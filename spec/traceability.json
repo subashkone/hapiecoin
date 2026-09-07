@@ -3013,7 +3013,7 @@
   "phase": 2,
   "test": "e2e (Playwright)",
   "acceptance": ".an-ctl inside the inboard cell; − / + step through the lot presets, clicking the number opens a preset menu, ⓘ opens option details; also shown on the keyboard-highlighted row",
-  "evidence": "screenshot: B / S / chart / 100 ▾ × 0.001 next to the 60,000 strike"
+  "evidence": "screenshot: B / S / chart / 100 ▾ × 0.001 next to the 60,000 strike · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
  },
  {
   "id": "HC-WS-024",
@@ -3028,7 +3028,7 @@
   "phase": 2,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Emits CG.emit('analyse:addLeg', {type, side, strike, expiry, lots, price, iv, symbol, asset}); if no handler appends within the same tick it appends to CG.analyse.legs itself and emits analyse:legs-changed; toast 'Leg Added'; max 10 active legs → toast 'Limit Reached · Maximum 10 active legs allowed per strategy'",
-  "evidence": "bundle strings: Leg Added, Limit Reached, Maximum 10 active legs allowed per strategy"
+  "evidence": "bundle strings: Leg Added, Limit Reached, Maximum 10 active legs allowed per strategy · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
  },
  {
   "id": "HC-WS-025",
@@ -3043,7 +3043,7 @@
   "phase": 2,
   "test": "e2e (Playwright)",
   "acceptance": "CG.state.chainLots persisted; all steppers update together",
-  "evidence": "screenshot: 100 ▾ × 0.001"
+  "evidence": "screenshot: 100 ▾ × 0.001 · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
  },
  {
   "id": "HC-WS-026",
@@ -3058,7 +3058,7 @@
   "phase": 2,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Dialog shows mark price, IV badge, 24h change, Δ, a 24h sparkline of mark price + IV (mock series), stats grid (Bid / Ask, OI, Volume, Bid / Ask Qty, Delta, Gamma, Theta, Vega, 24h Chg, Last, Open / High, Low) and Buy / Sell buttons with a lots selector",
-  "evidence": "screenshot: chart icon in the hover controls; bundle symbol format C-BTC-60000-250926"
+  "evidence": "screenshot: chart icon in the hover controls; bundle symbol format C-BTC-60000-250926 · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
  },
  {
   "id": "HC-WS-027",
@@ -3073,7 +3073,7 @@
   "phase": 2,
   "test": "e2e (Playwright)",
   "acceptance": "renderPills() runs on analyse:legs-changed and after every chain render",
-  "evidence": "screenshot: B 10 / S 10 pills in the chain"
+  "evidence": "screenshot: B 10 / S 10 pills in the chain · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
  },
  {
   "id": "HC-WS-028",
@@ -3088,7 +3088,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Registered through CG.shortcuts.register(key, description, handler) when the chrome registry exists (so they appear in the ? help) with a document-level fallback; ignored while typing or when a dialog is open; hovering a row moves the highlight",
-  "evidence": "inferred (nice-to-have requested in the brief)"
+  "evidence": "inferred (nice-to-have requested in the brief) · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
  },
  {
   "id": "HC-WS-029",
@@ -4543,7 +4543,7 @@
   "phase": 2,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "T.addLeg / analyse:addLeg enforce the limits and toast 'Limit Reached · Maximum 8 legs allowed for new strategy' or 'Limit Reached · Maximum 10 active legs allowed per strategy'",
-  "evidence": "bundle strings: Limit Reached, Maximum 8 legs allowed for new strategy, Maximum 10 active legs allowed per strategy"
+  "evidence": "bundle strings: Limit Reached, Maximum 8 legs allowed for new strategy, Maximum 10 active legs allowed per strategy · Phase 2 item 3 (07 Sep 2026): chain-side limit + add path (legs.test.ts, store.test.ts); the Builder half arrives with item 4"
  },
  {
   "id": "HC-TR-018",
@@ -4558,7 +4558,7 @@
   "phase": 2,
   "test": "e2e (Playwright)",
   "acceptance": "Chain B/S clicks emit analyse:addLeg; the builder normalises the leg (price from CG.quote, symbol, lots), appends it, toasts 'Leg Added' and emits analyse:legs-changed + cg-tour:leg-added",
-  "evidence": "bundle strings: Leg Added, cg-tour-set-tab"
+  "evidence": "bundle strings: Leg Added, cg-tour-set-tab · Phase 2 item 3 (07 Sep 2026): chain-side limit + add path (legs.test.ts, store.test.ts); the Builder half arrives with item 4"
  },
  {
   "id": "HC-TR-019",

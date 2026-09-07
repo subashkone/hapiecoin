@@ -95,3 +95,46 @@ No cards; one list per group; quick buttons are text buttons in one row, none pr
 
 ## 10. Confusion check
 1. "Which side does the order apply to?" → the Reorder hint says "from the strike outward, mirrored on the calls side", and the list is numbered 1 = nearest the strike. 2. "Did I lose the strike column?" → it is not in the list at all; Hide all still shows strikes with a "no columns" cell. 3. "Is Theta per day or per year?" → header "Θ/d" and the hover title; the design rule that every number carries a unit.
+
+---
+
+# Item 3 · row controls, leg marks and the first leg state · design pass · 2026-09-07
+
+Covers HC-WS-023..027 (row controls, add leg, lot presets, details dialog, leg marks), the chain half of HC-WS-028 (B / S keys, Enter, Esc), HC-TR-017 (limits), HC-TR-018 (legs added from the chain), ADR-010 (legs kept per asset). Mock reference: `mockup-v2/parts-src/analyse/30-core.js.html` (`ctlHtml`, `addLeg`, `renderPills`, `openOptInfo`), styles `.an-ctl`, `.bs`, `.stp`, `tr.leg`, `td.legcell`.
+
+## 1. Job
+Turn a strike into a leg in one click without leaving the chain, and always show which strikes already hold legs. First question in 2 s: **which side buys / sells this strike, and how many lots?** → the control sits on the row under the cursor, calls side for calls and puts side for puts, with the lot count visible in the stepper.
+
+## 2. Layout
+Desktop: the row parts from item 1 stay. On row hover (or keyboard highlight) a floating control appears on **each** side at the strike edge (inboard), over the price cells, never over the strike column:
+```
+calls row (hover):  … Bid/IV  Mark/IV  Ask/IV [B][S][− 10 +][ⓘ] │ 79,400 │ [ⓘ][− 10 +][B][S] Ask/IV  Mark/IV  Bid/IV …
+                                                                 │ C B 10 │
+                                                                 │ P S 10 │
+```
+Pills sit under the strike in the fixed column (`C B 10` green, `P S 10` red, `ATM` amber stays first). A row with a leg gets a 2 px stripe on its outer edge of each side that holds a leg (green when any long, red when short only) and the Mark cell of that side is outlined in the same colour; its B or S button renders filled. Narrow (390): the control is always visible on the highlighted row only (no hover on touch), stepper collapses to the number with a tap-to-cycle; pills unchanged.
+Option details dialog: title = Delta symbol (`C-BTC-79400-070926`), description `CALL · BTC · 07 Sep · 0 d to expiry · Spot 79,401.6`; body = mark (large) + IV badge + 24 h change badge, a stats grid (Bid / Ask, OI, Volume, Bid / Ask qty, Δ, Γ, Θ/day, ν, Last), then Buy / Sell buttons with a lots select. The mock's 24 h sparkline is omitted (no history feed yet; Phase 5 snapshotter).
+
+## 3. Hierarchy
+Primary: the ATM band stays the only amber element; the control itself is neutral with green B / red S as *side* colour (allowed by ADR-003). Secondary: lot stepper, pills. Tertiary: the ⓘ button. No new amber.
+
+## 4. States
+Hover only on pointer devices; keyboard highlight shows the same control. Leg limit reached (10 active per strategy, HC-TR-017): B / S disabled with the tooltip "Maximum 10 legs"; a toast repeats it if pressed via keyboard. No quote on a side (`row.call` undefined): that side shows no control. Stale chain: controls still work (the leg records the last mark and the "as of" time is in the footer). Light / dark: buy/sell tokens exist in both.
+
+## 5. Numbers
+Lots: integer presets 1 · 2 · 5 · 10 · 25 · 50 · 100 · 250 · 500 · 1000 (default 10, remembered per session); stepper tooltip "Lots × 0.001 BTC" from the lot-size setting. A leg records `price = mark` (USD per contract, 1 dp), `iv = markIv`, `lots`, `strike`, `expiry`, `kind`, `side`; quantity in underlying = lots × lot size, computed when needed, never stored twice. Toast on add: "Leg added · BUY 10 × C-BTC-79400-070926 @ 807.50".
+
+## 6. Interaction
+Pointer: hover shows the control; B / S add at once (no confirm); − / + step through the presets; ⓘ opens details. Keyboard on the highlighted row: **B** buy call, **S** sell call, **Shift+B** buy put, **Shift+S** sell put, **Enter** details, **Esc** clears the highlight, **+ / −** change lots. These match the v2 shortcut list (B, S registered there for the same purpose; Enter / Esc are not global). Palette: "Chain: clear legs for this asset" (with confirm) and "Chain: lot size presets" are deferred to the builder item; no new palette entry here. Focus order inside the control: B → S → − → + → ⓘ, all real buttons with aria-labels that include the side and kind ("Buy call 79,400").
+
+## 7. Traceability
+HC-WS-023 hover control · HC-WS-024 add at mark · HC-WS-025 presets + tooltip · HC-WS-026 details dialog · HC-WS-027 pills, outline, stripe, filled B/S · HC-WS-028 (chain keys B / S / Enter / Esc; the rest landed in item 1) · HC-TR-017 limit · HC-TR-018 chain → legs. Playwright: `HC-WS-023 / HC-WS-024 hover control adds a call and a put leg at mark`, `HC-WS-027 leg pills and stripes mark the rows and survive a reload`, `HC-WS-026 details dialog opens from ⓘ and Enter`, visual `analyse-legs-<theme>.png`.
+
+## 8. Real-data check
+5 rows: fine. 500 rows: the control renders only on the hovered / highlighted row, pills only on rows with legs; no per-row cost otherwise. 6-digit BTC strike + two pills in a 92 px column: pills are 9.5 px mono ("C B 10" ≈ 40 px) stacked under the strike, row height stays 36 px because the strike cell uses two lines max (ATM tag or pills; when both, the pill row wins and ATM is shown as the amber colour alone). 3-digit XAUT: same. Long strategy names: not here. No positions: no pills, no stripes, controls still appear on hover. Failure point: a side narrower than the control (≈ 150 px) in single-side mode on a 390 px phone → the control overlays the price cells fully; acceptable, and the details dialog covers the rest.
+
+## 9. Generic-pattern check
+One control per side, no persistent toolbar of buttons; green/red carry side meaning only; the ⓘ is the single icon and opens something. Pills answer "what do I hold here?"; the stripe answers it at a glance while scrolling.
+
+## 10. Confusion check
+1. "Which side will B buy?" → the control sits on the calls side for calls and the puts side for puts, its aria-label and tooltip say "Buy call 79,400"; the toast names the symbol. 2. "Is 10 lots or 10 contracts?" → stepper tooltip "Lots × 0.001 BTC" and the toast repeats "10 × symbol". 3. "Did the leg go in?" → the pill appears under the strike at once, the B button fills, and the toast confirms; the builder tab badge (item 4) will show the count.

@@ -137,3 +137,13 @@ One entry per decision. Newest last. Each entry: context, decision, consequences
   - The dialog applies every change immediately (no Save) and persists through the store; reorder offers ▲ ▼ buttons for keyboard users and HTML5 drag as a convenience.
   - Open / High / Low are deferred (GAPS #31) and shown muted in the dialog rather than as dead switches.
 - Consequences: hover controls and leg pills (item 3) attach to rows, not columns, so they are unaffected by the layout; the 24 h change cell is the only new coloured figure (signed change, green/red per ADR-003).
+
+## ADR-022 · Strategy legs from the chain: local per-asset state, added at mark (2026-09-07)
+- Context: HC-WS-023..028, HC-TR-017 and HC-TR-018 need legs before the Builder tab and the Phase 3 strategy API exist. ADR-010 already fixed that legs are kept per asset and never cleared by an asset switch.
+- Decisions:
+  - Legs live in the web UI store as `legs: Record<Underlying, StrategyLeg[]>`, persisted in the browser and normalised on read (unknown shapes dropped). The Phase 3 API replaces the storage, not the shape: a leg is `{ id, asset, kind, side, strike, expiry, lots, price, iv?, symbol, status, createdAt }` with price and IV copied from the live quote at the moment of adding; quantities are integer lots and the underlying amount is derived for display only, at the lot size's precision.
+  - The chain adds legs at the mark price with the row control (hover or keyboard highlight) or the keys B / S (calls) and Shift+B / Shift+S (puts); the lot count is one persisted setting (`chainLots`, presets 1..1000, default 10) shared by the control, the keys and the details dialog.
+  - The active-leg limit is 10 per asset strategy (HC-TR-017); the control disables at the limit and the keyboard path toasts the reason. The builder's "8 legs for a new strategy" rule arrives with the Builder tab.
+  - The automatic centring on load or expiry change only scrolls; only the A key, the ATM button and the palette command highlight the ATM row, so no row control appears before the trader asks for one.
+  - The details dialog omits the mock's 24 h sparkline until price history exists (GAPS #32).
+- Consequences: the Builder tab (item 4) reads and edits the same list; legs added here already carry everything the pricing package needs (`kind`, `side`, `strike`, `expiry`, `price`, `iv`, lots × lot size). Nothing here talks to a venue; no order can be created from this state.

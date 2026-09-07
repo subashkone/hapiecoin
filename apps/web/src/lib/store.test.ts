@@ -3,7 +3,19 @@ import { LAYOUT_IDS, defaultLayout } from "./chain/layout";
 import { ASSET_META, UI_STORAGE_KEY, useUiStore } from "./store";
 
 beforeEach(() => {
-  useUiStore.setState({ asset: "BTC", expiry: {}, feedPaused: false, dialog: null, dialogsTouched: false, paletteOpen: false, chainRange: 12, chainRecentre: 0 });
+  useUiStore.setState({
+    asset: "BTC",
+    expiry: {},
+    feedPaused: false,
+    dialog: null,
+    dialogsTouched: false,
+    paletteOpen: false,
+    chainRange: 12,
+    chainRecentre: 0,
+    legs: { BTC: [], ETH: [], XAUT: [] },
+    chainLots: 10,
+    optionDetail: null,
+  });
 });
 
 describe("HC-SH-003 UI store", () => {
@@ -31,7 +43,51 @@ describe("HC-SH-003 UI store", () => {
     const raw = window.localStorage.getItem(UI_STORAGE_KEY);
     expect(raw).toBeTruthy();
     const parsed = JSON.parse(raw!) as { state: Record<string, unknown> };
-    expect(parsed.state).toEqual({ asset: "XAUT", expiry: {}, feedPaused: false, chainRange: 12, chainColumns: defaultLayout() });
+    expect(parsed.state).toEqual({
+      asset: "XAUT",
+      expiry: {},
+      feedPaused: false,
+      chainRange: 12,
+      chainColumns: defaultLayout(),
+      legs: { BTC: [], ETH: [], XAUT: [] },
+      chainLots: 10,
+    });
+  });
+  it("HC-TR-017 / HC-TR-018 keeps legs per asset with the limit, remembers chain lots and opens the details dialog", () => {
+    const s = useUiStore.getState();
+    const input = { asset: "BTC" as const, kind: "call" as const, side: "buy" as const, strike: "79400", expiry: "2026-09-07", lots: 10, price: "807.5", iv: 0.27 };
+    const r = s.addLeg(input);
+    expect(r.ok).toBe(true);
+    expect(useUiStore.getState().legs.BTC).toHaveLength(1);
+    expect(useUiStore.getState().legs.ETH).toHaveLength(0);
+    for (let i = 1; i < 10; i += 1) s.addLeg({ ...input, strike: String(79_400 + i * 200) });
+    expect(s.addLeg(input)).toEqual({ ok: false, reason: "limit" });
+    expect(useUiStore.getState().legs.BTC).toHaveLength(10);
+    // another asset keeps its own list (ADR-010)
+    expect(s.addLeg({ ...input, asset: "ETH", strike: "4200" }).ok).toBe(true);
+    s.setAsset("ETH");
+    expect(useUiStore.getState().legs.BTC).toHaveLength(10);
+    const first = useUiStore.getState().legs.BTC[0]!;
+    s.removeLeg("BTC", first.id);
+    expect(useUiStore.getState().legs.BTC).toHaveLength(9);
+    s.setChainLots(25);
+    expect(useUiStore.getState().chainLots).toBe(25);
+    s.setChainLots(7);
+    expect(useUiStore.getState().chainLots).toBe(7);
+    s.setChainLots(-3);
+    expect(useUiStore.getState().chainLots).toBe(10);
+    s.openOptionDetail({ asset: "BTC", expiry: "2026-09-07", strike: "79400", kind: "put" });
+    expect(useUiStore.getState().dialog).toBe("option");
+    expect(useUiStore.getState().optionDetail?.kind).toBe("put");
+    // persisted legs are normalised on the way back in; the dialog target is not persisted
+    const merge = useUiStore.persist.getOptions().merge;
+    if (!merge) throw new Error("persist merge missing");
+    const current = useUiStore.getState();
+    const merged = merge({ legs: { BTC: [first, { id: "bad" }], ETH: "x" }, chainLots: 0, optionDetail: { asset: "BTC" } }, current);
+    expect(merged.legs.BTC).toHaveLength(1);
+    expect(merged.legs.ETH).toEqual([]);
+    expect(merged.chainLots).toBe(current.chainLots);
+    expect(merged.optionDetail).toBeNull();
   });
   it("HC-WS-014 stores a normalised column layout and migrates what it reads back", () => {
     const s = useUiStore.getState();

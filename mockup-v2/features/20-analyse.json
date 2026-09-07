@@ -181,7 +181,7 @@
   "feature": "Row hover reveals a floating control on both sides: [B] [S] [− 10 +] lot stepper [ⓘ]",
   "how": ".an-ctl inside the inboard cell; − / + step through the lot presets, clicking the number opens a preset menu, ⓘ opens option details; also shown on the keyboard-highlighted row",
   "status": "working",
-  "evidence": "screenshot: B / S / chart / 100 ▾ × 0.001 next to the 60,000 strike"
+  "evidence": "screenshot: B / S / chart / 100 ▾ × 0.001 next to the 60,000 strike · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
  },
  {
   "route": "/analyse",
@@ -189,7 +189,7 @@
   "feature": "B / S add a leg (CALL on the calls side, PUT on the puts side) at the mark price with the chosen lots",
   "how": "Emits CG.emit('analyse:addLeg', {type, side, strike, expiry, lots, price, iv, symbol, asset}); if no handler appends within the same tick it appends to CG.analyse.legs itself and emits analyse:legs-changed; toast 'Leg Added'; max 10 active legs → toast 'Limit Reached · Maximum 10 active legs allowed per strategy'",
   "status": "working",
-  "evidence": "bundle strings: Leg Added, Limit Reached, Maximum 10 active legs allowed per strategy"
+  "evidence": "bundle strings: Leg Added, Limit Reached, Maximum 10 active legs allowed per strategy · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
  },
  {
   "route": "/analyse",
@@ -197,7 +197,7 @@
   "feature": "Lot stepper presets (1 · 2 · 5 · 10 · 25 · 50 · 100 · 250 · 500 · 1000), default 10, \"× lot size\" shown as the stepper tooltip and in the option details dialog",
   "how": "CG.state.chainLots persisted; all steppers update together",
   "status": "working",
-  "evidence": "screenshot: 100 ▾ × 0.001"
+  "evidence": "screenshot: 100 ▾ × 0.001 · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
  },
  {
   "route": "/analyse",
@@ -205,7 +205,7 @@
   "feature": "ⓘ icon (or Enter on the highlighted row) → option details dialog titled with the Delta-style symbol (e.g. C-BTC-79500-250926)",
   "how": "Dialog shows mark price, IV badge, 24h change, Δ, a 24h sparkline of mark price + IV (mock series), stats grid (Bid / Ask, OI, Volume, Bid / Ask Qty, Delta, Gamma, Theta, Vega, 24h Chg, Last, Open / High, Low) and Buy / Sell buttons with a lots selector",
   "status": "working",
-  "evidence": "screenshot: chart icon in the hover controls; bundle symbol format C-BTC-60000-250926"
+  "evidence": "screenshot: chart icon in the hover controls; bundle symbol format C-BTC-60000-250926 · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
  },
  {
   "route": "/analyse",
@@ -213,7 +213,7 @@
   "feature": "Existing strategy legs are marked in the chain: 'C B 10' / 'P S 10' pills under the strike, the mark cell outlined green/red, a green/red stripe on the row's left edge, filled B / S buttons and an amber dot on the expiry chip",
   "how": "renderPills() runs on analyse:legs-changed and after every chain render",
   "status": "working",
-  "evidence": "screenshot: B 10 / S 10 pills in the chain"
+  "evidence": "screenshot: B 10 / S 10 pills in the chain · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
  },
  {
   "route": "/analyse",
@@ -221,7 +221,7 @@
   "feature": "Keyboard: j / k or ↑ / ↓ move the highlighted strike (amber outline), B / S add a call leg, Shift+B / Shift+S a put, E / Shift+E cycle the expiry, Enter opens details, Esc clears",
   "how": "Registered through CG.shortcuts.register(key, description, handler) when the chrome registry exists (so they appear in the ? help) with a document-level fallback; ignored while typing or when a dialog is open; hovering a row moves the highlight",
   "status": "working",
-  "evidence": "inferred (nice-to-have requested in the brief)"
+  "evidence": "inferred (nice-to-have requested in the brief) · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
  },
  {
   "route": "/analyse",

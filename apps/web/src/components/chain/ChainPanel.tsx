@@ -2,15 +2,17 @@
 // Live chain panel (HC-WS-107): expiry chips from the gateway / env, subscribe to
 // chain:delta_india:<asset>:<expiry>, render snap + q frames with designed empty, stale and error states.
 // The table itself (layout, range, keyboard) is ChainTable; this panel owns expiry selection and the states.
-import { Button, EmptyState, cn } from "@hapiecoin/ui";
-import { chainTopic } from "@hapiecoin/schema";
+import { Button, EmptyState, cn, toast } from "@hapiecoin/ui";
+import { type Quote, chainTopic } from "@hapiecoin/schema";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
+import { useSettings } from "@/lib/api/queries";
 import { discoverExpiries, nearestExpiry } from "@/lib/chain/expiries";
 import { publicEnv } from "@/lib/env";
-import { daysToExpiry, fmtExpiry } from "@/lib/format";
+import { daysToExpiry, fmtExpiry, fmtPrice } from "@/lib/format";
 import { useConnectionStatus, useGateway, useSpot, useTopic } from "@/lib/gateway/hooks";
 import { ASSET_META, useUiStore } from "@/lib/store";
+import { type LegKind, type LegSide, MAX_ACTIVE_LEGS, legsForChain, stepLots } from "@/lib/strategy/legs";
 import { ChainTable } from "./ChainTable";
 
 export function ChainPanel({ height = 520 }: { height?: number }) {
@@ -37,6 +39,14 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
   const layout = useUiStore((s) => s.chainColumns);
   const openDialog = useUiStore((s) => s.openDialog);
   const openColumns = useCallback(() => openDialog("columns"), [openDialog]);
+  // Legs (HC-WS-024..027, HC-TR-017/018): per-asset list in the store; this chain shows its expiry's legs.
+  const assetLegs = useUiStore((s) => s.legs[s.asset]);
+  const chainLots = useUiStore((s) => s.chainLots);
+  const setChainLots = useUiStore((s) => s.setChainLots);
+  const addLeg = useUiStore((s) => s.addLeg);
+  const openOptionDetail = useUiStore((s) => s.openOptionDetail);
+  const { data: settings } = useSettings();
+  const lotSize = settings?.lotSizes[asset];
 
   useEffect(() => {
     if (chain?.stale && topic) gw.refresh(topic);
@@ -50,6 +60,33 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
       if (next) setExpiry(asset, next);
     },
     [asset, expiry, list, setExpiry],
+  );
+  const chainLegs = useMemo(() => (expiry ? legsForChain(assetLegs, asset, expiry) : []), [assetLegs, asset, expiry]);
+  const atLimit = assetLegs.filter((l) => l.status === "open").length >= MAX_ACTIVE_LEGS;
+  const onAddLeg = useCallback(
+    (kind: LegKind, side: LegSide, strike: string, quote: Quote | undefined) => {
+      if (!expiry) return;
+      if (!quote) {
+        toast.error("No quote for this option yet");
+        return;
+      }
+      const r = addLeg({ asset, kind, side, strike, expiry, lots: chainLots, price: quote.mark, iv: quote.markIv });
+      if (r.ok) {
+        toast("Leg added", { description: `${side.toUpperCase()} ${r.leg.lots} × ${r.leg.symbol} @ ${fmtPrice(r.leg.price)}` });
+      } else if (r.reason === "limit") {
+        toast.error("Limit reached", { description: `Maximum ${MAX_ACTIVE_LEGS} active legs per strategy` });
+      } else {
+        toast.error("Lots must be a whole number above zero");
+      }
+    },
+    [addLeg, asset, chainLots, expiry],
+  );
+  const onLots = useCallback((delta: 1 | -1) => setChainLots(stepLots(chainLots, delta)), [chainLots, setChainLots]);
+  const onInfo = useCallback(
+    (kind: LegKind, strike: string) => {
+      if (expiry) openOptionDetail({ asset, expiry, strike, kind });
+    },
+    [asset, expiry, openOptionDetail],
   );
   const live = status === "open" && !feedPaused && !(chain?.stale ?? false);
   const asOf = chain?.stale && chain.updatedAt > 0 ? new Date(chain.updatedAt).toLocaleTimeString("en-GB") : null;
@@ -113,6 +150,13 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
             lotLabel={`Lot ${ASSET_META[asset].glyph} · USD per contract`}
             live={live}
             asOf={asOf}
+            legs={chainLegs}
+            lots={chainLots}
+            lotsTitle={`Lots × ${lotSize ?? "…"} ${asset}`}
+            atLimit={atLimit}
+            onAddLeg={onAddLeg}
+            onLots={onLots}
+            onInfo={onInfo}
           />
         )}
       </div>

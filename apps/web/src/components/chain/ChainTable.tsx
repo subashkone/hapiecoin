@@ -13,7 +13,9 @@ import type { ChainLayout } from "@/lib/chain/layout";
 import { type ChainRange, chainTotals, itmSide, maxOpenInterest, oiBarPercent, sliceAroundAtm } from "@/lib/chain/range";
 import { fmtChange, fmtDelta, fmtGamma, fmtIv, fmtOi, fmtPrice, fmtQty, fmtStrike, fmtTheta, fmtVega } from "@/lib/format";
 import { atmIndex, type ChainState } from "@/lib/gateway/reducer";
+import { type LegKind, type LegSide, type RowMarks, type StrategyLeg, rowMarks } from "@/lib/strategy/legs";
 import { ChainHeader } from "./ChainHeader";
+import { RowControls } from "./RowControls";
 import { ChainFooter, ChainTools, rangeLabel } from "./ChainTools";
 import {
   COLUMN_PX,
@@ -34,7 +36,7 @@ interface CellProps {
   col: "ask" | "mark" | "bid";
   price: string | undefined;
   iv: number | undefined;
-  flash?: string;
+  flash?: string | undefined;
   align: "right" | "left";
 }
 
@@ -48,7 +50,7 @@ function PriceIv({ col, price, iv, flash, align }: CellProps) {
 }
 
 /** One cell of one side, by column id (HC-WS-021); the cell content is display-only formatting. */
-function Cell({ col, q, flashes, side, maxOi }: { col: ChainColumn; q: Quote | undefined; flashes: ReturnType<typeof quoteFlashes>; side: "calls" | "puts"; maxOi: number }) {
+function Cell({ col, q, flashes, side, maxOi, markTone }: { col: ChainColumn; q: Quote | undefined; flashes: ReturnType<typeof quoteFlashes>; side: "calls" | "puts"; maxOi: number; markTone: "buy" | "sell" | null }) {
   const align = side === "calls" ? "right" : "left";
   const plain = (text: string, extra?: string) => (
     <div className={cn("num flex items-center px-2", align === "right" ? "justify-end" : "justify-start", extra)} data-col={col.id}>
@@ -59,7 +61,15 @@ function Cell({ col, q, flashes, side, maxOi }: { col: ChainColumn; q: Quote | u
     case "ask":
       return <PriceIv col="ask" price={q?.ask} iv={q?.askIv} flash={flashes.ask} align={align} />;
     case "mark":
-      return <PriceIv col="mark" price={q?.mark} iv={q?.markIv} flash={flashes.mark} align={align} />;
+      return (
+        <PriceIv
+          col="mark"
+          price={q?.mark}
+          iv={q?.markIv}
+          flash={cn(flashes.mark, markTone === "buy" && "legcell-buy", markTone === "sell" && "legcell-sell") || undefined}
+          align={align}
+        />
+      );
     case "bid":
       return <PriceIv col="bid" price={q?.bid} iv={q?.bidIv} flash={flashes.bid} align={align} />;
     case "oi": {
@@ -106,18 +116,20 @@ export function quoteFlashes(prev: Quote | undefined, next: Quote | undefined, c
   return { bid: dir("bid"), ask: dir("ask"), mark: dir("mark") };
 }
 
-function SideCells({ cols, q, flashes, side, maxOi }: { cols: readonly ChainColumn[]; q: Quote | undefined; flashes: ReturnType<typeof quoteFlashes>; side: "calls" | "puts"; maxOi: number }) {
+function SideCells({ cols, q, flashes, side, maxOi, markTone }: { cols: readonly ChainColumn[]; q: Quote | undefined; flashes: ReturnType<typeof quoteFlashes>; side: "calls" | "puts"; maxOi: number; markTone: "buy" | "sell" | null }) {
   if (cols.length === 0) {
     return <div className={cn("micro flex items-center px-2 text-muted-foreground", side === "calls" ? "justify-end" : "justify-start")}>no columns</div>;
   }
   return (
     <>
       {cols.map((col) => (
-        <Cell key={col.id} col={col} q={q} flashes={flashes} side={side} maxOi={maxOi} />
+        <Cell key={col.id} col={col} q={q} flashes={flashes} side={side} maxOi={maxOi} markTone={markTone} />
       ))}
     </>
   );
 }
+
+const NO_MARKS: RowMarks = { call: { buyLots: 0, sellLots: 0, tone: null }, put: { buyLots: 0, sellLots: 0, tone: null }, pills: [] };
 
 export interface ChainTableProps {
   chain: ChainState;
@@ -143,6 +155,16 @@ export interface ChainTableProps {
   asOf: string | null;
   /** Panel width override for tests (jsdom has no layout). */
   initialWidth?: number;
+  /** Legs of this asset and expiry (HC-WS-027). */
+  legs?: readonly StrategyLeg[];
+  /** Lots the B / S buttons add (HC-WS-025) and the "Lots × size" tooltip. */
+  lots?: number;
+  lotsTitle?: string;
+  /** True when the strategy holds the maximum active legs (HC-TR-017). */
+  atLimit?: boolean;
+  onAddLeg?: (kind: LegKind, side: LegSide, strike: string, quote: Quote | undefined) => void;
+  onLots?: (delta: 1 | -1) => void;
+  onInfo?: (kind: LegKind, strike: string) => void;
 }
 
 const CHROME_PX = 34 + 46 + 40; // tools + header + footer
@@ -164,6 +186,13 @@ export function ChainTable({
   live,
   asOf,
   initialWidth = 1200,
+  legs = [],
+  lots = 10,
+  lotsTitle = "Lots",
+  atLimit = false,
+  onAddLeg,
+  onLots,
+  onInfo,
 }: ChainTableProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -222,12 +251,30 @@ export function ChainTable({
     initialRect: { width: initialWidth, height: Math.max(120, height - CHROME_PX) },
   });
 
-  // Roving keyboard focus over the visible rows (HC-WS-016 / design §6).
+  // Leg marks per strike (HC-WS-027), recomputed only when the legs or rows change.
+  const marksByStrike = useMemo(() => {
+    const m = new Map<string, RowMarks>();
+    if (legs.length === 0) return m;
+    for (const r of rows) m.set(r.strike, rowMarks(legs, r.strike));
+    return m;
+  }, [legs, rows]);
+  const marksOf = (strike: string): RowMarks => marksByStrike.get(strike) ?? NO_MARKS;
+
+  // Roving keyboard focus over the visible rows (HC-WS-016 / design §6) and the hovered row for the controls.
   const [focus, setFocus] = useState<number>(-1);
-  const recentre = useCallback(() => {
+  const [hover, setHover] = useState<number>(-1);
+  const active = hover >= 0 ? hover : focus;
+  const addFromKey = (kind: LegKind, side: LegSide) => {
+    const row = rows[focus];
+    if (!row || !onAddLeg) return;
+    onAddLeg(kind, side, row.strike, kind === "call" ? row.call : row.put);
+  };
+  // `highlight` moves the keyboard highlight onto the ATM row (A key, palette); the automatic centring on
+  // load or expiry change only scrolls, so no row control appears before the trader asks for one.
+  const recentre = useCallback((highlight = false) => {
     if (atm < 0 || !rows.length) return;
     virtualizer.scrollToIndex(atm, { align: "center" });
-    setFocus(atm);
+    if (highlight) setFocus(atm);
     // The virtualiser may not have measured the viewport yet on first data; settle the exact centre next frame.
     if (typeof requestAnimationFrame === "function") {
       requestAnimationFrame(() => {
@@ -250,7 +297,7 @@ export function ChainTable({
   useEffect(() => {
     if (recentreSignal !== lastSignal.current) {
       lastSignal.current = recentreSignal;
-      recentre();
+      recentre(true);
     }
   }, [recentreSignal, recentre]);
   useEffect(() => {
@@ -278,7 +325,7 @@ export function ChainTable({
       case "a":
       case "A":
         e.preventDefault();
-        return recentre();
+        return recentre(true);
       case "e":
         e.preventDefault();
         return onExpiryStep?.(1);
@@ -291,10 +338,57 @@ export function ChainTable({
       case "ArrowLeft":
         e.preventDefault();
         return scroll.scrollBy(-COLUMN_PX, "calls");
+      // Legs (HC-WS-028): B / S on the calls side, Shift for puts; Enter details; Esc clears; + / − lots.
+      case "b":
+        e.preventDefault();
+        return addFromKey("call", "buy");
+      case "s":
+        e.preventDefault();
+        return addFromKey("call", "sell");
+      case "B":
+        e.preventDefault();
+        return addFromKey("put", "buy");
+      case "S":
+        e.preventDefault();
+        return addFromKey("put", "sell");
+      case "Enter": {
+        e.preventDefault();
+        const row = rows[focus];
+        if (row && onInfo) onInfo(e.shiftKey ? "put" : "call", row.strike);
+        return undefined;
+      }
+      case "Escape":
+        e.preventDefault();
+        setFocus(-1);
+        setHover(-1);
+        return undefined;
+      case "+":
+      case "=":
+        e.preventDefault();
+        return onLots?.(1);
+      case "-":
+      case "_":
+        e.preventDefault();
+        return onLots?.(-1);
       default:
         return undefined;
     }
   };
+
+  const controlsFor = (side: "calls" | "puts", row: ChainRow, marks: RowMarks) =>
+    onAddLeg ? (
+      <RowControls
+        side={side}
+        strike={row.strike}
+        lots={lots}
+        lotsTitle={lotsTitle}
+        marks={side === "calls" ? marks.call : marks.put}
+        atLimit={atLimit}
+        onAdd={(kind, legSide) => onAddLeg(kind, legSide, row.strike, side === "calls" ? row.call : row.put)}
+        onLots={(delta) => onLots?.(delta)}
+        onInfo={(kind) => onInfo?.(kind, row.strike)}
+      />
+    ) : null;
 
   // Wheel on either track moves the shared offset (non-passive so the page does not also scroll sideways).
   useEffect(() => {
@@ -335,6 +429,9 @@ export function ChainTable({
       data-x={scroll.x}
       data-puts-x={scroll.putsX}
       data-columns={putCols.map((c) => c.id).join(",")}
+      data-active={active}
+      data-hover={hover}
+      data-focus-index={focus}
     >
       <ChainTools
         range={range}
@@ -343,7 +440,7 @@ export function ChainTable({
         sides={sides}
         narrow={narrow}
         onSide={setNarrowSide}
-        onRecentre={recentre}
+        onRecentre={() => recentre(true)}
         onOpenColumns={onOpenColumns}
         columnsShown={putCols.length}
       />
@@ -369,7 +466,7 @@ export function ChainTable({
         aria-rowcount={rows.length}
         onKeyDown={onKeyDown}
       >
-        <div className="grid" style={{ gridTemplateColumns: gridCols, height: total }}>
+        <div className="grid" style={{ gridTemplateColumns: gridCols, height: total }} onMouseLeave={() => setHover(-1)}>
           {sides !== "puts" ? (
             <div ref={callsRef} className="relative min-w-0 overflow-hidden" data-testid="chain-calls" data-x={scroll.x}>
               <div style={trackStyle(scroll.x)}>
@@ -379,20 +476,26 @@ export function ChainTable({
                   const prev = prevSnapshot[v.index];
                   const flashes = quoteFlashes(prev?.call, row.call, row.call ? chain.changed.get(row.call.instrumentId) : undefined);
                   const isAtm = v.index === atm;
+                  const marks = marksOf(row.strike);
                   return (
                     <div
                       key={row.strike}
                       data-testid="chain-row-calls"
                       data-strike={row.strike}
+                      data-leg={marks.call.tone ?? undefined}
+                      onMouseEnter={() => setHover(v.index)}
                       className={cn(
                         "absolute left-0 grid w-full border-b border-border text-xs",
                         itmSide(row.strike, spot) === "call" && "itm-tint",
                         isAtm && "atm-band",
                         v.index === focus && "chain-focus",
+                        marks.call.tone === "buy" && "leg-stripe-buy",
+                        marks.call.tone === "sell" && "leg-stripe-sell",
                       )}
                       style={{ ...callsGrid, height: v.size, transform: `translateY(${v.start}px)` }}
                     >
-                      <SideCells cols={callCols} q={row.call} flashes={flashes} side="calls" maxOi={maxOi} />
+                      <SideCells cols={callCols} q={row.call} flashes={flashes} side="calls" maxOi={maxOi} markTone={marks.call.tone} />
+                      {v.index === active && row.call ? controlsFor("calls", row, marks) : null}
                     </div>
                   );
                 })}
@@ -404,6 +507,7 @@ export function ChainTable({
               const row = rows[v.index];
               if (!row) return null;
               const isAtm = v.index === atm;
+              const marks = marksOf(row.strike);
               return (
                 <div
                   key={row.strike}
@@ -413,7 +517,9 @@ export function ChainTable({
                   data-strike={row.strike}
                   data-atm={isAtm || undefined}
                   data-focus={v.index === focus || undefined}
+                  data-legs={marks.pills.length > 0 ? marks.pills.map((p) => p.text).join("|") : undefined}
                   onClick={() => setFocus(v.index)}
+                  onMouseEnter={() => setHover(v.index)}
                   className={cn(
                     "num absolute left-0 right-0 flex flex-col items-center justify-center border-b border-border text-[12.5px] font-medium",
                     isAtm && "atm-band text-spot",
@@ -422,7 +528,15 @@ export function ChainTable({
                   style={{ height: v.size, transform: `translateY(${v.start}px)` }}
                 >
                   <span className="whitespace-nowrap">{fmtStrike(row.strike)}</span>
-                  {isAtm ? (
+                  {marks.pills.length > 0 ? (
+                    <span className="flex max-w-full gap-1 truncate text-[9.5px] font-medium leading-none tracking-[0.04em]" data-testid="leg-pills">
+                      {marks.pills.map((p) => (
+                        <b key={p.text} className={p.tone === "buy" ? "text-buy" : "text-sell"} title={p.title}>
+                          {p.text}
+                        </b>
+                      ))}
+                    </span>
+                  ) : isAtm ? (
                     <span className="max-w-full truncate text-3xs font-normal leading-none text-spot" title={`At the money · spot ${fmtPrice(spot)}`}>
                       ATM · {fmtPrice(spot)}
                     </span>
@@ -440,20 +554,26 @@ export function ChainTable({
                   const prev = prevSnapshot[v.index];
                   const flashes = quoteFlashes(prev?.put, row.put, row.put ? chain.changed.get(row.put.instrumentId) : undefined);
                   const isAtm = v.index === atm;
+                  const marks = marksOf(row.strike);
                   return (
                     <div
                       key={row.strike}
                       data-testid="chain-row-puts"
                       data-strike={row.strike}
+                      data-leg={marks.put.tone ?? undefined}
+                      onMouseEnter={() => setHover(v.index)}
                       className={cn(
                         "absolute left-0 grid w-full border-b border-border text-xs",
                         itmSide(row.strike, spot) === "put" && "itm-tint",
                         isAtm && "atm-band",
                         v.index === focus && "chain-focus",
+                        marks.put.tone === "buy" && "leg-stripe-buy-r",
+                        marks.put.tone === "sell" && "leg-stripe-sell-r",
                       )}
                       style={{ ...putsGrid, height: v.size, transform: `translateY(${v.start}px)` }}
                     >
-                      <SideCells cols={putCols} q={row.put} flashes={flashes} side="puts" maxOi={maxOi} />
+                      <SideCells cols={putCols} q={row.put} flashes={flashes} side="puts" maxOi={maxOi} markTone={marks.put.tone} />
+                      {v.index === active && row.put ? controlsFor("puts", row, marks) : null}
                     </div>
                   );
                 })}
