@@ -1,0 +1,116 @@
+<!-- ===== /analyse workspace (v2 · Obsidian Desk): options chain + right analysis pane (payoff / scenarios / greeks / vol / structure / ladder) ===== -->
+<section class="screen" data-route="/analyse" data-title="Analyse" data-auth="user">
+  <div data-cg="app-header" data-variant="analyse"></div>
+  <div data-cg="plan-banner"></div>
+  <div class="an-shell" id="an-shell" data-mobile="chain" data-collapse="">
+    <div class="an-mobile-bar"><div class="tabs"><button class="tab active" data-mobile-view="chain">Chain</button><button class="tab" data-mobile-view="analysis">Analysis</button></div></div>
+    <div class="an-left" id="an-left">
+      <div class="an-lptabs" role="tablist" id="an-lptabs">
+        <button class="an-tab active" role="tab" data-lptab="chain" data-tour="options-chain">Chain</button>
+        <button class="an-tab" role="tab" data-lptab="strategy" data-tour="builder-tab">Builder<b class="cnt" data-cnt="builder" hidden>0</b></button>
+        <button class="an-tab" role="tab" data-lptab="paper" data-tour="paper-tab">Paper<b class="cnt" data-cnt="paper" hidden>0</b></button>
+        <button class="an-tab" role="tab" data-lptab="live">Live<b class="cnt" data-cnt="live" hidden>0</b></button>
+        <button class="an-tab" role="tab" data-lptab="journal">Journal<b class="cnt" data-cnt="journal" hidden>0</b></button>
+        <span class="an-tabs-right"><span class="micro" id="an-lot-info">Lot 0.001 BTC</span><span class="micro an-dot">·</span><span class="micro" id="an-basis-info">Basis mark</span><button class="an-ibtn" data-collapse="right" title="Expand chain · hide the analysis pane" aria-label="Expand chain"><i data-icon="chevr"></i></button></span>
+      </div>
+      <div id="analyse-left-panels" class="an-left-panels">
+        <div class="lp-panel an-chain-panel" data-tab="chain">
+          <div class="an-expiry-strip">
+            <button class="an-scroll-btn" data-exp-scroll="-1" title="Previous expiries" aria-label="Previous">‹</button>
+            <div class="an-expiries" id="an-expiries"></div>
+            <button class="an-scroll-btn" data-exp-scroll="1" title="Next expiries" aria-label="Next">›</button>
+          </div>
+          <div class="an-chain-tools">
+            <span class="micro">Strikes</span>
+            <div class="an-seg" id="an-range" role="group" aria-label="Strike range"><button data-range="6">±6</button><button data-range="12">±12</button><button data-range="all">all</button></div>
+            <button class="an-chip" id="an-greeks-toggle" title="Show Γ Θ ν columns (toggle)"><i data-icon="sigma"></i>Greeks</button>
+            <span class="micro an-tools-sep">Find Δ</span>
+            <div class="an-seg" id="an-finddelta" role="group" aria-label="Find strike by delta"><button data-delta="10">10Δ</button><button data-delta="16">16Δ</button><button data-delta="25">25Δ</button><button data-delta="50">50Δ</button></div>
+            <span class="flex-1"></span>
+            <button class="an-live-btn live" id="an-live-btn" title="Live prices"><i class="dot"></i><span>Live</span></button>
+            <button class="an-ibtn" id="an-colsettings-btn" title="Column settings" aria-label="Column settings"><i data-icon="gear"></i></button>
+          </div>
+          <div class="an-chain-wrap" id="an-chain-wrap" tabindex="0" aria-label="Options chain (j / k or arrows move the highlighted strike, B / S add legs, Shift for puts, E cycles expiry)">
+            <table class="an-chain" id="an-chain"><colgroup></colgroup><thead></thead><tbody></tbody></table>
+          </div>
+          <div class="an-chain-foot" id="an-chain-foot"></div>
+        </div>
+      </div>
+    </div>
+    <div class="an-divider" id="an-divider" title="Drag to resize · double-click to reset"><button class="an-restore" data-collapse="restore" title="Restore both panes" aria-label="Restore both panes">⋮</button></div>
+    <div class="an-right" id="an-right" data-tour="payoff-panel">
+      <div class="an-rptabs" role="tablist" id="an-rptabs">
+        <button class="an-tab active" role="tab" data-rptab="payoff">Payoff</button>
+        <button class="an-tab" role="tab" data-rptab="scenarios">Scenarios</button>
+        <button class="an-tab" role="tab" data-rptab="greeks">Greeks</button>
+        <button class="an-tab" role="tab" data-rptab="vol">Vol</button>
+        <button class="an-tab" role="tab" data-rptab="structure">Structure</button>
+        <button class="an-tab" role="tab" data-rptab="ladder">Ladder</button>
+        <span class="an-tabs-right"><span class="micro" id="an-strat-info"></span><button class="an-ibtn" id="an-share-btn" title="Share strategy link" aria-label="Share strategy link"><i data-icon="share"></i></button><button class="an-ibtn" data-collapse="left" title="Expand analysis · hide the chain" aria-label="Expand analysis"><i data-icon="chevl"></i></button></span>
+      </div>
+      <div class="an-right-body" id="an-right-body">
+        <div class="rp-panel" data-tab="payoff" id="an-payoff">
+          <div class="an-tiles" id="an-tiles"></div>
+          <div class="an-astrip" id="an-astrip"></div>
+          <div class="an-chart-hd">
+            <span class="micro">Payoff</span>
+            <div class="an-legend" id="an-legend">
+              <button class="lg" data-layer="expiry" title="Toggle the at-expiry P&amp;L line"><i></i>At expiry</button>
+              <button class="lg" data-layer="target" title="Toggle the target-date P&amp;L curve"><i class="curve"></i>On <span id="an-legend-date">today</span></button>
+            </div>
+            <div class="an-chips" id="an-chips">
+              <span class="micro">Layers</span>
+              <button class="an-chip" data-layer="oi" title="Open interest bars">OI</button>
+              <button class="an-chip" data-layer="sd" title="±1σ expected-move band">±SD</button>
+              <button class="an-chip" data-layer="be" title="Breakeven markers">BE</button>
+              <button class="an-chip" data-layer="ivdn" title="Target-date curve with IV shifted −5%">IV −5%</button>
+              <button class="an-chip" data-layer="ivup" title="Target-date curve with IV shifted +5%">IV +5%</button>
+              <button class="an-ibtn" id="an-layers-btn" title="All chart layers" aria-label="Chart layers"><i data-icon="layers"></i></button>
+              <div class="an-zoom"><button data-zoom="out" title="Zoom out" aria-label="Zoom out">−</button><button data-zoom="reset" title="Reset zoom" id="an-zoom-label">100%</button><button data-zoom="in" title="Zoom in" aria-label="Zoom in">+</button></div>
+            </div>
+          </div>
+          <div class="an-chart-host" id="an-chart-host"></div>
+          <div class="an-sliders">
+            <div class="sl">
+              <div class="lbl"><span class="micro" id="an-tp-title">Target price</span><span class="val"><button class="an-step" data-tp="-1" title="Decrease target price" aria-label="Decrease">−</button><span id="an-tp-val">—</span><em id="an-tp-pct">+0.0%</em><button class="an-step" data-tp="1" title="Increase target price" aria-label="Increase">+</button></span></div>
+              <div class="track" id="an-tp-track"><div class="fill" id="an-tp-fill"></div><div class="mk" id="an-tp-spot" data-l="spot"></div><div class="knob" id="an-tp-knob"></div><div class="ticks" id="an-tp-ticks"><span id="an-tp-min">—</span><span id="an-tp-max">—</span></div><input type="range" id="an-tp-range" min="0" max="100" step="1" value="50" aria-label="Target price"></div>
+            </div>
+            <div class="sl">
+              <div class="lbl"><span class="micro" id="an-td-title">Target date</span><span class="val"><button class="an-step" data-td="-1" title="Previous day" aria-label="Previous day">‹</button><span id="an-td-val">—</span><em id="an-td-left">0d left</em><button class="an-step" data-td="1" title="Next day" aria-label="Next day">›</button></span></div>
+              <div class="track" id="an-td-track"><div class="fill" id="an-td-fill"></div><div class="knob" id="an-td-knob"></div><div class="ticks" id="an-td-ticks"><span>Today</span><span id="an-td-max">Expiry</span></div><input type="range" id="an-td-range" min="0" max="30" step="1" value="0" aria-label="Target date"></div>
+            </div>
+          </div>
+          <div class="an-gstrip" id="an-greeks-strip"></div>
+        </div>
+        <div class="rp-panel" data-tab="scenarios" id="an-scenarios" hidden></div>
+        <div class="rp-panel" data-tab="greeks" id="an-greeks" hidden></div>
+        <div class="rp-panel" data-tab="vol" id="an-vol" hidden></div>
+        <div class="rp-panel" data-tab="structure" id="an-structure" hidden></div>
+        <div class="rp-panel" data-tab="ladder" id="an-ladder" hidden></div>
+      </div>
+    </div>
+  </div>
+  <div data-cg="portfolio-bar"></div>
+  <!-- Column Settings dialog -->
+  <div id="an-colsettings" hidden>
+    <div class="an-cs">
+      <div class="an-cs-head">
+        <div class="tabs"><button class="tab active" data-cstab="show">Show / Hide</button><button class="tab" data-cstab="reorder">Reorder</button></div>
+        <div class="an-cs-quick"><button class="btn btn-outline btn-xs" data-csq="essentials">Essentials</button><button class="btn btn-outline btn-xs" data-csq="all">Show All</button><button class="btn btn-outline btn-xs" data-csq="none">Hide all</button><button class="btn btn-ghost btn-xs" data-csq="reset">Reset</button></div>
+      </div>
+      <div class="an-cs-body" data-cspanel="show" id="an-cs-show"></div>
+      <div class="an-cs-body" data-cspanel="reorder" id="an-cs-reorder" hidden></div>
+      <div class="an-cs-foot"><span class="text-xs text-muted" id="an-cs-hint">Changes are saved automatically.</span><button class="btn btn-primary btn-sm" data-cg-close>Done</button></div>
+    </div>
+  </div>
+  <!-- Option details dialog (info icon in the hover controls) -->
+  <div id="an-optinfo" hidden></div>
+  <!-- Share link dialog -->
+  <div id="an-share" hidden></div>
+  <!-- Find strike by delta dialog (palette command) -->
+  <div id="an-finddelta-dlg" hidden></div>
+</section>
+<!-- Shared strategy link: #/s/<base64url json> -->
+<section class="screen" data-route="/s/:code" data-title="Shared strategy">
+  <div class="an-share-page" id="an-share-page"></div>
+</section>

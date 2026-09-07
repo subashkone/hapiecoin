@@ -1,0 +1,35 @@
+# secrets and local config
+.env
+.env.*
+!.env.example
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/agent-memory-local/
+.claude/memory/workingState.md
+
+# dependencies and build output
+node_modules/
+dist/
+.next/
+.turbo/
+coverage/
+playwright-report/
+test-results/
+
+# generated knowledge graph cache (graph.json and report are kept)
+graphify-out/cache/
+
+# screenshots and QA output
+mockup-clone/shots/
+mockup-v2/shots/
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/settings.json
+
+# embedded PGlite data (development without Docker)
+
+.pglite/

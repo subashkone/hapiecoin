@@ -1,0 +1,893 @@
+<!-- ===== Admin console (40-admin): /admin, /admin/subscriptions, /admin/menu-pricing, /admin/coupons, /admin/user-subscriptions, /admin/banners, /admin/emails, /admin/users ===== -->
+<section class="screen" data-route="/admin" data-redirect="/admin/users" data-auth="admin"></section>
+
+<!-- ---------- /admin/subscriptions ---------- -->
+<section class="screen adm" data-route="/admin/subscriptions" data-title="Subscription Plans" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div data-cg="admin-nav"></div>
+  <div class="container adm-page">
+    <div class="adm-head">
+      <div><h1 class="adm-title">Subscription Plans</h1><p class="adm-sub">Manage subscription tiers and pricing</p></div>
+      <button class="btn btn-primary" data-act="new"><i data-icon="plus"></i> New Plan</button>
+    </div>
+    <div class="card" data-el="card">
+      <div class="card-header"><div class="card-title" data-el="count">All Plans (0)</div></div>
+      <div class="adm-table-wrap" data-el="table"></div>
+    </div>
+  </div>
+  <div hidden data-el="dialog">
+    <form data-form="plan" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><label class="label" for="adm-plan-name">Plan Name *</label><input class="input" id="adm-plan-name" name="name" placeholder="e.g. Basic Plan"></div>
+        <div class="field"><label class="label" for="adm-plan-desc">Description</label><textarea class="textarea" id="adm-plan-desc" name="description" style="min-height:64px" placeholder="Short description shown on the plan card"></textarea></div>
+        <div class="field">
+          <label class="label" for="adm-plan-feature">Features</label>
+          <div class="flex gap-2"><input class="input" id="adm-plan-feature" data-el="feature-input" placeholder="Add a feature"><button type="button" class="btn btn-secondary" data-act="add-feature">Add</button></div>
+          <div class="adm-chips mt-2" data-el="features"></div>
+          <div class="hint">Type a feature and press <span class="kbd">Enter</span> to add it</div>
+        </div>
+        <div class="label mt-2">Billing Intervals</div>
+        <div class="adm-intervals" data-el="intervals"></div>
+        <div class="field mt-4"><label class="label">Menu Items</label><div class="adm-checklist" data-el="menu-items"></div><div class="hint" data-el="menu-count"></div></div>
+        <div class="adm-switch-row"><div><div class="font-medium text-sm">Active</div><div class="hint m-0">Plan visible to users</div></div><button type="button" class="switch on" role="switch" aria-checked="true" aria-label="Active" data-el="active"></button></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Create</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ---------- /admin/menu-pricing ---------- -->
+<section class="screen adm" data-route="/admin/menu-pricing" data-title="Menu Pricing Master" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div data-cg="admin-nav"></div>
+  <div class="container adm-page">
+    <div class="adm-head">
+      <div><h1 class="adm-title">Menu Pricing Master</h1><p class="adm-sub">Manage menu items linked to subscription plans</p></div>
+      <button class="btn btn-primary" data-act="new"><i data-icon="plus"></i> New Item</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title" data-el="count">All Menu Items (0)</div></div>
+      <div class="adm-table-wrap" data-el="table"></div>
+    </div>
+  </div>
+  <div hidden data-el="dialog">
+    <form data-form="menu" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><label class="label" for="adm-menu-name">Display Name *</label><input class="input" id="adm-menu-name" name="displayName" placeholder="e.g. Reports Export"></div>
+        <div class="field"><label class="label" for="adm-menu-cat">Category</label><input class="input" id="adm-menu-cat" name="category" placeholder="e.g. Trading, Analytics, Data"></div>
+        <div class="field"><label class="label" for="adm-menu-price">Price (₹)</label><input class="input mono" id="adm-menu-price" name="price" type="number" min="0" step="1" value="0"></div>
+        <div class="adm-switch-row"><div><div class="font-medium text-sm">Active</div><div class="hint m-0">Item can be linked to plans</div></div><button type="button" class="switch on" role="switch" aria-checked="true" aria-label="Active" data-el="active"></button></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Create</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ---------- /admin/coupons ---------- -->
+<section class="screen adm" data-route="/admin/coupons" data-title="Coupon Code Master" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div data-cg="admin-nav"></div>
+  <div class="container adm-page">
+    <div class="adm-head">
+      <div><h1 class="adm-title">Coupon Code Master</h1><p class="adm-sub">Manage discount coupons</p></div>
+      <button class="btn btn-primary" data-act="new"><i data-icon="plus"></i> New Coupon</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title" data-el="count">All Coupons (0)</div></div>
+      <div class="adm-table-wrap" data-el="table"></div>
+    </div>
+  </div>
+  <div hidden data-el="dialog">
+    <form data-form="coupon" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="adm-form-grid">
+          <div class="field"><label class="label" for="adm-cp-code">Code *</label><input class="input mono uppercase" id="adm-cp-code" name="code" placeholder="BASIC20"></div>
+          <div class="field"><label class="label" for="adm-cp-scope">Coupon Type</label><select class="select" id="adm-cp-scope" name="scope"><option value="public_all_listed">Public (All listed)</option><option value="private_community_listed">Community (Assigned to specific users &amp; their referrals)</option></select></div>
+        </div>
+        <div class="field adm-assign" data-el="assign" hidden>
+          <div class="flex items-center justify-between gap-2 flex-wrap mb-2">
+            <label class="label m-0">Assign to Users</label>
+            <div class="flex gap-1"><button type="button" class="btn btn-outline btn-xs" data-act="assign-all">Select All</button><button type="button" class="btn btn-outline btn-xs" data-act="assign-none">Deselect All</button><button type="button" class="btn btn-outline btn-xs" title="Invert selection" data-act="assign-invert">↔ Invert</button></div>
+          </div>
+          <div class="adm-search mb-2"><i data-icon="search"></i><input class="input" data-el="assign-search" placeholder="Search users..." aria-label="Search users"></div>
+          <div class="adm-checklist" data-el="assign-list"></div>
+          <div class="hint" data-el="assign-count">0 of 0 users selected</div>
+        </div>
+        <div class="field"><label class="label" for="adm-cp-desc">Description</label><input class="input" id="adm-cp-desc" name="description" placeholder="Shown to users at checkout"></div>
+        <div class="adm-form-grid">
+          <div class="field"><label class="label" for="adm-cp-dtype">Discount Type</label><select class="select" id="adm-cp-dtype" name="discountType"><option value="percent">Percent</option><option value="fixed">Fixed</option></select></div>
+          <div class="field"><label class="label" for="adm-cp-dval">Discount Value</label><input class="input mono" id="adm-cp-dval" name="discountValue" type="number" min="0" step="1" value="0"></div>
+          <div class="field"><label class="label" for="adm-cp-min">Min Order (₹)</label><input class="input mono" id="adm-cp-min" name="minOrderAmount" type="number" min="0" step="1" value="0"></div>
+          <div class="field"><label class="label" for="adm-cp-max">Max Uses</label><input class="input mono" id="adm-cp-max" name="maxUses" type="number" min="0" step="1" value="100"></div>
+          <div class="field"><label class="label" for="adm-cp-per">Per User Limit</label><input class="input mono" id="adm-cp-per" name="perUserLimit" type="number" min="0" step="1" value="1"></div>
+          <div class="field"></div>
+          <div class="field"><label class="label" for="adm-cp-start">Starts At</label><input class="input" id="adm-cp-start" name="startsAt" type="date"></div>
+          <div class="field"><label class="label" for="adm-cp-end">Expires At</label><input class="input" id="adm-cp-end" name="expiresAt" type="date"></div>
+        </div>
+        <div class="field"><label class="label">Applicable Plans &amp; Intervals</label><div class="adm-plan-grid" data-el="plan-grid"></div></div>
+        <div class="adm-switch-row"><div><div class="font-medium text-sm">Active</div><div class="hint m-0">Coupon can be applied at checkout</div></div><button type="button" class="switch on" role="switch" aria-checked="true" aria-label="Active" data-el="active"></button></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Create</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ---------- /admin/user-subscriptions ---------- -->
+<section class="screen adm" data-route="/admin/user-subscriptions" data-title="User Subscriptions" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div data-cg="admin-nav"></div>
+  <div class="container adm-page">
+    <div class="adm-head">
+      <div><h1 class="adm-title">User Subscriptions</h1><p class="adm-sub">Manage users and commissions</p></div>
+      <div class="tabs" role="tablist"><button class="tab active" role="tab" data-tab="users"><i data-icon="users"></i> Users</button><button class="tab" role="tab" data-tab="commissions"><i data-icon="wallet"></i> Commissions</button></div>
+    </div>
+
+    <!-- Users tab -->
+    <div data-panel="users">
+      <div class="card">
+        <div class="card-header adm-card-toolbar">
+          <div class="card-title" data-el="users-count">Users (0)</div>
+          <div class="flex gap-2 items-center flex-wrap">
+            <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="users-search" placeholder="Search by name or email..." aria-label="Search by name or email"></div>
+            <div class="adm-search"><i data-icon="filter"></i><select class="select select-sm" data-el="users-status" aria-label="Status"><option value="">All Statuses</option><option value="active">Active</option><option value="expired">Expired</option><option value="cancelled">Cancelled</option><option value="free">Free</option></select></div>
+          </div>
+        </div>
+        <div class="adm-table-wrap" data-el="users-table"></div>
+        <div class="adm-pager" data-el="users-pager"></div>
+      </div>
+    </div>
+
+    <!-- Commissions tab -->
+    <div data-panel="commissions" hidden>
+      <div class="adm-tiles" data-el="comm-tiles"></div>
+      <div class="card">
+        <div class="card-header adm-card-toolbar">
+          <div class="card-title">Commissions</div>
+          <div class="flex gap-2 items-center flex-wrap">
+            <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="comm-search" placeholder="Search referrer name..." aria-label="Search referrer name"></div>
+            <div class="adm-search"><i data-icon="calendar"></i><select class="select select-sm" data-el="comm-month" aria-label="Filter by month"><option value="">All Months</option></select></div>
+            <button class="btn btn-outline btn-sm" data-act="comm-clear">Clear</button>
+            <button class="btn btn-primary btn-sm" data-act="comm-bulk" title="Mark every pending commission as paid">Bulk pay</button>
+          </div>
+        </div>
+        <div class="adm-table-wrap" data-el="comm-table"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature Limits dialog -->
+  <div hidden data-el="limits-dialog">
+    <form data-form="limits" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><label class="label" for="adm-lim-paper">Paper Trading Limit</label><div class="flex items-center gap-2"><input class="input mono" id="adm-lim-paper" name="paper" type="number" min="0" step="1" style="max-width:160px"><span class="text-sm text-muted">trades / month</span></div><div class="hint">Set to 0 for plan default. Higher values override plan limit.</div></div>
+        <div class="field"><label class="label" for="adm-lim-live">Live Trading Limit</label><div class="flex items-center gap-2"><input class="input mono" id="adm-lim-live" name="live" type="number" min="0" step="1" style="max-width:160px"><span class="text-sm text-muted">trades / month</span></div><div class="hint">Set to 0 for plan default. Higher values override plan limit.</div></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Save Limits</button></div>
+    </form>
+  </div>
+
+  <!-- Lot size settings dialog (inferred from /admin lot-size-settings endpoint) -->
+  <div hidden data-el="lots-dialog">
+    <form data-form="lots" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="adm-form-grid adm-form-grid-3">
+          <div class="field"><label class="label" for="adm-lot-btc">BTC lot size</label><input class="input mono" id="adm-lot-btc" name="BTC" type="number" min="0.0001" step="0.001"></div>
+          <div class="field"><label class="label" for="adm-lot-eth">ETH lot size</label><input class="input mono" id="adm-lot-eth" name="ETH" type="number" min="0.001" step="0.01"></div>
+          <div class="field"><label class="label" for="adm-lot-xaut">XAUT lot size</label><input class="input mono" id="adm-lot-xaut" name="XAUT" type="number" min="0.0001" step="0.001"></div>
+        </div>
+        <div class="hint">Overrides the exchange default lot size for this user's strategy builder and P&amp;L calculations.</div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Save Lot Sizes</button></div>
+    </form>
+  </div>
+
+  <!-- Referral details dialog -->
+  <div hidden data-el="view-dialog">
+    <div class="cg-dialog-body" style="padding-top:4px">
+      <div class="adm-table-wrap adm-table-bordered" data-el="view-table"></div>
+      <div class="adm-totals mt-3" data-el="view-totals"></div>
+    </div>
+    <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="close">Close</button></div>
+  </div>
+
+  <!-- Mark Payment dialog -->
+  <div hidden data-el="pay-dialog">
+    <form data-form="pay" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><div class="label">Payment Status</div><div class="flex gap-2"><label class="adm-radio selected" data-val="paid"><input type="radio" name="payStatus" value="paid" checked> ✓ Paid</label><label class="adm-radio" data-val="not_paid"><input type="radio" name="payStatus" value="not_paid"> ✗ Not Paid</label></div></div>
+        <div class="field"><div class="label">Proof Link per Referral <span class="text-muted font-medium" data-el="proof-hint">(optional)</span></div><div class="adm-proofs" data-el="proofs"></div></div>
+        <div class="field"><label class="label" for="adm-pay-comment">Comment <span class="text-muted font-medium" data-el="comment-hint">(optional)</span></label><textarea class="textarea" id="adm-pay-comment" name="comment" placeholder="Optional note..." style="min-height:70px"></textarea></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Confirm Paid</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ---------- /admin/banners ---------- -->
+<section class="screen adm" data-route="/admin/banners" data-title="Banner Master" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div data-cg="admin-nav"></div>
+  <div class="container adm-page">
+    <div class="adm-head">
+      <div><h1 class="adm-title">Banner Master</h1><p class="adm-sub">Manage promotional banners and popups</p></div>
+      <button class="btn btn-primary" data-act="new"><i data-icon="plus"></i> New Banner</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title" data-el="count">All Banners (0)</div></div>
+      <div class="adm-table-wrap" data-el="table"></div>
+    </div>
+  </div>
+  <div hidden data-el="dialog">
+    <form data-form="banner" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><label class="label" for="banner-title">Title</label><input class="input" id="banner-title" name="title" placeholder="Welcome Offer"></div>
+        <div class="field"><label class="label" for="banner-description">Description</label><textarea class="textarea" id="banner-description" name="description" placeholder="Get 20% off your first plan" style="min-height:64px"></textarea></div>
+        <div class="field"><label class="label" for="banner-link">Link URL</label><input class="input" id="banner-link" name="linkUrl" type="url" placeholder="https://coingreek.com/offers"></div>
+        <div class="adm-form-grid">
+          <div class="field"><label class="label" for="banner-starts">Starts At <span class="text-muted font-medium">(optional)</span></label><input class="input" id="banner-starts" name="startsAt" type="datetime-local"></div>
+          <div class="field"><label class="label" for="banner-ends">Ends At <span class="text-muted font-medium">(optional)</span></label><input class="input" id="banner-ends" name="endsAt" type="datetime-local"></div>
+        </div>
+        <div class="field"><label class="label" for="banner-frequency">Frequency</label><select class="select" id="banner-frequency" name="frequency"><option value="once_per_day">once_per_day</option><option value="every_time">every_time</option><option value="once_per_session">once_per_session</option></select></div>
+        <div class="field">
+          <label class="label" for="banner-image">Image <span class="text-muted font-medium" data-el="image-hint">(leave empty to keep current)</span></label>
+          <input class="input adm-file" id="banner-image" name="image" type="file" accept="image/*">
+          <div class="hint">Maximum size 5 MB · PNG, JPG, GIF or WebP</div>
+          <div class="flex items-center gap-3 mt-3">
+            <div><div class="text-xs text-muted mb-1">Preview</div><div class="adm-thumb adm-thumb-lg" data-el="preview"></div></div>
+            <div class="flex flex-col gap-1"><button type="button" class="btn btn-outline btn-xs" data-act="use-gradient" title="Mock fallback: use a generated gradient instead of an uploaded file">Use gradient</button><span class="hint m-0">No upload needed in the mock</span></div>
+          </div>
+        </div>
+        <div class="adm-switch-row"><div><div class="font-medium text-sm">Active</div><div class="hint m-0">Show this banner to users</div></div><button type="button" class="switch on" role="switch" aria-checked="true" aria-label="Active" id="banner-active" data-el="active"></button></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Create Banner</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ---------- /admin/emails ---------- -->
+<section class="screen adm" data-route="/admin/emails" data-title="Promotional Emails" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div data-cg="admin-nav"></div>
+  <div class="container adm-page">
+    <div class="adm-head">
+      <div><h1 class="adm-title"><i data-icon="mail" data-size="22"></i> Promotional Emails</h1><p class="adm-sub">Send targeted campaigns to your users and review delivery history</p></div>
+      <div class="tabs" role="tablist"><button class="tab active" role="tab" data-tab="compose">Compose</button><button class="tab" role="tab" data-tab="history">History</button></div>
+    </div>
+
+    <!-- Compose -->
+    <div data-panel="compose" class="adm-compose">
+      <div class="card">
+        <div class="card-header adm-card-toolbar"><div class="card-title flex items-center gap-2"><i data-icon="users"></i> Recipients</div><span class="badge badge-secondary" data-el="sel-badge">0 selected</span></div>
+        <div class="card-content" style="padding-top:4px">
+          <div class="adm-search mb-2"><i data-icon="search"></i><input class="input input-sm" data-el="rc-search" placeholder="Search users by name or email" aria-label="Search users by name or email"></div>
+          <div class="flex items-center gap-2 mb-2">
+            <label class="text-xs text-muted" for="adm-rc-segment">Segment</label>
+            <select class="select select-sm" id="adm-rc-segment" data-el="rc-segment" style="max-width:180px"><option value="all">All users</option><option value="paid">Paid users</option><option value="free">Free users</option><option value="expired">Expired</option></select>
+            <button type="button" class="btn btn-outline btn-xs ml-auto" data-act="rc-all">Select all (0)</button>
+            <button type="button" class="btn btn-ghost btn-xs" data-act="rc-clear"><i data-icon="x" data-size="12"></i> Clear</button>
+          </div>
+          <div class="adm-checklist adm-checklist-tall" data-el="rc-list"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-content">
+          <div class="field"><label class="label" for="promo-subject">Subject</label><input class="input" id="promo-subject" data-el="subject" placeholder="Your report is ready"></div>
+          <div class="field"><label class="label" for="promo-message">Message</label><textarea class="textarea" id="promo-message" data-el="message" style="min-height:160px" placeholder="Hi {{name}}, …"></textarea></div>
+          <div class="flex items-center gap-2 flex-wrap mb-4"><span class="text-xs text-muted">Insert:</span><button type="button" class="adm-chip" data-ins="{{name}}" title="into the last-focused field">{{name}}</button><button type="button" class="adm-chip" data-ins="{{email}}" title="into the last-focused field">{{email}}</button><button type="button" class="adm-chip" data-ins="{{plan}}" title="into the last-focused field">{{plan}}</button><button type="button" class="adm-chip" data-ins="{{expiry}}" title="into the last-focused field">{{expiry}}</button></div>
+          <div class="adm-preview" data-el="preview"></div>
+          <div class="flex justify-end mt-4"><button type="button" class="btn btn-primary" data-act="send" disabled><i data-icon="send"></i> Send Email</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div data-panel="history" hidden>
+      <div class="card" data-el="hist-list">
+        <div class="card-header"><div class="card-title">Campaigns</div><div class="card-desc">Click a campaign to see per-recipient delivery</div></div>
+        <div class="adm-table-wrap" data-el="hist-table"></div>
+      </div>
+      <div data-el="hist-detail" hidden>
+        <button class="btn btn-ghost btn-sm mb-3" style="margin-left:-8px" data-act="hist-back"><i data-icon="arrowLeft"></i> Back to campaigns</button>
+        <div class="card mb-4">
+          <div class="card-header"><div class="card-title" data-el="det-subject"></div><div class="card-desc" data-el="det-meta"></div></div>
+          <div class="card-content"><div class="adm-tiles adm-tiles-4" data-el="det-tiles"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Recipients</div></div>
+          <div class="adm-table-wrap" data-el="det-table"></div>
+          <div class="adm-pager" data-el="det-pager"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- /admin/users ---------- -->
+<section class="screen adm" data-route="/admin/users" data-title="User Management" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div data-cg="admin-nav"></div>
+  <div class="container adm-page">
+    <div class="adm-head">
+      <div><h1 class="adm-title"><i data-icon="users" data-size="22"></i> User Management</h1><p class="adm-sub" data-el="count">0 users</p></div>
+      <div class="adm-search"><i data-icon="search"></i><input class="input" data-el="search" placeholder="Search by name or email" aria-label="Search by name or email" style="width:280px"></div>
+    </div>
+    <div class="card">
+      <div class="adm-table-wrap" data-el="table"></div>
+      <div class="adm-pager" data-el="pager"></div>
+    </div>
+  </div>
+  <div hidden data-el="detail-dialog">
+    <div class="cg-dialog-body" style="padding-top:4px">
+      <div class="adm-kv" data-el="detail-kv"></div>
+      <div class="divider mt-4 mb-4"></div>
+      <form data-form="lots" novalidate autocomplete="off">
+        <div class="flex items-center justify-between mb-2"><div class="font-semibold text-sm">Lot size settings</div><span class="badge badge-warning">inferred</span></div>
+        <div class="adm-form-grid adm-form-grid-3">
+          <div class="field"><label class="label">BTC</label><input class="input input-sm mono" name="BTC" type="number" min="0.0001" step="0.001"></div>
+          <div class="field"><label class="label">ETH</label><input class="input input-sm mono" name="ETH" type="number" min="0.001" step="0.01"></div>
+          <div class="field"><label class="label">XAUT</label><input class="input input-sm mono" name="XAUT" type="number" min="0.0001" step="0.001"></div>
+        </div>
+        <div class="flex justify-end gap-2"><button type="button" class="btn btn-outline btn-sm" data-act="close">Close</button><button type="submit" class="btn btn-primary btn-sm">Save lot sizes</button></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* ===== admin console (scoped to .adm screens + admin-nav chrome) ===== */
+  .adm [hidden],.adm-compose[hidden],.cg-dialog .adm-assign[hidden]{display:none!important}
+  .adm-nav{border-bottom:1px solid hsl(var(--border));background:hsl(var(--card))}
+  .adm-nav-inner{display:flex;align-items:center;gap:2px;height:44px;overflow-x:auto;scrollbar-width:none}
+  .adm-nav-inner::-webkit-scrollbar{display:none}
+  .adm-nav-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:hsl(var(--muted-foreground));font-weight:600;margin-right:10px;white-space:nowrap}
+  .adm-nav a{padding:6px 10px;border-radius:6px;font-size:13px;font-weight:500;color:hsl(var(--muted-foreground));white-space:nowrap}
+  .adm-nav a:hover{background:hsl(var(--muted));color:hsl(var(--foreground))}
+  .adm-nav a.active{color:hsl(var(--primary));background:hsl(var(--info-bg))}
+  .adm-page{padding-top:24px;padding-bottom:56px}
+  .adm-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+  .adm-title{font-size:24px;display:flex;align-items:center;gap:10px}
+  .adm-sub{color:hsl(var(--muted-foreground));font-size:13.5px;margin-top:4px}
+  .adm-ic{flex-shrink:0;vertical-align:middle}
+  .adm-card-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:12px}
+  .adm-table-wrap{overflow-x:auto}
+  .adm-table-wrap .table th:first-child,.adm-table-wrap .table td:first-child{padding-left:20px}
+  .adm-table-wrap .table th:last-child,.adm-table-wrap .table td:last-child{padding-right:20px}
+  .adm-table-wrap .table tbody tr:last-child td{border-bottom:0}
+  .adm-table-bordered{border:1px solid hsl(var(--border));border-radius:8px}
+  .adm-table-bordered .table th:first-child,.adm-table-bordered .table td:first-child{padding-left:12px}
+  .adm-icon-btn{width:30px;height:30px;border-radius:6px;display:inline-grid;place-items:center;color:hsl(var(--muted-foreground))}
+  .adm-icon-btn:hover{background:hsl(var(--muted));color:hsl(var(--foreground))}
+  .adm-icon-btn.danger:hover{color:hsl(var(--destructive));background:hsl(var(--sell-bg))}
+  .adm-actions{display:flex;gap:2px;justify-content:flex-end}
+  .adm-editable{cursor:pointer;border-bottom:1px dashed hsl(var(--muted-foreground)/.6);padding-bottom:1px}
+  .adm-editable:hover{color:hsl(var(--primary));border-bottom-color:hsl(var(--primary))}
+  .adm-inline-input{width:76px;height:28px;padding:0 6px;font-size:12px}
+  .adm-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .adm-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;background:hsl(var(--secondary));color:hsl(var(--secondary-foreground));font-size:12px;font-weight:500;border:1px solid transparent}
+  button.adm-chip:hover{border-color:hsl(var(--primary));color:hsl(var(--primary))}
+  .adm-chip .adm-chip-x{display:grid;place-items:center;width:16px;height:16px;border-radius:50%;color:hsl(var(--muted-foreground))}
+  .adm-chip .adm-chip-x:hover{background:hsl(var(--sell-bg));color:hsl(var(--destructive))}
+  .adm-intervals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .adm-interval{border:1px solid hsl(var(--border));border-radius:8px;padding:12px;background:hsl(var(--surface-2))}
+  .adm-interval h4{margin-bottom:10px}
+  .adm-interval .field{margin-bottom:10px}
+  .adm-interval .adm-sublabel{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:hsl(var(--muted-foreground));font-weight:600;margin:12px 0 8px}
+  .adm-checklist{max-height:220px;overflow:auto;border:1px solid hsl(var(--border));border-radius:8px;padding:6px;background:hsl(var(--card))}
+  .adm-checklist-tall{max-height:380px}
+  .adm-checklist label{display:flex;gap:10px;align-items:center;padding:6px 8px;border-radius:6px;font-size:13px;cursor:pointer}
+  .adm-checklist label:hover{background:hsl(var(--muted))}
+  .adm-checklist .empty{padding:20px}
+  .adm-search{position:relative;display:flex;align-items:center}
+  .adm-search>svg{position:absolute;left:10px;color:hsl(var(--muted-foreground));pointer-events:none}
+  .adm-search>.input,.adm-search>.select{padding-left:32px;min-width:200px}
+  .adm-switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid hsl(var(--border));border-radius:8px;padding:10px 12px;margin-bottom:14px}
+  .adm-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
+  .adm-form-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .adm-plan-grid{border:1px solid hsl(var(--border));border-radius:8px;overflow:hidden}
+  .adm-plan-grid .table th{background:hsl(var(--muted))}
+  .adm-plan-grid .table td{text-align:center}
+  .adm-plan-grid .table td:first-child{text-align:left;font-weight:500}
+  .adm-thumb{width:64px;height:36px;border-radius:6px;background-size:cover;background-position:center;background-color:hsl(var(--muted));flex-shrink:0}
+  .adm-thumb-lg{width:180px;height:100px;border-radius:8px;border:1px dashed hsl(var(--border));display:grid;place-items:center;color:hsl(var(--muted-foreground));font-size:12px}
+  .adm-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-top:1px solid hsl(var(--border));font-size:13px;color:hsl(var(--muted-foreground));flex-wrap:wrap}
+  .adm-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+  .adm-tiles-4{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:0}
+  .adm-preview{border:1px solid hsl(var(--border));border-radius:10px;padding:14px 16px;background:hsl(var(--surface-2))}
+  .adm-preview .adm-preview-subject{font-weight:600;margin:6px 0 8px}
+  .adm-preview .adm-preview-body{white-space:pre-wrap;font-size:13px;color:hsl(var(--foreground))}
+  .adm-preview mark{background:hsl(var(--info-bg));color:hsl(var(--info));border-radius:3px;padding:0 3px}
+  .adm-compose{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px;align-items:start}
+  .adm-radio{display:flex;gap:8px;align-items:center;padding:8px 14px;border:1px solid hsl(var(--border));border-radius:8px;cursor:pointer;font-weight:500;font-size:13px;flex:1}
+  .adm-radio input{accent-color:hsl(var(--primary))}
+  .adm-radio.selected{border-color:hsl(var(--primary));background:hsl(var(--info-bg))}
+  .adm-proofs{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto}
+  .adm-proofs .adm-proof{display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:center;font-size:12.5px}
+  .adm-totals{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;padding:10px 12px;border-radius:8px;background:hsl(var(--muted))}
+  .adm-kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
+  .adm-kv div>span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:hsl(var(--muted-foreground));font-weight:600}
+  .adm-kv div>b{font-weight:500;font-size:13px}
+  .adm-row-click{cursor:pointer}
+  .adm-strike{text-decoration:line-through;color:hsl(var(--muted-foreground));font-size:11.5px;margin-left:4px}
+  .adm-empty-icon{width:48px;height:48px;border-radius:12px;background:hsl(var(--muted));display:grid;place-items:center;margin:0 auto 12px;color:hsl(var(--muted-foreground))}
+
+  .adm .switch,.cg-dialog .switch{cursor:pointer}
+  @media (max-width:900px){.adm-intervals,.adm-compose,.adm-tiles-4{grid-template-columns:1fr}.adm-tiles{grid-template-columns:1fr}.adm-form-grid,.adm-kv{grid-template-columns:1fr}}
+</style>
+
+<script>
+(function () {
+  'use strict';
+  const A = (window.CG_ADMIN = window.CG_ADMIN || {});
+  const M = CG.mock, F = CG.fmt, esc = CG.esc, $ = CG.$, $$ = CG.$$;
+  // ---------- icons (lucide paths, inline) ----------
+  const ICONS = {
+    plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+    pencil: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+    trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+    users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    settings2: '<path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>',
+    calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+    eye: '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
+    x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+    send: '<path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/>',
+    arrowLeft: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+    chevLeft: '<path d="m15 18-6-6 6-6"/>',
+    chevRight: '<path d="m9 18 6-6-6-6"/>',
+    filter: '<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
+    layers: '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>',
+    image: '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+    ticket: '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>',
+    package: '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+    tag: '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',
+    inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>'
+  };
+  A.icon = (n, size) => '<svg class="adm-ic" width="' + (size || 16) + '" height="' + (size || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[n] || '') + '</svg>';
+  A.hydrateIcons = (root) => $$('i[data-icon]', root).forEach((i) => { i.outerHTML = A.icon(i.dataset.icon, i.dataset.size); });
+
+  // ---------- shared helpers ----------
+  const el = (root, name) => root.querySelector('[data-el="' + name + '"]');
+  A.el = el;
+  A.uid = (p) => p + '_' + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 6);
+  A.date = (d) => (d ? F.date(d) : '—');
+  A.dateTime = (d) => (d ? F.date(d) + ' ' + F.time(d) : '—');
+  A.daysLeft = (d) => Math.ceil((new Date(d) - CG.NOW) / 86400000);
+  A.statusBadge = (s) => ({ active: 'badge-success', expired: 'badge-loss', cancelled: 'badge-secondary', free: 'badge-outline', paid: 'badge-success', pending: 'badge-warning', not_paid: 'badge-loss', delivered: 'badge-success', failed: 'badge-loss' }[s] || 'badge-secondary');
+  A.statusLabel = (s) => ({ active: 'Active', expired: 'Expired', cancelled: 'Cancelled', free: 'Free', paid: 'Paid', pending: 'Pending', not_paid: 'Not Paid', delivered: 'Delivered', failed: 'Failed' }[s] || s);
+  A.planBadge = (name) => (/free/i.test(name || '') ? 'badge-outline' : /elite/i.test(name) ? 'badge-warning' : /pro/i.test(name) ? 'badge-default' : 'badge-info');
+  A.planName = (id) => { const p = M.plans.find((x) => x.id === id); return p ? p.name : id; };
+  A.switchHtml = (on, attrs) => '<button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + (on ? 'true' : 'false') + '" ' + (attrs || '') + '></button>';
+  A.setSwitch = (btn, on) => { btn.classList.toggle('on', !!on); btn.setAttribute('aria-checked', on ? 'true' : 'false'); };
+  A.isOn = (btn) => btn.classList.contains('on');
+  A.validation = (msg) => CG.toast({ title: 'Validation', description: msg, variant: 'destructive' });
+  A.save = (fn, title) => { try { fn(); CG.toast({ title: title, variant: 'success' }); return true; } catch (e) { CG.toast({ title: 'Failed to save', description: e && e.message ? e.message : 'Please try again.', variant: 'destructive' }); return false; } };
+  A.empty = (icon, title, sub, btn) => '<div class="empty"><div class="adm-empty-icon">' + A.icon(icon, 22) + '</div><b>' + esc(title) + '</b>' + esc(sub) + (btn ? '<div class="mt-4"><button class="btn btn-primary" data-act="new">' + A.icon('plus') + ' ' + esc(btn) + '</button></div>' : '') + '</div>';
+  A.pager = (page, pages, info, prevLabel, nextLabel) => '<span>Page ' + page + ' of ' + pages + (info ? ' · ' + esc(info) : '') + '</span><span class="flex gap-2"><button class="btn btn-outline btn-sm" data-act="prev"' + (page <= 1 ? ' disabled' : '') + '>' + prevLabel + '</button><button class="btn btn-outline btn-sm" data-act="next"' + (page >= pages ? ' disabled' : '') + '>' + nextLabel + '</button></span>';
+  A.paginate = (list, page, per) => { per = per || 10; const pages = Math.max(1, Math.ceil(list.length / per)); page = Math.min(Math.max(1, page), pages); return { page, pages, rows: list.slice((page - 1) * per, page * per), total: list.length }; };
+  A.bindTabs = (root, onChange) => { CG.delegate(root, 'click', '[data-tab]', (e, b) => { A.setTab(root, b.dataset.tab); if (onChange) onChange(b.dataset.tab); }); };
+  A.setTab = (root, name) => { $$('[data-tab]', root).forEach((t) => t.classList.toggle('active', t.dataset.tab === name)); $$('[data-panel]', root).forEach((p) => (p.hidden = p.dataset.panel !== name)); };
+  A.formVal = (form, name) => { const i = form.querySelector('[name="' + name + '"]'); return i ? i.value : ''; };
+  A.formSet = (form, name, v) => { const i = form.querySelector('[name="' + name + '"]'); if (i) i.value = v == null ? '' : v; };
+  A.busy = (btn, label, fn, ms) => { const old = btn.innerHTML; btn.disabled = true; btn.innerHTML = label; setTimeout(() => { btn.disabled = false; btn.innerHTML = old; fn(); }, ms || 450); };
+  // mock enrichments (do not rename existing fields)
+  M.users.forEach((u) => { if (u.validityDays == null) u.validityDays = u.subscribedAt && u.endsAt ? Math.round((new Date(u.endsAt) - new Date(u.subscribedAt)) / 86400000) : 0; if (!u.lotSizes) u.lotSizes = { BTC: 0.001, ETH: 0.01, XAUT: 0.001 }; if (!u.featureLimits) u.featureLimits = { paper_trading: 0, live_trading: 0 }; });
+
+  // ---------- CG.chrome['admin-nav'] : secondary "Admin pages" bar ----------
+  const NAV = [['Users', '/admin/users'], ['Subscription Plans', '/admin/subscriptions'], ['Menu Pricing', '/admin/menu-pricing'], ['Coupon Codes', '/admin/coupons'], ['User Subscriptions', '/admin/user-subscriptions'], ['Banners', '/admin/banners'], ['Promotional Emails', '/admin/emails']];
+  A.navActive = (host) => { const path = (CG.current && CG.current.path) || ''; $$('a[data-path]', host).forEach((a) => { const on = path === a.dataset.path || path.startsWith(a.dataset.path + '/'); a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }); };
+  CG.chrome['admin-nav'] = function (host) { host.innerHTML = '<nav class="adm-nav" aria-label="Admin pages"><div class="container adm-nav-inner"><span class="adm-nav-label">Admin pages</span>' + NAV.map(([l, p]) => '<a href="#' + p + '" data-path="' + p + '">' + esc(l) + '</a>').join('') + '</div></nav>'; A.navActive(host); };
+  CG.chrome['admin-nav:update'] = (host) => A.navActive(host);
+  CG.on('route', () => $$('[data-cg="admin-nav"]').forEach(A.navActive));
+
+  // =====================================================================
+  // /admin/subscriptions
+  // =====================================================================
+  CG.register('/admin/subscriptions', {
+    init(root) {
+      A.hydrateIcons(root);
+      const dlg = el(root, 'dialog'), form = dlg.querySelector('form');
+      const INTERVALS = [['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['yearly', 'Yearly']];
+      let editing = null, features = [], handle = null;
+      // build the three interval blocks once
+      el(dlg, 'intervals').innerHTML = INTERVALS.map(([k, label]) => '<div class="adm-interval"><h4>' + label + '</h4>' +
+        '<div class="field"><label class="label">Price</label><input class="input input-sm mono" name="' + k + '.price" type="number" min="0" step="1" value="0"></div>' +
+        '<div class="field"><label class="label">Discount Price (₹)</label><input class="input input-sm mono" name="' + k + '.discountPrice" type="number" min="0" step="1" value="0"></div>' +
+        '<div class="adm-sublabel">Feature Limits</div>' +
+        '<div class="field"><label class="label">Paper Trading Limit <span class="text-muted font-medium">(Per Month)</span></label><input class="input input-sm mono" name="' + k + '.paper" type="number" min="0" step="1" value="0"></div>' +
+        '<div class="field" style="margin-bottom:0"><label class="label">Live Trading Limit <span class="text-muted font-medium">(Per Month)</span></label><input class="input input-sm mono" name="' + k + '.live" type="number" min="0" step="1" value="0"></div>' +
+        '</div>').join('');
+      const renderFeatures = () => { el(dlg, 'features').innerHTML = features.length ? features.map((f, i) => '<span class="adm-chip">' + esc(f) + '<button type="button" class="adm-chip-x" data-act="rm-feature" data-i="' + i + '" aria-label="Remove ' + esc(f) + '">' + A.icon('x', 11) + '</button></span>').join('') : '<span class="text-xs text-muted">No features added yet</span>'; };
+      const renderMenu = (selected) => { const sel = new Set(selected || []); el(dlg, 'menu-items').innerHTML = M.menuItems.length ? M.menuItems.map((m) => '<label><input type="checkbox" class="checkbox" name="menuItem" value="' + esc(m.displayName) + '"' + (sel.has(m.displayName) ? ' checked' : '') + (m.isActive ? '' : ' title="Inactive menu item"') + '><span class="flex-1">' + esc(m.displayName) + (m.isActive ? '' : ' <span class="badge badge-secondary">Inactive</span>') + '</span><span class="text-xs text-muted">' + esc(m.category) + ' · ' + F.inr(m.price) + '</span></label>').join('') : '<div class="empty">No menu items — add some in Menu Pricing</div>'; updateMenuCount(); };
+      const updateMenuCount = () => { const n = $$('[name="menuItem"]:checked', form).length; el(dlg, 'menu-count').textContent = n + ' of ' + M.menuItems.length + ' menu items linked'; };
+      const addFeature = () => { const inp = el(dlg, 'feature-input'); const v = inp.value.trim(); if (!v) return; if (!features.includes(v)) features.push(v); inp.value = ''; renderFeatures(); inp.focus(); };
+      const open = (plan) => {
+        editing = plan || null; features = plan ? plan.features.slice() : []; form.reset();
+        A.formSet(form, 'name', plan ? plan.name : ''); A.formSet(form, 'description', plan ? plan.description : '');
+        INTERVALS.forEach(([k]) => { const iv = plan ? plan[k] || {} : {}; const fl = iv.featureLimits || {}; A.formSet(form, k + '.price', iv.price || 0); A.formSet(form, k + '.discountPrice', iv.discountPrice || 0); A.formSet(form, k + '.paper', fl.paper_trading || 0); A.formSet(form, k + '.live', fl.live_trading || 0); });
+        renderFeatures(); renderMenu(plan ? plan.menuItems : []); A.setSwitch(el(dlg, 'active'), plan ? plan.isActive : true);
+        el(dlg, 'submit').textContent = plan ? 'Update' : 'Create';
+        handle = CG.modal.open(dlg, { title: plan ? 'Edit Plan' : 'Create New Plan', description: plan ? 'Update pricing, limits and menu access for ' + plan.name : 'Define a new subscription tier, its pricing and feature limits', size: 'lg' });
+        setTimeout(() => form.querySelector('[name="name"]').focus(), 50);
+      };
+      const submit = (e) => {
+        e.preventDefault(); const name = A.formVal(form, 'name').trim();
+        if (!name) { A.validation('Plan name is required'); form.querySelector('[name="name"]').focus(); return; }
+        const data = { name, description: A.formVal(form, 'description').trim(), features: features.slice(), isActive: A.isOn(el(dlg, 'active')), menuItems: $$('[name="menuItem"]:checked', form).map((c) => c.value) };
+        INTERVALS.forEach(([k]) => { data[k] = { price: +A.formVal(form, k + '.price') || 0, discountPrice: +A.formVal(form, k + '.discountPrice') || 0, featureLimits: { paper_trading: +A.formVal(form, k + '.paper') || 0, live_trading: +A.formVal(form, k + '.live') || 0 } }; });
+        const ok = A.save(() => { if (editing) Object.assign(editing, data); else M.plans.push(Object.assign({ id: A.uid('p') }, data)); CG.emit('plans:changed', M.plans); }, editing ? 'Updated' : 'Created');
+        if (ok) { handle && handle.close(); render(); }
+      };
+      form.addEventListener('submit', submit);
+      el(dlg, 'feature-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addFeature(); } });
+      CG.delegate(form, 'click', '[data-act="add-feature"]', addFeature);
+      CG.delegate(form, 'click', '[data-act="rm-feature"]', (e, b) => { features.splice(+b.dataset.i, 1); renderFeatures(); });
+      CG.delegate(form, 'click', '[data-act="cancel"]', () => handle && handle.close());
+      CG.delegate(form, 'change', '[name="menuItem"]', updateMenuCount);
+      el(dlg, 'active').addEventListener('click', (e) => A.setSwitch(e.currentTarget, !A.isOn(e.currentTarget)));
+      CG.delegate(root, 'click', '[data-act="new"]', () => open(null));
+      CG.delegate(root, 'click', '[data-act="edit"]', (e, b) => open(M.plans.find((p) => p.id === b.dataset.id)));
+      CG.delegate(root, 'click', '[data-act="toggle"]', (e, b) => { const p = M.plans.find((x) => x.id === b.dataset.id); if (!p) return; p.isActive = !p.isActive; A.save(() => CG.emit('plans:changed', M.plans), 'Updated'); render(); });
+      const priceCell = (iv) => { if (!iv) return '<span class="text-muted">—</span>'; const hasDisc = iv.discountPrice > 0 && iv.discountPrice < iv.price; return '<span class="mono font-medium">' + F.inr(hasDisc ? iv.discountPrice : iv.price) + '</span>' + (hasDisc ? '<span class="adm-strike mono">' + F.inr(iv.price) + '</span><div class="text-2xs text-profit">' + Math.round((1 - iv.discountPrice / iv.price) * 100) + '% off</div>' : '') + '<div class="text-2xs text-muted">' + (iv.featureLimits ? (iv.featureLimits.paper_trading || '∞') + ' paper · ' + (iv.featureLimits.live_trading || (iv.price ? '∞' : 0)) + ' live' : '') + '</div>'; };
+      const render = () => {
+        el(root, 'count').textContent = 'All Plans (' + M.plans.length + ')';
+        const t = el(root, 'table');
+        if (!M.plans.length) { t.innerHTML = A.empty('package', 'No Plans Yet', 'Create your first subscription plan', 'Create Plan'); return; }
+        t.innerHTML = '<table class="table"><thead><tr><th>Name</th><th>Monthly</th><th>Quarterly</th><th>Yearly</th><th>Status</th><th class="r">Actions</th></tr></thead><tbody>' + M.plans.map((p) => '<tr><td><div class="font-medium">' + esc(p.name) + '</div><div class="text-xs text-muted" style="max-width:280px">' + esc(p.description || '') + '</div><div class="text-2xs text-muted mt-1">' + (p.features || []).length + ' features · ' + (p.menuItems || []).length + ' menu items</div></td><td>' + priceCell(p.monthly) + '</td><td>' + priceCell(p.quarterly) + '</td><td>' + priceCell(p.yearly) + '</td><td><div class="flex items-center gap-2">' + A.switchHtml(p.isActive, 'data-act="toggle" data-id="' + p.id + '" aria-label="Toggle plan active"') + '<span class="text-xs ' + (p.isActive ? '' : 'text-muted') + '">' + (p.isActive ? 'Active' : 'Inactive') + '</span></div></td><td><div class="adm-actions"><button class="adm-icon-btn" title="Edit plan" data-act="edit" data-id="' + p.id + '">' + A.icon('pencil') + '</button></div></td></tr>').join('') + '</tbody></table>';
+      };
+      this._render = render;
+    },
+    show() { this._render && this._render(); }
+  });
+
+  // =====================================================================
+  // /admin/menu-pricing
+  // =====================================================================
+  CG.register('/admin/menu-pricing', {
+    init(root) {
+      A.hydrateIcons(root);
+      const dlg = el(root, 'dialog'), form = dlg.querySelector('form'); let editing = null, handle = null;
+      const open = (item) => { editing = item || null; form.reset(); A.formSet(form, 'displayName', item ? item.displayName : ''); A.formSet(form, 'category', item ? item.category : ''); A.formSet(form, 'price', item ? item.price : 0); A.setSwitch(el(dlg, 'active'), item ? item.isActive : true); el(dlg, 'submit').textContent = item ? 'Update' : 'Create'; handle = CG.modal.open(dlg, { title: item ? 'Edit Menu Item' : 'New Menu Item', description: item ? 'Change the name, category or price of ' + item.displayName : 'Menu items can be linked to subscription plans' }); setTimeout(() => form.querySelector('[name="displayName"]').focus(), 50); };
+      form.addEventListener('submit', (e) => {
+        e.preventDefault(); const name = A.formVal(form, 'displayName').trim();
+        if (!name) { A.validation('Display Name is required'); form.querySelector('[name="displayName"]').focus(); return; }
+        const data = { displayName: name, category: A.formVal(form, 'category').trim() || 'General', price: +A.formVal(form, 'price') || 0, isActive: A.isOn(el(dlg, 'active')) };
+        const ok = A.save(() => { if (editing) { const old = editing.displayName; Object.assign(editing, data); if (old !== data.displayName) M.plans.forEach((p) => { p.menuItems = (p.menuItems || []).map((m) => (m === old ? data.displayName : m)); }); } else M.menuItems.push(Object.assign({ id: A.uid('m') }, data)); CG.emit('menuItems:changed', M.menuItems); }, editing ? 'Updated' : 'Created');
+        if (ok) { handle && handle.close(); render(); }
+      });
+      CG.delegate(form, 'click', '[data-act="cancel"]', () => handle && handle.close());
+      el(dlg, 'active').addEventListener('click', (e) => A.setSwitch(e.currentTarget, !A.isOn(e.currentTarget)));
+      CG.delegate(root, 'click', '[data-act="new"]', () => open(null));
+      CG.delegate(root, 'click', '[data-act="edit"]', (e, b) => open(M.menuItems.find((m) => m.id === b.dataset.id)));
+      CG.delegate(root, 'click', '[data-act="toggle"]', (e, b) => { const m = M.menuItems.find((x) => x.id === b.dataset.id); if (!m) return; m.isActive = !m.isActive; A.save(() => CG.emit('menuItems:changed', M.menuItems), 'Updated'); render(); });
+      const render = () => {
+        el(root, 'count').textContent = 'All Menu Items (' + M.menuItems.length + ')';
+        const t = el(root, 'table');
+        if (!M.menuItems.length) { t.innerHTML = A.empty('tag', 'No Menu Items', 'Add menu items that can be linked to plans', 'Add Item'); return; }
+        t.innerHTML = '<table class="table"><thead><tr><th>Display Name</th><th>Category</th><th class="r">Price (₹)</th><th>Linked plans</th><th>Status</th><th class="r">Actions</th></tr></thead><tbody>' + M.menuItems.map((m) => { const linked = M.plans.filter((p) => (p.menuItems || []).includes(m.displayName)).length; return '<tr><td class="font-medium">' + esc(m.displayName) + '</td><td><span class="badge badge-secondary">' + esc(m.category) + '</span></td><td class="r mono">' + (m.price ? F.inr(m.price) : '<span class="text-muted">Free</span>') + '</td><td class="text-xs text-muted">' + linked + ' plan' + (linked === 1 ? '' : 's') + '</td><td><div class="flex items-center gap-2">' + A.switchHtml(m.isActive, 'data-act="toggle" data-id="' + m.id + '" aria-label="Toggle item active"') + '<span class="text-xs ' + (m.isActive ? '' : 'text-muted') + '">' + (m.isActive ? 'Active' : 'Inactive') + '</span></div></td><td><div class="adm-actions"><button class="adm-icon-btn" title="Edit item" data-act="edit" data-id="' + m.id + '">' + A.icon('pencil') + '</button></div></td></tr>'; }).join('') + '</tbody></table>';
+      };
+      this._render = render;
+    },
+    show() { this._render && this._render(); }
+  });
+
+  // =====================================================================
+  // /admin/coupons
+  // =====================================================================
+  CG.register('/admin/coupons', {
+    init(root) {
+      A.hydrateIcons(root);
+      const dlg = el(root, 'dialog'), form = dlg.querySelector('form'); let editing = null, handle = null; const assigned = new Set();
+      const INTERVALS = [['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['yearly', 'Yearly']];
+      const filteredUsers = () => { const q = el(dlg, 'assign-search').value.trim().toLowerCase(); return M.users.filter((u) => !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)); };
+      const renderAssign = () => { const list = filteredUsers(); el(dlg, 'assign-list').innerHTML = list.length ? list.map((u) => '<label><input type="checkbox" class="checkbox" data-uid="' + u.id + '"' + (assigned.has(u.id) ? ' checked' : '') + '><span class="flex-1"><span class="block">' + esc(u.name) + '</span><span class="text-xs text-muted">' + esc(u.email) + '</span></span><span class="badge ' + A.planBadge(u.plan) + '">' + esc(u.plan) + '</span></label>').join('') : '<div class="empty">No users found</div>'; el(dlg, 'assign-count').textContent = assigned.size + ' of ' + M.users.length + ' users selected'; };
+      const renderPlanGrid = (sel) => { const g = el(dlg, 'plan-grid'); if (!M.plans.length) { g.innerHTML = '<div class="empty">No plans available</div>'; return; } g.innerHTML = '<table class="table table-compact"><thead><tr><th>Plan</th>' + INTERVALS.map(([, l]) => '<th style="text-align:center">' + l + '</th>').join('') + '</tr></thead><tbody>' + M.plans.map((p) => '<tr><td>' + esc(p.name) + (p.isActive ? '' : ' <span class="badge badge-secondary">Inactive</span>') + '</td>' + INTERVALS.map(([k]) => '<td><input type="checkbox" class="checkbox" data-plan="' + p.id + '" data-interval="' + k + '"' + (sel[p.id] && sel[p.id].includes(k) ? ' checked' : '') + ' aria-label="' + esc(p.name) + ' ' + k + '"></td>').join('') + '</tr>').join('') + '</tbody></table>'; };
+      const planIntervalsOf = (c) => { if (c.planIntervals) return c.planIntervals; const o = {}; (c.plans || []).forEach((p) => (o[p] = (c.intervals || []).slice())); return o; };
+      const toggleAssign = () => { const community = A.formVal(form, 'scope') === 'private_community_listed'; el(dlg, 'assign').hidden = !community; if (community) renderAssign(); };
+      const open = (c) => {
+        editing = c || null; form.reset(); assigned.clear(); (c && c.assignedUsers || []).forEach((id) => assigned.add(id));
+        A.formSet(form, 'code', c ? c.code : ''); A.formSet(form, 'scope', c ? c.scope : 'public_all_listed'); A.formSet(form, 'description', c ? c.description : ''); A.formSet(form, 'discountType', c ? c.discountType : 'percent'); A.formSet(form, 'discountValue', c ? c.discountValue : 10); A.formSet(form, 'minOrderAmount', c ? c.minOrderAmount : 0); A.formSet(form, 'maxUses', c ? c.maxUses : 100); A.formSet(form, 'perUserLimit', c ? c.perUserLimit : 1); A.formSet(form, 'startsAt', c ? c.startsAt : CG.NOW.toISOString().slice(0, 10)); A.formSet(form, 'expiresAt', c ? c.expiresAt : new Date(CG.NOW.getTime() + 90 * 86400000).toISOString().slice(0, 10));
+        el(dlg, 'assign-search').value = ''; renderPlanGrid(c ? planIntervalsOf(c) : {}); A.setSwitch(el(dlg, 'active'), c ? c.isActive : true); toggleAssign();
+        el(dlg, 'submit').textContent = c ? 'Update' : 'Create';
+        handle = CG.modal.open(dlg, { title: c ? 'Edit Coupon' : 'New Coupon', description: c ? 'Editing ' + c.code + ' · used ' + c.usedCount + ' of ' + c.maxUses + ' times' : 'Discount codes users can apply at checkout', size: 'lg' });
+        setTimeout(() => form.querySelector('[name="code"]').focus(), 50);
+      };
+      form.addEventListener('submit', (e) => {
+        e.preventDefault(); const code = A.formVal(form, 'code').trim().toUpperCase();
+        if (!code) { A.validation('Code is required'); form.querySelector('[name="code"]').focus(); return; }
+        const dup = M.coupons.find((x) => x.code === code && x !== editing); if (dup) { A.validation('Coupon code ' + code + ' already exists'); return; }
+        const planIntervals = {}; $$('[data-plan]:checked', form).forEach((c) => { (planIntervals[c.dataset.plan] = planIntervals[c.dataset.plan] || []).push(c.dataset.interval); });
+        const intervals = Array.from(new Set([].concat(...Object.values(planIntervals))));
+        const data = { code, scope: A.formVal(form, 'scope'), description: A.formVal(form, 'description').trim(), discountType: A.formVal(form, 'discountType'), discountValue: +A.formVal(form, 'discountValue') || 0, minOrderAmount: +A.formVal(form, 'minOrderAmount') || 0, maxUses: +A.formVal(form, 'maxUses') || 0, perUserLimit: +A.formVal(form, 'perUserLimit') || 0, startsAt: A.formVal(form, 'startsAt'), expiresAt: A.formVal(form, 'expiresAt'), plans: Object.keys(planIntervals), intervals, planIntervals, isActive: A.isOn(el(dlg, 'active')), assignedUsers: A.formVal(form, 'scope') === 'private_community_listed' ? Array.from(assigned) : [] };
+        if (data.discountType === 'percent' && data.discountValue > 100) { A.validation('Percent discount cannot exceed 100'); return; }
+        const ok = A.save(() => { if (editing) Object.assign(editing, data); else M.coupons.push(Object.assign({ id: A.uid('c'), usedCount: 0 }, data)); CG.emit('coupons:changed', M.coupons); }, editing ? 'Updated' : 'Created');
+        if (ok) { handle && handle.close(); render(); }
+      });
+      form.querySelector('[name="code"]').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ''); });
+      form.querySelector('[name="scope"]').addEventListener('change', toggleAssign);
+      el(dlg, 'assign-search').addEventListener('input', renderAssign);
+      CG.delegate(form, 'change', '[data-uid]', (e, c) => { if (c.checked) assigned.add(c.dataset.uid); else assigned.delete(c.dataset.uid); el(dlg, 'assign-count').textContent = assigned.size + ' of ' + M.users.length + ' users selected'; });
+      CG.delegate(form, 'click', '[data-act="assign-all"]', () => { filteredUsers().forEach((u) => assigned.add(u.id)); renderAssign(); });
+      CG.delegate(form, 'click', '[data-act="assign-none"]', () => { filteredUsers().forEach((u) => assigned.delete(u.id)); renderAssign(); });
+      CG.delegate(form, 'click', '[data-act="assign-invert"]', () => { filteredUsers().forEach((u) => (assigned.has(u.id) ? assigned.delete(u.id) : assigned.add(u.id))); renderAssign(); });
+      CG.delegate(form, 'click', '[data-act="cancel"]', () => handle && handle.close());
+      el(dlg, 'active').addEventListener('click', (e) => A.setSwitch(e.currentTarget, !A.isOn(e.currentTarget)));
+      CG.delegate(root, 'click', '[data-act="new"]', () => open(null));
+      CG.delegate(root, 'click', '[data-act="edit"]', (e, b) => open(M.coupons.find((c) => c.id === b.dataset.id)));
+      CG.delegate(root, 'click', '[data-act="toggle"]', (e, b) => { const c = M.coupons.find((x) => x.id === b.dataset.id); if (!c) return; c.isActive = !c.isActive; A.save(() => CG.emit('coupons:changed', M.coupons), 'Updated'); render(); });
+      CG.delegate(root, 'click', '[data-act="delete"]', async (e, b) => { const c = M.coupons.find((x) => x.id === b.dataset.id); if (!c) return; const ok = await CG.modal.confirm({ title: 'Delete Coupon?', description: 'This action cannot be undone. The coupon will be permanently deleted.', confirmText: 'Delete', variant: 'destructive' }); if (!ok) return; M.coupons.splice(M.coupons.indexOf(c), 1); CG.emit('coupons:changed', M.coupons); CG.toast({ title: 'Deleted', description: c.code + ' removed', variant: 'success' }); render(); });
+      const render = () => {
+        el(root, 'count').textContent = 'All Coupons (' + M.coupons.length + ')';
+        const t = el(root, 'table');
+        if (!M.coupons.length) { t.innerHTML = A.empty('ticket', 'No Coupons', 'Create your first coupon code', 'Create Coupon'); return; }
+        t.innerHTML = '<table class="table"><thead><tr><th>Code</th><th>Discount</th><th>Type</th><th>Validity</th><th>Plans</th><th>Uses</th><th>Status</th><th class="r">Actions</th></tr></thead><tbody>' + M.coupons.map((c) => { const expired = new Date(c.expiresAt) < CG.NOW; const community = c.scope === 'private_community_listed'; const pi = planIntervalsOf(c); return '<tr><td><div class="mono font-semibold">' + esc(c.code) + '</div><div class="text-xs text-muted" style="max-width:220px">' + esc(c.description || '') + '</div></td><td class="mono font-medium">' + (c.discountType === 'percent' ? c.discountValue + '%' : F.inr(c.discountValue)) + (c.minOrderAmount ? '<div class="text-2xs text-muted">min ' + F.inr(c.minOrderAmount) + '</div>' : '') + '</td><td><span class="badge ' + (community ? 'badge-info' : 'badge-secondary') + '">' + (community ? 'Community' : 'Public') + '</span>' + (community ? '<div class="text-2xs text-muted mt-1">' + (c.assignedUsers || []).length + ' users assigned</div>' : '') + '</td><td class="text-xs"><span class="nowrap">' + A.date(c.startsAt) + '</span> <span class="text-muted">→</span> <span class="nowrap ' + (expired ? 'text-loss' : '') + '">' + A.date(c.expiresAt) + '</span>' + (expired ? '<div class="text-2xs text-loss">Expired</div>' : '') + '</td><td><div class="flex flex-wrap gap-1" style="max-width:200px">' + (Object.keys(pi).length ? Object.keys(pi).map((pid) => '<span class="badge badge-outline" title="' + esc(pi[pid].join(', ')) + '">' + esc(A.planName(pid)) + '</span>').join('') : '<span class="text-xs text-muted">All plans</span>') + '</div></td><td class="mono text-xs">' + c.usedCount + ' / ' + (c.maxUses || '∞') + '<div class="text-2xs text-muted">' + c.perUserLimit + ' per user</div></td><td><div class="flex items-center gap-2">' + A.switchHtml(c.isActive, 'data-act="toggle" data-id="' + c.id + '" aria-label="Toggle coupon active"') + '<span class="text-xs ' + (c.isActive ? '' : 'text-muted') + '">' + (c.isActive ? 'Active' : 'Inactive') + '</span></div></td><td><div class="adm-actions"><button class="adm-icon-btn" title="Edit coupon" data-act="edit" data-id="' + c.id + '">' + A.icon('pencil') + '</button><button class="adm-icon-btn danger" title="Delete coupon" data-act="delete" data-id="' + c.id + '">' + A.icon('trash') + '</button></div></td></tr>'; }).join('') + '</tbody></table>';
+      };
+      this._render = render;
+    },
+    show() { this._render && this._render(); }
+  });
+
+  // =====================================================================
+  // /admin/user-subscriptions  (Users + Commissions tabs)
+  // =====================================================================
+  // referral-level detail rows for a commission record (generated once, deterministic)
+  A.commissionDetails = (c) => {
+    if (c.details) return c.details;
+    const r = CG.rng(c.referrerId.length * 977 + c.referrals * 31 + (c.total | 0));
+    const pool = M.users.filter((u) => u.id !== c.referrerId); const n = Math.max(1, c.referrals);
+    let k = c.total > 0 ? Math.round(n * c.paid / c.total) : 0; if (c.paid > 0 && k < 1) k = 1; if (c.pending > 0 && k > n - 1) k = n - 1; if (k < 0) k = 0;
+    const split = (amount, count) => { if (!count) return []; const w = []; for (let i = 0; i < count; i++) w.push(0.5 + r()); const s = w.reduce((a, b) => a + b, 0); const out = w.map((x) => Math.round(amount * x / s)); out[0] += amount - out.reduce((a, b) => a + b, 0); return out; };
+    const amts = split(c.paid, k).map((a) => ({ a, status: 'paid' })).concat(split(c.pending, n - k).map((a) => ({ a, status: 'pending' })));
+    const start = Math.floor(r() * pool.length); const pct = c.commissionPct || 20;
+    c.details = amts.map((x, i) => { const u = pool[(start + i * 7) % pool.length]; const paidAt = x.status === 'paid' ? new Date(CG.NOW - (20 + Math.floor(r() * 120)) * 86400000).toISOString().slice(0, 10) : null; return { userId: u.id, name: u.name, email: u.email, joinedAt: u.joinedAt, plan: u.plan, interval: u.interval, amount: Math.round(x.a * 100 / pct), commission: x.a, status: x.status, proofLink: '', paidAt }; });
+    c.paid = c.details.filter((d) => d.status === 'paid').reduce((s, d) => s + d.commission, 0); c.total = c.details.reduce((s, d) => s + d.commission, 0); c.pending = c.total - c.paid; c.status = c.pending > 0 ? 'pending' : 'paid';
+    return c.details;
+  };
+  M.commissions.forEach(A.commissionDetails);
+
+  CG.register('/admin/user-subscriptions', {
+    init(root) {
+      A.hydrateIcons(root);
+      const S = { tab: 'users', page: 1, q: '', status: '', cq: '', cmonth: '' };
+      A.bindTabs(root, (t) => { S.tab = t; render(); });
+      // ----- Users tab -----
+      el(root, 'users-search').addEventListener('input', (e) => { S.q = e.target.value.trim().toLowerCase(); S.page = 1; renderUsers(); });
+      el(root, 'users-status').addEventListener('change', (e) => { S.status = e.target.value; S.page = 1; renderUsers(); });
+      const filteredUsers = () => M.users.filter((u) => (!S.q || u.name.toLowerCase().includes(S.q) || u.email.toLowerCase().includes(S.q)) && (!S.status || u.status === S.status));
+      const expiryCell = (u) => { if (!u.endsAt) return '<span class="text-muted">—</span>'; const d = A.daysLeft(u.endsAt); if (d < 0) return '<div>' + A.date(u.endsAt) + '</div><div class="text-2xs text-loss">Expired ' + Math.abs(d) + ' d ago</div>'; return '<div>' + A.date(u.endsAt) + '</div><div class="text-2xs ' + (d < 7 ? 'text-warning' : 'text-muted') + '">' + d + ' d left' + (d < 7 ? ' <b>(Soon)</b>' : '') + '</div>'; };
+      const renderUsers = () => {
+        const list = filteredUsers(); const pg = A.paginate(list, S.page, 10); S.page = pg.page;
+        el(root, 'users-count').textContent = 'Users (' + list.length + ')';
+        const t = el(root, 'users-table');
+        if (!list.length) { t.innerHTML = '<div class="empty"><b>No users found</b>Try a different search or status filter</div>'; el(root, 'users-pager').innerHTML = ''; return; }
+        t.innerHTML = '<table class="table"><thead><tr><th>User</th><th>Plan</th><th>Expiry</th><th>Validity <span class="text-2xs">(days)</span></th><th>Referrals</th><th>Commission %</th><th>Account</th><th>Limits</th></tr></thead><tbody>' + pg.rows.map((u) => '<tr data-id="' + u.id + '"><td><div class="font-medium">' + esc(u.name) + (u.role === 'admin' ? ' <span class="badge badge-info">admin</span>' : '') + '</div><div class="text-xs text-muted">' + esc(u.email) + '</div></td><td><span class="badge ' + A.planBadge(u.plan) + '">' + esc(u.plan || 'Free Plan') + '</span><div class="text-2xs text-muted mt-1">' + A.statusLabel(u.status) + (u.interval && u.status !== 'free' ? ' · ' + u.interval : '') + '</div></td><td class="text-xs">' + expiryCell(u) + '</td><td><span class="adm-editable mono" data-edit="validity" data-id="' + u.id + '" title="Click to edit">' + (u.validityDays || 0) + '</span></td><td><span class="adm-editable mono" data-edit="referrals" data-id="' + u.id + '" title="Click to edit">' + (u.referrals || 0) + '</span></td><td><span class="adm-editable mono" data-edit="commission" data-id="' + u.id + '" title="Click to edit">' + (u.commissionPct || 0) + '%</span></td><td><button class="btn btn-xs ' + (u.activated ? 'btn-primary' : 'btn-secondary') + '" data-act="toggle-account" data-id="' + u.id + '" title="' + (u.activated ? 'Click to deactivate this account' : 'Click to activate this account') + '">' + (u.activated ? 'Active' : 'Deactive') + '</button></td><td><div class="flex gap-1"><button class="adm-icon-btn" title="Edit feature limits" data-act="limits" data-id="' + u.id + '">' + A.icon('settings2') + '</button><button class="adm-icon-btn" title="Lot size settings" data-act="lots" data-id="' + u.id + '">' + A.icon('layers') + '</button></div></td></tr>').join('') + '</tbody></table>';
+        el(root, 'users-pager').innerHTML = A.pager(pg.page, pg.pages, pg.total + ' users', '← Previous', 'Next →');
+      };
+      CG.delegate(el(root, 'users-pager'), 'click', '[data-act="prev"]', () => { S.page--; renderUsers(); });
+      CG.delegate(el(root, 'users-pager'), 'click', '[data-act="next"]', () => { S.page++; renderUsers(); });
+      // inline editing: click → number input; Enter saves, Escape cancels, blur cancels
+      CG.delegate(el(root, 'users-table'), 'click', '.adm-editable', (e, span) => {
+        if (span.dataset.editing) return; span.dataset.editing = '1';
+        const u = M.users.find((x) => x.id === span.dataset.id); const field = span.dataset.edit; const cur = field === 'validity' ? u.validityDays : field === 'referrals' ? u.referrals : u.commissionPct;
+        const inp = CG.h('<input type="number" min="0" ' + (field === 'commission' ? 'max="100" step="0.5"' : 'step="1"') + ' class="input adm-inline-input mono" value="' + cur + '" aria-label="Edit ' + field + '">');
+        span.replaceWith(inp); inp.focus(); inp.select(); let done = false;
+        const finish = (save) => { if (done) return; done = true; if (save) { const v = Math.max(0, +inp.value || 0); A.save(() => { if (field === 'validity') { u.validityDays = v; if (u.subscribedAt) u.endsAt = new Date(new Date(u.subscribedAt).getTime() + v * 86400000).toISOString().slice(0, 10); } else if (field === 'referrals') u.referrals = v; else u.commissionPct = v; CG.emit('users:changed', M.users); }, 'Updated'); } renderUsers(); };
+        inp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); finish(true); } else if (ev.key === 'Escape') { ev.preventDefault(); finish(false); } });
+        inp.addEventListener('blur', () => finish(false));
+      });
+      CG.delegate(root, 'click', '[data-act="toggle-account"]', (e, b) => { const u = M.users.find((x) => x.id === b.dataset.id); if (!u) return; u.activated = !u.activated; A.save(() => CG.emit('users:changed', M.users), 'Updated'); renderUsers(); });
+      // Feature Limits dialog
+      const limDlg = el(root, 'limits-dialog'), limForm = limDlg.querySelector('form'); let limUser = null, limHandle = null;
+      CG.delegate(root, 'click', '[data-act="limits"]', (e, b) => { limUser = M.users.find((x) => x.id === b.dataset.id); if (!limUser) return; A.formSet(limForm, 'paper', limUser.featureLimits.paper_trading || 0); A.formSet(limForm, 'live', limUser.featureLimits.live_trading || 0); limForm.querySelector('[data-el="submit"]').textContent = 'Save Limits'; limHandle = CG.modal.open(limDlg, { title: 'Feature Limits', description: limUser.name + ' · ' + limUser.plan + ' · plan default: ' + planLimits(limUser), size: 'sm' }); });
+      const planLimits = (u) => { const p = M.plans.find((x) => x.id === u.planId); const fl = p && p[u.interval] && p[u.interval].featureLimits; return fl ? (fl.paper_trading || '∞') + ' paper / ' + (fl.live_trading || (p.monthly.price ? '∞' : 0)) + ' live' : '—'; };
+      limForm.addEventListener('submit', (e) => { e.preventDefault(); const btn = limForm.querySelector('[data-el="submit"]'); const paper = Math.max(0, +A.formVal(limForm, 'paper') || 0), live = Math.max(0, +A.formVal(limForm, 'live') || 0); A.busy(btn, '<span class="spinner" style="width:14px;height:14px"></span> Saving...', () => { const ok = A.save(() => { limUser.featureLimits = { paper_trading: paper, live_trading: live }; CG.emit('users:changed', M.users); }, 'Updated'); if (ok) { limHandle && limHandle.close(); renderUsers(); } }); });
+      CG.delegate(limForm, 'click', '[data-act="cancel"]', () => limHandle && limHandle.close());
+      // Lot size dialog (inferred)
+      const lotDlg = el(root, 'lots-dialog'), lotForm = lotDlg.querySelector('form'); let lotUser = null, lotHandle = null;
+      CG.delegate(root, 'click', '[data-act="lots"]', (e, b) => { lotUser = M.users.find((x) => x.id === b.dataset.id); if (!lotUser) return; ['BTC', 'ETH', 'XAUT'].forEach((k) => A.formSet(lotForm, k, lotUser.lotSizes[k])); lotHandle = CG.modal.open(lotDlg, { title: 'Lot Size Settings', description: lotUser.name + ' · per-user lot sizes for BTC, ETH and XAUT', size: 'sm' }); });
+      lotForm.addEventListener('submit', (e) => { e.preventDefault(); const vals = {}; for (const k of ['BTC', 'ETH', 'XAUT']) { const v = +A.formVal(lotForm, k); if (!(v > 0)) { A.validation(k + ' lot size must be greater than 0'); return; } vals[k] = v; } const ok = A.save(() => { lotUser.lotSizes = vals; if (lotUser.id === M.user.id) { CG.state.lotSizes = Object.assign({}, vals); CG.saveState(); } CG.emit('users:changed', M.users); }, 'Updated'); if (ok) lotHandle && lotHandle.close(); });
+      CG.delegate(lotForm, 'click', '[data-act="cancel"]', () => lotHandle && lotHandle.close());
+
+      // ----- Commissions tab -----
+      const monthSel = el(root, 'comm-month');
+      const fillMonths = () => { const months = Array.from(new Set(M.commissions.map((c) => c.month))).sort().reverse(); monthSel.innerHTML = '<option value="">All Months</option>' + months.map((m) => '<option value="' + m + '"' + (m === S.cmonth ? ' selected' : '') + '>' + F.date(m + '-01', { month: 'short', year: 'numeric' }) + '</option>').join(''); };
+      el(root, 'comm-search').addEventListener('input', (e) => { S.cq = e.target.value.trim().toLowerCase(); renderComm(); });
+      monthSel.addEventListener('change', (e) => { S.cmonth = e.target.value; renderComm(); });
+      CG.delegate(root, 'click', '[data-act="comm-clear"]', () => { S.cq = ''; S.cmonth = ''; el(root, 'comm-search').value = ''; monthSel.value = ''; renderComm(); });
+      const filteredComm = () => M.commissions.filter((c) => (!S.cq || c.referrer.toLowerCase().includes(S.cq)) && (!S.cmonth || c.month === S.cmonth));
+      const renderComm = () => {
+        const list = filteredComm(); const total = list.reduce((s, c) => s + c.total, 0), paid = list.reduce((s, c) => s + c.paid, 0), pending = total - paid;
+        el(root, 'comm-tiles').innerHTML = '<div class="stat"><div class="stat-label">Total Commission</div><div class="stat-value">' + F.inr(total) + '</div><div class="stat-sub">' + list.length + ' referrer' + (list.length === 1 ? '' : 's') + ' · ' + list.reduce((s, c) => s + c.referrals, 0) + ' referrals</div></div><div class="stat"><div class="stat-label">Paid</div><div class="stat-value text-profit">' + F.inr(paid) + '</div><div class="stat-sub">' + list.filter((c) => c.status === 'paid').length + ' fully settled</div></div><div class="stat"><div class="stat-label">Pending</div><div class="stat-value ' + (pending ? 'text-warning' : '') + '">' + F.inr(pending) + '</div><div class="stat-sub">' + list.filter((c) => c.pending > 0).length + ' awaiting payout</div></div>';
+        const t = el(root, 'comm-table');
+        root.querySelector('[data-act="comm-bulk"]').disabled = !M.commissions.some((c) => c.pending > 0);
+        if (!list.length) { t.innerHTML = '<div class="empty"><b>No commissions found</b>Adjust the search or month filter</div>'; return; }
+        t.innerHTML = '<table class="table"><thead><tr><th>Referrer</th><th class="r">Referrals</th><th class="r">Commission %</th><th class="r">Total</th><th class="r">Paid</th><th class="r">Pending</th><th>Status</th><th class="r">Action</th></tr></thead><tbody>' + list.map((c) => '<tr><td><div class="font-medium">' + esc(c.referrer) + '</div><div class="text-xs text-muted">' + esc(c.email) + ' · ' + F.date(c.month + '-01', { month: 'short', year: 'numeric' }) + '</div></td><td class="r mono">' + c.referrals + '</td><td class="r mono">' + c.commissionPct + '%</td><td class="r mono font-medium">' + F.inr(c.total) + '</td><td class="r mono text-profit">' + F.inr(c.paid) + '</td><td class="r mono ' + (c.pending ? 'text-warning' : 'text-muted') + '">' + F.inr(c.pending) + '</td><td><span class="badge ' + A.statusBadge(c.status) + '">' + A.statusLabel(c.status) + '</span>' + (c.comment ? '<div class="text-2xs text-muted mt-1" style="max-width:160px">' + esc(c.comment) + '</div>' : '') + '</td><td><div class="adm-actions">' + (c.pending > 0 ? '<button class="btn btn-primary btn-xs" data-act="mark-paid" data-id="' + c.referrerId + '">Mark Paid</button>' : '') + '<button class="btn btn-ghost btn-xs" data-act="view" data-id="' + c.referrerId + '" title="Details">' + A.icon('eye', 14) + ' View</button></div></td></tr>').join('') + '</tbody></table>';
+      };
+      // View dialog
+      const viewDlg = el(root, 'view-dialog'); let viewHandle = null;
+      CG.delegate(root, 'click', '[data-act="view"]', (e, b) => { const c = M.commissions.find((x) => x.referrerId === b.dataset.id); if (!c) return; const d = A.commissionDetails(c); el(viewDlg, 'view-table').innerHTML = d.length ? '<table class="table table-compact"><thead><tr><th>User</th><th>Joined</th><th>Plan</th><th class="r">Amount</th><th class="r">Commission</th><th>Status</th></tr></thead><tbody>' + d.map((x) => '<tr><td><div class="font-medium">' + esc(x.name) + '</div><div class="text-2xs text-muted">' + esc(x.email) + '</div></td><td class="nowrap">' + F.dateIN(x.joinedAt) + '</td><td>' + esc(x.plan || '—') + (x.interval ? '<div class="text-2xs text-muted">' + x.interval + '</div>' : '') + '</td><td class="r mono">' + F.inr(x.amount) + '</td><td class="r mono font-medium">' + F.inr(x.commission) + '</td><td><span class="badge ' + (x.status === 'paid' ? 'badge-success' : x.status === 'not_paid' ? 'badge-loss' : 'badge-warning') + '">' + (x.status === 'paid' ? 'Paid' : 'Not Paid') + '</span>' + (x.paidAt ? '<div class="text-2xs text-muted">' + F.dateIN(x.paidAt) + '</div>' : '') + (x.proofLink ? '<div class="text-2xs"><a class="text-primary" href="' + esc(x.proofLink) + '" target="_blank" rel="noopener">proof</a></div>' : '') + '</td></tr>').join('') + '</tbody></table>' : '<div class="empty">No referrals recorded</div>'; el(viewDlg, 'view-totals').innerHTML = '<span><b>Total:</b> ' + F.inr(c.total) + '</span><span class="text-profit"><b>Paid:</b> ' + F.inr(c.paid) + '</span><span class="text-warning"><b>Pending:</b> ' + F.inr(c.pending) + '</span>'; viewHandle = CG.modal.open(viewDlg, { title: c.referrer + "'s Referrals", description: d.length + ' referred user' + (d.length === 1 ? '' : 's') + ' · ' + c.commissionPct + '% commission', size: 'lg' }); });
+      CG.delegate(viewDlg, 'click', '[data-act="close"]', () => viewHandle && viewHandle.close());
+      // Mark Payment dialog
+      const payDlg = el(root, 'pay-dialog'), payForm = payDlg.querySelector('form'); let payC = null, payHandle = null;
+      const payMode = () => payForm.querySelector('[name="payStatus"]:checked').value;
+      const syncPay = () => { const paid = payMode() === 'paid'; $$('.adm-radio', payForm).forEach((l) => l.classList.toggle('selected', l.dataset.val === payMode())); payForm.querySelector('[name="comment"]').placeholder = paid ? 'Optional note...' : 'Reason for not paying (required)'; el(payDlg, 'comment-hint').textContent = paid ? '(optional)' : '*'; el(payDlg, 'proof-hint').textContent = paid ? '(optional)' : '(not needed)'; payForm.querySelector('[data-el="submit"]').textContent = paid ? 'Confirm Paid' : 'Confirm Not Paid'; payForm.querySelector('[data-el="submit"]').className = 'btn ' + (paid ? 'btn-primary' : 'btn-destructive'); el(payDlg, 'proofs').style.opacity = paid ? '' : '.5'; };
+      CG.delegate(root, 'click', '[data-act="mark-paid"]', (e, b) => { payC = M.commissions.find((x) => x.referrerId === b.dataset.id); if (!payC) return; const pend = A.commissionDetails(payC).filter((d) => d.status !== 'paid'); payForm.reset(); payForm.querySelector('[name="payStatus"][value="paid"]').checked = true; el(payDlg, 'proofs').innerHTML = pend.length ? pend.map((d, i) => '<div class="adm-proof"><span class="truncate" title="' + esc(d.name) + '">' + esc(d.name) + ' <span class="text-muted mono">' + F.inr(d.commission) + '</span></span><input class="input input-sm" name="proof-link" data-i="' + i + '" type="url" placeholder="https://... (payment screenshot / receipt URL)"></div>').join('') : '<div class="text-xs text-muted">Nothing pending</div>'; syncPay(); payHandle = CG.modal.open(payDlg, { title: 'Mark Payment — ' + payC.referrer, description: 'Total: ' + F.inr(payC.total) + ' · Pending: ' + F.inr(payC.pending) + ' across ' + pend.length + ' referral' + (pend.length === 1 ? '' : 's') }); });
+      payForm.addEventListener('change', (e) => { if (e.target.name === 'payStatus') syncPay(); });
+      payForm.addEventListener('submit', (e) => { e.preventDefault(); const mode = payMode(); const comment = A.formVal(payForm, 'comment').trim(); if (mode === 'not_paid' && !comment) { A.validation('Reason for not paying is required'); payForm.querySelector('[name="comment"]').focus(); return; } const proofs = $$('[name="proof-link"]', payForm).map((i) => i.value.trim()); for (const p of proofs) if (p && !/^https?:\/\//i.test(p)) { A.validation('Proof link must start with http:// or https://'); return; } const btn = payForm.querySelector('[data-el="submit"]'); A.busy(btn, '<span class="spinner" style="width:14px;height:14px"></span> Saving...', () => { const ok = A.save(() => { const pend = A.commissionDetails(payC).filter((d) => d.status !== 'paid'); pend.forEach((d, i) => { d.proofLink = proofs[i] || ''; d.status = mode === 'paid' ? 'paid' : 'not_paid'; d.paidAt = mode === 'paid' ? CG.NOW.toISOString().slice(0, 10) : null; }); payC.comment = comment; if (mode === 'paid') { payC.paid = payC.total; payC.pending = 0; payC.status = 'paid'; } else payC.status = 'not_paid'; CG.emit('commissions:changed', M.commissions); }, 'Updated'); if (ok) { payHandle && payHandle.close(); renderComm(); } }); });
+      CG.delegate(payForm, 'click', '[data-act="cancel"]', () => payHandle && payHandle.close());
+      // Bulk pay (inferred from /admin/commissions/bulk-pay endpoint)
+      CG.delegate(root, 'click', '[data-act="comm-bulk"]', async () => { const pend = M.commissions.filter((c) => c.pending > 0); const amt = pend.reduce((s, c) => s + c.pending, 0); const ok = await CG.modal.confirm({ title: 'Bulk pay ' + pend.length + ' referrer' + (pend.length === 1 ? '' : 's') + '?', description: F.inr(amt) + ' of pending commission will be marked as paid. Proof links can be added later per referral.', confirmText: 'Confirm Paid' }); if (!ok) return; A.save(() => { pend.forEach((c) => { A.commissionDetails(c).forEach((d) => { if (d.status !== 'paid') { d.status = 'paid'; d.paidAt = CG.NOW.toISOString().slice(0, 10); } }); c.paid = c.total; c.pending = 0; c.status = 'paid'; }); CG.emit('commissions:changed', M.commissions); }, 'Updated'); renderComm(); });
+      const render = () => { A.setTab(root, S.tab); if (S.tab === 'users') renderUsers(); else { fillMonths(); renderComm(); } };
+      this._render = render; this._setTab = (t) => { S.tab = t; };
+    },
+    show(root, params, query) { if (query && (query.tab === 'users' || query.tab === 'commissions') && this._setTab) this._setTab(query.tab); this._render && this._render(); }
+  });
+
+  // =====================================================================
+  // /admin/banners
+  // =====================================================================
+  const GRADS = ['215 50% 55%/225 45% 45%', '142 71% 35%/168 100% 34%', '38 92% 50%/0 72% 51%', '262 60% 55%/300 50% 45%', '190 80% 40%/215 50% 55%'];
+  A.bannerBg = (img) => { if (!img) return ''; if (img.startsWith('gradient:')) { const [a, b] = img.slice(9).split('/'); return 'linear-gradient(135deg, hsl(' + a + '), hsl(' + b + '))'; } return 'url("' + img + '")'; };
+  CG.register('/admin/banners', {
+    init(root) {
+      A.hydrateIcons(root);
+      const dlg = el(root, 'dialog'), form = dlg.querySelector('form'), fileInp = form.querySelector('[name="image"]'), preview = el(root, 'preview');
+      let editing = null, handle = null, image = null, gradIdx = 0;
+      const setPreview = () => { if (image) { preview.style.backgroundImage = A.bannerBg(image); preview.textContent = ''; } else { preview.style.backgroundImage = ''; preview.innerHTML = A.icon('image', 20) + '<span class="mt-1">No image</span>'; } };
+      const open = (b) => {
+        editing = b || null; image = b ? b.image : null; form.reset();
+        A.formSet(form, 'title', b ? b.title : ''); A.formSet(form, 'description', b ? b.description : ''); A.formSet(form, 'linkUrl', b ? b.linkUrl : ''); A.formSet(form, 'startsAt', b ? b.startsAt : ''); A.formSet(form, 'endsAt', b ? b.endsAt : ''); A.formSet(form, 'frequency', b ? b.frequency : 'once_per_day');
+        el(dlg, 'image-hint').textContent = b ? '(leave empty to keep current)' : '*'; A.setSwitch(el(dlg, 'active'), b ? b.isActive : true); setPreview();
+        el(dlg, 'submit').textContent = b ? 'Save Changes' : 'Create Banner';
+        handle = CG.modal.open(dlg, { title: b ? 'Edit Banner' : 'New Banner', description: b ? 'Editing "' + b.title + '"' : 'Popup banners are shown to logged-in users based on the frequency rule' });
+        setTimeout(() => form.querySelector('[name="title"]').focus(), 50);
+      };
+      fileInp.addEventListener('change', () => {
+        const f = fileInp.files && fileInp.files[0]; if (!f) return;
+        if (!/^image\//.test(f.type)) { CG.toast({ title: 'Invalid image', description: 'Only image files are allowed', variant: 'destructive' }); fileInp.value = ''; return; }
+        if (f.size > 5 * 1024 * 1024) { CG.toast({ title: 'Invalid image', description: 'Image must be 5 MB or smaller', variant: 'destructive' }); fileInp.value = ''; return; }
+        const rd = new FileReader(); rd.onload = () => { image = String(rd.result); setPreview(); }; rd.onerror = () => CG.toast({ title: 'Invalid image', description: 'Could not read the file', variant: 'destructive' }); rd.readAsDataURL(f);
+      });
+      CG.delegate(form, 'click', '[data-act="use-gradient"]', () => { image = 'gradient:' + GRADS[gradIdx++ % GRADS.length]; fileInp.value = ''; setPreview(); });
+      form.addEventListener('submit', (e) => {
+        e.preventDefault(); const title = A.formVal(form, 'title').trim();
+        if (!title) { A.validation('Title is required'); form.querySelector('[name="title"]').focus(); return; }
+        if (!editing && !image) { A.validation('Image is required'); fileInp.focus(); return; }
+        const link = A.formVal(form, 'linkUrl').trim(); if (link && !/^https?:\/\//i.test(link)) { A.validation('Link URL must start with http:// or https://'); return; }
+        const s = A.formVal(form, 'startsAt'), en = A.formVal(form, 'endsAt'); if (s && en && new Date(en) < new Date(s)) { A.validation('Ends At must be after Starts At'); return; }
+        const data = { title, description: A.formVal(form, 'description').trim(), linkUrl: link, startsAt: s || null, endsAt: en || null, frequency: A.formVal(form, 'frequency'), isActive: A.isOn(el(dlg, 'active')), image: image || (editing && editing.image), type: 'popup' };
+        const ok = A.save(() => { if (editing) Object.assign(editing, data); else M.banners.unshift(Object.assign({ id: A.uid('b'), createdAt: CG.NOW.toISOString().slice(0, 10) }, data)); CG.emit('banners:changed', M.banners); }, editing ? 'Updated' : 'Created');
+        if (ok) { handle && handle.close(); render(); }
+      });
+      CG.delegate(form, 'click', '[data-act="cancel"]', () => handle && handle.close());
+      el(dlg, 'active').addEventListener('click', (e) => A.setSwitch(e.currentTarget, !A.isOn(e.currentTarget)));
+      CG.delegate(root, 'click', '[data-act="new"]', () => open(null));
+      CG.delegate(root, 'click', '[data-act="edit"]', (e, b) => open(M.banners.find((x) => x.id === b.dataset.id)));
+      CG.delegate(root, 'click', '[data-act="toggle"]', (e, b) => { const x = M.banners.find((y) => y.id === b.dataset.id); if (!x) return; x.isActive = !x.isActive; A.save(() => CG.emit('banners:changed', M.banners), 'Updated'); render(); });
+      CG.delegate(root, 'click', '[data-act="delete"]', async (e, b) => { const x = M.banners.find((y) => y.id === b.dataset.id); if (!x) return; const ok = await CG.modal.confirm({ title: 'Delete banner?', description: 'This permanently removes the banner. This action cannot be undone.', confirmText: 'Delete', variant: 'destructive' }); if (!ok) return; M.banners.splice(M.banners.indexOf(x), 1); CG.emit('banners:changed', M.banners); CG.toast({ title: 'Deleted', description: '"' + x.title + '" removed', variant: 'success' }); render(); });
+      const render = () => {
+        el(root, 'count').textContent = 'All Banners (' + M.banners.length + ')';
+        const t = el(root, 'table');
+        if (!M.banners.length) { t.innerHTML = A.empty('image', 'No Banners', 'Create your first banner', 'Create Banner'); return; }
+        t.innerHTML = '<table class="table"><thead><tr><th>Image</th><th>Title</th><th>Type</th><th>Frequency</th><th>Schedule</th><th>Active</th><th class="r">Actions</th></tr></thead><tbody>' + M.banners.map((b) => { const live = b.isActive && (!b.startsAt || new Date(b.startsAt) <= CG.NOW) && (!b.endsAt || new Date(b.endsAt) >= CG.NOW); return '<tr><td><div class="adm-thumb" style="background-image:' + A.bannerBg(b.image) + '" role="img" aria-label="' + esc(b.title) + '"></div></td><td><div class="font-medium">' + esc(b.title) + '</div><div class="text-xs text-muted" style="max-width:300px">' + esc(b.description || '') + '</div>' + (b.linkUrl ? '<div class="text-2xs text-primary truncate" style="max-width:300px">' + esc(b.linkUrl) + '</div>' : '') + '</td><td><span class="badge badge-secondary">' + esc(b.type || 'popup') + '</span></td><td><span class="badge badge-outline mono">' + esc(b.frequency) + '</span></td><td class="text-xs">' + (b.startsAt ? A.date(b.startsAt) : '<span class="text-muted">—</span>') + ' <span class="text-muted">→</span> ' + (b.endsAt ? A.date(b.endsAt) : '<span class="text-muted">—</span>') + '<div class="text-2xs ' + (live ? 'text-profit' : 'text-muted') + '">' + (live ? 'Showing now' : b.isActive ? 'Scheduled / ended' : 'Hidden') + '</div></td><td>' + A.switchHtml(b.isActive, 'data-act="toggle" data-id="' + b.id + '" aria-label="Toggle banner active"') + '</td><td><div class="adm-actions"><button class="adm-icon-btn" title="Edit banner" data-act="edit" data-id="' + b.id + '">' + A.icon('pencil') + '</button><button class="adm-icon-btn danger" title="Delete banner" data-act="delete" data-id="' + b.id + '">' + A.icon('trash') + '</button></div></td></tr>'; }).join('') + '</tbody></table>';
+      };
+      this._render = render;
+    },
+    show() { this._render && this._render(); }
+  });
+
+  // =====================================================================
+  // /admin/emails  (Compose + History)
+  // =====================================================================
+  A.campaignRecipients = (c) => {
+    if (c.recipientRows) return c.recipientRows;
+    const r = CG.rng(c.id.length * 131 + c.recipients * 17); const pool = M.users.slice(); const rows = [];
+    for (let i = 0; i < c.recipients; i++) { const u = pool[i % pool.length]; const failed = i >= c.recipients - (c.failed || 0); rows.push({ name: u.name, email: u.email, status: failed ? 'failed' : 'delivered', sentAt: new Date(new Date(c.sentAt).getTime() + i * 2600 + Math.floor(r() * 900)).toISOString(), error: failed ? ['Mailbox unavailable (550)', 'Recipient address rejected', 'Connection timed out'][i % 3] : '' }); }
+    c.recipientRows = rows; return rows;
+  };
+  A.fill = (tpl, u) => String(tpl || '').replace(/\{\{\s*(name|email|plan|expiry)\s*\}\}/g, (m, k) => (k === 'name' ? u.name : k === 'email' ? u.email : k === 'plan' ? (u.plan || 'Free Plan') : u.endsAt ? F.date(u.endsAt) : '—'));
+  CG.register('/admin/emails', {
+    init(root) {
+      A.hydrateIcons(root);
+      const S = { tab: 'compose', q: '', segment: 'all', selected: new Set(), lastFocus: null, campaign: null, page: 1 };
+      A.bindTabs(root, (t) => { S.tab = t; render(); });
+      const subj = el(root, 'subject'), msg = el(root, 'message'); const sendBtn = root.querySelector('[data-act="send"]');
+      [subj, msg].forEach((f) => { f.addEventListener('focus', () => (S.lastFocus = f)); f.addEventListener('input', renderPreview); });
+      const segmentUsers = () => M.users.filter((u) => S.segment === 'all' || (S.segment === 'paid' && u.status === 'active' && !/free/i.test(u.plan)) || (S.segment === 'free' && u.status === 'free') || (S.segment === 'expired' && u.status === 'expired'));
+      const visibleUsers = () => segmentUsers().filter((u) => !S.q || u.name.toLowerCase().includes(S.q) || u.email.toLowerCase().includes(S.q));
+      const renderRecipients = () => {
+        const list = visibleUsers();
+        el(root, 'rc-list').innerHTML = list.length ? list.map((u) => '<label><input type="checkbox" class="checkbox" data-uid="' + u.id + '"' + (S.selected.has(u.id) ? ' checked' : '') + '><span class="flex-1 truncate"><span class="block truncate">' + esc(u.name) + '</span><span class="text-xs text-muted">' + esc(u.email) + '</span></span><span class="badge ' + A.statusBadge(u.status) + '">' + A.statusLabel(u.status) + '</span></label>').join('') : '<div class="empty">No users match the search.</div>';
+        root.querySelector('[data-act="rc-all"]').textContent = 'Select all (' + list.length + ')';
+        el(root, 'sel-badge').textContent = S.selected.size + ' selected';
+        renderPreview();
+      };
+      function renderPreview() {
+        const first = Array.from(S.selected).map((id) => M.users.find((u) => u.id === id)).filter(Boolean)[0];
+        const hl = (s) => esc(s).replace(/\{\{\s*(name|email|plan|expiry)\s*\}\}/g, '<mark>$&</mark>');
+        const p = el(root, 'preview');
+        if (!first) p.innerHTML = '<div class="text-xs text-muted uppercase tracking-wide font-semibold">Preview</div><div class="adm-preview-subject">' + (subj.value ? hl(subj.value) : '<span class="text-muted">(no subject)</span>') + '</div><div class="adm-preview-body">' + (msg.value ? hl(msg.value) : '<span class="text-muted">Select a recipient to preview the filled placeholders.</span>') + '</div>';
+        else p.innerHTML = '<div class="text-xs text-muted uppercase tracking-wide font-semibold">Preview for ' + esc(first.name) + '</div><div class="text-2xs text-muted">To: ' + esc(first.email) + '</div><div class="adm-preview-subject">' + (subj.value ? esc(A.fill(subj.value, first)) : '<span class="text-muted">(no subject)</span>') + '</div><div class="adm-preview-body">' + (msg.value ? esc(A.fill(msg.value, first)) : '<span class="text-muted">(empty message)</span>') + '</div>';
+        sendBtn.disabled = !(S.selected.size && subj.value.trim() && msg.value.trim());
+        sendBtn.title = sendBtn.disabled ? 'Select recipients and fill in subject and message' : 'Send to ' + S.selected.size + ' user(s)';
+      }
+      el(root, 'rc-search').addEventListener('input', (e) => { S.q = e.target.value.trim().toLowerCase(); renderRecipients(); });
+      el(root, 'rc-segment').addEventListener('change', (e) => { S.segment = e.target.value; renderRecipients(); });
+      CG.delegate(root, 'change', '[data-uid]', (e, c) => { if (c.checked) S.selected.add(c.dataset.uid); else S.selected.delete(c.dataset.uid); el(root, 'sel-badge').textContent = S.selected.size + ' selected'; renderPreview(); });
+      CG.delegate(root, 'click', '[data-act="rc-all"]', () => { visibleUsers().forEach((u) => S.selected.add(u.id)); renderRecipients(); });
+      CG.delegate(root, 'click', '[data-act="rc-clear"]', () => { S.selected.clear(); renderRecipients(); });
+      CG.delegate(root, 'click', '[data-ins]', (e, b) => { const f = S.lastFocus || msg; const v = b.dataset.ins; const s = f.selectionStart != null ? f.selectionStart : f.value.length, en = f.selectionEnd != null ? f.selectionEnd : s; f.value = f.value.slice(0, s) + v + f.value.slice(en); f.focus(); f.setSelectionRange(s + v.length, s + v.length); renderPreview(); });
+      CG.delegate(root, 'click', '[data-act="send"]', async () => {
+        const n = S.selected.size; if (!n) return;
+        const ok = await CG.modal.confirm({ title: 'Send to ' + n + ' user(s)?', description: n + ' selected user(s). Placeholders are filled per recipient.', confirmText: 'Confirm' }); if (!ok) return;
+        A.busy(sendBtn, '<span class="spinner" style="width:14px;height:14px"></span> Sending...', () => {
+          try {
+            const ids = Array.from(S.selected); const failed = ids.length > 6 ? Math.max(0, Math.round(ids.length * 0.04)) : 0;
+            const c = { id: A.uid('cmp'), subject: subj.value.trim(), message: msg.value.trim(), sentAt: new Date(CG.NOW.getTime() + (Date.now() % 3600000)).toISOString(), sentBy: M.user.name, recipients: ids.length, delivered: ids.length - failed, failed, segment: el(root, 'rc-segment').selectedOptions[0].textContent };
+            c.recipientRows = ids.map((id, i) => { const u = M.users.find((x) => x.id === id); const bad = i >= ids.length - failed; return { name: u.name, email: u.email, status: bad ? 'failed' : 'delivered', sentAt: new Date(new Date(c.sentAt).getTime() + i * 1800).toISOString(), error: bad ? 'Mailbox unavailable (550)' : '' }; });
+            M.campaigns.unshift(c); CG.emit('campaigns:changed', M.campaigns);
+            CG.toast({ title: 'Emails sent', description: c.delivered + ' delivered' + (failed ? ', ' + failed + ' failed' : '') + ' · ' + c.subject, variant: 'success' });
+            S.selected.clear(); subj.value = ''; msg.value = ''; S.tab = 'history'; S.campaign = null; render();
+          } catch (err) { CG.toast({ title: 'Send failed', description: 'Please try again.', variant: 'destructive' }); }
+        }, 700);
+      });
+      // History
+      const renderHistory = () => {
+        el(root, 'hist-list').hidden = !!S.campaign; el(root, 'hist-detail').hidden = !S.campaign;
+        if (S.campaign) return renderDetail();
+        const t = el(root, 'hist-table');
+        if (!M.campaigns.length) { t.innerHTML = '<div class="empty"><div class="adm-empty-icon">' + A.icon('inbox', 22) + '</div><b>No campaigns sent yet.</b>Compose a message and send it to a segment of users</div>'; return; }
+        t.innerHTML = '<table class="table"><thead><tr><th>Subject</th><th>Sent at</th><th class="r">Recipients</th><th class="r">Delivered</th><th class="r">Failed</th><th>Sent by</th></tr></thead><tbody>' + M.campaigns.map((c) => '<tr class="adm-row-click" data-open="' + c.id + '" tabindex="0"><td><div class="font-medium">' + esc(c.subject) + '</div><div class="text-xs text-muted">' + esc(c.segment || '') + '</div></td><td class="nowrap text-xs">' + A.dateTime(c.sentAt) + '</td><td class="r mono">' + c.recipients + '</td><td class="r mono text-profit">' + c.delivered + '</td><td class="r mono ' + (c.failed ? 'text-loss' : 'text-muted') + '">' + c.failed + '</td><td>' + esc(c.sentBy) + '</td></tr>').join('') + '</tbody></table>';
+      };
+      const renderDetail = () => {
+        const c = S.campaign; const rows = A.campaignRecipients(c); const pg = A.paginate(rows, S.page, 10); S.page = pg.page; const pct = c.recipients ? Math.round(c.delivered / c.recipients * 100) : 0;
+        el(root, 'det-subject').textContent = c.subject; el(root, 'det-meta').innerHTML = 'Sent ' + esc(A.dateTime(c.sentAt)) + ' · By ' + esc(c.sentBy) + (c.segment ? ' · ' + esc(c.segment) : '');
+        el(root, 'det-tiles').innerHTML = '<div class="stat"><div class="stat-label">Recipients</div><div class="stat-value">' + c.recipients + '</div></div><div class="stat"><div class="stat-label">Delivered</div><div class="stat-value text-profit">' + c.delivered + '</div></div><div class="stat"><div class="stat-label">Failed</div><div class="stat-value ' + (c.failed ? 'text-loss' : '') + '">' + c.failed + '</div></div><div class="stat"><div class="stat-label">Success</div><div class="stat-value">' + pct + '%</div></div>';
+        el(root, 'det-table').innerHTML = rows.length ? '<table class="table"><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Sent at</th><th>Error</th></tr></thead><tbody>' + pg.rows.map((r) => '<tr><td class="font-medium">' + esc(r.name) + '</td><td class="text-xs">' + esc(r.email) + '</td><td><span class="badge ' + A.statusBadge(r.status) + '">' + A.statusLabel(r.status) + '</span></td><td class="text-xs nowrap">' + A.dateTime(r.sentAt) + '</td><td class="text-xs ' + (r.error ? 'text-loss' : 'text-muted') + '">' + (esc(r.error) || '—') + '</td></tr>').join('') + '</tbody></table>' : '<div class="empty">No recipients recorded.</div>';
+        el(root, 'det-pager').innerHTML = rows.length ? A.pager(pg.page, pg.pages, pg.total + ' recipients', A.icon('chevLeft', 14) + ' Prev', 'Next ' + A.icon('chevRight', 14)) : '';
+      };
+      CG.delegate(root, 'click', '[data-open]', (e, tr) => { S.campaign = M.campaigns.find((c) => c.id === tr.dataset.open); S.page = 1; renderHistory(); });
+      CG.delegate(root, 'keydown', '[data-open]', (e, tr) => { if (e.key === 'Enter') tr.click(); });
+      CG.delegate(root, 'click', '[data-act="hist-back"]', () => { S.campaign = null; renderHistory(); });
+      CG.delegate(el(root, 'det-pager'), 'click', '[data-act="prev"]', () => { S.page--; renderDetail(); });
+      CG.delegate(el(root, 'det-pager'), 'click', '[data-act="next"]', () => { S.page++; renderDetail(); });
+      const render = () => { A.setTab(root, S.tab); if (S.tab === 'compose') renderRecipients(); else renderHistory(); };
+      this._render = render; this._setTab = (t) => { S.tab = t; };
+    },
+    show(root, params, query) { if (query && (query.tab === 'history' || query.tab === 'compose') && this._setTab) this._setTab(query.tab); this._render && this._render(); }
+  });
+
+  // =====================================================================
+  // /admin/users  (User Management)
+  // =====================================================================
+  CG.register('/admin/users', {
+    init(root) {
+      A.hydrateIcons(root);
+      const S = { q: '', page: 1 };
+      el(root, 'search').addEventListener('input', (e) => { S.q = e.target.value.trim().toLowerCase(); S.page = 1; render(); });
+      const filtered = () => M.users.filter((u) => !S.q || u.name.toLowerCase().includes(S.q) || u.email.toLowerCase().includes(S.q));
+      const render = () => {
+        const list = filtered(); const pg = A.paginate(list, S.page, 10); S.page = pg.page;
+        el(root, 'count').textContent = M.users.length + ' users' + (S.q ? ' · ' + list.length + ' match' : '');
+        const t = el(root, 'table');
+        if (!list.length) { t.innerHTML = '<div class="empty"><b>No users found.</b>Try another name or email</div>'; el(root, 'pager').innerHTML = ''; return; }
+        t.innerHTML = '<table class="table"><thead><tr><th>Name</th><th>Email</th><th>Plan</th><th>Status</th><th>Subscribed</th><th>Ends</th><th>Joined</th><th>Referral code</th><th class="r">Commission %</th><th class="r">Referrals</th></tr></thead><tbody>' + pg.rows.map((u) => '<tr class="adm-row-click" data-open="' + u.id + '" tabindex="0" title="View user details"><td class="font-medium nowrap">' + esc(u.name) + (u.role === 'admin' ? ' <span class="badge badge-info">admin</span>' : '') + '</td><td class="text-xs">' + esc(u.email) + '</td><td><span class="badge ' + A.planBadge(u.plan) + '">' + esc(u.plan) + '</span></td><td><span class="badge ' + A.statusBadge(u.status) + '">' + A.statusLabel(u.status) + '</span>' + (u.activated ? '' : '<div class="text-2xs text-loss">deactivated</div>') + '</td><td class="text-xs nowrap">' + A.date(u.subscribedAt) + '</td><td class="text-xs nowrap">' + A.date(u.endsAt) + '</td><td class="text-xs nowrap">' + A.date(u.joinedAt) + '</td><td class="mono text-xs">' + esc(u.referralCode) + '</td><td class="r mono">' + u.commissionPct + '%</td><td class="r mono">' + u.referrals + '</td></tr>').join('') + '</tbody></table>';
+        el(root, 'pager').innerHTML = A.pager(pg.page, pg.pages, pg.total + ' users', A.icon('chevLeft', 14) + ' Prev', 'Next ' + A.icon('chevRight', 14));
+      };
+      CG.delegate(el(root, 'pager'), 'click', '[data-act="prev"]', () => { S.page--; render(); });
+      CG.delegate(el(root, 'pager'), 'click', '[data-act="next"]', () => { S.page++; render(); });
+      // detail dialog (row click) + lot size settings (inferred)
+      const dlg = el(root, 'detail-dialog'), form = dlg.querySelector('form'); let cur = null, handle = null;
+      CG.delegate(root, 'click', '[data-open]', (e, tr) => { cur = M.users.find((u) => u.id === tr.dataset.open); if (!cur) return; const kv = [['Name', cur.name], ['Email', cur.email], ['Mobile', cur.mobile], ['Role', cur.role], ['Plan', cur.plan + (cur.interval && cur.status !== 'free' ? ' · ' + cur.interval : '')], ['Status', A.statusLabel(cur.status) + (cur.activated ? '' : ' · deactivated')], ['Subscribed', A.date(cur.subscribedAt)], ['Ends', A.date(cur.endsAt)], ['Joined', A.date(cur.joinedAt)], ['Last login', A.date(cur.lastLoginAt)], ['Referral code', cur.referralCode], ['Commission %', cur.commissionPct + '%'], ['Referrals', cur.referrals], ['Amount paid', F.inr(cur.amountPaid)], ['Feature limits', (cur.featureLimits.paper_trading || 'plan default') + ' paper · ' + (cur.featureLimits.live_trading || 'plan default') + ' live']]; el(dlg, 'detail-kv').innerHTML = kv.map(([k, v]) => '<div><span>' + esc(k) + '</span><b class="' + (/code/i.test(k) ? 'mono' : '') + '">' + esc(v) + '</b></div>').join(''); ['BTC', 'ETH', 'XAUT'].forEach((k) => A.formSet(form, k, cur.lotSizes[k])); handle = CG.modal.open(dlg, { title: cur.name, description: cur.email + ' · ' + cur.plan, size: 'lg' }); });
+      CG.delegate(root, 'keydown', '[data-open]', (e, tr) => { if (e.key === 'Enter') tr.click(); });
+      form.addEventListener('submit', (e) => { e.preventDefault(); const vals = {}; for (const k of ['BTC', 'ETH', 'XAUT']) { const v = +A.formVal(form, k); if (!(v > 0)) { A.validation(k + ' lot size must be greater than 0'); return; } vals[k] = v; } const ok = A.save(() => { cur.lotSizes = vals; if (cur.id === M.user.id) { CG.state.lotSizes = Object.assign({}, vals); CG.saveState(); } CG.emit('users:changed', M.users); }, 'Updated'); if (ok) handle && handle.close(); });
+      CG.delegate(form, 'click', '[data-act="close"]', () => handle && handle.close());
+      this._render = render;
+    },
+    show() { this._render && this._render(); }
+  });
+})();
+</script>

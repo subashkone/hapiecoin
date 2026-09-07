@@ -1,0 +1,35 @@
+{
+  "name": "@hapiecoin/pricing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HapieCoin pricing engine: Black-76 prices, greeks, implied volatility, strategy analytics and chain structure helpers. Pure TypeScript, zero runtime dependencies.",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./worker": {
+      "types": "./src/worker/index.ts",
+      "development": "./src/worker/index.ts",
+      "import": "./dist/worker/index.js",
+      "default": "./dist/worker/index.js"
+    }
+  },
+  "files": ["dist", "src", "!src/**/*.test.ts", "!src/fixtures"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@hapiecoin/config": "workspace:*"
+  }
+}

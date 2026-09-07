@@ -1,0 +1,219 @@
+<script>
+(function () {
+  'use strict';
+  const A = window.CG_ADMIN; const M = CG.mock, F = CG.fmt, esc = CG.esc, $ = CG.$, $$ = CG.$$; const el = A.el;
+  // referral-level detail rows for a commission record (generated once, deterministic)
+  A.commissionDetails = (c) => {
+    if (c.details) return c.details;
+    const r = CG.rng(c.referrerId.length * 977 + c.referrals * 31 + (c.total | 0));
+    const pool = M.users.filter((u) => u.id !== c.referrerId); const n = Math.max(1, c.referrals);
+    let k = c.total > 0 ? Math.round(n * c.paid / c.total) : 0; if (c.paid > 0 && k < 1) k = 1; if (c.pending > 0 && k > n - 1) k = n - 1; if (k < 0) k = 0;
+    const split = (amount, count) => { if (!count) return []; const w = []; for (let i = 0; i < count; i++) w.push(0.5 + r()); const s = w.reduce((a, b) => a + b, 0); const out = w.map((x) => Math.round(amount * x / s)); out[0] += amount - out.reduce((a, b) => a + b, 0); return out; };
+    const amts = split(c.paid, k).map((a) => ({ a, status: 'paid' })).concat(split(c.pending, n - k).map((a) => ({ a, status: 'pending' })));
+    const start = Math.floor(r() * pool.length); const pct = c.commissionPct || 20;
+    c.details = amts.map((x, i) => { const u = pool[(start + i * 7) % pool.length]; const paidAt = x.status === 'paid' ? new Date(CG.NOW - (20 + Math.floor(r() * 120)) * 86400000).toISOString().slice(0, 10) : null; return { userId: u.id, name: u.name, email: u.email, joinedAt: u.joinedAt, plan: u.plan, interval: u.interval, amount: Math.round(x.a * 100 / pct), commission: x.a, status: x.status, proofLink: '', paidAt }; });
+    c.paid = c.details.filter((d) => d.status === 'paid').reduce((s, d) => s + d.commission, 0); c.total = c.details.reduce((s, d) => s + d.commission, 0); c.pending = c.total - c.paid; c.status = c.pending > 0 ? 'pending' : 'paid';
+    return c.details;
+  };
+  M.commissions.forEach(A.commissionDetails);
+  A.markCommissionPaid = (c) => { A.commissionDetails(c).forEach((d) => { if (d.status !== 'paid') { d.status = 'paid'; d.paidAt = CG.NOW.toISOString().slice(0, 10); } }); c.paid = c.total; c.pending = 0; c.status = 'paid'; };
+
+  // =====================================================================
+  // /admin/user-subscriptions  (Users + Commissions tabs)
+  // =====================================================================
+  CG.register('/admin/user-subscriptions', {
+    init(root) {
+      A.hydrateIcons(root);
+      const S = { tab: 'users', q: '', status: '', cq: '', cmonth: '' };
+      const bar2 = CG.h('<div class="adm-bulkbar" hidden></div>'); root.appendChild(bar2);
+      A.bindTabs(root, (t) => { S.tab = t; usersGrid.sel.clear(); commGrid.sel.clear(); render(); });
+      // ----- Users tab -----
+      el(root, 'users-search').addEventListener('input', (e) => { S.q = e.target.value.trim().toLowerCase(); usersGrid.page = 1; usersGrid.render(); });
+      el(root, 'users-status').addEventListener('change', (e) => { S.status = e.target.value; usersGrid.page = 1; usersGrid.render(); });
+      const expiryCell = (u) => { if (!u.endsAt) return '<span class="text-muted">—</span>'; const d = A.daysLeft(u.endsAt); if (d < 0) return '<div class="mono">' + A.date(u.endsAt) + '</div><div class="text-2xs text-loss">Expired ' + Math.abs(d) + ' d ago</div>'; return '<div class="mono">' + A.date(u.endsAt) + '</div><div class="text-2xs ' + (d < 7 ? 'text-warning' : 'text-muted') + '">' + d + ' d left' + (d < 7 ? ' <b>(Soon)</b>' : '') + '</div>'; };
+      const editable = (u, field, val) => '<span class="adm-editable mono" data-edit="' + field + '" data-id="' + u.id + '" title="Click to edit">' + val + '</span>';
+      const setActivated = (rows, on) => A.save(() => { rows.forEach((u) => (u.activated = on)); CG.emit('users:changed', M.users); }, rows.length + ' account' + (rows.length === 1 ? '' : 's') + (on ? ' activated' : ' deactivated'));
+      const usersGrid = A.grid({
+        key: 'usersubs', host: el(root, 'users-table'), pager: el(root, 'users-pager'), tools: el(root, 'users-tools'), bulkbar: el(root, 'bulkbar'), noun: 'users', per: 10,
+        columns: [
+          { id: 'user', label: 'User', always: true, sortVal: (u) => u.name.toLowerCase(), cell: (u) => '<div class="font-medium">' + esc(u.name) + (u.role === 'admin' ? ' <span class="badge badge-outline">admin</span>' : '') + '</div><div class="text-xs text-muted">' + esc(u.email) + '</div>', csv: (u) => u.name + ' <' + u.email + '>' },
+          { id: 'plan', label: 'Plan', sortVal: (u) => u.plan, cell: (u) => '<span class="badge ' + A.planBadge(u.plan) + '">' + esc(u.plan || 'Free Plan') + '</span><div class="text-2xs text-muted mt-1">' + A.statusLabel(u.status) + (u.interval && u.status !== 'free' ? ' · ' + u.interval : '') + '</div>', csv: (u) => u.plan + ' (' + A.statusLabel(u.status) + ')' },
+          { id: 'expiry', label: 'Expiry', sortVal: (u) => u.endsAt || '', cell: (u) => '<span class="text-xs">' + expiryCell(u) + '</span>', csv: (u) => u.endsAt || '' },
+          { id: 'validity', label: 'Validity <span class="text-2xs">(days)</span>', csvLabel: 'Validity days', cls: 'r', sortVal: (u) => u.validityDays || 0, cell: (u) => editable(u, 'validity', u.validityDays || 0), csv: (u) => u.validityDays || 0 },
+          { id: 'referrals', label: 'Referrals', cls: 'r', sortVal: (u) => u.referrals || 0, cell: (u) => editable(u, 'referrals', u.referrals || 0), csv: (u) => u.referrals || 0 },
+          { id: 'commission', label: 'Commission %', cls: 'r', sortVal: (u) => u.commissionPct || 0, cell: (u) => editable(u, 'commission', (u.commissionPct || 0) + '%'), csv: (u) => u.commissionPct || 0 },
+          { id: 'account', label: 'Account', sortVal: (u) => (u.activated ? 1 : 0), cell: (u) => '<button class="badge adm-status-btn ' + (u.activated ? 'badge-success' : 'badge-secondary') + '" data-act="toggle-account" data-id="' + u.id + '" title="' + (u.activated ? 'Click to deactivate this account' : 'Click to activate this account') + '">' + (u.activated ? 'Active' : 'Deactive') + '</button>', csv: (u) => (u.activated ? 'Active' : 'Deactivated') },
+          { id: 'limits', label: 'Limits', always: true, noCsv: true, cell: (u) => '<div class="flex gap-1"><button class="adm-icon-btn" title="Edit feature limits" data-act="limits" data-id="' + u.id + '">' + A.icon('settings2') + '</button><button class="adm-icon-btn" title="Lot size settings" data-act="lots" data-id="' + u.id + '">' + A.icon('layers') + '</button></div>' }
+        ],
+        rows: () => M.users.filter((u) => (!S.q || u.name.toLowerCase().includes(S.q) || u.email.toLowerCase().includes(S.q)) && (!S.status || u.status === S.status)),
+        rowId: (u) => u.id, isFiltered: () => !!(S.q || S.status),
+        empty: { icon: 'users', title: 'No users yet', hint: 'Users appear here as soon as they sign up.' },
+        emptyFiltered: { icon: 'search', title: 'No users found', hint: 'Try a different search or status filter.', action: 'Clear filters' },
+        bulk: [{ id: 'activate', label: 'Activate', icon: 'userCheck', run: (rows) => setActivated(rows, true) }, { id: 'deactivate', label: 'Deactivate', run: (rows) => setActivated(rows, false) }]
+      });
+      CG.delegate(root, 'click', '[data-act="clear-filters"]', () => { if (S.tab === 'users') { S.q = ''; S.status = ''; el(root, 'users-search').value = ''; el(root, 'users-status').value = ''; usersGrid.render(); } else { S.cq = ''; S.cmonth = ''; el(root, 'comm-search').value = ''; monthSel.value = ''; renderComm(); } });
+      // inline editing: click → number input; Enter saves, Escape cancels, blur cancels
+      CG.delegate(el(root, 'users-table'), 'click', '.adm-editable', (e, span) => {
+        if (span.dataset.editing) return; span.dataset.editing = '1';
+        const u = M.users.find((x) => x.id === span.dataset.id); const field = span.dataset.edit; const cur = field === 'validity' ? u.validityDays : field === 'referrals' ? u.referrals : u.commissionPct;
+        const inp = CG.h('<input type="number" min="0" ' + (field === 'commission' ? 'max="100" step="0.5"' : 'step="1"') + ' class="input adm-inline-input mono" value="' + cur + '" aria-label="Edit ' + field + '">');
+        span.replaceWith(inp); inp.focus(); inp.select(); let done = false;
+        const finish = (save) => { if (done) return; done = true; if (save) { const v = Math.max(0, +inp.value || 0); A.save(() => { if (field === 'validity') { u.validityDays = v; if (u.subscribedAt) u.endsAt = new Date(new Date(u.subscribedAt).getTime() + v * 86400000).toISOString().slice(0, 10); } else if (field === 'referrals') u.referrals = v; else u.commissionPct = v; CG.emit('users:changed', M.users); }, 'Updated'); } usersGrid.render(); };
+        inp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); finish(true); } else if (ev.key === 'Escape') { ev.preventDefault(); finish(false); } });
+        inp.addEventListener('blur', () => finish(false));
+      });
+      CG.delegate(root, 'click', '[data-act="toggle-account"]', (e, b) => { const u = M.users.find((x) => x.id === b.dataset.id); if (!u) return; u.activated = !u.activated; A.save(() => CG.emit('users:changed', M.users), 'Updated'); usersGrid.render(); });
+      // Feature Limits dialog
+      const limDlg = el(root, 'limits-dialog'), limForm = limDlg.querySelector('form'); let limUser = null, limHandle = null;
+      const planLimits = (u) => { const p = M.plans.find((x) => x.id === u.planId); const fl = p && p[u.interval] && p[u.interval].featureLimits; return fl ? (fl.paper_trading || '∞') + ' paper / ' + (fl.live_trading || (p.monthly.price ? '∞' : 0)) + ' live' : '—'; };
+      CG.delegate(root, 'click', '[data-act="limits"]', (e, b) => { limUser = M.users.find((x) => x.id === b.dataset.id); if (!limUser) return; A.formSet(limForm, 'paper', limUser.featureLimits.paper_trading || 0); A.formSet(limForm, 'live', limUser.featureLimits.live_trading || 0); limForm.querySelector('[data-el="submit"]').textContent = 'Save Limits'; limHandle = CG.modal.open(limDlg, { title: 'Feature Limits', description: limUser.name + ' · ' + limUser.plan + ' · plan default: ' + planLimits(limUser), size: 'sm' }); });
+      limForm.addEventListener('submit', (e) => { e.preventDefault(); const btn = limForm.querySelector('[data-el="submit"]'); const paper = Math.max(0, +A.formVal(limForm, 'paper') || 0), live = Math.max(0, +A.formVal(limForm, 'live') || 0); A.busy(btn, '<span class="spinner" style="width:14px;height:14px"></span> Saving...', () => { const ok = A.save(() => { limUser.featureLimits = { paper_trading: paper, live_trading: live }; CG.emit('users:changed', M.users); }, 'Updated'); if (ok) { limHandle && limHandle.close(); usersGrid.render(); } }); });
+      CG.delegate(limForm, 'click', '[data-act="cancel"]', () => limHandle && limHandle.close());
+      // Lot size dialog (inferred)
+      const lotDlg = el(root, 'lots-dialog'), lotForm = lotDlg.querySelector('form'); let lotUser = null, lotHandle = null;
+      CG.delegate(root, 'click', '[data-act="lots"]', (e, b) => { lotUser = M.users.find((x) => x.id === b.dataset.id); if (!lotUser) return; ['BTC', 'ETH', 'XAUT'].forEach((k) => A.formSet(lotForm, k, lotUser.lotSizes[k])); lotHandle = CG.modal.open(lotDlg, { title: 'Lot Size Settings', description: lotUser.name + ' · per-user lot sizes for BTC, ETH and XAUT', size: 'sm' }); });
+      lotForm.addEventListener('submit', (e) => { e.preventDefault(); const vals = {}; for (const k of ['BTC', 'ETH', 'XAUT']) { const v = +A.formVal(lotForm, k); if (!(v > 0)) { A.validation(k + ' lot size must be greater than 0'); return; } vals[k] = v; } const ok = A.save(() => { lotUser.lotSizes = vals; if (lotUser.id === M.user.id) { CG.state.lotSizes = Object.assign({}, vals); CG.saveState(); } CG.emit('users:changed', M.users); }, 'Updated'); if (ok) lotHandle && lotHandle.close(); });
+      CG.delegate(lotForm, 'click', '[data-act="cancel"]', () => lotHandle && lotHandle.close());
+
+      // ----- Commissions tab -----
+      const monthSel = el(root, 'comm-month');
+      const monthLabel = (m) => F.date(m + '-01', { month: 'short', year: 'numeric' });
+      const fillMonths = () => { const months = Array.from(new Set(M.commissions.map((c) => c.month))).sort().reverse(); monthSel.innerHTML = '<option value="">All Months</option>' + months.map((m) => '<option value="' + m + '"' + (m === S.cmonth ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join(''); };
+      el(root, 'comm-search').addEventListener('input', (e) => { S.cq = e.target.value.trim().toLowerCase(); renderComm(); });
+      monthSel.addEventListener('change', (e) => { S.cmonth = e.target.value; renderComm(); });
+      CG.delegate(root, 'click', '[data-act="comm-clear"]', () => { S.cq = ''; S.cmonth = ''; el(root, 'comm-search').value = ''; monthSel.value = ''; renderComm(); });
+      const filteredComm = () => M.commissions.filter((c) => (!S.cq || c.referrer.toLowerCase().includes(S.cq)) && (!S.cmonth || c.month === S.cmonth));
+      const bulkPay = async (list, title) => { const pend = list.filter((c) => c.pending > 0); if (!pend.length) { CG.toast({ title: 'Nothing pending', description: 'All selected commissions are already paid.' }); return false; } const amt = pend.reduce((s, c) => s + c.pending, 0); const ok = await CG.modal.confirm({ title: title || ('Bulk pay ' + pend.length + ' referrer' + (pend.length === 1 ? '' : 's') + '?'), description: F.inr(amt) + ' of pending commission will be marked as paid. Proof links can be added later per referral.', confirmText: 'Confirm Paid' }); if (!ok) return false; A.save(() => { pend.forEach(A.markCommissionPaid); CG.emit('commissions:changed', M.commissions); }, pend.length + ' referrer' + (pend.length === 1 ? '' : 's') + ' marked paid'); renderComm(); };
+      const commGrid = A.grid({
+        key: 'commissions', host: el(root, 'comm-table'), pager: el(root, 'comm-pager'), tools: el(root, 'comm-tools'), bulkbar: bar2, noun: 'referrers', per: 0,
+        columns: [
+          { id: 'referrer', label: 'Referrer', always: true, sortVal: (c) => c.referrer.toLowerCase(), cell: (c) => '<div class="font-medium">' + esc(c.referrer) + '</div><div class="text-xs text-muted">' + esc(c.email) + ' · <span class="mono">' + monthLabel(c.month) + '</span></div>', csv: (c) => c.referrer },
+          { id: 'month', label: 'Month', default: false, sortVal: (c) => c.month, cell: (c) => '<span class="mono text-xs">' + monthLabel(c.month) + '</span>', csv: (c) => c.month },
+          { id: 'referrals', label: 'Referrals', cls: 'r', sortVal: (c) => c.referrals, cell: (c) => String(c.referrals), csv: (c) => c.referrals },
+          { id: 'pct', label: 'Commission %', cls: 'r', sortVal: (c) => c.commissionPct, cell: (c) => c.commissionPct + '%', csv: (c) => c.commissionPct },
+          { id: 'total', label: 'Total', cls: 'r', sortVal: (c) => c.total, sortDesc: true, cell: (c) => '<span class="font-medium">' + F.inr(c.total) + '</span>', csv: (c) => c.total },
+          { id: 'paid', label: 'Paid', cls: 'r', sortVal: (c) => c.paid, sortDesc: true, cell: (c) => '<span class="text-profit">' + F.inr(c.paid) + '</span>', csv: (c) => c.paid },
+          { id: 'pending', label: 'Pending', cls: 'r', sortVal: (c) => c.pending, sortDesc: true, cell: (c) => '<span class="' + (c.pending ? 'text-warning' : 'text-muted') + '">' + F.inr(c.pending) + '</span>', csv: (c) => c.pending },
+          { id: 'status', label: 'Status', sortVal: (c) => c.status, cell: (c) => '<span class="badge ' + A.statusBadge(c.status) + '">' + A.statusLabel(c.status) + '</span>' + (c.comment ? '<div class="text-2xs text-muted mt-1" style="max-width:160px">' + esc(c.comment) + '</div>' : ''), csv: (c) => A.statusLabel(c.status) },
+          { id: 'action', label: 'Action', cls: 'r', always: true, noCsv: true, cell: (c) => '<div class="adm-actions">' + (c.pending > 0 ? '<button class="btn btn-outline btn-xs" data-act="mark-paid" data-id="' + c.referrerId + '">Mark Paid</button>' : '') + '<button class="btn btn-ghost btn-xs" data-act="view" data-id="' + c.referrerId + '" title="Details">' + A.icon('eye', 14) + ' View</button></div>' }
+        ],
+        rows: filteredComm, rowId: (c) => c.referrerId, isFiltered: () => !!(S.cq || S.cmonth),
+        empty: { icon: 'wallet', title: 'No commissions yet', hint: 'Commissions appear once referred users buy a plan.' },
+        emptyFiltered: { icon: 'search', title: 'No commissions found', hint: 'Adjust the search or month filter.', action: 'Clear filters' },
+        bulk: [{ id: 'markpaid', label: 'Mark paid', icon: 'check', run: (rows) => bulkPay(rows, 'Mark ' + rows.length + ' selected referrer' + (rows.length === 1 ? '' : 's') + ' as paid?') }]
+      });
+      const renderChart = () => {
+        const host = el(root, 'comm-chart'); const months = Array.from(new Set(M.commissions.map((c) => c.month))).sort();
+        if (!months.length) { host.innerHTML = '<div class="empty">No data</div>'; return; }
+        const paid = months.map((m) => M.commissions.filter((c) => c.month === m).reduce((s, c) => s + c.paid, 0)); const pend = months.map((m) => M.commissions.filter((c) => c.month === m).reduce((s, c) => s + c.pending, 0));
+        const w = Math.max(320, host.clientWidth || 800); const tp = paid.reduce((a, b) => a + b, 0), tq = pend.reduce((a, b) => a + b, 0);
+        host.innerHTML = A.barChart({ width: w, height: 180, labels: months.map((m) => F.date(m + '-01', { month: 'short' })), series: [{ name: 'Paid', cls: 'bar-paid', values: paid }, { name: 'Pending', cls: 'bar-pending', values: pend }], stacked: false, labelAll: false, fmt: A.inrShort, aria: 'Paid vs pending commission by month' }) + '<div class="adm-legend"><span><i></i>Paid</span><span><i class="pend"></i>Pending</span><span class="ml-auto">' + (tq ? Math.round(tq / (tp + tq) * 100) + '% of ' + F.inr(tp + tq) + ' still pending' : 'Everything settled') + '</span></div>';
+        el(root, 'comm-chart-meta').textContent = months.length + ' MONTHS · ' + F.inr(tp + tq) + ' TOTAL';
+      };
+      const renderComm = () => {
+        const list = filteredComm(); const total = list.reduce((s, c) => s + c.total, 0), paid = list.reduce((s, c) => s + c.paid, 0), pending = total - paid;
+        el(root, 'comm-tiles').innerHTML = '<div class="stat"><div class="stat-label">Total Commission</div><div class="stat-value">' + F.inr(total) + '</div><div class="stat-sub">' + list.length + ' referrer' + (list.length === 1 ? '' : 's') + ' · ' + list.reduce((s, c) => s + c.referrals, 0) + ' referrals</div></div><div class="stat"><div class="stat-label">Paid</div><div class="stat-value text-profit">' + F.inr(paid) + '</div><div class="stat-sub">' + list.filter((c) => c.status === 'paid').length + ' fully settled</div></div><div class="stat"><div class="stat-label">Pending</div><div class="stat-value ' + (pending ? 'text-warning' : '') + '">' + F.inr(pending) + '</div><div class="stat-sub">' + list.filter((c) => c.pending > 0).length + ' awaiting payout</div></div>';
+        el(root, 'bulk-pay').disabled = !M.commissions.some((c) => c.pending > 0);
+        renderChart(); commGrid.render();
+      };
+      // View dialog
+      const viewDlg = el(root, 'view-dialog'); let viewHandle = null;
+      CG.delegate(root, 'click', '[data-act="view"]', (e, b) => { const c = M.commissions.find((x) => x.referrerId === b.dataset.id); if (!c) return; const d = A.commissionDetails(c); el(viewDlg, 'view-table').innerHTML = d.length ? '<table class="table table-compact"><thead><tr><th>User</th><th>Joined</th><th>Plan</th><th class="r">Amount</th><th class="r">Commission</th><th>Status</th></tr></thead><tbody>' + d.map((x) => '<tr><td><div class="font-medium">' + esc(x.name) + '</div><div class="text-2xs text-muted">' + esc(x.email) + '</div></td><td class="nowrap mono text-xs">' + F.dateIN(x.joinedAt) + '</td><td>' + esc(x.plan || '—') + (x.interval ? '<div class="text-2xs text-muted">' + x.interval + '</div>' : '') + '</td><td class="r">' + F.inr(x.amount) + '</td><td class="r font-medium">' + F.inr(x.commission) + '</td><td><span class="badge ' + (x.status === 'paid' ? 'badge-success' : x.status === 'not_paid' ? 'badge-loss' : 'badge-warning') + '">' + (x.status === 'paid' ? 'Paid' : 'Not Paid') + '</span>' + (x.paidAt ? '<div class="text-2xs text-muted mono">' + F.dateIN(x.paidAt) + '</div>' : '') + (x.proofLink ? '<div class="text-2xs"><a class="text-primary" href="' + esc(x.proofLink) + '" target="_blank" rel="noopener">proof</a></div>' : '') + '</td></tr>').join('') + '</tbody></table>' : '<div class="empty">No referrals recorded</div>'; el(viewDlg, 'view-totals').innerHTML = '<span>Total <b>' + F.inr(c.total) + '</b></span><span class="text-profit">Paid <b>' + F.inr(c.paid) + '</b></span><span class="text-warning">Pending <b>' + F.inr(c.pending) + '</b></span>'; viewHandle = CG.modal.open(viewDlg, { title: c.referrer + "'s Referrals", description: d.length + ' referred user' + (d.length === 1 ? '' : 's') + ' · ' + c.commissionPct + '% commission', size: 'lg' }); });
+      CG.delegate(viewDlg, 'click', '[data-act="close"]', () => viewHandle && viewHandle.close());
+      // Mark Payment dialog
+      const payDlg = el(root, 'pay-dialog'), payForm = payDlg.querySelector('form'); let payC = null, payHandle = null;
+      const payMode = () => payForm.querySelector('[name="payStatus"]:checked').value;
+      const syncPay = () => { const paid = payMode() === 'paid'; $$('.adm-radio', payForm).forEach((l) => l.classList.toggle('selected', l.dataset.val === payMode())); payForm.querySelector('[name="comment"]').placeholder = paid ? 'Optional note...' : 'Reason for not paying (required)'; el(payDlg, 'comment-hint').textContent = paid ? '(optional)' : '*'; el(payDlg, 'proof-hint').textContent = paid ? '(optional)' : '(not needed)'; payForm.querySelector('[data-el="submit"]').textContent = paid ? 'Confirm Paid' : 'Confirm Not Paid'; payForm.querySelector('[data-el="submit"]').className = 'btn ' + (paid ? 'btn-primary' : 'btn-destructive'); el(payDlg, 'proofs').style.opacity = paid ? '' : '.5'; };
+      CG.delegate(root, 'click', '[data-act="mark-paid"]', (e, b) => { payC = M.commissions.find((x) => x.referrerId === b.dataset.id); if (!payC) return; const pend = A.commissionDetails(payC).filter((d) => d.status !== 'paid'); payForm.reset(); payForm.querySelector('[name="payStatus"][value="paid"]').checked = true; el(payDlg, 'proofs').innerHTML = pend.length ? pend.map((d, i) => '<div class="adm-proof"><span class="truncate" title="' + esc(d.name) + '">' + esc(d.name) + ' <span class="text-muted mono">' + F.inr(d.commission) + '</span></span><input class="input input-sm" name="proof-link" data-i="' + i + '" type="url" placeholder="https://... (payment screenshot / receipt URL)"></div>').join('') : '<div class="text-xs text-muted">Nothing pending</div>'; syncPay(); payHandle = CG.modal.open(payDlg, { title: 'Mark Payment — ' + payC.referrer, description: 'Total: ' + F.inr(payC.total) + ' · Pending: ' + F.inr(payC.pending) + ' across ' + pend.length + ' referral' + (pend.length === 1 ? '' : 's') }); });
+      payForm.addEventListener('change', (e) => { if (e.target.name === 'payStatus') syncPay(); });
+      payForm.addEventListener('submit', (e) => { e.preventDefault(); const mode = payMode(); const comment = A.formVal(payForm, 'comment').trim(); if (mode === 'not_paid' && !comment) { A.validation('Reason for not paying is required'); payForm.querySelector('[name="comment"]').focus(); return; } const proofs = $$('[name="proof-link"]', payForm).map((i) => i.value.trim()); for (const p of proofs) if (p && !/^https?:\/\//i.test(p)) { A.validation('Proof link must start with http:// or https://'); return; } const btn = payForm.querySelector('[data-el="submit"]'); A.busy(btn, '<span class="spinner" style="width:14px;height:14px"></span> Saving...', () => { const ok = A.save(() => { const pend = A.commissionDetails(payC).filter((d) => d.status !== 'paid'); pend.forEach((d, i) => { d.proofLink = proofs[i] || ''; d.status = mode === 'paid' ? 'paid' : 'not_paid'; d.paidAt = mode === 'paid' ? CG.NOW.toISOString().slice(0, 10) : null; }); payC.comment = comment; if (mode === 'paid') { payC.paid = payC.total; payC.pending = 0; payC.status = 'paid'; } else payC.status = 'not_paid'; CG.emit('commissions:changed', M.commissions); }, 'Updated'); if (ok) { payHandle && payHandle.close(); renderComm(); } }); });
+      CG.delegate(payForm, 'click', '[data-act="cancel"]', () => payHandle && payHandle.close());
+      // Bulk pay (inferred from /admin/commissions/bulk-pay endpoint)
+      CG.delegate(root, 'click', '[data-act="comm-bulk"]', () => { if (S.tab !== 'commissions') { S.tab = 'commissions'; render(); } bulkPay(M.commissions); });
+      window.addEventListener('resize', () => { if (root.classList.contains('active') && S.tab === 'commissions') renderChart(); });
+      const render = () => { A.setTab(root, S.tab); el(root, 'bulk-pay').hidden = S.tab !== 'commissions'; if (S.tab === 'users') { bar2.hidden = true; usersGrid.render(); } else { el(root, 'bulkbar').hidden = true; fillMonths(); renderComm(); } };
+      this._render = render; this._setTab = (t) => { S.tab = t; };
+    },
+    show(root, params, query) { if (query && (query.tab === 'users' || query.tab === 'commissions') && this._setTab) this._setTab(query.tab); this._render && this._render(); }
+  });
+
+  // =====================================================================
+  // /admin/banners
+  // =====================================================================
+  const GRADS = ['220 20% 30%/215 25% 18%', '152 40% 30%/168 45% 20%', '35 60% 45%/20 55% 30%', '262 30% 40%/300 25% 25%', '190 40% 32%/215 35% 22%'];
+  A.bannerBg = (img) => { if (!img) return ''; if (img.startsWith('gradient:')) { const [a, b] = img.slice(9).split('/'); return 'linear-gradient(135deg, hsl(' + a + '), hsl(' + b + '))'; } return 'url("' + img + '")'; };
+  CG.register('/admin/banners', {
+    init(root) {
+      A.hydrateIcons(root);
+      const dlg = el(root, 'dialog'), form = dlg.querySelector('form'), fileInp = form.querySelector('[name="image"]'), preview = el(root, 'preview'), prevDlg = el(root, 'preview-dialog');
+      let editing = null, handle = null, image = null, gradIdx = 0; const S = { q: '', status: '', frequency: '' };
+      const setPreview = () => { if (image) { preview.style.backgroundImage = A.bannerBg(image); preview.textContent = ''; } else { preview.style.backgroundImage = ''; preview.innerHTML = A.icon('image', 20) + '<span class="mt-1">No image</span>'; } };
+      const isLive = (b) => b.isActive && (!b.startsAt || new Date(b.startsAt) <= CG.NOW) && (!b.endsAt || new Date(b.endsAt) >= CG.NOW);
+      // "Preview as user": the popup exactly as the chrome shows it to a logged-in user
+      const openPreview = (b) => {
+        let prevHandle = null;
+        prevDlg.innerHTML = '<div class="bp-hero" style="background-image:' + A.bannerBg(b.image) + '"><span class="micro">Preview as user · ' + esc(b.frequency || 'once_per_day') + '</span></div><div class="bp-body"><h3>' + esc(b.title || 'Untitled banner') + '</h3><p class="text-muted">' + esc(b.description || '') + '</p></div><div class="bp-foot"><label class="flex items-center gap-2 text-xs text-muted"><input type="checkbox" class="checkbox"> Don\'t show again</label><div class="flex gap-2"><button type="button" class="btn btn-outline btn-sm" data-bp="dismiss">Dismiss</button>' + (b.linkUrl ? '<button type="button" class="btn btn-primary btn-sm" data-bp="cta">Learn more ' + A.icon('external', 13) + '</button>' : '') + '</div></div>';
+        prevHandle = CG.modal.open(prevDlg, { size: 'sm', onClose: () => { prevDlg.onclick = null; } });
+        prevDlg.onclick = (e) => { const x = e.target.closest('[data-bp]'); if (!x) return; if (x.dataset.bp === 'cta') CG.toast({ title: 'Banner link', description: 'Would open ' + (b.linkUrl || '') + ' (mock)' }); prevHandle.close(); };
+      };
+      const open = (b) => {
+        editing = b || null; image = b ? b.image : null; form.reset();
+        A.formSet(form, 'title', b ? b.title : ''); A.formSet(form, 'description', b ? b.description : ''); A.formSet(form, 'linkUrl', b ? b.linkUrl : ''); A.formSet(form, 'startsAt', b ? b.startsAt : ''); A.formSet(form, 'endsAt', b ? b.endsAt : ''); A.formSet(form, 'frequency', b ? b.frequency : 'once_per_day');
+        el(dlg, 'image-hint').textContent = b ? '(leave empty to keep current)' : '*'; A.setSwitch(el(dlg, 'active'), b ? b.isActive : true); setPreview();
+        el(dlg, 'submit').textContent = b ? 'Save Changes' : 'Create Banner';
+        handle = CG.modal.open(dlg, { title: b ? 'Edit Banner' : 'New Banner', description: b ? 'Editing "' + b.title + '"' : 'Popup banners are shown to logged-in users based on the frequency rule' });
+        setTimeout(() => form.querySelector('[name="title"]').focus(), 50);
+      };
+      fileInp.addEventListener('change', () => {
+        const f = fileInp.files && fileInp.files[0]; if (!f) return;
+        if (!/^image\//.test(f.type)) { CG.toast({ title: 'Invalid image', description: 'Only image files are allowed', variant: 'destructive' }); fileInp.value = ''; return; }
+        if (f.size > 5 * 1024 * 1024) { CG.toast({ title: 'Invalid image', description: 'Image must be 5 MB or smaller', variant: 'destructive' }); fileInp.value = ''; return; }
+        const rd = new FileReader(); rd.onload = () => { image = String(rd.result); setPreview(); }; rd.onerror = () => CG.toast({ title: 'Invalid image', description: 'Could not read the file', variant: 'destructive' }); rd.readAsDataURL(f);
+      });
+      CG.delegate(form, 'click', '[data-act="use-gradient"]', () => { image = 'gradient:' + GRADS[gradIdx++ % GRADS.length]; fileInp.value = ''; setPreview(); });
+      CG.delegate(form, 'click', '[data-act="preview-form"]', () => openPreview({ title: A.formVal(form, 'title'), description: A.formVal(form, 'description'), linkUrl: A.formVal(form, 'linkUrl'), frequency: A.formVal(form, 'frequency'), image: image || (editing && editing.image) }));
+      form.addEventListener('submit', (e) => {
+        e.preventDefault(); const title = A.formVal(form, 'title').trim();
+        if (!title) { A.validation('Title is required'); form.querySelector('[name="title"]').focus(); return; }
+        if (!editing && !image) { A.validation('Image is required'); fileInp.focus(); return; }
+        const link = A.formVal(form, 'linkUrl').trim(); if (link && !/^https?:\/\//i.test(link)) { A.validation('Link URL must start with http:// or https://'); return; }
+        const s = A.formVal(form, 'startsAt'), en = A.formVal(form, 'endsAt'); if (s && en && new Date(en) < new Date(s)) { A.validation('Ends At must be after Starts At'); return; }
+        const data = { title, description: A.formVal(form, 'description').trim(), linkUrl: link, startsAt: s || null, endsAt: en || null, frequency: A.formVal(form, 'frequency'), isActive: A.isOn(el(dlg, 'active')), image: image || (editing && editing.image), type: 'popup' };
+        const ok = A.save(() => { if (editing) Object.assign(editing, data); else M.banners.unshift(Object.assign({ id: A.uid('b'), createdAt: CG.NOW.toISOString().slice(0, 10) }, data)); CG.emit('banners:changed', M.banners); }, editing ? 'Updated' : 'Created');
+        if (ok) { handle && handle.close(); grid.render(); }
+      });
+      CG.delegate(form, 'click', '[data-act="cancel"]', () => handle && handle.close());
+      el(dlg, 'active').addEventListener('click', (e) => A.setSwitch(e.currentTarget, !A.isOn(e.currentTarget)));
+      CG.delegate(root, 'click', '[data-act="new"]', () => open(null));
+      CG.delegate(root, 'click', '[data-act="edit"]', (e, b) => open(M.banners.find((x) => x.id === b.dataset.id)));
+      CG.delegate(root, 'click', '[data-act="preview"]', (e, b) => { const x = M.banners.find((y) => y.id === b.dataset.id); if (x) openPreview(x); });
+      CG.delegate(root, 'click', '[data-act="toggle"]', (e, b) => { const x = M.banners.find((y) => y.id === b.dataset.id); if (!x) return; x.isActive = !x.isActive; A.save(() => CG.emit('banners:changed', M.banners), 'Updated'); grid.render(); });
+      CG.delegate(root, 'click', '[data-act="delete"]', async (e, b) => { const x = M.banners.find((y) => y.id === b.dataset.id); if (!x) return; const ok = await CG.modal.confirm({ title: 'Delete banner?', description: 'This permanently removes the banner. This action cannot be undone.', confirmText: 'Delete', variant: 'destructive' }); if (!ok) return; M.banners.splice(M.banners.indexOf(x), 1); CG.emit('banners:changed', M.banners); CG.toast({ title: 'Deleted', description: '"' + x.title + '" removed', variant: 'success' }); grid.render(); });
+      const setActive = (rows, on) => A.save(() => { rows.forEach((b) => (b.isActive = on)); CG.emit('banners:changed', M.banners); }, rows.length + ' banner' + (rows.length === 1 ? '' : 's') + (on ? ' activated' : ' deactivated'));
+      const grid = A.grid({
+        key: 'banners', host: el(root, 'table'), pager: el(root, 'pager'), tools: el(root, 'tools'), bulkbar: el(root, 'bulkbar'), noun: 'banners', per: 0,
+        columns: [
+          { id: 'image', label: 'Image', noCsv: true, cell: (b) => '<div class="adm-thumb" style="background-image:' + A.bannerBg(b.image) + '" role="img" aria-label="' + esc(b.title) + '"></div>' },
+          { id: 'title', label: 'Title', always: true, sortVal: (b) => b.title.toLowerCase(), cell: (b) => '<div class="font-medium">' + esc(b.title) + '</div><div class="text-xs text-muted" style="max-width:300px">' + esc(b.description || '') + '</div>' + (b.linkUrl ? '<div class="text-2xs text-muted mono truncate" style="max-width:300px">' + esc(b.linkUrl) + '</div>' : ''), csv: (b) => b.title },
+          { id: 'type', label: 'Type', default: false, cell: (b) => '<span class="badge badge-secondary">' + esc(b.type || 'popup') + '</span>', csv: (b) => b.type || 'popup' },
+          { id: 'frequency', label: 'Frequency', sortVal: (b) => b.frequency, cell: (b) => '<span class="badge badge-outline">' + esc(b.frequency) + '</span>', csv: (b) => b.frequency },
+          { id: 'schedule', label: 'Schedule', sortVal: (b) => b.startsAt || '', cell: (b) => '<span class="text-xs mono">' + (b.startsAt ? A.date(b.startsAt) : '<span class="text-muted">—</span>') + ' <span class="text-muted">→</span> ' + (b.endsAt ? A.date(b.endsAt) : '<span class="text-muted">—</span>') + '</span><div class="text-2xs ' + (isLive(b) ? 'text-profit' : 'text-muted') + '">' + (isLive(b) ? 'Showing now' : b.isActive ? 'Scheduled / ended' : 'Hidden') + '</div>', csv: (b) => (b.startsAt || '') + ' → ' + (b.endsAt || '') },
+          { id: 'active', label: 'Active', sortVal: (b) => (b.isActive ? 1 : 0), cell: (b) => A.switchHtml(b.isActive, 'data-act="toggle" data-id="' + b.id + '" aria-label="Toggle banner active"'), csv: (b) => (b.isActive ? 'Active' : 'Inactive') },
+          { id: 'actions', label: 'Actions', cls: 'r', always: true, noCsv: true, cell: (b) => '<div class="adm-actions"><button class="adm-icon-btn" title="Preview as user" data-act="preview" data-id="' + b.id + '">' + A.icon('monitor') + '</button><button class="adm-icon-btn" title="Edit banner" data-act="edit" data-id="' + b.id + '">' + A.icon('pencil') + '</button><button class="adm-icon-btn danger" title="Delete banner" data-act="delete" data-id="' + b.id + '">' + A.icon('trash') + '</button></div>' }
+        ],
+        rows: () => M.banners.filter((b) => (!S.q || (b.title + ' ' + (b.description || '')).toLowerCase().includes(S.q)) && (!S.frequency || b.frequency === S.frequency) && (!S.status || (S.status === 'live' ? isLive(b) : S.status === 'active' ? b.isActive : !b.isActive))),
+        rowId: (b) => b.id, isFiltered: () => !!(S.q || S.status || S.frequency),
+        empty: { icon: 'image', title: 'No Banners', hint: 'Create a popup banner to promote an offer to users.', action: 'Create Banner' },
+        emptyFiltered: { icon: 'search', title: 'No banners match', hint: 'Try another search, status or frequency.', action: 'Clear filters' },
+        bulk: [{ id: 'activate', label: 'Activate', icon: 'check', run: (rows) => setActive(rows, true) }, { id: 'deactivate', label: 'Deactivate', run: (rows) => setActive(rows, false) }]
+      });
+      el(root, 'q').addEventListener('input', (e) => { S.q = e.target.value.trim().toLowerCase(); grid.render(); });
+      el(root, 'status').addEventListener('change', (e) => { S.status = e.target.value; grid.render(); });
+      el(root, 'frequency').addEventListener('change', (e) => { S.frequency = e.target.value; grid.render(); });
+      CG.delegate(root, 'click', '[data-act="clear-filters"]', () => { S.q = S.status = S.frequency = ''; el(root, 'q').value = ''; el(root, 'status').value = ''; el(root, 'frequency').value = ''; grid.render(); });
+      this._render = () => grid.render();
+    },
+    show() { this._render && this._render(); }
+  });
+})();
+</script>

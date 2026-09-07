@@ -1,0 +1,31 @@
+name: hapiecoin
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg17
+    container_name: hapiecoin-postgres
+    environment:
+      POSTGRES_USER: hapiecoin
+      POSTGRES_PASSWORD: hapiecoin
+      POSTGRES_DB: hapiecoin
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hapiecoin -d hapiecoin"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    container_name: hapiecoin-redis
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  pgdata:

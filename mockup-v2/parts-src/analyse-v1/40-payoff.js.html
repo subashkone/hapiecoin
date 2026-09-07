@@ -1,0 +1,148 @@
+<script>
+(function () {
+  'use strict';
+  const M = window.__cgAnalyse; const { els, AN, st, F, ic, money, smoney, cls, fmtK, fmtAxis, fmtDM, fmtDateTime, nice, activeLegs, spotNow, baseAnalysis, pnlAtPrice, daysLeftLabel, sdInfo, latestExpiry } = M;
+  // ---------- layers / zoom ----------
+  const LAYER_DEFS = [['expiry', 'Expiry P&L', 'hsl(var(--profit))'], ['target', 'Target Date P&L', '#3b82f6'], ['fill', 'Profit / Loss Fill', 'hsl(var(--profit) / 0.45)'], ['oi', 'Open Interest', 'hsl(var(--loss) / 0.45)'], ['sd', 'SD Bands', 'hsl(var(--primary) / 0.5)'], ['be', 'Breakevens', 'hsl(var(--muted-foreground))']];
+  function layers() { if (!st.chartLayers || typeof st.chartLayers !== 'object') st.chartLayers = { expiry: true, target: true, fill: true, oi: true, sd: true, be: true }; return st.chartLayers; }
+  function setLayer(k, on) { layers()[k] = !!on; CG.saveState(); syncLegend(); renderChart(); }
+  function syncLegend() { const L = layers(); CG.$$('.lg', els.legend).forEach((b) => b.classList.toggle('off', !L[b.dataset.layer])); }
+  function openLayers() {
+    const L = layers();
+    const html = '<div class="menu-label">Chart Layers</div>' + LAYER_DEFS.map(([k, label, color]) => '<label class="an-layer-row"><input type="checkbox" class="checkbox" data-layer-cb="' + k + '"' + (L[k] ? ' checked' : '') + '><span class="sw" style="background:' + color + '"></span>' + label + '</label>').join('');
+    const m = CG.menu(els.layersBtn, html); m.addEventListener('change', (e) => { const cb = e.target.closest('[data-layer-cb]'); if (cb) setLayer(cb.dataset.layerCb, cb.checked); });
+  }
+  const ZOOMS = [0.5, 0.75, 1, 1.5, 2, 3];
+  const zoom = () => (ZOOMS.includes(+st.chartZoom) ? +st.chartZoom : 1);
+  function setZoom(z) { st.chartZoom = z; CG.saveState(); els.zoomLabel.textContent = Math.round(z * 100) + '%'; renderChart(); renderSliders(baseAnalysis()); }
+  function zoomStep(dir) { const i = ZOOMS.indexOf(zoom()); const j = Math.max(0, Math.min(ZOOMS.length - 1, i + dir)); setZoom(ZOOMS[j]); }
+  function xRange() { const spot = spotNow(); const span = 0.2 / zoom(); return { lo: spot * (1 - span), hi: spot * (1 + span), spot }; }
+  // ---------- payoff panel ----------
+  function renderPayoff() {
+    const a = baseAnalysis(); const spot = spotNow();
+    els.tpTitle.textContent = AN.asset + ' TARGET';
+    if (!a) { els.tMaxP.textContent = '—'; els.tMaxL.textContent = '—'; els.tPrem.textContent = '—'; els.tPrem.className = 'an-tile-v'; els.tPremS.textContent = ''; els.tBe.textContent = 'None'; }
+    else {
+      els.tMaxP.textContent = isFinite(a.maxProfit) ? money(a.maxProfit) : 'Unlimited';
+      els.tMaxL.textContent = isFinite(a.maxLoss) ? money(Math.abs(a.maxLoss)) : 'Unlimited';
+      els.tPrem.textContent = smoney(a.netPremium); els.tPrem.className = 'an-tile-v ' + cls(a.netPremium); els.tPremS.textContent = a.netPremium >= 0 ? 'Credit' : 'Debit';
+      els.tBe.textContent = a.breakevens.length ? a.breakevens.map((b) => F.num(b, 2) + ' (' + F.pct(((b - spot) / spot) * 100, 1) + ')').join(' | ') : 'None';
+    }
+    els.zoomLabel.textContent = Math.round(zoom() * 100) + '%';
+    syncLegend(); renderSdRow(a); renderChart(); renderChartFoot(a); renderSliders(a);
+  }
+  function renderSdRow(a) {
+    if (!a) { els.sdRow.hidden = true; return; } els.sdRow.hidden = false; const spot = spotNow(); const { sd, label } = sdInfo(a);
+    const cell = (k, v, extra, c) => '<div class="' + (c || '') + '"><div class="k">' + k + '</div><div class="v">' + v + '</div>' + (extra ? '<div class="sub">' + extra + '</div>' : '') + '</div>';
+    els.sdRow.innerHTML = cell('-2SD', fmtK(spot - 2 * sd)) + cell('-1SD', fmtK(spot - sd)) + cell('Current', fmtK(spot), 'Expected move by ' + label, 'cur') + cell('+1SD', fmtK(spot + sd)) + cell('+2SD', fmtK(spot + 2 * sd));
+  }
+  function ghostChart(W, H) {
+    const m = { l: 62, r: 54, t: 34, b: 42 }; const pw = W - m.l - m.r, ph = H - m.t - m.b; let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" style="opacity:.55">';
+    for (let i = 0; i <= 4; i++) { const y = m.t + (ph * i) / 4; s += '<line class="grid" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + y + '" y2="' + y + '"/>'; }
+    for (let i = 0; i <= 6; i++) { const x = m.l + (pw * i) / 6; s += '<line class="grid" x1="' + x + '" x2="' + x + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/>'; }
+    const y0 = m.t + ph * 0.55; s += '<line class="zero" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + y0 + '" y2="' + y0 + '"/>';
+    const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40; const y = y0 - Math.sin(t * Math.PI) * ph * 0.35 + (t < 0.5 ? 0 : (t - 0.5) * ph * 0.5); pts.push((m.l + pw * t).toFixed(1) + ',' + y.toFixed(1)); }
+    s += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="hsl(var(--muted-foreground))" stroke-width="1.5" stroke-dasharray="6 5" opacity=".5"/>';
+    s += '<text class="axis-title" transform="rotate(-90 12 ' + (m.t + ph / 2) + ')" x="12" y="' + (m.t + ph / 2) + '" text-anchor="middle">Profit / Loss</text><text class="axis-title" x="' + (m.l + pw / 2) + '" y="' + (H - 6) + '" text-anchor="middle">Underlying Price</text></svg>';
+    return s;
+  }
+  let chartCtx = null;
+  function renderChart() {
+    const host = els.chartHost; const legs = activeLegs(); const W = Math.max(320, host.clientWidth || 620), H = 400;
+    if (!legs.length) { host.innerHTML = ghostChart(W, H) + '<div class="an-chart-empty">' + ic('chart') + '<b>No Strategy Selected</b><span>Add option legs to visualize payoff</span></div>'; chartCtx = null; return; }
+    const { lo, hi, spot } = xRange(); const L = layers();
+    const a = CG.analyze(legs, AN.asset, { targetDays: AN.targetDays, spot, min: lo, max: hi, points: 201 });
+    const m = { l: 62, r: L.oi ? 54 : 26, t: 34, b: 42 }; const pw = W - m.l - m.r, ph = H - m.t - m.b;
+    let ymin = 0, ymax = 0; const useE = L.expiry || !L.target;
+    a.points.forEach((p) => { if (useE) { ymin = Math.min(ymin, p.pnlExpiry); ymax = Math.max(ymax, p.pnlExpiry); } if (L.target) { ymin = Math.min(ymin, p.pnlTarget); ymax = Math.max(ymax, p.pnlTarget); } });
+    if (ymax - ymin < 1e-9) { ymax += 1; ymin -= 1; } const pad = (ymax - ymin) * 0.12; ymin -= pad; ymax += pad;
+    const X = (p) => m.l + ((p - lo) / (hi - lo)) * pw, Y = (v) => m.t + ((ymax - v) / (ymax - ymin)) * ph; const y0 = Y(0);
+    const uid = 'an' + Math.random().toString(36).slice(2, 8); const f1 = (n) => (+n).toFixed(1);
+    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '">';
+    s += '<defs><clipPath id="' + uid + 'p"><rect x="' + m.l + '" y="' + m.t + '" width="' + pw + '" height="' + Math.max(0, y0 - m.t) + '"/></clipPath><clipPath id="' + uid + 'l"><rect x="' + m.l + '" y="' + f1(y0) + '" width="' + pw + '" height="' + Math.max(0, m.t + ph - y0) + '"/></clipPath><clipPath id="' + uid + 'c"><rect x="' + m.l + '" y="' + m.t + '" width="' + pw + '" height="' + ph + '"/></clipPath></defs>';
+    s += '<rect x="' + m.l + '" y="' + m.t + '" width="' + pw + '" height="' + ph + '" fill="hsl(var(--card))"/>';
+    // grid + axes
+    const xs = nice((hi - lo) / 6); for (let v = Math.ceil(lo / xs) * xs; v <= hi + 1e-6; v += xs) { const x = X(v); s += '<line class="grid" x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/><text class="axis" x="' + f1(x) + '" y="' + (m.t + ph + 16) + '" text-anchor="middle">' + fmtK(v) + '</text>'; }
+    const ys = nice((ymax - ymin) / 4); for (let v = Math.ceil(ymin / ys) * ys; v <= ymax + 1e-6; v += ys) { const y = Y(v); s += '<line class="grid" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + f1(y) + '" y2="' + f1(y) + '"/><text class="axis" x="' + (m.l - 8) + '" y="' + f1(y + 3.5) + '" text-anchor="end">' + fmtAxis(Math.abs(v) < ys / 1e6 ? 0 : v) + '</text>'; }
+    // SD bands
+    if (L.sd) {
+      const { sd } = sdInfo(a); const b1 = [spot - sd, spot + sd], b2 = [spot - 2 * sd, spot + 2 * sd];
+      s += '<rect clip-path="url(#' + uid + 'c)" x="' + f1(X(b1[0])) + '" y="' + m.t + '" width="' + f1(Math.max(0, X(b1[1]) - X(b1[0]))) + '" height="' + ph + '" fill="hsl(var(--primary) / 0.07)"/>';
+      b1.forEach((v) => { if (v > lo && v < hi) s += '<line x1="' + f1(X(v)) + '" x2="' + f1(X(v)) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '" stroke="hsl(var(--primary))" stroke-opacity=".7" stroke-dasharray="4 3"/>'; });
+      b2.forEach((v) => { if (v > lo && v < hi) s += '<line x1="' + f1(X(v)) + '" x2="' + f1(X(v)) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '" stroke="hsl(var(--muted-foreground))" stroke-opacity=".5" stroke-dasharray="2 4"/>'; });
+    }
+    // OI bars (Call OI red, Put OI green — as in the original chart legend)
+    if (L.oi) {
+      const ch = CG.chain(AN.asset, AN.expiry); const rows = ch.rows.filter((r) => r.strike >= lo && r.strike <= hi);
+      const maxOi = Math.max(1, ...rows.map((r) => Math.max(r.call.oi, r.put.oi))); const bw = Math.max(2, Math.min(6, pw / Math.max(rows.length, 1) / 3)); const hmax = ph * 0.4;
+      rows.forEach((r) => { const x = X(r.strike); const hc = (r.call.oi / maxOi) * hmax, hp = (r.put.oi / maxOi) * hmax; s += '<rect x="' + f1(x - bw - 0.5) + '" y="' + f1(m.t + ph - hc) + '" width="' + bw + '" height="' + f1(hc) + '" fill="hsl(var(--loss) / 0.35)"><title>' + F.int(r.strike) + ' · Call OI ' + F.int(r.call.oi) + '</title></rect><rect x="' + f1(x + 0.5) + '" y="' + f1(m.t + ph - hp) + '" width="' + bw + '" height="' + f1(hp) + '" fill="hsl(var(--profit) / 0.35)"><title>' + F.int(r.strike) + ' · Put OI ' + F.int(r.put.oi) + '</title></rect>'; });
+      s += '<text class="axis" x="' + (W - m.r + 6) + '" y="' + f1(m.t + ph - hmax + 4) + '">' + F.compact(maxOi) + '</text><text class="axis" x="' + (W - m.r + 6) + '" y="' + f1(m.t + ph - hmax / 2 + 4) + '">' + F.compact(maxOi / 2) + '</text>';
+    }
+    const ptsE = a.points.map((p) => [X(p.price), Y(p.pnlExpiry)]); const ptsT = a.points.map((p) => [X(p.price), Y(p.pnlTarget)]);
+    const poly = (pts) => pts.map((p) => f1(p[0]) + ',' + f1(p[1])).join(' ');
+    if (L.fill && L.expiry) { const area = 'M' + f1(ptsE[0][0]) + ',' + f1(y0) + ' L' + poly(ptsE) + ' L' + f1(ptsE[ptsE.length - 1][0]) + ',' + f1(y0) + ' Z'; s += '<path d="' + area + '" fill="hsl(var(--profit) / 0.2)" clip-path="url(#' + uid + 'p)"/><path d="' + area + '" fill="hsl(var(--loss) / 0.2)" clip-path="url(#' + uid + 'l)"/>'; }
+    s += '<line class="zero" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + f1(y0) + '" y2="' + f1(y0) + '"/>';
+    if (L.expiry) s += '<polyline points="' + poly(ptsE) + '" fill="none" stroke="hsl(var(--profit))" stroke-width="2" clip-path="url(#' + uid + 'p)"/><polyline points="' + poly(ptsE) + '" fill="none" stroke="hsl(var(--loss))" stroke-width="2" clip-path="url(#' + uid + 'l)"/>';
+    if (L.target) s += '<polyline points="' + poly(ptsT) + '" fill="none" stroke="#3b82f6" stroke-width="2" clip-path="url(#' + uid + 'c)"/>';
+    if (L.be) a.breakevens.forEach((b, i) => { if (b < lo || b > hi) return; const x = X(b); s += '<line x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '" stroke="hsl(var(--muted-foreground))" stroke-dasharray="4 3"/><text class="axis" x="' + f1(x + 4) + '" y="' + (m.t + 12 + (i % 2) * 11) + '" font-size="10" fill="hsl(var(--foreground))">BE ' + F.int(b) + '</text>'; });
+    const tp = AN.targetPrice; if (tp && Math.abs(tp - spot) > 1e-6 && tp >= lo && tp <= hi) { const x = X(tp); s += '<line x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '" stroke="hsl(var(--primary))" stroke-dasharray="2 3"/><text class="axis" x="' + f1(x) + '" y="' + (m.t + ph - 5) + '" text-anchor="middle" font-size="9.5" fill="hsl(var(--primary))">Target ' + fmtK(tp) + '</text>'; }
+    if (spot >= lo && spot <= hi) { const x = X(spot); const lbl = money(spot, 1); const w = Math.max(72, lbl.length * 7.4 + 18); s += '<line x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '" stroke="#f59e0b" stroke-dasharray="5 3" stroke-width="1.5"/><rect x="' + f1(x - w / 2) + '" y="3" width="' + w + '" height="28" rx="6" fill="#f59e0b"/><text x="' + f1(x) + '" y="14" text-anchor="middle" font-size="9" fill="#3a2a00" font-weight="600">Spot</text><text x="' + f1(x) + '" y="26" text-anchor="middle" font-size="11" fill="#1f1600" font-weight="700">' + lbl + '</text>'; }
+    s += '<text class="axis-title" transform="rotate(-90 12 ' + (m.t + ph / 2) + ')" x="12" y="' + (m.t + ph / 2) + '" text-anchor="middle">Profit / Loss</text><text class="axis-title" x="' + (m.l + pw / 2) + '" y="' + (H - 6) + '" text-anchor="middle">Underlying Price</text>';
+    if (L.oi) s += '<text class="axis-title" transform="rotate(90 ' + (W - 10) + ' ' + (m.t + ph / 2) + ')" x="' + (W - 10) + '" y="' + (m.t + ph / 2) + '" text-anchor="middle">Open Interest</text>';
+    s += '<g data-xh style="display:none"><line x1="0" x2="0" y1="' + m.t + '" y2="' + (m.t + ph) + '" stroke="hsl(var(--foreground))" stroke-opacity=".45" stroke-dasharray="3 3"/><circle r="3.5" fill="hsl(var(--profit))" stroke="#fff" stroke-width="1.5"/><circle r="3.5" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/></g>';
+    s += '<rect x="' + m.l + '" y="' + m.t + '" width="' + pw + '" height="' + ph + '" fill="transparent" data-hover style="cursor:crosshair"/></svg><div class="an-tip"></div>';
+    host.innerHTML = s; chartCtx = { a, lo, hi, X, Y, m, pw, ph, W, H }; bindChartHover();
+  }
+  function bindChartHover() {
+    const c = chartCtx; if (!c) return; const host = els.chartHost; const svg = host.querySelector('svg'); const tip = host.querySelector('.an-tip'); const xh = svg.querySelector('[data-xh]'); const line = xh.querySelector('line'); const circles = xh.querySelectorAll('circle');
+    const hide = () => { lastMouse = null; xh.style.display = 'none'; tip.style.display = 'none'; };
+    const onMove = (e) => {
+      lastMouse = { clientX: e.clientX, clientY: e.clientY };
+      const r = svg.getBoundingClientRect(); const x = (e.clientX - r.left) * (c.W / r.width); if (x < c.m.l || x > c.m.l + c.pw) return hide();
+      const n = c.a.points.length; const i = Math.max(0, Math.min(n - 1, Math.round(((x - c.m.l) / c.pw) * (n - 1)))); const p = c.a.points[i]; const pxx = c.X(p.price); const L = layers();
+      xh.style.display = ''; line.setAttribute('x1', pxx); line.setAttribute('x2', pxx);
+      circles[0].setAttribute('cx', pxx); circles[0].setAttribute('cy', c.Y(p.pnlExpiry)); circles[0].style.display = L.expiry ? '' : 'none';
+      circles[1].setAttribute('cx', pxx); circles[1].setAttribute('cy', c.Y(p.pnlTarget)); circles[1].style.display = L.target ? '' : 'none';
+      tip.innerHTML = '<b>@ ' + fmtK(p.price) + '</b> <span class="text-muted">(' + F.pct(((p.price - spotNow()) / spotNow()) * 100, 1) + ')</span><br>Expiry: <b class="' + cls(p.pnlExpiry) + '">' + smoney(p.pnlExpiry) + '</b><br>' + daysLeftLabel(c.a) + ': <b class="' + cls(p.pnlTarget) + '">' + smoney(p.pnlTarget) + '</b>';
+      tip.style.display = 'block'; const hr = host.getBoundingClientRect(); let left = e.clientX - hr.left + 14; if (left + tip.offsetWidth > hr.width - 4) left = e.clientX - hr.left - tip.offsetWidth - 14; tip.style.left = Math.max(0, left) + 'px'; tip.style.top = Math.max(0, e.clientY - hr.top - 34) + 'px';
+    };
+    svg.addEventListener('mousemove', onMove);
+    svg.addEventListener('mouseleave', hide);
+    if (lastMouse) onMove(lastMouse); // keep the crosshair alive across live re-renders
+  }
+  let lastMouse = null;
+  function renderChartFoot(a) {
+    if (!a) { els.chartFoot.hidden = true; return; } els.chartFoot.hidden = false; const spot = spotNow(); const tp = AN.targetPrice || spot; const p = pnlAtPrice(a.legs, tp); const pct = ((tp - spot) / spot) * 100;
+    els.chartFoot.innerHTML = '<span>@ <b class="text-primary">' + fmtK(tp) + '</b> <span class="' + cls(pct) + '">(' + F.pct(pct, 1) + ')</span></span><span>' + daysLeftLabel(a) + ': <b class="' + cls(p.pnlTarget) + '">' + smoney(p.pnlTarget) + '</b></span><span>Expiry: <b class="' + cls(p.pnlExpiry) + '">' + smoney(p.pnlExpiry) + '</b></span><span class="pl ' + (p.pnlTarget >= 0 ? 'profit' : 'loss') + '">' + ic(p.pnlTarget >= 0 ? 'trendup' : 'trenddown') + (p.pnlTarget >= 0 ? 'Profit: ' : 'Loss: ') + money(Math.abs(p.pnlTarget)) + '</span>';
+  }
+  function renderSliders(a) {
+    const A = CG.ASSETS[AN.asset]; const { lo, hi, spot } = xRange(); const tp = AN.targetPrice || spot;
+    const r = els.tpRange; r.min = Math.floor(lo); r.max = Math.ceil(hi); r.step = Math.max(1, Math.round(A.step / 50)); r.value = Math.round(tp);
+    els.tpVal.textContent = fmtK(tp); const pct = ((tp - spot) / spot) * 100; els.tpPct.textContent = F.pct(pct, 1); els.tpPct.className = 'badge ' + (pct >= 0 ? 'badge-success' : 'badge-destructive'); els.tpMin.textContent = fmtK(lo); els.tpMax.textContent = fmtK(hi);
+    const maxDte = a ? a.maxDte : F.dte(AN.expiry); if (AN.targetDays > maxDte) AN.targetDays = maxDte;
+    const d = els.tdRange; d.max = maxDte; d.value = AN.targetDays; d.disabled = maxDte === 0;
+    els.tdVal.textContent = fmtDateTime(new Date(CG.NOW.getTime() + AN.targetDays * 86400000)); els.tdTitle.textContent = AN.targetDays === 0 ? 'TODAY' : 'TARGET DATE';
+    els.tdMax.textContent = 'Expiry (' + fmtDM(F.expiryDate(a ? latestExpiry(a.legs) : AN.expiry)) + ')';
+  }
+  function setTargetPrice(v, full) {
+    const { lo, hi, spot } = xRange(); v = Math.max(lo, Math.min(hi, +v)); AN.targetPrice = Math.abs(v - spot) < 1e-6 ? null : v; CG.emit('analyse:target', { price: AN.targetPrice || spot, days: AN.targetDays });
+    if (full) renderSliders(baseAnalysis()); else { const tp = AN.targetPrice || spot; els.tpVal.textContent = fmtK(tp); const pct = ((tp - spot) / spot) * 100; els.tpPct.textContent = F.pct(pct, 1); els.tpPct.className = 'badge ' + (pct >= 0 ? 'badge-success' : 'badge-destructive'); }
+    renderChart(); renderChartFoot(baseAnalysis());
+  }
+  function setTargetDays(v) { const a = baseAnalysis(); const max = a ? a.maxDte : F.dte(AN.expiry); AN.targetDays = Math.max(0, Math.min(max, Math.round(+v) || 0)); CG.emit('analyse:target', { price: AN.targetPrice || spotNow(), days: AN.targetDays }); renderPayoff(); }
+  function bindPayoff() {
+    els.legend.addEventListener('click', (e) => { const b = e.target.closest('[data-layer]'); if (b) setLayer(b.dataset.layer, !layers()[b.dataset.layer]); });
+    els.layersBtn.addEventListener('click', openLayers);
+    els.payoff.addEventListener('click', (e) => {
+      const z = e.target.closest('[data-zoom]'); if (z) { if (z.dataset.zoom === 'in') zoomStep(1); else if (z.dataset.zoom === 'out') zoomStep(-1); else setZoom(1); return; }
+      const tp = e.target.closest('[data-tp]'); if (tp) { const A = CG.ASSETS[AN.asset]; setTargetPrice((AN.targetPrice || spotNow()) + (+tp.dataset.tp) * A.step / 5, true); return; }
+      const td = e.target.closest('[data-td]'); if (td) { setTargetDays(AN.targetDays + (+td.dataset.td)); }
+    });
+    els.tpRange.addEventListener('input', () => setTargetPrice(els.tpRange.value, false));
+    els.tpRange.addEventListener('change', () => setTargetPrice(els.tpRange.value, true));
+    els.tdRange.addEventListener('input', () => setTargetDays(els.tdRange.value));
+    let rt = null; if (window.ResizeObserver) new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => { if (M.isActive() && chartCtx && Math.abs(chartCtx.W - els.chartHost.clientWidth) > 4) renderChart(); }, 120); }).observe(els.chartHost);
+  }
+  Object.assign(M, { layers, setLayer, renderPayoff, renderChart, renderSliders, bindPayoff, setTargetPrice, setTargetDays, zoom, setZoom });
+})();
+</script>

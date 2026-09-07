@@ -1,0 +1,100 @@
+<!-- ===== /analyse workspace: shell + options chain + right analysis pane (payoff / analytics / greeks / P&L table) ===== -->
+<section class="screen" data-route="/analyse" data-title="Analyse" data-auth="user">
+  <div data-cg="app-header" data-variant="analyse"></div>
+  <div data-cg="plan-banner"></div>
+  <div class="an-shell" id="an-shell" data-mobile="chain">
+    <div class="an-mobile-bar"><div class="tabs"><button class="tab active" data-mobile-view="chain">Chain</button><button class="tab" data-mobile-view="analysis">Analysis</button></div></div>
+    <div class="an-left" id="an-left">
+      <div class="an-lptabs" role="tablist" id="an-lptabs">
+        <button class="an-tab active" role="tab" data-lptab="chain" data-tour="options-chain"><i data-icon="link"></i>Options Chain</button>
+        <button class="an-tab" role="tab" data-lptab="strategy" data-tour="builder-tab"><i data-icon="layers"></i>Strategy</button>
+        <button class="an-tab" role="tab" data-lptab="paper" data-tour="paper-tab"><i data-icon="file"></i>Paper Trades</button>
+        <button class="an-tab" role="tab" data-lptab="live"><i data-icon="radio"></i>Live Trades</button>
+      </div>
+      <div id="analyse-left-panels" class="an-left-panels">
+        <div class="lp-panel an-chain-panel" data-tab="chain">
+          <div class="an-expiry-strip">
+            <button class="an-scroll-btn" data-exp-scroll="-1" title="Previous expiries" aria-label="Previous">‹</button>
+            <div class="an-expiries" id="an-expiries"></div>
+            <button class="an-scroll-btn" data-exp-scroll="1" title="Next expiries" aria-label="Next">›</button>
+            <button class="an-live-btn live" id="an-live-btn" title="Live prices"><i data-icon="bolt"></i><span>Live</span></button>
+            <button class="an-gear" id="an-colsettings-btn" title="Column settings" aria-label="Column settings"><i data-icon="gear"></i></button>
+          </div>
+          <div class="an-chain-wrap" id="an-chain-wrap" tabindex="0" aria-label="Options chain (arrow keys move the highlighted strike, B / S add legs, Shift for puts)">
+            <table class="an-chain" id="an-chain"><colgroup></colgroup><thead></thead><tbody></tbody></table>
+          </div>
+          <div class="an-chain-foot" id="an-chain-foot"></div>
+        </div>
+      </div>
+    </div>
+    <div class="an-divider" id="an-divider" title="Drag to resize"></div>
+    <div class="an-right" id="an-right" data-tour="payoff-panel">
+      <div class="an-rptabs" role="tablist">
+        <button class="an-tab active" role="tab" data-rptab="payoff"><i data-icon="chart"></i>Payoff Diagram</button>
+        <button class="an-tab" role="tab" data-rptab="analytics"><i data-icon="activity"></i>Analytics</button>
+        <button class="an-tab" role="tab" data-rptab="greeks"><i data-icon="pie"></i>Greeks</button>
+        <button class="an-tab" role="tab" data-rptab="pnl"><i data-icon="table"></i>P&amp;L Table</button>
+      </div>
+      <div class="an-right-body" id="an-right-body">
+        <div class="rp-panel" data-tab="payoff" id="an-payoff">
+          <div class="an-tiles">
+            <div class="an-tile"><div class="an-tile-h"><i data-icon="trendup" class="text-profit"></i><span>Max Profit</span></div><div class="an-tile-v text-profit" id="an-t-maxp">—</div></div>
+            <div class="an-tile"><div class="an-tile-h"><i data-icon="trenddown" class="text-loss"></i><span>Max Loss</span></div><div class="an-tile-v text-loss" id="an-t-maxl">—</div></div>
+            <div class="an-tile"><div class="an-tile-h"><i data-icon="dollar"></i><span>Net Premium</span></div><div class="an-tile-v" id="an-t-prem">—</div><div class="an-tile-s" id="an-t-prem-s"></div></div>
+            <div class="an-tile an-tile-be"><div class="an-tile-h"><i data-icon="target"></i><span>Breakevens</span></div><div class="an-tile-v" id="an-t-be">None</div></div>
+          </div>
+          <div class="card an-chart-card">
+            <div class="an-chart-top">
+              <div class="an-legend" id="an-legend">
+                <button class="lg" data-layer="expiry" title="Toggle Expiry P&amp;L"><span class="sw line" style="background:hsl(var(--profit))"></span>On Expiry</button>
+                <button class="lg" data-layer="target" title="Toggle Target Date P&amp;L"><span class="sw line" style="background:#3b82f6"></span>On Target Date</button>
+                <button class="lg" data-layer="fill" title="Toggle Profit / Loss Fill"><span class="sw dot" style="background:hsl(var(--profit) / 0.35)"></span>Profit</button>
+                <button class="lg" data-layer="fill" title="Toggle Profit / Loss Fill"><span class="sw dot" style="background:hsl(var(--loss) / 0.35)"></span>Loss</button>
+                <button class="lg" data-layer="oi" title="Toggle Open Interest"><span class="sw dot" style="background:hsl(var(--loss) / 0.45)"></span>Call OI</button>
+                <button class="lg" data-layer="oi" title="Toggle Open Interest"><span class="sw dot" style="background:hsl(var(--profit) / 0.45)"></span>Put OI</button>
+              </div>
+              <div class="an-chart-ctl">
+                <div class="an-zoom"><button data-zoom="in" title="Zoom In" aria-label="Zoom In"><i data-icon="zoomin"></i></button><button class="mono" data-zoom="reset" title="Reset Zoom" id="an-zoom-label">100%</button><button data-zoom="out" title="Zoom Out" aria-label="Zoom Out"><i data-icon="zoomout"></i></button></div>
+                <button class="an-layers-btn" id="an-layers-btn" title="Toggle Layers"><i data-icon="layers"></i>Layers</button>
+              </div>
+            </div>
+            <div class="an-sd-row" id="an-sd-row"></div>
+            <div class="an-chart-host" id="an-chart-host"></div>
+            <div class="an-chart-foot" id="an-chart-foot"></div>
+          </div>
+          <div class="an-sliders">
+            <div class="card an-slider-card">
+              <div class="an-sl-h"><span id="an-tp-title">BTC TARGET</span><span class="badge" id="an-tp-pct">+0.0%</span></div>
+              <div class="an-sl-mid"><button class="an-step" data-tp="-1" title="Decrease target price" aria-label="Decrease">−</button><span class="an-sl-val mono" id="an-tp-val">—</span><button class="an-step" data-tp="1" title="Increase target price" aria-label="Increase">+</button></div>
+              <input type="range" class="an-range" id="an-tp-range" min="0" max="100" step="1" value="50" aria-label="Target price">
+              <div class="an-sl-minmax mono"><span id="an-tp-min">—</span><span id="an-tp-max">—</span></div>
+            </div>
+            <div class="card an-slider-card">
+              <div class="an-sl-h"><span id="an-td-title">TODAY</span><span class="an-info" title="Move the target date to see the On Target Date P&amp;L curve at a future date (time decay applied)."><i data-icon="info"></i></span></div>
+              <div class="an-sl-mid"><button class="an-step" data-td="-1" title="Previous day" aria-label="Previous day">‹</button><span class="an-sl-val" id="an-td-val">—</span><button class="an-step" data-td="1" title="Next day" aria-label="Next day">›</button></div>
+              <input type="range" class="an-range" id="an-td-range" min="0" max="30" step="1" value="0" aria-label="Target date">
+              <div class="an-sl-minmax"><span>Today</span><span id="an-td-max">Expiry</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="rp-panel" data-tab="analytics" id="an-analytics" hidden></div>
+        <div class="rp-panel" data-tab="greeks" id="an-greeks" hidden></div>
+        <div class="rp-panel" data-tab="pnl" id="an-pnl" hidden></div>
+      </div>
+    </div>
+  </div>
+  <!-- Column Settings dialog -->
+  <div id="an-colsettings" hidden>
+    <div class="an-cs">
+      <div class="an-cs-head">
+        <div class="tabs"><button class="tab active" data-cstab="show">Show / Hide</button><button class="tab" data-cstab="reorder">Reorder</button></div>
+        <div class="an-cs-quick"><button class="btn btn-outline btn-xs" data-csq="essentials">Essentials</button><button class="btn btn-outline btn-xs" data-csq="all">Show All</button><button class="btn btn-outline btn-xs" data-csq="none">Hide all</button><button class="btn btn-ghost btn-xs" data-csq="reset">Reset</button></div>
+      </div>
+      <div class="an-cs-body" data-cspanel="show" id="an-cs-show"></div>
+      <div class="an-cs-body" data-cspanel="reorder" id="an-cs-reorder" hidden></div>
+      <div class="an-cs-foot"><span class="text-xs text-muted" id="an-cs-hint">Changes are saved automatically.</span><button class="btn btn-primary btn-sm" data-cg-close>Done</button></div>
+    </div>
+  </div>
+  <!-- Option details dialog (chart icon in the hover controls) -->
+  <div id="an-optinfo" hidden></div>
+</section>

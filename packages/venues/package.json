@@ -1,0 +1,34 @@
+{
+  "name": "@hapiecoin/venues",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HapieCoin venue adapters: Delta Exchange India market data (REST + WebSocket) and Binance spot",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "smoke:delta": "tsx scripts/smoke-delta.ts"
+  },
+  "dependencies": {
+    "@hapiecoin/schema": "workspace:*",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@hapiecoin/config": "workspace:*",
+    "tsx": "4.23.13"
+  }
+}

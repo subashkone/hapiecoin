@@ -1,0 +1,3121 @@
+
+
+## / <$ot+wt>
+components: $ot:304, est:1836, Dv:65, Ov:81, Ep:61, sst:5276, nst:2267, Pt:40, Fn:74, kf:66, ost:906, dst:3161, zr:41, pst:1964, nx:70, xst:3480, Ane:158, s:71, yst:1640, Sot:3588, _ot:2259, Jo:63, Eot:592, Oot:1623, Mot:1277, Rot:2441, ki:84, i5:86
+- /analyse
+- /auth
+- #features
+- Features
+- #crypto-analytics
+- Market Analytics
+- #prices
+- Markets
+- #exchanges
+- Exchanges
+- button
+- Go to App 
+- /auth?tab=signup
+- Sign Up
+- Get Started 
+- circle
+- 4exip2
+- Moon
+- M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z
+- a7tn18
+- M5 12h14
+- 1ays0h
+- section
+- secondary
+- hsl(var(--profit))
+- Live on Delta Exchange
+- Trade Crypto Options
+- Like a Pro
+- Professional-grade options analytics, strategy builder, and paper trading — everything you need to master BTC & ETH options.
+- Start Trading Free 
+- features
+- smooth
+- Explore Features 
+- spring
+- preserve-3d
+- hsl(45 93% 47% / 0.5)
+- hsl(var(--profit) / 0.5)
+- coingreeks.com
+- Options Chain & Payoff Diagram
+- Strategy Templates
+- Ready to use
+- Options Chain
+- Live Greeks
+- http://www.w3.org/2000/svg
+- pattern
+- hero-grid
+- M 60 0 L 0 0 0 60
+- hsl(var(--primary))
+- url(#hero-grid)
+- linear
+- 1mglay
+- m6 9 6 6 6-6
+- qrunsl
+- -50px
+- subscribe
+- v2/ticker
+- en-US
+- prices
+- Live Markets
+- Powered by Delta Exchange
+- hsl(var(--accent))
+- LIVE
+- Connecting...
+- hsl(var(--loss))
+- hsl(var(--profit) / 0.1)
+- hsl(var(--loss) / 0.1)
+- H: $
+- L: $
+- Why CoinGreeks?
+- Stop Guessing. Start
+- Trading Smart
+- Without CoinGreeks
+- With CoinGreeks
+- CircleX
+- Platform Features
+- Everything You Need to
+- Trade Smarter
+- Capabilities
+- Built for Serious Traders
+- 24H Total Liq
+- Long Liq
+- Short Liq
+- Top Coin
+- crypto-analytics
+- Liquidations & Market Pulse
+- Professional-grade analytics inside your dashboard — track liquidations, exchange flows, and large orders in real time across BTC, ETH, and 200+ assets.
+- Live liquidation pattern · last 40 intervals
+- Dive into per-exchange breakdowns, historical charts, and a live order feed.
+- Explore Analytics 
+- Everything You Need
+- Full Feature List
+- A comprehensive toolkit designed for crypto options traders — from analytics to execution.
+- Check
+- M20 6 9 17l-5-5
+- 1gmf2c
+- Testimonials
+- Loved by Traders Worldwide
+- exchanges
+- Integrations
+- Supported Exchanges
+- Trade on leading crypto exchanges with more integrations coming soon.
+- default
+-  Live
+- Coming Soon
+- Ready to Trade Smarter?
+- Join thousands of traders using CoinGreeks for professional-grade crypto options analytics. Free paper trading included.
+- Create Free Account 
+- footer
+- Professional-grade crypto options analytics platform. Trade smarter with real-time data.
+- Quick Links
+- Legal
+- Contact Us
+- _blank
+- noopener noreferrer
+-  CoinGreeks. All rights reserved.
+- Mail
+- 18n3k1
+- M7.9 20A9 9 0 1 0 4 16.1L2 22Z
+- vv11sd
+
+## /privacy <Lot+wt>
+components: Lot:2588, Io:66
+- button
+-  Back
+- Privacy Policy
+- Last updated: March 30, 2026
+- section
+- 1. Information We Collect
+- 2. How We Use Your Information
+- 3. Data Storage & Security
+- Your data is stored securely using industry-standard encryption and appropriate technical measures.
+- 4. Cookies & Tracking
+- We use essential cookies to maintain your session and preferences. You can manage cookie preferences through your browser settings.
+- 5. Third-Party Services
+- We integrate with Delta Exchange for market data. Their respective privacy policies also apply.
+- 6. Your Rights
+- You have the right to access, update, or delete your personal information at any time through your account settings.
+- 7. Contact Us
+- Questions? Contact us at support@coingreeks.com.
+- m12 19-7-7 7-7
+- 1l729n
+
+## /terms <Fot+wt>
+components: Fot:2656, Io:66
+- button
+-  Back
+- Terms of Service
+- Last updated: March 30, 2026
+- section
+- 1. Acceptance of Terms
+- By accessing or using CoinGreeks, you agree to be bound by these Terms of Service.
+- 2. Description of Service
+- CoinGreeks provides crypto options analytics tools including real-time options chain data, strategy building, payoff analysis, Greeks calculations, and paper trading.
+- 3. Account Responsibilities
+- You are responsible for maintaining the confidentiality of your account credentials. You must be at least 18 years old.
+- 4. Acceptable Use
+- You agree not to misuse our services or use the platform for any illegal activity.
+- 5. Intellectual Property
+- All content and functionality of CoinGreeks are owned by us and protected by intellectual property laws.
+- 6. Limitation of Liability
+- as is
+- 7. Modifications
+- We reserve the right to modify these terms at any time.
+- 8. Contact
+- Contact us at support@coingreeks.com.
+- m12 19-7-7 7-7
+- 1l729n
+
+## /disclaimer <Bot+wt>
+components: Bot:2794, Io:66
+- button
+-  Back
+- Disclaimer
+- Last updated: March 30, 2026
+- section
+- Not Financial Advice
+- CoinGreeks is an analytics and educational platform. Nothing on this platform constitutes financial advice, investment advice, or trading advice.
+- Trading Risks
+- Cryptocurrency Risks
+- Cryptocurrency markets are highly volatile and unregulated in many jurisdictions. You should only trade with funds you can afford to lose.
+- Data Accuracy
+- While we strive to provide accurate real-time data, we cannot guarantee the accuracy, completeness, or timeliness of any information displayed on the platform.
+- Paper Trading
+- No Guarantee
+- We do not guarantee any specific outcomes from using our analytics tools. All trading decisions are your own responsibility.
+- Third-Party Integrations
+- CoinGreeks integrates with third-party exchanges and data providers. We are not responsible for the actions, services, or policies of these third parties.
+- m12 19-7-7 7-7
+- 1l729n
+
+## /payoff-preview <qot+wt>
+components: qot:852, oT:186
+- Payoff chart preview
+- default
+- calc(100vh - 64px)
+
+## /sso <Got+wt>
+components: Got:612
+- sso_return
+- Signing you in…
+
+## /auth/delta <Kot+wt>
+components: Kot:1345, mt:82
+- /analyse
+- Delta sign-in cancelled
+- No login code was returned.
+- destructive
+- /auth
+- coingreeks_pending_ref
+- Exchange failed
+- Welcome!
+- Account created with Delta.
+- Signed in with Delta.
+- Delta sign-in failed
+- Please try again.
+- Signing you in with Delta…
+- M21 12a9 9 0 1 1-6.219-8.56
+- 13zald
+
+## /auth <_ut+hnt+wt>
+components: hnt:29518, Ane:158, ki:84, Qe:48, b0:92, Sg:143, Cc:147, mt:82, Io:66, r4:221, zd:88, Sk:333, Uh:194, HU:43, Fn:74
+- /analyse
+- signup
+- Email is required
+- otp-verify
+- OTP Sent
+- Error
+- Failed to send OTP
+- destructive
+- Request failed
+- Enter valid OTP
+- Welcome!
+- Logged in successfully
+- Invalid OTP
+- OTP Resent
+- Welcome back!
+- Logged in successfully.
+- Invalid credentials.
+- Login failed
+- Account created!
+- Please verify your email with the OTP sent.
+- verify-email
+- Could not create account.
+- Signup failed
+- Please enter the complete 6-digit OTP
+- Email verified!
+- You can now sign in.
+- Verification failed
+- Invalid OTP.
+- Invalid email
+- OTP sent!
+- Check your email for the OTP.
+- reset-password
+- Failed
+- Could not send OTP.
+- Password reset!
+- You can now sign in with your new password.
+- Reset failed
+- Invalid OTP or request.
+- coingreeks_pending_ref
+- manual
+- opaqueredirect
+- Delta login is unavailable right now.
+- Delta login unavailable
+- Please try again later.
+- button
+- Continue with Delta Exchange
+- linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)
+- 40px 40px
+- Master Options
+- Trading
+- Professional-grade crypto options analytics with real-time Greeks, strategy building, and paper trading.
+- © 2025 CoinGreeks. Secure & encrypted.
+- Welcome back
+- Sign in to your trading dashboard
+- login-email
+- Email
+- you@example.com
+- login-password
+- Password
+- password
+- submit
+- Sign In
+- forgot
+- Forgot password?
+- otp-login
+-  Sign in with OTP
+- Don't have an account?
+- Create account
+-  Back to login
+- Sign in with OTP
+- We'll send a one-time code to your registered email
+- otp-email
+- Send OTP
+- New here?
+- Create an account first
+-  Change email
+- Enter OTP
+- Code sent to 
+- otp-code
+- OTP Code
+- numeric
+- Enter 6-digit code
+- Verify & Login
+- Resend OTP in 
+- Resend OTP
+- Start your options trading journey
+- signup-name
+- Full Name
+- John Doe
+- signup-email
+- signup-mobile
+- Mobile Number
+- signup-password
+- new-password
+- signup-confirm
+- Confirm
+- ✓ Uppercase letter
+- ✓ Lowercase letter
+- ✓ Number
+- ✓ Special character
+- ✓ 8+ characters
+- signup-ref
+- Referral Code (Optional)
+- REF_XXXXXXX
+- Create Account
+- Already have an account?
+- Sign in
+-  Back to sign up
+- spring
+- Verify your email
+- We've sent a 6-digit OTP to 
+- Verify Email
+- Didn't receive the code?
+- Resend in 
+- OTP resent
+- A new OTP has been sent to your email.
+-  Back to sign in
+- Reset password
+- Enter your email and we'll send you an OTP
+- forgot-email
+- Email Address
+-  Back
+- Set new password
+- Enter the OTP sent to 
+-  and your new password
+- reset-new-password
+- New Password
+- reset-confirm-password
+- Confirm Password
+- Reset Password
+- A new OTP has been sent.
+- Mail
+- 18n3k1
+- Lock
+- 1w4ew1
+- M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49
+- ct8e1f
+- M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0
+- 1nclc0
+- M21 12a9 9 0 1 1-6.219-8.56
+- 13zald
+- m12 19-7-7 7-7
+- 1l729n
+- M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z
+- 1s6t7t
+- User
+- M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2
+- 975kel
+- Phone
+- foiqr5
+- M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z
+- vktsd0
+- circle
+- 1mglay
+
+## /analyse <IQe+wt>
+components: IQe:42023, p1e:1684, vo:54, Aa:52, _a:68, Vi:68, Ta:41, ty:41, g1e:2016, Ep:61, Ur:54, n1e:125, i1e:2275, nx:70, Fn:74, Sm:128, pT:155, w$:481, Z6:190, e8:164, mT:190, t8:150, vs:90, Gs:91, oT:186, S$:113, we:54, Di:78, cm:48, Gn:41, wk:71, Mi:157, L1:109, yk:230, _k:78, sa:41, Ul:173, Ile:152, lce:155, o5:69, Bqe:73, Z_:134, GXe:102, KXe:69, XXe:127
+- payoff
+- en-US
+- SQUARED_OFF
+- cg-tour-set-tab
+- FUTURE
+- strike
+- expiry
+- Limit Reached
+- Maximum 10 active legs allowed per strategy
+- destructive
+- Maximum 8 legs allowed for new strategy
+- Maximum legs reached
+- Leg Added
+- SELL
+- CALL
+- Limit Exceeded
+- Net Positions
+- No changes
+- No new or modified legs to save
+- ./requoteLegs-CzbXBOh4.js
+- Some legs not re-quoted
+- Strategy
+- Success
+- No new legs
+- All legs are already saved
+- ${pe}
+- Error saving strategy:
+- Failed to save strategy
+- No legs
+- Add at least one leg to trade
+- Error in Trade All:
+- Add at least one leg
+- Saved
+- ${Dt.trim()}
+- Failed to save
+- Leg squared off successfully
+- Error squaring off leg:
+- Error
+- Failed to square off leg
+- No Strategy
+- Call
+- Bull Call Spread
+- Bear Call Spread
+- Bear Put Spread
+- Bull Put Spread
+- Long Straddle
+- Short Straddle
+- Custom Spread
+- Multi-leg Strategy
+- Custom Strategy
+- builder
+- templates
+- choose
+- Max Profit
+- Unlimited
+- Max Loss
+- analytics
+- data-tour
+- Chain
+- Paper
+- Templates
+- Live
+- Payoff
+- Analytics
+- button
+- Market Analytics (opens in a new tab)
+- Market
+- horizontal
+- Options Chain
+- builder-tab
+- paper-tab
+- Paper Trades
+- My Templates
+- Live Trades
+- options-chain
+- payoff-panel
+- Payoff Diagram
+- greeks
+- Greeks
+- P&L Table
+- Breakevens
+- number
+- None
+- P&L Analysis Table
+- Showing every 10th price point
+- Underlying Price
+- Change from Spot
+- P&L at Expiry
+- Status
+- No data — add option legs to see P&L table
+- SPOT
+- Breakeven
+- PROFIT
+- LOSS
+- BREAKEVEN
+- Breakeven Points
+- M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z
+- Upgrade Required
+- /subscription
+- Subscribe Here →
+- Dismiss
+- Paper Trade Started
+- ${oe}
+- call_options
+- put_options
+- perpetual_futures
+- market_order
+- Live Orders Placed
+- failed
+- pending
+- Order Partially Failed
+- Use retry or cancel.
+- Unknown error
+- [BrokerSelection] Trade error:
+- Failed to start trading
+- not available
+- Trade Failed
+- save-dialog
+- Save as Draft
+- Enter Strategy Name
+- Strategy name...
+- Enter
+- Escape
+- Cancel
+- save-button
+- Saving...
+- Save Draft
+- Save & Continue
+- Failed
+- _blank
+- noopener,noreferrer
+- aria-label
+- Previous
+- Next
+- m15 18-6-6 6-6
+- 1wnfg3
+- m9 18 6-6-6-6
+- mthhwq
+- Previous flyer
+- View 
+- Next flyer
+- M5 12h14
+- 1ays0h
+- M18 6 6 18
+- 1bl5f8
+- Your plan has expired.
+- Renew Plan
+- Your free plan is active.
+- Upgrade
+- Your plan expires soon — 
+-  left.
+- Congratulations! Your plan is active until
+- numeric
+- CircleX
+- circle
+- 1mglay
+- m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3
+- wmoenq
+- polyline
+- 126l90
+- 1r2t7k
+- M3 3v16a2 2 0 0 0 2 2h16
+- c24i48
+- Link2
+- M9 17H7A5 5 0 0 1 7 7h2
+- 8i5ue5
+- Layers
+- m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z
+- 8b97xw
+- M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z
+- 1rqfz7
+- usdka0
+- Radio
+- M4.9 19.1C1 15.2 1 8.8 4.9 4.9
+- 1vaf9d
+- Activity
+- M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2
+- 169zse
+- M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z
+- pzmjnu
+- Table2
+- M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18
+- gugj83
+- Target
+
+## /analytics/overview <Nct+wt>
+components: Nct:5933, Use:40, qse:715, op:44, Es:53, Hn:68, Wse:43, ln:50, xd:181, uct:66, Ect:631
+- bitcoin
+- Open Interest
+- All exchanges
+- 24h Volume
+- Liquidations 24h
+- Fear & Greed
+- BTC Price
+- ETH Price
+- BTC Dominance
+- Long/Short Ratio
+- BTC global
+- BTC Price & Open Interest
+- Price
+- BTC Long / Short Ratio
+- Long %
+- Short %
+- hsl(var(--cg2-up))
+- hsl(var(--cg2-down))
+- Fear & Greed Index
+- Top Gainers (24h)
+- Top Losers (24h)
+- Heatmap (24h)
+- hsl(var(--cg2-border))
+- Total Bitcoin Spot ETF Net Inflow
+- /analytics/etf
+- View all →
+- cg2-table
+- Date
+- Net Flow
+- Cumulative
+-  BTC ETFs tracked
+- Data via Coinglass · auto-refreshing every 60s
+- hsl(var(--cg2-accent))
+- hsl(220 70% 55%)
+- var(--cg2-up)
+- var(--cg2-down)
+- middle
+- hsl(var(--cg2-text))
+
+## /analytics <nct+wt+wut+wt>
+components: nct:466, Slt:78, tct:1319, i:131, rct:535, wut:100, gu:322
+- Market data · auto-refreshing · intervals vary per dataset
+- /analyse
+- Market Analytics
+- aria-label
+- Analytics sections
+- section-tab-indicator
+- spring
+- Loading section
+- coinglass
+
+## (index) <wut+wt>
+components: wut:100, gu:322
+- coinglass
+
+## coinglass <hut+wt>
+components: hut:822, gu:322
+- ./CoinglassHomeSection-D6xN45sU.js
+- ./LiquidationsSection-945dx5UJ.js
+- ./DerivativesSection-Dd2I6qhc.js
+- ./OptionsSection-CnwbPOBa.js
+- ./EtfFlowsSection-CZWJrPVX.js
+- ./WhalesSection-DBFXs7Ex.js
+- ./SentimentSection-ppBTCoUp.js
+- ./MarketsSection-ZpFf9Ip5.js
+- coinglass
+
+## liquidations <put+wt>
+components: 
+
+
+## derivatives <mut+wt>
+components: 
+
+
+## options <gut+wt>
+components: 
+
+
+## etf <xut+wt>
+components: 
+
+
+## whales <vut+wt>
+components: 
+
+
+## sentiment <yut+wt>
+components: 
+
+
+## markets <but+wt>
+components: 
+
+
+## /markets <wt>
+components: 
+
+
+## /analytics/coin/:symbol <gct+wt>
+components: gct:141, gu:322
+- /analytics/markets
+
+## /terminal <Lct+wt+Uct+wt>
+components: Uct:4184, Nu:100
+- fear-greed
+- coins-markets
+- etf-btc-flows
+- global-ls-ratio
+- oi-aggregated-history
+- open_interest_usd
+- oi_usd
+- volume_usd_24h
+- vol_usd_24h
+- price_change_percent_24h
+- flow_usd
+- net_flow
+- long_short_ratio
+- symbol
+- Coin
+- Price
+- ma-mono
+- current_price
+- 24h %
+- ma-up
+- ma-down
+- Dashboard
+- Derivatives market overview
+- Fear & Greed
+- Extreme Fear
+- Fear
+- Neutral
+- Greed
+- Extreme Greed
+- Total Open Interest
+- All tracked coins
+- 24h Volume
+- Aggregated futures
+- BTC Dominance
+- OI share
+- BTC ETF Net Inflow (USD)
+- Net Flow
+- hsl(168 100% 44%)
+-  Long / Short Ratio
+- L/S
+- hsl(50 90% 56%)
+- Top Gainers (24h)
+- Top Losers (24h)
+-  Aggregated Open Interest
+
+## (index) <Uct+wt>
+components: Uct:4184, Nu:100
+- fear-greed
+- coins-markets
+- etf-btc-flows
+- global-ls-ratio
+- oi-aggregated-history
+- open_interest_usd
+- oi_usd
+- volume_usd_24h
+- vol_usd_24h
+- price_change_percent_24h
+- flow_usd
+- net_flow
+- long_short_ratio
+- symbol
+- Coin
+- Price
+- ma-mono
+- current_price
+- 24h %
+- ma-up
+- ma-down
+- Dashboard
+- Derivatives market overview
+- Fear & Greed
+- Extreme Fear
+- Fear
+- Neutral
+- Greed
+- Extreme Greed
+- Total Open Interest
+- All tracked coins
+- 24h Volume
+- Aggregated futures
+- BTC Dominance
+- OI share
+- BTC ETF Net Inflow (USD)
+- Net Flow
+- hsl(168 100% 44%)
+-  Long / Short Ratio
+- L/S
+- hsl(50 90% 56%)
+- Top Gainers (24h)
+- Top Losers (24h)
+-  Aggregated Open Interest
+
+## spot <zct+wt>
+components: zct:104, Xse:42
+- Spot Markets
+- Sortable list of all tracked markets
+
+## sectors/:slug <Wct+wt>
+components: Wct:299, Xse:42
+- Unknown sector: 
+
+## etf <qct+wt>
+components: qct:2490, Nu:100
+- etf-btc-list
+- etf-btc-flows
+- aum_usd
+- holdings
+- btc_holdings
+- flow_usd
+- net_flow
+- issuer
+- Issuer
+- ma-dim
+- ma-mono
+- BTC Held
+- Net Flow (1d)
+- flow_usd_1d
+- net_flow_1d
+- ma-up
+- ma-down
+- Change %
+- price_change_percent_24h
+- Bitcoin Spot ETFs
+- Issuer flows, AUM and holdings
+- Total AUM
+- Total BTC Held
+- ETF Count
+- Net Inflow History
+- Net Flow USD
+- hsl(168 100% 44%)
+- ETF List
+
+## coin/:symbol <Kct+wt>
+components: Kct:5680, Nu:100
+- coins-markets
+- oi-aggregated-history
+- price-history
+- global-ls-ratio
+- aggregated-history
+- funding-exchange-list
+- oi-exchange-list
+- funding-oi-weight-history
+- taker-buy-sell
+- long_short_ratio
+- long_liquidation_usd
+- short_liquidation_usd
+- buy_volume_usd
+- sell_volume_usd
+- funding_rate
+- Exchange
+- Open Interest
+- ma-mono
+- open_interest_usd
+- oi_usd
+- 24h Vol
+- volume_usd_24h
+- vol_usd_24h
+- OI Share
+- open_interest_share
+- /terminal
+- ma-btn
+- ← Back
+- Price
+- current_price
+- price_change_percent_24h
+- open_interest_change_percent_24h
+- 24h Volume
+- Funding (avg)
+- Price & Open Interest
+- ma-mute
+- hsl(168 100% 44%)
+- hsl(50 90% 56%)
+- Long / Short Ratio
+- L/S
+- Liquidations
+- Long Liq
+- hsl(358 78% 58%)
+- Short Liq
+- hsl(152 76% 45%)
+- OI-Weighted Funding
+- Funding %
+- Taker Buy / Sell Volume
+- Sell
+- Markets by Exchange
+- Funding by Exchange
+- Liquidation Heatmap (long vs short)
+
+## exchanges/:exchange <Yct+wt>
+components: Yct:2074, Nu:100
+- Binance
+- coins-markets
+- exchange-balance-list
+- open_interest_usd
+- volume_usd_24h
+- funding_rate
+- symbol
+- Coin
+- Open Interest
+- ma-mono
+- 24h Vol
+- Funding
+- ma-up
+- ma-down
+- Exchange overview
+- Tracked Coins
+- Total OI
+- 24h Volume
+- BTC Balance
+- btc_balance
+- balance
+- Coins on 
+
+## derivatives/open-interest <Xct+wt>
+components: Xct:1081, Nu:100
+- oi-aggregated-history
+- oi-exchange-list
+- Exchange
+- Open Interest
+- ma-mono
+- open_interest_usd
+- Share
+- open_interest_share
+- hsl(168 100% 44%)
+- ma-panel
+
+## derivatives/funding <Qct+wt>
+components: Qct:965
+- funding-exchange-list
+- funding-oi-weight-history
+- funding_rate
+- OI-Weighted Funding
+- Funding %
+- hsl(168 100% 44%)
+- ma-panel
+- Per-exchange Funding
+
+## derivatives/long-short <Jct+wt>
+components: Jct:968
+- global-ls-ratio
+- long_short_ratio
+- Global Accounts
+- hsl(168 100% 44%)
+- Top Trader (Accounts)
+- hsl(50 90% 56%)
+- Top Trader (Positions)
+- hsl(280 60% 60%)
+- L/S
+
+## derivatives/liquidations <Zct+wt>
+components: Zct:1463, Nu:100
+- aggregated-history
+- long_liquidation_usd
+- short_liquidation_usd
+- Coin
+- 24h Total
+- ma-mono
+- liquidation_usd_24h
+- total_24h
+- Long
+- ma-mono ma-down
+- long_liquidation_usd_24h
+- Short
+- ma-mono ma-up
+- short_liquidation_usd_24h
+- Long Liq
+- hsl(358 78% 58%)
+- Short Liq
+- hsl(152 76% 45%)
+- ma-panel
+- By Coin (24h)
+
+## onchain/unlocks <Hct+wt>
+components: Hct:369
+- Token Unlock Schedule
+- Upcoming vesting events
+- ma-panel
+- Token unlock data unavailable
+- This data source is not enabled on the current plan. Enable a token-unlock endpoint in the proxy to populate this view — no mock data shown.
+
+## onchain/exchange-balance <rut+wt>
+components: rut:507
+- exchange-balance-list
+- exchange-balance-chart
+- balance
+- Exchange Balance
+- Bitcoin held on exchanges
+- BTC Balance
+- hsl(168 100% 44%)
+
+## indicators/fear-greed <eut+wt>
+components: eut:877
+- fear-greed
+- Fear & Greed Index
+- Extreme Fear
+- Fear
+- Neutral
+- Greed
+- Extreme Greed
+- History
+- F&G
+- hsl(168 100% 44%)
+
+## indicators/cycle <tut+wt>
+components: tut:718
+- ahr999
+- puell-multiple
+- pi-cycle
+- BTC Cycle Indicators
+- AHR999
+- Puell Multiple
+- Pi Cycle
+- hsl(168 100% 44%)
+
+## /subscription <Jnt+wt>
+components: Jnt:22042, mt:82, nc:4574, Dv:65, Ov:81, Xle:74, MI:41, II:41, cP:40, Di:78, sx:64, zd:88, nj:88, Kq:49, zr:41, Bi:41, GN:264, Ui:41, HT:41, pn:41, Fn:74, ice:303, cm:48, Gn:41, bc:90, Pt:40, nx:70, Uh:194, vo:54, Aa:52, Ta:41, cce:151, Ur:54, Qe:48
+- monthly
+- Invalid coupon
+- Error
+- destructive
+- razorpay
+- Success
+- Subscription activated!
+- script
+- https://checkout.razorpay.com/v1/checkout.js
+- Failed to load Razorpay SDK
+- Payment Cancelled
+- You can try again anytime.
+- Payment Successful!
+- Your subscription is now active.
+- Confirmation Failed
+- Please contact support.
+- payment.failed
+- Payment failed. Please try again.
+- Payment Failed
+- #6366f1
+- Something went wrong
+- My Subscription
+- Choose a plan to unlock features
+- Billing
+- Price
+- You Pay
+- Currency
+- Feature Limits
+- live_trading
+- paper_trading
+- ∞ Unlimited
+- / month
+- Features & Usage
+- Plan Features
+- No Active Subscription
+- Browse plans below and get started
+- smooth
+-  Choose a Plan
+- Available Plans
+- Monthly
+- quarterly
+- Semi-Annually
+- yearly
+- Yearly
+- string
+-  Free Plan
+-  Subscribe
+- Payment History
+- secondary
+- No payments yet
+- success
+- pending
+- failed
+- en-IN
+- 2-digit
+- numeric
+- Subscription
+-  off
+- Paid
+- Pending
+- Failed
+- Page 
+-  of 
+- button
+- ← Previous
+- Next →
+-  Subscribe to 
+-  Apply Coupon
+- Enter coupon code
+- Apply
+- Available Coupons
+- percent
+- List Price
+- Plan Discount
+- Coupon Discount
+- Subtotal
+- Tax (
+- Total
+- Cancel
+- Activate
+- Pay with Razorpay
+- M21 12a9 9 0 1 1-6.219-8.56
+- 13zald
+- /analyse
+- Go to Analyse
+- Switch to Light Mode
+- Switch to Dark Mode
+- header
+- aria-label
+- Open menu
+- Menu
+- Navigate between pages
+-  Market Analytics
+- Admin
+-  My Profile
+-  Logout
+- Primary
+- aria-current
+- Market Analytics (opens in a new tab)
+- Market Analytics
+- aria-hidden
+- Admin pages
+- circle
+- 4exip2
+- Moon
+- M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z
+- a7tn18
+- 1e0a9i
+- M3 3v16a2 2 0 0 0 2 2h16
+- c24i48
+- M15 3h6v6
+- 1q9fwt
+- User
+- M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2
+- 975kel
+- M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4
+- 1uf3rs
+- Crown
+- 1vdc57
+- 1mglay
+- Sparkles
+- 4pj2yx
+- ynyp8z
+- CircleX
+- M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z
+- vktsd0
+- Ticket
+- M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z
+- qn84l0
+- M18 6 6 18
+- 1bl5f8
+
+## /referrals <Znt+wt>
+components: Znt:10505, mt:82, nc:4574, Dv:65, Ov:81, Xle:74, MI:41, II:41, cP:40, Di:78, sx:64, zd:88, nj:88, Kq:49, Vle:83, Qe:48, Lle:92, a5:67, Na:68, En:66, bn:72, Vt:52, Ur:54, hu:89, ya:41, ba:41, _r:41, We:41, wa:41, Ue:41, Pt:40
+- Error
+- Failed to load referrals
+- destructive
+- Free
+- Copied!
+- Join CoinGreeks
+- My Referrals
+- Share & Earn
+- Get 
+- % commission on every paid referral
+-  Share
+- Code: 
+- How it works
+- Share your unique referral link
+- Friend signs up & purchases a plan
+- Total Referrals
+- Total Earned
+- Paid
+- Pending
+- Search by name or email...
+- All Status
+- pending
+- not_paid
+- No Purchase
+- All Plans
+- Date:
+-  of 
+- button
+-  Clear
+- No results found
+- No referrals yet
+- Try adjusting your filters
+- Share your link to start earning
+- User
+- Joined
+- Plan
+- Amount
+- Commission
+- Status
+- en-US
+- numeric
+- secondary
+-  referral
+- M21 12a9 9 0 1 1-6.219-8.56
+- 13zald
+- /analyse
+- Go to Analyse
+- Switch to Light Mode
+- Switch to Dark Mode
+- header
+- aria-label
+- Open menu
+- Menu
+- Navigate between pages
+-  Market Analytics
+- Admin
+-  My Profile
+-  Logout
+- Primary
+- aria-current
+- Market Analytics (opens in a new tab)
+- Market Analytics
+- aria-hidden
+- Admin pages
+- circle
+- 4exip2
+- Moon
+- M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z
+- a7tn18
+- 1e0a9i
+- M3 3v16a2 2 0 0 0 2 2h16
+- c24i48
+- M15 3h6v6
+- 1q9fwt
+- M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2
+- 975kel
+- M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4
+- 1uf3rs
+- Gift
+- bkv52
+- Copy
+- 17jyea
+- Share2
+- gq8acd
+- Search
+- 4ej97u
+- popper
+- M18 6 6 18
+- 1bl5f8
+- Users
+- M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2
+- 1yyitq
+
+## /admin <wt>
+components: 
+
+
+## /admin/subscriptions <Nnt+wt>
+components: Nnt:9589, nc:4574, Dv:65, Ov:81, Xle:74, MI:41, II:41, cP:40, Di:78, sx:64, zd:88, nj:88, Kq:49, vn:55, mt:82, zr:41, pn:41, Bi:41, Ui:41, ya:41, ba:41, _r:41, We:41, wa:41, Ue:41, el:41, Mv:177, vo:54, Aa:52, Ta:41, Qe:48, my:41, Pt:40, Ur:54, sE:82, sp:41
+- Error
+- Failed to load data
+- destructive
+- string
+- Validation
+- Plan name is required
+- Updated
+- Created
+- Failed to save
+- Subscription Plans
+- Manage subscription tiers and pricing
+-  New Plan
+- No Plans Yet
+- Create your first subscription plan
+-  Create Plan
+- All Plans (
+- Name
+- Monthly
+- Quarterly
+- Yearly
+- Status
+- Actions
+- Edit Plan
+- Create New Plan
+- Plan Name *
+- e.g. Basic Plan
+- Description
+- Features
+- Add a feature
+- Enter
+- button
+- secondary
+- Billing Intervals
+-  (Per Month)
+- Menu Items
+- Active
+- Plan visible to users
+- Cancel
+- Update
+- Create
+- /analyse
+- Go to Analyse
+- Switch to Light Mode
+- Switch to Dark Mode
+- header
+- aria-label
+- Open menu
+- Menu
+- Navigate between pages
+-  Market Analytics
+- Admin
+-  My Profile
+-  Logout
+- Primary
+- aria-current
+- Market Analytics (opens in a new tab)
+- Market Analytics
+- aria-hidden
+- Admin pages
+- circle
+- 4exip2
+- Moon
+- M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z
+- a7tn18
+- 1e0a9i
+- M3 3v16a2 2 0 0 0 2 2h16
+- c24i48
+- M15 3h6v6
+- 1q9fwt
+- User
+- M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2
+- 975kel
+- M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4
+- 1uf3rs
+- Plus
+- M5 12h14
+- 1ays0h
+- M21 12a9 9 0 1 1-6.219-8.56
+- 13zald
+- Pencil
+- M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z
+- 1a8usu
+- M18 6 6 18
+- 1bl5f8
+
+## /admin/menu-pricing <Cnt+wt>
+components: Cnt:4720, nc:4574, Dv:65, Ov:81, Xle:74, MI:41, II:41, cP:40, Di:78, sx:64, zd:88, nj:88, Kq:49, vn:55, mt:82, zr:41, pn:41, Bi:41, Ui:41, ya:41, ba:41, _r:41, We:41, wa:41, Ue:41, Pt:40, el:41, Mv:177, vo:54, Aa:52, Ta:41, Qe:48
+- Error
+- Failed to load menu items
+- destructive
+- Validation
+- Display Name is required
+- Updated
+- Created
+- Failed to save
+- Menu Pricing Master
+- Manage menu items linked to subscription plans
+-  New Item
+- No Menu Items
+- Add menu items that can be linked to plans
+-  Add Item
+- All Menu Items (
+- Display Name
+- Category
+- Price
+- Status
+- Actions
+- Failed to update status
+- Edit Menu Item
+- New Menu Item
+- Display Name *
+- e.g. Reports Export
+- e.g. Trading, Analytics, Data
+- Price (₹)
+- number
+- Active
+- Cancel
+- Update
+- Create
+- /analyse
+- Go to Analyse
+- button
+- Switch to Light Mode
+- Switch to Dark Mode
+- header
+- aria-label
+- Open menu
+- Menu
+- Navigate between pages
+-  Market Analytics
+- Admin
+-  My Profile
+-  Logout
+- Primary
+- aria-current
+- Market Analytics (opens in a new tab)
+- Market Analytics
+- aria-hidden
+- Admin pages
+- circle
+- 4exip2
+- Moon
+- M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z
+- a7tn18
+- 1e0a9i
+- M3 3v16a2 2 0 0 0 2 2h16
+- c24i48
+- M15 3h6v6
+- 1q9fwt
+- User
+- M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2
+- 975kel
+- M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4
+- 1uf3rs
+- Plus
+- M5 12h14
+- 1ays0h
+- M21 12a9 9 0 1 1-6.219-8.56
+- 13zald
+- Pencil
+- M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z
+- 1a8usu
+
+## /admin/coupons <Ent+wt>
+components: Ent:13838, nc:4574, Dv:65, Ov:81, Xle:74, MI:41, II:41, cP:40, Di:78, sx:64, zd:88, nj:88, Kq:49, vn:55, mt:82, zr:41, pn:41, Bi:41, Ui:41, ya:41, ba:41, _r:41, We:41, wa:41, Ue:41, Pt:40, el:41, Mv:177, ao:56, vo:54, Aa:52, Ta:41, Qe:48, En:66, bn:72, Vt:52, sp:41, my:41, ry:56, Lm:41, Um:41, zm:41, Wm:41, Vm:41
+- Error
+- Failed to load coupons
+- destructive
+- public_all_listed
+- Validation
+- Code is required
+- private_community_listed
+- Updated
+- Created
+- Failed to save
+- Coupon Code Master
+- Manage discount coupons
+-  New Coupon
+- No Coupons
+- Create your first coupon code
+-  Create Coupon
+- All Coupons (
+- Code
+- Discount
+- Type
+- Validity
+- Plans
+- Uses
+- Status
+- Actions
+- percent
+- secondary
+- Plan
+- Edit Coupon
+- New Coupon
+- Code *
+- BASIC20
+- Coupon Type
+- Assign to Users
+- Deselect All
+- Select All
+- Invert selection
+- ↔ Invert
+- Search users...
+- No users found
+-  of 
+-  users selected
+- Description
+- Discount Type
+- Percent
+- Fixed
+- Discount Value
+- number
+- Min Order (₹)
+- Max Uses
+- Per User Limit
+- Starts At
+- Expires At
+- Applicable Plans & Intervals
+- No plans available
+- Active
+- Cancel
+- Update
+- Create
+- Delete Coupon?
+- This action cannot be undone. The coupon will be permanently deleted.
+- Deleted
+- Delete
+- /analyse
+- Go to Analyse
+- button
+- Switch to Light Mode
+- Switch to Dark Mode
+- header
+- aria-label
+- Open menu
+- Menu
+- Navigate between pages
+-  Market Analytics
+- Admin
+-  My Profile
+-  Logout
+- Primary
+- aria-current
+- Market Analytics (opens in a new tab)
+- Market Analytics
+- aria-hidden
+- Admin pages
+- circle
+- 4exip2
+- Moon
+- M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z
+- a7tn18
+- 1e0a9i
+- M3 3v16a2 2 0 0 0 2 2h16
+- c24i48
+- M15 3h6v6
+- 1q9fwt
+- User
+- M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2
+- 975kel
+- M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4
+- 1uf3rs
+- Plus
+- M5 12h14
+- 1ays0h
+- M21 12a9 9 0 1 1-6.219-8.56
+- 13zald
+- Pencil
+- M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z
+- 1a8usu
+- Trash2
+- M3 6h18
+- d0wm0j
+- popper
+
+## /admin/user-subscriptions <Pnt+wt>
+components: Pnt:25687, Pt:40, nc:4574, Dv:65, Ov:81, Xle:74, MI:41, II:41, cP:40, Di:78, sx:64, zd:88, nj:88, Kq:49, cm:48, Gn:41, hu:89, Do:79, mt:82, zr:41, Bi:41, Ui:41, Na:68, Qe:48, En:66, zle:101, bn:72, Vt:52, pn:41, ya:41, ba:41, _r:41, We:41, wa:41, Ue:41, sce:61, rx:57, Cc:147, Ur:54
+- Free Plan
+- Error
+- Failed to load users
+- destructive
+- validity
+- referrals
+- commission
+- Failed to load commissions
+- commissions
+- Active
+- expired
+- Expired
+- cancelled
+- secondary
+- Cancelled
+- Free
+- User Subscriptions
+- Manage users and commissions
+-  Users
+-  Commissions
+- Users (
+- Search by name or email...
+- Status
+- All Statuses
+- User
+- Plan
+- Expiry
+- Validity 
+- Referrals 
+- Commission % 
+- Account
+- Limits
+- No users found
+- (Soon)
+- d left
+- number
+- Enter
+- Updated
+- Failed to update
+- Escape
+- button
+- Click to edit
+- default
+- Deactive
+- Edit feature limits
+- Page 
+-  of 
+-  users
+- ← Previous
+- Next →
+- Total Commission
+- Paid
+- Pending
+- Search referrer name...
+- Filter by month
+- All Months
+- Clear
+- No commissions found
+-  referral
+-  Paid
+-  Pending
+- Referrer
+- Referrals
+- Commission %
+- Total
+- Action
+- Details
+- pending
+-  user
+- Mark Paid
+-  View
+- 's Referrals
+-  referred user
+- Joined
+- Total Paid
+- Commission
+- dd MMM yyyy
+- Not Paid
+- Total: 
+- Paid: ₹
+- Pending: ₹
+- Close
+- Mark Payment — 
+-  · Total: ₹
+- Payment Status
+- ✓ Paid
+- not_paid
+- ✗ Not Paid
+- Proof Link per Referral 
+- https://... (payment screenshot / receipt URL)
+- Comment 
+- textarea
+- Optional note...
+- Reason for not paying (required)
+- Cancel
+- proof-link
+- Saving...
+- Confirm Paid
+- Confirm Not Paid
+- Feature Limits
+- Paper Trading Limit
+- trades / month
+- Set to 0 for plan default. Higher values override plan limit.
+- Live Trading Limit
+-  Saving...
+- Save Limits
+- /analyse
+- Go to Analyse
+- Switch to Light Mode
+- Switch to Dark Mode
+- header
+- aria-label
+- Open menu
+- Menu
+- Navigate between pages
+-  Market Analytics
+- Admin
+-  My Profile
+-  Logout
+- Primary
+- aria-current
+- Market Analytics (opens in a new tab)
+- Market Analytics
+- aria-hidden
+- Admin pages
+- circle
+- 4exip2
+- Moon
+- M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z
+- a7tn18
+- 1e0a9i
+- M3 3v16a2 2 0 0 0 2 2h16
+- c24i48
+- M15 3h6v6
+- 1q9fwt
+- M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2
+- 975kel
+- M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4
+- 1uf3rs
+- Users
+- M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2
+- 1yyitq
+- 7eqyqh
+- M21 12a9 9 0 1 1-6.219-8.56
+- 13zald
+- Search
+- 4ej97u
+- Filter
+- polygon
+- 1yg77f
+- popper
+- Settings2
+- M20 7h-9
+- 3s1dr2
+- Calendar
+- M8 2v4
+- 1cmpym
+- M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0
+- 1nclc0
+- M18 6 6 18
+- 1bl5f8
+
+## /admin/banners <Ant+wt>
+components: Ant:9805, nc:4574, Dv:65, Ov:81, Xle:74, MI:41, II:41, cP:40, Di:78, sx:64, zd:88, nj:88, Kq:49, vn:55, mt:82, zr:41, pn:41, Sm:128, F1:92, Bi:41, Ui:41, ya:41, ba:41, _r:41, We:41, wa:41, Ue:41, Pt:40, el:41, Mv:177, ao:56, vo:54, Aa:52, Ta:41, Qe:48, my:41, En:66, bn:72, Vt:52, ry:56, Lm:41, Um:41, zm:41, Wm:41, Vm:41
+- Admin access required
+- Failed to load banners
+- Error
+- destructive
+- once_per_day
+- Invalid image
+- Validation
+- Title is required
+- Image is required
+- Updated
+- Created
+- Failed to save
+- Failed to update status
+- Deleted
+- Failed to delete
+- Banner Master
+- Manage promotional banners and popups
+-  New Banner
+- Couldn't load banners
+- Retry
+- No Banners
+- Create your first banner
+-  Create Banner
+- All Banners (
+- Image
+- Title
+- Type
+- Frequency
+- Active
+- Actions
+- Edit Banner
+- New Banner
+- banner-title
+- Welcome Offer
+- banner-description
+- Description
+- Get 20% off your first plan
+- banner-link
+- Link URL
+- https://coingreek.com/offers
+- banner-starts
+- Starts At 
+- (optional)
+- datetime-local
+- banner-ends
+- Ends At 
+- banner-image
+- Image 
+- (leave empty to keep current)
+- image/*
+- Maximum size 
+- Preview
+- banner-active
+- Cancel
+- Save Changes
+- Create Banner
+- Delete banner?
+- This permanently removes the banner. This action cannot be undone.
+- Delete
+- /analyse
+- Go to Analyse
+- button
+- Switch to Light Mode
+- Switch to Dark Mode
+- header
+- aria-label
+- Open menu
+- Menu
+- Navigate between pages
+-  Market Analytics
+- Admin
+-  My Profile
+-  Logout
+- Primary
+- aria-current
+- Market Analytics (opens in a new tab)
+- Market Analytics
+- aria-hidden
+- Admin pages
+- circle
+- 4exip2
+- Moon
+- M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z
+- a7tn18
+- 1e0a9i
+- M3 3v16a2 2 0 0 0 2 2h16
+- c24i48
+- M15 3h6v6
+- 1q9fwt
+- User
+- M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2
+- 975kel
+- M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4
+- 1uf3rs
+- Plus
+- M5 12h14
+- 1ays0h
+- M21 12a9 9 0 1 1-6.219-8.56
+- 13zald
+- m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3
+- wmoenq
+- 1m3agn
+- Pencil
+- M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z
+- 1a8usu
+- Trash2
+- M3 6h18
+- d0wm0j
+- popper
+
+## /admin/emails <Vnt+wt>
+components: Vnt:6912, nc:4574, Dv:65, Ov:81, Xle:74, MI:41, II:41, cP:40, Di:78, sx:64, zd:88, nj:88, Kq:49, ki:84, cm:48, Gn:41, sa:41, zr:41, Bi:41, Ui:41, hu:89, Pt:40, pn:41, Na:68, Qe:48, En:66, bn:72, Vt:52, Ur:54, mt:82, sp:41, my:41, ZV:174, $nt:6518, Io:66, ya:41, ba:41, _r:41, We:41, wa:41, Ue:41, _a:68, Vi:68, ry:56, Lm:41, Um:41, zm:41, Wm:41, Vm:41
+- compose
+- message
+- Failed to load users
+- destructive
+- subject
+- Emails sent
+- history
+- Send failed
+- Please try again.
+- Promotional Emails
+- Compose
+- History
+-  Recipients
+- secondary
+-  selected
+- Search users by name or email
+- aria-label
+- Segment
+- All users
+- Select all (
+-  Clear
+- No users match the search.
+- promo-subject
+- Subject
+- Your report is ready
+- promo-message
+- Message
+- Insert:
+- button
+- into the last-focused field
+- Preview for 
+- Send Email
+- Send to 
+-  user(s)?
+- ',h,'
+-  selected user(s). Placeholders are filled per recipient.
+- Cancel
+- Confirm
+- /analyse
+- Go to Analyse
+- Switch to Light Mode
+- Switch to Dark Mode
+- header
+- Open menu
+- Menu
+- Navigate between pages
+-  Market Analytics
+- Admin
+-  My Profile
+-  Logout
+- Primary
+- aria-current
+- Market Analytics (opens in a new tab)
+- Market Analytics
+- aria-hidden
+- Admin pages
+- circle
+- 4exip2
+- Moon
+- M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z
+- a7tn18
+- 1e0a9i
+- M3 3v16a2 2 0 0 0 2 2h16
+- c24i48
+- M15 3h6v6
+- 1q9fwt
+- User
+- M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2
+- 975kel
+- M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4
+- 1uf3rs
+- Mail
+- 18n3k1
+- Users
+- M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2
+- 1yyitq
+- Search
+- 4ej97u
+- popper
+- M18 6 6 18
+- 1bl5f8
+- M21 12a9 9 0 1 1-6.219-8.56
+- 13zald
+- Send
+- M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z
+- 1ffxy3
+- Failed to load campaigns
+- Failed to load campaign
+- -ml-2
+-  Back to campaigns
+- Recipients 
+- Delivered 
+- Failed 
+- Success 
+- Sent 
+- By 
+- Name
+- Email
+- Status
+- Sent at
+- Error
+- No recipients recorded.
+- Page 
+-  of 
+-  Prev
+- Next 
+- Recipients
+- Delivered
+- Failed
+- Sent by
+- No campaigns sent yet.
+- m12 19-7-7 7-7
+- 1l729n
+- m15 18-6-6 6-6
+- 1wnfg3
+- m9 18 6-6-6-6
+- mthhwq
+
+## /admin/users <Gnt+wt>
+components: Gnt:4257, nc:4574, Dv:65, Ov:81, Xle:74, MI:41, II:41, cP:40, Di:78, sx:64, zd:88, nj:88, Kq:49, hu:89, zr:41, Bi:41, Ui:41, Na:68, Qe:48, En:66, bn:72, Vt:52, pn:41, mt:82, ya:41, ba:41, _r:41, We:41, wa:41, Ue:41, _a:68, Vi:68
+- Failed to load users
+- Users
+-  User Management
+-  users
+- Search by name or email
+- Name
+- Email
+- Plan
+- Status
+- Subscribed
+- Ends
+- Joined
+- Referral code
+- Commission %
+- Referrals
+- No users found.
+- Page 
+-  of 
+-  Prev
+- Next 
+- /analyse
+- Go to Analyse
+- button
+- Switch to Light Mode
+- Switch to Dark Mode
+- header
+- aria-label
+- Open menu
+- Menu
+- Navigate between pages
+-  Market Analytics
+- Admin
+-  My Profile
+-  Logout
+- Primary
+- aria-current
+- Market Analytics (opens in a new tab)
+- Market Analytics
+- aria-hidden
+- Admin pages
+- circle
+- 4exip2
+- Moon
+- M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z
+- a7tn18
+- 1e0a9i
+- M3 3v16a2 2 0 0 0 2 2h16
+- c24i48
+- M15 3h6v6
+- 1q9fwt
+- User
+- M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2
+- 975kel
+- M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4
+- 1uf3rs
+- M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2
+- 1yyitq
+- Search
+- 4ej97u
+- popper
+- M21 12a9 9 0 1 1-6.219-8.56
+- 13zald
+- m15 18-6-6 6-6
+- 1wnfg3
+- m9 18 6-6-6-6
+- mthhwq
+
+## * <pnt+fut+Nut>
+components: pnt:555, fut:5947, i5:86, Ur:54, mt:82, ZV:174, Nut:3200, Ghe:472, ffe:80, Kce:297, Hce:49, uW:41, dW:41, cW:41, Lhe:65, $ot:304, est:1836, Dv:65, Ov:81, Ep:61, sst:5276, nst:2267, Pt:40, Fn:74, kf:66, ost:906, dst:3161, zr:41, pst:1964, nx:70, xst:3480, Ane:158, s:71, yst:1640, Sot:3588, _ot:2259, Jo:63, Eot:592, Oot:1623, Mot:1277, Rot:2441, ki:84, Lot:2588, Io:66, Fot:2656, Bot:2794, qot:852, oT:186, Got:612, Kot:1345, hnt:29518, Qe:48, b0:92, Sg:143, Cc:147, r4:221, zd:88, Sk:333, Uh:194, HU:43, IQe:42023, p1e:1684, vo:54, Aa:52, _a:68, Vi:68, Ta:41, ty:41, g1e:2016, n1e:125, i1e:2275, Sm:128, pT:155, w$:481, Z6:190, e8:164, mT:190, t8:150, vs:90, Gs:91, S$:113, we:54, Di:78, cm:48, Gn:41, wk:71, Mi:157, L1:109, yk:230, _k:78, sa:41, Ul:173, Ile:152, lce:155, o5:69, Bqe:73, Z_:134, GXe:102, KXe:69, XXe:127, Nct:5933, Use:40, qse:715, op:44, Es:53, Hn:68, Wse:43, ln:50, xd:181, uct:66, Ect:631, nct:466, Slt:78, tct:1319, i:131, rct:535, wut:100, gu:322, hut:822, gct:141, Uct:4184, Nu:100, zct:104, Xse:42, Wct:299, qct:2490, Kct:5680, Yct:2074, Xct:1081, Qct:965, Jct:968, Zct:1463, Hct:369, rut:507, eut:877, tut:718, Jnt:22042, nc:4574, Xle:74, MI:41, II:41, cP:40, sx:64, nj:88, Kq:49, Bi:41, GN:264, Ui:41, HT:41, pn:41, ice:303, bc:90, cce:151, Znt:10505, Vle:83, Lle:92, a5:67, Na:68, En:66, bn:72, Vt:52, hu:89, ya:41, ba:41, _r:41, We:41, wa:41, Ue:41, Nnt:9589, vn:55, el:41, Mv:177, my:41, sE:82, sp:41, Cnt:4720, Ent:13838, ao:56, ry:56, Lm:41, Um:41, zm:41, Wm:41, Vm:41, Pnt:25687, Do:79, zle:101, sce:61, rx:57, Ant:9805, F1:92, Vnt:6912, $nt:6518, Gnt:4257
+- 404 Error: User attempted to access non-existent route:
+- Oops! Page not found
+- Return to Home
+- function
+- assistant
+- button
+- Ask CoinGreeks Assistant
+- aria-label
+- Ask CoinGreeks Assistant (drag to move)
+- data-tour
+- chat-launcher
+- CoinGreeks Assistant
+- Platform help · not financial advice
+- Limited visitor mode · log in for full support
+- Close
+- Hi! Ask me anything about using CoinGreeks — or try one of these:
+- Need a human?
+- _blank
+- noreferrer
+- Email
+- Ask a question…
+- submit
+- Send
+- M7.9 20A9 9 0 1 0 4 16.1L2 22Z
+- vv11sd
+- M18 6 6 18
+- 1bl5f8
+- M21 12a9 9 0 1 1-6.219-8.56
+- 13zald
+- M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z
+- 1ffxy3
+- /privacy
+- /terms
+- /disclaimer
+- /payoff-preview
+- /sso
+- /auth/delta
+- /auth
+- /analyse
+- /analytics/overview
+- /analytics
+- coinglass
+- liquidations
+- derivatives
+- options
+- whales
+- sentiment
+- markets
+- /markets
+- /analytics/markets
+- /analytics/coin/:symbol
+- /terminal
+- sectors/:slug
+- coin/:symbol
+- exchanges/:exchange
+- derivatives/open-interest
+- derivatives/funding
+- derivatives/long-short
+- derivatives/liquidations
+- onchain/unlocks
+- onchain/exchange-balance
+- indicators/fear-greed
+- indicators/cycle
+- /subscription
+- /referrals
+- /admin
+- /admin/subscriptions
+- /admin/menu-pricing
+- /admin/coupons
+- /admin/user-subscriptions
+- /admin/banners
+- /admin/emails
+- /admin/users
+- #features
+- Features
+- #crypto-analytics
+- Market Analytics
+- #prices
+- Markets
+- #exchanges
+- Exchanges
+- Go to App 
+- /auth?tab=signup
+- Sign Up
+- Get Started 
+- circle
+- 4exip2
+- Moon
+- M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z
+- a7tn18
+- M5 12h14
+- 1ays0h
+- section
+- secondary
+- hsl(var(--profit))
+- Live on Delta Exchange
+- Trade Crypto Options
+- Like a Pro
+- Professional-grade options analytics, strategy builder, and paper trading — everything you need to master BTC & ETH options.
+- Start Trading Free 
+- features
+- smooth
+- Explore Features 
+- spring
+- preserve-3d
+- hsl(45 93% 47% / 0.5)
+- hsl(var(--profit) / 0.5)
+- coingreeks.com
+- Options Chain & Payoff Diagram
+- Strategy Templates
+- Ready to use
+- Options Chain
+- Live Greeks
+- http://www.w3.org/2000/svg
+- pattern
+- hero-grid
+- M 60 0 L 0 0 0 60
+- hsl(var(--primary))
+- url(#hero-grid)
+- linear
+- 1mglay
+- m6 9 6 6 6-6
+- qrunsl
+- -50px
+- subscribe
+- v2/ticker
+- en-US
+- prices
+- Live Markets
+- Powered by Delta Exchange
+- hsl(var(--accent))
+- LIVE
+- Connecting...
+- hsl(var(--loss))
+- hsl(var(--profit) / 0.1)
+- hsl(var(--loss) / 0.1)
+- H: $
+- L: $
+- Why CoinGreeks?
+- Stop Guessing. Start
+- Trading Smart
+- Without CoinGreeks
+- With CoinGreeks
+- CircleX
+- Platform Features
+- Everything You Need to
+- Trade Smarter
+- Capabilities
+- Built for Serious Traders
+- 24H Total Liq
+- Long Liq
+- Short Liq
+- Top Coin
+- crypto-analytics
+- Liquidations & Market Pulse
+- Professional-grade analytics inside your dashboard — track liquidations, exchange flows, and large orders in real time across BTC, ETH, and 200+ assets.
+- Live liquidation pattern · last 40 intervals
+- Dive into per-exchange breakdowns, historical charts, and a live order feed.
+- Explore Analytics 
+- Everything You Need
+- Full Feature List
+- A comprehensive toolkit designed for crypto options traders — from analytics to execution.
+- Check
+- M20 6 9 17l-5-5
+- 1gmf2c
+- Testimonials
+- Loved by Traders Worldwide
+- exchanges
+- Integrations
+- Supported Exchanges
+- Trade on leading crypto exchanges with more integrations coming soon.
+- default
+-  Live
+- Coming Soon
+- Ready to Trade Smarter?
+- Join thousands of traders using CoinGreeks for professional-grade crypto options analytics. Free paper trading included.
+- Create Free Account 
+- footer
+- Professional-grade crypto options analytics platform. Trade smarter with real-time data.
+- Quick Links
+- Legal
+- Contact Us
+- noopener noreferrer
+-  CoinGreeks. All rights reserved.
+- Mail
+- 18n3k1
+-  Back
+- Privacy Policy
+- Last updated: March 30, 2026
+- 1. Information We Collect
+- 2. How We Use Your Information
+- 3. Data Storage & Security
+- Your data is stored securely using industry-standard encryption and appropriate technical measures.
+- 4. Cookies & Tracking
+- We use essential cookies to maintain your session and preferences. You can manage cookie preferences through your browser settings.
+- 5. Third-Party Services
+- We integrate with Delta Exchange for market data. Their respective privacy policies also apply.
+- 6. Your Rights
+- You have the right to access, update, or delete your personal information at any time through your account settings.
+- 7. Contact Us
+- Questions? Contact us at support@coingreeks.com.
+- m12 19-7-7 7-7
+- 1l729n
+- Terms of Service
+- 1. Acceptance of Terms
+- By accessing or using CoinGreeks, you agree to be bound by these Terms of Service.
+- 2. Description of Service
+- CoinGreeks provides crypto options analytics tools including real-time options chain data, strategy building, payoff analysis, Greeks calculations, and paper trading.
+- 3. Account Responsibilities
+- You are responsible for maintaining the confidentiality of your account credentials. You must be at least 18 years old.
+- 4. Acceptable Use
+- You agree not to misuse our services or use the platform for any illegal activity.
+- 5. Intellectual Property
+- All content and functionality of CoinGreeks are owned by us and protected by intellectual property laws.
+- 6. Limitation of Liability
+- as is
+- 7. Modifications
+- We reserve the right to modify these terms at any time.
+- 8. Contact
+- Contact us at support@coingreeks.com.
+- Disclaimer
+- Not Financial Advice
+- CoinGreeks is an analytics and educational platform. Nothing on this platform constitutes financial advice, investment advice, or trading advice.
+- Trading Risks
+- Cryptocurrency Risks
+- Cryptocurrency markets are highly volatile and unregulated in many jurisdictions. You should only trade with funds you can afford to lose.
+- Data Accuracy
+- While we strive to provide accurate real-time data, we cannot guarantee the accuracy, completeness, or timeliness of any information displayed on the platform.
+- Paper Trading
+- No Guarantee
+- We do not guarantee any specific outcomes from using our analytics tools. All trading decisions are your own responsibility.
+- Third-Party Integrations
+- CoinGreeks integrates with third-party exchanges and data providers. We are not responsible for the actions, services, or policies of these third parties.
+- Payoff chart preview
+- calc(100vh - 64px)
+- sso_return
+- Signing you in…
+- Delta sign-in cancelled
+- No login code was returned.
+- destructive
+- coingreeks_pending_ref
+- Exchange failed
+- Welcome!
+- Account created with Delta.
+- Signed in with Delta.
+- Delta sign-in failed
+- Please try again.
+- Signing you in with Delta…
+- signup
+- Email is required
+- otp-verify
+- OTP Sent
+- Error
+- Failed to send OTP
+- Request failed
+- Enter valid OTP
+- Logged in successfully
+- Invalid OTP
+- OTP Resent
+- Welcome back!
+- Logged in successfully.
+- Invalid credentials.
+- Login failed
+- Account created!
+- Please verify your email with the OTP sent.
+- verify-email
+- Could not create account.
+- Signup failed
+- Please enter the complete 6-digit OTP
+- Email verified!
+- You can now sign in.
+- Verification failed
+- Invalid OTP.
+- Invalid email
+- OTP sent!
+- Check your email for the OTP.
+- reset-password
+- Failed
+- Could not send OTP.
+- Password reset!
+- You can now sign in with your new password.
+- Reset failed
+- Invalid OTP or request.
+- manual
+- opaqueredirect
+- Delta login is unavailable right now.
+- Delta login unavailable
+- Please try again later.
+- Continue with Delta Exchange
+- linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)
+- 40px 40px
+- Master Options
+- Trading
+- Professional-grade crypto options analytics with real-time Greeks, strategy building, and paper trading.
+- © 2025 CoinGreeks. Secure & encrypted.
+- Welcome back
+- Sign in to your trading dashboard
+- login-email
+- you@example.com
+- login-password
+- Password
+- password
+- Sign In
+- forgot
+- Forgot password?
+- otp-login
+-  Sign in with OTP
+- Don't have an account?
+- Create account
+-  Back to login
+- Sign in with OTP
+- We'll send a one-time code to your registered email
+- otp-email
+- Send OTP
+- New here?
+- Create an account first
+-  Change email
+- Enter OTP
+- Code sent to 
+- otp-code
+- OTP Code
+- numeric
+- Enter 6-digit code
+- Verify & Login
+- Resend OTP in 
+- Resend OTP
+- Start your options trading journey
+- signup-name
+- Full Name
+- John Doe
+- signup-email
+- signup-mobile
+- Mobile Number
+- signup-password
+- new-password
+- signup-confirm
+- Confirm
+- ✓ Uppercase letter
+- ✓ Lowercase letter
+- ✓ Number
+- ✓ Special character
+- ✓ 8+ characters
+- signup-ref
+- Referral Code (Optional)
+- REF_XXXXXXX
+- Create Account
+- Already have an account?
+- Sign in
+-  Back to sign up
+- Verify your email
+- We've sent a 6-digit OTP to 
+- Verify Email
+- Didn't receive the code?
+- Resend in 
+- OTP resent
+- A new OTP has been sent to your email.
+-  Back to sign in
+- Reset password
+- Enter your email and we'll send you an OTP
+- forgot-email
+- Email Address
+- Set new password
+- Enter the OTP sent to 
+-  and your new password
+- reset-new-password
+- New Password
+- reset-confirm-password
+- Confirm Password
+- Reset Password
+- A new OTP has been sent.
+- Lock
+- 1w4ew1
+- M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49
+- ct8e1f
+- M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0
+- 1nclc0
+- M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z
+- 1s6t7t
+- User
+- M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2
+- 975kel
+- Phone
+- foiqr5
+- M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z
+- vktsd0
+- payoff
+- SQUARED_OFF
+- cg-tour-set-tab
+- FUTURE
+- strike
+- expiry
+- Limit Reached
+- Maximum 10 active legs allowed per strategy
+- Maximum 8 legs allowed for new strategy
+- Maximum legs reached
+- Leg Added
+- SELL
+- CALL
+- Limit Exceeded
+- Net Positions
+- No changes
+- No new or modified legs to save
+- ./requoteLegs-CzbXBOh4.js
+- Some legs not re-quoted
+- Strategy
+- Success
+- No new legs
+- All legs are already saved
+- ${pe}
+- Error saving strategy:
+- Failed to save strategy
+- No legs
+- Add at least one leg to trade
+- Error in Trade All:
+- Add at least one leg
+- Saved
+- ${Dt.trim()}
+- Failed to save
+- Leg squared off successfully
+- Error squaring off leg:
+- Failed to square off leg
+- No Strategy
+- Call
+- Bull Call Spread
+- Bear Call Spread
+- Bear Put Spread
+- Bull Put Spread
+- Long Straddle
+- Short Straddle
+- Custom Spread
+- Multi-leg Strategy
+- Custom Strategy
+- builder
+- templates
+- choose
+- Max Profit
+- Unlimited
+- Max Loss
+- analytics
+- Chain
+- Paper
+- Templates
+- Live
+- Payoff
+- Analytics
+- Market Analytics (opens in a new tab)
+- Market
+- horizontal
+- builder-tab
+- paper-tab
+- Paper Trades
+- My Templates
+- Live Trades
+- options-chain
+- payoff-panel
+- Payoff Diagram
+- greeks
+- Greeks
+- P&L Table
+- Breakevens
+- number
+- None
+- P&L Analysis Table
+- Showing every 10th price point
+- Underlying Price
+- Change from Spot
+- P&L at Expiry
+- Status
+- No data — add option legs to see P&L table
+- SPOT
+- Breakeven
+- PROFIT
+- LOSS
+- BREAKEVEN
+- Breakeven Points
+- M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z
+- Upgrade Required
+- Subscribe Here →
+- Dismiss
+- Paper Trade Started
+- ${oe}
+- call_options
+- put_options
+- perpetual_futures
+- market_order
+- Live Orders Placed
+- failed
+- pending
+- Order Partially Failed
+- Use retry or cancel.
+- Unknown error
+- [BrokerSelection] Trade error:
+- Failed to start trading
+- not available
+- Trade Failed
+- save-dialog
+- Save as Draft
+- Enter Strategy Name
+- Strategy name...
+- Enter
+- Escape
+- Cancel
+- save-button
+- Saving...
+- Save Draft
+- Save & Continue
+- noopener,noreferrer
+- Previous
+- Next
+- m15 18-6-6 6-6
+- 1wnfg3
+- m9 18 6-6-6-6
+- mthhwq
+- Previous flyer
+- View 
+- Next flyer
+- Your plan has expired.
+- Renew Plan
+- Your free plan is active.
+- Upgrade
+- Your plan expires soon — 
+-  left.
+- Congratulations! Your plan is active until
+- m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3
+- wmoenq
+- polyline
+- 126l90
+- 1r2t7k
+- M3 3v16a2 2 0 0 0 2 2h16
+- c24i48
+- Link2
+- M9 17H7A5 5 0 0 1 7 7h2
+- 8i5ue5
+- Layers
+- m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z
+- 8b97xw
+- M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z
+- 1rqfz7
+- usdka0
+- Radio
+- M4.9 19.1C1 15.2 1 8.8 4.9 4.9
+- 1vaf9d
+- Activity
+- M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2
+- 169zse
+- M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z
+- pzmjnu
+- Table2
+- M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18
+- gugj83
+- Target
+- bitcoin
+- Open Interest
+- All exchanges
+- 24h Volume
+- Liquidations 24h
+- Fear & Greed
+- BTC Price
+- ETH Price
+- BTC Dominance
+- Long/Short Ratio
+- BTC global
+- BTC Price & Open Interest
+- Price
+- BTC Long / Short Ratio
+- Long %
+- Short %
+- hsl(var(--cg2-up))
+- hsl(var(--cg2-down))
+- Fear & Greed Index
+- Top Gainers (24h)
+- Top Losers (24h)
+- Heatmap (24h)
+- hsl(var(--cg2-border))
+- Total Bitcoin Spot ETF Net Inflow
+- /analytics/etf
+- View all →
+- cg2-table
+- Date
+- Net Flow
+- Cumulative
+-  BTC ETFs tracked
+- Data via Coinglass · auto-refreshing every 60s
+- hsl(var(--cg2-accent))
+- hsl(220 70% 55%)
+- var(--cg2-up)
+- var(--cg2-down)
+- middle
+- hsl(var(--cg2-text))
+- Market data · auto-refreshing · intervals vary per dataset
+- Analytics sections
+- section-tab-indicator
+- Loading section
+- ./CoinglassHomeSection-D6xN45sU.js
+- ./LiquidationsSection-945dx5UJ.js
+- ./DerivativesSection-Dd2I6qhc.js
+- ./OptionsSection-CnwbPOBa.js
+- ./EtfFlowsSection-CZWJrPVX.js
+- ./WhalesSection-DBFXs7Ex.js
+- ./SentimentSection-ppBTCoUp.js
+- ./MarketsSection-ZpFf9Ip5.js
+- fear-greed
+- coins-markets
+- etf-btc-flows
+- global-ls-ratio
+- oi-aggregated-history
+- open_interest_usd
+- oi_usd
+- volume_usd_24h
+- vol_usd_24h
+- price_change_percent_24h
+- flow_usd
+- net_flow
+- long_short_ratio
+- symbol
+- Coin
+- ma-mono
+- current_price
+- 24h %
+- ma-up
+- ma-down
+- Dashboard
+- Derivatives market overview
+- Extreme Fear
+- Fear
+- Neutral
+- Greed
+- Extreme Greed
+- Total Open Interest
+- All tracked coins
+- Aggregated futures
+- OI share
+- BTC ETF Net Inflow (USD)
+- hsl(168 100% 44%)
+-  Long / Short Ratio
+- L/S
+- hsl(50 90% 56%)
+-  Aggregated Open Interest
+- Spot Markets
+- Sortable list of all tracked markets
+- Unknown sector: 
+- etf-btc-list
+- aum_usd
+- holdings
+- btc_holdings
+- issuer
+- Issuer
+- ma-dim
+- BTC Held
+- Net Flow (1d)
+- flow_usd_1d
+- net_flow_1d
+- Change %
+- Bitcoin Spot ETFs
+- Issuer flows, AUM and holdings
+- Total AUM
+- Total BTC Held
+- ETF Count
+- Net Inflow History
+- Net Flow USD
+- ETF List
+- price-history
+- aggregated-history
+- funding-exchange-list
+- oi-exchange-list
+- funding-oi-weight-history
+- taker-buy-sell
+- long_liquidation_usd
+- short_liquidation_usd
+- buy_volume_usd
+- sell_volume_usd
+- funding_rate
+- Exchange
+- 24h Vol
+- OI Share
+- open_interest_share
+- ma-btn
+- ← Back
+- open_interest_change_percent_24h
+- Funding (avg)
+- Price & Open Interest
+- ma-mute
+- Long / Short Ratio
+- Liquidations
+- hsl(358 78% 58%)
+- hsl(152 76% 45%)
+- OI-Weighted Funding
+- Funding %
+- Taker Buy / Sell Volume
+- Sell
+- Markets by Exchange
+- Funding by Exchange
+- Liquidation Heatmap (long vs short)
+- Binance
+- exchange-balance-list
+- Funding
+- Exchange overview
+- Tracked Coins
+- Total OI
+- BTC Balance
+- btc_balance
+- balance
+- Coins on 
+- Share
+- ma-panel
+- Per-exchange Funding
+- Global Accounts
+- Top Trader (Accounts)
+- Top Trader (Positions)
+- hsl(280 60% 60%)
+- 24h Total
+- liquidation_usd_24h
+- total_24h
+- Long
+- ma-mono ma-down
+- long_liquidation_usd_24h
+- Short
+- ma-mono ma-up
+- short_liquidation_usd_24h
+- By Coin (24h)
+- Token Unlock Schedule
+- Upcoming vesting events
+- Token unlock data unavailable
+- This data source is not enabled on the current plan. Enable a token-unlock endpoint in the proxy to populate this view — no mock data shown.
+- exchange-balance-chart
+- Exchange Balance
+- Bitcoin held on exchanges
+- History
+- F&G
+- ahr999
+- puell-multiple
+- pi-cycle
+- BTC Cycle Indicators
+- AHR999
+- Puell Multiple
+- Pi Cycle
+- monthly
+- Invalid coupon
+- razorpay
+- Subscription activated!
+- script
+- https://checkout.razorpay.com/v1/checkout.js
+- Failed to load Razorpay SDK
+- Payment Cancelled
+- You can try again anytime.
+- Payment Successful!
+- Your subscription is now active.
+- Confirmation Failed
+- Please contact support.
+- payment.failed
+- Payment failed. Please try again.
+- Payment Failed
+- #6366f1
+- Something went wrong
+- My Subscription
+- Choose a plan to unlock features
+- Billing
+- You Pay
+- Currency
+- Feature Limits
+- live_trading
+- paper_trading
+- ∞ Unlimited
+- / month
+- Features & Usage
+- Plan Features
+- No Active Subscription
+- Browse plans below and get started
+-  Choose a Plan
+- Available Plans
+- Monthly
+- quarterly
+- Semi-Annually
+- yearly
+- Yearly
+- string
+-  Free Plan
+-  Subscribe
+- Payment History
+- No payments yet
+- success
+- en-IN
+- 2-digit
+- Subscription
+-  off
+- Paid
+- Pending
+- Page 
+-  of 
+- ← Previous
+- Next →
+-  Subscribe to 
+-  Apply Coupon
+- Enter coupon code
+- Apply
+- Available Coupons
+- percent
+- List Price
+- Plan Discount
+- Coupon Discount
+- Subtotal
+- Tax (
+- Total
+- Activate
+- Pay with Razorpay
+- Go to Analyse
+- Switch to Light Mode
+- Switch to Dark Mode
+- header
+- Open menu
+- Menu
+- Navigate between pages
+-  Market Analytics
+- Admin
+-  My Profile
+-  Logout
+- Primary
+- aria-current
+- aria-hidden
+- Admin pages
+- 1e0a9i
+- M15 3h6v6
+- 1q9fwt
+- M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4
+- 1uf3rs
+- Crown
+- 1vdc57
+- Sparkles
+- 4pj2yx
+- ynyp8z
+- Ticket
+- M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z
+- qn84l0
+- Failed to load referrals
+- Free
+- Copied!
+- Join CoinGreeks
+- My Referrals
+- Share & Earn
+- Get 
+- % commission on every paid referral
+-  Share
+- Code: 
+- How it works
+- Share your unique referral link
+- Friend signs up & purchases a plan
+- Total Referrals
+- Total Earned
+- Search by name or email...
+- All Status
+- not_paid
+- No Purchase
+- All Plans
+- Date:
+-  Clear
+- No results found
+- No referrals yet
+- Try adjusting your filters
+- Share your link to start earning
+- Joined
+- Plan
+- Amount
+- Commission
+-  referral
+- Gift
+- bkv52
+- Copy
+- 17jyea
+- Share2
+- gq8acd
+- Search
+- 4ej97u
+- popper
+- Users
+- M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2
+- 1yyitq
+- Failed to load data
+- Validation
+- Plan name is required
+- Updated
+- Created
+- Subscription Plans
+- Manage subscription tiers and pricing
+-  New Plan
+- No Plans Yet
+- Create your first subscription plan
+-  Create Plan
+- All Plans (
+- Name
+- Quarterly
+- Actions
+- Edit Plan
+- Create New Plan
+- Plan Name *
+- e.g. Basic Plan
+- Description
+- Add a feature
+- Billing Intervals
+-  (Per Month)
+- Menu Items
+- Active
+- Plan visible to users
+- Update
+- Create
+- Plus
+- Pencil
+- M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z
+- 1a8usu
+- Failed to load menu items
+- Display Name is required
+- Menu Pricing Master
+- Manage menu items linked to subscription plans
+-  New Item
+- No Menu Items
+- Add menu items that can be linked to plans
+-  Add Item
+- All Menu Items (
+- Display Name
+- Category
+- Failed to update status
+- Edit Menu Item
+- New Menu Item
+- Display Name *
+- e.g. Reports Export
+- e.g. Trading, Analytics, Data
+- Price (₹)
+- Failed to load coupons
+- public_all_listed
+- Code is required
+- private_community_listed
+- Coupon Code Master
+- Manage discount coupons
+-  New Coupon
+- No Coupons
+- Create your first coupon code
+-  Create Coupon
+- All Coupons (
+- Code
+- Discount
+- Type
+- Validity
+- Plans
+- Uses
+- Edit Coupon
+- New Coupon
+- Code *
+- BASIC20
+- Coupon Type
+- Assign to Users
+- Deselect All
+- Select All
+- Invert selection
+- ↔ Invert
+- Search users...
+- No users found
+-  users selected
+- Discount Type
+- Percent
+- Fixed
+- Discount Value
+- Min Order (₹)
+- Max Uses
+- Per User Limit
+- Starts At
+- Expires At
+- Applicable Plans & Intervals
+- No plans available
+- Delete Coupon?
+- This action cannot be undone. The coupon will be permanently deleted.
+- Deleted
+- Delete
+- Trash2
+- M3 6h18
+- d0wm0j
+- Free Plan
+- Failed to load users
+- validity
+- referrals
+- commission
+- Failed to load commissions
+- commissions
+- expired
+- Expired
+- cancelled
+- Cancelled
+- User Subscriptions
+- Manage users and commissions
+-  Users
+-  Commissions
+- Users (
+- All Statuses
+- Expiry
+- Validity 
+- Referrals 
+- Commission % 
+- Account
+- Limits
+- (Soon)
+- d left
+- Failed to update
+- Click to edit
+- Deactive
+- Edit feature limits
+-  users
+- Total Commission
+- Search referrer name...
+- Filter by month
+- All Months
+- Clear
+- No commissions found
+-  Paid
+-  Pending
+- Referrer
+- Referrals
+- Commission %
+- Action
+- Details
+-  user
+- Mark Paid
+-  View
+- 's Referrals
+-  referred user
+- Total Paid
+- dd MMM yyyy
+- Not Paid
+- Total: 
+- Paid: ₹
+- Pending: ₹
+- Mark Payment — 
+-  · Total: ₹
+- Payment Status
+- ✓ Paid
+- ✗ Not Paid
+- Proof Link per Referral 
+- https://... (payment screenshot / receipt URL)
+- Comment 
+- textarea
+- Optional note...
+- Reason for not paying (required)
+- proof-link
+- Confirm Paid
+- Confirm Not Paid
+- Paper Trading Limit
+- trades / month
+- Set to 0 for plan default. Higher values override plan limit.
+- Live Trading Limit
+-  Saving...
+- Save Limits
+- 7eqyqh
+- Filter
+- polygon
+- 1yg77f
+- Settings2
+- M20 7h-9
+- 3s1dr2
+- Calendar
+- M8 2v4
+- 1cmpym
+- Admin access required
+- Failed to load banners
+- once_per_day
+- Invalid image
+- Title is required
+- Image is required
+- Failed to delete
+- Banner Master
+- Manage promotional banners and popups
+-  New Banner
+- Couldn't load banners
+- Retry
+- No Banners
+- Create your first banner
+-  Create Banner
+- All Banners (
+- Image
+- Title
+- Frequency
+- Edit Banner
+- New Banner
+- banner-title
+- Welcome Offer
+- banner-description
+- Get 20% off your first plan
+- banner-link
+- Link URL
+- https://coingreek.com/offers
+- banner-starts
+- Starts At 
+- (optional)
+- datetime-local
+- banner-ends
+- Ends At 
+- banner-image
+- Image 
+- (leave empty to keep current)
+- image/*
+- Maximum size 
+- Preview
+- banner-active
+- Save Changes
+- Create Banner
+- Delete banner?
+- This permanently removes the banner. This action cannot be undone.
+- 1m3agn
+- compose
+- message
+- subject
+- Emails sent
+- history
+- Send failed
+- Promotional Emails
+- Compose
+-  Recipients
+-  selected
+- Search users by name or email
+- Segment
+- All users
+- Select all (
+- No users match the search.
+- promo-subject
+- Subject
+- Your report is ready
+- promo-message
+- Message
+- Insert:
+- into the last-focused field
+- Preview for 
+- Send Email
+- Send to 
+-  user(s)?
+- ',h,'
+-  selected user(s). Placeholders are filled per recipient.
+- Failed to load campaigns
+- Failed to load campaign
+- -ml-2
+-  Back to campaigns
+- Recipients 
+- Delivered 
+- Failed 
+- Success 
+- Sent 
+- By 
+- Sent at
+- No recipients recorded.
+-  Prev
+- Next 
+- Recipients
+- Delivered
+- Sent by
+- No campaigns sent yet.
+-  User Management
+- Search by name or email
+- Subscribed
+- Ends
+- Referral code
+- No users found.

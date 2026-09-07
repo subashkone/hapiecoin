@@ -1,0 +1,52 @@
+{
+  "name": "@hapiecoin/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HapieCoin web app: landing, auth, analyse workspace (Next.js App Router)",
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "check:budget": "node scripts/check-budget.mjs",
+    "mock:servers": "tsx test/servers.ts"
+  },
+  "dependencies": {
+    "@hapiecoin/schema": "workspace:*",
+    "@hapiecoin/ui": "workspace:*",
+    "@tanstack/react-query": "5.102.8",
+    "@tanstack/react-virtual": "3.14.10",
+    "better-auth": "1.7.3",
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "4.5.4",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@hapiecoin/config": "workspace:*",
+    "@hono/node-server": "2.1.1",
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/postcss": "4.3.3",
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.7",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@types/ws": "8.18.1",
+    "@vitest/coverage-v8": "5.0.0",
+    "babel-plugin-react-compiler": "1.0.0",
+    "hono": "4.13.7",
+    "jsdom": "30.0.1",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.13",
+    "vitest": "5.0.0",
+    "ws": "8.21.3"
+  }
+}

@@ -1,0 +1,911 @@
+[
+ {
+  "route": "/analyse",
+  "screen": "Analyse workspace",
+  "feature": "Two-pane workspace (chain left ≈55%, analysis right ≈45%) below the app header, above the fixed portfolio bar; each pane scrolls internally",
+  "how": "Flex shell sized to 100vh minus the measured header + plan banner height and a reserved 44px bottom strip for the chrome portfolio bar (measured: fixed bar → padding, in-flow bar → subtracted); ResizeObservers keep it in sync",
+  "status": "working",
+  "evidence": "screenshot feature-payoff-diagram: two panes under the header"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse workspace",
+  "feature": "Resizable divider between the panes (drag 35–70%, double-click resets to 55%)",
+  "how": "Width persisted in CG.state.analyseSplit; chart re-renders to the new width",
+  "status": "working",
+  "evidence": "drag handle ⋮ between the panes in the original screenshot"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse workspace",
+  "feature": "Responsive stacking below 1000px with a segmented 'Chain | Analysis' toggle",
+  "how": "Media query stacks the panes; the toggle sets data-mobile on the shell to show one pane at a time",
+  "status": "working",
+  "evidence": "inferred from the responsive Tailwind classes in the bundle"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse workspace",
+  "feature": "Shared chrome placeholders: app header (variant 'analyse'), plan banner and portfolio bar",
+  "how": "<div data-cg=\"app-header\" data-variant=\"analyse\">, <div data-cg=\"plan-banner\"> and <div data-cg=\"portfolio-bar\"> are rendered by the chrome part; the workspace measures them",
+  "status": "working",
+  "evidence": "header with asset selector, futures price, Futures Live, Exchange, wallet in the screenshot"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse workspace",
+  "feature": "Left tab bar: Chain · Builder · Paper · Live · Journal with small mono count pills",
+  "how": "data-lptab chain|strategy|paper|live|journal (same data-tour ids as v1); pills show active legs / paper / live / closed strategy counts and hide at 0; the trading module mounts its .lp-panel[data-tab] panels into #analyse-left-panels",
+  "status": "working",
+  "evidence": "bundle strings: Options Chain, Strategy, Paper Trades, Live Trades, options-chain, builder-tab, paper-tab, cg-tour-set-tab"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse workspace",
+  "feature": "Deep links #/analyse?tab=strategy&panel=scenarios (panel = payoff | scenarios | greeks | vol | structure | ladder; the v1 values analytics → payoff and pnl → ladder still resolve)",
+  "how": "query.tab / query.panel are read in show(); the last tab is persisted in CG.state.analyseTab / analyseRightTab",
+  "status": "working",
+  "evidence": "inferred"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Expiry strip with two-line chips '25 Sep / 21d' (07 Sep … 26 Mar); an amber dot marks expiries that hold legs of the current strategy",
+  "how": "Chips rendered from CG.EXPIRIES; click sets CG.analyse.expiry + CG.state.expiry, re-renders the chain, emits analyse:expiry and toasts",
+  "status": "working",
+  "evidence": "expiry chips 01JUL26 … 31JUL26 in the screenshot"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Expiry strip scroll arrows ‹ › (only shown when the strip overflows)",
+  "how": "Overflow measured after render / resize; arrows scroll the strip by 220px",
+  "status": "working",
+  "evidence": "‹ › around the strip in the screenshot"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "LIVE pill in the chain toolbar (Live → Connecting → Static and back)",
+  "how": "Toggles CG.analyse.mode; in static mode ticks stop updating the chain",
+  "status": "working",
+  "evidence": "bundle strings: Live, Connecting, Static, Connecting to WebSocket..., Click to enable live prices"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Gear button in the chain toolbar → Column Settings dialog",
+  "how": "Opens the v1 Column Settings dialog (show / hide, reorder, quick buttons)",
+  "status": "working",
+  "evidence": "bundle strings: Column settings, Column Settings, ' of '"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Column Settings",
+  "feature": "Show / Hide tab with grouped switches: Market Data (Ask (Price/IV), Mark (Price/IV), Bid (Price/IV), OI, Volume, Bid Qty, Ask Qty), Greeks (Delta, Gamma, Theta, Vega), Activity (24hr Chg, Last), OHLC (Open, High, Low)",
+  "how": "Each row toggles the column; the chain re-renders instantly and the 'x of 16' counter updates",
+  "status": "working",
+  "evidence": "bundle strings: Market Data, Greeks, Activity, OHLC and every column label"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Column Settings",
+  "feature": "Quick buttons Essentials · Show All · Hide all · Reset",
+  "how": "Essentials = Ask · Mark · Bid · OI · Δ (the v2 default); Show All / Hide all / Reset; each change re-renders the chain and toasts",
+  "status": "working",
+  "evidence": "bundle strings: Essentials, Show All, Hide all, Reset"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Column Settings",
+  "feature": "Reorder tab – 'Drag columns to change their display order (left → right).'",
+  "how": "HTML5 drag & drop list (dragstart/dragover/dragend) plus ▲/▼ buttons; hidden columns are badged; order applies from the strike outward and is mirrored on the Calls side",
+  "status": "working",
+  "evidence": "bundle string: Drag columns to change their display order (left → right)."
+ },
+ {
+  "route": "/analyse",
+  "screen": "Column Settings",
+  "feature": "Persistence of column visibility and order",
+  "how": "Saved as CG.state.chainCols {v:2, order, visible} (v1 layouts are migrated to the v2 default)",
+  "status": "working",
+  "evidence": "bundle key oc_col_config"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Sticky two-row header: 'CALLS · ITM shaded · strikes ±12' | '25 Sep · 19d' | 'Δ per contract · PUTS', then the column labels Δ · OI · Bid/IV · Mark/IV · Ask/IV | Strike | Ask/IV · Mark/IV · Bid/IV · OI · Δ",
+  "how": "Column order is defined once from the strike outward (price triplet inboard, OI and Δ outboard) and mirrored on the calls side",
+  "status": "working",
+  "evidence": "screenshot: Calls / STRIKE / Puts header with arrows"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "41 strikes around ATM from CG.chain(asset, expiry) with a strike-range control (±6 / ±12 / all), auto-scrolled to ATM",
+  "how": "Range persisted in CG.state.chainRange (default ±12); the footer reports \"n of 41 strikes\"",
+  "status": "working",
+  "evidence": "screenshot shows 54,000 … 65,000 around the 60,000 ATM"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Strike cell: mono price; the ATM row is a single amber band with an 'ATM' micro tag; leg pills ('C B 10', 'P S 10') sit under the strike",
+  "how": "tr.atm background hsl(--primary/.09) with amber strike text; the sub-line is rebuilt on every legs change",
+  "status": "working",
+  "evidence": "screenshot: 60,000 ATM"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Price cells (Bid / Mark / Ask) show the price at 1dp with the IV at 1dp underneath; calls right-aligned, puts left-aligned; neutral ink (colour is reserved for buy/sell and P&L)",
+  "how": "cellInner() renders <span class=\"px\"> + <span class=\"iv\">; INR mode converts premiums at CG.state.conversionRate (0dp)",
+  "status": "working",
+  "evidence": "screenshot: $6893.0 / 55.4%"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "OI column drawn as a thin inward bar anchored at the outer edge (calls grow towards the strike from the left, puts from the right)",
+  "how": "2px bar width proportional to max OI of the chain; value shown as an integer",
+  "status": "working",
+  "evidence": "bundle strings: OIBarCell, rgba(34, 197, 94, 0.25), rgba(239, 68, 68, 0.25)"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "ITM tint: call cells below spot and put cells above spot get a 4% foreground tint",
+  "how": "td.itm{background:hsl(var(--foreground)/.04)}; hover replaces it with the raised surface tone",
+  "status": "working",
+  "evidence": "screenshot: green tint on ITM calls, red tint on ITM puts"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Optional columns: Γ (6dp), Θ (1dp), ν (1dp), Volume, Bid Qty, Ask Qty, 24hr Chg (signed, coloured), Last, Open, High, Low; Δ (2dp) is shown by default",
+  "how": "Toggled in Column Settings; the Greeks chip in the toolbar adds/removes Γ Θ ν in one click",
+  "status": "working",
+  "evidence": "bundle column labels; older screenshot shows Bid Qty BTC column"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Live price updates with flash animation",
+  "how": "On every 'tick' (2.5s) the chain is re-quoted; changed Bid/Mark/Ask/Last cells get .flash-up / .flash-down; if the ATM strike shifts the table is rebuilt keeping the scroll position",
+  "status": "working",
+  "evidence": "bundle strings: price-flash-up, price-flash-down"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Row hover reveals a floating control on both sides: [B] [S] [− 10 +] lot stepper [ⓘ]",
+  "how": ".an-ctl inside the inboard cell; − / + step through the lot presets, clicking the number opens a preset menu, ⓘ opens option details; also shown on the keyboard-highlighted row",
+  "status": "working",
+  "evidence": "screenshot: B / S / chart / 100 ▾ × 0.001 next to the 60,000 strike"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "B / S add a leg (CALL on the calls side, PUT on the puts side) at the mark price with the chosen lots",
+  "how": "Emits CG.emit('analyse:addLeg', {type, side, strike, expiry, lots, price, iv, symbol, asset}); if no handler appends within the same tick it appends to CG.analyse.legs itself and emits analyse:legs-changed; toast 'Leg Added'; max 10 active legs → toast 'Limit Reached · Maximum 10 active legs allowed per strategy'",
+  "status": "working",
+  "evidence": "bundle strings: Leg Added, Limit Reached, Maximum 10 active legs allowed per strategy"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Lot stepper presets (1 · 2 · 5 · 10 · 25 · 50 · 100 · 250 · 500 · 1000), default 10, \"× lot size\" shown as the stepper tooltip and in the option details dialog",
+  "how": "CG.state.chainLots persisted; all steppers update together",
+  "status": "working",
+  "evidence": "screenshot: 100 ▾ × 0.001"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "ⓘ icon (or Enter on the highlighted row) → option details dialog titled with the Delta-style symbol (e.g. C-BTC-79500-250926)",
+  "how": "Dialog shows mark price, IV badge, 24h change, Δ, a 24h sparkline of mark price + IV (mock series), stats grid (Bid / Ask, OI, Volume, Bid / Ask Qty, Delta, Gamma, Theta, Vega, 24h Chg, Last, Open / High, Low) and Buy / Sell buttons with a lots selector",
+  "status": "working",
+  "evidence": "screenshot: chart icon in the hover controls; bundle symbol format C-BTC-60000-250926"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Existing strategy legs are marked in the chain: 'C B 10' / 'P S 10' pills under the strike, the mark cell outlined green/red, a green/red stripe on the row's left edge, filled B / S buttons and an amber dot on the expiry chip",
+  "how": "renderPills() runs on analyse:legs-changed and after every chain render",
+  "status": "working",
+  "evidence": "screenshot: B 10 / S 10 pills in the chain"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Keyboard: j / k or ↑ / ↓ move the highlighted strike (amber outline), B / S add a call leg, Shift+B / Shift+S a put, E / Shift+E cycle the expiry, Enter opens details, Esc clears",
+  "how": "Registered through CG.shortcuts.register(key, description, handler) when the chrome registry exists (so they appear in the ? help) with a document-level fallback; ignored while typing or when a dialog is open; hovering a row moves the highlight",
+  "status": "working",
+  "evidence": "inferred (nice-to-have requested in the brief)"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Chain footer: Σ Call OI · Σ Put OI · PCR · Max pain · Skew 25Δ · Fwd · 'n of 41 strikes · hover a row for B / S'",
+  "how": "Skew 25Δ = IV(25Δ put) − IV(25Δ call) in vol points; Fwd from ATM put-call parity (K + C − P); max pain = strike minimising total option value",
+  "status": "working",
+  "evidence": "clone design; values derived from CG.chain"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Asset switch (BTC / ETH / XAUT) from the header",
+  "how": "Listens to CG.on('asset'): sets CG.analyse.asset, resets the target price, reloads the chain and every analysis panel",
+  "status": "working",
+  "evidence": "header asset dropdown 'Bitcoin (BTC)' in the screenshot"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Currency toggle (USD / INR) re-formats premiums, P&L, tiles, greeks and axes; strikes stay in USD (contract terms)",
+  "how": "Listens to CG.on('currency-settings-changed') and re-renders using CG.fmt.money / conversion rate",
+  "status": "working",
+  "evidence": "header '$ USD' control in the screenshot"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analysis pane",
+  "feature": "Right tab bar: Payoff · Scenarios · Greeks · Vol · Structure · Ladder with the strategy summary (\"Bull Call Spread · 25 Sep · 20 lots\"), Share and collapse buttons (data-tour=\"payoff-panel\")",
+  "how": "The v1 Analytics tab was merged into the Payoff tab as the Analytics strip; the v1 P&L Table became the Ladder tab",
+  "status": "working",
+  "evidence": "bundle strings: Payoff Diagram, Analytics, Greeks, P&L Table, payoff-panel"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "Six summary tiles: Max profit ('at ≥ 80,512' / 'unlimited upside') · Max loss ('at ≤ 79,319') · Net debit / credit with the per-BTC line ('465.8 / BTC · 10 lots') · Breakeven(s) with % from spot · POP ('lognormal · IV 42.4%') · R:R ('1 : 1.15')",
+  "how": "Hairline-separated tiles, no cards; extremes located from the expiry payoff, per-unit premium = net premium / (lot size × gcd of lots)",
+  "status": "working",
+  "evidence": "screenshot tiles; bundle strings: Max Profit, Max Loss, Unlimited, Breakevens, None"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "Empty state 'No strategy yet · Hover a chain row and press B / S, or load a template from the Builder' with a ghost chart and the spot marker",
+  "how": "Shown when CG.analyse.legs has no active legs; tiles show —",
+  "status": "working",
+  "evidence": "bundle strings: No Strategy Selected, Add option legs to visualize payoff"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "Legend toggles: At expiry (ink line) · On <target date> (blue curve); layer chips OI · ±SD · BE · IV −5% · IV +5%",
+  "how": "Clicking a legend item or chip flips the layer (persisted in CG.state.chartLayers)",
+  "status": "working",
+  "evidence": "bundle strings: On Expiry, On Target Date, Profit, Loss, Call OI, Put OI"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "Zoom controls − 100% + (50% … 300%), click the percentage to reset",
+  "how": "Rescales the x-axis range (spot ± 20% / zoom) and the target-price slider range; persisted in CG.state.chartZoom",
+  "status": "working",
+  "evidence": "bundle strings: Zoom In, Zoom Out, Reset Zoom"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "Layers popover: At-expiry P&L line · Target-date P&L curve · Profit / loss fill · Open interest bars · ±1σ expected-move band · Breakeven markers · IV −5% curve · IV +5% curve",
+  "how": "Checkbox list in a CG.menu popover; each toggle re-renders the SVG; persisted in CG.state.chartLayers",
+  "status": "working",
+  "evidence": "bundle strings: Layers, Toggle Layers, Chart Layers, Expiry P&L, Target Date P&L, Profit / Loss Fill, Open Interest, SD Bands, Breakevens"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "Expected-move band: ±1σ shaded band on the chart with dashed edges labelled \"+1σ 85.1k\" / \"−1σ 73.9k\" (replaces the v1 -2SD…+2SD header row)",
+  "how": "σ = spot × ATM IV × √(days/365) for the target date or expiry",
+  "status": "working",
+  "evidence": "bundle strings: -2SD, -1SD, Current, +1SD, +2SD, 'Expected move by ', expiry"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "SVG payoff chart in the direction-a style: ink at-expiry line, blue target-date curve, green/red fills, faint grid, $ axis, max profit / max loss tags at the plateaus, amber spot marker",
+  "how": "Rendered from CG.analyze(points 201) over the zoomed price range; re-renders on ticks, legs, sliders, layers, theme and resize",
+  "status": "working",
+  "evidence": "bundle strings: Underlying Price, Profit / Loss; screenshots pub_payoff-preview"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "Breakeven dashed verticals labelled 'BE 81,454'",
+  "how": "One dashed line + label per breakeven inside the visible range (layer 'Breakevens')",
+  "status": "working",
+  "evidence": "BE markers in the payoff screenshots"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "Spot marker: amber dashed hairline with the 'SPOT 79,521' tag at the top of the chart (the only accent colour on the chart)",
+  "how": "Drawn at the live futures price; the pill sits above the plot area",
+  "status": "working",
+  "evidence": "screenshot: orange Spot $60,127.0 pill"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "Faint open-interest bars per strike (call + put combined) along the bottom of the chart with a tooltip per bar",
+  "how": "Bars from CG.chain(asset, expiry) rows inside the visible range, scaled to 40% of the plot height; hover title shows strike and OI",
+  "status": "working",
+  "evidence": "bundle: 'hsl(var(--loss) / 0.35)' → Call OI, 'hsl(var(--profit) / 0.35)' → Put OI; Open Interest axis in the screenshot"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "±1σ band with dashed edges (see the expected-move band entry)",
+  "how": "Layer \"sd\"; the ±2σ guides of v1 were dropped in favour of the labelled ±1σ band",
+  "status": "working",
+  "evidence": "shaded band between the SD lines in pub_payoff-preview"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "Target-price marker: dashed blue line, dot on the target-date curve and a '+$1.7 @ 81,921' label; clicking the chart sets the target price",
+  "how": "AN.targetPrice; emits analyse:target",
+  "status": "working",
+  "evidence": "inferred from the BTC TARGET slider"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "Hover crosshair with tooltip '16 Sep @ 82,879 +4.2% · +$2.28 · exp +$5.33'",
+  "how": "mousemove over the plot snaps to the nearest sample, moves the crosshair + dots on both curves and positions an HTML tooltip; survives live re-renders",
+  "status": "working",
+  "evidence": "clone design (Recharts tooltip in the original)"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "Spot-zone readout ('Spot now ✓ profit zone / ✗ loss zone') in the Analytics strip (replaces the v1 chart footer)",
+  "how": "P&L at spot at expiry from CG.analyze",
+  "status": "working",
+  "evidence": "screenshot footer line"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "Target price slider: '− 81,900 +3.0% +' value, amber SPOT tick on the track, fill, knob and five price ticks",
+  "how": "Hidden native range over a custom track; steps move by 1/5 of the strike step; range follows the zoom",
+  "status": "working",
+  "evidence": "screenshot: BTC TARGET +0.0% · $60.1k · − + · $51.5k … $68.8k"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "Target date slider: 'Today · 06 Sep · 19d left' / 'Wed 16 Sep · 9d left', ‹ › day steps, ticks Today · mid dates · Expiry",
+  "how": "AN.targetDays 0…max DTE of the legs; legend and tooltips show the chosen date",
+  "status": "working",
+  "evidence": "screenshot: TODAY (i) · Mon, 29 Jun 12:22 PM · Today … Expiry (17 Jul)"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "Automatic re-rendering on price ticks, leg changes, asset / expiry / currency / lot-size changes, density, theme and pane resize",
+  "how": "CG.on('tick' | 'analyse:legs-changed' | 'asset' | 'currency-settings-changed'), window resize and a ResizeObserver on the chart host",
+  "status": "working",
+  "evidence": "inferred"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff · Analytics strip",
+  "feature": "Max profit with ROI → 'Max ROI 6% on margin' in the Analytics strip under the tiles (merged from the v1 Analytics tab)",
+  "how": "ROI = max profit / margin; ∞ when unlimited",
+  "status": "working",
+  "evidence": "bundle strings: Max Profit (At Expiry), % ROI, ROI based on max theoretical profit, Theoretical maximum"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff · Analytics strip",
+  "feature": "Max loss as % of capital → 'Margin $94 · risk 5%' in the Analytics strip",
+  "how": "Loss % = |max loss| / required margin; 'Unlimited' when infinite",
+  "status": "working",
+  "evidence": "bundle strings: Max Loss (At Expiry), Risk as % of capital"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff · Analytics strip",
+  "feature": "Expected required margin → 'Margin $94.38' in the Analytics strip and 'Margin est.' in the greeks strip",
+  "how": "CG.analyze(...).margin",
+  "status": "working",
+  "evidence": "bundle strings: Expected Required Margin, Capital required"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff · Analytics strip",
+  "feature": "Breakeven points → Breakeven tile ('79,966 · +0.6% from spot', or two values) plus 'Spot now ✓/✗ zone' in the strip",
+  "how": "Title switches Point/Points by count; zone from the expiry P&L at the live spot",
+  "status": "working",
+  "evidence": "bundle strings: Breakeven, Points, Point, No breakeven points, Current Price, ✓ In profit zone, ✗ In loss zone"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff · Analytics strip",
+  "feature": "R/R with grade → 'R:R 1.15 balanced' (✓ favorable ≥2 / balanced ≥1 / high risk / unlimited exposure) in the strip and the R : R tile",
+  "how": "rewardRisk from CG.analyze; unlimited profit shows 'Unlimited', unlimited loss shows 'Unlimited exposure'",
+  "status": "working",
+  "evidence": "bundle strings: R/R, Risk/Reward, ✓ Favorable risk/reward, Balanced risk/reward, High risk scenario, Unlimited exposure, N/A"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff · Analytics strip",
+  "feature": "Probability of profit with grade → 'POP 47.7% moderate' (✓ high ≥60 / moderate ≥40 / low) in the strip and the POP tile",
+  "how": "Lognormal POP from CG.analyze (green ≥50%, red below)",
+  "status": "working",
+  "evidence": "bundle strings: Probability of Profit, ✓ High probability, Moderate probability, Low probability, Calculating..."
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff · Analytics strip",
+  "feature": "Win if price → 'Win if > 79,966' / '77,660 – 81,341' / '< a or > b' / 'any price' in the strip",
+  "how": "Derived from the breakevens and the sign of the expiry P&L on each side",
+  "status": "working",
+  "evidence": "bundle strings: Win if price, Varies"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff · Analytics strip",
+  "feature": "Net premium → 'Net debit $4.66 · 465.8 / BTC' tile (credit / debit label switches)",
+  "how": "Signed net premium from CG.analyze",
+  "status": "working",
+  "evidence": "bundle string: Net Premium"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff · Analytics strip",
+  "feature": "Max ROI → 'Max ROI 6% on margin' in the strip",
+  "how": "Max profit / required margin (Unlimited when infinite)",
+  "status": "working",
+  "evidence": "bundle string: Max ROI"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Greeks",
+  "feature": "Greeks tab tiles: Total Delta (directional exposure) · Total Gamma (Δ change per $1) · Total Theta ($/day) · Total Vega ($ per 1% IV), hairline-separated",
+  "how": "Values from CG.analyze(...).greeks: delta 4dp (coloured by sign), gamma 6dp, theta 4dp (coloured), vega 4dp",
+  "status": "working",
+  "evidence": "bundle strings: Portfolio Greeks, IV sensitivity; anchors 'Directional exposure', 'Delta sensitivity', 'Time decay per day'"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Greeks",
+  "feature": "Leg-wise Greeks table: BUY/SELL · strike C/P · expiry, Lots, IV, Δ, Γ, Θ/day, ν and a 'Portfolio total' row",
+  "how": "Per-leg Black-76 greeks × lots × lot size × side sign; totals match the tiles",
+  "status": "working",
+  "evidence": "bundle leg-greeks table (action badge, lots, iv.toFixed(1), Portfolio Total colSpan 3)"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Greeks",
+  "feature": "'Understanding Greeks' explanations for Delta, Gamma, Theta and Vega",
+  "how": "Static explanatory cards (Delta and Gamma/Vega texts as in the original)",
+  "status": "static",
+  "evidence": "anchors: 'Understanding Greeks', 'Measures the rate of change in option price per $1 move in underlying…', 'Measures sensitivity to 1% change in implied volatility…'"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Ladder",
+  "feature": "Ladder tab: P&L by underlying price with columns Price · Change from spot · At expiry · On <target date> · Status (profit / loss / breakeven / spot pills)",
+  "how": "Rows every step from −20% to +20% around spot; the spot row is highlighted amber and breakeven rows are inserted (dashed); sticky header; auto-scrolls to spot",
+  "status": "working",
+  "evidence": "bundle strings: P&L Analysis Table, Showing every 10th price point, Underlying Price, Change from Spot, P&L at Expiry, Status, SPOT, PROFIT, LOSS, BREAKEVEN, No data — add option legs to see P&L table"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse workspace",
+  "feature": "Shared workspace state CG.analyse {legs, name, strategyId, asset, expiry, targetDays, targetPrice, mode, stats, setExpiry(), setRightTab(), findDelta()} and events analyse:addLeg / analyse:legs-changed / analyse:tab / analyse:set-tab / analyse:right-tab / analyse:expiry / analyse:target / analyse:stats",
+  "how": "State object created here; leg mutations belong to the trading part (chain only emits analyse:addLeg, with a local fallback); the right pane re-renders on analyse:legs-changed and on every tick",
+  "status": "working",
+  "evidence": "integration contract between the /analyse parts"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse workspace",
+  "feature": "Tab count pills: Builder = active legs, Paper / Live = strategy counts, Journal = closed strategies",
+  "how": "renderCounts() on analyse:legs-changed / analyse:strategies-changed; pills hide at 0",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse workspace",
+  "feature": "Pane collapse buttons ‹ › give either pane the full width; a ⋮ handle restores both",
+  "how": "CG.state.analyseCollapse = left | right | \"\"; the chart re-renders to the new width",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse workspace",
+  "feature": "Density: comfortable rows (36px) / compact rows (28px) for the chain and the ladder",
+  "how": "root[data-density] follows CG.state.density and CG.on('density')",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse workspace",
+  "feature": "Tab-bar micro info: 'Lot 0.001 BTC · Basis mark' (left) and 'Bull Call Spread · 25 Sep · 20 lots' (right)",
+  "how": "Rebuilt on legs / lot-size / basis changes",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse workspace",
+  "feature": "Header stats feed: CG.emit('analyse:stats', {atmIv, ivRank, ivPercentile, expectedMove, expiry, spot, pcr, maxPain, skew25}) on show, expiry, asset and every tick; also stored in CG.analyse.stats",
+  "how": "Consumed by the chrome header (ATM IV · IV rank · expected move)",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse workspace",
+  "feature": "Command palette commands: Switch expiry → <date> (one per expiry), Load template → <name> (skipped when the trading module registers its own), Toggle chain Greeks, Find strike by delta…, Share strategy link, Analyse → <tab>",
+  "how": "CG.palette.register({id,label,group:\"Analyse\",keywords,run}) guarded; commands navigate to /analyse first when needed",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse workspace",
+  "feature": "Keyboard shortcuts listed in the ? help: J / K, ↑ / ↓, B / S, Shift+B / Shift+S, E / Shift+E, Enter",
+  "how": "CG.shortcuts.register(key, description, handler, {group:\"Analyse workspace\"}) with a document fallback when the registry is absent",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Mirrored column order: Δ · OI · Bid/IV · Mark/IV · Ask/IV | Strike | Ask/IV · Mark/IV · Bid/IV · OI · Δ (price triplet inboard, Δ and OI outboard) with Δ visible by default at 2dp",
+  "how": "DEFAULT_ORDER / ESSENTIALS in the column model; column settings still reorder from the strike outward",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Strike range control ±6 / ±12 / all in the chain toolbar",
+  "how": "CG.state.chainRange; the header hint and footer count follow",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Greeks expand toggle adds Γ Θ ν columns next to Δ on both sides",
+  "how": "setGreeksCols() edits the column state (persisted) and re-renders; chip state mirrors the columns",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Find strike by Δ chips (10Δ · 16Δ · 25Δ · 50Δ): scrolls to the call and put strikes nearest that delta, pulses both rows, highlights the call strike and toasts the pair",
+  "how": "nearestDelta() over the full chain; widens the strike range when the hits fall outside it; the palette command opens a dialog with a custom Δ input",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Spot hairline between the two strikes bracketing spot with a 'SPOT 79,521' tag; ATM row as a single amber band",
+  "how": "A zero-height spot row is inserted after the last strike ≤ spot and moves on ticks; the neighbouring strike cells get extra padding so the tag never covers a label",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Row height 36px (28px compact), IV 1dp under 1dp prices, Δ 2dp, OI integers with thousands separators",
+  "how": "Fixed precision per column",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Two-line expiry chips '25 Sep / 21d' with an amber dot on expiries that hold legs; scroll arrows appear only on overflow",
+  "how": "",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Keyboard highlight row (amber outline) also shows the B / S controls; hovering another row moves the highlight",
+  "how": "tr.hl styling; hover sync keeps mouse and keyboard in step",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Header group row hints: \"ITM shaded · strikes ±12\" and \"Δ per contract\"",
+  "how": "",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Options chain",
+  "feature": "Footer additions: Skew 25Δ (IV put − IV call at 25Δ) and Fwd (from ATM put-call parity)",
+  "how": "",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff",
+  "feature": "Analytics strip under the tiles (merged Analytics tab): POP with grade · R:R with grade · Max ROI · Margin with risk % · Win if · Spot now zone",
+  "how": "Wraps to a second line on narrow panes",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff",
+  "feature": "Chart restyled to the reference: ink expiry line, blue target curve, green/red fills, amber SPOT tag + dashed hairline, ±1σ dashed edges with labels, faint OI bars, BE labels, max profit / max loss tags",
+  "how": "",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff",
+  "feature": "IV −5% and IV +5% layers: dashed blue target-date curves computed with CG.analyze(legs, asset, {ivShift:±0.05})",
+  "how": "Chips + layers popover; persisted in CG.state.chartLayers",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff",
+  "feature": "Target marker '+$1.7 @ 81,921' on the curve; clicking the chart sets the target price",
+  "how": "setTargetPrice(price, true)",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff",
+  "feature": "Sliders restyled: custom track with fill, knob, amber SPOT tick with label, five price ticks; date ticks Today · mid dates · Expiry",
+  "how": "",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff",
+  "feature": "Net greeks strip under the sliders: Net Δ · Net Γ · Net Θ / day · Net ν / 1% IV · Margin est. · 'USD per strategy · 20 lots · mark basis'",
+  "how": "",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff",
+  "feature": "Tooltip format '16 Sep @ 82,879 +4.2% · +$2.28 · exp +$5.33'",
+  "how": "",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Scenarios",
+  "feature": "Price × date P&L matrix: rows −10% … +10% in 2% steps (or ±20% in 4% steps), columns today · +25% · +50% · +75% · expiry−1d · expiry, cells shaded by magnitude with mono values",
+  "how": "Each cell = CG.analyze(…, {targetDays, spot, min:S, max:S}).pnlTarget; rows carry a SPOT label",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Scenarios",
+  "feature": "Mode toggle P&L | Δ | Θ re-computes the grid as position delta or theta per day at each price × date",
+  "how": "positionGreeksAt(legs, S, daysElapsed, ivShift) re-prices every leg with Black-76",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Scenarios",
+  "feature": "IV shift slider −20% … +20% re-computes the grid through CG.analyze(…, {ivShift})",
+  "how": "Debounced; persisted in CG.state.scnIv",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Scenarios",
+  "feature": "Target cell (nearest to the slider target price and date) is outlined; its row / column headers are emphasised; clicking a cell sets the target price and date",
+  "how": "Round-trips through setTargetPrice / setTargetDays",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Scenarios",
+  "feature": "Smooth toggle renders the same grid as a bilinearly interpolated canvas heat field with column separators, dashed zero (breakeven) contour, amber spot line and the target outline",
+  "how": "ImageData interpolation between cell centres; colours read from the theme tokens so both themes work",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Scenarios",
+  "feature": "Hover tooltip on cells and on the canvas ('81,129 · 16 Sep · +1.1'; canvas values are interpolated)",
+  "how": "",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Vol",
+  "feature": "Smile · <expiry>: mark IV across the 41 strikes with the strategy's strikes as amber dots, spot hairline, ATM IV and 25Δ skew readout",
+  "how": "From CG.chain(asset, expiry); re-renders on expiry changes",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Vol",
+  "feature": "Term structure: ATM IV per expiry across CG.EXPIRIES as bars (active expiry amber, click a bar to switch expiry) with contango / backwardation note",
+  "how": "",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Vol",
+  "feature": "IV rank (1y): rank, percentile, current, 1y low / high on a gauge with an interpretation line",
+  "how": "Generated 365-day ATM IV history (mean-reverting log process seeded per asset, pinned to the current ATM IV)",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Vol",
+  "feature": "Realised vs implied: 30-day realised vol (from a generated price series) vs the ATM IV history over 365 days, with the IV − RV spread",
+  "how": "",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Structure",
+  "feature": "Max pain: amber marker + label over call / put OI bars per strike (±12 around ATM) with spot hairline and strategy-strike ticks",
+  "how": "Max pain = strike minimising Σ call OI × max(K − Ki, 0) + put OI × max(Ki − K, 0)",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Structure",
+  "feature": "Put / call ratio for open interest and 24h volume with call/put share bars and a positioning note",
+  "how": "",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Structure",
+  "feature": "Gamma exposure (GEX) profile: Σ γ × OI × lot × spot² × 1% per strike (calls +, puts −) as signed bars with a zero line, net GEX and the gamma-flip strike",
+  "how": "",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Greeks",
+  "feature": "Position Δ and Θ across the price axis: two small charts (re-pricing every leg at 49 prices ±20% around spot on the target date) with strike dots and the spot hairline",
+  "how": "",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Greeks",
+  "feature": "Greeks tab restyled: hairline tiles, mono table (Θ and ν in currency), compact explanations",
+  "how": "",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Ladder",
+  "feature": "Step selector (250 / 500 / 1000 for BTC; ½× / 1× / 2× the strike step for other assets)",
+  "how": "CG.state.ladderStep",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Ladder",
+  "feature": "'At expiry' and 'On <target date>' P&L columns, 'Change from spot', status pills; spot row highlighted amber; breakeven rows inserted; sticky header; auto-scroll to spot",
+  "how": "",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Share",
+  "feature": "Share button in the pane header copies a link (origin + path + #/s/<base64url {a, l:[[type,side,strike,expiry,lots,price]…], n}>) and opens a dialog with the link, Copy button, legs and max profit / loss / POP",
+  "how": "navigator.clipboard with an execCommand fallback; toasts \"Link copied\"",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Share",
+  "feature": "/s/:code route (no auth): decodes the link, loads the legs into CG.analyse, toasts \"Strategy loaded from link\" and navigates to /analyse; logged-out visitors get a preview card (legs, max profit / loss, POP) with \"Open in Analyse\" and \"Sign in\"; invalid codes show an error card",
+  "how": "Registered as <section data-route=\"/s/:code\" data-title=\"Shared strategy\">",
+  "status": "working",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "new": true
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse workspace",
+  "feature": "Phase 1 live chain shell: expiries discovered from the gateway (fallback list only when it exposes none); the chain lists exactly the strikes the venue instrument list holds for the selected expiry, marks the ATM row and shows FEED LIVE / stale from the gateway sequence numbers",
+  "how": "apps/web ChainPanel + ChainTable over the gateway reducer; strikes never come from a fixed step (ADR-006)",
+  "status": "working",
+  "evidence": "Phase 1 build, 07 Sep 2026: unit (chain.test.tsx, expiries.test.ts, reducer.test.ts) + e2e analyse.spec.ts",
+  "phase": 1
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse workspace",
+  "feature": "Phase 1 chain rows: strike, call and put marks from the coalesced gateway deltas, one row per venue strike (no synthetic strikes, no gaps filled)",
+  "how": "ChainTable renders the reducer state; q frames patch only changed fields",
+  "status": "working",
+  "evidence": "Phase 1 build, 07 Sep 2026: chain.test.tsx, reducer.test.ts",
+  "phase": 1
+ }
+]

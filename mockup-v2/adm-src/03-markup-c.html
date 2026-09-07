@@ -1,0 +1,169 @@
+
+<!-- ---------- /admin/emails ---------- -->
+<section class="screen adm" data-route="/admin/emails" data-title="Promotional Emails" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div data-cg="admin-nav"></div>
+  <div class="container adm-page">
+    <div class="adm-head">
+      <div><h1 class="adm-title"><i data-icon="mail" data-size="22"></i> Promotional Emails</h1><p class="adm-sub">Send targeted campaigns to your users and review delivery history</p></div>
+      <div class="tabs" role="tablist"><button class="tab active" role="tab" data-tab="compose">Compose</button><button class="tab" role="tab" data-tab="history">History</button></div>
+    </div>
+
+    <!-- Compose -->
+    <div data-panel="compose" class="adm-compose">
+      <div class="card">
+        <div class="card-header adm-card-toolbar"><div class="card-title flex items-center gap-2"><i data-icon="users"></i> Recipients</div><span class="badge badge-secondary" data-el="sel-badge">0 selected</span></div>
+        <div class="card-content" style="padding-top:4px">
+          <div class="adm-search mb-2"><i data-icon="search"></i><input class="input input-sm" data-el="rc-search" placeholder="Search users by name or email" aria-label="Search users by name or email"></div>
+          <div class="flex items-center gap-2 mb-2">
+            <label class="text-xs text-muted" for="adm-rc-segment">Segment</label>
+            <select class="select select-sm" id="adm-rc-segment" data-el="rc-segment" style="max-width:180px"><option value="all">All users</option><option value="paid">Paid users</option><option value="free">Free users</option><option value="expired">Expired</option></select>
+            <button type="button" class="btn btn-outline btn-xs ml-auto" data-act="rc-all">Select all (0)</button>
+            <button type="button" class="btn btn-ghost btn-xs" data-act="rc-clear"><i data-icon="x" data-size="12"></i> Clear</button>
+          </div>
+          <div class="adm-checklist adm-checklist-tall" data-el="rc-list"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-content">
+          <div class="field"><label class="label" for="promo-subject">Subject</label><input class="input" id="promo-subject" data-el="subject" placeholder="Your report is ready"></div>
+          <div class="field"><label class="label" for="promo-message">Message</label><textarea class="textarea" id="promo-message" data-el="message" style="min-height:160px" placeholder="Hi {{name}}, …"></textarea></div>
+          <div class="flex items-center gap-2 flex-wrap mb-4"><span class="text-xs text-muted">Insert:</span><button type="button" class="adm-chip" data-ins="{{name}}" title="into the last-focused field">{{name}}</button><button type="button" class="adm-chip" data-ins="{{email}}" title="into the last-focused field">{{email}}</button><button type="button" class="adm-chip" data-ins="{{plan}}" title="into the last-focused field">{{plan}}</button><button type="button" class="adm-chip" data-ins="{{expiry}}" title="into the last-focused field">{{expiry}}</button></div>
+          <div class="adm-preview" data-el="preview"></div>
+          <div class="flex justify-end mt-4"><button type="button" class="btn btn-primary" data-act="send" disabled><i data-icon="send"></i> Send Email</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div data-panel="history" hidden>
+      <div class="card" data-el="hist-list">
+        <div class="card-header"><div class="card-title">Campaigns</div><div class="card-desc">Click a campaign to see per-recipient delivery</div></div>
+        <div class="adm-table-wrap" data-el="hist-table"></div>
+      </div>
+      <div data-el="hist-detail" hidden>
+        <button class="btn btn-ghost btn-sm mb-3" style="margin-left:-8px" data-act="hist-back"><i data-icon="arrowLeft"></i> Back to campaigns</button>
+        <div class="card mb-4">
+          <div class="card-header"><div class="card-title" data-el="det-subject"></div><div class="card-desc" data-el="det-meta"></div></div>
+          <div class="card-content"><div class="adm-tiles adm-tiles-4" data-el="det-tiles"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Recipients</div></div>
+          <div class="adm-table-wrap" data-el="det-table"></div>
+          <div class="adm-pager" data-el="det-pager"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- /admin/users ---------- -->
+<section class="screen adm" data-route="/admin/users" data-title="User Management" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div data-cg="admin-nav"></div>
+  <div class="container adm-page">
+    <div class="adm-head">
+      <div><h1 class="adm-title"><i data-icon="users" data-size="22"></i> User Management</h1><p class="adm-sub" data-el="count">0 users</p></div>
+      <div class="adm-search"><i data-icon="search"></i><input class="input" data-el="search" placeholder="Search by name or email" aria-label="Search by name or email" style="width:280px"></div>
+    </div>
+    <div class="card">
+      <div class="adm-table-wrap" data-el="table"></div>
+      <div class="adm-pager" data-el="pager"></div>
+    </div>
+  </div>
+  <div hidden data-el="detail-dialog">
+    <div class="cg-dialog-body" style="padding-top:4px">
+      <div class="adm-kv" data-el="detail-kv"></div>
+      <div class="divider mt-4 mb-4"></div>
+      <form data-form="lots" novalidate autocomplete="off">
+        <div class="flex items-center justify-between mb-2"><div class="font-semibold text-sm">Lot size settings</div><span class="badge badge-warning">inferred</span></div>
+        <div class="adm-form-grid adm-form-grid-3">
+          <div class="field"><label class="label">BTC</label><input class="input input-sm mono" name="BTC" type="number" min="0.0001" step="0.001"></div>
+          <div class="field"><label class="label">ETH</label><input class="input input-sm mono" name="ETH" type="number" min="0.001" step="0.01"></div>
+          <div class="field"><label class="label">XAUT</label><input class="input input-sm mono" name="XAUT" type="number" min="0.0001" step="0.001"></div>
+        </div>
+        <div class="flex justify-end gap-2"><button type="button" class="btn btn-outline btn-sm" data-act="close">Close</button><button type="submit" class="btn btn-primary btn-sm">Save lot sizes</button></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* ===== admin console (scoped to .adm screens + admin-nav chrome) ===== */
+  .adm-nav{border-bottom:1px solid hsl(var(--border));background:hsl(var(--card))}
+  .adm-nav-inner{display:flex;align-items:center;gap:2px;height:44px;overflow-x:auto;scrollbar-width:none}
+  .adm-nav-inner::-webkit-scrollbar{display:none}
+  .adm-nav-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:hsl(var(--muted-foreground));font-weight:600;margin-right:10px;white-space:nowrap}
+  .adm-nav a{padding:6px 10px;border-radius:6px;font-size:13px;font-weight:500;color:hsl(var(--muted-foreground));white-space:nowrap}
+  .adm-nav a:hover{background:hsl(var(--muted));color:hsl(var(--foreground))}
+  .adm-nav a.active{color:hsl(var(--primary));background:hsl(var(--info-bg))}
+  .adm .adm-page{padding-top:24px;padding-bottom:56px}
+  .adm .adm-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+  .adm .adm-title{font-size:24px;display:flex;align-items:center;gap:10px}
+  .adm .adm-sub{color:hsl(var(--muted-foreground));font-size:13.5px;margin-top:4px}
+  .adm .adm-ic{flex-shrink:0;vertical-align:middle}
+  .adm .adm-card-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:12px}
+  .adm .adm-table-wrap{overflow-x:auto}
+  .adm .adm-table-wrap .table th:first-child,.adm .adm-table-wrap .table td:first-child{padding-left:20px}
+  .adm .adm-table-wrap .table th:last-child,.adm .adm-table-wrap .table td:last-child{padding-right:20px}
+  .adm .adm-table-wrap .table tbody tr:last-child td{border-bottom:0}
+  .adm .adm-table-bordered{border:1px solid hsl(var(--border));border-radius:8px}
+  .adm .adm-table-bordered .table th:first-child,.adm .adm-table-bordered .table td:first-child{padding-left:12px}
+  .adm .adm-icon-btn{width:30px;height:30px;border-radius:6px;display:inline-grid;place-items:center;color:hsl(var(--muted-foreground))}
+  .adm .adm-icon-btn:hover{background:hsl(var(--muted));color:hsl(var(--foreground))}
+  .adm .adm-icon-btn.danger:hover{color:hsl(var(--destructive));background:hsl(var(--sell-bg))}
+  .adm .adm-actions{display:flex;gap:2px;justify-content:flex-end}
+  .adm .adm-editable{cursor:pointer;border-bottom:1px dashed hsl(var(--muted-foreground)/.6);padding-bottom:1px}
+  .adm .adm-editable:hover{color:hsl(var(--primary));border-bottom-color:hsl(var(--primary))}
+  .adm .adm-inline-input{width:76px;height:28px;padding:0 6px;font-size:12px}
+  .adm .adm-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .adm .adm-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;background:hsl(var(--secondary));color:hsl(var(--secondary-foreground));font-size:12px;font-weight:500;border:1px solid transparent}
+  .adm button.adm-chip:hover{border-color:hsl(var(--primary));color:hsl(var(--primary))}
+  .adm .adm-chip .adm-chip-x{display:grid;place-items:center;width:16px;height:16px;border-radius:50%;color:hsl(var(--muted-foreground))}
+  .adm .adm-chip .adm-chip-x:hover{background:hsl(var(--sell-bg));color:hsl(var(--destructive))}
+  .adm .adm-intervals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .adm .adm-interval{border:1px solid hsl(var(--border));border-radius:8px;padding:12px;background:hsl(var(--surface-2))}
+  .adm .adm-interval h4{margin-bottom:10px}
+  .adm .adm-interval .field{margin-bottom:10px}
+  .adm .adm-interval .adm-sublabel{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:hsl(var(--muted-foreground));font-weight:600;margin:12px 0 8px}
+  .adm .adm-checklist{max-height:220px;overflow:auto;border:1px solid hsl(var(--border));border-radius:8px;padding:6px;background:hsl(var(--card))}
+  .adm .adm-checklist-tall{max-height:380px}
+  .adm .adm-checklist label{display:flex;gap:10px;align-items:center;padding:6px 8px;border-radius:6px;font-size:13px;cursor:pointer}
+  .adm .adm-checklist label:hover{background:hsl(var(--muted))}
+  .adm .adm-checklist .empty{padding:20px}
+  .adm .adm-search{position:relative;display:flex;align-items:center}
+  .adm .adm-search>svg{position:absolute;left:10px;color:hsl(var(--muted-foreground));pointer-events:none}
+  .adm .adm-search>.input,.adm .adm-search>.select{padding-left:32px;min-width:200px}
+  .adm .adm-switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid hsl(var(--border));border-radius:8px;padding:10px 12px;margin-bottom:14px}
+  .adm .adm-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
+  .adm .adm-form-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .adm .adm-plan-grid{border:1px solid hsl(var(--border));border-radius:8px;overflow:hidden}
+  .adm .adm-plan-grid .table th{background:hsl(var(--muted))}
+  .adm .adm-plan-grid .table td{text-align:center}
+  .adm .adm-plan-grid .table td:first-child{text-align:left;font-weight:500}
+  .adm .adm-thumb{width:64px;height:36px;border-radius:6px;background-size:cover;background-position:center;background-color:hsl(var(--muted));flex-shrink:0}
+  .adm .adm-thumb-lg{width:180px;height:100px;border-radius:8px;border:1px dashed hsl(var(--border));display:grid;place-items:center;color:hsl(var(--muted-foreground));font-size:12px}
+  .adm .adm-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-top:1px solid hsl(var(--border));font-size:13px;color:hsl(var(--muted-foreground));flex-wrap:wrap}
+  .adm .adm-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+  .adm .adm-tiles-4{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:0}
+  .adm .adm-preview{border:1px solid hsl(var(--border));border-radius:10px;padding:14px 16px;background:hsl(var(--surface-2))}
+  .adm .adm-preview .adm-preview-subject{font-weight:600;margin:6px 0 8px}
+  .adm .adm-preview .adm-preview-body{white-space:pre-wrap;font-size:13px;color:hsl(var(--foreground))}
+  .adm .adm-preview mark{background:hsl(var(--info-bg));color:hsl(var(--info));border-radius:3px;padding:0 3px}
+  .adm .adm-compose{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px;align-items:start}
+  .adm .adm-radio{display:flex;gap:8px;align-items:center;padding:8px 14px;border:1px solid hsl(var(--border));border-radius:8px;cursor:pointer;font-weight:500;font-size:13px;flex:1}
+  .adm .adm-radio input{accent-color:hsl(var(--primary))}
+  .adm .adm-radio.selected{border-color:hsl(var(--primary));background:hsl(var(--info-bg))}
+  .adm .adm-proofs{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto}
+  .adm .adm-proofs .adm-proof{display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:center;font-size:12.5px}
+  .adm .adm-totals{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;padding:10px 12px;border-radius:8px;background:hsl(var(--muted))}
+  .adm .adm-kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
+  .adm .adm-kv div>span{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:hsl(var(--muted-foreground));font-weight:600}
+  .adm .adm-kv div>b{font-weight:500;font-size:13px}
+  .adm .adm-row-click{cursor:pointer}
+  .adm .adm-strike{text-decoration:line-through;color:hsl(var(--muted-foreground));font-size:11.5px;margin-left:4px}
+  .adm .adm-empty-icon{width:48px;height:48px;border-radius:12px;background:hsl(var(--muted));display:grid;place-items:center;margin:0 auto 12px;color:hsl(var(--muted-foreground))}
+  .adm .uppercase{text-transform:uppercase}
+  .adm .switch{cursor:pointer}
+  @media (max-width:900px){.adm .adm-intervals,.adm .adm-compose,.adm .adm-tiles-4{grid-template-columns:1fr}.adm .adm-tiles{grid-template-columns:1fr}.adm .adm-form-grid,.adm .adm-kv{grid-template-columns:1fr}}
+</style>

@@ -1,0 +1,992 @@
+<!-- ===== 10-public: landing, auth, sso, delta, legal, payoff-preview, 404 ===== -->
+<section class="screen pub" data-route="/" data-title="Trade Crypto Options Like a Pro">
+  <header class="pub-header">
+    <div class="pub-wrap pub-header-in">
+      <a href="#/" class="pub-logo" aria-label="CoinGreeks home"><span class="pub-logo-mark" data-pub-icon="logo"></span>CoinGreeks</a>
+      <nav class="pub-nav" aria-label="Landing sections">
+        <a href="#features" data-scroll="features">Features</a>
+        <a href="#crypto-analytics" data-scroll="crypto-analytics">Market Analytics</a>
+        <a href="#prices" data-scroll="prices">Markets</a>
+        <a href="#exchanges" data-scroll="exchanges">Exchanges</a>
+      </nav>
+      <div class="pub-header-right">
+        <button class="btn btn-ghost btn-icon pub-theme" data-pub-theme title="Toggle theme" aria-label="Toggle theme"></button>
+        <span class="pub-guest" data-pub-guest><a href="#/auth?tab=signup" class="btn btn-ghost pub-signup">Sign Up</a><a href="#/auth" class="btn btn-primary pub-pill">Get Started <i data-pub-icon="arrow"></i></a></span>
+        <span class="pub-user" data-pub-user hidden><a href="#/analyse" class="btn btn-primary pub-pill">Go to App <i data-pub-icon="arrow"></i></a></span>
+      </div>
+    </div>
+  </header>
+
+  <section class="pub-hero">
+    <div class="pub-hero-bg" aria-hidden="true"></div>
+    <div class="pub-wrap pub-hero-in">
+      <div class="pub-hero-copy">
+        <span class="pub-pill-live"><i></i>Live on Delta Exchange</span>
+        <h1 class="pub-h1">Trade Crypto Options<br><span class="pub-grad">Like a Pro</span></h1>
+        <p class="pub-lead">Professional-grade options analytics, strategy builder, and paper trading — everything you need to master BTC &amp; ETH options.</p>
+        <div class="pub-hero-bullets" id="pub-hero-bullets"></div>
+        <div class="pub-hero-actions">
+          <a href="#/auth" class="btn btn-primary btn-lg pub-pill pub-cta-main">Start Trading Free <i data-pub-icon="arrow"></i></a>
+          <a href="#features" data-scroll="features" class="btn btn-outline btn-lg pub-pill">Explore Features <i data-pub-icon="chevdown"></i></a>
+        </div>
+      </div>
+      <div class="pub-hero-visual" id="pub-hero-visual"></div>
+    </div>
+  </section>
+
+  <section class="pub-stats"><div class="pub-wrap pub-wrap-6" id="pub-stats"></div></section>
+
+  <section class="pub-prices" data-anchor="prices">
+    <div class="pub-wrap">
+      <div class="pub-prices-head">
+        <div><h2 class="pub-h2-sm">Live Markets</h2><p class="text-muted text-sm">Powered by Delta Exchange</p></div>
+        <span class="badge badge-outline pub-live-badge" id="pub-live-badge"><i></i>LIVE</span>
+      </div>
+      <div class="pub-tiles" id="pub-tiles"></div>
+    </div>
+  </section>
+
+  <section class="pub-why">
+    <div class="pub-wrap pub-wrap-5">
+      <div class="pub-sec-head"><p class="pub-eyebrow">Why CoinGreeks?</p><h2 class="pub-h2">Stop Guessing. Start <span class="pub-grad">Trading Smart</span></h2></div>
+      <div class="pub-why-grid" id="pub-why"></div>
+    </div>
+  </section>
+
+  <section class="pub-features" data-anchor="features">
+    <div class="pub-wrap">
+      <div class="pub-sec-head"><p class="pub-eyebrow">Platform Features</p><h2 class="pub-h2">Everything You Need to <span class="pub-grad">Trade Smarter</span></h2></div>
+      <div class="pub-ftabs" id="pub-ftabs" role="tablist"></div>
+      <div class="pub-fpanel" id="pub-fpanel"></div>
+    </div>
+  </section>
+
+  <section class="pub-caps">
+    <div class="pub-wrap">
+      <div class="pub-sec-head"><p class="pub-eyebrow">Capabilities</p><h2 class="pub-h2">Built for Serious Traders</h2></div>
+      <div class="pub-caps-grid" id="pub-caps"></div>
+    </div>
+  </section>
+
+  <section class="pub-analytics" data-anchor="crypto-analytics">
+    <div class="pub-wrap">
+      <div class="pub-sec-head"><p class="pub-eyebrow">Market Analytics</p><h2 class="pub-h2">Liquidations &amp; Market Pulse</h2><p class="pub-sub">Professional-grade analytics inside your dashboard — track liquidations, exchange flows, and large orders in real time across BTC, ETH, and 200+ assets.</p></div>
+      <div class="pub-an-card">
+        <div class="pub-an-stats" id="pub-an-stats"></div>
+        <div class="pub-an-spark"><div class="pub-an-bars" id="pub-an-bars"></div><p class="pub-an-note">Live liquidation pattern · last 40 intervals</p></div>
+        <div class="pub-an-foot"><p class="text-sm text-muted">Dive into per-exchange breakdowns, historical charts, and a live order feed.</p><a href="#/analytics" class="btn btn-primary pub-btn-xl">Explore Analytics <i data-pub-icon="arrow"></i></a></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pub-list">
+    <div class="pub-wrap">
+      <div class="pub-sec-head"><p class="pub-eyebrow">Everything You Need</p><h2 class="pub-h2">Full Feature List</h2><p class="pub-sub">A comprehensive toolkit designed for crypto options traders — from analytics to execution.</p></div>
+      <div class="pub-list-grid" id="pub-list"></div>
+    </div>
+  </section>
+
+  <section class="pub-testi">
+    <div class="pub-wrap"><div class="pub-sec-head"><p class="pub-eyebrow">Testimonials</p><h2 class="pub-h2">Loved by Traders Worldwide</h2></div></div>
+    <div class="pub-marquees" id="pub-testi"></div>
+  </section>
+
+  <section class="pub-exch" data-anchor="exchanges">
+    <div class="pub-wrap">
+      <div class="pub-sec-head"><p class="pub-eyebrow">Integrations</p><h2 class="pub-h2 pub-h2-md">Supported Exchanges</h2><p class="pub-sub pub-sub-sm">Trade on leading crypto exchanges with more integrations coming soon.</p></div>
+      <div class="pub-exch-grid" id="pub-exch"></div>
+    </div>
+  </section>
+
+  <section class="pub-cta">
+    <div class="pub-cta-in">
+      <h2 class="pub-h2 pub-cta-title">Ready to Trade Smarter?</h2>
+      <p class="pub-cta-sub">Join thousands of traders using CoinGreeks for professional-grade crypto options analytics. Free paper trading included.</p>
+      <a href="#/auth" class="btn btn-lg pub-pill pub-cta-btn">Create Free Account <i data-pub-icon="arrow"></i></a>
+    </div>
+  </section>
+
+  <div data-cg="footer"></div>
+</section>
+
+<section class="screen pub" data-route="/auth" data-title="Sign in">
+  <div class="pub-auth">
+    <aside class="pub-auth-left">
+      <div class="pub-auth-glow pub-auth-glow-a" aria-hidden="true"></div>
+      <div class="pub-auth-glow pub-auth-glow-b" aria-hidden="true"></div>
+      <div class="pub-auth-left-in">
+        <a href="#/" class="pub-logo"><span class="pub-logo-mark" data-pub-icon="logo"></span>CoinGreeks</a>
+        <div class="pub-auth-brand">
+          <h1 class="pub-auth-h1">Master Options<br><span class="text-primary">Trading</span></h1>
+          <p class="pub-auth-brand-p">Professional-grade crypto options analytics with real-time Greeks, strategy building, and paper trading.</p>
+          <div class="pub-auth-feats" id="pub-auth-feats"></div>
+        </div>
+        <p class="pub-auth-copy">© 2025 CoinGreeks. Secure &amp; encrypted.</p>
+      </div>
+    </aside>
+    <main class="pub-auth-right">
+      <div class="pub-auth-card" id="pub-auth-card"></div>
+    </main>
+  </div>
+</section>
+
+<section class="screen pub" data-route="/auth/delta" data-title="Signing in with Delta">
+  <div class="pub-center-screen"><div class="pub-bigspin" aria-hidden="true"></div><p class="text-muted" id="pub-delta-msg">Signing you in with Delta…</p></div>
+</section>
+
+<section class="screen pub" data-route="/sso" data-title="Signing in">
+  <div class="pub-center-screen"><div class="pub-bigspin" aria-hidden="true"></div><p class="text-muted">Signing you in…</p></div>
+</section>
+
+<section class="screen pub" data-route="/privacy" data-title="Privacy Policy">
+  <div class="pub-legal"><button class="btn btn-ghost btn-sm pub-back" data-pub-back><i data-pub-icon="arrowleft"></i> Back</button><h1 class="pub-legal-h1">Privacy Policy</h1><p class="pub-legal-date">Last updated: March 30, 2026</p><div class="pub-legal-body" data-legal="privacy"></div></div>
+</section>
+<section class="screen pub" data-route="/terms" data-title="Terms of Service">
+  <div class="pub-legal"><button class="btn btn-ghost btn-sm pub-back" data-pub-back><i data-pub-icon="arrowleft"></i> Back</button><h1 class="pub-legal-h1">Terms of Service</h1><p class="pub-legal-date">Last updated: March 30, 2026</p><div class="pub-legal-body" data-legal="terms"></div></div>
+</section>
+<section class="screen pub" data-route="/disclaimer" data-title="Disclaimer">
+  <div class="pub-legal"><button class="btn btn-ghost btn-sm pub-back" data-pub-back><i data-pub-icon="arrowleft"></i> Back</button><h1 class="pub-legal-h1">Disclaimer</h1><p class="pub-legal-date">Last updated: March 30, 2026</p><div class="pub-legal-body" data-legal="disclaimer"></div></div>
+</section>
+
+<section class="screen pub" data-route="/payoff-preview" data-title="Payoff chart preview">
+  <div class="pub-pp">
+    <div class="pub-pp-top"><span class="pub-pp-title">Payoff chart preview</span><div class="pub-pp-presets" id="pub-pp-presets"></div></div>
+    <div class="pub-pp-body">
+      <div class="pub-pp-card" id="pub-pp-card">
+        <div class="pub-pp-toolbar">
+          <div class="pub-pp-legend" id="pub-pp-legend"></div>
+          <div class="pub-pp-tools">
+            <div class="pub-pp-zoom"><button class="pub-pp-ib" data-pp-zoom="in" title="Zoom In" aria-label="Zoom In"><i data-pub-icon="zoomin"></i></button><button class="pub-pp-zoomlbl mono" data-pp-zoom="reset" title="Reset Zoom" id="pub-pp-zoomlbl">100%</button><button class="pub-pp-ib" data-pp-zoom="out" title="Zoom Out" aria-label="Zoom Out"><i data-pub-icon="zoomout"></i></button></div>
+            <div class="pub-pp-layers-wrap"><button class="btn btn-outline btn-sm pub-pp-layersbtn" data-pp-layers title="Toggle Layers"><i data-pub-icon="layers"></i> Layers</button><div class="pub-pp-pop" id="pub-pp-pop" hidden></div></div>
+          </div>
+        </div>
+        <div class="pub-pp-sd" id="pub-pp-sd"></div>
+        <div class="pub-pp-plot">
+          <div class="pub-pp-ylab">Profit / Loss</div>
+          <div class="pub-pp-svgwrap" id="pub-pp-svgwrap"><div class="pub-pp-tip" id="pub-pp-tip" hidden></div></div>
+          <div class="pub-pp-ylab pub-pp-ylab-r">Open Interest</div>
+        </div>
+        <div class="pub-pp-xlab">Underlying Price</div>
+        <div class="pub-pp-summary" id="pub-pp-summary"></div>
+      </div>
+      <div class="pub-pp-sliders">
+        <div class="pub-pp-sl card">
+          <div class="pub-pp-sl-head"><span class="pub-pp-sl-lbl">BTC Target</span><span class="badge pub-pp-pct" id="pub-pp-pct">+0.0%</span></div>
+          <div class="pub-pp-sl-row"><button class="pub-pp-ib" data-pp-target="-" aria-label="Decrease target"><i data-pub-icon="minus"></i></button><span class="pub-pp-sl-val mono" id="pub-pp-target-val">$100k</span><button class="pub-pp-ib" data-pp-target="+" aria-label="Increase target"><i data-pub-icon="plus"></i></button></div>
+          <input type="range" class="pub-range" id="pub-pp-target" aria-label="BTC target price">
+          <div class="pub-pp-sl-ends mono"><span id="pub-pp-target-min"></span><span id="pub-pp-target-max"></span></div>
+        </div>
+        <div class="pub-pp-sl card">
+          <div class="pub-pp-sl-head"><span class="pub-pp-sl-lbl">Today</span><i class="pub-pp-info" data-pub-icon="info" title="Move the date to see the P&amp;L on any day until expiry"></i></div>
+          <div class="pub-pp-sl-row"><button class="pub-pp-ib" data-pp-day="-" aria-label="Previous day"><i data-pub-icon="chevleft"></i></button><span class="pub-pp-sl-val pub-pp-sl-date" id="pub-pp-day-val"></span><button class="pub-pp-ib" data-pp-day="+" aria-label="Next day"><i data-pub-icon="chevright"></i></button></div>
+          <input type="range" class="pub-range" id="pub-pp-day" aria-label="Target date">
+          <div class="pub-pp-sl-ends"><span>Today</span><span id="pub-pp-day-max"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="screen pub" data-route="*" data-title="Not found">
+  <div class="pub-center-screen pub-404"><h1 class="pub-404-code">404</h1><p class="pub-404-msg">Oops! Page not found</p><a href="#/" class="pub-404-link">Return to Home</a></div>
+</section>
+<style>
+/* ===== 10-public: scoped styles (.pub screens + global .pub-footer / .pub-logo used by the footer chrome) ===== */
+.pub-logo{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:700;font-size:17px;letter-spacing:-.01em;color:hsl(var(--foreground))}
+.pub-logo-mark{width:28px;height:28px;display:grid;place-items:center;color:hsl(var(--primary))}
+.pub-logo-mark svg{width:26px;height:26px}
+i[data-pub-icon]{display:inline-flex;align-items:center;justify-content:center;font-style:normal;line-height:0}
+i[data-pub-icon] svg{width:16px;height:16px}
+.pub .pub-wrap{max-width:1280px;margin:0 auto;padding:0 32px}
+.pub .pub-wrap-6{max-width:1152px}.pub .pub-wrap-5{max-width:1024px}
+.pub [data-anchor]{scroll-margin-top:64px}
+@keyframes pub-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes pub-grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes pub-breathe{0%,100%{transform:scale(1);opacity:.35}50%{transform:scale(1.2);opacity:.55}}
+@keyframes pub-scroll-l{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes pub-scroll-r{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+@keyframes pub-fade-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* ---- header ---- */
+.pub .pub-header{position:sticky;top:0;z-index:50;height:64px;border-bottom:1px solid hsl(var(--border)/.6);background:hsl(var(--background)/.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.pub .pub-header-in{height:64px;display:flex;align-items:center;gap:24px}
+.pub .pub-nav{display:flex;gap:4px;flex:1;justify-content:center;margin-left:-40px}
+.pub .pub-nav a{padding:6px 14px;font-size:14px;color:hsl(var(--muted-foreground));border-radius:6px;font-weight:500}
+.pub .pub-nav a:hover{color:hsl(var(--foreground))}
+.pub .pub-header-right{display:flex;align-items:center;gap:8px}
+.pub .pub-header-right .pub-guest,.pub .pub-header-right .pub-user{display:inline-flex;align-items:center;gap:8px}
+.pub .pub-pill{border-radius:999px}
+.pub .pub-signup{font-weight:600}
+.pub .pub-theme svg{width:18px;height:18px}
+.pub .btn i[data-pub-icon] svg{width:16px;height:16px}
+/* ---- hero ---- */
+.pub .pub-hero{position:relative;padding:88px 0 84px;overflow:hidden}
+.pub .pub-hero-bg{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(hsl(var(--primary)/.09) 1px,transparent 1px),linear-gradient(90deg,hsl(var(--primary)/.09) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at 50% 40%,#000 20%,transparent 72%);mask-image:radial-gradient(ellipse at 50% 40%,#000 20%,transparent 72%)}
+.pub .pub-hero-in{position:relative;display:flex;align-items:center;gap:64px}
+.pub .pub-hero-copy{flex:1 1 55%;min-width:0}
+.pub .pub-hero-visual{flex:0 0 45%;position:relative;min-width:0}
+.pub .pub-pill-live{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;border:1px solid hsl(var(--border));background:hsl(var(--card));font-size:12.5px;font-weight:500;margin-bottom:22px}
+.pub .pub-pill-live i{width:6px;height:6px;border-radius:50%;background:hsl(var(--profit));animation:pub-pulse 1.6s infinite}
+.pub .pub-h1{font-size:60px;font-weight:800;letter-spacing:-.03em;line-height:1.08}
+.pub .pub-grad{background:linear-gradient(90deg,hsl(var(--primary)),hsl(var(--primary)) 40%,hsl(var(--accent)));-webkit-background-clip:text;background-clip:text;color:transparent}
+.pub .pub-lead{margin-top:20px;font-size:17px;line-height:1.6;color:hsl(var(--muted-foreground));max-width:560px}
+.pub .pub-hero-bullets{margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:10px 24px}
+.pub .pub-hero-bullets div{display:flex;align-items:center;gap:8px;font-size:13.5px;color:hsl(var(--muted-foreground))}
+.pub .pub-hero-bullets svg{width:16px;height:16px;color:hsl(var(--primary));flex-shrink:0}
+.pub .pub-hero-actions{margin-top:32px;display:flex;gap:12px;flex-wrap:wrap}
+.pub .btn-lg.pub-pill{height:48px;padding:0 32px;font-family:var(--font-display);font-size:15px;font-weight:600}
+.pub .pub-cta-main{box-shadow:0 10px 24px -8px hsl(var(--primary)/.5)}
+.pub .pub-hero-frame{position:relative}
+.pub .pub-hero-glow{position:absolute;inset:-16px;z-index:0;border-radius:24px;background:hsl(var(--primary)/.07);filter:blur(24px)}
+.pub .pub-hero-frame .pub-mock{position:relative;z-index:1}
+/* product mock (CSS-only app frame) */
+.pub .pub-mock{border:1px solid hsl(var(--border)/.7);border-radius:16px;overflow:hidden;background:hsl(var(--card));box-shadow:0 30px 60px -20px rgba(0,0,0,.2);font-size:6px;line-height:1.35;color:hsl(var(--foreground));text-align:left}
+.pub .pub-mock-bar{display:flex;align-items:center;gap:6px;padding:8px 14px;border-bottom:1px solid hsl(var(--border)/.5);background:hsl(var(--muted)/.5)}
+.pub .pub-mock-bar i{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.pub .pub-mock-bar i:nth-child(1){background:hsl(var(--destructive)/.5)}.pub .pub-mock-bar i:nth-child(2){background:hsl(45 93% 47%/.5)}.pub .pub-mock-bar i:nth-child(3){background:hsl(var(--profit)/.5)}
+.pub .pub-mock-url{flex:1;margin:0 auto;height:18px;max-width:200px;border-radius:6px;background:hsl(var(--muted)/.8);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:10px;color:hsl(var(--muted-foreground))}
+.pub .pub-mock-top{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid hsl(var(--border)/.6);font-size:6.5px}
+.pub .pub-mock-top b{font-family:var(--font-display);font-size:7px;display:inline-flex;align-items:center;gap:3px}
+.pub .pub-mock-top b i{width:8px;height:8px;border-radius:2px;background:hsl(var(--primary));display:inline-block}
+.pub .pub-mock-top .mono{font-weight:600}
+.pub .pub-mock-top .r{margin-left:auto;display:flex;gap:4px}
+.pub .pub-mock-top .r span{border:1px solid hsl(var(--border));border-radius:3px;padding:1px 4px;font-size:5.5px}
+.pub .pub-mock-tabs{display:flex;gap:10px;padding:4px 10px;border-bottom:1px solid hsl(var(--border)/.6);font-size:6px;color:hsl(var(--muted-foreground))}
+.pub .pub-mock-tabs span.on{color:hsl(var(--primary));font-weight:600;border-bottom:1px solid hsl(var(--primary))}
+.pub .pub-mock-body{display:grid;grid-template-columns:52% 48%}
+.pub .pub-mock-left{border-right:1px solid hsl(var(--border)/.6);font-family:var(--font-mono);font-size:5.5px;overflow:hidden}
+.pub .pub-mock-row{display:grid;grid-template-columns:1fr 1fr .9fr 1fr 1fr;padding:2.5px 6px;border-bottom:1px solid hsl(var(--border)/.4);align-items:center}
+.pub .pub-mock-row.head{color:hsl(var(--muted-foreground));font-weight:600;background:hsl(var(--muted)/.4);font-family:var(--font-body)}
+.pub .pub-mock-row .k{text-align:center;font-weight:600}
+.pub .pub-mock-row .itmc{background:hsl(var(--buy-bg))}.pub .pub-mock-row .itmp{background:hsl(var(--sell-bg))}
+.pub .pub-mock-row.atm .k span{background:hsl(var(--primary));color:#fff;border-radius:2px;padding:0 3px}
+.pub .pub-mock-row .g{color:hsl(var(--profit))}.pub .pub-mock-row .rd{color:hsl(var(--loss))}
+.pub .pub-mock-right{padding:6px;display:flex;flex-direction:column;gap:4px}
+.pub .pub-mock-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.pub .pub-mock-stat{border:1px solid hsl(var(--border)/.6);border-radius:4px;padding:3px 5px;font-size:5px;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:.04em}
+.pub .pub-mock-stat b{display:block;font-family:var(--font-mono);font-size:6.5px;text-transform:none;letter-spacing:0}
+.pub .pub-mock-right svg{width:100%;height:auto;border:1px solid hsl(var(--border)/.6);border-radius:4px;background:hsl(var(--surface-2))}
+.pub .pub-mock-sliders{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.pub .pub-mock-slider{border:1px solid hsl(var(--border)/.6);border-radius:4px;padding:4px 5px;font-size:5px;color:hsl(var(--muted-foreground))}
+.pub .pub-mock-slider b{display:block;font-family:var(--font-mono);color:hsl(var(--foreground));font-size:6px}
+.pub .pub-mock-slider i{display:block;height:2px;border-radius:2px;background:linear-gradient(90deg,hsl(var(--primary)) 60%,hsl(var(--muted)) 60%);margin-top:3px}
+.pub .pub-mock-legs{padding:4px 6px;display:grid;gap:3px;font-family:var(--font-body)}
+.pub .pub-mock-leg{display:grid;grid-template-columns:14px 1fr 24px 28px;gap:4px;align-items:center;border:1px solid hsl(var(--border)/.6);border-radius:3px;padding:3px 4px;font-size:5.5px}
+.pub .pub-mock-leg em{font-style:normal;font-weight:700;border-radius:2px;text-align:center;font-size:5px;padding:1px 0;color:#fff}
+.pub .pub-mock-leg em.b{background:hsl(var(--buy))}.pub .pub-mock-leg em.s{background:hsl(var(--sell))}
+.pub .pub-mock-leg .mono{text-align:right}
+.pub .pub-mock-chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:2px}
+.pub .pub-mock-chips span{border:1px solid hsl(var(--border));border-radius:999px;padding:1px 5px;font-size:5px;color:hsl(var(--muted-foreground))}
+.pub .pub-mock-chips span.on{background:hsl(var(--primary));color:#fff;border-color:transparent}
+.pub .pub-mock-title{font-size:6px;font-weight:600;padding:4px 6px 2px;font-family:var(--font-body);color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:.05em}
+.pub .pub-mock-pos{display:grid;grid-template-columns:1.6fr .5fr .7fr .7fr;gap:4px;padding:3px 6px;border-bottom:1px solid hsl(var(--border)/.4);font-size:5.5px;font-family:var(--font-body);align-items:center}
+.pub .pub-mock-pos.head{color:hsl(var(--muted-foreground));font-weight:600;background:hsl(var(--muted)/.4)}
+.pub .pub-mock-pos .mono{text-align:right}
+.pub .pub-mock-pos .tag{border-radius:2px;padding:0 3px;font-size:5px;font-weight:600;text-align:center}
+.pub .pub-mock-pos .tag.paper{background:hsl(var(--info-bg));color:hsl(var(--info))}.pub .pub-mock-pos .tag.live{background:hsl(var(--buy-bg));color:hsl(var(--buy))}
+.pub .pub-mock-wallet{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+/* hero floating chips */
+.pub .pub-chip{position:absolute;z-index:3;background:hsl(var(--card)/.92);border:1px solid hsl(var(--border)/.7);border-radius:12px;box-shadow:0 12px 30px -10px rgba(0,0,0,.25);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.pub .pub-chip-tpl{top:-16px;left:-18px;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.pub .pub-chip-tpl b{width:32px;height:32px;border-radius:8px;background:hsl(var(--primary)/.15);color:hsl(var(--primary));display:grid;place-items:center;font-family:var(--font-display);font-size:13px;flex-shrink:0}
+.pub .pub-chip-tpl p{font-size:12px;font-weight:600;line-height:1.3}
+.pub .pub-chip-tpl small{display:block;font-size:10px;color:hsl(var(--muted-foreground));font-weight:400}
+.pub .pub-chip-greeks{bottom:-8px;left:-24px;padding:8px 12px;border-radius:8px}
+.pub .pub-chip-greeks p{font-size:10px;font-weight:600;color:hsl(var(--muted-foreground));margin-bottom:4px}
+.pub .pub-chip-greeks div{display:flex;gap:8px;font-family:var(--font-mono);font-size:10px}
+.pub .pub-mini{position:absolute;z-index:2;bottom:-24px;right:-16px;width:160px;border:2px solid hsl(var(--border)/.6);border-radius:16px;overflow:hidden;background:hsl(var(--card));box-shadow:0 25px 50px -12px rgba(0,0,0,.25);transition:transform .2s}
+.pub .pub-mini:hover{transform:translateY(-4px)}
+.pub .pub-mini .pub-mock{border:0;border-radius:0;box-shadow:none;font-size:4.5px}
+.pub .pub-mini .pub-mock-body{grid-template-columns:1fr}
+.pub .pub-mini .pub-mock-left{border-right:0}
+/* ---- stats ---- */
+.pub .pub-stats{padding:40px 0;border-top:1px solid hsl(var(--border)/.4);border-bottom:1px solid hsl(var(--border)/.4);background:hsl(var(--muted)/.2)}
+.pub .pub-stats .pub-wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:32px}
+.pub .pub-stat{display:flex;align-items:center;gap:14px}
+.pub .pub-stat-ic{width:40px;height:40px;border-radius:10px;background:hsl(var(--primary)/.1);color:hsl(var(--primary));display:grid;place-items:center;flex-shrink:0}
+.pub .pub-stat-ic svg{width:18px;height:18px}
+.pub .pub-stat-v{font-family:var(--font-display);font-size:20px;font-weight:700;line-height:1.1}
+.pub .pub-stat-l{font-size:12.5px;color:hsl(var(--muted-foreground))}
+/* ---- live markets ---- */
+.pub .pub-prices{padding:56px 0;border-bottom:1px solid hsl(var(--border)/.4);background:hsl(var(--muted)/.2)}
+.pub .pub-prices-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px}
+.pub .pub-h2-sm{font-size:20px}
+.pub .pub-live-badge{gap:6px;font-size:11px;padding:4px 10px}
+.pub .pub-live-badge i{width:6px;height:6px;border-radius:50%;background:hsl(var(--profit));animation:pub-pulse 1.6s infinite}
+.pub .pub-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.pub .pub-tile{background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:12px;padding:20px;transition:transform .15s,border-color .15s,box-shadow .15s;animation:pub-fade-up .4s ease-out both}
+.pub .pub-tile:hover{transform:translateY(-2px);border-color:hsl(var(--primary)/.3);box-shadow:0 10px 24px -14px rgba(0,0,0,.25)}
+.pub .pub-tile-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.pub .pub-tile-ic{width:36px;height:36px;border-radius:10px;background:hsl(var(--primary)/.1);color:hsl(var(--primary));display:grid;place-items:center;font-weight:700;font-size:14px}
+.pub .pub-tile-sym{font-weight:600;font-size:13.5px}.pub .pub-tile-name{font-size:12px;color:hsl(var(--muted-foreground))}
+.pub .pub-tile-chg{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px}
+.pub .pub-tile-chg.up{color:hsl(var(--profit));background:hsl(var(--profit)/.1)}.pub .pub-tile-chg.down{color:hsl(var(--loss));background:hsl(var(--loss)/.1)}
+.pub .pub-tile-price{font-family:var(--font-display);font-size:24px;font-weight:700;border-radius:4px;display:inline-block;padding:0 2px;margin-left:-2px}
+.pub .pub-tile-hl{margin-top:8px;font-size:12px;color:hsl(var(--muted-foreground));display:flex;gap:16px;font-family:var(--font-mono)}
+/* ---- section shells ---- */
+.pub .pub-sec-head{text-align:center;margin-bottom:56px}
+.pub .pub-eyebrow{color:hsl(var(--primary));font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}
+.pub .pub-h2{font-size:36px;letter-spacing:-.02em;font-weight:700}
+.pub .pub-h2-md{font-size:30px}
+.pub .pub-sub{margin:12px auto 0;max-width:672px;color:hsl(var(--muted-foreground));font-size:15px;line-height:1.6}
+.pub .pub-sub-sm{max-width:448px;font-size:13.5px}
+/* ---- why ---- */
+.pub .pub-why{padding:96px 0}
+.pub .pub-why-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.pub .pub-why-card{padding:24px;border-radius:18px;border:1px solid transparent}
+.pub .pub-why-card.no{border-color:hsl(var(--destructive)/.2);background:hsl(var(--destructive)/.05)}
+.pub .pub-why-card.yes{border-color:hsl(var(--primary)/.2);background:hsl(var(--primary)/.05)}
+.pub .pub-why-card h3{font-size:15px;display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.pub .pub-why-card h3 svg{width:20px;height:20px}
+.pub .pub-why-card ul{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.pub .pub-why-card li{display:flex;gap:12px;align-items:flex-start;font-size:13.5px;color:hsl(var(--muted-foreground))}
+.pub .pub-why-card li svg{width:16px;height:16px;flex-shrink:0;margin-top:2px}
+.pub .pub-why-card.no svg{color:hsl(var(--destructive))}.pub .pub-why-card.no li svg{opacity:.6}
+.pub .pub-why-card.yes svg{color:hsl(var(--primary))}
+/* ---- platform features ---- */
+.pub .pub-features{padding:96px 0 112px}
+.pub .pub-ftabs{display:flex;justify-content:center;gap:12px;margin-bottom:48px;flex-wrap:wrap}
+.pub .pub-ftab{position:relative;display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;background:hsl(var(--muted));color:hsl(var(--foreground));overflow:hidden;transition:background .15s,color .15s}
+.pub .pub-ftab:hover{background:hsl(var(--secondary))}
+.pub .pub-ftab svg{width:16px;height:16px}
+.pub .pub-ftab.active{background:hsl(var(--primary));color:#fff;box-shadow:0 8px 20px -8px hsl(var(--primary)/.6)}
+.pub .pub-ftab-prog{position:absolute;left:0;bottom:0;height:2px;background:rgba(255,255,255,.75);width:0}
+.pub .pub-fpanel{display:grid;grid-template-columns:1.25fr 1fr;gap:56px;align-items:center}
+.pub .pub-fpanel-mock{animation:pub-fade-up .35s ease-out both}
+.pub .pub-fdesc{animation:pub-fade-up .35s ease-out both}
+.pub .pub-fdesc-ic{width:48px;height:48px;border-radius:12px;background:hsl(var(--primary)/.1);color:hsl(var(--primary));display:inline-grid;place-items:center;margin-right:16px;flex-shrink:0}
+.pub .pub-fdesc-ic svg{width:22px;height:22px}
+.pub .pub-fdesc h3{font-size:22px;display:flex;align-items:center;margin-bottom:24px}
+.pub .pub-fdesc ul{list-style:none;padding:0;margin:0;display:grid;gap:14px}
+.pub .pub-fdesc li{display:flex;gap:12px;align-items:flex-start;font-size:14px;color:hsl(var(--muted-foreground));line-height:1.5}
+.pub .pub-fdesc li svg{width:20px;height:20px;color:hsl(var(--primary));flex-shrink:0}
+/* ---- capabilities ---- */
+.pub .pub-caps{padding:96px 0;background:hsl(var(--muted)/.1)}
+.pub .pub-caps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.pub .pub-cap{padding:24px;border-radius:18px;border:1px solid hsl(var(--border));background:hsl(var(--card));transition:transform .15s,border-color .15s,box-shadow .15s}
+.pub .pub-cap.large{grid-column:span 2}
+.pub .pub-cap:hover{border-color:hsl(var(--primary)/.3);transform:translateY(-2px);box-shadow:0 12px 30px -16px rgba(0,0,0,.3)}
+.pub .pub-cap-ic{width:44px;height:44px;border-radius:12px;background:hsl(var(--primary)/.1);color:hsl(var(--primary));display:grid;place-items:center;margin-bottom:16px}
+.pub .pub-cap-ic svg{width:20px;height:20px}
+.pub .pub-cap h3{font-size:16px;margin-bottom:8px}
+.pub .pub-cap p{font-size:13.5px;color:hsl(var(--muted-foreground));line-height:1.55}
+/* ---- market analytics ---- */
+.pub .pub-analytics{padding:96px 0;position:relative;overflow:hidden}
+.pub .pub-analytics::before{content:"";position:absolute;left:50%;top:50%;width:600px;height:600px;transform:translate(-50%,-50%);border-radius:50%;background:hsl(var(--primary)/.05);filter:blur(60px);pointer-events:none}
+.pub .pub-an-card{position:relative;border-radius:24px;border:1px solid hsl(var(--border)/.6);background:hsl(var(--card)/.6);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:32px;box-shadow:0 25px 50px -12px hsl(var(--primary)/.08)}
+.pub .pub-an-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.pub .pub-an-stat{padding:16px;border-radius:12px;border:1px solid hsl(var(--border)/.6);background:hsl(var(--background)/.4)}
+.pub .pub-an-stat-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:hsl(var(--muted-foreground))}
+.pub .pub-an-stat-head svg{width:16px;height:16px}
+.pub .pub-an-stat-v{font-family:var(--font-mono);font-weight:700;font-size:20px}
+.pub .c-primary{color:hsl(var(--primary))}.pub .c-loss{color:hsl(var(--loss))}.pub .c-profit{color:hsl(var(--profit))}.pub .c-orange{color:hsl(27 96% 55%)}
+.pub .pub-an-spark{border-radius:12px;background:hsl(var(--background)/.4);border:1px solid hsl(var(--border)/.4);padding:16px;margin-bottom:24px}
+.pub .pub-an-bars{display:flex;align-items:flex-end;gap:4px;height:96px}
+.pub .pub-an-bars i{flex:1;border-radius:3px 3px 0 0;background:hsl(var(--profit)/.7);transform-origin:bottom;animation:pub-grow .5s ease-out both;position:relative}
+.pub .pub-an-bars i.l{background:hsl(var(--loss)/.7)}
+.pub .pub-an-bars i:hover{opacity:.85}
+.pub .pub-an-note{font-size:10px;color:hsl(var(--muted-foreground));margin-top:8px;text-align:center}
+.pub .pub-an-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.pub .pub-btn-xl{height:42px;padding:0 20px;border-radius:12px;font-weight:600;box-shadow:0 10px 24px -8px hsl(var(--primary)/.5)}
+/* ---- full feature list ---- */
+.pub .pub-list{padding:96px 0 112px;position:relative;overflow:hidden}
+.pub .pub-list::before{content:"";position:absolute;left:50%;top:50%;width:800px;height:800px;transform:translate(-50%,-50%);border-radius:50%;background:hsl(var(--primary)/.05);filter:blur(120px);pointer-events:none}
+.pub .pub-list-grid{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.pub .pub-list-card{padding:24px;border-radius:18px;border:1px solid hsl(var(--border));background:hsl(var(--card))}
+.pub .pub-list-card h3{font-size:16px;display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.pub .pub-list-card h3 span{width:36px;height:36px;border-radius:10px;background:hsl(var(--primary)/.1);color:hsl(var(--primary));display:grid;place-items:center;flex-shrink:0}
+.pub .pub-list-card h3 svg{width:18px;height:18px}
+.pub .pub-list-card ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.pub .pub-list-card li{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:hsl(var(--muted-foreground));line-height:1.45}
+.pub .pub-list-card li svg{width:16px;height:16px;color:hsl(var(--primary));flex-shrink:0;margin-top:2px}
+/* ---- testimonials ---- */
+.pub .pub-testi{padding:96px 0;background:hsl(var(--muted)/.1);overflow:hidden}
+.pub .pub-testi .pub-sec-head{margin-bottom:48px}
+.pub .pub-marquees{display:grid;gap:16px}
+.pub .pub-marquee{display:flex;overflow:hidden;-webkit-mask-image:linear-gradient(to right,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(to right,transparent,#000 10%,#000 90%,transparent)}
+.pub .pub-marquee-track{display:flex;gap:16px;flex-shrink:0;animation:pub-scroll-l 30s linear infinite;padding-right:16px}
+.pub .pub-marquee.right .pub-marquee-track{animation-name:pub-scroll-r}
+.pub .pub-marquee:hover .pub-marquee-track{animation-play-state:paused}
+.pub .pub-tcard{width:320px;flex-shrink:0;padding:20px;border-radius:16px;border:1px solid hsl(var(--border));background:hsl(var(--card))}
+.pub .pub-tcard p{font-size:13.5px;line-height:1.6;color:hsl(var(--muted-foreground));margin-bottom:16px}
+.pub .pub-tcard-who{display:flex;align-items:center;gap:10px}
+.pub .pub-tcard-av{width:28px;height:28px;border-radius:50%;background:hsl(var(--primary)/.12);color:hsl(var(--primary));display:grid;place-items:center;font-size:12px;font-weight:700;flex-shrink:0}
+.pub .pub-tcard b{display:block;font-size:12.5px}.pub .pub-tcard small{font-size:11px;color:hsl(var(--muted-foreground))}
+@media (prefers-reduced-motion:reduce){.pub .pub-marquee{-webkit-mask-image:none;mask-image:none;justify-content:center}.pub .pub-marquee-track{flex-wrap:wrap;justify-content:center;padding:0 32px}.pub .pub-marquee-track .pub-tcard.dup{display:none}}
+/* ---- exchanges ---- */
+.pub .pub-exch{padding:96px 0}
+.pub .pub-exch .pub-sec-head{margin-bottom:48px}
+.pub .pub-exch-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;max-width:768px;margin:0 auto}
+.pub .pub-exch-card{padding:24px;border-radius:18px;border:1px solid hsl(var(--border));background:hsl(var(--card));text-align:center;transition:transform .15s}
+.pub .pub-exch-card:hover{transform:translateY(-2px)}
+.pub .pub-exch-card.live{border-color:hsl(var(--primary)/.3);background:hsl(var(--primary)/.05)}
+.pub .pub-exch-card.coming{opacity:.6}
+.pub .pub-exch-logo-wrap{position:relative;width:fit-content;margin:0 auto 16px}
+.pub .pub-exch-logo{width:56px;height:56px;border-radius:16px;background:#fff;color:#0f1a2e;display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:15px;border:1px solid hsl(var(--border));letter-spacing:-.02em}
+.pub .pub-exch-logo.delta{color:#fff;background:linear-gradient(135deg,#1d9d5a,#f7931a)}
+.pub .pub-exch-logo.dcx{color:#fff;background:#0a1b3f}.pub .pub-exch-logo.cs{color:#fff;background:#2b3ee6}.pub .pub-exch-logo.mdx{color:#fff;background:#111}
+.pub .pub-exch-live{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10px;padding:1px 8px}
+.pub .pub-exch-card h3{font-size:14px;margin-bottom:8px}
+.pub .pub-exch-card .badge{font-size:10px}
+/* ---- CTA ---- */
+.pub .pub-cta{padding:96px 0;background:linear-gradient(135deg,hsl(var(--primary)),hsl(var(--accent)));position:relative;overflow:hidden;color:#fff}
+.pub .pub-cta::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.14),transparent 40%),radial-gradient(circle at 80% 90%,rgba(0,0,0,.12),transparent 45%);pointer-events:none}
+.pub .pub-cta-in{max-width:768px;margin:0 auto;padding:0 16px;text-align:center;position:relative}
+.pub .pub-cta-title{color:#fff}
+.pub .pub-cta-sub{margin:16px auto 0;max-width:512px;color:rgba(255,255,255,.82);font-size:15px;line-height:1.6}
+.pub .pub-cta-btn{margin-top:32px;background:#fff;color:hsl(var(--primary));box-shadow:0 10px 30px -10px rgba(0,0,0,.35);border-color:transparent}
+.pub .pub-cta-btn:hover{background:rgba(255,255,255,.92)}
+/* ---- footer (global chrome) ---- */
+.pub-footer{padding:48px 0;border-top:1px solid hsl(var(--border)/.4);background:hsl(var(--muted)/.1);color:hsl(var(--foreground))}
+.pub-footer .pub-wrap{max-width:1280px;margin:0 auto;padding:0 32px}
+.pub-footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px;margin-bottom:32px}
+.pub-footer-brand p{font-size:12px;color:hsl(var(--muted-foreground));line-height:1.6;max-width:240px;margin-top:12px}
+.pub-footer h4{font-family:var(--font-display);font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:hsl(var(--muted-foreground));margin-bottom:12px;font-weight:600}
+.pub-footer ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pub-footer li a{font-size:13.5px;color:hsl(var(--muted-foreground));display:inline-flex;align-items:center;gap:8px;transition:color .15s}
+.pub-footer li a:hover{color:hsl(var(--foreground))}
+.pub-footer li a svg{width:14px;height:14px}
+.pub-footer-bottom{padding-top:24px;border-top:1px solid hsl(var(--border)/.3);font-size:12px;color:hsl(var(--muted-foreground))}
+/* ---- auth ---- */
+.pub .pub-auth{display:flex;min-height:100vh;background:hsl(var(--background))}
+.pub .pub-auth-left{width:40%;max-width:640px;position:relative;overflow:hidden;background-color:hsl(var(--card));border-right:1px solid hsl(var(--border)/.6);background-image:linear-gradient(hsl(var(--primary)/.045) 1px,transparent 1px),linear-gradient(90deg,hsl(var(--primary)/.045) 1px,transparent 1px);background-size:40px 40px}
+.pub .pub-auth-glow{position:absolute;border-radius:50%;filter:blur(60px);background:hsl(var(--primary)/.14);pointer-events:none}
+.pub .pub-auth-glow-a{top:80px;right:80px;width:256px;height:256px;animation:pub-breathe 6s ease-in-out infinite}
+.pub .pub-auth-glow-b{bottom:128px;left:40px;width:192px;height:192px;background:hsl(var(--primary)/.1);animation:pub-breathe 8s ease-in-out infinite reverse}
+.pub .pub-auth-left-in{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:space-between;padding:56px;min-height:100vh}
+.pub .pub-auth-h1{font-size:38px;line-height:1.15}
+.pub .pub-auth-brand-p{margin-top:12px;font-size:13.5px;color:hsl(var(--muted-foreground));max-width:384px;line-height:1.6}
+.pub .pub-auth-feats{display:grid;gap:16px;margin-top:32px}
+.pub .pub-auth-feat{display:flex;gap:12px;align-items:flex-start}
+.pub .pub-auth-feat:hover .pub-auth-feat-ic{background:hsl(var(--primary)/.2)}
+.pub .pub-auth-feat-ic{width:36px;height:36px;border-radius:8px;background:hsl(var(--primary)/.1);color:hsl(var(--primary));display:grid;place-items:center;flex-shrink:0;transition:background .15s}
+.pub .pub-auth-feat-ic svg{width:16px;height:16px}
+.pub .pub-auth-feat b{font-size:13.5px;font-weight:500;display:block}.pub .pub-auth-feat small{font-size:12px;color:hsl(var(--muted-foreground))}
+.pub .pub-auth-copy{font-size:12px;color:hsl(var(--foreground)/.6)}
+.pub .pub-auth-right{flex:1;display:flex;align-items:center;justify-content:center;padding:32px}
+.pub .pub-auth-card{width:100%;max-width:420px;animation:pub-fade-up .3s ease-out both}
+.pub .pub-auth-title{font-size:26px;font-weight:700}
+.pub .pub-auth-desc{color:hsl(var(--muted-foreground));font-size:13.5px;margin-top:4px;margin-bottom:24px}
+.pub .pub-delta-btn{width:100%;height:44px;font-weight:600;font-size:13.5px;gap:8px}
+.pub .pub-delta-mark{width:18px;height:18px;display:inline-flex}
+.pub .pub-delta-mark svg{width:18px;height:18px}
+.pub .pub-or{display:flex;align-items:center;gap:12px;margin:20px 0;font-size:10px;letter-spacing:.1em;color:hsl(var(--muted-foreground));text-transform:uppercase}
+.pub .pub-or::before,.pub .pub-or::after{content:"";flex:1;height:1px;background:hsl(var(--border))}
+.pub .pub-f{margin-bottom:16px}
+.pub .pub-f label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;color:hsl(var(--foreground)/.85)}
+.pub .pub-in{position:relative}
+.pub .pub-in .input{height:44px;padding-left:40px;font-size:13.5px}
+.pub .pub-in.noicon .input{padding-left:12px}
+.pub .pub-in > i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:hsl(var(--muted-foreground));pointer-events:none;display:inline-flex}
+.pub .pub-in > i svg{width:16px;height:16px}
+.pub .pub-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:hsl(var(--muted-foreground));display:grid;place-items:center;width:26px;height:26px;border-radius:6px}
+.pub .pub-eye:hover{background:hsl(var(--muted))}
+.pub .pub-eye svg{width:16px;height:16px}
+.pub .pub-in.haseye .input{padding-right:40px}
+.pub .pub-ferr{font-size:11.5px;color:hsl(var(--destructive));margin-top:6px}
+.pub .pub-in.err .input{border-color:hsl(var(--destructive))}
+.pub .pub-auth-submit{width:100%;height:44px;font-size:14px;font-weight:600;margin-top:4px}
+.pub .pub-auth-links{display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:12.5px}
+.pub .pub-link{color:hsl(var(--primary));font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:inherit}
+.pub .pub-link:hover{text-decoration:underline}
+.pub .pub-link.b{font-weight:600}
+.pub .pub-link svg{width:14px;height:14px}
+.pub .pub-auth-alt{margin-top:28px;text-align:center;font-size:13.5px;color:hsl(var(--muted-foreground))}
+.pub .pub-auth-back{margin-top:20px;text-align:center;font-size:12.5px}
+.pub .pub-otp{display:flex;gap:10px;justify-content:space-between}
+.pub .pub-otp input{width:52px;height:56px;text-align:center;font-family:var(--font-mono);font-size:20px;font-weight:600;border:1px solid hsl(var(--input));border-radius:8px;background:hsl(var(--card));outline:none;padding:0}
+.pub .pub-otp input:focus{border-color:hsl(var(--ring));box-shadow:0 0 0 2px hsl(var(--ring)/.25)}
+.pub .pub-rules{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-top:8px}
+.pub .pub-rule{font-size:11.5px;color:hsl(var(--muted-foreground));transition:color .15s}
+.pub .pub-rule.ok{color:hsl(var(--profit));font-weight:500}
+.pub .pub-strength{height:4px;border-radius:2px;background:hsl(var(--muted));margin-top:8px;overflow:hidden}
+.pub .pub-strength i{display:block;height:100%;width:0;transition:width .2s,background .2s;background:hsl(var(--loss))}
+/* ---- centered screens / 404 / legal ---- */
+.pub .pub-center-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;background:hsl(var(--background))}
+.pub .pub-bigspin{width:48px;height:48px;border:4px solid hsl(var(--primary));border-top-color:transparent;border-radius:50%;animation:cg-spin .8s linear infinite}
+.pub .pub-404{background:hsl(var(--muted));gap:8px}
+.pub .pub-404-code{font-size:36px}
+.pub .pub-404-msg{font-size:20px;color:hsl(var(--muted-foreground));margin-bottom:8px}
+.pub .pub-404-link{color:hsl(var(--primary));text-decoration:underline}
+.pub .pub-legal{max-width:768px;margin:0 auto;padding:48px 24px 80px;min-height:100vh}
+.pub .pub-back{margin-bottom:24px;margin-left:-8px;gap:6px}
+.pub .pub-legal-h1{font-size:30px}
+.pub .pub-legal-date{font-size:13px;color:hsl(var(--muted-foreground));margin:8px 0 32px}
+.pub .pub-legal-body{display:grid;gap:24px;font-size:13.5px;color:hsl(var(--muted-foreground));line-height:1.65}
+.pub .pub-legal-body h2{font-size:17px;font-family:var(--font-display);color:hsl(var(--foreground));margin-bottom:8px}
+/* ---- payoff preview ---- */
+.pub .pub-pp{min-height:100vh;display:flex;flex-direction:column;background:hsl(var(--background))}
+.pub .pub-pp-top{border-bottom:1px solid hsl(var(--border));padding:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pub .pub-pp-title{font-size:13.5px;font-weight:600;margin-right:8px}
+.pub .pub-pp-presets{display:flex;gap:8px;flex-wrap:wrap}
+.pub .pub-pp-presets .btn{font-weight:600;font-family:var(--font-display);height:34px;font-size:13px}
+.pub .pub-pp-body{padding:12px;height:calc(100vh - 64px);min-height:640px;display:flex;flex-direction:column;gap:12px}
+.pub .pub-pp-card{background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:10px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:0}
+.pub .pub-pp-toolbar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;gap:12px}
+.pub .pub-pp-legend{display:flex;gap:14px;font-size:11px;color:hsl(var(--muted-foreground));flex-wrap:wrap}
+.pub .pub-pp-lg{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.pub .pub-pp-lg i{width:14px;height:2px;border-radius:2px;display:inline-block}
+.pub .pub-pp-lg i.dot{width:8px;height:8px;border-radius:50%}
+.pub .pub-pp-lg.off{opacity:.4;text-decoration:line-through}
+.pub .pub-pp-tools{display:flex;align-items:center;gap:8px}
+.pub .pub-pp-zoom{display:inline-flex;align-items:center;gap:2px;background:hsl(var(--muted));border-radius:8px;padding:2px}
+.pub .pub-pp-ib{width:26px;height:26px;border-radius:6px;display:grid;place-items:center;color:hsl(var(--foreground));border:1px solid hsl(var(--border));background:hsl(var(--card))}
+.pub .pub-pp-ib svg{width:14px;height:14px}
+.pub .pub-pp-zoom .pub-pp-ib{border:0;background:transparent}
+.pub .pub-pp-ib:hover{background:hsl(var(--muted))}
+.pub .pub-pp-zoomlbl{font-size:10px;padding:0 8px;min-width:44px;color:hsl(var(--foreground));height:26px}
+.pub .pub-pp-layers-wrap{position:relative}
+.pub .pub-pp-layersbtn{gap:6px;border-radius:8px;height:30px}
+.pub .pub-pp-layersbtn svg{width:14px;height:14px}
+.pub .pub-pp-pop{position:absolute;right:0;top:36px;z-index:20;width:220px;background:hsl(var(--popover));border:1px solid hsl(var(--border));border-radius:10px;box-shadow:0 10px 30px -10px rgba(0,0,0,.3);padding:8px}
+.pub .pub-pp-pop h4{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:hsl(var(--muted-foreground));padding:4px 8px 8px;font-weight:600}
+.pub .pub-pp-pop label{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;font-size:12.5px;border-radius:6px;cursor:pointer}
+.pub .pub-pp-pop label:hover{background:hsl(var(--muted))}
+.pub .pub-pp-pop .switch{width:32px;height:18px}.pub .pub-pp-pop .switch::after{width:12px;height:12px}.pub .pub-pp-pop .switch.on::after{transform:translateX(14px)}
+.pub .pub-pp-sd{display:grid;grid-template-columns:repeat(5,1fr);text-align:center;padding:6px 12px 8px;background:hsl(var(--muted)/.4);border-top:1px solid hsl(var(--border)/.6);border-bottom:1px solid hsl(var(--border)/.6);font-family:var(--font-mono);font-size:10px;color:hsl(var(--muted-foreground))}
+.pub .pub-pp-sd b{display:block;font-size:11px;color:hsl(var(--foreground))}
+.pub .pub-pp-sd .cur b{color:hsl(var(--primary));font-size:12px}
+.pub .pub-pp-sd .cur .sub{font-size:9px;color:hsl(var(--primary)/.7)}
+.pub .pub-pp-plot{flex:1;display:grid;grid-template-columns:20px 1fr 20px;min-height:0;position:relative}
+.pub .pub-pp-ylab{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;color:hsl(var(--muted-foreground));display:flex;align-items:center;justify-content:center}
+.pub .pub-pp-ylab-r{transform:none}
+.pub .pub-pp-svgwrap{position:relative;min-height:0;cursor:crosshair;overflow:hidden}
+.pub .pub-pp-svgwrap svg{position:absolute;inset:0;display:block}
+.pub .pub-pp-tip{position:absolute;pointer-events:none;background:hsl(var(--popover));border:1px solid hsl(var(--border));border-radius:8px;padding:8px 10px;font-size:11px;box-shadow:0 8px 20px -8px rgba(0,0,0,.3);z-index:5;white-space:nowrap;font-family:var(--font-mono)}
+.pub .pub-pp-tip b{display:block;margin-bottom:4px}
+.pub .pub-pp-tip span{display:block;color:hsl(var(--muted-foreground))}
+.pub .pub-pp-xlab{text-align:center;font-size:10px;color:hsl(var(--muted-foreground));padding:2px 0 6px}
+.pub .pub-pp-summary{display:flex;align-items:center;justify-content:center;gap:16px;padding:8px 12px 10px;border-top:1px solid hsl(var(--border)/.6);font-family:var(--font-mono);font-size:11.5px;color:hsl(var(--muted-foreground));flex-wrap:wrap}
+.pub .pub-pp-summary b{color:hsl(var(--foreground))}
+.pub .pub-pp-summary .t{color:hsl(var(--primary))}
+.pub .pub-pp-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;border:1px solid;font-weight:600}
+.pub .pub-pp-pill svg{width:14px;height:14px}
+.pub .pub-pp-pill.profit{color:hsl(var(--profit));border-color:hsl(var(--profit)/.4);background:hsl(var(--profit)/.1)}
+.pub .pub-pp-pill.loss{color:hsl(var(--loss));border-color:hsl(var(--loss)/.4);background:hsl(var(--loss)/.1)}
+.pub .pub-pp-sliders{display:grid;grid-template-columns:1fr 1fr;gap:12px;flex-shrink:0}
+.pub .pub-pp-sl{padding:12px 16px 10px}
+.pub .pub-pp-sl-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.pub .pub-pp-sl-lbl{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:hsl(var(--muted-foreground))}
+.pub .pub-pp-pct{font-family:var(--font-mono);font-size:10px;padding:1px 6px}
+.pub .pub-pp-pct.up{background:hsl(var(--profit)/.12);color:hsl(var(--profit))}.pub .pub-pp-pct.down{background:hsl(var(--loss)/.12);color:hsl(var(--loss))}
+.pub .pub-pp-info{color:hsl(var(--muted-foreground));cursor:help}
+.pub .pub-pp-info svg{width:12px;height:12px}
+.pub .pub-pp-sl-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pub .pub-pp-sl-val{font-weight:700;font-size:14px}
+.pub .pub-pp-sl-date{font-family:var(--font-body);font-size:12.5px}
+.pub .pub-range{width:100%;margin:8px 0 2px;accent-color:hsl(var(--primary));height:6px;cursor:pointer}
+.pub .pub-pp-sl-ends{display:flex;justify-content:space-between;font-size:10px;color:hsl(var(--muted-foreground))}
+/* ---- responsive ---- */
+@media (max-width:1100px){.pub .pub-hero-in{flex-direction:column;gap:72px}.pub .pub-hero-visual{width:100%;flex-basis:auto}.pub .pub-caps-grid{grid-template-columns:repeat(2,1fr)}.pub .pub-list-grid{grid-template-columns:repeat(2,1fr)}.pub .pub-fpanel{grid-template-columns:1fr;gap:32px}.pub .pub-h1{font-size:48px}.pub .pub-exch-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:760px){.pub .pub-nav{display:none}.pub .pub-wrap{padding:0 16px}.pub .pub-stats .pub-wrap,.pub .pub-tiles,.pub .pub-why-grid,.pub .pub-caps-grid,.pub .pub-an-stats,.pub .pub-list-grid,.pub .pub-exch-grid,.pub-footer-grid,.pub .pub-pp-sliders{grid-template-columns:1fr}.pub .pub-cap.large{grid-column:auto}.pub .pub-h1{font-size:38px}.pub .pub-h2{font-size:28px}.pub .pub-hero-bullets{grid-template-columns:1fr}.pub .pub-auth-left{display:none}.pub .pub-pp-body{height:auto}.pub .pub-pp-card{min-height:480px}.pub .pub-signup{display:none}}
+</style>
+<script>
+/* ===== 10-public · icons, landing page, footer chrome ===== */
+(function () {
+  const esc = CG.esc;
+  const svg = (paths, extra) => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' + (extra || '') + '>' + paths + '</svg>';
+  const I = {
+    logo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4.5a5.5 5.5 0 0 1 4.6 2.5l-2.4 1.5a2.7 2.7 0 1 0 0 3l2.4 1.5A5.5 5.5 0 1 1 12 6.5z"/></svg>',
+    arrow: svg('<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>'),
+    arrowleft: svg('<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>'),
+    chevdown: svg('<path d="m6 9 6 6 6-6"/>'),
+    chevleft: svg('<path d="m15 18-6-6 6-6"/>'),
+    chevright: svg('<path d="m9 18 6-6-6-6"/>'),
+    moon: svg('<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'),
+    sun: svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>'),
+    checkcircle: svg('<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>'),
+    check: svg('<path d="M20 6 9 17l-5-5"/>'),
+    xcircle: svg('<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>'),
+    layers: svg('<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>'),
+    activity: svg('<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>'),
+    coins: svg('<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>'),
+    shield: svg('<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>'),
+    barchart: svg('<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16h8"/><path d="M7 11h12"/><path d="M7 6h3"/>'),
+    zap: svg('<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>'),
+    trending: svg('<path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/>'),
+    trendingdown: svg('<path d="M16 17h6v-6"/><path d="m22 17-8.5-8.5-5 5L2 7"/>'),
+    crosshair: svg('<circle cx="12" cy="12" r="10"/><path d="M22 12h-4"/><path d="M6 12H2"/><path d="M12 6V2"/><path d="M12 22v-4"/>'),
+    gitbranch: svg('<line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>'),
+    radio: svg('<path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/>'),
+    globe: svg('<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>'),
+    flame: svg('<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>'),
+    wallet: svg('<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>'),
+    settings: svg('<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>'),
+    mail: svg('<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>'),
+    chat: svg('<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>'),
+    lock: svg('<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'),
+    eye: svg('<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>'),
+    eyeoff: svg('<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/>'),
+    user: svg('<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
+    phone: svg('<path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/>'),
+    tag: svg('<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>'),
+    key: svg('<path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/>'),
+    zoomin: svg('<circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="11" x2="11" y1="8" y2="14"/><line x1="8" x2="14" y1="11" y2="11"/>'),
+    zoomout: svg('<circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="8" x2="14" y1="11" y2="11"/>'),
+    minus: svg('<path d="M5 12h14"/>'),
+    plus: svg('<path d="M5 12h14"/><path d="M12 5v14"/>'),
+    info: svg('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>'),
+    delta: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#f7931a"/><path d="M12 4.5 4.5 19.5h15L12 4.5z" fill="#fff"/><path d="M12 10.5 8.5 17.5h7L12 10.5z" fill="#1d9d5a"/></svg>'
+  };
+  CG.pubIcons = I;
+  CG.pubFillIcons = function (root) { CG.$$('[data-pub-icon]', root).forEach((el) => { if (!el.firstElementChild) el.innerHTML = I[el.dataset.pubIcon] || ''; }); };
+
+  // ---------- landing copy (verbatim from the production bundle) ----------
+  const HERO_BULLETS = ['Real-time Options Chain with Live Greeks', '28 Pre-built Strategy Templates', 'Risk-free Paper Trading Mode', 'Interactive P&L Payoff Diagrams', 'WebSocket Streaming Prices', 'Multi-leg Strategy Builder'];
+  const STATS = [{ icon: 'layers', value: '28', label: 'Built-in Strategies' }, { icon: 'activity', value: 'Real-time', label: 'Greeks & IV' }, { icon: 'coins', value: '2', label: 'Assets Supported' }, { icon: 'shield', value: 'Paper', label: 'Trading' }];
+  const WITHOUT = ['Guessing strike prices blindly', 'No real-time Greeks or IV data', 'Manual P&L tracking on spreadsheets', 'No way to test strategies risk-free', 'Scattered tools across platforms'];
+  const WITH = ['ATM detection + full options chain', 'Live Delta, Gamma, Theta, Vega & IV', 'Automated P&L with payoff charts', 'Free paper trading with live prices', 'All-in-one analytics dashboard'];
+  const TABS = [
+    { icon: 'barchart', title: 'Real-time Options Chain', mock: 'chain', bullets: ['Live Greeks: Delta, Gamma, Theta, Vega', 'Implied Volatility & Open Interest', 'Bid/Ask spreads with depth', 'WebSocket streaming updates'] },
+    { icon: 'zap', title: 'Strategy Builder & Payoff', mock: 'builder', bullets: ['Build multi-leg strategies visually', 'Interactive P&L payoff charts', 'Max profit, max loss & breakevens', '28 pre-built strategy templates'] },
+    { icon: 'shield', title: 'Paper & Live Trading', mock: 'trading', bullets: ['Risk-free paper trading mode', 'Real-time P&L tracking', 'Position management & adjustments', 'One-click live execution via Delta'] }
+  ];
+  const CAPS = [
+    { icon: 'activity', title: 'Live Greeks & IV', desc: 'Delta, Gamma, Theta, Vega — all updated in real-time with sub-second WebSocket streaming for precise risk assessment.', large: true },
+    { icon: 'crosshair', title: 'ATM Detection', desc: 'Auto-detect at-the-money strikes for quick strategy setup.' },
+    { icon: 'gitbranch', title: 'Multi-leg Strategies', desc: 'Build complex spreads, strangles, iron condors & more.' },
+    { icon: 'radio', title: 'WebSocket Prices', desc: 'Sub-second price updates via WebSocket streaming for lightning-fast decisions.' },
+    { icon: 'shield', title: 'Risk Management', desc: 'Max profit, max loss, breakeven analysis, and comprehensive risk metrics — everything you need to manage exposure with confidence.', large: true },
+    { icon: 'globe', title: 'Multiple Assets', desc: 'Trade BTC, ETH & XAUT options on Delta Exchange.' }
+  ];
+  const FEATURE_LIST = [
+    { icon: 'barchart', title: 'Options Analytics', features: ['Real-time Options Chain with live bid/ask prices', 'Full Greeks display — Delta, Gamma, Theta, Vega, Rho', 'Implied Volatility (IV) calculations', 'ATM (At-The-Money) strike auto-detection', 'Open Interest & Volume analysis', 'Multi-expiry support with quick switching'] },
+    { icon: 'gitbranch', title: 'Strategy Builder', features: ['Multi-leg strategy construction (up to 4 legs)', 'Pre-built strategy templates (Straddle, Strangle, Spreads…)', 'Payoff diagram with breakeven visualization', 'Max Profit / Max Loss / Risk-Reward ratio', 'Custom strike & expiry selection per leg', 'Save & load strategies for later analysis'] },
+    { icon: 'wallet', title: 'Paper Trading', features: ['Simulated order execution with live market prices', 'Track P&L in real-time without real capital', 'Position management — view, modify & square-off', 'Order history with entry / exit details', 'Exchange charges & fee simulation', 'Practice strategies risk-free before going live'] },
+    { icon: 'activity', title: 'Live Market Data', features: ['WebSocket streaming for sub-second price updates', 'BTC, ETH & XAUT futures price with 24h change', 'Live P&L tracking on open positions', 'Connection status indicators', 'Automatic reconnection on network drops', 'Binance & Delta Exchange data feeds'] },
+    { icon: 'shield', title: 'Risk Management', features: ['Position-level & portfolio-level risk metrics', 'Breakeven price calculation', 'Probability of profit estimation', 'Max drawdown & exposure analysis', 'Lot size & margin calculator', 'Currency conversion (USD / INR)'] },
+    { icon: 'settings', title: 'Platform & Settings', features: ['Dark / Light theme toggle', 'API key management for Delta Exchange', 'Exchange charge configuration', 'Custom lot size settings', 'User profile & subscription management', 'Mobile-responsive design'] }
+  ];
+  const TESTI = [
+    { name: 'Arjun M.', role: 'Crypto Trader', quote: 'CoinGreeks completely changed how I approach options. The real-time Greeks and strategy builder are game-changers.' },
+    { name: 'Priya S.', role: 'DeFi Analyst', quote: 'Finally a platform that brings TradFi-grade options analytics to crypto. The paper trading mode is perfect for testing strategies.' },
+    { name: 'Rohit K.', role: 'Portfolio Manager', quote: "The payoff charts and risk metrics give me confidence before every trade. Best crypto options tool I've used." },
+    { name: 'Sneha R.', role: 'Quantitative Trader', quote: 'WebSocket price feeds and live IV updates — this is what professional crypto trading should look like.' },
+    { name: 'Raj P.', role: 'Options Enthusiast', quote: '28 strategy templates made it so easy to get started. I went from beginner to building custom spreads in a week.' },
+    { name: 'Kavita D.', role: 'Derivatives Trader', quote: 'The multi-leg strategy builder is incredibly intuitive. I can set up iron condors in seconds.' }
+  ];
+  const EXCH = [{ name: 'Delta Exchange', status: 'live', mark: 'Δ', cls: 'delta' }, { name: 'CoinDCX', status: 'coming', mark: 'DCX', cls: 'dcx' }, { name: 'CoinSwitch', status: 'coming', mark: 'CS', cls: 'cs' }, { name: 'Mudrex', status: 'coming', mark: 'M', cls: 'mdx' }];
+  CG.mock.landing = { heroBullets: HERO_BULLETS, stats: STATS, without: WITHOUT, with: WITH, tabs: TABS, capabilities: CAPS, featureList: FEATURE_LIST, testimonials: TESTI, exchanges: EXCH };
+
+  // ---------- CSS product mock (no images) ----------
+  let mockSeq = 0;
+  function mockPayoffSvg(w, h) {
+    let pts = null;
+    try { const tpl = CG.TEMPLATES.find((t) => t.name === 'Iron Condor'); const legs = CG.templateLegs(tpl, 'BTC', CG.state.expiry); pts = CG.analyze(legs, 'BTC', { points: 61 }).points.map((p) => p.pnlExpiry); } catch (e) { pts = null; }
+    if (!pts || !pts.some((v) => v !== 0)) pts = Array.from({ length: 61 }, (_, i) => { const x = i / 60; return x < .2 ? -1 : x < .35 ? -1 + (x - .2) / .15 * 2 : x < .65 ? 1 : x < .8 ? 1 - (x - .65) / .15 * 2 : -1; });
+    const mx = Math.max(...pts.map(Math.abs)) || 1; const id = 'pubm' + (mockSeq++);
+    const X = (i) => (i / (pts.length - 1)) * w, Y = (v) => h / 2 - (v / mx) * (h / 2 - 4);
+    const line = pts.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' ');
+    const area = line + ' L' + w + ' ' + h / 2 + ' L0 ' + h / 2 + ' Z';
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"><defs><clipPath id="' + id + 'a"><rect x="0" y="0" width="' + w + '" height="' + h / 2 + '"/></clipPath><clipPath id="' + id + 'b"><rect x="0" y="' + h / 2 + '" width="' + w + '" height="' + h / 2 + '"/></clipPath></defs><rect x="' + w * .3 + '" y="0" width="' + w * .4 + '" height="' + h + '" fill="hsl(var(--primary)/.06)"/><line x1="0" y1="' + h / 2 + '" x2="' + w + '" y2="' + h / 2 + '" stroke="hsl(var(--border))" stroke-dasharray="2 2"/><path d="' + area + '" fill="hsl(var(--profit)/.25)" clip-path="url(#' + id + 'a)"/><path d="' + area + '" fill="hsl(var(--loss)/.25)" clip-path="url(#' + id + 'b)"/><path d="' + line + '" fill="none" stroke="hsl(var(--profit))" stroke-width="1"/><path d="' + line + '" fill="none" stroke="hsl(var(--loss))" stroke-width="1" clip-path="url(#' + id + 'b)"/><line x1="' + w / 2 + '" y1="0" x2="' + w / 2 + '" y2="' + h + '" stroke="hsl(38 92% 50%)" stroke-dasharray="2 2"/><rect x="' + (w / 2 - 12) + '" y="2" width="24" height="6" rx="2" fill="hsl(38 92% 50%)"/></svg>';
+  }
+  function mockChainRows(n) {
+    let ch = null; try { ch = CG.chain('BTC', CG.state.expiry); } catch (e) { }
+    const rows = ch ? ch.rows : []; const mid = Math.floor(rows.length / 2); const out = [];
+    for (let i = -Math.floor(n / 2); i <= Math.floor(n / 2); i++) { const r = rows[mid + i]; if (!r) continue; out.push(r); }
+    return out;
+  }
+  function mockChainHtml(n) {
+    const rows = mockChainRows(n);
+    let h = '<div class="pub-mock-row head"><span>Δ</span><span>Call</span><span class="k">Strike</span><span>Put</span><span>Δ</span></div>';
+    rows.forEach((r) => { h += '<div class="pub-mock-row' + (r.atm ? ' atm' : '') + '"><span class="' + (r.itmCall ? 'itmc' : '') + '">' + r.call.delta.toFixed(2) + '</span><span class="' + (r.itmCall ? 'itmc' : '') + ' g">' + CG.fmt.num(r.call.mark, 1) + '</span><span class="k"><span>' + CG.fmt.int(r.strike) + '</span></span><span class="' + (r.itmPut ? 'itmp' : '') + ' rd">' + CG.fmt.num(r.put.mark, 1) + '</span><span class="' + (r.itmPut ? 'itmp' : '') + '">' + r.put.delta.toFixed(2) + '</span></div>'; });
+    return h;
+  }
+  function mockPayoffPanel() {
+    return '<div class="pub-mock-stats"><div class="pub-mock-stat">Max Profit<b class="g" style="color:hsl(var(--profit))">$479.60</b></div><div class="pub-mock-stat">Max Loss<b style="color:hsl(var(--loss))">$520.40</b></div><div class="pub-mock-stat">Breakevens<b>78.5k · 82.1k</b></div></div>' + mockPayoffSvg(200, 92) + '<div class="pub-mock-sliders"><div class="pub-mock-slider">BTC TARGET<b>$79.5k</b><i></i></div><div class="pub-mock-slider">TODAY<b>' + CG.fmt.date(CG.NOW, { weekday: 'short', day: '2-digit', month: 'short' }) + '</b><i></i></div></div>';
+  }
+  function mockLegsHtml() {
+    let legs = []; try { const tpl = CG.TEMPLATES.find((t) => t.name === 'Iron Condor'); legs = CG.templateLegs(tpl, 'BTC', CG.state.expiry); } catch (e) { }
+    return '<div class="pub-mock-title">Strategy · Iron Condor</div><div class="pub-mock-legs">' + legs.map((l) => '<div class="pub-mock-leg"><em class="' + (l.side === 'BUY' ? 'b' : 's') + '">' + l.side[0] + '</em><span>BTC ' + CG.fmt.int(l.strike) + ' ' + (l.type === 'CALL' ? 'CE' : 'PE') + '</span><span class="mono">' + l.lots + ' lot</span><span class="mono">' + CG.fmt.num(l.price, 1) + '</span></div>').join('') + '</div><div class="pub-mock-title">Templates</div><div class="pub-mock-chips" style="padding:0 6px 6px">' + ['Iron Condor', 'Straddle', 'Strangle', 'Bull Call', 'Bear Put', 'Butterfly', 'Jade Lizard'].map((t, i) => '<span class="' + (i === 0 ? 'on' : '') + '">' + t + '</span>').join('') + '</div>';
+  }
+  function mockPositionsHtml() {
+    const S = (CG.mock.strategies || []).filter((s) => s.status === 'PAPER' || s.status === 'LIVE').slice(0, 6);
+    return '<div class="pub-mock-title">Positions</div><div class="pub-mock-pos head"><span>Strategy</span><span>Mode</span><span class="mono">Legs</span><span class="mono">P&amp;L</span></div>' + S.map((s) => '<div class="pub-mock-pos"><span>' + esc(s.name) + '</span><span class="tag ' + (s.status === 'LIVE' ? 'live' : 'paper') + '">' + (s.status === 'LIVE' ? 'LIVE' : 'PAPER') + '</span><span class="mono">' + s.legs.length + '</span><span class="mono" style="color:hsl(var(--' + (s.totalPnl >= 0 ? 'profit' : 'loss') + '))">' + CG.fmt.signed(s.totalPnl) + '</span></div>').join('');
+  }
+  function mockPnlSvg(w, h) {
+    const S = (CG.mock.strategies || []).find((s) => s.pnlHistory && s.pnlHistory.length > 8) || null; const vals = S ? S.pnlHistory.map((p) => p.pnl) : [0, 1, 2, 1.5, 3, 4, 3.5, 5];
+    const mn = Math.min(0, ...vals), mx = Math.max(0.1, ...vals); const X = (i) => i / (vals.length - 1) * w, Y = (v) => h - 4 - (v - mn) / (mx - mn) * (h - 8);
+    const line = vals.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' ');
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none"><path d="' + line + ' L' + w + ' ' + h + ' L0 ' + h + ' Z" fill="hsl(var(--profit)/.15)"/><path d="' + line + '" fill="none" stroke="hsl(var(--profit))" stroke-width="1.2"/></svg>';
+  }
+  function pubMock(kind, opts) {
+    opts = opts || {}; const A = CG.ASSETS.BTC;
+    const top = '<div class="pub-mock-top"><b><i></i>CoinGreeks</b><span>Bitcoin (BTC)</span><span class="mono">$' + CG.fmt.num(A.price, 1) + '</span><span style="color:hsl(var(--' + (A.chg24 >= 0 ? 'profit' : 'loss') + '))">' + CG.fmt.pct(A.chg24) + '</span><span class="r"><span>Futures Live</span><span>Exchange</span><span>$32.33</span></span></div>';
+    const tabs = (on) => '<div class="pub-mock-tabs">' + ['Options Chain', 'Strategy', 'Paper Trades', 'Live Trades'].map((t) => '<span class="' + (t === on ? 'on' : '') + '">' + t + '</span>').join('') + '</div>';
+    let body;
+    if (kind === 'builder') body = tabs('Strategy') + '<div class="pub-mock-body"><div class="pub-mock-left" style="font-family:var(--font-body)">' + mockLegsHtml() + '</div><div class="pub-mock-right">' + mockPayoffPanel() + '</div></div>';
+    else if (kind === 'trading') body = tabs('Paper Trades') + '<div class="pub-mock-body"><div class="pub-mock-left">' + mockPositionsHtml() + '</div><div class="pub-mock-right"><div class="pub-mock-wallet"><div class="pub-mock-stat">Available<b>$' + CG.fmt.num(CG.mock.wallet ? CG.mock.wallet.available : 1000) + '</b></div><div class="pub-mock-stat">Margin used<b>$' + CG.fmt.num(CG.mock.wallet ? CG.mock.wallet.marginUsed : 312.4) + '</b></div><div class="pub-mock-stat">Equity<b style="color:hsl(var(--profit))">$' + CG.fmt.num(CG.mock.wallet ? CG.mock.wallet.equity : 1330.28) + '</b></div></div>' + mockPnlSvg(200, 110) + '<div class="pub-mock-sliders"><div class="pub-mock-slider">Realized P&amp;L<b style="color:hsl(var(--profit))">+$3.60</b></div><div class="pub-mock-slider">Unrealized P&amp;L<b style="color:hsl(var(--profit))">+$20.16</b></div></div></div></div>';
+    else body = tabs('Options Chain') + '<div class="pub-mock-body"><div class="pub-mock-left">' + mockChainHtml(opts.rows || 13) + '</div><div class="pub-mock-right">' + mockPayoffPanel() + '</div></div>';
+    return '<div class="pub-mock"><div class="pub-mock-bar"><i></i><i></i><i></i><span class="pub-mock-url">coingreeks.com</span></div>' + top + body + '</div>';
+  }
+  CG.pubMock = pubMock;
+
+  // ---------- landing screen ----------
+  let landingRoot = null, tabIdx = 0, tabProg = 0, tabTimer = null, pendingScroll = null;
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function renderHero(root) {
+    CG.$('#pub-hero-bullets', root).innerHTML = HERO_BULLETS.map((b) => '<div>' + I.checkcircle + '<span>' + esc(b) + '</span></div>').join('');
+    CG.$('#pub-hero-visual', root).innerHTML = '<div class="pub-hero-frame"><div class="pub-hero-glow"></div>' + pubMock('chain', { rows: 15 }) + '<div class="pub-chip pub-chip-tpl"><b>28</b><div><p>Strategy Templates</p><small>Ready to use</small></div></div><div class="pub-mini"><div class="pub-mock"><div class="pub-mock-left">' + mockChainHtml(9) + '</div></div></div><div class="pub-chip pub-chip-greeks"><p>Live Greeks</p><div><span class="text-profit">Δ 0.45</span><span class="text-primary">Γ 0.02</span><span class="text-loss">Θ -12.5</span></div></div></div>';
+  }
+  function renderStats(root) { CG.$('#pub-stats', root).innerHTML = STATS.map((s) => '<div class="pub-stat"><div class="pub-stat-ic">' + I[s.icon] + '</div><div><div class="pub-stat-v" data-count="' + esc(s.value) + '">' + esc(s.value) + '</div><div class="pub-stat-l">' + esc(s.label) + '</div></div></div>').join(''); }
+  function animateCounts(root) {
+    CG.$$('[data-count]', root).forEach((el) => { const target = parseInt(el.dataset.count, 10); if (isNaN(target) || el.dataset.done) return; el.dataset.done = '1'; if (reduceMotion) return; const t0 = performance.now(); const step = (t) => { const k = Math.min(1, (t - t0) / 1500); el.textContent = Math.round(target * k); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); });
+  }
+  function tileHtml(A) { const up = A.chg24 >= 0; return '<div class="pub-tile" data-sym="' + A.symbol + '"><div class="pub-tile-head"><div class="flex items-center gap-2"><div class="pub-tile-ic">' + A.symbol.charAt(0) + '</div><div><div class="pub-tile-sym">' + A.symbol + '</div><div class="pub-tile-name">' + esc(A.name) + '</div></div></div><span class="pub-tile-chg ' + (up ? 'up' : 'down') + '" data-chg>' + CG.fmt.pct(A.chg24) + '</span></div><div class="pub-tile-price" data-price>$' + CG.fmt.num(A.price) + '</div><div class="pub-tile-hl"><span>H: $<span data-high>' + CG.fmt.num(A.high) + '</span></span><span>L: $<span data-low>' + CG.fmt.num(A.low) + '</span></span></div></div>'; }
+  function renderTiles(root) { CG.$('#pub-tiles', root).innerHTML = ['BTC', 'ETH', 'XAUT'].map((s) => { const A = CG.ASSETS[s]; if (A.open == null) A.open = A.price / (1 + A.chg24 / 100); return tileHtml(A); }).join(''); }
+  function updateTiles(root) {
+    ['BTC', 'ETH', 'XAUT'].forEach((s) => { const A = CG.ASSETS[s]; const el = CG.$('.pub-tile[data-sym="' + s + '"]', root); if (!el) return; if (A.open == null) A.open = A.price / (1 + A.chg24 / 100); if (A.price > A.high) A.high = A.price; if (A.price < A.low) A.low = A.price; const chg = (A.price / A.open - 1) * 100; const p = CG.$('[data-price]', el); p.textContent = '$' + CG.fmt.num(A.price); p.classList.remove('flash-up', 'flash-down'); void p.offsetWidth; p.classList.add(A.prev != null && A.price < A.prev ? 'flash-down' : 'flash-up'); const c = CG.$('[data-chg]', el); c.textContent = CG.fmt.pct(chg); c.classList.toggle('up', chg >= 0); c.classList.toggle('down', chg < 0); CG.$('[data-high]', el).textContent = CG.fmt.num(A.high); CG.$('[data-low]', el).textContent = CG.fmt.num(A.low); });
+  }
+  function renderWhy(root) { CG.$('#pub-why', root).innerHTML = '<div class="pub-why-card no"><h3>' + I.xcircle + 'Without CoinGreeks</h3><ul>' + WITHOUT.map((t) => '<li>' + I.xcircle + '<span>' + esc(t) + '</span></li>').join('') + '</ul></div><div class="pub-why-card yes"><h3>' + I.checkcircle + 'With CoinGreeks</h3><ul>' + WITH.map((t) => '<li>' + I.checkcircle + '<span>' + esc(t) + '</span></li>').join('') + '</ul></div>'; }
+  function renderTabs(root) {
+    CG.$('#pub-ftabs', root).innerHTML = TABS.map((t, i) => '<button type="button" role="tab" class="pub-ftab' + (i === tabIdx ? ' active' : '') + '" data-tab="' + i + '" aria-selected="' + (i === tabIdx) + '">' + I[t.icon] + esc(t.title) + '<span class="pub-ftab-prog"></span></button>').join('');
+    renderTabPanel(root);
+  }
+  function renderTabPanel(root) {
+    const t = TABS[tabIdx];
+    CG.$('#pub-fpanel', root).innerHTML = '<div class="pub-fpanel-mock">' + pubMock(t.mock) + '</div><div class="pub-fdesc"><h3><span class="pub-fdesc-ic">' + I[t.icon] + '</span>' + esc(t.title) + '</h3><ul>' + t.bullets.map((b) => '<li>' + I.checkcircle + '<span>' + esc(b) + '</span></li>').join('') + '</ul></div>';
+  }
+  function selectTab(root, i, manual) { tabIdx = i; tabProg = 0; CG.$$('.pub-ftab', root).forEach((b, j) => { b.classList.toggle('active', j === i); b.setAttribute('aria-selected', j === i); CG.$('.pub-ftab-prog', b).style.width = '0'; }); renderTabPanel(root); if (manual) startRotate(root); }
+  function startRotate(root) { stopRotate(); if (reduceMotion) return; tabTimer = setInterval(() => { if (document.hidden || !root.classList.contains('active')) return; tabProg += 100 / (8000 / 50); if (tabProg >= 100) { selectTab(root, (tabIdx + 1) % TABS.length); return; } const b = CG.$$('.pub-ftab', root)[tabIdx]; if (b) CG.$('.pub-ftab-prog', b).style.width = tabProg + '%'; }, 50); }
+  function stopRotate() { clearInterval(tabTimer); tabTimer = null; }
+  function renderCaps(root) { CG.$('#pub-caps', root).innerHTML = CAPS.map((c) => '<div class="pub-cap' + (c.large ? ' large' : '') + '"><div class="pub-cap-ic">' + I[c.icon] + '</div><h3>' + esc(c.title) + '</h3><p>' + esc(c.desc) + '</p></div>').join(''); }
+  function renderAnalytics(root) {
+    const G = CG.mock.global || {}; const stats = [{ label: '24H Total Liq', value: CG.fmt.usdCompact(G.liq24h), icon: 'activity', cls: 'c-primary' }, { label: 'Long Liq', value: CG.fmt.usdCompact(G.longLiq24h), icon: 'trendingdown', cls: 'c-loss' }, { label: 'Short Liq', value: CG.fmt.usdCompact(G.shortLiq24h), icon: 'trending', cls: 'c-profit' }, { label: 'Top Coin', value: G.topLiqCoin || '—', icon: 'flame', cls: 'c-orange' }];
+    CG.$('#pub-an-stats', root).innerHTML = stats.map((s) => '<div class="pub-an-stat"><div class="pub-an-stat-head"><span>' + esc(s.label) + '</span><span class="' + s.cls + '">' + I[s.icon] + '</span></div><div class="pub-an-stat-v ' + s.cls + '">' + esc(s.value) + '</div></div>').join('');
+    const hist = (CG.mock.liqHistory || []).slice(-40); const max = Math.max(1, ...hist.map((h) => h.long + h.short));
+    CG.$('#pub-an-bars', root).innerHTML = hist.map((h, i) => { const tot = h.long + h.short; const pct = Math.max(8, Math.round(tot / max * 100)); return '<i class="' + (h.long > h.short ? 'l' : '') + '" style="height:' + pct + '%;animation-delay:' + (i * 20) + 'ms" title="' + CG.fmt.time(h.time) + ' · Long ' + CG.fmt.usdCompact(h.long) + ' · Short ' + CG.fmt.usdCompact(h.short) + '"></i>'; }).join('');
+  }
+  function renderList(root) { CG.$('#pub-list', root).innerHTML = FEATURE_LIST.map((c) => '<div class="pub-list-card"><h3><span>' + I[c.icon] + '</span>' + esc(c.title) + '</h3><ul>' + c.features.map((f) => '<li>' + I.check + '<span>' + esc(f) + '</span></li>').join('') + '</ul></div>').join(''); }
+  function tcard(t, dup) { return '<div class="pub-tcard' + (dup ? ' dup' : '') + '"' + (dup ? ' aria-hidden="true"' : '') + '><p>"' + esc(t.quote) + '"</p><div class="pub-tcard-who"><div class="pub-tcard-av">' + esc(t.name.charAt(0)) + '</div><div><b>' + esc(t.name) + '</b><small>' + esc(t.role) + '</small></div></div></div>'; }
+  function renderTesti(root) { const row = (items, dir) => '<div class="pub-marquee ' + dir + '"><div class="pub-marquee-track">' + items.map((t) => tcard(t)).join('') + items.map((t) => tcard(t, true)).join('') + '</div></div>'; CG.$('#pub-testi', root).innerHTML = row(TESTI.slice(0, 3), 'left') + row(TESTI.slice(3, 6), 'right'); }
+  function renderExch(root) { CG.$('#pub-exch', root).innerHTML = EXCH.map((e) => '<div class="pub-exch-card ' + e.status + '"><div class="pub-exch-logo-wrap"><div class="pub-exch-logo ' + e.cls + '">' + esc(e.mark) + '</div>' + (e.status === 'live' ? '<span class="badge badge-default pub-exch-live">● Live</span>' : '') + '</div><h3>' + esc(e.name) + '</h3>' + (e.status === 'live' ? '<span class="badge badge-success">Connected via API</span>' : '<span class="badge badge-secondary">Coming Soon</span>') + '</div>').join(''); }
+  function updateAuthState(root) { const on = !!CG.state.loggedIn; CG.$('[data-pub-guest]', root).hidden = on; CG.$('[data-pub-user]', root).hidden = !on; }
+  function updateThemeIcon(root) { const b = CG.$('[data-pub-theme]', root); if (b) b.innerHTML = CG.theme.get() === 'dark' ? I.sun : I.moon; }
+  function scrollToAnchor(key) { const root = landingRoot; if (!root) return; const el = CG.$('[data-anchor="' + key + '"]', root); if (!el) return; el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' }); }
+
+  // in-page section links (also used by the shared footer on every screen)
+  document.addEventListener('click', (e) => { const a = e.target.closest('[data-scroll]'); if (!a) return; e.preventDefault(); const key = a.dataset.scroll; if (CG.current.path !== '/') { pendingScroll = key; CG.navigate('/'); } else scrollToAnchor(key); });
+
+  CG.register('/', {
+    init(root) {
+      landingRoot = root; CG.pubFillIcons(root);
+      renderHero(root); renderStats(root); renderTiles(root); renderWhy(root); renderTabs(root); renderCaps(root); renderAnalytics(root); renderList(root); renderTesti(root); renderExch(root); updateThemeIcon(root); updateAuthState(root);
+      CG.$('[data-pub-theme]', root).addEventListener('click', () => CG.theme.toggle());
+      CG.delegate(root, 'click', '.pub-ftab', (e, b) => selectTab(root, +b.dataset.tab, true));
+      CG.on('theme', () => updateThemeIcon(root));
+      CG.on('auth', () => updateAuthState(root));
+      CG.on('tick', () => { if (root.classList.contains('active')) updateTiles(root); });
+      const io = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => { if (entries.some((x) => x.isIntersecting)) { animateCounts(root); io.disconnect(); } }, { rootMargin: '-50px' }) : null;
+      if (io) io.observe(CG.$('#pub-stats', root)); else animateCounts(root);
+    },
+    show(root) {
+      updateAuthState(root); updateThemeIcon(root); updateTiles(root); startRotate(root);
+      if (pendingScroll) { const k = pendingScroll; pendingScroll = null; setTimeout(() => scrollToAnchor(k), 60); }
+    },
+    hide() { stopRotate(); }
+  });
+
+  // ---------- shared footer chrome (used by every screen that has <div data-cg="footer">) ----------
+  CG.chrome['footer'] = function (el) {
+    el.innerHTML = '<footer class="pub-footer"><div class="pub-wrap"><div class="pub-footer-grid"><div class="pub-footer-brand"><a href="#/" class="pub-logo"><span class="pub-logo-mark">' + I.logo + '</span>CoinGreeks</a><p>Professional-grade crypto options analytics platform. Trade smarter with real-time data.</p></div><div><h4>Quick Links</h4><ul><li><a href="#features" data-scroll="features">Features</a></li><li><a href="#prices" data-scroll="prices">Markets</a></li><li><a href="#exchanges" data-scroll="exchanges">Exchanges</a></li></ul></div><div><h4>Legal</h4><ul><li><a href="#/privacy">Privacy Policy</a></li><li><a href="#/terms">Terms of Service</a></li><li><a href="#/disclaimer">Disclaimer</a></li></ul></div><div><h4>Contact Us</h4><ul><li><a href="mailto:support@coingreeks.com">' + I.mail + 'support@coingreeks.com</a></li><li><a href="https://wa.me/919684022369" target="_blank" rel="noopener noreferrer"><span class="text-profit" style="display:inline-flex">' + I.chat + '</span>+91 96840 22369</a></li></ul></div></div><div class="pub-footer-bottom">© ' + CG.NOW.getFullYear() + ' CoinGreeks. All rights reserved.</div></div></footer>';
+  };
+})();
+</script>
+<script>
+/* ===== 10-public · auth, delta/sso, legal pages, payoff preview ===== */
+(function () {
+  const I = CG.pubIcons, esc = CG.esc, F = CG.fmt;
+  // route counter used by the "← Back" buttons on legal pages
+  CG.pubNavCount = 0; CG.on('route', () => { CG.pubNavCount++; });
+
+  // ================= /auth =================
+  const AUTH_FEATS = [{ icon: 'barchart', title: 'Real-time Analytics', desc: 'Live options chain with Greeks & IV' }, { icon: 'shield', title: 'Paper Trading', desc: 'Practice risk-free before going live' }, { icon: 'zap', title: 'Strategy Builder', desc: 'Build & backtest custom strategies' }, { icon: 'trending', title: 'Payoff Charts', desc: 'Visualize P&L across strike prices' }];
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const RULES = [['Uppercase letter', (p) => /[A-Z]/.test(p)], ['Lowercase letter', (p) => /[a-z]/.test(p)], ['Number', (p) => /\d/.test(p)], ['Special character', (p) => /[^A-Za-z0-9]/.test(p)], ['8+ characters', (p) => p.length >= 8]];
+  const S = { email: '', loginEmail: '', timer: null, left: 0, tab: 'login' };
+  let aRoot = null, card = null;
+
+  const qs = (tab) => { const q = CG.current.query || {}; const parts = ['tab=' + tab]; if (q.next) parts.push('next=' + encodeURIComponent(q.next)); if (q.ref) parts.push('ref=' + encodeURIComponent(q.ref)); return '/auth?' + parts.join('&'); };
+  const go = (tab) => CG.navigate(qs(tab));
+  function finishLogin(email, title, desc) { CG.auth.login(email); CG.toast({ title, description: desc, variant: 'success' }); const q = CG.current.query || {}; CG.navigate(q.next && q.next[0] === '/' ? q.next : '/analyse', { replace: true }); }
+  const field = (o) => '<div class="pub-f" data-f="' + o.id + '"><label for="pub-' + o.id + '">' + esc(o.label) + '</label><div class="pub-in' + (o.icon ? '' : ' noicon') + (o.eye ? ' haseye' : '') + '">' + (o.icon ? '<i>' + I[o.icon] + '</i>' : '') + '<input class="input" id="pub-' + o.id + '" name="' + o.id + '" type="' + (o.type || 'text') + '" placeholder="' + esc(o.placeholder || '') + '" value="' + esc(o.value || '') + '" autocomplete="' + (o.auto || 'off') + '"' + (o.inputmode ? ' inputmode="' + o.inputmode + '"' : '') + (o.maxlength ? ' maxlength="' + o.maxlength + '"' : '') + '>' + (o.eye ? '<button type="button" class="pub-eye" data-eye aria-label="Show password">' + I.eye + '</button>' : '') + '</div>' + (o.after || '') + '<div class="pub-ferr" data-err hidden></div></div>';
+  const otpBoxes = () => '<div class="pub-f" data-f="otp"><label>OTP Code</label><div class="pub-otp" data-otp>' + Array.from({ length: 6 }, (_, i) => '<input type="text" inputmode="numeric" maxlength="1" aria-label="Digit ' + (i + 1) + '" autocomplete="one-time-code">').join('') + '</div><div class="pub-ferr" data-err hidden></div></div>';
+  const deltaBtn = () => '<button type="button" class="btn btn-outline pub-delta-btn" data-delta><span class="pub-delta-mark">' + I.delta + '</span>Continue with Delta Exchange</button><div class="pub-or">or</div>';
+  const backLink = (tab, label) => '<div class="pub-auth-back"><button type="button" class="pub-link" data-go="' + tab + '">' + I.arrowleft + esc(label) + '</button></div>';
+  const rulesHtml = () => '<div class="pub-strength"><i data-strength></i></div><div class="pub-rules" data-rules>' + RULES.map((r) => '<span class="pub-rule">✓ ' + esc(r[0]) + '</span>').join('') + '</div>';
+
+  const VIEWS = {
+    login: () => '<h2 class="pub-auth-title">Welcome back</h2><p class="pub-auth-desc">Sign in to your trading dashboard</p>' + deltaBtn() + '<form data-form="login" novalidate>' + field({ id: 'login-email', label: 'Email', icon: 'mail', type: 'email', placeholder: 'you@example.com', auto: 'email', value: S.loginEmail }) + field({ id: 'login-password', label: 'Password', icon: 'lock', type: 'password', placeholder: '••••••••', auto: 'current-password', eye: true }) + '<button class="btn btn-primary pub-auth-submit" type="submit">Sign In</button><div class="pub-auth-links"><button type="button" class="pub-link" data-go="forgot">Forgot password?</button><button type="button" class="pub-link b" data-go="otp-login">' + I.mail + ' Sign in with OTP</button></div></form><p class="pub-auth-alt">Don\'t have an account? <button type="button" class="pub-link b" data-go="signup">Create account</button></p>',
+    'otp-login': () => '<h2 class="pub-auth-title">Sign in with OTP</h2><p class="pub-auth-desc">We\'ll send a one-time code to your registered email</p><form data-form="otp-login" novalidate>' + field({ id: 'otp-email', label: 'Email', icon: 'mail', type: 'email', placeholder: 'you@example.com', auto: 'email', value: S.email || S.loginEmail }) + '<button class="btn btn-primary pub-auth-submit" type="submit">Send OTP</button></form><p class="pub-auth-alt">New here? <button type="button" class="pub-link b" data-go="signup">Create an account first</button></p>' + backLink('login', ' Back to login'),
+    'otp-verify': () => '<h2 class="pub-auth-title">Enter OTP</h2><p class="pub-auth-desc">Code sent to ' + esc(S.email) + '</p><form data-form="otp-verify" novalidate>' + otpBoxes() + '<button class="btn btn-primary pub-auth-submit" type="submit">Verify &amp; Login</button></form><p class="pub-auth-alt" data-countdown></p>' + backLink('otp-login', ' Change email'),
+    signup: () => { const q = CG.current.query || {}; return '<h2 class="pub-auth-title">Create account</h2><p class="pub-auth-desc">Start your options trading journey</p>' + deltaBtn() + '<form data-form="signup" novalidate>' + field({ id: 'signup-name', label: 'Full Name', icon: 'user', placeholder: 'John Doe', auto: 'name' }) + field({ id: 'signup-email', label: 'Email', icon: 'mail', type: 'email', placeholder: 'you@example.com', auto: 'email' }) + field({ id: 'signup-mobile', label: 'Mobile Number', icon: 'phone', type: 'tel', placeholder: '+91 98765 43210', auto: 'tel', inputmode: 'tel' }) + field({ id: 'signup-password', label: 'Password', icon: 'lock', type: 'password', placeholder: '••••••••', auto: 'new-password', eye: true, after: rulesHtml() }) + field({ id: 'signup-confirm', label: 'Confirm', icon: 'lock', type: 'password', placeholder: '••••••••', auto: 'new-password', eye: true }) + field({ id: 'signup-ref', label: 'Referral Code (Optional)', icon: 'tag', placeholder: 'REF_XXXXXXX', value: q.ref || '' }) + '<button class="btn btn-primary pub-auth-submit" type="submit">Create Account</button></form><p class="pub-auth-alt">Already have an account? <button type="button" class="pub-link b" data-go="login">Sign in</button></p>'; },
+    'verify-email': () => '<h2 class="pub-auth-title">Verify your email</h2><p class="pub-auth-desc">We\'ve sent a 6-digit OTP to ' + esc(S.email) + '</p><form data-form="verify-email" novalidate>' + otpBoxes() + '<button class="btn btn-primary pub-auth-submit" type="submit">Verify Email</button></form><p class="pub-auth-alt">Didn\'t receive the code? <span data-countdown></span></p>' + backLink('signup', ' Back to sign up'),
+    forgot: () => '<h2 class="pub-auth-title">Reset password</h2><p class="pub-auth-desc">Enter your email and we\'ll send you an OTP</p><form data-form="forgot" novalidate>' + field({ id: 'forgot-email', label: 'Email Address', icon: 'mail', type: 'email', placeholder: 'you@example.com', auto: 'email', value: S.email || S.loginEmail }) + '<button class="btn btn-primary pub-auth-submit" type="submit">Send OTP</button></form>' + backLink('login', ' Back to sign in'),
+    'reset-password': () => '<h2 class="pub-auth-title">Set new password</h2><p class="pub-auth-desc">Enter the OTP sent to ' + esc(S.email) + ' and your new password</p><form data-form="reset-password" novalidate>' + field({ id: 'reset-otp', label: 'OTP', icon: 'key', placeholder: 'Enter 6-digit code', inputmode: 'numeric', maxlength: 6, auto: 'one-time-code' }) + field({ id: 'reset-new-password', label: 'New Password', icon: 'lock', type: 'password', placeholder: '••••••••', auto: 'new-password', eye: true, after: rulesHtml() }) + field({ id: 'reset-confirm-password', label: 'Confirm Password', icon: 'lock', type: 'password', placeholder: '••••••••', auto: 'new-password', eye: true }) + '<button class="btn btn-primary pub-auth-submit" type="submit">Reset Password</button></form><p class="pub-auth-alt">Didn\'t receive the code? <span data-countdown></span></p>' + backLink('forgot', ' Back')
+  };
+  const PARENT = { 'otp-verify': 'otp-login', 'verify-email': 'signup', 'reset-password': 'forgot' };
+
+  function setErr(id, msg) { const f = CG.$('[data-f="' + id + '"]', card); if (!f) return; const e = CG.$('[data-err]', f); const w = CG.$('.pub-in, .pub-otp', f); if (msg) { e.textContent = msg; e.hidden = false; w && w.classList.add('err'); } else { e.hidden = true; w && w.classList.remove('err'); } }
+  const val = (id) => { const i = CG.$('#pub-' + id, card); return i ? i.value.trim() : ''; };
+  function checkEmail(id) { const v = val(id); if (!v) { setErr(id, 'Email is required'); return null; } if (!EMAIL_RE.test(v)) { setErr(id, 'Invalid email'); return null; } setErr(id, ''); return v; }
+  const otpValue = () => CG.$$('[data-otp] input', card).map((i) => i.value).join('');
+  function bindOtp() { const inputs = CG.$$('[data-otp] input', card); inputs.forEach((inp, i) => { inp.addEventListener('input', () => { inp.value = inp.value.replace(/\D/g, '').slice(-1); if (inp.value && inputs[i + 1]) inputs[i + 1].focus(); }); inp.addEventListener('keydown', (e) => { if (e.key === 'Backspace' && !inp.value && inputs[i - 1]) inputs[i - 1].focus(); }); inp.addEventListener('paste', (e) => { const t = ((e.clipboardData && e.clipboardData.getData('text')) || '').replace(/\D/g, '').slice(0, 6); if (t) { e.preventDefault(); t.split('').forEach((ch, j) => { if (inputs[j]) inputs[j].value = ch; }); inputs[Math.min(t.length, 5)].focus(); } }); }); if (inputs[0]) setTimeout(() => inputs[0].focus(), 40); }
+  function startCountdown(el, prefix, linkText, onResend) { clearInterval(S.timer); S.left = 30; const draw = () => { if (S.left > 0) el.innerHTML = '<span class="text-muted">' + esc(prefix) + S.left + 's</span>'; else { el.innerHTML = '<button type="button" class="pub-link b" data-resend>' + esc(linkText) + '</button>'; clearInterval(S.timer); } }; draw(); S.timer = setInterval(() => { S.left--; draw(); }, 1000); el.onclick = (e) => { if (e.target.closest('[data-resend]')) { onResend(); startCountdown(el, prefix, linkText, onResend); } }; }
+  function bindRules(pwId) { const inp = CG.$('#pub-' + pwId, card); if (!inp) return; const f = inp.closest('.pub-f'); const rules = CG.$$('.pub-rule', f); const bar = CG.$('[data-strength]', f); const upd = () => { const p = inp.value; let n = 0; RULES.forEach((r, i) => { const ok = r[1](p); rules[i].classList.toggle('ok', ok); if (ok) n++; }); if (bar) { bar.style.width = (n / RULES.length * 100) + '%'; bar.style.background = n <= 2 ? 'hsl(var(--loss))' : n <= 4 ? 'hsl(var(--warning))' : 'hsl(var(--profit))'; } }; inp.addEventListener('input', upd); upd(); }
+  const allRules = (p) => RULES.every((r) => r[1](p));
+
+  function renderAuth(query) {
+    clearInterval(S.timer);
+    let tab = query.tab || 'login'; if (!VIEWS[tab]) tab = 'login'; if (PARENT[tab] && !S.email) tab = PARENT[tab];
+    S.tab = tab; card.innerHTML = VIEWS[tab](); aRoot.dataset.tab = tab;
+    document.title = ({ login: 'Sign in', signup: 'Create account', forgot: 'Reset password' }[tab] || 'Sign in') + ' · CoinGreeks';
+    if (tab === 'otp-verify') { bindOtp(); startCountdown(CG.$('[data-countdown]', card), 'Resend OTP in ', 'Resend OTP', () => CG.toast({ title: 'OTP Resent', description: 'A new OTP has been sent to your email.' })); }
+    if (tab === 'verify-email') { bindOtp(); startCountdown(CG.$('[data-countdown]', card), 'Resend in ', 'Resend OTP', () => CG.toast({ title: 'OTP resent', description: 'A new OTP has been sent to your email.' })); }
+    if (tab === 'reset-password') { startCountdown(CG.$('[data-countdown]', card), 'Resend in ', 'Resend OTP', () => CG.toast({ title: 'OTP resent', description: 'A new OTP has been sent.' })); bindRules('reset-new-password'); const o = CG.$('#pub-reset-otp', card); o.addEventListener('input', () => { o.value = o.value.replace(/\D/g, '').slice(0, 6); }); }
+    if (tab === 'signup') bindRules('signup-password');
+    const first = CG.$('input:not([type=hidden])', card); if (first && tab !== 'otp-verify' && tab !== 'verify-email') setTimeout(() => first.focus(), 40);
+  }
+  function submit(form) {
+    const kind = form.dataset.form;
+    if (kind === 'login') { const email = checkEmail('login-email'); const pw = val('login-password'); if (!pw) setErr('login-password', 'Password is required'); else setErr('login-password', ''); if (!email || !pw) return; if (pw.length < 6) { CG.toast({ title: 'Login failed', description: 'Invalid credentials.', variant: 'destructive' }); setErr('login-password', 'Invalid credentials.'); return; } finishLogin(email, 'Welcome back!', 'Logged in successfully.'); }
+    else if (kind === 'otp-login') { const email = checkEmail('otp-email'); if (!email) return; S.email = email; CG.toast({ title: 'OTP Sent', description: 'Check your email for the OTP.' }); go('otp-verify'); }
+    else if (kind === 'otp-verify') { const code = otpValue(); if (code.length < 6) { setErr('otp', 'Enter valid OTP'); CG.toast({ title: 'Error', description: 'Enter valid OTP', variant: 'destructive' }); return; } finishLogin(S.email, 'Welcome!', 'Logged in successfully'); }
+    else if (kind === 'signup') { let ok = true; const name = val('signup-name'); if (!name) { setErr('signup-name', 'Full name is required'); ok = false; } else setErr('signup-name', ''); const email = checkEmail('signup-email'); if (!email) ok = false; const mob = val('signup-mobile').replace(/\D/g, ''); if (mob.length < 10) { setErr('signup-mobile', 'Enter a valid mobile number'); ok = false; } else setErr('signup-mobile', ''); const pw = val('signup-password'); if (!allRules(pw)) { setErr('signup-password', 'Password does not meet all the requirements'); ok = false; } else setErr('signup-password', ''); const cf = val('signup-confirm'); if (cf !== pw || !cf) { setErr('signup-confirm', 'Passwords do not match'); ok = false; } else setErr('signup-confirm', ''); const ref = val('signup-ref'); if (ref && !/^REF_[A-Z0-9]{3,}$/i.test(ref)) { setErr('signup-ref', 'Referral code looks invalid (REF_XXXXXXX)'); ok = false; } else setErr('signup-ref', ''); if (!ok) return; S.email = email; CG.mock.user.pendingSignup = { name, email, mobile: mob, ref }; CG.toast({ title: 'Account created!', description: 'Please verify your email with the OTP sent.', variant: 'success' }); go('verify-email'); }
+    else if (kind === 'verify-email') { const code = otpValue(); if (code.length < 6) { setErr('otp', 'Please enter the complete 6-digit OTP'); CG.toast({ title: 'Verification failed', description: 'Please enter the complete 6-digit OTP', variant: 'destructive' }); return; } const p = CG.mock.user.pendingSignup; if (p) { CG.mock.user.name = p.name; CG.mock.user.mobile = p.mobile; } CG.toast({ title: 'Email verified!', description: 'You can now sign in.', variant: 'success' }); S.loginEmail = S.email; go('login'); }
+    else if (kind === 'forgot') { const email = checkEmail('forgot-email'); if (!email) return; S.email = email; CG.toast({ title: 'OTP sent!', description: 'Check your email for the OTP.' }); go('reset-password'); }
+    else if (kind === 'reset-password') { let ok = true; const otp = val('reset-otp'); if (otp.length < 6) { setErr('reset-otp', 'Please enter the complete 6-digit OTP'); ok = false; } else setErr('reset-otp', ''); const pw = val('reset-new-password'); if (!allRules(pw)) { setErr('reset-new-password', 'Password does not meet all the requirements'); ok = false; } else setErr('reset-new-password', ''); const cf = val('reset-confirm-password'); if (cf !== pw || !cf) { setErr('reset-confirm-password', 'Passwords do not match'); ok = false; } else setErr('reset-confirm-password', ''); if (!ok) return; CG.toast({ title: 'Password reset!', description: 'You can now sign in with your new password.', variant: 'success' }); S.loginEmail = S.email; go('login'); }
+  }
+
+  CG.register('/auth', {
+    init(root) {
+      aRoot = root; card = CG.$('#pub-auth-card', root); CG.pubFillIcons(root);
+      CG.$('#pub-auth-feats', root).innerHTML = AUTH_FEATS.map((f) => '<div class="pub-auth-feat"><div class="pub-auth-feat-ic">' + I[f.icon] + '</div><div><b>' + esc(f.title) + '</b><small>' + esc(f.desc) + '</small></div></div>').join('');
+      CG.delegate(root, 'click', '[data-go]', (e, b) => { e.preventDefault(); go(b.dataset.go); });
+      CG.delegate(root, 'click', '[data-delta]', () => CG.navigate('/auth/delta'));
+      CG.delegate(root, 'click', '[data-eye]', (e, b) => { const inp = b.parentNode.querySelector('input'); const show = inp.type === 'password'; inp.type = show ? 'text' : 'password'; b.innerHTML = show ? I.eyeoff : I.eye; b.setAttribute('aria-label', show ? 'Hide password' : 'Show password'); });
+      root.addEventListener('submit', (e) => { const f = e.target.closest('form[data-form]'); if (!f) return; e.preventDefault(); submit(f); });
+    },
+    show(root, params, query) { if (CG.state.loggedIn) { CG.navigate(query.next && query.next[0] === '/' ? query.next : '/analyse', { replace: true }); return; } renderAuth(query || {}); },
+    hide() { clearInterval(S.timer); }
+  });
+
+  // ================= /auth/delta and /sso =================
+  let deltaTimer = null, ssoTimer = null;
+  CG.register('/auth/delta', { show(root) { clearTimeout(deltaTimer); deltaTimer = setTimeout(() => { if (!root.classList.contains('active')) return; CG.auth.login(); CG.toast({ title: 'Welcome!', description: 'Signed in with Delta.', variant: 'success' }); CG.navigate('/analyse', { replace: true }); }, 1500); }, hide() { clearTimeout(deltaTimer); } });
+  CG.register('/sso', { show(root, params, query) { clearTimeout(ssoTimer); ssoTimer = setTimeout(() => { if (!root.classList.contains('active')) return; CG.auth.login(); const back = query && query.sso_return && query.sso_return[0] === '/' ? query.sso_return : '/analyse'; CG.navigate(back, { replace: true }); }, 1000); }, hide() { clearTimeout(ssoTimer); } });
+
+  // ================= legal pages =================
+  const LEGAL = {
+    privacy: [['1. Information We Collect', 'We collect information you provide when creating an account, including your name, email address, and mobile number. We also collect usage data such as pages visited and features used.'], ['2. How We Use Your Information', 'Your information is used to provide and improve our services, personalize your experience, and ensure platform security. We do not sell your personal data to third parties.'], ['3. Data Storage & Security', 'Your data is stored securely using industry-standard encryption and appropriate technical measures.'], ['4. Cookies & Tracking', 'We use essential cookies to maintain your session and preferences. You can manage cookie preferences through your browser settings.'], ['5. Third-Party Services', 'We integrate with Delta Exchange for market data. Their respective privacy policies also apply.'], ['6. Your Rights', 'You have the right to access, update, or delete your personal information at any time through your account settings.'], ['7. Contact Us', 'Questions? Contact us at support@coingreeks.com.']],
+    terms: [['1. Acceptance of Terms', 'By accessing or using CoinGreeks, you agree to be bound by these Terms of Service.'], ['2. Description of Service', 'CoinGreeks provides crypto options analytics tools including real-time options chain data, strategy building, payoff analysis, Greeks calculations, and paper trading.'], ['3. Account Responsibilities', 'You are responsible for maintaining the confidentiality of your account credentials. You must be at least 18 years old.'], ['4. Acceptable Use', 'You agree not to misuse our services or use the platform for any illegal activity.'], ['5. Intellectual Property', 'All content and functionality of CoinGreeks are owned by us and protected by intellectual property laws.'], ['6. Limitation of Liability', 'CoinGreeks is provided "as is" without warranties. We are not liable for trading losses or service interruptions.'], ['7. Modifications', 'We reserve the right to modify these terms at any time.'], ['8. Contact', 'Contact us at support@coingreeks.com.']],
+    disclaimer: [['Not Financial Advice', 'CoinGreeks is an analytics and educational platform. Nothing on this platform constitutes financial advice, investment advice, or trading advice.'], ['Trading Risks', 'Options trading involves substantial risk of loss and is not suitable for all investors. You may lose more than your initial investment. Past performance is not indicative of future results.'], ['Cryptocurrency Risks', 'Cryptocurrency markets are highly volatile and unregulated in many jurisdictions. You should only trade with funds you can afford to lose.'], ['Data Accuracy', 'While we strive to provide accurate real-time data, we cannot guarantee the accuracy, completeness, or timeliness of any information displayed on the platform.'], ['Paper Trading', 'Paper trading results are simulated and do not represent actual trading. Real trading results may differ significantly due to slippage, liquidity, fees, and other market conditions.'], ['No Guarantee', 'We do not guarantee any specific outcomes from using our analytics tools. All trading decisions are your own responsibility.'], ['Third-Party Integrations', 'CoinGreeks integrates with third-party exchanges and data providers. We are not responsible for the actions, services, or policies of these third parties.']]
+  };
+  CG.mock.legal = LEGAL;
+  ['/privacy', '/terms', '/disclaimer'].forEach((route) => CG.register(route, { init(root) { CG.pubFillIcons(root); const body = CG.$('[data-legal]', root); body.innerHTML = LEGAL[body.dataset.legal].map((s) => '<section><h2>' + esc(s[0]) + '</h2><p>' + esc(s[1]) + '</p></section>').join(''); CG.$('[data-pub-back]', root).addEventListener('click', () => { if (CG.pubNavCount > 1) history.back(); else CG.navigate('/'); }); } }));
+
+  // ================= /payoff-preview =================
+  const SPOT = 100000;
+  function expiryIn(days) { for (let d = days - 2; d <= days + 2; d++) { const iso = new Date(CG.NOW.getTime() + d * 86400000).toISOString().slice(0, 10); if (F.dte(iso) === days) return iso; } return new Date(CG.NOW.getTime() + days * 86400000).toISOString().slice(0, 10); }
+  const EXP = expiryIn(30);
+  const L = (type, action, strike, price, iv) => ({ type, action, strike, price, iv });
+  function oiRebased(spot, step, n) { const rows = CG.chain('BTC', CG.state.expiry).rows; const mid = Math.floor(rows.length / 2); const out = []; for (let t = -n; t <= n; t++) { const r = rows[Math.max(0, Math.min(rows.length - 1, mid + t))]; out.push({ strike: spot + t * step, callOi: r.call.oi, putOi: r.put.oi }); } return out; }
+  function oiFromChain(lo, hi) { const rows = CG.chain('BTC', CG.state.expiry).rows.filter((r) => r.strike >= lo && r.strike <= hi).map((r) => ({ strike: r.strike, callOi: r.call.oi, putOi: r.put.oi })); return rows.length ? rows : oiRebased(78000, 1000, 9); }
+  const PRESETS = [
+    { name: 'Iron Condor', spot: SPOT, legs: [L('PE', 'B', 90000, 200, 55), L('PE', 'S', 95000, 800, 50), L('CE', 'S', 105000, 800, 50), L('CE', 'B', 110000, 200, 55)], oi: () => oiRebased(SPOT, 1000, 15) },
+    { name: 'Long Call (Unlimited)', spot: SPOT, legs: [L('CE', 'B', 100000, 1500, 55)], oi: () => oiRebased(SPOT, 1000, 15) },
+    { name: 'Short Strangle (Both Unlimited)', spot: SPOT, legs: [L('PE', 'S', 95000, 800, 50), L('CE', 'S', 105000, 800, 50)], oi: () => oiRebased(SPOT, 1000, 15) },
+    { name: 'Wide chain, narrow leg (BTC 78k, chain 69k-87k)', spot: 78000, legs: [L('CE', 'B', 78000, 1200, 55)], oi: () => oiFromChain(69000, 87000) }
+  ];
+  CG.mock.payoffPresets = PRESETS;
+  const LAYERS = [['expiry', 'Expiry P&L'], ['target', 'Target Date P&L'], ['fill', 'Profit / Loss Fill'], ['oi', 'Open Interest'], ['sd', 'SD Bands'], ['be', 'Breakevens']];
+  const LEGEND = [{ key: 'expiry', label: 'On Expiry', sw: '<i style="background:hsl(var(--profit))"></i>' }, { key: 'target', label: 'On Target Date', sw: '<i style="background:#3b82f6"></i>' }, { key: 'fill', label: 'Profit', sw: '<i class="dot" style="background:hsl(var(--profit)/.35)"></i>' }, { key: 'fill', label: 'Loss', sw: '<i class="dot" style="background:hsl(var(--loss)/.35)"></i>' }, { key: 'oi', label: 'Call OI', sw: '<i class="dot" style="background:hsl(var(--loss)/.5)"></i>' }, { key: 'oi', label: 'Put OI', sw: '<i class="dot" style="background:hsl(var(--profit)/.5)"></i>' }];
+  let pRoot = null; const st = { preset: PRESETS[0], zoom: 1, day: 30, target: SPOT, layers: { expiry: true, target: true, fill: true, oi: true, sd: true, be: true }, geom: null };
+  const kf = (v) => { const k = v / 1000; return '$' + (k >= 100 ? k.toFixed(0) : k.toFixed(1)) + 'k'; };
+  const yf = (v) => { const a = Math.abs(v); const sgn = v < 0 ? '-' : ''; if (a >= 1000) { const k = a / 1000; return '$' + sgn + (k >= 100 ? k.toFixed(0) : k.toFixed(1)) + 'k'; } return '$' + sgn + Math.round(a); };
+  const sk = (v) => (v >= 0 ? '+' : '-') + '$' + F.compact(Math.abs(v));
+  const oif = (v) => (v >= 1000 ? Math.round(v / 1000) + 'K' : Math.round(v));
+  function compute() {
+    const P = st.preset; const lotSize = CG.state.lotSizes.BTC || CG.ASSETS.BTC.lot; const lots = 1 / lotSize;
+    const legs = P.legs.map((l) => ({ type: l.type === 'CE' ? 'CALL' : 'PUT', side: l.action === 'B' ? 'BUY' : 'SELL', strike: l.strike, expiry: EXP, lots, price: l.price, iv: l.iv }));
+    const range = 0.18 / st.zoom; const min = P.spot * (1 - range), max = P.spot * (1 + range);
+    const res = CG.analyze(legs, 'BTC', { spot: P.spot, targetDays: st.day, min, max, points: 241 });
+    const at = (S) => { const r = CG.analyze(legs, 'BTC', { spot: P.spot, targetDays: st.day, min: S, max: S + 1, points: 2 }); return { exp: r.points[0].pnlExpiry, tgt: r.points[0].pnlTarget }; };
+    const sigma = legs.reduce((s, l) => s + l.iv, 0) / legs.length / 100; const tDays = st.day > 0 ? st.day : res.maxDte; const k = sigma * Math.sqrt(tDays / 365);
+    const sd = { m2: P.spot * Math.exp(-2 * k), m1: P.spot * Math.exp(-k), p1: P.spot * Math.exp(k), p2: P.spot * Math.exp(2 * k), days: tDays, byExpiry: st.day <= 0 };
+    return { res, legs, min, max, at, maxDte: res.maxDte, sd, pts: res.points };
+  }
+  function draw() {
+    if (!pRoot) return; const C = compute(); renderSd(C); renderSummary(C); renderSliders(C); renderLegend();
+    const wrap = CG.$('#pub-pp-svgwrap', pRoot); const W = Math.max(wrap.clientWidth || 0, 420), H = Math.max(wrap.clientHeight || 0, 240);
+    const P = st.preset; const pts = C.pts; const m = { l: 58, r: 46, t: 36, b: 24 }; const pw = W - m.l - m.r, ph = H - m.t - m.b;
+    const xs = (S) => m.l + (S - C.min) / (C.max - C.min) * pw;
+    const useT = st.layers.target && st.day < C.maxDte;
+    let ymin = Infinity, ymax = -Infinity; pts.forEach((p) => { ymin = Math.min(ymin, p.pnlExpiry, useT ? p.pnlTarget : p.pnlExpiry); ymax = Math.max(ymax, p.pnlExpiry, useT ? p.pnlTarget : p.pnlExpiry); });
+    if (ymin > 0) ymin = 0; if (ymax < 0) ymax = 0; const pad = (ymax - ymin) * 0.1 || 1; ymin -= pad; ymax += pad;
+    const ys = (v) => m.t + (ymax - v) / (ymax - ymin) * ph; const y0 = ys(0);
+    const withCross = (key) => { const out = []; for (let i = 0; i < pts.length; i++) { const p = pts[i]; if (i) { const q = pts[i - 1]; if ((q[key] < 0 && p[key] > 0) || (q[key] > 0 && p[key] < 0)) { const t = q[key] / (q[key] - p[key]); out.push({ price: q.price + t * (p.price - q.price), v: 0 }); } } out.push({ price: p.price, v: p[key] }); } return out; };
+    const linePath = (arr) => arr.map((p, i) => (i ? 'L' : 'M') + xs(p.price).toFixed(1) + ' ' + ys(p.v).toFixed(1)).join(' ');
+    const expArr = withCross('pnlExpiry'); const tgtArr = pts.map((p) => ({ price: p.price, v: p.pnlTarget }));
+    const areaPath = linePath(expArr) + ' L' + xs(C.max).toFixed(1) + ' ' + y0.toFixed(1) + ' L' + xs(C.min).toFixed(1) + ' ' + y0.toFixed(1) + ' Z';
+    let s = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" font-family="var(--font-mono)" font-size="10">';
+    s += '<defs><clipPath id="pub-pp-ca"><rect x="0" y="0" width="' + W + '" height="' + y0.toFixed(1) + '"/></clipPath><clipPath id="pub-pp-cb"><rect x="0" y="' + y0.toFixed(1) + '" width="' + W + '" height="' + (H - y0).toFixed(1) + '"/></clipPath><clipPath id="pub-pp-plot"><rect x="' + m.l + '" y="' + m.t + '" width="' + pw + '" height="' + ph + '"/></clipPath></defs>';
+    s += '<rect x="' + m.l + '" y="' + m.t + '" width="' + pw + '" height="' + ph + '" fill="hsl(var(--card))"/>';
+    if (st.layers.sd) { const a = Math.max(xs(C.sd.m1), m.l), b = Math.min(xs(C.sd.p1), m.l + pw); if (b > a) s += '<rect x="' + a.toFixed(1) + '" y="' + m.t + '" width="' + (b - a).toFixed(1) + '" height="' + ph + '" fill="hsl(var(--primary)/.06)"/>'; [C.sd.m1, C.sd.p1].forEach((v) => { if (v >= C.min && v <= C.max) s += '<line x1="' + xs(v).toFixed(1) + '" y1="' + m.t + '" x2="' + xs(v).toFixed(1) + '" y2="' + (m.t + ph) + '" stroke="hsl(var(--primary)/.45)" stroke-dasharray="4 3"/>'; }); }
+    // y grid + labels
+    for (let i = 0; i <= 3; i++) { const v = ymax - (ymax - ymin) * i / 3; const y = ys(v); s += '<line x1="' + m.l + '" y1="' + y.toFixed(1) + '" x2="' + (m.l + pw) + '" y2="' + y.toFixed(1) + '" stroke="hsl(var(--border))" stroke-dasharray="3 3"/><text x="' + (m.l - 6) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="end" fill="hsl(var(--muted-foreground))">' + yf(v) + '</text>'; }
+    // x grid + labels
+    const span = C.max - C.min; const raw = span / 9; const mag = Math.pow(10, Math.floor(Math.log10(raw))); const nice = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((v) => v >= raw); for (let v = Math.ceil(C.min / nice) * nice; v <= C.max + 1e-9; v += nice) { const x = xs(v); s += '<line x1="' + x.toFixed(1) + '" y1="' + m.t + '" x2="' + x.toFixed(1) + '" y2="' + (m.t + ph) + '" stroke="hsl(var(--border))" stroke-dasharray="3 3"/><text x="' + x.toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" fill="hsl(var(--muted-foreground))">' + kf(v) + '</text>'; }
+    s += '<line x1="' + m.l + '" y1="' + y0.toFixed(1) + '" x2="' + (m.l + pw) + '" y2="' + y0.toFixed(1) + '" stroke="hsl(var(--muted-foreground)/.5)" stroke-dasharray="4 3"/>';
+    if (st.layers.fill && st.layers.expiry) s += '<path d="' + areaPath + '" fill="hsl(var(--profit)/.22)" clip-path="url(#pub-pp-ca)"/><path d="' + areaPath + '" fill="hsl(var(--loss)/.22)" clip-path="url(#pub-pp-cb)"/>';
+    if (st.layers.oi) { const oi = P.oi(); const maxOi = Math.max(1, ...oi.map((o) => Math.max(o.callOi, o.putOi))); const bh = ph * 0.25; oi.filter((o) => o.strike >= C.min && o.strike <= C.max).forEach((o) => { const x = xs(o.strike); const hc = o.callOi / maxOi * bh, hp = o.putOi / maxOi * bh; s += '<rect x="' + (x - 5).toFixed(1) + '" y="' + (y0 - hc).toFixed(1) + '" width="4" height="' + hc.toFixed(1) + '" fill="hsl(var(--loss)/.4)"><title>' + F.int(o.strike) + ' · Call OI ' + F.int(o.callOi) + '</title></rect><rect x="' + (x + 1).toFixed(1) + '" y="' + (y0 - hp).toFixed(1) + '" width="4" height="' + hp.toFixed(1) + '" fill="hsl(var(--profit)/.4)"><title>' + F.int(o.strike) + ' · Put OI ' + F.int(o.putOi) + '</title></rect>'; }); s += '<text x="' + (m.l + pw + 6) + '" y="' + (m.t + 10) + '" fill="hsl(var(--muted-foreground))">' + oif(maxOi) + '</text><text x="' + (m.l + pw + 6) + '" y="' + (y0 - bh * 0.4 + 3).toFixed(1) + '" fill="hsl(var(--muted-foreground))">' + oif(maxOi * 0.4) + '</text>'; }
+    if (st.layers.expiry) s += '<path d="' + linePath(expArr) + '" fill="none" stroke="hsl(var(--profit))" stroke-width="2" clip-path="url(#pub-pp-ca)"/><path d="' + linePath(expArr) + '" fill="none" stroke="hsl(var(--loss))" stroke-width="2" clip-path="url(#pub-pp-cb)"/>';
+    if (useT) s += '<path d="' + linePath(tgtArr) + '" fill="none" stroke="#3b82f6" stroke-width="1.5" clip-path="url(#pub-pp-plot)"/>';
+    if (st.layers.be) C.res.breakevens.forEach((b) => { if (b >= C.min && b <= C.max) s += '<line x1="' + xs(b).toFixed(1) + '" y1="' + m.t + '" x2="' + xs(b).toFixed(1) + '" y2="' + (m.t + ph) + '" stroke="hsl(var(--primary)/.7)" stroke-dasharray="5 3"/><text x="' + xs(b).toFixed(1) + '" y="' + (m.t + ph - 6) + '" text-anchor="middle" font-size="9" fill="hsl(var(--primary))">BE ' + kf(b) + '</text>'; });
+    if (st.target !== P.spot && st.target >= C.min && st.target <= C.max) s += '<line x1="' + xs(st.target).toFixed(1) + '" y1="' + m.t + '" x2="' + xs(st.target).toFixed(1) + '" y2="' + (m.t + ph) + '" stroke="hsl(var(--foreground)/.45)" stroke-dasharray="2 3"/>';
+    const sx = xs(P.spot); s += '<line x1="' + sx.toFixed(1) + '" y1="' + m.t + '" x2="' + sx.toFixed(1) + '" y2="' + (m.t + ph) + '" stroke="hsl(38 92% 50%)" stroke-width="1.5" stroke-dasharray="5 3"/><g transform="translate(' + (sx - 44).toFixed(1) + ',4)"><rect width="88" height="26" rx="6" fill="hsl(38 92% 50%)"/><text x="44" y="10" text-anchor="middle" font-size="7.5" font-weight="600" fill="#1a1200">Spot</text><text x="44" y="21" text-anchor="middle" font-size="10" font-weight="700" fill="#1a1200">$' + F.num(P.spot) + '</text></g>';
+    s += '<g id="pub-pp-cross" style="display:none"><line data-cl x1="0" y1="' + m.t + '" x2="0" y2="' + (m.t + ph) + '" stroke="hsl(var(--foreground)/.5)"/><circle data-ce r="4" fill="hsl(var(--profit))" stroke="hsl(var(--card))" stroke-width="1.5"/><circle data-ct r="4" fill="#3b82f6" stroke="hsl(var(--card))" stroke-width="1.5"/></g>';
+    s += '</svg>';
+    const old = wrap.querySelector('svg'); if (old) old.remove(); wrap.insertAdjacentHTML('afterbegin', s);
+    st.geom = { xs, ys, pts, min: C.min, max: C.max, m, W, H, pw, useT };
+  }
+  function renderSd(C) { const d = C.sd; CG.$('#pub-pp-sd', pRoot).innerHTML = '<div>-2SD<b>' + kf(d.m2) + '</b></div><div>-1SD<b>' + kf(d.m1) + '</b></div><div class="cur">Current<b>' + kf(st.preset.spot) + '</b><span class="sub">Expected move by ' + (d.byExpiry ? 'expiry' : 'target date') + ' (' + d.days + 'd)</span></div><div>+1SD<b>' + kf(d.p1) + '</b></div><div>+2SD<b>' + kf(d.p2) + '</b></div>'; }
+  function renderSummary(C) { const v = C.at(st.target); const pct = (st.target / st.preset.spot - 1) * 100; const dl = st.day > 0 ? st.day + 'D' : 'Today'; const pos = v.exp >= 0; CG.$('#pub-pp-summary', pRoot).innerHTML = '<span>@ <span class="t">' + kf(st.target) + '</span> <span class="' + (pct >= 0 ? 'text-profit' : 'text-loss') + '">(' + F.pct(pct, 1) + ')</span></span><span>' + dl + ': <b class="' + (v.tgt >= 0 ? 'text-profit' : 'text-loss') + '">' + sk(v.tgt) + '</b></span><span>Expiry: <b class="' + (pos ? 'text-profit' : 'text-loss') + '">' + sk(v.exp) + '</b></span><span class="pub-pp-pill ' + (pos ? 'profit' : 'loss') + '">' + (pos ? I.trending : I.trendingdown) + (pos ? 'Profit' : 'Loss') + ': $' + F.compact(Math.abs(v.exp)) + '</span>'; }
+  function dayLabel(d) { const dt = new Date(CG.NOW.getTime() + d * 86400000); const wd = dt.toLocaleDateString('en-US', { weekday: 'short' }); const dd = String(dt.getDate()).padStart(2, '0'); const mo = dt.toLocaleDateString('en-US', { month: 'short' }); return wd + ', ' + dd + ' ' + mo + ' ' + F.time(dt); }
+  function renderSliders(C) {
+    const t = CG.$('#pub-pp-target', pRoot); t.min = Math.round(C.min); t.max = Math.round(C.max); t.step = 100; t.value = st.target; CG.$('#pub-pp-target-val', pRoot).textContent = kf(st.target); CG.$('#pub-pp-target-min', pRoot).textContent = kf(C.min); CG.$('#pub-pp-target-max', pRoot).textContent = kf(C.max);
+    const pct = (st.target / st.preset.spot - 1) * 100; const chip = CG.$('#pub-pp-pct', pRoot); chip.textContent = F.pct(pct, 1); chip.classList.toggle('up', pct >= 0); chip.classList.toggle('down', pct < 0);
+    const d = CG.$('#pub-pp-day', pRoot); d.min = 0; d.max = C.maxDte; d.step = 1; d.value = st.day; CG.$('#pub-pp-day-val', pRoot).textContent = dayLabel(st.day); CG.$('#pub-pp-day-max', pRoot).textContent = 'Expiry (' + F.date(new Date(CG.NOW.getTime() + C.maxDte * 86400000), { day: '2-digit', month: 'short' }) + ')';
+    CG.$('#pub-pp-zoomlbl', pRoot).textContent = Math.round(st.zoom * 100) + '%';
+  }
+  function renderLegend() { CG.$('#pub-pp-legend', pRoot).innerHTML = LEGEND.map((l) => '<span class="pub-pp-lg' + (st.layers[l.key] ? '' : ' off') + '" data-legend="' + l.key + '" title="Toggle ' + esc(l.label) + '">' + l.sw + esc(l.label) + '</span>').join(''); }
+  function renderPop() { CG.$('#pub-pp-pop', pRoot).innerHTML = '<h4>Chart Layers</h4>' + LAYERS.map((l) => '<label><span>' + esc(l[1]) + '</span><span class="switch' + (st.layers[l[0]] ? ' on' : '') + '" data-layer="' + l[0] + '" role="switch" aria-checked="' + !!st.layers[l[0]] + '"></span></label>').join(''); }
+  function renderPresets() { CG.$('#pub-pp-presets', pRoot).innerHTML = PRESETS.map((p, i) => '<button type="button" class="btn btn-sm ' + (st.preset === p ? 'btn-primary' : 'btn-outline') + '" data-preset="' + i + '">' + esc(p.name) + '</button>').join(''); }
+  function hover(e) {
+    const g = st.geom; if (!g) return; const wrap = CG.$('#pub-pp-svgwrap', pRoot); const r = wrap.getBoundingClientRect(); const x = e.clientX - r.left, y = e.clientY - r.top; const tip = CG.$('#pub-pp-tip', pRoot); const cross = CG.$('#pub-pp-cross', pRoot);
+    if (x < g.m.l || x > g.m.l + g.pw) { tip.hidden = true; if (cross) cross.style.display = 'none'; return; }
+    const price = g.min + (x - g.m.l) / g.pw * (g.max - g.min); let idx = 0, best = Infinity; g.pts.forEach((p, i) => { const d = Math.abs(p.price - price); if (d < best) { best = d; idx = i; } }); const p = g.pts[idx]; const px = g.xs(p.price);
+    if (cross) { cross.style.display = ''; const cl = cross.querySelector('[data-cl]'); cl.setAttribute('x1', px); cl.setAttribute('x2', px); const ce = cross.querySelector('[data-ce]'); ce.setAttribute('cx', px); ce.setAttribute('cy', g.ys(p.pnlExpiry)); ce.style.display = st.layers.expiry ? '' : 'none'; const ct = cross.querySelector('[data-ct]'); ct.setAttribute('cx', px); ct.setAttribute('cy', g.ys(p.pnlTarget)); ct.style.display = g.useT ? '' : 'none'; }
+    tip.hidden = false; tip.innerHTML = '<b>$' + F.num(p.price, 0) + '</b><span>Expiry: <em class="' + (p.pnlExpiry >= 0 ? 'text-profit' : 'text-loss') + '" style="font-style:normal">' + sk(p.pnlExpiry) + '</em></span><span>' + (st.day > 0 ? st.day + 'D' : 'Today') + ': <em class="' + (p.pnlTarget >= 0 ? 'text-profit' : 'text-loss') + '" style="font-style:normal">' + sk(p.pnlTarget) + '</em></span>';
+    const tw = tip.offsetWidth || 120; tip.style.left = (x + 14 + tw > r.width ? x - tw - 14 : x + 14) + 'px'; tip.style.top = Math.max(4, Math.min(y - 20, r.height - 70)) + 'px';
+  }
+  CG.register('/payoff-preview', {
+    init(root) {
+      pRoot = root; CG.pubFillIcons(root); renderPresets(); renderPop(); renderLegend();
+      CG.delegate(root, 'click', '[data-preset]', (e, b) => { st.preset = PRESETS[+b.dataset.preset]; st.target = st.preset.spot; st.zoom = 1; st.day = 30; renderPresets(); draw(); });
+      CG.delegate(root, 'click', '[data-pp-zoom]', (e, b) => { const k = b.dataset.ppZoom; st.zoom = k === 'in' ? Math.min(4, st.zoom * 1.25) : k === 'out' ? Math.max(0.5, st.zoom / 1.25) : 1; const range = 0.18 / st.zoom; st.target = Math.max(st.preset.spot * (1 - range), Math.min(st.preset.spot * (1 + range), st.target)); draw(); });
+      const pop = CG.$('#pub-pp-pop', root); CG.delegate(root, 'click', '[data-pp-layers]', () => { pop.hidden = !pop.hidden; });
+      document.addEventListener('mousedown', (e) => { if (!pop.hidden && !e.target.closest('.pub-pp-layers-wrap')) pop.hidden = true; });
+      CG.delegate(root, 'click', '[data-layer]', (e, sw) => { e.preventDefault(); const k = sw.dataset.layer; st.layers[k] = !st.layers[k]; sw.classList.toggle('on', st.layers[k]); sw.setAttribute('aria-checked', st.layers[k]); draw(); });
+      CG.delegate(root, 'click', '[data-legend]', (e, el) => { const k = el.dataset.legend; st.layers[k] = !st.layers[k]; renderPop(); draw(); });
+      const tgt = CG.$('#pub-pp-target', root); tgt.addEventListener('input', () => { st.target = +tgt.value; draw(); });
+      CG.delegate(root, 'click', '[data-pp-target]', (e, b) => { const g = st.geom || { min: st.preset.spot * .82, max: st.preset.spot * 1.18 }; st.target = Math.max(g.min, Math.min(g.max, st.target + (b.dataset.ppTarget === '+' ? 500 : -500))); draw(); });
+      const day = CG.$('#pub-pp-day', root); day.addEventListener('input', () => { st.day = +day.value; draw(); });
+      CG.delegate(root, 'click', '[data-pp-day]', (e, b) => { const max = +CG.$('#pub-pp-day', root).max || 30; st.day = Math.max(0, Math.min(max, st.day + (b.dataset.ppDay === '+' ? 1 : -1))); draw(); });
+      const wrap = CG.$('#pub-pp-svgwrap', root); wrap.addEventListener('mousemove', hover); wrap.addEventListener('mouseleave', () => { CG.$('#pub-pp-tip', root).hidden = true; const c = CG.$('#pub-pp-cross', root); if (c) c.style.display = 'none'; });
+      let rt = null; window.addEventListener('resize', () => { if (!root.classList.contains('active')) return; clearTimeout(rt); rt = setTimeout(draw, 80); });
+      CG.on('theme', () => { if (root.classList.contains('active')) draw(); });
+    },
+    show() { requestAnimationFrame(draw); setTimeout(draw, 120); }
+  });
+})();
+</script>

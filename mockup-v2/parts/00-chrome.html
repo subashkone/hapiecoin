@@ -1,0 +1,1047 @@
+<!-- ===== 00-chrome v2 (Obsidian Desk) · shared logged-in chrome: app header (analyse + default), settings menu + dialogs, command palette, alerts center, keyboard shortcuts, portfolio bar, plan banner, flyers, assistant, product tour. No screens of its own. ===== -->
+<style>
+[hidden]{display:none!important}
+html{--cg-row:36px;--cgc-dock:16px}
+html[data-density="compact"]{--cg-row:28px}
+/* ---- header (both variants) ---- */
+.cgc-header{height:50px;gap:8px;padding:0 12px;background:hsl(var(--header-bg));border-bottom:1px solid hsl(var(--border));color:hsl(var(--header-fg))}
+.cgc-brand{display:inline-flex;align-items:center;gap:7px;height:50px;font-family:var(--font-display);font-weight:600;font-size:13.5px;letter-spacing:-.01em;color:hsl(var(--foreground));flex-shrink:0;margin-right:2px}
+.cgc-brand svg{width:16px;height:16px;color:hsl(var(--primary));flex-shrink:0}
+.cgc-brand .sub{color:hsl(var(--muted-foreground));font-weight:500;font-size:12px}
+.cgc-admin{font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:1px 5px;border:1px solid hsl(var(--input));color:hsl(var(--muted-foreground));border-radius:2px;line-height:1.4;flex-shrink:0}
+.cgc-admin:hover{color:hsl(var(--foreground));border-color:hsl(var(--foreground)/.5)}
+.cgc-seg{display:inline-flex;height:26px;border:1px solid hsl(var(--input));border-radius:3px;overflow:hidden;flex-shrink:0}
+.cgc-seg button{padding:0 10px;font-family:var(--font-mono);font-size:11.5px;font-weight:500;letter-spacing:.02em;color:hsl(var(--muted-foreground));border-right:1px solid hsl(var(--input));line-height:1}
+.cgc-seg button:last-child{border-right:0}
+.cgc-seg button:hover{color:hsl(var(--foreground));background:hsl(var(--muted))}
+.cgc-seg button.on{background:hsl(var(--foreground));color:hsl(var(--background))}
+.cgc-kv{display:flex;flex-direction:column;justify-content:center;gap:2px;line-height:1.1;flex-shrink:0;white-space:nowrap}
+.cgc-kv .micro{font-size:9.5px;letter-spacing:.09em}
+.cgc-kv .v{font-family:var(--font-mono);font-size:12.5px;font-weight:500;display:flex;align-items:baseline;gap:6px;font-variant-numeric:tabular-nums}
+.cgc-kv .v.big{font-size:15px}
+.cgc-kv .v .dim{font-weight:400;font-size:11px;color:hsl(var(--muted-foreground))}
+.cgc-kv .v [data-price]{padding:0 2px;margin-left:-2px;border-radius:2px}
+.cgc-vdiv{width:1px;height:26px;background:hsl(var(--input));flex-shrink:0}
+.cgc-spacer{flex:1}
+.cgc-feed{display:inline-flex;align-items:center;gap:7px;height:26px;padding:0 6px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:hsl(var(--foreground)/.85);border:1px solid transparent;border-radius:3px;white-space:nowrap;flex-shrink:0}
+.cgc-feed:hover{border-color:hsl(var(--input))}
+.cgc-feed i{width:6px;height:6px;border-radius:50%;background:hsl(var(--profit));box-shadow:0 0 0 3px hsl(var(--profit)/.18)}
+.cgc-feed.off i{background:hsl(var(--muted-foreground));box-shadow:none}
+.cgc-feed.wait i{background:hsl(var(--warning));box-shadow:0 0 0 3px hsl(var(--warning)/.2)}
+.cgc-feed .ms{letter-spacing:0;text-transform:none;color:hsl(var(--muted-foreground));font-size:11px}
+.cgc-chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 8px;border:1px solid hsl(var(--input));border-radius:3px;font-size:11.5px;font-weight:500;color:hsl(var(--muted-foreground));white-space:nowrap;flex-shrink:0}
+.cgc-chip:hover{color:hsl(var(--foreground));background:hsl(var(--muted))}
+.cgc-chip svg{width:13px;height:13px;flex-shrink:0}
+.cgc-chip.on{color:hsl(var(--profit));border-color:hsl(var(--profit)/.4)}
+.cgc-chip.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.cgc-ibtn{position:relative;width:28px;height:28px;display:grid;place-items:center;color:hsl(var(--muted-foreground));border:1px solid transparent;border-radius:3px;flex-shrink:0}
+.cgc-ibtn:hover{border-color:hsl(var(--input));color:hsl(var(--foreground))}
+.cgc-ibtn svg{width:15px;height:15px}
+.cgc-badge{position:absolute;top:-5px;right:-5px;min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:hsl(var(--foreground));color:hsl(var(--background));font-family:var(--font-mono);font-size:9px;font-weight:600;display:grid;place-items:center;line-height:1;border:1px solid hsl(var(--header-bg))}
+.cgc-badge.hot{background:hsl(var(--loss));color:#fff}
+.cgc-cmdk{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 6px;color:hsl(var(--muted-foreground));font-size:11px;border:1px solid transparent;border-radius:3px;flex-shrink:0}
+.cgc-cmdk:hover{border-color:hsl(var(--input));color:hsl(var(--foreground))}
+.cgc-cmdk .kbd{border-bottom-width:2px;border-radius:2px}
+.cgc-avatar{width:26px;height:26px;border-radius:50%;background:hsl(var(--secondary));color:hsl(var(--foreground));display:grid;place-items:center;border:1px solid hsl(var(--input));flex-shrink:0}
+.cgc-avatar svg{width:14px;height:14px}
+.cgc-tabs{display:flex;align-items:stretch;height:50px;margin-left:6px}
+.cgc-tabs a{display:inline-flex;align-items:center;padding:0 10px;font-size:12.5px;font-weight:500;color:hsl(var(--muted-foreground));border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.cgc-tabs a:hover{color:hsl(var(--foreground))}
+.cgc-tabs a.active{color:hsl(var(--foreground));border-bottom-color:hsl(var(--primary))}
+@media (max-width:1500px){.cgc-cmdk .txt,.cgc-venue{display:none}}
+@media (max-width:1330px){.cgc-em{display:none}}
+@media (max-width:1180px){.cgc-iv,.cgc-feed .ms{display:none}}
+@media (max-width:1000px){.cgc-brand .sub,.cgc-chip .txt,.cgc-tabs a:not(.active),.cgc-kv .v .dim{display:none}}
+/* ---- menus ---- */
+.menu.cgc-menu{min-width:238px;max-height:calc(100vh - 70px);overflow:auto}
+.menu-item svg{width:14px;height:14px;color:hsl(var(--muted-foreground));flex-shrink:0}
+.menu-item.danger,.menu-item.danger svg{color:hsl(var(--destructive))}
+.menu-item .val{margin-left:auto;font-family:var(--font-mono);font-size:10.5px;color:hsl(var(--muted-foreground))}
+.menu-item .kbd{margin-left:auto}
+.cgc-menu-user{padding:8px 10px;border-bottom:1px solid hsl(var(--border));margin-bottom:4px}
+.cgc-menu-user b{display:block;font-size:13px}.cgc-menu-user span{font-size:11.5px;color:hsl(var(--muted-foreground))}
+.cgc-assetrow{display:flex;align-items:center;gap:10px}
+.cgc-assetrow .cgc-px{margin-left:auto;font-family:var(--font-mono);font-size:12px;color:hsl(var(--muted-foreground))}
+.cgc-assetrow.sel{background:hsl(var(--muted))}
+.cgc-coin{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;font-size:11px;font-weight:600;font-family:var(--font-mono);flex-shrink:0;border:1px solid hsl(var(--input));background:hsl(var(--secondary));color:hsl(var(--foreground))}
+.cgc-coin.XAUT{font-size:9px}
+/* ---- plan banner (slim strip) ---- */
+.cgc-banner{display:flex;align-items:center;gap:10px;height:28px;padding:0 10px 0 0;font-size:12px;border-bottom:1px solid hsl(var(--border));background:hsl(var(--card));color:hsl(var(--foreground))}
+.cgc-banner .stripe{width:3px;align-self:stretch;background:hsl(var(--muted-foreground));flex-shrink:0;margin-right:2px}
+.cgc-banner.expired .stripe{background:hsl(var(--loss))}.cgc-banner.expiring .stripe{background:hsl(var(--warning))}.cgc-banner.active .stripe{background:hsl(var(--profit))}.cgc-banner.free .stripe{background:hsl(var(--info))}
+.cgc-banner svg{width:13px;height:13px;color:hsl(var(--muted-foreground));flex-shrink:0}
+.cgc-banner .btn{height:20px;padding:0 8px;font-size:11px}
+.cgc-banner .cgc-x{margin-left:auto;width:20px;height:20px;border-radius:3px;display:grid;place-items:center;color:hsl(var(--muted-foreground))}
+.cgc-banner .cgc-x:hover{background:hsl(var(--muted));color:hsl(var(--foreground))}
+/* ---- dialog pieces ---- */
+.cgc-status{border:1px solid hsl(var(--border));border-radius:4px;padding:10px 12px;font-size:12.5px;display:flex;gap:10px;align-items:flex-start;background:hsl(var(--muted)/.5)}
+.cgc-status.ok{background:hsl(var(--buy-bg));border-color:hsl(var(--buy)/.35)}
+.cgc-status.no{background:hsl(var(--warning-bg));border-color:hsl(var(--warning)/.4)}
+.cgc-status b{display:block}.cgc-status .mono{font-size:12px}
+.cgc-status svg{width:16px;height:16px;flex-shrink:0;margin-top:1px}
+.cgc-sect{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:hsl(var(--muted-foreground));font-weight:500;margin:14px 0 8px}
+.cgc-ip{display:flex;align-items:center;gap:8px;border:1px dashed hsl(var(--input));border-radius:4px;padding:7px 10px;background:hsl(var(--muted)/.5)}
+.cgc-ip code{font-family:var(--font-mono);font-size:12.5px;flex:1}
+.cgc-avatars{display:flex;gap:12px;justify-content:center;margin:6px 0 10px}
+.cgc-av{width:52px;height:52px;border-radius:50%;border:1px solid hsl(var(--input));display:grid;place-items:center;background:hsl(var(--muted));color:hsl(var(--foreground));cursor:pointer}
+.cgc-av.sel{border-color:hsl(var(--foreground));box-shadow:0 0 0 3px hsl(var(--foreground)/.15)}
+.cgc-av svg{width:24px;height:24px}
+.cgc-av.big{width:72px;height:72px}.cgc-av.big svg{width:34px;height:34px}
+.cgc-radio{display:flex;gap:10px;padding:10px 12px;border:1px solid hsl(var(--border));border-radius:4px;cursor:pointer;margin-bottom:8px;align-items:flex-start}
+.cgc-radio.sel{border-color:hsl(var(--foreground)/.5);background:hsl(var(--muted)/.5)}
+.cgc-radio i{width:15px;height:15px;border-radius:50%;border:1.5px solid hsl(var(--muted-foreground));margin-top:2px;flex-shrink:0;display:grid;place-items:center}
+.cgc-radio.sel i{border-color:hsl(var(--foreground))}.cgc-radio.sel i::after{content:"";width:7px;height:7px;border-radius:50%;background:hsl(var(--foreground))}
+.cgc-radio b{display:block;font-size:12.5px}.cgc-radio span{font-size:11.5px;color:hsl(var(--muted-foreground))}
+.cgc-broker{display:flex;align-items:center;gap:12px;border:1px solid hsl(var(--border));border-radius:4px;padding:9px 12px;margin-bottom:8px}
+.cgc-broker b{display:block;font-size:13px}.cgc-broker .cgc-meta{font-size:11.5px;color:hsl(var(--muted-foreground));display:flex;gap:10px;flex-wrap:wrap}
+.cgc-broker .cgc-meta .mono{color:hsl(var(--foreground))}
+.cgc-kv-row{display:flex;justify-content:space-between;gap:12px;padding:5px 10px;font-size:12.5px}
+.cgc-kv-row span{color:hsl(var(--muted-foreground))}.cgc-kv-row b{font-family:var(--font-mono);font-weight:500}
+.cgc-lotrow{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:10px;margin-bottom:10px}
+.cgc-lotrow .cgc-eq{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.cgc-lotrow .input{width:120px;font-family:var(--font-mono)}
+.cgc-form-err{color:hsl(var(--destructive));font-size:11.5px;margin-top:4px}
+/* ---- flyers ---- */
+.cgc-flyer .cg-dialog-body{padding:18px 20px 14px}
+.cgc-flyer-card{position:relative;border:1px solid hsl(var(--input));border-left:3px solid hsl(var(--primary));background:hsl(var(--surface-3));padding:24px 22px 20px;min-height:210px;display:flex;flex-direction:column;justify-content:flex-end;border-radius:4px}
+.cgc-flyer-card .micro{margin-bottom:10px}
+.cgc-flyer-card h3{font-size:21px;margin-bottom:6px;letter-spacing:-.01em}
+.cgc-flyer-card p{font-size:13px;color:hsl(var(--muted-foreground));max-width:92%;line-height:1.5}
+.cgc-flyer-meta{display:flex;gap:14px;margin-top:14px;font-family:var(--font-mono);font-size:10.5px;color:hsl(var(--muted-foreground))}
+.cgc-flyer-nav{width:26px;height:26px;border-radius:3px;background:hsl(var(--card));border:1px solid hsl(var(--input));color:hsl(var(--foreground));display:grid;place-items:center}
+.cgc-flyer-nav:hover{background:hsl(var(--muted))}
+.cgc-flyer-nav svg{width:14px;height:14px}
+.cgc-flyer-row{display:flex;align-items:center;gap:8px;margin-top:12px}
+.cgc-flyer-row .cgc-freq{font-family:var(--font-mono);font-size:10.5px;color:hsl(var(--muted-foreground));margin-left:4px}
+.cgc-flyer-row .btn{margin-left:auto}
+.cgc-dots{display:flex;gap:6px;align-items:center;padding:0 4px}
+.cgc-dots i{width:6px;height:6px;border-radius:50%;background:hsl(var(--input))}.cgc-dots i.on{background:hsl(var(--foreground))}
+/* ---- assistant ---- */
+.cgc-chat-btn{position:fixed;right:16px;bottom:var(--cgc-dock,16px);width:40px;height:40px;border-radius:50%;background:hsl(var(--card));border:1px solid hsl(var(--input));color:hsl(var(--foreground));display:grid;place-items:center;box-shadow:0 10px 24px -10px rgba(0,0,0,.6);z-index:90;touch-action:none;user-select:none;transition:transform .15s,bottom .2s}
+.cgc-chat-btn:hover{transform:scale(1.05);border-color:hsl(var(--foreground)/.4)}.cgc-chat-btn.drag{transform:scale(1.08);cursor:grabbing}
+.cgc-chat-btn svg{width:18px;height:18px}
+.cgc-chat{position:fixed;width:340px;max-width:calc(100vw - 24px);height:480px;max-height:calc(100vh - 100px);background:hsl(var(--card));color:hsl(var(--card-foreground));border:1px solid hsl(var(--input));border-radius:6px;box-shadow:0 24px 60px -20px rgba(0,0,0,.7);z-index:91;display:flex;flex-direction:column;overflow:hidden;animation:cg-pop .16s ease-out}
+.cgc-chat-head{display:flex;align-items:center;gap:10px;padding:10px 12px;background:hsl(var(--surface-3));border-bottom:1px solid hsl(var(--border))}
+.cgc-chat-head>svg{width:16px;height:16px;color:hsl(var(--primary));flex-shrink:0}
+.cgc-chat-head b{display:block;font-family:var(--font-display);font-size:13px}.cgc-chat-head span{font-size:11px;color:hsl(var(--muted-foreground))}
+.cgc-chat-head .cgc-hbtn{margin-left:auto;width:26px;height:26px;border-radius:3px;display:grid;place-items:center;color:hsl(var(--muted-foreground));border:1px solid transparent}
+.cgc-chat-head .cgc-hbtn+.cgc-hbtn{margin-left:2px}
+.cgc-chat-head .cgc-hbtn:hover{border-color:hsl(var(--input));color:hsl(var(--foreground))}
+.cgc-chat-head .cgc-hbtn svg{width:14px;height:14px}
+.cgc-chat-body{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:hsl(var(--background))}
+.cgc-msg{max-width:90%;padding:8px 10px;border-radius:6px;font-size:12.5px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+.cgc-msg.bot{background:hsl(var(--card));border:1px solid hsl(var(--border));align-self:flex-start}
+.cgc-msg.me{background:hsl(var(--secondary));color:hsl(var(--foreground));align-self:flex-end}
+.cgc-chips{display:flex;flex-wrap:wrap;gap:6px}
+.cgc-chips button{font-size:11.5px;padding:4px 9px;border-radius:3px;border:1px solid hsl(var(--input));color:hsl(var(--foreground));background:hsl(var(--card));text-align:left;display:inline-flex;align-items:center;gap:5px}
+.cgc-chips button:hover{background:hsl(var(--muted))}
+.cgc-chips button.hi{border-color:hsl(var(--primary)/.55);color:hsl(var(--primary))}
+.cgc-chips button svg{width:12px;height:12px}
+.cgc-chat-form{display:flex;gap:6px;padding:10px 12px 6px;border-top:1px solid hsl(var(--border))}
+.cgc-chat-form .btn svg{width:14px;height:14px}
+.cgc-chat-foot{font-size:11px;color:hsl(var(--muted-foreground));text-align:center;padding:0 12px 8px}
+.cgc-chat-foot a{text-decoration:underline}
+.cgc-typing i{display:inline-block;width:5px;height:5px;border-radius:50%;background:hsl(var(--muted-foreground));margin:0 1px;animation:cgc-bounce 1s infinite}
+.cgc-typing i:nth-child(2){animation-delay:.15s}.cgc-typing i:nth-child(3){animation-delay:.3s}
+@keyframes cgc-bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-4px)}}
+/* ---- tour ---- */
+.cgc-tour{position:fixed;inset:0;z-index:150;pointer-events:none}
+.cgc-tour svg{position:absolute;inset:0;width:100%;height:100%}
+.cgc-tour-ring{position:fixed;z-index:150;pointer-events:none;border-radius:4px;box-shadow:0 0 0 2px hsl(var(--primary)),0 0 0 6px hsl(var(--primary)/.22);transition:all .25s}
+.cgc-tour-pop{position:fixed;z-index:151;pointer-events:auto;width:330px;max-width:calc(100vw - 24px);background:hsl(var(--card));color:hsl(var(--card-foreground));border:1px solid hsl(var(--input));border-radius:6px;box-shadow:0 20px 50px -15px rgba(0,0,0,.6);padding:14px 16px 12px;animation:cg-pop .16s ease-out}
+.cgc-tour-pop h4{font-size:14.5px;margin-bottom:6px;padding-right:22px}
+.cgc-tour-pop p{font-size:12.5px;color:hsl(var(--muted-foreground));line-height:1.5}
+.cgc-tour-foot{display:flex;align-items:center;gap:6px;margin-top:12px}
+.cgc-tour-prog{font-family:var(--font-mono);font-size:10.5px;color:hsl(var(--muted-foreground));margin-right:auto}
+.cgc-tour-x{position:absolute;right:8px;top:8px;width:24px;height:24px;border-radius:3px;display:grid;place-items:center;color:hsl(var(--muted-foreground))}
+.cgc-tour-x:hover{background:hsl(var(--muted))}
+.cgc-tour-arrow{position:absolute;width:12px;height:12px;background:hsl(var(--card));border-left:1px solid hsl(var(--input));border-top:1px solid hsl(var(--input));transform:rotate(45deg)}
+.cgc-tour-arrow.bottom{transform:rotate(225deg)}
+/* ---- command palette ---- */
+.cgc-pal-ov{position:fixed;inset:0;background:rgba(4,6,10,.55);z-index:120;display:flex;align-items:flex-start;justify-content:center;padding:11vh 16px 16px}
+.cgc-pal{width:100%;max-width:580px;background:hsl(var(--popover));border:1px solid hsl(var(--input));border-radius:6px;box-shadow:0 30px 80px -20px rgba(0,0,0,.8);overflow:hidden;animation:cg-pop .12s ease-out;display:flex;flex-direction:column;max-height:72vh}
+.cgc-pal-in{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid hsl(var(--border))}
+.cgc-pal-in svg{width:15px;height:15px;color:hsl(var(--muted-foreground));flex-shrink:0}
+.cgc-pal-in input{flex:1;background:none;border:0;outline:0;font:inherit;font-size:14px;color:hsl(var(--foreground));min-width:0}
+.cgc-pal-in input::placeholder{color:hsl(var(--muted-foreground))}
+.cgc-pal-list{overflow:auto;padding:6px 0;flex:1}
+.cgc-pal-grp{padding:8px 14px 3px;font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:hsl(var(--muted-foreground))}
+.cgc-pal-item{display:flex;align-items:center;gap:10px;padding:0 14px;height:var(--cg-row,36px);cursor:pointer;font-size:13px;color:hsl(var(--foreground))}
+.cgc-pal-item svg{width:14px;height:14px;color:hsl(var(--muted-foreground));flex-shrink:0}
+.cgc-pal-item.active{background:hsl(var(--muted))}
+.cgc-pal-item .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cgc-pal-item .lbl mark{background:none;color:inherit;font-weight:700;text-decoration:underline;text-decoration-color:hsl(var(--muted-foreground));text-underline-offset:2px}
+.cgc-pal-item .hint{margin-left:auto;font-family:var(--font-mono);font-size:10.5px;color:hsl(var(--muted-foreground));white-space:nowrap;padding-left:10px}
+.cgc-pal-item .kbd{margin-left:6px}
+.cgc-pal-foot{display:flex;gap:14px;padding:7px 14px;border-top:1px solid hsl(var(--border));font-size:11px;color:hsl(var(--muted-foreground));align-items:center}
+.cgc-pal-foot .kbd{margin-right:3px}
+.cgc-pal-empty{padding:26px;text-align:center;color:hsl(var(--muted-foreground));font-size:12.5px}
+/* ---- alerts center ---- */
+.cgc-al-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.cgc-al-head .counts{font-family:var(--font-mono);font-size:11px;color:hsl(var(--muted-foreground))}
+.cgc-al-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto auto auto 28px;gap:12px;align-items:center;padding:0 10px;min-height:calc(var(--cg-row,36px) + 12px);border:1px solid hsl(var(--border));border-radius:4px;margin-bottom:6px;background:hsl(var(--card))}
+.cgc-al-row .ic{width:26px;height:26px;border-radius:3px;border:1px solid hsl(var(--input));display:grid;place-items:center;color:hsl(var(--muted-foreground))}
+.cgc-al-row .ic svg{width:13px;height:13px}
+.cgc-al-row .cond{font-family:var(--font-mono);font-size:13px;font-weight:500;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cgc-al-row .sub{font-size:11px;color:hsl(var(--muted-foreground));margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cgc-al-row.triggered{border-color:hsl(var(--warning)/.55)}
+.cgc-al-row.paused{opacity:.7}
+.cgc-al-ch{display:flex;gap:4px}
+.cgc-al-ch span{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border:1px solid hsl(var(--input));border-radius:2px;color:hsl(var(--muted-foreground))}
+.cgc-al-row .del{color:hsl(var(--muted-foreground));width:26px;height:26px;display:grid;place-items:center;border-radius:3px}
+.cgc-al-row .del:hover{background:hsl(var(--sell-bg));color:hsl(var(--sell))}
+.cgc-al-row .del svg{width:13px;height:13px}
+.cgc-al-form{border:1px solid hsl(var(--input));border-radius:4px;padding:12px 14px;margin-bottom:12px;background:hsl(var(--surface-3)/.5)}
+.cgc-al-form .g2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.cgc-al-form .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px}
+.cgc-al-chk{display:flex;gap:16px;font-size:12.5px;align-items:center;height:32px}
+.cgc-al-chk label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.cgc-al-form .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+.cgc-al-empty{padding:34px 16px;text-align:center;border:1px dashed hsl(var(--input));border-radius:4px;color:hsl(var(--muted-foreground));font-size:12.5px}
+.cgc-al-empty b{display:block;color:hsl(var(--foreground));font-size:14px;margin-bottom:4px}
+.cgc-al-empty svg{width:22px;height:22px;margin-bottom:8px;opacity:.6}
+/* ---- keyboard shortcuts ---- */
+.cgc-sc-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.cgc-sc-table td{padding:6px 8px;border-bottom:1px solid hsl(var(--border));vertical-align:middle}
+.cgc-sc-table td:first-child{width:150px;white-space:nowrap}
+.cgc-sc-table .kbd{font-size:11px;padding:2px 6px;border-bottom-width:2px;color:hsl(var(--foreground))}
+.cgc-sc-table .kbd+.kbd{margin-left:3px}
+.cgc-sc-table tr.grp td{font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:hsl(var(--muted-foreground));padding:14px 8px 4px;border-bottom:0}
+.cgc-sc-table td .own{font-size:10.5px;color:hsl(var(--muted-foreground));margin-left:6px}
+/* ---- portfolio bar ---- */
+.cgc-pbar{height:32px;display:flex;align-items:center;padding:0 12px;background:hsl(var(--surface-3));border-top:1px solid hsl(var(--input));font-size:11.5px;color:hsl(var(--foreground));overflow:hidden;white-space:nowrap}
+.cgc-pbar .si{display:inline-flex;align-items:center;gap:7px;padding:0 12px;border-right:1px solid hsl(var(--border));height:100%;color:inherit;font:inherit}
+.cgc-pbar .si:first-child{padding-left:0}
+.cgc-pbar button.si:hover{background:hsl(var(--muted))}
+.cgc-pbar .si .micro{font-size:9.5px}
+.cgc-pbar .si b{font-family:var(--font-mono);font-weight:500;font-variant-numeric:tabular-nums}
+.cgc-pbar .up{color:hsl(var(--profit))}.cgc-pbar .down{color:hsl(var(--loss))}
+.cgc-pbar .mbar{width:56px;height:3px;background:hsl(var(--input));position:relative;display:inline-block}
+.cgc-pbar .mbar b{position:absolute;left:0;top:0;bottom:0;background:hsl(var(--muted-foreground))}
+.cgc-pbar .mbar b.warn{background:hsl(var(--warning))}
+.cgc-pbar .end{margin-left:auto;display:flex;height:100%}
+.cgc-pbar .end .si:last-child{border-right:0;padding-right:0}
+.cgc-pbar-fixed{position:fixed;left:0;right:0;bottom:0;z-index:45}
+html.cgc-pbar-fixed-on [data-route="/analyse"] .an-shell{height:calc(100vh - var(--an-top,56px) - 32px)}
+@media (max-width:1100px){.cgc-pbar .si.opt{display:none}}
+</style>
+
+<script>
+(function () {
+// ---- 10-header.js ----
+const CG = window.CG; if (!CG) return;
+const st = CG.state, M = CG.mock, F = CG.fmt, esc = CG.esc, h = CG.h;
+const CH = (CG.chrome = CG.chrome || {});
+// ---------- inline icons (lucide-style paths) ----------
+const PATHS = {
+  chevron: 'm6 9 6 6 6-6', left: 'm15 18-6-6 6-6', right: 'm9 18 6-6-6-6', x: 'M18 6 6 18M6 6l12 12', check: 'M20 6 9 17l-5-5',
+  wifi: 'M12 20h.01M2 8.82a15 15 0 0 1 20 0M5 12.86a10 10 0 0 1 14 0M8.5 16.43a5 5 0 0 1 7 0', wifioff: 'M12 20h.01M8.5 16.43a5 5 0 0 1 7 0M5 12.86a10 10 0 0 1 5.17-2.69M19 12.86a10 10 0 0 0-2.007-1.523M2 8.82a15 15 0 0 1 4.177-2.643M22 8.82a15 15 0 0 0-11.288-3.764M2 2l20 20',
+  plug: 'M12 22v-5M9 8V2M15 8V2M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z', wallet: 'M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4',
+  chart: 'M3 3v16a2 2 0 0 0 2 2h16M18 17V9M13 17V5M8 17v-3', moon: 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z', sun: 'M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z',
+  help: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01', gear: 'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
+  user: 'M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', card: 'M2 5h20v14H2zM2 10h20', users: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+  key: 'm21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4', dollar: 'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6', layers: 'm12 2 10 5-10 5L2 7l10-5ZM2 17l10 5 10-5M2 12l10 5 10-5', percent: 'M19 5 5 19M6.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM17.5 20a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z',
+  shield: 'M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z', list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01', tag: 'M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42zM7.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Z',
+  image: 'M3 5h18v14H3zM21 15l-5-5L5 21M9 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z', mail: 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm18 3-10 7L2 7', whatsapp: 'M7.9 20A9 9 0 1 0 4 16.1L2 22Z', logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9', copy: 'M8 8h12v12H8zM16 8V4H4v12h4',
+  plus: 'M5 12h14M12 5v14', edit: 'M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z', trash: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6', refresh: 'M21 12a9 9 0 1 1-6.219-8.56M21 3v6h-6', send: 'M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z', chat: 'M7.9 20A9 9 0 1 0 4 16.1L2 22Z', external: 'M15 3h6v6M10 14 21 3M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5',
+  rocket: 'M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09zM12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2zM9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5', diamond: 'M6 3h12l4 6-10 13L2 9Z M2 9h20M10 3l-2 6 4 13M14 3l2 6-4 13', lightning: 'M13 2 3 14h9l-1 8 10-12h-9l1-8Z', alert: 'M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z', crown: 'm2 4 3 12h14l3-12-6 7-4-7-4 7-6-7ZM3 20h18', bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0',
+  search: 'm21 21-4.34-4.34M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z', rows: 'M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM21 9H3M21 15H3', keyboard: 'M10 8h.01M12 12h.01M14 8h.01M16 12h.01M18 8h.01M6 8h.01M7 16h10M8 12h.01M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z', command: 'M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3',
+  trending: 'M16 7h6v6M22 7l-8.5 8.5-5-5L2 17', activity: 'M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2', sparkles: 'M9.94 14.34 12 22l2.06-7.66L22 12l-7.94-2.34L12 2l-2.06 7.66L2 12z', arrow: 'M5 12h14M12 5l7 7-7 7', pause: 'M6 4h4v16H6zM14 4h4v16h-4z', play: 'm6 3 14 9-14 9z', home: 'm3 10 9-7 9 7v10a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z', pie: 'M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1zM21.21 15.89A10 10 0 1 1 8 2.83', terminal: 'm4 17 6-6-6-6M12 19h8', book: 'M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20', briefcase: 'M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16M2 9h20v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z', sliders: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6'
+};
+const I = (name, size) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' + (size ? ' width="' + size + '" height="' + size + '"' : '') + ' aria-hidden="true"><path d="' + (PATHS[name] || '') + '"/></svg>';
+CH.icon = I;
+const MARK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.2 14.2 13.3H1.8z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 7.2v6" stroke="currentColor" stroke-width="1.7"/></svg>';
+CH.mark = MARK;
+const AV_ICON = { rocket: 'rocket', diamond: 'diamond', lightning: 'lightning' };
+const avatarSvg = (name, size) => I(AV_ICON[name] || 'rocket', size);
+const basePrice = {}; Object.keys(CG.ASSETS).forEach((k) => (basePrice[k] = CG.ASSETS[k].price));
+const chg24 = (A) => A.chg24 + (A.price / basePrice[A.symbol] - 1) * 100;
+const priceStr = (A) => F.num(A.price, A.price > 1000 ? 1 : 2);
+const themeTitle = () => (CG.theme.get() === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode');
+const expLabel = (code) => { const m = /^(\d{2})([A-Z]{3})(\d{2})$/.exec(code || ''); return m ? m[1] + ' ' + m[2][0] + m[2].slice(1).toLowerCase() : String(code || ''); };
+CH.expiryLabel = expLabel;
+const curExpiry = () => (CG.analyse && CG.analyse.expiry && CG.EXPIRIES.includes(CG.analyse.expiry) ? CG.analyse.expiry : st.expiry);
+// ---------- density ----------
+document.documentElement.dataset.density = st.density === 'compact' ? 'compact' : 'comfortable';
+CH.setDensity = function (v, quiet) {
+  v = v === 'compact' ? 'compact' : 'comfortable'; st.density = v; CG.saveState(); document.documentElement.dataset.density = v; CG.emit('density', v); headers.forEach(renderHeader);
+  if (!quiet) CG.toast({ title: 'Density: ' + v, description: v === 'compact' ? 'Dense 28px rows in chains, tables and lists.' : 'Comfortable 36px rows.' });
+};
+CH.toggleDensity = () => CH.setDensity(st.density === 'compact' ? 'comfortable' : 'compact');
+// ---------- market stats (ATM IV, IV rank, expected move) ----------
+M.ivRange = M.ivRange || { BTC: [0.30, 0.62], ETH: [0.40, 0.85], XAUT: [0.12, 0.30] };
+function marketStats(asset, expiry) {
+  asset = asset || (CG.analyse && CG.analyse.asset) || st.asset; const A = CG.ASSETS[asset] || CG.ASSETS.BTC; expiry = expiry || curExpiry();
+  const ext = CG.analyse && CG.analyse.stats;
+  if (ext && ext.atmIv != null && (!ext.asset || ext.asset === asset)) {
+    const iv = ext.atmIv <= 1.5 ? ext.atmIv * 100 : ext.atmIv; const rank = ext.ivRank == null ? null : (ext.ivRank <= 1 ? Math.round(ext.ivRank * 100) : Math.round(ext.ivRank));
+    const ex = ext.expiry || expiry; const em = ext.expectedMove != null ? ext.expectedMove : A.price * (iv / 100) * Math.sqrt(Math.max(F.dte(ex), 0.5) / 365);
+    return { atmIv: iv, ivRank: rank == null ? rankFor(asset, iv) : rank, expectedMove: em, expiry: ex, dte: F.dte(ex), source: 'analyse' };
+  }
+  let atmIv = A.iv * 100;
+  try { const ch = CG.chain(asset, expiry); const row = ch.rows.find((r) => r.atm) || ch.rows[Math.floor(ch.rows.length / 2)]; if (row) atmIv = (row.call.markIv + row.put.markIv) / 2; } catch (e) { }
+  const dte = Math.max(F.dte(expiry), 0.5);
+  return { atmIv, ivRank: rankFor(asset, atmIv), expectedMove: A.price * (atmIv / 100) * Math.sqrt(dte / 365), expiry, dte, source: 'chain' };
+}
+function rankFor(asset, ivPct) { const A = CG.ASSETS[asset] || CG.ASSETS.BTC; const rg = M.ivRange[asset] || [A.iv * 0.7, A.iv * 1.45]; return Math.round(Math.max(0, Math.min(100, (ivPct / 100 - rg[0]) / (rg[1] - rg[0]) * 100))); }
+CH.marketStats = marketStats;
+// ---------- app header ----------
+const headers = [];
+let liveConnecting = false, feedMs = 84;
+function segHtml() { return '<div class="cgc-seg" role="tablist" aria-label="Asset" data-tour="asset-select">' + Object.values(CG.ASSETS).map((A) => '<button role="tab" aria-selected="' + (A.symbol === st.asset) + '" class="' + (A.symbol === st.asset ? 'on' : '') + '" data-act="asset" data-sym="' + A.symbol + '" title="' + esc(A.name) + ' · ' + priceStr(A) + '">' + A.symbol + '</button>').join('') + '</div>'; }
+function statsHtml(A) {
+  const s = marketStats(A.symbol);
+  return '<div class="cgc-kv cgc-iv"><span class="micro">ATM IV</span><span class="v"><span data-atmiv>' + F.num(s.atmIv, 1) + '%</span><span class="dim">IV rank <span data-ivrank>' + s.ivRank + '</span></span></span></div>' +
+    '<div class="cgc-kv cgc-em"><span class="micro">Exp. move · <span data-em-exp>' + esc(expLabel(s.expiry)) + '</span></span><span class="v"><span data-em>± ' + F.num(s.expectedMove, 0) + '</span><span class="dim">1σ</span></span></div>';
+}
+function feedHtml() { const cls = liveConnecting ? 'wait' : st.liveFeed ? 'on' : 'off'; const txt = liveConnecting ? 'Connecting' : st.liveFeed ? 'Feed live' : 'Feed paused'; return '<button class="cgc-feed ' + cls + '" data-act="live" title="' + (st.liveFeed ? 'Live futures prices from Delta Exchange · click to pause' : 'Live feed paused · click to connect') + '"><i></i><span data-feed-txt>' + txt + '</span><span class="ms" data-feed-ms>' + (st.liveFeed && !liveConnecting ? '· ' + feedMs + ' ms' : '') + '</span></button>'; }
+function rightTools(logged) {
+  const alerts = CG.alerts ? CG.alerts.counts() : { armed: 0, triggered: 0 };
+  const bell = '<button class="cgc-ibtn" data-act="alerts" title="Alerts · ' + alerts.armed + ' armed" aria-label="Alerts">' + I('bell') + (alerts.armed || alerts.triggered ? '<span class="cgc-badge ' + (alerts.triggered ? 'hot' : '') + '" data-alert-count>' + (alerts.triggered || alerts.armed) + '</span>' : '') + '</button>';
+  const dens = '<button class="cgc-ibtn" data-act="density" title="Density: ' + (st.density === 'compact' ? 'compact · click for comfortable' : 'comfortable · click for compact') + '" aria-label="Toggle density">' + I('rows') + '</button>';
+  const theme = '<button class="cgc-ibtn" data-act="theme" title="' + themeTitle() + '" aria-label="' + themeTitle() + '">' + I(CG.theme.get() === 'dark' ? 'sun' : 'moon') + '</button>';
+  const cmd = '<button class="cgc-cmdk" data-act="palette" data-tour="command-palette" title="Command palette (Ctrl K)" aria-label="Command palette"><kbd class="kbd">Ctrl</kbd><kbd class="kbd">K</kbd><span class="txt">Command</span></button>';
+  const gear = '<button class="cgc-ibtn" data-act="settings" data-tour="settings-menu" title="Settings" aria-label="Settings">' + I('gear') + '</button>';
+  const av = '<button class="cgc-avatar" data-act="account" title="' + esc(M.user.name) + '" aria-label="Account">' + avatarSvg(M.user.avatar) + '</button>';
+  return logged ? bell + dens + theme + cmd + gear + av : theme + cmd + '<a class="btn btn-primary btn-sm" href="#/auth">Sign in</a>';
+}
+function renderHeader(H) {
+  const el = H.el; const A = CG.ASSETS[st.asset] || CG.ASSETS.BTC; const admin = CG.auth.isAdmin(); const logged = !!st.loggedIn;
+  const brand = (sub, href) => '<a href="#' + href + '" class="cgc-brand" title="HapieCoin">' + MARK + '<span>HapieCoin</span>' + (sub ? '<span class="sub">' + sub + '</span>' : '') + '</a>' + (admin ? '<a class="cgc-admin" href="#/admin/users" title="Admin console">Admin</a>' : '');
+  let html;
+  if (H.variant === 'analyse') {
+    const c = chg24(A);
+    html = '<header class="cg-header cgc-header cgc-analyse">' + brand('Analyse', '/analyse') + segHtml() +
+      '<div class="cgc-kv cgc-venue"><span class="micro">Venue</span><span class="v" style="font-family:var(--font-body)">Delta India</span></div><span class="cgc-vdiv"></span>' +
+      '<div class="cgc-kv"><span class="micro">Futures · ' + A.symbol + 'USD</span><span class="v big"><span data-price>' + priceStr(A) + '</span><span data-chg class="' + (c >= 0 ? 'text-profit' : 'text-loss') + '">' + F.pct(c) + '</span><span class="dim">24h</span></span></div>' +
+      statsHtml(A) + '<span class="cgc-spacer"></span>' + feedHtml() + '<span class="cgc-vdiv"></span>' +
+      '<button class="cgc-chip ' + (st.exchangeConnected ? 'on' : '') + '" data-act="exchange" title="' + (st.exchangeConnected ? 'Connected · Delta Exchange · click for API settings' : 'Exchange not connected · click to connect') + '">' + I('plug') + '<span class="txt">' + (st.exchangeConnected ? 'Connected' : 'Not connected') + '</span></button>' +
+      (st.exchangeConnected ? '<button class="cgc-chip on mono" data-act="wallet" title="Delta Exchange wallet · click to refresh">' + I('wallet') + F.usd(M.wallet.available) + '</button>' : '') +
+      rightTools(true) + '</header>';
+  } else {
+    const p = (CG.current && CG.current.path) || '';
+    const tab = (href, label, on) => '<a href="#' + href + '" class="' + (on ? 'active' : '') + '">' + label + '</a>';
+    const nav = logged ? '<nav class="cgc-tabs" aria-label="Primary">' + tab('/analyse', 'Analyse', p === '/analyse') + tab('/analytics', 'Market Analytics', p.startsWith('/analytics') || p.startsWith('/terminal')) + tab('/subscription', 'Subscription', p.startsWith('/subscription')) + tab('/referrals', 'Referrals', p.startsWith('/referrals')) + (admin ? tab('/admin/users', 'Admin', p.startsWith('/admin')) : '') + '</nav>' : '<nav class="cgc-tabs" aria-label="Primary">' + tab('/', 'Home', p === '/') + tab('/analytics', 'Market Analytics', p.startsWith('/analytics')) + '</nav>';
+    html = '<header class="cg-header cgc-header cgc-default">' + brand('', logged ? '/analyse' : '/') + nav + '<span class="cgc-spacer"></span>' + rightTools(logged) + '</header>';
+  }
+  el.innerHTML = html;
+  if (H.variant === 'analyse' && H.section && !H.section.querySelector('[data-cg="plan-banner"]')) { const b = h('<div data-cg="plan-banner"></div>'); el.appendChild(b); CH['plan-banner'](b, H.section); b.dataset.cgDone = '1'; }
+}
+function updatePrice(H) {
+  if (H.variant !== 'analyse') return; const A = CG.ASSETS[st.asset] || CG.ASSETS.BTC; const pe = H.el.querySelector('[data-price]'), ce = H.el.querySelector('[data-chg]'); if (!pe) return;
+  const up = A.prev == null ? null : A.price >= A.prev; pe.textContent = priceStr(A); pe.classList.remove('flash-up', 'flash-down'); void pe.offsetWidth; if (up != null) pe.classList.add(up ? 'flash-up' : 'flash-down');
+  const c = chg24(A); ce.textContent = F.pct(c); ce.className = c >= 0 ? 'text-profit' : 'text-loss';
+  const ms = H.el.querySelector('[data-feed-ms]'); if (ms && st.liveFeed && !liveConnecting) ms.textContent = '· ' + feedMs + ' ms';
+  updateStats(H);
+}
+function updateStats(H) {
+  if (H.variant !== 'analyse') return; const A = CG.ASSETS[st.asset] || CG.ASSETS.BTC; const s = marketStats(A.symbol); const q = (sel) => H.el.querySelector(sel);
+  const a = q('[data-atmiv]'); if (a) a.textContent = F.num(s.atmIv, 1) + '%'; const r = q('[data-ivrank]'); if (r) r.textContent = s.ivRank; const e = q('[data-em]'); if (e) e.textContent = '± ' + F.num(s.expectedMove, 0); const x = q('[data-em-exp]'); if (x) x.textContent = expLabel(s.expiry);
+}
+function updateBadge() { headers.forEach((H) => { const b = H.el.querySelector('[data-act="alerts"]'); if (!b) return; const c = CG.alerts ? CG.alerts.counts() : { armed: 0, triggered: 0 }; let badge = b.querySelector('.cgc-badge'); if (!c.armed && !c.triggered) { if (badge) badge.remove(); return; } if (!badge) { badge = h('<span class="cgc-badge" data-alert-count></span>'); b.appendChild(badge); } badge.textContent = c.triggered || c.armed; badge.classList.toggle('hot', !!c.triggered); b.title = 'Alerts · ' + c.armed + ' armed' + (c.triggered ? ' · ' + c.triggered + ' triggered' : ''); }); }
+CH.setAsset = function (sym, quiet) { if (!CG.ASSETS[sym] || st.asset === sym) return; st.asset = sym; CG.saveState(); CG.emit('asset', sym); if (!quiet) CG.toast({ title: CG.ASSETS[sym].name + ' (' + sym + ')', description: 'Futures ' + priceStr(CG.ASSETS[sym]) + ' · chain, builder and payoff switched.' }); };
+function headerAction(H, act, btn) {
+  switch (act) {
+    case 'theme': CG.theme.toggle(); break;
+    case 'settings': CH.openSettingsMenu(btn); break;
+    case 'account': CH.openAccountMenu(btn); break;
+    case 'asset': if (btn.dataset.sym) CH.setAsset(btn.dataset.sym); else CH.openAssetMenu(btn); break;
+    case 'live': if (st.liveFeed) { st.liveFeed = false; CG.saveState(); CG.emit('live-feed', false); headers.forEach(renderHeader); CG.toast({ title: 'Feed paused', description: 'Futures prices will not update until you reconnect.' }); } else { st.liveFeed = true; liveConnecting = true; CG.saveState(); headers.forEach(renderHeader); setTimeout(() => { liveConnecting = false; feedMs = Math.round(60 + Math.random() * 60); headers.forEach(renderHeader); CG.emit('live-feed', true); CG.toast({ title: 'Feed live', description: 'Connected to Delta Exchange live prices · ' + feedMs + ' ms.', variant: 'success' }); }, 900); } break;
+    case 'exchange': CH.openSettings('api'); break;
+    case 'wallet': CH.openWalletPopover(btn); break;
+    case 'market': CG.navigate('/analytics'); break;
+    case 'currency': CH.toggleCurrency(); break;
+    case 'tour': CH.startTour(); break;
+    case 'alerts': if (CG.alerts) CG.alerts.open(); break;
+    case 'density': CH.toggleDensity(); break;
+    case 'palette': if (CG.palette) CG.palette.toggle(); break;
+  }
+}
+CH.toggleCurrency = function () { st.currency = st.currency === 'INR' ? 'USD' : 'INR'; CG.saveState(); CG.emit('currency-settings-changed', st.currency); CG.emit('currency', st.currency); CG.toast({ title: 'Display currency: ' + st.currency, description: st.currency === 'INR' ? 'All calculated values (P&L, Margin, Net Premium) will be displayed in Indian Rupees (₹)' : 'All calculated values (P&L, Margin, Net Premium) will be displayed in US Dollars ($)' }); };
+CH['app-header'] = function (el, sectionEl) {
+  const route = (sectionEl && sectionEl.dataset.route) || ''; const variant = el.dataset.variant || (route === '/analyse' || route.startsWith('/analyse/') ? 'analyse' : 'default');
+  const H = { el, section: sectionEl, variant }; headers.push(H); renderHeader(H);
+  el.addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b && el.contains(b)) { e.preventDefault(); headerAction(H, b.dataset.act, b); } });
+};
+CH['app-header:update'] = function (el) { const H = headers.find((x) => x.el === el); if (H && H.variant !== 'analyse') renderHeader(H); };
+CH.rerenderHeaders = () => headers.forEach(renderHeader);
+['auth', 'asset', 'currency-settings-changed', 'theme', 'exchange-changed', 'profile-updated', 'density'].forEach((ev) => CG.on(ev, () => headers.forEach(renderHeader)));
+['analyse:stats', 'analyse:expiry', 'expiry', 'lot-sizes-changed'].forEach((ev) => CG.on(ev, () => headers.forEach(updateStats)));
+CG.on('alerts-changed', updateBadge); CG.on('alert-triggered', updateBadge);
+CG.on('tick', () => { feedMs = Math.max(38, Math.min(160, Math.round(feedMs + (Math.random() - 0.5) * 30))); headers.forEach(updatePrice); });
+// ---------- asset menu / wallet popover / account menu ----------
+CH.openAssetMenu = function (anchor) {
+  const m = CG.menu(anchor, '<div class="menu-label">Select asset</div>' + Object.values(CG.ASSETS).map((A) => '<button class="menu-item cgc-assetrow ' + (A.symbol === st.asset ? 'sel' : '') + '" data-sym="' + A.symbol + '"><span class="cgc-coin ' + A.symbol + '">' + esc(A.icon) + '</span><span><b>' + esc(A.name) + '</b> <span class="text-muted">(' + A.symbol + ')</span></span><span class="cgc-px">' + priceStr(A) + '</span></button>').join(''), { align: 'left' });
+  m.classList.add('cgc-menu'); m.addEventListener('click', (e) => { const b = e.target.closest('[data-sym]'); if (!b) return; CH.setAsset(b.dataset.sym); });
+};
+CH.openWalletPopover = function (anchor) {
+  const W = M.wallet; const m = CG.menu(anchor, '<div class="menu-label">Delta Exchange wallet</div><div class="cgc-kv-row"><span>Available</span><b>' + F.usd(W.available) + '</b></div><div class="cgc-kv-row"><span>Margin Used</span><b>' + F.usd(W.marginUsed) + '</b></div><div class="cgc-kv-row"><span>Total Equity</span><b>' + F.usd(W.equity) + '</b></div><div class="menu-sep"></div><button class="menu-item" data-refresh>' + I('refresh') + 'Click to refresh</button>');
+  m.classList.add('cgc-menu'); m.addEventListener('click', (e) => { if (e.target.closest('[data-refresh]')) { W.marginUsed = +(W.marginUsed * (1 + (Math.random() - 0.5) * 0.02)).toFixed(2); W.equity = +(W.available + W.marginUsed + 17.88).toFixed(2); CG.emit('broker-balance-changed', W); headers.forEach(renderHeader); CG.toast({ title: 'Balance refreshed', description: 'Wallet: ' + F.usd(W.available) + ' available · ' + F.usd(W.equity) + ' equity' }); } });
+};
+CH.openAccountMenu = function (anchor) {
+  const m = CG.menu(anchor, '<div class="cgc-menu-user"><b>' + esc(M.user.name) + '</b><span>' + esc(M.user.email) + '</span></div><div class="menu-label">Account</div><button class="menu-item" data-act="profile">' + I('user') + 'My Profile</button><a class="menu-item" href="#/subscription">' + I('card') + 'My Subscription</a><a class="menu-item" href="#/referrals">' + I('users') + 'My Referrals</a><div class="menu-sep"></div><button class="menu-item danger" data-act="logout">' + I('logout') + 'Logout</button>');
+  m.classList.add('cgc-menu'); m.addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b) menuAction(b.dataset.act); });
+};
+
+// ---- 20-dialogs.js ----
+// ---------- settings menu ----------
+CH.openSettingsMenu = function (anchor) {
+  const admin = CG.auth.isAdmin();
+  const item = (act, icon, label, val) => '<button class="menu-item" data-act="' + act + '">' + I(icon) + esc(label) + (val ? '<span class="val">' + esc(val) + '</span>' : '') + '</button>';
+  const link = (href, icon, label) => '<a class="menu-item" href="#' + href + '">' + I(icon) + esc(label) + '</a>';
+  let html = '<div class="menu-label">Account</div>' + item('profile', 'user', 'My Profile') + link('/subscription', 'card', 'My Subscription') + link('/referrals', 'users', 'My Referrals') +
+    '<div class="menu-sep"></div><div class="menu-label">Preferences</div>' + item('api', 'key', 'API Settings') + item('currency', 'dollar', 'Currency Settings', st.currency) + item('lot', 'layers', 'Lot Size Settings') + item('pnl', 'percent', 'P&L Settings', st.pnlBasis === 'bid_ask' ? 'bid/ask' : 'mark') + item('exchanges', 'plug', 'Exchange Setup') +
+    item('alerts', 'bell', 'Alerts', CG.alerts ? CG.alerts.counts().armed + ' armed' : '') + item('shortcuts', 'keyboard', 'Keyboard shortcuts', '?') + item('density', 'rows', 'Density', st.density === 'compact' ? 'compact' : 'comfortable') + item('palette', 'command', 'Command palette', 'Ctrl K') + link('/analytics', 'chart', 'Market Analytics') + item('tour', 'help', 'Take a tour') + item('theme', CG.theme.get() === 'dark' ? 'sun' : 'moon', themeTitle());
+  if (admin) html += '<div class="menu-sep"></div><div class="menu-label">Admin</div>' + link('/admin/subscriptions', 'crown', 'Subscription Plans') + link('/admin/menu-pricing', 'list', 'Menu Pricing') + link('/admin/coupons', 'tag', 'Coupon Codes') + link('/admin/user-subscriptions', 'shield', 'User Subscriptions') + link('/admin/banners', 'image', 'Banners') + link('/admin/emails', 'mail', 'Promotional Emails') + link('/admin/users', 'users', 'Users');
+  html += '<div class="menu-sep"></div><div class="menu-label">Support</div><a class="menu-item" href="mailto:support@hapiecoin.com">' + I('mail') + 'Email Us</a><a class="menu-item" href="https://wa.me/919684022369" target="_blank" rel="noopener noreferrer">' + I('whatsapp') + 'WhatsApp Us</a><div class="menu-sep"></div><button class="menu-item danger" data-act="logout">' + I('logout') + 'Logout</button>';
+  const m = CG.menu(anchor, html); m.classList.add('cgc-menu');
+  m.addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b) menuAction(b.dataset.act); });
+  return m;
+};
+function menuAction(act) {
+  if (act === 'theme') return CG.theme.toggle();
+  if (act === 'tour') return CH.startTour();
+  if (act === 'logout') return CH.confirmLogout();
+  if (act === 'alerts') return CG.alerts && CG.alerts.open();
+  if (act === 'shortcuts') return CG.shortcuts && CG.shortcuts.open();
+  if (act === 'density') return CH.toggleDensity();
+  if (act === 'palette') return CG.palette && CG.palette.open();
+  CH.openSettings(act);
+}
+CH.menuAction = menuAction;
+CH.confirmLogout = function () {
+  return CG.modal.confirm({ title: 'Confirm Logout', description: "Are you sure you want to sign out? You'll need to sign in again to access your account.", confirmText: 'Logout', variant: 'destructive' }).then((ok) => { if (ok) { CG.auth.logout(); CG.toast({ title: 'Logged out', description: 'You have been signed out.' }); } return ok; });
+};
+// ---------- settings dialogs ----------
+const foot = (primary, extra) => '<div class="cg-dialog-foot">' + (extra || '') + '<button class="btn btn-outline" data-cg-close>Cancel</button><button class="btn btn-primary" data-primary>' + primary + '</button></div>';
+const busy = (btn, label, ms) => new Promise((res) => { const old = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;border-color:rgba(0,0,0,.25);border-top-color:currentColor"></span>' + label; setTimeout(() => { btn.disabled = false; btn.innerHTML = old; res(); }, ms); });
+CH.busy = busy;
+const DIALOGS = {};
+DIALOGS.profile = function () {
+  const U = M.user; let editing = false, avatar = U.avatar;
+  const el = h('<div><div class="cg-dialog-body">' +
+    '<div class="text-center"><div class="cgc-av big sel mx-auto" data-avatar-big title="Tap to change avatar">' + avatarSvg(avatar) + '</div><div class="text-xs text-muted mt-2">Tap to change avatar</div><button class="btn btn-ghost btn-sm mt-1" data-change>Change</button></div>' +
+    '<div data-picker hidden><div class="cgc-sect text-center">Choose your avatar</div><div class="cgc-avatars">' + ['rocket', 'diamond', 'lightning'].map((a) => '<div class="cgc-av ' + (a === avatar ? 'sel' : '') + '" data-pick="' + a + '" title="' + a + '">' + avatarSvg(a) + '</div>').join('') + '</div></div>' +
+    '<div class="field"><label class="label">Full Name</label><input class="input" data-f="name" placeholder="Your name" disabled value="' + esc(U.name) + '"></div>' +
+    '<div class="field"><label class="label">Mobile</label><input class="input" data-f="mobile" placeholder="Mobile number" disabled value="' + esc(U.mobile) + '"></div>' +
+    '<div class="field"><label class="label">Email</label><input class="input" value="' + esc(U.email) + '" readonly disabled></div>' +
+    '<div class="grid grid-2 gap-3"><div class="field"><label class="label">Referral code</label><div class="flex gap-2"><input class="input mono" value="' + esc(U.referralCode) + '" readonly disabled><button class="btn btn-outline btn-icon" data-copy-ref title="Copy referral code">' + I('copy') + '</button></div></div><div class="field"><label class="label">Joined</label><input class="input mono" value="' + esc(F.dateIN(U.joinedAt)) + '" readonly disabled></div></div>' +
+    '</div><div class="cg-dialog-foot"><button class="btn btn-outline" data-cg-close>Close</button><button class="btn btn-primary" data-edit>Edit Profile</button></div></div>');
+  const inputs = () => CG.$$('[data-f]', el); const editBtn = el.querySelector('[data-edit]');
+  const setEditing = (v) => { editing = v; inputs().forEach((i) => (i.disabled = !v)); editBtn.textContent = v ? 'Save' : 'Edit Profile'; if (v) inputs()[0].focus(); };
+  el.querySelector('[data-change]').onclick = () => { const p = el.querySelector('[data-picker]'); p.hidden = !p.hidden; };
+  el.querySelector('[data-avatar-big]').onclick = () => { el.querySelector('[data-picker]').hidden = false; };
+  el.addEventListener('click', (e) => { const p = e.target.closest('[data-pick]'); if (!p) return; avatar = p.dataset.pick; U.avatar = avatar; CG.$$('[data-pick]', el).forEach((x) => x.classList.toggle('sel', x.dataset.pick === avatar)); el.querySelector('[data-avatar-big]').innerHTML = avatarSvg(avatar); CG.emit('profile-updated', U); CG.toast({ title: 'Avatar updated' }); });
+  el.querySelector('[data-copy-ref]').onclick = () => { try { navigator.clipboard && navigator.clipboard.writeText(U.referralCode); } catch (e) { } CG.toast({ title: 'Copied', description: 'Referral code copied to clipboard' }); };
+  editBtn.onclick = () => { if (!editing) return setEditing(true); const name = el.querySelector('[data-f="name"]').value.trim(); if (!name) return CG.toast({ title: 'Validation Error', description: 'Full Name is required', variant: 'destructive' }); busy(editBtn, 'Saving...', 600).then(() => { U.name = name; U.mobile = el.querySelector('[data-f="mobile"]').value.trim(); if (M.users[0]) M.users[0].name = U.name; setEditing(false); CG.emit('profile-updated', U); CG.toast({ title: 'Profile updated' }); }); };
+  return { el, opts: { title: 'Profile', description: 'Your account details', size: 'sm' } };
+};
+DIALOGS.api = function () {
+  const cred = (M.apiCredentials = M.apiCredentials || { apiKey: '', connectedAt: null, brokerId: (M.brokers[0] || {}).id });
+  const el = h('<div><div class="cg-dialog-body">' +
+    '<div class="cgc-status" data-status><span class="spinner"></span><div><b>Checking connection...</b></div></div>' +
+    '<div class="cgc-sect">Select Exchange</div><select class="select" data-broker>' + (M.brokers.length ? M.brokers.map((b) => '<option value="' + b.id + '" ' + (b.id === cred.brokerId ? 'selected' : '') + '>' + esc(b.name) + ' (' + b.feePercentage + '% fee)</option>').join('') : '<option value="">No exchanges configured</option>') + '</select><div class="hint" data-fee></div>' +
+    '<div class="cgc-sect">API Credentials</div><div class="field"><label class="label">API Key</label><input class="input mono" data-key placeholder="Enter your Delta Exchange API key" autocomplete="off"></div><div class="field"><label class="label">API Secret</label><input class="input mono" type="password" data-secret placeholder="Enter your Delta Exchange API secret" autocomplete="new-password"></div>' +
+    '<div class="text-xs text-muted">Get your API key from <a style="text-decoration:underline" href="https://www.delta.exchange/app/account/manageapikeys" target="_blank" rel="noopener noreferrer">Delta Exchange → Account → API Keys</a></div>' +
+    '<div class="cgc-sect">Whitelisted IP Address</div><div class="cgc-ip"><code>172.236.179.136</code><button class="btn btn-outline btn-sm" data-copy-ip>' + I('copy') + 'Copy</button></div><div class="hint">Add this IP to your Delta Exchange API key whitelist for secure access.</div>' +
+    '</div><div class="cg-dialog-foot"><button class="btn btn-outline text-destructive" data-disconnect hidden>Disconnect Exchange</button><button class="btn btn-outline" data-cg-close>Cancel</button><button class="btn btn-primary" data-connect>Connect &amp; Save</button></div></div>');
+  const sel = el.querySelector('[data-broker]'), fee = el.querySelector('[data-fee]'), status = el.querySelector('[data-status]'), disc = el.querySelector('[data-disconnect]');
+  const showFee = () => { const b = M.brokers.find((x) => x.id === sel.value); fee.textContent = b ? 'Fee: ' + b.feePercentage + '% · GST: ' + b.gstPercentage + '% · Cap: ' + b.feeCapPercentage + '%' : ''; cred.brokerId = sel.value; }; sel.onchange = showFee; showFee();
+  const renderStatus = () => { if (st.exchangeConnected) { status.className = 'cgc-status ok'; status.innerHTML = I('check') + '<div><b>Connected</b><div class="mono">API Key: ••••' + esc((cred.apiKey || 'xxxx1a2b').slice(-4)) + '</div><div class="mono">Connected: ' + esc(cred.connectedAt ? F.dateIN(cred.connectedAt) + ' ' + F.time(cred.connectedAt) : F.dateIN(CG.NOW)) + '</div><div class="mono">Wallet: ' + F.usd(M.wallet.available) + '</div></div>'; disc.hidden = false; } else { status.className = 'cgc-status no'; status.innerHTML = I('alert') + '<div><b>Not Connected</b>Enter your Delta Exchange API credentials to enable live trading.</div>'; disc.hidden = true; } };
+  setTimeout(renderStatus, 700);
+  el.querySelector('[data-copy-ip]').onclick = () => { try { navigator.clipboard && navigator.clipboard.writeText('172.236.179.136'); } catch (e) { } CG.toast({ title: 'Copied', description: 'IP address copied to clipboard' }); };
+  el.querySelector('[data-connect]').onclick = (e) => { const key = el.querySelector('[data-key]').value.trim(), sec = el.querySelector('[data-secret]').value.trim(); if (!key || !sec) return CG.toast({ title: 'Save Failed', description: 'Failed to save credentials · API key and API secret are required', variant: 'destructive' }); if (!sel.value) return CG.toast({ title: 'Save Failed', description: 'Select an exchange...', variant: 'destructive' }); busy(e.currentTarget, ' Connecting...', 1000).then(() => { cred.apiKey = key; cred.connectedAt = new Date(CG.NOW).toISOString(); st.exchangeConnected = true; CG.saveState(); CG.emit('exchange-changed', true); CG.emit('broker-credentials-changed', cred); renderStatus(); el.querySelector('[data-secret]').value = ''; CG.toast({ title: 'Exchange Connected', description: 'API credentials saved to server', variant: 'success' }); }); };
+  disc.onclick = () => { cred.apiKey = ''; cred.connectedAt = null; st.exchangeConnected = false; CG.saveState(); CG.emit('exchange-changed', false); CG.emit('broker-credentials-changed', null); renderStatus(); CG.toast({ title: 'Exchange Disconnected', description: 'Delta Exchange credentials removed' }); };
+  return { el, opts: { title: 'Delta Exchange API Settings', description: 'Connect your exchange account for live trading and wallet balance.' } };
+};
+DIALOGS.currency = function () {
+  const el = h('<div><div class="cg-dialog-body"><div class="grid grid-2 gap-3"><div class="field"><label class="label">From Currency</label><select class="select" data-from><option>USD</option></select></div><div class="field"><label class="label">To Currency</label><select class="select" data-to><option>INR</option></select></div></div>' +
+    '<div class="field"><label class="label">USD to INR Conversion Rate</label><input class="input mono" type="number" step="0.01" min="1" data-rate value="' + st.conversionRate + '"></div>' +
+    '<div class="field"><label class="label">Display currency</label><div class="tabs"><button class="tab ' + (st.currency === 'USD' ? 'active' : '') + '" data-cur="USD">$ USD</button><button class="tab ' + (st.currency === 'INR' ? 'active' : '') + '" data-cur="INR">₹ INR</button></div></div>' +
+    '<div class="alert alert-info"><div data-note></div></div></div>' + foot('Save') + '</div>');
+  const rate = el.querySelector('[data-rate]'), note = el.querySelector('[data-note]'); let cur = st.currency;
+  const upd = () => { note.textContent = 'All calculated values (P&L, Margin, Net Premium) will be displayed in ' + (cur === 'INR' ? 'Indian Rupees (₹)' : 'US Dollars ($)') + ' · Rate: $1 = ₹' + (parseFloat(rate.value) || 0); CG.$$('[data-cur]', el).forEach((b) => b.classList.toggle('active', b.dataset.cur === cur)); };
+  rate.oninput = upd; el.addEventListener('click', (e) => { const b = e.target.closest('[data-cur]'); if (b) { cur = b.dataset.cur; upd(); } }); upd();
+  el.querySelector('[data-primary]').onclick = (e) => { const r = parseFloat(rate.value); if (!(r > 0)) return CG.toast({ title: 'Error', description: 'Conversion rate must be greater than 0', variant: 'destructive' }); busy(e.currentTarget, ' Saving...', 500).then(() => { st.conversionRate = r; st.currency = cur; CG.saveState(); CG.emit('currency-settings-changed', st.currency); CG.emit('currency', st.currency); CG.toast({ title: 'Currency conversion saved', description: 'Rate: $1 = ₹' + r }); CG.modal.close(); }); };
+  return { el, opts: { title: 'Currency Settings', description: 'Set the USD to INR conversion rate used for all calculated values.', size: 'sm' } };
+};
+DIALOGS.lot = function () {
+  const syms = ['BTC', 'ETH', 'XAUT'];
+  const el = h('<div><div class="cg-dialog-body">' + syms.map((s) => '<div class="cgc-lotrow"><label class="label m-0">' + s + ' Lot Size</label><div class="cgc-eq"><span>1 lot =</span><input class="input input-sm" type="number" step="0.001" min="0.0001" data-lot="' + s + '" value="' + (st.lotSizes[s] || CG.ASSETS[s].lot) + '"><span>' + s + '</span></div></div>').join('') + '</div>' + foot('Save') + '</div>');
+  el.querySelector('[data-primary]').onclick = (e) => { const out = {}; for (const s of syms) { const v = parseFloat(el.querySelector('[data-lot="' + s + '"]').value); if (!(v > 0)) return CG.toast({ title: 'Failed to save lot sizes', description: s + ' lot size must be greater than 0', variant: 'destructive' }); out[s] = v; } busy(e.currentTarget, ' Saving...', 500).then(() => { st.lotSizes = out; CG.saveState(); CG.emit('lot-sizes-changed', out); CG.toast({ title: 'Lot sizes saved' }); CG.modal.close(); }); };
+  return { el, opts: { title: 'Lot Size Settings', description: 'Lot size for each symbol', size: 'sm' } };
+};
+DIALOGS.pnl = function () {
+  let basis = st.pnlBasis || 'mark';
+  const opt = (v, t, d) => '<div class="cgc-radio ' + (basis === v ? 'sel' : '') + '" role="radio" aria-checked="' + (basis === v) + '" data-basis="' + v + '"><i></i><div><b>' + t + '</b><span>' + d + '</span></div></div>';
+  const el = h('<div><div class="cg-dialog-body"><div role="radiogroup" aria-label="P&L price basis">' + opt('mark', 'Mark price', 'P&L at the exchange mark price — the same basis Delta Exchange shows.') + opt('bid_ask', 'Bid/Ask (executable)', 'P&L at the price you would actually get closing now: long legs at the bid, short legs at the ask.') + '</div><div class="alert alert-info mt-2 text-xs"><div>Delta Exchange shows P&L at the mark price. With Bid/Ask, HapieCoin shows the P&L you would realise by closing now, so the two figures <b>will differ</b> — usually by the bid/ask spread, and more on illiquid strikes.</div></div></div>' + foot('Save') + '</div>');
+  el.addEventListener('click', (e) => { const r = e.target.closest('[data-basis]'); if (!r) return; basis = r.dataset.basis; CG.$$('[data-basis]', el).forEach((x) => { const on = x.dataset.basis === basis; x.classList.toggle('sel', on); x.setAttribute('aria-checked', on); }); });
+  el.querySelector('[data-primary]').onclick = (e) => busy(e.currentTarget, ' Saving...', 400).then(() => { st.pnlBasis = basis; CG.saveState(); CG.emit('pnl-basis-changed', basis); CG.toast({ title: 'P&L settings saved', description: basis === 'mark' ? 'P&L basis: Mark price' : 'P&L basis: Bid/Ask (executable)' }); CG.modal.close(); });
+  return { el, opts: { title: 'P&L Settings', description: 'Choose the price basis for the P&L shown on paper and live trades.', size: 'sm' } };
+};
+DIALOGS.exchanges = function () {
+  const el = h('<div><div class="cg-dialog-body"><div class="flex items-center justify-between mb-3"><span class="text-sm text-muted">' + M.brokers.length + ' exchange(s) configured</span><button class="btn btn-primary btn-sm" data-add>' + I('plus') + 'Add Exchange</button></div><div data-list></div></div><div class="cg-dialog-foot"><button class="btn btn-outline" data-cg-close>Close</button></div></div>');
+  const list = el.querySelector('[data-list]');
+  const render = () => { list.innerHTML = M.brokers.length ? M.brokers.map((b) => '<div class="cgc-broker" data-id="' + b.id + '"><div class="cgc-coin">' + esc(b.name.slice(0, 1)) + '</div><div class="flex-1"><b>' + esc(b.name) + (b.isDefault ? ' <span class="badge badge-info">Preferred</span>' : '') + (b.scope === 'GLOBAL' ? ' <span class="badge badge-outline">GLOBAL</span>' : '') + '</b><div class="cgc-meta"><span>Fee: <span class="mono">' + b.feePercentage + '%</span></span><span>GST: <span class="mono">' + b.gstPercentage + '%</span></span><span>Fee Cap: <span class="mono">' + b.feeCapPercentage + '%</span></span></div></div><button class="btn btn-outline btn-sm" data-edit>' + I('edit') + 'Edit</button><button class="btn btn-outline btn-sm text-destructive" data-del>' + I('trash') + 'Delete</button></div>').join('') : '<div class="empty"><b>No exchanges configured</b>Add an exchange to configure its fee structure.</div>'; el.querySelector('.text-muted').textContent = M.brokers.length + ' exchange(s) configured'; };
+  render();
+  el.querySelector('[data-add]').onclick = () => CH.openExchangeForm(null, render);
+  el.addEventListener('click', async (e) => { const row = e.target.closest('[data-id]'); if (!row) return; const b = M.brokers.find((x) => x.id === row.dataset.id); if (e.target.closest('[data-edit]')) CH.openExchangeForm(b, render); else if (e.target.closest('[data-del]')) { const ok = await CG.modal.confirm({ title: 'Delete Exchange', description: 'This action cannot be undone', body: '<p class="text-sm">Are you sure you want to delete this exchange?</p><p class="text-xs text-warning mt-2">Warning: any strategies using this exchange will need to be reconfigured.</p>', confirmText: 'Delete', variant: 'destructive' }); if (ok) { M.brokers.splice(M.brokers.indexOf(b), 1); CG.emit('brokers-changed', M.brokers); render(); CG.toast({ title: 'Success', description: 'Exchange deleted successfully' }); } } });
+  return { el, opts: { title: 'Exchange Management', description: 'Manage exchange configurations for paper trading' } };
+};
+CH.openExchangeForm = function (b, onDone) {
+  const edit = !!b; b = b || { name: '', feePercentage: 0.05, gstPercentage: 18, feeCapPercentage: 10 };
+  const el = h('<div><div class="cg-dialog-body"><div class="field"><label class="label">Exchange Name</label><input class="input" data-f="name" placeholder="e.g., Delta Exchange India" value="' + esc(b.name) + '"><div class="cgc-form-err" data-err hidden></div></div><div class="field"><label class="label">Fee Percentage (%)</label><input class="input mono" type="number" step="0.01" min="0" data-f="fee" value="' + b.feePercentage + '"><div class="hint">Percentage of notional value</div></div><div class="field"><label class="label">GST Percentage (%)</label><input class="input mono" type="number" step="1" min="0" data-f="gst" value="' + b.gstPercentage + '"></div><div class="field"><label class="label">Fee Cap (% of premium)</label><input class="input mono" type="number" step="1" min="0" data-f="cap" value="' + b.feeCapPercentage + '"><div class="hint">Maximum fee as percentage of premium</div></div></div>' + foot(edit ? 'Update' : 'Create') + '</div>');
+  const hd = CG.modal.open(el, { title: edit ? 'Edit Exchange' : 'Add New Exchange', description: 'Configure exchange fee structure', size: 'sm' });
+  el.querySelector('[data-primary]').onclick = (e) => { const v = (k) => el.querySelector('[data-f="' + k + '"]').value; const err = el.querySelector('[data-err]'); if (!v('name').trim()) { err.hidden = false; err.textContent = 'Exchange name is required'; return CG.toast({ title: 'Validation Error', description: 'Exchange name is required', variant: 'destructive' }); } err.hidden = true; busy(e.currentTarget, ' Saving...', 500).then(() => { const data = { name: v('name').trim(), feePercentage: +v('fee') || 0, gstPercentage: +v('gst') || 0, feeCapPercentage: +v('cap') || 0 }; if (edit) Object.assign(b, data); else M.brokers.push(Object.assign({ id: 'br_' + Date.now(), scope: 'USER', isDefault: false }, data)); CG.emit('brokers-changed', M.brokers); CG.toast({ title: 'Success', description: edit ? 'Exchange updated successfully' : 'Exchange created successfully' }); hd.close(); if (onDone) onDone(); }); };
+  return hd;
+};
+CH.openSettings = function (kind) { const mk = DIALOGS[kind]; if (!mk) { CG.toast({ title: 'Unknown setting', description: String(kind), variant: 'destructive' }); return null; } const d = mk(); return CG.modal.open(d.el, d.opts); };
+CH.dialogs = DIALOGS;
+// ---------- upgrade required ----------
+CH.upgradeRequired = function (message) {
+  const el = h('<div><div class="cg-dialog-body"><div class="alert alert-warning"><span class="text-warning" style="flex-shrink:0;display:inline-flex">' + I('crown', 16) + '</span><div>' + esc(message || 'This feature is not included in your current plan.') + '</div></div></div><div class="cg-dialog-foot"><button class="btn btn-outline" data-cg-close>Dismiss</button><a class="btn btn-primary" href="#/subscription" data-sub>Subscribe Here →</a></div></div>');
+  const hd = CG.modal.open(el, { title: 'Upgrade Required', size: 'sm' }); el.querySelector('[data-sub]').addEventListener('click', () => hd.close()); return hd;
+};
+
+// ---- 30-banner-flyers.js ----
+// ---------- plan banner (slim one-line strip) ----------
+function bannerState() {
+  const S = M.subscription || {}; const exp = S.expiresAt ? new Date(S.expiresAt) : null; const days = exp ? Math.ceil((exp - CG.NOW) / 86400000) : null;
+  if (S.status === 'expired' || S.status === 'cancelled' || (days != null && days < 0)) return { kind: 'expired', text: 'Your plan has expired.', btn: 'Renew Plan' };
+  if (S.status === 'free' || S.planId === 'p_free' || !S.planId) return { kind: 'free', text: 'Your free plan is active.', btn: 'Upgrade' };
+  if (days != null && days <= 7) return { kind: 'expiring', text: 'Your plan expires soon — ' + days + ' day' + (days === 1 ? '' : 's') + ' left.', btn: 'Renew Plan' };
+  return { kind: 'active', text: 'Congratulations! Your plan is active until ' + (exp ? F.dateIN(exp) : ''), dismiss: true };
+}
+let bannerDismissed = null; try { bannerDismissed = sessionStorage.getItem('cg-plan-banner-dismissed'); } catch (e) { }
+let bannerEls = [];
+const liveBanners = () => (bannerEls = bannerEls.filter((e) => e.isConnected));
+function renderBanner(el) {
+  const b = bannerState();
+  if (!st.loggedIn || (b.dismiss && bannerDismissed === b.text)) { el.innerHTML = ''; return; }
+  const plan = (M.subscription && M.subscription.planName) || 'Plan';
+  el.innerHTML = '<div class="cgc-banner ' + b.kind + '" role="status"><i class="stripe"></i>' + I(b.kind === 'active' ? 'check' : b.kind === 'expired' ? 'alert' : 'bell') + '<span class="micro">' + esc(plan) + '</span><span>' + esc(b.text) + '</span>' + (b.btn ? '<a class="btn btn-outline btn-xs" href="#/subscription">' + esc(b.btn) + ' →</a>' : '') + (b.dismiss ? '<button class="cgc-x" data-dismiss aria-label="Dismiss">' + I('x', 12) + '</button>' : '') + '</div>';
+  const d = el.querySelector('[data-dismiss]'); if (d) d.onclick = () => { bannerDismissed = b.text; try { sessionStorage.setItem('cg-plan-banner-dismissed', b.text); } catch (e) { } bannerEls.forEach(renderBanner); };
+}
+CH['plan-banner'] = function (el) { liveBanners(); if (!bannerEls.includes(el)) bannerEls.push(el); renderBanner(el); };
+CH.planBannerState = bannerState;
+CH.refreshPlanBanner = () => liveBanners().forEach(renderBanner);
+['subscription-changed', 'auth'].forEach((ev) => CG.on(ev, CH.refreshPlanBanner));
+// ---------- banner flyers (popup carousel) ----------
+const activeBanners = () => (M.banners || []).filter((b) => b.isActive && (!b.startsAt || new Date(b.startsAt) <= CG.NOW) && (!b.endsAt || new Date(b.endsAt) >= CG.NOW));
+const toRoute = (url) => { const m = /hapiecoin\.com(\/[^?#]*)/.exec(url || ''); return m ? m[1] : null; };
+CH.showFlyers = function () {
+  const list = activeBanners(); if (!list.length) { CG.toast({ title: 'No active flyers', description: 'There are no banners scheduled right now.' }); return null; }
+  let i = 0;
+  const el = h('<div class="cgc-flyer"><div class="cg-dialog-body"><div data-slide></div><div class="cgc-flyer-row">' + (list.length > 1 ? '<button class="cgc-flyer-nav" aria-label="Previous flyer" data-prev>' + I('left') + '</button><div class="cgc-dots" data-dots></div><button class="cgc-flyer-nav" aria-label="Next flyer" data-next>' + I('right') + '</button>' : '<div class="cgc-dots" data-dots></div>') + '<span class="cgc-freq" data-freq></span><span data-cta></span></div></div></div>');
+  const slide = el.querySelector('[data-slide]'), dots = el.querySelector('[data-dots]'), freq = el.querySelector('[data-freq]'), cta = el.querySelector('[data-cta]');
+  const render = () => { const b = list[i]; const r = toRoute(b.linkUrl); slide.innerHTML = '<div class="cgc-flyer-card"><span class="micro">Announcement · ' + (i + 1) + ' of ' + list.length + '</span><h3>' + esc(b.title) + '</h3><p>' + esc(b.description) + '</p><div class="cgc-flyer-meta"><span>' + (b.startsAt ? F.dateIN(b.startsAt) : '') + (b.endsAt ? ' → ' + F.dateIN(b.endsAt) : '') + '</span></div></div>'; freq.textContent = b.frequency ? b.frequency.replace(/_/g, ' ') : ''; cta.innerHTML = b.linkUrl ? (r ? '<a class="btn btn-primary btn-sm" href="#' + esc(r) + '" data-view>View ' + I('external', 13) + '</a>' : '<a class="btn btn-primary btn-sm" href="' + esc(b.linkUrl) + '" target="_blank" rel="noopener,noreferrer">View ' + I('external', 13) + '</a>') : ''; dots.innerHTML = list.map((_, k) => '<i class="' + (k === i ? 'on' : '') + '"></i>').join(''); };
+  render();
+  let unRoute = null; const hd = CG.modal.open(el, { size: 'sm', onClose: () => { if (unRoute) unRoute(); CG.emit('flyers-closed'); } }); unRoute = CG.on('route', () => hd.close());
+  el.addEventListener('click', (e) => { if (e.target.closest('[data-prev]')) { i = (i - 1 + list.length) % list.length; render(); } else if (e.target.closest('[data-next]')) { i = (i + 1) % list.length; render(); } else if (e.target.closest('[data-view]')) hd.close(); });
+  return hd;
+};
+let flyersShown = false; try { flyersShown = !!sessionStorage.getItem('cg-flyers-shown'); } catch (e) { }
+CG.on('route', (cur) => {
+  if (!cur || cur.path !== '/analyse' || !st.loggedIn) return;
+  const needTour = !st.tourDone;
+  if (!flyersShown && activeBanners().length) {
+    flyersShown = true; try { sessionStorage.setItem('cg-flyers-shown', '1'); } catch (e) { }
+    setTimeout(() => { CH.showFlyers(); if (needTour) { const un = CG.on('flyers-closed', () => { un(); setTimeout(() => CH.autoTour(), 300); }); } }, 400);
+  } else if (needTour) setTimeout(() => CH.autoTour(), 500);
+});
+
+// ---- 40-assistant.js ----
+// ---------- HapieCoin Assistant (floating chat, 40px bubble docked above the portfolio bar) ----------
+const SUGGEST_BASE = ['How do I add a leg from the chain?', 'What is Probability of Profit?', 'How do I connect Delta Exchange?', 'Difference between mark and bid/ask P&L?'];
+const EXPLAIN_Q = 'Explain this strategy';
+const onAnalyse = () => (CG.current && CG.current.path) === '/analyse';
+const suggestions = () => (onAnalyse() ? [EXPLAIN_Q].concat(SUGGEST_BASE.slice(0, 3)) : SUGGEST_BASE);
+// ---- strategy explainer (canned template over CG.analyze) ----
+function strategyName(legs, AN) {
+  if (AN && AN.name) return AN.name;
+  const n = legs.length; const calls = legs.filter((l) => l.type === 'CALL'), puts = legs.filter((l) => l.type === 'PUT'); const buys = legs.filter((l) => l.side === 'BUY'), sells = legs.filter((l) => l.side === 'SELL');
+  const by = (arr) => arr.slice().sort((a, b) => a.strike - b.strike);
+  if (n === 1) { const l = legs[0]; return (l.side === 'BUY' ? 'Long ' : 'Short ') + (l.type === 'FUTURE' ? 'Future' : l.type === 'CALL' ? 'Call' : 'Put'); }
+  if (new Set(legs.map((l) => l.expiry)).size > 1 && n === 2) return 'Calendar Spread';
+  if (n === 2 && calls.length === 2 && buys.length === 1) return buys[0].strike < sells[0].strike ? 'Bull Call Spread' : 'Bear Call Spread';
+  if (n === 2 && puts.length === 2 && buys.length === 1) return buys[0].strike > sells[0].strike ? 'Bear Put Spread' : 'Bull Put Spread';
+  if (n === 2 && calls.length === 1 && puts.length === 1) { const c = calls[0], p = puts[0]; if (c.side === p.side) return (c.side === 'BUY' ? 'Long ' : 'Short ') + (c.strike === p.strike ? 'Straddle' : 'Strangle'); return c.side === 'BUY' ? 'Long Synthetic Future' : 'Short Synthetic Future'; }
+  if (n === 4 && calls.length === 2 && puts.length === 2 && buys.length === 2) { const sp = by(sells), bp = by(buys); const inner = sells.every((l) => l.strike >= bp[0].strike && l.strike <= bp[1].strike); if (inner) return sp[0].strike === sp[1].strike ? 'Iron Butterfly' : 'Iron Condor'; return bp[0].strike === bp[1].strike ? 'Reverse Iron Butterfly' : 'Reverse Iron Condor'; }
+  if (n === 3 && (calls.length === 3 || puts.length === 3)) { const tb = buys.reduce((a, l) => a + (l.lots || 1), 0), ts = sells.reduce((a, l) => a + (l.lots || 1), 0); if (tb === ts) return 'Long ' + (calls.length === 3 ? 'Call' : 'Put') + ' Butterfly'; }
+  if (n === 3 && puts.length === 2 && calls.length === 1 && calls[0].side === 'SELL' && sells.length === 2) return 'Jade Lizard';
+  if (n === 3 && calls.length === 2 && puts.length === 1 && puts[0].side === 'SELL' && sells.length === 2) return 'Reverse Jade Lizard';
+  return 'Custom ' + n + '-leg strategy';
+}
+CH.strategyName = strategyName;
+function legLine(l, A) { return (l.side === 'BUY' ? 'Buy ' : 'Sell ') + (l.lots || 1) + ' × ' + (l.type === 'FUTURE' ? A.symbol + ' future' : F.int(l.strike) + ' ' + (l.type === 'CALL' ? 'Call' : 'Put') + ' · ' + expLabel(l.expiry)) + (l.price ? ' @ ' + F.num(l.price, 1) : ''); }
+CH.explainStrategy = function () {
+  const AN = CG.analyse; const legs = ((AN && AN.legs) || []).filter((l) => l.status !== 'SQUARED_OFF'); const asset = (AN && AN.asset) || st.asset; const A = CG.ASSETS[asset] || CG.ASSETS.BTC;
+  if (!legs.length) return 'There are no legs in the Builder yet. Click a Bid or Ask price in the chain (or press B / S on a strike) to add one — then ask me again and I will summarise max profit, max loss, breakevens and probability of profit.';
+  let r; try { r = CG.analyze(legs, asset); } catch (e) { return 'I could not price this strategy right now — try again after the next tick.'; }
+  const name = strategyName(legs, AN);
+  const mp = isFinite(r.maxProfit) ? '+' + F.money(r.maxProfit) : 'unlimited'; const ml = isFinite(r.maxLoss) ? '-' + F.money(Math.abs(r.maxLoss)) : 'unlimited';
+  const be = r.breakevens.length ? r.breakevens.map((b) => F.int(b) + ' (' + F.pct((b / r.spot - 1) * 100, 1) + ' from spot)').join(' and ') : 'none — the position is entirely in profit or loss at expiry';
+  const prem = r.netPremium >= 0 ? 'You collect a net credit of ' + F.money(r.netPremium) : 'You pay a net debit of ' + F.money(-r.netPremium);
+  const qty = legs.reduce((s, l) => s + (l.lots || 1), 0) * r.lot; const d = r.greeks.delta; const bias = Math.abs(d) < qty * 0.12 ? 'neutral' : d > 0 ? 'bullish' : 'bearish';
+  const risk = !isFinite(r.maxLoss) ? 'risk is open-ended, so size it carefully' : isFinite(r.maxProfit) ? 'both risk and reward are capped' : 'risk is capped while reward is open-ended';
+  const theta = r.greeks.theta >= 0 ? 'time decay works for you' : 'time decay works against you';
+  const pop = r.pop == null ? '—' : Math.round(r.pop * 100) + '%';
+  return name + ' on ' + A.name + ' (' + A.symbol + ') · ' + legs.length + ' leg' + (legs.length > 1 ? 's' : '') + ' · spot ' + F.num(r.spot, A.price > 1000 ? 1 : 2) + '\n' + legs.map((l) => '• ' + legLine(l, A)).join('\n') +
+    '\n\n' + prem + '. Max profit ' + mp + ', max loss ' + ml + '. Breakeven' + (r.breakevens.length > 1 ? 's' : '') + ': ' + be + '. Probability of profit ' + pop + (r.rewardRisk ? ' · reward : risk 1 : ' + F.num(1 / r.rewardRisk, 2).replace(/\.00$/, '') : '') + '. Estimated margin ' + F.money(r.margin) + '.' +
+    '\n\nGreeks now — Δ ' + F.signed(d, 4) + ' ' + A.symbol + ', Θ ' + F.signedMoney(r.greeks.theta) + ' per day, ν ' + F.signedMoney(r.greeks.vega) + ' per 1% IV.' +
+    '\n\nRead: ' + bias + ' bias; ' + risk + '; ' + theta + '. Not financial advice.';
+};
+const ANSWERS = [
+  { k: /explain|summar|this strategy|my strategy|what am i holding/i, a: () => CH.explainStrategy() },
+  { k: /probab|\bpop\b/i, a: 'Probability of Profit (POP) is the estimated chance that your strategy finishes above breakeven at expiry. HapieCoin derives it from the current futures price, the implied volatility of your legs and the days to expiry. Above 60% is shown as high probability, 40–60% as moderate and below 40% as low. It is a statistical estimate, not a guarantee.' },
+  { k: /mark|bid|ask|basis|realis|realiz/i, a: 'Mark price P&L uses the exchange mark price — the same figure Delta Exchange shows. Bid/Ask (executable) P&L uses the price you would actually get if you closed right now: long legs at the bid and short legs at the ask. The two differ by roughly the bid/ask spread, more on illiquid strikes. Switch the basis in Settings → P&L Settings or from the Basis item in the portfolio bar.' },
+  { k: /connect|delta|api|exchange|key|secret|whitelist/i, a: 'Open Settings (gear icon) → API Settings. Create an API key on Delta Exchange (Account → API Keys), whitelist the IP 172.236.179.136, then paste the API key and secret and press Connect & Save. Once connected the header shows your wallet balance and the Live Trade button places real orders.' },
+  { k: /leg|chain|strike|\badd\b/i, a: 'To add a leg, open the Options Chain tab on the left and click the Bid or Ask price of any Call or Put — a B/S selector appears on that strike. Pick Buy or Sell and the quantity, and the leg is added to your Strategy Legs on the right. Keyboard: j / k move the strike cursor, B / S add a buy or sell leg. Add up to 10 legs, then use the Payoff Diagram to see max profit, max loss and breakevens.' },
+  { k: /paper|virtual|start|stop|square/i, a: 'Build your legs, then click Paper Trade in the Strategy Legs panel. Give the strategy a name, review the order preview (legs, net premium, margin) and click Start Paper Trade. The trade appears in the Paper Trades tab with live P&L. Open it to square off individual legs or stop the whole trade — virtual funds only, no real money.' },
+  { k: /alert|notify|telegram|push/i, a: 'Open the bell icon in the header (or press Ctrl K and type “alert”) to manage alerts. You can arm price alerts (BTC ≥ 82,000), IV rank alerts and strategy P&L alerts, delivered by push, email or Telegram. Alerts are evaluated on every price tick and show a toast when they trigger.' },
+  { k: /shortcut|keyboard|palette|ctrl|command/i, a: 'Press Ctrl K (⌘ K on Mac) anywhere to open the command palette — jump to any screen, switch asset, toggle theme or density, create an alert or log out. Press ? to see every keyboard shortcut: j / k strike cursor, B / S add legs, E next expiry, Shift E previous expiry, T theme, D density.' },
+  { k: /template|iron|condor|straddle|strangle|spread|butterfly|lizard/i, a: 'The Strategy tab includes 28 ready-made templates — Bull Call Spread, Iron Condor, Straddles, Strangles, Butterflies, Jade Lizard and more, grouped by Bullish, Bearish, Neutral and Others. Click a template to load its legs at the current ATM strike; you can still edit strikes, expiry and quantity before trading.' },
+  { k: /greek|delta\b|theta|vega|gamma/i, a: 'The Greeks tab shows portfolio and per-leg Greeks. Delta is the P&L change per $1 move in the futures price, Gamma is how fast Delta changes, Theta is the daily time decay and Vega is the sensitivity to a 1% change in implied volatility. Multi-leg strategies net these out across legs, and the portfolio bar at the bottom nets them across all open strategies.' },
+  { k: /margin|capital|collateral/i, a: 'Expected Required Margin is the capital Delta Exchange would block for the strategy: long options need only the premium paid, short options need an initial margin on the notional, and spreads get margin benefit. The figure in the Payoff panel updates as you change legs and quantity.' },
+  { k: /\blot|quantity|size|density|compact/i, a: 'One lot equals the contract size on Delta Exchange: 0.001 BTC, 0.01 ETH and 0.001 XAUT by default. Change these in Settings → Lot Size Settings; quantity in the chain and strategy legs is always lots × lot size. Prefer denser tables? Toggle Density (D) in the header for 28px rows.' },
+  { k: /plan|subscri|upgrade|renew|coupon|referr/i, a: 'Plans are managed under Settings → My Subscription. Free includes the live chain and 5 paper trades a month; Basic, Pro and Elite add templates, Greeks, unlimited paper trades, live trading and Market Analytics. Coupons can be applied at checkout, and your referral code (Settings → My Referrals) earns commission on every paid signup.' },
+  { k: /currency|inr|usd|rupee/i, a: 'Click the CCY item in the portfolio bar (or Settings → Currency Settings) to switch the display currency. All calculated values (P&L, Margin, Net Premium) are converted with the rate from Currency Settings (default $1 = ₹83.5). Chain prices stay in USD as quoted by the exchange.' }
+];
+const FALLBACK = 'I can help with using HapieCoin — the options chain, building strategies, paper and live trades, Greeks, alerts, shortcuts, settings and subscriptions. Try one of the suggestions above, or email support@hapiecoin.com for anything else.';
+const VISITOR = 'You are in limited visitor mode — I can explain how HapieCoin works, but log in for full support with your own strategies and trades.';
+const answerFor = (q) => { const hit = ANSWERS.find((x) => x.k.test(q)); const a = hit ? (typeof hit.a === 'function' ? hit.a() : hit.a) : FALLBACK; return a + (!st.loggedIn ? '\n\n' + VISITOR : ''); };
+const chat = { msgs: [], panel: null, btn: null, typing: null };
+function chatButton() {
+  if (chat.btn) return chat.btn;
+  const b = h('<button class="cgc-chat-btn" data-tour="chat-launcher" title="Ask HapieCoin Assistant (drag to move)" aria-label="Ask HapieCoin Assistant (drag to move)">' + I('chat') + '</button>');
+  document.body.appendChild(b); chat.btn = b;
+  try { const p = JSON.parse(localStorage.getItem('cg-v2-chat-pos') || 'null'); if (p) { b.style.left = Math.min(p.x, window.innerWidth - 48) + 'px'; b.style.top = Math.min(p.y, window.innerHeight - 48) + 'px'; b.style.right = 'auto'; b.style.bottom = 'auto'; } } catch (e) { }
+  let start = null, moved = false;
+  b.addEventListener('pointerdown', (e) => { const r = b.getBoundingClientRect(); start = { x: e.clientX, y: e.clientY, l: r.left, t: r.top }; moved = false; b.setPointerCapture(e.pointerId); });
+  b.addEventListener('pointermove', (e) => { if (!start) return; const dx = e.clientX - start.x, dy = e.clientY - start.y; if (!moved && Math.hypot(dx, dy) < 5) return; moved = true; b.classList.add('drag'); const x = Math.max(4, Math.min(start.l + dx, window.innerWidth - 44)), y = Math.max(4, Math.min(start.t + dy, window.innerHeight - 44)); b.style.left = x + 'px'; b.style.top = y + 'px'; b.style.right = 'auto'; b.style.bottom = 'auto'; if (chat.panel) placePanel(); });
+  const end = () => { if (!start) return; b.classList.remove('drag'); if (moved) { const r = b.getBoundingClientRect(); try { localStorage.setItem('cg-v2-chat-pos', JSON.stringify({ x: r.left, y: r.top })); } catch (er) { } } else toggleChat(); start = null; };
+  b.addEventListener('pointerup', end); b.addEventListener('pointercancel', end);
+  b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleChat(); } });
+  return b;
+}
+function placePanel() { const p = chat.panel; if (!p) return; const r = chat.btn.getBoundingClientRect(); const w = p.offsetWidth, hh = p.offsetHeight; let left = r.right - w, top = r.top - hh - 10; if (top < 8) top = Math.min(r.bottom + 10, window.innerHeight - hh - 8); left = Math.max(8, Math.min(left, window.innerWidth - w - 8)); p.style.left = left + 'px'; p.style.top = Math.max(8, top) + 'px'; }
+function toggleChat() { chat.panel ? closeChat() : openChat(); }
+function closeChat() { if (chat.panel) { chat.panel.remove(); chat.panel = null; } }
+function openChat() {
+  const p = h('<div class="cgc-chat" role="dialog" aria-label="HapieCoin Assistant"><div class="cgc-chat-head">' + I('chat') + '<div><b>HapieCoin Assistant</b><span>' + (st.loggedIn ? 'Platform help · not financial advice' : 'Limited visitor mode · log in for full support') + '</span></div>' + (onAnalyse() ? '<button class="cgc-hbtn" data-explain title="Explain this strategy" aria-label="Explain this strategy">' + I('sparkles') + '</button>' : '<span style="margin-left:auto"></span>') + '<button class="cgc-hbtn" aria-label="Close" data-close>' + I('x') + '</button></div><div class="cgc-chat-body" data-body></div><form class="cgc-chat-form"><input class="input" placeholder="Ask a question…" data-q autocomplete="off"><button class="btn btn-primary btn-icon" type="submit" aria-label="Send" title="Send">' + I('send') + '</button></form><div class="cgc-chat-foot">Need a human? <a href="mailto:support@hapiecoin.com" target="_blank" rel="noreferrer">Email</a> support@hapiecoin.com</div></div>');
+  document.body.appendChild(p); chat.panel = p; placePanel();
+  const body = p.querySelector('[data-body]');
+  if (!chat.msgs.length) chat.msgs.push({ who: 'bot', text: 'Hi! Ask me anything about using HapieCoin — or try one of these:', chips: true });
+  chat.msgs.forEach((m) => body.appendChild(renderMsg(m)));
+  body.scrollTop = body.scrollHeight;
+  p.querySelector('[data-close]').onclick = closeChat;
+  const ex = p.querySelector('[data-explain]'); if (ex) ex.onclick = () => ask(EXPLAIN_Q);
+  p.addEventListener('click', (e) => { const c = e.target.closest('[data-chip]'); if (c) ask(c.dataset.chip); });
+  p.querySelector('form').addEventListener('submit', (e) => { e.preventDefault(); const inp = p.querySelector('[data-q]'); const q = inp.value.trim(); if (!q) return; inp.value = ''; ask(q); });
+  p.querySelector('[data-q]').focus();
+}
+function renderMsg(m) { if (m.chips) { const d = h('<div class="cgc-msg bot"></div>'); d.textContent = m.text; const chips = h('<div class="cgc-chips mt-2"></div>'); suggestions().forEach((s) => { const b = h('<button type="button" data-chip="' + esc(s) + '" class="' + (s === EXPLAIN_Q ? 'hi' : '') + '">' + (s === EXPLAIN_Q ? I('sparkles') : '') + esc(s) + '</button>'); chips.appendChild(b); }); d.appendChild(chips); return d; } const d = h('<div class="cgc-msg ' + (m.who === 'me' ? 'me' : 'bot') + '"></div>'); d.textContent = m.text; return d; }
+function ask(q) {
+  if (chat.typing) return;
+  const body = chat.panel && chat.panel.querySelector('[data-body]'); const me = { who: 'me', text: q }; chat.msgs.push(me); if (body) { body.appendChild(renderMsg(me)); body.scrollTop = body.scrollHeight; }
+  const full = answerFor(q); const bot = { who: 'bot', text: '' }; chat.msgs.push(bot);
+  const el = h('<div class="cgc-msg bot"><span class="cgc-typing"><i></i><i></i><i></i></span></div>'); if (body) { body.appendChild(el); body.scrollTop = body.scrollHeight; }
+  chat.typing = setTimeout(() => { let n = 0; const step = Math.max(1, Math.ceil(full.length / 45)); el.textContent = ''; const iv = setInterval(() => { n = Math.min(full.length, n + step); el.textContent = full.slice(0, n); bot.text = el.textContent; if (body) body.scrollTop = body.scrollHeight; if (n >= full.length) { clearInterval(iv); chat.typing = null; } }, 33); chat.typing = iv; }, 450);
+}
+CH.openAssistant = openChat; CH.closeAssistant = closeChat; CH.askAssistant = (q) => { if (!chat.panel) openChat(); ask(q); }; CH.assistantOpen = () => !!chat.panel;
+CG.on('auth', () => { if (chat.panel) { closeChat(); } chat.msgs = []; });
+CG.on('route', (cur) => { document.documentElement.style.setProperty('--cgc-dock', cur && cur.path === '/analyse' ? '56px' : '16px'); if (chat.panel) { closeChat(); } chat.msgs = []; });
+window.addEventListener('resize', () => { if (chat.panel) placePanel(); });
+if (document.body) chatButton(); else document.addEventListener('DOMContentLoaded', chatButton);
+
+// ---- 50-tour.js ----
+// ---------- product tour (driver.js-like) ----------
+const TOUR_STEPS = [
+  { title: 'Welcome to HapieCoin', desc: "Let's place a real paper trade together — from picking legs to stopping the trade. Skip anytime; replay later from Settings → Take a tour.", next: 'Start' },
+  { target: 'asset-select', title: 'Choose your asset', desc: 'Switch between BTC, ETH and XAUT. The live futures price, ATM IV and expected move update here in real time.' },
+  { target: 'options-chain', title: 'Your workspaces', desc: 'Option Chain shows live strikes. Builder creates strategies. Paper and Live manage your trades, and Templates stores ready-made setups.', tab: 'options-chain' },
+  { target: 'options-chain', title: 'Add a leg — try it now', desc: 'Click any Call or Put price in the chain to add it as a leg (or press B / S on the highlighted strike). The tour moves on as soon as your first leg is added.', tab: 'options-chain', waitFor: 'cg-tour:leg-added' },
+  { target: 'strategy-legs', alt: 'add-leg-button', title: 'Your strategy legs', desc: 'Here is the leg you just added. Adjust side (Buy/Sell), strike, expiry and quantity — add more legs for multi-leg strategies. Press Next when it looks right.', tab: 'builder' },
+  { target: 'payoff-panel', title: 'Payoff and analytics', desc: 'See the payoff diagram, max profit, max loss and breakevens for the strategy you are building.' },
+  { target: 'paper-trade-button', title: 'Start a paper trade', desc: 'Click Paper Trade to begin — virtual funds only, no real money.', waitFor: 'cg-tour:save-dialog-open' },
+  { target: 'save-dialog', alt: 'save-button', title: 'Name your strategy', desc: "Give the trade a name you'll recognise in the list, then press Save.", waitFor: 'cg-tour:trade-modal-open' },
+  { target: 'trade-modal', alt: 'trade-confirm-button', title: 'Review and start', desc: 'Check the order preview — legs, net premium and required margin — then click Start Paper Trade.', waitFor: 'cg-tour:paper-started' },
+  { target: 'paper-tab', title: 'Your trade is running', desc: 'Every paper trade lives in the Paper tab — including the one you just started.', tab: 'paper' },
+  { target: 'paper-pnl', title: 'Track P&L and details', desc: 'Total P&L updates live as the market moves. Click the trade card to open full details — per-leg P&L, payoff chart and history.', tab: 'paper' },
+  { target: 'paper-stop', title: 'Stop a paper trade', desc: 'Use Stop on the trade card to square off every open leg at the current price and move the trade to your archive.', tab: 'paper' },
+  { target: 'settings-menu', title: 'Settings', desc: 'Manage your profile, subscription, API settings, alerts, density and preferences here. Replay this tour anytime from this menu.' },
+  { target: 'chat-launcher', title: 'Ask the HapieCoin Assistant', desc: 'Stuck anywhere? Click this chat button to ask about strategies, options concepts or how a screen works — or use “Explain this strategy” for a summary of your current legs. You can drag the button anywhere on the page.' },
+  { target: 'command-palette', title: 'Command palette', desc: 'Press Ctrl K (⌘ K on Mac) anywhere to jump to any screen, switch asset, toggle theme or density, create an alert or log out — just start typing. Press ? for the full list of keyboard shortcuts.' }
+];
+CH.TOUR_STEPS = TOUR_STEPS;
+let tour = null;
+const visible = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+function findTarget(step) { if (!step.target) return null; const sel = (k) => CG.$$('[data-tour="' + k + '"]').find(visible) || null; return sel(step.target) || (step.alt ? sel(step.alt) : null); }
+function makeTour() {
+  const ov = h('<div class="cgc-tour"><svg><defs><mask id="cgc-tour-mask"><rect width="100%" height="100%" fill="#fff"/><rect data-hole x="0" y="0" width="0" height="0" rx="4" fill="#000"/></mask></defs><rect width="100%" height="100%" fill="rgba(4,6,10,.66)" mask="url(#cgc-tour-mask)"/></svg></div>');
+  const ring = h('<div class="cgc-tour-ring" hidden></div>');
+  const pop = h('<div class="cgc-tour-pop" role="dialog" aria-live="polite"><button class="cgc-tour-x" aria-label="Close" data-close>' + I('x', 14) + '</button><h4 data-title></h4><p data-desc></p><div class="cgc-tour-foot"><span class="cgc-tour-prog" data-prog></span><button class="btn btn-outline btn-sm" data-prev>Previous</button><button class="btn btn-primary btn-sm" data-next>Next</button></div><div class="cgc-tour-arrow" data-arrow hidden></div></div>');
+  document.body.append(ov, ring, pop);
+  const N = TOUR_STEPS.length; let idx = 0, unsubWait = null, placeT = null, unsubRoute = null;
+  const hole = ov.querySelector('[data-hole]'), arrow = pop.querySelector('[data-arrow]');
+  function place() {
+    const step = TOUR_STEPS[idx]; const t = findTarget(step);
+    if (t) {
+      try { t.scrollIntoView({ block: 'center', inline: 'nearest' }); } catch (e) { }
+      const r = t.getBoundingClientRect(); const pad = 6; const x = r.left - pad, y = r.top - pad, w = r.width + pad * 2, hh = r.height + pad * 2;
+      hole.setAttribute('x', x); hole.setAttribute('y', y); hole.setAttribute('width', w); hole.setAttribute('height', hh);
+      ring.hidden = false; Object.assign(ring.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: hh + 'px' });
+      const pw = pop.offsetWidth, ph = pop.offsetHeight; let left = Math.max(8, Math.min(r.left, window.innerWidth - pw - 8)); let top, below = true;
+      if (r.bottom + 14 + ph <= window.innerHeight - 8) top = r.bottom + 14; else if (r.top - 14 - ph >= 8) { top = r.top - 14 - ph; below = false; } else { top = Math.max(8, Math.min(r.top, window.innerHeight - ph - 8)); left = r.right + 14 + pw <= window.innerWidth ? r.right + 14 : Math.max(8, r.left - pw - 14); arrow.hidden = true; }
+      if (r.bottom + 14 + ph <= window.innerHeight - 8 || r.top - 14 - ph >= 8) { arrow.hidden = false; arrow.className = 'cgc-tour-arrow' + (below ? '' : ' bottom'); arrow.style.left = Math.max(12, Math.min(r.left + r.width / 2 - left - 6, pw - 24)) + 'px'; arrow.style.top = below ? '-7px' : 'auto'; arrow.style.bottom = below ? 'auto' : '-7px'; }
+      pop.style.left = left + 'px'; pop.style.top = top + 'px';
+    } else {
+      hole.setAttribute('width', 0); hole.setAttribute('height', 0); ring.hidden = true; arrow.hidden = true;
+      pop.style.left = Math.max(8, (window.innerWidth - pop.offsetWidth) / 2) + 'px'; pop.style.top = Math.max(8, (window.innerHeight - pop.offsetHeight) / 2) + 'px';
+    }
+  }
+  function render() {
+    const step = TOUR_STEPS[idx];
+    pop.querySelector('[data-title]').textContent = step.title; pop.querySelector('[data-desc]').textContent = step.desc; pop.querySelector('[data-prog]').textContent = (idx + 1) + ' / ' + N;
+    const prev = pop.querySelector('[data-prev]'), next = pop.querySelector('[data-next]'); prev.disabled = idx === 0; prev.hidden = idx === 0; next.textContent = idx === N - 1 ? 'Done' : step.next || 'Next';
+    if (unsubWait) { unsubWait(); unsubWait = null; }
+    if (step.waitFor) unsubWait = CG.on(step.waitFor, () => T.go(idx + 1));
+    CG.emit('tour-step', { index: idx, target: step.target || null, tab: step.tab || null, title: step.title });
+    place(); clearTimeout(placeT); placeT = setTimeout(place, 180);
+  }
+  const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); T.destroy(); } else if (e.key === 'ArrowRight') T.go(idx + 1); else if (e.key === 'ArrowLeft') T.go(idx - 1); };
+  const onResize = () => place();
+  const T = {
+    go(i) { if (i < 0) return; if (i >= N) return T.finish(); idx = i; render(); },
+    finish() { T.destroy(); CG.emit('tour-end', { completed: true }); CG.toast({ title: 'Tour complete', description: 'Replay it anytime from Settings → Take a tour, or press Ctrl K and type “tour”.', variant: 'success' }); },
+    destroy() { if (unsubWait) unsubWait(); if (unsubRoute) unsubRoute(); clearTimeout(placeT); document.removeEventListener('keydown', onKey, true); window.removeEventListener('resize', onResize); window.removeEventListener('scroll', onResize, true); ov.remove(); ring.remove(); pop.remove(); if (tour === T) tour = null; CG.emit('tour-end', { completed: false }); },
+    get index() { return idx; }
+  };
+  pop.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) T.destroy(); else if (e.target.closest('[data-prev]')) T.go(idx - 1); else if (e.target.closest('[data-next]')) T.go(idx + 1); });
+  document.addEventListener('keydown', onKey, true); window.addEventListener('resize', onResize); window.addEventListener('scroll', onResize, true);
+  unsubRoute = CG.on('route', (c) => { if (c && c.path !== '/analyse' && CG.$('section.screen[data-route="/analyse"]')) T.destroy(); });
+  return T;
+}
+CH.startTour = function () {
+  if (tour) tour.destroy();
+  const hasAnalyse = !!CG.$('section.screen[data-route="/analyse"]');
+  if (hasAnalyse && (CG.current.path || '') !== '/analyse') { const un = CG.on('route', (c) => { if (c.path === '/analyse') { un(); setTimeout(() => CH.startTour(), 450); } }); CG.navigate('/analyse'); return null; }
+  CG.modal.closeAll(); CG.menu.closeAll(); if (CG.palette) CG.palette.close();
+  tour = makeTour(); tour.go(0); return tour;
+};
+CH.autoTour = function () { if (st.tourDone) return; st.tourDone = true; CG.saveState(); CH.startTour(); };
+CH.tourActive = () => !!tour;
+CH.tourNext = () => { if (tour) tour.go(tour.index + 1); };
+
+// ---- 60-palette.js ----
+// ---------- command palette · CG.palette ----------
+PATHS.history = 'M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5M12 7v5l4 2';
+const PAL = (CG.palette = {});
+const palRegistry = new Map();
+const PAL_GROUPS = ['Recent', 'Navigate', 'Actions', 'Settings'];
+const PAL_ICON = { Navigate: 'arrow', Actions: 'command', Settings: 'gear', Recent: 'history' };
+PAL.register = function (cmd) {
+  if (!cmd || !cmd.id || !cmd.label) throw new Error('CG.palette.register({id,label,group,keywords,hint,run})');
+  const kw = Array.isArray(cmd.keywords) ? cmd.keywords : typeof cmd.keywords === 'string' ? cmd.keywords.split(/[,;|]+|\s{2,}/) : [];
+  palRegistry.set(String(cmd.id), Object.assign({ group: 'Actions', hint: '' }, cmd, { id: String(cmd.id), label: String(cmd.label), group: String(cmd.group || 'Actions'), keywords: kw.map((k) => String(k).trim()).filter(Boolean), run: typeof cmd.run === 'function' ? cmd.run : () => CG.toast({ title: String(cmd.label) }) })); if (pal.open) palRender();
+  return () => PAL.unregister(cmd.id);
+};
+PAL.unregister = (id) => { palRegistry.delete(id); if (pal.open) palRender(); };
+PAL.list = () => Array.from(palRegistry.values());
+PAL.get = (id) => palRegistry.get(id);
+const pal = { open: false, ov: null, input: null, list: null, items: [], active: 0, query: '' };
+PAL.isOpen = () => pal.open;
+// ---- fuzzy matching ----
+function palFuzzy(q, text) {
+  const t = String(text || '').toLowerCase(); if (!q) return 1; if (!t) return -1;
+  const idx = t.indexOf(q); if (idx >= 0) return 120 - Math.min(idx, 40) * 0.8 + (idx === 0 || /[\s·/→(-]/.test(t[idx - 1]) ? 15 : 0) - Math.min(t.length - q.length, 60) * 0.05;
+  let score = 0, qi = 0, streak = 0;
+  for (let ti = 0; ti < t.length && qi < q.length; ti++) { if (t[ti] === q[qi]) { score += 2 + streak * 2 + (ti === 0 || /[\s·/→(-]/.test(t[ti - 1]) ? 4 : 0); streak++; qi++; } else streak = 0; }
+  return qi === q.length ? score : -1;
+}
+const palHint = (c) => { try { const v = typeof c.hint === 'function' ? c.hint() : c.hint; return v == null ? '' : String(v); } catch (e) { return ''; } };
+function palScore(cmd, q) { try { let best = palFuzzy(q, cmd.label); (Array.isArray(cmd.keywords) ? cmd.keywords : []).forEach((k) => { best = Math.max(best, palFuzzy(q, k) * 0.85); }); best = Math.max(best, palFuzzy(q, cmd.group) * 0.5, palFuzzy(q, palHint(cmd)) * 0.6); return best; } catch (e) { return -1; } }
+function palHighlight(label, q) {
+  if (!q) return esc(label); const t = label.toLowerCase(); const idx = t.indexOf(q);
+  if (idx >= 0) return esc(label.slice(0, idx)) + '<mark>' + esc(label.slice(idx, idx + q.length)) + '</mark>' + esc(label.slice(idx + q.length));
+  let out = '', qi = 0; for (let i = 0; i < label.length; i++) { if (qi < q.length && t[i] === q[qi]) { out += '<mark>' + esc(label[i]) + '</mark>'; qi++; } else out += esc(label[i]); } return out;
+}
+const palVisible = (cmd) => { try { return typeof cmd.when === 'function' ? !!cmd.when() : true; } catch (e) { return false; } };
+function palCompute() {
+  const q = pal.query.trim().toLowerCase(); const all = PAL.list().filter(palVisible); const groups = {};
+  if (!q) {
+    const recent = (st.recentCommands || []).map((id) => palRegistry.get(id)).filter((c) => c && palVisible(c));
+    if (recent.length) groups.Recent = recent.map((c) => ({ cmd: c, score: 0 }));
+    all.forEach((c) => { (groups[c.group] = groups[c.group] || []).push({ cmd: c, score: 0 }); });
+  } else {
+    all.forEach((c) => { const s = palScore(c, q); if (s > 0) (groups[c.group] = groups[c.group] || []).push({ cmd: c, score: s }); });
+    Object.keys(groups).forEach((g) => groups[g].sort((a, b) => b.score - a.score));
+  }
+  const order = PAL_GROUPS.concat(Object.keys(groups).filter((g) => !PAL_GROUPS.includes(g)));
+  const items = []; order.forEach((g) => { if (!groups[g] || !groups[g].length) return; groups[g].forEach((x, i) => items.push({ cmd: x.cmd, group: g, first: i === 0 })); });
+  if (q) { // when searching, surface the best hit first regardless of group
+    let bi = 0, bs = -1; items.forEach((it, i) => { const s = palScore(it.cmd, q); if (s > bs) { bs = s; bi = i; } });
+    if (bi > 0) { const top = items.splice(bi, 1)[0]; items.unshift(Object.assign({}, top, { group: 'Best match', first: true })); if (items[1] && items[1].group === top.group) items[1].first = items.slice(1).find((x) => x.group === top.group) === items[1]; }
+  }
+  return items;
+}
+function palRender() {
+  if (!pal.open) return; pal.items = palCompute(); pal.active = Math.max(0, Math.min(pal.active, pal.items.length - 1)); const q = pal.query.trim().toLowerCase();
+  if (!pal.items.length) { pal.list.innerHTML = '<div class="cgc-pal-empty">No commands match “' + esc(pal.query) + '”.<br><span class="text-2xs">Try a screen name, “alert”, “theme”, “density”, “BTC”…</span></div>'; return; }
+  let html = ''; pal.items.forEach((it, i) => { if (it.first) html += '<div class="cgc-pal-grp">' + esc(it.group) + '</div>'; const c = it.cmd; html += '<div class="cgc-pal-item ' + (i === pal.active ? 'active' : '') + '" data-i="' + i + '" role="option" aria-selected="' + (i === pal.active) + '">' + I(c.icon || PAL_ICON[c.group] || 'command') + '<span class="lbl">' + palHighlight(c.label, q) + '</span>' + (palHint(c) ? '<span class="hint">' + esc(palHint(c)) + '</span>' : '') + (c.kbd ? '<kbd class="kbd">' + esc(c.kbd) + '</kbd>' : '') + '</div>'; });
+  pal.list.innerHTML = html; palScrollActive();
+}
+function palScrollActive() { const el = pal.list && pal.list.querySelector('.cgc-pal-item.active'); if (el) { const r = el.getBoundingClientRect(), lr = pal.list.getBoundingClientRect(); if (r.top < lr.top) pal.list.scrollTop -= lr.top - r.top; else if (r.bottom > lr.bottom) pal.list.scrollTop += r.bottom - lr.bottom; } }
+function palSetActive(i) { if (!pal.items.length) return; pal.active = (i + pal.items.length) % pal.items.length; CG.$$('.cgc-pal-item', pal.list).forEach((el) => { const on = +el.dataset.i === pal.active; el.classList.toggle('active', on); el.setAttribute('aria-selected', on); }); palScrollActive(); }
+PAL.run = function (id) {
+  const c = palRegistry.get(id); if (!c) return false;
+  st.recentCommands = [id].concat((st.recentCommands || []).filter((x) => x !== id)).slice(0, 5); CG.saveState();
+  PAL.close(); try { c.run(); } catch (e) { console.error('palette command', id, e); CG.toast({ title: 'Command failed', description: String(e.message || e), variant: 'destructive' }); }
+  CG.emit('palette:run', { id, label: c.label }); return true;
+};
+PAL.open = function (query) {
+  if (pal.open) { if (query != null) { pal.input.value = query; pal.query = query; pal.active = 0; palRender(); } pal.input.focus(); return; }
+  CG.menu.closeAll(); palDiscoverRoutes();
+  const ov = h('<div class="cgc-pal-ov" role="dialog" aria-modal="true" aria-label="Command palette"><div class="cgc-pal"><div class="cgc-pal-in">' + I('search') + '<input type="text" placeholder="Type a command or search…" aria-label="Search commands" spellcheck="false" autocomplete="off"><kbd class="kbd">Esc</kbd></div><div class="cgc-pal-list" role="listbox"></div><div class="cgc-pal-foot"><span><kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> navigate</span><span><kbd class="kbd">↵</kbd> run</span><span><kbd class="kbd">Esc</kbd> close</span><span style="margin-left:auto" class="mono">' + palRegistry.size + ' commands</span></div></div></div>');
+  document.body.appendChild(ov); pal.ov = ov; pal.input = ov.querySelector('input'); pal.list = ov.querySelector('.cgc-pal-list'); pal.open = true; pal.query = query || ''; pal.active = 0; pal.input.value = pal.query;
+  palRender(); pal.input.focus();
+  pal.input.addEventListener('input', () => { pal.query = pal.input.value; pal.active = 0; palRender(); });
+  pal.input.addEventListener('keydown', (e) => { if (e.key === 'ArrowDown') { e.preventDefault(); palSetActive(pal.active + 1); } else if (e.key === 'ArrowUp') { e.preventDefault(); palSetActive(pal.active - 1); } else if (e.key === 'Enter') { e.preventDefault(); const it = pal.items[pal.active]; if (it) PAL.run(it.cmd.id); } else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); PAL.close(); } else if (e.key === 'Tab') { e.preventDefault(); palSetActive(pal.active + (e.shiftKey ? -1 : 1)); } });
+  ov.addEventListener('mousedown', (e) => { if (e.target === ov) PAL.close(); });
+  pal.list.addEventListener('mousemove', (e) => { const it = e.target.closest('.cgc-pal-item'); if (it && +it.dataset.i !== pal.active) palSetActive(+it.dataset.i); });
+  pal.list.addEventListener('click', (e) => { const it = e.target.closest('.cgc-pal-item'); if (it) { const x = pal.items[+it.dataset.i]; if (x) PAL.run(x.cmd.id); } });
+  CG.emit('palette:open');
+};
+PAL.close = function () { if (!pal.open) return; pal.ov.remove(); pal.ov = null; pal.open = false; pal.items = []; CG.emit('palette:close'); };
+PAL.toggle = (q) => (pal.open ? PAL.close() : PAL.open(q));
+// ---- default registry ----
+const loggedIn = () => !!st.loggedIn, isAdmin = () => CG.auth.isAdmin(), notLogged = () => !st.loggedIn;
+const nav = (id, path, label, keywords, when, hint) => PAL.register({ id, group: 'Navigate', label, keywords: keywords || [], hint: hint || path, when, run: () => CG.navigate(path) });
+nav('nav:home', '/', 'Home', ['landing', 'public', 'website']);
+nav('nav:auth', '/auth', 'Sign in', ['login', 'signup', 'register', 'otp', 'password'], notLogged);
+nav('nav:analyse', '/analyse', 'Analyse workspace', ['options chain', 'builder', 'payoff', 'strategy', 'paper', 'live', 'greeks', 'scenarios'], loggedIn);
+nav('nav:subscription', '/subscription', 'My Subscription', ['plan', 'billing', 'upgrade', 'renew', 'payments', 'coupon'], loggedIn);
+nav('nav:referrals', '/referrals', 'My Referrals', ['referral code', 'commission', 'earnings'], loggedIn);
+[['users', 'Users', ['user management', 'members']], ['subscriptions', 'Subscription Plans', ['plans', 'pricing']], ['menu-pricing', 'Menu Pricing', ['features', 'menu items']], ['coupons', 'Coupon Codes', ['discount', 'promo']], ['user-subscriptions', 'User Subscriptions', ['assign plan']], ['banners', 'Banners', ['flyers', 'popups', 'announcements']], ['emails', 'Promotional Emails', ['campaign', 'newsletter']]].forEach(([k, label, kw]) => nav('nav:admin:' + k, '/admin/' + k, 'Admin · ' + label, kw.concat(['admin']), isAdmin));
+[['coinglass', 'Markets Hub', ['coinglass', 'overview']], ['overview', 'Futures', ['open interest', 'volume']], ['liquidations', 'Liquidations', ['liq', 'long short']], ['derivatives', 'Derivatives', ['funding', 'oi']], ['options', 'Options', ['options oi', 'max pain', 'expiries']], ['etf', 'ETF', ['bitcoin etf', 'flows', 'ibit']], ['whales', 'Whales', ['whale alerts', 'large orders']], ['sentiment', 'Sentiment', ['fear greed', 'index']], ['markets', 'Futures Markets Screener', ['screener', 'coins', 'rsi']], ['coin/BTC', 'Coin · BTC', ['bitcoin coin page']]].forEach(([k, label, kw]) => nav('nav:analytics:' + k, '/analytics/' + k, 'Market Analytics · ' + label, kw.concat(['analytics', 'market']), loggedIn));
+[['', 'Terminal home', ['dashboard']], ['coin/BTC', 'Coin · BTC', ['bitcoin']], ['derivatives/funding', 'Funding Rates', ['funding']], ['derivatives/liquidations', 'Liquidations', ['liq']], ['derivatives/long-short', 'Long / Short', ['ratio']], ['derivatives/open-interest', 'Open Interest', ['oi']], ['etf', 'Bitcoin Spot ETFs', ['etf', 'flows']], ['exchanges/Binance', 'Exchange overview · Binance', ['exchanges']], ['indicators/cycle', 'BTC Cycle Indicators', ['ahr999', 'puell', 'pi cycle']], ['indicators/fear-greed', 'Fear & Greed Index', ['sentiment']], ['onchain/exchange-balance', 'Exchange Balance', ['onchain', 'reserves']], ['onchain/unlocks', 'Token Unlock Schedule', ['unlocks', 'vesting']], ['sectors/layer-1', 'Sectors · Layer 1', ['sectors', 'defi', 'memes']], ['spot', 'Spot Markets', ['spot']]].forEach(([k, label, kw]) => nav('nav:terminal:' + (k || 'home'), '/terminal' + (k ? '/' + k : ''), 'Terminal · ' + label, kw.concat(['terminal']), loggedIn));
+nav('nav:features', '/features', 'Feature inventory', ['features', 'inventory', 'qa', 'status']);
+nav('nav:payoff-preview', '/payoff-preview', 'Payoff chart preview', ['chart', 'preview', 'demo']);
+nav('nav:privacy', '/privacy', 'Privacy Policy', ['legal']); nav('nav:terms', '/terms', 'Terms of Service', ['legal']); nav('nav:disclaimer', '/disclaimer', 'Disclaimer', ['legal', 'risk']);
+Object.values(CG.ASSETS).forEach((A) => PAL.register({ id: 'asset:' + A.symbol, group: 'Actions', label: 'Switch asset → ' + A.symbol, keywords: [A.name, 'asset', 'switch', 'coin'], hint: A.name, icon: 'layers', run: () => { CH.setAsset(A.symbol); if ((CG.current.path || '') !== '/analyse' && st.loggedIn) CG.navigate('/analyse'); } }));
+PAL.register({ id: 'act:theme', group: 'Actions', label: 'Toggle theme', keywords: ['dark', 'light', 'mode', 'appearance'], kbd: 'T', icon: 'moon', run: () => CG.theme.toggle() });
+PAL.register({ id: 'act:density', group: 'Actions', label: 'Toggle density', keywords: ['compact', 'comfortable', 'rows', 'dense'], kbd: 'D', icon: 'rows', run: () => CH.toggleDensity() });
+PAL.register({ id: 'act:new-alert', group: 'Actions', label: 'New alert…', keywords: ['alert', 'price', 'notify', 'iv rank', 'pnl', 'telegram', 'push', 'email'], icon: 'bell', when: loggedIn, run: () => CG.alerts && CG.alerts.openNew() });
+PAL.register({ id: 'act:alerts', group: 'Actions', label: 'Alerts center', keywords: ['alerts', 'armed', 'triggered', 'bell'], icon: 'bell', when: loggedIn, run: () => CG.alerts && CG.alerts.open() });
+PAL.register({ id: 'act:tour', group: 'Actions', label: 'Take a tour', keywords: ['help', 'onboarding', 'guide', 'walkthrough'], icon: 'help', when: loggedIn, run: () => CH.startTour() });
+PAL.register({ id: 'act:shortcuts', group: 'Actions', label: 'Keyboard shortcuts', keywords: ['keys', 'hotkeys', 'help', '?'], kbd: '?', icon: 'keyboard', run: () => CG.shortcuts && CG.shortcuts.open() });
+PAL.register({ id: 'act:explain', group: 'Actions', label: 'Explain this strategy', keywords: ['assistant', 'summary', 'legs', 'max profit', 'breakeven', 'pop'], icon: 'sparkles', when: () => loggedIn() && (CG.current.path || '') === '/analyse', run: () => CH.askAssistant('Explain this strategy') });
+PAL.register({ id: 'act:assistant', group: 'Actions', label: 'Ask the assistant', keywords: ['chat', 'help', 'support', 'question'], icon: 'chat', run: () => CH.openAssistant() });
+PAL.register({ id: 'act:flyers', group: 'Actions', label: 'Show announcements', keywords: ['flyers', 'banners', 'popup', 'offers'], icon: 'image', when: loggedIn, run: () => CH.showFlyers() });
+PAL.register({ id: 'act:feed', group: 'Actions', label: 'Pause / resume live feed', keywords: ['live', 'feed', 'prices', 'websocket', 'pause', 'connect'], icon: 'wifi', when: loggedIn, run: () => { const H = headers.find((x) => x.variant === 'analyse'); if (H) headerAction(H, 'live', null); else { st.liveFeed = !st.liveFeed; CG.saveState(); CG.emit('live-feed', st.liveFeed); CG.toast({ title: st.liveFeed ? 'Feed live' : 'Feed paused' }); } } });
+PAL.register({ id: 'act:logout', group: 'Actions', label: 'Logout', keywords: ['sign out', 'log out', 'exit'], icon: 'logout', when: loggedIn, run: () => CH.confirmLogout() });
+[['api', 'Open API Settings', ['delta exchange', 'api key', 'secret', 'connect', 'whitelist'], 'key'], ['currency', 'Open Currency Settings', ['usd', 'inr', 'conversion rate', 'rupee'], 'dollar'], ['lot', 'Open Lot Size Settings', ['lot', 'contract size', 'quantity'], 'layers'], ['pnl', 'Open P&L Settings', ['mark', 'bid ask', 'basis', 'executable'], 'percent'], ['exchanges', 'Open Exchange Setup', ['brokers', 'fees', 'gst', 'exchange management'], 'plug'], ['profile', 'Open Profile', ['account', 'avatar', 'name', 'mobile', 'referral code'], 'user']].forEach(([k, label, kw, icon]) => PAL.register({ id: 'set:' + k, group: 'Settings', label, keywords: kw.concat(['settings']), icon, when: loggedIn, run: () => CH.openSettings(k) }));
+PAL.register({ id: 'set:currency-toggle', group: 'Settings', label: 'Display currency → ' + (st.currency === 'INR' ? 'USD' : 'INR'), keywords: ['currency', 'inr', 'usd', 'toggle'], icon: 'dollar', when: loggedIn, run: () => { CH.toggleCurrency(); const c = palRegistry.get('set:currency-toggle'); if (c) c.label = 'Display currency → ' + (st.currency === 'INR' ? 'USD' : 'INR'); } });
+// auto-discover any static screen other parts registered (labels from data-title)
+function palDiscoverRoutes() {
+  const known = new Set(PAL.list().filter((c) => c.group === 'Navigate').map(palHint));
+  CG.$$('section.screen[data-route][data-title]').forEach((sec) => { const r = sec.dataset.route; if (!r || r === '*' || r.includes(':') || sec.dataset.redirect || known.has(r) || palRegistry.has('nav:auto:' + r)) return; const auth = sec.dataset.auth; PAL.register({ id: 'nav:auto:' + r, group: 'Navigate', label: sec.dataset.title.replace(/&amp;/g, '&'), keywords: r.split('/').filter(Boolean), hint: r, when: auth === 'admin' ? isAdmin : auth === 'user' ? loggedIn : undefined, run: () => CG.navigate(r) }); });
+}
+
+// ---- 70-alerts.js ----
+// ---------- alerts center · CG.alerts ----------
+const AL = (CG.alerts = {});
+let alSeq = 10, alDialog = null;
+M.alerts = M.alerts || [
+  { id: 'al_1', kind: 'price', asset: 'BTC', op: '>=', value: 82000, channels: ['push'], state: 'armed', createdAt: '2026-09-05T09:10:00', lastValue: null, triggeredAt: null },
+  { id: 'al_2', kind: 'ivrank', asset: 'BTC', op: '<=', value: 30, channels: ['telegram'], state: 'armed', createdAt: '2026-09-05T09:12:00', lastValue: null, triggeredAt: null },
+  { id: 'al_3', kind: 'pnl', strategyId: 's_301', op: '>=', value: 20, channels: ['email'], state: 'armed', createdAt: '2026-09-06T08:40:00', lastValue: null, triggeredAt: null }
+];
+const AL_KINDS = { price: { label: 'Price', icon: 'trending', unit: 'USD' }, ivrank: { label: 'IV rank', icon: 'activity', unit: 'rank 0–100' }, pnl: { label: 'Strategy P&L', icon: 'percent', unit: 'USD P&L' } };
+const AL_CHANNELS = ['push', 'email', 'telegram'];
+const opSym = (op) => (op === '<=' ? '≤' : '≥');
+const stratName = (id) => { const s = (M.strategies || []).find((x) => x.id === id); return s ? s.name : id; };
+AL.conditionText = function (a) {
+  if (a.kind === 'price') return a.asset + ' ' + opSym(a.op) + ' ' + F.int(a.value);
+  if (a.kind === 'ivrank') return a.asset + ' IV rank ' + opSym(a.op) + ' ' + F.int(a.value);
+  return stratName(a.strategyId) + ' P&L ' + opSym(a.op) + ' ' + F.signedMoney(a.value, 2);
+};
+AL.list = () => M.alerts;
+AL.get = (id) => M.alerts.find((a) => a.id === id);
+AL.counts = () => ({ armed: M.alerts.filter((a) => a.state === 'armed').length, triggered: M.alerts.filter((a) => a.state === 'triggered').length, paused: M.alerts.filter((a) => a.state === 'paused').length, total: M.alerts.length });
+const alChanged = () => { CG.emit('alerts-changed', M.alerts); if (alDialog) alDialog.render(); };
+AL.add = function (a) {
+  a = Object.assign({ kind: 'price', asset: st.asset, op: '>=', value: 0, channels: ['push'], state: 'armed', createdAt: new Date(CG.NOW).toISOString(), lastValue: null, triggeredAt: null }, a || {});
+  if (!a.id) a.id = 'al_' + (alSeq++); if (!Array.isArray(a.channels) || !a.channels.length) a.channels = ['push']; a.value = +a.value || 0;
+  M.alerts.push(a); alChanged(); AL.evaluate([a]); return a;
+};
+AL.update = function (id, patch) { const a = AL.get(id); if (!a) return null; Object.assign(a, patch || {}); if (patch && (patch.value != null || patch.op || patch.kind || patch.asset || patch.strategyId)) { if (a.state === 'triggered') a.state = 'armed'; a.triggeredAt = null; } alChanged(); return a; };
+AL.remove = function (id) { const i = M.alerts.findIndex((a) => a.id === id); if (i < 0) return false; M.alerts.splice(i, 1); alChanged(); return true; };
+AL.arm = function (id, on) { const a = AL.get(id); if (!a) return null; a.state = on === false ? 'paused' : 'armed'; if (on !== false) a.triggeredAt = null; alChanged(); if (on !== false) AL.evaluate([a]); return a; };
+function alCurrent(a) {
+  if (a.kind === 'price') { const A = CG.ASSETS[a.asset]; return A ? A.price : null; }
+  if (a.kind === 'ivrank') { const ext = CG.analyse && CG.analyse.stats; if (ext && ext.ivRank != null && (!ext.asset || ext.asset === a.asset)) return ext.ivRank <= 1 ? ext.ivRank * 100 : ext.ivRank; return CH.marketStats(a.asset).ivRank; }
+  if (a.kind === 'pnl') { if (CG.portfolio && typeof CG.portfolio.strategyPnl === 'function') { try { const v = CG.portfolio.strategyPnl(a.strategyId); if (v != null && !isNaN(v)) return v; } catch (e) { } } const s = (M.strategies || []).find((x) => x.id === a.strategyId); return s ? (s.totalPnl != null ? s.totalPnl : (s.realizedPnl || 0) + (s.unrealizedPnl || 0)) : null; }
+  return null;
+}
+AL.currentValue = alCurrent;
+const alMet = (a, v) => (a.op === '<=' ? v <= a.value : v >= a.value);
+AL.evaluate = function (subset) {
+  if (!st.loggedIn) return 0; const list = subset || M.alerts; let fired = 0;
+  list.forEach((a) => { if (a.state !== 'armed') return; const v = alCurrent(a); if (v == null || isNaN(v)) return; a.lastValue = v; if (alMet(a, v)) { a.state = 'triggered'; a.triggeredAt = Date.now(); fired++; const what = a.kind === 'price' ? a.asset + ' crossed ' + F.int(a.value) : a.kind === 'ivrank' ? a.asset + ' IV rank ' + opSym(a.op) + ' ' + a.value + ' (now ' + Math.round(v) + ')' : stratName(a.strategyId) + ' P&L reached ' + F.signedMoney(v); CG.toast({ title: 'Alert triggered · ' + what, description: 'Sent via ' + a.channels.join(', ') + ' · re-arm it from the Alerts center.', variant: 'success', duration: 5000 }); CG.emit('alert-triggered', a); } });
+  if (fired) alChanged(); return fired;
+};
+CG.on('tick', () => AL.evaluate());
+CG.on('portfolio-changed', () => AL.evaluate());
+// ---- dialog ----
+function alRowHtml(a) {
+  const k = AL_KINDS[a.kind] || AL_KINDS.price; const cur = alCurrent(a);
+  const curTxt = cur == null ? '' : a.kind === 'price' ? 'now ' + F.num(cur, cur > 1000 ? 1 : 2) : a.kind === 'ivrank' ? 'now ' + Math.round(cur) : 'now ' + F.signedMoney(cur);
+  const stateBadge = a.state === 'triggered' ? '<span class="badge badge-warning">triggered</span>' : a.state === 'paused' ? '<span class="badge badge-outline">paused</span>' : '<span class="badge badge-success">armed</span>';
+  return '<div class="cgc-al-row ' + a.state + '" data-id="' + a.id + '"><span class="ic" title="' + k.label + '">' + I(k.icon) + '</span><div><div class="cond">' + esc(AL.conditionText(a)) + '</div><div class="sub">' + k.label + (curTxt ? ' · ' + curTxt : '') + (a.triggeredAt ? ' · fired ' + new Date(a.triggeredAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '') + '</div></div><div class="cgc-al-ch">' + a.channels.map((c) => '<span>' + esc(c) + '</span>').join('') + '</div>' + stateBadge + '<span class="switch ' + (a.state !== 'paused' ? 'on' : '') + '" role="switch" aria-checked="' + (a.state !== 'paused') + '" data-arm title="' + (a.state === 'paused' ? 'Arm' : a.state === 'triggered' ? 'Re-arm' : 'Pause') + '"></span><button class="del" data-del title="Delete alert" aria-label="Delete alert">' + I('trash') + '</button></div>';
+}
+function alFormHtml(pre) {
+  pre = pre || {}; const kind = AL_KINDS[pre.kind] ? pre.kind : 'price'; const strategies = (M.strategies || []).filter((s) => s.status === 'PAPER' || s.status === 'LIVE');
+  const opt = (v, l, sel) => '<option value="' + esc(v) + '"' + (sel ? ' selected' : '') + '>' + esc(l) + '</option>';
+  return '<form class="cgc-al-form" data-al-form novalidate><div class="g3">' +
+    '<div class="field"><label class="label">Type</label><select class="select" name="kind">' + Object.keys(AL_KINDS).map((k) => opt(k, AL_KINDS[k].label, k === kind)).join('') + '</select></div>' +
+    '<div class="field" data-f-asset' + (kind === 'pnl' ? ' hidden' : '') + '><label class="label">Asset</label><select class="select" name="asset">' + Object.keys(CG.ASSETS).map((s) => opt(s, CG.ASSETS[s].name + ' (' + s + ')', s === (pre.asset || st.asset))).join('') + '</select></div>' +
+    '<div class="field" data-f-strategy' + (kind !== 'pnl' ? ' hidden' : '') + '><label class="label">Strategy</label><select class="select" name="strategyId">' + (strategies.length ? strategies.map((s) => opt(s.id, s.name + ' · ' + s.status, s.id === pre.strategyId)).join('') : '<option value="">No open strategies</option>') + '</select></div>' +
+    '<div class="field"><label class="label">Condition</label><select class="select" name="op">' + opt('>=', '≥  at or above', (pre.op || '>=') === '>=') + opt('<=', '≤  at or below', pre.op === '<=') + '</select></div></div>' +
+    '<div class="g2"><div class="field"><label class="label">Value <span class="text-muted" data-unit>· ' + AL_KINDS[kind].unit + '</span></label><input class="input mono" name="value" type="number" step="any" placeholder="' + (kind === 'price' ? '82000' : kind === 'ivrank' ? '30' : '20') + '" value="' + (pre.value != null ? esc(pre.value) : '') + '"><div class="cgc-form-err" data-err hidden></div></div>' +
+    '<div class="field"><label class="label">Channels</label><div class="cgc-al-chk">' + AL_CHANNELS.map((c) => '<label><input type="checkbox" class="checkbox" name="ch" value="' + c + '"' + ((pre.channels || ['push']).includes(c) ? ' checked' : '') + '> ' + c + '</label>').join('') + '</div></div></div>' +
+    '<div class="actions"><button type="button" class="btn btn-outline" data-al-cancel>Cancel</button><button type="submit" class="btn btn-primary">Save alert</button></div></form>';
+}
+function alBuildDialog(prefill) {
+  const el = h('<div><div class="cg-dialog-body"><div class="cgc-al-head"><span class="counts" data-counts></span><span class="cgc-spacer"></span><button class="btn btn-primary btn-sm" data-al-new>' + I('plus') + 'New alert</button></div><div data-form-host></div><div data-list></div></div><div class="cg-dialog-foot"><span class="text-2xs text-muted" style="margin-right:auto">Evaluated on every price tick · price vs futures, IV rank vs ATM chain, P&L vs open strategies.</span><button class="btn btn-outline" data-cg-close>Close</button></div></div>');
+  const list = el.querySelector('[data-list]'), host = el.querySelector('[data-form-host]'), counts = el.querySelector('[data-counts]');
+  const D = { el, hd: null, render() { const c = AL.counts(); counts.textContent = c.total + ' alert' + (c.total === 1 ? '' : 's') + ' · ' + c.armed + ' armed · ' + c.triggered + ' triggered' + (c.paused ? ' · ' + c.paused + ' paused' : ''); list.innerHTML = M.alerts.length ? M.alerts.map(alRowHtml).join('') : '<div class="cgc-al-empty">' + I('bell') + '<b>No alerts yet</b>Create a price, IV rank or strategy P&L alert and we will notify you by push, email or Telegram.<div class="mt-3"><button class="btn btn-outline btn-sm" data-al-new>' + I('plus') + 'New alert</button></div></div>'; }, showForm(pre) { host.innerHTML = alFormHtml(pre); const inp = host.querySelector('[name="value"]'); if (inp) inp.focus(); }, hideForm() { host.innerHTML = ''; } };
+  el.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-al-new]')) return D.showForm({});
+    if (e.target.closest('[data-al-cancel]')) return D.hideForm();
+    const row = e.target.closest('[data-id]'); if (!row) return; const a = AL.get(row.dataset.id); if (!a) return;
+    if (e.target.closest('[data-arm]')) { const on = a.state === 'paused' || a.state === 'triggered'; AL.arm(a.id, on); CG.toast({ title: on ? 'Alert armed' : 'Alert paused', description: AL.conditionText(a) }); }
+    else if (e.target.closest('[data-del]')) { const ok = await CG.modal.confirm({ title: 'Delete alert', description: AL.conditionText(a), confirmText: 'Delete', variant: 'destructive' }); if (ok) { AL.remove(a.id); CG.toast({ title: 'Alert deleted', description: AL.conditionText(a) }); } }
+  });
+  el.addEventListener('change', (e) => { const f = e.target.closest('[data-al-form]'); if (!f || e.target.name !== 'kind') return; const k = e.target.value; f.querySelector('[data-f-asset]').hidden = k === 'pnl'; f.querySelector('[data-f-strategy]').hidden = k !== 'pnl'; f.querySelector('[data-unit]').textContent = '· ' + AL_KINDS[k].unit; f.querySelector('[name="value"]').placeholder = k === 'price' ? '82000' : k === 'ivrank' ? '30' : '20'; });
+  el.addEventListener('submit', (e) => {
+    const f = e.target.closest('[data-al-form]'); if (!f) return; e.preventDefault();
+    const kind = f.kind.value, value = parseFloat(f.value.value), channels = Array.from(f.querySelectorAll('[name="ch"]:checked')).map((c) => c.value); const err = f.querySelector('[data-err]');
+    if (isNaN(value)) { err.hidden = false; err.textContent = 'Value is required'; return CG.toast({ title: 'Validation Error', description: 'Alert value is required', variant: 'destructive' }); }
+    if (kind === 'ivrank' && (value < 0 || value > 100)) { err.hidden = false; err.textContent = 'IV rank is 0–100'; return; }
+    if (kind === 'pnl' && !f.strategyId.value) { err.hidden = false; err.textContent = 'Start a paper or live strategy first'; return; }
+    if (!channels.length) return CG.toast({ title: 'Validation Error', description: 'Pick at least one channel', variant: 'destructive' });
+    err.hidden = true; const a = AL.add({ kind, asset: f.asset.value, strategyId: kind === 'pnl' ? f.strategyId.value : undefined, op: f.op.value, value, channels });
+    D.hideForm(); if (a.state !== 'triggered') CG.toast({ title: 'Alert armed', description: AL.conditionText(a) + ' · via ' + channels.join(', '), variant: 'success' });
+  });
+  D.render(); if (prefill) D.showForm(prefill);
+  return D;
+}
+AL.open = function (prefill) {
+  if (alDialog) { if (prefill) alDialog.showForm(prefill); return alDialog.hd; }
+  const D = alBuildDialog(prefill); alDialog = D;
+  const unRoute = CG.on('route', () => { if (alDialog === D) D.hd.close(); });
+  D.hd = CG.modal.open(D.el, { title: 'Alerts', description: 'Price, IV rank and strategy P&L alerts · push, email or Telegram', size: 'lg', onClose: () => { alDialog = null; unRoute(); } });
+  return D.hd;
+};
+AL.openNew = function (prefill) { return AL.open(Object.assign({ kind: 'price', asset: st.asset, op: '>=', channels: ['push'] }, prefill || {})); };
+AL.close = () => { if (alDialog && alDialog.hd) alDialog.hd.close(); };
+
+// ---- 80-shortcuts.js ----
+// ---------- keyboard shortcuts · CG.shortcuts (global dispatcher + help dialog) ----------
+const SC = (CG.shortcuts = {});
+const scMap = new Map();
+let scDialog = null;
+function scNorm(key) { return String(key || '').trim().toLowerCase().replace(/\s+/g, '').replace(/cmd|meta|⌘/g, 'ctrl').replace(/esc$/, 'escape').replace(/-/g, '+').replace(/\+\+/g, '+'); }
+function scPretty(k) { return k.split('+').map((p) => ({ ctrl: 'Ctrl', shift: 'Shift', alt: 'Alt', escape: 'Esc', arrowup: '↑', arrowdown: '↓', arrowleft: '←', arrowright: '→', enter: '↵' }[p] || (p.length === 1 ? p.toUpperCase() : p))); }
+SC.register = function (key, description, handler, opts) { const k = scNorm(key); scMap.set(k, { key: k, description: description || '', handler: typeof handler === 'function' ? handler : null, group: (opts && opts.group) || 'Workspace', owner: (opts && opts.owner) || null, always: !!(opts && opts.always) }); if (scDialog) scDialog.render(); return () => SC.unregister(key); };
+SC.unregister = (key) => { scMap.delete(scNorm(key)); if (scDialog) scDialog.render(); };
+SC.list = () => Array.from(scMap.values());
+SC.combo = function (e) { const k = (e.key || '').toLowerCase(); if (['control', 'shift', 'alt', 'meta'].includes(k)) return null; const letter = k.length === 1 && /[a-z]/.test(k); return (e.ctrlKey || e.metaKey ? 'ctrl+' : '') + (e.altKey ? 'alt+' : '') + (e.shiftKey && letter ? 'shift+' : '') + (k === ' ' ? 'space' : k); };
+const scTyping = (t) => !!(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable));
+document.addEventListener('keydown', (e) => {
+  const combo = SC.combo(e); if (!combo) return; const sc = scMap.get(combo); if (!sc) return;
+  const typing = scTyping(e.target); const modal = !!document.querySelector('.cg-overlay'); const palOpen = CG.palette && CG.palette.isOpen();
+  if (palOpen && combo !== 'ctrl+k') return; if ((typing || modal) && !sc.always) return;
+  e.preventDefault(); CG.emit('shortcut', { key: combo, event: e });
+  if (sc.handler) { try { sc.handler(e); } catch (err) { console.error('shortcut', combo, err); } }
+});
+// ---- defaults ----
+SC.register('Ctrl+K', 'Command palette', () => CG.palette && CG.palette.toggle(), { group: 'Global', always: true });
+SC.register('?', 'Keyboard shortcuts help', () => SC.open(), { group: 'Global' });
+SC.register('T', 'Toggle theme (dark / light)', () => CG.theme.toggle(), { group: 'Global' });
+SC.register('D', 'Toggle density (comfortable / compact)', () => CH.toggleDensity(), { group: 'Global' });
+SC.register('Esc', 'Close dialogs, menus and panels', () => { CG.menu.closeAll(); if (CG.palette) CG.palette.close(); if (CH.assistantOpen && CH.assistantOpen()) CH.closeAssistant(); }, { group: 'Global', always: true });
+const onAnalyseRoute = () => (CG.current.path || '') === '/analyse';
+function scCycleExpiry(dir) {
+  if (!onAnalyseRoute()) return; const AN = CG.analyse; if (AN && typeof AN.setExpiry === 'function') { const i = CG.EXPIRIES.indexOf(AN.expiry || st.expiry); return AN.setExpiry(CG.EXPIRIES[(i + dir + CG.EXPIRIES.length) % CG.EXPIRIES.length]); }
+  const btns = CG.$$('section.screen.active [data-expiry], section.screen.active .an-exp'); if (btns.length) { const cur = btns.findIndex((b) => b.classList.contains('active') || b.getAttribute('aria-selected') === 'true'); const next = btns[(Math.max(cur, 0) + dir + btns.length) % btns.length]; if (next) { next.click(); return; } }
+  const i = CG.EXPIRIES.indexOf((AN && AN.expiry) || st.expiry); const e = CG.EXPIRIES[(i + dir + CG.EXPIRIES.length) % CG.EXPIRIES.length]; st.expiry = e; if (AN) AN.expiry = e; CG.saveState(); CG.emit('expiry', e); CG.emit('analyse:expiry', e);
+}
+SC.register('J', 'Move strike cursor down', null, { group: 'Analyse workspace' });
+SC.register('K', 'Move strike cursor up', null, { group: 'Analyse workspace' });
+SC.register('B', 'Add BUY leg at the strike cursor', null, { group: 'Analyse workspace' });
+SC.register('S', 'Add SELL leg at the strike cursor', null, { group: 'Analyse workspace' });
+SC.register('E', 'Next expiry', () => scCycleExpiry(1), { group: 'Analyse workspace' });
+SC.register('Shift+E', 'Previous expiry', () => scCycleExpiry(-1), { group: 'Analyse workspace' });
+// ---- help dialog ----
+SC.open = function () {
+  if (scDialog) return scDialog.hd;
+  const el = h('<div><div class="cg-dialog-body"><table class="cgc-sc-table" data-table></table><p class="text-2xs text-muted mt-3">Shortcuts are ignored while typing in a field or when a dialog is open (except Ctrl K and Esc). Other modules can add rows with <span class="mono">CG.shortcuts.register(key, description, handler)</span>.</p></div><div class="cg-dialog-foot"><button class="btn btn-outline" data-cg-close>Close</button></div></div>');
+  const D = { el, hd: null, render() { const groups = {}; SC.list().forEach((s) => { (groups[s.group] = groups[s.group] || []).push(s); }); const order = ['Global', 'Analyse workspace'].concat(Object.keys(groups).filter((g) => g !== 'Global' && g !== 'Analyse workspace')); el.querySelector('[data-table]').innerHTML = order.filter((g) => groups[g]).map((g) => '<tr class="grp"><td colspan="2">' + esc(g) + '</td></tr>' + groups[g].map((s) => '<tr><td>' + scPretty(s.key).map((p) => '<kbd class="kbd">' + esc(p) + '</kbd>').join('') + '</td><td>' + esc(s.description) + (s.handler ? '' : '<span class="own">handled by the workspace</span>') + '</td></tr>').join('')).join(''); } };
+  D.render(); scDialog = D; const unRoute = CG.on('route', () => { if (scDialog === D) D.hd.close(); }); D.hd = CG.modal.open(el, { title: 'Keyboard shortcuts', description: 'Press ? anywhere (outside a field) to open this list', size: 'sm', onClose: () => { scDialog = null; unRoute(); } }); return D.hd;
+};
+SC.close = () => { if (scDialog && scDialog.hd) scDialog.hd.close(); };
+
+// ---- 90-portfolio-bar.js ----
+// ---------- portfolio bar · CG.chrome['portfolio-bar'] ----------
+const pbars = [];
+function pbLocal() {
+  const open = (M.strategies || []).filter((s) => s.status === 'PAPER' || s.status === 'LIVE');
+  const out = { strategies: open.length, paper: open.filter((s) => s.status === 'PAPER').length, live: open.filter((s) => s.status === 'LIVE').length, netDelta: 0, netTheta: 0, netVega: 0, netGamma: 0, margin: 0, dayPnl: 0, openPnl: 0, source: 'chrome' };
+  open.forEach((s) => {
+    const legs = (s.legs || []).filter((l) => l.status !== 'SQUARED_OFF').map((l) => ({ type: l.type, side: l.side, strike: l.strike, expiry: l.expiry, lots: l.lots, price: l.price, iv: l.iv }));
+    if (legs.length) { try { const r = CG.analyze(legs, s.asset); out.netDelta += r.greeks.delta / (r.lot || 1); out.netTheta += r.greeks.theta; out.netVega += r.greeks.vega; out.netGamma += r.greeks.gamma; out.margin += r.margin; } catch (e) { } }
+    const hist = s.pnlHistory || []; const total = s.totalPnl != null ? s.totalPnl : (s.realizedPnl || 0) + (s.unrealizedPnl || 0); out.openPnl += total; out.dayPnl += hist.length > 1 ? total - hist[hist.length - 2].pnl : total;
+  });
+  const W = M.wallet || { available: 1000, marginUsed: 0 }; out.marginUsed = W.marginUsed || out.margin; out.marginTotal = (W.available || 0) + (W.marginUsed || 0);
+  return out;
+}
+function pbData() {
+  if (CG.portfolio && typeof CG.portfolio.compute === 'function') { try { const r = CG.portfolio.compute(); if (r) { const d = pbLocal(); return Object.assign(d, r, { source: 'portfolio' }); } } catch (e) { } }
+  return pbLocal();
+}
+CH.portfolioData = pbData;
+function pbRender(el) {
+  const d = pbData(); const al = CG.alerts ? CG.alerts.counts() : { armed: 0, triggered: 0 };
+  const num = (v, dp) => (v >= 0 ? '+' : '-') + F.num(Math.abs(v), dp); const cls = (v) => (v > 0 ? 'up' : v < 0 ? 'down' : '');
+  const pct = d.marginTotal ? Math.max(0, Math.min(100, d.marginUsed / d.marginTotal * 100)) : 0;
+  el.innerHTML = '<div class="cgc-pbar" role="status" aria-label="Portfolio summary">' +
+    '<button class="si" data-act="portfolio" title="Open paper & live trades"><span class="micro">Portfolio</span><b>' + d.strategies + ' open strateg' + (d.strategies === 1 ? 'y' : 'ies') + '</b>' + (d.live ? '<span class="micro">· ' + d.live + ' live</span>' : '') + '</button>' +
+    '<div class="si" title="Σ delta × lots across open strategies"><span class="micro">Net Δ</span><b class="' + cls(d.netDelta) + '">' + num(d.netDelta, 2) + '</b></div>' +
+    '<div class="si" title="Daily time decay of all open strategies"><span class="micro">Net Θ/day</span><b class="' + cls(d.netTheta) + '">' + F.signedMoney(d.netTheta) + '</b></div>' +
+    '<div class="si opt" title="P&L per 1% change in implied volatility"><span class="micro">Net ν</span><b class="' + cls(d.netVega) + '">' + F.signedMoney(d.netVega) + '</b></div>' +
+    '<button class="si" data-act="wallet" title="Margin used of available balance · click for wallet"><span class="micro">Margin used</span><b>' + F.money(d.marginUsed, 0) + ' / ' + F.money(d.marginTotal, 0) + '</b><span class="mbar"><b class="' + (pct > 70 ? 'warn' : '') + '" style="width:' + pct.toFixed(0) + '%"></b></span></button>' +
+    '<div class="si" title="Change in open P&L since yesterday"><span class="micro">Day P&L</span><b class="' + cls(d.dayPnl) + '">' + F.signedMoney(d.dayPnl) + '</b></div>' +
+    '<button class="si" data-act="alerts" title="Open the alerts center"><span class="micro">Alerts</span><b>' + al.armed + ' armed</b>' + (al.triggered ? '<span class="badge badge-warning">' + al.triggered + ' fired</span>' : '') + '</button>' +
+    '<div class="end"><button class="si" data-act="basis" title="P&L price basis · click to change"><span class="micro">Basis</span><b>' + (st.pnlBasis === 'bid_ask' ? 'bid/ask' : 'mark') + '</b></button><button class="si" data-act="ccy" title="Display currency · click to change"><span class="micro">CCY</span><b>' + st.currency + '</b></button></div></div>';
+}
+function pbAction(act) {
+  if (act === 'alerts') return CG.alerts && CG.alerts.open();
+  if (act === 'basis') return CH.openSettings('pnl');
+  if (act === 'ccy') return CH.openSettings('currency');
+  if (act === 'wallet') { const b = CG.$('.cgc-header [data-act="wallet"]'); return b ? CH.openWalletPopover(b) : CH.openSettings('api'); }
+  if (act === 'portfolio') { if ((CG.current.path || '') !== '/analyse') CG.navigate('/analyse'); CG.emit('analyse:set-tab', 'paper'); }
+}
+CH['portfolio-bar'] = function (el) { if (!pbars.includes(el)) { pbars.push(el); el.addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b && el.contains(b)) pbAction(b.dataset.act); }); } pbRender(el); };
+CH.refreshPortfolioBar = () => { for (let i = pbars.length - 1; i >= 0; i--) { if (!pbars[i].isConnected) pbars.splice(i, 1); else pbRender(pbars[i]); } };
+['tick', 'portfolio-changed', 'analyse:strategies-changed', 'strategies-changed', 'alerts-changed', 'alert-triggered', 'pnl-basis-changed', 'currency-settings-changed', 'currency', 'lot-sizes-changed', 'broker-balance-changed', 'density'].forEach((ev) => CG.on(ev, CH.refreshPortfolioBar));
+// fallback: if the analyse section has no placeholder, dock a fixed bar at the bottom of the workspace
+CG.on('route', (cur) => {
+  if (!cur || cur.path !== '/analyse') return;
+  const sec = CG.$('section.screen[data-route="/analyse"]'); if (!sec) return;
+  if (!sec.querySelector('[data-cg="portfolio-bar"]')) { const d = h('<div data-cg="portfolio-bar" class="cgc-pbar-fixed"></div>'); sec.appendChild(d); d.dataset.cgDone = '1'; CH['portfolio-bar'](d, sec); document.documentElement.classList.add('cgc-pbar-fixed-on'); }
+});
+
+})();
+</script>

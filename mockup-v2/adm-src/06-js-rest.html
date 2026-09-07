@@ -1,0 +1,166 @@
+
+  // =====================================================================
+  // /admin/banners
+  // =====================================================================
+  const GRADS = ['215 50% 55%/225 45% 45%', '142 71% 35%/168 100% 34%', '38 92% 50%/0 72% 51%', '262 60% 55%/300 50% 45%', '190 80% 40%/215 50% 55%'];
+  A.bannerBg = (img) => { if (!img) return ''; if (img.startsWith('gradient:')) { const [a, b] = img.slice(9).split('/'); return 'linear-gradient(135deg, hsl(' + a + '), hsl(' + b + '))'; } return 'url("' + img + '")'; };
+  CG.register('/admin/banners', {
+    init(root) {
+      A.hydrateIcons(root);
+      const dlg = el(root, 'dialog'), form = dlg.querySelector('form'), fileInp = form.querySelector('[name="image"]'), preview = el(root, 'preview');
+      let editing = null, handle = null, image = null, gradIdx = 0;
+      const setPreview = () => { if (image) { preview.style.backgroundImage = A.bannerBg(image); preview.textContent = ''; } else { preview.style.backgroundImage = ''; preview.innerHTML = A.icon('image', 20) + '<span class="mt-1">No image</span>'; } };
+      const open = (b) => {
+        editing = b || null; image = b ? b.image : null; form.reset();
+        A.formSet(form, 'title', b ? b.title : ''); A.formSet(form, 'description', b ? b.description : ''); A.formSet(form, 'linkUrl', b ? b.linkUrl : ''); A.formSet(form, 'startsAt', b ? b.startsAt : ''); A.formSet(form, 'endsAt', b ? b.endsAt : ''); A.formSet(form, 'frequency', b ? b.frequency : 'once_per_day');
+        el(root, 'image-hint').textContent = b ? '(leave empty to keep current)' : '*'; A.setSwitch(el(root, 'active'), b ? b.isActive : true); setPreview();
+        el(root, 'submit').textContent = b ? 'Save Changes' : 'Create Banner';
+        handle = CG.modal.open(dlg, { title: b ? 'Edit Banner' : 'New Banner', description: b ? 'Editing "' + b.title + '"' : 'Popup banners are shown to logged-in users based on the frequency rule' });
+        setTimeout(() => form.querySelector('[name="title"]').focus(), 50);
+      };
+      fileInp.addEventListener('change', () => {
+        const f = fileInp.files && fileInp.files[0]; if (!f) return;
+        if (!/^image\//.test(f.type)) { CG.toast({ title: 'Invalid image', description: 'Only image files are allowed', variant: 'destructive' }); fileInp.value = ''; return; }
+        if (f.size > 5 * 1024 * 1024) { CG.toast({ title: 'Invalid image', description: 'Image must be 5 MB or smaller', variant: 'destructive' }); fileInp.value = ''; return; }
+        const rd = new FileReader(); rd.onload = () => { image = String(rd.result); setPreview(); }; rd.onerror = () => CG.toast({ title: 'Invalid image', description: 'Could not read the file', variant: 'destructive' }); rd.readAsDataURL(f);
+      });
+      CG.delegate(form, 'click', '[data-act="use-gradient"]', () => { image = 'gradient:' + GRADS[gradIdx++ % GRADS.length]; fileInp.value = ''; setPreview(); });
+      form.addEventListener('submit', (e) => {
+        e.preventDefault(); const title = A.formVal(form, 'title').trim();
+        if (!title) { A.validation('Title is required'); form.querySelector('[name="title"]').focus(); return; }
+        if (!editing && !image) { A.validation('Image is required'); fileInp.focus(); return; }
+        const link = A.formVal(form, 'linkUrl').trim(); if (link && !/^https?:\/\//i.test(link)) { A.validation('Link URL must start with http:// or https://'); return; }
+        const s = A.formVal(form, 'startsAt'), en = A.formVal(form, 'endsAt'); if (s && en && new Date(en) < new Date(s)) { A.validation('Ends At must be after Starts At'); return; }
+        const data = { title, description: A.formVal(form, 'description').trim(), linkUrl: link, startsAt: s || null, endsAt: en || null, frequency: A.formVal(form, 'frequency'), isActive: A.isOn(el(root, 'active')), image: image || (editing && editing.image), type: 'popup' };
+        const ok = A.save(() => { if (editing) Object.assign(editing, data); else M.banners.unshift(Object.assign({ id: A.uid('b'), createdAt: CG.NOW.toISOString().slice(0, 10) }, data)); CG.emit('banners:changed', M.banners); }, editing ? 'Updated' : 'Created');
+        if (ok) { handle && handle.close(); render(); }
+      });
+      CG.delegate(form, 'click', '[data-act="cancel"]', () => handle && handle.close());
+      el(root, 'active').addEventListener('click', (e) => A.setSwitch(e.currentTarget, !A.isOn(e.currentTarget)));
+      CG.delegate(root, 'click', '[data-act="new"]', () => open(null));
+      CG.delegate(root, 'click', '[data-act="edit"]', (e, b) => open(M.banners.find((x) => x.id === b.dataset.id)));
+      CG.delegate(root, 'click', '[data-act="toggle"]', (e, b) => { const x = M.banners.find((y) => y.id === b.dataset.id); if (!x) return; x.isActive = !x.isActive; A.save(() => CG.emit('banners:changed', M.banners), 'Updated'); render(); });
+      CG.delegate(root, 'click', '[data-act="delete"]', async (e, b) => { const x = M.banners.find((y) => y.id === b.dataset.id); if (!x) return; const ok = await CG.modal.confirm({ title: 'Delete banner?', description: 'This permanently removes the banner. This action cannot be undone.', confirmText: 'Delete', variant: 'destructive' }); if (!ok) return; M.banners.splice(M.banners.indexOf(x), 1); CG.emit('banners:changed', M.banners); CG.toast({ title: 'Deleted', description: '"' + x.title + '" removed', variant: 'success' }); render(); });
+      const render = () => {
+        el(root, 'count').textContent = 'All Banners (' + M.banners.length + ')';
+        const t = el(root, 'table');
+        if (!M.banners.length) { t.innerHTML = A.empty('image', 'No Banners', 'Create your first banner', 'Create Banner'); return; }
+        t.innerHTML = '<table class="table"><thead><tr><th>Image</th><th>Title</th><th>Type</th><th>Frequency</th><th>Schedule</th><th>Active</th><th class="r">Actions</th></tr></thead><tbody>' + M.banners.map((b) => { const live = b.isActive && (!b.startsAt || new Date(b.startsAt) <= CG.NOW) && (!b.endsAt || new Date(b.endsAt) >= CG.NOW); return '<tr><td><div class="adm-thumb" style="background-image:' + A.bannerBg(b.image) + '" role="img" aria-label="' + esc(b.title) + '"></div></td><td><div class="font-medium">' + esc(b.title) + '</div><div class="text-xs text-muted" style="max-width:300px">' + esc(b.description || '') + '</div>' + (b.linkUrl ? '<div class="text-2xs text-primary truncate" style="max-width:300px">' + esc(b.linkUrl) + '</div>' : '') + '</td><td><span class="badge badge-secondary">' + esc(b.type || 'popup') + '</span></td><td><span class="badge badge-outline mono">' + esc(b.frequency) + '</span></td><td class="text-xs">' + (b.startsAt ? A.date(b.startsAt) : '<span class="text-muted">—</span>') + ' <span class="text-muted">→</span> ' + (b.endsAt ? A.date(b.endsAt) : '<span class="text-muted">—</span>') + '<div class="text-2xs ' + (live ? 'text-profit' : 'text-muted') + '">' + (live ? 'Showing now' : b.isActive ? 'Scheduled / ended' : 'Hidden') + '</div></td><td>' + A.switchHtml(b.isActive, 'data-act="toggle" data-id="' + b.id + '" aria-label="Toggle banner active"') + '</td><td><div class="adm-actions"><button class="adm-icon-btn" title="Edit banner" data-act="edit" data-id="' + b.id + '">' + A.icon('pencil') + '</button><button class="adm-icon-btn danger" title="Delete banner" data-act="delete" data-id="' + b.id + '">' + A.icon('trash') + '</button></div></td></tr>'; }).join('') + '</tbody></table>';
+      };
+      this._render = render;
+    },
+    show() { this._render && this._render(); }
+  });
+
+  // =====================================================================
+  // /admin/emails  (Compose + History)
+  // =====================================================================
+  A.campaignRecipients = (c) => {
+    if (c.recipientRows) return c.recipientRows;
+    const r = CG.rng(c.id.length * 131 + c.recipients * 17); const pool = M.users.slice(); const rows = [];
+    for (let i = 0; i < c.recipients; i++) { const u = pool[i % pool.length]; const failed = i >= c.recipients - (c.failed || 0); rows.push({ name: u.name, email: u.email, status: failed ? 'failed' : 'delivered', sentAt: new Date(new Date(c.sentAt).getTime() + i * 2600 + Math.floor(r() * 900)).toISOString(), error: failed ? ['Mailbox unavailable (550)', 'Recipient address rejected', 'Connection timed out'][i % 3] : '' }); }
+    c.recipientRows = rows; return rows;
+  };
+  A.fill = (tpl, u) => String(tpl || '').replace(/\{\{\s*(name|email|plan|expiry)\s*\}\}/g, (m, k) => (k === 'name' ? u.name : k === 'email' ? u.email : k === 'plan' ? (u.plan || 'Free Plan') : u.endsAt ? F.date(u.endsAt) : '—'));
+  CG.register('/admin/emails', {
+    init(root) {
+      A.hydrateIcons(root);
+      const S = { tab: 'compose', q: '', segment: 'all', selected: new Set(), lastFocus: null, campaign: null, page: 1 };
+      A.bindTabs(root, (t) => { S.tab = t; render(); });
+      const subj = el(root, 'subject'), msg = el(root, 'message'); const sendBtn = root.querySelector('[data-act="send"]');
+      [subj, msg].forEach((f) => { f.addEventListener('focus', () => (S.lastFocus = f)); f.addEventListener('input', renderPreview); });
+      const segmentUsers = () => M.users.filter((u) => S.segment === 'all' || (S.segment === 'paid' && u.status === 'active' && !/free/i.test(u.plan)) || (S.segment === 'free' && u.status === 'free') || (S.segment === 'expired' && u.status === 'expired'));
+      const visibleUsers = () => segmentUsers().filter((u) => !S.q || u.name.toLowerCase().includes(S.q) || u.email.toLowerCase().includes(S.q));
+      const renderRecipients = () => {
+        const list = visibleUsers();
+        el(root, 'rc-list').innerHTML = list.length ? list.map((u) => '<label><input type="checkbox" class="checkbox" data-uid="' + u.id + '"' + (S.selected.has(u.id) ? ' checked' : '') + '><span class="flex-1 truncate"><span class="block truncate">' + esc(u.name) + '</span><span class="text-xs text-muted">' + esc(u.email) + '</span></span><span class="badge ' + A.statusBadge(u.status) + '">' + A.statusLabel(u.status) + '</span></label>').join('') : '<div class="empty">No users match the search.</div>';
+        root.querySelector('[data-act="rc-all"]').textContent = 'Select all (' + list.length + ')';
+        el(root, 'sel-badge').textContent = S.selected.size + ' selected';
+        renderPreview();
+      };
+      function renderPreview() {
+        const first = Array.from(S.selected).map((id) => M.users.find((u) => u.id === id)).filter(Boolean)[0];
+        const hl = (s) => esc(s).replace(/\{\{\s*(name|email|plan|expiry)\s*\}\}/g, '<mark>$&</mark>');
+        const p = el(root, 'preview');
+        if (!first) p.innerHTML = '<div class="text-xs text-muted uppercase tracking-wide font-semibold">Preview</div><div class="adm-preview-subject">' + (subj.value ? hl(subj.value) : '<span class="text-muted">(no subject)</span>') + '</div><div class="adm-preview-body">' + (msg.value ? hl(msg.value) : '<span class="text-muted">Select a recipient to preview the filled placeholders.</span>') + '</div>';
+        else p.innerHTML = '<div class="text-xs text-muted uppercase tracking-wide font-semibold">Preview for ' + esc(first.name) + '</div><div class="text-2xs text-muted">To: ' + esc(first.email) + '</div><div class="adm-preview-subject">' + (subj.value ? esc(A.fill(subj.value, first)) : '<span class="text-muted">(no subject)</span>') + '</div><div class="adm-preview-body">' + (msg.value ? esc(A.fill(msg.value, first)) : '<span class="text-muted">(empty message)</span>') + '</div>';
+        sendBtn.disabled = !(S.selected.size && subj.value.trim() && msg.value.trim());
+        sendBtn.title = sendBtn.disabled ? 'Select recipients and fill in subject and message' : 'Send to ' + S.selected.size + ' user(s)';
+      }
+      el(root, 'rc-search').addEventListener('input', (e) => { S.q = e.target.value.trim().toLowerCase(); renderRecipients(); });
+      el(root, 'rc-segment').addEventListener('change', (e) => { S.segment = e.target.value; renderRecipients(); });
+      CG.delegate(root, 'change', '[data-uid]', (e, c) => { if (c.checked) S.selected.add(c.dataset.uid); else S.selected.delete(c.dataset.uid); el(root, 'sel-badge').textContent = S.selected.size + ' selected'; renderPreview(); });
+      CG.delegate(root, 'click', '[data-act="rc-all"]', () => { visibleUsers().forEach((u) => S.selected.add(u.id)); renderRecipients(); });
+      CG.delegate(root, 'click', '[data-act="rc-clear"]', () => { S.selected.clear(); renderRecipients(); });
+      CG.delegate(root, 'click', '[data-ins]', (e, b) => { const f = S.lastFocus || msg; const v = b.dataset.ins; const s = f.selectionStart != null ? f.selectionStart : f.value.length, en = f.selectionEnd != null ? f.selectionEnd : s; f.value = f.value.slice(0, s) + v + f.value.slice(en); f.focus(); f.setSelectionRange(s + v.length, s + v.length); renderPreview(); });
+      CG.delegate(root, 'click', '[data-act="send"]', async () => {
+        const n = S.selected.size; if (!n) return;
+        const ok = await CG.modal.confirm({ title: 'Send to ' + n + ' user(s)?', description: n + ' selected user(s). Placeholders are filled per recipient.', confirmText: 'Confirm' }); if (!ok) return;
+        A.busy(sendBtn, '<span class="spinner" style="width:14px;height:14px"></span> Sending...', () => {
+          try {
+            const ids = Array.from(S.selected); const failed = ids.length > 6 ? Math.max(0, Math.round(ids.length * 0.04)) : 0;
+            const c = { id: A.uid('cmp'), subject: subj.value.trim(), message: msg.value.trim(), sentAt: new Date(CG.NOW.getTime() + (Date.now() % 3600000)).toISOString(), sentBy: M.user.name, recipients: ids.length, delivered: ids.length - failed, failed, segment: el(root, 'rc-segment').selectedOptions[0].textContent };
+            c.recipientRows = ids.map((id, i) => { const u = M.users.find((x) => x.id === id); const bad = i >= ids.length - failed; return { name: u.name, email: u.email, status: bad ? 'failed' : 'delivered', sentAt: new Date(new Date(c.sentAt).getTime() + i * 1800).toISOString(), error: bad ? 'Mailbox unavailable (550)' : '' }; });
+            M.campaigns.unshift(c); CG.emit('campaigns:changed', M.campaigns);
+            CG.toast({ title: 'Emails sent', description: c.delivered + ' delivered' + (failed ? ', ' + failed + ' failed' : '') + ' · ' + c.subject, variant: 'success' });
+            S.selected.clear(); subj.value = ''; msg.value = ''; S.tab = 'history'; S.campaign = null; render();
+          } catch (err) { CG.toast({ title: 'Send failed', description: 'Please try again.', variant: 'destructive' }); }
+        }, 700);
+      });
+      // History
+      const renderHistory = () => {
+        el(root, 'hist-list').hidden = !!S.campaign; el(root, 'hist-detail').hidden = !S.campaign;
+        if (S.campaign) return renderDetail();
+        const t = el(root, 'hist-table');
+        if (!M.campaigns.length) { t.innerHTML = '<div class="empty"><div class="adm-empty-icon">' + A.icon('inbox', 22) + '</div><b>No campaigns sent yet.</b>Compose a message and send it to a segment of users</div>'; return; }
+        t.innerHTML = '<table class="table"><thead><tr><th>Subject</th><th>Sent at</th><th class="r">Recipients</th><th class="r">Delivered</th><th class="r">Failed</th><th>Sent by</th></tr></thead><tbody>' + M.campaigns.map((c) => '<tr class="adm-row-click" data-open="' + c.id + '" tabindex="0"><td><div class="font-medium">' + esc(c.subject) + '</div><div class="text-xs text-muted">' + esc(c.segment || '') + '</div></td><td class="nowrap text-xs">' + A.dateTime(c.sentAt) + '</td><td class="r mono">' + c.recipients + '</td><td class="r mono text-profit">' + c.delivered + '</td><td class="r mono ' + (c.failed ? 'text-loss' : 'text-muted') + '">' + c.failed + '</td><td>' + esc(c.sentBy) + '</td></tr>').join('') + '</tbody></table>';
+      };
+      const renderDetail = () => {
+        const c = S.campaign; const rows = A.campaignRecipients(c); const pg = A.paginate(rows, S.page, 10); S.page = pg.page; const pct = c.recipients ? Math.round(c.delivered / c.recipients * 100) : 0;
+        el(root, 'det-subject').textContent = c.subject; el(root, 'det-meta').innerHTML = 'Sent ' + esc(A.dateTime(c.sentAt)) + ' · By ' + esc(c.sentBy) + (c.segment ? ' · ' + esc(c.segment) : '');
+        el(root, 'det-tiles').innerHTML = '<div class="stat"><div class="stat-label">Recipients</div><div class="stat-value">' + c.recipients + '</div></div><div class="stat"><div class="stat-label">Delivered</div><div class="stat-value text-profit">' + c.delivered + '</div></div><div class="stat"><div class="stat-label">Failed</div><div class="stat-value ' + (c.failed ? 'text-loss' : '') + '">' + c.failed + '</div></div><div class="stat"><div class="stat-label">Success</div><div class="stat-value">' + pct + '%</div></div>';
+        el(root, 'det-table').innerHTML = rows.length ? '<table class="table"><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Sent at</th><th>Error</th></tr></thead><tbody>' + pg.rows.map((r) => '<tr><td class="font-medium">' + esc(r.name) + '</td><td class="text-xs">' + esc(r.email) + '</td><td><span class="badge ' + A.statusBadge(r.status) + '">' + A.statusLabel(r.status) + '</span></td><td class="text-xs nowrap">' + A.dateTime(r.sentAt) + '</td><td class="text-xs ' + (r.error ? 'text-loss' : 'text-muted') + '">' + (esc(r.error) || '—') + '</td></tr>').join('') + '</tbody></table>' : '<div class="empty">No recipients recorded.</div>';
+        el(root, 'det-pager').innerHTML = rows.length ? A.pager(pg.page, pg.pages, pg.total + ' recipients', A.icon('chevLeft', 14) + ' Prev', 'Next ' + A.icon('chevRight', 14)) : '';
+      };
+      CG.delegate(root, 'click', '[data-open]', (e, tr) => { S.campaign = M.campaigns.find((c) => c.id === tr.dataset.open); S.page = 1; renderHistory(); });
+      CG.delegate(root, 'keydown', '[data-open]', (e, tr) => { if (e.key === 'Enter') tr.click(); });
+      CG.delegate(root, 'click', '[data-act="hist-back"]', () => { S.campaign = null; renderHistory(); });
+      CG.delegate(el(root, 'det-pager'), 'click', '[data-act="prev"]', () => { S.page--; renderDetail(); });
+      CG.delegate(el(root, 'det-pager'), 'click', '[data-act="next"]', () => { S.page++; renderDetail(); });
+      const render = () => { A.setTab(root, S.tab); if (S.tab === 'compose') renderRecipients(); else renderHistory(); };
+      this._render = render; this._setTab = (t) => { S.tab = t; };
+    },
+    show(root, params, query) { if (query && (query.tab === 'history' || query.tab === 'compose') && this._setTab) this._setTab(query.tab); this._render && this._render(); }
+  });
+
+  // =====================================================================
+  // /admin/users  (User Management)
+  // =====================================================================
+  CG.register('/admin/users', {
+    init(root) {
+      A.hydrateIcons(root);
+      const S = { q: '', page: 1 };
+      el(root, 'search').addEventListener('input', (e) => { S.q = e.target.value.trim().toLowerCase(); S.page = 1; render(); });
+      const filtered = () => M.users.filter((u) => !S.q || u.name.toLowerCase().includes(S.q) || u.email.toLowerCase().includes(S.q));
+      const render = () => {
+        const list = filtered(); const pg = A.paginate(list, S.page, 10); S.page = pg.page;
+        el(root, 'count').textContent = M.users.length + ' users' + (S.q ? ' · ' + list.length + ' match' : '');
+        const t = el(root, 'table');
+        if (!list.length) { t.innerHTML = '<div class="empty"><b>No users found.</b>Try another name or email</div>'; el(root, 'pager').innerHTML = ''; return; }
+        t.innerHTML = '<table class="table"><thead><tr><th>Name</th><th>Email</th><th>Plan</th><th>Status</th><th>Subscribed</th><th>Ends</th><th>Joined</th><th>Referral code</th><th class="r">Commission %</th><th class="r">Referrals</th></tr></thead><tbody>' + pg.rows.map((u) => '<tr class="adm-row-click" data-open="' + u.id + '" tabindex="0" title="View user details"><td class="font-medium nowrap">' + esc(u.name) + (u.role === 'admin' ? ' <span class="badge badge-info">admin</span>' : '') + '</td><td class="text-xs">' + esc(u.email) + '</td><td><span class="badge ' + A.planBadge(u.plan) + '">' + esc(u.plan) + '</span></td><td><span class="badge ' + A.statusBadge(u.status) + '">' + A.statusLabel(u.status) + '</span>' + (u.activated ? '' : '<div class="text-2xs text-loss">deactivated</div>') + '</td><td class="text-xs nowrap">' + A.date(u.subscribedAt) + '</td><td class="text-xs nowrap">' + A.date(u.endsAt) + '</td><td class="text-xs nowrap">' + A.date(u.joinedAt) + '</td><td class="mono text-xs">' + esc(u.referralCode) + '</td><td class="r mono">' + u.commissionPct + '%</td><td class="r mono">' + u.referrals + '</td></tr>').join('') + '</tbody></table>';
+        el(root, 'pager').innerHTML = A.pager(pg.page, pg.pages, pg.total + ' users', A.icon('chevLeft', 14) + ' Prev', 'Next ' + A.icon('chevRight', 14));
+      };
+      CG.delegate(el(root, 'pager'), 'click', '[data-act="prev"]', () => { S.page--; render(); });
+      CG.delegate(el(root, 'pager'), 'click', '[data-act="next"]', () => { S.page++; render(); });
+      // detail dialog (row click) + lot size settings (inferred)
+      const dlg = el(root, 'detail-dialog'), form = dlg.querySelector('form'); let cur = null, handle = null;
+      CG.delegate(root, 'click', '[data-open]', (e, tr) => { cur = M.users.find((u) => u.id === tr.dataset.open); if (!cur) return; const kv = [['Name', cur.name], ['Email', cur.email], ['Mobile', cur.mobile], ['Role', cur.role], ['Plan', cur.plan + (cur.interval && cur.status !== 'free' ? ' · ' + cur.interval : '')], ['Status', A.statusLabel(cur.status) + (cur.activated ? '' : ' · deactivated')], ['Subscribed', A.date(cur.subscribedAt)], ['Ends', A.date(cur.endsAt)], ['Joined', A.date(cur.joinedAt)], ['Last login', A.date(cur.lastLoginAt)], ['Referral code', cur.referralCode], ['Commission %', cur.commissionPct + '%'], ['Referrals', cur.referrals], ['Amount paid', F.inr(cur.amountPaid)], ['Feature limits', (cur.featureLimits.paper_trading || 'plan default') + ' paper · ' + (cur.featureLimits.live_trading || 'plan default') + ' live']]; el(root, 'detail-kv').innerHTML = kv.map(([k, v]) => '<div><span>' + esc(k) + '</span><b class="' + (/code/i.test(k) ? 'mono' : '') + '">' + esc(v) + '</b></div>').join(''); ['BTC', 'ETH', 'XAUT'].forEach((k) => A.formSet(form, k, cur.lotSizes[k])); handle = CG.modal.open(dlg, { title: cur.name, description: cur.email + ' · ' + cur.plan, size: 'lg' }); });
+      CG.delegate(root, 'keydown', '[data-open]', (e, tr) => { if (e.key === 'Enter') tr.click(); });
+      form.addEventListener('submit', (e) => { e.preventDefault(); const vals = {}; for (const k of ['BTC', 'ETH', 'XAUT']) { const v = +A.formVal(form, k); if (!(v > 0)) { A.validation(k + ' lot size must be greater than 0'); return; } vals[k] = v; } const ok = A.save(() => { cur.lotSizes = vals; if (cur.id === M.user.id) { CG.state.lotSizes = Object.assign({}, vals); CG.saveState(); } CG.emit('users:changed', M.users); }, 'Updated'); if (ok) handle && handle.close(); });
+      CG.delegate(form, 'click', '[data-act="close"]', () => handle && handle.close());
+      this._render = render;
+    },
+    show() { this._render && this._render(); }
+  });
+})();
+</script>

@@ -1,0 +1,1297 @@
+<!-- ===== Admin console v2 (40-admin): /admin, /admin/users, /admin/subscriptions, /admin/menu-pricing, /admin/coupons, /admin/user-subscriptions, /admin/banners, /admin/emails ===== -->
+<section class="screen" data-route="/admin" data-redirect="/admin/users" data-auth="admin"></section>
+
+<!-- ---------- /admin/users ---------- -->
+<section class="screen adm" data-route="/admin/users" data-title="User Management" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div class="adm-layout">
+    <div data-cg="admin-nav"></div>
+    <div class="adm-page">
+      <div class="adm-head"><div><h1 class="adm-title">User Management</h1><p class="adm-sub" data-el="count">0 users</p></div><button class="btn btn-primary" data-act="invite"><i data-icon="plus"></i> Invite user</button></div>
+      <div class="adm-filters" data-el="filters">
+        <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="search" placeholder="Search by name or email" aria-label="Search by name or email"></div>
+        <select class="select select-sm" data-el="plan" aria-label="Plan"><option value="">All plans</option></select>
+        <select class="select select-sm" data-el="status" aria-label="Status"><option value="">All statuses</option><option value="active">Active</option><option value="expired">Expired</option><option value="cancelled">Cancelled</option><option value="free">Free</option><option value="deactivated">Deactivated</option></select>
+        <div class="adm-tools" data-el="tools"></div>
+      </div>
+      <div class="card"><div class="adm-table-wrap" data-el="table"></div><div class="adm-pager" data-el="pager"></div></div>
+    </div>
+  </div>
+  <div class="adm-bulkbar" data-el="bulkbar" hidden></div>
+  <!-- user detail drawer -->
+  <div class="adm-drawer-wrap" data-el="drawer" hidden>
+    <div class="adm-drawer-scrim" data-act="drawer-close"></div>
+    <aside class="adm-drawer" role="dialog" aria-modal="true" aria-label="User details">
+      <div class="adm-drawer-head" data-el="drawer-head"></div>
+      <div class="tabs-line adm-drawer-tabs" data-el="drawer-tabs" role="tablist"></div>
+      <div class="adm-drawer-body" data-el="drawer-body"></div>
+    </aside>
+  </div>
+</section>
+
+<!-- ---------- /admin/subscriptions ---------- -->
+<section class="screen adm" data-route="/admin/subscriptions" data-title="Subscription Plans" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div class="adm-layout">
+    <div data-cg="admin-nav"></div>
+    <div class="adm-page">
+      <div class="adm-head"><div><h1 class="adm-title">Subscription Plans</h1><p class="adm-sub">Manage subscription tiers and pricing</p></div><button class="btn btn-primary" data-act="new"><i data-icon="plus"></i> New Plan</button></div>
+      <div class="adm-filters" data-el="filters">
+        <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="q" placeholder="Search plans..." aria-label="Search plans"></div>
+        <select class="select select-sm" data-el="status" aria-label="Status"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
+        <div class="adm-tools" data-el="tools"></div>
+      </div>
+      <div class="card"><div class="adm-table-wrap" data-el="table"></div><div class="adm-pager" data-el="pager"></div></div>
+    </div>
+  </div>
+  <div class="adm-bulkbar" data-el="bulkbar" hidden></div>
+  <div hidden data-el="dialog">
+    <form data-form="plan" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><label class="label" for="adm-plan-name">Plan Name *</label><input class="input" id="adm-plan-name" name="name" placeholder="e.g. Basic Plan"></div>
+        <div class="field"><label class="label" for="adm-plan-desc">Description</label><textarea class="textarea" id="adm-plan-desc" name="description" style="min-height:64px" placeholder="Short description shown on the plan card"></textarea></div>
+        <div class="field">
+          <label class="label" for="adm-plan-feature">Features</label>
+          <div class="flex gap-2"><input class="input" id="adm-plan-feature" data-el="feature-input" placeholder="Add a feature"><button type="button" class="btn btn-secondary" data-act="add-feature">Add</button></div>
+          <div class="adm-chips mt-2" data-el="features"></div>
+          <div class="hint">Type a feature and press <span class="kbd">Enter</span> to add it</div>
+        </div>
+        <div class="label mt-2">Billing Intervals</div>
+        <div class="adm-intervals" data-el="intervals"></div>
+        <div class="field mt-4"><label class="label">Menu Items</label><div class="adm-checklist" data-el="menu-items"></div><div class="hint" data-el="menu-count"></div></div>
+        <div class="adm-switch-row"><div><div class="font-medium text-sm">Active</div><div class="hint m-0">Plan visible to users</div></div><button type="button" class="switch on" role="switch" aria-checked="true" aria-label="Active" data-el="active"></button></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Create</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ---------- /admin/menu-pricing ---------- -->
+<section class="screen adm" data-route="/admin/menu-pricing" data-title="Menu Pricing Master" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div class="adm-layout">
+    <div data-cg="admin-nav"></div>
+    <div class="adm-page">
+      <div class="adm-head"><div><h1 class="adm-title">Menu Pricing Master</h1><p class="adm-sub">Manage menu items linked to subscription plans</p></div><button class="btn btn-primary" data-act="new"><i data-icon="plus"></i> New Item</button></div>
+      <div class="adm-filters" data-el="filters">
+        <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="q" placeholder="Search menu items..." aria-label="Search menu items"></div>
+        <select class="select select-sm" data-el="category" aria-label="Category"><option value="">All categories</option></select>
+        <select class="select select-sm" data-el="status" aria-label="Status"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
+        <div class="adm-tools" data-el="tools"></div>
+      </div>
+      <div class="card"><div class="adm-table-wrap" data-el="table"></div><div class="adm-pager" data-el="pager"></div></div>
+    </div>
+  </div>
+  <div class="adm-bulkbar" data-el="bulkbar" hidden></div>
+  <div hidden data-el="dialog">
+    <form data-form="menu" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><label class="label" for="adm-menu-name">Display Name *</label><input class="input" id="adm-menu-name" name="displayName" placeholder="e.g. Reports Export"></div>
+        <div class="field"><label class="label" for="adm-menu-cat">Category</label><input class="input" id="adm-menu-cat" name="category" placeholder="e.g. Trading, Analytics, Data"></div>
+        <div class="field"><label class="label" for="adm-menu-price">Price (₹)</label><input class="input mono" id="adm-menu-price" name="price" type="number" min="0" step="1" value="0"></div>
+        <div class="adm-switch-row"><div><div class="font-medium text-sm">Active</div><div class="hint m-0">Item can be linked to plans</div></div><button type="button" class="switch on" role="switch" aria-checked="true" aria-label="Active" data-el="active"></button></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Create</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ---------- /admin/coupons ---------- -->
+<section class="screen adm" data-route="/admin/coupons" data-title="Coupon Code Master" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div class="adm-layout">
+    <div data-cg="admin-nav"></div>
+    <div class="adm-page">
+      <div class="adm-head"><div><h1 class="adm-title">Coupon Code Master</h1><p class="adm-sub">Manage discount coupons</p></div><button class="btn btn-primary" data-act="new"><i data-icon="plus"></i> New Coupon</button></div>
+      <div class="adm-filters" data-el="filters">
+        <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="q" placeholder="Search code or description..." aria-label="Search coupons"></div>
+        <select class="select select-sm" data-el="type" aria-label="Type"><option value="">All types</option><option value="public_all_listed">Public</option><option value="private_community_listed">Community</option></select>
+        <select class="select select-sm" data-el="status" aria-label="Status"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option><option value="expired">Expired</option></select>
+        <div class="adm-tools" data-el="tools"></div>
+      </div>
+      <div class="card"><div class="adm-table-wrap" data-el="table"></div><div class="adm-pager" data-el="pager"></div></div>
+    </div>
+  </div>
+  <div class="adm-bulkbar" data-el="bulkbar" hidden></div>
+  <div hidden data-el="dialog">
+    <form data-form="coupon" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="adm-form-grid">
+          <div class="field"><label class="label" for="adm-cp-code">Code *</label><input class="input mono uppercase" id="adm-cp-code" name="code" placeholder="BASIC20"></div>
+          <div class="field"><label class="label" for="adm-cp-scope">Coupon Type</label><select class="select" id="adm-cp-scope" name="scope"><option value="public_all_listed">Public (All listed)</option><option value="private_community_listed">Community (Assigned to specific users &amp; their referrals)</option></select></div>
+        </div>
+        <div class="field adm-assign" data-el="assign" hidden>
+          <div class="flex items-center justify-between gap-2 flex-wrap mb-2">
+            <label class="label m-0">Assign to Users</label>
+            <div class="flex gap-1"><button type="button" class="btn btn-outline btn-xs" data-act="assign-all">Select All</button><button type="button" class="btn btn-outline btn-xs" data-act="assign-none">Deselect All</button><button type="button" class="btn btn-outline btn-xs" title="Invert selection" data-act="assign-invert">↔ Invert</button></div>
+          </div>
+          <div class="adm-search mb-2"><i data-icon="search"></i><input class="input" data-el="assign-search" placeholder="Search users..." aria-label="Search users"></div>
+          <div class="adm-checklist" data-el="assign-list"></div>
+          <div class="hint" data-el="assign-count">0 of 0 users selected</div>
+        </div>
+        <div class="field"><label class="label" for="adm-cp-desc">Description</label><input class="input" id="adm-cp-desc" name="description" placeholder="Shown to users at checkout"></div>
+        <div class="adm-form-grid">
+          <div class="field"><label class="label" for="adm-cp-dtype">Discount Type</label><select class="select" id="adm-cp-dtype" name="discountType"><option value="percent">Percent</option><option value="fixed">Fixed</option></select></div>
+          <div class="field"><label class="label" for="adm-cp-dval">Discount Value</label><input class="input mono" id="adm-cp-dval" name="discountValue" type="number" min="0" step="1" value="0"></div>
+          <div class="field"><label class="label" for="adm-cp-min">Min Order (₹)</label><input class="input mono" id="adm-cp-min" name="minOrderAmount" type="number" min="0" step="1" value="0"></div>
+          <div class="field"><label class="label" for="adm-cp-max">Max Uses</label><input class="input mono" id="adm-cp-max" name="maxUses" type="number" min="0" step="1" value="100"></div>
+          <div class="field"><label class="label" for="adm-cp-per">Per User Limit</label><input class="input mono" id="adm-cp-per" name="perUserLimit" type="number" min="0" step="1" value="1"></div>
+          <div class="field"></div>
+          <div class="field"><label class="label" for="adm-cp-start">Starts At</label><input class="input" id="adm-cp-start" name="startsAt" type="date"></div>
+          <div class="field"><label class="label" for="adm-cp-end">Expires At</label><input class="input" id="adm-cp-end" name="expiresAt" type="date"></div>
+        </div>
+        <div class="field"><label class="label">Applicable Plans &amp; Intervals</label><div class="adm-plan-grid" data-el="plan-grid"></div></div>
+        <div class="adm-switch-row"><div><div class="font-medium text-sm">Active</div><div class="hint m-0">Coupon can be applied at checkout</div></div><button type="button" class="switch on" role="switch" aria-checked="true" aria-label="Active" data-el="active"></button></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Create</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ---------- /admin/user-subscriptions ---------- -->
+<section class="screen adm" data-route="/admin/user-subscriptions" data-title="User Subscriptions" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div class="adm-layout">
+    <div data-cg="admin-nav"></div>
+    <div class="adm-page">
+      <div class="adm-head">
+        <div><h1 class="adm-title">User Subscriptions</h1><p class="adm-sub">Manage users and commissions</p></div>
+        <div class="flex items-center gap-3"><div class="tabs-line" role="tablist"><button class="tab active" role="tab" data-tab="users"><i data-icon="users"></i> Users</button><button class="tab" role="tab" data-tab="commissions"><i data-icon="wallet"></i> Commissions</button></div><button class="btn btn-primary" data-act="comm-bulk" data-el="bulk-pay" title="Mark every pending commission as paid">Bulk pay</button></div>
+      </div>
+
+      <!-- Users tab -->
+      <div data-panel="users">
+        <div class="adm-filters" data-el="users-filters">
+          <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="users-search" placeholder="Search by name or email..." aria-label="Search by name or email"></div>
+          <select class="select select-sm" data-el="users-status" aria-label="Status"><option value="">All Statuses</option><option value="active">Active</option><option value="expired">Expired</option><option value="cancelled">Cancelled</option><option value="free">Free</option></select>
+          <div class="adm-tools" data-el="users-tools"></div>
+        </div>
+        <div class="card"><div class="adm-table-wrap" data-el="users-table"></div><div class="adm-pager" data-el="users-pager"></div></div>
+      </div>
+
+      <!-- Commissions tab -->
+      <div data-panel="commissions" hidden>
+        <div class="adm-filters" data-el="comm-filters">
+          <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="comm-search" placeholder="Search referrer name..." aria-label="Search referrer name"></div>
+          <select class="select select-sm" data-el="comm-month" aria-label="Filter by month"><option value="">All Months</option></select>
+          <button class="btn btn-outline btn-sm" data-act="comm-clear">Clear</button>
+          <div class="adm-tools" data-el="comm-tools"></div>
+        </div>
+        <div class="adm-tiles" data-el="comm-tiles"></div>
+        <div class="card mb-4">
+          <div class="card-header adm-card-toolbar"><div><div class="card-title">Paid vs pending by month</div><div class="card-desc">Commission owed to referrers, grouped by the month it was earned</div></div><span class="micro" data-el="comm-chart-meta"></span></div>
+          <div class="card-content adm-chart" data-el="comm-chart" style="padding-top:0"></div>
+        </div>
+        <div class="card"><div class="adm-table-wrap" data-el="comm-table"></div><div class="adm-pager" data-el="comm-pager"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="adm-bulkbar" data-el="bulkbar" hidden></div>
+
+  <!-- Feature Limits dialog -->
+  <div hidden data-el="limits-dialog">
+    <form data-form="limits" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><label class="label" for="adm-lim-paper">Paper Trading Limit</label><div class="flex items-center gap-2"><input class="input mono" id="adm-lim-paper" name="paper" type="number" min="0" step="1" style="max-width:160px"><span class="text-sm text-muted">trades / month</span></div><div class="hint">Set to 0 for plan default. Higher values override plan limit.</div></div>
+        <div class="field"><label class="label" for="adm-lim-live">Live Trading Limit</label><div class="flex items-center gap-2"><input class="input mono" id="adm-lim-live" name="live" type="number" min="0" step="1" style="max-width:160px"><span class="text-sm text-muted">trades / month</span></div><div class="hint">Set to 0 for plan default. Higher values override plan limit.</div></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Save Limits</button></div>
+    </form>
+  </div>
+
+  <!-- Lot size settings dialog (inferred from /admin lot-size-settings endpoint) -->
+  <div hidden data-el="lots-dialog">
+    <form data-form="lots" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="adm-form-grid adm-form-grid-3">
+          <div class="field"><label class="label" for="adm-lot-btc">BTC lot size</label><input class="input mono" id="adm-lot-btc" name="BTC" type="number" min="0.0001" step="0.001"></div>
+          <div class="field"><label class="label" for="adm-lot-eth">ETH lot size</label><input class="input mono" id="adm-lot-eth" name="ETH" type="number" min="0.001" step="0.01"></div>
+          <div class="field"><label class="label" for="adm-lot-xaut">XAUT lot size</label><input class="input mono" id="adm-lot-xaut" name="XAUT" type="number" min="0.0001" step="0.001"></div>
+        </div>
+        <div class="hint">Overrides the exchange default lot size for this user's strategy builder and P&amp;L calculations.</div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Save Lot Sizes</button></div>
+    </form>
+  </div>
+
+  <!-- Referral details dialog -->
+  <div hidden data-el="view-dialog">
+    <div class="cg-dialog-body" style="padding-top:4px">
+      <div class="adm-table-wrap adm-table-bordered" data-el="view-table"></div>
+      <div class="adm-totals mt-3" data-el="view-totals"></div>
+    </div>
+    <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="close">Close</button></div>
+  </div>
+
+  <!-- Mark Payment dialog -->
+  <div hidden data-el="pay-dialog">
+    <form data-form="pay" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><div class="label">Payment Status</div><div class="flex gap-2"><label class="adm-radio selected" data-val="paid"><input type="radio" name="payStatus" value="paid" checked> Paid</label><label class="adm-radio" data-val="not_paid"><input type="radio" name="payStatus" value="not_paid"> Not Paid</label></div></div>
+        <div class="field"><div class="label">Proof Link per Referral <span class="text-muted font-medium" data-el="proof-hint">(optional)</span></div><div class="adm-proofs" data-el="proofs"></div></div>
+        <div class="field"><label class="label" for="adm-pay-comment">Comment <span class="text-muted font-medium" data-el="comment-hint">(optional)</span></label><textarea class="textarea" id="adm-pay-comment" name="comment" placeholder="Optional note..." style="min-height:70px"></textarea></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Confirm Paid</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ---------- /admin/banners ---------- -->
+<section class="screen adm" data-route="/admin/banners" data-title="Banner Master" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div class="adm-layout">
+    <div data-cg="admin-nav"></div>
+    <div class="adm-page">
+      <div class="adm-head"><div><h1 class="adm-title">Banner Master</h1><p class="adm-sub">Manage promotional banners and popups</p></div><button class="btn btn-primary" data-act="new"><i data-icon="plus"></i> New Banner</button></div>
+      <div class="adm-filters" data-el="filters">
+        <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="q" placeholder="Search banners..." aria-label="Search banners"></div>
+        <select class="select select-sm" data-el="status" aria-label="Status"><option value="">All statuses</option><option value="live">Showing now</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
+        <select class="select select-sm" data-el="frequency" aria-label="Frequency"><option value="">All frequencies</option><option value="once_per_day">once_per_day</option><option value="every_time">every_time</option><option value="once_per_session">once_per_session</option></select>
+        <div class="adm-tools" data-el="tools"></div>
+      </div>
+      <div class="card"><div class="adm-table-wrap" data-el="table"></div><div class="adm-pager" data-el="pager"></div></div>
+    </div>
+  </div>
+  <div class="adm-bulkbar" data-el="bulkbar" hidden></div>
+  <div hidden data-el="dialog">
+    <form data-form="banner" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><label class="label" for="banner-title">Title</label><input class="input" id="banner-title" name="title" placeholder="Welcome Offer"></div>
+        <div class="field"><label class="label" for="banner-description">Description</label><textarea class="textarea" id="banner-description" name="description" placeholder="Get 20% off your first plan" style="min-height:64px"></textarea></div>
+        <div class="field"><label class="label" for="banner-link">Link URL</label><input class="input" id="banner-link" name="linkUrl" type="url" placeholder="https://coingreek.com/offers"></div>
+        <div class="adm-form-grid">
+          <div class="field"><label class="label" for="banner-starts">Starts At <span class="text-muted font-medium">(optional)</span></label><input class="input" id="banner-starts" name="startsAt" type="datetime-local"></div>
+          <div class="field"><label class="label" for="banner-ends">Ends At <span class="text-muted font-medium">(optional)</span></label><input class="input" id="banner-ends" name="endsAt" type="datetime-local"></div>
+        </div>
+        <div class="field"><label class="label" for="banner-frequency">Frequency</label><select class="select" id="banner-frequency" name="frequency"><option value="once_per_day">once_per_day</option><option value="every_time">every_time</option><option value="once_per_session">once_per_session</option></select></div>
+        <div class="field">
+          <label class="label" for="banner-image">Image <span class="text-muted font-medium" data-el="image-hint">(leave empty to keep current)</span></label>
+          <input class="input adm-file" id="banner-image" name="image" type="file" accept="image/*">
+          <div class="hint">Maximum size 5 MB · PNG, JPG, GIF or WebP</div>
+          <div class="flex items-center gap-3 mt-3">
+            <div><div class="micro mb-1">Preview</div><div class="adm-thumb adm-thumb-lg" data-el="preview"></div></div>
+            <div class="flex flex-col gap-1"><button type="button" class="btn btn-outline btn-xs" data-act="use-gradient" title="Mock fallback: use a generated gradient instead of an uploaded file">Use gradient</button><button type="button" class="btn btn-outline btn-xs" data-act="preview-form" title="Open the popup exactly as a user would see it">Preview as user</button><span class="hint m-0">No upload needed in the mock</span></div>
+          </div>
+        </div>
+        <div class="adm-switch-row"><div><div class="font-medium text-sm">Active</div><div class="hint m-0">Show this banner to users</div></div><button type="button" class="switch on" role="switch" aria-checked="true" aria-label="Active" id="banner-active" data-el="active"></button></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Create Banner</button></div>
+    </form>
+  </div>
+  <!-- "Preview as user" popup -->
+  <div hidden data-el="preview-dialog" class="adm-banner-preview"></div>
+</section>
+
+<!-- ---------- /admin/emails ---------- -->
+<section class="screen adm" data-route="/admin/emails" data-title="Promotional Emails" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div class="adm-layout">
+    <div data-cg="admin-nav"></div>
+    <div class="adm-page">
+      <div class="adm-head">
+        <div><h1 class="adm-title">Promotional Emails</h1><p class="adm-sub">Send targeted campaigns to your users and review delivery history</p></div>
+        <div class="flex items-center gap-3"><div class="tabs-line" role="tablist"><button class="tab active" role="tab" data-tab="compose">Compose</button><button class="tab" role="tab" data-tab="history">History</button></div><button type="button" class="btn btn-primary" data-act="send" disabled><i data-icon="send"></i> Send Email</button></div>
+      </div>
+
+      <!-- Compose -->
+      <div data-panel="compose" class="adm-compose">
+        <div class="card">
+          <div class="card-header adm-card-toolbar"><div class="card-title flex items-center gap-2"><i data-icon="users"></i> Recipients</div><span class="badge badge-secondary" data-el="sel-badge">0 selected</span></div>
+          <div class="card-content" style="padding-top:4px">
+            <div class="adm-search mb-2"><i data-icon="search"></i><input class="input input-sm" data-el="rc-search" placeholder="Search users by name or email" aria-label="Search users by name or email"></div>
+            <div class="flex items-center gap-2 mb-2">
+              <label class="micro" for="adm-rc-segment">Segment</label>
+              <select class="select select-sm" id="adm-rc-segment" data-el="rc-segment" style="max-width:180px"><option value="all">All users</option><option value="paid">Paid users</option><option value="free">Free users</option><option value="expired">Expired</option></select>
+              <button type="button" class="btn btn-outline btn-xs ml-auto" data-act="rc-all">Select all (0)</button>
+              <button type="button" class="btn btn-ghost btn-xs" data-act="rc-clear"><i data-icon="x" data-size="12"></i> Clear</button>
+            </div>
+            <div class="adm-checklist adm-checklist-tall" data-el="rc-list"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-content">
+            <div class="flex items-center gap-2 flex-wrap mb-3"><span class="micro">Templates</span><div class="adm-chips" data-el="templates"></div></div>
+            <div class="field"><label class="label" for="promo-subject">Subject</label><input class="input" id="promo-subject" data-el="subject" placeholder="Your report is ready"></div>
+            <div class="field"><label class="label" for="promo-message">Message</label><textarea class="textarea" id="promo-message" data-el="message" style="min-height:160px" placeholder="Hi {{name}}, …"></textarea></div>
+            <div class="flex items-center gap-2 flex-wrap mb-4"><span class="micro">Insert</span><button type="button" class="adm-chip" data-ins="{{name}}" title="into the last-focused field">{{name}}</button><button type="button" class="adm-chip" data-ins="{{email}}" title="into the last-focused field">{{email}}</button><button type="button" class="adm-chip" data-ins="{{plan}}" title="into the last-focused field">{{plan}}</button><button type="button" class="adm-chip" data-ins="{{expiry}}" title="into the last-focused field">{{expiry}}</button></div>
+            <div class="adm-preview" data-el="preview"></div>
+            <div class="flex justify-end gap-2 mt-4"><button type="button" class="btn btn-outline" data-act="test-send" title="Send this email to your own address"><i data-icon="mail"></i> Test send to me</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div data-panel="history" hidden>
+        <div data-el="hist-list">
+          <div class="adm-filters" data-el="hist-filters">
+            <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="hist-q" placeholder="Search subject or segment..." aria-label="Search campaigns"></div>
+            <div class="adm-tools" data-el="hist-tools"></div>
+          </div>
+          <div class="card"><div class="adm-table-wrap" data-el="hist-table"></div><div class="adm-pager" data-el="hist-pager"></div></div>
+        </div>
+        <div data-el="hist-detail" hidden>
+          <button class="btn btn-ghost btn-sm mb-3" style="margin-left:-8px" data-act="hist-back"><i data-icon="arrowLeft"></i> Back to campaigns</button>
+          <div class="card mb-4">
+            <div class="card-header"><div class="card-title" data-el="det-subject"></div><div class="card-desc" data-el="det-meta"></div></div>
+            <div class="card-content"><div class="adm-tiles adm-tiles-4" data-el="det-tiles"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header adm-card-toolbar"><div class="card-title">Recipients</div><button class="btn btn-outline btn-sm" data-act="det-csv"><i data-icon="copy"></i> Copy CSV</button></div>
+            <div class="adm-table-wrap" data-el="det-table"></div>
+            <div class="adm-pager" data-el="det-pager"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* ===== admin console v2 (scoped to .adm screens + admin-nav chrome) ===== */
+  .adm [hidden],.adm-compose[hidden],.cg-dialog .adm-assign[hidden]{display:none!important}
+  /* layout: left rail on >=1100px, top bar below */
+  .adm-layout{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);align-content:start;min-height:calc(100vh - 50px)}
+  @media (min-width:1100px){.adm-layout{grid-template-rows:minmax(0,1fr)}}
+  .adm-page{padding:0 24px 72px;min-width:0}
+  .adm-rail{display:flex;gap:2px;align-items:center;padding:6px 14px;border-bottom:1px solid hsl(var(--border));background:hsl(var(--card));overflow-x:auto;scrollbar-width:none}
+  .adm-rail::-webkit-scrollbar{display:none}
+  .adm-rail-label{display:none}
+  .adm-rail a{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:4px;font-size:12.5px;font-weight:500;color:hsl(var(--muted-foreground));white-space:nowrap;position:relative}
+  .adm-rail a:hover{background:hsl(var(--muted));color:hsl(var(--foreground))}
+  .adm-rail a.active{color:hsl(var(--foreground));background:hsl(var(--muted))}
+  .adm-rail a .adm-ic{opacity:.8}
+  .adm-rail .adm-rail-count{margin-left:auto;font-family:var(--font-mono);font-size:10.5px;color:hsl(var(--muted-foreground))}
+  .adm-rail-foot{display:none}
+  @media (min-width:1100px){
+    .adm-layout{grid-template-columns:208px minmax(0,1fr)}
+    .adm-layout>[data-cg="admin-nav"]{position:sticky;top:50px;align-self:start;height:calc(100vh - 50px);border-right:1px solid hsl(var(--border));background:hsl(var(--card))}
+    .adm-rail{flex-direction:column;align-items:stretch;padding:14px 10px;border-bottom:0;background:transparent;height:100%;overflow:visible}
+    .adm-rail-label{display:block;padding:0 10px 8px}
+    .adm-rail a{padding:7px 10px;border-radius:4px}
+    .adm-rail a.active{box-shadow:inset 2px 0 0 hsl(var(--primary))}
+    .adm-rail-foot{display:block;margin-top:auto;padding:10px;font-family:var(--font-mono);font-size:10.5px;color:hsl(var(--muted-foreground));border-top:1px solid hsl(var(--border));line-height:1.6}
+    .adm-page{padding:0 28px 72px}
+  }
+  /* slim page header */
+  .adm-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0 12px;border-bottom:1px solid hsl(var(--border));margin-bottom:12px;flex-wrap:wrap}
+  .adm-title{font-size:19px;display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
+  .adm-sub{color:hsl(var(--muted-foreground));font-size:12.5px;margin-top:2px}
+  .adm-ic{flex-shrink:0;vertical-align:middle}
+  /* sticky filter row */
+  .adm-filters{position:sticky;top:50px;z-index:20;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0 10px;margin-bottom:12px;background:hsl(var(--background));border-bottom:1px solid hsl(var(--border))}
+  .adm-filters .select{width:auto;min-width:140px}
+  .adm-tools{margin-left:auto;display:flex;align-items:center;gap:6px}
+  .adm-tools .adm-count{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:hsl(var(--muted-foreground));margin-right:6px;white-space:nowrap}
+  .adm-card-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:10px}
+  /* tables */
+  .adm-table-wrap{overflow-x:auto}
+  .adm-table-wrap .table th:first-child,.adm-table-wrap .table td:first-child{padding-left:16px}
+  .adm-table-wrap .table th:last-child,.adm-table-wrap .table td:last-child{padding-right:16px}
+  .adm-table-wrap .table tbody tr:last-child td{border-bottom:0}
+  .adm .table tbody tr{height:36px}
+  .adm.is-compact .table tbody tr{height:28px}
+  .adm.is-compact .table td{padding:3px 8px}
+  .adm.is-compact .table th{padding:5px 8px}
+  .adm.is-compact .table .text-2xs{display:none}
+  .adm .table th.r{text-align:right}
+  .adm .table th.adm-sortable{cursor:pointer;user-select:none}
+  .adm .table th.adm-sortable:hover{color:hsl(var(--foreground))}
+  .adm .table th .adm-sort-ind{display:inline-block;width:10px;margin-left:3px}
+  .adm .table th.sorted{color:hsl(var(--foreground))}
+  .adm .table .adm-selcol{width:34px;padding-right:0!important}
+  .adm .table tr.is-selected td{background:hsl(var(--muted)/.7)}
+  .adm-table-bordered{border:1px solid hsl(var(--border));border-radius:6px}
+  .adm-table-bordered .table th:first-child,.adm-table-bordered .table td:first-child{padding-left:12px}
+  .adm-icon-btn{width:28px;height:28px;border-radius:4px;display:inline-grid;place-items:center;color:hsl(var(--muted-foreground))}
+  .adm-icon-btn:hover{background:hsl(var(--muted));color:hsl(var(--foreground))}
+  .adm-icon-btn.danger:hover{color:hsl(var(--destructive));background:hsl(var(--sell-bg))}
+  .adm-actions{display:flex;gap:2px;justify-content:flex-end;align-items:center}
+  .adm-editable{cursor:pointer;border-bottom:1px dashed hsl(var(--muted-foreground)/.6);padding-bottom:1px}
+  .adm-editable:hover{color:hsl(var(--foreground));border-bottom-color:hsl(var(--foreground))}
+  .adm-inline-input{width:76px;height:26px;padding:0 6px;font-size:12px}
+  .adm-status-btn{cursor:pointer}
+  .adm-status-btn:hover{filter:brightness(1.15)}
+  .adm-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .adm-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:4px;background:hsl(var(--secondary));color:hsl(var(--secondary-foreground));font-size:12px;font-weight:500;border:1px solid transparent}
+  button.adm-chip:hover{border-color:hsl(var(--foreground)/.5)}
+  button.adm-chip.mono{font-family:var(--font-mono);font-size:11px}
+  .adm-chip .adm-chip-x{display:grid;place-items:center;width:16px;height:16px;border-radius:3px;color:hsl(var(--muted-foreground))}
+  .adm-chip .adm-chip-x:hover{background:hsl(var(--sell-bg));color:hsl(var(--destructive))}
+  .adm-intervals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .adm-interval{border:1px solid hsl(var(--border));border-radius:6px;padding:12px;background:hsl(var(--surface-2))}
+  .adm-interval h4{margin-bottom:10px}
+  .adm-interval .field{margin-bottom:10px}
+  .adm-interval .adm-sublabel{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:hsl(var(--muted-foreground));font-weight:500;margin:12px 0 8px}
+  .adm-checklist{max-height:220px;overflow:auto;border:1px solid hsl(var(--border));border-radius:6px;padding:4px;background:hsl(var(--card))}
+  .adm-checklist-tall{max-height:380px}
+  .adm-checklist label{display:flex;gap:10px;align-items:center;padding:5px 8px;border-radius:4px;font-size:12.5px;cursor:pointer}
+  .adm-checklist label:hover{background:hsl(var(--muted))}
+  .adm-checklist .empty{padding:20px}
+  .adm-search{position:relative;display:flex;align-items:center}
+  .adm-search>svg{position:absolute;left:9px;color:hsl(var(--muted-foreground));pointer-events:none}
+  .adm-search>.input,.adm-search>.select{padding-left:30px;min-width:220px}
+  .adm-switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid hsl(var(--border));border-radius:6px;padding:10px 12px;margin-bottom:14px}
+  .adm-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}
+  .adm-form-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .adm-plan-grid{border:1px solid hsl(var(--border));border-radius:6px;overflow:hidden}
+  .adm-plan-grid .table th{background:hsl(var(--muted))}
+  .adm-plan-grid .table td{text-align:center}
+  .adm-plan-grid .table td:first-child{text-align:left;font-weight:500}
+  .adm-thumb{width:60px;height:34px;border-radius:4px;background-size:cover;background-position:center;background-color:hsl(var(--muted));flex-shrink:0}
+  .adm-thumb-lg{width:180px;height:100px;border-radius:6px;border:1px dashed hsl(var(--border));display:grid;place-items:center;color:hsl(var(--muted-foreground));font-size:12px}
+  .adm-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;border-top:1px solid hsl(var(--border));font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:hsl(var(--muted-foreground));flex-wrap:wrap}
+  .adm-pager:empty{display:none}
+  .adm-pager .btn{font-family:var(--font-body);letter-spacing:0;text-transform:none}
+  .adm-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+  .adm-tiles-4{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:0}
+  .adm-preview{border:1px solid hsl(var(--border));border-radius:6px;padding:12px 14px;background:hsl(var(--surface-2))}
+  .adm-preview .adm-preview-subject{font-weight:600;margin:6px 0 8px}
+  .adm-preview .adm-preview-body{white-space:pre-wrap;font-size:12.5px;color:hsl(var(--foreground))}
+  .adm-preview mark{background:hsl(var(--muted));color:hsl(var(--foreground));border-radius:3px;padding:0 3px;font-family:var(--font-mono);font-size:11.5px}
+  .adm-compose{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:12px;align-items:start}
+  .adm-radio{display:flex;gap:8px;align-items:center;padding:8px 14px;border:1px solid hsl(var(--border));border-radius:6px;cursor:pointer;font-weight:500;font-size:13px;flex:1}
+  .adm-radio input{accent-color:hsl(var(--primary))}
+  .adm-radio.selected{border-color:hsl(var(--foreground)/.6);background:hsl(var(--muted))}
+  .adm-proofs{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto}
+  .adm-proofs .adm-proof{display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:center;font-size:12.5px}
+  .adm-totals{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;padding:10px 12px;border-radius:6px;background:hsl(var(--muted))}
+  .adm-totals b{font-family:var(--font-mono);font-weight:500}
+  .adm-kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
+  .adm-kv div>span{display:block;font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:hsl(var(--muted-foreground));font-weight:500}
+  .adm-kv div>b{font-weight:500;font-size:13px}
+  .adm-row-click{cursor:pointer}
+  .adm-strike{text-decoration:line-through;color:hsl(var(--muted-foreground));font-size:11.5px;margin-left:4px}
+  .adm-empty-icon{width:40px;height:40px;border-radius:6px;background:hsl(var(--muted));display:grid;place-items:center;margin:0 auto 10px;color:hsl(var(--muted-foreground))}
+  .adm .empty{padding:36px 16px}
+  .adm .switch,.cg-dialog .switch{cursor:pointer}
+  /* column menu rows (not .menu-item so the menu stays open) */
+  .adm-colrow{display:flex;align-items:center;gap:8px;padding:5px 9px;border-radius:4px;cursor:pointer;font-size:12.5px}
+  .adm-colrow:hover{background:hsl(var(--muted))}
+  /* floating bulk action bar */
+  .adm-bulkbar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:6px;padding:7px 8px 7px 14px;background:hsl(var(--popover));color:hsl(var(--popover-foreground));border:1px solid hsl(var(--input));border-radius:7px;box-shadow:0 16px 40px -18px rgba(0,0,0,.75);animation:cg-pop .14s ease-out;max-width:calc(100vw - 32px);flex-wrap:wrap}
+  .adm-bulkbar .adm-bulk-n{font-family:var(--font-mono);font-size:12px;margin-right:6px;white-space:nowrap}
+  .adm-bulkbar .adm-bulk-sep{width:1px;height:18px;background:hsl(var(--border));margin:0 4px}
+  /* drawer */
+  .adm-drawer-wrap{position:fixed;inset:0;z-index:90}
+  .adm-drawer-scrim{position:absolute;inset:0;background:rgba(4,6,10,.55)}
+  .adm-drawer{position:absolute;top:0;right:0;bottom:0;width:min(560px,100%);background:hsl(var(--card));color:hsl(var(--card-foreground));border-left:1px solid hsl(var(--input));box-shadow:-24px 0 60px -30px rgba(0,0,0,.8);display:flex;flex-direction:column;animation:adm-slide .18s ease-out}
+  @keyframes adm-slide{from{transform:translateX(28px);opacity:0}to{transform:none;opacity:1}}
+  .adm-drawer-head{display:flex;align-items:flex-start;gap:12px;padding:16px 18px 10px}
+  .adm-drawer-head .adm-avatar{width:38px;height:38px;border-radius:6px;background:hsl(var(--surface-3));display:grid;place-items:center;font-family:var(--font-mono);font-size:12.5px;flex-shrink:0}
+  .adm-drawer-head h3{font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .adm-drawer-tabs{padding:0 18px}
+  .adm-drawer-body{padding:16px 18px 24px;overflow:auto;flex:1}
+  .adm-drawer .adm-kv{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .adm-drawer .adm-kv div{padding:8px 0;border-bottom:1px solid hsl(var(--border))}
+  .adm-drawer .adm-kv b.mono{font-family:var(--font-mono)}
+  .adm-drawer-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+  /* charts */
+  .adm-chart svg{display:block;width:100%;height:auto}
+  .adm-chart .grid-l{stroke:hsl(var(--border));stroke-width:1}
+  .adm-chart .axis-t{fill:hsl(var(--muted-foreground));font-family:var(--font-mono);font-size:10px}
+  .adm-chart .val-t{fill:hsl(var(--foreground));font-family:var(--font-mono);font-size:10.5px}
+  .adm-chart .bar-paid{fill:hsl(var(--profit))}
+  .adm-chart .bar-pending{fill:url(#admHatch);stroke:hsl(var(--profit));stroke-width:1}
+  .adm-chart .bar-hit{fill:transparent}
+  .adm-chart .bar-hit:hover{fill:hsl(var(--foreground)/.05)}
+  .adm-legend{display:flex;gap:14px;align-items:center;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:hsl(var(--muted-foreground));margin-top:4px}
+  .adm-legend i{display:inline-block;width:12px;height:8px;border-radius:2px;background:hsl(var(--profit));vertical-align:-1px;margin-right:5px}
+  .adm-legend i.pend{background:repeating-linear-gradient(135deg,hsl(var(--profit)) 0 2px,transparent 2px 4px);border:1px solid hsl(var(--profit))}
+  /* banner "preview as user" popup */
+  .adm-banner-preview .bp-hero{height:200px;background-size:cover;background-position:center;background-color:hsl(var(--muted));position:relative}
+  .adm-banner-preview .bp-hero .micro{position:absolute;left:12px;top:10px;background:hsl(var(--card)/.85);padding:2px 7px;border-radius:3px;color:hsl(var(--foreground))}
+  .adm-banner-preview .bp-body{padding:18px 20px 6px}
+  .adm-banner-preview .bp-body h3{font-size:18px;margin-bottom:6px}
+  .adm-banner-preview .bp-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 20px 18px;flex-wrap:wrap}
+  @media (max-width:900px){.adm-intervals,.adm-compose,.adm-tiles-4{grid-template-columns:1fr}.adm-tiles{grid-template-columns:1fr}.adm-form-grid,.adm-kv{grid-template-columns:1fr}.adm-filters{position:static}}
+</style>
+
+<script>
+(function () {
+  'use strict';
+  const A = (window.CG_ADMIN = window.CG_ADMIN || {});
+  const M = CG.mock, F = CG.fmt, esc = CG.esc, $ = CG.$, $$ = CG.$$;
+  // ---------- icons (lucide paths, inline) ----------
+  const ICONS = {
+    plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+    pencil: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+    trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+    users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    settings2: '<path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>',
+    calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+    eye: '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
+    x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+    send: '<path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/>',
+    arrowLeft: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+    chevLeft: '<path d="m15 18-6-6 6-6"/>',
+    chevRight: '<path d="m9 18 6-6-6-6"/>',
+    chevDown: '<path d="m6 9 6 6 6-6"/>',
+    filter: '<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
+    layers: '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>',
+    image: '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+    ticket: '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>',
+    package: '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+    tag: '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',
+    inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+    copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+    columns: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/>',
+    monitor: '<rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/>',
+    userCheck: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/>',
+    external: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+    sparkles: '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>',
+    file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>'
+  };
+  A.icon = (n, size) => '<svg class="adm-ic" width="' + (size || 16) + '" height="' + (size || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[n] || '') + '</svg>';
+  A.hydrateIcons = (root) => $$('i[data-icon]', root).forEach((i) => { i.outerHTML = A.icon(i.dataset.icon, i.dataset.size); });
+
+  // ---------- shared helpers ----------
+  const el = (root, name) => root.querySelector('[data-el="' + name + '"]');
+  A.el = el;
+  A.uid = (p) => p + '_' + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 6);
+  A.date = (d) => (d ? F.date(d) : '—');
+  A.dateTime = (d) => (d ? F.date(d) + ' ' + F.time(d) : '—');
+  A.daysLeft = (d) => Math.ceil((new Date(d) - CG.NOW) / 86400000);
+  A.statusBadge = (s) => ({ active: 'badge-success', expired: 'badge-loss', cancelled: 'badge-secondary', free: 'badge-outline', paid: 'badge-success', pending: 'badge-warning', not_paid: 'badge-loss', delivered: 'badge-success', failed: 'badge-loss' }[s] || 'badge-secondary');
+  A.statusLabel = (s) => ({ active: 'Active', expired: 'Expired', cancelled: 'Cancelled', free: 'Free', paid: 'Paid', pending: 'Pending', not_paid: 'Not Paid', delivered: 'Delivered', failed: 'Failed' }[s] || s);
+  A.planBadge = (name) => (/free/i.test(name || '') ? 'badge-outline' : 'badge-secondary');
+  A.planName = (id) => { const p = M.plans.find((x) => x.id === id); return p ? p.name : id; };
+  A.switchHtml = (on, attrs) => '<button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + (on ? 'true' : 'false') + '" ' + (attrs || '') + '></button>';
+  A.setSwitch = (btn, on) => { btn.classList.toggle('on', !!on); btn.setAttribute('aria-checked', on ? 'true' : 'false'); };
+  A.isOn = (btn) => btn.classList.contains('on');
+  A.validation = (msg) => CG.toast({ title: 'Validation', description: msg, variant: 'destructive' });
+  A.save = (fn, title) => { try { fn(); CG.toast({ title: title, variant: 'success' }); return true; } catch (e) { CG.toast({ title: 'Failed to save', description: e && e.message ? e.message : 'Please try again.', variant: 'destructive' }); return false; } };
+  A.empty = (icon, title, hint, btn, act) => '<div class="empty"><div class="adm-empty-icon">' + A.icon(icon, 20) + '</div><b>' + esc(title) + '</b>' + esc(hint) + (btn ? '<div class="mt-4"><button class="btn ' + (act === 'clear-filters' ? 'btn-outline' : 'btn-primary') + ' btn-sm" data-act="' + (act || 'new') + '">' + (act === 'clear-filters' ? '' : A.icon('plus') + ' ') + esc(btn) + '</button></div>' : '') + '</div>';
+  A.pager = (page, pages, info, prevLabel, nextLabel) => '<span>' + (info ? esc(info) + ' · ' : '') + 'Page ' + page + ' of ' + pages + '</span><span class="flex gap-2"><button class="btn btn-outline btn-sm" data-act="prev"' + (page <= 1 ? ' disabled' : '') + '>' + prevLabel + '</button><button class="btn btn-outline btn-sm" data-act="next"' + (page >= pages ? ' disabled' : '') + '>' + nextLabel + '</button></span>';
+  A.paginate = (list, page, per) => { per = per || 10; const pages = Math.max(1, Math.ceil(list.length / per)); page = Math.min(Math.max(1, page), pages); return { page, pages, rows: list.slice((page - 1) * per, page * per), total: list.length }; };
+  A.bindTabs = (root, onChange) => { CG.delegate(root, 'click', '[data-tab]', (e, b) => { A.setTab(root, b.dataset.tab); if (onChange) onChange(b.dataset.tab); }); };
+  A.setTab = (root, name) => { $$('[data-tab]', root).forEach((t) => t.classList.toggle('active', t.dataset.tab === name)); $$('[data-panel]', root).forEach((p) => (p.hidden = p.dataset.panel !== name)); };
+  A.formVal = (form, name) => { const i = form.querySelector('[name="' + name + '"]'); return i ? i.value : ''; };
+  A.formSet = (form, name, v) => { const i = form.querySelector('[name="' + name + '"]'); if (i) i.value = v == null ? '' : v; };
+  A.busy = (btn, label, fn, ms) => { const old = btn.innerHTML; btn.disabled = true; btn.innerHTML = label; setTimeout(() => { btn.disabled = false; btn.innerHTML = old; fn(); }, ms || 450); };
+  A.strip = (html) => String(html || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  A.copyText = (text, toast) => { const done = () => CG.toast(Object.assign({ title: 'Copied!', variant: 'success' }, toast || {})); const fallback = () => { try { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); } catch (e) { } done(); }; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback(); };
+  A.csv = (headers, rows) => { const q = (v) => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }; return [headers.map(q).join(',')].concat(rows.map((r) => r.map(q).join(','))).join('\n'); };
+  A.copyCsv = (headers, rows, noun) => A.copyText(A.csv(headers, rows), { title: 'CSV copied', description: rows.length + ' ' + (noun || 'rows') + ' × ' + headers.length + ' columns' });
+  A.initials = (n) => String(n || '?').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+  // mock enrichments (do not rename existing fields)
+  M.users.forEach((u) => { if (u.validityDays == null) u.validityDays = u.subscribedAt && u.endsAt ? Math.round((new Date(u.endsAt) - new Date(u.subscribedAt)) / 86400000) : 0; if (!u.lotSizes) u.lotSizes = { BTC: 0.001, ETH: 0.01, XAUT: 0.001 }; if (!u.featureLimits) u.featureLimits = { paper_trading: 0, live_trading: 0 }; });
+  // density
+  A.applyDensity = (v) => { const c = (v || CG.state.density) === 'compact'; $$('section.adm').forEach((s) => s.classList.toggle('is-compact', c)); };
+  CG.on('density', A.applyDensity);
+
+  // ---------- CG.chrome['admin-nav'] : left rail (>=1100px) / top bar ----------
+  const NAV = [['Users', '/admin/users', 'users'], ['Subscription Plans', '/admin/subscriptions', 'package'], ['Menu Pricing', '/admin/menu-pricing', 'tag'], ['Coupon Codes', '/admin/coupons', 'ticket'], ['User Subscriptions', '/admin/user-subscriptions', 'wallet'], ['Banners', '/admin/banners', 'image'], ['Promotional Emails', '/admin/emails', 'mail']];
+  A.NAV = NAV;
+  A.navCount = (p) => ({ '/admin/users': M.users.length, '/admin/subscriptions': M.plans.length, '/admin/menu-pricing': M.menuItems.length, '/admin/coupons': M.coupons.length, '/admin/user-subscriptions': M.commissions.filter((c) => c.pending > 0).length, '/admin/banners': M.banners.filter((b) => b.isActive).length, '/admin/emails': M.campaigns.length }[p]);
+  A.navActive = (host) => { const path = (CG.current && CG.current.path) || ''; $$('a[data-path]', host).forEach((a) => { const on = path === a.dataset.path || path.startsWith(a.dataset.path + '/'); a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); const c = a.querySelector('.adm-rail-count'); if (c) c.textContent = A.navCount(a.dataset.path); }); };
+  CG.chrome['admin-nav'] = function (host) { host.innerHTML = '<nav class="adm-rail" aria-label="Admin pages"><span class="micro adm-rail-label">Admin</span>' + NAV.map(([l, p, ic]) => '<a href="#' + p + '" data-path="' + p + '">' + A.icon(ic, 15) + '<span>' + esc(l) + '</span><span class="adm-rail-count"></span></a>').join('') + '<div class="adm-rail-foot">' + esc(M.user.email) + '<br>role · ' + esc(CG.state.role || 'admin') + '<br>Ctrl K · palette</div></nav>'; A.navActive(host); };
+  CG.chrome['admin-nav:update'] = (host) => A.navActive(host);
+  CG.on('route', () => { $$('[data-cg="admin-nav"]').forEach(A.navActive); A.applyDensity(); });
+  ['users:changed', 'plans:changed', 'menuItems:changed', 'coupons:changed', 'commissions:changed', 'banners:changed', 'campaigns:changed'].forEach((ev) => CG.on(ev, () => $$('[data-cg="admin-nav"]').forEach(A.navActive)));
+
+  // ---------- palette commands (only if the chrome exposes a palette API) ----------
+  const regPalette = (cmds) => { const P = CG.palette; if (!P) return false; const fn = P.register || P.add; if (typeof fn === 'function') { try { cmds.forEach((c) => fn.call(P, c)); return true; } catch (e) { return false; } } if (Array.isArray(P.commands)) { cmds.forEach((c) => P.commands.push(c)); return true; } return false; };
+  const PAL = NAV.map(([l, p]) => ({ id: 'admin' + p.replace(/\//g, '-'), label: 'Admin → ' + l, group: 'Admin', run: () => CG.navigate(p) }));
+  let palDone = regPalette(PAL); if (!palDone) { const off = CG.on('route', () => { if (!palDone) palDone = regPalette(PAL); if (palDone) off(); }); }
+
+  // ---------- generic data grid: sticky tools, column menu (persisted), sorting, selection + bulk bar, CSV, pager, empty state ----------
+  // cfg: { root, key, host, pager, tools, bulkbar, columns:[{id,label,cell,csv,sortVal,cls,always,default}], rows(), rowId, rowAttrs, per, noun, empty:{icon,title,hint,action,act}, emptyFiltered:{title,hint}, isFiltered(), bulk:[{id,label,variant,run(rows,grid),keep}], csvName, onRender }
+  A.grid = function (cfg) {
+    const G = { sel: new Set(), sort: cfg.sort || null, page: 1 };
+    const colsState = () => (CG.state.adminCols = CG.state.adminCols || {});
+    const visibleCols = () => { const saved = colsState()[cfg.key]; return cfg.columns.filter((c) => c.always || (Array.isArray(saved) ? saved.includes(c.id) : c.default !== false)); };
+    G.setCols = (ids) => { colsState()[cfg.key] = ids; CG.saveState(); G.render(); };
+    G.resetCols = () => { delete colsState()[cfg.key]; CG.saveState(); G.render(); };
+    G.rows = () => { let rows = cfg.rows(); if (G.sort) { const c = cfg.columns.find((x) => x.id === G.sort.id); if (c && c.sortVal) rows = rows.slice().sort((a, b) => { const va = c.sortVal(a), vb = c.sortVal(b); const r = va > vb ? 1 : va < vb ? -1 : 0; return G.sort.dir === 'asc' ? r : -r; }); } return rows; };
+    G.selectedRows = () => cfg.rows().filter((r) => G.sel.has(cfg.rowId(r)));
+    G.clearSel = () => { G.sel.clear(); G.render(); };
+    const label = (c) => c.csvLabel || A.strip(c.label);
+    const csvCols = () => visibleCols().filter((c) => !c.noCsv);
+    G.csvText = (rowsOverride) => { const cols = csvCols(); const rows = rowsOverride || G.rows(); return A.csv(cols.map(label), rows.map((r) => cols.map((c) => (c.csv ? c.csv(r) : A.strip(c.cell(r)))))); };
+    G.copyCsv = (rowsOverride) => { const cols = csvCols(); const rows = rowsOverride || G.rows(); A.copyText(G.csvText(rows), { title: 'CSV copied', description: rows.length + ' ' + (cfg.noun || 'rows') + ' × ' + cols.length + ' columns' }); };
+    const renderTools = (total) => { if (!cfg.tools) return; cfg.tools.innerHTML = '<span class="adm-count">' + total + ' ' + esc(cfg.noun || 'rows') + '</span><button type="button" class="btn btn-outline btn-sm" data-grid="cols" title="Show or hide columns">' + A.icon('columns', 13) + ' Columns ' + A.icon('chevDown', 12) + '</button><button type="button" class="btn btn-outline btn-sm" data-grid="csv" title="Copy the current view as CSV">' + A.icon('copy', 13) + ' Copy CSV</button>'; };
+    const renderBulk = () => { const bar = cfg.bulkbar; if (!bar) return; if (!cfg.bulk || !G.sel.size) { bar.hidden = true; bar.innerHTML = ''; return; } bar.hidden = false; bar.innerHTML = '<span class="adm-bulk-n">' + G.sel.size + ' selected</span><span class="adm-bulk-sep"></span>' + cfg.bulk.map((b) => '<button type="button" class="btn btn-sm ' + (b.variant || 'btn-outline') + '" data-bulk="' + b.id + '">' + (b.icon ? A.icon(b.icon, 13) + ' ' : '') + esc(b.label) + '</button>').join('') + '<span class="adm-bulk-sep"></span><button type="button" class="btn btn-ghost btn-sm" data-bulk="__clear" title="Clear selection">' + A.icon('x', 13) + ' Clear</button>'; };
+    G.render = () => {
+      const all = G.rows(); const cols = visibleCols(); const host = cfg.host;
+      const ids = new Set(cfg.rows().map(cfg.rowId)); Array.from(G.sel).forEach((id) => { if (!ids.has(id)) G.sel.delete(id); });
+      renderTools(all.length);
+      if (!all.length) { const filtered = cfg.isFiltered && cfg.isFiltered(); const e = filtered && cfg.emptyFiltered ? cfg.emptyFiltered : cfg.empty; host.innerHTML = A.empty(e.icon || cfg.empty.icon, e.title, e.hint, e.action, e.act || (filtered ? 'clear-filters' : 'new')); if (cfg.pager) cfg.pager.innerHTML = ''; renderBulk(); if (cfg.onRender) cfg.onRender(all); return; }
+      const pg = cfg.per ? A.paginate(all, G.page, cfg.per) : { page: 1, pages: 1, rows: all, total: all.length }; G.page = pg.page;
+      const selAll = all.every((r) => G.sel.has(cfg.rowId(r)));
+      const th = (c) => '<th class="' + (c.cls || '') + (c.sortVal ? ' adm-sortable' : '') + (G.sort && G.sort.id === c.id ? ' sorted' : '') + '"' + (c.sortVal ? ' data-sort="' + c.id + '" title="Sort by ' + esc(label(c)) + '"' : '') + '>' + c.label + (c.sortVal ? '<span class="adm-sort-ind">' + (G.sort && G.sort.id === c.id ? (G.sort.dir === 'asc' ? '▲' : '▼') : '') + '</span>' : '') + '</th>';
+      host.innerHTML = '<table class="table"><thead><tr>' + (cfg.bulk ? '<th class="adm-selcol"><input type="checkbox" class="checkbox" data-sel="__all"' + (selAll ? ' checked' : '') + ' aria-label="Select all ' + all.length + ' rows" title="Select all ' + all.length + ' ' + esc(cfg.noun || 'rows') + '"></th>' : '') + cols.map(th).join('') + '</tr></thead><tbody>' + pg.rows.map((r) => { const id = cfg.rowId(r); return '<tr' + (cfg.rowAttrs ? ' ' + cfg.rowAttrs(r) : '') + (G.sel.has(id) ? ' class="is-selected"' : '') + '>' + (cfg.bulk ? '<td class="adm-selcol"><input type="checkbox" class="checkbox" data-sel="' + esc(id) + '"' + (G.sel.has(id) ? ' checked' : '') + ' aria-label="Select row"></td>' : '') + cols.map((c) => '<td class="' + (c.cls || '') + '">' + c.cell(r) + '</td>').join('') + '</tr>'; }).join('') + '</tbody></table>';
+      if (cfg.pager) cfg.pager.innerHTML = cfg.per ? A.pager(pg.page, pg.pages, pg.total + ' ' + (cfg.noun || 'rows'), A.icon('chevLeft', 14) + ' Prev', 'Next ' + A.icon('chevRight', 14)) : '';
+      renderBulk(); if (cfg.onRender) cfg.onRender(all);
+    };
+    // events
+    cfg.host.addEventListener('change', (e) => { const c = e.target.closest('[data-sel]'); if (!c) return; if (c.dataset.sel === '__all') { const all = G.rows(); if (c.checked) all.forEach((r) => G.sel.add(cfg.rowId(r))); else G.sel.clear(); } else if (c.checked) G.sel.add(c.dataset.sel); else G.sel.delete(c.dataset.sel); G.render(); });
+    cfg.host.addEventListener('click', (e) => { if (e.target.closest('[data-sel]')) { e.stopPropagation(); return; } const th = e.target.closest('th[data-sort]'); if (th) { const id = th.dataset.sort; if (G.sort && G.sort.id === id) G.sort.dir = G.sort.dir === 'asc' ? 'desc' : 'asc'; else { const c = cfg.columns.find((x) => x.id === id); G.sort = { id, dir: c && c.sortDesc ? 'desc' : 'asc' }; } G.page = 1; G.render(); } });
+    if (cfg.pager) { CG.delegate(cfg.pager, 'click', '[data-act="prev"]', () => { G.page--; G.render(); }); CG.delegate(cfg.pager, 'click', '[data-act="next"]', () => { G.page++; G.render(); }); }
+    if (cfg.tools) cfg.tools.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-grid]'); if (!b) return;
+      if (b.dataset.grid === 'csv') { G.copyCsv(); return; }
+      const vis = new Set(visibleCols().map((c) => c.id));
+      const m = CG.menu(b, '<div class="menu-label">Columns</div>' + cfg.columns.filter((c) => !c.always).map((c) => '<label class="adm-colrow"><input type="checkbox" class="checkbox" data-col="' + c.id + '"' + (vis.has(c.id) ? ' checked' : '') + '><span>' + esc(label(c)) + '</span></label>').join('') + '<div class="menu-sep"></div><button type="button" class="menu-item" data-cols-reset>' + A.icon('columns', 13) + ' Reset to default</button>');
+      m.addEventListener('change', (ev) => { const cb = ev.target.closest('[data-col]'); if (!cb) return; const ids = Array.from(m.querySelectorAll('[data-col]:checked')).map((x) => x.dataset.col); if (!ids.length) { cb.checked = true; CG.toast({ title: 'Keep at least one column' }); return; } G.setCols(cfg.columns.filter((c) => c.always || ids.includes(c.id)).map((c) => c.id)); });
+      m.addEventListener('click', (ev) => { if (ev.target.closest('[data-cols-reset]')) { G.resetCols(); CG.toast({ title: 'Columns reset' }); } });
+    });
+    if (cfg.bulkbar) cfg.bulkbar.addEventListener('click', async (e) => { const b = e.target.closest('[data-bulk]'); if (!b) return; if (b.dataset.bulk === '__clear') { G.clearSel(); return; } const act = cfg.bulk.find((x) => x.id === b.dataset.bulk); if (!act) return; const rows = G.selectedRows(); const r = await act.run(rows, G, b); if (r !== false && !act.keep) G.sel.clear(); G.render(); });
+    return G;
+  };
+
+  // ---------- grouped / stacked bar chart (SVG, theme-aware via CSS classes) ----------
+  const niceMax = (v) => { if (v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); const m = v / p; const n = m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10; return n * p; };
+  A.barChart = function (o) {
+    const W = o.width || 640, H = o.height || 170, padL = 52, padR = 12, padT = 20, padB = 24; const n = o.labels.length;
+    const totals = o.labels.map((_, i) => o.stacked ? o.series.reduce((s, sr) => s + (sr.values[i] || 0), 0) : Math.max.apply(null, o.series.map((sr) => sr.values[i] || 0)));
+    const max = niceMax(Math.max(1, ...totals)); const iw = W - padL - padR, ih = H - padT - padB; const y = (v) => padT + ih - v / max * ih; const slot = iw / Math.max(n, 1);
+    const fmt = o.fmt || ((v) => String(v)); let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="' + esc(o.aria || 'Bar chart') + '">';
+    s += '<defs><pattern id="admHatch" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" stroke="hsl(var(--profit))" stroke-width="1.5" opacity=".75"/></pattern></defs>';
+    [0, 0.5, 1].forEach((f) => { const v = max * f; s += '<line class="grid-l" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '"' + (f === 0 ? '' : ' stroke-dasharray="2 3"') + '/><text class="axis-t" x="' + (padL - 6) + '" y="' + (y(v) + 3.5).toFixed(1) + '" text-anchor="end">' + esc(fmt(v)) + '</text>'; });
+    const g = o.series.length; const bw = o.stacked ? Math.min(30, slot * 0.55) : Math.min(18, (slot * 0.62) / g);
+    o.labels.forEach((lab, i) => {
+      const cx = padL + slot * i + slot / 2; let cum = 0; const tip = lab + ': ' + o.series.map((sr) => sr.name + ' ' + fmt(sr.values[i] || 0)).join(' · ');
+      if (o.stacked) { o.series.forEach((sr) => { const v = sr.values[i] || 0; if (v <= 0) return; const top = y(cum + v), h = Math.max(1, y(cum) - top - (cum > 0 ? 2 : 0)); s += '<rect class="' + sr.cls + '" x="' + (cx - bw / 2).toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="2"><title>' + esc(tip) + '</title></rect>'; cum += v; }); }
+      else { o.series.forEach((sr, k) => { const v = sr.values[i] || 0; const x = cx - (g * bw + (g - 1) * 3) / 2 + k * (bw + 3); const top = y(v), h = y(0) - top; if (v > 0) s += '<rect class="' + sr.cls + '" x="' + x.toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + Math.max(1, h).toFixed(1) + '" rx="2"><title>' + esc(tip) + '</title></rect>'; }); }
+      if (totals[i] > 0 && (o.labelAll || i === n - 1 || totals[i] === Math.max(...totals))) s += '<text class="val-t" x="' + cx.toFixed(1) + '" y="' + (y(totals[i]) - 5).toFixed(1) + '" text-anchor="middle">' + esc(fmt(totals[i])) + '</text>';
+      s += '<text class="axis-t" x="' + cx.toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle">' + esc(lab) + '</text>';
+      s += '<rect class="bar-hit" x="' + (padL + slot * i).toFixed(1) + '" y="' + padT + '" width="' + slot.toFixed(1) + '" height="' + ih + '"><title>' + esc(tip) + '</title></rect>';
+    });
+    return s + '</svg>';
+  };
+  A.inrShort = (v) => (v >= 100000 ? '₹' + (v / 100000).toFixed(v % 100000 ? 1 : 0) + 'L' : v >= 1000 ? '₹' + (v / 1000).toFixed(v % 1000 ? 1 : 0) + 'k' : '₹' + Math.round(v));
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+  const A = window.CG_ADMIN; const M = CG.mock, F = CG.fmt, esc = CG.esc, $ = CG.$, $$ = CG.$$; const el = A.el;
+  const bindFilter = (input, ev, fn) => input.addEventListener(ev, (e) => fn(e.target.value));
+  const activeSwitch = (x, act) => '<div class="flex items-center gap-2">' + A.switchHtml(x.isActive, 'data-act="toggle" data-id="' + x.id + '" aria-label="Toggle active"') + '<span class="text-xs ' + (x.isActive ? '' : 'text-muted') + '">' + (x.isActive ? 'Active' : 'Inactive') + '</span></div>';
+  const bulkActive = (list, evName, noun) => [
+    { id: 'activate', label: 'Activate', icon: 'check', run: (rows) => { A.save(() => { rows.forEach((x) => (x.isActive = true)); CG.emit(evName, list); }, rows.length + ' ' + noun + ' activated'); } },
+    { id: 'deactivate', label: 'Deactivate', run: (rows) => { A.save(() => { rows.forEach((x) => (x.isActive = false)); CG.emit(evName, list); }, rows.length + ' ' + noun + ' deactivated'); } }
+  ];
+
+  // =====================================================================
+  // /admin/subscriptions  (plans)
+  // =====================================================================
+  CG.register('/admin/subscriptions', {
+    init(root) {
+      A.hydrateIcons(root);
+      const dlg = el(root, 'dialog'), form = dlg.querySelector('form');
+      const INTERVALS = [['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['yearly', 'Yearly']];
+      let editing = null, features = [], handle = null; const S = { q: '', status: '' };
+      el(dlg, 'intervals').innerHTML = INTERVALS.map(([k, label]) => '<div class="adm-interval"><h4>' + label + '</h4>' +
+        '<div class="field"><label class="label">Price</label><input class="input input-sm mono" name="' + k + '.price" type="number" min="0" step="1" value="0"></div>' +
+        '<div class="field"><label class="label">Discount Price (₹)</label><input class="input input-sm mono" name="' + k + '.discountPrice" type="number" min="0" step="1" value="0"></div>' +
+        '<div class="adm-sublabel">Feature Limits</div>' +
+        '<div class="field"><label class="label">Paper Trading Limit <span class="text-muted font-medium">(Per Month)</span></label><input class="input input-sm mono" name="' + k + '.paper" type="number" min="0" step="1" value="0"></div>' +
+        '<div class="field" style="margin-bottom:0"><label class="label">Live Trading Limit <span class="text-muted font-medium">(Per Month)</span></label><input class="input input-sm mono" name="' + k + '.live" type="number" min="0" step="1" value="0"></div>' +
+        '</div>').join('');
+      const renderFeatures = () => { el(dlg, 'features').innerHTML = features.length ? features.map((f, i) => '<span class="adm-chip">' + esc(f) + '<button type="button" class="adm-chip-x" data-act="rm-feature" data-i="' + i + '" aria-label="Remove ' + esc(f) + '">' + A.icon('x', 11) + '</button></span>').join('') : '<span class="text-xs text-muted">No features added yet</span>'; };
+      const renderMenu = (selected) => { const sel = new Set(selected || []); el(dlg, 'menu-items').innerHTML = M.menuItems.length ? M.menuItems.map((m) => '<label><input type="checkbox" class="checkbox" name="menuItem" value="' + esc(m.displayName) + '"' + (sel.has(m.displayName) ? ' checked' : '') + (m.isActive ? '' : ' title="Inactive menu item"') + '><span class="flex-1">' + esc(m.displayName) + (m.isActive ? '' : ' <span class="badge badge-secondary">Inactive</span>') + '</span><span class="text-xs text-muted mono">' + esc(m.category) + ' · ' + F.inr(m.price) + '</span></label>').join('') : '<div class="empty">No menu items — add some in Menu Pricing</div>'; updateMenuCount(); };
+      const updateMenuCount = () => { const n = $$('[name="menuItem"]:checked', form).length; el(dlg, 'menu-count').textContent = n + ' of ' + M.menuItems.length + ' menu items linked'; };
+      const addFeature = () => { const inp = el(dlg, 'feature-input'); const v = inp.value.trim(); if (!v) return; if (!features.includes(v)) features.push(v); inp.value = ''; renderFeatures(); inp.focus(); };
+      const open = (plan) => {
+        editing = plan || null; features = plan ? plan.features.slice() : []; form.reset();
+        A.formSet(form, 'name', plan ? plan.name : ''); A.formSet(form, 'description', plan ? plan.description : '');
+        INTERVALS.forEach(([k]) => { const iv = plan ? plan[k] || {} : {}; const fl = iv.featureLimits || {}; A.formSet(form, k + '.price', iv.price || 0); A.formSet(form, k + '.discountPrice', iv.discountPrice || 0); A.formSet(form, k + '.paper', fl.paper_trading || 0); A.formSet(form, k + '.live', fl.live_trading || 0); });
+        renderFeatures(); renderMenu(plan ? plan.menuItems : []); A.setSwitch(el(dlg, 'active'), plan ? plan.isActive : true);
+        el(dlg, 'submit').textContent = plan ? 'Update' : 'Create';
+        handle = CG.modal.open(dlg, { title: plan ? 'Edit Plan' : 'Create New Plan', description: plan ? 'Update pricing, limits and menu access for ' + plan.name : 'Define a new subscription tier, its pricing and feature limits', size: 'lg' });
+        setTimeout(() => form.querySelector('[name="name"]').focus(), 50);
+      };
+      form.addEventListener('submit', (e) => {
+        e.preventDefault(); const name = A.formVal(form, 'name').trim();
+        if (!name) { A.validation('Plan name is required'); form.querySelector('[name="name"]').focus(); return; }
+        const data = { name, description: A.formVal(form, 'description').trim(), features: features.slice(), isActive: A.isOn(el(dlg, 'active')), menuItems: $$('[name="menuItem"]:checked', form).map((c) => c.value) };
+        INTERVALS.forEach(([k]) => { data[k] = { price: +A.formVal(form, k + '.price') || 0, discountPrice: +A.formVal(form, k + '.discountPrice') || 0, featureLimits: { paper_trading: +A.formVal(form, k + '.paper') || 0, live_trading: +A.formVal(form, k + '.live') || 0 } }; });
+        const ok = A.save(() => { if (editing) Object.assign(editing, data); else M.plans.push(Object.assign({ id: A.uid('p') }, data)); CG.emit('plans:changed', M.plans); }, editing ? 'Updated' : 'Created');
+        if (ok) { handle && handle.close(); grid.render(); }
+      });
+      el(dlg, 'feature-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addFeature(); } });
+      CG.delegate(form, 'click', '[data-act="add-feature"]', addFeature);
+      CG.delegate(form, 'click', '[data-act="rm-feature"]', (e, b) => { features.splice(+b.dataset.i, 1); renderFeatures(); });
+      CG.delegate(form, 'click', '[data-act="cancel"]', () => handle && handle.close());
+      CG.delegate(form, 'change', '[name="menuItem"]', updateMenuCount);
+      el(dlg, 'active').addEventListener('click', (e) => A.setSwitch(e.currentTarget, !A.isOn(e.currentTarget)));
+      CG.delegate(root, 'click', '[data-act="new"]', () => open(null));
+      CG.delegate(root, 'click', '[data-act="edit"]', (e, b) => open(M.plans.find((p) => p.id === b.dataset.id)));
+      CG.delegate(root, 'click', '[data-act="toggle"]', (e, b) => { const p = M.plans.find((x) => x.id === b.dataset.id); if (!p) return; p.isActive = !p.isActive; A.save(() => CG.emit('plans:changed', M.plans), 'Updated'); grid.render(); });
+      const priceCell = (iv) => { if (!iv) return '<span class="text-muted">—</span>'; const hasDisc = iv.discountPrice > 0 && iv.discountPrice < iv.price; return '<span class="mono">' + F.inr(hasDisc ? iv.discountPrice : iv.price) + '</span>' + (hasDisc ? '<span class="adm-strike mono">' + F.inr(iv.price) + '</span><div class="text-2xs text-profit mono">' + Math.round((1 - iv.discountPrice / iv.price) * 100) + '% off</div>' : ''); };
+      const priceVal = (iv) => (iv ? (iv.discountPrice > 0 && iv.discountPrice < iv.price ? iv.discountPrice : iv.price) : 0);
+      const limitsText = (p) => { const fl = p.yearly && p.yearly.featureLimits; return fl ? (fl.paper_trading || '∞') + ' paper · ' + (fl.live_trading || (p.yearly.price ? '∞' : 0)) + ' live' : '—'; };
+      const grid = A.grid({
+        key: 'plans', host: el(root, 'table'), pager: el(root, 'pager'), tools: el(root, 'tools'), bulkbar: el(root, 'bulkbar'), noun: 'plans', per: 0,
+        columns: [
+          { id: 'name', label: 'Name', always: true, sortVal: (p) => p.name.toLowerCase(), cell: (p) => '<div class="font-medium">' + esc(p.name) + '</div><div class="text-xs text-muted" style="max-width:280px">' + esc(p.description || '') + '</div>', csv: (p) => p.name },
+          { id: 'monthly', label: 'Monthly', cls: 'r', sortVal: (p) => priceVal(p.monthly), cell: (p) => priceCell(p.monthly), csv: (p) => priceVal(p.monthly) },
+          { id: 'quarterly', label: 'Quarterly', cls: 'r', sortVal: (p) => priceVal(p.quarterly), cell: (p) => priceCell(p.quarterly), csv: (p) => priceVal(p.quarterly) },
+          { id: 'yearly', label: 'Yearly', cls: 'r', sortVal: (p) => priceVal(p.yearly), cell: (p) => priceCell(p.yearly), csv: (p) => priceVal(p.yearly) },
+          { id: 'limits', label: 'Limits <span class="text-2xs">(yearly)</span>', csvLabel: 'Limits', cell: (p) => '<span class="mono text-xs">' + limitsText(p) + '</span>' },
+          { id: 'features', label: 'Features', default: false, sortVal: (p) => (p.features || []).length, cell: (p) => '<span class="mono text-xs">' + (p.features || []).length + ' features · ' + (p.menuItems || []).length + ' menu items</span>' },
+          { id: 'status', label: 'Status', sortVal: (p) => (p.isActive ? 1 : 0), cell: (p) => activeSwitch(p), csv: (p) => (p.isActive ? 'Active' : 'Inactive') },
+          { id: 'actions', label: 'Actions', cls: 'r', always: true, noCsv: true, cell: (p) => '<div class="adm-actions"><button class="adm-icon-btn" title="Edit plan" data-act="edit" data-id="' + p.id + '">' + A.icon('pencil') + '</button></div>' }
+        ],
+        rows: () => M.plans.filter((p) => (!S.q || (p.name + ' ' + (p.description || '')).toLowerCase().includes(S.q)) && (!S.status || (S.status === 'active') === !!p.isActive)),
+        rowId: (p) => p.id, isFiltered: () => !!(S.q || S.status),
+        empty: { icon: 'package', title: 'No Plans Yet', hint: 'Create your first subscription plan to start selling.', action: 'Create Plan' },
+        emptyFiltered: { icon: 'search', title: 'No plans match', hint: 'Try another search term or status.', action: 'Clear filters' },
+        bulk: bulkActive(M.plans, 'plans:changed', 'plans')
+      });
+      bindFilter(el(root, 'q'), 'input', (v) => { S.q = v.trim().toLowerCase(); grid.render(); });
+      bindFilter(el(root, 'status'), 'change', (v) => { S.status = v; grid.render(); });
+      CG.delegate(root, 'click', '[data-act="clear-filters"]', () => { S.q = ''; S.status = ''; el(root, 'q').value = ''; el(root, 'status').value = ''; grid.render(); });
+      this._render = () => grid.render();
+    },
+    show() { this._render && this._render(); }
+  });
+
+  // =====================================================================
+  // /admin/menu-pricing
+  // =====================================================================
+  CG.register('/admin/menu-pricing', {
+    init(root) {
+      A.hydrateIcons(root);
+      const dlg = el(root, 'dialog'), form = dlg.querySelector('form'); let editing = null, handle = null; const S = { q: '', category: '', status: '' };
+      const open = (item) => { editing = item || null; form.reset(); A.formSet(form, 'displayName', item ? item.displayName : ''); A.formSet(form, 'category', item ? item.category : ''); A.formSet(form, 'price', item ? item.price : 0); A.setSwitch(el(dlg, 'active'), item ? item.isActive : true); el(dlg, 'submit').textContent = item ? 'Update' : 'Create'; handle = CG.modal.open(dlg, { title: item ? 'Edit Menu Item' : 'New Menu Item', description: item ? 'Change the name, category or price of ' + item.displayName : 'Menu items can be linked to subscription plans' }); setTimeout(() => form.querySelector('[name="displayName"]').focus(), 50); };
+      form.addEventListener('submit', (e) => {
+        e.preventDefault(); const name = A.formVal(form, 'displayName').trim();
+        if (!name) { A.validation('Display Name is required'); form.querySelector('[name="displayName"]').focus(); return; }
+        const data = { displayName: name, category: A.formVal(form, 'category').trim() || 'General', price: +A.formVal(form, 'price') || 0, isActive: A.isOn(el(dlg, 'active')) };
+        const ok = A.save(() => { if (editing) { const old = editing.displayName; Object.assign(editing, data); if (old !== data.displayName) M.plans.forEach((p) => { p.menuItems = (p.menuItems || []).map((m) => (m === old ? data.displayName : m)); }); } else M.menuItems.push(Object.assign({ id: A.uid('m') }, data)); CG.emit('menuItems:changed', M.menuItems); }, editing ? 'Updated' : 'Created');
+        if (ok) { handle && handle.close(); fillCategories(); grid.render(); }
+      });
+      CG.delegate(form, 'click', '[data-act="cancel"]', () => handle && handle.close());
+      el(dlg, 'active').addEventListener('click', (e) => A.setSwitch(e.currentTarget, !A.isOn(e.currentTarget)));
+      CG.delegate(root, 'click', '[data-act="new"]', () => open(null));
+      CG.delegate(root, 'click', '[data-act="edit"]', (e, b) => open(M.menuItems.find((m) => m.id === b.dataset.id)));
+      CG.delegate(root, 'click', '[data-act="toggle"]', (e, b) => { const m = M.menuItems.find((x) => x.id === b.dataset.id); if (!m) return; m.isActive = !m.isActive; A.save(() => CG.emit('menuItems:changed', M.menuItems), 'Updated'); grid.render(); });
+      const linked = (m) => M.plans.filter((p) => (p.menuItems || []).includes(m.displayName)).length;
+      const grid = A.grid({
+        key: 'menu', host: el(root, 'table'), pager: el(root, 'pager'), tools: el(root, 'tools'), bulkbar: el(root, 'bulkbar'), noun: 'items', per: 0,
+        columns: [
+          { id: 'name', label: 'Display Name', always: true, sortVal: (m) => m.displayName.toLowerCase(), cell: (m) => '<span class="font-medium">' + esc(m.displayName) + '</span>', csv: (m) => m.displayName },
+          { id: 'category', label: 'Category', sortVal: (m) => m.category, cell: (m) => '<span class="badge badge-secondary">' + esc(m.category) + '</span>', csv: (m) => m.category },
+          { id: 'price', label: 'Price (₹)', cls: 'r', sortVal: (m) => m.price, cell: (m) => (m.price ? F.inr(m.price) : '<span class="text-muted">Free</span>'), csv: (m) => m.price },
+          { id: 'linked', label: 'Linked plans', sortVal: linked, cell: (m) => { const n = linked(m); return '<span class="mono text-xs">' + n + ' plan' + (n === 1 ? '' : 's') + '</span>'; }, csv: linked },
+          { id: 'status', label: 'Status', sortVal: (m) => (m.isActive ? 1 : 0), cell: (m) => activeSwitch(m), csv: (m) => (m.isActive ? 'Active' : 'Inactive') },
+          { id: 'actions', label: 'Actions', cls: 'r', always: true, noCsv: true, cell: (m) => '<div class="adm-actions"><button class="adm-icon-btn" title="Edit item" data-act="edit" data-id="' + m.id + '">' + A.icon('pencil') + '</button></div>' }
+        ],
+        rows: () => M.menuItems.filter((m) => (!S.q || m.displayName.toLowerCase().includes(S.q)) && (!S.category || m.category === S.category) && (!S.status || (S.status === 'active') === !!m.isActive)),
+        rowId: (m) => m.id, isFiltered: () => !!(S.q || S.category || S.status),
+        empty: { icon: 'tag', title: 'No Menu Items', hint: 'Add menu items that can be linked to plans.', action: 'Add Item' },
+        emptyFiltered: { icon: 'search', title: 'No items match', hint: 'Try another search, category or status.', action: 'Clear filters' },
+        bulk: bulkActive(M.menuItems, 'menuItems:changed', 'items')
+      });
+      const fillCategories = () => { const cats = Array.from(new Set(M.menuItems.map((m) => m.category))).sort(); el(root, 'category').innerHTML = '<option value="">All categories</option>' + cats.map((c) => '<option value="' + esc(c) + '"' + (c === S.category ? ' selected' : '') + '>' + esc(c) + '</option>').join(''); };
+      bindFilter(el(root, 'q'), 'input', (v) => { S.q = v.trim().toLowerCase(); grid.render(); });
+      bindFilter(el(root, 'category'), 'change', (v) => { S.category = v; grid.render(); });
+      bindFilter(el(root, 'status'), 'change', (v) => { S.status = v; grid.render(); });
+      CG.delegate(root, 'click', '[data-act="clear-filters"]', () => { S.q = S.category = S.status = ''; el(root, 'q').value = ''; el(root, 'category').value = ''; el(root, 'status').value = ''; grid.render(); });
+      this._render = () => { fillCategories(); grid.render(); };
+    },
+    show() { this._render && this._render(); }
+  });
+
+  // =====================================================================
+  // /admin/coupons
+  // =====================================================================
+  CG.register('/admin/coupons', {
+    init(root) {
+      A.hydrateIcons(root);
+      const dlg = el(root, 'dialog'), form = dlg.querySelector('form'); let editing = null, handle = null; const assigned = new Set(); const S = { q: '', type: '', status: '' };
+      const INTERVALS = [['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['yearly', 'Yearly']];
+      const filteredUsers = () => { const q = el(dlg, 'assign-search').value.trim().toLowerCase(); return M.users.filter((u) => !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)); };
+      const renderAssign = () => { const list = filteredUsers(); el(dlg, 'assign-list').innerHTML = list.length ? list.map((u) => '<label><input type="checkbox" class="checkbox" data-uid="' + u.id + '"' + (assigned.has(u.id) ? ' checked' : '') + '><span class="flex-1"><span class="block">' + esc(u.name) + '</span><span class="text-xs text-muted">' + esc(u.email) + '</span></span><span class="badge ' + A.planBadge(u.plan) + '">' + esc(u.plan) + '</span></label>').join('') : '<div class="empty">No users found</div>'; el(dlg, 'assign-count').textContent = assigned.size + ' of ' + M.users.length + ' users selected'; };
+      const renderPlanGrid = (sel) => { const g = el(dlg, 'plan-grid'); if (!M.plans.length) { g.innerHTML = '<div class="empty">No plans available</div>'; return; } g.innerHTML = '<table class="table table-compact"><thead><tr><th>Plan</th>' + INTERVALS.map(([, l]) => '<th style="text-align:center">' + l + '</th>').join('') + '</tr></thead><tbody>' + M.plans.map((p) => '<tr><td>' + esc(p.name) + (p.isActive ? '' : ' <span class="badge badge-secondary">Inactive</span>') + '</td>' + INTERVALS.map(([k]) => '<td><input type="checkbox" class="checkbox" data-plan="' + p.id + '" data-interval="' + k + '"' + (sel[p.id] && sel[p.id].includes(k) ? ' checked' : '') + ' aria-label="' + esc(p.name) + ' ' + k + '"></td>').join('') + '</tr>').join('') + '</tbody></table>'; };
+      const planIntervalsOf = (c) => { if (c.planIntervals) return c.planIntervals; const o = {}; (c.plans || []).forEach((p) => (o[p] = (c.intervals || []).slice())); return o; };
+      const toggleAssign = () => { const community = A.formVal(form, 'scope') === 'private_community_listed'; el(dlg, 'assign').hidden = !community; if (community) renderAssign(); };
+      const open = (c) => {
+        editing = c || null; form.reset(); assigned.clear(); (c && c.assignedUsers || []).forEach((id) => assigned.add(id));
+        A.formSet(form, 'code', c ? c.code : ''); A.formSet(form, 'scope', c ? c.scope : 'public_all_listed'); A.formSet(form, 'description', c ? c.description : ''); A.formSet(form, 'discountType', c ? c.discountType : 'percent'); A.formSet(form, 'discountValue', c ? c.discountValue : 10); A.formSet(form, 'minOrderAmount', c ? c.minOrderAmount : 0); A.formSet(form, 'maxUses', c ? c.maxUses : 100); A.formSet(form, 'perUserLimit', c ? c.perUserLimit : 1); A.formSet(form, 'startsAt', c ? c.startsAt : CG.NOW.toISOString().slice(0, 10)); A.formSet(form, 'expiresAt', c ? c.expiresAt : new Date(CG.NOW.getTime() + 90 * 86400000).toISOString().slice(0, 10));
+        el(dlg, 'assign-search').value = ''; renderPlanGrid(c ? planIntervalsOf(c) : {}); A.setSwitch(el(dlg, 'active'), c ? c.isActive : true); toggleAssign();
+        el(dlg, 'submit').textContent = c ? 'Update' : 'Create';
+        handle = CG.modal.open(dlg, { title: c ? 'Edit Coupon' : 'New Coupon', description: c ? 'Editing ' + c.code + ' · used ' + c.usedCount + ' of ' + c.maxUses + ' times' : 'Discount codes users can apply at checkout', size: 'lg' });
+        setTimeout(() => form.querySelector('[name="code"]').focus(), 50);
+      };
+      form.addEventListener('submit', (e) => {
+        e.preventDefault(); const code = A.formVal(form, 'code').trim().toUpperCase();
+        if (!code) { A.validation('Code is required'); form.querySelector('[name="code"]').focus(); return; }
+        const dup = M.coupons.find((x) => x.code === code && x !== editing); if (dup) { A.validation('Coupon code ' + code + ' already exists'); return; }
+        const planIntervals = {}; $$('[data-plan]:checked', form).forEach((c) => { (planIntervals[c.dataset.plan] = planIntervals[c.dataset.plan] || []).push(c.dataset.interval); });
+        const intervals = Array.from(new Set([].concat(...Object.values(planIntervals))));
+        const data = { code, scope: A.formVal(form, 'scope'), description: A.formVal(form, 'description').trim(), discountType: A.formVal(form, 'discountType'), discountValue: +A.formVal(form, 'discountValue') || 0, minOrderAmount: +A.formVal(form, 'minOrderAmount') || 0, maxUses: +A.formVal(form, 'maxUses') || 0, perUserLimit: +A.formVal(form, 'perUserLimit') || 0, startsAt: A.formVal(form, 'startsAt'), expiresAt: A.formVal(form, 'expiresAt'), plans: Object.keys(planIntervals), intervals, planIntervals, isActive: A.isOn(el(dlg, 'active')), assignedUsers: A.formVal(form, 'scope') === 'private_community_listed' ? Array.from(assigned) : [] };
+        if (data.discountType === 'percent' && data.discountValue > 100) { A.validation('Percent discount cannot exceed 100'); return; }
+        const ok = A.save(() => { if (editing) Object.assign(editing, data); else M.coupons.push(Object.assign({ id: A.uid('c'), usedCount: 0 }, data)); CG.emit('coupons:changed', M.coupons); }, editing ? 'Updated' : 'Created');
+        if (ok) { handle && handle.close(); grid.render(); }
+      });
+      form.querySelector('[name="code"]').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ''); });
+      form.querySelector('[name="scope"]').addEventListener('change', toggleAssign);
+      el(dlg, 'assign-search').addEventListener('input', renderAssign);
+      CG.delegate(form, 'change', '[data-uid]', (e, c) => { if (c.checked) assigned.add(c.dataset.uid); else assigned.delete(c.dataset.uid); el(dlg, 'assign-count').textContent = assigned.size + ' of ' + M.users.length + ' users selected'; });
+      CG.delegate(form, 'click', '[data-act="assign-all"]', () => { filteredUsers().forEach((u) => assigned.add(u.id)); renderAssign(); });
+      CG.delegate(form, 'click', '[data-act="assign-none"]', () => { filteredUsers().forEach((u) => assigned.delete(u.id)); renderAssign(); });
+      CG.delegate(form, 'click', '[data-act="assign-invert"]', () => { filteredUsers().forEach((u) => (assigned.has(u.id) ? assigned.delete(u.id) : assigned.add(u.id))); renderAssign(); });
+      CG.delegate(form, 'click', '[data-act="cancel"]', () => handle && handle.close());
+      el(dlg, 'active').addEventListener('click', (e) => A.setSwitch(e.currentTarget, !A.isOn(e.currentTarget)));
+      CG.delegate(root, 'click', '[data-act="new"]', () => open(null));
+      CG.delegate(root, 'click', '[data-act="edit"]', (e, b) => open(M.coupons.find((c) => c.id === b.dataset.id)));
+      CG.delegate(root, 'click', '[data-act="toggle"]', (e, b) => { const c = M.coupons.find((x) => x.id === b.dataset.id); if (!c) return; c.isActive = !c.isActive; A.save(() => CG.emit('coupons:changed', M.coupons), 'Updated'); grid.render(); });
+      const removeCoupons = (list) => { list.forEach((c) => { const i = M.coupons.indexOf(c); if (i >= 0) M.coupons.splice(i, 1); }); CG.emit('coupons:changed', M.coupons); };
+      CG.delegate(root, 'click', '[data-act="delete"]', async (e, b) => { const c = M.coupons.find((x) => x.id === b.dataset.id); if (!c) return; const ok = await CG.modal.confirm({ title: 'Delete Coupon?', description: 'This action cannot be undone. The coupon will be permanently deleted.', confirmText: 'Delete', variant: 'destructive' }); if (!ok) return; removeCoupons([c]); CG.toast({ title: 'Deleted', description: c.code + ' removed', variant: 'success' }); grid.render(); });
+      const expired = (c) => new Date(c.expiresAt) < CG.NOW;
+      const grid = A.grid({
+        key: 'coupons', host: el(root, 'table'), pager: el(root, 'pager'), tools: el(root, 'tools'), bulkbar: el(root, 'bulkbar'), noun: 'coupons', per: 0,
+        columns: [
+          { id: 'code', label: 'Code', always: true, sortVal: (c) => c.code, cell: (c) => '<div class="mono font-medium">' + esc(c.code) + '</div><div class="text-xs text-muted" style="max-width:220px">' + esc(c.description || '') + '</div>', csv: (c) => c.code },
+          { id: 'discount', label: 'Discount', cls: 'r', sortVal: (c) => (c.discountType === 'percent' ? c.discountValue : c.discountValue / 100), cell: (c) => (c.discountType === 'percent' ? c.discountValue + '%' : F.inr(c.discountValue)) + (c.minOrderAmount ? '<div class="text-2xs text-muted">min ' + F.inr(c.minOrderAmount) + '</div>' : ''), csv: (c) => (c.discountType === 'percent' ? c.discountValue + '%' : c.discountValue) },
+          { id: 'type', label: 'Type', sortVal: (c) => c.scope, cell: (c) => { const community = c.scope === 'private_community_listed'; return '<span class="badge ' + (community ? 'badge-outline' : 'badge-secondary') + '">' + (community ? 'Community' : 'Public') + '</span>' + (community ? '<div class="text-2xs text-muted mt-1">' + (c.assignedUsers || []).length + ' users assigned</div>' : ''); }, csv: (c) => (c.scope === 'private_community_listed' ? 'Community' : 'Public') },
+          { id: 'validity', label: 'Validity', sortVal: (c) => c.expiresAt, cell: (c) => '<span class="text-xs mono nowrap">' + A.date(c.startsAt) + '</span> <span class="text-muted">→</span> <span class="text-xs mono nowrap ' + (expired(c) ? 'text-loss' : '') + '">' + A.date(c.expiresAt) + '</span>' + (expired(c) ? '<div class="text-2xs text-loss">Expired</div>' : ''), csv: (c) => c.startsAt + ' → ' + c.expiresAt },
+          { id: 'plans', label: 'Plans', cell: (c) => { const pi = planIntervalsOf(c); return '<div class="flex flex-wrap gap-1" style="max-width:200px">' + (Object.keys(pi).length ? Object.keys(pi).map((pid) => '<span class="badge badge-outline" title="' + esc(pi[pid].join(', ')) + '">' + esc(A.planName(pid)) + '</span>').join('') : '<span class="text-xs text-muted">All plans</span>') + '</div>'; }, csv: (c) => Object.keys(planIntervalsOf(c)).map(A.planName).join('; ') || 'All plans' },
+          { id: 'uses', label: 'Uses', cls: 'r nowrap', sortVal: (c) => c.usedCount, cell: (c) => c.usedCount + ' / ' + (c.maxUses || '∞') + '<div class="text-2xs text-muted">' + c.perUserLimit + ' per user</div>', csv: (c) => c.usedCount + '/' + (c.maxUses || '∞') },
+          { id: 'status', label: 'Status', sortVal: (c) => (c.isActive ? 1 : 0), cell: (c) => activeSwitch(c), csv: (c) => (c.isActive ? 'Active' : 'Inactive') },
+          { id: 'actions', label: 'Actions', cls: 'r', always: true, noCsv: true, cell: (c) => '<div class="adm-actions"><button class="adm-icon-btn" title="Edit coupon" data-act="edit" data-id="' + c.id + '">' + A.icon('pencil') + '</button><button class="adm-icon-btn danger" title="Delete coupon" data-act="delete" data-id="' + c.id + '">' + A.icon('trash') + '</button></div>' }
+        ],
+        rows: () => M.coupons.filter((c) => (!S.q || (c.code + ' ' + (c.description || '')).toLowerCase().includes(S.q)) && (!S.type || c.scope === S.type) && (!S.status || (S.status === 'expired' ? expired(c) : S.status === 'active' ? c.isActive && !expired(c) : !c.isActive))),
+        rowId: (c) => c.id, isFiltered: () => !!(S.q || S.type || S.status),
+        empty: { icon: 'ticket', title: 'No Coupons', hint: 'Create your first coupon code for checkout.', action: 'Create Coupon' },
+        emptyFiltered: { icon: 'search', title: 'No coupons match', hint: 'Try another search, type or status.', action: 'Clear filters' },
+        bulk: bulkActive(M.coupons, 'coupons:changed', 'coupons').concat([{ id: 'delete', label: 'Delete', icon: 'trash', variant: 'btn-destructive', run: async (rows) => { const ok = await CG.modal.confirm({ title: 'Delete ' + rows.length + ' coupon' + (rows.length === 1 ? '' : 's') + '?', description: rows.map((c) => c.code).join(', ') + ' · This action cannot be undone.', confirmText: 'Delete', variant: 'destructive' }); if (!ok) return false; removeCoupons(rows); CG.toast({ title: 'Deleted', description: rows.length + ' coupons removed', variant: 'success' }); } }])
+      });
+      bindFilter(el(root, 'q'), 'input', (v) => { S.q = v.trim().toLowerCase(); grid.render(); });
+      bindFilter(el(root, 'type'), 'change', (v) => { S.type = v; grid.render(); });
+      bindFilter(el(root, 'status'), 'change', (v) => { S.status = v; grid.render(); });
+      CG.delegate(root, 'click', '[data-act="clear-filters"]', () => { S.q = S.type = S.status = ''; el(root, 'q').value = ''; el(root, 'type').value = ''; el(root, 'status').value = ''; grid.render(); });
+      this._render = () => grid.render();
+    },
+    show() { this._render && this._render(); }
+  });
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+  const A = window.CG_ADMIN; const M = CG.mock, F = CG.fmt, esc = CG.esc, $ = CG.$, $$ = CG.$$; const el = A.el;
+  // referral-level detail rows for a commission record (generated once, deterministic)
+  A.commissionDetails = (c) => {
+    if (c.details) return c.details;
+    const r = CG.rng(c.referrerId.length * 977 + c.referrals * 31 + (c.total | 0));
+    const pool = M.users.filter((u) => u.id !== c.referrerId); const n = Math.max(1, c.referrals);
+    let k = c.total > 0 ? Math.round(n * c.paid / c.total) : 0; if (c.paid > 0 && k < 1) k = 1; if (c.pending > 0 && k > n - 1) k = n - 1; if (k < 0) k = 0;
+    const split = (amount, count) => { if (!count) return []; const w = []; for (let i = 0; i < count; i++) w.push(0.5 + r()); const s = w.reduce((a, b) => a + b, 0); const out = w.map((x) => Math.round(amount * x / s)); out[0] += amount - out.reduce((a, b) => a + b, 0); return out; };
+    const amts = split(c.paid, k).map((a) => ({ a, status: 'paid' })).concat(split(c.pending, n - k).map((a) => ({ a, status: 'pending' })));
+    const start = Math.floor(r() * pool.length); const pct = c.commissionPct || 20;
+    c.details = amts.map((x, i) => { const u = pool[(start + i * 7) % pool.length]; const paidAt = x.status === 'paid' ? new Date(CG.NOW - (20 + Math.floor(r() * 120)) * 86400000).toISOString().slice(0, 10) : null; return { userId: u.id, name: u.name, email: u.email, joinedAt: u.joinedAt, plan: u.plan, interval: u.interval, amount: Math.round(x.a * 100 / pct), commission: x.a, status: x.status, proofLink: '', paidAt }; });
+    c.paid = c.details.filter((d) => d.status === 'paid').reduce((s, d) => s + d.commission, 0); c.total = c.details.reduce((s, d) => s + d.commission, 0); c.pending = c.total - c.paid; c.status = c.pending > 0 ? 'pending' : 'paid';
+    return c.details;
+  };
+  M.commissions.forEach(A.commissionDetails);
+  A.markCommissionPaid = (c) => { A.commissionDetails(c).forEach((d) => { if (d.status !== 'paid') { d.status = 'paid'; d.paidAt = CG.NOW.toISOString().slice(0, 10); } }); c.paid = c.total; c.pending = 0; c.status = 'paid'; };
+
+  // =====================================================================
+  // /admin/user-subscriptions  (Users + Commissions tabs)
+  // =====================================================================
+  CG.register('/admin/user-subscriptions', {
+    init(root) {
+      A.hydrateIcons(root);
+      const S = { tab: 'users', q: '', status: '', cq: '', cmonth: '' };
+      const bar2 = CG.h('<div class="adm-bulkbar" hidden></div>'); root.appendChild(bar2);
+      A.bindTabs(root, (t) => { S.tab = t; usersGrid.sel.clear(); commGrid.sel.clear(); render(); });
+      // ----- Users tab -----
+      el(root, 'users-search').addEventListener('input', (e) => { S.q = e.target.value.trim().toLowerCase(); usersGrid.page = 1; usersGrid.render(); });
+      el(root, 'users-status').addEventListener('change', (e) => { S.status = e.target.value; usersGrid.page = 1; usersGrid.render(); });
+      const expiryCell = (u) => { if (!u.endsAt) return '<span class="text-muted">—</span>'; const d = A.daysLeft(u.endsAt); if (d < 0) return '<div class="mono">' + A.date(u.endsAt) + '</div><div class="text-2xs text-loss">Expired ' + Math.abs(d) + ' d ago</div>'; return '<div class="mono">' + A.date(u.endsAt) + '</div><div class="text-2xs ' + (d < 7 ? 'text-warning' : 'text-muted') + '">' + d + ' d left' + (d < 7 ? ' <b>(Soon)</b>' : '') + '</div>'; };
+      const editable = (u, field, val) => '<span class="adm-editable mono" data-edit="' + field + '" data-id="' + u.id + '" title="Click to edit">' + val + '</span>';
+      const setActivated = (rows, on) => A.save(() => { rows.forEach((u) => (u.activated = on)); CG.emit('users:changed', M.users); }, rows.length + ' account' + (rows.length === 1 ? '' : 's') + (on ? ' activated' : ' deactivated'));
+      const usersGrid = A.grid({
+        key: 'usersubs', host: el(root, 'users-table'), pager: el(root, 'users-pager'), tools: el(root, 'users-tools'), bulkbar: el(root, 'bulkbar'), noun: 'users', per: 10,
+        columns: [
+          { id: 'user', label: 'User', always: true, sortVal: (u) => u.name.toLowerCase(), cell: (u) => '<div class="font-medium">' + esc(u.name) + (u.role === 'admin' ? ' <span class="badge badge-outline">admin</span>' : '') + '</div><div class="text-xs text-muted">' + esc(u.email) + '</div>', csv: (u) => u.name + ' <' + u.email + '>' },
+          { id: 'plan', label: 'Plan', sortVal: (u) => u.plan, cell: (u) => '<span class="badge ' + A.planBadge(u.plan) + '">' + esc(u.plan || 'Free Plan') + '</span><div class="text-2xs text-muted mt-1">' + A.statusLabel(u.status) + (u.interval && u.status !== 'free' ? ' · ' + u.interval : '') + '</div>', csv: (u) => u.plan + ' (' + A.statusLabel(u.status) + ')' },
+          { id: 'expiry', label: 'Expiry', sortVal: (u) => u.endsAt || '', cell: (u) => '<span class="text-xs">' + expiryCell(u) + '</span>', csv: (u) => u.endsAt || '' },
+          { id: 'validity', label: 'Validity <span class="text-2xs">(days)</span>', csvLabel: 'Validity days', cls: 'r', sortVal: (u) => u.validityDays || 0, cell: (u) => editable(u, 'validity', u.validityDays || 0), csv: (u) => u.validityDays || 0 },
+          { id: 'referrals', label: 'Referrals', cls: 'r', sortVal: (u) => u.referrals || 0, cell: (u) => editable(u, 'referrals', u.referrals || 0), csv: (u) => u.referrals || 0 },
+          { id: 'commission', label: 'Commission %', cls: 'r', sortVal: (u) => u.commissionPct || 0, cell: (u) => editable(u, 'commission', (u.commissionPct || 0) + '%'), csv: (u) => u.commissionPct || 0 },
+          { id: 'account', label: 'Account', sortVal: (u) => (u.activated ? 1 : 0), cell: (u) => '<button class="badge adm-status-btn ' + (u.activated ? 'badge-success' : 'badge-secondary') + '" data-act="toggle-account" data-id="' + u.id + '" title="' + (u.activated ? 'Click to deactivate this account' : 'Click to activate this account') + '">' + (u.activated ? 'Active' : 'Deactive') + '</button>', csv: (u) => (u.activated ? 'Active' : 'Deactivated') },
+          { id: 'limits', label: 'Limits', always: true, noCsv: true, cell: (u) => '<div class="flex gap-1"><button class="adm-icon-btn" title="Edit feature limits" data-act="limits" data-id="' + u.id + '">' + A.icon('settings2') + '</button><button class="adm-icon-btn" title="Lot size settings" data-act="lots" data-id="' + u.id + '">' + A.icon('layers') + '</button></div>' }
+        ],
+        rows: () => M.users.filter((u) => (!S.q || u.name.toLowerCase().includes(S.q) || u.email.toLowerCase().includes(S.q)) && (!S.status || u.status === S.status)),
+        rowId: (u) => u.id, isFiltered: () => !!(S.q || S.status),
+        empty: { icon: 'users', title: 'No users yet', hint: 'Users appear here as soon as they sign up.' },
+        emptyFiltered: { icon: 'search', title: 'No users found', hint: 'Try a different search or status filter.', action: 'Clear filters' },
+        bulk: [{ id: 'activate', label: 'Activate', icon: 'userCheck', run: (rows) => setActivated(rows, true) }, { id: 'deactivate', label: 'Deactivate', run: (rows) => setActivated(rows, false) }]
+      });
+      CG.delegate(root, 'click', '[data-act="clear-filters"]', () => { if (S.tab === 'users') { S.q = ''; S.status = ''; el(root, 'users-search').value = ''; el(root, 'users-status').value = ''; usersGrid.render(); } else { S.cq = ''; S.cmonth = ''; el(root, 'comm-search').value = ''; monthSel.value = ''; renderComm(); } });
+      // inline editing: click → number input; Enter saves, Escape cancels, blur cancels
+      CG.delegate(el(root, 'users-table'), 'click', '.adm-editable', (e, span) => {
+        if (span.dataset.editing) return; span.dataset.editing = '1';
+        const u = M.users.find((x) => x.id === span.dataset.id); const field = span.dataset.edit; const cur = field === 'validity' ? u.validityDays : field === 'referrals' ? u.referrals : u.commissionPct;
+        const inp = CG.h('<input type="number" min="0" ' + (field === 'commission' ? 'max="100" step="0.5"' : 'step="1"') + ' class="input adm-inline-input mono" value="' + cur + '" aria-label="Edit ' + field + '">');
+        span.replaceWith(inp); inp.focus(); inp.select(); let done = false;
+        const finish = (save) => { if (done) return; done = true; if (save) { const v = Math.max(0, +inp.value || 0); A.save(() => { if (field === 'validity') { u.validityDays = v; if (u.subscribedAt) u.endsAt = new Date(new Date(u.subscribedAt).getTime() + v * 86400000).toISOString().slice(0, 10); } else if (field === 'referrals') u.referrals = v; else u.commissionPct = v; CG.emit('users:changed', M.users); }, 'Updated'); } usersGrid.render(); };
+        inp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); finish(true); } else if (ev.key === 'Escape') { ev.preventDefault(); finish(false); } });
+        inp.addEventListener('blur', () => finish(false));
+      });
+      CG.delegate(root, 'click', '[data-act="toggle-account"]', (e, b) => { const u = M.users.find((x) => x.id === b.dataset.id); if (!u) return; u.activated = !u.activated; A.save(() => CG.emit('users:changed', M.users), 'Updated'); usersGrid.render(); });
+      // Feature Limits dialog
+      const limDlg = el(root, 'limits-dialog'), limForm = limDlg.querySelector('form'); let limUser = null, limHandle = null;
+      const planLimits = (u) => { const p = M.plans.find((x) => x.id === u.planId); const fl = p && p[u.interval] && p[u.interval].featureLimits; return fl ? (fl.paper_trading || '∞') + ' paper / ' + (fl.live_trading || (p.monthly.price ? '∞' : 0)) + ' live' : '—'; };
+      CG.delegate(root, 'click', '[data-act="limits"]', (e, b) => { limUser = M.users.find((x) => x.id === b.dataset.id); if (!limUser) return; A.formSet(limForm, 'paper', limUser.featureLimits.paper_trading || 0); A.formSet(limForm, 'live', limUser.featureLimits.live_trading || 0); limForm.querySelector('[data-el="submit"]').textContent = 'Save Limits'; limHandle = CG.modal.open(limDlg, { title: 'Feature Limits', description: limUser.name + ' · ' + limUser.plan + ' · plan default: ' + planLimits(limUser), size: 'sm' }); });
+      limForm.addEventListener('submit', (e) => { e.preventDefault(); const btn = limForm.querySelector('[data-el="submit"]'); const paper = Math.max(0, +A.formVal(limForm, 'paper') || 0), live = Math.max(0, +A.formVal(limForm, 'live') || 0); A.busy(btn, '<span class="spinner" style="width:14px;height:14px"></span> Saving...', () => { const ok = A.save(() => { limUser.featureLimits = { paper_trading: paper, live_trading: live }; CG.emit('users:changed', M.users); }, 'Updated'); if (ok) { limHandle && limHandle.close(); usersGrid.render(); } }); });
+      CG.delegate(limForm, 'click', '[data-act="cancel"]', () => limHandle && limHandle.close());
+      // Lot size dialog (inferred)
+      const lotDlg = el(root, 'lots-dialog'), lotForm = lotDlg.querySelector('form'); let lotUser = null, lotHandle = null;
+      CG.delegate(root, 'click', '[data-act="lots"]', (e, b) => { lotUser = M.users.find((x) => x.id === b.dataset.id); if (!lotUser) return; ['BTC', 'ETH', 'XAUT'].forEach((k) => A.formSet(lotForm, k, lotUser.lotSizes[k])); lotHandle = CG.modal.open(lotDlg, { title: 'Lot Size Settings', description: lotUser.name + ' · per-user lot sizes for BTC, ETH and XAUT', size: 'sm' }); });
+      lotForm.addEventListener('submit', (e) => { e.preventDefault(); const vals = {}; for (const k of ['BTC', 'ETH', 'XAUT']) { const v = +A.formVal(lotForm, k); if (!(v > 0)) { A.validation(k + ' lot size must be greater than 0'); return; } vals[k] = v; } const ok = A.save(() => { lotUser.lotSizes = vals; if (lotUser.id === M.user.id) { CG.state.lotSizes = Object.assign({}, vals); CG.saveState(); } CG.emit('users:changed', M.users); }, 'Updated'); if (ok) lotHandle && lotHandle.close(); });
+      CG.delegate(lotForm, 'click', '[data-act="cancel"]', () => lotHandle && lotHandle.close());
+
+      // ----- Commissions tab -----
+      const monthSel = el(root, 'comm-month');
+      const monthLabel = (m) => F.date(m + '-01', { month: 'short', year: 'numeric' });
+      const fillMonths = () => { const months = Array.from(new Set(M.commissions.map((c) => c.month))).sort().reverse(); monthSel.innerHTML = '<option value="">All Months</option>' + months.map((m) => '<option value="' + m + '"' + (m === S.cmonth ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join(''); };
+      el(root, 'comm-search').addEventListener('input', (e) => { S.cq = e.target.value.trim().toLowerCase(); renderComm(); });
+      monthSel.addEventListener('change', (e) => { S.cmonth = e.target.value; renderComm(); });
+      CG.delegate(root, 'click', '[data-act="comm-clear"]', () => { S.cq = ''; S.cmonth = ''; el(root, 'comm-search').value = ''; monthSel.value = ''; renderComm(); });
+      const filteredComm = () => M.commissions.filter((c) => (!S.cq || c.referrer.toLowerCase().includes(S.cq)) && (!S.cmonth || c.month === S.cmonth));
+      const bulkPay = async (list, title) => { const pend = list.filter((c) => c.pending > 0); if (!pend.length) { CG.toast({ title: 'Nothing pending', description: 'All selected commissions are already paid.' }); return false; } const amt = pend.reduce((s, c) => s + c.pending, 0); const ok = await CG.modal.confirm({ title: title || ('Bulk pay ' + pend.length + ' referrer' + (pend.length === 1 ? '' : 's') + '?'), description: F.inr(amt) + ' of pending commission will be marked as paid. Proof links can be added later per referral.', confirmText: 'Confirm Paid' }); if (!ok) return false; A.save(() => { pend.forEach(A.markCommissionPaid); CG.emit('commissions:changed', M.commissions); }, pend.length + ' referrer' + (pend.length === 1 ? '' : 's') + ' marked paid'); renderComm(); };
+      const commGrid = A.grid({
+        key: 'commissions', host: el(root, 'comm-table'), pager: el(root, 'comm-pager'), tools: el(root, 'comm-tools'), bulkbar: bar2, noun: 'referrers', per: 0,
+        columns: [
+          { id: 'referrer', label: 'Referrer', always: true, sortVal: (c) => c.referrer.toLowerCase(), cell: (c) => '<div class="font-medium">' + esc(c.referrer) + '</div><div class="text-xs text-muted">' + esc(c.email) + ' · <span class="mono">' + monthLabel(c.month) + '</span></div>', csv: (c) => c.referrer },
+          { id: 'month', label: 'Month', default: false, sortVal: (c) => c.month, cell: (c) => '<span class="mono text-xs">' + monthLabel(c.month) + '</span>', csv: (c) => c.month },
+          { id: 'referrals', label: 'Referrals', cls: 'r', sortVal: (c) => c.referrals, cell: (c) => String(c.referrals), csv: (c) => c.referrals },
+          { id: 'pct', label: 'Commission %', cls: 'r', sortVal: (c) => c.commissionPct, cell: (c) => c.commissionPct + '%', csv: (c) => c.commissionPct },
+          { id: 'total', label: 'Total', cls: 'r', sortVal: (c) => c.total, sortDesc: true, cell: (c) => '<span class="font-medium">' + F.inr(c.total) + '</span>', csv: (c) => c.total },
+          { id: 'paid', label: 'Paid', cls: 'r', sortVal: (c) => c.paid, sortDesc: true, cell: (c) => '<span class="text-profit">' + F.inr(c.paid) + '</span>', csv: (c) => c.paid },
+          { id: 'pending', label: 'Pending', cls: 'r', sortVal: (c) => c.pending, sortDesc: true, cell: (c) => '<span class="' + (c.pending ? 'text-warning' : 'text-muted') + '">' + F.inr(c.pending) + '</span>', csv: (c) => c.pending },
+          { id: 'status', label: 'Status', sortVal: (c) => c.status, cell: (c) => '<span class="badge ' + A.statusBadge(c.status) + '">' + A.statusLabel(c.status) + '</span>' + (c.comment ? '<div class="text-2xs text-muted mt-1" style="max-width:160px">' + esc(c.comment) + '</div>' : ''), csv: (c) => A.statusLabel(c.status) },
+          { id: 'action', label: 'Action', cls: 'r', always: true, noCsv: true, cell: (c) => '<div class="adm-actions">' + (c.pending > 0 ? '<button class="btn btn-outline btn-xs" data-act="mark-paid" data-id="' + c.referrerId + '">Mark Paid</button>' : '') + '<button class="btn btn-ghost btn-xs" data-act="view" data-id="' + c.referrerId + '" title="Details">' + A.icon('eye', 14) + ' View</button></div>' }
+        ],
+        rows: filteredComm, rowId: (c) => c.referrerId, isFiltered: () => !!(S.cq || S.cmonth),
+        empty: { icon: 'wallet', title: 'No commissions yet', hint: 'Commissions appear once referred users buy a plan.' },
+        emptyFiltered: { icon: 'search', title: 'No commissions found', hint: 'Adjust the search or month filter.', action: 'Clear filters' },
+        bulk: [{ id: 'markpaid', label: 'Mark paid', icon: 'check', run: (rows) => bulkPay(rows, 'Mark ' + rows.length + ' selected referrer' + (rows.length === 1 ? '' : 's') + ' as paid?') }]
+      });
+      const renderChart = () => {
+        const host = el(root, 'comm-chart'); const months = Array.from(new Set(M.commissions.map((c) => c.month))).sort();
+        if (!months.length) { host.innerHTML = '<div class="empty">No data</div>'; return; }
+        const paid = months.map((m) => M.commissions.filter((c) => c.month === m).reduce((s, c) => s + c.paid, 0)); const pend = months.map((m) => M.commissions.filter((c) => c.month === m).reduce((s, c) => s + c.pending, 0));
+        const w = Math.max(320, host.clientWidth || 800); const tp = paid.reduce((a, b) => a + b, 0), tq = pend.reduce((a, b) => a + b, 0);
+        host.innerHTML = A.barChart({ width: w, height: 180, labels: months.map((m) => F.date(m + '-01', { month: 'short' })), series: [{ name: 'Paid', cls: 'bar-paid', values: paid }, { name: 'Pending', cls: 'bar-pending', values: pend }], stacked: false, labelAll: false, fmt: A.inrShort, aria: 'Paid vs pending commission by month' }) + '<div class="adm-legend"><span><i></i>Paid</span><span><i class="pend"></i>Pending</span><span class="ml-auto">' + (tq ? Math.round(tq / (tp + tq) * 100) + '% of ' + F.inr(tp + tq) + ' still pending' : 'Everything settled') + '</span></div>';
+        el(root, 'comm-chart-meta').textContent = months.length + ' MONTHS · ' + F.inr(tp + tq) + ' TOTAL';
+      };
+      const renderComm = () => {
+        const list = filteredComm(); const total = list.reduce((s, c) => s + c.total, 0), paid = list.reduce((s, c) => s + c.paid, 0), pending = total - paid;
+        el(root, 'comm-tiles').innerHTML = '<div class="stat"><div class="stat-label">Total Commission</div><div class="stat-value">' + F.inr(total) + '</div><div class="stat-sub">' + list.length + ' referrer' + (list.length === 1 ? '' : 's') + ' · ' + list.reduce((s, c) => s + c.referrals, 0) + ' referrals</div></div><div class="stat"><div class="stat-label">Paid</div><div class="stat-value text-profit">' + F.inr(paid) + '</div><div class="stat-sub">' + list.filter((c) => c.status === 'paid').length + ' fully settled</div></div><div class="stat"><div class="stat-label">Pending</div><div class="stat-value ' + (pending ? 'text-warning' : '') + '">' + F.inr(pending) + '</div><div class="stat-sub">' + list.filter((c) => c.pending > 0).length + ' awaiting payout</div></div>';
+        el(root, 'bulk-pay').disabled = !M.commissions.some((c) => c.pending > 0);
+        renderChart(); commGrid.render();
+      };
+      // View dialog
+      const viewDlg = el(root, 'view-dialog'); let viewHandle = null;
+      CG.delegate(root, 'click', '[data-act="view"]', (e, b) => { const c = M.commissions.find((x) => x.referrerId === b.dataset.id); if (!c) return; const d = A.commissionDetails(c); el(viewDlg, 'view-table').innerHTML = d.length ? '<table class="table table-compact"><thead><tr><th>User</th><th>Joined</th><th>Plan</th><th class="r">Amount</th><th class="r">Commission</th><th>Status</th></tr></thead><tbody>' + d.map((x) => '<tr><td><div class="font-medium">' + esc(x.name) + '</div><div class="text-2xs text-muted">' + esc(x.email) + '</div></td><td class="nowrap mono text-xs">' + F.dateIN(x.joinedAt) + '</td><td>' + esc(x.plan || '—') + (x.interval ? '<div class="text-2xs text-muted">' + x.interval + '</div>' : '') + '</td><td class="r">' + F.inr(x.amount) + '</td><td class="r font-medium">' + F.inr(x.commission) + '</td><td><span class="badge ' + (x.status === 'paid' ? 'badge-success' : x.status === 'not_paid' ? 'badge-loss' : 'badge-warning') + '">' + (x.status === 'paid' ? 'Paid' : 'Not Paid') + '</span>' + (x.paidAt ? '<div class="text-2xs text-muted mono">' + F.dateIN(x.paidAt) + '</div>' : '') + (x.proofLink ? '<div class="text-2xs"><a class="text-primary" href="' + esc(x.proofLink) + '" target="_blank" rel="noopener">proof</a></div>' : '') + '</td></tr>').join('') + '</tbody></table>' : '<div class="empty">No referrals recorded</div>'; el(viewDlg, 'view-totals').innerHTML = '<span>Total <b>' + F.inr(c.total) + '</b></span><span class="text-profit">Paid <b>' + F.inr(c.paid) + '</b></span><span class="text-warning">Pending <b>' + F.inr(c.pending) + '</b></span>'; viewHandle = CG.modal.open(viewDlg, { title: c.referrer + "'s Referrals", description: d.length + ' referred user' + (d.length === 1 ? '' : 's') + ' · ' + c.commissionPct + '% commission', size: 'lg' }); });
+      CG.delegate(viewDlg, 'click', '[data-act="close"]', () => viewHandle && viewHandle.close());
+      // Mark Payment dialog
+      const payDlg = el(root, 'pay-dialog'), payForm = payDlg.querySelector('form'); let payC = null, payHandle = null;
+      const payMode = () => payForm.querySelector('[name="payStatus"]:checked').value;
+      const syncPay = () => { const paid = payMode() === 'paid'; $$('.adm-radio', payForm).forEach((l) => l.classList.toggle('selected', l.dataset.val === payMode())); payForm.querySelector('[name="comment"]').placeholder = paid ? 'Optional note...' : 'Reason for not paying (required)'; el(payDlg, 'comment-hint').textContent = paid ? '(optional)' : '*'; el(payDlg, 'proof-hint').textContent = paid ? '(optional)' : '(not needed)'; payForm.querySelector('[data-el="submit"]').textContent = paid ? 'Confirm Paid' : 'Confirm Not Paid'; payForm.querySelector('[data-el="submit"]').className = 'btn ' + (paid ? 'btn-primary' : 'btn-destructive'); el(payDlg, 'proofs').style.opacity = paid ? '' : '.5'; };
+      CG.delegate(root, 'click', '[data-act="mark-paid"]', (e, b) => { payC = M.commissions.find((x) => x.referrerId === b.dataset.id); if (!payC) return; const pend = A.commissionDetails(payC).filter((d) => d.status !== 'paid'); payForm.reset(); payForm.querySelector('[name="payStatus"][value="paid"]').checked = true; el(payDlg, 'proofs').innerHTML = pend.length ? pend.map((d, i) => '<div class="adm-proof"><span class="truncate" title="' + esc(d.name) + '">' + esc(d.name) + ' <span class="text-muted mono">' + F.inr(d.commission) + '</span></span><input class="input input-sm" name="proof-link" data-i="' + i + '" type="url" placeholder="https://... (payment screenshot / receipt URL)"></div>').join('') : '<div class="text-xs text-muted">Nothing pending</div>'; syncPay(); payHandle = CG.modal.open(payDlg, { title: 'Mark Payment — ' + payC.referrer, description: 'Total: ' + F.inr(payC.total) + ' · Pending: ' + F.inr(payC.pending) + ' across ' + pend.length + ' referral' + (pend.length === 1 ? '' : 's') }); });
+      payForm.addEventListener('change', (e) => { if (e.target.name === 'payStatus') syncPay(); });
+      payForm.addEventListener('submit', (e) => { e.preventDefault(); const mode = payMode(); const comment = A.formVal(payForm, 'comment').trim(); if (mode === 'not_paid' && !comment) { A.validation('Reason for not paying is required'); payForm.querySelector('[name="comment"]').focus(); return; } const proofs = $$('[name="proof-link"]', payForm).map((i) => i.value.trim()); for (const p of proofs) if (p && !/^https?:\/\//i.test(p)) { A.validation('Proof link must start with http:// or https://'); return; } const btn = payForm.querySelector('[data-el="submit"]'); A.busy(btn, '<span class="spinner" style="width:14px;height:14px"></span> Saving...', () => { const ok = A.save(() => { const pend = A.commissionDetails(payC).filter((d) => d.status !== 'paid'); pend.forEach((d, i) => { d.proofLink = proofs[i] || ''; d.status = mode === 'paid' ? 'paid' : 'not_paid'; d.paidAt = mode === 'paid' ? CG.NOW.toISOString().slice(0, 10) : null; }); payC.comment = comment; if (mode === 'paid') { payC.paid = payC.total; payC.pending = 0; payC.status = 'paid'; } else payC.status = 'not_paid'; CG.emit('commissions:changed', M.commissions); }, 'Updated'); if (ok) { payHandle && payHandle.close(); renderComm(); } }); });
+      CG.delegate(payForm, 'click', '[data-act="cancel"]', () => payHandle && payHandle.close());
+      // Bulk pay (inferred from /admin/commissions/bulk-pay endpoint)
+      CG.delegate(root, 'click', '[data-act="comm-bulk"]', () => { if (S.tab !== 'commissions') { S.tab = 'commissions'; render(); } bulkPay(M.commissions); });
+      window.addEventListener('resize', () => { if (root.classList.contains('active') && S.tab === 'commissions') renderChart(); });
+      const render = () => { A.setTab(root, S.tab); el(root, 'bulk-pay').hidden = S.tab !== 'commissions'; if (S.tab === 'users') { bar2.hidden = true; usersGrid.render(); } else { el(root, 'bulkbar').hidden = true; fillMonths(); renderComm(); } };
+      this._render = render; this._setTab = (t) => { S.tab = t; };
+    },
+    show(root, params, query) { if (query && (query.tab === 'users' || query.tab === 'commissions') && this._setTab) this._setTab(query.tab); this._render && this._render(); }
+  });
+
+  // =====================================================================
+  // /admin/banners
+  // =====================================================================
+  const GRADS = ['220 20% 30%/215 25% 18%', '152 40% 30%/168 45% 20%', '35 60% 45%/20 55% 30%', '262 30% 40%/300 25% 25%', '190 40% 32%/215 35% 22%'];
+  A.bannerBg = (img) => { if (!img) return ''; if (img.startsWith('gradient:')) { const [a, b] = img.slice(9).split('/'); return 'linear-gradient(135deg, hsl(' + a + '), hsl(' + b + '))'; } return 'url("' + img + '")'; };
+  CG.register('/admin/banners', {
+    init(root) {
+      A.hydrateIcons(root);
+      const dlg = el(root, 'dialog'), form = dlg.querySelector('form'), fileInp = form.querySelector('[name="image"]'), preview = el(root, 'preview'), prevDlg = el(root, 'preview-dialog');
+      let editing = null, handle = null, image = null, gradIdx = 0; const S = { q: '', status: '', frequency: '' };
+      const setPreview = () => { if (image) { preview.style.backgroundImage = A.bannerBg(image); preview.textContent = ''; } else { preview.style.backgroundImage = ''; preview.innerHTML = A.icon('image', 20) + '<span class="mt-1">No image</span>'; } };
+      const isLive = (b) => b.isActive && (!b.startsAt || new Date(b.startsAt) <= CG.NOW) && (!b.endsAt || new Date(b.endsAt) >= CG.NOW);
+      // "Preview as user": the popup exactly as the chrome shows it to a logged-in user
+      const openPreview = (b) => {
+        let prevHandle = null;
+        prevDlg.innerHTML = '<div class="bp-hero" style="background-image:' + A.bannerBg(b.image) + '"><span class="micro">Preview as user · ' + esc(b.frequency || 'once_per_day') + '</span></div><div class="bp-body"><h3>' + esc(b.title || 'Untitled banner') + '</h3><p class="text-muted">' + esc(b.description || '') + '</p></div><div class="bp-foot"><label class="flex items-center gap-2 text-xs text-muted"><input type="checkbox" class="checkbox"> Don\'t show again</label><div class="flex gap-2"><button type="button" class="btn btn-outline btn-sm" data-bp="dismiss">Dismiss</button>' + (b.linkUrl ? '<button type="button" class="btn btn-primary btn-sm" data-bp="cta">Learn more ' + A.icon('external', 13) + '</button>' : '') + '</div></div>';
+        prevHandle = CG.modal.open(prevDlg, { size: 'sm', onClose: () => { prevDlg.onclick = null; } });
+        prevDlg.onclick = (e) => { const x = e.target.closest('[data-bp]'); if (!x) return; if (x.dataset.bp === 'cta') CG.toast({ title: 'Banner link', description: 'Would open ' + (b.linkUrl || '') + ' (mock)' }); prevHandle.close(); };
+      };
+      const open = (b) => {
+        editing = b || null; image = b ? b.image : null; form.reset();
+        A.formSet(form, 'title', b ? b.title : ''); A.formSet(form, 'description', b ? b.description : ''); A.formSet(form, 'linkUrl', b ? b.linkUrl : ''); A.formSet(form, 'startsAt', b ? b.startsAt : ''); A.formSet(form, 'endsAt', b ? b.endsAt : ''); A.formSet(form, 'frequency', b ? b.frequency : 'once_per_day');
+        el(dlg, 'image-hint').textContent = b ? '(leave empty to keep current)' : '*'; A.setSwitch(el(dlg, 'active'), b ? b.isActive : true); setPreview();
+        el(dlg, 'submit').textContent = b ? 'Save Changes' : 'Create Banner';
+        handle = CG.modal.open(dlg, { title: b ? 'Edit Banner' : 'New Banner', description: b ? 'Editing "' + b.title + '"' : 'Popup banners are shown to logged-in users based on the frequency rule' });
+        setTimeout(() => form.querySelector('[name="title"]').focus(), 50);
+      };
+      fileInp.addEventListener('change', () => {
+        const f = fileInp.files && fileInp.files[0]; if (!f) return;
+        if (!/^image\//.test(f.type)) { CG.toast({ title: 'Invalid image', description: 'Only image files are allowed', variant: 'destructive' }); fileInp.value = ''; return; }
+        if (f.size > 5 * 1024 * 1024) { CG.toast({ title: 'Invalid image', description: 'Image must be 5 MB or smaller', variant: 'destructive' }); fileInp.value = ''; return; }
+        const rd = new FileReader(); rd.onload = () => { image = String(rd.result); setPreview(); }; rd.onerror = () => CG.toast({ title: 'Invalid image', description: 'Could not read the file', variant: 'destructive' }); rd.readAsDataURL(f);
+      });
+      CG.delegate(form, 'click', '[data-act="use-gradient"]', () => { image = 'gradient:' + GRADS[gradIdx++ % GRADS.length]; fileInp.value = ''; setPreview(); });
+      CG.delegate(form, 'click', '[data-act="preview-form"]', () => openPreview({ title: A.formVal(form, 'title'), description: A.formVal(form, 'description'), linkUrl: A.formVal(form, 'linkUrl'), frequency: A.formVal(form, 'frequency'), image: image || (editing && editing.image) }));
+      form.addEventListener('submit', (e) => {
+        e.preventDefault(); const title = A.formVal(form, 'title').trim();
+        if (!title) { A.validation('Title is required'); form.querySelector('[name="title"]').focus(); return; }
+        if (!editing && !image) { A.validation('Image is required'); fileInp.focus(); return; }
+        const link = A.formVal(form, 'linkUrl').trim(); if (link && !/^https?:\/\//i.test(link)) { A.validation('Link URL must start with http:// or https://'); return; }
+        const s = A.formVal(form, 'startsAt'), en = A.formVal(form, 'endsAt'); if (s && en && new Date(en) < new Date(s)) { A.validation('Ends At must be after Starts At'); return; }
+        const data = { title, description: A.formVal(form, 'description').trim(), linkUrl: link, startsAt: s || null, endsAt: en || null, frequency: A.formVal(form, 'frequency'), isActive: A.isOn(el(dlg, 'active')), image: image || (editing && editing.image), type: 'popup' };
+        const ok = A.save(() => { if (editing) Object.assign(editing, data); else M.banners.unshift(Object.assign({ id: A.uid('b'), createdAt: CG.NOW.toISOString().slice(0, 10) }, data)); CG.emit('banners:changed', M.banners); }, editing ? 'Updated' : 'Created');
+        if (ok) { handle && handle.close(); grid.render(); }
+      });
+      CG.delegate(form, 'click', '[data-act="cancel"]', () => handle && handle.close());
+      el(dlg, 'active').addEventListener('click', (e) => A.setSwitch(e.currentTarget, !A.isOn(e.currentTarget)));
+      CG.delegate(root, 'click', '[data-act="new"]', () => open(null));
+      CG.delegate(root, 'click', '[data-act="edit"]', (e, b) => open(M.banners.find((x) => x.id === b.dataset.id)));
+      CG.delegate(root, 'click', '[data-act="preview"]', (e, b) => { const x = M.banners.find((y) => y.id === b.dataset.id); if (x) openPreview(x); });
+      CG.delegate(root, 'click', '[data-act="toggle"]', (e, b) => { const x = M.banners.find((y) => y.id === b.dataset.id); if (!x) return; x.isActive = !x.isActive; A.save(() => CG.emit('banners:changed', M.banners), 'Updated'); grid.render(); });
+      CG.delegate(root, 'click', '[data-act="delete"]', async (e, b) => { const x = M.banners.find((y) => y.id === b.dataset.id); if (!x) return; const ok = await CG.modal.confirm({ title: 'Delete banner?', description: 'This permanently removes the banner. This action cannot be undone.', confirmText: 'Delete', variant: 'destructive' }); if (!ok) return; M.banners.splice(M.banners.indexOf(x), 1); CG.emit('banners:changed', M.banners); CG.toast({ title: 'Deleted', description: '"' + x.title + '" removed', variant: 'success' }); grid.render(); });
+      const setActive = (rows, on) => A.save(() => { rows.forEach((b) => (b.isActive = on)); CG.emit('banners:changed', M.banners); }, rows.length + ' banner' + (rows.length === 1 ? '' : 's') + (on ? ' activated' : ' deactivated'));
+      const grid = A.grid({
+        key: 'banners', host: el(root, 'table'), pager: el(root, 'pager'), tools: el(root, 'tools'), bulkbar: el(root, 'bulkbar'), noun: 'banners', per: 0,
+        columns: [
+          { id: 'image', label: 'Image', noCsv: true, cell: (b) => '<div class="adm-thumb" style="background-image:' + A.bannerBg(b.image) + '" role="img" aria-label="' + esc(b.title) + '"></div>' },
+          { id: 'title', label: 'Title', always: true, sortVal: (b) => b.title.toLowerCase(), cell: (b) => '<div class="font-medium">' + esc(b.title) + '</div><div class="text-xs text-muted" style="max-width:300px">' + esc(b.description || '') + '</div>' + (b.linkUrl ? '<div class="text-2xs text-muted mono truncate" style="max-width:300px">' + esc(b.linkUrl) + '</div>' : ''), csv: (b) => b.title },
+          { id: 'type', label: 'Type', default: false, cell: (b) => '<span class="badge badge-secondary">' + esc(b.type || 'popup') + '</span>', csv: (b) => b.type || 'popup' },
+          { id: 'frequency', label: 'Frequency', sortVal: (b) => b.frequency, cell: (b) => '<span class="badge badge-outline">' + esc(b.frequency) + '</span>', csv: (b) => b.frequency },
+          { id: 'schedule', label: 'Schedule', sortVal: (b) => b.startsAt || '', cell: (b) => '<span class="text-xs mono">' + (b.startsAt ? A.date(b.startsAt) : '<span class="text-muted">—</span>') + ' <span class="text-muted">→</span> ' + (b.endsAt ? A.date(b.endsAt) : '<span class="text-muted">—</span>') + '</span><div class="text-2xs ' + (isLive(b) ? 'text-profit' : 'text-muted') + '">' + (isLive(b) ? 'Showing now' : b.isActive ? 'Scheduled / ended' : 'Hidden') + '</div>', csv: (b) => (b.startsAt || '') + ' → ' + (b.endsAt || '') },
+          { id: 'active', label: 'Active', sortVal: (b) => (b.isActive ? 1 : 0), cell: (b) => A.switchHtml(b.isActive, 'data-act="toggle" data-id="' + b.id + '" aria-label="Toggle banner active"'), csv: (b) => (b.isActive ? 'Active' : 'Inactive') },
+          { id: 'actions', label: 'Actions', cls: 'r', always: true, noCsv: true, cell: (b) => '<div class="adm-actions"><button class="adm-icon-btn" title="Preview as user" data-act="preview" data-id="' + b.id + '">' + A.icon('monitor') + '</button><button class="adm-icon-btn" title="Edit banner" data-act="edit" data-id="' + b.id + '">' + A.icon('pencil') + '</button><button class="adm-icon-btn danger" title="Delete banner" data-act="delete" data-id="' + b.id + '">' + A.icon('trash') + '</button></div>' }
+        ],
+        rows: () => M.banners.filter((b) => (!S.q || (b.title + ' ' + (b.description || '')).toLowerCase().includes(S.q)) && (!S.frequency || b.frequency === S.frequency) && (!S.status || (S.status === 'live' ? isLive(b) : S.status === 'active' ? b.isActive : !b.isActive))),
+        rowId: (b) => b.id, isFiltered: () => !!(S.q || S.status || S.frequency),
+        empty: { icon: 'image', title: 'No Banners', hint: 'Create a popup banner to promote an offer to users.', action: 'Create Banner' },
+        emptyFiltered: { icon: 'search', title: 'No banners match', hint: 'Try another search, status or frequency.', action: 'Clear filters' },
+        bulk: [{ id: 'activate', label: 'Activate', icon: 'check', run: (rows) => setActive(rows, true) }, { id: 'deactivate', label: 'Deactivate', run: (rows) => setActive(rows, false) }]
+      });
+      el(root, 'q').addEventListener('input', (e) => { S.q = e.target.value.trim().toLowerCase(); grid.render(); });
+      el(root, 'status').addEventListener('change', (e) => { S.status = e.target.value; grid.render(); });
+      el(root, 'frequency').addEventListener('change', (e) => { S.frequency = e.target.value; grid.render(); });
+      CG.delegate(root, 'click', '[data-act="clear-filters"]', () => { S.q = S.status = S.frequency = ''; el(root, 'q').value = ''; el(root, 'status').value = ''; el(root, 'frequency').value = ''; grid.render(); });
+      this._render = () => grid.render();
+    },
+    show() { this._render && this._render(); }
+  });
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+  const A = window.CG_ADMIN; const M = CG.mock, F = CG.fmt, esc = CG.esc, $ = CG.$, $$ = CG.$$; const el = A.el;
+
+  // =====================================================================
+  // /admin/emails  (Compose + History)
+  // =====================================================================
+  A.campaignRecipients = (c) => {
+    if (c.recipientRows) return c.recipientRows;
+    const r = CG.rng(c.id.length * 131 + c.recipients * 17); const pool = M.users.slice(); const rows = [];
+    for (let i = 0; i < c.recipients; i++) { const u = pool[i % pool.length]; const failed = i >= c.recipients - (c.failed || 0); rows.push({ name: u.name, email: u.email, status: failed ? 'failed' : 'delivered', sentAt: new Date(new Date(c.sentAt).getTime() + i * 2600 + Math.floor(r() * 900)).toISOString(), error: failed ? ['Mailbox unavailable (550)', 'Recipient address rejected', 'Connection timed out'][i % 3] : '' }); }
+    c.recipientRows = rows; return rows;
+  };
+  A.fill = (tpl, u) => String(tpl || '').replace(/\{\{\s*(name|email|plan|expiry)\s*\}\}/g, (m, k) => (k === 'name' ? u.name : k === 'email' ? u.email : k === 'plan' ? (u.plan || 'Free Plan') : u.endsAt ? F.date(u.endsAt) : '—'));
+  A.EMAIL_TEMPLATES = [
+    { id: 'weekly', label: 'Weekly report', subject: 'Your weekly options report is ready', message: 'Hi {{name}},\n\nYour strategies\' P&L summary for the week is ready in the Analyse workspace. Log in to review open positions, Greeks exposure and the date × price matrix.\n\n— Team HapieCoin' },
+    { id: 'expiry', label: 'Plan expiring', subject: 'Your {{plan}} expires on {{expiry}}', message: 'Hi {{name}},\n\nYour {{plan}} subscription ends on {{expiry}}. Renew now to keep unlimited paper trades and live trading enabled.\n\nRenew: https://hapiecoin.com/subscription\n\n— Team HapieCoin' },
+    { id: 'feature', label: 'New feature', subject: 'New: date × price P&L matrix', message: 'Hi {{name}},\n\nThe payoff panel now includes a date × price P&L matrix for every strategy, plus an expected-move band and breakeven markers.\n\nTry it in Analyse → Scenarios.\n\n— Team HapieCoin' }
+  ];
+  CG.register('/admin/emails', {
+    init(root) {
+      A.hydrateIcons(root);
+      const S = { tab: 'compose', q: '', segment: 'all', selected: new Set(), lastFocus: null, campaign: null, page: 1, hq: '' };
+      A.bindTabs(root, (t) => { S.tab = t; render(); });
+      const subj = el(root, 'subject'), msg = el(root, 'message'); const sendBtn = root.querySelector('[data-act="send"]');
+      [subj, msg].forEach((f) => { f.addEventListener('focus', () => (S.lastFocus = f)); f.addEventListener('input', renderPreview); });
+      el(root, 'templates').innerHTML = A.EMAIL_TEMPLATES.map((t) => '<button type="button" class="adm-chip" data-tpl="' + t.id + '" title="Fill subject and message">' + A.icon('file', 12) + ' ' + esc(t.label) + '</button>').join('');
+      CG.delegate(root, 'click', '[data-tpl]', (e, b) => { const t = A.EMAIL_TEMPLATES.find((x) => x.id === b.dataset.tpl); if (!t) return; subj.value = t.subject; msg.value = t.message; renderPreview(); CG.toast({ title: 'Template applied', description: t.label + ' · edit the text before sending' }); });
+      const segmentUsers = () => M.users.filter((u) => S.segment === 'all' || (S.segment === 'paid' && u.status === 'active' && !/free/i.test(u.plan)) || (S.segment === 'free' && u.status === 'free') || (S.segment === 'expired' && u.status === 'expired'));
+      const visibleUsers = () => segmentUsers().filter((u) => !S.q || u.name.toLowerCase().includes(S.q) || u.email.toLowerCase().includes(S.q));
+      const renderRecipients = () => {
+        const list = visibleUsers();
+        el(root, 'rc-list').innerHTML = list.length ? list.map((u) => '<label><input type="checkbox" class="checkbox" data-uid="' + u.id + '"' + (S.selected.has(u.id) ? ' checked' : '') + '><span class="flex-1 truncate"><span class="block truncate">' + esc(u.name) + '</span><span class="text-xs text-muted">' + esc(u.email) + '</span></span><span class="badge ' + A.statusBadge(u.status) + '">' + A.statusLabel(u.status) + '</span></label>').join('') : '<div class="empty">No users match the search.</div>';
+        root.querySelector('[data-act="rc-all"]').textContent = 'Select all (' + list.length + ')';
+        el(root, 'sel-badge').textContent = S.selected.size + ' selected';
+        renderPreview();
+      };
+      function renderPreview() {
+        const first = Array.from(S.selected).map((id) => M.users.find((u) => u.id === id)).filter(Boolean)[0];
+        const hl = (s) => esc(s).replace(/\{\{\s*(name|email|plan|expiry)\s*\}\}/g, '<mark>$&</mark>');
+        const p = el(root, 'preview');
+        if (!first) p.innerHTML = '<div class="micro">Preview</div><div class="adm-preview-subject">' + (subj.value ? hl(subj.value) : '<span class="text-muted">(no subject)</span>') + '</div><div class="adm-preview-body">' + (msg.value ? hl(msg.value) : '<span class="text-muted">Select a recipient to preview the filled placeholders.</span>') + '</div>';
+        else p.innerHTML = '<div class="micro">Preview for ' + esc(first.name) + '</div><div class="text-2xs text-muted mono">To: ' + esc(first.email) + '</div><div class="adm-preview-subject">' + (subj.value ? esc(A.fill(subj.value, first)) : '<span class="text-muted">(no subject)</span>') + '</div><div class="adm-preview-body">' + (msg.value ? esc(A.fill(msg.value, first)) : '<span class="text-muted">(empty message)</span>') + '</div>';
+        sendBtn.disabled = !(S.selected.size && subj.value.trim() && msg.value.trim());
+        sendBtn.title = sendBtn.disabled ? 'Select recipients and fill in subject and message' : 'Send to ' + S.selected.size + ' user(s)';
+      }
+      el(root, 'rc-search').addEventListener('input', (e) => { S.q = e.target.value.trim().toLowerCase(); renderRecipients(); });
+      el(root, 'rc-segment').addEventListener('change', (e) => { S.segment = e.target.value; renderRecipients(); });
+      CG.delegate(root, 'change', '[data-uid]', (e, c) => { if (c.checked) S.selected.add(c.dataset.uid); else S.selected.delete(c.dataset.uid); el(root, 'sel-badge').textContent = S.selected.size + ' selected'; renderPreview(); });
+      CG.delegate(root, 'click', '[data-act="rc-all"]', () => { visibleUsers().forEach((u) => S.selected.add(u.id)); renderRecipients(); });
+      CG.delegate(root, 'click', '[data-act="rc-clear"]', () => { S.selected.clear(); renderRecipients(); });
+      CG.delegate(root, 'click', '[data-ins]', (e, b) => { const f = S.lastFocus || msg; const v = b.dataset.ins; const s = f.selectionStart != null ? f.selectionStart : f.value.length, en = f.selectionEnd != null ? f.selectionEnd : s; f.value = f.value.slice(0, s) + v + f.value.slice(en); f.focus(); f.setSelectionRange(s + v.length, s + v.length); renderPreview(); });
+      CG.delegate(root, 'click', '[data-act="test-send"]', (e, b) => { if (!subj.value.trim() || !msg.value.trim()) { A.validation('Fill in the subject and message first'); return; } A.busy(b, '<span class="spinner" style="width:14px;height:14px"></span> Sending test...', () => CG.toast({ title: 'Test email sent to ' + M.user.email, description: A.fill(subj.value.trim(), M.users[0]) + ' · placeholders filled with your own profile', variant: 'success' }), 600); });
+      CG.delegate(root, 'click', '[data-act="send"]', async () => {
+        const n = S.selected.size; if (!n) return;
+        const ok = await CG.modal.confirm({ title: 'Send to ' + n + ' user(s)?', description: n + ' selected user(s). Placeholders are filled per recipient.', confirmText: 'Confirm' }); if (!ok) return;
+        A.busy(sendBtn, '<span class="spinner" style="width:14px;height:14px"></span> Sending...', () => {
+          try {
+            const ids = Array.from(S.selected); const failed = ids.length > 6 ? Math.max(0, Math.round(ids.length * 0.04)) : 0;
+            const c = { id: A.uid('cmp'), subject: subj.value.trim(), message: msg.value.trim(), sentAt: new Date(CG.NOW.getTime() + (Date.now() % 3600000)).toISOString(), sentBy: M.user.name, recipients: ids.length, delivered: ids.length - failed, failed, segment: el(root, 'rc-segment').selectedOptions[0].textContent };
+            c.recipientRows = ids.map((id, i) => { const u = M.users.find((x) => x.id === id); const bad = i >= ids.length - failed; return { name: u.name, email: u.email, status: bad ? 'failed' : 'delivered', sentAt: new Date(new Date(c.sentAt).getTime() + i * 1800).toISOString(), error: bad ? 'Mailbox unavailable (550)' : '' }; });
+            M.campaigns.unshift(c); CG.emit('campaigns:changed', M.campaigns);
+            CG.toast({ title: 'Emails sent', description: c.delivered + ' delivered' + (failed ? ', ' + failed + ' failed' : '') + ' · ' + c.subject, variant: 'success' });
+            S.selected.clear(); subj.value = ''; msg.value = ''; S.tab = 'history'; S.campaign = null; render();
+          } catch (err) { CG.toast({ title: 'Send failed', description: 'Please try again.', variant: 'destructive' }); }
+        }, 700);
+      });
+      // History grid
+      const histGrid = A.grid({
+        key: 'campaigns', host: el(root, 'hist-table'), pager: el(root, 'hist-pager'), tools: el(root, 'hist-tools'), noun: 'campaigns', per: 10,
+        columns: [
+          { id: 'subject', label: 'Subject', always: true, sortVal: (c) => c.subject.toLowerCase(), cell: (c) => '<div class="font-medium">' + esc(c.subject) + '</div><div class="text-xs text-muted">' + esc(c.segment || '') + '</div>', csv: (c) => c.subject },
+          { id: 'segment', label: 'Segment', default: false, sortVal: (c) => c.segment || '', cell: (c) => esc(c.segment || '—'), csv: (c) => c.segment || '' },
+          { id: 'sentAt', label: 'Sent at', sortVal: (c) => c.sentAt, sortDesc: true, cell: (c) => '<span class="nowrap text-xs mono">' + A.dateTime(c.sentAt) + '</span>', csv: (c) => c.sentAt },
+          { id: 'recipients', label: 'Recipients', cls: 'r', sortVal: (c) => c.recipients, cell: (c) => String(c.recipients), csv: (c) => c.recipients },
+          { id: 'delivered', label: 'Delivered', cls: 'r', sortVal: (c) => c.delivered, cell: (c) => '<span class="text-profit">' + c.delivered + '</span>', csv: (c) => c.delivered },
+          { id: 'failed', label: 'Failed', cls: 'r', sortVal: (c) => c.failed, cell: (c) => '<span class="' + (c.failed ? 'text-loss' : 'text-muted') + '">' + c.failed + '</span>', csv: (c) => c.failed },
+          { id: 'sentBy', label: 'Sent by', cell: (c) => esc(c.sentBy), csv: (c) => c.sentBy }
+        ],
+        rows: () => M.campaigns.filter((c) => !S.hq || (c.subject + ' ' + (c.segment || '')).toLowerCase().includes(S.hq)),
+        rowId: (c) => c.id, rowAttrs: (c) => 'class="adm-row-click" data-open="' + c.id + '" tabindex="0" title="Open delivery report"', isFiltered: () => !!S.hq,
+        empty: { icon: 'inbox', title: 'No campaigns sent yet.', hint: 'Compose a message and send it to a segment of users.', action: 'Compose', act: 'go-compose' },
+        emptyFiltered: { icon: 'search', title: 'No campaigns match', hint: 'Try another subject or segment.', action: 'Clear filters' }
+      });
+      el(root, 'hist-q').addEventListener('input', (e) => { S.hq = e.target.value.trim().toLowerCase(); histGrid.render(); });
+      CG.delegate(root, 'click', '[data-act="clear-filters"]', () => { S.hq = ''; el(root, 'hist-q').value = ''; histGrid.render(); });
+      CG.delegate(root, 'click', '[data-act="go-compose"]', () => { S.tab = 'compose'; render(); });
+      const renderHistory = () => { el(root, 'hist-list').hidden = !!S.campaign; el(root, 'hist-detail').hidden = !S.campaign; if (S.campaign) return renderDetail(); histGrid.render(); };
+      const renderDetail = () => {
+        const c = S.campaign; const rows = A.campaignRecipients(c); const pg = A.paginate(rows, S.page, 10); S.page = pg.page; const pct = c.recipients ? Math.round(c.delivered / c.recipients * 100) : 0;
+        el(root, 'det-subject').textContent = c.subject; el(root, 'det-meta').innerHTML = 'Sent ' + esc(A.dateTime(c.sentAt)) + ' · By ' + esc(c.sentBy) + (c.segment ? ' · ' + esc(c.segment) : '');
+        el(root, 'det-tiles').innerHTML = '<div class="stat"><div class="stat-label">Recipients</div><div class="stat-value">' + c.recipients + '</div></div><div class="stat"><div class="stat-label">Delivered</div><div class="stat-value text-profit">' + c.delivered + '</div></div><div class="stat"><div class="stat-label">Failed</div><div class="stat-value ' + (c.failed ? 'text-loss' : '') + '">' + c.failed + '</div></div><div class="stat"><div class="stat-label">Success</div><div class="stat-value">' + pct + '%</div></div>';
+        el(root, 'det-table').innerHTML = rows.length ? '<table class="table"><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Sent at</th><th>Error</th></tr></thead><tbody>' + pg.rows.map((r) => '<tr><td class="font-medium">' + esc(r.name) + '</td><td class="text-xs">' + esc(r.email) + '</td><td><span class="badge ' + A.statusBadge(r.status) + '">' + A.statusLabel(r.status) + '</span></td><td class="text-xs nowrap mono">' + A.dateTime(r.sentAt) + '</td><td class="text-xs ' + (r.error ? 'text-loss' : 'text-muted') + '">' + (esc(r.error) || '—') + '</td></tr>').join('') + '</tbody></table>' : '<div class="empty">No recipients recorded.</div>';
+        el(root, 'det-pager').innerHTML = rows.length ? A.pager(pg.page, pg.pages, pg.total + ' recipients', A.icon('chevLeft', 14) + ' Prev', 'Next ' + A.icon('chevRight', 14)) : '';
+      };
+      CG.delegate(root, 'click', '[data-open]', (e, tr) => { S.campaign = M.campaigns.find((c) => c.id === tr.dataset.open); S.page = 1; renderHistory(); });
+      CG.delegate(root, 'keydown', '[data-open]', (e, tr) => { if (e.key === 'Enter') tr.click(); });
+      CG.delegate(root, 'click', '[data-act="hist-back"]', () => { S.campaign = null; renderHistory(); });
+      CG.delegate(root, 'click', '[data-act="det-csv"]', () => { if (!S.campaign) return; const rows = A.campaignRecipients(S.campaign); A.copyCsv(['Name', 'Email', 'Status', 'Sent at', 'Error'], rows.map((r) => [r.name, r.email, A.statusLabel(r.status), r.sentAt, r.error]), 'recipients'); });
+      CG.delegate(el(root, 'det-pager'), 'click', '[data-act="prev"]', () => { S.page--; renderDetail(); });
+      CG.delegate(el(root, 'det-pager'), 'click', '[data-act="next"]', () => { S.page++; renderDetail(); });
+      const render = () => { A.setTab(root, S.tab); sendBtn.hidden = S.tab !== 'compose'; if (S.tab === 'compose') renderRecipients(); else renderHistory(); };
+      this._render = render; this._setTab = (t) => { S.tab = t; };
+    },
+    show(root, params, query) { if (query && (query.tab === 'history' || query.tab === 'compose') && this._setTab) this._setTab(query.tab); this._render && this._render(); }
+  });
+
+  // =====================================================================
+  // /admin/users  (User Management + detail drawer)
+  // =====================================================================
+  CG.register('/admin/users', {
+    init(root) {
+      A.hydrateIcons(root);
+      const S = { q: '', plan: '', status: '' };
+      const fillPlans = () => { const sel = el(root, 'plan'); sel.innerHTML = '<option value="">All plans</option>' + M.plans.map((p) => '<option value="' + p.id + '"' + (p.id === S.plan ? ' selected' : '') + '>' + esc(p.name) + '</option>').join(''); };
+      el(root, 'search').addEventListener('input', (e) => { S.q = e.target.value.trim().toLowerCase(); grid.page = 1; grid.render(); });
+      el(root, 'plan').addEventListener('change', (e) => { S.plan = e.target.value; grid.page = 1; grid.render(); });
+      el(root, 'status').addEventListener('change', (e) => { S.status = e.target.value; grid.page = 1; grid.render(); });
+      CG.delegate(root, 'click', '[data-act="clear-filters"]', () => { S.q = S.plan = S.status = ''; el(root, 'search').value = ''; el(root, 'plan').value = ''; el(root, 'status').value = ''; grid.render(); });
+      const setActivated = (rows, on) => A.save(() => { rows.forEach((u) => (u.activated = on)); CG.emit('users:changed', M.users); }, rows.length + ' account' + (rows.length === 1 ? '' : 's') + (on ? ' activated' : ' deactivated'));
+      const applyPlan = (rows, plan, interval) => { const days = interval === 'monthly' ? 30 : interval === 'quarterly' ? 90 : 365; rows.forEach((u) => { u.planId = plan.id; u.plan = plan.name; if (/free/i.test(plan.name)) { u.status = 'free'; u.interval = 'monthly'; u.subscribedAt = null; u.endsAt = null; u.validityDays = 0; } else { u.interval = interval; u.status = 'active'; u.subscribedAt = CG.NOW.toISOString().slice(0, 10); u.endsAt = new Date(CG.NOW.getTime() + days * 86400000).toISOString().slice(0, 10); u.validityDays = days; } }); CG.emit('users:changed', M.users); };
+      const grid = A.grid({
+        key: 'users', host: el(root, 'table'), pager: el(root, 'pager'), tools: el(root, 'tools'), bulkbar: el(root, 'bulkbar'), noun: 'users', per: 10,
+        columns: [
+          { id: 'name', label: 'Name', always: true, sortVal: (u) => u.name.toLowerCase(), cell: (u) => '<span class="font-medium nowrap">' + esc(u.name) + '</span>' + (u.role === 'admin' ? ' <span class="badge badge-outline">admin</span>' : ''), csv: (u) => u.name },
+          { id: 'email', label: 'Email', sortVal: (u) => u.email, cell: (u) => '<span class="text-xs">' + esc(u.email) + '</span>', csv: (u) => u.email },
+          { id: 'mobile', label: 'Mobile', default: false, cell: (u) => '<span class="mono text-xs">' + esc(u.mobile) + '</span>', csv: (u) => u.mobile },
+          { id: 'plan', label: 'Plan', sortVal: (u) => u.plan, cell: (u) => '<span class="badge ' + A.planBadge(u.plan) + '">' + esc(u.plan) + '</span>', csv: (u) => u.plan },
+          { id: 'status', label: 'Status', sortVal: (u) => u.status + (u.activated ? '' : 'z'), cell: (u) => '<span class="badge ' + A.statusBadge(u.status) + '">' + A.statusLabel(u.status) + '</span>' + (u.activated ? '' : '<div class="text-2xs text-loss">deactivated</div>'), csv: (u) => A.statusLabel(u.status) + (u.activated ? '' : ' (deactivated)') },
+          { id: 'subscribed', label: 'Subscribed', sortVal: (u) => u.subscribedAt || '', cell: (u) => '<span class="text-xs nowrap mono">' + A.date(u.subscribedAt) + '</span>', csv: (u) => u.subscribedAt || '' },
+          { id: 'ends', label: 'Ends', sortVal: (u) => u.endsAt || '', cell: (u) => '<span class="text-xs nowrap mono">' + A.date(u.endsAt) + '</span>', csv: (u) => u.endsAt || '' },
+          { id: 'joined', label: 'Joined', sortVal: (u) => u.joinedAt, sortDesc: true, cell: (u) => '<span class="text-xs nowrap mono">' + A.date(u.joinedAt) + '</span>', csv: (u) => u.joinedAt },
+          { id: 'lastLogin', label: 'Last login', default: false, sortVal: (u) => u.lastLoginAt || '', sortDesc: true, cell: (u) => '<span class="text-xs nowrap mono">' + A.date(u.lastLoginAt) + '</span>', csv: (u) => u.lastLoginAt || '' },
+          { id: 'code', label: 'Referral code', cell: (u) => '<span class="mono text-xs">' + esc(u.referralCode) + '</span>', csv: (u) => u.referralCode },
+          { id: 'pct', label: 'Commission %', cls: 'r', sortVal: (u) => u.commissionPct, cell: (u) => u.commissionPct + '%', csv: (u) => u.commissionPct },
+          { id: 'referrals', label: 'Referrals', cls: 'r', sortVal: (u) => u.referrals, sortDesc: true, cell: (u) => String(u.referrals), csv: (u) => u.referrals }
+        ],
+        rows: () => M.users.filter((u) => (!S.q || u.name.toLowerCase().includes(S.q) || u.email.toLowerCase().includes(S.q)) && (!S.plan || u.planId === S.plan) && (!S.status || (S.status === 'deactivated' ? !u.activated : u.status === S.status))),
+        rowId: (u) => u.id, rowAttrs: (u) => 'class="adm-row-click" data-open="' + u.id + '" tabindex="0" title="Open user"', isFiltered: () => !!(S.q || S.plan || S.status),
+        empty: { icon: 'users', title: 'No users yet', hint: 'Invite your first user to get started.', action: 'Invite user', act: 'invite' },
+        emptyFiltered: { icon: 'search', title: 'No users found.', hint: 'Try another name, email, plan or status.', action: 'Clear filters' },
+        bulk: [
+          { id: 'activate', label: 'Activate', icon: 'userCheck', run: (rows) => setActivated(rows, true) },
+          { id: 'deactivate', label: 'Deactivate', run: (rows) => setActivated(rows, false) },
+          { id: 'setplan', label: 'Set plan', icon: 'package', run: (rows, G, btn) => { const m = CG.menu(btn, '<div class="menu-label">Set plan for ' + rows.length + ' user' + (rows.length === 1 ? '' : 's') + '</div>' + M.plans.map((p) => '<button type="button" class="menu-item" data-plan="' + p.id + '">' + A.icon('package', 13) + ' ' + esc(p.name) + '<span class="ml-auto mono text-xs text-muted">' + (p.yearly && p.yearly.price ? F.inr(p.yearly.discountPrice || p.yearly.price) + '/yr' : 'free') + '</span></button>').join('')); m.addEventListener('click', (e) => { const b = e.target.closest('[data-plan]'); if (!b) return; const plan = M.plans.find((p) => p.id === b.dataset.plan); if (!plan) return; A.save(() => applyPlan(rows, plan, 'yearly'), rows.length + ' user' + (rows.length === 1 ? '' : 's') + ' moved to ' + plan.name); G.sel.clear(); G.render(); }); return false; }, keep: true },
+          { id: 'csv', label: 'Export CSV', icon: 'copy', run: (rows, G) => { G.copyCsv(rows); return false; }, keep: true }
+        ],
+        onRender: (all) => { el(root, 'count').textContent = M.users.length + ' users' + (all.length !== M.users.length ? ' · ' + all.length + ' match' : ''); }
+      });
+      // invite user (mock)
+      CG.delegate(root, 'click', '[data-act="invite"]', () => {
+        const h = CG.modal.open('<form data-invite novalidate autocomplete="off"><div class="cg-dialog-body"><div class="field"><label class="label">Name</label><input class="input" name="name" placeholder="Full name"></div><div class="field"><label class="label">Email *</label><input class="input" name="email" type="email" placeholder="name@example.com"></div><div class="field"><label class="label">Plan</label><select class="select" name="plan">' + M.plans.map((p) => '<option value="' + p.id + '">' + esc(p.name) + '</option>').join('') + '</select></div><p class="hint">An invitation email with a sign-up link is sent (mock).</p></div><div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-x="cancel">Cancel</button><button type="submit" class="btn btn-primary">Send invite</button></div></form>', { title: 'Invite user', description: 'Create an account and email a sign-up link', size: 'sm' });
+        const form = h.contentEl.querySelector('form'); setTimeout(() => form.querySelector('[name="name"]').focus(), 50);
+        form.addEventListener('click', (e) => { if (e.target.closest('[data-x="cancel"]')) h.close(); });
+        form.addEventListener('submit', (e) => { e.preventDefault(); const email = A.formVal(form, 'email').trim().toLowerCase(); const name = A.formVal(form, 'name').trim() || email.split('@')[0]; if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { A.validation('Enter a valid email address'); return; } if (M.users.some((u) => u.email === email)) { A.validation('A user with this email already exists'); return; } const plan = M.plans.find((p) => p.id === A.formVal(form, 'plan')) || M.plans[0]; A.save(() => { M.users.unshift({ id: A.uid('u'), name, email, mobile: '—', role: 'user', planId: plan.id, plan: plan.name, interval: 'monthly', status: /free/i.test(plan.name) ? 'free' : 'active', joinedAt: CG.NOW.toISOString().slice(0, 10), subscribedAt: null, endsAt: null, lastLoginAt: null, activated: true, referralCode: 'REF_' + name.slice(0, 3).toUpperCase() + Math.floor(1000 + Math.random() * 9000), commissionPct: 10, referrals: 0, featureLimits: { paper_trading: 0, live_trading: 0 }, lotSizes: { BTC: 0.001, ETH: 0.01, XAUT: 0.001 }, amountPaid: 0, validityDays: 0, invited: true }); CG.emit('users:changed', M.users); }, 'Invitation sent to ' + email); h.close(); grid.render(); });
+      });
+
+      // ---------- detail drawer ----------
+      const drawer = el(root, 'drawer'); let cur = null, tab = 'profile';
+      const TABS = [['profile', 'Profile'], ['subscription', 'Subscription'], ['referrals', 'Referrals'], ['limits', 'Limits'], ['lots', 'Lot sizes']];
+      const kv = (pairs) => '<div class="adm-kv">' + pairs.map(([k, v, cls]) => '<div><span>' + esc(k) + '</span><b class="' + (cls || '') + '">' + v + '</b></div>').join('') + '</div>';
+      const closeDrawer = () => { drawer.hidden = true; cur = null; document.removeEventListener('keydown', onKey); };
+      const onKey = (e) => { if (e.key === 'Escape' && !document.querySelector('.cg-overlay')) closeDrawer(); };
+      const renderHead = () => { el(drawer, 'drawer-head').innerHTML = '<div class="adm-avatar">' + A.initials(cur.name) + '</div><div class="flex-1"><h3>' + esc(cur.name) + (cur.role === 'admin' ? '<span class="badge badge-outline">admin</span>' : '') + '<span class="badge ' + A.planBadge(cur.plan) + '">' + esc(cur.plan) + '</span><span class="badge ' + A.statusBadge(cur.status) + '">' + A.statusLabel(cur.status) + '</span>' + (cur.activated ? '' : '<span class="badge badge-loss">deactivated</span>') + '</h3><div class="text-xs text-muted mt-1">' + esc(cur.email) + ' · <span class="mono">' + esc(cur.mobile) + '</span> · joined ' + A.date(cur.joinedAt) + '</div></div><button type="button" class="btn btn-outline btn-sm" data-act="impersonate" title="Open the app as this user (mock)">' + A.icon('eye', 13) + ' Impersonate (mock)</button><button type="button" class="cg-dialog-close" data-act="drawer-close" aria-label="Close">✕</button>'; };
+      const renderTabs = () => { el(drawer, 'drawer-tabs').innerHTML = TABS.map(([k, l]) => '<button type="button" class="tab' + (tab === k ? ' active' : '') + '" role="tab" data-dtab="' + k + '">' + l + '</button>').join(''); };
+      const planDefault = (u) => { const p = M.plans.find((x) => x.id === u.planId); const fl = p && p[u.interval] && p[u.interval].featureLimits; return fl ? (fl.paper_trading || '∞') + ' paper / ' + (fl.live_trading || (p.monthly.price ? '∞' : 0)) + ' live' : '—'; };
+      const renderBody = () => {
+        const u = cur; const body = el(drawer, 'drawer-body');
+        if (tab === 'profile') body.innerHTML = kv([['Name', esc(u.name)], ['Email', esc(u.email)], ['Mobile', esc(u.mobile), 'mono'], ['Role', esc(u.role)], ['Joined', A.date(u.joinedAt), 'mono'], ['Last login', A.date(u.lastLoginAt), 'mono'], ['Referral code', esc(u.referralCode), 'mono'], ['Amount paid', F.inr(u.amountPaid), 'mono'], ['Account', u.activated ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-loss">Deactivated</span>'], ['User id', esc(u.id), 'mono']]) + '<div class="adm-drawer-foot"><button type="button" class="btn btn-outline btn-sm" data-act="copy-email">' + A.icon('copy', 13) + ' Copy email</button><button type="button" class="btn ' + (u.activated ? 'btn-destructive' : 'btn-primary') + ' btn-sm" data-act="toggle-activated">' + (u.activated ? 'Deactivate account' : 'Activate account') + '</button></div>';
+        else if (tab === 'subscription') body.innerHTML = kv([['Plan', esc(u.plan)], ['Interval', esc(u.status === 'free' ? '—' : u.interval)], ['Status', '<span class="badge ' + A.statusBadge(u.status) + '">' + A.statusLabel(u.status) + '</span>'], ['Subscribed', A.date(u.subscribedAt), 'mono'], ['Ends', A.date(u.endsAt), 'mono'], ['Validity', (u.validityDays || 0) + ' days', 'mono'], ['Amount paid', F.inr(u.amountPaid), 'mono'], ['Days left', u.endsAt ? Math.max(0, A.daysLeft(u.endsAt)) + ' d' : '—', 'mono']]) + '<form data-dform="plan" class="mt-4"><div class="micro mb-2">Change plan</div><div class="adm-form-grid"><div class="field"><label class="label">Plan</label><select class="select select-sm" name="plan">' + M.plans.map((p) => '<option value="' + p.id + '"' + (p.id === u.planId ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('') + '</select></div><div class="field"><label class="label">Interval</label><select class="select select-sm" name="interval">' + ['monthly', 'quarterly', 'yearly'].map((i) => '<option value="' + i + '"' + (i === u.interval ? ' selected' : '') + '>' + i + '</option>').join('') + '</select></div></div><div class="hint">Starts today on the mock clock · previous validity is replaced.</div><div class="adm-drawer-foot"><button type="submit" class="btn btn-primary btn-sm">Set plan</button></div></form>';
+        else if (tab === 'referrals') { const c = M.commissions.find((x) => x.referrerId === u.id); const d = c ? A.commissionDetails(c) : []; body.innerHTML = kv([['Referral code', esc(u.referralCode), 'mono'], ['Commission', u.commissionPct + '%', 'mono'], ['Referrals', String(u.referrals), 'mono'], ['Earned', c ? F.inr(c.total) : F.inr(0), 'mono']]) + '<div class="micro mt-4 mb-2">Referred users</div>' + (d.length ? '<div class="adm-table-wrap adm-table-bordered"><table class="table table-compact"><thead><tr><th>User</th><th>Plan</th><th class="r">Commission</th><th>Status</th></tr></thead><tbody>' + d.map((x) => '<tr><td><div class="font-medium">' + esc(x.name) + '</div><div class="text-2xs text-muted">' + esc(x.email) + '</div></td><td class="text-xs">' + esc(x.plan || '—') + '</td><td class="r">' + F.inr(x.commission) + '</td><td><span class="badge ' + (x.status === 'paid' ? 'badge-success' : 'badge-warning') + '">' + (x.status === 'paid' ? 'Paid' : 'Pending') + '</span></td></tr>').join('') + '</tbody></table></div>' : '<div class="empty" style="padding:22px"><div class="adm-empty-icon">' + A.icon('users', 18) + '</div><b>No referrals yet</b>This user has not referred anyone with ' + esc(u.referralCode) + '.</div>') + '<div class="adm-drawer-foot"><a class="btn btn-outline btn-sm" href="#/admin/user-subscriptions?tab=commissions">' + A.icon('wallet', 13) + ' Open commissions</a></div>'; }
+        else if (tab === 'limits') body.innerHTML = '<form data-dform="limits"><div class="field"><label class="label">Paper Trading Limit</label><div class="flex items-center gap-2"><input class="input mono" name="paper" type="number" min="0" step="1" value="' + (u.featureLimits.paper_trading || 0) + '" style="max-width:160px"><span class="text-sm text-muted">trades / month</span></div></div><div class="field"><label class="label">Live Trading Limit</label><div class="flex items-center gap-2"><input class="input mono" name="live" type="number" min="0" step="1" value="' + (u.featureLimits.live_trading || 0) + '" style="max-width:160px"><span class="text-sm text-muted">trades / month</span></div></div><div class="hint">Set to 0 for plan default (' + esc(planDefault(u)) + '). Higher values override the plan limit.</div><div class="adm-drawer-foot"><button type="submit" class="btn btn-primary btn-sm">Save Limits</button></div></form>';
+        else body.innerHTML = '<form data-dform="lots"><div class="adm-form-grid adm-form-grid-3">' + ['BTC', 'ETH', 'XAUT'].map((k) => '<div class="field"><label class="label">' + k + ' lot size</label><input class="input mono" name="' + k + '" type="number" min="0.0001" step="' + (k === 'ETH' ? '0.01' : '0.001') + '" value="' + u.lotSizes[k] + '"></div>').join('') + '</div><div class="hint">Overrides the exchange default lot size for this user\'s strategy builder and P&amp;L calculations.</div><div class="adm-drawer-foot"><button type="submit" class="btn btn-primary btn-sm">Save lot sizes</button></div></form>';
+      };
+      const openDrawer = (u, t) => { cur = u; tab = t || 'profile'; renderHead(); renderTabs(); renderBody(); drawer.hidden = false; document.addEventListener('keydown', onKey); setTimeout(() => { const b = drawer.querySelector('[data-dtab].active'); if (b) b.focus(); }, 30); };
+      A.openUser = (id, t) => { const u = M.users.find((x) => x.id === id); if (u) { if (!root.classList.contains('active')) CG.navigate('/admin/users'); openDrawer(u, t); } };
+      CG.delegate(root, 'click', '[data-open]', (e, tr) => { const u = M.users.find((x) => x.id === tr.dataset.open); if (u) openDrawer(u, 'profile'); });
+      CG.delegate(root, 'keydown', '[data-open]', (e, tr) => { if (e.key === 'Enter') tr.click(); });
+      CG.delegate(drawer, 'click', '[data-act="drawer-close"]', closeDrawer);
+      CG.delegate(drawer, 'click', '[data-dtab]', (e, b) => { tab = b.dataset.dtab; renderTabs(); renderBody(); });
+      CG.delegate(drawer, 'click', '[data-act="impersonate"]', () => CG.toast({ title: 'Impersonating ' + cur.name + ' (mock)', description: 'You would now see the app exactly as ' + cur.email + ' does. Nothing changes in this mock.' }));
+      CG.delegate(drawer, 'click', '[data-act="copy-email"]', () => A.copyText(cur.email, { title: 'Email copied', description: cur.email }));
+      CG.delegate(drawer, 'click', '[data-act="toggle-activated"]', () => { cur.activated = !cur.activated; A.save(() => CG.emit('users:changed', M.users), cur.activated ? 'Account activated' : 'Account deactivated'); renderHead(); renderBody(); grid.render(); });
+      drawer.addEventListener('submit', (e) => {
+        e.preventDefault(); const form = e.target.closest('form'); if (!form || !cur) return; const kind = form.dataset.dform;
+        if (kind === 'lots') { const vals = {}; for (const k of ['BTC', 'ETH', 'XAUT']) { const v = +A.formVal(form, k); if (!(v > 0)) { A.validation(k + ' lot size must be greater than 0'); return; } vals[k] = v; } A.save(() => { cur.lotSizes = vals; if (cur.id === M.user.id) { CG.state.lotSizes = Object.assign({}, vals); CG.saveState(); } CG.emit('users:changed', M.users); }, 'Lot sizes saved'); }
+        else if (kind === 'limits') { const paper = Math.max(0, +A.formVal(form, 'paper') || 0), live = Math.max(0, +A.formVal(form, 'live') || 0); A.save(() => { cur.featureLimits = { paper_trading: paper, live_trading: live }; CG.emit('users:changed', M.users); }, 'Limits saved'); }
+        else if (kind === 'plan') { const plan = M.plans.find((p) => p.id === A.formVal(form, 'plan')); if (!plan) return; A.save(() => applyPlan([cur], plan, A.formVal(form, 'interval')), cur.name + ' moved to ' + plan.name); renderHead(); renderBody(); grid.render(); }
+      });
+      this._render = () => { fillPlans(); grid.render(); };
+      this._hide = () => { if (!drawer.hidden) closeDrawer(); };
+    },
+    show() { this._render && this._render(); },
+    hide() { this._hide && this._hide(); }
+  });
+})();
+</script>

@@ -1,0 +1,2408 @@
+
+
+#### "Strategy Templates"  [window, 10000 chars]
+- }),a.jsx(
+- ,{className:
+- ,children:
+- })]}),a.jsxs(
+- ,children:[a.jsx(
+- })]})]})]})]}):a.jsx(
+- })}),a.jsx(
+- ,children:a.jsx(
+- ,{onClick:()=>{Te(!1),ye(null)},className:
+- ,expiries:Se,currentPrice:Y,maxSelections:ue}),re&&Q&&Array.isArray(Q)&&Q.length>0&&a.jsx(
+- ,children:a.jsxs(
+- ,children:a.jsx(vn,{className:
+- })}),a.jsxs(
+- ,{children:[a.jsx(
+- }),a.jsxs(
+- ,children:[Q.length,
+- ,Q.length>1?
+- ]})]})]})}),a.jsx(
+- ,children:Q.map((he,kt)=>a.jsxs(
+- ,children:[a.jsxs(
+- ,{className:`px-2 py-0.5 rounded text-[10px] font-bold ${he.action===
+- }`,children:he.action===
+- ,{className:`px-2 py-0.5 rounded text-[10px] font-bold ${he.type===
+- }`,children:he.type===
+- ,children:he.strike.toLocaleString()})]}),a.jsxs(
+- ,children:[
+- ,he.price.toFixed(2)]})]}),a.jsxs(
+- ,children:he.lots||1})]}),a.jsxs(
+- ,children:he.expiry})]})]})]},kt))}),a.jsxs(
+- ,{onClick:()=>{G(!1),z(null),ie(!0)},disabled:v,className:
+- ,{onClick:Xt,disabled:v,className:
+- ,children:[a.jsx(vn,{className:
+- }),v?
+- :`Add ${Q.length} Leg${Q.length>1?
+- ,{className:`flex flex-col border-t border-border transition-all duration-300 ${d?
+- }`,style:d?{maxHeight:
+- }:void 0,children:[a.jsxs(
+- ,{onClick:()=>f(h=>!h),className:
+- }),d?a.jsx(kf,{className:
+- }):a.jsx(KV,{className:
+- })]}),d&&a.jsx(
+- ),[te,ve]=y.useState(
+- ),{toast:de}=sl(),{currency:Ae,conversionRate:Te}=Pa(),oe=Ae===
+- ,ye=Ae===
+- ?Te:1,Le=Q=>`${Q>=0?
+- }${oe}${(Math.abs(Q)*ye).toFixed(2)}`,{livePnL:Be,isConnected:xe}=lee(_,j&&!!_),je=async(Q=p)=>{try{h(!0);const z=await Xv(
+- ,Q,w);d(z.strategies),m(z.page),x(z.totalPage),v(z.total)}catch(z){console.error(
+- ,z),de({title:
+- ,description:
+- ,variant:
+- })}finally{h(!1)}};y.useEffect(()=>{je(1)},[]),y.useEffect(()=>{c&&c>0&&je(1)},[c]);const Oe=async Q=>{try{h(!0),await $j(Q),await je(),de({title:
+- })}catch(z){console.error(
+- })}finally{h(!1)}},ie=async Q=>{try{I(!0),A(!0);const z=await Bn(Q.id);M(z)}catch(z){console.error(
+- }),A(!1)}finally{I(!1)}},Se=async Q=>{if(s)try{const z=await Bn(Q.id);if(!z.legs||z.legs.length===0){de({title:
+- });return}const ee=z.legs.map(fe=>Wd(fe,z.id));s(ee,z.name,z.asset,Q.id)}catch(z){console.error(
+- })}},K=async(Q,z,ee)=>{var fe;if(P)try{if(!((fe=P.legs)==null?void 0:fe.find(lt=>lt.id===Q)))throw new Error(
+- ,description:Ne?`Leg squared off at $${Ne.toFixed(2)}`:
+- })}catch(ge){console.error(
+- ,ge),de({title:
+- ,description:ge.message||
+- })}finally{I(!1)}},Y=async()=>{var z;if(!P)return;const Q=((z=P.legs)==null?void 0:z.filter(ee=>ee.status!==
+- ).length)||0;if(Q>=10){de({title:
+- });return}B(10-Q),A(!1),R([]),F(0),L(!0);try{const[ee,fe]=await Promise.all([Tp(P.asset),Aj(P.asset)]);F(ee.markPrice||ee.price),R(fe)}catch(ee){console.error(
+- ,ee),de({title:
+- }),L(!1),A(!0)}},ce=async Q=>{P&&(X(Q),L(!1),W(!0))},ue=async()=>{if(!(!P||!H||!Array.isArray(H)||H.length===0))try{h(!0);const Q=ee=>{if(ee.includes(
+- ))return ee;const fe={JAN:
+- ,FEB:
+- ,MAR:
+- ,APR:
+- ,MAY:
+- ,JUN:
+- ,JUL:
+- ,AUG:
+- ,SEP:
+- ,OCT:
+- ,NOV:
+- ,DEC:
+- },ge=ee.substring(0,2),Ne=fe[ee.substring(2,5)];return`${
+- +ee.substring(5,7)}-${Ne}-${ge}`};for(const ee of H){const fe={optionType:ee.type===
+- ,side:ee.action===
+- ,strikePrice:ee.strike,expiryDate:Q(ee.expiry),quantity:ee.lots||1,lotSize:1,entryPremium:ee.price,unit:(ee.unit||
+- ).toUpperCase()};console.log(
+- ,fe),await Fj(P.id,fe)}const z=await Bn(P.id);if(M(z),W(!1),X(null),A(!0),s&&z.legs){const ee=z.legs.map(fe=>Wd(fe,z.id));s(ee,z.name,z.asset,z.id)}de({title:
+- ,description:`${H.length} adjustment leg${H.length>1?
+- } added successfully`})}catch(Q){console.error(
+- ,Q),de({title:
+- ,description:Q.message||
+- })}finally{h(!1)}},ne=async Q=>{try{const z=await Bn(Q.id);N(z),S(!0)}catch(z){console.error(
+
+#### "Draft Strategies"  [window, 10000 chars]
+- )){const On=Rr.error||
+- ;u?u(On):Ce({title:
+- ,description:On,variant:
+- })}else{const On=(Rr==null?void 0:Rr.error)||(Rr==null?void 0:Rr.message)||(Dt instanceof Error?Dt.message:
+- );On.includes(
+- )||On.includes(
+- )?u?u(On):Ce({title:
+- }):Ce({title:
+- })}}finally{w(!1)}},at=async he=>{try{de(!0),se(!0);const kt=await Bn(he.id);te(kt)}catch(kt){console.error(
+- ,kt),Ce({title:
+- ,description:
+- ,variant:
+- }),se(!1)}finally{de(!1)}},or=()=>{if(ae){if(c){se(!1),c(ae.id,ae.name);return}U(ae),se(!1),T(!0),lt()}},Er=async(he,kt)=>{console.log(
+- ,he,
+- })},kr=async he=>{ae&&(z(he),ie(!1),G(!0))},Xt=async()=>{if(!(!ae||!Q||!Array.isArray(Q)||Q.length===0))try{w(!0);const he=rr=>{if(rr.includes(
+- ))return rr;const Dt={JAN:
+- ,FEB:
+- ,MAR:
+- ,APR:
+- ,MAY:
+- ,JUN:
+- ,JUL:
+- ,AUG:
+- ,SEP:
+- ,OCT:
+- ,NOV:
+- ,DEC:
+- },Rr=rr.substring(0,2),On=Dt[rr.substring(2,5)];return`${
+- +rr.substring(5,7)}-${On}-${Rr}`};for(const rr of Q){const Dt={optionType:rr.type===
+- ,side:rr.action===
+- ,strikePrice:rr.strike,expiryDate:he(rr.expiry),quantity:rr.lots||1,lotSize:1,entryPremium:rr.price,unit:(rr.unit||
+- ).toUpperCase()};console.log(
+- ,Dt),await Fj(ae.id,Dt)}const kt=await Bn(ae.id);te(kt),G(!1),z(null),Ce({title:
+- ,description:`${Q.length} adjustment leg${Q.length>1?
+- } added successfully`})}catch(he){console.error(
+- ,he),Ce({title:
+- ,description:he.message||
+- })}finally{w(!1)}},Hr=async he=>{console.log(
+- })};return a.jsxs(
+- ,{className:
+- ,children:[!i&&a.jsx(
+- ,children:a.jsx(
+- ,children:[{label:
+- ,icon:Tle},{label:
+- ,icon:yk}].map((he,kt)=>a.jsxs(
+- ,{onClick:()=>f(kt),className:`px-3 py-2 text-xs font-medium border-b-2 transition-colors flex items-center gap-1.5 ${d===kt?
+- }`,children:[a.jsx(he.icon,{className:
+- }),he.label]},he.label))})}),d===0&&a.jsxs(
+- ,children:[a.jsxs(
+- ,children:[a.jsx(
+- ,children:RXe.map(he=>{const kt=$Xe[he];return a.jsxs(
+- ,{onClick:()=>p(he),className:`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${h===he?
+- }`,children:[a.jsx(kt,{className:
+- }),he]},he)})}),n.length>0&&a.jsx(
+- ,{value:m,onChange:he=>g(he.target.value),className:
+- ,children:n.map(he=>a.jsx(
+- ,{value:he,children:he},he))})]}),a.jsx(
+- ,children:dt.map(he=>{const kt=he.category===
+- ,rr=he.category===
+- ;he.category;const Dt=kt?
+- :rr?
+- ,Rr=kt?
+- ;return a.jsxs(
+- ,{viewBox:
+- ,className:
+- ,{x1:
+- ,y1:
+- ,x2:
+- ,y2:
+- ,stroke:
+- ,strokeWidth:
+- ,strokeDasharray:
+- }),FXe(he.name,he.name.replace(/\s+/g,
+- ).toLowerCase())]}),a.jsx(
+- ,{className:`text-[10px] font-semibold leading-tight ${Rr}`,children:he.name})]},he.name)})})]}),d===1&&a.jsxs(
+- ,{onClick:()=>{S(
+- ),A(1)},className:`px-3 py-1.5 text-[10px] font-medium border-b-2 transition-colors ${j===
+- }`,children:
+- }),a.jsx(
+- })]}),a.jsx(
+- ,{onClick:()=>ht(k),disabled:v,className:
+- ,title:
+- ,children:a.jsx(fi,{className:`w-3.5 h-3.5 text-muted-foreground ${v?
+- }`})})]}),a.jsx(
+- ,children:a.jsxs(
+- ,children:[a.jsx(Na,{className:
+- ,{type:
+- ,value:_,onChange:he=>N(he.target.value),placeholder:`Search ${j===
+- } strategies...`,className:
+- }),_&&a.jsx(
+- ,{onClick:()=>N(
+- ),className:
+- ,children:a.jsx(Ur,{className:
+- })})]})}),a.jsxs(
+- ,children:[v&&x.length===0?a.jsxs(
+- ,children:[a.jsx(fi,{className:
+- ]}):x.length===0?a.jsxs(
+- ,children:j===
+- })]}):a.jsx(
+- ,children:x.map(he=>{var Dt;const kt=he.status===
+- &&(Number(he.unrealizedPnl)!==0||Number(he.realizedPnl)!==0||Number(he.daysTracked)>0),rr=Number(he.unrealizedPnl||0)+Number(he.realizedPnl||0);return a.jsxs(
+- }),a.jsxs(
+- ,children:he.name}),l===he.name&&a.jsx(
+- ,children:
+- }),he.status===
+- &&a.jsx(
+- &&he.tradingMode===
+- &&a.jsxs(
+- ]}),he.status===
+- })]}),a.jsxs(
+- }),he.asset]}),a.jsx(
+- ,children:he.legsCount||((Dt=he.legs)==null?void 0:Dt.length)||0}),
+- ]}),a.jsx(
+
+#### "Lot Size Settings"  [d3, 323282 chars]
+- %7E
+- object
+- function
+- Module
+- base64
+- __proto__
+- application/json
+- application/x-www-form-urlencoded;charset=utf-8
+- application/x-www-form-urlencoded
+- multipart/form-data
+- files[]
+- XSRF-TOKEN
+- X-XSRF-TOKEN
+- application/json, text/plain, */*
+- Content-Type
+- delete
+- authorization
+- expires
+- if-modified-since
+- if-unmodified-since
+- last-modified
+- location
+- proxy-authorization
+- referer
+- retry-after
+- user-agent
+- set-cookie
+- internals
+- header name must be a non-empty string
+- Object iterator must return a key-value pair
+- parser must be boolean|regexp|function
+- Content-Length
+- Accept
+- Accept-Encoding
+- User-Agent
+- Authorization
+- canceled
+- Request failed with status code 
+- download
+- upload
+- secure
+- string
+- constructor
+- prototype
+- Basic 
+- onloadend
+- file:
+- Request aborted
+- Network Error
+- timeout of 
+- ms exceeded
+- timeout exceeded
+- progress
+- loadend
+- Unsupported protocol 
+- POST
+- stream
+- same-origin
+- include
+- credentials
+- response
+- status
+- headers
+- is not supported by the environment
+- is not available in the build
+- as no adapter specified
+- There is no suitable adapter to dispatch the request 
+- ERR_NOT_SUPPORT
+- boolean
+- number
+- symbol
+- [Axios v
+- ] Transitional option '
+-  has been removed
+-  in 
+-  has been deprecated since v
+-  and will be removed in the near future
+- options must be an object
+- option 
+-  must be 
+- Unknown option 
+- baseURL
+- withXSRFToken
+- common
+- options
+- Form
+- executor must be a function.
+- coingreeks_access_token
+- Token has expired
+- [API] Token expired, redirecting to auth page...
+- coingreeks_refresh_token
+- coingreeks_user_role
+- /auth
+- Token has expired. Please sign in again.
+- net-positions-changed
+- /positions/exit
+- /delta/net-position
+- OPTION
+- FUTURE
+- SELL
+- CALL
+- symbols
+- OPEN
+- /trading/strategies
+- live-strategies-changed
+- SQUARED_OFF
+- /trading/option-legs
+- ADJUSTMENT
+- amount
+- interval
+- per_page
+- broker-balance-changed
+- /live-trading/credentials
+- /live-trading/credentials/details
+- ip_not_whitelisted_for_api_key
+- invalid_api_key
+- unauthorized
+- Exchange API key is invalid or unauthorized. Please re-connect your exchange.
+- Failed to fetch wallet details from the exchange.
+- /live-trading/place-orders
+- /live-trading/exit-orders
+- '+e+'
+- Native crypto module could not be used to get secure random number.
+- Malformed UTF-8 data
+- ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=
+- ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_
+- AS IS
+- Invalid key length - 3DES requires the key length to be 64, 128, 192 or >192.
+- TESTNET
+- api-key
+- Authentication failed
+- Connection failed
+- PRODUCTION
+- delta_api_credentials
+- broker-credentials-changed
+- [BrokerConnection] Backend save failed, continuing with local storage:
+- [BrokerConnection] Backend disconnect failed:
+- coingreeks_api_credentials
+- Enter
+- Select
+- aria-hidden
+- option
+- button
+- combobox
+- aria-controls
+- aria-expanded
+- aria-required
+- aria-autocomplete
+- data-state
+- closed
+- data-disabled
+- data-placeholder
+- SelectContent.RemoveScroll
+- item-aligned
+- nearest
+- popper
+- listbox
+- column
+- Home
+- --radix-select-content-transform-origin
+- --radix-select-content-available-width
+- --radix-select-content-available-height
+- --radix-select-trigger-width
+- --radix-select-trigger-height
+- [data-radix-select-viewport]{scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch;}[data-radix-select-viewport]::-webkit-scrollbar{display:none}
+- data-radix-select-viewport
+- presentation
+- aria-labelledby
+- data-highlighted
+- aria-selected
+- checked
+- unchecked
+- aria-disabled
+- change
+- /brokers
+- default
+- Button
+- Input
+- Label
+- button, input, select, textarea
+- /assets/delta-exchange-logo-CocoN9zG.png
+- Preferred
+- Dialog
+- aria-haspopup
+- dialog
+- DialogOverlay.RemoveScroll
+- aria-describedby
+- Close
+- coingreeks_selected_broker
+- [ApiSettings] Failed to load brokers:
+- Credentials saved successfully
+- Exchange Connected
+- API credentials saved to server
+- Failed to save credentials
+- Save Failed
+- destructive
+- Exchange Disconnected
+- Delta Exchange credentials removed
+- Delta Exchange API Settings
+- Checking connection...
+- API Key: 
+- Connected: 
+- Wallet:
+- Not Connected
+- Enter your Delta Exchange API credentials to enable live trading.
+- Delta
+- Select Exchange
+- Loading exchanges...
+- No exchanges configured
+- Select an exchange...
+- % fee)
+- Fee: 
+- % · GST: 
+- % · Cap: 
+- API Credentials
+- API Key
+- Enter your Delta Exchange API key
+- API Secret
+- password
+- Enter your Delta Exchange API secret
+- new-password
+-  Connecting...
+- Connect & Save
+- Get your API key from
+- _blank
+- noopener noreferrer
+- Delta Exchange → Account → API Keys
+- Disconnect Exchange
+- Whitelisted IP Address
+- Copied
+- IP address copied to clipboard
+- Copy
+- Add this IP to your Delta Exchange API key whitelist for secure access.
+- Not authenticated
+- Failed to save
+- Currency conversion saved
+- Error
+- Currency Settings
+- From Currency
+- To Currency
+-  to 
+-  Conversion Rate
+- Cancel
+-  Saving...
+- Save
+- From
+-  Rate
+- coingreeks_lot_sizes
+- coingreeks_user_id
+- User ID not found
+- Failed to save lot sizes
+- XAUT
+- Lot sizes saved
+- Lot Size Settings
+- Lot size for each symbol
+-  Lot Size
+- 1 lot =
+- 1 lot = 
+- Mark price
+- P&L at the exchange mark price — the same basis Delta Exchange shows.
+- bid_ask
+- Bid/Ask (executable)
+- P&L at the price you would actually get closing now: long legs at the bid, short legs at the ask.
+- P&L Settings
+- Choose the price basis for the P&L shown on paper and live trades.
+- radiogroup
+- aria-label
+- P&L price basis
+- aria-checked
+- Delta Exchange shows P&L at the mark price. With Bid/Ask, CoinGreeks shows the P&L you would realise by closing now, so the two figures 
+- will differ
+-  — usually by the bid/ask spread, and more on illiquid strikes.
+- alert-dialog
+- alertdialog
+- Logged out
+- You have been signed out.
+- Failed to logout.
+- Confirm Logout
+- Are you sure you want to sign out? You'll need to sign in again to access your account.
+- Logout
+- rocket
+- diamond
+- lightning
+- Profile updated
+- Failed to update profile.
+- Avatar updated
+- Failed to update avatar.
+- Profile
+- Your account details
+- Change
+- Tap to change avatar
+- Choose your avatar
+- Saving...
+-  Full Name
+- Your name
+-  Mobile
+- Mobile number
+- Full Name
+- Email
+- Mobile
+- Edit Profile
+- Could not load profile.
+- USER
+- Error loading brokers:
+- Failed to load exchanges
+- Validation Error
+- Exchange name is required
+- GLOBAL
+- Success
+- Exchange created successfully
+- Error creating broker:
+- Failed to create exchange
+- Exchange updated successfully
+- Error updating broker:
+- Failed to update exchange
+- Exchange deleted successfully
+- Error deleting broker:
+- Failed to delete exchange
+- Exchange Management
+- Manage exchange configurations for paper trading
+- Add Exchange
+- Edit
+- Delete
+- Fee Cap
+- Edit Exchange
+- Add New Exchange
+- Configure exchange fee structure
+- Exchange Name
+- e.g., Delta Exchange India
+- Fee Percentage (%)
+- Percentage of notional value
+- GST Percentage (%)
+- Fee Cap (% of premium)
+- Maximum fee as percentage of premium
+- Update
+- Create
+- Delete Exchange
+- This action cannot be undone
+- Are you sure you want to delete this exchange?
+- GST: 
+- Fee Cap: 
+- ⚠️ Warning: Any strategies using this exchange will need to be reconfigured.
+- Deleting...
+- No wallet details returned by the exchange.
+- [useBrokerBalance] Error:
+- Click to refresh balance
+- Connect exchange to see balance
+- bottom
+- Available
+- Margin Used
+- Total Equity
+- Click to refresh
+- Loading balance...
+- Connect exchange to view live balance
+- mousedown
+- mouseup
+- center
+- 10px
+- driver-popover-side-
+- driver-popover-align-
+- driver-popover-arrow
+- driver-popover-arrow-none
+- checkbox
+- smooth
+- driver-popover-done-btn
+- previous
+- driver-popover-btn-disabled
+- driver-popover-content
+- driver-popover-title
+- driver-popover-description
+- .driver-popover-next-btn
+- .driver-popover-prev-btn
+- .driver-popover-close-btn
+- .driver-popover-prev-btn, .driver-popover-next-btn, .driver-popover-close-btn
+- driver-popover
+- header
+- Popover Title
+- Popover description is here
+- driver-popover-close-btn
+- &times;
+- footer
+- driver-popover-footer
+- driver-popover-progress-text
+- driver-popover-navigation-btns
+- driver-popover-prev-btn
+- driver-popover-footer-btn
+- Previous
+- driver-popover-next-btn
+- Next
+- __activeStagePosition
+- __overlaySvg
+- No stage svg found.
+- no path element found in stage svg
+- driver-overlay
+- driver-overlay-animated
+- preserve
+- version
+- xMinYMin slice
+- evenodd
+- rgb(0,0,0)
+- {{current}} of {{total}}
+- Done
+- {{current}}
+- {{total}}
+- driver-dummy-element
+- popover
+- __activeElement
+- __activeStep
+- __transitionCallback
+- __previousStep
+- __previousElement
+- .driver-active-element-parent
+- driver-active-element-parent
+- driver-active-element-parent-no-scroll
+- driver-active-element
+- driver-no-interaction
+- .driver-active-element
+- __resizeTimeout
+- Escape
+- __events
+- keydown
+- driver-active
+- driver-fade
+- driver-simple
+- driver-no-scroll
+- --driver-animation-duration
+- __pendingWaitCancel
+- No steps to drive through
+- __activeOnDestroyed
+- cg-tour:leg-added
+- cg-tour:save-dialog-open
+- cg-tour:trade-modal-open
+- cg-tour:paper-started
+- Welcome to CoinGreeks
+- Let's place a real paper trade together — from picking legs to stopping the trade. Skip anytime; replay later from the help button in the header.
+- Start
+- asset-select
+- Choose your asset
+- Switch between BTC, ETH and XAUT. The live futures price updates here in real time.
+- Your workspaces
+- Option Chain shows live strikes. Builder creates strategies. Paper and Live manage your trades, and Templates stores ready-made setups.
+- options-chain
+- Add a leg — try it now
+- Click any Call or Put price in the chain to add it as a leg. The tour moves on as soon as your first leg is added.
+- strategy-legs
+- builder
+- add-leg-button
+- Your strategy legs
+- Here is the leg you just added. Adjust side (Buy/Sell), strike, expiry and quantity — add more legs for multi-leg strategies. Press Next when it looks right.
+- payoff-panel
+- Payoff and analytics
+- See the payoff diagram, max profit, max loss and breakevens for the strategy you are building.
+- paper-trade-button
+- Start a paper trade
+- Click Paper Trade to begin — virtual funds only, no real money.
+- save-dialog
+- save-button
+- Name your strategy
+- Give the trade a name you'll recognise in the list, then press Save.
+- trade-modal
+- trade-confirm-button
+- Review and start
+- Check the order preview — legs, net premium and required margin — then click Start Paper Trade.
+- paper-tab
+- Your trade is running
+- Every paper trade lives in the Paper tab — including the one you just started.
+- paper-pnl
+- Track P&L and details
+- Total P&L updates live as the market moves. Click the trade card to open full details — per-leg P&L, payoff chart and history.
+- paper-stop
+- Stop a paper trade
+- settings-menu
+- Settings
+- Manage your profile, subscription, API settings and preferences here. Replay this tour anytime from the help button.
+- chat-launcher
+- Ask the CoinGreeks Assistant
+- Stuck anywhere? Click this chat button to ask about strategies, options concepts or how a screen works. You can drag the button anywhere on the page.
+- cg_tour_done
+- cg_tour_done_
+- cg-tour-arrow
+- ${w0}
+- cg-tour-set-tab
+- cg-tour-popover
+- Back
+- Bitcoin
+- Ethereum
+- Tether Gold
+- data-tour
+- Market Analytics (opens in a new tab)
+- market-button
+- Market Analytics
+-  Admin 
+- Admin
+-  Exchange Setup
+- Live
+- Connecting...
+- Click to connect exchange
+- Exchange
+- Connect
+- ₹ INR
+- $ USD
+- Take a tour
+- Switch to Light Mode
+- Switch to Dark Mode
+- Account
+-  My Profile
+- /subscription
+-  My Subscription
+- /referrals
+-  My Referrals
+- Preferences
+-  API Settings
+-  Currency Settings
+-  Lot Size Settings
+- /admin/subscriptions
+-  Subscription Plans
+- /admin/menu-pricing
+-  Menu Pricing
+- /admin/coupons
+-  Coupon Codes
+- /admin/user-subscriptions
+-  User Subscriptions
+- /admin/banners
+-  Banners
+- /admin/emails
+-  Promotional Emails
+- /admin/users
+-  Users
+- Support
+- Email Us
+- WhatsApp Us
+-  Logout
+- Switch to 
+- All calculated values (P&L, Margin, Net Premium) will be displayed in 
+- Indian Rupees (₹)
+- US Dollars ($)
+- Rate: $1 = ₹
+- currency-settings-changed
+- Your plan has expired.
+- Renew Plan
+- Your free plan is active.
+- Upgrade
+- Your plan expires soon — 
+-  left.
+- Congratulations! Your plan is active until
+- numeric
+- image/
+- Image must be 5 MB or smaller
+- Only image files are allowed
+- description
+- /banners
+- once_per_day
+- every_time
+- once_per_session
+- banner
+- noopener,noreferrer
+- Previous flyer
+- View 
+- Next flyer
+- Switch
+- switch
+- translateX(-100%)
+- future
+- futures_im
+- long_option
+- premium_paid
+- short_option
+- notional
+- premium
+- Error saving strategy:
+- Error squaring off leg:
+- Strategy Legs
+- Live prices from Delta Exchange (auto-updated). Paper trade will use these prices.
+- Static/custom prices (editable). Paper trade will use your entered prices.
+- ● Live Price
+- ○ Connecting...
+- ✎ Custom Price
+- Basket on: quantity and custom-price changes apply to every leg
+- Basket off: each leg keeps its own quantity and price
+-  Basket
+- Basket
+-  Update
+-  Clear
+-  New
+- Strategy name...
+- Updating...
+- 💹 Save & Trade
+- Save Draft
+- Confirm Square-Off
+- Close this option leg
+- Are you sure you want to square off this position?
+- Type
+- Sell
+- Strike
+- Quantity
+- Exit Price
+- ⚠️ This action cannot be undone. The position will be closed and P&L will be realized.
+- Closing...
+-  leg
+- Leg limit reached
+-  Future
+- Add Futures Contract
+- Side
+- Expiry
+- Unit
+- Price
+- Action
+- No legs added
+- Start building your strategy by adding option or futures legs
+- Select from Options Chain
+- USD Future
+- Buy Future
+- Sell Future
+- Or use strategy templates below
+- badge-buy
+- badge-sell
+- Price updated by live feed
+- Entry price
+- Closed
+- Delete this leg
+-  (ATM)
+-  (ITM)
+-  (OTM)
+- Live price from Delta Exchange
+- Click to edit custom price
+- Square off this leg
+- Maximum 10 active legs reached
+- Select option from live options chain
+- Select from Chain
+- Maximum 10 total legs reached
+- Maximum 8 fresh legs reached
+- Net Premium: 
+- B / 
+- Margin: 
+- Paper Trade
+- Live Trade
+- ROI based on max theoretical profit
+- % ROI
+- Max Profit (At Expiry)
+- Unlimited
+- Theoretical maximum
+- Risk as % of capital
+- Max Loss (At Expiry)
+- Expected Required Margin
+- Capital required
+- Breakeven 
+- Points
+- Point
+- No breakeven points
+- Current Price
+- ✓ In profit zone
+- ✗ In loss zone
+- R/R
+- Risk/Reward
+- ✓ Favorable risk/reward
+- Balanced risk/reward
+- High risk scenario
+- Unlimited exposure
+- N/A
+- Probability of Profit
+- ✓ High probability
+- Moderate probability
+- Low probability
+- Calculating...
+- Win if price
+- Varies
+- Net Premium
+- Max ROI
+- return this
+- [object Null]
+- [object Undefined]
+- [object Symbol]
+- '])(?:(?!\1)[^\\]|\\.)*?\1)\]/,iwe=/^\w*$/;function awe(e,t){if(rwe(e))return!1;var r=typeof e;return r==
+- ||r==
+- ||e==null||nwe(e)?!0:iwe.test(e)||!swe.test(e)||t!=null&&e in Object(t)}var gM=awe;function owe(e){var t=typeof e;return e!=null&&(t==
+- ||t==
+- )}var So=owe;const Gm=mr(So);var lwe=tc,cwe=So,uwe=
+- ,dwe=
+- ,fwe=
+- ,hwe=
+- ;function pwe(e){if(!cwe(e))return!1;var t=lwe(e);return t==dwe||t==fwe||t==uwe||t==hwe}var xM=pwe;const _t=mr(xM);var mwe=bo,gwe=mwe[
+- ],xwe=gwe,K2=xwe,C$=function(){var e=/[^.]+$/.exec(K2&&K2.keys&&K2.keys.IE_PROTO||
+- );return e?
+- +e:
+- }();function vwe(e){return!!C$&&C$ in e}var ywe=vwe,bwe=Function.prototype,wwe=bwe.toString;function Swe(e){if(e!=null){try{return wwe.call(e)}catch{}try{return e+
+- }catch{}}return
+- +Twe.call(Owe).replace(Ewe,
+- ).replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g,
+- ),vM=BSe,k$=hSe,USe=r_,zSe=vM;function VSe(){this.size=0,this.__data__={hash:new k$,map:new(zSe||USe),string:new k$}}var WSe=VSe;function HSe(e){var t=typeof e;return t==
+- ?e!==
+- :e===null}var qSe=HSe,GSe=qSe;function KSe(e,t){var r=e.__data__;return GSe(t)?r[typeof t==
+- ;function bM(e,t){if(typeof e!=
+- ||t!=null&&typeof t!=
+- [object String]
+- react.element
+- react.portal
+- react.fragment
+- react.strict_mode
+- react.profiler
+- react.provider
+- react.context
+- react.server_context
+- react.forward_ref
+- react.suspense
+- react.suspense_list
+- react.memo
+- react.lazy
+- react.offscreen
+- react.module.reference
+- [object Number]
+- @babel/helpers - typeof
+- children
+- aria-activedescendant
+- aria-atomic
+- aria-busy
+- aria-colcount
+- aria-colindex
+- aria-colspan
+- aria-current
+- aria-details
+- aria-errormessage
+- aria-flowto
+- aria-invalid
+- aria-keyshortcuts
+- aria-level
+- aria-live
+- aria-modal
+- aria-multiline
+- aria-multiselectable
+- aria-orientation
+- aria-owns
+- aria-placeholder
+- aria-posinset
+- aria-pressed
+- aria-readonly
+- aria-relevant
+- aria-roledescription
+- aria-rowcount
+- aria-rowindex
+- aria-rowspan
+- aria-setsize
+- aria-sort
+- aria-valuemax
+- aria-valuemin
+- aria-valuenow
+- aria-valuetext
+- height
+- method
+- target
+- accumulate
+- additive
+- alphabetic
+- amplitude
+- ascent
+- azimuth
+- decelerate
+- descent
+- direction
+- display
+- divisor
+- elevation
+- exponent
+- format
+- hanging
+- horizAdvX
+- horizOriginX
+- ideographic
+- intercept
+- kerning
+- mathematical
+- offset
+- operator
+- orient
+- orientation
+- panose1
+- pointsAtX
+- pointsAtY
+- pointsAtZ
+- radius
+- refX
+- refY
+- restart
+- result
+- spacing
+- stroke
+- targetX
+- targetY
+- transform
+- unicode
+- values
+- vertAdvY
+- vertOriginX
+- vertOriginY
+- visibility
+- widths
+- points
+- dangerouslySetInnerHTML
+- Component
+- type.displayName
+- type.name
+- circle
+- color-profile
+- ellipse
+- feFuncA
+- feFuncB
+- feFuncG
+- feFuncR
+- marker
+- metadata
+- missing-glyph
+- pattern
+- polygon
+- polyline
+- script
+- data-
+- recharts-surface
+- recharts-layer
+- \\ud800-\\udfff
+- \\u0300-\\u036f
+- \\ufe20-\\ufe2f
+- \\u20d0-\\u20ff
+- \\ufe0e\\ufe0f
+- \\u200d
+- \\ud83c[\\udffb-\\udfff]
+- (?:\\ud83c[\\udde6-\\uddff]){2}
+- [\\ud800-\\udbff][\\udc00-\\udfff]
+- length
+- @@toPrimitive must return a primitive value.
+- square
+- triangle
+- recharts-symbols
+- Cannot call a class as a function
+- Derived constructors may only return object or undefined
+#### "Column Settings"  [window, 10000 chars]
+- button
+- rgba(34, 197, 94, 0.25)
+- rgba(239, 68, 68, 0.25)
+- OIBarCell
+- Bid (Price/IV)
+- Mark (Price/IV)
+- Ask (Price/IV)
+- Bid Qty
+- Ask Qty
+- Delta
+- volume
+- Volume
+- Gamma
+- Vega
+- Theta
+- chg24
+- 24hr Chg
+- Last
+- Open
+- High
+- oc_col_config
+- Market Data
+- Greeks
+- Activity
+- OHLC
+- visibility
+- Column Settings
+-  of 
+- Reset
+- Show / Hide
+- Reorder
+- Show All
+- Essentials
+- Hide all
+- Show all
+- Drag columns to change their display order (left → right).
+- price-flash-up
+- price-flash-down
+
+#### "Chart Layers"  [window, 10000 chars]
+- No Strategy Selected
+- Add option legs to visualize payoff
+- hsl(var(--profit))
+- On Expiry
+- #3b82f6
+- On Target Date
+- hsl(var(--profit) / 0.2)
+- Profit
+- hsl(var(--loss) / 0.2)
+- Loss
+- hsl(var(--loss) / 0.35)
+- Call OI
+- hsl(var(--profit) / 0.35)
+- Put OI
+- button
+- Zoom In
+- Zoom Out
+- Reset Zoom
+- Toggle Layers
+- Layers
+- Chart Layers
+- Expiry P&L
+- Target Date P&L
+- hsl(var(--primary))
+- Profit / Loss Fill
+- Open Interest
+- SD Bands
+- Breakevens
+- -2SD
+- -1SD
+- Current
+- +1SD
+- +2SD
+- Expected move by 
+- expiry
+- Fetching live prices…
+- hsl(var(--loss))
+- hsl(var(--muted-foreground))
+- number
+- hsl(var(--border))
+- Underlying Price
+- 0.5px
+- Profit / Loss
+
+#### "Position Details"  [window, 10000 chars]
+- Iron Butterfly
+- Neutral
+- Sell ATM straddle, buy OTM strangle. Limited risk neutral strategy.
+- Reverse Iron Butterfly
+- Buy ATM straddle, sell OTM strangle. Profits from big moves.
+- Long Call Butterfly
+- Buy 1 ITM call, sell 2 ATM calls, buy 1 OTM call. Max profit at ATM.
+- Long Put Butterfly
+- Buy 1 ITM put, sell 2 ATM puts, buy 1 OTM put. Max profit at ATM.
+- Long Call Condor
+- Buy ITM call, sell 2 different ATM calls, buy OTM call. Wider profit zone than butterfly.
+- Long Calendar with Calls
+- Sell near-term call, buy longer-term call at same strike. Profits from time decay.
+- Long Calendar with Puts
+- Sell near-term put, buy longer-term put at same strike. Profits from time decay.
+- Long Gut
+- Buy ITM call and ITM put. High cost but profits from large moves.
+- Strip
+- Buy 1 ATM call and 2 ATM puts. Profits more from downside move.
+- Strap
+- Buy 2 ATM calls and 1 ATM put. Profits more from upside move.
+- Jade Lizard
+- Others
+- Sell put spread + sell OTM call. No upside risk with premium collection.
+- Reverse Jade Lizard
+- Sell call spread + sell OTM put. No downside risk with premium collection.
+- Error squaring off leg:
+- Square Off Position
+- Close this option leg
+- button
+- Position Details
+- Type
+- FUTURE
+- CALL
+- Strike Price
+- Quantity
+- Entry Premium
+- Exit Premium
+- number
+- Enter exit premium
+- Current market price or your desired exit price
+- Realized P&L
+- Entry Value
+- Exit Value
+- Net P&L
+- ⚠️ This action cannot be undone. The position will be closed and P&L will be realized.
+- Cancel
+- Closing...
+- Confirm Square Off
+- SQUARED_OFF
+- Error stopping paper trading:
+
+#### "Trading Statistics"  [window, 10000 chars]
+- ,children:[a.jsx(
+- ,{className:
+- ,children:
+- }),a.jsxs(
+- ,children:[
+- ,x.toFixed(2)]})]}),a.jsx(
+- ,children:[b>=0?a.jsx(vs,{className:
+- }):a.jsx(Gs,{className:
+- ,{className:`text-lg font-bold ${b>=0?
+- }`,children:[b>=0?
+- ,b.toFixed(2)]})]})]})]})]}),a.jsx(
+- ,children:a.jsx(
+- })})]}),a.jsxs(
+- ,{onClick:t,disabled:l,className:
+- }),a.jsx(
+- ,{onClick:v,disabled:l||!i||Number(i)<=0,className:
+- ,children:l?
+- ).length)||0,p=((b=n.legs)==null?void 0:b.filter(w=>w.status===
+- ).length)||0,m=((v=n.legs)==null?void 0:v.length)||0,g=async()=>{l(!0);try{await r(s),t()}catch(w){console.error(
+- ,w)}finally{l(!1)}};return a.jsx(
+- ,children:a.jsxs(
+- ,children:[a.jsxs(
+- ,{children:[a.jsx(
+- ,children:n.name})]}),a.jsx(
+- ,{onClick:t,className:
+- ,children:a.jsx(Ur,{className:
+- ,children:[d>=0?a.jsx(vs,{className:
+- ,{className:`text-3xl font-bold ${d>=0?
+- }`,children:[d>=0?
+- ,d.toFixed(2)]})]}),a.jsx(
+- ,{className:`text-xs font-medium mt-1 ${d>=0?
+- }`,children:d>=0?
+- })]})}),a.jsxs(
+- ,{className:`text-lg font-bold ${c>=0?
+- }`,children:[c>=0?
+- ,c.toFixed(2)]})]}),a.jsxs(
+- ,{className:`text-lg font-bold ${u>=0?
+- }`,children:[u>=0?
+- ,u.toFixed(2)]})]}),a.jsxs(
+- ,children:f})]})]})]}),a.jsxs(
+- ,children:m})]}),a.jsxs(
+- ,children:h})]}),a.jsxs(
+- ,children:p})]}),a.jsxs(
+- ,children:n.asset})]})]})]}),a.jsx(
+- ,{type:
+- ,id:
+- ,checked:s,onChange:w=>i(w.target.checked),className:
+- ,{htmlFor:
+- ,className:
+- ,children:s?
+- })]})]})}),h>0&&a.jsx(
+- ,h,
+- ,h>1?
+- ]})}),a.jsx(
+- ,{onClick:t,disabled:o,className:
+- ,{onClick:g,disabled:o,className:
+- ,children:o?
+- :a.jsxs(a.Fragment,{children:[s?a.jsx(Ele,{className:
+- }):a.jsx(ace,{className:
+- }),s?
+- ]})})]})]})})}const Wqe=e=>(e==null?void 0:e.toUpperCase())===
+- ;function s1(e,t){const r=Wqe(t),n=Math.abs(e),s=Number.isInteger(n)?String(n):n.toFixed(2);return`${e<0?
+- ?`${o}%`:s1(o,e.currency);t.push(`TSL ${i(r.trailStopLoss)} / trail ${i(r.trail)}`)}return t}const qqe={TARGET:
+- ,TAKEPROFIT:
+- ,STOPLOSS:
+- ,SL:
+- ,TRAIL:
+- ,TRAILING:
+- };function iee(e){if(!e||e.status!==
+- ||!e.triggered)return null;const{reason:t,at:r,pnl:n}=e.triggered;return{label:qqe[t==null?void 0:t.toUpperCase()]??`${t} hit`,tone:n>=0?
+- ,at:r,pnlText:s1(n,e.currency)}}function aee({risk:e}){const t=Hqe(e),r=iee(e);return t.length===0&&!r?null:a.jsxs(
+- ,children:[t.map(n=>a.jsx(
+- ,children:n},n)),r&&a.jsx(
+- ,{className:`text-[9px] px-1.5 py-px rounded-full border font-bold ${r.tone===
+- }`,children:r.label})]})}function CC(e,t){if(e==null)return
+- ;const r=(t==null?void 0:t.toUpperCase())===
+- ,n=Math.abs(e);return`${e<0?
+
+#### "Add a leg — try it now"  [window, 10000 chars]
+- __activeElement
+- __transitionCallback
+- __activeStep
+- driver-active
+- driver-fade
+- driver-simple
+- driver-no-scroll
+- --driver-animation-duration
+- __pendingWaitCancel
+- No steps to drive through
+- number
+- __activeOnDestroyed
+- driver-dummy-element
+- popover
+- cg-tour:leg-added
+- cg-tour:save-dialog-open
+- cg-tour:trade-modal-open
+- cg-tour:paper-started
+- Welcome to CoinGreeks
+- Let's place a real paper trade together — from picking legs to stopping the trade. Skip anytime; replay later from the help button in the header.
+- Start
+- asset-select
+- Choose your asset
+- Switch between BTC, ETH and XAUT. The live futures price updates here in real time.
+- bottom
+- Your workspaces
+- Option Chain shows live strikes. Builder creates strategies. Paper and Live manage your trades, and Templates stores ready-made setups.
+- options-chain
+- Add a leg — try it now
+- Click any Call or Put price in the chain to add it as a leg. The tour moves on as soon as your first leg is added.
+- strategy-legs
+- builder
+- add-leg-button
+- Your strategy legs
+- Here is the leg you just added. Adjust side (Buy/Sell), strike, expiry and quantity — add more legs for multi-leg strategies. Press Next when it looks right.
+- payoff-panel
+- Payoff and analytics
+- See the payoff diagram, max profit, max loss and breakevens for the strategy you are building.
+- paper-trade-button
+- Start a paper trade
+- Click Paper Trade to begin — virtual funds only, no real money.
+- save-dialog
+- save-button
+- Name your strategy
+- Give the trade a name you'll recognise in the list, then press Save.
+- trade-modal
+- trade-confirm-button
+- Review and start
+- Check the order preview — legs, net premium and required margin — then click Start Paper Trade.
+- paper-tab
+- Your trade is running
+- Every paper trade lives in the Paper tab — including the one you just started.
+- paper-pnl
+- Track P&L and details
+- Total P&L updates live as the market moves. Click the trade card to open full details — per-leg P&L, payoff chart and history.
+- paper-stop
+- Stop a paper trade
+- settings-menu
+- Settings
+- Manage your profile, subscription, API settings and preferences here. Replay this tour anytime from the help button.
+- chat-launcher
+- Ask the CoinGreeks Assistant
+- Stuck anywhere? Click this chat button to ask about strategies, options concepts or how a screen works. You can drag the button anywhere on the page.
+- string
+- cg_tour_done
+- cg_tour_done_
+- cg-tour-arrow
+- ${w0}
+- M20 4 V30
+- M8 20 L20 33 L32 20
+- cg-tour-set-tab
+
+#### "Portfolio Greeks"  [window, 10000 chars]
+- ,children:[a.jsxs(
+- ,{children:[a.jsx(
+- ,{className:
+- ,children:
+- }),a.jsxs(
+- ,children:[a.jsx(
+- ,{onClick:()=>$(
+- ),className:`h-10 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${F===
+- }`,children:
+- ),disabled:!0,className:
+- ,children:[
+- ,a.jsx(
+- })]})]})]}),a.jsxs(
+- }),X?a.jsxs(
+- ,children:[a.jsx(fi,{className:
+- ]}):W.length===0?a.jsxs(
+- }),a.jsx(
+- })]}):a.jsx(
+- ,children:W.map(he=>a.jsx(
+- ,{onClick:()=>V(he.id),className:`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${B===he.id?
+- }`,children:a.jsxs(
+- ,children:he.name}),a.jsxs(
+- ,he.feePercentage,
+- ]}),a.jsxs(
+- ,he.gstPercentage,
+- ,he.feeCapPercentage,
+- ]})]})]}),B===he.id&&a.jsx(
+- ,children:a.jsx(
+- ,fill:
+- ,viewBox:
+- ,stroke:
+- ,{strokeLinecap:
+- ,strokeLinejoin:
+- ,strokeWidth:3,d:
+- })})})]})},he.id))})]})]}),a.jsxs(
+- ,{onClick:()=>T(!1),className:
+- ,{onClick:ct,disabled:v||!B||W.length===0,className:
+- ,children:v?
+- })]})]})}),a.jsx(TI,{isOpen:Z,onClose:()=>{se(!1),te(null)},strategy:ae,loading:ve,onStartTrading:or}),Ae&&a.jsx(
+- ,children:a.jsxs(
+- }),oe&&a.jsxs(
+- ,children:[oe.name,
+- ,oe.asset,
+- ,((cl=oe.legs)==null?void 0:cl.length)||0,
+- ]})]}),a.jsx(
+- ,{onClick:()=>{Te(!1),ye(null)},className:
+- ,strokeWidth:2,d:
+- })})})]}),a.jsx(
+- ,children:oe!=null&&oe.legs&&oe.legs.length>0?a.jsxs(
+- })]}),a.jsxs(
+- ,{children:a.jsxs(
+- })]})}),a.jsxs(
+- ,{children:[oe.legs.map((he,kt)=>a.jsxs(
+- ,{className:`text-[9px] px-1.5 py-0.5 rounded font-bold ${he.side===
+- }`,children:he.side}),a.jsx(
+- ,children:he.legType===
+- ||he.optionType==null?he.symbol||
+- :`${he.strikePrice} ${he.optionType}`})]})}),a.jsx(
+- ,children:he.quantity}),a.jsx(
+- })]},he.id||kt)),a.jsxs(
+- ,colSpan:3,children:
+- })]})]})]})})]}),a.jsxs(
+
+#### "Probability of Profit"  [window, 10000 chars]
+- ,children:
+- }),a.jsx(
+- ,{className:
+- ,children:d===1/0?
+- :c(d)}),a.jsx(
+- })]}),a.jsxs(
+- ,children:[a.jsxs(
+- ,children:[a.jsx(Gs,{className:
+- }),m&&a.jsxs(
+- ,title:
+- ,children:[m,
+- ]})]}),a.jsx(
+- ,children:f===-1/0?
+- :c(Math.abs(f))}),a.jsx(
+- ,children:[a.jsx(
+- ,children:a.jsx(Do,{className:
+- })}),a.jsx(
+- ,children:c(h)}),a.jsx(
+- })]})]}),a.jsxs(
+- ,children:[a.jsx(o5,{className:
+- }),a.jsxs(
+- ,children:[
+- ,t.length>1?
+- ]})]}),(()=>{const g=t.filter(x=>typeof x==
+- &&!isNaN(x)&&isFinite(x));return g.length>0?a.jsx(
+- ,children:g.map((x,b)=>{const v=(x-r)/r*100;return a.jsxs(
+- ,children:g.length>1?`BE ${b+1}`:
+- ,children:u(x)}),a.jsxs(
+- ,v>=0?
+- ,v.toFixed(2),
+- ]})]})]},b)})}):a.jsx(
+- })})(),r&&a.jsxs(
+- ,children:u(r)})]}),(()=>{const g=t.filter(b=>typeof b==
+- }):g.length>0?a.jsx(
+- }):null})()]})]}),a.jsxs(
+- ,children:a.jsx(
+- })]}),e.rewardRisk!==null&&e.rewardRisk!==1/0&&e.rewardRisk>0?a.jsxs(
+- ,children:e.rewardRisk.toFixed(2)}),a.jsx(
+- })]}),a.jsx(
+- ,children:e.rewardRisk>=2?
+- :e.rewardRisk>=1?
+- })]}):d===1/0&&f!==-1/0?a.jsxs(
+- ,{children:[a.jsx(
+- })]}):f===-1/0&&d!==1/0?a.jsxs(
+- })]}):a.jsx(
+- })]}),e.pop!==void 0&&e.pop>0?a.jsxs(
+- ,{className:`text-3xl font-bold ${e.pop>=50?
+- }`,children:e.pop.toFixed(1)}),a.jsx(
+- ,children:e.pop>=60?
+- :e.pop>=40?
+- })]})]}),a.jsx(
+- ,children:a.jsxs(
+- ,children:d>0&&f<0&&t.length===2?`${u(t[0])} - ${u(t[1])}`:d>0&&t.length===1?d===1/0?`> ${u(t[0])}`:`< ${u(t[0])}`:
+- ,{className:`text-sm font-semibold ${e.netPremium>0?
+- }`,children:[e.netPremium>0?
+- ,c(Math.abs(e.netPremium))]})]}),a.jsxs(
+- :h>0?`${(d/h*100).toFixed(0)}%`:
+- })]})]})})]})}var T1e=Array.isArray,Js=T1e,O1e=typeof Rt==
+- &&Rt&&Rt.Object===Object&&Rt,UY=O1e,M1e=UY,I1e=typeof self==
+- &&self&&self.Object===Object&&self,D1e=M1e||I1e||Function(
+- ,Y1e=
+- ,N$=_$?_$.toStringTag:void 0;function X1e(e){return e==null?e===void 0?Y1e:K1e:N$&&N$ in Object(e)?q1e(e):G1e(e)}var tc=X1e;function Q1e(e){return e!=null&&typeof e==
+- }var wo=Q1e,J1e=tc,Z1e=wo,ewe=
+- ;function twe(e){return typeof e==
+- ||Z1e(e)&&J1e(e)==ewe}var qm=twe,rwe=Js,nwe=qm,swe=/\.|\[(?:[^[\]]*|([
+- number
+- symbol
+- boolean
+- object
+- function
+- [object AsyncFunction]
+- [object Function]
+- [object GeneratorFunction]
+- [object Proxy]
+- __core-js_shared__
+- Symbol(src)_1.
+- create
+- __lodash_hash_undefined__
+
+#### "Select Option from Chain"  [window, 10000 chars]
+- button
+- smooth
+- N/A
+- Connecting to WebSocket...
+- Click to enable live prices
+- Live
+- Connecting
+- Static
+- Column settings
+- hsl(var(--border)) transparent
+- Loading options chain...
+- No data available
+- 80vh
+- Select Option from Chain
+-  • Spot: 
+- Maximum 
+-  leg
+- Click 
+-  to Buy or 
+-  to Sell • Select multiple legs
+- SELL
+- Qty:
+- number
+- symbols
+- Unit
+- Symbol
+- Clear
+- Add 
+-  Leg
+- Close
+- Bullish
+- Bearish
+- Neutral
+- Others
+- Buy Call
+- Sell Put
+- Bull Call Spread
+- Bull Put Spread
+- Long Synthetic Future
+- Buy Put
+- Sell Call
+- Bear Put Spread
+- Bear Call Spread
+- Short Synthetic Future
+- Long Straddle
+- Short Straddle
+- Long Strangle
+- Short Strangle
+- Iron Condor
+- Reverse Iron Condor
+- Iron Butterfly
+
+#### "My Profile" : NOT FOUND
+
+#### "Change Password" : NOT FOUND
+
+#### "Previous flyer"  [g1e, 2016 chars]
+- _blank
+- noopener,noreferrer
+- button
+- aria-label
+- Previous flyer
+- View 
+- Next flyer
+
+#### "Your plan has expired."  [i1e, 2275 chars]
+- Your plan has expired.
+- /subscription
+- Renew Plan
+- Your free plan is active.
+- Upgrade
+- Your plan expires soon — 
+-  left.
+- Congratulations! Your plan is active until
+- numeric
+
+#### "Archived Strategies"  [window, 10000 chars]
+- );On.includes(
+- )||On.includes(
+- )?u?u(On):Ce({title:
+- ,description:On,variant:
+- }):Ce({title:
+- })}}finally{w(!1)}},at=async he=>{try{de(!0),se(!0);const kt=await Bn(he.id);te(kt)}catch(kt){console.error(
+- ,kt),Ce({title:
+- ,description:
+- ,variant:
+- }),se(!1)}finally{de(!1)}},or=()=>{if(ae){if(c){se(!1),c(ae.id,ae.name);return}U(ae),se(!1),T(!0),lt()}},Er=async(he,kt)=>{console.log(
+- ,he,
+- })},kr=async he=>{ae&&(z(he),ie(!1),G(!0))},Xt=async()=>{if(!(!ae||!Q||!Array.isArray(Q)||Q.length===0))try{w(!0);const he=rr=>{if(rr.includes(
+- ))return rr;const Dt={JAN:
+- ,FEB:
+- ,MAR:
+- ,APR:
+- ,MAY:
+- ,JUN:
+- ,JUL:
+- ,AUG:
+- ,SEP:
+- ,OCT:
+- ,NOV:
+- ,DEC:
+- },Rr=rr.substring(0,2),On=Dt[rr.substring(2,5)];return`${
+- +rr.substring(5,7)}-${On}-${Rr}`};for(const rr of Q){const Dt={optionType:rr.type===
+- ,side:rr.action===
+- ,strikePrice:rr.strike,expiryDate:he(rr.expiry),quantity:rr.lots||1,lotSize:1,entryPremium:rr.price,unit:(rr.unit||
+- ).toUpperCase()};console.log(
+- ,Dt),await Fj(ae.id,Dt)}const kt=await Bn(ae.id);te(kt),G(!1),z(null),Ce({title:
+- ,description:`${Q.length} adjustment leg${Q.length>1?
+- } added successfully`})}catch(he){console.error(
+- ,he),Ce({title:
+- ,description:he.message||
+- })}finally{w(!1)}},Hr=async he=>{console.log(
+- })};return a.jsxs(
+- ,{className:
+- ,children:[!i&&a.jsx(
+- ,children:a.jsx(
+- ,children:[{label:
+- ,icon:Tle},{label:
+- ,icon:yk}].map((he,kt)=>a.jsxs(
+- ,{onClick:()=>f(kt),className:`px-3 py-2 text-xs font-medium border-b-2 transition-colors flex items-center gap-1.5 ${d===kt?
+- }`,children:[a.jsx(he.icon,{className:
+- }),he.label]},he.label))})}),d===0&&a.jsxs(
+- ,children:[a.jsxs(
+- ,children:[a.jsx(
+- ,children:RXe.map(he=>{const kt=$Xe[he];return a.jsxs(
+- ,{onClick:()=>p(he),className:`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${h===he?
+- }`,children:[a.jsx(kt,{className:
+- }),he]},he)})}),n.length>0&&a.jsx(
+- ,{value:m,onChange:he=>g(he.target.value),className:
+- ,children:n.map(he=>a.jsx(
+- ,{value:he,children:he},he))})]}),a.jsx(
+- ,children:dt.map(he=>{const kt=he.category===
+- ,rr=he.category===
+- ;he.category;const Dt=kt?
+- :rr?
+- ,Rr=kt?
+- ;return a.jsxs(
+- ,{viewBox:
+- ,className:
+- ,{x1:
+- ,y1:
+- ,x2:
+- ,y2:
+- ,stroke:
+- ,strokeWidth:
+- ,strokeDasharray:
+- }),FXe(he.name,he.name.replace(/\s+/g,
+- ).toLowerCase())]}),a.jsx(
+- ,{className:`text-[10px] font-semibold leading-tight ${Rr}`,children:he.name})]},he.name)})})]}),d===1&&a.jsxs(
+- ,{onClick:()=>{S(
+- ),A(1)},className:`px-3 py-1.5 text-[10px] font-medium border-b-2 transition-colors ${j===
+- }`,children:
+- }),a.jsx(
+- })]}),a.jsx(
+- ,{onClick:()=>ht(k),disabled:v,className:
+- ,title:
+- ,children:a.jsx(fi,{className:`w-3.5 h-3.5 text-muted-foreground ${v?
+- }`})})]}),a.jsx(
+- ,children:a.jsxs(
+- ,children:[a.jsx(Na,{className:
+- ,{type:
+- ,value:_,onChange:he=>N(he.target.value),placeholder:`Search ${j===
+- } strategies...`,className:
+- }),_&&a.jsx(
+- ,{onClick:()=>N(
+- ),className:
+- ,children:a.jsx(Ur,{className:
+- })})]})}),a.jsxs(
+- ,children:[v&&x.length===0?a.jsxs(
+- ,children:[a.jsx(fi,{className:
+- ]}):x.length===0?a.jsxs(
+- ,children:j===
+- })]}):a.jsx(
+- ,children:x.map(he=>{var Dt;const kt=he.status===
+- &&(Number(he.unrealizedPnl)!==0||Number(he.realizedPnl)!==0||Number(he.daysTracked)>0),rr=Number(he.unrealizedPnl||0)+Number(he.realizedPnl||0);return a.jsxs(
+- }),a.jsxs(
+- ,children:he.name}),l===he.name&&a.jsx(
+- ,children:
+- }),he.status===
+- &&a.jsx(
+- &&he.tradingMode===
+- &&a.jsxs(
+- ]}),he.status===
+- })]}),a.jsxs(
+- }),he.asset]}),a.jsx(
+- ,children:he.legsCount||((Dt=he.legs)==null?void 0:Dt.length)||0}),
+- ]}),a.jsx(
+- ,children:new Date(he.createdAt).toLocaleDateString(
+- ,{month:
+- ,day:
+- ,year:
+- })})]})]}),a.jsxs(
+- ,children:[j!==
+- ,{onClick:()=>Et(he),disabled:v,className:
+
+#### "My Templates"  [window, 10000 chars]
+- })}finally{w(!1)}},Et=async he=>{if(t)try{w(!0);const kt=await Bn(he.id);if(!kt.legs||kt.legs.length===0){Ce({title:
+- ,description:
+- ,variant:
+- });return}const rr=kt.legs.map(Dt=>Wd(Dt,he.id));t(rr),Ce({title:
+- ,description:`Loaded strategy: ${he.name}`})}catch(kt){console.error(
+- ,kt),Ce({title:
+- })}finally{w(!1)}},He=async he=>{try{w(!0),await kG(he.id,
+- ),await ht(),Ce({title:
+- ,description:`${he.name} is now active and ready to trade`})}catch(kt){console.error(
+- });return}const Rr=yi=>{const bi=new Date(yi),ic=[
+- ],ys=String(bi.getDate()).padStart(2,
+- ),ac=ic[bi.getMonth()],ei=String(bi.getFullYear()).slice(-2);return`${ys}${ac}${ei}`},On=await Tp(Dt.asset),Hu=On.markPrice||On.price;console.log(
+- ,On),console.log(
+- ,Hu),console.log(
+- ,ul),console.log(
+- ,Hu);const Gu=await PG(R.id,B,F,ul,Hu),Xr=Dt.legs.map(yi=>Wd(yi,R.id));t(Xr),T(!1),F===
+- &&o&&o(),await ht(),Ce({title:`${F===
+- } Trading Started`,description:`Trading ${R.name} on ${(he=W.find(yi=>yi.id===B))==null?void 0:he.name}`})}catch(Dt){console.error(
+- ,Dt);const Rr=(kt=Dt==null?void 0:Dt.response)==null?void 0:kt.data;if(Rr!=null&&Rr.quota||(rr=Rr==null?void 0:Rr.error)!=null&&rr.includes(
+- )){const On=Rr.error||
+- ;u?u(On):Ce({title:
+- ,description:On,variant:
+- })}else{const On=(Rr==null?void 0:Rr.error)||(Rr==null?void 0:Rr.message)||(Dt instanceof Error?Dt.message:
+- );On.includes(
+- )||On.includes(
+- )?u?u(On):Ce({title:
+- }):Ce({title:
+- })}}finally{w(!1)}},at=async he=>{try{de(!0),se(!0);const kt=await Bn(he.id);te(kt)}catch(kt){console.error(
+- }),se(!1)}finally{de(!1)}},or=()=>{if(ae){if(c){se(!1),c(ae.id,ae.name);return}U(ae),se(!1),T(!0),lt()}},Er=async(he,kt)=>{console.log(
+- ,he,
+- })},kr=async he=>{ae&&(z(he),ie(!1),G(!0))},Xt=async()=>{if(!(!ae||!Q||!Array.isArray(Q)||Q.length===0))try{w(!0);const he=rr=>{if(rr.includes(
+- ))return rr;const Dt={JAN:
+- ,FEB:
+- ,MAR:
+- ,APR:
+- ,MAY:
+- ,JUN:
+- ,JUL:
+- ,AUG:
+- ,SEP:
+- ,OCT:
+- ,NOV:
+- ,DEC:
+- },Rr=rr.substring(0,2),On=Dt[rr.substring(2,5)];return`${
+- +rr.substring(5,7)}-${On}-${Rr}`};for(const rr of Q){const Dt={optionType:rr.type===
+- ,side:rr.action===
+- ,strikePrice:rr.strike,expiryDate:he(rr.expiry),quantity:rr.lots||1,lotSize:1,entryPremium:rr.price,unit:(rr.unit||
+- ).toUpperCase()};console.log(
+- ,Dt),await Fj(ae.id,Dt)}const kt=await Bn(ae.id);te(kt),G(!1),z(null),Ce({title:
+- ,description:`${Q.length} adjustment leg${Q.length>1?
+- } added successfully`})}catch(he){console.error(
+- ,he),Ce({title:
+- ,description:he.message||
+- })}finally{w(!1)}},Hr=async he=>{console.log(
+- })};return a.jsxs(
+- ,{className:
+- ,children:[!i&&a.jsx(
+- ,children:a.jsx(
+- ,children:[{label:
+- ,icon:Tle},{label:
+- ,icon:yk}].map((he,kt)=>a.jsxs(
+- ,{onClick:()=>f(kt),className:`px-3 py-2 text-xs font-medium border-b-2 transition-colors flex items-center gap-1.5 ${d===kt?
+- }`,children:[a.jsx(he.icon,{className:
+- }),he.label]},he.label))})}),d===0&&a.jsxs(
+- ,children:[a.jsxs(
+- ,children:[a.jsx(
+- ,children:RXe.map(he=>{const kt=$Xe[he];return a.jsxs(
+- ,{onClick:()=>p(he),className:`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${h===he?
+- }`,children:[a.jsx(kt,{className:
+- }),he]},he)})}),n.length>0&&a.jsx(
+- ,{value:m,onChange:he=>g(he.target.value),className:
+- ,children:n.map(he=>a.jsx(
+- ,{value:he,children:he},he))})]}),a.jsx(
+- ,children:dt.map(he=>{const kt=he.category===
+- ,rr=he.category===
+- ;he.category;const Dt=kt?
+- :rr?
+- ,Rr=kt?
+- ;return a.jsxs(
+- ,{viewBox:
+- ,className:
+- ,{x1:
+- ,y1:
+- ,x2:
+- ,y2:
+- ,stroke:
+- ,strokeWidth:
+- ,strokeDasharray:
+- }),FXe(he.name,he.name.replace(/\s+/g,
+- ).toLowerCase())]}),a.jsx(
+- ,{className:`text-[10px] font-semibold leading-tight ${Rr}`,children:he.name})]},he.name)})})]}),d===1&&a.jsxs(
+- ,{onClick:()=>{S(
+- ),A(1)},className:`px-3 py-1.5 text-[10px] font-medium border-b-2 transition-colors ${j===
+- }`,children:
+- }),a.jsx(
+- })]}),a.jsx(
+- ,{onClick:()=>ht(k),disabled:v,className:
+- ,title:
+- ,children:a.jsx(fi,{className:`w-3.5 h-3.5 text-muted-foreground ${v?
+- }`})})]}),a.jsx(
+- ,children:a.jsxs(
+- ,children:[a.jsx(Na,{className:
+- ,{type:
+- ,value:_,onChange:he=>N(he.target.value),placeholder:`Search ${j===
+- } strategies...`,className:
+- }),_&&a.jsx(
+- ,{onClick:()=>N(
+- ),className:
+- ,children:a.jsx(Ur,{className:
+- })})]})}),a.jsxs(
+- ,children:[v&&x.length===0?a.jsxs(
+- ,children:[a.jsx(fi,{className:
+- ]}):x.length===0?a.jsxs(
+- ,children:j===
+- })]}):a.jsx(
+- ,children:x.map(he=>{var Dt;const kt=he.status===
+- &&(Number(he.unrealizedPnl)!==0||Number(he.realizedPnl)!==0||Number(he.daysTracked)>0),rr=Number(he.unrealizedPnl||0)+Number(he.realizedPnl||0);return a.jsxs(
+
+#### "IV sensitivity"  [window, 10000 chars]
+- })]})]}),h!==Te&&a.jsx(
+- ,{onClick:()=>p(Te),className:
+- ,children:
+- })]}),a.jsxs(
+- ,{className:
+- ,children:[a.jsx(
+- ,{onClick:()=>Be(1),className:
+- ,children:a.jsx(_a,{className:
+- })}),a.jsx(
+- ,children:oe&&!isNaN(oe.getTime())?xu(oe,
+- }),a.jsx(
+- ,{onClick:()=>Be(-1),className:
+- ,children:a.jsx(Vi,{className:
+- })})]}),a.jsx(aT,{value:[h],onValueChange:([ie])=>p(ie),min:0,max:Te,step:1}),a.jsxs(
+- }),a.jsxs(
+- ,children:[
+- ,ye&&!isNaN(ye.getTime())?xu(ye,
+- ]})]})]}),n.length===0&&a.jsxs(
+- ,{className:`text-base font-bold ${X.expiry>=0?
+- }`,children:[X.expiry>=0?
+- ,O(Math.abs(X.expiry))]})]})]})})]})}function Lqe(e,t,r=1){if(zt(e))return Ype(e,t,void 0,r);const n=e.action===
+- ?1:-1,s=e.quantityUnit===
+- }){const i=t.map(o=>({leg:o,greeks:Lqe(o,r,n)}));return a.jsxs(
+- ,children:[a.jsxs(
+- ,children:[e.delta>=0?a.jsx(vs,{className:
+- }):a.jsx(Gs,{className:
+- })]}),a.jsx(
+- ,{className:`text-xl font-bold ${e.delta>=0?
+- }`,children:e.delta.toFixed(4)}),a.jsx(
+- ,children:a.jsx(
+- ,children:e.gamma.toFixed(6)}),a.jsx(
+- ,{className:`text-xl font-bold ${e.theta>=0?
+- }`,children:e.theta.toFixed(4)}),a.jsx(
+- ,children:e.vega.toFixed(4)}),a.jsx(
+- })]})]}),t.length>0&&a.jsx(
+- ,children:a.jsxs(
+- ,{children:a.jsxs(
+- })]})}),a.jsxs(
+- ,{children:[i.map((o,l)=>a.jsxs(
+- ,{className:`px-1.5 py-0.5 rounded text-xs font-medium ${o.leg.action===
+- }`,children:o.leg.action}),a.jsx(
+- ,children:zt(o.leg)?$H(o.leg,s):`${o.leg.strike} ${o.leg.type}`})]})}),a.jsx(
+- ,children:o.leg.lots}),a.jsxs(
+- ,children:[(o.leg.iv||50).toFixed(1),
+- ]}),a.jsx(
+- ,{className:`py-2 px-2 text-center font-mono text-xs ${o.greeks.delta>=0?
+- }`,children:o.greeks.delta.toFixed(4)}),a.jsx(
+- ,children:o.greeks.gamma.toFixed(6)}),a.jsx(
+- ,{className:`py-2 px-2 text-center font-mono text-xs ${o.greeks.theta>=0?
+- }`,children:o.greeks.theta.toFixed(4)}),a.jsx(
+- ,children:o.greeks.vega.toFixed(4)})]},o.leg.id)),a.jsxs(
+- ,colSpan:3,children:
+- ,{className:`py-2 px-2 text-center font-mono text-xs ${e.delta>=0?
+- ,{className:`py-2 px-2 text-center font-mono text-xs ${e.theta>=0?
+- ,children:e.vega.toFixed(4)})]})]})]})})]})}const Uqe=[{name:
+- ,category:
+- ,description:
+- ,legs:[{type:
+- ,action:
+- ,strike:0,expiry:
+- ,lots:1}]},{name:
+- ,lots:1},{type:
+- ,strike:1,expiry:
+- ,strike:-1,expiry:
+
+#### "Understanding Greeks"  [window, 10000 chars]
+- ,{strokeLinecap:
+- ,strokeLinejoin:
+- ,strokeWidth:2,d:
+- })})})]}),a.jsx(
+- ,{className:
+- ,children:oe!=null&&oe.legs&&oe.legs.length>0?a.jsxs(
+- ,children:[a.jsxs(
+- ,children:[a.jsx(
+- ,children:
+- }),a.jsxs(
+- }),a.jsx(
+- })]}),a.jsxs(
+- })]})]})]}),a.jsxs(
+- ,children:a.jsxs(
+- ,{children:a.jsxs(
+- })]})}),a.jsxs(
+- ,{children:[oe.legs.map((he,kt)=>a.jsxs(
+- ,{className:`text-[9px] px-1.5 py-0.5 rounded font-bold ${he.side===
+- }`,children:he.side}),a.jsx(
+- ,children:he.legType===
+- ||he.optionType==null?he.symbol||
+- :`${he.strikePrice} ${he.optionType}`})]})}),a.jsx(
+- ,children:he.quantity}),a.jsx(
+- })]},he.id||kt)),a.jsxs(
+- ,colSpan:3,children:
+- })]})]})]})})]}),a.jsxs(
+- })]})]})]})]}):a.jsx(
+- })}),a.jsx(
+- ,children:a.jsx(
+- ,{onClick:()=>{Te(!1),ye(null)},className:
+- ,expiries:Se,currentPrice:Y,maxSelections:ue}),re&&Q&&Array.isArray(Q)&&Q.length>0&&a.jsx(
+- ,children:a.jsx(vn,{className:
+- })}),a.jsxs(
+- ,{children:[a.jsx(
+- ,children:[Q.length,
+- ,Q.length>1?
+- ]})]})]})}),a.jsx(
+- ,children:Q.map((he,kt)=>a.jsxs(
+- ,{className:`px-2 py-0.5 rounded text-[10px] font-bold ${he.action===
+- }`,children:he.action===
+- ,{className:`px-2 py-0.5 rounded text-[10px] font-bold ${he.type===
+- }`,children:he.type===
+- ,children:he.strike.toLocaleString()})]}),a.jsxs(
+- ,children:[
+- ,he.price.toFixed(2)]})]}),a.jsxs(
+- ,children:he.lots||1})]}),a.jsxs(
+- ,children:he.expiry})]})]})]},kt))}),a.jsxs(
+- ,{onClick:()=>{G(!1),z(null),ie(!0)},disabled:v,className:
+- ,{onClick:Xt,disabled:v,className:
+
+#### "Win if price"  [window, 10000 chars]
+- Unlimited
+- Theoretical maximum
+- Expected Required Margin
+- Capital required
+- Breakeven 
+- Points
+- Point
+- number
+- No breakeven points
+- Current Price
+- ✓ In profit zone
+- ✗ In loss zone
+- R/R
+- Risk/Reward
+- ✓ Favorable risk/reward
+- Balanced risk/reward
+- High risk scenario
+- Unlimited exposure
+- N/A
+- Probability of Profit
+- ✓ High probability
+- Moderate probability
+- Low probability
+- Calculating...
+- Win if price
+- Varies
+- Net Premium
+- Max ROI
+- object
+- return this
+- [object Null]
+- [object Undefined]
+- [object Symbol]
+- symbol
+- '])(?:(?!\1)[^\\]|\\.)*?\1)\]/,iwe=/^\w*$/;function awe(e,t){if(rwe(e))return!1;var r=typeof e;return r==
+- ||r==
+- ||e==null||nwe(e)?!0:iwe.test(e)||!swe.test(e)||t!=null&&e in Object(t)}var gM=awe;function owe(e){var t=typeof e;return e!=null&&(t==
+- ||t==
+- )}var So=owe;const Gm=mr(So);var lwe=tc,cwe=So,uwe=
+- ,dwe=
+- ,fwe=
+- ,hwe=
+- ;function pwe(e){if(!cwe(e))return!1;var t=lwe(e);return t==dwe||t==fwe||t==uwe||t==hwe}var xM=pwe;const _t=mr(xM);var mwe=bo,gwe=mwe[
+- ],xwe=gwe,K2=xwe,C$=function(){var e=/[^.]+$/.exec(K2&&K2.keys&&K2.keys.IE_PROTO||
+- );return e?
+- +e:
+- }();function vwe(e){return!!C$&&C$ in e}var ywe=vwe,bwe=Function.prototype,wwe=bwe.toString;function Swe(e){if(e!=null){try{return wwe.call(e)}catch{}try{return e+
+- }catch{}}return
+- +Twe.call(Owe).replace(Ewe,
+- ).replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g,
+
+#### "Search coin (BTC, ETH, SOL…)"  [Mct, 1084 chars]
+- header
+- /terminal
+- Market
+- ma-accent
+- Analytics
+- Search coin (BTC, ETH, SOL…)
+
+#### "Analytics sections"  [tct, 1319 chars]
+- aria-label
+- Analytics sections
+- section-tab-indicator
+- spring
+
+#### "Heatmap (24h)"  [Nct, 5933 chars]
+- bitcoin
+- Open Interest
+- All exchanges
+- 24h Volume
+- Liquidations 24h
+- Fear & Greed
+- BTC Price
+- ETH Price
+- BTC Dominance
+- Long/Short Ratio
+- BTC global
+- BTC Price & Open Interest
+- Price
+- BTC Long / Short Ratio
+- Long %
+- Short %
+- hsl(var(--cg2-up))
+- hsl(var(--cg2-down))
+- Fear & Greed Index
+- Top Gainers (24h)
+- Top Losers (24h)
+- Heatmap (24h)
+- hsl(var(--cg2-border))
+- Total Bitcoin Spot ETF Net Inflow
+- /analytics/etf
+- View all →
+- cg2-table
+- Date
+- Net Flow
+- Cumulative
+-  BTC ETFs tracked
+- Data via Coinglass · auto-refreshing every 60s
+
+#### "Using Live WebSocket Prices"  [window, 10000 chars]
+- button
+- Previous
+- Next
+- Stop Paper Trading
+- Choose what to do with this strategy
+- Stop paper trading for this strategy:
+- 📄 Paper
+- Live Prices
+- Asset: 
+- Legs: 
+- P&L: 
+- SQUARED_OFF
+- Active Legs
+- FUTURE
+- CALL
+- Qty: 
+- M5 13l4 4L19 7
+- Using Live WebSocket Prices
+- Current market prices will be used for all legs when stopping
+- Connecting to Live Prices
+- Please wait while we fetch current market prices...
+- checkbox
+- Archive this strategy
+- Move to archived strategies. Uncheck to keep it active for future use.
+- Cancel
+- Stop paper trading
+- Waiting for live prices...
+- Stopping...
+- Stop Trading
+- Connecting...
+- Delete Strategy
+- Are you sure you want to delete 
+- ? This action cannot be undone.
+- Deleting...
+- Delete
+- Refreshed
+- Strategy data has been updated
+- Error refreshing strategy:
+- Error
+- Failed to refresh strategy
+- destructive
+
+#### "Connecting to Live Prices"  [window, 10000 chars]
+- ,title:
+- ,children:a.jsx(Vi,{className:
+- })})]})]}),j&&_&&a.jsx(
+- ,{className:
+- ,children:a.jsxs(
+- ,children:[a.jsx(
+- ,children:a.jsx(Bh,{className:
+- })}),a.jsxs(
+- ,{children:[a.jsx(
+- ,children:
+- }),a.jsx(
+- })]})]})}),a.jsxs(
+- }),a.jsxs(
+- ,children:[a.jsxs(
+- ,children:_.name}),xe&&a.jsxs(
+- ]})]}),a.jsxs(
+- ,{children:[
+- ,_.asset]}),a.jsxs(
+- ,((G=_.legs)==null?void 0:G.length)||0]}),_.totalPnl!==null&&_.totalPnl!==void 0&&a.jsxs(
+- ,{className:_.totalPnl>=0?
+- ,children:[
+- ,_.totalPnl>=0?
+- ,_.totalPnl.toFixed(2)]})]})]}),_.legs&&_.legs.filter(Q=>Q.status!==
+- ).length>0&&a.jsxs(
+- ,children:_.legs.filter(Q=>Q.status!==
+- ).map((Q,z)=>a.jsxs(
+- ,{className:`text-[9px] px-1 py-0.5 rounded font-bold ${Q.side===
+- }`,children:Q.side}),Q.legType===
+- ||Q.optionType==null?a.jsx(
+- ,children:Q.symbol||
+- }):a.jsxs(a.Fragment,{children:[a.jsx(
+- ,{className:`text-[9px] font-bold ${Q.optionType===
+- }`,children:Q.optionType===
+- ,children:Number(Q.strikePrice).toLocaleString()})]})]}),a.jsxs(
+- ,Q.quantity||1]})]},Q.id||z))})]}),xe&&a.jsx(
+- ,children:a.jsx(
+- ,fill:
+- ,viewBox:
+- ,stroke:
+- ,{strokeLinecap:
+- ,strokeLinejoin:
+- ,strokeWidth:3,d:
+- })})}),a.jsxs(
+- })]})]})}),!xe&&a.jsx(
+- ,children:a.jsx(fi,{className:
+- ,{type:
+- ,id:
+- ,checked:C,onChange:Q=>E(Q.target.checked),className:
+- ,disabled:!xe}),a.jsxs(
+- ,{htmlFor:
+- ,className:
+- })]})]})]}),a.jsxs(
+- ,{onClick:()=>{S(!1),N(null)},disabled:f,className:
+- ,{onClick:re,disabled:f||!xe,className:
+- ,title:xe?
+- ,children:[a.jsx(Bh,{className:
+- }),f?
+- :xe?
+- ]})]})]})}),J&&a.jsx(
+- })}),a.jsx(
+- ,a.jsx(
+- ,children:J.name}),
+- ]})}),a.jsxs(
+- ,{onClick:()=>Z(null),disabled:f,className:
+- ,{onClick:async()=>{await Oe(J.id),Z(null)},disabled:f,className:
+- ,children:f?
+- })]})]})}),a.jsx(TI,{isOpen:k,onClose:()=>{A(!1),M(null)},strategy:P?{...P,tradingMode:
+- ,description:
+- })}catch(Q){console.error(
+- ,Q),de({title:
+- ,variant:
+- })}finally{I(!1)}}}),a.jsx(Z_,{isOpen:D,onClose:()=>{L(!1),A(!0)},onSelect:()=>{},onSelectMultiple:ce,showUnitSelector:!0,asset:(P==null?void 0:P.asset)||
+- ,expiries:T,currentPrice:U,maxSelections:$}),V&&H&&Array.isArray(H)&&H.length>0&&a.jsx(
+- ,children:a.jsx(vn,{className:
+- ,children:[H.length,
+- ,H.length>1?
+- ]})]})]})}),a.jsx(
+- ,children:H.map((Q,z)=>a.jsxs(
+- ,{className:`px-2 py-0.5 rounded text-[10px] font-bold ${Q.action===
+- }`,children:Q.action===
+- }),Q.instrument!==
+- &&a.jsx(
+- ,{className:`px-2 py-0.5 rounded text-[10px] font-bold ${Q.type===
+
+#### "Options Greeks"  [window, 10000 chars]
+- ,children:
+- }),a.jsx(
+- ,{onClick:async()=>{await Ge(ge.id),Ne(null)},disabled:v,className:
+- ,children:v?
+- })]})]})}),L&&R&&a.jsx(
+- ,{className:
+- ,children:a.jsxs(
+- ,children:[a.jsxs(
+- ,children:[a.jsx(
+- ,children:R.name})]}),a.jsxs(
+- ,{children:[a.jsx(
+- }),a.jsxs(
+- ,{onClick:()=>$(
+- ),className:`h-10 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${F===
+- }`,children:
+- ),disabled:!0,className:
+- ,children:[
+- ,a.jsx(
+- })]})]})]}),a.jsxs(
+- }),X?a.jsxs(
+- ,children:[a.jsx(fi,{className:
+- ]}):W.length===0?a.jsxs(
+- })]}):a.jsx(
+- ,children:W.map(he=>a.jsx(
+- ,{onClick:()=>V(he.id),className:`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${B===he.id?
+- }`,children:a.jsxs(
+- ,children:he.name}),a.jsxs(
+- ,he.feePercentage,
+- ]}),a.jsxs(
+- ,he.gstPercentage,
+- ,he.feeCapPercentage,
+- ]})]})]}),B===he.id&&a.jsx(
+- ,children:a.jsx(
+- ,fill:
+- ,viewBox:
+- ,stroke:
+- ,{strokeLinecap:
+- ,strokeLinejoin:
+- ,strokeWidth:3,d:
+- })})})]})},he.id))})]})]}),a.jsxs(
+- ,{onClick:()=>T(!1),className:
+- ,{onClick:ct,disabled:v||!B||W.length===0,className:
+- })]})]})}),a.jsx(TI,{isOpen:Z,onClose:()=>{se(!1),te(null)},strategy:ae,loading:ve,onStartTrading:or}),Ae&&a.jsx(
+- }),oe&&a.jsxs(
+- ,children:[oe.name,
+- ,oe.asset,
+- ,((cl=oe.legs)==null?void 0:cl.length)||0,
+- ]})]}),a.jsx(
+- ,{onClick:()=>{Te(!1),ye(null)},className:
+- ,strokeWidth:2,d:
+- })})})]}),a.jsx(
+- ,children:oe!=null&&oe.legs&&oe.legs.length>0?a.jsxs(
+- })]}),a.jsxs(
+- ,{children:a.jsxs(
+- })]})}),a.jsxs(
+- ,{children:[oe.legs.map((he,kt)=>a.jsxs(
+- ,{className:`text-[9px] px-1.5 py-0.5 rounded font-bold ${he.side===
+- }`,children:he.side}),a.jsx(
+- ,children:he.legType===
+- ||he.optionType==null?he.symbol||
+- :`${he.strikePrice} ${he.optionType}`})]})}),a.jsx(
+- ,children:he.quantity}),a.jsx(
+- })]},he.id||kt)),a.jsxs(
+- ,colSpan:3,children:
+
+#### "Leg-wise Greeks"  [window, 10000 chars]
+- }`,children:a.jsxs(
+- ,{className:
+- ,children:[a.jsxs(
+- ,children:[a.jsx(
+- ,children:he.name}),a.jsxs(
+- ,{children:[a.jsx(
+- ,children:
+- ,he.feePercentage,
+- ]}),a.jsxs(
+- ,he.gstPercentage,
+- ,he.feeCapPercentage,
+- ]})]})]}),B===he.id&&a.jsx(
+- ,children:a.jsx(
+- ,fill:
+- ,viewBox:
+- ,stroke:
+- ,{strokeLinecap:
+- ,strokeLinejoin:
+- ,strokeWidth:3,d:
+- })})})]})},he.id))})]})]}),a.jsxs(
+- ,{onClick:()=>T(!1),className:
+- }),a.jsx(
+- ,{onClick:ct,disabled:v||!B||W.length===0,className:
+- ,children:v?
+- })]})]})}),a.jsx(TI,{isOpen:Z,onClose:()=>{se(!1),te(null)},strategy:ae,loading:ve,onStartTrading:or}),Ae&&a.jsx(
+- ,children:a.jsxs(
+- }),oe&&a.jsxs(
+- ,children:[oe.name,
+- ,oe.asset,
+- ,((cl=oe.legs)==null?void 0:cl.length)||0,
+- ]})]}),a.jsx(
+- ,{onClick:()=>{Te(!1),ye(null)},className:
+- ,strokeWidth:2,d:
+- })})})]}),a.jsx(
+- ,children:oe!=null&&oe.legs&&oe.legs.length>0?a.jsxs(
+- }),a.jsxs(
+- })]}),a.jsxs(
+- })]})]})]}),a.jsxs(
+- ,{children:a.jsxs(
+- })]})}),a.jsxs(
+- ,{children:[oe.legs.map((he,kt)=>a.jsxs(
+- ,{className:`text-[9px] px-1.5 py-0.5 rounded font-bold ${he.side===
+- }`,children:he.side}),a.jsx(
+- ,children:he.legType===
+- ||he.optionType==null?he.symbol||
+- :`${he.strikePrice} ${he.optionType}`})]})}),a.jsx(
+- ,children:he.quantity}),a.jsx(
+- })]},he.id||kt)),a.jsxs(
+- ,colSpan:3,children:
+- })]})]})]})})]}),a.jsxs(
+- })]})]})]})]}):a.jsx(
+- })}),a.jsx(
+
+#### "Max ROI"  [window, 10000 chars]
+- ,{className:
+- ,children:[a.jsxs(
+- ,children:[a.jsx(o5,{className:
+- }),a.jsxs(
+- ,children:[
+- ,t.length>1?
+- ]})]}),(()=>{const g=t.filter(x=>typeof x==
+- &&!isNaN(x)&&isFinite(x));return g.length>0?a.jsx(
+- ,children:g.map((x,b)=>{const v=(x-r)/r*100;return a.jsxs(
+- ,children:[a.jsx(
+- ,children:g.length>1?`BE ${b+1}`:
+- ,children:u(x)}),a.jsxs(
+- ,v>=0?
+- ,v.toFixed(2),
+- ]})]})]},b)})}):a.jsx(
+- ,children:
+- })})(),r&&a.jsxs(
+- }),a.jsx(
+- ,children:u(r)})]}),(()=>{const g=t.filter(b=>typeof b==
+- }):g.length>0?a.jsx(
+- }):null})()]})]}),a.jsxs(
+- ,children:a.jsx(
+- })}),a.jsx(
+- })]}),e.rewardRisk!==null&&e.rewardRisk!==1/0&&e.rewardRisk>0?a.jsxs(
+- ,children:e.rewardRisk.toFixed(2)}),a.jsx(
+- })]}),a.jsx(
+- ,children:e.rewardRisk>=2?
+- :e.rewardRisk>=1?
+- })]}):d===1/0&&f!==-1/0?a.jsxs(
+- ,{children:[a.jsx(
+- })]}):f===-1/0&&d!==1/0?a.jsxs(
+- })]}):a.jsx(
+- })]}),a.jsxs(
+- })]}),e.pop!==void 0&&e.pop>0?a.jsxs(
+- ,{className:`text-3xl font-bold ${e.pop>=50?
+- }`,children:e.pop.toFixed(1)}),a.jsx(
+- ,children:e.pop>=60?
+- :e.pop>=40?
+- })]})]}),a.jsx(
+- ,children:a.jsxs(
+- ,children:d>0&&f<0&&t.length===2?`${u(t[0])} - ${u(t[1])}`:d>0&&t.length===1?d===1/0?`> ${u(t[0])}`:`< ${u(t[0])}`:
+- ,{className:`text-sm font-semibold ${e.netPremium>0?
+- }`,children:[e.netPremium>0?
+- ,c(Math.abs(e.netPremium))]})]}),a.jsxs(
+- ,children:d===1/0?
+- :h>0?`${(d/h*100).toFixed(0)}%`:
+- })]})]})})]})}var T1e=Array.isArray,Js=T1e,O1e=typeof Rt==
+- &&Rt&&Rt.Object===Object&&Rt,UY=O1e,M1e=UY,I1e=typeof self==
+- &&self&&self.Object===Object&&self,D1e=M1e||I1e||Function(
+- ,Y1e=
+- ,N$=_$?_$.toStringTag:void 0;function X1e(e){return e==null?e===void 0?Y1e:K1e:N$&&N$ in Object(e)?q1e(e):G1e(e)}var tc=X1e;function Q1e(e){return e!=null&&typeof e==
+- }var wo=Q1e,J1e=tc,Z1e=wo,ewe=
+- ;function twe(e){return typeof e==
+- ||Z1e(e)&&J1e(e)==ewe}var qm=twe,rwe=Js,nwe=qm,swe=/\.|\[(?:[^[\]]*|([
+- number
+- symbol
+- boolean
+- object
+- function
+- [object AsyncFunction]
+- [object Function]
+- [object GeneratorFunction]
+- [object Proxy]
+- __core-js_shared__
+- Symbol(src)_1.
+- create
+- __lodash_hash_undefined__
+- string
+- __proto__
+
+#### "Expiry P&L"  [window, 10000 chars]
+- No Strategy Selected
+- Add option legs to visualize payoff
+- hsl(var(--profit))
+- On Expiry
+- #3b82f6
+- On Target Date
+- hsl(var(--profit) / 0.2)
+- Profit
+- hsl(var(--loss) / 0.2)
+- Loss
+- hsl(var(--loss) / 0.35)
+- Call OI
+- hsl(var(--profit) / 0.35)
+- Put OI
+- button
+- Zoom In
+- Zoom Out
+- Reset Zoom
+- Toggle Layers
+- Layers
+- Chart Layers
+- Expiry P&L
+- Target Date P&L
+- hsl(var(--primary))
+- Profit / Loss Fill
+- Open Interest
+- SD Bands
+- Breakevens
+- -2SD
+- -1SD
+- Current
+- +1SD
+- +2SD
+- Expected move by 
+- expiry
+- Fetching live prices…
+- hsl(var(--loss))
+- hsl(var(--muted-foreground))
+- number
+- hsl(var(--border))
+- Underlying Price
+- 0.5px
+- Profit / Loss
+
+#### "OHLC"  [window, 10000 chars]
+- button
+- rgba(34, 197, 94, 0.25)
+- rgba(239, 68, 68, 0.25)
+- OIBarCell
+- Bid (Price/IV)
+- Mark (Price/IV)
+- Ask (Price/IV)
+- Bid Qty
+- Ask Qty
+- Delta
+- volume
+- Volume
+- Gamma
+- Vega
+- Theta
+- chg24
+- 24hr Chg
+- Last
+- Open
+- High
+- oc_col_config
+- Market Data
+- Greeks
+- Activity
+- OHLC
+- visibility
+- Column Settings
+-  of 
+- Reset
+- Show / Hide
+- Reorder
+- Show All
+- Essentials
+- Hide all
+- Show all
+- Drag columns to change their display order (left → right).

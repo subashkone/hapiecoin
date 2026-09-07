@@ -1,0 +1,119 @@
+# HapieCoin · decision log (ADR)
+
+One entry per decision. Newest last. Each entry: context, decision, consequences. This file is indexed by graphify together with `spec/`, `GAPS.md` and the mock sources so every agent can find why things are the way they are.
+
+## ADR-001 · Product name and reference (2026-09-07)
+- Context: the product being built is the user's own site; coingreeks.com is only the reference/competitor that was cloned for parity.
+- Decision: the product is **HapieCoin** (hapiecoin.com). The v1 clone keeps the CoinGreeks name deliberately as the reference copy; everything else uses HapieCoin.
+- Consequences: package scope `@hapiecoin/*`, all copy and artifacts use HapieCoin.
+
+## ADR-002 · Two mocks kept side by side (2026-09-06)
+- Context: user wants to compare the faithful clone with the improved version and be able to fall back.
+- Decision: `mockup-clone` (v1, faithful) and `mockup-v2` (improved, Obsidian Desk design) are separate builds with separate URLs; neither is edited to become the other.
+- Consequences: v1 answers "what did the original do"; v2 answers "what should HapieCoin look and feel like".
+
+## ADR-003 · Design system: Obsidian Desk, dark-first (2026-09-06)
+- Context: three directions were built (Obsidian Desk, Quant Paper, Mission Control); research on options tools favoured a dark instrument with amber "market is here" accent.
+- Decision: Obsidian Desk tokens app-wide; light theme is a first-class variant; amber only for spot/ATM/primary action; green/red only for P&L and side.
+- Consequences: tokens live in one file; switching to Quant Paper later is a token change, not a redesign. Launch default theme may flip to light if usability sessions show daytime retail users.
+
+## ADR-004 · Stack (2026-09-04, confirmed 2026-09-07)
+- Decision: pnpm + Turborepo monorepo; Next.js 16 / React 19 / TypeScript / Tailwind v4 / shadcn; TanStack Query + Zustand + TanStack Table/Virtual; uPlot canvas charts; shared pricing package (Black-76) in a Web Worker; Hono API on Node 22 with Zod + OpenAPI + Drizzle; dedicated market-data gateway on uWebSockets.js; PostgreSQL 17 + TimescaleDB; Redis 7; BullMQ; Better Auth; Razorpay; Docker behind Cloudflare.
+- Alternatives considered: Vite SPA + Astro marketing site (acceptable if the team prefers no server components); Bun (rejected for a system that places real orders); microservices beyond web/API/gateway (rejected, adds latency and ops cost).
+
+## ADR-005 · Monorepo with independently deployable apps (2026-09-07)
+- Decision: one repository; apps/web, apps/api, apps/gateway, apps/workers; packages/pricing, schema, venues, ui, config.
+- Consequences: one PR changes pricing + API + UI atomically; shared Zod schemas prevent contract drift; one CI with budgets. Split only if a separate team owns a product on its own cadence.
+
+## ADR-006 · Chain driven by the exchange instrument list (2026-09-07)
+- Context: review found v2 showed only fixed-step strikes; real Delta expiries have irregular ladders (200/400/600 daily, 500/1000 weekly, 1000 monthly; 27–52 strikes).
+- Decision: strikes always come from the venue's instrument list per expiry; never from a step constant. Calls and puts render as one table with a fixed centre strike column so vertical and horizontal scroll are shared.
+- Consequences: first acceptance tests of Phase 2 (see GAPS.md #1, #2).
+
+## ADR-007 · Traceability as the definition of done (2026-09-07)
+- Decision: every feature has an ID in `spec/traceability.json`; a phase closes only when all its IDs have passing tests and visual diffs within tolerance; inferred items are confirmed with the product owner before implementation; review gaps become new IDs.
+
+## ADR-008 · Knowledge graph for project memory (2026-09-07)
+- Decision: graphify indexes this repository (spec, docs, GAPS.md, mock sources, and later the code) so agents query structure instead of re-reading files. Decisions are recorded here, not only in chat, so the graph can hold them.
+
+## ADR-009 · Claude Code environment (2026-09-07)
+- Context: development will run through Claude Code; the agent must not hallucinate symbols, claim untested success, touch the reference clone, or leak secrets. Four public setups were compared (router CLAUDE.md + memory + rules + commands; four anti-hallucination layers; six real-project skills; Anthropic's four-part playbook).
+- Decision: project-scoped setup in the repo: a 39-line router `CLAUDE.md` whose first sections are honesty rules and a verification protocol; `.claude/memory/` (product, system, active context); `.claude/rules/` with path-scoped rules; `fact-checker` and `code-reviewer` subagents; skills `/plan`, `/review`, `/commit`, `/checkpoint`, `/frontend-design`, `/new-skill`; Node hooks that inject state at session start, deny destructive commands and protected paths, feed type/lint/syntax errors back after every edit, and run tests before the agent may finish. Documented in `docs/CLAUDE-SETUP.md`.
+- Consequences: guidance lives in rules, enforcement lives in hooks and `permissions.deny`; `mockup-clone/` and `.env*` cannot be edited by the agent; decisions and gaps are file-based so graphify and future sessions see them. MCP servers and CI are added with the monorepo scaffold.
+
+## ADR-010 · The 11 inferred behaviours, decided (2026-09-07)
+- Context: 11 behaviours were reconstructed from the original's bundle (screens behind login). The product owner delegated the decisions ("apply the best").
+- Decisions (full acceptance text in `spec/decisions-overrides.json`, applied to `spec/traceability.json`):
+  - HC-TR-089 Trade All → Live becomes an explicit batch selector with per-strategy margin checks and one preview; nothing converts silently.
+  - HC-TR-025 Builder state is kept per asset; switching assets never clears legs, so no confirmation dialog.
+  - HC-TR-047 Drafts can be archived from the list with Undo; archive is a soft state with Restore.
+  - HC-TR-078 Draft details: Load in Builder / Activate / Duplicate; archived: Load in Builder / Restore / Duplicate; "Final" performance only for archived.
+  - HC-AD-049 Per-user lot sizes live in the user drawer's Limits tab, validated and audit-logged.
+  - HC-AD-058 Bulk pay requires a payment reference, shows total and count, exports the batch CSV, audit-logged.
+  - HC-AD-090 Quick-view drawer stays, plus a full page /admin/users/:id for deep edits and history.
+  - HC-SH-074 Tour step 12 wording approved; steps 10–12 switch the left tab to Paper.
+  - HC-AC-055 Referrals load error: inline panel with Retry plus toast; stale data kept visible with a note.
+  - HC-AD-067 Banner image required in production (PNG/JPG/WebP ≤ 5 MB, 1200×630 recommended) with live preview; no gradient fallback.
+  - HC-AD-070 Banners error state with Retry and "last loaded data" notice.
+- Consequences: three new build items (per-asset builder state, batch selector, full user page) added to GAPS.md; the matrix has 0 open inferred items.
+
+## ADR-011 · Toolchain pins for Phase 1 (2026-09-07)
+- Context: `pnpm add` resolved TypeScript 7.0.2, which typescript-eslint 8.69 rejects (`>=4.8.4 <6.1.0`); the shared tsconfig extended the repo root by a relative path that breaks through pnpm symlinks; ESLint 10 removed the `unix`/`compact` formatters the post-edit hook used.
+- Decision: pin `typescript` to 6.0.3 (exact) until typescript-eslint supports 7.x; make `packages/config/tsconfig/base.json` self-contained and let each package set `rootDir`/`outDir`; lint plain JS files without type information; the hook uses ESLint's default formatter; the token guard applies to `.ts/.tsx` only (CSS hex is checked by the ui package's tokens test).
+- Consequences: revisit the TypeScript pin when typescript-eslint publishes TS 7 support; Node 24 + pnpm 12 via corepack are the supported toolchain.
+
+## ADR-012 · Pricing model matches Delta India marks (2026-09-07)
+- Context: `packages/pricing` was validated against 307 live Delta tickers (all BTC expiries).
+- Decision: options are priced with Black-76 on `spot_price` with zero rate and no futures basis (the forward implied by every mark equals spot within 0.007 %); Greek units follow Delta: vega per 1 vol point, theta per calendar day; settlement 12:00 UTC for BTC/ETH and 16:00 UTC for XAUT, always taken from the instrument's `settlementTime`; POP uses the unshifted ATM IV; time is a 365-day year.
+- Consequences: marks reproduce to 3.3e-11 USD at the implied forward; residuals in the fixture (max 3.4 USD) come from mixed spot snapshots, not the model. Unit tests assert price ≤ max(1.5 %, 0.5 USD), IV ≤ 0.005 where vega ≥ 10, delta ≤ 0.02, gamma ≤ 10 %, vega ≤ 5 %, theta ≤ 10 % (T ≥ 1 day).
+
+## ADR-013 · Local development database without Docker (2026-09-07)
+- Context: Docker Desktop and WSL 2.7.13 were installed on 07 Sep 2026 but need a Windows restart; Phase 1 must not block on it.
+- Decision: `apps/api` runs on PGlite (embedded Postgres via Drizzle) when `DATABASE_URL` is absent and on PostgreSQL 17 + Timescale when it is set; the gateway uses in-process pub/sub when `REDIS_URL` is absent and Redis otherwise. `docker-compose.yml` provides both services; the same migrations run on both.
+- Consequences: unit and contract tests run everywhere without services; the Docker path is exercised in CI and before Phase 1 closes.
+
+## ADR-014 · Market-data protocol and venue adapters (2026-09-07)
+- Context: Delta labels `v2/ticker` on `socket.india.delta.exchange` as legacy and offers a compact `ticker` channel on `public-socket.india.delta.exchange`; both answered live on 07 Sep 2026. The venues package and the schema package chose different field names for Instrument/Quote.
+- Decision: the venues client defaults to `v2/ticker` and parses both frame formats, so the migration is a config change; the gateway speaks `@hapiecoin/schema` messages (JSON frames in Phase 1, encoder kept pluggable for msgpack later) and converts venue shapes through `packages/venues/src/schema-adapter.ts`, which is the only place the two vocabularies meet.
+- Consequences: chain strikes always originate from the instrument list (ADR-006) and are validated by `ChainSnapshot.parse` before leaving the gateway.
+
+## ADR-015 · API security and account conventions in apps/api (2026-09-07)
+- Context: Phase 1 `apps/api` (Hono, Better Auth, Drizzle) had to fix several details the spec leaves open.
+- Decisions:
+  - Exchange credentials: API key and secret are sealed separately with AES-256-GCM, each record carrying its own IV and auth tag (columns `api_key_iv/tag`, `api_secret_iv/tag`) because GCM must never reuse an IV under one key; only `api_key_masked` is ever serialised (`BrokerCredentialPublic` is strict).
+  - Referral codes are `REF` + 7 RFC 4648 base32 characters (10 chars, no underscore) so they satisfy the shared `ReferralCode` schema (`^[A-Z0-9]{6,12}$`) and survive being typed from a screenshot; the inviter's code is accepted as `ref` at sign-up and stored in `users.referred_by` only when it matches an existing user.
+  - Better Auth is mounted at `/v1/auth/*`; sign-up is email + password with mandatory OTP verification (`/email-otp/verify-email` signs the user in), OTP sign-in and OTP password reset use the `emailOTP` plugin (6 digits, 10 minutes); `role` is server-assigned (`input: false`).
+  - Delta credential failures map to the SCREAMING_SNAKE envelope codes required by `ApiError` (`INVALID_API_KEY`, `IP_NOT_WHITELISTED_FOR_API_KEY`, 400) with the venue's original code in `details.deltaCode`; an unreachable venue is 502 `DELTA_UNAVAILABLE`.
+  - Rate limits: 300 req/min per IP globally, 5 OTP sends / 15 min per email and per IP, 10 failed verifications / 15 min lock the email; counters live in one `RateStore` (memory, or Redis sorted sets when `REDIS_URL` is set) shared with Better Auth's `rateLimit.customStorage`.
+  - `audit_log` is append-only at the database level (rules discard UPDATE/DELETE) and every snapshot passes through the log scrubber.
+- Consequences: the web app must send `ref` (not `referralCode`) at sign-up and read `apiKeyMasked`; rotating `CREDENTIALS_ENC_KEY` requires re-sealing rows (no key-versioning yet, see GAPS #10).
+
+## ADR-016 · Gateway transport: `ws` now, uWebSockets.js when a compatible build exists (2026-09-07)
+- Context: ADR-004 named uWebSockets.js for `apps/gateway`. `uNetworking/uWebSockets.js#v20.51.0` installs from GitHub but ships prebuilt binaries for Node ABIs 108/115/127/131 only; the repo toolchain is Node 24 (ABI 137) and the loader refuses ("supports only Node.js versions 18, 20, 22 and 23"). uWS.js also requires glibc while the gateway image is `node:24-alpine` (musl).
+- Decision: the gateway runs on the `ws` package behind a transport interface (`apps/gateway/src/transport/types.ts`: `SocketServerFactory`, `Connection` with `bufferedAmount()` for backpressure). Server logic, origin check, snapshot/delta protocol, coalescing, backpressure and shutdown are transport-agnostic and tested through a fake transport; the `ws` transport has its own socket-level tests. Frames are JSON text; the encoder is pluggable (`src/encoder.ts`) so msgpack can be negotiated per connection later without touching the schema.
+- Consequences: revisit when uWS.js publishes ABI 137 binaries and the image moves to a glibc base (or the gateway is pinned to Node 22 in its own image); the swap is one `SocketServerFactory` implementation. Redis fan-out (`RedisPubSub`) assumes a single feed process per Redis until a feed-leader election exists (Phase 2).
+
+## ADR-017 · Web app boundaries: same-origin API, client boundary for the design system, nonce CSP (2026-09-07)
+- Context: `apps/web` (Next.js 16 App Router) talks to `apps/api` (Better Auth cookies, `/v1`) and `apps/gateway` (WebSocket). `@hapiecoin/ui` ships no `"use client"` directives and creates React contexts at import time, which server components reject. The brief asks for a nonce CSP and a 350 KB gzipped first-load budget on `/analyse`.
+- Decisions:
+  - Same-origin API: `next.config.ts` rewrites `/api/auth/*` and `/v1/*` to `API_URL`, so the Better Auth session cookie is first-party and the browser needs no CORS; server components forward the cookie to `/v1/me` for the protected-route check (`src/lib/auth/server.ts`).
+  - Design system through one client boundary: server components import UI parts from `src/components/ui.ts` (`"use client"` re-exports); the root layout duplicates `themeInitScript("hapiecoin.theme", "dark")` as a string pinned by a unit test instead of importing the package.
+  - CSP with a per-request nonce from `src/proxy.ts` (`script-src 'self' 'nonce-…' 'strict-dynamic'`, `frame-ancestors 'none'`); every route is therefore server-rendered on demand. `style-src 'unsafe-inline'` stays because Tailwind/Radix set inline styles; documented in `next.config.ts`.
+  - Budget: the workspace (chain, virtualiser) and the settings dialogs load through `next/dynamic` after first paint; `scripts/check-budget.mjs` reads Turbopack's per-route client-reference manifest and fails above 350 KB gzipped (measured 326.7 KB on 07 Sep; the `nomodule` polyfill is reported separately, as Next does).
+  - Phase 1 Delta sign-in (`/auth/delta`) shows the spinner, then explains that Delta login arrives with live trading and links back, rather than faking a login.
+- Consequences: adding `"use client"` to `@hapiecoin/ui` entry points would remove the boundary file (GAPS #18). The app codes against the contracts that landed on 07 Sep in `apps/api/src/routes/*` and `apps/gateway/src/server.ts` (plan `state`, PATCH updates, `{ items }` credentials, `feed.expiries`); the mock API and fake gateway under `apps/web/test/` mirror them.
+
+## ADR-018 · Auth mount path and browser access to gateway health (2026-09-07)
+- Context: the first real web→api→gateway run failed on sign-up: the browser posted to `/api/auth/*` on the web origin while `apps/api` mounts Better Auth at `/v1/auth/*`; and the browser could not read the gateway's `/healthz` (no CORS), so the expiry list fell back to the env default.
+- Decision: the browser always talks to its own origin (`/api/auth/*`, `/v1/*`) so the session cookie stays first-party; Next.js rewrites `/api/auth/:path*` → `${API_URL}/v1/auth/:path*` and `/v1/:path*` → `${API_URL}/v1/:path*`. The web test mock serves both prefixes so unit tests (direct) and e2e (through the rewrite) agree. The gateway answers CORS (`access-control-allow-origin` = the allowed web origin, `vary: origin`, OPTIONS 204) on its HTTP endpoints only for origins that pass the same check as the WebSocket upgrade.
+- Consequences: one auth base path on the API (`/v1/auth`); any client other than the web app must use it directly. A real integration run is part of the Phase 1 exit gate from now on, because the unit/e2e mirrors could not catch this class of mismatch.
+
+## ADR-019 · Client IP trust and the public auth origin (2026-09-07)
+- Context: the Phase 1 review (GAPS #23–#27) found four defaults that were safe on a laptop and wrong in production: the client IP for rate limits was read from proxy headers anyone can set (or fell back to one shared "unknown" bucket), `BETTER_AUTH_URL` defaulted to the API origin so the Google OAuth callback set the session cookie where the web app never reads it, production could boot on in-memory PGlite or with the OTP-logging mailer, and the web referral input used a format the API never issues.
+- Decisions:
+  - Client IP = the socket peer address (`@hono/node-server` conninfo). Forwarded headers (`cf-connecting-ip`, `x-forwarded-for`, `x-real-ip`) are honoured only when the peer is listed in `TRUSTED_PROXY_IPS` (`*` trusts every peer, for local development and the test harness only). Better Auth's own limiter reads a single internal header, `x-hapiecoin-client-ip`, that the app sets after that check and strips from incoming requests.
+  - `BETTER_AUTH_URL` defaults to `WEB_URL`: auth URLs are public URLs on the web origin, and the `/v1/:path*` rewrite carries the OAuth callback to the API, so the session cookie is first-party (extends ADR-018). Set it explicitly only when the API is exposed on its own public host.
+  - Production (`NODE_ENV=production`) requires `DATABASE_URL` and `RESEND_API_KEY` next to the existing secrets and warns without `REDIS_URL`; `createMailer` refuses the capture mailer in production regardless of config.
+  - Referral input is validated with the shared `ReferralCode` schema (`REF` + 7 base32, case-insensitive on entry); no client-side format of its own.
+  - The gateway re-watches every held chain topic after each instrument refresh so strikes listed intraday receive quotes (the venue socket deduplicates subscriptions).
+- Consequences: deployments behind Cloudflare or a load balancer must list the proxy's address (or use the platform's own client-IP header via a trusted hop) or every user shares the proxy's bucket, which is the safe failure. Local development keeps working through `env.example` (`TRUSTED_PROXY_IPS=127.0.0.1,::1`). Google sign-in has an end-to-end test against the mock provider; the real provider still needs the client id and secret.
