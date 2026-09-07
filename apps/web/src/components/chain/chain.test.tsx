@@ -1,46 +1,67 @@
-import { act, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { chainTopic } from "@hapiecoin/schema";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildChain, strikesOf } from "../../../test/fixtures/chain";
 import { FakeSocket, renderWithProviders } from "../../../test/helpers";
-import { applySnapshot, emptyChain, applyDeltas } from "@/lib/gateway/reducer";
+import { applySnapshot, emptyChain, applyDeltas, atmIndex } from "@/lib/gateway/reducer";
 import { useUiStore } from "@/lib/store";
 import { ChainPanel } from "./ChainPanel";
-import { ChainTable, quoteFlashes } from "./ChainTable";
+import { ChainTable, type ChainTableProps, quoteFlashes } from "./ChainTable";
 
 const EXPIRY = "2026-09-25";
 const TOPIC = chainTopic("delta_india", "BTC", EXPIRY);
 const rows = buildChain("BTC", EXPIRY);
+// spot 50,500 puts the ATM row (50,000, index 2) inside jsdom's un-scrollable first viewport;
+// the bracketing rule itself is unit-tested against 79,521 in reducer.test.ts.
+const SPOT = "50500";
+
+function tableProps(over: Partial<ChainTableProps> = {}): ChainTableProps {
+  return {
+    chain: applySnapshot(emptyChain(TOPIC), 0, rows, 1),
+    spot: SPOT,
+    height: 520,
+    range: 12,
+    onRange: vi.fn(),
+    expiryLabel: "25 Sep",
+    daysLeft: 18,
+    lotLabel: "Lot ₿ · USD per contract",
+    live: true,
+    asOf: null,
+    ...over,
+  };
+}
 
 beforeEach(() => {
   FakeSocket.reset();
-  useUiStore.setState({ asset: "BTC", expiry: {}, feedPaused: false, dialog: null, dialogsTouched: false, paletteOpen: false });
+  useUiStore.setState({ asset: "BTC", expiry: {}, feedPaused: false, dialog: null, dialogsTouched: false, paletteOpen: false, chainRange: 12, chainRecentre: 0 });
 });
 afterEach(() => vi.unstubAllGlobals());
 
 describe("HC-WS-108 ChainTable renders the venue strikes", () => {
-  it("shows mirrored columns, exact strikes, the ATM band on the strike bracketing spot and flashes", async () => {
-    const state = applySnapshot(emptyChain(TOPIC), 0, rows, 1);
-    // spot 50,500 puts the ATM row (50,000, index 2) inside jsdom's un-scrollable first viewport;
-    // the bracketing rule itself is unit-tested against 79,521 in reducer.test.ts.
-    const { rerender } = renderWithProviders(<ChainTable chain={state} spot="50500" height={520} />);
+  it("shows exact strikes on all three row lists, the ATM band on the strike bracketing spot and flashes", async () => {
+    const props = tableProps({ range: 0 });
+    const { rerender } = renderWithProviders(<ChainTable {...props} />);
     const table = screen.getByTestId("chain-table");
     expect(table.dataset["rows"]).toBe("52");
+    expect(table.dataset["total"]).toBe("52");
     expect(within(table).getAllByText("Mark/IV")).toHaveLength(2);
     expect(within(table).getByText("Strike")).toBeTruthy();
     const rendered = screen.getAllByTestId("chain-row").map((r) => r.dataset["strike"]);
     const listed = strikesOf("BTC", EXPIRY);
     expect(rendered.every((s) => listed.includes(s!))).toBe(true);
     expect(rendered.length).toBeGreaterThan(5);
+    // the calls and puts tracks carry the same strikes in the same order as the strike column
+    expect(screen.getAllByTestId("chain-row-calls").map((r) => r.dataset["strike"])).toEqual(rendered);
+    expect(screen.getAllByTestId("chain-row-puts").map((r) => r.dataset["strike"])).toEqual(rendered);
     const atm = screen.getAllByTestId("chain-row").find((r) => r.dataset["atm"] === "true");
     expect(atm?.dataset["strike"]).toBe("50000"); // last listed strike ≤ spot
-    expect(within(atm!).getByText(/ATM · spot 50,500/)).toBeTruthy();
-    // a delta on a visible instrument flashes the mark cell
-    const first = screen.getAllByTestId("chain-row")[0]!;
+    expect(within(atm!).getByText(/ATM · 50,500/)).toBeTruthy();
+    // a delta on a visible instrument flashes the mark cell on the calls track (HC-WS-022)
+    const first = screen.getAllByTestId("chain-row-calls")[0]!;
     const row = rows.find((r) => r.strike === first.dataset["strike"])!;
-    const next = applyDeltas(state, 1, [{ i: row.call!.instrumentId, mark: String(Number(row.call!.mark) + 10) }], 2);
-    rerender(<ChainTable chain={next} spot="50500" height={520} />);
+    const next = applyDeltas(props.chain, 1, [{ i: row.call!.instrumentId, mark: String(Number(row.call!.mark) + 10) }], 2);
+    rerender(<ChainTable {...props} chain={next} />);
     await waitFor(() => expect(first.querySelector(".flash-up")).toBeTruthy());
   });
   it("quoteFlashes reports direction per field only for changed fields", () => {
@@ -50,6 +71,190 @@ describe("HC-WS-108 ChainTable renders the venue strikes", () => {
     expect(quoteFlashes(prev, { ...prev, ask: "0" }, new Set(["ask"])).ask).toBe("flash-down");
     expect(quoteFlashes(undefined, next, new Set(["mark"])).mark).toBe("");
     expect(quoteFlashes(prev, next, undefined).mark).toBe("");
+  });
+});
+
+describe("HC-WS-015 / HC-WS-017 / HC-WS-018 / HC-WS-019 / HC-WS-020 chain layout", () => {
+  it("HC-WS-015 renders the sticky two-row header with basis labels aligned to the tracks", () => {
+    renderWithProviders(<ChainTable {...tableProps()} />);
+    const table = screen.getByTestId("chain-table");
+    expect(screen.getByTestId("chain-band-calls").textContent).toContain("Calls · ITM shaded · strikes ±12");
+    expect(screen.getByTestId("chain-band-puts").textContent).toContain("Δ per contract · Puts");
+    expect(screen.getByTestId("chain-band-expiry").textContent).toContain("25 Sep");
+    expect(screen.getByTestId("chain-band-expiry").textContent).toContain("18d");
+    expect(screen.getByTestId("chain-header").className).toContain("sticky");
+    expect(screen.getByTestId("chain-head-calls").dataset["x"]).toBe(table.dataset["x"]);
+    expect(screen.getByTestId("chain-head-puts").dataset["x"]).toBe(table.dataset["putsX"]);
+    // calls columns read outer → inner and puts mirror them
+    const heads = within(screen.getByTestId("chain-head-calls")).getAllByText(/./).map((e) => e.textContent);
+    expect(heads).toEqual(["Δ", "OI", "Bid/IV", "Mark/IV", "Ask/IV"]);
+    expect(within(screen.getByTestId("chain-head-puts")).getAllByText(/./).map((e) => e.textContent)).toEqual(["Ask/IV", "Mark/IV", "Bid/IV", "OI", "Δ"]);
+  });
+  it("HC-WS-016 the range control slices the venue list around ATM and the footer counts it", async () => {
+    const onRange = vi.fn();
+    renderWithProviders(<ChainTable {...tableProps({ onRange })} />);
+    const table = screen.getByTestId("chain-table");
+    // spot 50,500 → ATM index 2 → ±12 keeps rows 0..14
+    expect(table.dataset["rows"]).toBe("15");
+    expect(table.dataset["range"]).toBe("12");
+    expect(screen.getByTestId("chain-count").textContent).toBe("15 of 52 strikes");
+    expect(screen.getByTestId("chain-range-12").getAttribute("aria-pressed")).toBe("true");
+    await userEvent.setup().click(screen.getByTestId("chain-range-6"));
+    expect(onRange).toHaveBeenCalledWith(6);
+    await userEvent.setup().click(screen.getByTestId("chain-range-0"));
+    expect(onRange).toHaveBeenCalledWith(0);
+  });
+  it("HC-WS-017 / HC-WS-020 marks the ATM band on every row part and tints ITM cells only on the ITM side", () => {
+    renderWithProviders(<ChainTable {...tableProps()} />);
+    const atm = screen.getAllByTestId("chain-row").find((r) => r.dataset["atm"] === "true")!;
+    expect(atm.className).toContain("atm-band");
+    expect(atm.className).toContain("text-spot");
+    const callsAtm = screen.getAllByTestId("chain-row-calls").find((r) => r.dataset["strike"] === atm.dataset["strike"])!;
+    const putsAtm = screen.getAllByTestId("chain-row-puts").find((r) => r.dataset["strike"] === atm.dataset["strike"])!;
+    expect(callsAtm.className).toContain("atm-band");
+    expect(putsAtm.className).toContain("atm-band");
+    // strikes below spot: calls ITM, puts not; above spot the other way round
+    const below = screen.getAllByTestId("chain-row-calls").find((r) => Number(r.dataset["strike"]) < Number(SPOT))!;
+    const belowPut = screen.getAllByTestId("chain-row-puts").find((r) => r.dataset["strike"] === below.dataset["strike"])!;
+    expect(below.className).toContain("itm-tint");
+    expect(belowPut.className).not.toContain("itm-tint");
+    const above = screen.getAllByTestId("chain-row-puts").find((r) => Number(r.dataset["strike"]) > Number(SPOT))!;
+    const aboveCall = screen.getAllByTestId("chain-row-calls").find((r) => r.dataset["strike"] === above.dataset["strike"])!;
+    expect(above.className).toContain("itm-tint");
+    expect(aboveCall.className).not.toContain("itm-tint");
+  });
+  it("HC-WS-018 / HC-WS-019 aligns price cells towards the strike and draws OI bars relative to the max OI", () => {
+    renderWithProviders(<ChainTable {...tableProps()} />);
+    const calls = screen.getAllByTestId("chain-row-calls")[0]!;
+    const puts = screen.getAllByTestId("chain-row-puts")[0]!;
+    expect(calls.querySelectorAll(".items-end").length).toBe(3);
+    expect(calls.querySelector(".items-start")).toBeNull();
+    expect(puts.querySelectorAll(".items-start").length).toBe(3);
+    expect(puts.querySelector(".items-end")).toBeNull();
+    const bars = screen.getAllByTestId("chain-oi").map((c) => Number(c.dataset["pct"]));
+    expect(Math.max(...bars)).toBe(100);
+    expect(bars.every((p) => p >= 0 && p <= 100)).toBe(true);
+    const callBar = calls.querySelector(".oi-bar");
+    const putBar = puts.querySelector(".oi-bar");
+    if (callBar) expect(callBar.className).toContain("left-0");
+    if (putBar) expect(putBar.className).toContain("right-0");
+    // footer totals come from the visible rows
+    expect(screen.getByTestId("chain-footer").textContent).toMatch(/Σ Call OI/);
+    expect(screen.getByTestId("chain-footer").textContent).toMatch(/PCR/);
+  });
+  it("shows the stale state: dimmed rows, Stale dot and an 'as of' time", () => {
+    const stale = { ...tableProps().chain, stale: true, updatedAt: 5 };
+    renderWithProviders(<ChainTable {...tableProps({ chain: stale, live: false, asOf: "12:04:31" })} />);
+    expect(screen.getByTestId("chain-table").className).toContain("opacity-60");
+    expect(screen.getByTestId("chain-live").dataset["live"]).toBe("false");
+    expect(screen.getByTestId("chain-live").textContent).toContain("Stale");
+    expect(screen.getByTestId("chain-asof").textContent).toBe("as of 12:04:31");
+  });
+});
+
+describe("GAPS-2 calls and puts share the vertical scroll and mirror the horizontal scroll", () => {
+  it("keeps one row list per side under one virtualiser and mirrors the offset from either side", () => {
+    // 600 px panel: each side has (600 − 92) / 2 = 254 px for a 340 px track → max offset 86
+    renderWithProviders(<ChainTable {...tableProps({ initialWidth: 600 })} />);
+    const table = screen.getByTestId("chain-table");
+    expect(table.dataset["sides"]).toBe("both");
+    expect(screen.getAllByTestId("chain-scroll")).toHaveLength(1);
+    // initial: calls show their inner columns (offset at max), puts their inner columns (offset 0)
+    expect(table.dataset["x"]).toBe("86");
+    expect(table.dataset["putsX"]).toBe("0");
+    expect(screen.getByTestId("chain-calls").dataset["x"]).toBe("86");
+    expect(screen.getByTestId("chain-puts").dataset["x"]).toBe("0");
+    // the calls scrollbar moves both sides
+    const callsBar = screen.getByTestId("chain-scrollbar-calls");
+    callsBar.scrollLeft = 20;
+    fireEvent.scroll(callsBar);
+    expect(table.dataset["x"]).toBe("20");
+    expect(table.dataset["putsX"]).toBe("66");
+    expect(screen.getByTestId("chain-head-calls").dataset["x"]).toBe("20");
+    expect(screen.getByTestId("chain-head-puts").dataset["x"]).toBe("66");
+    // the puts scrollbar moves the calls side the other way
+    const putsBar = screen.getByTestId("chain-scrollbar-puts");
+    putsBar.scrollLeft = 6;
+    fireEvent.scroll(putsBar);
+    expect(table.dataset["x"]).toBe("80");
+    expect(table.dataset["putsX"]).toBe("6");
+    // wheel on the puts track scrolls it and mirrors to calls; shift+wheel uses deltaY
+    act(() => {
+      screen.getByTestId("chain-puts").dispatchEvent(new WheelEvent("wheel", { deltaX: 10, bubbles: true, cancelable: true }));
+    });
+    expect(table.dataset["x"]).toBe("70");
+    act(() => {
+      screen.getByTestId("chain-calls").dispatchEvent(new WheelEvent("wheel", { deltaY: -10, shiftKey: true, bubbles: true, cancelable: true }));
+    });
+    expect(table.dataset["x"]).toBe("60");
+    // a vertical wheel is left to the vertical scroller
+    act(() => {
+      screen.getByTestId("chain-calls").dispatchEvent(new WheelEvent("wheel", { deltaY: 30, bubbles: true, cancelable: true }));
+    });
+    expect(table.dataset["x"]).toBe("60");
+  });
+  it("has no horizontal offset when the track fits", () => {
+    renderWithProviders(<ChainTable {...tableProps({ initialWidth: 1200 })} />);
+    expect(screen.getByTestId("chain-table").dataset["x"]).toBe("0");
+    expect(screen.getByTestId("chain-table").dataset["putsX"]).toBe("0");
+    expect(screen.getByTestId("chain-scrollbar-calls").className).toContain("invisible");
+  });
+  it("shows one side at a time below 560 px with a toggle", async () => {
+    renderWithProviders(<ChainTable {...tableProps({ initialWidth: 400 })} />);
+    const table = screen.getByTestId("chain-table");
+    expect(table.dataset["sides"]).toBe("calls");
+    expect(screen.queryByTestId("chain-puts")).toBeNull();
+    expect(screen.getByTestId("chain-side-calls").getAttribute("aria-pressed")).toBe("true");
+    await userEvent.setup().click(screen.getByTestId("chain-side-puts"));
+    expect(table.dataset["sides"]).toBe("puts");
+    expect(screen.queryByTestId("chain-calls")).toBeNull();
+    expect(screen.getByTestId("chain-puts")).toBeTruthy();
+    expect(screen.getByTestId("chain-band-puts")).toBeTruthy();
+  });
+});
+
+describe("HC-WS-016 keyboard: J / K / arrows / Home / End / A / E", () => {
+  it("moves the highlighted strike, recentres on ATM, steps the expiry and shifts columns", async () => {
+    const onExpiryStep = vi.fn();
+    renderWithProviders(<ChainTable {...tableProps({ initialWidth: 600, onExpiryStep })} />);
+    const user = userEvent.setup();
+    const grid = screen.getByTestId("chain-scroll");
+    const focused = () => screen.getAllByTestId("chain-row").find((r) => r.dataset["focus"] === "true")?.dataset["strike"];
+    const atm = atmIndex(rows, SPOT);
+    grid.focus();
+    await user.keyboard("j");
+    expect(focused()).toBe(rows[atm + 1]!.strike);
+    await user.keyboard("{ArrowDown}");
+    expect(focused()).toBe(rows[atm + 2]!.strike);
+    await user.keyboard("k");
+    expect(focused()).toBe(rows[atm + 1]!.strike);
+    await user.keyboard("{Home}");
+    expect(focused()).toBe(rows[0]!.strike);
+    await user.keyboard("{ArrowUp}");
+    expect(focused()).toBe(rows[0]!.strike);
+    await user.keyboard("a");
+    expect(focused()).toBe(rows[atm]!.strike);
+    await user.keyboard("e");
+    expect(onExpiryStep).toHaveBeenLastCalledWith(1);
+    await user.keyboard("{Shift>}E{/Shift}");
+    expect(onExpiryStep).toHaveBeenLastCalledWith(-1);
+    const table = screen.getByTestId("chain-table");
+    expect(table.dataset["x"]).toBe("86");
+    await user.keyboard("{ArrowLeft}");
+    expect(table.dataset["x"]).toBe("18");
+    await user.keyboard("{ArrowRight}");
+    expect(table.dataset["x"]).toBe("86");
+    // clicking a strike focuses it; the recentre signal recentres
+    await user.click(screen.getAllByTestId("chain-row")[0]!);
+    expect(focused()).toBe(rows[0]!.strike);
+  });
+  it("recentres when the store signal bumps", () => {
+    const props = tableProps({ initialWidth: 600 });
+    const { rerender } = renderWithProviders(<ChainTable {...props} recentreSignal={0} />);
+    const focused = () => screen.getAllByTestId("chain-row").find((r) => r.dataset["focus"] === "true")?.dataset["strike"];
+    expect(focused()).toBe(rows[atmIndex(rows, SPOT)]!.strike);
+    rerender(<ChainTable {...props} recentreSignal={1} />);
+    expect(focused()).toBe(rows[atmIndex(rows, SPOT)]!.strike);
   });
 });
 
@@ -74,9 +279,16 @@ describe("HC-WS-107 ChainPanel", () => {
     act(() => {
       ws.receive({ t: "snap", topic: TOPIC, seq: 0, rows });
     });
+    // no spot yet → no ATM → the range control cannot slice, every listed strike shows
     await waitFor(() => expect(screen.getByTestId("chain-table").dataset["rows"]).toBe("52"));
     expect(screen.getByText(/seq 0/)).toBeTruthy();
-    await userEvent.setup().click(screen.getAllByTestId("expiry-chip")[1]!);
+    expect(screen.getByTestId("chain-live").dataset["live"]).toBe("true");
+    // the range control writes the store
+    await userEvent.setup().click(screen.getByTestId("chain-range-6"));
+    expect(useUiStore.getState().chainRange).toBe(6);
+    // E steps the expiry through the panel
+    screen.getByTestId("chain-scroll").focus();
+    await userEvent.setup().keyboard("e");
     const topic2 = chainTopic("delta_india", "BTC", "2026-10-30");
     await waitFor(() => expect(screen.getByTestId("chain-panel").dataset["topic"]).toBe(topic2));
     await waitFor(() => expect(subscribed()).toContain(topic2));
@@ -84,6 +296,9 @@ describe("HC-WS-107 ChainPanel", () => {
       ws.receive({ t: "snap", topic: topic2, seq: 0, rows: [] });
     });
     expect(await screen.findByText("No strikes listed for this expiry")).toBeTruthy();
+    // clicking a chip still works
+    await userEvent.setup().click(screen.getAllByTestId("expiry-chip")[0]!);
+    await waitFor(() => expect(screen.getByTestId("chain-panel").dataset["topic"]).toBe(TOPIC));
     vi.unstubAllGlobals();
   });
   it("falls back to the default expiry list, shows the paused state and reconnects", async () => {
@@ -99,7 +314,7 @@ describe("HC-WS-107 ChainPanel", () => {
     expect(reopen).toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
-  it("asks the gateway for a fresh snapshot when the state goes stale", async () => {
+  it("asks the gateway for a fresh snapshot when the state goes stale and shows the stale footer", async () => {
     vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("down"))));
     const { gateway } = renderWithProviders(<ChainPanel height={520} />);
     const refresh = vi.spyOn(gateway, "refresh");
@@ -116,6 +331,8 @@ describe("HC-WS-107 ChainPanel", () => {
       ws.receive({ t: "q", topic, seq: 9, d: [{ i: rows[0]!.call!.instrumentId, mark: "1" }] });
     });
     await waitFor(() => expect(refresh).toHaveBeenCalledWith(topic));
+    await waitFor(() => expect(screen.getByTestId("chain-live").dataset["live"]).toBe("false"));
+    expect(screen.getByTestId("chain-asof").textContent).toMatch(/^as of \d/);
     vi.unstubAllGlobals();
   });
 });

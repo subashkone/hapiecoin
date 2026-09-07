@@ -2893,7 +2893,7 @@
   "phase": 2,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Column order is defined once from the strike outward (price triplet inboard, OI and Δ outboard) and mirrored on the calls side",
-  "evidence": "screenshot: Calls / STRIKE / Puts header with arrows"
+  "evidence": "screenshot: Calls / STRIKE / Puts header with arrows · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020"
  },
  {
   "id": "HC-WS-016",
@@ -2908,7 +2908,7 @@
   "phase": 2,
   "test": "e2e (Playwright)",
   "acceptance": "Range persisted in CG.state.chainRange (default ±12); the footer reports \"n of 41 strikes\"",
-  "evidence": "screenshot shows 54,000 … 65,000 around the 60,000 ATM"
+  "evidence": "screenshot shows 54,000 … 65,000 around the 60,000 ATM · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020"
  },
  {
   "id": "HC-WS-017",
@@ -2923,7 +2923,7 @@
   "phase": 2,
   "test": "e2e (Playwright)",
   "acceptance": "tr.atm background hsl(--primary/.09) with amber strike text; the sub-line is rebuilt on every legs change",
-  "evidence": "screenshot: 60,000 ATM"
+  "evidence": "screenshot: 60,000 ATM · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020"
  },
  {
   "id": "HC-WS-018",
@@ -2938,7 +2938,7 @@
   "phase": 2,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "cellInner() renders <span class=\"px\"> + <span class=\"iv\">; INR mode converts premiums at CG.state.conversionRate (0dp)",
-  "evidence": "screenshot: $6893.0 / 55.4%"
+  "evidence": "screenshot: $6893.0 / 55.4% · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020"
  },
  {
   "id": "HC-WS-019",
@@ -2953,7 +2953,7 @@
   "phase": 2,
   "test": "e2e (Playwright)",
   "acceptance": "2px bar width proportional to max OI of the chain; value shown as an integer",
-  "evidence": "bundle strings: OIBarCell, rgba(34, 197, 94, 0.25), rgba(239, 68, 68, 0.25)"
+  "evidence": "bundle strings: OIBarCell, rgba(34, 197, 94, 0.25), rgba(239, 68, 68, 0.25) · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020"
  },
  {
   "id": "HC-WS-020",
@@ -2968,7 +2968,7 @@
   "phase": 2,
   "test": "e2e (Playwright)",
   "acceptance": "td.itm{background:hsl(var(--foreground)/.04)}; hover replaces it with the raised surface tone",
-  "evidence": "screenshot: green tint on ITM calls, red tint on ITM puts"
+  "evidence": "screenshot: green tint on ITM calls, red tint on ITM puts · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020"
  },
  {
   "id": "HC-WS-021",
@@ -2998,7 +2998,7 @@
   "phase": 2,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "On every 'tick' (2.5s) the chain is re-quoted; changed Bid/Mark/Ask/Last cells get .flash-up / .flash-down; if the ATM strike shifts the table is rebuilt keeping the scroll position",
-  "evidence": "bundle strings: price-flash-up, price-flash-down"
+  "evidence": "bundle strings: price-flash-up, price-flash-down · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020"
  },
  {
   "id": "HC-WS-023",
