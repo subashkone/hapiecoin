@@ -1,0 +1,132 @@
+
+<!-- ---------- /admin/user-subscriptions ---------- -->
+<section class="screen adm" data-route="/admin/user-subscriptions" data-title="User Subscriptions" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div data-cg="admin-nav"></div>
+  <div class="container adm-page">
+    <div class="adm-head">
+      <div><h1 class="adm-title">User Subscriptions</h1><p class="adm-sub">Manage users and commissions</p></div>
+      <div class="tabs" role="tablist"><button class="tab active" role="tab" data-tab="users"><i data-icon="users"></i> Users</button><button class="tab" role="tab" data-tab="commissions"><i data-icon="wallet"></i> Commissions</button></div>
+    </div>
+
+    <!-- Users tab -->
+    <div data-panel="users">
+      <div class="card">
+        <div class="card-header adm-card-toolbar">
+          <div class="card-title" data-el="users-count">Users (0)</div>
+          <div class="flex gap-2 items-center flex-wrap">
+            <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="users-search" placeholder="Search by name or email..." aria-label="Search by name or email"></div>
+            <div class="adm-search"><i data-icon="filter"></i><select class="select select-sm" data-el="users-status" aria-label="Status"><option value="">All Statuses</option><option value="active">Active</option><option value="expired">Expired</option><option value="cancelled">Cancelled</option><option value="free">Free</option></select></div>
+          </div>
+        </div>
+        <div class="adm-table-wrap" data-el="users-table"></div>
+        <div class="adm-pager" data-el="users-pager"></div>
+      </div>
+    </div>
+
+    <!-- Commissions tab -->
+    <div data-panel="commissions" hidden>
+      <div class="adm-tiles" data-el="comm-tiles"></div>
+      <div class="card">
+        <div class="card-header adm-card-toolbar">
+          <div class="card-title">Commissions</div>
+          <div class="flex gap-2 items-center flex-wrap">
+            <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="comm-search" placeholder="Search referrer name..." aria-label="Search referrer name"></div>
+            <div class="adm-search"><i data-icon="calendar"></i><select class="select select-sm" data-el="comm-month" aria-label="Filter by month"><option value="">All Months</option></select></div>
+            <button class="btn btn-outline btn-sm" data-act="comm-clear">Clear</button>
+            <button class="btn btn-primary btn-sm" data-act="comm-bulk" title="Mark every pending commission as paid">Bulk pay</button>
+          </div>
+        </div>
+        <div class="adm-table-wrap" data-el="comm-table"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature Limits dialog -->
+  <div hidden data-el="limits-dialog">
+    <form data-form="limits" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><label class="label" for="adm-lim-paper">Paper Trading Limit</label><div class="flex items-center gap-2"><input class="input mono" id="adm-lim-paper" name="paper" type="number" min="0" step="1" style="max-width:160px"><span class="text-sm text-muted">trades / month</span></div><div class="hint">Set to 0 for plan default. Higher values override plan limit.</div></div>
+        <div class="field"><label class="label" for="adm-lim-live">Live Trading Limit</label><div class="flex items-center gap-2"><input class="input mono" id="adm-lim-live" name="live" type="number" min="0" step="1" style="max-width:160px"><span class="text-sm text-muted">trades / month</span></div><div class="hint">Set to 0 for plan default. Higher values override plan limit.</div></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Save Limits</button></div>
+    </form>
+  </div>
+
+  <!-- Lot size settings dialog (inferred from /admin lot-size-settings endpoint) -->
+  <div hidden data-el="lots-dialog">
+    <form data-form="lots" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="adm-form-grid adm-form-grid-3">
+          <div class="field"><label class="label" for="adm-lot-btc">BTC lot size</label><input class="input mono" id="adm-lot-btc" name="BTC" type="number" min="0.0001" step="0.001"></div>
+          <div class="field"><label class="label" for="adm-lot-eth">ETH lot size</label><input class="input mono" id="adm-lot-eth" name="ETH" type="number" min="0.001" step="0.01"></div>
+          <div class="field"><label class="label" for="adm-lot-xaut">XAUT lot size</label><input class="input mono" id="adm-lot-xaut" name="XAUT" type="number" min="0.0001" step="0.001"></div>
+        </div>
+        <div class="hint">Overrides the exchange default lot size for this user's strategy builder and P&amp;L calculations.</div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Save Lot Sizes</button></div>
+    </form>
+  </div>
+
+  <!-- Referral details dialog -->
+  <div hidden data-el="view-dialog">
+    <div class="cg-dialog-body" style="padding-top:4px">
+      <div class="adm-table-wrap adm-table-bordered" data-el="view-table"></div>
+      <div class="adm-totals mt-3" data-el="view-totals"></div>
+    </div>
+    <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="close">Close</button></div>
+  </div>
+
+  <!-- Mark Payment dialog -->
+  <div hidden data-el="pay-dialog">
+    <form data-form="pay" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><div class="label">Payment Status</div><div class="flex gap-2"><label class="adm-radio selected" data-val="paid"><input type="radio" name="payStatus" value="paid" checked> ✓ Paid</label><label class="adm-radio" data-val="not_paid"><input type="radio" name="payStatus" value="not_paid"> ✗ Not Paid</label></div></div>
+        <div class="field"><div class="label">Proof Link per Referral <span class="text-muted font-medium" data-el="proof-hint">(optional)</span></div><div class="adm-proofs" data-el="proofs"></div></div>
+        <div class="field"><label class="label" for="adm-pay-comment">Comment <span class="text-muted font-medium" data-el="comment-hint">(optional)</span></label><textarea class="textarea" id="adm-pay-comment" name="comment" placeholder="Optional note..." style="min-height:70px"></textarea></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Confirm Paid</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ---------- /admin/banners ---------- -->
+<section class="screen adm" data-route="/admin/banners" data-title="Banner Master" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div data-cg="admin-nav"></div>
+  <div class="container adm-page">
+    <div class="adm-head">
+      <div><h1 class="adm-title">Banner Master</h1><p class="adm-sub">Manage promotional banners and popups</p></div>
+      <button class="btn btn-primary" data-act="new"><i data-icon="plus"></i> New Banner</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title" data-el="count">All Banners (0)</div></div>
+      <div class="adm-table-wrap" data-el="table"></div>
+    </div>
+  </div>
+  <div hidden data-el="dialog">
+    <form data-form="banner" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><label class="label" for="banner-title">Title</label><input class="input" id="banner-title" name="title" placeholder="Welcome Offer"></div>
+        <div class="field"><label class="label" for="banner-description">Description</label><textarea class="textarea" id="banner-description" name="description" placeholder="Get 20% off your first plan" style="min-height:64px"></textarea></div>
+        <div class="field"><label class="label" for="banner-link">Link URL</label><input class="input" id="banner-link" name="linkUrl" type="url" placeholder="https://coingreek.com/offers"></div>
+        <div class="adm-form-grid">
+          <div class="field"><label class="label" for="banner-starts">Starts At <span class="text-muted font-medium">(optional)</span></label><input class="input" id="banner-starts" name="startsAt" type="datetime-local"></div>
+          <div class="field"><label class="label" for="banner-ends">Ends At <span class="text-muted font-medium">(optional)</span></label><input class="input" id="banner-ends" name="endsAt" type="datetime-local"></div>
+        </div>
+        <div class="field"><label class="label" for="banner-frequency">Frequency</label><select class="select" id="banner-frequency" name="frequency"><option value="once_per_day">once_per_day</option><option value="every_time">every_time</option><option value="once_per_session">once_per_session</option></select></div>
+        <div class="field">
+          <label class="label" for="banner-image">Image <span class="text-muted font-medium" data-el="image-hint">(leave empty to keep current)</span></label>
+          <input class="input adm-file" id="banner-image" name="image" type="file" accept="image/*">
+          <div class="hint">Maximum size 5 MB · PNG, JPG, GIF or WebP</div>
+          <div class="flex items-center gap-3 mt-3">
+            <div><div class="text-xs text-muted mb-1">Preview</div><div class="adm-thumb adm-thumb-lg" data-el="preview"></div></div>
+            <div class="flex flex-col gap-1"><button type="button" class="btn btn-outline btn-xs" data-act="use-gradient" title="Mock fallback: use a generated gradient instead of an uploaded file">Use gradient</button><span class="hint m-0">No upload needed in the mock</span></div>
+          </div>
+        </div>
+        <div class="adm-switch-row"><div><div class="font-medium text-sm">Active</div><div class="hint m-0">Show this banner to users</div></div><button type="button" class="switch on" role="switch" aria-checked="true" aria-label="Active" id="banner-active" data-el="active"></button></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Create Banner</button></div>
+    </form>
+  </div>
+</section>

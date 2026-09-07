@@ -1,0 +1,25 @@
+# System patterns · HapieCoin
+
+## Stack (ADR-004, ADR-005)
+- Monorepo: pnpm + Turborepo. `apps/web` (Next.js 16, React 19, TS, Tailwind v4, shadcn), `apps/api` (Hono on Node 22, Zod + OpenAPI, Drizzle), `apps/gateway` (market data on uWebSockets.js), `apps/workers` (BullMQ). `packages/pricing` (Black-76, runs in a Web Worker), `packages/schema` (shared Zod), `packages/venues` (Delta, Binance adapters), `packages/ui`, `packages/config`.
+- Data: PostgreSQL 17 + TimescaleDB, Redis 7. Auth: Better Auth. Payments: Razorpay. Deploy: Docker behind Cloudflare.
+- Client state: TanStack Query for server data, Zustand for UI state, TanStack Table/Virtual for the chain, uPlot canvas charts.
+
+## Market data (see auto-memory `coingreeks-original-site-facts`)
+- Delta Exchange India public REST `/v2/products`, `/v2/tickers`, `/v2/history/candles`; WS `wss://socket.india.delta.exchange` channel `v2/ticker`. Binance `<sym>usdt@miniTicker` for spot.
+- Lot sizes BTC 0.001, ETH 0.01, XAUT 0.001. Tickers carry greeks, mark IV, bid/ask IV, OI.
+
+## Conventions
+- Strikes and expiries come from the instrument list; the chain is one table with a fixed centre strike column so calls and puts scroll together (ADR-006).
+- Money and quantities: never floating point for currency totals; use integer minor units or decimal strings; Black-76 math lives only in `packages/pricing`.
+- Validate every external boundary (HTTP, WS, env) with Zod schemas from `packages/schema`.
+- Paper and live trading share one order model but different executors; the live executor is the only code that may call an order endpoint.
+- Tests: Vitest for units, Playwright for e2e and visual diffs; each test title carries its traceability ID.
+- Design tokens live in one file; amber is only for spot/ATM/primary action; green/red only for P&L and side (ADR-003).
+
+## Mocks (pre-build reference)
+- `mockup-clone/`: faithful clone of the original, hash-routed single HTML. Read-only reference (ADR-002).
+- `mockup-v2/`: HapieCoin improved mock. Edit sources in `parts/`, `parts-src/`, `src-trd/`, `chrome-src/`, `public-src/`, `adm-src/`, `_analytics-src/`, then `node assemble.js`. Never hand-edit the generated `hapiecoin-v2*.html`.
+
+## Knowledge graph
+- graphify indexes this folder into `graphify-out/`. Ask structural questions through `/graphify` before grepping large mock bundles.

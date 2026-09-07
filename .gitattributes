@@ -1,0 +1,6 @@
+# Keep LF in the repository on every OS (the .editorconfig also says lf); binaries untouched.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

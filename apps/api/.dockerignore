@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+.pglite
+.turbo
+*.log
+.env
+.env.*

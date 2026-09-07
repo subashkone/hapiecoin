@@ -1,0 +1,543 @@
+<!-- ===== 30-account · /subscription (My Subscription) + /referrals (My Referrals) ===== -->
+<section class="screen" data-route="/subscription" data-title="My Subscription" data-auth="user">
+  <div data-cg="app-header"></div><div data-cg="plan-banner"></div>
+  <div class="container acct-page">
+    <div class="acct-head">
+      <div><h1>My Subscription</h1><p class="acct-sub">Choose a plan to unlock features</p></div>
+    </div>
+    <div id="sub-current"></div>
+    <div class="acct-section-head" id="sub-plans-anchor">
+      <div><h2>Available Plans</h2><p class="acct-sub">Switch the billing interval to compare prices and feature limits</p></div>
+      <div class="tabs" id="sub-interval" role="tablist" aria-label="Billing interval">
+        <button class="tab" role="tab" data-interval="monthly">Monthly</button>
+        <button class="tab" role="tab" data-interval="quarterly">Quarterly</button>
+        <button class="tab active" role="tab" data-interval="yearly">Yearly</button>
+      </div>
+    </div>
+    <div id="sub-plans" class="sub-plans"></div>
+    <div class="card mt-8" id="sub-history">
+      <div class="card-header flex items-center justify-between gap-3">
+        <div><div class="card-title">Payment History</div><div class="card-desc">Invoices for every subscription payment on this account</div></div>
+      </div>
+      <div class="card-content" style="padding-top:4px" id="sub-payments"></div>
+    </div>
+  </div>
+  <div data-cg="footer"></div>
+  <!-- Subscribe dialog (moved into the overlay by CG.modal) -->
+  <div id="sub-dialog" class="sub-dlg" hidden></div>
+  <!-- Razorpay mock checkout -->
+  <div id="sub-rzp" class="sub-rzp" hidden></div>
+</section>
+
+<section class="screen" data-route="/referrals" data-title="My Referrals" data-auth="user">
+  <div data-cg="app-header"></div><div data-cg="plan-banner"></div>
+  <div class="container acct-page">
+    <div class="acct-head">
+      <div><h1>My Referrals</h1><p class="acct-sub">Share &amp; Earn</p></div>
+    </div>
+    <div id="ref-hero"></div>
+    <div class="ref-grid mt-6">
+      <div class="card" id="ref-how"></div>
+      <div class="ref-stats" id="ref-stats"></div>
+    </div>
+    <div class="card mt-6" id="ref-list-card">
+      <div class="card-header"><div class="card-title">Referred Users</div><div class="card-desc">Everyone who signed up with your link</div></div>
+      <div class="card-content" style="padding-top:4px">
+        <div class="ref-filters" id="ref-filters">
+          <div class="ref-search"><span class="ref-search-ico" data-ico="search"></span><input class="input" id="ref-q" placeholder="Search by name or email..." aria-label="Search by name or email"></div>
+          <select class="select" id="ref-status" aria-label="Status"><option value="">All Status</option><option value="paid">Paid</option><option value="pending">Pending</option><option value="not_paid">No Purchase</option></select>
+          <select class="select" id="ref-plan" aria-label="Plan"><option value="">All Plans</option><option value="Free">Free</option><option value="Basic Plan">Basic Plan</option><option value="Pro Plan">Pro Plan</option><option value="Elite Plan">Elite Plan</option></select>
+          <div class="ref-dates"><span class="text-muted text-xs">Date:</span><input type="date" class="input" id="ref-from" aria-label="From date"><span class="text-muted text-xs">–</span><input type="date" class="input" id="ref-to" aria-label="To date"></div>
+          <button class="btn btn-outline" id="ref-clear"><span data-ico="x"></span> Clear</button>
+        </div>
+        <div id="ref-table"></div>
+      </div>
+    </div>
+  </div>
+  <div data-cg="footer"></div>
+</section>
+
+<style>
+/* ---------- shared account page chrome ---------- */
+[data-route="/subscription"] .acct-page,[data-route="/referrals"] .acct-page{padding-top:28px;padding-bottom:48px}
+[data-route="/subscription"] .acct-head,[data-route="/referrals"] .acct-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+[data-route="/subscription"] .acct-head h1,[data-route="/referrals"] .acct-head h1{font-size:26px;letter-spacing:-.01em}
+[data-route="/subscription"] .acct-sub,[data-route="/referrals"] .acct-sub{color:hsl(var(--muted-foreground));font-size:13.5px;margin-top:4px}
+[data-route="/subscription"] .acct-section-head,[data-route="/referrals"] .acct-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:34px 0 16px;flex-wrap:wrap}
+[data-route="/subscription"] .acct-section-head h2,[data-route="/referrals"] .acct-section-head h2{font-size:20px}
+[data-route="/subscription"] .ico,[data-route="/referrals"] .ico,.sub-dlg .ico,.sub-rzp .ico{width:16px;height:16px;flex-shrink:0;vertical-align:-3px}
+[data-route="/subscription"] .ico-lg,[data-route="/referrals"] .ico-lg{width:22px;height:22px}
+[data-route="/subscription"] .acct-pager,[data-route="/referrals"] .acct-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 2px;flex-wrap:wrap}
+[data-route="/subscription"] .acct-pager .btn[disabled],[data-route="/referrals"] .acct-pager .btn[disabled]{opacity:.45}
+[data-route="/subscription"] .acct-icon,[data-route="/referrals"] .acct-icon{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:hsl(var(--info-bg));color:hsl(var(--primary));flex-shrink:0}
+/* ---------- /subscription: current plan ---------- */
+[data-route="/subscription"] .sub-current-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:12px}
+[data-route="/subscription"] .sub-current-grid{display:grid;grid-template-columns:minmax(260px,1fr) 1.4fr;gap:28px;border-top:1px solid hsl(var(--border));padding-top:18px}
+[data-route="/subscription"] .sub-kv-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;border-bottom:1px dashed hsl(var(--border));font-size:13px}
+[data-route="/subscription"] .sub-kv-row:last-child{border-bottom:0}
+[data-route="/subscription"] .sub-kv-row>span{color:hsl(var(--muted-foreground))}
+[data-route="/subscription"] .sub-kv-row>b{font-weight:600;display:inline-flex;align-items:center;gap:8px;text-align:right}
+[data-route="/subscription"] .sub-h{font-family:var(--font-display);font-weight:600;font-size:14px;margin-bottom:10px}
+[data-route="/subscription"] .sub-h2{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:hsl(var(--muted-foreground));font-weight:600;margin:14px 0 8px}
+[data-route="/subscription"] .sub-limit{padding:10px 12px;border:1px solid hsl(var(--border));border-radius:8px;margin-bottom:8px;background:hsl(var(--surface-2))}
+[data-route="/subscription"] .sub-limit-top{display:flex;justify-content:space-between;align-items:center;font-size:12.5px}
+[data-route="/subscription"] .sub-limit-top b{font-weight:600}
+[data-route="/subscription"] .sub-bar{height:6px;border-radius:999px;background:hsl(var(--muted));overflow:hidden;margin:7px 0 5px}
+[data-route="/subscription"] .sub-bar i{display:block;height:100%;background:hsl(var(--primary));border-radius:999px;transition:width .3s}
+[data-route="/subscription"] .sub-bar.unl i{background:hsl(var(--profit)/.55)}
+[data-route="/subscription"] .sub-feats{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px}
+[data-route="/subscription"] .sub-feats li{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.35}
+[data-route="/subscription"] .sub-feats .ico{color:hsl(var(--profit));margin-top:1px}
+[data-route="/subscription"] .sub-plan .sub-feats{grid-template-columns:1fr}
+[data-route="/subscription"] .sub-none{display:flex;flex-direction:column;align-items:center;text-align:center;padding:36px 20px}
+[data-route="/subscription"] .sub-none .acct-icon{width:52px;height:52px;border-radius:14px;margin-bottom:12px}
+/* ---------- /subscription: plan cards ---------- */
+[data-route="/subscription"] .sub-plans{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+[data-route="/subscription"] .sub-plan{position:relative;display:flex;flex-direction:column;transition:box-shadow .15s,border-color .15s}
+[data-route="/subscription"] .sub-plan:hover{box-shadow:0 8px 24px -14px rgba(0,0,0,.25)}
+[data-route="/subscription"] .sub-plan.is-current{border-color:hsl(var(--primary));box-shadow:0 0 0 1px hsl(var(--primary))}
+[data-route="/subscription"] .sub-plan.is-popular .sub-plan-flag{background:hsl(var(--accent))}
+[data-route="/subscription"] .sub-plan-flag{position:absolute;top:-10px;left:16px;background:hsl(var(--primary));color:#fff;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 9px;border-radius:999px}
+[data-route="/subscription"] .sub-plan .card-content{display:flex;flex-direction:column;flex:1;gap:12px}
+[data-route="/subscription"] .sub-price-big{font-family:var(--font-mono);font-size:28px;font-weight:700;line-height:1}
+[data-route="/subscription"] .sub-price s{font-family:var(--font-mono);color:hsl(var(--muted-foreground));font-size:14px}
+[data-route="/subscription"] .sub-chips{display:flex;flex-wrap:wrap;gap:6px}
+[data-route="/subscription"] .sub-chips .badge{font-weight:500;gap:5px}
+[data-route="/subscription"] .sub-chips .badge b{font-family:var(--font-mono);font-weight:600;font-size:10.5px}
+[data-route="/subscription"] .sub-plan .btn{margin-top:auto}
+/* ---------- /subscription: payment history ---------- */
+[data-route="/subscription"] .sub-inv{color:hsl(var(--primary));display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:12px}
+[data-route="/subscription"] .sub-inv:hover{text-decoration:underline}
+@media (max-width:1024px){[data-route="/subscription"] .sub-plans{grid-template-columns:repeat(2,minmax(0,1fr))}[data-route="/subscription"] .sub-current-grid{grid-template-columns:1fr}}
+@media (max-width:640px){[data-route="/subscription"] .sub-plans{grid-template-columns:1fr}[data-route="/subscription"] .sub-feats{grid-template-columns:1fr}}
+/* ---------- subscribe dialog (lives in the overlay, so scoped by class) ---------- */
+.sub-dlg .cg-dialog-body{padding-top:6px}
+.sub-dlg-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:22px}
+.sub-dlg .sub-coupon-err{font-size:12px;color:hsl(var(--destructive));margin-top:6px}
+.sub-dlg .sub-coupon-chip{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:5px 8px 5px 10px;border-radius:999px;background:hsl(var(--buy-bg));color:hsl(var(--buy));font-size:12px;font-weight:600;font-family:var(--font-mono)}
+.sub-dlg .sub-coupon-chip button{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;color:inherit}
+.sub-dlg .sub-coupon-chip button:hover{background:hsl(var(--buy)/.15)}
+.sub-dlg .sub-coupons{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow:auto;padding-right:2px}
+.sub-dlg .sub-coupon{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;padding:10px 12px;border:1px dashed hsl(var(--border));border-radius:8px;background:hsl(var(--surface-2));transition:border-color .15s,background .15s}
+.sub-dlg .sub-coupon:hover{border-color:hsl(var(--primary));background:hsl(var(--info-bg))}
+.sub-dlg .sub-coupon.is-applied{border-style:solid;border-color:hsl(var(--profit));background:hsl(var(--buy-bg))}
+.sub-dlg .sub-coupon.is-off{opacity:.55}
+.sub-dlg .sub-coupon.is-off:hover{border-color:hsl(var(--border));background:hsl(var(--surface-2))}
+.sub-dlg .sub-coupon-tag{flex-shrink:0;min-width:64px;text-align:center;padding:6px 8px;border-radius:6px;background:hsl(var(--primary));color:#fff;font-family:var(--font-mono);font-weight:700;font-size:12px;line-height:1.1}
+.sub-dlg .sub-coupon.is-off .sub-coupon-tag{background:hsl(var(--muted-foreground))}
+.sub-dlg .sub-coupon-code{font-family:var(--font-mono);font-weight:700;font-size:13px}
+.sub-dlg .sub-breakdown{border:1px solid hsl(var(--border));border-radius:10px;background:hsl(var(--surface-2));padding:14px 16px}
+.sub-dlg .sub-bd-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:6px 0;font-size:13px}
+.sub-dlg .sub-bd-row>span{color:hsl(var(--muted-foreground))}
+.sub-dlg .sub-bd-row>b{font-family:var(--font-mono);font-weight:500;text-align:right;min-width:90px}
+.sub-dlg .sub-bd-row.total{border-top:1px solid hsl(var(--border));margin-top:6px;padding-top:12px;font-size:15px}
+.sub-dlg .sub-bd-row.total>span{color:hsl(var(--foreground));font-weight:600}
+.sub-dlg .sub-bd-row.total>b{font-weight:700;font-size:18px}
+.sub-dlg .sub-bd-row .text-profit{color:hsl(var(--profit))}
+.sub-dlg .sub-plan-summary{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid hsl(var(--border));border-radius:10px;margin-bottom:14px;background:hsl(var(--card))}
+.sub-dlg .sub-plan-summary .acct-icon{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:hsl(var(--info-bg));color:hsl(var(--primary))}
+@media (max-width:760px){.sub-dlg-grid{grid-template-columns:1fr}}
+/* ---------- Razorpay mock checkout ---------- */
+.sub-rzp{font-family:var(--font-body);border-radius:14px;overflow:hidden;background:#fff;color:#1a1f36;position:relative}
+.sub-rzp-head{background:linear-gradient(160deg,#0b2a5b,#072654);color:#fff;padding:16px 38px 14px 18px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.sub-rzp-brand{display:flex;align-items:center;gap:10px}
+.sub-rzp-logo{width:34px;height:34px;border-radius:9px;background:#3395ff;display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:18px}
+.sub-rzp-brand b{display:block;font-size:15px;line-height:1.1}
+.sub-rzp-brand small{display:block;font-size:11.5px;opacity:.75}
+.sub-rzp-amt{text-align:right}
+.sub-rzp-amt small{display:block;font-size:11px;opacity:.75;max-width:180px}
+.sub-rzp-amt b{display:block;font-family:var(--font-mono);font-size:22px;font-weight:700;letter-spacing:-.01em}
+.sub-rzp-x{position:absolute;right:8px;top:8px;width:26px;height:26px;border-radius:6px;color:#fff;opacity:.7;display:grid;place-items:center}
+.sub-rzp-x:hover{opacity:1;background:rgba(255,255,255,.12)}
+.sub-rzp-tabs{display:flex;border-bottom:1px solid #e6e8ef;background:#f6f7fb}
+.sub-rzp-tab{flex:1;padding:10px 6px;font-size:12.5px;font-weight:600;color:#6b7280;border-bottom:2px solid transparent;display:flex;align-items:center;justify-content:center;gap:6px}
+.sub-rzp-tab.active{color:#072654;border-bottom-color:#3395ff;background:#fff}
+.sub-rzp-body{padding:16px 18px;min-height:190px}
+.sub-rzp-body .rzp-label{font-size:11.5px;font-weight:600;color:#6b7280;margin:0 0 6px;text-transform:uppercase;letter-spacing:.04em}
+.sub-rzp-body .rzp-input{display:block;width:100%;height:38px;padding:0 12px;border:1px solid #d5d9e2;border-radius:6px;background:#fff;color:#1a1f36;font-size:13px;margin-bottom:12px;outline:none}
+.sub-rzp-body .rzp-input:focus{border-color:#3395ff;box-shadow:0 0 0 2px rgba(51,149,255,.2)}
+.sub-rzp-body .rzp-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sub-rzp-body .rzp-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sub-rzp-body .rzp-opt{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid #d5d9e2;border-radius:6px;font-size:12.5px;cursor:pointer;background:#fff}
+.sub-rzp-body .rzp-opt.active{border-color:#3395ff;background:#eef6ff}
+.sub-rzp-body .rzp-opt i{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-style:normal;font-size:10px;font-weight:800;color:#fff;background:#072654}
+.sub-rzp-body .rzp-upi-apps{display:flex;gap:8px;margin-bottom:12px}
+.sub-rzp-body .rzp-upi-app{flex:1;padding:8px 6px;border:1px solid #d5d9e2;border-radius:6px;font-size:11.5px;text-align:center;font-weight:600;color:#1a1f36;cursor:pointer}
+.sub-rzp-body .rzp-upi-app.active{border-color:#3395ff;background:#eef6ff}
+.sub-rzp-foot{padding:0 18px 12px;display:flex;flex-direction:column;gap:8px}
+.sub-rzp-pay{height:42px;border-radius:6px;background:#3395ff;color:#fff;font-weight:700;font-size:14px;width:100%;font-family:var(--font-body)}
+.sub-rzp-pay:hover{background:#1f86f5}
+.sub-rzp-pay:disabled{opacity:.6;cursor:not-allowed}
+.sub-rzp-cancel{height:34px;border-radius:6px;color:#6b7280;font-size:12.5px;font-weight:600;width:100%}
+.sub-rzp-cancel:hover{background:#f3f4f8}
+.sub-rzp-secure{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;color:#6b7280;padding:8px 0 10px;border-top:1px solid #eceef3}
+.sub-rzp-mock{background:#fff8e6;color:#8a5a00;font-size:11px;padding:7px 18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-top:1px solid #f4dfa6}
+.sub-rzp-mock a{text-decoration:underline;cursor:pointer;font-weight:600}
+.sub-rzp-processing{position:absolute;inset:0;background:rgba(255,255,255,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;font-weight:600;color:#072654;z-index:2}
+.sub-rzp-processing .ico{width:28px;height:28px;animation:cg-spin .9s linear infinite;color:#3395ff}
+/* ---------- /referrals ---------- */
+[data-route="/referrals"] .ref-hero{display:flex;gap:22px;align-items:flex-start;padding:24px;background:linear-gradient(135deg,hsl(var(--info-bg)),hsl(var(--card)) 70%);flex-wrap:wrap}
+[data-route="/referrals"] .ref-hero .acct-icon{width:54px;height:54px;border-radius:14px;background:hsl(var(--primary));color:#fff}
+[data-route="/referrals"] .ref-hero h3{font-size:20px;letter-spacing:-.01em}
+[data-route="/referrals"] .ref-link-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+[data-route="/referrals"] .ref-link-row .input{flex:1;min-width:260px;font-family:var(--font-mono);font-size:12.5px;background:hsl(var(--card))}
+[data-route="/referrals"] .ref-code{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:5px 10px;border:1px dashed hsl(var(--primary)/.5);border-radius:999px;font-size:12px;color:hsl(var(--primary));background:hsl(var(--card));cursor:pointer}
+[data-route="/referrals"] .ref-code b{font-family:var(--font-mono);font-weight:700}
+[data-route="/referrals"] .ref-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px}
+[data-route="/referrals"] .ref-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+[data-route="/referrals"] .ref-step{position:relative;padding:14px 12px 12px;border:1px solid hsl(var(--border));border-radius:10px;background:hsl(var(--surface-2))}
+[data-route="/referrals"] .ref-step-n{position:absolute;top:-10px;left:12px;width:22px;height:22px;border-radius:50%;background:hsl(var(--primary));color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;font-family:var(--font-mono)}
+[data-route="/referrals"] .ref-step .acct-icon{width:34px;height:34px;border-radius:9px;margin-bottom:8px}
+[data-route="/referrals"] .ref-step b{display:block;font-size:13px;line-height:1.3}
+[data-route="/referrals"] .ref-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+[data-route="/referrals"] .ref-stats .stat{display:flex;gap:12px;align-items:center}
+[data-route="/referrals"] .ref-stats .stat .acct-icon{width:38px;height:38px}
+[data-route="/referrals"] .ref-filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0 14px}
+[data-route="/referrals"] .ref-search{position:relative;flex:1;min-width:220px}
+[data-route="/referrals"] .ref-search .input{padding-left:34px}
+[data-route="/referrals"] .ref-search-ico{position:absolute;left:11px;top:10px;color:hsl(var(--muted-foreground));pointer-events:none}
+[data-route="/referrals"] .ref-filters .select{width:150px}
+[data-route="/referrals"] .ref-dates{display:flex;align-items:center;gap:6px}
+[data-route="/referrals"] .ref-dates .input{width:148px;font-size:12.5px}
+[data-route="/referrals"] .ref-user b{display:block;font-weight:600}
+[data-route="/referrals"] .ref-user span{font-size:11.5px;color:hsl(var(--muted-foreground))}
+[data-route="/referrals"] .ref-avatar{width:32px;height:32px;border-radius:50%;background:hsl(var(--secondary));color:hsl(var(--secondary-foreground));display:grid;place-items:center;font-size:11.5px;font-weight:700;flex-shrink:0}
+@media (max-width:1024px){[data-route="/referrals"] .ref-grid{grid-template-columns:1fr}}
+@media (max-width:640px){[data-route="/referrals"] .ref-steps{grid-template-columns:1fr}[data-route="/referrals"] .ref-stats{grid-template-columns:1fr}}
+</style>
+
+<script>
+(function () {
+  // ---------- shared helpers for the account screens ----------
+  const PATHS = {
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    crown: '<path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/>',
+    sparkles: '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>',
+    ticket: '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>',
+    circlex: '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+    x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>',
+    copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+    share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/>',
+    search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+    clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+    coins: '<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>',
+    download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+    lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    cart: '<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+    loader: '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
+    card: '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
+    bank: '<path d="M3 21h18"/><path d="M3 10h18"/><path d="m5 6 7-3 7 3"/><path d="M4 10v11"/><path d="M20 10v11"/><path d="M8 14v3"/><path d="M12 14v3"/><path d="M16 14v3"/>',
+    qr: '<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>',
+    calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>'
+  };
+  const I = (name, cls) => '<svg class="ico ' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (PATHS[name] || '') + '</svg>';
+  const esc = CG.esc;
+  const inr = (n, d) => CG.fmt.inr(n, d || 0);
+  const INTERVALS = { monthly: { label: 'Monthly', months: 1, days: 30 }, quarterly: { label: 'Quarterly', months: 3, days: 90 }, semi_annual: { label: 'Semi-Annually', months: 6, days: 180 }, yearly: { label: 'Yearly', months: 12, days: 365 } };
+  const ilabel = (i) => { const k = String(i || '').toLowerCase().replace('-', '_'); return (INTERVALS[k] || { label: i || '—' }).label; };
+  const pd = (s) => { if (s instanceof Date) return s; if (!s) return null; return /T/.test(s) ? new Date(s) : new Date(s + 'T00:00:00'); };
+  const eod = (s) => { const d = pd(s); if (!d) return null; return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59); };
+  const fmtDateIN = (d) => pd(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const fmtDateTimeIN = (d) => pd(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }).replace(/\b(am|pm)\b/i, (m) => m.toUpperCase());
+  const fmtDateUS = (d) => pd(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const pagerHtml = (page, pages, id) => '<div class="acct-pager" data-pager="' + id + '"><span class="text-muted text-xs">Page ' + page + ' of ' + pages + '</span><div class="flex gap-2"><button type="button" class="btn btn-outline btn-sm" data-pg="prev"' + (page <= 1 ? ' disabled' : '') + '>← Previous</button><button type="button" class="btn btn-outline btn-sm" data-pg="next"' + (page >= pages ? ' disabled' : '') + '>Next →</button></div></div>';
+  const copyText = (text) => { const done = () => CG.toast({ title: 'Copied!', description: text.length > 60 ? text.slice(0, 57) + '…' : text, variant: 'success' }); const fallback = () => { try { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); } catch (e) { } done(); }; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback(); };
+  CG.mock.paymentSeq = CG.mock.paymentSeq || 9002;
+
+  // =====================================================================
+  //  /subscription
+  // =====================================================================
+  (function () {
+    const TAX_PCT = 18;
+    const PER_PAGE = 5;
+    let root, interval = 'yearly', page = 1;
+    const S = () => CG.mock.subscription;
+    const plans = () => CG.mock.plans.filter((p) => p.isActive !== false);
+    const planById = (id) => CG.mock.plans.find((p) => p.id === id);
+    // 0 = unlimited, except for a feature the plan does not include at all (e.g. live trading on Free/Basic)
+    const FEATURE_MENU = { live_trading: 'Live Trading', paper_trading: 'Options Chain' };
+    const included = (plan, key) => !plan || !plan.menuItems || !FEATURE_MENU[key] || plan.menuItems.includes(FEATURE_MENU[key]);
+    const limitText = (v, key, plan) => (!v || v <= 0 ? (included(plan, key) ? '∞ Unlimited' : 'Not included') : v + ' / month');
+    const isoLocal = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const isoLocalTime = (d) => isoLocal(d) + 'T' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':' + String(d.getSeconds()).padStart(2, '0');
+    const pricing = (plan, iv) => plan[iv] || plan.yearly || { price: 0, discountPrice: 0, featureLimits: {} };
+    const subStatus = (s) => { if (!s) return null; if (s.status === 'cancelled') return 'Cancelled'; const exp = eod(s.expiresAt); if (s.status === 'expired' || (exp && exp < CG.NOW)) return 'Expired'; return 'Active'; };
+    const daysLeft = (s) => { const exp = eod(s.expiresAt); return exp ? Math.max(0, Math.round((exp - CG.NOW) / 864e5)) : 0; };
+    const statusBadge = (st) => '<span class="badge ' + (st === 'Active' ? 'badge-success' : st === 'Expired' ? 'badge-destructive' : 'badge-secondary') + '">' + st + '</span>';
+
+    // ---- quote / coupon maths ----
+    function quote(plan, iv, coupon) {
+      const p = pricing(plan, iv); const list = +p.price || 0; const disc = p.discountPrice != null ? +p.discountPrice : list;
+      const planDiscount = Math.max(0, list - disc);
+      let couponDiscount = 0;
+      if (coupon) couponDiscount = coupon.discountType === 'percent' ? Math.round(disc * coupon.discountValue / 100) : Math.min(+coupon.discountValue || 0, disc);
+      const subtotal = Math.max(0, disc - couponDiscount); const tax = Math.round(subtotal * TAX_PCT / 100);
+      return { list, disc, planDiscount, couponDiscount, subtotal, tax, total: subtotal + tax, offPct: list > 0 ? Math.round(planDiscount / list * 100) : 0, months: (INTERVALS[iv] || INTERVALS.yearly).months };
+    }
+    function checkCoupon(c, plan, iv) {
+      if (!c || c.isActive === false) return { ok: false, reason: 'Invalid coupon' };
+      if (c.expiresAt && eod(c.expiresAt) < CG.NOW) return { ok: false, reason: 'This coupon has expired' };
+      if (c.startsAt && pd(c.startsAt) > CG.NOW) return { ok: false, reason: 'This coupon is not active yet' };
+      if (c.maxUses && c.usedCount >= c.maxUses) return { ok: false, reason: 'This coupon has reached its usage limit' };
+      if (c.scope && /private/.test(c.scope) && !(c.assignedUsers || []).includes(CG.mock.user.id)) return { ok: false, reason: 'Invalid coupon' };
+      if (c.plans && c.plans.length && !c.plans.includes(plan.id)) return { ok: false, reason: 'Not applicable to ' + plan.name };
+      if (c.intervals && c.intervals.length && !c.intervals.includes(iv)) return { ok: false, reason: 'Not applicable to ' + ilabel(iv) + ' billing' };
+      const q = quote(plan, iv, null);
+      if (c.minOrderAmount && q.disc < c.minOrderAmount) return { ok: false, reason: 'Minimum order amount is ' + inr(c.minOrderAmount) };
+      return { ok: true, coupon: c };
+    }
+    const findCoupon = (code) => CG.mock.coupons.find((c) => c.code.toUpperCase() === String(code || '').trim().toUpperCase());
+    const visibleCoupons = () => CG.mock.coupons.filter((c) => c.isActive !== false && !(c.expiresAt && eod(c.expiresAt) < CG.NOW) && (!/private/.test(c.scope || '') || (c.assignedUsers || []).includes(CG.mock.user.id)));
+    const couponTag = (c) => (c.discountType === 'percent' ? c.discountValue + '% OFF' : inr(c.discountValue) + ' OFF');
+
+    // ---- current plan card ----
+    function renderCurrent() {
+      const host = CG.$('#sub-current', root); const s = S();
+      if (!s) {
+        host.innerHTML = '<div class="card"><div class="sub-none"><div class="acct-icon">' + I('circlex', 'ico-lg') + '</div><h3>No Active Subscription</h3><p class="text-muted mt-1">Browse plans below and get started</p><button class="btn btn-primary mt-4" data-act="choose">' + I('sparkles') + ' Choose a Plan</button></div></div>';
+        return;
+      }
+      const plan = planById(s.planId) || { name: s.planName, features: [] }; const st = subStatus(s); const dl = daysLeft(s);
+      const limits = s.featureLimits || {}; const usage = s.usage || {};
+      const keys = Object.keys(limits).length ? Object.keys(limits) : ['paper_trading', 'live_trading'];
+      const limitRows = keys.map((k) => { const lim = +limits[k] || 0; const used = +usage[k] || 0; const inc = included(plan, k); const unl = lim <= 0 && inc; const none = lim <= 0 && !inc; const pct = none ? 0 : unl ? 100 : Math.min(100, Math.round(used / lim * 100)); return '<div class="sub-limit"><div class="sub-limit-top"><span class="mono">' + esc(k) + '</span><b' + (none ? ' class="text-muted"' : '') + '>' + limitText(lim, k, plan) + '</b></div><div class="sub-bar' + (unl ? ' unl' : '') + '"><i style="width:' + pct + '%"></i></div><div class="text-xs text-muted">' + (none ? 'Upgrade to unlock' : unl ? used + ' used' : used + ' of ' + lim + ' used · ' + pct + '%') + '</div></div>'; }).join('');
+      const feats = (plan.features || []).map((f) => '<li>' + I('check') + '<span>' + esc(f) + '</span></li>').join('');
+      const isTop = plan.id === 'p_elite';
+      host.innerHTML = '<div class="card"><div class="card-header sub-current-head"><div class="flex items-center gap-3"><div class="acct-icon">' + I('crown', 'ico-lg') + '</div><div><div class="card-title flex items-center gap-2">' + esc(plan.name) + ' ' + statusBadge(st) + '</div><div class="card-desc">Started ' + fmtDateIN(s.startedAt) + ' · ' + (st === 'Active' ? 'Valid until ' : 'Ended ') + fmtDateIN(s.expiresAt) + '</div></div></div><div class="flex gap-2"><button class="btn ' + (st === 'Active' ? 'btn-outline' : 'btn-primary') + '" data-act="renew">' + I('clock') + ' Renew Plan</button>' + (isTop ? '' : '<button class="btn btn-primary" data-act="upgrade">' + I('sparkles') + ' Upgrade</button>') + '</div></div>' +
+        '<div class="card-content sub-current-grid"><div class="sub-kv"><div class="sub-kv-row"><span>Billing</span><b>' + ilabel(s.interval) + '</b></div><div class="sub-kv-row"><span>Price</span><b>' + (s.price > s.paid ? '<s class="mono text-muted">' + inr(s.price) + '</s><span class="badge badge-success">' + Math.round((s.price - s.paid) / s.price * 100) + '% off</span>' : '<span class="mono">' + inr(s.price) + '</span>') + '</b></div><div class="sub-kv-row"><span>You Pay</span><b class="mono text-lg">' + inr(s.paid) + '</b></div><div class="sub-kv-row"><span>Currency</span><b>' + esc(s.currency || 'INR') + '</b></div><div class="sub-kv-row"><span>' + (st === 'Active' ? 'Valid until' : 'Expired on') + '</span><b>' + fmtDateIN(s.expiresAt) + (st === 'Active' ? '<span class="badge ' + (dl <= 7 ? 'badge-warning' : 'badge-info') + '">' + dl + ' days left</span>' : '') + '</b></div></div>' +
+        '<div class="sub-usage"><div class="sub-h">Features &amp; Usage</div><div class="sub-h2">Feature Limits</div>' + limitRows + '<div class="sub-h2">Plan Features</div><ul class="sub-feats">' + (feats || '<li class="text-muted">—</li>') + '</ul></div></div></div>';
+    }
+
+    // ---- plan cards ----
+    function renderPlans() {
+      const host = CG.$('#sub-plans', root); const s = S(); const cur = s ? s.planId : null; const curActive = s && subStatus(s) === 'Active';
+      CG.$$('#sub-interval .tab', root).forEach((t) => t.classList.toggle('active', t.dataset.interval === interval));
+      host.innerHTML = plans().map((plan) => {
+        const q = quote(plan, interval, null); const p = pricing(plan, interval); const isFree = q.list === 0; const isCur = cur === plan.id && curActive;
+        let btn;
+        if (isCur) btn = '<button class="btn btn-secondary w-full" disabled>' + I('check') + ' Current Plan</button>';
+        else if (isFree && s) btn = '<button class="btn btn-outline w-full" disabled title="Included in every plan">Free Plan</button>';
+        else btn = '<button class="btn btn-primary w-full" data-subscribe="' + plan.id + '">' + (isFree ? 'Activate' : 'Subscribe') + '</button>';
+        const perMonth = isFree ? 'Free forever' : (q.months > 1 ? '<span class="mono">' + inr(Math.round(q.disc / q.months)) + '</span> / month · billed ' + ilabel(interval).toLowerCase() : 'billed ' + ilabel(interval).toLowerCase());
+        const chips = Object.keys(p.featureLimits || {}).map((k) => { const none = !(+p.featureLimits[k] > 0) && !included(plan, k); return '<span class="badge badge-outline' + (none ? ' text-muted' : '') + '"><b>' + esc(k) + '</b> ' + limitText(p.featureLimits[k], k, plan) + '</span>'; }).join('');
+        const feats = (plan.features || []).map((f) => '<li>' + I('check') + '<span>' + esc(f) + '</span></li>').join('');
+        const popular = plan.id === 'p_pro' && !isCur;
+        return '<div class="card sub-plan' + (isCur ? ' is-current' : '') + (popular ? ' is-popular' : '') + '">' + (isCur ? '<span class="sub-plan-flag">Current</span>' : popular ? '<span class="sub-plan-flag">Most popular</span>' : '') + '<div class="card-header"><div class="card-title">' + esc(plan.name) + '</div><div class="card-desc">' + esc(plan.description || '') + '</div></div><div class="card-content"><div class="sub-price"><div class="flex items-baseline gap-2 flex-wrap"><span class="sub-price-big">' + (isFree ? '₹0' : inr(q.disc)) + '</span>' + (q.planDiscount > 0 ? '<s>' + inr(q.list) + '</s><span class="badge badge-success">' + q.offPct + '% off</span>' : '') + '</div><div class="text-xs text-muted mt-1">' + perMonth + '</div></div><div class="sub-chips">' + chips + '</div><ul class="sub-feats">' + feats + '</ul>' + btn + '</div></div>';
+      }).join('');
+    }
+
+    // ---- payment history ----
+    function renderPayments() {
+      const host = CG.$('#sub-payments', root); const rows = (CG.mock.payments || []).slice().sort((a, b) => pd(b.date) - pd(a.date));
+      if (!rows.length) { host.innerHTML = '<div class="empty"><b>No payments yet</b>Your invoices will appear here once you subscribe to a plan.</div>'; return; }
+      const pages = Math.max(1, Math.ceil(rows.length / PER_PAGE)); if (page > pages) page = pages; const slice = rows.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+      const badge = (st) => st === 'success' || st === 'paid' ? '<span class="badge badge-success">Paid</span>' : st === 'pending' ? '<span class="badge badge-warning">Pending</span>' : '<span class="badge badge-destructive">Failed</span>';
+      host.innerHTML = '<div class="overflow-x-auto"><table class="table"><thead><tr><th>Date</th><th>Plan</th><th>Interval</th><th class="r">Amount</th><th>Coupon</th><th>Method</th><th>Status</th><th>Invoice</th></tr></thead><tbody>' + slice.map((p) => '<tr><td class="nowrap">' + fmtDateTimeIN(p.date) + '</td><td class="font-medium">' + esc(p.plan) + '</td><td>' + ilabel(p.interval) + '</td><td class="r mono">' + inr(p.amount) + '</td><td>' + (p.coupon ? '<span class="mono">' + esc(p.coupon) + '</span> <span class="text-profit mono text-xs">-' + inr(p.discount || 0) + '</span>' : '<span class="text-muted">—</span>') + '</td><td class="text-muted">' + esc(p.method || 'Razorpay') + '</td><td>' + badge(p.status) + '</td><td>' + (p.invoice ? '<a class="sub-inv" href="#/subscription" data-invoice="' + esc(p.invoice) + '">' + I('download') + esc(p.invoice) + '</a>' : '<span class="text-muted">—</span>') + '</td></tr>').join('') + '</tbody></table></div>' + pagerHtml(page, pages, 'payments');
+    }
+
+    function renderAll() { renderCurrent(); renderPlans(); renderPayments(); }
+
+    // ---- subscribe dialog ----
+    const dlg = () => CG.$('#sub-dialog');
+    let D = null; // { plan, interval, coupon, handle }
+    function renderDialog() {
+      const el = dlg(); const q = quote(D.plan, D.interval, D.coupon); const free = q.total <= 0;
+      const list = visibleCoupons().map((c) => { const chk = checkCoupon(c, D.plan, D.interval); const applied = D.coupon && D.coupon.id === c.id; return '<button type="button" class="sub-coupon' + (applied ? ' is-applied' : '') + (chk.ok ? '' : ' is-off') + '" data-code="' + esc(c.code) + '"><div class="sub-coupon-tag">' + esc(couponTag(c)) + '</div><div class="flex-1"><div class="flex items-center gap-2 flex-wrap"><span class="sub-coupon-code">' + esc(c.code) + '</span>' + (/private/.test(c.scope || '') ? '<span class="badge badge-info">Community</span>' : '') + (applied ? '<span class="badge badge-success">Applied</span>' : '') + '</div><div class="text-xs text-muted">' + esc(c.description || '') + '</div><div class="text-2xs text-muted mt-1">' + (c.expiresAt ? 'Expires ' + fmtDateIN(c.expiresAt) : 'No expiry') + (c.minOrderAmount ? ' · Min order ' + inr(c.minOrderAmount) : '') + (chk.ok ? '' : ' · <span class="text-destructive">' + esc(chk.reason) + '</span>') + '</div></div></button>'; }).join('');
+      el.innerHTML = '<div class="cg-dialog-body"><div class="sub-plan-summary"><div class="acct-icon">' + I('crown') + '</div><div class="flex-1"><b>' + esc(D.plan.name) + '</b><div class="text-xs text-muted">' + ilabel(D.interval) + ' billing · ' + esc(D.plan.description || '') + '</div></div><div class="text-right"><div class="mono font-bold text-lg">' + inr(q.disc) + '</div>' + (q.planDiscount > 0 ? '<div class="text-2xs text-muted"><s>' + inr(q.list) + '</s> · ' + q.offPct + '% off</div>' : '') + '</div></div>' +
+        '<div class="sub-dlg-grid"><div class="sub-dlg-left"><label class="label" for="sub-coupon-input">' + I('ticket') + ' Apply Coupon</label><div class="flex gap-2"><input class="input" id="sub-coupon-input" placeholder="Enter coupon code" autocomplete="off" style="text-transform:uppercase" value="' + (D.coupon ? esc(D.coupon.code) : '') + '"' + (D.coupon ? ' disabled' : '') + '><button type="button" class="btn btn-outline" data-act="apply"' + (D.coupon ? ' disabled' : '') + '>Apply</button></div><div class="sub-coupon-err" data-coupon-err hidden></div>' + (D.coupon ? '<div><span class="sub-coupon-chip">' + I('ticket') + esc(D.coupon.code) + ' (-' + inr(q.couponDiscount) + ')<button type="button" data-act="remove-coupon" aria-label="Remove coupon">' + I('x') + '</button></span></div>' : '') +
+        '<div class="label mt-4">Available Coupons</div>' + (list ? '<div class="sub-coupons">' + list + '</div>' : '<div class="empty" style="padding:18px">No coupons available right now</div>') + '</div>' +
+        '<div class="sub-dlg-right"><div class="sub-breakdown"><div class="sub-bd-row"><span>List Price</span><b>' + inr(q.list) + '</b></div><div class="sub-bd-row"><span>Plan Discount</span><b class="' + (q.planDiscount ? 'text-profit' : '') + '">' + (q.planDiscount ? '-' + inr(q.planDiscount) : inr(0)) + '</b></div><div class="sub-bd-row"><span>Coupon Discount' + (D.coupon ? ' <span class="mono text-xs">(' + esc(D.coupon.code) + ')</span>' : '') + '</span><b class="' + (q.couponDiscount ? 'text-profit' : '') + '">' + (q.couponDiscount ? '-' + inr(q.couponDiscount) : inr(0)) + '</b></div><div class="sub-bd-row"><span>Subtotal</span><b>' + inr(q.subtotal) + '</b></div><div class="sub-bd-row"><span>Tax (' + TAX_PCT + '% GST)</span><b>' + inr(q.tax) + '</b></div><div class="sub-bd-row total"><span>Total</span><b>' + inr(q.total) + '</b></div></div><p class="hint mt-3">' + (free ? 'No payment needed — the plan activates instantly.' : 'You will be redirected to Razorpay to complete the payment securely. Your plan activates as soon as the payment is confirmed.') + '</p></div></div></div>' +
+        '<div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button>' + (free ? '<button type="button" class="btn btn-primary" data-act="activate">' + I('check') + ' Activate</button>' : '<button type="button" class="btn btn-primary" data-act="pay">' + I('lock') + ' Pay with Razorpay</button>') + '</div>';
+    }
+    function openSubscribe(plan, iv) {
+      D = { plan, interval: iv, coupon: null, handle: null }; renderDialog();
+      D.handle = CG.modal.open(dlg(), { title: 'Subscribe to ' + plan.name + ' · ' + ilabel(iv), description: 'Review the price, apply a coupon and pay securely', size: 'lg', onClose: () => { D = null; } });
+      setTimeout(() => { const i = CG.$('#sub-coupon-input', dlg()); if (i && !i.disabled) i.focus(); }, 60);
+    }
+    function showCouponError(msg) { const e = CG.$('[data-coupon-err]', dlg()); if (e) { e.textContent = msg; e.hidden = false; } CG.toast({ title: 'Error', description: 'Invalid coupon' + (msg && msg !== 'Invalid coupon' ? ' · ' + msg : ''), variant: 'destructive' }); }
+    function applyCoupon(code) {
+      if (!D) return; code = String(code || '').trim();
+      if (!code) { showCouponError('Enter coupon code'); return; }
+      const c = findCoupon(code); const chk = checkCoupon(c, D.plan, D.interval);
+      if (!chk.ok) { showCouponError(chk.reason); return; }
+      D.coupon = c; renderDialog(); const q = quote(D.plan, D.interval, c);
+      CG.toast({ title: 'Success', description: c.code + ' applied · you save ' + inr(q.couponDiscount), variant: 'success' });
+    }
+    function activateSubscription(plan, iv, q, paymentMeta) {
+      const p = pricing(plan, iv); const days = (INTERVALS[iv] || INTERVALS.yearly).days; const start = new Date(CG.NOW); const end = new Date(CG.NOW.getTime() + days * 864e5);
+      const prev = S();
+      CG.mock.subscription = { planId: plan.id, planName: plan.name, interval: iv, status: 'active', startedAt: isoLocal(start), expiresAt: isoLocal(end), price: q.list, paid: q.subtotal, currency: 'INR', featureLimits: Object.assign({}, p.featureLimits || {}), usage: prev && prev.planId === plan.id ? prev.usage : { paper_trading: 0, live_trading: 0 }, coupon: D && D.coupon ? D.coupon.code : null, paymentId: paymentMeta ? paymentMeta.id : null };
+      const me = (CG.mock.users || []).find((u) => u.id === CG.mock.user.id); if (me) Object.assign(me, { planId: plan.id, plan: plan.name, interval: iv, status: 'active', subscribedAt: CG.mock.subscription.startedAt, endsAt: CG.mock.subscription.expiresAt, amountPaid: q.total, featureLimits: Object.assign({}, p.featureLimits || {}) });
+      if (D && D.coupon) D.coupon.usedCount = (D.coupon.usedCount || 0) + 1;
+      CG.emit('subscription', CG.mock.subscription);
+    }
+    function pushPayment(status, q, method, extra) {
+      const id = 'pay_' + (CG.mock.paymentSeq++); const year = CG.NOW.getFullYear();
+      const invNo = CG.mock.payments.filter((p) => p.invoice && p.invoice.indexOf('INV-' + year) === 0).length + 1;
+      const pay = Object.assign({ id, date: isoLocalTime(new Date(CG.NOW.getTime() + (Date.now() - BOOT))), plan: D.plan.name, interval: ilabel(D.interval), amount: q.total, coupon: D.coupon ? D.coupon.code : null, discount: q.couponDiscount, tax: q.tax, status, method: 'Razorpay · ' + method, invoice: status === 'success' ? 'INV-' + year + '-' + String(invNo).padStart(4, '0') : null }, extra || {});
+      CG.mock.payments.unshift(pay); return pay;
+    }
+    const BOOT = Date.now();
+    function pay() {
+      if (!D) return; const q = quote(D.plan, D.interval, D.coupon); const plan = D.plan, iv = D.interval;
+      if (q.total <= 0) { activateSubscription(plan, iv, q, null); CG.toast({ title: 'Success', description: 'Subscription activated!', variant: 'success' }); if (D.handle) D.handle.close(); page = 1; renderAll(); return; }
+      if (!CG.razorpayMock) { CG.toast({ title: 'Error', description: 'Failed to load Razorpay SDK', variant: 'destructive' }); return; }
+      CG.razorpayMock.open({
+        amount: q.total, name: 'HapieCoin', description: 'Subscription · ' + plan.name + ' · ' + ilabel(iv), prefill: { name: CG.mock.user.name, email: CG.mock.user.email, contact: CG.mock.user.mobile }, theme: { color: '#6366f1' },
+        handler(res) {
+          try {
+            if (!D) return;
+            if (res.status === 'success') { const p = pushPayment('success', q, res.method, { razorpayPaymentId: res.paymentId }); activateSubscription(plan, iv, q, p); CG.toast({ title: 'Payment Successful!', description: 'Your subscription is now active.', variant: 'success' }); if (D.handle) D.handle.close(); page = 1; renderAll(); }
+            else if (res.status === 'failed') { pushPayment('failed', q, res.method, { error: 'payment.failed' }); CG.toast({ title: 'Payment Failed', description: 'Payment failed. Please try again.', variant: 'destructive' }); renderPayments(); }
+            else if (res.status === 'confirm_failed') { pushPayment('pending', q, res.method, { razorpayPaymentId: res.paymentId }); CG.toast({ title: 'Confirmation Failed', description: 'Please contact support.', variant: 'destructive' }); renderPayments(); }
+            else if (res.status === 'sdk_error') { CG.toast({ title: 'Error', description: 'Failed to load Razorpay SDK', variant: 'destructive' }); }
+            else { CG.toast({ title: 'Payment Cancelled', description: 'You can try again anytime.' }); }
+          } catch (e) { console.error(e); CG.toast({ title: 'Error', description: 'Something went wrong', variant: 'destructive' }); }
+        }
+      });
+    }
+
+    // ---- Razorpay mock SDK (exposed so other screens can reuse it) ----
+    CG.razorpayMock = CG.razorpayMock || {
+      open(opts) {
+        const el = CG.$('#sub-rzp'); if (!el) { opts.handler({ status: 'sdk_error' }); return; }
+        const tabs = [{ id: 'upi', label: 'UPI', ico: 'qr' }, { id: 'card', label: 'Card', ico: 'card' }, { id: 'netbanking', label: 'Netbanking', ico: 'bank' }, { id: 'wallet', label: 'Wallet', ico: 'wallet' }];
+        const st = { tab: 'upi', bank: 'HDFC Bank', wallet: 'Paytm', upiApp: 'Google Pay', busy: false };
+        const amt = inr(opts.amount);
+        function panel() {
+          if (st.tab === 'upi') return '<div class="rzp-label">Pay using UPI app</div><div class="rzp-upi-apps">' + ['Google Pay', 'PhonePe', 'Paytm', 'BHIM'].map((a) => '<div class="rzp-upi-app' + (st.upiApp === a ? ' active' : '') + '" data-upi="' + a + '">' + a + '</div>').join('') + '</div><div class="rzp-label">or enter UPI ID</div><input class="rzp-input mono" placeholder="yourname@upi" data-f="vpa" value="' + esc(opts.prefill && opts.prefill.vpa || '') + '">';
+          if (st.tab === 'card') return '<div class="rzp-label">Card number</div><input class="rzp-input mono" placeholder="1234 5678 9012 3456" inputmode="numeric" data-f="card"><div class="rzp-row"><div><div class="rzp-label">Expiry</div><input class="rzp-input mono" placeholder="MM / YY" data-f="exp"></div><div><div class="rzp-label">CVV</div><input class="rzp-input mono" placeholder="•••" type="password" maxlength="4" data-f="cvv"></div></div><div class="rzp-label">Name on card</div><input class="rzp-input" placeholder="Name as on card" data-f="name" value="' + esc(opts.prefill && opts.prefill.name || '') + '">';
+          if (st.tab === 'netbanking') return '<div class="rzp-label">Select bank</div><div class="rzp-opts">' + ['HDFC Bank', 'ICICI Bank', 'State Bank of India', 'Axis Bank', 'Kotak Mahindra', 'Yes Bank'].map((b) => '<div class="rzp-opt' + (st.bank === b ? ' active' : '') + '" data-bank="' + b + '"><i>' + b.split(' ').map((w) => w[0]).join('').slice(0, 2) + '</i>' + b + '</div>').join('') + '</div>';
+          return '<div class="rzp-label">Select wallet</div><div class="rzp-opts">' + ['Paytm', 'PhonePe', 'Amazon Pay', 'Mobikwik', 'Freecharge', 'Airtel Money'].map((w) => '<div class="rzp-opt' + (st.wallet === w ? ' active' : '') + '" data-wallet="' + w + '"><i>' + w.slice(0, 2).toUpperCase() + '</i>' + w + '</div>').join('') + '</div>';
+        }
+        function render() {
+          el.innerHTML = '<div class="sub-rzp-head"><div class="sub-rzp-brand"><span class="sub-rzp-logo">R</span><div><b>Razorpay</b><small>' + esc(opts.name || 'HapieCoin') + ' · Trusted Business</small></div></div><div class="sub-rzp-amt"><small>' + esc(opts.description || 'Subscription') + '</small><b>' + amt + '</b></div><button type="button" class="sub-rzp-x" data-rzp="cancel" aria-label="Close">' + I('x') + '</button></div>' +
+            '<div class="sub-rzp-tabs">' + tabs.map((t) => '<button type="button" class="sub-rzp-tab' + (st.tab === t.id ? ' active' : '') + '" data-tab="' + t.id + '">' + I(t.ico) + t.label + '</button>').join('') + '</div>' +
+            '<div class="sub-rzp-body">' + panel() + '</div>' +
+            '<div class="sub-rzp-foot"><button type="button" class="sub-rzp-pay" data-rzp="pay">Pay ' + amt + '</button><button type="button" class="sub-rzp-cancel" data-rzp="cancel">Cancel</button></div>' +
+            '<div class="sub-rzp-secure">' + I('lock') + ' Secured by Razorpay · ' + esc(opts.prefill && opts.prefill.email || '') + '</div>' +
+            '<div class="sub-rzp-mock"><span>Mock checkout —</span><a data-rzp="fail">Simulate failure</a><a data-rzp="confirm-fail">Simulate confirmation failure</a><a data-rzp="sdk-error">Simulate SDK error</a></div>';
+        }
+        render();
+        const h = CG.modal.open(el, { size: 'sm', noClose: true, persistent: true, onClose: (r) => { el.onclick = null; el.innerHTML = ''; opts.handler(r || { status: 'dismissed' }); } });
+        h.box.style.maxWidth = '400px'; h.box.style.background = 'transparent'; h.box.style.border = '0';
+        const methodLabel = () => (st.tab === 'upi' ? 'UPI' : st.tab === 'card' ? 'Card' : st.tab === 'netbanking' ? 'Netbanking' : 'Wallet');
+        const finish = (status) => { if (st.busy) return; st.busy = true; el.appendChild(CG.h('<div class="sub-rzp-processing">' + I('loader') + '<span>Processing…</span><small style="font-weight:400;color:#6b7280">Do not press back or refresh</small></div>')); const btn = CG.$('[data-rzp="pay"]', el); if (btn) btn.disabled = true; setTimeout(() => h.close({ status, method: methodLabel(), paymentId: 'pay_' + Math.random().toString(36).slice(2, 12).toUpperCase() }), 1200); };
+        el.onclick = (e) => {
+          const t = e.target.closest('[data-tab],[data-rzp],[data-bank],[data-wallet],[data-upi]'); if (!t || st.busy) return;
+          if (t.dataset.tab) { st.tab = t.dataset.tab; render(); return; }
+          if (t.dataset.bank) { st.bank = t.dataset.bank; render(); return; }
+          if (t.dataset.wallet) { st.wallet = t.dataset.wallet; render(); return; }
+          if (t.dataset.upi) { st.upiApp = t.dataset.upi; render(); return; }
+          const a = t.dataset.rzp;
+          if (a === 'cancel') h.close({ status: 'dismissed' });
+          else if (a === 'pay') finish('success');
+          else if (a === 'fail') finish('failed');
+          else if (a === 'confirm-fail') finish('confirm_failed');
+          else if (a === 'sdk-error') h.close({ status: 'sdk_error' });
+        };
+        return h;
+      }
+    };
+
+    // ---- register ----
+    CG.register('/subscription', {
+      init(r) {
+        root = r;
+        const s = S(); if (s && INTERVALS[s.interval]) interval = s.interval;
+        CG.delegate(root, 'click', '#sub-interval .tab', (e, t) => { interval = t.dataset.interval; renderPlans(); });
+        CG.delegate(root, 'click', '[data-subscribe]', (e, t) => { const plan = planById(t.dataset.subscribe); if (!plan) { CG.toast({ title: 'Error', description: 'Something went wrong', variant: 'destructive' }); return; } openSubscribe(plan, interval); });
+        CG.delegate(root, 'click', '[data-act="choose"],[data-act="upgrade"]', (e, t) => { const anchor = CG.$('#sub-plans-anchor', root); anchor.scrollIntoView({ behavior: 'smooth', block: 'start' }); if (t.dataset.act === 'upgrade') { const s = S(); const idx = plans().findIndex((p) => p.id === (s && s.planId)); const next = plans()[idx + 1]; if (next) { setTimeout(() => { const card = CG.$$('.sub-plan', root)[idx + 1]; if (card) { card.style.boxShadow = '0 0 0 2px hsl(var(--primary))'; setTimeout(() => (card.style.boxShadow = ''), 1600); } }, 350); } } });
+        CG.delegate(root, 'click', '[data-act="renew"]', () => { const s = S(); const plan = planById(s && s.planId); if (!plan) return; interval = INTERVALS[s.interval] ? s.interval : interval; renderPlans(); openSubscribe(plan, interval); });
+        CG.delegate(root, 'click', '[data-invoice]', (e, t) => { e.preventDefault(); CG.toast({ title: 'Invoice ' + t.dataset.invoice + ' downloaded', description: 'Saved as ' + t.dataset.invoice + '.pdf', variant: 'success' }); });
+        CG.delegate(root, 'click', '[data-pager="payments"] [data-pg]', (e, t) => { if (t.disabled) return; page += t.dataset.pg === 'next' ? 1 : -1; renderPayments(); });
+        // dialog events (element is moved into the overlay while open, so bind on the element itself)
+        const d = dlg();
+        d.addEventListener('click', (e) => {
+          const t = e.target.closest('[data-act],[data-code]'); if (!t || !D) return;
+          if (t.dataset.code) { if (t.classList.contains('is-applied')) { D.coupon = null; renderDialog(); } else applyCoupon(t.dataset.code); return; }
+          const a = t.dataset.act;
+          if (a === 'apply') applyCoupon(CG.$('#sub-coupon-input', d).value);
+          else if (a === 'remove-coupon') { D.coupon = null; renderDialog(); CG.toast({ title: 'Coupon removed' }); }
+          else if (a === 'cancel') D.handle.close();
+          else if (a === 'pay' || a === 'activate') pay();
+        });
+        d.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'sub-coupon-input') { e.preventDefault(); applyCoupon(e.target.value); } });
+        d.addEventListener('input', (e) => { if (e.target.id === 'sub-coupon-input') { const er = CG.$('[data-coupon-err]', d); if (er) er.hidden = true; } });
+        CG.on('subscription', () => { if (root.classList.contains('active')) renderAll(); });
+      },
+      show() { page = 1; renderAll(); }
+    });
+  })();
+
+  // =====================================================================
+  //  /referrals
+  // =====================================================================
+  (function () {
+    const PER_PAGE = 10;
+    let root, page = 1;
+    const F = { q: '', status: '', plan: '', from: '', to: '' };
+    const R = () => CG.mock.referrals;
+    const round2 = (n) => Math.round(n * 100) / 100;
+    function sync() { const r = R(); if (!r) return; const users = r.users || []; r.totalReferrals = users.length; r.totalEarned = round2(users.reduce((s, u) => s + (+u.commission || 0), 0)); r.paid = round2(users.filter((u) => u.status === 'paid').reduce((s, u) => s + (+u.commission || 0), 0)); r.pending = round2(users.filter((u) => u.status === 'pending').reduce((s, u) => s + (+u.commission || 0), 0)); }
+    const initials = (n) => String(n || '?').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+    const statusBadge = (s) => (s === 'paid' ? '<span class="badge badge-success">Paid</span>' : s === 'pending' ? '<span class="badge badge-warning">Pending</span>' : '<span class="badge badge-secondary">No Purchase</span>');
+    const planBadge = (u) => (u.plan ? '<span class="badge badge-outline">' + esc(u.plan) + '</span>' + (u.interval ? ' <span class="text-2xs text-muted">' + ilabel(u.interval) + '</span>' : '') : '<span class="text-muted">—</span>');
+
+    function renderHero() {
+      const r = R(); const pct = r.commissionPct || CG.mock.user.commissionPct || 20;
+      CG.$('#ref-hero', root).innerHTML = '<div class="card"><div class="ref-hero"><div class="acct-icon">' + I('gift', 'ico-lg') + '</div><div class="flex-1"><h3>Get ' + pct + '% commission on every paid referral</h3><p class="text-muted mt-1">Invite friends to HapieCoin with your personal link. Whenever someone you referred buys a plan, ' + pct + '% of what they pay is credited to you.</p><div class="ref-link-row"><input class="input" id="ref-link" readonly value="' + esc(r.link) + '" aria-label="Referral link"><button class="btn btn-outline" id="ref-copy">' + I('copy') + ' Copy</button><button class="btn btn-primary" id="ref-share">' + I('share') + ' Share</button></div><button type="button" class="ref-code" id="ref-code" title="Click to copy your referral code">Code: <b>' + esc(r.code) + '</b>' + I('copy') + '</button></div></div></div>';
+    }
+    function renderHow() {
+      const pct = R().commissionPct || 20;
+      CG.$('#ref-how', root).innerHTML = '<div class="card-header"><div class="card-title">How it works</div><div class="card-desc">Three steps to your first commission</div></div><div class="card-content"><div class="ref-steps">' + [['link', 'Share your unique referral link'], ['cart', 'Friend signs up & purchases a plan'], ['coins', 'Earn ' + pct + '% commission']].map((s, i) => '<div class="ref-step"><span class="ref-step-n">' + (i + 1) + '</span><div class="acct-icon">' + I(s[0]) + '</div><b>' + esc(s[1]) + '</b></div>').join('') + '</div><p class="hint mt-3">Commissions are marked <b>Pending</b> until the referred payment clears, then <b>Paid</b> once settled to your account.</p></div>';
+    }
+    function renderStats() {
+      const r = R();
+      CG.$('#ref-stats', root).innerHTML = [['users', 'Total Referrals', String(r.totalReferrals), 'signed up with your link'], ['coins', 'Total Earned', inr(r.totalEarned, 2), 'lifetime commission'], ['wallet', 'Paid', inr(r.paid, 2), 'settled to you'], ['clock', 'Pending', inr(r.pending, 2), 'awaiting settlement']].map((s) => '<div class="stat"><div class="acct-icon">' + I(s[0]) + '</div><div><div class="stat-label">' + s[1] + '</div><div class="stat-value">' + s[2] + '</div><div class="stat-sub">' + s[3] + '</div></div></div>').join('');
+    }
+    function filtered() {
+      const q = F.q.trim().toLowerCase(); const from = F.from ? pd(F.from) : null; const to = F.to ? eod(F.to) : null;
+      return (R().users || []).filter((u) => {
+        if (q && !((u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q))) return false;
+        if (F.status && u.status !== F.status) return false;
+        if (F.plan && (F.plan === 'Free' ? !!u.plan : u.plan !== F.plan)) return false;
+        const j = pd(u.joinedAt); if (from && j < from) return false; if (to && j > to) return false;
+        return true;
+      }).sort((a, b) => pd(b.joinedAt) - pd(a.joinedAt));
+    }
+    function renderTable() {
+      const host = CG.$('#ref-table', root); const all = R().users || []; const rows = filtered();
+      if (!all.length) { host.innerHTML = '<div class="empty">' + I('users', 'ico-lg') + '<b>No referrals yet</b>Share your link to start earning</div>'; return; }
+      if (!rows.length) { host.innerHTML = '<div class="empty">' + I('search', 'ico-lg') + '<b>No results found</b>Try adjusting your filters</div>'; return; }
+      const pages = Math.max(1, Math.ceil(rows.length / PER_PAGE)); if (page > pages) page = pages; const slice = rows.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+      host.innerHTML = '<div class="overflow-x-auto"><table class="table"><thead><tr><th>User</th><th>Joined</th><th>Plan</th><th class="r">Amount</th><th class="r">Commission</th><th>Status</th></tr></thead><tbody>' + slice.map((u) => '<tr><td><div class="flex items-center gap-3 ref-user"><span class="ref-avatar">' + initials(u.name) + '</span><div><b>' + esc(u.name) + '</b><span>' + esc(u.email) + '</span></div></div></td><td class="nowrap">' + fmtDateUS(u.joinedAt) + '</td><td>' + planBadge(u) + '</td><td class="r mono">' + (u.amount ? inr(u.amount) : '<span class="text-muted">—</span>') + '</td><td class="r mono ' + (u.commission ? 'text-profit' : '') + '">' + (u.commission ? inr(u.commission, 2) : '<span class="text-muted">—</span>') + '</td><td>' + statusBadge(u.status) + '</td></tr>').join('') + '</tbody></table></div>' +
+        '<div class="acct-pager" data-pager="referrals"><span class="text-muted text-xs">' + rows.length + ' referral' + (rows.length === 1 ? '' : 's') + (rows.length !== all.length ? ' (filtered from ' + all.length + ')' : '') + ' · Page ' + page + ' of ' + pages + '</span><div class="flex gap-2"><button type="button" class="btn btn-outline btn-sm" data-pg="prev"' + (page <= 1 ? ' disabled' : '') + '>← Previous</button><button type="button" class="btn btn-outline btn-sm" data-pg="next"' + (page >= pages ? ' disabled' : '') + '>Next →</button></div></div>';
+    }
+    function renderAll() { try { sync(); renderHero(); renderHow(); renderStats(); renderTable(); } catch (e) { console.error(e); CG.toast({ title: 'Error', description: 'Failed to load referrals', variant: 'destructive' }); } }
+    function share() {
+      const r = R(); const data = { title: 'Join HapieCoin', text: 'Trade crypto options smarter with HapieCoin. Sign up with my referral link:', url: r.link };
+      if (navigator.share) { navigator.share(data).then(() => CG.toast({ title: 'Thanks for sharing!', variant: 'success' })).catch(() => copyText(r.link)); } else copyText(r.link);
+    }
+    CG.register('/referrals', {
+      init(r) {
+        root = r;
+        CG.$$('[data-ico]', root).forEach((el) => { el.innerHTML = I(el.dataset.ico); });
+        CG.delegate(root, 'click', '#ref-copy', () => copyText(R().link));
+        CG.delegate(root, 'click', '#ref-share', share);
+        CG.delegate(root, 'click', '#ref-code', () => copyText(R().code));
+        CG.delegate(root, 'click', '#ref-link', (e, t) => { t.select(); });
+        const bind = (id, key, ev) => CG.$('#' + id, root).addEventListener(ev || 'input', (e) => { F[key] = e.target.value; page = 1; renderTable(); });
+        bind('ref-q', 'q'); bind('ref-status', 'status', 'change'); bind('ref-plan', 'plan', 'change'); bind('ref-from', 'from', 'change'); bind('ref-to', 'to', 'change');
+        CG.delegate(root, 'click', '#ref-clear', () => { F.q = F.status = F.plan = F.from = F.to = ''; ['ref-q', 'ref-status', 'ref-plan', 'ref-from', 'ref-to'].forEach((id) => (CG.$('#' + id, root).value = '')); page = 1; renderTable(); CG.toast({ title: 'Filters cleared' }); });
+        CG.delegate(root, 'click', '[data-pager="referrals"] [data-pg]', (e, t) => { if (t.disabled) return; page += t.dataset.pg === 'next' ? 1 : -1; renderTable(); });
+      },
+      show() { page = 1; renderAll(); }
+    });
+  })();
+})();
+</script>

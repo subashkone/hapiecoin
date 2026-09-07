@@ -1,0 +1,179 @@
+/**
+ * Test harness: boots the real app on an in-memory PGlite with a capturing mailer, a fake Delta
+ * client and an in-memory rate store. Each test file creates its own instance (isolated database).
+ */
+import { createApp } from "../app.js";
+import { AUTH_BASE_PATH, authOptionsPublic, createAuth, sessionResolver, type Auth } from "../auth.js";
+import { type Config, loadConfig } from "../config.js";
+import { createDb, type Db, type DbHandle } from "../db/client.js";
+import { SEED, seed } from "../db/seed.js";
+import { FakeDeltaPrivateClient } from "../delta/private-client.js";
+import { createLogger } from "../logger.js";
+import { MailCapture } from "../mailer.js";
+import { MemoryRateStore } from "../security/rate-store.js";
+import { createVault, type Vault } from "../vault.js";
+import type { OpenAPIHono } from "@hono/zod-openapi";
+import type { AppEnv } from "../security/context.js";
+
+export const TEST_ENV: Record<string, string> = {
+  NODE_ENV: "test",
+  BETTER_AUTH_SECRET: "test-secret-test-secret-test-secret-0123456789",
+  BETTER_AUTH_URL: "http://localhost:3001",
+  WEB_URL: "http://localhost:3000",
+  // app.request() has no socket, so tests pass the client IP in x-forwarded-for and trust every peer.
+  TRUSTED_PROXY_IPS: "*",
+  CREDENTIALS_ENC_KEY: Buffer.alloc(32, 7).toString("base64"),
+  EGRESS_IP: "172.236.179.136",
+};
+
+export interface RequestOptions {
+  method?: string;
+  cookie?: string | undefined;
+  json?: unknown;
+  headers?: Record<string, string>;
+  /** Defaults to the web app origin for state-changing requests (a browser always sends it). */
+  origin?: string | null;
+  ip?: string;
+}
+
+export interface TestApp {
+  app: OpenAPIHono<AppEnv>;
+  config: Config;
+  db: Db;
+  handle: DbHandle;
+  auth: Auth;
+  mail: MailCapture;
+  delta: FakeDeltaPrivateClient;
+  rateStore: MemoryRateStore;
+  vault: Vault;
+  now: { value: number };
+  request(path: string, opts?: RequestOptions): Promise<Response>;
+  /** Sign up through Better Auth (email + password, then OTP verification). Returns the session cookie. */
+  signUp(
+    email: string,
+    opts?: { name?: string; password?: string; mobile?: string; ref?: string },
+  ): Promise<{ cookie: string }>;
+  /** OTP sign-in for an existing user (the seeded admin, or someone created with signUp). */
+  signInOtp(email: string): Promise<{ cookie: string }>;
+  adminCookie(): Promise<string>;
+  close(): Promise<void>;
+}
+
+export function cookieHeaderFrom(res: Response, previous = ""): string {
+  const jar = new Map<string, string>();
+  for (const part of previous.split(";")) {
+    const [k, ...v] = part.trim().split("=");
+    if (k) jar.set(k, v.join("="));
+  }
+  for (const line of res.headers.getSetCookie()) {
+    const first = line.split(";")[0] ?? "";
+    const eq = first.indexOf("=");
+    if (eq === -1) continue;
+    const name = first.slice(0, eq).trim();
+    const value = first.slice(eq + 1).trim();
+    if (value === "") jar.delete(name);
+    else jar.set(name, value);
+  }
+  return [...jar].map(([k, v]) => `${k}=${v}`).join("; ");
+}
+
+export async function createTestApp(envOverrides: Record<string, string> = {}): Promise<TestApp> {
+  const config = loadConfig({ ...TEST_ENV, ...envOverrides }, { warn: () => undefined });
+  const logger = createLogger({ level: "silent" });
+  const handle = await createDb();
+  await handle.migrate();
+  await seed(handle.db);
+  const mail = new MailCapture();
+  const delta = new FakeDeltaPrivateClient();
+  const now = { value: Date.now() };
+  const rateStore = new MemoryRateStore({ now: () => now.value });
+  const vault = createVault(config.credentialsEncKey);
+  const auth = createAuth({ config, db: handle.db, mailer: mail, rateStore, logger });
+  const app = createApp({
+    config,
+    db: handle.db,
+    dbKind: handle.kind,
+    ping: () => handle.ping(),
+    auth,
+    authBasePath: AUTH_BASE_PATH,
+    sessions: sessionResolver(auth),
+    rateStore,
+    logger,
+    vault,
+    delta,
+    authOptions: authOptionsPublic(config),
+  });
+
+  const request = (path: string, opts: RequestOptions = {}): Promise<Response> => {
+    const method = opts.method ?? (opts.json !== undefined ? "POST" : "GET");
+    const headers: Record<string, string> = { "x-forwarded-for": opts.ip ?? "203.0.113.10", ...opts.headers };
+    if (opts.cookie) headers["cookie"] = opts.cookie;
+    if (opts.json !== undefined) headers["content-type"] = "application/json";
+    const origin = opts.origin === undefined ? (method === "GET" ? undefined : config.webUrl) : opts.origin;
+    if (origin !== undefined && origin !== null) headers["origin"] = origin;
+    const init: RequestInit = { method, headers };
+    if (opts.json !== undefined) init.body = JSON.stringify(opts.json);
+    return Promise.resolve(app.request(`http://localhost:3001${path}`, init));
+  };
+
+  const signInOtp = async (email: string): Promise<{ cookie: string }> => {
+    const send = await request(`${AUTH_BASE_PATH}/email-otp/send-verification-otp`, {
+      json: { email, type: "sign-in" },
+      ip: nextIp(),
+    });
+    if (send.status !== 200) throw new Error(`send OTP failed: ${send.status} ${await send.text()}`);
+    const otp = mail.last(email, "sign-in")?.otp;
+    if (!otp) throw new Error(`no sign-in OTP captured for ${email}`);
+    const res = await request(`${AUTH_BASE_PATH}/sign-in/email-otp`, { json: { email, otp } });
+    if (res.status !== 200) throw new Error(`OTP sign-in failed: ${res.status} ${await res.text()}`);
+    return { cookie: cookieHeaderFrom(res) };
+  };
+
+  // Helpers use a fresh client IP per call so the per-IP OTP limit (5 / 15 min) never trips inside a test file.
+  let ipCounter = 0;
+  const nextIp = (): string => {
+    ipCounter += 1;
+    return `10.${(ipCounter >> 16) & 255}.${(ipCounter >> 8) & 255}.${ipCounter & 255}`;
+  };
+
+  const verifyEmail = async (email: string, cookie: string): Promise<{ cookie: string }> => {
+    const otp = mail.last(email, "email-verification")?.otp;
+    if (!otp) throw new Error(`no verification OTP captured for ${email}`);
+    const res = await request(`${AUTH_BASE_PATH}/email-otp/verify-email`, {
+      json: { email, otp },
+      cookie,
+      ip: nextIp(),
+    });
+    if (res.status !== 200) throw new Error(`verify-email failed: ${res.status} ${await res.text()}`);
+    return { cookie: cookieHeaderFrom(res, cookie) };
+  };
+
+  return {
+    app,
+    config,
+    db: handle.db,
+    handle,
+    auth,
+    mail,
+    delta,
+    rateStore,
+    vault,
+    now,
+    request,
+    async signUp(email, opts = {}) {
+      const body: Record<string, unknown> = {
+        email,
+        name: opts.name ?? "Test Trader",
+        password: opts.password ?? "correct horse battery",
+      };
+      if (opts.mobile !== undefined) body["mobile"] = opts.mobile;
+      if (opts.ref !== undefined) body["ref"] = opts.ref;
+      const res = await request(`${AUTH_BASE_PATH}/sign-up/email`, { json: body, ip: nextIp() });
+      if (res.status !== 200) throw new Error(`sign-up failed: ${res.status} ${await res.text()}`);
+      return verifyEmail(email, cookieHeaderFrom(res));
+    },
+    signInOtp,
+    adminCookie: () => signInOtp(SEED.adminEmail).then((r) => r.cookie),
+    close: () => handle.close(),
+  };
+}

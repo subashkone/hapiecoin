@@ -1,0 +1,33 @@
+{
+  "name": "@hapiecoin/gateway",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HapieCoin market-data gateway: Delta Exchange India quotes fanned out to browsers over WebSocket as chain snapshots and coalesced deltas",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "client": "tsx scripts/client.ts"
+  },
+  "dependencies": {
+    "@hapiecoin/schema": "workspace:*",
+    "@hapiecoin/venues": "workspace:*",
+    "ioredis": "5.10.0",
+    "ws": "8.19.0",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@hapiecoin/config": "workspace:*",
+    "@types/ws": "8.18.1",
+    "tsx": "4.23.13"
+  }
+}

@@ -1,0 +1,525 @@
+<!-- ===== 00-chrome · shared logged-in chrome: app header (analyse + default variants), settings menu, settings dialogs, plan banner, upgrade dialog, banner flyers, CoinGreeks Assistant, product tour. No screens of its own. ===== -->
+<style>
+[hidden]{display:none!important}
+/* ---- header ---- */
+.cgc-header{gap:10px;padding:0 14px}
+.cgc-header .cg-logo{font-size:16px;flex-shrink:0}
+.cgc-admin{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:hsl(var(--info-bg));color:hsl(var(--primary));border:1px solid hsl(var(--primary)/.3);line-height:1.4}
+.cgc-vdiv{width:1px;height:28px;background:hsl(var(--border));margin:0 4px;flex-shrink:0}
+.cgc-asset{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 10px;border-radius:8px;font-family:var(--font-display);font-weight:600;font-size:15px;flex-shrink:0}
+.cgc-asset:hover{background:hsl(var(--muted))}
+.cgc-asset svg{width:16px;height:16px;color:hsl(var(--muted-foreground))}
+.cgc-coin{width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:700;color:#fff;font-family:var(--font-mono);flex-shrink:0}
+.cgc-coin.BTC{background:#f7931a}.cgc-coin.ETH{background:#627eea}.cgc-coin.XAUT{background:#c9a227;font-size:10px}
+.cgc-stat{display:flex;flex-direction:column;justify-content:center;line-height:1.15;padding:0 6px;flex-shrink:0}
+.cgc-stat .cgc-lbl{font-size:11px;color:hsl(var(--muted-foreground))}
+.cgc-stat .cgc-val{font-family:var(--font-mono);font-size:17px;font-weight:700;padding:0 3px;border-radius:4px;margin-left:-3px}
+.cgc-right{margin-left:auto;display:flex;align-items:center;gap:6px}
+.cgc-chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:7px;border:1px solid hsl(var(--border));background:hsl(var(--muted));font-size:12.5px;font-weight:500;color:hsl(var(--muted-foreground));white-space:nowrap}
+.cgc-chip:hover{background:hsl(var(--secondary));color:hsl(var(--foreground))}
+.cgc-chip.on{background:hsl(var(--buy-bg));color:hsl(var(--buy));border-color:hsl(var(--buy)/.35)}
+.cgc-chip.warn{background:hsl(var(--warning-bg));color:hsl(var(--warning));border-color:hsl(var(--warning)/.4)}
+.cgc-chip svg{width:15px;height:15px;flex-shrink:0}
+.cgc-chip .cgc-sub{font-size:10.5px;font-weight:600;opacity:.8;padding-left:4px;border-left:1px solid currentColor;margin-left:2px}
+.cgc-icon{width:34px;height:34px;border-radius:7px;display:inline-grid;place-items:center;color:hsl(var(--foreground));flex-shrink:0}
+.cgc-icon:hover{background:hsl(var(--muted))}
+.cgc-icon svg{width:18px;height:18px}
+.cgc-avatar{width:32px;height:32px;border-radius:50%;background:hsl(var(--info-bg));color:hsl(var(--primary));display:grid;place-items:center;border:1px solid hsl(var(--primary)/.3);flex-shrink:0}
+.cgc-avatar svg{width:18px;height:18px}
+.cgc-header .cg-nav{display:flex;align-items:center;gap:2px}
+.cgc-header .cg-nav .btn{color:hsl(var(--primary-foreground));height:32px}
+.cgc-header .cg-nav .btn:hover{background:hsl(var(--primary)/.9);color:#fff}
+.menu.cgc-menu{min-width:240px;max-height:calc(100vh - 80px);overflow:auto}
+.menu-item svg{width:15px;height:15px;color:hsl(var(--muted-foreground));flex-shrink:0}
+.menu-item.danger,.menu-item.danger svg{color:hsl(var(--destructive))}
+.cgc-menu-user{padding:8px 10px;border-bottom:1px solid hsl(var(--border));margin-bottom:4px}
+.cgc-menu-user b{display:block;font-size:13px}.cgc-menu-user span{font-size:11.5px;color:hsl(var(--muted-foreground))}
+.cgc-assetrow{display:flex;align-items:center;gap:10px}
+.cgc-assetrow .cgc-px{margin-left:auto;font-family:var(--font-mono);font-size:12px;color:hsl(var(--muted-foreground))}
+.cgc-assetrow.sel{background:hsl(var(--info-bg))}
+@media (max-width:900px){.cgc-stat.cgc-chg,.cgc-chip .cgc-sub,.cgc-chip span.cgc-txt{display:none}}
+/* ---- plan banner ---- */
+.cgc-banner{display:flex;align-items:center;gap:12px;padding:7px 16px;font-size:13px;border-bottom:1px solid hsl(var(--border))}
+.cgc-banner.expired{background:hsl(var(--sell-bg));color:hsl(var(--sell))}
+.cgc-banner.free{background:hsl(var(--info-bg));color:hsl(var(--primary))}
+.cgc-banner.expiring{background:hsl(var(--warning-bg));color:hsl(var(--warning))}
+.cgc-banner.active{background:hsl(var(--buy-bg));color:hsl(var(--buy))}
+.cgc-banner .btn{height:26px;padding:0 10px;font-size:12px}
+.cgc-banner .cgc-x{margin-left:auto;width:24px;height:24px;border-radius:5px;display:grid;place-items:center;opacity:.7}
+.cgc-banner .cgc-x:hover{opacity:1;background:rgba(0,0,0,.06)}
+.cgc-banner svg{width:15px;height:15px;flex-shrink:0}
+/* ---- dialog pieces ---- */
+.cgc-status{border:1px solid hsl(var(--border));border-radius:8px;padding:10px 12px;font-size:13px;display:flex;gap:10px;align-items:flex-start;background:hsl(var(--muted)/.5)}
+.cgc-status.ok{background:hsl(var(--buy-bg));border-color:hsl(var(--buy)/.35)}
+.cgc-status.no{background:hsl(var(--warning-bg));border-color:hsl(var(--warning)/.4)}
+.cgc-status b{display:block}.cgc-status .mono{font-size:12.5px}
+.cgc-status svg{width:18px;height:18px;flex-shrink:0;margin-top:1px}
+.cgc-sect{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:hsl(var(--muted-foreground));font-weight:600;margin:14px 0 8px}
+.cgc-ip{display:flex;align-items:center;gap:8px;border:1px dashed hsl(var(--border));border-radius:8px;padding:8px 10px;background:hsl(var(--muted)/.5)}
+.cgc-ip code{font-family:var(--font-mono);font-size:13px;flex:1}
+.cgc-avatars{display:flex;gap:12px;justify-content:center;margin:6px 0 10px}
+.cgc-av{width:56px;height:56px;border-radius:50%;border:2px solid hsl(var(--border));display:grid;place-items:center;background:hsl(var(--muted));color:hsl(var(--primary));cursor:pointer}
+.cgc-av.sel{border-color:hsl(var(--primary));box-shadow:0 0 0 3px hsl(var(--primary)/.2)}
+.cgc-av svg{width:28px;height:28px}
+.cgc-av.big{width:76px;height:76px}.cgc-av.big svg{width:38px;height:38px}
+.cgc-radio{display:flex;gap:10px;padding:10px 12px;border:1px solid hsl(var(--border));border-radius:8px;cursor:pointer;margin-bottom:8px;align-items:flex-start}
+.cgc-radio.sel{border-color:hsl(var(--primary));background:hsl(var(--info-bg))}
+.cgc-radio i{width:16px;height:16px;border-radius:50%;border:2px solid hsl(var(--muted-foreground));margin-top:2px;flex-shrink:0;display:grid;place-items:center}
+.cgc-radio.sel i{border-color:hsl(var(--primary))}.cgc-radio.sel i::after{content:"";width:8px;height:8px;border-radius:50%;background:hsl(var(--primary))}
+.cgc-radio b{display:block;font-size:13px}.cgc-radio span{font-size:12px;color:hsl(var(--muted-foreground))}
+.cgc-broker{display:flex;align-items:center;gap:12px;border:1px solid hsl(var(--border));border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.cgc-broker b{display:block;font-size:13.5px}.cgc-broker .cgc-meta{font-size:12px;color:hsl(var(--muted-foreground));display:flex;gap:10px;flex-wrap:wrap}
+.cgc-broker .cgc-meta .mono{color:hsl(var(--foreground))}
+.cgc-kv{display:flex;justify-content:space-between;gap:12px;padding:5px 10px;font-size:13px}
+.cgc-kv span{color:hsl(var(--muted-foreground))}.cgc-kv b{font-family:var(--font-mono);font-weight:600}
+.cgc-lotrow{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:10px;margin-bottom:10px}
+.cgc-lotrow .cgc-eq{display:flex;align-items:center;gap:8px;font-size:13px}
+.cgc-lotrow .input{width:120px;font-family:var(--font-mono)}
+.cgc-form-err{color:hsl(var(--destructive));font-size:12px;margin-top:4px}
+/* ---- flyers ---- */
+.cgc-flyer{position:relative}
+.cgc-flyer .cg-dialog-body{padding-top:44px}
+.cgc-flyer-img{height:300px;border-radius:12px;display:flex;flex-direction:column;justify-content:flex-end;padding:22px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.cgc-flyer-img h3{color:#fff;font-size:24px;margin-bottom:6px}
+.cgc-flyer-img p{font-size:14px;opacity:.95;max-width:90%}
+.cgc-flyer-nav{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.92);color:#111;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.cgc-flyer-nav svg{width:18px;height:18px}
+.cgc-flyer-nav.prev{left:10px}.cgc-flyer-nav.next{right:10px}
+.cgc-dots{display:flex;gap:6px;justify-content:center;margin-top:10px}
+.cgc-dots i{width:7px;height:7px;border-radius:50%;background:hsl(var(--border))}.cgc-dots i.on{background:hsl(var(--primary))}
+/* ---- assistant ---- */
+.cgc-chat-btn{position:fixed;right:20px;bottom:20px;width:52px;height:52px;border-radius:50%;background:hsl(var(--primary));color:#fff;display:grid;place-items:center;box-shadow:0 8px 24px -6px hsl(var(--primary)/.8);z-index:90;touch-action:none;user-select:none;transition:transform .15s}
+.cgc-chat-btn:hover{transform:scale(1.06)}.cgc-chat-btn.drag{transform:scale(1.1);cursor:grabbing}
+.cgc-chat-btn svg{width:24px;height:24px}
+.cgc-chat{position:fixed;width:360px;max-width:calc(100vw - 24px);height:520px;max-height:calc(100vh - 100px);background:hsl(var(--card));color:hsl(var(--card-foreground));border:1px solid hsl(var(--border));border-radius:14px;box-shadow:0 24px 60px -20px rgba(0,0,0,.45);z-index:91;display:flex;flex-direction:column;overflow:hidden;animation:cg-pop .16s ease-out}
+.cgc-chat-head{display:flex;align-items:center;gap:10px;padding:12px 14px;background:hsl(var(--primary));color:#fff}
+.cgc-chat-head svg{width:20px;height:20px}
+.cgc-chat-head b{display:block;font-family:var(--font-display);font-size:14px}.cgc-chat-head span{font-size:11px;opacity:.85}
+.cgc-chat-head .cgc-close{margin-left:auto;width:28px;height:28px;border-radius:6px;display:grid;place-items:center;color:#fff}
+.cgc-chat-head .cgc-close:hover{background:rgba(255,255,255,.15)}
+.cgc-chat-body{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:hsl(var(--background))}
+.cgc-msg{max-width:88%;padding:8px 11px;border-radius:12px;font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+.cgc-msg.bot{background:hsl(var(--card));border:1px solid hsl(var(--border));align-self:flex-start;border-bottom-left-radius:4px}
+.cgc-msg.me{background:hsl(var(--primary));color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.cgc-chips{display:flex;flex-wrap:wrap;gap:6px}
+.cgc-chips button{font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid hsl(var(--primary)/.4);color:hsl(var(--primary));background:hsl(var(--info-bg));text-align:left}
+.cgc-chips button:hover{background:hsl(var(--primary));color:#fff}
+.cgc-chat-form{display:flex;gap:6px;padding:10px 12px 6px;border-top:1px solid hsl(var(--border))}
+.cgc-chat-form .btn svg{width:15px;height:15px}
+.cgc-chat-foot{font-size:11px;color:hsl(var(--muted-foreground));text-align:center;padding:0 12px 8px}
+.cgc-chat-foot a{color:hsl(var(--primary));text-decoration:underline}
+.cgc-typing i{display:inline-block;width:5px;height:5px;border-radius:50%;background:hsl(var(--muted-foreground));margin:0 1px;animation:cgc-bounce 1s infinite}
+.cgc-typing i:nth-child(2){animation-delay:.15s}.cgc-typing i:nth-child(3){animation-delay:.3s}
+@keyframes cgc-bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-4px)}}
+/* ---- tour ---- */
+.cgc-tour{position:fixed;inset:0;z-index:150;pointer-events:none}
+.cgc-tour svg{position:absolute;inset:0;width:100%;height:100%}
+.cgc-tour-ring{position:fixed;z-index:150;pointer-events:none;border-radius:8px;box-shadow:0 0 0 2px hsl(var(--primary)),0 0 0 6px hsl(var(--primary)/.25);transition:all .25s}
+.cgc-tour-pop{position:fixed;z-index:151;pointer-events:auto;width:330px;max-width:calc(100vw - 24px);background:hsl(var(--card));color:hsl(var(--card-foreground));border:1px solid hsl(var(--border));border-radius:12px;box-shadow:0 20px 50px -15px rgba(0,0,0,.45);padding:14px 16px 12px;animation:cg-pop .16s ease-out}
+.cgc-tour-pop h4{font-size:15px;margin-bottom:6px;padding-right:22px}
+.cgc-tour-pop p{font-size:13px;color:hsl(var(--muted-foreground));line-height:1.5}
+.cgc-tour-foot{display:flex;align-items:center;gap:6px;margin-top:12px}
+.cgc-tour-prog{font-size:11.5px;color:hsl(var(--muted-foreground));margin-right:auto}
+.cgc-tour-x{position:absolute;right:8px;top:8px;width:26px;height:26px;border-radius:6px;display:grid;place-items:center;color:hsl(var(--muted-foreground))}
+.cgc-tour-x:hover{background:hsl(var(--muted))}
+.cgc-tour-arrow{position:absolute;width:12px;height:12px;background:hsl(var(--card));border-left:1px solid hsl(var(--border));border-top:1px solid hsl(var(--border));transform:rotate(45deg)}
+.cgc-tour-arrow.bottom{transform:rotate(225deg)}
+</style>
+
+<script>
+(function () {
+// ---- 10-header.js ----
+const CG = window.CG; if (!CG) return;
+const st = CG.state, M = CG.mock, F = CG.fmt, esc = CG.esc, h = CG.h;
+const CH = (CG.chrome = CG.chrome || {});
+// ---------- inline icons (lucide-style paths) ----------
+const PATHS = {
+  chevron: 'm6 9 6 6 6-6', left: 'm15 18-6-6 6-6', right: 'm9 18 6-6-6-6', x: 'M18 6 6 18M6 6l12 12', check: 'M20 6 9 17l-5-5',
+  wifi: 'M12 20h.01M2 8.82a15 15 0 0 1 20 0M5 12.86a10 10 0 0 1 14 0M8.5 16.43a5 5 0 0 1 7 0', wifioff: 'M12 20h.01M8.5 16.43a5 5 0 0 1 7 0M5 12.86a10 10 0 0 1 5.17-2.69M19 12.86a10 10 0 0 0-2.007-1.523M2 8.82a15 15 0 0 1 4.177-2.643M22 8.82a15 15 0 0 0-11.288-3.764M2 2l20 20',
+  plug: 'M12 22v-5M9 8V2M15 8V2M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z', wallet: 'M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4',
+  chart: 'M3 3v16a2 2 0 0 0 2 2h16M18 17V9M13 17V5M8 17v-3', moon: 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z', sun: 'M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z',
+  help: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01', gear: 'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
+  user: 'M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z', card: 'M2 5h20v14H2zM2 10h20', users: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+  key: 'm21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4', dollar: 'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6', layers: 'm12 2 10 5-10 5L2 7l10-5ZM2 17l10 5 10-5M2 12l10 5 10-5', percent: 'M19 5 5 19M6.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM17.5 20a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z',
+  shield: 'M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z', list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01', tag: 'M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42zM7.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Z',
+  image: 'M3 5h18v14H3zM21 15l-5-5L5 21M9 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z', mail: 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm18 3-10 7L2 7', whatsapp: 'M7.9 20A9 9 0 1 0 4 16.1L2 22Z', logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9', copy: 'M8 8h12v12H8zM16 8V4H4v12h4',
+  plus: 'M5 12h14M12 5v14', edit: 'M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z', trash: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6', refresh: 'M21 12a9 9 0 1 1-6.219-8.56M21 3v6h-6', send: 'M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z', chat: 'M7.9 20A9 9 0 1 0 4 16.1L2 22Z', external: 'M15 3h6v6M10 14 21 3M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5',
+  rocket: 'M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09zM12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2zM9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5', diamond: 'M6 3h12l4 6-10 13L2 9Z M2 9h20M10 3l-2 6 4 13M14 3l2 6-4 13', lightning: 'M13 2 3 14h9l-1 8 10-12h-9l1-8Z', alert: 'M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z', crown: 'm2 4 3 12h14l3-12-6 7-4-7-4 7-6-7ZM3 20h18', bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0'
+};
+const I = (name, size) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' + (size ? ' width="' + size + '" height="' + size + '"' : '') + ' aria-hidden="true"><path d="' + (PATHS[name] || '') + '"/></svg>';
+CH.icon = I;
+const AV_ICON = { rocket: 'rocket', diamond: 'diamond', lightning: 'lightning' };
+const avatarSvg = (name, size) => I(AV_ICON[name] || 'rocket', size);
+const basePrice = {}; Object.keys(CG.ASSETS).forEach((k) => (basePrice[k] = CG.ASSETS[k].price));
+const chg24 = (A) => A.chg24 + (A.price / basePrice[A.symbol] - 1) * 100;
+const priceStr = (A) => '$' + F.num(A.price, A.price > 1000 ? 1 : 2);
+const themeTitle = () => (CG.theme.get() === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode');
+// ---------- app header ----------
+const headers = [];
+let liveConnecting = false;
+function renderHeader(H) {
+  const el = H.el; const A = CG.ASSETS[st.asset] || CG.ASSETS.BTC; const admin = CG.auth.isAdmin(); const logged = !!st.loggedIn;
+  const themeBtn = '<button class="cgc-icon" data-act="theme" title="' + themeTitle() + '" aria-label="' + themeTitle() + '">' + I(CG.theme.get() === 'dark' ? 'sun' : 'moon') + '</button>';
+  const gear = '<button class="cgc-icon" data-act="settings" data-tour="settings-menu" title="Settings" aria-label="Settings">' + I('gear') + '</button>';
+  let html;
+  if (H.variant === 'analyse') {
+    const c = chg24(A);
+    html = '<header class="cg-header cgc-header cgc-analyse"><a href="#/analyse" class="cg-logo"><i>C</i>CoinGreeks</a>' + (admin ? '<a class="cgc-admin" href="#/admin/users" title="Admin">Admin</a>' : '') + '<span class="cgc-vdiv"></span>' +
+      '<button class="cgc-asset" data-act="asset" data-tour="asset-select" title="Select asset"><span class="cgc-coin ' + A.symbol + '">' + esc(A.icon) + '</span><span>' + esc(A.name) + ' (' + A.symbol + ')</span>' + I('chevron') + '</button>' +
+      '<div class="cgc-stat"><span class="cgc-lbl">Futures Price</span><span class="cgc-val" data-price>' + priceStr(A) + '</span></div>' +
+      '<div class="cgc-stat cgc-chg"><span class="cgc-lbl">24h Change</span><span class="cgc-val ' + (c >= 0 ? 'text-profit' : 'text-loss') + '" data-chg>' + F.pct(c) + '</span></div>' +
+      '<div class="cgc-right">' +
+      '<button class="cgc-chip ' + (st.liveFeed ? 'on' : '') + '" data-act="live" title="' + (st.liveFeed ? 'Live futures prices from Delta Exchange · click to pause' : 'Live feed paused · click to connect') + '">' + I(st.liveFeed ? 'wifi' : 'wifioff') + '<span class="cgc-txt">Futures</span> ' + (liveConnecting ? 'Connecting...' : st.liveFeed ? 'Live' : 'Offline') + '</button>' +
+      '<button class="cgc-chip ' + (st.exchangeConnected ? 'on' : '') + '" data-act="exchange" title="' + (st.exchangeConnected ? 'Connected · Delta Exchange' : 'Click to connect exchange') + '">' + I('plug') + '<span class="cgc-txt">Exchange</span><span class="cgc-sub">' + (st.exchangeConnected ? 'Connected' : 'Not Connected') + '</span></button>' +
+      (st.exchangeConnected ? '<button class="cgc-chip on mono" data-act="wallet" title="Click to refresh balance">' + I('wallet') + F.usd(M.wallet.available) + '</button>' : '') +
+      '<button class="cgc-icon" data-act="market" data-tour="market-button" title="Market Analytics (opens in a new tab)" aria-label="Market Analytics (opens in a new tab)">' + I('chart') + '</button>' +
+      '<button class="cgc-chip" data-act="currency" title="Display currency · click to switch">' + (st.currency === 'INR' ? '₹ INR' : '$ USD') + '</button>' +
+      themeBtn + '<button class="cgc-icon" data-act="tour" title="Take a tour" aria-label="Take a tour">' + I('help') + '</button>' + gear + '</div></header>';
+  } else {
+    const p = (CG.current && CG.current.path) || '';
+    html = '<header class="cg-header cgc-header"><a href="#/' + (logged ? 'analyse' : '') + '" class="cg-logo"><i>C</i>CoinGreeks</a>' + (admin ? '<a class="cgc-admin" href="#/admin/users" title="Admin">Admin</a>' : '') +
+      '<nav class="cg-nav ml-auto">' + (logged ? '<a class="btn btn-primary btn-sm" href="#/analyse">Go to Analyse</a>' : '') + '<a href="#/analytics" class="' + (p.startsWith('/analytics') ? 'active' : '') + '">Market Analytics</a>' + (admin ? '<a href="#/admin/users" class="' + (p.startsWith('/admin') ? 'active' : '') + '">Admin</a>' : '') + '</nav>' +
+      themeBtn + (logged ? gear + '<button class="cgc-avatar" data-act="account" title="' + esc(M.user.name) + '" aria-label="Account">' + avatarSvg(M.user.avatar) + '</button>' : '<a class="btn btn-primary btn-sm" href="#/auth">Sign In</a>') + '</header>';
+  }
+  el.innerHTML = html;
+  if (H.variant === 'analyse' && H.section && !H.section.querySelector('[data-cg="plan-banner"]')) { const b = h('<div data-cg="plan-banner"></div>'); el.appendChild(b); CH['plan-banner'](b, H.section); b.dataset.cgDone = '1'; }
+}
+function updatePrice(H) { if (H.variant !== 'analyse') return; const A = CG.ASSETS[st.asset] || CG.ASSETS.BTC; const pe = H.el.querySelector('[data-price]'), ce = H.el.querySelector('[data-chg]'); if (!pe) return; const up = A.prev == null ? null : A.price >= A.prev; pe.textContent = priceStr(A); pe.classList.remove('flash-up', 'flash-down'); void pe.offsetWidth; if (up != null) pe.classList.add(up ? 'flash-up' : 'flash-down'); const c = chg24(A); ce.textContent = F.pct(c); ce.className = 'cgc-val ' + (c >= 0 ? 'text-profit' : 'text-loss'); }
+function headerAction(H, act, btn) {
+  switch (act) {
+    case 'theme': CG.theme.toggle(); break;
+    case 'settings': CH.openSettingsMenu(btn); break;
+    case 'account': CH.openAccountMenu(btn); break;
+    case 'asset': CH.openAssetMenu(btn); break;
+    case 'live': if (st.liveFeed) { st.liveFeed = false; CG.saveState(); CG.emit('live-feed', false); headers.forEach(renderHeader); CG.toast({ title: 'Live feed paused', description: 'Futures prices will not update until you reconnect.' }); } else { st.liveFeed = true; liveConnecting = true; CG.saveState(); headers.forEach(renderHeader); setTimeout(() => { liveConnecting = false; headers.forEach(renderHeader); CG.emit('live-feed', true); CG.toast({ title: 'Futures Live', description: 'Connected to Delta Exchange live prices.', variant: 'success' }); }, 1000); } break;
+    case 'exchange': CH.openSettings('api'); break;
+    case 'wallet': CH.openWalletPopover(btn); break;
+    case 'market': CG.navigate('/analytics'); break;
+    case 'currency': st.currency = st.currency === 'INR' ? 'USD' : 'INR'; CG.saveState(); CG.emit('currency-settings-changed', st.currency); CG.emit('currency', st.currency); CG.toast({ title: 'Display currency: ' + st.currency, description: st.currency === 'INR' ? 'All calculated values (P&L, Margin, Net Premium) will be displayed in Indian Rupees (₹)' : 'All calculated values (P&L, Margin, Net Premium) will be displayed in US Dollars ($)' }); break;
+    case 'tour': CH.startTour(); break;
+  }
+}
+CH['app-header'] = function (el, sectionEl) {
+  const route = (sectionEl && sectionEl.dataset.route) || ''; const variant = el.dataset.variant || (route === '/analyse' || route.startsWith('/analyse/') ? 'analyse' : 'default');
+  const H = { el, section: sectionEl, variant }; headers.push(H); renderHeader(H);
+  el.addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b && el.contains(b)) { e.preventDefault(); headerAction(H, b.dataset.act, b); } });
+};
+CH['app-header:update'] = function (el) { const H = headers.find((x) => x.el === el); if (H && H.variant !== 'analyse') renderHeader(H); };
+['auth', 'asset', 'currency-settings-changed', 'theme', 'exchange-changed', 'profile-updated'].forEach((ev) => CG.on(ev, () => headers.forEach(renderHeader)));
+CG.on('tick', () => headers.forEach(updatePrice));
+// ---------- asset menu / wallet popover / account menu ----------
+CH.openAssetMenu = function (anchor) {
+  const m = CG.menu(anchor, '<div class="menu-label">Select asset</div>' + Object.values(CG.ASSETS).map((A) => '<button class="menu-item cgc-assetrow ' + (A.symbol === st.asset ? 'sel' : '') + '" data-sym="' + A.symbol + '"><span class="cgc-coin ' + A.symbol + '">' + esc(A.icon) + '</span><span><b>' + esc(A.name) + '</b> <span class="text-muted">(' + A.symbol + ')</span></span><span class="cgc-px">' + priceStr(A) + '</span></button>').join(''), { align: 'left' });
+  m.classList.add('cgc-menu'); m.addEventListener('click', (e) => { const b = e.target.closest('[data-sym]'); if (!b) return; st.asset = b.dataset.sym; CG.saveState(); CG.emit('asset', st.asset); });
+};
+CH.openWalletPopover = function (anchor) {
+  const W = M.wallet; const m = CG.menu(anchor, '<div class="menu-label">Delta Exchange wallet</div><div class="cgc-kv"><span>Available</span><b>' + F.usd(W.available) + '</b></div><div class="cgc-kv"><span>Margin Used</span><b>' + F.usd(W.marginUsed) + '</b></div><div class="cgc-kv"><span>Total Equity</span><b>' + F.usd(W.equity) + '</b></div><div class="menu-sep"></div><button class="menu-item" data-refresh>' + I('refresh') + 'Click to refresh</button>');
+  m.classList.add('cgc-menu'); m.addEventListener('click', (e) => { if (e.target.closest('[data-refresh]')) { W.marginUsed = +(W.marginUsed * (1 + (Math.random() - 0.5) * 0.02)).toFixed(2); W.equity = +(W.available + W.marginUsed + 17.88).toFixed(2); CG.emit('broker-balance-changed', W); headers.forEach(renderHeader); CG.toast({ title: 'Balance refreshed', description: 'Wallet: ' + F.usd(W.available) + ' available · ' + F.usd(W.equity) + ' equity' }); } });
+};
+CH.openAccountMenu = function (anchor) {
+  const m = CG.menu(anchor, '<div class="cgc-menu-user"><b>' + esc(M.user.name) + '</b><span>' + esc(M.user.email) + '</span></div><div class="menu-label">Account</div><button class="menu-item" data-act="profile">' + I('user') + 'My Profile</button><a class="menu-item" href="#/subscription">' + I('card') + 'My Subscription</a><a class="menu-item" href="#/referrals">' + I('users') + 'My Referrals</a><div class="menu-sep"></div><button class="menu-item danger" data-act="logout">' + I('logout') + 'Logout</button>');
+  m.classList.add('cgc-menu'); m.addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b) menuAction(b.dataset.act); });
+};
+
+// ---- 20-dialogs.js ----
+// ---------- settings menu ----------
+CH.openSettingsMenu = function (anchor) {
+  const admin = CG.auth.isAdmin();
+  const item = (act, icon, label) => '<button class="menu-item" data-act="' + act + '">' + I(icon) + esc(label) + '</button>';
+  const link = (href, icon, label) => '<a class="menu-item" href="#' + href + '">' + I(icon) + esc(label) + '</a>';
+  let html = '<div class="menu-label">Account</div>' + item('profile', 'user', 'My Profile') + link('/subscription', 'card', 'My Subscription') + link('/referrals', 'users', 'My Referrals') +
+    '<div class="menu-sep"></div><div class="menu-label">Preferences</div>' + item('api', 'key', 'API Settings') + item('currency', 'dollar', 'Currency Settings') + item('lot', 'layers', 'Lot Size Settings') + item('pnl', 'percent', 'P&L Settings') + item('exchanges', 'plug', 'Exchange Setup') + item('tour', 'help', 'Take a tour') + item('theme', CG.theme.get() === 'dark' ? 'sun' : 'moon', themeTitle());
+  if (admin) html += '<div class="menu-sep"></div><div class="menu-label">Admin</div>' + link('/admin/subscriptions', 'crown', 'Subscription Plans') + link('/admin/menu-pricing', 'list', 'Menu Pricing') + link('/admin/coupons', 'tag', 'Coupon Codes') + link('/admin/user-subscriptions', 'shield', 'User Subscriptions') + link('/admin/banners', 'image', 'Banners') + link('/admin/emails', 'mail', 'Promotional Emails') + link('/admin/users', 'users', 'Users');
+  html += '<div class="menu-sep"></div><div class="menu-label">Support</div><a class="menu-item" href="mailto:support@coingreeks.com">' + I('mail') + 'Email Us</a><a class="menu-item" href="https://wa.me/919684022369" target="_blank" rel="noopener noreferrer">' + I('whatsapp') + 'WhatsApp Us</a><div class="menu-sep"></div><button class="menu-item danger" data-act="logout">' + I('logout') + 'Logout</button>';
+  const m = CG.menu(anchor, html); m.classList.add('cgc-menu');
+  m.addEventListener('click', (e) => { const b = e.target.closest('[data-act]'); if (b) menuAction(b.dataset.act); });
+  return m;
+};
+function menuAction(act) {
+  if (act === 'theme') return CG.theme.toggle();
+  if (act === 'tour') return CH.startTour();
+  if (act === 'logout') return CH.confirmLogout();
+  CH.openSettings(act);
+}
+CH.confirmLogout = function () {
+  return CG.modal.confirm({ title: 'Confirm Logout', description: "Are you sure you want to sign out? You'll need to sign in again to access your account.", confirmText: 'Logout', variant: 'destructive' }).then((ok) => { if (ok) { CG.auth.logout(); CG.toast({ title: 'Logged out', description: 'You have been signed out.' }); } return ok; });
+};
+// ---------- settings dialogs ----------
+const foot = (primary, extra) => '<div class="cg-dialog-foot">' + (extra || '') + '<button class="btn btn-outline" data-cg-close>Cancel</button><button class="btn btn-primary" data-primary>' + primary + '</button></div>';
+const busy = (btn, label, ms) => new Promise((res) => { const old = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;border-color:rgba(255,255,255,.4);border-top-color:#fff"></span>' + label; setTimeout(() => { btn.disabled = false; btn.innerHTML = old; res(); }, ms); });
+const DIALOGS = {};
+DIALOGS.profile = function () {
+  const U = M.user; let editing = false, avatar = U.avatar;
+  const el = h('<div><div class="cg-dialog-body">' +
+    '<div class="text-center"><div class="cgc-av big sel mx-auto" data-avatar-big title="Tap to change avatar">' + avatarSvg(avatar) + '</div><div class="text-xs text-muted mt-2">Tap to change avatar</div><button class="btn btn-ghost btn-sm mt-1" data-change>Change</button></div>' +
+    '<div data-picker hidden><div class="cgc-sect text-center">Choose your avatar</div><div class="cgc-avatars">' + ['rocket', 'diamond', 'lightning'].map((a) => '<div class="cgc-av ' + (a === avatar ? 'sel' : '') + '" data-pick="' + a + '" title="' + a + '">' + avatarSvg(a) + '</div>').join('') + '</div></div>' +
+    '<div class="field"><label class="label">Full Name</label><input class="input" data-f="name" placeholder="Your name" disabled value="' + esc(U.name) + '"></div>' +
+    '<div class="field"><label class="label">Mobile</label><input class="input" data-f="mobile" placeholder="Mobile number" disabled value="' + esc(U.mobile) + '"></div>' +
+    '<div class="field"><label class="label">Email</label><input class="input" value="' + esc(U.email) + '" readonly disabled></div>' +
+    '<div class="grid grid-2 gap-3"><div class="field"><label class="label">Referral code</label><div class="flex gap-2"><input class="input mono" value="' + esc(U.referralCode) + '" readonly disabled><button class="btn btn-outline btn-icon" data-copy-ref title="Copy referral code">' + I('copy') + '</button></div></div><div class="field"><label class="label">Joined</label><input class="input" value="' + esc(F.dateIN(U.joinedAt)) + '" readonly disabled></div></div>' +
+    '</div><div class="cg-dialog-foot"><button class="btn btn-outline" data-cg-close>Close</button><button class="btn btn-primary" data-edit>Edit Profile</button></div></div>');
+  const inputs = () => CG.$$('[data-f]', el); const editBtn = el.querySelector('[data-edit]');
+  const setEditing = (v) => { editing = v; inputs().forEach((i) => (i.disabled = !v)); editBtn.textContent = v ? 'Save' : 'Edit Profile'; if (v) inputs()[0].focus(); };
+  el.querySelector('[data-change]').onclick = () => { const p = el.querySelector('[data-picker]'); p.hidden = !p.hidden; };
+  el.querySelector('[data-avatar-big]').onclick = () => { el.querySelector('[data-picker]').hidden = false; };
+  el.addEventListener('click', (e) => { const p = e.target.closest('[data-pick]'); if (!p) return; avatar = p.dataset.pick; U.avatar = avatar; CG.$$('[data-pick]', el).forEach((x) => x.classList.toggle('sel', x.dataset.pick === avatar)); el.querySelector('[data-avatar-big]').innerHTML = avatarSvg(avatar); CG.emit('profile-updated', U); CG.toast({ title: 'Avatar updated' }); });
+  el.querySelector('[data-copy-ref]').onclick = () => { try { navigator.clipboard && navigator.clipboard.writeText(U.referralCode); } catch (e) { } CG.toast({ title: 'Copied', description: 'Referral code copied to clipboard' }); };
+  editBtn.onclick = () => { if (!editing) return setEditing(true); const name = el.querySelector('[data-f="name"]').value.trim(); if (!name) return CG.toast({ title: 'Validation Error', description: 'Full Name is required', variant: 'destructive' }); busy(editBtn, 'Saving...', 600).then(() => { U.name = name; U.mobile = el.querySelector('[data-f="mobile"]').value.trim(); if (M.users[0]) M.users[0].name = U.name; setEditing(false); CG.emit('profile-updated', U); CG.toast({ title: 'Profile updated' }); }); };
+  return { el, opts: { title: 'Profile', description: 'Your account details', size: 'sm' } };
+};
+DIALOGS.api = function () {
+  const cred = (M.apiCredentials = M.apiCredentials || { apiKey: '', connectedAt: null, brokerId: (M.brokers[0] || {}).id });
+  const el = h('<div><div class="cg-dialog-body">' +
+    '<div class="cgc-status" data-status><span class="spinner"></span><div><b>Checking connection...</b></div></div>' +
+    '<div class="cgc-sect">Select Exchange</div><select class="select" data-broker>' + (M.brokers.length ? M.brokers.map((b) => '<option value="' + b.id + '" ' + (b.id === cred.brokerId ? 'selected' : '') + '>' + esc(b.name) + ' (' + b.feePercentage + '% fee)</option>').join('') : '<option value="">No exchanges configured</option>') + '</select><div class="hint" data-fee></div>' +
+    '<div class="cgc-sect">API Credentials</div><div class="field"><label class="label">API Key</label><input class="input mono" data-key placeholder="Enter your Delta Exchange API key" autocomplete="off"></div><div class="field"><label class="label">API Secret</label><input class="input mono" type="password" data-secret placeholder="Enter your Delta Exchange API secret" autocomplete="new-password"></div>' +
+    '<div class="text-xs text-muted">Get your API key from <a class="text-primary" style="text-decoration:underline" href="https://www.delta.exchange/app/account/manageapikeys" target="_blank" rel="noopener noreferrer">Delta Exchange → Account → API Keys</a></div>' +
+    '<div class="cgc-sect">Whitelisted IP Address</div><div class="cgc-ip"><code>172.236.179.136</code><button class="btn btn-outline btn-sm" data-copy-ip>' + I('copy') + 'Copy</button></div><div class="hint">Add this IP to your Delta Exchange API key whitelist for secure access.</div>' +
+    '</div><div class="cg-dialog-foot"><button class="btn btn-outline text-destructive" data-disconnect hidden>Disconnect Exchange</button><button class="btn btn-outline" data-cg-close>Cancel</button><button class="btn btn-primary" data-connect>Connect &amp; Save</button></div></div>');
+  const sel = el.querySelector('[data-broker]'), fee = el.querySelector('[data-fee]'), status = el.querySelector('[data-status]'), disc = el.querySelector('[data-disconnect]');
+  const showFee = () => { const b = M.brokers.find((x) => x.id === sel.value); fee.textContent = b ? 'Fee: ' + b.feePercentage + '% · GST: ' + b.gstPercentage + '% · Cap: ' + b.feeCapPercentage + '%' : ''; cred.brokerId = sel.value; }; sel.onchange = showFee; showFee();
+  const renderStatus = () => { if (st.exchangeConnected) { status.className = 'cgc-status ok'; status.innerHTML = I('check') + '<div><b>Connected</b><div class="mono">API Key: ••••' + esc((cred.apiKey || 'xxxx1a2b').slice(-4)) + '</div><div class="mono">Connected: ' + esc(cred.connectedAt ? F.dateIN(cred.connectedAt) + ' ' + F.time(cred.connectedAt) : F.dateIN(CG.NOW)) + '</div><div class="mono">Wallet: ' + F.usd(M.wallet.available) + '</div></div>'; disc.hidden = false; } else { status.className = 'cgc-status no'; status.innerHTML = I('alert') + '<div><b>Not Connected</b>Enter your Delta Exchange API credentials to enable live trading.</div>'; disc.hidden = true; } };
+  setTimeout(renderStatus, 700);
+  el.querySelector('[data-copy-ip]').onclick = () => { try { navigator.clipboard && navigator.clipboard.writeText('172.236.179.136'); } catch (e) { } CG.toast({ title: 'Copied', description: 'IP address copied to clipboard' }); };
+  el.querySelector('[data-connect]').onclick = (e) => { const key = el.querySelector('[data-key]').value.trim(), sec = el.querySelector('[data-secret]').value.trim(); if (!key || !sec) return CG.toast({ title: 'Save Failed', description: 'Failed to save credentials · API key and API secret are required', variant: 'destructive' }); if (!sel.value) return CG.toast({ title: 'Save Failed', description: 'Select an exchange...', variant: 'destructive' }); busy(e.currentTarget, ' Connecting...', 1000).then(() => { cred.apiKey = key; cred.connectedAt = new Date(CG.NOW).toISOString(); st.exchangeConnected = true; CG.saveState(); CG.emit('exchange-changed', true); CG.emit('broker-credentials-changed', cred); renderStatus(); el.querySelector('[data-secret]').value = ''; CG.toast({ title: 'Exchange Connected', description: 'API credentials saved to server', variant: 'success' }); }); };
+  disc.onclick = () => { cred.apiKey = ''; cred.connectedAt = null; st.exchangeConnected = false; CG.saveState(); CG.emit('exchange-changed', false); CG.emit('broker-credentials-changed', null); renderStatus(); CG.toast({ title: 'Exchange Disconnected', description: 'Delta Exchange credentials removed' }); };
+  return { el, opts: { title: 'Delta Exchange API Settings', description: 'Connect your exchange account for live trading and wallet balance.' } };
+};
+DIALOGS.currency = function () {
+  const el = h('<div><div class="cg-dialog-body"><div class="grid grid-2 gap-3"><div class="field"><label class="label">From Currency</label><select class="select" data-from><option>USD</option></select></div><div class="field"><label class="label">To Currency</label><select class="select" data-to><option>INR</option></select></div></div>' +
+    '<div class="field"><label class="label">USD to INR Conversion Rate</label><input class="input mono" type="number" step="0.01" min="1" data-rate value="' + st.conversionRate + '"></div>' +
+    '<div class="field"><label class="label">Display currency</label><div class="tabs"><button class="tab ' + (st.currency === 'USD' ? 'active' : '') + '" data-cur="USD">$ USD</button><button class="tab ' + (st.currency === 'INR' ? 'active' : '') + '" data-cur="INR">₹ INR</button></div></div>' +
+    '<div class="alert alert-info"><div data-note></div></div></div>' + foot('Save') + '</div>');
+  const rate = el.querySelector('[data-rate]'), note = el.querySelector('[data-note]'); let cur = st.currency;
+  const upd = () => { note.textContent = 'All calculated values (P&L, Margin, Net Premium) will be displayed in ' + (cur === 'INR' ? 'Indian Rupees (₹)' : 'US Dollars ($)') + ' · Rate: $1 = ₹' + (parseFloat(rate.value) || 0); CG.$$('[data-cur]', el).forEach((b) => b.classList.toggle('active', b.dataset.cur === cur)); };
+  rate.oninput = upd; el.addEventListener('click', (e) => { const b = e.target.closest('[data-cur]'); if (b) { cur = b.dataset.cur; upd(); } }); upd();
+  el.querySelector('[data-primary]').onclick = (e) => { const r = parseFloat(rate.value); if (!(r > 0)) return CG.toast({ title: 'Error', description: 'Conversion rate must be greater than 0', variant: 'destructive' }); busy(e.currentTarget, ' Saving...', 500).then(() => { st.conversionRate = r; st.currency = cur; CG.saveState(); CG.emit('currency-settings-changed', st.currency); CG.emit('currency', st.currency); CG.toast({ title: 'Currency conversion saved', description: 'Rate: $1 = ₹' + r }); CG.modal.close(); }); };
+  return { el, opts: { title: 'Currency Settings', description: 'Set the USD to INR conversion rate used for all calculated values.', size: 'sm' } };
+};
+DIALOGS.lot = function () {
+  const syms = ['BTC', 'ETH', 'XAUT'];
+  const el = h('<div><div class="cg-dialog-body">' + syms.map((s) => '<div class="cgc-lotrow"><label class="label m-0">' + s + ' Lot Size</label><div class="cgc-eq"><span>1 lot =</span><input class="input input-sm" type="number" step="0.001" min="0.0001" data-lot="' + s + '" value="' + (st.lotSizes[s] || CG.ASSETS[s].lot) + '"><span>' + s + '</span></div></div>').join('') + '</div>' + foot('Save') + '</div>');
+  el.querySelector('[data-primary]').onclick = (e) => { const out = {}; for (const s of syms) { const v = parseFloat(el.querySelector('[data-lot="' + s + '"]').value); if (!(v > 0)) return CG.toast({ title: 'Failed to save lot sizes', description: s + ' lot size must be greater than 0', variant: 'destructive' }); out[s] = v; } busy(e.currentTarget, ' Saving...', 500).then(() => { st.lotSizes = out; CG.saveState(); CG.emit('lot-sizes-changed', out); CG.toast({ title: 'Lot sizes saved' }); CG.modal.close(); }); };
+  return { el, opts: { title: 'Lot Size Settings', description: 'Lot size for each symbol', size: 'sm' } };
+};
+DIALOGS.pnl = function () {
+  let basis = st.pnlBasis || 'mark';
+  const opt = (v, t, d) => '<div class="cgc-radio ' + (basis === v ? 'sel' : '') + '" role="radio" aria-checked="' + (basis === v) + '" data-basis="' + v + '"><i></i><div><b>' + t + '</b><span>' + d + '</span></div></div>';
+  const el = h('<div><div class="cg-dialog-body"><div role="radiogroup" aria-label="P&L price basis">' + opt('mark', 'Mark price', 'P&L at the exchange mark price — the same basis Delta Exchange shows.') + opt('bid_ask', 'Bid/Ask (executable)', 'P&L at the price you would actually get closing now: long legs at the bid, short legs at the ask.') + '</div><div class="alert alert-info mt-2 text-xs"><div>Delta Exchange shows P&L at the mark price. With Bid/Ask, CoinGreeks shows the P&L you would realise by closing now, so the two figures <b>will differ</b> — usually by the bid/ask spread, and more on illiquid strikes.</div></div></div>' + foot('Save') + '</div>');
+  el.addEventListener('click', (e) => { const r = e.target.closest('[data-basis]'); if (!r) return; basis = r.dataset.basis; CG.$$('[data-basis]', el).forEach((x) => { const on = x.dataset.basis === basis; x.classList.toggle('sel', on); x.setAttribute('aria-checked', on); }); });
+  el.querySelector('[data-primary]').onclick = (e) => busy(e.currentTarget, ' Saving...', 400).then(() => { st.pnlBasis = basis; CG.saveState(); CG.emit('pnl-basis-changed', basis); CG.toast({ title: 'P&L settings saved', description: basis === 'mark' ? 'P&L basis: Mark price' : 'P&L basis: Bid/Ask (executable)' }); CG.modal.close(); });
+  return { el, opts: { title: 'P&L Settings', description: 'Choose the price basis for the P&L shown on paper and live trades.', size: 'sm' } };
+};
+DIALOGS.exchanges = function () {
+  const el = h('<div><div class="cg-dialog-body"><div class="flex items-center justify-between mb-3"><span class="text-sm text-muted">' + M.brokers.length + ' exchange(s) configured</span><button class="btn btn-primary btn-sm" data-add>' + I('plus') + 'Add Exchange</button></div><div data-list></div></div><div class="cg-dialog-foot"><button class="btn btn-outline" data-cg-close>Close</button></div></div>');
+  const list = el.querySelector('[data-list]');
+  const render = () => { list.innerHTML = M.brokers.length ? M.brokers.map((b) => '<div class="cgc-broker" data-id="' + b.id + '"><div class="cgc-coin" style="background:hsl(var(--primary))">' + esc(b.name.slice(0, 1)) + '</div><div class="flex-1"><b>' + esc(b.name) + (b.isDefault ? ' <span class="badge badge-info">Preferred</span>' : '') + (b.scope === 'GLOBAL' ? ' <span class="badge badge-outline">GLOBAL</span>' : '') + '</b><div class="cgc-meta"><span>Fee: <span class="mono">' + b.feePercentage + '%</span></span><span>GST: <span class="mono">' + b.gstPercentage + '%</span></span><span>Fee Cap: <span class="mono">' + b.feeCapPercentage + '%</span></span></div></div><button class="btn btn-outline btn-sm" data-edit>' + I('edit') + 'Edit</button><button class="btn btn-outline btn-sm text-destructive" data-del>' + I('trash') + 'Delete</button></div>').join('') : '<div class="empty"><b>No exchanges configured</b>Add an exchange to configure its fee structure.</div>'; el.querySelector('.text-muted').textContent = M.brokers.length + ' exchange(s) configured'; };
+  render();
+  el.querySelector('[data-add]').onclick = () => CH.openExchangeForm(null, render);
+  el.addEventListener('click', async (e) => { const row = e.target.closest('[data-id]'); if (!row) return; const b = M.brokers.find((x) => x.id === row.dataset.id); if (e.target.closest('[data-edit]')) CH.openExchangeForm(b, render); else if (e.target.closest('[data-del]')) { const ok = await CG.modal.confirm({ title: 'Delete Exchange', description: 'This action cannot be undone', body: '<p class="text-sm">Are you sure you want to delete this exchange?</p><p class="text-xs text-warning mt-2">⚠️ Warning: Any strategies using this exchange will need to be reconfigured.</p>', confirmText: 'Delete', variant: 'destructive' }); if (ok) { M.brokers.splice(M.brokers.indexOf(b), 1); CG.emit('brokers-changed', M.brokers); render(); CG.toast({ title: 'Success', description: 'Exchange deleted successfully' }); } } });
+  return { el, opts: { title: 'Exchange Management', description: 'Manage exchange configurations for paper trading' } };
+};
+CH.openExchangeForm = function (b, onDone) {
+  const edit = !!b; b = b || { name: '', feePercentage: 0.05, gstPercentage: 18, feeCapPercentage: 10 };
+  const el = h('<div><div class="cg-dialog-body"><div class="field"><label class="label">Exchange Name</label><input class="input" data-f="name" placeholder="e.g., Delta Exchange India" value="' + esc(b.name) + '"><div class="cgc-form-err" data-err hidden></div></div><div class="field"><label class="label">Fee Percentage (%)</label><input class="input mono" type="number" step="0.01" min="0" data-f="fee" value="' + b.feePercentage + '"><div class="hint">Percentage of notional value</div></div><div class="field"><label class="label">GST Percentage (%)</label><input class="input mono" type="number" step="1" min="0" data-f="gst" value="' + b.gstPercentage + '"></div><div class="field"><label class="label">Fee Cap (% of premium)</label><input class="input mono" type="number" step="1" min="0" data-f="cap" value="' + b.feeCapPercentage + '"><div class="hint">Maximum fee as percentage of premium</div></div></div>' + foot(edit ? 'Update' : 'Create') + '</div>');
+  const hd = CG.modal.open(el, { title: edit ? 'Edit Exchange' : 'Add New Exchange', description: 'Configure exchange fee structure', size: 'sm' });
+  el.querySelector('[data-primary]').onclick = (e) => { const v = (k) => el.querySelector('[data-f="' + k + '"]').value; const err = el.querySelector('[data-err]'); if (!v('name').trim()) { err.hidden = false; err.textContent = 'Exchange name is required'; return CG.toast({ title: 'Validation Error', description: 'Exchange name is required', variant: 'destructive' }); } err.hidden = true; busy(e.currentTarget, ' Saving...', 500).then(() => { const data = { name: v('name').trim(), feePercentage: +v('fee') || 0, gstPercentage: +v('gst') || 0, feeCapPercentage: +v('cap') || 0 }; if (edit) Object.assign(b, data); else M.brokers.push(Object.assign({ id: 'br_' + Date.now(), scope: 'USER', isDefault: false }, data)); CG.emit('brokers-changed', M.brokers); CG.toast({ title: 'Success', description: edit ? 'Exchange updated successfully' : 'Exchange created successfully' }); hd.close(); if (onDone) onDone(); }); };
+  return hd;
+};
+CH.openSettings = function (kind) { const mk = DIALOGS[kind]; if (!mk) { CG.toast({ title: 'Unknown setting', description: String(kind), variant: 'destructive' }); return null; } const d = mk(); return CG.modal.open(d.el, d.opts); };
+CH.dialogs = DIALOGS;
+// ---------- upgrade required ----------
+CH.upgradeRequired = function (message) {
+  const el = h('<div><div class="cg-dialog-body"><div class="alert alert-warning"><span class="text-warning" style="flex-shrink:0;display:inline-flex">' + I('crown', 18) + '</span><div>' + esc(message || 'This feature is not included in your current plan.') + '</div></div></div><div class="cg-dialog-foot"><button class="btn btn-outline" data-cg-close>Dismiss</button><a class="btn btn-primary" href="#/subscription" data-sub>Subscribe Here →</a></div></div>');
+  const hd = CG.modal.open(el, { title: 'Upgrade Required', size: 'sm' }); el.querySelector('[data-sub]').addEventListener('click', () => hd.close()); return hd;
+};
+
+// ---- 30-banner-flyers.js ----
+// ---------- plan banner ----------
+function bannerState() {
+  const S = M.subscription || {}; const exp = S.expiresAt ? new Date(S.expiresAt) : null; const days = exp ? Math.ceil((exp - CG.NOW) / 86400000) : null;
+  if (S.status === 'expired' || S.status === 'cancelled' || (days != null && days < 0)) return { kind: 'expired', text: 'Your plan has expired.', btn: 'Renew Plan' };
+  if (S.status === 'free' || S.planId === 'p_free' || !S.planId) return { kind: 'free', text: 'Your free plan is active.', btn: 'Upgrade' };
+  if (days != null && days <= 7) return { kind: 'expiring', text: 'Your plan expires soon — ' + days + ' day' + (days === 1 ? '' : 's') + ' left.', btn: 'Renew Plan' };
+  return { kind: 'active', text: 'Congratulations! Your plan is active until ' + (exp ? F.dateIN(exp) : ''), dismiss: true };
+}
+let bannerDismissed = null; try { bannerDismissed = sessionStorage.getItem('cg-plan-banner-dismissed'); } catch (e) { }
+let bannerEls = [];
+const liveBanners = () => (bannerEls = bannerEls.filter((e) => e.isConnected));
+function renderBanner(el) {
+  const b = bannerState();
+  if (!st.loggedIn || (b.dismiss && bannerDismissed === b.text)) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="cgc-banner ' + b.kind + '" role="status">' + I(b.kind === 'active' ? 'check' : b.kind === 'expired' ? 'alert' : 'bell') + '<span>' + esc(b.text) + '</span>' + (b.btn ? '<a class="btn btn-primary" href="#/subscription">' + esc(b.btn) + '</a>' : '') + (b.dismiss ? '<button class="cgc-x" data-dismiss aria-label="Dismiss">' + I('x', 14) + '</button>' : '') + '</div>';
+  const d = el.querySelector('[data-dismiss]'); if (d) d.onclick = () => { bannerDismissed = b.text; try { sessionStorage.setItem('cg-plan-banner-dismissed', b.text); } catch (e) { } bannerEls.forEach(renderBanner); };
+}
+CH['plan-banner'] = function (el) { liveBanners(); if (!bannerEls.includes(el)) bannerEls.push(el); renderBanner(el); };
+CH.planBannerState = bannerState;
+CH.refreshPlanBanner = () => liveBanners().forEach(renderBanner);
+['subscription-changed', 'auth'].forEach((ev) => CG.on(ev, CH.refreshPlanBanner));
+// ---------- banner flyers (popup carousel) ----------
+const activeBanners = () => (M.banners || []).filter((b) => b.isActive && (!b.startsAt || new Date(b.startsAt) <= CG.NOW) && (!b.endsAt || new Date(b.endsAt) >= CG.NOW));
+const gradientCss = (img) => { if (img && img.startsWith('gradient:')) { const [a, b] = img.slice(9).split('/'); return 'linear-gradient(135deg, hsl(' + a + '), hsl(' + b + '))'; } return 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))'; };
+const toRoute = (url) => { const m = /coingreeks\.com(\/[^?#]*)/.exec(url || ''); return m ? m[1] : null; };
+CH.showFlyers = function () {
+  const list = activeBanners(); if (!list.length) { CG.toast({ title: 'No active flyers', description: 'There are no banners scheduled right now.' }); return null; }
+  let i = 0;
+  const el = h('<div class="cgc-flyer"><div class="cg-dialog-body"><div data-slide></div><div class="cgc-dots" data-dots></div></div>' + (list.length > 1 ? '<button class="cgc-flyer-nav prev" aria-label="Previous flyer" data-prev>' + I('left') + '</button><button class="cgc-flyer-nav next" aria-label="Next flyer" data-next>' + I('right') + '</button>' : '') + '</div>');
+  const slide = el.querySelector('[data-slide]'), dots = el.querySelector('[data-dots]');
+  const render = () => { const b = list[i]; const r = toRoute(b.linkUrl); slide.innerHTML = '<div class="cgc-flyer-img" style="background:' + gradientCss(b.image) + '"><h3>' + esc(b.title) + '</h3><p>' + esc(b.description) + '</p></div><div class="flex items-center justify-between mt-3"><span class="text-xs text-muted">' + (i + 1) + ' / ' + list.length + '</span>' + (b.linkUrl ? (r ? '<a class="btn btn-primary btn-sm" href="#' + esc(r) + '" data-view>View ' + I('external', 14) + '</a>' : '<a class="btn btn-primary btn-sm" href="' + esc(b.linkUrl) + '" target="_blank" rel="noopener,noreferrer">View ' + I('external', 14) + '</a>') : '') + '</div>'; dots.innerHTML = list.map((_, k) => '<i class="' + (k === i ? 'on' : '') + '"></i>').join(''); };
+  render();
+  const hd = CG.modal.open(el, { size: 'sm', onClose: () => CG.emit('flyers-closed') });
+  el.addEventListener('click', (e) => { if (e.target.closest('[data-prev]')) { i = (i - 1 + list.length) % list.length; render(); } else if (e.target.closest('[data-next]')) { i = (i + 1) % list.length; render(); } else if (e.target.closest('[data-view]')) hd.close(); });
+  return hd;
+};
+let flyersShown = false; try { flyersShown = !!sessionStorage.getItem('cg-flyers-shown'); } catch (e) { }
+CG.on('route', (cur) => {
+  if (!cur || cur.path !== '/analyse' || !st.loggedIn) return;
+  const needTour = !st.tourDone;
+  if (!flyersShown && activeBanners().length) {
+    flyersShown = true; try { sessionStorage.setItem('cg-flyers-shown', '1'); } catch (e) { }
+    setTimeout(() => { CH.showFlyers(); if (needTour) { const un = CG.on('flyers-closed', () => { un(); setTimeout(() => CH.autoTour(), 300); }); } }, 400);
+  } else if (needTour) setTimeout(() => CH.autoTour(), 500);
+});
+
+// ---- 40-assistant.js ----
+// ---------- CoinGreeks Assistant (floating chat) ----------
+const SUGGEST = ['How do I add a leg from the chain?', 'What is Probability of Profit?', 'How do I connect Delta Exchange?', 'Difference between mark and bid/ask P&L?'];
+const ANSWERS = [
+  { k: /probab|\bpop\b/i, a: 'Probability of Profit (POP) is the estimated chance that your strategy finishes above breakeven at expiry. CoinGreeks derives it from the current futures price, the implied volatility of your legs and the days to expiry. Above 60% is shown as high probability, 40–60% as moderate and below 40% as low. It is a statistical estimate, not a guarantee.' },
+  { k: /mark|bid|ask|basis|realis|realiz/i, a: 'Mark price P&L uses the exchange mark price — the same figure Delta Exchange shows. Bid/Ask (executable) P&L uses the price you would actually get if you closed right now: long legs at the bid and short legs at the ask. The two differ by roughly the bid/ask spread, more on illiquid strikes. Switch the basis in Settings → P&L Settings.' },
+  { k: /connect|delta|api|exchange|key|secret|whitelist/i, a: 'Open Settings (gear icon) → API Settings. Create an API key on Delta Exchange (Account → API Keys), whitelist the IP 172.236.179.136, then paste the API key and secret and press Connect & Save. Once connected the header shows your wallet balance and the Live Trade button places real orders.' },
+  { k: /leg|chain|strike|\badd\b/i, a: 'To add a leg, open the Options Chain tab on the left and click the Bid or Ask price of any Call or Put — a B/S selector appears on that strike. Pick Buy or Sell and the quantity, and the leg is added to your Strategy Legs on the right. Add up to 10 legs, then use the Payoff Diagram to see max profit, max loss and breakevens.' },
+  { k: /paper|virtual|start|stop|square/i, a: 'Build your legs, then click Paper Trade in the Strategy Legs panel. Give the strategy a name, review the order preview (legs, net premium, margin) and click Start Paper Trade. The trade appears in the Paper Trades tab with live P&L. Open it to square off individual legs or stop the whole trade — virtual funds only, no real money.' },
+  { k: /template|iron|condor|straddle|strangle|spread|butterfly|lizard/i, a: 'The Strategy tab includes 28 ready-made templates — Bull Call Spread, Iron Condor, Straddles, Strangles, Butterflies, Jade Lizard and more, grouped by Bullish, Bearish, Neutral and Others. Click a template to load its legs at the current ATM strike; you can still edit strikes, expiry and quantity before trading.' },
+  { k: /greek|delta\b|theta|vega|gamma/i, a: 'The Greeks tab shows portfolio and per-leg Greeks. Delta is the P&L change per $1 move in the futures price, Gamma is how fast Delta changes, Theta is the daily time decay and Vega is the sensitivity to a 1% change in implied volatility. Multi-leg strategies net these out across legs.' },
+  { k: /margin|capital|collateral/i, a: 'Expected Required Margin is the capital Delta Exchange would block for the strategy: long options need only the premium paid, short options need an initial margin on the notional, and spreads get margin benefit. The figure in the Payoff panel updates as you change legs and quantity.' },
+  { k: /\blot|quantity|size/i, a: 'One lot equals the contract size on Delta Exchange: 0.001 BTC, 0.01 ETH and 0.001 XAUT by default. Change these in Settings → Lot Size Settings; quantity in the chain and strategy legs is always lots × lot size.' },
+  { k: /plan|subscri|upgrade|renew|coupon|referr/i, a: 'Plans are managed under Settings → My Subscription. Free includes the live chain and 5 paper trades a month; Basic, Pro and Elite add templates, Greeks, unlimited paper trades, live trading and Market Analytics. Coupons can be applied at checkout, and your referral code (Settings → My Referrals) earns commission on every paid signup.' },
+  { k: /currency|inr|usd|rupee/i, a: 'Click the $ USD / ₹ INR button in the header to switch the display currency. All calculated values (P&L, Margin, Net Premium) are converted with the rate from Settings → Currency Settings (default $1 = ₹83.5). Chain prices stay in USD as quoted by the exchange.' }
+];
+const FALLBACK = 'I can help with using CoinGreeks — the options chain, building strategies, paper and live trades, Greeks, settings and subscriptions. Try one of the suggestions above, or email support@coingreeks.com for anything else.';
+const VISITOR = 'You are in limited visitor mode — I can explain how CoinGreeks works, but log in for full support with your own strategies and trades.';
+const answerFor = (q) => { const hit = ANSWERS.find((x) => x.k.test(q)); return (hit ? hit.a : FALLBACK) + (!st.loggedIn ? '\n\n' + VISITOR : ''); };
+const chat = { msgs: [], panel: null, btn: null, greeted: false, typing: null };
+function chatButton() {
+  if (chat.btn) return chat.btn;
+  const b = h('<button class="cgc-chat-btn" data-tour="chat-launcher" title="Ask CoinGreeks Assistant (drag to move)" aria-label="Ask CoinGreeks Assistant (drag to move)">' + I('chat') + '</button>');
+  document.body.appendChild(b); chat.btn = b;
+  try { const p = JSON.parse(localStorage.getItem('cg-chat-pos') || 'null'); if (p) { b.style.left = Math.min(p.x, window.innerWidth - 60) + 'px'; b.style.top = Math.min(p.y, window.innerHeight - 60) + 'px'; b.style.right = 'auto'; b.style.bottom = 'auto'; } } catch (e) { }
+  let start = null, moved = false;
+  b.addEventListener('pointerdown', (e) => { const r = b.getBoundingClientRect(); start = { x: e.clientX, y: e.clientY, l: r.left, t: r.top }; moved = false; b.setPointerCapture(e.pointerId); });
+  b.addEventListener('pointermove', (e) => { if (!start) return; const dx = e.clientX - start.x, dy = e.clientY - start.y; if (!moved && Math.hypot(dx, dy) < 5) return; moved = true; b.classList.add('drag'); const x = Math.max(4, Math.min(start.l + dx, window.innerWidth - 56)), y = Math.max(4, Math.min(start.t + dy, window.innerHeight - 56)); b.style.left = x + 'px'; b.style.top = y + 'px'; b.style.right = 'auto'; b.style.bottom = 'auto'; if (chat.panel) placePanel(); });
+  const end = (e) => { if (!start) return; b.classList.remove('drag'); if (moved) { const r = b.getBoundingClientRect(); try { localStorage.setItem('cg-chat-pos', JSON.stringify({ x: r.left, y: r.top })); } catch (er) { } } else toggleChat(); start = null; };
+  b.addEventListener('pointerup', end); b.addEventListener('pointercancel', end);
+  b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleChat(); } });
+  return b;
+}
+function placePanel() { const p = chat.panel; if (!p) return; const r = chat.btn.getBoundingClientRect(); const w = p.offsetWidth, hh = p.offsetHeight; let left = r.right - w, top = r.top - hh - 12; if (top < 8) top = Math.min(r.bottom + 12, window.innerHeight - hh - 8); left = Math.max(8, Math.min(left, window.innerWidth - w - 8)); p.style.left = left + 'px'; p.style.top = Math.max(8, top) + 'px'; }
+function toggleChat() { chat.panel ? closeChat() : openChat(); }
+function closeChat() { if (chat.panel) { chat.panel.remove(); chat.panel = null; } }
+function openChat() {
+  const p = h('<div class="cgc-chat" role="dialog" aria-label="CoinGreeks Assistant"><div class="cgc-chat-head">' + I('chat') + '<div><b>CoinGreeks Assistant</b><span>' + (st.loggedIn ? 'Platform help · not financial advice' : 'Limited visitor mode · log in for full support') + '</span></div><button class="cgc-close" aria-label="Close" data-close>' + I('x', 16) + '</button></div><div class="cgc-chat-body" data-body></div><form class="cgc-chat-form"><input class="input" placeholder="Ask a question…" data-q autocomplete="off"><button class="btn btn-primary btn-icon" type="submit" aria-label="Send" title="Send">' + I('send') + '</button></form><div class="cgc-chat-foot">Need a human? <a href="mailto:support@coingreeks.com" target="_blank" rel="noreferrer">Email</a> support@coingreeks.com</div></div>');
+  document.body.appendChild(p); chat.panel = p; placePanel();
+  const body = p.querySelector('[data-body]');
+  if (!chat.msgs.length) chat.msgs.push({ who: 'bot', text: 'Hi! Ask me anything about using CoinGreeks — or try one of these:', chips: true });
+  chat.msgs.forEach((m) => body.appendChild(renderMsg(m)));
+  body.scrollTop = body.scrollHeight;
+  p.querySelector('[data-close]').onclick = closeChat;
+  p.addEventListener('click', (e) => { const c = e.target.closest('[data-chip]'); if (c) ask(c.textContent); });
+  p.querySelector('form').addEventListener('submit', (e) => { e.preventDefault(); const inp = p.querySelector('[data-q]'); const q = inp.value.trim(); if (!q) return; inp.value = ''; ask(q); });
+  p.querySelector('[data-q]').focus();
+}
+function renderMsg(m) { if (m.chips) { const d = h('<div class="cgc-msg bot"></div>'); d.textContent = m.text; const chips = h('<div class="cgc-chips mt-2"></div>'); SUGGEST.forEach((s) => { const b = h('<button type="button" data-chip></button>'); b.textContent = s; chips.appendChild(b); }); d.appendChild(chips); return d; } const d = h('<div class="cgc-msg ' + (m.who === 'me' ? 'me' : 'bot') + '"></div>'); d.textContent = m.text; return d; }
+function ask(q) {
+  if (chat.typing) return;
+  const body = chat.panel && chat.panel.querySelector('[data-body]'); const me = { who: 'me', text: q }; chat.msgs.push(me); if (body) { body.appendChild(renderMsg(me)); body.scrollTop = body.scrollHeight; }
+  const full = answerFor(q); const bot = { who: 'bot', text: '' }; chat.msgs.push(bot);
+  const el = h('<div class="cgc-msg bot"><span class="cgc-typing"><i></i><i></i><i></i></span></div>'); if (body) { body.appendChild(el); body.scrollTop = body.scrollHeight; }
+  chat.typing = setTimeout(() => { let n = 0; const step = Math.max(1, Math.ceil(full.length / 45)); el.textContent = ''; const iv = setInterval(() => { n = Math.min(full.length, n + step); el.textContent = full.slice(0, n); bot.text = el.textContent; if (body) body.scrollTop = body.scrollHeight; if (n >= full.length) { clearInterval(iv); chat.typing = null; } }, 33); chat.typing = iv; }, 450);
+}
+CH.openAssistant = openChat; CH.closeAssistant = closeChat; CH.askAssistant = (q) => { if (!chat.panel) openChat(); ask(q); };
+CG.on('auth', () => { if (chat.panel) { closeChat(); } chat.msgs = []; });
+window.addEventListener('resize', () => { if (chat.panel) placePanel(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && chat.panel && !document.querySelector('.cg-overlay')) closeChat(); });
+if (document.body) chatButton(); else document.addEventListener('DOMContentLoaded', chatButton);
+
+// ---- 50-tour.js ----
+// ---------- product tour (driver.js-like) ----------
+const TOUR_STEPS = [
+  { title: 'Welcome to CoinGreeks', desc: "Let's place a real paper trade together — from picking legs to stopping the trade. Skip anytime; replay later from the help button in the header.", next: 'Start' },
+  { target: 'asset-select', title: 'Choose your asset', desc: 'Switch between BTC, ETH and XAUT. The live futures price updates here in real time.' },
+  { target: 'options-chain', title: 'Your workspaces', desc: 'Option Chain shows live strikes. Builder creates strategies. Paper and Live manage your trades, and Templates stores ready-made setups.', tab: 'options-chain' },
+  { target: 'options-chain', title: 'Add a leg — try it now', desc: 'Click any Call or Put price in the chain to add it as a leg. The tour moves on as soon as your first leg is added.', tab: 'options-chain', waitFor: 'cg-tour:leg-added' },
+  { target: 'strategy-legs', alt: 'add-leg-button', title: 'Your strategy legs', desc: 'Here is the leg you just added. Adjust side (Buy/Sell), strike, expiry and quantity — add more legs for multi-leg strategies. Press Next when it looks right.', tab: 'builder' },
+  { target: 'payoff-panel', title: 'Payoff and analytics', desc: 'See the payoff diagram, max profit, max loss and breakevens for the strategy you are building.' },
+  { target: 'paper-trade-button', title: 'Start a paper trade', desc: 'Click Paper Trade to begin — virtual funds only, no real money.', waitFor: 'cg-tour:save-dialog-open' },
+  { target: 'save-dialog', alt: 'save-button', title: 'Name your strategy', desc: "Give the trade a name you'll recognise in the list, then press Save.", waitFor: 'cg-tour:trade-modal-open' },
+  { target: 'trade-modal', alt: 'trade-confirm-button', title: 'Review and start', desc: 'Check the order preview — legs, net premium and required margin — then click Start Paper Trade.', waitFor: 'cg-tour:paper-started' },
+  { target: 'paper-tab', title: 'Your trade is running', desc: 'Every paper trade lives in the Paper tab — including the one you just started.', tab: 'paper' },
+  { target: 'paper-pnl', title: 'Track P&L and details', desc: 'Total P&L updates live as the market moves. Click the trade card to open full details — per-leg P&L, payoff chart and history.', tab: 'paper' },
+  { target: 'paper-stop', title: 'Stop a paper trade', desc: 'Use Stop on the trade card to square off every open leg at the current price and move the trade to your archive.', tab: 'paper' },
+  { target: 'settings-menu', title: 'Settings', desc: 'Manage your profile, subscription, API settings and preferences here. Replay this tour anytime from the help button.' },
+  { target: 'chat-launcher', title: 'Ask the CoinGreeks Assistant', desc: 'Stuck anywhere? Click this chat button to ask about strategies, options concepts or how a screen works. You can drag the button anywhere on the page.' }
+];
+CH.TOUR_STEPS = TOUR_STEPS;
+let tour = null;
+const visible = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+function findTarget(step) { if (!step.target) return null; const sel = (k) => CG.$$('[data-tour="' + k + '"]').find(visible) || null; return sel(step.target) || (step.alt ? sel(step.alt) : null); }
+function makeTour() {
+  const ov = h('<div class="cgc-tour"><svg><defs><mask id="cgc-tour-mask"><rect width="100%" height="100%" fill="#fff"/><rect data-hole x="0" y="0" width="0" height="0" rx="8" fill="#000"/></mask></defs><rect width="100%" height="100%" fill="rgba(5,10,20,.62)" mask="url(#cgc-tour-mask)"/></svg></div>');
+  const ring = h('<div class="cgc-tour-ring" hidden></div>');
+  const pop = h('<div class="cgc-tour-pop" role="dialog" aria-live="polite"><button class="cgc-tour-x" aria-label="Close" data-close>' + I('x', 14) + '</button><h4 data-title></h4><p data-desc></p><div class="cgc-tour-foot"><span class="cgc-tour-prog" data-prog></span><button class="btn btn-outline btn-sm" data-prev>Previous</button><button class="btn btn-primary btn-sm" data-next>Next</button></div><div class="cgc-tour-arrow" data-arrow hidden></div></div>');
+  document.body.append(ov, ring, pop);
+  const N = TOUR_STEPS.length; let idx = 0, unsubWait = null, placeT = null, unsubRoute = null;
+  const hole = ov.querySelector('[data-hole]'), arrow = pop.querySelector('[data-arrow]');
+  function place() {
+    const step = TOUR_STEPS[idx]; const t = findTarget(step);
+    if (t) {
+      try { t.scrollIntoView({ block: 'center', inline: 'nearest' }); } catch (e) { }
+      const r = t.getBoundingClientRect(); const pad = 6; const x = r.left - pad, y = r.top - pad, w = r.width + pad * 2, hh = r.height + pad * 2;
+      hole.setAttribute('x', x); hole.setAttribute('y', y); hole.setAttribute('width', w); hole.setAttribute('height', hh);
+      ring.hidden = false; Object.assign(ring.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: hh + 'px' });
+      const pw = pop.offsetWidth, ph = pop.offsetHeight; let left = Math.max(8, Math.min(r.left, window.innerWidth - pw - 8)); let top, below = true;
+      if (r.bottom + 14 + ph <= window.innerHeight - 8) top = r.bottom + 14; else if (r.top - 14 - ph >= 8) { top = r.top - 14 - ph; below = false; } else { top = Math.max(8, Math.min(r.top, window.innerHeight - ph - 8)); left = r.right + 14 + pw <= window.innerWidth ? r.right + 14 : Math.max(8, r.left - pw - 14); arrow.hidden = true; }
+      if (r.bottom + 14 + ph <= window.innerHeight - 8 || r.top - 14 - ph >= 8) { arrow.hidden = false; arrow.className = 'cgc-tour-arrow' + (below ? '' : ' bottom'); arrow.style.left = Math.max(12, Math.min(r.left + r.width / 2 - left - 6, pw - 24)) + 'px'; arrow.style.top = below ? '-7px' : 'auto'; arrow.style.bottom = below ? 'auto' : '-7px'; }
+      pop.style.left = left + 'px'; pop.style.top = top + 'px';
+    } else {
+      hole.setAttribute('width', 0); hole.setAttribute('height', 0); ring.hidden = true; arrow.hidden = true;
+      pop.style.left = Math.max(8, (window.innerWidth - pop.offsetWidth) / 2) + 'px'; pop.style.top = Math.max(8, (window.innerHeight - pop.offsetHeight) / 2) + 'px';
+    }
+  }
+  function render() {
+    const step = TOUR_STEPS[idx];
+    pop.querySelector('[data-title]').textContent = step.title; pop.querySelector('[data-desc]').textContent = step.desc; pop.querySelector('[data-prog]').textContent = (idx + 1) + ' of ' + N;
+    const prev = pop.querySelector('[data-prev]'), next = pop.querySelector('[data-next]'); prev.disabled = idx === 0; prev.hidden = idx === 0; next.textContent = idx === N - 1 ? 'Done' : step.next || 'Next';
+    if (unsubWait) { unsubWait(); unsubWait = null; }
+    if (step.waitFor) unsubWait = CG.on(step.waitFor, () => T.go(idx + 1));
+    CG.emit('tour-step', { index: idx, target: step.target || null, tab: step.tab || null, title: step.title });
+    place(); clearTimeout(placeT); placeT = setTimeout(place, 180);
+  }
+  const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); T.destroy(); } else if (e.key === 'ArrowRight') T.go(idx + 1); else if (e.key === 'ArrowLeft') T.go(idx - 1); };
+  const onResize = () => place();
+  const T = {
+    go(i) { if (i < 0) return; if (i >= N) return T.finish(); idx = i; render(); },
+    finish() { T.destroy(); CG.emit('tour-end', { completed: true }); CG.toast({ title: 'Tour complete', description: 'Replay it anytime from the help button in the header.', variant: 'success' }); },
+    destroy() { if (unsubWait) unsubWait(); if (unsubRoute) unsubRoute(); clearTimeout(placeT); document.removeEventListener('keydown', onKey, true); window.removeEventListener('resize', onResize); window.removeEventListener('scroll', onResize, true); ov.remove(); ring.remove(); pop.remove(); if (tour === T) tour = null; CG.emit('tour-end', { completed: false }); },
+    get index() { return idx; }
+  };
+  pop.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) T.destroy(); else if (e.target.closest('[data-prev]')) T.go(idx - 1); else if (e.target.closest('[data-next]')) T.go(idx + 1); });
+  document.addEventListener('keydown', onKey, true); window.addEventListener('resize', onResize); window.addEventListener('scroll', onResize, true);
+  unsubRoute = CG.on('route', (c) => { if (c && c.path !== '/analyse' && CG.$('section.screen[data-route="/analyse"]')) T.destroy(); });
+  return T;
+}
+CH.startTour = function () {
+  if (tour) tour.destroy();
+  const hasAnalyse = !!CG.$('section.screen[data-route="/analyse"]');
+  if (hasAnalyse && (CG.current.path || '') !== '/analyse') { const un = CG.on('route', (c) => { if (c.path === '/analyse') { un(); setTimeout(() => CH.startTour(), 450); } }); CG.navigate('/analyse'); return null; }
+  CG.modal.closeAll(); CG.menu.closeAll();
+  tour = makeTour(); tour.go(0); return tour;
+};
+CH.autoTour = function () { if (st.tourDone) return; st.tourDone = true; CG.saveState(); CH.startTour(); };
+CH.tourActive = () => !!tour;
+CH.tourNext = () => { if (tour) tour.go(tour.index + 1); };
+
+})();
+</script>

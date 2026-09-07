@@ -1,0 +1,128 @@
+<script>
+(function () {
+  'use strict';
+  const M = window.__cgAnalyse; const { els, AN, st, F, P, ic, money, smoney, cls, activeLegs, spotNow, lotSize, baseAnalysis, pnlAtPrice, symbolOf } = M;
+  const emptyCard = (title, desc, msg) => '<div class="card"><div class="card-header"><div class="card-title">' + title + '</div>' + (desc ? '<div class="card-desc">' + desc + '</div>' : '') + '</div><div class="empty"><b>No Strategy Selected</b>' + msg + '</div></div>';
+  // ---------- Analytics ----------
+  function renderAnalytics() {
+    const host = els.analytics; const a = baseAnalysis(); const spot = spotNow();
+    if (!a) { host.innerHTML = emptyCard('Strategy Analytics', 'Max profit, max loss, breakevens, probability of profit', 'Add option legs to see analytics'); return; }
+    const mp = a.maxProfit, ml = a.maxLoss, margin = a.margin, bes = a.breakevens;
+    const roi = isFinite(mp) && margin > 0 ? (mp / margin) * 100 : null; const lossPct = isFinite(ml) && margin > 0 ? (Math.abs(ml) / margin) * 100 : null;
+    const curPnl = pnlAtPrice(a.legs, spot).pnlExpiry; const rr = a.rewardRisk; let rrV, rrG = '', rrC = '';
+    if (rr !== null && isFinite(rr) && rr > 0) { rrV = rr.toFixed(2); if (rr >= 2) { rrG = '✓ Favorable risk/reward'; rrC = 'text-profit'; } else if (rr >= 1) { rrG = 'Balanced risk/reward'; rrC = 'text-warning'; } else { rrG = 'High risk scenario'; rrC = 'text-loss'; } }
+    else if (mp === Infinity && ml !== -Infinity) { rrV = 'Unlimited'; rrG = '✓ Favorable risk/reward'; rrC = 'text-profit'; }
+    else if (ml === -Infinity && mp !== Infinity) { rrV = '—'; rrG = 'Unlimited exposure'; rrC = 'text-loss'; }
+    else { rrV = 'N/A'; rrG = mp === Infinity && ml === -Infinity ? 'Unlimited exposure' : ''; rrC = 'text-muted'; }
+    const pop = a.pop == null ? null : a.pop * 100; const popG = pop == null ? 'Calculating...' : pop >= 60 ? '✓ High probability' : pop >= 40 ? 'Moderate probability' : 'Low probability'; const popC = pop == null ? 'text-muted' : pop >= 50 ? 'text-profit' : 'text-loss';
+    let win = 'Varies'; const right = a.points[a.points.length - 1].pnlExpiry > 0;
+    if (bes.length === 1) win = (right ? '> ' : '< ') + F.int(bes[0]);
+    else if (bes.length === 2) { const mid = pnlAtPrice(a.legs, (bes[0] + bes[1]) / 2).pnlExpiry > 0; win = mid ? F.int(bes[0]) + ' - ' + F.int(bes[1]) : '< ' + F.int(bes[0]) + ' or > ' + F.int(bes[1]); }
+    const maxRoi = mp === Infinity ? 'Unlimited' : margin > 0 ? ((mp / margin) * 100).toFixed(0) + '%' : '—';
+    const beList = bes.length ? bes.map((b, i) => { const v = ((b - spot) / spot) * 100; return '<div class="row"><span class="lbl">' + (bes.length > 1 ? 'BE ' + (i + 1) : 'Breakeven') + '</span><span>' + money(b) + ' <span class="' + cls(v) + '">(' + F.pct(v, 2) + ')</span></span></div>'; }).join('') : '<div class="s">No breakeven points</div>';
+    host.innerHTML = '<div class="an-acards">' +
+      '<div class="an-acard"><div class="t">' + ic('trendup') + 'Max Profit (At Expiry)</div><div class="v text-profit">' + (isFinite(mp) ? money(mp) : 'Unlimited') + '</div><div class="s">' + (roi != null ? '<span class="badge badge-success">' + roi.toFixed(1) + '% ROI</span>ROI based on max theoretical profit' : 'Theoretical maximum') + '</div></div>' +
+      '<div class="an-acard"><div class="t">' + ic('trenddown') + 'Max Loss (At Expiry)</div><div class="v text-loss">' + (isFinite(ml) ? money(Math.abs(ml)) : 'Unlimited') + '</div><div class="s">' + (lossPct != null ? '<span class="badge badge-destructive">' + lossPct.toFixed(1) + '%</span>' : '') + 'Risk as % of capital</div></div>' +
+      '<div class="an-acard"><div class="t">' + ic('dollar') + 'Expected Required Margin</div><div class="v">' + money(margin) + '</div><div class="s">Capital required</div></div>' +
+      '<div class="an-acard"><div class="t">' + ic('target') + 'Breakeven ' + (bes.length === 1 ? 'Point' : 'Points') + '</div><div class="an-belist">' + beList + '<div class="row"><span class="lbl">Current Price</span><span>' + money(spot) + ' <span class="' + cls(curPnl) + '">' + (curPnl >= 0 ? '✓ In profit zone' : '✗ In loss zone') + '</span></span></div></div></div>' +
+      '<div class="an-acard"><div class="t">' + ic('activity') + 'R/R</div><div class="v">' + rrV + '</div><div class="s">Risk/Reward</div><div class="g ' + rrC + '">' + rrG + '</div></div>' +
+      '<div class="an-acard"><div class="t">' + ic('pie') + 'Probability of Profit</div><div class="v lg ' + popC + '">' + (pop == null ? '—' : pop.toFixed(1) + '%') + '</div><div class="g ' + popC + '">' + popG + '</div></div>' +
+      '<div class="an-a3"><div class="an-acard"><div class="t">Win if price</div><div class="v" style="font-size:15px">' + win + '</div><div class="s">At expiry</div></div>' +
+      '<div class="an-acard"><div class="t">Net Premium</div><div class="v ' + cls(a.netPremium) + '">' + smoney(a.netPremium) + '</div><div class="s">' + (a.netPremium >= 0 ? 'Credit received' : 'Debit paid') + '</div></div>' +
+      '<div class="an-acard"><div class="t">Max ROI</div><div class="v">' + maxRoi + '</div><div class="s">On required margin</div></div></div></div>';
+  }
+  // ---------- Greeks ----------
+  function legGreeks(l, spot) {
+    const A = CG.ASSETS[AN.asset]; const q = (+l.lots || 1) * lotSize() * (l.side === 'BUY' ? 1 : -1);
+    if (l.type === 'FUTURE') return { delta: q, gamma: 0, theta: 0, vega: 0 };
+    const T = Math.max(F.dte(l.expiry), 0) / 365; const s = (l.iv || P.smile(l.strike, spot, A.iv) * 100) / 100; const g = P.greeks(spot, l.strike, T, s, l.type === 'CALL');
+    return { delta: g.delta * q, gamma: g.gamma * q, theta: g.theta * q, vega: g.vega * q };
+  }
+  function renderGreeks() {
+    const host = els.greeks; const a = baseAnalysis(); const spot = spotNow();
+    if (!a) { host.innerHTML = emptyCard('Portfolio Greeks', 'Delta, gamma, theta and vega of the whole position', 'Add option legs to see portfolio Greeks'); return; }
+    const g = a.greeks;
+    const tile = (t, v, s, c, icon) => '<div class="an-gtile"><div class="t">' + (icon ? ic(icon) : '') + t + '</div><div class="v ' + (c || '') + '">' + v + '</div><div class="s">' + s + '</div></div>';
+    const tiles = '<div class="an-gtiles">' + tile('Total Delta', g.delta.toFixed(4), 'Directional exposure', cls(g.delta), g.delta >= 0 ? 'trendup' : 'trenddown') + tile('Total Gamma', g.gamma.toFixed(6), 'Delta sensitivity', '', 'activity') + tile('Total Theta', g.theta.toFixed(4), 'Time decay per day', cls(g.theta), 'pie') + tile('Total Vega', g.vega.toFixed(4), 'IV sensitivity', '', 'chart') + '</div>';
+    const rows = a.legs.map((l) => { const lg = legGreeks(l, spot); return '<tr><td><span class="badge ' + (l.side === 'BUY' ? 'badge-buy' : 'badge-sell') + '">' + l.side + '</span> ' + (l.type === 'FUTURE' ? (l.symbol || AN.asset + ' FUTURE') : F.int(l.strike) + ' ' + l.type) + ' <span class="text-2xs text-muted">' + (l.expiry || '') + '</span></td><td>' + (l.lots || 1) + '</td><td>' + (l.type === 'FUTURE' ? '—' : (+l.iv || 50).toFixed(1)) + '</td><td class="' + cls(lg.delta) + '">' + lg.delta.toFixed(4) + '</td><td>' + lg.gamma.toFixed(6) + '</td><td class="' + cls(lg.theta) + '">' + lg.theta.toFixed(4) + '</td><td>' + lg.vega.toFixed(4) + '</td></tr>'; }).join('');
+    const table = '<div class="card mb-4"><div class="card-header" style="padding-bottom:4px"><div class="card-title" style="font-size:14px">Leg-wise Greeks</div><div class="card-desc">Per-leg Greeks scaled by quantity (lots × ' + lotSize() + ' ' + AN.asset + ')</div></div><div class="overflow-x-auto"><table class="table table-compact an-gtable"><thead><tr><th>Instrument</th><th>Qty</th><th>IV (%)</th><th>Delta</th><th>Gamma</th><th>Theta</th><th>Vega</th></tr></thead><tbody>' + rows + '<tr class="total"><td colspan="3">Portfolio Total</td><td class="' + cls(g.delta) + '">' + g.delta.toFixed(4) + '</td><td>' + g.gamma.toFixed(6) + '</td><td class="' + cls(g.theta) + '">' + g.theta.toFixed(4) + '</td><td>' + g.vega.toFixed(4) + '</td></tr></tbody></table></div></div>';
+    const expl = '<div class="an-sec-title">Understanding Greeks</div><div class="an-gexpl"><div class="x"><b>Delta (Δ)</b>Measures the rate of change in option price per $1 move in underlying. Portfolio delta indicates directional exposure.</div><div class="x"><b>Gamma (Γ)</b>Measures the rate of change in delta per $1 move in underlying. High gamma means delta changes rapidly.</div><div class="x"><b>Theta (Θ)</b>Measures the rate of time decay in option value per day. Negative theta means the position loses value as time passes, all else being equal.</div><div class="x"><b>Vega (ν)</b>Measures sensitivity to 1% change in implied volatility. Higher vega means more exposure to volatility changes.</div></div>';
+    host.innerHTML = '<div class="an-sec-title">Portfolio Greeks</div>' + tiles + table + expl;
+  }
+  // ---------- P&L table ----------
+  function renderPnlTable() {
+    const host = els.pnl; const a = baseAnalysis(); const spot = spotNow();
+    const head = '<div class="card-header"><div class="card-title" style="font-size:15px">P&amp;L Analysis Table</div><div class="card-desc">Showing every 10th price point</div></div>';
+    if (!a) { host.innerHTML = '<div class="card">' + head + '<div class="empty">No data — add option legs to see P&amp;L table</div></div>'; return; }
+    const rows = a.points.filter((p, i) => i % 10 === 0).map((p) => ({ price: p.price, pnl: p.pnlExpiry }));
+    const spotRow = { price: spot, pnl: pnlAtPrice(a.legs, spot).pnlExpiry, spot: true }; let ins = rows.findIndex((r) => r.price > spot); if (ins < 0) ins = rows.length; rows.splice(ins, 0, spotRow);
+    const scale = Math.max(1, ...a.points.map((p) => Math.abs(p.pnlExpiry)).filter(isFinite)); const eps = scale * 0.005;
+    const body = rows.map((r) => { const chg = ((r.price - spot) / spot) * 100; const stt = r.pnl > eps ? '<span class="badge badge-success">PROFIT</span>' : r.pnl < -eps ? '<span class="badge badge-destructive">LOSS</span>' : '<span class="badge badge-warning">BREAKEVEN</span>'; return '<tr' + (r.spot ? ' class="spot"' : '') + '><td>' + money(r.price) + (r.spot ? ' <span class="badge badge-info">SPOT</span>' : '') + '</td><td class="' + cls(chg) + '">' + F.pct(chg, 2) + '</td><td class="' + cls(r.pnl) + '">' + smoney(r.pnl) + '</td><td>' + stt + '</td></tr>'; }).join('');
+    host.innerHTML = '<div class="card">' + head + '<div class="overflow-x-auto"><table class="table table-compact an-pnltable"><thead><tr><th>Underlying Price</th><th>Change from Spot</th><th>P&amp;L at Expiry</th><th>Status</th></tr></thead><tbody>' + body + '</tbody></table></div></div>';
+  }
+  Object.assign(M, { renderAnalytics, renderGreeks, renderPnlTable });
+
+  // ---------- registration / wiring ----------
+  CG.register('/analyse', {
+    init(root) {
+      M.root = root;
+      Object.assign(els, {
+        shell: root.querySelector('#an-shell'), left: root.querySelector('#an-left'), right: root.querySelector('#an-right'), divider: root.querySelector('#an-divider'), lptabs: root.querySelector('#an-lptabs'), leftPanels: root.querySelector('#analyse-left-panels'), rightBody: root.querySelector('#an-right-body'),
+        exp: root.querySelector('#an-expiries'), live: root.querySelector('#an-live-btn'), wrap: root.querySelector('#an-chain-wrap'), table: root.querySelector('#an-chain'), foot: root.querySelector('#an-chain-foot'), cs: root.querySelector('#an-colsettings'), optinfo: root.querySelector('#an-optinfo'),
+        payoff: root.querySelector('#an-payoff'), analytics: root.querySelector('#an-analytics'), greeks: root.querySelector('#an-greeks'), pnl: root.querySelector('#an-pnl'),
+        tMaxP: root.querySelector('#an-t-maxp'), tMaxL: root.querySelector('#an-t-maxl'), tPrem: root.querySelector('#an-t-prem'), tPremS: root.querySelector('#an-t-prem-s'), tBe: root.querySelector('#an-t-be'),
+        legend: root.querySelector('#an-legend'), layersBtn: root.querySelector('#an-layers-btn'), zoomLabel: root.querySelector('#an-zoom-label'), sdRow: root.querySelector('#an-sd-row'), chartHost: root.querySelector('#an-chart-host'), chartFoot: root.querySelector('#an-chart-foot'),
+        tpTitle: root.querySelector('#an-tp-title'), tpPct: root.querySelector('#an-tp-pct'), tpVal: root.querySelector('#an-tp-val'), tpRange: root.querySelector('#an-tp-range'), tpMin: root.querySelector('#an-tp-min'), tpMax: root.querySelector('#an-tp-max'),
+        tdTitle: root.querySelector('#an-td-title'), tdVal: root.querySelector('#an-td-val'), tdRange: root.querySelector('#an-td-range'), tdMax: root.querySelector('#an-td-max')
+      });
+      els.tbody = els.table.querySelector('tbody');
+      M.fillIcons(root); M.setLive(AN.mode === 'static' ? 'static' : 'live');
+      if (st.analyseSplit) root.style.setProperty('--an-split', st.analyseSplit + '%');
+      // left tabs + mobile toggle + divider
+      els.lptabs.addEventListener('click', (e) => { const b = e.target.closest('[data-lptab]'); if (b) M.setLeftTab(b.dataset.lptab); });
+      root.addEventListener('click', (e) => { const b = e.target.closest('[data-rptab]'); if (b) { M.setRightTab(b.dataset.rptab); return; } const mv = e.target.closest('[data-mobile-view]'); if (mv) { els.shell.dataset.mobile = mv.dataset.mobileView; CG.$$('[data-mobile-view]', root).forEach((x) => x.classList.toggle('active', x === mv)); if (mv.dataset.mobileView === 'analysis') M.renderRight(); else M.scrollToAtm(); } });
+      els.divider.addEventListener('mousedown', (e) => { e.preventDefault(); els.divider.classList.add('on'); const rect = els.shell.getBoundingClientRect(); const move = (ev) => { const pct = Math.min(70, Math.max(35, ((ev.clientX - rect.left) / rect.width) * 100)); root.style.setProperty('--an-split', pct.toFixed(1) + '%'); }; const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); els.divider.classList.remove('on'); st.analyseSplit = parseFloat(root.style.getPropertyValue('--an-split')) || 55; CG.saveState(); M.renderChart(); }; document.addEventListener('mousemove', move); document.addEventListener('mouseup', up); });
+      new MutationObserver(() => { if (st.analyseTab) M.setLeftTab(st.analyseTab, true); }).observe(els.leftPanels, { childList: true });
+      // expiry strip / live / column settings
+      root.querySelector('.an-expiry-strip').addEventListener('click', (e) => { const x = e.target.closest('[data-exp]'); if (x) { M.setExpiry(x.dataset.exp); return; } const s = e.target.closest('[data-exp-scroll]'); if (s) { els.exp.scrollBy({ left: 220 * (+s.dataset.expScroll), behavior: 'smooth' }); return; } if (e.target.closest('#an-live-btn')) { M.toggleLive(); return; } if (e.target.closest('#an-colsettings-btn')) M.openColSettings(); });
+      M.bindCs();
+      els.optinfo.addEventListener('click', (e) => { const b = e.target.closest('[data-oi-act]'); if (!b) return; const lots = +(els.optinfo.querySelector('[data-oi-lots]') || {}).value || M.curLots(); st.chainLots = lots; CG.saveState(); if (M.addLeg(els.optinfo.dataset.type, b.dataset.oiAct, +els.optinfo.dataset.strike, lots)) CG.modal.closeAll(); });
+      // chain interactions
+      els.wrap.addEventListener('click', (e) => {
+        const hb = e.target.closest('[data-hscroll]'); if (hb) { els.wrap.scrollBy({ left: 180 * (+hb.dataset.hscroll), behavior: 'smooth' }); return; }
+        const b = e.target.closest('[data-act]'); if (!b || b.tagName === 'SELECT') return; const tr = b.closest('tr'); const ctl = b.closest('.an-ctl'); if (!tr || !ctl) return; const strike = +tr.dataset.strike; const type = ctl.dataset.type;
+        if (b.dataset.act === 'INFO') { M.openOptInfo(type, strike); return; }
+        const lots = +(ctl.querySelector('select.lots') || {}).value || M.curLots(); M.addLeg(type, b.dataset.act, strike, lots);
+      });
+      els.wrap.addEventListener('change', (e) => { const s = e.target.closest('select.lots'); if (!s) return; st.chainLots = +s.value; CG.saveState(); CG.$$('select.lots', els.wrap).forEach((x) => { if (x !== s) x.value = s.value; }); });
+      let raf = null; els.wrap.addEventListener('scroll', () => { if (raf) return; raf = requestAnimationFrame(() => { raf = null; M.updateVis(); }); });
+      els.wrap.addEventListener('keydown', (e) => {
+        const rows = M.rowsByStrike(); const strikes = Object.keys(rows).map(Number).sort((a, b) => a - b); if (!strikes.length) return; let cur = M.hl.get();
+        const setHl = (k) => { if (cur != null && rows[cur]) rows[cur].classList.remove('hl'); cur = k; M.hl.set(k); if (k != null && rows[k]) { rows[k].classList.add('hl'); const tr = rows[k]; const top = tr.offsetTop - 70, bot = tr.offsetTop + tr.offsetHeight; if (top < els.wrap.scrollTop) els.wrap.scrollTop = top; else if (bot > els.wrap.scrollTop + els.wrap.clientHeight) els.wrap.scrollTop = bot - els.wrap.clientHeight; } };
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); const atm = (M.chain() || {}).atm; let i = cur == null ? strikes.indexOf(atm) : strikes.indexOf(cur); i = Math.max(0, Math.min(strikes.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1))); setHl(strikes[i]); return; }
+        if (e.key === 'Escape') { setHl(null); return; }
+        if ((e.key === 'b' || e.key === 'B' || e.key === 's' || e.key === 'S') && cur != null) { e.preventDefault(); M.addLeg(e.shiftKey ? 'PUT' : 'CALL', e.key.toUpperCase() === 'B' ? 'BUY' : 'SELL', cur, M.curLots()); return; }
+        if (e.key === 'Enter' && cur != null) { e.preventDefault(); M.openOptInfo(e.shiftKey ? 'PUT' : 'CALL', cur); }
+      });
+      M.bindPayoff();
+      // ---------- shared events ----------
+      CG.on('asset', (a) => { if (!a || !CG.ASSETS[a]) return; if (AN.asset === a) return; AN.asset = a; st.asset = a; AN.targetPrice = null; M.hl.set(null); if (M.isActive()) { M.renderChain(); M.renderRight(); } });
+      CG.on('tick', () => { if (!M.isActive()) return; if (AN.mode === 'live') M.updateChain(); M.renderRight(); });
+      CG.on('currency-settings-changed', () => { if (!M.isActive()) return; M.renderChain(true); M.renderRight(); });
+      CG.on('analyse:legs-changed', () => { if (AN.asset && CG.ASSETS[AN.asset] && AN.expiry && CG.EXPIRIES.includes(AN.expiry)) { const ch = M.chain(); if (ch && (ch.asset !== AN.asset || ch.expiry !== AN.expiry)) { st.asset = AN.asset; st.expiry = AN.expiry; M.renderExpiries(); if (M.isActive()) M.renderChain(); } } if (!M.isActive()) return; M.renderPills(); M.renderRight(); });
+      CG.on('analyse:set-tab', (name) => M.setLeftTab(name));
+      window.addEventListener('cg-tour-set-tab', (e) => { if (e && e.detail) M.setLeftTab(typeof e.detail === 'string' ? e.detail : e.detail.tab); });
+      let rz = null; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (M.isActive()) { M.measureTop(); M.renderChart(); } }, 120); });
+      if (window.ResizeObserver) ['[data-cg="app-header"]', '[data-cg="plan-banner"]'].forEach((s) => { const el = root.querySelector(s); if (el) new ResizeObserver(() => M.measureTop()).observe(el); });
+    },
+    show(root, params, query) {
+      if (CG.ASSETS[st.asset] && st.asset !== AN.asset) { AN.asset = st.asset; AN.targetPrice = null; }
+      if (CG.EXPIRIES.includes(st.expiry) && st.expiry !== AN.expiry) AN.expiry = st.expiry;
+      M.measureTop(); M.renderExpiries(); M.renderChain();
+      M.setLeftTab((query && query.tab) || st.analyseTab || 'chain', true);
+      M.setRightTab((query && query.panel) || st.analyseRightTab || 'payoff');
+      setTimeout(() => { M.measureTop(); M.scrollToAtm(); }, 30);
+    }
+  });
+})();
+</script>

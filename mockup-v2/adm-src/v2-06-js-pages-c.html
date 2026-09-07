@@ -1,0 +1,198 @@
+<script>
+(function () {
+  'use strict';
+  const A = window.CG_ADMIN; const M = CG.mock, F = CG.fmt, esc = CG.esc, $ = CG.$, $$ = CG.$$; const el = A.el;
+
+  // =====================================================================
+  // /admin/emails  (Compose + History)
+  // =====================================================================
+  A.campaignRecipients = (c) => {
+    if (c.recipientRows) return c.recipientRows;
+    const r = CG.rng(c.id.length * 131 + c.recipients * 17); const pool = M.users.slice(); const rows = [];
+    for (let i = 0; i < c.recipients; i++) { const u = pool[i % pool.length]; const failed = i >= c.recipients - (c.failed || 0); rows.push({ name: u.name, email: u.email, status: failed ? 'failed' : 'delivered', sentAt: new Date(new Date(c.sentAt).getTime() + i * 2600 + Math.floor(r() * 900)).toISOString(), error: failed ? ['Mailbox unavailable (550)', 'Recipient address rejected', 'Connection timed out'][i % 3] : '' }); }
+    c.recipientRows = rows; return rows;
+  };
+  A.fill = (tpl, u) => String(tpl || '').replace(/\{\{\s*(name|email|plan|expiry)\s*\}\}/g, (m, k) => (k === 'name' ? u.name : k === 'email' ? u.email : k === 'plan' ? (u.plan || 'Free Plan') : u.endsAt ? F.date(u.endsAt) : '—'));
+  A.EMAIL_TEMPLATES = [
+    { id: 'weekly', label: 'Weekly report', subject: 'Your weekly options report is ready', message: 'Hi {{name}},\n\nYour strategies\' P&L summary for the week is ready in the Analyse workspace. Log in to review open positions, Greeks exposure and the date × price matrix.\n\n— Team HapieCoin' },
+    { id: 'expiry', label: 'Plan expiring', subject: 'Your {{plan}} expires on {{expiry}}', message: 'Hi {{name}},\n\nYour {{plan}} subscription ends on {{expiry}}. Renew now to keep unlimited paper trades and live trading enabled.\n\nRenew: https://hapiecoin.com/subscription\n\n— Team HapieCoin' },
+    { id: 'feature', label: 'New feature', subject: 'New: date × price P&L matrix', message: 'Hi {{name}},\n\nThe payoff panel now includes a date × price P&L matrix for every strategy, plus an expected-move band and breakeven markers.\n\nTry it in Analyse → Scenarios.\n\n— Team HapieCoin' }
+  ];
+  CG.register('/admin/emails', {
+    init(root) {
+      A.hydrateIcons(root);
+      const S = { tab: 'compose', q: '', segment: 'all', selected: new Set(), lastFocus: null, campaign: null, page: 1, hq: '' };
+      A.bindTabs(root, (t) => { S.tab = t; render(); });
+      const subj = el(root, 'subject'), msg = el(root, 'message'); const sendBtn = root.querySelector('[data-act="send"]');
+      [subj, msg].forEach((f) => { f.addEventListener('focus', () => (S.lastFocus = f)); f.addEventListener('input', renderPreview); });
+      el(root, 'templates').innerHTML = A.EMAIL_TEMPLATES.map((t) => '<button type="button" class="adm-chip" data-tpl="' + t.id + '" title="Fill subject and message">' + A.icon('file', 12) + ' ' + esc(t.label) + '</button>').join('');
+      CG.delegate(root, 'click', '[data-tpl]', (e, b) => { const t = A.EMAIL_TEMPLATES.find((x) => x.id === b.dataset.tpl); if (!t) return; subj.value = t.subject; msg.value = t.message; renderPreview(); CG.toast({ title: 'Template applied', description: t.label + ' · edit the text before sending' }); });
+      const segmentUsers = () => M.users.filter((u) => S.segment === 'all' || (S.segment === 'paid' && u.status === 'active' && !/free/i.test(u.plan)) || (S.segment === 'free' && u.status === 'free') || (S.segment === 'expired' && u.status === 'expired'));
+      const visibleUsers = () => segmentUsers().filter((u) => !S.q || u.name.toLowerCase().includes(S.q) || u.email.toLowerCase().includes(S.q));
+      const renderRecipients = () => {
+        const list = visibleUsers();
+        el(root, 'rc-list').innerHTML = list.length ? list.map((u) => '<label><input type="checkbox" class="checkbox" data-uid="' + u.id + '"' + (S.selected.has(u.id) ? ' checked' : '') + '><span class="flex-1 truncate"><span class="block truncate">' + esc(u.name) + '</span><span class="text-xs text-muted">' + esc(u.email) + '</span></span><span class="badge ' + A.statusBadge(u.status) + '">' + A.statusLabel(u.status) + '</span></label>').join('') : '<div class="empty">No users match the search.</div>';
+        root.querySelector('[data-act="rc-all"]').textContent = 'Select all (' + list.length + ')';
+        el(root, 'sel-badge').textContent = S.selected.size + ' selected';
+        renderPreview();
+      };
+      function renderPreview() {
+        const first = Array.from(S.selected).map((id) => M.users.find((u) => u.id === id)).filter(Boolean)[0];
+        const hl = (s) => esc(s).replace(/\{\{\s*(name|email|plan|expiry)\s*\}\}/g, '<mark>$&</mark>');
+        const p = el(root, 'preview');
+        if (!first) p.innerHTML = '<div class="micro">Preview</div><div class="adm-preview-subject">' + (subj.value ? hl(subj.value) : '<span class="text-muted">(no subject)</span>') + '</div><div class="adm-preview-body">' + (msg.value ? hl(msg.value) : '<span class="text-muted">Select a recipient to preview the filled placeholders.</span>') + '</div>';
+        else p.innerHTML = '<div class="micro">Preview for ' + esc(first.name) + '</div><div class="text-2xs text-muted mono">To: ' + esc(first.email) + '</div><div class="adm-preview-subject">' + (subj.value ? esc(A.fill(subj.value, first)) : '<span class="text-muted">(no subject)</span>') + '</div><div class="adm-preview-body">' + (msg.value ? esc(A.fill(msg.value, first)) : '<span class="text-muted">(empty message)</span>') + '</div>';
+        sendBtn.disabled = !(S.selected.size && subj.value.trim() && msg.value.trim());
+        sendBtn.title = sendBtn.disabled ? 'Select recipients and fill in subject and message' : 'Send to ' + S.selected.size + ' user(s)';
+      }
+      el(root, 'rc-search').addEventListener('input', (e) => { S.q = e.target.value.trim().toLowerCase(); renderRecipients(); });
+      el(root, 'rc-segment').addEventListener('change', (e) => { S.segment = e.target.value; renderRecipients(); });
+      CG.delegate(root, 'change', '[data-uid]', (e, c) => { if (c.checked) S.selected.add(c.dataset.uid); else S.selected.delete(c.dataset.uid); el(root, 'sel-badge').textContent = S.selected.size + ' selected'; renderPreview(); });
+      CG.delegate(root, 'click', '[data-act="rc-all"]', () => { visibleUsers().forEach((u) => S.selected.add(u.id)); renderRecipients(); });
+      CG.delegate(root, 'click', '[data-act="rc-clear"]', () => { S.selected.clear(); renderRecipients(); });
+      CG.delegate(root, 'click', '[data-ins]', (e, b) => { const f = S.lastFocus || msg; const v = b.dataset.ins; const s = f.selectionStart != null ? f.selectionStart : f.value.length, en = f.selectionEnd != null ? f.selectionEnd : s; f.value = f.value.slice(0, s) + v + f.value.slice(en); f.focus(); f.setSelectionRange(s + v.length, s + v.length); renderPreview(); });
+      CG.delegate(root, 'click', '[data-act="test-send"]', (e, b) => { if (!subj.value.trim() || !msg.value.trim()) { A.validation('Fill in the subject and message first'); return; } A.busy(b, '<span class="spinner" style="width:14px;height:14px"></span> Sending test...', () => CG.toast({ title: 'Test email sent to ' + M.user.email, description: A.fill(subj.value.trim(), M.users[0]) + ' · placeholders filled with your own profile', variant: 'success' }), 600); });
+      CG.delegate(root, 'click', '[data-act="send"]', async () => {
+        const n = S.selected.size; if (!n) return;
+        const ok = await CG.modal.confirm({ title: 'Send to ' + n + ' user(s)?', description: n + ' selected user(s). Placeholders are filled per recipient.', confirmText: 'Confirm' }); if (!ok) return;
+        A.busy(sendBtn, '<span class="spinner" style="width:14px;height:14px"></span> Sending...', () => {
+          try {
+            const ids = Array.from(S.selected); const failed = ids.length > 6 ? Math.max(0, Math.round(ids.length * 0.04)) : 0;
+            const c = { id: A.uid('cmp'), subject: subj.value.trim(), message: msg.value.trim(), sentAt: new Date(CG.NOW.getTime() + (Date.now() % 3600000)).toISOString(), sentBy: M.user.name, recipients: ids.length, delivered: ids.length - failed, failed, segment: el(root, 'rc-segment').selectedOptions[0].textContent };
+            c.recipientRows = ids.map((id, i) => { const u = M.users.find((x) => x.id === id); const bad = i >= ids.length - failed; return { name: u.name, email: u.email, status: bad ? 'failed' : 'delivered', sentAt: new Date(new Date(c.sentAt).getTime() + i * 1800).toISOString(), error: bad ? 'Mailbox unavailable (550)' : '' }; });
+            M.campaigns.unshift(c); CG.emit('campaigns:changed', M.campaigns);
+            CG.toast({ title: 'Emails sent', description: c.delivered + ' delivered' + (failed ? ', ' + failed + ' failed' : '') + ' · ' + c.subject, variant: 'success' });
+            S.selected.clear(); subj.value = ''; msg.value = ''; S.tab = 'history'; S.campaign = null; render();
+          } catch (err) { CG.toast({ title: 'Send failed', description: 'Please try again.', variant: 'destructive' }); }
+        }, 700);
+      });
+      // History grid
+      const histGrid = A.grid({
+        key: 'campaigns', host: el(root, 'hist-table'), pager: el(root, 'hist-pager'), tools: el(root, 'hist-tools'), noun: 'campaigns', per: 10,
+        columns: [
+          { id: 'subject', label: 'Subject', always: true, sortVal: (c) => c.subject.toLowerCase(), cell: (c) => '<div class="font-medium">' + esc(c.subject) + '</div><div class="text-xs text-muted">' + esc(c.segment || '') + '</div>', csv: (c) => c.subject },
+          { id: 'segment', label: 'Segment', default: false, sortVal: (c) => c.segment || '', cell: (c) => esc(c.segment || '—'), csv: (c) => c.segment || '' },
+          { id: 'sentAt', label: 'Sent at', sortVal: (c) => c.sentAt, sortDesc: true, cell: (c) => '<span class="nowrap text-xs mono">' + A.dateTime(c.sentAt) + '</span>', csv: (c) => c.sentAt },
+          { id: 'recipients', label: 'Recipients', cls: 'r', sortVal: (c) => c.recipients, cell: (c) => String(c.recipients), csv: (c) => c.recipients },
+          { id: 'delivered', label: 'Delivered', cls: 'r', sortVal: (c) => c.delivered, cell: (c) => '<span class="text-profit">' + c.delivered + '</span>', csv: (c) => c.delivered },
+          { id: 'failed', label: 'Failed', cls: 'r', sortVal: (c) => c.failed, cell: (c) => '<span class="' + (c.failed ? 'text-loss' : 'text-muted') + '">' + c.failed + '</span>', csv: (c) => c.failed },
+          { id: 'sentBy', label: 'Sent by', cell: (c) => esc(c.sentBy), csv: (c) => c.sentBy }
+        ],
+        rows: () => M.campaigns.filter((c) => !S.hq || (c.subject + ' ' + (c.segment || '')).toLowerCase().includes(S.hq)),
+        rowId: (c) => c.id, rowAttrs: (c) => 'class="adm-row-click" data-open="' + c.id + '" tabindex="0" title="Open delivery report"', isFiltered: () => !!S.hq,
+        empty: { icon: 'inbox', title: 'No campaigns sent yet.', hint: 'Compose a message and send it to a segment of users.', action: 'Compose', act: 'go-compose' },
+        emptyFiltered: { icon: 'search', title: 'No campaigns match', hint: 'Try another subject or segment.', action: 'Clear filters' }
+      });
+      el(root, 'hist-q').addEventListener('input', (e) => { S.hq = e.target.value.trim().toLowerCase(); histGrid.render(); });
+      CG.delegate(root, 'click', '[data-act="clear-filters"]', () => { S.hq = ''; el(root, 'hist-q').value = ''; histGrid.render(); });
+      CG.delegate(root, 'click', '[data-act="go-compose"]', () => { S.tab = 'compose'; render(); });
+      const renderHistory = () => { el(root, 'hist-list').hidden = !!S.campaign; el(root, 'hist-detail').hidden = !S.campaign; if (S.campaign) return renderDetail(); histGrid.render(); };
+      const renderDetail = () => {
+        const c = S.campaign; const rows = A.campaignRecipients(c); const pg = A.paginate(rows, S.page, 10); S.page = pg.page; const pct = c.recipients ? Math.round(c.delivered / c.recipients * 100) : 0;
+        el(root, 'det-subject').textContent = c.subject; el(root, 'det-meta').innerHTML = 'Sent ' + esc(A.dateTime(c.sentAt)) + ' · By ' + esc(c.sentBy) + (c.segment ? ' · ' + esc(c.segment) : '');
+        el(root, 'det-tiles').innerHTML = '<div class="stat"><div class="stat-label">Recipients</div><div class="stat-value">' + c.recipients + '</div></div><div class="stat"><div class="stat-label">Delivered</div><div class="stat-value text-profit">' + c.delivered + '</div></div><div class="stat"><div class="stat-label">Failed</div><div class="stat-value ' + (c.failed ? 'text-loss' : '') + '">' + c.failed + '</div></div><div class="stat"><div class="stat-label">Success</div><div class="stat-value">' + pct + '%</div></div>';
+        el(root, 'det-table').innerHTML = rows.length ? '<table class="table"><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Sent at</th><th>Error</th></tr></thead><tbody>' + pg.rows.map((r) => '<tr><td class="font-medium">' + esc(r.name) + '</td><td class="text-xs">' + esc(r.email) + '</td><td><span class="badge ' + A.statusBadge(r.status) + '">' + A.statusLabel(r.status) + '</span></td><td class="text-xs nowrap mono">' + A.dateTime(r.sentAt) + '</td><td class="text-xs ' + (r.error ? 'text-loss' : 'text-muted') + '">' + (esc(r.error) || '—') + '</td></tr>').join('') + '</tbody></table>' : '<div class="empty">No recipients recorded.</div>';
+        el(root, 'det-pager').innerHTML = rows.length ? A.pager(pg.page, pg.pages, pg.total + ' recipients', A.icon('chevLeft', 14) + ' Prev', 'Next ' + A.icon('chevRight', 14)) : '';
+      };
+      CG.delegate(root, 'click', '[data-open]', (e, tr) => { S.campaign = M.campaigns.find((c) => c.id === tr.dataset.open); S.page = 1; renderHistory(); });
+      CG.delegate(root, 'keydown', '[data-open]', (e, tr) => { if (e.key === 'Enter') tr.click(); });
+      CG.delegate(root, 'click', '[data-act="hist-back"]', () => { S.campaign = null; renderHistory(); });
+      CG.delegate(root, 'click', '[data-act="det-csv"]', () => { if (!S.campaign) return; const rows = A.campaignRecipients(S.campaign); A.copyCsv(['Name', 'Email', 'Status', 'Sent at', 'Error'], rows.map((r) => [r.name, r.email, A.statusLabel(r.status), r.sentAt, r.error]), 'recipients'); });
+      CG.delegate(el(root, 'det-pager'), 'click', '[data-act="prev"]', () => { S.page--; renderDetail(); });
+      CG.delegate(el(root, 'det-pager'), 'click', '[data-act="next"]', () => { S.page++; renderDetail(); });
+      const render = () => { A.setTab(root, S.tab); sendBtn.hidden = S.tab !== 'compose'; if (S.tab === 'compose') renderRecipients(); else renderHistory(); };
+      this._render = render; this._setTab = (t) => { S.tab = t; };
+    },
+    show(root, params, query) { if (query && (query.tab === 'history' || query.tab === 'compose') && this._setTab) this._setTab(query.tab); this._render && this._render(); }
+  });
+
+  // =====================================================================
+  // /admin/users  (User Management + detail drawer)
+  // =====================================================================
+  CG.register('/admin/users', {
+    init(root) {
+      A.hydrateIcons(root);
+      const S = { q: '', plan: '', status: '' };
+      const fillPlans = () => { const sel = el(root, 'plan'); sel.innerHTML = '<option value="">All plans</option>' + M.plans.map((p) => '<option value="' + p.id + '"' + (p.id === S.plan ? ' selected' : '') + '>' + esc(p.name) + '</option>').join(''); };
+      el(root, 'search').addEventListener('input', (e) => { S.q = e.target.value.trim().toLowerCase(); grid.page = 1; grid.render(); });
+      el(root, 'plan').addEventListener('change', (e) => { S.plan = e.target.value; grid.page = 1; grid.render(); });
+      el(root, 'status').addEventListener('change', (e) => { S.status = e.target.value; grid.page = 1; grid.render(); });
+      CG.delegate(root, 'click', '[data-act="clear-filters"]', () => { S.q = S.plan = S.status = ''; el(root, 'search').value = ''; el(root, 'plan').value = ''; el(root, 'status').value = ''; grid.render(); });
+      const setActivated = (rows, on) => A.save(() => { rows.forEach((u) => (u.activated = on)); CG.emit('users:changed', M.users); }, rows.length + ' account' + (rows.length === 1 ? '' : 's') + (on ? ' activated' : ' deactivated'));
+      const applyPlan = (rows, plan, interval) => { const days = interval === 'monthly' ? 30 : interval === 'quarterly' ? 90 : 365; rows.forEach((u) => { u.planId = plan.id; u.plan = plan.name; if (/free/i.test(plan.name)) { u.status = 'free'; u.interval = 'monthly'; u.subscribedAt = null; u.endsAt = null; u.validityDays = 0; } else { u.interval = interval; u.status = 'active'; u.subscribedAt = CG.NOW.toISOString().slice(0, 10); u.endsAt = new Date(CG.NOW.getTime() + days * 86400000).toISOString().slice(0, 10); u.validityDays = days; } }); CG.emit('users:changed', M.users); };
+      const grid = A.grid({
+        key: 'users', host: el(root, 'table'), pager: el(root, 'pager'), tools: el(root, 'tools'), bulkbar: el(root, 'bulkbar'), noun: 'users', per: 10,
+        columns: [
+          { id: 'name', label: 'Name', always: true, sortVal: (u) => u.name.toLowerCase(), cell: (u) => '<span class="font-medium nowrap">' + esc(u.name) + '</span>' + (u.role === 'admin' ? ' <span class="badge badge-outline">admin</span>' : ''), csv: (u) => u.name },
+          { id: 'email', label: 'Email', sortVal: (u) => u.email, cell: (u) => '<span class="text-xs">' + esc(u.email) + '</span>', csv: (u) => u.email },
+          { id: 'mobile', label: 'Mobile', default: false, cell: (u) => '<span class="mono text-xs">' + esc(u.mobile) + '</span>', csv: (u) => u.mobile },
+          { id: 'plan', label: 'Plan', sortVal: (u) => u.plan, cell: (u) => '<span class="badge ' + A.planBadge(u.plan) + '">' + esc(u.plan) + '</span>', csv: (u) => u.plan },
+          { id: 'status', label: 'Status', sortVal: (u) => u.status + (u.activated ? '' : 'z'), cell: (u) => '<span class="badge ' + A.statusBadge(u.status) + '">' + A.statusLabel(u.status) + '</span>' + (u.activated ? '' : '<div class="text-2xs text-loss">deactivated</div>'), csv: (u) => A.statusLabel(u.status) + (u.activated ? '' : ' (deactivated)') },
+          { id: 'subscribed', label: 'Subscribed', sortVal: (u) => u.subscribedAt || '', cell: (u) => '<span class="text-xs nowrap mono">' + A.date(u.subscribedAt) + '</span>', csv: (u) => u.subscribedAt || '' },
+          { id: 'ends', label: 'Ends', sortVal: (u) => u.endsAt || '', cell: (u) => '<span class="text-xs nowrap mono">' + A.date(u.endsAt) + '</span>', csv: (u) => u.endsAt || '' },
+          { id: 'joined', label: 'Joined', sortVal: (u) => u.joinedAt, sortDesc: true, cell: (u) => '<span class="text-xs nowrap mono">' + A.date(u.joinedAt) + '</span>', csv: (u) => u.joinedAt },
+          { id: 'lastLogin', label: 'Last login', default: false, sortVal: (u) => u.lastLoginAt || '', sortDesc: true, cell: (u) => '<span class="text-xs nowrap mono">' + A.date(u.lastLoginAt) + '</span>', csv: (u) => u.lastLoginAt || '' },
+          { id: 'code', label: 'Referral code', cell: (u) => '<span class="mono text-xs">' + esc(u.referralCode) + '</span>', csv: (u) => u.referralCode },
+          { id: 'pct', label: 'Commission %', cls: 'r', sortVal: (u) => u.commissionPct, cell: (u) => u.commissionPct + '%', csv: (u) => u.commissionPct },
+          { id: 'referrals', label: 'Referrals', cls: 'r', sortVal: (u) => u.referrals, sortDesc: true, cell: (u) => String(u.referrals), csv: (u) => u.referrals }
+        ],
+        rows: () => M.users.filter((u) => (!S.q || u.name.toLowerCase().includes(S.q) || u.email.toLowerCase().includes(S.q)) && (!S.plan || u.planId === S.plan) && (!S.status || (S.status === 'deactivated' ? !u.activated : u.status === S.status))),
+        rowId: (u) => u.id, rowAttrs: (u) => 'class="adm-row-click" data-open="' + u.id + '" tabindex="0" title="Open user"', isFiltered: () => !!(S.q || S.plan || S.status),
+        empty: { icon: 'users', title: 'No users yet', hint: 'Invite your first user to get started.', action: 'Invite user', act: 'invite' },
+        emptyFiltered: { icon: 'search', title: 'No users found.', hint: 'Try another name, email, plan or status.', action: 'Clear filters' },
+        bulk: [
+          { id: 'activate', label: 'Activate', icon: 'userCheck', run: (rows) => setActivated(rows, true) },
+          { id: 'deactivate', label: 'Deactivate', run: (rows) => setActivated(rows, false) },
+          { id: 'setplan', label: 'Set plan', icon: 'package', run: (rows, G, btn) => { const m = CG.menu(btn, '<div class="menu-label">Set plan for ' + rows.length + ' user' + (rows.length === 1 ? '' : 's') + '</div>' + M.plans.map((p) => '<button type="button" class="menu-item" data-plan="' + p.id + '">' + A.icon('package', 13) + ' ' + esc(p.name) + '<span class="ml-auto mono text-xs text-muted">' + (p.yearly && p.yearly.price ? F.inr(p.yearly.discountPrice || p.yearly.price) + '/yr' : 'free') + '</span></button>').join('')); m.addEventListener('click', (e) => { const b = e.target.closest('[data-plan]'); if (!b) return; const plan = M.plans.find((p) => p.id === b.dataset.plan); if (!plan) return; A.save(() => applyPlan(rows, plan, 'yearly'), rows.length + ' user' + (rows.length === 1 ? '' : 's') + ' moved to ' + plan.name); G.sel.clear(); G.render(); }); return false; }, keep: true },
+          { id: 'csv', label: 'Export CSV', icon: 'copy', run: (rows, G) => { G.copyCsv(rows); return false; }, keep: true }
+        ],
+        onRender: (all) => { el(root, 'count').textContent = M.users.length + ' users' + (all.length !== M.users.length ? ' · ' + all.length + ' match' : ''); }
+      });
+      // invite user (mock)
+      CG.delegate(root, 'click', '[data-act="invite"]', () => {
+        const h = CG.modal.open('<form data-invite novalidate autocomplete="off"><div class="cg-dialog-body"><div class="field"><label class="label">Name</label><input class="input" name="name" placeholder="Full name"></div><div class="field"><label class="label">Email *</label><input class="input" name="email" type="email" placeholder="name@example.com"></div><div class="field"><label class="label">Plan</label><select class="select" name="plan">' + M.plans.map((p) => '<option value="' + p.id + '">' + esc(p.name) + '</option>').join('') + '</select></div><p class="hint">An invitation email with a sign-up link is sent (mock).</p></div><div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-x="cancel">Cancel</button><button type="submit" class="btn btn-primary">Send invite</button></div></form>', { title: 'Invite user', description: 'Create an account and email a sign-up link', size: 'sm' });
+        const form = h.contentEl.querySelector('form'); setTimeout(() => form.querySelector('[name="name"]').focus(), 50);
+        form.addEventListener('click', (e) => { if (e.target.closest('[data-x="cancel"]')) h.close(); });
+        form.addEventListener('submit', (e) => { e.preventDefault(); const email = A.formVal(form, 'email').trim().toLowerCase(); const name = A.formVal(form, 'name').trim() || email.split('@')[0]; if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { A.validation('Enter a valid email address'); return; } if (M.users.some((u) => u.email === email)) { A.validation('A user with this email already exists'); return; } const plan = M.plans.find((p) => p.id === A.formVal(form, 'plan')) || M.plans[0]; A.save(() => { M.users.unshift({ id: A.uid('u'), name, email, mobile: '—', role: 'user', planId: plan.id, plan: plan.name, interval: 'monthly', status: /free/i.test(plan.name) ? 'free' : 'active', joinedAt: CG.NOW.toISOString().slice(0, 10), subscribedAt: null, endsAt: null, lastLoginAt: null, activated: true, referralCode: 'REF_' + name.slice(0, 3).toUpperCase() + Math.floor(1000 + Math.random() * 9000), commissionPct: 10, referrals: 0, featureLimits: { paper_trading: 0, live_trading: 0 }, lotSizes: { BTC: 0.001, ETH: 0.01, XAUT: 0.001 }, amountPaid: 0, validityDays: 0, invited: true }); CG.emit('users:changed', M.users); }, 'Invitation sent to ' + email); h.close(); grid.render(); });
+      });
+
+      // ---------- detail drawer ----------
+      const drawer = el(root, 'drawer'); let cur = null, tab = 'profile';
+      const TABS = [['profile', 'Profile'], ['subscription', 'Subscription'], ['referrals', 'Referrals'], ['limits', 'Limits'], ['lots', 'Lot sizes']];
+      const kv = (pairs) => '<div class="adm-kv">' + pairs.map(([k, v, cls]) => '<div><span>' + esc(k) + '</span><b class="' + (cls || '') + '">' + v + '</b></div>').join('') + '</div>';
+      const closeDrawer = () => { drawer.hidden = true; cur = null; document.removeEventListener('keydown', onKey); };
+      const onKey = (e) => { if (e.key === 'Escape' && !document.querySelector('.cg-overlay')) closeDrawer(); };
+      const renderHead = () => { el(drawer, 'drawer-head').innerHTML = '<div class="adm-avatar">' + A.initials(cur.name) + '</div><div class="flex-1"><h3>' + esc(cur.name) + (cur.role === 'admin' ? '<span class="badge badge-outline">admin</span>' : '') + '<span class="badge ' + A.planBadge(cur.plan) + '">' + esc(cur.plan) + '</span><span class="badge ' + A.statusBadge(cur.status) + '">' + A.statusLabel(cur.status) + '</span>' + (cur.activated ? '' : '<span class="badge badge-loss">deactivated</span>') + '</h3><div class="text-xs text-muted mt-1">' + esc(cur.email) + ' · <span class="mono">' + esc(cur.mobile) + '</span> · joined ' + A.date(cur.joinedAt) + '</div></div><button type="button" class="btn btn-outline btn-sm" data-act="impersonate" title="Open the app as this user (mock)">' + A.icon('eye', 13) + ' Impersonate (mock)</button><button type="button" class="cg-dialog-close" data-act="drawer-close" aria-label="Close">✕</button>'; };
+      const renderTabs = () => { el(drawer, 'drawer-tabs').innerHTML = TABS.map(([k, l]) => '<button type="button" class="tab' + (tab === k ? ' active' : '') + '" role="tab" data-dtab="' + k + '">' + l + '</button>').join(''); };
+      const planDefault = (u) => { const p = M.plans.find((x) => x.id === u.planId); const fl = p && p[u.interval] && p[u.interval].featureLimits; return fl ? (fl.paper_trading || '∞') + ' paper / ' + (fl.live_trading || (p.monthly.price ? '∞' : 0)) + ' live' : '—'; };
+      const renderBody = () => {
+        const u = cur; const body = el(drawer, 'drawer-body');
+        if (tab === 'profile') body.innerHTML = kv([['Name', esc(u.name)], ['Email', esc(u.email)], ['Mobile', esc(u.mobile), 'mono'], ['Role', esc(u.role)], ['Joined', A.date(u.joinedAt), 'mono'], ['Last login', A.date(u.lastLoginAt), 'mono'], ['Referral code', esc(u.referralCode), 'mono'], ['Amount paid', F.inr(u.amountPaid), 'mono'], ['Account', u.activated ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-loss">Deactivated</span>'], ['User id', esc(u.id), 'mono']]) + '<div class="adm-drawer-foot"><button type="button" class="btn btn-outline btn-sm" data-act="copy-email">' + A.icon('copy', 13) + ' Copy email</button><button type="button" class="btn ' + (u.activated ? 'btn-destructive' : 'btn-primary') + ' btn-sm" data-act="toggle-activated">' + (u.activated ? 'Deactivate account' : 'Activate account') + '</button></div>';
+        else if (tab === 'subscription') body.innerHTML = kv([['Plan', esc(u.plan)], ['Interval', esc(u.status === 'free' ? '—' : u.interval)], ['Status', '<span class="badge ' + A.statusBadge(u.status) + '">' + A.statusLabel(u.status) + '</span>'], ['Subscribed', A.date(u.subscribedAt), 'mono'], ['Ends', A.date(u.endsAt), 'mono'], ['Validity', (u.validityDays || 0) + ' days', 'mono'], ['Amount paid', F.inr(u.amountPaid), 'mono'], ['Days left', u.endsAt ? Math.max(0, A.daysLeft(u.endsAt)) + ' d' : '—', 'mono']]) + '<form data-dform="plan" class="mt-4"><div class="micro mb-2">Change plan</div><div class="adm-form-grid"><div class="field"><label class="label">Plan</label><select class="select select-sm" name="plan">' + M.plans.map((p) => '<option value="' + p.id + '"' + (p.id === u.planId ? ' selected' : '') + '>' + esc(p.name) + '</option>').join('') + '</select></div><div class="field"><label class="label">Interval</label><select class="select select-sm" name="interval">' + ['monthly', 'quarterly', 'yearly'].map((i) => '<option value="' + i + '"' + (i === u.interval ? ' selected' : '') + '>' + i + '</option>').join('') + '</select></div></div><div class="hint">Starts today on the mock clock · previous validity is replaced.</div><div class="adm-drawer-foot"><button type="submit" class="btn btn-primary btn-sm">Set plan</button></div></form>';
+        else if (tab === 'referrals') { const c = M.commissions.find((x) => x.referrerId === u.id); const d = c ? A.commissionDetails(c) : []; body.innerHTML = kv([['Referral code', esc(u.referralCode), 'mono'], ['Commission', u.commissionPct + '%', 'mono'], ['Referrals', String(u.referrals), 'mono'], ['Earned', c ? F.inr(c.total) : F.inr(0), 'mono']]) + '<div class="micro mt-4 mb-2">Referred users</div>' + (d.length ? '<div class="adm-table-wrap adm-table-bordered"><table class="table table-compact"><thead><tr><th>User</th><th>Plan</th><th class="r">Commission</th><th>Status</th></tr></thead><tbody>' + d.map((x) => '<tr><td><div class="font-medium">' + esc(x.name) + '</div><div class="text-2xs text-muted">' + esc(x.email) + '</div></td><td class="text-xs">' + esc(x.plan || '—') + '</td><td class="r">' + F.inr(x.commission) + '</td><td><span class="badge ' + (x.status === 'paid' ? 'badge-success' : 'badge-warning') + '">' + (x.status === 'paid' ? 'Paid' : 'Pending') + '</span></td></tr>').join('') + '</tbody></table></div>' : '<div class="empty" style="padding:22px"><div class="adm-empty-icon">' + A.icon('users', 18) + '</div><b>No referrals yet</b>This user has not referred anyone with ' + esc(u.referralCode) + '.</div>') + '<div class="adm-drawer-foot"><a class="btn btn-outline btn-sm" href="#/admin/user-subscriptions?tab=commissions">' + A.icon('wallet', 13) + ' Open commissions</a></div>'; }
+        else if (tab === 'limits') body.innerHTML = '<form data-dform="limits"><div class="field"><label class="label">Paper Trading Limit</label><div class="flex items-center gap-2"><input class="input mono" name="paper" type="number" min="0" step="1" value="' + (u.featureLimits.paper_trading || 0) + '" style="max-width:160px"><span class="text-sm text-muted">trades / month</span></div></div><div class="field"><label class="label">Live Trading Limit</label><div class="flex items-center gap-2"><input class="input mono" name="live" type="number" min="0" step="1" value="' + (u.featureLimits.live_trading || 0) + '" style="max-width:160px"><span class="text-sm text-muted">trades / month</span></div></div><div class="hint">Set to 0 for plan default (' + esc(planDefault(u)) + '). Higher values override the plan limit.</div><div class="adm-drawer-foot"><button type="submit" class="btn btn-primary btn-sm">Save Limits</button></div></form>';
+        else body.innerHTML = '<form data-dform="lots"><div class="adm-form-grid adm-form-grid-3">' + ['BTC', 'ETH', 'XAUT'].map((k) => '<div class="field"><label class="label">' + k + ' lot size</label><input class="input mono" name="' + k + '" type="number" min="0.0001" step="' + (k === 'ETH' ? '0.01' : '0.001') + '" value="' + u.lotSizes[k] + '"></div>').join('') + '</div><div class="hint">Overrides the exchange default lot size for this user\'s strategy builder and P&amp;L calculations.</div><div class="adm-drawer-foot"><button type="submit" class="btn btn-primary btn-sm">Save lot sizes</button></div></form>';
+      };
+      const openDrawer = (u, t) => { cur = u; tab = t || 'profile'; renderHead(); renderTabs(); renderBody(); drawer.hidden = false; document.addEventListener('keydown', onKey); setTimeout(() => { const b = drawer.querySelector('[data-dtab].active'); if (b) b.focus(); }, 30); };
+      A.openUser = (id, t) => { const u = M.users.find((x) => x.id === id); if (u) { if (!root.classList.contains('active')) CG.navigate('/admin/users'); openDrawer(u, t); } };
+      CG.delegate(root, 'click', '[data-open]', (e, tr) => { const u = M.users.find((x) => x.id === tr.dataset.open); if (u) openDrawer(u, 'profile'); });
+      CG.delegate(root, 'keydown', '[data-open]', (e, tr) => { if (e.key === 'Enter') tr.click(); });
+      CG.delegate(drawer, 'click', '[data-act="drawer-close"]', closeDrawer);
+      CG.delegate(drawer, 'click', '[data-dtab]', (e, b) => { tab = b.dataset.dtab; renderTabs(); renderBody(); });
+      CG.delegate(drawer, 'click', '[data-act="impersonate"]', () => CG.toast({ title: 'Impersonating ' + cur.name + ' (mock)', description: 'You would now see the app exactly as ' + cur.email + ' does. Nothing changes in this mock.' }));
+      CG.delegate(drawer, 'click', '[data-act="copy-email"]', () => A.copyText(cur.email, { title: 'Email copied', description: cur.email }));
+      CG.delegate(drawer, 'click', '[data-act="toggle-activated"]', () => { cur.activated = !cur.activated; A.save(() => CG.emit('users:changed', M.users), cur.activated ? 'Account activated' : 'Account deactivated'); renderHead(); renderBody(); grid.render(); });
+      drawer.addEventListener('submit', (e) => {
+        e.preventDefault(); const form = e.target.closest('form'); if (!form || !cur) return; const kind = form.dataset.dform;
+        if (kind === 'lots') { const vals = {}; for (const k of ['BTC', 'ETH', 'XAUT']) { const v = +A.formVal(form, k); if (!(v > 0)) { A.validation(k + ' lot size must be greater than 0'); return; } vals[k] = v; } A.save(() => { cur.lotSizes = vals; if (cur.id === M.user.id) { CG.state.lotSizes = Object.assign({}, vals); CG.saveState(); } CG.emit('users:changed', M.users); }, 'Lot sizes saved'); }
+        else if (kind === 'limits') { const paper = Math.max(0, +A.formVal(form, 'paper') || 0), live = Math.max(0, +A.formVal(form, 'live') || 0); A.save(() => { cur.featureLimits = { paper_trading: paper, live_trading: live }; CG.emit('users:changed', M.users); }, 'Limits saved'); }
+        else if (kind === 'plan') { const plan = M.plans.find((p) => p.id === A.formVal(form, 'plan')); if (!plan) return; A.save(() => applyPlan([cur], plan, A.formVal(form, 'interval')), cur.name + ' moved to ' + plan.name); renderHead(); renderBody(); grid.render(); }
+      });
+      this._render = () => { fillPlans(); grid.render(); };
+      this._hide = () => { if (!drawer.hidden) closeDrawer(); };
+    },
+    show() { this._render && this._render(); },
+    hide() { this._hide && this._hide(); }
+  });
+})();
+</script>

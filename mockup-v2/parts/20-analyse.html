@@ -1,0 +1,1438 @@
+<!-- ===== /analyse workspace (v2 · Obsidian Desk): options chain + right analysis pane (payoff / scenarios / greeks / vol / structure / ladder) ===== -->
+<section class="screen" data-route="/analyse" data-title="Analyse" data-auth="user">
+  <div data-cg="app-header" data-variant="analyse"></div>
+  <div data-cg="plan-banner"></div>
+  <div class="an-shell" id="an-shell" data-mobile="chain" data-collapse="">
+    <div class="an-mobile-bar"><div class="tabs"><button class="tab active" data-mobile-view="chain">Chain</button><button class="tab" data-mobile-view="analysis">Analysis</button></div></div>
+    <div class="an-left" id="an-left">
+      <div class="an-lptabs" role="tablist" id="an-lptabs">
+        <button class="an-tab active" role="tab" data-lptab="chain" data-tour="options-chain">Chain</button>
+        <button class="an-tab" role="tab" data-lptab="strategy" data-tour="builder-tab">Builder<b class="cnt" data-cnt="builder" hidden>0</b></button>
+        <button class="an-tab" role="tab" data-lptab="paper" data-tour="paper-tab">Paper<b class="cnt" data-cnt="paper" hidden>0</b></button>
+        <button class="an-tab" role="tab" data-lptab="live">Live<b class="cnt" data-cnt="live" hidden>0</b></button>
+        <button class="an-tab" role="tab" data-lptab="journal">Journal<b class="cnt" data-cnt="journal" hidden>0</b></button>
+        <span class="an-tabs-right"><span class="micro" id="an-lot-info">Lot 0.001 BTC</span><span class="micro an-dot">·</span><span class="micro" id="an-basis-info">Basis mark</span><button class="an-ibtn" data-collapse="right" title="Expand chain · hide the analysis pane" aria-label="Expand chain"><i data-icon="chevr"></i></button></span>
+      </div>
+      <div id="analyse-left-panels" class="an-left-panels">
+        <div class="lp-panel an-chain-panel" data-tab="chain">
+          <div class="an-expiry-strip">
+            <button class="an-scroll-btn" data-exp-scroll="-1" title="Previous expiries" aria-label="Previous">‹</button>
+            <div class="an-expiries" id="an-expiries"></div>
+            <button class="an-scroll-btn" data-exp-scroll="1" title="Next expiries" aria-label="Next">›</button>
+          </div>
+          <div class="an-chain-tools">
+            <span class="micro">Strikes</span>
+            <div class="an-seg" id="an-range" role="group" aria-label="Strike range"><button data-range="6">±6</button><button data-range="12">±12</button><button data-range="all">all</button></div>
+            <button class="an-chip" id="an-greeks-toggle" title="Show Γ Θ ν columns (toggle)"><i data-icon="sigma"></i>Greeks</button>
+            <span class="micro an-tools-sep">Find Δ</span>
+            <div class="an-seg" id="an-finddelta" role="group" aria-label="Find strike by delta"><button data-delta="10">10Δ</button><button data-delta="16">16Δ</button><button data-delta="25">25Δ</button><button data-delta="50">50Δ</button></div>
+            <span class="flex-1"></span>
+            <button class="an-live-btn live" id="an-live-btn" title="Live prices"><i class="dot"></i><span>Live</span></button>
+            <button class="an-ibtn" id="an-colsettings-btn" title="Column settings" aria-label="Column settings"><i data-icon="gear"></i></button>
+          </div>
+          <div class="an-chain-wrap" id="an-chain-wrap" tabindex="0" aria-label="Options chain (j / k or arrows move the highlighted strike, B / S add legs, Shift for puts, E cycles expiry)">
+            <table class="an-chain" id="an-chain"><colgroup></colgroup><thead></thead><tbody></tbody></table>
+          </div>
+          <div class="an-chain-foot" id="an-chain-foot"></div>
+        </div>
+      </div>
+    </div>
+    <div class="an-divider" id="an-divider" title="Drag to resize · double-click to reset"><button class="an-restore" data-collapse="restore" title="Restore both panes" aria-label="Restore both panes">⋮</button></div>
+    <div class="an-right" id="an-right" data-tour="payoff-panel">
+      <div class="an-rptabs" role="tablist" id="an-rptabs">
+        <button class="an-tab active" role="tab" data-rptab="payoff">Payoff</button>
+        <button class="an-tab" role="tab" data-rptab="scenarios">Scenarios</button>
+        <button class="an-tab" role="tab" data-rptab="greeks">Greeks</button>
+        <button class="an-tab" role="tab" data-rptab="vol">Vol</button>
+        <button class="an-tab" role="tab" data-rptab="structure">Structure</button>
+        <button class="an-tab" role="tab" data-rptab="ladder">Ladder</button>
+        <span class="an-tabs-right"><span class="micro" id="an-strat-info"></span><button class="an-ibtn" id="an-share-btn" title="Share strategy link" aria-label="Share strategy link"><i data-icon="share"></i></button><button class="an-ibtn" data-collapse="left" title="Expand analysis · hide the chain" aria-label="Expand analysis"><i data-icon="chevl"></i></button></span>
+      </div>
+      <div class="an-right-body" id="an-right-body">
+        <div class="rp-panel" data-tab="payoff" id="an-payoff">
+          <div class="an-tiles" id="an-tiles"></div>
+          <div class="an-astrip" id="an-astrip"></div>
+          <div class="an-chart-hd">
+            <span class="micro">Payoff</span>
+            <div class="an-legend" id="an-legend">
+              <button class="lg" data-layer="expiry" title="Toggle the at-expiry P&amp;L line"><i></i>At expiry</button>
+              <button class="lg" data-layer="target" title="Toggle the target-date P&amp;L curve"><i class="curve"></i>On <span id="an-legend-date">today</span></button>
+            </div>
+            <div class="an-chips" id="an-chips">
+              <span class="micro">Layers</span>
+              <button class="an-chip" data-layer="oi" title="Open interest bars">OI</button>
+              <button class="an-chip" data-layer="sd" title="±1σ expected-move band">±SD</button>
+              <button class="an-chip" data-layer="be" title="Breakeven markers">BE</button>
+              <button class="an-chip" data-layer="ivdn" title="Target-date curve with IV shifted −5%">IV −5%</button>
+              <button class="an-chip" data-layer="ivup" title="Target-date curve with IV shifted +5%">IV +5%</button>
+              <button class="an-ibtn" id="an-layers-btn" title="All chart layers" aria-label="Chart layers"><i data-icon="layers"></i></button>
+              <div class="an-zoom"><button data-zoom="out" title="Zoom out" aria-label="Zoom out">−</button><button data-zoom="reset" title="Reset zoom" id="an-zoom-label">100%</button><button data-zoom="in" title="Zoom in" aria-label="Zoom in">+</button></div>
+            </div>
+          </div>
+          <div class="an-chart-host" id="an-chart-host"></div>
+          <div class="an-sliders">
+            <div class="sl">
+              <div class="lbl"><span class="micro" id="an-tp-title">Target price</span><span class="val"><button class="an-step" data-tp="-1" title="Decrease target price" aria-label="Decrease">−</button><span id="an-tp-val">—</span><em id="an-tp-pct">+0.0%</em><button class="an-step" data-tp="1" title="Increase target price" aria-label="Increase">+</button></span></div>
+              <div class="track" id="an-tp-track"><div class="fill" id="an-tp-fill"></div><div class="mk" id="an-tp-spot" data-l="spot"></div><div class="knob" id="an-tp-knob"></div><div class="ticks" id="an-tp-ticks"><span id="an-tp-min">—</span><span id="an-tp-max">—</span></div><input type="range" id="an-tp-range" min="0" max="100" step="1" value="50" aria-label="Target price"></div>
+            </div>
+            <div class="sl">
+              <div class="lbl"><span class="micro" id="an-td-title">Target date</span><span class="val"><button class="an-step" data-td="-1" title="Previous day" aria-label="Previous day">‹</button><span id="an-td-val">—</span><em id="an-td-left">0d left</em><button class="an-step" data-td="1" title="Next day" aria-label="Next day">›</button></span></div>
+              <div class="track" id="an-td-track"><div class="fill" id="an-td-fill"></div><div class="knob" id="an-td-knob"></div><div class="ticks" id="an-td-ticks"><span>Today</span><span id="an-td-max">Expiry</span></div><input type="range" id="an-td-range" min="0" max="30" step="1" value="0" aria-label="Target date"></div>
+            </div>
+          </div>
+          <div class="an-gstrip" id="an-greeks-strip"></div>
+        </div>
+        <div class="rp-panel" data-tab="scenarios" id="an-scenarios" hidden></div>
+        <div class="rp-panel" data-tab="greeks" id="an-greeks" hidden></div>
+        <div class="rp-panel" data-tab="vol" id="an-vol" hidden></div>
+        <div class="rp-panel" data-tab="structure" id="an-structure" hidden></div>
+        <div class="rp-panel" data-tab="ladder" id="an-ladder" hidden></div>
+      </div>
+    </div>
+  </div>
+  <div data-cg="portfolio-bar"></div>
+  <!-- Column Settings dialog -->
+  <div id="an-colsettings" hidden>
+    <div class="an-cs">
+      <div class="an-cs-head">
+        <div class="tabs"><button class="tab active" data-cstab="show">Show / Hide</button><button class="tab" data-cstab="reorder">Reorder</button></div>
+        <div class="an-cs-quick"><button class="btn btn-outline btn-xs" data-csq="essentials">Essentials</button><button class="btn btn-outline btn-xs" data-csq="all">Show All</button><button class="btn btn-outline btn-xs" data-csq="none">Hide all</button><button class="btn btn-ghost btn-xs" data-csq="reset">Reset</button></div>
+      </div>
+      <div class="an-cs-body" data-cspanel="show" id="an-cs-show"></div>
+      <div class="an-cs-body" data-cspanel="reorder" id="an-cs-reorder" hidden></div>
+      <div class="an-cs-foot"><span class="text-xs text-muted" id="an-cs-hint">Changes are saved automatically.</span><button class="btn btn-primary btn-sm" data-cg-close>Done</button></div>
+    </div>
+  </div>
+  <!-- Option details dialog (info icon in the hover controls) -->
+  <div id="an-optinfo" hidden></div>
+  <!-- Share link dialog -->
+  <div id="an-share" hidden></div>
+  <!-- Find strike by delta dialog (palette command) -->
+  <div id="an-finddelta-dlg" hidden></div>
+</section>
+<!-- Shared strategy link: #/s/<base64url json> -->
+<section class="screen" data-route="/s/:code" data-title="Shared strategy">
+  <div class="an-share-page" id="an-share-page"></div>
+</section>
+<style>
+/* ================= /analyse workspace · v2 "Obsidian Desk" ================= */
+[data-route="/analyse"]{--an-top:50px;--an-bottom:44px;--an-split:55%;--an-row:36px;--an-itm:hsl(var(--foreground)/.04);--an-oi:hsl(var(--foreground)/.28);--an-hl:hsl(var(--foreground)/.05);padding-bottom:var(--an-bottom)}
+[data-route="/analyse"] .an-shell{display:flex;height:calc(100vh - var(--an-top) - var(--an-bottom));min-height:480px;background:hsl(var(--background));overflow:hidden;position:relative}
+[data-route="/analyse"] .an-left{width:var(--an-split);min-width:360px;display:flex;flex-direction:column;background:hsl(var(--surface-1));border-right:1px solid hsl(var(--border));min-height:0}
+[data-route="/analyse"] .an-right{flex:1;min-width:360px;display:flex;flex-direction:column;min-height:0;background:hsl(var(--background))}
+[data-route="/analyse"] .an-shell[data-collapse="left"] .an-left{display:none}
+[data-route="/analyse"] .an-shell[data-collapse="right"] .an-right{display:none}
+[data-route="/analyse"] .an-shell[data-collapse="left"] .an-right,[data-route="/analyse"] .an-shell[data-collapse="right"] .an-left{width:100%;border-right:0}
+[data-route="/analyse"] .an-divider{width:7px;cursor:col-resize;background:transparent;position:relative;flex-shrink:0;margin-left:-4px;z-index:4}
+[data-route="/analyse"] .an-divider::after{content:"";position:absolute;left:2px;top:50%;width:3px;height:28px;margin-top:-14px;border-radius:2px;background:hsl(var(--border))}
+[data-route="/analyse"] .an-divider:hover::after,[data-route="/analyse"] .an-divider.on::after{background:hsl(var(--primary))}
+[data-route="/analyse"] .an-divider .an-restore{display:none;position:absolute;left:0;top:8px;width:16px;height:26px;background:hsl(var(--surface-3));border:1px solid hsl(var(--input));border-radius:0 4px 4px 0;color:hsl(var(--muted-foreground));font-size:11px;line-height:1;z-index:5}
+[data-route="/analyse"] .an-shell[data-collapse="left"] .an-divider,[data-route="/analyse"] .an-shell[data-collapse="right"] .an-divider{cursor:default;margin-left:0;width:0}
+[data-route="/analyse"] .an-shell[data-collapse="left"] .an-divider::after,[data-route="/analyse"] .an-shell[data-collapse="right"] .an-divider::after{display:none}
+[data-route="/analyse"] .an-shell[data-collapse="left"] .an-restore,[data-route="/analyse"] .an-shell[data-collapse="right"] .an-restore{display:grid;place-items:center}
+[data-route="/analyse"] .an-shell[data-collapse="right"] .an-restore{left:auto;right:0;border-radius:4px 0 0 4px}
+[data-route="/analyse"] .an-mobile-bar{display:none;padding:6px 12px;border-bottom:1px solid hsl(var(--border));background:hsl(var(--surface-1))}
+/* ---- tab bars ---- */
+[data-route="/analyse"] .an-lptabs,[data-route="/analyse"] .an-rptabs{display:flex;align-items:stretch;height:36px;padding:0 14px;border-bottom:1px solid hsl(var(--border));flex-shrink:0;background:hsl(var(--surface-1));overflow:visible}
+[data-route="/analyse"] .an-rptabs{background:hsl(var(--background))}
+[data-route="/analyse"] .an-tab{display:inline-flex;align-items:center;gap:6px;padding:0 11px;font-size:12.5px;font-weight:500;color:hsl(var(--muted-foreground));border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;letter-spacing:.01em}
+[data-route="/analyse"] .an-tab:first-child{padding-left:0}
+[data-route="/analyse"] .an-tab:hover{color:hsl(var(--foreground))}
+[data-route="/analyse"] .an-tab.active{color:hsl(var(--foreground));border-bottom-color:hsl(var(--primary))}
+[data-route="/analyse"] .an-tab .cnt{font-family:var(--font-mono);font-weight:400;font-size:10px;color:hsl(var(--muted-foreground));background:hsl(var(--surface-3));padding:0 5px;line-height:15px;border-radius:2px}
+[data-route="/analyse"] .an-tab.active .cnt{color:hsl(var(--foreground))}
+[data-route="/analyse"] .an-tabs-right{margin-left:auto;display:flex;align-items:center;gap:8px;min-width:0}
+[data-route="/analyse"] .an-tabs-right .micro{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-route="/analyse"] .an-ibtn{width:26px;height:26px;display:inline-grid;place-items:center;color:hsl(var(--muted-foreground));border:1px solid transparent;border-radius:4px;flex-shrink:0}
+[data-route="/analyse"] .an-ibtn:hover{border-color:hsl(var(--input));color:hsl(var(--foreground))}
+[data-route="/analyse"] .an-ibtn.on{color:hsl(var(--foreground));background:hsl(var(--surface-3));border-color:hsl(var(--input))}
+[data-route="/analyse"] i[data-icon]{display:inline-flex;width:14px;height:14px;flex-shrink:0}
+[data-route="/analyse"] i[data-icon] svg{width:100%;height:100%}
+[data-route="/analyse"] .an-left-panels{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+[data-route="/analyse"] .lp-panel{flex:1;min-height:0;display:flex;flex-direction:column}
+[data-route="/analyse"] .lp-panel[hidden]{display:none!important}
+[data-route="/analyse"] .an-placeholder{align-items:center;justify-content:center;color:hsl(var(--muted-foreground));font-size:12.5px}
+/* ---- expiry strip ---- */
+[data-route="/analyse"] .an-expiry-strip{display:flex;align-items:center;gap:2px;padding:6px 10px;border-bottom:1px solid hsl(var(--border));flex-shrink:0}
+[data-route="/analyse"] .an-expiries{display:flex;gap:2px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:none;scroll-behavior:smooth}
+[data-route="/analyse"] .an-expiries::-webkit-scrollbar{display:none}
+[data-route="/analyse"] .an-exp{display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 6px;flex:1 0 auto;min-width:58px;border:1px solid transparent;border-radius:3px;white-space:nowrap}
+[data-route="/analyse"] .an-exp b{font-family:var(--font-mono);font-weight:500;font-size:11.5px;color:hsl(var(--muted-foreground));letter-spacing:-.01em;line-height:1.1}
+[data-route="/analyse"] .an-exp em{font-style:normal;font-size:9.5px;color:hsl(var(--muted-foreground));font-family:var(--font-mono);line-height:1.1;opacity:.85}
+[data-route="/analyse"] .an-exp:hover{background:hsl(var(--surface-3)/.6)}
+[data-route="/analyse"] .an-exp.active{background:hsl(var(--surface-3));border-color:hsl(var(--input))}
+[data-route="/analyse"] .an-exp.active b{color:hsl(var(--foreground))}
+[data-route="/analyse"] .an-exp.has-leg b::after{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:hsl(var(--primary));margin-left:4px;vertical-align:middle}
+[data-route="/analyse"] .an-scroll-btn{width:18px;height:30px;font-size:15px;color:hsl(var(--muted-foreground));border-radius:3px;flex-shrink:0;display:none}
+[data-route="/analyse"] .an-expiry-strip.overflow .an-scroll-btn{display:block}
+[data-route="/analyse"] .an-scroll-btn:hover{background:hsl(var(--surface-3));color:hsl(var(--foreground))}
+/* ---- chain toolbar ---- */
+[data-route="/analyse"] .an-chain-tools{display:flex;align-items:center;gap:8px;padding:0 14px;height:34px;border-bottom:1px solid hsl(var(--border));flex-shrink:0;overflow:hidden}
+[data-route="/analyse"] .an-tools-sep{margin-left:6px}
+[data-route="/analyse"] .an-seg{display:inline-flex;border:1px solid hsl(var(--input));border-radius:3px;height:22px;overflow:hidden;flex-shrink:0}
+[data-route="/analyse"] .an-seg button{padding:0 8px;font-family:var(--font-mono);font-size:10.5px;color:hsl(var(--muted-foreground));border-right:1px solid hsl(var(--input));letter-spacing:.02em;line-height:1}
+[data-route="/analyse"] .an-seg button:last-child{border-right:0}
+[data-route="/analyse"] .an-seg button:hover{color:hsl(var(--foreground));background:hsl(var(--surface-3)/.6)}
+[data-route="/analyse"] .an-seg button.on{background:hsl(var(--foreground));color:hsl(var(--background))}
+[data-route="/analyse"] .an-chip{height:22px;padding:0 8px;font-size:10.5px;font-weight:500;letter-spacing:.04em;border:1px solid hsl(var(--input));color:hsl(var(--muted-foreground));display:inline-flex;align-items:center;gap:5px;border-radius:3px;white-space:nowrap;flex-shrink:0;font-family:var(--font-mono)}
+[data-route="/analyse"] .an-chip::before{content:"";width:6px;height:6px;border:1px solid currentColor;border-radius:1px;flex-shrink:0}
+[data-route="/analyse"] .an-chip:hover{color:hsl(var(--foreground))}
+[data-route="/analyse"] .an-chip.on{color:hsl(var(--foreground));border-color:hsl(var(--muted-foreground));background:hsl(var(--surface-3)/.5)}
+[data-route="/analyse"] .an-chip.on::before{background:currentColor}
+[data-route="/analyse"] .an-chip i[data-icon]{width:11px;height:11px}
+[data-route="/analyse"] .an-live-btn{height:22px;padding:0 8px;border-radius:3px;border:1px solid hsl(var(--profit)/.5);background:hsl(var(--buy-bg));color:hsl(var(--profit));font-weight:600;font-size:10px;letter-spacing:.08em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap;font-family:var(--font-mono)}
+[data-route="/analyse"] .an-live-btn .dot{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px hsl(var(--profit)/.18)}
+[data-route="/analyse"] .an-live-btn.static{border-color:hsl(var(--input));background:transparent;color:hsl(var(--muted-foreground))}
+[data-route="/analyse"] .an-live-btn.static .dot{box-shadow:none}
+[data-route="/analyse"] .an-live-btn.connecting{border-color:hsl(var(--warning)/.6);background:hsl(var(--warning-bg));color:hsl(var(--warning))}
+[data-route="/analyse"] .an-live-btn.connecting .dot{animation:cg-spin 1s linear infinite;border-radius:1px}
+/* ---- chain table ---- */
+[data-route="/analyse"] .an-chain-wrap{flex:1;min-height:0;overflow:auto;position:relative;outline:none;scrollbar-width:thin;scrollbar-color:hsl(var(--input)) transparent;padding:0 14px}
+[data-route="/analyse"] .an-chain-wrap:focus-visible{box-shadow:inset 0 0 0 1px hsl(var(--ring)/.5)}
+[data-route="/analyse"] .an-chain{border-collapse:separate;border-spacing:0;table-layout:fixed;font-family:var(--font-mono);font-size:12px;font-variant-numeric:tabular-nums;letter-spacing:-.01em;min-width:100%}
+[data-route="/analyse"] .an-chain th,[data-route="/analyse"] .an-chain td{padding:0 5px;white-space:nowrap;vertical-align:middle;text-align:right}
+[data-route="/analyse"] .an-chain td.p-side,[data-route="/analyse"] .an-chain th.p-side{text-align:left}
+[data-route="/analyse"] .an-chain td.strike,[data-route="/analyse"] .an-chain th.strike{text-align:center}
+[data-route="/analyse"] .an-chain thead th{position:sticky;top:0;z-index:6;background:hsl(var(--surface-1));font-weight:500}
+[data-route="/analyse"] .an-chain thead tr.h1 th{height:24px;border-bottom:1px solid hsl(var(--border));font-family:var(--font-body);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;color:hsl(var(--foreground))}
+[data-route="/analyse"] .an-chain thead tr.h1 th .h{font-family:var(--font-mono);font-size:9.5px;color:hsl(var(--muted-foreground));letter-spacing:.04em;text-transform:none;font-weight:400;margin:0 8px}
+[data-route="/analyse"] .an-chain thead tr.h1 th.strike{font-family:var(--font-mono);font-size:9.5px;color:hsl(var(--muted-foreground));text-transform:none;font-weight:500;letter-spacing:.04em}
+[data-route="/analyse"] .an-chain thead tr.h2 th{top:24px;height:26px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:hsl(var(--muted-foreground));border-bottom:1px solid hsl(var(--input))}
+[data-route="/analyse"] .an-chain thead tr.h2 th em{font-style:normal;color:hsl(var(--muted-foreground));opacity:.6;letter-spacing:.04em}
+[data-route="/analyse"] .an-chain tbody td{height:var(--an-row);border-bottom:1px solid hsl(var(--border));position:relative;line-height:1.1}
+[data-route="/analyse"][data-density="compact"]{--an-row:28px}
+[data-route="/analyse"] .an-chain tbody tr:hover td{background:hsl(var(--surface-3))}
+[data-route="/analyse"] .an-chain td.itm{background:var(--an-itm)}
+[data-route="/analyse"] .an-chain tbody tr:hover td.itm{background:hsl(var(--surface-3))}
+[data-route="/analyse"] .an-chain td.strike{font-weight:500;color:hsl(var(--foreground));font-size:12.5px;border-left:1px solid hsl(var(--border));border-right:1px solid hsl(var(--border))}
+[data-route="/analyse"] .an-chain td.strike em{font-style:normal;font-size:8.5px;letter-spacing:.06em;margin-top:2px;display:flex;gap:4px;justify-content:center;line-height:1}
+[data-route="/analyse"] .an-chain td.strike em b{font-weight:500}
+[data-route="/analyse"] .an-chain td.strike em .atm{color:hsl(var(--primary))}
+[data-route="/analyse"] .an-chain td.strike em .lb{color:hsl(var(--buy))}
+[data-route="/analyse"] .an-chain td.strike em .ls{color:hsl(var(--sell))}
+[data-route="/analyse"][data-density="compact"] .an-chain td.strike em{display:none}
+[data-route="/analyse"][data-density="compact"] .an-chain td.strike{font-size:12px}
+[data-route="/analyse"] .an-chain tr.atm td{background:hsl(var(--primary)/.09);border-bottom-color:hsl(var(--primary)/.45)}
+[data-route="/analyse"] .an-chain tr.atm td.itm{background:hsl(var(--primary)/.09)}
+[data-route="/analyse"] .an-chain tr.atm td.strike{color:hsl(var(--primary))}
+[data-route="/analyse"] .an-chain tbody tr.atm:hover td{background:hsl(var(--primary)/.14)}
+[data-route="/analyse"] .an-chain tr.hl td{box-shadow:inset 0 1px 0 hsl(var(--primary)),inset 0 -1px 0 hsl(var(--primary))}
+[data-route="/analyse"] .an-chain tr.hl td:first-child{box-shadow:inset 1px 1px 0 hsl(var(--primary)),inset 0 -1px 0 hsl(var(--primary)),inset 1px 0 0 hsl(var(--primary))}
+[data-route="/analyse"] .an-chain tr.hl td:last-child{box-shadow:inset -1px 1px 0 hsl(var(--primary)),inset 0 -1px 0 hsl(var(--primary)),inset -1px 0 0 hsl(var(--primary))}
+[data-route="/analyse"] .an-chain tr.found td{animation:an-found 1.6s ease-out}
+@keyframes an-found{0%{background:hsl(var(--primary)/.35)}100%{background:transparent}}
+[data-route="/analyse"] .an-chain tr.leg td:first-child::before{content:"";position:absolute;left:0;top:-1px;bottom:-1px;width:2px;background:hsl(var(--buy));z-index:1}
+[data-route="/analyse"] .an-chain tr.leg-s td:first-child::before{background:hsl(var(--sell))}
+[data-route="/analyse"] .an-chain td.legcell{box-shadow:inset 0 0 0 1px hsl(var(--buy))}
+[data-route="/analyse"] .an-chain td.legcell.ls{box-shadow:inset 0 0 0 1px hsl(var(--sell))}
+[data-route="/analyse"] .an-cell{display:flex;flex-direction:column;justify-content:center;align-items:flex-end;gap:1px;position:relative;z-index:1;line-height:1.1}
+[data-route="/analyse"] td.p-side .an-cell{align-items:flex-start}
+[data-route="/analyse"] .an-cell .px{font-size:12px;color:hsl(var(--foreground))}
+[data-route="/analyse"] .an-cell .iv{font-size:9.5px;color:hsl(var(--muted-foreground))}
+[data-route="/analyse"][data-density="compact"] .an-cell .px{font-size:11px}
+[data-route="/analyse"][data-density="compact"] .an-cell .iv{font-size:8.5px}
+[data-route="/analyse"] .an-cell .dl{color:hsl(var(--muted-foreground))}
+[data-route="/analyse"] .an-cell .px.up{color:hsl(var(--profit))}
+[data-route="/analyse"] .an-cell .px.dn{color:hsl(var(--loss))}
+[data-route="/analyse"] .an-oibar{position:absolute;bottom:5px;height:2px;background:var(--an-oi);z-index:0;pointer-events:none}
+[data-route="/analyse"] td.c-side .an-oibar{left:5px}
+[data-route="/analyse"] td.p-side .an-oibar{right:5px}
+[data-route="/analyse"][data-density="compact"] .an-oibar{bottom:3px}
+/* spot hairline row */
+[data-route="/analyse"] .an-chain tr.spotrow td{height:0;padding:0;border:0;line-height:0;font-size:0;position:relative;overflow:visible;background:transparent!important;box-shadow:none!important}
+[data-route="/analyse"] .an-spotline{position:absolute;left:0;right:0;top:-1px;height:1px;background:hsl(var(--spot));z-index:3;pointer-events:none}
+[data-route="/analyse"] .an-chain tr.spot-below td.strike{padding-bottom:8px}
+[data-route="/analyse"] .an-chain tr.spot-above td.strike{padding-top:8px}
+[data-route="/analyse"][data-density="compact"] .an-chain tr.spot-below td.strike,[data-route="/analyse"][data-density="compact"] .an-chain tr.spot-above td.strike{padding-top:0;padding-bottom:0}
+[data-route="/analyse"] .an-spotline span{position:absolute;left:50%;top:0;transform:translate(-50%,-50%);box-shadow:0 0 0 1px hsl(var(--surface-1));background:hsl(var(--spot));color:hsl(var(--primary-foreground));font-family:var(--font-mono);font-size:8.5px;font-weight:500;letter-spacing:.08em;padding:1px 6px;line-height:1.3;white-space:nowrap;border-radius:2px}
+/* hover controls */
+[data-route="/analyse"] .an-ctl{display:none;position:absolute;top:50%;transform:translateY(-50%);z-index:5;align-items:center;gap:3px;padding:3px;background:hsl(var(--popover));border:1px solid hsl(var(--input));border-radius:3px;box-shadow:0 3px 12px rgba(0,0,0,.35);font-family:var(--font-body)}
+[data-route="/analyse"] td.c-inb .an-ctl{right:4px}
+[data-route="/analyse"] td.p-inb .an-ctl{left:4px}
+[data-route="/analyse"] tr:hover .an-ctl,[data-route="/analyse"] tr.hl .an-ctl{display:flex}
+[data-route="/analyse"] .an-ctl .bs{width:20px;height:18px;display:grid;place-items:center;font-size:10.5px;font-weight:700;border:1px solid;border-radius:2px}
+[data-route="/analyse"] .an-ctl .bs.b{color:hsl(var(--buy));border-color:hsl(var(--buy));background:hsl(var(--buy-bg))}
+[data-route="/analyse"] .an-ctl .bs.s{color:hsl(var(--sell));border-color:hsl(var(--sell));background:hsl(var(--sell-bg))}
+[data-route="/analyse"] .an-ctl .bs.b:hover,[data-route="/analyse"] .an-ctl .bs.b.on{background:hsl(var(--buy));color:#fff}
+[data-route="/analyse"] .an-ctl .bs.s:hover,[data-route="/analyse"] .an-ctl .bs.s.on{background:hsl(var(--sell));color:#fff}
+[data-route="/analyse"] .an-ctl .stp{display:inline-flex;align-items:center;border:1px solid hsl(var(--input));border-radius:2px;height:18px;font-family:var(--font-mono);font-size:10.5px}
+[data-route="/analyse"] .an-ctl .stp button{width:16px;height:100%;display:grid;place-items:center;color:hsl(var(--muted-foreground));font-size:12px}
+[data-route="/analyse"] .an-ctl .stp button:hover{color:hsl(var(--foreground));background:hsl(var(--surface-3))}
+[data-route="/analyse"] .an-ctl .stp .n{min-width:30px;text-align:center;color:hsl(var(--foreground));padding:0 2px;cursor:pointer}
+[data-route="/analyse"] .an-ctl .lot{font-family:var(--font-mono);font-size:9.5px;color:hsl(var(--muted-foreground));padding:0 3px;white-space:nowrap}
+[data-route="/analyse"] .an-ctl .ic{width:18px;height:18px;border-radius:2px;display:grid;place-items:center;color:hsl(var(--muted-foreground))}
+[data-route="/analyse"] .an-ctl .ic:hover{color:hsl(var(--foreground));background:hsl(var(--surface-3))}
+[data-route="/analyse"] .an-ctl .ic i{width:12px;height:12px}
+[data-route="/analyse"] .an-chain-foot{display:flex;gap:16px;height:30px;align-items:center;padding:0 14px;border-top:1px solid hsl(var(--border));font-size:10.5px;color:hsl(var(--muted-foreground));font-family:var(--font-mono);white-space:nowrap;overflow:hidden;flex-shrink:0}
+[data-route="/analyse"] .an-chain-foot b{font-weight:500;color:hsl(var(--foreground))}
+[data-route="/analyse"] .an-chain-foot .r{margin-left:auto;font-family:var(--font-body);font-size:10.5px}
+/* ---- right pane ---- */
+[data-route="/analyse"] .an-right-body{flex:1;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:hsl(var(--input)) transparent}
+[data-route="/analyse"] .rp-panel[hidden]{display:none!important}
+[data-route="/analyse"] .an-tiles{display:grid;grid-template-columns:repeat(6,1fr);padding:8px 14px;border-bottom:1px solid hsl(var(--border))}
+[data-route="/analyse"] .an-tile{padding:2px 0 2px 12px;border-left:1px solid hsl(var(--border));min-width:0}
+[data-route="/analyse"] .an-tile:first-child{padding-left:0;border-left:0}
+[data-route="/analyse"] .an-tile .v{font-family:var(--font-mono);font-size:16px;font-weight:500;margin:4px 0 2px;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-route="/analyse"] .an-tile .v.sm{font-size:13px}
+[data-route="/analyse"] .an-tile .s{display:block;font-size:10px;color:hsl(var(--muted-foreground));font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-route="/analyse"] .an-tile .micro{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-route="/analyse"] .an-astrip{display:flex;align-items:center;flex-wrap:wrap;row-gap:2px;padding:4px 14px;min-height:30px;border-bottom:1px solid hsl(var(--border));font-size:11px;white-space:nowrap}
+[data-route="/analyse"] .an-astrip .ai{display:inline-flex;align-items:center;gap:6px;padding:0 10px;border-right:1px solid hsl(var(--border));height:20px;flex:0 0 auto}
+[data-route="/analyse"] .an-astrip .ai:first-child{padding-left:0}
+[data-route="/analyse"] .an-astrip .ai:last-child{border-right:0}
+[data-route="/analyse"] .an-astrip .ai b{font-family:var(--font-mono);font-weight:500;font-size:11.5px}
+[data-route="/analyse"] .an-astrip .ai .g{font-size:10px;color:hsl(var(--muted-foreground))}
+[data-route="/analyse"] .an-astrip.empty{color:hsl(var(--muted-foreground))}
+[data-route="/analyse"] .an-chart-hd{display:flex;align-items:center;gap:14px;padding:8px 14px 2px;flex-wrap:wrap}
+[data-route="/analyse"] .an-legend{display:flex;gap:14px;font-size:11px;color:hsl(var(--foreground));align-items:center}
+[data-route="/analyse"] .an-legend .lg{display:inline-flex;align-items:center;gap:6px;color:hsl(var(--foreground));font-weight:500}
+[data-route="/analyse"] .an-legend .lg i{display:inline-block;width:14px;height:0;border-top:2px solid hsl(var(--foreground))}
+[data-route="/analyse"] .an-legend .lg i.curve{border-top-color:hsl(var(--curve))}
+[data-route="/analyse"] .an-legend .lg.off{opacity:.4;text-decoration:line-through}
+[data-route="/analyse"] .an-chips{display:flex;gap:4px;margin-left:auto;align-items:center}
+[data-route="/analyse"] .an-chips .micro{margin-right:4px}
+[data-route="/analyse"] .an-zoom{display:inline-flex;border:1px solid hsl(var(--input));border-radius:3px;margin-left:6px;height:22px;overflow:hidden}
+[data-route="/analyse"] .an-zoom button{min-width:22px;height:100%;display:grid;place-items:center;color:hsl(var(--muted-foreground));border-right:1px solid hsl(var(--input));font-family:var(--font-mono);font-size:10.5px;padding:0 6px}
+[data-route="/analyse"] .an-zoom button:last-child{border-right:0}
+[data-route="/analyse"] .an-zoom button:hover{color:hsl(var(--foreground));background:hsl(var(--surface-3))}
+[data-route="/analyse"] .an-chart-host{position:relative;padding:0 14px 4px;min-height:230px}
+[data-route="/analyse"] .an-chart-host svg{display:block;width:100%;height:auto;overflow:visible;font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+[data-route="/analyse"] .an-chart-host svg text{font-size:9.5px;fill:hsl(var(--muted-foreground))}
+[data-route="/analyse"] .an-chart-host .grid{stroke:hsl(var(--border));stroke-width:1}
+[data-route="/analyse"] .an-chart-host .gridv{stroke:hsl(var(--border));stroke-width:1;stroke-dasharray:1 3}
+[data-route="/analyse"] .an-chart-host .zero{stroke:hsl(var(--muted-foreground));stroke-width:1}
+[data-route="/analyse"] .an-chart-host .band{fill:hsl(var(--muted-foreground));opacity:.07}
+[data-route="/analyse"] .an-chart-host .bandl{stroke:hsl(var(--muted-foreground));stroke-dasharray:2 3;opacity:.7}
+[data-route="/analyse"] .an-chart-host .oib{fill:hsl(var(--muted-foreground));opacity:.16}
+[data-route="/analyse"] .an-chart-host .fill-up{fill:hsl(var(--profit));opacity:.18}
+[data-route="/analyse"] .an-chart-host .fill-dn{fill:hsl(var(--loss));opacity:.18}
+[data-route="/analyse"] .an-chart-host .exp{fill:none;stroke:hsl(var(--foreground));stroke-width:1.6;stroke-linejoin:round}
+[data-route="/analyse"] .an-chart-host .tgt{fill:none;stroke:hsl(var(--curve));stroke-width:1.6;stroke-linecap:round}
+[data-route="/analyse"] .an-chart-host .tgt2{fill:none;stroke:hsl(var(--curve));stroke-width:1;stroke-dasharray:3 3;opacity:.6}
+[data-route="/analyse"] .an-chart-host .be{stroke:hsl(var(--foreground));stroke-dasharray:4 3;stroke-width:1;opacity:.7}
+[data-route="/analyse"] .an-chart-host .betxt{fill:hsl(var(--foreground));opacity:.8}
+[data-route="/analyse"] .an-chart-host .spot{stroke:hsl(var(--spot));stroke-width:1.2;stroke-dasharray:5 3}
+[data-route="/analyse"] .an-chart-host .spottag{fill:hsl(var(--spot))}
+[data-route="/analyse"] .an-chart-host .spottxt{fill:hsl(var(--primary-foreground));font-weight:500;font-size:8.5px;letter-spacing:.08em}
+[data-route="/analyse"] .an-chart-host .tp{stroke:hsl(var(--curve));stroke-dasharray:2 3;opacity:.7}
+[data-route="/analyse"] .an-chart-host .tpdot{fill:hsl(var(--background));stroke:hsl(var(--curve));stroke-width:1.6}
+[data-route="/analyse"] .an-chart-host .tptxt{fill:hsl(var(--curve));font-weight:500}
+[data-route="/analyse"] .an-chart-host .maxp{fill:hsl(var(--profit));font-weight:500}
+[data-route="/analyse"] .an-chart-host .maxl{fill:hsl(var(--loss));font-weight:500}
+[data-route="/analyse"] .an-chart-host .xh{stroke:hsl(var(--foreground));stroke-opacity:.45;stroke-dasharray:3 3}
+[data-route="/analyse"] .an-chart-host .xhd{stroke:hsl(var(--background));stroke-width:1.5}
+[data-route="/analyse"] .an-tip{position:absolute;pointer-events:none;background:hsl(var(--popover));border:1px solid hsl(var(--input));border-radius:3px;padding:5px 8px;font-size:10.5px;font-family:var(--font-mono);box-shadow:0 3px 12px rgba(0,0,0,.4);white-space:nowrap;z-index:3;display:none;line-height:1.5;color:hsl(var(--foreground))}
+[data-route="/analyse"] .an-tip b{font-weight:500}
+[data-route="/analyse"] .an-chart-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:hsl(var(--muted-foreground));font-size:12px}
+[data-route="/analyse"] .an-chart-empty b{font-family:var(--font-display);font-size:14px;color:hsl(var(--foreground))}
+[data-route="/analyse"] .an-chart-empty .kbd{margin:0 2px}
+/* sliders */
+[data-route="/analyse"] .an-sliders{display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:9px 14px 8px;border-top:1px solid hsl(var(--border));border-bottom:1px solid hsl(var(--border))}
+[data-route="/analyse"] .sl .lbl{display:flex;justify-content:space-between;align-items:center;min-height:22px}
+[data-route="/analyse"] .sl .val{font-family:var(--font-mono);font-size:12.5px;font-weight:500;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+[data-route="/analyse"] .sl .lbl .micro{white-space:nowrap}
+[data-route="/analyse"] .sl .val em{font-style:normal;color:hsl(var(--muted-foreground));font-weight:400;font-size:11px}
+[data-route="/analyse"] .an-step{width:18px;height:18px;border:1px solid hsl(var(--input));border-radius:2px;display:grid;place-items:center;color:hsl(var(--muted-foreground));font-size:12px;line-height:1;font-family:var(--font-body)}
+[data-route="/analyse"] .an-step:hover{color:hsl(var(--foreground));background:hsl(var(--surface-3))}
+[data-route="/analyse"] .track{position:relative;height:32px;margin-top:2px}
+[data-route="/analyse"] .track::before{content:"";position:absolute;left:0;right:0;top:9px;height:2px;background:hsl(var(--input))}
+[data-route="/analyse"] .track .fill{position:absolute;left:0;top:9px;height:2px;background:hsl(var(--muted-foreground))}
+[data-route="/analyse"] .track .knob{position:absolute;top:4px;width:12px;height:12px;border-radius:50%;background:hsl(var(--surface-1));border:2px solid hsl(var(--foreground));transform:translateX(-50%);pointer-events:none;z-index:2}
+[data-route="/analyse"] .track .ticks{position:absolute;left:0;right:0;top:18px;display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:9.5px;color:hsl(var(--muted-foreground));pointer-events:none}
+[data-route="/analyse"] .track .mk{position:absolute;top:5px;width:1px;height:10px;background:hsl(var(--spot));transform:translateX(-50%);z-index:1}
+[data-route="/analyse"] .track .mk::after{content:attr(data-l);position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-family:var(--font-mono);font-size:8.5px;color:hsl(var(--spot));letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+[data-route="/analyse"] .track input{position:absolute;left:-6px;right:-6px;top:0;width:calc(100% + 12px);height:20px;opacity:0;margin:0;cursor:pointer}
+[data-route="/analyse"] .track input:disabled{cursor:not-allowed}
+/* greeks strip */
+[data-route="/analyse"] .an-gstrip{display:flex;padding:7px 14px;border-bottom:1px solid hsl(var(--border));align-items:center;overflow:hidden}
+[data-route="/analyse"] .an-gstrip .gk{display:flex;flex-direction:column;gap:2px;padding-right:14px;margin-right:14px;border-right:1px solid hsl(var(--border));white-space:nowrap}
+[data-route="/analyse"] .an-gstrip .gk:last-of-type{border-right:0}
+[data-route="/analyse"] .an-gstrip .gk .v{font-family:var(--font-mono);font-size:12.5px;font-weight:500;font-variant-numeric:tabular-nums}
+[data-route="/analyse"] .an-gstrip .note{margin-left:auto;font-size:10.5px;color:hsl(var(--muted-foreground));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* ---- generic panel blocks (scenarios / vol / structure / greeks / ladder) ---- */
+[data-route="/analyse"] .an-blk{padding:8px 14px 12px;border-bottom:1px solid hsl(var(--border))}
+[data-route="/analyse"] .an-blk-hd{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;min-height:22px}
+[data-route="/analyse"] .an-blk-hd h4{margin:0;font-size:12px;font-weight:600;letter-spacing:.01em}
+[data-route="/analyse"] .an-blk-hd .right{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+[data-route="/analyse"] .an-blk-hd .lg{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:hsl(var(--muted-foreground))}
+[data-route="/analyse"] .an-blk-hd .lg i{width:10px;height:10px;display:inline-block;border-radius:1px}
+[data-route="/analyse"] .an-blk-hd .lg i.ln{height:0;width:12px;border-top:2px solid currentColor;border-radius:0}
+[data-route="/analyse"] .an-grid2{display:grid;grid-template-columns:1fr 1fr}
+[data-route="/analyse"] .an-grid2 .an-blk:nth-child(odd){border-right:1px solid hsl(var(--border))}
+[data-route="/analyse"] .an-empty{padding:28px 14px;color:hsl(var(--muted-foreground));font-size:12px;text-align:center}
+[data-route="/analyse"] .an-empty b{display:block;color:hsl(var(--foreground));font-family:var(--font-display);font-size:14px;margin-bottom:3px}
+[data-route="/analyse"] .an-svg{display:block;width:100%;height:auto;overflow:visible;font-family:var(--font-mono)}
+[data-route="/analyse"] .an-svg text{font-size:9.5px;fill:hsl(var(--muted-foreground))}
+[data-route="/analyse"] .an-svg .grid{stroke:hsl(var(--border))}
+[data-route="/analyse"] .an-svg .zero{stroke:hsl(var(--muted-foreground))}
+[data-route="/analyse"] .an-svg .ln{fill:none;stroke-width:1.6;stroke-linejoin:round}
+[data-route="/analyse"] .an-svg .ln.ink{stroke:hsl(var(--foreground))}
+[data-route="/analyse"] .an-svg .ln.curve{stroke:hsl(var(--curve))}
+[data-route="/analyse"] .an-svg .ln.dim{stroke:hsl(var(--muted-foreground));stroke-dasharray:3 3;stroke-width:1.2}
+[data-route="/analyse"] .an-svg .ln.up{stroke:hsl(var(--profit))}
+[data-route="/analyse"] .an-svg .ln.dn{stroke:hsl(var(--loss))}
+[data-route="/analyse"] .an-svg .spot{stroke:hsl(var(--spot));stroke-dasharray:4 3}
+[data-route="/analyse"] .an-svg .spotdot{fill:hsl(var(--spot))}
+[data-route="/analyse"] .an-svg .legdot{fill:hsl(var(--spot));stroke:hsl(var(--background));stroke-width:1.5}
+[data-route="/analyse"] .an-svg .bar-c{fill:hsl(var(--profit));opacity:.55}
+[data-route="/analyse"] .an-svg .bar-p{fill:hsl(var(--loss));opacity:.55}
+[data-route="/analyse"] .an-svg .bar-pos{fill:hsl(var(--profit));opacity:.7}
+[data-route="/analyse"] .an-svg .bar-neg{fill:hsl(var(--loss));opacity:.7}
+[data-route="/analyse"] .an-svg .bar-n{fill:hsl(var(--muted-foreground));opacity:.35}
+[data-route="/analyse"] .an-svg .accent{fill:hsl(var(--spot))}
+[data-route="/analyse"] .an-svg .tink{fill:hsl(var(--foreground))}
+[data-route="/analyse"] .an-svg .strk{stroke:hsl(var(--spot));stroke-width:1;stroke-dasharray:2 2}
+/* scenarios */
+[data-route="/analyse"] .an-scn-ctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+[data-route="/analyse"] .an-scn-ctl .micro{white-space:nowrap}
+[data-route="/analyse"] .an-ivsl{display:inline-flex;align-items:center;gap:6px}
+[data-route="/analyse"] .an-ivsl input{width:110px;height:16px;margin:0;accent-color:hsl(var(--foreground));cursor:pointer}
+[data-route="/analyse"] .an-ivsl b{font-family:var(--font-mono);font-weight:500;font-size:11px;min-width:34px;text-align:right}
+[data-route="/analyse"] .mtx{display:grid;grid-template-columns:76px repeat(var(--cols,6),1fr);gap:2px;font-family:var(--font-mono);font-size:11.5px;font-variant-numeric:tabular-nums;letter-spacing:-.01em;position:relative}
+[data-route="/analyse"] .mtx .h{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:hsl(var(--muted-foreground));text-align:center;height:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:500;border-bottom:1px solid hsl(var(--border));line-height:1.1}
+[data-route="/analyse"] .mtx .h small{font-size:8.5px;text-transform:none;letter-spacing:.02em;opacity:.8}
+[data-route="/analyse"] .mtx .h.tg{color:hsl(var(--foreground));border-bottom:1px solid hsl(var(--foreground))}
+[data-route="/analyse"] .mtx .rh{color:hsl(var(--muted-foreground));display:flex;align-items:center;justify-content:flex-end;padding-right:10px;height:var(--mtx-row,26px);gap:6px;white-space:nowrap}
+[data-route="/analyse"] .mtx .rh em{font-style:normal;font-size:8.5px;letter-spacing:.06em;font-family:var(--font-mono);color:hsl(var(--spot))}
+[data-route="/analyse"] .mtx .rh.tg{color:hsl(var(--foreground))}
+[data-route="/analyse"] .mtx .cell{height:var(--mtx-row,26px);display:flex;align-items:center;justify-content:center;font-weight:500;color:hsl(var(--foreground));position:relative;cursor:default;border-radius:1px}
+[data-route="/analyse"] .mtx .cell.tg{box-shadow:inset 0 0 0 1.5px hsl(var(--foreground))}
+[data-route="/analyse"] .mtx .cell:hover{box-shadow:inset 0 0 0 1px hsl(var(--muted-foreground))}
+[data-route="/analyse"] .mtx canvas{grid-column:2 / -1;display:block;width:100%;height:100%;border-radius:2px;cursor:crosshair}
+[data-route="/analyse"] .an-scn-tip{position:absolute;pointer-events:none;background:hsl(var(--popover));border:1px solid hsl(var(--input));border-radius:3px;padding:4px 8px;font-size:10.5px;font-family:var(--font-mono);box-shadow:0 3px 12px rgba(0,0,0,.4);white-space:nowrap;z-index:5;display:none;line-height:1.5}
+/* ladder */
+[data-route="/analyse"] .an-ladder-wrap{max-height:none}
+[data-route="/analyse"] .an-ladder{width:100%;border-collapse:separate;border-spacing:0;font-family:var(--font-mono);font-size:11.5px;font-variant-numeric:tabular-nums}
+[data-route="/analyse"] .an-ladder th{position:sticky;top:0;z-index:2;background:hsl(var(--background));text-align:right;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:hsl(var(--muted-foreground));font-weight:500;padding:6px 8px;border-bottom:1px solid hsl(var(--input));white-space:nowrap}
+[data-route="/analyse"] .an-ladder td{text-align:right;padding:0 8px;height:var(--an-row);border-bottom:1px solid hsl(var(--border));white-space:nowrap}
+[data-route="/analyse"] .an-ladder th:last-child,[data-route="/analyse"] .an-ladder td:last-child{text-align:left}
+[data-route="/analyse"] .an-ladder tr:hover td{background:hsl(var(--surface-3)/.6)}
+[data-route="/analyse"] .an-ladder tr.spot td{background:hsl(var(--primary)/.1);color:hsl(var(--foreground));border-bottom-color:hsl(var(--primary)/.45)}
+[data-route="/analyse"] .an-ladder tr.spot td:first-child{color:hsl(var(--primary));font-weight:500}
+[data-route="/analyse"] .an-ladder tr.be td{border-bottom-style:dashed}
+[data-route="/analyse"] .an-pill{display:inline-flex;align-items:center;padding:0 6px;border-radius:2px;font-family:var(--font-mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;line-height:16px;font-weight:500;border:1px solid transparent}
+[data-route="/analyse"] .an-pill.profit{color:hsl(var(--profit));border-color:hsl(var(--profit)/.5);background:hsl(var(--buy-bg))}
+[data-route="/analyse"] .an-pill.loss{color:hsl(var(--loss));border-color:hsl(var(--loss)/.5);background:hsl(var(--sell-bg))}
+[data-route="/analyse"] .an-pill.flat{color:hsl(var(--muted-foreground));border-color:hsl(var(--input))}
+[data-route="/analyse"] .an-pill.spot{color:hsl(var(--primary));border-color:hsl(var(--primary)/.5)}
+/* greeks tab */
+[data-route="/analyse"] .an-gtiles{display:grid;grid-template-columns:repeat(4,1fr);padding:8px 14px;border-bottom:1px solid hsl(var(--border))}
+[data-route="/analyse"] .an-gtile{padding:2px 0 2px 12px;border-left:1px solid hsl(var(--border))}
+[data-route="/analyse"] .an-gtile:first-child{padding-left:0;border-left:0}
+[data-route="/analyse"] .an-gtile .v{font-family:var(--font-mono);font-size:16px;font-weight:500;margin:4px 0 2px;letter-spacing:-.02em;line-height:1}
+[data-route="/analyse"] .an-gtile .s{font-size:10px;color:hsl(var(--muted-foreground));font-family:var(--font-mono)}
+[data-route="/analyse"] .an-tbl{width:100%;border-collapse:separate;border-spacing:0;font-family:var(--font-mono);font-size:11.5px;font-variant-numeric:tabular-nums}
+[data-route="/analyse"] .an-tbl th{text-align:right;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:hsl(var(--muted-foreground));font-weight:500;padding:5px 8px;border-bottom:1px solid hsl(var(--input));white-space:nowrap}
+[data-route="/analyse"] .an-tbl td{text-align:right;padding:0 8px;height:30px;border-bottom:1px solid hsl(var(--border));white-space:nowrap}
+[data-route="/analyse"] .an-tbl th:first-child,[data-route="/analyse"] .an-tbl td:first-child{text-align:left;padding-left:0}
+[data-route="/analyse"] .an-tbl tr.total td{font-weight:500;color:hsl(var(--foreground));background:hsl(var(--surface-3)/.4)}
+[data-route="/analyse"] .an-side{font-family:var(--font-body);font-size:10px;letter-spacing:.08em;font-weight:600;margin-right:6px}
+[data-route="/analyse"] .an-side.b{color:hsl(var(--buy))}
+[data-route="/analyse"] .an-side.s{color:hsl(var(--sell))}
+[data-route="/analyse"] .an-gexpl{display:grid;grid-template-columns:1fr 1fr;gap:0}
+[data-route="/analyse"] .an-gexpl .x{padding:8px 14px;font-size:11.5px;color:hsl(var(--muted-foreground));line-height:1.45;border-bottom:1px solid hsl(var(--border))}
+[data-route="/analyse"] .an-gexpl .x:nth-child(odd){border-right:1px solid hsl(var(--border))}
+[data-route="/analyse"] .an-gexpl .x b{display:block;color:hsl(var(--foreground));font-size:12px;margin-bottom:1px}
+/* vol / structure stat rows */
+[data-route="/analyse"] .an-kv{display:flex;gap:18px;align-items:baseline;flex-wrap:wrap;font-size:11px;color:hsl(var(--muted-foreground))}
+[data-route="/analyse"] .an-kv b{font-family:var(--font-mono);font-weight:500;color:hsl(var(--foreground));font-size:12px}
+[data-route="/analyse"] .an-big{font-family:var(--font-mono);font-size:26px;font-weight:500;letter-spacing:-.02em;line-height:1}
+[data-route="/analyse"] .an-gauge{position:relative;height:6px;background:hsl(var(--surface-3));border-radius:2px;margin:10px 0 6px}
+[data-route="/analyse"] .an-gauge i{position:absolute;top:-3px;width:2px;height:12px;background:hsl(var(--spot));transform:translateX(-50%)}
+[data-route="/analyse"] .an-gauge b{position:absolute;left:0;top:0;bottom:0;background:hsl(var(--muted-foreground)/.45);border-radius:2px}
+[data-route="/analyse"] .an-pcr{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+[data-route="/analyse"] .an-pcr .bar{display:flex;height:6px;border-radius:2px;overflow:hidden;margin-top:6px}
+[data-route="/analyse"] .an-pcr .bar i{display:block;height:100%}
+[data-route="/analyse"] .an-pcr .bar .c{background:hsl(var(--profit));opacity:.7}
+[data-route="/analyse"] .an-pcr .bar .p{background:hsl(var(--loss));opacity:.7}
+/* ---- column settings / option info / share dialogs (moved into the body overlay: keep unscoped) ---- */
+.an-cs{padding:4px 20px 16px}
+.an-cs-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.an-cs-quick{display:flex;gap:6px;flex-wrap:wrap}
+.an-cs-body{max-height:56vh;overflow:auto}
+.an-cs-group{margin-bottom:10px}
+.an-cs-gtitle{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:hsl(var(--muted-foreground));font-weight:500;margin-bottom:2px}
+.an-cs-row{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:4px;font-size:12.5px;cursor:pointer}
+.an-cs-row:hover{background:hsl(var(--muted))}
+.an-cs-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.an-cs-list li{display:flex;align-items:center;gap:10px;padding:6px 10px;border:1px solid hsl(var(--border));border-radius:4px;background:hsl(var(--card));font-size:12.5px;cursor:grab}
+.an-cs-list li.dragging{opacity:.4}
+.an-cs-list li .grip{color:hsl(var(--muted-foreground));font-size:13px;letter-spacing:-2px}
+.an-cs-list li .idx{font-family:var(--font-mono);font-size:10.5px;color:hsl(var(--muted-foreground));width:18px}
+.an-cs-list li .mv{margin-left:auto;display:flex;gap:2px}
+.an-cs-list li .mv button{width:22px;height:22px;border-radius:3px;color:hsl(var(--muted-foreground));font-size:10px}
+.an-cs-list li .mv button:hover{background:hsl(var(--muted))}
+.an-cs-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px}
+.an-oi-wrap{padding:6px 20px 18px}
+.an-oi-top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.an-oi-top .mk{font-family:var(--font-mono);font-size:22px;font-weight:500}
+.an-oi-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:10px;border-top:1px solid hsl(var(--border));border-left:1px solid hsl(var(--border))}
+.an-oi-stats div{border-right:1px solid hsl(var(--border));border-bottom:1px solid hsl(var(--border));padding:6px 8px}
+.an-oi-stats .k{font-family:var(--font-mono);font-size:9.5px;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:.08em}
+.an-oi-stats .v{font-family:var(--font-mono);font-size:12.5px;font-weight:500;margin-top:2px}
+.an-oi-wrap i[data-icon],.an-cs i[data-icon]{display:inline-flex;width:14px;height:14px}
+.an-oi-wrap i[data-icon] svg{width:100%;height:100%}
+.an-layer-row{display:flex;align-items:center;gap:10px;padding:6px 9px;border-radius:4px;cursor:pointer;font-size:12.5px}
+.an-layer-row:hover{background:hsl(var(--muted))}
+.an-layer-row .sw{width:12px;height:0;border-top:2px solid;flex-shrink:0}
+.an-share-wrap{padding:4px 20px 18px}
+.an-share-wrap .lnk{display:flex;gap:6px;margin:8px 0}
+.an-share-wrap .lnk input{font-family:var(--font-mono);font-size:11.5px}
+.an-share-legs{font-family:var(--font-mono);font-size:11.5px;display:flex;flex-direction:column;gap:2px;margin-top:8px}
+.an-share-wrap .an-kv{display:flex;gap:18px;align-items:baseline;flex-wrap:wrap;font-size:11px;color:hsl(var(--muted-foreground))}
+.an-share-wrap .an-kv b{font-family:var(--font-mono);font-weight:500;font-size:12px}
+.an-share-legs span{display:flex;gap:10px;align-items:baseline}
+.an-fd-chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+/* ---- shared strategy page ---- */
+[data-route^="/s/"] .an-share-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px;background:hsl(var(--background))}
+[data-route^="/s/"] .an-share-card{width:100%;max-width:520px;border:1px solid hsl(var(--border));background:hsl(var(--surface-1));border-radius:7px;padding:18px 20px}
+[data-route^="/s/"] .an-share-card h2{font-size:18px;margin-top:4px}
+[data-route^="/s/"] .an-share-card .legs{margin:12px 0;border-top:1px solid hsl(var(--border))}
+[data-route^="/s/"] .an-share-card .legs div{display:grid;grid-template-columns:44px 1fr 60px 80px;gap:8px;padding:7px 0;border-bottom:1px solid hsl(var(--border));font-family:var(--font-mono);font-size:12px;align-items:baseline}
+[data-route^="/s/"] .an-share-card .legs .r{text-align:right}
+[data-route^="/s/"] .an-share-card .tiles{display:grid;grid-template-columns:repeat(3,1fr);margin:12px 0}
+[data-route^="/s/"] .an-share-card .tiles div{padding:2px 12px;border-left:1px solid hsl(var(--border))}
+[data-route^="/s/"] .an-share-card .tiles div:first-child{padding-left:0;border-left:0}
+[data-route^="/s/"] .an-share-card .tiles .v{font-family:var(--font-mono);font-size:16px;font-weight:500;margin-top:4px}
+/* ---- responsive ---- */
+@media (max-width:1000px){
+  [data-route="/analyse"] .an-shell{flex-direction:column}
+  [data-route="/analyse"] .an-mobile-bar{display:flex}
+  [data-route="/analyse"] .an-divider{display:none}
+  [data-route="/analyse"] .an-left,[data-route="/analyse"] .an-right{width:100%!important;min-width:0;flex:1}
+  [data-route="/analyse"] .an-left{border-right:0}
+  [data-route="/analyse"] .an-shell[data-mobile="chain"] .an-right{display:none}
+  [data-route="/analyse"] .an-shell[data-mobile="analysis"] .an-left{display:none}
+  [data-route="/analyse"] .an-tiles{grid-template-columns:repeat(3,1fr);row-gap:8px}
+  [data-route="/analyse"] .an-tile:nth-child(4){padding-left:0;border-left:0}
+  [data-route="/analyse"] .an-gtiles{grid-template-columns:1fr 1fr}
+  [data-route="/analyse"] button[data-collapse]{display:none!important}
+}
+@media (max-width:640px){
+  [data-route="/analyse"] .an-sliders,[data-route="/analyse"] .an-grid2,[data-route="/analyse"] .an-gexpl{grid-template-columns:1fr}
+  [data-route="/analyse"] .an-grid2 .an-blk:nth-child(odd),[data-route="/analyse"] .an-gexpl .x:nth-child(odd){border-right:0}
+  [data-route="/analyse"] .an-tab{padding:0 8px;font-size:12px}
+  [data-route="/analyse"] .an-tabs-right .micro{display:none}
+}
+</style>
+<script>
+(function () {
+  'use strict';
+  const ROUTE = '/analyse';
+  const st = CG.state, F = CG.fmt, P = CG.pricing;
+  // ---------- shared workspace state (mutations of `legs` belong to the trading agent) ----------
+  CG.analyse = CG.analyse || { legs: [], name: '', strategyId: null, asset: st.asset, expiry: st.expiry, targetDays: 0, targetPrice: null, mode: 'live' };
+  const AN = CG.analyse;
+  if (!Array.isArray(AN.legs)) AN.legs = [];
+  if (!AN.asset || !CG.ASSETS[AN.asset]) AN.asset = CG.ASSETS[st.asset] ? st.asset : 'BTC';
+  if (!AN.expiry || !CG.EXPIRIES.includes(AN.expiry)) AN.expiry = CG.EXPIRIES.includes(st.expiry) ? st.expiry : CG.EXPIRIES[5];
+  if (!AN.mode) AN.mode = 'live';
+  if (AN.targetDays == null) AN.targetDays = 0;
+  AN.setExpiry = (e) => setExpiry(e); AN.setRightTab = (t) => setRightTab(t); AN.findDelta = (d) => findDelta(d);
+
+  // ---------- icons (inline SVG, lucide-style paths) ----------
+  const SVG = (inner) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + inner + '</svg>';
+  const ICONS = {
+    layers: SVG('<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>'),
+    chart: SVG('<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>'),
+    gear: SVG('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'),
+    info: SVG('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>'),
+    share: SVG('<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>'),
+    chevl: SVG('<polyline points="15 18 9 12 15 6"/>'),
+    chevr: SVG('<polyline points="9 18 15 12 9 6"/>'),
+    sigma: SVG('<path d="M18 7V4H6l6 8-6 8h12v-3"/>'),
+    link: SVG('<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'),
+    copy: SVG('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'),
+    trendup: SVG('<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>'),
+    trenddown: SVG('<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>')
+  };
+  const ic = (n) => '<i data-icon="' + n + '">' + (ICONS[n] || '') + '</i>';
+  const fillIcons = (scope) => CG.$$('i[data-icon]', scope).forEach((i) => { if (!i.firstChild) i.innerHTML = ICONS[i.dataset.icon] || ''; });
+
+  // ---------- formatting helpers (currency aware) ----------
+  const isINR = () => st.currency === 'INR';
+  const cur = () => (isINR() ? '₹' : '$');
+  const rate = () => (isINR() ? st.conversionRate || 83.5 : 1);
+  const px = (v, d) => (v == null || isNaN(v) ? '—' : isINR() ? F.num(v * rate(), 0) : F.num(v, d == null ? 1 : d)); // bare number, 1dp (chain)
+  const money = (v, d) => F.money(v, d == null ? 2 : d);
+  const smoney = (v, d) => F.signedMoney(v, d == null ? 2 : d);
+  const cls = (v) => (v >= 0 ? 'text-profit' : 'text-loss');
+  const fmtStrike = (v) => F.num(v, 0); // strikes are contract terms in USD, never converted
+  function fmtK(v) { if (v == null || isNaN(v)) return '—'; const a = Math.abs(v) * rate(); let t; if (a >= 1e6) t = (a / 1e6).toFixed(2) + 'M'; else if (a >= 1e3) t = (a / 1e3).toFixed(1) + 'k'; else t = a.toFixed(a < 10 ? 2 : 0); return (v < 0 ? '-' : '') + cur() + t; }
+  function fmtAxis(v) { if (v == null || isNaN(v)) return ''; const a = Math.abs(v) * rate(); let t; if (a >= 1e6) t = (a / 1e6).toFixed(1) + 'M'; else if (a >= 1e3) t = (a / 1e3).toFixed(1) + 'k'; else t = a.toFixed(a < 10 && a > 0 ? 1 : 0); return (v < 0 ? '-' : '') + t; }
+  const fmtKbare = (v) => { const a = Math.abs(v) * rate(); return a >= 1e3 ? (a / 1e3).toFixed(a >= 1e5 ? 0 : 1) + 'k' : a.toFixed(0); };
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const fmtDM = (d) => String(d.getUTCDate()).padStart(2, '0') + ' ' + MON[d.getUTCMonth()];
+  const fmtDMloc = (d) => String(d.getDate()).padStart(2, '0') + ' ' + MON[d.getMonth()];
+  const fmtDateTime = (d) => DAYS[d.getDay()] + ', ' + String(d.getDate()).padStart(2, '0') + ' ' + MON[d.getMonth()] + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const expShort = (code) => fmtDM(F.expiryDate(code));
+  function nice(x) { if (!(x > 0)) return 1; const p = Math.pow(10, Math.floor(Math.log10(x))); const f = x / p; const c = [1, 2, 2.5, 5, 10].find((k) => k >= f - 1e-9) || 10; return c * p; }
+  const esc = CG.esc;
+
+  // ---------- legs helpers ----------
+  const isActiveLeg = (l) => l && l.status !== 'SQUARED_OFF' && l.status !== 'CLOSED' && l.status !== 'EXITED';
+  const activeLegs = () => AN.legs.filter(isActiveLeg);
+  const symbolOf = (type, asset, strike, expiry) => (type === 'CALL' ? 'C-' : type === 'PUT' ? 'P-' : 'F-') + asset + '-' + strike + '-' + expiry;
+  const deltaSymbol = (type, asset, strike, expiry) => { const d = F.expiryDate(expiry); return (type === 'CALL' ? 'C-' : 'P-') + asset + '-' + strike + '-' + expiry.slice(0, 2) + String(d.getUTCMonth() + 1).padStart(2, '0') + expiry.slice(5); };
+  const legOnAsset = (l) => (l.asset ? l.asset === AN.asset : l.symbol ? l.symbol.indexOf('-' + AN.asset + '-') > 0 : true);
+  const spotNow = () => CG.ASSETS[AN.asset].price;
+  const lotSize = () => (st.lotSizes && st.lotSizes[AN.asset]) || CG.ASSETS[AN.asset].lot;
+  const totalLots = () => activeLegs().reduce((s, l) => s + (+l.lots || 1), 0);
+
+  // ---------- chain column configuration (mirrored outward from the strike) ----------
+  const COLS = [
+    { id: 'ask', label: 'Ask (Price/IV)', h: 'Ask<em>/IV</em>', group: 'Market Data', w: 64 },
+    { id: 'mark', label: 'Mark (Price/IV)', h: 'Mark<em>/IV</em>', group: 'Market Data', w: 64 },
+    { id: 'bid', label: 'Bid (Price/IV)', h: 'Bid<em>/IV</em>', group: 'Market Data', w: 64 },
+    { id: 'oi', label: 'OI', h: 'OI', group: 'Market Data', w: 66 },
+    { id: 'delta', label: 'Delta', h: 'Δ', group: 'Greeks', w: 46 },
+    { id: 'gamma', label: 'Gamma', h: 'Γ', group: 'Greeks', w: 68 },
+    { id: 'theta', label: 'Theta', h: 'Θ', group: 'Greeks', w: 56 },
+    { id: 'vega', label: 'Vega', h: 'ν', group: 'Greeks', w: 56 },
+    { id: 'volume', label: 'Volume', h: 'Vol', group: 'Market Data', w: 60 },
+    { id: 'bidQty', label: 'Bid Qty', h: 'Bid qty', group: 'Market Data', w: 64 },
+    { id: 'askQty', label: 'Ask Qty', h: 'Ask qty', group: 'Market Data', w: 64 },
+    { id: 'chg24', label: '24hr Chg', h: '24h', group: 'Activity', w: 58 },
+    { id: 'last', label: 'Last', h: 'Last', group: 'Activity', w: 60 },
+    { id: 'open', label: 'Open', h: 'Open', group: 'OHLC', w: 60 },
+    { id: 'high', label: 'High', h: 'High', group: 'OHLC', w: 60 },
+    { id: 'low', label: 'Low', h: 'Low', group: 'OHLC', w: 60 }
+  ];
+  const GROUPS = ['Market Data', 'Greeks', 'Activity', 'OHLC'];
+  const DEFAULT_ORDER = ['ask', 'mark', 'bid', 'oi', 'delta', 'gamma', 'theta', 'vega', 'volume', 'bidQty', 'askQty', 'chg24', 'last', 'open', 'high', 'low'];
+  const ESSENTIALS = ['ask', 'mark', 'bid', 'oi', 'delta'];
+  const GREEK_EXTRA = ['gamma', 'theta', 'vega'];
+  const colById = (id) => COLS.find((c) => c.id === id);
+  function colState() {
+    let cs = st.chainCols; const ids = COLS.map((c) => c.id);
+    if (!cs || !Array.isArray(cs.order) || !Array.isArray(cs.visible) || cs.v !== 2) cs = { v: 2, order: DEFAULT_ORDER.slice(), visible: ESSENTIALS.slice() };
+    cs.order = cs.order.filter((id) => ids.includes(id)); ids.forEach((id) => { if (!cs.order.includes(id)) cs.order.push(id); });
+    cs.visible = cs.visible.filter((id) => ids.includes(id));
+    st.chainCols = cs; return cs;
+  }
+  const visibleCols = () => { const cs = colState(); return cs.order.filter((id) => cs.visible.includes(id)).map(colById); };
+  const greeksShown = () => { const cs = colState(); return GREEK_EXTRA.every((id) => cs.visible.includes(id)); };
+  function setGreeksCols(on) {
+    const cs = colState();
+    if (on) { GREEK_EXTRA.forEach((id) => { if (!cs.visible.includes(id)) cs.visible.push(id); }); const rest = cs.order.filter((id) => !GREEK_EXTRA.includes(id)); const di = rest.indexOf('delta'); rest.splice(di < 0 ? rest.length : di + 1, 0, ...GREEK_EXTRA); cs.order = rest; }
+    else cs.visible = cs.visible.filter((id) => !GREEK_EXTRA.includes(id));
+    st.chainGreeks = !!on; CG.saveState(); syncTools(); renderChain(true);
+  }
+  const LOTS = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000];
+  const curLots = () => (LOTS.includes(+st.chainLots) ? +st.chainLots : (+st.chainLots > 0 ? +st.chainLots : 10));
+  const RANGES = ['6', '12', 'all'];
+  const curRange = () => (RANGES.includes(String(st.chainRange)) ? String(st.chainRange) : '12');
+
+  // ---------- module state ----------
+  let root = null; const els = {};
+  let chainRef = null, rowsByStrike = {}, prevVals = {}, hlStrike = null, csHandle = null, liveTimer = null, spotAfter = null;
+  const isActive = () => !!root && root.classList.contains('active');
+
+  // ---------- chain cells ----------
+  function cellInner(col, o, side) {
+    switch (col.id) {
+      case 'bid': return '<span class="px">' + px(o.bid) + '</span><span class="iv">' + F.pct0(o.bidIv, 1) + '</span>';
+      case 'mark': return '<span class="px">' + px(o.mark) + '</span><span class="iv">' + F.pct0(o.markIv, 1) + '</span>';
+      case 'ask': return '<span class="px">' + px(o.ask) + '</span><span class="iv">' + F.pct0(o.askIv, 1) + '</span>';
+      case 'oi': return '<span class="px">' + F.int(o.oi) + '</span>';
+      case 'volume': return '<span class="px">' + F.int(o.volume) + '</span>';
+      case 'bidQty': return '<span class="px">' + F.int(o.bidQty) + '</span>';
+      case 'askQty': return '<span class="px">' + F.int(o.askQty) + '</span>';
+      case 'delta': return '<span class="px dl">' + o.delta.toFixed(2) + '</span>';
+      case 'gamma': return '<span class="px dl">' + o.gamma.toFixed(6) + '</span>';
+      case 'theta': return '<span class="px dl">' + o.theta.toFixed(1) + '</span>';
+      case 'vega': return '<span class="px dl">' + o.vega.toFixed(1) + '</span>';
+      case 'chg24': return '<span class="px ' + (o.chg24 >= 0 ? 'up' : 'dn') + '">' + F.pct(o.chg24, 1) + '</span>';
+      default: return '<span class="px">' + px(o[col.id]) + '</span>';
+    }
+  }
+  const cellVal = (col, o) => o[col.id];
+  function ctlHtml(type) {
+    return '<div class="an-ctl" data-type="' + type + '"><button class="bs b" data-act="BUY" title="Buy ' + type.toLowerCase() + ' (B)">B</button><button class="bs s" data-act="SELL" title="Sell ' + type.toLowerCase() + ' (S)">S</button><span class="stp" title="Lots × ' + lotSize() + ' ' + AN.asset + '"><button data-act="LOTDN" aria-label="Fewer lots">−</button><span class="n" data-act="LOTMENU">' + curLots() + '</span><button data-act="LOTUP" aria-label="More lots">+</button></span><button class="ic" data-act="INFO" title="Option details &amp; 24h chart">' + ic('info') + '</button></div>';
+  }
+  function tdHtml(side, c, r, o, inb, itm, maxOi) {
+    prevVals[r.strike + side + c.id] = cellVal(c, o);
+    let h = '<td class="' + side + '-side' + (itm ? ' itm' : '') + (inb ? ' ' + side + '-inb' : '') + '" data-col="' + c.id + '">';
+    if (c.id === 'oi') h += '<div class="an-oibar" style="width:' + Math.max(2, (o.oi / maxOi) * 88).toFixed(1) + '%"></div>';
+    h += '<div class="an-cell">' + cellInner(c, o, side) + '</div>';
+    if (inb) h += ctlHtml(side === 'c' ? 'CALL' : 'PUT');
+    return h + '</td>';
+  }
+  function rangeRows(ch) { const rg = curRange(); if (rg === 'all') return ch.rows; const ai = ch.rows.findIndex((r) => r.atm); const n = +rg; return ch.rows.filter((r, i) => Math.abs(i - ai) <= n); }
+  function spotBracket(rows, spot) { if (!rows.length || spot < rows[0].strike || spot > rows[rows.length - 1].strike) return null; let after = null; rows.forEach((r) => { if (r.strike <= spot) after = r.strike; }); return after; }
+  function renderChain(keepScroll) {
+    const ch = CG.chain(AN.asset, AN.expiry); chainRef = ch;
+    const cols = visibleCols(); const callCols = cols.slice().reverse(); const n = cols.length; const spot = spotNow(); const rows = rangeRows(ch);
+    const maxOi = Math.max(1, ...ch.rows.map((r) => Math.max(r.call.oi, r.put.oi)));
+    const total = Math.max(n, 1) * 2 + 1;
+    let cg = ''; callCols.forEach((c) => (cg += '<col style="width:' + c.w + 'px">')); cg += '<col style="width:82px">'; cols.forEach((c) => (cg += '<col style="width:' + c.w + 'px">'));
+    if (!n) cg = '<col style="width:150px"><col style="width:82px"><col style="width:150px">';
+    const rg = curRange(); const rgTxt = rg === 'all' ? 'all strikes' : 'strikes ±' + rg;
+    const h1 = '<tr class="h1"><th class="c-side" colspan="' + Math.max(n, 1) + '" style="text-align:left">Calls<span class="h">ITM shaded · ' + rgTxt + '</span></th><th class="strike">' + expShort(AN.expiry) + ' · ' + F.dte(AN.expiry) + 'd</th><th class="p-side" colspan="' + Math.max(n, 1) + '" style="text-align:right"><span class="h">Δ per contract</span>Puts</th></tr>';
+    const h2 = '<tr class="h2">' + (n ? callCols.map((c) => '<th class="c-side">' + c.h + '</th>').join('') : '<th>—</th>') + '<th class="strike">Strike</th>' + (n ? cols.map((c) => '<th class="p-side">' + c.h + '</th>').join('') : '<th>—</th>') + '</tr>';
+    let body = ''; prevVals = {}; spotAfter = spotBracket(rows, spot);
+    rows.forEach((r, ri) => {
+      body += '<tr data-strike="' + r.strike + '" class="' + (r.atm ? 'atm' : '') + (hlStrike === r.strike ? ' hl' : '') + (spotAfter === r.strike ? ' spot-below' : ri > 0 && spotAfter === rows[ri - 1].strike ? ' spot-above' : '') + '">';
+      if (n) callCols.forEach((c, i) => (body += tdHtml('c', c, r, r.call, i === n - 1, r.strike < spot, maxOi)));
+      else body += '<td class="c-side c-inb' + (r.strike < spot ? ' itm' : '') + '"><div class="an-cell"><span class="iv">no columns</span></div>' + ctlHtml('CALL') + '</td>';
+      body += '<td class="strike"><span>' + fmtStrike(r.strike) + '</span><em>' + (r.atm ? '<b class="atm">ATM</b>' : '') + '</em></td>';
+      if (n) cols.forEach((c, i) => (body += tdHtml('p', c, r, r.put, i === 0, r.strike > spot, maxOi)));
+      else body += '<td class="p-side p-inb' + (r.strike > spot ? ' itm' : '') + '"><div class="an-cell"><span class="iv">no columns</span></div>' + ctlHtml('PUT') + '</td>';
+      body += '</tr>';
+      if (spotAfter === r.strike) body += '<tr class="spotrow"><td colspan="' + total + '"><div class="an-spotline"><span>SPOT ' + fmtStrike(spot) + '</span></div></td></tr>';
+    });
+    els.table.querySelector('colgroup').innerHTML = cg; els.table.querySelector('thead').innerHTML = h1 + h2; els.tbody.innerHTML = body;
+    rowsByStrike = {}; CG.$$('tr[data-strike]', els.tbody).forEach((tr) => (rowsByStrike[tr.dataset.strike] = tr));
+    fillIcons(els.tbody); renderPills(); renderFoot(); syncTools();
+    if (!keepScroll) scrollToAtm(); else updateVis();
+  }
+  function updateChain() {
+    if (!chainRef) return renderChain();
+    const ch = CG.chain(AN.asset, AN.expiry); const spot = spotNow();
+    const same = ch.rows.length === chainRef.rows.length && ch.rows.every((r, i) => r.strike === chainRef.rows[i].strike) && spotBracket(rangeRows(ch), spot) === spotAfter;
+    if (!same) return renderChain(true);
+    chainRef = ch; const cols = visibleCols(); const n = cols.length;
+    const maxOi = Math.max(1, ...ch.rows.map((r) => Math.max(r.call.oi, r.put.oi)));
+    const FLASH = ['bid', 'mark', 'ask', 'last'];
+    ch.rows.forEach((r) => {
+      const tr = rowsByStrike[r.strike]; if (!tr) return; const tds = tr.children;
+      const seq = []; cols.slice().reverse().forEach((c) => seq.push(['c', c, r.call, r.strike < spot])); seq.push(null); cols.forEach((c) => seq.push(['p', c, r.put, r.strike > spot]));
+      if (!n) { tds[0].classList.toggle('itm', r.strike < spot); tds[2].classList.toggle('itm', r.strike > spot); return; }
+      seq.forEach((s, i) => {
+        if (!s) return; const cell = tds[i]; if (!cell) return; const side = s[0], c = s[1], o = s[2];
+        cell.classList.toggle('itm', s[3]);
+        const key = r.strike + side + c.id; const v = cellVal(c, o), pv = prevVals[key];
+        if (pv !== v) {
+          prevVals[key] = v; const cc = cell.querySelector('.an-cell'); if (cc) cc.innerHTML = cellInner(c, o, side);
+          if (c.id === 'oi') { const bar = cell.querySelector('.an-oibar'); if (bar) bar.style.width = Math.max(2, (o.oi / maxOi) * 88).toFixed(1) + '%'; }
+          if (typeof pv === 'number' && FLASH.includes(c.id)) { cell.classList.remove('flash-up', 'flash-down'); void cell.offsetWidth; cell.classList.add(v > pv ? 'flash-up' : 'flash-down'); }
+        }
+      });
+    });
+    const sl = els.tbody.querySelector('.an-spotline span'); if (sl) sl.textContent = 'SPOT ' + fmtStrike(spot);
+    renderFoot();
+  }
+  const chainLegs = () => activeLegs().filter((l) => l.expiry === AN.expiry && legOnAsset(l) && l.type !== 'FUTURE');
+  function renderPills() {
+    const legs = chainLegs();
+    Object.keys(rowsByStrike).forEach((k) => {
+      const tr = rowsByStrike[k]; const strike = +k; let hasB = false, hasS = false; const tags = [];
+      if (tr.classList.contains('atm')) tags.push('<b class="atm">ATM</b>');
+      [['CALL', 'c'], ['PUT', 'p']].forEach(([type, side]) => {
+        const mine = legs.filter((l) => l.type === type && +l.strike === strike);
+        const b = mine.filter((l) => l.side === 'BUY').reduce((s, l) => s + (+l.lots || 1), 0), s = mine.filter((l) => l.side === 'SELL').reduce((x, l) => x + (+l.lots || 1), 0);
+        if (b) { hasB = true; tags.push('<b class="lb" title="Long ' + b + ' lots ' + type.toLowerCase() + '">' + (type === 'CALL' ? 'C' : 'P') + ' B ' + b + '</b>'); }
+        if (s) { hasS = true; tags.push('<b class="ls" title="Short ' + s + ' lots ' + type.toLowerCase() + '">' + (type === 'CALL' ? 'C' : 'P') + ' S ' + s + '</b>'); }
+        const mk = tr.querySelector('td.' + side + '-side[data-col="mark"]') || tr.querySelector('td.' + side + '-inb');
+        if (mk) { mk.classList.toggle('legcell', !!(b || s)); mk.classList.toggle('ls', !b && !!s); }
+        const inb = tr.querySelector('td.' + side + '-inb'); if (inb) { const bb = inb.querySelector('.bs.b'), sb = inb.querySelector('.bs.s'); if (bb) bb.classList.toggle('on', b > 0); if (sb) sb.classList.toggle('on', s > 0); }
+      });
+      const em = tr.querySelector('td.strike em'); if (em) em.innerHTML = tags.join('');
+      tr.classList.toggle('leg', hasB || hasS); tr.classList.toggle('leg-s', !hasB && hasS);
+    });
+  }
+  function visibleRowCount() {
+    const wrap = els.wrap; const top = wrap.scrollTop + 50, bot = wrap.scrollTop + wrap.clientHeight; let n = 0;
+    Object.keys(rowsByStrike).forEach((k) => { const tr = rowsByStrike[k]; const t = tr.offsetTop, b = t + tr.offsetHeight; if (b > top && t < bot) n++; });
+    return n;
+  }
+  function maxPain(ch) { let best = ch.atm, bestV = Infinity; ch.rows.forEach((k) => { let v = 0; ch.rows.forEach((r) => { v += r.call.oi * Math.max(k.strike - r.strike, 0) + r.put.oi * Math.max(r.strike - k.strike, 0); }); if (v < bestV) { bestV = v; best = k.strike; } }); return best; }
+  function nearestDelta(ch, d) { let c = null, p = null, cd = 9, pd = 9; ch.rows.forEach((r) => { const a = Math.abs(r.call.delta - d); if (a < cd) { cd = a; c = r; } const b = Math.abs(r.put.delta + d); if (b < pd) { pd = b; p = r; } }); return { call: c, put: p }; }
+  function chainStats(ch) {
+    let cOI = 0, pOI = 0, cVol = 0, pVol = 0; ch.rows.forEach((r) => { cOI += r.call.oi; pOI += r.put.oi; cVol += r.call.volume; pVol += r.put.volume; });
+    const nd = nearestDelta(ch, 0.25); const skew = nd.call && nd.put ? nd.put.put.markIv - nd.call.call.markIv : null;
+    const atm = ch.rows.find((r) => r.atm) || ch.rows[20]; const fwd = atm ? atm.strike + atm.call.mark - atm.put.mark : ch.spot;
+    const atmIv = atm ? (atm.call.markIv + atm.put.markIv) / 2 : CG.ASSETS[AN.asset].iv * 100;
+    return { cOI, pOI, cVol, pVol, pcr: cOI ? pOI / cOI : null, pcrVol: cVol ? pVol / cVol : null, maxPain: maxPain(ch), skew, fwd, atmIv, skewCall: nd.call, skewPut: nd.put };
+  }
+  function renderFoot() {
+    const ch = chainRef; if (!ch) return; const s = chainStats(ch);
+    els.foot.innerHTML = '<span>Σ Call OI <b>' + F.int(s.cOI) + '</b></span><span>Σ Put OI <b>' + F.int(s.pOI) + '</b></span><span>PCR <b>' + (s.pcr == null ? '—' : s.pcr.toFixed(2)) + '</b></span><span>Max pain <b>' + fmtStrike(s.maxPain) + '</b></span><span title="IV(25Δ put) − IV(25Δ call)">Skew 25Δ <b>' + (s.skew == null ? '—' : (s.skew >= 0 ? '+' : '') + s.skew.toFixed(1) + '</b>') + '</span><span title="Forward from ATM put-call parity">Fwd <b>' + px(s.fwd, 1) + '</b></span><span class="r"><span id="an-vis">' + visibleRowCount() + ' of ' + ch.rows.length + ' strikes</span> · hover a row for B / S</span>';
+  }
+  function updateVis() { const v = els.foot.querySelector('#an-vis'); if (v && chainRef) v.textContent = visibleRowCount() + ' of ' + chainRef.rows.length + ' strikes'; }
+  function scrollToAtm() {
+    const wrap = els.wrap; const tr = wrap.querySelector('tr.atm');
+    if (tr) wrap.scrollTop = Math.max(0, tr.offsetTop - wrap.clientHeight / 2 + tr.offsetHeight / 2 + 25);
+    wrap.scrollLeft = Math.max(0, (els.table.scrollWidth - wrap.clientWidth) / 2);
+    updateVis();
+  }
+  function scrollRowIntoView(tr) { const top = tr.offsetTop - 60, bot = tr.offsetTop + tr.offsetHeight + 4; if (top < els.wrap.scrollTop) els.wrap.scrollTop = top; else if (bot > els.wrap.scrollTop + els.wrap.clientHeight) els.wrap.scrollTop = bot - els.wrap.clientHeight; }
+  function syncTools() {
+    CG.$$('[data-range]', els.range).forEach((b) => b.classList.toggle('on', b.dataset.range === curRange()));
+    els.greeksBtn.classList.toggle('on', greeksShown());
+    els.lotInfo.textContent = 'Lot ' + lotSize() + ' ' + AN.asset; els.basisInfo.textContent = 'Basis ' + (st.pnlBasis || 'mark');
+  }
+  function setRange(v) { st.chainRange = v; CG.saveState(); renderChain(); CG.toast({ title: 'Strike range', description: v === 'all' ? 'Showing all 41 strikes' : 'Showing ATM ±' + v + ' strikes' }); }
+  function setLots(n) { st.chainLots = n; CG.saveState(); CG.$$('.an-ctl .stp .n', els.tbody).forEach((x) => (x.textContent = n)); }
+  function stepLots(dir) { const i = LOTS.indexOf(curLots()); let j; if (i < 0) j = dir > 0 ? LOTS.findIndex((x) => x > curLots()) : LOTS.length - 1 - LOTS.slice().reverse().findIndex((x) => x < curLots()); else j = i + dir; setLots(LOTS[Math.max(0, Math.min(LOTS.length - 1, j))]); }
+  // ---------- strike finder (by delta) ----------
+  function findDelta(d) {
+    const ch = chainRef || CG.chain(AN.asset, AN.expiry); const nd = nearestDelta(ch, d / 100); if (!nd.call || !nd.put) return;
+    const ai = ch.rows.findIndex((r) => r.atm); const need = Math.max(Math.abs(ch.rows.indexOf(nd.call) - ai), Math.abs(ch.rows.indexOf(nd.put) - ai));
+    const rg = curRange(); const fits = rg === 'all' || +rg >= need; if (!fits) { st.chainRange = need <= 12 ? '12' : 'all'; CG.saveState(); renderChain(true); }
+    const rc = rowsByStrike[nd.call.strike], rp = rowsByStrike[nd.put.strike]; if (!rc || !rp) return;
+    const top = Math.min(rc.offsetTop, rp.offsetTop), bot = Math.max(rc.offsetTop, rp.offsetTop) + rc.offsetHeight;
+    els.wrap.scrollTop = Math.max(0, (top + bot) / 2 - els.wrap.clientHeight / 2 + 25);
+    setHl(nd.call.strike); [rc, rp].forEach((tr) => { tr.classList.remove('found'); void tr.offsetWidth; tr.classList.add('found'); setTimeout(() => tr.classList.remove('found'), 1700); });
+    CG.toast({ title: d + 'Δ strikes', description: 'Call ' + fmtStrike(nd.call.strike) + ' (Δ ' + nd.call.call.delta.toFixed(2) + ') · Put ' + fmtStrike(nd.put.strike) + ' (Δ ' + nd.put.put.delta.toFixed(2) + ')' });
+    updateVis();
+  }
+  function setHl(k) { if (hlStrike != null && rowsByStrike[hlStrike]) rowsByStrike[hlStrike].classList.remove('hl'); hlStrike = k; if (k != null && rowsByStrike[k]) { rowsByStrike[k].classList.add('hl'); scrollRowIntoView(rowsByStrike[k]); } }
+  function moveHl(dir) { const strikes = Object.keys(rowsByStrike).map(Number).sort((a, b) => a - b); if (!strikes.length) return; const atm = (chainRef || {}).atm; let i = hlStrike == null ? strikes.indexOf(atm) : strikes.indexOf(hlStrike); if (i < 0) i = Math.floor(strikes.length / 2); i = Math.max(0, Math.min(strikes.length - 1, i + dir)); setHl(strikes[i]); }
+  // ---------- expiry strip / live toggle ----------
+  function renderExpiries() {
+    const legExp = new Set(activeLegs().filter(legOnAsset).map((l) => l.expiry));
+    els.exp.innerHTML = CG.EXPIRIES.map((e) => { const d = F.expiryDate(e); return '<button class="an-exp' + (e === AN.expiry ? ' active' : '') + (legExp.has(e) ? ' has-leg' : '') + '" data-exp="' + e + '" title="' + e + ' · ' + DAYS[d.getUTCDay()] + ' ' + F.date(d) + ' · ' + F.dte(e) + ' days to expiry' + (legExp.has(e) ? ' · has legs' : '') + '"><b>' + fmtDM(d) + '</b><em>' + F.dte(e) + 'd</em></button>'; }).join('');
+    const a = els.exp.querySelector('.active'); if (a) els.exp.scrollLeft = Math.max(0, a.offsetLeft - els.exp.clientWidth / 2 + a.offsetWidth / 2);
+    els.expStrip.classList.toggle('overflow', els.exp.scrollWidth > els.exp.clientWidth + 2);
+  }
+  function setExpiry(e, silent) {
+    if (!CG.EXPIRIES.includes(e)) return; AN.expiry = e; st.expiry = e; CG.saveState(); renderExpiries(); renderChain(); CG.emit('analyse:expiry', e); emitStats(); renderRight();
+    if (!silent) CG.toast({ title: 'Expiry ' + expShort(e), description: F.dte(e) + ' days to expiry · ' + AN.asset });
+  }
+  function cycleExpiry(dir) { const i = CG.EXPIRIES.indexOf(AN.expiry); const j = (i + dir + CG.EXPIRIES.length) % CG.EXPIRIES.length; setExpiry(CG.EXPIRIES[j]); }
+  function setLive(mode) {
+    AN.mode = mode; const b = els.live; b.className = 'an-live-btn ' + mode; b.querySelector('span').textContent = mode === 'live' ? 'Live' : mode === 'connecting' ? 'Connecting' : 'Static';
+    b.title = mode === 'live' ? 'Live prices on · click to switch to static' : mode === 'connecting' ? 'Connecting to WebSocket...' : 'Click to enable live prices';
+  }
+  function toggleLive() {
+    if (AN.mode === 'connecting') return; const next = AN.mode === 'live' ? 'static' : 'live'; setLive('connecting'); clearTimeout(liveTimer);
+    liveTimer = setTimeout(() => { setLive(next); if (next === 'live') { updateChain(); CG.toast({ title: 'Live', description: 'Streaming ' + AN.asset + ' ' + AN.expiry + ' option prices' }); } else CG.toast({ title: 'Static', description: 'Chain prices frozen · click Live to resume' }); }, 700);
+  }
+  // ---------- add leg (delegated to the trading agent; fallback appends locally) ----------
+  function addLeg(type, side, strike, lots) {
+    lots = +lots || curLots(); const q = CG.quote(AN.asset, AN.expiry, strike, type);
+    const payload = { type, side, strike, expiry: AN.expiry, lots, price: q.mark, iv: q.markIv, symbol: symbolOf(type, AN.asset, strike, AN.expiry), asset: AN.asset };
+    const before = AN.legs.length, ref = AN.legs; let handled = false; const off = CG.on('analyse:legs-changed', () => { handled = true; });
+    CG.emit('analyse:addLeg', payload); off();
+    if (!handled && AN.legs === ref && AN.legs.length === before) {
+      if (activeLegs().length >= 10) { CG.toast({ title: 'Limit Reached', description: 'Maximum 10 active legs allowed per strategy', variant: 'destructive' }); return false; }
+      AN.legs.push(Object.assign({ id: CG.newLegId(), status: 'OPEN', isAdjustment: false }, payload)); CG.emit('analyse:legs-changed');
+    }
+    if (AN.legs.length <= before) return false;
+    CG.toast({ title: 'Leg added', description: side + ' ' + lots + ' × ' + payload.symbol + ' @ ' + money(q.mark, 1), variant: 'success' });
+    return true;
+  }
+  // ---------- option details dialog ----------
+  function openOptInfo(type, strike) {
+    const ch = chainRef || CG.chain(AN.asset, AN.expiry); const r = ch.rows.find((x) => x.strike === strike); if (!r) return; const o = type === 'CALL' ? r.call : r.put;
+    const seed = strike * 3 + (type === 'CALL' ? 11 : 17) + AN.expiry.charCodeAt(0) * 7;
+    const marks = CG.series(24, o.mark, 0.05, seed); const k = o.mark / marks[23]; const mk = marks.map((v) => v * k);
+    const ivs = CG.series(24, o.markIv, 0.015, seed + 5); const k2 = o.markIv / ivs[23]; const iv = ivs.map((v) => v * k2);
+    const W = 460, H = 120, m = 8; const mn = Math.min(...mk), mx = Math.max(...mk); const in_ = Math.min(...iv), ix = Math.max(...iv);
+    const X = (i) => m + (i / 23) * (W - 2 * m); const Y1 = (v) => H - m - ((v - mn) / (mx - mn || 1)) * (H - 2 * m); const Y2 = (v) => H - m - ((v - in_) / (ix - in_ || 1)) * (H - 2 * m);
+    const p1 = mk.map((v, i) => X(i).toFixed(1) + ',' + Y1(v).toFixed(1)).join(' '); const p2 = iv.map((v, i) => X(i).toFixed(1) + ',' + Y2(v).toFixed(1)).join(' ');
+    const svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:120px;display:block;background:hsl(var(--surface-2));border:1px solid hsl(var(--border));border-radius:3px"><polyline points="' + p2 + '" fill="none" stroke="hsl(var(--muted-foreground))" stroke-width="1" stroke-dasharray="3 3"/><polyline points="' + p1 + '" fill="none" stroke="hsl(var(--foreground))" stroke-width="1.6"/><circle cx="' + X(23) + '" cy="' + Y1(mk[23]) + '" r="3" fill="hsl(var(--spot))"/></svg>';
+    const stat = (k, v, c) => '<div><div class="k">' + k + '</div><div class="v ' + (c || '') + '">' + v + '</div></div>';
+    els.optinfo.innerHTML = '<div class="an-oi-wrap"><div class="an-oi-top"><span class="mk">' + money(o.mark, 1) + '</span><span class="badge badge-outline">IV ' + F.pct0(o.markIv, 1) + '</span><span class="badge ' + (o.chg24 >= 0 ? 'badge-success' : 'badge-destructive') + '">' + F.pct(o.chg24, 1) + ' 24h</span><span class="text-xs text-muted mono">Δ ' + o.delta.toFixed(2) + '</span></div>' + svg +
+      '<div class="flex justify-between text-2xs text-muted mt-1 mono"><span><span style="display:inline-block;width:14px;height:2px;background:hsl(var(--foreground));vertical-align:middle"></span> Mark · last 24h (mock)</span><span><span style="display:inline-block;width:14px;border-top:1px dashed hsl(var(--muted-foreground));vertical-align:middle"></span> IV ' + F.pct0(in_, 1) + ' – ' + F.pct0(ix, 1) + '</span></div>' +
+      '<div class="an-oi-stats">' + stat('Bid / Ask', px(o.bid) + ' / ' + px(o.ask)) + stat('OI', F.int(o.oi)) + stat('Volume', F.int(o.volume)) + stat('Bid / Ask Qty', F.int(o.bidQty) + ' / ' + F.int(o.askQty)) + stat('Delta (Δ)', o.delta.toFixed(4)) + stat('Gamma (Γ)', o.gamma.toFixed(6)) + stat('Theta (Θ)', o.theta.toFixed(2)) + stat('Vega (ν)', o.vega.toFixed(2)) + stat('24h Chg', F.pct(o.chg24, 1), o.chg24 >= 0 ? 'text-profit' : 'text-loss') + stat('Last', px(o.last)) + stat('Open / High', px(o.open) + ' / ' + px(o.high)) + stat('Low', px(o.low)) + '</div>' +
+      '<div class="flex items-center gap-2 mt-4"><button class="btn btn-buy btn-sm" data-oi-act="BUY">Buy</button><button class="btn btn-sell btn-sm" data-oi-act="SELL">Sell</button><select class="select select-sm" style="width:90px" data-oi-lots>' + LOTS.map((n) => '<option value="' + n + '"' + (n === curLots() ? ' selected' : '') + '>' + n + '</option>').join('') + '</select><span class="text-xs text-muted">lots × ' + lotSize() + ' ' + AN.asset + '</span></div></div>';
+    els.optinfo.dataset.type = type; els.optinfo.dataset.strike = strike;
+    CG.modal.open(els.optinfo, { title: deltaSymbol(type, AN.asset, strike, AN.expiry), description: type + ' · ' + AN.asset + ' · ' + AN.expiry + ' · ' + F.dte(AN.expiry) + ' days to expiry · Spot ' + money(spotNow(), 1) });
+  }
+  // ---------- column settings dialog ----------
+  const csDesc = () => colState().visible.length + ' of ' + COLS.length + ' columns visible';
+  function renderCs() {
+    const cs = colState(); const show = els.cs.querySelector('#an-cs-show'), reorder = els.cs.querySelector('#an-cs-reorder');
+    show.innerHTML = GROUPS.map((g) => '<div class="an-cs-group"><div class="an-cs-gtitle">' + g + '</div>' + COLS.filter((c) => c.group === g).map((c) => { const on = cs.visible.includes(c.id); return '<div class="an-cs-row" data-cscol="' + c.id + '"><span>' + c.label + '</span><button class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="Toggle ' + c.label + '"></button></div>'; }).join('') + '</div>').join('');
+    reorder.innerHTML = '<p class="hint" style="margin:0 0 8px">Drag columns to change their display order (left → right). The order applies from the strike outward and is mirrored on the Calls side.</p><ul class="an-cs-list">' + cs.order.map((id, i) => { const c = colById(id); return '<li draggable="true" data-cscol="' + id + '"><span class="grip">⋮⋮</span><span class="idx">' + (i + 1) + '</span><span>' + c.label + '</span>' + (cs.visible.includes(id) ? '' : '<span class="badge badge-secondary">hidden</span>') + '<span class="mv"><button data-mv="-1" title="Move up">▲</button><button data-mv="1" title="Move down">▼</button></span></li>'; }).join('') + '</ul>';
+    if (csHandle) { const d = csHandle.box.querySelector('.cg-dialog-desc'); if (d) d.textContent = csDesc(); }
+  }
+  function csChanged() { CG.saveState(); renderCs(); renderChain(true); }
+  function openColSettings() { renderCs(); csHandle = CG.modal.open(els.cs, { title: 'Column Settings', description: csDesc(), onClose: () => { csHandle = null; } }); }
+  function bindCs() {
+    const box = els.cs;
+    box.addEventListener('click', (e) => {
+      const tab = e.target.closest('[data-cstab]'); if (tab) { CG.$$('[data-cstab]', box).forEach((b) => b.classList.toggle('active', b === tab)); CG.$$('[data-cspanel]', box).forEach((p) => (p.hidden = p.dataset.cspanel !== tab.dataset.cstab)); return; }
+      const q = e.target.closest('[data-csq]'); if (q) { const cs = colState(); const k = q.dataset.csq; if (k === 'essentials') cs.visible = ESSENTIALS.slice(); else if (k === 'all') cs.visible = COLS.map((c) => c.id); else if (k === 'none') cs.visible = []; else { cs.visible = ESSENTIALS.slice(); cs.order = DEFAULT_ORDER.slice(); } csChanged(); CG.toast({ title: 'Column Settings', description: k === 'essentials' ? 'Essentials: Ask, Mark, Bid, OI, Δ' : k === 'all' ? 'All ' + COLS.length + ' columns shown' : k === 'none' ? 'All columns hidden' : 'Reset to defaults' }); return; }
+      const mv = e.target.closest('[data-mv]'); if (mv) { const li = mv.closest('li'); const cs = colState(); const i = cs.order.indexOf(li.dataset.cscol); const j = i + (+mv.dataset.mv); if (j < 0 || j >= cs.order.length) return; cs.order.splice(i, 1); cs.order.splice(j, 0, li.dataset.cscol); csChanged(); return; }
+      const row = e.target.closest('.an-cs-row'); if (row) { const cs = colState(); const id = row.dataset.cscol; if (cs.visible.includes(id)) cs.visible = cs.visible.filter((x) => x !== id); else cs.visible.push(id); csChanged(); }
+    });
+    let dragId = null;
+    box.addEventListener('dragstart', (e) => { const li = e.target.closest('li[data-cscol]'); if (!li) return; dragId = li.dataset.cscol; li.classList.add('dragging'); try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragId); } catch (x) { } });
+    box.addEventListener('dragover', (e) => { const ul = e.target.closest('.an-cs-list'); if (!ul || !dragId) return; e.preventDefault(); const over = e.target.closest('li[data-cscol]'); const dragging = ul.querySelector('li.dragging'); if (!over || !dragging || over === dragging) return; const r = over.getBoundingClientRect(); const after = e.clientY > r.top + r.height / 2; ul.insertBefore(dragging, after ? over.nextSibling : over); });
+    box.addEventListener('drop', (e) => { if (e.target.closest('.an-cs-list')) e.preventDefault(); });
+    box.addEventListener('dragend', () => { const ul = box.querySelector('.an-cs-list'); if (!ul || !dragId) return; dragId = null; const cs = colState(); cs.order = CG.$$('li[data-cscol]', ul).map((li) => li.dataset.cscol); csChanged(); });
+  }
+  // ---------- tabs / shell ----------
+  const LEFT_TABS = ['chain', 'strategy', 'paper', 'live', 'journal'];
+  function setLeftTab(name, silent) {
+    if (!LEFT_TABS.includes(name)) name = 'chain'; st.analyseTab = name; CG.saveState();
+    CG.$$('[data-lptab]', els.lptabs).forEach((b) => { b.classList.toggle('active', b.dataset.lptab === name); b.setAttribute('aria-selected', b.dataset.lptab === name); });
+    const panels = CG.$$('.lp-panel', els.leftPanels); const real = panels.filter((p) => !p.classList.contains('an-placeholder'));
+    const found = real.some((p) => p.dataset.tab === name);
+    real.forEach((p) => (p.hidden = p.dataset.tab !== name));
+    let ph = els.leftPanels.querySelector('.an-placeholder');
+    if (found) { if (ph) ph.remove(); }
+    else { if (!ph) { ph = CG.h('<div class="lp-panel an-placeholder"></div>'); els.leftPanels.appendChild(ph); } ph.dataset.tab = name; ph.hidden = false; ph.innerHTML = '<div class="an-empty"><b>' + (name === 'journal' ? 'Journal' : 'Panel') + ' not loaded</b>' + (name === 'journal' ? 'Closed strategies appear here once the trading module loads.' : 'This panel is rendered by the trading module.') + '</div>'; }
+    if (name === 'chain') setTimeout(updateVis, 0);
+    if (!silent) CG.emit('analyse:tab', name);
+  }
+  function renderCounts() {
+    const S = (CG.mock && CG.mock.strategies) || [];
+    const c = { builder: activeLegs().length, paper: S.filter((s) => s.status === 'PAPER').length, live: S.filter((s) => s.status === 'LIVE').length, journal: S.filter((s) => s.status === 'ARCHIVED' || s.status === 'CLOSED').length };
+    CG.$$('[data-cnt]', els.lptabs).forEach((b) => { const v = c[b.dataset.cnt] || 0; b.textContent = v; b.hidden = !v; });
+  }
+  const RIGHT_TABS = ['payoff', 'scenarios', 'greeks', 'vol', 'structure', 'ladder'];
+  const RIGHT_ALIAS = { pnl: 'ladder', analytics: 'payoff', table: 'ladder' };
+  function setRightTab(name) {
+    name = RIGHT_ALIAS[name] || name; if (!RIGHT_TABS.includes(name)) name = 'payoff'; st.analyseRightTab = name; CG.saveState();
+    CG.$$('[data-rptab]', root).forEach((b) => { b.classList.toggle('active', b.dataset.rptab === name); b.setAttribute('aria-selected', b.dataset.rptab === name); });
+    CG.$$('.rp-panel', els.rightBody).forEach((p) => (p.hidden = p.dataset.tab !== name));
+    renderRight(); CG.emit('analyse:right-tab', name);
+  }
+  function setCollapse(v) { v = v === 'left' || v === 'right' ? v : ''; st.analyseCollapse = v; CG.saveState(); els.shell.dataset.collapse = v; setTimeout(() => { M.renderChart && M.renderChart(); updateVis(); }, 30); if (v) CG.toast({ title: v === 'left' ? 'Analysis expanded' : 'Chain expanded', description: 'Click the ⋮ handle to restore both panes' }); }
+  function measureTop() { let h = 0; ['[data-cg="app-header"]', '[data-cg="plan-banner"]'].forEach((s) => { const el = root.querySelector(s); if (el) h += el.offsetHeight; }); root.style.setProperty('--an-top', h + 'px'); measureBottom(); }
+  function measureBottom() { const el = root.querySelector('[data-cg="portfolio-bar"]'); const child = el && el.firstElementChild; if (!child) { root.style.setProperty('--an-bottom', '44px'); root.style.paddingBottom = '44px'; return; } const fixed = getComputedStyle(child).position === 'fixed'; const h = fixed ? child.offsetHeight : el.offsetHeight; root.style.setProperty('--an-bottom', h + 'px'); root.style.paddingBottom = fixed ? h + 'px' : '0'; }
+  function applyDensity() { root.dataset.density = st.density === 'compact' ? 'compact' : 'comfortable'; }
+  function renderRight() {
+    if (!isActive()) return; const tab = st.analyseRightTab || 'payoff'; renderStratInfo();
+    if (tab === 'payoff') M.renderPayoff(); else if (tab === 'scenarios') M.renderScenarios(); else if (tab === 'greeks') M.renderGreeks(); else if (tab === 'vol') M.renderVol(); else if (tab === 'structure') M.renderStructure(); else M.renderLadder();
+  }
+  function renderStratInfo() { const legs = activeLegs(); els.stratInfo.textContent = legs.length ? (AN.name || 'Custom strategy') + ' · ' + expShort(latestExpiry(legs)) + ' · ' + totalLots() + ' lots' : 'No strategy'; }
+  // ---------- analysis helpers shared by the right pane ----------
+  function baseAnalysis() { const legs = activeLegs(); if (!legs.length) return null; const a = CG.analyze(legs, AN.asset, { targetDays: AN.targetDays, spot: spotNow() }); a.legs = legs; if (AN.targetDays > a.maxDte) AN.targetDays = a.maxDte; return a; }
+  function pnlAtPrice(legs, price, opts) { const a = CG.analyze(legs, AN.asset, Object.assign({ targetDays: AN.targetDays, spot: spotNow(), min: price, max: price + 1e-6, points: 2 }, opts || {})); return a.points[0]; }
+  const daysLeftLabel = (a) => Math.max(0, a.maxDte - Math.min(AN.targetDays, a.maxDte)) + 'D';
+  function sdInfo(a) { const A = CG.ASSETS[AN.asset]; const days = AN.targetDays > 0 ? Math.min(AN.targetDays, a.maxDte) : a.maxDte; const sd = spotNow() * A.iv * Math.sqrt(Math.max(days, 1) / 365); return { sd, days, label: days >= a.maxDte ? 'expiry (' + days + 'd)' : 'target date (' + days + 'd)' }; }
+  function latestExpiry(legs) { let best = null, bd = -1; legs.forEach((l) => { if (l.type === 'FUTURE' || !l.expiry) return; const d = F.dte(l.expiry); if (d > bd) { bd = d; best = l.expiry; } }); return best || AN.expiry; }
+  // position greeks re-priced at price S after `daysElapsed` days with an IV shift (fraction)
+  function positionGreeksAt(legs, S, daysElapsed, ivShift) {
+    const A = CG.ASSETS[AN.asset]; const lot = lotSize(); const g = { delta: 0, gamma: 0, theta: 0, vega: 0 };
+    legs.forEach((l) => { const q = (+l.lots || 1) * lot * (l.side === 'BUY' ? 1 : -1); if (l.type === 'FUTURE') { g.delta += q; return; } const T = Math.max(F.dte(l.expiry) - (daysElapsed || 0), 0) / 365; const s = ((l.iv || P.smile(l.strike, spotNow(), A.iv) * 100) / 100) * (1 + (ivShift || 0)); const gg = P.greeks(S, l.strike, T, s, l.type === 'CALL'); g.delta += gg.delta * q; g.gamma += gg.gamma * q; g.theta += gg.theta * q; g.vega += gg.vega * q; });
+    return g;
+  }
+  // 1y ATM IV history + realised vol (generated, deterministic per asset)
+  const volCache = {};
+  function volHistory(asset) {
+    const A = CG.ASSETS[asset]; const key = asset; if (volCache[key]) return volCache[key];
+    const seed = asset.charCodeAt(0) * 131 + asset.length * 17;
+    const r = CG.rng(seed); const xs = []; let x = 0; for (let i = 0; i < 365; i++) { x = x * 0.97 + (r() - 0.5) * 0.1; xs.push(x); } const cur = chainStats(CG.chain(asset, AN.expiry)).atmIv; const base = A.iv * 100; const shift = Math.log(cur / base) - xs[364]; const iv = xs.map((v) => base * Math.exp(v + shift));
+    const prices = CG.series(395, A.price, 0.045, seed + 7); const rv = []; for (let i = 30; i < 395; i++) { let m = 0; const rs = []; for (let j = i - 29; j <= i; j++) { const r = Math.log(prices[j] / prices[j - 1]); rs.push(r); m += r; } m /= rs.length; let v = 0; rs.forEach((r) => (v += (r - m) * (r - m))); rv.push(Math.sqrt(v / (rs.length - 1) * 365) * 100); }
+    const min = Math.min(...iv), max = Math.max(...iv); const below = iv.filter((v) => v < cur).length;
+    volCache[key] = { iv, rv, cur, min, max, rank: max > min ? ((cur - min) / (max - min)) * 100 : 50, pct: (below / iv.length) * 100 };
+    return volCache[key];
+  }
+  function emitStats() {
+    if (!chainRef) return; const s = chainStats(chainRef); const vh = volHistory(AN.asset); const dte = F.dte(AN.expiry); const spot = spotNow();
+    AN.stats = { asset: AN.asset, expiry: AN.expiry, dte, spot, atmIv: s.atmIv, ivRank: vh.rank, ivPercentile: vh.pct, expectedMove: spot * (s.atmIv / 100) * Math.sqrt(Math.max(dte, 0.5) / 365), pcr: s.pcr, maxPain: s.maxPain, skew25: s.skew };
+    CG.emit('analyse:stats', AN.stats);
+  }
+  // ---------- keyboard ----------
+  const fired = {}; const once = (id, fn, ev) => { if (ev && typeof ev === 'object' && 'key' in ev) { if (ev.__anHandled) return; ev.__anHandled = true; fn(); return; } const now = Date.now(); if (fired[id] && now - fired[id] < 40) return; fired[id] = now; fn(); };
+  const chainVisible = () => isActive() && (st.analyseTab || 'chain') === 'chain' && !els.chainPanel.hidden && els.shell.dataset.collapse !== 'left';
+  const KEYS = [
+    { id: 'j', keys: ['j', 'ArrowDown'], label: 'Next strike', run: () => moveHl(1) },
+    { id: 'k', keys: ['k', 'ArrowUp'], label: 'Previous strike', run: () => moveHl(-1) },
+    { id: 'b', keys: ['b'], label: 'Buy call at highlighted strike', run: () => hlStrike != null && addLeg('CALL', 'BUY', hlStrike, curLots()) },
+    { id: 's', keys: ['s'], label: 'Sell call at highlighted strike', run: () => hlStrike != null && addLeg('CALL', 'SELL', hlStrike, curLots()) },
+    { id: 'B', keys: ['B'], shift: true, label: 'Buy put at highlighted strike', run: () => hlStrike != null && addLeg('PUT', 'BUY', hlStrike, curLots()) },
+    { id: 'S', keys: ['S'], shift: true, label: 'Sell put at highlighted strike', run: () => hlStrike != null && addLeg('PUT', 'SELL', hlStrike, curLots()) },
+    { id: 'e', keys: ['e'], label: 'Next expiry', run: () => cycleExpiry(1) },
+    { id: 'E', keys: ['E'], shift: true, label: 'Previous expiry', run: () => cycleExpiry(-1) },
+    { id: 'Enter', keys: ['Enter'], label: 'Option details for highlighted strike', run: (ev) => hlStrike != null && openOptInfo(ev && ev.shiftKey ? 'PUT' : 'CALL', hlStrike) },
+    { id: 'Escape', keys: ['Escape'], label: 'Clear highlight', run: () => setHl(null) }
+  ];
+  function onKey(e) {
+    if (!chainVisible() || e.ctrlKey || e.metaKey || e.altKey || (e.defaultPrevented && e.key !== 'Escape')) return;
+    const t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+    if (document.querySelector('.cg-overlay')) return;
+    const k = KEYS.find((d) => d.keys.includes(e.key)); if (!k) return;
+    if (k.id === 'Escape' && hlStrike == null) return;
+    e.preventDefault(); once(k.id, () => k.run(e), e);
+  }
+  function registerShortcuts() {
+    document.addEventListener('keydown', onKey);
+    // chrome shortcut registry (CG.shortcuts.register(key, description, handler, opts)) — it preventDefaults before calling us, so the document listener above skips those keys
+    if (!CG.shortcuts || typeof CG.shortcuts.register !== 'function') return;
+    KEYS.forEach((k) => { if (k.id === 'Escape') return; k.keys.forEach((key) => { try { CG.shortcuts.register((k.shift ? 'Shift+' : '') + key, k.label, (ev) => { if (!chainVisible()) return; once(k.id, () => k.run(ev), ev); }, { group: 'Analyse workspace', owner: 'analyse' }); } catch (x) { } }); });
+  }
+  function registerPalette() {
+    if (!CG.palette || typeof CG.palette.register !== 'function') return;
+    const reg = (o) => { try { CG.palette.register(Object.assign({ group: 'Analyse', route: ROUTE }, o, { run: () => { if (!isActive()) CG.navigate(ROUTE); setTimeout(o.run, isActive() ? 0 : 60); }, handler: o.run })); } catch (x) { } };
+    CG.EXPIRIES.forEach((e) => reg({ id: 'an-exp-' + e, label: 'Switch expiry → ' + expShort(e) + ' · ' + F.dte(e) + 'd', keywords: 'expiry ' + e, run: () => setExpiry(e) }));
+    const existing = (typeof CG.palette.list === 'function' ? CG.palette.list() : []).map((c) => String(c.label || '').toLowerCase());
+    CG.TEMPLATES.forEach((t) => { if (existing.some((l) => l.includes('template') && l.includes(t.name.toLowerCase()))) return; reg({ id: 'an-tpl-' + t.name.replace(/\W+/g, '-').toLowerCase(), label: 'Load template → ' + t.name, keywords: 'template ' + t.category, run: () => loadTemplate(t) }); });
+    reg({ id: 'an-greeks-cols', label: 'Toggle chain Greeks (Γ Θ ν columns)', keywords: 'greeks columns gamma theta vega', run: () => setGreeksCols(!greeksShown()) });
+    reg({ id: 'an-find-delta', label: 'Find strike by delta…', keywords: 'delta strike finder 25', run: openFindDelta });
+    reg({ id: 'an-share', label: 'Share strategy link', keywords: 'share link copy', run: () => M.openShare && M.openShare() });
+    ['payoff', 'scenarios', 'greeks', 'vol', 'structure', 'ladder'].forEach((t) => reg({ id: 'an-tab-' + t, label: 'Analyse → ' + t.charAt(0).toUpperCase() + t.slice(1) + ' tab', keywords: 'tab ' + t, run: () => setRightTab(t) }));
+  }
+  function dedupePalette() {
+    if (!CG.palette || typeof CG.palette.list !== 'function' || typeof CG.palette.unregister !== 'function') return;
+    const all = CG.palette.list(); const others = new Set(all.filter((c) => !/^an-/.test(c.id)).map((c) => String(c.label || '').toLowerCase()));
+    all.filter((c) => /^an-tpl-/.test(c.id) && others.has(String(c.label || '').toLowerCase())).forEach((c) => { try { CG.palette.unregister(c.id); } catch (x) { } });
+  }
+  function loadTemplate(tpl) {
+    if (CG.trading && typeof CG.trading.loadTemplate === 'function') { try { CG.trading.loadTemplate(tpl); return; } catch (x) { } }
+    AN.legs = CG.templateLegs(tpl, AN.asset, AN.expiry); AN.name = tpl.name; AN.strategyId = null; CG.emit('analyse:legs-changed', AN.legs); CG.toast({ title: 'Template loaded', description: tpl.name + ' · ' + AN.legs.length + ' legs · ' + AN.expiry, variant: 'success' });
+  }
+  function openFindDelta() {
+    const box = els.findDlg; box.innerHTML = '<div class="an-share-wrap"><p class="text-sm text-muted">Scroll the chain to the call and put strikes whose delta is closest to the chosen value.</p><div class="an-fd-chips">' + [5, 10, 16, 25, 30, 40, 50].map((d) => '<button class="btn btn-outline btn-sm mono" data-fd="' + d + '">' + d + 'Δ</button>').join('') + '</div><div class="flex gap-2 items-center"><input class="input input-sm mono" style="width:120px" type="number" min="1" max="99" placeholder="custom Δ" data-fd-input><button class="btn btn-primary btn-sm" data-fd-go>Find</button></div></div>';
+    const h = CG.modal.open(box, { title: 'Find strike by delta', size: 'sm' });
+    box.onclick = (e) => { const b = e.target.closest('[data-fd]'); if (b) { h.close(); findDelta(+b.dataset.fd); return; } if (e.target.closest('[data-fd-go]')) { const v = +box.querySelector('[data-fd-input]').value; if (v > 0 && v < 100) { h.close(); findDelta(v); } else CG.toast({ title: 'Enter a delta between 1 and 99', variant: 'destructive' }); } };
+  }
+  // expose internals to the other chunks of this part
+  const M = (window.__cgAnalyse = { get root() { return root; }, set root(v) { root = v; }, els, AN, st, F, P, ic, ICONS, fillIcons, px, money, smoney, cls, fmtK, fmtAxis, fmtKbare, fmtStrike, fmtDM, fmtDMloc, fmtDateTime, expShort, nice, esc, MON, DAYS, activeLegs, chainLegs, spotNow, lotSize, totalLots, baseAnalysis, pnlAtPrice, daysLeftLabel, sdInfo, latestExpiry, positionGreeksAt, volHistory, chainStats, maxPain, symbolOf, renderChain, updateChain, renderPills, renderExpiries, setExpiry, cycleExpiry, setLive, toggleLive, addLeg, openOptInfo, openColSettings, bindCs, setLeftTab, setRightTab, setCollapse, measureTop, measureBottom, applyDensity, renderRight, renderCounts, renderStratInfo, scrollToAtm, updateVis, curLots, setLots, stepLots, LOTS, setRange, curRange, setGreeksCols, greeksShown, findDelta, openFindDelta, setHl, moveHl, loadTemplate, registerShortcuts, registerPalette, dedupePalette, emitStats, isActive, rowsByStrike: () => rowsByStrike, hl: { get: () => hlStrike, set: (v) => { hlStrike = v; } }, chain: () => chainRef, COLS });
+})();
+</script>
+<script>
+(function () {
+  'use strict';
+  const M = window.__cgAnalyse; const { els, AN, st, F, ic, money, smoney, cls, fmtK, fmtAxis, fmtStrike, fmtDMloc, nice, activeLegs, spotNow, lotSize, totalLots, baseAnalysis, pnlAtPrice, sdInfo, latestExpiry, chainStats } = M;
+  // ---------- layers / zoom ----------
+  const LAYER_DEFS = [['expiry', 'At-expiry P&L line', 'hsl(var(--foreground))'], ['target', 'Target-date P&L curve', 'hsl(var(--curve))'], ['fill', 'Profit / loss fill', 'hsl(var(--profit))'], ['oi', 'Open interest bars', 'hsl(var(--muted-foreground))'], ['sd', '±1σ expected-move band', 'hsl(var(--muted-foreground))'], ['be', 'Breakeven markers', 'hsl(var(--foreground))'], ['ivdn', 'IV −5% curve (target date)', 'hsl(var(--curve))'], ['ivup', 'IV +5% curve (target date)', 'hsl(var(--curve))']];
+  function layers() { if (!st.chartLayers || typeof st.chartLayers !== 'object' || st.chartLayers.v !== 2) st.chartLayers = { v: 2, expiry: true, target: true, fill: true, oi: true, sd: true, be: true, ivdn: false, ivup: false }; return st.chartLayers; }
+  function setLayer(k, on) { layers()[k] = !!on; CG.saveState(); syncLegend(); renderChart(); }
+  function syncLegend() { const L = layers(); CG.$$('.lg', els.legend).forEach((b) => b.classList.toggle('off', !L[b.dataset.layer])); CG.$$('.an-chip[data-layer]', els.chips).forEach((b) => b.classList.toggle('on', !!L[b.dataset.layer])); }
+  function openLayers() {
+    const L = layers();
+    const html = '<div class="menu-label">Chart layers</div>' + LAYER_DEFS.map(([k, label, color]) => '<label class="an-layer-row"><input type="checkbox" class="checkbox" data-layer-cb="' + k + '"' + (L[k] ? ' checked' : '') + '><span class="sw" style="border-color:' + color + '"></span>' + label + '</label>').join('');
+    const m = CG.menu(els.layersBtn, html); m.addEventListener('change', (e) => { const cb = e.target.closest('[data-layer-cb]'); if (cb) setLayer(cb.dataset.layerCb, cb.checked); });
+  }
+  const ZOOMS = [0.5, 0.75, 1, 1.5, 2, 3];
+  const zoom = () => (ZOOMS.includes(+st.chartZoom) ? +st.chartZoom : 1);
+  function setZoom(z) { st.chartZoom = z; CG.saveState(); els.zoomLabel.textContent = Math.round(z * 100) + '%'; renderChart(); renderSliders(baseAnalysis()); }
+  function zoomStep(dir) { const i = ZOOMS.indexOf(zoom()); const j = Math.max(0, Math.min(ZOOMS.length - 1, i + dir)); setZoom(ZOOMS[j]); }
+  function xRange() { const spot = spotNow(); const span = 0.2 / zoom(); return { lo: spot * (1 - span), hi: spot * (1 + span), spot }; }
+  const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+  const targetDate = () => new Date(CG.NOW.getTime() + AN.targetDays * 86400000);
+  const targetLabel = () => (AN.targetDays === 0 ? 'today' : fmtDMloc(targetDate()));
+  // where the max profit / loss is reached (plateau or peak)
+  function whereExtreme(a, v) { const pts = a.points; const eps = Math.max(1e-6, Math.abs(v) * 1e-4); const hits = pts.filter((p) => Math.abs(p.pnlExpiry - v) <= eps).map((p) => p.price); if (!hits.length) return ''; const first = hits[0], last = hits[hits.length - 1]; if (Math.abs(first - pts[0].price) < 1e-6 && Math.abs(last - pts[pts.length - 1].price) < 1e-6) return 'flat'; if (Math.abs(last - pts[pts.length - 1].price) < 1e-6) return 'at ≥ ' + fmtStrike(first); if (Math.abs(first - pts[0].price) < 1e-6) return 'at ≤ ' + fmtStrike(last); if (last - first > a.spot * 0.004) return fmtStrike(first) + ' – ' + fmtStrike(last); return 'at ' + fmtStrike((first + last) / 2); }
+  // ---------- payoff panel ----------
+  function renderPayoff() { const a = baseAnalysis(); renderTiles(a); renderStrip(a); els.legendDate.textContent = targetLabel(); els.zoomLabel.textContent = Math.round(zoom() * 100) + '%'; syncLegend(); renderChart(); renderSliders(a); renderGreeksStrip(a); }
+  const tile = (label, v, sub, c) => '<div class="an-tile"><span class="micro">' + label + '</span><div class="v ' + (c || '') + '">' + v + '</div><span class="s">' + (sub || '') + '</span></div>';
+  function renderTiles(a) {
+    if (!a) { els.tiles.innerHTML = tile('Max profit', '—', 'no legs') + tile('Max loss', '—', 'no legs') + tile('Net premium', '—', '') + tile('Breakeven', '—', '') + tile('POP', '—', 'prob. of profit') + tile('R : R', '—', 'risk to reward'); return; }
+    const spot = spotNow(); const A = CG.ASSETS[AN.asset]; const lots = a.legs.map((l) => +l.lots || 1).reduce((g, n) => gcd(g, n), 0) || 1;
+    const perUnit = a.netPremium / (lotSize() * lots); const cs = chainStats(M.chain() || CG.chain(AN.asset, AN.expiry));
+    const mp = isFinite(a.maxProfit) ? smoney(a.maxProfit) : 'Unlimited', ml = isFinite(a.maxLoss) ? smoney(a.maxLoss) : 'Unlimited';
+    const bes = a.breakevens; let beV = 'None', beS = 'no breakeven'; if (bes.length === 1) { beV = fmtStrike(bes[0]); beS = F.pct(((bes[0] - spot) / spot) * 100, 1) + ' from spot'; } else if (bes.length >= 2) { beV = '<span class="sm">' + bes.map(fmtStrike).join(' · ') + '</span>'; beS = bes.map((b) => F.pct(((b - spot) / spot) * 100, 1)).join(' · '); }
+    const pop = a.pop == null ? '—' : Math.round(a.pop * 100) + '%';
+    let rr = 'N/A', rrS = 'risk to reward'; if (a.rewardRisk != null && isFinite(a.rewardRisk)) rr = '1 : ' + a.rewardRisk.toFixed(2); else if (a.maxProfit === Infinity && isFinite(a.maxLoss)) { rr = '1 : ∞'; rrS = 'unlimited reward'; } else if (a.maxLoss === -Infinity) { rr = '∞ : 1'; rrS = 'unlimited risk'; }
+    els.tiles.innerHTML = tile('Max profit', mp, isFinite(a.maxProfit) ? whereExtreme(a, a.maxProfit) : 'unlimited upside', a.maxProfit > 0 ? 'text-profit' : 'text-loss') + tile('Max loss', ml, isFinite(a.maxLoss) ? whereExtreme(a, a.maxLoss) : 'unlimited downside', a.maxLoss < 0 ? 'text-loss' : 'text-profit') + tile(a.netPremium >= 0 ? 'Net credit' : 'Net debit', money(Math.abs(a.netPremium)), F.num(Math.abs(perUnit), 1) + ' / ' + AN.asset + (lots > 1 ? ' · ' + lots + ' lots' : '')) + tile(bes.length > 1 ? 'Breakevens' : 'Breakeven', beV, beS) + tile('POP', pop, 'lognormal · IV ' + cs.atmIv.toFixed(1) + '%', a.pop == null ? '' : a.pop >= 0.5 ? 'text-profit' : '') + tile('R : R', rr, rrS);
+  }
+  function renderStrip(a) {
+    const host = els.astrip; if (!a) { host.className = 'an-astrip empty'; host.innerHTML = '<span class="ai"><span class="micro">Analytics</span><span class="g">POP · R:R · ROI · margin · win zone appear once legs are added</span></span>'; return; }
+    host.className = 'an-astrip'; const spot = spotNow(); const mp = a.maxProfit, ml = a.maxLoss, margin = a.margin, bes = a.breakevens;
+    const pop = a.pop == null ? null : a.pop * 100; const popG = pop == null ? 'calculating' : pop >= 60 ? '✓ high' : pop >= 40 ? 'moderate' : 'low'; const popC = pop == null ? '' : pop >= 50 ? 'text-profit' : 'text-loss';
+    const rr = a.rewardRisk; let rrG = '', rrC = ''; if (rr != null && isFinite(rr) && rr > 0) { if (rr >= 2) { rrG = '✓ favorable'; rrC = 'text-profit'; } else if (rr >= 1) { rrG = 'balanced'; rrC = 'text-warning'; } else { rrG = 'high risk'; rrC = 'text-loss'; } } else if (mp === Infinity && ml !== -Infinity) { rrG = '✓ favorable'; rrC = 'text-profit'; } else if (ml === -Infinity) { rrG = 'unlimited exposure'; rrC = 'text-loss'; }
+    const maxRoi = mp === Infinity ? '∞' : margin > 0 ? ((mp / margin) * 100).toFixed(0) + '%' : '—'; const lossPct = isFinite(ml) && margin > 0 ? (Math.abs(ml) / margin) * 100 : null;
+    let win = 'varies'; const right = a.points[a.points.length - 1].pnlExpiry > 0;
+    if (bes.length === 1) win = (right ? '> ' : '< ') + fmtStrike(bes[0]); else if (bes.length === 2) { const mid = pnlAtPrice(a.legs, (bes[0] + bes[1]) / 2).pnlExpiry > 0; win = mid ? fmtStrike(bes[0]) + ' – ' + fmtStrike(bes[1]) : '< ' + fmtStrike(bes[0]) + ' or > ' + fmtStrike(bes[1]); } else if (!bes.length) win = a.points[Math.round(a.points.length / 2)].pnlExpiry > 0 ? 'any price' : 'never (at expiry)';
+    const cur = pnlAtPrice(a.legs, spot).pnlExpiry;
+    const item = (k, v, g, c) => '<span class="ai"><span class="micro">' + k + '</span><b class="' + (c || '') + '">' + v + '</b>' + (g ? '<span class="g">' + g + '</span>' : '') + '</span>';
+    host.innerHTML = item('POP', pop == null ? '—' : pop.toFixed(1) + '%', popG, popC) + item('R:R', rr != null && isFinite(rr) ? rr.toFixed(2) : mp === Infinity ? '∞' : 'N/A', rrG, rrC) + item('Max ROI', maxRoi, 'on margin') + item('Margin', money(margin), lossPct != null ? 'risk ' + lossPct.toFixed(0) + '%' : '') + item('Win if', win, '') + item('Spot now', cur >= 0 ? '✓ profit zone' : '✗ loss zone', '', cls(cur));
+  }
+  function ghostChart(W, H) {
+    const m = { l: 44, r: 16, t: 22, b: 22 }; const pw = W - m.l - m.r, ph = H - m.t - m.b; let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" style="opacity:.6">';
+    for (let i = 0; i <= 4; i++) { const y = m.t + (ph * i) / 4; s += '<line class="grid" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + y + '" y2="' + y + '"/>'; }
+    for (let i = 0; i <= 8; i++) { const x = m.l + (pw * i) / 8; s += '<line class="gridv" x1="' + x + '" x2="' + x + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/>'; }
+    const y0 = m.t + ph * 0.55; s += '<line class="zero" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + y0 + '" y2="' + y0 + '"/>';
+    const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40; const y = y0 - Math.sin(t * Math.PI) * ph * 0.35 + (t < 0.5 ? 0 : (t - 0.5) * ph * 0.5); pts.push((m.l + pw * t).toFixed(1) + ',' + y.toFixed(1)); }
+    s += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="hsl(var(--muted-foreground))" stroke-width="1.2" stroke-dasharray="5 4" opacity=".5"/>';
+    const spot = spotNow(); const x = m.l + pw * 0.5; s += '<line class="spot" x1="' + x + '" x2="' + x + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/><rect class="spottag" x="' + (x - 40) + '" y="3" width="80" height="13" rx="2"/><text class="spottxt" x="' + x + '" y="12.5" text-anchor="middle">SPOT ' + fmtStrike(spot) + '</text></svg>';
+    return s;
+  }
+  let chartCtx = null, lastMouse = null;
+  function renderChart() {
+    const host = els.chartHost; const legs = activeLegs(); const W = Math.max(320, host.clientWidth - 28 || 600), H = Math.max(230, Math.min(320, Math.round(W * 0.44)));
+    if (!legs.length) { host.innerHTML = ghostChart(W, H) + '<div class="an-chart-empty"><b>No strategy yet</b><span>Hover a chain row and press <span class="kbd">B</span>/<span class="kbd">S</span>, or load a template from the Builder</span></div>'; chartCtx = null; return; }
+    const { lo, hi, spot } = xRange(); const L = layers(); const f1 = (n) => (+n).toFixed(1);
+    const a = CG.analyze(legs, AN.asset, { targetDays: AN.targetDays, spot, min: lo, max: hi, points: 201 });
+    const ivCurves = {}; if (L.ivdn) ivCurves.ivdn = CG.analyze(legs, AN.asset, { targetDays: AN.targetDays, spot, min: lo, max: hi, points: 201, ivShift: -0.05 }); if (L.ivup) ivCurves.ivup = CG.analyze(legs, AN.asset, { targetDays: AN.targetDays, spot, min: lo, max: hi, points: 201, ivShift: 0.05 });
+    const m = { l: 44, r: 16, t: 22, b: 22 }; const pw = W - m.l - m.r, ph = H - m.t - m.b;
+    let ymin = 0, ymax = 0; const useE = L.expiry || !L.target;
+    a.points.forEach((p) => { if (useE) { ymin = Math.min(ymin, p.pnlExpiry); ymax = Math.max(ymax, p.pnlExpiry); } if (L.target) { ymin = Math.min(ymin, p.pnlTarget); ymax = Math.max(ymax, p.pnlTarget); } });
+    if (ymax - ymin < 1e-9) { ymax += 1; ymin -= 1; } const pad = (ymax - ymin) * 0.14; ymin -= pad; ymax += pad;
+    const X = (p) => m.l + ((p - lo) / (hi - lo)) * pw, Y = (v) => m.t + ((ymax - v) / (ymax - ymin)) * ph; const y0 = Y(0);
+    const uid = 'an' + Math.random().toString(36).slice(2, 8);
+    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="Payoff chart">';
+    s += '<defs><clipPath id="' + uid + 'a"><rect x="' + m.l + '" y="' + m.t + '" width="' + pw + '" height="' + Math.max(0, y0 - m.t) + '"/></clipPath><clipPath id="' + uid + 'b"><rect x="' + m.l + '" y="' + f1(y0) + '" width="' + pw + '" height="' + Math.max(0, m.t + ph - y0) + '"/></clipPath><clipPath id="' + uid + 'c"><rect x="' + m.l + '" y="' + m.t + '" width="' + pw + '" height="' + ph + '"/></clipPath></defs>';
+    // ±1σ band
+    if (L.sd) { const { sd } = sdInfo(Object.assign({}, a, { legs })); const b1 = [spot - sd, spot + sd]; s += '<g clip-path="url(#' + uid + 'c)"><rect class="band" x="' + f1(X(b1[0])) + '" y="' + m.t + '" width="' + f1(Math.max(0, X(b1[1]) - X(b1[0]))) + '" height="' + ph + '"/><line class="bandl" x1="' + f1(X(b1[0])) + '" x2="' + f1(X(b1[0])) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/><line class="bandl" x1="' + f1(X(b1[1])) + '" x2="' + f1(X(b1[1])) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/></g>'; if (b1[1] < hi) s += '<text x="' + f1(X(b1[1]) - 4) + '" y="' + (m.t + 10) + '" text-anchor="end">+1σ ' + M.fmtKbare(b1[1]) + '</text>'; if (b1[0] > lo) s += '<text x="' + f1(X(b1[0]) + 4) + '" y="' + (m.t + 10) + '">−1σ ' + M.fmtKbare(b1[0]) + '</text>'; }
+    // grid + axes
+    const ys = nice((ymax - ymin) / 4); for (let v = Math.ceil(ymin / ys) * ys; v <= ymax + 1e-6; v += ys) { const y = Y(v); if (Math.abs(v) > ys / 1e6) s += '<line class="grid" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + f1(y) + '" y2="' + f1(y) + '"/>'; s += '<text x="' + (m.l - 6) + '" y="' + f1(y + 3.5) + '" text-anchor="end">' + (v > 0 ? '+' : '') + fmtAxis(Math.abs(v) < ys / 1e6 ? 0 : v) + '</text>'; }
+    const xs = nice((hi - lo) / 8); for (let v = Math.ceil(lo / xs) * xs; v <= hi + 1e-6; v += xs) { const x = X(v); if (v > lo + xs / 4 && v < hi - xs / 4) s += '<line class="gridv" x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/>'; s += '<text x="' + f1(x) + '" y="' + (H - 6) + '" text-anchor="middle">' + M.fmtKbare(v) + '</text>'; }
+    s += '<text x="' + (m.l - 6) + '" y="' + (m.t - 8) + '" text-anchor="end">' + (st.currency === 'INR' ? '₹' : '$') + '</text>';
+    // OI bars (faint, call + put per strike)
+    if (L.oi) { const ch = M.chain() || CG.chain(AN.asset, AN.expiry); const rows = ch.rows.filter((r) => r.strike >= lo && r.strike <= hi); const maxOi = Math.max(1, ...rows.map((r) => r.call.oi + r.put.oi)); const bw = Math.max(3, Math.min(8, pw / Math.max(rows.length, 1) / 2.2)); s += '<g>'; rows.forEach((r) => { const h = ((r.call.oi + r.put.oi) / maxOi) * ph * 0.24; s += '<rect class="oib" x="' + f1(X(r.strike) - bw / 2) + '" y="' + f1(m.t + ph - h) + '" width="' + f1(bw) + '" height="' + f1(h) + '"><title>' + fmtStrike(r.strike) + ' · Call OI ' + F.int(r.call.oi) + ' · Put OI ' + F.int(r.put.oi) + '</title></rect>'; }); s += '</g>'; }
+    // zero line, fills, curves
+    const ptsE = a.points.map((p) => [X(p.price), Y(p.pnlExpiry)]); const ptsT = a.points.map((p) => [X(p.price), Y(p.pnlTarget)]);
+    const poly = (pts) => pts.map((p) => f1(p[0]) + ',' + f1(p[1])).join(' ');
+    if (L.fill && L.expiry) { const area = poly(ptsE) + ' ' + f1(ptsE[ptsE.length - 1][0]) + ',' + f1(y0) + ' ' + f1(ptsE[0][0]) + ',' + f1(y0); s += '<polygon class="fill-up" points="' + area + '" clip-path="url(#' + uid + 'a)"/><polygon class="fill-dn" points="' + area + '" clip-path="url(#' + uid + 'b)"/>'; }
+    s += '<line class="zero" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + f1(y0) + '" y2="' + f1(y0) + '"/>';
+    if (L.expiry) s += '<polyline class="exp" points="' + poly(ptsE) + '" clip-path="url(#' + uid + 'c)"/>';
+    Object.keys(ivCurves).forEach((k) => { s += '<polyline class="tgt2" points="' + poly(ivCurves[k].points.map((p) => [X(p.price), Y(p.pnlTarget)])) + '" clip-path="url(#' + uid + 'c)"/>'; });
+    if (L.target) s += '<polyline class="tgt" points="' + poly(ptsT) + '" clip-path="url(#' + uid + 'c)"/>';
+    // max profit / loss tags
+    if (isFinite(a.maxProfit) && a.maxProfit > 0) { const yy = Y(a.maxProfit); s += '<text class="maxp" x="' + (m.l + pw - 3) + '" y="' + f1(yy + (yy < m.t + 14 ? 12 : -4)) + '" text-anchor="end">max ' + smoney(a.maxProfit) + '</text>'; }
+    if (isFinite(a.maxLoss) && a.maxLoss < 0) { const yy = Y(a.maxLoss); s += '<text class="maxl" x="' + (m.l + 4) + '" y="' + f1(yy > m.t + ph - 14 ? yy - 4 : yy + 11) + '">max ' + smoney(a.maxLoss) + '</text>'; }
+    // breakevens
+    if (L.be) a.breakevens.forEach((b, i) => { if (b < lo || b > hi) return; const x = X(b); s += '<line class="be" x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/><text class="betxt" x="' + f1(x - 4) + '" y="' + (m.t + ph - 6 - (i % 2) * 11) + '" text-anchor="end">BE ' + fmtStrike(b) + '</text>'; });
+    // spot marker (the accent)
+    if (spot >= lo && spot <= hi) { const x = X(spot); const lbl = 'SPOT ' + fmtStrike(spot); const w = lbl.length * 5.6 + 12; s += '<line class="spot" x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + (m.t - 2) + '" y2="' + (m.t + ph) + '"/><rect class="spottag" x="' + f1(x - w / 2) + '" y="3" width="' + f1(w) + '" height="13" rx="2"/><text class="spottxt" x="' + f1(x) + '" y="12.5" text-anchor="middle">' + lbl + '</text>'; }
+    // target price marker (from the slider)
+    const tp = AN.targetPrice; if (tp && Math.abs(tp - spot) > 1e-6 && tp >= lo && tp <= hi) { const x = X(tp); const p = pnlAtPrice(legs, tp); const yv = L.target ? p.pnlTarget : p.pnlExpiry; const yy = Y(yv); const right = tp < spot + (hi - spot) * 0.6; s += '<line class="tp" x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/><circle class="tpdot" cx="' + f1(x) + '" cy="' + f1(yy) + '" r="3.5"/><text class="tptxt" x="' + f1(x + (right ? 8 : -8)) + '" y="' + f1(yy - 8) + '" text-anchor="' + (right ? 'start' : 'end') + '">' + smoney(yv, 1) + ' @ ' + fmtStrike(tp) + '</text>'; }
+    s += '<g data-xh style="display:none"><line class="xh" x1="0" x2="0" y1="' + m.t + '" y2="' + (m.t + ph) + '"/><circle class="xhd" r="3.5" fill="hsl(var(--foreground))"/><circle class="xhd" r="3.5" fill="hsl(var(--curve))"/></g>';
+    s += '<rect x="' + m.l + '" y="' + m.t + '" width="' + pw + '" height="' + ph + '" fill="transparent" data-hover style="cursor:crosshair"/></svg><div class="an-tip"></div>';
+    host.innerHTML = s; chartCtx = { a, lo, hi, X, Y, m, pw, ph, W, H }; bindChartHover();
+  }
+  function bindChartHover() {
+    const c = chartCtx; if (!c) return; const host = els.chartHost; const svg = host.querySelector('svg'); const tip = host.querySelector('.an-tip'); const xh = svg.querySelector('[data-xh]'); const line = xh.querySelector('line'); const circles = xh.querySelectorAll('circle');
+    const hide = () => { lastMouse = null; xh.style.display = 'none'; tip.style.display = 'none'; };
+    const onMove = (e) => {
+      lastMouse = { clientX: e.clientX, clientY: e.clientY };
+      const r = svg.getBoundingClientRect(); const x = (e.clientX - r.left) * (c.W / r.width); if (x < c.m.l || x > c.m.l + c.pw) return hide();
+      const n = c.a.points.length; const i = Math.max(0, Math.min(n - 1, Math.round(((x - c.m.l) / c.pw) * (n - 1)))); const p = c.a.points[i]; const pxx = c.X(p.price); const L = layers();
+      xh.style.display = ''; line.setAttribute('x1', pxx); line.setAttribute('x2', pxx);
+      circles[0].setAttribute('cx', pxx); circles[0].setAttribute('cy', c.Y(p.pnlExpiry)); circles[0].style.display = L.expiry ? '' : 'none';
+      circles[1].setAttribute('cx', pxx); circles[1].setAttribute('cy', c.Y(p.pnlTarget)); circles[1].style.display = L.target ? '' : 'none';
+      tip.innerHTML = '<b>' + (AN.targetDays === 0 ? 'Today' : fmtDMloc(targetDate())) + ' @ ' + fmtStrike(p.price) + '</b> <span class="text-muted">' + F.pct(((p.price - spotNow()) / spotNow()) * 100, 1) + '</span> · <b class="' + cls(p.pnlTarget) + '">' + smoney(p.pnlTarget) + '</b> · <span class="text-muted">exp</span> <b class="' + cls(p.pnlExpiry) + '">' + smoney(p.pnlExpiry) + '</b>';
+      tip.style.display = 'block'; const hr = host.getBoundingClientRect(); let left = e.clientX - hr.left + 14; if (left + tip.offsetWidth > hr.width - 4) left = e.clientX - hr.left - tip.offsetWidth - 14; tip.style.left = Math.max(0, left) + 'px'; tip.style.top = Math.max(0, e.clientY - hr.top - 30) + 'px';
+    };
+    svg.addEventListener('mousemove', onMove); svg.addEventListener('mouseleave', hide);
+    svg.addEventListener('click', (e) => { const r = svg.getBoundingClientRect(); const x = (e.clientX - r.left) * (c.W / r.width); if (x < c.m.l || x > c.m.l + c.pw) return; const price = c.lo + ((x - c.m.l) / c.pw) * (c.hi - c.lo); setTargetPrice(price, true); });
+    if (lastMouse) onMove(lastMouse); // keep the crosshair alive across live re-renders
+  }
+  // ---------- sliders ----------
+  function renderSliders(a) {
+    const A = CG.ASSETS[AN.asset]; const { lo, hi, spot } = xRange(); const tp = AN.targetPrice || spot;
+    const r = els.tpRange; r.min = Math.floor(lo); r.max = Math.ceil(hi); r.step = Math.max(1, Math.round(A.step / 50)); r.value = Math.round(tp);
+    const pct = ((tp - lo) / (hi - lo)) * 100; els.tpVal.textContent = fmtStrike(tp); const ch = ((tp - spot) / spot) * 100; els.tpPct.textContent = F.pct(ch, 1); els.tpPct.className = ch >= 0 ? 'text-profit' : 'text-loss';
+    els.tpKnob.style.left = pct + '%'; els.tpFill.style.width = pct + '%'; els.tpSpot.style.left = (((spot - lo) / (hi - lo)) * 100) + '%';
+    els.tpTicks.innerHTML = [0, 0.25, 0.5, 0.75, 1].map((t) => '<span>' + fmtStrike(lo + (hi - lo) * t) + '</span>').join('');
+    els.tpTitle.textContent = AN.asset + ' target price';
+    const maxDte = a ? a.maxDte : F.dte(AN.expiry); if (AN.targetDays > maxDte) AN.targetDays = maxDte;
+    const d = els.tdRange; d.max = Math.max(maxDte, 0); d.value = AN.targetDays; d.disabled = maxDte === 0;
+    const dp = maxDte ? (AN.targetDays / maxDte) * 100 : 0; els.tdKnob.style.left = dp + '%'; els.tdFill.style.width = dp + '%';
+    const td = targetDate(); els.tdVal.textContent = AN.targetDays === 0 ? 'Today' : M.DAYS[td.getDay()] + ' ' + fmtDMloc(td); els.tdLeft.textContent = (AN.targetDays === 0 ? fmtDMloc(CG.NOW) + ' · ' : '') + Math.max(0, maxDte - AN.targetDays) + 'd left';
+    els.tdTitle.textContent = 'Target date';
+    const expC = a ? latestExpiry(a.legs) : AN.expiry; const mids = maxDte >= 6 ? [Math.round(maxDte / 3), Math.round((2 * maxDte) / 3)] : maxDte >= 2 ? [Math.round(maxDte / 2)] : [];
+    els.tdTicks.innerHTML = '<span>Today · ' + fmtDMloc(CG.NOW) + '</span>' + mids.map((n) => '<span>' + fmtDMloc(new Date(CG.NOW.getTime() + n * 86400000)) + '</span>').join('') + '<span>Expiry · ' + M.expShort(expC) + '</span>';
+  }
+  function renderGreeksStrip(a) {
+    const host = els.gstrip; if (!a) { host.innerHTML = '<span class="micro">Net greeks appear once legs are added</span>'; return; }
+    const g = a.greeks; const gk = (k, v, c) => '<div class="gk"><span class="micro">' + k + '</span><span class="v ' + (c || '') + '">' + v + '</span></div>';
+    const fmtG = (v) => (Math.abs(v) < 1e-6 ? '0.0000' : Math.abs(v) < 1e-3 ? v.toExponential(1) : v.toFixed(4));
+    host.innerHTML = gk('Net Δ', F.signed(g.delta, 4), cls(g.delta)) + gk('Net Γ', fmtG(g.gamma)) + gk('Net Θ / day', smoney(g.theta), cls(g.theta)) + gk('Net ν / 1% IV', smoney(g.vega), cls(g.vega)) + gk('Margin est.', money(a.margin)) + '<span class="note">' + (st.currency === 'INR' ? 'INR' : 'USD') + ' per strategy · ' + totalLots() + ' lots · ' + (st.pnlBasis || 'mark') + ' basis</span>';
+  }
+  function setTargetPrice(v, full) {
+    const { lo, hi, spot } = xRange(); v = Math.max(lo, Math.min(hi, +v)); AN.targetPrice = Math.abs(v - spot) < 1e-6 ? null : v; CG.emit('analyse:target', { price: AN.targetPrice || spot, days: AN.targetDays });
+    if (full) renderSliders(baseAnalysis()); else { const tp = AN.targetPrice || spot; const pct = ((tp - lo) / (hi - lo)) * 100; els.tpVal.textContent = fmtStrike(tp); const ch = ((tp - spot) / spot) * 100; els.tpPct.textContent = F.pct(ch, 1); els.tpPct.className = ch >= 0 ? 'text-profit' : 'text-loss'; els.tpKnob.style.left = pct + '%'; els.tpFill.style.width = pct + '%'; }
+    renderChart();
+  }
+  function setTargetDays(v) { const a = baseAnalysis(); const max = a ? a.maxDte : F.dte(AN.expiry); AN.targetDays = Math.max(0, Math.min(max, Math.round(+v) || 0)); CG.emit('analyse:target', { price: AN.targetPrice || spotNow(), days: AN.targetDays }); renderPayoff(); }
+  function bindPayoff() {
+    els.legend.addEventListener('click', (e) => { const b = e.target.closest('[data-layer]'); if (b) setLayer(b.dataset.layer, !layers()[b.dataset.layer]); });
+    els.chips.addEventListener('click', (e) => { const b = e.target.closest('.an-chip[data-layer]'); if (b) { setLayer(b.dataset.layer, !layers()[b.dataset.layer]); return; } if (e.target.closest('#an-layers-btn')) { openLayers(); return; } const z = e.target.closest('[data-zoom]'); if (z) { if (z.dataset.zoom === 'in') zoomStep(1); else if (z.dataset.zoom === 'out') zoomStep(-1); else setZoom(1); } });
+    els.payoff.addEventListener('click', (e) => {
+      const tp = e.target.closest('[data-tp]'); if (tp) { const A = CG.ASSETS[AN.asset]; setTargetPrice((AN.targetPrice || spotNow()) + (+tp.dataset.tp) * A.step / 5, true); return; }
+      const td = e.target.closest('[data-td]'); if (td) { setTargetDays(AN.targetDays + (+td.dataset.td)); }
+    });
+    els.tpRange.addEventListener('input', () => setTargetPrice(els.tpRange.value, false));
+    els.tpRange.addEventListener('change', () => setTargetPrice(els.tpRange.value, true));
+    els.tdRange.addEventListener('input', () => setTargetDays(els.tdRange.value));
+    let rt = null; if (window.ResizeObserver) new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => { if (M.isActive() && chartCtx && Math.abs(chartCtx.W - (els.chartHost.clientWidth - 28)) > 4) renderChart(); }, 120); }).observe(els.chartHost);
+  }
+  Object.assign(M, { layers, setLayer, renderPayoff, renderChart, renderSliders, bindPayoff, setTargetPrice, setTargetDays, zoom, setZoom, targetDate, targetLabel, gcd });
+})();
+</script>
+<script>
+(function () {
+  'use strict';
+  const M = window.__cgAnalyse; const { els, AN, st, F, P, ic, money, smoney, cls, fmtK, fmtAxis, fmtKbare, fmtStrike, fmtDMloc, expShort, nice, esc, activeLegs, spotNow, lotSize, totalLots, baseAnalysis, pnlAtPrice, latestExpiry, positionGreeksAt, volHistory, chainStats, maxPain } = M;
+  const f1 = (n) => (+n).toFixed(1);
+  const emptyBlk = (title, msg) => '<div class="an-empty"><b>' + title + '</b>' + msg + '</div>';
+  const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  function hslToRgb(str) { const m = /([\d.]+)\s+([\d.]+)%\s+([\d.]+)%/.exec(str); if (!m) return [128, 128, 128]; const h = +m[1] / 360, s = +m[2] / 100, l = +m[3] / 100; const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q; const t2c = (t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1 / 6) return p + (q - p) * 6 * t; if (t < 1 / 2) return q; if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6; return p; }; return [Math.round(t2c(h + 1 / 3) * 255), Math.round(t2c(h) * 255), Math.round(t2c(h - 1 / 3) * 255)]; }
+  // ======================================================================
+  // SCENARIOS · price × date P&L matrix
+  // ======================================================================
+  const scnMode = () => (['pnl', 'delta', 'theta'].includes(st.scnMode) ? st.scnMode : 'pnl');
+  const scnIv = () => (isFinite(+st.scnIv) ? Math.max(-20, Math.min(20, Math.round(+st.scnIv))) : 0);
+  const scnRange = () => (+st.scnRange === 20 ? 20 : 10);
+  let scnGrid = null;
+  function scenarioGrid(a) {
+    const spot = spotNow(); const legs = a.legs; const maxDte = a.maxDte; const ivShift = scnIv() / 100; const mode = scnMode(); const rg = scnRange(); const step = rg / 5;
+    const dayset = Array.from(new Set([0, Math.round(maxDte * 0.25), Math.round(maxDte * 0.5), Math.round(maxDte * 0.75), Math.max(0, maxDte - 1), maxDte])).sort((x, y) => x - y);
+    const pcts = []; for (let p = rg; p >= -rg - 1e-9; p -= step) pcts.push(+p.toFixed(2));
+    const rows = pcts.map((p) => ({ pct: p, price: spot * (1 + p / 100) }));
+    const cells = rows.map((r) => dayset.map((d) => { if (mode === 'pnl') return CG.analyze(legs, AN.asset, { targetDays: d, spot, min: r.price, max: r.price + 1e-6, points: 2, ivShift }).points[0].pnlTarget; const g = positionGreeksAt(legs, r.price, d, ivShift); return mode === 'delta' ? g.delta : g.theta; }));
+    let vmax = 0; cells.forEach((row) => row.forEach((v) => { if (isFinite(v)) vmax = Math.max(vmax, Math.abs(v)); }));
+    const tp = AN.targetPrice || spot; let ti = 0, tbest = Infinity; rows.forEach((r, i) => { const d = Math.abs(r.price - tp); if (d < tbest) { tbest = d; ti = i; } }); let tj = 0, tjb = Infinity; dayset.forEach((d, j) => { const dd = Math.abs(d - AN.targetDays); if (dd < tjb) { tjb = dd; tj = j; } });
+    return { rows, days: dayset, cells, vmax: vmax || 1, ti, tj, mode, maxDte, spot };
+  }
+  const fmtCell = (v, mode) => (mode === 'pnl' ? (v >= 0 ? '+' : '-') + Math.abs(v).toFixed(1) : mode === 'delta' ? F.signed(v, 4) : (v >= 0 ? '+' : '-') + Math.abs(v).toFixed(2));
+  const dayLabel = (d, maxDte) => (d === 0 ? 'Today' : d === maxDte ? 'Expiry' : fmtDMloc(new Date(CG.NOW.getTime() + d * 86400000)));
+  const daySub = (d, maxDte) => (d === 0 ? fmtDMloc(CG.NOW) : d === maxDte ? fmtDMloc(new Date(CG.NOW.getTime() + d * 86400000)) : '+' + d + 'd');
+  function renderScenarios() {
+    const host = els.scenarios; const a = baseAnalysis(); const mode = scnMode(); const smooth = !!st.scnSmooth;
+    const ctl = '<div class="an-blk-hd"><span class="micro">Scenarios</span><h4>' + (mode === 'pnl' ? 'P&amp;L' : mode === 'delta' ? 'Position Δ' : 'Position Θ / day') + ' by price × date</h4><div class="right an-scn-ctl"><div class="an-seg" data-scn-mode><button data-mode="pnl"' + (mode === 'pnl' ? ' class="on"' : '') + '>P&amp;L</button><button data-mode="delta"' + (mode === 'delta' ? ' class="on"' : '') + '>Δ</button><button data-mode="theta"' + (mode === 'theta' ? ' class="on"' : '') + '>Θ</button></div><div class="an-seg" data-scn-range><button data-rg="10"' + (scnRange() === 10 ? ' class="on"' : '') + '>±10%</button><button data-rg="20"' + (scnRange() === 20 ? ' class="on"' : '') + '>±20%</button></div><label class="an-ivsl"><span class="micro">IV shift</span><input type="range" min="-20" max="20" step="1" value="' + scnIv() + '" data-scn-iv aria-label="IV shift"><b data-scn-ivv>' + (scnIv() >= 0 ? '+' : '') + scnIv() + '%</b></label><button class="an-chip' + (smooth ? ' on' : '') + '" data-scn-smooth title="Bilinear heat field instead of cells">Smooth</button></div></div>';
+    if (!a) { host.innerHTML = '<div class="an-blk">' + ctl + emptyBlk('No strategy yet', 'The price × date matrix appears once legs are added.') + '</div>'; return; }
+    const G = scenarioGrid(a); scnGrid = G; const cols = G.days.length; const unit = mode === 'pnl' ? (st.currency === 'INR' ? 'INR' : 'USD') : mode === 'delta' ? AN.asset + ' Δ' : (st.currency === 'INR' ? 'INR' : 'USD') + ' / day';
+    let m = '<div class="mtx" style="--cols:' + cols + '"><div class="h" style="justify-content:flex-end;align-items:flex-end;padding-right:10px">Price</div>';
+    G.days.forEach((d, j) => (m += '<div class="h' + (j === G.tj ? ' tg' : '') + '"><span>' + dayLabel(d, G.maxDte) + '</span><small>' + daySub(d, G.maxDte) + '</small></div>'));
+    if (smooth) { m += G.rows.map((r, i) => '<div class="rh' + (i === G.ti ? ' tg' : '') + '"' + (i === 0 ? ' style="grid-row:2"' : '') + '>' + (Math.abs(r.pct) < 1e-9 ? '<em>SPOT</em>' : '') + fmtStrike(r.price) + '</div>').join(''); m += '<canvas data-scn-canvas style="grid-row:2 / span ' + G.rows.length + '"></canvas>'; }
+    else G.rows.forEach((r, i) => { m += '<div class="rh' + (i === G.ti ? ' tg' : '') + '">' + (Math.abs(r.pct) < 1e-9 ? '<em>SPOT</em>' : '') + fmtStrike(r.price) + '</div>'; G.cells[i].forEach((v, j) => { const al = (0.1 + 0.5 * Math.abs(v) / G.vmax).toFixed(2); m += '<div class="cell' + (i === G.ti && j === G.tj ? ' tg' : '') + '" data-i="' + i + '" data-j="' + j + '" style="background:hsl(var(--' + (v >= 0 ? 'profit' : 'loss') + ')/' + al + ')">' + fmtCell(v, mode) + '</div>'; }); });
+    m += '</div><div class="an-scn-tip" data-scn-tip></div>';
+    host.innerHTML = '<div class="an-blk">' + ctl + '<div class="an-blk-hd" style="margin-top:2px"><span class="lg"><i style="background:hsl(var(--profit)/.5)"></i>profit</span><span class="lg"><i style="background:hsl(var(--loss)/.5)"></i>loss</span><span class="micro">' + unit + ' · shade = magnitude · outlined = target from the sliders (' + fmtStrike(G.rows[G.ti].price) + ' · ' + dayLabel(G.days[G.tj], G.maxDte) + ')</span><span class="right micro">rows ' + (scnRange() / 5) + '% apart · IV ' + (scnIv() >= 0 ? '+' : '') + scnIv() + '%</span></div>' + m + '</div>';
+    if (smooth) drawHeat(host.querySelector('[data-scn-canvas]'), G);
+  }
+  function drawHeat(cv, G) {
+    if (!cv) return; const rect = cv.getBoundingClientRect(); const W = Math.max(200, Math.round(rect.width)), H = Math.max(100, Math.round(rect.height)); cv.width = W; cv.height = H; const ctx = cv.getContext('2d');
+    const up = hslToRgb(cssVar('--profit')), dn = hslToRgb(cssVar('--loss')), bg = hslToRgb(cssVar('--background'));
+    const nr = G.rows.length, nc = G.days.length; const img = ctx.createImageData(W, H); const d = img.data;
+    const cw = W / nc, rh = H / nr;
+    for (let y = 0; y < H; y++) { const fy = Math.max(0, Math.min(nr - 1, y / rh - 0.5)); const i0 = Math.floor(fy), i1 = Math.min(nr - 1, i0 + 1), ty = fy - i0; for (let x = 0; x < W; x++) { const fx = Math.max(0, Math.min(nc - 1, x / cw - 0.5)); const j0 = Math.floor(fx), j1 = Math.min(nc - 1, j0 + 1), tx = fx - j0; const v = (G.cells[i0][j0] * (1 - tx) + G.cells[i0][j1] * tx) * (1 - ty) + (G.cells[i1][j0] * (1 - tx) + G.cells[i1][j1] * tx) * ty; const al = 0.08 + 0.62 * Math.min(1, Math.abs(v) / G.vmax); const c = v >= 0 ? up : dn; const k = (y * W + x) * 4; d[k] = Math.round(bg[0] + (c[0] - bg[0]) * al); d[k + 1] = Math.round(bg[1] + (c[1] - bg[1]) * al); d[k + 2] = Math.round(bg[2] + (c[2] - bg[2]) * al); d[k + 3] = 255; } }
+    ctx.putImageData(img, 0, 0);
+    // zero contour (breakeven ridge) + target outline + column separators
+    ctx.strokeStyle = 'rgba(' + hslToRgb(cssVar('--foreground')).join(',') + ',0.35)'; ctx.lineWidth = 1; for (let j = 1; j < nc; j++) { ctx.beginPath(); ctx.moveTo(Math.round(j * cw) + 0.5, 0); ctx.lineTo(Math.round(j * cw) + 0.5, H); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(' + hslToRgb(cssVar('--foreground')).join(',') + ',0.9)'; ctx.setLineDash([3, 3]); for (let j = 0; j < nc; j++) { for (let i = 0; i < nr - 1; i++) { const a0 = G.cells[i][j], a1 = G.cells[i + 1][j]; if ((a0 >= 0) !== (a1 >= 0)) { const t = a0 / (a0 - a1); const yy = (i + 0.5 + t) * rh; ctx.beginPath(); ctx.moveTo(j * cw + 2, yy); ctx.lineTo((j + 1) * cw - 2, yy); ctx.stroke(); } } }
+    ctx.setLineDash([]); ctx.strokeStyle = 'rgb(' + hslToRgb(cssVar('--foreground')).join(',') + ')'; ctx.lineWidth = 1.5; ctx.strokeRect(G.tj * cw + 1, G.ti * rh + 1, cw - 2, rh - 2);
+    ctx.fillStyle = 'rgb(' + hslToRgb(cssVar('--spot')).join(',') + ')'; const si = G.rows.findIndex((r) => Math.abs(r.pct) < 1e-9); if (si >= 0) ctx.fillRect(0, Math.round((si + 0.5) * rh), W, 1);
+  }
+  function bindScenarios() {
+    const host = els.scenarios;
+    host.addEventListener('click', (e) => {
+      const md = e.target.closest('[data-scn-mode] [data-mode]'); if (md) { st.scnMode = md.dataset.mode; CG.saveState(); renderScenarios(); return; }
+      const rg = e.target.closest('[data-scn-range] [data-rg]'); if (rg) { st.scnRange = +rg.dataset.rg; CG.saveState(); renderScenarios(); return; }
+      if (e.target.closest('[data-scn-smooth]')) { st.scnSmooth = !st.scnSmooth; CG.saveState(); renderScenarios(); CG.toast({ title: st.scnSmooth ? 'Smooth heat field' : 'Cell matrix', description: st.scnSmooth ? 'Bilinear interpolation between the price × date nodes' : 'Discrete price × date cells' }); return; }
+      const cell = e.target.closest('.mtx .cell'); if (cell && scnGrid) { const r = scnGrid.rows[+cell.dataset.i]; M.setTargetPrice(r.price, true); M.setTargetDays(scnGrid.days[+cell.dataset.j]); setTimeout(renderScenarios, 0); CG.toast({ title: 'Target set', description: fmtStrike(r.price) + ' · ' + dayLabel(scnGrid.days[+cell.dataset.j], scnGrid.maxDte) }); }
+    });
+    let ivT = null; host.addEventListener('input', (e) => { const r = e.target.closest('[data-scn-iv]'); if (!r) return; st.scnIv = +r.value; const v = host.querySelector('[data-scn-ivv]'); if (v) v.textContent = (st.scnIv >= 0 ? '+' : '') + st.scnIv + '%'; clearTimeout(ivT); ivT = setTimeout(() => { CG.saveState(); renderScenarios(); }, 60); });
+    host.addEventListener('mousemove', (e) => {
+      const tip = host.querySelector('[data-scn-tip]'); if (!tip || !scnGrid) return; const G = scnGrid; let txt = null; let anchor = null;
+      const cell = e.target.closest('.mtx .cell'); const cv = e.target.closest('[data-scn-canvas]');
+      if (cell) { const i = +cell.dataset.i, j = +cell.dataset.j; txt = '<b>' + fmtStrike(G.rows[i].price) + '</b> (' + F.pct(G.rows[i].pct, 0) + ') · ' + dayLabel(G.days[j], G.maxDte) + ' · <b class="' + cls(G.cells[i][j]) + '">' + fmtCell(G.cells[i][j], G.mode) + '</b>'; anchor = cell; }
+      else if (cv) { const r = cv.getBoundingClientRect(); const fx = ((e.clientX - r.left) / r.width) * G.days.length - 0.5, fy = ((e.clientY - r.top) / r.height) * G.rows.length - 0.5; const j0 = Math.max(0, Math.min(G.days.length - 1, Math.floor(fx))), j1 = Math.min(G.days.length - 1, j0 + 1), tx = Math.max(0, Math.min(1, fx - j0)); const i0 = Math.max(0, Math.min(G.rows.length - 1, Math.floor(fy))), i1 = Math.min(G.rows.length - 1, i0 + 1), ty = Math.max(0, Math.min(1, fy - i0)); const v = (G.cells[i0][j0] * (1 - tx) + G.cells[i0][j1] * tx) * (1 - ty) + (G.cells[i1][j0] * (1 - tx) + G.cells[i1][j1] * tx) * ty; const price = G.rows[i0].price + (G.rows[i1].price - G.rows[i0].price) * ty; const day = G.days[j0] + (G.days[j1] - G.days[j0]) * tx; txt = '<b>' + fmtStrike(price) + '</b> · ' + (day < 0.5 ? 'today' : fmtDMloc(new Date(CG.NOW.getTime() + Math.round(day) * 86400000))) + ' · <b class="' + cls(v) + '">' + fmtCell(v, G.mode) + '</b> <span class="text-muted">interpolated</span>'; anchor = cv; }
+      if (!txt) { tip.style.display = 'none'; return; }
+      tip.innerHTML = txt; tip.style.display = 'block'; const hr = host.getBoundingClientRect(); let left = e.clientX - hr.left + 12; if (left + tip.offsetWidth > hr.width - 6) left = e.clientX - hr.left - tip.offsetWidth - 12; tip.style.left = Math.max(0, left) + 'px'; tip.style.top = (e.clientY - hr.top - 30 + host.scrollTop) + 'px';
+    });
+    host.addEventListener('mouseleave', () => { const tip = host.querySelector('[data-scn-tip]'); if (tip) tip.style.display = 'none'; });
+  }
+  // ======================================================================
+  // GREEKS tab
+  // ======================================================================
+  function legGreeks(l, spot) { const A = CG.ASSETS[AN.asset]; const q = (+l.lots || 1) * lotSize() * (l.side === 'BUY' ? 1 : -1); if (l.type === 'FUTURE') return { delta: q, gamma: 0, theta: 0, vega: 0 }; const T = Math.max(F.dte(l.expiry), 0) / 365; const s = (l.iv || P.smile(l.strike, spot, A.iv) * 100) / 100; const g = P.greeks(spot, l.strike, T, s, l.type === 'CALL'); return { delta: g.delta * q, gamma: g.gamma * q, theta: g.theta * q, vega: g.vega * q }; }
+  function lineChart(opts) {
+    // opts: {W,H,xs,series:[{ys,cls}],xfmt,yfmt,spot,marks:[{x,cls}],ylabel, zero:true}
+    const W = opts.W, H = opts.H, m = { l: 44, r: 12, t: 16, b: 20 }; const pw = W - m.l - m.r, ph = H - m.t - m.b; const xs = opts.xs; const lo = xs[0], hi = xs[xs.length - 1];
+    let ymin = Infinity, ymax = -Infinity; opts.series.forEach((s) => s.ys.forEach((v) => { if (isFinite(v)) { ymin = Math.min(ymin, v); ymax = Math.max(ymax, v); } })); if (opts.zero) { ymin = Math.min(ymin, 0); ymax = Math.max(ymax, 0); } if (ymax - ymin < 1e-9) { ymax += 1; ymin -= 1; } const pad = (ymax - ymin) * 0.12; ymin -= pad; ymax += pad;
+    const X = (v) => m.l + ((v - lo) / (hi - lo || 1)) * pw, Y = (v) => m.t + ((ymax - v) / (ymax - ymin)) * ph;
+    let s = '<svg class="an-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '">';
+    const ys = nice((ymax - ymin) / 4); for (let v = Math.ceil(ymin / ys) * ys; v <= ymax + 1e-6; v += ys) { const y = Y(v); s += '<line class="grid" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + f1(y) + '" y2="' + f1(y) + '"/><text x="' + (m.l - 5) + '" y="' + f1(y + 3.5) + '" text-anchor="end">' + opts.yfmt(Math.abs(v) < ys / 1e6 ? 0 : v) + '</text>'; }
+    const nx = opts.nx || 6; for (let i = 0; i <= nx; i++) { const v = lo + ((hi - lo) * i) / nx; s += '<text x="' + f1(X(v)) + '" y="' + (H - 5) + '" text-anchor="middle">' + opts.xfmt(v) + '</text>'; }
+    if (opts.zero) s += '<line class="zero" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + f1(Y(0)) + '" y2="' + f1(Y(0)) + '"/>';
+    if (opts.spot != null && opts.spot >= lo && opts.spot <= hi) s += '<line class="spot" x1="' + f1(X(opts.spot)) + '" x2="' + f1(X(opts.spot)) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/>';
+    (opts.bands || []).forEach((b) => { s += '<rect x="' + f1(X(b[0])) + '" y="' + m.t + '" width="' + f1(X(b[1]) - X(b[0])) + '" height="' + ph + '" fill="hsl(var(--muted-foreground))" opacity=".07"/>'; });
+    opts.series.forEach((sr) => { s += '<polyline class="ln ' + sr.cls + '" points="' + xs.map((x, i) => f1(X(x)) + ',' + f1(Y(sr.ys[i]))).join(' ') + '"/>'; if (sr.end) { const i = xs.length - 1; s += '<circle cx="' + f1(X(xs[i])) + '" cy="' + f1(Y(sr.ys[i])) + '" r="3" class="' + (sr.cls === 'curve' ? 'accent' : 'tink') + '"/><text x="' + f1(X(xs[i]) - 5) + '" y="' + f1(Y(sr.ys[i]) - 6) + '" text-anchor="end" class="' + (sr.cls === 'curve' ? '' : '') + '" style="fill:hsl(var(--' + (sr.cls === 'curve' ? 'curve' : 'foreground') + '))">' + sr.end + '</text>'; } });
+    (opts.marks || []).forEach((mk) => { const i = xs.reduce((best, x, k) => (Math.abs(x - mk.x) < Math.abs(xs[best] - mk.x) ? k : best), 0); const sr = opts.series[mk.series || 0]; s += '<circle class="legdot" cx="' + f1(X(xs[i])) + '" cy="' + f1(Y(sr.ys[i])) + '" r="3.5"><title>' + esc(mk.title || '') + '</title></circle>'; });
+    if (opts.ylabel) s += '<text x="' + (m.l - 5) + '" y="' + (m.t - 5) + '" text-anchor="end">' + opts.ylabel + '</text>';
+    return s + '</svg>';
+  }
+  function renderGreeks() {
+    const host = els.greeks; const a = baseAnalysis(); const spot = spotNow();
+    if (!a) { host.innerHTML = emptyBlk('No strategy yet', 'Portfolio Greeks and the Δ / Θ profiles appear once legs are added.'); return; }
+    const g = a.greeks; const fmtG = (v) => (Math.abs(v) < 1e-6 ? '0.0000' : Math.abs(v) < 1e-3 ? v.toExponential(2) : v.toFixed(4));
+    const tile = (t, v, s, c) => '<div class="an-gtile"><span class="micro">' + t + '</span><div class="v ' + (c || '') + '">' + v + '</div><span class="s">' + s + '</span></div>';
+    const tiles = '<div class="an-gtiles">' + tile('Total Delta', F.signed(g.delta, 4), 'directional exposure · ' + AN.asset, cls(g.delta)) + tile('Total Gamma', fmtG(g.gamma), 'Δ change per $1 move') + tile('Total Theta', smoney(g.theta), 'time decay per day', cls(g.theta)) + tile('Total Vega', smoney(g.vega), 'per 1% IV change', cls(g.vega)) + '</div>';
+    const W = Math.max(260, Math.floor((els.rightBody.clientWidth - 28) / 2) - 14), H = 150; const xs = []; for (let i = 0; i <= 48; i++) xs.push(spot * (0.8 + 0.4 * i / 48));
+    const gs = xs.map((S) => positionGreeksAt(a.legs, S, AN.targetDays, 0)); const lbl = AN.targetDays === 0 ? 'today' : 'on ' + fmtDMloc(M.targetDate());
+    const charts = '<div class="an-grid2"><div class="an-blk"><div class="an-blk-hd"><span class="micro">Position Δ</span><h4>Delta across price</h4><span class="right micro">' + lbl + '</span></div>' + lineChart({ W, H, xs, series: [{ ys: gs.map((x) => x.delta), cls: 'ink' }], xfmt: fmtKbare, yfmt: (v) => F.num(v, 3), spot, zero: true, marks: a.legs.filter((l) => l.type !== 'FUTURE').map((l) => ({ x: l.strike, title: l.side + ' ' + l.type + ' ' + l.strike })) }) + '</div><div class="an-blk"><div class="an-blk-hd"><span class="micro">Position Θ</span><h4>Theta / day across price</h4><span class="right micro">' + lbl + '</span></div>' + lineChart({ W, H, xs, series: [{ ys: gs.map((x) => x.theta), cls: 'curve' }], xfmt: fmtKbare, yfmt: (v) => fmtAxis(v), spot, zero: true, marks: a.legs.filter((l) => l.type !== 'FUTURE').map((l) => ({ x: l.strike, title: l.side + ' ' + l.type + ' ' + l.strike })) }) + '</div></div>';
+    const rows = a.legs.map((l) => { const lg = legGreeks(l, spot); return '<tr><td><span class="an-side ' + (l.side === 'BUY' ? 'b' : 's') + '">' + l.side + '</span>' + (l.type === 'FUTURE' ? (l.symbol || AN.asset + ' FUTURE') : fmtStrike(l.strike) + ' ' + (l.type === 'CALL' ? 'C' : 'P')) + ' <span class="text-muted">' + (l.expiry ? expShort(l.expiry) : '') + '</span></td><td>' + (l.lots || 1) + '</td><td>' + (l.type === 'FUTURE' ? '—' : (+l.iv || 50).toFixed(1) + '%') + '</td><td class="' + cls(lg.delta) + '">' + F.signed(lg.delta, 4) + '</td><td>' + fmtG(lg.gamma) + '</td><td class="' + cls(lg.theta) + '">' + smoney(lg.theta) + '</td><td>' + smoney(lg.vega) + '</td></tr>'; }).join('');
+    const table = '<div class="an-blk"><div class="an-blk-hd"><span class="micro">Leg-wise</span><h4>Greeks per leg</h4><span class="right micro">scaled by lots × ' + lotSize() + ' ' + AN.asset + '</span></div><div class="overflow-x-auto"><table class="an-tbl"><thead><tr><th>Instrument</th><th>Lots</th><th>IV</th><th>Δ</th><th>Γ</th><th>Θ / day</th><th>ν</th></tr></thead><tbody>' + rows + '<tr class="total"><td colspan="3">Portfolio total</td><td class="' + cls(g.delta) + '">' + F.signed(g.delta, 4) + '</td><td>' + fmtG(g.gamma) + '</td><td class="' + cls(g.theta) + '">' + smoney(g.theta) + '</td><td>' + smoney(g.vega) + '</td></tr></tbody></table></div></div>';
+    const expl = '<div class="an-gexpl"><div class="x"><b>Delta (Δ)</b>Change in option price per $1 move in the underlying. Portfolio delta is your directional exposure in ' + AN.asset + '.</div><div class="x"><b>Gamma (Γ)</b>Change in delta per $1 move. High gamma means delta changes rapidly near the strikes.</div><div class="x"><b>Theta (Θ)</b>Time decay per day. Negative theta means the position loses value as time passes, all else equal.</div><div class="x"><b>Vega (ν)</b>Sensitivity to a 1% change in implied volatility. Higher vega means more exposure to volatility changes.</div></div>';
+    host.innerHTML = tiles + charts + table + expl;
+  }
+  // ======================================================================
+  // VOL tab · smile, term structure, IV rank, realised vs implied
+  // ======================================================================
+  function renderVol() {
+    const host = els.vol; const ch = M.chain() || CG.chain(AN.asset, AN.expiry); const spot = spotNow(); const W = Math.max(260, Math.floor((els.rightBody.clientWidth - 28) / 2) - 14), H = 160;
+    const legs = M.chainLegs(); const cs = chainStats(ch);
+    // smile
+    const rows = ch.rows; const xs = rows.map((r) => r.strike); const ivs = rows.map((r) => (r.call.markIv + r.put.markIv) / 2);
+    const smile = lineChart({ W, H, xs, series: [{ ys: ivs, cls: 'ink' }], xfmt: fmtKbare, yfmt: (v) => v.toFixed(0) + '%', spot, nx: 4, marks: legs.map((l) => ({ x: l.strike, title: l.side + ' ' + l.type + ' ' + l.strike + ' · IV ' + (l.iv || 0).toFixed(1) + '%' })) });
+    // term structure
+    const exps = CG.EXPIRIES; const tsv = exps.map((e) => chainStats(CG.chain(AN.asset, e)).atmIv); const tmax = Math.max(...tsv) * 1.08, tmin = Math.min(...tsv) * 0.92; const m = { l: 40, r: 10, t: 14, b: 26 }; const pw = W - m.l - m.r, ph = H - m.t - m.b; const bw = pw / exps.length;
+    let ts = '<svg class="an-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '">'; const Yt = (v) => m.t + ((tmax - v) / (tmax - tmin)) * ph;
+    const ys = nice((tmax - tmin) / 3); for (let v = Math.ceil(tmin / ys) * ys; v <= tmax + 1e-6; v += ys) ts += '<line class="grid" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + f1(Yt(v)) + '" y2="' + f1(Yt(v)) + '"/><text x="' + (m.l - 5) + '" y="' + f1(Yt(v) + 3.5) + '" text-anchor="end">' + v.toFixed(0) + '%</text>';
+    exps.forEach((e, i) => { const x = m.l + i * bw; const on = e === AN.expiry; ts += '<rect class="' + (on ? 'accent' : 'bar-n') + '" x="' + f1(x + bw * 0.2) + '" y="' + f1(Yt(tsv[i])) + '" width="' + f1(bw * 0.6) + '" height="' + f1(m.t + ph - Yt(tsv[i])) + '" data-exp="' + e + '" style="cursor:pointer"><title>' + e + ' · ATM IV ' + tsv[i].toFixed(1) + '%</title></rect><text x="' + f1(x + bw / 2) + '" y="' + (H - 5) + '" text-anchor="middle"' + (on ? ' class="accent"' : '') + '>' + F.dte(e) + 'd</text>' + (on ? '<text x="' + f1(x + bw / 2) + '" y="' + f1(Yt(tsv[i]) - 5) + '" text-anchor="middle" class="accent">' + expShort(e) + ' · ' + tsv[i].toFixed(1) + '%</text>' : ''); });
+    ts += '<polyline class="ln ink" style="stroke-width:1;opacity:.6" points="' + exps.map((e, i) => f1(m.l + i * bw + bw / 2) + ',' + f1(Yt(tsv[i]))).join(' ') + '"/></svg>';
+    // IV rank
+    const vh = volHistory(AN.asset); const rankPct = Math.max(0, Math.min(100, vh.rank));
+    const rank = '<div class="an-kv"><span><b class="an-big">' + vh.rank.toFixed(0) + '</b></span><span>IV rank (1y)</span><span>percentile <b>' + vh.pct.toFixed(0) + '</b></span><span>current <b>' + vh.cur.toFixed(1) + '%</b></span></div><div class="an-gauge"><b style="width:' + rankPct.toFixed(1) + '%"></b><i style="left:' + rankPct.toFixed(1) + '%"></i></div><div class="an-kv"><span>1y low <b>' + vh.min.toFixed(1) + '%</b></span><span>1y high <b>' + vh.max.toFixed(1) + '%</b></span><span class="text-muted">' + (vh.rank >= 50 ? 'IV is rich vs its 1y range · premium-selling structures are better paid' : 'IV is cheap vs its 1y range · long-premium structures cost less') + '</span></div>';
+    // realised vs implied
+    const days = []; for (let i = 0; i < 365; i++) days.push(i); const rv = vh.rv.slice(-365);
+    const rvi = lineChart({ W, H, xs: days, series: [{ ys: vh.iv, cls: 'ink', end: 'IV ' + vh.cur.toFixed(1) + '%' }, { ys: rv, cls: 'curve', end: 'RV ' + rv[rv.length - 1].toFixed(1) + '%' }], xfmt: (d) => (d >= 364 ? 'now' : '−' + Math.round(364 - d) + 'd'), yfmt: (v) => v.toFixed(0) + '%', nx: 4 });
+    const spread = vh.cur - rv[rv.length - 1];
+    host.innerHTML = '<div class="an-grid2"><div class="an-blk"><div class="an-blk-hd"><span class="micro">Smile</span><h4>' + expShort(AN.expiry) + ' · ' + F.dte(AN.expiry) + 'd</h4><span class="right micro">mark IV by strike · <span class="text-spot">●</span> strategy strikes</span></div>' + smile + '<div class="an-kv mt-2"><span>ATM <b>' + cs.atmIv.toFixed(1) + '%</b></span><span>25Δ skew <b>' + (cs.skew == null ? '—' : (cs.skew >= 0 ? '+' : '') + cs.skew.toFixed(1) + '</b>') + '</span><span>' + (cs.skewPut ? 'put ' + fmtStrike(cs.skewPut.strike) + ' ' + cs.skewPut.put.markIv.toFixed(1) + '% · call ' + fmtStrike(cs.skewCall.strike) + ' ' + cs.skewCall.call.markIv.toFixed(1) + '%' : '') + '</span></div></div>' +
+      '<div class="an-blk"><div class="an-blk-hd"><span class="micro">Term structure</span><h4>ATM IV by expiry</h4><span class="right micro">click a bar to switch expiry</span></div>' + ts + '<div class="an-kv mt-2"><span>front <b>' + tsv[0].toFixed(1) + '%</b></span><span>back <b>' + tsv[tsv.length - 1].toFixed(1) + '%</b></span><span>' + (tsv[tsv.length - 1] > tsv[0] ? 'contango · longer-dated IV richer' : 'backwardation · near-dated IV richer') + '</span></div></div>' +
+      '<div class="an-blk"><div class="an-blk-hd"><span class="micro">IV rank</span><h4>1-year range</h4><span class="right micro">generated 365-day ATM IV history</span></div>' + rank + '</div>' +
+      '<div class="an-blk"><div class="an-blk-hd"><span class="micro">Realised vs implied</span><h4>30-day realised vol vs ATM IV</h4><span class="right micro"><span class="lg"><i class="ln" style="color:hsl(var(--foreground))"></i>implied</span><span class="lg"><i class="ln" style="color:hsl(var(--curve))"></i>realised</span></span></div>' + rvi + '<div class="an-kv mt-2"><span>IV − RV <b class="' + cls(spread) + '">' + (spread >= 0 ? '+' : '') + spread.toFixed(1) + ' pts</b></span><span class="text-muted">' + (spread > 0 ? 'options price more movement than recently realised (volatility risk premium)' : 'realised movement exceeds what options price in') + '</span></div></div></div>';
+  }
+  // ======================================================================
+  // STRUCTURE tab · max pain, PCR, GEX
+  // ======================================================================
+  function barChart(opts) {
+    // grouped / signed bars per strike. opts: {W,H,items:[{k, a, b}] , mode:'group'|'signed', spot, marks, mp}
+    const W = opts.W, H = opts.H, m = { l: 44, r: 10, t: 18, b: 22 }; const pw = W - m.l - m.r, ph = H - m.t - m.b; const items = opts.items; const n = items.length; const bw = pw / n;
+    let vmax = 0, vmin = 0; items.forEach((it) => { if (opts.mode === 'group') vmax = Math.max(vmax, it.a, it.b); else { vmax = Math.max(vmax, it.a); vmin = Math.min(vmin, it.a); } }); if (opts.mode === 'group') vmin = 0; if (vmax - vmin < 1e-9) vmax = vmin + 1; vmax *= 1.08; if (vmin < 0) vmin *= 1.08;
+    const Y = (v) => m.t + ((vmax - v) / (vmax - vmin)) * ph; const X = (i) => m.l + i * bw; const y0 = Y(0);
+    let s = '<svg class="an-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '">';
+    const ys = nice((vmax - vmin) / 4); for (let v = Math.ceil(vmin / ys) * ys; v <= vmax + 1e-6; v += ys) s += '<line class="grid" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + f1(Y(v)) + '" y2="' + f1(Y(v)) + '"/><text x="' + (m.l - 5) + '" y="' + f1(Y(v) + 3.5) + '" text-anchor="end">' + opts.yfmt(v) + '</text>';
+    items.forEach((it, i) => { const x = X(i); if (opts.mode === 'group') { s += '<rect class="bar-c" x="' + f1(x + bw * 0.12) + '" y="' + f1(Y(it.a)) + '" width="' + f1(bw * 0.36) + '" height="' + f1(y0 - Y(it.a)) + '"><title>' + fmtStrike(it.k) + ' · Call OI ' + F.int(it.a) + '</title></rect><rect class="bar-p" x="' + f1(x + bw * 0.52) + '" y="' + f1(Y(it.b)) + '" width="' + f1(bw * 0.36) + '" height="' + f1(y0 - Y(it.b)) + '"><title>' + fmtStrike(it.k) + ' · Put OI ' + F.int(it.b) + '</title></rect>'; } else { const top = Math.min(y0, Y(it.a)), hgt = Math.abs(y0 - Y(it.a)); s += '<rect class="' + (it.a >= 0 ? 'bar-pos' : 'bar-neg') + '" x="' + f1(x + bw * 0.15) + '" y="' + f1(top) + '" width="' + f1(bw * 0.7) + '" height="' + f1(hgt) + '"><title>' + fmtStrike(it.k) + ' · GEX ' + F.usdCompact(it.a) + '</title></rect>'; } if (i % Math.ceil(n / 8) === 0 || i === n - 1) s += '<text x="' + f1(x + bw / 2) + '" y="' + (H - 6) + '" text-anchor="middle">' + fmtKbare(it.k) + '</text>'; });
+    s += '<line class="zero" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + f1(y0) + '" y2="' + f1(y0) + '"/>';
+    const xOf = (k) => { const i = items.findIndex((it) => it.k === k); if (i >= 0) return X(i) + bw / 2; const lo = items[0].k, hi = items[n - 1].k; return m.l + ((k - lo) / (hi - lo)) * (pw - bw) + bw / 2; };
+    if (opts.spot != null) { const x = xOf(opts.spot); s += '<line class="spot" x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/>'; }
+    if (opts.mp != null) { const x = xOf(opts.mp); s += '<line class="strk" x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + (m.t - 2) + '" y2="' + (m.t + ph) + '" style="stroke-dasharray:none;stroke-width:1.4"/><polygon class="accent" points="' + f1(x - 5) + ',' + (m.t - 8) + ' ' + f1(x + 5) + ',' + (m.t - 8) + ' ' + f1(x) + ',' + (m.t - 1) + '"/><text x="' + f1(x + 7) + '" y="' + (m.t + 2) + '" class="accent" style="fill:hsl(var(--spot))">' + opts.mpLabel + '</text>'; }
+    (opts.marks || []).forEach((mk) => { const x = xOf(mk.x); s += '<rect class="accent" x="' + f1(x - 1) + '" y="' + f1(m.t + ph + 1) + '" width="2" height="6"><title>' + esc(mk.title) + '</title></rect>'; });
+    return s + '</svg>';
+  }
+  function renderStructure() {
+    const host = els.structure; const ch = M.chain() || CG.chain(AN.asset, AN.expiry); const spot = spotNow(); const cs = chainStats(ch); const W = Math.max(300, els.rightBody.clientWidth - 28), H = 170; const lot = lotSize();
+    const ai = ch.rows.findIndex((r) => r.atm); const rows = ch.rows.filter((r, i) => Math.abs(i - ai) <= 12); const legs = M.chainLegs(); const marks = legs.map((l) => ({ x: l.strike, title: l.side + ' ' + l.type + ' ' + l.strike }));
+    const oi = barChart({ W, H, mode: 'group', items: rows.map((r) => ({ k: r.strike, a: r.call.oi, b: r.put.oi })), yfmt: (v) => F.compact(v), spot, mp: cs.maxPain, mpLabel: 'Max pain ' + fmtStrike(cs.maxPain), marks });
+    const gexItems = rows.map((r) => ({ k: r.strike, a: (r.call.gamma * r.call.oi - r.put.gamma * r.put.oi) * lot * spot * spot * 0.01 }));
+    const gexTotal = ch.rows.reduce((s, r) => s + (r.call.gamma * r.call.oi - r.put.gamma * r.put.oi) * lot * spot * spot * 0.01, 0);
+    let flip = null; let cum = 0; const sorted = ch.rows.slice(); for (let i = 0; i < sorted.length; i++) { const v = (sorted[i].call.gamma * sorted[i].call.oi - sorted[i].put.gamma * sorted[i].put.oi) * lot * spot * spot * 0.01; const prev = cum; cum += v; if (i > 0 && (prev < 0) !== (cum < 0)) { flip = sorted[i].strike; break; } }
+    const gex = barChart({ W, H, mode: 'signed', items: gexItems, yfmt: (v) => F.usdCompact(v), spot, marks });
+    const pcrBar = (c, p, label, v) => '<div><div class="an-kv"><span class="micro">' + label + '</span><b class="an-big" style="font-size:22px">' + (v == null ? '—' : v.toFixed(2)) + '</b><span class="text-muted">' + (v == null ? '' : v > 1.2 ? 'put-heavy · hedged / bearish positioning' : v < 0.8 ? 'call-heavy · bullish positioning' : 'balanced') + '</span></div><div class="an-pcr-bar bar" style="display:flex;height:6px;border-radius:2px;overflow:hidden;margin-top:6px"><i class="c" style="width:' + ((c / (c + p || 1)) * 100).toFixed(1) + '%;display:block;background:hsl(var(--profit));opacity:.7"></i><i class="p" style="width:' + ((p / (c + p || 1)) * 100).toFixed(1) + '%;display:block;background:hsl(var(--loss));opacity:.7"></i></div><div class="an-kv mt-1"><span>calls <b>' + F.int(c) + '</b></span><span>puts <b>' + F.int(p) + '</b></span></div></div>';
+    host.innerHTML = '<div class="an-blk"><div class="an-blk-hd"><span class="micro">Max pain</span><h4>Open interest by strike · ' + expShort(AN.expiry) + '</h4><span class="right"><span class="lg"><i style="background:hsl(var(--profit)/.6)"></i>call OI</span><span class="lg"><i style="background:hsl(var(--loss)/.6)"></i>put OI</span><span class="lg"><i style="background:hsl(var(--spot))"></i>strategy strikes</span></span></div>' + oi + '<div class="an-kv mt-2"><span>max pain <b class="text-spot">' + fmtStrike(cs.maxPain) + '</b></span><span>' + F.pct(((cs.maxPain - spot) / spot) * 100, 1) + ' from spot</span><span>Σ call OI <b>' + F.int(cs.cOI) + '</b></span><span>Σ put OI <b>' + F.int(cs.pOI) + '</b></span><span class="text-muted">strike where total option value at expiry is smallest</span></div></div>' +
+      '<div class="an-blk"><div class="an-blk-hd"><span class="micro">Put / call ratio</span><h4>Positioning</h4></div><div class="an-pcr">' + pcrBar(cs.cOI, cs.pOI, 'PCR · open interest', cs.pcr) + pcrBar(cs.cVol, cs.pVol, 'PCR · 24h volume', cs.pcrVol) + '</div></div>' +
+      '<div class="an-blk"><div class="an-blk-hd"><span class="micro">Gamma exposure</span><h4>Dealer GEX by strike</h4><span class="right micro">Σ Γ × OI × spot² × 1% · calls +, puts −</span></div>' + gex + '<div class="an-kv mt-2"><span>net GEX <b class="' + cls(gexTotal) + '">' + F.usdCompact(gexTotal) + '</b> / 1% move</span><span>gamma flip <b>' + (flip ? fmtStrike(flip) : '—') + '</b></span><span class="text-muted">' + (gexTotal >= 0 ? 'positive gamma · dealers dampen moves (mean-reverting)' : 'negative gamma · dealers chase moves (trending)') + '</span></div></div>';
+  }
+  // ======================================================================
+  // LADDER tab · P&L table
+  // ======================================================================
+  const ladderStep = () => { const A = CG.ASSETS[AN.asset]; const opts = [A.step / 2, A.step, A.step * 2]; const v = +st.ladderStep; return opts.includes(v) ? v : A.step; };
+  function renderLadder() {
+    const host = els.ladder; const a = baseAnalysis(); const spot = spotNow(); const A = CG.ASSETS[AN.asset]; const step = ladderStep(); const opts = [A.step / 2, A.step, A.step * 2];
+    const ctl = '<div class="an-blk-hd"><span class="micro">Ladder</span><h4>P&amp;L by underlying price</h4><div class="right"><span class="micro">Step</span><div class="an-seg" data-ladder-step>' + opts.map((o) => '<button data-step="' + o + '"' + (o === step ? ' class="on"' : '') + '>' + F.num(o, 0) + '</button>').join('') + '</div></div></div>';
+    if (!a) { host.innerHTML = '<div class="an-blk">' + ctl + emptyBlk('No strategy yet', 'The P&amp;L ladder appears once legs are added.') + '</div>'; return; }
+    const lo = Math.ceil((spot * 0.8) / step) * step, hi = Math.floor((spot * 1.2) / step) * step; const prices = []; for (let p = lo; p <= hi + 1e-9; p += step) prices.push(p);
+    const rows = prices.map((p) => ({ price: p })); let ins = rows.findIndex((r) => r.price > spot); if (ins < 0) ins = rows.length; rows.splice(ins, 0, { price: spot, spot: true });
+    a.breakevens.forEach((b) => { if (rows.some((r) => Math.abs(r.price - b) < 1e-6)) return; let i = rows.findIndex((r) => r.price > b); if (i < 0) i = rows.length; rows.splice(i, 0, { price: b, be: true }); });
+    const scale = Math.max(1, ...a.points.map((p) => Math.abs(p.pnlExpiry)).filter(isFinite)); const eps = scale * 0.005; const tl = AN.targetDays === 0 ? 'today' : fmtDMloc(M.targetDate());
+    const body = rows.map((r) => { const p = pnlAtPrice(a.legs, r.price); const chg = ((r.price - spot) / spot) * 100; const pill = r.spot ? '<span class="an-pill spot">spot</span>' : r.be ? '<span class="an-pill flat">breakeven</span>' : p.pnlExpiry > eps ? '<span class="an-pill profit">profit</span>' : p.pnlExpiry < -eps ? '<span class="an-pill loss">loss</span>' : '<span class="an-pill flat">flat</span>'; return '<tr class="' + (r.spot ? 'spot' : r.be ? 'be' : '') + '"><td>' + (r.spot || r.be ? fmtStrike(r.price) : fmtStrike(r.price)) + '</td><td class="' + cls(chg) + '">' + F.pct(chg, 1) + '</td><td class="' + cls(p.pnlExpiry) + '">' + smoney(p.pnlExpiry) + '</td><td class="' + cls(p.pnlTarget) + '">' + smoney(p.pnlTarget) + '</td><td>' + pill + '</td></tr>'; }).join('');
+    host.innerHTML = '<div class="an-blk" style="padding-bottom:0">' + ctl + '</div><div class="an-ladder-wrap"><table class="an-ladder"><thead><tr><th>Price</th><th>Change from spot</th><th>At expiry</th><th>On ' + tl + '</th><th>Status</th></tr></thead><tbody>' + body + '</tbody></table></div><div class="an-blk an-kv" style="border-bottom:0"><span>' + rows.length + ' rows · ±20% around spot in ' + F.num(step, 0) + ' steps</span><span>spot row highlighted · breakevens inserted as dashed rows</span></div>';
+    const sp = host.querySelector('tr.spot'); if (sp) { const top = sp.offsetTop - els.rightBody.clientHeight / 2 + 40; if (top > 0) els.rightBody.scrollTop = top; }
+  }
+  function bindLadder() { els.ladder.addEventListener('click', (e) => { const b = e.target.closest('[data-ladder-step] [data-step]'); if (b) { st.ladderStep = +b.dataset.step; CG.saveState(); renderLadder(); } }); }
+  // ======================================================================
+  // SHARE link
+  // ======================================================================
+  const b64u = (s) => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const unb64u = (s) => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4))));
+  const baseUrl = () => ((location.origin && location.origin !== 'null') ? location.origin : 'file://') + location.pathname;
+  function shareCode() { const legs = activeLegs(); return b64u(JSON.stringify({ a: AN.asset, l: legs.map((l) => [l.type, l.side, l.strike || 0, l.expiry || '', +l.lots || 1, +l.price || 0]), n: AN.name || '' })); }
+  function decodeShare(code) { try { const o = JSON.parse(unb64u(code)); if (!o || !Array.isArray(o.l) || !o.l.length || !CG.ASSETS[o.a]) return null; const legs = o.l.map((x) => ({ id: CG.newLegId(), type: x[0], side: x[1], strike: +x[2], expiry: x[3], lots: +x[4] || 1, price: +x[5] || 0, iv: (x[0] === 'FUTURE' ? 0 : (CG.quote(o.a, CG.EXPIRIES.includes(x[3]) ? x[3] : AN.expiry, +x[2], x[0]).markIv)), status: 'OPEN', isAdjustment: false, symbol: M.symbolOf(x[0], o.a, +x[2], x[3]), asset: o.a })); if (!legs.every((l) => ['CALL', 'PUT', 'FUTURE'].includes(l.type) && ['BUY', 'SELL'].includes(l.side))) return null; return { asset: o.a, legs, name: o.n || '' }; } catch (e) { return null; } }
+  async function copyText(t) { try { await navigator.clipboard.writeText(t); return true; } catch (e) { try { const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok; } catch (x) { return false; } } }
+  function openShare() {
+    const legs = activeLegs(); if (!legs.length) { CG.toast({ title: 'Nothing to share', description: 'Add legs to the strategy first', variant: 'destructive' }); return; }
+    const link = baseUrl() + '#/s/' + shareCode(); const a = baseAnalysis();
+    els.share.innerHTML = '<div class="an-share-wrap"><p class="text-sm text-muted">Anyone with this link sees a preview of the strategy and can open it in Analyse. Legs, lots and entry prices are encoded in the link itself — nothing is uploaded.</p><div class="lnk"><input class="input input-sm" readonly value="' + esc(link) + '" data-share-input><button class="btn btn-primary btn-sm" data-share-copy>' + ic('copy') + 'Copy</button></div><div class="an-share-legs">' + legs.map((l) => '<span><b class="' + (l.side === 'BUY' ? 'text-buy' : 'text-sell') + '">' + l.side + '</b><span>' + (l.lots || 1) + ' × ' + (l.symbol || M.symbolOf(l.type, AN.asset, l.strike, l.expiry)) + '</span><span class="text-muted">@ ' + F.num(l.price || 0, 1) + '</span></span>').join('') + '</div>' + (a ? '<div class="an-kv mt-3"><span>max profit <b class="text-profit">' + (isFinite(a.maxProfit) ? smoney(a.maxProfit) : 'Unlimited') + '</b></span><span>max loss <b class="text-loss">' + (isFinite(a.maxLoss) ? smoney(a.maxLoss) : 'Unlimited') + '</b></span><span>POP <b>' + (a.pop == null ? '—' : Math.round(a.pop * 100) + '%') + '</b></span></div>' : '') + '</div>';
+    const h = CG.modal.open(els.share, { title: 'Share strategy', description: (AN.name || 'Custom strategy') + ' · ' + AN.asset + ' · ' + legs.length + ' legs' });
+    els.share.onclick = async (e) => { if (!e.target.closest('[data-share-copy]')) return; const ok = await copyText(link); CG.toast(ok ? { title: 'Link copied', description: 'Share it to load this strategy in Analyse', variant: 'success' } : { title: 'Copy blocked by the browser', description: 'Select the link and copy it manually', variant: 'destructive' }); if (ok) h.close(); };
+    copyText(link).then((ok) => { if (ok) CG.toast({ title: 'Link copied to clipboard', description: link.length > 70 ? link.slice(0, 70) + '…' : link, variant: 'success' }); });
+  }
+  function applyShared(d) { AN.asset = d.asset; st.asset = d.asset; AN.legs = d.legs; AN.name = d.name; AN.strategyId = null; AN.targetPrice = null; AN.targetDays = 0; const e = d.legs.find((l) => CG.EXPIRIES.includes(l.expiry)); if (e) { AN.expiry = e.expiry; st.expiry = e.expiry; } CG.saveState(); CG.emit('analyse:legs-changed', AN.legs); }
+  function renderSharePage(root, params) {
+    const host = root.querySelector('#an-share-page'); const d = decodeShare(params.code || '');
+    if (!d) { host.innerHTML = '<div class="an-share-card"><span class="micro">Shared strategy</span><h2>This link is not valid</h2><p class="text-muted mt-2">The strategy code could not be decoded. Ask for a fresh link or build the strategy yourself.</p><div class="flex gap-2 mt-4"><a class="btn btn-primary" href="#/analyse">Open Analyse</a><a class="btn btn-outline" href="#/">Home</a></div></div>'; return; }
+    if (st.loggedIn) { applyShared(d); CG.toast({ title: 'Strategy loaded from link', description: (d.name || 'Custom strategy') + ' · ' + d.legs.length + ' legs · ' + d.asset, variant: 'success' }); CG.navigate('/analyse', { replace: true }); return; }
+    const a = CG.analyze(d.legs, d.asset, {}); const exp = d.legs.find((l) => l.expiry);
+    host.innerHTML = '<div class="an-share-card"><span class="micro">Shared strategy · ' + esc(d.asset) + (exp ? ' · ' + esc(expShort(exp.expiry)) : '') + '</span><h2>' + esc(d.name || 'Custom strategy') + '</h2><div class="legs">' + d.legs.map((l) => '<div><span class="' + (l.side === 'BUY' ? 'text-buy' : 'text-sell') + '">' + l.side + '</span><span>' + esc(l.symbol) + '</span><span class="r">' + l.lots + ' lots</span><span class="r text-muted">@ ' + F.num(l.price, 1) + '</span></div>').join('') + '</div><div class="tiles"><div><span class="micro">Max profit</span><div class="v text-profit">' + (isFinite(a.maxProfit) ? smoney(a.maxProfit) : 'Unlimited') + '</div></div><div><span class="micro">Max loss</span><div class="v text-loss">' + (isFinite(a.maxLoss) ? smoney(a.maxLoss) : 'Unlimited') + '</div></div><div><span class="micro">POP</span><div class="v">' + (a.pop == null ? '—' : Math.round(a.pop * 100) + '%') + '</div></div></div><p class="text-muted text-xs">Sign in to open this strategy in the Analyse workspace with the live chain, payoff and scenarios.</p><div class="flex gap-2 mt-4"><button class="btn btn-primary" data-share-open>Open in Analyse</button><a class="btn btn-outline" href="#/auth">Sign in</a></div></div>';
+    host.onclick = (e) => { if (e.target.closest('[data-share-open]')) { applyShared(d); CG.toast({ title: 'Strategy loaded from link', description: 'Sign in to continue to Analyse' }); CG.navigate('/analyse'); } };
+  }
+  CG.register('/s/:code', { show(root, params) { renderSharePage(root, params); } });
+  Object.assign(M, { renderScenarios, renderGreeks, renderVol, renderStructure, renderLadder, openShare, shareCode, decodeShare });
+
+  // ======================================================================
+  // registration / wiring
+  // ======================================================================
+  let paletteDone = false; const tryPalette = () => { if (!paletteDone && CG.palette && typeof CG.palette.register === 'function') { paletteDone = true; M.registerPalette(); } setTimeout(M.dedupePalette, 150); };
+  CG.register('/analyse', {
+    init(root) {
+      M.root = root;
+      Object.assign(els, {
+        shell: root.querySelector('#an-shell'), left: root.querySelector('#an-left'), right: root.querySelector('#an-right'), divider: root.querySelector('#an-divider'), lptabs: root.querySelector('#an-lptabs'), rptabs: root.querySelector('#an-rptabs'), leftPanels: root.querySelector('#analyse-left-panels'), chainPanel: root.querySelector('.an-chain-panel'), rightBody: root.querySelector('#an-right-body'),
+        expStrip: root.querySelector('.an-expiry-strip'), exp: root.querySelector('#an-expiries'), tools: root.querySelector('.an-chain-tools'), range: root.querySelector('#an-range'), greeksBtn: root.querySelector('#an-greeks-toggle'), findDelta: root.querySelector('#an-finddelta'), live: root.querySelector('#an-live-btn'), wrap: root.querySelector('#an-chain-wrap'), table: root.querySelector('#an-chain'), foot: root.querySelector('#an-chain-foot'), cs: root.querySelector('#an-colsettings'), optinfo: root.querySelector('#an-optinfo'), share: root.querySelector('#an-share'), findDlg: root.querySelector('#an-finddelta-dlg'),
+        lotInfo: root.querySelector('#an-lot-info'), basisInfo: root.querySelector('#an-basis-info'), stratInfo: root.querySelector('#an-strat-info'),
+        payoff: root.querySelector('#an-payoff'), scenarios: root.querySelector('#an-scenarios'), greeks: root.querySelector('#an-greeks'), vol: root.querySelector('#an-vol'), structure: root.querySelector('#an-structure'), ladder: root.querySelector('#an-ladder'),
+        tiles: root.querySelector('#an-tiles'), astrip: root.querySelector('#an-astrip'), legend: root.querySelector('#an-legend'), legendDate: root.querySelector('#an-legend-date'), chips: root.querySelector('#an-chips'), layersBtn: root.querySelector('#an-layers-btn'), zoomLabel: root.querySelector('#an-zoom-label'), chartHost: root.querySelector('#an-chart-host'), gstrip: root.querySelector('#an-greeks-strip'),
+        tpTitle: root.querySelector('#an-tp-title'), tpPct: root.querySelector('#an-tp-pct'), tpVal: root.querySelector('#an-tp-val'), tpRange: root.querySelector('#an-tp-range'), tpKnob: root.querySelector('#an-tp-knob'), tpFill: root.querySelector('#an-tp-fill'), tpSpot: root.querySelector('#an-tp-spot'), tpTicks: root.querySelector('#an-tp-ticks'),
+        tdTitle: root.querySelector('#an-td-title'), tdVal: root.querySelector('#an-td-val'), tdLeft: root.querySelector('#an-td-left'), tdRange: root.querySelector('#an-td-range'), tdKnob: root.querySelector('#an-td-knob'), tdFill: root.querySelector('#an-td-fill'), tdTicks: root.querySelector('#an-td-ticks')
+      });
+      els.tbody = els.table.querySelector('tbody');
+      M.fillIcons(root); M.setLive(AN.mode === 'static' ? 'static' : 'live'); M.applyDensity();
+      if (st.analyseSplit) root.style.setProperty('--an-split', st.analyseSplit + '%');
+      els.shell.dataset.collapse = st.analyseCollapse === 'left' || st.analyseCollapse === 'right' ? st.analyseCollapse : '';
+      // tabs / collapse / mobile toggle / divider
+      els.lptabs.addEventListener('click', (e) => { const b = e.target.closest('[data-lptab]'); if (b) M.setLeftTab(b.dataset.lptab); });
+      root.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-rptab]'); if (b) { M.setRightTab(b.dataset.rptab); return; }
+        const c = e.target.closest('[data-collapse]'); if (c && c.tagName === 'BUTTON') { M.setCollapse(c.dataset.collapse === 'restore' ? '' : c.dataset.collapse); return; }
+        if (e.target.closest('#an-share-btn')) { openShare(); return; }
+        const mv = e.target.closest('[data-mobile-view]'); if (mv) { els.shell.dataset.mobile = mv.dataset.mobileView; CG.$$('[data-mobile-view]', root).forEach((x) => x.classList.toggle('active', x === mv)); if (mv.dataset.mobileView === 'analysis') M.renderRight(); else M.scrollToAtm(); }
+      });
+      els.divider.addEventListener('mousedown', (e) => { if (e.target.closest('[data-collapse]')) return; e.preventDefault(); els.divider.classList.add('on'); const rect = els.shell.getBoundingClientRect(); const move = (ev) => { const pct = Math.min(70, Math.max(35, ((ev.clientX - rect.left) / rect.width) * 100)); root.style.setProperty('--an-split', pct.toFixed(1) + '%'); }; const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); els.divider.classList.remove('on'); st.analyseSplit = parseFloat(root.style.getPropertyValue('--an-split')) || 55; CG.saveState(); M.renderChart(); M.updateVis(); }; document.addEventListener('mousemove', move); document.addEventListener('mouseup', up); });
+      els.divider.addEventListener('dblclick', () => { st.analyseSplit = 55; root.style.setProperty('--an-split', '55%'); CG.saveState(); M.renderChart(); CG.toast({ title: 'Split reset', description: 'Chain 55% · analysis 45%' }); });
+      new MutationObserver(() => { M.setLeftTab(st.analyseTab || 'chain', true); }).observe(els.leftPanels, { childList: true });
+      // expiry strip / chain tools
+      els.expStrip.addEventListener('click', (e) => { const x = e.target.closest('[data-exp]'); if (x) { M.setExpiry(x.dataset.exp); return; } const s = e.target.closest('[data-exp-scroll]'); if (s) els.exp.scrollBy({ left: 220 * (+s.dataset.expScroll), behavior: 'smooth' }); });
+      els.tools.addEventListener('click', (e) => {
+        const rg = e.target.closest('[data-range]'); if (rg) { M.setRange(rg.dataset.range); return; }
+        if (e.target.closest('#an-greeks-toggle')) { M.setGreeksCols(!M.greeksShown()); return; }
+        const fd = e.target.closest('[data-delta]'); if (fd) { M.findDelta(+fd.dataset.delta); return; }
+        if (e.target.closest('#an-live-btn')) { M.toggleLive(); return; }
+        if (e.target.closest('#an-colsettings-btn')) M.openColSettings();
+      });
+      M.bindCs();
+      els.optinfo.addEventListener('click', (e) => { const b = e.target.closest('[data-oi-act]'); if (!b) return; const lots = +(els.optinfo.querySelector('[data-oi-lots]') || {}).value || M.curLots(); M.setLots(lots); if (M.addLeg(els.optinfo.dataset.type, b.dataset.oiAct, +els.optinfo.dataset.strike, lots)) CG.modal.closeAll(); });
+      // chain interactions
+      els.wrap.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-act]'); if (!b) return; const tr = b.closest('tr'); const ctl = b.closest('.an-ctl'); if (!tr || !ctl) return; const strike = +tr.dataset.strike; const type = ctl.dataset.type; const act = b.dataset.act;
+        if (act === 'INFO') { M.openOptInfo(type, strike); return; }
+        if (act === 'LOTDN') { M.stepLots(-1); return; } if (act === 'LOTUP') { M.stepLots(1); return; }
+        if (act === 'LOTMENU') { const m = CG.menu(b, '<div class="menu-label">Lots (× ' + M.lotSize() + ' ' + AN.asset + ')</div>' + M.LOTS.map((n) => '<button class="menu-item mono" data-lots="' + n + '">' + n + (n === M.curLots() ? ' ✓' : '') + '</button>').join(''), { align: 'left' }); m.addEventListener('click', (ev) => { const x = ev.target.closest('[data-lots]'); if (x) M.setLots(+x.dataset.lots); }); return; }
+        M.addLeg(type, act, strike, M.curLots());
+      });
+      let raf = null; els.wrap.addEventListener('scroll', () => { if (raf) return; raf = requestAnimationFrame(() => { raf = null; M.updateVis(); }); });
+      els.wrap.addEventListener('mouseover', (e) => { const tr = e.target.closest('tr[data-strike]'); if (tr && M.hl.get() != null && +tr.dataset.strike !== M.hl.get()) M.setHl(+tr.dataset.strike); });
+      M.registerShortcuts();
+      M.bindPayoff(); bindScenarios(); bindLadder();
+      els.rightBody.addEventListener('click', (e) => { const r = e.target.closest('rect[data-exp]'); if (r) M.setExpiry(r.dataset.exp); });
+      // ---------- shared events ----------
+      CG.on('asset', (a) => { if (!a || !CG.ASSETS[a]) return; if (AN.asset === a) return; AN.asset = a; st.asset = a; AN.targetPrice = null; M.hl.set(null); if (M.isActive()) { M.renderExpiries(); M.renderChain(); M.renderRight(); M.emitStats(); } });
+      CG.on('tick', () => { if (!M.isActive()) return; if (AN.mode === 'live') M.updateChain(); M.renderRight(); M.emitStats(); });
+      CG.on('currency-settings-changed', () => { if (!M.isActive()) return; M.renderChain(true); M.renderRight(); });
+      CG.on('lot-sizes-changed', () => { if (!M.isActive()) return; M.renderChain(true); M.renderRight(); });
+      CG.on('pnl-basis-changed', () => { if (M.isActive()) { M.renderChain(true); M.renderRight(); } });
+      CG.on('analyse:legs-changed', () => { if (AN.asset && CG.ASSETS[AN.asset] && AN.expiry && CG.EXPIRIES.includes(AN.expiry)) { const ch = M.chain(); if (ch && (ch.asset !== AN.asset || ch.expiry !== AN.expiry)) { st.asset = AN.asset; st.expiry = AN.expiry; if (M.isActive()) M.renderChain(); } } if (!M.isActive()) return; M.renderPills(); M.renderExpiries(); M.renderCounts(); M.renderRight(); });
+      CG.on('analyse:strategies-changed', () => { if (M.isActive()) M.renderCounts(); });
+      CG.on('analyse:set-tab', (name) => M.setLeftTab(name));
+      CG.on('density', (v) => { if (v) st.density = v; M.applyDensity(); if (M.isActive()) { M.updateVis(); if ((st.analyseRightTab || 'payoff') === 'ladder') M.renderLadder(); } });
+      CG.on('theme', () => { if (M.isActive()) setTimeout(M.renderRight, 30); });
+      CG.on('route', tryPalette);
+      window.addEventListener('cg-tour-set-tab', (e) => { if (e && e.detail) M.setLeftTab(typeof e.detail === 'string' ? e.detail : e.detail.tab); });
+      let rz = null; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (M.isActive()) { M.measureTop(); M.renderExpiries(); M.renderRight(); } }, 120); });
+      if (window.ResizeObserver) ['[data-cg="app-header"]', '[data-cg="plan-banner"]', '[data-cg="portfolio-bar"]'].forEach((s) => { const el = root.querySelector(s); if (el) new ResizeObserver(() => M.measureTop()).observe(el); });
+      tryPalette();
+    },
+    show(root, params, query) {
+      if (CG.ASSETS[st.asset] && st.asset !== AN.asset) { AN.asset = st.asset; AN.targetPrice = null; }
+      if (CG.EXPIRIES.includes(st.expiry) && st.expiry !== AN.expiry) AN.expiry = st.expiry;
+      M.measureTop(); M.applyDensity(); M.renderExpiries(); M.renderChain(); M.renderCounts();
+      M.setLeftTab((query && query.tab) || st.analyseTab || 'chain', true);
+      M.setRightTab((query && query.panel) || st.analyseRightTab || 'payoff');
+      M.emitStats(); tryPalette();
+      setTimeout(() => { M.measureTop(); M.scrollToAtm(); M.renderExpiries(); }, 30);
+    }
+  });
+})();
+</script>

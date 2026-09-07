@@ -1,0 +1,295 @@
+<script>
+(function () {
+  'use strict';
+  const M = window.__cgAnalyse; const { els, AN, st, F, P, ic, money, smoney, cls, fmtK, fmtAxis, fmtKbare, fmtStrike, fmtDMloc, expShort, nice, esc, activeLegs, spotNow, lotSize, totalLots, baseAnalysis, pnlAtPrice, latestExpiry, positionGreeksAt, volHistory, chainStats, maxPain } = M;
+  const f1 = (n) => (+n).toFixed(1);
+  const emptyBlk = (title, msg) => '<div class="an-empty"><b>' + title + '</b>' + msg + '</div>';
+  const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  function hslToRgb(str) { const m = /([\d.]+)\s+([\d.]+)%\s+([\d.]+)%/.exec(str); if (!m) return [128, 128, 128]; const h = +m[1] / 360, s = +m[2] / 100, l = +m[3] / 100; const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q; const t2c = (t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1 / 6) return p + (q - p) * 6 * t; if (t < 1 / 2) return q; if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6; return p; }; return [Math.round(t2c(h + 1 / 3) * 255), Math.round(t2c(h) * 255), Math.round(t2c(h - 1 / 3) * 255)]; }
+  // ======================================================================
+  // SCENARIOS · price × date P&L matrix
+  // ======================================================================
+  const scnMode = () => (['pnl', 'delta', 'theta'].includes(st.scnMode) ? st.scnMode : 'pnl');
+  const scnIv = () => (isFinite(+st.scnIv) ? Math.max(-20, Math.min(20, Math.round(+st.scnIv))) : 0);
+  const scnRange = () => (+st.scnRange === 20 ? 20 : 10);
+  let scnGrid = null;
+  function scenarioGrid(a) {
+    const spot = spotNow(); const legs = a.legs; const maxDte = a.maxDte; const ivShift = scnIv() / 100; const mode = scnMode(); const rg = scnRange(); const step = rg / 5;
+    const dayset = Array.from(new Set([0, Math.round(maxDte * 0.25), Math.round(maxDte * 0.5), Math.round(maxDte * 0.75), Math.max(0, maxDte - 1), maxDte])).sort((x, y) => x - y);
+    const pcts = []; for (let p = rg; p >= -rg - 1e-9; p -= step) pcts.push(+p.toFixed(2));
+    const rows = pcts.map((p) => ({ pct: p, price: spot * (1 + p / 100) }));
+    const cells = rows.map((r) => dayset.map((d) => { if (mode === 'pnl') return CG.analyze(legs, AN.asset, { targetDays: d, spot, min: r.price, max: r.price + 1e-6, points: 2, ivShift }).points[0].pnlTarget; const g = positionGreeksAt(legs, r.price, d, ivShift); return mode === 'delta' ? g.delta : g.theta; }));
+    let vmax = 0; cells.forEach((row) => row.forEach((v) => { if (isFinite(v)) vmax = Math.max(vmax, Math.abs(v)); }));
+    const tp = AN.targetPrice || spot; let ti = 0, tbest = Infinity; rows.forEach((r, i) => { const d = Math.abs(r.price - tp); if (d < tbest) { tbest = d; ti = i; } }); let tj = 0, tjb = Infinity; dayset.forEach((d, j) => { const dd = Math.abs(d - AN.targetDays); if (dd < tjb) { tjb = dd; tj = j; } });
+    return { rows, days: dayset, cells, vmax: vmax || 1, ti, tj, mode, maxDte, spot };
+  }
+  const fmtCell = (v, mode) => (mode === 'pnl' ? (v >= 0 ? '+' : '-') + Math.abs(v).toFixed(1) : mode === 'delta' ? F.signed(v, 4) : (v >= 0 ? '+' : '-') + Math.abs(v).toFixed(2));
+  const dayLabel = (d, maxDte) => (d === 0 ? 'Today' : d === maxDte ? 'Expiry' : fmtDMloc(new Date(CG.NOW.getTime() + d * 86400000)));
+  const daySub = (d, maxDte) => (d === 0 ? fmtDMloc(CG.NOW) : d === maxDte ? fmtDMloc(new Date(CG.NOW.getTime() + d * 86400000)) : '+' + d + 'd');
+  function renderScenarios() {
+    const host = els.scenarios; const a = baseAnalysis(); const mode = scnMode(); const smooth = !!st.scnSmooth;
+    const ctl = '<div class="an-blk-hd"><span class="micro">Scenarios</span><h4>' + (mode === 'pnl' ? 'P&amp;L' : mode === 'delta' ? 'Position Δ' : 'Position Θ / day') + ' by price × date</h4><div class="right an-scn-ctl"><div class="an-seg" data-scn-mode><button data-mode="pnl"' + (mode === 'pnl' ? ' class="on"' : '') + '>P&amp;L</button><button data-mode="delta"' + (mode === 'delta' ? ' class="on"' : '') + '>Δ</button><button data-mode="theta"' + (mode === 'theta' ? ' class="on"' : '') + '>Θ</button></div><div class="an-seg" data-scn-range><button data-rg="10"' + (scnRange() === 10 ? ' class="on"' : '') + '>±10%</button><button data-rg="20"' + (scnRange() === 20 ? ' class="on"' : '') + '>±20%</button></div><label class="an-ivsl"><span class="micro">IV shift</span><input type="range" min="-20" max="20" step="1" value="' + scnIv() + '" data-scn-iv aria-label="IV shift"><b data-scn-ivv>' + (scnIv() >= 0 ? '+' : '') + scnIv() + '%</b></label><button class="an-chip' + (smooth ? ' on' : '') + '" data-scn-smooth title="Bilinear heat field instead of cells">Smooth</button></div></div>';
+    if (!a) { host.innerHTML = '<div class="an-blk">' + ctl + emptyBlk('No strategy yet', 'The price × date matrix appears once legs are added.') + '</div>'; return; }
+    const G = scenarioGrid(a); scnGrid = G; const cols = G.days.length; const unit = mode === 'pnl' ? (st.currency === 'INR' ? 'INR' : 'USD') : mode === 'delta' ? AN.asset + ' Δ' : (st.currency === 'INR' ? 'INR' : 'USD') + ' / day';
+    let m = '<div class="mtx" style="--cols:' + cols + '"><div class="h" style="justify-content:flex-end;align-items:flex-end;padding-right:10px">Price</div>';
+    G.days.forEach((d, j) => (m += '<div class="h' + (j === G.tj ? ' tg' : '') + '"><span>' + dayLabel(d, G.maxDte) + '</span><small>' + daySub(d, G.maxDte) + '</small></div>'));
+    if (smooth) { m += G.rows.map((r, i) => '<div class="rh' + (i === G.ti ? ' tg' : '') + '"' + (i === 0 ? ' style="grid-row:2"' : '') + '>' + (Math.abs(r.pct) < 1e-9 ? '<em>SPOT</em>' : '') + fmtStrike(r.price) + '</div>').join(''); m += '<canvas data-scn-canvas style="grid-row:2 / span ' + G.rows.length + '"></canvas>'; }
+    else G.rows.forEach((r, i) => { m += '<div class="rh' + (i === G.ti ? ' tg' : '') + '">' + (Math.abs(r.pct) < 1e-9 ? '<em>SPOT</em>' : '') + fmtStrike(r.price) + '</div>'; G.cells[i].forEach((v, j) => { const al = (0.1 + 0.5 * Math.abs(v) / G.vmax).toFixed(2); m += '<div class="cell' + (i === G.ti && j === G.tj ? ' tg' : '') + '" data-i="' + i + '" data-j="' + j + '" style="background:hsl(var(--' + (v >= 0 ? 'profit' : 'loss') + ')/' + al + ')">' + fmtCell(v, mode) + '</div>'; }); });
+    m += '</div><div class="an-scn-tip" data-scn-tip></div>';
+    host.innerHTML = '<div class="an-blk">' + ctl + '<div class="an-blk-hd" style="margin-top:2px"><span class="lg"><i style="background:hsl(var(--profit)/.5)"></i>profit</span><span class="lg"><i style="background:hsl(var(--loss)/.5)"></i>loss</span><span class="micro">' + unit + ' · shade = magnitude · outlined = target from the sliders (' + fmtStrike(G.rows[G.ti].price) + ' · ' + dayLabel(G.days[G.tj], G.maxDte) + ')</span><span class="right micro">rows ' + (scnRange() / 5) + '% apart · IV ' + (scnIv() >= 0 ? '+' : '') + scnIv() + '%</span></div>' + m + '</div>';
+    if (smooth) drawHeat(host.querySelector('[data-scn-canvas]'), G);
+  }
+  function drawHeat(cv, G) {
+    if (!cv) return; const rect = cv.getBoundingClientRect(); const W = Math.max(200, Math.round(rect.width)), H = Math.max(100, Math.round(rect.height)); cv.width = W; cv.height = H; const ctx = cv.getContext('2d');
+    const up = hslToRgb(cssVar('--profit')), dn = hslToRgb(cssVar('--loss')), bg = hslToRgb(cssVar('--background'));
+    const nr = G.rows.length, nc = G.days.length; const img = ctx.createImageData(W, H); const d = img.data;
+    const cw = W / nc, rh = H / nr;
+    for (let y = 0; y < H; y++) { const fy = Math.max(0, Math.min(nr - 1, y / rh - 0.5)); const i0 = Math.floor(fy), i1 = Math.min(nr - 1, i0 + 1), ty = fy - i0; for (let x = 0; x < W; x++) { const fx = Math.max(0, Math.min(nc - 1, x / cw - 0.5)); const j0 = Math.floor(fx), j1 = Math.min(nc - 1, j0 + 1), tx = fx - j0; const v = (G.cells[i0][j0] * (1 - tx) + G.cells[i0][j1] * tx) * (1 - ty) + (G.cells[i1][j0] * (1 - tx) + G.cells[i1][j1] * tx) * ty; const al = 0.08 + 0.62 * Math.min(1, Math.abs(v) / G.vmax); const c = v >= 0 ? up : dn; const k = (y * W + x) * 4; d[k] = Math.round(bg[0] + (c[0] - bg[0]) * al); d[k + 1] = Math.round(bg[1] + (c[1] - bg[1]) * al); d[k + 2] = Math.round(bg[2] + (c[2] - bg[2]) * al); d[k + 3] = 255; } }
+    ctx.putImageData(img, 0, 0);
+    // zero contour (breakeven ridge) + target outline + column separators
+    ctx.strokeStyle = 'rgba(' + hslToRgb(cssVar('--foreground')).join(',') + ',0.35)'; ctx.lineWidth = 1; for (let j = 1; j < nc; j++) { ctx.beginPath(); ctx.moveTo(Math.round(j * cw) + 0.5, 0); ctx.lineTo(Math.round(j * cw) + 0.5, H); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(' + hslToRgb(cssVar('--foreground')).join(',') + ',0.9)'; ctx.setLineDash([3, 3]); for (let j = 0; j < nc; j++) { for (let i = 0; i < nr - 1; i++) { const a0 = G.cells[i][j], a1 = G.cells[i + 1][j]; if ((a0 >= 0) !== (a1 >= 0)) { const t = a0 / (a0 - a1); const yy = (i + 0.5 + t) * rh; ctx.beginPath(); ctx.moveTo(j * cw + 2, yy); ctx.lineTo((j + 1) * cw - 2, yy); ctx.stroke(); } } }
+    ctx.setLineDash([]); ctx.strokeStyle = 'rgb(' + hslToRgb(cssVar('--foreground')).join(',') + ')'; ctx.lineWidth = 1.5; ctx.strokeRect(G.tj * cw + 1, G.ti * rh + 1, cw - 2, rh - 2);
+    ctx.fillStyle = 'rgb(' + hslToRgb(cssVar('--spot')).join(',') + ')'; const si = G.rows.findIndex((r) => Math.abs(r.pct) < 1e-9); if (si >= 0) ctx.fillRect(0, Math.round((si + 0.5) * rh), W, 1);
+  }
+  function bindScenarios() {
+    const host = els.scenarios;
+    host.addEventListener('click', (e) => {
+      const md = e.target.closest('[data-scn-mode] [data-mode]'); if (md) { st.scnMode = md.dataset.mode; CG.saveState(); renderScenarios(); return; }
+      const rg = e.target.closest('[data-scn-range] [data-rg]'); if (rg) { st.scnRange = +rg.dataset.rg; CG.saveState(); renderScenarios(); return; }
+      if (e.target.closest('[data-scn-smooth]')) { st.scnSmooth = !st.scnSmooth; CG.saveState(); renderScenarios(); CG.toast({ title: st.scnSmooth ? 'Smooth heat field' : 'Cell matrix', description: st.scnSmooth ? 'Bilinear interpolation between the price × date nodes' : 'Discrete price × date cells' }); return; }
+      const cell = e.target.closest('.mtx .cell'); if (cell && scnGrid) { const r = scnGrid.rows[+cell.dataset.i]; M.setTargetPrice(r.price, true); M.setTargetDays(scnGrid.days[+cell.dataset.j]); setTimeout(renderScenarios, 0); CG.toast({ title: 'Target set', description: fmtStrike(r.price) + ' · ' + dayLabel(scnGrid.days[+cell.dataset.j], scnGrid.maxDte) }); }
+    });
+    let ivT = null; host.addEventListener('input', (e) => { const r = e.target.closest('[data-scn-iv]'); if (!r) return; st.scnIv = +r.value; const v = host.querySelector('[data-scn-ivv]'); if (v) v.textContent = (st.scnIv >= 0 ? '+' : '') + st.scnIv + '%'; clearTimeout(ivT); ivT = setTimeout(() => { CG.saveState(); renderScenarios(); }, 60); });
+    host.addEventListener('mousemove', (e) => {
+      const tip = host.querySelector('[data-scn-tip]'); if (!tip || !scnGrid) return; const G = scnGrid; let txt = null; let anchor = null;
+      const cell = e.target.closest('.mtx .cell'); const cv = e.target.closest('[data-scn-canvas]');
+      if (cell) { const i = +cell.dataset.i, j = +cell.dataset.j; txt = '<b>' + fmtStrike(G.rows[i].price) + '</b> (' + F.pct(G.rows[i].pct, 0) + ') · ' + dayLabel(G.days[j], G.maxDte) + ' · <b class="' + cls(G.cells[i][j]) + '">' + fmtCell(G.cells[i][j], G.mode) + '</b>'; anchor = cell; }
+      else if (cv) { const r = cv.getBoundingClientRect(); const fx = ((e.clientX - r.left) / r.width) * G.days.length - 0.5, fy = ((e.clientY - r.top) / r.height) * G.rows.length - 0.5; const j0 = Math.max(0, Math.min(G.days.length - 1, Math.floor(fx))), j1 = Math.min(G.days.length - 1, j0 + 1), tx = Math.max(0, Math.min(1, fx - j0)); const i0 = Math.max(0, Math.min(G.rows.length - 1, Math.floor(fy))), i1 = Math.min(G.rows.length - 1, i0 + 1), ty = Math.max(0, Math.min(1, fy - i0)); const v = (G.cells[i0][j0] * (1 - tx) + G.cells[i0][j1] * tx) * (1 - ty) + (G.cells[i1][j0] * (1 - tx) + G.cells[i1][j1] * tx) * ty; const price = G.rows[i0].price + (G.rows[i1].price - G.rows[i0].price) * ty; const day = G.days[j0] + (G.days[j1] - G.days[j0]) * tx; txt = '<b>' + fmtStrike(price) + '</b> · ' + (day < 0.5 ? 'today' : fmtDMloc(new Date(CG.NOW.getTime() + Math.round(day) * 86400000))) + ' · <b class="' + cls(v) + '">' + fmtCell(v, G.mode) + '</b> <span class="text-muted">interpolated</span>'; anchor = cv; }
+      if (!txt) { tip.style.display = 'none'; return; }
+      tip.innerHTML = txt; tip.style.display = 'block'; const hr = host.getBoundingClientRect(); let left = e.clientX - hr.left + 12; if (left + tip.offsetWidth > hr.width - 6) left = e.clientX - hr.left - tip.offsetWidth - 12; tip.style.left = Math.max(0, left) + 'px'; tip.style.top = (e.clientY - hr.top - 30 + host.scrollTop) + 'px';
+    });
+    host.addEventListener('mouseleave', () => { const tip = host.querySelector('[data-scn-tip]'); if (tip) tip.style.display = 'none'; });
+  }
+  // ======================================================================
+  // GREEKS tab
+  // ======================================================================
+  function legGreeks(l, spot) { const A = CG.ASSETS[AN.asset]; const q = (+l.lots || 1) * lotSize() * (l.side === 'BUY' ? 1 : -1); if (l.type === 'FUTURE') return { delta: q, gamma: 0, theta: 0, vega: 0 }; const T = Math.max(F.dte(l.expiry), 0) / 365; const s = (l.iv || P.smile(l.strike, spot, A.iv) * 100) / 100; const g = P.greeks(spot, l.strike, T, s, l.type === 'CALL'); return { delta: g.delta * q, gamma: g.gamma * q, theta: g.theta * q, vega: g.vega * q }; }
+  function lineChart(opts) {
+    // opts: {W,H,xs,series:[{ys,cls}],xfmt,yfmt,spot,marks:[{x,cls}],ylabel, zero:true}
+    const W = opts.W, H = opts.H, m = { l: 44, r: 12, t: 16, b: 20 }; const pw = W - m.l - m.r, ph = H - m.t - m.b; const xs = opts.xs; const lo = xs[0], hi = xs[xs.length - 1];
+    let ymin = Infinity, ymax = -Infinity; opts.series.forEach((s) => s.ys.forEach((v) => { if (isFinite(v)) { ymin = Math.min(ymin, v); ymax = Math.max(ymax, v); } })); if (opts.zero) { ymin = Math.min(ymin, 0); ymax = Math.max(ymax, 0); } if (ymax - ymin < 1e-9) { ymax += 1; ymin -= 1; } const pad = (ymax - ymin) * 0.12; ymin -= pad; ymax += pad;
+    const X = (v) => m.l + ((v - lo) / (hi - lo || 1)) * pw, Y = (v) => m.t + ((ymax - v) / (ymax - ymin)) * ph;
+    let s = '<svg class="an-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '">';
+    const ys = nice((ymax - ymin) / 4); for (let v = Math.ceil(ymin / ys) * ys; v <= ymax + 1e-6; v += ys) { const y = Y(v); s += '<line class="grid" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + f1(y) + '" y2="' + f1(y) + '"/><text x="' + (m.l - 5) + '" y="' + f1(y + 3.5) + '" text-anchor="end">' + opts.yfmt(Math.abs(v) < ys / 1e6 ? 0 : v) + '</text>'; }
+    const nx = opts.nx || 6; for (let i = 0; i <= nx; i++) { const v = lo + ((hi - lo) * i) / nx; s += '<text x="' + f1(X(v)) + '" y="' + (H - 5) + '" text-anchor="middle">' + opts.xfmt(v) + '</text>'; }
+    if (opts.zero) s += '<line class="zero" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + f1(Y(0)) + '" y2="' + f1(Y(0)) + '"/>';
+    if (opts.spot != null && opts.spot >= lo && opts.spot <= hi) s += '<line class="spot" x1="' + f1(X(opts.spot)) + '" x2="' + f1(X(opts.spot)) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/>';
+    (opts.bands || []).forEach((b) => { s += '<rect x="' + f1(X(b[0])) + '" y="' + m.t + '" width="' + f1(X(b[1]) - X(b[0])) + '" height="' + ph + '" fill="hsl(var(--muted-foreground))" opacity=".07"/>'; });
+    opts.series.forEach((sr) => { s += '<polyline class="ln ' + sr.cls + '" points="' + xs.map((x, i) => f1(X(x)) + ',' + f1(Y(sr.ys[i]))).join(' ') + '"/>'; if (sr.end) { const i = xs.length - 1; s += '<circle cx="' + f1(X(xs[i])) + '" cy="' + f1(Y(sr.ys[i])) + '" r="3" class="' + (sr.cls === 'curve' ? 'accent' : 'tink') + '"/><text x="' + f1(X(xs[i]) - 5) + '" y="' + f1(Y(sr.ys[i]) - 6) + '" text-anchor="end" class="' + (sr.cls === 'curve' ? '' : '') + '" style="fill:hsl(var(--' + (sr.cls === 'curve' ? 'curve' : 'foreground') + '))">' + sr.end + '</text>'; } });
+    (opts.marks || []).forEach((mk) => { const i = xs.reduce((best, x, k) => (Math.abs(x - mk.x) < Math.abs(xs[best] - mk.x) ? k : best), 0); const sr = opts.series[mk.series || 0]; s += '<circle class="legdot" cx="' + f1(X(xs[i])) + '" cy="' + f1(Y(sr.ys[i])) + '" r="3.5"><title>' + esc(mk.title || '') + '</title></circle>'; });
+    if (opts.ylabel) s += '<text x="' + (m.l - 5) + '" y="' + (m.t - 5) + '" text-anchor="end">' + opts.ylabel + '</text>';
+    return s + '</svg>';
+  }
+  function renderGreeks() {
+    const host = els.greeks; const a = baseAnalysis(); const spot = spotNow();
+    if (!a) { host.innerHTML = emptyBlk('No strategy yet', 'Portfolio Greeks and the Δ / Θ profiles appear once legs are added.'); return; }
+    const g = a.greeks; const fmtG = (v) => (Math.abs(v) < 1e-6 ? '0.0000' : Math.abs(v) < 1e-3 ? v.toExponential(2) : v.toFixed(4));
+    const tile = (t, v, s, c) => '<div class="an-gtile"><span class="micro">' + t + '</span><div class="v ' + (c || '') + '">' + v + '</div><span class="s">' + s + '</span></div>';
+    const tiles = '<div class="an-gtiles">' + tile('Total Delta', F.signed(g.delta, 4), 'directional exposure · ' + AN.asset, cls(g.delta)) + tile('Total Gamma', fmtG(g.gamma), 'Δ change per $1 move') + tile('Total Theta', smoney(g.theta), 'time decay per day', cls(g.theta)) + tile('Total Vega', smoney(g.vega), 'per 1% IV change', cls(g.vega)) + '</div>';
+    const W = Math.max(260, Math.floor((els.rightBody.clientWidth - 28) / 2) - 14), H = 150; const xs = []; for (let i = 0; i <= 48; i++) xs.push(spot * (0.8 + 0.4 * i / 48));
+    const gs = xs.map((S) => positionGreeksAt(a.legs, S, AN.targetDays, 0)); const lbl = AN.targetDays === 0 ? 'today' : 'on ' + fmtDMloc(M.targetDate());
+    const charts = '<div class="an-grid2"><div class="an-blk"><div class="an-blk-hd"><span class="micro">Position Δ</span><h4>Delta across price</h4><span class="right micro">' + lbl + '</span></div>' + lineChart({ W, H, xs, series: [{ ys: gs.map((x) => x.delta), cls: 'ink' }], xfmt: fmtKbare, yfmt: (v) => F.num(v, 3), spot, zero: true, marks: a.legs.filter((l) => l.type !== 'FUTURE').map((l) => ({ x: l.strike, title: l.side + ' ' + l.type + ' ' + l.strike })) }) + '</div><div class="an-blk"><div class="an-blk-hd"><span class="micro">Position Θ</span><h4>Theta / day across price</h4><span class="right micro">' + lbl + '</span></div>' + lineChart({ W, H, xs, series: [{ ys: gs.map((x) => x.theta), cls: 'curve' }], xfmt: fmtKbare, yfmt: (v) => fmtAxis(v), spot, zero: true, marks: a.legs.filter((l) => l.type !== 'FUTURE').map((l) => ({ x: l.strike, title: l.side + ' ' + l.type + ' ' + l.strike })) }) + '</div></div>';
+    const rows = a.legs.map((l) => { const lg = legGreeks(l, spot); return '<tr><td><span class="an-side ' + (l.side === 'BUY' ? 'b' : 's') + '">' + l.side + '</span>' + (l.type === 'FUTURE' ? (l.symbol || AN.asset + ' FUTURE') : fmtStrike(l.strike) + ' ' + (l.type === 'CALL' ? 'C' : 'P')) + ' <span class="text-muted">' + (l.expiry ? expShort(l.expiry) : '') + '</span></td><td>' + (l.lots || 1) + '</td><td>' + (l.type === 'FUTURE' ? '—' : (+l.iv || 50).toFixed(1) + '%') + '</td><td class="' + cls(lg.delta) + '">' + F.signed(lg.delta, 4) + '</td><td>' + fmtG(lg.gamma) + '</td><td class="' + cls(lg.theta) + '">' + smoney(lg.theta) + '</td><td>' + smoney(lg.vega) + '</td></tr>'; }).join('');
+    const table = '<div class="an-blk"><div class="an-blk-hd"><span class="micro">Leg-wise</span><h4>Greeks per leg</h4><span class="right micro">scaled by lots × ' + lotSize() + ' ' + AN.asset + '</span></div><div class="overflow-x-auto"><table class="an-tbl"><thead><tr><th>Instrument</th><th>Lots</th><th>IV</th><th>Δ</th><th>Γ</th><th>Θ / day</th><th>ν</th></tr></thead><tbody>' + rows + '<tr class="total"><td colspan="3">Portfolio total</td><td class="' + cls(g.delta) + '">' + F.signed(g.delta, 4) + '</td><td>' + fmtG(g.gamma) + '</td><td class="' + cls(g.theta) + '">' + smoney(g.theta) + '</td><td>' + smoney(g.vega) + '</td></tr></tbody></table></div></div>';
+    const expl = '<div class="an-gexpl"><div class="x"><b>Delta (Δ)</b>Change in option price per $1 move in the underlying. Portfolio delta is your directional exposure in ' + AN.asset + '.</div><div class="x"><b>Gamma (Γ)</b>Change in delta per $1 move. High gamma means delta changes rapidly near the strikes.</div><div class="x"><b>Theta (Θ)</b>Time decay per day. Negative theta means the position loses value as time passes, all else equal.</div><div class="x"><b>Vega (ν)</b>Sensitivity to a 1% change in implied volatility. Higher vega means more exposure to volatility changes.</div></div>';
+    host.innerHTML = tiles + charts + table + expl;
+  }
+  // ======================================================================
+  // VOL tab · smile, term structure, IV rank, realised vs implied
+  // ======================================================================
+  function renderVol() {
+    const host = els.vol; const ch = M.chain() || CG.chain(AN.asset, AN.expiry); const spot = spotNow(); const W = Math.max(260, Math.floor((els.rightBody.clientWidth - 28) / 2) - 14), H = 160;
+    const legs = M.chainLegs(); const cs = chainStats(ch);
+    // smile
+    const rows = ch.rows; const xs = rows.map((r) => r.strike); const ivs = rows.map((r) => (r.call.markIv + r.put.markIv) / 2);
+    const smile = lineChart({ W, H, xs, series: [{ ys: ivs, cls: 'ink' }], xfmt: fmtKbare, yfmt: (v) => v.toFixed(0) + '%', spot, nx: 4, marks: legs.map((l) => ({ x: l.strike, title: l.side + ' ' + l.type + ' ' + l.strike + ' · IV ' + (l.iv || 0).toFixed(1) + '%' })) });
+    // term structure
+    const exps = CG.EXPIRIES; const tsv = exps.map((e) => chainStats(CG.chain(AN.asset, e)).atmIv); const tmax = Math.max(...tsv) * 1.08, tmin = Math.min(...tsv) * 0.92; const m = { l: 40, r: 10, t: 14, b: 26 }; const pw = W - m.l - m.r, ph = H - m.t - m.b; const bw = pw / exps.length;
+    let ts = '<svg class="an-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '">'; const Yt = (v) => m.t + ((tmax - v) / (tmax - tmin)) * ph;
+    const ys = nice((tmax - tmin) / 3); for (let v = Math.ceil(tmin / ys) * ys; v <= tmax + 1e-6; v += ys) ts += '<line class="grid" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + f1(Yt(v)) + '" y2="' + f1(Yt(v)) + '"/><text x="' + (m.l - 5) + '" y="' + f1(Yt(v) + 3.5) + '" text-anchor="end">' + v.toFixed(0) + '%</text>';
+    exps.forEach((e, i) => { const x = m.l + i * bw; const on = e === AN.expiry; ts += '<rect class="' + (on ? 'accent' : 'bar-n') + '" x="' + f1(x + bw * 0.2) + '" y="' + f1(Yt(tsv[i])) + '" width="' + f1(bw * 0.6) + '" height="' + f1(m.t + ph - Yt(tsv[i])) + '" data-exp="' + e + '" style="cursor:pointer"><title>' + e + ' · ATM IV ' + tsv[i].toFixed(1) + '%</title></rect><text x="' + f1(x + bw / 2) + '" y="' + (H - 5) + '" text-anchor="middle"' + (on ? ' class="accent"' : '') + '>' + F.dte(e) + 'd</text>' + (on ? '<text x="' + f1(x + bw / 2) + '" y="' + f1(Yt(tsv[i]) - 5) + '" text-anchor="middle" class="accent">' + expShort(e) + ' · ' + tsv[i].toFixed(1) + '%</text>' : ''); });
+    ts += '<polyline class="ln ink" style="stroke-width:1;opacity:.6" points="' + exps.map((e, i) => f1(m.l + i * bw + bw / 2) + ',' + f1(Yt(tsv[i]))).join(' ') + '"/></svg>';
+    // IV rank
+    const vh = volHistory(AN.asset); const rankPct = Math.max(0, Math.min(100, vh.rank));
+    const rank = '<div class="an-kv"><span><b class="an-big">' + vh.rank.toFixed(0) + '</b></span><span>IV rank (1y)</span><span>percentile <b>' + vh.pct.toFixed(0) + '</b></span><span>current <b>' + vh.cur.toFixed(1) + '%</b></span></div><div class="an-gauge"><b style="width:' + rankPct.toFixed(1) + '%"></b><i style="left:' + rankPct.toFixed(1) + '%"></i></div><div class="an-kv"><span>1y low <b>' + vh.min.toFixed(1) + '%</b></span><span>1y high <b>' + vh.max.toFixed(1) + '%</b></span><span class="text-muted">' + (vh.rank >= 50 ? 'IV is rich vs its 1y range · premium-selling structures are better paid' : 'IV is cheap vs its 1y range · long-premium structures cost less') + '</span></div>';
+    // realised vs implied
+    const days = []; for (let i = 0; i < 365; i++) days.push(i); const rv = vh.rv.slice(-365);
+    const rvi = lineChart({ W, H, xs: days, series: [{ ys: vh.iv, cls: 'ink', end: 'IV ' + vh.cur.toFixed(1) + '%' }, { ys: rv, cls: 'curve', end: 'RV ' + rv[rv.length - 1].toFixed(1) + '%' }], xfmt: (d) => (d >= 364 ? 'now' : '−' + Math.round(364 - d) + 'd'), yfmt: (v) => v.toFixed(0) + '%', nx: 4 });
+    const spread = vh.cur - rv[rv.length - 1];
+    host.innerHTML = '<div class="an-grid2"><div class="an-blk"><div class="an-blk-hd"><span class="micro">Smile</span><h4>' + expShort(AN.expiry) + ' · ' + F.dte(AN.expiry) + 'd</h4><span class="right micro">mark IV by strike · <span class="text-spot">●</span> strategy strikes</span></div>' + smile + '<div class="an-kv mt-2"><span>ATM <b>' + cs.atmIv.toFixed(1) + '%</b></span><span>25Δ skew <b>' + (cs.skew == null ? '—' : (cs.skew >= 0 ? '+' : '') + cs.skew.toFixed(1) + '</b>') + '</span><span>' + (cs.skewPut ? 'put ' + fmtStrike(cs.skewPut.strike) + ' ' + cs.skewPut.put.markIv.toFixed(1) + '% · call ' + fmtStrike(cs.skewCall.strike) + ' ' + cs.skewCall.call.markIv.toFixed(1) + '%' : '') + '</span></div></div>' +
+      '<div class="an-blk"><div class="an-blk-hd"><span class="micro">Term structure</span><h4>ATM IV by expiry</h4><span class="right micro">click a bar to switch expiry</span></div>' + ts + '<div class="an-kv mt-2"><span>front <b>' + tsv[0].toFixed(1) + '%</b></span><span>back <b>' + tsv[tsv.length - 1].toFixed(1) + '%</b></span><span>' + (tsv[tsv.length - 1] > tsv[0] ? 'contango · longer-dated IV richer' : 'backwardation · near-dated IV richer') + '</span></div></div>' +
+      '<div class="an-blk"><div class="an-blk-hd"><span class="micro">IV rank</span><h4>1-year range</h4><span class="right micro">generated 365-day ATM IV history</span></div>' + rank + '</div>' +
+      '<div class="an-blk"><div class="an-blk-hd"><span class="micro">Realised vs implied</span><h4>30-day realised vol vs ATM IV</h4><span class="right micro"><span class="lg"><i class="ln" style="color:hsl(var(--foreground))"></i>implied</span><span class="lg"><i class="ln" style="color:hsl(var(--curve))"></i>realised</span></span></div>' + rvi + '<div class="an-kv mt-2"><span>IV − RV <b class="' + cls(spread) + '">' + (spread >= 0 ? '+' : '') + spread.toFixed(1) + ' pts</b></span><span class="text-muted">' + (spread > 0 ? 'options price more movement than recently realised (volatility risk premium)' : 'realised movement exceeds what options price in') + '</span></div></div></div>';
+  }
+  // ======================================================================
+  // STRUCTURE tab · max pain, PCR, GEX
+  // ======================================================================
+  function barChart(opts) {
+    // grouped / signed bars per strike. opts: {W,H,items:[{k, a, b}] , mode:'group'|'signed', spot, marks, mp}
+    const W = opts.W, H = opts.H, m = { l: 44, r: 10, t: 18, b: 22 }; const pw = W - m.l - m.r, ph = H - m.t - m.b; const items = opts.items; const n = items.length; const bw = pw / n;
+    let vmax = 0, vmin = 0; items.forEach((it) => { if (opts.mode === 'group') vmax = Math.max(vmax, it.a, it.b); else { vmax = Math.max(vmax, it.a); vmin = Math.min(vmin, it.a); } }); if (opts.mode === 'group') vmin = 0; if (vmax - vmin < 1e-9) vmax = vmin + 1; vmax *= 1.08; if (vmin < 0) vmin *= 1.08;
+    const Y = (v) => m.t + ((vmax - v) / (vmax - vmin)) * ph; const X = (i) => m.l + i * bw; const y0 = Y(0);
+    let s = '<svg class="an-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '">';
+    const ys = nice((vmax - vmin) / 4); for (let v = Math.ceil(vmin / ys) * ys; v <= vmax + 1e-6; v += ys) s += '<line class="grid" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + f1(Y(v)) + '" y2="' + f1(Y(v)) + '"/><text x="' + (m.l - 5) + '" y="' + f1(Y(v) + 3.5) + '" text-anchor="end">' + opts.yfmt(v) + '</text>';
+    items.forEach((it, i) => { const x = X(i); if (opts.mode === 'group') { s += '<rect class="bar-c" x="' + f1(x + bw * 0.12) + '" y="' + f1(Y(it.a)) + '" width="' + f1(bw * 0.36) + '" height="' + f1(y0 - Y(it.a)) + '"><title>' + fmtStrike(it.k) + ' · Call OI ' + F.int(it.a) + '</title></rect><rect class="bar-p" x="' + f1(x + bw * 0.52) + '" y="' + f1(Y(it.b)) + '" width="' + f1(bw * 0.36) + '" height="' + f1(y0 - Y(it.b)) + '"><title>' + fmtStrike(it.k) + ' · Put OI ' + F.int(it.b) + '</title></rect>'; } else { const top = Math.min(y0, Y(it.a)), hgt = Math.abs(y0 - Y(it.a)); s += '<rect class="' + (it.a >= 0 ? 'bar-pos' : 'bar-neg') + '" x="' + f1(x + bw * 0.15) + '" y="' + f1(top) + '" width="' + f1(bw * 0.7) + '" height="' + f1(hgt) + '"><title>' + fmtStrike(it.k) + ' · GEX ' + F.usdCompact(it.a) + '</title></rect>'; } if (i % Math.ceil(n / 8) === 0 || i === n - 1) s += '<text x="' + f1(x + bw / 2) + '" y="' + (H - 6) + '" text-anchor="middle">' + fmtKbare(it.k) + '</text>'; });
+    s += '<line class="zero" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + f1(y0) + '" y2="' + f1(y0) + '"/>';
+    const xOf = (k) => { const i = items.findIndex((it) => it.k === k); if (i >= 0) return X(i) + bw / 2; const lo = items[0].k, hi = items[n - 1].k; return m.l + ((k - lo) / (hi - lo)) * (pw - bw) + bw / 2; };
+    if (opts.spot != null) { const x = xOf(opts.spot); s += '<line class="spot" x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/>'; }
+    if (opts.mp != null) { const x = xOf(opts.mp); s += '<line class="strk" x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + (m.t - 2) + '" y2="' + (m.t + ph) + '" style="stroke-dasharray:none;stroke-width:1.4"/><polygon class="accent" points="' + f1(x - 5) + ',' + (m.t - 8) + ' ' + f1(x + 5) + ',' + (m.t - 8) + ' ' + f1(x) + ',' + (m.t - 1) + '"/><text x="' + f1(x + 7) + '" y="' + (m.t + 2) + '" class="accent" style="fill:hsl(var(--spot))">' + opts.mpLabel + '</text>'; }
+    (opts.marks || []).forEach((mk) => { const x = xOf(mk.x); s += '<rect class="accent" x="' + f1(x - 1) + '" y="' + f1(m.t + ph + 1) + '" width="2" height="6"><title>' + esc(mk.title) + '</title></rect>'; });
+    return s + '</svg>';
+  }
+  function renderStructure() {
+    const host = els.structure; const ch = M.chain() || CG.chain(AN.asset, AN.expiry); const spot = spotNow(); const cs = chainStats(ch); const W = Math.max(300, els.rightBody.clientWidth - 28), H = 170; const lot = lotSize();
+    const ai = ch.rows.findIndex((r) => r.atm); const rows = ch.rows.filter((r, i) => Math.abs(i - ai) <= 12); const legs = M.chainLegs(); const marks = legs.map((l) => ({ x: l.strike, title: l.side + ' ' + l.type + ' ' + l.strike }));
+    const oi = barChart({ W, H, mode: 'group', items: rows.map((r) => ({ k: r.strike, a: r.call.oi, b: r.put.oi })), yfmt: (v) => F.compact(v), spot, mp: cs.maxPain, mpLabel: 'Max pain ' + fmtStrike(cs.maxPain), marks });
+    const gexItems = rows.map((r) => ({ k: r.strike, a: (r.call.gamma * r.call.oi - r.put.gamma * r.put.oi) * lot * spot * spot * 0.01 }));
+    const gexTotal = ch.rows.reduce((s, r) => s + (r.call.gamma * r.call.oi - r.put.gamma * r.put.oi) * lot * spot * spot * 0.01, 0);
+    let flip = null; let cum = 0; const sorted = ch.rows.slice(); for (let i = 0; i < sorted.length; i++) { const v = (sorted[i].call.gamma * sorted[i].call.oi - sorted[i].put.gamma * sorted[i].put.oi) * lot * spot * spot * 0.01; const prev = cum; cum += v; if (i > 0 && (prev < 0) !== (cum < 0)) { flip = sorted[i].strike; break; } }
+    const gex = barChart({ W, H, mode: 'signed', items: gexItems, yfmt: (v) => F.usdCompact(v), spot, marks });
+    const pcrBar = (c, p, label, v) => '<div><div class="an-kv"><span class="micro">' + label + '</span><b class="an-big" style="font-size:22px">' + (v == null ? '—' : v.toFixed(2)) + '</b><span class="text-muted">' + (v == null ? '' : v > 1.2 ? 'put-heavy · hedged / bearish positioning' : v < 0.8 ? 'call-heavy · bullish positioning' : 'balanced') + '</span></div><div class="an-pcr-bar bar" style="display:flex;height:6px;border-radius:2px;overflow:hidden;margin-top:6px"><i class="c" style="width:' + ((c / (c + p || 1)) * 100).toFixed(1) + '%;display:block;background:hsl(var(--profit));opacity:.7"></i><i class="p" style="width:' + ((p / (c + p || 1)) * 100).toFixed(1) + '%;display:block;background:hsl(var(--loss));opacity:.7"></i></div><div class="an-kv mt-1"><span>calls <b>' + F.int(c) + '</b></span><span>puts <b>' + F.int(p) + '</b></span></div></div>';
+    host.innerHTML = '<div class="an-blk"><div class="an-blk-hd"><span class="micro">Max pain</span><h4>Open interest by strike · ' + expShort(AN.expiry) + '</h4><span class="right"><span class="lg"><i style="background:hsl(var(--profit)/.6)"></i>call OI</span><span class="lg"><i style="background:hsl(var(--loss)/.6)"></i>put OI</span><span class="lg"><i style="background:hsl(var(--spot))"></i>strategy strikes</span></span></div>' + oi + '<div class="an-kv mt-2"><span>max pain <b class="text-spot">' + fmtStrike(cs.maxPain) + '</b></span><span>' + F.pct(((cs.maxPain - spot) / spot) * 100, 1) + ' from spot</span><span>Σ call OI <b>' + F.int(cs.cOI) + '</b></span><span>Σ put OI <b>' + F.int(cs.pOI) + '</b></span><span class="text-muted">strike where total option value at expiry is smallest</span></div></div>' +
+      '<div class="an-blk"><div class="an-blk-hd"><span class="micro">Put / call ratio</span><h4>Positioning</h4></div><div class="an-pcr">' + pcrBar(cs.cOI, cs.pOI, 'PCR · open interest', cs.pcr) + pcrBar(cs.cVol, cs.pVol, 'PCR · 24h volume', cs.pcrVol) + '</div></div>' +
+      '<div class="an-blk"><div class="an-blk-hd"><span class="micro">Gamma exposure</span><h4>Dealer GEX by strike</h4><span class="right micro">Σ Γ × OI × spot² × 1% · calls +, puts −</span></div>' + gex + '<div class="an-kv mt-2"><span>net GEX <b class="' + cls(gexTotal) + '">' + F.usdCompact(gexTotal) + '</b> / 1% move</span><span>gamma flip <b>' + (flip ? fmtStrike(flip) : '—') + '</b></span><span class="text-muted">' + (gexTotal >= 0 ? 'positive gamma · dealers dampen moves (mean-reverting)' : 'negative gamma · dealers chase moves (trending)') + '</span></div></div>';
+  }
+  // ======================================================================
+  // LADDER tab · P&L table
+  // ======================================================================
+  const ladderStep = () => { const A = CG.ASSETS[AN.asset]; const opts = [A.step / 2, A.step, A.step * 2]; const v = +st.ladderStep; return opts.includes(v) ? v : A.step; };
+  function renderLadder() {
+    const host = els.ladder; const a = baseAnalysis(); const spot = spotNow(); const A = CG.ASSETS[AN.asset]; const step = ladderStep(); const opts = [A.step / 2, A.step, A.step * 2];
+    const ctl = '<div class="an-blk-hd"><span class="micro">Ladder</span><h4>P&amp;L by underlying price</h4><div class="right"><span class="micro">Step</span><div class="an-seg" data-ladder-step>' + opts.map((o) => '<button data-step="' + o + '"' + (o === step ? ' class="on"' : '') + '>' + F.num(o, 0) + '</button>').join('') + '</div></div></div>';
+    if (!a) { host.innerHTML = '<div class="an-blk">' + ctl + emptyBlk('No strategy yet', 'The P&amp;L ladder appears once legs are added.') + '</div>'; return; }
+    const lo = Math.ceil((spot * 0.8) / step) * step, hi = Math.floor((spot * 1.2) / step) * step; const prices = []; for (let p = lo; p <= hi + 1e-9; p += step) prices.push(p);
+    const rows = prices.map((p) => ({ price: p })); let ins = rows.findIndex((r) => r.price > spot); if (ins < 0) ins = rows.length; rows.splice(ins, 0, { price: spot, spot: true });
+    a.breakevens.forEach((b) => { if (rows.some((r) => Math.abs(r.price - b) < 1e-6)) return; let i = rows.findIndex((r) => r.price > b); if (i < 0) i = rows.length; rows.splice(i, 0, { price: b, be: true }); });
+    const scale = Math.max(1, ...a.points.map((p) => Math.abs(p.pnlExpiry)).filter(isFinite)); const eps = scale * 0.005; const tl = AN.targetDays === 0 ? 'today' : fmtDMloc(M.targetDate());
+    const body = rows.map((r) => { const p = pnlAtPrice(a.legs, r.price); const chg = ((r.price - spot) / spot) * 100; const pill = r.spot ? '<span class="an-pill spot">spot</span>' : r.be ? '<span class="an-pill flat">breakeven</span>' : p.pnlExpiry > eps ? '<span class="an-pill profit">profit</span>' : p.pnlExpiry < -eps ? '<span class="an-pill loss">loss</span>' : '<span class="an-pill flat">flat</span>'; return '<tr class="' + (r.spot ? 'spot' : r.be ? 'be' : '') + '"><td>' + (r.spot || r.be ? fmtStrike(r.price) : fmtStrike(r.price)) + '</td><td class="' + cls(chg) + '">' + F.pct(chg, 1) + '</td><td class="' + cls(p.pnlExpiry) + '">' + smoney(p.pnlExpiry) + '</td><td class="' + cls(p.pnlTarget) + '">' + smoney(p.pnlTarget) + '</td><td>' + pill + '</td></tr>'; }).join('');
+    host.innerHTML = '<div class="an-blk" style="padding-bottom:0">' + ctl + '</div><div class="an-ladder-wrap"><table class="an-ladder"><thead><tr><th>Price</th><th>Change from spot</th><th>At expiry</th><th>On ' + tl + '</th><th>Status</th></tr></thead><tbody>' + body + '</tbody></table></div><div class="an-blk an-kv" style="border-bottom:0"><span>' + rows.length + ' rows · ±20% around spot in ' + F.num(step, 0) + ' steps</span><span>spot row highlighted · breakevens inserted as dashed rows</span></div>';
+    const sp = host.querySelector('tr.spot'); if (sp) { const top = sp.offsetTop - els.rightBody.clientHeight / 2 + 40; if (top > 0) els.rightBody.scrollTop = top; }
+  }
+  function bindLadder() { els.ladder.addEventListener('click', (e) => { const b = e.target.closest('[data-ladder-step] [data-step]'); if (b) { st.ladderStep = +b.dataset.step; CG.saveState(); renderLadder(); } }); }
+  // ======================================================================
+  // SHARE link
+  // ======================================================================
+  const b64u = (s) => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const unb64u = (s) => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4))));
+  const baseUrl = () => ((location.origin && location.origin !== 'null') ? location.origin : 'file://') + location.pathname;
+  function shareCode() { const legs = activeLegs(); return b64u(JSON.stringify({ a: AN.asset, l: legs.map((l) => [l.type, l.side, l.strike || 0, l.expiry || '', +l.lots || 1, +l.price || 0]), n: AN.name || '' })); }
+  function decodeShare(code) { try { const o = JSON.parse(unb64u(code)); if (!o || !Array.isArray(o.l) || !o.l.length || !CG.ASSETS[o.a]) return null; const legs = o.l.map((x) => ({ id: CG.newLegId(), type: x[0], side: x[1], strike: +x[2], expiry: x[3], lots: +x[4] || 1, price: +x[5] || 0, iv: (x[0] === 'FUTURE' ? 0 : (CG.quote(o.a, CG.EXPIRIES.includes(x[3]) ? x[3] : AN.expiry, +x[2], x[0]).markIv)), status: 'OPEN', isAdjustment: false, symbol: M.symbolOf(x[0], o.a, +x[2], x[3]), asset: o.a })); if (!legs.every((l) => ['CALL', 'PUT', 'FUTURE'].includes(l.type) && ['BUY', 'SELL'].includes(l.side))) return null; return { asset: o.a, legs, name: o.n || '' }; } catch (e) { return null; } }
+  async function copyText(t) { try { await navigator.clipboard.writeText(t); return true; } catch (e) { try { const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok; } catch (x) { return false; } } }
+  function openShare() {
+    const legs = activeLegs(); if (!legs.length) { CG.toast({ title: 'Nothing to share', description: 'Add legs to the strategy first', variant: 'destructive' }); return; }
+    const link = baseUrl() + '#/s/' + shareCode(); const a = baseAnalysis();
+    els.share.innerHTML = '<div class="an-share-wrap"><p class="text-sm text-muted">Anyone with this link sees a preview of the strategy and can open it in Analyse. Legs, lots and entry prices are encoded in the link itself — nothing is uploaded.</p><div class="lnk"><input class="input input-sm" readonly value="' + esc(link) + '" data-share-input><button class="btn btn-primary btn-sm" data-share-copy>' + ic('copy') + 'Copy</button></div><div class="an-share-legs">' + legs.map((l) => '<span><b class="' + (l.side === 'BUY' ? 'text-buy' : 'text-sell') + '">' + l.side + '</b><span>' + (l.lots || 1) + ' × ' + (l.symbol || M.symbolOf(l.type, AN.asset, l.strike, l.expiry)) + '</span><span class="text-muted">@ ' + F.num(l.price || 0, 1) + '</span></span>').join('') + '</div>' + (a ? '<div class="an-kv mt-3"><span>max profit <b class="text-profit">' + (isFinite(a.maxProfit) ? smoney(a.maxProfit) : 'Unlimited') + '</b></span><span>max loss <b class="text-loss">' + (isFinite(a.maxLoss) ? smoney(a.maxLoss) : 'Unlimited') + '</b></span><span>POP <b>' + (a.pop == null ? '—' : Math.round(a.pop * 100) + '%') + '</b></span></div>' : '') + '</div>';
+    const h = CG.modal.open(els.share, { title: 'Share strategy', description: (AN.name || 'Custom strategy') + ' · ' + AN.asset + ' · ' + legs.length + ' legs' });
+    els.share.onclick = async (e) => { if (!e.target.closest('[data-share-copy]')) return; const ok = await copyText(link); CG.toast(ok ? { title: 'Link copied', description: 'Share it to load this strategy in Analyse', variant: 'success' } : { title: 'Copy blocked by the browser', description: 'Select the link and copy it manually', variant: 'destructive' }); if (ok) h.close(); };
+    copyText(link).then((ok) => { if (ok) CG.toast({ title: 'Link copied to clipboard', description: link.length > 70 ? link.slice(0, 70) + '…' : link, variant: 'success' }); });
+  }
+  function applyShared(d) { AN.asset = d.asset; st.asset = d.asset; AN.legs = d.legs; AN.name = d.name; AN.strategyId = null; AN.targetPrice = null; AN.targetDays = 0; const e = d.legs.find((l) => CG.EXPIRIES.includes(l.expiry)); if (e) { AN.expiry = e.expiry; st.expiry = e.expiry; } CG.saveState(); CG.emit('analyse:legs-changed', AN.legs); }
+  function renderSharePage(root, params) {
+    const host = root.querySelector('#an-share-page'); const d = decodeShare(params.code || '');
+    if (!d) { host.innerHTML = '<div class="an-share-card"><span class="micro">Shared strategy</span><h2>This link is not valid</h2><p class="text-muted mt-2">The strategy code could not be decoded. Ask for a fresh link or build the strategy yourself.</p><div class="flex gap-2 mt-4"><a class="btn btn-primary" href="#/analyse">Open Analyse</a><a class="btn btn-outline" href="#/">Home</a></div></div>'; return; }
+    if (st.loggedIn) { applyShared(d); CG.toast({ title: 'Strategy loaded from link', description: (d.name || 'Custom strategy') + ' · ' + d.legs.length + ' legs · ' + d.asset, variant: 'success' }); CG.navigate('/analyse', { replace: true }); return; }
+    const a = CG.analyze(d.legs, d.asset, {}); const exp = d.legs.find((l) => l.expiry);
+    host.innerHTML = '<div class="an-share-card"><span class="micro">Shared strategy · ' + esc(d.asset) + (exp ? ' · ' + esc(expShort(exp.expiry)) : '') + '</span><h2>' + esc(d.name || 'Custom strategy') + '</h2><div class="legs">' + d.legs.map((l) => '<div><span class="' + (l.side === 'BUY' ? 'text-buy' : 'text-sell') + '">' + l.side + '</span><span>' + esc(l.symbol) + '</span><span class="r">' + l.lots + ' lots</span><span class="r text-muted">@ ' + F.num(l.price, 1) + '</span></div>').join('') + '</div><div class="tiles"><div><span class="micro">Max profit</span><div class="v text-profit">' + (isFinite(a.maxProfit) ? smoney(a.maxProfit) : 'Unlimited') + '</div></div><div><span class="micro">Max loss</span><div class="v text-loss">' + (isFinite(a.maxLoss) ? smoney(a.maxLoss) : 'Unlimited') + '</div></div><div><span class="micro">POP</span><div class="v">' + (a.pop == null ? '—' : Math.round(a.pop * 100) + '%') + '</div></div></div><p class="text-muted text-xs">Sign in to open this strategy in the Analyse workspace with the live chain, payoff and scenarios.</p><div class="flex gap-2 mt-4"><button class="btn btn-primary" data-share-open>Open in Analyse</button><a class="btn btn-outline" href="#/auth">Sign in</a></div></div>';
+    host.onclick = (e) => { if (e.target.closest('[data-share-open]')) { applyShared(d); CG.toast({ title: 'Strategy loaded from link', description: 'Sign in to continue to Analyse' }); CG.navigate('/analyse'); } };
+  }
+  CG.register('/s/:code', { show(root, params) { renderSharePage(root, params); } });
+  Object.assign(M, { renderScenarios, renderGreeks, renderVol, renderStructure, renderLadder, openShare, shareCode, decodeShare });
+
+  // ======================================================================
+  // registration / wiring
+  // ======================================================================
+  let paletteDone = false; const tryPalette = () => { if (!paletteDone && CG.palette && typeof CG.palette.register === 'function') { paletteDone = true; M.registerPalette(); } setTimeout(M.dedupePalette, 150); };
+  CG.register('/analyse', {
+    init(root) {
+      M.root = root;
+      Object.assign(els, {
+        shell: root.querySelector('#an-shell'), left: root.querySelector('#an-left'), right: root.querySelector('#an-right'), divider: root.querySelector('#an-divider'), lptabs: root.querySelector('#an-lptabs'), rptabs: root.querySelector('#an-rptabs'), leftPanels: root.querySelector('#analyse-left-panels'), chainPanel: root.querySelector('.an-chain-panel'), rightBody: root.querySelector('#an-right-body'),
+        expStrip: root.querySelector('.an-expiry-strip'), exp: root.querySelector('#an-expiries'), tools: root.querySelector('.an-chain-tools'), range: root.querySelector('#an-range'), greeksBtn: root.querySelector('#an-greeks-toggle'), findDelta: root.querySelector('#an-finddelta'), live: root.querySelector('#an-live-btn'), wrap: root.querySelector('#an-chain-wrap'), table: root.querySelector('#an-chain'), foot: root.querySelector('#an-chain-foot'), cs: root.querySelector('#an-colsettings'), optinfo: root.querySelector('#an-optinfo'), share: root.querySelector('#an-share'), findDlg: root.querySelector('#an-finddelta-dlg'),
+        lotInfo: root.querySelector('#an-lot-info'), basisInfo: root.querySelector('#an-basis-info'), stratInfo: root.querySelector('#an-strat-info'),
+        payoff: root.querySelector('#an-payoff'), scenarios: root.querySelector('#an-scenarios'), greeks: root.querySelector('#an-greeks'), vol: root.querySelector('#an-vol'), structure: root.querySelector('#an-structure'), ladder: root.querySelector('#an-ladder'),
+        tiles: root.querySelector('#an-tiles'), astrip: root.querySelector('#an-astrip'), legend: root.querySelector('#an-legend'), legendDate: root.querySelector('#an-legend-date'), chips: root.querySelector('#an-chips'), layersBtn: root.querySelector('#an-layers-btn'), zoomLabel: root.querySelector('#an-zoom-label'), chartHost: root.querySelector('#an-chart-host'), gstrip: root.querySelector('#an-greeks-strip'),
+        tpTitle: root.querySelector('#an-tp-title'), tpPct: root.querySelector('#an-tp-pct'), tpVal: root.querySelector('#an-tp-val'), tpRange: root.querySelector('#an-tp-range'), tpKnob: root.querySelector('#an-tp-knob'), tpFill: root.querySelector('#an-tp-fill'), tpSpot: root.querySelector('#an-tp-spot'), tpTicks: root.querySelector('#an-tp-ticks'),
+        tdTitle: root.querySelector('#an-td-title'), tdVal: root.querySelector('#an-td-val'), tdLeft: root.querySelector('#an-td-left'), tdRange: root.querySelector('#an-td-range'), tdKnob: root.querySelector('#an-td-knob'), tdFill: root.querySelector('#an-td-fill'), tdTicks: root.querySelector('#an-td-ticks')
+      });
+      els.tbody = els.table.querySelector('tbody');
+      M.fillIcons(root); M.setLive(AN.mode === 'static' ? 'static' : 'live'); M.applyDensity();
+      if (st.analyseSplit) root.style.setProperty('--an-split', st.analyseSplit + '%');
+      els.shell.dataset.collapse = st.analyseCollapse === 'left' || st.analyseCollapse === 'right' ? st.analyseCollapse : '';
+      // tabs / collapse / mobile toggle / divider
+      els.lptabs.addEventListener('click', (e) => { const b = e.target.closest('[data-lptab]'); if (b) M.setLeftTab(b.dataset.lptab); });
+      root.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-rptab]'); if (b) { M.setRightTab(b.dataset.rptab); return; }
+        const c = e.target.closest('[data-collapse]'); if (c && c.tagName === 'BUTTON') { M.setCollapse(c.dataset.collapse === 'restore' ? '' : c.dataset.collapse); return; }
+        if (e.target.closest('#an-share-btn')) { openShare(); return; }
+        const mv = e.target.closest('[data-mobile-view]'); if (mv) { els.shell.dataset.mobile = mv.dataset.mobileView; CG.$$('[data-mobile-view]', root).forEach((x) => x.classList.toggle('active', x === mv)); if (mv.dataset.mobileView === 'analysis') M.renderRight(); else M.scrollToAtm(); }
+      });
+      els.divider.addEventListener('mousedown', (e) => { if (e.target.closest('[data-collapse]')) return; e.preventDefault(); els.divider.classList.add('on'); const rect = els.shell.getBoundingClientRect(); const move = (ev) => { const pct = Math.min(70, Math.max(35, ((ev.clientX - rect.left) / rect.width) * 100)); root.style.setProperty('--an-split', pct.toFixed(1) + '%'); }; const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); els.divider.classList.remove('on'); st.analyseSplit = parseFloat(root.style.getPropertyValue('--an-split')) || 55; CG.saveState(); M.renderChart(); M.updateVis(); }; document.addEventListener('mousemove', move); document.addEventListener('mouseup', up); });
+      els.divider.addEventListener('dblclick', () => { st.analyseSplit = 55; root.style.setProperty('--an-split', '55%'); CG.saveState(); M.renderChart(); CG.toast({ title: 'Split reset', description: 'Chain 55% · analysis 45%' }); });
+      new MutationObserver(() => { M.setLeftTab(st.analyseTab || 'chain', true); }).observe(els.leftPanels, { childList: true });
+      // expiry strip / chain tools
+      els.expStrip.addEventListener('click', (e) => { const x = e.target.closest('[data-exp]'); if (x) { M.setExpiry(x.dataset.exp); return; } const s = e.target.closest('[data-exp-scroll]'); if (s) els.exp.scrollBy({ left: 220 * (+s.dataset.expScroll), behavior: 'smooth' }); });
+      els.tools.addEventListener('click', (e) => {
+        const rg = e.target.closest('[data-range]'); if (rg) { M.setRange(rg.dataset.range); return; }
+        if (e.target.closest('#an-greeks-toggle')) { M.setGreeksCols(!M.greeksShown()); return; }
+        const fd = e.target.closest('[data-delta]'); if (fd) { M.findDelta(+fd.dataset.delta); return; }
+        if (e.target.closest('#an-live-btn')) { M.toggleLive(); return; }
+        if (e.target.closest('#an-colsettings-btn')) M.openColSettings();
+      });
+      M.bindCs();
+      els.optinfo.addEventListener('click', (e) => { const b = e.target.closest('[data-oi-act]'); if (!b) return; const lots = +(els.optinfo.querySelector('[data-oi-lots]') || {}).value || M.curLots(); M.setLots(lots); if (M.addLeg(els.optinfo.dataset.type, b.dataset.oiAct, +els.optinfo.dataset.strike, lots)) CG.modal.closeAll(); });
+      // chain interactions
+      els.wrap.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-act]'); if (!b) return; const tr = b.closest('tr'); const ctl = b.closest('.an-ctl'); if (!tr || !ctl) return; const strike = +tr.dataset.strike; const type = ctl.dataset.type; const act = b.dataset.act;
+        if (act === 'INFO') { M.openOptInfo(type, strike); return; }
+        if (act === 'LOTDN') { M.stepLots(-1); return; } if (act === 'LOTUP') { M.stepLots(1); return; }
+        if (act === 'LOTMENU') { const m = CG.menu(b, '<div class="menu-label">Lots (× ' + M.lotSize() + ' ' + AN.asset + ')</div>' + M.LOTS.map((n) => '<button class="menu-item mono" data-lots="' + n + '">' + n + (n === M.curLots() ? ' ✓' : '') + '</button>').join(''), { align: 'left' }); m.addEventListener('click', (ev) => { const x = ev.target.closest('[data-lots]'); if (x) M.setLots(+x.dataset.lots); }); return; }
+        M.addLeg(type, act, strike, M.curLots());
+      });
+      let raf = null; els.wrap.addEventListener('scroll', () => { if (raf) return; raf = requestAnimationFrame(() => { raf = null; M.updateVis(); }); });
+      els.wrap.addEventListener('mouseover', (e) => { const tr = e.target.closest('tr[data-strike]'); if (tr && M.hl.get() != null && +tr.dataset.strike !== M.hl.get()) M.setHl(+tr.dataset.strike); });
+      M.registerShortcuts();
+      M.bindPayoff(); bindScenarios(); bindLadder();
+      els.rightBody.addEventListener('click', (e) => { const r = e.target.closest('rect[data-exp]'); if (r) M.setExpiry(r.dataset.exp); });
+      // ---------- shared events ----------
+      CG.on('asset', (a) => { if (!a || !CG.ASSETS[a]) return; if (AN.asset === a) return; AN.asset = a; st.asset = a; AN.targetPrice = null; M.hl.set(null); if (M.isActive()) { M.renderExpiries(); M.renderChain(); M.renderRight(); M.emitStats(); } });
+      CG.on('tick', () => { if (!M.isActive()) return; if (AN.mode === 'live') M.updateChain(); M.renderRight(); M.emitStats(); });
+      CG.on('currency-settings-changed', () => { if (!M.isActive()) return; M.renderChain(true); M.renderRight(); });
+      CG.on('lot-sizes-changed', () => { if (!M.isActive()) return; M.renderChain(true); M.renderRight(); });
+      CG.on('pnl-basis-changed', () => { if (M.isActive()) { M.renderChain(true); M.renderRight(); } });
+      CG.on('analyse:legs-changed', () => { if (AN.asset && CG.ASSETS[AN.asset] && AN.expiry && CG.EXPIRIES.includes(AN.expiry)) { const ch = M.chain(); if (ch && (ch.asset !== AN.asset || ch.expiry !== AN.expiry)) { st.asset = AN.asset; st.expiry = AN.expiry; if (M.isActive()) M.renderChain(); } } if (!M.isActive()) return; M.renderPills(); M.renderExpiries(); M.renderCounts(); M.renderRight(); });
+      CG.on('analyse:strategies-changed', () => { if (M.isActive()) M.renderCounts(); });
+      CG.on('analyse:set-tab', (name) => M.setLeftTab(name));
+      CG.on('density', (v) => { if (v) st.density = v; M.applyDensity(); if (M.isActive()) { M.updateVis(); if ((st.analyseRightTab || 'payoff') === 'ladder') M.renderLadder(); } });
+      CG.on('theme', () => { if (M.isActive()) setTimeout(M.renderRight, 30); });
+      CG.on('route', tryPalette);
+      window.addEventListener('cg-tour-set-tab', (e) => { if (e && e.detail) M.setLeftTab(typeof e.detail === 'string' ? e.detail : e.detail.tab); });
+      let rz = null; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (M.isActive()) { M.measureTop(); M.renderExpiries(); M.renderRight(); } }, 120); });
+      if (window.ResizeObserver) ['[data-cg="app-header"]', '[data-cg="plan-banner"]', '[data-cg="portfolio-bar"]'].forEach((s) => { const el = root.querySelector(s); if (el) new ResizeObserver(() => M.measureTop()).observe(el); });
+      tryPalette();
+    },
+    show(root, params, query) {
+      if (CG.ASSETS[st.asset] && st.asset !== AN.asset) { AN.asset = st.asset; AN.targetPrice = null; }
+      if (CG.EXPIRIES.includes(st.expiry) && st.expiry !== AN.expiry) AN.expiry = st.expiry;
+      M.measureTop(); M.applyDensity(); M.renderExpiries(); M.renderChain(); M.renderCounts();
+      M.setLeftTab((query && query.tab) || st.analyseTab || 'chain', true);
+      M.setRightTab((query && query.panel) || st.analyseRightTab || 'payoff');
+      M.emitStats(); tryPalette();
+      setTimeout(() => { M.measureTop(); M.scrollToAtm(); M.renderExpiries(); }, 30);
+    }
+  });
+})();
+</script>

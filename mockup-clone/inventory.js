@@ -1,0 +1,36 @@
+// Builds feature-inventory.html (standalone document) from features/*.json
+const fs = require('fs');
+const path = require('path');
+const dir = __dirname;
+const featDir = path.join(dir, 'features');
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const areaNames = { '00-chrome': 'App shell: header, settings, tour, assistant', '10-public': 'Public site & authentication', '20-analyse': 'Analyse: options chain & analysis pane', '21-trading': 'Analyse: strategy builder, paper & live trading', '30-account': 'Account: subscription & referrals', '40-admin': 'Admin console', '50-analytics': 'Market Analytics (cg2 app)', '60-terminal': 'Market Analytics terminal (/terminal)' };
+let features = [];
+for (const f of fs.readdirSync(featDir).filter((x) => x.endsWith('.json')).sort()) { try { const arr = JSON.parse(fs.readFileSync(path.join(featDir, f), 'utf8')); arr.forEach((x) => (x.area = f.replace('.json', ''))); features = features.concat(arr); } catch (e) { console.error('bad', f, e.message); } }
+const areas = {}; features.forEach((f) => { (areas[f.area] = areas[f.area] || {}); const k = (f.route || '?') + '||' + (f.screen || ''); (areas[f.area][k] = areas[f.area][k] || []).push(f); });
+const counts = { working: 0, static: 0, inferred: 0 }; features.forEach((f) => (counts[f.status] = (counts[f.status] || 0) + 1));
+const screens = new Set(features.map((f) => (f.route || '') + '||' + (f.screen || '')));
+let toc = ''; let body = '';
+Object.keys(areas).sort().forEach((a) => { const id = 'a-' + a; const n = Object.values(areas[a]).reduce((s, x) => s + x.length, 0); toc += '<a href="#' + id + '">' + esc(areaNames[a] || a) + ' <span>' + n + '</span></a>'; body += '<section id="' + id + '"><h2>' + esc(areaNames[a] || a) + '</h2>'; Object.keys(areas[a]).sort().forEach((k) => { const [route, screen] = k.split('||'); const rows = areas[a][k]; body += '<h3>' + esc(screen || route) + ' <code>' + esc(route) + '</code> <small>' + rows.length + ' features</small></h3><div class="tw"><table><thead><tr><th>Feature</th><th>How it works in the clone</th><th>Status</th></tr></thead><tbody>'; rows.forEach((r) => { body += '<tr><td><b>' + esc(r.feature) + '</b>' + (r.evidence ? '<div class="ev">' + esc(r.evidence) + '</div>' : '') + '</td><td>' + esc(r.how || r.notes || '') + '</td><td><span class="st ' + esc(r.status || 'static') + '">' + esc(r.status || 'static') + '</span></td></tr>'; }); body += '</tbody></table></div>'; }); body += '</section>'; });
+const html = `<title>CoinGreeks Feature Inventory</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap">
+<style>
+:root{--bg:#F5F6F8;--surface:#fff;--ink:#16202B;--ink2:#46546A;--ink3:#76839A;--line:#D9DFE7;--accent:#B9791A;--accentbg:#FBF1DC;--ok:#1B8A55;--okbg:#E3F3EA;--warn:#B06A00;--warnbg:#FBF1DC;--mutebg:#ECEFF3;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D1117;--surface:#151B23;--ink:#E6EBF2;--ink2:#AEB9C7;--ink3:#7D8A9A;--line:#27313D;--accent:#EBB35A;--accentbg:#2B2113;--ok:#3DC27B;--okbg:#132A1E;--warn:#E8A23B;--warnbg:#2B2113;--mutebg:#1B232D;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0D1117;--surface:#151B23;--ink:#E6EBF2;--ink2:#AEB9C7;--ink3:#7D8A9A;--line:#27313D;--accent:#EBB35A;--accentbg:#2B2113;--ok:#3DC27B;--okbg:#132A1E;--warn:#E8A23B;--warnbg:#2B2113;--mutebg:#1B232D;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:14.5px;line-height:1.55}
+header{background:var(--surface);border-bottom:1px solid var(--line)}header .in{max-width:1180px;margin:0 auto;padding:36px 28px 28px}
+h1{font-family:"Bricolage Grotesque","IBM Plex Sans",sans-serif;font-size:40px;margin:0 0 8px;letter-spacing:-.02em}h2{font-family:"Bricolage Grotesque",sans-serif;font-size:24px;margin:0 0 14px;padding-top:34px;border-top:1px solid var(--line)}h3{font-size:16px;margin:22px 0 8px;font-weight:600}h3 code{font-family:"IBM Plex Mono",monospace;font-size:12px;background:var(--mutebg);padding:1px 6px;border-radius:4px;margin-left:6px}h3 small{color:var(--ink3);font-weight:400;font-size:12px;margin-left:6px}
+.dek{color:var(--ink2);max-width:70ch;margin:0}.kpis{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}.kpi{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:10px 14px;min-width:150px}.kpi b{display:block;font-family:"IBM Plex Mono",monospace;font-size:22px}.kpi span{font-size:11.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em}
+.wrap{max-width:1180px;margin:0 auto;padding:10px 28px 80px;display:grid;grid-template-columns:250px minmax(0,1fr);gap:40px}nav{position:sticky;top:16px;align-self:start;font-size:13px}nav a{display:flex;justify-content:space-between;gap:8px;color:var(--ink2);text-decoration:none;padding:6px 0 6px 10px;border-left:2px solid var(--line)}nav a:hover{color:var(--ink);border-color:var(--accent)}nav a span{font-family:"IBM Plex Mono",monospace;color:var(--ink3);font-size:11px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:8px}th,td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--line)}th{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-weight:500}td:first-child{width:34%}td:last-child{width:92px;white-space:nowrap}.ev{font-size:11.5px;color:var(--ink3);margin-top:2px}
+.st{font-family:"IBM Plex Mono",monospace;font-size:11px;padding:2px 7px;border-radius:4px}.st.working{background:var(--okbg);color:var(--ok)}.st.static{background:var(--mutebg);color:var(--ink2)}.st.inferred{background:var(--warnbg);color:var(--warn)}
+.legend{font-size:13px;color:var(--ink2);margin-top:14px}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}nav{display:none}}
+</style>
+<header><div class="in"><h1>CoinGreeks Feature Inventory</h1><p class="dek">Every screen, control and behaviour found on coingreeks.com by reverse-engineering the production bundle, the lazy-loaded analytics sections and the product screenshots, and how the navigable mock clone reproduces each one.</p>
+<div class="kpis"><div class="kpi"><b>${features.length}</b><span>features</span></div><div class="kpi"><b>${screens.size}</b><span>screens</span></div><div class="kpi"><b>${counts.working || 0}</b><span>working in mock</span></div><div class="kpi"><b>${counts.static || 0}</b><span>static</span></div><div class="kpi"><b>${counts.inferred || 0}</b><span>inferred</span></div></div>
+<p class="legend"><span class="st working">working</span> interactive in the mockup &nbsp; <span class="st static">static</span> rendered with mock data only &nbsp; <span class="st inferred">inferred</span> behaviour reconstructed from bundle strings, not observed behind login.</p></div></header>
+<div class="wrap"><nav>${toc}</nav><main>${body}</main></div>`;
+fs.writeFileSync(path.join(dir, 'feature-inventory.html'), html);
+console.log('features', features.length, 'screens', screens.size, counts);

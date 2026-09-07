@@ -1,0 +1,208 @@
+<script>
+(function () {
+  'use strict';
+  const A = window.CG_ADMIN; const M = CG.mock, F = CG.fmt, esc = CG.esc, $ = CG.$, $$ = CG.$$; const el = A.el;
+  const bindFilter = (input, ev, fn) => input.addEventListener(ev, (e) => fn(e.target.value));
+  const activeSwitch = (x, act) => '<div class="flex items-center gap-2">' + A.switchHtml(x.isActive, 'data-act="toggle" data-id="' + x.id + '" aria-label="Toggle active"') + '<span class="text-xs ' + (x.isActive ? '' : 'text-muted') + '">' + (x.isActive ? 'Active' : 'Inactive') + '</span></div>';
+  const bulkActive = (list, evName, noun) => [
+    { id: 'activate', label: 'Activate', icon: 'check', run: (rows) => { A.save(() => { rows.forEach((x) => (x.isActive = true)); CG.emit(evName, list); }, rows.length + ' ' + noun + ' activated'); } },
+    { id: 'deactivate', label: 'Deactivate', run: (rows) => { A.save(() => { rows.forEach((x) => (x.isActive = false)); CG.emit(evName, list); }, rows.length + ' ' + noun + ' deactivated'); } }
+  ];
+
+  // =====================================================================
+  // /admin/subscriptions  (plans)
+  // =====================================================================
+  CG.register('/admin/subscriptions', {
+    init(root) {
+      A.hydrateIcons(root);
+      const dlg = el(root, 'dialog'), form = dlg.querySelector('form');
+      const INTERVALS = [['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['yearly', 'Yearly']];
+      let editing = null, features = [], handle = null; const S = { q: '', status: '' };
+      el(dlg, 'intervals').innerHTML = INTERVALS.map(([k, label]) => '<div class="adm-interval"><h4>' + label + '</h4>' +
+        '<div class="field"><label class="label">Price</label><input class="input input-sm mono" name="' + k + '.price" type="number" min="0" step="1" value="0"></div>' +
+        '<div class="field"><label class="label">Discount Price (₹)</label><input class="input input-sm mono" name="' + k + '.discountPrice" type="number" min="0" step="1" value="0"></div>' +
+        '<div class="adm-sublabel">Feature Limits</div>' +
+        '<div class="field"><label class="label">Paper Trading Limit <span class="text-muted font-medium">(Per Month)</span></label><input class="input input-sm mono" name="' + k + '.paper" type="number" min="0" step="1" value="0"></div>' +
+        '<div class="field" style="margin-bottom:0"><label class="label">Live Trading Limit <span class="text-muted font-medium">(Per Month)</span></label><input class="input input-sm mono" name="' + k + '.live" type="number" min="0" step="1" value="0"></div>' +
+        '</div>').join('');
+      const renderFeatures = () => { el(dlg, 'features').innerHTML = features.length ? features.map((f, i) => '<span class="adm-chip">' + esc(f) + '<button type="button" class="adm-chip-x" data-act="rm-feature" data-i="' + i + '" aria-label="Remove ' + esc(f) + '">' + A.icon('x', 11) + '</button></span>').join('') : '<span class="text-xs text-muted">No features added yet</span>'; };
+      const renderMenu = (selected) => { const sel = new Set(selected || []); el(dlg, 'menu-items').innerHTML = M.menuItems.length ? M.menuItems.map((m) => '<label><input type="checkbox" class="checkbox" name="menuItem" value="' + esc(m.displayName) + '"' + (sel.has(m.displayName) ? ' checked' : '') + (m.isActive ? '' : ' title="Inactive menu item"') + '><span class="flex-1">' + esc(m.displayName) + (m.isActive ? '' : ' <span class="badge badge-secondary">Inactive</span>') + '</span><span class="text-xs text-muted mono">' + esc(m.category) + ' · ' + F.inr(m.price) + '</span></label>').join('') : '<div class="empty">No menu items — add some in Menu Pricing</div>'; updateMenuCount(); };
+      const updateMenuCount = () => { const n = $$('[name="menuItem"]:checked', form).length; el(dlg, 'menu-count').textContent = n + ' of ' + M.menuItems.length + ' menu items linked'; };
+      const addFeature = () => { const inp = el(dlg, 'feature-input'); const v = inp.value.trim(); if (!v) return; if (!features.includes(v)) features.push(v); inp.value = ''; renderFeatures(); inp.focus(); };
+      const open = (plan) => {
+        editing = plan || null; features = plan ? plan.features.slice() : []; form.reset();
+        A.formSet(form, 'name', plan ? plan.name : ''); A.formSet(form, 'description', plan ? plan.description : '');
+        INTERVALS.forEach(([k]) => { const iv = plan ? plan[k] || {} : {}; const fl = iv.featureLimits || {}; A.formSet(form, k + '.price', iv.price || 0); A.formSet(form, k + '.discountPrice', iv.discountPrice || 0); A.formSet(form, k + '.paper', fl.paper_trading || 0); A.formSet(form, k + '.live', fl.live_trading || 0); });
+        renderFeatures(); renderMenu(plan ? plan.menuItems : []); A.setSwitch(el(dlg, 'active'), plan ? plan.isActive : true);
+        el(dlg, 'submit').textContent = plan ? 'Update' : 'Create';
+        handle = CG.modal.open(dlg, { title: plan ? 'Edit Plan' : 'Create New Plan', description: plan ? 'Update pricing, limits and menu access for ' + plan.name : 'Define a new subscription tier, its pricing and feature limits', size: 'lg' });
+        setTimeout(() => form.querySelector('[name="name"]').focus(), 50);
+      };
+      form.addEventListener('submit', (e) => {
+        e.preventDefault(); const name = A.formVal(form, 'name').trim();
+        if (!name) { A.validation('Plan name is required'); form.querySelector('[name="name"]').focus(); return; }
+        const data = { name, description: A.formVal(form, 'description').trim(), features: features.slice(), isActive: A.isOn(el(dlg, 'active')), menuItems: $$('[name="menuItem"]:checked', form).map((c) => c.value) };
+        INTERVALS.forEach(([k]) => { data[k] = { price: +A.formVal(form, k + '.price') || 0, discountPrice: +A.formVal(form, k + '.discountPrice') || 0, featureLimits: { paper_trading: +A.formVal(form, k + '.paper') || 0, live_trading: +A.formVal(form, k + '.live') || 0 } }; });
+        const ok = A.save(() => { if (editing) Object.assign(editing, data); else M.plans.push(Object.assign({ id: A.uid('p') }, data)); CG.emit('plans:changed', M.plans); }, editing ? 'Updated' : 'Created');
+        if (ok) { handle && handle.close(); grid.render(); }
+      });
+      el(dlg, 'feature-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addFeature(); } });
+      CG.delegate(form, 'click', '[data-act="add-feature"]', addFeature);
+      CG.delegate(form, 'click', '[data-act="rm-feature"]', (e, b) => { features.splice(+b.dataset.i, 1); renderFeatures(); });
+      CG.delegate(form, 'click', '[data-act="cancel"]', () => handle && handle.close());
+      CG.delegate(form, 'change', '[name="menuItem"]', updateMenuCount);
+      el(dlg, 'active').addEventListener('click', (e) => A.setSwitch(e.currentTarget, !A.isOn(e.currentTarget)));
+      CG.delegate(root, 'click', '[data-act="new"]', () => open(null));
+      CG.delegate(root, 'click', '[data-act="edit"]', (e, b) => open(M.plans.find((p) => p.id === b.dataset.id)));
+      CG.delegate(root, 'click', '[data-act="toggle"]', (e, b) => { const p = M.plans.find((x) => x.id === b.dataset.id); if (!p) return; p.isActive = !p.isActive; A.save(() => CG.emit('plans:changed', M.plans), 'Updated'); grid.render(); });
+      const priceCell = (iv) => { if (!iv) return '<span class="text-muted">—</span>'; const hasDisc = iv.discountPrice > 0 && iv.discountPrice < iv.price; return '<span class="mono">' + F.inr(hasDisc ? iv.discountPrice : iv.price) + '</span>' + (hasDisc ? '<span class="adm-strike mono">' + F.inr(iv.price) + '</span><div class="text-2xs text-profit mono">' + Math.round((1 - iv.discountPrice / iv.price) * 100) + '% off</div>' : ''); };
+      const priceVal = (iv) => (iv ? (iv.discountPrice > 0 && iv.discountPrice < iv.price ? iv.discountPrice : iv.price) : 0);
+      const limitsText = (p) => { const fl = p.yearly && p.yearly.featureLimits; return fl ? (fl.paper_trading || '∞') + ' paper · ' + (fl.live_trading || (p.yearly.price ? '∞' : 0)) + ' live' : '—'; };
+      const grid = A.grid({
+        key: 'plans', host: el(root, 'table'), pager: el(root, 'pager'), tools: el(root, 'tools'), bulkbar: el(root, 'bulkbar'), noun: 'plans', per: 0,
+        columns: [
+          { id: 'name', label: 'Name', always: true, sortVal: (p) => p.name.toLowerCase(), cell: (p) => '<div class="font-medium">' + esc(p.name) + '</div><div class="text-xs text-muted" style="max-width:280px">' + esc(p.description || '') + '</div>', csv: (p) => p.name },
+          { id: 'monthly', label: 'Monthly', cls: 'r', sortVal: (p) => priceVal(p.monthly), cell: (p) => priceCell(p.monthly), csv: (p) => priceVal(p.monthly) },
+          { id: 'quarterly', label: 'Quarterly', cls: 'r', sortVal: (p) => priceVal(p.quarterly), cell: (p) => priceCell(p.quarterly), csv: (p) => priceVal(p.quarterly) },
+          { id: 'yearly', label: 'Yearly', cls: 'r', sortVal: (p) => priceVal(p.yearly), cell: (p) => priceCell(p.yearly), csv: (p) => priceVal(p.yearly) },
+          { id: 'limits', label: 'Limits <span class="text-2xs">(yearly)</span>', csvLabel: 'Limits', cell: (p) => '<span class="mono text-xs">' + limitsText(p) + '</span>' },
+          { id: 'features', label: 'Features', default: false, sortVal: (p) => (p.features || []).length, cell: (p) => '<span class="mono text-xs">' + (p.features || []).length + ' features · ' + (p.menuItems || []).length + ' menu items</span>' },
+          { id: 'status', label: 'Status', sortVal: (p) => (p.isActive ? 1 : 0), cell: (p) => activeSwitch(p), csv: (p) => (p.isActive ? 'Active' : 'Inactive') },
+          { id: 'actions', label: 'Actions', cls: 'r', always: true, noCsv: true, cell: (p) => '<div class="adm-actions"><button class="adm-icon-btn" title="Edit plan" data-act="edit" data-id="' + p.id + '">' + A.icon('pencil') + '</button></div>' }
+        ],
+        rows: () => M.plans.filter((p) => (!S.q || (p.name + ' ' + (p.description || '')).toLowerCase().includes(S.q)) && (!S.status || (S.status === 'active') === !!p.isActive)),
+        rowId: (p) => p.id, isFiltered: () => !!(S.q || S.status),
+        empty: { icon: 'package', title: 'No Plans Yet', hint: 'Create your first subscription plan to start selling.', action: 'Create Plan' },
+        emptyFiltered: { icon: 'search', title: 'No plans match', hint: 'Try another search term or status.', action: 'Clear filters' },
+        bulk: bulkActive(M.plans, 'plans:changed', 'plans')
+      });
+      bindFilter(el(root, 'q'), 'input', (v) => { S.q = v.trim().toLowerCase(); grid.render(); });
+      bindFilter(el(root, 'status'), 'change', (v) => { S.status = v; grid.render(); });
+      CG.delegate(root, 'click', '[data-act="clear-filters"]', () => { S.q = ''; S.status = ''; el(root, 'q').value = ''; el(root, 'status').value = ''; grid.render(); });
+      this._render = () => grid.render();
+    },
+    show() { this._render && this._render(); }
+  });
+
+  // =====================================================================
+  // /admin/menu-pricing
+  // =====================================================================
+  CG.register('/admin/menu-pricing', {
+    init(root) {
+      A.hydrateIcons(root);
+      const dlg = el(root, 'dialog'), form = dlg.querySelector('form'); let editing = null, handle = null; const S = { q: '', category: '', status: '' };
+      const open = (item) => { editing = item || null; form.reset(); A.formSet(form, 'displayName', item ? item.displayName : ''); A.formSet(form, 'category', item ? item.category : ''); A.formSet(form, 'price', item ? item.price : 0); A.setSwitch(el(dlg, 'active'), item ? item.isActive : true); el(dlg, 'submit').textContent = item ? 'Update' : 'Create'; handle = CG.modal.open(dlg, { title: item ? 'Edit Menu Item' : 'New Menu Item', description: item ? 'Change the name, category or price of ' + item.displayName : 'Menu items can be linked to subscription plans' }); setTimeout(() => form.querySelector('[name="displayName"]').focus(), 50); };
+      form.addEventListener('submit', (e) => {
+        e.preventDefault(); const name = A.formVal(form, 'displayName').trim();
+        if (!name) { A.validation('Display Name is required'); form.querySelector('[name="displayName"]').focus(); return; }
+        const data = { displayName: name, category: A.formVal(form, 'category').trim() || 'General', price: +A.formVal(form, 'price') || 0, isActive: A.isOn(el(dlg, 'active')) };
+        const ok = A.save(() => { if (editing) { const old = editing.displayName; Object.assign(editing, data); if (old !== data.displayName) M.plans.forEach((p) => { p.menuItems = (p.menuItems || []).map((m) => (m === old ? data.displayName : m)); }); } else M.menuItems.push(Object.assign({ id: A.uid('m') }, data)); CG.emit('menuItems:changed', M.menuItems); }, editing ? 'Updated' : 'Created');
+        if (ok) { handle && handle.close(); fillCategories(); grid.render(); }
+      });
+      CG.delegate(form, 'click', '[data-act="cancel"]', () => handle && handle.close());
+      el(dlg, 'active').addEventListener('click', (e) => A.setSwitch(e.currentTarget, !A.isOn(e.currentTarget)));
+      CG.delegate(root, 'click', '[data-act="new"]', () => open(null));
+      CG.delegate(root, 'click', '[data-act="edit"]', (e, b) => open(M.menuItems.find((m) => m.id === b.dataset.id)));
+      CG.delegate(root, 'click', '[data-act="toggle"]', (e, b) => { const m = M.menuItems.find((x) => x.id === b.dataset.id); if (!m) return; m.isActive = !m.isActive; A.save(() => CG.emit('menuItems:changed', M.menuItems), 'Updated'); grid.render(); });
+      const linked = (m) => M.plans.filter((p) => (p.menuItems || []).includes(m.displayName)).length;
+      const grid = A.grid({
+        key: 'menu', host: el(root, 'table'), pager: el(root, 'pager'), tools: el(root, 'tools'), bulkbar: el(root, 'bulkbar'), noun: 'items', per: 0,
+        columns: [
+          { id: 'name', label: 'Display Name', always: true, sortVal: (m) => m.displayName.toLowerCase(), cell: (m) => '<span class="font-medium">' + esc(m.displayName) + '</span>', csv: (m) => m.displayName },
+          { id: 'category', label: 'Category', sortVal: (m) => m.category, cell: (m) => '<span class="badge badge-secondary">' + esc(m.category) + '</span>', csv: (m) => m.category },
+          { id: 'price', label: 'Price (₹)', cls: 'r', sortVal: (m) => m.price, cell: (m) => (m.price ? F.inr(m.price) : '<span class="text-muted">Free</span>'), csv: (m) => m.price },
+          { id: 'linked', label: 'Linked plans', sortVal: linked, cell: (m) => { const n = linked(m); return '<span class="mono text-xs">' + n + ' plan' + (n === 1 ? '' : 's') + '</span>'; }, csv: linked },
+          { id: 'status', label: 'Status', sortVal: (m) => (m.isActive ? 1 : 0), cell: (m) => activeSwitch(m), csv: (m) => (m.isActive ? 'Active' : 'Inactive') },
+          { id: 'actions', label: 'Actions', cls: 'r', always: true, noCsv: true, cell: (m) => '<div class="adm-actions"><button class="adm-icon-btn" title="Edit item" data-act="edit" data-id="' + m.id + '">' + A.icon('pencil') + '</button></div>' }
+        ],
+        rows: () => M.menuItems.filter((m) => (!S.q || m.displayName.toLowerCase().includes(S.q)) && (!S.category || m.category === S.category) && (!S.status || (S.status === 'active') === !!m.isActive)),
+        rowId: (m) => m.id, isFiltered: () => !!(S.q || S.category || S.status),
+        empty: { icon: 'tag', title: 'No Menu Items', hint: 'Add menu items that can be linked to plans.', action: 'Add Item' },
+        emptyFiltered: { icon: 'search', title: 'No items match', hint: 'Try another search, category or status.', action: 'Clear filters' },
+        bulk: bulkActive(M.menuItems, 'menuItems:changed', 'items')
+      });
+      const fillCategories = () => { const cats = Array.from(new Set(M.menuItems.map((m) => m.category))).sort(); el(root, 'category').innerHTML = '<option value="">All categories</option>' + cats.map((c) => '<option value="' + esc(c) + '"' + (c === S.category ? ' selected' : '') + '>' + esc(c) + '</option>').join(''); };
+      bindFilter(el(root, 'q'), 'input', (v) => { S.q = v.trim().toLowerCase(); grid.render(); });
+      bindFilter(el(root, 'category'), 'change', (v) => { S.category = v; grid.render(); });
+      bindFilter(el(root, 'status'), 'change', (v) => { S.status = v; grid.render(); });
+      CG.delegate(root, 'click', '[data-act="clear-filters"]', () => { S.q = S.category = S.status = ''; el(root, 'q').value = ''; el(root, 'category').value = ''; el(root, 'status').value = ''; grid.render(); });
+      this._render = () => { fillCategories(); grid.render(); };
+    },
+    show() { this._render && this._render(); }
+  });
+
+  // =====================================================================
+  // /admin/coupons
+  // =====================================================================
+  CG.register('/admin/coupons', {
+    init(root) {
+      A.hydrateIcons(root);
+      const dlg = el(root, 'dialog'), form = dlg.querySelector('form'); let editing = null, handle = null; const assigned = new Set(); const S = { q: '', type: '', status: '' };
+      const INTERVALS = [['monthly', 'Monthly'], ['quarterly', 'Quarterly'], ['yearly', 'Yearly']];
+      const filteredUsers = () => { const q = el(dlg, 'assign-search').value.trim().toLowerCase(); return M.users.filter((u) => !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)); };
+      const renderAssign = () => { const list = filteredUsers(); el(dlg, 'assign-list').innerHTML = list.length ? list.map((u) => '<label><input type="checkbox" class="checkbox" data-uid="' + u.id + '"' + (assigned.has(u.id) ? ' checked' : '') + '><span class="flex-1"><span class="block">' + esc(u.name) + '</span><span class="text-xs text-muted">' + esc(u.email) + '</span></span><span class="badge ' + A.planBadge(u.plan) + '">' + esc(u.plan) + '</span></label>').join('') : '<div class="empty">No users found</div>'; el(dlg, 'assign-count').textContent = assigned.size + ' of ' + M.users.length + ' users selected'; };
+      const renderPlanGrid = (sel) => { const g = el(dlg, 'plan-grid'); if (!M.plans.length) { g.innerHTML = '<div class="empty">No plans available</div>'; return; } g.innerHTML = '<table class="table table-compact"><thead><tr><th>Plan</th>' + INTERVALS.map(([, l]) => '<th style="text-align:center">' + l + '</th>').join('') + '</tr></thead><tbody>' + M.plans.map((p) => '<tr><td>' + esc(p.name) + (p.isActive ? '' : ' <span class="badge badge-secondary">Inactive</span>') + '</td>' + INTERVALS.map(([k]) => '<td><input type="checkbox" class="checkbox" data-plan="' + p.id + '" data-interval="' + k + '"' + (sel[p.id] && sel[p.id].includes(k) ? ' checked' : '') + ' aria-label="' + esc(p.name) + ' ' + k + '"></td>').join('') + '</tr>').join('') + '</tbody></table>'; };
+      const planIntervalsOf = (c) => { if (c.planIntervals) return c.planIntervals; const o = {}; (c.plans || []).forEach((p) => (o[p] = (c.intervals || []).slice())); return o; };
+      const toggleAssign = () => { const community = A.formVal(form, 'scope') === 'private_community_listed'; el(dlg, 'assign').hidden = !community; if (community) renderAssign(); };
+      const open = (c) => {
+        editing = c || null; form.reset(); assigned.clear(); (c && c.assignedUsers || []).forEach((id) => assigned.add(id));
+        A.formSet(form, 'code', c ? c.code : ''); A.formSet(form, 'scope', c ? c.scope : 'public_all_listed'); A.formSet(form, 'description', c ? c.description : ''); A.formSet(form, 'discountType', c ? c.discountType : 'percent'); A.formSet(form, 'discountValue', c ? c.discountValue : 10); A.formSet(form, 'minOrderAmount', c ? c.minOrderAmount : 0); A.formSet(form, 'maxUses', c ? c.maxUses : 100); A.formSet(form, 'perUserLimit', c ? c.perUserLimit : 1); A.formSet(form, 'startsAt', c ? c.startsAt : CG.NOW.toISOString().slice(0, 10)); A.formSet(form, 'expiresAt', c ? c.expiresAt : new Date(CG.NOW.getTime() + 90 * 86400000).toISOString().slice(0, 10));
+        el(dlg, 'assign-search').value = ''; renderPlanGrid(c ? planIntervalsOf(c) : {}); A.setSwitch(el(dlg, 'active'), c ? c.isActive : true); toggleAssign();
+        el(dlg, 'submit').textContent = c ? 'Update' : 'Create';
+        handle = CG.modal.open(dlg, { title: c ? 'Edit Coupon' : 'New Coupon', description: c ? 'Editing ' + c.code + ' · used ' + c.usedCount + ' of ' + c.maxUses + ' times' : 'Discount codes users can apply at checkout', size: 'lg' });
+        setTimeout(() => form.querySelector('[name="code"]').focus(), 50);
+      };
+      form.addEventListener('submit', (e) => {
+        e.preventDefault(); const code = A.formVal(form, 'code').trim().toUpperCase();
+        if (!code) { A.validation('Code is required'); form.querySelector('[name="code"]').focus(); return; }
+        const dup = M.coupons.find((x) => x.code === code && x !== editing); if (dup) { A.validation('Coupon code ' + code + ' already exists'); return; }
+        const planIntervals = {}; $$('[data-plan]:checked', form).forEach((c) => { (planIntervals[c.dataset.plan] = planIntervals[c.dataset.plan] || []).push(c.dataset.interval); });
+        const intervals = Array.from(new Set([].concat(...Object.values(planIntervals))));
+        const data = { code, scope: A.formVal(form, 'scope'), description: A.formVal(form, 'description').trim(), discountType: A.formVal(form, 'discountType'), discountValue: +A.formVal(form, 'discountValue') || 0, minOrderAmount: +A.formVal(form, 'minOrderAmount') || 0, maxUses: +A.formVal(form, 'maxUses') || 0, perUserLimit: +A.formVal(form, 'perUserLimit') || 0, startsAt: A.formVal(form, 'startsAt'), expiresAt: A.formVal(form, 'expiresAt'), plans: Object.keys(planIntervals), intervals, planIntervals, isActive: A.isOn(el(dlg, 'active')), assignedUsers: A.formVal(form, 'scope') === 'private_community_listed' ? Array.from(assigned) : [] };
+        if (data.discountType === 'percent' && data.discountValue > 100) { A.validation('Percent discount cannot exceed 100'); return; }
+        const ok = A.save(() => { if (editing) Object.assign(editing, data); else M.coupons.push(Object.assign({ id: A.uid('c'), usedCount: 0 }, data)); CG.emit('coupons:changed', M.coupons); }, editing ? 'Updated' : 'Created');
+        if (ok) { handle && handle.close(); grid.render(); }
+      });
+      form.querySelector('[name="code"]').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ''); });
+      form.querySelector('[name="scope"]').addEventListener('change', toggleAssign);
+      el(dlg, 'assign-search').addEventListener('input', renderAssign);
+      CG.delegate(form, 'change', '[data-uid]', (e, c) => { if (c.checked) assigned.add(c.dataset.uid); else assigned.delete(c.dataset.uid); el(dlg, 'assign-count').textContent = assigned.size + ' of ' + M.users.length + ' users selected'; });
+      CG.delegate(form, 'click', '[data-act="assign-all"]', () => { filteredUsers().forEach((u) => assigned.add(u.id)); renderAssign(); });
+      CG.delegate(form, 'click', '[data-act="assign-none"]', () => { filteredUsers().forEach((u) => assigned.delete(u.id)); renderAssign(); });
+      CG.delegate(form, 'click', '[data-act="assign-invert"]', () => { filteredUsers().forEach((u) => (assigned.has(u.id) ? assigned.delete(u.id) : assigned.add(u.id))); renderAssign(); });
+      CG.delegate(form, 'click', '[data-act="cancel"]', () => handle && handle.close());
+      el(dlg, 'active').addEventListener('click', (e) => A.setSwitch(e.currentTarget, !A.isOn(e.currentTarget)));
+      CG.delegate(root, 'click', '[data-act="new"]', () => open(null));
+      CG.delegate(root, 'click', '[data-act="edit"]', (e, b) => open(M.coupons.find((c) => c.id === b.dataset.id)));
+      CG.delegate(root, 'click', '[data-act="toggle"]', (e, b) => { const c = M.coupons.find((x) => x.id === b.dataset.id); if (!c) return; c.isActive = !c.isActive; A.save(() => CG.emit('coupons:changed', M.coupons), 'Updated'); grid.render(); });
+      const removeCoupons = (list) => { list.forEach((c) => { const i = M.coupons.indexOf(c); if (i >= 0) M.coupons.splice(i, 1); }); CG.emit('coupons:changed', M.coupons); };
+      CG.delegate(root, 'click', '[data-act="delete"]', async (e, b) => { const c = M.coupons.find((x) => x.id === b.dataset.id); if (!c) return; const ok = await CG.modal.confirm({ title: 'Delete Coupon?', description: 'This action cannot be undone. The coupon will be permanently deleted.', confirmText: 'Delete', variant: 'destructive' }); if (!ok) return; removeCoupons([c]); CG.toast({ title: 'Deleted', description: c.code + ' removed', variant: 'success' }); grid.render(); });
+      const expired = (c) => new Date(c.expiresAt) < CG.NOW;
+      const grid = A.grid({
+        key: 'coupons', host: el(root, 'table'), pager: el(root, 'pager'), tools: el(root, 'tools'), bulkbar: el(root, 'bulkbar'), noun: 'coupons', per: 0,
+        columns: [
+          { id: 'code', label: 'Code', always: true, sortVal: (c) => c.code, cell: (c) => '<div class="mono font-medium">' + esc(c.code) + '</div><div class="text-xs text-muted" style="max-width:220px">' + esc(c.description || '') + '</div>', csv: (c) => c.code },
+          { id: 'discount', label: 'Discount', cls: 'r', sortVal: (c) => (c.discountType === 'percent' ? c.discountValue : c.discountValue / 100), cell: (c) => (c.discountType === 'percent' ? c.discountValue + '%' : F.inr(c.discountValue)) + (c.minOrderAmount ? '<div class="text-2xs text-muted">min ' + F.inr(c.minOrderAmount) + '</div>' : ''), csv: (c) => (c.discountType === 'percent' ? c.discountValue + '%' : c.discountValue) },
+          { id: 'type', label: 'Type', sortVal: (c) => c.scope, cell: (c) => { const community = c.scope === 'private_community_listed'; return '<span class="badge ' + (community ? 'badge-outline' : 'badge-secondary') + '">' + (community ? 'Community' : 'Public') + '</span>' + (community ? '<div class="text-2xs text-muted mt-1">' + (c.assignedUsers || []).length + ' users assigned</div>' : ''); }, csv: (c) => (c.scope === 'private_community_listed' ? 'Community' : 'Public') },
+          { id: 'validity', label: 'Validity', sortVal: (c) => c.expiresAt, cell: (c) => '<span class="text-xs mono nowrap">' + A.date(c.startsAt) + '</span> <span class="text-muted">→</span> <span class="text-xs mono nowrap ' + (expired(c) ? 'text-loss' : '') + '">' + A.date(c.expiresAt) + '</span>' + (expired(c) ? '<div class="text-2xs text-loss">Expired</div>' : ''), csv: (c) => c.startsAt + ' → ' + c.expiresAt },
+          { id: 'plans', label: 'Plans', cell: (c) => { const pi = planIntervalsOf(c); return '<div class="flex flex-wrap gap-1" style="max-width:200px">' + (Object.keys(pi).length ? Object.keys(pi).map((pid) => '<span class="badge badge-outline" title="' + esc(pi[pid].join(', ')) + '">' + esc(A.planName(pid)) + '</span>').join('') : '<span class="text-xs text-muted">All plans</span>') + '</div>'; }, csv: (c) => Object.keys(planIntervalsOf(c)).map(A.planName).join('; ') || 'All plans' },
+          { id: 'uses', label: 'Uses', cls: 'r nowrap', sortVal: (c) => c.usedCount, cell: (c) => c.usedCount + ' / ' + (c.maxUses || '∞') + '<div class="text-2xs text-muted">' + c.perUserLimit + ' per user</div>', csv: (c) => c.usedCount + '/' + (c.maxUses || '∞') },
+          { id: 'status', label: 'Status', sortVal: (c) => (c.isActive ? 1 : 0), cell: (c) => activeSwitch(c), csv: (c) => (c.isActive ? 'Active' : 'Inactive') },
+          { id: 'actions', label: 'Actions', cls: 'r', always: true, noCsv: true, cell: (c) => '<div class="adm-actions"><button class="adm-icon-btn" title="Edit coupon" data-act="edit" data-id="' + c.id + '">' + A.icon('pencil') + '</button><button class="adm-icon-btn danger" title="Delete coupon" data-act="delete" data-id="' + c.id + '">' + A.icon('trash') + '</button></div>' }
+        ],
+        rows: () => M.coupons.filter((c) => (!S.q || (c.code + ' ' + (c.description || '')).toLowerCase().includes(S.q)) && (!S.type || c.scope === S.type) && (!S.status || (S.status === 'expired' ? expired(c) : S.status === 'active' ? c.isActive && !expired(c) : !c.isActive))),
+        rowId: (c) => c.id, isFiltered: () => !!(S.q || S.type || S.status),
+        empty: { icon: 'ticket', title: 'No Coupons', hint: 'Create your first coupon code for checkout.', action: 'Create Coupon' },
+        emptyFiltered: { icon: 'search', title: 'No coupons match', hint: 'Try another search, type or status.', action: 'Clear filters' },
+        bulk: bulkActive(M.coupons, 'coupons:changed', 'coupons').concat([{ id: 'delete', label: 'Delete', icon: 'trash', variant: 'btn-destructive', run: async (rows) => { const ok = await CG.modal.confirm({ title: 'Delete ' + rows.length + ' coupon' + (rows.length === 1 ? '' : 's') + '?', description: rows.map((c) => c.code).join(', ') + ' · This action cannot be undone.', confirmText: 'Delete', variant: 'destructive' }); if (!ok) return false; removeCoupons(rows); CG.toast({ title: 'Deleted', description: rows.length + ' coupons removed', variant: 'success' }); } }])
+      });
+      bindFilter(el(root, 'q'), 'input', (v) => { S.q = v.trim().toLowerCase(); grid.render(); });
+      bindFilter(el(root, 'type'), 'change', (v) => { S.type = v; grid.render(); });
+      bindFilter(el(root, 'status'), 'change', (v) => { S.status = v; grid.render(); });
+      CG.delegate(root, 'click', '[data-act="clear-filters"]', () => { S.q = S.type = S.status = ''; el(root, 'q').value = ''; el(root, 'type').value = ''; el(root, 'status').value = ''; grid.render(); });
+      this._render = () => grid.render();
+    },
+    show() { this._render && this._render(); }
+  });
+})();
+</script>

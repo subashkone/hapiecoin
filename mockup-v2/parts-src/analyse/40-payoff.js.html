@@ -1,0 +1,163 @@
+<script>
+(function () {
+  'use strict';
+  const M = window.__cgAnalyse; const { els, AN, st, F, ic, money, smoney, cls, fmtK, fmtAxis, fmtStrike, fmtDMloc, nice, activeLegs, spotNow, lotSize, totalLots, baseAnalysis, pnlAtPrice, sdInfo, latestExpiry, chainStats } = M;
+  // ---------- layers / zoom ----------
+  const LAYER_DEFS = [['expiry', 'At-expiry P&L line', 'hsl(var(--foreground))'], ['target', 'Target-date P&L curve', 'hsl(var(--curve))'], ['fill', 'Profit / loss fill', 'hsl(var(--profit))'], ['oi', 'Open interest bars', 'hsl(var(--muted-foreground))'], ['sd', '±1σ expected-move band', 'hsl(var(--muted-foreground))'], ['be', 'Breakeven markers', 'hsl(var(--foreground))'], ['ivdn', 'IV −5% curve (target date)', 'hsl(var(--curve))'], ['ivup', 'IV +5% curve (target date)', 'hsl(var(--curve))']];
+  function layers() { if (!st.chartLayers || typeof st.chartLayers !== 'object' || st.chartLayers.v !== 2) st.chartLayers = { v: 2, expiry: true, target: true, fill: true, oi: true, sd: true, be: true, ivdn: false, ivup: false }; return st.chartLayers; }
+  function setLayer(k, on) { layers()[k] = !!on; CG.saveState(); syncLegend(); renderChart(); }
+  function syncLegend() { const L = layers(); CG.$$('.lg', els.legend).forEach((b) => b.classList.toggle('off', !L[b.dataset.layer])); CG.$$('.an-chip[data-layer]', els.chips).forEach((b) => b.classList.toggle('on', !!L[b.dataset.layer])); }
+  function openLayers() {
+    const L = layers();
+    const html = '<div class="menu-label">Chart layers</div>' + LAYER_DEFS.map(([k, label, color]) => '<label class="an-layer-row"><input type="checkbox" class="checkbox" data-layer-cb="' + k + '"' + (L[k] ? ' checked' : '') + '><span class="sw" style="border-color:' + color + '"></span>' + label + '</label>').join('');
+    const m = CG.menu(els.layersBtn, html); m.addEventListener('change', (e) => { const cb = e.target.closest('[data-layer-cb]'); if (cb) setLayer(cb.dataset.layerCb, cb.checked); });
+  }
+  const ZOOMS = [0.5, 0.75, 1, 1.5, 2, 3];
+  const zoom = () => (ZOOMS.includes(+st.chartZoom) ? +st.chartZoom : 1);
+  function setZoom(z) { st.chartZoom = z; CG.saveState(); els.zoomLabel.textContent = Math.round(z * 100) + '%'; renderChart(); renderSliders(baseAnalysis()); }
+  function zoomStep(dir) { const i = ZOOMS.indexOf(zoom()); const j = Math.max(0, Math.min(ZOOMS.length - 1, i + dir)); setZoom(ZOOMS[j]); }
+  function xRange() { const spot = spotNow(); const span = 0.2 / zoom(); return { lo: spot * (1 - span), hi: spot * (1 + span), spot }; }
+  const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+  const targetDate = () => new Date(CG.NOW.getTime() + AN.targetDays * 86400000);
+  const targetLabel = () => (AN.targetDays === 0 ? 'today' : fmtDMloc(targetDate()));
+  // where the max profit / loss is reached (plateau or peak)
+  function whereExtreme(a, v) { const pts = a.points; const eps = Math.max(1e-6, Math.abs(v) * 1e-4); const hits = pts.filter((p) => Math.abs(p.pnlExpiry - v) <= eps).map((p) => p.price); if (!hits.length) return ''; const first = hits[0], last = hits[hits.length - 1]; if (Math.abs(first - pts[0].price) < 1e-6 && Math.abs(last - pts[pts.length - 1].price) < 1e-6) return 'flat'; if (Math.abs(last - pts[pts.length - 1].price) < 1e-6) return 'at ≥ ' + fmtStrike(first); if (Math.abs(first - pts[0].price) < 1e-6) return 'at ≤ ' + fmtStrike(last); if (last - first > a.spot * 0.004) return fmtStrike(first) + ' – ' + fmtStrike(last); return 'at ' + fmtStrike((first + last) / 2); }
+  // ---------- payoff panel ----------
+  function renderPayoff() { const a = baseAnalysis(); renderTiles(a); renderStrip(a); els.legendDate.textContent = targetLabel(); els.zoomLabel.textContent = Math.round(zoom() * 100) + '%'; syncLegend(); renderChart(); renderSliders(a); renderGreeksStrip(a); }
+  const tile = (label, v, sub, c) => '<div class="an-tile"><span class="micro">' + label + '</span><div class="v ' + (c || '') + '">' + v + '</div><span class="s">' + (sub || '') + '</span></div>';
+  function renderTiles(a) {
+    if (!a) { els.tiles.innerHTML = tile('Max profit', '—', 'no legs') + tile('Max loss', '—', 'no legs') + tile('Net premium', '—', '') + tile('Breakeven', '—', '') + tile('POP', '—', 'prob. of profit') + tile('R : R', '—', 'risk to reward'); return; }
+    const spot = spotNow(); const A = CG.ASSETS[AN.asset]; const lots = a.legs.map((l) => +l.lots || 1).reduce((g, n) => gcd(g, n), 0) || 1;
+    const perUnit = a.netPremium / (lotSize() * lots); const cs = chainStats(M.chain() || CG.chain(AN.asset, AN.expiry));
+    const mp = isFinite(a.maxProfit) ? smoney(a.maxProfit) : 'Unlimited', ml = isFinite(a.maxLoss) ? smoney(a.maxLoss) : 'Unlimited';
+    const bes = a.breakevens; let beV = 'None', beS = 'no breakeven'; if (bes.length === 1) { beV = fmtStrike(bes[0]); beS = F.pct(((bes[0] - spot) / spot) * 100, 1) + ' from spot'; } else if (bes.length >= 2) { beV = '<span class="sm">' + bes.map(fmtStrike).join(' · ') + '</span>'; beS = bes.map((b) => F.pct(((b - spot) / spot) * 100, 1)).join(' · '); }
+    const pop = a.pop == null ? '—' : Math.round(a.pop * 100) + '%';
+    let rr = 'N/A', rrS = 'risk to reward'; if (a.rewardRisk != null && isFinite(a.rewardRisk)) rr = '1 : ' + a.rewardRisk.toFixed(2); else if (a.maxProfit === Infinity && isFinite(a.maxLoss)) { rr = '1 : ∞'; rrS = 'unlimited reward'; } else if (a.maxLoss === -Infinity) { rr = '∞ : 1'; rrS = 'unlimited risk'; }
+    els.tiles.innerHTML = tile('Max profit', mp, isFinite(a.maxProfit) ? whereExtreme(a, a.maxProfit) : 'unlimited upside', a.maxProfit > 0 ? 'text-profit' : 'text-loss') + tile('Max loss', ml, isFinite(a.maxLoss) ? whereExtreme(a, a.maxLoss) : 'unlimited downside', a.maxLoss < 0 ? 'text-loss' : 'text-profit') + tile(a.netPremium >= 0 ? 'Net credit' : 'Net debit', money(Math.abs(a.netPremium)), F.num(Math.abs(perUnit), 1) + ' / ' + AN.asset + (lots > 1 ? ' · ' + lots + ' lots' : '')) + tile(bes.length > 1 ? 'Breakevens' : 'Breakeven', beV, beS) + tile('POP', pop, 'lognormal · IV ' + cs.atmIv.toFixed(1) + '%', a.pop == null ? '' : a.pop >= 0.5 ? 'text-profit' : '') + tile('R : R', rr, rrS);
+  }
+  function renderStrip(a) {
+    const host = els.astrip; if (!a) { host.className = 'an-astrip empty'; host.innerHTML = '<span class="ai"><span class="micro">Analytics</span><span class="g">POP · R:R · ROI · margin · win zone appear once legs are added</span></span>'; return; }
+    host.className = 'an-astrip'; const spot = spotNow(); const mp = a.maxProfit, ml = a.maxLoss, margin = a.margin, bes = a.breakevens;
+    const pop = a.pop == null ? null : a.pop * 100; const popG = pop == null ? 'calculating' : pop >= 60 ? '✓ high' : pop >= 40 ? 'moderate' : 'low'; const popC = pop == null ? '' : pop >= 50 ? 'text-profit' : 'text-loss';
+    const rr = a.rewardRisk; let rrG = '', rrC = ''; if (rr != null && isFinite(rr) && rr > 0) { if (rr >= 2) { rrG = '✓ favorable'; rrC = 'text-profit'; } else if (rr >= 1) { rrG = 'balanced'; rrC = 'text-warning'; } else { rrG = 'high risk'; rrC = 'text-loss'; } } else if (mp === Infinity && ml !== -Infinity) { rrG = '✓ favorable'; rrC = 'text-profit'; } else if (ml === -Infinity) { rrG = 'unlimited exposure'; rrC = 'text-loss'; }
+    const maxRoi = mp === Infinity ? '∞' : margin > 0 ? ((mp / margin) * 100).toFixed(0) + '%' : '—'; const lossPct = isFinite(ml) && margin > 0 ? (Math.abs(ml) / margin) * 100 : null;
+    let win = 'varies'; const right = a.points[a.points.length - 1].pnlExpiry > 0;
+    if (bes.length === 1) win = (right ? '> ' : '< ') + fmtStrike(bes[0]); else if (bes.length === 2) { const mid = pnlAtPrice(a.legs, (bes[0] + bes[1]) / 2).pnlExpiry > 0; win = mid ? fmtStrike(bes[0]) + ' – ' + fmtStrike(bes[1]) : '< ' + fmtStrike(bes[0]) + ' or > ' + fmtStrike(bes[1]); } else if (!bes.length) win = a.points[Math.round(a.points.length / 2)].pnlExpiry > 0 ? 'any price' : 'never (at expiry)';
+    const cur = pnlAtPrice(a.legs, spot).pnlExpiry;
+    const item = (k, v, g, c) => '<span class="ai"><span class="micro">' + k + '</span><b class="' + (c || '') + '">' + v + '</b>' + (g ? '<span class="g">' + g + '</span>' : '') + '</span>';
+    host.innerHTML = item('POP', pop == null ? '—' : pop.toFixed(1) + '%', popG, popC) + item('R:R', rr != null && isFinite(rr) ? rr.toFixed(2) : mp === Infinity ? '∞' : 'N/A', rrG, rrC) + item('Max ROI', maxRoi, 'on margin') + item('Margin', money(margin), lossPct != null ? 'risk ' + lossPct.toFixed(0) + '%' : '') + item('Win if', win, '') + item('Spot now', cur >= 0 ? '✓ profit zone' : '✗ loss zone', '', cls(cur));
+  }
+  function ghostChart(W, H) {
+    const m = { l: 44, r: 16, t: 22, b: 22 }; const pw = W - m.l - m.r, ph = H - m.t - m.b; let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" style="opacity:.6">';
+    for (let i = 0; i <= 4; i++) { const y = m.t + (ph * i) / 4; s += '<line class="grid" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + y + '" y2="' + y + '"/>'; }
+    for (let i = 0; i <= 8; i++) { const x = m.l + (pw * i) / 8; s += '<line class="gridv" x1="' + x + '" x2="' + x + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/>'; }
+    const y0 = m.t + ph * 0.55; s += '<line class="zero" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + y0 + '" y2="' + y0 + '"/>';
+    const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40; const y = y0 - Math.sin(t * Math.PI) * ph * 0.35 + (t < 0.5 ? 0 : (t - 0.5) * ph * 0.5); pts.push((m.l + pw * t).toFixed(1) + ',' + y.toFixed(1)); }
+    s += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="hsl(var(--muted-foreground))" stroke-width="1.2" stroke-dasharray="5 4" opacity=".5"/>';
+    const spot = spotNow(); const x = m.l + pw * 0.5; s += '<line class="spot" x1="' + x + '" x2="' + x + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/><rect class="spottag" x="' + (x - 40) + '" y="3" width="80" height="13" rx="2"/><text class="spottxt" x="' + x + '" y="12.5" text-anchor="middle">SPOT ' + fmtStrike(spot) + '</text></svg>';
+    return s;
+  }
+  let chartCtx = null, lastMouse = null;
+  function renderChart() {
+    const host = els.chartHost; const legs = activeLegs(); const W = Math.max(320, host.clientWidth - 28 || 600), H = Math.max(230, Math.min(320, Math.round(W * 0.44)));
+    if (!legs.length) { host.innerHTML = ghostChart(W, H) + '<div class="an-chart-empty"><b>No strategy yet</b><span>Hover a chain row and press <span class="kbd">B</span>/<span class="kbd">S</span>, or load a template from the Builder</span></div>'; chartCtx = null; return; }
+    const { lo, hi, spot } = xRange(); const L = layers(); const f1 = (n) => (+n).toFixed(1);
+    const a = CG.analyze(legs, AN.asset, { targetDays: AN.targetDays, spot, min: lo, max: hi, points: 201 });
+    const ivCurves = {}; if (L.ivdn) ivCurves.ivdn = CG.analyze(legs, AN.asset, { targetDays: AN.targetDays, spot, min: lo, max: hi, points: 201, ivShift: -0.05 }); if (L.ivup) ivCurves.ivup = CG.analyze(legs, AN.asset, { targetDays: AN.targetDays, spot, min: lo, max: hi, points: 201, ivShift: 0.05 });
+    const m = { l: 44, r: 16, t: 22, b: 22 }; const pw = W - m.l - m.r, ph = H - m.t - m.b;
+    let ymin = 0, ymax = 0; const useE = L.expiry || !L.target;
+    a.points.forEach((p) => { if (useE) { ymin = Math.min(ymin, p.pnlExpiry); ymax = Math.max(ymax, p.pnlExpiry); } if (L.target) { ymin = Math.min(ymin, p.pnlTarget); ymax = Math.max(ymax, p.pnlTarget); } });
+    if (ymax - ymin < 1e-9) { ymax += 1; ymin -= 1; } const pad = (ymax - ymin) * 0.14; ymin -= pad; ymax += pad;
+    const X = (p) => m.l + ((p - lo) / (hi - lo)) * pw, Y = (v) => m.t + ((ymax - v) / (ymax - ymin)) * ph; const y0 = Y(0);
+    const uid = 'an' + Math.random().toString(36).slice(2, 8);
+    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="Payoff chart">';
+    s += '<defs><clipPath id="' + uid + 'a"><rect x="' + m.l + '" y="' + m.t + '" width="' + pw + '" height="' + Math.max(0, y0 - m.t) + '"/></clipPath><clipPath id="' + uid + 'b"><rect x="' + m.l + '" y="' + f1(y0) + '" width="' + pw + '" height="' + Math.max(0, m.t + ph - y0) + '"/></clipPath><clipPath id="' + uid + 'c"><rect x="' + m.l + '" y="' + m.t + '" width="' + pw + '" height="' + ph + '"/></clipPath></defs>';
+    // ±1σ band
+    if (L.sd) { const { sd } = sdInfo(Object.assign({}, a, { legs })); const b1 = [spot - sd, spot + sd]; s += '<g clip-path="url(#' + uid + 'c)"><rect class="band" x="' + f1(X(b1[0])) + '" y="' + m.t + '" width="' + f1(Math.max(0, X(b1[1]) - X(b1[0]))) + '" height="' + ph + '"/><line class="bandl" x1="' + f1(X(b1[0])) + '" x2="' + f1(X(b1[0])) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/><line class="bandl" x1="' + f1(X(b1[1])) + '" x2="' + f1(X(b1[1])) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/></g>'; if (b1[1] < hi) s += '<text x="' + f1(X(b1[1]) - 4) + '" y="' + (m.t + 10) + '" text-anchor="end">+1σ ' + M.fmtKbare(b1[1]) + '</text>'; if (b1[0] > lo) s += '<text x="' + f1(X(b1[0]) + 4) + '" y="' + (m.t + 10) + '">−1σ ' + M.fmtKbare(b1[0]) + '</text>'; }
+    // grid + axes
+    const ys = nice((ymax - ymin) / 4); for (let v = Math.ceil(ymin / ys) * ys; v <= ymax + 1e-6; v += ys) { const y = Y(v); if (Math.abs(v) > ys / 1e6) s += '<line class="grid" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + f1(y) + '" y2="' + f1(y) + '"/>'; s += '<text x="' + (m.l - 6) + '" y="' + f1(y + 3.5) + '" text-anchor="end">' + (v > 0 ? '+' : '') + fmtAxis(Math.abs(v) < ys / 1e6 ? 0 : v) + '</text>'; }
+    const xs = nice((hi - lo) / 8); for (let v = Math.ceil(lo / xs) * xs; v <= hi + 1e-6; v += xs) { const x = X(v); if (v > lo + xs / 4 && v < hi - xs / 4) s += '<line class="gridv" x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/>'; s += '<text x="' + f1(x) + '" y="' + (H - 6) + '" text-anchor="middle">' + M.fmtKbare(v) + '</text>'; }
+    s += '<text x="' + (m.l - 6) + '" y="' + (m.t - 8) + '" text-anchor="end">' + (st.currency === 'INR' ? '₹' : '$') + '</text>';
+    // OI bars (faint, call + put per strike)
+    if (L.oi) { const ch = M.chain() || CG.chain(AN.asset, AN.expiry); const rows = ch.rows.filter((r) => r.strike >= lo && r.strike <= hi); const maxOi = Math.max(1, ...rows.map((r) => r.call.oi + r.put.oi)); const bw = Math.max(3, Math.min(8, pw / Math.max(rows.length, 1) / 2.2)); s += '<g>'; rows.forEach((r) => { const h = ((r.call.oi + r.put.oi) / maxOi) * ph * 0.24; s += '<rect class="oib" x="' + f1(X(r.strike) - bw / 2) + '" y="' + f1(m.t + ph - h) + '" width="' + f1(bw) + '" height="' + f1(h) + '"><title>' + fmtStrike(r.strike) + ' · Call OI ' + F.int(r.call.oi) + ' · Put OI ' + F.int(r.put.oi) + '</title></rect>'; }); s += '</g>'; }
+    // zero line, fills, curves
+    const ptsE = a.points.map((p) => [X(p.price), Y(p.pnlExpiry)]); const ptsT = a.points.map((p) => [X(p.price), Y(p.pnlTarget)]);
+    const poly = (pts) => pts.map((p) => f1(p[0]) + ',' + f1(p[1])).join(' ');
+    if (L.fill && L.expiry) { const area = poly(ptsE) + ' ' + f1(ptsE[ptsE.length - 1][0]) + ',' + f1(y0) + ' ' + f1(ptsE[0][0]) + ',' + f1(y0); s += '<polygon class="fill-up" points="' + area + '" clip-path="url(#' + uid + 'a)"/><polygon class="fill-dn" points="' + area + '" clip-path="url(#' + uid + 'b)"/>'; }
+    s += '<line class="zero" x1="' + m.l + '" x2="' + (m.l + pw) + '" y1="' + f1(y0) + '" y2="' + f1(y0) + '"/>';
+    if (L.expiry) s += '<polyline class="exp" points="' + poly(ptsE) + '" clip-path="url(#' + uid + 'c)"/>';
+    Object.keys(ivCurves).forEach((k) => { s += '<polyline class="tgt2" points="' + poly(ivCurves[k].points.map((p) => [X(p.price), Y(p.pnlTarget)])) + '" clip-path="url(#' + uid + 'c)"/>'; });
+    if (L.target) s += '<polyline class="tgt" points="' + poly(ptsT) + '" clip-path="url(#' + uid + 'c)"/>';
+    // max profit / loss tags
+    if (isFinite(a.maxProfit) && a.maxProfit > 0) { const yy = Y(a.maxProfit); s += '<text class="maxp" x="' + (m.l + pw - 3) + '" y="' + f1(yy + (yy < m.t + 14 ? 12 : -4)) + '" text-anchor="end">max ' + smoney(a.maxProfit) + '</text>'; }
+    if (isFinite(a.maxLoss) && a.maxLoss < 0) { const yy = Y(a.maxLoss); s += '<text class="maxl" x="' + (m.l + 4) + '" y="' + f1(yy > m.t + ph - 14 ? yy - 4 : yy + 11) + '">max ' + smoney(a.maxLoss) + '</text>'; }
+    // breakevens
+    if (L.be) a.breakevens.forEach((b, i) => { if (b < lo || b > hi) return; const x = X(b); s += '<line class="be" x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/><text class="betxt" x="' + f1(x - 4) + '" y="' + (m.t + ph - 6 - (i % 2) * 11) + '" text-anchor="end">BE ' + fmtStrike(b) + '</text>'; });
+    // spot marker (the accent)
+    if (spot >= lo && spot <= hi) { const x = X(spot); const lbl = 'SPOT ' + fmtStrike(spot); const w = lbl.length * 5.6 + 12; s += '<line class="spot" x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + (m.t - 2) + '" y2="' + (m.t + ph) + '"/><rect class="spottag" x="' + f1(x - w / 2) + '" y="3" width="' + f1(w) + '" height="13" rx="2"/><text class="spottxt" x="' + f1(x) + '" y="12.5" text-anchor="middle">' + lbl + '</text>'; }
+    // target price marker (from the slider)
+    const tp = AN.targetPrice; if (tp && Math.abs(tp - spot) > 1e-6 && tp >= lo && tp <= hi) { const x = X(tp); const p = pnlAtPrice(legs, tp); const yv = L.target ? p.pnlTarget : p.pnlExpiry; const yy = Y(yv); const right = tp < spot + (hi - spot) * 0.6; s += '<line class="tp" x1="' + f1(x) + '" x2="' + f1(x) + '" y1="' + m.t + '" y2="' + (m.t + ph) + '"/><circle class="tpdot" cx="' + f1(x) + '" cy="' + f1(yy) + '" r="3.5"/><text class="tptxt" x="' + f1(x + (right ? 8 : -8)) + '" y="' + f1(yy - 8) + '" text-anchor="' + (right ? 'start' : 'end') + '">' + smoney(yv, 1) + ' @ ' + fmtStrike(tp) + '</text>'; }
+    s += '<g data-xh style="display:none"><line class="xh" x1="0" x2="0" y1="' + m.t + '" y2="' + (m.t + ph) + '"/><circle class="xhd" r="3.5" fill="hsl(var(--foreground))"/><circle class="xhd" r="3.5" fill="hsl(var(--curve))"/></g>';
+    s += '<rect x="' + m.l + '" y="' + m.t + '" width="' + pw + '" height="' + ph + '" fill="transparent" data-hover style="cursor:crosshair"/></svg><div class="an-tip"></div>';
+    host.innerHTML = s; chartCtx = { a, lo, hi, X, Y, m, pw, ph, W, H }; bindChartHover();
+  }
+  function bindChartHover() {
+    const c = chartCtx; if (!c) return; const host = els.chartHost; const svg = host.querySelector('svg'); const tip = host.querySelector('.an-tip'); const xh = svg.querySelector('[data-xh]'); const line = xh.querySelector('line'); const circles = xh.querySelectorAll('circle');
+    const hide = () => { lastMouse = null; xh.style.display = 'none'; tip.style.display = 'none'; };
+    const onMove = (e) => {
+      lastMouse = { clientX: e.clientX, clientY: e.clientY };
+      const r = svg.getBoundingClientRect(); const x = (e.clientX - r.left) * (c.W / r.width); if (x < c.m.l || x > c.m.l + c.pw) return hide();
+      const n = c.a.points.length; const i = Math.max(0, Math.min(n - 1, Math.round(((x - c.m.l) / c.pw) * (n - 1)))); const p = c.a.points[i]; const pxx = c.X(p.price); const L = layers();
+      xh.style.display = ''; line.setAttribute('x1', pxx); line.setAttribute('x2', pxx);
+      circles[0].setAttribute('cx', pxx); circles[0].setAttribute('cy', c.Y(p.pnlExpiry)); circles[0].style.display = L.expiry ? '' : 'none';
+      circles[1].setAttribute('cx', pxx); circles[1].setAttribute('cy', c.Y(p.pnlTarget)); circles[1].style.display = L.target ? '' : 'none';
+      tip.innerHTML = '<b>' + (AN.targetDays === 0 ? 'Today' : fmtDMloc(targetDate())) + ' @ ' + fmtStrike(p.price) + '</b> <span class="text-muted">' + F.pct(((p.price - spotNow()) / spotNow()) * 100, 1) + '</span> · <b class="' + cls(p.pnlTarget) + '">' + smoney(p.pnlTarget) + '</b> · <span class="text-muted">exp</span> <b class="' + cls(p.pnlExpiry) + '">' + smoney(p.pnlExpiry) + '</b>';
+      tip.style.display = 'block'; const hr = host.getBoundingClientRect(); let left = e.clientX - hr.left + 14; if (left + tip.offsetWidth > hr.width - 4) left = e.clientX - hr.left - tip.offsetWidth - 14; tip.style.left = Math.max(0, left) + 'px'; tip.style.top = Math.max(0, e.clientY - hr.top - 30) + 'px';
+    };
+    svg.addEventListener('mousemove', onMove); svg.addEventListener('mouseleave', hide);
+    svg.addEventListener('click', (e) => { const r = svg.getBoundingClientRect(); const x = (e.clientX - r.left) * (c.W / r.width); if (x < c.m.l || x > c.m.l + c.pw) return; const price = c.lo + ((x - c.m.l) / c.pw) * (c.hi - c.lo); setTargetPrice(price, true); });
+    if (lastMouse) onMove(lastMouse); // keep the crosshair alive across live re-renders
+  }
+  // ---------- sliders ----------
+  function renderSliders(a) {
+    const A = CG.ASSETS[AN.asset]; const { lo, hi, spot } = xRange(); const tp = AN.targetPrice || spot;
+    const r = els.tpRange; r.min = Math.floor(lo); r.max = Math.ceil(hi); r.step = Math.max(1, Math.round(A.step / 50)); r.value = Math.round(tp);
+    const pct = ((tp - lo) / (hi - lo)) * 100; els.tpVal.textContent = fmtStrike(tp); const ch = ((tp - spot) / spot) * 100; els.tpPct.textContent = F.pct(ch, 1); els.tpPct.className = ch >= 0 ? 'text-profit' : 'text-loss';
+    els.tpKnob.style.left = pct + '%'; els.tpFill.style.width = pct + '%'; els.tpSpot.style.left = (((spot - lo) / (hi - lo)) * 100) + '%';
+    els.tpTicks.innerHTML = [0, 0.25, 0.5, 0.75, 1].map((t) => '<span>' + fmtStrike(lo + (hi - lo) * t) + '</span>').join('');
+    els.tpTitle.textContent = AN.asset + ' target price';
+    const maxDte = a ? a.maxDte : F.dte(AN.expiry); if (AN.targetDays > maxDte) AN.targetDays = maxDte;
+    const d = els.tdRange; d.max = Math.max(maxDte, 0); d.value = AN.targetDays; d.disabled = maxDte === 0;
+    const dp = maxDte ? (AN.targetDays / maxDte) * 100 : 0; els.tdKnob.style.left = dp + '%'; els.tdFill.style.width = dp + '%';
+    const td = targetDate(); els.tdVal.textContent = AN.targetDays === 0 ? 'Today' : M.DAYS[td.getDay()] + ' ' + fmtDMloc(td); els.tdLeft.textContent = (AN.targetDays === 0 ? fmtDMloc(CG.NOW) + ' · ' : '') + Math.max(0, maxDte - AN.targetDays) + 'd left';
+    els.tdTitle.textContent = 'Target date';
+    const expC = a ? latestExpiry(a.legs) : AN.expiry; const mids = maxDte >= 6 ? [Math.round(maxDte / 3), Math.round((2 * maxDte) / 3)] : maxDte >= 2 ? [Math.round(maxDte / 2)] : [];
+    els.tdTicks.innerHTML = '<span>Today · ' + fmtDMloc(CG.NOW) + '</span>' + mids.map((n) => '<span>' + fmtDMloc(new Date(CG.NOW.getTime() + n * 86400000)) + '</span>').join('') + '<span>Expiry · ' + M.expShort(expC) + '</span>';
+  }
+  function renderGreeksStrip(a) {
+    const host = els.gstrip; if (!a) { host.innerHTML = '<span class="micro">Net greeks appear once legs are added</span>'; return; }
+    const g = a.greeks; const gk = (k, v, c) => '<div class="gk"><span class="micro">' + k + '</span><span class="v ' + (c || '') + '">' + v + '</span></div>';
+    const fmtG = (v) => (Math.abs(v) < 1e-6 ? '0.0000' : Math.abs(v) < 1e-3 ? v.toExponential(1) : v.toFixed(4));
+    host.innerHTML = gk('Net Δ', F.signed(g.delta, 4), cls(g.delta)) + gk('Net Γ', fmtG(g.gamma)) + gk('Net Θ / day', smoney(g.theta), cls(g.theta)) + gk('Net ν / 1% IV', smoney(g.vega), cls(g.vega)) + gk('Margin est.', money(a.margin)) + '<span class="note">' + (st.currency === 'INR' ? 'INR' : 'USD') + ' per strategy · ' + totalLots() + ' lots · ' + (st.pnlBasis || 'mark') + ' basis</span>';
+  }
+  function setTargetPrice(v, full) {
+    const { lo, hi, spot } = xRange(); v = Math.max(lo, Math.min(hi, +v)); AN.targetPrice = Math.abs(v - spot) < 1e-6 ? null : v; CG.emit('analyse:target', { price: AN.targetPrice || spot, days: AN.targetDays });
+    if (full) renderSliders(baseAnalysis()); else { const tp = AN.targetPrice || spot; const pct = ((tp - lo) / (hi - lo)) * 100; els.tpVal.textContent = fmtStrike(tp); const ch = ((tp - spot) / spot) * 100; els.tpPct.textContent = F.pct(ch, 1); els.tpPct.className = ch >= 0 ? 'text-profit' : 'text-loss'; els.tpKnob.style.left = pct + '%'; els.tpFill.style.width = pct + '%'; }
+    renderChart();
+  }
+  function setTargetDays(v) { const a = baseAnalysis(); const max = a ? a.maxDte : F.dte(AN.expiry); AN.targetDays = Math.max(0, Math.min(max, Math.round(+v) || 0)); CG.emit('analyse:target', { price: AN.targetPrice || spotNow(), days: AN.targetDays }); renderPayoff(); }
+  function bindPayoff() {
+    els.legend.addEventListener('click', (e) => { const b = e.target.closest('[data-layer]'); if (b) setLayer(b.dataset.layer, !layers()[b.dataset.layer]); });
+    els.chips.addEventListener('click', (e) => { const b = e.target.closest('.an-chip[data-layer]'); if (b) { setLayer(b.dataset.layer, !layers()[b.dataset.layer]); return; } if (e.target.closest('#an-layers-btn')) { openLayers(); return; } const z = e.target.closest('[data-zoom]'); if (z) { if (z.dataset.zoom === 'in') zoomStep(1); else if (z.dataset.zoom === 'out') zoomStep(-1); else setZoom(1); } });
+    els.payoff.addEventListener('click', (e) => {
+      const tp = e.target.closest('[data-tp]'); if (tp) { const A = CG.ASSETS[AN.asset]; setTargetPrice((AN.targetPrice || spotNow()) + (+tp.dataset.tp) * A.step / 5, true); return; }
+      const td = e.target.closest('[data-td]'); if (td) { setTargetDays(AN.targetDays + (+td.dataset.td)); }
+    });
+    els.tpRange.addEventListener('input', () => setTargetPrice(els.tpRange.value, false));
+    els.tpRange.addEventListener('change', () => setTargetPrice(els.tpRange.value, true));
+    els.tdRange.addEventListener('input', () => setTargetDays(els.tdRange.value));
+    let rt = null; if (window.ResizeObserver) new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(() => { if (M.isActive() && chartCtx && Math.abs(chartCtx.W - (els.chartHost.clientWidth - 28)) > 4) renderChart(); }, 120); }).observe(els.chartHost);
+  }
+  Object.assign(M, { layers, setLayer, renderPayoff, renderChart, renderSliders, bindPayoff, setTargetPrice, setTargetDays, zoom, setZoom, targetDate, targetLabel, gcd });
+})();
+</script>

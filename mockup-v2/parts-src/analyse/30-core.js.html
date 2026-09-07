@@ -1,0 +1,463 @@
+<script>
+(function () {
+  'use strict';
+  const ROUTE = '/analyse';
+  const st = CG.state, F = CG.fmt, P = CG.pricing;
+  // ---------- shared workspace state (mutations of `legs` belong to the trading agent) ----------
+  CG.analyse = CG.analyse || { legs: [], name: '', strategyId: null, asset: st.asset, expiry: st.expiry, targetDays: 0, targetPrice: null, mode: 'live' };
+  const AN = CG.analyse;
+  if (!Array.isArray(AN.legs)) AN.legs = [];
+  if (!AN.asset || !CG.ASSETS[AN.asset]) AN.asset = CG.ASSETS[st.asset] ? st.asset : 'BTC';
+  if (!AN.expiry || !CG.EXPIRIES.includes(AN.expiry)) AN.expiry = CG.EXPIRIES.includes(st.expiry) ? st.expiry : CG.EXPIRIES[5];
+  if (!AN.mode) AN.mode = 'live';
+  if (AN.targetDays == null) AN.targetDays = 0;
+  AN.setExpiry = (e) => setExpiry(e); AN.setRightTab = (t) => setRightTab(t); AN.findDelta = (d) => findDelta(d);
+
+  // ---------- icons (inline SVG, lucide-style paths) ----------
+  const SVG = (inner) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + inner + '</svg>';
+  const ICONS = {
+    layers: SVG('<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>'),
+    chart: SVG('<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>'),
+    gear: SVG('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'),
+    info: SVG('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>'),
+    share: SVG('<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>'),
+    chevl: SVG('<polyline points="15 18 9 12 15 6"/>'),
+    chevr: SVG('<polyline points="9 18 15 12 9 6"/>'),
+    sigma: SVG('<path d="M18 7V4H6l6 8-6 8h12v-3"/>'),
+    link: SVG('<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'),
+    copy: SVG('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'),
+    trendup: SVG('<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>'),
+    trenddown: SVG('<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>')
+  };
+  const ic = (n) => '<i data-icon="' + n + '">' + (ICONS[n] || '') + '</i>';
+  const fillIcons = (scope) => CG.$$('i[data-icon]', scope).forEach((i) => { if (!i.firstChild) i.innerHTML = ICONS[i.dataset.icon] || ''; });
+
+  // ---------- formatting helpers (currency aware) ----------
+  const isINR = () => st.currency === 'INR';
+  const cur = () => (isINR() ? '₹' : '$');
+  const rate = () => (isINR() ? st.conversionRate || 83.5 : 1);
+  const px = (v, d) => (v == null || isNaN(v) ? '—' : isINR() ? F.num(v * rate(), 0) : F.num(v, d == null ? 1 : d)); // bare number, 1dp (chain)
+  const money = (v, d) => F.money(v, d == null ? 2 : d);
+  const smoney = (v, d) => F.signedMoney(v, d == null ? 2 : d);
+  const cls = (v) => (v >= 0 ? 'text-profit' : 'text-loss');
+  const fmtStrike = (v) => F.num(v, 0); // strikes are contract terms in USD, never converted
+  function fmtK(v) { if (v == null || isNaN(v)) return '—'; const a = Math.abs(v) * rate(); let t; if (a >= 1e6) t = (a / 1e6).toFixed(2) + 'M'; else if (a >= 1e3) t = (a / 1e3).toFixed(1) + 'k'; else t = a.toFixed(a < 10 ? 2 : 0); return (v < 0 ? '-' : '') + cur() + t; }
+  function fmtAxis(v) { if (v == null || isNaN(v)) return ''; const a = Math.abs(v) * rate(); let t; if (a >= 1e6) t = (a / 1e6).toFixed(1) + 'M'; else if (a >= 1e3) t = (a / 1e3).toFixed(1) + 'k'; else t = a.toFixed(a < 10 && a > 0 ? 1 : 0); return (v < 0 ? '-' : '') + t; }
+  const fmtKbare = (v) => { const a = Math.abs(v) * rate(); return a >= 1e3 ? (a / 1e3).toFixed(a >= 1e5 ? 0 : 1) + 'k' : a.toFixed(0); };
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const fmtDM = (d) => String(d.getUTCDate()).padStart(2, '0') + ' ' + MON[d.getUTCMonth()];
+  const fmtDMloc = (d) => String(d.getDate()).padStart(2, '0') + ' ' + MON[d.getMonth()];
+  const fmtDateTime = (d) => DAYS[d.getDay()] + ', ' + String(d.getDate()).padStart(2, '0') + ' ' + MON[d.getMonth()] + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const expShort = (code) => fmtDM(F.expiryDate(code));
+  function nice(x) { if (!(x > 0)) return 1; const p = Math.pow(10, Math.floor(Math.log10(x))); const f = x / p; const c = [1, 2, 2.5, 5, 10].find((k) => k >= f - 1e-9) || 10; return c * p; }
+  const esc = CG.esc;
+
+  // ---------- legs helpers ----------
+  const isActiveLeg = (l) => l && l.status !== 'SQUARED_OFF' && l.status !== 'CLOSED' && l.status !== 'EXITED';
+  const activeLegs = () => AN.legs.filter(isActiveLeg);
+  const symbolOf = (type, asset, strike, expiry) => (type === 'CALL' ? 'C-' : type === 'PUT' ? 'P-' : 'F-') + asset + '-' + strike + '-' + expiry;
+  const deltaSymbol = (type, asset, strike, expiry) => { const d = F.expiryDate(expiry); return (type === 'CALL' ? 'C-' : 'P-') + asset + '-' + strike + '-' + expiry.slice(0, 2) + String(d.getUTCMonth() + 1).padStart(2, '0') + expiry.slice(5); };
+  const legOnAsset = (l) => (l.asset ? l.asset === AN.asset : l.symbol ? l.symbol.indexOf('-' + AN.asset + '-') > 0 : true);
+  const spotNow = () => CG.ASSETS[AN.asset].price;
+  const lotSize = () => (st.lotSizes && st.lotSizes[AN.asset]) || CG.ASSETS[AN.asset].lot;
+  const totalLots = () => activeLegs().reduce((s, l) => s + (+l.lots || 1), 0);
+
+  // ---------- chain column configuration (mirrored outward from the strike) ----------
+  const COLS = [
+    { id: 'ask', label: 'Ask (Price/IV)', h: 'Ask<em>/IV</em>', group: 'Market Data', w: 64 },
+    { id: 'mark', label: 'Mark (Price/IV)', h: 'Mark<em>/IV</em>', group: 'Market Data', w: 64 },
+    { id: 'bid', label: 'Bid (Price/IV)', h: 'Bid<em>/IV</em>', group: 'Market Data', w: 64 },
+    { id: 'oi', label: 'OI', h: 'OI', group: 'Market Data', w: 66 },
+    { id: 'delta', label: 'Delta', h: 'Δ', group: 'Greeks', w: 46 },
+    { id: 'gamma', label: 'Gamma', h: 'Γ', group: 'Greeks', w: 68 },
+    { id: 'theta', label: 'Theta', h: 'Θ', group: 'Greeks', w: 56 },
+    { id: 'vega', label: 'Vega', h: 'ν', group: 'Greeks', w: 56 },
+    { id: 'volume', label: 'Volume', h: 'Vol', group: 'Market Data', w: 60 },
+    { id: 'bidQty', label: 'Bid Qty', h: 'Bid qty', group: 'Market Data', w: 64 },
+    { id: 'askQty', label: 'Ask Qty', h: 'Ask qty', group: 'Market Data', w: 64 },
+    { id: 'chg24', label: '24hr Chg', h: '24h', group: 'Activity', w: 58 },
+    { id: 'last', label: 'Last', h: 'Last', group: 'Activity', w: 60 },
+    { id: 'open', label: 'Open', h: 'Open', group: 'OHLC', w: 60 },
+    { id: 'high', label: 'High', h: 'High', group: 'OHLC', w: 60 },
+    { id: 'low', label: 'Low', h: 'Low', group: 'OHLC', w: 60 }
+  ];
+  const GROUPS = ['Market Data', 'Greeks', 'Activity', 'OHLC'];
+  const DEFAULT_ORDER = ['ask', 'mark', 'bid', 'oi', 'delta', 'gamma', 'theta', 'vega', 'volume', 'bidQty', 'askQty', 'chg24', 'last', 'open', 'high', 'low'];
+  const ESSENTIALS = ['ask', 'mark', 'bid', 'oi', 'delta'];
+  const GREEK_EXTRA = ['gamma', 'theta', 'vega'];
+  const colById = (id) => COLS.find((c) => c.id === id);
+  function colState() {
+    let cs = st.chainCols; const ids = COLS.map((c) => c.id);
+    if (!cs || !Array.isArray(cs.order) || !Array.isArray(cs.visible) || cs.v !== 2) cs = { v: 2, order: DEFAULT_ORDER.slice(), visible: ESSENTIALS.slice() };
+    cs.order = cs.order.filter((id) => ids.includes(id)); ids.forEach((id) => { if (!cs.order.includes(id)) cs.order.push(id); });
+    cs.visible = cs.visible.filter((id) => ids.includes(id));
+    st.chainCols = cs; return cs;
+  }
+  const visibleCols = () => { const cs = colState(); return cs.order.filter((id) => cs.visible.includes(id)).map(colById); };
+  const greeksShown = () => { const cs = colState(); return GREEK_EXTRA.every((id) => cs.visible.includes(id)); };
+  function setGreeksCols(on) {
+    const cs = colState();
+    if (on) { GREEK_EXTRA.forEach((id) => { if (!cs.visible.includes(id)) cs.visible.push(id); }); const rest = cs.order.filter((id) => !GREEK_EXTRA.includes(id)); const di = rest.indexOf('delta'); rest.splice(di < 0 ? rest.length : di + 1, 0, ...GREEK_EXTRA); cs.order = rest; }
+    else cs.visible = cs.visible.filter((id) => !GREEK_EXTRA.includes(id));
+    st.chainGreeks = !!on; CG.saveState(); syncTools(); renderChain(true);
+  }
+  const LOTS = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000];
+  const curLots = () => (LOTS.includes(+st.chainLots) ? +st.chainLots : (+st.chainLots > 0 ? +st.chainLots : 10));
+  const RANGES = ['6', '12', 'all'];
+  const curRange = () => (RANGES.includes(String(st.chainRange)) ? String(st.chainRange) : '12');
+
+  // ---------- module state ----------
+  let root = null; const els = {};
+  let chainRef = null, rowsByStrike = {}, prevVals = {}, hlStrike = null, csHandle = null, liveTimer = null, spotAfter = null;
+  const isActive = () => !!root && root.classList.contains('active');
+
+  // ---------- chain cells ----------
+  function cellInner(col, o, side) {
+    switch (col.id) {
+      case 'bid': return '<span class="px">' + px(o.bid) + '</span><span class="iv">' + F.pct0(o.bidIv, 1) + '</span>';
+      case 'mark': return '<span class="px">' + px(o.mark) + '</span><span class="iv">' + F.pct0(o.markIv, 1) + '</span>';
+      case 'ask': return '<span class="px">' + px(o.ask) + '</span><span class="iv">' + F.pct0(o.askIv, 1) + '</span>';
+      case 'oi': return '<span class="px">' + F.int(o.oi) + '</span>';
+      case 'volume': return '<span class="px">' + F.int(o.volume) + '</span>';
+      case 'bidQty': return '<span class="px">' + F.int(o.bidQty) + '</span>';
+      case 'askQty': return '<span class="px">' + F.int(o.askQty) + '</span>';
+      case 'delta': return '<span class="px dl">' + o.delta.toFixed(2) + '</span>';
+      case 'gamma': return '<span class="px dl">' + o.gamma.toFixed(6) + '</span>';
+      case 'theta': return '<span class="px dl">' + o.theta.toFixed(1) + '</span>';
+      case 'vega': return '<span class="px dl">' + o.vega.toFixed(1) + '</span>';
+      case 'chg24': return '<span class="px ' + (o.chg24 >= 0 ? 'up' : 'dn') + '">' + F.pct(o.chg24, 1) + '</span>';
+      default: return '<span class="px">' + px(o[col.id]) + '</span>';
+    }
+  }
+  const cellVal = (col, o) => o[col.id];
+  function ctlHtml(type) {
+    return '<div class="an-ctl" data-type="' + type + '"><button class="bs b" data-act="BUY" title="Buy ' + type.toLowerCase() + ' (B)">B</button><button class="bs s" data-act="SELL" title="Sell ' + type.toLowerCase() + ' (S)">S</button><span class="stp" title="Lots × ' + lotSize() + ' ' + AN.asset + '"><button data-act="LOTDN" aria-label="Fewer lots">−</button><span class="n" data-act="LOTMENU">' + curLots() + '</span><button data-act="LOTUP" aria-label="More lots">+</button></span><button class="ic" data-act="INFO" title="Option details &amp; 24h chart">' + ic('info') + '</button></div>';
+  }
+  function tdHtml(side, c, r, o, inb, itm, maxOi) {
+    prevVals[r.strike + side + c.id] = cellVal(c, o);
+    let h = '<td class="' + side + '-side' + (itm ? ' itm' : '') + (inb ? ' ' + side + '-inb' : '') + '" data-col="' + c.id + '">';
+    if (c.id === 'oi') h += '<div class="an-oibar" style="width:' + Math.max(2, (o.oi / maxOi) * 88).toFixed(1) + '%"></div>';
+    h += '<div class="an-cell">' + cellInner(c, o, side) + '</div>';
+    if (inb) h += ctlHtml(side === 'c' ? 'CALL' : 'PUT');
+    return h + '</td>';
+  }
+  function rangeRows(ch) { const rg = curRange(); if (rg === 'all') return ch.rows; const ai = ch.rows.findIndex((r) => r.atm); const n = +rg; return ch.rows.filter((r, i) => Math.abs(i - ai) <= n); }
+  function spotBracket(rows, spot) { if (!rows.length || spot < rows[0].strike || spot > rows[rows.length - 1].strike) return null; let after = null; rows.forEach((r) => { if (r.strike <= spot) after = r.strike; }); return after; }
+  function renderChain(keepScroll) {
+    const ch = CG.chain(AN.asset, AN.expiry); chainRef = ch;
+    const cols = visibleCols(); const callCols = cols.slice().reverse(); const n = cols.length; const spot = spotNow(); const rows = rangeRows(ch);
+    const maxOi = Math.max(1, ...ch.rows.map((r) => Math.max(r.call.oi, r.put.oi)));
+    const total = Math.max(n, 1) * 2 + 1;
+    let cg = ''; callCols.forEach((c) => (cg += '<col style="width:' + c.w + 'px">')); cg += '<col style="width:82px">'; cols.forEach((c) => (cg += '<col style="width:' + c.w + 'px">'));
+    if (!n) cg = '<col style="width:150px"><col style="width:82px"><col style="width:150px">';
+    const rg = curRange(); const rgTxt = rg === 'all' ? 'all strikes' : 'strikes ±' + rg;
+    const h1 = '<tr class="h1"><th class="c-side" colspan="' + Math.max(n, 1) + '" style="text-align:left">Calls<span class="h">ITM shaded · ' + rgTxt + '</span></th><th class="strike">' + expShort(AN.expiry) + ' · ' + F.dte(AN.expiry) + 'd</th><th class="p-side" colspan="' + Math.max(n, 1) + '" style="text-align:right"><span class="h">Δ per contract</span>Puts</th></tr>';
+    const h2 = '<tr class="h2">' + (n ? callCols.map((c) => '<th class="c-side">' + c.h + '</th>').join('') : '<th>—</th>') + '<th class="strike">Strike</th>' + (n ? cols.map((c) => '<th class="p-side">' + c.h + '</th>').join('') : '<th>—</th>') + '</tr>';
+    let body = ''; prevVals = {}; spotAfter = spotBracket(rows, spot);
+    rows.forEach((r, ri) => {
+      body += '<tr data-strike="' + r.strike + '" class="' + (r.atm ? 'atm' : '') + (hlStrike === r.strike ? ' hl' : '') + (spotAfter === r.strike ? ' spot-below' : ri > 0 && spotAfter === rows[ri - 1].strike ? ' spot-above' : '') + '">';
+      if (n) callCols.forEach((c, i) => (body += tdHtml('c', c, r, r.call, i === n - 1, r.strike < spot, maxOi)));
+      else body += '<td class="c-side c-inb' + (r.strike < spot ? ' itm' : '') + '"><div class="an-cell"><span class="iv">no columns</span></div>' + ctlHtml('CALL') + '</td>';
+      body += '<td class="strike"><span>' + fmtStrike(r.strike) + '</span><em>' + (r.atm ? '<b class="atm">ATM</b>' : '') + '</em></td>';
+      if (n) cols.forEach((c, i) => (body += tdHtml('p', c, r, r.put, i === 0, r.strike > spot, maxOi)));
+      else body += '<td class="p-side p-inb' + (r.strike > spot ? ' itm' : '') + '"><div class="an-cell"><span class="iv">no columns</span></div>' + ctlHtml('PUT') + '</td>';
+      body += '</tr>';
+      if (spotAfter === r.strike) body += '<tr class="spotrow"><td colspan="' + total + '"><div class="an-spotline"><span>SPOT ' + fmtStrike(spot) + '</span></div></td></tr>';
+    });
+    els.table.querySelector('colgroup').innerHTML = cg; els.table.querySelector('thead').innerHTML = h1 + h2; els.tbody.innerHTML = body;
+    rowsByStrike = {}; CG.$$('tr[data-strike]', els.tbody).forEach((tr) => (rowsByStrike[tr.dataset.strike] = tr));
+    fillIcons(els.tbody); renderPills(); renderFoot(); syncTools();
+    if (!keepScroll) scrollToAtm(); else updateVis();
+  }
+  function updateChain() {
+    if (!chainRef) return renderChain();
+    const ch = CG.chain(AN.asset, AN.expiry); const spot = spotNow();
+    const same = ch.rows.length === chainRef.rows.length && ch.rows.every((r, i) => r.strike === chainRef.rows[i].strike) && spotBracket(rangeRows(ch), spot) === spotAfter;
+    if (!same) return renderChain(true);
+    chainRef = ch; const cols = visibleCols(); const n = cols.length;
+    const maxOi = Math.max(1, ...ch.rows.map((r) => Math.max(r.call.oi, r.put.oi)));
+    const FLASH = ['bid', 'mark', 'ask', 'last'];
+    ch.rows.forEach((r) => {
+      const tr = rowsByStrike[r.strike]; if (!tr) return; const tds = tr.children;
+      const seq = []; cols.slice().reverse().forEach((c) => seq.push(['c', c, r.call, r.strike < spot])); seq.push(null); cols.forEach((c) => seq.push(['p', c, r.put, r.strike > spot]));
+      if (!n) { tds[0].classList.toggle('itm', r.strike < spot); tds[2].classList.toggle('itm', r.strike > spot); return; }
+      seq.forEach((s, i) => {
+        if (!s) return; const cell = tds[i]; if (!cell) return; const side = s[0], c = s[1], o = s[2];
+        cell.classList.toggle('itm', s[3]);
+        const key = r.strike + side + c.id; const v = cellVal(c, o), pv = prevVals[key];
+        if (pv !== v) {
+          prevVals[key] = v; const cc = cell.querySelector('.an-cell'); if (cc) cc.innerHTML = cellInner(c, o, side);
+          if (c.id === 'oi') { const bar = cell.querySelector('.an-oibar'); if (bar) bar.style.width = Math.max(2, (o.oi / maxOi) * 88).toFixed(1) + '%'; }
+          if (typeof pv === 'number' && FLASH.includes(c.id)) { cell.classList.remove('flash-up', 'flash-down'); void cell.offsetWidth; cell.classList.add(v > pv ? 'flash-up' : 'flash-down'); }
+        }
+      });
+    });
+    const sl = els.tbody.querySelector('.an-spotline span'); if (sl) sl.textContent = 'SPOT ' + fmtStrike(spot);
+    renderFoot();
+  }
+  const chainLegs = () => activeLegs().filter((l) => l.expiry === AN.expiry && legOnAsset(l) && l.type !== 'FUTURE');
+  function renderPills() {
+    const legs = chainLegs();
+    Object.keys(rowsByStrike).forEach((k) => {
+      const tr = rowsByStrike[k]; const strike = +k; let hasB = false, hasS = false; const tags = [];
+      if (tr.classList.contains('atm')) tags.push('<b class="atm">ATM</b>');
+      [['CALL', 'c'], ['PUT', 'p']].forEach(([type, side]) => {
+        const mine = legs.filter((l) => l.type === type && +l.strike === strike);
+        const b = mine.filter((l) => l.side === 'BUY').reduce((s, l) => s + (+l.lots || 1), 0), s = mine.filter((l) => l.side === 'SELL').reduce((x, l) => x + (+l.lots || 1), 0);
+        if (b) { hasB = true; tags.push('<b class="lb" title="Long ' + b + ' lots ' + type.toLowerCase() + '">' + (type === 'CALL' ? 'C' : 'P') + ' B ' + b + '</b>'); }
+        if (s) { hasS = true; tags.push('<b class="ls" title="Short ' + s + ' lots ' + type.toLowerCase() + '">' + (type === 'CALL' ? 'C' : 'P') + ' S ' + s + '</b>'); }
+        const mk = tr.querySelector('td.' + side + '-side[data-col="mark"]') || tr.querySelector('td.' + side + '-inb');
+        if (mk) { mk.classList.toggle('legcell', !!(b || s)); mk.classList.toggle('ls', !b && !!s); }
+        const inb = tr.querySelector('td.' + side + '-inb'); if (inb) { const bb = inb.querySelector('.bs.b'), sb = inb.querySelector('.bs.s'); if (bb) bb.classList.toggle('on', b > 0); if (sb) sb.classList.toggle('on', s > 0); }
+      });
+      const em = tr.querySelector('td.strike em'); if (em) em.innerHTML = tags.join('');
+      tr.classList.toggle('leg', hasB || hasS); tr.classList.toggle('leg-s', !hasB && hasS);
+    });
+  }
+  function visibleRowCount() {
+    const wrap = els.wrap; const top = wrap.scrollTop + 50, bot = wrap.scrollTop + wrap.clientHeight; let n = 0;
+    Object.keys(rowsByStrike).forEach((k) => { const tr = rowsByStrike[k]; const t = tr.offsetTop, b = t + tr.offsetHeight; if (b > top && t < bot) n++; });
+    return n;
+  }
+  function maxPain(ch) { let best = ch.atm, bestV = Infinity; ch.rows.forEach((k) => { let v = 0; ch.rows.forEach((r) => { v += r.call.oi * Math.max(k.strike - r.strike, 0) + r.put.oi * Math.max(r.strike - k.strike, 0); }); if (v < bestV) { bestV = v; best = k.strike; } }); return best; }
+  function nearestDelta(ch, d) { let c = null, p = null, cd = 9, pd = 9; ch.rows.forEach((r) => { const a = Math.abs(r.call.delta - d); if (a < cd) { cd = a; c = r; } const b = Math.abs(r.put.delta + d); if (b < pd) { pd = b; p = r; } }); return { call: c, put: p }; }
+  function chainStats(ch) {
+    let cOI = 0, pOI = 0, cVol = 0, pVol = 0; ch.rows.forEach((r) => { cOI += r.call.oi; pOI += r.put.oi; cVol += r.call.volume; pVol += r.put.volume; });
+    const nd = nearestDelta(ch, 0.25); const skew = nd.call && nd.put ? nd.put.put.markIv - nd.call.call.markIv : null;
+    const atm = ch.rows.find((r) => r.atm) || ch.rows[20]; const fwd = atm ? atm.strike + atm.call.mark - atm.put.mark : ch.spot;
+    const atmIv = atm ? (atm.call.markIv + atm.put.markIv) / 2 : CG.ASSETS[AN.asset].iv * 100;
+    return { cOI, pOI, cVol, pVol, pcr: cOI ? pOI / cOI : null, pcrVol: cVol ? pVol / cVol : null, maxPain: maxPain(ch), skew, fwd, atmIv, skewCall: nd.call, skewPut: nd.put };
+  }
+  function renderFoot() {
+    const ch = chainRef; if (!ch) return; const s = chainStats(ch);
+    els.foot.innerHTML = '<span>Σ Call OI <b>' + F.int(s.cOI) + '</b></span><span>Σ Put OI <b>' + F.int(s.pOI) + '</b></span><span>PCR <b>' + (s.pcr == null ? '—' : s.pcr.toFixed(2)) + '</b></span><span>Max pain <b>' + fmtStrike(s.maxPain) + '</b></span><span title="IV(25Δ put) − IV(25Δ call)">Skew 25Δ <b>' + (s.skew == null ? '—' : (s.skew >= 0 ? '+' : '') + s.skew.toFixed(1) + '</b>') + '</span><span title="Forward from ATM put-call parity">Fwd <b>' + px(s.fwd, 1) + '</b></span><span class="r"><span id="an-vis">' + visibleRowCount() + ' of ' + ch.rows.length + ' strikes</span> · hover a row for B / S</span>';
+  }
+  function updateVis() { const v = els.foot.querySelector('#an-vis'); if (v && chainRef) v.textContent = visibleRowCount() + ' of ' + chainRef.rows.length + ' strikes'; }
+  function scrollToAtm() {
+    const wrap = els.wrap; const tr = wrap.querySelector('tr.atm');
+    if (tr) wrap.scrollTop = Math.max(0, tr.offsetTop - wrap.clientHeight / 2 + tr.offsetHeight / 2 + 25);
+    wrap.scrollLeft = Math.max(0, (els.table.scrollWidth - wrap.clientWidth) / 2);
+    updateVis();
+  }
+  function scrollRowIntoView(tr) { const top = tr.offsetTop - 60, bot = tr.offsetTop + tr.offsetHeight + 4; if (top < els.wrap.scrollTop) els.wrap.scrollTop = top; else if (bot > els.wrap.scrollTop + els.wrap.clientHeight) els.wrap.scrollTop = bot - els.wrap.clientHeight; }
+  function syncTools() {
+    CG.$$('[data-range]', els.range).forEach((b) => b.classList.toggle('on', b.dataset.range === curRange()));
+    els.greeksBtn.classList.toggle('on', greeksShown());
+    els.lotInfo.textContent = 'Lot ' + lotSize() + ' ' + AN.asset; els.basisInfo.textContent = 'Basis ' + (st.pnlBasis || 'mark');
+  }
+  function setRange(v) { st.chainRange = v; CG.saveState(); renderChain(); CG.toast({ title: 'Strike range', description: v === 'all' ? 'Showing all 41 strikes' : 'Showing ATM ±' + v + ' strikes' }); }
+  function setLots(n) { st.chainLots = n; CG.saveState(); CG.$$('.an-ctl .stp .n', els.tbody).forEach((x) => (x.textContent = n)); }
+  function stepLots(dir) { const i = LOTS.indexOf(curLots()); let j; if (i < 0) j = dir > 0 ? LOTS.findIndex((x) => x > curLots()) : LOTS.length - 1 - LOTS.slice().reverse().findIndex((x) => x < curLots()); else j = i + dir; setLots(LOTS[Math.max(0, Math.min(LOTS.length - 1, j))]); }
+  // ---------- strike finder (by delta) ----------
+  function findDelta(d) {
+    const ch = chainRef || CG.chain(AN.asset, AN.expiry); const nd = nearestDelta(ch, d / 100); if (!nd.call || !nd.put) return;
+    const ai = ch.rows.findIndex((r) => r.atm); const need = Math.max(Math.abs(ch.rows.indexOf(nd.call) - ai), Math.abs(ch.rows.indexOf(nd.put) - ai));
+    const rg = curRange(); const fits = rg === 'all' || +rg >= need; if (!fits) { st.chainRange = need <= 12 ? '12' : 'all'; CG.saveState(); renderChain(true); }
+    const rc = rowsByStrike[nd.call.strike], rp = rowsByStrike[nd.put.strike]; if (!rc || !rp) return;
+    const top = Math.min(rc.offsetTop, rp.offsetTop), bot = Math.max(rc.offsetTop, rp.offsetTop) + rc.offsetHeight;
+    els.wrap.scrollTop = Math.max(0, (top + bot) / 2 - els.wrap.clientHeight / 2 + 25);
+    setHl(nd.call.strike); [rc, rp].forEach((tr) => { tr.classList.remove('found'); void tr.offsetWidth; tr.classList.add('found'); setTimeout(() => tr.classList.remove('found'), 1700); });
+    CG.toast({ title: d + 'Δ strikes', description: 'Call ' + fmtStrike(nd.call.strike) + ' (Δ ' + nd.call.call.delta.toFixed(2) + ') · Put ' + fmtStrike(nd.put.strike) + ' (Δ ' + nd.put.put.delta.toFixed(2) + ')' });
+    updateVis();
+  }
+  function setHl(k) { if (hlStrike != null && rowsByStrike[hlStrike]) rowsByStrike[hlStrike].classList.remove('hl'); hlStrike = k; if (k != null && rowsByStrike[k]) { rowsByStrike[k].classList.add('hl'); scrollRowIntoView(rowsByStrike[k]); } }
+  function moveHl(dir) { const strikes = Object.keys(rowsByStrike).map(Number).sort((a, b) => a - b); if (!strikes.length) return; const atm = (chainRef || {}).atm; let i = hlStrike == null ? strikes.indexOf(atm) : strikes.indexOf(hlStrike); if (i < 0) i = Math.floor(strikes.length / 2); i = Math.max(0, Math.min(strikes.length - 1, i + dir)); setHl(strikes[i]); }
+  // ---------- expiry strip / live toggle ----------
+  function renderExpiries() {
+    const legExp = new Set(activeLegs().filter(legOnAsset).map((l) => l.expiry));
+    els.exp.innerHTML = CG.EXPIRIES.map((e) => { const d = F.expiryDate(e); return '<button class="an-exp' + (e === AN.expiry ? ' active' : '') + (legExp.has(e) ? ' has-leg' : '') + '" data-exp="' + e + '" title="' + e + ' · ' + DAYS[d.getUTCDay()] + ' ' + F.date(d) + ' · ' + F.dte(e) + ' days to expiry' + (legExp.has(e) ? ' · has legs' : '') + '"><b>' + fmtDM(d) + '</b><em>' + F.dte(e) + 'd</em></button>'; }).join('');
+    const a = els.exp.querySelector('.active'); if (a) els.exp.scrollLeft = Math.max(0, a.offsetLeft - els.exp.clientWidth / 2 + a.offsetWidth / 2);
+    els.expStrip.classList.toggle('overflow', els.exp.scrollWidth > els.exp.clientWidth + 2);
+  }
+  function setExpiry(e, silent) {
+    if (!CG.EXPIRIES.includes(e)) return; AN.expiry = e; st.expiry = e; CG.saveState(); renderExpiries(); renderChain(); CG.emit('analyse:expiry', e); emitStats(); renderRight();
+    if (!silent) CG.toast({ title: 'Expiry ' + expShort(e), description: F.dte(e) + ' days to expiry · ' + AN.asset });
+  }
+  function cycleExpiry(dir) { const i = CG.EXPIRIES.indexOf(AN.expiry); const j = (i + dir + CG.EXPIRIES.length) % CG.EXPIRIES.length; setExpiry(CG.EXPIRIES[j]); }
+  function setLive(mode) {
+    AN.mode = mode; const b = els.live; b.className = 'an-live-btn ' + mode; b.querySelector('span').textContent = mode === 'live' ? 'Live' : mode === 'connecting' ? 'Connecting' : 'Static';
+    b.title = mode === 'live' ? 'Live prices on · click to switch to static' : mode === 'connecting' ? 'Connecting to WebSocket...' : 'Click to enable live prices';
+  }
+  function toggleLive() {
+    if (AN.mode === 'connecting') return; const next = AN.mode === 'live' ? 'static' : 'live'; setLive('connecting'); clearTimeout(liveTimer);
+    liveTimer = setTimeout(() => { setLive(next); if (next === 'live') { updateChain(); CG.toast({ title: 'Live', description: 'Streaming ' + AN.asset + ' ' + AN.expiry + ' option prices' }); } else CG.toast({ title: 'Static', description: 'Chain prices frozen · click Live to resume' }); }, 700);
+  }
+  // ---------- add leg (delegated to the trading agent; fallback appends locally) ----------
+  function addLeg(type, side, strike, lots) {
+    lots = +lots || curLots(); const q = CG.quote(AN.asset, AN.expiry, strike, type);
+    const payload = { type, side, strike, expiry: AN.expiry, lots, price: q.mark, iv: q.markIv, symbol: symbolOf(type, AN.asset, strike, AN.expiry), asset: AN.asset };
+    const before = AN.legs.length, ref = AN.legs; let handled = false; const off = CG.on('analyse:legs-changed', () => { handled = true; });
+    CG.emit('analyse:addLeg', payload); off();
+    if (!handled && AN.legs === ref && AN.legs.length === before) {
+      if (activeLegs().length >= 10) { CG.toast({ title: 'Limit Reached', description: 'Maximum 10 active legs allowed per strategy', variant: 'destructive' }); return false; }
+      AN.legs.push(Object.assign({ id: CG.newLegId(), status: 'OPEN', isAdjustment: false }, payload)); CG.emit('analyse:legs-changed');
+    }
+    if (AN.legs.length <= before) return false;
+    CG.toast({ title: 'Leg added', description: side + ' ' + lots + ' × ' + payload.symbol + ' @ ' + money(q.mark, 1), variant: 'success' });
+    return true;
+  }
+  // ---------- option details dialog ----------
+  function openOptInfo(type, strike) {
+    const ch = chainRef || CG.chain(AN.asset, AN.expiry); const r = ch.rows.find((x) => x.strike === strike); if (!r) return; const o = type === 'CALL' ? r.call : r.put;
+    const seed = strike * 3 + (type === 'CALL' ? 11 : 17) + AN.expiry.charCodeAt(0) * 7;
+    const marks = CG.series(24, o.mark, 0.05, seed); const k = o.mark / marks[23]; const mk = marks.map((v) => v * k);
+    const ivs = CG.series(24, o.markIv, 0.015, seed + 5); const k2 = o.markIv / ivs[23]; const iv = ivs.map((v) => v * k2);
+    const W = 460, H = 120, m = 8; const mn = Math.min(...mk), mx = Math.max(...mk); const in_ = Math.min(...iv), ix = Math.max(...iv);
+    const X = (i) => m + (i / 23) * (W - 2 * m); const Y1 = (v) => H - m - ((v - mn) / (mx - mn || 1)) * (H - 2 * m); const Y2 = (v) => H - m - ((v - in_) / (ix - in_ || 1)) * (H - 2 * m);
+    const p1 = mk.map((v, i) => X(i).toFixed(1) + ',' + Y1(v).toFixed(1)).join(' '); const p2 = iv.map((v, i) => X(i).toFixed(1) + ',' + Y2(v).toFixed(1)).join(' ');
+    const svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:120px;display:block;background:hsl(var(--surface-2));border:1px solid hsl(var(--border));border-radius:3px"><polyline points="' + p2 + '" fill="none" stroke="hsl(var(--muted-foreground))" stroke-width="1" stroke-dasharray="3 3"/><polyline points="' + p1 + '" fill="none" stroke="hsl(var(--foreground))" stroke-width="1.6"/><circle cx="' + X(23) + '" cy="' + Y1(mk[23]) + '" r="3" fill="hsl(var(--spot))"/></svg>';
+    const stat = (k, v, c) => '<div><div class="k">' + k + '</div><div class="v ' + (c || '') + '">' + v + '</div></div>';
+    els.optinfo.innerHTML = '<div class="an-oi-wrap"><div class="an-oi-top"><span class="mk">' + money(o.mark, 1) + '</span><span class="badge badge-outline">IV ' + F.pct0(o.markIv, 1) + '</span><span class="badge ' + (o.chg24 >= 0 ? 'badge-success' : 'badge-destructive') + '">' + F.pct(o.chg24, 1) + ' 24h</span><span class="text-xs text-muted mono">Δ ' + o.delta.toFixed(2) + '</span></div>' + svg +
+      '<div class="flex justify-between text-2xs text-muted mt-1 mono"><span><span style="display:inline-block;width:14px;height:2px;background:hsl(var(--foreground));vertical-align:middle"></span> Mark · last 24h (mock)</span><span><span style="display:inline-block;width:14px;border-top:1px dashed hsl(var(--muted-foreground));vertical-align:middle"></span> IV ' + F.pct0(in_, 1) + ' – ' + F.pct0(ix, 1) + '</span></div>' +
+      '<div class="an-oi-stats">' + stat('Bid / Ask', px(o.bid) + ' / ' + px(o.ask)) + stat('OI', F.int(o.oi)) + stat('Volume', F.int(o.volume)) + stat('Bid / Ask Qty', F.int(o.bidQty) + ' / ' + F.int(o.askQty)) + stat('Delta (Δ)', o.delta.toFixed(4)) + stat('Gamma (Γ)', o.gamma.toFixed(6)) + stat('Theta (Θ)', o.theta.toFixed(2)) + stat('Vega (ν)', o.vega.toFixed(2)) + stat('24h Chg', F.pct(o.chg24, 1), o.chg24 >= 0 ? 'text-profit' : 'text-loss') + stat('Last', px(o.last)) + stat('Open / High', px(o.open) + ' / ' + px(o.high)) + stat('Low', px(o.low)) + '</div>' +
+      '<div class="flex items-center gap-2 mt-4"><button class="btn btn-buy btn-sm" data-oi-act="BUY">Buy</button><button class="btn btn-sell btn-sm" data-oi-act="SELL">Sell</button><select class="select select-sm" style="width:90px" data-oi-lots>' + LOTS.map((n) => '<option value="' + n + '"' + (n === curLots() ? ' selected' : '') + '>' + n + '</option>').join('') + '</select><span class="text-xs text-muted">lots × ' + lotSize() + ' ' + AN.asset + '</span></div></div>';
+    els.optinfo.dataset.type = type; els.optinfo.dataset.strike = strike;
+    CG.modal.open(els.optinfo, { title: deltaSymbol(type, AN.asset, strike, AN.expiry), description: type + ' · ' + AN.asset + ' · ' + AN.expiry + ' · ' + F.dte(AN.expiry) + ' days to expiry · Spot ' + money(spotNow(), 1) });
+  }
+  // ---------- column settings dialog ----------
+  const csDesc = () => colState().visible.length + ' of ' + COLS.length + ' columns visible';
+  function renderCs() {
+    const cs = colState(); const show = els.cs.querySelector('#an-cs-show'), reorder = els.cs.querySelector('#an-cs-reorder');
+    show.innerHTML = GROUPS.map((g) => '<div class="an-cs-group"><div class="an-cs-gtitle">' + g + '</div>' + COLS.filter((c) => c.group === g).map((c) => { const on = cs.visible.includes(c.id); return '<div class="an-cs-row" data-cscol="' + c.id + '"><span>' + c.label + '</span><button class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="Toggle ' + c.label + '"></button></div>'; }).join('') + '</div>').join('');
+    reorder.innerHTML = '<p class="hint" style="margin:0 0 8px">Drag columns to change their display order (left → right). The order applies from the strike outward and is mirrored on the Calls side.</p><ul class="an-cs-list">' + cs.order.map((id, i) => { const c = colById(id); return '<li draggable="true" data-cscol="' + id + '"><span class="grip">⋮⋮</span><span class="idx">' + (i + 1) + '</span><span>' + c.label + '</span>' + (cs.visible.includes(id) ? '' : '<span class="badge badge-secondary">hidden</span>') + '<span class="mv"><button data-mv="-1" title="Move up">▲</button><button data-mv="1" title="Move down">▼</button></span></li>'; }).join('') + '</ul>';
+    if (csHandle) { const d = csHandle.box.querySelector('.cg-dialog-desc'); if (d) d.textContent = csDesc(); }
+  }
+  function csChanged() { CG.saveState(); renderCs(); renderChain(true); }
+  function openColSettings() { renderCs(); csHandle = CG.modal.open(els.cs, { title: 'Column Settings', description: csDesc(), onClose: () => { csHandle = null; } }); }
+  function bindCs() {
+    const box = els.cs;
+    box.addEventListener('click', (e) => {
+      const tab = e.target.closest('[data-cstab]'); if (tab) { CG.$$('[data-cstab]', box).forEach((b) => b.classList.toggle('active', b === tab)); CG.$$('[data-cspanel]', box).forEach((p) => (p.hidden = p.dataset.cspanel !== tab.dataset.cstab)); return; }
+      const q = e.target.closest('[data-csq]'); if (q) { const cs = colState(); const k = q.dataset.csq; if (k === 'essentials') cs.visible = ESSENTIALS.slice(); else if (k === 'all') cs.visible = COLS.map((c) => c.id); else if (k === 'none') cs.visible = []; else { cs.visible = ESSENTIALS.slice(); cs.order = DEFAULT_ORDER.slice(); } csChanged(); CG.toast({ title: 'Column Settings', description: k === 'essentials' ? 'Essentials: Ask, Mark, Bid, OI, Δ' : k === 'all' ? 'All ' + COLS.length + ' columns shown' : k === 'none' ? 'All columns hidden' : 'Reset to defaults' }); return; }
+      const mv = e.target.closest('[data-mv]'); if (mv) { const li = mv.closest('li'); const cs = colState(); const i = cs.order.indexOf(li.dataset.cscol); const j = i + (+mv.dataset.mv); if (j < 0 || j >= cs.order.length) return; cs.order.splice(i, 1); cs.order.splice(j, 0, li.dataset.cscol); csChanged(); return; }
+      const row = e.target.closest('.an-cs-row'); if (row) { const cs = colState(); const id = row.dataset.cscol; if (cs.visible.includes(id)) cs.visible = cs.visible.filter((x) => x !== id); else cs.visible.push(id); csChanged(); }
+    });
+    let dragId = null;
+    box.addEventListener('dragstart', (e) => { const li = e.target.closest('li[data-cscol]'); if (!li) return; dragId = li.dataset.cscol; li.classList.add('dragging'); try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragId); } catch (x) { } });
+    box.addEventListener('dragover', (e) => { const ul = e.target.closest('.an-cs-list'); if (!ul || !dragId) return; e.preventDefault(); const over = e.target.closest('li[data-cscol]'); const dragging = ul.querySelector('li.dragging'); if (!over || !dragging || over === dragging) return; const r = over.getBoundingClientRect(); const after = e.clientY > r.top + r.height / 2; ul.insertBefore(dragging, after ? over.nextSibling : over); });
+    box.addEventListener('drop', (e) => { if (e.target.closest('.an-cs-list')) e.preventDefault(); });
+    box.addEventListener('dragend', () => { const ul = box.querySelector('.an-cs-list'); if (!ul || !dragId) return; dragId = null; const cs = colState(); cs.order = CG.$$('li[data-cscol]', ul).map((li) => li.dataset.cscol); csChanged(); });
+  }
+  // ---------- tabs / shell ----------
+  const LEFT_TABS = ['chain', 'strategy', 'paper', 'live', 'journal'];
+  function setLeftTab(name, silent) {
+    if (!LEFT_TABS.includes(name)) name = 'chain'; st.analyseTab = name; CG.saveState();
+    CG.$$('[data-lptab]', els.lptabs).forEach((b) => { b.classList.toggle('active', b.dataset.lptab === name); b.setAttribute('aria-selected', b.dataset.lptab === name); });
+    const panels = CG.$$('.lp-panel', els.leftPanels); const real = panels.filter((p) => !p.classList.contains('an-placeholder'));
+    const found = real.some((p) => p.dataset.tab === name);
+    real.forEach((p) => (p.hidden = p.dataset.tab !== name));
+    let ph = els.leftPanels.querySelector('.an-placeholder');
+    if (found) { if (ph) ph.remove(); }
+    else { if (!ph) { ph = CG.h('<div class="lp-panel an-placeholder"></div>'); els.leftPanels.appendChild(ph); } ph.dataset.tab = name; ph.hidden = false; ph.innerHTML = '<div class="an-empty"><b>' + (name === 'journal' ? 'Journal' : 'Panel') + ' not loaded</b>' + (name === 'journal' ? 'Closed strategies appear here once the trading module loads.' : 'This panel is rendered by the trading module.') + '</div>'; }
+    if (name === 'chain') setTimeout(updateVis, 0);
+    if (!silent) CG.emit('analyse:tab', name);
+  }
+  function renderCounts() {
+    const S = (CG.mock && CG.mock.strategies) || [];
+    const c = { builder: activeLegs().length, paper: S.filter((s) => s.status === 'PAPER').length, live: S.filter((s) => s.status === 'LIVE').length, journal: S.filter((s) => s.status === 'ARCHIVED' || s.status === 'CLOSED').length };
+    CG.$$('[data-cnt]', els.lptabs).forEach((b) => { const v = c[b.dataset.cnt] || 0; b.textContent = v; b.hidden = !v; });
+  }
+  const RIGHT_TABS = ['payoff', 'scenarios', 'greeks', 'vol', 'structure', 'ladder'];
+  const RIGHT_ALIAS = { pnl: 'ladder', analytics: 'payoff', table: 'ladder' };
+  function setRightTab(name) {
+    name = RIGHT_ALIAS[name] || name; if (!RIGHT_TABS.includes(name)) name = 'payoff'; st.analyseRightTab = name; CG.saveState();
+    CG.$$('[data-rptab]', root).forEach((b) => { b.classList.toggle('active', b.dataset.rptab === name); b.setAttribute('aria-selected', b.dataset.rptab === name); });
+    CG.$$('.rp-panel', els.rightBody).forEach((p) => (p.hidden = p.dataset.tab !== name));
+    renderRight(); CG.emit('analyse:right-tab', name);
+  }
+  function setCollapse(v) { v = v === 'left' || v === 'right' ? v : ''; st.analyseCollapse = v; CG.saveState(); els.shell.dataset.collapse = v; setTimeout(() => { M.renderChart && M.renderChart(); updateVis(); }, 30); if (v) CG.toast({ title: v === 'left' ? 'Analysis expanded' : 'Chain expanded', description: 'Click the ⋮ handle to restore both panes' }); }
+  function measureTop() { let h = 0; ['[data-cg="app-header"]', '[data-cg="plan-banner"]'].forEach((s) => { const el = root.querySelector(s); if (el) h += el.offsetHeight; }); root.style.setProperty('--an-top', h + 'px'); measureBottom(); }
+  function measureBottom() { const el = root.querySelector('[data-cg="portfolio-bar"]'); const child = el && el.firstElementChild; if (!child) { root.style.setProperty('--an-bottom', '44px'); root.style.paddingBottom = '44px'; return; } const fixed = getComputedStyle(child).position === 'fixed'; const h = fixed ? child.offsetHeight : el.offsetHeight; root.style.setProperty('--an-bottom', h + 'px'); root.style.paddingBottom = fixed ? h + 'px' : '0'; }
+  function applyDensity() { root.dataset.density = st.density === 'compact' ? 'compact' : 'comfortable'; }
+  function renderRight() {
+    if (!isActive()) return; const tab = st.analyseRightTab || 'payoff'; renderStratInfo();
+    if (tab === 'payoff') M.renderPayoff(); else if (tab === 'scenarios') M.renderScenarios(); else if (tab === 'greeks') M.renderGreeks(); else if (tab === 'vol') M.renderVol(); else if (tab === 'structure') M.renderStructure(); else M.renderLadder();
+  }
+  function renderStratInfo() { const legs = activeLegs(); els.stratInfo.textContent = legs.length ? (AN.name || 'Custom strategy') + ' · ' + expShort(latestExpiry(legs)) + ' · ' + totalLots() + ' lots' : 'No strategy'; }
+  // ---------- analysis helpers shared by the right pane ----------
+  function baseAnalysis() { const legs = activeLegs(); if (!legs.length) return null; const a = CG.analyze(legs, AN.asset, { targetDays: AN.targetDays, spot: spotNow() }); a.legs = legs; if (AN.targetDays > a.maxDte) AN.targetDays = a.maxDte; return a; }
+  function pnlAtPrice(legs, price, opts) { const a = CG.analyze(legs, AN.asset, Object.assign({ targetDays: AN.targetDays, spot: spotNow(), min: price, max: price + 1e-6, points: 2 }, opts || {})); return a.points[0]; }
+  const daysLeftLabel = (a) => Math.max(0, a.maxDte - Math.min(AN.targetDays, a.maxDte)) + 'D';
+  function sdInfo(a) { const A = CG.ASSETS[AN.asset]; const days = AN.targetDays > 0 ? Math.min(AN.targetDays, a.maxDte) : a.maxDte; const sd = spotNow() * A.iv * Math.sqrt(Math.max(days, 1) / 365); return { sd, days, label: days >= a.maxDte ? 'expiry (' + days + 'd)' : 'target date (' + days + 'd)' }; }
+  function latestExpiry(legs) { let best = null, bd = -1; legs.forEach((l) => { if (l.type === 'FUTURE' || !l.expiry) return; const d = F.dte(l.expiry); if (d > bd) { bd = d; best = l.expiry; } }); return best || AN.expiry; }
+  // position greeks re-priced at price S after `daysElapsed` days with an IV shift (fraction)
+  function positionGreeksAt(legs, S, daysElapsed, ivShift) {
+    const A = CG.ASSETS[AN.asset]; const lot = lotSize(); const g = { delta: 0, gamma: 0, theta: 0, vega: 0 };
+    legs.forEach((l) => { const q = (+l.lots || 1) * lot * (l.side === 'BUY' ? 1 : -1); if (l.type === 'FUTURE') { g.delta += q; return; } const T = Math.max(F.dte(l.expiry) - (daysElapsed || 0), 0) / 365; const s = ((l.iv || P.smile(l.strike, spotNow(), A.iv) * 100) / 100) * (1 + (ivShift || 0)); const gg = P.greeks(S, l.strike, T, s, l.type === 'CALL'); g.delta += gg.delta * q; g.gamma += gg.gamma * q; g.theta += gg.theta * q; g.vega += gg.vega * q; });
+    return g;
+  }
+  // 1y ATM IV history + realised vol (generated, deterministic per asset)
+  const volCache = {};
+  function volHistory(asset) {
+    const A = CG.ASSETS[asset]; const key = asset; if (volCache[key]) return volCache[key];
+    const seed = asset.charCodeAt(0) * 131 + asset.length * 17;
+    const r = CG.rng(seed); const xs = []; let x = 0; for (let i = 0; i < 365; i++) { x = x * 0.97 + (r() - 0.5) * 0.1; xs.push(x); } const cur = chainStats(CG.chain(asset, AN.expiry)).atmIv; const base = A.iv * 100; const shift = Math.log(cur / base) - xs[364]; const iv = xs.map((v) => base * Math.exp(v + shift));
+    const prices = CG.series(395, A.price, 0.045, seed + 7); const rv = []; for (let i = 30; i < 395; i++) { let m = 0; const rs = []; for (let j = i - 29; j <= i; j++) { const r = Math.log(prices[j] / prices[j - 1]); rs.push(r); m += r; } m /= rs.length; let v = 0; rs.forEach((r) => (v += (r - m) * (r - m))); rv.push(Math.sqrt(v / (rs.length - 1) * 365) * 100); }
+    const min = Math.min(...iv), max = Math.max(...iv); const below = iv.filter((v) => v < cur).length;
+    volCache[key] = { iv, rv, cur, min, max, rank: max > min ? ((cur - min) / (max - min)) * 100 : 50, pct: (below / iv.length) * 100 };
+    return volCache[key];
+  }
+  function emitStats() {
+    if (!chainRef) return; const s = chainStats(chainRef); const vh = volHistory(AN.asset); const dte = F.dte(AN.expiry); const spot = spotNow();
+    AN.stats = { asset: AN.asset, expiry: AN.expiry, dte, spot, atmIv: s.atmIv, ivRank: vh.rank, ivPercentile: vh.pct, expectedMove: spot * (s.atmIv / 100) * Math.sqrt(Math.max(dte, 0.5) / 365), pcr: s.pcr, maxPain: s.maxPain, skew25: s.skew };
+    CG.emit('analyse:stats', AN.stats);
+  }
+  // ---------- keyboard ----------
+  const fired = {}; const once = (id, fn, ev) => { if (ev && typeof ev === 'object' && 'key' in ev) { if (ev.__anHandled) return; ev.__anHandled = true; fn(); return; } const now = Date.now(); if (fired[id] && now - fired[id] < 40) return; fired[id] = now; fn(); };
+  const chainVisible = () => isActive() && (st.analyseTab || 'chain') === 'chain' && !els.chainPanel.hidden && els.shell.dataset.collapse !== 'left';
+  const KEYS = [
+    { id: 'j', keys: ['j', 'ArrowDown'], label: 'Next strike', run: () => moveHl(1) },
+    { id: 'k', keys: ['k', 'ArrowUp'], label: 'Previous strike', run: () => moveHl(-1) },
+    { id: 'b', keys: ['b'], label: 'Buy call at highlighted strike', run: () => hlStrike != null && addLeg('CALL', 'BUY', hlStrike, curLots()) },
+    { id: 's', keys: ['s'], label: 'Sell call at highlighted strike', run: () => hlStrike != null && addLeg('CALL', 'SELL', hlStrike, curLots()) },
+    { id: 'B', keys: ['B'], shift: true, label: 'Buy put at highlighted strike', run: () => hlStrike != null && addLeg('PUT', 'BUY', hlStrike, curLots()) },
+    { id: 'S', keys: ['S'], shift: true, label: 'Sell put at highlighted strike', run: () => hlStrike != null && addLeg('PUT', 'SELL', hlStrike, curLots()) },
+    { id: 'e', keys: ['e'], label: 'Next expiry', run: () => cycleExpiry(1) },
+    { id: 'E', keys: ['E'], shift: true, label: 'Previous expiry', run: () => cycleExpiry(-1) },
+    { id: 'Enter', keys: ['Enter'], label: 'Option details for highlighted strike', run: (ev) => hlStrike != null && openOptInfo(ev && ev.shiftKey ? 'PUT' : 'CALL', hlStrike) },
+    { id: 'Escape', keys: ['Escape'], label: 'Clear highlight', run: () => setHl(null) }
+  ];
+  function onKey(e) {
+    if (!chainVisible() || e.ctrlKey || e.metaKey || e.altKey || (e.defaultPrevented && e.key !== 'Escape')) return;
+    const t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+    if (document.querySelector('.cg-overlay')) return;
+    const k = KEYS.find((d) => d.keys.includes(e.key)); if (!k) return;
+    if (k.id === 'Escape' && hlStrike == null) return;
+    e.preventDefault(); once(k.id, () => k.run(e), e);
+  }
+  function registerShortcuts() {
+    document.addEventListener('keydown', onKey);
+    // chrome shortcut registry (CG.shortcuts.register(key, description, handler, opts)) — it preventDefaults before calling us, so the document listener above skips those keys
+    if (!CG.shortcuts || typeof CG.shortcuts.register !== 'function') return;
+    KEYS.forEach((k) => { if (k.id === 'Escape') return; k.keys.forEach((key) => { try { CG.shortcuts.register((k.shift ? 'Shift+' : '') + key, k.label, (ev) => { if (!chainVisible()) return; once(k.id, () => k.run(ev), ev); }, { group: 'Analyse workspace', owner: 'analyse' }); } catch (x) { } }); });
+  }
+  function registerPalette() {
+    if (!CG.palette || typeof CG.palette.register !== 'function') return;
+    const reg = (o) => { try { CG.palette.register(Object.assign({ group: 'Analyse', route: ROUTE }, o, { run: () => { if (!isActive()) CG.navigate(ROUTE); setTimeout(o.run, isActive() ? 0 : 60); }, handler: o.run })); } catch (x) { } };
+    CG.EXPIRIES.forEach((e) => reg({ id: 'an-exp-' + e, label: 'Switch expiry → ' + expShort(e) + ' · ' + F.dte(e) + 'd', keywords: 'expiry ' + e, run: () => setExpiry(e) }));
+    const existing = (typeof CG.palette.list === 'function' ? CG.palette.list() : []).map((c) => String(c.label || '').toLowerCase());
+    CG.TEMPLATES.forEach((t) => { if (existing.some((l) => l.includes('template') && l.includes(t.name.toLowerCase()))) return; reg({ id: 'an-tpl-' + t.name.replace(/\W+/g, '-').toLowerCase(), label: 'Load template → ' + t.name, keywords: 'template ' + t.category, run: () => loadTemplate(t) }); });
+    reg({ id: 'an-greeks-cols', label: 'Toggle chain Greeks (Γ Θ ν columns)', keywords: 'greeks columns gamma theta vega', run: () => setGreeksCols(!greeksShown()) });
+    reg({ id: 'an-find-delta', label: 'Find strike by delta…', keywords: 'delta strike finder 25', run: openFindDelta });
+    reg({ id: 'an-share', label: 'Share strategy link', keywords: 'share link copy', run: () => M.openShare && M.openShare() });
+    ['payoff', 'scenarios', 'greeks', 'vol', 'structure', 'ladder'].forEach((t) => reg({ id: 'an-tab-' + t, label: 'Analyse → ' + t.charAt(0).toUpperCase() + t.slice(1) + ' tab', keywords: 'tab ' + t, run: () => setRightTab(t) }));
+  }
+  function dedupePalette() {
+    if (!CG.palette || typeof CG.palette.list !== 'function' || typeof CG.palette.unregister !== 'function') return;
+    const all = CG.palette.list(); const others = new Set(all.filter((c) => !/^an-/.test(c.id)).map((c) => String(c.label || '').toLowerCase()));
+    all.filter((c) => /^an-tpl-/.test(c.id) && others.has(String(c.label || '').toLowerCase())).forEach((c) => { try { CG.palette.unregister(c.id); } catch (x) { } });
+  }
+  function loadTemplate(tpl) {
+    if (CG.trading && typeof CG.trading.loadTemplate === 'function') { try { CG.trading.loadTemplate(tpl); return; } catch (x) { } }
+    AN.legs = CG.templateLegs(tpl, AN.asset, AN.expiry); AN.name = tpl.name; AN.strategyId = null; CG.emit('analyse:legs-changed', AN.legs); CG.toast({ title: 'Template loaded', description: tpl.name + ' · ' + AN.legs.length + ' legs · ' + AN.expiry, variant: 'success' });
+  }
+  function openFindDelta() {
+    const box = els.findDlg; box.innerHTML = '<div class="an-share-wrap"><p class="text-sm text-muted">Scroll the chain to the call and put strikes whose delta is closest to the chosen value.</p><div class="an-fd-chips">' + [5, 10, 16, 25, 30, 40, 50].map((d) => '<button class="btn btn-outline btn-sm mono" data-fd="' + d + '">' + d + 'Δ</button>').join('') + '</div><div class="flex gap-2 items-center"><input class="input input-sm mono" style="width:120px" type="number" min="1" max="99" placeholder="custom Δ" data-fd-input><button class="btn btn-primary btn-sm" data-fd-go>Find</button></div></div>';
+    const h = CG.modal.open(box, { title: 'Find strike by delta', size: 'sm' });
+    box.onclick = (e) => { const b = e.target.closest('[data-fd]'); if (b) { h.close(); findDelta(+b.dataset.fd); return; } if (e.target.closest('[data-fd-go]')) { const v = +box.querySelector('[data-fd-input]').value; if (v > 0 && v < 100) { h.close(); findDelta(v); } else CG.toast({ title: 'Enter a delta between 1 and 99', variant: 'destructive' }); } };
+  }
+  // expose internals to the other chunks of this part
+  const M = (window.__cgAnalyse = { get root() { return root; }, set root(v) { root = v; }, els, AN, st, F, P, ic, ICONS, fillIcons, px, money, smoney, cls, fmtK, fmtAxis, fmtKbare, fmtStrike, fmtDM, fmtDMloc, fmtDateTime, expShort, nice, esc, MON, DAYS, activeLegs, chainLegs, spotNow, lotSize, totalLots, baseAnalysis, pnlAtPrice, daysLeftLabel, sdInfo, latestExpiry, positionGreeksAt, volHistory, chainStats, maxPain, symbolOf, renderChain, updateChain, renderPills, renderExpiries, setExpiry, cycleExpiry, setLive, toggleLive, addLeg, openOptInfo, openColSettings, bindCs, setLeftTab, setRightTab, setCollapse, measureTop, measureBottom, applyDensity, renderRight, renderCounts, renderStratInfo, scrollToAtm, updateVis, curLots, setLots, stepLots, LOTS, setRange, curRange, setGreeksCols, greeksShown, findDelta, openFindDelta, setHl, moveHl, loadTemplate, registerShortcuts, registerPalette, dedupePalette, emitStats, isActive, rowsByStrike: () => rowsByStrike, hl: { get: () => hlStrike, set: (v) => { hlStrike = v; } }, chain: () => chainRef, COLS });
+})();
+</script>

@@ -1,0 +1,38 @@
+/* HapieCoin web: fonts + Obsidian Desk theme (ADR-003). Component classes from @hapiecoin/ui are
+   picked up through the @source below; the app never declares a raw colour. */
+@import "@hapiecoin/ui/fonts.css";
+@import "@hapiecoin/ui/theme.css";
+@source "../../../../packages/ui/src";
+
+/* Public pages use a slightly larger measure than the trading UI. */
+@utility pub-wrap {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+
+/* Hairline ATM band on the chain (amber only for spot/ATM, ADR-003). */
+@utility atm-band {
+  box-shadow: inset 0 1px 0 hsl(var(--primary) / 0.55), inset 0 -1px 0 hsl(var(--primary) / 0.55);
+  background: hsl(var(--primary) / 0.06);
+}
+
+/* Pulsing live dot (reduced motion honoured by theme.css). */
+@keyframes hc-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@utility live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: hsl(var(--profit));
+  animation: hc-pulse 1.6s ease-in-out infinite;
+}

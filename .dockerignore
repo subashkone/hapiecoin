@@ -1,0 +1,18 @@
+# Keep host-side artefacts out of image builds (pnpm's symlinked node_modules would overwrite the container's).
+**/node_modules
+**/dist
+**/.next
+**/coverage
+**/test-results
+**/playwright-report
+**/.turbo
+.git
+.claude
+graphify-out
+mockup-clone
+mockup-v2
+spec
+docs
+**/*.log
+**/.env
+**/.env.*

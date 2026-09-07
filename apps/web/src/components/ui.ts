@@ -1,0 +1,37 @@
+"use client";
+// Client boundary for @hapiecoin/ui. The design-system package creates React contexts at import time
+// (ThemeProvider, Tabs, Radix), which server components must not load; re-exporting from a "use client"
+// module lets server components render these as client references (SSR'd, then hydrated).
+export {
+  Badge,
+  Button,
+  Checkbox,
+  Dialog,
+  DialogBody,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  EmptyState,
+  Field,
+  Input,
+  Kbd,
+  Label,
+  Select,
+  Spinner,
+  Stat,
+  Switch,
+  TBody,
+  THead,
+  Table,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Td,
+  Th,
+  Tr,
+  Tooltip,
+} from "@hapiecoin/ui";

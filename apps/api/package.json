@@ -1,0 +1,51 @@
+{
+  "name": "@hapiecoin/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HapieCoin HTTP API: auth, profile, settings, brokers, encrypted exchange credentials, plan state",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "drizzle"
+  ],
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/db/migrate-cli.ts",
+    "db:seed": "tsx src/db/seed-cli.ts"
+  },
+  "dependencies": {
+    "@better-auth/passkey": "1.7.3",
+    "@electric-sql/pglite": "0.5.8",
+    "@hapiecoin/schema": "workspace:*",
+    "@hono/node-server": "2.1.1",
+    "@hono/swagger-ui": "0.6.1",
+    "@hono/zod-openapi": "1.6.3",
+    "better-auth": "1.7.3",
+    "drizzle-orm": "0.45.2",
+    "hono": "4.13.7",
+    "ioredis": "5.10.0",
+    "pino": "10.3.1",
+    "postgres": "3.4.9",
+    "resend": "6.26.0",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@hapiecoin/config": "workspace:*",
+    "drizzle-kit": "0.31.10",
+    "tsx": "4.23.13"
+  }
+}

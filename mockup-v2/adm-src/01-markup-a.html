@@ -1,0 +1,113 @@
+<!-- ===== Admin console (40-admin): /admin, /admin/subscriptions, /admin/menu-pricing, /admin/coupons, /admin/user-subscriptions, /admin/banners, /admin/emails, /admin/users ===== -->
+<section class="screen" data-route="/admin" data-redirect="/admin/users" data-auth="admin"></section>
+
+<!-- ---------- /admin/subscriptions ---------- -->
+<section class="screen adm" data-route="/admin/subscriptions" data-title="Subscription Plans" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div data-cg="admin-nav"></div>
+  <div class="container adm-page">
+    <div class="adm-head">
+      <div><h1 class="adm-title">Subscription Plans</h1><p class="adm-sub">Manage subscription tiers and pricing</p></div>
+      <button class="btn btn-primary" data-act="new"><i data-icon="plus"></i> New Plan</button>
+    </div>
+    <div class="card" data-el="card">
+      <div class="card-header"><div class="card-title" data-el="count">All Plans (0)</div></div>
+      <div class="adm-table-wrap" data-el="table"></div>
+    </div>
+  </div>
+  <div hidden data-el="dialog">
+    <form data-form="plan" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><label class="label" for="adm-plan-name">Plan Name *</label><input class="input" id="adm-plan-name" name="name" placeholder="e.g. Basic Plan"></div>
+        <div class="field"><label class="label" for="adm-plan-desc">Description</label><textarea class="textarea" id="adm-plan-desc" name="description" style="min-height:64px" placeholder="Short description shown on the plan card"></textarea></div>
+        <div class="field">
+          <label class="label" for="adm-plan-feature">Features</label>
+          <div class="flex gap-2"><input class="input" id="adm-plan-feature" data-el="feature-input" placeholder="Add a feature"><button type="button" class="btn btn-secondary" data-act="add-feature">Add</button></div>
+          <div class="adm-chips mt-2" data-el="features"></div>
+          <div class="hint">Type a feature and press <span class="kbd">Enter</span> to add it</div>
+        </div>
+        <div class="label mt-2">Billing Intervals</div>
+        <div class="adm-intervals" data-el="intervals"></div>
+        <div class="field mt-4"><label class="label">Menu Items</label><div class="adm-checklist" data-el="menu-items"></div><div class="hint" data-el="menu-count"></div></div>
+        <div class="adm-switch-row"><div><div class="font-medium text-sm">Active</div><div class="hint m-0">Plan visible to users</div></div><button type="button" class="switch on" role="switch" aria-checked="true" aria-label="Active" data-el="active"></button></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Create</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ---------- /admin/menu-pricing ---------- -->
+<section class="screen adm" data-route="/admin/menu-pricing" data-title="Menu Pricing Master" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div data-cg="admin-nav"></div>
+  <div class="container adm-page">
+    <div class="adm-head">
+      <div><h1 class="adm-title">Menu Pricing Master</h1><p class="adm-sub">Manage menu items linked to subscription plans</p></div>
+      <button class="btn btn-primary" data-act="new"><i data-icon="plus"></i> New Item</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title" data-el="count">All Menu Items (0)</div></div>
+      <div class="adm-table-wrap" data-el="table"></div>
+    </div>
+  </div>
+  <div hidden data-el="dialog">
+    <form data-form="menu" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><label class="label" for="adm-menu-name">Display Name *</label><input class="input" id="adm-menu-name" name="displayName" placeholder="e.g. Reports Export"></div>
+        <div class="field"><label class="label" for="adm-menu-cat">Category</label><input class="input" id="adm-menu-cat" name="category" placeholder="e.g. Trading, Analytics, Data"></div>
+        <div class="field"><label class="label" for="adm-menu-price">Price (₹)</label><input class="input mono" id="adm-menu-price" name="price" type="number" min="0" step="1" value="0"></div>
+        <div class="adm-switch-row"><div><div class="font-medium text-sm">Active</div><div class="hint m-0">Item can be linked to plans</div></div><button type="button" class="switch on" role="switch" aria-checked="true" aria-label="Active" data-el="active"></button></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Create</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ---------- /admin/coupons ---------- -->
+<section class="screen adm" data-route="/admin/coupons" data-title="Coupon Code Master" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div data-cg="admin-nav"></div>
+  <div class="container adm-page">
+    <div class="adm-head">
+      <div><h1 class="adm-title">Coupon Code Master</h1><p class="adm-sub">Manage discount coupons</p></div>
+      <button class="btn btn-primary" data-act="new"><i data-icon="plus"></i> New Coupon</button>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title" data-el="count">All Coupons (0)</div></div>
+      <div class="adm-table-wrap" data-el="table"></div>
+    </div>
+  </div>
+  <div hidden data-el="dialog">
+    <form data-form="coupon" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="adm-form-grid">
+          <div class="field"><label class="label" for="adm-cp-code">Code *</label><input class="input mono uppercase" id="adm-cp-code" name="code" placeholder="BASIC20"></div>
+          <div class="field"><label class="label" for="adm-cp-scope">Coupon Type</label><select class="select" id="adm-cp-scope" name="scope"><option value="public_all_listed">Public (All listed)</option><option value="private_community_listed">Community (Assigned to specific users &amp; their referrals)</option></select></div>
+        </div>
+        <div class="field adm-assign" data-el="assign" hidden>
+          <div class="flex items-center justify-between gap-2 flex-wrap mb-2">
+            <label class="label m-0">Assign to Users</label>
+            <div class="flex gap-1"><button type="button" class="btn btn-outline btn-xs" data-act="assign-all">Select All</button><button type="button" class="btn btn-outline btn-xs" data-act="assign-none">Deselect All</button><button type="button" class="btn btn-outline btn-xs" title="Invert selection" data-act="assign-invert">↔ Invert</button></div>
+          </div>
+          <div class="adm-search mb-2"><i data-icon="search"></i><input class="input" data-el="assign-search" placeholder="Search users..." aria-label="Search users"></div>
+          <div class="adm-checklist" data-el="assign-list"></div>
+          <div class="hint" data-el="assign-count">0 of 0 users selected</div>
+        </div>
+        <div class="field"><label class="label" for="adm-cp-desc">Description</label><input class="input" id="adm-cp-desc" name="description" placeholder="Shown to users at checkout"></div>
+        <div class="adm-form-grid">
+          <div class="field"><label class="label" for="adm-cp-dtype">Discount Type</label><select class="select" id="adm-cp-dtype" name="discountType"><option value="percent">Percent</option><option value="fixed">Fixed</option></select></div>
+          <div class="field"><label class="label" for="adm-cp-dval">Discount Value</label><input class="input mono" id="adm-cp-dval" name="discountValue" type="number" min="0" step="1" value="0"></div>
+          <div class="field"><label class="label" for="adm-cp-min">Min Order (₹)</label><input class="input mono" id="adm-cp-min" name="minOrderAmount" type="number" min="0" step="1" value="0"></div>
+          <div class="field"><label class="label" for="adm-cp-max">Max Uses</label><input class="input mono" id="adm-cp-max" name="maxUses" type="number" min="0" step="1" value="100"></div>
+          <div class="field"><label class="label" for="adm-cp-per">Per User Limit</label><input class="input mono" id="adm-cp-per" name="perUserLimit" type="number" min="0" step="1" value="1"></div>
+          <div class="field"></div>
+          <div class="field"><label class="label" for="adm-cp-start">Starts At</label><input class="input" id="adm-cp-start" name="startsAt" type="date"></div>
+          <div class="field"><label class="label" for="adm-cp-end">Expires At</label><input class="input" id="adm-cp-end" name="expiresAt" type="date"></div>
+        </div>
+        <div class="field"><label class="label">Applicable Plans &amp; Intervals</label><div class="adm-plan-grid" data-el="plan-grid"></div></div>
+        <div class="adm-switch-row"><div><div class="font-medium text-sm">Active</div><div class="hint m-0">Coupon can be applied at checkout</div></div><button type="button" class="switch on" role="switch" aria-checked="true" aria-label="Active" data-el="active"></button></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Create</button></div>
+    </form>
+  </div>
+</section>

@@ -1,0 +1,347 @@
+<!-- ===== Admin console v2 (40-admin): /admin, /admin/users, /admin/subscriptions, /admin/menu-pricing, /admin/coupons, /admin/user-subscriptions, /admin/banners, /admin/emails ===== -->
+<section class="screen" data-route="/admin" data-redirect="/admin/users" data-auth="admin"></section>
+
+<!-- ---------- /admin/users ---------- -->
+<section class="screen adm" data-route="/admin/users" data-title="User Management" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div class="adm-layout">
+    <div data-cg="admin-nav"></div>
+    <div class="adm-page">
+      <div class="adm-head"><div><h1 class="adm-title">User Management</h1><p class="adm-sub" data-el="count">0 users</p></div><button class="btn btn-primary" data-act="invite"><i data-icon="plus"></i> Invite user</button></div>
+      <div class="adm-filters" data-el="filters">
+        <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="search" placeholder="Search by name or email" aria-label="Search by name or email"></div>
+        <select class="select select-sm" data-el="plan" aria-label="Plan"><option value="">All plans</option></select>
+        <select class="select select-sm" data-el="status" aria-label="Status"><option value="">All statuses</option><option value="active">Active</option><option value="expired">Expired</option><option value="cancelled">Cancelled</option><option value="free">Free</option><option value="deactivated">Deactivated</option></select>
+        <div class="adm-tools" data-el="tools"></div>
+      </div>
+      <div class="card"><div class="adm-table-wrap" data-el="table"></div><div class="adm-pager" data-el="pager"></div></div>
+    </div>
+  </div>
+  <div class="adm-bulkbar" data-el="bulkbar" hidden></div>
+  <!-- user detail drawer -->
+  <div class="adm-drawer-wrap" data-el="drawer" hidden>
+    <div class="adm-drawer-scrim" data-act="drawer-close"></div>
+    <aside class="adm-drawer" role="dialog" aria-modal="true" aria-label="User details">
+      <div class="adm-drawer-head" data-el="drawer-head"></div>
+      <div class="tabs-line adm-drawer-tabs" data-el="drawer-tabs" role="tablist"></div>
+      <div class="adm-drawer-body" data-el="drawer-body"></div>
+    </aside>
+  </div>
+</section>
+
+<!-- ---------- /admin/subscriptions ---------- -->
+<section class="screen adm" data-route="/admin/subscriptions" data-title="Subscription Plans" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div class="adm-layout">
+    <div data-cg="admin-nav"></div>
+    <div class="adm-page">
+      <div class="adm-head"><div><h1 class="adm-title">Subscription Plans</h1><p class="adm-sub">Manage subscription tiers and pricing</p></div><button class="btn btn-primary" data-act="new"><i data-icon="plus"></i> New Plan</button></div>
+      <div class="adm-filters" data-el="filters">
+        <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="q" placeholder="Search plans..." aria-label="Search plans"></div>
+        <select class="select select-sm" data-el="status" aria-label="Status"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
+        <div class="adm-tools" data-el="tools"></div>
+      </div>
+      <div class="card"><div class="adm-table-wrap" data-el="table"></div><div class="adm-pager" data-el="pager"></div></div>
+    </div>
+  </div>
+  <div class="adm-bulkbar" data-el="bulkbar" hidden></div>
+  <div hidden data-el="dialog">
+    <form data-form="plan" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><label class="label" for="adm-plan-name">Plan Name *</label><input class="input" id="adm-plan-name" name="name" placeholder="e.g. Basic Plan"></div>
+        <div class="field"><label class="label" for="adm-plan-desc">Description</label><textarea class="textarea" id="adm-plan-desc" name="description" style="min-height:64px" placeholder="Short description shown on the plan card"></textarea></div>
+        <div class="field">
+          <label class="label" for="adm-plan-feature">Features</label>
+          <div class="flex gap-2"><input class="input" id="adm-plan-feature" data-el="feature-input" placeholder="Add a feature"><button type="button" class="btn btn-secondary" data-act="add-feature">Add</button></div>
+          <div class="adm-chips mt-2" data-el="features"></div>
+          <div class="hint">Type a feature and press <span class="kbd">Enter</span> to add it</div>
+        </div>
+        <div class="label mt-2">Billing Intervals</div>
+        <div class="adm-intervals" data-el="intervals"></div>
+        <div class="field mt-4"><label class="label">Menu Items</label><div class="adm-checklist" data-el="menu-items"></div><div class="hint" data-el="menu-count"></div></div>
+        <div class="adm-switch-row"><div><div class="font-medium text-sm">Active</div><div class="hint m-0">Plan visible to users</div></div><button type="button" class="switch on" role="switch" aria-checked="true" aria-label="Active" data-el="active"></button></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Create</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ---------- /admin/menu-pricing ---------- -->
+<section class="screen adm" data-route="/admin/menu-pricing" data-title="Menu Pricing Master" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div class="adm-layout">
+    <div data-cg="admin-nav"></div>
+    <div class="adm-page">
+      <div class="adm-head"><div><h1 class="adm-title">Menu Pricing Master</h1><p class="adm-sub">Manage menu items linked to subscription plans</p></div><button class="btn btn-primary" data-act="new"><i data-icon="plus"></i> New Item</button></div>
+      <div class="adm-filters" data-el="filters">
+        <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="q" placeholder="Search menu items..." aria-label="Search menu items"></div>
+        <select class="select select-sm" data-el="category" aria-label="Category"><option value="">All categories</option></select>
+        <select class="select select-sm" data-el="status" aria-label="Status"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
+        <div class="adm-tools" data-el="tools"></div>
+      </div>
+      <div class="card"><div class="adm-table-wrap" data-el="table"></div><div class="adm-pager" data-el="pager"></div></div>
+    </div>
+  </div>
+  <div class="adm-bulkbar" data-el="bulkbar" hidden></div>
+  <div hidden data-el="dialog">
+    <form data-form="menu" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><label class="label" for="adm-menu-name">Display Name *</label><input class="input" id="adm-menu-name" name="displayName" placeholder="e.g. Reports Export"></div>
+        <div class="field"><label class="label" for="adm-menu-cat">Category</label><input class="input" id="adm-menu-cat" name="category" placeholder="e.g. Trading, Analytics, Data"></div>
+        <div class="field"><label class="label" for="adm-menu-price">Price (₹)</label><input class="input mono" id="adm-menu-price" name="price" type="number" min="0" step="1" value="0"></div>
+        <div class="adm-switch-row"><div><div class="font-medium text-sm">Active</div><div class="hint m-0">Item can be linked to plans</div></div><button type="button" class="switch on" role="switch" aria-checked="true" aria-label="Active" data-el="active"></button></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Create</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ---------- /admin/coupons ---------- -->
+<section class="screen adm" data-route="/admin/coupons" data-title="Coupon Code Master" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div class="adm-layout">
+    <div data-cg="admin-nav"></div>
+    <div class="adm-page">
+      <div class="adm-head"><div><h1 class="adm-title">Coupon Code Master</h1><p class="adm-sub">Manage discount coupons</p></div><button class="btn btn-primary" data-act="new"><i data-icon="plus"></i> New Coupon</button></div>
+      <div class="adm-filters" data-el="filters">
+        <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="q" placeholder="Search code or description..." aria-label="Search coupons"></div>
+        <select class="select select-sm" data-el="type" aria-label="Type"><option value="">All types</option><option value="public_all_listed">Public</option><option value="private_community_listed">Community</option></select>
+        <select class="select select-sm" data-el="status" aria-label="Status"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option><option value="expired">Expired</option></select>
+        <div class="adm-tools" data-el="tools"></div>
+      </div>
+      <div class="card"><div class="adm-table-wrap" data-el="table"></div><div class="adm-pager" data-el="pager"></div></div>
+    </div>
+  </div>
+  <div class="adm-bulkbar" data-el="bulkbar" hidden></div>
+  <div hidden data-el="dialog">
+    <form data-form="coupon" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="adm-form-grid">
+          <div class="field"><label class="label" for="adm-cp-code">Code *</label><input class="input mono uppercase" id="adm-cp-code" name="code" placeholder="BASIC20"></div>
+          <div class="field"><label class="label" for="adm-cp-scope">Coupon Type</label><select class="select" id="adm-cp-scope" name="scope"><option value="public_all_listed">Public (All listed)</option><option value="private_community_listed">Community (Assigned to specific users &amp; their referrals)</option></select></div>
+        </div>
+        <div class="field adm-assign" data-el="assign" hidden>
+          <div class="flex items-center justify-between gap-2 flex-wrap mb-2">
+            <label class="label m-0">Assign to Users</label>
+            <div class="flex gap-1"><button type="button" class="btn btn-outline btn-xs" data-act="assign-all">Select All</button><button type="button" class="btn btn-outline btn-xs" data-act="assign-none">Deselect All</button><button type="button" class="btn btn-outline btn-xs" title="Invert selection" data-act="assign-invert">↔ Invert</button></div>
+          </div>
+          <div class="adm-search mb-2"><i data-icon="search"></i><input class="input" data-el="assign-search" placeholder="Search users..." aria-label="Search users"></div>
+          <div class="adm-checklist" data-el="assign-list"></div>
+          <div class="hint" data-el="assign-count">0 of 0 users selected</div>
+        </div>
+        <div class="field"><label class="label" for="adm-cp-desc">Description</label><input class="input" id="adm-cp-desc" name="description" placeholder="Shown to users at checkout"></div>
+        <div class="adm-form-grid">
+          <div class="field"><label class="label" for="adm-cp-dtype">Discount Type</label><select class="select" id="adm-cp-dtype" name="discountType"><option value="percent">Percent</option><option value="fixed">Fixed</option></select></div>
+          <div class="field"><label class="label" for="adm-cp-dval">Discount Value</label><input class="input mono" id="adm-cp-dval" name="discountValue" type="number" min="0" step="1" value="0"></div>
+          <div class="field"><label class="label" for="adm-cp-min">Min Order (₹)</label><input class="input mono" id="adm-cp-min" name="minOrderAmount" type="number" min="0" step="1" value="0"></div>
+          <div class="field"><label class="label" for="adm-cp-max">Max Uses</label><input class="input mono" id="adm-cp-max" name="maxUses" type="number" min="0" step="1" value="100"></div>
+          <div class="field"><label class="label" for="adm-cp-per">Per User Limit</label><input class="input mono" id="adm-cp-per" name="perUserLimit" type="number" min="0" step="1" value="1"></div>
+          <div class="field"></div>
+          <div class="field"><label class="label" for="adm-cp-start">Starts At</label><input class="input" id="adm-cp-start" name="startsAt" type="date"></div>
+          <div class="field"><label class="label" for="adm-cp-end">Expires At</label><input class="input" id="adm-cp-end" name="expiresAt" type="date"></div>
+        </div>
+        <div class="field"><label class="label">Applicable Plans &amp; Intervals</label><div class="adm-plan-grid" data-el="plan-grid"></div></div>
+        <div class="adm-switch-row"><div><div class="font-medium text-sm">Active</div><div class="hint m-0">Coupon can be applied at checkout</div></div><button type="button" class="switch on" role="switch" aria-checked="true" aria-label="Active" data-el="active"></button></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Create</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ---------- /admin/user-subscriptions ---------- -->
+<section class="screen adm" data-route="/admin/user-subscriptions" data-title="User Subscriptions" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div class="adm-layout">
+    <div data-cg="admin-nav"></div>
+    <div class="adm-page">
+      <div class="adm-head">
+        <div><h1 class="adm-title">User Subscriptions</h1><p class="adm-sub">Manage users and commissions</p></div>
+        <div class="flex items-center gap-3"><div class="tabs-line" role="tablist"><button class="tab active" role="tab" data-tab="users"><i data-icon="users"></i> Users</button><button class="tab" role="tab" data-tab="commissions"><i data-icon="wallet"></i> Commissions</button></div><button class="btn btn-primary" data-act="comm-bulk" data-el="bulk-pay" title="Mark every pending commission as paid">Bulk pay</button></div>
+      </div>
+
+      <!-- Users tab -->
+      <div data-panel="users">
+        <div class="adm-filters" data-el="users-filters">
+          <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="users-search" placeholder="Search by name or email..." aria-label="Search by name or email"></div>
+          <select class="select select-sm" data-el="users-status" aria-label="Status"><option value="">All Statuses</option><option value="active">Active</option><option value="expired">Expired</option><option value="cancelled">Cancelled</option><option value="free">Free</option></select>
+          <div class="adm-tools" data-el="users-tools"></div>
+        </div>
+        <div class="card"><div class="adm-table-wrap" data-el="users-table"></div><div class="adm-pager" data-el="users-pager"></div></div>
+      </div>
+
+      <!-- Commissions tab -->
+      <div data-panel="commissions" hidden>
+        <div class="adm-filters" data-el="comm-filters">
+          <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="comm-search" placeholder="Search referrer name..." aria-label="Search referrer name"></div>
+          <select class="select select-sm" data-el="comm-month" aria-label="Filter by month"><option value="">All Months</option></select>
+          <button class="btn btn-outline btn-sm" data-act="comm-clear">Clear</button>
+          <div class="adm-tools" data-el="comm-tools"></div>
+        </div>
+        <div class="adm-tiles" data-el="comm-tiles"></div>
+        <div class="card mb-4">
+          <div class="card-header adm-card-toolbar"><div><div class="card-title">Paid vs pending by month</div><div class="card-desc">Commission owed to referrers, grouped by the month it was earned</div></div><span class="micro" data-el="comm-chart-meta"></span></div>
+          <div class="card-content adm-chart" data-el="comm-chart" style="padding-top:0"></div>
+        </div>
+        <div class="card"><div class="adm-table-wrap" data-el="comm-table"></div><div class="adm-pager" data-el="comm-pager"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="adm-bulkbar" data-el="bulkbar" hidden></div>
+
+  <!-- Feature Limits dialog -->
+  <div hidden data-el="limits-dialog">
+    <form data-form="limits" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><label class="label" for="adm-lim-paper">Paper Trading Limit</label><div class="flex items-center gap-2"><input class="input mono" id="adm-lim-paper" name="paper" type="number" min="0" step="1" style="max-width:160px"><span class="text-sm text-muted">trades / month</span></div><div class="hint">Set to 0 for plan default. Higher values override plan limit.</div></div>
+        <div class="field"><label class="label" for="adm-lim-live">Live Trading Limit</label><div class="flex items-center gap-2"><input class="input mono" id="adm-lim-live" name="live" type="number" min="0" step="1" style="max-width:160px"><span class="text-sm text-muted">trades / month</span></div><div class="hint">Set to 0 for plan default. Higher values override plan limit.</div></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Save Limits</button></div>
+    </form>
+  </div>
+
+  <!-- Lot size settings dialog (inferred from /admin lot-size-settings endpoint) -->
+  <div hidden data-el="lots-dialog">
+    <form data-form="lots" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="adm-form-grid adm-form-grid-3">
+          <div class="field"><label class="label" for="adm-lot-btc">BTC lot size</label><input class="input mono" id="adm-lot-btc" name="BTC" type="number" min="0.0001" step="0.001"></div>
+          <div class="field"><label class="label" for="adm-lot-eth">ETH lot size</label><input class="input mono" id="adm-lot-eth" name="ETH" type="number" min="0.001" step="0.01"></div>
+          <div class="field"><label class="label" for="adm-lot-xaut">XAUT lot size</label><input class="input mono" id="adm-lot-xaut" name="XAUT" type="number" min="0.0001" step="0.001"></div>
+        </div>
+        <div class="hint">Overrides the exchange default lot size for this user's strategy builder and P&amp;L calculations.</div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Save Lot Sizes</button></div>
+    </form>
+  </div>
+
+  <!-- Referral details dialog -->
+  <div hidden data-el="view-dialog">
+    <div class="cg-dialog-body" style="padding-top:4px">
+      <div class="adm-table-wrap adm-table-bordered" data-el="view-table"></div>
+      <div class="adm-totals mt-3" data-el="view-totals"></div>
+    </div>
+    <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="close">Close</button></div>
+  </div>
+
+  <!-- Mark Payment dialog -->
+  <div hidden data-el="pay-dialog">
+    <form data-form="pay" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><div class="label">Payment Status</div><div class="flex gap-2"><label class="adm-radio selected" data-val="paid"><input type="radio" name="payStatus" value="paid" checked> Paid</label><label class="adm-radio" data-val="not_paid"><input type="radio" name="payStatus" value="not_paid"> Not Paid</label></div></div>
+        <div class="field"><div class="label">Proof Link per Referral <span class="text-muted font-medium" data-el="proof-hint">(optional)</span></div><div class="adm-proofs" data-el="proofs"></div></div>
+        <div class="field"><label class="label" for="adm-pay-comment">Comment <span class="text-muted font-medium" data-el="comment-hint">(optional)</span></label><textarea class="textarea" id="adm-pay-comment" name="comment" placeholder="Optional note..." style="min-height:70px"></textarea></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Confirm Paid</button></div>
+    </form>
+  </div>
+</section>
+
+<!-- ---------- /admin/banners ---------- -->
+<section class="screen adm" data-route="/admin/banners" data-title="Banner Master" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div class="adm-layout">
+    <div data-cg="admin-nav"></div>
+    <div class="adm-page">
+      <div class="adm-head"><div><h1 class="adm-title">Banner Master</h1><p class="adm-sub">Manage promotional banners and popups</p></div><button class="btn btn-primary" data-act="new"><i data-icon="plus"></i> New Banner</button></div>
+      <div class="adm-filters" data-el="filters">
+        <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="q" placeholder="Search banners..." aria-label="Search banners"></div>
+        <select class="select select-sm" data-el="status" aria-label="Status"><option value="">All statuses</option><option value="live">Showing now</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
+        <select class="select select-sm" data-el="frequency" aria-label="Frequency"><option value="">All frequencies</option><option value="once_per_day">once_per_day</option><option value="every_time">every_time</option><option value="once_per_session">once_per_session</option></select>
+        <div class="adm-tools" data-el="tools"></div>
+      </div>
+      <div class="card"><div class="adm-table-wrap" data-el="table"></div><div class="adm-pager" data-el="pager"></div></div>
+    </div>
+  </div>
+  <div class="adm-bulkbar" data-el="bulkbar" hidden></div>
+  <div hidden data-el="dialog">
+    <form data-form="banner" novalidate autocomplete="off">
+      <div class="cg-dialog-body">
+        <div class="field"><label class="label" for="banner-title">Title</label><input class="input" id="banner-title" name="title" placeholder="Welcome Offer"></div>
+        <div class="field"><label class="label" for="banner-description">Description</label><textarea class="textarea" id="banner-description" name="description" placeholder="Get 20% off your first plan" style="min-height:64px"></textarea></div>
+        <div class="field"><label class="label" for="banner-link">Link URL</label><input class="input" id="banner-link" name="linkUrl" type="url" placeholder="https://coingreek.com/offers"></div>
+        <div class="adm-form-grid">
+          <div class="field"><label class="label" for="banner-starts">Starts At <span class="text-muted font-medium">(optional)</span></label><input class="input" id="banner-starts" name="startsAt" type="datetime-local"></div>
+          <div class="field"><label class="label" for="banner-ends">Ends At <span class="text-muted font-medium">(optional)</span></label><input class="input" id="banner-ends" name="endsAt" type="datetime-local"></div>
+        </div>
+        <div class="field"><label class="label" for="banner-frequency">Frequency</label><select class="select" id="banner-frequency" name="frequency"><option value="once_per_day">once_per_day</option><option value="every_time">every_time</option><option value="once_per_session">once_per_session</option></select></div>
+        <div class="field">
+          <label class="label" for="banner-image">Image <span class="text-muted font-medium" data-el="image-hint">(leave empty to keep current)</span></label>
+          <input class="input adm-file" id="banner-image" name="image" type="file" accept="image/*">
+          <div class="hint">Maximum size 5 MB · PNG, JPG, GIF or WebP</div>
+          <div class="flex items-center gap-3 mt-3">
+            <div><div class="micro mb-1">Preview</div><div class="adm-thumb adm-thumb-lg" data-el="preview"></div></div>
+            <div class="flex flex-col gap-1"><button type="button" class="btn btn-outline btn-xs" data-act="use-gradient" title="Mock fallback: use a generated gradient instead of an uploaded file">Use gradient</button><button type="button" class="btn btn-outline btn-xs" data-act="preview-form" title="Open the popup exactly as a user would see it">Preview as user</button><span class="hint m-0">No upload needed in the mock</span></div>
+          </div>
+        </div>
+        <div class="adm-switch-row"><div><div class="font-medium text-sm">Active</div><div class="hint m-0">Show this banner to users</div></div><button type="button" class="switch on" role="switch" aria-checked="true" aria-label="Active" id="banner-active" data-el="active"></button></div>
+      </div>
+      <div class="cg-dialog-foot"><button type="button" class="btn btn-outline" data-act="cancel">Cancel</button><button type="submit" class="btn btn-primary" data-el="submit">Create Banner</button></div>
+    </form>
+  </div>
+  <!-- "Preview as user" popup -->
+  <div hidden data-el="preview-dialog" class="adm-banner-preview"></div>
+</section>
+
+<!-- ---------- /admin/emails ---------- -->
+<section class="screen adm" data-route="/admin/emails" data-title="Promotional Emails" data-auth="admin">
+  <div data-cg="app-header"></div>
+  <div class="adm-layout">
+    <div data-cg="admin-nav"></div>
+    <div class="adm-page">
+      <div class="adm-head">
+        <div><h1 class="adm-title">Promotional Emails</h1><p class="adm-sub">Send targeted campaigns to your users and review delivery history</p></div>
+        <div class="flex items-center gap-3"><div class="tabs-line" role="tablist"><button class="tab active" role="tab" data-tab="compose">Compose</button><button class="tab" role="tab" data-tab="history">History</button></div><button type="button" class="btn btn-primary" data-act="send" disabled><i data-icon="send"></i> Send Email</button></div>
+      </div>
+
+      <!-- Compose -->
+      <div data-panel="compose" class="adm-compose">
+        <div class="card">
+          <div class="card-header adm-card-toolbar"><div class="card-title flex items-center gap-2"><i data-icon="users"></i> Recipients</div><span class="badge badge-secondary" data-el="sel-badge">0 selected</span></div>
+          <div class="card-content" style="padding-top:4px">
+            <div class="adm-search mb-2"><i data-icon="search"></i><input class="input input-sm" data-el="rc-search" placeholder="Search users by name or email" aria-label="Search users by name or email"></div>
+            <div class="flex items-center gap-2 mb-2">
+              <label class="micro" for="adm-rc-segment">Segment</label>
+              <select class="select select-sm" id="adm-rc-segment" data-el="rc-segment" style="max-width:180px"><option value="all">All users</option><option value="paid">Paid users</option><option value="free">Free users</option><option value="expired">Expired</option></select>
+              <button type="button" class="btn btn-outline btn-xs ml-auto" data-act="rc-all">Select all (0)</button>
+              <button type="button" class="btn btn-ghost btn-xs" data-act="rc-clear"><i data-icon="x" data-size="12"></i> Clear</button>
+            </div>
+            <div class="adm-checklist adm-checklist-tall" data-el="rc-list"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-content">
+            <div class="flex items-center gap-2 flex-wrap mb-3"><span class="micro">Templates</span><div class="adm-chips" data-el="templates"></div></div>
+            <div class="field"><label class="label" for="promo-subject">Subject</label><input class="input" id="promo-subject" data-el="subject" placeholder="Your report is ready"></div>
+            <div class="field"><label class="label" for="promo-message">Message</label><textarea class="textarea" id="promo-message" data-el="message" style="min-height:160px" placeholder="Hi {{name}}, …"></textarea></div>
+            <div class="flex items-center gap-2 flex-wrap mb-4"><span class="micro">Insert</span><button type="button" class="adm-chip" data-ins="{{name}}" title="into the last-focused field">{{name}}</button><button type="button" class="adm-chip" data-ins="{{email}}" title="into the last-focused field">{{email}}</button><button type="button" class="adm-chip" data-ins="{{plan}}" title="into the last-focused field">{{plan}}</button><button type="button" class="adm-chip" data-ins="{{expiry}}" title="into the last-focused field">{{expiry}}</button></div>
+            <div class="adm-preview" data-el="preview"></div>
+            <div class="flex justify-end gap-2 mt-4"><button type="button" class="btn btn-outline" data-act="test-send" title="Send this email to your own address"><i data-icon="mail"></i> Test send to me</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div data-panel="history" hidden>
+        <div data-el="hist-list">
+          <div class="adm-filters" data-el="hist-filters">
+            <div class="adm-search"><i data-icon="search"></i><input class="input input-sm" data-el="hist-q" placeholder="Search subject or segment..." aria-label="Search campaigns"></div>
+            <div class="adm-tools" data-el="hist-tools"></div>
+          </div>
+          <div class="card"><div class="adm-table-wrap" data-el="hist-table"></div><div class="adm-pager" data-el="hist-pager"></div></div>
+        </div>
+        <div data-el="hist-detail" hidden>
+          <button class="btn btn-ghost btn-sm mb-3" style="margin-left:-8px" data-act="hist-back"><i data-icon="arrowLeft"></i> Back to campaigns</button>
+          <div class="card mb-4">
+            <div class="card-header"><div class="card-title" data-el="det-subject"></div><div class="card-desc" data-el="det-meta"></div></div>
+            <div class="card-content"><div class="adm-tiles adm-tiles-4" data-el="det-tiles"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header adm-card-toolbar"><div class="card-title">Recipients</div><button class="btn btn-outline btn-sm" data-act="det-csv"><i data-icon="copy"></i> Copy CSV</button></div>
+            <div class="adm-table-wrap" data-el="det-table"></div>
+            <div class="adm-pager" data-el="det-pager"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
