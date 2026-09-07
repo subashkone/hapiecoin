@@ -32,6 +32,11 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("chain-table")).toHaveAttribute("data-rows", /^[1-9][0-9]$/, { timeout: 15_000 });
       await expect(page.getByTestId("futures-price-value")).not.toHaveText("—", { timeout: 15_000 });
       await page.screenshot({ path: `${DIR}/analyse-${theme}.png` });
+      // HC-WS-010 Column Settings dialog over the chain
+      await page.getByTestId("chain-columns").click();
+      await expect(page.getByTestId("column-settings")).toBeVisible();
+      await page.screenshot({ path: `${DIR}/analyse-columns-${theme}.png` });
+      await page.getByTestId("columns-done").click();
       await page.goto("/");
       await expect(page.getByTestId("tile-BTC")).toHaveAttribute("data-state", "live", { timeout: 15_000 });
       await page.screenshot({ path: `${DIR}/home-${theme}.png` });

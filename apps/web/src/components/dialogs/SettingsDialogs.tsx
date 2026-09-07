@@ -3,6 +3,7 @@
 // shell so any header (analyse or default) can open them.
 import { useUiStore } from "@/lib/store";
 import { ApiSettingsDialog } from "./ApiSettingsDialog";
+import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
 import { CurrencyDialog } from "./CurrencyDialog";
 import { ExchangeManagementDialog } from "./ExchangeManagementDialog";
 import { LogoutDialog } from "./LogoutDialog";
@@ -25,6 +26,7 @@ export function SettingsDialogs() {
       <PnlDialog open={dialog === "pnl"} onOpenChange={onOpenChange} />
       <ExchangeManagementDialog open={dialog === "exchanges"} onOpenChange={onOpenChange} />
       <LogoutDialog open={dialog === "logout"} onOpenChange={onOpenChange} />
+      <ColumnSettingsDialog open={dialog === "columns"} onOpenChange={onOpenChange} />
     </>
   );
 }

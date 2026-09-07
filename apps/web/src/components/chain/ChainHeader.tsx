@@ -3,7 +3,7 @@
 // calls and puts parts are tracks translated by the shared horizontal offset, so they always line up
 // with the body columns (GAPS #2). Lives outside the vertical scroller, so it never scrolls away.
 import { cn } from "@hapiecoin/ui";
-import { CALL_COLUMNS, PUT_COLUMNS, STRIKE_COL_PX } from "./columns";
+import { type ChainColumn, STRIKE_COL_PX, gridTemplate } from "./columns";
 
 export interface ChainHeaderProps {
   /** Calls track offset in px (from useMirroredScroll). */
@@ -11,6 +11,10 @@ export interface ChainHeaderProps {
   /** Puts track offset in px. */
   putsX: number;
   trackWidth: number;
+  /** Calls columns in reading order (outboard → inboard). */
+  callCols: readonly ChainColumn[];
+  /** Puts columns in reading order (inboard → outboard). */
+  putCols: readonly ChainColumn[];
   expiryLabel: string;
   daysLeft: number | null;
   /** Which sides are shown (narrow layout shows one). */
@@ -19,17 +23,25 @@ export interface ChainHeaderProps {
   lotLabel: string;
 }
 
-function Track({ x, width, children, side }: { x: number; width: number; children: React.ReactNode; side: "calls" | "puts" }) {
+function Track({ x, width, cols, side }: { x: number; width: number; cols: readonly ChainColumn[]; side: "calls" | "puts" }) {
   return (
     <div className="min-w-0 overflow-hidden" data-testid={`chain-head-${side}`} data-x={x}>
-      <div className="grid" style={{ width, gridTemplateColumns: `repeat(${side === "calls" ? CALL_COLUMNS.length : PUT_COLUMNS.length}, 1fr)`, transform: `translateX(-${x}px)` }}>
-        {children}
+      <div className="grid" style={{ width, gridTemplateColumns: gridTemplate(cols), transform: `translateX(-${x}px)` }}>
+        {cols.length === 0 ? (
+          <div className={cn("micro px-2 py-1", side === "calls" ? "text-right" : "text-left")}>no columns</div>
+        ) : (
+          cols.map((c) => (
+            <div key={c.id} className={cn("micro truncate px-2 py-1", side === "calls" ? "text-right" : "text-left")} title={c.title} data-col={c.id}>
+              {c.header}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
 }
 
-export function ChainHeader({ x, putsX, trackWidth, expiryLabel, daysLeft, sides, rangeLabel, lotLabel }: ChainHeaderProps) {
+export function ChainHeader({ x, putsX, trackWidth, callCols, putCols, expiryLabel, daysLeft, sides, rangeLabel, lotLabel }: ChainHeaderProps) {
   const showCalls = sides !== "puts";
   const showPuts = sides !== "calls";
   const cols = sides === "both" ? `minmax(0,1fr) ${STRIKE_COL_PX}px minmax(0,1fr)` : `minmax(0,1fr) ${STRIKE_COL_PX}px`;
@@ -54,25 +66,9 @@ export function ChainHeader({ x, putsX, trackWidth, expiryLabel, daysLeft, sides
         ) : null}
       </div>
       <div className="grid items-stretch border-t border-border" style={{ gridTemplateColumns: cols }}>
-        {showCalls ? (
-          <Track x={x} width={trackWidth} side="calls">
-            {CALL_COLUMNS.map((c) => (
-              <div key={"c" + c.id} className="micro px-2 py-1 text-right" title={c.title}>
-                {c.label}
-              </div>
-            ))}
-          </Track>
-        ) : null}
+        {showCalls ? <Track x={x} width={trackWidth} cols={callCols} side="calls" /> : null}
         <div className="micro border-x border-border py-1 text-center">Strike</div>
-        {showPuts ? (
-          <Track x={putsX} width={trackWidth} side="puts">
-            {PUT_COLUMNS.map((c) => (
-              <div key={"p" + c.id} className="micro px-2 py-1 text-left" title={c.title}>
-                {c.label}
-              </div>
-            ))}
-          </Track>
-        ) : null}
+        {showPuts ? <Track x={putsX} width={trackWidth} cols={putCols} side="puts" /> : null}
       </div>
     </div>
   );

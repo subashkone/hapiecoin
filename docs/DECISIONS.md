@@ -128,3 +128,12 @@ One entry per decision. Newest last. Each entry: context, decision, consequences
   - Below 560 px the table shows one side at a time (calls | puts toggle) with the strike column pinned at the inner edge; the same virtualiser and offset model apply.
   - Keyboard inside the grid: J / K / ↑ / ↓ move the highlighted strike, Home / End jump, A recentres on ATM, E / Shift+E step the expiry, ← / → shift columns; the palette exposes "Chain: recentre on ATM" and "Chain: show all strikes". These keys match the v2 mock's shortcut list; B / S (legs) arrive with item 3.
 - Consequences: optional columns (HC-WS-021) only change `CALL_COLUMNS` and the track width; hover controls (HC-WS-023) and leg pills (HC-WS-027) attach to the existing row parts. The stale state dims the whole table and shows "as of" in the footer; the ATM band remains the only amber element (ADR-003).
+
+## ADR-021 · Chain column layout: order from the strike outward, persisted and normalised (2026-09-07)
+- Context: HC-WS-010..014, 021 and 073 add optional columns and a Column Settings dialog to the item 1 layout (ADR-020). The mock keeps one ordered list and mirrors it; the gateway quote carries prices, IVs, OI, volume, sizes, Greeks, last and 24 h change but no candle fields.
+- Decisions:
+  - One persisted layout `{ v: 2, order, visible }` (`chainColumns` in the UI store). `order` is read from the strike outward: the first visible column touches the strike on the puts side and the same list is mirrored on the calls side. Every read goes through `normaliseLayout`, which drops unknown ids, appends new ones in default order and falls back to the default for other versions, so a stored layout never breaks a newer build.
+  - Column definitions (id, label, header, group, unit title, fixed width) live in one file; the track width, header labels and body cells all derive from the visible list, so adding a column is one entry plus one cell renderer. Essentials = Ask · Mark · Bid · OI · Δ; the Greek trio Γ Θ ν toggles together (palette and dialog).
+  - The dialog applies every change immediately (no Save) and persists through the store; reorder offers ▲ ▼ buttons for keyboard users and HTML5 drag as a convenience.
+  - Open / High / Low are deferred (GAPS #31) and shown muted in the dialog rather than as dead switches.
+- Consequences: hover controls and leg pills (item 3) attach to rows, not columns, so they are unaffected by the layout; the 24 h change cell is the only new coloured figure (signed change, green/red per ADR-003).

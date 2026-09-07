@@ -1,11 +1,13 @@
 // Settings dialogs against the in-memory mock API: every dialog saves through /v1 and the change persists.
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
 import { routerMock } from "../../../test/next-mocks";
 import { useUiStore } from "@/lib/store";
+import { defaultLayout } from "@/lib/chain/layout";
 import { ApiSettingsDialog } from "./ApiSettingsDialog";
+import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
 import { CurrencyDialog, currencyNote } from "./CurrencyDialog";
 import { ExchangeManagementDialog, validateBrokerForm } from "./ExchangeManagementDialog";
 import { LogoutDialog } from "./LogoutDialog";
@@ -20,9 +22,69 @@ const EMAIL = "asha@example.com";
 beforeEach(() => {
   mock = installMockFetch();
   mock.loginAs(EMAIL);
-  useUiStore.setState({ asset: "BTC", expiry: {}, feedPaused: false, dialog: null, dialogsTouched: false, paletteOpen: false });
+  useUiStore.setState({ asset: "BTC", expiry: {}, feedPaused: false, dialog: null, dialogsTouched: false, paletteOpen: false, chainColumns: defaultLayout() });
 });
 afterEach(() => mock.restore());
+
+describe("HC-WS-010..014 Column Settings", () => {
+  it("HC-WS-011 switches toggle a column, the counter updates and HC-WS-012 quick buttons apply presets", async () => {
+    const u = userEvent.setup();
+    renderWithProviders(<ColumnSettingsDialog open onOpenChange={noop} />);
+    expect(screen.getByTestId("columns-counter").textContent).toBe("5 of 13 columns visible");
+    expect(screen.getByTestId("columns-row-gamma").dataset["on"]).toBe("false");
+    await u.click(screen.getByRole("switch", { name: "Gamma" }));
+    expect(useUiStore.getState().chainColumns.visible).toContain("gamma");
+    expect(screen.getByTestId("columns-counter").textContent).toBe("6 of 13 columns visible");
+    await u.click(screen.getByRole("switch", { name: "Gamma" }));
+    expect(useUiStore.getState().chainColumns.visible).not.toContain("gamma");
+    await u.click(screen.getByTestId("columns-preset-all"));
+    expect(screen.getByTestId("columns-counter").textContent).toBe("13 of 13 columns visible");
+    await u.click(screen.getByTestId("columns-preset-none"));
+    expect(screen.getByTestId("columns-counter").textContent).toBe("0 of 13 columns visible");
+    await u.click(screen.getByTestId("columns-preset-essentials"));
+    expect(useUiStore.getState().chainColumns.visible).toEqual(["ask", "mark", "bid", "oi", "delta"]);
+    // HC-WS-073 Greeks trio
+    await u.click(screen.getByTestId("columns-greeks"));
+    expect(useUiStore.getState().chainColumns.visible.slice(-3)).toEqual(["gamma", "theta", "vega"]);
+    expect(screen.getByTestId("columns-greeks").textContent).toBe("Hide Greeks");
+    // OHLC is listed but not switchable
+    expect(screen.getByTestId("columns-group-ohlc").textContent).toContain("arrives with candle data");
+    expect(screen.queryByRole("switch", { name: "Open" })).toBeNull();
+  });
+  it("HC-WS-013 the Reorder tab moves columns with ▲ ▼ and drag, and Reset restores the default", async () => {
+    const u = userEvent.setup();
+    const onOpenChange = vi.fn();
+    renderWithProviders(<ColumnSettingsDialog open onOpenChange={onOpenChange} />);
+    await u.click(screen.getByTestId("columns-tab-reorder"));
+    expect(screen.getByTestId("columns-order-ask").dataset["index"]).toBe("0");
+    expect(screen.getByTestId("columns-up-ask").hasAttribute("disabled")).toBe(true);
+    await u.click(screen.getByTestId("columns-down-ask"));
+    expect(useUiStore.getState().chainColumns.order.slice(0, 2)).toEqual(["mark", "ask"]);
+    await u.click(screen.getByTestId("columns-up-ask"));
+    expect(useUiStore.getState().chainColumns.order.slice(0, 2)).toEqual(["ask", "mark"]);
+    // hidden columns are badged
+    expect(within(screen.getByTestId("columns-order-gamma")).getByText("hidden")).toBeTruthy();
+    // drag "last" onto "ask" drops it before ask
+    const last = screen.getByTestId("columns-order-last");
+    const ask = screen.getByTestId("columns-order-ask");
+    const dt = { effectAllowed: "", setData: noop, getData: () => "" } as unknown as DataTransfer;
+    fireEvent.dragStart(last, { dataTransfer: dt });
+    fireEvent.dragOver(ask, { dataTransfer: dt });
+    fireEvent.drop(ask, { dataTransfer: dt });
+    fireEvent.dragEnd(last, { dataTransfer: dt });
+    expect(useUiStore.getState().chainColumns.order.slice(0, 2)).toEqual(["last", "ask"]);
+    await u.click(screen.getByTestId("columns-preset-reset"));
+    expect(useUiStore.getState().chainColumns).toEqual(defaultLayout());
+    await u.click(screen.getByTestId("columns-done"));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+  it("HC-WS-010 the store's dialog kind mounts it through SettingsDialogs", async () => {
+    renderWithProviders(<SettingsDialogs />);
+    expect(screen.queryByTestId("column-settings")).toBeNull();
+    useUiStore.getState().openDialog("columns");
+    expect(await screen.findByTestId("column-settings")).toBeTruthy();
+  });
+});
 
 const account = () => mock.state.accounts.get(EMAIL)!;
 const noop = () => {};

@@ -12,6 +12,7 @@ import {
 } from "@hapiecoin/ui";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { greeksShown, setGreeks } from "@/lib/chain/layout";
 import { useUiStore } from "@/lib/store";
 
 export interface PaletteCommand {
@@ -54,6 +55,23 @@ export function buildCommands(opts: {
         group: "Actions",
         keywords: ["chain", "range", "strikes", "expand"],
         run: () => useUiStore.getState().setChainRange(0),
+      },
+      {
+        id: "act:chain-columns",
+        label: "Chain: column settings",
+        group: "Actions",
+        keywords: ["chain", "columns", "show", "hide", "reorder", "greeks"],
+        run: () => useUiStore.getState().openDialog("columns"),
+      },
+      {
+        id: "act:chain-greeks",
+        label: "Chain: toggle Greeks columns (Γ Θ ν)",
+        group: "Actions",
+        keywords: ["chain", "greeks", "gamma", "theta", "vega", "columns"],
+        run: () => {
+          const s = useUiStore.getState();
+          s.setChainColumns(setGreeks(s.chainColumns, !greeksShown(s.chainColumns)));
+        },
       },
     );
   } else {

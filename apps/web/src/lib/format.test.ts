@@ -1,7 +1,37 @@
 import { describe, expect, it } from "vitest";
-import { daysToExpiry, fmtDate, fmtDelta, fmtExpiry, fmtIv, fmtOi, fmtPct, fmtPrice, fmtStrike, fmtUsd } from "./format";
+import {
+  daysToExpiry,
+  fmtChange,
+  fmtDate,
+  fmtDelta,
+  fmtExpiry,
+  fmtGamma,
+  fmtIv,
+  fmtOi,
+  fmtPct,
+  fmtPrice,
+  fmtQty,
+  fmtStrike,
+  fmtTheta,
+  fmtUsd,
+  fmtVega,
+} from "./format";
 
 describe("[FORMAT] display formatters", () => {
+  it("HC-WS-021 formats Γ 6 dp, Θ and ν 1 dp, quantities compact and the 24 h change signed", () => {
+    expect(fmtGamma(0.00012345)).toBe("0.000123");
+    expect(fmtGamma(undefined)).toBe("—");
+    expect(fmtTheta(-12.34)).toBe("-12.3");
+    expect(fmtTheta(Number.NaN)).toBe("—");
+    expect(fmtVega(45.678)).toBe("45.7");
+    expect(fmtVega(undefined)).toBe("—");
+    expect(fmtQty("1234")).toBe("1.2K");
+    expect(fmtQty(undefined)).toBe("—");
+    expect(fmtChange(1.234)).toEqual({ text: "+1.23%", dir: "up" });
+    expect(fmtChange(-0.5)).toEqual({ text: "-0.50%", dir: "down" });
+    expect(fmtChange(0)).toEqual({ text: "0.00%", dir: "flat" });
+    expect(fmtChange(undefined)).toEqual({ text: "—", dir: "flat" });
+  });
   it("HC-SH-004 fmtPrice groups and picks digits by magnitude", () => {
     expect(fmtPrice("79521.5")).toBe("79,521.5");
     expect(fmtPrice("3.14159")).toBe("3.14");

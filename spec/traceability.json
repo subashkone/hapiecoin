@@ -2818,7 +2818,7 @@
   "phase": 2,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "Opens the v1 Column Settings dialog (show / hide, reorder, quick buttons)",
-  "evidence": "bundle strings: Column settings, Column Settings, ' of '"
+  "evidence": "bundle strings: Column settings, Column Settings, ' of ' · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
  },
  {
   "id": "HC-WS-011",
@@ -2833,7 +2833,7 @@
   "phase": 2,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Each row toggles the column; the chain re-renders instantly and the 'x of 16' counter updates",
-  "evidence": "bundle strings: Market Data, Greeks, Activity, OHLC and every column label"
+  "evidence": "bundle strings: Market Data, Greeks, Activity, OHLC and every column label · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
  },
  {
   "id": "HC-WS-012",
@@ -2848,7 +2848,7 @@
   "phase": 2,
   "test": "e2e (Playwright)",
   "acceptance": "Essentials = Ask · Mark · Bid · OI · Δ (the v2 default); Show All / Hide all / Reset; each change re-renders the chain and toasts",
-  "evidence": "bundle strings: Essentials, Show All, Hide all, Reset"
+  "evidence": "bundle strings: Essentials, Show All, Hide all, Reset · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
  },
  {
   "id": "HC-WS-013",
@@ -2863,7 +2863,7 @@
   "phase": 2,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "HTML5 drag & drop list (dragstart/dragover/dragend) plus ▲/▼ buttons; hidden columns are badged; order applies from the strike outward and is mirrored on the Calls side",
-  "evidence": "bundle string: Drag columns to change their display order (left → right)."
+  "evidence": "bundle string: Drag columns to change their display order (left → right). · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
  },
  {
   "id": "HC-WS-014",
@@ -2878,7 +2878,7 @@
   "phase": 2,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "Saved as CG.state.chainCols {v:2, order, visible} (v1 layouts are migrated to the v2 default)",
-  "evidence": "bundle key oc_col_config"
+  "evidence": "bundle key oc_col_config · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
  },
  {
   "id": "HC-WS-015",
@@ -2983,7 +2983,7 @@
   "phase": 2,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Toggled in Column Settings; the Greeks chip in the toolbar adds/removes Γ Θ ν in one click",
-  "evidence": "bundle column labels; older screenshot shows Bid Qty BTC column"
+  "evidence": "bundle column labels; older screenshot shows Bid Qty BTC column · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
  },
  {
   "id": "HC-WS-022",
@@ -3763,7 +3763,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "setGreeksCols() edits the column state (persisted) and re-renders; chip state mirrors the columns",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
  },
  {
   "id": "HC-WS-074",
