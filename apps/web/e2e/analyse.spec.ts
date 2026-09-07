@@ -130,6 +130,47 @@ test.describe("HC-SH analyse header and live chain", () => {
     await expect(focused).toHaveAttribute("data-strike", atmStrike!);
   });
 
+  test("HC-WS-010 gear opens Column Settings and toggles apply to the chain; HC-WS-012 presets", async ({ page }) => {
+    const table = page.getByTestId("chain-table");
+    await expect(table).toHaveAttribute("data-columns", "ask,mark,bid,oi,delta", { timeout: 15_000 });
+    await page.getByTestId("chain-columns").click();
+    const dialog = page.getByTestId("column-settings");
+    await expect(dialog).toBeVisible();
+    await expect(page.getByTestId("columns-counter")).toHaveText("5 of 13 columns visible");
+    await page.getByRole("switch", { name: "Gamma" }).click();
+    await expect(page.getByTestId("columns-counter")).toHaveText("6 of 13 columns visible");
+    await expect(table).toHaveAttribute("data-columns", "ask,mark,bid,oi,delta,gamma");
+    await expect(page.getByTestId("chain-head-puts").locator("[data-col=gamma]")).toHaveText("Γ");
+    await page.getByTestId("columns-preset-none").click();
+    await expect(table).toHaveAttribute("data-columns", "");
+    await expect(page.getByTestId("chain-head-puts")).toContainText("no columns");
+    await page.getByTestId("columns-preset-essentials").click();
+    await expect(table).toHaveAttribute("data-columns", "ask,mark,bid,oi,delta");
+    await page.getByTestId("columns-done").click();
+    await expect(dialog).toBeHidden();
+  });
+
+  test("HC-WS-013 reorder moves a column next to the strike on both sides; HC-WS-014 the layout survives a reload", async ({ page }) => {
+    const table = page.getByTestId("chain-table");
+    await expect(table).toHaveAttribute("data-columns", "ask,mark,bid,oi,delta", { timeout: 15_000 });
+    await page.getByTestId("chain-columns").click();
+    await page.getByTestId("columns-tab-reorder").click();
+    // Δ up four times: it becomes the column touching the strike on both sides
+    for (let i = 0; i < 4; i += 1) await page.getByTestId("columns-up-delta").click();
+    await expect(table).toHaveAttribute("data-columns", "delta,ask,mark,bid,oi");
+    const putHeads = page.getByTestId("chain-head-puts").locator("[data-col]");
+    await expect(putHeads.first()).toHaveAttribute("data-col", "delta");
+    const callHeads = page.getByTestId("chain-head-calls").locator("[data-col]");
+    await expect(callHeads.last()).toHaveAttribute("data-col", "delta");
+    await page.getByTestId("columns-done").click();
+    await page.reload();
+    await expect(page.getByTestId("chain-table")).toHaveAttribute("data-columns", "delta,ask,mark,bid,oi", { timeout: 15_000 });
+    // clean up for the other tests (the layout is persisted per browser context)
+    await page.getByTestId("chain-columns").click();
+    await page.getByTestId("columns-preset-reset").click();
+    await expect(page.getByTestId("chain-table")).toHaveAttribute("data-columns", "ask,mark,bid,oi,delta");
+  });
+
   test("HC-SH-006 feed status pauses and reconnects", async ({ page }) => {
     const feed = page.getByTestId("feed-status");
     await expect(feed).toHaveAttribute("data-state", "live", { timeout: 15_000 });

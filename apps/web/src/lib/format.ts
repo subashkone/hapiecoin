@@ -39,6 +39,35 @@ export function fmtOi(oi: string | undefined): string {
   return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
+/** Gamma per contract → 6 dp (HC-WS-021). */
+export function fmtGamma(gamma: number | undefined): string {
+  if (gamma === undefined || !Number.isFinite(gamma)) return "—";
+  return gamma.toFixed(6);
+}
+
+/** Theta per day (USD per contract) → 1 dp with sign kept. */
+export function fmtTheta(theta: number | undefined): string {
+  if (theta === undefined || !Number.isFinite(theta)) return "—";
+  return theta.toFixed(1);
+}
+
+/** Vega per IV point (USD per contract) → 1 dp. */
+export function fmtVega(vega: number | undefined): string {
+  if (vega === undefined || !Number.isFinite(vega)) return "—";
+  return vega.toFixed(1);
+}
+
+/** Contract quantity (volume, bid/ask size) → compact like OI. */
+export function fmtQty(qty: string | undefined): string {
+  return fmtOi(qty);
+}
+
+/** 24 h change in percent → signed with 2 dp, plus the direction for colouring. */
+export function fmtChange(pct: number | undefined): { text: string; dir: "up" | "down" | "flat" } {
+  if (pct === undefined || !Number.isFinite(pct)) return { text: "—", dir: "flat" };
+  return { text: fmtPct(pct), dir: pct > 0 ? "up" : pct < 0 ? "down" : "flat" };
+}
+
 /** Strike decimal string → grouped integer text ("79,500"). */
 export function fmtStrike(strike: string): string {
   const n = Number(strike);

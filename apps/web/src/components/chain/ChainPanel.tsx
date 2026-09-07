@@ -34,6 +34,9 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
   const range = useUiStore((s) => s.chainRange);
   const setChainRange = useUiStore((s) => s.setChainRange);
   const recentreSignal = useUiStore((s) => s.chainRecentre);
+  const layout = useUiStore((s) => s.chainColumns);
+  const openDialog = useUiStore((s) => s.openDialog);
+  const openColumns = useCallback(() => openDialog("columns"), [openDialog]);
 
   useEffect(() => {
     if (chain?.stale && topic) gw.refresh(topic);
@@ -101,6 +104,8 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
             height={height}
             range={range}
             onRange={setChainRange}
+            layout={layout}
+            onOpenColumns={openColumns}
             recentreSignal={recentreSignal}
             onExpiryStep={stepExpiry}
             expiryLabel={expiry ? fmtExpiry(expiry) : ""}

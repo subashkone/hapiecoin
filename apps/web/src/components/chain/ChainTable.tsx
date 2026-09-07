@@ -9,30 +9,89 @@ import { cn } from "@hapiecoin/ui";
 import type { ChainRow, Quote } from "@hapiecoin/schema";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { ChainLayout } from "@/lib/chain/layout";
 import { type ChainRange, chainTotals, itmSide, maxOpenInterest, oiBarPercent, sliceAroundAtm } from "@/lib/chain/range";
-import { fmtDelta, fmtIv, fmtOi, fmtPrice, fmtStrike } from "@/lib/format";
+import { fmtChange, fmtDelta, fmtGamma, fmtIv, fmtOi, fmtPrice, fmtQty, fmtStrike, fmtTheta, fmtVega } from "@/lib/format";
 import { atmIndex, type ChainState } from "@/lib/gateway/reducer";
 import { ChainHeader } from "./ChainHeader";
 import { ChainFooter, ChainTools, rangeLabel } from "./ChainTools";
-import { COLUMN_PX, NARROW_BREAKPOINT_PX, ROW_PX, SIDE_TRACK_PX, STRIKE_COL_PX } from "./columns";
+import {
+  COLUMN_PX,
+  type ChainColumn,
+  NARROW_BREAKPOINT_PX,
+  ROW_PX,
+  STRIKE_COL_PX,
+  callColumns,
+  gridTemplate,
+  putColumns,
+  trackWidth as layoutTrackWidth,
+} from "./columns";
 import { useMirroredScroll } from "./useMirroredScroll";
 
 type Sides = "both" | "calls" | "puts";
 
 interface CellProps {
+  col: "ask" | "mark" | "bid";
   price: string | undefined;
   iv: number | undefined;
   flash?: string;
   align: "right" | "left";
 }
 
-function PriceIv({ price, iv, flash, align }: CellProps) {
+function PriceIv({ col, price, iv, flash, align }: CellProps) {
   return (
-    <div className={cn("num flex flex-col justify-center px-2 leading-tight", align === "right" ? "items-end" : "items-start", flash)}>
+    <div className={cn("num flex flex-col justify-center px-2 leading-tight", align === "right" ? "items-end" : "items-start", flash)} data-col={col}>
       <span>{fmtPrice(price)}</span>
       <span className="text-3xs text-muted-foreground">{fmtIv(iv)}</span>
     </div>
   );
+}
+
+/** One cell of one side, by column id (HC-WS-021); the cell content is display-only formatting. */
+function Cell({ col, q, flashes, side, maxOi }: { col: ChainColumn; q: Quote | undefined; flashes: ReturnType<typeof quoteFlashes>; side: "calls" | "puts"; maxOi: number }) {
+  const align = side === "calls" ? "right" : "left";
+  const plain = (text: string, extra?: string) => (
+    <div className={cn("num flex items-center px-2", align === "right" ? "justify-end" : "justify-start", extra)} data-col={col.id}>
+      {text}
+    </div>
+  );
+  switch (col.id) {
+    case "ask":
+      return <PriceIv col="ask" price={q?.ask} iv={q?.askIv} flash={flashes.ask} align={align} />;
+    case "mark":
+      return <PriceIv col="mark" price={q?.mark} iv={q?.markIv} flash={flashes.mark} align={align} />;
+    case "bid":
+      return <PriceIv col="bid" price={q?.bid} iv={q?.bidIv} flash={flashes.bid} align={align} />;
+    case "oi": {
+      const pct = oiBarPercent(q?.oi, maxOi);
+      return (
+        <div className={cn("num relative flex items-center px-2", align === "right" ? "justify-end" : "justify-start")} data-testid="chain-oi" data-pct={pct} data-col="oi">
+          {pct > 0 ? <i className={cn("oi-bar", side === "calls" ? "left-0" : "right-0")} style={{ width: `${pct}%` }} aria-hidden /> : null}
+          <span className="relative">{fmtOi(q?.oi)}</span>
+        </div>
+      );
+    }
+    case "delta":
+      return plain(fmtDelta(q?.greeks?.delta));
+    case "gamma":
+      return plain(fmtGamma(q?.greeks?.gamma));
+    case "theta":
+      return plain(fmtTheta(q?.greeks?.theta));
+    case "vega":
+      return plain(fmtVega(q?.greeks?.vega));
+    case "volume":
+      return plain(fmtQty(q?.volume24h));
+    case "bidQty":
+      return plain(fmtQty(q?.bidQty));
+    case "askQty":
+      return plain(fmtQty(q?.askQty));
+    case "chg24": {
+      const c = fmtChange(q?.change24hPct);
+      return plain(c.text, c.dir === "up" ? "text-profit" : c.dir === "down" ? "text-loss" : undefined);
+    }
+    case "last":
+      return plain(fmtPrice(q?.last));
+  }
 }
 
 /** Which of the previous frame's flash directions apply to this quote (keyed by field). */
@@ -47,22 +106,17 @@ export function quoteFlashes(prev: Quote | undefined, next: Quote | undefined, c
   return { bid: dir("bid"), ask: dir("ask"), mark: dir("mark") };
 }
 
-function SideCells({ q, flashes, side, maxOi }: { q: Quote | undefined; flashes: ReturnType<typeof quoteFlashes>; side: "calls" | "puts"; maxOi: number }) {
-  const align = side === "calls" ? "right" : "left";
-  const pct = oiBarPercent(q?.oi, maxOi);
-  const cells = [
-    <div key="delta" className={cn("num flex items-center px-2", align === "right" ? "justify-end" : "justify-start")}>
-      {fmtDelta(q?.greeks?.delta)}
-    </div>,
-    <div key="oi" className={cn("num relative flex items-center px-2", align === "right" ? "justify-end" : "justify-start")} data-testid="chain-oi" data-pct={pct}>
-      {pct > 0 ? <i className={cn("oi-bar", side === "calls" ? "left-0" : "right-0")} style={{ width: `${pct}%` }} aria-hidden /> : null}
-      <span className="relative">{fmtOi(q?.oi)}</span>
-    </div>,
-    <PriceIv key="bid" price={q?.bid} iv={q?.bidIv} flash={flashes.bid} align={align} />,
-    <PriceIv key="mark" price={q?.mark} iv={q?.markIv} flash={flashes.mark} align={align} />,
-    <PriceIv key="ask" price={q?.ask} iv={q?.askIv} flash={flashes.ask} align={align} />,
-  ];
-  return <>{side === "calls" ? cells : cells.reverse()}</>;
+function SideCells({ cols, q, flashes, side, maxOi }: { cols: readonly ChainColumn[]; q: Quote | undefined; flashes: ReturnType<typeof quoteFlashes>; side: "calls" | "puts"; maxOi: number }) {
+  if (cols.length === 0) {
+    return <div className={cn("micro flex items-center px-2 text-muted-foreground", side === "calls" ? "justify-end" : "justify-start")}>no columns</div>;
+  }
+  return (
+    <>
+      {cols.map((col) => (
+        <Cell key={col.id} col={col} q={q} flashes={flashes} side={side} maxOi={maxOi} />
+      ))}
+    </>
+  );
 }
 
 export interface ChainTableProps {
@@ -73,6 +127,10 @@ export interface ChainTableProps {
   height?: number;
   range: ChainRange;
   onRange: (range: ChainRange) => void;
+  /** Which columns show and in what order from the strike outward (HC-WS-021). */
+  layout: ChainLayout;
+  /** Gear button: open the Column Settings dialog (HC-WS-010). */
+  onOpenColumns?: () => void;
   /** Bumped by the store when something asks to recentre on ATM. */
   recentreSignal?: number;
   /** Step the expiry (E / Shift+E). */
@@ -96,6 +154,8 @@ export function ChainTable({
   height = 520,
   range,
   onRange,
+  layout,
+  onOpenColumns,
   recentreSignal = 0,
   onExpiryStep,
   expiryLabel,
@@ -116,6 +176,10 @@ export function ChainTable({
   const [narrowSide, setNarrowSide] = useState<"calls" | "puts">("calls");
   const sides: Sides = narrow ? narrowSide : "both";
   const sideViewport = Math.max(0, Math.floor(sides === "both" ? (width - STRIKE_COL_PX) / 2 : width - STRIKE_COL_PX));
+  // Columns from the persisted layout: puts read inboard → outboard, calls are the mirror (HC-WS-021).
+  const putCols = useMemo(() => putColumns(layout), [layout]);
+  const callCols = useMemo(() => callColumns(layout), [layout]);
+  const SIDE_TRACK_PX = useMemo(() => layoutTrackWidth(layout), [layout]);
   const scroll = useMirroredScroll(SIDE_TRACK_PX, sideViewport);
   useEffect(() => {
     const el = rootRef.current;
@@ -254,7 +318,8 @@ export function ChainTable({
   const total = virtualizer.getTotalSize();
   const gridCols = sides === "both" ? `minmax(0,1fr) ${STRIKE_COL_PX}px minmax(0,1fr)` : `minmax(0,1fr) ${STRIKE_COL_PX}px`;
   const trackStyle = (x: number): React.CSSProperties => ({ width: SIDE_TRACK_PX, height: total, transform: `translateX(-${x}px)`, position: "relative" });
-  const rowGrid: React.CSSProperties = { gridTemplateColumns: `repeat(5, ${COLUMN_PX}px)` };
+  const callsGrid: React.CSSProperties = { gridTemplateColumns: gridTemplate(callCols) };
+  const putsGrid: React.CSSProperties = { gridTemplateColumns: gridTemplate(putCols) };
 
   return (
     <div
@@ -269,6 +334,7 @@ export function ChainTable({
       data-sides={sides}
       data-x={scroll.x}
       data-puts-x={scroll.putsX}
+      data-columns={putCols.map((c) => c.id).join(",")}
     >
       <ChainTools
         range={range}
@@ -278,11 +344,15 @@ export function ChainTable({
         narrow={narrow}
         onSide={setNarrowSide}
         onRecentre={recentre}
+        onOpenColumns={onOpenColumns}
+        columnsShown={putCols.length}
       />
       <ChainHeader
         x={scroll.x}
         putsX={scroll.putsX}
         trackWidth={SIDE_TRACK_PX}
+        callCols={callCols}
+        putCols={putCols}
         expiryLabel={expiryLabel}
         daysLeft={daysLeft}
         sides={sides}
@@ -320,9 +390,9 @@ export function ChainTable({
                         isAtm && "atm-band",
                         v.index === focus && "chain-focus",
                       )}
-                      style={{ ...rowGrid, height: v.size, transform: `translateY(${v.start}px)` }}
+                      style={{ ...callsGrid, height: v.size, transform: `translateY(${v.start}px)` }}
                     >
-                      <SideCells q={row.call} flashes={flashes} side="calls" maxOi={maxOi} />
+                      <SideCells cols={callCols} q={row.call} flashes={flashes} side="calls" maxOi={maxOi} />
                     </div>
                   );
                 })}
@@ -381,9 +451,9 @@ export function ChainTable({
                         isAtm && "atm-band",
                         v.index === focus && "chain-focus",
                       )}
-                      style={{ ...rowGrid, height: v.size, transform: `translateY(${v.start}px)` }}
+                      style={{ ...putsGrid, height: v.size, transform: `translateY(${v.start}px)` }}
                     >
-                      <SideCells q={row.put} flashes={flashes} side="puts" maxOi={maxOi} />
+                      <SideCells cols={putCols} q={row.put} flashes={flashes} side="puts" maxOi={maxOi} />
                     </div>
                   );
                 })}

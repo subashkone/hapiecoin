@@ -21,9 +21,12 @@ export interface ChainToolsProps {
   narrow: boolean;
   onSide: (side: "calls" | "puts") => void;
   onRecentre: () => void;
+  /** Gear: open the Column Settings dialog (HC-WS-010). */
+  onOpenColumns?: (() => void) | undefined;
+  columnsShown?: number;
 }
 
-export function ChainTools({ range, onRange, live, sides, narrow, onSide, onRecentre }: ChainToolsProps) {
+export function ChainTools({ range, onRange, live, sides, narrow, onSide, onRecentre, onOpenColumns, columnsShown }: ChainToolsProps) {
   return (
     <div className="flex h-[34px] shrink-0 items-center gap-2 border-b border-border px-2" data-testid="chain-tools">
       <div className="inline-flex h-[22px] overflow-hidden rounded-[3px] border border-input" role="group" aria-label="Strike range" data-testid="chain-range">
@@ -73,6 +76,19 @@ export function ChainTools({ range, onRange, live, sides, narrow, onSide, onRece
         <i className={cn("inline-block h-1.5 w-1.5 rounded-full", live ? "live-dot" : "bg-muted-foreground/50")} />
         {live ? "Live" : "Stale"}
       </span>
+      {onOpenColumns ? (
+        <button
+          type="button"
+          onClick={onOpenColumns}
+          className="inline-flex h-[22px] items-center gap-1 rounded-[3px] border border-input px-1.5 font-mono text-3xs uppercase tracking-[0.06em] text-muted-foreground hover:text-foreground"
+          title="Column settings"
+          aria-label="Column settings"
+          data-testid="chain-columns"
+        >
+          <span aria-hidden>⚙</span>
+          {columnsShown !== undefined ? <span>{columnsShown}</span> : null}
+        </button>
+      ) : null}
     </div>
   );
 }

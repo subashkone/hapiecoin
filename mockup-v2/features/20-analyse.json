@@ -77,7 +77,7 @@
   "feature": "Gear button in the chain toolbar → Column Settings dialog",
   "how": "Opens the v1 Column Settings dialog (show / hide, reorder, quick buttons)",
   "status": "working",
-  "evidence": "bundle strings: Column settings, Column Settings, ' of '"
+  "evidence": "bundle strings: Column settings, Column Settings, ' of ' · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
  },
  {
   "route": "/analyse",
@@ -85,7 +85,7 @@
   "feature": "Show / Hide tab with grouped switches: Market Data (Ask (Price/IV), Mark (Price/IV), Bid (Price/IV), OI, Volume, Bid Qty, Ask Qty), Greeks (Delta, Gamma, Theta, Vega), Activity (24hr Chg, Last), OHLC (Open, High, Low)",
   "how": "Each row toggles the column; the chain re-renders instantly and the 'x of 16' counter updates",
   "status": "working",
-  "evidence": "bundle strings: Market Data, Greeks, Activity, OHLC and every column label"
+  "evidence": "bundle strings: Market Data, Greeks, Activity, OHLC and every column label · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
  },
  {
   "route": "/analyse",
@@ -93,7 +93,7 @@
   "feature": "Quick buttons Essentials · Show All · Hide all · Reset",
   "how": "Essentials = Ask · Mark · Bid · OI · Δ (the v2 default); Show All / Hide all / Reset; each change re-renders the chain and toasts",
   "status": "working",
-  "evidence": "bundle strings: Essentials, Show All, Hide all, Reset"
+  "evidence": "bundle strings: Essentials, Show All, Hide all, Reset · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
  },
  {
   "route": "/analyse",
@@ -101,7 +101,7 @@
   "feature": "Reorder tab – 'Drag columns to change their display order (left → right).'",
   "how": "HTML5 drag & drop list (dragstart/dragover/dragend) plus ▲/▼ buttons; hidden columns are badged; order applies from the strike outward and is mirrored on the Calls side",
   "status": "working",
-  "evidence": "bundle string: Drag columns to change their display order (left → right)."
+  "evidence": "bundle string: Drag columns to change their display order (left → right). · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
  },
  {
   "route": "/analyse",
@@ -109,7 +109,7 @@
   "feature": "Persistence of column visibility and order",
   "how": "Saved as CG.state.chainCols {v:2, order, visible} (v1 layouts are migrated to the v2 default)",
   "status": "working",
-  "evidence": "bundle key oc_col_config"
+  "evidence": "bundle key oc_col_config · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
  },
  {
   "route": "/analyse",
@@ -165,7 +165,7 @@
   "feature": "Optional columns: Γ (6dp), Θ (1dp), ν (1dp), Volume, Bid Qty, Ask Qty, 24hr Chg (signed, coloured), Last, Open, High, Low; Δ (2dp) is shown by default",
   "how": "Toggled in Column Settings; the Greeks chip in the toolbar adds/removes Γ Θ ν in one click",
   "status": "working",
-  "evidence": "bundle column labels; older screenshot shows Bid Qty BTC column"
+  "evidence": "bundle column labels; older screenshot shows Bid Qty BTC column · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
  },
  {
   "route": "/analyse",
@@ -590,7 +590,7 @@
   "feature": "Greeks expand toggle adds Γ Θ ν columns next to Δ on both sides",
   "how": "setGreeksCols() edits the column state (persisted) and re-renders; chip state mirrors the columns",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021",
   "new": true
  },
  {

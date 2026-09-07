@@ -4,6 +4,7 @@ import { chainTopic } from "@hapiecoin/schema";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildChain, strikesOf } from "../../../test/fixtures/chain";
 import { FakeSocket, renderWithProviders } from "../../../test/helpers";
+import { applyPreset, defaultLayout, moveColumn } from "@/lib/chain/layout";
 import { applySnapshot, emptyChain, applyDeltas, atmIndex } from "@/lib/gateway/reducer";
 import { useUiStore } from "@/lib/store";
 import { ChainPanel } from "./ChainPanel";
@@ -23,6 +24,7 @@ function tableProps(over: Partial<ChainTableProps> = {}): ChainTableProps {
     height: 520,
     range: 12,
     onRange: vi.fn(),
+    layout: defaultLayout(),
     expiryLabel: "25 Sep",
     daysLeft: 18,
     lotLabel: "Lot ₿ · USD per contract",
@@ -34,9 +36,56 @@ function tableProps(over: Partial<ChainTableProps> = {}): ChainTableProps {
 
 beforeEach(() => {
   FakeSocket.reset();
-  useUiStore.setState({ asset: "BTC", expiry: {}, feedPaused: false, dialog: null, dialogsTouched: false, paletteOpen: false, chainRange: 12, chainRecentre: 0 });
+  useUiStore.setState({
+    asset: "BTC",
+    expiry: {},
+    feedPaused: false,
+    dialog: null,
+    dialogsTouched: false,
+    paletteOpen: false,
+    chainRange: 12,
+    chainRecentre: 0,
+    chainColumns: defaultLayout(),
+  });
 });
 afterEach(() => vi.unstubAllGlobals());
+
+describe("HC-WS-021 ChainTable renders the visible columns from the strike outward, mirrored on the calls side", () => {
+  it("shows every column with its unit title, in layout order, and formats the extra figures", () => {
+    const all = applyPreset(defaultLayout(), "all");
+    renderWithProviders(<ChainTable {...tableProps({ layout: all, range: 0, onOpenColumns: vi.fn() })} />);
+    const table = screen.getByTestId("chain-table");
+    expect(table.dataset["columns"]).toBe("ask,mark,bid,oi,delta,gamma,theta,vega,volume,bidQty,askQty,chg24,last");
+    const putHeads = within(screen.getByTestId("chain-head-puts")).getAllByTitle(/./).map((e) => e.dataset["col"]);
+    expect(putHeads).toEqual(["ask", "mark", "bid", "oi", "delta", "gamma", "theta", "vega", "volume", "bidQty", "askQty", "chg24", "last"]);
+    const callHeads = within(screen.getByTestId("chain-head-calls")).getAllByTitle(/./).map((e) => e.dataset["col"]);
+    expect(callHeads).toEqual([...putHeads].reverse());
+    expect(within(screen.getByTestId("chain-head-puts")).getByTitle(/Theta, USD per contract per day/)).toBeTruthy();
+    const first = screen.getAllByTestId("chain-row-puts")[0]!;
+    expect(first.querySelectorAll("[data-col]")).toHaveLength(13);
+    expect(first.querySelector("[data-col=gamma]")?.textContent).toMatch(/^(—|-?\d+\.\d{6})$/);
+    expect(first.querySelector("[data-col=theta]")?.textContent).toMatch(/^(—|-?\d+\.\d)$/);
+    expect(first.querySelector("[data-col=chg24]")?.textContent).toMatch(/^(—|[+-]?\d+\.\d\d%)$/);
+    // the gear reports the count and opens the dialog through the callback
+    expect(screen.getByTestId("chain-columns").textContent).toContain("13");
+  });
+  it("a reordered layout moves the column next to the strike on both sides; an empty layout keeps the strike column", async () => {
+    const moved = moveColumn(defaultLayout(), "delta", -4);
+    const { rerender } = renderWithProviders(<ChainTable {...tableProps({ layout: moved })} />);
+    expect(screen.getByTestId("chain-table").dataset["columns"]).toBe("delta,ask,mark,bid,oi");
+    const putHeads = within(screen.getByTestId("chain-head-puts")).getAllByTitle(/./).map((e) => e.dataset["col"]);
+    expect(putHeads[0]).toBe("delta");
+    const callHeads = within(screen.getByTestId("chain-head-calls")).getAllByTitle(/./).map((e) => e.dataset["col"]);
+    expect(callHeads[callHeads.length - 1]).toBe("delta");
+    const onOpenColumns = vi.fn();
+    rerender(<ChainTable {...tableProps({ layout: applyPreset(defaultLayout(), "none"), onOpenColumns })} />);
+    expect(screen.getByTestId("chain-table").dataset["columns"]).toBe("");
+    expect(screen.getAllByText("no columns").length).toBeGreaterThan(2);
+    expect(screen.getAllByTestId("chain-row").length).toBeGreaterThan(5);
+    await userEvent.setup().click(screen.getByTestId("chain-columns"));
+    expect(onOpenColumns).toHaveBeenCalled();
+  });
+});
 
 describe("HC-WS-108 ChainTable renders the venue strikes", () => {
   it("shows exact strikes on all three row lists, the ATM band on the strike bracketing spot and flashes", async () => {
@@ -154,44 +203,44 @@ describe("HC-WS-015 / HC-WS-017 / HC-WS-018 / HC-WS-019 / HC-WS-020 chain layout
 
 describe("GAPS-2 calls and puts share the vertical scroll and mirror the horizontal scroll", () => {
   it("keeps one row list per side under one virtualiser and mirrors the offset from either side", () => {
-    // 600 px panel: each side has (600 − 92) / 2 = 254 px for a 340 px track → max offset 86
+    // 600 px panel: each side has (600 − 92) / 2 = 254 px for the 328 px essentials track → max offset 74
     renderWithProviders(<ChainTable {...tableProps({ initialWidth: 600 })} />);
     const table = screen.getByTestId("chain-table");
     expect(table.dataset["sides"]).toBe("both");
     expect(screen.getAllByTestId("chain-scroll")).toHaveLength(1);
     // initial: calls show their inner columns (offset at max), puts their inner columns (offset 0)
-    expect(table.dataset["x"]).toBe("86");
+    expect(table.dataset["x"]).toBe("74");
     expect(table.dataset["putsX"]).toBe("0");
-    expect(screen.getByTestId("chain-calls").dataset["x"]).toBe("86");
+    expect(screen.getByTestId("chain-calls").dataset["x"]).toBe("74");
     expect(screen.getByTestId("chain-puts").dataset["x"]).toBe("0");
     // the calls scrollbar moves both sides
     const callsBar = screen.getByTestId("chain-scrollbar-calls");
     callsBar.scrollLeft = 20;
     fireEvent.scroll(callsBar);
     expect(table.dataset["x"]).toBe("20");
-    expect(table.dataset["putsX"]).toBe("66");
+    expect(table.dataset["putsX"]).toBe("54");
     expect(screen.getByTestId("chain-head-calls").dataset["x"]).toBe("20");
-    expect(screen.getByTestId("chain-head-puts").dataset["x"]).toBe("66");
+    expect(screen.getByTestId("chain-head-puts").dataset["x"]).toBe("54");
     // the puts scrollbar moves the calls side the other way
     const putsBar = screen.getByTestId("chain-scrollbar-puts");
     putsBar.scrollLeft = 6;
     fireEvent.scroll(putsBar);
-    expect(table.dataset["x"]).toBe("80");
+    expect(table.dataset["x"]).toBe("68");
     expect(table.dataset["putsX"]).toBe("6");
     // wheel on the puts track scrolls it and mirrors to calls; shift+wheel uses deltaY
     act(() => {
       screen.getByTestId("chain-puts").dispatchEvent(new WheelEvent("wheel", { deltaX: 10, bubbles: true, cancelable: true }));
     });
-    expect(table.dataset["x"]).toBe("70");
+    expect(table.dataset["x"]).toBe("58");
     act(() => {
       screen.getByTestId("chain-calls").dispatchEvent(new WheelEvent("wheel", { deltaY: -10, shiftKey: true, bubbles: true, cancelable: true }));
     });
-    expect(table.dataset["x"]).toBe("60");
+    expect(table.dataset["x"]).toBe("48");
     // a vertical wheel is left to the vertical scroller
     act(() => {
       screen.getByTestId("chain-calls").dispatchEvent(new WheelEvent("wheel", { deltaY: 30, bubbles: true, cancelable: true }));
     });
-    expect(table.dataset["x"]).toBe("60");
+    expect(table.dataset["x"]).toBe("48");
   });
   it("has no horizontal offset when the track fits", () => {
     renderWithProviders(<ChainTable {...tableProps({ initialWidth: 1200 })} />);
@@ -239,11 +288,11 @@ describe("HC-WS-016 keyboard: J / K / arrows / Home / End / A / E", () => {
     await user.keyboard("{Shift>}E{/Shift}");
     expect(onExpiryStep).toHaveBeenLastCalledWith(-1);
     const table = screen.getByTestId("chain-table");
-    expect(table.dataset["x"]).toBe("86");
+    expect(table.dataset["x"]).toBe("74");
     await user.keyboard("{ArrowLeft}");
-    expect(table.dataset["x"]).toBe("18");
+    expect(table.dataset["x"]).toBe("6");
     await user.keyboard("{ArrowRight}");
-    expect(table.dataset["x"]).toBe("86");
+    expect(table.dataset["x"]).toBe("74");
     // clicking a strike focuses it; the recentre signal recentres
     await user.click(screen.getAllByTestId("chain-row")[0]!);
     expect(focused()).toBe(rows[0]!.strike);

@@ -36,6 +36,13 @@ describe("HC-PB-059 command palette", () => {
     expect(useUiStore.getState().chainRecentre).toBe(before + 1);
     expect(useUiStore.getState().chainRange).toBe(0);
     expect(out.some((c) => c.id === "act:chain-atm")).toBe(false);
+    // HC-WS-010 / HC-WS-073 column commands
+    inn.find((c) => c.id === "act:chain-columns")?.run();
+    expect(useUiStore.getState().dialog).toBe("columns");
+    inn.find((c) => c.id === "act:chain-greeks")?.run();
+    expect(useUiStore.getState().chainColumns.visible).toEqual(expect.arrayContaining(["gamma", "theta", "vega"]));
+    inn.find((c) => c.id === "act:chain-greeks")?.run();
+    expect(useUiStore.getState().chainColumns.visible).not.toContain("gamma");
   });
   it("scores substrings above subsequences and filters/sorts", () => {
     const cmds = buildCommands({ loggedIn: false, navigate: vi.fn(), toggleTheme: vi.fn() });
