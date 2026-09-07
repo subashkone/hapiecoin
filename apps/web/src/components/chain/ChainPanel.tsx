@@ -1,15 +1,16 @@
 "use client";
-// Live chain panel (Phase 1 pipe proof): expiry chips from the gateway / env, subscribe to
+// Live chain panel (HC-WS-107): expiry chips from the gateway / env, subscribe to
 // chain:delta_india:<asset>:<expiry>, render snap + q frames with designed empty, stale and error states.
+// The table itself (layout, range, keyboard) is ChainTable; this panel owns expiry selection and the states.
 import { Button, EmptyState, cn } from "@hapiecoin/ui";
 import { chainTopic } from "@hapiecoin/schema";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { discoverExpiries, nearestExpiry } from "@/lib/chain/expiries";
 import { publicEnv } from "@/lib/env";
 import { daysToExpiry, fmtExpiry } from "@/lib/format";
 import { useConnectionStatus, useGateway, useSpot, useTopic } from "@/lib/gateway/hooks";
-import { useUiStore } from "@/lib/store";
+import { ASSET_META, useUiStore } from "@/lib/store";
 import { ChainTable } from "./ChainTable";
 
 export function ChainPanel({ height = 520 }: { height?: number }) {
@@ -30,10 +31,25 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
   const status = useConnectionStatus();
   const gw = useGateway();
   const feedPaused = useUiStore((s) => s.feedPaused);
+  const range = useUiStore((s) => s.chainRange);
+  const setChainRange = useUiStore((s) => s.setChainRange);
+  const recentreSignal = useUiStore((s) => s.chainRecentre);
 
   useEffect(() => {
     if (chain?.stale && topic) gw.refresh(topic);
   }, [chain?.stale, topic, gw]);
+
+  const stepExpiry = useCallback(
+    (delta: 1 | -1) => {
+      if (!expiry) return;
+      const i = list.indexOf(expiry);
+      const next = list[i + delta];
+      if (next) setExpiry(asset, next);
+    },
+    [asset, expiry, list, setExpiry],
+  );
+  const live = status === "open" && !feedPaused && !(chain?.stale ?? false);
+  const asOf = chain?.stale && chain.updatedAt > 0 ? new Date(chain.updatedAt).toLocaleTimeString("en-GB") : null;
 
   return (
     <section className="flex h-full flex-col" data-testid="chain-panel" data-topic={topic ?? ""}>
@@ -79,7 +95,20 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
         ) : chain.rows.length === 0 ? (
           <EmptyState title="No strikes listed for this expiry" description="The venue returned an empty instrument list." />
         ) : (
-          <ChainTable chain={chain} spot={spot?.price} height={height} />
+          <ChainTable
+            chain={chain}
+            spot={spot?.price}
+            height={height}
+            range={range}
+            onRange={setChainRange}
+            recentreSignal={recentreSignal}
+            onExpiryStep={stepExpiry}
+            expiryLabel={expiry ? fmtExpiry(expiry) : ""}
+            daysLeft={expiry ? daysToExpiry(expiry) : null}
+            lotLabel={`Lot ${ASSET_META[asset].glyph} · USD per contract`}
+            live={live}
+            asOf={asOf}
+          />
         )}
       </div>
     </section>

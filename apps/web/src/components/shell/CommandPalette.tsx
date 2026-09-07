@@ -38,7 +38,24 @@ export function buildCommands(opts: {
   });
   const list: PaletteCommand[] = [nav("nav:home", "/", "Home", ["landing", "public", "website"])];
   if (opts.loggedIn) {
-    list.push(nav("nav:analyse", "/analyse", "Analyse workspace", ["options chain", "builder", "payoff"]));
+    list.push(
+      nav("nav:analyse", "/analyse", "Analyse workspace", ["options chain", "builder", "payoff"]),
+      {
+        id: "act:chain-atm",
+        label: "Chain: recentre on ATM",
+        group: "Actions",
+        hint: "A",
+        keywords: ["chain", "strike", "spot", "centre", "center"],
+        run: () => useUiStore.getState().recentreChain(),
+      },
+      {
+        id: "act:chain-all",
+        label: "Chain: show all strikes",
+        group: "Actions",
+        keywords: ["chain", "range", "strikes", "expand"],
+        run: () => useUiStore.getState().setChainRange(0),
+      },
+    );
   } else {
     list.push(nav("nav:auth", "/auth", "Sign in", ["login", "signup", "register", "otp", "password"]));
   }

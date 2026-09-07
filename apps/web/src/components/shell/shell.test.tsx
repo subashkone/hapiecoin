@@ -27,6 +27,15 @@ describe("HC-PB-059 command palette", () => {
     expect(inn[1]?.label).toBe("Analyse workspace");
     inn[1]?.run();
     expect(navigate).toHaveBeenCalledWith("/analyse");
+    // chain commands (HC-WS-016) act on the UI store
+    const atm = inn.find((c) => c.id === "act:chain-atm");
+    const all = inn.find((c) => c.id === "act:chain-all");
+    const before = useUiStore.getState().chainRecentre;
+    atm?.run();
+    all?.run();
+    expect(useUiStore.getState().chainRecentre).toBe(before + 1);
+    expect(useUiStore.getState().chainRange).toBe(0);
+    expect(out.some((c) => c.id === "act:chain-atm")).toBe(false);
   });
   it("scores substrings above subsequences and filters/sorts", () => {
     const cmds = buildCommands({ loggedIn: false, navigate: vi.fn(), toggleTheme: vi.fn() });

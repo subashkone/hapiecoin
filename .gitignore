@@ -33,3 +33,6 @@ Thumbs.db
 # embedded PGlite data (development without Docker)
 
 .pglite/
+
+# TypeScript incremental build caches
+*.tsbuildinfo
