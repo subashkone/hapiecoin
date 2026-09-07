@@ -171,6 +171,62 @@ test.describe("HC-SH analyse header and live chain", () => {
     await expect(page.getByTestId("chain-table")).toHaveAttribute("data-columns", "ask,mark,bid,oi,delta");
   });
 
+  test("HC-WS-023 / HC-WS-024 / HC-WS-027 hover control adds a call and a put leg at mark; pills and stripes survive a reload", async ({ page }) => {
+    await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 15_000 });
+    const atm = page.locator("[data-testid=chain-row][data-atm=true]");
+    const strike = (await atm.getAttribute("data-strike"))!;
+    const callsRow = page.locator(`[data-testid=chain-row-calls][data-strike="${strike}"]`);
+    await callsRow.hover();
+    const controls = page.getByTestId("row-controls-calls");
+    await expect(controls).toBeVisible();
+    await expect(controls).toHaveAttribute("data-strike", strike);
+    await expect(page.getByTestId("row-lots-value-calls")).toHaveText("10");
+    await page.getByTestId("row-lots-up-calls").click();
+    await expect(page.getByTestId("row-lots-value-calls")).toHaveText("25");
+    await page.getByTestId("row-buy-calls").click();
+    await expect(page.getByText("Leg added")).toBeVisible();
+    await expect(atm).toHaveAttribute("data-legs", "C B 25");
+    await expect(callsRow).toHaveAttribute("data-leg", "buy");
+    await expect(callsRow.locator("[data-col=mark]")).toHaveClass(/legcell-buy/);
+    await expect(page.getByTestId("row-buy-calls")).toHaveAttribute("aria-pressed", "true");
+    const putsRow = page.locator(`[data-testid=chain-row-puts][data-strike="${strike}"]`);
+    await putsRow.hover();
+    await page.getByTestId("row-sell-puts").click();
+    await expect(atm).toHaveAttribute("data-legs", "C B 25|P S 25");
+    await expect(putsRow).toHaveAttribute("data-leg", "sell");
+    // persisted per browser context (ADR-022)
+    await page.reload();
+    await expect(page.locator(`[data-testid=chain-row][data-strike="${strike}"]`)).toHaveAttribute("data-legs", "C B 25|P S 25", { timeout: 15_000 });
+    await page.getByTestId("chain-scroll").focus();
+    // clean up for the other tests: Esc clears the highlight; legs are cleared through the store in the next test's seed
+    await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
+  });
+
+  test("HC-WS-026 details dialog opens from the info button and Enter, and adds a leg with the chosen lots", async ({ page }) => {
+    await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 15_000 });
+    const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
+    await page.locator(`[data-testid=chain-row-puts][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-info-puts").click();
+    const dialog = page.getByTestId("option-details");
+    await expect(dialog).toBeVisible();
+    await expect(page.getByTestId("option-symbol")).toHaveText(new RegExp(`^P-BTC-${Number(strike)}-\\d{6}$`));
+    await expect(page.getByTestId("option-description")).toContainText("PUT · BTC");
+    await expect(page.getByTestId("option-mark")).not.toHaveText("—", { timeout: 15_000 });
+    await expect(page.getByTestId("option-stats")).toContainText("Gamma");
+    await page.getByTestId("option-lots").selectOption("5");
+    await page.getByTestId("option-buy").click();
+    await expect(dialog).toBeHidden();
+    await expect(page.locator(`[data-testid=chain-row][data-strike="${strike}"]`)).toHaveAttribute("data-legs", "P B 5");
+    // Enter on the highlighted row opens the call details
+    await page.getByTestId("chain-scroll").focus();
+    await page.keyboard.press("a");
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("option-symbol")).toHaveText(/^C-BTC-/);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
+  });
+
   test("HC-SH-006 feed status pauses and reconnects", async ({ page }) => {
     const feed = page.getByTestId("feed-status");
     await expect(feed).toHaveAttribute("data-state", "live", { timeout: 15_000 });

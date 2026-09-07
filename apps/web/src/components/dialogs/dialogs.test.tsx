@@ -1,13 +1,18 @@
 // Settings dialogs against the in-memory mock API: every dialog saves through /v1 and the change persists.
-import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
+import { chainTopic } from "@hapiecoin/schema";
+import { buildChain } from "../../../test/fixtures/chain";
+import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
 import { routerMock } from "../../../test/next-mocks";
 import { useUiStore } from "@/lib/store";
 import { defaultLayout } from "@/lib/chain/layout";
+import { fmtPrice } from "@/lib/format";
+import { deltaSymbol } from "@/lib/strategy/legs";
 import { ApiSettingsDialog } from "./ApiSettingsDialog";
 import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
+import { OptionDetailsDialog } from "./OptionDetailsDialog";
 import { CurrencyDialog, currencyNote } from "./CurrencyDialog";
 import { ExchangeManagementDialog, validateBrokerForm } from "./ExchangeManagementDialog";
 import { LogoutDialog } from "./LogoutDialog";
@@ -22,9 +27,65 @@ const EMAIL = "asha@example.com";
 beforeEach(() => {
   mock = installMockFetch();
   mock.loginAs(EMAIL);
-  useUiStore.setState({ asset: "BTC", expiry: {}, feedPaused: false, dialog: null, dialogsTouched: false, paletteOpen: false, chainColumns: defaultLayout() });
+  useUiStore.setState({
+    asset: "BTC",
+    expiry: {},
+    feedPaused: false,
+    dialog: null,
+    dialogsTouched: false,
+    paletteOpen: false,
+    chainColumns: defaultLayout(),
+    legs: { BTC: [], ETH: [], XAUT: [] },
+    chainLots: 10,
+    optionDetail: null,
+  });
+  FakeSocket.reset();
 });
 afterEach(() => mock.restore());
+
+describe("HC-WS-026 Option details dialog", () => {
+  const EXPIRY = "2026-09-25";
+  const chainRows = buildChain("BTC", EXPIRY);
+  it("shows the symbol, the live figures and adds a leg with the chosen lots", async () => {
+    const target = { asset: "BTC" as const, expiry: EXPIRY, strike: chainRows[5]!.strike, kind: "call" as const };
+    useUiStore.getState().openOptionDetail(target);
+    const onOpenChange = vi.fn();
+    renderWithProviders(<OptionDetailsDialog open onOpenChange={onOpenChange} />);
+    expect(screen.getByTestId("option-symbol").textContent).toBe(deltaSymbol("call", "BTC", target.strike, EXPIRY));
+    expect(screen.getByTestId("option-description").textContent).toContain("CALL · BTC · 25 Sep");
+    expect(screen.getByTestId("option-empty")).toBeTruthy();
+    // the live quote arrives over the gateway
+    const ws = FakeSocket.last();
+    act(() => {
+      ws.open();
+    });
+    const topic = chainTopic("delta_india", "BTC", EXPIRY);
+    await waitFor(() => expect(ws.sentFrames().flatMap((f) => (f as { topics?: string[] }).topics ?? [])).toContain(topic));
+    act(() => {
+      ws.receive({ t: "snap", topic, seq: 0, rows: chainRows });
+    });
+    const q = chainRows[5]!.call!;
+    await waitFor(() => expect(screen.getByTestId("option-mark").textContent).toBe(fmtPrice(q.mark)));
+    expect(screen.getByTestId("option-stats").textContent).toContain("Gamma");
+    await waitFor(() => expect(screen.getByTestId("option-qty").textContent).toContain("× 0.001"));
+    const u = userEvent.setup();
+    await u.selectOptions(screen.getByTestId("option-lots"), "25");
+    expect(screen.getByTestId("option-qty").textContent).toContain("0.025");
+    await u.click(screen.getByTestId("option-sell"));
+    const legs = useUiStore.getState().legs.BTC;
+    expect(legs).toHaveLength(1);
+    expect(legs[0]).toMatchObject({ kind: "call", side: "sell", lots: 25, price: q.mark, strike: target.strike, expiry: EXPIRY });
+    expect(useUiStore.getState().chainLots).toBe(25);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+  it("mounts through SettingsDialogs when the store opens it", async () => {
+    renderWithProviders(<SettingsDialogs />);
+    expect(screen.queryByTestId("option-details")).toBeNull();
+    useUiStore.getState().openOptionDetail({ asset: "BTC", expiry: EXPIRY, strike: "50000", kind: "put" });
+    expect(await screen.findByTestId("option-details")).toBeTruthy();
+    expect(screen.getByTestId("option-symbol").textContent).toBe("P-BTC-50000-250926");
+  });
+});
 
 describe("HC-WS-010..014 Column Settings", () => {
   it("HC-WS-011 switches toggle a column, the counter updates and HC-WS-012 quick buttons apply presets", async () => {

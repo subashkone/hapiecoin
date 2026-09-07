@@ -46,9 +46,130 @@ beforeEach(() => {
     chainRange: 12,
     chainRecentre: 0,
     chainColumns: defaultLayout(),
+    legs: { BTC: [], ETH: [], XAUT: [] },
+    chainLots: 10,
+    optionDetail: null,
   });
 });
 afterEach(() => vi.unstubAllGlobals());
+
+describe("HC-WS-023 / HC-WS-024 / HC-WS-025 row controls add legs at mark", () => {
+  it("hover shows the control on both sides, B / S add with the stepper lots, − / + step the presets, ⓘ asks for details", async () => {
+    const onAddLeg = vi.fn();
+    const onLots = vi.fn();
+    const onInfo = vi.fn();
+    renderWithProviders(<ChainTable {...tableProps({ onAddLeg, onLots, onInfo, lots: 10, lotsTitle: "Lots × 0.001 BTC" })} />);
+    const u = userEvent.setup();
+    expect(screen.queryByTestId("row-controls-calls")).toBeNull();
+    const row = screen.getAllByTestId("chain-row-calls")[3]!;
+    await u.hover(row);
+    const calls = screen.getByTestId("row-controls-calls");
+    const puts = screen.getByTestId("row-controls-puts");
+    expect(calls.dataset["strike"]).toBe(row.dataset["strike"]);
+    expect(puts.dataset["strike"]).toBe(row.dataset["strike"]);
+    expect(screen.getByTestId("row-lots-value-calls").textContent).toBe("10");
+    expect(screen.getByTestId("row-lots-calls").getAttribute("title")).toBe("Lots × 0.001 BTC");
+    // user-event moves the pointer with a mouseout whose relatedTarget is null (jsdom), which React reads as
+    // leaving the table; real browsers name the button, and the e2e tests cover that path. Click directly here.
+    fireEvent.click(screen.getByTestId("row-buy-calls"));
+    const strike = row.dataset["strike"]!;
+    const quote = rows.find((r) => r.strike === strike)!;
+    expect(onAddLeg).toHaveBeenLastCalledWith("call", "buy", strike, quote.call);
+    fireEvent.click(screen.getByTestId("row-sell-puts"));
+    expect(onAddLeg).toHaveBeenLastCalledWith("put", "sell", strike, quote.put);
+    fireEvent.click(screen.getByTestId("row-lots-up-calls"));
+    expect(onLots).toHaveBeenLastCalledWith(1);
+    fireEvent.click(screen.getByTestId("row-lots-down-puts"));
+    expect(onLots).toHaveBeenLastCalledWith(-1);
+    fireEvent.click(screen.getByTestId("row-info-puts"));
+    expect(onInfo).toHaveBeenLastCalledWith("put", strike);
+    expect(screen.getByTestId("row-buy-calls").getAttribute("aria-label")).toMatch(/^Buy call /);
+    // leaving the table hides the control (React maps mouseout with an outside relatedTarget to onMouseLeave)
+    fireEvent.mouseOut(screen.getByTestId("chain-scroll").firstElementChild!, { relatedTarget: document.body });
+    expect(screen.getByTestId("chain-table").dataset["active"]).toBe("-1");
+    expect(screen.queryByTestId("row-controls-calls")).toBeNull();
+  });
+  it("HC-TR-017 at the limit the B / S buttons are disabled with the reason", async () => {
+    renderWithProviders(<ChainTable {...tableProps({ onAddLeg: vi.fn(), atLimit: true })} />);
+    await userEvent.setup().hover(screen.getAllByTestId("chain-row-puts")[2]!);
+    expect(screen.getByTestId("row-buy-puts").hasAttribute("disabled")).toBe(true);
+    expect(screen.getByTestId("row-sell-calls").getAttribute("title")).toBe("Maximum 10 legs");
+  });
+});
+
+describe("HC-WS-027 leg pills, mark outline, stripes and filled buttons follow the legs", () => {
+  it("marks the rows that hold legs on the right side only", async () => {
+    const strike = rows[4]!.strike;
+    const other = rows[6]!.strike;
+    const legs = [
+      { id: "l1", asset: "BTC" as const, kind: "call" as const, side: "buy" as const, strike, expiry: EXPIRY, lots: 10, price: "1", symbol: "C-BTC-x", status: "open" as const, createdAt: 1 },
+      { id: "l2", asset: "BTC" as const, kind: "put" as const, side: "sell" as const, strike, expiry: EXPIRY, lots: 3, price: "1", symbol: "P-BTC-x", status: "open" as const, createdAt: 1 },
+      { id: "l3", asset: "BTC" as const, kind: "call" as const, side: "sell" as const, strike: other, expiry: EXPIRY, lots: 2, price: "1", symbol: "C-BTC-y", status: "open" as const, createdAt: 1 },
+    ];
+    renderWithProviders(<ChainTable {...tableProps({ legs, onAddLeg: vi.fn(), range: 0 })} />);
+    const strikeRow = screen.getAllByTestId("chain-row").find((r) => r.dataset["strike"] === strike)!;
+    expect(strikeRow.dataset["legs"]).toBe("C B 10|P S 3");
+    const pills = within(strikeRow).getByTestId("leg-pills");
+    expect(within(pills).getByText("C B 10").className).toContain("text-buy");
+    expect(within(pills).getByText("P S 3").className).toContain("text-sell");
+    const callsRow = screen.getAllByTestId("chain-row-calls").find((r) => r.dataset["strike"] === strike)!;
+    const putsRow = screen.getAllByTestId("chain-row-puts").find((r) => r.dataset["strike"] === strike)!;
+    expect(callsRow.dataset["leg"]).toBe("buy");
+    expect(callsRow.className).toContain("leg-stripe-buy");
+    expect(callsRow.querySelector("[data-col=mark]")?.className).toContain("legcell-buy");
+    expect(putsRow.dataset["leg"]).toBe("sell");
+    expect(putsRow.className).toContain("leg-stripe-sell-r");
+    expect(putsRow.querySelector("[data-col=mark]")?.className).toContain("legcell-sell");
+    const otherCalls = screen.getAllByTestId("chain-row-calls").find((r) => r.dataset["strike"] === other)!;
+    expect(otherCalls.dataset["leg"]).toBe("sell");
+    const otherPuts = screen.getAllByTestId("chain-row-puts").find((r) => r.dataset["strike"] === other)!;
+    expect(otherPuts.dataset["leg"]).toBeUndefined();
+    expect(otherPuts.querySelector("[data-col=mark]")?.className).not.toContain("legcell");
+    // the ATM row without legs keeps its tag; hover fills the held button
+    expect(screen.getAllByTestId("chain-row").find((r) => r.dataset["atm"] === "true")?.textContent).toContain("ATM ·");
+    await userEvent.setup().hover(callsRow);
+    expect(screen.getByTestId("row-buy-calls").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("row-sell-calls").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("row-sell-puts").getAttribute("aria-pressed")).toBe("true");
+  });
+});
+
+describe("HC-WS-028 keys B / S / Shift+B / Shift+S / Enter / Esc / + / −", () => {
+  it("act on the highlighted row", async () => {
+    const onAddLeg = vi.fn();
+    const onLots = vi.fn();
+    const onInfo = vi.fn();
+    renderWithProviders(<ChainTable {...tableProps({ onAddLeg, onLots, onInfo })} />);
+    const u = userEvent.setup();
+    const grid = screen.getByTestId("chain-scroll");
+    grid.focus();
+    await u.keyboard("j");
+    const focused = screen.getAllByTestId("chain-row").find((r) => r.dataset["focus"] === "true")!;
+    const strike = focused.dataset["strike"]!;
+    const quote = rows.find((r) => r.strike === strike)!;
+    // the highlighted row shows the control too
+    expect(screen.getByTestId("row-controls-calls").dataset["strike"]).toBe(strike);
+    await u.keyboard("b");
+    expect(onAddLeg).toHaveBeenLastCalledWith("call", "buy", strike, quote.call);
+    await u.keyboard("s");
+    expect(onAddLeg).toHaveBeenLastCalledWith("call", "sell", strike, quote.call);
+    await u.keyboard("{Shift>}B{/Shift}");
+    expect(onAddLeg).toHaveBeenLastCalledWith("put", "buy", strike, quote.put);
+    await u.keyboard("{Shift>}S{/Shift}");
+    expect(onAddLeg).toHaveBeenLastCalledWith("put", "sell", strike, quote.put);
+    await u.keyboard("{Enter}");
+    expect(onInfo).toHaveBeenLastCalledWith("call", strike);
+    await u.keyboard("{Shift>}{Enter}{/Shift}");
+    expect(onInfo).toHaveBeenLastCalledWith("put", strike);
+    await u.keyboard("+");
+    expect(onLots).toHaveBeenLastCalledWith(1);
+    await u.keyboard("-");
+    expect(onLots).toHaveBeenLastCalledWith(-1);
+    await u.keyboard("{Escape}");
+    expect(screen.queryByTestId("row-controls-calls")).toBeNull();
+    expect(screen.getAllByTestId("chain-row").some((r) => r.dataset["focus"] === "true")).toBe(false);
+  });
+});
 
 describe("HC-WS-021 ChainTable renders the visible columns from the strike outward, mirrored on the calls side", () => {
   it("shows every column with its unit title, in layout order, and formats the extra figures", () => {
@@ -297,11 +418,11 @@ describe("HC-WS-016 keyboard: J / K / arrows / Home / End / A / E", () => {
     await user.click(screen.getAllByTestId("chain-row")[0]!);
     expect(focused()).toBe(rows[0]!.strike);
   });
-  it("recentres when the store signal bumps", () => {
+  it("centres on load without highlighting; the store signal recentres and highlights the ATM row", () => {
     const props = tableProps({ initialWidth: 600 });
     const { rerender } = renderWithProviders(<ChainTable {...props} recentreSignal={0} />);
     const focused = () => screen.getAllByTestId("chain-row").find((r) => r.dataset["focus"] === "true")?.dataset["strike"];
-    expect(focused()).toBe(rows[atmIndex(rows, SPOT)]!.strike);
+    expect(focused()).toBeUndefined();
     rerender(<ChainTable {...props} recentreSignal={1} />);
     expect(focused()).toBe(rows[atmIndex(rows, SPOT)]!.strike);
   });

@@ -37,6 +37,16 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("column-settings")).toBeVisible();
       await page.screenshot({ path: `${DIR}/analyse-columns-${theme}.png` });
       await page.getByTestId("columns-done").click();
+      // HC-WS-027 a chain holding two legs, with the hover control on the ATM row
+      const atmStrike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
+      await page.locator(`[data-testid=chain-row-calls][data-strike="${atmStrike}"]`).hover();
+      await page.getByTestId("row-buy-calls").click();
+      await page.locator(`[data-testid=chain-row-puts][data-strike="${atmStrike}"]`).hover();
+      await page.getByTestId("row-sell-puts").click();
+      await page.locator(`[data-testid=chain-row-calls][data-strike="${atmStrike}"]`).hover();
+      await expect(page.getByTestId("row-controls-calls")).toBeVisible();
+      await page.screenshot({ path: `${DIR}/analyse-legs-${theme}.png` });
+      await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
       await page.goto("/");
       await expect(page.getByTestId("tile-BTC")).toHaveAttribute("data-state", "live", { timeout: 15_000 });
       await page.screenshot({ path: `${DIR}/home-${theme}.png` });
