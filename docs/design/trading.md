@@ -117,3 +117,8 @@ Shipped as designed with these differences and details:
 - `NetPositionsPanel` on the Live tab: `GET /v1/strategies/live/positions` (now with `contractValue` and `mark`), asset filter, tick to analyse, Exit / Exit all with a confirm dialog → `POST /v1/strategies/live/positions/exit` (reduce-only market orders through the executor; matching open live legs are squared off at the fill through `closeLegRow`, an emptied strategy is archived, audit `positions.exit`).
 - Found on the testnet trial the same day and fixed: `GET /v1/brokers` envelope (GAPS #41), vault key per process in development (GAPS #42).
 
+## As built · Phase 3 close-out (08 Sep 2026, ADR-029)
+- Preview: `marginUsed` from the venue's positions next to the available balance; ticket label says the exchange margin appears once filled.
+- `apps/api/src/live-reconcile.ts`: `reconcilePending(deps)` and `startReconciler(deps, ms)` started in `main.ts` (not under test); `TRADING_RECONCILE_MS`. Live tab polls its list every 10 s while any order chip is pending.
+- `lib/strategy/usePnlWriter.ts` mounted in the Workspace: today's P&L point per active strategy, first after 20 s then every 5 min when moved, never with an unpriced leg, only while the feed is live.
+

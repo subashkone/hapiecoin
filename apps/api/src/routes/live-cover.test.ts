@@ -5,6 +5,7 @@ import type { LiveBatchResult, LivePreview, Strategy } from "@hapiecoin/schema";
 import { eq } from "drizzle-orm";
 import { brokerCredentials } from "../db/schema.js";
 import { SEED } from "../db/seed.js";
+import { reconcilePending, startReconciler } from "../live-reconcile.js";
 import { createTestApp, type TestApp } from "../test-support/harness.js";
 
 let t: TestApp;
@@ -184,6 +185,48 @@ describe("HC-TR-145 exchange positions exit", () => {
     }
     const bob = (await t.signUp("bob-cover@hapiecoin.test")).cookie;
     expect((await t.request("/v1/strategies/live/positions/exit", { cookie: bob, json: { brokerId: SEED.brokerId, productIds: [101], idempotencyKey: "key-pos-exit-0003" } })).status).toBe(409);
+  });
+});
+
+describe("ADR-029 background reconciliation of pending orders", () => {
+  it("adopts venue fills for pending orders without the Sync button, skips strategies whose credential cannot be opened, and idles when nothing is pending", async () => {
+    const s = await draft("reconciled");
+    t.trading.partialNextOrder();
+    const live = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: alice, json: { brokerId: SEED.brokerId, idempotencyKey: "key-reconcile-0001" } }));
+    expect(live.orders[0]!.state).toBe("pending");
+    const first = await reconcilePending(t.deps);
+    expect(first).toEqual({ strategies: 1, updated: 0, failed: 0 }); // still open at the venue
+    t.trading.complete(Number(live.orders[0]!.venueOrderId), "1234");
+    const second = await reconcilePending(t.deps);
+    expect(second).toEqual({ strategies: 1, updated: 1, failed: 0 });
+    const after = await get(s.id);
+    expect(after.orders[0]).toMatchObject({ state: "filled", fillPrice: "1234" });
+    expect(after.legs[0]!.entryPrice).toBe("1234");
+    expect(await reconcilePending(t.deps)).toEqual({ strategies: 0, updated: 0, failed: 0 });
+    // the periodic runner runs the same pass
+    const s2 = await draft("reconciled twice");
+    t.trading.partialNextOrder();
+    const live2 = await json<Strategy>(await t.request(`/v1/strategies/${s2.id}/live/place`, { cookie: alice, json: { brokerId: SEED.brokerId, idempotencyKey: "key-reconcile-0002" } }));
+    t.trading.complete(Number(live2.orders[0]!.venueOrderId), "1240");
+    const stop = startReconciler(t.deps, 5);
+    await new Promise((r) => setTimeout(r, 60));
+    stop();
+    expect((await get(s2.id)).orders[0]!.state).toBe("filled");
+  });
+
+  it("a strategy whose stored credential cannot be opened is counted as failed and left pending", async () => {
+    const s = await draft("locked out");
+    t.trading.partialNextOrder();
+    await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: alice, json: { brokerId: SEED.brokerId, idempotencyKey: "key-reconcile-0003" } });
+    const [row] = await t.db.select().from(brokerCredentials).where(eq(brokerCredentials.brokerId, SEED.brokerId)).limit(1);
+    const original = row!.apiSecretTag;
+    await t.db.update(brokerCredentials).set({ apiSecretTag: Buffer.alloc(original.length, 9).toString("base64") }).where(eq(brokerCredentials.id, row!.id));
+    try {
+      expect(await reconcilePending(t.deps)).toMatchObject({ strategies: 1, updated: 0, failed: 1 });
+    } finally {
+      await t.db.update(brokerCredentials).set({ apiSecretTag: original }).where(eq(brokerCredentials.id, row!.id));
+      await t.request(`/v1/strategies/${s.id}/close`, { cookie: alice, json: { exits: {} } }).catch(() => undefined);
+    }
   });
 });
 

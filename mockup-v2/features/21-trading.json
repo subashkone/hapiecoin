@@ -445,7 +445,7 @@
     "feature": "Trade Preview · Review your strategy before trading",
     "how": "Legs table (Side, Type, Strike, Expiry, Qty, Price), 'Net Premium: Credit/Debit $x', 'Current BTC Price', 'Expected Required Margin', exchange name, red warning for live ('You are about to trade this strategy. Orders will be placed on Delta Exchange. Prices may differ from displayed estimates. Ensure you have sufficient margin.'), Cancel / 'Trade Now →'",
     "status": "working",
-    "evidence": "bundle strings: Expected Required Margin, Current Price, Net Premium · Phase 3 item 1 (08 Sep 2026): Trade Preview: legs, value, fee per leg, net premium, you will pay / receive, spot, margin est. (TradePreviewDialog.tsx); unit trading.test.tsx, e2e analyse.spec.ts HC-TR-022, visual analyse-trade-mode / analyse-paper / analyse-details"
+    "evidence": "bundle strings: Expected Required Margin, Current Price, Net Premium · Phase 3 item 1 (08 Sep 2026): Trade Preview: legs, value, fee per leg, net premium, you will pay / receive, spot, margin est. (TradePreviewDialog.tsx); unit trading.test.tsx, e2e analyse.spec.ts HC-TR-022, visual analyse-trade-mode / analyse-paper / analyse-details · ADR-029 (08 Sep 2026): exchange margin in use shown in the preview (no pre-trade estimate at Delta); unit trading-live.test.tsx"
   },
   {
     "route": "/analyse",
@@ -605,7 +605,7 @@
     "feature": "P&L History mini chart",
     "how": "Inline SVG line/area from strategy.pnlHistory plus the current total, theme-aware colours",
     "status": "working",
-    "evidence": "bundle: pnlHistory · Phase 3 item 1 (08 Sep 2026): P&L history chart from strategy_pnl points plus the live total (PnlChart); api strategies.test.ts pnl upsert"
+    "evidence": "bundle: pnlHistory · Phase 3 item 1 (08 Sep 2026): P&L history chart from strategy_pnl points plus the live total (PnlChart); api strategies.test.ts pnl upsert · ADR-029 (08 Sep 2026): browser writer records today's point (usePnlWriter); unit usePnlWriter.test.tsx"
   },
   {
     "route": "/analyse",
@@ -677,7 +677,7 @@
     "feature": "Failed order banner + 'Retry Failed Orders'",
     "how": "'Order placement failed · Retried n time(s)'; Retry shows 'Retrying...' and after 1s flips the failed orders to filled with new order ids and toasts 'Orders placed · Failed legs were submitted successfully.' (seeded on strategy s_310 added to CG.mock.strategies at init)",
     "status": "working",
-    "evidence": "bundle strings: failed, Use retry or cancel., Order Partially Failed · Phase 3 item 2 (08 Sep 2026): Failed banner with leg count and retries, Retry Failed Orders → live/retry keeps the client order id; unit trading-live.test.tsx HC-TR-083"
+    "evidence": "bundle strings: failed, Use retry or cancel., Order Partially Failed · Phase 3 item 2 (08 Sep 2026): Failed banner with leg count and retries, Retry Failed Orders → live/retry keeps the client order id; unit trading-live.test.tsx HC-TR-083 · ADR-029 (08 Sep 2026): pending orders are reconciled by the API in the background and the Live tab polls while pending; api live-cover.test.ts reconciler tests"
   },
   {
     "route": "/analyse",

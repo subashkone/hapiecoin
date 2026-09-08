@@ -56,6 +56,8 @@ const RawEnv = z.object({
   TRADING_MAX_NOTIONAL_USD: z.coerce.number().positive().default(100_000),
   TRADING_MAX_LEGS: z.coerce.number().int().min(1).max(10).default(10),
   TRADING_MARK_BAND_PCT: z.coerce.number().min(0).max(50).default(5),
+  /** Background reconciliation of pending venue orders, ms (ADR-029). */
+  TRADING_RECONCILE_MS: z.coerce.number().int().min(1000).default(15_000),
   DELTA_API_KEY: z.string().optional(),
   DELTA_API_SECRET: z.string().optional(),
 });
@@ -80,7 +82,7 @@ export interface Config {
   credentialsEncKey: Buffer;
   deltaRestUrl: string;
   deltaTradingRestUrl: string;
-  trading: { disabled: boolean; maxNotionalUsd: number; maxLegs: number; markBandPct: number };
+  trading: { disabled: boolean; maxNotionalUsd: number; maxLegs: number; markBandPct: number; reconcileMs: number };
   egressIp: string;
   logLevel: string;
   pgliteDataDir: string | undefined;
@@ -193,7 +195,7 @@ export function loadConfig(
     credentialsEncKey,
     deltaRestUrl: e.DELTA_REST_URL,
     deltaTradingRestUrl: e.DELTA_TRADING_REST_URL ?? e.DELTA_REST_URL,
-    trading: { disabled: e.TRADING_DISABLED === "1" || e.TRADING_DISABLED === "true", maxNotionalUsd: e.TRADING_MAX_NOTIONAL_USD, maxLegs: e.TRADING_MAX_LEGS, markBandPct: e.TRADING_MARK_BAND_PCT },
+    trading: { disabled: e.TRADING_DISABLED === "1" || e.TRADING_DISABLED === "true", maxNotionalUsd: e.TRADING_MAX_NOTIONAL_USD, maxLegs: e.TRADING_MAX_LEGS, markBandPct: e.TRADING_MARK_BAND_PCT, reconcileMs: e.TRADING_RECONCILE_MS },
     egressIp: e.EGRESS_IP,
     logLevel: e.LOG_LEVEL ?? (isTest ? "silent" : "info"),
     pgliteDataDir: e.PGLITE_DATA_DIR,

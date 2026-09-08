@@ -222,6 +222,8 @@ export const LivePreview = z.strictObject({
   notional: DecimalString,
   available: DecimalString.nullable(),
   availableAsset: z.string().nullable(),
+  /** Margin the exchange currently holds against open positions (sum of position margins); null when unknown. Delta has no pre-trade margin estimate endpoint (ADR-029). */
+  marginUsed: DecimalString.nullable(),
   limits: z.strictObject({ maxLegs: z.number().int(), maxNotionalUsd: z.number(), markBandPct: z.number() }),
 });
 export type LivePreview = z.infer<typeof LivePreview>;

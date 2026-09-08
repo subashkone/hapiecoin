@@ -3,6 +3,7 @@
  * client and an in-memory rate store. Each test file creates its own instance (isolated database).
  */
 import { createApp } from "../app.js";
+import type { AppDeps } from "../routes/shared.js";
 import { AUTH_BASE_PATH, authOptionsPublic, createAuth, sessionResolver, type Auth } from "../auth.js";
 import { type Config, loadConfig } from "../config.js";
 import { createDb, type Db, type DbHandle } from "../db/client.js";
@@ -46,6 +47,8 @@ export interface TestApp {
   mail: MailCapture;
   delta: FakeDeltaPrivateClient;
   trading: FakeDeltaTradingClient;
+  /** The app's dependency bag, for tests that drive background jobs directly (reconcilePending). */
+  deps: AppDeps;
   rateStore: MemoryRateStore;
   vault: Vault;
   now: { value: number };
@@ -92,7 +95,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
   const rateStore = new MemoryRateStore({ now: () => now.value });
   const vault = createVault(config.credentialsEncKey);
   const auth = createAuth({ config, db: handle.db, mailer: mail, rateStore, logger });
-  const app = createApp({
+  const deps: AppDeps = {
     config,
     db: handle.db,
     dbKind: handle.kind,
@@ -106,7 +109,8 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
     delta,
     trading,
     authOptions: authOptionsPublic(config),
-  });
+  };
+  const app = createApp(deps);
 
   const request = (path: string, opts: RequestOptions = {}): Promise<Response> => {
     const method = opts.method ?? (opts.json !== undefined ? "POST" : "GET");
@@ -154,6 +158,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
 
   return {
     app,
+    deps,
     trading,
     config,
     db: handle.db,

@@ -328,7 +328,7 @@ export function BuilderPanel() {
                   <div className="num text-[15px] font-medium" data-testid="ticket-margin">
                     {margin === null ? "—" : fmtMoney(margin, money)}
                   </div>
-                  <div className="micro">{margin === null ? (result ? "undefined risk · exchange est. in Phase 3" : "") : "worst expiry loss"}</div>
+                  <div className="micro">{margin === null ? (result ? "undefined risk · exchange margin shown once filled" : "") : "worst expiry loss"}</div>
                 </div>
                 <div>
                   <div className="micro">P&amp;L at target</div>

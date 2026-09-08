@@ -13,6 +13,7 @@ import { TradeFlow } from "@/components/trading/TradeFlow";
 import { useStrategies } from "@/lib/api/strategies";
 import { useConnectionStatus } from "@/lib/gateway/hooks";
 import { usePaperBook } from "@/lib/strategy/usePaper";
+import { usePnlWriter } from "@/lib/strategy/usePnlWriter";
 import { type WorkspaceTab, useUiStore } from "@/lib/store";
 
 export const LEFT_TABS: { id: WorkspaceTab; label: string; phase?: number; blurb?: string }[] = [
@@ -63,6 +64,7 @@ export function Workspace() {
   const { data: strategies } = useStrategies();
   const book = usePaperBook(strategies ?? []);
   const feedLive = useConnectionStatus() === "open";
+  usePnlWriter(strategies, book, feedLive); // GAPS #38: today's P&L point for every active strategy, from the browser that prices them
   const paperCount = (strategies ?? []).filter((s) => s.status === "paper").length;
   const liveCount = (strategies ?? []).filter((s) => s.status === "live").length;
   const [split, setSplit] = useState(SPLIT_DEFAULT);

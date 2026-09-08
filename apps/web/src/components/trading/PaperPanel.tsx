@@ -67,6 +67,13 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const q = search.trim().toLowerCase();
   const all = useMemo(() => (data ?? []).filter((s) => s.status === kind), [data, kind]);
+  // ADR-029: the API reconciles pending orders in the background; while any are pending, poll the list so chips update
+  const anyPending = kind === "live" && all.some((s) => s.orders.some((o) => o.state === "pending"));
+  useEffect(() => {
+    if (!anyPending) return;
+    const id = setInterval(() => void refetch(), 10_000);
+    return () => clearInterval(id);
+  }, [anyPending, refetch]);
   // nothing followed yet on this tab: the pane follows the first card (HC-TR-143)
   useEffect(() => {
     if (workspaceTab !== kind || paneSource !== null) return;
