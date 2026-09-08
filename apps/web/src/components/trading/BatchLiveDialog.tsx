@@ -5,6 +5,7 @@ import type { Broker, Strategy } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { useEffect, useState } from "react";
 import { newIdempotencyKey, useLiveBatch } from "@/lib/api/live";
+import { handleUpgradeRequired } from "@/lib/api/upgrade";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
 import { openLegs } from "@/lib/strategy/paper";
@@ -32,7 +33,9 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, conne
           if (r.failed) toast.error("Batch stopped", { description: `${strategies.find((s) => s.id === r.failed?.id)?.name ?? r.failed.id}: ${r.failed.error}` });
           else toast.success("Live Orders Placed", { description: `${r.placed.length} ${r.placed.length === 1 ? "strategy" : "strategies"} moved to live` });
         },
-        onError: (e) => toast.error("Batch refused", { description: e.message }),
+        onError: (e) => {
+          if (!handleUpgradeRequired(e)) toast.error("Batch refused", { description: e.message });
+        },
       },
     );
   return (

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { PhasePlaceholder } from "@/components/shell/PhasePlaceholder";
+import { AdminLater } from "@/components/admin/AdminLater";
 
-export const metadata: Metadata = { title: "Admin" };
+export const metadata: Metadata = { title: "Admin · Users" };
 
 export default function Page() {
-  return <PhasePlaceholder title="Admin" phase={5} blurb="User management, plans, coupons, banners and promotional emails." />;
+  return <AdminLater title="User Management" item="Phase 4 item 4" blurb="Roles, search, bulk actions and account details. Plan-level edits are already on User Subscriptions." />;
 }

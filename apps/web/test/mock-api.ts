@@ -3,8 +3,8 @@
 // deliberately simple: one OTP (123456), sessions in a Map, settings/brokers/credentials per user.
 import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import type { Broker, BrokerCredentialPublic, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
-import { maskApiKey, realizedPnl, toDecimal } from "@hapiecoin/schema";
+import type { BillingInterval, Broker, BrokerCredentialPublic, LimitKey, MenuItem, Plan, PlanLimits, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
+import { INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, maskApiKey, priceBreakdown, realizedPnl, toDecimal } from "@hapiecoin/schema";
 
 export const SESSION_COOKIE = "better-auth.session_token";
 export const TEST_OTP = "123456";
@@ -21,6 +21,22 @@ interface Account {
   strategies: Strategy[];
   tradingDisabled: boolean;
   referredBy?: string;
+  /** Billing (ADR-030): the catalogue subscription behind the banner, admin toggles and overrides. */
+  subscription: MockSubscription | null;
+  /** Set by /__test/seed when a banner state was given: the banner follows that seed, not the catalogue (visual tests). */
+  seededBanner: boolean;
+  active: boolean;
+  limitOverrides: PlanLimits;
+  commissionPct: string;
+}
+interface MockSubscription {
+  id: string;
+  planId: string;
+  interval: BillingInterval;
+  startsAt: string;
+  expiresAt: string | null;
+  priceInr: string;
+  paidInr: string;
 }
 interface PlanRecord {
   state: "free" | "active" | "expiring_soon" | "expired";
@@ -30,6 +46,8 @@ interface PlanRecord {
 }
 
 export interface MockState {
+  plans: Plan[];
+  menuItems: MenuItem[];
   accounts: Map<string, Account>;
   sessions: Map<string, string>; // token → email
   /** OTPs issued: `${email}:${type}` → code (always TEST_OTP, but recorded for assertions). */
@@ -62,6 +80,29 @@ function id(prefix: string): string {
   return `${prefix}_${counter.toString(36)}${Date.now().toString(36)}`;
 }
 
+
+function seedMenuItems(): MenuItem[] {
+  const at = "2026-09-01T00:00:00.000Z";
+  return [
+    { id: "mnu_market_analytics", displayName: "Market Analytics", category: "Analytics", priceInr: "299", active: true, linkedPlans: 0, createdAt: at, updatedAt: at },
+    { id: "mnu_reports_export", displayName: "Reports Export", category: "Data", priceInr: "199", active: true, linkedPlans: 0, createdAt: at, updatedAt: at },
+    { id: "mnu_alerts", displayName: "Price & P&L Alerts", category: "Trading", priceInr: "149", active: true, linkedPlans: 0, createdAt: at, updatedAt: at },
+  ];
+}
+function seedPlans(): Plan[] {
+  const at = "2026-09-01T00:00:00.000Z";
+  const tier = (monthly: number, quarterly: number, yearly: number, discount: number, limits: PlanLimits): Plan["intervals"] => {
+    const one = (price: number) => ({ priceInr: String(price), discountPriceInr: discount > 0 && price > 0 ? String(Math.round(price * (1 - discount / 100))) : null, limits });
+    return { monthly: one(monthly), quarterly: one(quarterly), yearly: one(yearly) };
+  };
+  return [
+    { id: "pln_free", name: "Free", description: "Explore the chain, build strategies and paper trade a little.", features: ["Live options chain", "Strategy builder and 28 templates", "3 paper trades a month"], intervals: tier(0, 0, 0, 0, { paper_trading: 3, templates: 5 }), menuItemIds: [], active: true, sortOrder: 0, createdAt: at, updatedAt: at },
+    { id: "pln_basic", name: "Basic", description: "For traders who paper trade every day.", features: ["Everything in Free", "25 paper trades a month", "Unlimited saved strategies", "Price alerts"], intervals: tier(499, 1299, 4499, 10, { paper_trading: 25, templates: 0, alerts: 10 }), menuItemIds: ["mnu_alerts"], active: true, sortOrder: 10, createdAt: at, updatedAt: at },
+    { id: "pln_pro", name: "Pro", description: "Live trading on Delta Exchange India with analytics.", features: ["Everything in Basic", "Unlimited paper trades", "50 live trades a month", "Market analytics"], intervals: tier(999, 2699, 8999, 15, { paper_trading: 0, live_trading: 50, templates: 0, alerts: 50 }), menuItemIds: ["mnu_alerts", "mnu_market_analytics"], active: true, sortOrder: 20, createdAt: at, updatedAt: at },
+    { id: "pln_elite", name: "Elite", description: "No limits, every module, priority support.", features: ["Everything in Pro", "Unlimited live trades", "Reports export", "Priority support"], intervals: tier(1999, 5399, 17999, 20, { paper_trading: 0, live_trading: 0, templates: 0, alerts: 0 }), menuItemIds: ["mnu_alerts", "mnu_market_analytics", "mnu_reports_export"], active: true, sortOrder: 30, createdAt: at, updatedAt: at },
+  ];
+}
+
 export function createAccount(
   state: MockState,
   input: { email: string; password?: string; name?: string; mobile?: string; role?: "user" | "admin"; verified?: boolean },
@@ -87,6 +128,12 @@ export function createAccount(
     plan: { state: "free" },
     strategies: [],
     tradingDisabled: false,
+    // like the API test harness: accounts start on Elite (no limits) so trading tests stay about trading; billing tests clear it
+    subscription: { id: id("sub"), planId: "pln_elite", interval: "yearly", startsAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 365 * 86_400_000).toISOString(), priceInr: "17999", paidInr: "0" },
+    seededBanner: false,
+    active: true,
+    limitOverrides: {},
+    commissionPct: "0",
   };
   state.accounts.set(email, acc);
   return acc;
@@ -98,10 +145,12 @@ export function createSession(state: MockState, email: string): string {
   return token;
 }
 
-export function createMockApi(state: MockState = { accounts: new Map(), sessions: new Map(), otps: new Map() }) {
+export function createMockApi(state: MockState = { plans: seedPlans(),
+    menuItems: seedMenuItems(),
+    accounts: new Map(), sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
-  const err = (c: Context, status: 400 | 401 | 403 | 404 | 409, code: string, message: string) =>
+  const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409, code: string, message: string) =>
     c.json({ code, message }, status);
 
   const current = (c: Context): Account | null => {
@@ -387,6 +436,8 @@ export function createMockApi(state: MockState = { accounts: new Map(), sessions
     const body = await c.req.json<{ mode: "paper" | "live"; brokerId: string; entries: Record<string, string> }>();
     if (s.status !== "draft") return err(c, 409, "CONFLICT", `Only a draft can be started; this strategy is ${s.status}`);
     if (body.mode === "live") return err(c, 409, "CONFLICT", "Live placement goes through /live/preview and /live/place (ADR-025)");
+    const blockedPaper = assertEntitled(c, current(c)!, "paper_trading");
+    if (blockedPaper) return blockedPaper;
     if (!current(c)!.brokers.some((b) => b.id === body.brokerId)) return err(c, 400, "BAD_REQUEST", "Select an exchange...");
     const at = nowIso();
     for (const l of s.legs) {
@@ -591,6 +642,8 @@ export function createMockApi(state: MockState = { accounts: new Map(), sessions
     const body = await c.req.json<{ brokerId: string; idempotencyKey: string; expected?: Record<string, string> }>();
     if (s.orderBatchId === body.idempotencyKey) return c.json(s);
     if (s.status !== "draft" && s.status !== "paper") return err(c, 409, "CONFLICT", `Only a draft or paper strategy can go live; this strategy is ${s.status}`);
+    const blockedLive = assertEntitled(c, current(c)!, "live_trading");
+    if (blockedLive) return blockedLive;
     const p = livePreview(c, s, null);
     if (!p.ok) return err(c, 409, "CONFLICT", p.reasons.join(" · "));
     Object.assign(s, { status: "live", tradingMode: "live", brokerId: body.brokerId, orderBatchId: body.idempotencyKey, startedAt: s.startedAt ?? nowIso(), closedAt: null });
@@ -616,6 +669,207 @@ export function createMockApi(state: MockState = { accounts: new Map(), sessions
     return c.json(touch(s));
   });
 
+  /* ---------------- billing (Phase 4 item 1, ADR-030; mirrors apps/api/src/routes/billing.ts) ---------------- */
+  const planOf = (id: string) => state.plans.find((p) => p.id === id);
+  const activeSub = (acc: Account) => {
+    const s = acc.subscription;
+    if (!s) return null;
+    if (s.expiresAt && new Date(s.expiresAt).getTime() <= Date.now()) return null;
+    return s;
+  };
+  const usageOf = (acc: Account) => {
+    const since = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)).getTime();
+    const started = acc.strategies.filter((s) => s.startedAt && new Date(s.startedAt).getTime() >= since);
+    return { paper_trading: started.filter((s) => s.tradingMode === "paper").length, live_trading: started.filter((s) => s.tradingMode === "live").length, alerts: 0, templates: acc.strategies.filter((s) => s.status === "draft").length };
+  };
+  const entitlementsOf = (acc: Account) => {
+    const sub = activeSub(acc);
+    const plan = (sub ? planOf(sub.planId) : undefined) ?? state.plans.find((p) => p.active && Number(p.intervals.monthly.priceInr) === 0);
+    const limits = plan ? plan.intervals[sub?.interval ?? "monthly"].limits : {};
+    const used = usageOf(acc);
+    const entitlements = LIMIT_KEYS.map((key) => {
+      const o = acc.limitOverrides[key];
+      const l = limits[key];
+      if (o !== undefined && o > 0) return { key, limit: o, included: true, used: used[key], overridden: true };
+      if (l === undefined) return { key, limit: 0, included: false, used: used[key], overridden: false };
+      return { key, limit: l === 0 ? null : l, included: true, used: used[key], overridden: false };
+    });
+    return { plan, sub, entitlements };
+  };
+  const planStateOf = (acc: Account): PlanRecord => {
+    const sub = acc.subscription;
+    if (acc.seededBanner) return acc.plan; // e2e seedUser fixed the banner text
+    if (!sub) return { state: "free" };
+    const plan = planOf(sub.planId);
+    if (!sub.expiresAt) return { state: "active", planName: plan?.name ?? "Plan" };
+    const daysLeft = Math.ceil((new Date(sub.expiresAt).getTime() - Date.now()) / 86_400_000);
+    if (daysLeft <= 0) return { state: "expired", planName: plan?.name ?? "Plan", expiresAt: sub.expiresAt, daysLeft: 0 };
+    return { state: daysLeft <= 7 ? "expiring_soon" : "active", planName: plan?.name ?? "Plan", expiresAt: sub.expiresAt, daysLeft };
+  };
+  const subscriptionView = (acc: Account) => {
+    const { plan, sub, entitlements } = entitlementsOf(acc);
+    return {
+      plan: planStateOf(acc),
+      current: sub ? { id: sub.id, planId: sub.planId, planName: planOf(sub.planId)?.name ?? "Plan", interval: sub.interval, status: "active", startsAt: sub.startsAt, expiresAt: sub.expiresAt, priceInr: sub.priceInr, paidInr: sub.paidInr, currency: "INR" } : null,
+      effectivePlan: plan ?? null,
+      entitlements,
+      plans: state.plans.filter((p) => p.active).sort((a, b) => a.sortOrder - b.sortOrder),
+      menuItems: plan ? state.menuItems.filter((m) => m.active && plan.menuItemIds.includes(m.id)).map((m) => m.displayName).sort() : [],
+      accountActive: acc.active,
+    };
+  };
+  /** 403 UPGRADE_REQUIRED like the API (HC-SH-054). */
+  const assertEntitled = (c: Context, acc: Account, key: LimitKey): Response | null => {
+    if (!acc.active) return err(c, 403, "ACCOUNT_DEACTIVATED", "Your account has been deactivated. Contact support.");
+    const { plan, entitlements } = entitlementsOf(acc);
+    const e = entitlements.find((x) => x.key === key)!;
+    const name = plan?.name ?? "current";
+    if (!e.included) return err(c, 403, "UPGRADE_REQUIRED", `${key === "live_trading" ? "Live trading" : key === "paper_trading" ? "Paper trading" : key} is not included in your ${name} plan. Upgrade to unlock it.`);
+    if (e.limit !== null && e.used >= e.limit) return err(c, 403, "UPGRADE_REQUIRED", `Your ${name} plan allows ${e.limit} ${LIMIT_LABELS[key].toLowerCase()}; you have used ${e.used} this month. Upgrade for more.`);
+    return null;
+  };
+  v1.get("/plans", (c) => c.json({ items: state.plans.filter((p) => p.active).sort((a, b) => a.sortOrder - b.sortOrder) }));
+  v1.get("/subscription", (c) => c.json(subscriptionView(current(c)!)));
+  v1.post("/subscription/activate", async (c) => {
+    const acc = current(c)!;
+    const body = await c.req.json<{ planId: string; interval: BillingInterval }>();
+    if (!acc.active) return err(c, 403, "FORBIDDEN", "Your account has been deactivated. Contact support.");
+    const plan = planOf(body.planId);
+    if (!plan || !plan.active) return err(c, 404, "NOT_FOUND", "Plan not found");
+    const pricing = plan.intervals[body.interval];
+    const total = priceBreakdown(pricing).total;
+    if (total > 0) return err(c, 402, "PAYMENT_REQUIRED", `${plan.name} · ${body.interval} costs ₹${total.toFixed(2)}; checkout arrives with Razorpay in the next release`);
+    const cur = activeSub(acc);
+    if (cur && cur.planId === plan.id && cur.interval === body.interval) return err(c, 409, "CONFLICT", `You are already on ${plan.name} · ${body.interval}`);
+    const startsAt = nowIso();
+    acc.subscription = { id: id("sub"), planId: plan.id, interval: body.interval, startsAt, expiresAt: Number(pricing.priceInr) === 0 ? null : new Date(Date.now() + INTERVAL_MONTHS[body.interval] * 30 * 86_400_000).toISOString(), priceInr: pricing.priceInr, paidInr: "0" };
+    acc.seededBanner = false; // the catalogue subscription now drives the banner
+    acc.plan = planStateOf(acc);
+    return c.json(subscriptionView(acc));
+  });
+  const adminOnly = (c: Context): Response | null => (current(c)!.user.role === "admin" ? null : err(c, 403, "FORBIDDEN", "Admin only"));
+  v1.get("/admin/plans", (c) => adminOnly(c) ?? c.json({ items: [...state.plans].sort((a, b) => a.sortOrder - b.sortOrder) }));
+  v1.post("/admin/plans", async (c) => {
+    const denied = adminOnly(c);
+    if (denied) return denied;
+    const body = await c.req.json<Omit<Plan, "id" | "createdAt" | "updatedAt">>();
+    if (!body.name) return err(c, 400, "VALIDATION", "Plan name is required");
+    if (state.plans.some((p) => p.name.toLowerCase() === body.name.toLowerCase())) return err(c, 409, "CONFLICT", `A plan named ${body.name} already exists`);
+    const at = nowIso();
+    const plan: Plan = { id: id("pln"), ...body, createdAt: at, updatedAt: at };
+    state.plans.push(plan);
+    return c.json(plan, 201);
+  });
+  v1.patch("/admin/plans/:id", async (c) => {
+    const denied = adminOnly(c);
+    if (denied) return denied;
+    const plan = planOf(c.req.param("id"));
+    if (!plan) return err(c, 404, "NOT_FOUND", "Plan not found");
+    const body = await c.req.json<Partial<Plan>>();
+    Object.assign(plan, body, { updatedAt: nowIso() });
+    return c.json(plan);
+  });
+  v1.post("/admin/plans/bulk", async (c) => {
+    const denied = adminOnly(c);
+    if (denied) return denied;
+    const body = await c.req.json<{ ids: string[]; active: boolean }>();
+    const items = state.plans.filter((p) => body.ids.includes(p.id));
+    for (const p of items) Object.assign(p, { active: body.active, updatedAt: nowIso() });
+    return c.json({ items });
+  });
+  const linked = (mid: string) => state.plans.filter((p) => p.menuItemIds.includes(mid)).length;
+  v1.get("/admin/menu-items", (c) => adminOnly(c) ?? c.json({ items: state.menuItems.map((m) => ({ ...m, linkedPlans: linked(m.id) })) }));
+  v1.post("/admin/menu-items", async (c) => {
+    const denied = adminOnly(c);
+    if (denied) return denied;
+    const body = await c.req.json<{ displayName: string; category: string; priceInr: string; active?: boolean }>();
+    if (!body.displayName) return err(c, 400, "VALIDATION", "Display Name is required");
+    const at = nowIso();
+    const item: MenuItem = { id: id("mnu"), displayName: body.displayName, category: body.category, priceInr: body.priceInr, active: body.active ?? true, linkedPlans: 0, createdAt: at, updatedAt: at };
+    state.menuItems.push(item);
+    return c.json(item, 201);
+  });
+  v1.patch("/admin/menu-items/:id", async (c) => {
+    const denied = adminOnly(c);
+    if (denied) return denied;
+    const item = state.menuItems.find((m) => m.id === c.req.param("id"));
+    if (!item) return err(c, 404, "NOT_FOUND", "Menu item not found");
+    Object.assign(item, await c.req.json<Partial<MenuItem>>(), { updatedAt: nowIso() });
+    return c.json({ ...item, linkedPlans: linked(item.id) });
+  });
+  v1.post("/admin/menu-items/bulk", async (c) => {
+    const denied = adminOnly(c);
+    if (denied) return denied;
+    const body = await c.req.json<{ ids: string[]; active: boolean }>();
+    const items = state.menuItems.filter((m) => body.ids.includes(m.id));
+    for (const m of items) Object.assign(m, { active: body.active, updatedAt: nowIso() });
+    return c.json({ items: items.map((m) => ({ ...m, linkedPlans: linked(m.id) })) });
+  });
+  const adminRow = (acc: Account) => {
+    const sub = activeSub(acc);
+    const plan = sub ? planOf(sub.planId) : undefined;
+    return {
+      id: acc.user.id,
+      email: acc.user.email,
+      name: acc.user.name,
+      role: acc.user.role,
+      active: acc.active,
+      planName: plan?.name ?? (acc.plan.planName ?? null),
+      planId: sub?.planId ?? null,
+      interval: sub?.interval ?? null,
+      startsAt: sub?.startsAt ?? null,
+      expiresAt: sub?.expiresAt ?? acc.plan.expiresAt ?? null,
+      validityDays: sub && sub.expiresAt ? Math.max(1, Math.round((new Date(sub.expiresAt).getTime() - new Date(sub.startsAt).getTime()) / 86_400_000)) : null,
+      referrals: [...state.accounts.values()].filter((a) => a.referredBy === acc.user.referralCode).length,
+      commissionPct: acc.commissionPct,
+      limitOverrides: acc.limitOverrides,
+      lotSizes: acc.settings.lotSizes,
+      createdAt: acc.user.createdAt,
+    };
+  };
+  v1.get("/admin/users", (c) => {
+    const denied = adminOnly(c);
+    if (denied) return denied;
+    const q = (c.req.query("q") ?? "").toLowerCase();
+    const status = c.req.query("status") ?? "all";
+    const page = Number(c.req.query("page") ?? "1");
+    const rows = [...state.accounts.values()].map(adminRow).filter((r) => !q || r.email.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)).filter((r) => {
+      if (status === "all") return true;
+      if (status === "deactivated") return !r.active;
+      if (status === "free") return r.planName === null;
+      if (status === "active") return r.planName !== null && (r.expiresAt === null || new Date(r.expiresAt).getTime() > Date.now());
+      return r.planName !== null && r.expiresAt !== null && new Date(r.expiresAt).getTime() <= Date.now();
+    });
+    return c.json({ items: rows.slice((page - 1) * 10, page * 10), total: rows.length, page, pageSize: 10 });
+  });
+  v1.patch("/admin/users/:id", async (c) => {
+    const denied = adminOnly(c);
+    if (denied) return denied;
+    const acc = [...state.accounts.values()].find((a) => a.user.id === c.req.param("id"));
+    if (!acc) return err(c, 404, "NOT_FOUND", "User not found");
+    const body = await c.req.json<{ validityDays?: number; active?: boolean; commissionPct?: string; limitOverrides?: PlanLimits; lotSizes?: Record<string, string> }>();
+    if (body.validityDays !== undefined) {
+      const sub = activeSub(acc);
+      if (!sub) return err(c, 409, "CONFLICT", "This user has no active subscription to extend");
+      sub.expiresAt = new Date(new Date(sub.startsAt).getTime() + body.validityDays * 86_400_000).toISOString();
+      acc.plan = planStateOf(acc);
+    }
+    if (body.active !== undefined) acc.active = body.active;
+    if (body.commissionPct !== undefined) acc.commissionPct = body.commissionPct;
+    if (body.limitOverrides !== undefined) acc.limitOverrides = body.limitOverrides;
+    if (body.lotSizes !== undefined) acc.settings.lotSizes = { ...acc.settings.lotSizes, ...body.lotSizes };
+    return c.json(adminRow(acc));
+  });
+  v1.post("/admin/users/bulk", async (c) => {
+    const denied = adminOnly(c);
+    if (denied) return denied;
+    const me = current(c)!;
+    const body = await c.req.json<{ ids: string[]; active: boolean }>();
+    let updated = 0;
+    for (const acc of state.accounts.values()) if (body.ids.includes(acc.user.id) && acc.user.id !== me.user.id) { acc.active = body.active; updated += 1; }
+    return c.json({ updated });
+  });
+
   app.route("/v1", v1);
 
   /* ---------------- test hooks ---------------- */
@@ -628,7 +882,11 @@ export function createMockApi(state: MockState = { accounts: new Map(), sessions
   app.post("/__test/seed", async (c) => {
     const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean }>();
     const acc = createAccount(state, body);
-    if (body.plan) acc.plan = body.plan;
+    if (body.plan) {
+      acc.plan = body.plan;
+      acc.seededBanner = true;
+      if (body.plan.state === "free") acc.subscription = null;
+    }
     if (body.connected) {
       acc.credential = { brokerId: "brk_delta", apiKeyMasked: "****ab12", connectedAt: new Date().toISOString(), whitelistedIp: WHITELIST_IP };
     }

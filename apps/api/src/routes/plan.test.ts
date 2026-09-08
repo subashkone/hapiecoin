@@ -14,7 +14,7 @@ const DAY = 24 * 60 * 60 * 1000;
 
 describe("HC-SH-014 plan banner state", () => {
   it("free for a user without a subscription; active until <date> for the seeded admin (Pro, 365 days)", async () => {
-    const { cookie } = await t.signUp("plan@hapiecoin.test");
+    const { cookie } = await t.signUp("plan@hapiecoin.test", { plan: "free" });
     expect(await (await t.request("/v1/plan", { cookie })).json()).toEqual({ state: "free" });
     const admin = await t.adminCookie();
     const body = (await (await t.request("/v1/plan", { cookie: admin })).json()) as {
@@ -30,7 +30,7 @@ describe("HC-SH-014 plan banner state", () => {
   });
 
   it("expiring soon at ≤ 7 days, expired after, and picks the latest subscription", async () => {
-    const { cookie } = await t.signUp("plans@hapiecoin.test");
+    const { cookie } = await t.signUp("plans@hapiecoin.test", { plan: "free" });
     const me = (await (await t.request("/v1/me", { cookie })).json()) as { id: string };
     const now = Date.now();
     await t.db

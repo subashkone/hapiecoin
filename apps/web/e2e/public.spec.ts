@@ -55,9 +55,9 @@ test.describe("HC-PB landing and public pages", () => {
     await signIn(page, "nav@example.com");
     for (const [path, title] of [
       ["/analytics", "Market Analytics"],
-      ["/subscription", "Subscription"],
+      ["/subscription", "Choose a plan to unlock features"],
       ["/referrals", "Referrals"],
-      ["/admin/users", "Admin"],
+      ["/admin/users", "User Management"],
     ] as const) {
       await page.goto(path);
       await expect(page.getByTestId("app-header")).toHaveAttribute("data-variant", "default");

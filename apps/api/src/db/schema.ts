@@ -6,6 +6,7 @@
  * Money-shaped values (fee percentages, conversion rate, lot sizes) are stored as decimal strings in
  * text/jsonb columns, never as floats (brief: decimal strings cross package boundaries).
  */
+import type { PlanIntervals } from "@hapiecoin/schema";
 import { sql } from "drizzle-orm";
 import {
   bigserial,
@@ -50,6 +51,12 @@ export const users = pgTable(
     referredBy: text("referred_by"),
     /** Per-account kill switch (ADR-025): true refuses every live placement for this user. */
     tradingDisabled: boolean("trading_disabled").notNull().default(false),
+    /** Admin account toggle (HC-AD-047): false refuses trading and plan activation. */
+    active: boolean("active").notNull().default(true),
+    /** Per-user feature limit overrides (HC-AD-048), same keys as plan limits; > 0 replaces the plan number. */
+    limitOverrides: jsonb("limit_overrides").$type<Record<string, number>>().notNull().default(sql`'{}'::jsonb`),
+    /** Referral commission percentage (HC-AD-046), decimal string. */
+    commissionPct: text("commission_pct").notNull().default("0"),
   },
   (t) => [
     uniqueIndex("users_email_uq").on(t.email),
@@ -202,6 +209,33 @@ export const brokerCredentials = pgTable(
 );
 
 /** Minimal subscription record for the plan banner (HC-SH-014). Payments (phase 4) will extend it. */
+/** Plan catalogue (Phase 4 item 1, ADR-030): prices and per-interval limits live in one JSON column per plan. */
+export const plans = pgTable(
+  "plans",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    features: jsonb("features").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    intervals: jsonb("intervals").$type<PlanIntervals>().notNull(),
+    menuItemIds: jsonb("menu_item_ids").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    active: boolean("active").notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(100),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("plans_name_uq").on(t.name)],
+);
+
+/** Menu pricing master (HC-AD-020..028): priced items a plan can link. */
+export const menuItems = pgTable("menu_items", {
+  id: text("id").primaryKey(),
+  displayName: text("display_name").notNull(),
+  category: text("category").notNull(),
+  priceInr: text("price_inr").notNull().default("0"),
+  active: boolean("active").notNull().default(true),
+  ...timestamps,
+});
+
 export const subscriptions = pgTable(
   "subscriptions",
   {
@@ -210,6 +244,13 @@ export const subscriptions = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     planName: text("plan_name").notNull(),
+    /** The catalogue plan (ADR-030); null for rows created before the catalogue existed. */
+    planId: text("plan_id").references(() => plans.id, { onDelete: "set null" }),
+    interval: text("interval", { enum: ["monthly", "quarterly", "yearly"] }),
+    /** INR decimal strings: list price at the interval and what was actually paid (₹0 for a free activation). */
+    priceInr: text("price_inr"),
+    paidInr: text("paid_inr"),
+    currency: text("currency").notNull().default("INR"),
     status: text("status", { enum: ["active", "expired", "cancelled"] }).notNull(),
     startsAt: timestamp("starts_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
     /** Null = never expires. */
@@ -358,5 +399,7 @@ export const schema = {
   strategyLegs,
   strategyPnl,
   strategyOrders,
+  plans,
+  menuItems,
 };
 export type Schema = typeof schema;

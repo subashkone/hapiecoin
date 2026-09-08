@@ -6,3 +6,4 @@ export * from "./gateway.js";
 export * from "./accounts.js";
 export * from "./api.js";
 export * from "./strategies.js";
+export * from "./billing.js";

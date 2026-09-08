@@ -2,11 +2,13 @@
  * Test harness: boots the real app on an in-memory PGlite with a capturing mailer, a fake Delta
  * client and an in-memory rate store. Each test file creates its own instance (isolated database).
  */
+import { eq } from "drizzle-orm";
 import { createApp } from "../app.js";
 import type { AppDeps } from "../routes/shared.js";
 import { AUTH_BASE_PATH, authOptionsPublic, createAuth, sessionResolver, type Auth } from "../auth.js";
 import { type Config, loadConfig } from "../config.js";
 import { createDb, type Db, type DbHandle } from "../db/client.js";
+import { plans, subscriptions } from "../db/schema.js";
 import { SEED, seed } from "../db/seed.js";
 import { FakeDeltaTradingClient } from "@hapiecoin/venues";
 import { FakeDeltaPrivateClient } from "../delta/private-client.js";
@@ -56,7 +58,9 @@ export interface TestApp {
   /** Sign up through Better Auth (email + password, then OTP verification). Returns the session cookie. */
   signUp(
     email: string,
-    opts?: { name?: string; password?: string; mobile?: string; ref?: string },
+    opts?: {
+      /** Plan for the new user (ADR-030): tests default to Elite (no limits) so trading tests stay about trading; billing tests ask for "free". */
+      plan?: "free" | "elite"; name?: string; password?: string; mobile?: string; ref?: string },
   ): Promise<{ cookie: string }>;
   /** OTP sign-in for an existing user (the seeded admin, or someone created with signUp). */
   signInOtp(email: string): Promise<{ cookie: string }>;
@@ -180,7 +184,16 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
       if (opts.ref !== undefined) body["ref"] = opts.ref;
       const res = await request(`${AUTH_BASE_PATH}/sign-up/email`, { json: body, ip: nextIp() });
       if (res.status !== 200) throw new Error(`sign-up failed: ${res.status} ${await res.text()}`);
-      return verifyEmail(email, cookieHeaderFrom(res));
+      const session = await verifyEmail(email, cookieHeaderFrom(res));
+      if (opts.plan !== "free") {
+        const me = (await (await request("/v1/me", { cookie: session.cookie })).json()) as { id: string };
+        const [elite] = await handle.db.select().from(plans).where(eq(plans.id, SEED.plans.elite)).limit(1);
+        if (elite) {
+          const startsAt = new Date(now.value);
+          await handle.db.insert(subscriptions).values({ id: `sub_test_${me.id}`, userId: me.id, planName: elite.name, planId: elite.id, interval: "yearly", priceInr: elite.intervals.yearly.priceInr, paidInr: "0", currency: "INR", status: "active", startsAt, expiresAt: new Date(startsAt.getTime() + 365 * 86_400_000), featureLimits: elite.intervals.yearly.limits });
+        }
+      }
+      return session;
     },
     signInOtp,
     adminCookie: () => signInOtp(SEED.adminEmail).then((r) => r.cookie),

@@ -36,6 +36,7 @@ export function jsonContent<T extends z.ZodType>(schema: T, description: string)
 export const errorResponses = {
   400: jsonContent(ApiError, "Validation failed"),
   401: jsonContent(ApiError, "Not signed in"),
+  402: jsonContent(ApiError, "Payment required"),
   403: jsonContent(ApiError, "Not allowed"),
   404: jsonContent(ApiError, "Not found"),
   409: jsonContent(ApiError, "Wrong state for this action"),

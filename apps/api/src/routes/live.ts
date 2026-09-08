@@ -6,6 +6,7 @@ import { Id, LiveBatchBody, LiveBatchResult, LivePlaceBody, LivePositions, LiveP
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, asc, eq } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
+import { assertEntitled } from "../entitlements.js";
 import { strategies, strategyLegs, users } from "../db/schema.js";
 import { type AppEnv, type SessionUser, currentUser } from "../security/context.js";
 import { errors } from "../security/errors.js";
@@ -74,6 +75,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const existing = (await ordersOf(deps, row.id)).some((o) => o.batchId === body.idempotencyKey);
       if (existing) return c.json(await loadStrategy(deps, row.id), 200); // repeat of the same placement (idempotency key)
       if (row.status !== "draft" && row.status !== "paper") throw errors.conflict(`Only a draft or paper strategy can go live; this strategy is ${row.status}`);
+      await assertEntitled(deps, me.id, "live_trading"); // HC-SH-054 (ADR-030)
       const { legs, p } = await checkedPreview(me, row, body.brokerId, null);
       if (!p.ok) throw errors.conflict(p.reasons.join(" · "));
       const creds = await openCredential(deps, me, body.brokerId);
@@ -152,6 +154,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const body = c.req.valid("json");
       const blocked = await tradingBlockedReason(deps, me);
       if (blocked) throw errors.conflict(blocked);
+      await assertEntitled(deps, me.id, "live_trading"); // one check per batch: the batch counts as one placement per strategy below
       const creds = await openCredential(deps, me, body.brokerId);
       const placed: string[] = [];
       const skipped: string[] = [];

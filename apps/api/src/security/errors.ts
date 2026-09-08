@@ -35,6 +35,7 @@ export const errors = {
   badRequest: (message: string) => new HttpError(400, "BAD_REQUEST", message),
   /** The request is well-formed but the resource is in the wrong state for it (e.g. starting a non-draft). */
   conflict: (message: string) => new HttpError(409, "CONFLICT", message),
+  paymentRequired: (message: string) => new HttpError(402, "PAYMENT_REQUIRED", message),
   validation: (issues: unknown) =>
     new HttpError(400, "VALIDATION_ERROR", "Request failed validation", { issues }),
   rateLimited: (message: string, retryAfterSec: number, code = "RATE_LIMITED") =>

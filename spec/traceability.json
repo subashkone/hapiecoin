@@ -747,7 +747,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "CG.chrome['plan-banner'] reads CG.mock.subscription; button → /subscription",
-  "evidence": "bundle strings: Your plan has expired., Renew Plan"
+  "evidence": "bundle strings: Your plan has expired., Renew Plan · Phase 4 item 1 (08 Sep 2026, ADR-030): banner states now derive from the catalogue subscription (planState)"
  },
  {
   "id": "HC-SH-051",
@@ -792,7 +792,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Dismiss hides it for the session (sessionStorage); re-renders on 'subscription-changed'",
-  "evidence": "bundle string: Congratulations! Your plan is active until"
+  "evidence": "bundle string: Congratulations! Your plan is active until · Phase 4 item 1 (08 Sep 2026, ADR-030): active banner from the catalogue subscription"
  },
  {
   "id": "HC-SH-054",
@@ -807,7 +807,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Subscribe navigates to /subscription and closes; Dismiss closes",
-  "evidence": "bundle strings: Upgrade Required, Subscribe Here →, Dismiss"
+  "evidence": "bundle strings: Upgrade Required, Subscribe Here →, Dismiss · Phase 4 item 1 (08 Sep 2026, ADR-030): UpgradeRequiredDialog opened by 403 UPGRADE_REQUIRED with the API's reason; unit subscription.test.tsx, e2e account.spec.ts HC-SH-054"
  },
  {
   "id": "HC-SH-055",
@@ -6512,7 +6512,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Slim v2 title row: title + muted subtitle left, mono status meta (PRO · YEARLY · 116 DAYS LEFT) and the single amber primary action right; hairline underneath",
-  "evidence": "bundle strings: My Subscription, Choose a plan to unlock features"
+  "evidence": "bundle strings: My Subscription, Choose a plan to unlock features · Phase 4 item 1 (08 Sep 2026, ADR-030): SubscriptionPage header; unit subscription.test.tsx, e2e account.spec.ts"
  },
  {
   "id": "HC-AC-002",
@@ -6527,7 +6527,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Section carries data-auth=\"user\"; logged-out visitors are redirected to /auth?next=/subscription by the router",
-  "evidence": "protected route in the production app"
+  "evidence": "protected route in the production app · Phase 4 item 1 (08 Sep 2026, ADR-030): signed-in route; guests redirected by the existing auth guard"
  },
  {
   "id": "HC-AC-003",
@@ -6542,7 +6542,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Rendered from CG.mock.subscription; badge is Active (green), Expired (red, when expiresAt < mock clock or status expired) or Cancelled (grey)",
-  "evidence": "bundle strings: Subscription, secondary/success/destructive badge variants"
+  "evidence": "bundle strings: Subscription, secondary/success/destructive badge variants · Phase 4 item 1 (08 Sep 2026, ADR-030): current plan card with status badge (sub-status) and days-left pill; unit subscription.test.tsx"
  },
  {
   "id": "HC-AC-004",
@@ -6557,7 +6557,7 @@
   "phase": 4,
   "test": "unit (pricing) · visual (screenshot diff)",
   "acceptance": "Five-cell mono stat strip under the plan header (micro labels, tabular numbers, struck list price with % off pill, days-left pill); Feature Limits and Plan Features sit side by side below it",
-  "evidence": "bundle strings: Billing, Price, You Pay, Currency, ' off', en-IN"
+  "evidence": "bundle strings: Billing, Price, You Pay, Currency, ' off', en-IN · Phase 4 item 1 (08 Sep 2026, ADR-030): summary strip Billing / Price / You pay / Currency / Valid until (sub-summary)"
  },
  {
   "id": "HC-AC-005",
@@ -6572,7 +6572,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "'Valid until 31 Dec 2026' + '116 days left' computed against the mock clock (06 Sep 2026); badge turns amber when 7 days or fewer remain; expired plans show 'Expired on'",
-  "evidence": "bundle strings: 2-digit, numeric, en-IN date formatting"
+  "evidence": "bundle strings: 2-digit, numeric, en-IN date formatting · Phase 4 item 1 (08 Sep 2026, ADR-030): valid-until date with days-left (sub-valid-until)"
  },
  {
   "id": "HC-AC-006",
@@ -6587,7 +6587,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "One row per key in subscription.featureLimits (paper_trading, live_trading): raw key in mono, limit as '∞ Unlimited' or '25 / month', progress bar and '14 used' / '3 of 25 used · 12%' caption; a 0 limit for a feature the plan does not include renders 'Not included · Upgrade to unlock'",
-  "evidence": "bundle strings: Feature Limits, paper_trading, live_trading, ∞ Unlimited, / month"
+  "evidence": "bundle strings: Feature Limits, paper_trading, live_trading, ∞ Unlimited, / month · Phase 4 item 1 (08 Sep 2026, ADR-030): LimitsList with usage bars, ∞ Unlimited, n / month, Not included · Upgrade to unlock; unit subscription.test.tsx"
  },
  {
   "id": "HC-AC-007",
@@ -6602,7 +6602,7 @@
   "phase": 4,
   "test": "visual (screenshot diff)",
   "acceptance": "Check-marked two-column bullet list from plan.features of the subscribed plan",
-  "evidence": "bundle strings: Features & Usage, Plan Features"
+  "evidence": "bundle strings: Features & Usage, Plan Features · Phase 4 item 1 (08 Sep 2026, ADR-030): plan features list plus linked menu items (sub-features)"
  },
  {
   "id": "HC-AC-008",
@@ -6617,7 +6617,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Opens the Subscribe dialog pre-set to the current plan and interval (primary style when the plan is expired)",
-  "evidence": "inferred from plan card actions"
+  "evidence": "inferred from plan card actions · Phase 4 item 1 (08 Sep 2026, ADR-030): Renew opens the breakdown for the current plan (sub-renew)"
  },
  {
   "id": "HC-AC-009",
@@ -6632,7 +6632,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Header primary action reads Upgrade plan (Renew plan on Elite or when expired, Choose a plan with no subscription); it and the outline Upgrade in the current card smooth-scroll to Available Plans, pin the next tier in the diff panel and flash its card",
-  "evidence": "bundle strings: smooth (scrollIntoView behaviour)"
+  "evidence": "bundle strings: smooth (scrollIntoView behaviour) · Phase 4 item 1 (08 Sep 2026, ADR-030): Upgrade opens the next plan (sub-upgrade)"
  },
  {
   "id": "HC-AC-010",
@@ -6647,7 +6647,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "When CG.mock.subscription is null the card shows an icon, 'No Active Subscription', 'Browse plans below and get started' and a 'Choose a Plan' button that smooth-scrolls to the plan grid",
-  "evidence": "bundle strings: No Active Subscription, Browse plans below and get started, Choose a Plan, smooth"
+  "evidence": "bundle strings: No Active Subscription, Browse plans below and get started, Choose a Plan, smooth · Phase 4 item 1 (08 Sep 2026, ADR-030): No Active Subscription state (sub-none); unit + e2e"
  },
  {
   "id": "HC-AC-011",
@@ -6662,7 +6662,7 @@
   "phase": 4,
   "test": "visual (screenshot diff)",
   "acceptance": "Section heading with subtitle; anchor target for Choose a Plan / Upgrade",
-  "evidence": "bundle strings: Available Plans"
+  "evidence": "bundle strings: Available Plans · Phase 4 item 1 (08 Sep 2026, ADR-030): Available plans section (sub-plans)"
  },
  {
   "id": "HC-AC-012",
@@ -6677,7 +6677,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Segmented tabs; re-renders every plan card's price, discount badge, per-month line and feature-limit chips for the chosen interval; defaults to the current subscription's interval; Semi-Annually label supported for history rows",
-  "evidence": "bundle strings: Monthly, quarterly, Semi-Annually, yearly, Yearly"
+  "evidence": "bundle strings: Monthly, quarterly, Semi-Annually, yearly, Yearly · Phase 4 item 1 (08 Sep 2026, ADR-030): interval toggle Monthly / Quarterly / Yearly (interval-*); unit + e2e"
  },
  {
   "id": "HC-AC-013",
@@ -6692,7 +6692,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Four hairline cards without shadows in a 4-up comparison grid: micro flag row, name, description, discount price large in mono, list price struck with % off pill, per-month line, mono limit chips, feature bullets and the action button",
-  "evidence": "bundle strings: Free Plan, ' off', / month, string"
+  "evidence": "bundle strings: Free Plan, ' off', / month, string · Phase 4 item 1 (08 Sep 2026, ADR-030): plan grid Free / Basic / Pro / Elite (plan-card); unit + e2e"
  },
  {
   "id": "HC-AC-014",
@@ -6707,7 +6707,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "The active plan's card gets a 2px amber top rule plus a small amber micro label 'CURRENT PLAN' (no big tag); the Pro card shows a muted 'MOST POPULAR' micro label otherwise",
-  "evidence": "inferred"
+  "evidence": "inferred · Phase 4 item 1 (08 Sep 2026, ADR-030): current plan highlighted with amber top rule and Current plan chip"
  },
  {
   "id": "HC-AC-015",
@@ -6722,7 +6722,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "'Current Plan' (disabled) on the active plan, 'Free Plan' (disabled) on the free card while a paid plan is active, 'Activate' on the free card with no subscription, 'Subscribe' elsewhere",
-  "evidence": "bundle strings: Free Plan, Subscribe, Activate"
+  "evidence": "bundle strings: Free Plan, Subscribe, Activate · Phase 4 item 1 (08 Sep 2026, ADR-030): card action Activate / Subscribe / Manage (plan-action)"
  },
  {
   "id": "HC-AC-016",
@@ -6737,7 +6737,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "CG.modal (lg) with plan summary strip, coupon column and price breakdown column; Cancel closes it",
-  "evidence": "bundle strings: Subscribe to, Cancel"
+  "evidence": "bundle strings: Subscribe to, Cancel · Phase 4 item 1 (08 Sep 2026, ADR-030): Subscribe dialog 'Subscribe to <Plan> · <Interval>' (subscribe-dialog)"
  },
  {
   "id": "HC-AC-017",
@@ -6812,7 +6812,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "List Price, Plan Discount, Coupon Discount, Subtotal, Tax (18% GST), Total — right-aligned mono ₹ values recalculated on every coupon change",
-  "evidence": "bundle strings: List Price, Plan Discount, Coupon Discount, Subtotal, Tax (, Total"
+  "evidence": "bundle strings: List Price, Plan Discount, Coupon Discount, Subtotal, Tax (, Total · Phase 4 item 1 (08 Sep 2026, ADR-030): price breakdown List / Plan discount / Coupon / Subtotal / GST 18 % / Total (priceBreakdown in @hapiecoin/schema); unit subscription.test.tsx"
  },
  {
   "id": "HC-AC-022",
@@ -6827,7 +6827,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Opens the Razorpay mock checkout (CG.razorpayMock.open) with the computed total, description 'Subscription · Plan · Interval' and user prefill",
-  "evidence": "bundle strings: Pay with Razorpay, razorpay, https://checkout.razorpay.com/v1/checkout.js, #6366f1"
+  "evidence": "bundle strings: Pay with Razorpay, razorpay, https://checkout.razorpay.com/v1/checkout.js, #6366f1 · Phase 4 item 1 (08 Sep 2026, ADR-030): Pay with Razorpay button present, disabled until item 2"
  },
  {
   "id": "HC-AC-023",
@@ -6842,7 +6842,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · api contract",
   "acceptance": "When the total is zero (Free plan or 100% coupon) the footer shows 'Activate' instead; activation updates CG.mock.subscription immediately and toasts 'Success · Subscription activated!'",
-  "evidence": "bundle strings: Activate, Success, Subscription activated!"
+  "evidence": "bundle strings: Activate, Success, Subscription activated! · Phase 4 item 1 (08 Sep 2026, ADR-030): Activate for ₹0 totals → POST /v1/subscription/activate; api billing.test.ts, unit + e2e"
  },
  {
   "id": "HC-AC-024",
@@ -7338,7 +7338,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Hovering, focusing or clicking any plan card renders a diff against the current plan for the selected interval: price → price with +/− delta per month/quarter/year, upgrade/downgrade/switch wording, only the changed limits (25 → ∞, ✕ → ✓ in green, regressions in red), a count of unchanged limits and a Subscribe/Activate shortcut; hovering the current plan says so; with nothing hovered it shows the next tier",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): DiffPanel 'What changes if you upgrade' (plan-diff); unit + e2e"
  },
  {
   "id": "HC-AC-057",
@@ -7353,7 +7353,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Clicking a card (not its button) pins it as the compared plan with a subtle ring; clicking again unpins; Enter on a focused card does the same",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): clicking a card pins the diff (data-pinned)"
  },
  {
   "id": "HC-AC-058",
@@ -7368,7 +7368,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Hairline table under the plan grid: rows Paper trades / month, Live trades / month, Strategy templates, Market analytics, Reports export × columns Free / Basic / Pro / Elite with the interval price under each; cells show numbers, ∞, green ✓ or muted ✕; the current plan column is tinted with an amber top rule; follows the billing interval toggle",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): LimitsMatrix rows × plans with the current column tinted (plan-matrix)"
  },
  {
   "id": "HC-AC-059",
@@ -7383,7 +7383,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Monthly / Quarterly / Yearly as underline tabs (amber underline on the active one) driving plan cards, diff panel and matrix together",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): interval tabs restyled as a segmented control"
  },
  {
   "id": "HC-AC-060",
@@ -7458,7 +7458,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "No payments → Browse plans button; filtered-empty → Show all; no subscription → Choose a Plan",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): empty states with actions (sub-none, error Retry)"
  },
  {
   "id": "HC-AC-065",
@@ -7488,7 +7488,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Registered with CG.palette when present: navigates to /subscription and triggers the header primary action",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): palette command 'Subscription: change plan'"
  },
  {
   "id": "HC-AC-067",
@@ -7578,7 +7578,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "No referrals → Share link button; no results → Clear filters button",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): empty states with actions (sub-none, error Retry)"
  },
  {
   "id": "HC-AC-073",
@@ -7623,7 +7623,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "Section with data-redirect; router replaces the hash",
-  "evidence": "route /admin has no own strings in the bundle; /admin/users is the first admin page"
+  "evidence": "route /admin has no own strings in the bundle; /admin/users is the first admin page · Phase 4 item 1 (08 Sep 2026, ADR-030): /admin redirects to /admin/users; e2e admin.spec.ts"
  },
  {
   "id": "HC-AD-002",
@@ -7638,7 +7638,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "Non-admin / logged-out users are redirected by the router (CG.auth.isAdmin)",
-  "evidence": "bundle string: Admin access required"
+  "evidence": "bundle string: Admin access required · Phase 4 item 1 (08 Sep 2026, ADR-030): AdminShell denies non-admins (data-state denied); unit admin.test.tsx, e2e admin.spec.ts"
  },
  {
   "id": "HC-AD-003",
@@ -7653,7 +7653,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "On ≥1100px a sticky left rail with an ADMIN micro label, icon + label links (Users · Subscription Plans · Menu Pricing · Coupon Codes · User Subscriptions · Banners · Promotional Emails), live counts per page, amber inset rule on the active item and a footer with the admin email; below 1100px it collapses into a horizontal top bar",
-  "evidence": "bundle strings: Admin pages, aria-current, Navigate between pages"
+  "evidence": "bundle strings: Admin pages, aria-current, Navigate between pages · Phase 4 item 1 (08 Sep 2026, ADR-030): sticky rail with live counts and admin email, horizontal tabs below 1024 px (admin-rail)"
  },
  {
   "id": "HC-AD-004",
@@ -7668,7 +7668,7 @@
   "phase": 4,
   "test": "visual (screenshot diff)",
   "acceptance": "Slim title row: 'Subscription Plans' / 'Manage subscription tiers and pricing' left, the single amber primary action right, hairline underneath",
-  "evidence": "bundle strings: Subscription Plans, Manage subscription tiers and pricing"
+  "evidence": "bundle strings: Subscription Plans, Manage subscription tiers and pricing · Phase 4 item 1 (08 Sep 2026, ADR-030): PlansAdmin header"
  },
  {
   "id": "HC-AD-005",
@@ -7683,7 +7683,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Opens the 'Create New Plan' dialog",
-  "evidence": "bundle strings: New Plan, Create New Plan"
+  "evidence": "bundle strings: New Plan, Create New Plan · Phase 4 item 1 (08 Sep 2026, ADR-030): + New Plan (plan-new)"
  },
  {
   "id": "HC-AD-006",
@@ -7698,7 +7698,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Rendered from CG.mock.plans; price cells show discount price with struck-through list price and % off, plus paper/live limits",
-  "evidence": "bundle strings: All Plans (, Name, Monthly, Quarterly, Yearly, Status, Actions"
+  "evidence": "bundle strings: All Plans (, Name, Monthly, Quarterly, Yearly, Status, Actions · Phase 4 item 1 (08 Sep 2026, ADR-030): plans table (plans-table); unit admin.test.tsx, e2e"
  },
  {
   "id": "HC-AD-007",
@@ -7713,7 +7713,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Toggles plan.isActive in CG.mock, toast 'Updated'",
-  "evidence": "bundle strings: Status, Active, Updated"
+  "evidence": "bundle strings: Status, Active, Updated · Phase 4 item 1 (08 Sep 2026, ADR-030): status switch per plan (plan-toggle)"
  },
  {
   "id": "HC-AD-008",
@@ -7728,7 +7728,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Opens 'Edit Plan' dialog pre-filled; submit label 'Update'",
-  "evidence": "bundle strings: Pencil, Edit Plan, Update"
+  "evidence": "bundle strings: Pencil, Edit Plan, Update · Phase 4 item 1 (08 Sep 2026, ADR-030): edit action (plan-edit)"
  },
  {
   "id": "HC-AD-009",
@@ -7743,7 +7743,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Shown when CG.mock.plans is empty; button opens the create dialog",
-  "evidence": "bundle strings: No Plans Yet, Create your first subscription plan, Create Plan"
+  "evidence": "bundle strings: No Plans Yet, Create your first subscription plan, Create Plan · Phase 4 item 1 (08 Sep 2026, ADR-030): empty state No Plans Yet"
  },
  {
   "id": "HC-AD-010",
@@ -7758,7 +7758,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Required text input",
-  "evidence": "bundle strings: Plan Name *, e.g. Basic Plan"
+  "evidence": "bundle strings: Plan Name *, e.g. Basic Plan · Phase 4 item 1 (08 Sep 2026, ADR-030): Plan Name * field"
  },
  {
   "id": "HC-AD-011",
@@ -7773,7 +7773,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Textarea saved to plan.description",
-  "evidence": "bundle string: Description"
+  "evidence": "bundle string: Description · Phase 4 item 1 (08 Sep 2026, ADR-030): Description field"
  },
  {
   "id": "HC-AD-012",
@@ -7788,7 +7788,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Enter or the secondary Add button appends a chip; × removes it; saved as plan.features[]",
-  "evidence": "bundle strings: Features, Add a feature, Enter, button, secondary"
+  "evidence": "bundle strings: Features, Add a feature, Enter, button, secondary · Phase 4 item 1 (08 Sep 2026, ADR-030): features chip input with Enter / Add and removable chips"
  },
  {
   "id": "HC-AD-013",
@@ -7803,7 +7803,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Three input groups saved to plan.monthly/quarterly/yearly {price, discountPrice}",
-  "evidence": "bundle strings: Billing Intervals, Monthly, Quarterly, Yearly"
+  "evidence": "bundle strings: Billing Intervals, Monthly, Quarterly, Yearly · Phase 4 item 1 (08 Sep 2026, ADR-030): billing intervals with price and discount price per interval"
  },
  {
   "id": "HC-AD-014",
@@ -7818,7 +7818,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Saved to plan.<interval>.featureLimits {paper_trading, live_trading}; 0 = unlimited",
-  "evidence": "bundle strings: Feature Limits, (Per Month), Paper Trading Limit, Live Trading Limit"
+  "evidence": "bundle strings: Feature Limits, (Per Month), Paper Trading Limit, Live Trading Limit · Phase 4 item 1 (08 Sep 2026, ADR-030): feature limits per interval, empty = not included, 0 = unlimited"
  },
  {
   "id": "HC-AD-015",
@@ -7833,7 +7833,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Checklist built from CG.mock.menuItems with category and price; saved to plan.menuItems[]; counter 'x of y menu items linked'",
-  "evidence": "bundle string: Menu Items"
+  "evidence": "bundle string: Menu Items · Phase 4 item 1 (08 Sep 2026, ADR-030): menu items checklist with 'x of y linked'"
  },
  {
   "id": "HC-AD-016",
@@ -7848,7 +7848,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Sets plan.isActive",
-  "evidence": "bundle strings: Active, Plan visible to users"
+  "evidence": "bundle strings: Active, Plan visible to users · Phase 4 item 1 (08 Sep 2026, ADR-030): Active switch"
  },
  {
   "id": "HC-AD-017",
@@ -7863,7 +7863,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Cancel closes; submit validates then mutates CG.mock.plans and re-renders the table",
-  "evidence": "bundle strings: Cancel, Create, Update"
+  "evidence": "bundle strings: Cancel, Create, Update · Phase 4 item 1 (08 Sep 2026, ADR-030): Cancel / Create | Update footer"
  },
  {
   "id": "HC-AD-018",
@@ -7878,7 +7878,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Destructive toast when the name is empty; focus returns to the field",
-  "evidence": "bundle strings: Validation, Plan name is required, destructive"
+  "evidence": "bundle strings: Validation, Plan name is required, destructive · Phase 4 item 1 (08 Sep 2026, ADR-030): validation toast 'Plan name is required'"
  },
  {
   "id": "HC-AD-019",
@@ -7893,7 +7893,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Success toasts after save; 'Failed to save' is raised if the in-memory mutation throws",
-  "evidence": "bundle strings: Created, Updated, Failed to save"
+  "evidence": "bundle strings: Created, Updated, Failed to save · Phase 4 item 1 (08 Sep 2026, ADR-030): Created / Updated / Failed to save toasts"
  },
  {
   "id": "HC-AD-020",
@@ -7908,7 +7908,7 @@
   "phase": 4,
   "test": "visual (screenshot diff)",
   "acceptance": "'Menu Pricing Master' / 'Manage menu items linked to subscription plans'",
-  "evidence": "bundle strings: Menu Pricing Master, Manage menu items linked to subscription plans"
+  "evidence": "bundle strings: Menu Pricing Master, Manage menu items linked to subscription plans · Phase 4 item 1 (08 Sep 2026, ADR-030): PlansAdmin header"
  },
  {
   "id": "HC-AD-021",
@@ -7923,7 +7923,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Opens 'New Menu Item' dialog",
-  "evidence": "bundle strings: New Item, New Menu Item"
+  "evidence": "bundle strings: New Item, New Menu Item · Phase 4 item 1 (08 Sep 2026, ADR-030): + New Item"
  },
  {
   "id": "HC-AD-022",
@@ -7938,7 +7938,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Rendered from CG.mock.menuItems; 'Linked plans' column counts plans referencing the item",
-  "evidence": "bundle strings: All Menu Items (, Display Name, Category, Price, Status, Actions"
+  "evidence": "bundle strings: All Menu Items (, Display Name, Category, Price, Status, Actions · Phase 4 item 1 (08 Sep 2026, ADR-030): table with linked plans count (menu-linked); unit admin.test.tsx"
  },
  {
   "id": "HC-AD-023",
@@ -7953,7 +7953,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Toggles isActive, toast 'Updated' (the bundle's 'Failed to update status' path is never hit in the mock)",
-  "evidence": "bundle strings: Status, Updated, Failed to update status"
+  "evidence": "bundle strings: Status, Updated, Failed to update status · Phase 4 item 1 (08 Sep 2026, ADR-030): status switch per item"
  },
  {
   "id": "HC-AD-024",
@@ -7968,7 +7968,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Pre-fills the form; renaming an item also renames it inside every plan's menuItems list",
-  "evidence": "bundle strings: Pencil, Edit Menu Item, Update"
+  "evidence": "bundle strings: Pencil, Edit Menu Item, Update · Phase 4 item 1 (08 Sep 2026, ADR-030): edit dialog"
  },
  {
   "id": "HC-AD-025",
@@ -7983,7 +7983,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Shown when the list is empty",
-  "evidence": "bundle strings: No Menu Items, Add menu items that can be linked to plans, Add Item"
+  "evidence": "bundle strings: No Menu Items, Add menu items that can be linked to plans, Add Item · Phase 4 item 1 (08 Sep 2026, ADR-030): empty state"
  },
  {
   "id": "HC-AD-026",
@@ -7998,7 +7998,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Saved to CG.mock.menuItems",
-  "evidence": "bundle strings: Display Name *, e.g. Reports Export, e.g. Trading, Analytics, Data, Price (₹), number, Active"
+  "evidence": "bundle strings: Display Name *, e.g. Reports Export, e.g. Trading, Analytics, Data, Price (₹), number, Active · Phase 4 item 1 (08 Sep 2026, ADR-030): Display Name / Category / Price fields"
  },
  {
   "id": "HC-AD-027",
@@ -8013,7 +8013,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Destructive toast on empty name",
-  "evidence": "bundle strings: Validation, Display Name is required"
+  "evidence": "bundle strings: Validation, Display Name is required · Phase 4 item 1 (08 Sep 2026, ADR-030): validation 'Display Name is required'"
  },
  {
   "id": "HC-AD-028",
@@ -8028,7 +8028,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Same save pipeline as plans",
-  "evidence": "bundle strings: Created, Updated, Failed to save, Cancel, Create, Update"
+  "evidence": "bundle strings: Created, Updated, Failed to save, Cancel, Create, Update · Phase 4 item 1 (08 Sep 2026, ADR-030): toasts and footer"
  },
  {
   "id": "HC-AD-029",
@@ -8238,7 +8238,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "'User Subscriptions' / 'Manage users and commissions'; tabs switch panels (also via ?tab= query)",
-  "evidence": "bundle strings: User Subscriptions, Manage users and commissions, Users, Commissions"
+  "evidence": "bundle strings: User Subscriptions, Manage users and commissions, Users, Commissions · Phase 4 item 1 (08 Sep 2026, ADR-030): User Subscriptions tabs Users / Commissions (commissions placeholder until item 3)"
  },
  {
   "id": "HC-AD-043",
@@ -8253,7 +8253,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Filters CG.mock.users live; count reflects the filtered list",
-  "evidence": "bundle strings: Users (, Search by name or email..., Status, All Statuses, Active, Expired, Cancelled, Free"
+  "evidence": "bundle strings: Users (, Search by name or email..., Status, All Statuses, Active, Expired, Cancelled, Free · Phase 4 item 1 (08 Sep 2026, ADR-030): Users (N) header with search and status select"
  },
  {
   "id": "HC-AD-044",
@@ -8268,7 +8268,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "10 rows per page from the filtered list",
-  "evidence": "bundle strings: User, Plan, Expiry, Validity, Referrals, Commission %, Account, Limits, Free Plan"
+  "evidence": "bundle strings: User, Plan, Expiry, Validity, Referrals, Commission %, Account, Limits, Free Plan · Phase 4 item 1 (08 Sep 2026, ADR-030): users table columns (users-table); unit admin.test.tsx, e2e admin.spec.ts"
  },
  {
   "id": "HC-AD-045",
@@ -8283,7 +8283,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Computed against the mock clock CG.NOW",
-  "evidence": "bundle strings: d left, (Soon)"
+  "evidence": "bundle strings: d left, (Soon) · Phase 4 item 1 (08 Sep 2026, ADR-030): expiry cell with d left / (Soon) / Expired N d ago"
  },
  {
   "id": "HC-AD-046",
@@ -8298,7 +8298,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Click → number input; Enter saves (toast 'Updated', validity also recomputes endsAt), Escape / blur cancels",
-  "evidence": "bundle strings: validity, referrals, commission, number, Enter, Escape, Click to edit, Updated, Failed to update"
+  "evidence": "bundle strings: validity, referrals, commission, number, Enter, Escape, Click to edit, Updated, Failed to update · Phase 4 item 1 (08 Sep 2026, ADR-030): inline validity and commission edits, Enter saves, Escape / blur cancels (InlineNumber)"
  },
  {
   "id": "HC-AD-047",
@@ -8313,7 +8313,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Flips user.activated, toast 'Updated'",
-  "evidence": "bundle strings: Account, default, Deactive"
+  "evidence": "bundle strings: Account, default, Deactive · Phase 4 item 1 (08 Sep 2026, ADR-030): account Active / Deactive toggle; a deactivated account is refused by the API"
  },
  {
   "id": "HC-AD-048",
@@ -8328,7 +8328,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Paper Trading Limit / Live Trading Limit inputs with 'trades / month' suffix and hint 'Set to 0 for plan default. Higher values override plan limit.'; 'Save Limits' shows 'Saving...' then toast 'Updated'",
-  "evidence": "bundle strings: Edit feature limits, Feature Limits, Paper Trading Limit, trades / month, Set to 0 for plan default. Higher values override plan limit., Live Trading Limit, Saving..., Save Limits, Settings2"
+  "evidence": "bundle strings: Edit feature limits, Feature Limits, Paper Trading Limit, trades / month, Set to 0 for plan default. Higher values override plan limit., Live Trading Limit, Saving..., Save Limits, Settings2 · Phase 4 item 1 (08 Sep 2026, ADR-030): Feature Limits dialog with overrides (limits-dialog)"
  },
  {
   "id": "HC-AD-049",
@@ -8343,7 +8343,7 @@
   "phase": 4,
   "test": "visual (screenshot diff)",
   "acceptance": "Per-user lot sizes are edited inside the user drawer's Limits tab (not a separate icon), validated as > 0, written to the audit log with before/after values, and take effect on the user's next chain load.",
-  "evidence": "admin lot-size-settings API endpoint exists in the bundle; no UI strings observed",
+  "evidence": "admin lot-size-settings API endpoint exists in the bundle; no UI strings observed · Phase 4 item 1 (08 Sep 2026, ADR-030): per-user lot size dialog (lot-sizes-dialog)",
   "decided": true
  },
  {
@@ -8359,7 +8359,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Buttons disabled at the ends; resets to page 1 on filter change",
-  "evidence": "bundle strings: Page, of, users, ← Previous, Next →"
+  "evidence": "bundle strings: Page, of, users, ← Previous, Next → · Phase 4 item 1 (08 Sep 2026, ADR-030): pagination 10 per page (users-pager)"
  },
  {
   "id": "HC-AD-051",
@@ -8374,7 +8374,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Shown when search/status filter matches nothing",
-  "evidence": "bundle string: No users found"
+  "evidence": "bundle string: No users found · Phase 4 item 1 (08 Sep 2026, ADR-030): empty state No users found"
  },
  {
   "id": "HC-AD-052",
@@ -9263,7 +9263,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Filters plans by name/description and Active/Inactive",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): plans search + status filter"
  },
  {
   "id": "HC-AD-111",
@@ -9278,7 +9278,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Selected plans are toggled and plans:changed is emitted",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): plans bulk activate / deactivate"
  },
  {
   "id": "HC-AD-112",
@@ -9293,7 +9293,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Yearly paper/live limits column, plus a hideable Features column (features · menu items count)",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): Limits and Features columns"
  },
  {
   "id": "HC-AD-113",
@@ -9308,7 +9308,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Category options are built from the data; all three combine",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): menu items search, category and status filters"
  },
  {
   "id": "HC-AD-114",
@@ -9323,7 +9323,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Toggles the selected menu items",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): plans bulk activate / deactivate"
  },
  {
   "id": "HC-AD-115",
@@ -9368,7 +9368,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Flips the account flag for the selected users; the Account cell is now a clickable status pill",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): users bulk activate / deactivate (never the acting admin)"
  },
  {
   "id": "HC-AD-118",
@@ -9413,7 +9413,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Users / Commissions as underline tabs in the title row; Bulk pay is the amber header action on the Commissions tab",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): tabs restyled, header primary action"
  },
  {
   "id": "HC-AD-121",
@@ -9458,7 +9458,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Toggles isActive on the selection",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): plans bulk activate / deactivate"
  },
  {
   "id": "HC-AD-124",

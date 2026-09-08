@@ -87,7 +87,7 @@ test.describe("HC-PB-025 / HC-PB-036 redirects", () => {
     await signIn(page, "in@example.com");
     await page.goto("/auth?next=%2Fsubscription");
     await expect(page).toHaveURL(/\/subscription/);
-    await expect(page.getByTestId("phase-placeholder")).toBeVisible();
+    await expect(page.getByTestId("subscription-page")).toBeVisible();
   });
   test("HC-PB-037 / HC-PB-038 Delta hand-off explains itself; SSO returns to the app", async ({ page }) => {
     await page.goto("/auth");

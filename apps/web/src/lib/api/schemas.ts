@@ -4,15 +4,7 @@ import { BrokerCredentialPublic } from "@hapiecoin/schema";
 import { z } from "zod";
 
 /** GET /v1/plan (HC-SH-014): drives the banner under the analyse header. Shape from apps/api/src/routes/plan.ts. */
-export const PlanState = z.object({
-  state: z.enum(["free", "active", "expiring_soon", "expired"]),
-  planName: z.string().min(1).optional(),
-  /** ISO date-time the plan expires; null/absent for the free plan or a plan without an end date. */
-  expiresAt: z.string().nullable().optional(),
-  /** Whole days left; the API computes it so client clocks do not matter. */
-  daysLeft: z.number().int().optional(),
-});
-export type PlanState = z.infer<typeof PlanState>;
+export { PlanState, type PlanState as PlanStateT } from "@hapiecoin/schema";
 
 /** GET /v1/credentials: stored credentials (masked), one per broker; empty when not connected. */
 export const CredentialResponse = z.object({ items: z.array(BrokerCredentialPublic) });
