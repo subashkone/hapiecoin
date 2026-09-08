@@ -4633,7 +4633,7 @@
   "phase": 3,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Same flow as Paper Trade with the Live card preselected; live confirm is blocked until the exchange is connected",
-  "evidence": "bundle string: Live Trade · Phase 3 item 1 (08 Sep 2026): Live trade button opens the same flow; Continue · Live is disabled until item 2 places venue orders (note in the dialog); unit trading.test.tsx"
+  "evidence": "bundle string: Live Trade · Phase 3 item 1 (08 Sep 2026): Live trade button opens the same flow; Continue · Live is disabled until item 2 places venue orders (note in the dialog); unit trading.test.tsx · Phase 3 item 2 (08 Sep 2026): Continue · Live enabled once the exchange is connected; the live path previews against the venue before placing; unit trading-live.test.tsx HC-TR-055"
  },
  {
   "id": "HC-TR-024",
@@ -5235,7 +5235,7 @@
   "phase": 3,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Opens Select Trading Mode locked to Live for that strategy; on confirm the paper strategy is converted to LIVE with filled orders",
-  "evidence": "bundle: tradingMode LIVE conversion · Phase 3 item 1 (08 Sep 2026): Go live button present, disabled until item 2; unit trading.test.tsx"
+  "evidence": "bundle: tradingMode LIVE conversion · Phase 3 item 1 (08 Sep 2026): Go live button present, disabled until item 2; unit trading.test.tsx · Phase 3 item 2 (08 Sep 2026): Go live opens the trade flow locked to Live → exchange preview (contracts, marks, notional, wallet, safeguards) → live/place with an idempotency key; unit trading-live.test.tsx, e2e analyse.spec.ts HC-TR-063, visual analyse-live-preview-*.png"
  },
  {
   "id": "HC-TR-064",
@@ -5340,7 +5340,7 @@
   "phase": 3,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Refresh recalculates + toasts 'Refreshed'; Stop opens the Stop Paper Trading dialog; live strategies get a destructive Square Off All instead",
-  "evidence": "bundle strings: Refresh, Stop, Live · Phase 3 item 1 (08 Sep 2026): Refresh and Stop (paper) / Square off all row of actions; unit trading.test.tsx"
+  "evidence": "bundle strings: Refresh, Stop, Live · Phase 3 item 1 (08 Sep 2026): Refresh and Stop (paper) / Square off all row of actions; unit trading.test.tsx · Phase 3 item 2 (08 Sep 2026): Live cards carry Sync (while orders are pending) and Square off all (reduce-only exits through Details); unit trading-live.test.tsx"
  },
  {
   "id": "HC-TR-071",
@@ -5521,7 +5521,7 @@
   "phase": 3,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Search filters live strategies; Refresh toasts 'Refreshed'; chip shows 'exchange connected' / 'exchange not connected' from CG.state.exchangeConnected",
-  "evidence": "bundle string: Live Trades"
+  "evidence": "bundle string: Live Trades · Phase 3 item 2 (08 Sep 2026): Live tab is the shared list (PaperPanel kind=live) with search, Refresh and the exchange connection chip; unit trading-live.test.tsx, visual analyse-live-*.png"
  },
  {
   "id": "HC-TR-083",
@@ -5536,7 +5536,7 @@
   "phase": 3,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Sum of LIVE strategies' total P&L with counts of trades and open positions, updated on tick",
-  "evidence": "panel summary"
+  "evidence": "panel summary · Phase 3 item 2 (08 Sep 2026): Live tab P&L strip marks open live legs at the feed like paper; unit trading-live.test.tsx"
  },
  {
   "id": "HC-TR-084",
@@ -5551,7 +5551,7 @@
   "phase": 3,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Chips 'S C 90,000 · filled' / pending / failed / closed per leg from strategy.orders",
-  "evidence": "bundle strings: 🟢 Live, filled, pending, failed, Order Partially Failed"
+  "evidence": "bundle strings: 🟢 Live, filled, pending, failed, Order Partially Failed · Phase 3 item 2 (08 Sep 2026): Live pill on the card, pulsing red count pill on the tab, per-leg order chips pending | filled | failed | closed with the venue error as tooltip; unit trading-live.test.tsx"
  },
  {
   "id": "HC-TR-085",
@@ -5566,7 +5566,7 @@
   "phase": 3,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "'Order placement failed · Retried n time(s)'; Retry shows 'Retrying...' and after 1s flips the failed orders to filled with new order ids and toasts 'Orders placed · Failed legs were submitted successfully.' (seeded on strategy s_310 added to CG.mock.strategies at init)",
-  "evidence": "bundle strings: failed, Use retry or cancel., Order Partially Failed"
+  "evidence": "bundle strings: failed, Use retry or cancel., Order Partially Failed · Phase 3 item 2 (08 Sep 2026): Failed banner with leg count and retries, Retry Failed Orders → live/retry keeps the client order id; unit trading-live.test.tsx HC-TR-083"
  },
  {
   "id": "HC-TR-086",
@@ -5581,7 +5581,7 @@
   "phase": 3,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Details opens the modal; Square Off All confirms 'Market orders will be placed on Delta Exchange to close all positions with full quantity.' → 'Exiting...' → all legs squared off at market and the strategy archived (toast 'Positions closed'); Delete confirms 'Delete <name>? This cannot be undone.'",
-  "evidence": "bundle: live square-off copy"
+  "evidence": "bundle: live square-off copy · Phase 3 item 2 (08 Sep 2026): Details, Square off all (archives the live strategy after the exits) and Delete on live cards; unit + e2e analyse.spec.ts HC-TR-063"
  },
  {
   "id": "HC-TR-087",
@@ -5596,7 +5596,7 @@
   "phase": 3,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "'Page 1 of 1' with Previous / Next (5 per page); empty 'No live trades · Use Trade All → Live to place real orders on Delta Exchange.'",
-  "evidence": "bundle strings: Page, Previous, Next"
+  "evidence": "bundle strings: Page, Previous, Next · Phase 3 item 2 (08 Sep 2026): Pagination shared with the Paper tab; Live empty state explains how to go live; unit workspace.test.tsx"
  },
  {
   "id": "HC-TR-088",
@@ -5611,7 +5611,7 @@
   "phase": 3,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Title with 'Live (filled pill, pulsing dot)' badge, legs table with Est. Price, 'Net Premium Credit/Debit', 'Est. premium received' / 'Est. cost', Expected Required Margin, warning 'These order(s) will be placed on the exchange with real funds at market. Fill prices may differ from the estimate above.', Cancel / 'Place Order' ('Placing...') → adjustment legs appended with filled orders",
-  "evidence": "bundle: adjustment order confirmation copy"
+  "evidence": "bundle: adjustment order confirmation copy · Phase 3 item 2 (08 Sep 2026): Adjustments on a live strategy stop at Confirm Adjustment Order before POST legs places the orders; unit trading-live.test.tsx HC-TR-088"
  },
  {
   "id": "HC-TR-089",
@@ -5624,9 +5624,9 @@
   "status": "confirmed",
   "isNew": false,
   "phase": 3,
-  "test": "unit (pricing) · visual (screenshot diff) · api contract · security",
+  "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "'Trade All → Live' opens a batch selector listing every open paper strategy with a checkbox (all ticked by default), a per-strategy margin check and a single Trade Preview of all selected legs. Nothing converts without an explicit tick and a final confirmation; strategies failing the margin check are shown blocked, not skipped silently. Result toast lists converted and blocked counts.",
-  "evidence": "bundle strings: Error in Trade All:, Live Orders Placed",
+  "evidence": "bundle strings: Error in Trade All:, Live Orders Placed · Phase 3 item 2 (08 Sep 2026): Trade All → Live opens a batch selector (open paper strategies ticked, one exchange, red warning) → live/batch, stops at the first refusal and names the strategy; unit trading-live.test.tsx HC-TR-089, API live-cover.test.ts",
   "decided": true
  },
  {

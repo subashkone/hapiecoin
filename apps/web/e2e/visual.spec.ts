@@ -23,7 +23,7 @@ for (const theme of ["dark", "light"] as const) {
     });
 
     test(`HC-SH-001 /analyse ${theme}`, async ({ page, request }) => {
-      await seedUser(request, { email: `shot-${theme}@example.com`, plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" } });
+      await seedUser(request, { email: `shot-${theme}@example.com`, plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" }, connected: true });
       await signIn(page, `shot-${theme}@example.com`);
       await page.evaluate((t) => {
         localStorage.setItem("hapiecoin.theme", t);
@@ -75,6 +75,16 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("strategy-details")).toBeVisible();
       await page.screenshot({ path: `${DIR}/analyse-details-${theme}.png` });
       await page.keyboard.press("Escape");
+      // HC-TR-063 / HC-TR-082 go live: the exchange preview and the Live tab
+      await page.getByTestId("card-golive").click();
+      await expect(page.getByTestId("trade-mode").getByTestId("mode-live")).toHaveAttribute("aria-pressed", "true");
+      await page.getByTestId("trade-continue").click();
+      await expect(page.getByTestId("venue-preview")).toHaveAttribute("data-ok", "true");
+      await page.screenshot({ path: `${DIR}/analyse-live-preview-${theme}.png` });
+      await page.getByTestId("trade-now").click();
+      await expect(page.getByTestId("live-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+      await expect(page.getByTestId("live-card").getByTestId("order-chip").first()).toHaveAttribute("data-state", "filled");
+      await page.screenshot({ path: `${DIR}/analyse-live-${theme}.png` });
       await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
       await page.goto("/");
       await expect(page.getByTestId("tile-BTC")).toHaveAttribute("data-state", "live", { timeout: 15_000 });

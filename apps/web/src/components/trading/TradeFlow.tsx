@@ -7,6 +7,8 @@ import { toast } from "@hapiecoin/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useBrokers, useCredential } from "@/lib/api/queries";
 import { useCreateStrategy, usePatchStrategy, useStartStrategy, useStrategies } from "@/lib/api/strategies";
+import { newIdempotencyKey, useLivePlace, useLivePreview } from "@/lib/api/live";
+import type { LivePreview } from "@hapiecoin/schema";
 import { useUiStore } from "@/lib/store";
 import { type FeeEstimate, localLegToInput, openLegs } from "@/lib/strategy/paper";
 import { guessTemplateName } from "@/lib/strategy/templates";
@@ -62,13 +64,22 @@ export function TradeFlow({ book }: { book: PaperBook }) {
   const create = useCreateStrategy();
   const patch = usePatchStrategy();
   const start = useStartStrategy();
+  const livePreview = useLivePreview();
+  const livePlace = useLivePlace();
+  const [venue, setVenue] = useState<LivePreview | null>(null);
+  const [idemKey, setIdemKey] = useState("");
   const [step, setStep] = useState<"mode" | "preview" | "name">("mode");
   const [mode, setMode] = useState<"paper" | "live">("paper");
   const [brokerId, setBrokerId] = useState("");
   const [fees, setFees] = useState<FeeEstimate>({ fee: 0, gst: 0, total: 0, per: [] });
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    if (flow) setStep("mode");
+    if (flow) {
+      setStep("mode");
+      setMode(flow.mode ?? "paper");
+      setVenue(null);
+      setIdemKey(newIdempotencyKey());
+    }
   }, [flow]);
 
   const target: Strategy | null = flow?.strategyId ? strategies?.find((s) => s.id === flow.strategyId) ?? null : null;
@@ -100,8 +111,27 @@ export function TradeFlow({ book }: { book: PaperBook }) {
       setMeta(builder.asset, { name: "", draftId: null });
     }
     closeTrade();
-    setWorkspaceTab("paper");
+    setWorkspaceTab(s.status === "live" ? "live" : "paper");
+    if (s.status === "live") {
+      const failed = s.orders.filter((o) => o.state === "failed").length;
+      if (failed) toast.error("Some orders were refused", { description: `${s.name} · ${failed} ${failed === 1 ? "order" : "orders"} failed · use Retry on the Live tab` });
+      else toast.success("Live Orders Placed", { description: `${s.name} · ${s.orders.length} ${s.orders.length === 1 ? "order" : "orders"} on ${broker?.name ?? "Delta Exchange"}` });
+      return;
+    }
     toast.success(target ? "Paper Trading Started" : "Paper Trade Started", { description: target ? `Trading ${s.name} on ${broker?.name ?? "Delta Exchange"}` : s.name });
+  };
+  /** Live: the draft must exist on the server before the venue preview; returns its id. */
+  const ensureDraft = async (name?: string): Promise<string> => {
+    if (target) return target.id;
+    const finalName = (name ?? meta.name).trim();
+    const body = { name: finalName, asset: builder.asset, templateName: guessTemplateName(builder.legs), legs: builder.legs.map((l) => ({ ...localLegToInput(l), price: toDecimal(Number(builder.priceFor(l)), 4) })) };
+    if (meta.draftId) {
+      await patch.mutateAsync({ id: meta.draftId, body: { name: body.name, templateName: body.templateName, legs: body.legs } });
+      return meta.draftId;
+    }
+    const created = await create.mutateAsync(body);
+    setMeta(builder.asset, { draftId: created.id, name: created.name });
+    return created.id;
   };
   const trade = async (name?: string) => {
     setBusy(true);
@@ -122,6 +152,11 @@ export function TradeFlow({ book }: { book: PaperBook }) {
           id = meta.draftId;
         } else id = (await create.mutateAsync(body)).id;
       }
+      if (mode === "live") {
+        const placed = await livePlace.mutateAsync({ id, body: { brokerId, idempotencyKey: idemKey, expected: Object.fromEntries((venue?.legs ?? []).filter((l) => l.mark !== null).map((l) => [l.legId, l.mark!])) } });
+        finish(placed);
+        return;
+      }
       const saved = await start.mutateAsync({ id, body: { mode, brokerId, entries: target ? entries() : {} } });
       finish(saved);
     } catch (e) {
@@ -137,6 +172,25 @@ export function TradeFlow({ book }: { book: PaperBook }) {
     }
     void trade();
   };
+  /** Live: after the mode step, ask the server for the venue preview before showing Trade Preview. */
+  const toPreview = async (m: "paper" | "live", b: string, name?: string) => {
+    if (m !== "live") {
+      setStep("preview");
+      return;
+    }
+    setBusy(true);
+    try {
+      const id = await ensureDraft(name);
+      const v = await livePreview.mutateAsync({ id, body: { brokerId: b, ...(maxLoss !== null ? { worstLoss: maxLoss } : {}) } });
+      setVenue(v);
+      setStep("preview");
+    } catch (e) {
+      toast.error("Could not preview the live order", { description: e instanceof Error ? e.message : "request failed" });
+      closeTrade();
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <>
       <TradeModeDialog
@@ -151,15 +205,20 @@ export function TradeFlow({ book }: { book: PaperBook }) {
         brokers={brokers ?? []}
         connected={connected}
         priceModeLabel={customPrices ? "Custom (entered prices)" : "Live (Delta Exchange)"}
+        lockLive={flow.mode === "live"}
         onContinue={(m, b, f) => {
           setMode(m);
           setBrokerId(b);
           setFees(f);
-          setStep("preview");
+          if (m === "live" && fromBuilder && !meta.name.trim()) {
+            setStep("name");
+            return;
+          }
+          void toPreview(m, b);
         }}
       />
-      <TradePreviewDialog open={step === "preview"} onOpenChange={(o) => !o && closeTrade()} mode={mode} asset={asset} legs={legs} spot={spot} lotSize={lotSize} money={money} broker={broker} fees={fees} maxLoss={maxLoss} customPrices={customPrices} busy={busy} onTrade={onTradeNow} />
-      <SaveDraftDialog open={step === "name"} onOpenChange={(o) => !o && setStep("preview")} initialName={meta.name} intent="trade" onSave={(n) => { setMeta(builder.asset, { name: n }); setStep("preview"); void trade(n); }} />
+      <TradePreviewDialog open={step === "preview"} onOpenChange={(o) => !o && closeTrade()} mode={mode} asset={asset} legs={legs} spot={spot} lotSize={lotSize} money={money} broker={broker} fees={fees} maxLoss={maxLoss} customPrices={customPrices} busy={busy} venue={venue} onTrade={onTradeNow} />
+      <SaveDraftDialog open={step === "name"} onOpenChange={(o) => !o && setStep("preview")} initialName={meta.name} intent="trade" onSave={(n) => { setMeta(builder.asset, { name: n }); if (mode === "live") void toPreview("live", brokerId, n); else { setStep("preview"); void trade(n); } }} />
     </>
   );
 }

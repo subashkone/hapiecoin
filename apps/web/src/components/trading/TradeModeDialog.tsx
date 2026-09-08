@@ -33,6 +33,8 @@ export interface TradeModeProps {
   brokers: Broker[];
   connected: boolean;
   priceModeLabel: string;
+  /** Preselect Live and disable the Paper card (Go live from a paper strategy). */
+  lockLive?: boolean | undefined;
   onContinue: (mode: "paper" | "live", brokerId: string, fees: FeeEstimate) => void;
 }
 
@@ -47,18 +49,21 @@ export function feeLine(b: Broker | undefined): string {
 }
 
 export function TradeModeDialog(p: TradeModeProps) {
-  const [mode, setMode] = useState<"paper" | "live">("paper");
+  const [mode, setMode] = useState<"paper" | "live">(p.lockLive ? "live" : "paper");
   const [brokerId, setBrokerId] = useState("");
   const [err, setErr] = useState(false);
   const openSettings = useUiStore((s) => s.openDialog);
   useEffect(() => {
     if (p.open && !brokerId && p.brokers[0]) setBrokerId(p.brokers[0].id);
   }, [p.open, p.brokers, brokerId]);
+  useEffect(() => {
+    if (p.open && p.lockLive) setMode("live");
+  }, [p.open, p.lockLive]);
   const broker = p.brokers.find((b) => b.id === brokerId);
   const fees = feeFor(p.legs, p.spot ?? 0, p.lotSize, broker);
   const np = netPremium(p.legs, p.lotSize);
   const live = mode === "live";
-  const liveBlocked = live && (!p.connected || true); // item 2 lifts the second condition
+  const liveBlocked = live && !p.connected;
   return (
     <Dialog open={p.open} onOpenChange={p.onOpenChange}>
       <DialogContent className="sm:max-w-[560px]" data-testid="trade-mode">
@@ -69,7 +74,7 @@ export function TradeModeDialog(p: TradeModeProps) {
         <DialogBody>
           <div className="grid grid-cols-2 gap-2" data-tour="trade-modal">
             {(["paper", "live"] as const).map((m) => (
-              <button key={m} type="button" aria-pressed={mode === m} onClick={() => setMode(m)} className={cn("rounded border p-3 text-left", mode === m ? "border-foreground/50 bg-muted/40" : "border-border hover:border-foreground/30")} data-testid={`mode-${m}`}>
+              <button key={m} type="button" aria-pressed={mode === m} disabled={m === "paper" && p.lockLive === true} onClick={() => setMode(m)} className={cn("rounded border p-3 text-left", mode === m ? "border-foreground/50 bg-muted/40" : "border-border hover:border-foreground/30")} data-testid={`mode-${m}`}>
                 <b className="flex items-center gap-2 text-[13px]">
                   <span className={cn("micro rounded border px-1", m === "live" ? "border-loss text-loss" : "border-border")}>{m === "live" ? "Live" : "Paper"}</span>
                   {m === "live" ? "Live · Real money" : "Paper · Simulated"}
@@ -121,7 +126,7 @@ export function TradeModeDialog(p: TradeModeProps) {
             <div className="mt-3 rounded border border-loss/40 p-2 text-2xs" data-testid="trade-real-money">
               <b className="text-loss">Real Money Trading</b>
               <div>Orders will be placed on Delta Exchange with real funds. Prices may differ from estimates. You may lose money.</div>
-              <div className="micro mt-1">Live order placement arrives with the next release; paper trading is available now.</div>
+              <div className="micro mt-1">Every order is checked by the server first: exchange connected, contracts sized, mark within {"5 %"} of the preview, wallet and limits.</div>
             </div>
           ) : (
             <div className="mt-3 rounded border border-info/30 bg-info-bg p-2 text-2xs text-info" data-testid="trade-paper-note">
@@ -136,7 +141,7 @@ export function TradeModeDialog(p: TradeModeProps) {
           </Button>
           <Button
             disabled={liveBlocked}
-            title={liveBlocked ? (p.connected ? "Live order placement arrives with the next release" : "Connect your exchange first") : undefined}
+            title={liveBlocked ? "Connect your exchange first" : undefined}
             onClick={() => {
               if (!brokerId) {
                 setErr(true);

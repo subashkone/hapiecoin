@@ -133,7 +133,7 @@ export interface UiState {
   /** True once the browser-local drafts were imported (or there were none), so a reload never imports twice. Persisted. */
   draftsImported: boolean;
   /** Trading flow dialogs (HC-TR-050..057): null = closed; strategyId null = trade the Builder legs. */
-  tradeFlow: { strategyId: string | null } | null;
+  tradeFlow: { strategyId: string | null; mode?: "paper" | "live" | undefined } | null;
   /** Strategy Details dialog (HC-TR-068): the open strategy id or null. */
   detailsId: string | null;
   /** Left-pane tab, right-pane tab and the Builder sub-tab (HC-WS-005, HC-TR-001). */
@@ -153,7 +153,7 @@ export interface UiState {
   archiveDraft: (id: string, archived: boolean) => void;
   deleteDraft: (id: string) => void;
   markDraftsImported: () => void;
-  openTrade: (target: { strategyId: string | null }) => void;
+  openTrade: (target: { strategyId: string | null; mode?: "paper" | "live" | undefined }) => void;
   closeTrade: () => void;
   openDetails: (id: string | null) => void;
   setWorkspaceTab: (tab: WorkspaceTab) => void;

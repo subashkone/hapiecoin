@@ -26,26 +26,38 @@ import {
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
-import { brokers, strategies, strategyLegs, strategyPnl, userSettings } from "../db/schema.js";
+import { brokers, strategies, strategyLegs, strategyOrders, strategyPnl } from "../db/schema.js";
 import { type AppEnv, type SessionUser, currentUser } from "../security/context.js";
 import { errors } from "../security/errors.js";
 import { requireUser } from "../security/guards.js";
 import { type AppDeps, cookieAuth, errorResponses, jsonContent, newId } from "./shared.js";
+import { type OrderRow, lotSizeFor as lotSizeOf, openCredential, ordersOf, placeEntries, placeExit, planLegs, toOrder, tradingBlockedReason } from "./live-exec.js";
 
 type StrategyRow = typeof strategies.$inferSelect;
 type LegRow = typeof strategyLegs.$inferSelect;
 type PnlRow = typeof strategyPnl.$inferSelect;
 
+/** Load one strategy with legs, P&L points and orders (shared with the live routes). */
+export async function loadStrategy(deps: AppDeps, id: string): Promise<Strategy> {
+  const [row] = await deps.db.select().from(strategies).where(eq(strategies.id, id)).limit(1);
+  if (!row) throw errors.notFound("Strategy");
+  const [legs, pnl, orders] = await Promise.all([
+    deps.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, id)).orderBy(asc(strategyLegs.position), asc(strategyLegs.createdAt)),
+    deps.db.select().from(strategyPnl).where(eq(strategyPnl.strategyId, id)).orderBy(asc(strategyPnl.day)),
+    ordersOf(deps, id),
+  ]);
+  return toStrategy(row, legs, pnl, orders);
+}
+
 const IdParam = z.object({ id: Id });
 const LegParam = z.object({ id: Id, legId: Id });
 const ListQuery = z.object({ status: StrategyStatus.optional() });
-const DEFAULT_LOTS: Record<string, string> = { BTC: "0.001", ETH: "0.01", XAUT: "0.001" };
 
 function iso(d: Date | null): string | null {
   return d === null ? null : d.toISOString();
 }
 
-export function toStrategy(row: StrategyRow, legs: LegRow[], pnl: PnlRow[]): Strategy {
+export function toStrategy(row: StrategyRow, legs: LegRow[], pnl: PnlRow[], orders: OrderRow[] = []): Strategy {
   return {
     id: row.id,
     name: row.name,
@@ -84,6 +96,7 @@ export function toStrategy(row: StrategyRow, legs: LegRow[], pnl: PnlRow[]): Str
     notes: row.notes,
     tags: row.tags,
     orderBatchId: row.orderBatchId,
+    orders: orders.map(toOrder),
     startedAt: iso(row.startedAt),
     closedAt: iso(row.closedAt),
     createdAt: row.createdAt.toISOString(),
@@ -128,22 +141,9 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
   async function legsOf(id: string): Promise<LegRow[]> {
     return db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, id)).orderBy(asc(strategyLegs.position), asc(strategyLegs.createdAt));
   }
-  async function pnlOf(id: string): Promise<PnlRow[]> {
-    return db.select().from(strategyPnl).where(eq(strategyPnl.strategyId, id)).orderBy(asc(strategyPnl.day));
-  }
-  async function full(row: StrategyRow): Promise<Strategy> {
-    const [legs, pnl] = await Promise.all([legsOf(row.id), pnlOf(row.id)]);
-    return toStrategy(row, legs, pnl);
-  }
-  async function reload(id: string): Promise<Strategy> {
-    const [row] = await db.select().from(strategies).where(eq(strategies.id, id)).limit(1);
-    if (!row) throw errors.notFound("Strategy");
-    return full(row);
-  }
-  async function lotSizeFor(user: SessionUser, asset: string): Promise<string> {
-    const [s] = await db.select({ lotSizes: userSettings.lotSizes }).from(userSettings).where(eq(userSettings.userId, user.id)).limit(1);
-    return s?.lotSizes[asset] ?? DEFAULT_LOTS[asset] ?? "1";
-  }
+  const full = (row: StrategyRow) => loadStrategy(deps, row.id);
+  const reload = (id: string) => loadStrategy(deps, id);
+  const lotSizeFor = (user: SessionUser, asset: string) => lotSizeOf(deps, user, asset);
   async function brokerVisible(user: SessionUser, brokerId: string): Promise<boolean> {
     const [b] = await db
       .select({ id: brokers.id })
@@ -177,15 +177,17 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
         .orderBy(desc(strategies.createdAt), desc(strategies.id));
       if (rows.length === 0) return c.json({ items: [] }, 200);
       const ids = rows.map((r) => r.id);
-      const [legs, pnl] = await Promise.all([
+      const [legs, pnl, orders] = await Promise.all([
         db.select().from(strategyLegs).where(inArray(strategyLegs.strategyId, ids)),
         db.select().from(strategyPnl).where(inArray(strategyPnl.strategyId, ids)),
+        db.select().from(strategyOrders).where(inArray(strategyOrders.strategyId, ids)),
       ]);
       const items = rows.map((r) =>
         toStrategy(
           r,
           legs.filter((l) => l.strategyId === r.id),
           pnl.filter((p) => p.strategyId === r.id),
+          orders.filter((o) => o.strategyId === r.id),
         ),
       );
       return c.json({ items }, 200);
@@ -299,7 +301,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const row = await loadOwned(me, c.req.valid("param").id);
       const body = c.req.valid("json");
       if (row.status !== "draft") throw errors.conflict(`Only a draft can be started; this strategy is ${row.status}`);
-      if (body.mode === "live") throw errors.conflict("Live trading arrives with Phase 3 item 2; start a paper trade instead");
+      if (body.mode === "live") throw errors.conflict("Live placement goes through /live/preview and /live/place (ADR-025)");
       if (!(await brokerVisible(me, body.brokerId))) throw errors.badRequest("Select an exchange...");
       const legs = await legsOf(row.id);
       if (legs.length === 0) throw errors.badRequest("Add at least one leg to trade");
@@ -339,7 +341,24 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const before = await full(row);
       const now = new Date();
       const nextPos = legs.reduce((m, l) => Math.max(m, l.position), -1) + 1;
-      await db.insert(strategyLegs).values(body.legs.map((l, i) => legValues(row.id, l, nextPos + i, { entryPrice: l.price, status: "open", isAdjustment: true, openedAt: now })));
+      // paper: the client price is the entry; live: the entry is the venue fill, set by the executor
+      const inserted = await db.insert(strategyLegs).values(body.legs.map((l, i) => legValues(row.id, l, nextPos + i, { entryPrice: row.status === "live" ? null : l.price, status: "open", isAdjustment: true, openedAt: row.status === "live" ? null : now }))).returning();
+      if (row.status === "live") {
+        // HC-TR-088: adjustment legs on a live strategy are real orders; a refused placement removes the leg again
+        const blocked = await tradingBlockedReason(deps, me);
+        if (blocked) {
+          await db.delete(strategyLegs).where(inArray(strategyLegs.id, inserted.map((l) => l.id)));
+          throw errors.conflict(blocked);
+        }
+        const creds = await openCredential(deps, me, row.brokerId ?? "");
+        const plan = await planLegs(deps, inserted, await lotSizeFor(me, row.asset));
+        if (plan.reasons.length) {
+          await db.delete(strategyLegs).where(inArray(strategyLegs.id, inserted.map((l) => l.id)));
+          throw errors.conflict(plan.reasons.join(" · "));
+        }
+        // a refused leg stays open with its failed order so Retry (HC-TR-085) can place it again
+        await placeEntries(deps, creds, row, inserted, plan.legs, `adj:${newId("b")}`, "adjustment", {});
+      }
       await touch(row.id);
       const after = await reload(row.id);
       await auditFrom(c, db)({ action: "strategy.adjust", target: `strategy:${row.id}`, before, after });
@@ -391,7 +410,8 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const body = c.req.valid("json");
       const before = await full(row);
       const now = new Date();
-      const realized = await closeLeg(row, leg, body.exitPrice, body.lots, await lotSizeFor(me, row.asset), now);
+      const exitPrice = row.status === "live" ? await placeExit(deps, await openCredential(deps, me, row.brokerId ?? ""), me, row, leg, body.lots ?? leg.lots, `exit:${newId("b")}`) : body.exitPrice;
+      const realized = await closeLeg(row, leg, exitPrice, body.lots, await lotSizeFor(me, row.asset), now);
       await touch(row.id, { realizedPnl: addDecimal(row.realizedPnl, realized) });
       const after = await reload(row.id);
       await auditFrom(c, db)({ action: "leg.close", target: `strategy:${row.id}:leg:${legId}`, before, after });
@@ -417,12 +437,17 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const body = c.req.valid("json");
       const legs = (await legsOf(row.id)).filter((l) => l.status === "open");
       if (legs.length === 0) throw errors.conflict("Nothing to square off");
-      for (const l of legs) if (body.exits[l.id] === undefined) throw errors.badRequest(`Missing exit price for leg ${l.id}`);
+      if (row.status !== "live") for (const l of legs) if (body.exits[l.id] === undefined) throw errors.badRequest(`Missing exit price for leg ${l.id}`);
       const before = await full(row);
       const lotSize = await lotSizeFor(me, row.asset);
       const now = new Date();
       let realized = row.realizedPnl;
-      for (const l of legs) realized = addDecimal(realized, await closeLeg(row, l, body.exits[l.id]!, undefined, lotSize, now));
+      const creds = row.status === "live" ? await openCredential(deps, me, row.brokerId ?? "") : null;
+      const batch = `exit:${newId("b")}`;
+      for (const l of legs) {
+        const exit = creds ? await placeExit(deps, creds, me, row, l, l.lots, batch) : body.exits[l.id]!;
+        realized = addDecimal(realized, await closeLeg(row, l, exit, undefined, lotSize, now));
+      }
       await touch(row.id, row.status === "live" ? { realizedPnl: realized, status: "archived", closedAt: now } : { realizedPnl: realized });
       const after = await reload(row.id);
       await auditFrom(c, db)({ action: "strategy.close_all", target: `strategy:${row.id}`, before, after });

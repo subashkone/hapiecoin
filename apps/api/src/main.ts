@@ -6,6 +6,7 @@ import { AUTH_BASE_PATH, authOptionsPublic, createAuth, sessionResolver } from "
 import { loadConfig } from "./config.js";
 import { createDb } from "./db/client.js";
 import { seed } from "./db/seed.js";
+import { DeltaTradingClientImpl } from "@hapiecoin/venues";
 import { DeltaPrivateClientImpl } from "./delta/private-client.js";
 import { loadRepoEnv } from "./env-file.js";
 import { createLogger } from "./logger.js";
@@ -56,7 +57,8 @@ const app = createApp({
   rateStore,
   logger,
   vault: createVault(config.credentialsEncKey),
-  delta: new DeltaPrivateClientImpl({ baseUrl: config.deltaRestUrl, nodeEnv: config.nodeEnv }),
+  delta: new DeltaPrivateClientImpl({ baseUrl: config.deltaTradingRestUrl, nodeEnv: config.nodeEnv }),
+  trading: new DeltaTradingClientImpl({ baseUrl: config.deltaTradingRestUrl, nodeEnv: config.nodeEnv }),
   authOptions: authOptionsPublic(config),
 });
 

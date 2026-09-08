@@ -3,7 +3,7 @@
 // deliberately simple: one OTP (123456), sessions in a Map, settings/brokers/credentials per user.
 import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import type { Broker, BrokerCredentialPublic, Strategy, StrategyLeg, StrategyLegInput, User, UserSettings } from "@hapiecoin/schema";
+import type { Broker, BrokerCredentialPublic, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { maskApiKey, realizedPnl, toDecimal } from "@hapiecoin/schema";
 
 export const SESSION_COOKIE = "better-auth.session_token";
@@ -19,6 +19,7 @@ interface Account {
   credential: BrokerCredentialPublic | null;
   plan: PlanRecord;
   strategies: Strategy[];
+  tradingDisabled: boolean;
   referredBy?: string;
 }
 interface PlanRecord {
@@ -85,6 +86,7 @@ export function createAccount(
     credential: null,
     plan: { state: "free" },
     strategies: [],
+    tradingDisabled: false,
   };
   state.accounts.set(email, acc);
   return acc;
@@ -350,7 +352,7 @@ export function createMockApi(state: MockState = { accounts: new Map(), sessions
     if (!body.name?.trim()) return err(c, 400, "VALIDATION", "Strategy name is required");
     if (!body.legs?.length || body.legs.length > 8) return err(c, 400, "VALIDATION", "1..8 legs");
     const at = nowIso();
-    const s: Strategy = { id: id("strat"), name: body.name.trim(), asset: body.asset, status: "draft", tradingMode: null, templateName: body.templateName ?? "Custom", brokerId: null, legs: body.legs.map((l, i) => mkLeg(l, i)), realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, startedAt: null, closedAt: null, createdAt: at, updatedAt: at };
+    const s: Strategy = { id: id("strat"), name: body.name.trim(), asset: body.asset, status: "draft", tradingMode: null, templateName: body.templateName ?? "Custom", brokerId: null, legs: body.legs.map((l, i) => mkLeg(l, i)), realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], startedAt: null, closedAt: null, createdAt: at, updatedAt: at };
     acc.strategies.unshift(s);
     return c.json(s, 201);
   });
@@ -384,7 +386,7 @@ export function createMockApi(state: MockState = { accounts: new Map(), sessions
     if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
     const body = await c.req.json<{ mode: "paper" | "live"; brokerId: string; entries: Record<string, string> }>();
     if (s.status !== "draft") return err(c, 409, "CONFLICT", `Only a draft can be started; this strategy is ${s.status}`);
-    if (body.mode === "live") return err(c, 409, "CONFLICT", "Live trading arrives with Phase 3 item 2; start a paper trade instead");
+    if (body.mode === "live") return err(c, 409, "CONFLICT", "Live placement goes through /live/preview and /live/place (ADR-025)");
     if (!current(c)!.brokers.some((b) => b.id === body.brokerId)) return err(c, 400, "BAD_REQUEST", "Select an exchange...");
     const at = nowIso();
     for (const l of s.legs) {
@@ -403,7 +405,9 @@ export function createMockApi(state: MockState = { accounts: new Map(), sessions
     if (open + body.legs.length > 10) return err(c, 409, "CONFLICT", "Maximum 10 active legs allowed per strategy");
     const at = nowIso();
     const next = s.legs.reduce((m, l) => Math.max(m, l.position), -1) + 1;
-    s.legs.push(...body.legs.map((l, i) => mkLeg(l, next + i, { entryPrice: l.price, isAdjustment: true, openedAt: at })));
+    const added = body.legs.map((l, i) => mkLeg(l, next + i, { entryPrice: s.status === "live" ? null : l.price, isAdjustment: true, openedAt: s.status === "live" ? null : at }));
+    s.legs.push(...added);
+    if (s.status === "live") placeLive(c, s, `adj:${id("b")}`, "adjustment", added);
     return c.json(touch(s));
   });
   v1.post("/strategies/:id/legs/:legId/close", async (c) => {
@@ -415,7 +419,8 @@ export function createMockApi(state: MockState = { accounts: new Map(), sessions
     if (leg.status !== "open") return err(c, 409, "CONFLICT", "This leg is already squared off");
     const body = await c.req.json<{ exitPrice: string; lots?: number }>();
     if (body.lots !== undefined && body.lots > leg.lots) return err(c, 400, "BAD_REQUEST", `Exit quantity exceeds the leg's ${leg.lots} lots`);
-    closeLeg(s, leg, body.exitPrice, body.lots, lotSizeOf(c, s.asset));
+    const exitPrice = s.status === "live" ? exitLive(c, s, leg, body.lots ?? leg.lots) : body.exitPrice;
+    closeLeg(s, leg, exitPrice, body.lots, lotSizeOf(c, s.asset));
     return c.json(touch(s));
   });
   v1.post("/strategies/:id/close", async (c) => {
@@ -425,8 +430,8 @@ export function createMockApi(state: MockState = { accounts: new Map(), sessions
     const body = await c.req.json<{ exits: Record<string, string> }>();
     const open = s.legs.filter((l) => l.status === "open");
     if (!open.length) return err(c, 409, "CONFLICT", "Nothing to square off");
-    for (const l of open) if (body.exits[l.id] === undefined) return err(c, 400, "BAD_REQUEST", `Missing exit price for leg ${l.id}`);
-    for (const l of open) closeLeg(s, l, body.exits[l.id]!, undefined, lotSizeOf(c, s.asset));
+    if (s.status !== "live") for (const l of open) if (body.exits[l.id] === undefined) return err(c, 400, "BAD_REQUEST", `Missing exit price for leg ${l.id}`);
+    for (const l of open) closeLeg(s, l, s.status === "live" ? exitLive(c, s, l, l.lots) : body.exits[l.id]!, undefined, lotSizeOf(c, s.asset));
     if (s.status === "live") Object.assign(s, { status: "archived", closedAt: nowIso() });
     return c.json(touch(s));
   });
@@ -471,6 +476,119 @@ export function createMockApi(state: MockState = { accounts: new Map(), sessions
     s.pnlHistory.sort((a, b) => (a.day < b.day ? -1 : 1));
     return c.json(touch(s));
   });
+
+  /* ---------------- live trading (Phase 3 item 2, mirrors apps/api/src/routes/live.ts on a fake venue) ---------------- */
+  const markOf = (l: StrategyLeg) => toDecimal(Number(l.price) * 1.001, 4);
+  const contractsOf = (l: StrategyLeg, lotSize: string) => Math.round((l.lots * Number(lotSize)) / 0.001);
+  const livePreview = (c: Context, s: Strategy, worstLoss: number | null) => {
+    const acc = current(c)!;
+    const reasons: string[] = [];
+    if (acc.tradingDisabled) reasons.push("Live trading is disabled for this account");
+    if (!acc.credential) reasons.push("Connect your exchange in Settings → API Settings to enable live trading");
+    const open = s.legs.filter((l) => l.status === "open");
+    if (!open.length) reasons.push("Add at least one leg to trade");
+    const lotSize = lotSizeOf(c, s.asset);
+    const legs = open.map((l) => ({ legId: l.id, symbol: l.symbol, side: l.side, lots: l.lots, contracts: contractsOf(l, lotSize), contractValue: "0.001", productState: "live", mark: markOf(l), notional: toDecimal(contractsOf(l, lotSize) * 0.001 * Number(markOf(l)), 2) }));
+    const notional = legs.reduce((a, l) => a + Number(l.notional), 0);
+    if (notional > 100_000) reasons.push(`Notional ${toDecimal(notional, 2)} USD exceeds the 100000 USD limit per placement`);
+    if (worstLoss !== null && Math.abs(worstLoss) > 4000) reasons.push(`Available USD 4000 is below the worst-loss estimate ${toDecimal(Math.abs(worstLoss), 2)}`);
+    return { ok: reasons.length === 0, reasons, legs, notional: toDecimal(notional, 2), available: acc.credential ? "4000" : null, availableAsset: acc.credential ? "USD" : null, limits: { maxLegs: 10, maxNotionalUsd: 100_000, markBandPct: 5 } };
+  };
+  const placeLive = (c: Context, s: Strategy, batchId: string, purpose: StrategyOrder["purpose"], legs: StrategyLeg[]) => {
+    const at = nowIso();
+    const lotSize = lotSizeOf(c, s.asset);
+    for (const l of legs) {
+      const attempt = s.orders.filter((o) => o.legId === l.id && o.purpose !== "exit").length + 1;
+      const fail = l.symbol.includes("FAIL");
+      const fill = markOf(l);
+      s.orders.push({ id: id("ord"), legId: l.id, purpose, clientOrderId: `hc-${l.id}-${attempt}`, venueOrderId: fail ? null : String(700000 + s.orders.length), symbol: l.symbol, side: l.side, size: contractsOf(l, lotSize), state: fail ? "failed" : "filled", fillPrice: fail ? null : fill, error: fail ? "Not enough margin on the exchange for this order" : null, attempts: attempt, createdAt: at, updatedAt: at });
+      if (!fail) Object.assign(l, { entryPrice: fill, price: fill, status: "open", openedAt: at, orderId: String(700000 + s.orders.length - 1) });
+    }
+  };
+  const exitLive = (c: Context, s: Strategy, leg: StrategyLeg, lots: number) => {
+    const at = nowIso();
+    const fill = markOf(leg);
+    s.orders.push({ id: id("ord"), legId: leg.id, purpose: "exit", clientOrderId: `hc-${leg.id}-x${s.orders.length + 1}`, venueOrderId: String(800000 + s.orders.length), symbol: leg.symbol, side: leg.side === "buy" ? "sell" : "buy", size: contractsOf({ ...leg, lots }, lotSizeOf(c, s.asset)), state: "closed", fillPrice: fill, error: null, attempts: 1, createdAt: at, updatedAt: at });
+    return fill;
+  };
+  v1.post("/strategies/live/batch", async (c) => {
+    const acc = current(c)!;
+    const body = await c.req.json<{ ids: string[]; brokerId: string; idempotencyKey: string }>();
+    if (acc.tradingDisabled) return err(c, 409, "CONFLICT", "Live trading is disabled for this account");
+    if (!acc.credential) return err(c, 409, "CONFLICT", "Connect your exchange in Settings → API Settings to enable live trading");
+    const placed: string[] = [];
+    const skipped: string[] = [];
+    let failed: { id: string; error: string } | null = null;
+    for (const sid of body.ids) {
+      const s = acc.strategies.find((x) => x.id === sid);
+      if (!s || s.status !== "paper") {
+        skipped.push(sid);
+        continue;
+      }
+      const key = `${body.idempotencyKey}:${sid}`;
+      if (s.orders.some((o) => o.clientOrderId.startsWith("hc-") && s.orderBatchId === key)) {
+        placed.push(sid);
+        continue;
+      }
+      const p = livePreview(c, s, null);
+      if (!p.ok) {
+        failed = { id: sid, error: p.reasons.join(" · ") };
+        break;
+      }
+      Object.assign(s, { status: "live", tradingMode: "live", brokerId: body.brokerId, orderBatchId: key });
+      placeLive(c, s, key, "entry", s.legs.filter((l) => l.status === "open"));
+      touch(s);
+      placed.push(sid);
+      if (s.orders.some((o) => o.state === "failed")) {
+        failed = { id: sid, error: s.orders.filter((o) => o.state === "failed").map((o) => `${o.symbol}: ${o.error ?? "failed"}`).join(" · ") };
+        break;
+      }
+    }
+    return c.json({ placed, failed, skipped });
+  });
+  v1.get("/strategies/live/positions", (c) => {
+    const acc = current(c)!;
+    if (!acc.credential) return err(c, 409, "CONFLICT", "Connect your exchange in Settings → API Settings to enable live trading");
+    const positions = acc.strategies.filter((s) => s.status === "live").flatMap((s) => s.legs.filter((l) => l.status === "open" && l.entryPrice).map((l) => ({ productId: 100 + s.legs.indexOf(l), symbol: l.symbol, size: (l.side === "buy" ? 1 : -1) * contractsOf(l, lotSizeOf(c, s.asset)), entryPrice: l.entryPrice, realizedPnl: "0", margin: "12" })));
+    return c.json({ positions, balances: [{ asset: "USD", balance: "5000", availableBalance: "4000" }] });
+  });
+  v1.post("/strategies/:id/live/preview", async (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    const body = await c.req.json<{ brokerId: string; worstLoss?: number }>();
+    return c.json(livePreview(c, s, body.worstLoss ?? null));
+  });
+  v1.post("/strategies/:id/live/place", async (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    const body = await c.req.json<{ brokerId: string; idempotencyKey: string; expected?: Record<string, string> }>();
+    if (s.orderBatchId === body.idempotencyKey) return c.json(s);
+    if (s.status !== "draft" && s.status !== "paper") return err(c, 409, "CONFLICT", `Only a draft or paper strategy can go live; this strategy is ${s.status}`);
+    const p = livePreview(c, s, null);
+    if (!p.ok) return err(c, 409, "CONFLICT", p.reasons.join(" · "));
+    Object.assign(s, { status: "live", tradingMode: "live", brokerId: body.brokerId, orderBatchId: body.idempotencyKey, startedAt: s.startedAt ?? nowIso(), closedAt: null });
+    placeLive(c, s, body.idempotencyKey, "entry", s.legs.filter((l) => l.status === "open"));
+    return c.json(touch(s));
+  });
+  v1.post("/strategies/:id/live/retry", (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (s.status !== "live") return err(c, 409, "CONFLICT", "Only a live strategy has orders to retry");
+    for (const o of s.orders.filter((x) => x.state === "failed")) {
+      const leg = s.legs.find((l) => l.id === o.legId);
+      if (!leg) continue;
+      leg.symbol = leg.symbol.replace("FAIL", "OK"); // the venue accepts on retry in the mock
+      Object.assign(o, { state: "filled", venueOrderId: String(700000 + s.orders.length), fillPrice: markOf(leg), error: null, attempts: o.attempts + 1, updatedAt: nowIso() });
+      Object.assign(leg, { entryPrice: markOf(leg), price: markOf(leg), openedAt: nowIso() });
+    }
+    return c.json(touch(s));
+  });
+  v1.post("/strategies/:id/live/sync", (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    return c.json(touch(s));
+  });
+
   app.route("/v1", v1);
 
   /* ---------------- test hooks ---------------- */

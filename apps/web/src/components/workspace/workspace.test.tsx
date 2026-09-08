@@ -17,11 +17,11 @@ afterEach(() => {
 });
 
 describe("[WORKSPACE] HC-WS-001..006 two-pane shell", () => {
-  it("has every left tab enabled, the Paper tab live, Phase 3 / 4 placeholders on Live / Journal, and the analysis tabs on the right", async () => {
+  it("has every left tab enabled, the Paper and Live tabs live, a Phase 4 placeholder on Journal, and the analysis tabs on the right", async () => {
     renderWithProviders(<Workspace />);
     for (const id of ["chain", "builder", "paper", "live", "journal"]) expect(screen.getByTestId(`tab-${id}`).hasAttribute("disabled")).toBe(false);
     expect(screen.getByTestId("tab-paper").getAttribute("title")).toBeNull();
-    expect(screen.getByTestId("tab-live").getAttribute("title")).toBe("Arrives in Phase 3");
+    expect(screen.getByTestId("tab-live").getAttribute("title")).toBeNull();
     expect(screen.getByTestId("tab-journal").getAttribute("title")).toBe("Arrives in Phase 4");
     expect(screen.getByTestId("chain-panel")).toBeTruthy();
     expect(screen.getByTestId("workspace").dataset["layout"]).toBe("split");
@@ -32,7 +32,7 @@ describe("[WORKSPACE] HC-WS-001..006 two-pane shell", () => {
     expect(useUiStore.getState().workspaceTab).toBe("paper");
     expect(screen.getByTestId("paper-panel")).toBeTruthy();
     await u.click(screen.getByTestId("tab-live"));
-    expect(screen.getByTestId("placeholder-live").textContent).toContain("Live arrives in Phase 3");
+    expect(screen.getByTestId("live-panel")).toBeTruthy();
     await u.click(screen.getByTestId("analysis-tab-scenarios"));
     expect(useUiStore.getState().analysisTab).toBe("scenarios");
     expect(screen.getByTestId("analysis-placeholder-scenarios").textContent).toContain("Scenarios arrives in Phase 5");
