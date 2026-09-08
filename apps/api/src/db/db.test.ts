@@ -108,7 +108,10 @@ describe("[DB] schema declares the relationships the API relies on", () => {
     expect(fks(accounts)).toEqual([{ from: "user_id", to: "users.id", onDelete: "cascade" }]);
     expect(fks(passkeys)).toEqual([{ from: "user_id", to: "users.id", onDelete: "cascade" }]);
     expect(fks(userSettings)).toEqual([{ from: "user_id", to: "users.id", onDelete: "cascade" }]);
-    expect(fks(subscriptions)).toEqual([{ from: "user_id", to: "users.id", onDelete: "cascade" }]);
+    expect(fks(subscriptions)).toEqual([
+      { from: "user_id", to: "users.id", onDelete: "cascade" },
+      { from: "plan_id", to: "plans.id", onDelete: "set null" },
+    ]);
     expect(fks(brokers)).toEqual([{ from: "owner_id", to: "users.id", onDelete: "cascade" }]);
     expect(fks(brokerCredentials)).toEqual([
       { from: "user_id", to: "users.id", onDelete: "cascade" },
@@ -152,6 +155,8 @@ describe("[DB] schema declares the relationships the API relies on", () => {
         "brokers",
         "passkeys",
         "sessions",
+        "plans",
+        "menuItems",
         "strategies",
         "strategyLegs",
         "strategyOrders",
@@ -168,9 +173,9 @@ describe("[DB] schema declares the relationships the API relies on", () => {
 describe("[DB] seed", () => {
   it("creates the admin, the Delta India broker and an active Pro subscription once", async () => {
     const first = await seed(handle.db, () => new Date("2026-09-07T00:00:00Z"));
-    expect(first).toEqual({ admin: "created", broker: "created", subscription: "created" });
+    expect(first).toEqual({ admin: "created", broker: "created", subscription: "created", plans: "created" });
     const second = await seed(handle.db);
-    expect(second).toEqual({ admin: "exists", broker: "exists", subscription: "exists" });
+    expect(second).toEqual({ admin: "exists", broker: "exists", subscription: "exists", plans: "exists" });
 
     const [admin] = await handle.db.select().from(users).where(eq(users.email, SEED.adminEmail));
     expect(admin).toMatchObject({ role: "admin", emailVerified: true, referralCode: SEED.adminReferralCode });

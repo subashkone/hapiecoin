@@ -1,130 +1,1064 @@
 [
-  {"route":"/admin","screen":"Admin (index)","feature":"Redirect /admin → /admin/users","how":"Section with data-redirect; router replaces the hash","status":"working","evidence":"route /admin has no own strings in the bundle; /admin/users is the first admin page"},
-  {"route":"/admin","screen":"Admin (index)","feature":"Admin-only guard (data-auth=admin)","how":"Non-admin / logged-out users are redirected by the router (CG.auth.isAdmin)","status":"working","evidence":"bundle string: Admin access required"},
-  {"route":"/admin","screen":"Admin (index)","feature":"Admin navigation rail (CG.chrome['admin-nav'])","how":"On ≥1100px a sticky left rail with an ADMIN micro label, icon + label links (Users · Subscription Plans · Menu Pricing · Coupon Codes · User Subscriptions · Banners · Promotional Emails), live counts per page, amber inset rule on the active item and a footer with the admin email; below 1100px it collapses into a horizontal top bar","status":"working","evidence":"bundle strings: Admin pages, aria-current, Navigate between pages"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Page title + subtitle","how":"Slim title row: 'Subscription Plans' / 'Manage subscription tiers and pricing' left, the single amber primary action right, hairline underneath","status":"static","evidence":"bundle strings: Subscription Plans, Manage subscription tiers and pricing"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"'+ New Plan' button","how":"Opens the 'Create New Plan' dialog","status":"working","evidence":"bundle strings: New Plan, Create New Plan"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Card 'All Plans (N)' table: Name, Monthly, Quarterly, Yearly, Status, Actions","how":"Rendered from CG.mock.plans; price cells show discount price with struck-through list price and % off, plus paper/live limits","status":"working","evidence":"bundle strings: All Plans (, Name, Monthly, Quarterly, Yearly, Status, Actions"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Status switch (Active / Inactive) per plan","how":"Toggles plan.isActive in CG.mock, toast 'Updated'","status":"working","evidence":"bundle strings: Status, Active, Updated"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Edit (pencil) action","how":"Opens 'Edit Plan' dialog pre-filled; submit label 'Update'","status":"working","evidence":"bundle strings: Pencil, Edit Plan, Update"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Empty state 'No Plans Yet · Create your first subscription plan · + Create Plan'","how":"Shown when CG.mock.plans is empty; button opens the create dialog","status":"working","evidence":"bundle strings: No Plans Yet, Create your first subscription plan, Create Plan"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Dialog field 'Plan Name *' (placeholder e.g. Basic Plan)","how":"Required text input","status":"working","evidence":"bundle strings: Plan Name *, e.g. Basic Plan"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Dialog field 'Description'","how":"Textarea saved to plan.description","status":"working","evidence":"bundle string: Description"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Dialog 'Features' chip input ('Add a feature' + Enter / Add button, removable chips)","how":"Enter or the secondary Add button appends a chip; × removes it; saved as plan.features[]","status":"working","evidence":"bundle strings: Features, Add a feature, Enter, button, secondary"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Dialog 'Billing Intervals': Monthly / Quarterly / Yearly blocks with Price and Discount Price (₹)","how":"Three input groups saved to plan.monthly/quarterly/yearly {price, discountPrice}","status":"working","evidence":"bundle strings: Billing Intervals, Monthly, Quarterly, Yearly"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Dialog 'Feature Limits' per interval: Paper Trading Limit (Per Month), Live Trading Limit (Per Month)","how":"Saved to plan.<interval>.featureLimits {paper_trading, live_trading}; 0 = unlimited","status":"working","evidence":"bundle strings: Feature Limits, (Per Month), Paper Trading Limit, Live Trading Limit"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Dialog 'Menu Items' multi-select checkboxes","how":"Checklist built from CG.mock.menuItems with category and price; saved to plan.menuItems[]; counter 'x of y menu items linked'","status":"working","evidence":"bundle string: Menu Items"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Dialog 'Active · Plan visible to users' switch","how":"Sets plan.isActive","status":"working","evidence":"bundle strings: Active, Plan visible to users"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Dialog footer Cancel / Create | Update","how":"Cancel closes; submit validates then mutates CG.mock.plans and re-renders the table","status":"working","evidence":"bundle strings: Cancel, Create, Update"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Validation toast 'Validation · Plan name is required'","how":"Destructive toast when the name is empty; focus returns to the field","status":"working","evidence":"bundle strings: Validation, Plan name is required, destructive"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Toasts 'Created' / 'Updated' / 'Failed to save'","how":"Success toasts after save; 'Failed to save' is raised if the in-memory mutation throws","status":"working","evidence":"bundle strings: Created, Updated, Failed to save"},
-  {"route":"/admin/menu-pricing","screen":"Menu Pricing Master","feature":"Page title + subtitle","how":"'Menu Pricing Master' / 'Manage menu items linked to subscription plans'","status":"static","evidence":"bundle strings: Menu Pricing Master, Manage menu items linked to subscription plans"},
-  {"route":"/admin/menu-pricing","screen":"Menu Pricing Master","feature":"'+ New Item' button","how":"Opens 'New Menu Item' dialog","status":"working","evidence":"bundle strings: New Item, New Menu Item"},
-  {"route":"/admin/menu-pricing","screen":"Menu Pricing Master","feature":"Card 'All Menu Items (N)' table: Display Name, Category, Price (₹), Status, Actions (+ linked plans count)","how":"Rendered from CG.mock.menuItems; 'Linked plans' column counts plans referencing the item","status":"working","evidence":"bundle strings: All Menu Items (, Display Name, Category, Price, Status, Actions"},
-  {"route":"/admin/menu-pricing","screen":"Menu Pricing Master","feature":"Status switch per item","how":"Toggles isActive, toast 'Updated' (the bundle's 'Failed to update status' path is never hit in the mock)","status":"working","evidence":"bundle strings: Status, Updated, Failed to update status"},
-  {"route":"/admin/menu-pricing","screen":"Menu Pricing Master","feature":"Edit (pencil) action → 'Edit Menu Item' dialog","how":"Pre-fills the form; renaming an item also renames it inside every plan's menuItems list","status":"working","evidence":"bundle strings: Pencil, Edit Menu Item, Update"},
-  {"route":"/admin/menu-pricing","screen":"Menu Pricing Master","feature":"Empty state 'No Menu Items · Add menu items that can be linked to plans · + Add Item'","how":"Shown when the list is empty","status":"working","evidence":"bundle strings: No Menu Items, Add menu items that can be linked to plans, Add Item"},
-  {"route":"/admin/menu-pricing","screen":"Menu Pricing Master","feature":"Dialog fields: 'Display Name *' (e.g. Reports Export), Category (e.g. Trading, Analytics, Data), 'Price (₹)' number, Active switch","how":"Saved to CG.mock.menuItems","status":"working","evidence":"bundle strings: Display Name *, e.g. Reports Export, e.g. Trading, Analytics, Data, Price (₹), number, Active"},
-  {"route":"/admin/menu-pricing","screen":"Menu Pricing Master","feature":"Validation 'Validation · Display Name is required'","how":"Destructive toast on empty name","status":"working","evidence":"bundle strings: Validation, Display Name is required"},
-  {"route":"/admin/menu-pricing","screen":"Menu Pricing Master","feature":"Toasts 'Created' / 'Updated' / 'Failed to save'; footer Cancel / Create | Update","how":"Same save pipeline as plans","status":"working","evidence":"bundle strings: Created, Updated, Failed to save, Cancel, Create, Update"},
-  {"route":"/admin/coupons","screen":"Coupon Code Master","feature":"Page title + subtitle, '+ New Coupon' button","how":"'Coupon Code Master' / 'Manage discount coupons'; button opens 'New Coupon' dialog","status":"working","evidence":"bundle strings: Coupon Code Master, Manage discount coupons, New Coupon"},
-  {"route":"/admin/coupons","screen":"Coupon Code Master","feature":"Card 'All Coupons (N)' table: Code, Discount, Type, Validity, Plans, Uses, Status, Actions","how":"Code in mono with description; Discount '20%' or '₹500' (+ min order); Type badge Public / Community (+ assigned users count); Validity 'starts → expires' with red 'Expired' when past; Plans as badges (interval list in tooltip); Uses 'used / max' + per-user limit","status":"working","evidence":"bundle strings: All Coupons (, Code, Discount, Type, Validity, Plans, Uses, Status, Actions, percent, secondary, Plan"},
-  {"route":"/admin/coupons","screen":"Coupon Code Master","feature":"Status switch per coupon","how":"Toggles isActive, toast 'Updated'","status":"working","evidence":"bundle strings: Status, Updated"},
-  {"route":"/admin/coupons","screen":"Coupon Code Master","feature":"Edit (pencil) → 'Edit Coupon' dialog","how":"Pre-fills every field incl. assigned users and plan×interval grid; submit 'Update'","status":"working","evidence":"bundle strings: Pencil, Edit Coupon, Update"},
-  {"route":"/admin/coupons","screen":"Coupon Code Master","feature":"Delete (trash) → confirm 'Delete Coupon? · This action cannot be undone. The coupon will be permanently deleted.' → toast 'Deleted'","how":"CG.modal.confirm (destructive); removes the coupon from CG.mock.coupons","status":"working","evidence":"bundle strings: Trash2, Delete Coupon?, This action cannot be undone. The coupon will be permanently deleted., Delete, Deleted"},
-  {"route":"/admin/coupons","screen":"Coupon Code Master","feature":"Empty state 'No Coupons · Create your first coupon code · + Create Coupon'","how":"Shown when the list is empty","status":"working","evidence":"bundle strings: No Coupons, Create your first coupon code, Create Coupon"},
-  {"route":"/admin/coupons","screen":"Coupon Code Master","feature":"Dialog 'Code *' (placeholder BASIC20, forced uppercase)","how":"Input filter uppercases and strips invalid characters; duplicate codes rejected","status":"working","evidence":"bundle strings: Code *, BASIC20"},
-  {"route":"/admin/coupons","screen":"Coupon Code Master","feature":"Dialog 'Coupon Type': Public (All listed) / Community (Assigned to specific users & their referrals)","how":"Select mapped to scope public_all_listed / private_community_listed","status":"working","evidence":"bundle strings: Coupon Type, public_all_listed, private_community_listed"},
-  {"route":"/admin/coupons","screen":"Coupon Code Master","feature":"'Assign to Users' block (Community only): 'Search users...', Select All / Deselect All / '↔ Invert' (title 'Invert selection'), checkbox list, 'x of y users selected', 'No users found'","how":"Appears when type = Community; list from CG.mock.users; bulk buttons act on the filtered set; saved to coupon.assignedUsers","status":"working","evidence":"bundle strings: Assign to Users, Search users..., Select All, Deselect All, Invert selection, ↔ Invert, of, users selected, No users found"},
-  {"route":"/admin/coupons","screen":"Coupon Code Master","feature":"Dialog fields Description, 'Discount Type' Percent/Fixed, 'Discount Value', 'Min Order (₹)', 'Max Uses', 'Per User Limit', 'Starts At', 'Expires At'","how":"Number/date inputs saved on the coupon; percent > 100 rejected","status":"working","evidence":"bundle strings: Description, Discount Type, Percent, Fixed, Discount Value, number, Min Order (₹), Max Uses, Per User Limit, Starts At, Expires At"},
-  {"route":"/admin/coupons","screen":"Coupon Code Master","feature":"'Applicable Plans & Intervals' grid (plan × Monthly/Quarterly/Yearly checkboxes; 'No plans available')","how":"Built from CG.mock.plans; saved as coupon.planIntervals plus flat plans[]/intervals[]","status":"working","evidence":"bundle strings: Applicable Plans & Intervals, No plans available"},
-  {"route":"/admin/coupons","screen":"Coupon Code Master","feature":"Active switch, footer Cancel / Create | Update","how":"Standard save pipeline","status":"working","evidence":"bundle strings: Active, Cancel, Create, Update"},
-  {"route":"/admin/coupons","screen":"Coupon Code Master","feature":"Validation 'Validation · Code is required'; toasts Created / Updated / Failed to save","how":"Destructive toast on empty code","status":"working","evidence":"bundle strings: Validation, Code is required, Created, Updated, Failed to save"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Page title + subtitle, tabs 'Users' / 'Commissions'","how":"'User Subscriptions' / 'Manage users and commissions'; tabs switch panels (also via ?tab= query)","status":"working","evidence":"bundle strings: User Subscriptions, Manage users and commissions, Users, Commissions"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Users tab header 'Users (N)' with search 'Search by name or email...' and Status select (All Statuses / Active / Expired / Cancelled / Free)","how":"Filters CG.mock.users live; count reflects the filtered list","status":"working","evidence":"bundle strings: Users (, Search by name or email..., Status, All Statuses, Active, Expired, Cancelled, Free"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Users table columns: User (name, email), Plan (badge; 'Free Plan'), Expiry, Validity, Referrals, Commission %, Account, Limits","how":"10 rows per page from the filtered list","status":"working","evidence":"bundle strings: User, Plan, Expiry, Validity, Referrals, Commission %, Account, Limits, Free Plan"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Expiry cell: date + 'N d left', '(Soon)' when under 7 days, 'Expired N d ago' when past","how":"Computed against the mock clock CG.NOW","status":"working","evidence":"bundle strings: d left, (Soon)"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Inline edit of Validity (days), Referrals and Commission % ('Click to edit')","how":"Click → number input; Enter saves (toast 'Updated', validity also recomputes endsAt), Escape / blur cancels","status":"working","evidence":"bundle strings: validity, referrals, commission, number, Enter, Escape, Click to edit, Updated, Failed to update"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Account toggle button Active / Deactive","how":"Flips user.activated, toast 'Updated'","status":"working","evidence":"bundle strings: Account, default, Deactive"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Limits icon 'Edit feature limits' → dialog 'Feature Limits'","how":"Paper Trading Limit / Live Trading Limit inputs with 'trades / month' suffix and hint 'Set to 0 for plan default. Higher values override plan limit.'; 'Save Limits' shows 'Saving...' then toast 'Updated'","status":"working","evidence":"bundle strings: Edit feature limits, Feature Limits, Paper Trading Limit, trades / month, Set to 0 for plan default. Higher values override plan limit., Live Trading Limit, Saving..., Save Limits, Settings2"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Per-user 'Lot size settings' icon → dialog with BTC / ETH / XAUT lot sizes","how":"Saves user.lotSizes (and CG.state.lotSizes for the demo user); validation when a value is not > 0","status":"inferred","evidence":"admin lot-size-settings API endpoint exists in the bundle; no UI strings observed"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Pagination 'Page x of y · N users · ← Previous · Next →' (10 per page)","how":"Buttons disabled at the ends; resets to page 1 on filter change","status":"working","evidence":"bundle strings: Page, of, users, ← Previous, Next →"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Users empty state 'No users found'","how":"Shown when search/status filter matches nothing","status":"working","evidence":"bundle string: No users found"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Commissions tiles: Total Commission / Paid / Pending (₹)","how":"Sums over the filtered CG.mock.commissions","status":"working","evidence":"bundle strings: Total Commission, Paid, Pending"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Commissions filters: 'Search referrer name...', 'Filter by month' select (All Months + months), 'Clear'","how":"Filters the table and tiles; Clear resets both","status":"working","evidence":"bundle strings: Search referrer name..., Filter by month, All Months, Clear, Filter, Calendar"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Commissions table: Referrer, Referrals, Commission %, Total, Paid, Pending, Status, Action","how":"Status badge Paid / Pending / Not Paid; 'Mark Paid' only while pending; 'View' (eye) always","status":"working","evidence":"bundle strings: Referrer, Referrals, Commission %, Total, Paid, Pending, Status, Action, pending, Mark Paid, View, Details"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Empty state 'No commissions found'","how":"Shown when filters match nothing","status":"working","evidence":"bundle string: No commissions found"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"'View' → dialog \"<Name>'s Referrals · N referred user(s)\": table User, Joined (dd MMM yyyy), Plan, Amount, Commission, Status Paid/Not Paid + 'Total: ₹ · Paid: ₹ · Pending: ₹', Close","how":"Per-referral rows generated deterministically from CG.mock.users and stored on the commission record (CG.mock.commissions[i].details)","status":"working","evidence":"bundle strings: 's Referrals, referred user, Joined, Commission, dd MMM yyyy, Not Paid, Total:, Paid: ₹, Pending: ₹, Close"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"'Mark Paid' → dialog 'Mark Payment — <Name> · Total: ₹x': Payment Status radio '✓ Paid' / '✗ Not Paid', 'Proof Link per Referral' inputs, 'Comment' textarea, Cancel / 'Confirm Paid' | 'Confirm Not Paid' ('Saving...')","how":"Paid marks all pending referrals paid (record → Paid, pending 0); Not Paid requires a comment ('Reason for not paying (required)') and marks the record Not Paid; proof URLs validated and stored per referral","status":"working","evidence":"bundle strings: Mark Payment —, · Total: ₹, Payment Status, ✓ Paid, ✗ Not Paid, not_paid, Proof Link per Referral, https://... (payment screenshot / receipt URL), Comment, Optional note..., Reason for not paying (required), proof-link, Saving..., Confirm Paid, Confirm Not Paid"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"'Bulk pay' button (all pending commissions)","how":"Confirm dialog with the total pending amount, then marks every pending record and referral as paid","status":"inferred","evidence":"/admin/commissions/bulk-pay endpoint exists in the bundle; no UI strings observed"},
-  {"route":"/admin/banners","screen":"Banner Master","feature":"Page title + subtitle, '+ New Banner' button","how":"'Banner Master' / 'Manage promotional banners and popups'; opens 'New Banner' dialog","status":"working","evidence":"bundle strings: Banner Master, Manage promotional banners and popups, New Banner"},
-  {"route":"/admin/banners","screen":"Banner Master","feature":"Card 'All Banners (N)' table: Image (thumbnail), Title (+ description, link), Type (popup), Frequency, Schedule, Active, Actions","how":"Thumbnail renders the uploaded data-URL or a gradient; schedule shows 'Showing now' / 'Scheduled / ended' / 'Hidden'","status":"working","evidence":"bundle strings: All Banners (, Image, Title, Type, Frequency, Active, Actions, once_per_day"},
-  {"route":"/admin/banners","screen":"Banner Master","feature":"Active switch per banner","how":"Toggles isActive, toast 'Updated'","status":"working","evidence":"bundle strings: Active, Updated, Failed to update status"},
-  {"route":"/admin/banners","screen":"Banner Master","feature":"Edit (pencil) → 'Edit Banner' dialog; submit 'Save Changes'","how":"Pre-fills fields; image hint '(leave empty to keep current)'","status":"working","evidence":"bundle strings: Pencil, Edit Banner, Save Changes, (leave empty to keep current)"},
-  {"route":"/admin/banners","screen":"Banner Master","feature":"Delete (trash) → confirm 'Delete banner? · This permanently removes the banner. This action cannot be undone.' → toast 'Deleted'","how":"Destructive confirm; removes from CG.mock.banners","status":"working","evidence":"bundle strings: Trash2, Delete banner?, This permanently removes the banner. This action cannot be undone., Delete, Deleted, Failed to delete"},
-  {"route":"/admin/banners","screen":"Banner Master","feature":"Empty state 'No Banners · Create your first banner · + Create Banner'","how":"Shown when the list is empty","status":"working","evidence":"bundle strings: No Banners, Create your first banner, Create Banner"},
-  {"route":"/admin/banners","screen":"Banner Master","feature":"Dialog fields: Title (Welcome Offer), Description (Get 20% off your first plan), Link URL (https://coingreek.com/offers), 'Starts At (optional)' / 'Ends At (optional)' datetime-local, Frequency select (once_per_day / every_time / once_per_session)","how":"Ids banner-title, banner-description, banner-link, banner-starts, banner-ends; link must be http(s); end must be after start","status":"working","evidence":"bundle strings: banner-title, Welcome Offer, banner-description, Get 20% off your first plan, banner-link, Link URL, https://coingreek.com/offers, banner-starts, Starts At, (optional), datetime-local, banner-ends, Ends At, once_per_day"},
-  {"route":"/admin/banners","screen":"Banner Master","feature":"'Image' file input (accept image/*, 'Maximum size 5 MB') with Preview","how":"FileReader renders the chosen file; non-images → 'Invalid image · Only image files are allowed'; > 5 MB → 'Invalid image · Image must be 5 MB or smaller'","status":"working","evidence":"bundle strings: banner-image, Image, image/*, Maximum size, Preview, Invalid image"},
-  {"route":"/admin/banners","screen":"Banner Master","feature":"'Use gradient' fallback (mock only)","how":"Cycles through generated gradients so a banner can be created without uploading a file","status":"inferred","evidence":"Clone convenience — the original requires an uploaded image"},
-  {"route":"/admin/banners","screen":"Banner Master","feature":"Active switch, footer Cancel / 'Create Banner' | 'Save Changes'","how":"Standard save pipeline; new banners are inserted at the top","status":"working","evidence":"bundle strings: banner-active, Cancel, Create Banner, Save Changes"},
-  {"route":"/admin/banners","screen":"Banner Master","feature":"Validation 'Validation · Title is required' and 'Validation · Image is required' (create only); toasts Created / Updated / Failed to save","how":"Destructive toasts; image check skipped when editing","status":"working","evidence":"bundle strings: Validation, Title is required, Image is required, Created, Updated, Failed to save"},
-  {"route":"/admin/banners","screen":"Banner Master","feature":"Error state \"Couldn't load banners · Retry\"","how":"Not reproduced — the mock has no network layer","status":"inferred","evidence":"bundle strings: Couldn't load banners, Retry, Failed to load banners"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"Page title 'Promotional Emails' with tabs Compose / History","how":"Tabs switch panels; sending a campaign switches to History automatically","status":"working","evidence":"bundle strings: Promotional Emails, Compose, History, compose, history"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"'Recipients' card with 'N selected' badge","how":"Badge tracks the selection set","status":"working","evidence":"bundle strings: Recipients, selected, secondary"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"Recipient search 'Search users by name or email'","how":"Filters the checkbox list live","status":"working","evidence":"bundle strings: Search users by name or email, aria-label"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"'Segment' select: All users / Paid users / Free users / Expired","how":"Filters CG.mock.users by status/plan","status":"working","evidence":"bundle strings: Segment, All users"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"'Select all (N)' / 'Clear' buttons","how":"Select all adds every visible user; Clear empties the selection","status":"working","evidence":"bundle strings: Select all (, Clear"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"Recipient checkbox list with status badges; 'No users match the search.'","how":"Toggling a checkbox updates the selection, badge and preview","status":"working","evidence":"bundle string: No users match the search."},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"'Subject' (placeholder 'Your report is ready') and 'Message' textarea","how":"Ids promo-subject / promo-message; both required to enable Send","status":"working","evidence":"bundle strings: promo-subject, Subject, Your report is ready, promo-message, Message, subject, message"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"'Insert:' placeholder chips {{name}} {{email}} {{plan}} {{expiry}} ('into the last-focused field')","how":"Inserts at the caret of whichever field was focused last (defaults to Message)","status":"working","evidence":"bundle strings: Insert:, into the last-focused field, button"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"'Preview for <first selected user>' card","how":"Renders subject and message with placeholders filled from the first selected user; highlights raw placeholders when nobody is selected","status":"working","evidence":"bundle string: Preview for"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"'Send Email' → confirm 'Send to N user(s)? · N selected user(s). Placeholders are filled per recipient.' Cancel / Confirm","how":"Confirm dialog; button disabled until recipients, subject and message are set","status":"working","evidence":"bundle strings: Send Email, Send to, user(s)?, selected user(s). Placeholders are filled per recipient., Cancel, Confirm, Send"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"Sending: 'Sending...' state, toast 'Emails sent', campaign added to CG.mock.campaigns, compose form reset, switch to History","how":"Simulated delivery with a small failure rate on large sends; 'Send failed · Please try again.' path guarded","status":"working","evidence":"bundle strings: Emails sent, Send failed, Please try again."},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"History table: Subject, Sent at, Recipients, Delivered, Failed, Sent by (click a row for details)","how":"Rendered from CG.mock.campaigns, newest first; rows are keyboard-accessible","status":"working","evidence":"bundle strings: Sent at, Recipients, Delivered, Failed, Sent by"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"History empty state 'No campaigns sent yet.'","how":"Shown when CG.mock.campaigns is empty","status":"working","evidence":"bundle string: No campaigns sent yet."},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"Campaign detail: '← Back to campaigns', subject, 'Sent <date> · By <name>', tiles Recipients / Delivered / Failed / Success %","how":"Per-campaign view inside the History tab","status":"working","evidence":"bundle strings: Back to campaigns, Recipients, Delivered, Failed, Success, Sent, By"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"Campaign recipients table: Name, Email, Status, Sent at, Error; 'No recipients recorded.'; pagination 'Page x of y · ← Prev · Next →' (10 per page)","how":"Recipient rows for seeded campaigns are generated deterministically from CG.mock.users; failed rows carry an SMTP-style error","status":"working","evidence":"bundle strings: Name, Email, Status, Sent at, Error, No recipients recorded., Page, of, Prev, Next"},
-  {"route":"/admin/users","screen":"User Management","feature":"Page title 'User Management' with 'N users' subtitle and search 'Search by name or email'","how":"Count from CG.mock.users; search filters name/email and shows the match count","status":"working","evidence":"bundle strings: User Management, users, Search by name or email, Users"},
-  {"route":"/admin/users","screen":"User Management","feature":"Table: Name, Email, Plan, Status, Subscribed, Ends, Joined, Referral code (mono), Commission %, Referrals","how":"10 rows per page; status badge per user state, 'deactivated' note for disabled accounts","status":"working","evidence":"bundle strings: Name, Email, Plan, Status, Subscribed, Ends, Joined, Referral code, Commission %, Referrals"},
-  {"route":"/admin/users","screen":"User Management","feature":"Empty state 'No users found.'","how":"Shown when the search matches nothing","status":"working","evidence":"bundle string: No users found."},
-  {"route":"/admin/users","screen":"User Management","feature":"Pagination 'Page x of y · N users · ← Prev · Next →'","how":"Chevron buttons, disabled at the ends","status":"working","evidence":"bundle strings: Page, of, Prev, Next"},
-  {"route":"/admin/users","screen":"User Management","feature":"Row click → user detail drawer","how":"Opens a right-hand drawer (see the drawer features below) instead of a dialog; Enter on a focused row does the same; Esc, the scrim or ✕ closes it","status":"inferred","evidence":"admin lot-size-settings endpoint exists; the bundle's user table has no detail strings"},
-  {"route":"/admin","screen":"Admin (index)","feature":"Palette commands 'Admin → …'","how":"Seven commands (Users, Plans, Menu Pricing, Coupons, User Subscriptions, Banners, Emails) registered with CG.palette.register when the chrome exposes it","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin","screen":"Admin (index)","feature":"Sticky filter row on every page","how":"Search + selects + the tools cluster (row count, Columns ▾, Copy CSV) stick under the 50px header while the table scrolls","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin","screen":"Admin (index)","feature":"Column visibility menu ('Columns ▾')","how":"Checkbox menu per table (menu stays open while toggling); at least one column must stay; Reset to default; choices persisted in CG.state.adminCols[page] via CG.saveState()","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin","screen":"Admin (index)","feature":"Sortable column headers","how":"Sortable columns show a ▲/▼ indicator; click toggles direction; numeric columns default to descending","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin","screen":"Admin (index)","feature":"Bulk selection + floating action bar","how":"Header checkbox selects every filtered row, row checkboxes toggle one; a floating bar at the bottom shows the count, per-page actions and Clear; selected rows are tinted","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin","screen":"Admin (index)","feature":"Copy CSV of the current view","how":"Copies the filtered + sorted rows with only the visible (non-action) columns as CSV and toasts rows × columns","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin","screen":"Admin (index)","feature":"Improved empty states","how":"Icon + one-line hint + primary action (Create … / Invite user / Compose) when there is no data, and a Clear filters action when filters hide everything","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin","screen":"Admin (index)","feature":"Row density","how":"All admin tables switch between 36px and 28px rows on CG.emit('density', …)","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/users","screen":"User Management","feature":"Plan + status filters","how":"Plan select (from CG.mock.plans) and status select (Active / Expired / Cancelled / Free / Deactivated) combine with the search","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/users","screen":"User Management","feature":"Bulk actions: Activate / Deactivate / Set plan / Export CSV","how":"Activate and Deactivate flip activated for the selection; Set plan opens a menu of plans and moves the users (yearly, dates recomputed); Export CSV copies only the selected rows","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/users","screen":"User Management","feature":"User detail drawer","how":"Slides in from the right (560px) with avatar initials, name, plan/status/admin/deactivated pills, email · mobile · joined, and tabs Profile / Subscription / Referrals / Limits / Lot sizes","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/users","screen":"User Management","feature":"'Impersonate (mock)' button","how":"In the drawer header; toasts that you would now see the app as this user","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/users","screen":"User Management","feature":"Drawer · Profile tab","how":"Key/value grid (name, email, mobile, role, joined, last login, referral code, amount paid, account, id) with Copy email and Activate/Deactivate account buttons","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/users","screen":"User Management","feature":"Drawer · Subscription tab","how":"Plan, interval, status, subscribed, ends, validity, amount paid, days left plus a Change plan form (plan + interval → Set plan) that updates the user and the table","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/users","screen":"User Management","feature":"Drawer · Referrals tab","how":"Referral code, commission %, count and earned, then the referred users table from the commission records or an empty state; link to Commissions","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/users","screen":"User Management","feature":"Drawer · Limits tab","how":"Paper / live trading limit form with the plan default in the hint; Save Limits toasts","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/users","screen":"User Management","feature":"Drawer · Lot sizes tab","how":"BTC / ETH / XAUT lot size form (validates > 0); saving the demo user also updates CG.state.lotSizes","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/users","screen":"User Management","feature":"Invite user dialog (mock)","how":"Header primary action: name, email (validated, must be unique) and plan; creates the user in CG.mock.users and toasts Invitation sent","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/users","screen":"User Management","feature":"Hideable extra columns","how":"Mobile and Last login are available in the Columns menu but hidden by default","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Search + status filter","how":"Filters plans by name/description and Active/Inactive","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Bulk Activate / Deactivate","how":"Selected plans are toggled and plans:changed is emitted","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/subscriptions","screen":"Subscription Plans","feature":"Limits and Features columns","how":"Yearly paper/live limits column, plus a hideable Features column (features · menu items count)","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/menu-pricing","screen":"Menu Pricing Master","feature":"Search, category and status filters","how":"Category options are built from the data; all three combine","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/menu-pricing","screen":"Menu Pricing Master","feature":"Bulk Activate / Deactivate","how":"Toggles the selected menu items","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/coupons","screen":"Coupon Code Master","feature":"Search, type and status filters","how":"Code/description search, Public/Community type, Active / Inactive / Expired status","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/coupons","screen":"Coupon Code Master","feature":"Bulk Activate / Deactivate / Delete","how":"Delete asks for confirmation listing the codes, then removes them and emits coupons:changed","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Users tab bulk Activate / Deactivate","how":"Flips the account flag for the selected users; the Account cell is now a clickable status pill","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Commissions · Paid vs pending by month chart","how":"Grouped SVG bars per commission month: paid solid green, pending hatched; ₹ axis, tooltips, legend and a still-pending readout; tiles above, table below","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Commissions bulk 'Mark paid'","how":"Select referrers → Mark paid confirms the pending amount and settles them; Bulk pay (header primary) still settles everyone","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/user-subscriptions","screen":"User Subscriptions","feature":"Tabs restyled + header primary","how":"Users / Commissions as underline tabs in the title row; Bulk pay is the amber header action on the Commissions tab","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/banners","screen":"Banner Master","feature":"'Preview as user' popup","how":"Monitor icon per row (and a Preview as user button inside the form using the current values) opens the popup exactly as a logged-in user sees it: image, title, description, Don’t show again, Dismiss and Learn more","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/banners","screen":"Banner Master","feature":"Status + frequency filters","how":"Showing now / Active / Inactive and the three frequency rules combine with search","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/banners","screen":"Banner Master","feature":"Bulk Activate / Deactivate","how":"Toggles isActive on the selection","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"Template picker","how":"Weekly report / Plan expiring / New feature chips fill subject and message (placeholders included) and toast","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"'Test send to me' button","how":"Validates subject/message, shows a sending state and toasts a test email to the admin address with placeholders filled from the admin profile","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"History sticky search + columns + CSV","how":"Campaign history is a grid with subject/segment search, hideable Segment column, sortable headers and Copy CSV; no bulk actions","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"Recipients Copy CSV","how":"Campaign detail copies the per-recipient delivery rows as CSV","status":"working","new":true,"evidence":"v2 improvement"},
-  {"route":"/admin/emails","screen":"Promotional Emails","feature":"Send Email as header primary","how":"The amber Send Email button lives in the title row next to the Compose / History tabs and hides on History","status":"working","new":true,"evidence":"v2 improvement"}
+  {
+    "route": "/admin",
+    "screen": "Admin (index)",
+    "feature": "Redirect /admin → /admin/users",
+    "how": "Section with data-redirect; router replaces the hash",
+    "status": "working",
+    "evidence": "route /admin has no own strings in the bundle; /admin/users is the first admin page · Phase 4 item 1 (08 Sep 2026, ADR-030): /admin redirects to /admin/users; e2e admin.spec.ts"
+  },
+  {
+    "route": "/admin",
+    "screen": "Admin (index)",
+    "feature": "Admin-only guard (data-auth=admin)",
+    "how": "Non-admin / logged-out users are redirected by the router (CG.auth.isAdmin)",
+    "status": "working",
+    "evidence": "bundle string: Admin access required · Phase 4 item 1 (08 Sep 2026, ADR-030): AdminShell denies non-admins (data-state denied); unit admin.test.tsx, e2e admin.spec.ts"
+  },
+  {
+    "route": "/admin",
+    "screen": "Admin (index)",
+    "feature": "Admin navigation rail (CG.chrome['admin-nav'])",
+    "how": "On ≥1100px a sticky left rail with an ADMIN micro label, icon + label links (Users · Subscription Plans · Menu Pricing · Coupon Codes · User Subscriptions · Banners · Promotional Emails), live counts per page, amber inset rule on the active item and a footer with the admin email; below 1100px it collapses into a horizontal top bar",
+    "status": "working",
+    "evidence": "bundle strings: Admin pages, aria-current, Navigate between pages · Phase 4 item 1 (08 Sep 2026, ADR-030): sticky rail with live counts and admin email, horizontal tabs below 1024 px (admin-rail)"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Page title + subtitle",
+    "how": "Slim title row: 'Subscription Plans' / 'Manage subscription tiers and pricing' left, the single amber primary action right, hairline underneath",
+    "status": "static",
+    "evidence": "bundle strings: Subscription Plans, Manage subscription tiers and pricing · Phase 4 item 1 (08 Sep 2026, ADR-030): PlansAdmin header"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "'+ New Plan' button",
+    "how": "Opens the 'Create New Plan' dialog",
+    "status": "working",
+    "evidence": "bundle strings: New Plan, Create New Plan · Phase 4 item 1 (08 Sep 2026, ADR-030): + New Plan (plan-new)"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Card 'All Plans (N)' table: Name, Monthly, Quarterly, Yearly, Status, Actions",
+    "how": "Rendered from CG.mock.plans; price cells show discount price with struck-through list price and % off, plus paper/live limits",
+    "status": "working",
+    "evidence": "bundle strings: All Plans (, Name, Monthly, Quarterly, Yearly, Status, Actions · Phase 4 item 1 (08 Sep 2026, ADR-030): plans table (plans-table); unit admin.test.tsx, e2e"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Status switch (Active / Inactive) per plan",
+    "how": "Toggles plan.isActive in CG.mock, toast 'Updated'",
+    "status": "working",
+    "evidence": "bundle strings: Status, Active, Updated · Phase 4 item 1 (08 Sep 2026, ADR-030): status switch per plan (plan-toggle)"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Edit (pencil) action",
+    "how": "Opens 'Edit Plan' dialog pre-filled; submit label 'Update'",
+    "status": "working",
+    "evidence": "bundle strings: Pencil, Edit Plan, Update · Phase 4 item 1 (08 Sep 2026, ADR-030): edit action (plan-edit)"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Empty state 'No Plans Yet · Create your first subscription plan · + Create Plan'",
+    "how": "Shown when CG.mock.plans is empty; button opens the create dialog",
+    "status": "working",
+    "evidence": "bundle strings: No Plans Yet, Create your first subscription plan, Create Plan · Phase 4 item 1 (08 Sep 2026, ADR-030): empty state No Plans Yet"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Dialog field 'Plan Name *' (placeholder e.g. Basic Plan)",
+    "how": "Required text input",
+    "status": "working",
+    "evidence": "bundle strings: Plan Name *, e.g. Basic Plan · Phase 4 item 1 (08 Sep 2026, ADR-030): Plan Name * field"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Dialog field 'Description'",
+    "how": "Textarea saved to plan.description",
+    "status": "working",
+    "evidence": "bundle string: Description · Phase 4 item 1 (08 Sep 2026, ADR-030): Description field"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Dialog 'Features' chip input ('Add a feature' + Enter / Add button, removable chips)",
+    "how": "Enter or the secondary Add button appends a chip; × removes it; saved as plan.features[]",
+    "status": "working",
+    "evidence": "bundle strings: Features, Add a feature, Enter, button, secondary · Phase 4 item 1 (08 Sep 2026, ADR-030): features chip input with Enter / Add and removable chips"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Dialog 'Billing Intervals': Monthly / Quarterly / Yearly blocks with Price and Discount Price (₹)",
+    "how": "Three input groups saved to plan.monthly/quarterly/yearly {price, discountPrice}",
+    "status": "working",
+    "evidence": "bundle strings: Billing Intervals, Monthly, Quarterly, Yearly · Phase 4 item 1 (08 Sep 2026, ADR-030): billing intervals with price and discount price per interval"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Dialog 'Feature Limits' per interval: Paper Trading Limit (Per Month), Live Trading Limit (Per Month)",
+    "how": "Saved to plan.<interval>.featureLimits {paper_trading, live_trading}; 0 = unlimited",
+    "status": "working",
+    "evidence": "bundle strings: Feature Limits, (Per Month), Paper Trading Limit, Live Trading Limit · Phase 4 item 1 (08 Sep 2026, ADR-030): feature limits per interval, empty = not included, 0 = unlimited"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Dialog 'Menu Items' multi-select checkboxes",
+    "how": "Checklist built from CG.mock.menuItems with category and price; saved to plan.menuItems[]; counter 'x of y menu items linked'",
+    "status": "working",
+    "evidence": "bundle string: Menu Items · Phase 4 item 1 (08 Sep 2026, ADR-030): menu items checklist with 'x of y linked'"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Dialog 'Active · Plan visible to users' switch",
+    "how": "Sets plan.isActive",
+    "status": "working",
+    "evidence": "bundle strings: Active, Plan visible to users · Phase 4 item 1 (08 Sep 2026, ADR-030): Active switch"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Dialog footer Cancel / Create | Update",
+    "how": "Cancel closes; submit validates then mutates CG.mock.plans and re-renders the table",
+    "status": "working",
+    "evidence": "bundle strings: Cancel, Create, Update · Phase 4 item 1 (08 Sep 2026, ADR-030): Cancel / Create | Update footer"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Validation toast 'Validation · Plan name is required'",
+    "how": "Destructive toast when the name is empty; focus returns to the field",
+    "status": "working",
+    "evidence": "bundle strings: Validation, Plan name is required, destructive · Phase 4 item 1 (08 Sep 2026, ADR-030): validation toast 'Plan name is required'"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Toasts 'Created' / 'Updated' / 'Failed to save'",
+    "how": "Success toasts after save; 'Failed to save' is raised if the in-memory mutation throws",
+    "status": "working",
+    "evidence": "bundle strings: Created, Updated, Failed to save · Phase 4 item 1 (08 Sep 2026, ADR-030): Created / Updated / Failed to save toasts"
+  },
+  {
+    "route": "/admin/menu-pricing",
+    "screen": "Menu Pricing Master",
+    "feature": "Page title + subtitle",
+    "how": "'Menu Pricing Master' / 'Manage menu items linked to subscription plans'",
+    "status": "static",
+    "evidence": "bundle strings: Menu Pricing Master, Manage menu items linked to subscription plans · Phase 4 item 1 (08 Sep 2026, ADR-030): PlansAdmin header"
+  },
+  {
+    "route": "/admin/menu-pricing",
+    "screen": "Menu Pricing Master",
+    "feature": "'+ New Item' button",
+    "how": "Opens 'New Menu Item' dialog",
+    "status": "working",
+    "evidence": "bundle strings: New Item, New Menu Item · Phase 4 item 1 (08 Sep 2026, ADR-030): + New Item"
+  },
+  {
+    "route": "/admin/menu-pricing",
+    "screen": "Menu Pricing Master",
+    "feature": "Card 'All Menu Items (N)' table: Display Name, Category, Price (₹), Status, Actions (+ linked plans count)",
+    "how": "Rendered from CG.mock.menuItems; 'Linked plans' column counts plans referencing the item",
+    "status": "working",
+    "evidence": "bundle strings: All Menu Items (, Display Name, Category, Price, Status, Actions · Phase 4 item 1 (08 Sep 2026, ADR-030): table with linked plans count (menu-linked); unit admin.test.tsx"
+  },
+  {
+    "route": "/admin/menu-pricing",
+    "screen": "Menu Pricing Master",
+    "feature": "Status switch per item",
+    "how": "Toggles isActive, toast 'Updated' (the bundle's 'Failed to update status' path is never hit in the mock)",
+    "status": "working",
+    "evidence": "bundle strings: Status, Updated, Failed to update status · Phase 4 item 1 (08 Sep 2026, ADR-030): status switch per item"
+  },
+  {
+    "route": "/admin/menu-pricing",
+    "screen": "Menu Pricing Master",
+    "feature": "Edit (pencil) action → 'Edit Menu Item' dialog",
+    "how": "Pre-fills the form; renaming an item also renames it inside every plan's menuItems list",
+    "status": "working",
+    "evidence": "bundle strings: Pencil, Edit Menu Item, Update · Phase 4 item 1 (08 Sep 2026, ADR-030): edit dialog"
+  },
+  {
+    "route": "/admin/menu-pricing",
+    "screen": "Menu Pricing Master",
+    "feature": "Empty state 'No Menu Items · Add menu items that can be linked to plans · + Add Item'",
+    "how": "Shown when the list is empty",
+    "status": "working",
+    "evidence": "bundle strings: No Menu Items, Add menu items that can be linked to plans, Add Item · Phase 4 item 1 (08 Sep 2026, ADR-030): empty state"
+  },
+  {
+    "route": "/admin/menu-pricing",
+    "screen": "Menu Pricing Master",
+    "feature": "Dialog fields: 'Display Name *' (e.g. Reports Export), Category (e.g. Trading, Analytics, Data), 'Price (₹)' number, Active switch",
+    "how": "Saved to CG.mock.menuItems",
+    "status": "working",
+    "evidence": "bundle strings: Display Name *, e.g. Reports Export, e.g. Trading, Analytics, Data, Price (₹), number, Active · Phase 4 item 1 (08 Sep 2026, ADR-030): Display Name / Category / Price fields"
+  },
+  {
+    "route": "/admin/menu-pricing",
+    "screen": "Menu Pricing Master",
+    "feature": "Validation 'Validation · Display Name is required'",
+    "how": "Destructive toast on empty name",
+    "status": "working",
+    "evidence": "bundle strings: Validation, Display Name is required · Phase 4 item 1 (08 Sep 2026, ADR-030): validation 'Display Name is required'"
+  },
+  {
+    "route": "/admin/menu-pricing",
+    "screen": "Menu Pricing Master",
+    "feature": "Toasts 'Created' / 'Updated' / 'Failed to save'; footer Cancel / Create | Update",
+    "how": "Same save pipeline as plans",
+    "status": "working",
+    "evidence": "bundle strings: Created, Updated, Failed to save, Cancel, Create, Update · Phase 4 item 1 (08 Sep 2026, ADR-030): toasts and footer"
+  },
+  {
+    "route": "/admin/coupons",
+    "screen": "Coupon Code Master",
+    "feature": "Page title + subtitle, '+ New Coupon' button",
+    "how": "'Coupon Code Master' / 'Manage discount coupons'; button opens 'New Coupon' dialog",
+    "status": "working",
+    "evidence": "bundle strings: Coupon Code Master, Manage discount coupons, New Coupon"
+  },
+  {
+    "route": "/admin/coupons",
+    "screen": "Coupon Code Master",
+    "feature": "Card 'All Coupons (N)' table: Code, Discount, Type, Validity, Plans, Uses, Status, Actions",
+    "how": "Code in mono with description; Discount '20%' or '₹500' (+ min order); Type badge Public / Community (+ assigned users count); Validity 'starts → expires' with red 'Expired' when past; Plans as badges (interval list in tooltip); Uses 'used / max' + per-user limit",
+    "status": "working",
+    "evidence": "bundle strings: All Coupons (, Code, Discount, Type, Validity, Plans, Uses, Status, Actions, percent, secondary, Plan"
+  },
+  {
+    "route": "/admin/coupons",
+    "screen": "Coupon Code Master",
+    "feature": "Status switch per coupon",
+    "how": "Toggles isActive, toast 'Updated'",
+    "status": "working",
+    "evidence": "bundle strings: Status, Updated"
+  },
+  {
+    "route": "/admin/coupons",
+    "screen": "Coupon Code Master",
+    "feature": "Edit (pencil) → 'Edit Coupon' dialog",
+    "how": "Pre-fills every field incl. assigned users and plan×interval grid; submit 'Update'",
+    "status": "working",
+    "evidence": "bundle strings: Pencil, Edit Coupon, Update"
+  },
+  {
+    "route": "/admin/coupons",
+    "screen": "Coupon Code Master",
+    "feature": "Delete (trash) → confirm 'Delete Coupon? · This action cannot be undone. The coupon will be permanently deleted.' → toast 'Deleted'",
+    "how": "CG.modal.confirm (destructive); removes the coupon from CG.mock.coupons",
+    "status": "working",
+    "evidence": "bundle strings: Trash2, Delete Coupon?, This action cannot be undone. The coupon will be permanently deleted., Delete, Deleted"
+  },
+  {
+    "route": "/admin/coupons",
+    "screen": "Coupon Code Master",
+    "feature": "Empty state 'No Coupons · Create your first coupon code · + Create Coupon'",
+    "how": "Shown when the list is empty",
+    "status": "working",
+    "evidence": "bundle strings: No Coupons, Create your first coupon code, Create Coupon"
+  },
+  {
+    "route": "/admin/coupons",
+    "screen": "Coupon Code Master",
+    "feature": "Dialog 'Code *' (placeholder BASIC20, forced uppercase)",
+    "how": "Input filter uppercases and strips invalid characters; duplicate codes rejected",
+    "status": "working",
+    "evidence": "bundle strings: Code *, BASIC20"
+  },
+  {
+    "route": "/admin/coupons",
+    "screen": "Coupon Code Master",
+    "feature": "Dialog 'Coupon Type': Public (All listed) / Community (Assigned to specific users & their referrals)",
+    "how": "Select mapped to scope public_all_listed / private_community_listed",
+    "status": "working",
+    "evidence": "bundle strings: Coupon Type, public_all_listed, private_community_listed"
+  },
+  {
+    "route": "/admin/coupons",
+    "screen": "Coupon Code Master",
+    "feature": "'Assign to Users' block (Community only): 'Search users...', Select All / Deselect All / '↔ Invert' (title 'Invert selection'), checkbox list, 'x of y users selected', 'No users found'",
+    "how": "Appears when type = Community; list from CG.mock.users; bulk buttons act on the filtered set; saved to coupon.assignedUsers",
+    "status": "working",
+    "evidence": "bundle strings: Assign to Users, Search users..., Select All, Deselect All, Invert selection, ↔ Invert, of, users selected, No users found"
+  },
+  {
+    "route": "/admin/coupons",
+    "screen": "Coupon Code Master",
+    "feature": "Dialog fields Description, 'Discount Type' Percent/Fixed, 'Discount Value', 'Min Order (₹)', 'Max Uses', 'Per User Limit', 'Starts At', 'Expires At'",
+    "how": "Number/date inputs saved on the coupon; percent > 100 rejected",
+    "status": "working",
+    "evidence": "bundle strings: Description, Discount Type, Percent, Fixed, Discount Value, number, Min Order (₹), Max Uses, Per User Limit, Starts At, Expires At"
+  },
+  {
+    "route": "/admin/coupons",
+    "screen": "Coupon Code Master",
+    "feature": "'Applicable Plans & Intervals' grid (plan × Monthly/Quarterly/Yearly checkboxes; 'No plans available')",
+    "how": "Built from CG.mock.plans; saved as coupon.planIntervals plus flat plans[]/intervals[]",
+    "status": "working",
+    "evidence": "bundle strings: Applicable Plans & Intervals, No plans available"
+  },
+  {
+    "route": "/admin/coupons",
+    "screen": "Coupon Code Master",
+    "feature": "Active switch, footer Cancel / Create | Update",
+    "how": "Standard save pipeline",
+    "status": "working",
+    "evidence": "bundle strings: Active, Cancel, Create, Update"
+  },
+  {
+    "route": "/admin/coupons",
+    "screen": "Coupon Code Master",
+    "feature": "Validation 'Validation · Code is required'; toasts Created / Updated / Failed to save",
+    "how": "Destructive toast on empty code",
+    "status": "working",
+    "evidence": "bundle strings: Validation, Code is required, Created, Updated, Failed to save"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Page title + subtitle, tabs 'Users' / 'Commissions'",
+    "how": "'User Subscriptions' / 'Manage users and commissions'; tabs switch panels (also via ?tab= query)",
+    "status": "working",
+    "evidence": "bundle strings: User Subscriptions, Manage users and commissions, Users, Commissions · Phase 4 item 1 (08 Sep 2026, ADR-030): User Subscriptions tabs Users / Commissions (commissions placeholder until item 3)"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Users tab header 'Users (N)' with search 'Search by name or email...' and Status select (All Statuses / Active / Expired / Cancelled / Free)",
+    "how": "Filters CG.mock.users live; count reflects the filtered list",
+    "status": "working",
+    "evidence": "bundle strings: Users (, Search by name or email..., Status, All Statuses, Active, Expired, Cancelled, Free · Phase 4 item 1 (08 Sep 2026, ADR-030): Users (N) header with search and status select"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Users table columns: User (name, email), Plan (badge; 'Free Plan'), Expiry, Validity, Referrals, Commission %, Account, Limits",
+    "how": "10 rows per page from the filtered list",
+    "status": "working",
+    "evidence": "bundle strings: User, Plan, Expiry, Validity, Referrals, Commission %, Account, Limits, Free Plan · Phase 4 item 1 (08 Sep 2026, ADR-030): users table columns (users-table); unit admin.test.tsx, e2e admin.spec.ts"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Expiry cell: date + 'N d left', '(Soon)' when under 7 days, 'Expired N d ago' when past",
+    "how": "Computed against the mock clock CG.NOW",
+    "status": "working",
+    "evidence": "bundle strings: d left, (Soon) · Phase 4 item 1 (08 Sep 2026, ADR-030): expiry cell with d left / (Soon) / Expired N d ago"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Inline edit of Validity (days), Referrals and Commission % ('Click to edit')",
+    "how": "Click → number input; Enter saves (toast 'Updated', validity also recomputes endsAt), Escape / blur cancels",
+    "status": "working",
+    "evidence": "bundle strings: validity, referrals, commission, number, Enter, Escape, Click to edit, Updated, Failed to update · Phase 4 item 1 (08 Sep 2026, ADR-030): inline validity and commission edits, Enter saves, Escape / blur cancels (InlineNumber)"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Account toggle button Active / Deactive",
+    "how": "Flips user.activated, toast 'Updated'",
+    "status": "working",
+    "evidence": "bundle strings: Account, default, Deactive · Phase 4 item 1 (08 Sep 2026, ADR-030): account Active / Deactive toggle; a deactivated account is refused by the API"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Limits icon 'Edit feature limits' → dialog 'Feature Limits'",
+    "how": "Paper Trading Limit / Live Trading Limit inputs with 'trades / month' suffix and hint 'Set to 0 for plan default. Higher values override plan limit.'; 'Save Limits' shows 'Saving...' then toast 'Updated'",
+    "status": "working",
+    "evidence": "bundle strings: Edit feature limits, Feature Limits, Paper Trading Limit, trades / month, Set to 0 for plan default. Higher values override plan limit., Live Trading Limit, Saving..., Save Limits, Settings2 · Phase 4 item 1 (08 Sep 2026, ADR-030): Feature Limits dialog with overrides (limits-dialog)"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Per-user 'Lot size settings' icon → dialog with BTC / ETH / XAUT lot sizes",
+    "how": "Saves user.lotSizes (and CG.state.lotSizes for the demo user); validation when a value is not > 0",
+    "status": "inferred",
+    "evidence": "admin lot-size-settings API endpoint exists in the bundle; no UI strings observed · Phase 4 item 1 (08 Sep 2026, ADR-030): per-user lot size dialog (lot-sizes-dialog)"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Pagination 'Page x of y · N users · ← Previous · Next →' (10 per page)",
+    "how": "Buttons disabled at the ends; resets to page 1 on filter change",
+    "status": "working",
+    "evidence": "bundle strings: Page, of, users, ← Previous, Next → · Phase 4 item 1 (08 Sep 2026, ADR-030): pagination 10 per page (users-pager)"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Users empty state 'No users found'",
+    "how": "Shown when search/status filter matches nothing",
+    "status": "working",
+    "evidence": "bundle string: No users found · Phase 4 item 1 (08 Sep 2026, ADR-030): empty state No users found"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Commissions tiles: Total Commission / Paid / Pending (₹)",
+    "how": "Sums over the filtered CG.mock.commissions",
+    "status": "working",
+    "evidence": "bundle strings: Total Commission, Paid, Pending"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Commissions filters: 'Search referrer name...', 'Filter by month' select (All Months + months), 'Clear'",
+    "how": "Filters the table and tiles; Clear resets both",
+    "status": "working",
+    "evidence": "bundle strings: Search referrer name..., Filter by month, All Months, Clear, Filter, Calendar"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Commissions table: Referrer, Referrals, Commission %, Total, Paid, Pending, Status, Action",
+    "how": "Status badge Paid / Pending / Not Paid; 'Mark Paid' only while pending; 'View' (eye) always",
+    "status": "working",
+    "evidence": "bundle strings: Referrer, Referrals, Commission %, Total, Paid, Pending, Status, Action, pending, Mark Paid, View, Details"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Empty state 'No commissions found'",
+    "how": "Shown when filters match nothing",
+    "status": "working",
+    "evidence": "bundle string: No commissions found"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "'View' → dialog \"<Name>'s Referrals · N referred user(s)\": table User, Joined (dd MMM yyyy), Plan, Amount, Commission, Status Paid/Not Paid + 'Total: ₹ · Paid: ₹ · Pending: ₹', Close",
+    "how": "Per-referral rows generated deterministically from CG.mock.users and stored on the commission record (CG.mock.commissions[i].details)",
+    "status": "working",
+    "evidence": "bundle strings: 's Referrals, referred user, Joined, Commission, dd MMM yyyy, Not Paid, Total:, Paid: ₹, Pending: ₹, Close"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "'Mark Paid' → dialog 'Mark Payment — <Name> · Total: ₹x': Payment Status radio '✓ Paid' / '✗ Not Paid', 'Proof Link per Referral' inputs, 'Comment' textarea, Cancel / 'Confirm Paid' | 'Confirm Not Paid' ('Saving...')",
+    "how": "Paid marks all pending referrals paid (record → Paid, pending 0); Not Paid requires a comment ('Reason for not paying (required)') and marks the record Not Paid; proof URLs validated and stored per referral",
+    "status": "working",
+    "evidence": "bundle strings: Mark Payment —, · Total: ₹, Payment Status, ✓ Paid, ✗ Not Paid, not_paid, Proof Link per Referral, https://... (payment screenshot / receipt URL), Comment, Optional note..., Reason for not paying (required), proof-link, Saving..., Confirm Paid, Confirm Not Paid"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "'Bulk pay' button (all pending commissions)",
+    "how": "Confirm dialog with the total pending amount, then marks every pending record and referral as paid",
+    "status": "inferred",
+    "evidence": "/admin/commissions/bulk-pay endpoint exists in the bundle; no UI strings observed"
+  },
+  {
+    "route": "/admin/banners",
+    "screen": "Banner Master",
+    "feature": "Page title + subtitle, '+ New Banner' button",
+    "how": "'Banner Master' / 'Manage promotional banners and popups'; opens 'New Banner' dialog",
+    "status": "working",
+    "evidence": "bundle strings: Banner Master, Manage promotional banners and popups, New Banner"
+  },
+  {
+    "route": "/admin/banners",
+    "screen": "Banner Master",
+    "feature": "Card 'All Banners (N)' table: Image (thumbnail), Title (+ description, link), Type (popup), Frequency, Schedule, Active, Actions",
+    "how": "Thumbnail renders the uploaded data-URL or a gradient; schedule shows 'Showing now' / 'Scheduled / ended' / 'Hidden'",
+    "status": "working",
+    "evidence": "bundle strings: All Banners (, Image, Title, Type, Frequency, Active, Actions, once_per_day"
+  },
+  {
+    "route": "/admin/banners",
+    "screen": "Banner Master",
+    "feature": "Active switch per banner",
+    "how": "Toggles isActive, toast 'Updated'",
+    "status": "working",
+    "evidence": "bundle strings: Active, Updated, Failed to update status"
+  },
+  {
+    "route": "/admin/banners",
+    "screen": "Banner Master",
+    "feature": "Edit (pencil) → 'Edit Banner' dialog; submit 'Save Changes'",
+    "how": "Pre-fills fields; image hint '(leave empty to keep current)'",
+    "status": "working",
+    "evidence": "bundle strings: Pencil, Edit Banner, Save Changes, (leave empty to keep current)"
+  },
+  {
+    "route": "/admin/banners",
+    "screen": "Banner Master",
+    "feature": "Delete (trash) → confirm 'Delete banner? · This permanently removes the banner. This action cannot be undone.' → toast 'Deleted'",
+    "how": "Destructive confirm; removes from CG.mock.banners",
+    "status": "working",
+    "evidence": "bundle strings: Trash2, Delete banner?, This permanently removes the banner. This action cannot be undone., Delete, Deleted, Failed to delete"
+  },
+  {
+    "route": "/admin/banners",
+    "screen": "Banner Master",
+    "feature": "Empty state 'No Banners · Create your first banner · + Create Banner'",
+    "how": "Shown when the list is empty",
+    "status": "working",
+    "evidence": "bundle strings: No Banners, Create your first banner, Create Banner"
+  },
+  {
+    "route": "/admin/banners",
+    "screen": "Banner Master",
+    "feature": "Dialog fields: Title (Welcome Offer), Description (Get 20% off your first plan), Link URL (https://coingreek.com/offers), 'Starts At (optional)' / 'Ends At (optional)' datetime-local, Frequency select (once_per_day / every_time / once_per_session)",
+    "how": "Ids banner-title, banner-description, banner-link, banner-starts, banner-ends; link must be http(s); end must be after start",
+    "status": "working",
+    "evidence": "bundle strings: banner-title, Welcome Offer, banner-description, Get 20% off your first plan, banner-link, Link URL, https://coingreek.com/offers, banner-starts, Starts At, (optional), datetime-local, banner-ends, Ends At, once_per_day"
+  },
+  {
+    "route": "/admin/banners",
+    "screen": "Banner Master",
+    "feature": "'Image' file input (accept image/*, 'Maximum size 5 MB') with Preview",
+    "how": "FileReader renders the chosen file; non-images → 'Invalid image · Only image files are allowed'; > 5 MB → 'Invalid image · Image must be 5 MB or smaller'",
+    "status": "working",
+    "evidence": "bundle strings: banner-image, Image, image/*, Maximum size, Preview, Invalid image"
+  },
+  {
+    "route": "/admin/banners",
+    "screen": "Banner Master",
+    "feature": "'Use gradient' fallback (mock only)",
+    "how": "Cycles through generated gradients so a banner can be created without uploading a file",
+    "status": "inferred",
+    "evidence": "Clone convenience — the original requires an uploaded image"
+  },
+  {
+    "route": "/admin/banners",
+    "screen": "Banner Master",
+    "feature": "Active switch, footer Cancel / 'Create Banner' | 'Save Changes'",
+    "how": "Standard save pipeline; new banners are inserted at the top",
+    "status": "working",
+    "evidence": "bundle strings: banner-active, Cancel, Create Banner, Save Changes"
+  },
+  {
+    "route": "/admin/banners",
+    "screen": "Banner Master",
+    "feature": "Validation 'Validation · Title is required' and 'Validation · Image is required' (create only); toasts Created / Updated / Failed to save",
+    "how": "Destructive toasts; image check skipped when editing",
+    "status": "working",
+    "evidence": "bundle strings: Validation, Title is required, Image is required, Created, Updated, Failed to save"
+  },
+  {
+    "route": "/admin/banners",
+    "screen": "Banner Master",
+    "feature": "Error state \"Couldn't load banners · Retry\"",
+    "how": "Not reproduced — the mock has no network layer",
+    "status": "inferred",
+    "evidence": "bundle strings: Couldn't load banners, Retry, Failed to load banners"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "Page title 'Promotional Emails' with tabs Compose / History",
+    "how": "Tabs switch panels; sending a campaign switches to History automatically",
+    "status": "working",
+    "evidence": "bundle strings: Promotional Emails, Compose, History, compose, history"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "'Recipients' card with 'N selected' badge",
+    "how": "Badge tracks the selection set",
+    "status": "working",
+    "evidence": "bundle strings: Recipients, selected, secondary"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "Recipient search 'Search users by name or email'",
+    "how": "Filters the checkbox list live",
+    "status": "working",
+    "evidence": "bundle strings: Search users by name or email, aria-label"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "'Segment' select: All users / Paid users / Free users / Expired",
+    "how": "Filters CG.mock.users by status/plan",
+    "status": "working",
+    "evidence": "bundle strings: Segment, All users"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "'Select all (N)' / 'Clear' buttons",
+    "how": "Select all adds every visible user; Clear empties the selection",
+    "status": "working",
+    "evidence": "bundle strings: Select all (, Clear"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "Recipient checkbox list with status badges; 'No users match the search.'",
+    "how": "Toggling a checkbox updates the selection, badge and preview",
+    "status": "working",
+    "evidence": "bundle string: No users match the search."
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "'Subject' (placeholder 'Your report is ready') and 'Message' textarea",
+    "how": "Ids promo-subject / promo-message; both required to enable Send",
+    "status": "working",
+    "evidence": "bundle strings: promo-subject, Subject, Your report is ready, promo-message, Message, subject, message"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "'Insert:' placeholder chips {{name}} {{email}} {{plan}} {{expiry}} ('into the last-focused field')",
+    "how": "Inserts at the caret of whichever field was focused last (defaults to Message)",
+    "status": "working",
+    "evidence": "bundle strings: Insert:, into the last-focused field, button"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "'Preview for <first selected user>' card",
+    "how": "Renders subject and message with placeholders filled from the first selected user; highlights raw placeholders when nobody is selected",
+    "status": "working",
+    "evidence": "bundle string: Preview for"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "'Send Email' → confirm 'Send to N user(s)? · N selected user(s). Placeholders are filled per recipient.' Cancel / Confirm",
+    "how": "Confirm dialog; button disabled until recipients, subject and message are set",
+    "status": "working",
+    "evidence": "bundle strings: Send Email, Send to, user(s)?, selected user(s). Placeholders are filled per recipient., Cancel, Confirm, Send"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "Sending: 'Sending...' state, toast 'Emails sent', campaign added to CG.mock.campaigns, compose form reset, switch to History",
+    "how": "Simulated delivery with a small failure rate on large sends; 'Send failed · Please try again.' path guarded",
+    "status": "working",
+    "evidence": "bundle strings: Emails sent, Send failed, Please try again."
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "History table: Subject, Sent at, Recipients, Delivered, Failed, Sent by (click a row for details)",
+    "how": "Rendered from CG.mock.campaigns, newest first; rows are keyboard-accessible",
+    "status": "working",
+    "evidence": "bundle strings: Sent at, Recipients, Delivered, Failed, Sent by"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "History empty state 'No campaigns sent yet.'",
+    "how": "Shown when CG.mock.campaigns is empty",
+    "status": "working",
+    "evidence": "bundle string: No campaigns sent yet."
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "Campaign detail: '← Back to campaigns', subject, 'Sent <date> · By <name>', tiles Recipients / Delivered / Failed / Success %",
+    "how": "Per-campaign view inside the History tab",
+    "status": "working",
+    "evidence": "bundle strings: Back to campaigns, Recipients, Delivered, Failed, Success, Sent, By"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "Campaign recipients table: Name, Email, Status, Sent at, Error; 'No recipients recorded.'; pagination 'Page x of y · ← Prev · Next →' (10 per page)",
+    "how": "Recipient rows for seeded campaigns are generated deterministically from CG.mock.users; failed rows carry an SMTP-style error",
+    "status": "working",
+    "evidence": "bundle strings: Name, Email, Status, Sent at, Error, No recipients recorded., Page, of, Prev, Next"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "Page title 'User Management' with 'N users' subtitle and search 'Search by name or email'",
+    "how": "Count from CG.mock.users; search filters name/email and shows the match count",
+    "status": "working",
+    "evidence": "bundle strings: User Management, users, Search by name or email, Users"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "Table: Name, Email, Plan, Status, Subscribed, Ends, Joined, Referral code (mono), Commission %, Referrals",
+    "how": "10 rows per page; status badge per user state, 'deactivated' note for disabled accounts",
+    "status": "working",
+    "evidence": "bundle strings: Name, Email, Plan, Status, Subscribed, Ends, Joined, Referral code, Commission %, Referrals"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "Empty state 'No users found.'",
+    "how": "Shown when the search matches nothing",
+    "status": "working",
+    "evidence": "bundle string: No users found."
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "Pagination 'Page x of y · N users · ← Prev · Next →'",
+    "how": "Chevron buttons, disabled at the ends",
+    "status": "working",
+    "evidence": "bundle strings: Page, of, Prev, Next"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "Row click → user detail drawer",
+    "how": "Opens a right-hand drawer (see the drawer features below) instead of a dialog; Enter on a focused row does the same; Esc, the scrim or ✕ closes it",
+    "status": "inferred",
+    "evidence": "admin lot-size-settings endpoint exists; the bundle's user table has no detail strings"
+  },
+  {
+    "route": "/admin",
+    "screen": "Admin (index)",
+    "feature": "Palette commands 'Admin → …'",
+    "how": "Seven commands (Users, Plans, Menu Pricing, Coupons, User Subscriptions, Banners, Emails) registered with CG.palette.register when the chrome exposes it",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin",
+    "screen": "Admin (index)",
+    "feature": "Sticky filter row on every page",
+    "how": "Search + selects + the tools cluster (row count, Columns ▾, Copy CSV) stick under the 50px header while the table scrolls",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin",
+    "screen": "Admin (index)",
+    "feature": "Column visibility menu ('Columns ▾')",
+    "how": "Checkbox menu per table (menu stays open while toggling); at least one column must stay; Reset to default; choices persisted in CG.state.adminCols[page] via CG.saveState()",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin",
+    "screen": "Admin (index)",
+    "feature": "Sortable column headers",
+    "how": "Sortable columns show a ▲/▼ indicator; click toggles direction; numeric columns default to descending",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin",
+    "screen": "Admin (index)",
+    "feature": "Bulk selection + floating action bar",
+    "how": "Header checkbox selects every filtered row, row checkboxes toggle one; a floating bar at the bottom shows the count, per-page actions and Clear; selected rows are tinted",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin",
+    "screen": "Admin (index)",
+    "feature": "Copy CSV of the current view",
+    "how": "Copies the filtered + sorted rows with only the visible (non-action) columns as CSV and toasts rows × columns",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin",
+    "screen": "Admin (index)",
+    "feature": "Improved empty states",
+    "how": "Icon + one-line hint + primary action (Create … / Invite user / Compose) when there is no data, and a Clear filters action when filters hide everything",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin",
+    "screen": "Admin (index)",
+    "feature": "Row density",
+    "how": "All admin tables switch between 36px and 28px rows on CG.emit('density', …)",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "Plan + status filters",
+    "how": "Plan select (from CG.mock.plans) and status select (Active / Expired / Cancelled / Free / Deactivated) combine with the search",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "Bulk actions: Activate / Deactivate / Set plan / Export CSV",
+    "how": "Activate and Deactivate flip activated for the selection; Set plan opens a menu of plans and moves the users (yearly, dates recomputed); Export CSV copies only the selected rows",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "User detail drawer",
+    "how": "Slides in from the right (560px) with avatar initials, name, plan/status/admin/deactivated pills, email · mobile · joined, and tabs Profile / Subscription / Referrals / Limits / Lot sizes",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "'Impersonate (mock)' button",
+    "how": "In the drawer header; toasts that you would now see the app as this user",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "Drawer · Profile tab",
+    "how": "Key/value grid (name, email, mobile, role, joined, last login, referral code, amount paid, account, id) with Copy email and Activate/Deactivate account buttons",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "Drawer · Subscription tab",
+    "how": "Plan, interval, status, subscribed, ends, validity, amount paid, days left plus a Change plan form (plan + interval → Set plan) that updates the user and the table",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "Drawer · Referrals tab",
+    "how": "Referral code, commission %, count and earned, then the referred users table from the commission records or an empty state; link to Commissions",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "Drawer · Limits tab",
+    "how": "Paper / live trading limit form with the plan default in the hint; Save Limits toasts",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "Drawer · Lot sizes tab",
+    "how": "BTC / ETH / XAUT lot size form (validates > 0); saving the demo user also updates CG.state.lotSizes",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "Invite user dialog (mock)",
+    "how": "Header primary action: name, email (validated, must be unique) and plan; creates the user in CG.mock.users and toasts Invitation sent",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "Hideable extra columns",
+    "how": "Mobile and Last login are available in the Columns menu but hidden by default",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Search + status filter",
+    "how": "Filters plans by name/description and Active/Inactive",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): plans search + status filter"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Bulk Activate / Deactivate",
+    "how": "Selected plans are toggled and plans:changed is emitted",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): plans bulk activate / deactivate"
+  },
+  {
+    "route": "/admin/subscriptions",
+    "screen": "Subscription Plans",
+    "feature": "Limits and Features columns",
+    "how": "Yearly paper/live limits column, plus a hideable Features column (features · menu items count)",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): Limits and Features columns"
+  },
+  {
+    "route": "/admin/menu-pricing",
+    "screen": "Menu Pricing Master",
+    "feature": "Search, category and status filters",
+    "how": "Category options are built from the data; all three combine",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): menu items search, category and status filters"
+  },
+  {
+    "route": "/admin/menu-pricing",
+    "screen": "Menu Pricing Master",
+    "feature": "Bulk Activate / Deactivate",
+    "how": "Toggles the selected menu items",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): plans bulk activate / deactivate"
+  },
+  {
+    "route": "/admin/coupons",
+    "screen": "Coupon Code Master",
+    "feature": "Search, type and status filters",
+    "how": "Code/description search, Public/Community type, Active / Inactive / Expired status",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/coupons",
+    "screen": "Coupon Code Master",
+    "feature": "Bulk Activate / Deactivate / Delete",
+    "how": "Delete asks for confirmation listing the codes, then removes them and emits coupons:changed",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Users tab bulk Activate / Deactivate",
+    "how": "Flips the account flag for the selected users; the Account cell is now a clickable status pill",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): users bulk activate / deactivate (never the acting admin)"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Commissions · Paid vs pending by month chart",
+    "how": "Grouped SVG bars per commission month: paid solid green, pending hatched; ₹ axis, tooltips, legend and a still-pending readout; tiles above, table below",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Commissions bulk 'Mark paid'",
+    "how": "Select referrers → Mark paid confirms the pending amount and settles them; Bulk pay (header primary) still settles everyone",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/user-subscriptions",
+    "screen": "User Subscriptions",
+    "feature": "Tabs restyled + header primary",
+    "how": "Users / Commissions as underline tabs in the title row; Bulk pay is the amber header action on the Commissions tab",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): tabs restyled, header primary action"
+  },
+  {
+    "route": "/admin/banners",
+    "screen": "Banner Master",
+    "feature": "'Preview as user' popup",
+    "how": "Monitor icon per row (and a Preview as user button inside the form using the current values) opens the popup exactly as a logged-in user sees it: image, title, description, Don’t show again, Dismiss and Learn more",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/banners",
+    "screen": "Banner Master",
+    "feature": "Status + frequency filters",
+    "how": "Showing now / Active / Inactive and the three frequency rules combine with search",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/banners",
+    "screen": "Banner Master",
+    "feature": "Bulk Activate / Deactivate",
+    "how": "Toggles isActive on the selection",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): plans bulk activate / deactivate"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "Template picker",
+    "how": "Weekly report / Plan expiring / New feature chips fill subject and message (placeholders included) and toast",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "'Test send to me' button",
+    "how": "Validates subject/message, shows a sending state and toasts a test email to the admin address with placeholders filled from the admin profile",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "History sticky search + columns + CSV",
+    "how": "Campaign history is a grid with subject/segment search, hideable Segment column, sortable headers and Copy CSV; no bulk actions",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "Recipients Copy CSV",
+    "how": "Campaign detail copies the per-recipient delivery rows as CSV",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  },
+  {
+    "route": "/admin/emails",
+    "screen": "Promotional Emails",
+    "feature": "Send Email as header primary",
+    "how": "The amber Send Email button lives in the title row next to the Compose / History tabs and hides on History",
+    "status": "working",
+    "new": true,
+    "evidence": "v2 improvement"
+  }
 ]

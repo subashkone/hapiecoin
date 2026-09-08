@@ -1,6 +1,6 @@
 /** Plan banner state (HC-SH-014): free / active / expiring soon (≤ 7 days) / expired. */
-import { IsoDateTime } from "@hapiecoin/schema";
-import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
+import { PlanState } from "@hapiecoin/schema";
+import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
 import { desc, eq, sql } from "drizzle-orm";
 import { subscriptions } from "../db/schema.js";
 import { type AppEnv, currentUser } from "../security/context.js";
@@ -9,18 +9,11 @@ import { type AppDeps, cookieAuth, errorResponses, jsonContent } from "./shared.
 
 export const EXPIRING_SOON_DAYS = 7;
 
-export const PlanState = z.object({
-  state: z.enum(["free", "active", "expiring_soon", "expired"]),
-  planName: z.string().optional(),
-  /** null = never expires. */
-  expiresAt: IsoDateTime.nullable().optional(),
-  daysLeft: z.number().int().optional(),
-});
-export type PlanState = z.infer<typeof PlanState>;
+export { PlanState };
 
 type Row = typeof subscriptions.$inferSelect;
 
-export function planState(row: Row | undefined, now: Date): PlanState {
+export function planState(row: Pick<Row, "status" | "planName" | "expiresAt"> | undefined, now: Date): PlanState {
   if (!row) return { state: "free" };
   if (row.status !== "active")
     return { state: "expired", planName: row.planName, expiresAt: row.expiresAt?.toISOString() ?? null };

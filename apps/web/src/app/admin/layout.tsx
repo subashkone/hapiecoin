@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { AppHeader } from "@/components/header/AppHeader";
+import { AdminShell } from "@/components/admin/AdminShell";
 import { SettingsDialogsLoader } from "@/components/dialogs/SettingsDialogsLoader";
+import { AppHeader } from "@/components/header/AppHeader";
 import { getServerUser } from "@/lib/auth/server";
 
 export default async function Layout({ children }: { children: ReactNode }) {
@@ -8,7 +9,7 @@ export default async function Layout({ children }: { children: ReactNode }) {
   return (
     <>
       <AppHeader variant="default" initialUser={user} />
-      {children}
+      <AdminShell>{children}</AdminShell>
       <SettingsDialogsLoader />
     </>
   );

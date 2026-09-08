@@ -397,7 +397,7 @@
     "feature": "Expired: 'Your plan has expired.' + Renew Plan",
     "how": "CG.chrome['plan-banner'] reads CG.mock.subscription; button → /subscription",
     "status": "working",
-    "evidence": "bundle strings: Your plan has expired., Renew Plan"
+    "evidence": "bundle strings: Your plan has expired., Renew Plan · Phase 4 item 1 (08 Sep 2026, ADR-030): banner states now derive from the catalogue subscription (planState)"
   },
   {
     "route": "/analyse",
@@ -421,7 +421,7 @@
     "feature": "Active: 'Congratulations! Your plan is active until 31 Dec 2026' (dismissable)",
     "how": "Dismiss hides it for the session (sessionStorage); re-renders on 'subscription-changed'",
     "status": "working",
-    "evidence": "bundle string: Congratulations! Your plan is active until"
+    "evidence": "bundle string: Congratulations! Your plan is active until · Phase 4 item 1 (08 Sep 2026, ADR-030): active banner from the catalogue subscription"
   },
   {
     "route": "/analyse",
@@ -429,7 +429,7 @@
     "feature": "CG.chrome.upgradeRequired(message): 'Upgrade Required' + message + 'Subscribe Here →' + Dismiss",
     "how": "Subscribe navigates to /subscription and closes; Dismiss closes",
     "status": "working",
-    "evidence": "bundle strings: Upgrade Required, Subscribe Here →, Dismiss"
+    "evidence": "bundle strings: Upgrade Required, Subscribe Here →, Dismiss · Phase 4 item 1 (08 Sep 2026, ADR-030): UpgradeRequiredDialog opened by 403 UPGRADE_REQUIRED with the API's reason; unit subscription.test.tsx, e2e account.spec.ts HC-SH-054"
   },
   {
     "route": "/analyse",

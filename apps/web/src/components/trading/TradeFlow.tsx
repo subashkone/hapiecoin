@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useBrokers, useCredential } from "@/lib/api/queries";
 import { useCreateStrategy, usePatchStrategy, useStartStrategy, useStrategies } from "@/lib/api/strategies";
 import { newIdempotencyKey, useLivePlace, useLivePreview } from "@/lib/api/live";
+import { handleUpgradeRequired } from "@/lib/api/upgrade";
 import type { LivePreview } from "@hapiecoin/schema";
 import { useUiStore } from "@/lib/store";
 import { type FeeEstimate, localLegToInput, openLegs } from "@/lib/strategy/paper";
@@ -162,7 +163,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
       const saved = await start.mutateAsync({ id, body: { mode, brokerId, entries: target ? entries() : {} } });
       finish(saved);
     } catch (e) {
-      toast.error("Could not start the trade", { description: e instanceof Error ? e.message : "request failed" });
+      if (!handleUpgradeRequired(e)) toast.error("Could not start the trade", { description: e instanceof Error ? e.message : "request failed" });
     } finally {
       setBusy(false);
     }

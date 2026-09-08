@@ -26,6 +26,7 @@ import {
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
+import { assertEntitled } from "../entitlements.js";
 import { brokers, strategies, strategyLegs, strategyOrders, strategyPnl } from "../db/schema.js";
 import { type AppEnv, type SessionUser, currentUser } from "../security/context.js";
 import { errors } from "../security/errors.js";
@@ -330,6 +331,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const body = c.req.valid("json");
       if (row.status !== "draft") throw errors.conflict(`Only a draft can be started; this strategy is ${row.status}`);
       if (body.mode === "live") throw errors.conflict("Live placement goes through /live/preview and /live/place (ADR-025)");
+      await assertEntitled(deps, me.id, "paper_trading"); // HC-SH-054: plan limit per calendar month (ADR-030)
       if (!(await brokerVisible(me, body.brokerId))) throw errors.badRequest("Select an exchange...");
       const legs = await legsOf(row.id);
       if (legs.length === 0) throw errors.badRequest("Add at least one leg to trade");

@@ -41,6 +41,7 @@ export function buildCommands(opts: {
   if (opts.loggedIn) {
     list.push(
       nav("nav:analyse", "/analyse", "Analyse workspace", ["options chain", "builder", "payoff"]),
+      nav("nav:subscription", "/subscription", "Subscription: change plan", ["plan", "upgrade", "billing", "renew"]),
       {
         id: "act:chain-atm",
         label: "Chain: recentre on ATM",

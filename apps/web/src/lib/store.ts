@@ -18,7 +18,7 @@ import {
   removeLeg as removeLegPure,
 } from "./strategy/legs";
 
-export type DialogKind = "profile" | "api" | "currency" | "lot" | "pnl" | "exchanges" | "logout" | "columns" | "option" | null;
+export type DialogKind = "profile" | "api" | "currency" | "lot" | "pnl" | "exchanges" | "logout" | "columns" | "option" | "upgrade" | null;
 
 /** Which option the details dialog shows (HC-WS-026); transient. */
 export interface OptionDetailTarget {
@@ -113,6 +113,8 @@ export interface UiState {
   expiry: Partial<Record<Underlying, string | null>>;
   feedPaused: boolean;
   dialog: DialogKind;
+  /** Message of the Upgrade Required dialog (HC-SH-054); set by openUpgrade. */
+  upgradeMessage: string;
   /** True once any dialog has been opened this session (keeps the lazily loaded dialog chunk mounted). */
   dialogsTouched: boolean;
   paletteOpen: boolean;
@@ -183,6 +185,8 @@ export interface UiState {
   setExpiry: (asset: Underlying, expiry: string | null) => void;
   setFeedPaused: (paused: boolean) => void;
   openDialog: (kind: DialogKind) => void;
+  /** Open the Upgrade Required dialog with the API's reason (403 UPGRADE_REQUIRED). */
+  openUpgrade: (message: string) => void;
   closeDialog: () => void;
   setPaletteOpen: (open: boolean) => void;
 }
@@ -196,6 +200,7 @@ export const useUiStore = create<UiState>()(
       expiry: {},
       feedPaused: false,
       dialog: null,
+      upgradeMessage: "",
       dialogsTouched: false,
       paletteOpen: false,
       chainRange: 12,
@@ -293,6 +298,7 @@ export const useUiStore = create<UiState>()(
       setExpiry: (asset, expiry) => set((s) => ({ expiry: { ...s.expiry, [asset]: expiry } })),
       setFeedPaused: (feedPaused) => set({ feedPaused }),
       openDialog: (dialog) => set({ dialog, dialogsTouched: true }),
+      openUpgrade: (upgradeMessage) => set({ dialog: "upgrade", upgradeMessage, dialogsTouched: true }),
       closeDialog: () => set({ dialog: null }),
       setPaletteOpen: (paletteOpen) => set({ paletteOpen }),
     }),

@@ -9,6 +9,7 @@ import { ExchangeManagementDialog } from "./ExchangeManagementDialog";
 import { LogoutDialog } from "./LogoutDialog";
 import { LotSizeDialog } from "./LotSizeDialog";
 import { OptionDetailsDialog } from "./OptionDetailsDialog";
+import { UpgradeRequiredDialog } from "./UpgradeRequiredDialog";
 import { PnlDialog } from "./PnlDialog";
 import { ProfileDialog } from "./ProfileDialog";
 
@@ -29,6 +30,7 @@ export function SettingsDialogs() {
       <LogoutDialog open={dialog === "logout"} onOpenChange={onOpenChange} />
       <ColumnSettingsDialog open={dialog === "columns"} onOpenChange={onOpenChange} />
       <OptionDetailsDialog open={dialog === "option"} onOpenChange={onOpenChange} />
+      <UpgradeRequiredDialog open={dialog === "upgrade"} onOpenChange={onOpenChange} />
     </>
   );
 }
