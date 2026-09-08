@@ -79,3 +79,34 @@ test.describe("HC-AC My Referrals", () => {
     await expect(page.getByTestId("earnings-chart")).toHaveCount(0);
   });
 });
+
+test.describe("HC-AC checkout, payment history and invoice", () => {
+  test("HC-AC-017..026 / HC-AC-031..033 apply a coupon, pay through the mock checkout, see the row and the invoice", async ({ page, request, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await seedUser(request, { email: "pay@example.com", plan: { state: "free" }, coupons: true });
+    await signIn(page, "pay@example.com");
+    await page.goto("/subscription");
+    await expect(page.getByTestId("subscription-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await page.getByTestId("plan-card").nth(2).getByTestId("plan-action").click(); // Pro monthly
+    await expect(page.getByTestId("subscribe-dialog")).toBeVisible();
+    await expect(page.getByTestId("price-total")).toHaveText("\u20b91,001.82");
+    await page.getByTestId("coupon-input").fill("basic20");
+    await page.getByTestId("coupon-apply").click();
+    await expect(page.getByTestId("coupon-chip")).toContainText("BASIC20");
+    await expect(page.getByTestId("price-total")).toHaveText("\u20b9801.46");
+    await page.getByTestId("subscribe-pay").click();
+    await expect(page.getByTestId("mock-checkout")).toBeVisible();
+    await page.getByTestId("mock-cancel").click();
+    await expect(page.getByText("Payment cancelled")).toBeVisible();
+    await page.getByTestId("subscribe-pay").click();
+    await page.getByTestId("mock-pay").click();
+    await expect(page.getByTestId("sub-plan-name")).toHaveText("Pro", { timeout: 10_000 });
+    await expect(page.getByTestId("payment-history")).toHaveAttribute("data-count", "2");
+    await expect(page.getByTestId("payment-row").first()).toHaveAttribute("data-status", "paid");
+    await page.getByTestId("payment-invoice").first().click();
+    await expect(page.getByTestId("invoice-dialog")).toHaveAttribute("data-state-load", "ready");
+    await expect(page.getByTestId("invoice-lines")).toContainText("BASIC20");
+    await page.getByTestId("invoice-copy").click();
+    await expect(page.getByText("Copied!")).toBeVisible();
+  });
+});

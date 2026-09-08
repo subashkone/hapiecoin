@@ -1,11 +1,13 @@
 "use client";
 // My Subscription (HC-AC-001..015, 056..059, 064..066; ADR-030; docs/design/billing.md): what plan you are on, when
 // it ends, what you can still do this month, and the plan comparison with a pinned "what changes if I upgrade"
-// panel. ₹0 plans activate here; paid plans open the breakdown and wait for Razorpay (item 2).
-import { type BillingInterval, LIMIT_KEYS, LIMIT_LABELS, type Plan, type SubscriptionView, priceBreakdown } from "@hapiecoin/schema";
-import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, cn, toast } from "@hapiecoin/ui";
+// panel. The Subscribe dialog (CheckoutDialog, ADR-034) quotes coupons and pays through Razorpay; Payment History below.
+import { CheckoutDialog } from "./CheckoutDialog";
+import { PaymentHistory } from "./PaymentHistory";
+import { type BillingInterval, LIMIT_KEYS, LIMIT_LABELS, type Plan, type SubscriptionView } from "@hapiecoin/schema";
+import { Button, EmptyState, cn } from "@hapiecoin/ui";
 import { useEffect, useMemo, useState } from "react";
-import { useActivatePlan, useSubscription } from "@/lib/api/billing";
+import { useSubscription } from "@/lib/api/billing";
 import { BILLING_INTERVALS, INTERVAL_LABELS, effectivePrice, fmtInr, limitText, nextPlan, perMonth } from "@/lib/billing/format";
 import { fmtDate } from "@/lib/format";
 
@@ -191,49 +193,6 @@ export function LimitsMatrix({ plans, interval, currentId }: { plans: Plan[]; in
   );
 }
 
-function SubscribeDialog({ plan, interval, open, onOpenChange, onActivated }: { plan: Plan | null; interval: BillingInterval; open: boolean; onOpenChange: (o: boolean) => void; onActivated: () => void }) {
-  const activate = useActivatePlan();
-  if (!plan) return null;
-  const b = priceBreakdown(plan.intervals[interval]);
-  const rows: [string, number][] = [["List price", b.list], ["Plan discount", -b.planDiscount], ["Coupon discount", -b.couponDiscount], ["Subtotal", b.subtotal], ["Tax (18% GST)", b.tax]];
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[440px]" data-testid="subscribe-dialog">
-        <DialogHeader>
-          <DialogTitle>
-            Subscribe to {plan.name} · {INTERVAL_LABELS[interval]}
-          </DialogTitle>
-          <DialogDescription>{b.total === 0 ? "No payment needed for this plan." : "Coupons and Razorpay checkout arrive with the next release."}</DialogDescription>
-        </DialogHeader>
-        <DialogBody>
-          <dl className="grid grid-cols-[1fr_auto] gap-y-1 text-xs" data-testid="price-breakdown">
-            {rows.map(([k, v]) => (
-              <div key={k} className="contents">
-                <dt className="text-muted-foreground">{k}</dt>
-                <dd className="num text-right">{v < 0 ? `− ${fmtInr(-v, { decimals: true })}` : fmtInr(v, { decimals: true })}</dd>
-              </div>
-            ))}
-            <dt className="mt-1 border-t border-border pt-1 font-medium">Total</dt>
-            <dd className="num mt-1 border-t border-border pt-1 text-right font-medium" data-testid="price-total">{fmtInr(b.total, { decimals: true })}</dd>
-          </dl>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          {b.total === 0 ? (
-            <Button loading={activate.isPending} onClick={() => activate.mutate({ planId: plan.id, interval }, { onSuccess: () => { onOpenChange(false); onActivated(); toast.success("Plan activated", { description: `${plan.name} · ${INTERVAL_LABELS[interval]}` }); }, onError: (e) => toast.error("Could not activate", { description: e.message }) })} data-testid="subscribe-activate">
-              Activate
-            </Button>
-          ) : (
-            <Button disabled title="Razorpay checkout arrives with the next release" data-testid="subscribe-pay">
-              Pay with Razorpay
-            </Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export function SubscriptionPage() {
   const { data: view, isLoading, isError, error, refetch } = useSubscription();
   const [interval, setInterval] = useState<BillingInterval>("monthly");
@@ -332,7 +291,8 @@ export function SubscriptionPage() {
         </div>
       </section>
 
-      <SubscribeDialog plan={choose} interval={interval} open={choose !== null} onOpenChange={(o) => !o && setChoose(null)} onActivated={() => setPinnedId(null)} />
+      <PaymentHistory onBrowsePlans={() => document.getElementById("plan-grid")?.scrollIntoView({ behavior: "smooth" })} />
+      <CheckoutDialog plan={choose} interval={interval} open={choose !== null} onOpenChange={(o) => !o && setChoose(null)} onActivated={() => setPinnedId(null)} />
     </main>
   );
 }

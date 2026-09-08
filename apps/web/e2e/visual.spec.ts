@@ -151,5 +151,30 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("banner-dialog")).toBeVisible();
       await page.screenshot({ path: `${DIR}/admin-banner-dialog-${theme}.png` });
     });
+
+    test(`HC-AC-016 subscribe dialog, HC-AC-062 invoice and HC-AD-029 coupons ${theme}`, async ({ page, request }) => {
+      await seedUser(request, { email: `chk-${theme}@example.com`, role: "admin", plan: { state: "free" }, coupons: true, payments: 4 });
+      await signIn(page, `chk-${theme}@example.com`);
+      await page.evaluate((t) => {
+        localStorage.setItem("hapiecoin.theme", t);
+      }, theme);
+      await page.goto("/subscription");
+      await expect(page.getByTestId("subscription-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+      await page.getByTestId("plan-card").nth(2).getByTestId("plan-action").click();
+      await expect(page.getByTestId("coupon-option").first()).toBeVisible();
+      await page.getByTestId("coupon-input").fill("basic20");
+      await page.getByTestId("coupon-apply").click();
+      await expect(page.getByTestId("coupon-chip")).toBeVisible();
+      await page.screenshot({ path: `${DIR}/account-subscribe-${theme}.png` });
+      await page.keyboard.press("Escape");
+      await expect(page.getByTestId("payment-row").first()).toBeVisible();
+      await page.getByTestId("payment-invoice").first().click();
+      await expect(page.getByTestId("invoice-dialog")).toHaveAttribute("data-state-load", "ready");
+      await page.screenshot({ path: `${DIR}/account-invoice-${theme}.png` });
+      await page.keyboard.press("Escape");
+      await page.goto("/admin/coupons");
+      await expect(page.getByTestId("coupon-row")).toHaveCount(4, { timeout: 15_000 });
+      await page.screenshot({ path: `${DIR}/admin-coupons-${theme}.png`, fullPage: true });
+    });
   });
 }

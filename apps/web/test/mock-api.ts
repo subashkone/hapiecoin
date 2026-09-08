@@ -3,8 +3,8 @@
 // deliberately simple: one OTP (123456), sessions in a Map, settings/brokers/credentials per user.
 import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import type { AdminCommissionRow, Banner, BannerFrequency, BillingInterval, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
-import { INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, bannerSchedule, base64Bytes, commissionFor, maskApiKey, monthKey, priceBreakdown, realizedPnl, toDecimal } from "@hapiecoin/schema";
+import type { AdminCommissionRow, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Coupon, CouponReason, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
+import { INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, realizedPnl, toDecimal } from "@hapiecoin/schema";
 
 export const SESSION_COOKIE = "better-auth.session_token";
 export const TEST_OTP = "123456";
@@ -91,6 +91,11 @@ export interface MockState {
   commissions: MockCommission[];
   /** Banners (ADR-033) with the image kept as the data URL the admin uploaded. */
   banners: MockBanner[];
+  /** Coupons and payments (ADR-034); checkout answers in "mock" mode, confirm accepts the signature "mock-sig". */
+  coupons: Coupon[];
+  payments: (Payment & { userId: string; couponId: string | null })[];
+  /** Test switch: "razorpay" makes /v1/checkout answer like the real API so the checkout.js path can be exercised with a stubbed window.Razorpay. */
+  checkoutMode: "mock" | "razorpay";
   /** Invitations "sent" by POST /v1/admin/users/invite (the API mails them). */
   invites: { email: string; name: string; invitedBy: string; link: string }[];
   sessions: Map<string, string>; // token → email
@@ -196,7 +201,7 @@ export function createSession(state: MockState, email: string): string {
 
 export function createMockApi(state: MockState = { plans: seedPlans(),
     menuItems: seedMenuItems(),
-    accounts: new Map(), commissions: [], banners: [], invites: [], sessions: new Map(), otps: new Map() }) {
+    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
   const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409, code: string, message: string) =>
@@ -942,15 +947,193 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     return c.json({ deleted: true });
   });
 
+  /* ---------------- coupons, checkout, payments (ADR-034) ---------------- */
+  const nextInvoiceNo = () => invoiceNumber(new Date().getUTCFullYear(), state.payments.filter((p) => p.invoiceNo).length + 1);
+  const userUses = (acc: Account, couponId: string) => state.payments.filter((p) => p.userId === acc.user.id && p.couponId === couponId && p.status === "paid").length;
+  const couponReason = (acc: Account, cp: Coupon, plan: Plan, interval: BillingInterval): CouponReason | null => {
+    const now = Date.now();
+    const pr = plan.intervals[interval];
+    const discounted = pr.discountPriceInr === null ? Number(pr.priceInr) : Number(pr.discountPriceInr);
+    if (!cp.active) return "inactive";
+    if (cp.startsAt && new Date(cp.startsAt).getTime() > now) return "not_started";
+    if (cp.endsAt && new Date(cp.endsAt).getTime() < now) return "expired";
+    if (cp.maxUses !== null && cp.usedCount >= cp.maxUses) return "exhausted";
+    if (cp.scope === "community" && !cp.assignedUserIds.includes(acc.user.id)) return "not_assigned";
+    if (!cp.planIds.includes(plan.id)) return "wrong_plan";
+    if (!cp.intervals.includes(interval)) return "wrong_interval";
+    if (discounted < Number(cp.minOrderInr)) return "below_minimum";
+    if (userUses(acc, cp.id) >= cp.perUserLimit) return "per_user_limit";
+    return null;
+  };
+  const toAvailable = (cp: Coupon, reason: CouponReason | null): AvailableCoupon => ({ code: cp.code, description: cp.description, discountType: cp.discountType, discountValue: cp.discountValue, minOrderInr: cp.minOrderInr, endsAt: cp.endsAt, scope: cp.scope, reason });
+  const resolveCoupon = (acc: Account, code: string, plan: Plan, interval: BillingInterval): { coupon: Coupon | null; reason: CouponReason | null } => {
+    const cp = state.coupons.find((x) => x.code === code.trim().toUpperCase());
+    if (!cp) return { coupon: null, reason: "unknown" };
+    return { coupon: cp, reason: couponReason(acc, cp, plan, interval) };
+  };
+  const stripPayment = (p: (typeof state.payments)[number]): Payment => ({ id: p.id, at: p.at, planId: p.planId, planName: p.planName, interval: p.interval, listInr: p.listInr, planDiscountInr: p.planDiscountInr, couponCode: p.couponCode, couponDiscountInr: p.couponDiscountInr, taxInr: p.taxInr, amountInr: p.amountInr, method: p.method, status: p.status, orderId: p.orderId, razorpayPaymentId: p.razorpayPaymentId, failureReason: p.failureReason, invoiceNo: p.invoiceNo });
+  v1.get("/coupons", (c) => {
+    const acc = current(c)!;
+    const plan = planOf(c.req.query("planId") ?? "");
+    const interval = (c.req.query("interval") ?? "monthly") as BillingInterval;
+    if (!plan || !plan.active) return err(c, 404, "NOT_FOUND", "Plan not found");
+    const items = state.coupons.filter((cp) => cp.active && (cp.scope === "public" || cp.assignedUserIds.includes(acc.user.id))).map((cp) => toAvailable(cp, couponReason(acc, cp, plan, interval)));
+    return c.json({ items, breakdown: breakdownFor(plan.intervals[interval]) });
+  });
+  v1.post("/coupons/quote", async (c) => {
+    const acc = current(c)!;
+    const body = await c.req.json<{ code: string; planId: string; interval: BillingInterval }>();
+    const plan = planOf(body.planId);
+    if (!plan || !plan.active) return err(c, 404, "NOT_FOUND", "Plan not found");
+    const r = resolveCoupon(acc, body.code, plan, body.interval);
+    if (r.reason) return c.json({ coupon: r.coupon ? toAvailable(r.coupon, r.reason) : { code: body.code.toUpperCase(), description: "", discountType: "percent", discountValue: "0", minOrderInr: "0", endsAt: null, scope: "public", reason: r.reason }, breakdown: breakdownFor(plan.intervals[body.interval]) });
+    return c.json({ coupon: toAvailable(r.coupon!, null), breakdown: breakdownFor(plan.intervals[body.interval], r.coupon) });
+  });
+  v1.post("/checkout", async (c) => {
+    const acc = current(c)!;
+    const body = await c.req.json<{ planId: string; interval: BillingInterval; couponCode?: string }>();
+    if (!acc.active) return err(c, 403, "FORBIDDEN", "Your account has been deactivated. Contact support.");
+    const plan = planOf(body.planId);
+    if (!plan || !plan.active) return err(c, 404, "NOT_FOUND", "Plan not found");
+    let coupon: Coupon | null = null;
+    if (body.couponCode) {
+      const r = resolveCoupon(acc, body.couponCode, plan, body.interval);
+      if (r.reason) return err(c, 400, "VALIDATION", `Coupon ${body.couponCode.toUpperCase()}: ${r.reason.replace(/_/g, " ")}`);
+      coupon = r.coupon;
+    }
+    const bd = breakdownFor(plan.intervals[body.interval], coupon);
+    if (Number(bd.total) <= 0) return err(c, 400, "VALIDATION", "This order costs ₹0; use Activate");
+    const cur = activeSub(acc);
+    if (cur && cur.planId === plan.id && cur.interval === body.interval) return err(c, 409, "CONFLICT", `You are already on ${plan.name} · ${body.interval}`);
+    const paymentId = id("pay");
+    const orderId = id("order_mock");
+    state.payments.unshift({ id: paymentId, userId: acc.user.id, couponId: coupon?.id ?? null, at: nowIso(), planId: plan.id, planName: plan.name, interval: body.interval, listInr: bd.list, planDiscountInr: bd.planDiscount, couponCode: coupon?.code ?? null, couponDiscountInr: bd.couponDiscount, taxInr: bd.tax, amountInr: bd.total, method: null, status: "pending", orderId, razorpayPaymentId: null, failureReason: null, invoiceNo: null });
+    return c.json({ mode: state.checkoutMode, paymentId, orderId, keyId: "rzp_test_mock", amountPaise: toPaise(bd.total), currency: "INR", name: "HapieCoin", description: `Subscription · ${plan.name} · ${body.interval}`, prefill: { name: acc.user.name, email: acc.user.email, ...(acc.user.mobile ? { contact: acc.user.mobile } : {}) }, breakdown: bd }, 201);
+  });
+  v1.post("/checkout/confirm", async (c) => {
+    const acc = current(c)!;
+    const body = await c.req.json<{ razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }>();
+    const p = state.payments.find((x) => x.orderId === body.razorpay_order_id && x.userId === acc.user.id);
+    if (!p) return err(c, 404, "NOT_FOUND", "Payment not found");
+    if (body.razorpay_signature !== "mock-sig") return err(c, 400, "VALIDATION", "Payment signature does not match; contact support if you were charged");
+    if (p.status === "paid") return c.json({ payment: stripPayment(p), activated: false });
+    const plan = planOf(p.planId ?? "")!;
+    if (acc.subscription) acc.pastSubscriptions.push({ ...acc.subscription });
+    const at = nowIso();
+    acc.subscription = { id: id("sub"), planId: plan.id, interval: p.interval, startsAt: at, expiresAt: new Date(Date.now() + INTERVAL_MONTHS[p.interval] * 30 * 86_400_000).toISOString(), priceInr: p.listInr, paidInr: p.amountInr };
+    acc.seededBanner = false;
+    acc.plan = planStateOf(acc);
+    recordCommission(acc);
+    const coupon = p.couponId ? state.coupons.find((x) => x.id === p.couponId) : undefined;
+    if (coupon) coupon.usedCount += 1;
+    Object.assign(p, { status: "paid", at, method: body.razorpay_payment_id.includes("card") ? "card" : "upi", razorpayPaymentId: body.razorpay_payment_id, invoiceNo: nextInvoiceNo(), failureReason: null });
+    return c.json({ payment: stripPayment(p), activated: true });
+  });
+  v1.post("/checkout/cancel", async (c) => {
+    const acc = current(c)!;
+    const body = await c.req.json<{ orderId: string; reason?: string }>();
+    const p = state.payments.find((x) => x.orderId === body.orderId && x.userId === acc.user.id);
+    if (!p) return err(c, 404, "NOT_FOUND", "Payment not found");
+    if (p.status === "pending") Object.assign(p, { status: "failed", failureReason: body.reason ?? "Cancelled by the user" });
+    return c.json(stripPayment(p));
+  });
+  v1.get("/payments", (c) => {
+    const acc = current(c)!;
+    const status = c.req.query("status") ?? "all";
+    const page = Number(c.req.query("page") ?? "1");
+    const all = state.payments.filter((p) => p.userId === acc.user.id);
+    const rows = status === "all" ? all : all.filter((p) => p.status === status);
+    return c.json({ items: rows.slice((page - 1) * 5, page * 5).map(stripPayment), total: rows.length, page, pageSize: 5, counts: { all: all.length, paid: all.filter((p) => p.status === "paid").length, pending: all.filter((p) => p.status === "pending").length, failed: all.filter((p) => p.status === "failed").length } });
+  });
+  v1.get("/payments/:id/invoice", (c) => {
+    const acc = current(c)!;
+    const p = state.payments.find((x) => x.id === c.req.param("id") && x.userId === acc.user.id);
+    if (!p || p.status !== "paid" || !p.invoiceNo) return err(c, 404, "NOT_FOUND", "Invoice not found");
+    const taxable = (Math.round((Number(p.amountInr) - Number(p.taxInr)) * 100) / 100).toFixed(2);
+    const half = (Math.round(Number(p.taxInr) * 100) / 2 / 100).toFixed(2);
+    const sub = acc.subscription;
+    return c.json({ no: p.invoiceNo, issuedAt: p.at, seller: { name: "HapieCoin", address: "Address on file · India", gstin: "GSTIN pending", email: "billing@hapiecoin.com" }, billedTo: { name: acc.user.name, email: acc.user.email, mobile: acc.user.mobile ?? null }, period: { from: sub?.startsAt ?? p.at, to: sub?.expiresAt ?? null }, lines: { description: `${p.planName} plan · ${p.interval}`, listInr: p.listInr, planDiscountInr: p.planDiscountInr, couponCode: p.couponCode, couponDiscountInr: p.couponDiscountInr, taxableInr: taxable, cgstInr: half, sgstInr: (Math.round((Number(p.taxInr) - Number(half)) * 100) / 100).toFixed(2), totalInr: p.amountInr }, payment: { method: p.method, razorpayPaymentId: p.razorpayPaymentId, paidAt: p.at } });
+  });
+  v1.get("/admin/coupons", (c) => adminGate(c) ?? c.json({ items: [...state.coupons] }));
+  const couponBody = (b: Partial<Coupon>): string | null => {
+    if (!b.code || !/^[A-Z0-9_-]{3,24}$/.test(b.code.toUpperCase())) return "3–24 letters, digits, _ or -";
+    if (!b.planIds || b.planIds.length === 0) return "pick at least one plan";
+    if (b.discountType === "percent" && !(Number(b.discountValue) > 0 && Number(b.discountValue) <= 100)) return "percent must be 1–100";
+    if (b.discountType === "fixed" && !(Number(b.discountValue) > 0)) return "fixed must be above 0";
+    if (b.startsAt && b.endsAt && new Date(b.endsAt).getTime() <= new Date(b.startsAt).getTime()) return "end must be after start";
+    return null;
+  };
+  v1.post("/admin/coupons", async (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const body = await c.req.json<Partial<Coupon>>();
+    const bad = couponBody(body);
+    if (bad) return err(c, 400, "VALIDATION", bad);
+    const code = body.code!.trim().toUpperCase();
+    if (state.coupons.some((x) => x.code === code)) return err(c, 409, "CONFLICT", `Coupon ${code} already exists`);
+    const at = nowIso();
+    const cp: Coupon = { id: id("cpn"), code, description: body.description ?? "", discountType: body.discountType ?? "percent", discountValue: body.discountValue ?? "0", minOrderInr: body.minOrderInr ?? "0", maxUses: body.maxUses ?? null, usedCount: 0, perUserLimit: body.perUserLimit ?? 1, startsAt: body.startsAt ?? null, endsAt: body.endsAt ?? null, scope: body.scope ?? "public", planIds: body.planIds ?? [], intervals: body.intervals ?? ["monthly", "quarterly", "yearly"], assignedUserIds: body.assignedUserIds ?? [], active: body.active ?? true, createdAt: at, updatedAt: at };
+    state.coupons.unshift(cp);
+    return c.json(cp, 201);
+  });
+  v1.put("/admin/coupons/:id", async (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const cp = state.coupons.find((x) => x.id === c.req.param("id"));
+    if (!cp) return err(c, 404, "NOT_FOUND", "Coupon not found");
+    const body = await c.req.json<Partial<Coupon>>();
+    const bad = couponBody(body);
+    if (bad) return err(c, 400, "VALIDATION", bad);
+    const code = body.code!.trim().toUpperCase();
+    if (state.coupons.some((x) => x.code === code && x.id !== cp.id)) return err(c, 409, "CONFLICT", `Coupon ${code} already exists`);
+    Object.assign(cp, body, { code, updatedAt: nowIso() });
+    return c.json(cp);
+  });
+  v1.patch("/admin/coupons/:id", async (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const cp = state.coupons.find((x) => x.id === c.req.param("id"));
+    if (!cp) return err(c, 404, "NOT_FOUND", "Coupon not found");
+    const body = await c.req.json<{ active: boolean }>();
+    Object.assign(cp, { active: body.active, updatedAt: nowIso() });
+    return c.json(cp);
+  });
+  v1.delete("/admin/coupons/:id", (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const i = state.coupons.findIndex((x) => x.id === c.req.param("id"));
+    if (i < 0) return err(c, 404, "NOT_FOUND", "Coupon not found");
+    state.coupons.splice(i, 1);
+    return c.json({ deleted: true });
+  });
+  v1.post("/admin/coupons/bulk", async (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const body = await c.req.json<{ ids: string[]; action: "activate" | "deactivate" | "delete" }>();
+    let updated = 0;
+    if (body.action === "delete") {
+      const before = state.coupons.length;
+      for (let i = state.coupons.length - 1; i >= 0; i -= 1) if (body.ids.includes(state.coupons[i]!.id)) state.coupons.splice(i, 1);
+      updated = before - state.coupons.length;
+    } else for (const cp of state.coupons) if (body.ids.includes(cp.id)) { cp.active = body.action === "activate"; updated += 1; }
+    return c.json({ updated });
+  });
+
   v1.post("/subscription/activate", async (c) => {
     const acc = current(c)!;
-    const body = await c.req.json<{ planId: string; interval: BillingInterval }>();
+    const body = await c.req.json<{ planId: string; interval: BillingInterval; couponCode?: string }>();
     if (!acc.active) return err(c, 403, "FORBIDDEN", "Your account has been deactivated. Contact support.");
     const plan = planOf(body.planId);
     if (!plan || !plan.active) return err(c, 404, "NOT_FOUND", "Plan not found");
     const pricing = plan.intervals[body.interval];
-    const total = priceBreakdown(pricing).total;
-    if (total > 0) return err(c, 402, "PAYMENT_REQUIRED", `${plan.name} · ${body.interval} costs ₹${total.toFixed(2)}; checkout arrives with Razorpay in the next release`);
+    let coupon: Coupon | null = null;
+    if (body.couponCode) {
+      const r = resolveCoupon(acc, body.couponCode, plan, body.interval);
+      if (r.reason) return err(c, 400, "VALIDATION", `Coupon ${body.couponCode.toUpperCase()}: ${r.reason.replace(/_/g, " ")}`);
+      coupon = r.coupon;
+    }
+    const total = Number(breakdownFor(pricing, coupon).total);
+    if (total > 0) return err(c, 402, "PAYMENT_REQUIRED", `${plan.name} · ${body.interval} costs ₹${total.toFixed(2)}; pay with Razorpay`);
     const cur = activeSub(acc);
     if (cur && cur.planId === plan.id && cur.interval === body.interval) return err(c, 409, "CONFLICT", `You are already on ${plan.name} · ${body.interval}`);
     const startsAt = nowIso();
@@ -958,6 +1141,9 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     acc.seededBanner = false; // the catalogue subscription now drives the banner
     acc.plan = planStateOf(acc);
     recordCommission(acc);
+    const bd = breakdownFor(pricing, coupon);
+    state.payments.unshift({ id: id("pay"), userId: acc.user.id, couponId: coupon?.id ?? null, at: startsAt, planId: plan.id, planName: plan.name, interval: body.interval, listInr: bd.list, planDiscountInr: bd.planDiscount, couponCode: coupon?.code ?? null, couponDiscountInr: bd.couponDiscount, taxInr: bd.tax, amountInr: bd.total, method: coupon ? "coupon" : "free", status: "paid", orderId: null, razorpayPaymentId: null, failureReason: null, invoiceNo: Number(bd.list) > 0 ? nextInvoiceNo() : null });
+    if (coupon) coupon.usedCount += 1;
     return c.json(subscriptionView(acc));
   });
   const adminOnly = (c: Context): Response | null => (current(c)!.user.role === "admin" ? null : err(c, 403, "FORBIDDEN", "Admin only"));
@@ -1206,14 +1392,36 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     state.accounts.clear();
     state.commissions.length = 0;
     state.banners.length = 0;
+    state.coupons.length = 0;
+    state.payments.length = 0;
     state.invites.length = 0;
     state.sessions.clear();
     state.otps.clear();
     return c.json({ ok: true });
   });
   app.post("/__test/seed", async (c) => {
-    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; referrals?: number; banners?: number }>();
+    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; referrals?: number; banners?: number; coupons?: boolean; payments?: number }>();
     const acc = createAccount(state, body);
+    if (body.coupons) {
+      const at = nowIso();
+      const mk = (x: Partial<Coupon> & Pick<Coupon, "code" | "discountType" | "discountValue" | "planIds">): Coupon => ({ id: id("cpn"), description: "", minOrderInr: "0", maxUses: null, usedCount: 0, perUserLimit: 1, startsAt: null, endsAt: null, scope: "public", intervals: ["monthly", "quarterly", "yearly"], assignedUserIds: [], active: true, createdAt: at, updatedAt: at, ...x });
+      state.coupons.push(
+        mk({ code: "BASIC20", description: "Get 20% off your first plan", discountType: "percent", discountValue: "20", planIds: ["pln_basic", "pln_pro"], maxUses: 100, usedCount: 37, endsAt: "2026-12-31T23:59:00.000Z" }),
+        mk({ code: "PRO500", description: "₹500 off Pro yearly", discountType: "fixed", discountValue: "500", minOrderInr: "5000", planIds: ["pln_pro"], intervals: ["yearly"], maxUses: 200, usedCount: 58 }),
+        mk({ code: "COMMUNITY25", description: "Community members & their referrals", discountType: "percent", discountValue: "25", planIds: ["pln_basic", "pln_pro", "pln_elite"], intervals: ["quarterly", "yearly"], scope: "community", assignedUserIds: [acc.user.id], perUserLimit: 2 }),
+        mk({ code: "DIWALI30", description: "Festive offer (expired)", discountType: "percent", discountValue: "30", planIds: ["pln_basic", "pln_pro"], startsAt: "2025-10-15T00:00:00.000Z", endsAt: "2025-11-15T23:59:00.000Z", active: false }),
+      );
+    }
+    if (body.payments) {
+      const kinds: Array<[string, BillingInterval, Payment["status"], string | null, string | null]> = [["pln_pro", "yearly", "paid", "WELCOME10", "upi"], ["pln_basic", "quarterly", "paid", null, "card"], ["pln_basic", "quarterly", "failed", null, "netbanking"], ["pln_elite", "monthly", "pending", null, null]];
+      for (let i = 0; i < body.payments; i += 1) {
+        const [planId, interval, status, couponCode, method] = kinds[i % kinds.length]!;
+        const plan = planOf(planId)!;
+        const bd = breakdownFor(plan.intervals[interval], couponCode ? { discountType: "percent", discountValue: "10" } : null);
+        const at = new Date(Date.UTC(2026, 8, 1 - i, 10, 12)).toISOString();
+        state.payments.push({ id: id("pay"), userId: acc.user.id, couponId: null, at, planId, planName: plan.name, interval, listInr: bd.list, planDiscountInr: bd.planDiscount, couponCode, couponDiscountInr: bd.couponDiscount, taxInr: bd.tax, amountInr: bd.total, method, status, orderId: `order_seed${i}`, razorpayPaymentId: status === "paid" ? `pay_seed${i}` : null, failureReason: status === "failed" ? "Bank declined" : null, invoiceNo: status === "paid" ? invoiceNumber(2026, i + 1) : null });
+      }
+    }
     if (body.banners) {
       // n banners: live once-a-day, live once-per-session, scheduled, hidden … cycling
       const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";

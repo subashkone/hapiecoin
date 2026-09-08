@@ -19,6 +19,10 @@ export interface SeedOptions {
   referrals?: number;
   /** Seed this many banners (live, live, scheduled, hidden … cycling; ADR-033). */
   banners?: number;
+  /** Seed the four demo coupons (ADR-034); the community one is assigned to this user. */
+  coupons?: boolean;
+  /** Seed this many payment rows (paid, paid, failed, pending … cycling). */
+  payments?: number;
 }
 
 export async function seedUser(request: APIRequestContext, opts: SeedOptions) {

@@ -423,6 +423,62 @@ export const banners = pgTable("banners", {
   ...timestamps,
 });
 
+/** Discount coupons (Phase 4 item 2, ADR-034). Values are decimal strings; plan / interval scope as arrays. */
+export const coupons = pgTable(
+  "coupons",
+  {
+    id: text("id").primaryKey(),
+    code: text("code").notNull(),
+    description: text("description").notNull().default(""),
+    discountType: text("discount_type", { enum: ["percent", "fixed"] }).notNull(),
+    discountValue: text("discount_value").notNull(),
+    minOrderInr: text("min_order_inr").notNull().default("0"),
+    maxUses: integer("max_uses"),
+    usedCount: integer("used_count").notNull().default(0),
+    perUserLimit: integer("per_user_limit").notNull().default(1),
+    startsAt: timestamp("starts_at", { withTimezone: true, mode: "date" }),
+    endsAt: timestamp("ends_at", { withTimezone: true, mode: "date" }),
+    scope: text("scope", { enum: ["public", "community"] }).notNull().default("public"),
+    planIds: jsonb("plan_ids").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    intervals: jsonb("intervals").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    assignedUserIds: jsonb("assigned_user_ids").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    active: boolean("active").notNull().default(true),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("coupons_code_uq").on(t.code)],
+);
+
+/** One row per checkout attempt (ADR-034): pending on order creation, paid after a verified confirmation or webhook. */
+export const payments = pgTable(
+  "payments",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    planId: text("plan_id").references(() => plans.id, { onDelete: "set null" }),
+    planName: text("plan_name").notNull(),
+    interval: text("interval", { enum: ["monthly", "quarterly", "yearly"] }).notNull(),
+    listInr: text("list_inr").notNull(),
+    planDiscountInr: text("plan_discount_inr").notNull().default("0.00"),
+    couponId: text("coupon_id").references(() => coupons.id, { onDelete: "set null" }),
+    couponCode: text("coupon_code"),
+    couponDiscountInr: text("coupon_discount_inr").notNull().default("0.00"),
+    taxInr: text("tax_inr").notNull().default("0.00"),
+    amountInr: text("amount_inr").notNull(),
+    status: text("status", { enum: ["paid", "pending", "failed"] }).notNull(),
+    method: text("method"),
+    orderId: text("order_id"),
+    razorpayPaymentId: text("razorpay_payment_id"),
+    failureReason: text("failure_reason"),
+    invoiceNo: text("invoice_no"),
+    subscriptionId: text("subscription_id").references(() => subscriptions.id, { onDelete: "set null" }),
+    paidAt: timestamp("paid_at", { withTimezone: true, mode: "date" }),
+    ...timestamps,
+  },
+  (t) => [index("payments_user_id_idx").on(t.userId), uniqueIndex("payments_order_id_uq").on(t.orderId), uniqueIndex("payments_rzp_payment_uq").on(t.razorpayPaymentId), uniqueIndex("payments_invoice_no_uq").on(t.invoiceNo)],
+);
+
 /** Every table, for `drizzle(client, { schema })`; declared last so each table exists before it is referenced. */
 export const schema = {
   users,
@@ -443,5 +499,7 @@ export const schema = {
   menuItems,
   referralCommissions,
   banners,
+  coupons,
+  payments,
 };
 export type Schema = typeof schema;

@@ -43,6 +43,13 @@
       "when": 1788885578348,
       "tag": "0005_aberrant_kate_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788887995314,
+      "tag": "0006_nebulous_frog_thor",
+      "breakpoints": true
     }
   ]
 }

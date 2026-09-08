@@ -3,18 +3,19 @@
  *
  *   GET   /v1/plans                       active plans for the comparison grid (HC-AC-011..015)
  *   GET   /v1/subscription                current plan, entitlements with usage, plans, menu items (HC-AC-003..010)
- *   POST  /v1/subscription/activate       ₹0 totals only (HC-AC-023); paid checkout arrives with Razorpay (item 2) → 402
+ *   POST  /v1/subscription/activate       ₹0 totals only, coupon-aware (HC-AC-023); paid totals → 402, use /v1/checkout (ADR-034)
  *   admin GET/POST/PATCH /v1/admin/plans, POST /v1/admin/plans/bulk                  (HC-AD-004..019, 110..112)
  *   admin GET/POST/PATCH /v1/admin/menu-items, POST /v1/admin/menu-items/bulk        (HC-AD-020..028, 113, 114)
  *   admin GET /v1/admin/users, PATCH /v1/admin/users/{id}, POST /v1/admin/users/bulk (HC-AD-042..051, 117; extended for User Management in ADR-032, see admin-users.ts)
  */
-import { ActivateBody, AdminUserPatch, AdminUserRow, AdminUsersPage, AdminUsersQuery, BulkActiveBody, INTERVAL_MONTHS, Id, MenuItem, MenuItemInput, MenuItemList, Plan, PlanInput, PlanList, SubscriptionView, priceBreakdown } from "@hapiecoin/schema";
+import { ActivateBody, AdminUserPatch, AdminUserRow, AdminUsersPage, AdminUsersQuery, BulkActiveBody, INTERVAL_MONTHS, Id, MenuItem, MenuItemInput, MenuItemList, Plan, PlanInput, PlanList, SubscriptionView } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, asc, eq, ilike, inArray, sql } from "drizzle-orm";
 import { adminRow, assertRoleChangeAllowed, listUsers } from "../admin-users.js";
 import { auditFrom } from "../audit.js";
 import { menuItems, plans, subscriptions, userSettings, users } from "../db/schema.js";
 import { activeSubscription, entitlementsFor, toPlan } from "../entitlements.js";
+import { priceFor, recordFreePayment } from "../checkout.js";
 import { recordReferralCommission } from "../referrals.js";
 import { type AppEnv, currentUser } from "../security/context.js";
 import { errors } from "../security/errors.js";
@@ -72,7 +73,7 @@ export function registerBillingRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, n
       method: "post",
       path: "/v1/subscription/activate",
       tags: ["billing"],
-      summary: "Activate a ₹0 plan (HC-AC-023); paid plans answer 402 until Razorpay checkout (item 2)",
+      summary: "Activate a ₹0 total (HC-AC-023); paid totals answer 402 and go through /v1/checkout",
       security: cookieAuth,
       middleware: [guard],
       request: { body: { content: { "application/json": { schema: ActivateBody } }, required: true } },
@@ -83,18 +84,20 @@ export function registerBillingRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, n
       const body = c.req.valid("json");
       const [u] = await db.select({ active: users.active }).from(users).where(eq(users.id, me.id)).limit(1);
       if (u && !u.active) throw errors.forbidden("Your account has been deactivated. Contact support.");
-      const [plan] = await db.select().from(plans).where(and(eq(plans.id, body.planId), eq(plans.active, true))).limit(1);
-      if (!plan) throw errors.notFound("Plan");
-      const pricing = plan.intervals[body.interval];
-      const total = priceBreakdown(pricing).total;
-      if (total > 0) throw errors.paymentRequired(`${plan.name} · ${body.interval} costs ₹${total.toFixed(2)}; checkout arrives with Razorpay in the next release`);
       const at = now();
+      const { plan, coupon, breakdown } = await priceFor(deps, me.id, body.planId, body.interval, body.couponCode, at);
+      const pricing = plan.intervals[body.interval];
+      const total = Number(breakdown.total);
+      if (total > 0) throw errors.paymentRequired(`${plan.name} · ${body.interval} costs ₹${breakdown.total}; pay with Razorpay`);
       const current = await activeSubscription(deps, me.id, at);
       if (current?.planId === plan.id && current.interval === body.interval) throw errors.conflict(`You are already on ${plan.name} · ${body.interval}`);
       await db.update(subscriptions).set({ status: "cancelled", updatedAt: at }).where(and(eq(subscriptions.userId, me.id), eq(subscriptions.status, "active")));
       const expiresAt = total === 0 && Number(pricing.priceInr) === 0 ? null : new Date(at.getTime() + INTERVAL_MONTHS[body.interval] * 30 * 86_400_000);
       const [created] = await db.insert(subscriptions).values({ id: newId("sub"), userId: me.id, planName: plan.name, planId: plan.id, interval: body.interval, priceInr: pricing.priceInr, paidInr: "0", currency: "INR", status: "active", startsAt: at, expiresAt, featureLimits: pricing.limits }).returning();
-      if (created) await recordReferralCommission(deps, created, at); // ADR-031: the referrer sees the sign-up even at ₹0
+      if (created) {
+        await recordReferralCommission(deps, created, at); // ADR-031: the referrer sees the sign-up even at ₹0
+        await recordFreePayment(deps, me.id, plan, body.interval, coupon, breakdown, created.id, at); // ADR-034: history shows the ₹0 order
+      }
       const view = await subscriptionView(me.id);
       await auditFrom(c, db)({ action: "subscription.activate", target: `user:${me.id}`, before: current ? { planName: current.planName, interval: current.interval } : null, after: { planName: plan.name, interval: body.interval, paidInr: "0" } });
       return c.json(view, 200);
