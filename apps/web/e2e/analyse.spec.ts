@@ -411,3 +411,57 @@ test.describe("HC-TR paper trading (Phase 3 item 1)", () => {
     await expect(page.getByTestId("mine-card")).toContainText("E2E straddle");
   });
 });
+
+test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
+  test.beforeEach(async ({ page, request }) => {
+    await seedUser(request, { email: "live@example.com", plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" }, connected: true });
+    await signIn(page, "live@example.com");
+    await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
+    await page.reload();
+    await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 15_000 });
+  });
+
+  test("HC-TR-063 go live from a paper card: locked Live mode, exchange preview, orders on the Live tab; HC-TR-086 square off all", async ({ page }) => {
+    const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
+    await page.locator(`[data-testid=chain-row-calls][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-buy-calls").click();
+    await page.getByTestId("tab-builder").click();
+    await page.getByTestId("strategy-name").fill("E2E long call");
+    await page.getByTestId("builder-paper-trade").click();
+    const mode = page.getByTestId("trade-mode");
+    await expect(mode.getByTestId("trade-broker")).toHaveValue("brk_delta");
+    await mode.getByTestId("trade-continue").click();
+    await page.getByTestId("trade-preview").getByTestId("trade-now").click();
+    await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+    // Go live from the card
+    const card = page.getByTestId("paper-card");
+    await expect(card.getByTestId("card-golive")).toBeEnabled();
+    await card.getByTestId("card-golive").click();
+    await expect(mode.getByTestId("mode-live")).toHaveAttribute("aria-pressed", "true");
+    await expect(mode.getByTestId("mode-paper")).toBeDisabled();
+    await expect(mode.getByTestId("trade-real-money")).toBeVisible();
+    await mode.getByTestId("trade-continue").click();
+    const preview = page.getByTestId("trade-preview");
+    await expect(preview.getByTestId("venue-preview")).toHaveAttribute("data-ok", "true");
+    await expect(preview.getByTestId("venue-leg")).toHaveCount(1);
+    await expect(preview.getByTestId("trade-now")).toHaveText(/Place live orders/);
+    await preview.getByTestId("trade-now").click();
+    await expect(page.getByTestId("live-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+    await expect(page.getByTestId("live-count")).toContainText("1");
+    const live = page.getByTestId("live-card");
+    await expect(live.getByTestId("mode-pill")).toHaveAttribute("data-status", "live");
+    await expect(live.getByTestId("order-chip")).toHaveAttribute("data-state", "filled");
+    await expect(page.getByTestId("live-exchange-chip")).toHaveText(/exchange connected/);
+    // square off all from Details: reduce-only exits, strategy archived
+    await live.getByTestId("card-sqall").click();
+    const details = page.getByTestId("strategy-details");
+    await expect(details.getByTestId("details-mode-note")).toContainText("Live trading");
+    await details.getByTestId("details-sqall").click();
+    await details.getByTestId("details-sqall-confirm").click();
+    await expect(details).toHaveAttribute("data-status", "archived");
+    await page.keyboard.press("Escape");
+    await expect(details).toBeHidden();
+    await expect(page.getByTestId("live-empty")).toBeVisible();
+  });
+});
+

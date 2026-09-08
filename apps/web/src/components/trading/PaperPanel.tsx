@@ -6,6 +6,9 @@ import { Button, EmptyState, cn, toast } from "@hapiecoin/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { strategyKeys, useDeleteStrategy, useStrategies } from "@/lib/api/strategies";
+import { useLiveRetry, useLiveSync } from "@/lib/api/live";
+import { useBrokers, useCredential } from "@/lib/api/queries";
+import { BatchLiveDialog } from "./BatchLiveDialog";
 import { fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
 import { dayPnl, daysOf, fmtLeg, openLegs, pnlSeries } from "@/lib/strategy/paper";
@@ -46,6 +49,13 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const qc = useQueryClient();
   const openDetails = useUiStore((s) => s.openDetails);
   const del = useDeleteStrategy();
+  const retry = useLiveRetry();
+  const sync = useLiveSync();
+  const { data: brokers } = useBrokers();
+  const { data: credential } = useCredential();
+  const connected = (credential?.items.length ?? 0) > 0;
+  const openTrade = useUiStore((s) => s.openTrade);
+  const [batch, setBatch] = useState(false);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("pnl");
   const [page, setPage] = useState(1);
@@ -82,10 +92,14 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
           Refresh
         </Button>
         {kind === "paper" ? (
-          <Button size="sm" variant="outline" className="ml-auto" disabled title="Batch live conversion arrives with the next release (HC-TR-089)" data-testid="trade-all-live">
+          <Button size="sm" variant="outline" className="ml-auto" disabled={all.length === 0} title={all.length ? "Place every open paper strategy as live orders (batch selector)" : "No paper strategies"} onClick={() => setBatch(true)} data-testid="trade-all-live">
             Trade All → Live
           </Button>
-        ) : null}
+        ) : (
+          <span className={cn("micro ml-auto rounded border px-1.5 py-0.5", connected ? "border-profit text-profit" : "border-border text-muted-foreground")} data-testid="live-exchange-chip">
+            {connected ? "exchange connected" : "exchange not connected"}
+          </span>
+        )}
       </div>
       <div className="grid grid-cols-3 gap-2 px-3 py-2" data-testid={`${kind}-strip`}>
         <div className="rounded border border-border px-2 py-1.5"><div className="micro">Total P&amp;L</div><div className={cn("num text-[15px] font-medium", totals.total >= 0 ? "text-profit" : "text-loss")} data-testid={`${kind}-total`}>{fmtMoney(totals.total, money, { signed: true })}</div><div className="micro">{all.length} {all.length === 1 ? "trade" : "trades"} · {totals.open} open {totals.open === 1 ? "leg" : "legs"}</div></div>
@@ -98,7 +112,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
         ) : isError ? (
           <EmptyState title="Could not load strategies" description="Check your connection and try again." action={<Button size="sm" variant="outline" onClick={() => void refetch()}>Retry</Button>} />
         ) : rows.length === 0 ? (
-          <EmptyState title={q ? `No matching ${kind} trades` : kind === "paper" ? "No paper trades yet" : "No live trades"} description={q ? "Try a different search" : kind === "paper" ? "Click Paper trade in the Builder to begin" : "Live order placement arrives with the next release."} className="py-12" data-testid={`${kind}-empty`} />
+          <EmptyState title={q ? `No matching ${kind} trades` : kind === "paper" ? "No paper trades yet" : "No live trades"} description={q ? "Try a different search" : kind === "paper" ? "Click Paper trade in the Builder to begin" : "Go live from a paper card, or pick Live in the Builder's trade dialog."} className="py-12" data-testid={`${kind}-empty`} />
         ) : (
           <div className="flex flex-col gap-2">
             {slice.map((s) => {
@@ -119,21 +133,37 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <Sparkline series={pnlSeries(s, p.total)} />
                     <div className="flex flex-wrap gap-1">
-                      {s.legs.map((l) => (
-                        <span key={l.id} className={cn("micro rounded border px-1", l.status === "open" ? "border-border" : "border-border/50 text-muted-foreground line-through")} title={fmtLeg(l)}>
-                          {l.side[0]!.toUpperCase()} {l.kind === "future" ? "FUT" : `${l.kind[0]!.toUpperCase()} ${Number(l.strike).toLocaleString("en-US")}`} · {l.lots}
-                        </span>
-                      ))}
+                      {s.legs.map((l) => {
+                        const order = kind === "live" ? s.orders.filter((o) => o.legId === l.id && o.purpose !== "exit").at(-1) : undefined;
+                        const state = l.status === "squared_off" ? "closed" : order?.state ?? (kind === "live" ? "pending" : "open");
+                        return (
+                          <span key={l.id} className={cn("micro rounded border px-1", state === "closed" ? "border-border/50 text-muted-foreground line-through" : state === "failed" ? "border-loss text-loss" : state === "pending" ? "border-warning text-warning" : "border-border")} title={order?.error ?? (order?.venueOrderId ? `Order ${order.venueOrderId}` : fmtLeg(l))} data-testid="order-chip" data-state={state}>
+                            {l.side[0]!.toUpperCase()} {l.kind === "future" ? "FUT" : `${l.kind[0]!.toUpperCase()} ${Number(l.strike).toLocaleString("en-US")}`} · {kind === "live" ? state : l.lots}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
+                  {kind === "live" && s.orders.some((o) => o.state === "failed") ? (
+                    <div className="mt-2 flex flex-wrap items-center gap-2 rounded border border-loss/40 p-2 text-2xs" data-testid="failed-banner">
+                      <b className="text-loss">Order placement failed</b>
+                      <span className="text-muted-foreground">{s.orders.filter((o) => o.state === "failed").length} {s.orders.filter((o) => o.state === "failed").length === 1 ? "leg" : "legs"} · retried {Math.max(...s.orders.filter((o) => o.state === "failed").map((o) => o.attempts)) - 1} {Math.max(...s.orders.filter((o) => o.state === "failed").map((o) => o.attempts)) - 1 === 1 ? "time" : "times"}</span>
+                      <Button size="sm" variant="destructive" className="ml-auto" loading={retry.isPending} onClick={() => retry.mutate(s.id, { onSuccess: (r) => { const left = r ? r.orders.filter((o) => o.state === "failed").length : 0; if (left) toast.error("Still failing", { description: `${left} ${left === 1 ? "order" : "orders"} refused again` }); else toast.success("Orders placed", { description: "All legs are filled" }); }, onError: (e) => toast.error("Retry refused", { description: e.message }) })} data-testid="card-retry">Retry Failed Orders</Button>
+                    </div>
+                  ) : null}
                   <div className="mt-2 flex flex-wrap gap-1">
                     <Button size="sm" variant="outline" onClick={() => openDetails(s.id)} data-testid="card-details">Details</Button>
                     {kind === "paper" ? (
                       <>
-                        <Button size="sm" variant="outline" disabled title="Live order placement arrives with the next release" data-testid="card-golive">Go live</Button>
+                        <Button size="sm" variant="outline" disabled={!connected || open.length === 0} title={connected ? "Place these legs as live orders" : "Connect your exchange first"} onClick={() => openTrade({ strategyId: s.id, mode: "live" })} data-testid="card-golive">Go live</Button>
                         <Button size="sm" variant="outline" className="text-warning" onClick={() => setStopId(s.id)} data-testid="card-stop" data-tour="paper-stop">Stop</Button>
                       </>
-                    ) : null}
+                    ) : (
+                      <>
+                        {s.orders.some((o) => o.state === "pending") ? <Button size="sm" variant="outline" loading={sync.isPending} onClick={() => sync.mutate(s.id, { onSuccess: () => toast("Synced", { description: "Order states refreshed from the exchange" }) })} data-testid="card-sync">Sync</Button> : null}
+                        <Button size="sm" variant="outline" className="text-loss" disabled={open.length === 0} onClick={() => openDetails(s.id)} title="Square off from Details" data-testid="card-sqall">Square off all</Button>
+                      </>
+                    )}
                     <span className="ml-auto flex gap-1">
                       {deleteId === s.id ? (
                         <>
@@ -158,6 +188,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
           </div>
         )}
       </div>
+      {kind === "paper" ? <BatchLiveDialog open={batch} onOpenChange={setBatch} strategies={all} brokers={brokers ?? []} connected={connected} money={money} totalOf={(s) => book.pnlOf(s).total} /> : null}
       {stopping ? <StopPaperDialog open={true} onOpenChange={(o) => !o && setStopId(null)} strategy={stopping} priceOf={(l) => book.priceOf(stopping, l)} total={book.pnlOf(stopping).total} money={money} live={feedLive} onDone={() => void qc.invalidateQueries({ queryKey: strategyKeys.all })} /> : null}
     </section>
   );

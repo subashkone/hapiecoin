@@ -14,7 +14,7 @@ let mock: MockFetch;
 const CALL = { id: "leg_a", kind: "call" as const, side: "buy" as const, strike: "80000", expiry: "2026-09-25", symbol: "C-BTC-80000-250926", lots: 10, price: "1200", entryPrice: "1200", exitPrice: null, iv: 0.5, status: "open" as const, isAdjustment: false, position: 0, openedAt: "2026-09-08T10:00:00Z", closedAt: null, orderId: null };
 function strat(i: number, over: Partial<Strategy> = {}): Strategy {
   const at = `2026-09-0${(i % 8) + 1}T10:00:00Z`;
-  return { id: `strat_${i}`, name: `Paper ${i}`, asset: i % 2 ? "ETH" : "BTC", status: "paper", tradingMode: "paper", templateName: "Custom", brokerId: "brk_delta", legs: [{ ...CALL, id: `leg_${i}` }], realizedPnl: String(i), pnlHistory: [], notes: "", tags: [], orderBatchId: null, startedAt: at, closedAt: null, createdAt: at, updatedAt: at, ...over };
+  return { id: `strat_${i}`, name: `Paper ${i}`, asset: i % 2 ? "ETH" : "BTC", status: "paper", tradingMode: "paper", templateName: "Custom", brokerId: "brk_delta", legs: [{ ...CALL, id: `leg_${i}` }], realizedPnl: String(i), pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], startedAt: at, closedAt: null, createdAt: at, updatedAt: at, ...over };
 }
 
 beforeEach(() => {
@@ -64,7 +64,7 @@ describe("HC-TR-058..066 Paper tab list", () => {
 });
 
 describe("HC-TR-050..055 trading mode dialog branches", () => {
-  it("live needs a connected exchange and stays disabled in item 1; a missing exchange shows the error", async () => {
+  it("live needs a connected exchange; once connected Continue is enabled; a missing exchange shows the error", async () => {
     const onContinue = () => undefined;
     const legs = [{ id: "a", kind: "call" as const, side: "buy" as const, strike: "80000", expiry: "2026-09-25", symbol: "C", lots: 10, price: "1200" }];
     const brokers = [{ id: "b1", name: "Delta Exchange India", feePct: "0.05", gstPct: "18", feeCapPct: "10", scope: "GLOBAL" as const }];
@@ -81,7 +81,8 @@ describe("HC-TR-050..055 trading mode dialog branches", () => {
     expect(useUiStore.getState().dialog).toBe("api");
     rerender(<TradeModeDialog open title="x" asset="BTC" legs={legs} spot={80_000} lotSize="0.001" money={{ currency: "USD", rate: "1" }} brokers={brokers} connected={true} priceModeLabel="Live" onContinue={onContinue} onOpenChange={() => undefined} />);
     expect(screen.queryByTestId("trade-not-connected")).toBeNull();
-    expect(screen.getByTestId("trade-continue").getAttribute("title")).toContain("next release");
+    expect(screen.getByTestId("trade-continue").getAttribute("title")).toBeNull();
+    expect(screen.getByTestId("trade-continue").hasAttribute("disabled")).toBe(false);
     expect(screen.getByTestId("trade-net").textContent).toContain("Debit");
   });
 });

@@ -1,4 +1,5 @@
 /** Shared route plumbing: dependency bag, OpenAPI response helpers, id generation. */
+import type { DeltaTradingClient } from "@hapiecoin/venues";
 import { randomBytes } from "node:crypto";
 import { ApiError } from "@hapiecoin/schema";
 import type { z } from "@hono/zod-openapi";
@@ -22,6 +23,8 @@ export interface AppDeps {
   logger: Logger;
   vault: Vault;
   delta: DeltaPrivateClient;
+  /** The live executor (ADR-025): the only path to order endpoints. */
+  trading: DeltaTradingClient;
   /** Public auth capabilities (Google hidden when unconfigured). */
   authOptions: { emailOtp: true; passkey: true; google: boolean };
 }
@@ -36,6 +39,7 @@ export const errorResponses = {
   403: jsonContent(ApiError, "Not allowed"),
   404: jsonContent(ApiError, "Not found"),
   409: jsonContent(ApiError, "Wrong state for this action"),
+  502: jsonContent(ApiError, "Exchange refused or unreachable"),
   429: jsonContent(ApiError, "Rate limited"),
 } as const;
 

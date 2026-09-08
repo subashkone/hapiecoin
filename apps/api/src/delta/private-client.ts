@@ -13,7 +13,8 @@
  *                  "User-Agent": "hapiecoin-api", "Content-Type": "application/json" }
  * Delta rejects signatures whose timestamp is older than 5 s, so the clock is injectable but must be real in production.
  */
-import { createHmac } from "node:crypto";
+import { signDeltaRequest } from "@hapiecoin/venues";
+export { signDeltaRequest };
 
 export type DeltaCredentialErrorCode =
   | "invalid_api_key"
@@ -28,38 +29,6 @@ export type VerifyCredentialsResult =
 export interface DeltaPrivateClient {
   /** One read-only call with the given credentials. Never throws for a credential problem; returns `{ ok: false, code }`. */
   verifyCredentials(creds: { apiKey: string; apiSecret: string }): Promise<VerifyCredentialsResult>;
-}
-
-export interface SignedRequest {
-  url: string;
-  headers: Record<string, string>;
-}
-
-/** Build the signed request for `method path?query` (exported so the scheme is unit-testable). */
-export function signDeltaRequest(opts: {
-  baseUrl: string;
-  method: "GET" | "POST" | "PUT" | "DELETE";
-  path: string;
-  query?: string;
-  body?: string;
-  apiKey: string;
-  apiSecret: string;
-  timestamp: number;
-}): SignedRequest {
-  const query = opts.query ? (opts.query.startsWith("?") ? opts.query : `?${opts.query}`) : "";
-  const ts = String(opts.timestamp);
-  const payload = `${opts.method}${ts}${opts.path}${query}${opts.body ?? ""}`;
-  const signature = createHmac("sha256", opts.apiSecret).update(payload).digest("hex");
-  return {
-    url: `${opts.baseUrl.replace(/\/+$/, "")}${opts.path}${query}`,
-    headers: {
-      "api-key": opts.apiKey,
-      timestamp: ts,
-      signature,
-      "User-Agent": "hapiecoin-api",
-      "Content-Type": "application/json",
-    },
-  };
 }
 
 export type FetchLike = (

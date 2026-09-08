@@ -7,6 +7,7 @@ import { AUTH_BASE_PATH, authOptionsPublic, createAuth, sessionResolver, type Au
 import { type Config, loadConfig } from "../config.js";
 import { createDb, type Db, type DbHandle } from "../db/client.js";
 import { SEED, seed } from "../db/seed.js";
+import { FakeDeltaTradingClient } from "@hapiecoin/venues";
 import { FakeDeltaPrivateClient } from "../delta/private-client.js";
 import { createLogger } from "../logger.js";
 import { MailCapture } from "../mailer.js";
@@ -44,6 +45,7 @@ export interface TestApp {
   auth: Auth;
   mail: MailCapture;
   delta: FakeDeltaPrivateClient;
+  trading: FakeDeltaTradingClient;
   rateStore: MemoryRateStore;
   vault: Vault;
   now: { value: number };
@@ -85,6 +87,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
   await seed(handle.db);
   const mail = new MailCapture();
   const delta = new FakeDeltaPrivateClient();
+  const trading = new FakeDeltaTradingClient();
   const now = { value: Date.now() };
   const rateStore = new MemoryRateStore({ now: () => now.value });
   const vault = createVault(config.credentialsEncKey);
@@ -101,6 +104,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
     logger,
     vault,
     delta,
+    trading,
     authOptions: authOptionsPublic(config),
   });
 
@@ -150,6 +154,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
 
   return {
     app,
+    trading,
     config,
     db: handle.db,
     handle,

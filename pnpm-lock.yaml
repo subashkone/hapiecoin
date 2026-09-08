@@ -148,6 +148,9 @@ importers:
       '@hapiecoin/schema':
         specifier: workspace:*
         version: link:../../packages/schema
+      '@hapiecoin/venues':
+        specifier: workspace:*
+        version: link:../../packages/venues
       '@hono/node-server':
         specifier: 2.1.1
         version: 2.1.1(hono@4.13.7)

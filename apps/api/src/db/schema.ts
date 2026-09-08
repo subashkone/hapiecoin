@@ -48,6 +48,8 @@ export const users = pgTable(
     referralCode: text("referral_code").notNull(),
     /** Referral code of the inviter, captured from `ref` at sign-up. */
     referredBy: text("referred_by"),
+    /** Per-account kill switch (ADR-025): true refuses every live placement for this user. */
+    tradingDisabled: boolean("trading_disabled").notNull().default(false),
   },
   (t) => [
     uniqueIndex("users_email_uq").on(t.email),
@@ -238,19 +240,6 @@ export const auditLog = pgTable(
   (t) => [index("audit_log_actor_id_idx").on(t.actorId), index("audit_log_target_idx").on(t.target)],
 );
 
-export const schema = {
-  users,
-  sessions,
-  accounts,
-  verifications,
-  passkeys,
-  userSettings,
-  brokers,
-  brokerCredentials,
-  subscriptions,
-  auditLog,
-};
-export type Schema = typeof schema;
 
 // ---------------------------------------------------------------------------------------------
 // Strategies (Phase 3, ADR-024): drafts, paper trades, live trades and archived strategies
@@ -324,3 +313,50 @@ export const strategyPnl = pgTable(
   (t) => [uniqueIndex("strategy_pnl_strategy_day_uq").on(t.strategyId, t.day)],
 );
 
+/** Venue orders behind live legs (ADR-025): one row per placement attempt outcome, keyed by the client order id. */
+export const strategyOrders = pgTable(
+  "strategy_orders",
+  {
+    id: text("id").primaryKey(),
+    strategyId: text("strategy_id")
+      .notNull()
+      .references(() => strategies.id, { onDelete: "cascade" }),
+    legId: text("leg_id")
+      .notNull()
+      .references(() => strategyLegs.id, { onDelete: "cascade" }),
+    /** Batch this order was placed in (idempotency key of the placement). */
+    batchId: text("batch_id").notNull(),
+    purpose: text("purpose", { enum: ["entry", "exit", "adjustment"] }).notNull(),
+    clientOrderId: text("client_order_id").notNull(),
+    venueOrderId: text("venue_order_id"),
+    productId: integer("product_id").notNull(),
+    symbol: text("symbol").notNull(),
+    side: text("side", { enum: ["buy", "sell"] }).notNull(),
+    size: integer("size").notNull(),
+    state: text("state", { enum: ["pending", "filled", "failed", "cancelled", "closed"] }).notNull(),
+    fillPrice: text("fill_price"),
+    error: text("error"),
+    attempts: integer("attempts").notNull().default(1),
+    ...timestamps,
+  },
+  (t) => [index("strategy_orders_strategy_id_idx").on(t.strategyId), uniqueIndex("strategy_orders_client_uq").on(t.clientOrderId)],
+);
+
+/** Every table, for `drizzle(client, { schema })`; declared last so each table exists before it is referenced. */
+export const schema = {
+  users,
+  sessions,
+  accounts,
+  verifications,
+  passkeys,
+  userSettings,
+  brokers,
+  brokerCredentials,
+  subscriptions,
+  auditLog,
+  strategies,
+  strategyLegs,
+  strategyPnl,
+  strategyOrders,
+};
+export type Schema = typeof schema;

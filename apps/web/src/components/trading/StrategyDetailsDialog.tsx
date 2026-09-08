@@ -17,6 +17,8 @@ import { ChainPickerDialog } from "@/components/builder/ChainPickerDialog";
 import { PartialExitDialog } from "./PartialExitDialog";
 import { SquareOffDialog } from "./SquareOffDialog";
 import { StopPaperDialog } from "./StopPaperDialog";
+import { ConfirmAdjustmentDialog } from "./ConfirmAdjustmentDialog";
+import type { NewLegInput } from "@/lib/strategy/legs";
 
 export function ModePill({ status }: { status: Strategy["status"] }) {
   const cls = status === "live" ? "border-loss bg-loss text-white" : status === "paper" ? "border-border" : status === "archived" ? "border-border text-muted-foreground" : "border-border text-muted-foreground";
@@ -72,6 +74,7 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
   const [adjust, setAdjust] = useState(false);
   const [confirmAll, setConfirmAll] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [pendingAdj, setPendingAdj] = useState<NewLegInput[] | null>(null);
   const closeAll = useCloseAll();
   const addLegs = useAddLegs();
   const del = useDeleteStrategy();
@@ -201,7 +204,7 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
                   {t === "active" ? "Active" : "Squared off"} <span className="font-mono text-3xs">{t === "active" ? open.length : closed.length}</span>
                 </button>
               ))}
-              <span className="micro ml-auto">{s.status === "live" ? `orders on ${book.brokerName(s.brokerId)}` : s.status === "paper" ? "simulated at live prices" : ""}</span>
+              <span className="micro ml-auto" data-testid="details-mode-note">{s.status === "live" ? `Live trading · orders on ${book.brokerName(s.brokerId)}` : s.status === "paper" ? "simulated at live prices" : ""}</span>
             </div>
             {shown.length === 0 ? <p className="py-4 text-center text-xs text-muted-foreground">{tab === "active" ? "No active legs · All legs have been squared off" : "No squared off legs · Closed legs will appear here"}</p> : null}
             {adj.length ? <><div className="micro mt-2">Adjustments</div><div className="flex flex-col gap-1">{adj.map(legRow)}</div></> : null}
@@ -240,16 +243,47 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
         asset={s.asset}
         expiry={s.legs.find((l) => l.kind !== "future")?.expiry ?? null}
         title="Add adjustment legs"
-        onAdd={(legs) =>
+        onAdd={(legs) => {
+          if (s.status === "live") {
+            setPendingAdj(legs);
+            return;
+          }
           addLegs.mutate(
             { id: s.id, body: { legs: legs.map(pickToInput) } },
             {
               onSuccess: () => toast.success("Adjustment added", { description: `${legs.length} adjustment ${legs.length === 1 ? "leg" : "legs"} added successfully` }),
               onError: (e) => toast.error("Could not add adjustment", { description: e.message }),
             },
-          )
-        }
+          );
+        }}
       />
+      {pendingAdj ? (
+        <ConfirmAdjustmentDialog
+          open={true}
+          onOpenChange={(o) => !o && setPendingAdj(null)}
+          strategy={s}
+          legs={pendingAdj}
+          lotSize={book.lotSizeOf(s.asset)}
+          money={money}
+          brokerName={book.brokerName(s.brokerId)}
+          preview={null}
+          busy={addLegs.isPending}
+          onConfirm={() =>
+            addLegs.mutate(
+              { id: s.id, body: { legs: pendingAdj.map(pickToInput) } },
+              {
+                onSuccess: (r) => {
+                  setPendingAdj(null);
+                  const failed = r ? r.orders.filter((o) => o.purpose === "adjustment" && o.state === "failed").length : 0;
+                  if (failed) toast.error("Adjustment partly refused", { description: `${failed} ${failed === 1 ? "order" : "orders"} failed · use Retry on the Live tab` });
+                  else toast.success("Adjustment orders placed", { description: `${pendingAdj.length} ${pendingAdj.length === 1 ? "order" : "orders"} filled` });
+                },
+                onError: (e) => toast.error("Adjustment refused", { description: e.message }),
+              },
+            )
+          }
+        />
+      ) : null}
     </>
   );
 }

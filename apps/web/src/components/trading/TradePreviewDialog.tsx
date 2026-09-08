@@ -1,7 +1,7 @@
 "use client";
 // Trade Preview (HC-TR-056, HC-TR-057): the legs as they will be tracked, fees, what you pay or receive,
 // spot, margin estimate, then "Trade now".
-import type { Broker, Underlying } from "@hapiecoin/schema";
+import type { Broker, LivePreview, Underlying } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn } from "@hapiecoin/ui";
 import { fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
@@ -23,6 +23,8 @@ export interface TradePreviewProps {
   maxLoss: number | null;
   customPrices: boolean;
   busy: boolean;
+  /** Server-side venue preview (live only): contracts, marks, notional, wallet and safeguard verdicts. */
+  venue?: LivePreview | null | undefined;
   onTrade: () => void;
 }
 
@@ -85,6 +87,25 @@ export function TradePreviewDialog(p: TradePreviewProps) {
             <dt className="text-muted-foreground">Exchange</dt>
             <dd>{p.broker?.name ?? "—"}</dd>
           </dl>
+          {p.venue ? (
+            <div className="mt-3 rounded border border-border p-2 text-2xs" data-testid="venue-preview" data-ok={p.venue.ok}>
+              <div className="micro mb-1">Exchange check · {p.venue.ok ? "ready to place" : "blocked"}</div>
+              <table className="w-full">
+                <thead><tr className="micro text-left"><th className="pr-2">Symbol</th><th className="pr-2 text-right">Contracts</th><th className="pr-2 text-right">Mark</th><th className="text-right">Notional</th></tr></thead>
+                <tbody>
+                  {p.venue.legs.map((l) => (
+                    <tr key={l.legId} className="num" data-testid="venue-leg"><td className="pr-2">{l.symbol}</td><td className="pr-2 text-right">{l.contracts ?? "—"}</td><td className="pr-2 text-right">{l.mark ?? "—"}</td><td className="text-right">{fmtMoney(Number(l.notional), p.money)}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="mt-1 flex flex-wrap gap-x-3">
+                <span>Notional <b className="num">{fmtMoney(Number(p.venue.notional), p.money)}</b></span>
+                <span>Available <b className="num">{p.venue.available ? `${p.venue.available} ${p.venue.availableAsset ?? ""}` : "—"}</b></span>
+                <span className="text-muted-foreground">band ±{p.venue.limits.markBandPct} % · max {p.venue.limits.maxLegs} legs · max {p.venue.limits.maxNotionalUsd.toLocaleString("en-US")} USD</span>
+              </div>
+              {p.venue.reasons.length ? <ul className="mt-1 list-disc pl-4 text-loss" data-testid="venue-reasons">{p.venue.reasons.map((r) => <li key={r}>{r}</li>)}</ul> : null}
+            </div>
+          ) : null}
           <div className={cn("mt-3 rounded border p-2 text-2xs", p.mode === "live" ? "border-loss/40" : "border-info/30 bg-info-bg text-info")} data-testid="preview-note">
             {p.mode === "live"
               ? "You are about to trade this strategy. Orders will be placed on Delta Exchange. Prices may differ from displayed estimates. Ensure you have sufficient margin."
@@ -95,8 +116,8 @@ export function TradePreviewDialog(p: TradePreviewProps) {
           <Button variant="outline" onClick={() => p.onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={p.onTrade} loading={p.busy} data-testid="trade-now" data-tour="trade-confirm-button">
-            Trade now →
+          <Button onClick={p.onTrade} loading={p.busy} disabled={p.venue !== null && p.venue !== undefined && !p.venue.ok} variant={p.mode === "live" ? "destructive" : "primary"} data-testid="trade-now" data-tour="trade-confirm-button">
+            {p.mode === "live" ? "Place live orders →" : "Trade now →"}
           </Button>
         </DialogFooter>
       </DialogContent>

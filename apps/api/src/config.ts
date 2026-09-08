@@ -49,6 +49,13 @@ const RawEnv = z.object({
   /** Persistent PGlite directory for development (in-memory when unset). */
   PGLITE_DATA_DIR: z.string().min(1).optional(),
   // Read only for the trading-safety guard; the API never uses live keys itself.
+  /** Base URL for every private (signed) call: credential checks and orders. Testnet for Phase 3 (ADR-025). */
+  DELTA_TRADING_REST_URL: z.url().optional(),
+  /** Global kill switch: "1" / "true" refuses every live placement (ADR-025). */
+  TRADING_DISABLED: z.string().optional(),
+  TRADING_MAX_NOTIONAL_USD: z.coerce.number().positive().default(100_000),
+  TRADING_MAX_LEGS: z.coerce.number().int().min(1).max(10).default(10),
+  TRADING_MARK_BAND_PCT: z.coerce.number().min(0).max(50).default(5),
   DELTA_API_KEY: z.string().optional(),
   DELTA_API_SECRET: z.string().optional(),
 });
@@ -72,6 +79,8 @@ export interface Config {
   /** 32-byte AES-256-GCM key for exchange credentials at rest. */
   credentialsEncKey: Buffer;
   deltaRestUrl: string;
+  deltaTradingRestUrl: string;
+  trading: { disabled: boolean; maxNotionalUsd: number; maxLegs: number; markBandPct: number };
   egressIp: string;
   logLevel: string;
   pgliteDataDir: string | undefined;
@@ -179,6 +188,8 @@ export function loadConfig(
     emailFrom: e.EMAIL_FROM,
     credentialsEncKey,
     deltaRestUrl: e.DELTA_REST_URL,
+    deltaTradingRestUrl: e.DELTA_TRADING_REST_URL ?? e.DELTA_REST_URL,
+    trading: { disabled: e.TRADING_DISABLED === "1" || e.TRADING_DISABLED === "true", maxNotionalUsd: e.TRADING_MAX_NOTIONAL_USD, maxLegs: e.TRADING_MAX_LEGS, markBandPct: e.TRADING_MARK_BAND_PCT },
     egressIp: e.EGRESS_IP,
     logLevel: e.LOG_LEVEL ?? (isTest ? "silent" : "info"),
     pgliteDataDir: e.PGLITE_DATA_DIR,

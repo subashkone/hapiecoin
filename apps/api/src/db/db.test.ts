@@ -15,6 +15,10 @@ import {
   passkeys,
   schema,
   sessions,
+  strategies,
+  strategyLegs,
+  strategyOrders,
+  strategyPnl,
   subscriptions,
   userSettings,
   users,
@@ -114,6 +118,24 @@ describe("[DB] schema declares the relationships the API relies on", () => {
     expect(fks(verifications)).toEqual([]);
   });
 
+  it("strategy tables cascade from users and strategies; a deleted broker leaves the strategy (broker null)", () => {
+    expect(fks(strategies)).toEqual([
+      { from: "user_id", to: "users.id", onDelete: "cascade" },
+      { from: "broker_id", to: "brokers.id", onDelete: "set null" },
+    ]);
+    expect(fks(strategyLegs)).toEqual([{ from: "strategy_id", to: "strategies.id", onDelete: "cascade" }]);
+    expect(fks(strategyPnl)).toEqual([{ from: "strategy_id", to: "strategies.id", onDelete: "cascade" }]);
+    expect(fks(strategyOrders)).toEqual([
+      { from: "strategy_id", to: "strategies.id", onDelete: "cascade" },
+      { from: "leg_id", to: "strategy_legs.id", onDelete: "cascade" },
+    ]);
+    const indexNames = (table: Parameters<typeof getTableConfig>[0]) => getTableConfig(table).indexes.map((i) => i.config.name);
+    expect(indexNames(strategies)).toContain("strategies_user_id_idx");
+    expect(indexNames(strategyLegs)).toEqual(["strategy_legs_strategy_id_idx"]);
+    expect(indexNames(strategyPnl)).toEqual(["strategy_pnl_strategy_day_uq"]);
+    expect(indexNames(strategyOrders)).toEqual(["strategy_orders_strategy_id_idx", "strategy_orders_client_uq"]);
+  });
+
   it("unique constraints protect email, referral code, session token and one credential per user+broker", () => {
     const uniqueNames = (table: Parameters<typeof getTableConfig>[0]) =>
       getTableConfig(table)
@@ -130,6 +152,10 @@ describe("[DB] schema declares the relationships the API relies on", () => {
         "brokers",
         "passkeys",
         "sessions",
+        "strategies",
+        "strategyLegs",
+        "strategyOrders",
+        "strategyPnl",
         "subscriptions",
         "userSettings",
         "users",

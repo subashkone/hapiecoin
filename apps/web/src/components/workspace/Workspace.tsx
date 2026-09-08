@@ -19,7 +19,7 @@ export const LEFT_TABS: { id: WorkspaceTab; label: string; phase?: number; blurb
   { id: "chain", label: "Chain" },
   { id: "builder", label: "Builder" },
   { id: "paper", label: "Paper" },
-  { id: "live", label: "Live", phase: 3, blurb: "Live orders on Delta Exchange India through your own API key." },
+  { id: "live", label: "Live" },
   { id: "journal", label: "Journal", phase: 4, blurb: "Closed trades, notes and the performance log." },
 ];
 
@@ -64,6 +64,7 @@ export function Workspace() {
   const book = usePaperBook(strategies ?? []);
   const feedLive = useConnectionStatus() === "open";
   const paperCount = (strategies ?? []).filter((s) => s.status === "paper").length;
+  const liveCount = (strategies ?? []).filter((s) => s.status === "live").length;
   const [split, setSplit] = useState(SPLIT_DEFAULT);
   const [dragging, setDragging] = useState(false);
   const [stacked, setStacked] = useState<"left" | "analysis">("left");
@@ -123,6 +124,12 @@ export function Workspace() {
                 {paperCount}
               </span>
             ) : null}
+            {t.id === "live" && liveCount > 0 ? (
+              <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-loss px-1.5 font-mono text-3xs text-white" data-testid="live-count">
+                <i className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                {liveCount}
+              </span>
+            ) : null}
           </TabsTrigger>
         ))}
         <span className="ml-auto self-center pr-2 font-mono text-3xs uppercase tracking-[0.1em] text-muted-foreground">Lot · basis mark</span>
@@ -135,6 +142,9 @@ export function Workspace() {
       </TabsContent>
       <TabsContent value="paper" className="min-h-0 flex-1">
         <PaperPanel book={book} feedLive={feedLive} />
+      </TabsContent>
+      <TabsContent value="live" className="min-h-0 flex-1">
+        <PaperPanel book={book} feedLive={feedLive} kind="live" />
       </TabsContent>
       {LEFT_TABS.filter((t) => t.phase).map((t) => (
         <TabsContent key={t.id} value={t.id} className="min-h-0 flex-1">

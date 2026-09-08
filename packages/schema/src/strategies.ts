@@ -79,6 +79,28 @@ export const StrategyLeg = z.strictObject({
 });
 export type StrategyLeg = z.infer<typeof StrategyLeg>;
 
+export const OrderState = z.enum(["pending", "filled", "failed", "cancelled", "closed"]);
+export type OrderState = z.infer<typeof OrderState>;
+
+/** A venue order behind a live leg (ADR-025). */
+export const StrategyOrder = z.strictObject({
+  id: Id,
+  legId: Id,
+  purpose: z.enum(["entry", "exit", "adjustment"]),
+  clientOrderId: z.string(),
+  venueOrderId: z.string().nullable(),
+  symbol: z.string(),
+  side: StrategyLegSide,
+  size: z.number().int().nonnegative(),
+  state: OrderState,
+  fillPrice: DecimalString.nullable(),
+  error: z.string().nullable(),
+  attempts: z.number().int().min(1),
+  createdAt: IsoDateTime,
+  updatedAt: IsoDateTime,
+});
+export type StrategyOrder = z.infer<typeof StrategyOrder>;
+
 export const PnlPoint = z.strictObject({ day: z.iso.date(), pnl: DecimalString });
 export type PnlPoint = z.infer<typeof PnlPoint>;
 
@@ -97,6 +119,8 @@ export const Strategy = z.strictObject({
   notes: z.string().max(2_000),
   tags: z.array(z.string().min(1).max(32)).max(20),
   orderBatchId: z.string().nullable(),
+  /** Venue orders (live strategies); empty for drafts and paper. */
+  orders: z.array(StrategyOrder).default([]),
   startedAt: IsoDateTime.nullable(),
   closedAt: IsoDateTime.nullable(),
   createdAt: IsoDateTime,
@@ -175,3 +199,70 @@ export function toDecimal(n: number, digits = 2): string {
 }
 
 export { PositiveDecimal as PositiveDecimalString };
+
+/** Live placement preview (ADR-025): what the executor would send and every safeguard verdict. */
+export const LivePreviewLeg = z.strictObject({
+  legId: Id,
+  symbol: z.string(),
+  side: StrategyLegSide,
+  lots: z.number().int().min(1),
+  contracts: z.number().int().min(1).nullable(),
+  contractValue: DecimalString,
+  productState: z.string(),
+  mark: DecimalString.nullable(),
+  /** contracts × contract value × mark, USD. */
+  notional: DecimalString,
+});
+export type LivePreviewLeg = z.infer<typeof LivePreviewLeg>;
+
+export const LivePreview = z.strictObject({
+  ok: z.boolean(),
+  reasons: z.array(z.string()),
+  legs: z.array(LivePreviewLeg),
+  notional: DecimalString,
+  available: DecimalString.nullable(),
+  availableAsset: z.string().nullable(),
+  limits: z.strictObject({ maxLegs: z.number().int(), maxNotionalUsd: z.number(), markBandPct: z.number() }),
+});
+export type LivePreview = z.infer<typeof LivePreview>;
+
+export const LivePlaceBody = z.strictObject({
+  brokerId: Id,
+  /** Idempotency key chosen by the client; a repeat returns the stored outcome. */
+  idempotencyKey: z.string().min(8).max(80),
+  /** Marks shown in the preview, per leg id; the placement is refused when the venue mark moved past the band. */
+  expected: z.record(Id, DecimalString).default({}),
+});
+export type LivePlaceBody = z.infer<typeof LivePlaceBody>;
+
+export const LivePreviewBody = z.strictObject({ brokerId: Id });
+export type LivePreviewBody = z.infer<typeof LivePreviewBody>;
+
+export const LiveBatchBody = z.strictObject({
+  ids: z.array(Id).min(1).max(20),
+  brokerId: Id,
+  idempotencyKey: z.string().min(8).max(80),
+});
+export type LiveBatchBody = z.infer<typeof LiveBatchBody>;
+
+export const LiveBatchResult = z.strictObject({
+  placed: z.array(Id),
+  failed: z.strictObject({ id: Id, error: z.string() }).nullable(),
+  skipped: z.array(Id),
+});
+export type LiveBatchResult = z.infer<typeof LiveBatchResult>;
+
+export const LivePosition = z.strictObject({
+  productId: z.number().int(),
+  symbol: z.string().nullable(),
+  size: z.number(),
+  entryPrice: DecimalString.nullable(),
+  realizedPnl: DecimalString.nullable(),
+  margin: DecimalString.nullable(),
+});
+export const LivePositions = z.strictObject({
+  positions: z.array(LivePosition),
+  balances: z.array(z.strictObject({ asset: z.string(), balance: DecimalString, availableBalance: DecimalString })),
+});
+export type LivePositions = z.infer<typeof LivePositions>;
+
