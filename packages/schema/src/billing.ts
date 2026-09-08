@@ -142,7 +142,7 @@ export const SubscriptionView = z.strictObject({
 });
 export type SubscriptionView = z.infer<typeof SubscriptionView>;
 
-export const ActivateBody = z.strictObject({ planId: Id, interval: BillingInterval });
+export const ActivateBody = z.strictObject({ planId: Id, interval: BillingInterval, couponCode: z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{3,24}$/).optional() });
 export type ActivateBody = z.infer<typeof ActivateBody>;
 
 /** Price breakdown of a plan at an interval (HC-AC-021); tax is GST 18 % on the discounted subtotal. */

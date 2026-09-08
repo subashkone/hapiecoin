@@ -40,6 +40,13 @@ const RawEnv = z.object({
   GOOGLE_CLIENT_ID: z.string().min(1).optional(),
   GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
   RESEND_API_KEY: z.string().min(1).optional(),
+  RAZORPAY_KEY_ID: z.string().min(1).optional(),
+  RAZORPAY_KEY_SECRET: z.string().min(1).optional(),
+  RAZORPAY_WEBHOOK_SECRET: z.string().min(1).optional(),
+  INVOICE_SELLER_NAME: z.string().min(1).default("HapieCoin"),
+  INVOICE_SELLER_ADDRESS: z.string().min(1).default("Address on file · India"),
+  INVOICE_SELLER_GSTIN: z.string().min(1).default("GSTIN pending"),
+  INVOICE_SELLER_EMAIL: z.string().min(3).default("billing@hapiecoin.com"),
   EMAIL_FROM: z.string().min(3).default("HapieCoin <no-reply@hapiecoin.com>"),
   CREDENTIALS_ENC_KEY: Base64Key32.optional(),
   DELTA_REST_URL: z.url().default("https://api.india.delta.exchange"),
@@ -78,6 +85,9 @@ export interface Config {
   google: { clientId: string; clientSecret: string } | undefined;
   resendApiKey: string | undefined;
   emailFrom: string;
+  /** Razorpay test or live keys (ADR-034); undefined = checkout answers 503. Values never leave the process. */
+  razorpay: { keyId: string; keySecret: string; webhookSecret: string | undefined } | undefined;
+  invoiceSeller: { name: string; address: string; gstin: string; email: string };
   /** 32-byte AES-256-GCM key for exchange credentials at rest. */
   credentialsEncKey: Buffer;
   deltaRestUrl: string;
@@ -192,6 +202,8 @@ export function loadConfig(
     google,
     resendApiKey: e.RESEND_API_KEY,
     emailFrom: e.EMAIL_FROM,
+    razorpay: e.RAZORPAY_KEY_ID && e.RAZORPAY_KEY_SECRET ? { keyId: e.RAZORPAY_KEY_ID, keySecret: e.RAZORPAY_KEY_SECRET, webhookSecret: e.RAZORPAY_WEBHOOK_SECRET } : undefined,
+    invoiceSeller: { name: e.INVOICE_SELLER_NAME, address: e.INVOICE_SELLER_ADDRESS, gstin: e.INVOICE_SELLER_GSTIN, email: e.INVOICE_SELLER_EMAIL },
     credentialsEncKey,
     deltaRestUrl: e.DELTA_REST_URL,
     deltaTradingRestUrl: e.DELTA_TRADING_REST_URL ?? e.DELTA_REST_URL,

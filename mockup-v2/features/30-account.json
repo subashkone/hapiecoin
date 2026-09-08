@@ -125,7 +125,7 @@
     "feature": "Subscribe dialog 'Subscribe to <Plan> · <Interval>'",
     "how": "CG.modal (lg) with plan summary strip, coupon column and price breakdown column; Cancel closes it",
     "status": "working",
-    "evidence": "bundle strings: Subscribe to, Cancel · Phase 4 item 1 (08 Sep 2026, ADR-030): Subscribe dialog 'Subscribe to <Plan> · <Interval>' (subscribe-dialog)"
+    "evidence": "bundle strings: Subscribe to, Cancel · Phase 4 item 1 (08 Sep 2026, ADR-030): Subscribe dialog 'Subscribe to <Plan> · <Interval>' (subscribe-dialog) · Phase 4 item 2 (08 Sep 2026, ADR-034): CheckoutDialog: plan strip, coupon column, breakdown column (subscribe-dialog)"
   },
   {
     "route": "/subscription",
@@ -133,7 +133,7 @@
     "feature": "Apply Coupon input + Apply button",
     "how": "Input 'Enter coupon code' (uppercased), Apply button or Enter key validates against CG.mock.coupons; errors appear inline and as toast 'Error · Invalid coupon'",
     "status": "working",
-    "evidence": "bundle strings: Apply Coupon, Enter coupon code, Apply, Error, Invalid coupon, destructive"
+    "evidence": "bundle strings: Apply Coupon, Enter coupon code, Apply, Error, Invalid coupon, destructive · Phase 4 item 2 (08 Sep 2026, ADR-034): coupon input + Apply / Enter → POST /v1/coupons/quote; inline error + toast (coupon-input, coupon-apply, coupon-error)"
   },
   {
     "route": "/subscription",
@@ -141,7 +141,7 @@
     "feature": "Coupon validation rules",
     "how": "Rejects unknown/inactive codes, expired or not-yet-started windows, exhausted maxUses, private community coupons not assigned to the user, plans/intervals outside the coupon scope, and orders below minOrderAmount; each with a specific reason",
     "status": "working",
-    "evidence": "coupon fields in the admin bundle: percent, minOrderAmount, plans, intervals, scope"
+    "evidence": "coupon fields in the admin bundle: percent, minOrderAmount, plans, intervals, scope · Phase 4 item 2 (08 Sep 2026, ADR-034): couponReason on the server: unknown / inactive / not_started / expired / exhausted / not_assigned / wrong_plan / wrong_interval / below_minimum / per_user_limit (COUPON_REASON_TEXT)"
   },
   {
     "route": "/subscription",
@@ -149,7 +149,7 @@
     "feature": "Applied coupon chip with remove",
     "how": "Green chip 'BASIC20 (-₹720)' with an ✕ that removes the coupon and restores the breakdown; input locks while a coupon is applied",
     "status": "working",
-    "evidence": "inferred"
+    "evidence": "inferred · Phase 4 item 2 (08 Sep 2026, ADR-034): applied chip with amount and ✕ (coupon-chip, coupon-remove)"
   },
   {
     "route": "/subscription",
@@ -157,7 +157,7 @@
     "feature": "Available Coupons list",
     "how": "Public coupons plus community coupons assigned to the user (COMMUNITY25), each with '20% OFF' / '₹500 OFF' tag, description, expiry and min order; click applies; inapplicable ones are dimmed with the reason; applied one is marked",
     "status": "working",
-    "evidence": "bundle strings: Available Coupons, percent"
+    "evidence": "bundle strings: Available Coupons, percent · Phase 4 item 2 (08 Sep 2026, ADR-034): GET /v1/coupons lists public + assigned coupons with reasons; inapplicable dimmed (coupon-option)"
   },
   {
     "route": "/subscription",
@@ -165,7 +165,7 @@
     "feature": "Price breakdown",
     "how": "List Price, Plan Discount, Coupon Discount, Subtotal, Tax (18% GST), Total — right-aligned mono ₹ values recalculated on every coupon change",
     "status": "working",
-    "evidence": "bundle strings: List Price, Plan Discount, Coupon Discount, Subtotal, Tax (, Total · Phase 4 item 1 (08 Sep 2026, ADR-030): price breakdown List / Plan discount / Coupon / Subtotal / GST 18 % / Total (priceBreakdown in @hapiecoin/schema); unit subscription.test.tsx"
+    "evidence": "bundle strings: List Price, Plan Discount, Coupon Discount, Subtotal, Tax (, Total · Phase 4 item 1 (08 Sep 2026, ADR-030): price breakdown List / Plan discount / Coupon / Subtotal / GST 18 % / Total (priceBreakdown in @hapiecoin/schema); unit subscription.test.tsx · Phase 4 item 2 (08 Sep 2026, ADR-034): Breakdown list / plan discount / coupon / subtotal / GST / total from breakdownFor (price-breakdown)"
   },
   {
     "route": "/subscription",
@@ -173,7 +173,7 @@
     "feature": "Pay with Razorpay button",
     "how": "Opens the Razorpay mock checkout (CG.razorpayMock.open) with the computed total, description 'Subscription · Plan · Interval' and user prefill",
     "status": "working",
-    "evidence": "bundle strings: Pay with Razorpay, razorpay, https://checkout.razorpay.com/v1/checkout.js, #6366f1 · Phase 4 item 1 (08 Sep 2026, ADR-030): Pay with Razorpay button present, disabled until item 2"
+    "evidence": "bundle strings: Pay with Razorpay, razorpay, https://checkout.razorpay.com/v1/checkout.js, #6366f1 · Phase 4 item 1 (08 Sep 2026, ADR-030): Pay with Razorpay button present, disabled until item 2 · Phase 4 item 2 (08 Sep 2026, ADR-034): POST /v1/checkout → Razorpay checkout.js (openRazorpay) with the order the API created (subscribe-pay)"
   },
   {
     "route": "/subscription",
@@ -181,7 +181,7 @@
     "feature": "Activate (₹0 total)",
     "how": "When the total is zero (Free plan or 100% coupon) the footer shows 'Activate' instead; activation updates CG.mock.subscription immediately and toasts 'Success · Subscription activated!'",
     "status": "working",
-    "evidence": "bundle strings: Activate, Success, Subscription activated! · Phase 4 item 1 (08 Sep 2026, ADR-030): Activate for ₹0 totals → POST /v1/subscription/activate; api billing.test.ts, unit + e2e"
+    "evidence": "bundle strings: Activate, Success, Subscription activated! · Phase 4 item 1 (08 Sep 2026, ADR-030): Activate for ₹0 totals → POST /v1/subscription/activate; api billing.test.ts, unit + e2e · Phase 4 item 2 (08 Sep 2026, ADR-034): ₹0 totals show Activate → POST /v1/subscription/activate with couponCode (subscribe-activate)"
   },
   {
     "route": "/subscription",
@@ -189,7 +189,7 @@
     "feature": "Razorpay mock checkout window",
     "how": "Dark tokenised checkout: panel/raised surfaces, hairlines, mono amount, amber underline on the active method tab (UPI / Card / Netbanking / Wallet), amber Pay button, Cancel, mono SECURED BY RAZORPAY footer and the mock-controls strip",
     "status": "working",
-    "evidence": "bundle strings: razorpay, Subscription"
+    "evidence": "bundle strings: razorpay, Subscription · Phase 4 item 2 (08 Sep 2026, ADR-034): in-app MockCheckout only when the mock server answers mode 'mock' (mock-checkout)"
   },
   {
     "route": "/subscription",
@@ -197,7 +197,7 @@
     "feature": "Payment success flow",
     "how": "Pay → 1.2s 'Processing…' overlay → subscription replaced (plan, interval, expiresAt = now + 30/90/365 days, featureLimits from the plan), CG.mock.users[0] updated, payment row + invoice pushed to CG.mock.payments, coupon usedCount incremented, 'subscription' event emitted, toast 'Payment Successful! · Your subscription is now active.', dialogs close, page re-renders",
     "status": "working",
-    "evidence": "bundle strings: Payment Successful!, Your subscription is now active."
+    "evidence": "bundle strings: Payment Successful!, Your subscription is now active. · Phase 4 item 2 (08 Sep 2026, ADR-034): POST /v1/checkout/confirm verifies the signature and settles: subscription, coupon usedCount, invoice number"
   },
   {
     "route": "/subscription",
@@ -205,7 +205,7 @@
     "feature": "Payment cancel flow",
     "how": "Cancel / ✕ in the checkout closes it and toasts 'Payment Cancelled · You can try again anytime.'; the Subscribe dialog stays open",
     "status": "working",
-    "evidence": "bundle strings: Payment Cancelled, You can try again anytime."
+    "evidence": "bundle strings: Payment Cancelled, You can try again anytime. · Phase 4 item 2 (08 Sep 2026, ADR-034): dismiss → 'Payment cancelled' toast, POST /v1/checkout/cancel marks the row failed, dialog stays open"
   },
   {
     "route": "/subscription",
@@ -213,7 +213,7 @@
     "feature": "Simulate failure (payment.failed)",
     "how": "Mock-controls link in the checkout: runs Processing then toasts 'Payment Failed · Payment failed. Please try again.' and adds a Failed row to Payment History",
     "status": "working",
-    "evidence": "bundle strings: payment.failed, Payment Failed, Payment failed. Please try again."
+    "evidence": "bundle strings: payment.failed, Payment Failed, Payment failed. Please try again. · Phase 4 item 2 (08 Sep 2026, ADR-034): payment.failed / mock-fail → 'Payment failed' toast + failed row"
   },
   {
     "route": "/subscription",
@@ -221,7 +221,7 @@
     "feature": "Simulate confirmation failure",
     "how": "Mock-controls link: payment captured but backend confirmation fails → toast 'Confirmation Failed · Please contact support.' and a Pending payment row",
     "status": "working",
-    "evidence": "bundle strings: Confirmation Failed, Please contact support."
+    "evidence": "bundle strings: Confirmation Failed, Please contact support. · Phase 4 item 2 (08 Sep 2026, ADR-034): bad signature → 'Confirmation failed · contact support' (mock-confirm-fail)"
   },
   {
     "route": "/subscription",
@@ -229,7 +229,7 @@
     "feature": "Simulate SDK error",
     "how": "Mock-controls link reproduces the checkout.js load failure → toast 'Error · Failed to load Razorpay SDK'; the same toast fires if CG.razorpayMock is missing",
     "status": "working",
-    "evidence": "bundle strings: Failed to load Razorpay SDK, script"
+    "evidence": "bundle strings: Failed to load Razorpay SDK, script · Phase 4 item 2 (08 Sep 2026, ADR-034): checkout.js load error → 'Failed to load Razorpay SDK' (loadCheckoutJs)"
   },
   {
     "route": "/subscription",
@@ -237,7 +237,7 @@
     "feature": "Generic error fallback",
     "how": "Unexpected exceptions in the payment handler or a missing plan id toast 'Error · Something went wrong'",
     "status": "working",
-    "evidence": "bundle strings: Something went wrong"
+    "evidence": "bundle strings: Something went wrong · Phase 4 item 2 (08 Sep 2026, ADR-034): other errors → 'Error · Something went wrong'"
   },
   {
     "route": "/subscription",
@@ -245,7 +245,7 @@
     "feature": "Payment History table",
     "how": "Columns Date (en-IN '01 Jan 2026, 10:12 AM'), Plan, Interval, Amount (mono ₹), Coupon (code + '-₹…' or —), Method (Razorpay · UPI/Card/Netbanking/Wallet), Status badge, Invoice; sorted newest first from CG.mock.payments",
     "status": "working",
-    "evidence": "bundle strings: Payment History, en-IN, 2-digit, numeric"
+    "evidence": "bundle strings: Payment History, en-IN, 2-digit, numeric · Phase 4 item 2 (08 Sep 2026, ADR-034): PaymentHistory table Date / Plan / Interval / Amount / Coupon / Method / Status / Invoice from GET /v1/payments (payment-row)"
   },
   {
     "route": "/subscription",
@@ -253,7 +253,7 @@
     "feature": "Payment status badges",
     "how": "success → Paid (green), pending → Pending (amber), failed → Failed (red)",
     "status": "working",
-    "evidence": "bundle strings: success, pending, failed, Paid, Pending, Failed"
+    "evidence": "bundle strings: success, pending, failed, Paid, Pending, Failed · Phase 4 item 2 (08 Sep 2026, ADR-034): StatusBadge paid / pending / failed (payment-status)"
   },
   {
     "route": "/subscription",
@@ -261,7 +261,7 @@
     "feature": "Invoice link opens the invoice preview",
     "how": "Mono 'INV-2026-0001' link with an eye icon opens the rendered invoice preview dialog; failed/pending rows show —",
     "status": "working",
-    "evidence": "inferred (invoice column in the payments table)"
+    "evidence": "inferred (invoice column in the payments table) · Phase 4 item 2 (08 Sep 2026, ADR-034): invoice link opens InvoiceDialog (payment-invoice, invoice-dialog)"
   },
   {
     "route": "/subscription",
@@ -269,7 +269,7 @@
     "feature": "Payment History empty state",
     "how": "'No payments yet' when CG.mock.payments is empty",
     "status": "working",
-    "evidence": "bundle strings: No payments yet"
+    "evidence": "bundle strings: No payments yet · Phase 4 item 2 (08 Sep 2026, ADR-034): 'No payments yet' with Browse plans (payments-empty)"
   },
   {
     "route": "/subscription",
@@ -277,7 +277,7 @@
     "feature": "Payment History pagination",
     "how": "5 rows per page with 'Page 1 of 2', '← Previous' and 'Next →' buttons (disabled at the ends)",
     "status": "working",
-    "evidence": "bundle strings: Page , of , ← Previous, Next →, button"
+    "evidence": "bundle strings: Page , of , ← Previous, Next →, button · Phase 4 item 2 (08 Sep 2026, ADR-034): 5 per page from the API with Previous / Next (payments-pager)"
   },
   {
     "route": "/subscription",
@@ -285,7 +285,7 @@
     "feature": "Live re-render on subscription change",
     "how": "Listens to the custom 'subscription' event so other screens that change CG.mock.subscription are reflected while the page is active",
     "status": "working",
-    "evidence": "inferred"
+    "evidence": "inferred · Phase 4 item 2 (08 Sep 2026, ADR-034): TanStack Query invalidation on confirm / cancel / activate re-renders the page"
   },
   {
     "route": "/referrals",
@@ -482,7 +482,7 @@
     "how": "Mono chips ALL / PAID / PENDING / FAILED with live counts; the active chip inverts; pagination resets; a filtered-empty state offers Show all",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 2 (08 Sep 2026, ADR-034): chips ALL / PAID / PENDING / FAILED with counts from the API (payment-chip-*)"
   },
   {
     "route": "/subscription",
@@ -491,7 +491,7 @@
     "how": "Copies the current (filtered) payments as CSV (Date, Plan, Interval, Amount, Coupon, Discount, Tax, Method, Status, Invoice) to the clipboard and toasts the row × column count",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 2 (08 Sep 2026, ADR-034): Copy CSV of the visible rows (payments-csv, paymentsCsv)"
   },
   {
     "route": "/subscription",
@@ -500,7 +500,7 @@
     "how": "Rendered tax invoice: HapieCoin letterhead with GSTIN, invoice number and Paid pill, Billed to / Invoice date / Service period, line items (plan · interval, plan discount, coupon, taxable value, CGST 9%, SGST 9%, total) derived from the payment row, footer with invoice and payment ids",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 2 (08 Sep 2026, ADR-034): InvoiceDialog: letterhead, GSTIN, number, Paid pill, billed to, period, lines with CGST / SGST (invoice)"
   },
   {
     "route": "/subscription",
@@ -509,7 +509,7 @@
     "how": "Download (amber) copies a plain-text rendering of the invoice to the clipboard and toasts 'Invoice INV-… downloaded · mock download'; Copy as text copies the same without the download wording",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 2 (08 Sep 2026, ADR-034): Download as .txt and Copy as text (invoice-download, invoice-copy, invoiceText)"
   },
   {
     "route": "/subscription",
@@ -518,7 +518,7 @@
     "how": "No payments → Browse plans button; filtered-empty → Show all; no subscription → Choose a Plan",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): empty states with actions (sub-none, error Retry)"
+    "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): empty states with actions (sub-none, error Retry) · Phase 4 item 2 (08 Sep 2026, ADR-034): empty states: Browse plans / Show all / Choose a Plan"
   },
   {
     "route": "/subscription",
@@ -527,7 +527,7 @@
     "how": "Tables switch between 36px comfortable and 28px compact rows when the chrome emits CG.emit('density', …)",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 2 (08 Sep 2026, ADR-034): payment rows use the h-row token so the density toggle applies"
   },
   {
     "route": "/subscription",

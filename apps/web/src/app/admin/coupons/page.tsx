@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { AdminLater } from "@/components/admin/AdminLater";
+import { CouponsAdmin } from "@/components/admin/CouponsAdmin";
 
-export const metadata: Metadata = { title: "Admin · Coupon Codes" };
+export const metadata: Metadata = { title: "Admin · Coupons" };
 
 export default function Page() {
-  return <AdminLater title="Coupon Codes" item="Phase 4 item 2" blurb="Coupon master, validation rules and usage arrive with Razorpay checkout." />;
+  return <CouponsAdmin />;
 }

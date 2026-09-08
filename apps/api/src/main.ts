@@ -13,6 +13,7 @@ import { DeltaPrivateClientImpl } from "./delta/private-client.js";
 import { loadRepoEnv } from "./env-file.js";
 import { createLogger } from "./logger.js";
 import { createMailer } from "./mailer.js";
+import { RazorpayHttpClient } from "./razorpay.js";
 import { MemoryRateStore, type RateStore, RedisRateStore } from "./security/rate-store.js";
 import { createVault } from "./vault.js";
 
@@ -52,6 +53,7 @@ const deps: AppDeps = {
   authBasePath: AUTH_BASE_PATH,
   sessions: sessionResolver(auth),
   mailer,
+  razorpay: config.razorpay ? new RazorpayHttpClient({ ...config.razorpay, nodeEnv: config.nodeEnv }) : null,
   rateStore,
   logger,
   vault: createVault(config.credentialsEncKey),

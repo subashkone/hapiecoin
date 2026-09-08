@@ -8,6 +8,7 @@ import type { Db, DbKind } from "../db/client.js";
 import type { DeltaPrivateClient } from "../delta/private-client.js";
 import type { Logger } from "../logger.js";
 import type { Mailer } from "../mailer.js";
+import type { RazorpayClient } from "../razorpay.js";
 import type { SessionResolver } from "../security/guards.js";
 import type { RateStore } from "../security/rate-store.js";
 import type { Vault } from "../vault.js";
@@ -22,6 +23,8 @@ export interface AppDeps {
   sessions: SessionResolver;
   /** Transactional mail (OTP through Better Auth, admin invitations through routes). */
   mailer: Mailer;
+  /** Razorpay (ADR-034); null when keys are absent → checkout answers 503. */
+  razorpay: RazorpayClient | null;
   rateStore: RateStore;
   logger: Logger;
   vault: Vault;
@@ -40,6 +43,7 @@ export const errorResponses = {
   400: jsonContent(ApiError, "Validation failed"),
   401: jsonContent(ApiError, "Not signed in"),
   402: jsonContent(ApiError, "Payment required"),
+  503: jsonContent(ApiError, "Not configured on this server"),
   403: jsonContent(ApiError, "Not allowed"),
   404: jsonContent(ApiError, "Not found"),
   409: jsonContent(ApiError, "Wrong state for this action"),

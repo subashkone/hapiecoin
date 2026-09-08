@@ -229,7 +229,7 @@
     "feature": "Page title + subtitle, '+ New Coupon' button",
     "how": "'Coupon Code Master' / 'Manage discount coupons'; button opens 'New Coupon' dialog",
     "status": "working",
-    "evidence": "bundle strings: Coupon Code Master, Manage discount coupons, New Coupon"
+    "evidence": "bundle strings: Coupon Code Master, Manage discount coupons, New Coupon · Phase 4 item 2 (08 Sep 2026, ADR-034): CouponsAdmin header + New Coupon (coupon-new)"
   },
   {
     "route": "/admin/coupons",
@@ -237,7 +237,7 @@
     "feature": "Card 'All Coupons (N)' table: Code, Discount, Type, Validity, Plans, Uses, Status, Actions",
     "how": "Code in mono with description; Discount '20%' or '₹500' (+ min order); Type badge Public / Community (+ assigned users count); Validity 'starts → expires' with red 'Expired' when past; Plans as badges (interval list in tooltip); Uses 'used / max' + per-user limit",
     "status": "working",
-    "evidence": "bundle strings: All Coupons (, Code, Discount, Type, Validity, Plans, Uses, Status, Actions, percent, secondary, Plan"
+    "evidence": "bundle strings: All Coupons (, Code, Discount, Type, Validity, Plans, Uses, Status, Actions, percent, secondary, Plan · Phase 4 item 2 (08 Sep 2026, ADR-034): table Code + description, Discount (+ min), Type badge (+ assigned count), Validity with Expired, Plans badges with interval tooltip, Uses x / max, Active (coupon-row)"
   },
   {
     "route": "/admin/coupons",
@@ -245,7 +245,7 @@
     "feature": "Status switch per coupon",
     "how": "Toggles isActive, toast 'Updated'",
     "status": "working",
-    "evidence": "bundle strings: Status, Updated"
+    "evidence": "bundle strings: Status, Updated · Phase 4 item 2 (08 Sep 2026, ADR-034): Active switch → PATCH /v1/admin/coupons/{id} (coupon-toggle)"
   },
   {
     "route": "/admin/coupons",
@@ -253,7 +253,7 @@
     "feature": "Edit (pencil) → 'Edit Coupon' dialog",
     "how": "Pre-fills every field incl. assigned users and plan×interval grid; submit 'Update'",
     "status": "working",
-    "evidence": "bundle strings: Pencil, Edit Coupon, Update"
+    "evidence": "bundle strings: Pencil, Edit Coupon, Update · Phase 4 item 2 (08 Sep 2026, ADR-034): Edit dialog pre-filled incl. assigned users and the plan × interval grid; PUT (coupon-edit)"
   },
   {
     "route": "/admin/coupons",
@@ -261,7 +261,7 @@
     "feature": "Delete (trash) → confirm 'Delete Coupon? · This action cannot be undone. The coupon will be permanently deleted.' → toast 'Deleted'",
     "how": "CG.modal.confirm (destructive); removes the coupon from CG.mock.coupons",
     "status": "working",
-    "evidence": "bundle strings: Trash2, Delete Coupon?, This action cannot be undone. The coupon will be permanently deleted., Delete, Deleted"
+    "evidence": "bundle strings: Trash2, Delete Coupon?, This action cannot be undone. The coupon will be permanently deleted., Delete, Deleted · Phase 4 item 2 (08 Sep 2026, ADR-034): Delete confirm dialog → DELETE (coupon-delete-confirm)"
   },
   {
     "route": "/admin/coupons",
@@ -269,7 +269,7 @@
     "feature": "Empty state 'No Coupons · Create your first coupon code · + Create Coupon'",
     "how": "Shown when the list is empty",
     "status": "working",
-    "evidence": "bundle strings: No Coupons, Create your first coupon code, Create Coupon"
+    "evidence": "bundle strings: No Coupons, Create your first coupon code, Create Coupon · Phase 4 item 2 (08 Sep 2026, ADR-034): 'No Coupons · Create your first coupon code' (coupon-empty)"
   },
   {
     "route": "/admin/coupons",
@@ -277,7 +277,7 @@
     "feature": "Dialog 'Code *' (placeholder BASIC20, forced uppercase)",
     "how": "Input filter uppercases and strips invalid characters; duplicate codes rejected",
     "status": "working",
-    "evidence": "bundle strings: Code *, BASIC20"
+    "evidence": "bundle strings: Code *, BASIC20 · Phase 4 item 2 (08 Sep 2026, ADR-034): Code input uppercases and strips invalid characters; duplicates → 409 shown inline (coupon-code)"
   },
   {
     "route": "/admin/coupons",
@@ -285,7 +285,7 @@
     "feature": "Dialog 'Coupon Type': Public (All listed) / Community (Assigned to specific users & their referrals)",
     "how": "Select mapped to scope public_all_listed / private_community_listed",
     "status": "working",
-    "evidence": "bundle strings: Coupon Type, public_all_listed, private_community_listed"
+    "evidence": "bundle strings: Coupon Type, public_all_listed, private_community_listed · Phase 4 item 2 (08 Sep 2026, ADR-034): Coupon type Public / Community (coupon-scope)"
   },
   {
     "route": "/admin/coupons",
@@ -293,7 +293,7 @@
     "feature": "'Assign to Users' block (Community only): 'Search users...', Select All / Deselect All / '↔ Invert' (title 'Invert selection'), checkbox list, 'x of y users selected', 'No users found'",
     "how": "Appears when type = Community; list from CG.mock.users; bulk buttons act on the filtered set; saved to coupon.assignedUsers",
     "status": "working",
-    "evidence": "bundle strings: Assign to Users, Search users..., Select All, Deselect All, Invert selection, ↔ Invert, of, users selected, No users found"
+    "evidence": "bundle strings: Assign to Users, Search users..., Select All, Deselect All, Invert selection, ↔ Invert, of, users selected, No users found · Phase 4 item 2 (08 Sep 2026, ADR-034): Assign to Users block with search, Select all / Deselect all from the admin users list (coupon-assign-*)"
   },
   {
     "route": "/admin/coupons",
@@ -301,7 +301,7 @@
     "feature": "Dialog fields Description, 'Discount Type' Percent/Fixed, 'Discount Value', 'Min Order (₹)', 'Max Uses', 'Per User Limit', 'Starts At', 'Expires At'",
     "how": "Number/date inputs saved on the coupon; percent > 100 rejected",
     "status": "working",
-    "evidence": "bundle strings: Description, Discount Type, Percent, Fixed, Discount Value, number, Min Order (₹), Max Uses, Per User Limit, Starts At, Expires At"
+    "evidence": "bundle strings: Description, Discount Type, Percent, Fixed, Discount Value, number, Min Order (₹), Max Uses, Per User Limit, Starts At, Expires At · Phase 4 item 2 (08 Sep 2026, ADR-034): Description, Discount type Percent / Fixed, value (percent ≤ 100), Min order, Max uses, Per-user limit, Starts / Ends (coupon-*)"
   },
   {
     "route": "/admin/coupons",
@@ -309,7 +309,7 @@
     "feature": "'Applicable Plans & Intervals' grid (plan × Monthly/Quarterly/Yearly checkboxes; 'No plans available')",
     "how": "Built from CG.mock.plans; saved as coupon.planIntervals plus flat plans[]/intervals[]",
     "status": "working",
-    "evidence": "bundle strings: Applicable Plans & Intervals, No plans available"
+    "evidence": "bundle strings: Applicable Plans & Intervals, No plans available · Phase 4 item 2 (08 Sep 2026, ADR-034): Applicable plans × intervals grid from the admin plans (coupon-grid, coupon-cell-*)"
   },
   {
     "route": "/admin/coupons",
@@ -317,7 +317,7 @@
     "feature": "Active switch, footer Cancel / Create | Update",
     "how": "Standard save pipeline",
     "status": "working",
-    "evidence": "bundle strings: Active, Cancel, Create, Update"
+    "evidence": "bundle strings: Active, Cancel, Create, Update · Phase 4 item 2 (08 Sep 2026, ADR-034): Active switch, footer Cancel / Create | Update (coupon-active, coupon-save)"
   },
   {
     "route": "/admin/coupons",
@@ -325,7 +325,7 @@
     "feature": "Validation 'Validation · Code is required'; toasts Created / Updated / Failed to save",
     "how": "Destructive toast on empty code",
     "status": "working",
-    "evidence": "bundle strings: Validation, Code is required, Created, Updated, Failed to save"
+    "evidence": "bundle strings: Validation, Code is required, Created, Updated, Failed to save · Phase 4 item 2 (08 Sep 2026, ADR-034): 'Code is required' and other validation as toast + inline (coupon-error); Created / Updated / Failed toasts"
   },
   {
     "route": "/admin/user-subscriptions",
@@ -942,7 +942,7 @@
     "how": "Code/description search, Public/Community type, Active / Inactive / Expired status",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 2 (08 Sep 2026, ADR-034): search + type + status (Active / Inactive / Expired) filters with Clear (coupon-search, coupon-type-filter, coupon-status-filter)"
   },
   {
     "route": "/admin/coupons",
@@ -951,7 +951,7 @@
     "how": "Delete asks for confirmation listing the codes, then removes them and emits coupons:changed",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 2 (08 Sep 2026, ADR-034): bulk Activate / Deactivate / Delete with a confirm listing the codes (coupon-bulk-*)"
   },
   {
     "route": "/admin/user-subscriptions",

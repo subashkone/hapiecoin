@@ -103,3 +103,44 @@ Four tiles answer four different questions (count, earned, paid, pending), not d
 2. "Which link do I share?" → one link input, one Copy, the code chip explains it is the same code in the link.
 3. "No Purchase vs Pending" → No Purchase is grey and reads "signed up, no plan yet"; Pending is amber with the amount.
 
+# Checkout, coupons, payment history and invoices · design (Phase 4 item 2, 08 Sep 2026, ADR-034)
+
+## 1. Job
+**Subscribe dialog**: pay for a plan in under a minute and see exactly what is charged. First question: "What will I pay after my coupon?" answered by the Total line, recomputed on every coupon change.
+**Payment history**: know whether a payment went through and get the invoice. First question: "Did my last payment succeed?" answered by the status badge on the newest row.
+**Coupon Code Master (admin)**: create and scope discounts and see how much they are used.
+
+## 2. Layout
+Subscribe dialog (560 px): plan summary strip → two columns: Coupon (input + Apply, applied chip with ✕, Available coupons list with tag, expiry, min order; inapplicable ones dimmed with the reason) and Price breakdown (List, Plan discount, Coupon discount, Subtotal, Tax 18 % GST, Total) → footer Cancel · Pay with Razorpay (amber) or Activate when the total is ₹0.
+Checkout: the Razorpay hosted checkout (checkout.js) with the order created by the API; the web mock server answers in "mock" mode and the client shows an in-app mock checkout (Pay / Cancel / Simulate failure) so tests and demos never touch Razorpay.
+Payment history (My Subscription page, below the plans): chips ALL / PAID / PENDING / FAILED with counts → table Date · Plan · Interval · Amount · Coupon · Method · Status · Invoice, 5 per page, Copy CSV → Invoice dialog (letterhead with GSTIN, number, Paid pill, Billed to, period, lines with CGST 9 % / SGST 9 %, total, payment reference; Download as .txt, Copy as text).
+Admin (`/admin/coupons`): header + New Coupon → filters (search, type, status, Clear, count, Copy CSV) → table Code (mono + description) · Discount · Type · Validity · Plans · Uses · Active · Actions → dialog (Code uppercased, Type public / community with user assignment list, Description, Discount type + value, Min order, Max uses, Per-user limit, Starts / Ends, Applicable plans × intervals grid, Active) → bulk bar Activate / Deactivate / Delete with confirm.
+
+## 3. Hierarchy
+One amber action per surface: Pay with Razorpay / Activate; + New Coupon; Download in the invoice. Green only for Paid and the applied-coupon chip; red for Failed; amber for Pending.
+
+## 4. States
+Coupon errors inline and as a toast with the exact reason (unknown, inactive, not started, expired, exhausted, not assigned, wrong plan or interval, below minimum, per-user limit). Checkout: cancel → "Payment cancelled · you can try again", failure → "Payment failed · please try again" and a Failed row, confirmation failure (signature or server) → "Confirmation failed · contact support" and a Pending row that the webhook can still settle, checkout.js load failure → "Failed to load Razorpay". Payment history empty → Browse plans; filtered empty → Show all. Without Razorpay keys the API answers 503 "Checkout is not configured" and the dialog says so.
+
+## 5. Numbers
+INR with two decimals, right-aligned mono; amounts to Razorpay in paise (integer); GST 18 % split CGST 9 % + SGST 9 % on the invoice; invoice numbers INV-YYYY-NNNN per calendar year; dates en-IN with time in the history table.
+
+## 6. Interaction
+Enter in the coupon input applies; the input locks while a coupon is applied. The checkout handler posts order id, payment id and signature to the API, which verifies HMAC-SHA256(order_id|payment_id, key secret) before touching the subscription; the webhook (HMAC-SHA256 of the raw body with the webhook secret) settles captured or failed payments idempotently, so a closed tab still ends in the right state. Coupons redeem once per payment; usedCount and the per-user count move only on a paid payment.
+
+## 7. Traceability
+HC-AC-016..036, HC-AC-060..065; HC-AD-029..041, HC-AD-115, HC-AD-116. Playwright `account.spec.ts` "HC-AC-017..025 coupon + mock checkout + history + invoice", `admin.spec.ts` "HC-AD-029..041 coupons"; visuals `account-subscribe-<theme>.png`, `account-invoice-<theme>.png`, `admin-coupons-<theme>.png`. Unit: web `checkout.test.tsx`, `payments.test.tsx`, `coupons.test.tsx`; api `routes/checkout.test.ts`, `routes/coupons.test.ts`; schema `payments.test.ts`.
+
+## 8. Real-data check
+A ₹17,999 yearly plan with a 25 % coupon and GST fits the mono column; 500 payments page at 5 per page server-side; 40 coupons list on one page (paging later with GAPS #48's banners). A coupon making the total ₹0 activates without Razorpay (Activate replaces Pay).
+
+## 9. Generic-pattern check
+The Available coupons list shows only coupons the user may actually use and says why the rest do not apply. The invoice is a document, not a card grid. No fake progress: the mock checkout is only in the mock server.
+
+## 10. Confusion check
+1. "Was I charged?" → Paid / Pending / Failed badges plus the toast wording name the state; Pending explains that confirmation is still expected.
+2. "Is the coupon applied?" → the chip with the amount replaces the input; the Coupon discount line moves at the same time.
+3. "Is this a real payment?" → the mock checkout says "Mock checkout · no money moves" in its header; the real one is Razorpay's own window.
+
+## Server rules (ADR-034)
+Orders are created by the API only (amount from the catalogue, never from the client); the client receives order id, key id and amount to display. Confirmation requires a valid signature; the plan changes only on a paid payment. Webhook handling is idempotent by Razorpay payment id. Coupons are validated server-side on quote, checkout and confirm with the same function. Razorpay keys come from the environment only; the API refuses checkout (503) when they are absent, and never in test mode calls Razorpay (a fake client in the harness). Invoices are rendered from the stored payment row, never recomputed from today's prices.

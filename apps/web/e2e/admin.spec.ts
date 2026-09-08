@@ -115,4 +115,24 @@ test.describe("HC-AD admin", () => {
     await page.getByTestId("banner-delete-confirm").click();
     await expect(page.getByTestId("banner-row")).toHaveCount(2);
   });
+
+  test("HC-AD-029..041, 116 coupons: create with the plan grid, switch, bulk delete", async ({ page, request }) => {
+    await seedUser(request, { email: "boss@example.com", role: "admin", coupons: true });
+    await signIn(page, "boss@example.com");
+    await page.goto("/admin/coupons");
+    await expect(page.getByTestId("admin-coupons")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("coupon-row")).toHaveCount(4);
+    await page.getByTestId("coupon-new").click();
+    await page.getByTestId("coupon-code").fill("summer15");
+    await page.getByTestId("coupon-discount-value").fill("15");
+    await page.getByTestId("coupon-cell-pln_pro-yearly").check();
+    await page.getByTestId("coupon-save").click();
+    await expect(page.locator("[data-testid=coupon-row][data-code=SUMMER15]")).toHaveCount(1);
+    await page.locator("[data-testid=coupon-row][data-code=SUMMER15]").getByTestId("coupon-toggle").click();
+    await page.locator("[data-testid=coupon-row][data-code=SUMMER15]").getByTestId("coupon-select").check();
+    await page.locator("[data-testid=coupon-row][data-code=DIWALI30]").getByTestId("coupon-select").check();
+    await page.getByTestId("coupon-bulk-delete").click();
+    await page.getByTestId("coupon-delete-confirm").click();
+    await expect(page.getByTestId("coupon-row")).toHaveCount(3);
+  });
 });

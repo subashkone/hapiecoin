@@ -14,6 +14,7 @@ import { FakeDeltaTradingClient } from "@hapiecoin/venues";
 import { FakeDeltaPrivateClient } from "../delta/private-client.js";
 import { createLogger } from "../logger.js";
 import { MailCapture } from "../mailer.js";
+import { FakeRazorpay } from "../razorpay.js";
 import { MemoryRateStore } from "../security/rate-store.js";
 import { createVault, type Vault } from "../vault.js";
 import type { OpenAPIHono } from "@hono/zod-openapi";
@@ -34,6 +35,8 @@ export interface RequestOptions {
   method?: string;
   cookie?: string | undefined;
   json?: unknown;
+  /** Raw body (webhooks); sets no content type. */
+  body?: string;
   headers?: Record<string, string>;
   /** Defaults to the web app origin for state-changing requests (a browser always sends it). */
   origin?: string | null;
@@ -47,6 +50,7 @@ export interface TestApp {
   handle: DbHandle;
   auth: Auth;
   mail: MailCapture;
+  razorpay: FakeRazorpay;
   delta: FakeDeltaPrivateClient;
   trading: FakeDeltaTradingClient;
   /** The app's dependency bag, for tests that drive background jobs directly (reconcilePending). */
@@ -93,6 +97,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
   await handle.migrate();
   await seed(handle.db);
   const mail = new MailCapture();
+  const razorpay = new FakeRazorpay();
   const delta = new FakeDeltaPrivateClient();
   const trading = new FakeDeltaTradingClient();
   const now = { value: Date.now() };
@@ -108,6 +113,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
     authBasePath: AUTH_BASE_PATH,
     sessions: sessionResolver(auth),
     mailer: mail,
+    razorpay,
     rateStore,
     logger,
     vault,
@@ -118,7 +124,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
   const app = createApp(deps);
 
   const request = (path: string, opts: RequestOptions = {}): Promise<Response> => {
-    const method = opts.method ?? (opts.json !== undefined ? "POST" : "GET");
+    const method = opts.method ?? (opts.json !== undefined || opts.body !== undefined ? "POST" : "GET");
     const headers: Record<string, string> = { "x-forwarded-for": opts.ip ?? "203.0.113.10", ...opts.headers };
     if (opts.cookie) headers["cookie"] = opts.cookie;
     if (opts.json !== undefined) headers["content-type"] = "application/json";
@@ -126,6 +132,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
     if (origin !== undefined && origin !== null) headers["origin"] = origin;
     const init: RequestInit = { method, headers };
     if (opts.json !== undefined) init.body = JSON.stringify(opts.json);
+    else if (opts.body !== undefined) init.body = opts.body;
     return Promise.resolve(app.request(`http://localhost:3001${path}`, init));
   };
 
@@ -170,6 +177,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
     handle,
     auth,
     mail,
+    razorpay,
     delta,
     rateStore,
     vault,

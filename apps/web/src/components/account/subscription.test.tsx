@@ -49,7 +49,7 @@ describe("HC-AC-003..015 My Subscription", () => {
     expect(screen.getByTestId("plan-matrix").textContent).toContain("∞");
   });
 
-  it("Subscribe on a paid plan shows the breakdown with GST and a disabled Razorpay button; Activate on Free activates without payment", async () => {
+  it("Subscribe on a paid plan shows the breakdown with GST and an enabled Pay with Razorpay button; Activate on Free activates without payment", async () => {
     renderWithProviders(<SubscriptionPage />);
     const u = userEvent.setup();
     await waitFor(() => expect(screen.getByTestId("subscription-page").dataset["state"]).toBe("ready"));
@@ -58,7 +58,7 @@ describe("HC-AC-003..015 My Subscription", () => {
     expect(dlg.textContent).toContain("Subscribe to Pro · Monthly");
     expect(within(dlg).getByTestId("price-breakdown").textContent).toContain("Tax (18% GST)");
     expect(within(dlg).getByTestId("price-total").textContent).toMatch(/₹/);
-    expect(within(dlg).getByTestId("subscribe-pay").hasAttribute("disabled")).toBe(true);
+    expect(within(dlg).getByTestId("subscribe-pay").hasAttribute("disabled")).toBe(false);
     await u.click(within(dlg).getByText("Cancel"));
     await u.click(within(screen.getAllByTestId("plan-card")[0]!).getByTestId("plan-action"));
     const free = screen.getByTestId("subscribe-dialog");
