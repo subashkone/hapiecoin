@@ -72,11 +72,18 @@ describe("HC-WS-033..058 payoff", () => {
     await waitFor(() => expect(screen.getByTestId("payoff-panel").dataset["state"]).toBe("ready"), { timeout: 4000 });
     expect(screen.getByTestId("tile-max-profit").textContent).toContain("Unlimited");
     expect(screen.getByTestId("tile-max-loss").textContent).toMatch(/−\$|-\$|\$/);
-    expect(screen.getByTestId("tile-breakeven").textContent).toContain("2 points");
+    expect(screen.getByTestId("tile-breakeven").textContent).toContain(" · "); // two break-evens, shown with their % from spot (ADR-028)
     expect(screen.getByTestId("tile-net").textContent).toContain("debit paid");
     expect(screen.getByTestId("tile-rr").textContent).toContain("1 : ∞");
     expect(screen.getByTestId("win-zone").textContent).toMatch(/< [\d,]+ or > [\d,]+/);
     expect(screen.getByTestId("greeks-strip").textContent).toContain("greeks at spot");
+    // ADR-028 parity: sigma price labels above the chart and break-evens as % from spot
+    const sigma = screen.getByTestId("sigma-labels");
+    expect(sigma.children).toHaveLength(5);
+    expect(sigma.textContent).toContain("−2σ");
+    expect(sigma.textContent).toContain("Spot");
+    expect(sigma.textContent).toContain("+2σ");
+    expect(screen.getByTestId("tile-breakeven").textContent).toMatch(/[+−-]\d+\.\d%/);
     // HC-WS-046 a long straddle held to expiry at today's spot loses the premium
     expect(screen.getByTestId("spot-zone").dataset["zone"]).toBe("loss");
     expect(screen.getByTestId("spot-zone").textContent).toContain("loss zone");
@@ -92,6 +99,7 @@ describe("HC-WS-033..058 payoff", () => {
     expect(useUiStore.getState().targetPrice).toBe(Number(row.strike) + 2000);
     fireEvent.change(screen.getByTestId("target-days"), { target: { value: "3" } });
     expect(useUiStore.getState().targetDays).toBe(3);
+    expect(screen.getByTestId("target-date-label").textContent).toMatch(/^\+3d · /);
     await u.click(screen.getByTestId("target-price-reset"));
     expect(useUiStore.getState().targetPrice).toBeNull();
     await u.click(screen.getByTestId("target-days-expiry"));

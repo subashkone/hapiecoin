@@ -34,6 +34,7 @@ function useLiveMutation<TVars, TResult extends Strategy | void | { placed: stri
     onSuccess: (s: TResult) => {
       if (s && "id" in s) qc.setQueryData(strategyKeys.one(s.id), s);
       void qc.invalidateQueries({ queryKey: strategyKeys.all });
+      void qc.invalidateQueries({ queryKey: ["live", "positions"] }); // the venue's positions changed with the orders
     },
   });
 }

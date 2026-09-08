@@ -3,7 +3,8 @@
 // feed status text (HC-SH-006), exchange chip (HC-SH-007), wallet placeholder (HC-SH-008).
 import { Plug, Tooltip, Wallet, cn, toast } from "@hapiecoin/ui";
 import { UNDERLYINGS, type Underlying } from "@hapiecoin/schema";
-import { useCredential } from "@/lib/api/queries";
+import { useCredential, useSettings, useUpdateSettings } from "@/lib/api/queries";
+import { useLivePositions } from "@/lib/api/live";
 import { fmtPct, fmtPrice } from "@/lib/format";
 import { useConnectionStatus, useFlash, useGateway, useLatency, useSpot } from "@/lib/gateway/hooks";
 import { ASSET_META, useUiStore } from "@/lib/store";
@@ -136,16 +137,47 @@ export function ExchangeChip() {
         <Plug className="size-3.5" aria-hidden="true" />
         <span>{isLoading ? "…" : connected ? "Connected" : "Not connected"}</span>
       </button>
-      {connected ? (
-        <Tooltip content="Wallet balance arrives with live trading (Phase 3).">
-          <span
-            data-testid="wallet-chip"
-            className="inline-flex h-7 items-center gap-1.5 rounded border border-border px-2 font-mono text-xs text-muted-foreground"
-          >
-            <Wallet className="size-3.5" aria-hidden="true" />—
-          </span>
-        </Tooltip>
-      ) : null}
+      {connected ? <WalletChip brokerId={data?.items[0]?.brokerId ?? null} /> : null}
     </>
+  );
+}
+
+/** Available balance on the connected exchange (HC-SH-011): the settling asset first, refreshed with the positions query. */
+export function WalletChip({ brokerId }: { brokerId: string | null }) {
+  const { data, isError } = useLivePositions(brokerId);
+  const row = data ? (["USD", "USDT", "INR"].map((a) => data.balances.find((b) => b.asset === a)).find((b) => b !== undefined) ?? data.balances[0]) : undefined;
+  const text = isError ? "wallet ?" : !data ? "…" : row ? `${Number(row.availableBalance).toLocaleString("en-US", { maximumFractionDigits: 2 })} ${row.asset}` : "no balance";
+  return (
+    <Tooltip content={row ? `Available ${row.availableBalance} of ${row.balance} ${row.asset} on the exchange` : isError ? "The wallet could not be read; open API settings" : "Reading the exchange wallet"}>
+      <span data-testid="wallet-chip" data-state={isError ? "error" : data ? "ready" : "loading"} className="inline-flex h-7 items-center gap-1.5 rounded border border-border px-2 font-mono text-xs text-foreground">
+        <Wallet className="size-3.5" aria-hidden="true" />
+        {text}
+      </span>
+    </Tooltip>
+  );
+}
+
+/** One-click USD / INR switch (HC-SH-012); the rate itself lives in the Currency dialog. */
+export function CurrencyToggle() {
+  const { data: settings } = useSettings();
+  const update = useUpdateSettings();
+  const openDialog = useUiStore((s) => s.openDialog);
+  if (!settings) return null;
+  const inr = settings.currency === "INR";
+  return (
+    <button
+      type="button"
+      onClick={() => update.mutate({ currency: inr ? "USD" : "INR" })}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        openDialog("currency");
+      }}
+      title={inr ? `Showing INR at ${settings.conversionRate} per USD · click for USD · right-click for the rate` : "Showing USD · click for INR"}
+      className={cn("inline-flex h-7 items-center rounded border px-2 font-mono text-xs", inr ? "border-accent/60 text-accent" : "border-border text-muted-foreground hover:text-foreground")}
+      data-testid="currency-toggle"
+      data-currency={settings.currency}
+    >
+      {inr ? "₹ INR" : "$ USD"}
+    </button>
   );
 }

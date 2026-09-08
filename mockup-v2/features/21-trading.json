@@ -85,7 +85,7 @@
     "feature": "Qty input (lots)",
     "how": "Number input per leg; change updates leg.lots (or every leg when Basket is on), recomputes Net Premium / Margin and emits analyse:legs-changed",
     "status": "working",
-    "evidence": "bundle strings: Qty, Quantity · Phase 2 item 4 (08 Sep 2026): lots stepper on the chain presets plus a typed integer input; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-011"
+    "evidence": "bundle strings: Qty, Quantity · Phase 2 item 4 (08 Sep 2026): lots stepper on the chain presets plus a typed integer input; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-011 · ADR-028 (08 Sep 2026): default 100 lots like the reference site; presets 1..1000 unchanged; unit legs.test.ts, store.test.ts"
   },
   {
     "route": "/analyse",
@@ -1214,5 +1214,25 @@
     "evidence": "ADR-026 (08 Sep 2026): POST /v1/strategies/live/positions/exit with audit positions.exit; unit pane-follow.test.tsx, API live-cover.test.ts HC-TR-145",
     "new": true,
     "phase": 3
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Builder",
+    "feature": "Leg checkbox: include / exclude a leg from the analysis",
+    "how": "Per-leg checkbox and a master checkbox in the legs table; an unticked leg stays in the table (dimmed) but leaves the payoff, Greeks, ticket, drafts and trades; the sub-header shows '(N on)'",
+    "status": "working",
+    "evidence": "Parity with the reference site's current legs table (ADR-028, 08 Sep 2026): StrategyLeg.enabled, activeLegs; unit legs.test.ts, builder.test.tsx HC-TR-146, e2e analyse.spec.ts HC-TR-009 block",
+    "phase": 3,
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Builder",
+    "feature": "Per-leg type, strike and expiry editable in place",
+    "how": "CE / PE toggle, strike select from that expiry's venue ladder, expiry select from the listed expiries; the symbol follows and the ladder's mark / IV replace the stored quote when available",
+    "status": "working",
+    "evidence": "ADR-028 (08 Sep 2026): LegInstrument.tsx, setLegInstrument, useExpiries; unit legs.test.ts, builder.test.tsx HC-TR-147, e2e analyse.spec.ts HC-TR-009 block",
+    "phase": 3,
+    "new": true
   }
 ]

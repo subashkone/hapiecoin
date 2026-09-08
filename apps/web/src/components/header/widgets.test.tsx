@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { FakeSocket, installMockFetch, makeGateway, renderWithProviders, type MockFetch } from "../../../test/helpers";
 import { useUiStore } from "@/lib/store";
-import { AssetSwitch, ExchangeChip, FeedStatus, FuturesPrice } from "./widgets";
+import { CurrencyToggle, AssetSwitch, ExchangeChip, FeedStatus, FuturesPrice } from "./widgets";
 
 let mock: MockFetch;
 beforeEach(() => {
@@ -102,11 +102,20 @@ describe("HC-SH-007 / HC-SH-008 exchange chip", () => {
     await userEvent.setup().click(screen.getByTestId("exchange-chip"));
     expect(useUiStore.getState().dialog).toBe("api");
   });
-  it("turns green with a wallet placeholder when credentials exist", async () => {
+  it("turns green and shows the exchange wallet's available balance when credentials exist (HC-SH-011)", async () => {
     mock.loginAs("asha@example.com", { connected: true });
     renderWithProviders(<ExchangeChip />);
     await waitFor(() => expect(screen.getByTestId("exchange-chip").dataset["state"]).toBe("connected"));
     expect(screen.getByText("Connected")).toBeTruthy();
-    expect(screen.getByTestId("wallet-chip")).toBeTruthy();
+    await waitFor(() => expect(screen.getByTestId("wallet-chip").dataset["state"]).toBe("ready"));
+    expect(screen.getByTestId("wallet-chip").textContent).toContain("4,000 USD");
+  });
+  it("HC-SH-012 the currency toggle flips USD / INR in the settings", async () => {
+    mock.loginAs("asha@example.com");
+    renderWithProviders(<CurrencyToggle />);
+    await waitFor(() => expect(screen.getByTestId("currency-toggle").dataset["currency"]).toBe("USD"));
+    await userEvent.setup().click(screen.getByTestId("currency-toggle"));
+    await waitFor(() => expect(screen.getByTestId("currency-toggle").dataset["currency"]).toBe("INR"));
+    expect(screen.getByTestId("currency-toggle").textContent).toContain("INR");
   });
 });

@@ -3,7 +3,7 @@
 // date sliders, the "win if" strip and the net Greeks strip. Every figure comes from @hapiecoin/pricing.
 import { Button, EmptyState, cn } from "@hapiecoin/ui";
 import { useMemo, useState } from "react";
-import { fmtDelta, fmtGamma, fmtPrice, fmtStrike, fmtVega } from "@/lib/format";
+import { fmtDate, fmtDelta, fmtGamma, fmtPrice, fmtStrike, fmtVega } from "@/lib/format";
 import { useChain } from "@/lib/gateway/hooks";
 import { fmtMoney, fmtMoneyCompact } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
@@ -134,11 +134,21 @@ export function PayoffPanel() {
       <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3" data-testid="payoff-tiles">
         <Tile label="Max profit" value={result ? fmtMoney(result.maxProfit, money, { unlimited: "Unlimited" }) : "—"} sub={where(maxPAt)} tone="profit" testId="tile-max-profit" title="Highest P&L at expiry over the price axis" />
         <Tile label="Max loss" value={result ? fmtMoney(result.maxLoss, money, { unlimited: "Unlimited" }) : "—"} sub={where(maxLAt)} tone="loss" testId="tile-max-loss" title="Lowest P&L at expiry over the price axis" />
-        <Tile label="Break-even" value={result ? (result.breakevens.length ? result.breakevens.map((b) => fmtStrike(String(Math.round(b)))).join(" · ") : "none") : "—"} sub={result ? (result.breakevens.length === 1 ? "one point" : result.breakevens.length ? `${result.breakevens.length} points` : "") : ""} testId="tile-breakeven" title="Underlying prices where the expiry P&L is zero" />
+        <Tile label="Break-even" value={result ? (result.breakevens.length ? result.breakevens.map((b) => fmtStrike(String(Math.round(b)))).join(" · ") : "none") : "—"} sub={result && spot ? (result.breakevens.length ? result.breakevens.map((b) => `${((b - spot) / spot) * 100 >= 0 ? "+" : ""}${(((b - spot) / spot) * 100).toFixed(1)}%`).join(" · ") : "") : result ? (result.breakevens.length === 1 ? "one point" : result.breakevens.length ? `${result.breakevens.length} points` : "") : ""} testId="tile-breakeven" title="Underlying prices where the expiry P&L is zero" />
         <Tile label="POP" value={result && Number.isFinite(result.pop) ? `${(result.pop * 100).toFixed(0)}%` : "—"} sub={pop?.text} tone={pop?.tone} testId="tile-pop" title="Probability of any profit at expiry: lognormal on the ATM IV" />
         <Tile label="R : R" value={result ? rrText(result.rewardRisk, result.maxProfit, result.maxLoss) : "—"} sub={rr?.text} tone={rr?.tone} testId="tile-rr" title="Max profit : max loss" />
         <Tile label="Net premium" value={result ? fmtMoney(result.netPremium, money, { signed: true }) : "—"} sub={result ? (result.netPremium >= 0 ? "credit received" : "debit paid") : ""} tone={result ? (result.netPremium >= 0 ? "profit" : "loss") : "muted"} testId="tile-net" title="Premium received minus premium paid, at the prices in the Builder" />
       </div>
+      {result && spot !== null && Number.isFinite(result.expectedMove) && result.expectedMove > 0 ? (
+        <div className="grid grid-cols-5 px-3 pt-1 text-center font-mono text-3xs text-muted-foreground" data-testid="sigma-labels" title="Lognormal expected move to expiry from the legs' IV">
+          {([-2, -1, 0, 1, 2] as const).map((k) => (
+            <span key={k} className={k === 0 ? "text-spot" : undefined}>
+              <span className="block">{k === 0 ? "Spot" : `${k > 0 ? "+" : "−"}${Math.abs(k)}σ`}</span>
+              <span className="block text-foreground">{fmtStrike(String(Math.round(spot + k * result.expectedMove)))}</span>
+            </span>
+          ))}
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 text-2xs" data-testid="payoff-strip">
         <span>
           <span className="text-muted-foreground">Win if </span>
@@ -199,7 +209,7 @@ export function PayoffPanel() {
         <label className="flex items-center gap-2 text-2xs">
           <span className="micro w-[72px] shrink-0">Target date</span>
           <input type="range" min={0} max={Math.max(0, dte)} step={1} value={Math.min(a.targetDays, Math.max(0, dte))} onChange={(e) => setTarget({ days: Number(e.target.value) })} className="flex-1 accent-[hsl(var(--curve))]" aria-label="Target days ahead" data-testid="target-days" disabled={dte === 0} />
-          <span className="num w-[80px] text-right">{a.targetDays === 0 ? "today" : `+${a.targetDays}d`}</span>
+          <span className="num w-[130px] text-right" data-testid="target-date-label">{a.targetDays === 0 ? "today" : `+${a.targetDays}d · ${fmtDate(new Date(a.nowMs + a.targetDays * 86_400_000).toISOString().slice(0, 10))}`}</span>
           <button type="button" onClick={() => setTarget({ days: dte })} className="text-muted-foreground hover:text-foreground" title="Move the target to expiry" data-testid="target-days-expiry">
             expiry
           </button>

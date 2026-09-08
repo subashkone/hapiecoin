@@ -150,7 +150,7 @@ describe("HC-SH-003 UI store", () => {
     s.setChainLots(7);
     expect(useUiStore.getState().chainLots).toBe(7);
     s.setChainLots(-3);
-    expect(useUiStore.getState().chainLots).toBe(10);
+    expect(useUiStore.getState().chainLots).toBe(100);
     s.openOptionDetail({ asset: "BTC", expiry: "2026-09-07", strike: "79400", kind: "put" });
     expect(useUiStore.getState().dialog).toBe("option");
     expect(useUiStore.getState().optionDetail?.kind).toBe("put");

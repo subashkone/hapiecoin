@@ -38,7 +38,7 @@ import { Logo } from "@/components/shell/Logo";
 import { Menu, MenuItem, MenuLabel, MenuSeparator } from "@/components/shell/Menu";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
 import { SUPPORT_EMAIL, SUPPORT_WHATSAPP } from "@/content/landing";
-import { AssetSwitch, ExchangeChip, FeedStatus, FuturesPrice } from "./widgets";
+import { AssetSwitch, CurrencyToggle, ExchangeChip, FeedStatus, FuturesPrice } from "./widgets";
 import { PlanBanner } from "./PlanBanner";
 
 export const AVATAR_ICON = { rocket: Rocket, diamond: Gem, lightning: Zap } as const;
@@ -225,6 +225,7 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
           <FeedStatus />
           <span className="hidden h-6 w-px bg-border md:block" aria-hidden="true" />
           <ExchangeChip />
+          <CurrencyToggle />
           <Bell className="hidden size-4 text-muted-foreground lg:block" aria-hidden="true" />
           <ThemeToggle />
           <PaletteButton className="hidden lg:inline-flex" />

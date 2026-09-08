@@ -117,7 +117,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Opens balance popover: Available / Margin Used / Total Equity from CG.mock.wallet + 'Click to refresh' (refreshes numbers, toast)",
-  "evidence": "bundle strings: Available, Margin Used, Total Equity, Click to refresh, Click to refresh balance · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx"
+  "evidence": "bundle strings: Available, Margin Used, Total Equity, Click to refresh, Click to refresh balance · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx · ADR-028 (08 Sep 2026): live available balance from the exchange wallet (WalletChip); unit widgets.test.tsx"
  },
  {
   "id": "HC-SH-009",
@@ -147,7 +147,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "CG.chrome.toggleCurrency() keeps the v1 behaviour (emits currency-settings-changed + currency, toasts)",
-  "evidence": "bundle strings: $ USD, ₹ INR, currency-settings-changed"
+  "evidence": "bundle strings: $ USD, ₹ INR, currency-settings-changed · ADR-028 (08 Sep 2026): one-click $ USD / ₹ INR toggle in the header (CurrencyToggle); unit widgets.test.tsx, e2e analyse.spec.ts HC-SH-012"
  },
  {
   "id": "HC-SH-011",
@@ -4453,7 +4453,7 @@
   "phase": 2,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Number input per leg; change updates leg.lots (or every leg when Basket is on), recomputes Net Premium / Margin and emits analyse:legs-changed",
-  "evidence": "bundle strings: Qty, Quantity · Phase 2 item 4 (08 Sep 2026): lots stepper on the chain presets plus a typed integer input; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-011"
+  "evidence": "bundle strings: Qty, Quantity · Phase 2 item 4 (08 Sep 2026): lots stepper on the chain presets plus a typed integer input; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-011 · ADR-028 (08 Sep 2026): default 100 lots like the reference site; presets 1..1000 unchanged; unit legs.test.ts, store.test.ts"
  },
  {
   "id": "HC-TR-012",
@@ -6468,6 +6468,36 @@
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Per-row X and Exit all open a confirm listing the positions; reduce-only market orders through the executor; HapieCoin legs matching the symbol are squared off at the fill and an emptied strategy is archived; refused exits are reported per product",
   "evidence": "ADR-026 (08 Sep 2026): POST /v1/strategies/live/positions/exit with audit positions.exit; unit pane-follow.test.tsx, API live-cover.test.ts HC-TR-145"
+ },
+ {
+  "id": "HC-TR-146",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/analyse",
+  "screen": "Analyse · Builder",
+  "feature": "Leg checkbox: include / exclude a leg from the analysis",
+  "status": "working",
+  "isNew": true,
+  "phase": 3,
+  "test": "unit (pricing) · e2e (Playwright)",
+  "acceptance": "Per-leg checkbox and a master checkbox in the legs table; an unticked leg stays in the table (dimmed) but leaves the payoff, Greeks, ticket, drafts and trades; the sub-header shows '(N on)'",
+  "evidence": "Parity with the reference site's current legs table (ADR-028, 08 Sep 2026): StrategyLeg.enabled, activeLegs; unit legs.test.ts, builder.test.tsx HC-TR-146, e2e analyse.spec.ts HC-TR-009 block"
+ },
+ {
+  "id": "HC-TR-147",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/analyse",
+  "screen": "Analyse · Builder",
+  "feature": "Per-leg type, strike and expiry editable in place",
+  "status": "working",
+  "isNew": true,
+  "phase": 3,
+  "test": "unit (pricing) · e2e (Playwright)",
+  "acceptance": "CE / PE toggle, strike select from that expiry's venue ladder, expiry select from the listed expiries; the symbol follows and the ladder's mark / IV replace the stored quote when available",
+  "evidence": "ADR-028 (08 Sep 2026): LegInstrument.tsx, setLegInstrument, useExpiries; unit legs.test.ts, builder.test.tsx HC-TR-147, e2e analyse.spec.ts HC-TR-009 block"
  },
  {
   "id": "HC-AC-001",

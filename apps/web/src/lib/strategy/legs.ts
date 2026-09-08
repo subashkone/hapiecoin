@@ -24,13 +24,24 @@ export interface StrategyLeg {
   /** Venue-style symbol, e.g. C-BTC-79400-070926. */
   symbol: string;
   status: "open";
+  /** False = kept in the table but left out of the analysis, ticket and trades (HC-TR-146). Undefined = enabled. */
+  enabled?: boolean | undefined;
   createdAt: number;
+}
+
+/** Open and not switched off: the legs the analysis, ticket and trade flows use. */
+export function isActiveLeg(l: StrategyLeg): boolean {
+  return l.status === "open" && l.enabled !== false;
+}
+export function activeLegs(legs: readonly StrategyLeg[]): StrategyLeg[] {
+  return legs.filter(isActiveLeg);
 }
 
 /** Ten active legs per strategy (HC-TR-017; new strategies stop at 8 in the builder, item 4). */
 export const MAX_ACTIVE_LEGS = 10;
 export const LOT_PRESETS: readonly number[] = [1, 2, 5, 10, 25, 50, 100, 250, 500, 1000];
-export const DEFAULT_LOTS = 10;
+/** 100 lots like the reference site's Builder (ADR-028); the row-control presets stay 1..1000. */
+export const DEFAULT_LOTS = 100;
 
 export function isLotPreset(n: unknown): n is number {
   return typeof n === "number" && LOT_PRESETS.includes(n);
@@ -122,6 +133,22 @@ export function toggleLegSide(legs: readonly StrategyLeg[], id: string): Strateg
   return legs.map((l) => (l.id === id ? { ...l, side: l.side === "buy" ? "sell" : "buy" } : l));
 }
 
+/** Include / exclude a leg from the analysis without deleting it (HC-TR-146). */
+export function toggleLegEnabled(legs: readonly StrategyLeg[], id: string): StrategyLeg[] {
+  return legs.map((l) => (l.id === id ? { ...l, enabled: l.enabled === false } : l));
+}
+
+/** Change an option leg's type, strike or expiry in place (HC-TR-147); the symbol follows, the quote replaces the stored price when given. */
+export function setLegInstrument(legs: readonly StrategyLeg[], id: string, patch: { kind?: "call" | "put"; strike?: string; expiry?: string }, quote?: { price: string; iv?: number | undefined }): StrategyLeg[] {
+  return legs.map((l) => {
+    if (l.id !== id || l.kind === "future") return l;
+    const kind = patch.kind ?? l.kind;
+    const strike = patch.strike ?? l.strike;
+    const expiry = patch.expiry ?? l.expiry;
+    return { ...l, kind, strike, expiry, symbol: deltaSymbol(kind, l.asset, strike, expiry), ...(quote ? { price: quote.price, iv: quote.iv } : {}) };
+  });
+}
+
 /** Set lots on one leg, or on every open leg when `basket` is on (HC-TR-004, HC-TR-011); lots are clamped to ≥ 1 integers. */
 export function setLegLots(legs: readonly StrategyLeg[], id: string, lots: number, basket = false): StrategyLeg[] {
   const v = Math.max(1, Math.round(Number.isFinite(lots) ? lots : 1));
@@ -198,6 +225,7 @@ export function normaliseLegs(input: unknown): StrategyLeg[] {
         price: l.price,
         iv: typeof l.iv === "number" ? l.iv : undefined,
         symbol: l.symbol,
+        ...(l.enabled === false ? { enabled: false } : {}),
         status: "open",
         createdAt: typeof l.createdAt === "number" ? l.createdAt : 0,
       });

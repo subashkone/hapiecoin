@@ -89,8 +89,10 @@ describe("HC-TR-001..021 Builder legs table", () => {
     const legRows = screen.getAllByTestId("leg-row");
     expect(legRows).toHaveLength(2);
     expect(legRows[0]!.dataset["side"]).toBe("buy");
-    expect(within(legRows[0]!).getByText(`${Number(call.strike).toLocaleString("en-US")} C`)).toBeTruthy();
-    expect(within(legRows[1]!).getByText(`${Number(put.strike).toLocaleString("en-US")} P`)).toBeTruthy();
+    expect(within(legRows[0]!).getByTestId<HTMLSelectElement>("leg-strike").value).toBe(call.strike);
+    expect(within(legRows[0]!).getByTestId("leg-kind").textContent).toBe("CE");
+    expect(within(legRows[1]!).getByTestId<HTMLSelectElement>("leg-strike").value).toBe(put.strike);
+    expect(within(legRows[1]!).getByTestId("leg-kind").textContent).toBe("PE");
     expect(screen.getByTestId("builder-remaining").textContent).toContain("6 of 8 slots left");
     // live price follows the feed mark
     await waitFor(() => expect(within(legRows[0]!).getByTestId("leg-price").textContent).not.toBe("—"));
@@ -207,6 +209,47 @@ describe("HC-TR-037..044 templates", () => {
     }
     expect(useUiStore.getState().strategy.BTC.name).toBe("Iron Condor");
     expect(useUiStore.getState().builderTab).toBe("builder");
+  });
+});
+
+describe("HC-TR-146 / HC-TR-147 leg checkbox and in-place instrument edits (ADR-028)", () => {
+  it("unticking a leg drops it from the analysis and the ticket but keeps the row; the master checkbox toggles all", async () => {
+    seedLegs();
+    renderWithProviders(<BuilderPanel />);
+    serveMarket();
+    const u = userEvent.setup();
+    await waitFor(() => expect(screen.getByTestId("ticket-net").textContent).not.toBe("—"), { timeout: 4000 });
+    const before = screen.getByTestId("ticket-net").textContent;
+    await u.click(within(screen.getAllByTestId("leg-row")[1]!).getByTestId("leg-enabled"));
+    expect(useUiStore.getState().legs.BTC[1]!.enabled).toBe(false);
+    expect(screen.getAllByTestId("leg-row")).toHaveLength(2);
+    expect(screen.getAllByTestId("leg-row")[1]!.dataset["enabled"]).toBe("false");
+    expect(screen.getByTestId("builder-panel").dataset["activeLegs"]).toBe("1");
+    expect(screen.getByTestId("builder-subinfo").textContent).toContain("(1 on)");
+    await waitFor(() => expect(screen.getByTestId("ticket-net").textContent).not.toBe(before), { timeout: 4000 });
+    await u.click(screen.getByTestId("legs-enable-all"));
+    expect(useUiStore.getState().legs.BTC.every((l) => l.enabled !== false)).toBe(true);
+    await u.click(screen.getByTestId("legs-enable-all"));
+    expect(useUiStore.getState().legs.BTC.every((l) => l.enabled === false)).toBe(true);
+    expect(screen.getByTestId("builder-panel").dataset["activeLegs"]).toBe("0");
+  });
+
+  it("type, strike and expiry change in place; the symbol follows and the quote comes from the ladder", async () => {
+    const { call } = seedLegs();
+    renderWithProviders(<BuilderPanel />);
+    serveMarket();
+    const u = userEvent.setup();
+    const row = screen.getAllByTestId("leg-row")[0]!;
+    await u.click(within(row).getByTestId("leg-kind"));
+    expect(useUiStore.getState().legs.BTC[0]).toMatchObject({ kind: "put", symbol: `P-BTC-${call.strike}-250926` });
+    const other = rows.find((r) => r.strike !== call.strike && r.put)!;
+    await u.selectOptions(within(row).getByTestId("leg-strike"), other.strike);
+    expect(useUiStore.getState().legs.BTC[0]).toMatchObject({ kind: "put", strike: other.strike, price: other.put!.mark, symbol: `P-BTC-${other.strike}-250926` });
+    await waitFor(() => expect(within(row).getByTestId<HTMLSelectElement>("leg-expiry").options.length).toBeGreaterThan(1));
+    const nextExpiry = [...within(row).getByTestId<HTMLSelectElement>("leg-expiry").options].map((o) => o.value).find((v) => v !== EXPIRY)!;
+    await u.selectOptions(within(row).getByTestId("leg-expiry"), nextExpiry);
+    expect(useUiStore.getState().legs.BTC[0]!.expiry).toBe(nextExpiry);
+    expect(useUiStore.getState().legs.BTC[0]!.symbol.startsWith("P-BTC-")).toBe(true);
   });
 });
 
