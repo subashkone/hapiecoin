@@ -52,6 +52,10 @@ describe("HC-WS-108 chain reducer keeps the venue strike list", () => {
     const gap = applyDeltas(s0, 7, [{ i: rows[0]!.call!.instrumentId, mark: "1" }]);
     expect(gap.stale).toBe(true);
     expect(gap.seq).toBe(5);
+    // GAPS #30: a replayed or out-of-order frame is ignored rather than marking the chain stale
+    const replay = applyDeltas(s0, 5, [{ i: rows[0]!.call!.instrumentId, mark: "1" }]);
+    expect(replay).toBe(s0);
+    expect(applyDeltas(s0, 3, []).stale).toBe(false);
     const none = applyDeltas(emptyChain(TOPIC), 1, [{ i: rows[0]!.call!.instrumentId, mark: "1" }]);
     expect(none.seq).toBe(-1);
   });

@@ -61,7 +61,7 @@
   "feature": "Expiry strip scroll arrows ‹ › (only shown when the strip overflows)",
   "how": "Overflow measured after render / resize; arrows scroll the strip by 220px",
   "status": "working",
-  "evidence": "‹ › around the strip in the screenshot"
+  "evidence": "‹ › around the strip in the screenshot · Phase 2 close-out (08 Sep 2026): ExpiryStrip.tsx shows ‹ › only when the chips overflow (chain strip and chain picker); unit ExpiryStrip.test.tsx"
  },
  {
   "route": "/analyse",
@@ -69,7 +69,7 @@
   "feature": "LIVE pill in the chain toolbar (Live → Connecting → Static and back)",
   "how": "Toggles CG.analyse.mode; in static mode ticks stop updating the chain",
   "status": "working",
-  "evidence": "bundle strings: Live, Connecting, Static, Connecting to WebSocket..., Click to enable live prices"
+  "evidence": "bundle strings: Live, Connecting, Static, Connecting to WebSocket..., Click to enable live prices · Phase 2 close-out (08 Sep 2026): chain toolbar pill Live / Connecting / Stale / Paused from the gateway status, feed pause and the stale flag (ChainTools.tsx); unit chain.test.tsx HC-WS-009"
  },
  {
   "route": "/analyse",
@@ -237,7 +237,7 @@
   "feature": "Asset switch (BTC / ETH / XAUT) from the header",
   "how": "Listens to CG.on('asset'): sets CG.analyse.asset, resets the target price, reloads the chain and every analysis panel",
   "status": "working",
-  "evidence": "header asset dropdown 'Bitcoin (BTC)' in the screenshot"
+  "evidence": "header asset dropdown 'Bitcoin (BTC)' in the screenshot · Phase 2 close-out (08 Sep 2026): header asset switch drives the chain, legs, Builder and pane through the UI store (ADR-010); unit widgets.test.tsx HC-SH-003, e2e analyse.spec.ts HC-SH-003"
  },
  {
   "route": "/analyse",
@@ -365,7 +365,7 @@
   "feature": "Spot-zone readout ('Spot now ✓ profit zone / ✗ loss zone') in the Analytics strip (replaces the v1 chart footer)",
   "how": "P&L at spot at expiry from CG.analyze",
   "status": "working",
-  "evidence": "screenshot footer line"
+  "evidence": "screenshot footer line · Phase 2 close-out (08 Sep 2026): \"Spot now ✓ profit zone / ✗ loss zone / at break-even\" in the payoff strip (spotZoneAt in analysis.ts); unit analysis.test.tsx"
  },
  {
   "route": "/analyse",

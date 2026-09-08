@@ -1,7 +1,7 @@
 /** Plan banner state (HC-SH-014): free / active / expiring soon (≤ 7 days) / expired. */
 import { IsoDateTime } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { subscriptions } from "../db/schema.js";
 import { type AppEnv, currentUser } from "../security/context.js";
 import { requireUser } from "../security/guards.js";
@@ -58,7 +58,8 @@ export function registerPlanRoutes(
         .select()
         .from(subscriptions)
         .where(eq(subscriptions.userId, me.id))
-        .orderBy(desc(subscriptions.expiresAt), desc(subscriptions.createdAt))
+        // GAPS #30: Postgres sorts NULL first in DESC, so a cancelled lifetime row used to shadow an active one.
+        .orderBy(sql`case when ${subscriptions.status} = 'active' then 0 else 1 end`, sql`${subscriptions.expiresAt} desc nulls last`, desc(subscriptions.createdAt))
         .limit(1);
       return c.json(planState(row, now()), 200);
     },

@@ -32,6 +32,10 @@ export const GatewayEnv = z.object({
   /** Per-connection send buffer above which coalesced frames are dropped until it drains. */
   MAX_BUFFERED_BYTES: z.coerce.number().int().min(1_024).default(1_048_576),
   LOG_LEVEL: z.enum(LOG_LEVELS).default("info"),
+  /** When set, GET /metrics requires `Authorization: Bearer <token>` (GAPS #30). */
+  METRICS_TOKEN: z.string().min(8).optional(),
+  /** Open WebSocket connections allowed per client address; extra ones are closed with 1013 (GAPS #30). */
+  MAX_CONNECTIONS_PER_IP: z.coerce.number().int().min(1).default(20),
 });
 export type GatewayConfig = z.infer<typeof GatewayEnv>;
 

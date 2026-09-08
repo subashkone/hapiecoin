@@ -29,7 +29,6 @@
   },
   "dependencies": {
     "@better-auth/passkey": "1.7.3",
-    "@electric-sql/pglite": "0.5.8",
     "@hapiecoin/schema": "workspace:*",
     "@hono/node-server": "2.1.1",
     "@hono/swagger-ui": "0.6.1",
@@ -44,6 +43,7 @@
     "zod": "4.5.4"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@hapiecoin/config": "workspace:*",
     "drizzle-kit": "0.31.10",
     "tsx": "4.23.13"

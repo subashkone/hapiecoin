@@ -17,6 +17,7 @@ describe("[GATEWAY] config", () => {
       UNSUBSCRIBE_GRACE_MS: 30_000,
       INSTRUMENT_REFRESH_MS: 300_000,
       MAX_BUFFERED_BYTES: 1_048_576,
+      MAX_CONNECTIONS_PER_IP: 20,
       LOG_LEVEL: "info",
     });
     expect(config.REDIS_URL).toBeUndefined();

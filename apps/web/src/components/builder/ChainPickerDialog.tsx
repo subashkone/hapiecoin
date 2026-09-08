@@ -11,6 +11,7 @@ import { daysToExpiry, fmtExpiry, fmtIv, fmtOi, fmtPrice, fmtStrike } from "@/li
 import { useChain, useSpot } from "@/lib/gateway/hooks";
 import { atmIndex } from "@/lib/gateway/reducer";
 import { useUiStore } from "@/lib/store";
+import { ExpiryStrip } from "@/components/chain/ExpiryStrip";
 import { type LegKind, type LegSide, MAX_ACTIVE_LEGS } from "@/lib/strategy/legs";
 
 interface Pick {
@@ -92,7 +93,7 @@ export function ChainPickerDialog({ open, onOpenChange, remaining }: { open: boo
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
-          <div className="flex gap-1 overflow-x-auto pb-1" role="tablist" aria-label="Expiry">
+          <ExpiryStrip className="pb-1" testId="picker-strip">
             {list.map((e) => (
               <button
                 key={e}
@@ -107,7 +108,7 @@ export function ChainPickerDialog({ open, onOpenChange, remaining }: { open: boo
                 {fmtExpiry(e)} <span className="font-mono text-3xs">{daysToExpiry(e)}d</span>
               </button>
             ))}
-          </div>
+          </ExpiryStrip>
           <div className="mt-2 max-h-[46vh] overflow-auto rounded border border-border">
             <table className="w-full text-xs" data-testid="picker-table" data-rows={shown.rows.length}>
               <thead className="sticky top-0 bg-surface-1">

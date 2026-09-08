@@ -41,8 +41,8 @@ export interface FeedLike {
 
 export type ServerConfig = Pick<
   GatewayConfig,
-  "NODE_ENV" | "WEB_URL" | "MAX_TOPICS_PER_CONN" | "MAX_BUFFERED_BYTES" | "COALESCE_MS"
->;
+  "NODE_ENV" | "WEB_URL" | "MAX_TOPICS_PER_CONN" | "MAX_BUFFERED_BYTES" | "COALESCE_MS" | "MAX_CONNECTIONS_PER_IP"
+> & { METRICS_TOKEN?: string | undefined };
 
 export interface GatewayServerOptions {
   config: ServerConfig;
@@ -217,6 +217,10 @@ export class GatewayServer {
       };
     }
     if (path === "/metrics") {
+      const token = this.config.METRICS_TOKEN;
+      if (token !== undefined && request.headers["authorization"] !== `Bearer ${token}`) {
+        return { status: 401, contentType: "application/json", body: JSON.stringify({ error: "unauthorized" }), headers: { ...cors, "www-authenticate": "Bearer" } };
+      }
       return {
         status: 200,
         contentType: "text/plain; version=0.0.4; charset=utf-8",
@@ -253,6 +257,12 @@ export class GatewayServer {
   }
 
   private onOpen(conn: Connection): void {
+    const sameAddress = [...this.conns.values()].filter((s) => s.conn.remoteAddress === conn.remoteAddress).length;
+    if (sameAddress >= this.config.MAX_CONNECTIONS_PER_IP) {
+      this.log.warn("connection refused: per-address cap", { remote: conn.remoteAddress, open: sameAddress });
+      conn.close(1013, `at most ${this.config.MAX_CONNECTIONS_PER_IP} connections per address`);
+      return;
+    }
     this.conns.set(conn.id, {
       conn,
       topics: new Map(),

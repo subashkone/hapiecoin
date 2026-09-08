@@ -320,6 +320,17 @@ describe("HC-WS-015 / HC-WS-017 / HC-WS-018 / HC-WS-019 / HC-WS-020 chain layout
     expect(screen.getByTestId("chain-live").textContent).toContain("Stale");
     expect(screen.getByTestId("chain-asof").textContent).toBe("as of 12:04:31");
   });
+  it("HC-WS-009 the toolbar pill reads Live, Connecting, Stale or Paused from the feed state", () => {
+    const { rerender } = renderWithProviders(<ChainTable {...tableProps({ feed: "connecting", live: false })} />);
+    const pill = () => screen.getByTestId("chain-live");
+    expect(pill().dataset["feed"]).toBe("connecting");
+    expect(pill().textContent).toContain("Connecting");
+    rerender(<ChainTable {...tableProps({ feed: "paused", live: false })} />);
+    expect(pill().textContent).toContain("Paused");
+    rerender(<ChainTable {...tableProps({ feed: "live", live: true })} />);
+    expect(pill().textContent).toContain("Live");
+    expect(pill().getAttribute("title")).toContain("gateway");
+  });
 });
 
 describe("GAPS-2 calls and puts share the vertical scroll and mirror the horizontal scroll", () => {

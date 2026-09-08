@@ -61,6 +61,20 @@ describe("HC-SH-014 plan banner state", () => {
     };
     expect(soon.state).toBe("expiring_soon");
     expect(soon.daysLeft).toBeLessThanOrEqual(3);
+    // GAPS #30: a cancelled lifetime row (NULL expiry) must not shadow the active dated one
+    await t.db
+      .insert(subscriptions)
+      .values({
+        id: "sub_cancelled_lifetime",
+        userId: me.id,
+        planName: "Legacy",
+        status: "cancelled",
+        startsAt: new Date(now - 400 * DAY),
+        expiresAt: null,
+        featureLimits: {},
+      });
+    const still = (await (await t.request("/v1/plan", { cookie })).json()) as { state: string; planName: string };
+    expect(still).toMatchObject({ state: "expiring_soon", planName: "Pro" });
   });
 
   it("planState covers every branch", () => {

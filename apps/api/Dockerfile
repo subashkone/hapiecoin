@@ -6,7 +6,7 @@ WORKDIR /repo
 
 # 1. Install with the lockfile (all workspaces the API depends on).
 FROM base AS deps
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
 COPY packages/config/package.json packages/config/
 COPY packages/schema/package.json packages/schema/
 COPY apps/api/package.json apps/api/
@@ -23,7 +23,9 @@ RUN pnpm --filter @hapiecoin/schema build && pnpm --filter @hapiecoin/api build
 # Production-only tree of the API and its workspace dependencies (single project; `...` would select many).
 RUN pnpm --filter @hapiecoin/api --prod --legacy deploy /out
 
-# 3. Runtime: production deps only, non-root, migrations included.
+# 3. Runtime: production deps only, non-root, migrations included. PGlite is a devDependency and never
+#    loads here (DATABASE_URL is required in production), though drizzle-orm still peer-links it into the
+#    pnpm store (GAPS #30).
 FROM node:24-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app

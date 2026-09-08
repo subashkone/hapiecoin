@@ -3,7 +3,7 @@
 // ticket, and the actions. Legs live in the UI store (ADR-022); prices follow the feed in live mode.
 import { Button, EmptyState, Input, Switch, Tabs, TabsContent, TabsList, TabsTrigger, cn, toast } from "@hapiecoin/ui";
 import { black76Greeks, yearFraction } from "@hapiecoin/pricing";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { daysToExpiry, fmtExpiry, fmtIv, fmtPrice, fmtStrike } from "@/lib/format";
 import { fmtMoney } from "@/lib/money";
 import { settlementHourUtc } from "@/lib/pricing/legs";
@@ -16,6 +16,26 @@ import { SaveDraftDialog } from "@/components/dialogs/SaveDraftDialog";
 import { ChainPickerDialog } from "./ChainPickerDialog";
 import { FutureDialog } from "./FutureDialog";
 import { TemplatesPanel } from "./TemplatesPanel";
+
+/** Price cell that flashes green / red for 800 ms when the value moves (HC-TR-012). */
+export function PriceCell({ value, title }: { value: string; title: string }) {
+  const prev = useRef<number | null>(null);
+  const [cls, setCls] = useState("");
+  const n = Number(value);
+  useEffect(() => {
+    const p = prev.current;
+    prev.current = Number.isFinite(n) ? n : p;
+    if (p === null || !Number.isFinite(n) || n === p) return;
+    setCls(n > p ? "flash-up" : "flash-down");
+    const id = setTimeout(() => setCls(""), 800);
+    return () => clearTimeout(id);
+  }, [n]);
+  return (
+    <span className={cn("inline-block rounded-[2px] px-0.5", cls)} title={title} data-testid="leg-price" data-flash={cls}>
+      {fmtPrice(value, 1)}
+    </span>
+  );
+}
 
 /** New strategies stop at 8 legs; editing an active one allows 10 (HC-TR-017). Phase 2 has no active strategies yet. */
 export const NEW_STRATEGY_LEGS = 8;
@@ -246,9 +266,7 @@ export function BuilderPanel() {
                                 data-testid="leg-price-input"
                               />
                             ) : (
-                              <span title={meta.priceMode === "live" ? "Live price from Delta Exchange" : "Stored price"} data-testid="leg-price">
-                                {fmtPrice(a.priceFor(l), 1)}
-                              </span>
+                              <PriceCell value={a.priceFor(l)} title={meta.priceMode === "live" ? "Live price from Delta Exchange" : "Stored price"} />
                             )}
                           </td>
                           <td className={cn("num py-1.5 pr-2 text-right", g ? (g.delta >= 0 ? "text-profit" : "text-loss") : "text-muted-foreground")}>{g ? g.delta.toFixed(4) : "—"}</td>

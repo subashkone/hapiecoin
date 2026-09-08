@@ -768,9 +768,9 @@
     "semantic_hash": ""
   },
   ".claude/memory/activeContext.md": {
-    "mtime": 1788803426.209788,
-    "seen": 1788806372.0323713,
-    "ast_hash": "c89a64a710b3f407ed4dea578d7aaf25",
+    "mtime": 1788806754.892156,
+    "seen": 1788806819.8304303,
+    "ast_hash": "f6a44cfbaae5fe334a82c704a06ea06e",
     "semantic_hash": ""
   },
   ".claude/memory/productContext.md": {
@@ -1506,9 +1506,9 @@
     "semantic_hash": ""
   },
   "apps/web/next-env.d.ts": {
-    "mtime": 1788805373.6787782,
-    "seen": 1788806371.9864109,
-    "ast_hash": "aa94238a90e7d04b7a47ecc3145ba6a0",
+    "mtime": 1788806771.491068,
+    "seen": 1788806819.7794695,
+    "ast_hash": "8195d2c60ce847a459ae9d308d6a5724",
     "semantic_hash": ""
   },
   "apps/web/next.config.ts": {
@@ -1926,9 +1926,9 @@
     "semantic_hash": ""
   },
   "apps/web/src/components/workspace/workspace.test.tsx": {
-    "mtime": 1788806119.612931,
-    "seen": 1788806371.998027,
-    "ast_hash": "39666cfedec7ba2dac0ec4e8de6a0cd7",
+    "mtime": 1788806711.705708,
+    "seen": 1788806819.79088,
+    "ast_hash": "1eaf12ddba2eac3a8d8352adfe02e4b8",
     "semantic_hash": ""
   },
   "apps/web/src/content/landing.ts": {
@@ -1992,15 +1992,15 @@
     "semantic_hash": ""
   },
   "apps/web/src/lib/chain/expiries.test.ts": {
-    "mtime": 1788794780.204114,
-    "seen": 1788798142.6599643,
-    "ast_hash": "dd6b2c128e172e72e05bbebf7ff62d29",
+    "mtime": 1788806486.8111618,
+    "seen": 1788806819.7928798,
+    "ast_hash": "ec819f0aa0c11e808f41f4116fa43661",
     "semantic_hash": ""
   },
   "apps/web/src/lib/chain/expiries.ts": {
-    "mtime": 1788794780.204114,
-    "seen": 1788798142.6599643,
-    "ast_hash": "2b20c1c1af7d45da26fe9327c7f939f3",
+    "mtime": 1788806486.8101616,
+    "seen": 1788806819.7928798,
+    "ast_hash": "015d186c835459784a842e684af76e79",
     "semantic_hash": ""
   },
   "apps/web/src/lib/env.test.ts": {
@@ -3180,9 +3180,9 @@
     "semantic_hash": ""
   },
   "apps/web/src/components/analysis/PayoffPanel.tsx": {
-    "mtime": 1788804776.0404336,
-    "seen": 1788806371.9907331,
-    "ast_hash": "018ee5f3c2ce37010eab9f7eb8a88d6a",
+    "mtime": 1788806486.812164,
+    "seen": 1788806819.7828531,
+    "ast_hash": "a73b8c834b5f82bc640080ca12911c45",
     "semantic_hash": ""
   },
   "apps/web/src/components/analysis/analysis.test.tsx": {
@@ -3300,9 +3300,15 @@
     "semantic_hash": ""
   },
   "docs/design/workspace-builder.md": {
-    "mtime": 1788806313.50578,
-    "seen": 1788806372.0356972,
-    "ast_hash": "96d2439632cd8912394c949bbc0ea56e",
+    "mtime": 1788806754.892156,
+    "seen": 1788806819.8355691,
+    "ast_hash": "c097a533d2043d3a8b7d7031c7060bdf",
+    "semantic_hash": ""
+  },
+  "apps/web/src/lib/pricing/client.test.ts": {
+    "mtime": 1788806726.2943573,
+    "seen": 1788806819.7965105,
+    "ast_hash": "e8e75bd85ce8c727ec02f9372043ea0b",
     "semantic_hash": ""
   }
 }
