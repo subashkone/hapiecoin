@@ -25,7 +25,7 @@ export function toPricingLegs(legs: readonly StrategyLeg[], lotSize: string | un
   if (!Number.isFinite(size) || size <= 0) return [];
   const out: PricingLeg[] = [];
   for (const l of legs) {
-    if (l.status !== "open") continue;
+    if (l.status !== "open" || l.enabled === false) continue;
     const price = l.kind === "future" ? Number(source.spot ?? l.price) : Number(source.mark?.(l) ?? l.price);
     const iv = l.kind === "future" ? undefined : (source.iv?.(l) ?? l.iv);
     if (!Number.isFinite(price)) continue;

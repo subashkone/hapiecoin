@@ -180,23 +180,23 @@ test.describe("HC-SH analyse header and live chain", () => {
     const controls = page.getByTestId("row-controls-calls");
     await expect(controls).toBeVisible();
     await expect(controls).toHaveAttribute("data-strike", strike);
-    await expect(page.getByTestId("row-lots-value-calls")).toHaveText("10");
+    await expect(page.getByTestId("row-lots-value-calls")).toHaveText("100");
     await page.getByTestId("row-lots-up-calls").click();
-    await expect(page.getByTestId("row-lots-value-calls")).toHaveText("25");
+    await expect(page.getByTestId("row-lots-value-calls")).toHaveText("250");
     await page.getByTestId("row-buy-calls").click();
     await expect(page.getByText("Leg added")).toBeVisible();
-    await expect(atm).toHaveAttribute("data-legs", "C B 25");
+    await expect(atm).toHaveAttribute("data-legs", "C B 250");
     await expect(callsRow).toHaveAttribute("data-leg", "buy");
     await expect(callsRow.locator("[data-col=mark]")).toHaveClass(/legcell-buy/);
     await expect(page.getByTestId("row-buy-calls")).toHaveAttribute("aria-pressed", "true");
     const putsRow = page.locator(`[data-testid=chain-row-puts][data-strike="${strike}"]`);
     await putsRow.hover();
     await page.getByTestId("row-sell-puts").click();
-    await expect(atm).toHaveAttribute("data-legs", "C B 25|P S 25");
+    await expect(atm).toHaveAttribute("data-legs", "C B 250|P S 250");
     await expect(putsRow).toHaveAttribute("data-leg", "sell");
     // persisted per browser context (ADR-022)
     await page.reload();
-    await expect(page.locator(`[data-testid=chain-row][data-strike="${strike}"]`)).toHaveAttribute("data-legs", "C B 25|P S 25", { timeout: 15_000 });
+    await expect(page.locator(`[data-testid=chain-row][data-strike="${strike}"]`)).toHaveAttribute("data-legs", "C B 250|P S 250", { timeout: 15_000 });
     await page.getByTestId("chain-scroll").focus();
     // clean up for the other tests: Esc clears the highlight; legs are cleared through the store in the next test's seed
     await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
@@ -269,7 +269,7 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     await expect(page.getByTestId("strategy-name")).toHaveValue("Iron Condor");
     await expect(page.getByTestId("payoff-panel")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
     await expect(page.getByTestId("tile-max-profit")).not.toContainText("—");
-    await expect(page.getByTestId("tile-breakeven")).toContainText("2 points");
+    await expect(page.getByTestId("tile-breakeven")).toContainText("%"); // two break-evens, each as % from spot (ADR-028)
     await expect(page.getByTestId("tile-net")).toContainText("credit received");
     await expect(page.getByTestId("payoff-chart")).toHaveAttribute("data-points", /^[1-9]\d+$/);
     await expect(page.getByTestId("win-zone")).toContainText("–");
@@ -277,6 +277,7 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     await page.getByTestId("tab-chain").click();
     await expect(page.getByTestId("expiry-dot").first()).toBeVisible();
     // HC-TR-040 strip: one click from the Builder legs replaces the strategy (ADR-027)
+    await page.getByTestId("tab-builder").click();
     await page.getByTestId("builder-tab-builder").click();
     await expect(page.getByTestId("templates-strip")).toHaveAttribute("data-open", "true");
     await page.getByTestId("strip-cat-neutral").click();
@@ -296,7 +297,21 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     await row.getByTestId("leg-side").click();
     await expect(row).toHaveAttribute("data-side", "sell");
     await row.getByTestId("leg-lots-up").click();
-    await expect(row.getByTestId("leg-lots")).toHaveValue("25");
+    await expect(row.getByTestId("leg-lots")).toHaveValue("250");
+    // HC-TR-146 untick the leg: it stays in the table but leaves the analysis; HC-TR-147 CE → PE in place
+    await row.getByTestId("leg-enabled").click();
+    await expect(page.getByTestId("builder-panel")).toHaveAttribute("data-active-legs", "0");
+    await expect(row).toHaveAttribute("data-enabled", "false");
+    await row.getByTestId("leg-enabled").click();
+    await expect(page.getByTestId("builder-panel")).toHaveAttribute("data-active-legs", "1");
+    await row.getByTestId("leg-kind").click();
+    await expect(row.getByTestId("leg-kind")).toHaveText("PE");
+    await expect(row.getByTestId("leg-strike")).toHaveValue(strike);
+    // HC-SH-012 header currency toggle
+    await page.getByTestId("currency-toggle").click();
+    await expect(page.getByTestId("currency-toggle")).toHaveAttribute("data-currency", "INR");
+    await page.getByTestId("currency-toggle").click();
+    await expect(page.getByTestId("currency-toggle")).toHaveAttribute("data-currency", "USD");
     await page.getByTestId("price-mode").click();
     await row.getByTestId("leg-price-input").fill("999.5");
     await page.getByTestId("price-mode").click();

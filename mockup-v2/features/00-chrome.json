@@ -1,943 +1,943 @@
 [
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "Logo (amber Δ mark + HapieCoin · Analyse) → /analyse",
-  "how": "Rendered by CG.chrome['app-header'] variant 'analyse'; 50px panel-tone header with hairline bottom border; link to #/analyse",
-  "status": "working",
-  "evidence": "screenshot feature-payoff-diagram · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "Admin badge next to logo (admin only, neutral mono chip) → /admin/users",
-  "how": "Shown when CG.auth.isAdmin(); hidden for normal users",
-  "status": "working",
-  "evidence": "bundle strings: ' Admin ', Admin · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "Asset switcher: BTC / ETH / XAUT segmented control (data-tour=asset-select) + 'Venue: Delta India'",
-  "how": "Clicking a segment sets CG.state.asset, saves state, emits 'asset' and toasts; CG.chrome.openAssetMenu() dropdown kept for compatibility",
-  "status": "working",
-  "evidence": "bundle strings: Bitcoin, Ethereum, Tether Gold, asset-select · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx, e2e analyse.spec.ts"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "Futures price + 24h % (DM Mono, tabular figures) with live flash on every tick",
-  "how": "Label 'FUTURES · BTCUSD'; price flashes green/red vs previous tick; 24h % derived from base price",
-  "status": "working",
-  "evidence": "header label 'Futures Price' in screenshots · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx, e2e analyse.spec.ts"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "24h Change ± % (green/red) beside the price",
-  "how": "Same cell as the price, semantic profit/loss colour",
-  "status": "working",
-  "evidence": "header label '24h Change' · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "Feed status as text '● FEED LIVE · 84 ms' (latency jitters on each tick) — click pauses / reconnects",
-  "how": "Replaces the green pill; dot turns grey when paused, amber while connecting; emits 'live-feed' and toasts",
-  "status": "working",
-  "evidence": "bundle strings: Live, Connecting... · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx, e2e analyse.spec.ts"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "'Exchange' chip: Not connected / Connected (green when connected) → API Settings dialog",
-  "how": "Opens the Delta Exchange API Settings dialog; turns green with 'Connected' when CG.state.exchangeConnected",
-  "status": "working",
-  "evidence": "bundle strings: Exchange, Click to connect exchange, Not Connected, Connect · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "Wallet balance chip ($1,000.00) when exchange connected",
-  "how": "Opens balance popover: Available / Margin Used / Total Equity from CG.mock.wallet + 'Click to refresh' (refreshes numbers, toast)",
-  "status": "working",
-  "evidence": "bundle strings: Available, Margin Used, Total Equity, Click to refresh, Click to refresh balance · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "Market Analytics moved out of the header into the settings menu, default-header tabs and the command palette",
-  "how": "Settings → Market Analytics link, 'Market Analytics' tab on the default header, palette 'Market Analytics · …' commands",
-  "status": "working",
-  "evidence": "bundle strings: Market Analytics (opens in a new tab), market-button"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "Currency toggle moved to the portfolio bar (CCY item) and settings menu / palette ('Display currency → INR')",
-  "how": "CG.chrome.toggleCurrency() keeps the v1 behaviour (emits currency-settings-changed + currency, toasts)",
-  "status": "working",
-  "evidence": "bundle strings: $ USD, ₹ INR, currency-settings-changed"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "Theme toggle (moon/sun) · 'Switch to Dark Mode' / 'Switch to Light Mode'",
-  "how": "CG.theme.toggle(); header re-renders icon and title on 'theme' event",
-  "status": "working",
-  "evidence": "bundle strings: Switch to Dark Mode, Switch to Light Mode · Phase 1 tests (tagged 08 Sep 2026): unit shell.test.tsx"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "'Take a tour' moved to the settings menu and the command palette",
-  "how": "CG.chrome.startTour() unchanged",
-  "status": "working",
-  "evidence": "bundle string: Take a tour"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "Settings gear (data-tour=settings-menu)",
-  "how": "Opens the settings dropdown menu",
-  "status": "working",
-  "evidence": "bundle string: settings-menu · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "Plan banner auto-inserted under the analyse header",
-  "how": "If the screen has no data-cg=plan-banner placeholder the header appends one",
-  "status": "working",
-  "evidence": "bundle strings: Your plan has expired., Congratulations! Your plan is active until · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
- },
- {
-  "route": "/subscription",
-  "screen": "Shared chrome · App header (default)",
-  "feature": "Logo → /analyse (or / when logged out)",
-  "how": "CG.chrome['app-header'] default variant used by every non-analyse logged-in page",
-  "status": "working",
-  "evidence": "observed on /subscription, /referrals, /admin/* · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
- },
- {
-  "route": "/subscription",
-  "screen": "Shared chrome · App header (default)",
-  "feature": "Text tabs Analyse · Market Analytics · Subscription · Referrals · Admin with an amber underline on the active route",
-  "how": "Replaces the 'Go to Analyse' button; active tab from CG.current.path (Market Analytics also active on /terminal/*)",
-  "status": "working",
-  "evidence": "inferred from bundle nav strings · Phase 1 tests (tagged 08 Sep 2026): e2e public.spec.ts"
- },
- {
-  "route": "/subscription",
-  "screen": "Shared chrome · App header (default)",
-  "feature": "'Market Analytics' tab (active state on /analytics/* and /terminal/*)",
-  "how": "Navigates to /analytics; highlighted when current path starts with /analytics",
-  "status": "working",
-  "evidence": "bundle string: Market Analytics · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
- },
- {
-  "route": "/subscription",
-  "screen": "Shared chrome · App header (default)",
-  "feature": "'Admin' nav link + badge (admin only) → /admin/users",
-  "how": "Only rendered when CG.auth.isAdmin()",
-  "status": "working",
-  "evidence": "bundle string: Admin, /admin/users · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
- },
- {
-  "route": "/subscription",
-  "screen": "Shared chrome · App header (default)",
-  "feature": "Alerts bell, density toggle, theme toggle, Ctrl K button, settings gear on the default header",
-  "how": "Same controls as the analyse header",
-  "status": "working",
-  "evidence": "bundle strings: Switch to Dark Mode / Light Mode"
- },
- {
-  "route": "/subscription",
-  "screen": "Shared chrome · App header (default)",
-  "feature": "User avatar button → Account menu",
-  "how": "Menu shows name/email, My Profile, My Subscription, My Referrals, Logout",
-  "status": "working",
-  "evidence": "bundle strings: Account, My Profile, My Subscription, My Referrals, Logout · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
- },
- {
-  "route": "/subscription",
-  "screen": "Shared chrome · App header (default)",
-  "feature": "'Sign In' button when logged out",
-  "how": "Header re-renders on 'auth'; Sign In navigates to /auth",
-  "status": "working",
-  "evidence": "observed: public pages show Sign In · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Settings menu",
-  "feature": "Section 'Account': My Profile / My Subscription / My Referrals",
-  "how": "My Profile opens the Profile dialog; the others navigate to /subscription and /referrals",
-  "status": "working",
-  "evidence": "bundle strings: Account, My Profile, My Subscription, My Referrals · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Settings menu",
-  "feature": "Section 'Preferences': API Settings, Currency Settings (value), Lot Size Settings, P&L Settings (value), Exchange Setup, Alerts (armed count), Keyboard shortcuts (?), Density (value), Command palette (Ctrl K), Market Analytics, Take a tour, theme",
-  "how": "Each opens the matching dialog / starts the tour / toggles theme",
-  "status": "working",
-  "evidence": "bundle strings: Preferences, API Settings, Currency Settings, Lot Size Settings, P&L Settings, Exchange Setup, Take a tour, Switch to Dark Mode"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Settings menu",
-  "feature": "Section 'Admin' (admin only): Subscription Plans, Menu Pricing, Coupon Codes, User Subscriptions, Banners, Promotional Emails, Users",
-  "how": "Links to /admin/subscriptions, /admin/menu-pricing, /admin/coupons, /admin/user-subscriptions, /admin/banners, /admin/emails, /admin/users",
-  "status": "working",
-  "evidence": "bundle strings + routes"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Settings menu",
-  "feature": "Section 'Support': Email Us (mailto:support@hapiecoin.com), WhatsApp Us (wa.me/919684022369, new tab)",
-  "how": "External links with rel=noopener",
-  "status": "working",
-  "evidence": "bundle strings: Support, Email Us, WhatsApp Us"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Settings menu",
-  "feature": "Logout → Confirm Logout dialog",
-  "how": "'Are you sure you want to sign out? You'll need to sign in again to access your account.' → CG.auth.logout() + toast 'Logged out · You have been signed out.'",
-  "status": "working",
-  "evidence": "bundle strings: Confirm Logout, Logged out, You have been signed out. · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx, unit dialogs.test.tsx, e2e analyse.spec.ts"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Profile dialog",
-  "feature": "Profile · Your account details",
-  "how": "CG.chrome.openSettings('profile')",
-  "status": "working",
-  "evidence": "bundle strings: Profile, Your account details · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Profile dialog",
-  "feature": "Avatar picker (rocket / diamond / lightning) · 'Tap to change avatar' · 'Choose your avatar' · Change",
-  "how": "Tapping the avatar or Change reveals the picker; picking updates CG.mock.user.avatar, header avatar and toasts 'Avatar updated'",
-  "status": "working",
-  "evidence": "bundle strings: rocket, diamond, lightning, Tap to change avatar, Choose your avatar, Change, Avatar updated · dialog copy and flow audited against the v2 mock (08 Sep 2026)"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Profile dialog",
-  "feature": "Fields: Full Name ('Your name'), Mobile ('Mobile number'), Email (read-only), Referral code (+copy), Joined",
-  "how": "Read-only until Edit Profile; copy button toasts 'Copied'",
-  "status": "working",
-  "evidence": "bundle strings: Full Name, Your name, Mobile, Mobile number, Email · dialog copy and flow audited against the v2 mock (08 Sep 2026)"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Profile dialog",
-  "feature": "Edit Profile → Save ('Saving...')",
-  "how": "Validates name, 600ms 'Saving...' then updates CG.mock.user, emits 'profile-updated', toast 'Profile updated'",
-  "status": "working",
-  "evidence": "bundle strings: Edit Profile, Saving..., Profile updated · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · API Settings dialog",
-  "feature": "Delta Exchange API Settings · status block",
-  "how": "'Checking connection...' spinner (700ms) then 'Not Connected · Enter your Delta Exchange API credentials to enable live trading.' or connected block with 'API Key: ••••1a2b', 'Connected: <date>', 'Wallet: $1,000.00'",
-  "status": "working",
-  "evidence": "bundle strings: Delta Exchange API Settings, Checking connection..., API Key: , Connected: , Wallet:, Not Connected · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · API Settings dialog",
-  "feature": "Select Exchange (brokers with '(0.05% fee)') + 'Fee: 0.05% · GST: 18% · Cap: 10%'",
-  "how": "Select lists CG.mock.brokers; fee line updates on change; selection stored in CG.mock.apiCredentials.brokerId",
-  "status": "working",
-  "evidence": "bundle strings: Select Exchange, % fee), Fee: , % · GST: , % · Cap:  · dialog copy and flow audited against the v2 mock (08 Sep 2026)"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · API Settings dialog",
-  "feature": "API Credentials: API Key + API Secret (password) inputs",
-  "how": "Placeholders 'Enter your Delta Exchange API key' / 'Enter your Delta Exchange API secret'",
-  "status": "working",
-  "evidence": "bundle strings: API Credentials, API Key, API Secret, placeholders · dialog copy and flow audited against the v2 mock (08 Sep 2026)"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · API Settings dialog",
-  "feature": "Connect & Save (validation → 'Connecting...' 1s → connected)",
-  "how": "Empty key/secret → destructive toast 'Save Failed'; success sets CG.state.exchangeConnected, emits 'exchange-changed' + 'broker-credentials-changed', toast 'Exchange Connected · API credentials saved to server'",
-  "status": "working",
-  "evidence": "bundle strings: Connect & Save, Connecting..., Exchange Connected, API credentials saved to server, Save Failed · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · API Settings dialog",
-  "feature": "'Get your API key from Delta Exchange → Account → API Keys' link (new tab)",
-  "how": "External link with rel=noopener noreferrer",
-  "status": "working",
-  "evidence": "bundle strings: Get your API key from, Delta Exchange → Account → API Keys · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · API Settings dialog",
-  "feature": "Whitelisted IP Address 172.236.179.136 + Copy + hint",
-  "how": "Copy writes to clipboard and toasts 'Copied · IP address copied to clipboard'; hint 'Add this IP to your Delta Exchange API key whitelist for secure access.'",
-  "status": "working",
-  "evidence": "bundle strings: Whitelisted IP Address, Copy, Copied, IP address copied to clipboard, hint text · dialog copy and flow audited against the v2 mock (08 Sep 2026)"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · API Settings dialog",
-  "feature": "Disconnect Exchange (only when connected)",
-  "how": "Clears credentials, CG.state.exchangeConnected=false, toast 'Exchange Disconnected · Delta Exchange credentials removed'",
-  "status": "working",
-  "evidence": "bundle strings: Disconnect Exchange, Exchange Disconnected, Delta Exchange credentials removed · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Currency Settings dialog",
-  "feature": "From Currency (USD) → To Currency (INR) + 'USD to INR Conversion Rate' input",
-  "how": "Rate defaults to CG.state.conversionRate (83.5)",
-  "status": "working",
-  "evidence": "bundle strings: Currency Settings, From Currency, To Currency, Conversion Rate · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Currency Settings dialog",
-  "feature": "Display currency tabs ($ USD / ₹ INR) + note 'All calculated values (P&L, Margin, Net Premium) will be displayed in … · Rate: $1 = ₹83.5'",
-  "how": "Note updates live as rate / currency change",
-  "status": "working",
-  "evidence": "bundle strings: All calculated values…, Indian Rupees (₹), US Dollars ($), Rate: $1 = ₹ · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Currency Settings dialog",
-  "feature": "Save ('Saving...') / Cancel",
-  "how": "Validates rate > 0; sets CG.state.conversionRate + currency, emits 'currency-settings-changed', toast 'Currency conversion saved'",
-  "status": "working",
-  "evidence": "bundle strings: Save, Saving..., Cancel, Currency conversion saved · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Lot Size Settings dialog",
-  "feature": "Lot size for each symbol: BTC / ETH / XAUT rows '1 lot = [0.001] BTC'",
-  "how": "Inputs pre-filled from CG.state.lotSizes",
-  "status": "working",
-  "evidence": "bundle strings: Lot Size Settings, Lot size for each symbol, Lot Size, 1 lot = · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Lot Size Settings dialog",
-  "feature": "Save → 'Lot sizes saved'",
-  "how": "Validates > 0 (else 'Failed to save lot sizes'), stores CG.state.lotSizes, emits 'lot-sizes-changed'",
-  "status": "working",
-  "evidence": "bundle strings: Lot sizes saved, Failed to save lot sizes · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx, e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · P&L Settings dialog",
-  "feature": "Radio group 'P&L price basis': Mark price / Bid/Ask (executable) with descriptions",
-  "how": "aria radiogroup; click selects; Save stores CG.state.pnlBasis ('mark' | 'bid_ask') and emits 'pnl-basis-changed'",
-  "status": "working",
-  "evidence": "bundle strings: P&L Settings, Choose the price basis…, Mark price, Bid/Ask (executable), bid_ask, P&L price basis · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx, e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · P&L Settings dialog",
-  "feature": "Explanatory note about mark vs bid/ask differences",
-  "how": "Static info alert with the bundle text ('…so the two figures will differ — usually by the bid/ask spread, and more on illiquid strikes.')",
-  "status": "static",
-  "evidence": "bundle strings: Delta Exchange shows P&L at the mark price… · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Exchange Management dialog",
-  "feature": "Exchange Management · Manage exchange configurations for paper trading · list of exchange cards (name, Preferred/GLOBAL badges, Fee %, GST %, Fee Cap %)",
-  "how": "Rendered from CG.mock.brokers",
-  "status": "working",
-  "evidence": "bundle strings: Exchange Management, Manage exchange configurations for paper trading, Fee Cap, GST: , Preferred, GLOBAL · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Exchange Management dialog",
-  "feature": "Add Exchange → 'Add New Exchange · Configure exchange fee structure' form",
-  "how": "Fields Exchange Name ('e.g., Delta Exchange India'), Fee Percentage (%) 'Percentage of notional value', GST Percentage (%), Fee Cap (% of premium) 'Maximum fee as percentage of premium'; Create pushes to CG.mock.brokers, toast 'Success · Exchange created successfully'",
-  "status": "working",
-  "evidence": "bundle strings: Add Exchange, Add New Exchange, Configure exchange fee structure, field labels/hints, Create, Exchange created successfully · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Exchange Management dialog",
-  "feature": "Validation 'Exchange name is required'",
-  "how": "Inline error + destructive toast 'Validation Error'",
-  "status": "working",
-  "evidence": "bundle strings: Validation Error, Exchange name is required · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Exchange Management dialog",
-  "feature": "Edit → 'Edit Exchange' form → Update",
-  "how": "Mutates the broker in CG.mock.brokers, toast 'Exchange updated successfully', emits 'brokers-changed'",
-  "status": "working",
-  "evidence": "bundle strings: Edit, Edit Exchange, Update, Exchange updated successfully · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Exchange Management dialog",
-  "feature": "Delete → confirm 'Delete Exchange · This action cannot be undone' + warning",
-  "how": "Body 'Are you sure you want to delete this exchange?' + '⚠️ Warning: Any strategies using this exchange will need to be reconfigured.'; confirm removes from CG.mock.brokers, toast 'Exchange deleted successfully'",
-  "status": "working",
-  "evidence": "bundle strings: Delete Exchange, This action cannot be undone, warning text, Exchange deleted successfully · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Plan banner",
-  "feature": "Expired: 'Your plan has expired.' + Renew Plan",
-  "how": "CG.chrome['plan-banner'] reads CG.mock.subscription; button → /subscription",
-  "status": "working",
-  "evidence": "bundle strings: Your plan has expired., Renew Plan"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Plan banner",
-  "feature": "Free: 'Your free plan is active.' + Upgrade",
-  "how": "Shown when planId is p_free / status free",
-  "status": "working",
-  "evidence": "bundle strings: Your free plan is active., Upgrade"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Plan banner",
-  "feature": "Expiring: 'Your plan expires soon — N days left.' + Renew Plan",
-  "how": "Shown when expiresAt is within 7 days of CG.NOW",
-  "status": "working",
-  "evidence": "bundle strings: Your plan expires soon — ,  left."
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Plan banner",
-  "feature": "Active: 'Congratulations! Your plan is active until 31 Dec 2026' (dismissable)",
-  "how": "Dismiss hides it for the session (sessionStorage); re-renders on 'subscription-changed'",
-  "status": "working",
-  "evidence": "bundle string: Congratulations! Your plan is active until"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Upgrade Required dialog",
-  "feature": "CG.chrome.upgradeRequired(message): 'Upgrade Required' + message + 'Subscribe Here →' + Dismiss",
-  "how": "Subscribe navigates to /subscription and closes; Dismiss closes",
-  "status": "working",
-  "evidence": "bundle strings: Upgrade Required, Subscribe Here →, Dismiss"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Banner flyers",
-  "feature": "Flyer popup carousel of active CG.mock.banners (dark panel with amber accent stripe, ANNOUNCEMENT n of N, title, description, date range)",
-  "how": "CG.chrome.showFlyers(); gradients removed",
-  "status": "working",
-  "evidence": "bundle strings: banner, once_per_session, once_per_day, every_time"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Banner flyers",
-  "feature": "Previous / Next arrows + dots in the footer row, frequency label, 'View' link, close",
-  "how": "Arrows cycle; View opens the banner link (hapiecoin.com links become hash routes, others open in a new tab)",
-  "status": "working",
-  "evidence": "bundle strings: Previous flyer, Next flyer, View , noopener,noreferrer"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · HapieCoin Assistant",
-  "feature": "Floating 40px chat bubble bottom-right on every screen, docked above the portfolio bar on /analyse (bottom 56px)",
-  "how": "CSS var --cgc-dock set on route; data-tour=chat-launcher",
-  "status": "working",
-  "evidence": "bundle strings: Ask HapieCoin Assistant (drag to move), chat-launcher"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · HapieCoin Assistant",
-  "feature": "Drag to move (pointer events) with remembered position",
-  "how": "Drag > 5px moves the button (clamped to viewport) and stores position in localStorage; a plain click toggles the panel",
-  "status": "working",
-  "evidence": "bundle string: drag to move"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · HapieCoin Assistant",
-  "feature": "Panel header 'HapieCoin Assistant · Platform help · not financial advice' (or visitor mode) with an 'Explain this strategy' quick-action button on /analyse",
-  "how": "Subtitle depends on CG.state.loggedIn",
-  "status": "working",
-  "evidence": "bundle strings: HapieCoin Assistant, Platform help · not financial advice, Limited visitor mode · log in for full support"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · HapieCoin Assistant",
-  "feature": "Greeting 'Hi! Ask me anything about using HapieCoin — or try one of these:' + 4 suggestion chips",
-  "how": "Chips send the question immediately",
-  "status": "working",
-  "evidence": "bundle string: Hi! Ask me anything about using HapieCoin — or try one of these:"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · HapieCoin Assistant",
-  "feature": "Input 'Ask a question…' + Send; mock streamed answers",
-  "how": "Keyword matching over 11 canned answers (legs/chain, POP, connect Delta, mark vs bid/ask, paper trades, templates, Greeks, margin, lot size, plans, currency) typed out over ~1.5s; fallback answer otherwise; visitor note when logged out",
-  "status": "working",
-  "evidence": "bundle strings: Ask a question…, Send, submit"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · HapieCoin Assistant",
-  "feature": "Footer 'Need a human? Email' (mailto:support@hapiecoin.com, new tab)",
-  "how": "External mailto link with rel=noreferrer",
-  "status": "working",
-  "evidence": "bundle strings: Need a human?, Email, _blank, noreferrer"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · HapieCoin Assistant",
-  "feature": "Close button / Escape closes the panel",
-  "how": "Panel removed; conversation kept for the session",
-  "status": "working",
-  "evidence": "bundle string: Close"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Product tour",
-  "feature": "driver.js-style overlay with cut-out around the target (SVG mask) + highlight ring + popover (title, description, 'x of N', Previous / Next / Done, close)",
-  "how": "CG.chrome.startTour(); targets located by [data-tour=…]; popover centred when the target is not in the DOM; keyboard ← → Esc",
-  "status": "working",
-  "evidence": "bundle strings: driver-popover, {{current}} of {{total}}, Previous, Next, Done"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Product tour",
-  "feature": "Step 1 'Welcome to HapieCoin' (Start button, no target)",
-  "how": "Text from the bundle",
-  "status": "working",
-  "evidence": "bundle strings: Welcome to HapieCoin, Let's place a real paper trade together…, Start"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Product tour",
-  "feature": "Step 2 'Choose your asset' (asset-select)",
-  "how": "Highlights the asset selector",
-  "status": "working",
-  "evidence": "bundle strings: asset-select, Choose your asset"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Product tour",
-  "feature": "Step 3 'Your workspaces' (options-chain)",
-  "how": "Highlights the workspace / chain area; emits tour-step with tab 'options-chain'",
-  "status": "working",
-  "evidence": "bundle strings: Your workspaces, options-chain"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Product tour",
-  "feature": "Step 4 'Add a leg — try it now' (advances on 'cg-tour:leg-added')",
-  "how": "Waits for the analyse screen to emit CG.emit('cg-tour:leg-added'); Next also works",
-  "status": "working",
-  "evidence": "bundle strings: Add a leg — try it now, cg-tour:leg-added"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Product tour",
-  "feature": "Step 5 'Your strategy legs' (strategy-legs, tab builder)",
-  "how": "Highlights the legs panel",
-  "status": "working",
-  "evidence": "bundle strings: strategy-legs, builder, Your strategy legs"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Product tour",
-  "feature": "Step 6 'Payoff and analytics' (payoff-panel)",
-  "how": "Highlights the payoff panel",
-  "status": "working",
-  "evidence": "bundle strings: payoff-panel, Payoff and analytics"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Product tour",
-  "feature": "Step 7 'Start a paper trade' (paper-trade-button, advances on 'cg-tour:save-dialog-open')",
-  "how": "Highlights the Paper Trade button",
-  "status": "working",
-  "evidence": "bundle strings: paper-trade-button, Start a paper trade, cg-tour:save-dialog-open"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Product tour",
-  "feature": "Step 8 'Name your strategy' (save-dialog, advances on 'cg-tour:trade-modal-open')",
-  "how": "Popover above the modal (z-index 150)",
-  "status": "working",
-  "evidence": "bundle strings: save-dialog, save-button, Name your strategy, cg-tour:trade-modal-open"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Product tour",
-  "feature": "Step 9 'Review and start' (trade-modal, advances on 'cg-tour:paper-started')",
-  "how": "Highlights the trade preview modal",
-  "status": "working",
-  "evidence": "bundle strings: trade-modal, trade-confirm-button, Review and start, cg-tour:paper-started"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Product tour",
-  "feature": "Steps 10–12 'Your trade is running' (paper-tab), 'Track P&L and details' (paper-pnl), 'Stop a paper trade' (paper-stop)",
-  "how": "Emit tour-step with tab 'paper' so the workspace can switch tabs; 'Stop a paper trade' has no description in the bundle — a short one was written",
-  "status": "inferred",
-  "evidence": "bundle strings: paper-tab, paper-pnl, paper-stop + titles/descriptions"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Product tour",
-  "feature": "Steps 13–15 'Settings' (settings-menu), 'Ask the HapieCoin Assistant' (chat-launcher) and 'Command palette' (command-palette)",
-  "how": "Highlights the gear and the floating chat button; Done closes with a toast",
-  "status": "working",
-  "evidence": "bundle strings: settings-menu, Settings, chat-launcher, Ask the HapieCoin Assistant"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Product tour",
-  "feature": "Auto-start once on /analyse (CG.state.tourDone) after the flyer popup closes; 'Take a tour' restarts; navigates to /analyse first if started elsewhere",
-  "how": "cg_tour_done equivalent persisted in CG.state via CG.saveState()",
-  "status": "working",
-  "evidence": "bundle strings: cg_tour_done, Take a tour"
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "ATM IV + 'IV rank N' (mono)",
-  "how": "From CG.analyse.stats {atmIv, ivRank} when the analyse part emits 'analyse:stats'; otherwise computed from the ATM row of CG.chain(asset, expiry) and a per-asset IV range (CG.mock.ivRange). Exposed as CG.chrome.marketStats(asset)",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "'EXP. MOVE · 25 SEP  ± 7,693 1σ' expected move for the selected expiry",
-  "how": "spot × ATM IV × √(dte/365); re-rendered on tick, 'asset', 'expiry', 'analyse:expiry' and 'analyse:stats'",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "Alerts bell with armed-count badge (red when an alert has triggered) → Alerts dialog",
-  "how": "Badge re-rendered on 'alerts-changed' / 'alert-triggered'",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "Density toggle (comfortable / compact)",
-  "how": "Sets CG.state.density, CG.saveState(), CG.emit('density', value) and html[data-density]; --cg-row = 36px / 28px; keyboard D",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "'Ctrl K · Command' button opens the command palette (data-tour=command-palette)",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "User avatar → Account menu (My Profile / My Subscription / My Referrals / Logout) on both header variants",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · App header (analyse)",
-  "feature": "Responsive trimming: venue and Command label hide ≤1500px, expected move ≤1330px, ATM IV ≤1180px, sub-labels ≤1000px",
-  "how": "CSS media queries; header never overflows at 1440 / 1280 / 1100 / 960 (pw/check-v2-widths.js)",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/subscription",
-  "screen": "Shared chrome · App header (default)",
-  "feature": "Logged-out variant: Home · Market Analytics tabs, theme, Ctrl K, 'Sign in' primary button",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Command palette",
-  "feature": "Open with Ctrl K / ⌘ K anywhere (even inside inputs), the header button, Settings → Command palette or CG.palette.open()",
-  "how": "CG.palette.open(query?) / close() / toggle() / isOpen(); overlay closes on Esc or backdrop click",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Command palette",
-  "feature": "Search input with fuzzy matching on label + keywords + hint (substring first, then subsequence with word-start bonus); matched characters underlined",
-  "how": "Best hit surfaced first as “Best match”",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Command palette",
-  "feature": "Grouped results: Recent · Navigate · Actions · Settings (custom groups appended)",
-  "how": "Recent shows the last 5 used commands (CG.state.recentCommands, persisted via CG.saveState)",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Command palette",
-  "feature": "Keyboard: ↑ ↓ / Tab move, ↵ runs, Esc closes; mouse hover selects, click runs",
-  "how": "Footer shows the key hints and the number of registered commands",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Command palette",
-  "feature": "Registry API for other parts: CG.palette.register({id,label,group,keywords,hint,kbd,icon,when,run}) → unregister fn; CG.palette.unregister(id); CG.palette.list(); CG.palette.run(id)",
-  "how": "Emits 'palette:open', 'palette:close', 'palette:run' {id,label}",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Command palette",
-  "feature": "Default Navigate commands: Home, Sign in, Analyse workspace, My Subscription, My Referrals, all Admin pages, all Market Analytics sections, all Terminal pages, Feature inventory, Payoff chart preview, legal pages",
-  "how": "User routes only when logged in, admin routes only for admins; every other static screen is auto-discovered from section[data-route][data-title] on open",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Command palette",
-  "feature": "Default Actions: Switch asset → BTC / ETH / XAUT, Toggle theme (T), Toggle density (D), New alert…, Alerts center, Take a tour, Keyboard shortcuts (?), Explain this strategy (on /analyse), Ask the assistant, Show announcements, Pause / resume live feed, Logout",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Command palette",
-  "feature": "Default Settings: Open API Settings / Currency Settings / Lot Size Settings / P&L Settings / Exchange Setup / Profile, Display currency → INR/USD",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Command palette",
-  "feature": "Empty state “No commands match …” with hints",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Alerts center",
-  "feature": "Alert store CG.mock.alerts seeded with 3 alerts: BTC ≥ 82,000 (push), BTC IV rank ≤ 30 (telegram), s_301 “BTC Bull Call Spread · Sep” P&L ≥ +$20 (email)",
-  "how": "Fields: id, kind price|ivrank|pnl, asset|strategyId, op >=|<=, value, channels[], state armed|triggered|paused, lastValue, triggeredAt",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Alerts center",
-  "feature": "API: CG.alerts.add(a), update(id, patch), remove(id), list(), get(id), arm(id, bool), counts(), conditionText(a), currentValue(a), evaluate(subset?), open(prefill?), openNew(prefill), close()",
-  "how": "Every mutation emits 'alerts-changed'",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Alerts center",
-  "feature": "Evaluation on every 'tick' (and 'portfolio-changed'): price vs CG.ASSETS[sym].price, IV rank vs CG.analyse.stats.ivRank (fallback CG.chrome.marketStats), strategy P&L via CG.portfolio.strategyPnl(id) if present else CG.mock.strategies totalPnl",
-  "how": "When met: state='triggered', toast “Alert triggered · BTC crossed 82,000 · Sent via push”, CG.emit('alert-triggered', alert)",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Alerts center",
-  "feature": "Alerts dialog (bell, portfolio bar, settings menu, palette): counts line, rows with kind icon, condition text (mono), current value, channel chips push/email/telegram, state badge armed/triggered/paused, arm switch, delete",
-  "how": "Delete confirms via CG.modal.confirm; the switch re-arms triggered alerts or pauses armed ones",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Alerts center",
-  "feature": "New alert form: Type (Price / IV rank / Strategy P&L), Asset or Strategy select, Condition ≥ / ≤, Value (unit hint), Channels checkboxes, Save / Cancel with validation toasts",
-  "how": "Saving arms the alert immediately and evaluates it once",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Alerts center",
-  "feature": "Empty state “No alerts yet” with a New alert button",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Alerts center",
-  "feature": "CG.alerts.openNew(prefill) for other parts (e.g. a “Set alert” button on a strategy)",
-  "how": "prefill: {kind, asset, strategyId, op, value, channels}",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Keyboard shortcuts",
-  "feature": "Global keydown dispatcher (ignores typing in inputs / textareas / selects / contenteditable and open dialogs, except Ctrl K and Esc)",
-  "how": "CG.shortcuts.combo(e) normalises to e.g. 'ctrl+k', 'shift+e', '?'; CG.emit('shortcut', {key, event}) before the handler",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Keyboard shortcuts",
-  "feature": "Help dialog on “?” (also Settings → Keyboard shortcuts, palette): table of kbd + description grouped Global / Analyse workspace / other",
-  "how": "Rows without a handler are marked “handled by the workspace”",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Keyboard shortcuts",
-  "feature": "Default rows: Ctrl K palette, ? help, T theme, D density, Esc close (menus, palette, assistant), j / k strike cursor, B / S add leg, E next expiry, Shift E previous expiry",
-  "how": "E / Shift E fall back to CG.analyse.setExpiry(), then the expiry strip buttons, then CG.state.expiry + events",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Keyboard shortcuts",
-  "feature": "API: CG.shortcuts.register(key, description, handler, {group, always}) → unregister fn; unregister(key); list(); open(); close()",
-  "how": "Registering an existing key overrides it (the analyse part owns j/k/B/S)",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Portfolio bar",
-  "feature": "32px status bar rendered into <div data-cg=\"portfolio-bar\"> (or a fixed bottom bar appended to /analyse when the placeholder is absent)",
-  "how": "html.cgc-pbar-fixed-on shrinks .an-shell by 32px in the fallback; toasts and the assistant dock above it",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Portfolio bar",
-  "feature": "Items: Portfolio · N open strategies (live count) · Net Δ · Net Θ/day · Net ν · Margin used $x / $y with bar · Day P&L · Alerts N armed (+ fired badge) · Basis mark|bid/ask · CCY USD|INR",
-  "how": "Values from CG.portfolio.compute() when the trading part provides it, else computed from CG.mock.strategies (PAPER/LIVE, open legs) with CG.analyze; CG.chrome.portfolioData()",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Portfolio bar",
-  "feature": "Re-renders on 'tick', 'portfolio-changed', 'analyse:strategies-changed', 'alerts-changed', 'alert-triggered', 'pnl-basis-changed', 'currency-settings-changed', 'lot-sizes-changed', 'broker-balance-changed', 'density'",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Portfolio bar",
-  "feature": "Clicks: Portfolio → Paper tab (analyse:set-tab), Margin → wallet popover / API settings, Alerts → alerts dialog, Basis → P&L Settings, CCY → Currency Settings",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Plan banner",
-  "feature": "Slim 28px one-line strip: state stripe (green active / amber expiring / red expired / blue free), plan name micro-label, message, outline action, dismiss",
-  "how": "Same four states and dismiss persistence as v1",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · HapieCoin Assistant",
-  "feature": "“Explain this strategy” quick action (header sparkle button, first suggestion chip on /analyse, palette command) summarises CG.analyse.legs",
-  "how": "CG.chrome.explainStrategy(): classifies the legs (CG.chrome.strategyName), lists legs, net debit/credit, max profit/loss, breakevens with % from spot, POP, reward:risk, margin, Greeks and a bias / risk / theta read-out from CG.analyze",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · HapieCoin Assistant",
-  "feature": "New canned answers for alerts, shortcuts / palette and density",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Product tour",
-  "feature": "Step 15 'Command palette' targets the Ctrl K button (data-tour=command-palette)",
-  "how": "CG.chrome.TOUR_STEPS.length === 15",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- },
- {
-  "route": "/analyse",
-  "screen": "Shared chrome · Density",
-  "feature": "html[data-density=\"comfortable|compact\"] set at boot from CG.state.density and on every change; --cg-row CSS variable (36px / 28px) for dense rows in any part",
-  "how": "CG.chrome.setDensity(v), CG.chrome.toggleDensity(); event 'density'",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
-  "new": true
- }
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "Logo (amber Δ mark + HapieCoin · Analyse) → /analyse",
+    "how": "Rendered by CG.chrome['app-header'] variant 'analyse'; 50px panel-tone header with hairline bottom border; link to #/analyse",
+    "status": "working",
+    "evidence": "screenshot feature-payoff-diagram · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "Admin badge next to logo (admin only, neutral mono chip) → /admin/users",
+    "how": "Shown when CG.auth.isAdmin(); hidden for normal users",
+    "status": "working",
+    "evidence": "bundle strings: ' Admin ', Admin · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "Asset switcher: BTC / ETH / XAUT segmented control (data-tour=asset-select) + 'Venue: Delta India'",
+    "how": "Clicking a segment sets CG.state.asset, saves state, emits 'asset' and toasts; CG.chrome.openAssetMenu() dropdown kept for compatibility",
+    "status": "working",
+    "evidence": "bundle strings: Bitcoin, Ethereum, Tether Gold, asset-select · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx, e2e analyse.spec.ts"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "Futures price + 24h % (DM Mono, tabular figures) with live flash on every tick",
+    "how": "Label 'FUTURES · BTCUSD'; price flashes green/red vs previous tick; 24h % derived from base price",
+    "status": "working",
+    "evidence": "header label 'Futures Price' in screenshots · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx, e2e analyse.spec.ts"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "24h Change ± % (green/red) beside the price",
+    "how": "Same cell as the price, semantic profit/loss colour",
+    "status": "working",
+    "evidence": "header label '24h Change' · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "Feed status as text '● FEED LIVE · 84 ms' (latency jitters on each tick) — click pauses / reconnects",
+    "how": "Replaces the green pill; dot turns grey when paused, amber while connecting; emits 'live-feed' and toasts",
+    "status": "working",
+    "evidence": "bundle strings: Live, Connecting... · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx, e2e analyse.spec.ts"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "'Exchange' chip: Not connected / Connected (green when connected) → API Settings dialog",
+    "how": "Opens the Delta Exchange API Settings dialog; turns green with 'Connected' when CG.state.exchangeConnected",
+    "status": "working",
+    "evidence": "bundle strings: Exchange, Click to connect exchange, Not Connected, Connect · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "Wallet balance chip ($1,000.00) when exchange connected",
+    "how": "Opens balance popover: Available / Margin Used / Total Equity from CG.mock.wallet + 'Click to refresh' (refreshes numbers, toast)",
+    "status": "working",
+    "evidence": "bundle strings: Available, Margin Used, Total Equity, Click to refresh, Click to refresh balance · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx · ADR-028 (08 Sep 2026): live available balance from the exchange wallet (WalletChip); unit widgets.test.tsx"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "Market Analytics moved out of the header into the settings menu, default-header tabs and the command palette",
+    "how": "Settings → Market Analytics link, 'Market Analytics' tab on the default header, palette 'Market Analytics · …' commands",
+    "status": "working",
+    "evidence": "bundle strings: Market Analytics (opens in a new tab), market-button"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "Currency toggle moved to the portfolio bar (CCY item) and settings menu / palette ('Display currency → INR')",
+    "how": "CG.chrome.toggleCurrency() keeps the v1 behaviour (emits currency-settings-changed + currency, toasts)",
+    "status": "working",
+    "evidence": "bundle strings: $ USD, ₹ INR, currency-settings-changed · ADR-028 (08 Sep 2026): one-click $ USD / ₹ INR toggle in the header (CurrencyToggle); unit widgets.test.tsx, e2e analyse.spec.ts HC-SH-012"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "Theme toggle (moon/sun) · 'Switch to Dark Mode' / 'Switch to Light Mode'",
+    "how": "CG.theme.toggle(); header re-renders icon and title on 'theme' event",
+    "status": "working",
+    "evidence": "bundle strings: Switch to Dark Mode, Switch to Light Mode · Phase 1 tests (tagged 08 Sep 2026): unit shell.test.tsx"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "'Take a tour' moved to the settings menu and the command palette",
+    "how": "CG.chrome.startTour() unchanged",
+    "status": "working",
+    "evidence": "bundle string: Take a tour"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "Settings gear (data-tour=settings-menu)",
+    "how": "Opens the settings dropdown menu",
+    "status": "working",
+    "evidence": "bundle string: settings-menu · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "Plan banner auto-inserted under the analyse header",
+    "how": "If the screen has no data-cg=plan-banner placeholder the header appends one",
+    "status": "working",
+    "evidence": "bundle strings: Your plan has expired., Congratulations! Your plan is active until · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
+  },
+  {
+    "route": "/subscription",
+    "screen": "Shared chrome · App header (default)",
+    "feature": "Logo → /analyse (or / when logged out)",
+    "how": "CG.chrome['app-header'] default variant used by every non-analyse logged-in page",
+    "status": "working",
+    "evidence": "observed on /subscription, /referrals, /admin/* · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
+  },
+  {
+    "route": "/subscription",
+    "screen": "Shared chrome · App header (default)",
+    "feature": "Text tabs Analyse · Market Analytics · Subscription · Referrals · Admin with an amber underline on the active route",
+    "how": "Replaces the 'Go to Analyse' button; active tab from CG.current.path (Market Analytics also active on /terminal/*)",
+    "status": "working",
+    "evidence": "inferred from bundle nav strings · Phase 1 tests (tagged 08 Sep 2026): e2e public.spec.ts"
+  },
+  {
+    "route": "/subscription",
+    "screen": "Shared chrome · App header (default)",
+    "feature": "'Market Analytics' tab (active state on /analytics/* and /terminal/*)",
+    "how": "Navigates to /analytics; highlighted when current path starts with /analytics",
+    "status": "working",
+    "evidence": "bundle string: Market Analytics · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
+  },
+  {
+    "route": "/subscription",
+    "screen": "Shared chrome · App header (default)",
+    "feature": "'Admin' nav link + badge (admin only) → /admin/users",
+    "how": "Only rendered when CG.auth.isAdmin()",
+    "status": "working",
+    "evidence": "bundle string: Admin, /admin/users · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
+  },
+  {
+    "route": "/subscription",
+    "screen": "Shared chrome · App header (default)",
+    "feature": "Alerts bell, density toggle, theme toggle, Ctrl K button, settings gear on the default header",
+    "how": "Same controls as the analyse header",
+    "status": "working",
+    "evidence": "bundle strings: Switch to Dark Mode / Light Mode"
+  },
+  {
+    "route": "/subscription",
+    "screen": "Shared chrome · App header (default)",
+    "feature": "User avatar button → Account menu",
+    "how": "Menu shows name/email, My Profile, My Subscription, My Referrals, Logout",
+    "status": "working",
+    "evidence": "bundle strings: Account, My Profile, My Subscription, My Referrals, Logout · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
+  },
+  {
+    "route": "/subscription",
+    "screen": "Shared chrome · App header (default)",
+    "feature": "'Sign In' button when logged out",
+    "how": "Header re-renders on 'auth'; Sign In navigates to /auth",
+    "status": "working",
+    "evidence": "observed: public pages show Sign In · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Settings menu",
+    "feature": "Section 'Account': My Profile / My Subscription / My Referrals",
+    "how": "My Profile opens the Profile dialog; the others navigate to /subscription and /referrals",
+    "status": "working",
+    "evidence": "bundle strings: Account, My Profile, My Subscription, My Referrals · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Settings menu",
+    "feature": "Section 'Preferences': API Settings, Currency Settings (value), Lot Size Settings, P&L Settings (value), Exchange Setup, Alerts (armed count), Keyboard shortcuts (?), Density (value), Command palette (Ctrl K), Market Analytics, Take a tour, theme",
+    "how": "Each opens the matching dialog / starts the tour / toggles theme",
+    "status": "working",
+    "evidence": "bundle strings: Preferences, API Settings, Currency Settings, Lot Size Settings, P&L Settings, Exchange Setup, Take a tour, Switch to Dark Mode"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Settings menu",
+    "feature": "Section 'Admin' (admin only): Subscription Plans, Menu Pricing, Coupon Codes, User Subscriptions, Banners, Promotional Emails, Users",
+    "how": "Links to /admin/subscriptions, /admin/menu-pricing, /admin/coupons, /admin/user-subscriptions, /admin/banners, /admin/emails, /admin/users",
+    "status": "working",
+    "evidence": "bundle strings + routes"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Settings menu",
+    "feature": "Section 'Support': Email Us (mailto:support@hapiecoin.com), WhatsApp Us (wa.me/919684022369, new tab)",
+    "how": "External links with rel=noopener",
+    "status": "working",
+    "evidence": "bundle strings: Support, Email Us, WhatsApp Us"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Settings menu",
+    "feature": "Logout → Confirm Logout dialog",
+    "how": "'Are you sure you want to sign out? You'll need to sign in again to access your account.' → CG.auth.logout() + toast 'Logged out · You have been signed out.'",
+    "status": "working",
+    "evidence": "bundle strings: Confirm Logout, Logged out, You have been signed out. · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx, unit dialogs.test.tsx, e2e analyse.spec.ts"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Profile dialog",
+    "feature": "Profile · Your account details",
+    "how": "CG.chrome.openSettings('profile')",
+    "status": "working",
+    "evidence": "bundle strings: Profile, Your account details · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Profile dialog",
+    "feature": "Avatar picker (rocket / diamond / lightning) · 'Tap to change avatar' · 'Choose your avatar' · Change",
+    "how": "Tapping the avatar or Change reveals the picker; picking updates CG.mock.user.avatar, header avatar and toasts 'Avatar updated'",
+    "status": "working",
+    "evidence": "bundle strings: rocket, diamond, lightning, Tap to change avatar, Choose your avatar, Change, Avatar updated · dialog copy and flow audited against the v2 mock (08 Sep 2026)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Profile dialog",
+    "feature": "Fields: Full Name ('Your name'), Mobile ('Mobile number'), Email (read-only), Referral code (+copy), Joined",
+    "how": "Read-only until Edit Profile; copy button toasts 'Copied'",
+    "status": "working",
+    "evidence": "bundle strings: Full Name, Your name, Mobile, Mobile number, Email · dialog copy and flow audited against the v2 mock (08 Sep 2026)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Profile dialog",
+    "feature": "Edit Profile → Save ('Saving...')",
+    "how": "Validates name, 600ms 'Saving...' then updates CG.mock.user, emits 'profile-updated', toast 'Profile updated'",
+    "status": "working",
+    "evidence": "bundle strings: Edit Profile, Saving..., Profile updated · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · API Settings dialog",
+    "feature": "Delta Exchange API Settings · status block",
+    "how": "'Checking connection...' spinner (700ms) then 'Not Connected · Enter your Delta Exchange API credentials to enable live trading.' or connected block with 'API Key: ••••1a2b', 'Connected: <date>', 'Wallet: $1,000.00'",
+    "status": "working",
+    "evidence": "bundle strings: Delta Exchange API Settings, Checking connection..., API Key: , Connected: , Wallet:, Not Connected · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · API Settings dialog",
+    "feature": "Select Exchange (brokers with '(0.05% fee)') + 'Fee: 0.05% · GST: 18% · Cap: 10%'",
+    "how": "Select lists CG.mock.brokers; fee line updates on change; selection stored in CG.mock.apiCredentials.brokerId",
+    "status": "working",
+    "evidence": "bundle strings: Select Exchange, % fee), Fee: , % · GST: , % · Cap:  · dialog copy and flow audited against the v2 mock (08 Sep 2026)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · API Settings dialog",
+    "feature": "API Credentials: API Key + API Secret (password) inputs",
+    "how": "Placeholders 'Enter your Delta Exchange API key' / 'Enter your Delta Exchange API secret'",
+    "status": "working",
+    "evidence": "bundle strings: API Credentials, API Key, API Secret, placeholders · dialog copy and flow audited against the v2 mock (08 Sep 2026)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · API Settings dialog",
+    "feature": "Connect & Save (validation → 'Connecting...' 1s → connected)",
+    "how": "Empty key/secret → destructive toast 'Save Failed'; success sets CG.state.exchangeConnected, emits 'exchange-changed' + 'broker-credentials-changed', toast 'Exchange Connected · API credentials saved to server'",
+    "status": "working",
+    "evidence": "bundle strings: Connect & Save, Connecting..., Exchange Connected, API credentials saved to server, Save Failed · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · API Settings dialog",
+    "feature": "'Get your API key from Delta Exchange → Account → API Keys' link (new tab)",
+    "how": "External link with rel=noopener noreferrer",
+    "status": "working",
+    "evidence": "bundle strings: Get your API key from, Delta Exchange → Account → API Keys · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · API Settings dialog",
+    "feature": "Whitelisted IP Address 172.236.179.136 + Copy + hint",
+    "how": "Copy writes to clipboard and toasts 'Copied · IP address copied to clipboard'; hint 'Add this IP to your Delta Exchange API key whitelist for secure access.'",
+    "status": "working",
+    "evidence": "bundle strings: Whitelisted IP Address, Copy, Copied, IP address copied to clipboard, hint text · dialog copy and flow audited against the v2 mock (08 Sep 2026)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · API Settings dialog",
+    "feature": "Disconnect Exchange (only when connected)",
+    "how": "Clears credentials, CG.state.exchangeConnected=false, toast 'Exchange Disconnected · Delta Exchange credentials removed'",
+    "status": "working",
+    "evidence": "bundle strings: Disconnect Exchange, Exchange Disconnected, Delta Exchange credentials removed · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Currency Settings dialog",
+    "feature": "From Currency (USD) → To Currency (INR) + 'USD to INR Conversion Rate' input",
+    "how": "Rate defaults to CG.state.conversionRate (83.5)",
+    "status": "working",
+    "evidence": "bundle strings: Currency Settings, From Currency, To Currency, Conversion Rate · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Currency Settings dialog",
+    "feature": "Display currency tabs ($ USD / ₹ INR) + note 'All calculated values (P&L, Margin, Net Premium) will be displayed in … · Rate: $1 = ₹83.5'",
+    "how": "Note updates live as rate / currency change",
+    "status": "working",
+    "evidence": "bundle strings: All calculated values…, Indian Rupees (₹), US Dollars ($), Rate: $1 = ₹ · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Currency Settings dialog",
+    "feature": "Save ('Saving...') / Cancel",
+    "how": "Validates rate > 0; sets CG.state.conversionRate + currency, emits 'currency-settings-changed', toast 'Currency conversion saved'",
+    "status": "working",
+    "evidence": "bundle strings: Save, Saving..., Cancel, Currency conversion saved · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Lot Size Settings dialog",
+    "feature": "Lot size for each symbol: BTC / ETH / XAUT rows '1 lot = [0.001] BTC'",
+    "how": "Inputs pre-filled from CG.state.lotSizes",
+    "status": "working",
+    "evidence": "bundle strings: Lot Size Settings, Lot size for each symbol, Lot Size, 1 lot = · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Lot Size Settings dialog",
+    "feature": "Save → 'Lot sizes saved'",
+    "how": "Validates > 0 (else 'Failed to save lot sizes'), stores CG.state.lotSizes, emits 'lot-sizes-changed'",
+    "status": "working",
+    "evidence": "bundle strings: Lot sizes saved, Failed to save lot sizes · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx, e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · P&L Settings dialog",
+    "feature": "Radio group 'P&L price basis': Mark price / Bid/Ask (executable) with descriptions",
+    "how": "aria radiogroup; click selects; Save stores CG.state.pnlBasis ('mark' | 'bid_ask') and emits 'pnl-basis-changed'",
+    "status": "working",
+    "evidence": "bundle strings: P&L Settings, Choose the price basis…, Mark price, Bid/Ask (executable), bid_ask, P&L price basis · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx, e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · P&L Settings dialog",
+    "feature": "Explanatory note about mark vs bid/ask differences",
+    "how": "Static info alert with the bundle text ('…so the two figures will differ — usually by the bid/ask spread, and more on illiquid strikes.')",
+    "status": "static",
+    "evidence": "bundle strings: Delta Exchange shows P&L at the mark price… · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Exchange Management dialog",
+    "feature": "Exchange Management · Manage exchange configurations for paper trading · list of exchange cards (name, Preferred/GLOBAL badges, Fee %, GST %, Fee Cap %)",
+    "how": "Rendered from CG.mock.brokers",
+    "status": "working",
+    "evidence": "bundle strings: Exchange Management, Manage exchange configurations for paper trading, Fee Cap, GST: , Preferred, GLOBAL · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Exchange Management dialog",
+    "feature": "Add Exchange → 'Add New Exchange · Configure exchange fee structure' form",
+    "how": "Fields Exchange Name ('e.g., Delta Exchange India'), Fee Percentage (%) 'Percentage of notional value', GST Percentage (%), Fee Cap (% of premium) 'Maximum fee as percentage of premium'; Create pushes to CG.mock.brokers, toast 'Success · Exchange created successfully'",
+    "status": "working",
+    "evidence": "bundle strings: Add Exchange, Add New Exchange, Configure exchange fee structure, field labels/hints, Create, Exchange created successfully · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Exchange Management dialog",
+    "feature": "Validation 'Exchange name is required'",
+    "how": "Inline error + destructive toast 'Validation Error'",
+    "status": "working",
+    "evidence": "bundle strings: Validation Error, Exchange name is required · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Exchange Management dialog",
+    "feature": "Edit → 'Edit Exchange' form → Update",
+    "how": "Mutates the broker in CG.mock.brokers, toast 'Exchange updated successfully', emits 'brokers-changed'",
+    "status": "working",
+    "evidence": "bundle strings: Edit, Edit Exchange, Update, Exchange updated successfully · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Exchange Management dialog",
+    "feature": "Delete → confirm 'Delete Exchange · This action cannot be undone' + warning",
+    "how": "Body 'Are you sure you want to delete this exchange?' + '⚠️ Warning: Any strategies using this exchange will need to be reconfigured.'; confirm removes from CG.mock.brokers, toast 'Exchange deleted successfully'",
+    "status": "working",
+    "evidence": "bundle strings: Delete Exchange, This action cannot be undone, warning text, Exchange deleted successfully · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Plan banner",
+    "feature": "Expired: 'Your plan has expired.' + Renew Plan",
+    "how": "CG.chrome['plan-banner'] reads CG.mock.subscription; button → /subscription",
+    "status": "working",
+    "evidence": "bundle strings: Your plan has expired., Renew Plan"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Plan banner",
+    "feature": "Free: 'Your free plan is active.' + Upgrade",
+    "how": "Shown when planId is p_free / status free",
+    "status": "working",
+    "evidence": "bundle strings: Your free plan is active., Upgrade"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Plan banner",
+    "feature": "Expiring: 'Your plan expires soon — N days left.' + Renew Plan",
+    "how": "Shown when expiresAt is within 7 days of CG.NOW",
+    "status": "working",
+    "evidence": "bundle strings: Your plan expires soon — ,  left."
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Plan banner",
+    "feature": "Active: 'Congratulations! Your plan is active until 31 Dec 2026' (dismissable)",
+    "how": "Dismiss hides it for the session (sessionStorage); re-renders on 'subscription-changed'",
+    "status": "working",
+    "evidence": "bundle string: Congratulations! Your plan is active until"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Upgrade Required dialog",
+    "feature": "CG.chrome.upgradeRequired(message): 'Upgrade Required' + message + 'Subscribe Here →' + Dismiss",
+    "how": "Subscribe navigates to /subscription and closes; Dismiss closes",
+    "status": "working",
+    "evidence": "bundle strings: Upgrade Required, Subscribe Here →, Dismiss"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Banner flyers",
+    "feature": "Flyer popup carousel of active CG.mock.banners (dark panel with amber accent stripe, ANNOUNCEMENT n of N, title, description, date range)",
+    "how": "CG.chrome.showFlyers(); gradients removed",
+    "status": "working",
+    "evidence": "bundle strings: banner, once_per_session, once_per_day, every_time"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Banner flyers",
+    "feature": "Previous / Next arrows + dots in the footer row, frequency label, 'View' link, close",
+    "how": "Arrows cycle; View opens the banner link (hapiecoin.com links become hash routes, others open in a new tab)",
+    "status": "working",
+    "evidence": "bundle strings: Previous flyer, Next flyer, View , noopener,noreferrer"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · HapieCoin Assistant",
+    "feature": "Floating 40px chat bubble bottom-right on every screen, docked above the portfolio bar on /analyse (bottom 56px)",
+    "how": "CSS var --cgc-dock set on route; data-tour=chat-launcher",
+    "status": "working",
+    "evidence": "bundle strings: Ask HapieCoin Assistant (drag to move), chat-launcher"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · HapieCoin Assistant",
+    "feature": "Drag to move (pointer events) with remembered position",
+    "how": "Drag > 5px moves the button (clamped to viewport) and stores position in localStorage; a plain click toggles the panel",
+    "status": "working",
+    "evidence": "bundle string: drag to move"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · HapieCoin Assistant",
+    "feature": "Panel header 'HapieCoin Assistant · Platform help · not financial advice' (or visitor mode) with an 'Explain this strategy' quick-action button on /analyse",
+    "how": "Subtitle depends on CG.state.loggedIn",
+    "status": "working",
+    "evidence": "bundle strings: HapieCoin Assistant, Platform help · not financial advice, Limited visitor mode · log in for full support"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · HapieCoin Assistant",
+    "feature": "Greeting 'Hi! Ask me anything about using HapieCoin — or try one of these:' + 4 suggestion chips",
+    "how": "Chips send the question immediately",
+    "status": "working",
+    "evidence": "bundle string: Hi! Ask me anything about using HapieCoin — or try one of these:"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · HapieCoin Assistant",
+    "feature": "Input 'Ask a question…' + Send; mock streamed answers",
+    "how": "Keyword matching over 11 canned answers (legs/chain, POP, connect Delta, mark vs bid/ask, paper trades, templates, Greeks, margin, lot size, plans, currency) typed out over ~1.5s; fallback answer otherwise; visitor note when logged out",
+    "status": "working",
+    "evidence": "bundle strings: Ask a question…, Send, submit"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · HapieCoin Assistant",
+    "feature": "Footer 'Need a human? Email' (mailto:support@hapiecoin.com, new tab)",
+    "how": "External mailto link with rel=noreferrer",
+    "status": "working",
+    "evidence": "bundle strings: Need a human?, Email, _blank, noreferrer"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · HapieCoin Assistant",
+    "feature": "Close button / Escape closes the panel",
+    "how": "Panel removed; conversation kept for the session",
+    "status": "working",
+    "evidence": "bundle string: Close"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Product tour",
+    "feature": "driver.js-style overlay with cut-out around the target (SVG mask) + highlight ring + popover (title, description, 'x of N', Previous / Next / Done, close)",
+    "how": "CG.chrome.startTour(); targets located by [data-tour=…]; popover centred when the target is not in the DOM; keyboard ← → Esc",
+    "status": "working",
+    "evidence": "bundle strings: driver-popover, {{current}} of {{total}}, Previous, Next, Done"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Product tour",
+    "feature": "Step 1 'Welcome to HapieCoin' (Start button, no target)",
+    "how": "Text from the bundle",
+    "status": "working",
+    "evidence": "bundle strings: Welcome to HapieCoin, Let's place a real paper trade together…, Start"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Product tour",
+    "feature": "Step 2 'Choose your asset' (asset-select)",
+    "how": "Highlights the asset selector",
+    "status": "working",
+    "evidence": "bundle strings: asset-select, Choose your asset"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Product tour",
+    "feature": "Step 3 'Your workspaces' (options-chain)",
+    "how": "Highlights the workspace / chain area; emits tour-step with tab 'options-chain'",
+    "status": "working",
+    "evidence": "bundle strings: Your workspaces, options-chain"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Product tour",
+    "feature": "Step 4 'Add a leg — try it now' (advances on 'cg-tour:leg-added')",
+    "how": "Waits for the analyse screen to emit CG.emit('cg-tour:leg-added'); Next also works",
+    "status": "working",
+    "evidence": "bundle strings: Add a leg — try it now, cg-tour:leg-added"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Product tour",
+    "feature": "Step 5 'Your strategy legs' (strategy-legs, tab builder)",
+    "how": "Highlights the legs panel",
+    "status": "working",
+    "evidence": "bundle strings: strategy-legs, builder, Your strategy legs"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Product tour",
+    "feature": "Step 6 'Payoff and analytics' (payoff-panel)",
+    "how": "Highlights the payoff panel",
+    "status": "working",
+    "evidence": "bundle strings: payoff-panel, Payoff and analytics"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Product tour",
+    "feature": "Step 7 'Start a paper trade' (paper-trade-button, advances on 'cg-tour:save-dialog-open')",
+    "how": "Highlights the Paper Trade button",
+    "status": "working",
+    "evidence": "bundle strings: paper-trade-button, Start a paper trade, cg-tour:save-dialog-open"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Product tour",
+    "feature": "Step 8 'Name your strategy' (save-dialog, advances on 'cg-tour:trade-modal-open')",
+    "how": "Popover above the modal (z-index 150)",
+    "status": "working",
+    "evidence": "bundle strings: save-dialog, save-button, Name your strategy, cg-tour:trade-modal-open"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Product tour",
+    "feature": "Step 9 'Review and start' (trade-modal, advances on 'cg-tour:paper-started')",
+    "how": "Highlights the trade preview modal",
+    "status": "working",
+    "evidence": "bundle strings: trade-modal, trade-confirm-button, Review and start, cg-tour:paper-started"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Product tour",
+    "feature": "Steps 10–12 'Your trade is running' (paper-tab), 'Track P&L and details' (paper-pnl), 'Stop a paper trade' (paper-stop)",
+    "how": "Emit tour-step with tab 'paper' so the workspace can switch tabs; 'Stop a paper trade' has no description in the bundle — a short one was written",
+    "status": "inferred",
+    "evidence": "bundle strings: paper-tab, paper-pnl, paper-stop + titles/descriptions"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Product tour",
+    "feature": "Steps 13–15 'Settings' (settings-menu), 'Ask the HapieCoin Assistant' (chat-launcher) and 'Command palette' (command-palette)",
+    "how": "Highlights the gear and the floating chat button; Done closes with a toast",
+    "status": "working",
+    "evidence": "bundle strings: settings-menu, Settings, chat-launcher, Ask the HapieCoin Assistant"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Product tour",
+    "feature": "Auto-start once on /analyse (CG.state.tourDone) after the flyer popup closes; 'Take a tour' restarts; navigates to /analyse first if started elsewhere",
+    "how": "cg_tour_done equivalent persisted in CG.state via CG.saveState()",
+    "status": "working",
+    "evidence": "bundle strings: cg_tour_done, Take a tour"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "ATM IV + 'IV rank N' (mono)",
+    "how": "From CG.analyse.stats {atmIv, ivRank} when the analyse part emits 'analyse:stats'; otherwise computed from the ATM row of CG.chain(asset, expiry) and a per-asset IV range (CG.mock.ivRange). Exposed as CG.chrome.marketStats(asset)",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "'EXP. MOVE · 25 SEP  ± 7,693 1σ' expected move for the selected expiry",
+    "how": "spot × ATM IV × √(dte/365); re-rendered on tick, 'asset', 'expiry', 'analyse:expiry' and 'analyse:stats'",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "Alerts bell with armed-count badge (red when an alert has triggered) → Alerts dialog",
+    "how": "Badge re-rendered on 'alerts-changed' / 'alert-triggered'",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "Density toggle (comfortable / compact)",
+    "how": "Sets CG.state.density, CG.saveState(), CG.emit('density', value) and html[data-density]; --cg-row = 36px / 28px; keyboard D",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "'Ctrl K · Command' button opens the command palette (data-tour=command-palette)",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "User avatar → Account menu (My Profile / My Subscription / My Referrals / Logout) on both header variants",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · App header (analyse)",
+    "feature": "Responsive trimming: venue and Command label hide ≤1500px, expected move ≤1330px, ATM IV ≤1180px, sub-labels ≤1000px",
+    "how": "CSS media queries; header never overflows at 1440 / 1280 / 1100 / 960 (pw/check-v2-widths.js)",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/subscription",
+    "screen": "Shared chrome · App header (default)",
+    "feature": "Logged-out variant: Home · Market Analytics tabs, theme, Ctrl K, 'Sign in' primary button",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Command palette",
+    "feature": "Open with Ctrl K / ⌘ K anywhere (even inside inputs), the header button, Settings → Command palette or CG.palette.open()",
+    "how": "CG.palette.open(query?) / close() / toggle() / isOpen(); overlay closes on Esc or backdrop click",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Command palette",
+    "feature": "Search input with fuzzy matching on label + keywords + hint (substring first, then subsequence with word-start bonus); matched characters underlined",
+    "how": "Best hit surfaced first as “Best match”",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Command palette",
+    "feature": "Grouped results: Recent · Navigate · Actions · Settings (custom groups appended)",
+    "how": "Recent shows the last 5 used commands (CG.state.recentCommands, persisted via CG.saveState)",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Command palette",
+    "feature": "Keyboard: ↑ ↓ / Tab move, ↵ runs, Esc closes; mouse hover selects, click runs",
+    "how": "Footer shows the key hints and the number of registered commands",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Command palette",
+    "feature": "Registry API for other parts: CG.palette.register({id,label,group,keywords,hint,kbd,icon,when,run}) → unregister fn; CG.palette.unregister(id); CG.palette.list(); CG.palette.run(id)",
+    "how": "Emits 'palette:open', 'palette:close', 'palette:run' {id,label}",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Command palette",
+    "feature": "Default Navigate commands: Home, Sign in, Analyse workspace, My Subscription, My Referrals, all Admin pages, all Market Analytics sections, all Terminal pages, Feature inventory, Payoff chart preview, legal pages",
+    "how": "User routes only when logged in, admin routes only for admins; every other static screen is auto-discovered from section[data-route][data-title] on open",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Command palette",
+    "feature": "Default Actions: Switch asset → BTC / ETH / XAUT, Toggle theme (T), Toggle density (D), New alert…, Alerts center, Take a tour, Keyboard shortcuts (?), Explain this strategy (on /analyse), Ask the assistant, Show announcements, Pause / resume live feed, Logout",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Command palette",
+    "feature": "Default Settings: Open API Settings / Currency Settings / Lot Size Settings / P&L Settings / Exchange Setup / Profile, Display currency → INR/USD",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Command palette",
+    "feature": "Empty state “No commands match …” with hints",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Alerts center",
+    "feature": "Alert store CG.mock.alerts seeded with 3 alerts: BTC ≥ 82,000 (push), BTC IV rank ≤ 30 (telegram), s_301 “BTC Bull Call Spread · Sep” P&L ≥ +$20 (email)",
+    "how": "Fields: id, kind price|ivrank|pnl, asset|strategyId, op >=|<=, value, channels[], state armed|triggered|paused, lastValue, triggeredAt",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Alerts center",
+    "feature": "API: CG.alerts.add(a), update(id, patch), remove(id), list(), get(id), arm(id, bool), counts(), conditionText(a), currentValue(a), evaluate(subset?), open(prefill?), openNew(prefill), close()",
+    "how": "Every mutation emits 'alerts-changed'",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Alerts center",
+    "feature": "Evaluation on every 'tick' (and 'portfolio-changed'): price vs CG.ASSETS[sym].price, IV rank vs CG.analyse.stats.ivRank (fallback CG.chrome.marketStats), strategy P&L via CG.portfolio.strategyPnl(id) if present else CG.mock.strategies totalPnl",
+    "how": "When met: state='triggered', toast “Alert triggered · BTC crossed 82,000 · Sent via push”, CG.emit('alert-triggered', alert)",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Alerts center",
+    "feature": "Alerts dialog (bell, portfolio bar, settings menu, palette): counts line, rows with kind icon, condition text (mono), current value, channel chips push/email/telegram, state badge armed/triggered/paused, arm switch, delete",
+    "how": "Delete confirms via CG.modal.confirm; the switch re-arms triggered alerts or pauses armed ones",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Alerts center",
+    "feature": "New alert form: Type (Price / IV rank / Strategy P&L), Asset or Strategy select, Condition ≥ / ≤, Value (unit hint), Channels checkboxes, Save / Cancel with validation toasts",
+    "how": "Saving arms the alert immediately and evaluates it once",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Alerts center",
+    "feature": "Empty state “No alerts yet” with a New alert button",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Alerts center",
+    "feature": "CG.alerts.openNew(prefill) for other parts (e.g. a “Set alert” button on a strategy)",
+    "how": "prefill: {kind, asset, strategyId, op, value, channels}",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Keyboard shortcuts",
+    "feature": "Global keydown dispatcher (ignores typing in inputs / textareas / selects / contenteditable and open dialogs, except Ctrl K and Esc)",
+    "how": "CG.shortcuts.combo(e) normalises to e.g. 'ctrl+k', 'shift+e', '?'; CG.emit('shortcut', {key, event}) before the handler",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Keyboard shortcuts",
+    "feature": "Help dialog on “?” (also Settings → Keyboard shortcuts, palette): table of kbd + description grouped Global / Analyse workspace / other",
+    "how": "Rows without a handler are marked “handled by the workspace”",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Keyboard shortcuts",
+    "feature": "Default rows: Ctrl K palette, ? help, T theme, D density, Esc close (menus, palette, assistant), j / k strike cursor, B / S add leg, E next expiry, Shift E previous expiry",
+    "how": "E / Shift E fall back to CG.analyse.setExpiry(), then the expiry strip buttons, then CG.state.expiry + events",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Keyboard shortcuts",
+    "feature": "API: CG.shortcuts.register(key, description, handler, {group, always}) → unregister fn; unregister(key); list(); open(); close()",
+    "how": "Registering an existing key overrides it (the analyse part owns j/k/B/S)",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Portfolio bar",
+    "feature": "32px status bar rendered into <div data-cg=\"portfolio-bar\"> (or a fixed bottom bar appended to /analyse when the placeholder is absent)",
+    "how": "html.cgc-pbar-fixed-on shrinks .an-shell by 32px in the fallback; toasts and the assistant dock above it",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Portfolio bar",
+    "feature": "Items: Portfolio · N open strategies (live count) · Net Δ · Net Θ/day · Net ν · Margin used $x / $y with bar · Day P&L · Alerts N armed (+ fired badge) · Basis mark|bid/ask · CCY USD|INR",
+    "how": "Values from CG.portfolio.compute() when the trading part provides it, else computed from CG.mock.strategies (PAPER/LIVE, open legs) with CG.analyze; CG.chrome.portfolioData()",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Portfolio bar",
+    "feature": "Re-renders on 'tick', 'portfolio-changed', 'analyse:strategies-changed', 'alerts-changed', 'alert-triggered', 'pnl-basis-changed', 'currency-settings-changed', 'lot-sizes-changed', 'broker-balance-changed', 'density'",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Portfolio bar",
+    "feature": "Clicks: Portfolio → Paper tab (analyse:set-tab), Margin → wallet popover / API settings, Alerts → alerts dialog, Basis → P&L Settings, CCY → Currency Settings",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Plan banner",
+    "feature": "Slim 28px one-line strip: state stripe (green active / amber expiring / red expired / blue free), plan name micro-label, message, outline action, dismiss",
+    "how": "Same four states and dismiss persistence as v1",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · HapieCoin Assistant",
+    "feature": "“Explain this strategy” quick action (header sparkle button, first suggestion chip on /analyse, palette command) summarises CG.analyse.legs",
+    "how": "CG.chrome.explainStrategy(): classifies the legs (CG.chrome.strategyName), lists legs, net debit/credit, max profit/loss, breakevens with % from spot, POP, reward:risk, margin, Greeks and a bias / risk / theta read-out from CG.analyze",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · HapieCoin Assistant",
+    "feature": "New canned answers for alerts, shortcuts / palette and density",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Product tour",
+    "feature": "Step 15 'Command palette' targets the Ctrl K button (data-tour=command-palette)",
+    "how": "CG.chrome.TOUR_STEPS.length === 15",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Density",
+    "feature": "html[data-density=\"comfortable|compact\"] set at boot from CG.state.density and on every change; --cg-row CSS variable (36px / 28px) for dense rows in any part",
+    "how": "CG.chrome.setDensity(v), CG.chrome.toggleDensity(); event 'density'",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "new": true
+  }
 ]

@@ -4,12 +4,12 @@
 import { Button, EmptyState, Input, Switch, Tabs, TabsContent, TabsList, TabsTrigger, cn, toast } from "@hapiecoin/ui";
 import { black76Greeks, yearFraction } from "@hapiecoin/pricing";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { daysToExpiry, fmtExpiry, fmtIv, fmtPrice, fmtStrike } from "@/lib/format";
+import { fmtExpiry, fmtIv, fmtPrice, fmtStrike } from "@/lib/format";
 import { fmtMoney } from "@/lib/money";
 import { settlementHourUtc } from "@/lib/pricing/legs";
 import { useUiStore } from "@/lib/store";
 import { marginEstimate, premiumPerUnit } from "@/lib/strategy/analysis";
-import { MAX_ACTIVE_LEGS, type StrategyLeg, setLegLots, setLegPrice, stepLots, toggleLegSide } from "@/lib/strategy/legs";
+import { MAX_ACTIVE_LEGS, type StrategyLeg, setLegInstrument, setLegLots, setLegPrice, stepLots, toggleLegEnabled, toggleLegSide } from "@/lib/strategy/legs";
 import { guessTemplateName } from "@/lib/strategy/templates";
 import { useCreateStrategy, usePatchStrategy } from "@/lib/api/strategies";
 import { localLegToInput } from "@/lib/strategy/paper";
@@ -17,6 +17,7 @@ import { useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
 import { SaveDraftDialog } from "@/components/dialogs/SaveDraftDialog";
 import { ChainPickerDialog } from "./ChainPickerDialog";
 import { FutureDialog } from "./FutureDialog";
+import { LegInstrument } from "./LegInstrument";
 import { TemplatesPanel } from "./TemplatesPanel";
 import { TemplatesStrip } from "./TemplatesStrip";
 
@@ -66,8 +67,9 @@ export function BuilderPanel() {
   const [saveIntent, setSaveIntent] = useState<"draft" | "trade" | null>(null);
   const [picker, setPicker] = useState(false);
   const [future, setFuture] = useState(false);
-  const { asset, legs, result, spot, lotSize, money } = a;
-  const remaining = Math.max(0, NEW_STRATEGY_LEGS - legs.length);
+  const { asset, legs, result, spot, lotSize, money } = a; // legs = the enabled ones the analysis uses
+  const allLegs = useUiStore((s) => s.legs[s.asset]); // the table shows switched-off legs too (HC-TR-146)
+  const remaining = Math.max(0, NEW_STRATEGY_LEGS - allLegs.length);
   const limitTitle = `Maximum ${NEW_STRATEGY_LEGS} legs for a new strategy`;
 
   const perLeg = useMemo(() => {
@@ -121,7 +123,7 @@ export function BuilderPanel() {
   const margin = result ? marginEstimate(result) : null;
 
   return (
-    <section className="flex h-full min-h-0 flex-col" data-testid="builder-panel" data-legs={legs.length}>
+    <section className="flex h-full min-h-0 flex-col" data-testid="builder-panel" data-legs={allLegs.length} data-active-legs={legs.length}>
       <Tabs value={builderTab} onValueChange={(v) => setBuilderTab(v === "templates" ? "templates" : "builder")} className="flex min-h-0 flex-1 flex-col gap-0">
         <TabsList className="px-2">
           <TabsTrigger value="builder" data-testid="builder-tab-builder">
@@ -131,8 +133,9 @@ export function BuilderPanel() {
             Templates
           </TabsTrigger>
           <span className="ml-auto self-center pr-2 font-mono text-3xs uppercase tracking-[0.1em] text-muted-foreground" data-testid="builder-subinfo">
-            {legs.length} {legs.length === 1 ? "leg" : "legs"}
-            {legs.length ? ` · ${[...new Set(legs.filter((l) => l.kind !== "future").map((l) => fmtExpiry(l.expiry)))].join(" · ")}` : ""}
+            {allLegs.length} {allLegs.length === 1 ? "leg" : "legs"}
+            {legs.length !== allLegs.length ? ` (${legs.length} on)` : ""}
+            {allLegs.length ? ` · ${[...new Set(allLegs.filter((l) => l.kind !== "future").map((l) => fmtExpiry(l.expiry)))].join(" · ")}` : ""}
           </span>
         </TabsList>
         <TabsContent value="builder" className="min-h-0 flex-1 overflow-auto p-3" data-tour="strategy-legs">
@@ -142,7 +145,7 @@ export function BuilderPanel() {
               value={meta.name}
               onChange={(e) => setMeta(asset, { name: e.target.value.slice(0, 80) })}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && legs.length) {
+                if (e.key === "Enter" && allLegs.length) {
                   e.preventDefault();
                   if (meta.name.trim()) onSave(meta.name.trim(), "draft");
                   else setSaveIntent("draft");
@@ -179,7 +182,7 @@ export function BuilderPanel() {
             </Button>
           </div>
 
-          {legs.length === 0 ? (
+          {allLegs.length === 0 ? (
             <EmptyState
               title="No legs added"
               description="Start building your strategy by adding option or futures legs"
@@ -201,6 +204,15 @@ export function BuilderPanel() {
                 <table className="w-full text-xs" data-testid="legs-table">
                   <thead>
                     <tr className="micro text-left">
+                      <th className="w-6 py-1 pr-1">
+                        <input
+                          type="checkbox"
+                          aria-label="Include every leg"
+                          checked={allLegs.length > 0 && allLegs.every((l) => l.enabled !== false)}
+                          onChange={(e) => updateLegs(asset, (ls) => ls.map((l) => ({ ...l, enabled: e.target.checked ? true : false })))}
+                          data-testid="legs-enable-all"
+                        />
+                      </th>
                       <th className="py-1 pr-2">Side</th>
                       <th className="py-1 pr-2">Instrument</th>
                       <th className="py-1 pr-2 text-right">Lots</th>
@@ -218,12 +230,16 @@ export function BuilderPanel() {
                     </tr>
                   </thead>
                   <tbody>
-                    {legs.map((l) => {
-                      const g = perLeg.get(l.id) ?? null;
+                    {allLegs.map((l) => {
+                      const on = l.enabled !== false;
+                      const g = on ? (perLeg.get(l.id) ?? null) : null;
                       const q = a.quoteFor(l);
                       const mny = moneyness(l, spot);
                       return (
-                        <tr key={l.id} className="border-t border-border" data-testid="leg-row" data-leg-id={l.id} data-side={l.side}>
+                        <tr key={l.id} className={cn("border-t border-border", !on && "opacity-50")} data-testid="leg-row" data-leg-id={l.id} data-side={l.side} data-enabled={on}>
+                          <td className="py-1.5 pr-1">
+                            <input type="checkbox" checked={on} onChange={() => updateLegs(asset, (ls) => toggleLegEnabled(ls, l.id))} aria-label={on ? "Exclude this leg from the analysis" : "Include this leg in the analysis"} title={on ? "Untick to analyse without this leg" : "Tick to include this leg again"} data-testid="leg-enabled" />
+                          </td>
                           <td className="py-1.5 pr-2">
                             <button
                               type="button"
@@ -236,12 +252,7 @@ export function BuilderPanel() {
                             </button>
                           </td>
                           <td className="py-1.5 pr-2">
-                            <div className="num font-medium">{l.kind === "future" ? l.symbol : `${fmtStrike(l.strike)} ${l.kind === "call" ? "C" : "P"}`}</div>
-                            <div className="micro">
-                              {l.kind === "future" ? "perp future" : `${fmtExpiry(l.expiry)} · ${daysToExpiry(l.expiry)}d`}
-                              {mny ? ` · ${mny}` : ""}
-                              {l.kind !== "future" && !q ? " · no quote" : ""}
-                            </div>
+                            <LegInstrument leg={l} moneyness={mny} hasQuote={l.kind === "future" || !!q} onChange={(patch, quote) => updateLegs(asset, (ls) => setLegInstrument(ls, l.id, patch, quote))} />
                           </td>
                           <td className="py-1.5 pr-2 text-right">
                             <span className="inline-flex h-6 items-center rounded-[2px] border border-input font-mono text-xs">

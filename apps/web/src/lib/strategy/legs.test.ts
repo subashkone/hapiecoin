@@ -1,26 +1,12 @@
 import { describe, expect, it } from "vitest";
-import {
-  DEFAULT_LOTS,
-  LOT_PRESETS,
-  MAX_ACTIVE_LEGS,
-  type StrategyLeg,
-  addLeg,
-  deltaSymbol,
-  isLotPreset,
-  legQuantity,
-  legsForChain,
-  normaliseLegs,
-  removeLeg,
-  rowMarks,
-  stepLots,
-} from "./legs";
+import { DEFAULT_LOTS, LOT_PRESETS, MAX_ACTIVE_LEGS, activeLegs, addLeg, deltaSymbol, isLotPreset, legQuantity, legsForChain, normaliseLegs, removeLeg, rowMarks, setLegInstrument, stepLots, toggleLegEnabled, type StrategyLeg } from "./legs";
 
 const base = { asset: "BTC" as const, kind: "call" as const, side: "buy" as const, strike: "79400", expiry: "2026-09-07", lots: 10, price: "807.5", iv: 0.27 };
 
 describe("HC-WS-025 stepLots walks the presets both ways and clamps", () => {
   it("steps through the presets and snaps odd values", () => {
     expect(LOT_PRESETS).toEqual([1, 2, 5, 10, 25, 50, 100, 250, 500, 1000]);
-    expect(DEFAULT_LOTS).toBe(10);
+    expect(DEFAULT_LOTS).toBe(100);
     expect(stepLots(10, 1)).toBe(25);
     expect(stepLots(10, -1)).toBe(5);
     expect(stepLots(1, -1)).toBe(1);
@@ -121,5 +107,31 @@ describe("normaliseLegs drops unknown shapes", () => {
     expect(out[0]?.symbol).toBe("C-BTC-79400-070926");
     expect(normaliseLegs(undefined)).toEqual([]);
     expect(normaliseLegs({})).toEqual([]);
+  });
+});
+
+describe("HC-TR-146 / HC-TR-147 switch a leg off and edit its instrument in place (ADR-028)", () => {
+  it("toggleLegEnabled keeps the leg but drops it from activeLegs; the flag survives normalisation", () => {
+    const a = addLeg([], base);
+    if (!a.ok) throw new Error("add failed");
+    const off = toggleLegEnabled(a.legs, a.leg.id);
+    expect(off[0]!.enabled).toBe(false);
+    expect(activeLegs(off)).toEqual([]);
+    expect(activeLegs(toggleLegEnabled(off, a.leg.id))).toHaveLength(1);
+    expect(normaliseLegs(off)[0]!.enabled).toBe(false);
+    expect("enabled" in normaliseLegs(a.legs)[0]!).toBe(false);
+  });
+
+  it("setLegInstrument changes type, strike and expiry, rewrites the symbol and takes the new quote when given", () => {
+    const a = addLeg([], base);
+    if (!a.ok) throw new Error("add failed");
+    const put = setLegInstrument(a.legs, a.leg.id, { kind: "put" }, { price: "412.5", iv: 0.31 });
+    expect(put[0]).toMatchObject({ kind: "put", strike: "79400", symbol: "P-BTC-79400-070926", price: "412.5", iv: 0.31 });
+    const moved = setLegInstrument(put, a.leg.id, { strike: "80000", expiry: "2026-09-25" });
+    expect(moved[0]).toMatchObject({ kind: "put", strike: "80000", expiry: "2026-09-25", symbol: "P-BTC-80000-250926", price: "412.5" }); // no quote yet: price stands
+    const fut = addLeg(moved, { ...base, kind: "future", strike: "0", expiry: "" });
+    if (!fut.ok) throw new Error("add failed");
+    expect(setLegInstrument(fut.legs, fut.leg.id, { kind: "put" })[1]).toBe(fut.leg); // futures are not editable
+    expect(setLegInstrument(fut.legs, "nope", { kind: "put" })).toEqual(fut.legs);
   });
 });

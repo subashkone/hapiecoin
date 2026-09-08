@@ -105,7 +105,7 @@ export function useStrategyAnalysis(scope: "pane" | "builder" = "pane"): Strateg
   const legs = useMemo(() => {
     if (followed) return followed.legs.filter((l) => l.status === "open").map((l) => serverLegToLocal(l, followed.asset));
     if (positions.asset) return positions.legs;
-    return allLegs.filter((l) => l.status === "open");
+    return allLegs.filter((l) => l.status === "open" && l.enabled !== false);
   }, [followed, positions, allLegs]);
   // a followed position keeps its entry premiums (like custom prices); the Builder follows its own price mode
   const priceMode = source.kind === "builder" ? meta.priceMode : "custom";

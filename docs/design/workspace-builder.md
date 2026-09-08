@@ -53,3 +53,6 @@ Expiries are listed until their settlement instant (12:00 UTC BTC / ETH, 16:00 U
 ## Amendment · templates strip (08 Sep 2026, ADR-027)
 `TemplatesStrip` sits under the Builder actions: outlook tabs Bullish / Bearish / Neutral / Others, expiry select, scroll row of sketch cards, one click loads (replaces the legs, names the strategy, stays on the Builder). Collapsible with a persisted flag; "All 28 →" opens the Templates tab, which keeps the gallery and My templates. Loading shared with the tab via `useTemplateLoader`.
 
+## Amendment · legs table parity (08 Sep 2026, ADR-028)
+Checkbox column (master + per leg, `enabled` on the leg, `activeLegs` for analysis / ticket / trade), `LegInstrument` editor per option row (CE / PE toggle, strike select from the expiry's chain, expiry select from `useExpiries`), default 100 lots. Payoff: `sigma-labels` row (−2σ … +2σ), break-even % in the tile, target date next to +Nd. Header: `WalletChip` (available balance from `live/positions` balances) and `CurrencyToggle`.
+

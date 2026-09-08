@@ -39,6 +39,11 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
   useEffect(() => {
     if (confirm) setKey(newIdempotencyKey());
   }, [confirm]);
+  // the header wallet chip shares this query and may hold a snapshot from before the last order: refresh on mount
+  const refetch = positions.refetch;
+  useEffect(() => {
+    if (brokerId) void refetch();
+  }, [brokerId, refetch]);
   // ticked ids that disappeared (closed elsewhere) drop out of the pane source
   useEffect(() => {
     if (!positions.data || paneSource?.kind !== "positions") return;
