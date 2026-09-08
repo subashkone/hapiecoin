@@ -14,6 +14,7 @@ beforeEach(() => {
     chainRecentre: 0,
     legs: { BTC: [], ETH: [], XAUT: [] },
     chainLots: 10,
+    lotsDefault: 100,
     optionDetail: null,
   });
 });
@@ -51,6 +52,7 @@ describe("HC-SH-003 UI store", () => {
       chainColumns: defaultLayout(),
       legs: { BTC: [], ETH: [], XAUT: [] },
       chainLots: 10,
+      lotsDefault: 100,
       strategy: {
         BTC: { name: "", basket: false, priceMode: "live", draftId: null },
         ETH: { name: "", basket: false, priceMode: "live", draftId: null },
@@ -123,6 +125,10 @@ describe("HC-SH-003 UI store", () => {
     // once imported, old browser drafts are ignored on later loads (ADR-024)
     expect(merge({ drafts: [{ id: "a", name: "A", asset: "BTC" }], draftsImported: true }, current).drafts).toEqual([]);
     expect(merged.strategy.BTC).toEqual({ name: "", basket: false, priceMode: "custom", draftId: null });
+    // ADR-028: lots persisted under the old default are lifted to 100 once; a choice made under the new default sticks
+    expect(merge({ chainLots: 10 }, current).chainLots).toBe(current.chainLots); // no lotsDefault marker: the current default wins
+    expect(merge({ chainLots: 25, lotsDefault: 100 }, current).chainLots).toBe(25);
+    expect(merge({ chainLots: 25, lotsDefault: 100 }, current).lotsDefault).toBe(100);
     expect(merged.workspaceTab).toBe(current.workspaceTab);
     expect(merged.analysisTab).toBe("ladder");
     expect(merged.targetDays).toBe(0);

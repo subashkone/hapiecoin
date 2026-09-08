@@ -126,6 +126,8 @@ export interface UiState {
   legs: LegsByAsset;
   /** Lots the chain's B / S buttons add (HC-WS-025). Persisted. */
   chainLots: number;
+  /** Default lots the persisted `chainLots` was last aligned to; a change of DEFAULT_LOTS re-applies once (ADR-028). Persisted. */
+  lotsDefault: number;
   /** The option the details dialog is showing, when `dialog === "option"`. */
   optionDetail: OptionDetailTarget | null;
   /** Builder meta per asset (name, basket, price mode, loaded draft). Persisted. */
@@ -201,6 +203,7 @@ export const useUiStore = create<UiState>()(
       chainColumns: defaultLayout(),
       legs: emptyLegs(),
       chainLots: DEFAULT_LOTS,
+      lotsDefault: DEFAULT_LOTS,
       optionDetail: null,
       strategy: emptyMetaByAsset(),
       drafts: [],
@@ -303,6 +306,7 @@ export const useUiStore = create<UiState>()(
         chainColumns: s.chainColumns,
         legs: s.legs,
         chainLots: s.chainLots,
+        lotsDefault: s.lotsDefault,
         strategy: s.strategy,
         draftsImported: s.draftsImported,
         workspaceTab: s.workspaceTab,
@@ -320,7 +324,9 @@ export const useUiStore = create<UiState>()(
           chainRange: isChainRange(p.chainRange) ? p.chainRange : current.chainRange,
           chainColumns: p.chainColumns === undefined ? current.chainColumns : normaliseLayout(p.chainColumns),
           legs: p.legs === undefined ? current.legs : normaliseLegsByAsset(p.legs),
-          chainLots: typeof p.chainLots === "number" && Number.isInteger(p.chainLots) && p.chainLots > 0 ? p.chainLots : current.chainLots,
+          // a browser that persisted lots under an older default (10) gets the new default once; later choices stick
+          chainLots: p.lotsDefault === DEFAULT_LOTS && typeof p.chainLots === "number" && Number.isInteger(p.chainLots) && p.chainLots > 0 ? p.chainLots : current.chainLots,
+          lotsDefault: DEFAULT_LOTS,
           optionDetail: null,
           strategy: p.strategy === undefined ? current.strategy : normaliseMetaByAsset(p.strategy),
           draftsImported: p.draftsImported === true,
