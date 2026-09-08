@@ -8,17 +8,7 @@
  */
 import type { PlanIntervals } from "@hapiecoin/schema";
 import { sql } from "drizzle-orm";
-import {
-  bigserial,
-  boolean,
-  index,
-  integer,
-  jsonb,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-} from "drizzle-orm/pg-core";
+import { bigserial, boolean, customType, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
@@ -410,6 +400,29 @@ export const referralCommissions = pgTable(
   (t) => [index("referral_commissions_referrer_idx").on(t.referrerId), uniqueIndex("referral_commissions_subscription_uq").on(t.subscriptionId)],
 );
 
+/** Raw bytes (banner images, ADR-033). drizzle has no bytea column, so a custom type maps Buffer <-> bytea. */
+const bytea = customType<{ data: Buffer; driverData: Buffer | Uint8Array }>({
+  dataType: () => "bytea",
+  toDriver: (value) => value,
+  fromDriver: (value) => Buffer.from(value),
+});
+
+/** Promotional banners (Phase 4 item 4b, ADR-033): scheduled popups with the image stored inline (≤ 5 MB). */
+export const banners = pgTable("banners", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  linkUrl: text("link_url"),
+  frequency: text("frequency", { enum: ["every_time", "once_per_session", "once_per_day"] }).notNull().default("once_per_day"),
+  startsAt: timestamp("starts_at", { withTimezone: true, mode: "date" }),
+  endsAt: timestamp("ends_at", { withTimezone: true, mode: "date" }),
+  active: boolean("active").notNull().default(true),
+  image: bytea("image").notNull(),
+  imageType: text("image_type").notNull(),
+  imageBytes: integer("image_bytes").notNull(),
+  ...timestamps,
+});
+
 /** Every table, for `drizzle(client, { schema })`; declared last so each table exists before it is referenced. */
 export const schema = {
   users,
@@ -429,5 +442,6 @@ export const schema = {
   plans,
   menuItems,
   referralCommissions,
+  banners,
 };
 export type Schema = typeof schema;

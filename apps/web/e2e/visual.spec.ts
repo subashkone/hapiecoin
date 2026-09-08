@@ -132,5 +132,24 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("drawer-referrals")).toBeVisible();
       await page.screenshot({ path: `${DIR}/admin-user-drawer-${theme}.png` });
     });
+
+    test(`HC-AD-059 /admin/banners and HC-SH-055 the flyer ${theme}`, async ({ page, request }) => {
+      await seedUser(request, { email: `bn-${theme}@example.com`, role: "admin", banners: 4 });
+      await signIn(page, `bn-${theme}@example.com`);
+      await page.evaluate((t) => {
+        localStorage.setItem("hapiecoin.theme", t);
+      }, theme);
+      await page.goto("/analyse");
+      await expect(page.getByTestId("flyer")).toHaveAttribute("data-count", "2", { timeout: 15_000 });
+      await page.screenshot({ path: `${DIR}/analyse-flyer-${theme}.png` });
+      await page.getByTestId("flyer-dismiss").click();
+      await page.goto("/admin/banners");
+      await expect(page.getByTestId("admin-banners")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+      await expect(page.getByTestId("banner-row")).toHaveCount(4);
+      await page.screenshot({ path: `${DIR}/admin-banners-${theme}.png`, fullPage: true });
+      await page.getByTestId("banner-new").click();
+      await expect(page.getByTestId("banner-dialog")).toBeVisible();
+      await page.screenshot({ path: `${DIR}/admin-banner-dialog-${theme}.png` });
+    });
   });
 }

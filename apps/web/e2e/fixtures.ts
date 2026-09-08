@@ -17,6 +17,8 @@ export interface SeedOptions {
   connected?: boolean;
   /** Seed this many referred sign-ups with commissions for the user (ADR-031). */
   referrals?: number;
+  /** Seed this many banners (live, live, scheduled, hidden … cycling; ADR-033). */
+  banners?: number;
 }
 
 export async function seedUser(request: APIRequestContext, opts: SeedOptions) {
