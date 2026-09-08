@@ -1,0 +1,233 @@
+// Builder, templates, chain picker and future dialog (HC-TR-001..049) against the in-memory API, the fake
+// gateway socket and the recorded instrument list.
+import { chainTopic } from "@hapiecoin/schema";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
+import { buildChain } from "../../../test/fixtures/chain";
+import { useUiStore } from "@/lib/store";
+import { TEMPLATES } from "@/lib/strategy/templates";
+import { BuilderPanel } from "./BuilderPanel";
+
+const EXPIRY = "2026-09-25";
+const TOPIC = chainTopic("delta_india", "BTC", EXPIRY);
+const rows = buildChain("BTC", EXPIRY);
+let mock: MockFetch;
+
+function seedLegs() {
+  const s = useUiStore.getState();
+  const atm = rows.findIndex((r) => Number(r.strike) >= 79521);
+  const call = rows[atm]!;
+  const put = rows[atm - 2]!;
+  s.addLeg({ asset: "BTC", kind: "call", side: "buy", strike: call.strike, expiry: EXPIRY, lots: 10, price: call.call!.mark, iv: call.call!.markIv });
+  s.addLeg({ asset: "BTC", kind: "put", side: "sell", strike: put.strike, expiry: EXPIRY, lots: 10, price: put.put!.mark, iv: put.put!.markIv });
+  return { call, put };
+}
+
+/** True once the gateway client has asked the socket for EXPIRY's chain topic. */
+function subscribedToChain(): boolean {
+  return FakeSocket.last()
+    .sentFrames()
+    .flatMap((f) => (f as { topics?: string[] }).topics ?? [])
+    .includes(TOPIC);
+}
+
+/** Open the socket and serve the spot and the chain for EXPIRY. */
+function serveMarket() {
+  const ws = FakeSocket.last();
+  act(() => {
+    ws.open();
+    ws.receive({ t: "spot", s: "BTC", p: "79521", c24: 0.4 });
+    ws.receive({ t: "snap", topic: TOPIC, seq: 0, rows });
+  });
+  return ws;
+}
+
+beforeEach(() => {
+  FakeSocket.reset();
+  mock = installMockFetch();
+  mock.loginAs("trader@example.com");
+  useUiStore.setState({
+    asset: "BTC",
+    expiry: { BTC: EXPIRY },
+    legs: { BTC: [], ETH: [], XAUT: [] },
+    strategy: { BTC: { name: "", basket: false, priceMode: "live", draftId: null }, ETH: { name: "", basket: false, priceMode: "live", draftId: null }, XAUT: { name: "", basket: false, priceMode: "live", draftId: null } },
+    drafts: [],
+    chainLots: 10,
+    workspaceTab: "builder",
+    builderTab: "builder",
+    targetPrice: null,
+    targetDays: 0,
+  });
+});
+afterEach(() => {
+  mock.restore();
+});
+
+describe("HC-TR-001..021 Builder legs table", () => {
+  it("lists the legs with side, instrument, lots, price and the ticket; toggles side, steps lots, deletes", async () => {
+    const { call, put } = seedLegs();
+    renderWithProviders(<BuilderPanel />);
+    serveMarket();
+    const u = userEvent.setup();
+    const legRows = screen.getAllByTestId("leg-row");
+    expect(legRows).toHaveLength(2);
+    expect(legRows[0]!.dataset["side"]).toBe("buy");
+    expect(within(legRows[0]!).getByText(`${Number(call.strike).toLocaleString("en-US")} C`)).toBeTruthy();
+    expect(within(legRows[1]!).getByText(`${Number(put.strike).toLocaleString("en-US")} P`)).toBeTruthy();
+    expect(screen.getByTestId("builder-remaining").textContent).toContain("6 of 8 slots left");
+    // live price follows the feed mark
+    await waitFor(() => expect(within(legRows[0]!).getByTestId("leg-price").textContent).not.toBe("—"));
+    // ticket fills once the engine has priced
+    await waitFor(() => expect(screen.getByTestId("ticket-net").textContent).not.toBe("—"), { timeout: 4000 });
+    expect(screen.getByTestId("ticket-pop").textContent).toMatch(/%/);
+    // side toggle
+    await u.click(within(legRows[0]!).getByTestId("leg-side"));
+    expect(useUiStore.getState().legs.BTC[0]!.side).toBe("sell");
+    // lots stepper follows the presets: 10 → 25
+    await u.click(within(legRows[0]!).getByTestId("leg-lots-up"));
+    expect(useUiStore.getState().legs.BTC[0]!.lots).toBe(25);
+    await u.click(within(legRows[0]!).getByTestId("leg-lots-down"));
+    expect(useUiStore.getState().legs.BTC[0]!.lots).toBe(10);
+    // basket applies quantity to every leg
+    await u.click(screen.getByTestId("basket-switch"));
+    await u.click(within(screen.getAllByTestId("leg-row")[0]!).getByTestId("leg-lots-up"));
+    expect(useUiStore.getState().legs.BTC.map((l) => l.lots)).toEqual([25, 25]);
+    // delete
+    await u.click(within(screen.getAllByTestId("leg-row")[1]!).getByTestId("leg-delete"));
+    expect(screen.getAllByTestId("leg-row")).toHaveLength(1);
+    // clear → empty state
+    await u.click(screen.getByTestId("builder-clear"));
+    expect(screen.getByText("No legs added")).toBeTruthy();
+    expect(screen.getByTestId("builder-select-chain")).toBeTruthy();
+  });
+
+  it("HC-TR-024 custom price mode edits the stored price per leg (and every leg with the basket on)", async () => {
+    seedLegs();
+    renderWithProviders(<BuilderPanel />);
+    serveMarket();
+    const u = userEvent.setup();
+    await u.click(screen.getByTestId("price-mode"));
+    expect(useUiStore.getState().strategy.BTC.priceMode).toBe("custom");
+    const inputs = screen.getAllByTestId("leg-price-input");
+    expect(inputs).toHaveLength(2);
+    fireEvent.change(inputs[0]!, { target: { value: "1234.5" } });
+    expect(useUiStore.getState().legs.BTC[0]!.price).toBe("1234.5");
+    expect(useUiStore.getState().legs.BTC[1]!.price).not.toBe("1234.5");
+  });
+});
+
+describe("HC-TR-025 / HC-TR-026 / HC-TR-045..049 drafts", () => {
+  it("Save draft names the strategy, keeps it under My templates, and Load / Archive / Delete round-trip", async () => {
+    seedLegs();
+    renderWithProviders(<BuilderPanel />);
+    serveMarket();
+    const u = userEvent.setup();
+    await u.click(screen.getByTestId("builder-save"));
+    const dialog = screen.getByTestId("save-draft-dialog");
+    await u.clear(within(dialog).getByTestId("save-draft-name"));
+    await u.type(within(dialog).getByTestId("save-draft-name"), "My strangle");
+    await u.click(within(dialog).getByTestId("save-draft-confirm"));
+    await waitFor(() => expect(useUiStore.getState().drafts).toHaveLength(1));
+    expect(useUiStore.getState().drafts[0]!.name).toBe("My strangle");
+    expect(useUiStore.getState().strategy.BTC.draftId).toBe(useUiStore.getState().drafts[0]!.id);
+    expect(screen.getByTestId("builder-save").textContent).toBe("Update");
+    // New resets the builder but keeps the draft
+    await u.click(screen.getByTestId("builder-new"));
+    expect(useUiStore.getState().legs.BTC).toHaveLength(0);
+    expect(useUiStore.getState().drafts).toHaveLength(1);
+    // My templates
+    await u.click(screen.getByTestId("builder-tab-templates"));
+    expect(screen.getAllByTestId("mine-card")).toHaveLength(1);
+    await u.type(screen.getByTestId("mine-search"), "zzz");
+    expect(screen.getByTestId("mine-empty")).toBeTruthy();
+    await u.clear(screen.getByTestId("mine-search"));
+    await u.click(screen.getByTestId("mine-load"));
+    expect(useUiStore.getState().legs.BTC).toHaveLength(2);
+    expect(useUiStore.getState().builderTab).toBe("builder");
+    await u.click(screen.getByTestId("builder-tab-templates"));
+    await u.click(screen.getByTestId("mine-archive"));
+    expect(screen.getByTestId("mine-empty")).toBeTruthy();
+    await u.click(screen.getByTestId("mine-archived"));
+    expect(screen.getAllByTestId("mine-card")).toHaveLength(1);
+    await u.click(screen.getByTestId("mine-delete"));
+    await u.click(screen.getByTestId("mine-delete-confirm"));
+    expect(useUiStore.getState().drafts).toHaveLength(0);
+  });
+});
+
+describe("HC-TR-037..044 templates", () => {
+  it("shows the 28 cards by category and places a template on the venue ladder around ATM", async () => {
+    useUiStore.setState({ builderTab: "templates" });
+    renderWithProviders(<BuilderPanel />);
+    serveMarket();
+    const u = userEvent.setup();
+    expect(screen.getAllByTestId("template-card")).toHaveLength(TEMPLATES.length);
+    await u.click(screen.getByTestId("template-cat-bullish"));
+    expect(screen.getAllByTestId("template-card")).toHaveLength(TEMPLATES.filter((t) => t.category === "Bullish").length);
+    await u.click(screen.getByTestId("template-cat-neutral"));
+    await waitFor(() => expect(screen.getByTestId<HTMLSelectElement>("template-expiry").value).toBe(EXPIRY));
+    act(() => FakeSocket.last().open());
+    await waitFor(() => expect(subscribedToChain()).toBe(true), { timeout: 5000 });
+    serveMarket();
+    await u.click(screen.getByText("Iron Condor"));
+    await waitFor(() => expect(useUiStore.getState().legs.BTC).toHaveLength(4));
+    const legs = useUiStore.getState().legs.BTC;
+    // every strike is a listed one and the legs sit on the chosen expiry
+    for (const l of legs) {
+      expect(rows.some((r) => r.strike === l.strike)).toBe(true);
+      expect(l.expiry).toBe(EXPIRY);
+    }
+    expect(useUiStore.getState().strategy.BTC.name).toBe("Iron Condor");
+    expect(useUiStore.getState().builderTab).toBe("builder");
+  });
+});
+
+describe("HC-TR-027..035 chain picker and future dialog", () => {
+  it("multi-selects B / S per side within the remaining slots and adds the picks", async () => {
+    renderWithProviders(<BuilderPanel />);
+    serveMarket();
+    const u = userEvent.setup();
+    await u.click(screen.getByTestId("builder-select-chain"));
+    const dialog = screen.getByTestId("chain-picker");
+    await waitFor(() => expect(within(dialog).getAllByTestId("picker-expiry").length).toBeGreaterThan(0));
+    act(() => FakeSocket.last().open());
+    await waitFor(() => expect(subscribedToChain()).toBe(true), { timeout: 5000 });
+    serveMarket();
+    await waitFor(() => expect(within(dialog).getAllByTestId("picker-row").length).toBeGreaterThan(0), { timeout: 5000 });
+    const picker = within(dialog);
+    const first = picker.getAllByTestId("picker-row")[5]!;
+    await u.click(within(first).getByTestId("picker-buy-call"));
+    await u.click(within(first).getByTestId("picker-sell-put"));
+    // second click on the same cell deselects
+    await u.click(within(first).getByTestId("picker-sell-put"));
+    await u.click(within(first).getByTestId("picker-buy-put"));
+    expect(picker.getAllByTestId("picker-qty")).toHaveLength(2);
+    fireEvent.change(picker.getAllByTestId("picker-qty")[0]!, { target: { value: "5" } });
+    await u.click(picker.getByTestId("picker-add"));
+    await waitFor(() => expect(useUiStore.getState().legs.BTC).toHaveLength(2));
+    expect(useUiStore.getState().legs.BTC.map((l) => [l.kind, l.side, l.lots])).toEqual([
+      ["call", "buy", 5],
+      ["put", "buy", 10],
+    ]);
+  });
+
+  it("adds a perpetual future at the live spot", async () => {
+    seedLegs();
+    renderWithProviders(<BuilderPanel />);
+    serveMarket();
+    const u = userEvent.setup();
+    await u.click(screen.getByTestId("builder-add-future"));
+    const dialog = screen.getByTestId("future-dialog");
+    expect(dialog.textContent).toContain("Spot 79,521");
+    await u.click(within(dialog).getByTestId("future-sell"));
+    await u.click(within(dialog).getByTestId("future-add"));
+    await waitFor(() => expect(useUiStore.getState().legs.BTC).toHaveLength(3));
+    const fut = useUiStore.getState().legs.BTC[2]!;
+    expect(fut.kind).toBe("future");
+    expect(fut.side).toBe("sell");
+    expect(fut.symbol).toBe("BTCUSD");
+    expect(fut.price).toBe("79521");
+  });
+});

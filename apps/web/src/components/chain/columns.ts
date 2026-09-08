@@ -34,19 +34,19 @@ export interface ChainColumn {
 }
 
 export const COLUMNS: readonly ChainColumn[] = [
-  { id: "ask", label: "Ask (Price/IV)", header: "Ask/IV", group: "Market Data", title: "Best ask, USD per contract, with its implied volatility", width: 68 },
-  { id: "mark", label: "Mark (Price/IV)", header: "Mark/IV", group: "Market Data", title: "Mark price, USD per contract, with its implied volatility", width: 68 },
-  { id: "bid", label: "Bid (Price/IV)", header: "Bid/IV", group: "Market Data", title: "Best bid, USD per contract, with its implied volatility", width: 68 },
+  { id: "ask", label: "Ask (Price/IV)", header: "Ask/IV", group: "Market Data", title: "Best ask, USD per underlying unit, with its implied volatility", width: 68 },
+  { id: "mark", label: "Mark (Price/IV)", header: "Mark/IV", group: "Market Data", title: "Mark price, USD per underlying unit, with its implied volatility", width: 68 },
+  { id: "bid", label: "Bid (Price/IV)", header: "Bid/IV", group: "Market Data", title: "Best bid, USD per underlying unit, with its implied volatility", width: 68 },
   { id: "oi", label: "OI", header: "OI", group: "Market Data", title: "Open interest, contracts; bar relative to the largest OI in this expiry", width: 68 },
-  { id: "delta", label: "Delta", header: "Δ", group: "Greeks", title: "Delta per contract (2 dp)", width: 56 },
-  { id: "gamma", label: "Gamma", header: "Γ", group: "Greeks", title: "Gamma per contract (6 dp)", width: 72 },
-  { id: "theta", label: "Theta", header: "Θ/d", group: "Greeks", title: "Theta, USD per contract per day (1 dp)", width: 60 },
-  { id: "vega", label: "Vega", header: "ν", group: "Greeks", title: "Vega, USD per contract per IV point (1 dp)", width: 60 },
+  { id: "delta", label: "Delta", header: "Δ", group: "Greeks", title: "Delta per unit (2 dp)", width: 56 },
+  { id: "gamma", label: "Gamma", header: "Γ", group: "Greeks", title: "Gamma per unit (6 dp)", width: 72 },
+  { id: "theta", label: "Theta", header: "Θ/d", group: "Greeks", title: "Theta, USD per unit per day (1 dp)", width: 60 },
+  { id: "vega", label: "Vega", header: "ν", group: "Greeks", title: "Vega, USD per unit per IV point (1 dp)", width: 60 },
   { id: "volume", label: "Volume", header: "Vol", group: "Market Data", title: "24 h volume, contracts", width: 64 },
   { id: "bidQty", label: "Bid Qty", header: "Bid qty", group: "Market Data", title: "Size at the best bid, contracts", width: 64 },
   { id: "askQty", label: "Ask Qty", header: "Ask qty", group: "Market Data", title: "Size at the best ask, contracts", width: 64 },
   { id: "chg24", label: "24hr Chg", header: "24h", group: "Activity", title: "24 h change of the mark, percent", width: 60 },
-  { id: "last", label: "Last", header: "Last", group: "Activity", title: "Last traded price, USD per contract", width: 64 },
+  { id: "last", label: "Last", header: "Last", group: "Activity", title: "Last traded price, USD per underlying unit", width: 64 },
 ];
 
 export const COLUMN_GROUPS: readonly ColumnGroup[] = ["Market Data", "Greeks", "Activity"];

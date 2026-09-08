@@ -61,7 +61,7 @@ export function ChainHeader({ x, putsX, trackWidth, callCols, putCols, expiryLab
         {showPuts ? (
           <div className="micro flex min-w-0 items-center justify-between gap-2 px-2 py-1" data-testid="chain-band-puts">
             <span className="hidden truncate 2xl:inline">{lotLabel}</span>
-            <span className={cn("truncate", sides === "puts" && "ml-auto")}>Δ per contract · Puts</span>
+            <span className={cn("truncate", sides === "puts" && "ml-auto")}>Δ per unit · Puts</span>
           </div>
         ) : null}
       </div>

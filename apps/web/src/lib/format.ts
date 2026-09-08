@@ -39,19 +39,19 @@ export function fmtOi(oi: string | undefined): string {
   return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
-/** Gamma per contract → 6 dp (HC-WS-021). */
+/** Gamma per unit → 6 dp (HC-WS-021). */
 export function fmtGamma(gamma: number | undefined): string {
   if (gamma === undefined || !Number.isFinite(gamma)) return "—";
   return gamma.toFixed(6);
 }
 
-/** Theta per day (USD per contract) → 1 dp with sign kept. */
+/** Theta per day (USD per underlying unit) → 1 dp with sign kept. */
 export function fmtTheta(theta: number | undefined): string {
   if (theta === undefined || !Number.isFinite(theta)) return "—";
   return theta.toFixed(1);
 }
 
-/** Vega per IV point (USD per contract) → 1 dp. */
+/** Vega per IV point (USD per underlying unit) → 1 dp. */
 export function fmtVega(vega: number | undefined): string {
   if (vega === undefined || !Number.isFinite(vega)) return "—";
   return vega.toFixed(1);

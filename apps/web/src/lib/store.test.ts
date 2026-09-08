@@ -51,7 +51,79 @@ describe("HC-SH-003 UI store", () => {
       chainColumns: defaultLayout(),
       legs: { BTC: [], ETH: [], XAUT: [] },
       chainLots: 10,
+      strategy: {
+        BTC: { name: "", basket: false, priceMode: "live", draftId: null },
+        ETH: { name: "", basket: false, priceMode: "live", draftId: null },
+        XAUT: { name: "", basket: false, priceMode: "live", draftId: null },
+      },
+      drafts: [],
+      workspaceTab: "chain",
+      analysisTab: "payoff",
+      targetDays: 0,
     });
+  });
+  it("HC-TR-020 / HC-TR-045 / HC-TR-047 / HC-TR-048 drafts: save, update, load, archive, delete; meta per asset; tabs and target", () => {
+    const s = useUiStore.getState();
+    const input = { asset: "BTC" as const, kind: "call" as const, side: "buy" as const, strike: "79400", expiry: "2026-09-07", lots: 10, price: "807.5", iv: 0.27 };
+    s.addLeg(input);
+    s.setStrategyMeta("BTC", { name: "My spread", basket: true, priceMode: "custom" });
+    expect(useUiStore.getState().strategy.BTC).toMatchObject({ name: "My spread", basket: true, priceMode: "custom", draftId: null });
+    expect(useUiStore.getState().strategy.ETH.basket).toBe(false);
+    const d = s.saveDraft("BTC", "My spread", "Buy Call");
+    expect(d.status).toBe("draft");
+    expect(d.legs).toHaveLength(1);
+    expect(useUiStore.getState().drafts).toHaveLength(1);
+    expect(useUiStore.getState().strategy.BTC.draftId).toBe(d.id);
+    // saving again updates the same draft
+    s.addLeg({ ...input, strike: "80000" });
+    const d2 = s.saveDraft("BTC", "My spread v2", "Bull Call Spread");
+    expect(d2.id).toBe(d.id);
+    expect(useUiStore.getState().drafts).toHaveLength(1);
+    expect(useUiStore.getState().drafts[0]?.legs).toHaveLength(2);
+    expect(useUiStore.getState().drafts[0]?.name).toBe("My spread v2");
+    // clear and load back
+    expect(s.setLegs("BTC", [])).toBe(true);
+    expect(useUiStore.getState().legs.BTC).toHaveLength(0);
+    s.setAsset("ETH");
+    expect(s.loadDraft(d.id)?.name).toBe("My spread v2");
+    expect(useUiStore.getState().asset).toBe("BTC");
+    expect(useUiStore.getState().legs.BTC).toHaveLength(2);
+    expect(useUiStore.getState().workspaceTab).toBe("builder");
+    expect(s.loadDraft("nope")).toBeNull();
+    // archive / delete
+    s.archiveDraft(d.id, true);
+    expect(useUiStore.getState().drafts[0]?.status).toBe("archived");
+    s.archiveDraft(d.id, false);
+    expect(useUiStore.getState().drafts[0]?.status).toBe("draft");
+    s.deleteDraft(d.id);
+    expect(useUiStore.getState().drafts).toHaveLength(0);
+    expect(useUiStore.getState().strategy.BTC.draftId).toBeNull();
+    // limit on replace, tabs and target
+    const many = Array.from({ length: 11 }, (_, i) => ({ ...useUiStore.getState().legs.BTC[0]!, id: `x${i}` }));
+    expect(s.setLegs("BTC", many)).toBe(false);
+    s.updateLegs("BTC", (legs) => legs.slice(0, 1));
+    expect(useUiStore.getState().legs.BTC).toHaveLength(1);
+    s.setWorkspaceTab("paper");
+    s.setAnalysisTab("greeks");
+    s.setBuilderTab("templates");
+    s.setTarget({ price: 81_000, days: 3.6 });
+    expect(useUiStore.getState()).toMatchObject({ workspaceTab: "paper", analysisTab: "greeks", builderTab: "templates", targetPrice: 81_000, targetDays: 4 });
+    s.setTarget({ price: null });
+    expect(useUiStore.getState().targetPrice).toBeNull();
+    // persisted drafts and meta are normalised; the builder sub-tab and target price are not persisted
+    const merge = useUiStore.persist.getOptions().merge;
+    if (!merge) throw new Error("persist merge missing");
+    const current = useUiStore.getState();
+    const merged = merge(
+      { drafts: [{ id: "a", name: "A", asset: "BTC", status: "weird", legs: "x" }, { id: 1 }], strategy: { BTC: { name: 42, priceMode: "custom" } }, workspaceTab: "nope", analysisTab: "ladder", targetDays: -2 },
+      current,
+    );
+    expect(merged.drafts).toEqual([expect.objectContaining({ id: "a", status: "draft", legs: [], templateName: "Custom" })]);
+    expect(merged.strategy.BTC).toEqual({ name: "", basket: false, priceMode: "custom", draftId: null });
+    expect(merged.workspaceTab).toBe(current.workspaceTab);
+    expect(merged.analysisTab).toBe("ladder");
+    expect(merged.targetDays).toBe(0);
+    expect(merged.targetPrice).toBeNull();
   });
   it("HC-TR-017 / HC-TR-018 keeps legs per asset with the limit, remembers chain lots and opens the details dialog", () => {
     const s = useUiStore.getState();

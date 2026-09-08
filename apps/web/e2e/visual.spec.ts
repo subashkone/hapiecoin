@@ -46,6 +46,19 @@ for (const theme of ["dark", "light"] as const) {
       await page.locator(`[data-testid=chain-row-calls][data-strike="${atmStrike}"]`).hover();
       await expect(page.getByTestId("row-controls-calls")).toBeVisible();
       await page.screenshot({ path: `${DIR}/analyse-legs-${theme}.png` });
+      // HC-TR-001 / HC-WS-033 the Builder with the two legs and the payoff pane priced
+      await page.getByTestId("tab-builder").click();
+      await expect(page.getByTestId("builder-panel")).toHaveAttribute("data-legs", "2");
+      await expect(page.getByTestId("payoff-panel")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+      await expect(page.getByTestId("ticket-net")).not.toHaveText("—");
+      await page.screenshot({ path: `${DIR}/analyse-builder-${theme}.png` });
+      await page.getByTestId("builder-tab-templates").click();
+      await expect(page.getByTestId("template-card")).toHaveCount(28);
+      await page.screenshot({ path: `${DIR}/analyse-templates-${theme}.png` });
+      await page.getByTestId("analysis-tab-greeks").click();
+      await expect(page.getByTestId("greek-delta")).not.toContainText("—");
+      await page.screenshot({ path: `${DIR}/analyse-greeks-${theme}.png` });
+      await page.getByTestId("analysis-tab-payoff").click();
       await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
       await page.goto("/");
       await expect(page.getByTestId("tile-BTC")).toHaveAttribute("data-state", "live", { timeout: 15_000 });

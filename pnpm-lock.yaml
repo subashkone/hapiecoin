@@ -225,6 +225,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@hapiecoin/pricing':
+        specifier: workspace:*
+        version: link:../../packages/pricing
       '@hapiecoin/schema':
         specifier: workspace:*
         version: link:../../packages/schema

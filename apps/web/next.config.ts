@@ -24,12 +24,18 @@ const nextConfig: NextConfig = {
   // No raster images are used; the optimizer would only add a server route.
   images: { unoptimized: true },
   reactCompiler: true,
-  transpilePackages: ["@hapiecoin/ui", "@hapiecoin/schema"],
-  // `@hapiecoin/schema` sources use TypeScript-style `./x.js` imports for `.ts` files; Turbopack in `next dev`
-  // follows the package's `development` export condition to src/ and cannot map that extension, so dev resolves
-  // the built dist (the same file `next build` picks through the `import` condition). Build the package first:
-  // `pnpm --filter @hapiecoin/schema build` (the turbo `build`/`typecheck` tasks already depend on it).
-  turbopack: { resolveAlias: { "@hapiecoin/schema": "./node_modules/@hapiecoin/schema/dist/index.js" } },
+  transpilePackages: ["@hapiecoin/ui", "@hapiecoin/schema", "@hapiecoin/pricing"],
+  // `@hapiecoin/schema` and `@hapiecoin/pricing` sources use TypeScript-style `./x.js` imports for `.ts` files;
+  // Turbopack in `next dev` follows the package's `development` export condition to src/ and cannot map that
+  // extension, so dev resolves the built dist (the same file `next build` picks through the `import` condition).
+  // Build the packages first: `pnpm --filter @hapiecoin/schema --filter @hapiecoin/pricing build` (the turbo
+  // `build`/`typecheck` tasks already depend on it).
+  turbopack: {
+    resolveAlias: {
+      "@hapiecoin/schema": "./node_modules/@hapiecoin/schema/dist/index.js",
+      "@hapiecoin/pricing": "./node_modules/@hapiecoin/pricing/dist/index.js",
+    },
+  },
   headers() {
     return Promise.resolve([{ source: "/(.*)", headers: staticHeaders }]);
   },
