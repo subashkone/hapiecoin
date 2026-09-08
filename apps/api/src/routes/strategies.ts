@@ -121,8 +121,36 @@ function legValues(strategyId: string, input: StrategyLegInput, position: number
   };
 }
 
-function addDecimal(a: string, b: string): string {
+export function addDecimal(a: string, b: string): string {
   return toDecimal(Number(a) + Number(b));
+}
+
+/**
+ * Square off `lots` of a leg (all of it when undefined) at `exitPrice`, splitting a partial exit into a closed
+ * copy; returns the realised P&L of the closed part. Shared by the strategy routes and the positions exit (HC-TR-145).
+ */
+export async function closeLegRow(deps: AppDeps, strategy: StrategyRow, leg: LegRow, exitPrice: string, lots: number | undefined, lotSize: string, now: Date): Promise<string> {
+  const db = deps.db;
+  if (leg.status !== "open") throw errors.conflict("This leg is already squared off");
+  const qty = lots ?? leg.lots;
+  if (qty > leg.lots) throw errors.badRequest(`Exit quantity exceeds the leg's ${leg.lots} lots`);
+  const closedPart = { side: leg.side, lots: qty, entryPrice: leg.entryPrice ?? leg.price, exitPrice };
+  const realized = realizedPnl(closedPart, lotSize);
+  if (qty < leg.lots) {
+    await db.update(strategyLegs).set({ lots: leg.lots - qty, updatedAt: now }).where(eq(strategyLegs.id, leg.id));
+    await db.insert(strategyLegs).values({
+      ...legValues(strategy.id, { kind: leg.kind, side: leg.side, strike: leg.strike, expiry: leg.expiry, symbol: leg.symbol, lots: qty, price: leg.price, ...(leg.iv === null ? {} : { iv: Number(leg.iv) }) }, leg.position),
+      entryPrice: leg.entryPrice ?? leg.price,
+      exitPrice,
+      status: "squared_off",
+      isAdjustment: leg.isAdjustment,
+      openedAt: leg.openedAt,
+      closedAt: now,
+    });
+  } else {
+    await db.update(strategyLegs).set({ exitPrice, status: "squared_off", closedAt: now, updatedAt: now }).where(eq(strategyLegs.id, leg.id));
+  }
+  return realized;
 }
 
 export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
@@ -366,28 +394,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
     },
   );
 
-  async function closeLeg(strategy: StrategyRow, leg: LegRow, exitPrice: string, lots: number | undefined, lotSize: string, now: Date): Promise<string> {
-    if (leg.status !== "open") throw errors.conflict("This leg is already squared off");
-    const qty = lots ?? leg.lots;
-    if (qty > leg.lots) throw errors.badRequest(`Exit quantity exceeds the leg's ${leg.lots} lots`);
-    const closedPart = { side: leg.side, lots: qty, entryPrice: leg.entryPrice ?? leg.price, exitPrice };
-    const realized = realizedPnl(closedPart, lotSize);
-    if (qty < leg.lots) {
-      await db.update(strategyLegs).set({ lots: leg.lots - qty, updatedAt: now }).where(eq(strategyLegs.id, leg.id));
-      await db.insert(strategyLegs).values({
-        ...legValues(strategy.id, { kind: leg.kind, side: leg.side, strike: leg.strike, expiry: leg.expiry, symbol: leg.symbol, lots: qty, price: leg.price, ...(leg.iv === null ? {} : { iv: Number(leg.iv) }) }, leg.position),
-        entryPrice: leg.entryPrice ?? leg.price,
-        exitPrice,
-        status: "squared_off",
-        isAdjustment: leg.isAdjustment,
-        openedAt: leg.openedAt,
-        closedAt: now,
-      });
-    } else {
-      await db.update(strategyLegs).set({ exitPrice, status: "squared_off", closedAt: now, updatedAt: now }).where(eq(strategyLegs.id, leg.id));
-    }
-    return realized;
-  }
+  const closeLeg = (strategy: StrategyRow, leg: LegRow, exitPrice: string, lots: number | undefined, lotSize: string, now: Date) => closeLegRow(deps, strategy, leg, exitPrice, lots, lotSize, now);
 
   app.openapi(
     createRoute({

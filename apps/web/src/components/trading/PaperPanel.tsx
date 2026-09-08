@@ -4,11 +4,12 @@
 import type { Strategy } from "@hapiecoin/schema";
 import { Button, EmptyState, cn, toast } from "@hapiecoin/ui";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { strategyKeys, useDeleteStrategy, useStrategies } from "@/lib/api/strategies";
 import { useLiveRetry, useLiveSync } from "@/lib/api/live";
 import { useBrokers, useCredential } from "@/lib/api/queries";
 import { BatchLiveDialog } from "./BatchLiveDialog";
+import { NetPositionsPanel } from "./NetPositionsPanel";
 import { fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
 import { dayPnl, daysOf, fmtLeg, openLegs, pnlSeries } from "@/lib/strategy/paper";
@@ -55,6 +56,9 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const { data: credential } = useCredential();
   const connected = (credential?.items.length ?? 0) > 0;
   const openTrade = useUiStore((s) => s.openTrade);
+  const paneSource = useUiStore((s) => s.paneSource);
+  const followStrategy = useUiStore((s) => s.followStrategy);
+  const workspaceTab = useUiStore((s) => s.workspaceTab);
   const [batch, setBatch] = useState(false);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("pnl");
@@ -63,6 +67,12 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const q = search.trim().toLowerCase();
   const all = useMemo(() => (data ?? []).filter((s) => s.status === kind), [data, kind]);
+  // nothing followed yet on this tab: the pane follows the first card (HC-TR-143)
+  useEffect(() => {
+    if (workspaceTab !== kind || paneSource !== null) return;
+    const first = all[0];
+    if (first) followStrategy(first.id);
+  }, [workspaceTab, kind, paneSource, all, followStrategy]);
   const rows = useMemo(() => sortStrategies(all.filter((s) => !q || `${s.name} ${s.asset} ${s.templateName}`.toLowerCase().includes(q)), sort, (s) => book.pnlOf(s).total), [all, q, sort, book]);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const current = Math.min(page, pages);
@@ -101,6 +111,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
           </span>
         )}
       </div>
+      {kind === "live" ? <NetPositionsPanel money={money} /> : null}
       <div className="grid grid-cols-3 gap-2 px-3 py-2" data-testid={`${kind}-strip`}>
         <div className="rounded border border-border px-2 py-1.5"><div className="micro">Total P&amp;L</div><div className={cn("num text-[15px] font-medium", totals.total >= 0 ? "text-profit" : "text-loss")} data-testid={`${kind}-total`}>{fmtMoney(totals.total, money, { signed: true })}</div><div className="micro">{all.length} {all.length === 1 ? "trade" : "trades"} · {totals.open} open {totals.open === 1 ? "leg" : "legs"}</div></div>
         <div className="rounded border border-border px-2 py-1.5"><div className="micro">Day P&amp;L</div><div className={cn("num text-[15px] font-medium", totals.day >= 0 ? "text-profit" : "text-loss")}>{fmtMoney(totals.day, money, { signed: true })}</div><div className="micro">vs previous close</div></div>
@@ -119,7 +130,26 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
               const p = book.pnlOf(s);
               const open = openLegs(s);
               return (
-                <div key={s.id} className="rounded border border-border p-2" data-testid={`${kind}-card`} data-id={s.id}>
+                <div
+                  key={s.id}
+                  role="button"
+                  tabIndex={0}
+                  className={cn("rounded border p-2 outline-none focus-visible:ring-1 focus-visible:ring-ring", paneSource?.kind === "strategy" && paneSource.id === s.id ? "border-accent" : "border-border hover:border-foreground/30")}
+                  title="Click to analyse this strategy in the pane"
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest("button, a, input, select")) return;
+                    followStrategy(s.id);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      followStrategy(s.id);
+                    }
+                  }}
+                  data-testid={`${kind}-card`}
+                  data-id={s.id}
+                  data-followed={paneSource?.kind === "strategy" && paneSource.id === s.id ? "true" : undefined}
+                >
                   <div className="flex flex-wrap items-start gap-2">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium"><span className="truncate">{s.name}</span><ModePill status={s.status} /></div>

@@ -259,10 +259,28 @@ export const LivePosition = z.strictObject({
   entryPrice: DecimalString.nullable(),
   realizedPnl: DecimalString.nullable(),
   margin: DecimalString.nullable(),
+  /** Units of underlying per contract (from the product) so the client can size lots and P&L; null when the product is unknown. */
+  contractValue: DecimalString.nullable(),
+  /** Current venue mark, null when the venue has none. */
+  mark: DecimalString.nullable(),
 });
+export type LivePosition = z.infer<typeof LivePosition>;
 export const LivePositions = z.strictObject({
   positions: z.array(LivePosition),
   balances: z.array(z.strictObject({ asset: z.string(), balance: DecimalString, availableBalance: DecimalString })),
 });
 export type LivePositions = z.infer<typeof LivePositions>;
+
+/** Square off exchange positions from the Live tab's net-positions table (HC-TR-145): reduce-only market orders. */
+export const LivePositionsExitBody = z.strictObject({
+  brokerId: Id,
+  productIds: z.array(z.number().int()).min(1).max(20),
+  idempotencyKey: z.string().min(8).max(80),
+});
+export type LivePositionsExitBody = z.infer<typeof LivePositionsExitBody>;
+export const LivePositionsExitResult = z.strictObject({
+  closed: z.array(z.strictObject({ productId: z.number().int(), fillPrice: DecimalString.nullable(), state: OrderState })),
+  failed: z.array(z.strictObject({ productId: z.number().int(), error: z.string() })),
+});
+export type LivePositionsExitResult = z.infer<typeof LivePositionsExitResult>;
 

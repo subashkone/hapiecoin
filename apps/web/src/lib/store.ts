@@ -99,6 +99,8 @@ function normaliseDrafts(input: unknown): SavedStrategy[] {
 export type WorkspaceTab = "chain" | "builder" | "paper" | "live" | "journal";
 export type AnalysisTab = "payoff" | "scenarios" | "greeks" | "vol" | "structure" | "ladder";
 export type BuilderSubTab = "builder" | "templates";
+/** What the analysis pane shows (ADR-026): the Builder legs (null), a paper / live strategy, or ticked exchange positions. */
+export type PaneSource = { kind: "strategy"; id: string } | { kind: "positions"; productIds: number[] } | null;
 
 function normaliseLegsByAsset(input: unknown): LegsByAsset {
   const o = (typeof input === "object" && input !== null ? input : {}) as Partial<Record<Underlying, unknown>>;
@@ -136,6 +138,10 @@ export interface UiState {
   tradeFlow: { strategyId: string | null; mode?: "paper" | "live" | undefined } | null;
   /** Strategy Details dialog (HC-TR-068): the open strategy id or null. */
   detailsId: string | null;
+  /** Analysis pane source (HC-TR-143, ADR-026); cleared when the Builder or Chain tab is opened. Not persisted. */
+  paneSource: PaneSource;
+  /** Strategy templates strip under the Builder legs (HC-TR-040, ADR-027): open or collapsed. Persisted. */
+  templatesStrip: boolean;
   /** Left-pane tab, right-pane tab and the Builder sub-tab (HC-WS-005, HC-TR-001). */
   workspaceTab: WorkspaceTab;
   analysisTab: AnalysisTab;
@@ -156,6 +162,11 @@ export interface UiState {
   openTrade: (target: { strategyId: string | null; mode?: "paper" | "live" | undefined }) => void;
   closeTrade: () => void;
   openDetails: (id: string | null) => void;
+  /** Follow a paper / live strategy in the analysis pane (null = back to the Builder legs). */
+  followStrategy: (id: string | null) => void;
+  /** Analyse ticked exchange positions (HC-TR-144); an empty list returns to the Builder legs. */
+  analysePositions: (productIds: number[]) => void;
+  setTemplatesStrip: (open: boolean) => void;
   setWorkspaceTab: (tab: WorkspaceTab) => void;
   setAnalysisTab: (tab: AnalysisTab) => void;
   setBuilderTab: (tab: BuilderSubTab) => void;
@@ -196,6 +207,8 @@ export const useUiStore = create<UiState>()(
       draftsImported: false,
       tradeFlow: null,
       detailsId: null,
+      paneSource: null,
+      templatesStrip: true,
       workspaceTab: "chain",
       analysisTab: "payoff",
       builderTab: "builder",
@@ -252,7 +265,10 @@ export const useUiStore = create<UiState>()(
       openTrade: (target) => set({ tradeFlow: target }),
       closeTrade: () => set({ tradeFlow: null }),
       openDetails: (detailsId) => set({ detailsId }),
-      setWorkspaceTab: (workspaceTab) => set({ workspaceTab }),
+      followStrategy: (id) => set({ paneSource: id === null ? null : { kind: "strategy", id } }),
+      analysePositions: (productIds) => set({ paneSource: productIds.length ? { kind: "positions", productIds: [...productIds] } : null }),
+      setTemplatesStrip: (templatesStrip) => set({ templatesStrip }),
+      setWorkspaceTab: (workspaceTab) => set((s) => ({ workspaceTab, paneSource: workspaceTab === "builder" || workspaceTab === "chain" ? null : s.paneSource })),
       setAnalysisTab: (analysisTab) => set({ analysisTab }),
       setBuilderTab: (builderTab) => set({ builderTab }),
       setTarget: (patch) =>
@@ -292,6 +308,7 @@ export const useUiStore = create<UiState>()(
         workspaceTab: s.workspaceTab,
         analysisTab: s.analysisTab,
         targetDays: s.targetDays,
+        templatesStrip: s.templatesStrip,
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<UiState>;
@@ -307,6 +324,7 @@ export const useUiStore = create<UiState>()(
           optionDetail: null,
           strategy: p.strategy === undefined ? current.strategy : normaliseMetaByAsset(p.strategy),
           draftsImported: p.draftsImported === true,
+          templatesStrip: p.templatesStrip !== false,
           drafts: p.draftsImported === true || p.drafts === undefined ? [] : normaliseDrafts(p.drafts),
           workspaceTab: tabs.includes(p.workspaceTab as WorkspaceTab) ? (p.workspaceTab as WorkspaceTab) : current.workspaceTab,
           analysisTab: atabs.includes(p.analysisTab as AnalysisTab) ? (p.analysisTab as AnalysisTab) : current.analysisTab,

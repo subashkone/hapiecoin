@@ -210,6 +210,39 @@ describe("HC-TR-037..044 templates", () => {
   });
 });
 
+describe("HC-TR-040 templates strip under the Builder legs (ADR-027)", () => {
+  it("loads a template with one click, filters by outlook, collapses with a persisted flag, and links to the full gallery", async () => {
+    useUiStore.setState({ builderTab: "builder", templatesStrip: true });
+    renderWithProviders(<BuilderPanel />);
+    serveMarket();
+    const u = userEvent.setup();
+    const strip = screen.getByTestId("templates-strip");
+    expect(strip.dataset["open"]).toBe("true");
+    expect(screen.getAllByTestId("strip-card")).toHaveLength(TEMPLATES.filter((t) => t.category === "Bullish").length);
+    await u.click(screen.getByTestId("strip-cat-neutral"));
+    expect(screen.getAllByTestId("strip-card")).toHaveLength(TEMPLATES.filter((t) => t.category === "Neutral").length);
+    await waitFor(() => expect(screen.getByTestId<HTMLSelectElement>("strip-expiry").value).toBe(EXPIRY));
+    act(() => FakeSocket.last().open());
+    await waitFor(() => expect(subscribedToChain()).toBe(true), { timeout: 5000 });
+    serveMarket();
+    await waitFor(() => expect(within(strip).getByText("Iron Condor").closest("button")?.hasAttribute("disabled")).toBe(false));
+    await u.click(within(strip).getByText("Iron Condor"));
+    await waitFor(() => expect(useUiStore.getState().legs.BTC).toHaveLength(4));
+    expect(useUiStore.getState().strategy.BTC.name).toBe("Iron Condor");
+    expect(useUiStore.getState().builderTab).toBe("builder"); // never leaves the Builder
+    // one more click replaces the legs rather than merging them
+    await u.click(within(strip).getByText("Iron Butterfly"));
+    await waitFor(() => expect(useUiStore.getState().strategy.BTC.name).toBe("Iron Butterfly"));
+    expect(useUiStore.getState().legs.BTC).toHaveLength(4);
+    await u.click(screen.getByTestId("templates-strip-toggle"));
+    expect(useUiStore.getState().templatesStrip).toBe(false);
+    expect(screen.queryByTestId("strip-cards")).toBeNull();
+    await u.click(screen.getByTestId("templates-strip-toggle"));
+    await u.click(screen.getByTestId("strip-see-all"));
+    expect(useUiStore.getState().builderTab).toBe("templates");
+  });
+});
+
 describe("HC-TR-027..035 chain picker and future dialog", () => {
   it("multi-selects B / S per side within the remaining slots and adds the picks", async () => {
     renderWithProviders(<BuilderPanel />);

@@ -53,10 +53,11 @@ export function TradeFlow({ book }: { book: PaperBook }) {
   useImportLegacyDrafts();
   const flow = useUiStore((s) => s.tradeFlow);
   const closeTrade = useUiStore((s) => s.closeTrade);
+  const followStrategy = useUiStore((s) => s.followStrategy);
   const setLegs = useUiStore((s) => s.setLegs);
   const setMeta = useUiStore((s) => s.setStrategyMeta);
   const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
-  const builder = useStrategyAnalysis();
+  const builder = useStrategyAnalysis("builder");
   const meta = useUiStore((s) => s.strategy[s.asset]);
   const { data: strategies } = useStrategies();
   const { data: brokers } = useBrokers();
@@ -112,6 +113,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
     }
     closeTrade();
     setWorkspaceTab(s.status === "live" ? "live" : "paper");
+    followStrategy(s.id); // the pane follows the new position instead of an empty Builder (HC-TR-143)
     if (s.status === "live") {
       const failed = s.orders.filter((o) => o.state === "failed").length;
       if (failed) toast.error("Some orders were refused", { description: `${s.name} · ${failed} ${failed === 1 ? "order" : "orders"} failed · use Retry on the Live tab` });

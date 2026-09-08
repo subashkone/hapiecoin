@@ -56,6 +56,19 @@ describe("[CONFIG] environment parsing", () => {
     expect(warnings.some((w) => w.includes("CREDENTIALS_ENC_KEY"))).toBe(true);
   });
 
+  it("derives a stable development encryption key from BETTER_AUTH_SECRET when CREDENTIALS_ENC_KEY is unset or empty (GAPS #42)", () => {
+    const warnings: string[] = [];
+    const warn = (m: string) => warnings.push(m);
+    const a = loadConfig({ NODE_ENV: "development", BETTER_AUTH_SECRET: "stable-dev-secret-of-32-characters!!" }, { warn });
+    const b = loadConfig({ NODE_ENV: "development", BETTER_AUTH_SECRET: "stable-dev-secret-of-32-characters!!", CREDENTIALS_ENC_KEY: "  " }, { warn });
+    const other = loadConfig({ NODE_ENV: "development", BETTER_AUTH_SECRET: "another-dev-secret-of-32-characters!" }, { warn });
+    expect(a.credentialsEncKey.length).toBe(32);
+    expect(a.credentialsEncKey.equals(b.credentialsEncKey)).toBe(true);
+    expect(a.credentialsEncKey.equals(other.credentialsEncKey)).toBe(false);
+    expect(warnings.length).toBe(3);
+    expect(warnings.every((w) => w.includes("derived from BETTER_AUTH_SECRET"))).toBe(true);
+  });
+
   it("uses console.warn by default for ephemeral secrets", () => {
     const original = console.warn;
     const lines: string[] = [];

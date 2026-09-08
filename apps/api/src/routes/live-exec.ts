@@ -36,10 +36,16 @@ export async function openCredential(deps: AppDeps, user: SessionUser, brokerId:
   if (!own) throw errors.badRequest("Select an exchange...");
   const [row] = await deps.db.select().from(brokerCredentials).where(and(eq(brokerCredentials.userId, user.id), eq(brokerCredentials.brokerId, brokerId))).limit(1);
   if (!row) throw errors.conflict("Connect your exchange in Settings → API Settings to enable live trading");
-  return {
-    apiKey: deps.vault.open({ ct: row.apiKeyCt, iv: row.apiKeyIv, tag: row.apiKeyTag }),
-    apiSecret: deps.vault.open({ ct: row.apiSecretCt, iv: row.apiSecretIv, tag: row.apiSecretTag }),
-  };
+  try {
+    return {
+      apiKey: deps.vault.open({ ct: row.apiKeyCt, iv: row.apiKeyIv, tag: row.apiKeyTag }),
+      apiSecret: deps.vault.open({ ct: row.apiSecretCt, iv: row.apiSecretIv, tag: row.apiSecretTag }),
+    };
+  } catch (e) {
+    // sealed under another CREDENTIALS_ENC_KEY (or tampered): the only way forward is to reconnect (GAPS #42)
+    deps.logger.warn({ err: e instanceof Error ? e.message : String(e), userId: user.id, brokerId }, "stored exchange credential cannot be opened");
+    throw errors.conflict("Your saved exchange key cannot be decrypted because the server's encryption key changed. Reconnect it in Settings → API Settings.");
+  }
 }
 
 /** Kill switches (ADR-025): the operator's env flag and the account flag. */
@@ -119,7 +125,9 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
       if (worstLoss !== null && Number.isFinite(worstLoss) && Math.abs(worstLoss) > Number(row.availableBalance)) reasons.push(`Available ${row.asset} ${row.availableBalance} is below the worst-loss estimate ${toDecimal(Math.abs(worstLoss), 2)}`);
     }
   } catch (e) {
-    reasons.push(e instanceof HttpError ? e.message : "Could not read the exchange wallet");
+    // the reason matters to the trader (vault, venue, network); log it and show it, never the key material
+    deps.logger.warn({ err: e instanceof Error ? e.message : String(e), userId: user.id, brokerId }, "live preview: wallet read failed");
+    reasons.push(e instanceof HttpError ? e.message : `Could not read the exchange wallet (${e instanceof Error ? e.message : "unknown error"})`);
   }
   return { ok: reasons.length === 0, reasons, legs: plan.legs, notional: toDecimal(notional, 2), available, availableAsset, limits: { maxLegs: trading.maxLegs, maxNotionalUsd: trading.maxNotionalUsd, markBandPct: trading.markBandPct } };
 }

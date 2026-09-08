@@ -276,6 +276,14 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     // HC-WS-007 the chain's expiry chip carries the leg dot
     await page.getByTestId("tab-chain").click();
     await expect(page.getByTestId("expiry-dot").first()).toBeVisible();
+    // HC-TR-040 strip: one click from the Builder legs replaces the strategy (ADR-027)
+    await page.getByTestId("builder-tab-builder").click();
+    await expect(page.getByTestId("templates-strip")).toHaveAttribute("data-open", "true");
+    await page.getByTestId("strip-cat-neutral").click();
+    await expect(page.locator("[data-testid=strip-card][data-name='Iron Condor']")).toBeEnabled({ timeout: 15_000 });
+    await page.locator("[data-testid=strip-card][data-name='Iron Condor']").click();
+    await expect(page.getByTestId("builder-panel")).toHaveAttribute("data-legs", "4");
+    await expect(page.getByTestId("strategy-name")).toHaveValue("Iron Condor");
   });
 
   test("HC-TR-009 / HC-TR-011 / HC-TR-013 builder edits: side, lots, custom price, delete; HC-TR-020 / HC-TR-044 save draft, list, load, delete", async ({ page }) => {
@@ -452,6 +460,14 @@ test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
     await expect(live.getByTestId("mode-pill")).toHaveAttribute("data-status", "live");
     await expect(live.getByTestId("order-chip")).toHaveAttribute("data-state", "filled");
     await expect(page.getByTestId("live-exchange-chip")).toHaveText(/exchange connected/);
+    // HC-TR-143 the pane follows the new live strategy; HC-TR-144 the venue's net positions with tick-to-analyse
+    await expect(page.getByTestId("pane-source")).toContainText("E2E long call");
+    await expect(page.getByTestId("net-positions")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("position-row")).toHaveCount(1);
+    await page.getByTestId("position-tick").click();
+    await expect(page.getByTestId("pane-source")).toContainText("1 exchange position");
+    await page.getByTestId("position-tick").click();
+    await expect(page.getByTestId("pane-source")).toContainText("E2E long call");
     // square off all from Details: reduce-only exits, strategy archived
     await live.getByTestId("card-sqall").click();
     const details = page.getByTestId("strategy-details");

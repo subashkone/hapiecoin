@@ -18,6 +18,7 @@ import { SaveDraftDialog } from "@/components/dialogs/SaveDraftDialog";
 import { ChainPickerDialog } from "./ChainPickerDialog";
 import { FutureDialog } from "./FutureDialog";
 import { TemplatesPanel } from "./TemplatesPanel";
+import { TemplatesStrip } from "./TemplatesStrip";
 
 /** Price cell that flashes green / red for 800 ms when the value moves (HC-TR-012). */
 export function PriceCell({ value, title }: { value: string; title: string }) {
@@ -51,7 +52,7 @@ function moneyness(leg: StrategyLeg, spot: number | null): "ATM" | "ITM" | "OTM"
 }
 
 export function BuilderPanel() {
-  const a = useStrategyAnalysis();
+  const a = useStrategyAnalysis("builder");
   const meta = useUiStore((s) => s.strategy[s.asset]);
   const setMeta = useUiStore((s) => s.setStrategyMeta);
   const updateLegs = useUiStore((s) => s.updateLegs);
@@ -347,6 +348,7 @@ export function BuilderPanel() {
               Live trade
             </Button>
           </div>
+          <TemplatesStrip />
         </TabsContent>
         <TabsContent value="templates" className="min-h-0 flex-1 overflow-auto">
           <TemplatesPanel />
