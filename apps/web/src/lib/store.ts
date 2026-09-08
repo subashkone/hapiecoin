@@ -140,6 +140,8 @@ export interface UiState {
   draftsImported: boolean;
   /** Visible admin table columns per page (HC-AD-093); null or absent = the page's default. Persisted. */
   adminCols: Record<string, string[] | null>;
+  /** Bumped by the palette's "Show announcements" (HC-SH-055); the flyer popup reopens every live banner. */
+  flyersRequested: number;
   /** Trading flow dialogs (HC-TR-050..057): null = closed; strategyId null = trade the Builder legs. */
   tradeFlow: { strategyId: string | null; mode?: "paper" | "live" | undefined } | null;
   /** Strategy Details dialog (HC-TR-068): the open strategy id or null. */
@@ -192,6 +194,7 @@ export interface UiState {
   closeDialog: () => void;
   setPaletteOpen: (open: boolean) => void;
   setAdminCols: (page: string, cols: string[] | null) => void;
+  requestFlyers: () => void;
 }
 
 export const UI_STORAGE_KEY = "hapiecoin.ui";
@@ -213,6 +216,7 @@ export const useUiStore = create<UiState>()(
       chainLots: DEFAULT_LOTS,
       lotsDefault: DEFAULT_LOTS,
       adminCols: {},
+      flyersRequested: 0,
       optionDetail: null,
       strategy: emptyMetaByAsset(),
       drafts: [],
@@ -306,6 +310,7 @@ export const useUiStore = create<UiState>()(
       closeDialog: () => set({ dialog: null }),
       setPaletteOpen: (paletteOpen) => set({ paletteOpen }),
       setAdminCols: (page, cols) => set((s) => ({ adminCols: { ...s.adminCols, [page]: cols } })),
+      requestFlyers: () => set((s) => ({ flyersRequested: s.flyersRequested + 1 })),
     }),
     {
       name: UI_STORAGE_KEY,

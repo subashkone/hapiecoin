@@ -469,7 +469,7 @@
     "feature": "Page title + subtitle, '+ New Banner' button",
     "how": "'Banner Master' / 'Manage promotional banners and popups'; opens 'New Banner' dialog",
     "status": "working",
-    "evidence": "bundle strings: Banner Master, Manage promotional banners and popups, New Banner"
+    "evidence": "bundle strings: Banner Master, Manage promotional banners and popups, New Banner · Phase 4 item 4b (08 Sep 2026, ADR-033): BannersAdmin header with count and + New Banner (banner-new)"
   },
   {
     "route": "/admin/banners",
@@ -477,7 +477,7 @@
     "feature": "Card 'All Banners (N)' table: Image (thumbnail), Title (+ description, link), Type (popup), Frequency, Schedule, Active, Actions",
     "how": "Thumbnail renders the uploaded data-URL or a gradient; schedule shows 'Showing now' / 'Scheduled / ended' / 'Hidden'",
     "status": "working",
-    "evidence": "bundle strings: All Banners (, Image, Title, Type, Frequency, Active, Actions, once_per_day"
+    "evidence": "bundle strings: All Banners (, Image, Title, Type, Frequency, Active, Actions, once_per_day · Phase 4 item 4b (08 Sep 2026, ADR-033): table thumbnail from /v1/banners/{id}/image, title + description + link, frequency, window, schedule badge Showing now / Scheduled / Ended / Hidden (banner-row)"
   },
   {
     "route": "/admin/banners",
@@ -485,7 +485,7 @@
     "feature": "Active switch per banner",
     "how": "Toggles isActive, toast 'Updated'",
     "status": "working",
-    "evidence": "bundle strings: Active, Updated, Failed to update status"
+    "evidence": "bundle strings: Active, Updated, Failed to update status · Phase 4 item 4b (08 Sep 2026, ADR-033): Active switch per row → PATCH active (banner-toggle)"
   },
   {
     "route": "/admin/banners",
@@ -493,7 +493,7 @@
     "feature": "Edit (pencil) → 'Edit Banner' dialog; submit 'Save Changes'",
     "how": "Pre-fills fields; image hint '(leave empty to keep current)'",
     "status": "working",
-    "evidence": "bundle strings: Pencil, Edit Banner, Save Changes, (leave empty to keep current)"
+    "evidence": "bundle strings: Pencil, Edit Banner, Save Changes, (leave empty to keep current) · Phase 4 item 4b (08 Sep 2026, ADR-033): Edit dialog pre-filled, image hint '(leave empty to keep current)' (banner-edit, banner-dialog)"
   },
   {
     "route": "/admin/banners",
@@ -501,7 +501,7 @@
     "feature": "Delete (trash) → confirm 'Delete banner? · This permanently removes the banner. This action cannot be undone.' → toast 'Deleted'",
     "how": "Destructive confirm; removes from CG.mock.banners",
     "status": "working",
-    "evidence": "bundle strings: Trash2, Delete banner?, This permanently removes the banner. This action cannot be undone., Delete, Deleted, Failed to delete"
+    "evidence": "bundle strings: Trash2, Delete banner?, This permanently removes the banner. This action cannot be undone., Delete, Deleted, Failed to delete · Phase 4 item 4b (08 Sep 2026, ADR-033): Delete confirm dialog → DELETE /v1/admin/banners/{id} (banner-delete-confirm)"
   },
   {
     "route": "/admin/banners",
@@ -509,7 +509,7 @@
     "feature": "Empty state 'No Banners · Create your first banner · + Create Banner'",
     "how": "Shown when the list is empty",
     "status": "working",
-    "evidence": "bundle strings: No Banners, Create your first banner, Create Banner"
+    "evidence": "bundle strings: No Banners, Create your first banner, Create Banner · Phase 4 item 4b (08 Sep 2026, ADR-033): 'No Banners · Create your first banner' with + Create Banner (banner-empty)"
   },
   {
     "route": "/admin/banners",
@@ -517,7 +517,7 @@
     "feature": "Dialog fields: Title (Welcome Offer), Description (Get 20% off your first plan), Link URL (https://coingreek.com/offers), 'Starts At (optional)' / 'Ends At (optional)' datetime-local, Frequency select (once_per_day / every_time / once_per_session)",
     "how": "Ids banner-title, banner-description, banner-link, banner-starts, banner-ends; link must be http(s); end must be after start",
     "status": "working",
-    "evidence": "bundle strings: banner-title, Welcome Offer, banner-description, Get 20% off your first plan, banner-link, Link URL, https://coingreek.com/offers, banner-starts, Starts At, (optional), datetime-local, banner-ends, Ends At, once_per_day"
+    "evidence": "bundle strings: banner-title, Welcome Offer, banner-description, Get 20% off your first plan, banner-link, Link URL, https://coingreek.com/offers, banner-starts, Starts At, (optional), datetime-local, banner-ends, Ends At, once_per_day · Phase 4 item 4b (08 Sep 2026, ADR-033): dialog fields title / description / link / frequency / starts / ends with http(s) and window validation (banner-*)"
   },
   {
     "route": "/admin/banners",
@@ -525,7 +525,7 @@
     "feature": "'Image' file input (accept image/*, 'Maximum size 5 MB') with Preview",
     "how": "FileReader renders the chosen file; non-images → 'Invalid image · Only image files are allowed'; > 5 MB → 'Invalid image · Image must be 5 MB or smaller'",
     "status": "working",
-    "evidence": "bundle strings: banner-image, Image, image/*, Maximum size, Preview, Invalid image"
+    "evidence": "bundle strings: banner-image, Image, image/*, Maximum size, Preview, Invalid image · Phase 4 item 4b (08 Sep 2026, ADR-033): file input accept image/*, client checks type and 5 MB, live preview (banner-image, banner-preview-img)"
   },
   {
     "route": "/admin/banners",
@@ -533,7 +533,7 @@
     "feature": "'Use gradient' fallback (mock only)",
     "how": "Cycles through generated gradients so a banner can be created without uploading a file",
     "status": "inferred",
-    "evidence": "Clone convenience — the original requires an uploaded image"
+    "evidence": "Clone convenience — the original requires an uploaded image · Phase 4 item 4b (08 Sep 2026, ADR-033): not built; production banners need a real image"
   },
   {
     "route": "/admin/banners",
@@ -541,7 +541,7 @@
     "feature": "Active switch, footer Cancel / 'Create Banner' | 'Save Changes'",
     "how": "Standard save pipeline; new banners are inserted at the top",
     "status": "working",
-    "evidence": "bundle strings: banner-active, Cancel, Create Banner, Save Changes"
+    "evidence": "bundle strings: banner-active, Cancel, Create Banner, Save Changes · Phase 4 item 4b (08 Sep 2026, ADR-033): Active switch and footer Cancel / Create Banner | Save Changes (banner-active, banner-save)"
   },
   {
     "route": "/admin/banners",
@@ -549,15 +549,15 @@
     "feature": "Validation 'Validation · Title is required' and 'Validation · Image is required' (create only); toasts Created / Updated / Failed to save",
     "how": "Destructive toasts; image check skipped when editing",
     "status": "working",
-    "evidence": "bundle strings: Validation, Title is required, Image is required, Created, Updated, Failed to save"
+    "evidence": "bundle strings: Validation, Title is required, Image is required, Created, Updated, Failed to save · Phase 4 item 4b (08 Sep 2026, ADR-033): 'Title is required' / 'Image is required' toasts and inline error (banner-error)"
   },
   {
     "route": "/admin/banners",
     "screen": "Banner Master",
     "feature": "Error state \"Couldn't load banners · Retry\"",
     "how": "Not reproduced — the mock has no network layer",
-    "status": "inferred",
-    "evidence": "bundle strings: Couldn't load banners, Retry, Failed to load banners"
+    "status": "working",
+    "evidence": "bundle strings: Couldn't load banners, Retry, Failed to load banners · Phase 4 item 4b (08 Sep 2026, ADR-033): error state Couldn't load banners with Retry (banner-load-error)"
   },
   {
     "route": "/admin/emails",
@@ -996,7 +996,7 @@
     "how": "Monitor icon per row (and a Preview as user button inside the form using the current values) opens the popup exactly as a logged-in user sees it: image, title, description, Don’t show again, Dismiss and Learn more",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 4b (08 Sep 2026, ADR-033): Preview as user from the row and from the dialog with the current values (banner-row-preview, banner-preview → FlyerDialog preview)"
   },
   {
     "route": "/admin/banners",
@@ -1005,7 +1005,7 @@
     "how": "Showing now / Active / Inactive and the three frequency rules combine with search",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 4b (08 Sep 2026, ADR-033): schedule (Showing now / Scheduled / Ended / Active / Inactive) + frequency filters with search and Clear (banner-schedule-filter, banner-frequency-filter)"
   },
   {
     "route": "/admin/banners",

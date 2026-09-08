@@ -437,7 +437,7 @@
     "feature": "Flyer popup carousel of active CG.mock.banners (dark panel with amber accent stripe, ANNOUNCEMENT n of N, title, description, date range)",
     "how": "CG.chrome.showFlyers(); gradients removed",
     "status": "working",
-    "evidence": "bundle strings: banner, once_per_session, once_per_day, every_time"
+    "evidence": "bundle strings: banner, once_per_session, once_per_day, every_time · Phase 4 item 4b (08 Sep 2026, ADR-033): FlyerPopup on /analyse from GET /v1/banners, due banners by frequency rule, 400 ms after landing (flyer)"
   },
   {
     "route": "/analyse",
@@ -445,7 +445,7 @@
     "feature": "Previous / Next arrows + dots in the footer row, frequency label, 'View' link, close",
     "how": "Arrows cycle; View opens the banner link (hapiecoin.com links become hash routes, others open in a new tab)",
     "status": "working",
-    "evidence": "bundle strings: Previous flyer, Next flyer, View , noopener,noreferrer"
+    "evidence": "bundle strings: Previous flyer, Next flyer, View , noopener,noreferrer · Phase 4 item 4b (08 Sep 2026, ADR-033): flyer-prev / flyer-next / flyer-dots, frequency label, View follows hapiecoin.com links in place and others in a new tab, Don't show again, Dismiss"
   },
   {
     "route": "/analyse",

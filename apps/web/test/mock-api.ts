@@ -3,8 +3,8 @@
 // deliberately simple: one OTP (123456), sessions in a Map, settings/brokers/credentials per user.
 import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import type { AdminCommissionRow, BillingInterval, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
-import { INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, commissionFor, maskApiKey, monthKey, priceBreakdown, realizedPnl, toDecimal } from "@hapiecoin/schema";
+import type { AdminCommissionRow, Banner, BannerFrequency, BillingInterval, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
+import { INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, bannerSchedule, base64Bytes, commissionFor, maskApiKey, monthKey, priceBreakdown, realizedPnl, toDecimal } from "@hapiecoin/schema";
 
 export const SESSION_COOKIE = "better-auth.session_token";
 export const TEST_OTP = "123456";
@@ -62,6 +62,21 @@ interface MockCommission {
   createdAt: string;
   updatedAt: string;
 }
+interface MockBanner {
+  id: string;
+  title: string;
+  description: string;
+  linkUrl: string | null;
+  frequency: BannerFrequency;
+  startsAt: string | null;
+  endsAt: string | null;
+  active: boolean;
+  image: string;
+  imageType: string;
+  imageBytes: number;
+  createdAt: string;
+  updatedAt: string;
+}
 interface PlanRecord {
   state: "free" | "active" | "expiring_soon" | "expired";
   planName?: string;
@@ -74,6 +89,8 @@ export interface MockState {
   menuItems: MenuItem[];
   accounts: Map<string, Account>;
   commissions: MockCommission[];
+  /** Banners (ADR-033) with the image kept as the data URL the admin uploaded. */
+  banners: MockBanner[];
   /** Invitations "sent" by POST /v1/admin/users/invite (the API mails them). */
   invites: { email: string; name: string; invitedBy: string; link: string }[];
   sessions: Map<string, string>; // token → email
@@ -179,7 +196,7 @@ export function createSession(state: MockState, email: string): string {
 
 export function createMockApi(state: MockState = { plans: seedPlans(),
     menuItems: seedMenuItems(),
-    accounts: new Map(), commissions: [], invites: [], sessions: new Map(), otps: new Map() }) {
+    accounts: new Map(), commissions: [], banners: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
   const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409, code: string, message: string) =>
@@ -863,6 +880,68 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     return c.json({ settledRows: pending.length, referrers: new Set(pending.map((x) => x.referrerId)).size, amountInr: money(pending.reduce((t, x) => t + Number(x.commissionInr), 0)) });
   });
 
+  /* ---------------- banners (ADR-033) ---------------- */
+  const bannerView = (b: MockBanner): Banner => ({ id: b.id, title: b.title, description: b.description, linkUrl: b.linkUrl, type: "popup", frequency: b.frequency, startsAt: b.startsAt, endsAt: b.endsAt, active: b.active, imageUrl: `/v1/banners/${b.id}/image?v=${new Date(b.updatedAt).getTime()}`, imageType: b.imageType, imageBytes: b.imageBytes, schedule: bannerSchedule(b, new Date()), createdAt: b.createdAt, updatedAt: b.updatedAt });
+  const decodeImage = (dataUrl: string): { type: string; bytes: number } | string => {
+    const m = /^data:(image\/[a-z]+);base64,(.*)$/i.exec(dataUrl);
+    if (!m || !m[1] || !m[2]) return "Only image files are allowed";
+    if (!["image/png", "image/jpeg", "image/webp", "image/gif"].includes(m[1].toLowerCase())) return "Only PNG, JPEG, WebP or GIF images are allowed";
+    const bytes = base64Bytes(m[2]);
+    if (bytes > 5 * 1024 * 1024) return "Image must be 5 MB or smaller";
+    return { type: m[1].toLowerCase(), bytes };
+  };
+  v1.get("/banners", (c) => c.json({ items: state.banners.map(bannerView).filter((b) => b.schedule === "showing") }));
+  v1.get("/banners/:id/image", (c) => {
+    const b = state.banners.find((x) => x.id === c.req.param("id"));
+    if (!b) return err(c, 404, "NOT_FOUND", "Banner not found");
+    const bytes = Uint8Array.from(atob(b.image.split(",")[1] ?? ""), (ch) => ch.charCodeAt(0));
+    return new Response(bytes, { headers: { "content-type": b.imageType, "cache-control": "private, max-age=86400, immutable" } });
+  });
+  v1.get("/admin/banners", (c) => adminGate(c) ?? c.json({ items: [...state.banners].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(bannerView) }));
+  v1.post("/admin/banners", async (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const body = await c.req.json<{ title?: string; description?: string; linkUrl?: string | null; frequency?: BannerFrequency; startsAt?: string | null; endsAt?: string | null; active?: boolean; image?: string }>();
+    if (!body.title?.trim()) return err(c, 400, "VALIDATION", "Title is required");
+    if (!body.image) return err(c, 400, "VALIDATION", "Image is required");
+    if (body.linkUrl && !/^https?:\/\//i.test(body.linkUrl)) return err(c, 400, "VALIDATION", "link must start with http:// or https://");
+    if (body.startsAt && body.endsAt && new Date(body.endsAt).getTime() <= new Date(body.startsAt).getTime()) return err(c, 400, "VALIDATION", "end must be after start");
+    const img = decodeImage(body.image);
+    if (typeof img === "string") return err(c, 400, "VALIDATION", img);
+    const at = nowIso();
+    const b: MockBanner = { id: id("bnr"), title: body.title.trim(), description: body.description ?? "", linkUrl: body.linkUrl ?? null, frequency: body.frequency ?? "once_per_day", startsAt: body.startsAt ?? null, endsAt: body.endsAt ?? null, active: body.active ?? true, image: body.image, imageType: img.type, imageBytes: img.bytes, createdAt: at, updatedAt: at };
+    state.banners.push(b);
+    return c.json(bannerView(b), 201);
+  });
+  v1.patch("/admin/banners/:id", async (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const b = state.banners.find((x) => x.id === c.req.param("id"));
+    if (!b) return err(c, 404, "NOT_FOUND", "Banner not found");
+    const body = await c.req.json<Partial<Pick<MockBanner, "title" | "description" | "linkUrl" | "frequency" | "startsAt" | "endsAt" | "active" | "image">>>();
+    if (Object.keys(body).length === 0) return err(c, 400, "VALIDATION", "nothing to update");
+    const startsAt = body.startsAt === undefined ? b.startsAt : body.startsAt;
+    const endsAt = body.endsAt === undefined ? b.endsAt : body.endsAt;
+    if (startsAt && endsAt && new Date(endsAt).getTime() <= new Date(startsAt).getTime()) return err(c, 400, "VALIDATION", "end must be after start");
+    if (body.image) {
+      const img = decodeImage(body.image);
+      if (typeof img === "string") return err(c, 400, "VALIDATION", img);
+      Object.assign(b, { image: body.image, imageType: img.type, imageBytes: img.bytes });
+    }
+    const rest: Partial<MockBanner> = { ...body };
+    delete rest.image;
+    Object.assign(b, rest, { startsAt, endsAt, updatedAt: new Date(Date.now() + 1).toISOString() });
+    return c.json(bannerView(b));
+  });
+  v1.delete("/admin/banners/:id", (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const i = state.banners.findIndex((x) => x.id === c.req.param("id"));
+    if (i < 0) return err(c, 404, "NOT_FOUND", "Banner not found");
+    state.banners.splice(i, 1);
+    return c.json({ deleted: true });
+  });
+
   v1.post("/subscription/activate", async (c) => {
     const acc = current(c)!;
     const body = await c.req.json<{ planId: string; interval: BillingInterval }>();
@@ -1126,14 +1205,29 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   app.post("/__test/reset", (c) => {
     state.accounts.clear();
     state.commissions.length = 0;
+    state.banners.length = 0;
     state.invites.length = 0;
     state.sessions.clear();
     state.otps.clear();
     return c.json({ ok: true });
   });
   app.post("/__test/seed", async (c) => {
-    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; referrals?: number }>();
+    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; referrals?: number; banners?: number }>();
     const acc = createAccount(state, body);
+    if (body.banners) {
+      // n banners: live once-a-day, live once-per-session, scheduled, hidden … cycling
+      const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+      const presets: Omit<MockBanner, "id" | "createdAt" | "updatedAt" | "image" | "imageType" | "imageBytes">[] = [
+        { title: "Welcome Offer", description: "Get 20% off your first plan with code BASIC20", linkUrl: "https://hapiecoin.com/subscription", frequency: "once_per_day", startsAt: "2026-09-01T00:00:00.000Z", endsAt: "2026-12-31T23:59:00.000Z", active: true },
+        { title: "Live Trading is here", description: "Connect your Delta Exchange API key and trade real orders from the builder.", linkUrl: "https://www.deltaexchange.com/", frequency: "once_per_session", startsAt: null, endsAt: null, active: true },
+        { title: "Festive Sale", description: "30% off yearly plans", linkUrl: null, frequency: "every_time", startsAt: "2099-10-15T00:00:00.000Z", endsAt: "2099-11-15T23:59:00.000Z", active: true },
+        { title: "Old Promo", description: "ended", linkUrl: null, frequency: "every_time", startsAt: "2025-10-15T00:00:00.000Z", endsAt: "2025-11-15T23:59:00.000Z", active: false },
+      ];
+      for (let i = 0; i < body.banners; i += 1) {
+        const at = new Date(Date.UTC(2026, 8, 1 + i)).toISOString();
+        state.banners.push({ id: id("bnr"), ...presets[i % presets.length]!, image: png, imageType: "image/png", imageBytes: 70, createdAt: at, updatedAt: at });
+      }
+    }
     if (body.referrals) {
       // n referred traders on rotating plans, joined over the last months; every third commission already settled
       acc.commissionPct = "20";

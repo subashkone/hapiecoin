@@ -496,3 +496,25 @@ test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
   });
 });
 
+test.describe("HC-SH-055 / HC-SH-056 flyer popup", () => {
+  test("shows the live banners once on /analyse, cycles, and does not return within the session", async ({ page, request }) => {
+    await seedUser(request, { email: "flyer@example.com", banners: 4 }); // live once-a-day, live once-per-session, scheduled, hidden
+    await signIn(page, "flyer@example.com");
+    await page.goto("/analyse");
+    await expect(page.getByTestId("flyer")).toHaveAttribute("data-count", "2", { timeout: 15_000 });
+    await expect(page.getByTestId("flyer-title")).toHaveText("Welcome Offer");
+    await page.getByTestId("flyer-next").click();
+    await expect(page.getByTestId("flyer-title")).toHaveText("Live Trading is here");
+    await expect(page.getByTestId("flyer-view")).toContainText("↗");
+    await page.getByTestId("flyer-dismiss").click();
+    await expect(page.getByTestId("flyer")).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByTestId("chain-table")).toBeVisible({ timeout: 15_000 });
+    await page.waitForTimeout(800);
+    await expect(page.getByTestId("flyer")).toHaveCount(0); // both rules say not again today / this session
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox").fill("announcements");
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("flyer")).toHaveAttribute("data-count", "2");
+  });
+});

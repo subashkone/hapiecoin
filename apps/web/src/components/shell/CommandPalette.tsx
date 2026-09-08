@@ -74,6 +74,16 @@ export function buildCommands(opts: {
           ]
         : []),
       {
+        id: "act:flyers",
+        label: "Show announcements",
+        group: "Actions",
+        keywords: ["flyers", "banners", "popup", "offers", "announcements"],
+        run: () => {
+          opts.navigate("/analyse");
+          useUiStore.getState().requestFlyers();
+        },
+      },
+      {
         id: "act:chain-atm",
         label: "Chain: recentre on ATM",
         group: "Actions",
