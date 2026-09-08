@@ -31,6 +31,8 @@ export function buildCommands(opts: {
   toggleTheme: () => void;
   /** The signed-in user's referral code; enables "Referrals: copy link" (HC-AC-073). */
   referralCode?: string | null;
+  /** Admin role: adds the seven "Admin: …" navigation commands (HC-AD-091). */
+  admin?: boolean;
 }): PaletteCommand[] {
   const nav = (id: string, path: string, label: string, keywords: string[] = []): PaletteCommand => ({
     id,
@@ -46,6 +48,17 @@ export function buildCommands(opts: {
       nav("nav:analyse", "/analyse", "Analyse workspace", ["options chain", "builder", "payoff"]),
       nav("nav:subscription", "/subscription", "Subscription: change plan", ["plan", "upgrade", "billing", "renew"]),
       nav("nav:referrals", "/referrals", "Referrals: share link and earnings", ["refer", "commission", "invite", "share"]),
+      ...(opts.admin
+        ? [
+            nav("nav:admin-users", "/admin/users", "Admin: Users", ["admin", "user management", "invite"]),
+            nav("nav:admin-plans", "/admin/plans", "Admin: Subscription Plans", ["admin", "plans", "pricing"]),
+            nav("nav:admin-pricing", "/admin/pricing", "Admin: Menu Pricing", ["admin", "menu items"]),
+            nav("nav:admin-coupons", "/admin/coupons", "Admin: Coupon Codes", ["admin", "coupons", "discount"]),
+            nav("nav:admin-subscriptions", "/admin/subscriptions", "Admin: User Subscriptions", ["admin", "commissions", "subscriptions"]),
+            nav("nav:admin-banners", "/admin/banners", "Admin: Banners", ["admin", "flyer", "popup"]),
+            nav("nav:admin-emails", "/admin/emails", "Admin: Promotional Emails", ["admin", "campaign", "email"]),
+          ]
+        : []),
       ...(opts.referralCode
         ? [
             {
@@ -186,7 +199,7 @@ export function filterCommands(cmds: PaletteCommand[], query: string): PaletteCo
     .map((x) => x.c);
 }
 
-export function CommandPalette({ loggedIn, referralCode = null }: { loggedIn: boolean; referralCode?: string | null }) {
+export function CommandPalette({ loggedIn, referralCode = null, admin = false }: { loggedIn: boolean; referralCode?: string | null; admin?: boolean }) {
   const open = useUiStore((s) => s.paletteOpen);
   const setOpen = useUiStore((s) => s.setPaletteOpen);
   const router = useRouter();
@@ -195,8 +208,8 @@ export function CommandPalette({ loggedIn, referralCode = null }: { loggedIn: bo
   const [active, setActive] = useState(0);
 
   const commands = useMemo(
-    () => buildCommands({ loggedIn, navigate: (p) => router.push(p), toggleTheme, referralCode }),
-    [loggedIn, referralCode, router, toggleTheme],
+    () => buildCommands({ loggedIn, navigate: (p) => router.push(p), toggleTheme, referralCode, admin }),
+    [admin, loggedIn, referralCode, router, toggleTheme],
   );
   const items = useMemo(() => filterCommands(commands, query), [commands, query]);
 

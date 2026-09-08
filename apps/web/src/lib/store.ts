@@ -138,6 +138,8 @@ export interface UiState {
   drafts: SavedStrategy[];
   /** True once the browser-local drafts were imported (or there were none), so a reload never imports twice. Persisted. */
   draftsImported: boolean;
+  /** Visible admin table columns per page (HC-AD-093); null or absent = the page's default. Persisted. */
+  adminCols: Record<string, string[] | null>;
   /** Trading flow dialogs (HC-TR-050..057): null = closed; strategyId null = trade the Builder legs. */
   tradeFlow: { strategyId: string | null; mode?: "paper" | "live" | undefined } | null;
   /** Strategy Details dialog (HC-TR-068): the open strategy id or null. */
@@ -189,6 +191,7 @@ export interface UiState {
   openUpgrade: (message: string) => void;
   closeDialog: () => void;
   setPaletteOpen: (open: boolean) => void;
+  setAdminCols: (page: string, cols: string[] | null) => void;
 }
 
 export const UI_STORAGE_KEY = "hapiecoin.ui";
@@ -209,6 +212,7 @@ export const useUiStore = create<UiState>()(
       legs: emptyLegs(),
       chainLots: DEFAULT_LOTS,
       lotsDefault: DEFAULT_LOTS,
+      adminCols: {},
       optionDetail: null,
       strategy: emptyMetaByAsset(),
       drafts: [],
@@ -301,6 +305,7 @@ export const useUiStore = create<UiState>()(
       openUpgrade: (upgradeMessage) => set({ dialog: "upgrade", upgradeMessage, dialogsTouched: true }),
       closeDialog: () => set({ dialog: null }),
       setPaletteOpen: (paletteOpen) => set({ paletteOpen }),
+      setAdminCols: (page, cols) => set((s) => ({ adminCols: { ...s.adminCols, [page]: cols } })),
     }),
     {
       name: UI_STORAGE_KEY,
@@ -315,6 +320,7 @@ export const useUiStore = create<UiState>()(
         lotsDefault: s.lotsDefault,
         strategy: s.strategy,
         draftsImported: s.draftsImported,
+        adminCols: s.adminCols,
         workspaceTab: s.workspaceTab,
         analysisTab: s.analysisTab,
         targetDays: s.targetDays,
@@ -336,6 +342,7 @@ export const useUiStore = create<UiState>()(
           optionDetail: null,
           strategy: p.strategy === undefined ? current.strategy : normaliseMetaByAsset(p.strategy),
           draftsImported: p.draftsImported === true,
+          adminCols: p.adminCols && typeof p.adminCols === "object" ? p.adminCols : {},
           templatesStrip: p.templatesStrip !== false,
           drafts: p.draftsImported === true || p.drafts === undefined ? [] : normaliseDrafts(p.drafts),
           workspaceTab: tabs.includes(p.workspaceTab as WorkspaceTab) ? (p.workspaceTab as WorkspaceTab) : current.workspaceTab,

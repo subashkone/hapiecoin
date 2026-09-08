@@ -357,7 +357,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "Links to /admin/subscriptions, /admin/menu-pricing, /admin/coupons, /admin/user-subscriptions, /admin/banners, /admin/emails, /admin/users",
-  "evidence": "bundle strings + routes"
+  "evidence": "bundle strings + routes · Phase 4 item 4a (08 Sep 2026, ADR-032): SettingsMenu Admin section with the seven admin links for role admin (menu-admin-users)"
  },
  {
   "id": "HC-SH-025",
@@ -8902,7 +8902,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Count from CG.mock.users; search filters name/email and shows the match count",
-  "evidence": "bundle strings: User Management, users, Search by name or email, Users"
+  "evidence": "bundle strings: User Management, users, Search by name or email, Users · Phase 4 item 4a (08 Sep 2026, ADR-032): UsersAdmin header with count subtitle and search (um-search)"
  },
  {
   "id": "HC-AD-087",
@@ -8917,7 +8917,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · api contract",
   "acceptance": "10 rows per page; status badge per user state, 'deactivated' note for disabled accounts",
-  "evidence": "bundle strings: Name, Email, Plan, Status, Subscribed, Ends, Joined, Referral code, Commission %, Referrals"
+  "evidence": "bundle strings: Name, Email, Plan, Status, Subscribed, Ends, Joined, Referral code, Commission %, Referrals · Phase 4 item 4a (08 Sep 2026, ADR-032): table Name / Email / Plan / Status / Subscribed / Ends / Joined / Referral code / Commission; Paid, Mobile, Last login hidden by default (USER_COLUMNS)"
  },
  {
   "id": "HC-AD-088",
@@ -8932,7 +8932,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Shown when the search matches nothing",
-  "evidence": "bundle string: No users found."
+  "evidence": "bundle string: No users found. · Phase 4 item 4a (08 Sep 2026, ADR-032): 'No users match' with Clear filters, 'No users yet' with Invite (um-empty-filtered, um-empty)"
  },
  {
   "id": "HC-AD-089",
@@ -8947,7 +8947,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Chevron buttons, disabled at the ends",
-  "evidence": "bundle strings: Page, of, Prev, Next"
+  "evidence": "bundle strings: Page, of, Prev, Next · Phase 4 item 4a (08 Sep 2026, ADR-032): Page x of y · N users with Previous / Next (um-pager)"
  },
  {
   "id": "HC-AD-090",
@@ -8957,12 +8957,12 @@
   "route": "/admin/users",
   "screen": "User Management",
   "feature": "Row click → user detail drawer",
-  "status": "confirmed",
+  "status": "working",
   "isNew": false,
   "phase": 4,
-  "test": "visual (screenshot diff)",
-  "acceptance": "Row click opens the quick-view drawer (profile, subscription, referrals, limits, lot sizes); the drawer header links to a full page /admin/users/:id for deep edits and history. Esc, scrim and ✕ close the drawer; focus is trapped while open.",
-  "evidence": "admin lot-size-settings endpoint exists; the bundle's user table has no detail strings",
+  "test": "e2e (Playwright)",
+  "acceptance": "Row click or Enter opens the quick-view drawer (profile, subscription, referrals, limits, lot sizes, history as a tab; ADR-032). Esc, scrim and ✕ close the drawer; focus is trapped while open. A full page /admin/users/:id is not needed while every edit fits the drawer.",
+  "evidence": "admin lot-size-settings endpoint exists; the bundle's user table has no detail strings · Phase 4 item 4a (08 Sep 2026, ADR-032): row click or Enter opens UserDrawer; Esc, scrim and × close (user-drawer)",
   "decided": true
  },
  {
@@ -8978,7 +8978,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "Seven commands (Users, Plans, Menu Pricing, Coupons, User Subscriptions, Banners, Emails) registered with CG.palette.register when the chrome exposes it",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): palette nav:admin-* commands for admins (buildCommands admin)"
  },
  {
   "id": "HC-AD-092",
@@ -8993,7 +8993,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Search + selects + the tools cluster (row count, Columns ▾, Copy CSV) stick under the 50px header while the table scrolls",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): sticky filter row with tools cluster (users-filters)"
  },
  {
   "id": "HC-AD-093",
@@ -9008,7 +9008,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "Checkbox menu per table (menu stays open while toggling); at least one column must stay; Reset to default; choices persisted in CG.state.adminCols[page] via CG.saveState()",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): ColumnsMenu, at least one column, Reset, persisted in ui store adminCols (um-columns-*)"
  },
  {
   "id": "HC-AD-094",
@@ -9023,7 +9023,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Sortable columns show a ▲/▼ indicator; click toggles direction; numeric columns default to descending",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): SortHeader; numeric / date columns start descending (um-sort-*)"
  },
  {
   "id": "HC-AD-095",
@@ -9038,7 +9038,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Header checkbox selects every filtered row, row checkboxes toggle one; a floating bar at the bottom shows the count, per-page actions and Clear; selected rows are tinted",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): header + row checkboxes with FloatingBar (um-bulk)"
  },
  {
   "id": "HC-AD-096",
@@ -9053,7 +9053,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Copies the filtered + sorted rows with only the visible (non-action) columns as CSV and toasts rows × columns",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): Copy CSV of the visible columns on this page (um-csv, rowsCsv)"
  },
  {
   "id": "HC-AD-097",
@@ -9068,7 +9068,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Icon + one-line hint + primary action (Create … / Invite user / Compose) when there is no data, and a Clear filters action when filters hide everything",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): empty states with Invite user / Clear filters actions"
  },
  {
   "id": "HC-AD-098",
@@ -9083,7 +9083,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "All admin tables switch between 36px and 28px rows on CG.emit('density', …)",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): rows use the h-row token so the header density toggle applies"
  },
  {
   "id": "HC-AD-099",
@@ -9098,7 +9098,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Plan select (from CG.mock.plans) and status select (Active / Expired / Cancelled / Free / Deactivated) combine with the search",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): plan select from the catalogue + status select (um-plan, um-status)"
  },
  {
   "id": "HC-AD-100",
@@ -9113,7 +9113,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Activate and Deactivate flip activated for the selection; Set plan opens a menu of plans and moves the users (yearly, dates recomputed); Export CSV copies only the selected rows",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): bulk Activate / Deactivate / Set plan (comped) / Export selected CSV (um-bulk-*)"
  },
  {
   "id": "HC-AD-101",
@@ -9128,7 +9128,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Slides in from the right (560px) with avatar initials, name, plan/status/admin/deactivated pills, email · mobile · joined, and tabs Profile / Subscription / Referrals / Limits / Lot sizes",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): 560 px right drawer with initials, pills, tabs (user-drawer)"
  },
  {
   "id": "HC-AD-102",
@@ -9138,12 +9138,12 @@
   "route": "/admin/users",
   "screen": "User Management",
   "feature": "'Impersonate (mock)' button",
-  "status": "working",
+  "status": "confirmed",
   "isNew": true,
   "phase": 4,
-  "test": "e2e (Playwright)",
+  "test": "visual (screenshot diff)",
   "acceptance": "In the drawer header; toasts that you would now see the app as this user",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): not built on purpose (GAPS #47); the reference site's button only toasts"
  },
  {
   "id": "HC-AD-103",
@@ -9158,7 +9158,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · api contract",
   "acceptance": "Key/value grid (name, email, mobile, role, joined, last login, referral code, amount paid, account, id) with Copy email and Activate/Deactivate account buttons",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): Profile tab key/value grid, Copy email, Activate / Deactivate, Make admin / Remove admin; hidden for the acting admin (drawer-toggle-*)"
  },
  {
   "id": "HC-AD-104",
@@ -9173,7 +9173,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Plan, interval, status, subscribed, ends, validity, amount paid, days left plus a Change plan form (plan + interval → Set plan) that updates the user and the table",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): Subscription tab with Set plan (₹0) dialog and subscription history (drawer-set-plan, drawer-sub-history)"
  },
  {
   "id": "HC-AD-105",
@@ -9188,7 +9188,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Referral code, commission %, count and earned, then the referred users table from the commission records or an empty state; link to Commissions",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): Referrals tab summary + rows + link to Commissions (drawer-referrals)"
  },
  {
   "id": "HC-AD-106",
@@ -9203,7 +9203,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Paper / live trading limit form with the plan default in the hint; Save Limits toasts",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): Limits tab with plan default hints, Save limits (drawer-limit-*)"
  },
  {
   "id": "HC-AD-107",
@@ -9218,7 +9218,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "BTC / ETH / XAUT lot size form (validates > 0); saving the demo user also updates CG.state.lotSizes",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): Lot sizes tab validates > 0 (drawer-lot-*)"
  },
  {
   "id": "HC-AD-108",
@@ -9233,7 +9233,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Header primary action: name, email (validated, must be unique) and plan; creates the user in CG.mock.users and toasts Invitation sent",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): InviteUserDialog → POST /v1/admin/users/invite, mails a sign-in link (invite-*)"
  },
  {
   "id": "HC-AD-109",
@@ -9248,7 +9248,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Mobile and Last login are available in the Columns menu but hidden by default",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4a (08 Sep 2026, ADR-032): Mobile, Last login and Paid available in Columns, hidden by default"
  },
  {
   "id": "HC-AD-110",

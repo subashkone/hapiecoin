@@ -7,6 +7,7 @@ import type { Config } from "../config.js";
 import type { Db, DbKind } from "../db/client.js";
 import type { DeltaPrivateClient } from "../delta/private-client.js";
 import type { Logger } from "../logger.js";
+import type { Mailer } from "../mailer.js";
 import type { SessionResolver } from "../security/guards.js";
 import type { RateStore } from "../security/rate-store.js";
 import type { Vault } from "../vault.js";
@@ -19,6 +20,8 @@ export interface AppDeps {
   auth: { handler(request: Request): Promise<Response> };
   authBasePath: string;
   sessions: SessionResolver;
+  /** Transactional mail (OTP through Better Auth, admin invitations through routes). */
+  mailer: Mailer;
   rateStore: RateStore;
   logger: Logger;
   vault: Vault;

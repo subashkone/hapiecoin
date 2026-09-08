@@ -6,11 +6,12 @@
  *   POST  /v1/subscription/activate       ₹0 totals only (HC-AC-023); paid checkout arrives with Razorpay (item 2) → 402
  *   admin GET/POST/PATCH /v1/admin/plans, POST /v1/admin/plans/bulk                  (HC-AD-004..019, 110..112)
  *   admin GET/POST/PATCH /v1/admin/menu-items, POST /v1/admin/menu-items/bulk        (HC-AD-020..028, 113, 114)
- *   admin GET /v1/admin/users, PATCH /v1/admin/users/{id}, POST /v1/admin/users/bulk (HC-AD-042..051, 117)
+ *   admin GET /v1/admin/users, PATCH /v1/admin/users/{id}, POST /v1/admin/users/bulk (HC-AD-042..051, 117; extended for User Management in ADR-032, see admin-users.ts)
  */
-import { ActivateBody, AdminUserPatch, AdminUserRow, AdminUsersPage, BulkActiveBody, INTERVAL_MONTHS, Id, MenuItem, MenuItemInput, MenuItemList, Plan, PlanInput, PlanList, SubscriptionView, priceBreakdown } from "@hapiecoin/schema";
+import { ActivateBody, AdminUserPatch, AdminUserRow, AdminUsersPage, AdminUsersQuery, BulkActiveBody, INTERVAL_MONTHS, Id, MenuItem, MenuItemInput, MenuItemList, Plan, PlanInput, PlanList, SubscriptionView, priceBreakdown } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
-import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, asc, eq, ilike, inArray, sql } from "drizzle-orm";
+import { adminRow, assertRoleChangeAllowed, listUsers } from "../admin-users.js";
 import { auditFrom } from "../audit.js";
 import { menuItems, plans, subscriptions, userSettings, users } from "../db/schema.js";
 import { activeSubscription, entitlementsFor, toPlan } from "../entitlements.js";
@@ -24,7 +25,6 @@ import { type AppDeps, cookieAuth, errorResponses, jsonContent, newId } from "./
 
 const IdParam = z.object({ id: Id });
 type MenuRow = typeof menuItems.$inferSelect;
-type UserRow = typeof users.$inferSelect;
 
 export function registerBillingRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, now: () => Date = () => new Date()): void {
   const db = deps.db;
@@ -239,52 +239,9 @@ export function registerBillingRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, n
   );
 
   // ---------------------------------------------------------------- admin · user subscriptions
-  async function adminRow(u: UserRow, at: Date): Promise<AdminUserRow> {
-    const sub = await activeSubscription(deps, u.id, at);
-    const [ref] = await db.select({ n: sql<number>`count(*)` }).from(users).where(eq(users.referredBy, u.referralCode));
-    const [settings] = await db.select({ lotSizes: userSettings.lotSizes }).from(userSettings).where(eq(userSettings.userId, u.id)).limit(1);
-    const validityDays = sub && sub.expiresAt ? Math.max(1, Math.round((sub.expiresAt.getTime() - sub.startsAt.getTime()) / 86_400_000)) : null;
-    return {
-      id: u.id,
-      email: u.email,
-      name: u.name,
-      role: u.role,
-      active: u.active,
-      planName: sub?.planName ?? null,
-      planId: sub?.planId ?? null,
-      interval: sub?.interval ?? null,
-      startsAt: sub?.startsAt.toISOString() ?? null,
-      expiresAt: sub?.expiresAt?.toISOString() ?? null,
-      validityDays,
-      referrals: Number(ref?.n ?? 0),
-      commissionPct: u.commissionPct,
-      limitOverrides: u.limitOverrides,
-      lotSizes: settings ? settings.lotSizes : null,
-      createdAt: u.createdAt.toISOString(),
-    };
-  }
-  const UsersQuery = z.object({ q: z.string().trim().max(80).optional(), status: z.enum(["all", "active", "expired", "free", "deactivated"]).default("all"), page: z.coerce.number().int().min(1).default(1) });
-  const PAGE_SIZE = 10;
-
   app.openapi(
-    createRoute({ method: "get", path: "/v1/admin/users", tags: ["admin"], summary: "User subscriptions (HC-AD-043..051)", security: cookieAuth, middleware: admin, request: { query: UsersQuery }, responses: { 200: jsonContent(AdminUsersPage, "Users"), 401: errorResponses[401], 403: errorResponses[403] } }),
-    async (c) => {
-      const q = c.req.valid("query");
-      const at = now();
-      const where = q.q ? or(ilike(users.email, `%${q.q}%`), ilike(users.name, `%${q.q}%`)) : undefined;
-      const all = await db.select().from(users).where(where).orderBy(desc(users.createdAt), asc(users.id));
-      const rows: AdminUserRow[] = [];
-      for (const u of all) rows.push(await adminRow(u, at));
-      const filtered = rows.filter((r) => {
-        if (q.status === "all") return true;
-        if (q.status === "deactivated") return !r.active;
-        if (q.status === "free") return r.planName === null;
-        if (q.status === "active") return r.planName !== null && (r.expiresAt === null || new Date(r.expiresAt).getTime() > at.getTime());
-        return r.planName !== null && r.expiresAt !== null && new Date(r.expiresAt).getTime() <= at.getTime();
-      });
-      const start = (q.page - 1) * PAGE_SIZE;
-      return c.json({ items: filtered.slice(start, start + PAGE_SIZE), total: filtered.length, page: q.page, pageSize: PAGE_SIZE }, 200);
-    },
+    createRoute({ method: "get", path: "/v1/admin/users", tags: ["admin"], summary: "Users with search, plan / status filters, sort and paging (HC-AD-043..051, 086, 089, 094, 099)", security: cookieAuth, middleware: admin, request: { query: AdminUsersQuery }, responses: { 200: jsonContent(AdminUsersPage, "Users"), 401: errorResponses[401], 403: errorResponses[403] } }),
+    async (c) => c.json(await listUsers(deps, c.req.valid("query"), now()), 200),
   );
   app.openapi(
     createRoute({
@@ -303,14 +260,24 @@ export function registerBillingRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, n
       const at = now();
       const [u] = await db.select().from(users).where(eq(users.id, id)).limit(1);
       if (!u) throw errors.notFound("User");
-      const before = await adminRow(u, at);
+      const before = await adminRow(deps, u, at);
       if (body.validityDays !== undefined) {
         const sub = await activeSubscription(deps, id, at);
         if (!sub) throw errors.conflict("This user has no active subscription to extend");
         await db.update(subscriptions).set({ expiresAt: new Date(sub.startsAt.getTime() + body.validityDays * 86_400_000), updatedAt: at }).where(eq(subscriptions.id, sub.id));
       }
+      const me = currentUser(c);
       const patch: Partial<typeof users.$inferInsert> = {};
-      if (body.active !== undefined) patch.active = body.active;
+      if (body.active !== undefined) {
+        if (id === me.id && !body.active) throw errors.conflict("You cannot deactivate your own account"); // ADR-032
+        patch.active = body.active;
+      }
+      if (body.role !== undefined) {
+        await assertRoleChangeAllowed(deps, me.id, u, body.role);
+        patch.role = body.role;
+      }
+      if (body.name !== undefined) patch.name = body.name;
+      if (body.mobile !== undefined) patch.mobile = body.mobile;
       if (body.commissionPct !== undefined) patch.commissionPct = body.commissionPct;
       if (body.limitOverrides !== undefined) patch.limitOverrides = body.limitOverrides;
       if (Object.keys(patch).length) await db.update(users).set({ ...patch, updatedAt: at }).where(eq(users.id, id));
@@ -320,7 +287,7 @@ export function registerBillingRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, n
         await db.insert(userSettings).values({ userId: id, lotSizes, updatedAt: at }).onConflictDoUpdate({ target: userSettings.userId, set: { lotSizes, updatedAt: at } });
       }
       const [fresh] = await db.select().from(users).where(eq(users.id, id)).limit(1);
-      const after = await adminRow(fresh ?? u, at);
+      const after = await adminRow(deps, fresh ?? u, at);
       await auditFrom(c, db)({ action: "admin.user.update", target: `user:${id}`, before, after: { ...after, patch: body } });
       return c.json(after, 200);
     },

@@ -3,7 +3,7 @@
 // month (the reference site's convention, HC-AD-014 / HC-AC-006). Per-user overrides (HC-AD-048) replace the plan
 // number when greater than 0.
 import { z } from "zod";
-import { Id } from "./accounts.js";
+import { Id, Mobile } from "./accounts.js";
 import { DecimalString, IsoDateTime, isNonNegativeDecimal } from "./primitives.js";
 
 /** Plan banner state (HC-SH-014, HC-SH-050..053): free / active / expiring soon (≤ 7 days) / expired. */
@@ -176,6 +176,12 @@ export const AdminUserRow = z.strictObject({
   limitOverrides: PlanLimits,
   lotSizes: z.partialRecord(z.enum(["BTC", "ETH", "XAUT"]), DecimalString).nullable(),
   createdAt: IsoDateTime,
+  // User Management (HC-AD-087, 103, 109; ADR-032)
+  mobile: z.string().nullable(),
+  referralCode: z.string(),
+  /** Sum of paidInr over every subscription the user ever had. */
+  paidInr: DecimalString,
+  lastLoginAt: IsoDateTime.nullable(),
 });
 export type AdminUserRow = z.infer<typeof AdminUserRow>;
 export const AdminUsersPage = z.strictObject({ items: z.array(AdminUserRow), total: z.number().int(), page: z.number().int(), pageSize: z.number().int() });
@@ -184,6 +190,10 @@ export const AdminUserPatch = z
   .strictObject({
     validityDays: z.number().int().min(1).max(3650).optional(),
     active: z.boolean().optional(),
+    // User Management (HC-AD-103; ADR-032): the API refuses own-role and own-account changes and demoting the last admin
+    name: z.string().trim().min(1).max(100).optional(),
+    mobile: Mobile.nullable().optional(),
+    role: z.enum(["user", "admin"]).optional(),
     commissionPct: DecimalString.refine((v) => Number(v) >= 0 && Number(v) <= 100, { message: "0..100" }).optional(),
     limitOverrides: PlanLimits.optional(),
     lotSizes: z.partialRecord(z.enum(["BTC", "ETH", "XAUT"]), DecimalString.refine((v) => Number(v) > 0, { message: "must be greater than zero" })).optional(),
