@@ -181,7 +181,7 @@ describe("HC-WS-021 ChainTable renders the visible columns from the strike outwa
     expect(putHeads).toEqual(["ask", "mark", "bid", "oi", "delta", "gamma", "theta", "vega", "volume", "bidQty", "askQty", "chg24", "last"]);
     const callHeads = within(screen.getByTestId("chain-head-calls")).getAllByTitle(/./).map((e) => e.dataset["col"]);
     expect(callHeads).toEqual([...putHeads].reverse());
-    expect(within(screen.getByTestId("chain-head-puts")).getByTitle(/Theta, USD per contract per day/)).toBeTruthy();
+    expect(within(screen.getByTestId("chain-head-puts")).getByTitle(/Theta, USD per unit per day/)).toBeTruthy();
     const first = screen.getAllByTestId("chain-row-puts")[0]!;
     expect(first.querySelectorAll("[data-col]")).toHaveLength(13);
     expect(first.querySelector("[data-col=gamma]")?.textContent).toMatch(/^(—|-?\d+\.\d{6})$/);
@@ -249,7 +249,7 @@ describe("HC-WS-015 / HC-WS-017 / HC-WS-018 / HC-WS-019 / HC-WS-020 chain layout
     renderWithProviders(<ChainTable {...tableProps()} />);
     const table = screen.getByTestId("chain-table");
     expect(screen.getByTestId("chain-band-calls").textContent).toContain("Calls · ITM shaded · strikes ±12");
-    expect(screen.getByTestId("chain-band-puts").textContent).toContain("Δ per contract · Puts");
+    expect(screen.getByTestId("chain-band-puts").textContent).toContain("Δ per unit · Puts");
     expect(screen.getByTestId("chain-band-expiry").textContent).toContain("25 Sep");
     expect(screen.getByTestId("chain-band-expiry").textContent).toContain("18d");
     expect(screen.getByTestId("chain-header").className).toContain("sticky");

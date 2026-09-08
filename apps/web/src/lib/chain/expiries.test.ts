@@ -44,4 +44,13 @@ describe("HC-WS-107 expiry discovery", () => {
     expect(nearestExpiry(["2026-09-11", "2026-09-18"])).toBe("2026-09-11");
     expect(nearestExpiry([])).toBeNull();
   });
+
+  it("drops an expiry once its settlement instant has passed (12:00 UTC BTC, 16:00 UTC XAUT)", async () => {
+    const empty = (() => Promise.resolve(new Response("{}", { status: 500 }))) as unknown as typeof fetch;
+    const csv = "2026-09-07,2026-09-11";
+    const at = (h: number) => Date.UTC(2026, 8, 7, h);
+    expect((await discoverExpiries("BTC", { gatewayWsUrl: "ws://x", defaultsCsv: csv, fetch: empty, today: "2026-09-07", nowMs: at(11) })).expiries).toEqual(["2026-09-07", "2026-09-11"]);
+    expect((await discoverExpiries("BTC", { gatewayWsUrl: "ws://x", defaultsCsv: csv, fetch: empty, today: "2026-09-07", nowMs: at(13) })).expiries).toEqual(["2026-09-11"]);
+    expect((await discoverExpiries("XAUT", { gatewayWsUrl: "ws://x", defaultsCsv: csv, fetch: empty, today: "2026-09-07", nowMs: at(13) })).expiries).toEqual(["2026-09-07", "2026-09-11"]);
+  });
 });

@@ -11,7 +11,7 @@ import { discoverExpiries, nearestExpiry } from "@/lib/chain/expiries";
 import { publicEnv } from "@/lib/env";
 import { daysToExpiry, fmtExpiry, fmtPrice } from "@/lib/format";
 import { useConnectionStatus, useGateway, useSpot, useTopic } from "@/lib/gateway/hooks";
-import { ASSET_META, useUiStore } from "@/lib/store";
+import { useUiStore } from "@/lib/store";
 import { type LegKind, type LegSide, MAX_ACTIVE_LEGS, legsForChain, stepLots } from "@/lib/strategy/legs";
 import { ChainTable } from "./ChainTable";
 
@@ -41,6 +41,7 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
   const openColumns = useCallback(() => openDialog("columns"), [openDialog]);
   // Legs (HC-WS-024..027, HC-TR-017/018): per-asset list in the store; this chain shows its expiry's legs.
   const assetLegs = useUiStore((s) => s.legs[s.asset]);
+  const legExpiries = useMemo(() => new Set(assetLegs.filter((l) => l.status === "open" && l.kind !== "future").map((l) => l.expiry)), [assetLegs]);
   const chainLots = useUiStore((s) => s.chainLots);
   const setChainLots = useUiStore((s) => s.setChainLots);
   const addLeg = useUiStore((s) => s.addLeg);
@@ -110,7 +111,10 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
                 on ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <span className="text-xs font-medium">{fmtExpiry(e)}</span>
+              <span className="text-xs font-medium">
+                {fmtExpiry(e)}
+                {legExpiries.has(e) ? <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-spot align-middle" title="This expiry holds strategy legs" data-testid="expiry-dot" /> : null}
+              </span>
               <span className="font-mono text-3xs">{daysToExpiry(e)}d</span>
             </button>
           );
@@ -147,7 +151,7 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
             onExpiryStep={stepExpiry}
             expiryLabel={expiry ? fmtExpiry(expiry) : ""}
             daysLeft={expiry ? daysToExpiry(expiry) : null}
-            lotLabel={`Lot ${ASSET_META[asset].glyph} · USD per contract`}
+            lotLabel={`Lot ${lotSize ?? "…"} ${asset} · prices USD per ${asset}`}
             live={live}
             asOf={asOf}
             legs={chainLegs}

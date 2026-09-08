@@ -13,6 +13,9 @@ const config: ViteUserConfig = mergeConfig(
     test: {
       setupFiles: ["./test/setup.ts"],
       css: false,
+      // jsdom + user-event flows price real legs and open Radix dialogs; under the full turbo gate (every
+      // package's coverage and build at once) the default 5 s per test timed out on a loaded laptop.
+      testTimeout: 20_000,
     },
   }),
 );

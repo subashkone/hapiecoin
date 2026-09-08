@@ -84,7 +84,7 @@ export function OptionDetailsDialog({ open, onOpenChange }: DialogProps) {
                 <span className={cn("micro rounded border px-1.5 py-0.5", change.dir === "up" && "border-profit text-profit", change.dir === "down" && "border-loss text-loss")}>
                   {change.text} 24h
                 </span>
-                <span className="micro ml-auto">USD per contract · mark</span>
+                <span className="micro ml-auto">USD per {target?.asset ?? "unit"} · mark</span>
               </div>
               <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3" data-testid="option-stats">
                 <Stat k="Bid / Ask" v={`${fmtPrice(q.bid)} / ${fmtPrice(q.ask)}`} />

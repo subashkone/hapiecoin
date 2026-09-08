@@ -1,6 +1,6 @@
 "use client";
 // Minimal command palette (HC-PB-059): Ctrl K / ⌘ K opens a filterable list of navigation commands.
-// Phase 1 scope: Home, Sign in (logged out) / Analyse (logged in), legal pages, theme toggle.
+// Navigation, chain actions (Phase 2 items 1–3), Builder / analysis actions (Phase 2 item 4), theme toggle.
 import {
   Dialog,
   DialogContent,
@@ -62,6 +62,61 @@ export function buildCommands(opts: {
         group: "Actions",
         keywords: ["chain", "columns", "show", "hide", "reorder", "greeks"],
         run: () => useUiStore.getState().openDialog("columns"),
+      },
+      {
+        id: "act:builder-open",
+        label: "Builder: open the strategy builder",
+        group: "Actions",
+        keywords: ["builder", "legs", "strategy", "tab"],
+        run: () => {
+          const s = useUiStore.getState();
+          s.setWorkspaceTab("builder");
+          s.setBuilderTab("builder");
+        },
+      },
+      {
+        id: "act:builder-templates",
+        label: "Builder: load a template",
+        group: "Actions",
+        keywords: ["templates", "straddle", "strangle", "spread", "condor", "butterfly"],
+        run: () => {
+          const s = useUiStore.getState();
+          s.setWorkspaceTab("builder");
+          s.setBuilderTab("templates");
+        },
+      },
+      {
+        id: "act:builder-new",
+        label: "Builder: new strategy (clear legs)",
+        group: "Actions",
+        keywords: ["new", "clear", "reset", "legs", "strategy"],
+        run: () => {
+          const s = useUiStore.getState();
+          s.setLegs(s.asset, []);
+          s.setStrategyMeta(s.asset, { name: "", draftId: null, priceMode: "live" });
+          s.setWorkspaceTab("builder");
+        },
+      },
+      {
+        id: "act:analysis-payoff",
+        label: "Analysis: payoff chart",
+        group: "Actions",
+        keywords: ["payoff", "chart", "breakeven", "pop", "target"],
+        run: () => useUiStore.getState().setAnalysisTab("payoff"),
+      },
+      {
+        id: "act:analysis-greeks",
+        label: "Analysis: Greeks",
+        group: "Actions",
+        keywords: ["greeks", "delta", "gamma", "theta", "vega"],
+        run: () => useUiStore.getState().setAnalysisTab("greeks"),
+      },
+      {
+        id: "act:analysis-ladder",
+        label: "Analysis: P&L ladder",
+        group: "Actions",
+        keywords: ["ladder", "pnl", "price", "table"],
+        run: () => useUiStore.getState().setAnalysisTab("ladder"),
       },
       {
         id: "act:chain-greeks",

@@ -18,6 +18,7 @@
     "mock:servers": "tsx test/servers.ts"
   },
   "dependencies": {
+    "@hapiecoin/pricing": "workspace:*",
     "@hapiecoin/schema": "workspace:*",
     "@hapiecoin/ui": "workspace:*",
     "@tanstack/react-query": "5.102.8",

@@ -247,3 +247,108 @@ test.describe("HC-SH analyse header and live chain", () => {
     await expect(page).toHaveURL(/\/auth\?next=/);
   });
 });
+
+test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
+  test.beforeEach(async ({ page, request }) => {
+    await seedUser(request, { email: "builder@example.com", plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" } });
+    await signIn(page, "builder@example.com");
+    await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
+    await page.reload();
+    await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 15_000 });
+  });
+
+  test("HC-TR-040 / HC-WS-033 / HC-WS-039 a template loads legs into the Builder and the payoff tiles and chart appear", async ({ page }) => {
+    await expect(page.getByTestId("payoff-panel")).toHaveAttribute("data-state", "empty");
+    await page.getByTestId("tab-builder").click();
+    await page.getByTestId("builder-tab-templates").click();
+    await expect(page.getByTestId("template-card")).toHaveCount(28);
+    await page.getByTestId("template-cat-neutral").click();
+    await page.locator("[data-testid=template-card][data-name='Iron Condor']").click();
+    await expect(page.getByTestId("builder-panel")).toHaveAttribute("data-legs", "4");
+    await expect(page.getByTestId("builder-count")).toHaveText("4");
+    await expect(page.getByTestId("strategy-name")).toHaveValue("Iron Condor");
+    await expect(page.getByTestId("payoff-panel")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("tile-max-profit")).not.toContainText("—");
+    await expect(page.getByTestId("tile-breakeven")).toContainText("2 points");
+    await expect(page.getByTestId("tile-net")).toContainText("credit received");
+    await expect(page.getByTestId("payoff-chart")).toHaveAttribute("data-points", /^[1-9]\d+$/);
+    await expect(page.getByTestId("win-zone")).toContainText("–");
+    // HC-WS-007 the chain's expiry chip carries the leg dot
+    await page.getByTestId("tab-chain").click();
+    await expect(page.getByTestId("expiry-dot").first()).toBeVisible();
+  });
+
+  test("HC-TR-009 / HC-TR-011 / HC-TR-013 builder edits: side, lots, custom price, delete; HC-TR-020 / HC-TR-044 save draft, list, load, delete", async ({ page }) => {
+    const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
+    await page.locator(`[data-testid=chain-row-calls][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-buy-calls").click();
+    await page.getByTestId("tab-builder").click();
+    const row = page.getByTestId("leg-row").first();
+    await expect(row).toHaveAttribute("data-side", "buy");
+    await row.getByTestId("leg-side").click();
+    await expect(row).toHaveAttribute("data-side", "sell");
+    await row.getByTestId("leg-lots-up").click();
+    await expect(row.getByTestId("leg-lots")).toHaveValue("25");
+    await page.getByTestId("price-mode").click();
+    await row.getByTestId("leg-price-input").fill("999.5");
+    await page.getByTestId("price-mode").click();
+    await expect(row.getByTestId("leg-price")).not.toHaveText("999.5");
+    // save as a draft
+    await page.getByTestId("strategy-name").fill("E2E short call");
+    await page.getByTestId("builder-save").click();
+    await page.getByTestId("save-draft-confirm").click();
+    await expect(page.getByTestId("builder-save")).toHaveText("Update");
+    await page.getByTestId("builder-new").click();
+    await expect(page.getByText("No legs added")).toBeVisible();
+    await page.getByTestId("builder-tab-templates").click();
+    await expect(page.getByTestId("mine-card")).toHaveCount(1);
+    await page.getByTestId("mine-load").click();
+    await expect(page.getByTestId("builder-panel")).toHaveAttribute("data-legs", "1");
+    await expect(page.getByTestId("strategy-name")).toHaveValue("E2E short call");
+    // delete the leg, then the draft
+    await page.getByTestId("leg-delete").click();
+    await expect(page.getByText("No legs added")).toBeVisible();
+    await page.getByTestId("builder-tab-templates").click();
+    await page.getByTestId("mine-delete").click();
+    await page.getByTestId("mine-delete-confirm").click();
+    await expect(page.getByTestId("mine-empty")).toBeVisible();
+    // drafts live in the browser until Phase 3 (ADR-023): none left after a reload
+    await page.reload();
+    await page.getByTestId("tab-builder").click();
+    await page.getByTestId("builder-tab-templates").click();
+    await expect(page.getByTestId("mine-empty")).toBeVisible();
+  });
+
+  test("HC-TR-027 / HC-TR-035 select from chain and add a future; HC-WS-047 / HC-WS-048 target sliders; HC-WS-059 / HC-WS-062 Greeks and ladder", async ({ page }) => {
+    await page.getByTestId("tab-builder").click();
+    await page.getByTestId("builder-select-chain").click();
+    const picker = page.getByTestId("chain-picker");
+    await expect(picker.getByTestId("picker-row").first()).toBeVisible({ timeout: 15_000 });
+    const rows = picker.getByTestId("picker-row");
+    await rows.nth(10).getByTestId("picker-buy-call").click();
+    await rows.nth(14).getByTestId("picker-sell-call").click();
+    await expect(picker.getByTestId("picker-add")).toHaveText("Add 2 Legs");
+    await picker.getByTestId("picker-add").click();
+    await expect(page.getByTestId("builder-panel")).toHaveAttribute("data-legs", "2");
+    await page.getByTestId("builder-add-future").click();
+    await page.getByTestId("future-sell").click();
+    await page.getByTestId("future-add").click();
+    await expect(page.getByTestId("builder-panel")).toHaveAttribute("data-legs", "3");
+    await expect(page.getByTestId("leg-row").nth(2)).toContainText("BTCUSD");
+    // payoff target sliders
+    await expect(page.getByTestId("payoff-panel")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    const before = await page.getByTestId("ticket-target").textContent();
+    await page.getByTestId("target-days-expiry").click();
+    await page.getByTestId("target-price").focus();
+    await page.keyboard.press("End");
+    await expect(page.getByTestId("ticket-target")).not.toHaveText(before ?? "");
+    await page.getByTestId("target-price-reset").click();
+    // greeks and ladder tabs
+    await page.getByTestId("analysis-tab-greeks").click();
+    await expect(page.getByTestId("greeks-row")).toHaveCount(3);
+    await expect(page.getByTestId("greek-delta")).not.toContainText("—");
+    await page.getByTestId("analysis-tab-ladder").click();
+    await expect(page.locator("[data-testid=ladder-row][data-status=spot]")).toHaveCount(1);
+    await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
+  });
+});

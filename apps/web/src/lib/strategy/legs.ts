@@ -3,7 +3,8 @@
 // underlying units is derived (lots × lot size) when needed and never stored twice (typescript rule 3).
 import type { Underlying } from "@hapiecoin/schema";
 
-export type LegKind = "call" | "put";
+/** Options from the chain, or a perpetual future added from the Builder (HC-TR-016, HC-TR-035). */
+export type LegKind = "call" | "put" | "future";
 export type LegSide = "buy" | "sell";
 
 export interface StrategyLeg {
@@ -16,7 +17,7 @@ export interface StrategyLeg {
   /** Expiry ISO date "YYYY-MM-DD". */
   expiry: string;
   lots: number;
-  /** Mark at the time the leg was added, USD per contract (decimal string). */
+  /** Mark at the time the leg was added, USD per underlying unit as Delta quotes it (decimal string). */
   price: string;
   /** Mark IV at the time the leg was added, decimal fraction; undefined when the venue had none. */
   iv?: number | undefined;
@@ -43,8 +44,9 @@ export function stepLots(lots: number, delta: 1 | -1): number {
   return stepLots(nearest, delta);
 }
 
-/** Delta-style symbol: C-BTC-79400-070926 (strike without decimals when integral; expiry as DDMMYY). */
+/** Delta-style symbol: C-BTC-79400-070926 (strike without decimals when integral; expiry as DDMMYY); BTCUSD for the perpetual. */
 export function deltaSymbol(kind: LegKind, asset: Underlying, strike: string, expiryIso: string): string {
+  if (kind === "future") return `${asset}USD`;
   const [y, m, d] = expiryIso.split("-");
   const code = d && m && y ? `${d}${m}${y.slice(2)}` : expiryIso;
   const k = Number(strike);
@@ -115,6 +117,22 @@ export interface RowMarks {
   pills: { text: string; tone: "buy" | "sell"; title: string }[];
 }
 
+/** Flip a leg's side (HC-TR-009). */
+export function toggleLegSide(legs: readonly StrategyLeg[], id: string): StrategyLeg[] {
+  return legs.map((l) => (l.id === id ? { ...l, side: l.side === "buy" ? "sell" : "buy" } : l));
+}
+
+/** Set lots on one leg, or on every open leg when `basket` is on (HC-TR-004, HC-TR-011); lots are clamped to ≥ 1 integers. */
+export function setLegLots(legs: readonly StrategyLeg[], id: string, lots: number, basket = false): StrategyLeg[] {
+  const v = Math.max(1, Math.round(Number.isFinite(lots) ? lots : 1));
+  return legs.map((l) => (l.id === id || (basket && l.status === "open") ? { ...l, lots: v } : l));
+}
+
+/** Set a custom price on one leg, or on every open leg when `basket` is on (HC-TR-010). */
+export function setLegPrice(legs: readonly StrategyLeg[], id: string, price: string, basket = false): StrategyLeg[] {
+  return legs.map((l) => (l.id === id || (basket && l.status === "open") ? { ...l, price } : l));
+}
+
 function sideMarks(legs: readonly StrategyLeg[], kind: LegKind, strike: string): SideMarks {
   const mine = legs.filter((l) => l.kind === kind && Number(l.strike) === Number(strike));
   const buyLots = mine.filter((l) => l.side === "buy").reduce((s, l) => s + l.lots, 0);
@@ -158,7 +176,7 @@ export function normaliseLegs(input: unknown): StrategyLeg[] {
     const l = x as Partial<StrategyLeg>;
     if (
       typeof l.id === "string" &&
-      (l.kind === "call" || l.kind === "put") &&
+      (l.kind === "call" || l.kind === "put" || l.kind === "future") &&
       (l.side === "buy" || l.side === "sell") &&
       typeof l.strike === "string" &&
       typeof l.expiry === "string" &&
