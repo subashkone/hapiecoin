@@ -15,6 +15,8 @@ export interface SeedOptions {
   role?: "user" | "admin";
   plan?: { state: "free" | "active" | "expiring_soon" | "expired"; planName?: string; expiresAt?: string; daysLeft?: number };
   connected?: boolean;
+  /** Seed this many referred sign-ups with commissions for the user (ADR-031). */
+  referrals?: number;
 }
 
 export async function seedUser(request: APIRequestContext, opts: SeedOptions) {

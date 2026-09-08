@@ -56,7 +56,7 @@ test.describe("HC-PB landing and public pages", () => {
     for (const [path, title] of [
       ["/analytics", "Market Analytics"],
       ["/subscription", "Choose a plan to unlock features"],
-      ["/referrals", "Referrals"],
+      ["/referrals", "Share & Earn"],
       ["/admin/users", "User Management"],
     ] as const) {
       await page.goto(path);

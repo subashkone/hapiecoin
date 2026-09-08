@@ -30,6 +30,26 @@ test.describe("HC-AD admin", () => {
     await page.getByTestId("users-search").fill("boss");
     await expect(page.getByTestId("user-row")).toHaveCount(1);
     await page.getByTestId("subs-tab-commissions").click();
-    await expect(page.getByTestId("commissions-placeholder")).toBeVisible();
+    await expect(page.getByTestId("admin-commissions")).toHaveAttribute("data-state", "ready");
+    await expect(page.getByTestId("cms-empty")).toBeVisible();
+  });
+
+  test("HC-AD-052..058 / HC-AD-118 commissions: tiles, View, Mark Paid, Bulk pay", async ({ page, request }) => {
+    await seedUser(request, { email: "boss@example.com", role: "admin", referrals: 4 });
+    await signIn(page, "boss@example.com");
+    await page.goto("/admin/subscriptions");
+    await expect(page.getByTestId("admin-shell")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await page.getByTestId("subs-tab-commissions").click();
+    await expect(page.getByTestId("cms-row")).toHaveCount(1);
+    await expect(page.getByTestId("cms-tile").nth(2)).toContainText("₹599.60");
+    await page.getByTestId("cms-view").click();
+    await expect(page.getByTestId("cms-view-row")).toHaveCount(4);
+    await page.keyboard.press("Escape");
+    await page.getByTestId("cms-mark").click();
+    await page.getByTestId("cms-mark-note").fill("NEFT ref 9921");
+    await page.getByTestId("cms-mark-save").click();
+    await expect(page.getByTestId("cms-row")).toHaveAttribute("data-status", "paid");
+    await expect(page.getByTestId("cms-tile").nth(2)).toContainText("₹0.00");
+    await expect(page.getByTestId("cms-bulk-pay")).toBeDisabled();
   });
 });

@@ -293,15 +293,15 @@
     "feature": "Page header 'My Referrals · Share & Earn'",
     "how": "Slim v2 title row with mono meta (20% COMMISSION · 6 REFERRALS) and the amber Share primary action on the right",
     "status": "working",
-    "evidence": "bundle strings: My Referrals, Share & Earn"
+    "evidence": "bundle strings: My Referrals, Share & Earn · Phase 4 item 3 (08 Sep 2026, ADR-031): ReferralsPage header meta (pct · n referrals) + amber Share; e2e account.spec + unit referrals.test"
   },
   {
     "route": "/referrals",
     "screen": "My Referrals",
     "feature": "Referral link card 'Get 20% commission on every paid referral'",
     "how": "Flat hairline card (no gradient): gift icon, headline using referrals.commissionPct, explanatory copy, mono link input, Copy button and the dashed code chip",
-    "status": "static",
-    "evidence": "bundle strings: Get , % commission on every paid referral, Gift"
+    "status": "working",
+    "evidence": "bundle strings: Get , % commission on every paid referral, Gift · Phase 4 item 3 (08 Sep 2026, ADR-031): link card headline from commissionPct (ref-link-card)"
   },
   {
     "route": "/referrals",
@@ -309,7 +309,7 @@
     "feature": "Referral link (read-only input)",
     "how": "Shows CG.mock.referrals.link in a mono read-only input; clicking selects the whole link",
     "status": "working",
-    "evidence": "inferred from Copy/Share actions"
+    "evidence": "inferred from Copy/Share actions · Phase 4 item 3 (08 Sep 2026, ADR-031): read-only mono link input, click selects (ref-link)"
   },
   {
     "route": "/referrals",
@@ -317,7 +317,7 @@
     "feature": "Copy button",
     "how": "Copies the link via navigator.clipboard (execCommand fallback) and toasts 'Copied!'",
     "status": "working",
-    "evidence": "bundle strings: Copy, Copied!"
+    "evidence": "bundle strings: Copy, Copied! · Phase 4 item 3 (08 Sep 2026, ADR-031): Copy → clipboard + 'Copied!' toast (ref-copy)"
   },
   {
     "route": "/referrals",
@@ -325,7 +325,7 @@
     "feature": "Share button",
     "how": "Opens the Share dialog (link row + WhatsApp / X / Email message templates); the native navigator.share sheet is offered inside the dialog when the browser supports it",
     "status": "working",
-    "evidence": "bundle strings: Share, Join HapieCoin, Share2"
+    "evidence": "bundle strings: Share, Join HapieCoin, Share2 · Phase 4 item 3 (08 Sep 2026, ADR-031): Share opens the share dialog (ref-share)"
   },
   {
     "route": "/referrals",
@@ -333,15 +333,15 @@
     "feature": "'Code: REF_DEMO4K2' chip",
     "how": "Dashed chip with the referral code from CG.mock.user.referralCode; click copies the code",
     "status": "working",
-    "evidence": "bundle strings: Code: , REF_XXXXXXX"
+    "evidence": "bundle strings: Code: , REF_XXXXXXX · Phase 4 item 3 (08 Sep 2026, ADR-031): dashed code chip copies the code (ref-code)"
   },
   {
     "route": "/referrals",
     "screen": "My Referrals",
     "feature": "How it works (3 steps)",
     "how": "Numbered steps: Share your unique referral link → Friend signs up & purchases a plan → Earn 20% commission, plus a note on Pending vs Paid",
-    "status": "static",
-    "evidence": "bundle strings: How it works, Share your unique referral link, Friend signs up & purchases a plan"
+    "status": "working",
+    "evidence": "bundle strings: How it works, Share your unique referral link, Friend signs up & purchases a plan · Phase 4 item 3 (08 Sep 2026, ADR-031): How it works 3 steps + Pending → Paid note (ref-how)"
   },
   {
     "route": "/referrals",
@@ -349,7 +349,7 @@
     "feature": "Stats tiles: Total Referrals / Total Earned / Paid / Pending",
     "how": "Computed from the referral rows (count, sum of commission, sum of paid, sum of pending) and written back to CG.mock.referrals so every screen agrees; ₹ values in mono with 2 decimals",
     "status": "working",
-    "evidence": "bundle strings: Total Referrals, Total Earned, Paid, Pending, Users"
+    "evidence": "bundle strings: Total Referrals, Total Earned, Paid, Pending, Users · Phase 4 item 3 (08 Sep 2026, ADR-031): tiles from GET /v1/referrals stats (ref-tile)"
   },
   {
     "route": "/referrals",
@@ -357,7 +357,7 @@
     "feature": "Search by name or email",
     "how": "Case-insensitive live filter over name and email; resets to page 1",
     "status": "working",
-    "evidence": "bundle strings: Search by name or email..., Search"
+    "evidence": "bundle strings: Search by name or email..., Search · Phase 4 item 3 (08 Sep 2026, ADR-031): search by name or email (ref-search)"
   },
   {
     "route": "/referrals",
@@ -365,7 +365,7 @@
     "feature": "Status filter (All Status / Paid / Pending / No Purchase)",
     "how": "Select bound to row.status (paid / pending / not_paid)",
     "status": "working",
-    "evidence": "bundle strings: All Status, pending, not_paid, No Purchase"
+    "evidence": "bundle strings: All Status, pending, not_paid, No Purchase · Phase 4 item 3 (08 Sep 2026, ADR-031): status filter All / Paid / Pending / No Purchase (ref-status-filter)"
   },
   {
     "route": "/referrals",
@@ -373,7 +373,7 @@
     "feature": "Plan filter (All Plans / Free / Basic Plan / Pro Plan / Elite Plan)",
     "how": "Select; 'Free' matches referrals with no purchased plan",
     "status": "working",
-    "evidence": "bundle strings: All Plans, Free"
+    "evidence": "bundle strings: All Plans, Free · Phase 4 item 3 (08 Sep 2026, ADR-031): plan filter from the rows' plan names (ref-plan-filter)"
   },
   {
     "route": "/referrals",
@@ -381,7 +381,7 @@
     "feature": "Date range filter",
     "how": "'Date:' label with from/to date inputs filtering on the Joined date (inclusive)",
     "status": "working",
-    "evidence": "bundle strings: Date:"
+    "evidence": "bundle strings: Date: · Phase 4 item 3 (08 Sep 2026, ADR-031): joined date range (ref-from / ref-to)"
   },
   {
     "route": "/referrals",
@@ -389,7 +389,7 @@
     "feature": "Clear button",
     "how": "Resets search, status, plan and dates, re-renders and toasts 'Filters cleared'",
     "status": "working",
-    "evidence": "bundle strings:  Clear"
+    "evidence": "bundle strings:  Clear · Phase 4 item 3 (08 Sep 2026, ADR-031): Clear resets filters and page, toasts (ref-clear)"
   },
   {
     "route": "/referrals",
@@ -397,7 +397,7 @@
     "feature": "Referrals table",
     "how": "Columns User (mono initials, name + email), Joined (mono), Plan (outline badge + interval), Amount, Commission (mono, right-aligned, green), Status; every header is sortable; default newest first",
     "status": "working",
-    "evidence": "bundle strings: User, Joined, Plan, Amount, Commission, Status, en-US, numeric"
+    "evidence": "bundle strings: User, Joined, Plan, Amount, Commission, Status, en-US, numeric · Phase 4 item 3 (08 Sep 2026, ADR-031): table User / Joined / Plan / Amount / Commission / Status, sticky User column (ref-table)"
   },
   {
     "route": "/referrals",
@@ -405,7 +405,7 @@
     "feature": "Status badges",
     "how": "paid → Paid (green), pending → Pending (amber), not_paid → No Purchase (grey)",
     "status": "working",
-    "evidence": "bundle strings: Paid, Pending, No Purchase, secondary"
+    "evidence": "bundle strings: Paid, Pending, No Purchase, secondary · Phase 4 item 3 (08 Sep 2026, ADR-031): StatusBadge paid / pending / not_paid (ref-status)"
   },
   {
     "route": "/referrals",
@@ -413,7 +413,7 @@
     "feature": "Empty state: no referrals",
     "how": "'No referrals yet · Share your link to start earning' when the referral list is empty",
     "status": "working",
-    "evidence": "bundle strings: No referrals yet, Share your link to start earning"
+    "evidence": "bundle strings: No referrals yet, Share your link to start earning · Phase 4 item 3 (08 Sep 2026, ADR-031): 'No referrals yet' with Share link (ref-empty)"
   },
   {
     "route": "/referrals",
@@ -421,7 +421,7 @@
     "feature": "Empty state: no results",
     "how": "'No results found · Try adjusting your filters' when filters exclude every row",
     "status": "working",
-    "evidence": "bundle strings: No results found, Try adjusting your filters"
+    "evidence": "bundle strings: No results found, Try adjusting your filters · Phase 4 item 3 (08 Sep 2026, ADR-031): 'No results found' with Clear filters (ref-no-results)"
   },
   {
     "route": "/referrals",
@@ -429,15 +429,15 @@
     "feature": "Pagination + count footer",
     "how": "10 rows per page; footer '6 referrals (filtered from N) · Page 1 of 1' with pluralised ' referral', '← Previous' / 'Next →' buttons",
     "status": "working",
-    "evidence": "bundle strings:  referral,  of , button"
+    "evidence": "bundle strings:  referral,  of , button · Phase 4 item 3 (08 Sep 2026, ADR-031): 10 per page with count footer and filtered-from count (ref-pager)"
   },
   {
     "route": "/referrals",
     "screen": "My Referrals",
     "feature": "Load error toast",
     "how": "Rendering is wrapped so an exception toasts 'Error · Failed to load referrals' instead of leaving the page blank",
-    "status": "inferred",
-    "evidence": "bundle strings: Error, Failed to load referrals, destructive"
+    "status": "working",
+    "evidence": "bundle strings: Error, Failed to load referrals, destructive · Phase 4 item 3 (08 Sep 2026, ADR-031): error state with Retry (referrals-page[data-state=error])"
   },
   {
     "route": "/subscription",
@@ -545,7 +545,7 @@
     "how": "SVG bars per signup month from the referral rows: paid commission solid green, pending as a hatched outline of the same hue (state in shape, not a second colour), faint ₹ grid, mono axis labels, value labels, hover tooltip per bar, legend and a best-month readout; re-renders on resize",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): EarningsChart SVG, paid solid / pending hatched, last 12 months (earnings-chart)"
   },
   {
     "route": "/referrals",
@@ -554,7 +554,7 @@
     "how": "Total Referrals / Total Earned / Paid (green) / Pending as four mono stat tiles above the chart, computed from the rows",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): four tiles: referrals, earned, paid, pending"
   },
   {
     "route": "/referrals",
@@ -563,7 +563,7 @@
     "how": "Link row (Copy link, native Share… when supported) plus WhatsApp, X (Twitter) and Email templates that embed the referral link and code; each has a Copy message button with a toast",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): ShareDialog WhatsApp / X / Email templates + native share when supported (share-dialog)"
   },
   {
     "route": "/referrals",
@@ -572,7 +572,7 @@
     "how": "User, Joined, Plan, Amount, Commission and Status headers sort ascending/descending with a ▲/▼ indicator; numeric/date columns default to descending",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): sortable headers, default joined desc (ref-sort-*)"
   },
   {
     "route": "/referrals",
@@ -581,7 +581,7 @@
     "how": "Copies the filtered, sorted rows (Name, Email, Joined, Plan, Interval, Amount, Commission, Status) as CSV with a toast",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): Copy CSV of the visible rows (ref-csv, referralsCsv)"
   },
   {
     "route": "/referrals",
@@ -590,7 +590,7 @@
     "how": "No referrals → Share link button; no results → Clear filters button",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): empty states with actions (sub-none, error Retry)"
+    "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): empty states with actions (sub-none, error Retry) · Phase 4 item 3 (08 Sep 2026, ADR-031): referrals empty states with Share link / Clear filters actions"
   },
   {
     "route": "/referrals",
@@ -599,7 +599,7 @@
     "how": "Registered with CG.palette when present: copies the referral link and toasts",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): palette 'Referrals: copy link' (act:referral-copy) when the code is known"
   },
   {
     "route": "/referrals",
@@ -608,6 +608,6 @@
     "how": "Referral table honours the compact density setting (28px rows)",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): row density: 1-line rows with initials avatar at text-xs"
   }
 ]

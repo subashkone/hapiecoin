@@ -1,13 +1,14 @@
 "use client";
 // Admin · User Subscriptions, Users tab (HC-AD-042..051, 117, 120): plan and expiry per user, inline validity /
 // commission edits, account toggle, feature-limit overrides and per-user lot sizes, 10 per page. The Commissions
-// tab arrives with referrals (item 3).
+// tab (HC-AD-052..058) lives in CommissionsAdmin.
 import { type AdminUserRow, LIMIT_KEYS, LIMIT_LABELS, type PlanLimits } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, Input, cn, toast } from "@hapiecoin/ui";
 import { useState } from "react";
 import { useAdminUsers, useBulkAdminUsers, usePatchAdminUser } from "@/lib/api/billing";
 import { fmtDate } from "@/lib/format";
 import { AdminHeader, BulkBar } from "./AdminShell";
+import { CommissionsAdmin } from "./CommissionsAdmin";
 
 /** Click → number input; Enter saves, Escape or blur cancels (HC-AD-046). */
 function InlineNumber({ value, suffix, onSave, testId, title }: { value: number | null; suffix: string; onSave: (v: number) => void; testId: string; title: string }) {
@@ -130,7 +131,7 @@ export function UserSubscriptionsAdmin() {
         ))}
       </div>
       {tab === "commissions" ? (
-        <EmptyState title="Commissions arrive with referrals" description="Phase 4 item 3: referral commissions, mark paid and bulk pay." className="py-10" data-testid="commissions-placeholder" />
+        <CommissionsAdmin />
       ) : (
         <>
           <div className="mb-2 flex flex-wrap items-center gap-2" data-testid="admin-filters">

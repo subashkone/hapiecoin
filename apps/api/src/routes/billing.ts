@@ -14,6 +14,7 @@ import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
 import { menuItems, plans, subscriptions, userSettings, users } from "../db/schema.js";
 import { activeSubscription, entitlementsFor, toPlan } from "../entitlements.js";
+import { recordReferralCommission } from "../referrals.js";
 import { type AppEnv, currentUser } from "../security/context.js";
 import { errors } from "../security/errors.js";
 import { requireAdmin, requireUser } from "../security/guards.js";
@@ -92,7 +93,8 @@ export function registerBillingRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, n
       if (current?.planId === plan.id && current.interval === body.interval) throw errors.conflict(`You are already on ${plan.name} · ${body.interval}`);
       await db.update(subscriptions).set({ status: "cancelled", updatedAt: at }).where(and(eq(subscriptions.userId, me.id), eq(subscriptions.status, "active")));
       const expiresAt = total === 0 && Number(pricing.priceInr) === 0 ? null : new Date(at.getTime() + INTERVAL_MONTHS[body.interval] * 30 * 86_400_000);
-      await db.insert(subscriptions).values({ id: newId("sub"), userId: me.id, planName: plan.name, planId: plan.id, interval: body.interval, priceInr: pricing.priceInr, paidInr: "0", currency: "INR", status: "active", startsAt: at, expiresAt, featureLimits: pricing.limits });
+      const [created] = await db.insert(subscriptions).values({ id: newId("sub"), userId: me.id, planName: plan.name, planId: plan.id, interval: body.interval, priceInr: pricing.priceInr, paidInr: "0", currency: "INR", status: "active", startsAt: at, expiresAt, featureLimits: pricing.limits }).returning();
+      if (created) await recordReferralCommission(deps, created, at); // ADR-031: the referrer sees the sign-up even at ₹0
       const view = await subscriptionView(me.id);
       await auditFrom(c, db)({ action: "subscription.activate", target: `user:${me.id}`, before: current ? { planName: current.planName, interval: current.interval } : null, after: { planName: plan.name, interval: body.interval, paidInr: "0" } });
       return c.json(view, 200);

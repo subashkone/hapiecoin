@@ -147,7 +147,66 @@ describe("HC-AD-042..051 user subscriptions", () => {
     await u.selectOptions(screen.getByTestId("users-status"), "deactivated");
     await waitFor(() => expect(screen.getAllByTestId("user-row").map((r) => r.dataset["email"])).toEqual(["user1@example.com"]));
     await u.click(screen.getByTestId("subs-tab-commissions"));
-    expect(screen.getByTestId("commissions-placeholder")).toBeTruthy();
+    await waitFor(() => expect(screen.getByTestId("admin-commissions").dataset["state"]).toBe("ready"));
+    expect(screen.getByTestId("cms-empty")).toBeTruthy();
+  });
+});
+
+describe("HC-AD-052..058, 118, 119 commissions", () => {
+  const seed = async (email: string, referrals: number, role?: "user" | "admin") => {
+    const res = await mock.app.request("http://localhost/__test/seed", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, referrals, ...(role ? { role } : {}) }) });
+    expect(res.status).toBe(200);
+  };
+  it("tiles, rows, View dialog, Mark Payment with the Not Paid reason rule, month filter, select then Mark paid, Bulk pay, chart", async () => {
+    await seed(ADMIN, 4, "admin"); // Pro pending, Free no purchase, Basic paid, Elite pending
+    await seed("ria@example.com", 2); // Pro pending, Free no purchase
+    mock.loginAs(ADMIN, { role: "admin" });
+    renderWithProviders(<UserSubscriptionsAdmin />);
+    const u = userEvent.setup();
+    await u.click(await screen.findByTestId("subs-tab-commissions"));
+    await waitFor(() => expect(screen.getAllByTestId("cms-row")).toHaveLength(2));
+    const tiles = screen.getAllByTestId("cms-tile").map((t) => t.textContent);
+    expect(tiles[0]).toContain("₹899.20"); // 20 % of 999 + 499 + 1999 (boss) + 999 (ria)
+    expect(tiles[1]).toContain("₹99.80");
+    expect(tiles[2]).toContain("₹799.40");
+    expect(screen.getByTestId("earnings-chart")).toBeTruthy();
+    const boss = screen.getAllByTestId("cms-row").find((r) => r.dataset["email"] === ADMIN)!;
+    expect(within(boss).getByTestId("cms-pending").textContent).toBe("₹599.60");
+    await u.click(within(boss).getByTestId("cms-view"));
+    await waitFor(() => expect(screen.getAllByTestId("cms-view-row")).toHaveLength(4));
+    await u.click(screen.getByTestId("cms-view-close"));
+    await waitFor(() => expect(screen.queryByTestId("cms-view-dialog")).toBeNull());
+    await u.click(within(boss).getByTestId("cms-mark"));
+    await u.click(screen.getByTestId("cms-mark-not_paid"));
+    await u.click(screen.getByTestId("cms-mark-save"));
+    expect(screen.getByTestId("cms-mark-error").textContent).toContain("reason is required");
+    await u.type(screen.getByTestId("cms-mark-note"), "bank details missing");
+    await u.type(screen.getByTestId("cms-mark-proof"), "not-a-url");
+    await u.click(screen.getByTestId("cms-mark-save"));
+    expect(screen.getByTestId("cms-mark-error").textContent).toContain("full URL");
+    await u.clear(screen.getByTestId("cms-mark-proof"));
+    await u.click(screen.getByTestId("cms-mark-save"));
+    await waitFor(() => expect(screen.queryByTestId("cms-mark-dialog")).toBeNull());
+    await waitFor(() => expect(screen.getAllByTestId("cms-row").find((r) => r.dataset["email"] === ADMIN)!.dataset["status"]).toBe("paid")); // only the settled Basic row counts now
+    expect(screen.getAllByTestId("cms-row").find((r) => r.dataset["email"] === ADMIN)!.textContent).toContain("bank details missing");
+    // month filter narrows to the seeded months; Clear resets
+    const months = [...screen.getByTestId("cms-month").querySelectorAll("option")].map((o) => o.value).filter(Boolean);
+    expect(months.length).toBeGreaterThan(1);
+    await u.selectOptions(screen.getByTestId("cms-month"), months[months.length - 1]!);
+    await waitFor(() => expect(screen.getByTestId("admin-commissions").dataset["count"]).toBe("1"));
+    await u.click(screen.getByTestId("cms-clear"));
+    await waitFor(() => expect(screen.getAllByTestId("cms-row")).toHaveLength(2));
+    // select ria's row, Mark paid (1), confirm
+    const ria = screen.getAllByTestId("cms-row").find((r) => r.dataset["email"] === "ria@example.com")!;
+    await u.click(within(ria).getByTestId("cms-select"));
+    expect(screen.getByTestId("cms-bulk-pay").textContent).toBe("Mark paid (1)");
+    await u.click(screen.getByTestId("cms-bulk-pay"));
+    expect(screen.getByTestId("cms-bulk-dialog").textContent).toContain("₹199.80");
+    await u.click(screen.getByTestId("cms-bulk-confirm"));
+    await waitFor(() => expect(mock.state.commissions.filter((x) => x.status === "pending")).toHaveLength(0));
+    await waitFor(() => expect(screen.getByTestId("cms-bulk-pay")).toHaveProperty("disabled", true));
+    await u.type(screen.getByTestId("cms-search"), "ria");
+    await waitFor(() => expect(screen.getAllByTestId("cms-row")).toHaveLength(1));
   });
 });
 

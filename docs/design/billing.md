@@ -51,3 +51,55 @@ The four plan cards are the comparison the trader asked for, not decoration; the
 1. "Is my plan active?" → the badge shows the state word and the days-left pill sits beside it; the banner repeats it.
 2. "Which price will I pay?" → one price large (discounted), the list price struck, and the interval toggle names the period; the breakdown dialog lists tax before the total.
 3. "Does 0 mean nothing or unlimited?" → 0 is rendered as "∞ Unlimited" everywhere and the admin dialog says "0 = unlimited" beside the input; a feature the plan lacks says "Not included".
+
+# Referrals and commissions · design (Phase 4 item 3, 08 Sep 2026)
+
+Reuses the v2 mock's account patterns (ref card, stat tiles, sub-matrix table, cg-dialog) and the admin table / bulkbar patterns above. Tokens per ADR-003; amber only for Share (trader) and Bulk pay (admin).
+
+## 1. Job
+**My Referrals**: in two seconds the trader sees *how much they have earned and what is still pending*, then gets the link to share. First question: "Did anyone I invited pay, and did I get paid?" answered by the Paid / Pending tiles.
+**Admin · Commissions**: settle what is owed. First question: "How much is pending right now?" answered by the Pending tile.
+
+## 2. Layout
+Desktop 1440 (`/referrals`, app shell, one scrolling page):
+```
+│ My Referrals · Share & Earn        20% COMMISSION · 6 REFERRALS      [Share ▲] │
+│ ┌ link card ───────────────────────────────┐ ┌ How it works ──────────────────┐ │
+│ │ 🎁 Get 20 % on every paid referral       │ │ 1 Share your link              │ │
+│ │ [https://hapiecoin.com/auth?ref=CODE][Copy]│ 2 Friend signs up and buys     │ │
+│ │ Code: ┆ REFABC1234 ┆ (click copies)       │ │ 3 Earn 20 % · Pending → Paid   │ │
+│ └──────────────────────────────────────────┘ └────────────────────────────────┘ │
+│ Total referrals 6 · Total earned ₹1,234.00 · Paid ₹900.00 · Pending ₹334.00     │
+│ Earnings by month  ▮▮ ▮░ ▮▮▮  (paid solid, pending hatched)                     │
+│ [search] [status ▾] [plan ▾] Date [from] [to] [Clear]            [Copy CSV]     │
+│ User ▾ | Joined ▾ | Plan | Amount | Commission | Status   (10 rows, pager)       │
+```
+Narrow 390: link card and How-it-works stack; tiles wrap 2 × 2; chart keeps its own `overflow-x`; the table scrolls in its box with the User column sticky; filters wrap to two rows.
+Admin Commissions tab (inside User Subscriptions): tiles row → filters (search referrer, month, Clear) → bulk bar when rows are ticked → table → chart below the table.
+
+## 3. Hierarchy
+Primary: Share (trader), Bulk pay (admin). Secondary: Copy, Copy CSV, table sort headers, Mark Paid / View. Tertiary: tiles, chart, code chip. Green only for commission amounts and the Paid badge; amber for the Pending badge; grey for No Purchase.
+
+## 4. States
+Loading: skeleton card + tiles. Empty: "No referrals yet · Share your link to start earning" with a Share button; filtered-out: "No results found" with Clear filters; admin: "No commissions found". Error: inline with Retry (HC-AC-055 asks for a toast; the page also keeps its header so nothing is blank). Light and dark from tokens; the hatched pending bars use a pattern, not a second colour.
+
+## 5. Numbers
+All ₹ INR, mono, right-aligned, two decimals on money (₹1,234.00, Indian grouping); counts without decimals; commission % from the referrer's `commissionPct` (admin-set, default 0 → the page says "Ask for your commission rate" instead of "0 %"). Joined = the referred user's sign-up date (dd MMM yyyy, UTC). Month buckets by the commission's `createdAt` (UTC). Sorting: dates and money default descending, text ascending.
+
+## 6. Interaction
+Tab order: Share → link input (click selects all) → Copy → code chip → filters → table headers (Enter toggles sort) → pager. Palette: "Referrals: copy link" (HC-AC-073). Share dialog: link row with Copy link and "Share…" (native `navigator.share` when present), three message templates each with Copy message. Admin: tick rows → bulk bar "Mark paid"; Mark Payment dialog defaults to Paid; Not Paid requires a reason; proof URL must be http(s).
+
+## 7. Traceability
+HC-AC-037..055, 067..074; HC-AD-052..058, 118, 119. Playwright: `account.spec.ts` "HC-AC-038 / 043 / 050 / 069 link card, tiles, filters and the Share dialog" and "HC-AC-051 no referrals"; `admin.spec.ts` "HC-AD-052..058 / 118 commissions: tiles, View, Mark Paid, Bulk pay"; visuals `account-referrals-<theme>.png`, `account-referrals-share-<theme>.png`, `admin-commissions-<theme>.png`, `admin-commissions-mark-<theme>.png` (visual.spec.ts). Unit: `referrals.test.tsx`, `admin.test.tsx` (commissions), `shell.test.tsx` (palette copy link), api `routes/referrals.test.ts`, schema `referrals.test.ts`.
+
+## 8. Real-data check
+0 referrals: card + empty state, chart hidden. 500 referrals: server-side pagination at 10, filters server-side, chart limited to the last 12 months. A ₹1,29,999.00 commission fits the mono cell at 13 px. Long names truncate at 28 characters with a title tooltip. Breakpoint that fails: the six-column table below 640 px; fix is the sticky first column plus horizontal scroll.
+
+## 9. Generic-pattern check
+Four tiles answer four different questions (count, earned, paid, pending), not decoration. One amber action per screen. The gift icon is the only icon and marks the share card. The chart shows state through shape (solid vs hatched), not a second colour.
+
+## 10. Confusion check
+1. "Is Pending money I already have?" → the tile label reads "Pending · not yet paid out" and the How-it-works note explains Pending → Paid on settlement.
+2. "Which link do I share?" → one link input, one Copy, the code chip explains it is the same code in the link.
+3. "No Purchase vs Pending" → No Purchase is grey and reads "signed up, no plan yet"; Pending is amber with the amount.
+

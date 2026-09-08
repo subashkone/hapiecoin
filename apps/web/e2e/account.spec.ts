@@ -47,3 +47,35 @@ test.describe("HC-AC My Subscription", () => {
     await expect(page.getByTestId("subscription-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
   });
 });
+
+test.describe("HC-AC My Referrals", () => {
+  test("HC-AC-038 / HC-AC-043 / HC-AC-050 / HC-AC-069 link card, tiles, filters and the Share dialog", async ({ page, request, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await seedUser(request, { email: "ref@example.com", referrals: 6 });
+    await signIn(page, "ref@example.com");
+    await page.goto("/referrals");
+    await expect(page.getByTestId("referrals-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("ref-meta")).toHaveText("20% commission · 6 referrals");
+    await expect(page.getByTestId("ref-link")).toHaveValue(/[/]auth[?]tab=signup&ref=ASHA2026$/);
+    await page.getByTestId("ref-copy").click();
+    await expect(page.getByText("Copied!")).toBeVisible();
+    await expect(page.getByTestId("ref-tile").nth(3)).toContainText("₹799.40");
+    await expect(page.getByTestId("earnings-bar")).toHaveCount(4);
+    await expect(page.getByTestId("ref-row")).toHaveCount(6);
+    await page.getByTestId("ref-status-filter").selectOption("pending");
+    await expect(page.getByTestId("ref-row")).toHaveCount(3);
+    await page.getByTestId("ref-clear").click();
+    await expect(page.getByTestId("ref-row")).toHaveCount(6);
+    await page.getByTestId("ref-share").click();
+    await expect(page.getByTestId("share-dialog")).toBeVisible();
+    await expect(page.getByTestId("share-whatsapp")).toContainText("ref=ASHA2026");
+  });
+
+  test("HC-AC-051 a trader with no referrals sees the share prompt", async ({ page, request }) => {
+    await seedUser(request, { email: "lonely@example.com" });
+    await signIn(page, "lonely@example.com");
+    await page.goto("/referrals");
+    await expect(page.getByTestId("ref-empty")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("earnings-chart")).toHaveCount(0);
+  });
+});

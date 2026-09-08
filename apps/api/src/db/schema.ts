@@ -383,6 +383,33 @@ export const strategyOrders = pgTable(
   (t) => [index("strategy_orders_strategy_id_idx").on(t.strategyId), uniqueIndex("strategy_orders_client_uq").on(t.clientOrderId)],
 );
 
+/** Referral commissions (Phase 4 item 3, ADR-031): one row per referred subscription, settled by an admin. */
+export const referralCommissions = pgTable(
+  "referral_commissions",
+  {
+    id: text("id").primaryKey(),
+    referrerId: text("referrer_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    referredUserId: text("referred_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    subscriptionId: text("subscription_id").references(() => subscriptions.id, { onDelete: "set null" }),
+    planName: text("plan_name").notNull(),
+    interval: text("interval", { enum: ["monthly", "quarterly", "yearly"] }),
+    /** What the referred user paid (INR) and the commission on it at the referrer's percentage at that time. */
+    amountInr: text("amount_inr").notNull().default("0"),
+    commissionInr: text("commission_inr").notNull().default("0"),
+    commissionPct: text("commission_pct").notNull().default("0"),
+    status: text("status", { enum: ["paid", "pending", "not_paid"] }).notNull(),
+    paidAt: timestamp("paid_at", { withTimezone: true, mode: "date" }),
+    note: text("note"),
+    proofUrl: text("proof_url"),
+    ...timestamps,
+  },
+  (t) => [index("referral_commissions_referrer_idx").on(t.referrerId), uniqueIndex("referral_commissions_subscription_uq").on(t.subscriptionId)],
+);
+
 /** Every table, for `drizzle(client, { schema })`; declared last so each table exists before it is referenced. */
 export const schema = {
   users,
@@ -401,5 +428,6 @@ export const schema = {
   strategyOrders,
   plans,
   menuItems,
+  referralCommissions,
 };
 export type Schema = typeof schema;
