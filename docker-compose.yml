@@ -1,7 +1,8 @@
 name: hapiecoin
 services:
   postgres:
-    image: timescale/timescaledb:latest-pg17
+    # Pinned by digest (GAPS #30): timescaledb 2.29.2 on PostgreSQL 17.11 as pulled on 08 Sep 2026. Bump deliberately.
+    image: timescale/timescaledb:latest-pg17@sha256:bc8527e62f70f0766b29515077965025872fabb5349db421565f69ee273baf2d
     container_name: hapiecoin-postgres
     environment:
       POSTGRES_USER: hapiecoin

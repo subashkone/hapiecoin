@@ -17,6 +17,7 @@ import { type LegKind, type LegSide, type RowMarks, type StrategyLeg, rowMarks }
 import { ChainHeader } from "./ChainHeader";
 import { RowControls } from "./RowControls";
 import { ChainFooter, ChainTools, rangeLabel } from "./ChainTools";
+import type { FeedState } from "./ChainTools";
 import {
   COLUMN_PX,
   type ChainColumn,
@@ -151,6 +152,7 @@ export interface ChainTableProps {
   daysLeft: number | null;
   lotLabel: string;
   live: boolean;
+  feed?: FeedState | undefined;
   /** Time label shown in the footer while stale, or null. */
   asOf: string | null;
   /** Panel width override for tests (jsdom has no layout). */
@@ -184,6 +186,7 @@ export function ChainTable({
   daysLeft,
   lotLabel,
   live,
+  feed,
   asOf,
   initialWidth = 1200,
   legs = [],
@@ -437,6 +440,7 @@ export function ChainTable({
         range={range}
         onRange={onRange}
         live={live}
+        feed={feed}
         sides={sides}
         narrow={narrow}
         onSide={setNarrowSide}

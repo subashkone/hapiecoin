@@ -7,7 +7,7 @@ import { fmtDelta, fmtGamma, fmtPrice, fmtStrike, fmtVega } from "@/lib/format";
 import { useChain } from "@/lib/gateway/hooks";
 import { fmtMoney, fmtMoneyCompact } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
-import { cleanStep, pnlAt, popGrade, rrGrade, rrText, whereExtreme, winZone } from "@/lib/strategy/analysis";
+import { cleanStep, pnlAt, popGrade, rrGrade, rrText, spotZoneAt, whereExtreme, winZone } from "@/lib/strategy/analysis";
 import { type StrategyAnalysis, useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
 import { PayoffChart, type PayoffChartFrame } from "./PayoffChart";
 
@@ -127,6 +127,7 @@ export function PayoffPanel() {
   const dte = result && Number.isFinite(result.daysToNearestExpiry) ? Math.max(0, Math.ceil(result.daysToNearestExpiry)) : 0;
   const priceStep = spot ? cleanStep(spot * 0.001) : 1;
   const hoverPnl = hover !== null && result ? { exp: pnlAt(result.points, hover, "pnlExpiry"), tgt: pnlAt(result.points, hover, "pnlTarget") } : null;
+  const spotZone = result && spot !== null ? spotZoneAt(result, spot, money) : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="payoff-panel" data-state={result ? "ready" : a.error ? "error" : "pending"}>
@@ -146,6 +147,10 @@ export function PayoffPanel() {
         <span>
           <span className="text-muted-foreground">Expected move </span>
           <span className="num" data-testid="expected-move">{result && Number.isFinite(result.expectedMove) ? `±${fmtStrike(String(Math.round(result.expectedMove)))} (${((result.expectedMove / (spot || 1)) * 100).toFixed(1)}%)` : "—"}</span>
+        </span>
+        <span data-testid="spot-zone" data-zone={spotZone?.zone ?? ""}>
+          <span className="text-muted-foreground">Spot now </span>
+          <span className={cn("num font-medium", spotZone?.zone === "profit" && "text-profit", spotZone?.zone === "loss" && "text-loss")}>{spotZone ? spotZone.text : "—"}</span>
         </span>
         <span>
           <span className="text-muted-foreground">Nearest expiry </span>

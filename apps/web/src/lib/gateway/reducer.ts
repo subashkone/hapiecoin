@@ -41,6 +41,7 @@ const FLASH_FIELDS = ["mark", "bid", "ask", "last", "oi"] as const;
 
 export function applyDeltas(state: ChainState, seq: number, deltas: QuoteDelta[], now = Date.now()): ChainState {
   if (state.seq < 0) return state; // no snapshot yet: ignore until one arrives
+  if (seq <= state.seq) return state; // replay or out-of-order frame: already applied, nothing to do
   if (seq !== state.seq + 1) return { ...state, stale: true };
   const rows = state.rows.slice();
   const changed = new Map<string, Set<keyof Quote>>();

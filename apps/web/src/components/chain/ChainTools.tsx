@@ -13,10 +13,21 @@ export function rangeLabel(range: ChainRange): string {
   return range === 0 ? "all strikes" : `strikes ±${range}`;
 }
 
+export type FeedState = "live" | "connecting" | "stale" | "paused";
+const FEED_LABEL: Record<FeedState, string> = { live: "Live", connecting: "Connecting", stale: "Stale", paused: "Paused" };
+const FEED_TITLE: Record<FeedState, string> = {
+  live: "Quotes stream from the gateway",
+  connecting: "Connecting to the market-data gateway…",
+  stale: "A frame was missed; the chain shows the last snapshot until it resubscribes",
+  paused: "Feed paused from the header",
+};
+
 export interface ChainToolsProps {
   range: ChainRange;
   onRange: (range: ChainRange) => void;
   live: boolean;
+  /** Pill state (HC-WS-009); derived from `live` when absent. */
+  feed?: FeedState | undefined;
   sides: "both" | "calls" | "puts";
   narrow: boolean;
   onSide: (side: "calls" | "puts") => void;
@@ -26,7 +37,8 @@ export interface ChainToolsProps {
   columnsShown?: number;
 }
 
-export function ChainTools({ range, onRange, live, sides, narrow, onSide, onRecentre, onOpenColumns, columnsShown }: ChainToolsProps) {
+export function ChainTools({ range, onRange, live, feed, sides, narrow, onSide, onRecentre, onOpenColumns, columnsShown }: ChainToolsProps) {
+  const state: FeedState = feed ?? (live ? "live" : "stale");
   return (
     <div className="flex h-[34px] shrink-0 items-center gap-2 border-b border-border px-2" data-testid="chain-tools">
       <div className="inline-flex h-[22px] overflow-hidden rounded-[3px] border border-input" role="group" aria-label="Strike range" data-testid="chain-range">
@@ -72,9 +84,9 @@ export function ChainTools({ range, onRange, live, sides, narrow, onSide, onRece
         </div>
       ) : null}
       <span className="flex-1" />
-      <span className="inline-flex items-center gap-1.5 font-mono text-3xs uppercase tracking-[0.06em] text-muted-foreground" data-testid="chain-live" data-live={live}>
-        <i className={cn("inline-block h-1.5 w-1.5 rounded-full", live ? "live-dot" : "bg-muted-foreground/50")} />
-        {live ? "Live" : "Stale"}
+      <span className="inline-flex items-center gap-1.5 font-mono text-3xs uppercase tracking-[0.06em] text-muted-foreground" title={FEED_TITLE[state]} data-testid="chain-live" data-live={live} data-feed={state}>
+        <i className={cn("inline-block h-1.5 w-1.5 rounded-full", state === "live" ? "live-dot" : state === "connecting" ? "animate-pulse bg-warning" : "bg-muted-foreground/50")} />
+        {FEED_LABEL[state]}
       </span>
       {onOpenColumns ? (
         <button

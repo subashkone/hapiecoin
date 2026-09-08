@@ -20,6 +20,7 @@ const CONFIG: ServerConfig = {
   MAX_TOPICS_PER_CONN: 3,
   MAX_BUFFERED_BYTES: 1_024,
   COALESCE_MS: 250,
+  MAX_CONNECTIONS_PER_IP: 20,
 };
 
 let now = NOW;
@@ -99,6 +100,32 @@ describe("[GATEWAY] HTTP endpoints", () => {
     expect(body.feed.expiries.BTC[0]).toBe("2026-09-05");
     expect(body.feed.spot.BTC).toMatch(/^\d/);
     feed.stop();
+  });
+
+  it("[GAPS-30] /metrics needs the bearer token when METRICS_TOKEN is set", async () => {
+    const { server } = await make({ METRICS_TOKEN: "s3cret-metrics-token" });
+    expect(http(server, "/metrics").status).toBe(401);
+    expect(server.handlers.http({ method: "GET", url: "/metrics", headers: { authorization: "Bearer wrong" } }).status).toBe(401);
+    const ok = server.handlers.http({ method: "GET", url: "/metrics", headers: { authorization: "Bearer s3cret-metrics-token" } });
+    expect(ok.status).toBe(200);
+    expect(ok.body).toContain("hapiecoin_gateway_connections");
+    // /healthz stays open for load balancers
+    expect(http(server, "/healthz").status).not.toBe(401);
+  });
+
+  it("[GAPS-30] a client address may hold at most MAX_CONNECTIONS_PER_IP sockets; the next one is closed with 1013", async () => {
+    const { server, transport } = await make({ MAX_CONNECTIONS_PER_IP: 2 });
+    const a = transport.connect()!;
+    const b = transport.connect()!;
+    const c = transport.connect()!;
+    expect(a.closed).toBeNull();
+    expect(b.closed).toBeNull();
+    expect(c.closed).toMatchObject({ code: 1013 });
+    expect(server.connectionCount()).toBe(2);
+    a.disconnect();
+    const d = transport.connect()!;
+    expect(d.closed).toBeNull();
+    expect(server.connectionCount()).toBe(2);
   });
 
   it("[GATEWAY] /metrics reports connections, topics and a per-scrape message rate; other paths 404, non-GET 405", async () => {

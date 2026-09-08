@@ -12,7 +12,7 @@
   "phase": 1,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "Rendered by CG.chrome['app-header'] variant 'analyse'; 50px panel-tone header with hairline bottom border; link to #/analyse",
-  "evidence": "screenshot feature-payoff-diagram"
+  "evidence": "screenshot feature-payoff-diagram · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
  },
  {
   "id": "HC-SH-002",
@@ -27,7 +27,7 @@
   "phase": 1,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "Shown when CG.auth.isAdmin(); hidden for normal users",
-  "evidence": "bundle strings: ' Admin ', Admin"
+  "evidence": "bundle strings: ' Admin ', Admin · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
  },
  {
   "id": "HC-SH-003",
@@ -42,7 +42,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Clicking a segment sets CG.state.asset, saves state, emits 'asset' and toasts; CG.chrome.openAssetMenu() dropdown kept for compatibility",
-  "evidence": "bundle strings: Bitcoin, Ethereum, Tether Gold, asset-select"
+  "evidence": "bundle strings: Bitcoin, Ethereum, Tether Gold, asset-select · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx, e2e analyse.spec.ts"
  },
  {
   "id": "HC-SH-004",
@@ -57,7 +57,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Label 'FUTURES · BTCUSD'; price flashes green/red vs previous tick; 24h % derived from base price",
-  "evidence": "header label 'Futures Price' in screenshots"
+  "evidence": "header label 'Futures Price' in screenshots · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx, e2e analyse.spec.ts"
  },
  {
   "id": "HC-SH-005",
@@ -72,7 +72,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "Same cell as the price, semantic profit/loss colour",
-  "evidence": "header label '24h Change'"
+  "evidence": "header label '24h Change' · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx"
  },
  {
   "id": "HC-SH-006",
@@ -87,7 +87,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Replaces the green pill; dot turns grey when paused, amber while connecting; emits 'live-feed' and toasts",
-  "evidence": "bundle strings: Live, Connecting..."
+  "evidence": "bundle strings: Live, Connecting... · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx, e2e analyse.spec.ts"
  },
  {
   "id": "HC-SH-007",
@@ -102,7 +102,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright) · api contract",
   "acceptance": "Opens the Delta Exchange API Settings dialog; turns green with 'Connected' when CG.state.exchangeConnected",
-  "evidence": "bundle strings: Exchange, Click to connect exchange, Not Connected, Connect"
+  "evidence": "bundle strings: Exchange, Click to connect exchange, Not Connected, Connect · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx"
  },
  {
   "id": "HC-SH-008",
@@ -117,7 +117,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Opens balance popover: Available / Margin Used / Total Equity from CG.mock.wallet + 'Click to refresh' (refreshes numbers, toast)",
-  "evidence": "bundle strings: Available, Margin Used, Total Equity, Click to refresh, Click to refresh balance"
+  "evidence": "bundle strings: Available, Margin Used, Total Equity, Click to refresh, Click to refresh balance · Phase 1 tests (tagged 08 Sep 2026): unit widgets.test.tsx"
  },
  {
   "id": "HC-SH-009",
@@ -162,7 +162,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "CG.theme.toggle(); header re-renders icon and title on 'theme' event",
-  "evidence": "bundle strings: Switch to Dark Mode, Switch to Light Mode"
+  "evidence": "bundle strings: Switch to Dark Mode, Switch to Light Mode · Phase 1 tests (tagged 08 Sep 2026): unit shell.test.tsx"
  },
  {
   "id": "HC-SH-012",
@@ -192,7 +192,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "Opens the settings dropdown menu",
-  "evidence": "bundle string: settings-menu"
+  "evidence": "bundle string: settings-menu · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
  },
  {
   "id": "HC-SH-014",
@@ -207,7 +207,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "If the screen has no data-cg=plan-banner placeholder the header appends one",
-  "evidence": "bundle strings: Your plan has expired., Congratulations! Your plan is active until"
+  "evidence": "bundle strings: Your plan has expired., Congratulations! Your plan is active until · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
  },
  {
   "id": "HC-SH-015",
@@ -222,7 +222,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "CG.chrome['app-header'] default variant used by every non-analyse logged-in page",
-  "evidence": "observed on /subscription, /referrals, /admin/*"
+  "evidence": "observed on /subscription, /referrals, /admin/* · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
  },
  {
   "id": "HC-SH-016",
@@ -237,7 +237,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Replaces the 'Go to Analyse' button; active tab from CG.current.path (Market Analytics also active on /terminal/*)",
-  "evidence": "inferred from bundle nav strings"
+  "evidence": "inferred from bundle nav strings · Phase 1 tests (tagged 08 Sep 2026): e2e public.spec.ts"
  },
  {
   "id": "HC-SH-017",
@@ -252,7 +252,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Navigates to /analytics; highlighted when current path starts with /analytics",
-  "evidence": "bundle string: Market Analytics"
+  "evidence": "bundle string: Market Analytics · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
  },
  {
   "id": "HC-SH-018",
@@ -267,7 +267,7 @@
   "phase": 1,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "Only rendered when CG.auth.isAdmin()",
-  "evidence": "bundle string: Admin, /admin/users"
+  "evidence": "bundle string: Admin, /admin/users · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
  },
  {
   "id": "HC-SH-019",
@@ -297,7 +297,7 @@
   "phase": 1,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Menu shows name/email, My Profile, My Subscription, My Referrals, Logout",
-  "evidence": "bundle strings: Account, My Profile, My Subscription, My Referrals, Logout"
+  "evidence": "bundle strings: Account, My Profile, My Subscription, My Referrals, Logout · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
  },
  {
   "id": "HC-SH-021",
@@ -312,7 +312,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "Header re-renders on 'auth'; Sign In navigates to /auth",
-  "evidence": "observed: public pages show Sign In"
+  "evidence": "observed: public pages show Sign In · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
  },
  {
   "id": "HC-SH-022",
@@ -327,7 +327,7 @@
   "phase": 1,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "My Profile opens the Profile dialog; the others navigate to /subscription and /referrals",
-  "evidence": "bundle strings: Account, My Profile, My Subscription, My Referrals"
+  "evidence": "bundle strings: Account, My Profile, My Subscription, My Referrals · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx"
  },
  {
   "id": "HC-SH-023",
@@ -387,7 +387,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "'Are you sure you want to sign out? You'll need to sign in again to access your account.' → CG.auth.logout() + toast 'Logged out · You have been signed out.'",
-  "evidence": "bundle strings: Confirm Logout, Logged out, You have been signed out."
+  "evidence": "bundle strings: Confirm Logout, Logged out, You have been signed out. · Phase 1 tests (tagged 08 Sep 2026): unit AppHeader.test.tsx, unit dialogs.test.tsx, e2e analyse.spec.ts"
  },
  {
   "id": "HC-SH-027",
@@ -402,7 +402,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "CG.chrome.openSettings('profile')",
-  "evidence": "bundle strings: Profile, Your account details"
+  "evidence": "bundle strings: Profile, Your account details · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-028",
@@ -417,7 +417,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "Tapping the avatar or Change reveals the picker; picking updates CG.mock.user.avatar, header avatar and toasts 'Avatar updated'",
-  "evidence": "bundle strings: rocket, diamond, lightning, Tap to change avatar, Choose your avatar, Change, Avatar updated"
+  "evidence": "bundle strings: rocket, diamond, lightning, Tap to change avatar, Choose your avatar, Change, Avatar updated · dialog copy and flow audited against the v2 mock (08 Sep 2026)"
  },
  {
   "id": "HC-SH-029",
@@ -432,7 +432,7 @@
   "phase": 1,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Read-only until Edit Profile; copy button toasts 'Copied'",
-  "evidence": "bundle strings: Full Name, Your name, Mobile, Mobile number, Email"
+  "evidence": "bundle strings: Full Name, Your name, Mobile, Mobile number, Email · dialog copy and flow audited against the v2 mock (08 Sep 2026)"
  },
  {
   "id": "HC-SH-030",
@@ -447,7 +447,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "Validates name, 600ms 'Saving...' then updates CG.mock.user, emits 'profile-updated', toast 'Profile updated'",
-  "evidence": "bundle strings: Edit Profile, Saving..., Profile updated"
+  "evidence": "bundle strings: Edit Profile, Saving..., Profile updated · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-031",
@@ -462,7 +462,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "'Checking connection...' spinner (700ms) then 'Not Connected · Enter your Delta Exchange API credentials to enable live trading.' or connected block with 'API Key: ••••1a2b', 'Connected: <date>', 'Wallet: $1,000.00'",
-  "evidence": "bundle strings: Delta Exchange API Settings, Checking connection..., API Key: , Connected: , Wallet:, Not Connected"
+  "evidence": "bundle strings: Delta Exchange API Settings, Checking connection..., API Key: , Connected: , Wallet:, Not Connected · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-032",
@@ -477,7 +477,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Select lists CG.mock.brokers; fee line updates on change; selection stored in CG.mock.apiCredentials.brokerId",
-  "evidence": "bundle strings: Select Exchange, % fee), Fee: , % · GST: , % · Cap: "
+  "evidence": "bundle strings: Select Exchange, % fee), Fee: , % · GST: , % · Cap:  · dialog copy and flow audited against the v2 mock (08 Sep 2026)"
  },
  {
   "id": "HC-SH-033",
@@ -492,7 +492,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Placeholders 'Enter your Delta Exchange API key' / 'Enter your Delta Exchange API secret'",
-  "evidence": "bundle strings: API Credentials, API Key, API Secret, placeholders"
+  "evidence": "bundle strings: API Credentials, API Key, API Secret, placeholders · dialog copy and flow audited against the v2 mock (08 Sep 2026)"
  },
  {
   "id": "HC-SH-034",
@@ -507,7 +507,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Empty key/secret → destructive toast 'Save Failed'; success sets CG.state.exchangeConnected, emits 'exchange-changed' + 'broker-credentials-changed', toast 'Exchange Connected · API credentials saved to server'",
-  "evidence": "bundle strings: Connect & Save, Connecting..., Exchange Connected, API credentials saved to server, Save Failed"
+  "evidence": "bundle strings: Connect & Save, Connecting..., Exchange Connected, API credentials saved to server, Save Failed · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-035",
@@ -522,7 +522,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "External link with rel=noopener noreferrer",
-  "evidence": "bundle strings: Get your API key from, Delta Exchange → Account → API Keys"
+  "evidence": "bundle strings: Get your API key from, Delta Exchange → Account → API Keys · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-036",
@@ -537,7 +537,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Copy writes to clipboard and toasts 'Copied · IP address copied to clipboard'; hint 'Add this IP to your Delta Exchange API key whitelist for secure access.'",
-  "evidence": "bundle strings: Whitelisted IP Address, Copy, Copied, IP address copied to clipboard, hint text"
+  "evidence": "bundle strings: Whitelisted IP Address, Copy, Copied, IP address copied to clipboard, hint text · dialog copy and flow audited against the v2 mock (08 Sep 2026)"
  },
  {
   "id": "HC-SH-037",
@@ -552,7 +552,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Clears credentials, CG.state.exchangeConnected=false, toast 'Exchange Disconnected · Delta Exchange credentials removed'",
-  "evidence": "bundle strings: Disconnect Exchange, Exchange Disconnected, Delta Exchange credentials removed"
+  "evidence": "bundle strings: Disconnect Exchange, Exchange Disconnected, Delta Exchange credentials removed · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-038",
@@ -567,7 +567,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "Rate defaults to CG.state.conversionRate (83.5)",
-  "evidence": "bundle strings: Currency Settings, From Currency, To Currency, Conversion Rate"
+  "evidence": "bundle strings: Currency Settings, From Currency, To Currency, Conversion Rate · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-039",
@@ -582,7 +582,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Note updates live as rate / currency change",
-  "evidence": "bundle strings: All calculated values…, Indian Rupees (₹), US Dollars ($), Rate: $1 = ₹"
+  "evidence": "bundle strings: All calculated values…, Indian Rupees (₹), US Dollars ($), Rate: $1 = ₹ · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-040",
@@ -597,7 +597,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "Validates rate > 0; sets CG.state.conversionRate + currency, emits 'currency-settings-changed', toast 'Currency conversion saved'",
-  "evidence": "bundle strings: Save, Saving..., Cancel, Currency conversion saved"
+  "evidence": "bundle strings: Save, Saving..., Cancel, Currency conversion saved · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-041",
@@ -612,7 +612,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "Inputs pre-filled from CG.state.lotSizes",
-  "evidence": "bundle strings: Lot Size Settings, Lot size for each symbol, Lot Size, 1 lot ="
+  "evidence": "bundle strings: Lot Size Settings, Lot size for each symbol, Lot Size, 1 lot = · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-042",
@@ -627,7 +627,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "Validates > 0 (else 'Failed to save lot sizes'), stores CG.state.lotSizes, emits 'lot-sizes-changed'",
-  "evidence": "bundle strings: Lot sizes saved, Failed to save lot sizes"
+  "evidence": "bundle strings: Lot sizes saved, Failed to save lot sizes · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx, e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-043",
@@ -642,7 +642,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "aria radiogroup; click selects; Save stores CG.state.pnlBasis ('mark' | 'bid_ask') and emits 'pnl-basis-changed'",
-  "evidence": "bundle strings: P&L Settings, Choose the price basis…, Mark price, Bid/Ask (executable), bid_ask, P&L price basis"
+  "evidence": "bundle strings: P&L Settings, Choose the price basis…, Mark price, Bid/Ask (executable), bid_ask, P&L price basis · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx, e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-044",
@@ -657,7 +657,7 @@
   "phase": 1,
   "test": "visual (screenshot diff) · api contract",
   "acceptance": "Static info alert with the bundle text ('…so the two figures will differ — usually by the bid/ask spread, and more on illiquid strikes.')",
-  "evidence": "bundle strings: Delta Exchange shows P&L at the mark price…"
+  "evidence": "bundle strings: Delta Exchange shows P&L at the mark price… · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-045",
@@ -672,7 +672,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Rendered from CG.mock.brokers",
-  "evidence": "bundle strings: Exchange Management, Manage exchange configurations for paper trading, Fee Cap, GST: , Preferred, GLOBAL"
+  "evidence": "bundle strings: Exchange Management, Manage exchange configurations for paper trading, Fee Cap, GST: , Preferred, GLOBAL · Phase 1 tests (tagged 08 Sep 2026): unit dialogs.test.tsx; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-046",
@@ -687,7 +687,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Fields Exchange Name ('e.g., Delta Exchange India'), Fee Percentage (%) 'Percentage of notional value', GST Percentage (%), Fee Cap (% of premium) 'Maximum fee as percentage of premium'; Create pushes to CG.mock.brokers, toast 'Success · Exchange created successfully'",
-  "evidence": "bundle strings: Add Exchange, Add New Exchange, Configure exchange fee structure, field labels/hints, Create, Exchange created successfully"
+  "evidence": "bundle strings: Add Exchange, Add New Exchange, Configure exchange fee structure, field labels/hints, Create, Exchange created successfully · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-047",
@@ -702,7 +702,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Inline error + destructive toast 'Validation Error'",
-  "evidence": "bundle strings: Validation Error, Exchange name is required"
+  "evidence": "bundle strings: Validation Error, Exchange name is required · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-048",
@@ -717,7 +717,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "Mutates the broker in CG.mock.brokers, toast 'Exchange updated successfully', emits 'brokers-changed'",
-  "evidence": "bundle strings: Edit, Edit Exchange, Update, Exchange updated successfully"
+  "evidence": "bundle strings: Edit, Edit Exchange, Update, Exchange updated successfully · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-049",
@@ -732,7 +732,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "Body 'Are you sure you want to delete this exchange?' + '⚠️ Warning: Any strategies using this exchange will need to be reconfigured.'; confirm removes from CG.mock.brokers, toast 'Exchange deleted successfully'",
-  "evidence": "bundle strings: Delete Exchange, This action cannot be undone, warning text, Exchange deleted successfully"
+  "evidence": "bundle strings: Delete Exchange, This action cannot be undone, warning text, Exchange deleted successfully · Phase 1 tests (tagged 08 Sep 2026): e2e settings.spec.ts; dialog copy and flow audited against the v2 mock"
  },
  {
   "id": "HC-SH-050",
@@ -1708,7 +1708,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "Nav links smooth-scroll to landing sections without changing the route; Ctrl K opens CG.palette; Sign Up → #/auth?tab=signup, Get Started → #/auth",
-  "evidence": "bundle strings: Features, Market Analytics, Markets, Exchanges, Sign Up, Get Started, #features, #crypto-analytics, #prices, #exchanges"
+  "evidence": "bundle strings: Features, Market Analytics, Markets, Exchanges, Sign Up, Get Started, #features, #crypto-analytics, #prices, #exchanges · Phase 1 tests (tagged 08 Sep 2026): unit landing.test.tsx, e2e public.spec.ts"
  },
  {
   "id": "HC-PB-002",
@@ -1753,7 +1753,7 @@
   "phase": 1,
   "test": "unit (pricing) · visual (screenshot diff) · security",
   "acceptance": "Copy unchanged; dark ground, no gradient washes",
-  "evidence": "bundle: rst[] array, hero-grid pattern"
+  "evidence": "bundle: rst[] array, hero-grid pattern · Phase 1 tests (tagged 08 Sep 2026): unit landing.test.tsx, e2e public.spec.ts"
  },
  {
   "id": "HC-PB-005",
@@ -1828,7 +1828,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Tiles update and flash on every 'tick'",
-  "evidence": "bundle: v2/ticker websocket subscription, LIVE / Connecting..., H: $ / L: $"
+  "evidence": "bundle: v2/ticker websocket subscription, LIVE / Connecting..., H: $ / L: $ · Phase 1 tests (tagged 08 Sep 2026): unit landing.test.tsx, e2e public.spec.ts"
  },
  {
   "id": "HC-PB-010",
@@ -1963,7 +1963,7 @@
   "phase": 1,
   "test": "unit (pricing) · visual (screenshot diff) · api contract · security",
   "acceptance": "Text-logo tiles; the live card is highlighted, coming-soon cards are dimmed to 60% like the original",
-  "evidence": "bundle: Tot[] array, Live / Coming Soon badges"
+  "evidence": "bundle: Tot[] array, Live / Coming Soon badges · Phase 1 tests (tagged 08 Sep 2026): e2e public.spec.ts"
  },
  {
   "id": "HC-PB-019",
@@ -2038,7 +2038,7 @@
   "phase": 1,
   "test": "unit (pricing) · visual (screenshot diff) · security",
   "acceptance": "Glows and grid backgrounds removed",
-  "evidence": "bundle: Master Options / Trading, fnt[] features, © 2025 HapieCoin. Secure & encrypted."
+  "evidence": "bundle: Master Options / Trading, fnt[] features, © 2025 HapieCoin. Secure & encrypted. · Phase 1 tests (tagged 08 Sep 2026): unit AuthScreen.test.tsx"
  },
  {
   "id": "HC-PB-024",
@@ -2053,7 +2053,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Every tab change navigates to #/auth?tab=… (preserving next= and ref=) so browser back/forward moves between steps; sub-steps that need an email fall back to their parent step on a cold visit",
-  "evidence": "bundle: signup, otp-verify, verify-email, reset-password, forgot, otp-login view keys"
+  "evidence": "bundle: signup, otp-verify, verify-email, reset-password, forgot, otp-login view keys · Phase 1 tests (tagged 08 Sep 2026): unit AuthScreen.test.tsx"
  },
  {
   "id": "HC-PB-025",
@@ -2068,7 +2068,7 @@
   "phase": 1,
   "test": "e2e (Playwright)",
   "acceptance": "show() checks CG.state.loggedIn and navigates to ?next= or /analyse",
-  "evidence": "bundle: navigate('/analyse') when isLoggedIn"
+  "evidence": "bundle: navigate('/analyse') when isLoggedIn · Phase 1 tests (tagged 08 Sep 2026): e2e auth.spec.ts"
  },
  {
   "id": "HC-PB-026",
@@ -2083,7 +2083,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Email required / format validated inline (“Email is required”, “Invalid email”); password < 6 chars → toast “Login failed · Invalid credentials.”; success → CG.auth.login(email), toast “Welcome back! · Logged in successfully.”, navigate to ?next= or /analyse",
-  "evidence": "bundle strings: Welcome back, Sign in to your trading dashboard, Continue with Delta Exchange, Email, Password, Sign In, Forgot password?, Sign in with OTP, Create account, Invalid credentials., Logged in successfully."
+  "evidence": "bundle strings: Welcome back, Sign in to your trading dashboard, Continue with Delta Exchange, Email, Password, Sign In, Forgot password?, Sign in with OTP, Create account, Invalid credentials., Logged in successfully. · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
  },
  {
   "id": "HC-PB-027",
@@ -2098,7 +2098,7 @@
   "phase": 1,
   "test": "e2e (Playwright) · security",
   "acceptance": "Button switches the input type between password and text and swaps the icon; present on every password field",
-  "evidence": "bundle: Eye / EyeOff icon paths"
+  "evidence": "bundle: Eye / EyeOff icon paths · Phase 1 tests (tagged 08 Sep 2026): e2e auth.spec.ts"
  },
  {
   "id": "HC-PB-028",
@@ -2113,7 +2113,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Navigates to #/auth/delta which simulates the OAuth hand-off",
-  "evidence": "bundle: Continue with Delta Exchange, /auth/delta route"
+  "evidence": "bundle: Continue with Delta Exchange, /auth/delta route · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx"
  },
  {
   "id": "HC-PB-029",
@@ -2128,7 +2128,7 @@
   "phase": 1,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "Validates the email, toast “OTP Sent · Check your email for the OTP.” and moves to ?tab=otp-verify",
-  "evidence": "bundle: Sign in with OTP, otp-email, Send OTP, New here?, Create an account first, Back to login, OTP Sent"
+  "evidence": "bundle: Sign in with OTP, otp-email, Send OTP, New here?, Create an account first, Back to login, OTP Sent · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
  },
  {
   "id": "HC-PB-030",
@@ -2143,7 +2143,7 @@
   "phase": 1,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "Boxes auto-advance, support backspace and paste; any 6 digits succeed (e.g. 123456) → toast “Welcome! · Logged in successfully” + login; incomplete code → “Error · Enter valid OTP”; resend → toast “OTP Resent” and the 30s timer restarts",
-  "evidence": "bundle: Enter OTP, Code sent to, OTP Code, Verify & Login, Resend OTP in, Resend OTP, Change email, Enter valid OTP, OTP Resent"
+  "evidence": "bundle: Enter OTP, Code sent to, OTP Code, Verify & Login, Resend OTP in, Resend OTP, Change email, Enter valid OTP, OTP Resent · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
  },
  {
   "id": "HC-PB-031",
@@ -2158,7 +2158,7 @@
   "phase": 1,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "Referral code is prefilled from ?ref= (referral links); validations: name required, email format, 10-digit mobile, all password rules, confirm must match (“Passwords do not match”), referral pattern REF_…; success → toast “Account created! · Please verify your email with the OTP sent.” → ?tab=verify-email",
-  "evidence": "bundle: Start your options trading journey, Full Name, John Doe, Mobile Number, signup-ref, Referral Code (Optional), REF_XXXXXXX, Create Account, Already have an account?, Account created!"
+  "evidence": "bundle: Start your options trading journey, Full Name, John Doe, Mobile Number, signup-ref, Referral Code (Optional), REF_XXXXXXX, Create Account, Already have an account?, Account created! · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
  },
  {
   "id": "HC-PB-032",
@@ -2188,7 +2188,7 @@
   "phase": 1,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Incomplete → toast “Verification failed · Please enter the complete 6-digit OTP”; success → toast “Email verified! · You can now sign in.” and returns to the login tab with the email prefilled; resend → “OTP resent · A new OTP has been sent to your email.”",
-  "evidence": "bundle: Verify your email, We've sent a 6-digit OTP to, Verify Email, Didn't receive the code?, Resend in, Email verified!, You can now sign in., OTP resent"
+  "evidence": "bundle: Verify your email, We've sent a 6-digit OTP to, Verify Email, Didn't receive the code?, Resend in, Email verified!, You can now sign in., OTP resent · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
  },
  {
   "id": "HC-PB-034",
@@ -2203,7 +2203,7 @@
   "phase": 1,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "Validates the email, toast “OTP sent! · Check your email for the OTP.” → ?tab=reset-password",
-  "evidence": "bundle: Reset password, forgot-email, Email Address, Send OTP, Back to sign in, OTP sent!"
+  "evidence": "bundle: Reset password, forgot-email, Email Address, Send OTP, Back to sign in, OTP sent! · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
  },
  {
   "id": "HC-PB-035",
@@ -2218,7 +2218,7 @@
   "phase": 1,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "OTP must be 6 digits, new password must pass all rules and match; success → toast “Password reset! · You can now sign in with your new password.” → login tab",
-  "evidence": "bundle: Set new password, Enter the OTP sent to, and your new password, reset-new-password, New Password, Confirm Password, Reset Password, Password reset!, A new OTP has been sent."
+  "evidence": "bundle: Set new password, Enter the OTP sent to, and your new password, reset-new-password, New Password, Confirm Password, Reset Password, Password reset!, A new OTP has been sent. · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
  },
  {
   "id": "HC-PB-036",
@@ -2233,7 +2233,7 @@
   "phase": 1,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Protected screens redirect to /auth?next=/path; after any successful login the user lands on that path",
-  "evidence": "router contract in core.js"
+  "evidence": "router contract in core.js · Phase 1 tests (tagged 08 Sep 2026): e2e auth.spec.ts"
  },
  {
   "id": "HC-PB-037",
@@ -2788,7 +2788,7 @@
   "phase": 2,
   "test": "e2e (Playwright)",
   "acceptance": "Overflow measured after render / resize; arrows scroll the strip by 220px",
-  "evidence": "‹ › around the strip in the screenshot"
+  "evidence": "‹ › around the strip in the screenshot · Phase 2 close-out (08 Sep 2026): ExpiryStrip.tsx shows ‹ › only when the chips overflow (chain strip and chain picker); unit ExpiryStrip.test.tsx"
  },
  {
   "id": "HC-WS-009",
@@ -2803,7 +2803,7 @@
   "phase": 2,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Toggles CG.analyse.mode; in static mode ticks stop updating the chain",
-  "evidence": "bundle strings: Live, Connecting, Static, Connecting to WebSocket..., Click to enable live prices"
+  "evidence": "bundle strings: Live, Connecting, Static, Connecting to WebSocket..., Click to enable live prices · Phase 2 close-out (08 Sep 2026): chain toolbar pill Live / Connecting / Stale / Paused from the gateway status, feed pause and the stale flag (ChainTools.tsx); unit chain.test.tsx HC-WS-009"
  },
  {
   "id": "HC-WS-010",
@@ -3118,7 +3118,7 @@
   "phase": 2,
   "test": "e2e (Playwright)",
   "acceptance": "Listens to CG.on('asset'): sets CG.analyse.asset, resets the target price, reloads the chain and every analysis panel",
-  "evidence": "header asset dropdown 'Bitcoin (BTC)' in the screenshot"
+  "evidence": "header asset dropdown 'Bitcoin (BTC)' in the screenshot · Phase 2 close-out (08 Sep 2026): header asset switch drives the chain, legs, Builder and pane through the UI store (ADR-010); unit widgets.test.tsx HC-SH-003, e2e analyse.spec.ts HC-SH-003"
  },
  {
   "id": "HC-WS-031",
@@ -3358,7 +3358,7 @@
   "phase": 2,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "P&L at spot at expiry from CG.analyze",
-  "evidence": "screenshot footer line"
+  "evidence": "screenshot footer line · Phase 2 close-out (08 Sep 2026): \"Spot now ✓ profit zone / ✗ loss zone / at break-even\" in the payoff strip (spotZoneAt in analysis.ts); unit analysis.test.tsx"
  },
  {
   "id": "HC-WS-047",
@@ -4468,7 +4468,7 @@
   "phase": 3,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "On every CG 'tick' the mark price from CG.quote is written into the cell with a green/red flash animation",
-  "evidence": "bundle strings: Live price from Delta Exchange, Price updated by live feed · Phase 2 item 4 (08 Sep 2026): live price cell follows the feed mark (no tick flash: GAPS #33); unit builder.test.tsx"
+  "evidence": "bundle strings: Live price from Delta Exchange, Price updated by live feed · Phase 2 item 4 (08 Sep 2026): live price cell follows the feed mark (no tick flash: GAPS #33); unit builder.test.tsx · Phase 2 close-out (08 Sep 2026): live price cell flashes green / red for 800 ms on a tick (PriceCell in BuilderPanel.tsx); unit builder.test.tsx HC-TR-012"
  },
  {
   "id": "HC-TR-013",
@@ -4709,7 +4709,7 @@
   "phase": 2,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "All CG.EXPIRIES as chips; the active chip is blue; clicking re-renders the chain for that expiry; arrows scroll the strip",
-  "evidence": "screenshot feature-strategy-builder · Phase 2 item 4 (08 Sep 2026): expiry chips row (native overflow scroll, no ‹ › buttons: GAPS #33); unit builder.test.tsx"
+  "evidence": "screenshot feature-strategy-builder · Phase 2 item 4 (08 Sep 2026): expiry chips row (native overflow scroll, no ‹ › buttons: GAPS #33); unit builder.test.tsx · Phase 2 close-out (08 Sep 2026): chain-picker expiry row uses ExpiryStrip with ‹ › on overflow; unit ExpiryStrip.test.tsx"
  },
  {
   "id": "HC-TR-029",
@@ -5672,7 +5672,7 @@
   "phase": 2,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "When the workspace part is absent a minimal section with Options Chain / Strategy / Paper Trades / Live Trades tabs hosts the three panels so the trading area stays testable; it removes itself if a real /analyse section is present at DOMContentLoaded",
-  "evidence": "build contract"
+  "evidence": "build contract · Phase 2 close-out (08 Sep 2026): the /analyse shell code-splits the workspace behind a spinner (WorkspaceLoader.tsx); unit workspace.test.tsx"
  },
  {
   "id": "HC-TR-093",

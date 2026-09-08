@@ -8,7 +8,7 @@ import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch } fro
 import { buildChain } from "../../../test/fixtures/chain";
 import { useUiStore } from "@/lib/store";
 import { TEMPLATES } from "@/lib/strategy/templates";
-import { BuilderPanel } from "./BuilderPanel";
+import { BuilderPanel, PriceCell } from "./BuilderPanel";
 
 const EXPIRY = "2026-09-25";
 const TOPIC = chainTopic("delta_india", "BTC", EXPIRY);
@@ -63,6 +63,21 @@ beforeEach(() => {
 });
 afterEach(() => {
   mock.restore();
+});
+
+describe("HC-TR-012 live price cell", () => {
+  it("flashes up or down for a moment when the price moves, and not on the first render", () => {
+    const { rerender } = renderWithProviders(<PriceCell value="100" title="t" />);
+    const cell = () => screen.getByTestId("leg-price");
+    expect(cell().dataset["flash"]).toBe("");
+    rerender(<PriceCell value="101.5" title="t" />);
+    expect(cell().dataset["flash"]).toBe("flash-up");
+    expect(cell().textContent).toBe("101.5");
+    rerender(<PriceCell value="99" title="t" />);
+    expect(cell().dataset["flash"]).toBe("flash-down");
+    rerender(<PriceCell value="99" title="t" />);
+    expect(cell().dataset["flash"]).toBe("flash-down");
+  });
 });
 
 describe("HC-TR-001..021 Builder legs table", () => {

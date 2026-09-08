@@ -1,6 +1,7 @@
 // Pure helpers around the pricing engine's AnalyzeResult for the analysis pane (HC-WS-033, 046, 050..058,
 // HC-TR-019). Display grading only; every number comes from @hapiecoin/pricing.
 import type { AnalyzeResult, PayoffPoint } from "@hapiecoin/pricing";
+import { type MoneyFormat, fmtMoney } from "@/lib/money";
 
 export type Grade = { text: string; tone: "profit" | "loss" | "warning" | "muted" };
 
@@ -105,6 +106,15 @@ function gcd(a: number, b: number): number {
   let y = Math.abs(Math.round(b));
   while (y) [x, y] = [y, x % y];
   return x;
+}
+
+/** "Spot now: profit zone / loss zone / at break-even" (HC-WS-046): the expiry P&L if the price stayed where it is. */
+export function spotZoneAt(result: AnalyzeResult, spot: number, money: MoneyFormat): { zone: "profit" | "loss" | "flat"; text: string } {
+  const pnl = pnlAt(result.points, spot, "pnlExpiry");
+  const scale = Math.max(1, ...result.points.map((p) => Math.abs(p.pnlExpiry)).filter(Number.isFinite));
+  if (!Number.isFinite(pnl) || Math.abs(pnl) <= scale * 0.005) return { zone: "flat", text: "at break-even" };
+  const amount = fmtMoney(pnl, money, { signed: true });
+  return pnl > 0 ? { zone: "profit", text: "\u2713 profit zone " + amount } : { zone: "loss", text: "\u2717 loss zone " + amount };
 }
 
 /** Ladder prices around spot at a step derived from spot (≈ 0.25 % rounded to a clean number), ±20 %. */

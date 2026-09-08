@@ -5,7 +5,7 @@
   "feature": "Sticky 56px panel-tone header with amber Δ mark logo (→ home), text nav (Features / Market Analytics / Markets / Exchanges / What's new), Ctrl K button, theme toggle, Sign Up, Get Started →",
   "how": "Nav links smooth-scroll to landing sections without changing the route; Ctrl K opens CG.palette; Sign Up → #/auth?tab=signup, Get Started → #/auth",
   "status": "working",
-  "evidence": "bundle strings: Features, Market Analytics, Markets, Exchanges, Sign Up, Get Started, #features, #crypto-analytics, #prices, #exchanges"
+  "evidence": "bundle strings: Features, Market Analytics, Markets, Exchanges, Sign Up, Get Started, #features, #crypto-analytics, #prices, #exchanges · Phase 1 tests (tagged 08 Sep 2026): unit landing.test.tsx, e2e public.spec.ts"
  },
  {
   "route": "/",
@@ -29,7 +29,7 @@
   "feature": "Hero: ‘LIVE ON DELTA EXCHANGE’ mono tag with pulsing dot, headline “Trade Crypto Options / Like a Pro” (second line muted, no gradient), lead paragraph, 6 check bullets",
   "how": "Copy unchanged; dark ground, no gradient washes",
   "status": "static",
-  "evidence": "bundle: rst[] array, hero-grid pattern"
+  "evidence": "bundle: rst[] array, hero-grid pattern · Phase 1 tests (tagged 08 Sep 2026): unit landing.test.tsx, e2e public.spec.ts"
  },
  {
   "route": "/",
@@ -69,7 +69,7 @@
   "feature": "Live Markets · Powered by Delta Exchange with LIVE tag and BTCUSD / ETHUSD / XAUTUSD tiles (price, 24h %, sparkline, H/L, IV)",
   "how": "Tiles update and flash on every 'tick'",
   "status": "working",
-  "evidence": "bundle: v2/ticker websocket subscription, LIVE / Connecting..., H: $ / L: $"
+  "evidence": "bundle: v2/ticker websocket subscription, LIVE / Connecting..., H: $ / L: $ · Phase 1 tests (tagged 08 Sep 2026): unit landing.test.tsx, e2e public.spec.ts"
  },
  {
   "route": "/",
@@ -141,7 +141,7 @@
   "feature": "INTEGRATIONS “Supported Exchanges” — Delta Exchange (● LIVE, Connected via API) plus CoinDCX, CoinSwitch, Mudrex (Coming Soon)",
   "how": "Text-logo tiles; the live card is highlighted, coming-soon cards are dimmed to 60% like the original",
   "status": "static",
-  "evidence": "bundle: Tot[] array, Live / Coming Soon badges"
+  "evidence": "bundle: Tot[] array, Live / Coming Soon badges · Phase 1 tests (tagged 08 Sep 2026): e2e public.spec.ts"
  },
  {
   "route": "/",
@@ -181,7 +181,7 @@
   "feature": "Split layout: panel-tone brand column (mono eyebrow, “Master Options Trading” with amber word, paragraph, 4 hairline feature rows, live futures ticker, mono copyright) + form column",
   "how": "Glows and grid backgrounds removed",
   "status": "static",
-  "evidence": "bundle: Master Options / Trading, fnt[] features, © 2025 HapieCoin. Secure & encrypted."
+  "evidence": "bundle: Master Options / Trading, fnt[] features, © 2025 HapieCoin. Secure & encrypted. · Phase 1 tests (tagged 08 Sep 2026): unit AuthScreen.test.tsx"
  },
  {
   "route": "/auth",
@@ -189,7 +189,7 @@
   "feature": "Tab state driven by the URL (?tab=login | otp-login | otp-verify | signup | verify-email | forgot | reset-password)",
   "how": "Every tab change navigates to #/auth?tab=… (preserving next= and ref=) so browser back/forward moves between steps; sub-steps that need an email fall back to their parent step on a cold visit",
   "status": "working",
-  "evidence": "bundle: signup, otp-verify, verify-email, reset-password, forgot, otp-login view keys"
+  "evidence": "bundle: signup, otp-verify, verify-email, reset-password, forgot, otp-login view keys · Phase 1 tests (tagged 08 Sep 2026): unit AuthScreen.test.tsx"
  },
  {
   "route": "/auth",
@@ -197,7 +197,7 @@
   "feature": "Logged-in visitors are redirected away from /auth",
   "how": "show() checks CG.state.loggedIn and navigates to ?next= or /analyse",
   "status": "working",
-  "evidence": "bundle: navigate('/analyse') when isLoggedIn"
+  "evidence": "bundle: navigate('/analyse') when isLoggedIn · Phase 1 tests (tagged 08 Sep 2026): e2e auth.spec.ts"
  },
  {
   "route": "/auth",
@@ -205,7 +205,7 @@
   "feature": "Login card: “Welcome back · Sign in to your trading dashboard”, Continue with Delta Exchange, OR divider, mono uppercase field labels, amber Sign In, Forgot password? / Sign in with OTP, Create account",
   "how": "Email required / format validated inline (“Email is required”, “Invalid email”); password < 6 chars → toast “Login failed · Invalid credentials.”; success → CG.auth.login(email), toast “Welcome back! · Logged in successfully.”, navigate to ?next= or /analyse",
   "status": "working",
-  "evidence": "bundle strings: Welcome back, Sign in to your trading dashboard, Continue with Delta Exchange, Email, Password, Sign In, Forgot password?, Sign in with OTP, Create account, Invalid credentials., Logged in successfully."
+  "evidence": "bundle strings: Welcome back, Sign in to your trading dashboard, Continue with Delta Exchange, Email, Password, Sign In, Forgot password?, Sign in with OTP, Create account, Invalid credentials., Logged in successfully. · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
  },
  {
   "route": "/auth",
@@ -213,7 +213,7 @@
   "feature": "Password visibility toggle (eye / eye-off)",
   "how": "Button switches the input type between password and text and swaps the icon; present on every password field",
   "status": "working",
-  "evidence": "bundle: Eye / EyeOff icon paths"
+  "evidence": "bundle: Eye / EyeOff icon paths · Phase 1 tests (tagged 08 Sep 2026): e2e auth.spec.ts"
  },
  {
   "route": "/auth",
@@ -221,7 +221,7 @@
   "feature": "Continue with Delta Exchange",
   "how": "Navigates to #/auth/delta which simulates the OAuth hand-off",
   "status": "working",
-  "evidence": "bundle: Continue with Delta Exchange, /auth/delta route"
+  "evidence": "bundle: Continue with Delta Exchange, /auth/delta route · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx"
  },
  {
   "route": "/auth",
@@ -229,7 +229,7 @@
   "feature": "Sign in with OTP: “We'll send a one-time code to your registered email”, Email, Send OTP, New here? Create an account first, ← Back to login",
   "how": "Validates the email, toast “OTP Sent · Check your email for the OTP.” and moves to ?tab=otp-verify",
   "status": "working",
-  "evidence": "bundle: Sign in with OTP, otp-email, Send OTP, New here?, Create an account first, Back to login, OTP Sent"
+  "evidence": "bundle: Sign in with OTP, otp-email, Send OTP, New here?, Create an account first, Back to login, OTP Sent · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
  },
  {
   "route": "/auth",
@@ -237,7 +237,7 @@
   "feature": "Enter OTP: “Code sent to <email>”, 6 DM Mono digit boxes (auto-advance, backspace, paste), Verify & Login, “Resend OTP in 30s” countdown → “Resend OTP”",
   "how": "Boxes auto-advance, support backspace and paste; any 6 digits succeed (e.g. 123456) → toast “Welcome! · Logged in successfully” + login; incomplete code → “Error · Enter valid OTP”; resend → toast “OTP Resent” and the 30s timer restarts",
   "status": "working",
-  "evidence": "bundle: Enter OTP, Code sent to, OTP Code, Verify & Login, Resend OTP in, Resend OTP, Change email, Enter valid OTP, OTP Resent"
+  "evidence": "bundle: Enter OTP, Code sent to, OTP Code, Verify & Login, Resend OTP in, Resend OTP, Change email, Enter valid OTP, OTP Resent · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
  },
  {
   "route": "/auth",
@@ -245,7 +245,7 @@
   "feature": "Create account form: Full Name, Email, Mobile Number, Password, Confirm, Referral Code (Optional) placeholder REF_XXXXXXX, Create Account, Already have an account? Sign in",
   "how": "Referral code is prefilled from ?ref= (referral links); validations: name required, email format, 10-digit mobile, all password rules, confirm must match (“Passwords do not match”), referral pattern REF_…; success → toast “Account created! · Please verify your email with the OTP sent.” → ?tab=verify-email",
   "status": "working",
-  "evidence": "bundle: Start your options trading journey, Full Name, John Doe, Mobile Number, signup-ref, Referral Code (Optional), REF_XXXXXXX, Create Account, Already have an account?, Account created!"
+  "evidence": "bundle: Start your options trading journey, Full Name, John Doe, Mobile Number, signup-ref, Referral Code (Optional), REF_XXXXXXX, Create Account, Already have an account?, Account created! · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
  },
  {
   "route": "/auth",
@@ -261,7 +261,7 @@
   "feature": "Verify your email: “We've sent a 6-digit OTP to <email>”, 6 boxes, Verify Email, “Didn't receive the code? Resend in 30s”, ← Back to sign up",
   "how": "Incomplete → toast “Verification failed · Please enter the complete 6-digit OTP”; success → toast “Email verified! · You can now sign in.” and returns to the login tab with the email prefilled; resend → “OTP resent · A new OTP has been sent to your email.”",
   "status": "working",
-  "evidence": "bundle: Verify your email, We've sent a 6-digit OTP to, Verify Email, Didn't receive the code?, Resend in, Email verified!, You can now sign in., OTP resent"
+  "evidence": "bundle: Verify your email, We've sent a 6-digit OTP to, Verify Email, Didn't receive the code?, Resend in, Email verified!, You can now sign in., OTP resent · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
  },
  {
   "route": "/auth",
@@ -269,7 +269,7 @@
   "feature": "Reset password: “Enter your email and we'll send you an OTP”, Email Address, Send OTP, ← Back to sign in",
   "how": "Validates the email, toast “OTP sent! · Check your email for the OTP.” → ?tab=reset-password",
   "status": "working",
-  "evidence": "bundle: Reset password, forgot-email, Email Address, Send OTP, Back to sign in, OTP sent!"
+  "evidence": "bundle: Reset password, forgot-email, Email Address, Send OTP, Back to sign in, OTP sent! · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
  },
  {
   "route": "/auth",
@@ -277,7 +277,7 @@
   "feature": "Set new password: “Enter the OTP sent to <email> and your new password”, OTP, New Password (rules), Confirm Password, Reset Password, resend countdown, ← Back",
   "how": "OTP must be 6 digits, new password must pass all rules and match; success → toast “Password reset! · You can now sign in with your new password.” → login tab",
   "status": "working",
-  "evidence": "bundle: Set new password, Enter the OTP sent to, and your new password, reset-new-password, New Password, Confirm Password, Reset Password, Password reset!, A new OTP has been sent."
+  "evidence": "bundle: Set new password, Enter the OTP sent to, and your new password, reset-new-password, New Password, Confirm Password, Reset Password, Password reset!, A new OTP has been sent. · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
  },
  {
   "route": "/auth",
@@ -285,7 +285,7 @@
   "feature": "?next= deep-link support",
   "how": "Protected screens redirect to /auth?next=/path; after any successful login the user lands on that path",
   "status": "working",
-  "evidence": "router contract in core.js"
+  "evidence": "router contract in core.js · Phase 1 tests (tagged 08 Sep 2026): e2e auth.spec.ts"
  },
  {
   "route": "/auth/delta",

@@ -4,11 +4,8 @@
  * Both return the same Drizzle `Db` type so the rest of the API never knows which is underneath.
  */
 import { fileURLToPath } from "node:url";
-import { PGlite } from "@electric-sql/pglite";
 import { sql } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
-import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
-import { migrate as migratePglite } from "drizzle-orm/pglite/migrator";
 import { drizzle as drizzlePostgres } from "drizzle-orm/postgres-js";
 import { migrate as migratePostgres } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
@@ -17,6 +14,9 @@ import { schema, type Schema } from "./schema.js";
 export type Db = PgDatabase<PgQueryResultHKT, Schema>;
 
 export type DbKind = "pglite" | "postgres";
+
+/** Arbitrary but fixed key for the migration advisory lock (shared by every API replica). */
+export const MIGRATION_LOCK_KEY = 727_001;
 
 export interface DbHandle {
   db: Db;
@@ -51,12 +51,25 @@ export async function createDb(opts: CreateDbOptions = {}): Promise<DbHandle> {
     return {
       db,
       kind: "postgres",
-      migrate: () => migratePostgres(db, { migrationsFolder }),
+      // GAPS #30: replicas booting together serialise on a transaction-level advisory lock, so only one
+      // applies the migrations while the others wait and then find nothing left to do.
+      migrate: () =>
+        client.begin(async (tx) => {
+          await tx`select pg_advisory_xact_lock(${MIGRATION_LOCK_KEY})`;
+          await migratePostgres(db, { migrationsFolder });
+        }),
       ping: () => ping(db),
       close: () => client.end({ timeout: 5 }),
     };
   }
 
+  // Development and tests only: PGlite is a devDependency and is not shipped in the production image
+  // (GAPS #30); production refuses to boot without DATABASE_URL (ADR-019), so this branch never runs there.
+  const [{ PGlite }, { drizzle: drizzlePglite }, { migrate: migratePglite }] = await Promise.all([
+    import("@electric-sql/pglite"),
+    import("drizzle-orm/pglite"),
+    import("drizzle-orm/pglite/migrator"),
+  ]);
   const client =
     opts.pgliteDataDir === undefined ? await PGlite.create() : await PGlite.create(opts.pgliteDataDir);
   const db = drizzlePglite(client, { schema, casing: "snake_case" });

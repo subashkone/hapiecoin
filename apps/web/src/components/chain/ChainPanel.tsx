@@ -14,6 +14,8 @@ import { useConnectionStatus, useGateway, useSpot, useTopic } from "@/lib/gatewa
 import { useUiStore } from "@/lib/store";
 import { type LegKind, type LegSide, MAX_ACTIVE_LEGS, legsForChain, stepLots } from "@/lib/strategy/legs";
 import { ChainTable } from "./ChainTable";
+import type { FeedState } from "./ChainTools";
+import { ExpiryStrip } from "./ExpiryStrip";
 
 export function ChainPanel({ height = 520 }: { height?: number }) {
   const asset = useUiStore((s) => s.asset);
@@ -90,11 +92,13 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
     [asset, expiry, openOptionDetail],
   );
   const live = status === "open" && !feedPaused && !(chain?.stale ?? false);
+  const feed: FeedState = feedPaused ? "paused" : status !== "open" ? "connecting" : (chain?.stale ?? false) ? "stale" : "live";
   const asOf = chain?.stale && chain.updatedAt > 0 ? new Date(chain.updatedAt).toLocaleTimeString("en-GB") : null;
 
   return (
     <section className="flex h-full flex-col" data-testid="chain-panel" data-topic={topic ?? ""}>
-      <div className="flex items-center gap-1 overflow-x-auto border-b border-border px-2 py-1.5" role="tablist" aria-label="Expiry">
+      <div className="flex items-center gap-1 border-b border-border px-2 py-1.5">
+        <ExpiryStrip>
         {list.map((e) => {
           const on = e === expiry;
           return (
@@ -121,6 +125,7 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
         })}
         {expiries.isLoading ? <span className="px-2 text-2xs text-muted-foreground">Loading expiries…</span> : null}
         {!expiries.isLoading && list.length === 0 ? <span className="px-2 text-2xs text-muted-foreground">No expiries available</span> : null}
+        </ExpiryStrip>
         <span className="ml-auto shrink-0 font-mono text-3xs uppercase tracking-[0.1em] text-muted-foreground">
           {expiries.data ? (expiries.data.source === "gateway" ? "expiries · gateway" : "expiries · default list") : ""}
           {chain && chain.seq >= 0 ? ` · seq ${chain.seq}` : ""}
@@ -153,6 +158,7 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
             daysLeft={expiry ? daysToExpiry(expiry) : null}
             lotLabel={`Lot ${lotSize ?? "…"} ${asset} · prices USD per ${asset}`}
             live={live}
+            feed={feed}
             asOf={asOf}
             legs={chainLegs}
             lots={chainLots}

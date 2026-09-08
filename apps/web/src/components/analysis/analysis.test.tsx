@@ -77,6 +77,9 @@ describe("HC-WS-033..058 payoff", () => {
     expect(screen.getByTestId("tile-rr").textContent).toContain("1 : ∞");
     expect(screen.getByTestId("win-zone").textContent).toMatch(/< [\d,]+ or > [\d,]+/);
     expect(screen.getByTestId("greeks-strip").textContent).toContain("greeks at spot");
+    // HC-WS-046 a long straddle held to expiry at today's spot loses the premium
+    expect(screen.getByTestId("spot-zone").dataset["zone"]).toBe("loss");
+    expect(screen.getByTestId("spot-zone").textContent).toContain("loss zone");
     // layers and zoom are toggles
     const oi = screen.getByTestId("layer-oi");
     expect(oi.getAttribute("aria-pressed")).toBe("false");
