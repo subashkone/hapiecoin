@@ -59,6 +59,22 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("greek-delta")).not.toContainText("—");
       await page.screenshot({ path: `${DIR}/analyse-greeks-${theme}.png` });
       await page.getByTestId("analysis-tab-payoff").click();
+      // HC-TR-058 / HC-TR-068 a paper trade on the Paper tab and its details
+      await page.getByTestId("builder-tab-builder").click();
+      await page.getByTestId("strategy-name").fill("Visual straddle");
+      await page.getByTestId("builder-paper-trade").click();
+      await expect(page.getByTestId("trade-mode")).toBeVisible();
+      await page.screenshot({ path: `${DIR}/analyse-trade-mode-${theme}.png` });
+      await page.getByTestId("trade-continue").click();
+      await expect(page.getByTestId("trade-preview")).toBeVisible();
+      await page.getByTestId("trade-now").click();
+      await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+      await expect(page.getByTestId("paper-card").getByTestId("card-pnl")).not.toHaveText("—");
+      await page.screenshot({ path: `${DIR}/analyse-paper-${theme}.png` });
+      await page.getByTestId("card-details").click();
+      await expect(page.getByTestId("strategy-details")).toBeVisible();
+      await page.screenshot({ path: `${DIR}/analyse-details-${theme}.png` });
+      await page.keyboard.press("Escape");
       await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
       await page.goto("/");
       await expect(page.getByTestId("tile-BTC")).toHaveAttribute("data-state", "live", { timeout: 15_000 });

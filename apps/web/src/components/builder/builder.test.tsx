@@ -133,42 +133,53 @@ describe("HC-TR-001..021 Builder legs table", () => {
   });
 });
 
-describe("HC-TR-025 / HC-TR-026 / HC-TR-045..049 drafts", () => {
-  it("Save draft names the strategy, keeps it under My templates, and Load / Archive / Delete round-trip", async () => {
+describe("HC-TR-020 / HC-TR-041..049 drafts through the strategy API (ADR-024)", () => {
+  it("Save draft creates the strategy on the server, My templates lists it, and Load / Archive / Delete round-trip", async () => {
     seedLegs();
     renderWithProviders(<BuilderPanel />);
     serveMarket();
     const u = userEvent.setup();
+    const mine = () => mock.state.accounts.get("trader@example.com")!.strategies;
     await u.click(screen.getByTestId("builder-save"));
     const dialog = screen.getByTestId("save-draft-dialog");
     await u.clear(within(dialog).getByTestId("save-draft-name"));
     await u.type(within(dialog).getByTestId("save-draft-name"), "My strangle");
     await u.click(within(dialog).getByTestId("save-draft-confirm"));
-    await waitFor(() => expect(useUiStore.getState().drafts).toHaveLength(1));
-    expect(useUiStore.getState().drafts[0]!.name).toBe("My strangle");
-    expect(useUiStore.getState().strategy.BTC.draftId).toBe(useUiStore.getState().drafts[0]!.id);
+    await waitFor(() => expect(mine()).toHaveLength(1));
+    expect(mine()[0]!.name).toBe("My strangle");
+    expect(mine()[0]!.legs).toHaveLength(2);
+    expect(mine()[0]!.status).toBe("draft");
+    await waitFor(() => expect(useUiStore.getState().strategy.BTC.draftId).toBe(mine()[0]!.id));
     expect(screen.getByTestId("builder-save").textContent).toBe("Update");
-    // New resets the builder but keeps the draft
+    // Update replaces the draft's legs on the server instead of creating a second row
+    await u.click(within(screen.getAllByTestId("leg-row")[1]!).getByTestId("leg-delete"));
+    await u.click(screen.getByTestId("builder-save"));
+    await waitFor(() => expect(mine()[0]!.legs).toHaveLength(1));
+    expect(mine()).toHaveLength(1);
+    // New resets the Builder but keeps the draft
     await u.click(screen.getByTestId("builder-new"));
     expect(useUiStore.getState().legs.BTC).toHaveLength(0);
-    expect(useUiStore.getState().drafts).toHaveLength(1);
-    // My templates
+    expect(mine()).toHaveLength(1);
+    // My templates reads the API
     await u.click(screen.getByTestId("builder-tab-templates"));
-    expect(screen.getAllByTestId("mine-card")).toHaveLength(1);
+    await waitFor(() => expect(screen.getAllByTestId("mine-card")).toHaveLength(1));
+    expect(screen.getByTestId("mine-activate")).toBeTruthy();
     await u.type(screen.getByTestId("mine-search"), "zzz");
     expect(screen.getByTestId("mine-empty")).toBeTruthy();
     await u.clear(screen.getByTestId("mine-search"));
     await u.click(screen.getByTestId("mine-load"));
-    expect(useUiStore.getState().legs.BTC).toHaveLength(2);
+    expect(useUiStore.getState().legs.BTC).toHaveLength(1);
+    expect(useUiStore.getState().strategy.BTC.draftId).toBe(mine()[0]!.id);
     expect(useUiStore.getState().builderTab).toBe("builder");
     await u.click(screen.getByTestId("builder-tab-templates"));
     await u.click(screen.getByTestId("mine-archive"));
-    expect(screen.getByTestId("mine-empty")).toBeTruthy();
+    await waitFor(() => expect(mine()[0]!.status).toBe("archived"));
+    await waitFor(() => expect(screen.getByTestId("mine-empty")).toBeTruthy());
     await u.click(screen.getByTestId("mine-archived"));
-    expect(screen.getAllByTestId("mine-card")).toHaveLength(1);
+    await waitFor(() => expect(screen.getAllByTestId("mine-card")).toHaveLength(1));
     await u.click(screen.getByTestId("mine-delete"));
     await u.click(screen.getByTestId("mine-delete-confirm"));
-    expect(useUiStore.getState().drafts).toHaveLength(0);
+    await waitFor(() => expect(mine()).toHaveLength(0));
   });
 });
 

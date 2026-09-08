@@ -11,6 +11,8 @@ import { useUiStore } from "@/lib/store";
 import { marginEstimate, premiumPerUnit } from "@/lib/strategy/analysis";
 import { MAX_ACTIVE_LEGS, type StrategyLeg, setLegLots, setLegPrice, stepLots, toggleLegSide } from "@/lib/strategy/legs";
 import { guessTemplateName } from "@/lib/strategy/templates";
+import { useCreateStrategy, usePatchStrategy } from "@/lib/api/strategies";
+import { localLegToInput } from "@/lib/strategy/paper";
 import { useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
 import { SaveDraftDialog } from "@/components/dialogs/SaveDraftDialog";
 import { ChainPickerDialog } from "./ChainPickerDialog";
@@ -55,7 +57,9 @@ export function BuilderPanel() {
   const updateLegs = useUiStore((s) => s.updateLegs);
   const setLegs = useUiStore((s) => s.setLegs);
   const removeLeg = useUiStore((s) => s.removeLeg);
-  const saveDraft = useUiStore((s) => s.saveDraft);
+  const openTrade = useUiStore((s) => s.openTrade);
+  const createStrategy = useCreateStrategy();
+  const patchStrategy = usePatchStrategy();
   const builderTab = useUiStore((s) => s.builderTab);
   const setBuilderTab = useUiStore((s) => s.setBuilderTab);
   const [saveIntent, setSaveIntent] = useState<"draft" | "trade" | null>(null);
@@ -100,9 +104,15 @@ export function BuilderPanel() {
     toast("New strategy", { description: "Builder reset · add legs from the chain or a template" });
   };
   const onSave = (name: string, intent: "draft" | "trade") => {
-    const d = saveDraft(asset, name, guessTemplateName(legs));
-    toast(meta.draftId ? "Updated" : "Saved", { description: `${d.name} saved as draft` });
-    if (intent === "trade") toast("Paper and live trading arrive in Phase 3", { description: "The draft is saved; choose a trading mode once trading lands." });
+    const body = { name, templateName: guessTemplateName(legs), legs: legs.map(localLegToInput) };
+    const done = (s: { id: string; name: string }) => {
+      setMeta(asset, { name: s.name, draftId: s.id });
+      toast(meta.draftId ? "Updated" : "Saved", { description: `${s.name} saved as draft` });
+      if (intent === "trade") openTrade({ strategyId: null });
+    };
+    const fail = (e: Error) => toast.error("Could not save", { description: e.message });
+    if (meta.draftId) patchStrategy.mutate({ id: meta.draftId, body }, { onSuccess: done, onError: fail });
+    else createStrategy.mutate({ asset, ...body }, { onSuccess: done, onError: fail });
   };
 
   const net = result?.netPremium ?? null;
@@ -329,8 +339,12 @@ export function BuilderPanel() {
             <Button size="sm" variant="outline" disabled={legs.length === 0} onClick={() => (meta.name.trim() && meta.draftId ? onSave(meta.name.trim(), "draft") : setSaveIntent("draft"))} data-testid="builder-save">
               {meta.draftId ? "Update" : "Save draft"}
             </Button>
-            <Button size="sm" variant="ghost" disabled={legs.length === 0} onClick={() => setSaveIntent("trade")} title="Name it, then choose paper or live (Phase 3)" data-testid="builder-save-trade">
-              Save &amp; trade
+            <span className="flex-1" />
+            <Button size="sm" disabled={legs.length === 0} onClick={() => openTrade({ strategyId: null })} title="Simulated positions at live prices · no real orders" data-testid="builder-paper-trade" data-tour="paper-trade-button">
+              Paper trade
+            </Button>
+            <Button size="sm" variant="outline" disabled={legs.length === 0} onClick={() => openTrade({ strategyId: null })} title="Real orders on the exchange (arrives with the next release)" data-testid="builder-live-trade">
+              Live trade
             </Button>
           </div>
         </TabsContent>

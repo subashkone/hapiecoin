@@ -35,6 +35,7 @@ export const errorResponses = {
   401: jsonContent(ApiError, "Not signed in"),
   403: jsonContent(ApiError, "Not allowed"),
   404: jsonContent(ApiError, "Not found"),
+  409: jsonContent(ApiError, "Wrong state for this action"),
   429: jsonContent(ApiError, "Rate limited"),
 } as const;
 

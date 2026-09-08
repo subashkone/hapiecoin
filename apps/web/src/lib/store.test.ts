@@ -56,7 +56,7 @@ describe("HC-SH-003 UI store", () => {
         ETH: { name: "", basket: false, priceMode: "live", draftId: null },
         XAUT: { name: "", basket: false, priceMode: "live", draftId: null },
       },
-      drafts: [],
+      draftsImported: false,
       workspaceTab: "chain",
       analysisTab: "payoff",
       targetDays: 0,
@@ -119,6 +119,9 @@ describe("HC-SH-003 UI store", () => {
       current,
     );
     expect(merged.drafts).toEqual([expect.objectContaining({ id: "a", status: "draft", legs: [], templateName: "Custom" })]);
+    expect(merged.draftsImported).toBe(false);
+    // once imported, old browser drafts are ignored on later loads (ADR-024)
+    expect(merge({ drafts: [{ id: "a", name: "A", asset: "BTC" }], draftsImported: true }, current).drafts).toEqual([]);
     expect(merged.strategy.BTC).toEqual({ name: "", basket: false, priceMode: "custom", draftId: null });
     expect(merged.workspaceTab).toBe(current.workspaceTab);
     expect(merged.analysisTab).toBe("ladder");

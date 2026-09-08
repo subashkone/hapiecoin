@@ -32,6 +32,9 @@ export const errors = {
   unauthenticated: () => new HttpError(401, "UNAUTHENTICATED", "Sign in to continue"),
   forbidden: (message = "You do not have permission to do that") => new HttpError(403, "FORBIDDEN", message),
   notFound: (what = "Resource") => new HttpError(404, "NOT_FOUND", `${what} not found`),
+  badRequest: (message: string) => new HttpError(400, "BAD_REQUEST", message),
+  /** The request is well-formed but the resource is in the wrong state for it (e.g. starting a non-draft). */
+  conflict: (message: string) => new HttpError(409, "CONFLICT", message),
   validation: (issues: unknown) =>
     new HttpError(400, "VALIDATION_ERROR", "Request failed validation", { issues }),
   rateLimited: (message: string, retryAfterSec: number, code = "RATE_LIMITED") =>
