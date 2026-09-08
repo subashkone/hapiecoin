@@ -101,6 +101,7 @@ export function TradePreviewDialog(p: TradePreviewProps) {
               <div className="mt-1 flex flex-wrap gap-x-3">
                 <span>Notional <b className="num">{fmtMoney(Number(p.venue.notional), p.money)}</b></span>
                 <span>Available <b className="num">{p.venue.available ? `${p.venue.available} ${p.venue.availableAsset ?? ""}` : "—"}</b></span>
+                <span title="Margin the exchange holds against your open positions right now; Delta has no pre-trade estimate (ADR-029)">Margin in use <b className="num" data-testid="venue-margin-used">{p.venue.marginUsed ? `${p.venue.marginUsed} ${p.venue.availableAsset ?? "USD"}` : "—"}</b></span>
                 <span className="text-muted-foreground">band ±{p.venue.limits.markBandPct} % · max {p.venue.limits.maxLegs} legs · max {p.venue.limits.maxNotionalUsd.toLocaleString("en-US")} USD</span>
               </div>
               {p.venue.reasons.length ? <ul className="mt-1 list-disc pl-4 text-loss" data-testid="venue-reasons">{p.venue.reasons.map((r) => <li key={r}>{r}</li>)}</ul> : null}

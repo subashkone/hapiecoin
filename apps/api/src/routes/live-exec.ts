@@ -115,10 +115,14 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
   if (notional > trading.maxNotionalUsd) reasons.push(`Notional ${toDecimal(notional, 2)} USD exceeds the ${trading.maxNotionalUsd} USD limit per placement`);
   let available: string | null = null;
   let availableAsset: string | null = null;
+  let marginUsed: string | null = null;
   try {
     const creds = await openCredential(deps, user, brokerId);
     const balances = await deps.trading.getBalances(creds);
     const row = SETTLING_ASSETS.map((a) => balances.find((b) => b.asset === a)).find((b) => b !== undefined);
+    // the venue has no pre-trade margin estimate; show what it holds right now so the trader sees the real headroom (ADR-029)
+    const positions = await deps.trading.getPositions(creds);
+    marginUsed = toDecimal(positions.reduce((s, p) => s + (p.margin ? Number(p.margin) : 0), 0), 2);
     if (row) {
       available = row.availableBalance;
       availableAsset = row.asset;
@@ -129,7 +133,7 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
     deps.logger.warn({ err: e instanceof Error ? e.message : String(e), userId: user.id, brokerId }, "live preview: wallet read failed");
     reasons.push(e instanceof HttpError ? e.message : `Could not read the exchange wallet (${e instanceof Error ? e.message : "unknown error"})`);
   }
-  return { ok: reasons.length === 0, reasons, legs: plan.legs, notional: toDecimal(notional, 2), available, availableAsset, limits: { maxLegs: trading.maxLegs, maxNotionalUsd: trading.maxNotionalUsd, markBandPct: trading.markBandPct } };
+  return { ok: reasons.length === 0, reasons, legs: plan.legs, notional: toDecimal(notional, 2), available, availableAsset, marginUsed, limits: { maxLegs: trading.maxLegs, maxNotionalUsd: trading.maxNotionalUsd, markBandPct: trading.markBandPct } };
 }
 
 export interface PlacementOutcome {

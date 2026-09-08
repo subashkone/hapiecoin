@@ -1,5 +1,7 @@
 // Process entrypoint: `pnpm dev` (tsx watch) and `pnpm start` (node dist/main.js).
 import { serve } from "@hono/node-server";
+import { startReconciler } from "./live-reconcile.js";
+import type { AppDeps } from "./routes/shared.js";
 import { Redis } from "ioredis";
 import { createApp } from "./app.js";
 import { AUTH_BASE_PATH, authOptionsPublic, createAuth, sessionResolver } from "./auth.js";
@@ -46,7 +48,7 @@ const auth = createAuth({
   logger,
 });
 
-const app = createApp({
+const deps: AppDeps = {
   config,
   db: handle.db,
   dbKind: handle.kind,
@@ -60,7 +62,11 @@ const app = createApp({
   delta: new DeltaPrivateClientImpl({ baseUrl: config.deltaTradingRestUrl, nodeEnv: config.nodeEnv }),
   trading: new DeltaTradingClientImpl({ baseUrl: config.deltaTradingRestUrl, nodeEnv: config.nodeEnv }),
   authOptions: authOptionsPublic(config),
-});
+};
+const app = createApp(deps);
+
+// ADR-029: pending venue orders are reconciled in the background; tests drive reconcilePending directly
+const stopReconciler = config.nodeEnv === "test" ? () => undefined : startReconciler(deps, config.trading.reconcileMs);
 
 const server = serve({ fetch: app.fetch, port: config.apiPort }, (info) => {
   logger.info(
@@ -76,6 +82,7 @@ const server = serve({ fetch: app.fetch, port: config.apiPort }, (info) => {
 
 async function shutdown(signal: string): Promise<void> {
   logger.info({ signal }, "shutting down");
+  stopReconciler();
   server.close();
   await redis?.quit();
   await handle.close();

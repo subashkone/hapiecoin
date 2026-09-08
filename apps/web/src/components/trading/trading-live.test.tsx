@@ -83,6 +83,7 @@ describe("HC-TR-063 Go live from a paper card", () => {
     expect(within(venue).getAllByTestId("venue-leg")).toHaveLength(1);
     expect(within(venue).getAllByTestId("venue-leg")[0]!.textContent).toContain("C-BTC-80000-250926");
     expect(within(preview).getByTestId("trade-now").textContent).toContain("Place live orders");
+    expect(within(venue).getByTestId("venue-margin-used").textContent).toContain("12 USD"); // exchange margin in use (ADR-029)
     await u.click(within(preview).getByTestId("trade-now"));
     await waitFor(() => expect(mine()[0]!.status).toBe("live"));
     expect(mine()[0]!.orderBatchId).toMatch(/^web-/);
