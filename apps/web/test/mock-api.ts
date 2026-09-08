@@ -28,6 +28,12 @@ interface Account {
   active: boolean;
   limitOverrides: PlanLimits;
   commissionPct: string;
+  /** Last session created (HC-AD-109); null for an invited user who never signed in. */
+  lastLoginAt: string | null;
+  /** Every subscription ever held, for the admin drawer's history (ADR-032). */
+  pastSubscriptions: MockSubscription[];
+  /** Audit lines targeting this user, newest first (drawer History tab). */
+  history: { id: number; action: string; target: string; actorId: string | null; actorEmail: string | null; at: string; after: unknown }[];
 }
 interface MockSubscription {
   id: string;
@@ -68,6 +74,8 @@ export interface MockState {
   menuItems: MenuItem[];
   accounts: Map<string, Account>;
   commissions: MockCommission[];
+  /** Invitations "sent" by POST /v1/admin/users/invite (the API mails them). */
+  invites: { email: string; name: string; invitedBy: string; link: string }[];
   sessions: Map<string, string>; // token → email
   /** OTPs issued: `${email}:${type}` → code (always TEST_OTP, but recorded for assertions). */
   otps: Map<string, string>;
@@ -153,6 +161,9 @@ export function createAccount(
     active: true,
     limitOverrides: {},
     commissionPct: "0",
+    lastLoginAt: null,
+    pastSubscriptions: [],
+    history: [],
   };
   state.accounts.set(email, acc);
   return acc;
@@ -161,12 +172,14 @@ export function createAccount(
 export function createSession(state: MockState, email: string): string {
   const token = id("ses");
   state.sessions.set(token, email.toLowerCase());
+  const acc = state.accounts.get(email.toLowerCase());
+  if (acc) acc.lastLoginAt = new Date().toISOString();
   return token;
 }
 
 export function createMockApi(state: MockState = { plans: seedPlans(),
     menuItems: seedMenuItems(),
-    accounts: new Map(), commissions: [], sessions: new Map(), otps: new Map() }) {
+    accounts: new Map(), commissions: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
   const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409, code: string, message: string) =>
@@ -946,21 +959,123 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       limitOverrides: acc.limitOverrides,
       lotSizes: acc.settings.lotSizes,
       createdAt: acc.user.createdAt,
+      mobile: acc.user.mobile ?? null,
+      referralCode: acc.user.referralCode,
+      paidInr: money([...acc.pastSubscriptions, ...(acc.subscription ? [acc.subscription] : [])].reduce((t, s) => t + Number(s.paidInr), 0)),
+      lastLoginAt: acc.lastLoginAt,
     };
   };
+  const accByUserId = (uid: string) => [...state.accounts.values()].find((a) => a.user.id === uid);
+  const rowStatus = (r: ReturnType<typeof adminRow>, status: string) => {
+    if (status === "all") return true;
+    if (status === "deactivated") return !r.active;
+    if (status === "free") return r.planName === null;
+    if (status === "active") return r.planName !== null && (r.expiresAt === null || new Date(r.expiresAt).getTime() > Date.now());
+    return r.planName !== null && r.expiresAt !== null && new Date(r.expiresAt).getTime() <= Date.now();
+  };
+  /** Comped plan change (ADR-032): the current subscription moves to history, the new one starts now at ₹0. */
+  const setPlanFor = (acc: Account, plan: Plan, interval: BillingInterval) => {
+    if (acc.subscription) acc.pastSubscriptions.push({ ...acc.subscription });
+    const pricing = plan.intervals[interval];
+    acc.subscription = { id: id("sub"), planId: plan.id, interval, startsAt: nowIso(), expiresAt: Number(pricing.priceInr) === 0 ? null : new Date(Date.now() + INTERVAL_MONTHS[interval] * 30 * 86_400_000).toISOString(), priceInr: pricing.priceInr, paidInr: "0" };
+    acc.seededBanner = false;
+    acc.plan = planStateOf(acc);
+    recordCommission(acc);
+  };
+  const subView = (s: MockSubscription, active: boolean) => ({
+    id: s.id,
+    planId: s.planId,
+    planName: planOf(s.planId)?.name ?? "",
+    interval: s.interval,
+    status: active ? (s.expiresAt !== null && new Date(s.expiresAt).getTime() <= Date.now() ? "expired" : "active") : "cancelled",
+    startsAt: s.startsAt,
+    expiresAt: s.expiresAt,
+    validityDays: s.expiresAt ? Math.max(1, Math.round((new Date(s.expiresAt).getTime() - new Date(s.startsAt).getTime()) / 86_400_000)) : null,
+    daysLeft: active && s.expiresAt ? Math.max(0, Math.round((new Date(s.expiresAt).getTime() - Date.now()) / 86_400_000)) : null,
+    priceInr: s.priceInr,
+    paidInr: s.paidInr,
+  });
+  v1.get("/admin/users/:id", (c) => {
+    const denied = adminOnly(c);
+    if (denied) return denied;
+    const acc = accByUserId(c.req.param("id"));
+    if (!acc) return err(c, 404, "NOT_FOUND", "User not found");
+    const sub = activeSub(acc);
+    const plan = sub ? planOf(sub.planId) : state.plans.find((p) => Number(p.intervals.monthly.priceInr) === 0);
+    const latest = latestByReferred(acc.user.id);
+    const all = state.commissions.filter((x) => x.referrerId === acc.user.id);
+    const referred = referredOf(acc);
+    return c.json({
+      user: adminRow(acc),
+      subscription: sub ? subView(sub, true) : null,
+      subscriptions: [...(acc.subscription ? [subView(acc.subscription, true)] : []), ...[...acc.pastSubscriptions].reverse().map((s) => subView(s, false))],
+      planDefaults: { planName: plan?.name ?? "Free", limits: plan?.intervals[sub?.interval ?? "monthly"].limits ?? {} },
+      referrals: { code: acc.user.referralCode, commissionPct: acc.commissionPct, count: referred.length, earnedInr: money(sumOf(all, "paid") + sumOf(all, "pending")), paidInr: money(sumOf(all, "paid")), pendingInr: money(sumOf(all, "pending")), rows: referred.map((u) => referralRow(u, latest.get(u.user.id))) },
+      history: acc.history,
+    });
+  });
+  v1.post("/admin/users/:id/plan", async (c) => {
+    const denied = adminOnly(c);
+    if (denied) return denied;
+    const acc = accByUserId(c.req.param("id"));
+    if (!acc) return err(c, 404, "NOT_FOUND", "User not found");
+    const body = await c.req.json<{ planId: string; interval: BillingInterval }>();
+    const plan = planOf(body.planId);
+    if (!plan || !plan.active) return err(c, 404, "NOT_FOUND", "Plan not found");
+    setPlanFor(acc, plan, body.interval);
+    acc.history.unshift({ id: acc.history.length + 1, action: "admin.user.set_plan", target: `user:${acc.user.id}`, actorId: current(c)!.user.id, actorEmail: current(c)!.user.email, at: nowIso(), after: { planName: plan.name, interval: body.interval, paidInr: "0" } });
+    return c.json(adminRow(acc));
+  });
+  v1.post("/admin/users/bulk-plan", async (c) => {
+    const denied = adminOnly(c);
+    if (denied) return denied;
+    const body = await c.req.json<{ ids: string[]; planId: string; interval: BillingInterval }>();
+    const plan = planOf(body.planId);
+    if (!plan || !plan.active) return err(c, 404, "NOT_FOUND", "Plan not found");
+    let updated = 0;
+    for (const acc of state.accounts.values()) if (body.ids.includes(acc.user.id)) { setPlanFor(acc, plan, body.interval); updated += 1; }
+    return c.json({ updated, planName: updated ? plan.name : "" });
+  });
+  v1.post("/admin/users/invite", async (c) => {
+    const denied = adminOnly(c);
+    if (denied) return denied;
+    const body = await c.req.json<{ name: string; email: string; mobile?: string; planId?: string; interval?: BillingInterval }>();
+    if (!body.name?.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.email ?? "")) return err(c, 400, "VALIDATION", "name and a valid email are required");
+    if (state.accounts.has(body.email.toLowerCase())) return err(c, 409, "CONFLICT", `${body.email.toLowerCase()} already has an account`);
+    const acc = createAccount(state, { email: body.email, name: body.name.trim(), ...(body.mobile ? { mobile: body.mobile } : {}), verified: false });
+    acc.subscription = null; // invited users start without a plan unless one is comped below
+    acc.plan = planStateOf(acc);
+    if (body.planId && body.interval) {
+      const plan = planOf(body.planId);
+      if (!plan) return err(c, 404, "NOT_FOUND", "Plan not found");
+      setPlanFor(acc, plan, body.interval);
+    }
+    state.invites.push({ email: acc.user.email, name: acc.user.name, invitedBy: current(c)!.user.name, link: `http://localhost:3000/auth?tab=login&email=${encodeURIComponent(acc.user.email)}` });
+    acc.history.unshift({ id: 1, action: "admin.user.invite", target: `user:${acc.user.id}`, actorId: current(c)!.user.id, actorEmail: current(c)!.user.email, at: nowIso(), after: { email: acc.user.email } });
+    return c.json(adminRow(acc), 201);
+  });
   v1.get("/admin/users", (c) => {
     const denied = adminOnly(c);
     if (denied) return denied;
     const q = (c.req.query("q") ?? "").toLowerCase();
     const status = c.req.query("status") ?? "all";
+    const planFilter = c.req.query("plan") ?? "all";
+    const sort = (c.req.query("sort") ?? "createdAt") as keyof ReturnType<typeof adminRow>;
+    const dir = c.req.query("dir") === "asc" ? 1 : -1;
     const page = Number(c.req.query("page") ?? "1");
-    const rows = [...state.accounts.values()].map(adminRow).filter((r) => !q || r.email.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)).filter((r) => {
-      if (status === "all") return true;
-      if (status === "deactivated") return !r.active;
-      if (status === "free") return r.planName === null;
-      if (status === "active") return r.planName !== null && (r.expiresAt === null || new Date(r.expiresAt).getTime() > Date.now());
-      return r.planName !== null && r.expiresAt !== null && new Date(r.expiresAt).getTime() <= Date.now();
-    });
+    const rows = [...state.accounts.values()]
+      .map(adminRow)
+      .filter((r) => !q || r.email.toLowerCase().includes(q) || r.name.toLowerCase().includes(q))
+      .filter((r) => rowStatus(r, status))
+      .filter((r) => planFilter === "all" || (planFilter === "free" ? r.planId === null : r.planId === planFilter))
+      .sort((a, b) => {
+        const av = a[sort] as string | number | null;
+        const bv = b[sort] as string | number | null;
+        if (av === null || av === undefined) return 1;
+        if (bv === null || bv === undefined) return -1;
+        const cmp = sort === "paidInr" ? Number(av) - Number(bv) : String(av).localeCompare(String(bv));
+        return cmp * dir || a.id.localeCompare(b.id);
+      });
     return c.json({ items: rows.slice((page - 1) * 10, page * 10), total: rows.length, page, pageSize: 10 });
   });
   v1.patch("/admin/users/:id", async (c) => {
@@ -968,7 +1083,20 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (denied) return denied;
     const acc = [...state.accounts.values()].find((a) => a.user.id === c.req.param("id"));
     if (!acc) return err(c, 404, "NOT_FOUND", "User not found");
-    const body = await c.req.json<{ validityDays?: number; active?: boolean; commissionPct?: string; limitOverrides?: PlanLimits; lotSizes?: Record<string, string> }>();
+    const body = await c.req.json<{ validityDays?: number; active?: boolean; commissionPct?: string; limitOverrides?: PlanLimits; lotSizes?: Record<string, string>; name?: string; mobile?: string | null; role?: "user" | "admin" }>();
+    const me = current(c)!;
+    if (body.active === false && acc === me) return err(c, 409, "CONFLICT", "You cannot deactivate your own account");
+    if (body.role !== undefined) {
+      if (acc === me) return err(c, 409, "CONFLICT", "You cannot change your own role");
+      if (body.role === "admin" && !acc.active) return err(c, 409, "CONFLICT", "Activate the account before making it an admin");
+      if (body.role === "user" && acc.user.role === "admin" && [...state.accounts.values()].filter((a) => a.user.role === "admin" && a.active).length <= 1) return err(c, 409, "CONFLICT", "HapieCoin needs at least one active admin");
+      acc.user.role = body.role;
+    }
+    if (body.name !== undefined) acc.user.name = body.name;
+    if (body.mobile !== undefined) {
+      if (body.mobile === null) delete acc.user.mobile;
+      else acc.user.mobile = body.mobile;
+    }
     if (body.validityDays !== undefined) {
       const sub = activeSub(acc);
       if (!sub) return err(c, 409, "CONFLICT", "This user has no active subscription to extend");
@@ -979,6 +1107,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (body.commissionPct !== undefined) acc.commissionPct = body.commissionPct;
     if (body.limitOverrides !== undefined) acc.limitOverrides = body.limitOverrides;
     if (body.lotSizes !== undefined) acc.settings.lotSizes = { ...acc.settings.lotSizes, ...body.lotSizes };
+    acc.history.unshift({ id: acc.history.length + 1, action: "admin.user.update", target: `user:${acc.user.id}`, actorId: me.user.id, actorEmail: me.user.email, at: nowIso(), after: { patch: body } });
     return c.json(adminRow(acc));
   });
   v1.post("/admin/users/bulk", async (c) => {
@@ -997,6 +1126,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   app.post("/__test/reset", (c) => {
     state.accounts.clear();
     state.commissions.length = 0;
+    state.invites.length = 0;
     state.sessions.clear();
     state.otps.clear();
     return c.json({ ok: true });

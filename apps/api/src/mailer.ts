@@ -14,13 +14,23 @@ export interface OtpMail {
   type: OtpPurpose;
 }
 
+/** Admin invitation (HC-AD-108, ADR-032): the invitee signs in by OTP through `link`; no password is ever set for them. */
+export interface InviteMail {
+  email: string;
+  name: string;
+  invitedBy: string;
+  link: string;
+}
+
 export interface Mailer {
   sendOtp(mail: OtpMail): Promise<void>;
+  sendInvite(mail: InviteMail): Promise<void>;
 }
 
 /** Records every OTP mail (dev/test). `last(email)` returns the most recent code for an address. */
 export class MailCapture implements Mailer {
   readonly sent: OtpMail[] = [];
+  readonly invites: InviteMail[] = [];
 
   constructor(private readonly log?: (line: string) => void) {}
 
@@ -28,6 +38,12 @@ export class MailCapture implements Mailer {
     this.sent.push(mail);
     // Deliberately unscrubbed: this is the development delivery channel. Never enabled in production.
     this.log?.(`[mail] to=${mail.email} otp=${mail.otp} type=${mail.type}`);
+    return Promise.resolve();
+  }
+
+  sendInvite(mail: InviteMail): Promise<void> {
+    this.invites.push(mail);
+    this.log?.(`[mail] invite to=${mail.email} by=${mail.invitedBy}`);
     return Promise.resolve();
   }
 
@@ -47,6 +63,15 @@ export const OTP_SUBJECT: Record<OtpPurpose, string> = {
   "forget-password": "Reset your HapieCoin password",
   "change-email": "Confirm your new HapieCoin email",
 };
+
+export const INVITE_SUBJECT = "You are invited to HapieCoin";
+export function inviteBody(mail: InviteMail): string {
+  return `Hi ${mail.name},
+
+${mail.invitedBy} has set up a HapieCoin account for you (${mail.email}). Sign in with a one-time code here: ${mail.link}
+
+HapieCoin: options strategies for Delta Exchange India.`;
+}
 
 export function otpBody(mail: OtpMail): string {
   return `Your HapieCoin code is ${mail.otp}. It expires in 10 minutes. If you did not request it, ignore this email.`;
@@ -80,6 +105,14 @@ export class ResendMailer implements Mailer {
     });
     if (error) {
       this.logger?.error({ to: mail.email, type: mail.type, reason: error.message }, "otp mail failed");
+      throw new Error(`mail delivery failed: ${error.message}`);
+    }
+  }
+
+  async sendInvite(mail: InviteMail): Promise<void> {
+    const { error } = await this.client.emails.send({ from: this.from, to: mail.email, subject: INVITE_SUBJECT, text: inviteBody(mail) });
+    if (error) {
+      this.logger?.error({ to: mail.email, reason: error.message }, "invite mail failed");
       throw new Error(`mail delivery failed: ${error.message}`);
     }
   }

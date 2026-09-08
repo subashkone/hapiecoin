@@ -114,5 +114,23 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("cms-mark-dialog")).toBeVisible();
       await page.screenshot({ path: `${DIR}/admin-commissions-mark-${theme}.png` });
     });
+
+    test(`HC-AD-086 /admin/users and the user drawer ${theme}`, async ({ page, request }) => {
+      await seedUser(request, { email: `um-${theme}@example.com`, role: "admin", referrals: 4 });
+      await signIn(page, `um-${theme}@example.com`);
+      await page.evaluate((t) => {
+        localStorage.setItem("hapiecoin.theme", t);
+      }, theme);
+      await page.goto("/admin/users");
+      await expect(page.getByTestId("admin-users")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+      await expect(page.getByTestId("um-row")).toHaveCount(5);
+      await page.getByTestId("um-row").nth(1).getByTestId("um-select").check();
+      await page.screenshot({ path: `${DIR}/admin-users-${theme}.png`, fullPage: true });
+      await page.locator(`[data-testid=um-row][data-email="um-${theme}@example.com"]`).click(); // the admin is the referrer
+      await expect(page.getByTestId("user-drawer")).toHaveAttribute("data-state-load", "ready");
+      await page.getByTestId("drawer-tab-referrals").click();
+      await expect(page.getByTestId("drawer-referrals")).toBeVisible();
+      await page.screenshot({ path: `${DIR}/admin-user-drawer-${theme}.png` });
+    });
   });
 }

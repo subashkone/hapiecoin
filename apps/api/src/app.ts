@@ -15,6 +15,7 @@ import { registerSettingsRoutes } from "./routes/settings.js";
 import { registerLiveRoutes } from "./routes/live.js";
 import { registerBillingRoutes } from "./routes/billing.js";
 import { registerReferralRoutes } from "./routes/referrals.js";
+import { registerAdminUserRoutes } from "./routes/admin-users.js";
 import { registerStrategyRoutes } from "./routes/strategies.js";
 import { type AppDeps, jsonContent } from "./routes/shared.js";
 import { type AppEnv, CLIENT_IP_HEADER } from "./security/context.js";
@@ -104,6 +105,7 @@ export function createApp(deps: AppDeps): OpenAPIHono<AppEnv> {
   registerLiveRoutes(app, deps);
   registerBillingRoutes(app, deps);
   registerReferralRoutes(app, deps);
+  registerAdminUserRoutes(app, deps);
 
   app.openAPIRegistry.registerComponent("securitySchemes", "cookieAuth", {
     type: "apiKey",

@@ -189,7 +189,7 @@
     "feature": "Section 'Admin' (admin only): Subscription Plans, Menu Pricing, Coupon Codes, User Subscriptions, Banners, Promotional Emails, Users",
     "how": "Links to /admin/subscriptions, /admin/menu-pricing, /admin/coupons, /admin/user-subscriptions, /admin/banners, /admin/emails, /admin/users",
     "status": "working",
-    "evidence": "bundle strings + routes"
+    "evidence": "bundle strings + routes · Phase 4 item 4a (08 Sep 2026, ADR-032): SettingsMenu Admin section with the seven admin links for role admin (menu-admin-users)"
   },
   {
     "route": "/analyse",

@@ -180,7 +180,7 @@ async function findReferralCode(db: Db, code: string): Promise<string | null> {
   return row?.code ?? null;
 }
 
-async function uniqueReferralCode(db: Db): Promise<string> {
+export async function uniqueReferralCode(db: Db): Promise<string> {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     const code = generateReferralCode();
     if ((await findReferralCode(db, code)) === null) return code;

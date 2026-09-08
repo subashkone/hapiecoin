@@ -8,3 +8,4 @@ export * from "./api.js";
 export * from "./strategies.js";
 export * from "./billing.js";
 export * from "./referrals.js";
+export * from "./admin.js";

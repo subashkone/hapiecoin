@@ -35,18 +35,13 @@ if (config.redisUrl !== undefined) {
   rateStore = new RedisRateStore(redis);
 }
 
-const auth = createAuth({
-  config,
-  db: handle.db,
-  mailer: createMailer({
-    resendApiKey: config.resendApiKey,
-    from: config.emailFrom,
-    logger,
-    nodeEnv: config.nodeEnv,
-  }),
-  rateStore,
+const mailer = createMailer({
+  resendApiKey: config.resendApiKey,
+  from: config.emailFrom,
   logger,
+  nodeEnv: config.nodeEnv,
 });
+const auth = createAuth({ config, db: handle.db, mailer, rateStore, logger });
 
 const deps: AppDeps = {
   config,
@@ -56,6 +51,7 @@ const deps: AppDeps = {
   auth,
   authBasePath: AUTH_BASE_PATH,
   sessions: sessionResolver(auth),
+  mailer,
   rateStore,
   logger,
   vault: createVault(config.credentialsEncKey),

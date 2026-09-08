@@ -52,4 +52,32 @@ test.describe("HC-AD admin", () => {
     await expect(page.getByTestId("cms-tile").nth(2)).toContainText("₹0.00");
     await expect(page.getByTestId("cms-bulk-pay")).toBeDisabled();
   });
+
+  test("HC-AD-086..101, 108 users: search, drawer, comped plan, invite", async ({ page, request }) => {
+    await seedUser(request, { email: "boss@example.com", role: "admin" });
+    await seedUser(request, { email: "ria@example.com" });
+    await signIn(page, "boss@example.com");
+    await page.goto("/admin/users");
+    await expect(page.getByTestId("admin-users")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("um-row")).toHaveCount(2);
+    await page.getByTestId("um-search").fill("ria");
+    await expect(page.getByTestId("um-row")).toHaveCount(1);
+    await page.getByTestId("um-row").click();
+    await expect(page.getByTestId("user-drawer")).toHaveAttribute("data-state-load", "ready");
+    await expect(page.getByTestId("drawer-pill-plan")).toHaveText("Elite");
+    await page.getByTestId("drawer-tab-subscription").click();
+    await page.getByTestId("drawer-set-plan").click();
+    await page.getByTestId("set-plan-plan").selectOption("pln_pro");
+    await page.getByTestId("set-plan-save").click();
+    await expect(page.getByTestId("drawer-pill-plan")).toHaveText("Pro");
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("user-drawer")).toHaveCount(0);
+    await expect(page.getByTestId("um-row").getByTestId("user-plan")).toHaveText("Pro");
+    await page.getByTestId("users-invite").click();
+    await page.getByTestId("invite-name").fill("New Trader");
+    await page.getByTestId("invite-email").fill("new@example.com");
+    await page.getByTestId("invite-send").click();
+    await expect(page.getByTestId("user-drawer")).toHaveAttribute("data-state-load", "ready");
+    await expect(page.getByTestId("drawer-name")).toHaveText("New Trader");
+  });
 });

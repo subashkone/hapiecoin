@@ -40,8 +40,11 @@ describe("HC-SH-001 analyse header", () => {
     // HC-SH-014 plan banner appears under the header
     await waitFor(() => expect(screen.getByTestId("plan-banner")).toBeTruthy());
   });
-  it("HC-SH-002 shows the admin chip for admins", () => {
+  it("HC-SH-002 shows the admin chip for admins; HC-SH-024 the settings menu gains the Admin section", async () => {
     renderWithProviders(<AppHeader variant="analyse" initialUser={{ ...user, role: "admin" }} />);
+    await userEvent.setup().click(screen.getByTestId("settings-gear"));
+    expect(screen.getByTestId("menu-admin-users").getAttribute("href")).toBe("/admin/users");
+    expect(screen.getByText("Promotional Emails")).toBeTruthy();
     expect(screen.getByTestId("admin-chip").getAttribute("href")).toBe("/admin/users");
   });
   it("HC-SH-013 / HC-SH-022 / HC-SH-026 settings menu opens dialogs and the logout confirm", async () => {

@@ -110,6 +110,19 @@ function SettingsMenu({ user }: { user: User }) {
         <MenuItem href="/referrals" onSelect={() => setOpen(false)}>
           <Users /> My Referrals
         </MenuItem>
+        {user.role === "admin" ? (
+          <>
+            <MenuSeparator />
+            <MenuLabel>Admin</MenuLabel>
+            <MenuItem href="/admin/users" onSelect={() => setOpen(false)} testId="menu-admin-users"><Users /> User Management</MenuItem>
+            <MenuItem href="/admin/plans" onSelect={() => setOpen(false)}><CreditCard /> Subscription Plans</MenuItem>
+            <MenuItem href="/admin/pricing" onSelect={() => setOpen(false)}><DollarSign /> Menu Pricing</MenuItem>
+            <MenuItem href="/admin/coupons" onSelect={() => setOpen(false)}><Percent /> Coupon Codes</MenuItem>
+            <MenuItem href="/admin/subscriptions" onSelect={() => setOpen(false)}><Layers /> User Subscriptions</MenuItem>
+            <MenuItem href="/admin/banners" onSelect={() => setOpen(false)}><Bell /> Banners</MenuItem>
+            <MenuItem href="/admin/emails" onSelect={() => setOpen(false)}><Plug /> Promotional Emails</MenuItem>
+          </>
+        ) : null}
         <MenuSeparator />
         <MenuLabel>Preferences</MenuLabel>
         <MenuItem onSelect={() => pick("api")} testId="menu-api">
@@ -233,7 +246,7 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
           <AccountMenu user={user} />
         </header>
         <PlanBanner />
-        <CommandPalette loggedIn referralCode={user.referralCode} />
+        <CommandPalette loggedIn referralCode={user.referralCode} admin={user.role === "admin"} />
       </>
     );
   }
@@ -295,7 +308,7 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
           </Button>
         )}
       </header>
-      <CommandPalette loggedIn={!!user} referralCode={user?.referralCode ?? null} />
+      <CommandPalette loggedIn={!!user} referralCode={user?.referralCode ?? null} admin={user?.role === "admin"} />
     </>
   );
 }

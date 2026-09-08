@@ -107,6 +107,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
     auth,
     authBasePath: AUTH_BASE_PATH,
     sessions: sessionResolver(auth),
+    mailer: mail,
     rateStore,
     logger,
     vault,

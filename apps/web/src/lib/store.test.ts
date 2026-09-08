@@ -59,6 +59,7 @@ describe("HC-SH-003 UI store", () => {
         XAUT: { name: "", basket: false, priceMode: "live", draftId: null },
       },
       draftsImported: false,
+      adminCols: {},
       workspaceTab: "chain",
       analysisTab: "payoff",
       targetDays: 0, templatesStrip: true,

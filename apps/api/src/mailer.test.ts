@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createLogger } from "./logger.js";
-import { MailCapture, OTP_SUBJECT, ResendMailer, createMailer, otpBody, type ResendLike } from "./mailer.js";
+import { INVITE_SUBJECT, MailCapture, OTP_SUBJECT, ResendMailer, createMailer, otpBody, type ResendLike } from "./mailer.js";
 
 describe("[MAIL] OTP delivery", () => {
   it("dev mailer logs `[mail] to=<email> otp=<code>` and remembers the last code per address", async () => {
@@ -40,8 +40,12 @@ describe("[MAIL] OTP delivery", () => {
       subject: OTP_SUBJECT["forget-password"],
       text: otpBody({ email: "u@x.com", otp: "123456", type: "forget-password" }),
     });
+    await mailer.sendInvite({ email: "new@x.com", name: "New Trader", invitedBy: "Demo Admin", link: "https://hapiecoin.com/auth?tab=login&email=new%40x.com" });
+    expect(sent[1]).toMatchObject({ to: "new@x.com", subject: INVITE_SUBJECT, text: expect.stringContaining("Demo Admin") as string });
+    expect(sent[1]).toMatchObject({ text: expect.stringContaining("https://hapiecoin.com/auth?tab=login&email=new%40x.com") as string });
     fail = true;
     await expect(mailer.sendOtp({ email: "u@x.com", otp: "1", type: "sign-in" })).rejects.toThrow(/quota/);
+    await expect(mailer.sendInvite({ email: "new@x.com", name: "N", invitedBy: "A", link: "https://x" })).rejects.toThrow(/quota/);
     const silent = new ResendMailer(client, "x");
     await expect(silent.sendOtp({ email: "u@x.com", otp: "1", type: "sign-in" })).rejects.toThrow();
   });
@@ -51,6 +55,8 @@ describe("[MAIL] OTP delivery", () => {
     const dev = createMailer({ resendApiKey: undefined, from: "x", logger, nodeEnv: "development" });
     expect(dev).toBeInstanceOf(MailCapture);
     await dev.sendOtp({ email: "dev@x.com", otp: "654321", type: "sign-in" });
+    await dev.sendInvite({ email: "dev2@x.com", name: "Dev Two", invitedBy: "Demo Admin", link: "https://x" });
+    expect((dev as MailCapture).invites[0]?.email).toBe("dev2@x.com");
     expect((dev as MailCapture).last("dev@x.com")?.otp).toBe("654321");
     expect(createMailer({ resendApiKey: "re_test", from: "x", logger, nodeEnv: "production" })).toBeInstanceOf(
       ResendMailer,
