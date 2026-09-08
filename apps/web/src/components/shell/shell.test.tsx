@@ -25,6 +25,12 @@ describe("HC-PB-059 command palette", () => {
     expect(out.map((c) => c.label)).toEqual(["Home", "Sign in", "Privacy Policy", "Terms of Service", "Disclaimer", "Toggle theme"]);
     const inn = buildCommands({ loggedIn: true, navigate, toggleTheme: vi.fn() });
     expect(inn[1]?.label).toBe("Analyse workspace");
+    expect(inn.find((c) => c.id === "act:referral-copy")).toBeUndefined();
+    // HC-AC-073 the copy-link command exists only once the referral code is known
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    buildCommands({ loggedIn: true, navigate, toggleTheme: vi.fn(), referralCode: "ASHA2026" }).find((c) => c.id === "act:referral-copy")?.run();
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/auth?tab=signup&ref=ASHA2026`);
     inn[1]?.run();
     expect(navigate).toHaveBeenCalledWith("/analyse");
     // chain commands (HC-WS-016) act on the UI store

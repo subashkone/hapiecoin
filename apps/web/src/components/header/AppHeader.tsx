@@ -233,7 +233,7 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
           <AccountMenu user={user} />
         </header>
         <PlanBanner />
-        <CommandPalette loggedIn />
+        <CommandPalette loggedIn referralCode={user.referralCode} />
       </>
     );
   }
@@ -295,7 +295,7 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
           </Button>
         )}
       </header>
-      <CommandPalette loggedIn={!!user} />
+      <CommandPalette loggedIn={!!user} referralCode={user?.referralCode ?? null} />
     </>
   );
 }

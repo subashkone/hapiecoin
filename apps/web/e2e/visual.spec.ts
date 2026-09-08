@@ -90,5 +90,29 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("tile-BTC")).toHaveAttribute("data-state", "live", { timeout: 15_000 });
       await page.screenshot({ path: `${DIR}/home-${theme}.png` });
     });
+
+    test(`HC-AC-037 /referrals and HC-AD-052 admin commissions ${theme}`, async ({ page, request }) => {
+      await seedUser(request, { email: `ref-${theme}@example.com`, role: "admin", referrals: 6 });
+      await signIn(page, `ref-${theme}@example.com`);
+      await page.evaluate((t) => {
+        localStorage.setItem("hapiecoin.theme", t);
+      }, theme);
+      await page.goto("/referrals");
+      await expect(page.getByTestId("referrals-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+      await expect(page.getByTestId("ref-row")).toHaveCount(6);
+      await page.screenshot({ path: `${DIR}/account-referrals-${theme}.png`, fullPage: true });
+      await page.getByTestId("ref-share").click();
+      await expect(page.getByTestId("share-dialog")).toBeVisible();
+      await page.screenshot({ path: `${DIR}/account-referrals-share-${theme}.png` });
+      await page.keyboard.press("Escape");
+      await page.goto("/admin/subscriptions");
+      await expect(page.getByTestId("admin-shell")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+      await page.getByTestId("subs-tab-commissions").click();
+      await expect(page.getByTestId("cms-row")).toHaveCount(1);
+      await page.screenshot({ path: `${DIR}/admin-commissions-${theme}.png`, fullPage: true });
+      await page.getByTestId("cms-mark").click();
+      await expect(page.getByTestId("cms-mark-dialog")).toBeVisible();
+      await page.screenshot({ path: `${DIR}/admin-commissions-mark-${theme}.png` });
+    });
   });
 }

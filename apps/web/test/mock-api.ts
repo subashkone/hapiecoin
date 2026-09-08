@@ -3,8 +3,8 @@
 // deliberately simple: one OTP (123456), sessions in a Map, settings/brokers/credentials per user.
 import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import type { BillingInterval, Broker, BrokerCredentialPublic, LimitKey, MenuItem, Plan, PlanLimits, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
-import { INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, maskApiKey, priceBreakdown, realizedPnl, toDecimal } from "@hapiecoin/schema";
+import type { AdminCommissionRow, BillingInterval, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
+import { INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, commissionFor, maskApiKey, monthKey, priceBreakdown, realizedPnl, toDecimal } from "@hapiecoin/schema";
 
 export const SESSION_COOKIE = "better-auth.session_token";
 export const TEST_OTP = "123456";
@@ -38,6 +38,24 @@ interface MockSubscription {
   priceInr: string;
   paidInr: string;
 }
+/** Referral commission (ADR-031): one per referred subscription, settled by an admin. */
+interface MockCommission {
+  id: string;
+  referrerId: string;
+  referredUserId: string;
+  subscriptionId: string;
+  planName: string;
+  interval: BillingInterval | null;
+  amountInr: string;
+  commissionInr: string;
+  commissionPct: string;
+  status: CommissionStatus;
+  paidAt: string | null;
+  note: string | null;
+  proofUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 interface PlanRecord {
   state: "free" | "active" | "expiring_soon" | "expired";
   planName?: string;
@@ -49,6 +67,7 @@ export interface MockState {
   plans: Plan[];
   menuItems: MenuItem[];
   accounts: Map<string, Account>;
+  commissions: MockCommission[];
   sessions: Map<string, string>; // token → email
   /** OTPs issued: `${email}:${type}` → code (always TEST_OTP, but recorded for assertions). */
   otps: Map<string, string>;
@@ -105,7 +124,7 @@ function seedPlans(): Plan[] {
 
 export function createAccount(
   state: MockState,
-  input: { email: string; password?: string; name?: string; mobile?: string; role?: "user" | "admin"; verified?: boolean },
+  input: { email: string; password?: string; name?: string; mobile?: string; role?: "user" | "admin"; verified?: boolean; createdAt?: string },
 ): Account {
   const email = input.email.toLowerCase();
   const user: User = {
@@ -114,8 +133,8 @@ export function createAccount(
     name: input.name ?? "Asha Trader",
     role: input.role ?? "user",
     avatar: "rocket",
-    referralCode: "ASHA2026",
-    createdAt: new Date("2026-09-01T10:00:00Z").toISOString(),
+    referralCode: state.accounts.size === 0 ? "ASHA2026" : `ASHA${(state.accounts.size + 2026).toString(36).toUpperCase()}`,
+    createdAt: input.createdAt ?? new Date("2026-09-01T10:00:00Z").toISOString(),
     ...(input.mobile ? { mobile: input.mobile } : {}),
   };
   const acc: Account = {
@@ -147,7 +166,7 @@ export function createSession(state: MockState, email: string): string {
 
 export function createMockApi(state: MockState = { plans: seedPlans(),
     menuItems: seedMenuItems(),
-    accounts: new Map(), sessions: new Map(), otps: new Map() }) {
+    accounts: new Map(), commissions: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
   const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409, code: string, message: string) =>
@@ -730,6 +749,107 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   };
   v1.get("/plans", (c) => c.json({ items: state.plans.filter((p) => p.active).sort((a, b) => a.sortOrder - b.sortOrder) }));
   v1.get("/subscription", (c) => c.json(subscriptionView(current(c)!)));
+  /* ---------------- referrals and commissions (ADR-031) ---------------- */
+  const money = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
+  const accById = (uid: string) => [...state.accounts.values()].find((a) => a.user.id === uid);
+  const referrerOf = (acc: Account) => (acc.referredBy ? [...state.accounts.values()].find((a) => a.user.referralCode === acc.referredBy) : undefined);
+  const recordCommission = (acc: Account) => {
+    const sub = acc.subscription;
+    const referrer = referrerOf(acc);
+    if (!sub || !referrer || referrer === acc) return;
+    const at = nowIso();
+    const commissionInr = commissionFor(sub.paidInr, referrer.commissionPct);
+    const status: CommissionStatus = Number(commissionInr) > 0 ? "pending" : "not_paid";
+    const planName = planOf(sub.planId)?.name ?? "";
+    const existing = state.commissions.find((x) => x.subscriptionId === sub.id);
+    if (existing) {
+      if (existing.status !== "paid") Object.assign(existing, { amountInr: sub.paidInr, commissionInr, commissionPct: referrer.commissionPct, planName, interval: sub.interval, status, updatedAt: at });
+      return;
+    }
+    state.commissions.push({ id: id("cms"), referrerId: referrer.user.id, referredUserId: acc.user.id, subscriptionId: sub.id, planName, interval: sub.interval, amountInr: sub.paidInr, commissionInr, commissionPct: referrer.commissionPct, status, paidAt: null, note: null, proofUrl: null, createdAt: at, updatedAt: at });
+  };
+  const latestByReferred = (referrerId: string) => {
+    const m = new Map<string, MockCommission>();
+    for (const x of [...state.commissions].filter((x) => x.referrerId === referrerId).sort((a, b) => b.createdAt.localeCompare(a.createdAt))) if (!m.has(x.referredUserId)) m.set(x.referredUserId, x);
+    return m;
+  };
+  const referralRow = (u: Account, x: MockCommission | undefined): ReferralRow => ({ userId: u.user.id, name: u.user.name, email: u.user.email, joinedAt: u.user.createdAt, planName: x?.planName ?? null, interval: x?.interval ?? null, amountInr: x?.amountInr ?? "0", commissionInr: x?.commissionInr ?? "0", status: x?.status ?? "not_paid", month: monthKey(x?.createdAt ?? u.user.createdAt) });
+  const referredOf = (acc: Account) => [...state.accounts.values()].filter((a) => a.referredBy === acc.user.referralCode && a !== acc).sort((a, b) => b.user.createdAt.localeCompare(a.user.createdAt));
+  const byMonth = (rows: MockCommission[]) => {
+    const m = new Map<string, { paid: number; pending: number }>();
+    for (const r of rows) {
+      const k = monthKey(r.createdAt);
+      const b = m.get(k) ?? { paid: 0, pending: 0 };
+      if (r.status === "paid") b.paid += Number(r.commissionInr);
+      if (r.status === "pending") b.pending += Number(r.commissionInr);
+      m.set(k, b);
+    }
+    return [...m.entries()].sort(([a], [b]) => a.localeCompare(b)).slice(-12).map(([month, b]) => ({ month, paidInr: money(b.paid), pendingInr: money(b.pending) }));
+  };
+  const sumOf = (rows: MockCommission[], s: CommissionStatus) => rows.filter((r) => r.status === s).reduce((t, r) => t + Number(r.commissionInr), 0);
+  v1.get("/referrals", (c) => {
+    const acc = current(c)!;
+    const latest = latestByReferred(acc.user.id);
+    const all = state.commissions.filter((x) => x.referrerId === acc.user.id);
+    const paid = sumOf(all, "paid");
+    const pending = sumOf(all, "pending");
+    const referred = referredOf(acc);
+    return c.json({ code: acc.user.referralCode, link: `http://localhost:3000/auth?tab=signup&ref=${acc.user.referralCode}`, commissionPct: acc.commissionPct, stats: { referrals: referred.length, earnedInr: money(paid + pending), paidInr: money(paid), pendingInr: money(pending) }, rows: referred.map((u) => referralRow(u, latest.get(u.user.id))), byMonth: byMonth(all) });
+  });
+  const adminGate = (c: Context): Response | null => (current(c)!.user.role === "admin" ? null : err(c, 403, "FORBIDDEN", "Admin only"));
+  v1.get("/admin/commissions", (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const q = (c.req.query("q") ?? "").toLowerCase();
+    const month = c.req.query("month") ?? "";
+    if (month && !/^\d{4}-\d{2}$/.test(month)) return err(c, 400, "INVALID_BODY", "month must be YYYY-MM");
+    const all = state.commissions;
+    const months = [...new Set(all.map((r) => monthKey(r.createdAt)))].sort().reverse();
+    const inMonth = month ? all.filter((r) => monthKey(r.createdAt) === month) : all;
+    const rows: AdminCommissionRow[] = [...new Set(inMonth.map((r) => r.referrerId))]
+      .map((rid) => ({ acc: accById(rid)!, mine: inMonth.filter((r) => r.referrerId === rid) }))
+      .filter(({ acc }) => acc && (!q || acc.user.name.toLowerCase().includes(q) || acc.user.email.toLowerCase().includes(q)))
+      .map(({ acc, mine }): AdminCommissionRow => {
+        const paid = sumOf(mine, "paid");
+        const pending = sumOf(mine, "pending");
+        const lastNote = mine.filter((r) => r.note).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]?.note ?? null;
+        return { referrerId: acc.user.id, name: acc.user.name, email: acc.user.email, referrals: new Set(mine.map((r) => r.referredUserId)).size, commissionPct: acc.commissionPct, totalInr: money(paid + pending), paidInr: money(paid), pendingInr: money(pending), status: pending > 0 ? "pending" : paid > 0 ? "paid" : "not_paid", lastNote };
+      })
+      .sort((a, b) => Number(b.pendingInr) - Number(a.pendingInr) || a.name.localeCompare(b.name));
+    const tiles = rows.reduce((t, r) => ({ total: t.total + Number(r.totalInr), paid: t.paid + Number(r.paidInr), pending: t.pending + Number(r.pendingInr) }), { total: 0, paid: 0, pending: 0 });
+    return c.json({ tiles: { totalInr: money(tiles.total), paidInr: money(tiles.paid), pendingInr: money(tiles.pending) }, rows, byMonth: byMonth(inMonth), months });
+  });
+  v1.get("/admin/commissions/:id", (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const acc = accById(c.req.param("id"));
+    if (!acc) return err(c, 404, "NOT_FOUND", "Referrer not found");
+    const latest = latestByReferred(acc.user.id);
+    return c.json({ referrer: { id: acc.user.id, name: acc.user.name, email: acc.user.email, commissionPct: acc.commissionPct }, rows: referredOf(acc).map((u) => referralRow(u, latest.get(u.user.id))) });
+  });
+  v1.post("/admin/commissions/:id/mark", async (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const body = await c.req.json<{ status: "paid" | "not_paid"; note?: string; proofUrl?: string }>();
+    if (body.status === "not_paid" && !body.note?.trim()) return err(c, 400, "INVALID_BODY", "A reason is required when marking Not Paid");
+    const acc = accById(c.req.param("id"));
+    if (!acc) return err(c, 404, "NOT_FOUND", "Referrer not found");
+    const pending = state.commissions.filter((x) => x.referrerId === acc.user.id && x.status === "pending");
+    if (pending.length === 0) return err(c, 409, "CONFLICT", "Nothing pending for this referrer");
+    const at = nowIso();
+    for (const x of pending) Object.assign(x, { status: body.status, paidAt: body.status === "paid" ? at : null, ...(body.note !== undefined ? { note: body.note } : {}), ...(body.proofUrl !== undefined ? { proofUrl: body.proofUrl } : {}), updatedAt: at });
+    return c.json({ rows: pending.length, amountInr: money(pending.reduce((t, x) => t + Number(x.commissionInr), 0)) });
+  });
+  v1.post("/admin/commissions/bulk-pay", async (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const body = await c.req.json<{ referrerIds?: string[] }>();
+    const pending = state.commissions.filter((x) => x.status === "pending" && (!body.referrerIds || body.referrerIds.includes(x.referrerId)));
+    const at = nowIso();
+    for (const x of pending) Object.assign(x, { status: "paid", paidAt: at, note: "bulk pay", updatedAt: at });
+    return c.json({ settledRows: pending.length, referrers: new Set(pending.map((x) => x.referrerId)).size, amountInr: money(pending.reduce((t, x) => t + Number(x.commissionInr), 0)) });
+  });
+
   v1.post("/subscription/activate", async (c) => {
     const acc = current(c)!;
     const body = await c.req.json<{ planId: string; interval: BillingInterval }>();
@@ -745,6 +865,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     acc.subscription = { id: id("sub"), planId: plan.id, interval: body.interval, startsAt, expiresAt: Number(pricing.priceInr) === 0 ? null : new Date(Date.now() + INTERVAL_MONTHS[body.interval] * 30 * 86_400_000).toISOString(), priceInr: pricing.priceInr, paidInr: "0" };
     acc.seededBanner = false; // the catalogue subscription now drives the banner
     acc.plan = planStateOf(acc);
+    recordCommission(acc);
     return c.json(subscriptionView(acc));
   });
   const adminOnly = (c: Context): Response | null => (current(c)!.user.role === "admin" ? null : err(c, 403, "FORBIDDEN", "Admin only"));
@@ -875,13 +996,35 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   /* ---------------- test hooks ---------------- */
   app.post("/__test/reset", (c) => {
     state.accounts.clear();
+    state.commissions.length = 0;
     state.sessions.clear();
     state.otps.clear();
     return c.json({ ok: true });
   });
   app.post("/__test/seed", async (c) => {
-    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean }>();
+    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; referrals?: number }>();
     const acc = createAccount(state, body);
+    if (body.referrals) {
+      // n referred traders on rotating plans, joined over the last months; every third commission already settled
+      acc.commissionPct = "20";
+      const names = ["Priya Sharma", "Rahul Verma", "Anita Desai", "Vikram Singh", "Neha Gupta", "Arjun Mehta", "Kavya Nair", "Rohan Iyer"];
+      const plans = ["pln_pro", "pln_free", "pln_basic", "pln_elite"];
+      for (let i = 0; i < body.referrals; i += 1) {
+        const joined = new Date(Date.UTC(2026, 8 - (i % 4), 3 + i, 9)).toISOString();
+        const ref = createAccount(state, { email: `${acc.user.email.split("@")[0]}.ref${i + 1}@example.com`, name: names[i % names.length]!, createdAt: joined });
+        ref.referredBy = acc.user.referralCode;
+        const plan = planOf(plans[i % plans.length]!)!;
+        const paid = plan.intervals.monthly.priceInr;
+        ref.subscription = { id: id("sub"), planId: plan.id, interval: "monthly", startsAt: joined, expiresAt: null, priceInr: paid, paidInr: paid };
+        recordCommission(ref);
+        const x = state.commissions.find((y) => y.referredUserId === ref.user.id);
+        if (x) {
+          x.createdAt = joined;
+          x.updatedAt = joined;
+          if (i % 3 === 2 && x.status === "pending") Object.assign(x, { status: "paid", paidAt: joined, note: "NEFT ref 4471" });
+        }
+      }
+    }
     if (body.plan) {
       acc.plan = body.plan;
       acc.seededBanner = true;

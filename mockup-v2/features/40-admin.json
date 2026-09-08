@@ -333,7 +333,7 @@
     "feature": "Page title + subtitle, tabs 'Users' / 'Commissions'",
     "how": "'User Subscriptions' / 'Manage users and commissions'; tabs switch panels (also via ?tab= query)",
     "status": "working",
-    "evidence": "bundle strings: User Subscriptions, Manage users and commissions, Users, Commissions · Phase 4 item 1 (08 Sep 2026, ADR-030): User Subscriptions tabs Users / Commissions (commissions placeholder until item 3)"
+    "evidence": "bundle strings: User Subscriptions, Manage users and commissions, Users, Commissions · Phase 4 item 1 (08 Sep 2026, ADR-030): User Subscriptions tabs Users / Commissions (commissions placeholder until item 3) · Phase 4 item 3 (08 Sep 2026, ADR-031): Commissions tab now renders CommissionsAdmin (subs-tab-commissions)"
   },
   {
     "route": "/admin/user-subscriptions",
@@ -413,7 +413,7 @@
     "feature": "Commissions tiles: Total Commission / Paid / Pending (₹)",
     "how": "Sums over the filtered CG.mock.commissions",
     "status": "working",
-    "evidence": "bundle strings: Total Commission, Paid, Pending"
+    "evidence": "bundle strings: Total Commission, Paid, Pending · Phase 4 item 3 (08 Sep 2026, ADR-031): tiles Total / Paid / Pending from GET /v1/admin/commissions (cms-tile)"
   },
   {
     "route": "/admin/user-subscriptions",
@@ -421,7 +421,7 @@
     "feature": "Commissions filters: 'Search referrer name...', 'Filter by month' select (All Months + months), 'Clear'",
     "how": "Filters the table and tiles; Clear resets both",
     "status": "working",
-    "evidence": "bundle strings: Search referrer name..., Filter by month, All Months, Clear, Filter, Calendar"
+    "evidence": "bundle strings: Search referrer name..., Filter by month, All Months, Clear, Filter, Calendar · Phase 4 item 3 (08 Sep 2026, ADR-031): search referrer + month select + Clear (cms-search, cms-month, cms-clear)"
   },
   {
     "route": "/admin/user-subscriptions",
@@ -429,7 +429,7 @@
     "feature": "Commissions table: Referrer, Referrals, Commission %, Total, Paid, Pending, Status, Action",
     "how": "Status badge Paid / Pending / Not Paid; 'Mark Paid' only while pending; 'View' (eye) always",
     "status": "working",
-    "evidence": "bundle strings: Referrer, Referrals, Commission %, Total, Paid, Pending, Status, Action, pending, Mark Paid, View, Details"
+    "evidence": "bundle strings: Referrer, Referrals, Commission %, Total, Paid, Pending, Status, Action, pending, Mark Paid, View, Details · Phase 4 item 3 (08 Sep 2026, ADR-031): table Referrer / Referrals / Commission % / Total / Paid / Pending / Status / Action with View + Mark Paid (cms-row)"
   },
   {
     "route": "/admin/user-subscriptions",
@@ -437,7 +437,7 @@
     "feature": "Empty state 'No commissions found'",
     "how": "Shown when filters match nothing",
     "status": "working",
-    "evidence": "bundle string: No commissions found"
+    "evidence": "bundle string: No commissions found · Phase 4 item 3 (08 Sep 2026, ADR-031): 'No commissions yet' empty state (cms-empty)"
   },
   {
     "route": "/admin/user-subscriptions",
@@ -445,7 +445,7 @@
     "feature": "'View' → dialog \"<Name>'s Referrals · N referred user(s)\": table User, Joined (dd MMM yyyy), Plan, Amount, Commission, Status Paid/Not Paid + 'Total: ₹ · Paid: ₹ · Pending: ₹', Close",
     "how": "Per-referral rows generated deterministically from CG.mock.users and stored on the commission record (CG.mock.commissions[i].details)",
     "status": "working",
-    "evidence": "bundle strings: 's Referrals, referred user, Joined, Commission, dd MMM yyyy, Not Paid, Total:, Paid: ₹, Pending: ₹, Close"
+    "evidence": "bundle strings: 's Referrals, referred user, Joined, Commission, dd MMM yyyy, Not Paid, Total:, Paid: ₹, Pending: ₹, Close · Phase 4 item 3 (08 Sep 2026, ADR-031): View dialog lists that referrer's referrals with status (cms-view-dialog)"
   },
   {
     "route": "/admin/user-subscriptions",
@@ -453,15 +453,15 @@
     "feature": "'Mark Paid' → dialog 'Mark Payment — <Name> · Total: ₹x': Payment Status radio '✓ Paid' / '✗ Not Paid', 'Proof Link per Referral' inputs, 'Comment' textarea, Cancel / 'Confirm Paid' | 'Confirm Not Paid' ('Saving...')",
     "how": "Paid marks all pending referrals paid (record → Paid, pending 0); Not Paid requires a comment ('Reason for not paying (required)') and marks the record Not Paid; proof URLs validated and stored per referral",
     "status": "working",
-    "evidence": "bundle strings: Mark Payment —, · Total: ₹, Payment Status, ✓ Paid, ✗ Not Paid, not_paid, Proof Link per Referral, https://... (payment screenshot / receipt URL), Comment, Optional note..., Reason for not paying (required), proof-link, Saving..., Confirm Paid, Confirm Not Paid"
+    "evidence": "bundle strings: Mark Payment —, · Total: ₹, Payment Status, ✓ Paid, ✗ Not Paid, not_paid, Proof Link per Referral, https://... (payment screenshot / receipt URL), Comment, Optional note..., Reason for not paying (required), proof-link, Saving..., Confirm Paid, Confirm Not Paid · Phase 4 item 3 (08 Sep 2026, ADR-031): Mark Payment dialog Paid / Not Paid, reason required for Not Paid, optional proof URL (cms-mark-dialog); POST /v1/admin/commissions/{id}/mark"
   },
   {
     "route": "/admin/user-subscriptions",
     "screen": "User Subscriptions",
     "feature": "'Bulk pay' button (all pending commissions)",
     "how": "Confirm dialog with the total pending amount, then marks every pending record and referral as paid",
-    "status": "inferred",
-    "evidence": "/admin/commissions/bulk-pay endpoint exists in the bundle; no UI strings observed"
+    "status": "working",
+    "evidence": "/admin/commissions/bulk-pay endpoint exists in the bundle; no UI strings observed · Phase 4 item 3 (08 Sep 2026, ADR-031): Bulk pay with confirm dialog, POST /v1/admin/commissions/bulk-pay (cms-bulk-pay, cms-bulk-confirm)"
   },
   {
     "route": "/admin/banners",
@@ -969,7 +969,7 @@
     "how": "Grouped SVG bars per commission month: paid solid green, pending hatched; ₹ axis, tooltips, legend and a still-pending readout; tiles above, table below",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): paid vs pending by month chart under the table (earnings-chart)"
   },
   {
     "route": "/admin/user-subscriptions",
@@ -978,7 +978,7 @@
     "how": "Select referrers → Mark paid confirms the pending amount and settles them; Bulk pay (header primary) still settles everyone",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): select rows → 'Mark paid (n)' → bulk-pay with referrerIds (cms-select)"
   },
   {
     "route": "/admin/user-subscriptions",

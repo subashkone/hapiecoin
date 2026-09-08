@@ -7052,7 +7052,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Slim v2 title row with mono meta (20% COMMISSION · 6 REFERRALS) and the amber Share primary action on the right",
-  "evidence": "bundle strings: My Referrals, Share & Earn"
+  "evidence": "bundle strings: My Referrals, Share & Earn · Phase 4 item 3 (08 Sep 2026, ADR-031): ReferralsPage header meta (pct · n referrals) + amber Share; e2e account.spec + unit referrals.test"
  },
  {
   "id": "HC-AC-038",
@@ -7062,12 +7062,12 @@
   "route": "/referrals",
   "screen": "My Referrals",
   "feature": "Referral link card 'Get 20% commission on every paid referral'",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 4,
-  "test": "visual (screenshot diff) · api contract",
+  "test": "e2e (Playwright) · api contract",
   "acceptance": "Flat hairline card (no gradient): gift icon, headline using referrals.commissionPct, explanatory copy, mono link input, Copy button and the dashed code chip",
-  "evidence": "bundle strings: Get , % commission on every paid referral, Gift"
+  "evidence": "bundle strings: Get , % commission on every paid referral, Gift · Phase 4 item 3 (08 Sep 2026, ADR-031): link card headline from commissionPct (ref-link-card)"
  },
  {
   "id": "HC-AC-039",
@@ -7082,7 +7082,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Shows CG.mock.referrals.link in a mono read-only input; clicking selects the whole link",
-  "evidence": "inferred from Copy/Share actions"
+  "evidence": "inferred from Copy/Share actions · Phase 4 item 3 (08 Sep 2026, ADR-031): read-only mono link input, click selects (ref-link)"
  },
  {
   "id": "HC-AC-040",
@@ -7097,7 +7097,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Copies the link via navigator.clipboard (execCommand fallback) and toasts 'Copied!'",
-  "evidence": "bundle strings: Copy, Copied!"
+  "evidence": "bundle strings: Copy, Copied! · Phase 4 item 3 (08 Sep 2026, ADR-031): Copy → clipboard + 'Copied!' toast (ref-copy)"
  },
  {
   "id": "HC-AC-041",
@@ -7112,7 +7112,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Opens the Share dialog (link row + WhatsApp / X / Email message templates); the native navigator.share sheet is offered inside the dialog when the browser supports it",
-  "evidence": "bundle strings: Share, Join HapieCoin, Share2"
+  "evidence": "bundle strings: Share, Join HapieCoin, Share2 · Phase 4 item 3 (08 Sep 2026, ADR-031): Share opens the share dialog (ref-share)"
  },
  {
   "id": "HC-AC-042",
@@ -7127,7 +7127,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Dashed chip with the referral code from CG.mock.user.referralCode; click copies the code",
-  "evidence": "bundle strings: Code: , REF_XXXXXXX"
+  "evidence": "bundle strings: Code: , REF_XXXXXXX · Phase 4 item 3 (08 Sep 2026, ADR-031): dashed code chip copies the code (ref-code)"
  },
  {
   "id": "HC-AC-043",
@@ -7137,12 +7137,12 @@
   "route": "/referrals",
   "screen": "My Referrals",
   "feature": "How it works (3 steps)",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 4,
-  "test": "visual (screenshot diff) · api contract",
+  "test": "e2e (Playwright) · api contract",
   "acceptance": "Numbered steps: Share your unique referral link → Friend signs up & purchases a plan → Earn 20% commission, plus a note on Pending vs Paid",
-  "evidence": "bundle strings: How it works, Share your unique referral link, Friend signs up & purchases a plan"
+  "evidence": "bundle strings: How it works, Share your unique referral link, Friend signs up & purchases a plan · Phase 4 item 3 (08 Sep 2026, ADR-031): How it works 3 steps + Pending → Paid note (ref-how)"
  },
  {
   "id": "HC-AC-044",
@@ -7157,7 +7157,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Computed from the referral rows (count, sum of commission, sum of paid, sum of pending) and written back to CG.mock.referrals so every screen agrees; ₹ values in mono with 2 decimals",
-  "evidence": "bundle strings: Total Referrals, Total Earned, Paid, Pending, Users"
+  "evidence": "bundle strings: Total Referrals, Total Earned, Paid, Pending, Users · Phase 4 item 3 (08 Sep 2026, ADR-031): tiles from GET /v1/referrals stats (ref-tile)"
  },
  {
   "id": "HC-AC-045",
@@ -7172,7 +7172,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Case-insensitive live filter over name and email; resets to page 1",
-  "evidence": "bundle strings: Search by name or email..., Search"
+  "evidence": "bundle strings: Search by name or email..., Search · Phase 4 item 3 (08 Sep 2026, ADR-031): search by name or email (ref-search)"
  },
  {
   "id": "HC-AC-046",
@@ -7187,7 +7187,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Select bound to row.status (paid / pending / not_paid)",
-  "evidence": "bundle strings: All Status, pending, not_paid, No Purchase"
+  "evidence": "bundle strings: All Status, pending, not_paid, No Purchase · Phase 4 item 3 (08 Sep 2026, ADR-031): status filter All / Paid / Pending / No Purchase (ref-status-filter)"
  },
  {
   "id": "HC-AC-047",
@@ -7202,7 +7202,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Select; 'Free' matches referrals with no purchased plan",
-  "evidence": "bundle strings: All Plans, Free"
+  "evidence": "bundle strings: All Plans, Free · Phase 4 item 3 (08 Sep 2026, ADR-031): plan filter from the rows' plan names (ref-plan-filter)"
  },
  {
   "id": "HC-AC-048",
@@ -7217,7 +7217,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "'Date:' label with from/to date inputs filtering on the Joined date (inclusive)",
-  "evidence": "bundle strings: Date:"
+  "evidence": "bundle strings: Date: · Phase 4 item 3 (08 Sep 2026, ADR-031): joined date range (ref-from / ref-to)"
  },
  {
   "id": "HC-AC-049",
@@ -7232,7 +7232,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Resets search, status, plan and dates, re-renders and toasts 'Filters cleared'",
-  "evidence": "bundle strings:  Clear"
+  "evidence": "bundle strings:  Clear · Phase 4 item 3 (08 Sep 2026, ADR-031): Clear resets filters and page, toasts (ref-clear)"
  },
  {
   "id": "HC-AC-050",
@@ -7247,7 +7247,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Columns User (mono initials, name + email), Joined (mono), Plan (outline badge + interval), Amount, Commission (mono, right-aligned, green), Status; every header is sortable; default newest first",
-  "evidence": "bundle strings: User, Joined, Plan, Amount, Commission, Status, en-US, numeric"
+  "evidence": "bundle strings: User, Joined, Plan, Amount, Commission, Status, en-US, numeric · Phase 4 item 3 (08 Sep 2026, ADR-031): table User / Joined / Plan / Amount / Commission / Status, sticky User column (ref-table)"
  },
  {
   "id": "HC-AC-051",
@@ -7262,7 +7262,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "paid → Paid (green), pending → Pending (amber), not_paid → No Purchase (grey)",
-  "evidence": "bundle strings: Paid, Pending, No Purchase, secondary"
+  "evidence": "bundle strings: Paid, Pending, No Purchase, secondary · Phase 4 item 3 (08 Sep 2026, ADR-031): StatusBadge paid / pending / not_paid (ref-status)"
  },
  {
   "id": "HC-AC-052",
@@ -7277,7 +7277,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "'No referrals yet · Share your link to start earning' when the referral list is empty",
-  "evidence": "bundle strings: No referrals yet, Share your link to start earning"
+  "evidence": "bundle strings: No referrals yet, Share your link to start earning · Phase 4 item 3 (08 Sep 2026, ADR-031): 'No referrals yet' with Share link (ref-empty)"
  },
  {
   "id": "HC-AC-053",
@@ -7292,7 +7292,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "'No results found · Try adjusting your filters' when filters exclude every row",
-  "evidence": "bundle strings: No results found, Try adjusting your filters"
+  "evidence": "bundle strings: No results found, Try adjusting your filters · Phase 4 item 3 (08 Sep 2026, ADR-031): 'No results found' with Clear filters (ref-no-results)"
  },
  {
   "id": "HC-AC-054",
@@ -7307,7 +7307,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "10 rows per page; footer '6 referrals (filtered from N) · Page 1 of 1' with pluralised ' referral', '← Previous' / 'Next →' buttons",
-  "evidence": "bundle strings:  referral,  of , button"
+  "evidence": "bundle strings:  referral,  of , button · Phase 4 item 3 (08 Sep 2026, ADR-031): 10 per page with count footer and filtered-from count (ref-pager)"
  },
  {
   "id": "HC-AC-055",
@@ -7320,9 +7320,9 @@
   "status": "confirmed",
   "isNew": false,
   "phase": 4,
-  "test": "visual (screenshot diff) · api contract",
+  "test": "e2e (Playwright) · api contract",
   "acceptance": "If referrals fail to load, the page shows an inline error panel 'Couldn't load referrals' with a Retry button and a toast; the last successfully loaded data stays visible with a 'stale' note when available.",
-  "evidence": "bundle strings: Error, Failed to load referrals, destructive",
+  "evidence": "bundle strings: Error, Failed to load referrals, destructive · Phase 4 item 3 (08 Sep 2026, ADR-031): error state with Retry (referrals-page[data-state=error])",
   "decided": true
  },
  {
@@ -7503,7 +7503,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "SVG bars per signup month from the referral rows: paid commission solid green, pending as a hatched outline of the same hue (state in shape, not a second colour), faint ₹ grid, mono axis labels, value labels, hover tooltip per bar, legend and a best-month readout; re-renders on resize",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): EarningsChart SVG, paid solid / pending hatched, last 12 months (earnings-chart)"
  },
  {
   "id": "HC-AC-068",
@@ -7518,7 +7518,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Total Referrals / Total Earned / Paid (green) / Pending as four mono stat tiles above the chart, computed from the rows",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): four tiles: referrals, earned, paid, pending"
  },
  {
   "id": "HC-AC-069",
@@ -7533,7 +7533,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · api contract",
   "acceptance": "Link row (Copy link, native Share… when supported) plus WhatsApp, X (Twitter) and Email templates that embed the referral link and code; each has a Copy message button with a toast",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): ShareDialog WhatsApp / X / Email templates + native share when supported (share-dialog)"
  },
  {
   "id": "HC-AC-070",
@@ -7548,7 +7548,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "User, Joined, Plan, Amount, Commission and Status headers sort ascending/descending with a ▲/▼ indicator; numeric/date columns default to descending",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): sortable headers, default joined desc (ref-sort-*)"
  },
  {
   "id": "HC-AC-071",
@@ -7563,7 +7563,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Copies the filtered, sorted rows (Name, Email, Joined, Plan, Interval, Amount, Commission, Status) as CSV with a toast",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): Copy CSV of the visible rows (ref-csv, referralsCsv)"
  },
  {
   "id": "HC-AC-072",
@@ -7578,7 +7578,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "No referrals → Share link button; no results → Clear filters button",
-  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): empty states with actions (sub-none, error Retry)"
+  "evidence": "v2 improvement · Phase 4 item 1 (08 Sep 2026, ADR-030): empty states with actions (sub-none, error Retry) · Phase 4 item 3 (08 Sep 2026, ADR-031): referrals empty states with Share link / Clear filters actions"
  },
  {
   "id": "HC-AC-073",
@@ -7593,7 +7593,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Registered with CG.palette when present: copies the referral link and toasts",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): palette 'Referrals: copy link' (act:referral-copy) when the code is known"
  },
  {
   "id": "HC-AC-074",
@@ -7608,7 +7608,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Referral table honours the compact density setting (28px rows)",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): row density: 1-line rows with initials avatar at text-xs"
  },
  {
   "id": "HC-AD-001",
@@ -8238,7 +8238,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "'User Subscriptions' / 'Manage users and commissions'; tabs switch panels (also via ?tab= query)",
-  "evidence": "bundle strings: User Subscriptions, Manage users and commissions, Users, Commissions · Phase 4 item 1 (08 Sep 2026, ADR-030): User Subscriptions tabs Users / Commissions (commissions placeholder until item 3)"
+  "evidence": "bundle strings: User Subscriptions, Manage users and commissions, Users, Commissions · Phase 4 item 1 (08 Sep 2026, ADR-030): User Subscriptions tabs Users / Commissions (commissions placeholder until item 3) · Phase 4 item 3 (08 Sep 2026, ADR-031): Commissions tab now renders CommissionsAdmin (subs-tab-commissions)"
  },
  {
   "id": "HC-AD-043",
@@ -8389,7 +8389,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Sums over the filtered CG.mock.commissions",
-  "evidence": "bundle strings: Total Commission, Paid, Pending"
+  "evidence": "bundle strings: Total Commission, Paid, Pending · Phase 4 item 3 (08 Sep 2026, ADR-031): tiles Total / Paid / Pending from GET /v1/admin/commissions (cms-tile)"
  },
  {
   "id": "HC-AD-053",
@@ -8404,7 +8404,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Filters the table and tiles; Clear resets both",
-  "evidence": "bundle strings: Search referrer name..., Filter by month, All Months, Clear, Filter, Calendar"
+  "evidence": "bundle strings: Search referrer name..., Filter by month, All Months, Clear, Filter, Calendar · Phase 4 item 3 (08 Sep 2026, ADR-031): search referrer + month select + Clear (cms-search, cms-month, cms-clear)"
  },
  {
   "id": "HC-AD-054",
@@ -8419,7 +8419,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Status badge Paid / Pending / Not Paid; 'Mark Paid' only while pending; 'View' (eye) always",
-  "evidence": "bundle strings: Referrer, Referrals, Commission %, Total, Paid, Pending, Status, Action, pending, Mark Paid, View, Details"
+  "evidence": "bundle strings: Referrer, Referrals, Commission %, Total, Paid, Pending, Status, Action, pending, Mark Paid, View, Details · Phase 4 item 3 (08 Sep 2026, ADR-031): table Referrer / Referrals / Commission % / Total / Paid / Pending / Status / Action with View + Mark Paid (cms-row)"
  },
  {
   "id": "HC-AD-055",
@@ -8434,7 +8434,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Shown when filters match nothing",
-  "evidence": "bundle string: No commissions found"
+  "evidence": "bundle string: No commissions found · Phase 4 item 3 (08 Sep 2026, ADR-031): 'No commissions yet' empty state (cms-empty)"
  },
  {
   "id": "HC-AD-056",
@@ -8449,7 +8449,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Per-referral rows generated deterministically from CG.mock.users and stored on the commission record (CG.mock.commissions[i].details)",
-  "evidence": "bundle strings: 's Referrals, referred user, Joined, Commission, dd MMM yyyy, Not Paid, Total:, Paid: ₹, Pending: ₹, Close"
+  "evidence": "bundle strings: 's Referrals, referred user, Joined, Commission, dd MMM yyyy, Not Paid, Total:, Paid: ₹, Pending: ₹, Close · Phase 4 item 3 (08 Sep 2026, ADR-031): View dialog lists that referrer's referrals with status (cms-view-dialog)"
  },
  {
   "id": "HC-AD-057",
@@ -8464,7 +8464,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "Paid marks all pending referrals paid (record → Paid, pending 0); Not Paid requires a comment ('Reason for not paying (required)') and marks the record Not Paid; proof URLs validated and stored per referral",
-  "evidence": "bundle strings: Mark Payment —, · Total: ₹, Payment Status, ✓ Paid, ✗ Not Paid, not_paid, Proof Link per Referral, https://... (payment screenshot / receipt URL), Comment, Optional note..., Reason for not paying (required), proof-link, Saving..., Confirm Paid, Confirm Not Paid"
+  "evidence": "bundle strings: Mark Payment —, · Total: ₹, Payment Status, ✓ Paid, ✗ Not Paid, not_paid, Proof Link per Referral, https://... (payment screenshot / receipt URL), Comment, Optional note..., Reason for not paying (required), proof-link, Saving..., Confirm Paid, Confirm Not Paid · Phase 4 item 3 (08 Sep 2026, ADR-031): Mark Payment dialog Paid / Not Paid, reason required for Not Paid, optional proof URL (cms-mark-dialog); POST /v1/admin/commissions/{id}/mark"
  },
  {
   "id": "HC-AD-058",
@@ -8477,9 +8477,9 @@
   "status": "confirmed",
   "isNew": false,
   "phase": 4,
-  "test": "visual (screenshot diff) · api contract",
+  "test": "e2e (Playwright) · api contract",
   "acceptance": "'Bulk pay' requires a payment reference (UTR / transaction id) and shows the total and count before confirming; on confirm every pending commission is marked paid with that reference, a CSV of the batch is offered, and the action is audit-logged. Individual 'Mark Paid' remains for exceptions.",
-  "evidence": "/admin/commissions/bulk-pay endpoint exists in the bundle; no UI strings observed",
+  "evidence": "/admin/commissions/bulk-pay endpoint exists in the bundle; no UI strings observed · Phase 4 item 3 (08 Sep 2026, ADR-031): Bulk pay with confirm dialog, POST /v1/admin/commissions/bulk-pay (cms-bulk-pay, cms-bulk-confirm)",
   "decided": true
  },
  {
@@ -9383,7 +9383,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Grouped SVG bars per commission month: paid solid green, pending hatched; ₹ axis, tooltips, legend and a still-pending readout; tiles above, table below",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): paid vs pending by month chart under the table (earnings-chart)"
  },
  {
   "id": "HC-AD-119",
@@ -9398,7 +9398,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Select referrers → Mark paid confirms the pending amount and settles them; Bulk pay (header primary) still settles everyone",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): select rows → 'Mark paid (n)' → bulk-pay with referrerIds (cms-select)"
  },
  {
   "id": "HC-AD-120",

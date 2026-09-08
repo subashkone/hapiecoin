@@ -8,6 +8,7 @@ import {
   Kbd,
   Search,
   cn,
+  toast,
   useTheme,
 } from "@hapiecoin/ui";
 import { useRouter } from "next/navigation";
@@ -28,6 +29,8 @@ export function buildCommands(opts: {
   loggedIn: boolean;
   navigate: (path: string) => void;
   toggleTheme: () => void;
+  /** The signed-in user's referral code; enables "Referrals: copy link" (HC-AC-073). */
+  referralCode?: string | null;
 }): PaletteCommand[] {
   const nav = (id: string, path: string, label: string, keywords: string[] = []): PaletteCommand => ({
     id,
@@ -42,6 +45,21 @@ export function buildCommands(opts: {
     list.push(
       nav("nav:analyse", "/analyse", "Analyse workspace", ["options chain", "builder", "payoff"]),
       nav("nav:subscription", "/subscription", "Subscription: change plan", ["plan", "upgrade", "billing", "renew"]),
+      nav("nav:referrals", "/referrals", "Referrals: share link and earnings", ["refer", "commission", "invite", "share"]),
+      ...(opts.referralCode
+        ? [
+            {
+              id: "act:referral-copy",
+              label: "Referrals: copy link",
+              group: "Actions" as const,
+              keywords: ["refer", "invite", "share", "commission", "code"],
+              run: () => {
+                const link = `${window.location.origin}/auth?tab=signup&ref=${opts.referralCode}`;
+                void navigator.clipboard.writeText(link).then(() => toast.success("Copied!", { description: "Referral link" })).catch(() => toast.error("Could not copy", { description: link }));
+              },
+            },
+          ]
+        : []),
       {
         id: "act:chain-atm",
         label: "Chain: recentre on ATM",
@@ -168,7 +186,7 @@ export function filterCommands(cmds: PaletteCommand[], query: string): PaletteCo
     .map((x) => x.c);
 }
 
-export function CommandPalette({ loggedIn }: { loggedIn: boolean }) {
+export function CommandPalette({ loggedIn, referralCode = null }: { loggedIn: boolean; referralCode?: string | null }) {
   const open = useUiStore((s) => s.paletteOpen);
   const setOpen = useUiStore((s) => s.setPaletteOpen);
   const router = useRouter();
@@ -177,8 +195,8 @@ export function CommandPalette({ loggedIn }: { loggedIn: boolean }) {
   const [active, setActive] = useState(0);
 
   const commands = useMemo(
-    () => buildCommands({ loggedIn, navigate: (p) => router.push(p), toggleTheme }),
-    [loggedIn, router, toggleTheme],
+    () => buildCommands({ loggedIn, navigate: (p) => router.push(p), toggleTheme, referralCode }),
+    [loggedIn, referralCode, router, toggleTheme],
   );
   const items = useMemo(() => filterCommands(commands, query), [commands, query]);
 
