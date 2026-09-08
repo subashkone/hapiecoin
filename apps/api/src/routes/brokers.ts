@@ -2,7 +2,7 @@
  * Exchange fee profiles (HC-SH-045..049). GLOBAL brokers are visible to everyone and managed by admins;
  * USER brokers belong to the user who created them. Deleting a broker that stored credentials reference is refused.
  */
-import { Broker, BrokerScope, DecimalString, Id, isNonNegativeDecimal } from "@hapiecoin/schema";
+import { Broker, BrokerScope, DecimalString, Id, isNonNegativeDecimal, paginated } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, count, eq, or } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
@@ -36,7 +36,8 @@ export const BrokerPatch = z
   .strict();
 export type BrokerPatch = z.infer<typeof BrokerPatch>;
 
-const BrokerList = z.object({ items: z.array(Broker) });
+/** The shared list envelope (`nextCursor` required, null on the only page): the web parses it with `paginated(Broker)`. */
+const BrokerList = paginated(Broker);
 const IdParam = z.object({ id: Id });
 
 type Row = typeof brokers.$inferSelect;
@@ -92,7 +93,7 @@ export function registerBrokerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): v
         .from(brokers)
         .where(visibleTo(me))
         .orderBy(brokers.createdAt, brokers.id);
-      return c.json({ items: rows.map(toBroker) }, 200);
+      return c.json({ items: rows.map(toBroker), nextCursor: null }, 200);
     },
   );
 

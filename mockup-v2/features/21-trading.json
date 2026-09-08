@@ -317,7 +317,7 @@
     "feature": "Template click loads legs into the Builder",
     "how": "CG.analyse.legs = CG.templateLegs(tpl, asset, expiry), name = template name, switches to Builder and toasts 'Strategy · Loaded strategy: <name>'",
     "status": "working",
-    "evidence": "bundle string: Loaded strategy: · Phase 2 item 4 (08 Sep 2026): template click places legs on the venue ladder around ATM (ADR-023) and names the strategy; unit templates.test.ts + builder.test.tsx, e2e analyse.spec.ts HC-TR-040"
+    "evidence": "bundle string: Loaded strategy: · Phase 2 item 4 (08 Sep 2026): template click places legs on the venue ladder around ATM (ADR-023) and names the strategy; unit templates.test.ts + builder.test.tsx, e2e analyse.spec.ts HC-TR-040 · ADR-027 (08 Sep 2026): templates strip under the Builder legs, one click loads (Bullish / Bearish / Neutral / Others, expiry select, persisted collapse); unit builder.test.tsx, e2e analyse.spec.ts HC-TR-040 strip"
   },
   {
     "route": "/analyse",
@@ -653,7 +653,7 @@
     "feature": "Toolbar: search 'Search live trades...', Refresh, exchange connection chip",
     "how": "Search filters live strategies; Refresh toasts 'Refreshed'; chip shows 'exchange connected' / 'exchange not connected' from CG.state.exchangeConnected",
     "status": "working",
-    "evidence": "bundle string: Live Trades · Phase 3 item 2 (08 Sep 2026): Live tab is the shared list (PaperPanel kind=live) with search, Refresh and the exchange connection chip; unit trading-live.test.tsx, visual analyse-live-*.png"
+    "evidence": "bundle string: Live Trades · Phase 3 item 2 (08 Sep 2026): Live tab is the shared list (PaperPanel kind=live) with search, Refresh and the exchange connection chip; unit trading-live.test.tsx, visual analyse-live-*.png · ADR-026 (08 Sep 2026): net-positions table above the live cards (venue positions, asset filter, tick to analyse, Exit / Exit all); unit pane-follow.test.tsx"
   },
   {
     "route": "/analyse",
@@ -669,7 +669,7 @@
     "feature": "Live strategy card with 'Live (filled pill, pulsing dot)' badge, batch id and per-leg order status chips",
     "how": "Chips 'S C 90,000 · filled' / pending / failed / closed per leg from strategy.orders",
     "status": "working",
-    "evidence": "bundle strings: 🟢 Live, filled, pending, failed, Order Partially Failed · Phase 3 item 2 (08 Sep 2026): Live pill on the card, pulsing red count pill on the tab, per-leg order chips pending | filled | failed | closed with the venue error as tooltip; unit trading-live.test.tsx"
+    "evidence": "bundle strings: 🟢 Live, filled, pending, failed, Order Partially Failed · Phase 3 item 2 (08 Sep 2026): Live pill on the card, pulsing red count pill on the tab, per-leg order chips pending | filled | failed | closed with the venue error as tooltip; unit trading-live.test.tsx · ADR-026 (08 Sep 2026): clicking a live card follows it in the analysis pane; unit pane-follow.test.tsx"
   },
   {
     "route": "/analyse",
@@ -1184,5 +1184,35 @@
     "status": "working",
     "evidence": "v2 design brief (Obsidian Desk)",
     "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Paper / Live tabs",
+    "feature": "Analysis pane follows the selected strategy card",
+    "how": "Clicking a paper or live card (Enter on focus) makes Payoff / Greeks / Ladder analyse its open legs at entry premiums; the first card of the tab is followed by default and a new trade is followed after Paper trade / Go live; a source bar names the followed strategy with Back to Builder",
+    "status": "working",
+    "evidence": "HapieCoin improvement over the reference site (ADR-026, 08 Sep 2026): store paneSource, useStrategyAnalysis(scope), PaneSourceBar; unit pane-follow.test.tsx, e2e analyse.spec.ts HC-TR-143",
+    "new": true,
+    "phase": 3
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Live tab",
+    "feature": "Net positions table from the exchange with tick-to-analyse",
+    "how": "Position (side, strike, CE/PE, expiry), size in contracts, entry, mark, P&L at mark, asset filter BTC / ETH / XAUT, refresh; ticked rows are parsed from their Delta symbols and analysed in the pane",
+    "status": "working",
+    "evidence": "ADR-026 (08 Sep 2026): NetPositionsPanel, lib/strategy/positions.ts, positions payload with contractValue and mark; unit positions.test.ts, pane-follow.test.tsx, API live-cover.test.ts",
+    "new": true,
+    "phase": 3
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Live tab",
+    "feature": "Exit / Exit all on exchange positions",
+    "how": "Per-row X and Exit all open a confirm listing the positions; reduce-only market orders through the executor; HapieCoin legs matching the symbol are squared off at the fill and an emptied strategy is archived; refused exits are reported per product",
+    "status": "working",
+    "evidence": "ADR-026 (08 Sep 2026): POST /v1/strategies/live/positions/exit with audit positions.exit; unit pane-follow.test.tsx, API live-cover.test.ts HC-TR-145",
+    "new": true,
+    "phase": 3
   }
 ]

@@ -22,7 +22,8 @@ const FEES = { feePct: "0.05", gstPct: "18", feeCapPct: "10" };
 describe("HC-SH-045..049 exchange management", () => {
   it("HC-SH-032 / HC-SH-045 lists the seeded Delta India broker with fee 0.05 %, GST 18 %, cap 10 %", async () => {
     const res = await t.request("/v1/brokers", { cookie: alice });
-    const { items } = (await res.json()) as { items: Broker[] };
+    const { items, nextCursor } = (await res.json()) as { items: Broker[]; nextCursor: string | null };
+    expect(nextCursor).toBeNull(); // the shared paginated envelope; the web rejects a list without it (GAPS #41)
     expect(items.map((b) => b.id)).toContain(SEED.brokerId);
     const delta = items.find((b) => b.id === SEED.brokerId);
     expect(delta).toEqual({

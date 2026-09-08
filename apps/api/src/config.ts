@@ -5,7 +5,7 @@
  *   API boots without a .env (the repo-root .env is loaded by src/env-file.ts when present); in production they are required.
  * - Trading safety rule 2: live Delta keys must be absent when NODE_ENV=test. Boot throws otherwise.
  */
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
 
 const NodeEnv = z.enum(["development", "test", "production"]);
@@ -145,11 +145,15 @@ export function loadConfig(
   }
 
   let credentialsEncKey: Buffer;
-  if (e.CREDENTIALS_ENC_KEY === undefined) {
+  if (e.CREDENTIALS_ENC_KEY === undefined || e.CREDENTIALS_ENC_KEY.trim() === "") {
     if (isProd) throw new ConfigError("CREDENTIALS_ENC_KEY is required in production (32 bytes, base64)");
-    credentialsEncKey = randomBytes(32);
+    // Development: derive a stable key from the auth secret so saved exchange keys survive restarts (GAPS #42).
+    // With an ephemeral auth secret the derived key is ephemeral too, like the sessions.
+    credentialsEncKey = createHash("sha256").update(`hapiecoin-credentials:${betterAuthSecret}`).digest();
     warn(
-      "[config] CREDENTIALS_ENC_KEY not set: using an ephemeral key; stored exchange credentials will not decrypt after a restart",
+      e.BETTER_AUTH_SECRET === undefined
+        ? "[config] CREDENTIALS_ENC_KEY not set: using an ephemeral key; stored exchange credentials will not decrypt after a restart"
+        : "[config] CREDENTIALS_ENC_KEY not set: derived from BETTER_AUTH_SECRET for development; set it explicitly before production",
     );
   } else {
     credentialsEncKey = Buffer.from(e.CREDENTIALS_ENC_KEY, "base64");

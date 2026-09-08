@@ -1,6 +1,6 @@
 // Live trading through TanStack Query (Phase 3 item 2, ADR-025): preview, place, retry, sync, batch, positions.
 // Every order goes through the API's executor; the browser never talks to the venue.
-import { type LiveBatchBody, LiveBatchResult, type LivePlaceBody, LivePositions, LivePreview, Strategy } from "@hapiecoin/schema";
+import { type LiveBatchBody, LiveBatchResult, type LivePlaceBody, LivePositions, type LivePositionsExitBody, LivePositionsExitResult, LivePreview, Strategy } from "@hapiecoin/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type ApiClient } from "./client";
 import { strategyKeys } from "./strategies";
@@ -15,6 +15,7 @@ export function liveFetchers(client: ApiClient = api) {
     sync: (id: string) => client.post(`/v1/strategies/${enc(id)}/live/sync`, {}, Strategy),
     batch: (body: LiveBatchBody) => client.post("/v1/strategies/live/batch", body, LiveBatchResult),
     positions: (brokerId: string) => client.get(`/v1/strategies/live/positions?brokerId=${enc(brokerId)}`, LivePositions),
+    exitPositions: (body: LivePositionsExitBody) => client.post("/v1/strategies/live/positions/exit", body, LivePositionsExitResult),
   };
 }
 
@@ -51,6 +52,17 @@ export function useLiveSync() {
 }
 export function useLiveBatch() {
   return useLiveMutation((body: LiveBatchBody) => f.batch(body));
+}
+/** Square off ticked exchange positions (HC-TR-145): reduce-only market orders through the executor. */
+export function useLiveExitPositions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: LivePositionsExitBody) => f.exitPositions(body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["live", "positions"] });
+      void qc.invalidateQueries({ queryKey: strategyKeys.all });
+    },
+  });
 }
 export function useLivePositions(brokerId: string | null, enabled = true) {
   return useQuery({ queryKey: ["live", "positions", brokerId ?? ""], queryFn: () => f.positions(brokerId ?? ""), enabled: enabled && brokerId !== null, staleTime: 10_000, refetchInterval: 15_000 });

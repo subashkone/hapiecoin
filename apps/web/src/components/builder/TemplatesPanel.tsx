@@ -38,20 +38,17 @@ export function templateSketch(tpl: StrategyTemplate): string {
   return xs.map((_, i) => `${x(i).toFixed(1)},${y(ys[i]!).toFixed(1)}`).join(" ");
 }
 
-export function TemplatesPanel() {
+/**
+ * Template loading shared by the Templates tab and the strip under the Builder legs (HC-TR-040, ADR-027): the
+ * expiry choice (workspace expiry by default), the venue chain around ATM, and `load` that materialises a template.
+ */
+export function useTemplateLoader() {
   const asset = useUiStore((s) => s.asset);
   const workspaceExpiry = useUiStore((s) => s.expiry[s.asset] ?? null);
   const chainLots = useUiStore((s) => s.chainLots);
   const setLegs = useUiStore((s) => s.setLegs);
   const setMeta = useUiStore((s) => s.setStrategyMeta);
   const setBuilderTab = useUiStore((s) => s.setBuilderTab);
-  const setAsset = useUiStore((s) => s.setAsset);
-  const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
-  const openTrade = useUiStore((s) => s.openTrade);
-  const openDetails = useUiStore((s) => s.openDetails);
-  const { data: strategies, isLoading: mineLoading } = useStrategies();
-  const archiveStrategy = useArchiveStrategy();
-  const deleteStrategy = useDeleteStrategy();
   const env = publicEnv();
   const expiries = useQuery({
     queryKey: ["expiries", asset],
@@ -65,19 +62,6 @@ export function TemplatesPanel() {
   const spot = useSpot(asset);
   const rows = chain?.rows ?? [];
   const atm = useMemo(() => atmIndex(rows, spot?.price), [rows, spot?.price]);
-  const [category, setCategory] = useState<(typeof TEMPLATE_CATEGORIES)[number]>("All");
-  const [mine, setMine] = useState<"draft" | "archived">("draft");
-  const [search, setSearch] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-  const cards = TEMPLATES.filter((t) => category === "All" || t.category === category);
-  const myList = (strategies ?? []).filter((d) => d.status === mine && (search.trim() === "" || `${d.name} ${d.asset} ${d.templateName}`.toLowerCase().includes(search.trim().toLowerCase())));
-  const loadDraft = (d: Strategy) => {
-    setAsset(d.asset);
-    setLegs(d.asset, d.legs.filter((l) => l.status === "open").map((l) => serverLegToLocal(l, d.asset)));
-    setMeta(d.asset, { name: d.name, draftId: d.status === "draft" ? d.id : null });
-    setWorkspaceTab("builder");
-    setBuilderTab("builder");
-  };
 
   const load = (tpl: StrategyTemplate) => {
     if (!expiry) return;
@@ -99,6 +83,34 @@ export function TemplatesPanel() {
     setMeta(asset, { name: tpl.name, draftId: null });
     setBuilderTab("builder");
     toast(`${tpl.name} loaded`, { description: `${legs.length} ${legs.length === 1 ? "leg" : "legs"} on ${fmtExpiry(expiry)} · ${chainLots} lots each` });
+  };
+  return { asset, expiry, list, setChosen, load, chainReady: rows.length > 0 };
+}
+
+export function TemplatesPanel() {
+  const { expiry, list, setChosen, load } = useTemplateLoader();
+  const setLegs = useUiStore((s) => s.setLegs);
+  const setMeta = useUiStore((s) => s.setStrategyMeta);
+  const setBuilderTab = useUiStore((s) => s.setBuilderTab);
+  const setAsset = useUiStore((s) => s.setAsset);
+  const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
+  const openTrade = useUiStore((s) => s.openTrade);
+  const openDetails = useUiStore((s) => s.openDetails);
+  const { data: strategies, isLoading: mineLoading } = useStrategies();
+  const archiveStrategy = useArchiveStrategy();
+  const deleteStrategy = useDeleteStrategy();
+  const [category, setCategory] = useState<(typeof TEMPLATE_CATEGORIES)[number]>("All");
+  const [mine, setMine] = useState<"draft" | "archived">("draft");
+  const [search, setSearch] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const cards = TEMPLATES.filter((t) => category === "All" || t.category === category);
+  const myList = (strategies ?? []).filter((d) => d.status === mine && (search.trim() === "" || `${d.name} ${d.asset} ${d.templateName}`.toLowerCase().includes(search.trim().toLowerCase())));
+  const loadDraft = (d: Strategy) => {
+    setAsset(d.asset);
+    setLegs(d.asset, d.legs.filter((l) => l.status === "open").map((l) => serverLegToLocal(l, d.asset)));
+    setMeta(d.asset, { name: d.name, draftId: d.status === "draft" ? d.id : null });
+    setWorkspaceTab("builder");
+    setBuilderTab("builder");
   };
 
   return (

@@ -59,7 +59,7 @@ describe("HC-SH-003 UI store", () => {
       draftsImported: false,
       workspaceTab: "chain",
       analysisTab: "payoff",
-      targetDays: 0,
+      targetDays: 0, templatesStrip: true,
     });
   });
   it("HC-TR-020 / HC-TR-045 / HC-TR-047 / HC-TR-048 drafts: save, update, load, archive, delete; meta per asset; tabs and target", () => {

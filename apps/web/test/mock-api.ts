@@ -549,8 +549,35 @@ export function createMockApi(state: MockState = { accounts: new Map(), sessions
   v1.get("/strategies/live/positions", (c) => {
     const acc = current(c)!;
     if (!acc.credential) return err(c, 409, "CONFLICT", "Connect your exchange in Settings → API Settings to enable live trading");
-    const positions = acc.strategies.filter((s) => s.status === "live").flatMap((s) => s.legs.filter((l) => l.status === "open" && l.entryPrice).map((l) => ({ productId: 100 + s.legs.indexOf(l), symbol: l.symbol, size: (l.side === "buy" ? 1 : -1) * contractsOf(l, lotSizeOf(c, s.asset)), entryPrice: l.entryPrice, realizedPnl: "0", margin: "12" })));
+    const positions = acc.strategies.filter((s) => s.status === "live").flatMap((s) => s.legs.filter((l) => l.status === "open" && l.entryPrice).map((l) => ({ productId: 100 + s.legs.indexOf(l), symbol: l.symbol, size: (l.side === "buy" ? 1 : -1) * contractsOf(l, lotSizeOf(c, s.asset)), entryPrice: l.entryPrice, realizedPnl: "0", margin: "12", contractValue: lotSizeOf(c, s.asset), mark: markOf(l) })));
     return c.json({ positions, balances: [{ asset: "USD", balance: "5000", availableBalance: "4000" }] });
+  });
+  v1.post("/strategies/live/positions/exit", async (c) => {
+    const acc = current(c)!;
+    if (!acc.credential) return err(c, 409, "CONFLICT", "Connect your exchange in Settings → API Settings to enable live trading");
+    const body = await c.req.json<{ brokerId: string; productIds: number[]; idempotencyKey: string }>();
+    const closed: { productId: number; fillPrice: string | null; state: string }[] = [];
+    const failed: { productId: number; error: string }[] = [];
+    for (const productId of body.productIds) {
+      let hit = false;
+      for (const s of acc.strategies.filter((x) => x.status === "live")) {
+        const leg = s.legs[productId - 100];
+        if (!leg || leg.status !== "open" || !leg.entryPrice) continue;
+        hit = true;
+        if (leg.symbol.includes("FAIL")) {
+          failed.push({ productId, error: "Not enough margin on the exchange for this order" });
+          break;
+        }
+        const fill = exitLive(c, s, leg, leg.lots);
+        closeLeg(s, leg, fill, undefined, lotSizeOf(c, s.asset));
+        if (s.legs.every((l) => l.status !== "open")) Object.assign(s, { status: "archived", closedAt: nowIso() });
+        touch(s);
+        closed.push({ productId, fillPrice: fill, state: "closed" });
+        break;
+      }
+      if (!hit) failed.push({ productId, error: "No open position for this product" });
+    }
+    return c.json({ closed, failed });
   });
   v1.post("/strategies/:id/live/preview", async (c) => {
     const s = findStrategy(c);

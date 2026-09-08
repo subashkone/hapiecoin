@@ -2,7 +2,7 @@
  * Live trading routes (Phase 3 item 2, ADR-025): preview, place, retry, sync, Trade All → Live batch,
  * positions, and the admin kill switch. HC-TR-023, 055, 063, 070, 082..089.
  */
-import { Id, LiveBatchBody, LiveBatchResult, LivePlaceBody, LivePositions, LivePreview, LivePreviewBody, Strategy } from "@hapiecoin/schema";
+import { Id, LiveBatchBody, LiveBatchResult, LivePlaceBody, LivePositions, LivePositionsExitBody, LivePositionsExitResult, LivePreview, LivePreviewBody, Strategy } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, asc, eq } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
@@ -10,9 +10,9 @@ import { strategies, strategyLegs, users } from "../db/schema.js";
 import { type AppEnv, type SessionUser, currentUser } from "../security/context.js";
 import { errors } from "../security/errors.js";
 import { requireAdmin, requireUser } from "../security/guards.js";
-import { openCredential, ordersOf, placeEntries, preview, retryFailed, syncOrders, tradingBlockedReason, type StrategyRow } from "./live-exec.js";
+import { lotSizeFor, openCredential, ordersOf, placeEntries, preview, retryFailed, syncOrders, tradingBlockedReason, type StrategyRow } from "./live-exec.js";
 import { type AppDeps, cookieAuth, errorResponses, jsonContent } from "./shared.js";
-import { loadStrategy } from "./strategies.js";
+import { addDecimal, closeLegRow, loadStrategy } from "./strategies.js";
 
 const IdParam = z.object({ id: Id });
 const PreviewBody = LivePreviewBody.extend({ worstLoss: z.number().optional() });
@@ -201,8 +201,72 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
     async (c) => {
       const me = currentUser(c);
       const creds = await openCredential(deps, me, c.req.valid("query").brokerId);
-      const [positions, balances] = await Promise.all([deps.trading.getPositions(creds), deps.trading.getBalances(creds)]);
+      const [raw, balances] = await Promise.all([deps.trading.getPositions(creds), deps.trading.getBalances(creds)]);
+      // HC-TR-144: the client sizes lots and P&L from contract value and mark; unknown products stay null
+      const positions = await Promise.all(
+        raw.map(async (p) => {
+          const [product, mark] = p.symbol ? await Promise.all([deps.trading.getProduct(p.symbol).catch(() => null), deps.trading.getMark(p.symbol).catch(() => null)]) : [null, null];
+          return { ...p, contractValue: product?.contractValue ?? null, mark };
+        }),
+      );
       return c.json({ positions, balances }, 200);
+    },
+  );
+
+  /** Close every open live leg of the user with this symbol at the venue fill (the position is gone at the venue). */
+  async function squareOffLegsFor(me: SessionUser, symbol: string, fill: string): Promise<void> {
+    const rows = await db
+      .select({ strategy: strategies, leg: strategyLegs })
+      .from(strategyLegs)
+      .innerJoin(strategies, eq(strategyLegs.strategyId, strategies.id))
+      .where(and(eq(strategies.userId, me.id), eq(strategies.status, "live"), eq(strategyLegs.symbol, symbol), eq(strategyLegs.status, "open")));
+    for (const { strategy, leg } of rows) {
+      const realized = await closeLegRow(deps, strategy, leg, fill, undefined, await lotSizeFor(deps, me, strategy.asset), new Date());
+      const [fresh] = await db.select({ realizedPnl: strategies.realizedPnl }).from(strategies).where(eq(strategies.id, strategy.id)).limit(1);
+      const stillOpen = await db.select({ id: strategyLegs.id }).from(strategyLegs).where(and(eq(strategyLegs.strategyId, strategy.id), eq(strategyLegs.status, "open"))).limit(1);
+      await touch(strategy.id, { realizedPnl: addDecimal(fresh?.realizedPnl ?? strategy.realizedPnl, realized), ...(stillOpen.length === 0 ? { status: "archived", closedAt: new Date() } : {}) });
+    }
+  }
+
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/v1/strategies/live/positions/exit",
+      tags: ["live"],
+      summary: "Square off exchange positions with reduce-only market orders; matching live legs are closed at the fill (HC-TR-145)",
+      security: cookieAuth,
+      middleware: [guard],
+      request: { body: { content: { "application/json": { schema: LivePositionsExitBody } }, required: true } },
+      responses: { 200: jsonContent(LivePositionsExitResult, "Exits"), 400: errorResponses[400], 401: errorResponses[401], 409: errorResponses[409] },
+    }),
+    async (c) => {
+      const me = currentUser(c);
+      const body = c.req.valid("json");
+      const blocked = await tradingBlockedReason(deps, me);
+      if (blocked) throw errors.conflict(blocked);
+      const creds = await openCredential(deps, me, body.brokerId);
+      const positions = await deps.trading.getPositions(creds);
+      const closed: LivePositionsExitResult["closed"] = [];
+      const failed: LivePositionsExitResult["failed"] = [];
+      const keyTail = body.idempotencyKey.replace(/[^A-Za-z0-9]/g, "").slice(-10);
+      for (const productId of body.productIds) {
+        const p = positions.find((x) => x.productId === productId && x.size !== 0);
+        if (!p) {
+          failed.push({ productId, error: "No open position for this product" });
+          continue;
+        }
+        // one reduce-only market order per position; the client id ties a repeat of the same key to the same order
+        const result = await deps.trading.placeOrder(creds, { productId, size: Math.abs(p.size), side: p.size > 0 ? "sell" : "buy", clientOrderId: `hc-pos-${productId}-${keyTail}`, reduceOnly: true });
+        if (!result.ok) {
+          failed.push({ productId, error: result.message });
+          continue;
+        }
+        const fill = result.order.averageFillPrice;
+        closed.push({ productId, fillPrice: fill, state: result.order.state === "closed" ? "closed" : result.order.state === "cancelled" ? "cancelled" : "pending" });
+        if (result.order.state === "closed" && fill && p.symbol) await squareOffLegsFor(me, p.symbol, fill);
+      }
+      await auditFrom(c, db)({ action: "positions.exit", target: `broker:${body.brokerId}`, after: { closed, failed, key: body.idempotencyKey } });
+      return c.json({ closed, failed }, 200);
     },
   );
 
