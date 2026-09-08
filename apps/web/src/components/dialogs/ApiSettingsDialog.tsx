@@ -27,6 +27,7 @@ import {
   useDisconnectExchange,
   useWhitelistIp,
 } from "@/lib/api/queries";
+import { useLivePositions } from "@/lib/api/live";
 import { fmtDate } from "@/lib/format";
 import type { DialogProps } from "./SettingsDialogs";
 
@@ -49,6 +50,9 @@ export function ApiSettingsDialog({ open, onOpenChange }: DialogProps) {
   }, [brokerId, credential.data, list]);
   const broker = list.find((b) => b.id === brokerId);
   const connected = credential.data?.items[0] ?? null;
+  // GAPS #42: a stored key sealed under another server key answers 409 on every private call; say so here, where the fix is
+  const wallet = useLivePositions(connected?.brokerId ?? null);
+  const staleKey = wallet.isError && /decrypt|reconnect/i.test(wallet.error.message);
 
   const copyIp = async () => {
     if (!ip.data) return;
@@ -112,7 +116,12 @@ export function ApiSettingsDialog({ open, onOpenChange }: DialogProps) {
               <>
                 <Check className="size-4 text-profit" aria-hidden="true" />
                 <div>
-                  <b>Connected</b>
+                  <b>{staleKey ? "Connected · key needs re-entering" : "Connected"}</b>
+                  {staleKey ? (
+                    <div className="mt-1 rounded border border-warning/60 p-2 text-2xs text-warning" data-testid="api-stale-key">
+                      {wallet.error.message} Paste the key and secret again below and press Connect &amp; Save.
+                    </div>
+                  ) : null}
                   <div className="font-mono text-2xs text-muted-foreground">API Key: {connected.apiKeyMasked}</div>
                   <div className="font-mono text-2xs text-muted-foreground">Connected: {fmtDate(connected.connectedAt)}</div>
                   <div className="font-mono text-2xs text-muted-foreground">Wallet: — (arrives with live trading)</div>
