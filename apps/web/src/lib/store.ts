@@ -128,8 +128,14 @@ export interface UiState {
   optionDetail: OptionDetailTarget | null;
   /** Builder meta per asset (name, basket, price mode, loaded draft). Persisted. */
   strategy: StrategyMetaByAsset;
-  /** Saved strategies (drafts and archived), local until Phase 3. Persisted. */
+  /** Drafts saved before Phase 3 (ADR-023), read once from the old persisted state and imported to the API (ADR-024). */
   drafts: SavedStrategy[];
+  /** True once the browser-local drafts were imported (or there were none), so a reload never imports twice. Persisted. */
+  draftsImported: boolean;
+  /** Trading flow dialogs (HC-TR-050..057): null = closed; strategyId null = trade the Builder legs. */
+  tradeFlow: { strategyId: string | null } | null;
+  /** Strategy Details dialog (HC-TR-068): the open strategy id or null. */
+  detailsId: string | null;
   /** Left-pane tab, right-pane tab and the Builder sub-tab (HC-WS-005, HC-TR-001). */
   workspaceTab: WorkspaceTab;
   analysisTab: AnalysisTab;
@@ -146,6 +152,10 @@ export interface UiState {
   loadDraft: (id: string) => SavedStrategy | null;
   archiveDraft: (id: string, archived: boolean) => void;
   deleteDraft: (id: string) => void;
+  markDraftsImported: () => void;
+  openTrade: (target: { strategyId: string | null }) => void;
+  closeTrade: () => void;
+  openDetails: (id: string | null) => void;
   setWorkspaceTab: (tab: WorkspaceTab) => void;
   setAnalysisTab: (tab: AnalysisTab) => void;
   setBuilderTab: (tab: BuilderSubTab) => void;
@@ -183,6 +193,9 @@ export const useUiStore = create<UiState>()(
       optionDetail: null,
       strategy: emptyMetaByAsset(),
       drafts: [],
+      draftsImported: false,
+      tradeFlow: null,
+      detailsId: null,
       workspaceTab: "chain",
       analysisTab: "payoff",
       builderTab: "builder",
@@ -235,6 +248,10 @@ export const useUiStore = create<UiState>()(
             Object.entries(st.strategy).map(([k, m]) => [k, m.draftId === id ? { ...m, draftId: null } : m]),
           ) as StrategyMetaByAsset,
         })),
+      markDraftsImported: () => set({ drafts: [], draftsImported: true }),
+      openTrade: (target) => set({ tradeFlow: target }),
+      closeTrade: () => set({ tradeFlow: null }),
+      openDetails: (detailsId) => set({ detailsId }),
       setWorkspaceTab: (workspaceTab) => set({ workspaceTab }),
       setAnalysisTab: (analysisTab) => set({ analysisTab }),
       setBuilderTab: (builderTab) => set({ builderTab }),
@@ -271,7 +288,7 @@ export const useUiStore = create<UiState>()(
         legs: s.legs,
         chainLots: s.chainLots,
         strategy: s.strategy,
-        drafts: s.drafts,
+        draftsImported: s.draftsImported,
         workspaceTab: s.workspaceTab,
         analysisTab: s.analysisTab,
         targetDays: s.targetDays,
@@ -289,7 +306,8 @@ export const useUiStore = create<UiState>()(
           chainLots: typeof p.chainLots === "number" && Number.isInteger(p.chainLots) && p.chainLots > 0 ? p.chainLots : current.chainLots,
           optionDetail: null,
           strategy: p.strategy === undefined ? current.strategy : normaliseMetaByAsset(p.strategy),
-          drafts: p.drafts === undefined ? current.drafts : normaliseDrafts(p.drafts),
+          draftsImported: p.draftsImported === true,
+          drafts: p.draftsImported === true || p.drafts === undefined ? [] : normaliseDrafts(p.drafts),
           workspaceTab: tabs.includes(p.workspaceTab as WorkspaceTab) ? (p.workspaceTab as WorkspaceTab) : current.workspaceTab,
           analysisTab: atabs.includes(p.analysisTab as AnalysisTab) ? (p.analysisTab as AnalysisTab) : current.analysisTab,
           builderTab: current.builderTab,

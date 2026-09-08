@@ -4,7 +4,9 @@
  */
 import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
+import { loadRepoEnv } from "./env-file.js";
 
+loadRepoEnv(import.meta.url);
 const app = createApp(loadConfig());
 
 let stopping = false;

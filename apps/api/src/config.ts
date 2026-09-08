@@ -2,7 +2,7 @@
  * Environment configuration (Zod-validated, ADR-004 "validate every external boundary").
  *
  * - Secrets that are missing in development/test are generated per process with a warning so the
- *   API boots without a .env; in production they are required.
+ *   API boots without a .env (the repo-root .env is loaded by src/env-file.ts when present); in production they are required.
  * - Trading safety rule 2: live Delta keys must be absent when NODE_ENV=test. Boot throws otherwise.
  */
 import { randomBytes } from "node:crypto";

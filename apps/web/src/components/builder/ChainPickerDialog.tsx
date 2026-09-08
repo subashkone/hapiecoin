@@ -12,7 +12,8 @@ import { useChain, useSpot } from "@/lib/gateway/hooks";
 import { atmIndex } from "@/lib/gateway/reducer";
 import { useUiStore } from "@/lib/store";
 import { ExpiryStrip } from "@/components/chain/ExpiryStrip";
-import { type LegKind, type LegSide, MAX_ACTIVE_LEGS } from "@/lib/strategy/legs";
+import { type LegKind, type LegSide, MAX_ACTIVE_LEGS, type NewLegInput } from "@/lib/strategy/legs";
+import type { Underlying } from "@hapiecoin/schema";
 
 interface Pick {
   key: string;
@@ -25,9 +26,23 @@ interface Pick {
   lots: number;
 }
 
-export function ChainPickerDialog({ open, onOpenChange, remaining }: { open: boolean; onOpenChange: (open: boolean) => void; remaining: number }) {
-  const asset = useUiStore((s) => s.asset);
-  const workspaceExpiry = useUiStore((s) => s.expiry[s.asset] ?? null);
+export interface ChainPickerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  remaining: number;
+  /** Override the workspace asset / expiry (adjustments on an active strategy). */
+  asset?: Underlying | undefined;
+  expiry?: string | null | undefined;
+  /** When set, the picks go here instead of the Builder legs. */
+  onAdd?: ((legs: NewLegInput[]) => void) | undefined;
+  title?: string | undefined;
+}
+
+export function ChainPickerDialog({ open, onOpenChange, remaining, asset: assetOverride, expiry: expiryOverride, onAdd, title }: ChainPickerProps) {
+  const storeAsset = useUiStore((s) => s.asset);
+  const asset = assetOverride ?? storeAsset;
+  const storeExpiry = useUiStore((s) => s.expiry[asset] ?? null);
+  const workspaceExpiry = expiryOverride ?? storeExpiry;
   const chainLots = useUiStore((s) => s.chainLots);
   const addLeg = useUiStore((s) => s.addLeg);
   const env = publicEnv();
@@ -69,6 +84,11 @@ export function ChainPickerDialog({ open, onOpenChange, remaining }: { open: boo
     });
   };
   const add = () => {
+    if (onAdd) {
+      onAdd(picks.map((p) => ({ asset, kind: p.kind, side: p.side, strike: p.strike, expiry: p.expiry, lots: p.lots, price: p.price, iv: p.iv })));
+      onOpenChange(false);
+      return;
+    }
     let added = 0;
     for (const p of picks) {
       const r = addLeg({ asset, kind: p.kind, side: p.side, strike: p.strike, expiry: p.expiry, lots: p.lots, price: p.price, iv: p.iv });
@@ -87,7 +107,7 @@ export function ChainPickerDialog({ open, onOpenChange, remaining }: { open: boo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[820px]" data-testid="chain-picker">
         <DialogHeader>
-          <DialogTitle>Select Option from Chain</DialogTitle>
+          <DialogTitle>{title ?? "Select Option from Chain"}</DialogTitle>
           <DialogDescription>
             {asset} • Spot {fmtPrice(spot?.price)} · <span className="micro rounded border border-border px-1">Maximum {remaining} more {remaining === 1 ? "leg" : "legs"}</span>
           </DialogDescription>

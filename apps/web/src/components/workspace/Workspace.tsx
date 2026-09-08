@@ -7,12 +7,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnalysisPane } from "@/components/analysis/AnalysisPane";
 import { BuilderPanel } from "@/components/builder/BuilderPanel";
 import { ChainPanel } from "@/components/chain/ChainPanel";
+import { PaperPanel } from "@/components/trading/PaperPanel";
+import { StrategyDetailsDialog } from "@/components/trading/StrategyDetailsDialog";
+import { TradeFlow } from "@/components/trading/TradeFlow";
+import { useStrategies } from "@/lib/api/strategies";
+import { useConnectionStatus } from "@/lib/gateway/hooks";
+import { usePaperBook } from "@/lib/strategy/usePaper";
 import { type WorkspaceTab, useUiStore } from "@/lib/store";
 
 export const LEFT_TABS: { id: WorkspaceTab; label: string; phase?: number; blurb?: string }[] = [
   { id: "chain", label: "Chain" },
   { id: "builder", label: "Builder" },
-  { id: "paper", label: "Paper", phase: 3, blurb: "Paper trading with fills at the live mark, positions and P&L." },
+  { id: "paper", label: "Paper" },
   { id: "live", label: "Live", phase: 3, blurb: "Live orders on Delta Exchange India through your own API key." },
   { id: "journal", label: "Journal", phase: 4, blurb: "Closed trades, notes and the performance log." },
 ];
@@ -54,6 +60,10 @@ export function Workspace() {
   const tab = useUiStore((s) => s.workspaceTab);
   const setTab = useUiStore((s) => s.setWorkspaceTab);
   const legCount = useUiStore((s) => s.legs[s.asset].filter((l) => l.status === "open").length);
+  const { data: strategies } = useStrategies();
+  const book = usePaperBook(strategies ?? []);
+  const feedLive = useConnectionStatus() === "open";
+  const paperCount = (strategies ?? []).filter((s) => s.status === "paper").length;
   const [split, setSplit] = useState(SPLIT_DEFAULT);
   const [dragging, setDragging] = useState(false);
   const [stacked, setStacked] = useState<"left" | "analysis">("left");
@@ -108,6 +118,11 @@ export function Workspace() {
                 {legCount}
               </span>
             ) : null}
+            {t.id === "paper" && paperCount > 0 ? (
+              <span className="ml-1 rounded-full bg-muted px-1.5 font-mono text-3xs text-foreground" data-testid="paper-count">
+                {paperCount}
+              </span>
+            ) : null}
           </TabsTrigger>
         ))}
         <span className="ml-auto self-center pr-2 font-mono text-3xs uppercase tracking-[0.1em] text-muted-foreground">Lot · basis mark</span>
@@ -118,6 +133,9 @@ export function Workspace() {
       <TabsContent value="builder" className="min-h-0 flex-1">
         <BuilderPanel />
       </TabsContent>
+      <TabsContent value="paper" className="min-h-0 flex-1">
+        <PaperPanel book={book} feedLive={feedLive} />
+      </TabsContent>
       {LEFT_TABS.filter((t) => t.phase).map((t) => (
         <TabsContent key={t.id} value={t.id} className="min-h-0 flex-1">
           <EmptyState title={`${t.label} arrives in Phase ${t.phase}`} description={t.blurb} className="py-24" data-testid={`placeholder-${t.id}`} />
@@ -126,9 +144,17 @@ export function Workspace() {
     </Tabs>
   );
 
+  const overlays = (
+    <>
+      <TradeFlow book={book} />
+      <StrategyDetailsDialog book={book} feedLive={feedLive} />
+    </>
+  );
+
   if (narrow) {
     return (
       <div className="flex min-h-[calc(100vh-50px)] flex-col" data-testid="workspace" data-layout="stacked">
+        {overlays}
         <div className="flex border-b border-border" role="tablist" aria-label="Pane">
           {(["left", "analysis"] as const).map((k) => (
             <button key={k} type="button" role="tab" aria-selected={stacked === k} onClick={() => setStacked(k)} className={cn("flex-1 py-2 text-xs", stacked === k ? "border-b-2 border-foreground text-foreground" : "text-muted-foreground")} data-testid={`stack-${k}`}>
@@ -143,6 +169,7 @@ export function Workspace() {
 
   return (
     <div ref={grid} className="grid min-h-[calc(100vh-50px)]" style={{ gridTemplateColumns: `minmax(0, ${split}fr) 6px minmax(360px, ${1 - split}fr)` }} data-testid="workspace" data-layout="split" data-split={split.toFixed(2)}>
+      {overlays}
       <div className="min-w-0 border-r border-border">{left}</div>
       <div
         role="separator"

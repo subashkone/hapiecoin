@@ -251,3 +251,76 @@ export const schema = {
   auditLog,
 };
 export type Schema = typeof schema;
+
+// ---------------------------------------------------------------------------------------------
+// Strategies (Phase 3, ADR-024): drafts, paper trades, live trades and archived strategies
+// ---------------------------------------------------------------------------------------------
+
+export const strategies = pgTable(
+  "strategies",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    asset: text("asset", { enum: ["BTC", "ETH", "XAUT"] }).notNull(),
+    status: text("status", { enum: ["draft", "paper", "live", "archived"] }).notNull(),
+    tradingMode: text("trading_mode", { enum: ["paper", "live"] }),
+    templateName: text("template_name").notNull().default("Custom"),
+    brokerId: text("broker_id").references(() => brokers.id, { onDelete: "set null" }),
+    /** Sum of realised leg P&L in USD, decimal string. */
+    realizedPnl: text("realized_pnl").notNull().default("0"),
+    notes: text("notes").notNull().default(""),
+    tags: jsonb("tags").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    orderBatchId: text("order_batch_id"),
+    startedAt: timestamp("started_at", { withTimezone: true, mode: "date" }),
+    closedAt: timestamp("closed_at", { withTimezone: true, mode: "date" }),
+    ...timestamps,
+  },
+  (t) => [index("strategies_user_id_idx").on(t.userId), index("strategies_user_status_idx").on(t.userId, t.status)],
+);
+
+export const strategyLegs = pgTable(
+  "strategy_legs",
+  {
+    id: text("id").primaryKey(),
+    strategyId: text("strategy_id")
+      .notNull()
+      .references(() => strategies.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: ["call", "put", "future"] }).notNull(),
+    side: text("side", { enum: ["buy", "sell"] }).notNull(),
+    /** Venue-listed strike as a decimal string; empty for futures. */
+    strike: text("strike").notNull().default(""),
+    expiry: text("expiry").notNull(),
+    symbol: text("symbol").notNull(),
+    lots: integer("lots").notNull(),
+    price: text("price").notNull(),
+    entryPrice: text("entry_price"),
+    exitPrice: text("exit_price"),
+    iv: text("iv"),
+    status: text("status", { enum: ["open", "squared_off"] }).notNull().default("open"),
+    isAdjustment: boolean("is_adjustment").notNull().default(false),
+    position: integer("position").notNull().default(0),
+    openedAt: timestamp("opened_at", { withTimezone: true, mode: "date" }),
+    closedAt: timestamp("closed_at", { withTimezone: true, mode: "date" }),
+    orderId: text("order_id"),
+    ...timestamps,
+  },
+  (t) => [index("strategy_legs_strategy_id_idx").on(t.strategyId)],
+);
+
+/** One P&L point per strategy per calendar day, upserted by the client's tick (HC-TR-076). */
+export const strategyPnl = pgTable(
+  "strategy_pnl",
+  {
+    strategyId: text("strategy_id")
+      .notNull()
+      .references(() => strategies.id, { onDelete: "cascade" }),
+    day: text("day").notNull(),
+    pnl: text("pnl").notNull(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("strategy_pnl_strategy_day_uq").on(t.strategyId, t.day)],
+);
+

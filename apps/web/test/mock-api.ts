@@ -3,8 +3,8 @@
 // deliberately simple: one OTP (123456), sessions in a Map, settings/brokers/credentials per user.
 import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import type { Broker, BrokerCredentialPublic, User, UserSettings } from "@hapiecoin/schema";
-import { maskApiKey } from "@hapiecoin/schema";
+import type { Broker, BrokerCredentialPublic, Strategy, StrategyLeg, StrategyLegInput, User, UserSettings } from "@hapiecoin/schema";
+import { maskApiKey, realizedPnl, toDecimal } from "@hapiecoin/schema";
 
 export const SESSION_COOKIE = "better-auth.session_token";
 export const TEST_OTP = "123456";
@@ -18,6 +18,7 @@ interface Account {
   brokers: Broker[];
   credential: BrokerCredentialPublic | null;
   plan: PlanRecord;
+  strategies: Strategy[];
   referredBy?: string;
 }
 interface PlanRecord {
@@ -83,6 +84,7 @@ export function createAccount(
     brokers: [GLOBAL_BROKER],
     credential: null,
     plan: { state: "free" },
+    strategies: [],
   };
   state.accounts.set(email, acc);
   return acc;
@@ -292,6 +294,183 @@ export function createMockApi(state: MockState = { accounts: new Map(), sessions
   });
   v1.get("/credentials/whitelist-ip", (c) => c.json({ ip: WHITELIST_IP }));
   v1.get("/plan", (c) => c.json(current(c)!.plan));
+
+  /* ---------------- strategies (Phase 3 item 1, mirrors apps/api/src/routes/strategies.ts) ---------------- */
+  const nowIso = () => new Date().toISOString();
+  const mkLeg = (input: StrategyLegInput, position: number, extra: Partial<StrategyLeg> = {}): StrategyLeg => ({
+    id: id("leg"),
+    kind: input.kind,
+    side: input.side,
+    strike: input.strike,
+    expiry: input.expiry,
+    symbol: input.symbol,
+    lots: input.lots,
+    price: input.price,
+    entryPrice: null,
+    exitPrice: null,
+    iv: input.iv ?? null,
+    status: "open",
+    isAdjustment: false,
+    position,
+    openedAt: null,
+    closedAt: null,
+    orderId: null,
+    ...extra,
+  });
+  const findStrategy = (c: Context): Strategy | undefined => current(c)!.strategies.find((s) => s.id === c.req.param("id"));
+  const isActive = (s: Strategy) => s.status === "paper" || s.status === "live";
+  const lotSizeOf = (c: Context, asset: string) => current(c)!.settings.lotSizes[asset as "BTC"] ?? "0.001";
+  const touch = (s: Strategy) => {
+    s.updatedAt = nowIso();
+    return s;
+  };
+  const closeLeg = (s: Strategy, leg: StrategyLeg, exitPrice: string, lots: number | undefined, lotSize: string) => {
+    const qty = lots ?? leg.lots;
+    const realized = realizedPnl({ side: leg.side, lots: qty, entryPrice: leg.entryPrice ?? leg.price, exitPrice }, lotSize);
+    const at = nowIso();
+    if (qty < leg.lots) {
+      leg.lots -= qty;
+      const idx = s.legs.indexOf(leg);
+      s.legs.splice(idx + 1, 0, { ...leg, id: id("leg"), lots: qty, exitPrice, status: "squared_off", closedAt: at });
+    } else {
+      leg.exitPrice = exitPrice;
+      leg.status = "squared_off";
+      leg.closedAt = at;
+    }
+    s.realizedPnl = toDecimal(Number(s.realizedPnl) + Number(realized));
+  };
+  v1.get("/strategies", (c) => {
+    const status = c.req.query("status");
+    const items = current(c)!.strategies.filter((s) => !status || s.status === status);
+    return c.json({ items });
+  });
+  v1.post("/strategies", async (c) => {
+    const acc = current(c)!;
+    const body = await c.req.json<{ name: string; asset: Strategy["asset"]; templateName?: string; legs: StrategyLegInput[] }>();
+    if (!body.name?.trim()) return err(c, 400, "VALIDATION", "Strategy name is required");
+    if (!body.legs?.length || body.legs.length > 8) return err(c, 400, "VALIDATION", "1..8 legs");
+    const at = nowIso();
+    const s: Strategy = { id: id("strat"), name: body.name.trim(), asset: body.asset, status: "draft", tradingMode: null, templateName: body.templateName ?? "Custom", brokerId: null, legs: body.legs.map((l, i) => mkLeg(l, i)), realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, startedAt: null, closedAt: null, createdAt: at, updatedAt: at };
+    acc.strategies.unshift(s);
+    return c.json(s, 201);
+  });
+  v1.get("/strategies/:id", (c) => {
+    const s = findStrategy(c);
+    return s ? c.json(s) : err(c, 404, "NOT_FOUND", "Strategy not found");
+  });
+  v1.patch("/strategies/:id", async (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    const body = await c.req.json<{ name?: string; templateName?: string; legs?: StrategyLegInput[]; notes?: string; tags?: string[] }>();
+    if (body.legs) {
+      if (s.status !== "draft") return err(c, 409, "CONFLICT", "Legs can only be replaced on a draft");
+      s.legs = body.legs.map((l, i) => mkLeg(l, i));
+    }
+    if (body.name !== undefined) s.name = body.name;
+    if (body.templateName !== undefined) s.templateName = body.templateName;
+    if (body.notes !== undefined) s.notes = body.notes;
+    if (body.tags !== undefined) s.tags = body.tags;
+    return c.json(touch(s));
+  });
+  v1.delete("/strategies/:id", (c) => {
+    const acc = current(c)!;
+    const i = acc.strategies.findIndex((s) => s.id === c.req.param("id"));
+    if (i < 0) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    acc.strategies.splice(i, 1);
+    return c.body(null, 204);
+  });
+  v1.post("/strategies/:id/start", async (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    const body = await c.req.json<{ mode: "paper" | "live"; brokerId: string; entries: Record<string, string> }>();
+    if (s.status !== "draft") return err(c, 409, "CONFLICT", `Only a draft can be started; this strategy is ${s.status}`);
+    if (body.mode === "live") return err(c, 409, "CONFLICT", "Live trading arrives with Phase 3 item 2; start a paper trade instead");
+    if (!current(c)!.brokers.some((b) => b.id === body.brokerId)) return err(c, 400, "BAD_REQUEST", "Select an exchange...");
+    const at = nowIso();
+    for (const l of s.legs) {
+      const entry = body.entries[l.id] ?? l.price;
+      Object.assign(l, { entryPrice: entry, price: entry, exitPrice: null, status: "open", openedAt: at, closedAt: null });
+    }
+    Object.assign(s, { status: "paper", tradingMode: "paper", brokerId: body.brokerId, startedAt: at, closedAt: null, realizedPnl: "0", pnlHistory: [] });
+    return c.json(touch(s));
+  });
+  v1.post("/strategies/:id/legs", async (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (!isActive(s)) return err(c, 409, "CONFLICT", "Adjustments apply to a paper or live strategy");
+    const body = await c.req.json<{ legs: StrategyLegInput[] }>();
+    const open = s.legs.filter((l) => l.status === "open").length;
+    if (open + body.legs.length > 10) return err(c, 409, "CONFLICT", "Maximum 10 active legs allowed per strategy");
+    const at = nowIso();
+    const next = s.legs.reduce((m, l) => Math.max(m, l.position), -1) + 1;
+    s.legs.push(...body.legs.map((l, i) => mkLeg(l, next + i, { entryPrice: l.price, isAdjustment: true, openedAt: at })));
+    return c.json(touch(s));
+  });
+  v1.post("/strategies/:id/legs/:legId/close", async (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (!isActive(s)) return err(c, 409, "CONFLICT", "Only legs of a paper or live strategy can be squared off");
+    const leg = s.legs.find((l) => l.id === c.req.param("legId"));
+    if (!leg) return err(c, 404, "NOT_FOUND", "Leg not found");
+    if (leg.status !== "open") return err(c, 409, "CONFLICT", "This leg is already squared off");
+    const body = await c.req.json<{ exitPrice: string; lots?: number }>();
+    if (body.lots !== undefined && body.lots > leg.lots) return err(c, 400, "BAD_REQUEST", `Exit quantity exceeds the leg's ${leg.lots} lots`);
+    closeLeg(s, leg, body.exitPrice, body.lots, lotSizeOf(c, s.asset));
+    return c.json(touch(s));
+  });
+  v1.post("/strategies/:id/close", async (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (!isActive(s)) return err(c, 409, "CONFLICT", "Only a paper or live strategy can be squared off");
+    const body = await c.req.json<{ exits: Record<string, string> }>();
+    const open = s.legs.filter((l) => l.status === "open");
+    if (!open.length) return err(c, 409, "CONFLICT", "Nothing to square off");
+    for (const l of open) if (body.exits[l.id] === undefined) return err(c, 400, "BAD_REQUEST", `Missing exit price for leg ${l.id}`);
+    for (const l of open) closeLeg(s, l, body.exits[l.id]!, undefined, lotSizeOf(c, s.asset));
+    if (s.status === "live") Object.assign(s, { status: "archived", closedAt: nowIso() });
+    return c.json(touch(s));
+  });
+  v1.post("/strategies/:id/stop", async (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (s.status !== "paper") return err(c, 409, "CONFLICT", "Only a paper strategy can be stopped");
+    const body = await c.req.json<{ archive: boolean; exits?: Record<string, string> }>();
+    const open = s.legs.filter((l) => l.status === "open");
+    if (body.archive) {
+      for (const l of open) if (body.exits?.[l.id] === undefined) return err(c, 400, "BAD_REQUEST", `Missing exit price for leg ${l.id}`);
+      for (const l of open) closeLeg(s, l, body.exits![l.id]!, undefined, lotSizeOf(c, s.asset));
+      Object.assign(s, { status: "archived", closedAt: nowIso() });
+    } else {
+      for (const l of open) Object.assign(l, { price: l.entryPrice ?? l.price, entryPrice: null, openedAt: null });
+      Object.assign(s, { status: "draft", tradingMode: null, startedAt: null, closedAt: null });
+    }
+    return c.json(touch(s));
+  });
+  v1.post("/strategies/:id/archive", (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (s.status !== "draft") return err(c, 409, "CONFLICT", "Only a draft strategy can be archived");
+    Object.assign(s, { status: "archived", closedAt: nowIso() });
+    return c.json(touch(s));
+  });
+  v1.post("/strategies/:id/restore", (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (s.status !== "archived") return err(c, 409, "CONFLICT", "Only an archived strategy can be restored");
+    Object.assign(s, { status: "draft", tradingMode: null, closedAt: null });
+    return c.json(touch(s));
+  });
+  v1.post("/strategies/:id/pnl", async (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (!isActive(s)) return err(c, 409, "CONFLICT", "P&L history is recorded for paper and live strategies");
+    const body = await c.req.json<{ day: string; pnl: string }>();
+    const existing = s.pnlHistory.find((p) => p.day === body.day);
+    if (existing) existing.pnl = body.pnl;
+    else s.pnlHistory.push({ day: body.day, pnl: body.pnl });
+    s.pnlHistory.sort((a, b) => (a.day < b.day ? -1 : 1));
+    return c.json(touch(s));
+  });
   app.route("/v1", v1);
 
   /* ---------------- test hooks ---------------- */

@@ -11,6 +11,9 @@ import { daysToExpiry, fmtDate, fmtExpiry } from "@/lib/format";
 import { useChain, useSpot } from "@/lib/gateway/hooks";
 import { atmIndex } from "@/lib/gateway/reducer";
 import { useUiStore } from "@/lib/store";
+import { useArchiveStrategy, useDeleteStrategy, useStrategies } from "@/lib/api/strategies";
+import { serverLegToLocal } from "@/lib/strategy/paper";
+import type { Strategy } from "@hapiecoin/schema";
 import { MAX_ACTIVE_LEGS, addLeg as addLegPure, type StrategyLeg } from "@/lib/strategy/legs";
 import { type StrategyTemplate, TEMPLATES, TEMPLATE_CATEGORIES, materialiseTemplate } from "@/lib/strategy/templates";
 
@@ -42,10 +45,13 @@ export function TemplatesPanel() {
   const setLegs = useUiStore((s) => s.setLegs);
   const setMeta = useUiStore((s) => s.setStrategyMeta);
   const setBuilderTab = useUiStore((s) => s.setBuilderTab);
-  const drafts = useUiStore((s) => s.drafts);
-  const loadDraft = useUiStore((s) => s.loadDraft);
-  const archiveDraft = useUiStore((s) => s.archiveDraft);
-  const deleteDraft = useUiStore((s) => s.deleteDraft);
+  const setAsset = useUiStore((s) => s.setAsset);
+  const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
+  const openTrade = useUiStore((s) => s.openTrade);
+  const openDetails = useUiStore((s) => s.openDetails);
+  const { data: strategies, isLoading: mineLoading } = useStrategies();
+  const archiveStrategy = useArchiveStrategy();
+  const deleteStrategy = useDeleteStrategy();
   const env = publicEnv();
   const expiries = useQuery({
     queryKey: ["expiries", asset],
@@ -64,7 +70,14 @@ export function TemplatesPanel() {
   const [search, setSearch] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const cards = TEMPLATES.filter((t) => category === "All" || t.category === category);
-  const myList = drafts.filter((d) => d.status === mine && (search.trim() === "" || `${d.name} ${d.asset} ${d.templateName}`.toLowerCase().includes(search.trim().toLowerCase())));
+  const myList = (strategies ?? []).filter((d) => d.status === mine && (search.trim() === "" || `${d.name} ${d.asset} ${d.templateName}`.toLowerCase().includes(search.trim().toLowerCase())));
+  const loadDraft = (d: Strategy) => {
+    setAsset(d.asset);
+    setLegs(d.asset, d.legs.filter((l) => l.status === "open").map((l) => serverLegToLocal(l, d.asset)));
+    setMeta(d.asset, { name: d.name, draftId: d.status === "draft" ? d.id : null });
+    setWorkspaceTab("builder");
+    setBuilderTab("builder");
+  };
 
   const load = (tpl: StrategyTemplate) => {
     if (!expiry) return;
@@ -139,7 +152,9 @@ export function TemplatesPanel() {
           ) : null}
         </span>
       </div>
-      {myList.length === 0 ? (
+      {mineLoading ? (
+        <p className="py-6 text-center text-xs text-muted-foreground">Loading your strategies…</p>
+      ) : myList.length === 0 ? (
         <p className="py-6 text-center text-xs text-muted-foreground" data-testid="mine-empty">
           {mine === "draft" ? "No draft strategies · Create a strategy to see it here" : "No archived strategies · Archived strategies appear here"}
         </p>
@@ -152,17 +167,25 @@ export function TemplatesPanel() {
               <span className="micro">{d.asset}</span>
               <span className="micro">{d.legs.length} {d.legs.length === 1 ? "leg" : "legs"}</span>
               <span className="micro">{d.templateName}</span>
-              <span className="micro">{d.status === "archived" && d.archivedAt ? `closed ${fmtDate(new Date(d.archivedAt).toISOString())}` : `created ${fmtDate(new Date(d.createdAt).toISOString())}`}</span>
+              <span className="micro">{d.status === "archived" && d.closedAt ? `closed ${fmtDate(d.closedAt)}` : `created ${fmtDate(d.createdAt)}`}{d.tradingMode ? ` · was ${d.tradingMode}` : ""}</span>
               <span className="ml-auto flex gap-1">
-                <Button size="sm" variant="outline" onClick={() => { loadDraft(d.id); toast("Loaded", { description: `${d.name} loaded into the Builder` }); }} data-testid="mine-load">
+                <Button size="sm" variant="outline" onClick={() => { loadDraft(d); toast("Loaded", { description: `${d.name} loaded into the Builder` }); }} data-testid="mine-load">
                   Load
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => { archiveDraft(d.id, d.status === "draft"); toast(d.status === "draft" ? "Archived" : "Restored", { description: d.name }); }} data-testid="mine-archive">
+                {d.status === "draft" ? (
+                  <Button size="sm" onClick={() => openTrade({ strategyId: d.id })} title="Start paper trading this draft" data-testid="mine-activate">
+                    Activate
+                  </Button>
+                ) : null}
+                <Button size="sm" variant="ghost" onClick={() => openDetails(d.id)} data-testid="mine-details">
+                  Details
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => archiveStrategy.mutate({ id: d.id, archived: d.status === "draft" }, { onSuccess: () => toast(d.status === "draft" ? "Archived" : "Restored", { description: d.name }), onError: (e) => toast.error("Could not update", { description: e.message }) })} data-testid="mine-archive">
                   {d.status === "draft" ? "Archive" : "Restore"}
                 </Button>
                 {confirmDelete === d.id ? (
                   <>
-                    <Button size="sm" variant="ghost" className="text-loss" onClick={() => { deleteDraft(d.id); setConfirmDelete(null); toast("Deleted", { description: d.name }); }} data-testid="mine-delete-confirm">
+                    <Button size="sm" variant="ghost" className="text-loss" loading={deleteStrategy.isPending} onClick={() => deleteStrategy.mutate(d.id, { onSuccess: () => { setConfirmDelete(null); toast("Deleted", { description: d.name }); }, onError: (e) => toast.error("Could not delete", { description: e.message }) })} data-testid="mine-delete-confirm">
                       Confirm delete
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(null)}>

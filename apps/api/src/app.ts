@@ -12,6 +12,7 @@ import { registerCredentialRoutes } from "./routes/credentials.js";
 import { registerMeRoutes } from "./routes/me.js";
 import { registerPlanRoutes } from "./routes/plan.js";
 import { registerSettingsRoutes } from "./routes/settings.js";
+import { registerStrategyRoutes } from "./routes/strategies.js";
 import { type AppDeps, jsonContent } from "./routes/shared.js";
 import { type AppEnv, CLIENT_IP_HEADER } from "./security/context.js";
 import { errors, notFound, onError, zodIssues } from "./security/errors.js";
@@ -96,6 +97,7 @@ export function createApp(deps: AppDeps): OpenAPIHono<AppEnv> {
   registerBrokerRoutes(app, deps);
   registerCredentialRoutes(app, deps);
   registerPlanRoutes(app, deps);
+  registerStrategyRoutes(app, deps);
 
   app.openAPIRegistry.registerComponent("securitySchemes", "cookieAuth", {
     type: "apiKey",

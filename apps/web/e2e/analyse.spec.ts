@@ -352,3 +352,62 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
   });
 });
+
+test.describe("HC-TR paper trading (Phase 3 item 1)", () => {
+  test.beforeEach(async ({ page, request }) => {
+    await seedUser(request, { email: "paper@example.com", plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" } });
+    await signIn(page, "paper@example.com");
+    await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
+    await page.reload();
+    await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 15_000 });
+  });
+
+  test("HC-TR-022 / HC-TR-050..057 a paper trade from the Builder lands on the Paper tab with live P&L; HC-TR-079 / HC-TR-081 square off and stop", async ({ page }) => {
+    const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
+    await page.locator(`[data-testid=chain-row-calls][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-buy-calls").click();
+    await page.locator(`[data-testid=chain-row-puts][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-sell-puts").click();
+    await page.getByTestId("tab-builder").click();
+    await page.getByTestId("strategy-name").fill("E2E straddle");
+    await page.getByTestId("builder-paper-trade").click();
+    const mode = page.getByTestId("trade-mode");
+    await expect(mode).toBeVisible();
+    await expect(mode.getByTestId("mode-paper")).toHaveAttribute("aria-pressed", "true");
+    await expect(mode.getByTestId("trade-broker")).toHaveValue("brk_delta");
+    await mode.getByTestId("trade-continue").click();
+    const preview = page.getByTestId("trade-preview");
+    await expect(preview.getByTestId("preview-row")).toHaveCount(2);
+    await preview.getByTestId("trade-now").click();
+    await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+    await expect(page.getByTestId("paper-count")).toHaveText("1");
+    const card = page.getByTestId("paper-card");
+    await expect(card.getByTestId("mode-pill")).toHaveAttribute("data-status", "paper");
+    await expect(card.getByTestId("card-pnl")).not.toHaveText("—");
+    await expect(page.getByTestId("builder-count")).toHaveCount(0);
+    // details: square off one leg at market, then stop and archive
+    await card.getByTestId("card-details").click();
+    const details = page.getByTestId("strategy-details");
+    await expect(details.getByTestId("details-leg")).toHaveCount(2);
+    await details.getByTestId("details-sqoff").first().click();
+    const sq = page.getByTestId("square-off");
+    await expect(sq.getByTestId("sqoff-exit")).not.toHaveValue("");
+    await sq.getByTestId("sqoff-confirm").click();
+    await expect(sq).toBeHidden();
+    await details.getByTestId("details-tab-closed").click();
+    await expect(details.getByTestId("details-leg")).toHaveCount(1);
+    await details.getByTestId("details-stop").click();
+    const stop = page.getByTestId("stop-paper");
+    await expect(stop.getByTestId("stop-leg")).toHaveCount(1);
+    await expect(stop.getByTestId("stop-go")).toHaveText("Stop trading");
+    await stop.getByTestId("stop-go").click();
+    await expect(details).toBeHidden();
+    await expect(page.getByTestId("paper-empty")).toBeVisible();
+    // the archived strategy is under My templates → Archived
+    await page.getByTestId("tab-builder").click();
+    await page.getByTestId("builder-tab-templates").click();
+    await page.getByTestId("mine-archived").click();
+    await expect(page.getByTestId("mine-card")).toHaveCount(1);
+    await expect(page.getByTestId("mine-card")).toContainText("E2E straddle");
+  });
+});

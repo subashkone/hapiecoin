@@ -1,0 +1,177 @@
+/**
+ * Strategies and their legs (Phase 3, ADR-024): the contract between apps/api and apps/web for drafts,
+ * paper trades and, later, live trades. Money and premiums are decimal strings; quantities are integer lots.
+ */
+import { z } from "zod";
+import { Id } from "./accounts.js";
+import { DecimalString, IsoDateTime, Underlying, isNonNegativeDecimal, isPositiveDecimal } from "./primitives.js";
+
+const NonNegativeDecimal = DecimalString.refine(isNonNegativeDecimal, { message: "must not be negative" });
+const PositiveDecimal = DecimalString.refine(isPositiveDecimal, { message: "must be greater than zero" });
+
+export const STRATEGY_STATUSES = ["draft", "paper", "live", "archived"] as const;
+export const StrategyStatus = z.enum(STRATEGY_STATUSES);
+export type StrategyStatus = z.infer<typeof StrategyStatus>;
+
+export const TradingMode = z.enum(["paper", "live"]);
+export type TradingMode = z.infer<typeof TradingMode>;
+
+export const StrategyLegKind = z.enum(["call", "put", "future"]);
+export type StrategyLegKind = z.infer<typeof StrategyLegKind>;
+export const StrategyLegSide = z.enum(["buy", "sell"]);
+export type StrategyLegSide = z.infer<typeof StrategyLegSide>;
+export const StrategyLegStatus = z.enum(["open", "squared_off"]);
+export type StrategyLegStatus = z.infer<typeof StrategyLegStatus>;
+
+/** "YYYY-MM-DD" for options and dated futures, "PERP" for the perpetual. */
+export const LegExpiry = z.string().regex(/^(\d{4}-\d{2}-\d{2}|PERP)$/, "expected YYYY-MM-DD or PERP");
+export type LegExpiry = z.infer<typeof LegExpiry>;
+
+/** Limits (HC-TR-017): 8 legs on a new strategy, 10 open legs on an active one. */
+export const MAX_NEW_LEGS = 8;
+export const MAX_OPEN_LEGS = 10;
+export const MAX_STRATEGY_NAME = 80;
+
+/** A leg as the client submits it (draft legs and adjustments). Strikes are venue-listed values (ADR-006). */
+export const StrategyLegInput = z
+  .strictObject({
+    kind: StrategyLegKind,
+    side: StrategyLegSide,
+    /** Empty string for futures. */
+    strike: z.union([NonNegativeDecimal, z.literal("")]),
+    expiry: LegExpiry,
+    symbol: z.string().min(1).max(64),
+    lots: z.number().int().min(1).max(100_000),
+    /** Price per underlying unit at the time of adding (mark or custom). */
+    price: NonNegativeDecimal,
+    iv: z.number().min(0).max(10).optional(),
+  })
+  .superRefine((leg, ctx) => {
+    if (leg.kind === "future") {
+      if (leg.strike !== "") ctx.addIssue({ code: "custom", path: ["strike"], message: "futures have no strike" });
+    } else {
+      if (leg.strike === "") ctx.addIssue({ code: "custom", path: ["strike"], message: "options need a strike" });
+      if (leg.expiry === "PERP") ctx.addIssue({ code: "custom", path: ["expiry"], message: "options need a dated expiry" });
+    }
+  });
+export type StrategyLegInput = z.infer<typeof StrategyLegInput>;
+
+export const StrategyLeg = z.strictObject({
+  id: Id,
+  kind: StrategyLegKind,
+  side: StrategyLegSide,
+  strike: z.string(),
+  expiry: LegExpiry,
+  symbol: z.string(),
+  lots: z.number().int().min(1),
+  /** Price stored when the leg was added (draft) and the entry premium once the strategy started. */
+  price: NonNegativeDecimal,
+  entryPrice: NonNegativeDecimal.nullable(),
+  exitPrice: NonNegativeDecimal.nullable(),
+  iv: z.number().nullable(),
+  status: StrategyLegStatus,
+  isAdjustment: z.boolean(),
+  position: z.number().int().nonnegative(),
+  openedAt: IsoDateTime.nullable(),
+  closedAt: IsoDateTime.nullable(),
+  /** Venue order id (live only, Phase 3 item 2). */
+  orderId: z.string().nullable(),
+});
+export type StrategyLeg = z.infer<typeof StrategyLeg>;
+
+export const PnlPoint = z.strictObject({ day: z.iso.date(), pnl: DecimalString });
+export type PnlPoint = z.infer<typeof PnlPoint>;
+
+export const Strategy = z.strictObject({
+  id: Id,
+  name: z.string().min(1).max(MAX_STRATEGY_NAME),
+  asset: Underlying,
+  status: StrategyStatus,
+  tradingMode: TradingMode.nullable(),
+  templateName: z.string().max(80),
+  brokerId: Id.nullable(),
+  legs: z.array(StrategyLeg),
+  /** Sum of (exit − entry) × lots × lot size × side over squared-off legs, in USD. */
+  realizedPnl: DecimalString,
+  pnlHistory: z.array(PnlPoint),
+  notes: z.string().max(2_000),
+  tags: z.array(z.string().min(1).max(32)).max(20),
+  orderBatchId: z.string().nullable(),
+  startedAt: IsoDateTime.nullable(),
+  closedAt: IsoDateTime.nullable(),
+  createdAt: IsoDateTime,
+  updatedAt: IsoDateTime,
+});
+export type Strategy = z.infer<typeof Strategy>;
+
+export const StrategyList = z.object({ items: z.array(Strategy) });
+export type StrategyList = z.infer<typeof StrategyList>;
+
+export const StrategyCreate = z.strictObject({
+  name: z.string().trim().min(1, "Strategy name is required").max(MAX_STRATEGY_NAME),
+  asset: Underlying,
+  templateName: z.string().trim().max(80).default("Custom"),
+  legs: z.array(StrategyLegInput).min(1, "Add at least one leg").max(MAX_NEW_LEGS, `Maximum ${MAX_NEW_LEGS} legs allowed for a new strategy`),
+});
+export type StrategyCreate = z.infer<typeof StrategyCreate>;
+
+/** Draft edits: rename, replace legs (draft only), notes and tags. */
+export const StrategyPatch = z.strictObject({
+  name: z.string().trim().min(1).max(MAX_STRATEGY_NAME).optional(),
+  templateName: z.string().trim().max(80).optional(),
+  legs: z.array(StrategyLegInput).min(1).max(MAX_NEW_LEGS).optional(),
+  notes: z.string().max(2_000).optional(),
+  tags: z.array(z.string().trim().min(1).max(32)).max(20).optional(),
+});
+export type StrategyPatch = z.infer<typeof StrategyPatch>;
+
+/** Entry premiums per leg id (paper: the client's live mark or custom price). */
+export const PriceMap = z.record(Id, NonNegativeDecimal);
+export type PriceMap = z.infer<typeof PriceMap>;
+
+export const StrategyStart = z.strictObject({
+  mode: TradingMode,
+  brokerId: Id,
+  entries: PriceMap,
+});
+export type StrategyStart = z.infer<typeof StrategyStart>;
+
+export const AddLegsBody = z.strictObject({ legs: z.array(StrategyLegInput).min(1).max(MAX_OPEN_LEGS) });
+export type AddLegsBody = z.infer<typeof AddLegsBody>;
+
+/** Close a leg fully (lots omitted) or partially (lots < the leg's lots); the closed part becomes its own leg row. */
+export const CloseLegBody = z.strictObject({
+  exitPrice: NonNegativeDecimal,
+  lots: z.number().int().min(1).optional(),
+});
+export type CloseLegBody = z.infer<typeof CloseLegBody>;
+
+export const CloseAllBody = z.strictObject({ exits: PriceMap });
+export type CloseAllBody = z.infer<typeof CloseAllBody>;
+
+/** Stop paper trading (HC-TR-081): archive (legs closed at `exits`) or back to draft (legs kept). */
+export const StopBody = z.strictObject({
+  archive: z.boolean(),
+  exits: PriceMap.default({}),
+});
+export type StopBody = z.infer<typeof StopBody>;
+
+export const PnlUpsert = PnlPoint;
+
+/** Realised P&L of one closed leg in USD: (exit − entry) × lots × lot size × (+1 buy / −1 sell), 2 dp. */
+export function realizedPnl(leg: { side: StrategyLegSide; lots: number; entryPrice: string | null; exitPrice: string | null }, lotSize: string): string {
+  if (leg.entryPrice === null || leg.exitPrice === null) return "0";
+  const sign = leg.side === "buy" ? 1 : -1;
+  const pnl = (Number(leg.exitPrice) - Number(leg.entryPrice)) * leg.lots * Number(lotSize) * sign;
+  return toDecimal(pnl);
+}
+
+/** Format a computed number as a decimal string with 2 decimals, "-0.00" normalised to "0". */
+export function toDecimal(n: number, digits = 2): string {
+  if (!Number.isFinite(n)) return "0";
+  const s = n.toFixed(digits);
+  const trimmed = s.includes(".") ? s.replace(/0+$/, "").replace(/\.$/, "") : s;
+  return trimmed === "-0" || trimmed === "" ? "0" : trimmed;
+}
+
+export { PositiveDecimal as PositiveDecimalString };

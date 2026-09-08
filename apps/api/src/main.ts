@@ -7,11 +7,13 @@ import { loadConfig } from "./config.js";
 import { createDb } from "./db/client.js";
 import { seed } from "./db/seed.js";
 import { DeltaPrivateClientImpl } from "./delta/private-client.js";
+import { loadRepoEnv } from "./env-file.js";
 import { createLogger } from "./logger.js";
 import { createMailer } from "./mailer.js";
 import { MemoryRateStore, type RateStore, RedisRateStore } from "./security/rate-store.js";
 import { createVault } from "./vault.js";
 
+loadRepoEnv(import.meta.url);
 const config = loadConfig();
 const logger = createLogger({ level: config.logLevel, base: { env: config.nodeEnv } });
 
