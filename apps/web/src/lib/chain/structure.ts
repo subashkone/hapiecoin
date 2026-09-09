@@ -1,7 +1,7 @@
 // Pure helpers for the Scenarios, Vol and Structure tabs (HC-WS-088..100): the bridge from the gateway's
 // chain rows to the pricing package's structure helpers, the scenario axes (price × date), the 25Δ skew and
 // the heat shading rule. Every figure comes from @hapiecoin/pricing or the venue rows; nothing here prices.
-import type { ChainRow as PricingRow } from "@hapiecoin/pricing";
+import { type ChainRow as PricingRow, maxPain } from "@hapiecoin/pricing";
 import type { ChainRow as SchemaRow } from "@hapiecoin/schema";
 
 const MS_PER_DAY = 86_400_000;
@@ -136,4 +136,50 @@ export function termShape(ivs: readonly (number | null)[]): "contango" | "backwa
   const back = xs[xs.length - 1]!;
   if (Math.abs(back - front) < 0.005) return "flat";
   return back > front ? "contango" : "backwardation";
+}
+
+/** Chain footer figures (HC-WS-029, 080): max pain over the listed strikes, the 25Δ skew and the ATM forward. */
+export interface ChainStats {
+  maxPain: number | null;
+  /** IV(25Δ put) − IV(25Δ call) in vol points. */
+  skewPts: number | null;
+  /** Forward from ATM put-call parity: K + C − P at the strike nearest spot with both marks. */
+  fwd: number | null;
+}
+export function chainStats(rows: readonly SchemaRow[], spot: number | null): ChainStats {
+  const priced = toPricingRows(rows);
+  const mp = priced.length ? maxPain(priced) : Number.NaN;
+  const sk = skew25(rows);
+  let fwd: number | null = null;
+  if (spot !== null && Number.isFinite(spot)) {
+    let best: SchemaRow | null = null;
+    for (const r of rows) {
+      if (!r.call || !r.put) continue;
+      const c = Number(r.call.mark);
+      const p = Number(r.put.mark);
+      if (!Number.isFinite(c) || !Number.isFinite(p) || c <= 0 || p <= 0) continue;
+      if (!best || Math.abs(Number(r.strike) - spot) < Math.abs(Number(best.strike) - spot)) best = r;
+    }
+    if (best) fwd = Number(best.strike) + Number(best.call!.mark) - Number(best.put!.mark);
+  }
+  return { maxPain: Number.isFinite(mp) ? mp : null, skewPts: sk ? sk.skewPts : null, fwd };
+}
+
+/** The Δ chips of the chain toolbar (HC-WS-074), in percent of a unit delta. */
+export const DELTA_CHIPS = [10, 16, 25, 50] as const;
+export interface DeltaHit {
+  strike: string;
+  delta: number;
+}
+/** The call whose Δ is nearest +target and the put whose Δ is nearest −target over the whole chain (target 0..1). */
+export function nearestDelta(rows: readonly SchemaRow[], target: number): { call: DeltaHit | null; put: DeltaHit | null } {
+  let call: DeltaHit | null = null;
+  let put: DeltaHit | null = null;
+  for (const r of rows) {
+    const cd = r.call?.greeks?.delta;
+    if (cd !== undefined && Number.isFinite(cd) && (!call || Math.abs(cd - target) < Math.abs(call.delta - target))) call = { strike: r.strike, delta: cd };
+    const pd = r.put?.greeks?.delta;
+    if (pd !== undefined && Number.isFinite(pd) && (!put || Math.abs(pd + target) < Math.abs(put.delta + target))) put = { strike: r.strike, delta: pd };
+  }
+  return { call, put };
 }

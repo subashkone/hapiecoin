@@ -3103,7 +3103,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Skew 25Δ = IV(25Δ put) − IV(25Δ call) in vol points; Fwd from ATM put-call parity (K + C − P); max pain = strike minimising total option value",
-  "evidence": "clone design; values derived from CG.chain"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/chain/{ChainTools,ChainTable}.tsx + lib/chain/structure.ts chainStats / nearestDelta; unit structure.test.ts + chain.test.tsx; e2e analyse.spec.ts HC-WS-016 block · max pain / skew 25Δ / Fwd over the whole chain, OI as full integers"
  },
  {
   "id": "HC-WS-030",
@@ -3658,7 +3658,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "root[data-density] follows CG.state.density and CG.on('density')",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): ChainPanel passes rowHeight 36 / 28 from useDensity; LadderPanel drops cell padding in compact (data-density)"
  },
  {
   "id": "HC-WS-067",
@@ -3778,7 +3778,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "nearestDelta() over the full chain; widens the strike range when the hits fall outside it; the palette command opens a dialog with a custom Δ input",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/chain/{ChainTools,ChainTable}.tsx + lib/chain/structure.ts chainStats / nearestDelta; unit structure.test.ts + chain.test.tsx; e2e analyse.spec.ts HC-WS-016 block · chips chain-delta-10/16/25/50, widen → scroll → focus call → pulse both (data-pulse) + toast"
  },
  {
   "id": "HC-WS-075",
@@ -3793,7 +3793,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "A zero-height spot row is inserted after the last strike ≤ spot and moves on ticks; the neighbouring strike cells get extra padding so the tag never covers a label",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/chain/{ChainTools,ChainTable}.tsx + lib/chain/structure.ts chainStats / nearestDelta; unit structure.test.ts + chain.test.tsx; e2e analyse.spec.ts HC-WS-016 block · spot-hairline overlay (data-y) between the bracketing strikes, skipped on a listed strike"
  },
  {
   "id": "HC-WS-076",
@@ -3808,7 +3808,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Fixed precision per column",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): rows 36 / 28 px by density, OI cells via fmtOiFull (thousands separators), IV 1 dp, Δ 2 dp (lib/format.ts); unit format.test.ts"
  },
  {
   "id": "HC-WS-077",
@@ -3868,7 +3868,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Behaves as in the v2 mock.",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/chain/{ChainTools,ChainTable}.tsx + lib/chain/structure.ts chainStats / nearestDelta; unit structure.test.ts + chain.test.tsx; e2e analyse.spec.ts HC-WS-016 block · chain-skew / chain-fwd in the footer"
  },
  {
   "id": "HC-WS-081",
@@ -3883,7 +3883,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Wraps to a second line on narrow panes",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · max-roi (max profit ÷ margin) and strip-margin with risk % of notional"
  },
  {
   "id": "HC-WS-082",
@@ -3913,7 +3913,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Chips + layers popover; persisted in CG.state.chartLayers",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · layer-ivDown / layer-ivUp: two useScenario calls with ivShift ±0.05 drawn dashed; persisted in store.chartLayers (store.test.ts)"
  },
  {
   "id": "HC-WS-084",
@@ -3928,7 +3928,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "setTargetPrice(price, true)",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · PayoffChart onSelect → setTarget on click (e2e asserts the slider value changes)"
  },
  {
   "id": "HC-WS-085",
@@ -3943,7 +3943,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Behaves as in the v2 mock.",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · five price ticks with SPOT in amber and Today / mid / Expiry date ticks under the native range inputs (native track kept for keyboard access, ADR-048)"
  },
  {
   "id": "HC-WS-086",
@@ -3958,7 +3958,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Behaves as in the v2 mock.",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · greeks-strip adds Margin est. and the greeks-basis line \"USD per strategy · N lots\""
  },
  {
   "id": "HC-WS-087",
@@ -3973,7 +3973,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Behaves as in the v2 mock.",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · hover-readout \"date @ price ±x% · target · exp\""
  },
  {
   "id": "HC-WS-088",

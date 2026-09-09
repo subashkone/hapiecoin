@@ -26,7 +26,10 @@ export interface PayoffFrame {
   /** Target marker: price and the P&L on the target-date curve there. */
   target: { price: number; pnl: number } | null;
   targetLabel: string;
-  layers: { expiry: boolean; target: boolean; fill: boolean; oi: boolean; band: boolean; breakeven: boolean };
+  layers: { expiry: boolean; target: boolean; fill: boolean; oi: boolean; band: boolean; breakeven: boolean; ivUp?: boolean | undefined; ivDown?: boolean | undefined };
+  /** Target-date P&L per point with every leg's IV shifted ±5 vol points (HC-WS-083); null entries are skipped. */
+  ivUp?: readonly (number | null)[] | null | undefined;
+  ivDown?: readonly (number | null)[] | null | undefined;
   /** Open-interest bars per strike (combined), normalised 0..1, or empty. */
   oi: readonly { strike: number; value: number }[];
   /** Price axis range. */
@@ -55,7 +58,7 @@ export function payoffScales(frame: PayoffFrame): PayoffScales {
   const pw = Math.max(1, frame.width - m.l - m.r);
   const ph = Math.max(1, frame.height - m.t - m.b);
   const [lo, hi] = frame.range;
-  const ys = [...frame.points.flatMap((p) => [p.pnlExpiry, p.pnlTarget]), ...(frame.ghost ?? []).map((p) => p.pnlExpiry)].filter(Number.isFinite);
+  const ys = [...frame.points.flatMap((p) => [p.pnlExpiry, p.pnlTarget]), ...(frame.ghost ?? []).map((p) => p.pnlExpiry), ...(frame.layers.ivUp ? frame.ivUp ?? [] : []), ...(frame.layers.ivDown ? frame.ivDown ?? [] : [])].filter((v): v is number => v !== null && Number.isFinite(v));
   let yMin = Math.min(0, ...ys);
   let yMax = Math.max(0, ...ys);
   if (yMax === yMin) {
@@ -191,6 +194,29 @@ export function drawPayoff(ctx: CanvasRenderingContext2D, frame: PayoffFrame): P
         ctx.fill();
         ctx.globalAlpha = 1;
       }
+    }
+    // IV ±5 % target-date curves (dashed, HC-WS-083)
+    for (const [on, data] of [[layers.ivUp, frame.ivUp], [layers.ivDown, frame.ivDown]] as const) {
+      if (!on || !data || data.length !== pts.length) continue;
+      ctx.strokeStyle = c.target;
+      ctx.globalAlpha = 0.65;
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      let pen = false;
+      pts.forEach((p, i) => {
+        const v = data[i];
+        if (v === null || v === undefined || !Number.isFinite(v)) {
+          pen = false;
+          return;
+        }
+        if (pen) ctx.lineTo(s.x(p.price), s.y(v));
+        else ctx.moveTo(s.x(p.price), s.y(v));
+        pen = true;
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
     }
     // target-date curve
     if (layers.target) {

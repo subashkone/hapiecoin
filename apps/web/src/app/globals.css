@@ -56,6 +56,11 @@
 @utility chain-focus {
   box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.9);
 }
+/* Find-by-Δ hit rows pulse twice (HC-WS-074). */
+@utility chain-pulse {
+  animation: hc-pulse 0.7s 2;
+  box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.7);
+}
 
 /* Pulsing live dot (reduced motion honoured by theme.css). */
 @keyframes hc-pulse {

@@ -1,7 +1,7 @@
 "use client";
 // Ladder tab (HC-WS-062..064): P&L at expiry and on the target date for a ladder of prices around spot,
 // with the spot row and each break-even inserted, and a status pill per row.
-import { EmptyState, cn } from "@hapiecoin/ui";
+import { EmptyState, cn, useDensity } from "@hapiecoin/ui";
 import { useMemo, useState } from "react";
 import { fmtStrike } from "@/lib/format";
 import { fmtMoney } from "@/lib/money";
@@ -17,6 +17,7 @@ const PILL: Record<LadderStatus, { text: string; cls: string }> = {
 };
 
 export function LadderPanel() {
+  const compact = useDensity().density === "compact"; // HC-WS-066
   const a = useStrategyAnalysis();
   const { result, spot, money, legs } = a;
   const [stepMul, setStepMul] = useState<1 | 2 | 4>(1);
@@ -47,7 +48,7 @@ export function LadderPanel() {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.price} className={cn("border-t border-border", r.status === "spot" && "atm-band", r.status === "breakeven" && "bg-muted/40")} data-testid="ladder-row" data-status={r.status}>
+              <tr key={r.price} className={cn("border-t border-border", compact ? "[&>td]:py-0" : "", r.status === "spot" && "atm-band", r.status === "breakeven" && "bg-muted/40")} data-testid="ladder-row" data-status={r.status} data-density={compact ? "compact" : "comfortable"}>
                 <td className={cn("num py-1 pl-3 pr-2 text-right", r.status === "spot" && "text-spot")}>{fmtStrike(String(Math.round(r.price)))}</td>
                 <td className={cn("num py-1 pr-2 text-right", r.changePct > 0 ? "text-profit" : r.changePct < 0 ? "text-loss" : "text-muted-foreground")}>{r.changePct === 0 ? "0.0%" : `${r.changePct > 0 ? "+" : "−"}${Math.abs(r.changePct).toFixed(1)}%`}</td>
                 <td className={cn("num py-1 pr-2 text-right", r.atExpiry > 0 ? "text-profit" : r.atExpiry < 0 ? "text-loss" : "")}>{fmtMoney(r.atExpiry, money, { signed: true })}</td>

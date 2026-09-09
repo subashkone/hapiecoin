@@ -41,7 +41,7 @@ function useCanvasColors(): PayoffColors {
   }, [tick]);
 }
 
-export function PayoffChart({ frame, onHover, className }: { frame: PayoffChartFrame; onHover?: (price: number | null) => void; className?: string }) {
+export function PayoffChart({ frame, onHover, onSelect, className }: { frame: PayoffChartFrame; onHover?: (price: number | null) => void; onSelect?: ((price: number) => void) | undefined; className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -94,7 +94,6 @@ export function PayoffChart({ frame, onHover, className }: { frame: PayoffChartF
     <div ref={box} className={className} data-testid="payoff-chart" data-points={frame.points.length}>
       <canvas
         ref={ref}
-        style={{ width: size.w, height: size.h, display: "block" }}
         role="img"
         aria-label="Payoff chart: profit and loss against the underlying price at expiry and on the target date"
         onPointerMove={(e) => {
@@ -106,6 +105,11 @@ export function PayoffChart({ frame, onHover, className }: { frame: PayoffChartF
           setHover(null);
           onHover?.(null);
         }}
+        onClick={(e) => {
+          const p = toPrice(e.clientX); // HC-WS-084: a click sets the target price
+          if (p !== null) onSelect?.(p);
+        }}
+        style={{ width: size.w, height: size.h, display: "block", cursor: onSelect ? "crosshair" : undefined }}
       />
     </div>
   );

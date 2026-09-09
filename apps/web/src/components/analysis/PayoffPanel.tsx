@@ -1,26 +1,31 @@
 "use client";
 // Payoff tab (HC-WS-033..058): summary tiles, the canvas chart with layers and zoom, target price and
 // date sliders, the "win if" strip and the net Greeks strip. Every figure comes from @hapiecoin/pricing.
+import type { ScenarioOptions } from "@hapiecoin/pricing";
 import { Button, EmptyState, cn } from "@hapiecoin/ui";
 import { useMemo, useState } from "react";
 import { fmtDate, fmtDelta, fmtGamma, fmtPrice, fmtStrike, fmtVega } from "@/lib/format";
 import { useChain } from "@/lib/gateway/hooks";
 import { fmtMoney, fmtMoneyCompact } from "@/lib/money";
-import { useUiStore } from "@/lib/store";
-import { cleanStep, pnlAt, popGrade, rrGrade, rrText, spotZoneAt, whereExtreme, winZone } from "@/lib/strategy/analysis";
+import { useScenario } from "@/lib/pricing/client";
+import { settlementHourUtc } from "@/lib/pricing/legs";
+import { type ChartLayers, useUiStore } from "@/lib/store";
+import { cleanStep, marginEstimate, pnlAt, popGrade, rrGrade, rrText, spotZoneAt, whereExtreme, winZone } from "@/lib/strategy/analysis";
 import { type StrategyAnalysis, useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
 import { PayoffChart, type PayoffChartFrame } from "./PayoffChart";
 import { BeforeAfterStrip } from "./BeforeAfterStrip";
 
-type Layers = PayoffChartFrame["layers"];
-const LAYER_LABELS: { key: keyof Layers; label: string; title: string }[] = [
+const LAYER_LABELS: { key: keyof ChartLayers; label: string; title: string }[] = [
   { key: "expiry", label: "Expiry", title: "P&L if held to the nearest expiry" },
   { key: "target", label: "Target", title: "P&L on the target date (Black-76 at today's IV)" },
   { key: "fill", label: "Fill", title: "Shade profit and loss zones" },
   { key: "breakeven", label: "BE", title: "Break-even lines" },
   { key: "band", label: "±1σ", title: "Expected one-standard-deviation move to expiry" },
   { key: "oi", label: "OI", title: "Open interest per strike (calls + puts)" },
+  { key: "ivDown", label: "IV −5%", title: "Target-date curve with every leg's IV five vol points lower (dashed)" },
+  { key: "ivUp", label: "IV +5%", title: "Target-date curve with every leg's IV five vol points higher (dashed)" },
 ];
+const IV_SHIFT = 0.05;
 const ZOOMS = [1, 2, 4] as const;
 
 export function Tile({ label, value, sub, tone, testId, title }: { label: string; value: string; sub?: string | undefined; tone?: "profit" | "loss" | "warning" | "muted" | undefined; testId?: string | undefined; title?: string | undefined }) {
@@ -35,11 +40,14 @@ export function Tile({ label, value, sub, tone, testId, title }: { label: string
 
 export function GreeksStrip({ a }: { a: StrategyAnalysis }) {
   const g = a.result?.greeks;
+  const margin = a.result ? marginEstimate(a.result) : null;
+  const lots = a.legs.reduce((s, l) => s + Math.abs(l.lots), 0);
   const items: [string, string, string][] = [
     ["Δ", g ? fmtDelta(g.delta) : "—", "Position delta · units of the underlying"],
     ["Γ", g ? fmtGamma(g.gamma) : "—", "Delta change per 1 USD move"],
-    ["Θ", g ? fmtMoney(g.theta, a.money, { signed: true }) : "—", "Time decay per calendar day"],
-    ["ν", g ? fmtVega(g.vega) : "—", "P&L per 1 vol point"],
+    ["Θ / day", g ? fmtMoney(g.theta, a.money, { signed: true }) : "—", "Time decay per calendar day"],
+    ["ν / 1% IV", g ? fmtVega(g.vega) : "—", "P&L per 1 vol point"],
+    ["Margin est.", margin === null ? "—" : fmtMoney(margin, a.money), "Worst expiry loss for defined-risk strategies; the exchange margin replaces it once filled"],
   ];
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1 px-3 py-1.5 font-mono text-2xs" data-testid="greeks-strip">
@@ -49,7 +57,7 @@ export function GreeksStrip({ a }: { a: StrategyAnalysis }) {
           <span className={cn(v.startsWith("−") || v.startsWith("-") ? "text-loss" : "text-foreground")}>{v}</span>
         </span>
       ))}
-      <span className="ml-auto text-muted-foreground">{a.result ? "greeks at spot · Black-76" : ""}</span>
+      <span className="ml-auto text-muted-foreground" data-testid="greeks-basis">{a.result ? `${a.money.currency} per strategy · ${lots} ${lots === 1 ? "lot" : "lots"} · greeks at spot · Black-76` : ""}</span>
     </div>
   );
 }
@@ -58,7 +66,8 @@ export function PayoffPanel() {
   const a = useStrategyAnalysis();
   const setTarget = useUiStore((s) => s.setTarget);
   const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
-  const [layers, setLayers] = useState<Layers>({ expiry: true, target: true, fill: true, oi: false, band: true, breakeven: true });
+  const layers = useUiStore((s) => s.chartLayers);
+  const setChartLayer = useUiStore((s) => s.setChartLayer);
   const [zoom, setZoom] = useState<(typeof ZOOMS)[number]>(1);
   const [hover, setHover] = useState<number | null>(null);
   const { result, spot, money, legs } = a;
@@ -80,12 +89,23 @@ export function PayoffPanel() {
     return [Math.max(full[0], spot - half), Math.min(full[1], spot + half)];
   }, [result, spot, zoom]);
 
+  // IV ±5 % target-date curves (HC-WS-083): the worker prices the same price axis on the target date with every leg's sigma shifted
+  const ivPrices = useMemo(() => (result ? result.points.map((p) => p.price) : []), [result]);
+  const ivOptions = (shift: number, on: boolean): ScenarioOptions | null => (on && result && spot !== null ? { prices: ivPrices, dates: [result.targetMs], ivShift: shift, mode: "pnl", defaultIv: 0.5, settlementHourUtc: settlementHourUtc(a.asset) } : null);
+  const ivUp = useScenario(a.pricingLegs, ivOptions(IV_SHIFT, layers.ivUp));
+  const ivDown = useScenario(a.pricingLegs, ivOptions(-IV_SHIFT, layers.ivDown));
+  const ivUpRow = ivUp.grid?.values[0] ?? null;
+  const ivDownRow = ivDown.grid?.values[0] ?? null;
   const frame = useMemo<PayoffChartFrame | null>(() => {
     if (!result || spot === null) return null;
-    const pts = result.points.filter((p) => p.price >= range[0] && p.price <= range[1]);
+    const idx = result.points.map((_, i) => i).filter((i) => result.points[i]!.price >= range[0] && result.points[i]!.price <= range[1]);
+    const pts = idx.map((i) => result.points[i]!);
+    const pick = (row: readonly number[] | null) => (row && row.length === result.points.length ? idx.map((i) => row[i] ?? null) : null);
     const sigma = result.expectedMove;
     return {
       points: pts,
+      ivUp: layers.ivUp ? pick(ivUpRow) : null,
+      ivDown: layers.ivDown ? pick(ivDownRow) : null,
       spot,
       breakevens: result.breakevens,
       band: Number.isFinite(sigma) && sigma > 0 ? [spot - sigma, spot + sigma] : null,
@@ -98,7 +118,7 @@ export function PayoffPanel() {
       fmtMoney: (v) => fmtMoneyCompact(v, money),
       ghost: a.before?.points ?? null,
     };
-  }, [result, spot, range, a.targetPrice, a.targetDays, layers, oi, money, a.before]);
+  }, [result, spot, range, a.targetPrice, a.targetDays, layers, oi, money, a.before, ivUpRow, ivDownRow]);
 
   if (legs.length === 0) {
     return (
@@ -130,6 +150,13 @@ export function PayoffPanel() {
   const priceStep = spot ? cleanStep(spot * 0.001) : 1;
   const hoverPnl = hover !== null && result ? { exp: pnlAt(result.points, hover, "pnlExpiry"), tgt: pnlAt(result.points, hover, "pnlTarget") } : null;
   const spotZone = result && spot !== null ? spotZoneAt(result, spot, money) : null;
+  // analytics strip extras (HC-WS-081): return on the margin and the margin against the strategy's notional
+  const margin = result ? marginEstimate(result) : null;
+  const notional = spot !== null && a.lotSize ? spot * Number(a.lotSize) * a.legs.reduce((s, l) => s + Math.abs(l.lots), 0) : null;
+  const maxRoi = result && margin !== null && margin > 0 && Number.isFinite(result.maxProfit) ? result.maxProfit / margin : null;
+  const riskPct = margin !== null && notional ? (margin / notional) * 100 : null;
+  const targetDate = fmtDate(new Date(a.nowMs + a.targetDays * 86_400_000).toISOString().slice(0, 10));
+  const priceTicks = spot === null ? [] : [0.8, 0.9, 1, 1.1, 1.2].map((k) => ({ k, price: spot * k }));
 
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="payoff-panel" data-tour="payoff-panel" data-state={result ? "ready" : a.error ? "error" : "pending"} data-adjusting={a.adjusting ? "true" : undefined}>
@@ -169,9 +196,18 @@ export function PayoffPanel() {
           <span className="text-muted-foreground">Nearest expiry </span>
           <span className="num">{result && Number.isFinite(result.daysToNearestExpiry) ? `${result.daysToNearestExpiry.toFixed(1)}d` : "—"}</span>
         </span>
+        <span title="Max profit ÷ margin estimate">
+          <span className="text-muted-foreground">Max ROI </span>
+          <span className="num" data-testid="max-roi">{maxRoi === null ? (result && !Number.isFinite(result.maxProfit) ? "∞" : "—") : `${(maxRoi * 100).toFixed(0)}%`}</span>
+        </span>
+        <span title="Worst expiry loss for defined-risk strategies · share of the strategy's notional (spot × lots × lot size)">
+          <span className="text-muted-foreground">Margin </span>
+          <span className="num" data-testid="strip-margin">{margin === null ? "—" : fmtMoney(margin, money)}</span>
+          {riskPct !== null ? <span className="micro"> risk {riskPct.toFixed(1)}%</span> : null}
+        </span>
         {hoverPnl ? (
-          <span className="num ml-auto" data-testid="hover-readout">
-            {fmtStrike(String(Math.round(hover ?? 0)))} · exp {fmtMoney(hoverPnl.exp, money, { signed: true })} · target {fmtMoney(hoverPnl.tgt, money, { signed: true })}
+          <span className="num ml-auto" data-testid="hover-readout" title="target date @ price (from spot) · P&L on the target date · P&L at expiry">
+            {targetDate} @ {fmtStrike(String(Math.round(hover ?? 0)))} {spot ? `${((hover ?? 0) / spot - 1) * 100 >= 0 ? "+" : ""}${(((hover ?? 0) / spot - 1) * 100).toFixed(1)}%` : ""} · {fmtMoney(hoverPnl.tgt, money, { signed: true })} · exp {fmtMoney(hoverPnl.exp, money, { signed: true })}
           </span>
         ) : a.error ? (
           <span className="ml-auto text-loss">{a.error}</span>
@@ -180,7 +216,7 @@ export function PayoffPanel() {
       <div className="flex items-center gap-1 px-3 pt-2">
         <span className="micro mr-1">Layers</span>
         {LAYER_LABELS.map((l) => (
-          <button key={l.key} type="button" aria-pressed={layers[l.key]} title={l.title} onClick={() => setLayers((s) => ({ ...s, [l.key]: !s[l.key] }))} className={cn("rounded border px-1.5 py-0.5 text-2xs", layers[l.key] ? "border-foreground/40 text-foreground" : "border-border text-muted-foreground")} data-testid={`layer-${l.key}`}>
+          <button key={l.key} type="button" aria-pressed={layers[l.key]} title={l.title} onClick={() => setChartLayer(l.key, !layers[l.key])} className={cn("rounded border px-1.5 py-0.5 text-2xs", layers[l.key] ? "border-foreground/40 text-foreground" : "border-border text-muted-foreground")} data-testid={`layer-${l.key}`}>
             {l.label}
           </button>
         ))}
@@ -193,7 +229,7 @@ export function PayoffPanel() {
       </div>
       <div className="relative min-h-[260px] flex-1">
         {frame ? (
-          <PayoffChart frame={frame} onHover={setHover} className="absolute inset-0 px-1" />
+          <PayoffChart frame={frame} onHover={setHover} onSelect={(p) => setTarget({ price: Math.round(p) })} className="absolute inset-0 px-1" />
         ) : (
           <div className="grid h-full place-items-center text-xs text-muted-foreground" data-testid="payoff-waiting">
             {spot === null ? "Waiting for the spot price…" : a.error ? "Pricing failed for these legs" : "Pricing…"}
@@ -201,6 +237,7 @@ export function PayoffPanel() {
         )}
       </div>
       <div className="grid grid-cols-1 gap-2 px-3 py-2 sm:grid-cols-2" data-testid="target-controls">
+        <div className="flex flex-col gap-0.5">
         <label className="flex items-center gap-2 text-2xs">
           <span className="micro w-[72px] shrink-0">Target price</span>
           <input type="range" min={spot ? Math.round(spot * 0.8) : 0} max={spot ? Math.round(spot * 1.2) : 1} step={priceStep} value={a.targetPrice} onChange={(e) => setTarget({ price: Number(e.target.value) })} className="flex-1 accent-[hsl(var(--curve))]" aria-label="Target price" data-testid="target-price" disabled={spot === null} />
@@ -209,6 +246,13 @@ export function PayoffPanel() {
             spot
           </button>
         </label>
+        <div className="flex justify-between gap-1 pl-[80px] pr-1 font-mono text-[9px] text-muted-foreground" data-testid="price-ticks">
+          {priceTicks.map((t) => (
+            <span key={t.k} className={cn(t.k === 1 && "text-spot")} title={fmtStrike(String(Math.round(t.price)))}>{t.k === 1 ? "SPOT" : `${t.k > 1 ? "+" : "−"}${Math.round(Math.abs(t.k - 1) * 100)}%`}</span>
+          ))}
+        </div>
+        </div>
+        <div className="flex flex-col gap-0.5">
         <label className="flex items-center gap-2 text-2xs">
           <span className="micro w-[72px] shrink-0">Target date</span>
           <input type="range" min={0} max={Math.max(0, dte)} step={1} value={Math.min(a.targetDays, Math.max(0, dte))} onChange={(e) => setTarget({ days: Number(e.target.value) })} className="flex-1 accent-[hsl(var(--curve))]" aria-label="Target days ahead" data-testid="target-days" disabled={dte === 0} />
@@ -217,6 +261,12 @@ export function PayoffPanel() {
             expiry
           </button>
         </label>
+        <div className="flex justify-between gap-1 pl-[80px] pr-1 font-mono text-[9px] text-muted-foreground" data-testid="date-ticks">
+          <span title={fmtDate(new Date(a.nowMs).toISOString().slice(0, 10))}>Today</span>
+          {dte > 3 ? <span>{fmtDate(new Date(a.nowMs + Math.round(dte / 2) * 86_400_000).toISOString().slice(0, 10))}</span> : null}
+          <span title={fmtDate(new Date(a.nowMs + dte * 86_400_000).toISOString().slice(0, 10))}>Expiry</span>
+        </div>
+        </div>
       </div>
       <GreeksStrip a={a} />
     </div>

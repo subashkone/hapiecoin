@@ -2,7 +2,7 @@
 // Live chain panel (HC-WS-107): expiry chips from the gateway / env, subscribe to
 // chain:delta_india:<asset>:<expiry>, render snap + q frames with designed empty, stale and error states.
 // The table itself (layout, range, keyboard) is ChainTable; this panel owns expiry selection and the states.
-import { Button, EmptyState, cn, toast } from "@hapiecoin/ui";
+import { Button, EmptyState, cn, toast, useDensity } from "@hapiecoin/ui";
 import { type Quote, chainTopic } from "@hapiecoin/schema";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo } from "react";
@@ -50,6 +50,8 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
   const openOptionDetail = useUiStore((s) => s.openOptionDetail);
   const { data: settings } = useSettings();
   const lotSize = settings?.lotSizes[asset];
+  const { density } = useDensity(); // HC-WS-066: 36 px rows comfortable, 28 px compact
+  const rowHeight = density === "compact" ? 28 : 36;
 
   useEffect(() => {
     if (chain?.stale && topic) gw.refresh(topic);
@@ -147,6 +149,7 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
           <ChainTable
             chain={chain}
             spot={spot?.price}
+            rowHeight={rowHeight}
             height={height}
             range={range}
             onRange={setChainRange}

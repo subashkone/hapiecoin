@@ -71,6 +71,13 @@ test.describe("HC-SH analyse header and live chain", () => {
     await expect(table).toHaveAttribute("data-rows", String(total));
     await page.getByTestId("chain-range-12").click();
     await expect(table).toHaveAttribute("data-rows", String(rows12));
+    // HC-WS-029 / 080 footer stats; HC-WS-075 the spot hairline; HC-WS-074 the Δ chips
+    await expect(page.getByTestId("chain-max-pain")).not.toHaveText("—");
+    await expect(page.getByTestId("chain-fwd")).not.toHaveText("—");
+    await expect(page.getByTestId("spot-hairline")).toContainText("SPOT");
+    await page.getByTestId("chain-delta-25").click();
+    await expect(page.getByText("25Δ strikes")).toBeVisible();
+    await expect(page.locator("[data-testid=chain-row][data-pulse=true]")).toHaveCount(2, { timeout: 1500 });
   });
 
   test("HC-WS-015 chain header stays pinned while scrolling; GAPS-2 calls and puts share the vertical scroll and mirror the horizontal one", async ({ page }) => {
@@ -273,6 +280,18 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     await expect(page.getByTestId("tile-net")).toContainText("credit received");
     await expect(page.getByTestId("payoff-chart")).toHaveAttribute("data-points", /^[1-9]\d+$/);
     await expect(page.getByTestId("win-zone")).toContainText("–");
+    // HC-WS-081 / 083 / 084: ROI and margin in the strip, the IV +5% layer, a click on the chart sets the target
+    await expect(page.getByTestId("max-roi")).not.toHaveText("—");
+    await expect(page.getByTestId("strip-margin")).toContainText("$");
+    await page.getByTestId("layer-ivUp").click();
+    await expect(page.getByTestId("layer-ivUp")).toHaveAttribute("aria-pressed", "true");
+    const slider = page.locator("[data-testid=target-controls] input[type=range]").first();
+    const before = await slider.inputValue();
+    const box = (await page.getByTestId("payoff-chart").boundingBox())!;
+    await page.mouse.click(box.x + box.width * 0.75, box.y + box.height * 0.5);
+    await expect.poll(async () => slider.inputValue()).not.toBe(before);
+    await page.getByTestId("target-price-reset").click();
+    await page.getByTestId("layer-ivUp").click();
     // HC-WS-007 the chain's expiry chip carries the leg dot
     await page.getByTestId("tab-chain").click();
     await expect(page.getByTestId("expiry-dot").first()).toBeVisible();

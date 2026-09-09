@@ -517,3 +517,39 @@ describe("HC-WS-107 ChainPanel", () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe("HC-WS-029 / HC-WS-074 / HC-WS-075 / HC-WS-080 footer stats, the Δ finder and the spot hairline", () => {
+  it("footer shows max pain, skew and forward; a Δ chip focuses the call row and pulses both hits; the hairline sits between the bracketing strikes", async () => {
+    const onRange = vi.fn();
+    renderWithProviders(<ChainTable {...tableProps({ range: 0, onRange })} />);
+    expect(screen.getByTestId("chain-max-pain").textContent).not.toBe("—");
+    expect(screen.getByTestId("chain-fwd").textContent).not.toBe("—");
+    expect(screen.getByTestId("chain-stats").textContent).toContain("hover a row for B / S"); // shown from 2xl up
+    // spot 79,521 sits between 79,500 and 80,000: the hairline is one row boundary below the ATM row
+    const line = screen.getByTestId("spot-hairline");
+    expect(line.textContent).toContain("SPOT");
+    const above = rows.findIndex((r) => Number(r.strike) > Number(SPOT));
+    expect(above).toBeGreaterThan(0);
+    expect(line.dataset["y"]).toBe(String(above * 36));
+    const u = userEvent.setup();
+    await u.click(screen.getByTestId("chain-delta-25"));
+    const table = screen.getByTestId("chain-table");
+    await waitFor(() => expect(table.dataset["pulse"]).toMatch(/^\d+\|\d+$/)); // call|put strikes of the hit
+    const [callStrike, putStrike] = table.dataset["pulse"]!.split("|");
+    expect(Number(callStrike)).toBeGreaterThan(Number(putStrike)); // OTM call above, OTM put below
+    expect(Number(table.dataset["focusIndex"])).toBe(rows.findIndex((r) => r.strike === callStrike));
+    const pulsing = screen.getAllByTestId("chain-row").filter((r) => r.dataset["pulse"] === "true");
+    for (const r of pulsing) expect([callStrike, putStrike]).toContain(r.dataset["strike"]); // only the hits pulse
+    expect(onRange).not.toHaveBeenCalled(); // every strike was already shown
+    // a listed strike equal to spot has no hairline (the ATM band alone marks it)
+    const { unmount } = renderWithProviders(<ChainTable {...tableProps({ spot: rows[above - 1]!.strike, range: 0 })} />);
+    expect(screen.queryAllByTestId("spot-hairline")).toHaveLength(1); // only the first table's
+    unmount();
+  });
+  it("a Δ hit outside the ±range widens the range to every strike first", async () => {
+    const onRange = vi.fn();
+    renderWithProviders(<ChainTable {...tableProps({ range: 6, onRange })} />);
+    await userEvent.setup().click(screen.getByTestId("chain-delta-10"));
+    expect(onRange).toHaveBeenCalledWith(0);
+  });
+});

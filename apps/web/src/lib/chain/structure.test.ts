@@ -84,3 +84,25 @@ describe("HC-WS-088 scenario axes, target lookup and shading", () => {
     expect(termShape([null, null])).toBeNull();
   });
 });
+
+describe("HC-WS-029, 074, 080 chain footer stats and the Δ finder", () => {
+  it("chainStats: max pain, 25Δ skew and the ATM forward from put-call parity", async () => {
+    const { chainStats, nearestDelta, DELTA_CHIPS } = await import("./structure");
+    const st = chainStats(rows, 79521);
+    expect(st.maxPain).not.toBeNull();
+    expect(Number.isFinite(st.maxPain!)).toBe(true);
+    expect(st.skewPts === null || Number.isFinite(st.skewPts)).toBe(true);
+    // fwd = K + C − P at the strike nearest spot with both marks
+    const atm = [...rows].filter((r) => r.call && r.put).sort((a, b) => Math.abs(Number(a.strike) - 79521) - Math.abs(Number(b.strike) - 79521))[0]!;
+    expect(st.fwd).toBeCloseTo(Number(atm.strike) + Number(atm.call!.mark) - Number(atm.put!.mark), 6);
+    expect(chainStats([], 79521)).toEqual({ maxPain: null, skewPts: null, fwd: null });
+    expect(chainStats(rows, null).fwd).toBeNull();
+    expect(DELTA_CHIPS).toEqual([10, 16, 25, 50]);
+    const hit = nearestDelta(rows, 0.25);
+    expect(hit.call && hit.put).toBeTruthy();
+    expect(Math.abs(hit.call!.delta - 0.25)).toBeLessThan(0.15);
+    expect(Math.abs(hit.put!.delta + 0.25)).toBeLessThan(0.15);
+    expect(Number(hit.call!.strike)).toBeGreaterThan(Number(hit.put!.strike)); // OTM call above, OTM put below
+    expect(nearestDelta(rows.map((r) => ({ strike: r.strike, call: r.call ? { ...r.call, greeks: undefined } : undefined, put: r.put ? { ...r.put, greeks: undefined } : undefined })), 0.25)).toEqual({ call: null, put: null });
+  });
+});

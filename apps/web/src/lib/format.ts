@@ -39,6 +39,14 @@ export function fmtOi(oi: string | undefined): string {
   return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
+/** Open interest as a plain integer with thousands separators ("10,276"; HC-WS-076). */
+export function fmtOiFull(oi: string | undefined): string {
+  if (oi === undefined) return "—";
+  const n = Number(oi);
+  if (!Number.isFinite(n)) return "—";
+  return Math.round(n).toLocaleString("en-US");
+}
+
 /** Gamma per unit → 6 dp (HC-WS-021). */
 export function fmtGamma(gamma: number | undefined): string {
   if (gamma === undefined || !Number.isFinite(gamma)) return "—";
