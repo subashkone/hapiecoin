@@ -107,6 +107,29 @@ for (const theme of ["dark", "light"] as const) {
       await page.screenshot({ path: `${DIR}/analytics-overview-${theme}.png`, fullPage: true });
     });
 
+    test(`HC-MA-038 /analytics/markets, HC-MA-041 /analytics/derivatives, HC-MA-060 /analytics/liquidations and HC-MA-084 /analytics/coin/BTC ${theme}`, async ({ page, request }) => {
+      await seedUser(request, { email: `ma3-${theme}@example.com` });
+      await signIn(page, `ma3-${theme}@example.com`);
+      await page.evaluate((t) => {
+        localStorage.setItem("hapiecoin.theme", t);
+      }, theme);
+      await page.goto("/analytics/markets?compare=BTC,ETH");
+      await expect(page.getByTestId("table-screener")).toHaveAttribute("data-rows", "10", { timeout: 15_000 });
+      await expect(page.getByTestId("compare-grid")).toHaveAttribute("data-count", "2");
+      await page.screenshot({ path: `${DIR}/analytics-markets-${theme}.png`, fullPage: true });
+      await page.goto("/analytics/derivatives");
+      await expect(page.getByTestId("arb-count")).toHaveText("10 of 10 coins", { timeout: 15_000 });
+      await expect(page.getByTestId("chart-ls")).toHaveAttribute("data-state", "ready");
+      await page.screenshot({ path: `${DIR}/analytics-derivatives-${theme}.png`, fullPage: true });
+      await page.goto("/analytics/liquidations");
+      await expect(page.getByTestId("liq-feed")).toHaveAttribute("data-rows", "40", { timeout: 15_000 });
+      await page.screenshot({ path: `${DIR}/analytics-liquidations-${theme}.png`, fullPage: true });
+      await page.goto("/analytics/coin/BTC");
+      await expect(page.getByTestId("table-coin-funding")).toHaveAttribute("data-rows", "3", { timeout: 15_000 });
+      await expect(page.getByTestId("chart-taker")).toHaveAttribute("data-state", "ready");
+      await page.screenshot({ path: `${DIR}/analytics-coin-${theme}.png`, fullPage: true });
+    });
+
     test(`HC-PB-042 /payoff-preview ${theme}`, async ({ page }) => {
       await page.goto("/payoff-preview");
       await page.evaluate((t) => {

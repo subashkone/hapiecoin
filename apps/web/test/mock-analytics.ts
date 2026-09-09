@@ -1,8 +1,9 @@
 // Deterministic analytics snapshots for unit tests and Playwright (ADR-038): the same shapes the ingest service
 // writes, generated from a seeded random walk so charts and tables have realistic, stable data.
-import { type AnalyticsDataset, type AnalyticsSnapshot, type MarketRow, type OverviewData, type SeriesPoint, analyticsKey, fearGreedLabel } from "@hapiecoin/schema";
+import { type AnalyticsDataset, type AnalyticsSnapshot, type FundingData, type LiquidationEvent, type LiquidationsData, type LongShortData, type MarketRow, type OpenInterestData, type OverviewData, type SeriesPoint, type TakerVolumeData, analyticsKey, fearGreedLabel, fundingApr } from "@hapiecoin/schema";
 
-const NOW = Date.UTC(2026, 8, 9, 9, 0, 0);
+/** Snapshot time: the current minute, so windowed views (1h liquidations, 12h heatmap) hold real events; values stay seeded. */
+const NOW = Math.floor(Date.now() / 60e3) * 60e3;
 function rng(seed: number): () => number {
   let s = seed >>> 0 || 1;
   return () => {
@@ -60,9 +61,88 @@ export function mockOverview(): OverviewData {
   };
 }
 
-/** Every snapshot keyed the way the API serves them; `symbol` datasets use BTC only. */
+const VENUES = ["binance", "bybit", "okx"] as const;
+const coinIndex = (symbol: string) => Math.max(0, COINS.findIndex(([s]) => s === symbol));
+const OI_USD = [8.4e9, 3.1e9, 9e8, 6e8, 5e8, 4e8, 3e8, 2.5e8, 2e8, 1.5e8];
+
+/** Funding per venue with 8 h history and the OI-weighted series (PR 5.3 pages). */
+export function mockFunding(symbol: string): FundingData {
+  const i = coinIndex(symbol);
+  const r = rng(400 + i);
+  const oi = OI_USD[i]!;
+  const base = (r() - 0.4) * 0.0003;
+  const venues = VENUES.map((venue, k) => {
+    const rate = Number((base + (k - 1) * 0.00004).toFixed(6));
+    return { venue, rate, predicted: Number((rate * 1.05).toFixed(6)), nextFundingAt: Math.ceil(NOW / 288e5) * 288e5, apr: fundingApr(rate), oiUsd: oi * [0.55, 0.3, 0.15][k]! };
+  });
+  const history = VENUES.map((venue, k) => ({ venue, points: walk(500 + i * 3 + k, 90, 288e5, 0.0001 + k * 0.00002, 0.3, -0.001).map((p) => ({ t: p.t, v: Number((p.v - 0.00005).toFixed(6)) })) }));
+  const oiWeighted = history[0]!.points.map((p, j) => ({ t: p.t, v: Number((history.reduce((s, h) => s + (h.points[j]?.v ?? 0), 0) / history.length).toFixed(6)) }));
+  return { symbol, venues, history, oiWeighted };
+}
+export function mockOpenInterest(symbol: string): OpenInterestData {
+  const i = coinIndex(symbol);
+  const r = rng(600 + i);
+  const oi = OI_USD[i]!;
+  const shares = [0.55, 0.3, 0.15];
+  const venues = VENUES.map((venue, k) => ({ venue, oiUsd: oi * shares[k]!, oiBase: (oi * shares[k]!) / COINS[i]![2], change1h: (r() - 0.5) * 0.02, change24h: (r() - 0.45) * 0.1 }));
+  const history = VENUES.map((venue, k) => ({ venue, points: walk(700 + i * 3 + k, 288, 5 * 60e3, oi * shares[k]! * 0.97, 0.004) }));
+  const aggregated = history[0]!.points.map((p, j) => ({ t: p.t, v: history.reduce((s, h) => s + (h.points[j]?.v ?? 0), 0) }));
+  return { symbol, venues, totalUsd: oi, history, aggregated };
+}
+export function mockLongShort(symbol: string): LongShortData {
+  const i = coinIndex(symbol);
+  const mk = (seed: number, start: number) => walk(seed, 168, 3600e3, start, 0.03, 0.3).map((p) => ({ t: p.t, v: Number(p.v.toFixed(2)) }));
+  const global = mk(800 + i, 1.1);
+  const topAccounts = mk(820 + i, 1.4);
+  const topPositions = mk(840 + i, 0.9);
+  const latest = (s: SeriesPoint[]) => {
+    const ratio = s[s.length - 1]!.v;
+    return { long: Number((ratio / (1 + ratio)).toFixed(4)), short: Number((1 / (1 + ratio)).toFixed(4)), ratio };
+  };
+  return { symbol, venue: "binance", period: "1h", global, topAccounts, topPositions, latest: { global: latest(global), topAccounts: latest(topAccounts), topPositions: latest(topPositions) } };
+}
+export function mockTakerVolume(symbol: string): TakerVolumeData {
+  const i = coinIndex(symbol);
+  const r = rng(900 + i);
+  const vol = COINS[i]![3] * 0.03;
+  const points = walk(950 + i, 168, 3600e3, vol / 24, 0.2).map((p) => {
+    const b = 0.4 + r() * 0.25;
+    return { t: p.t, buy: p.v * b, sell: p.v * (1 - b) };
+  });
+  return { symbol, venue: "binance", period: "1h", points };
+}
+/** 24 h of hourly buckets plus 60 recent events spread over the last 6 h across three venues. */
+export function mockLiquidations(): LiquidationsData {
+  const r = rng(1100);
+  const bucketMs = 3600e3;
+  const start = Math.floor((NOW - 24 * 3600e3) / bucketMs) * bucketMs;
+  const buckets: LiquidationsData["buckets"] = [];
+  for (let t = start; t <= NOW; t += bucketMs) buckets.push({ t, longUsd: 2e6 + r() * 1.4e7, shortUsd: 1e6 + r() * 6e6 });
+  const recent: LiquidationEvent[] = [];
+  for (let k = 0; k < 60; k++) {
+    const c = COINS[Math.floor(r() * COINS.length)]!;
+    const side = r() > 0.4 ? "long" : "short";
+    const usd = Math.round(800 + Math.pow(r(), 3) * 900_000);
+    const priceAt = c[2] * (1 + (side === "long" ? -1 : 1) * r() * 0.03);
+    recent.push({ t: NOW - Math.floor(r() * 6 * 3600e3), venue: VENUES[k % 3]!, symbol: c[0], side, price: priceAt, qty: usd / priceAt, usd });
+  }
+  recent.sort((a, b) => b.t - a.t);
+  const bySymbol = COINS.map(([symbol], i) => ({ symbol, longUsd: OI_USD[i]! * 0.016, shortUsd: OI_USD[i]! * 0.004 }));
+  const total = bySymbol.reduce((s, x) => ({ longUsd: s.longUsd + x.longUsd, shortUsd: s.shortUsd + x.shortUsd }), { longUsd: 0, shortUsd: 0 });
+  const byVenue = VENUES.map((venue, k) => ({ venue, longUsd: total.longUsd * [0.6, 0.25, 0.15][k]!, shortUsd: total.shortUsd * [0.6, 0.25, 0.15][k]! }));
+  return { windowMs: 24 * 3600e3, bucketMs, buckets, byVenue, bySymbol, total, recent };
+}
+
+/** Every snapshot keyed the way the API serves them; the per-symbol datasets cover all ten mock coins. */
 export function mockAnalyticsSnapshots(): Map<string, AnalyticsSnapshot> {
   const map = new Map<string, AnalyticsSnapshot>();
+  for (const [symbol] of COINS) {
+    map.set(analyticsKey("funding", symbol), envelope("funding", analyticsKey("funding", symbol), "Binance · Bybit · OKX", mockFunding(symbol)));
+    map.set(analyticsKey("open-interest", symbol), envelope("open-interest", analyticsKey("open-interest", symbol), "Binance · Bybit · OKX", mockOpenInterest(symbol)));
+    map.set(analyticsKey("long-short", symbol), envelope("long-short", analyticsKey("long-short", symbol), "Binance", mockLongShort(symbol)));
+    map.set(analyticsKey("taker-volume", symbol), envelope("taker-volume", analyticsKey("taker-volume", symbol), "Binance", mockTakerVolume(symbol)));
+  }
+  map.set(analyticsKey("liquidations"), envelope("liquidations", analyticsKey("liquidations"), "Binance · Bybit · OKX", mockLiquidations(), 15_000));
   map.set(analyticsKey("overview"), envelope("overview", analyticsKey("overview"), "Binance · Bybit · OKX · alternative.me · CoinGecko", mockOverview()));
   map.set(analyticsKey("markets"), envelope("markets", analyticsKey("markets"), "CoinGecko", { rows: mockMarketRows(), global: { totalMarketCap: 2.9e12, volume24h: 9e10, btcDominance: 55.1, ethDominance: 12.4 } }, 600_000));
   const fg = mockOverview().fearGreedHistory;

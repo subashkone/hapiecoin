@@ -29,6 +29,8 @@ export interface DataTableProps<R> {
   columns?: boolean;
   csv?: string;
   star?: (row: R) => string;
+  /** Checkbox column for compare mode (HC-MA-110): `max` selected at once, the rest are disabled. */
+  select?: { get: (row: R) => string; selected: readonly string[]; onToggle: (id: string) => void; max?: number; label?: string };
   rowHref?: (row: R) => string;
   limit?: number;
   maxH?: number;
@@ -131,6 +133,7 @@ export function DataTable<R>(p: DataTableProps<R>) {
         <THead className="sticky top-0 z-10 bg-card">
           <Tr>
             {p.star ? <Th className="w-7" aria-label="Watch" /> : null}
+            {p.select ? <Th className="w-9 text-2xs">{p.select.label ?? "Cmp"}</Th> : null}
             {visible.map((c) => (
               <Th key={c.key} numeric={c.align === "r"} className={cn(c.align === "c" && "text-center", c.sort !== false && "cursor-pointer select-none hover:text-foreground")} onClick={c.sort === false ? undefined : () => onSort(c.key)} aria-sort={sortKey === c.key ? (dir === "asc" ? "ascending" : "descending") : "none"} data-testid={`th-${c.key}`}>
                 {c.label}
@@ -142,7 +145,7 @@ export function DataTable<R>(p: DataTableProps<R>) {
         <TBody>
           {shown.length === 0 ? (
             <Tr>
-              <Td colSpan={visible.length + (p.star ? 1 : 0)} className="py-6 text-center text-muted-foreground">
+              <Td colSpan={visible.length + (p.star ? 1 : 0) + (p.select ? 1 : 0)} className="py-6 text-center text-muted-foreground">
                 {q ? `No rows match “${q}”` : (p.empty ?? "No data")}
               </Td>
             </Tr>
@@ -150,6 +153,10 @@ export function DataTable<R>(p: DataTableProps<R>) {
             shown.map((r) => {
               const href = p.rowHref?.(r);
               const sym = p.star?.(r);
+              const sel = p.select;
+              const selId = sel?.get(r);
+              const selOn = selId !== undefined && sel !== undefined && sel.selected.includes(selId);
+              const selFull = sel !== undefined && sel.max !== undefined && sel.selected.length >= sel.max;
               return (
                 <Tr key={p.rowKey(r)} className={cn(href && "cursor-pointer")} onClick={href ? () => router.push(href) : undefined} data-testid="table-row" data-key={p.rowKey(r)}>
                   {sym !== undefined ? (
@@ -157,6 +164,11 @@ export function DataTable<R>(p: DataTableProps<R>) {
                       <button type="button" onClick={(e) => { e.stopPropagation(); toggleWatch(sym); }} aria-pressed={watch.includes(sym)} aria-label={watch.includes(sym) ? `Unwatch ${sym}` : `Watch ${sym}`} className={cn("text-[13px]", watch.includes(sym) ? "text-accent" : "text-muted-foreground/60 hover:text-foreground")} data-testid="star">
                         {watch.includes(sym) ? "★" : "☆"}
                       </button>
+                    </Td>
+                  ) : null}
+                  {sel !== undefined && selId !== undefined ? (
+                    <Td className="w-9">
+                      <input type="checkbox" checked={selOn} disabled={!selOn && selFull} onClick={(e) => e.stopPropagation()} onChange={() => sel.onToggle(selId)} aria-label={`Compare ${selId}`} title={!selOn && selFull ? `Up to ${sel.max} at once` : "Compare"} data-testid="select-row" />
                     </Td>
                   ) : null}
                   {visible.map((c) => (

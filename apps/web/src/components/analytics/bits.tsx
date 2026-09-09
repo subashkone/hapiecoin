@@ -4,8 +4,9 @@
 import type { AnalyticsSnapshot } from "@hapiecoin/schema";
 import { Badge, cn } from "@hapiecoin/ui";
 import Link from "next/link";
-import type { ReactNode } from "react";
-import { ago, fearGreedTone, heatAlpha, pct, toneClass, usdCompact } from "@/lib/analytics/format";
+import { Fragment, type ReactNode } from "react";
+import { type HeatRow } from "@/lib/analytics/derive";
+import { ago, fearGreedTone, heatAlpha, pct, price as fmtPrice, toneClass, usdCompact } from "@/lib/analytics/format";
 
 export function Tile({ label, value, sub, extra, tone, testId, className }: { label: ReactNode; value: ReactNode; sub?: ReactNode; extra?: ReactNode; tone?: "profit" | "loss" | "warning" | "muted"; testId?: string; className?: string }) {
   return (
@@ -148,6 +149,65 @@ export function ComingSoon({ title, why, gap = 55 }: { title: string; why: strin
         <div className="micro mt-2">Coming soon · GAPS #{gap}</div>
       </div>
     </div>
+  );
+}
+
+/** Horizontal bars with the value at the right (liquidations by exchange, HC-MA-063). */
+export function HBars({ items, fmt = usdCompact, testId }: { items: { label: string; value: number; color?: string }[]; fmt?: (v: number) => string; testId?: string }) {
+  const max = items.reduce((m, i) => Math.max(m, i.value), 0) || 1;
+  return (
+    <div className="space-y-1.5" data-testid={testId ?? "hbars"} data-count={items.length}>
+      {items.map((i) => (
+        <div key={i.label} className="grid grid-cols-[72px_minmax(0,1fr)_64px] items-center gap-2 text-2xs">
+          <span className="truncate">{i.label}</span>
+          <span className="h-2 overflow-hidden rounded bg-muted">
+            <i className="block h-full rounded" style={{ width: `${((i.value / max) * 100).toFixed(1)}%`, background: i.color ?? "hsl(var(--curve))" }} />
+          </span>
+          <span className="num text-right">{fmt(i.value)}</span>
+        </div>
+      ))}
+      {items.length === 0 ? <div className="text-2xs text-muted-foreground">No venue has reported yet.</div> : null}
+    </div>
+  );
+}
+
+/** Price-band × hour grid of captured liquidations (HC-MA-085): shorts red above the price, longs green below. */
+export function LiqHeatmap({ rows, hours, max, count, now = Date.now() }: { rows: HeatRow[]; hours: number[]; max: number; count: number; now?: number }) {
+  const hm = (t: number) => `${String(new Date(t).getHours()).padStart(2, "0")}:00`;
+  return (
+    <div data-testid="liq-heatmap" data-count={count}>
+      <div className="grid gap-px font-mono text-[10px]" style={{ gridTemplateColumns: `64px repeat(${hours.length}, minmax(0, 1fr))` }}>
+        {rows.map((r) => (
+          <Fragment key={r.band}>
+            <div className="pr-1 text-right text-muted-foreground" title={`${r.band > 0 ? "+" : ""}${r.band}%`}>{fmtPrice(r.level)}</div>
+            {r.cells.map((v, i) => (
+              <div key={i} className="h-5 rounded-sm" style={{ background: `hsl(var(${r.band > 0 ? "--loss" : "--profit"}) / ${(v > 0 && max > 0 ? 0.12 + (v / max) * 0.8 : 0.06).toFixed(2)})` }} title={`${r.band > 0 ? "Short" : "Long"} liquidations ${r.band > 0 ? "+" : ""}${r.band}% · ${hm(hours[i] ?? now)} · ${usdCompact(v)}`} />
+            ))}
+          </Fragment>
+        ))}
+        <div />
+        {hours.map((t, i) => (
+          <div key={t} className="text-center text-muted-foreground">{i % 2 === 0 ? hm(t) : ""}</div>
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-3 text-2xs text-muted-foreground">
+        <span><i className="mr-1 inline-block h-2 w-2 rounded-sm bg-loss/80" />Short liquidations (above price)</span>
+        <span><i className="mr-1 inline-block h-2 w-2 rounded-sm bg-profit/80" />Long liquidations (below price)</span>
+        <span className="ml-auto">{count === 0 ? "No liquidations captured for this coin in the window" : `${count} events · from the captured feed`}</span>
+      </div>
+    </div>
+  );
+}
+
+/** Native coin selector (HC-MA-041): the tracked symbols, keyboard friendly, no portal. */
+export function CoinSelect({ value, symbols, names, onChange, testId }: { value: string; symbols: readonly string[]; names?: Record<string, string>; onChange: (s: string) => void; testId?: string }) {
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} className="h-7 rounded border border-border bg-card px-2 font-mono text-xs" aria-label="Coin" data-testid={testId ?? "coin-select"}>
+      {symbols.map((s) => (
+        <option key={s} value={s}>{names?.[s] ? `${s} · ${names[s]}` : s}</option>
+      ))}
+      {symbols.includes(value) ? null : <option value={value}>{value}</option>}
+    </select>
   );
 }
 

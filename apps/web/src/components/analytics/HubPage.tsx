@@ -16,12 +16,12 @@ type Tab = (typeof TABS)[number];
 const SECTORS: Record<string, "layer-1" | "layer-2" | "defi" | "memes"> = { BTC: "layer-1", ETH: "layer-1", SOL: "layer-1", ADA: "layer-1", AVAX: "layer-1", BNB: "layer-1", LTC: "layer-1", XRP: "layer-1", DOGE: "memes", SHIB: "memes", PEPE: "memes", LINK: "defi", UNI: "defi", AAVE: "defi", ARB: "layer-2", OP: "layer-2", MATIC: "layer-2", POL: "layer-2" };
 export const sectorOf = (symbol: string): string => SECTORS[symbol] ?? "other";
 
-export type HubRow = MarketRow & Partial<Pick<OverviewSymbol, "funding" | "oiChange1h" | "oiChange24h" | "liq24hUsd" | "oiUsd">>;
+export type HubRow = MarketRow & Partial<Omit<OverviewSymbol, "symbol">>;
 export function mergeRows(markets: MarketRow[], symbols: OverviewSymbol[]): HubRow[] {
   const by = new Map(symbols.map((s) => [s.symbol, s]));
   return markets.map((m) => {
     const s = by.get(m.symbol);
-    return s ? { ...m, funding: s.funding, oiChange1h: s.oiChange1h, oiChange24h: s.oiChange24h, liq24hUsd: s.liq24hUsd, oiUsd: s.oiUsd } : m;
+    return s ? { ...m, oiUsd: s.oiUsd, oiChange1h: s.oiChange1h, oiChange24h: s.oiChange24h, funding: s.funding, lsRatio: s.lsRatio, liq24hUsd: s.liq24hUsd, venues: s.venues } : m;
   });
 }
 

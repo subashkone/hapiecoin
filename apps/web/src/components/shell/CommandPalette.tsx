@@ -46,8 +46,11 @@ export function buildCommands(opts: {
   if (opts.loggedIn) {
     list.push(
       nav("nav:analyse", "/analyse", "Analyse workspace", ["options chain", "builder", "payoff"]),
-      nav("nav:analytics-hub", "/analytics/hub", "Analytics: Markets Hub", ["analytics", "markets", "open interest", "liquidations", "hub"]),
+      nav("nav:analytics-hub", "/analytics/hub", "Analytics: Markets Hub", ["analytics", "markets", "open interest", "hub"]),
       nav("nav:analytics-overview", "/analytics/overview", "Analytics: Futures overview", ["analytics", "futures", "long short", "fear greed"]),
+      nav("nav:analytics-markets", "/analytics/markets", "Analytics: Markets screener", ["analytics", "screener", "compare", "watchlist"]),
+      nav("nav:analytics-derivatives", "/analytics/derivatives", "Analytics: Derivatives", ["analytics", "funding", "open interest", "arbitrage"]),
+      nav("nav:analytics-liquidations", "/analytics/liquidations", "Analytics: Liquidations", ["analytics", "liquidations", "feed", "long short"]),
       nav("nav:subscription", "/subscription", "Subscription: change plan", ["plan", "upgrade", "billing", "renew"]),
       nav("nav:referrals", "/referrals", "Referrals: share link and earnings", ["refer", "commission", "invite", "share"]),
       ...(opts.admin

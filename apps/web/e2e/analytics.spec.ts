@@ -1,4 +1,5 @@
-// Market Analytics shell, Markets Hub, Futures overview and coin page (PR 5.2) on the mock API's analytics snapshots.
+// Market Analytics shell, Markets Hub, Futures overview, coin page (PR 5.2) and the screener, derivatives and
+// liquidations pages (PR 5.3) on the mock API's analytics snapshots.
 import { expect, seedUser, signIn, test } from "./fixtures";
 
 test.describe("HC-MA Market Analytics", () => {
@@ -23,8 +24,9 @@ test.describe("HC-MA Market Analytics", () => {
     await page.getByTestId("coin-watch").click();
     await expect(page.getByTestId("coin-watch")).toHaveAttribute("aria-pressed", "true");
     await page.getByTestId("coin-back").click();
-    await expect(page).toHaveURL(/\/analytics\/hub$/);
-    await expect(page.getByTestId("watch-strip")).toContainText("ETH");
+    await expect(page).toHaveURL(/\/analytics\/markets$/);
+    await page.getByTestId("section-hub").click();
+    await expect(page.getByTestId("watch-strip")).toContainText("ETH", { timeout: 15_000 });
     await page.getByTestId("section-whales").click();
     await expect(page.getByTestId("section-soon")).toHaveAttribute("data-release", "PR 5.4");
     await page.getByTestId("section-terminal").click();
@@ -89,5 +91,83 @@ test.describe("HC-MA Market Analytics", () => {
     await page.getByRole("combobox").fill("markets hub");
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/analytics\/hub$/);
+  });
+
+  test("HC-MA-038..040 / HC-MA-110..112 Markets screener: category chips, compare, hidden columns and the watchlist chip", async ({ page }) => {
+    await page.goto("/analytics/markets?category=layer-1");
+    await expect(page.getByTestId("markets-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("section-markets")).toHaveAttribute("aria-current", "page");
+    const table = page.getByTestId("table-screener");
+    await expect(table).toHaveAttribute("data-rows", "8");
+    await expect(page.getByTestId("th-change7d")).toHaveCount(0);
+    await page.getByTestId("select-row").nth(0).check();
+    await page.getByTestId("select-row").nth(1).check();
+    await page.getByTestId("select-row").nth(2).check();
+    await expect(page.getByTestId("compare-grid")).toHaveAttribute("data-count", "3");
+    await expect(page.getByTestId("select-row").nth(3)).toBeDisabled();
+    await page.getByTestId("compare-remove").first().click();
+    await expect(page.getByTestId("compare-grid")).toHaveAttribute("data-count", "2");
+    await page.getByTestId("category-chips").getByText("Memes").click();
+    await expect(page).toHaveURL(/category=memes$/);
+    await expect(table).toHaveAttribute("data-rows", "1");
+    await page.getByTestId("category-chips").getByText("All").click();
+    await expect(table).toHaveAttribute("data-rows", "10");
+    await page.getByTestId("watch-only").click();
+    await expect(page.getByText("Your watchlist is empty")).toBeVisible();
+    await page.getByTestId("watch-only").click();
+    await page.getByTestId("table-search").fill("sol");
+    await expect(table).toHaveAttribute("data-rows", "1");
+    await page.getByTestId("table-row").first().click();
+    await expect(page).toHaveURL(/\/analytics\/coin\/SOL$/);
+    await page.getByTestId("coin-compare").click();
+    await expect(page).toHaveURL(/\/analytics\/markets\?compare=SOL$/);
+    await expect(page.getByTestId("compare-grid")).toHaveAttribute("data-count", "1");
+  });
+
+  test("HC-MA-041..048 / HC-MA-113 Derivatives: coin selector, tiles, four timeframe charts, basis placeholder and the arbitrage table", async ({ page }) => {
+    await page.goto("/analytics/derivatives");
+    await expect(page.getByTestId("derivatives-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("tile-oi")).toContainText("$8.40B");
+    await expect(page.getByTestId("tile-funding")).toContainText("APR");
+    for (const id of ["chart-px", "chart-oi", "chart-funding", "chart-ls"]) await expect(page.getByTestId(id)).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("panel-basis").getByTestId("coming-soon")).toContainText("GAPS #57");
+    await expect(page.getByTestId("arb-count")).toHaveText("10 of 10 coins", { timeout: 15_000 });
+    await page.getByTestId("chart-funding").getByTestId("chart-tf").getByText("7D").click();
+    await expect(page.getByTestId("chart-funding")).toHaveAttribute("data-state", "ready");
+    await page.getByTestId("coin-select").selectOption("ETH");
+    await expect(page).toHaveURL(/symbol=ETH$/);
+    await expect(page.getByTestId("tile-oi")).toContainText("$3.10B", { timeout: 15_000 });
+    await page.getByText("Full coin analytics →").click();
+    await expect(page).toHaveURL(/\/analytics\/coin\/ETH$/);
+  });
+
+  test("HC-MA-060..066 / HC-MA-116 Liquidations: tiles, window chips, exchange bars, top coins and the feed filter; coin charts and tables", async ({ page }) => {
+    await page.goto("/analytics/liquidations");
+    await expect(page.getByTestId("liquidations-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("tile-ratio")).toContainText("top coin BTC");
+    await expect(page.getByTestId("chart-liq")).toHaveAttribute("data-state", "ready");
+    await page.getByTestId("liq-window").getByText("1h").click();
+    await expect(page.getByTestId("panel-liq")).toContainText("1h Liquidations Over Time");
+    await expect(page.getByTestId("liq-exchanges")).toHaveAttribute("data-count", "3");
+    await expect(page.getByTestId("table-liq-top")).toHaveAttribute("data-rows", "10");
+    await expect(page.getByTestId("liq-feed")).toHaveAttribute("data-rows", "40");
+    await page.getByTestId("liq-min").selectOption("500000");
+    await expect(page.getByTestId("liq-feed")).not.toHaveAttribute("data-rows", "40");
+    await page.getByTestId("table-search").fill("btc");
+    await expect(page.getByTestId("table-liq-top")).toHaveAttribute("data-rows", "1");
+    await page.getByTestId("table-row").first().click();
+    await expect(page).toHaveURL(/\/analytics\/coin\/BTC$/);
+    await expect(page.getByTestId("coin-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    for (const id of ["chart-pxoi", "chart-ls", "chart-funding", "chart-taker"]) await expect(page.getByTestId(id)).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("liq-heatmap")).toBeVisible();
+    await expect(page.getByTestId("table-coin-markets")).toHaveAttribute("data-rows", "3");
+    await expect(page.getByTestId("table-coin-funding")).toHaveAttribute("data-rows", "3");
+    await page.getByTestId("chart-pxoi").getByTestId("chart-tf").getByText("1D").click();
+    await expect(page.getByTestId("chart-pxoi")).toHaveAttribute("data-state", "ready");
+    // palette reaches the new pages (HC-MA-092)
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox").fill("liquidations");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/analytics\/liquidations$/);
   });
 });

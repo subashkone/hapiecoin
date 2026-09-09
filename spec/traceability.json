@@ -10103,7 +10103,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Filters rows by symbol/name as you type; empty state 'No coins match'",
-  "evidence": "bundle strings: Search coin..., Futures Markets Screener"
+  "evidence": "bundle strings: Search coin..., Futures Markets Screener — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): DataTable search on symbol + name in MarketsPage.tsx (`table-search`, placeholder 'Search coin…'); e2e analytics.spec 'Markets screener'"
  },
  {
   "id": "HC-MA-039",
@@ -10118,7 +10118,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Chips navigate to #/analytics/markets?category=<slug>; the query param selects the active chip and filters by coin sector (also reachable from Markets Hub → Categories)",
-  "evidence": "inferred from ?category= query in the original"
+  "evidence": "inferred from ?category= query in the original — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): `category-chips` (All / Layer 1 / Layer 2 / DeFi / Memes) push `?category=`; sectorOf() from HubPage; unknown values fall back to All"
  },
  {
   "id": "HC-MA-040",
@@ -10133,7 +10133,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Sortable; heat cells for 24h % and OI 24h %; L/S coloured by >1 / <1; row click opens #/analytics/coin/SYM; footer shows market count",
-  "evidence": "bundle strings: Coin, Price, 24h %, Market Cap, 24h Volume, Open Interest, OI 24h %, L/S Ratio"
+  "evidence": "bundle strings: Coin, Price, 24h %, Market Cap, 24h Volume, Open Interest, OI 24h %, L/S Ratio — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): screenerCols: Coin, Price, 24h %, Market Cap, 24h Volume, Open Interest, OI 24h %, L/S Ratio (from overview.lsRatio) + hidden 7d %, Funding, Liq 24h; row click → /analytics/coin/:symbol"
  },
  {
   "id": "HC-MA-041",
@@ -10148,7 +10148,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Changing the select re-renders every tile and chart for that coin (also honours ?symbol=)",
-  "evidence": "bundle strings: symbol, Coin"
+  "evidence": "bundle strings: symbol, Coin — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): CoinSelect of the tracked symbols sorted by OI (ten today; the mock's top-20 needs more ANALYTICS_SYMBOLS), BTC default, `?symbol=` kept in the URL; 'Full coin analytics →' link"
  },
  {
   "id": "HC-MA-042",
@@ -10158,12 +10158,12 @@
   "route": "/analytics/derivatives",
   "screen": "Derivatives",
   "feature": "Tiles: Open interest, 24h volume, Funding (OI-weighted, APR), L/S ratio · 24h",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "unit (pricing) · visual (screenshot diff)",
+  "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "From CG.mock.coins + derived per-coin series",
-  "evidence": "bundle strings: Open interest, 24h volume, Funding, L/S ratio · 24h"
+  "evidence": "bundle strings: Open interest, 24h volume, Funding, L/S ratio · 24h — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): derivatives-tiles: Open interest (venues count, Δ24h), 24h volume (perp taker sum when Binance serves it, else spot · CoinGecko), Funding (OI-weighted, APR), L/S ratio · 24h with L/S split"
  },
  {
   "id": "HC-MA-043",
@@ -10178,7 +10178,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "CG.mock.priceHistory(sym, 96) hourly closes with gradient fill and tooltip",
-  "evidence": "bundle strings: Close price, Close, url(#priceFill)"
+  "evidence": "bundle strings: Close price, Close, url(#priceFill) — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): chart-px area from the CoinGecko 7-day sparkline (sparklineSeries), timeframes 1D/7D only — no hourly price feed is ingested (ADR-040 §2)"
  },
  {
   "id": "HC-MA-044",
@@ -10193,7 +10193,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Per-coin OI random-walk derived from oiHistory scaled by the coin's OI share",
-  "evidence": "bundle strings: Aggregated · Binance · OKX · Bybit, url(#oiFill)"
+  "evidence": "bundle strings: Aggregated · Binance · OKX · Bybit, url(#oiFill) — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): chart-oi area from open-interest.aggregated; panel sub names the venues in the snapshot's source"
  },
  {
   "id": "HC-MA-045",
@@ -10208,7 +10208,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "60 × 8h funding bars, green positive / red negative, from CG.mock.fundingHistory offset by the coin's funding",
-  "evidence": "bundle strings: Funding, OI-weighted · %"
+  "evidence": "bundle strings: Funding, OI-weighted · % — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): chart-funding ± bars from funding.oiWeighted (colorNeg red), timeframes 7D/30D/90D/1Y (30D default; venue history ≤ 30 d, GAPS #56)"
  },
  {
   "id": "HC-MA-046",
@@ -10223,7 +10223,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Per-coin ratio series derived from lsHistory",
-  "evidence": "bundle strings: Global account ratio, L/S Ratio"
+  "evidence": "bundle strings: Global account ratio, L/S Ratio — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): chart-ls line from long-short.global with the 1.00 hline; empty state names Binance when the venue is unreachable (GAPS #57)"
  },
  {
   "id": "HC-MA-047",
@@ -10233,12 +10233,12 @@
   "route": "/analytics/derivatives",
   "screen": "Derivatives",
   "feature": "Chart: Basis · Perp/spot basis % · positive = contango (± bars)",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "unit (pricing) · e2e (Playwright)",
+  "test": "unit (pricing) · visual (screenshot diff)",
   "acceptance": "Amber bars for contango, red for backwardation, hourly",
-  "evidence": "bundle strings: Basis, Perp/spot basis % · positive = contango, hsl(var(--warning))"
+  "evidence": "bundle strings: Basis, Perp/spot basis % · positive = contango, hsl(var(--warning)) — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): ComingSoon 'Basis' (GAPS #57): needs mark + index price per venue from a tickers job"
  },
  {
   "id": "HC-MA-048",
@@ -10253,7 +10253,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "CG.mock.fundingArb; sortable, default Est. APR desc; Long/Short badges; row opens coin page",
-  "evidence": "bundle strings: Funding Rate Arbitrage, Cross-exchange funding spreads · long the negative leg, short the positive leg, Long leg, Short leg, Spread, Funding Δ, Est. APR, Min OI"
+  "evidence": "bundle strings: Funding Rate Arbitrage, Cross-exchange funding spreads · long the negative leg, short the positive leg, Long leg, Short leg, Spread, Funding Δ, Est. APR, Min OI — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): arbRows() over every tracked coin's funding snapshot (useAnalyticsMany): Coin, Long leg, Short leg, Spread (8h), Funding Δ (day), Est. APR, Min OI; sorted by APR; CSV"
  },
  {
   "id": "HC-MA-049",
@@ -10428,12 +10428,12 @@
   "route": "/analytics/liquidations",
   "screen": "Liquidations",
   "feature": "Tiles: Long Liquidations, Short Liquidations, Long / Short Ratio (24h)",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "From CG.mock.global long/short liq with share-of-total bars",
-  "evidence": "bundle strings: Long Liquidations, Short Liquidations, Long / Short Ratio"
+  "evidence": "bundle strings: Long Liquidations, Short Liquidations, Long / Short Ratio — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): liquidations-tiles from liquidations.total: Long, Short (% of total, split bars), Long / Short Ratio with total and top coin"
  },
  {
   "id": "HC-MA-061",
@@ -10448,7 +10448,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Stacked bars from CG.mock.liqHistory; tooltip shows long, short and total",
-  "evidence": "bundle strings: Liquidations Over Time, Aggregated across Binance · OKX · Bybit, Long Liq, Short Liq"
+  "evidence": "bundle strings: Liquidations Over Time, Aggregated across Binance · OKX · Bybit, Long Liq, Short Liq — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): chart-liq stacked Long Liq / Short Liq bars; title 'Nh Liquidations Over Time'; sub names the snapshot's venues"
  },
  {
   "id": "HC-MA-062",
@@ -10463,7 +10463,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Re-buckets the chart (5-minute buckets for 1h/4h, hourly for 12h/24h) and updates the panel title",
-  "evidence": "bundle strings: window, Scale"
+  "evidence": "bundle strings: window, Scale — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): liq-window chips 1h/4h/12h/24h (liqWindow: hourly buckets for 12h/24h, 5/15-minute bins of the newest events for 1h/4h with a buffer-reach note)"
  },
  {
   "id": "HC-MA-063",
@@ -10473,12 +10473,12 @@
   "route": "/analytics/liquidations",
   "screen": "Liquidations",
   "feature": "Liquidations by Exchange · 24h window (horizontal bars)",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "CG.mock.exchanges liq24h sorted desc",
-  "evidence": "bundle strings: by Exchange, window, vertical"
+  "evidence": "bundle strings: by Exchange, window, vertical — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): HBars from liquidations.byVenue (liq-exchanges)"
  },
  {
   "id": "HC-MA-064",
@@ -10493,7 +10493,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Sortable top-12 table; filter input narrows rows ('No coins' empty state); L/S Bias is a split bar with long %; row click opens coin page; link goes to the Markets screener",
-  "evidence": "bundle strings: Top Coins by Liquidation, h window · click row for full coin analytics, Filter coins..., No coins, Coin, Total, Long, Short, L/S Bias, View all markets →, /markets"
+  "evidence": "bundle strings: Top Coins by Liquidation, h window · click row for full coin analytics, Filter coins..., No coins, Coin, Total, Long, Short, L/S Bias, View all markets →, /markets — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): table-liq-top from liquidations.bySymbol: Coin, Total, Long, Short, L/S Bias (split + long share), 'Filter coins…' search, 12 rows, 'View all markets →'"
  },
  {
   "id": "HC-MA-065",
@@ -10508,7 +10508,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Rows (time, exchange, coin, Long/Short Liquidated badge, price, USD) from CG.mock.liqFeed; a new mock liquidation is prepended every 12 s with a flash while the screen is shown; the interval is cleared in hide()",
-  "evidence": "bundle strings: Live Liquidation Feed, · Binance · refreshes every 12s, Long Liquidated, Short Liquidated, Binance,OKX,Bybit"
+  "evidence": "bundle strings: Live Liquidation Feed, · Binance · refreshes every 12s, Long Liquidated, Short Liquidated, Binance,OKX,Bybit — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): liq-feed lists the newest 40 events (time, venue, coin, side badge, price, USD); new events since the last refresh are highlighted; sub reads '<source> · refreshes every Ns' from the snapshot TTL"
  },
  {
   "id": "HC-MA-066",
@@ -10523,7 +10523,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Filters the feed; shows 'No liquidations above $X' when nothing qualifies",
-  "evidence": "bundle strings: Min USD, No liquidations above $"
+  "evidence": "bundle strings: Min USD, No liquidations above $ — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): liq-min native select All/$1K/$10K/$50K/$100K/$500K; empty text 'No liquidations above $X'"
  },
  {
   "id": "HC-MA-067",
@@ -10793,7 +10793,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "All from CG2.coinSeries(symbol) (priceHistory + scaled global histories); crosshair tooltips",
-  "evidence": "inferred"
+  "evidence": "inferred — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): coin page charts: chart-pxoi (OI area + price line on the right axis, price from the CoinGecko sparkline aligned by alignTo), chart-ls, chart-liq (binEvents of the captured events, 1D/7D), chart-funding (± bars), chart-taker (buy up / sell down, 48 h)"
  },
  {
   "id": "HC-MA-085",
@@ -10803,12 +10803,12 @@
   "route": "/analytics/coin/:symbol",
   "screen": "Coin analytics",
   "feature": "Liquidation Heatmap (long vs short) grid",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "12h × ±5% price-level grid; short-liquidation levels above price in red, long levels below in green; cell title shows level and estimated USD",
-  "evidence": "inferred"
+  "evidence": "inferred — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): LiqHeatmap from liqHeatmap(): price bands ±1..±5 % × last 12 hours, shorts red above, longs green below, tooltip per cell, count of captured events; honest about its source (GAPS #58)"
  },
  {
   "id": "HC-MA-086",
@@ -10823,7 +10823,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Coin OI/volume split across CG.mock.exchanges; sortable; OI share bar",
-  "evidence": "inferred"
+  "evidence": "inferred — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): table-coin-markets from open-interest.venues + funding.venues: Exchange, Open Interest, OI 24h % (replaces 24h Vol: no per-venue volume is ingested), OI Share bar, Funding"
  },
  {
   "id": "HC-MA-087",
@@ -10838,7 +10838,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Heat-cell funding per exchange with predicted rate, annualised APR and countdown to the next 8h settlement",
-  "evidence": "inferred"
+  "evidence": "inferred — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): table-coin-funding: Exchange, Funding rate (heat), Predicted, APR, Next funding countdown (nextFundingIn)"
  },
  {
   "id": "HC-MA-088",
@@ -11183,7 +11183,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Cmp checkbox column; picking 1–3 coins shows a Compare panel above the table: normalised price lines (base 100, timeframe chips 1D–1Y, base-100 reference line) and a side-by-side stats table (Price, 24h/7d %, cap, volume, OI, OI 24h %, funding, L/S, liq, RSI) with the best value highlighted; ✕ removes a coin, Clear empties; a 4th coin is refused with a toast; state in CG.state.compare is shared with /terminal/spot; ?compare=1 opens the panel with a hint",
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): DataTable `select` column (Cmp, max 3, others disabled) → ComparePanel with ten metrics per coin, remove/clear, `?compare=` seed; coin page ⇄ Compare deep-links"
  },
  {
   "id": "HC-MA-111",
@@ -11198,7 +11198,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "★ Watchlist chip limits the screener to starred coins (empty state when none); stars in rows toggle the list",
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): `watch-only` chip filters on the persisted watchlist; empty text 'Your watchlist is empty — star coins to pin them here'"
  },
  {
   "id": "HC-MA-112",
@@ -11213,7 +11213,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Available through Columns ▾; CSV export respects visible columns",
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): screenerCols hidden: 7d %, Funding, Liq 24h; foot lists them; Columns ▾ restores"
  },
  {
   "id": "HC-MA-113",
@@ -11228,7 +11228,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Close price / OI / L/S / Basis: 1D–1Y; Funding: 7D–1Y at the native 8h step",
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): timeframe chips on close price (1D/7D), open interest, funding (7D..1Y) and long/short; basis is coming soon so four of five charts carry chips"
  },
  {
   "id": "HC-MA-114",
@@ -11273,7 +11273,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Filter box inside the table toolbar replaces the old panel input; window chips 1h/4h/12h/24h retained",
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): table-liq-top search + CSV (`liquidations-by-coin`)"
  },
  {
   "id": "HC-MA-117",
@@ -11348,7 +11348,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Per-coin seeded series; exchange tables get CSV",
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.3 (09 Sep 2026, ADR-040): chart-pxoi 1D/7D, chart-ls 1D..1Y, chart-liq 1D/7D, chart-funding 7D..1Y"
  },
  {
   "id": "HC-MT-001",
