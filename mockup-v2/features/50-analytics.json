@@ -389,15 +389,15 @@
   "feature": "'Deribit · Options' header with exchange toggle (Deribit / OKX / Binance / Bybit / Delta)",
   "how": "Selecting an exchange rescales tiles and the expiry chart by that exchange's share",
   "status": "working",
-  "evidence": "bundle strings: Deribit, Options, button"
+  "evidence": "bundle strings: Deribit, Options, button — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): OptionsPage header '<Exchange> · Options' with `options-exchange` chips (Deribit / Delta India) and `options-symbol` select (BTC / ETH); OKX / Binance / Bybit wait for verified tickers (GAPS #59)"
  },
  {
   "route": "/analytics/options",
   "screen": "Options",
   "feature": "Tiles: Total open interest, OI (contracts), 24h volume, Nearest expiry max pain",
   "how": "From CG.mock.optionsByExchange / optionsExpiries; includes put/call ratio and Δ 24h",
-  "status": "static",
-  "evidence": "bundle strings: Total open interest, OI (contracts), 24h volume, Nearest expiry max pain"
+  "status": "working",
+  "evidence": "bundle strings: Total open interest, OI (contracts), 24h volume, Nearest expiry max pain — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): options-tiles: Total open interest (USD, venue share), OI in underlying units with put/call ratio, 24h volume with listed-option count, Nearest expiry max pain with the underlying price"
  },
  {
   "route": "/analytics/options",
@@ -405,15 +405,15 @@
   "feature": "Chart: Call/put OI per expiry with max pain price · Deribit",
   "how": "Grouped Call OI (green) / Put OI (red) bars per expiry with Max Pain labels above each group and a dashed Max Pain line on the right axis; tooltip per expiry",
   "status": "working",
-  "evidence": "bundle strings: Call/put OI per expiry with max pain price · Deribit, Call OI, Put OI, Max Pain, hsl(var(--heat-up) / 0.75), hsl(var(--heat-down) / 0.75)"
+  "evidence": "bundle strings: Call/put OI per expiry with max pain price · Deribit, Call OI, Put OI, Max Pain, hsl(var(--heat-up) / 0.75), hsl(var(--heat-down) / 0.75) — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): chart-expiry: Call OI / Put OI bars per expiry with the Max Pain line on the right axis and $ labels above each expiry; data from the `options` dataset (Deribit book summary, Delta tickers; maxPain() in @hapiecoin/schema)"
  },
  {
   "route": "/analytics/options",
   "screen": "Options",
   "feature": "Open Interest by Exchange donut with share legend",
   "how": "Donut of optionsByExchange oiUsd using the bundle's exchange palette; centre shows total OI",
-  "status": "static",
-  "evidence": "bundle strings: Open Interest by Exchange, hsl(38 92% 50%), hsl(142 71% 45%), hsl(0 72% 52%), hsl(280 60% 60%), hsl(190 70% 50%)"
+  "status": "working",
+  "evidence": "bundle strings: Open Interest by Exchange, hsl(38 92% 50%), hsl(142 71% 45%), hsl(0 72% 52%), hsl(280 60% 60%), hsl(190 70% 50%) — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): Donut of OI share per venue with legend and total in the centre"
  },
  {
   "route": "/analytics/options",
@@ -421,7 +421,7 @@
   "feature": "Table: Options Markets by Exchange (Exchange, OI (USD), Share, OI Δ 24h, 24h Volume, Vol Δ 24h)",
   "how": "Sortable; heat cells for the Δ columns",
   "status": "working",
-  "evidence": "bundle strings: Options Markets by Exchange, OI, market share and volume, Exchange, OI (USD), Share, OI Δ 24h, 24h Volume, Vol Δ 24h"
+  "evidence": "bundle strings: Options Markets by Exchange, OI, market share and volume, Exchange, OI (USD), Share, OI Δ 24h, 24h Volume, Vol Δ 24h — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): table-options-exchanges: Exchange, OI (USD), Share, OI (units), Put/Call, 24h Volume, Expiries; CSV. OI Δ 24h and Vol Δ 24h need a kept history (not in this release)"
  },
  {
   "route": "/analytics/etf",
@@ -429,7 +429,7 @@
   "feature": "Bitcoin / Ethereum toggle",
   "how": "Switches every tile, chart and table between CG.mock.etfs (BTC) and CG.mock.ethEtfs (ETH); ETH flows derived from etfFlows",
   "status": "working",
-  "evidence": "bundle strings: Bitcoin, Ethereum, bitcoin, ethereum, button"
+  "evidence": "bundle strings: Bitcoin, Ethereum, bitcoin, ethereum, button — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): etf-asset chips Bitcoin / Ethereum switch the page title and tiles"
  },
  {
   "route": "/analytics/etf",
@@ -437,39 +437,39 @@
   "feature": "Tiles: 7-day net flow, Total AUM, Funds tracked",
   "how": "Sum of last 7 flows, sum of fund AUM (+ coins held), count of funds",
   "status": "static",
-  "evidence": "bundle strings: 7-day net flow, Total AUM, Funds tracked"
+  "evidence": "bundle strings: 7-day net flow, Total AUM, Funds tracked — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): tiles render with '—' and name the missing provider (GAPS #55)"
  },
  {
   "route": "/analytics/etf",
   "screen": "ETF",
   "feature": "Chart: Daily net inflow/outflow (USD) with price overlay · last 60 sessions",
   "how": "Heat-coloured ± bars (inflow green / outflow red) with the asset price line on the right axis; tooltip",
-  "status": "working",
-  "evidence": "bundle strings: Daily net inflow/outflow (USD) with price overlay · last 60 sessions, Net flow, Price, hsl(var(--heat-up)), hsl(var(--heat-down))"
+  "status": "static",
+  "evidence": "bundle strings: Daily net inflow/outflow (USD) with price overlay · last 60 sessions, Net flow, Price, hsl(var(--heat-up)), hsl(var(--heat-down)) — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): ComingSoon panel in the Net Flows slot (GAPS #55)"
  },
  {
   "route": "/analytics/etf",
   "screen": "ETF",
   "feature": "Chart: Cumulative Net Flow (area)",
   "how": "Running total of flows since launch",
-  "status": "working",
-  "evidence": "bundle strings: Cumulative Net Flow, Cumulative, url(#cumFill)"
+  "status": "static",
+  "evidence": "bundle strings: Cumulative Net Flow, Cumulative, url(#cumFill) — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): ComingSoon panel (GAPS #55)"
  },
  {
   "route": "/analytics/etf",
   "screen": "ETF",
   "feature": "Table: Per-fund AUM, holdings and daily change (Ticker, Fund, Type, Price, 24h %, Volume, AUM, Holdings, Δ 24h)",
   "how": "Sortable; Spot badge; heat cell for 24h %; holdings in BTC/ETH; Δ 24h coloured",
-  "status": "working",
-  "evidence": "bundle strings: Per-fund AUM, holdings and daily change, Ticker, Fund, Type, Price, 24h %, Volume, Holdings, Δ 24h, hold24"
+  "status": "static",
+  "evidence": "bundle strings: Per-fund AUM, holdings and daily change, Ticker, Fund, Type, Price, 24h %, Volume, Holdings, Δ 24h, hold24 — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): ComingSoon panel in the funds-table slot (GAPS #55)"
  },
  {
   "route": "/analytics/etf",
   "screen": "ETF",
   "feature": "Table: Grayscale Holdings · Trust holdings & premium/discount (Asset, Holdings, Value, Premium, Δ 30d)",
   "how": "Grayscale funds from both ETF lists; premium and Δ 30d as heat cells",
-  "status": "working",
-  "evidence": "bundle strings: Grayscale Holdings, Trust holdings & premium/discount, Asset, Holdings, Value, Premium, Δ 30d"
+  "status": "static",
+  "evidence": "bundle strings: Grayscale Holdings, Trust holdings & premium/discount, Asset, Holdings, Value, Premium, Δ 30d — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): ComingSoon panel: Grayscale trusts need the issuer NAV feed"
  },
  {
   "route": "/analytics/liquidations",
@@ -581,7 +581,7 @@
   "feature": "Fear & Greed Index · Crypto market sentiment · daily: gauge + 90-day area chart with coloured bands",
   "how": "Gauge from fearGreedNow; chart of CG.mock.fearGreed with Extreme Fear/Fear/Greed/Extreme Greed background bands; tooltip shows value and label",
   "status": "working",
-  "evidence": "bundle strings: Fear & Greed Index, Crypto market sentiment · daily, Extreme Fear, Fear, Neutral, Greed, Extreme Greed, hsl(0 72% 50% / 0.5), hsl(142 71% 40% / 0.5), url(#fgFill)"
+  "evidence": "bundle strings: Fear & Greed Index, Crypto market sentiment · daily, Extreme Fear, Fear, Neutral, Greed, Extreme Greed, hsl(0 72% 50% / 0.5), hsl(142 71% 40% / 0.5), url(#fgFill) — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): SentimentPage: Gauge from the fear-greed dataset + banded chart-fg (extreme fear / fear / greed / extreme greed) with 7D/30D/90D/1Y"
  },
  {
   "route": "/analytics/sentiment",
@@ -589,7 +589,7 @@
   "feature": "Bull Market Peak Indicators · Cycle-top signal checklist (8 rows with hit / not-hit dots)",
   "how": "Pi Cycle Top, AHR999 > 4, Puell > 4, 2Y MA ×5, Rainbow top band, RSI 1w > 90, F&G > 90, Coinbase premium spike — each evaluated from CG.mock.cycle / coins / fearGreed / coinbasePremium with the current reading and a 'N / 8 triggered' badge",
   "status": "working",
-  "evidence": "bundle strings: Bull Market Peak Indicators, Cycle-top signal checklist"
+  "evidence": "bundle strings: Bull Market Peak Indicators, Cycle-top signal checklist — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): Checklist from cycleChecklist(): Pi Cycle, 2Y MA ×5, rainbow top band, RSI 1w > 90, F&G > 90, Coinbase premium spike computed; AHR999 and Puell shown as n/a (GAPS #59); summary 'n / known triggered'"
  },
  {
   "route": "/analytics/sentiment",
@@ -597,7 +597,7 @@
   "feature": "Chart: Pi Cycle Top Indicator · 111DMA crossing 2×350DMA has marked cycle tops",
   "how": "Log-scale lines for price, 111DMA and 350DMA×2 from CG.mock.cycleHistory",
   "status": "working",
-  "evidence": "bundle strings: Pi Cycle Top Indicator, 111DMA crossing 2×350DMA has marked cycle tops, 111DMA, 350DMA×2"
+  "evidence": "bundle strings: Pi Cycle Top Indicator, 111DMA crossing 2×350DMA has marked cycle tops, 111DMA, 350DMA×2 — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): chart-pi: price, 111DMA and 350DMA×2 on a log axis from the `cycle` dataset (Bybit spot daily closes, 1000-day window)"
  },
  {
   "route": "/analytics/sentiment",
@@ -605,23 +605,23 @@
   "feature": "Chart: Bitcoin Rainbow Chart · Log-regression valuation bands",
   "how": "Nine coloured regression bands (log fit of cycleHistory price) using the bundle's band palette with the price line; tooltip names the current band",
   "status": "working",
-  "evidence": "bundle strings: Bitcoin Rainbow Chart, Log-regression valuation bands, hsl(240 60% 55%) … hsl(0 72% 45%)"
+  "evidence": "bundle strings: Bitcoin Rainbow Chart, Log-regression valuation bands, hsl(240 60% 55%) … hsl(0 72% 45%) — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): chart-rainbow: nine filled regions from the log-linear fit × multipliers (fit over the 1000-day window, labelled as such; GAPS #59) with the price line"
  },
  {
   "route": "/analytics/sentiment",
   "screen": "Sentiment",
   "feature": "Chart: AHR999 Accumulation Index · < 0.45 bottom zone · > 4 top zone",
   "how": "Log-scale area with 0.45 (green) and 4 (red) reference lines",
-  "status": "working",
-  "evidence": "bundle strings: AHR999 Accumulation Index, < 0.45 bottom zone · > 4 top zone, ahr999"
+  "status": "static",
+  "evidence": "bundle strings: AHR999 Accumulation Index, < 0.45 bottom zone · > 4 top zone, ahr999 — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): ComingSoon: AHR999 constants not verified (GAPS #59)"
  },
  {
   "route": "/analytics/sentiment",
   "screen": "Sentiment",
   "feature": "Chart: Puell Multiple · Miner revenue vs 365d average",
   "how": "Amber area with 0.5 / 4 reference lines",
-  "status": "working",
-  "evidence": "bundle strings: Puell Multiple, Miner revenue vs 365d average, Puell, hsl(var(--warning))"
+  "status": "static",
+  "evidence": "bundle strings: Puell Multiple, Miner revenue vs 365d average, Puell, hsl(var(--warning)) — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): ComingSoon: Puell needs miner revenue (GAPS #59)"
  },
  {
   "route": "/analytics/sentiment",
@@ -629,7 +629,7 @@
   "feature": "Chart: 2-Year MA Multiplier · Buy below 2Y MA · sell above 2Y MA ×5",
   "how": "Log-scale price, 2Y MA (green) and 2Y MA ×5 (red) lines",
   "status": "working",
-  "evidence": "bundle strings: 2-Year MA Multiplier, Buy below 2Y MA · sell above 2Y MA ×5, 2Y MA, 2Y MA ×5"
+  "evidence": "bundle strings: 2-Year MA Multiplier, Buy below 2Y MA · sell above 2Y MA ×5, 2Y MA, 2Y MA ×5 — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): chart-ma2: price, 2Y MA and 2Y MA ×5 on a log axis; note when the window is shorter than 730 days"
  },
  {
   "route": "/analytics/sentiment",
@@ -637,7 +637,7 @@
   "feature": "Chart: Coinbase Premium · US institutional spot pressure vs Binance · hourly (± bars)",
   "how": "CG.mock.coinbasePremium, green premium / red discount bars",
   "status": "working",
-  "evidence": "bundle strings: Coinbase Premium, US institutional spot pressure vs Binance · hourly, Premium, url(#premFill)"
+  "evidence": "bundle strings: Coinbase Premium, US institutional spot pressure vs Binance · hourly, Premium, url(#premFill) — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): chart-premium: hourly Coinbase BTC-USD minus Binance BTC-USDT via CoinGecko exchange tickers (Coinbase is blocked on the user's network); history kept by the ingest (`appendSeries`); 1D/7D/30D"
  },
  {
   "route": "/analytics/sentiment",
@@ -645,7 +645,7 @@
   "feature": "Table: RSI Screener · Multi-timeframe relative strength · green = oversold, red = overbought (Coin, Price, RSI 15m/1h/4h/12h/24h/1w)",
   "how": "Top 25 coins; each RSI value is a heat cell (green ≤35, red ≥65); sortable per timeframe; row opens coin page",
   "status": "working",
-  "evidence": "bundle strings: RSI Screener, Multi-timeframe relative strength · green = oversold, red = overbought, RSI 15m, RSI 1h, RSI 4h, RSI 12h, RSI 24h, RSI 1w"
+  "evidence": "bundle strings: RSI Screener, Multi-timeframe relative strength · green = oversold, red = overbought, RSI 15m, RSI 1h, RSI 4h, RSI 12h, RSI 24h, RSI 1w — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): table-rsi: Coin, Price, RSI 15m/1h/4h/12h/1d/1w (Wilder RSI(14) from Bybit perpetual candles) with RsiCell heat; star · search · Columns ▾ · CSV; row → coin page"
  },
  {
   "route": "/analytics/coin/:symbol",
@@ -936,16 +936,16 @@
   "how": "Call/put OI bars in profit/loss tints, Max Pain dashed in --primary with per-expiry labels; CSV on the exchange table",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): Max Pain line and labels in hsl(var(--primary)) (amber) on chart-expiry"
  },
  {
   "route": "/analytics/etf",
   "screen": "ETF",
   "feature": "Timeframe chips on Net Flows and Cumulative Net Flow",
   "how": "Net flows 7D/30D/90D/1Y (daily bins, generated flows for ranges beyond the mock), cumulative 30D/90D/1Y; funds table has Columns ▾ + CSV",
-  "status": "working",
+  "status": "static",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): chips are described in the panel subtitle; the charts are coming soon (GAPS #55)"
  },
  {
   "route": "/analytics/liquidations",
@@ -972,7 +972,7 @@
   "how": "Cycle charts keep 180D as the default; Pi Cycle/Rainbow/2Y MA stay 180D",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): chart-fg 7D/30D/90D/1Y; cycle-tf 30D/90D/180D/ALL on Pi Cycle, rainbow and 2Y MA; chart-premium 1D/7D/30D (AHR999/Puell chips wait with their panels)"
  },
  {
   "route": "/analytics/sentiment",
@@ -981,7 +981,7 @@
   "how": "Upgraded shared table",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.4a (09 Sep 2026, ADR-042): table-rsi star / search / Columns ▾ / CSV (DataTable)"
  },
  {
   "route": "/analytics/coin/:symbol",

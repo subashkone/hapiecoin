@@ -2,17 +2,20 @@ import { describe, expect, it } from "vitest";
 import { BinanceAdapter } from "./adapters/binance.js";
 import { BybitAdapter } from "./adapters/bybit.js";
 import { CoinGeckoAdapter } from "./adapters/coingecko.js";
+import { DeltaAdapter } from "./adapters/delta.js";
+import { DeribitAdapter } from "./adapters/deribit.js";
 import { FearGreedAdapter } from "./adapters/feargreed.js";
 import { OkxAdapter } from "./adapters/okx.js";
 import { JsonClient } from "./http.js";
-import { type Adapters, type JobContext, NoVenueError, buildFearGreed, buildFunding, buildLiquidations, buildLongShort, buildMarkets, buildOpenInterest, buildTakerVolume, sumSeries, weightedSeries } from "./jobs.js";
+import { type Adapters, type JobContext, NoVenueError, buildCycle, buildFearGreed, buildFunding, buildLiquidations, buildLongShort, buildMarkets, buildOpenInterest, buildOptions, buildPremium, buildRsi, buildTakerVolume, sumSeries, toError, weightedSeries } from "./jobs.js";
+import { MemoryStore } from "./store.js";
 import { LiquidationBuffer } from "./liquidations.js";
 import { FakeFetch } from "./test-support/fake-fetch.js";
-import { T0, bybit, healthyFetch, okx } from "./test-support/fixtures.js";
+import { KLINE_DAYS, LAST_CLOSE, T0, bybit, delta, deribit, healthyFetch, okx } from "./test-support/fixtures.js";
 
 function adapters(f: FakeFetch, coingecko = true): Adapters {
   const c = new JsonClient({ fetch: f.fetch, sleep: () => Promise.resolve() });
-  return { binance: new BinanceAdapter(c, "https://fapi"), bybit: new BybitAdapter(c, "https://bybit"), okx: new OkxAdapter(c, "https://okx"), coingecko: coingecko ? new CoinGeckoAdapter(c, "https://cg/api/v3", "k") : null, fearGreed: new FearGreedAdapter(c, "https://alt/fng/") };
+  return { binance: new BinanceAdapter(c, "https://fapi"), bybit: new BybitAdapter(c, "https://bybit"), okx: new OkxAdapter(c, "https://okx"), coingecko: coingecko ? new CoinGeckoAdapter(c, "https://cg/api/v3", "k") : null, fearGreed: new FearGreedAdapter(c, "https://alt/fng/"), deribit: new DeribitAdapter(c, "https://deribit/api/v2"), delta: new DeltaAdapter(c, "https://delta") };
 }
 const ctx = (f: FakeFetch, coingecko = true): JobContext => ({ adapters: adapters(f, coingecko), now: () => T0, ttlMs: 60_000 });
 
@@ -125,6 +128,63 @@ describe("[INGEST] dataset builders", () => {
     const none = await buildLiquidations(ctx(new FakeFetch().on("/api/v5/public/liquidation-orders", { body: okx.error })), ["BTC"], new LiquidationBuffer(), { bybit: false });
     expect(none.source).toBe("no venue connected");
     expect(none.stale).toBe(true);
+  });
+  it("options: per-expiry OI and max pain per venue, expired and non-option rows skipped, one venue may fail", async () => {
+    const s = await buildOptions(ctx(healthyFetch()), "BTC");
+    if (s.dataset !== "options") throw new Error("wrong dataset");
+    expect(s.source).toBe("Deribit · Delta India");
+    const d = s.data.venues.find((v) => v.venue === "deribit")!;
+    expect(d.instruments).toBe(6);
+    expect(d.expiries.map((e) => e.label)).toEqual(["25SEP26", "30OCT26"]);
+    expect(d.expiries[0]).toMatchObject({ callOi: 500, putOi: 150, strikes: 3, maxPain: 80000 });
+    expect(d.expiries[0]?.expiry).toBe(Date.UTC(2026, 8, 25, 8));
+    expect(d.oiBase).toBe(660);
+    expect(d.oiUsd).toBe(660 * 80000);
+    expect(d.volume24hUsd).toBe(6500);
+    expect(d.putCallOi).toBeCloseTo(150 / 510, 9);
+    const dl = s.data.venues.find((v) => v.venue === "delta")!;
+    expect(dl).toMatchObject({ instruments: 3, oiBase: 2, underlyingPrice: 80100, putCallOi: 0.5 / 1.5 });
+    expect(toError("boom").message).toBe("boom");
+    expect(toError(new Error("kept"))).toBeInstanceOf(Error);
+    expect(dl.expiries[0]?.expiry).toBe(Date.UTC(2026, 8, 25, 12));
+    const oneDown = await buildOptions(ctx(healthyFetch().on("/v2/tickers", { status: 500, text: "down" })), "BTC");
+    expect(oneDown.source).toBe("Deribit");
+    const noPrice = healthyFetch().on("/api/v2/public/get_book_summary_by_currency", { body: { result: [{ instrument_name: "BTC-25SEP26-80000-C", open_interest: 1, volume_usd: 0, underlying_price: null }] } }).on("/v2/tickers", { body: delta.error });
+    await expect(buildOptions(ctx(noPrice), "BTC")).rejects.toThrow(/options: every venue failed.*no underlying price/);
+    const puts = await buildOptions(ctx(healthyFetch().on("/api/v2/public/get_book_summary_by_currency", { body: { result: [{ instrument_name: "ETH-25SEP26-3000-P", open_interest: 1, volume_usd: 0, underlying_price: 3000 }] } }).on("/v2/tickers", { body: delta.error })), "ETH");
+    if (puts.dataset !== "options") throw new Error("wrong dataset");
+    expect(puts.data.venues[0]?.putCallOi).toBeNull();
+    expect(deribit.empty.result).toEqual([]);
+  });
+  it("cycle: averages need history, the fit covers every close; rsi per timeframe; premium keeps its own history", async () => {
+    const c = await buildCycle(ctx(healthyFetch()));
+    if (c.dataset !== "cycle") throw new Error("wrong dataset");
+    expect(c.data.points).toHaveLength(KLINE_DAYS);
+    expect(c.data.points.at(-1)?.close).toBe(LAST_CLOSE);
+    expect(c.data.points[0]?.ma111).toBeNull();
+    expect(c.data.points.at(-1)?.ma111).toBeGreaterThan(0);
+    expect(c.data.points.at(-1)?.ma350x2).toBeGreaterThan(c.data.points.at(-1)!.ma111!);
+    expect(c.data.points.at(-1)?.ma2y).toBeNull();
+    expect(c.data.points.at(-1)?.ma2yX5).toBeNull();
+    expect(c.data.points.at(-1)?.fit).toBeGreaterThan(100);
+    expect(c.data.windowDays).toBe(KLINE_DAYS);
+    await expect(buildCycle(ctx(healthyFetch().on("/v5/market/kline", { body: { retCode: 0, result: { list: [] } } })))).rejects.toThrow(/only 0 daily closes/);
+    const r = await buildRsi(ctx(healthyFetch()), ["BTC", "ETH"]);
+    if (r.dataset !== "rsi") throw new Error("wrong dataset");
+    expect(r.data.rows).toHaveLength(2);
+    expect(r.data.rows[0]?.rsi["1w"]).toBe(100); // climbing closes
+    expect(r.data.rows[0]?.price).toBe(LAST_CLOSE);
+    await expect(buildRsi(ctx(healthyFetch().on("/v5/market/kline", { body: bybit.error })), ["BTC"])).rejects.toBeInstanceOf(NoVenueError);
+    await expect(buildRsi(ctx(healthyFetch().on("/v5/market/kline", { body: { retCode: 0, result: { list: [] } } })), ["BTC"])).rejects.toThrow(/rsi: every venue failed/); // no candles → no row
+    const store = new MemoryStore();
+    const p = await buildPremium(ctx(healthyFetch()), store);
+    if (p.dataset !== "premium") throw new Error("wrong dataset");
+    expect(p.data).toMatchObject({ coinbaseUsd: 80050, binanceUsd: 80000, premiumUsd: 50 });
+    expect(p.data.points).toEqual([{ t: Math.floor(T0 / 3_600_000) * 3_600_000, v: 50 }]);
+    const again = await buildPremium(ctx(healthyFetch()), store);
+    expect(again.dataset === "premium" ? again.data.points : []).toHaveLength(1); // same hour overwrites
+    await expect(buildPremium(ctx(healthyFetch(), false), store)).rejects.toThrow("COINGECKO_API_KEY");
+    await expect(buildPremium(ctx(healthyFetch().on("/api/v3/exchanges/gdax/tickers", { body: { tickers: [] } })), store)).rejects.toThrow(/no BTC\/USD ticker on gdax/);
   });
   it("rejects a snapshot that fails the schema", async () => {
     const bad = healthyFetch().on("/fng/", { body: { data: [{ value: "50", timestamp: "-1" }] } });

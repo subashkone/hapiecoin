@@ -58,11 +58,11 @@ describe("[INGEST] Scheduler", () => {
     expect(s.statuses()[0]?.runs).toBe(1);
     resolve(snap());
     await first;
-    const broken = new Scheduler({ store: { get: () => Promise.reject(new Error("redis gone")), set: () => Promise.resolve(), close: () => Promise.resolve() }, log: createLogger("debug", (l) => lines.push(l)), setTimer: () => 0, clearTimer: () => undefined });
+    const broken = new Scheduler({ store: { get: () => Promise.reject(new Error("redis gone")), set: () => Promise.resolve(), appendSeries: () => Promise.resolve([]), close: () => Promise.resolve() }, log: createLogger("debug", (l) => lines.push(l)), setTimer: () => 0, clearTimer: () => undefined });
     broken.add({ name: "x", intervalMs: 1, run: () => Promise.reject(new Error("no")) });
     await broken.tick("x");
     expect(lines.some((l) => l.includes("could not mark snapshot stale"))).toBe(true);
-    const thrown = new Scheduler({ store: { get: () => Promise.resolve(null), set: () => Promise.resolve(), close: () => Promise.resolve() }, log: createLogger("silent"), setTimer: () => 0, clearTimer: () => undefined });
+    const thrown = new Scheduler({ store: { get: () => Promise.resolve(null), set: () => Promise.resolve(), appendSeries: () => Promise.resolve([]), close: () => Promise.resolve() }, log: createLogger("silent"), setTimer: () => 0, clearTimer: () => undefined });
     // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- the non-Error path must be covered
     thrown.add({ name: "y", intervalMs: 1, run: () => Promise.reject("string failure") });
     await thrown.tick("y");

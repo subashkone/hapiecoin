@@ -6,11 +6,13 @@ import WebSocket from "ws";
 import { BinanceAdapter } from "./adapters/binance.js";
 import { BybitAdapter } from "./adapters/bybit.js";
 import { CoinGeckoAdapter } from "./adapters/coingecko.js";
+import { DeltaAdapter } from "./adapters/delta.js";
+import { DeribitAdapter } from "./adapters/deribit.js";
 import { FearGreedAdapter } from "./adapters/feargreed.js";
 import { OkxAdapter } from "./adapters/okx.js";
 import type { IngestConfig } from "./config.js";
 import { type FetchLike, JsonClient } from "./http.js";
-import { type Adapters, buildFearGreed, buildFunding, buildLiquidations, buildLongShort, buildMarkets, buildOpenInterest, buildTakerVolume } from "./jobs.js";
+import { type Adapters, buildCycle, buildFearGreed, buildFunding, buildLiquidations, buildLongShort, buildMarkets, buildOpenInterest, buildOptions, buildPremium, buildRsi, buildTakerVolume } from "./jobs.js";
 import { BybitLiquidationStream, ForceOrderStream, LiquidationBuffer, type LiquidationStream, type SocketLike } from "./liquidations.js";
 import { type Logger, createLogger } from "./log.js";
 import { buildOverview } from "./overview.js";
@@ -54,6 +56,8 @@ export function createApp(config: IngestConfig, deps: AppDeps = {}): App {
     okx: new OkxAdapter(http, config.OKX_URL),
     coingecko: config.COINGECKO_API_KEY !== undefined ? new CoinGeckoAdapter(http, config.COINGECKO_URL, config.COINGECKO_API_KEY) : null,
     fearGreed: new FearGreedAdapter(http, config.FNG_URL),
+    deribit: new DeribitAdapter(http, config.DERIBIT_URL),
+    delta: new DeltaAdapter(http, config.DELTA_URL),
   };
   const tracked = new Set(config.ANALYTICS_SYMBOLS);
   const buffer = new LiquidationBuffer({ now });
@@ -84,6 +88,11 @@ export function createApp(config: IngestConfig, deps: AppDeps = {}): App {
   if (adapters.coingecko) scheduler.add({ name: analyticsKey("markets"), intervalMs: config.MARKETS_REFRESH_MS, run: () => buildMarkets(ctx(config.MARKETS_REFRESH_MS)) });
   else log.warn("COINGECKO_API_KEY not set: the markets dataset is skipped");
   scheduler.add({ name: analyticsKey("fear-greed"), intervalMs: config.FEAR_GREED_REFRESH_MS, run: () => buildFearGreed(ctx(config.FEAR_GREED_REFRESH_MS)) });
+  for (const symbol of config.OPTIONS_SYMBOLS) scheduler.add({ name: analyticsKey("options", symbol), intervalMs: config.OPTIONS_REFRESH_MS, run: () => buildOptions(ctx(config.OPTIONS_REFRESH_MS), symbol) });
+  scheduler.add({ name: analyticsKey("cycle"), intervalMs: config.CYCLE_REFRESH_MS, run: () => buildCycle(ctx(config.CYCLE_REFRESH_MS)) });
+  scheduler.add({ name: analyticsKey("rsi"), intervalMs: config.RSI_REFRESH_MS, run: () => buildRsi(ctx(config.RSI_REFRESH_MS), config.ANALYTICS_SYMBOLS) });
+  if (adapters.coingecko) scheduler.add({ name: analyticsKey("premium"), intervalMs: config.PREMIUM_REFRESH_MS, run: () => buildPremium(ctx(config.PREMIUM_REFRESH_MS), store) });
+  else log.warn("COINGECKO_API_KEY not set: the premium dataset is skipped");
   // folds the snapshots above into the hub/overview payload; runs last on boot (stagger order) and then every derivatives interval
   scheduler.add({ name: analyticsKey("overview"), intervalMs: d, run: () => buildOverview(store, config.ANALYTICS_SYMBOLS, now, d) });
 

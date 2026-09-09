@@ -75,6 +75,14 @@ export function Chart(p: ChartProps) {
                 </linearGradient>
               ))}
             </defs>
+            {layout.bandRects.map((b, i) => (
+              <rect key={`b${i}`} x={layout.pad.l} y={b.y} width={layout.w - layout.pad.l - layout.pad.r} height={b.h} fill={b.color} data-testid="chart-band" />
+            ))}
+            {layout.regionPaths.map((r) => (
+              <path key={r.key} d={r.d} fill={r.color} opacity="0.28" data-testid="chart-region">
+                <title>{r.key}</title>
+              </path>
+            ))}
             {layout.ticksL.map((v) => (
               <g key={`l${v}`}>
                 <line x1={layout.pad.l} x2={layout.w - layout.pad.r} y1={layout.sy(v)} y2={layout.sy(v)} stroke="hsl(var(--border))" strokeDasharray="1 3" />
@@ -102,6 +110,9 @@ export function Chart(p: ChartProps) {
                 <path d={x.d} fill="none" stroke={x.color} strokeWidth={x.width} strokeDasharray={x.dash} strokeLinejoin="round" strokeLinecap="round" />
                 {x.last ? <circle cx={x.last.x} cy={x.last.y} r="2.6" fill={x.color} /> : null}
               </g>
+            ))}
+            {layout.labelPos.map((l, i) => (
+              <text key={`lb${i}`} x={l.x} y={l.y} textAnchor="middle" fill={l.color ?? "hsl(var(--primary))"} className="font-medium" data-testid="chart-label">{l.text}</text>
             ))}
             {layout.tags.map((t) => (
               <g key={t.label} transform={`translate(${layout.w - layout.pad.r + 3},${t.y})`}>

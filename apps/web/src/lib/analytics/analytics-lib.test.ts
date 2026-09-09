@@ -1,6 +1,6 @@
 // Analytics helpers (HC-MA-009, 011, 093): chart layout maths, timeframe slicing and the formatters.
 import { describe, expect, it } from "vitest";
-import { indexAt, layoutChart, niceTicks } from "./chart";
+import { indexAt, layoutChart, logTicks, niceTicks } from "./chart";
 import { ago, fearGreedTone, heatAlpha, pct, price, signedUsdCompact, sliceSeries, toneClass, usdCompact } from "./format";
 
 describe("formatters", () => {
@@ -86,6 +86,26 @@ describe("chart layout", () => {
     expect(indexAt(grouped, grouped.pad.l + 1)).toBe(0);
     expect(indexAt(l, 1e9)).toBe(3);
     expect(indexAt(l, -1e9)).toBe(0);
+  });
+  it("log axis, bands, regions and labels", () => {
+    expect(logTicks(15, 250)).toEqual([20, 50, 100, 200]);
+    expect(logTicks(0, 10)).toEqual([]);
+    const l = layoutChart({ x: ["a", "b", "c"], logY: true, series: [{ label: "p", type: "area", data: [10, 100, 1000] }, { label: "z", type: "line", data: [0, null, 5] }], regions: [{ label: "r", lower: [5, 50, 500], upper: [20, 200, 2000], color: "c" }, { label: "short", lower: [1], upper: [2], color: "c" }], bands: [{ from: 10, to: 100, color: "b" }, { from: 5000, to: 9000, color: "b2" }], labels: [{ i: 1, y: 100, text: "mid" }, { i: 9, y: 1, text: "off" }], hlines: [{ y: 50 }] });
+    expect(l.ticksL).toEqual([1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000]); // the "short" region pulls the floor down to 1
+    expect(l.sy(100)).toBeCloseTo((l.sy(10) + l.sy(1000)) / 2, 6); // log-spaced
+    expect(l.sy(0)).toBe(l.pad.t + (l.h - l.pad.t - l.pad.b)); // non-positive sits on the floor
+    expect(l.paths.find((p) => p.key === "z")?.d.startsWith("M")).toBe(true); // 0 skipped, 5 drawn
+    expect(l.regionPaths).toHaveLength(1);
+    expect(l.regionPaths[0]?.d.endsWith("Z")).toBe(true);
+    expect(l.bandRects).toHaveLength(2);
+    expect(l.bandRects[0]!.h).toBeGreaterThan(0);
+    expect(l.bandRects[1]!.h).toBe(0); // fully above the range
+    expect(l.labelPos).toHaveLength(1);
+    expect(l.labelPos[0]?.text).toBe("mid");
+    const lin = layoutChart({ x: ["a", "b"], series: [{ label: "p", type: "line", data: [1, 2] }], regions: [{ label: "only", lower: [0.5, 1], upper: [3, 4], color: "c" }] });
+    expect(lin.yl.hi).toBeGreaterThanOrEqual(4); // regions widen the extent
+    const noLog = layoutChart({ x: ["a"], logY: true, series: [{ label: "p", type: "line", data: [-1] }] });
+    expect(noLog.ticksL.length).toBeGreaterThan(0); // falls back to linear when nothing is positive
   });
   it("colours negative bars with colorNeg", () => {
     const l = layoutChart({ x: ["a", "b"], series: [{ label: "f", type: "bar", data: [1, -1], color: "up", colorNeg: "down" }] });

@@ -33,6 +33,14 @@ import { KEY_PREFIX, MemoryStore, RedisStore, type RedisLike } from "./store.js"
 const snap: AnalyticsSnapshot = { dataset: "fear-greed", key: "fear-greed:-", source: "alternative.me", asOf: 1000, ttlMs: 60_000, stale: false, data: { points: [{ t: 1, v: 50 }], latest: { value: 50, label: "Neutral", at: 1 } } };
 
 describe("[INGEST] MemoryStore", () => {
+  it("keeps small series in memory, deduped on time and capped", async () => {
+    const s = new MemoryStore();
+    expect(await s.appendSeries("p", { t: 5, v: 1 }, 2)).toEqual([{ t: 5, v: 1 }]);
+    expect(await s.appendSeries("p", { t: 4, v: 0 }, 2)).toEqual([{ t: 4, v: 0 }, { t: 5, v: 1 }]);
+    expect(await s.appendSeries("p", { t: 6, v: 2 }, 2)).toEqual([{ t: 5, v: 1 }, { t: 6, v: 2 }]);
+    await s.close();
+    expect(await s.appendSeries("p", { t: 7, v: 3 }, 2)).toEqual([{ t: 7, v: 3 }]);
+  });
   it("stores, serves until the TTL passes, then forgets", async () => {
     let now = 1000;
     const s = new MemoryStore(() => now);
@@ -56,7 +64,7 @@ describe("[INGEST] RedisStore", () => {
     const on = vi.fn();
     const client: RedisLike = {
       get: (k) => Promise.resolve(map.get(k) ?? null),
-      set: (k, v, mode, ttl) => {
+      set: (k: string, v: string, mode?: "PX", ttl?: number) => {
         calls.push([k, mode, ttl]);
         map.set(k, v);
         return Promise.resolve("OK");
@@ -72,6 +80,12 @@ describe("[INGEST] RedisStore", () => {
     await s.set(snap, 1234);
     expect(calls[0]).toEqual([`${KEY_PREFIX}fear-greed:-`, "PX", 1234]);
     expect(await s.get("fear-greed:-")).toEqual(snap);
+    expect(await s.appendSeries("premium:BTC", { t: 2, v: 2 }, 3)).toEqual([{ t: 2, v: 2 }]);
+    expect(await s.appendSeries("premium:BTC", { t: 1, v: 1 }, 3)).toEqual([{ t: 1, v: 1 }, { t: 2, v: 2 }]);
+    expect(await s.appendSeries("premium:BTC", { t: 2, v: 9 }, 3)).toEqual([{ t: 1, v: 1 }, { t: 2, v: 9 }]);
+    expect(await s.appendSeries("premium:BTC", { t: 3, v: 3 }, 2)).toEqual([{ t: 2, v: 9 }, { t: 3, v: 3 }]);
+    expect(map.has("hapiecoin:an:series:premium:BTC")).toBe(true);
+    expect(calls.some((c) => c[0] === "hapiecoin:an:series:premium:BTC" && c[1] === undefined)).toBe(true); // no TTL on series
     expect(await s.get("nope")).toBeNull();
     await s.close();
     expect(calls.at(-1)).toEqual(["quit"]);

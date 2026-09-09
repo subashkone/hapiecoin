@@ -82,7 +82,7 @@ describe("[INGEST] app", () => {
     sockets[1]!.emit("open");
     expect(app.health().stream.bybit).toBe("open");
     const names = app.scheduler.statuses().map((j) => j.name);
-    expect(names).toEqual(["funding:BTC", "open-interest:BTC", "long-short:BTC", "taker-volume:BTC", "liquidations:-", "markets:-", "fear-greed:-", "overview:-"]);
+    expect(names).toEqual(["funding:BTC", "open-interest:BTC", "long-short:BTC", "taker-volume:BTC", "liquidations:-", "markets:-", "fear-greed:-", "options:BTC", "options:ETH", "cycle:-", "rsi:-", "premium:-", "overview:-"]);
     for (const n of names) await app.scheduler.tick(n);
     expect(app.health().ok).toBe(true);
     expect((await store.get("markets:-"))?.source).toBe("CoinGecko");
@@ -103,6 +103,8 @@ describe("[INGEST] app", () => {
     const app = createApp(loadConfig({ ...env, COINGECKO_API_KEY: "" }), { fetch: healthyFetch().on("/fng/", { status: 500, text: "down" }).fetch, log: createLogger("warn", (l) => lines.push(l)), stream: false });
     expect(lines.some((l) => l.includes("COINGECKO_API_KEY not set"))).toBe(true);
     expect(app.scheduler.statuses().map((j) => j.name)).not.toContain("markets:-");
+    expect(app.scheduler.statuses().map((j) => j.name)).not.toContain("premium:-");
+    expect(lines.some((l) => l.includes("premium dataset is skipped"))).toBe(true);
     const port = await app.start();
     await app.scheduler.tick("fear-greed:-");
     expect(app.health().ok).toBe(false);

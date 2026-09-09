@@ -57,6 +57,43 @@ export const coingecko = {
   global: { data: { total_market_cap: { usd: 2.9e12 }, total_volume: { usd: 9e10 }, market_cap_percentage: { btc: 55.1, eth: 12.4 } } },
 };
 
+export const deribit = {
+  options: {
+    jsonrpc: "2.0",
+    result: [
+      { instrument_name: "BTC-25SEP26-70000-P", open_interest: 100, volume_usd: 1000, underlying_price: 80000, mark_price: 0.01 },
+      { instrument_name: "BTC-25SEP26-80000-C", open_interest: 200, volume_usd: 2000, underlying_price: 80000, mark_price: 0.03 },
+      { instrument_name: "BTC-25SEP26-80000-P", open_interest: 50, volume_usd: 500, underlying_price: 80000, mark_price: 0.03 },
+      { instrument_name: "BTC-25SEP26-90000-C", open_interest: 300, volume_usd: 3000, underlying_price: 80000, mark_price: 0.005 },
+      { instrument_name: "BTC-30OCT26-100000-C", open_interest: 10, volume_usd: 0, underlying_price: 80000, mark_price: 0.001 },
+      { instrument_name: "BTC-30OCT26-110000-P", open_interest: null, volume_usd: null, underlying_price: null, mark_price: null }, // sparse row
+      { instrument_name: "BTC-1SEP26-80000-C", open_interest: 999, volume_usd: 0, underlying_price: 80000, mark_price: 0 }, // expired
+      { instrument_name: "BTC-PERPETUAL", open_interest: 1e9, volume_usd: 0, underlying_price: null, mark_price: 80000 }, // not an option name
+    ],
+  },
+  empty: { jsonrpc: "2.0", result: [] },
+};
+export const delta = {
+  options: {
+    success: true,
+    result: [
+      { symbol: "C-BTC-80000-250926", contract_type: "call_options", strike_price: "80000", oi_value: "1.5", oi_value_usd: "120000", turnover_usd: 300, spot_price: "80100" },
+      { symbol: "P-BTC-75000-250926", contract_type: "put_options", strike_price: "75000", oi_value: "0.5", oi_value_usd: "40000", turnover_usd: 100, spot_price: "80100" },
+      { symbol: "C-BTC-90000-250926", contract_type: "call_options" }, // sparse row: no oi, turnover or spot yet
+      { symbol: "BTCUSD", contract_type: "perpetual_futures", oi_value: "10", turnover_usd: 5, spot_price: "80100" },
+    ],
+  },
+  error: { success: false, result: [] },
+};
+/** Bybit klines newest first: 400 daily closes climbing 0.3 % a day (enough for RSI(14), the 111 and 350-day averages, not the 2-year one). */
+export const KLINE_DAYS = 400;
+export const bybitKlines = { retCode: 0, retMsg: "OK", result: { list: Array.from({ length: KLINE_DAYS }, (_, i) => [String(T0 - i * 86_400_000), "1", "1", "1", String((100 * 1.003 ** (KLINE_DAYS - 1 - i)).toFixed(2)), "1", "1"]) } };
+export const LAST_CLOSE = Number((100 * 1.003 ** (KLINE_DAYS - 1)).toFixed(2));
+export const coingeckoTickers = {
+  gdax: { name: "Coinbase", tickers: [{ base: "BTC", target: "USD", last: 80050, is_stale: false }, { base: "ETH", target: "USD", last: 3000 }] },
+  binance: { name: "Binance", tickers: [{ base: "BTC", target: "USDT", last: 80000 }, { base: "BTC", target: "BUSD", last: null }] },
+};
+
 export const fng = { name: "Fear and Greed Index", data: [{ value: "42", value_classification: "Fear", timestamp: String(Math.floor(T0 / 1000)), time_until_update: "1000" }, { value: "60", value_classification: "Greed", timestamp: String(Math.floor(T0 / 1000) - 86_400) }] };
 
 /** A FakeFetch answering every endpoint the jobs call with the fixtures above. */
@@ -74,6 +111,11 @@ export function healthyFetch(): FakeFetch {
     .on("/v5/market/funding/history", { body: bybit.funding })
     .on("/v5/market/open-interest", { body: bybit.oi })
     .on("/v5/market/account-ratio", { body: bybit.ratio })
+    .on("/v5/market/kline", { body: bybitKlines })
+    .on("/api/v2/public/get_book_summary_by_currency", { body: deribit.options })
+    .on("/v2/tickers", { body: delta.options })
+    .on("/api/v3/exchanges/gdax/tickers", { body: coingeckoTickers.gdax })
+    .on("/api/v3/exchanges/binance/tickers", { body: coingeckoTickers.binance })
     .on("/api/v5/public/funding-rate", { body: okx.funding })
     .on("/api/v5/public/funding-rate-history", { body: okx.fundingHistory })
     .on("/api/v5/public/open-interest", { body: okx.oi })

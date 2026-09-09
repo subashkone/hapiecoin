@@ -1450,7 +1450,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   app.get("/v1/analytics/:dataset", (c) => {
     const dataset = c.req.param("dataset");
     const symbol = (c.req.query("symbol") ?? "").toUpperCase();
-    const key = `${dataset}:${["funding", "open-interest", "long-short", "taker-volume"].includes(dataset) ? symbol : "-"}`;
+    const key = `${dataset}:${["funding", "open-interest", "long-short", "taker-volume", "options"].includes(dataset) ? symbol : "-"}`;
     const snap = analytics.get(key);
     if (!snap) return c.json({ code: "UNAVAILABLE", message: `${dataset} is not available yet` }, 503);
     c.header("Cache-Control", "public, max-age=15");

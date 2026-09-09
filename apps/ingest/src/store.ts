@@ -4,7 +4,7 @@
  * and in a dev shell without REDIS_URL. A snapshot is written with a TTL well above its refresh interval so a
  * short outage serves stale data (flagged) rather than nothing.
  */
-import type { AnalyticsSnapshot } from "@hapiecoin/schema";
+import type { AnalyticsSnapshot, SeriesPoint } from "@hapiecoin/schema";
 import Redis from "ioredis";
 
 export const KEY_PREFIX = "hapiecoin:an:";
@@ -14,12 +14,28 @@ export const TTL_MULTIPLIER = 20;
 export interface SnapshotStore {
   get(key: string): Promise<AnalyticsSnapshot | null>;
   set(snapshot: AnalyticsSnapshot, ttlMs: number): Promise<void>;
+  /** Small histories the ingest keeps itself (no provider serves them): append a point, keep the newest `max`, return the series (ADR-042). */
+  appendSeries(name: string, point: SeriesPoint, max: number): Promise<SeriesPoint[]>;
   close(): Promise<void>;
+}
+export const SERIES_PREFIX = "series:";
+/** Append, drop duplicates on `t`, sort ascending and cap. */
+export function pushPoint(series: readonly SeriesPoint[], point: SeriesPoint, max: number): SeriesPoint[] {
+  const out = series.filter((p) => p.t !== point.t);
+  out.push(point);
+  out.sort((a, b) => a.t - b.t);
+  return out.slice(Math.max(0, out.length - max));
 }
 
 export class MemoryStore implements SnapshotStore {
   private readonly map = new Map<string, { snapshot: AnalyticsSnapshot; expiresAt: number }>();
+  private readonly series = new Map<string, SeriesPoint[]>();
   constructor(private readonly now: () => number = Date.now) {}
+  appendSeries(name: string, point: SeriesPoint, max: number): Promise<SeriesPoint[]> {
+    const next = pushPoint(this.series.get(name) ?? [], point, max);
+    this.series.set(name, next);
+    return Promise.resolve(next);
+  }
   get(key: string): Promise<AnalyticsSnapshot | null> {
     const hit = this.map.get(key);
     if (!hit) return Promise.resolve(null);
@@ -35,6 +51,7 @@ export class MemoryStore implements SnapshotStore {
   }
   close(): Promise<void> {
     this.map.clear();
+    this.series.clear();
     return Promise.resolve();
   }
   size(): number {
@@ -45,6 +62,7 @@ export class MemoryStore implements SnapshotStore {
 /** The slice of ioredis this store uses; tests pass a fake through `createClient`. */
 export interface RedisLike {
   get(key: string): Promise<string | null>;
+  set(key: string, value: string): Promise<unknown>;
   set(key: string, value: string, mode: "PX", ttl: number): Promise<unknown>;
   quit(): Promise<unknown>;
   on(event: "error", listener: (error: Error) => void): unknown;
@@ -72,6 +90,14 @@ export class RedisStore implements SnapshotStore {
   }
   async set(snapshot: AnalyticsSnapshot, ttlMs: number): Promise<void> {
     await this.client.set(this.prefix + snapshot.key, JSON.stringify(snapshot), "PX", ttlMs);
+  }
+  /** Stored as one JSON array without TTL (a few hundred points); read-modify-write is fine for a single writer. */
+  async appendSeries(name: string, point: SeriesPoint, max: number): Promise<SeriesPoint[]> {
+    const key = this.prefix + SERIES_PREFIX + name;
+    const raw = await this.client.get(key);
+    const next = pushPoint(raw === null ? [] : (JSON.parse(raw) as SeriesPoint[]), point, max);
+    await this.client.set(key, JSON.stringify(next));
+    return next;
   }
   async close(): Promise<void> {
     await this.client.quit();
