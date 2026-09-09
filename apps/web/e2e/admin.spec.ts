@@ -135,4 +135,26 @@ test.describe("HC-AD admin", () => {
     await page.getByTestId("coupon-delete-confirm").click();
     await expect(page.getByTestId("coupon-row")).toHaveCount(3);
   });
+
+  test("HC-AD-071..085 emails: compose with a template and placeholders, send, read the campaign detail", async ({ page, request }) => {
+    await seedUser(request, { email: "boss@example.com", role: "admin", campaigns: 2 });
+    await seedUser(request, { email: "ria@example.com" });
+    await signIn(page, "boss@example.com");
+    await page.goto("/admin/emails");
+    await expect(page.getByTestId("email-recipient")).toHaveCount(2, { timeout: 15_000 });
+    await expect(page.getByTestId("email-send")).toBeDisabled();
+    await page.getByTestId("email-select-all").click();
+    await page.getByTestId("email-template-weekly_report").click();
+    await expect(page.getByTestId("email-preview-subject")).toContainText("weekly options report");
+    await page.getByTestId("email-send").click();
+    await expect(page.getByTestId("email-confirm")).toContainText("Send to 2 users?");
+    await page.getByTestId("email-send-confirm").click();
+    await expect(page.getByTestId("admin-emails")).toHaveAttribute("data-tab", "history");
+    await expect(page.getByTestId("campaign-row")).toHaveCount(3);
+    await page.getByTestId("campaign-row").first().click();
+    await expect(page.getByTestId("campaign-detail")).toHaveAttribute("data-state", "ready");
+    await expect(page.getByTestId("campaign-recipient")).toHaveCount(2);
+    await page.getByTestId("campaign-back").click();
+    await expect(page.getByTestId("campaign-row")).toHaveCount(3);
+  });
 });

@@ -479,6 +479,38 @@ export const payments = pgTable(
   (t) => [index("payments_user_id_idx").on(t.userId), uniqueIndex("payments_order_id_uq").on(t.orderId), uniqueIndex("payments_rzp_payment_uq").on(t.razorpayPaymentId), uniqueIndex("payments_invoice_no_uq").on(t.invoiceNo)],
 );
 
+/** Promotional email campaigns (Phase 4 item 4c, ADR-035) and one delivery row per recipient. */
+export const campaigns = pgTable("campaigns", {
+  id: text("id").primaryKey(),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  segment: text("segment", { enum: ["all", "paid", "free", "expired"] }).notNull().default("all"),
+  sentById: text("sent_by_id").references(() => users.id, { onDelete: "set null" }),
+  sentBy: text("sent_by").notNull(),
+  sentAt: timestamp("sent_at", { withTimezone: true, mode: "date" }).notNull(),
+  recipients: integer("recipients").notNull().default(0),
+  delivered: integer("delivered").notNull().default(0),
+  failed: integer("failed").notNull().default(0),
+  ...timestamps,
+});
+
+export const campaignRecipients = pgTable(
+  "campaign_recipients",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    campaignId: text("campaign_id")
+      .notNull()
+      .references(() => campaigns.id, { onDelete: "cascade" }),
+    userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    status: text("status", { enum: ["sent", "failed"] }).notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true, mode: "date" }).notNull(),
+    error: text("error"),
+  },
+  (t) => [index("campaign_recipients_campaign_idx").on(t.campaignId)],
+);
+
 /** Every table, for `drizzle(client, { schema })`; declared last so each table exists before it is referenced. */
 export const schema = {
   users,
@@ -501,5 +533,7 @@ export const schema = {
   banners,
   coupons,
   payments,
+  campaigns,
+  campaignRecipients,
 };
 export type Schema = typeof schema;

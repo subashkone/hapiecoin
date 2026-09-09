@@ -3,8 +3,8 @@
 // deliberately simple: one OTP (123456), sessions in a Map, settings/brokers/credentials per user.
 import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import type { AdminCommissionRow, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Coupon, CouponReason, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
-import { INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, realizedPnl, toDecimal } from "@hapiecoin/schema";
+import type { AdminCommissionRow, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
+import { INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal } from "@hapiecoin/schema";
 
 export const SESSION_COOKIE = "better-auth.session_token";
 export const TEST_OTP = "123456";
@@ -96,6 +96,8 @@ export interface MockState {
   payments: (Payment & { userId: string; couponId: string | null })[];
   /** Test switch: "razorpay" makes /v1/checkout answer like the real API so the checkout.js path can be exercised with a stubbed window.Razorpay. */
   checkoutMode: "mock" | "razorpay";
+  /** Promotional email campaigns (ADR-035) with their delivery rows; every 7th recipient of a send "bounces". */
+  campaigns: (Campaign & { rows: CampaignRecipient[] })[];
   /** Invitations "sent" by POST /v1/admin/users/invite (the API mails them). */
   invites: { email: string; name: string; invitedBy: string; link: string }[];
   sessions: Map<string, string>; // token → email
@@ -201,7 +203,7 @@ export function createSession(state: MockState, email: string): string {
 
 export function createMockApi(state: MockState = { plans: seedPlans(),
     menuItems: seedMenuItems(),
-    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", invites: [], sessions: new Map(), otps: new Map() }) {
+    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
   const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409, code: string, message: string) =>
@@ -1054,6 +1056,63 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const sub = acc.subscription;
     return c.json({ no: p.invoiceNo, issuedAt: p.at, seller: { name: "HapieCoin", address: "Address on file · India", gstin: "GSTIN pending", email: "billing@hapiecoin.com" }, billedTo: { name: acc.user.name, email: acc.user.email, mobile: acc.user.mobile ?? null }, period: { from: sub?.startsAt ?? p.at, to: sub?.expiresAt ?? null }, lines: { description: `${p.planName} plan · ${p.interval}`, listInr: p.listInr, planDiscountInr: p.planDiscountInr, couponCode: p.couponCode, couponDiscountInr: p.couponDiscountInr, taxableInr: taxable, cgstInr: half, sgstInr: (Math.round((Number(p.taxInr) - Number(half)) * 100) / 100).toFixed(2), totalInr: p.amountInr }, payment: { method: p.method, razorpayPaymentId: p.razorpayPaymentId, paidAt: p.at } });
   });
+  /* ---------------- promotional emails (ADR-035) ---------------- */
+  const recipientStatus = (acc: Account): "active" | "free" | "expired" => {
+    const r = adminRow(acc);
+    if (r.planName === null) return "free";
+    if (r.expiresAt !== null && new Date(r.expiresAt).getTime() <= Date.now()) return "expired";
+    return "active";
+  };
+  const placeholderValues = (acc: Account) => {
+    const r = adminRow(acc);
+    return { name: acc.user.name, email: acc.user.email, plan: r.planName ?? "Free", expiry: r.expiresAt ? new Date(r.expiresAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "no end date" };
+  };
+  const campaignPub = (cp: (typeof state.campaigns)[number]): Campaign => ({ id: cp.id, subject: cp.subject, message: cp.message, segment: cp.segment, sentAt: cp.sentAt, sentBy: cp.sentBy, recipients: cp.recipients, delivered: cp.delivered, failed: cp.failed });
+  v1.get("/admin/emails/recipients", (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const q = (c.req.query("q") ?? "").toLowerCase();
+    const segment = (c.req.query("segment") ?? "all") as EmailSegment;
+    const items = [...state.accounts.values()]
+      .filter((a) => a.active && (!q || a.user.name.toLowerCase().includes(q) || a.user.email.toLowerCase().includes(q)))
+      .map((a) => ({ acc: a, status: recipientStatus(a), row: adminRow(a) }))
+      .filter(({ status, row }) => segment === "all" || (segment === "expired" ? status === "expired" : segment === "free" ? status === "free" || (status === "active" && row.planName === "Free") : status === "active" && row.planName !== "Free"))
+      .sort((a, b) => a.acc.user.name.localeCompare(b.acc.user.name))
+      .map(({ acc, status, row }) => ({ id: acc.user.id, name: acc.user.name, email: acc.user.email, status, planName: row.planName, expiresAt: row.expiresAt }));
+    return c.json({ items: items.slice(0, 200), total: items.length, capped: items.length > 200 });
+  });
+  v1.post("/admin/emails/send", async (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const me = current(c)!;
+    const body = await c.req.json<{ userIds: string[]; subject: string; message: string; segment?: EmailSegment }>();
+    if (!body.userIds?.length || !body.subject?.trim() || !body.message?.trim()) return err(c, 400, "VALIDATION", "recipients, subject and message are required");
+    const targets = [...state.accounts.values()].filter((a) => a.active && body.userIds.includes(a.user.id));
+    if (targets.length === 0) return err(c, 400, "VALIDATION", "None of the selected users can be emailed");
+    const at = nowIso();
+    const rows: CampaignRecipient[] = targets.map((a, i) => ({ userId: a.user.id, name: a.user.name, email: a.user.email, status: (i + 1) % 7 === 0 ? "failed" : "sent", sentAt: at, error: (i + 1) % 7 === 0 ? `550 mailbox unavailable: ${a.user.email}` : null }));
+    for (const a of targets) void renderTemplate(body.message, placeholderValues(a)); // the API renders per recipient; the mock only proves the values exist
+    const delivered = rows.filter((r) => r.status === "sent").length;
+    const campaign: Campaign & { rows: CampaignRecipient[] } = { id: id("cmp"), subject: body.subject.trim(), message: body.message.trim(), segment: body.segment ?? "all", sentAt: at, sentBy: me.user.name, recipients: rows.length, delivered, failed: rows.length - delivered, rows };
+    state.campaigns.unshift(campaign);
+    return c.json({ campaign: campaignPub(campaign) }, 201);
+  });
+  v1.post("/admin/emails/test", async (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const me = current(c)!;
+    const body = await c.req.json<{ subject: string; message: string }>();
+    if (!body.subject?.trim() || !body.message?.trim()) return err(c, 400, "VALIDATION", "subject and message are required");
+    return c.json({ email: me.user.email, subject: renderTemplate(body.subject, placeholderValues(me)) });
+  });
+  v1.get("/admin/emails/campaigns", (c) => adminGate(c) ?? c.json({ items: state.campaigns.map(campaignPub) }));
+  v1.get("/admin/emails/campaigns/:id", (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const cp = state.campaigns.find((x) => x.id === c.req.param("id"));
+    if (!cp) return err(c, 404, "NOT_FOUND", "Campaign not found");
+    return c.json({ campaign: campaignPub(cp), recipients: cp.rows });
+  });
   v1.get("/admin/coupons", (c) => adminGate(c) ?? c.json({ items: [...state.coupons] }));
   const couponBody = (b: Partial<Coupon>): string | null => {
     if (!b.code || !/^[A-Z0-9_-]{3,24}$/.test(b.code.toUpperCase())) return "3–24 letters, digits, _ or -";
@@ -1394,13 +1453,14 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     state.banners.length = 0;
     state.coupons.length = 0;
     state.payments.length = 0;
+    state.campaigns.length = 0;
     state.invites.length = 0;
     state.sessions.clear();
     state.otps.clear();
     return c.json({ ok: true });
   });
   app.post("/__test/seed", async (c) => {
-    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; referrals?: number; banners?: number; coupons?: boolean; payments?: number }>();
+    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; referrals?: number; banners?: number; coupons?: boolean; payments?: number; campaigns?: number }>();
     const acc = createAccount(state, body);
     if (body.coupons) {
       const at = nowIso();
@@ -1411,6 +1471,19 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
         mk({ code: "COMMUNITY25", description: "Community members & their referrals", discountType: "percent", discountValue: "25", planIds: ["pln_basic", "pln_pro", "pln_elite"], intervals: ["quarterly", "yearly"], scope: "community", assignedUserIds: [acc.user.id], perUserLimit: 2 }),
         mk({ code: "DIWALI30", description: "Festive offer (expired)", discountType: "percent", discountValue: "30", planIds: ["pln_basic", "pln_pro"], startsAt: "2025-10-15T00:00:00.000Z", endsAt: "2025-11-15T23:59:00.000Z", active: false }),
       );
+    }
+    if (body.campaigns) {
+      const subjects = ["Your weekly options report is ready", "Live trading now available on Pro", "Diwali offer: 30% off yearly plans"];
+      for (let i = 0; i < body.campaigns; i += 1) {
+        const at = new Date(Date.UTC(2026, 8, 1 - i * 7, 9)).toISOString();
+        const rows: CampaignRecipient[] = [
+          { userId: acc.user.id, name: acc.user.name, email: acc.user.email, status: "sent", sentAt: at, error: null },
+          { userId: null, name: "Priya Sharma", email: `priya${i}@example.com`, status: "sent", sentAt: at, error: null },
+          { userId: null, name: "Rahul Verma", email: `rahul${i}@example.com`, status: i % 2 === 0 ? "failed" : "sent", sentAt: at, error: i % 2 === 0 ? "550 mailbox unavailable" : null },
+        ];
+        const delivered = rows.filter((r) => r.status === "sent").length;
+        state.campaigns.push({ id: id("cmp"), subject: subjects[i % subjects.length]!, message: "Hi {{name}}, sign in to see what is new on your {{plan}} plan.", segment: (["all", "paid", "free"] as const)[i % 3]!, sentAt: at, sentBy: acc.user.name, recipients: rows.length, delivered, failed: rows.length - delivered, rows });
+      }
     }
     if (body.payments) {
       const kinds: Array<[string, BillingInterval, Payment["status"], string | null, string | null]> = [["pln_pro", "yearly", "paid", "WELCOME10", "upi"], ["pln_basic", "quarterly", "paid", null, "card"], ["pln_basic", "quarterly", "failed", null, "netbanking"], ["pln_elite", "monthly", "pending", null, null]];

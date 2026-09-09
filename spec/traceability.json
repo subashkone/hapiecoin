@@ -8677,7 +8677,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Tabs switch panels; sending a campaign switches to History automatically",
-  "evidence": "bundle strings: Promotional Emails, Compose, History, compose, history"
+  "evidence": "bundle strings: Promotional Emails, Compose, History, compose, history · Phase 4 item 4c (08 Sep 2026, ADR-035): EmailsAdmin tabs Compose / History; sending switches to History (emails-tab-*)"
  },
  {
   "id": "HC-AD-072",
@@ -8692,7 +8692,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Badge tracks the selection set",
-  "evidence": "bundle strings: Recipients, selected, secondary"
+  "evidence": "bundle strings: Recipients, selected, secondary · Phase 4 item 4c (08 Sep 2026, ADR-035): Recipients card with 'N selected' badge (email-selected)"
  },
  {
   "id": "HC-AD-073",
@@ -8707,7 +8707,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Filters the checkbox list live",
-  "evidence": "bundle strings: Search users by name or email, aria-label"
+  "evidence": "bundle strings: Search users by name or email, aria-label · Phase 4 item 4c (08 Sep 2026, ADR-035): search filters the list live via GET /v1/admin/emails/recipients (email-search)"
  },
  {
   "id": "HC-AD-074",
@@ -8722,7 +8722,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Filters CG.mock.users by status/plan",
-  "evidence": "bundle strings: Segment, All users"
+  "evidence": "bundle strings: Segment, All users · Phase 4 item 4c (08 Sep 2026, ADR-035): Segment select All / Paid / Free / Expired (email-segment)"
  },
  {
   "id": "HC-AD-075",
@@ -8737,7 +8737,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Select all adds every visible user; Clear empties the selection",
-  "evidence": "bundle strings: Select all (, Clear"
+  "evidence": "bundle strings: Select all (, Clear · Phase 4 item 4c (08 Sep 2026, ADR-035): Select all (N) / Clear (email-select-all, email-clear)"
  },
  {
   "id": "HC-AD-076",
@@ -8752,7 +8752,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Toggling a checkbox updates the selection, badge and preview",
-  "evidence": "bundle string: No users match the search."
+  "evidence": "bundle string: No users match the search. · Phase 4 item 4c (08 Sep 2026, ADR-035): checkbox list with plan / status badges; 'No users match the search.' (email-recipient, email-no-users)"
  },
  {
   "id": "HC-AD-077",
@@ -8767,7 +8767,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Ids promo-subject / promo-message; both required to enable Send",
-  "evidence": "bundle strings: promo-subject, Subject, Your report is ready, promo-message, Message, subject, message"
+  "evidence": "bundle strings: promo-subject, Subject, Your report is ready, promo-message, Message, subject, message · Phase 4 item 4c (08 Sep 2026, ADR-035): Subject and Message required to enable Send (promo-subject, promo-message)"
  },
  {
   "id": "HC-AD-078",
@@ -8782,7 +8782,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Inserts at the caret of whichever field was focused last (defaults to Message)",
-  "evidence": "bundle strings: Insert:, into the last-focused field, button"
+  "evidence": "bundle strings: Insert:, into the last-focused field, button · Phase 4 item 4c (08 Sep 2026, ADR-035): Insert chips write at the caret of the last focused field (email-insert-*)"
  },
  {
   "id": "HC-AD-079",
@@ -8797,7 +8797,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Renders subject and message with placeholders filled from the first selected user; highlights raw placeholders when nobody is selected",
-  "evidence": "bundle string: Preview for"
+  "evidence": "bundle string: Preview for · Phase 4 item 4c (08 Sep 2026, ADR-035): Preview for the first selected user; raw placeholders highlighted when nobody is selected (email-preview)"
  },
  {
   "id": "HC-AD-080",
@@ -8812,7 +8812,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Confirm dialog; button disabled until recipients, subject and message are set",
-  "evidence": "bundle strings: Send Email, Send to, user(s)?, selected user(s). Placeholders are filled per recipient., Cancel, Confirm, Send"
+  "evidence": "bundle strings: Send Email, Send to, user(s)?, selected user(s). Placeholders are filled per recipient., Cancel, Confirm, Send · Phase 4 item 4c (08 Sep 2026, ADR-035): Send Email → confirm 'Send to N users?' (email-confirm, email-send-confirm)"
  },
  {
   "id": "HC-AD-081",
@@ -8827,7 +8827,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Simulated delivery with a small failure rate on large sends; 'Send failed · Please try again.' path guarded",
-  "evidence": "bundle strings: Emails sent, Send failed, Please try again."
+  "evidence": "bundle strings: Emails sent, Send failed, Please try again. · Phase 4 item 4c (08 Sep 2026, ADR-035): POST /v1/admin/emails/send; 'Emails sent · N delivered, M failed' toast; 'Send failed' path (useSendCampaign)"
  },
  {
   "id": "HC-AD-082",
@@ -8842,7 +8842,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Rendered from CG.mock.campaigns, newest first; rows are keyboard-accessible",
-  "evidence": "bundle strings: Sent at, Recipients, Delivered, Failed, Sent by"
+  "evidence": "bundle strings: Sent at, Recipients, Delivered, Failed, Sent by · Phase 4 item 4c (08 Sep 2026, ADR-035): History table Subject / Sent at / Recipients / Delivered / Failed / Sent by, newest first, rows keyboard-reachable (campaign-row)"
  },
  {
   "id": "HC-AD-083",
@@ -8857,7 +8857,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Shown when CG.mock.campaigns is empty",
-  "evidence": "bundle string: No campaigns sent yet."
+  "evidence": "bundle string: No campaigns sent yet. · Phase 4 item 4c (08 Sep 2026, ADR-035): 'No campaigns sent yet.' (history-empty)"
  },
  {
   "id": "HC-AD-084",
@@ -8872,7 +8872,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Per-campaign view inside the History tab",
-  "evidence": "bundle strings: Back to campaigns, Recipients, Delivered, Failed, Success, Sent, By"
+  "evidence": "bundle strings: Back to campaigns, Recipients, Delivered, Failed, Success, Sent, By · Phase 4 item 4c (08 Sep 2026, ADR-035): campaign detail with Back, subject, sent line, tiles (campaign-detail)"
  },
  {
   "id": "HC-AD-085",
@@ -8887,7 +8887,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Recipient rows for seeded campaigns are generated deterministically from CG.mock.users; failed rows carry an SMTP-style error",
-  "evidence": "bundle strings: Name, Email, Status, Sent at, Error, No recipients recorded., Page, of, Prev, Next"
+  "evidence": "bundle strings: Name, Email, Status, Sent at, Error, No recipients recorded., Page, of, Prev, Next · Phase 4 item 4c (08 Sep 2026, ADR-035): recipients table Name / Email / Status / Sent at / Error (campaign-recipient)"
  },
  {
   "id": "HC-AD-086",
@@ -9473,7 +9473,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Weekly report / Plan expiring / New feature chips fill subject and message (placeholders included) and toast",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4c (08 Sep 2026, ADR-035): template chips Weekly report / Plan expiring / New feature fill subject and message (email-template-*)"
  },
  {
   "id": "HC-AD-125",
@@ -9488,7 +9488,7 @@
   "phase": 4,
   "test": "e2e (Playwright) · api contract · security",
   "acceptance": "Validates subject/message, shows a sending state and toasts a test email to the admin address with placeholders filled from the admin profile",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4c (08 Sep 2026, ADR-035): Test send to me → POST /v1/admin/emails/test with the admin's own values (email-test)"
  },
  {
   "id": "HC-AD-126",
@@ -9503,7 +9503,7 @@
   "phase": 4,
   "test": "e2e (Playwright)",
   "acceptance": "Campaign history is a grid with subject/segment search, hideable Segment column, sortable headers and Copy CSV; no bulk actions",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4c (08 Sep 2026, ADR-035): history search + Columns (Segment hidden by default) + sortable headers + Copy CSV (history-*)"
  },
  {
   "id": "HC-AD-127",
@@ -9518,7 +9518,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Campaign detail copies the per-recipient delivery rows as CSV",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4c (08 Sep 2026, ADR-035): campaign detail Copy CSV of the delivery rows (campaign-csv)"
  },
  {
   "id": "HC-AD-128",
@@ -9533,7 +9533,7 @@
   "phase": 4,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "The amber Send Email button lives in the title row next to the Compose / History tabs and hides on History",
-  "evidence": "v2 improvement"
+  "evidence": "v2 improvement · Phase 4 item 4c (08 Sep 2026, ADR-035): Send Email lives in the title row and hides on History (email-send)"
  },
  {
   "id": "HC-MA-001",
