@@ -17,10 +17,10 @@ const mine = () => acc().strategies;
 const AT = "2026-09-08T10:00:00Z";
 const CALL = { id: "leg_a", kind: "call" as const, side: "buy" as const, strike: "80000", expiry: "2026-09-25", symbol: "C-BTC-80000-250926", lots: 10, price: "1200", entryPrice: "1200", exitPrice: null, iv: 0.5, status: "open" as const, isAdjustment: false, position: 0, openedAt: AT, closedAt: null, orderId: null };
 function strat(i: number, over: Partial<Strategy> = {}): Strategy {
-  return { id: `strat_${i}`, name: `Strategy ${i}`, asset: "BTC", status: "paper", tradingMode: "paper", templateName: "Custom", brokerId: "brk_delta", legs: [{ ...CALL, id: `leg_${i}` }], realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], startedAt: AT, closedAt: null, createdAt: AT, updatedAt: AT, ...over };
+  return { id: `strat_${i}`, name: `Strategy ${i}`, asset: "BTC", status: "paper", tradingMode: "paper", templateName: "Custom", brokerId: "brk_delta", legs: [{ ...CALL, id: `leg_${i}` }], realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: AT, closedAt: null, createdAt: AT, updatedAt: AT, ...over };
 }
 const liveStrat = (i: number, legs: Strategy["legs"] = [{ ...CALL, id: `leg_${i}` }]) =>
-  strat(i, { status: "live", tradingMode: "live", orderBatchId: "web-seed", legs, orders: legs.map((l, k) => ({ id: `ord_${i}_${k}`, legId: l.id, purpose: "entry" as const, clientOrderId: `hc-${l.id}-1`, venueOrderId: `70000${k}`, symbol: l.symbol, side: l.side, size: 10, state: "filled" as const, fillPrice: "1200", error: null, attempts: 1, createdAt: AT, updatedAt: AT })) });
+  strat(i, { status: "live", tradingMode: "live", orderBatchId: "web-seed", legs, orders: legs.map((l, k) => ({ id: `ord_${i}_${k}`, legId: l.id, purpose: "entry" as const, batchId: "web-seed", clientOrderId: `hc-${l.id}-1`, venueOrderId: `70000${k}`, symbol: l.symbol, side: l.side, size: 10, state: "filled" as const, fillPrice: "1200", error: null, attempts: 1, createdAt: AT, updatedAt: AT })) });
 function connect() {
   acc().credential = { brokerId: "brk_delta", apiKeyMasked: "****ab12", connectedAt: AT, whitelistedIp: "203.0.113.10" };
 }

@@ -222,3 +222,129 @@ describe("kill switch env", () => {
     }
   });
 });
+
+describe("HC-TR-088 adjustment batch on a live strategy (ADR-044)", () => {
+  const adjust = (id: string, body: Record<string, unknown>) => t.request(`/v1/strategies/${id}/adjust`, { cookie: alice, json: body });
+  const SOLD_CALL = { ...CALL, strike: "82000", symbol: "C-BTC-82000-250926", side: "sell", lots: 5, price: "700" };
+  beforeEach(() => {
+    t.trading.product("C-BTC-82000-250926", 103).markAt("C-BTC-82000-250926", "700").fillAt(103, "705");
+  });
+
+  it("previews the proposed batch instead of the open legs: trims and closes as reduce-only exits, adds as entries, the cap after netting", async () => {
+    const s = await draft([CALL, PUT]);
+    const live = await json<Strategy>(await place(s.id, "key-adj-live-000"));
+    const [call, put] = live.legs;
+    const p = await json<LivePreview>(await preview(s.id, { adds: [SOLD_CALL], changes: [{ legId: call!.id, lotsAfter: 4, price: "1300" }, { legId: put!.id, lotsAfter: 10, price: "900" }] }));
+    expect(p.ok).toBe(true);
+    expect(p.legs.map((l) => [l.legId, l.side, l.lots, l.mark])).toEqual([
+      [call!.id, "sell", 6, "1200"], // the trim: 10 → 4 sells 6
+      ["new-1", "sell", 5, "700"],
+    ]);
+    const capped = await json<LivePreview>(await preview(s.id, { adds: Array.from({ length: 9 }, () => SOLD_CALL), changes: [] }));
+    expect(capped.ok).toBe(false);
+    expect(capped.reasons).toContain("Maximum 10 active legs allowed per strategy");
+    const withClose = await json<LivePreview>(await preview(s.id, { adds: Array.from({ length: 9 }, () => SOLD_CALL), changes: [{ legId: put!.id, lotsAfter: 0, price: "900" }] }));
+    expect(withClose.reasons).not.toContain("Maximum 10 active legs allowed per strategy");
+    expect(withClose.legs[0]).toMatchObject({ legId: put!.id, side: "buy", lots: 10 });
+    expect((await preview(s.id, { changes: [{ legId: "leg_nope", lotsAfter: 0, price: "1" }] })).status).toBe(400);
+    expect((await preview(s.id, { changes: [{ legId: call!.id, lotsAfter: 11, price: "1" }] })).status).toBe(400);
+    // no overrides: the open legs, as before
+    const plain = await json<LivePreview>(await preview(s.id));
+    expect(plain.legs.map((l) => l.legId)).toEqual([call!.id, put!.id]);
+  });
+
+  it("places the exits first, then the entries, in one batch; fills set exits and entries; the history row carries the key", async () => {
+    const s = await draft([CALL, PUT]);
+    const live = await json<Strategy>(await place(s.id, "key-adj-live-001"));
+    const [call, put] = live.legs;
+    t.trading.fillAt(101, "1300").fillAt(102, "800");
+    const res = await adjust(s.id, { adds: [SOLD_CALL], changes: [{ legId: call!.id, lotsAfter: 4, price: "0" }, { legId: put!.id, lotsAfter: 0, price: "0" }], expected: { "C-BTC-82000-250926": "700" }, idempotencyKey: "key-adj-live-002", reason: "roll up" });
+    expect(res.status).toBe(200);
+    const a = await json<Strategy>(res);
+    // call entered at 1201 (fill), 6 lots out at 1300: +0.594 → 0.59 (P&L is booked to 2 dp); put entered at 899, 10 lots out at 800, sold: +0.99
+    expect(a.realizedPnl).toBe("1.58");
+    expect(a.legs.find((l) => l.id === call!.id)).toMatchObject({ status: "open", lots: 4, entryPrice: "1201" });
+    expect(a.legs.find((l) => l.id === put!.id)).toMatchObject({ status: "squared_off", exitPrice: "800" });
+    expect(a.legs.find((l) => l.symbol === "C-BTC-82000-250926")).toMatchObject({ status: "open", isAdjustment: true, entryPrice: "705" });
+    const batch = a.orders.filter((o) => o.purpose !== "entry");
+    expect(batch.map((o) => [o.purpose, o.side, o.size, o.state])).toEqual([
+      ["exit", "sell", 6, "closed"],
+      ["exit", "buy", 10, "closed"],
+      ["adjustment", "sell", 5, "filled"],
+    ]);
+    expect(batch.every((o) => o.batchId === "key-adj-live-002")).toBe(true);
+    expect(a.adjustments).toMatchObject([{ added: 1, trimmed: 1, closed: 1, realizedPnl: "1.58", batchId: "key-adj-live-002", reason: "roll up" }]);
+    // repeating the key does not place again
+    const again = await json<Strategy>(await adjust(s.id, { adds: [SOLD_CALL], idempotencyKey: "key-adj-live-002" }));
+    expect(again.orders).toHaveLength(a.orders.length);
+    expect(again.adjustments).toHaveLength(1);
+  });
+
+  it("an entry outside the mark band stays open with a failed order for Retry; a refused plan removes the added legs; a failed exit stops the batch with 502", async () => {
+    const s = await draft([CALL]);
+    const live = await json<Strategy>(await place(s.id, "key-adj-live-003"));
+    const [call] = live.legs;
+    // band: the Review showed 100, the venue mark is 700
+    const off = await json<Strategy>(await adjust(s.id, { adds: [SOLD_CALL], expected: { "C-BTC-82000-250926": "100" } }));
+    const added = off.legs.find((l) => l.symbol === "C-BTC-82000-250926");
+    expect(added).toMatchObject({ status: "open", entryPrice: null });
+    expect(off.orders.filter((o) => o.purpose === "adjustment").map((o) => o.state)).toEqual(["failed"]);
+    expect(off.adjustments).toHaveLength(1);
+    // plan refused (unknown product) with a close in the same batch: refused before the venue sees anything, the close included
+    const unknown = await adjust(s.id, { adds: [{ ...SOLD_CALL, symbol: "C-BTC-99000-250926", strike: "99000" }], changes: [{ legId: call!.id, lotsAfter: 0, price: "0" }] });
+    expect(unknown.status).toBe(409);
+    expect((await json<{ message: string }>(unknown)).message).toContain("C-BTC-99000-250926");
+    const afterUnknown = await json<Strategy>(await t.request(`/v1/strategies/${s.id}`, { cookie: alice }));
+    expect(afterUnknown.legs).toHaveLength(off.legs.length);
+    expect(afterUnknown.legs.find((l) => l.id === call!.id)).toMatchObject({ status: "open", lots: 10 });
+    expect(afterUnknown.orders.filter((o) => o.purpose === "exit")).toEqual([]);
+    expect(afterUnknown.adjustments).toHaveLength(1);
+    // a failed exit stops the batch: the leg stays open, the adds are not inserted, the history row says why
+    t.trading.failWith(101, "insufficient_margin", { once: true });
+    const failed = await adjust(s.id, { changes: [{ legId: call!.id, lotsAfter: 0, price: "0" }], adds: [SOLD_CALL], reason: "hedge" });
+    expect(failed.status).toBe(502);
+    const afterFail = await json<Strategy>(await t.request(`/v1/strategies/${s.id}`, { cookie: alice }));
+    expect(afterFail.legs.find((l) => l.id === call!.id)).toMatchObject({ status: "open", lots: 10 });
+    expect(afterFail.legs).toHaveLength(off.legs.length);
+    expect(afterFail.orders.filter((o) => o.purpose === "exit").map((o) => o.state)).toEqual(["failed"]);
+    expect(afterFail.adjustments).toHaveLength(2);
+    expect(afterFail.adjustments[1]).toMatchObject({ added: 0, trimmed: 0, closed: 0, realizedPnl: "0" });
+    expect(afterFail.adjustments[1]!.reason).toMatch(/^hedge · Stopped: C-BTC-80000-250926: .*margin/i);
+    // blocked account: refused before any order
+    const admin = await t.adminCookie();
+    await t.request(`/v1/admin/users/${aliceId}/trading`, { cookie: admin, json: { disabled: true } });
+    expect((await adjust(s.id, { changes: [{ legId: call!.id, lotsAfter: 0, price: "0" }] })).status).toBe(409);
+    await t.request(`/v1/admin/users/${aliceId}/trading`, { cookie: admin, json: { disabled: false } });
+  });
+
+  it("when a later exit fails, the earlier fill stays booked, the batch stops, the key is used up and a new key finishes the rest", async () => {
+    const s = await draft([CALL, PUT]);
+    const live = await json<Strategy>(await place(s.id, "key-adj-live-004"));
+    const [call, put] = live.legs;
+    t.trading.fillAt(101, "1300").failWith(102, "insufficient_margin", { once: true });
+    const res = await adjust(s.id, { changes: [{ legId: call!.id, lotsAfter: 0, price: "0" }, { legId: put!.id, lotsAfter: 0, price: "0" }], adds: [SOLD_CALL], idempotencyKey: "key-adj-live-005", reason: "flatten" });
+    expect(res.status).toBe(502);
+    const after = await json<Strategy>(await t.request(`/v1/strategies/${s.id}`, { cookie: alice }));
+    // the call's exit filled at 1300 against the 1201 entry: (1300 − 1201) × 10 × 0.001 = 0.99, booked
+    expect(after.legs.find((l) => l.id === call!.id)).toMatchObject({ status: "squared_off", exitPrice: "1300" });
+    expect(after.realizedPnl).toBe("0.99");
+    expect(after.legs.find((l) => l.id === put!.id)).toMatchObject({ status: "open", lots: 10 });
+    expect(after.legs).toHaveLength(2); // the add never went in
+    expect(after.orders.filter((o) => o.purpose === "exit").map((o) => [o.symbol, o.state])).toEqual([
+      ["C-BTC-80000-250926", "closed"],
+      ["P-BTC-78000-250926", "failed"],
+    ]);
+    expect(after.adjustments).toMatchObject([{ added: 0, trimmed: 0, closed: 1, realizedPnl: "0.99", batchId: "key-adj-live-005" }]);
+    expect(after.adjustments[0]!.reason).toMatch(/^flatten · Stopped: P-BTC-78000-250926: /);
+    // the same key is used up: nothing more happens
+    const same = await json<Strategy>(await adjust(s.id, { changes: [{ legId: put!.id, lotsAfter: 0, price: "0" }], idempotencyKey: "key-adj-live-005" }));
+    expect(same.adjustments).toHaveLength(1);
+    expect(same.legs.find((l) => l.id === put!.id)).toMatchObject({ status: "open" });
+    // a new key finishes the rest
+    const rest = await json<Strategy>(await adjust(s.id, { changes: [{ legId: put!.id, lotsAfter: 0, price: "0" }], adds: [SOLD_CALL], idempotencyKey: "key-adj-live-006" }));
+    expect(rest.legs.every((l) => l.id === put!.id ? l.status === "squared_off" : true)).toBe(true);
+    expect(rest.legs).toHaveLength(3);
+    expect(rest.adjustments).toHaveLength(2);
+    expect(rest.adjustments[1]).toMatchObject({ added: 1, closed: 1, batchId: "key-adj-live-006" });
+  });
+});

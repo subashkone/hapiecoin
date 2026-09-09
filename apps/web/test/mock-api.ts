@@ -458,7 +458,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (!body.name?.trim()) return err(c, 400, "VALIDATION", "Strategy name is required");
     if (!body.legs?.length || body.legs.length > 8) return err(c, 400, "VALIDATION", "1..8 legs");
     const at = nowIso();
-    const s: Strategy = { id: id("strat"), name: body.name.trim(), asset: body.asset, status: "draft", tradingMode: null, templateName: body.templateName ?? "Custom", brokerId: null, legs: body.legs.map((l, i) => mkLeg(l, i)), realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], startedAt: null, closedAt: null, createdAt: at, updatedAt: at };
+    const s: Strategy = { id: id("strat"), name: body.name.trim(), asset: body.asset, status: "draft", tradingMode: null, templateName: body.templateName ?? "Custom", brokerId: null, legs: body.legs.map((l, i) => mkLeg(l, i)), realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: null, closedAt: null, createdAt: at, updatedAt: at };
     acc.strategies.unshift(s);
     return c.json(s, 201);
   });
@@ -516,6 +516,43 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const added = body.legs.map((l, i) => mkLeg(l, next + i, { entryPrice: s.status === "live" ? null : l.price, isAdjustment: true, openedAt: s.status === "live" ? null : at }));
     s.legs.push(...added);
     if (s.status === "live") placeLive(c, s, `adj:${id("b")}`, "adjustment", added);
+    return c.json(touch(s));
+  });
+  // adjustment workbench batch (ADR-044): trims / closes first, then adds; paper at the client marks, live through the fake venue
+  v1.post("/strategies/:id/adjust", async (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (!isActive(s)) return err(c, 409, "CONFLICT", "Adjustments apply to a paper or live strategy");
+    const body = await c.req.json<{ adds?: StrategyLegInput[]; changes?: { legId: string; lotsAfter: number; price: string }[]; expected?: Record<string, string>; idempotencyKey?: string; reason?: string }>();
+    const adds = body.adds ?? [];
+    const changes = body.changes ?? [];
+    if (body.idempotencyKey && s.adjustments.some((a) => a.batchId === body.idempotencyKey)) return c.json(s);
+    const open = s.legs.filter((l) => l.status === "open");
+    const planned: { leg: StrategyLeg; exitLots: number; price: string }[] = [];
+    const seen = new Set<string>();
+    for (const ch of changes) {
+      const leg = open.find((l) => l.id === ch.legId);
+      if (!leg) return err(c, 400, "BAD_REQUEST", `Leg ${ch.legId} is not an open leg of this strategy`);
+      if (seen.has(leg.id)) return err(c, 400, "BAD_REQUEST", `${leg.symbol}: listed twice`);
+      seen.add(leg.id);
+      if (ch.lotsAfter > leg.lots) return err(c, 400, "BAD_REQUEST", `${leg.symbol}: lots after (${ch.lotsAfter}) exceed the open ${leg.lots}; add lots through "adds"`);
+      if (ch.lotsAfter === leg.lots) continue;
+      planned.push({ leg, exitLots: leg.lots - ch.lotsAfter, price: ch.price });
+    }
+    if (planned.length === 0 && adds.length === 0) return err(c, 400, "BAD_REQUEST", "Nothing to adjust");
+    const closes = planned.filter((p) => p.exitLots === p.leg.lots).length;
+    if (open.length - closes + adds.length > 10) return err(c, 409, "CONFLICT", "Maximum 10 active legs allowed per strategy");
+    const at = nowIso();
+    const lotSize = lotSizeOf(c, s.asset);
+    const wasRealized = Number(s.realizedPnl);
+    for (const p of planned) closeLeg(s, p.leg, s.status === "live" ? exitLive(c, s, p.leg, p.exitLots) : p.price, p.exitLots < p.leg.lots ? p.exitLots : undefined, lotSize);
+    const realized = Number(s.realizedPnl) - wasRealized;
+    const next = s.legs.reduce((m, l) => Math.max(m, l.position), -1) + 1;
+    const added = adds.map((l, i) => mkLeg(l, next + i, { entryPrice: s.status === "live" ? null : l.price, isAdjustment: true, openedAt: s.status === "live" ? null : at }));
+    s.legs.push(...added);
+    const batchId = body.idempotencyKey ?? `adj:${id("b")}`;
+    if (s.status === "live" && added.length) placeLive(c, s, batchId, "adjustment", added, body.expected ?? {});
+    s.adjustments.push({ id: id("adj"), at, reason: body.reason?.trim() ? body.reason.trim() : null, added: added.length, trimmed: planned.length - closes, closed: closes, realizedPnl: toDecimal(realized, 2), batchId });
     return c.json(touch(s));
   });
   v1.post("/strategies/:id/legs/:legId/close", async (c) => {
@@ -602,21 +639,24 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (worstLoss !== null && Math.abs(worstLoss) > 4000) reasons.push(`Available USD 4000 is below the worst-loss estimate ${toDecimal(Math.abs(worstLoss), 2)}`);
     return { ok: reasons.length === 0, reasons, legs, notional: toDecimal(notional, 2), available: acc.credential ? "4000" : null, availableAsset: acc.credential ? "USD" : null, marginUsed: acc.credential ? "12" : null, limits: { maxLegs: 10, maxNotionalUsd: 100_000, markBandPct: 5 } };
   };
-  const placeLive = (c: Context, s: Strategy, batchId: string, purpose: StrategyOrder["purpose"], legs: StrategyLeg[]) => {
+  const placeLive = (c: Context, s: Strategy, batchId: string, purpose: StrategyOrder["purpose"], legs: StrategyLeg[], expected: Record<string, string> = {}) => {
     const at = nowIso();
     const lotSize = lotSizeOf(c, s.asset);
     for (const l of legs) {
       const attempt = s.orders.filter((o) => o.legId === l.id && o.purpose !== "exit").length + 1;
-      const fail = l.symbol.includes("FAIL");
       const fill = markOf(l);
-      s.orders.push({ id: id("ord"), legId: l.id, purpose, clientOrderId: `hc-${l.id}-${attempt}`, venueOrderId: fail ? null : String(700000 + s.orders.length), symbol: l.symbol, side: l.side, size: contractsOf(l, lotSize), state: fail ? "failed" : "filled", fillPrice: fail ? null : fill, error: fail ? "Not enough margin on the exchange for this order" : null, attempts: attempt, createdAt: at, updatedAt: at });
+      const shown = expected[l.symbol];
+      // the mark band (5 %): a leg whose mark moved from what Review showed is refused, like the real executor
+      const moved = shown !== undefined && Math.abs(Number(fill) - Number(shown)) / Number(shown) > 0.05;
+      const fail = l.symbol.includes("FAIL") || moved;
+      s.orders.push({ id: id("ord"), legId: l.id, purpose, batchId, clientOrderId: `hc-${l.id}-${attempt}`, venueOrderId: fail ? null : String(700000 + s.orders.length), symbol: l.symbol, side: l.side, size: contractsOf(l, lotSize), state: fail ? "failed" : "filled", fillPrice: fail ? null : fill, error: fail ? (moved ? `${l.symbol}: mark moved from ${shown} to ${fill}, outside the band` : "Not enough margin on the exchange for this order") : null, attempts: attempt, createdAt: at, updatedAt: at });
       if (!fail) Object.assign(l, { entryPrice: fill, price: fill, status: "open", openedAt: at, orderId: String(700000 + s.orders.length - 1) });
     }
   };
   const exitLive = (c: Context, s: Strategy, leg: StrategyLeg, lots: number) => {
     const at = nowIso();
     const fill = markOf(leg);
-    s.orders.push({ id: id("ord"), legId: leg.id, purpose: "exit", clientOrderId: `hc-${leg.id}-x${s.orders.length + 1}`, venueOrderId: String(800000 + s.orders.length), symbol: leg.symbol, side: leg.side === "buy" ? "sell" : "buy", size: contractsOf({ ...leg, lots }, lotSizeOf(c, s.asset)), state: "closed", fillPrice: fill, error: null, attempts: 1, createdAt: at, updatedAt: at });
+    s.orders.push({ id: id("ord"), legId: leg.id, purpose: "exit", batchId: `exit:${leg.id}`, clientOrderId: `hc-${leg.id}-x${s.orders.length + 1}`, venueOrderId: String(800000 + s.orders.length), symbol: leg.symbol, side: leg.side === "buy" ? "sell" : "buy", size: contractsOf({ ...leg, lots }, lotSizeOf(c, s.asset)), state: "closed", fillPrice: fill, error: null, attempts: 1, createdAt: at, updatedAt: at });
     return fill;
   };
   v1.post("/strategies/live/batch", async (c) => {
@@ -690,7 +730,22 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   v1.post("/strategies/:id/live/preview", async (c) => {
     const s = findStrategy(c);
     if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
-    const body = await c.req.json<{ brokerId: string; worstLoss?: number }>();
+    const body = await c.req.json<{ brokerId: string; worstLoss?: number; adds?: StrategyLegInput[]; changes?: { legId: string; lotsAfter: number; price: string }[] }>();
+    if (body.adds !== undefined || body.changes !== undefined) {
+      const open = s.legs.filter((l) => l.status === "open");
+      const rows: StrategyLeg[] = [];
+      for (const ch of body.changes ?? []) {
+        const leg = open.find((l) => l.id === ch.legId);
+        if (!leg) return err(c, 400, "BAD_REQUEST", `Leg ${ch.legId} is not an open leg of this strategy`);
+        if (ch.lotsAfter > leg.lots) return err(c, 400, "BAD_REQUEST", `${leg.symbol}: lots after (${ch.lotsAfter}) exceed the open ${leg.lots}`);
+        if (ch.lotsAfter < leg.lots) rows.push({ ...leg, side: leg.side === "buy" ? "sell" : "buy", lots: leg.lots - ch.lotsAfter });
+      }
+      (body.adds ?? []).forEach((l, i) => rows.push({ ...mkLeg(l, 900 + i, { entryPrice: null, isAdjustment: true, openedAt: null }), id: `new-${i + 1}` }));
+      const p = livePreview(c, { ...s, legs: rows }, body.worstLoss ?? null);
+      const closes = (body.changes ?? []).filter((ch) => ch.lotsAfter === 0).length;
+      if (open.length - closes + (body.adds ?? []).length > 10) p.reasons.push("Maximum 10 active legs allowed per strategy");
+      return c.json({ ...p, ok: p.reasons.length === 0 });
+    }
     return c.json(livePreview(c, s, body.worstLoss ?? null));
   });
   v1.post("/strategies/:id/live/place", async (c) => {

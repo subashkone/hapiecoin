@@ -1,0 +1,361 @@
+<title>Adjustment Workbench v2</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0b0d10;--card:#12151a;--card2:#171b21;--border:#242a33;--fg:#e6e8eb;--muted:#8b93a1;--amber:#f0a92c;--amber-bg:rgba(240,169,44,.12);--up:#39b37a;--up-bg:rgba(57,179,122,.14);--down:#e05c5c;--down-bg:rgba(224,92,92,.14);--curve:#5b8def;--font:Inter,system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.45 var(--font)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.micro{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.top{display:flex;align-items:center;gap:14px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--card)}
+.top b{font-size:15px}.amber{color:var(--amber)}
+.pill{display:inline-block;border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-family:var(--mono);font-size:10.5px;color:var(--muted);white-space:nowrap}
+.pill.paper{border-color:var(--muted)}.pill.live{border-color:var(--amber);background:var(--amber-bg);color:var(--amber)}.pill.adj{border-style:dashed;color:var(--fg)}.pill.warn{border-color:var(--down);color:var(--down)}
+.bar{display:flex;gap:8px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.bar .st{border:1px solid var(--border);border-radius:14px;padding:2px 10px;font-size:11.5px;color:var(--muted)}
+.bar .st.on{border-color:var(--amber);color:var(--fg);background:var(--amber-bg)}.bar .st.done{color:var(--up);border-color:var(--up)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:5px;overflow:hidden}
+.seg button{background:var(--card2);border:0;border-right:1px solid var(--border);color:var(--muted);padding:5px 11px;font:12.5px var(--font);cursor:pointer}
+.seg button:last-child{border-right:0}.seg button.on{color:var(--fg);background:var(--amber-bg)}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-height:calc(100vh - 92px)}
+.wrap.three{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr)}
+.pane{min-width:0;border-right:1px solid var(--border)}.pane:last-child{border-right:0}
+.tabs{display:flex;gap:2px;padding:0 10px;border-bottom:1px solid var(--border);align-items:center}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:9px 10px;font:13px var(--font);cursor:pointer}
+.tabs button.on{color:var(--fg);border-bottom-color:var(--amber)}.tabs .right{margin-left:auto}
+.body{padding:12px}
+.card{border:1px solid var(--border);background:var(--card);border-radius:6px;padding:10px 12px;margin-bottom:10px}
+.card.sel{border-color:var(--curve)}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{background:var(--card2);border:1px solid var(--border);color:var(--fg);border-radius:5px;padding:5px 11px;font:12.5px var(--font);cursor:pointer;white-space:nowrap}
+.btn.primary{background:var(--amber);border-color:var(--amber);color:#1a1200;font-weight:600}
+.btn.live{background:var(--down);border-color:var(--down);color:#fff;font-weight:600;position:relative;overflow:hidden}
+.btn.live .fillbar{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(255,255,255,.28);transition:width .1s linear}
+.btn.warn{color:var(--amber);border-color:var(--amber)}.btn.danger{color:var(--down);border-color:transparent;background:none}.btn.ghost{background:none}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.chip{font-family:var(--mono);font-size:11px;border:1px solid var(--border);border-radius:4px;padding:2px 7px;color:var(--muted);cursor:pointer;background:var(--card2)}
+.chip.on{color:var(--fg);border-color:var(--fg)}.chip:hover{color:var(--fg)}
+.pos{color:var(--up)}.neg{color:var(--down)}
+.side{font-family:var(--mono);font-size:10.5px;border-radius:3px;padding:1px 6px;white-space:nowrap}
+.side.buy{background:var(--up-bg);color:var(--up)}.side.sell{background:var(--down-bg);color:var(--down)}
+table{border-collapse:collapse;width:100%}th{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--muted);text-align:left;padding:5px 6px;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;background:var(--card)}
+td{padding:5px 6px;border-bottom:1px solid var(--border);white-space:nowrap}td.r,th.r{text-align:right}
+.tw{overflow:auto}
+.bs{display:inline-block;width:22px;height:22px;line-height:20px;text-align:center;border:1px solid var(--border);border-radius:3px;font-family:var(--mono);font-size:11px;cursor:pointer;color:var(--muted);user-select:none}
+.bs.b:hover,.bs.b.on{color:var(--up);border-color:var(--up);background:var(--up-bg)}.bs.s:hover,.bs.s.on{color:var(--down);border-color:var(--down);background:var(--down-bg)}
+.strike{font-family:var(--mono);font-weight:600;background:var(--card2);text-align:center}
+.chainwrap{max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:6px;background:var(--card)}
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.strip.six{grid-template-columns:repeat(6,minmax(0,1fr))}
+.tile{border:1px solid var(--border);background:var(--card);border-radius:6px;padding:8px 10px;min-width:0}
+.tile .v{font-family:var(--mono);font-size:15px;font-weight:600;margin-top:2px;white-space:nowrap}
+.tile .d{font-family:var(--mono);font-size:10.5px;margin-top:2px;color:var(--muted);line-height:1.5}
+.tile .d .arr{color:var(--muted);margin:0 3px}
+.legend{display:flex;gap:14px;font-size:11.5px;color:var(--muted);margin:6px 0;flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:0;border-top:2px solid var(--fg);vertical-align:middle;margin-right:5px}
+.legend i.ghost{border-top-style:dashed;border-top-color:var(--muted)}.legend i.curve{border-top-color:var(--curve)}
+canvas{width:100%;height:230px;display:block;background:var(--card);border:1px solid var(--border);border-radius:6px}
+.slider{display:flex;gap:10px;align-items:center;margin-top:8px;font-size:11.5px;color:var(--muted)}
+input[type=range]{accent-color:var(--amber);flex:1}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:20}
+.overlay.open{display:flex}
+.dialog{background:var(--card);border:1px solid var(--border);border-radius:8px;width:min(960px,94vw);max-height:92vh;overflow:auto;padding:16px 18px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.dialog.livebox{border-color:var(--down)}
+.dialog h3{margin:0 0 4px;font-size:16px}
+.toast{position:fixed;right:18px;bottom:18px;background:var(--card2);border:1px solid var(--up);color:var(--fg);padding:10px 14px;border-radius:6px;display:none;z-index:30;font-size:12.5px;max-width:420px}
+.toast.show{display:block}
+.note{border:1px dashed var(--border);border-radius:6px;padding:8px 10px;color:var(--muted);font-size:12px}
+.banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--amber-bg);border:1px solid var(--amber);border-radius:6px;padding:7px 10px;margin-bottom:10px}
+.lock{color:var(--muted);font-family:var(--mono);font-size:10.5px}
+.verdict{border-left:3px solid var(--up);background:var(--up-bg);padding:8px 10px;border-radius:4px;font-size:12px;margin-top:8px}
+.verdict.bad{border-left-color:var(--down);background:var(--down-bg)}
+kbd{font-family:var(--mono);font-size:10.5px;border:1px solid var(--border);border-radius:3px;padding:0 4px;color:var(--muted)}
+.lots{display:inline-flex;border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.lots button{background:var(--card2);border:0;color:var(--muted);width:22px;cursor:pointer}.lots span{padding:0 6px;font-family:var(--mono);font-size:12px;min-width:44px;text-align:center}
+.hl{outline:2px solid var(--amber);outline-offset:2px;border-radius:5px;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{outline-color:transparent}}
+.sticky{position:sticky;top:0;background:var(--bg);z-index:5;padding-bottom:6px}
+.fill{font-family:var(--mono);font-size:10.5px}
+.fill.placed{color:var(--muted)}.fill.filled{color:var(--up)}.fill.rejected{color:var(--down)}
+.choose{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.choose .opt{border:1px solid var(--border);border-radius:6px;padding:10px 12px;cursor:pointer;background:var(--card)}
+.choose .opt.on{border-color:var(--amber);background:var(--amber-bg)}.choose .opt b{display:block;margin-bottom:3px}.choose .opt span{color:var(--muted);font-size:12px}
+@media (max-width:1000px){.wrap,.wrap.three{grid-template-columns:1fr}.pane{border-right:0;border-bottom:1px solid var(--border)}.strip,.strip.six{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+<div class="top"><span class="amber">⚠</span><b>HapieCoin</b><span>Analyse</span><span class="pill">BTC</span><span class="micro">Futures · BTCUSD</span><span class="num" style="font-size:15px" id="spotTop">79,557.2</span><span class="micro" id="feedAge"><span class="pos">●</span> feed live · marks 0s old</span><span style="margin-left:auto"></span><span class="pill" id="modePill">○ PAPER</span><span class="pill">₹ INR</span></div>
+
+<div class="bar" id="flow">
+  <span class="st on" data-step="1">1 · Paper</span><span class="micro">→</span><span class="st" data-step="2">2 · Adjust</span><span class="micro">→</span><span class="st" data-step="3">3 · Review</span><span class="micro">→</span><span class="st" data-step="4">4 · Done</span>
+  <span style="margin-left:auto"></span>
+  <span class="micro">layout</span><span class="seg"><button id="lyH1" class="on" title="Hybrid 1: the Analyse layout stays; the Chain tab becomes the picker">H1 · In place</button><button id="lyH2" title="Hybrid 2: one workbench screen with legs · chain · preview">H2 · Workbench</button></span>
+  <span class="micro">strategy</span><span class="seg"><button id="mdP" class="on">○ paper</button><button id="mdL">● live</button></span>
+  <button class="btn ghost" id="resetBtn">↺ restart</button>
+</div>
+
+<div id="app"></div>
+<div class="overlay" id="ov"><div class="dialog" id="dlg"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ================= market mock =================
+let SPOT = 79557.2; const LOT = 0.001, INR = 84.2, TICK = 0.1;
+const NOW = new Date("2026-09-09T05:57:00Z"); const t0 = Date.now();
+const EXPIRIES = [["2026-09-09", "09 Sep", "0d"], ["2026-09-10", "10 Sep", "1d"], ["2026-09-11", "11 Sep", "2d"], ["2026-09-18", "18 Sep", "9d"], ["2026-09-25", "25 Sep", "16d"], ["2026-10-30", "30 Oct", "51d"]];
+const settle = (d) => new Date(d + "T12:00:00Z").getTime();
+const yearsTo = (d, at = NOW.getTime()) => Math.max((settle(d) - at) / (365 * 864e5), 0.05 / 365);
+function erf(x) { const s = Math.sign(x); x = Math.abs(x); const t = 1 / (1 + 0.3275911 * x); return s * (1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x)); }
+const N = (x) => 0.5 * (1 + erf(x / Math.SQRT2)), pdf = (x) => Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+const ivOf = (K, d) => { const m = Math.log(K / SPOT); const base = 0.36 + 0.06 * Math.min(1, yearsTo(d) * 365 / 30); return Math.max(0.2, base + 0.9 * Math.abs(m) + (m < 0 ? 0.25 * -m : 0)); };
+function b76(type, F, K, T, iv) { if (T <= 0.06 / 365) return type === "C" ? Math.max(F - K, 0) : Math.max(K - F, 0); const s = iv * Math.sqrt(T), d1 = (Math.log(F / K) + 0.5 * s * s) / s, d2 = d1 - s; return type === "C" ? F * N(d1) - K * N(d2) : K * N(-d2) - F * N(-d1); }
+function greeks(leg, F) { const T = yearsTo(leg.expiry), iv = ivOf(leg.strike, leg.expiry), s = iv * Math.sqrt(T), d1 = (Math.log(F / leg.strike) + 0.5 * s * s) / s; const q = leg.lots * LOT * (leg.side === "buy" ? 1 : -1); const delta = leg.type === "C" ? N(d1) : N(d1) - 1; return { delta: delta * q, gamma: pdf(d1) / (F * s) * q, theta: -(F * pdf(d1) * iv) / (2 * Math.sqrt(T)) / 365 * q, vega: F * pdf(d1) * Math.sqrt(T) / 100 * q }; }
+const mark = (type, K, d) => Math.round(b76(type, SPOT, K, yearsTo(d), ivOf(K, d)) * 10) / 10;
+const STRIKES = []; for (let k = 75000; k <= 84000; k += 200) STRIKES.push(k);
+
+// ================= the strategy =================
+const S = { id: "STRAT_UYMQYLDVKTOU", name: "Long Call Butterfly", asset: "BTC", realised: 0, legs: [
+  { id: "l1", side: "buy", type: "C", strike: 77800, expiry: "2026-09-09", lots: 100, entry: 837.8 },
+  { id: "l2", side: "sell", type: "C", strike: 78200, expiry: "2026-09-09", lots: 200, entry: 603.8 },
+  { id: "l3", side: "buy", type: "C", strike: 78600, expiry: "2026-09-09", lots: 100, entry: 425.9 },
+]};
+S.legs.forEach((l) => (l.mark = mark(l.type, l.strike, l.expiry)));
+let layout = "H1", mode = "paper", step = 1, adjusting = false, picks = [], leftTab = "paper", rightTab = "payoff", chainExpiry = "2026-09-09", valueAt = "2026-09-09", targetPct = 0, showBefore = true, done = false, orderType = "market";
+
+// ================= position maths =================
+const expLabel = (d) => EXPIRIES.find((e) => e[0] === d)[1];
+function netted() { // proposed picks against open legs: opposite side trims/closes, same side adds to the leg
+  const out = []; for (const p of picks) { const held = S.legs.find((l) => l.strike === p.strike && l.type === p.type && l.expiry === p.expiry); if (held && held.side !== p.side) { const closeLots = Math.min(p.lots, held.lots); out.push({ ...p, nets: held.id, adds: null, closeLots, newLots: p.lots - closeLots }); } else if (held) out.push({ ...p, nets: null, adds: held.id, closeLots: 0, newLots: p.lots }); else out.push({ ...p, nets: null, adds: null, closeLots: 0, newLots: p.lots }); } return out; }
+const effectOf = (p) => { if (p.nets) { const o = S.legs.find((l) => l.id === p.nets); return (p.closeLots >= o.lots ? `<span class="pill warn">CLOSES ${o.side === "buy" ? "B" : "S"} ${p.type} ${p.strike.toLocaleString()}</span>` : `<span class="pill warn">TRIMS ${p.type} ${p.strike.toLocaleString()} by ${p.closeLots}</span>`) + (p.newLots ? ` <span class="pill adj">FLIPS +${p.newLots} ${p.side}</span>` : ""); } if (p.adds) return `<span class="pill adj">ADDS +${p.lots} to ${p.type} ${p.strike.toLocaleString()}</span>`; return `<span class="pill adj">NEW LEG</span>`; };
+function combined() { // open legs after netting + genuinely new legs
+  const n = netted(); const legs = S.legs.map((l) => ({ ...l, basis: l.entry })); for (const p of n) { if (p.nets) { const o = legs.find((l) => l.id === p.nets); o.lots -= p.closeLots; } if (p.newLots > 0) legs.push({ id: p.key, side: p.side, type: p.type, strike: p.strike, expiry: p.expiry, lots: p.newLots, entry: p.mark, mark: p.mark, basis: p.mark, adj: true }); } return legs.filter((l) => l.lots > 0);
+}
+const openCountAfter = () => { const c = combined(); const addKeys = new Set(netted().filter((p) => p.adds).map((p) => p.key)); return c.filter((l) => !(l.adj && addKeys.has(l.id))).length; };
+function valueAtDate(legs, F, at) { // ₹ P&L of the position if the underlying is F on date `at` (legs after `at` keep time value)
+  let v = 0; for (const l of legs) { const T = Math.max((settle(l.expiry) - settle(at)) / (365 * 864e5), 0); const px = T > 0.06 / 365 ? b76(l.type, F, l.strike, T, ivOf(l.strike, l.expiry)) : (l.type === "C" ? Math.max(F - l.strike, 0) : Math.max(l.strike - F, 0)); v += (l.side === "buy" ? 1 : -1) * (px - l.basis) * l.lots * LOT; } return v * INR;
+}
+function analyse(legs, at) {
+  const lo = SPOT * 0.9, hi = SPOT * 1.1, series = []; for (let i = 0; i <= 160; i++) { const p = lo + (hi - lo) * i / 160; series.push({ p, v: valueAtDate(legs, p, at) }); }
+  const netC = legs.reduce((n, l) => n + (l.type === "C" ? (l.side === "buy" ? 1 : -1) * l.lots : 0), 0), netP = legs.reduce((n, l) => n + (l.type === "P" ? (l.side === "buy" ? 1 : -1) * l.lots : 0), 0);
+  const last = EXPIRIES[EXPIRIES.length - 1][0]; const far = valueAtDate(legs, SPOT * 3, last), zero = valueAtDate(legs, 1, last);
+  const maxP = Math.max(...series.map((x) => x.v)), maxL = Math.min(...series.map((x) => x.v));
+  const upUnl = netC > 0, upLoss = netC < 0; // beyond the range: calls decide
+  const maxProfit = upUnl ? Infinity : Math.max(maxP, far, zero), maxLoss = upLoss ? -Infinity : Math.min(maxL, far, zero);
+  const be = []; for (let i = 1; i < series.length; i++) if ((series[i - 1].v < 0) !== (series[i].v < 0)) be.push(Math.round(series[i].p));
+  const sig = SPOT * 0.42 * Math.sqrt(Math.max((settle(at) - NOW.getTime()) / (365 * 864e5), 0.5 / 365)); let pop = 0, tot = 0; for (const x of series) { const w = Math.exp(-0.5 * ((x.p - SPOT) / sig) ** 2); tot += w; if (x.v > 0) pop += w; }
+  const g = legs.reduce((a, l) => { const gg = greeks(l, SPOT); return { delta: a.delta + gg.delta, gamma: a.gamma + gg.gamma, theta: a.theta + gg.theta, vega: a.vega + gg.vega }; }, { delta: 0, gamma: 0, theta: 0, vega: 0 });
+  const shortNotional = legs.filter((l) => l.side === "sell").reduce((s, l) => s + SPOT * l.lots * LOT, 0); const margin = Math.max(maxLoss === -Infinity ? shortNotional * 0.12 : -maxLoss, shortNotional * 0.04) * INR / INR;
+  return { series, maxProfit, maxLoss, breakevens: be, pop: pop / tot, greeks: g, margin: Math.round(maxLoss === -Infinity ? shortNotional * 0.12 * INR : Math.max(-maxLoss, shortNotional * 0.04 * INR)), netP, netC, downBound: netP < 0 ? zero : null };
+}
+const fmt = (v, kind) => v === Infinity ? (kind === "loss" ? "Unlimited loss" : "Unlimited profit") : v === -Infinity ? "Unlimited loss" : (v < 0 ? "−₹" : "+₹") + Math.abs(Math.round(v)).toLocaleString("en-IN");
+const fmt0 = (v) => "₹" + Math.abs(Math.round(v)).toLocaleString("en-IN");
+const premiumOf = (legs) => legs.reduce((s, l) => s + (l.side === "sell" ? 1 : -1) * l.mark * l.lots * LOT, 0) * INR;
+const feesOf = (legs) => legs.reduce((s, l) => s + Math.min(l.mark * l.lots * LOT * 0.0005, SPOT * l.lots * LOT * 0.0003) * INR * 1.18, 0);
+const cashflow = () => { const newLegs = combined().filter((l) => l.adj); return premiumOf(newLegs) + netted().filter((p) => p.nets).reduce((s, p) => { const o = S.legs.find((l) => l.id === p.nets); return s + (o.side === "buy" ? 1 : -1) * o.mark * p.closeLots * LOT * INR; }, 0); };
+const unrealised = () => S.legs.reduce((s, l) => s + (l.side === "buy" ? 1 : -1) * (l.mark - l.entry) * l.lots * LOT, 0) * INR;
+const pnlNow = () => unrealised() + S.realised;
+
+// ================= helpers =================
+const $ = (s) => document.querySelector(s);
+function setStep(n) { step = n; document.querySelectorAll("#flow .st").forEach((el) => { const k = +el.dataset.step; el.classList.toggle("on", k === n); el.classList.toggle("done", k < n); }); }
+function toast(msg, ms = 2800) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), ms); }
+const badge = () => `<span class="pill ${mode}">${mode === "paper" ? "○ PAPER" : "● LIVE"}</span>`;
+let marksAt = Date.now(); setInterval(() => { const s = Math.round((Date.now() - marksAt) / 1000); $("#feedAge").innerHTML = `<span class="${s > 20 ? "neg" : "pos"}">●</span> feed live · marks ${s}s old`; }, 1000);
+function reprice() { SPOT = Math.round((SPOT + (Math.random() - 0.5) * 40) * 10) / 10; S.legs.forEach((l) => (l.mark = mark(l.type, l.strike, l.expiry))); picks.forEach((p) => (p.mark = mark(p.type, p.strike, p.expiry))); marksAt = Date.now(); $("#spotTop").textContent = SPOT.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
+
+// ================= rendering =================
+function render() {
+  const app = $("#app");
+  if (!adjusting) { app.innerHTML = `<div class="wrap"><div class="pane">${tabsLeft()}<div class="body" id="leftBody"></div></div><div class="pane">${tabsRight()}<div class="body" id="rightBody"></div></div></div>`; renderHome(); renderPreview($("#rightBody")); bindTabs(); return; }
+  if (layout === "H1") { app.innerHTML = `<div class="wrap"><div class="pane">${tabsLeft()}<div class="body" id="leftBody"></div></div><div class="pane">${tabsRight()}<div class="body" id="rightBody"></div></div></div>`; if (leftTab === "builder") renderBuilder($("#leftBody")); else renderChain($("#leftBody"), true); renderPreview($("#rightBody")); bindTabs(); return; }
+  app.innerHTML = `<div class="wrap three"><div class="pane"><div class="tabs"><span class="micro" style="padding:9px 8px">Position · ${S.name}</span></div><div class="body" id="legsBody"></div></div><div class="pane"><div class="tabs"><span class="micro" style="padding:9px 8px">Chain · pick adjustment legs</span></div><div class="body" id="chainBody"></div></div><div class="pane">${tabsRight()}<div class="body" id="rightBody"></div></div></div>`;
+  renderLegs($("#legsBody")); renderChain($("#chainBody"), false); renderPreview($("#rightBody")); bindTabs();
+}
+function tabsLeft() { const n = adjusting ? `${S.legs.length}+${picks.length}` : "2"; return `<div class="tabs"><button data-lt="chain" class="${leftTab === "chain" ? "on" : ""}">Chain${adjusting ? ' <span class="pill adj">picking</span>' : ""}</button><button data-lt="builder" class="${leftTab === "builder" ? "on" : ""}">Builder <span class="pill">${n}</span></button><button data-lt="paper" class="${leftTab === "paper" ? "on" : ""}">Paper <span class="pill">3</span></button><button data-lt="live">Live</button><button data-lt="journal">Journal</button><span class="right micro" style="padding-right:8px">lot · basis mark</span></div>`; }
+function tabsRight() { return `<div class="tabs"><span class="micro" style="padding:0 8px">${adjusting ? "adjusting" : done ? "following" : "following"} · ${S.name}</span>${["payoff", "greeks", "ladder"].map((t) => `<button data-rt="${t}" class="${rightTab === t ? "on" : ""}">${t[0].toUpperCase() + t.slice(1)}</button>`).join("")}<span class="right"></span>${adjusting ? `<button class="btn ghost" id="cancelAdj" style="margin:4px 8px">Cancel · <kbd>Esc</kbd></button>` : ""}</div>`; }
+function bindTabs() {
+  document.querySelectorAll("[data-lt]").forEach((b) => (b.onclick = () => { leftTab = b.dataset.lt; if (adjusting && !["chain", "builder"].includes(leftTab)) { toast("Chain and Builder stay available while adjusting; other tabs return after Review or Cancel"); leftTab = "chain"; } render(); }));
+  document.querySelectorAll("[data-rt]").forEach((b) => (b.onclick = () => { rightTab = b.dataset.rt; renderPreview($("#rightBody")); }));
+  if ($("#cancelAdj")) $("#cancelAdj").onclick = cancelAdjust;
+}
+
+function renderHome() {
+  const el = $("#leftBody"); const lastEx = S.legs.map((l) => l.expiry).sort().pop(); const a = analyse(S.legs.map((l) => ({ ...l, basis: l.entry })), lastEx); const pnl = pnlNow();
+  el.innerHTML = `${step === 1 ? `<div class="choose"><div class="opt ${layout === "H1" ? "on" : ""}" id="chH1"><b>H1 · In place</b><span>The Analyse screen stays as it is. "Adjust" turns the Chain tab into the picker with a banner; Builder shows the locked legs plus your new rows; the right pane previews before → after on every click.</span></div><div class="opt ${layout === "H2" ? "on" : ""}" id="chH2"><b>H2 · Workbench</b><span>"Adjust" opens one screen: your position and ticket on the left, the chain in the middle, the preview on the right. Fewest clicks; nothing hidden behind tabs.</span></div></div>` : ""}
+  <div class="strip" style="grid-template-columns:repeat(3,1fr)"><div class="tile"><div class="micro">Total P&L</div><div class="v ${pnl < 0 ? "neg" : "pos"}">${fmt(pnl)}</div><div class="d">3 trades · ${S.legs.length + 6} open legs · realised ${fmt(S.realised)}</div></div><div class="tile"><div class="micro">Day P&L</div><div class="v neg">−₹885</div><div class="d">vs previous close</div></div><div class="tile"><div class="micro">Prices</div><div class="v">Live</div><div class="d">mark basis · gateway</div></div></div>
+  <div class="card"><div class="row"><b>Bull Call Spread</b><span class="pill paper">○ PAPER</span><span class="micro">BTC · 2/3 legs · 1 day</span><span class="num pos" style="margin-left:auto">₹0.00</span></div></div>
+  <div class="card"><div class="row"><b>Iron Butterfly</b><span class="pill paper">○ PAPER</span><span class="micro">BTC · 4/4 legs · 1 day</span><span class="num pos" style="margin-left:auto">₹0.00</span></div></div>
+  <div class="card sel"><div class="row"><b>${S.name}</b>${badge()}${done ? '<span class="pill adj">ADJUSTED</span>' : ""}<span class="micro">BTC · ${S.legs.length} legs · 0 days</span><span class="num ${pnl < 0 ? "neg" : "pos"}" style="margin-left:auto">${fmt(pnl)}</span></div>
+    <div class="row" style="margin-top:6px">${S.legs.map((l) => `<span class="pill ${l.adj ? "adj" : ""}">${l.side === "buy" ? "B" : "S"} ${l.type} ${l.strike.toLocaleString()} · ${expLabel(l.expiry)} · ${l.lots}${l.adj ? " · ADJ" : ""}</span>`).join("")}</div>
+    <div class="row" style="margin-top:8px"><span class="micro">max loss <b class="${a.maxLoss === -Infinity ? "neg" : ""}">${fmt(a.maxLoss, "loss")}</b> · max profit <b class="pos">${fmt(a.maxProfit)}</b> · POP ${Math.round(a.pop * 100)}%</span><span style="margin-left:auto"></span><button class="btn" id="details">Details</button><button class="btn ${done ? "" : "hl"}" id="adjust">Adjust · <kbd>A</kbd></button><button class="btn warn">Stop</button></div></div>
+  ${done ? `<div class="note">Done. The card and Details now carry the combined position: max loss / profit are recomputed from the open legs at their entry prices (paper) or venue fills (live). Use ↺ restart to try the other layout or the other mode.</div>` : `<div class="note">Fewest clicks: <b>Adjust</b> on the card (or <kbd>A</kbd>) goes straight to picking, no Details detour. Details keeps its own "+ Add adjustment" for the same flow.</div>`}`;
+  $("#adjust").onclick = startAdjust; $("#details").onclick = openDetails;
+  if ($("#chH1")) { $("#chH1").onclick = () => { layout = "H1"; syncLayout(); render(); }; $("#chH2").onclick = () => { layout = "H2"; syncLayout(); render(); }; }
+}
+function startAdjust() { adjusting = true; picks = []; leftTab = "chain"; rightTab = "payoff"; chainExpiry = "2026-09-09"; valueAt = S.legs.map((l) => l.expiry).sort().pop(); setStep(2); render(); }
+function cancelAdjust() { if (picks.length && !confirm(`Discard ${picks.length} proposed leg${picks.length === 1 ? "" : "s"}?`)) return; adjusting = false; picks = []; leftTab = "paper"; setStep(1); render(); toast("Adjustment cancelled · nothing was sent"); }
+
+// ---- chain (picker) ----
+function renderChain(el, withBanner) {
+  const remaining = 10 - openCountAfter();
+  el.innerHTML = `${withBanner ? banner() : `<div class="row" style="margin-bottom:8px"><span class="micro">${remaining} more open legs allowed after netting</span><span style="margin-left:auto" class="micro">spot ${SPOT.toLocaleString()}</span></div>`}
+  <div class="row" style="margin-bottom:6px;gap:4px"><span class="micro">expiry</span>${EXPIRIES.map((e) => `<span class="chip ${chainExpiry === e[0] ? "on" : ""}" data-ex="${e[0]}">${e[1]} <span class="micro">${e[2]}</span></span>`).join("")}</div>
+  <div class="chainwrap"><table><thead><tr><th>Calls</th><th class="r">Mark · IV</th><th class="strike">Strike</th><th>Mark · IV</th><th class="r">Puts</th></tr></thead><tbody>
+  ${STRIKES.map((k) => { const pc = picks.find((p) => p.strike === k && p.type === "C" && p.expiry === chainExpiry), pp = picks.find((p) => p.strike === k && p.type === "P" && p.expiry === chainExpiry); const open = S.legs.filter((l) => l.strike === k && l.expiry === chainExpiry); const atm = Math.abs(k - SPOT) < 100; return `<tr ${atm ? 'style="background:var(--amber-bg)"' : ""}><td><span class="bs b ${pc?.side === "buy" ? "on" : ""}" data-k="${k}" data-t="C" data-s="buy">B</span> <span class="bs s ${pc?.side === "sell" ? "on" : ""}" data-k="${k}" data-t="C" data-s="sell">S</span> ${open.filter((l) => l.type === "C").map((l) => `<span class="pill" title="you hold this contract">${l.side === "buy" ? "+" : "−"}${l.lots}</span>`).join("")}</td><td class="r num">${mark("C", k, chainExpiry).toFixed(1)} <span class="micro">${(ivOf(k, chainExpiry) * 100).toFixed(0)}%</span></td><td class="strike">${k.toLocaleString()}${atm ? ' <span class="micro amber">ATM</span>' : ""}</td><td class="num">${mark("P", k, chainExpiry).toFixed(1)} <span class="micro">${(ivOf(k, chainExpiry) * 100).toFixed(0)}%</span></td><td class="r">${open.filter((l) => l.type === "P").map((l) => `<span class="pill">${l.side === "buy" ? "+" : "−"}${l.lots}</span>`).join("")} <span class="bs b ${pp?.side === "buy" ? "on" : ""}" data-k="${k}" data-t="P" data-s="buy">B</span> <span class="bs s ${pp?.side === "sell" ? "on" : ""}" data-k="${k}" data-t="P" data-s="sell">S</span></td></tr>`; }).join("")}
+  </tbody></table></div>
+  ${withBanner ? proposed() + ticket() : `<div class="micro" style="margin-top:6px"><kbd>B</kbd> buy · <kbd>S</kbd> sell · a pill on a row means you already hold that contract; the opposite side reduces or closes it</div>`}`;
+  el.querySelectorAll("[data-ex]").forEach((c) => (c.onclick = () => { chainExpiry = c.dataset.ex; render(); }));
+  if (!el._scrolled) { el._scrolled = true; requestAnimationFrame(scrollChainToAtm); }
+  el.querySelectorAll(".bs").forEach((b) => (b.onclick = () => togglePick(+b.dataset.k, b.dataset.t, b.dataset.s)));
+  bindProposed(el);
+}
+function banner() { return `<div class="banner"><b>Adjusting</b><span>${S.name}</span>${badge()}<span class="micro">${S.legs.length} open legs locked · ${10 - openCountAfter()} more allowed</span><span style="margin-left:auto"></span>${quickFixes()}</div>`; }
+function quickFixes() { return `<span class="micro">quick fixes</span><span class="chip" data-qf="rollup">Roll wings up</span><span class="chip" data-qf="rollout">Roll out to 18 Sep</span><span class="chip" data-qf="condor">Widen to condor</span><span class="chip" data-qf="hedge">Hedge with 79.4K call</span>`; }
+function applyQuickFix(k) {
+  const add = (side, type, strike, expiry, lots) => picks.push({ key: `${expiry}:${strike}${type}`, side, type, strike, expiry, lots, mark: mark(type, strike, expiry) });
+  picks = [];
+  if (k === "rollup") { add("sell", "C", 77800, "2026-09-09", 100); add("buy", "C", 78200, "2026-09-09", 200); add("sell", "C", 78600, "2026-09-09", 100); add("buy", "C", 79000, "2026-09-09", 100); add("sell", "C", 79400, "2026-09-09", 200); add("buy", "C", 79800, "2026-09-09", 100); }
+  if (k === "rollout") { add("sell", "C", 77800, "2026-09-09", 100); add("buy", "C", 78200, "2026-09-09", 200); add("sell", "C", 78600, "2026-09-09", 100); add("buy", "C", 79000, "2026-09-18", 100); add("sell", "C", 79600, "2026-09-18", 200); add("buy", "C", 80200, "2026-09-18", 100); }
+  if (k === "condor") { add("sell", "C", 78200, "2026-09-09", 100); add("buy", "C", 78200, "2026-09-09", 0); picks.pop(); add("sell", "C", 79000, "2026-09-09", 100); add("buy", "C", 79400, "2026-09-09", 100); }
+  if (k === "hedge") { add("buy", "C", 79400, "2026-09-09", 100); }
+  setStep(2); render(); toast(`Quick fix staged as proposed legs · edit lots or remove any row · nothing sent`);
+}
+function scrollChainToAtm() { document.querySelectorAll(".chainwrap").forEach((w) => { const atm = w.querySelector("tr[style]"); if (atm) w.scrollTop = Math.max(0, atm.offsetTop - w.clientHeight / 2); }); }
+function togglePick(strike, type, side) {
+  const i = picks.findIndex((p) => p.strike === strike && p.type === type && p.expiry === chainExpiry);
+  if (i >= 0 && picks[i].side === side) picks.splice(i, 1);
+  else { const open = S.legs.find((l) => l.strike === strike && l.type === type && l.expiry === chainExpiry && l.side !== side); const same = S.legs.find((l) => l.strike === strike && l.type === type && l.expiry === chainExpiry && l.side === side); const pick = { key: `${chainExpiry}:${strike}${type}`, strike, type, side, expiry: chainExpiry, lots: open ? open.lots : same ? 50 : 100, mark: mark(type, strike, chainExpiry) }; if (i >= 0) picks[i] = pick; else { picks.push(pick); if (openCountAfter() > 10) { picks.pop(); return toast("Limit reached: 10 open legs after netting"); } } }
+  render();
+}
+function proposed() {
+  const n = netted(); const remaining = 10 - openCountAfter();
+  return `<div class="row" style="margin:8px 0 4px"><span class="micro">Proposed (${picks.length})</span><span class="micro" style="margin-left:auto">${remaining} more open legs allowed after netting</span></div>
+  ${picks.length ? `<div class="tw"><table><thead><tr><th>Side</th><th>Contract</th><th class="r">Lots</th><th class="r">Mark</th><th>Effect</th><th></th></tr></thead><tbody>${n.map((p, i) => `<tr><td><span class="side ${p.side}">${p.side.toUpperCase()}</span></td><td class="num">${p.type}E ${p.strike.toLocaleString()} · ${expLabel(p.expiry)}</td><td class="r"><span class="lots"><button data-dl="${i}">−</button><span>${p.lots}</span><button data-il="${i}">+</button></span></td><td class="r num">${p.mark.toFixed(1)}</td><td>${effectOf(p)}</td><td><button class="btn danger" data-rm="${i}">✕</button></td></tr>`).join("")}</tbody></table></div>` : `<div class="note">Three ways to stage a change: the <b>lots after</b> stepper on an open leg above (fewer trims, 0 closes, more adds), <kbd>B</kbd> / <kbd>S</kbd> on any strike of any expiry in the chain, or a quick fix. Lots beyond the open size open a new leg in the opposite direction, and the row says so.</div>`}`;
+}
+function bindProposed(el) {
+  el.querySelectorAll("[data-rm]").forEach((b) => (b.onclick = () => { picks.splice(+b.dataset.rm, 1); render(); }));
+  el.querySelectorAll("[data-dl]").forEach((b) => (b.onclick = () => { picks[+b.dataset.dl].lots = Math.max(1, picks[+b.dataset.dl].lots - 50); render(); }));
+  el.querySelectorAll("[data-il]").forEach((b) => (b.onclick = () => { picks[+b.dataset.il].lots += 50; render(); }));
+  el.querySelectorAll("[data-dl],[data-il]").forEach(() => undefined);
+  el.querySelectorAll("[data-qf]").forEach((c) => (c.onclick = () => applyQuickFix(c.dataset.qf)));
+  el.querySelectorAll("[data-la]").forEach((b) => (b.onclick = () => setLotsAfter(b.dataset.la, +b.dataset.v)));
+  if ($("#review")) $("#review").onclick = openReview;
+}
+function ticket() {
+  const b = analyse(S.legs.map((l) => ({ ...l, basis: l.entry })), valueAt), a = picks.length ? analyse(combined(), valueAt) : null; const newLegs = combined().filter((l) => l.adj); const prem = cashflow();
+  return `<div class="strip" style="margin-top:10px"><div class="tile"><div class="micro">You ${prem >= 0 ? "receive" : "pay"}</div><div class="v ${prem >= 0 ? "pos" : "neg"}">${picks.length ? fmt0(prem) : "—"}</div><div class="d">at mark · fees est. ${fmt0(feesOf(newLegs))}</div></div><div class="tile"><div class="micro">Max loss after</div><div class="v ${(a ?? b).maxLoss === -Infinity ? "neg" : ""}">${fmt((a ?? b).maxLoss, "loss")}</div><div class="d">${fmt(b.maxLoss, "loss")}<span class="arr">→</span>${a ? verdict(b.maxLoss, a.maxLoss, "loss") : "now"}</div></div><div class="tile"><div class="micro">Margin · venue</div><div class="v">${fmt0((a ?? b).margin)}</div><div class="d">held ${fmt0(b.margin)}<span class="arr">→</span>after · avail ₹1,24,300</div></div><div class="tile"><div class="micro">Open legs after</div><div class="v">${openCountAfter()}</div><div class="d">of 10 · ${S.legs.length} now</div></div></div>
+  <div class="row"><span class="micro">marks re-read when Review opens · <kbd>Esc</kbd> cancels</span><span style="margin-left:auto"></span><button class="btn primary" id="review" ${picks.length ? "" : "disabled"}>Review ${picks.length} leg${picks.length === 1 ? "" : "s"} ▸</button></div>`;
+}
+const verdict = (b, a, kind) => { const better = kind === "loss" ? (a === -Infinity ? false : b === -Infinity ? true : a > b) : a > b; return a === b ? `<span class="micro">unchanged</span>` : `<span class="${better ? "pos" : "neg"}">${better ? "▲ better" : "▼ worse"}</span>`; };
+
+// ---- builder (H1) and legs column (H2) ----
+function renderBuilder(el) {
+  el.innerHTML = `${banner()}${legsTable(true)}${proposed()}${ticket()}`; bindProposed(el);
+}
+function renderLegs(el) { el.innerHTML = `<div class="row" style="margin-bottom:8px"><b>${S.name}</b>${badge()}<span class="micro">${S.legs.length} open · locked at entry</span></div>${legsTable(false)}<div class="row" style="margin:8px 0"><span class="micro">quick fixes</span></div><div class="row" style="gap:6px;margin-bottom:6px"><span class="chip" data-qf="rollup">Roll wings up</span><span class="chip" data-qf="rollout">Roll out to 18 Sep</span><span class="chip" data-qf="condor">Widen to condor</span><span class="chip" data-qf="hedge">Hedge with 79.4K call</span></div>${proposed()}${ticket()}`; bindProposed(el); }
+function setLotsAfter(id, after) {
+  const l = S.legs.find((x) => x.id === id); after = Math.max(0, after); const i = picks.findIndex((p) => p.strike === l.strike && p.type === l.type && p.expiry === l.expiry);
+  if (after === l.lots) { if (i >= 0) picks.splice(i, 1); }
+  else { const side = after < l.lots ? (l.side === "buy" ? "sell" : "buy") : l.side; const lots = Math.abs(after - l.lots); const pick = { key: `${l.expiry}:${l.strike}${l.type}`, strike: l.strike, type: l.type, side, expiry: l.expiry, lots, mark: mark(l.type, l.strike, l.expiry) }; if (i >= 0) picks[i] = pick; else picks.push(pick); }
+  setStep(2); render();
+}
+function lotsAfter(l) { const p = netted().find((x) => (x.nets === l.id) || (x.adds === l.id)); if (!p) return l.lots; return p.nets ? l.lots - p.closeLots : l.lots + p.lots; }
+function legsTable(inBuilder) {
+  return `<div class="tw"><table><thead><tr><th>Side</th><th>Instrument · entry → mark · P&L</th><th class="r">Lots now → after</th><th></th></tr></thead><tbody>${S.legs.map((l) => { const pnl = (l.side === "buy" ? 1 : -1) * (l.mark - l.entry) * l.lots * LOT * INR; const after = lotsAfter(l); const changed = after !== l.lots; return `<tr><td><span class="side ${l.side}">${l.side.toUpperCase()}</span></td><td class="num">${l.type}E ${l.strike.toLocaleString()} · ${expLabel(l.expiry)}<div class="lock">🔒 open${l.adj ? " · adj" : ""} · ${l.entry} → ${l.mark} · <span class="${pnl < 0 ? "neg" : "pos"}">${fmt(pnl)}</span></div>${changed ? `<div>${after === 0 ? '<span class="pill warn">closing</span>' : after < l.lots ? `<span class="pill warn">trimming ${l.lots - after}</span>` : `<span class="pill adj">adding ${after - l.lots} at mark</span>`}</div>` : ""}</td><td class="r"><span class="num" style="color:var(--muted)">${l.lots} →</span> <span class="lots"><button data-la="${l.id}" data-v="${after - 50}" title="fewer lots">−</button><span class="${changed ? (after < l.lots ? "neg" : "pos") : ""}">${after}</span><button data-la="${l.id}" data-v="${after + 50}" title="more lots (buys / sells more at mark)">+</button></span></td><td>${changed ? `<button class="btn danger" data-la="${l.id}" data-v="${l.lots}" title="Undo">✕</button>` : `<button class="btn" style="padding:3px 7px" data-la="${l.id}" data-v="0" title="Close all ${l.lots} lots">Close</button>`}</td></tr>`; }).join("")}</tbody></table></div>
+  <div class="micro" style="margin:4px 0 8px">Set the lots you want to hold after: fewer trims, 0 closes, more adds at mark. The same order appears on the proposed list, where you can edit it too. The chain's B / S on a strike you hold does the same thing.</div>`;
+}
+function stageExit(id, all) { const l = S.legs.find((x) => x.id === id); const side = l.side === "buy" ? "sell" : "buy"; const i = picks.findIndex((p) => p.strike === l.strike && p.type === l.type && p.expiry === l.expiry); const lots = all ? l.lots : Math.max(50, Math.round(l.lots / 2 / 50) * 50); const pick = { key: `${l.expiry}:${l.strike}${l.type}`, strike: l.strike, type: l.type, side, expiry: l.expiry, lots, mark: mark(l.type, l.strike, l.expiry) }; if (i >= 0) picks[i] = pick; else picks.push(pick); setStep(2); render(); toast(all ? `Closing ${l.type}E ${l.strike.toLocaleString()} staged · nothing sent until you confirm` : `Partial exit staged at ${lots} lots · change the lots on the proposed row`); }
+
+// ---- preview (right pane) ----
+function renderPreview(el) {
+  const before = analyse(S.legs.map((l) => ({ ...l, basis: l.entry })), valueAt), after = adjusting && picks.length ? analyse(combined(), valueAt) : null; const main = after ?? before;
+  const legsNow = adjusting ? combined() : S.legs; const dates = [...new Set(legsNow.map((l) => l.expiry))].sort();
+  if (valueAt !== "today" && !dates.includes(valueAt)) { valueAt = dates[dates.length - 1]; return renderPreview(el); }
+  const summary = after ? summaryLine(before, after) : "";
+  const strip = `${summary}<div class="strip six">${tile("Max loss", before.maxLoss, after?.maxLoss, "loss")}${tile("Max profit", before.maxProfit, after?.maxProfit, "profit")}${tile("Prob. of profit", before.pop, after?.pop, "pct")}${tile("Breakevens", before.breakevens, after?.breakevens, "be")}${tile("Net Δ · Θ/day", before.greeks, after?.greeks, "greeks")}${tile("Margin · venue", before.margin, after?.margin, "inr")}</div>`;
+  const valueChips = `<div class="row" style="margin-bottom:6px"><span class="micro">value at</span><span class="chip ${valueAt === "today" ? "on" : ""}" data-va="today">today</span>${dates.map((d) => `<span class="chip ${valueAt === d ? "on" : ""}" data-va="${d}">${expLabel(d)} expiry</span>`).join("")}<span class="micro" style="margin-left:auto">${dates.length > 1 ? "legs expiring later keep their time value" : "single expiry"}</span></div>`;
+  if (rightTab === "payoff") el.innerHTML = `${strip}${valueChips}<div class="legend"><span><i></i>${after ? "after (combined)" : "position"}</span>${after ? `<span><i class="ghost"></i>before</span><label style="margin-left:auto"><input type="checkbox" id="ghost" ${showBefore ? "checked" : ""}> show before</label>` : ""}</div><canvas id="cv" width="900" height="230"></canvas><div class="slider"><span>target</span><input type="range" id="tgt" min="-8" max="8" step=".25" value="${targetPct}"><span class="num" id="tgtLab"></span></div>`;
+  else if (rightTab === "greeks") { const legs = after ? combined() : S.legs.map((l) => ({ ...l })); el.innerHTML = `${strip}<div class="tw"><table><thead><tr><th>Leg</th><th class="r">Δ</th><th class="r">Γ</th><th class="r">Θ / day</th><th class="r">Vega / 1%</th></tr></thead><tbody>${legs.map((l) => { const g = greeks(l, SPOT); return `<tr><td><span class="side ${l.side}">${l.side.toUpperCase()}</span> <span class="num">${l.type}E ${l.strike.toLocaleString()} · ${expLabel(l.expiry)} · ${l.lots}</span> ${l.adj ? '<span class="pill adj">ADJ</span>' : ""}</td><td class="r num">${g.delta.toFixed(3)}</td><td class="r num">${g.gamma.toExponential(2)}</td><td class="r num ${g.theta < 0 ? "neg" : "pos"}">${fmt(g.theta * INR)}</td><td class="r num">${fmt(g.vega * INR)}</td></tr>`; }).join("")}<tr style="font-weight:600"><td>Net ${after ? "after" : ""}</td><td class="r num">${main.greeks.delta.toFixed(3)}</td><td class="r num">${main.greeks.gamma.toExponential(2)}</td><td class="r num">${fmt(main.greeks.theta * INR)}</td><td class="r num">${fmt(main.greeks.vega * INR)}</td></tr></tbody></table></div><div class="micro" style="margin-top:6px">Δ ${main.greeks.delta.toFixed(3)} BTC ≈ ${fmt(main.greeks.delta * SPOT * 0.01 * INR)} per 1% move</div>`; }
+  else { const rows = [-6, -4, -3, -2, -1, 0, 1, 2, 3, 4, 6].map((k) => SPOT * (1 + k / 100)); el.innerHTML = `${strip}${valueChips}<div class="tw"><table><thead><tr><th class="r">Price</th><th class="r">Move</th><th class="r">Before</th>${after ? '<th class="r">After</th><th class="r">Δ</th>' : ""}</tr></thead><tbody>${rows.map((p) => { const b = valueAtDate(S.legs.map((l) => ({ ...l, basis: l.entry })), p, valueAt), a = after ? valueAtDate(combined(), p, valueAt) : null; return `<tr ${Math.abs(p - SPOT) < 1 ? 'style="background:var(--amber-bg)"' : ""}><td class="r num">${Math.round(p).toLocaleString()}</td><td class="r num">${((p / SPOT - 1) * 100).toFixed(0)}%</td><td class="r num ${b < 0 ? "neg" : "pos"}">${fmt(b)}</td>${after ? `<td class="r num ${a < 0 ? "neg" : "pos"}">${fmt(a)}</td><td class="r num ${a - b < 0 ? "neg" : "pos"}">${fmt(a - b)}</td>` : ""}</tr>`; }).join("")}</tbody></table></div>`; }
+  el.querySelectorAll("[data-va]").forEach((c) => (c.onclick = () => { valueAt = c.dataset.va; render(); }));
+  if ($("#cv")) { draw(before, after); $("#tgt").oninput = (e) => { targetPct = +e.target.value; draw(before, after); }; if ($("#ghost")) $("#ghost").onchange = (e) => { showBefore = e.target.checked; draw(before, after); }; }
+}
+function summaryLine(b, a) {
+  const parts = []; const cash = cashflow();
+  if (a.maxLoss !== b.maxLoss) parts.push(a.maxLoss === -Infinity ? `<span class="neg">introduces unlimited loss</span>` : b.maxLoss === -Infinity ? `<span class="pos">caps the loss at ${fmt(a.maxLoss)}</span>` : `max loss ${a.maxLoss > b.maxLoss ? '<span class="pos">improves</span>' : '<span class="neg">worsens</span>'} by ${fmt0(Math.abs(a.maxLoss - b.maxLoss))}`);
+  parts.push(`you ${cash >= 0 ? "receive" : "pay"} ${fmt0(cash)}`);
+  if (a.breakevens[0] && b.breakevens[0]) parts.push(`lower breakeven moves ${a.breakevens[0] > b.breakevens[0] ? "up" : "down"} ${Math.abs(a.breakevens[0] - b.breakevens[0]).toLocaleString()}`);
+  if (Math.round(a.pop * 100) !== Math.round(b.pop * 100)) parts.push(`POP ${Math.round(b.pop * 100)}% → ${Math.round(a.pop * 100)}%`);
+  const warns = []; if (a.maxLoss === -Infinity && b.maxLoss !== -Infinity) warns.push("This adjustment makes the loss unlimited on the upside."); if (a.margin > 124300 + b.margin) warns.push("Margin after exceeds the available balance."); if (combined().some((l) => l.adj && l.expiry === "2026-09-09")) warns.push("New 09 Sep legs expire today (0 DTE).");
+  return `<div class="note" style="margin-bottom:8px;border-style:solid;color:var(--fg)"><b>This change:</b> ${parts.join(" · ")}.${warns.length ? `<div class="neg" style="margin-top:4px">⚠ ${warns.join(" ")}</div>` : ""}</div>`;
+}
+function tile(lab, b, a, kind) {
+  const f = (v) => kind === "pct" ? Math.round(v * 100) + "%" : kind === "greeks" ? `${v.delta.toFixed(3)} · ${fmt(v.theta * INR)}` : kind === "be" ? (v.length ? v.map((x) => (x / 1000).toFixed(1) + "K").join(" / ") : "none") : kind === "inr" ? fmt0(v) : fmt(v, kind);
+  const cls = kind === "loss" ? ((a ?? b) === -Infinity ? "neg" : "") : kind === "profit" ? "pos" : "";
+  let v = ""; if (a !== null && a !== undefined && ["loss", "profit", "pct"].includes(kind)) v = verdict(b, a, kind === "loss" ? "loss" : "x"); if (a !== null && a !== undefined && kind === "inr") v = a <= b ? '<span class="pos">▲ less held</span>' : '<span class="neg">▼ more held</span>';
+  return `<div class="tile"><div class="micro">${lab}</div><div class="v ${cls}">${a !== null && a !== undefined ? f(a) : f(b)}</div><div class="d">${a !== null && a !== undefined ? `${f(b)}<span class="arr">→</span>${v}` : "current · at " + (valueAt === "today" ? "today" : expLabel(valueAt))}</div></div>`;
+}
+function draw(before, after) {
+  const cv = $("#cv"); const c = cv.getContext("2d"); const W = cv.width, H = cv.height, pad = { l: 66, r: 16, t: 14, b: 26 }; c.clearRect(0, 0, W, H);
+  const all = [...before.series.map((x) => x.v), ...(after ? after.series.map((x) => x.v) : [])]; let lo = Math.min(...all, 0), hi = Math.max(...all, 0); const r = hi - lo || 1; lo -= r * .08; hi += r * .08;
+  const sx = (i) => pad.l + (W - pad.l - pad.r) * i / 160, sy = (v) => pad.t + (H - pad.t - pad.b) * (1 - (v - lo) / (hi - lo));
+  c.font = "10.5px IBM Plex Mono"; c.strokeStyle = "#242a33"; c.setLineDash([2, 4]); for (let k = 0; k <= 4; k++) { const v = lo + (hi - lo) * k / 4; c.beginPath(); c.moveTo(pad.l, sy(v)); c.lineTo(W - pad.r, sy(v)); c.stroke(); c.fillStyle = "#8b93a1"; c.textAlign = "right"; c.fillText((v < 0 ? "−" : "") + "₹" + Math.abs(Math.round(v / 100) * 100).toLocaleString("en-IN"), pad.l - 6, sy(v) + 4); } c.setLineDash([]);
+  c.strokeStyle = "#8b93a1"; c.beginPath(); c.moveTo(pad.l, sy(0)); c.lineTo(W - pad.r, sy(0)); c.stroke();
+  const main = after ?? before; for (let i = 1; i < 161; i++) { const v = main.series[i].v; c.fillStyle = v >= 0 ? "rgba(57,179,122,.18)" : "rgba(224,92,92,.18)"; c.beginPath(); c.moveTo(sx(i - 1), sy(0)); c.lineTo(sx(i - 1), sy(main.series[i - 1].v)); c.lineTo(sx(i), sy(v)); c.lineTo(sx(i), sy(0)); c.closePath(); c.fill(); }
+  const line = (ser, col, dash, w) => { c.strokeStyle = col; c.lineWidth = w; c.setLineDash(dash); c.beginPath(); ser.forEach((x, i) => (i ? c.lineTo(sx(i), sy(x.v)) : c.moveTo(sx(i), sy(x.v)))); c.stroke(); c.setLineDash([]); c.lineWidth = 1; };
+  if (after && showBefore) line(before.series, "#8b93a1", [5, 4], 1.2); line(main.series, "#e6e8eb", [], 1.8);
+  const ti = Math.round(80 + targetPct / 10 * 80); const tp = SPOT * (1 + targetPct / 100); c.strokeStyle = "#f0a92c"; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(sx(ti), pad.t); c.lineTo(sx(ti), H - pad.b); c.stroke(); c.setLineDash([]);
+  c.fillStyle = "#f0a92c"; c.textAlign = "center"; c.fillText((targetPct === 0 ? "spot " : "target ") + Math.round(tp).toLocaleString(), sx(ti), H - 8); const v = main.series[ti].v; c.fillStyle = v >= 0 ? "#39b37a" : "#e05c5c"; c.beginPath(); c.arc(sx(ti), sy(v), 3.5, 0, 7); c.fill();
+  c.textAlign = "left"; c.fillStyle = "#8b93a1"; c.fillText("−10%", pad.l, H - 8); c.textAlign = "right"; c.fillText("+10%", W - pad.r, H - 8);
+  $("#tgtLab").innerHTML = `${Math.round(tp).toLocaleString()} · <span class="${v < 0 ? "neg" : "pos"}">${fmt(v)}</span> at ${valueAt === "today" ? "today" : expLabel(valueAt)}${after && showBefore ? ` · was <span class="${before.series[ti].v < 0 ? "neg" : "pos"}">${fmt(before.series[ti].v)}</span>` : ""}`;
+}
+
+// ---- details (secondary entry point) ----
+function openDetails() {
+  const lastEx = S.legs.map((l) => l.expiry).sort().pop(); const a = analyse(S.legs.map((l) => ({ ...l, basis: l.entry })), lastEx); const adj = S.legs.filter((l) => l.adj), orig = S.legs.filter((l) => !l.adj);
+  $("#dlg").className = "dialog"; $("#dlg").innerHTML = `<div class="row"><h3>${S.name}</h3>${badge()}${done ? '<span class="pill adj">ADJUSTED</span>' : ""}<span class="micro">${S.id} · Delta Exchange India</span><button class="btn" style="margin-left:auto" id="x">✕</button></div>
+  <div class="strip" style="margin-top:10px"><div class="tile"><div class="micro">Total P&L</div><div class="v ${pnlNow() < 0 ? "neg" : "pos"}">${fmt(pnlNow())}</div><div class="d">unrealised ${fmt(unrealised())} · realised ${fmt(S.realised)}</div></div><div class="tile"><div class="micro">Max loss</div><div class="v ${a.maxLoss === -Infinity ? "neg" : ""}">${fmt(a.maxLoss, "loss")}</div><div class="d">at ${expLabel(lastEx)} expiry · combined</div></div><div class="tile"><div class="micro">Max profit</div><div class="v pos">${fmt(a.maxProfit)}</div><div class="d">POP ${Math.round(a.pop * 100)}%</div></div><div class="tile"><div class="micro">Legs</div><div class="v">${S.legs.length}</div><div class="d">${orig.length} original · ${adj.length} adjustment</div></div></div>
+  <div class="row"><button class="btn" id="dAdj">+ Add adjustment</button><button class="btn">Partial exit</button><button class="btn">Square off all</button><button class="btn warn">Stop</button></div>
+  ${done ? `<div class="micro" style="margin:12px 0 4px">Adjustment history</div><div class="note" style="color:var(--fg)">${S.adjustedAt.toLocaleTimeString("en-GB", { hour12: false })} · ${S.legs.filter((l) => l.adj).length} new leg${S.legs.filter((l) => l.adj).length === 1 ? "" : "s"}, realised ${fmt(S.realised)} on closed lots${S.reason ? ` · <i>"${S.reason}"</i>` : ""} · <span class="micro">saved to the journal</span></div>` : ""}
+  ${adj.length ? `<div class="micro" style="margin:12px 0 4px">Adjustments</div>${legsRows(adj)}` : ""}<div class="micro" style="margin:12px 0 4px">Original legs</div>${legsRows(orig)}`;
+  $("#ov").classList.add("open"); $("#x").onclick = () => $("#ov").classList.remove("open"); $("#dAdj").onclick = () => { $("#ov").classList.remove("open"); startAdjust(); };
+}
+const legsRows = (legs) => `<div class="tw"><table><tbody>${legs.map((l) => `<tr><td><span class="side ${l.side}">${l.side.toUpperCase()}</span></td><td class="num">${l.strike.toLocaleString()} ${l.type} · ${expLabel(l.expiry)}</td><td class="num">${l.lots} lots</td><td class="num">entry ${l.entry} → now ${l.mark}${l.fill ? ` <span class="fill filled">filled @ ${l.fill}</span>` : ""}</td><td class="r num ${(l.side === "buy" ? 1 : -1) * (l.mark - l.entry) < 0 ? "neg" : "pos"}">${fmt((l.side === "buy" ? 1 : -1) * (l.mark - l.entry) * l.lots * LOT * INR)}</td></tr>`).join("")}</tbody></table></div>`;
+
+// ---- review + confirm ----
+function openReview() {
+  reprice(); setStep(3); const b = analyse(S.legs.map((l) => ({ ...l, basis: l.entry })), valueAt), a = analyse(combined(), valueAt); const n = netted(); const newLegs = combined().filter((l) => l.adj); const prem = cashflow(); const live = mode === "live";
+  $("#dlg").className = "dialog" + (live ? " livebox" : ""); $("#dlg").innerHTML = `<div class="row"><h3>${live ? "Place live adjustment" : "Confirm paper adjustment"}</h3>${badge()}<span class="micro">${S.name} · ${S.legs.length} open → ${openCountAfter()} after · Delta Exchange India</span><button class="btn" style="margin-left:auto" id="x">✕</button></div>
+  ${live ? `<div class="verdict bad" style="margin-top:8px"><b>Real orders.</b> This sends ${n.length} order${n.length === 1 ? "" : "s"} to Delta Exchange India. Marks were re-read just now; each leg carries a price band of ±3 ticks.</div>` : ""}
+  <div class="strip" style="margin-top:10px">${tile("Max loss", b.maxLoss, a.maxLoss, "loss")}${tile("Max profit", b.maxProfit, a.maxProfit, "profit")}${tile("Prob. of profit", b.pop, a.pop, "pct")}<div class="tile"><div class="micro">You ${prem >= 0 ? "receive" : "pay"}</div><div class="v ${prem >= 0 ? "pos" : "neg"}">${fmt0(prem)}</div><div class="d">at mark · fees est. ${fmt0(feesOf(newLegs))}</div></div></div>
+  <div class="tw"><table><thead><tr><th>Order</th><th>Effect</th><th class="r">Lots</th><th class="r">Mark now</th>${live ? '<th class="r">Band</th><th>Type</th>' : ""}<th class="r">Value</th><th class="r">Fee est.</th></tr></thead><tbody>${n.map((p) => `<tr><td><span class="side ${p.side}">${p.side.toUpperCase()}</span> <span class="num">${p.type}E ${p.strike.toLocaleString()} · ${expLabel(p.expiry)}</span></td><td>${effectOf(p)}</td><td class="r num">${p.lots}</td><td class="r num">${p.mark.toFixed(1)}</td>${live ? `<td class="r num">${(p.mark - 3 * TICK).toFixed(1)}–${(p.mark + 3 * TICK).toFixed(1)}</td><td>${orderType}</td>` : ""}<td class="r num">${fmt((p.side === "sell" ? 1 : -1) * p.mark * p.lots * LOT * INR)}</td><td class="r num">${fmt0(feesOf([{ ...p }]))}</td></tr>`).join("")}</tbody></table></div>
+  ${live ? `<div class="row" style="margin-top:10px"><span class="micro">order type</span><span class="seg"><button id="otM" class="${orderType === "market" ? "on" : ""}">Market</button><button id="otL" class="${orderType === "limit" ? "on" : ""}">Limit at mark</button></span><span class="micro">margin held ${fmt0(b.margin)} → ${fmt0(a.margin)} · available after ₹${(124300 - (a.margin - b.margin)).toLocaleString("en-IN")} · all products operational</span></div>` : `<div class="note" style="margin-top:10px">Paper: the new legs are recorded at the marks above, re-read this instant. Reduced legs realise P&L at mark. Existing legs otherwise stay as they are.</div>`}
+  <div class="row" style="margin-top:10px"><span class="micro">why (journal)</span><input id="reason" placeholder="e.g. spot ran above the wings; rolling up to stay in range" value="${S.reason ?? ""}" style="flex:1;min-width:260px;background:var(--card2);border:1px solid var(--border);color:var(--fg);border-radius:4px;padding:5px 8px;font:12px var(--font)"></div>
+  <div class="row" style="margin-top:12px"><span class="micro" id="ageRow">marks 0s old · <a href="#" id="refresh" style="color:var(--muted)">refresh</a></span><span style="margin-left:auto"></span><button class="btn" id="back">Back</button>${live ? `<button class="btn live" id="hold"><span class="fillbar"></span><span style="position:relative">Hold to place ${n.length} order${n.length === 1 ? "" : "s"}</span></button>` : `<button class="btn primary" id="confirm">Confirm paper adjustment</button>`}</div>`;
+  $("#ov").classList.add("open"); const close = () => { $("#ov").classList.remove("open"); setStep(2); }; $("#x").onclick = close; $("#back").onclick = close; $("#refresh").onclick = (e) => { e.preventDefault(); openReview(); };
+  if ($("#otM")) { $("#otM").onclick = () => { orderType = "market"; openReview(); }; $("#otL").onclick = () => { orderType = "limit"; openReview(); }; }
+  if ($("#confirm")) $("#confirm").onclick = () => finalize(false);
+  if ($("#hold")) { const h = $("#hold"), bar = h.querySelector(".fillbar"); let t = null, start = 0; const tick = () => { const p = Math.min(1, (Date.now() - start) / 1200); bar.style.width = p * 100 + "%"; if (p >= 1) { clearInterval(t); finalize(true); } }; h.onmousedown = h.ontouchstart = () => { start = Date.now(); t = setInterval(tick, 40); }; const stop = () => { clearInterval(t); bar.style.width = "0"; }; h.onmouseup = h.onmouseleave = h.ontouchend = stop; }
+}
+function finalize(live) {
+  const n = netted(); S.reason = ($("#reason")?.value ?? "").trim(); S.adjustedAt = new Date(); $("#ov").classList.remove("open");
+  if (live) { // simulate per-leg fills, then commit
+    $("#dlg").className = "dialog livebox"; $("#dlg").innerHTML = `<h3>Placing ${n.length} order${n.length === 1 ? "" : "s"}…</h3><div class="tw"><table><tbody>${n.map((p, i) => `<tr><td><span class="side ${p.side}">${p.side.toUpperCase()}</span> <span class="num">${p.type}E ${p.strike.toLocaleString()} · ${expLabel(p.expiry)} · ${p.lots}</span></td><td class="r"><span class="fill placed" id="f${i}">placed</span></td></tr>`).join("")}</tbody></table></div>`; $("#ov").classList.add("open");
+    n.forEach((p, i) => setTimeout(() => { const e = $("#f" + i); e.className = "fill filled"; e.textContent = `filled @ ${(p.mark + (Math.random() - .5) * 0.4).toFixed(1)}`; p.fill = e.textContent.slice(9); }, 500 + i * 450));
+    setTimeout(() => { commit(n, true); $("#ov").classList.remove("open"); toast(`Live adjustment complete · ${n.length} filled · max loss and profit updated on the card and in Details`, 4000); }, 700 + n.length * 450);
+    return;
+  }
+  commit(n, false); toast(`Paper adjustment recorded · ${n.length} leg${n.length === 1 ? "" : "s"} at mark · combined max loss / profit updated`, 4000);
+}
+function commit(n, live) {
+  for (const p of n) { if (p.nets) { const o = S.legs.find((l) => l.id === p.nets); const px = live && p.fill ? +p.fill : p.mark; S.realised += (o.side === "buy" ? 1 : -1) * (px - o.entry) * p.closeLots * LOT * INR; o.lots -= p.closeLots; } if (p.adds) { const o = S.legs.find((l) => l.id === p.adds); const px = live && p.fill ? +p.fill : p.mark; o.entry = Math.round(((o.entry * o.lots + px * p.lots) / (o.lots + p.lots)) * 10) / 10; o.lots += p.lots; continue; } if (p.newLots > 0) S.legs.push({ id: p.key, side: p.side, type: p.type, strike: p.strike, expiry: p.expiry, lots: p.newLots, entry: live && p.fill ? +p.fill : p.mark, mark: p.mark, adj: true, fill: live ? p.fill : undefined }); }
+  for (let i = S.legs.length - 1; i >= 0; i--) if (S.legs[i].lots <= 0) S.legs.splice(i, 1);
+  adjusting = false; picks = []; done = true; leftTab = "paper"; valueAt = S.legs.map((l) => l.expiry).sort().pop(); setStep(4); render(); setTimeout(openDetails, 600);
+}
+
+// ================= wiring =================
+function syncLayout() { $("#lyH1").classList.toggle("on", layout === "H1"); $("#lyH2").classList.toggle("on", layout === "H2"); }
+$("#lyH1").onclick = () => { layout = "H1"; syncLayout(); render(); }; $("#lyH2").onclick = () => { layout = "H2"; syncLayout(); render(); };
+$("#mdP").onclick = () => setMode("paper"); $("#mdL").onclick = () => setMode("live");
+function setMode(m) { mode = m; $("#mdP").classList.toggle("on", m === "paper"); $("#mdL").classList.toggle("on", m === "live"); $("#modePill").className = "pill " + m; $("#modePill").textContent = m === "paper" ? "○ PAPER" : "● LIVE"; render(); }
+$("#resetBtn").onclick = () => { location.reload(); };
+document.addEventListener("keydown", (e) => { if (e.target.tagName === "INPUT") return; if (e.key === "Escape") { if ($("#ov").classList.contains("open")) { $("#ov").classList.remove("open"); if (step === 3) setStep(2); return; } if (adjusting) cancelAdjust(); } if ((e.key === "a" || e.key === "A") && !adjusting && !done) startAdjust(); });
+render();
+</script>

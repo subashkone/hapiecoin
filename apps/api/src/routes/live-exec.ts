@@ -60,6 +60,7 @@ export function toOrder(o: OrderRow): StrategyOrder {
     id: o.id,
     legId: o.legId,
     purpose: o.purpose,
+    batchId: o.batchId,
     clientOrderId: o.clientOrderId,
     venueOrderId: o.venueOrderId,
     symbol: o.symbol,
@@ -78,8 +79,10 @@ export async function ordersOf(deps: AppDeps, strategyId: string): Promise<Order
   return deps.db.select().from(strategyOrders).where(eq(strategyOrders.strategyId, strategyId)).orderBy(strategyOrders.createdAt, strategyOrders.id);
 }
 
+/** The slice of a leg row the planner and the preview read; the adjustment preview passes synthetic rows for proposed legs. */
+export type PlanLeg = Pick<LegRow, "id" | "symbol" | "side" | "lots">;
 /** Contracts, product state and current mark for each leg; reasons collect what would block a placement. */
-export async function planLegs(deps: AppDeps, legs: readonly LegRow[], lotSize: string): Promise<{ legs: LivePreviewLeg[]; reasons: string[] }> {
+export async function planLegs(deps: AppDeps, legs: readonly PlanLeg[], lotSize: string): Promise<{ legs: LivePreviewLeg[]; reasons: string[] }> {
   const reasons: string[] = [];
   const out: LivePreviewLeg[] = [];
   for (const l of legs) {
@@ -101,16 +104,22 @@ export async function planLegs(deps: AppDeps, legs: readonly LegRow[], lotSize: 
   return { legs: out, reasons };
 }
 
-export async function preview(deps: AppDeps, user: SessionUser, strategy: StrategyRow, legs: readonly LegRow[], brokerId: string, worstLoss: number | null): Promise<LivePreview> {
+/**
+ * Every check a placement needs, as reasons. `legs` are entries (the per-placement leg and notional caps apply to them);
+ * `exits` are reduce-only rows of an adjustment batch (ADR-044): planned for product state and sizing, listed first,
+ * never counted against the entry caps because they reduce risk.
+ */
+export async function preview(deps: AppDeps, user: SessionUser, strategy: StrategyRow, legs: readonly PlanLeg[], brokerId: string, worstLoss: number | null, exits: readonly PlanLeg[] = []): Promise<LivePreview> {
   const reasons: string[] = [];
   const blocked = await tradingBlockedReason(deps, user);
   if (blocked) reasons.push(blocked);
   const { trading } = deps.config;
-  if (legs.length === 0) reasons.push("Add at least one leg to trade");
+  if (legs.length === 0 && exits.length === 0) reasons.push("Add at least one leg to trade");
   if (legs.length > trading.maxLegs) reasons.push(`At most ${trading.maxLegs} legs per live placement`);
   const lotSize = await lotSizeFor(deps, user, strategy.asset);
+  const exitPlan = await planLegs(deps, exits, lotSize);
   const plan = await planLegs(deps, legs, lotSize);
-  reasons.push(...plan.reasons);
+  reasons.push(...exitPlan.reasons, ...plan.reasons);
   const notional = plan.legs.reduce((s, l) => s + Number(l.notional), 0);
   if (notional > trading.maxNotionalUsd) reasons.push(`Notional ${toDecimal(notional, 2)} USD exceeds the ${trading.maxNotionalUsd} USD limit per placement`);
   let available: string | null = null;
@@ -133,7 +142,7 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
     deps.logger.warn({ err: e instanceof Error ? e.message : String(e), userId: user.id, brokerId }, "live preview: wallet read failed");
     reasons.push(e instanceof HttpError ? e.message : `Could not read the exchange wallet (${e instanceof Error ? e.message : "unknown error"})`);
   }
-  return { ok: reasons.length === 0, reasons, legs: plan.legs, notional: toDecimal(notional, 2), available, availableAsset, marginUsed, limits: { maxLegs: trading.maxLegs, maxNotionalUsd: trading.maxNotionalUsd, markBandPct: trading.markBandPct } };
+  return { ok: reasons.length === 0, reasons, legs: [...exitPlan.legs, ...plan.legs], notional: toDecimal(notional, 2), available, availableAsset, marginUsed, limits: { maxLegs: trading.maxLegs, maxNotionalUsd: trading.maxNotionalUsd, markBandPct: trading.markBandPct } };
 }
 
 export interface PlacementOutcome {

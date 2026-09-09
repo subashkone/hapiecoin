@@ -7,6 +7,7 @@
  */
 import {
   AddLegsBody,
+  AdjustBody,
   CloseAllBody,
   CloseLegBody,
   Id,
@@ -27,27 +28,29 @@ import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
 import { assertEntitled } from "../entitlements.js";
-import { brokers, strategies, strategyLegs, strategyOrders, strategyPnl } from "../db/schema.js";
+import { brokers, strategies, strategyAdjustments, strategyLegs, strategyOrders, strategyPnl } from "../db/schema.js";
 import { type AppEnv, type SessionUser, currentUser } from "../security/context.js";
 import { errors } from "../security/errors.js";
 import { requireUser } from "../security/guards.js";
 import { type AppDeps, cookieAuth, errorResponses, jsonContent, newId } from "./shared.js";
-import { type OrderRow, lotSizeFor as lotSizeOf, openCredential, ordersOf, placeEntries, placeExit, planLegs, toOrder, tradingBlockedReason } from "./live-exec.js";
+import { type OrderRow, type PlanLeg, lotSizeFor as lotSizeOf, openCredential, ordersOf, placeEntries, placeExit, planLegs, preview, toOrder, tradingBlockedReason } from "./live-exec.js";
 
 type StrategyRow = typeof strategies.$inferSelect;
 type LegRow = typeof strategyLegs.$inferSelect;
 type PnlRow = typeof strategyPnl.$inferSelect;
+type AdjustmentRow = typeof strategyAdjustments.$inferSelect;
 
 /** Load one strategy with legs, P&L points and orders (shared with the live routes). */
 export async function loadStrategy(deps: AppDeps, id: string): Promise<Strategy> {
   const [row] = await deps.db.select().from(strategies).where(eq(strategies.id, id)).limit(1);
   if (!row) throw errors.notFound("Strategy");
-  const [legs, pnl, orders] = await Promise.all([
+  const [legs, pnl, orders, adjustments] = await Promise.all([
     deps.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, id)).orderBy(asc(strategyLegs.position), asc(strategyLegs.createdAt)),
     deps.db.select().from(strategyPnl).where(eq(strategyPnl.strategyId, id)).orderBy(asc(strategyPnl.day)),
     ordersOf(deps, id),
+    deps.db.select().from(strategyAdjustments).where(eq(strategyAdjustments.strategyId, id)).orderBy(asc(strategyAdjustments.createdAt), asc(strategyAdjustments.id)),
   ]);
-  return toStrategy(row, legs, pnl, orders);
+  return toStrategy(row, legs, pnl, orders, adjustments);
 }
 
 const IdParam = z.object({ id: Id });
@@ -58,7 +61,7 @@ function iso(d: Date | null): string | null {
   return d === null ? null : d.toISOString();
 }
 
-export function toStrategy(row: StrategyRow, legs: LegRow[], pnl: PnlRow[], orders: OrderRow[] = []): Strategy {
+export function toStrategy(row: StrategyRow, legs: LegRow[], pnl: PnlRow[], orders: OrderRow[] = [], adjustments: AdjustmentRow[] = []): Strategy {
   return {
     id: row.id,
     name: row.name,
@@ -98,6 +101,7 @@ export function toStrategy(row: StrategyRow, legs: LegRow[], pnl: PnlRow[], orde
     tags: row.tags,
     orderBatchId: row.orderBatchId,
     orders: orders.map(toOrder),
+    adjustments: adjustments.map((a) => ({ id: a.id, at: a.createdAt.toISOString(), reason: a.reason, added: a.added, trimmed: a.trimmed, closed: a.closed, realizedPnl: a.realizedPnl, batchId: a.batchId })),
     startedAt: iso(row.startedAt),
     closedAt: iso(row.closedAt),
     createdAt: row.createdAt.toISOString(),
@@ -397,6 +401,117 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
   );
 
   const closeLeg = (strategy: StrategyRow, leg: LegRow, exitPrice: string, lots: number | undefined, lotSize: string, now: Date) => closeLegRow(deps, strategy, leg, exitPrice, lots, lotSize, now);
+
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/v1/strategies/{id}/adjust",
+      tags: ["strategies"],
+      summary: "Adjustment batch: add legs, trim or close open legs, in one go (adjustment workbench, ADR-044; HC-TR-071, HC-TR-088)",
+      security: cookieAuth,
+      middleware: [guard],
+      request: { params: IdParam, body: { content: { "application/json": { schema: AdjustBody } }, required: true } },
+      responses: { 200: jsonContent(Strategy, "Adjusted"), 400: errorResponses[400], 401: errorResponses[401], 404: errorResponses[404], 409: errorResponses[409], 502: errorResponses[502] },
+    }),
+    async (c) => {
+      const me = currentUser(c);
+      const row = await loadOwned(me, c.req.valid("param").id);
+      if (!active(row)) throw errors.conflict("Adjustments apply to a paper or live strategy");
+      const body = c.req.valid("json");
+      if (body.idempotencyKey) {
+        const [seen] = await db.select({ id: strategyAdjustments.id }).from(strategyAdjustments).where(and(eq(strategyAdjustments.strategyId, row.id), eq(strategyAdjustments.batchId, body.idempotencyKey))).limit(1);
+        if (seen) return c.json(await reload(row.id), 200); // repeat of the same batch
+      }
+      const legs = await legsOf(row.id);
+      const open = legs.filter((l) => l.status === "open");
+      // validate the changes against the open legs before touching anything
+      const changes: { leg: LegRow; exitLots: number; price: string }[] = [];
+      const seen = new Set<string>();
+      for (const ch of body.changes) {
+        const leg = open.find((l) => l.id === ch.legId);
+        if (!leg) throw errors.badRequest(`Leg ${ch.legId} is not an open leg of this strategy`);
+        if (seen.has(leg.id)) throw errors.badRequest(`${leg.symbol}: listed twice`);
+        seen.add(leg.id);
+        if (ch.lotsAfter > leg.lots) throw errors.badRequest(`${leg.symbol}: lots after (${ch.lotsAfter}) exceed the open ${leg.lots}; add lots through "adds"`);
+        if (ch.lotsAfter === leg.lots) continue; // no-op
+        changes.push({ leg, exitLots: leg.lots - ch.lotsAfter, price: ch.price });
+      }
+      if (changes.length === 0 && body.adds.length === 0) throw errors.badRequest("Nothing to adjust");
+      const closes = changes.filter((x) => x.exitLots === x.leg.lots).length;
+      if (open.length - closes + body.adds.length > MAX_OPEN_LEGS) throw errors.conflict(`Maximum ${MAX_OPEN_LEGS} active legs allowed per strategy`);
+      const before = await full(row);
+      const now = new Date();
+      const lotSize = await lotSizeFor(me, row.asset);
+      const batchId = body.idempotencyKey ?? `adj:${newId("b")}`;
+      const nextPos = legs.reduce((m, l) => Math.max(m, l.position), -1) + 1;
+      let creds: Awaited<ReturnType<typeof openCredential>> | null = null;
+      if (row.status === "live") {
+        // HC-TR-088: every check before the first order. Trims and closes are reduce-only rows; adds go through the same
+        // guards as a placement (product state, sizing, notional cap, wallet). One refusal stops the batch before the
+        // venue sees anything.
+        const exits: PlanLeg[] = changes.map((x) => ({ id: x.leg.id, symbol: x.leg.symbol, side: x.leg.side === "buy" ? "sell" : "buy", lots: x.exitLots }));
+        const entries: PlanLeg[] = body.adds.map((l, i) => ({ id: `new-${i + 1}`, symbol: l.symbol, side: l.side, lots: l.lots }));
+        const p = await preview(deps, me, row, entries, row.brokerId ?? "", null, exits);
+        if (p.reasons.length) throw errors.conflict(p.reasons.join(" · "));
+        creds = await openCredential(deps, me, row.brokerId ?? "");
+      }
+      // The history row goes in first: (strategy, batch) is unique, so a concurrent repeat of the same key sees the
+      // strategy as it is instead of placing twice. The key wins over the body: a different body under a used key is
+      // ignored, so the client sends a fresh key for every Review.
+      const adjId = newId("adj");
+      try {
+        await db.insert(strategyAdjustments).values({ id: adjId, strategyId: row.id, batchId, reason: body.reason ? body.reason : null, createdAt: now });
+      } catch (e) {
+        if (e instanceof Error && e.message.includes("strategy_adjustments_batch_uq")) return c.json(await reload(row.id), 200);
+        throw e;
+      }
+      const done = { added: 0, trimmed: 0, closed: 0, realizedPnl: "0" };
+      let total = row.realizedPnl;
+      try {
+        for (const ch of changes) {
+          const whole = ch.exitLots === ch.leg.lots;
+          const exit = creds ? await placeExit(deps, creds, me, row, ch.leg, ch.exitLots, batchId) : ch.price;
+          const realized = await closeLeg(row, ch.leg, exit, whole ? undefined : ch.exitLots, lotSize, now);
+          done.realizedPnl = addDecimal(done.realizedPnl, realized);
+          total = addDecimal(total, realized);
+          if (whole) done.closed += 1;
+          else done.trimmed += 1;
+          await touch(row.id, { realizedPnl: total }); // booked per fill, so a later refusal leaves nothing unbooked
+        }
+        if (body.adds.length) {
+          // paper: the client price is the entry; live: the entry is the venue fill, set by the executor
+          const inserted = await db.insert(strategyLegs).values(body.adds.map((l, i) => legValues(row.id, l, nextPos + i, { entryPrice: creds ? null : l.price, status: "open", isAdjustment: true, openedAt: creds ? null : now }))).returning();
+          if (creds) {
+            const plan = await planLegs(deps, inserted, lotSize);
+            if (plan.reasons.length) {
+              // the venue changed between the checks and now: the legs go again, nothing was placed
+              await db.delete(strategyLegs).where(inArray(strategyLegs.id, inserted.map((l) => l.id)));
+              throw errors.conflict(plan.reasons.join(" · "));
+            }
+            const expectedById: Record<string, string> = {};
+            for (const l of inserted) {
+              const mark = body.expected[l.symbol];
+              if (mark !== undefined) expectedById[l.id] = mark;
+            }
+            // a refused leg stays open with its failed order so Retry (HC-TR-085) can place it again
+            await placeEntries(deps, creds, row, inserted, plan.legs, batchId, "adjustment", expectedById);
+          }
+          done.added = inserted.length;
+        }
+      } catch (e) {
+        // HC-TR-088: what filled stays booked; the history row says where the batch stopped, and the client rebuilds the
+        // rest from the strategy as it is, under a new key
+        const why = e instanceof Error ? e.message : String(e);
+        await db.update(strategyAdjustments).set({ ...done, reason: `${body.reason ? `${body.reason} · ` : ""}Stopped: ${why}` }).where(eq(strategyAdjustments.id, adjId));
+        throw e;
+      }
+      await db.update(strategyAdjustments).set(done).where(eq(strategyAdjustments.id, adjId));
+      await touch(row.id);
+      const after = await reload(row.id);
+      await auditFrom(c, db)({ action: "strategy.adjust", target: `strategy:${row.id}`, before, after });
+      return c.json(after, 200);
+    },
+  );
 
   app.openapi(
     createRoute({

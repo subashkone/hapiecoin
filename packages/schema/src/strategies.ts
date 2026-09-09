@@ -87,6 +87,8 @@ export const StrategyOrder = z.strictObject({
   id: Id,
   legId: Id,
   purpose: z.enum(["entry", "exit", "adjustment"]),
+  /** Placement batch (the idempotency key of the placement or adjustment) so history can show each batch's fills. */
+  batchId: z.string(),
   clientOrderId: z.string(),
   venueOrderId: z.string().nullable(),
   symbol: z.string(),
@@ -103,6 +105,20 @@ export type StrategyOrder = z.infer<typeof StrategyOrder>;
 
 export const PnlPoint = z.strictObject({ day: z.iso.date(), pnl: DecimalString });
 export type PnlPoint = z.infer<typeof PnlPoint>;
+
+/** What one adjustment batch did, kept with the strategy (Details → Adjustment history, the journal hook). */
+export const StrategyAdjustment = z.strictObject({
+  id: Id,
+  at: IsoDateTime,
+  reason: z.string().nullable(),
+  added: z.number().int().nonnegative(),
+  trimmed: z.number().int().nonnegative(),
+  closed: z.number().int().nonnegative(),
+  /** Realised P&L of the closed lots in this batch, USD. */
+  realizedPnl: DecimalString,
+  batchId: z.string().nullable(),
+});
+export type StrategyAdjustment = z.infer<typeof StrategyAdjustment>;
 
 export const Strategy = z.strictObject({
   id: Id,
@@ -121,6 +137,8 @@ export const Strategy = z.strictObject({
   orderBatchId: z.string().nullable(),
   /** Venue orders (live strategies); empty for drafts and paper. */
   orders: z.array(StrategyOrder).default([]),
+  /** Adjustment batches, oldest first (ADR-044). */
+  adjustments: z.array(StrategyAdjustment).default([]),
   startedAt: IsoDateTime.nullable(),
   closedAt: IsoDateTime.nullable(),
   createdAt: IsoDateTime,
@@ -162,6 +180,30 @@ export type StrategyStart = z.infer<typeof StrategyStart>;
 
 export const AddLegsBody = z.strictObject({ legs: z.array(StrategyLegInput).min(1).max(MAX_OPEN_LEGS) });
 export type AddLegsBody = z.infer<typeof AddLegsBody>;
+
+/** One open leg's lots after the adjustment: fewer trims, 0 closes; `price` is the paper exit (client mark), ignored live. */
+export const AdjustChange = z.strictObject({
+  legId: Id,
+  lotsAfter: z.number().int().min(0).max(100_000),
+  price: NonNegativeDecimal,
+});
+export type AdjustChange = z.infer<typeof AdjustChange>;
+export const MAX_ADJUST_REASON = 280;
+/**
+ * One atomic adjustment batch (ADR-044): new legs (or more lots on a contract already held), trims / closes of open
+ * legs, the marks shown at Review (per symbol, live band), an idempotency key and the trader's reason (journal).
+ */
+export const AdjustBody = z
+  .strictObject({
+    adds: z.array(StrategyLegInput).max(MAX_OPEN_LEGS).default([]),
+    changes: z.array(AdjustChange).max(MAX_OPEN_LEGS).default([]),
+    expected: z.record(z.string(), PositiveDecimal).default({}),
+    idempotencyKey: z.string().min(8).max(80).optional(),
+    reason: z.string().trim().max(MAX_ADJUST_REASON).optional(),
+  })
+  .refine((b) => b.adds.length + b.changes.length > 0, { message: "Nothing to adjust", path: ["adds"] });
+export type AdjustBody = z.infer<typeof AdjustBody>;
+
 
 /** Close a leg fully (lots omitted) or partially (lots < the leg's lots); the closed part becomes its own leg row. */
 export const CloseLegBody = z.strictObject({
@@ -237,7 +279,12 @@ export const LivePlaceBody = z.strictObject({
 });
 export type LivePlaceBody = z.infer<typeof LivePlaceBody>;
 
-export const LivePreviewBody = z.strictObject({ brokerId: Id });
+/** Preview the open legs, or (adjustment workbench) the proposed batch: `adds` as entries and `changes` as exits. */
+export const LivePreviewBody = z.strictObject({
+  brokerId: Id,
+  adds: z.array(StrategyLegInput).max(MAX_OPEN_LEGS).optional(),
+  changes: z.array(AdjustChange).max(MAX_OPEN_LEGS).optional(),
+});
 export type LivePreviewBody = z.infer<typeof LivePreviewBody>;
 
 export const LiveBatchBody = z.strictObject({

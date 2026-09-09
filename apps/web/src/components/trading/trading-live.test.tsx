@@ -22,7 +22,7 @@ const mine = () => acc().strategies;
 const CALL = { id: "leg_a", kind: "call" as const, side: "buy" as const, strike: "80000", expiry: EXPIRY, symbol: "C-BTC-80000-250926", lots: 10, price: "1200", entryPrice: "1200", exitPrice: null, iv: 0.5, status: "open" as const, isAdjustment: false, position: 0, openedAt: "2026-09-08T10:00:00Z", closedAt: null, orderId: null };
 function strat(i: number, over: Partial<Strategy> = {}): Strategy {
   const at = `2026-09-0${(i % 8) + 1}T10:00:00Z`;
-  return { id: `strat_${i}`, name: `Paper ${i}`, asset: "BTC", status: "paper", tradingMode: "paper", templateName: "Custom", brokerId: "brk_delta", legs: [{ ...CALL, id: `leg_${i}` }], realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], startedAt: at, closedAt: null, createdAt: at, updatedAt: at, ...over };
+  return { id: `strat_${i}`, name: `Paper ${i}`, asset: "BTC", status: "paper", tradingMode: "paper", templateName: "Custom", brokerId: "brk_delta", legs: [{ ...CALL, id: `leg_${i}` }], realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: at, closedAt: null, createdAt: at, updatedAt: at, ...over };
 }
 function connect() {
   acc().credential = { brokerId: "brk_delta", apiKeyMasked: "****ab12", connectedAt: "2026-09-08T09:00:00Z", whitelistedIp: "203.0.113.10" };
@@ -231,7 +231,7 @@ describe("HC-TR-088 live adjustments and square off from Details", () => {
   it("an adjustment goes through Confirm Adjustment Order and lands as a filled order; Square off all archives with exit orders", async () => {
     connect();
     const at = "2026-09-08T10:00:00Z";
-    mine().push(strat(1, { status: "live", tradingMode: "live", orderBatchId: "web-seed", orders: [{ id: "ord_1", legId: "leg_1", purpose: "entry", clientOrderId: "hc-leg_1-1", venueOrderId: "700001", symbol: CALL.symbol, side: "buy", size: 10, state: "pending", fillPrice: null, error: null, attempts: 1, createdAt: at, updatedAt: at }] }));
+    mine().push(strat(1, { status: "live", tradingMode: "live", orderBatchId: "web-seed", orders: [{ id: "ord_1", legId: "leg_1", purpose: "entry", batchId: "web-seed", clientOrderId: "hc-leg_1-1", venueOrderId: "700001", symbol: CALL.symbol, side: "buy", size: 10, state: "pending", fillPrice: null, error: null, attempts: 1, createdAt: at, updatedAt: at }] }));
     useUiStore.setState({ workspaceTab: "live" });
     renderWithProviders(<Workspace />);
     act(() => FakeSocket.last().open());
