@@ -27,6 +27,8 @@ export const IngestEnv = z.object({
   BINANCE_FAPI_URL: z.url({ protocol: /^https?$/ }).default("https://fapi.binance.com"),
   BINANCE_FSTREAM_URL: z.url({ protocol: /^wss?$/ }).default("wss://fstream.binance.com/ws"),
   BYBIT_URL: z.url({ protocol: /^https?$/ }).default("https://api.bybit.com"),
+  /** Bybit v5 public linear stream (allLiquidation.{symbol}); the liquidation fallback when Binance is unreachable (ADR-041). */
+  BYBIT_WS_URL: z.url({ protocol: /^wss?$/ }).default("wss://stream.bybit.com/v5/public/linear"),
   OKX_URL: z.url({ protocol: /^https?$/ }).default("https://www.okx.com"),
   COINGECKO_URL: z.url({ protocol: /^https?$/ }).default("https://api.coingecko.com/api/v3"),
   /** CoinGecko Demo key (free, 10k calls/month). Optional: without it the markets job is skipped. */

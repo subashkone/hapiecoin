@@ -11,11 +11,14 @@ import { OkxAdapter } from "./adapters/okx.js";
 import type { IngestConfig } from "./config.js";
 import { type FetchLike, JsonClient } from "./http.js";
 import { type Adapters, buildFearGreed, buildFunding, buildLiquidations, buildLongShort, buildMarkets, buildOpenInterest, buildTakerVolume } from "./jobs.js";
-import { ForceOrderStream, LiquidationBuffer, type SocketLike } from "./liquidations.js";
+import { BybitLiquidationStream, ForceOrderStream, LiquidationBuffer, type LiquidationStream, type SocketLike } from "./liquidations.js";
 import { type Logger, createLogger } from "./log.js";
 import { buildOverview } from "./overview.js";
 import { Scheduler } from "./scheduler.js";
 import { MemoryStore, RedisStore, type SnapshotStore } from "./store.js";
+
+type StreamVenue = "binance" | "bybit";
+type StreamState = "open" | "closed" | "error" | "off";
 
 export interface AppDeps {
   fetch?: FetchLike;
@@ -23,7 +26,7 @@ export interface AppDeps {
   log?: Logger;
   createSocket?: (url: string) => SocketLike;
   now?: () => number;
-  /** Skip the Binance liquidation stream (tests without a fake socket). */
+  /** Skip the Binance and Bybit liquidation streams (tests without a fake socket). */
   stream?: boolean;
 }
 
@@ -37,7 +40,7 @@ export interface App {
   start(): Promise<number>;
   stop(): Promise<void>;
   /** Health payload also served at GET /healthz. */
-  health(): { ok: boolean; store: "redis" | "memory"; stream: "open" | "closed" | "error" | "off"; jobs: ReturnType<Scheduler["statuses"]> };
+  health(): { ok: boolean; store: "redis" | "memory"; stream: Record<StreamVenue, StreamState>; jobs: ReturnType<Scheduler["statuses"]> };
 }
 
 export function createApp(config: IngestConfig, deps: AppDeps = {}): App {
@@ -54,21 +57,20 @@ export function createApp(config: IngestConfig, deps: AppDeps = {}): App {
   };
   const tracked = new Set(config.ANALYTICS_SYMBOLS);
   const buffer = new LiquidationBuffer({ now });
-  let streamState: "open" | "closed" | "error" | "off" = "off";
-  const stream =
-    deps.stream === false
-      ? null
-      : new ForceOrderStream({
-          url: config.BINANCE_FSTREAM_URL,
-          tracked,
-          buffer,
-          createSocket: deps.createSocket ?? ((url) => new WebSocket(url)),
-          onState: (state, error) => {
-            streamState = state;
-            if (state === "error") log.warn("liquidation stream error", { error });
-            else log.info("liquidation stream", { state });
-          },
-        });
+  const streamState: Record<StreamVenue, StreamState> = { binance: "off", bybit: "off" };
+  const createSocket = deps.createSocket ?? ((url) => new WebSocket(url));
+  const streamOpts = (venue: StreamVenue, url: string) => ({
+    url,
+    tracked,
+    buffer,
+    createSocket,
+    onState: (state: StreamState, error?: Error) => {
+      streamState[venue] = state;
+      if (state === "error") log.warn("liquidation stream error", { venue, error });
+      else log.info("liquidation stream", { venue, state });
+    },
+  });
+  const streams: LiquidationStream[] = deps.stream === false ? [] : [new ForceOrderStream(streamOpts("binance", config.BINANCE_FSTREAM_URL)), new BybitLiquidationStream(streamOpts("bybit", config.BYBIT_WS_URL))];
   const scheduler = new Scheduler({ store, log, now });
   const ctx = (ttlMs: number) => ({ adapters, now, ttlMs });
   const d = config.DERIVATIVES_REFRESH_MS;
@@ -78,7 +80,7 @@ export function createApp(config: IngestConfig, deps: AppDeps = {}): App {
     scheduler.add({ name: analyticsKey("long-short", symbol), intervalMs: d, run: () => buildLongShort(ctx(d), symbol) });
     scheduler.add({ name: analyticsKey("taker-volume", symbol), intervalMs: d, run: () => buildTakerVolume(ctx(d), symbol) });
   }
-  scheduler.add({ name: analyticsKey("liquidations"), intervalMs: config.LIQUIDATIONS_FLUSH_MS, run: () => buildLiquidations(ctx(config.LIQUIDATIONS_FLUSH_MS), config.ANALYTICS_SYMBOLS, buffer, streamState === "open") });
+  scheduler.add({ name: analyticsKey("liquidations"), intervalMs: config.LIQUIDATIONS_FLUSH_MS, run: () => buildLiquidations(ctx(config.LIQUIDATIONS_FLUSH_MS), config.ANALYTICS_SYMBOLS, buffer, { binance: streamState.binance === "open", bybit: streamState.bybit === "open" }) });
   if (adapters.coingecko) scheduler.add({ name: analyticsKey("markets"), intervalMs: config.MARKETS_REFRESH_MS, run: () => buildMarkets(ctx(config.MARKETS_REFRESH_MS)) });
   else log.warn("COINGECKO_API_KEY not set: the markets dataset is skipped");
   scheduler.add({ name: analyticsKey("fear-greed"), intervalMs: config.FEAR_GREED_REFRESH_MS, run: () => buildFearGreed(ctx(config.FEAR_GREED_REFRESH_MS)) });
@@ -88,7 +90,7 @@ export function createApp(config: IngestConfig, deps: AppDeps = {}): App {
   const health: App["health"] = () => {
     const jobs = scheduler.statuses();
     const ok = jobs.every((j) => j.lastError === null || j.lastOkAt !== null);
-    return { ok, store: config.REDIS_URL !== undefined && !deps.store ? "redis" : "memory", stream: streamState, jobs };
+    return { ok, store: config.REDIS_URL !== undefined && !deps.store ? "redis" : "memory", stream: { ...streamState }, jobs };
   };
   let server: Server | null = null;
 
@@ -114,7 +116,7 @@ export function createApp(config: IngestConfig, deps: AppDeps = {}): App {
         server.once("error", reject);
         server.listen(config.INGEST_PORT, config.INGEST_HOST, () => {
           const port = (server?.address() as AddressInfo).port;
-          stream?.start();
+          for (const s of streams) s.start();
           scheduler.start();
           log.info("ingest listening", { port, host: config.INGEST_HOST, store: health().store, symbols: config.ANALYTICS_SYMBOLS.length, markets: adapters.coingecko !== null });
           resolve(port);
@@ -122,7 +124,7 @@ export function createApp(config: IngestConfig, deps: AppDeps = {}): App {
       }),
     stop: async () => {
       scheduler.stop();
-      stream?.stop();
+      for (const s of streams) s.stop();
       await new Promise<void>((resolve) => (server ? server.close(() => resolve()) : resolve()));
       await store.close();
       log.info("ingest stopped");

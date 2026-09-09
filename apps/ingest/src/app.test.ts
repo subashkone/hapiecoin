@@ -71,27 +71,30 @@ describe("[INGEST] app", () => {
   it("boots on a free port, answers /healthz, runs every job into the store and stops", async () => {
     const lines: string[] = [];
     const store = new MemoryStore();
-    let socket: FakeSocket | null = null;
-    const app = createApp(loadConfig(env), { fetch: healthyFetch().fetch, store, log: createLogger("info", (l) => lines.push(l)), createSocket: () => (socket = new FakeSocket()), now: () => 1_788_900_000_000 });
+    const sockets: FakeSocket[] = [];
+    const app = createApp(loadConfig(env), { fetch: healthyFetch().fetch, store, log: createLogger("info", (l) => lines.push(l)), createSocket: () => { const s = new FakeSocket(); sockets.push(s); return s; }, now: () => 1_788_900_000_000 });
     const port = await app.start();
     expect(port).toBeGreaterThan(0);
-    expect(app.health().stream).toBe("off");
-    socket!.emit("open");
-    expect(app.health().stream).toBe("open");
+    expect(app.health().stream).toEqual({ binance: "off", bybit: "off" });
+    expect(sockets).toHaveLength(2);
+    sockets[0]!.emit("open");
+    expect(app.health().stream).toEqual({ binance: "open", bybit: "off" });
+    sockets[1]!.emit("open");
+    expect(app.health().stream.bybit).toBe("open");
     const names = app.scheduler.statuses().map((j) => j.name);
     expect(names).toEqual(["funding:BTC", "open-interest:BTC", "long-short:BTC", "taker-volume:BTC", "liquidations:-", "markets:-", "fear-greed:-", "overview:-"]);
     for (const n of names) await app.scheduler.tick(n);
     expect(app.health().ok).toBe(true);
     expect((await store.get("markets:-"))?.source).toBe("CoinGecko");
-    expect((await store.get("liquidations:-"))?.source).toBe("Binance · OKX");
+    expect((await store.get("liquidations:-"))?.source).toBe("Binance · Bybit · OKX");
     const ov = await store.get("overview:-");
     expect(ov?.dataset === "overview" ? ov.data.symbols.map((s) => s.symbol) : []).toEqual(["BTC"]);
     const res = await fetch(`http://127.0.0.1:${port}/healthz`);
     expect(res.status).toBe(200);
     expect(((await res.json()) as { store: string }).store).toBe("memory");
     expect((await fetch(`http://127.0.0.1:${port}/nope`)).status).toBe(404);
-    socket!.emit("error", new Error("x"));
-    expect(app.health().stream).toBe("error");
+    sockets[0]!.emit("error", new Error("x"));
+    expect(app.health().stream).toEqual({ binance: "error", bybit: "open" });
     await app.stop();
     expect(lines.some((l) => l.includes("ingest stopped"))).toBe(true);
   });
@@ -116,7 +119,7 @@ describe("[INGEST] app", () => {
     FakeRedis.instances[0]!.listeners[0]!(new Error("redis down"));
     expect(lines.some((l) => l.includes("redis error"))).toBe(true);
     await app.start();
-    expect(FakeWs.instances[0]?.url).toBe("wss://fstream.binance.com/ws/!forceOrder@arr");
+    expect(FakeWs.instances.map((w) => w.url)).toEqual(["wss://fstream.binance.com/ws/!forceOrder@arr", "wss://stream.bybit.com/v5/public/linear"]);
     await app.stop();
   });
   it("stops cleanly even when never started", async () => {

@@ -122,7 +122,7 @@ export function CoinPage({ symbol }: { symbol: string }) {
           <SourceLine snapshot={oi.data} />
         </Panel>
         <Panel title="Long / Short Ratio" sub={`global accounts · ${ls.data?.source ?? "Binance"}`} testId="panel-ls">
-          <Chart h={220} x={lsS.x} xTip={lsS.xTip} series={[{ label: "L/S Ratio", type: "line", data: lsS.values, color: "hsl(var(--curve))", fmt: (v) => v.toFixed(2) }]} hlines={[{ y: 1, label: "1.00" }]} yFmt={(v) => v.toFixed(2)} loading={ls.isPending} empty={ls.data ? "Nothing to plot for this range" : "Long/short needs a venue that serves account ratios (Binance)"} tf={{ value: tfLs, onChange: setTfLs }} testId="chart-ls" />
+          <Chart h={220} x={lsS.x} xTip={lsS.xTip} series={[{ label: "L/S Ratio", type: "line", data: lsS.values, color: "hsl(var(--curve))", fmt: (v) => v.toFixed(2) }]} hlines={[{ y: 1, label: "1.00" }]} yFmt={(v) => v.toFixed(2)} loading={ls.isPending} empty={ls.data ? "Nothing to plot for this range" : "Long/short needs a venue that serves account ratios (Binance or Bybit)"} tf={{ value: tfLs, onChange: setTfLs }} testId="chart-ls" />
           <SourceLine snapshot={ls.data} />
         </Panel>
         <Panel title="Liquidations" sub="Long Liq / Short Liq · from the captured events" testId="panel-liq">

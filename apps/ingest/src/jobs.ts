@@ -153,19 +153,30 @@ const latestOf = (pts: RatioPoint[]): { long: number; short: number; ratio: numb
   return l ? { long: l.long, short: l.short, ratio: l.ratio } : { long: 0, short: 0, ratio: 0 };
 };
 
-/** Long/short comes from Binance (the only venue publishing all three series the chart needs). */
+const ratioSeries = (pts: RatioPoint[]): SeriesPoint[] => pts.map((p) => ({ t: p.t, v: p.ratio }));
+
+/**
+ * Long/short comes from Binance (the only venue publishing all three series the chart needs); when Binance cannot be
+ * reached the global account ratio comes from Bybit and the top-trader series stay empty (ADR-041, GAPS #57).
+ */
 export async function buildLongShort(ctx: JobContext, symbol: string): Promise<AnalyticsSnapshot> {
   const b = ctx.adapters.binance;
-  const [global, topAccounts, topPositions] = await Promise.all([b.globalLongShort(symbol), b.topAccountsLongShort(symbol), b.topPositionsLongShort(symbol)]);
-  const series = (pts: RatioPoint[]): SeriesPoint[] => pts.map((p) => ({ t: p.t, v: p.ratio }));
+  const primary = await settle("binance", Promise.all([b.globalLongShort(symbol), b.topAccountsLongShort(symbol), b.topPositionsLongShort(symbol)]));
+  const base = { dataset: "long-short" as const, key: analyticsKey("long-short", symbol), asOf: ctx.now(), ttlMs: ctx.ttlMs, stale: false };
+  if ("value" in primary) {
+    const [global, topAccounts, topPositions] = primary.value;
+    return finish({
+      ...base,
+      source: "Binance",
+      data: { symbol: symbol.toUpperCase(), venue: "binance", period: "1h", global: ratioSeries(global), topAccounts: ratioSeries(topAccounts), topPositions: ratioSeries(topPositions), latest: { global: latestOf(global), topAccounts: latestOf(topAccounts), topPositions: latestOf(topPositions) } },
+    });
+  }
+  const fallback = await settle("bybit", ctx.adapters.bybit.accountRatio(symbol));
+  if ("error" in fallback) throw new NoVenueError("long-short", [primary.error, fallback.error]);
   return finish({
-    dataset: "long-short",
-    key: analyticsKey("long-short", symbol),
-    source: "Binance",
-    asOf: ctx.now(),
-    ttlMs: ctx.ttlMs,
-    stale: false,
-    data: { symbol: symbol.toUpperCase(), venue: "binance", period: "1h", global: series(global), topAccounts: series(topAccounts), topPositions: series(topPositions), latest: { global: latestOf(global), topAccounts: latestOf(topAccounts), topPositions: latestOf(topPositions) } },
+    ...base,
+    source: "Bybit",
+    data: { symbol: symbol.toUpperCase(), venue: "bybit", period: "1h", global: ratioSeries(fallback.value), topAccounts: [], topPositions: [], latest: { global: latestOf(fallback.value), topAccounts: latestOf([]), topPositions: latestOf([]) } },
   });
 }
 
@@ -185,13 +196,14 @@ export async function buildFearGreed(ctx: JobContext): Promise<AnalyticsSnapshot
   return finish({ dataset: "fear-greed", key: analyticsKey("fear-greed"), source: "alternative.me", asOf: ctx.now(), ttlMs: ctx.ttlMs, stale: false, data });
 }
 
-/** Polls OKX's recent liquidations for every tracked symbol into the buffer, then folds the buffer (with the Binance stream's events) into the snapshot. */
-export async function buildLiquidations(ctx: JobContext, symbols: readonly string[], buffer: LiquidationBuffer, streamOpen: boolean): Promise<AnalyticsSnapshot> {
+/** Polls OKX's recent liquidations for every tracked symbol into the buffer, then folds the buffer (with the Binance and Bybit streams' events) into the snapshot. */
+export async function buildLiquidations(ctx: JobContext, symbols: readonly string[], buffer: LiquidationBuffer, streams: { binance?: boolean; bybit?: boolean }): Promise<AnalyticsSnapshot> {
   const results = await Promise.all(symbols.map((s) => settle("okx", ctx.adapters.okx.liquidations(s))));
   const { ok } = split(results);
   for (const r of ok) buffer.add(r.value);
   const venues: AnalyticsVenue[] = [];
-  if (streamOpen) venues.push("binance");
+  if (streams.binance) venues.push("binance");
+  if (streams.bybit) venues.push("bybit");
   if (ok.length > 0) venues.push("okx");
   return finish({ dataset: "liquidations", key: analyticsKey("liquidations"), source: venues.length ? sourceOf(venues) : "no venue connected", asOf: ctx.now(), ttlMs: ctx.ttlMs, stale: venues.length === 0, data: buffer.snapshot() });
 }
