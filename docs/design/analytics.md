@@ -39,3 +39,37 @@ fresh · stale (badge "stale since …") · unavailable (503: "Ingest has not wr
 
 ### Open
 GAPS #55 (paid sources → coming-soon panels), #56 (history table for 90D/1Y chips).
+
+## 5.2 · Shell, Markets Hub, Futures overview (this PR)
+Traceability: HC-MA-001, 003..037, 088..109; coin page tiles HC-MA-082, 083, 120. ADR-039.
+
+### Job
+The hub answers "what is the market doing right now" in one screen: open interest, liquidations, Fear & Greed, long/short and the derivatives table. The overview answers "which way is BTC leaning" with the OI and long/short charts. Within two seconds the tiles must show numbers with a source line under them.
+
+### Layout
+```
+[app header · default]
+[Δ Market Analytics  ← Analyse                       Search coin…  Ctrl K]
+[Hub · Futures · Markets · Derivatives · Options · ETF · Liquidations · Whales · Sentiment · Terminal ▾]
+hub:  tiles ×10 (5 per row) · source line · watchlist strip
+      ┌ main table (tabs · search · columns · CSV) ────────────┐ ┌ gainers/losers ┐
+      │                                                        │ │ heatmap        │
+      └────────────────────────────────────────────────────────┘ │ ETF (soon)     │
+overview: tiles ×8 · [BTC price & OI][BTC long/short] · [F&G gauge][gainers][losers] · [heatmap][ETF soon] · footer
+```
+At 390 px tiles go 2-up, the table scrolls inside its own container, side panels stack under the table.
+
+### Hierarchy
+Tiles carry the figures; the only amber is the gauge needle and the accent links. Green/red only in P&L-like cells (changes, long/short split, funding sign). Coming-soon blocks are dashed and muted.
+
+### States
+loading (skeleton charts, "—" tiles) · ready · unavailable (503 before the first ingest write: one dashed notice, tiles show "—") · stale (badge on the source line) · no CoinGecko (main table and gainers/losers explain the missing key) · deferred (coming soon with the gap number).
+
+### Numbers
+Compact USD (`$8.40B`), prices by magnitude, percents to two decimals with sign, funding to four decimals, long/short split as a two-colour bar. Every tile names its basis ("Tracked symbols · aggregated", "BTC global accounts").
+
+### Interaction
+Tabs, timeframe chips and legend items are buttons with `aria-selected`/`data-on`; table headers sort (▲▼), search filters, Columns ▾ toggles, CSV copies visible columns; row click opens the coin page; star toggles the watchlist. Coin search: arrow keys, Enter, Escape, outside click. Palette: `nav:analytics-hub`, `nav:analytics-overview`.
+
+### Tests
+Unit: `lib/analytics/analytics-lib.test.ts`, `components/analytics/analytics.test.tsx`. E2E: `analytics.spec.ts`. Visual: `analytics-hub-*`, `analytics-overview-*`. Mock data: `test/mock-analytics.ts`.

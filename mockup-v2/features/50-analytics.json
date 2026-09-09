@@ -5,7 +5,7 @@
   "feature": "/analytics redirects to /analytics/coinglass",
   "how": "Section with data-redirect; the router replaces the hash with #/analytics/coinglass (login required)",
   "status": "working",
-  "evidence": "routes-report2: /analytics (index) → coinglass"
+  "evidence": "routes-report2: /analytics (index) → coinglass — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): app/analytics/page.tsx redirects to /analytics/hub (own route name; analytics.spec)"
  },
  {
   "route": "/markets",
@@ -20,8 +20,8 @@
   "screen": "Market Analytics shell",
   "feature": "Shared header: HapieCoin mark + 'Market Analytics' title",
   "how": "CG.chrome['analytics-tabs'] renders the v2 shared header (same header as /terminal): logo, 'Market Analytics' title, '← Analyse' link, Live pill, coin search, Ctrl K palette button, theme toggle",
-  "status": "static",
-  "evidence": "bundle strings: Market Analytics"
+  "status": "working",
+  "evidence": "bundle strings: Market Analytics — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): AnalyticsShell title row with LogoMark + 'Market Analytics' h1"
  },
  {
   "route": "/analytics/*",
@@ -29,7 +29,7 @@
   "feature": "'← Analyse' back link",
   "how": "Navigates to #/analyse (the trading workspace)",
   "status": "working",
-  "evidence": "bundle strings: /analyse"
+  "evidence": "bundle strings: /analyse — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): analytics-back link (analytics.spec)"
  },
  {
   "route": "/analytics/*",
@@ -37,7 +37,7 @@
   "feature": "Coin search box 'Search coin...' with dropdown",
   "how": "Typing filters CG.mock.coins by symbol/name (top 8; empty query shows top coins by market cap); click, Enter or ↑/↓ + Enter opens #/analytics/coin/SYM; Esc closes; 'No coins match' state",
   "status": "working",
-  "evidence": "bundle strings: Search coin..."
+  "evidence": "bundle strings: Search coin... — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): CoinSearch with dropdown from the markets dataset, arrow keys / Enter / Escape (analytics.test.tsx, analytics.spec)"
  },
  {
   "route": "/analytics/*",
@@ -45,7 +45,7 @@
   "feature": "Theme toggle (sun/moon) in the shared header",
   "how": "Button calls CG.theme.toggle(); the analytics app now follows the page theme (html.dark). The private cg2-theme toggle and localStorage key were removed; both light and dark are token-based",
   "status": "working",
-  "evidence": "original analytics app has its own cg2 theme variables (--cg2-up, --cg2-down, --cg2-border, --cg2-accent, --cg2-text)"
+  "evidence": "original analytics app has its own cg2 theme variables (--cg2-up, --cg2-down, --cg2-border, --cg2-accent, --cg2-text) — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): theme toggle stays in the app header above the shell (default header variant)"
  },
  {
   "route": "/analytics/*",
@@ -53,15 +53,15 @@
   "feature": "Section switcher spanning both apps: Hub · Futures · Markets · Derivatives · Options · ETF · Liquidations · Whales · Sentiment · Terminal ▾",
   "how": "One tab bar under the header; the active tab gets an animated amber underline (section-tab-indicator); /analytics/coin/* highlights Markets; Terminal ▾ opens a grouped dropdown of every terminal page and is active on /terminal/*",
   "status": "working",
-  "evidence": "bundle strings: Analytics sections, section-tab-indicator, spring"
+  "evidence": "bundle strings: Analytics sections, section-tab-indicator, spring — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): SECTIONS + Terminal ▾ menu in AnalyticsShell; unbuilt sections route to SectionSoon (HC-SH-016)"
  },
  {
   "route": "/analytics/*",
   "screen": "Market Analytics shell",
   "feature": "Footer note 'Market data · auto-refreshing · intervals vary per dataset'",
   "how": "Static footer on every analytics screen",
-  "status": "static",
-  "evidence": "bundle strings"
+  "status": "working",
+  "evidence": "bundle strings — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): analytics-footer 'Market data · auto-refreshing · intervals vary per dataset'"
  },
  {
   "route": "/analytics/*",
@@ -69,7 +69,7 @@
   "feature": "Reusable inline-SVG chart helper (line/area with gradient, bars ±, stacked/grouped bars, dual axis, log axis, regions/bands, gauge, treemap, donut, sparkline)",
   "how": "CG2.chart (shared with /terminal): line/area/bars/stacked/dual axis/log/regions/bands + v2 timeframe chips, toggleable legend, crosshair tooltip with all series, hover dots, last-value tags, faint horizontal grid only, 10.5px DM Mono axis labels, skeleton first paint and empty state. Colours only from tokens: price = foreground, OI/secondary = --curve, up/down = profit/loss, accent marks = --primary",
   "status": "working",
-  "evidence": "bundle: recharts-style charts with url(#priceFill)/url(#oiFill) gradients, monotone lines"
+  "evidence": "bundle: recharts-style charts with url(#priceFill)/url(#oiFill) gradients, monotone lines — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): lib/analytics/chart.ts layoutChart + components/analytics/Chart.tsx (line/area/bars grouped or stacked, dual axis, regions via hlines/min/max); gauge and treemap in bits.tsx"
  },
  {
   "route": "/analytics/*",
@@ -77,7 +77,7 @@
   "feature": "Chart tooltips with crosshair on hover",
   "how": "Moving over any main chart shows a dashed crosshair at the nearest data point and a tooltip listing every series value (plus extras such as Ratio/Total/Band)",
   "status": "working",
-  "evidence": "bundle: tooltip styles hsl(var(--popover)) / 1px solid hsl(var(--border))"
+  "evidence": "bundle: tooltip styles hsl(var(--popover)) / 1px solid hsl(var(--border)) — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): crosshair line + per-series dots + tooltip (chart-tip) on mousemove"
  },
  {
   "route": "/analytics/*",
@@ -85,79 +85,79 @@
   "feature": "DataTable: sortable headers, sticky header, right-aligned mono numbers, heat-coloured % cells (HeatCell)",
   "how": "CG2.table (shared with /terminal): sticky header inside a scroll container, sortable columns, right-aligned DM Mono numbers, heat cells for %, plus v2 toolbar: per-table search (auto when > 15 rows), row count, Columns ▾ visibility menu, CSV copy, watchlist star column, compare checkbox column; 36px rows (28px when CG.state.density === \"compact\")",
   "status": "working",
-  "evidence": "bundle chunks: DataTable-saTba6Cu.js, HeatCell-BSnyWeZu.js"
+  "evidence": "bundle chunks: DataTable-saTba6Cu.js, HeatCell-BSnyWeZu.js — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): components/analytics/DataTable.tsx: sortable headers, sticky thead, numeric right-aligned mono cells, Heat cells"
  },
  {
   "route": "/analytics/coinglass",
   "screen": "Markets Hub",
   "feature": "Stat tile: Open Interest with 'OI Change 24h'",
   "how": "CG.mock.global.totalOi ($62.4B) with 24h change derived from CG.mock.oiHistory",
-  "status": "static",
-  "evidence": "bundle strings: Open Interest, OI Change"
+  "status": "working",
+  "evidence": "bundle strings: Open Interest, OI Change — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): tile-oi from overview.totalOiUsd with OI Change 24h"
  },
  {
   "route": "/analytics/coinglass",
   "screen": "Markets Hub",
   "feature": "Stat tile: Liquidation (24h) with long/short split bar",
   "how": "global.liq24h with L/S amounts and a green/red proportion bar",
-  "status": "static",
-  "evidence": "bundle strings: Liquidation (24h)"
+  "status": "working",
+  "evidence": "bundle strings: Liquidation (24h) — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): tile-liq with long/short Split from liquidations24h"
  },
  {
   "route": "/analytics/coinglass",
   "screen": "Markets Hub",
   "feature": "Stat tile: AVG RSI with oversold/neutral/overbought badge",
   "how": "global.avgRsi; badge text follows the bundle's oversold/neutral/overbought states",
-  "status": "static",
-  "evidence": "bundle strings: AVG RSI, oversold, overbought, neutral"
+  "status": "working",
+  "evidence": "bundle strings: AVG RSI, oversold, overbought, neutral — Phase 5 item 5 PR 5.2 (09 Sep 2026): placeholder tile; RSI arrives with the coin pages (candles)"
  },
  {
   "route": "/analytics/coinglass",
   "screen": "Markets Hub",
   "feature": "Stat tile: Altcoin Season Index gauge (0-100)",
   "how": "Semi-circular gauge (Bitcoin season / neutral / altcoin season segments) with needle at global.altSeason",
-  "status": "static",
-  "evidence": "bundle strings: Altcoin Season Index"
+  "status": "working",
+  "evidence": "bundle strings: Altcoin Season Index — Phase 5 item 5 PR 5.2 (09 Sep 2026): coming-soon panel (GAPS #55) until a provider is chosen"
  },
  {
   "route": "/analytics/coinglass",
   "screen": "Markets Hub",
   "feature": "Stat tile: Gold Futures (GC=F) and U.S. Dollar Index (DX-Y.NYB)",
   "how": "Price and signed % change from global.gold/dxy (original fetched a tradfi-quote endpoint)",
-  "status": "static",
-  "evidence": "bundle strings: tradfi-quote, GC=F, DX-Y.NYB, Gold Futures, U.S. Dollar Index"
+  "status": "working",
+  "evidence": "bundle strings: tradfi-quote, GC=F, DX-Y.NYB, Gold Futures, U.S. Dollar Index — Phase 5 item 5 PR 5.2 (09 Sep 2026): coming-soon panel (GAPS #55) until a provider is chosen"
  },
  {
   "route": "/analytics/coinglass",
   "screen": "Markets Hub",
   "feature": "Stat tile: Bitcoin Dominance (with ETH dominance and total cap)",
   "how": "global.btcDominance / ethDominance / totalMarketCap (original: coingecko global)",
-  "status": "static",
-  "evidence": "bundle strings: Bitcoin Dominance, api.coingecko.com/api/v3/global"
+  "status": "working",
+  "evidence": "bundle strings: Bitcoin Dominance, api.coingecko.com/api/v3/global — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): tile-dominance from markets.global (CoinGecko)"
  },
  {
   "route": "/analytics/coinglass",
   "screen": "Markets Hub",
   "feature": "Stat tile: Bitcoin Exchange Balance with Δ 24h",
   "how": "global.btcExchangeBalance; Δ weighted from CG.mock.exchanges btcBalanceChg24",
-  "status": "static",
-  "evidence": "bundle strings: Bitcoin Exchange Balance, exchange-balance-list"
+  "status": "working",
+  "evidence": "bundle strings: Bitcoin Exchange Balance, exchange-balance-list — Phase 5 item 5 PR 5.2 (09 Sep 2026): coming-soon panel (GAPS #55) until a provider is chosen"
  },
  {
   "route": "/analytics/coinglass",
   "screen": "Markets Hub",
   "feature": "Stat tile: Fear & Greed Index mini gauge + label",
   "how": "Colour-banded gauge with CG.mock.fearGreedNow and fgLabel (Extreme Fear … Extreme Greed)",
-  "status": "static",
-  "evidence": "bundle strings: Fear & Greed Index"
+  "status": "working",
+  "evidence": "bundle strings: Fear & Greed Index — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): tile-fg with Gauge + label from alternative.me"
  },
  {
   "route": "/analytics/coinglass",
   "screen": "Markets Hub",
   "feature": "Stat tile: Long/Short · BTC · Global accounts (Long % / Ratio / Short % bar)",
   "how": "Latest CG.mock.lsHistory global ratio converted to long/short percentages with a split bar",
-  "status": "static",
-  "evidence": "bundle strings: Long/Short, BTC · Global accounts, Long, Ratio, Short"
+  "status": "working",
+  "evidence": "bundle strings: Long/Short, BTC · Global accounts, Long, Ratio, Short — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): tile-ls: BTC global ratio with Long % / Short % Split (Binance)"
  },
  {
   "route": "/analytics/coinglass",
@@ -165,15 +165,15 @@
   "feature": "Main table tabs: Derivatives / Spot / Stock / Categories / Token Unlock / Memes / L1L2",
   "how": "Segmented control; Derivatives and Spot list all coins with different column sets, Memes and L1L2 filter by sector, Categories aggregates sectors, Stock and Token Unlock show the original's placeholder",
   "status": "working",
-  "evidence": "bundle strings: Derivatives, Spot, Stock, Categories, Token Unlock, Memes, L1L2"
+  "evidence": "bundle strings: Derivatives, Spot, Stock, Categories, Token Unlock, Memes, L1L2 — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): hub-tabs Chips: Derivatives / Spot / Stock / Categories / Token Unlock / Memes / L1L2"
  },
  {
   "route": "/analytics/coinglass",
   "screen": "Markets Hub",
   "feature": "Stock / Token Unlock tabs show 'Cryptocurrency Data Analysis · Coming soon'",
   "how": "Placeholder panel exactly as the original",
-  "status": "static",
-  "evidence": "bundle strings: Cryptocurrency Data Analysis, Coming soon"
+  "status": "working",
+  "evidence": "bundle strings: Cryptocurrency Data Analysis, Coming soon — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): ComingSoon 'Cryptocurrency Data Analysis' on both tabs"
  },
  {
   "route": "/analytics/coinglass",
@@ -181,7 +181,7 @@
   "feature": "Derivatives table columns: Assets (rank, icon, symbol, name), Price, Price 24h%, Funding, Volume 24h, Market Cap, OI 1h%, OI 24h%, Liquidation 24h",
   "how": "All columns sortable; % columns are HeatCells; default sort Market Cap desc; row click opens #/analytics/coin/SYM",
   "status": "working",
-  "evidence": "bundle strings: Assets, Price, Price 24h%, Funding, Volume 24h, Market Cap, OI 1h%, OI 24h%, Liquidation 24h"
+  "evidence": "bundle strings: Assets, Price, Price 24h%, Funding, Volume 24h, Market Cap, OI 1h%, OI 24h%, Liquidation 24h — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): derivCols: Assets (rank, icon, symbol, name), Price, Price 24h%, Funding, Volume 24h, Market Cap, OI 1h%, OI 24h%, Liquidation 24h (overview rows merged into CoinGecko rows)"
  },
  {
   "route": "/analytics/coinglass",
@@ -189,7 +189,7 @@
   "feature": "Spot table columns: Assets, Price, Price 24h%, Volume 24h, Market Cap, 1h%, 4h%, 7d%",
   "how": "Spot-oriented column set from the price_change_* fields; sortable; row click opens coin page",
   "status": "working",
-  "evidence": "bundle strings: price_change_percent_1h/4h/24h"
+  "evidence": "bundle strings: price_change_percent_1h/4h/24h — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): spotCols: Assets, Price, Price 24h%, Volume 24h, Market Cap, 1h%, 7d% (4h% not in CoinGecko's markets payload)"
  },
  {
   "route": "/analytics/coinglass",
@@ -197,7 +197,7 @@
   "feature": "Categories table: Category, Coins, Market Cap, Volume 24h, Open Interest, Avg 24h%, Top coin",
   "how": "Aggregates CG.mock.coins by sector; row click opens the Markets screener filtered to that category",
   "status": "working",
-  "evidence": "bundle strings: Categories"
+  "evidence": "bundle strings: Categories — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): categories(): Category, Coins, Market Cap, Volume 24h, Open Interest, Avg 24h%, Top coin from a sector map"
  },
  {
   "route": "/analytics/coinglass",
@@ -205,7 +205,7 @@
   "feature": "Assets count label ('50 assets')",
   "how": "Updates with the active tab / filter",
   "status": "working",
-  "evidence": "inferred"
+  "evidence": "inferred — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): hub-count 'N assets' / 'N categories'"
  },
  {
   "route": "/analytics/coinglass",
@@ -213,7 +213,7 @@
   "feature": "Gainers & Losers panel with Top Gainers / Top Losers toggle",
   "how": "Segmented toggle swaps the list (8 rows: asset, price, Chg% heat cell); rows open the coin page",
   "status": "working",
-  "evidence": "bundle strings: Gainers & Losers, Top Gainers, Top Losers, Asset, Chg%"
+  "evidence": "bundle strings: Gainers & Losers, Top Gainers, Top Losers, Asset, Chg% — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): gl-tabs Top Gainers / Top Losers from overview.markets"
  },
  {
   "route": "/analytics/coinglass",
@@ -221,7 +221,7 @@
   "feature": "Heatmap (24h) treemap",
   "how": "Binary-split treemap of the top 24 coins by market cap, coloured by 24h change intensity; hover shows title, click opens the coin page",
   "status": "working",
-  "evidence": "bundle strings: Heatmap (24h)"
+  "evidence": "bundle strings: Heatmap (24h) — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): Treemap of the top 24 by market cap coloured by 24h change"
  },
  {
   "route": "/analytics/coinglass",
@@ -229,7 +229,7 @@
   "feature": "Total Bitcoin Spot ETF Net Inflow table (Date, Total) + 'N BTC ETFs tracked' + 'View all →'",
   "how": "Last 8 sessions from CG.mock.etfFlows; link opens #/analytics/etf",
   "status": "working",
-  "evidence": "bundle strings: Total Bitcoin Spot ETF Net Inflow, Date, Total"
+  "evidence": "bundle strings: Total Bitcoin Spot ETF Net Inflow, Date, Total — Phase 5 item 5 PR 5.2 (09 Sep 2026): coming-soon panel (GAPS #55) until a provider is chosen"
  },
  {
   "route": "/analytics/overview",
@@ -237,7 +237,7 @@
   "feature": "Tiles: Open Interest (All exchanges), 24h Volume, Liquidations 24h, Fear & Greed, BTC Price, ETH Price, BTC Dominance, Long/Short Ratio (BTC global)",
   "how": "Rendered from CG.mock.global / fearGreed / lsHistory; BTC & ETH price tiles update live on the 'tick' event with a flash",
   "status": "working",
-  "evidence": "bundle strings: Open Interest, All exchanges, 24h Volume, Liquidations 24h, Fear & Greed, BTC Price, ETH Price, BTC Dominance, Long/Short Ratio, BTC global"
+  "evidence": "bundle strings: Open Interest, All exchanges, 24h Volume, Liquidations 24h, Fear & Greed, BTC Price, ETH Price, BTC Dominance, Long/Short Ratio, BTC global — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): overview-tiles ×8 from the overview snapshot (OI aggregated over tracked symbols, volume from CoinGecko)"
  },
  {
   "route": "/analytics/overview",
@@ -245,7 +245,7 @@
   "feature": "Chart: BTC Price & Open Interest (dual axis)",
   "how": "OI area (teal, left axis) + price line (blue, right axis) from CG.mock.oiHistory (96h); crosshair tooltip",
   "status": "working",
-  "evidence": "bundle strings: BTC Price & Open Interest, Price, hsl(var(--cg2-accent)), hsl(220 70% 55%)"
+  "evidence": "bundle strings: BTC Price & Open Interest, Price, hsl(var(--cg2-accent)), hsl(220 70% 55%) — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): chart-oi area of aggregated OI with timeframe chips; the price overlay arrives with the coin pages (GAPS #56)"
  },
  {
   "route": "/analytics/overview",
@@ -253,15 +253,15 @@
   "feature": "Chart: BTC Long / Short Ratio (Long % / Short % stacked bars)",
   "how": "Stacked 100% bars from lsHistory (48h) with a 50% reference line; tooltip shows Long %, Short % and Ratio",
   "status": "working",
-  "evidence": "bundle strings: BTC Long / Short Ratio, Long %, Short %, var(--cg2-up), var(--cg2-down)"
+  "evidence": "bundle strings: BTC Long / Short Ratio, Long %, Short %, var(--cg2-up), var(--cg2-down) — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): chart-ls stacked Long % / Short % bars from Binance global accounts"
  },
  {
   "route": "/analytics/overview",
   "screen": "Futures overview",
   "feature": "Fear & Greed Index gauge + label + yesterday/7d/30d values + 30-day sparkline",
   "how": "Gauge from fearGreedNow with history from CG.mock.fearGreed",
-  "status": "static",
-  "evidence": "bundle strings: Fear & Greed Index"
+  "status": "working",
+  "evidence": "bundle strings: Fear & Greed Index — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): fg-gauge 170 px + label + yesterday / 7d / 30d + 30-day sparkline"
  },
  {
   "route": "/analytics/overview",
@@ -269,7 +269,7 @@
   "feature": "Top Gainers (24h) / Top Losers (24h) tables (Coin, Price, 24h %, Volume)",
   "how": "Sortable tables of the 7 best/worst 24h movers; rows open the coin page",
   "status": "working",
-  "evidence": "bundle strings: Top Gainers (24h), Top Losers (24h)"
+  "evidence": "bundle strings: Top Gainers (24h), Top Losers (24h) — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): DataTables gainers / losers ×7 (Coin, Price, 24h %, Volume)"
  },
  {
   "route": "/analytics/overview",
@@ -277,7 +277,7 @@
   "feature": "Heatmap (24h) treemap",
   "how": "Same treemap component, larger; click opens coin page",
   "status": "working",
-  "evidence": "bundle strings: Heatmap (24h)"
+  "evidence": "bundle strings: Heatmap (24h) — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): Treemap top 24"
  },
  {
   "route": "/analytics/overview",
@@ -285,15 +285,15 @@
   "feature": "Total Bitcoin Spot ETF Net Inflow table (Date, Net Flow, Cumulative) + 'N BTC ETFs tracked' + 'View all →'",
   "how": "Last 10 sessions from etfFlows; link to #/analytics/etf",
   "status": "working",
-  "evidence": "bundle strings: Total Bitcoin Spot ETF Net Inflow, Date, Net Flow, Cumulative, BTC ETFs tracked, View all →, /analytics/etf"
+  "evidence": "bundle strings: Total Bitcoin Spot ETF Net Inflow, Date, Net Flow, Cumulative, BTC ETFs tracked, View all →, /analytics/etf — Phase 5 item 5 PR 5.2 (09 Sep 2026): coming-soon panel (GAPS #55) until a provider is chosen"
  },
  {
   "route": "/analytics/overview",
   "screen": "Futures overview",
   "feature": "Footer 'Data via Coinglass · auto-refreshing every 60s'",
   "how": "Static note under the grid",
-  "status": "static",
-  "evidence": "bundle strings"
+  "status": "working",
+  "evidence": "bundle strings — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): overview-footer 'Data via <sources> · auto-refreshing every <ttl>s' from the snapshot itself"
  },
  {
   "route": "/analytics/markets",
@@ -653,15 +653,15 @@
   "feature": "Back link, coin header (icon, symbol, name, rank, sector, live price, 24h heat cell)",
   "how": "Reads :symbol from the route; price updates on the 'tick' event for BTC/ETH; unknown symbol shows a toast and redirects to /analytics/markets",
   "status": "working",
-  "evidence": "routes-report2: /analytics/coin/:symbol → /analytics/markets"
+  "evidence": "routes-report2: /analytics/coin/:symbol → /analytics/markets — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): CoinPage header: back, Coin cell with rank and name, price, 24h heat, Watch button"
  },
  {
   "route": "/analytics/coin/:symbol",
   "screen": "Coin analytics",
   "feature": "Tiles: Open Interest (+Δ24h/1h), 24h Volume, Funding (avg), Long/Short, Liquidations 24h, Market Cap",
   "how": "From CG.mock.coins + derived series; split bars for L/S and liquidations",
-  "status": "static",
-  "evidence": "inferred (terminal coin page parity)"
+  "status": "working",
+  "evidence": "inferred (terminal coin page parity) — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): coin tiles: OI (+Δ24h/1h), 24h Volume, Funding (OI-weighted), Long/Short, Liquidations 24h, Market Cap"
  },
  {
   "route": "/analytics/coin/:symbol",
@@ -702,7 +702,7 @@
   "how": "The private cg2 palette (teal accent, Inter/JetBrains fonts, cg2-* variables) was deleted; every colour comes from --background/--card/--border/--foreground/--muted-foreground/--profit/--loss/--primary/--curve and fonts from --font-body/--font-mono; dark and light both polished (tested)",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): both /analytics and /terminal layouts render AnalyticsShell on the app tokens"
  },
  {
   "route": "/analytics/*",
@@ -711,7 +711,7 @@
   "how": "Lists every terminal page grouped (Markets / Derivatives / ETF / On-chain / Indicators) via CG.menu; the current page is highlighted in amber",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): terminal-menu in the section switcher (analytics.spec)"
  },
  {
   "route": "/analytics/*",
@@ -720,7 +720,7 @@
   "how": "Header search opens /analytics/coin/SYM (in the terminal app the same header opens /terminal/coin/SYM); top-8 matches by symbol/name, ↑↓/Enter/Esc, starred coins show a star, hint row explains the keys",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): CoinSearch navigates to /analytics/coin/:symbol"
  },
  {
   "route": "/analytics/*",
@@ -729,7 +729,7 @@
   "how": "Header kbd button opens the command palette (CG.palette.open()); falls back to dispatching Ctrl+K and a hint toast if no palette is present",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): analytics-palette button opens the palette"
  },
  {
   "route": "/analytics/*",
@@ -738,7 +738,7 @@
   "how": "CG2.registerPalette registers every analytics + terminal page (\"Market Analytics · Hub\", \"Terminal · Funding Rates\"…), \"Compare coins…\" (opens /analytics/markets?compare=1) and \"Add to watchlist → BTC/ETH/SOL/BNB/XRP/DOGE/ADA/AVAX/LINK/PEPE\" with CG.palette.register (guarded, also exposed via CG.commandProviders)",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): nav:analytics-hub, nav:analytics-overview (shell.test.tsx, analytics.spec)"
  },
  {
   "route": "/analytics/*",
@@ -747,7 +747,7 @@
   "how": "CG2.tfChart/tfSeries: the mock series is sliced when it covers the range, otherwise regenerated with a seeded random walk (CG.rng) anchored on the current value and scaled by sqrt(step); daily/8h sources keep their native step (180D for cycle charts); the choice is remembered per chart",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): Chips 1D · 7D · 30D · 90D · 1Y on chart-oi / chart-ls via sliceSeries()"
  },
  {
   "route": "/analytics/*",
@@ -756,7 +756,7 @@
   "how": "Click a legend item to hide/show that series (strikethrough when off); axis rescales; hiding everything shows an inline empty state",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): legend-item buttons hide a series (data-on)"
  },
  {
   "route": "/analytics/*",
@@ -765,7 +765,7 @@
   "how": "Dashed crosshair + hover dots on every line series; the tooltip lists every visible series with its own formatter (plus extra rows like Ratio/Total/Net)",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): chart-tip lists every visible series value"
  },
  {
   "route": "/analytics/*",
@@ -774,7 +774,7 @@
   "how": "Each line/area series ends with a dot and a coloured value pill on the right edge (collision-nudged; right padding grows to fit)",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): layoutChart tags at the right edge, de-overlapped"
  },
  {
   "route": "/analytics/*",
@@ -783,7 +783,7 @@
   "how": "Grid lines only on the y axis in --border; all axis labels DM Mono 10.5px muted",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): dashed grid lines + 10.5 px mono axis labels in Chart.tsx"
  },
  {
   "route": "/analytics/*",
@@ -792,7 +792,7 @@
   "how": "First paint shows a shimmer skeleton for one frame (also gives the chart its measured width); series with no data render a \"No data\" empty state",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): chart-skeleton while pending; chart-empty with the reason"
  },
  {
   "route": "/analytics/*",
@@ -801,7 +801,7 @@
   "how": "Tables with more than 15 rows (or search:true) get a search box that filters by symbol/name while keeping focus and caret",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): table-search on tables with more than 15 rows or search=true"
  },
  {
   "route": "/analytics/*",
@@ -810,7 +810,7 @@
   "how": "Checkbox menu (stays open while toggling) + \"Show all columns\"; used on the hub, markets screener, RSI screener, ETF funds, terminal dashboard/spot/liquidations",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): table-columns menu with per-column checkboxes"
  },
  {
   "route": "/analytics/*",
@@ -819,7 +819,7 @@
   "how": "Copies the visible (filtered + sorted) rows and visible columns as CSV to the clipboard (execCommand fallback) and toasts the row count",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): table-csv copies the visible columns of the filtered rows"
  },
  {
   "route": "/analytics/*",
@@ -828,7 +828,7 @@
   "how": "Rows drop from 36px to 28px when CG.state.density === 'compact' (reacts to CG.emit('density'))",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): DataTable compact prop on the overview gainers/losers; page density follows the app setting"
  },
  {
   "route": "/analytics/*",
@@ -837,7 +837,7 @@
   "how": "Star column on every coin table toggles CG.state.watchlist (persisted with CG.saveState); toasts; strips and filters update through the \"watchlist\" event",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): star column toggles the persisted watchlist (store.watchlist)"
  },
  {
   "route": "/analytics/*",
@@ -846,7 +846,7 @@
   "how": "CG2.gauge: 180° track with semantic segments (loss/warning/muted/profit) and an amber --primary needle + hub; inline variant inside tiles (Alt season, Fear & Greed, Whale Index), large variant with a scale on Futures/Sentiment",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): Gauge component with the primary-coloured needle"
  },
  {
   "route": "/analytics/coinglass",
@@ -855,7 +855,7 @@
   "how": "Cards for each starred coin (price, 24h heat, 7D sparkline coloured by 7d change, remove star); click opens the coin; empty state links to the screener; \"Manage in Markets →\"",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): watch-strip on the hub shows watched coins with price and 24h"
  },
  {
   "route": "/analytics/coinglass",
@@ -864,7 +864,7 @@
   "how": "Compact arc gauge with amber needle beside the value",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): Gauge inside tile-fg; Altcoin Season is a coming-soon tile"
  },
  {
   "route": "/analytics/coinglass",
@@ -873,7 +873,7 @@
   "how": "Derivatives/Spot/Memes/L1L2 tabs share the upgraded table; sticky header inside a 640px scroll area",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): star · search · Columns ▾ · CSV on the hub table"
  },
  {
   "route": "/analytics/overview",
@@ -882,7 +882,7 @@
   "how": "1D slices the hourly mock; 7D–1Y regenerate anchored series",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): chart-oi and chart-ls carry tf chips"
  },
  {
   "route": "/analytics/overview",
@@ -891,7 +891,7 @@
   "how": "Large arc gauge with amber needle, label and scale, plus yesterday/7d/30d values and a 30-day sparkline",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): tile-fg Gauge 92 px"
  },
  {
   "route": "/analytics/markets",

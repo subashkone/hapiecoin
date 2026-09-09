@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AnalyticsShell } from "@/components/analytics/AnalyticsShell";
 import { AppHeader } from "@/components/header/AppHeader";
 import { SettingsDialogsLoader } from "@/components/dialogs/SettingsDialogsLoader";
 import { getServerUser } from "@/lib/auth/server";
@@ -8,7 +9,7 @@ export default async function Layout({ children }: { children: ReactNode }) {
   return (
     <>
       <AppHeader variant="default" initialUser={user} />
-      {children}
+      <AnalyticsShell>{children}</AnalyticsShell>
       <SettingsDialogsLoader />
     </>
   );

@@ -143,6 +143,8 @@ export interface UiState {
   adminCols: Record<string, string[] | null>;
   /** Bumped by the palette's "Show announcements" (HC-SH-055); the flyer popup reopens every live banner. */
   flyersRequested: number;
+  /** Analytics watchlist symbols (HC-MA-103, 105). Persisted. */
+  watchlist: string[];
   /** Bumped by "Take a tour" (settings menu, palette); the tour starts on /analyse. */
   tourRequested: number;
   /** Bumped to open the assistant, optionally with a question to ask (palette, tour). */
@@ -202,6 +204,7 @@ export interface UiState {
   setAdminCols: (page: string, cols: string[] | null) => void;
   requestFlyers: () => void;
   requestTour: () => void;
+  toggleWatch: (symbol: string) => void;
   openAssistant: (question?: string) => void;
 }
 
@@ -226,6 +229,7 @@ export const useUiStore = create<UiState>()(
       adminCols: {},
       flyersRequested: 0,
       tourRequested: 0,
+      watchlist: [],
       assistantRequested: 0,
       assistantQuestion: null,
       optionDetail: null,
@@ -326,6 +330,7 @@ export const useUiStore = create<UiState>()(
       setAdminCols: (page, cols) => set((s) => ({ adminCols: { ...s.adminCols, [page]: cols } })),
       requestFlyers: () => set((s) => ({ flyersRequested: s.flyersRequested + 1 })),
       requestTour: () => set((s) => ({ tourRequested: s.tourRequested + 1 })),
+      toggleWatch: (symbol) => set((s) => ({ watchlist: s.watchlist.includes(symbol) ? s.watchlist.filter((x) => x !== symbol) : [...s.watchlist, symbol] })),
       openAssistant: (question) => set((s) => ({ assistantRequested: s.assistantRequested + 1, assistantQuestion: question ?? null })),
     }),
     {
@@ -342,6 +347,7 @@ export const useUiStore = create<UiState>()(
         strategy: s.strategy,
         draftsImported: s.draftsImported,
         adminCols: s.adminCols,
+        watchlist: s.watchlist,
         workspaceTab: s.workspaceTab,
         analysisTab: s.analysisTab,
         targetDays: s.targetDays,
@@ -364,6 +370,7 @@ export const useUiStore = create<UiState>()(
           strategy: p.strategy === undefined ? current.strategy : normaliseMetaByAsset(p.strategy),
           draftsImported: p.draftsImported === true,
           adminCols: p.adminCols && typeof p.adminCols === "object" ? p.adminCols : {},
+          watchlist: Array.isArray(p.watchlist) ? p.watchlist.filter((x): x is string => typeof x === "string") : [],
           templatesStrip: p.templatesStrip !== false,
           drafts: p.draftsImported === true || p.drafts === undefined ? [] : normaliseDrafts(p.drafts),
           workspaceTab: tabs.includes(p.workspaceTab as WorkspaceTab) ? (p.workspaceTab as WorkspaceTab) : current.workspaceTab,

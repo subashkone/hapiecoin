@@ -13,6 +13,7 @@ import { type FetchLike, JsonClient } from "./http.js";
 import { type Adapters, buildFearGreed, buildFunding, buildLiquidations, buildLongShort, buildMarkets, buildOpenInterest, buildTakerVolume } from "./jobs.js";
 import { ForceOrderStream, LiquidationBuffer, type SocketLike } from "./liquidations.js";
 import { type Logger, createLogger } from "./log.js";
+import { buildOverview } from "./overview.js";
 import { Scheduler } from "./scheduler.js";
 import { MemoryStore, RedisStore, type SnapshotStore } from "./store.js";
 
@@ -81,6 +82,8 @@ export function createApp(config: IngestConfig, deps: AppDeps = {}): App {
   if (adapters.coingecko) scheduler.add({ name: analyticsKey("markets"), intervalMs: config.MARKETS_REFRESH_MS, run: () => buildMarkets(ctx(config.MARKETS_REFRESH_MS)) });
   else log.warn("COINGECKO_API_KEY not set: the markets dataset is skipped");
   scheduler.add({ name: analyticsKey("fear-greed"), intervalMs: config.FEAR_GREED_REFRESH_MS, run: () => buildFearGreed(ctx(config.FEAR_GREED_REFRESH_MS)) });
+  // folds the snapshots above into the hub/overview payload; runs last on boot (stagger order) and then every derivatives interval
+  scheduler.add({ name: analyticsKey("overview"), intervalMs: d, run: () => buildOverview(store, config.ANALYTICS_SYMBOLS, now, d) });
 
   const health: App["health"] = () => {
     const jobs = scheduler.statuses();

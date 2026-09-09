@@ -8,7 +8,7 @@ export const AnalyticsVenue = z.enum(ANALYTICS_VENUES);
 export type AnalyticsVenue = z.infer<typeof AnalyticsVenue>;
 export const ANALYTICS_VENUE_LABELS: Record<AnalyticsVenue, string> = { binance: "Binance", bybit: "Bybit", okx: "OKX", delta: "Delta India" };
 
-export const ANALYTICS_DATASETS = ["funding", "open-interest", "long-short", "taker-volume", "liquidations", "markets", "fear-greed"] as const;
+export const ANALYTICS_DATASETS = ["funding", "open-interest", "long-short", "taker-volume", "liquidations", "markets", "fear-greed", "overview"] as const;
 export const AnalyticsDataset = z.enum(ANALYTICS_DATASETS);
 export type AnalyticsDataset = z.infer<typeof AnalyticsDataset>;
 
@@ -121,6 +121,52 @@ export const FearGreedData = z.strictObject({
 });
 export type FearGreedData = z.infer<typeof FearGreedData>;
 
+/** One row per tracked symbol, folded from the per-symbol snapshots by the ingest service (the hub's Derivatives columns). */
+export const OverviewSymbol = z.strictObject({
+  symbol: AnalyticsSymbol,
+  oiUsd: z.number(),
+  oiChange1h: z.number().nullable(),
+  oiChange24h: z.number().nullable(),
+  /** Latest OI-weighted funding rate per 8 h, decimal fraction. */
+  funding: z.number().nullable(),
+  lsRatio: z.number().nullable(),
+  liq24hUsd: z.number(),
+  venues: z.number().int().nonnegative(),
+});
+export type OverviewSymbol = z.infer<typeof OverviewSymbol>;
+/** Everything the Markets Hub and Futures overview tiles need in one read (HC-MA-012..020, 030..036). */
+export const OverviewData = z.strictObject({
+  symbols: z.array(OverviewSymbol),
+  totalOiUsd: z.number(),
+  oiChange24h: z.number().nullable(),
+  liquidations24h: z.strictObject({ longUsd: z.number(), shortUsd: z.number() }),
+  fearGreed: z.strictObject({ value: z.number().int().min(0).max(100), label: z.string(), at: Ms }).nullable(),
+  btcLongShort: z.strictObject({ long: z.number(), short: z.number(), ratio: z.number() }).nullable(),
+  /** From the markets dataset; null until CoinGecko is configured. */
+  markets: z
+    .strictObject({
+      btcPrice: z.number().nullable(),
+      btcChange24h: z.number().nullable(),
+      ethPrice: z.number().nullable(),
+      ethChange24h: z.number().nullable(),
+      btcDominance: z.number().nullable(),
+      ethDominance: z.number().nullable(),
+      totalMarketCap: z.number().nullable(),
+      volume24h: z.number().nullable(),
+      gainers: z.array(MarketRow),
+      losers: z.array(MarketRow),
+      heatmap: z.array(z.strictObject({ symbol: AnalyticsSymbol, marketCap: z.number(), change24h: z.number().nullable() })),
+    })
+    .nullable(),
+  /** Aggregated open interest across tracked symbols (5 m grid, provider window). */
+  oiHistory: z.array(SeriesPoint),
+  /** BTC global long/short ratio, hourly. */
+  lsHistory: z.array(SeriesPoint),
+  /** Daily Fear & Greed, last 365 points at most. */
+  fearGreedHistory: z.array(SeriesPoint),
+});
+export type OverviewData = z.infer<typeof OverviewData>;
+
 /** The envelope every dataset travels in. `stale` is set when the last refresh failed and the previous data is being served. */
 function envelope<D extends AnalyticsDataset, T extends z.ZodType>(dataset: D, data: T) {
   return z.strictObject({
@@ -142,7 +188,8 @@ export const TakerVolumeSnapshot = envelope("taker-volume", TakerVolumeData);
 export const LiquidationsSnapshot = envelope("liquidations", LiquidationsData);
 export const MarketsSnapshot = envelope("markets", MarketsData);
 export const FearGreedSnapshot = envelope("fear-greed", FearGreedData);
-export const AnalyticsSnapshot = z.discriminatedUnion("dataset", [FundingSnapshot, OpenInterestSnapshot, LongShortSnapshot, TakerVolumeSnapshot, LiquidationsSnapshot, MarketsSnapshot, FearGreedSnapshot]);
+export const OverviewSnapshot = envelope("overview", OverviewData);
+export const AnalyticsSnapshot = z.discriminatedUnion("dataset", [FundingSnapshot, OpenInterestSnapshot, LongShortSnapshot, TakerVolumeSnapshot, LiquidationsSnapshot, MarketsSnapshot, FearGreedSnapshot, OverviewSnapshot]);
 export type AnalyticsSnapshot = z.infer<typeof AnalyticsSnapshot>;
 export type SnapshotOf<D extends AnalyticsDataset> = Extract<AnalyticsSnapshot, { dataset: D }>;
 

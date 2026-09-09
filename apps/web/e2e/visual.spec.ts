@@ -91,6 +91,22 @@ for (const theme of ["dark", "light"] as const) {
       await page.screenshot({ path: `${DIR}/home-${theme}.png` });
     });
 
+    test(`HC-MA-012 /analytics/hub and HC-MA-030 /analytics/overview ${theme}`, async ({ page, request }) => {
+      await seedUser(request, { email: `ma-${theme}@example.com` });
+      await signIn(page, `ma-${theme}@example.com`);
+      await page.evaluate((t) => {
+        localStorage.setItem("hapiecoin.theme", t);
+      }, theme);
+      await page.goto("/analytics/hub");
+      await expect(page.getByTestId("hub-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+      await expect(page.getByTestId("table-hub-derivatives")).toHaveAttribute("data-rows", "10");
+      await page.screenshot({ path: `${DIR}/analytics-hub-${theme}.png`, fullPage: true });
+      await page.goto("/analytics/overview");
+      await expect(page.getByTestId("overview-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+      await expect(page.getByTestId("chart-oi")).toHaveAttribute("data-state", "ready");
+      await page.screenshot({ path: `${DIR}/analytics-overview-${theme}.png`, fullPage: true });
+    });
+
     test(`HC-PB-042 /payoff-preview ${theme}`, async ({ page }) => {
       await page.goto("/payoff-preview");
       await page.evaluate((t) => {

@@ -79,11 +79,13 @@ describe("[INGEST] app", () => {
     socket!.emit("open");
     expect(app.health().stream).toBe("open");
     const names = app.scheduler.statuses().map((j) => j.name);
-    expect(names).toEqual(["funding:BTC", "open-interest:BTC", "long-short:BTC", "taker-volume:BTC", "liquidations:-", "markets:-", "fear-greed:-"]);
+    expect(names).toEqual(["funding:BTC", "open-interest:BTC", "long-short:BTC", "taker-volume:BTC", "liquidations:-", "markets:-", "fear-greed:-", "overview:-"]);
     for (const n of names) await app.scheduler.tick(n);
     expect(app.health().ok).toBe(true);
     expect((await store.get("markets:-"))?.source).toBe("CoinGecko");
     expect((await store.get("liquidations:-"))?.source).toBe("Binance · OKX");
+    const ov = await store.get("overview:-");
+    expect(ov?.dataset === "overview" ? ov.data.symbols.map((s) => s.symbol) : []).toEqual(["BTC"]);
     const res = await fetch(`http://127.0.0.1:${port}/healthz`);
     expect(res.status).toBe(200);
     expect(((await res.json()) as { store: string }).store).toBe("memory");
