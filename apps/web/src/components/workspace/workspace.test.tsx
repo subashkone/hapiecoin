@@ -35,7 +35,7 @@ describe("[WORKSPACE] HC-WS-001..006 two-pane shell", () => {
     expect(screen.getByTestId("live-panel")).toBeTruthy();
     await u.click(screen.getByTestId("analysis-tab-scenarios"));
     expect(useUiStore.getState().analysisTab).toBe("scenarios");
-    expect(screen.getByTestId("analysis-placeholder-scenarios").textContent).toContain("Scenarios arrives in Phase 5");
+    expect(screen.getByTestId("scenarios-panel").dataset["state"]).toBe("empty"); // Phase 5 item 1: a live tab with its own empty state
   });
 
   it("HC-WS-005 the Builder tab carries the open-leg count and opens the Builder", async () => {

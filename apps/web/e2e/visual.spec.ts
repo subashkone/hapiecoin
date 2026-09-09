@@ -58,6 +58,19 @@ for (const theme of ["dark", "light"] as const) {
       await page.getByTestId("analysis-tab-greeks").click();
       await expect(page.getByTestId("greek-delta")).not.toContainText("—");
       await page.screenshot({ path: `${DIR}/analyse-greeks-${theme}.png` });
+      // HC-WS-088..100 the Phase 5 tabs
+      await page.getByTestId("analysis-tab-scenarios").click();
+      await expect(page.getByTestId("scenarios-panel")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+      await page.screenshot({ path: `${DIR}/analyse-scenarios-${theme}.png` });
+      await page.getByTestId("scenario-smooth").click();
+      await expect(page.getByTestId("scenario-heat")).toBeVisible();
+      await page.screenshot({ path: `${DIR}/analyse-scenarios-smooth-${theme}.png` });
+      await page.getByTestId("analysis-tab-vol").click();
+      await expect(page.getByTestId("vol-panel")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+      await page.screenshot({ path: `${DIR}/analyse-vol-${theme}.png` });
+      await page.getByTestId("analysis-tab-structure").click();
+      await expect(page.getByTestId("structure-panel")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+      await page.screenshot({ path: `${DIR}/analyse-structure-${theme}.png` });
       await page.getByTestId("analysis-tab-payoff").click();
       // HC-TR-058 / HC-TR-068 a paper trade on the Paper tab and its details
       await page.getByTestId("builder-tab-builder").click();

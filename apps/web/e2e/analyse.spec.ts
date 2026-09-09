@@ -372,6 +372,37 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     await expect(page.getByTestId("greek-delta")).not.toContainText("—");
     await page.getByTestId("analysis-tab-ladder").click();
     await expect(page.locator("[data-testid=ladder-row][data-status=spot]")).toHaveCount(1);
+    // HC-WS-088..093 Scenarios: the matrix, a click sets the target, modes and the smooth field
+    await page.getByTestId("analysis-tab-scenarios").click();
+    const scen = page.getByTestId("scenarios-panel");
+    await expect(scen).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("scenario-matrix")).toHaveAttribute("data-rows", "11");
+    await expect(page.locator("[data-testid=scenario-cell][data-target=true]")).toHaveCount(1);
+    await page.locator("[data-testid=scenario-cell][data-i='0']").last().click();
+    await expect(page.locator("[data-testid=scenario-cell][data-i='0'][data-target=true]")).toHaveCount(1);
+    await page.getByTestId("scenario-mode-delta").click();
+    await expect(page.getByTestId("scenario-unit")).toHaveText("BTC Δ");
+    await page.getByTestId("scenario-mode-pnl").click();
+    await page.getByTestId("scenario-smooth").click();
+    await expect(page.getByTestId("scenario-heat")).toHaveAttribute("data-rows", "11");
+    await page.getByTestId("scenario-smooth").click();
+    // HC-WS-094..097 Vol: the smile, the skew, the term structure and the expiry switch
+    await page.getByTestId("analysis-tab-vol").click();
+    const vol = page.getByTestId("vol-panel");
+    await expect(vol).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(vol.getByTestId("chart-smile")).toHaveAttribute("data-state", "ready");
+    await expect(vol.getByTestId("skew-25")).toContainText("pts");
+    await expect(vol.getByTestId("term-expiry").first()).toBeVisible();
+    await expect(vol.getByTestId("coming-soon")).toHaveCount(2);
+    // HC-WS-098..100 Structure: open interest with max pain, the ratios and GEX
+    await page.getByTestId("analysis-tab-structure").click();
+    const structure = page.getByTestId("structure-panel");
+    await expect(structure).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(structure).toHaveAttribute("data-max-pain", /^[0-9]/);
+    await expect(structure.getByTestId("chart-oi")).toHaveAttribute("data-state", "ready");
+    await expect(structure.getByTestId("pcr-oi")).toHaveAttribute("data-read", /put-heavy|call-heavy|balanced/);
+    await expect(structure.getByTestId("chart-gex")).toHaveAttribute("data-state", "ready");
+    await page.getByTestId("analysis-tab-payoff").click();
     await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
   });
 });
@@ -777,8 +808,8 @@ test.describe("HC-SH-057..063 / HC-SH-110 assistant", () => {
     expect(moved.x).toBeLessThan(box.x - 200);
     await page.reload();
     await expect(launcher).toBeVisible();
-    const after = (await launcher.boundingBox())!;
-    expect(Math.abs(after.x - moved.x)).toBeLessThan(2);
+    // the stored position is applied by an effect after the first paint, so poll rather than read the first box
+    await expect.poll(async () => Math.abs(((await launcher.boundingBox())?.x ?? Number.POSITIVE_INFINITY) - moved.x)).toBeLessThan(2);
     // the palette opens it
     await page.keyboard.press("Control+k");
     await page.getByRole("combobox").fill("assistant");
