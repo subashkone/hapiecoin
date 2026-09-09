@@ -2,7 +2,7 @@
 // One pricing client per browser tab: a Web Worker in the browser, the inline transport where `Worker` does
 // not exist (tests, server render). `useAnalysis` batches requests per animation frame so a burst of ticks
 // produces one engine call (frontend rule: batch per frame, no layout thrash).
-import { type AnalyzeOptions, type AnalyzeResult, type Leg, type MessageTransport, PricingClient, createInlineTransport } from "@hapiecoin/pricing";
+import { type AnalyzeOptions, type AnalyzeResult, type Leg, type MessageTransport, PricingClient, type ScenarioGrid, type ScenarioOptions, createInlineTransport } from "@hapiecoin/pricing";
 import { useEffect, useRef, useState } from "react";
 
 let client: PricingClient | null = null;
@@ -50,6 +50,7 @@ export function useAnalysis(legs: readonly Leg[], options: AnalyzeOptions | null
   const key = legs.length === 0 || !options ? "" : JSON.stringify([legs, options]);
   useEffect(() => {
     if (key === "") {
+      seq.current += 1; // a result still in flight for the previous legs must not land on the empty state
       setState(EMPTY);
       return;
     }
@@ -64,6 +65,53 @@ export function useAnalysis(legs: readonly Leg[], options: AnalyzeOptions | null
         })
         .catch((e: unknown) => {
           if (id === seq.current) setState((s) => ({ result: s.result, error: e instanceof Error ? e.message : "pricing failed", pending: false }));
+        });
+    };
+    if (typeof requestAnimationFrame === "function") {
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+      frame.current = requestAnimationFrame(run);
+      return () => {
+        if (frame.current !== null) cancelAnimationFrame(frame.current);
+      };
+    }
+    run();
+    return undefined;
+    // `key` captures legs + options by value; the objects themselves are read when the frame runs.
+  }, [key]);
+  return state;
+}
+
+export interface ScenarioState {
+  grid: ScenarioGrid | null;
+  error: string | null;
+  pending: boolean;
+}
+
+const EMPTY_SCENARIO: ScenarioState = { grid: null, error: null, pending: false };
+
+/** Price × date grid of `legs` (HC-WS-088..090); same batching as useAnalysis, last good grid kept while a new one computes. */
+export function useScenario(legs: readonly Leg[], options: ScenarioOptions | null): ScenarioState {
+  const [state, setState] = useState<ScenarioState>(EMPTY_SCENARIO);
+  const seq = useRef(0);
+  const frame = useRef<number | null>(null);
+  const key = legs.length === 0 || !options || options.prices.length === 0 || options.dates.length === 0 ? "" : JSON.stringify([legs, options]);
+  useEffect(() => {
+    if (key === "") {
+      seq.current += 1;
+      setState(EMPTY_SCENARIO);
+      return;
+    }
+    const run = () => {
+      frame.current = null;
+      const id = (seq.current += 1);
+      setState((s) => ({ ...s, pending: true }));
+      getPricingClient()
+        .scenario(legs as Leg[], options as ScenarioOptions)
+        .then((grid) => {
+          if (id === seq.current) setState({ grid, error: null, pending: false });
+        })
+        .catch((e: unknown) => {
+          if (id === seq.current) setState((s) => ({ grid: s.grid, error: e instanceof Error ? e.message : "pricing failed", pending: false }));
         });
     };
     if (typeof requestAnimationFrame === "function") {
