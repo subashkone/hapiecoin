@@ -87,6 +87,10 @@ describe("chart layout", () => {
     expect(indexAt(l, 1e9)).toBe(3);
     expect(indexAt(l, -1e9)).toBe(0);
   });
+  it("colours negative bars with colorNeg", () => {
+    const l = layoutChart({ x: ["a", "b"], series: [{ label: "f", type: "bar", data: [1, -1], color: "up", colorNeg: "down" }] });
+    expect(l.bars.map((b) => b.color)).toEqual(["up", "down"]);
+  });
   it("handles hidden series, flat data, explicit min/max, zero and empty inputs", () => {
     const flat = layoutChart({ w: 200, h: 100, x: ["a", "b"], series: [{ label: "f", data: [5, 5] }] });
     expect(flat.yl.lo).toBeLessThan(5);

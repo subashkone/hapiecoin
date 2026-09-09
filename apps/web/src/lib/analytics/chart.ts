@@ -8,6 +8,8 @@ export interface ChartSeries {
   type?: SeriesType;
   /** CSS colour; defaults by slot. */
   color?: string;
+  /** Bar colour for values below zero (funding, basis). */
+  colorNeg?: string;
   axis?: "l" | "r";
   /** Value formatter for the tooltip and tags. */
   fmt?: (v: number) => string;
@@ -180,7 +182,7 @@ export function layoutChart(spec: ChartSpec, hidden: ReadonlySet<string> = new S
       const y1 = sy(base + v, s.axis);
       const y0 = sy(base, s.axis);
       const x = sx(i) - gw / 2 + (spec.stack ? 0 : si * bw);
-      bars.push({ key: `${s.label}-${i}`, x, y: Math.min(y0, y1), w: bw, h: Math.max(1, Math.abs(y0 - y1)), color, i });
+      bars.push({ key: `${s.label}-${i}`, x, y: Math.min(y0, y1), w: bw, h: Math.max(1, Math.abs(y0 - y1)), color: v < 0 && s.colorNeg ? s.colorNeg : color, i });
     }
   });
   const paths: Layout["paths"] = [];

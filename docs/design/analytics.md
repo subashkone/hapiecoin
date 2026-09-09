@@ -40,7 +40,7 @@ fresh · stale (badge "stale since …") · unavailable (503: "Ingest has not wr
 ### Open
 GAPS #55 (paid sources → coming-soon panels), #56 (history table for 90D/1Y chips).
 
-## 5.2 · Shell, Markets Hub, Futures overview (this PR)
+## 5.2 · Shell, Markets Hub, Futures overview (PR #22)
 Traceability: HC-MA-001, 003..037, 088..109; coin page tiles HC-MA-082, 083, 120. ADR-039.
 
 ### Job
@@ -73,3 +73,45 @@ Tabs, timeframe chips and legend items are buttons with `aria-selected`/`data-on
 
 ### Tests
 Unit: `lib/analytics/analytics-lib.test.ts`, `components/analytics/analytics.test.tsx`. E2E: `analytics.spec.ts`. Visual: `analytics-hub-*`, `analytics-overview-*`. Mock data: `test/mock-analytics.ts`.
+
+## 5.3 · Markets screener, Derivatives, Liquidations, coin-page charts (this PR)
+Traceability: HC-MA-038..048, 060..066, 084..087, 110..113, 116, 121. ADR-040; gaps #57, #58.
+
+### Job
+The screener answers "which coin is moving, and where is the leverage" in one sortable table with compare. Derivatives answers "how crowded is this coin" (OI, funding, long/short, cross-venue funding spread). Liquidations answers "who just got flushed, on which side, where". The coin page puts all of it under one symbol. Within two seconds each page shows tiles with real numbers and a source line, or says which venue it is waiting for.
+
+### Layout
+```
+markets:      [Compare · up to 3 coins (only when ?compare= or a Cmp box is ticked)]
+              ┌ Futures Markets Screener · chips All/L1/L2/DeFi/Memes · ★ Watchlist ───┐
+              │ search · rows · Columns ▾ · CSV | ★ Cmp Coin Price 24h% Cap Vol OI OI24h L/S │
+              └ foot: N markets · hidden columns: 7d %, Funding, Liq 24h ────────────────┘
+derivatives:  [Derivatives · sub · coin ▾ · Full coin analytics →]  tiles ×4
+              [Close price (1D/7D)] [Open Interest (tf)]  ·  [Funding ± bars (7D..1Y)] [Global account ratio + 1.00]
+              [Basis · coming soon #57]  ·  [Funding Rate Arbitrage table]
+liquidations: tiles ×3 (Long / Short / Ratio with split bars) · source line
+              [Nh Liquidations Over Time · chips 1h 4h 12h 24h] · [by Exchange hbars][Top Coins table + View all →]
+              [Live Liquidation Feed · live dot · Min USD ▾]
+coin:         [← Back to markets · BTC Bitcoin · $price · 24h · BTCUSDT perp · ☆ Watch · ⇄ Compare]  tiles ×6
+              [Price & OI dual axis][Long/Short] · [Liquidations from events][OI-weighted funding]
+              [Taker buy/sell 48h][Liquidation heatmap ±5% × 12h] · [Markets by Exchange][Funding by Exchange]
+```
+At 390 px tiles go 2-up (3-up for the liquidation trio collapse to 1-up), chart pairs stack, tables scroll inside their own container, the feed keeps its six columns and scrolls horizontally.
+
+### Hierarchy
+Numbers in tiles; green/red only for side, funding sign, long/short shares and 24 h changes. The only amber is the accent link ("Full coin analytics →", "View all markets →"). Compare and window chips are neutral segmented controls. Coming-soon and unavailable notices are dashed and muted.
+
+### States
+loading (skeleton charts, "—" tiles) · ready · unavailable (503: one dashed notice naming the dataset, tiles "—") · stale (badge on the source line) · venue-missing (chart empty state names the venue: "Long/short needs a venue that serves account ratios (Binance)") · buffer-capped ("The event buffer keeps the newest N liquidations, which do not reach back the full 4h") · no CoinGecko (screener shows the key notice; close-price chart says it needs the markets dataset) · unknown coin (notice with the tracked-symbol count).
+
+### Numbers
+Compact USD, prices by magnitude, funding to four decimals per 8 h with APR = rate × 3 × 365, spreads per 8 h and per day (× 3), long/short as ratio plus L/S shares, liquidation bias as a two-colour bar with the long share, heatmap bands as price levels (±1..±5 %), next funding as "1h 05m". Every panel names its basis ("OI-weighted · 8h", "spot · CoinGecko 7-day sparkline", "from the captured events").
+
+### Interaction
+Category chips push `?category=`; compare boxes (max 3, the rest disabled with a tooltip) and `?compare=`; coin selector replaces `?symbol=`; window chips and timeframe chips are `role=tab`; Min USD is a native select; row click opens the coin page; ★ toggles the persisted watchlist. Palette: `nav:analytics-markets`, `nav:analytics-derivatives`, `nav:analytics-liquidations`.
+
+### Tests
+Unit: `lib/analytics/derive.test.ts`, `components/analytics/analytics-pages.test.tsx`, colorNeg in `analytics-lib.test.ts`. E2E: three cases in `analytics.spec.ts`. Visual: `analytics-markets-*`, `analytics-derivatives-*`, `analytics-liquidations-*`, `analytics-coin-*`. Mock data: per-symbol and liquidation snapshots in `test/mock-analytics.ts` (snapshot time = current minute so 1 h and 12 h windows hold events).
+
+### Real-data check
+On the user's machine only Bybit is reachable (GAPS #57): open interest and funding show one venue, the arbitrage table is empty ("No coin has funding from two or more venues yet"), long/short and taker charts show the venue they wait for, the feed says "No liquidations captured yet". With Binance and OKX reachable all panels fill; with 500 tracked symbols the arbitrage fan-out becomes 500 requests per minute — cap ANALYTICS_SYMBOLS or add a server-side `funding-all` dataset before that.
