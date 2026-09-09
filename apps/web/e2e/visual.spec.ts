@@ -58,6 +58,10 @@ for (const theme of ["dark", "light"] as const) {
       await page.getByTestId("analysis-tab-greeks").click();
       await expect(page.getByTestId("greek-delta")).not.toContainText("—");
       await page.screenshot({ path: `${DIR}/analyse-greeks-${theme}.png` });
+      await page.getByTestId("share-open").click();
+      await expect(page.getByTestId("share-link")).not.toHaveValue("");
+      await page.screenshot({ path: `${DIR}/analyse-share-${theme}.png` });
+      await page.keyboard.press("Escape");
       // HC-WS-088..100 the Phase 5 tabs
       await page.getByTestId("analysis-tab-scenarios").click();
       await expect(page.getByTestId("scenarios-panel")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });

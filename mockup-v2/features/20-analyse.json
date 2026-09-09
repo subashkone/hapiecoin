@@ -45,7 +45,7 @@
   "feature": "Deep links #/analyse?tab=strategy&panel=scenarios (panel = payoff | scenarios | greeks | vol | structure | ladder; the v1 values analytics → payoff and pnl → ladder still resolve)",
   "how": "query.tab / query.panel are read in show(); the last tab is persisted in CG.state.analyseTab / analyseRightTab",
   "status": "working",
-  "evidence": "inferred"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): Workspace reads ?tab= / ?panel= once via useSearchParams (unknown values ignored); unit workspace.test.tsx; e2e analyse.spec.ts HC-TR-040 block"
  },
  {
   "route": "/analyse",
@@ -518,7 +518,7 @@
   "feature": "Pane collapse buttons ‹ › give either pane the full width; a ⋮ handle restores both",
   "how": "CG.state.analyseCollapse = left | right | \"\"; the chart re-renders to the new width",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): collapse-left / collapse-right buttons, store.analyseCollapse (persisted), 16 px ⋮ collapse-restore handle, data-collapse on the workspace; unit workspace.test.tsx; e2e analyse.spec.ts",
   "new": true
  },
  {
@@ -536,7 +536,7 @@
   "feature": "Tab-bar micro info: 'Lot 0.001 BTC · Basis mark' (left) and 'Bull Call Spread · 25 Sep · 20 lots' (right)",
   "how": "Rebuilt on legs / lot-size / basis changes",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): left-tab-info \"Lot 0.001 BTC · basis mark\" (lot size from settings) and pane-strategy-info \"name · expiry · N lots\" (AnalysisPane StrategyInfo); unit workspace.test.tsx + analysis.test.tsx; e2e analyse.spec.ts",
   "new": true
  },
  {
@@ -554,7 +554,7 @@
   "feature": "Command palette commands: Switch expiry → <date> (one per expiry), Load template → <name> (skipped when the trading module registers its own), Toggle chain Greeks, Find strike by delta…, Share strategy link, Analyse → <tab>",
   "how": "CG.palette.register({id,label,group:\"Analyse\",keywords,run}) guarded; commands navigate to /analyse first when needed",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): CommandPalette buildCommands expiries / templates → \"Switch expiry → date\" (act:expiry-*) and \"Load template → name\" (act:template-* via store.templateRequest, honoured by useTemplateLoader); unit shell.test.tsx; e2e analyse.spec.ts",
   "new": true
  },
  {
@@ -842,7 +842,7 @@
   "feature": "Position Δ and Θ across the price axis: two small charts (re-pricing every leg at 49 prices ±20% around spot on the target date) with strike dots and the spot hairline",
   "how": "",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): GreeksPanel chart-delta-price / chart-theta-price: useScenario delta / theta at 49 prices ±20 % on the target date; unit analysis.test.tsx; e2e analyse.spec.ts",
   "new": true
  },
  {
@@ -851,7 +851,7 @@
   "feature": "Greeks tab restyled: hairline tiles, mono table (Θ and ν in currency), compact explanations",
   "how": "",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): Greeks tiles and table: Θ and ν in the display currency (fmtMoney), hairline tiles, compact meanings; unit analysis.test.tsx",
   "new": true
  },
  {
@@ -860,7 +860,7 @@
   "feature": "Step selector (250 / 500 / 1000 for BTC; ½× / 1× / 2× the strike step for other assets)",
   "how": "CG.state.ladderStep",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): ladder step multiplier persisted in store.ladderStep (1× / 2× / 4× of spot × 0.25 %); unit store.test.ts + analysis.test.tsx",
   "new": true
  },
  {
@@ -878,7 +878,7 @@
   "feature": "Share button in the pane header copies a link (origin + path + #/s/<base64url {a, l:[[type,side,strike,expiry,lots,price]…], n}>) and opens a dialog with the link, Copy button, legs and max profit / loss / POP",
   "how": "navigator.clipboard with an execCommand fallback; toasts \"Link copied\"",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): ShareDialog (share-open → share-link / share-copy) with lib/strategy/share.ts encodeShare → /s/<base64url>; toast \"Link copied to clipboard\"; unit share.test.ts + analysis.test.tsx; e2e analyse.spec.ts; visual analyse-share-*.png",
   "new": true
  },
  {
@@ -887,7 +887,7 @@
   "feature": "/s/:code route (no auth): decodes the link, loads the legs into CG.analyse, toasts \"Strategy loaded from link\" and navigates to /analyse; logged-out visitors get a preview card (legs, max profit / loss, POP) with \"Open in Analyse\" and \"Sign in\"; invalid codes show an error card",
   "how": "Registered as <section data-route=\"/s/:code\" data-title=\"Shared strategy\">",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): app/s/[code]/page.tsx (public) → ShareLanding decodes, loads the legs at the shared prices, toasts \"Strategy loaded from link\" and replaces the route with /analyse; invalid codes explain themselves; unit ShareLanding.test.tsx; e2e analyse.spec.ts",
   "new": true
  },
  {

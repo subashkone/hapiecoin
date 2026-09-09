@@ -2758,7 +2758,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "query.tab / query.panel are read in show(); the last tab is persisted in CG.state.analyseTab / analyseRightTab",
-  "evidence": "inferred"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): Workspace reads ?tab= / ?panel= once via useSearchParams (unknown values ignored); unit workspace.test.tsx; e2e analyse.spec.ts HC-TR-040 block"
  },
  {
   "id": "HC-WS-007",
@@ -3643,7 +3643,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "CG.state.analyseCollapse = left | right | \"\"; the chart re-renders to the new width",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): collapse-left / collapse-right buttons, store.analyseCollapse (persisted), 16 px ⋮ collapse-restore handle, data-collapse on the workspace; unit workspace.test.tsx; e2e analyse.spec.ts"
  },
  {
   "id": "HC-WS-066",
@@ -3673,7 +3673,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Rebuilt on legs / lot-size / basis changes",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): left-tab-info \"Lot 0.001 BTC · basis mark\" (lot size from settings) and pane-strategy-info \"name · expiry · N lots\" (AnalysisPane StrategyInfo); unit workspace.test.tsx + analysis.test.tsx; e2e analyse.spec.ts"
  },
  {
   "id": "HC-WS-068",
@@ -3703,7 +3703,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "CG.palette.register({id,label,group:\"Analyse\",keywords,run}) guarded; commands navigate to /analyse first when needed",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): CommandPalette buildCommands expiries / templates → \"Switch expiry → date\" (act:expiry-*) and \"Load template → name\" (act:template-* via store.templateRequest, honoured by useTemplateLoader); unit shell.test.tsx; e2e analyse.spec.ts"
  },
  {
   "id": "HC-WS-070",
@@ -4183,7 +4183,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Behaves as in the v2 mock.",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): GreeksPanel chart-delta-price / chart-theta-price: useScenario delta / theta at 49 prices ±20 % on the target date; unit analysis.test.tsx; e2e analyse.spec.ts"
  },
  {
   "id": "HC-WS-102",
@@ -4198,7 +4198,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Behaves as in the v2 mock.",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): Greeks tiles and table: Θ and ν in the display currency (fmtMoney), hairline tiles, compact meanings; unit analysis.test.tsx"
  },
  {
   "id": "HC-WS-103",
@@ -4213,7 +4213,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "CG.state.ladderStep",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): ladder step multiplier persisted in store.ladderStep (1× / 2× / 4× of spot × 0.25 %); unit store.test.ts + analysis.test.tsx"
  },
  {
   "id": "HC-WS-104",
@@ -4243,7 +4243,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "navigator.clipboard with an execCommand fallback; toasts \"Link copied\"",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): ShareDialog (share-open → share-link / share-copy) with lib/strategy/share.ts encodeShare → /s/<base64url>; toast \"Link copied to clipboard\"; unit share.test.ts + analysis.test.tsx; e2e analyse.spec.ts; visual analyse-share-*.png"
  },
  {
   "id": "HC-WS-106",
@@ -4258,7 +4258,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Registered as <section data-route=\"/s/:code\" data-title=\"Shared strategy\">",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): app/s/[code]/page.tsx (public) → ShareLanding decodes, loads the legs at the shared prices, toasts \"Strategy loaded from link\" and replaces the route with /analyse; invalid codes explain themselves; unit ShareLanding.test.tsx; e2e analyse.spec.ts"
  },
  {
   "id": "HC-WS-107",

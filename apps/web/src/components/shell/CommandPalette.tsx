@@ -14,7 +14,10 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { greeksShown, setGreeks } from "@/lib/chain/layout";
+import { useExpiries } from "@/lib/chain/useExpiries";
+import { fmtExpiry } from "@/lib/format";
 import { useUiStore } from "@/lib/store";
+import { TEMPLATES } from "@/lib/strategy/templates";
 
 export interface PaletteCommand {
   id: string;
@@ -33,6 +36,10 @@ export function buildCommands(opts: {
   referralCode?: string | null;
   /** Admin role: adds the seven "Admin: …" navigation commands (HC-AD-091). */
   admin?: boolean;
+  /** Listed expiries of the workspace asset → "Switch expiry → <date>" per expiry (HC-WS-069). */
+  expiries?: readonly string[];
+  /** Template names → "Load template → <name>" per template (HC-WS-069, HC-TR-140). */
+  templates?: readonly string[];
 }): PaletteCommand[] {
   const nav = (id: string, path: string, label: string, keywords: string[] = []): PaletteCommand => ({
     id,
@@ -194,6 +201,36 @@ export function buildCommands(opts: {
         keywords: ["ladder", "pnl", "price", "table"],
         run: () => useUiStore.getState().setAnalysisTab("ladder"),
       },
+      ...(opts.expiries ?? []).map(
+        (e): PaletteCommand => ({
+          id: `act:expiry-${e}`,
+          label: `Switch expiry → ${fmtExpiry(e)}`,
+          group: "Actions",
+          hint: e,
+          keywords: ["expiry", "chain", "switch", e],
+          run: () => {
+            const s = useUiStore.getState();
+            opts.navigate("/analyse");
+            s.setExpiry(s.asset, e);
+            s.setWorkspaceTab("chain");
+          },
+        }),
+      ),
+      ...(opts.templates ?? []).map(
+        (name): PaletteCommand => ({
+          id: `act:template-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+          label: `Load template → ${name}`,
+          group: "Actions",
+          keywords: ["template", "load", "strategy", name],
+          run: () => {
+            const s = useUiStore.getState();
+            opts.navigate("/analyse");
+            s.setWorkspaceTab("builder");
+            s.setBuilderTab("templates");
+            s.requestTemplate(name);
+          },
+        }),
+      ),
       {
         id: "act:chain-greeks",
         label: "Chain: toggle Greeks columns (Γ Θ ν)",
@@ -251,9 +288,12 @@ export function CommandPalette({ loggedIn, referralCode = null, admin = false }:
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
 
+  const asset = useUiStore((s) => s.asset);
+  const expiries = useExpiries(asset);
+  const templates = useMemo(() => TEMPLATES.map((t) => t.name), []);
   const commands = useMemo(
-    () => buildCommands({ loggedIn, navigate: (p) => router.push(p), toggleTheme, referralCode, admin }),
-    [admin, loggedIn, referralCode, router, toggleTheme],
+    () => buildCommands({ loggedIn, navigate: (p) => router.push(p), toggleTheme, referralCode, admin, expiries: loggedIn ? expiries : [], templates: loggedIn ? templates : [] }),
+    [admin, loggedIn, referralCode, router, toggleTheme, expiries, templates],
   );
   const items = useMemo(() => filterCommands(commands, query), [commands, query]);
 

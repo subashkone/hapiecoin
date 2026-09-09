@@ -119,13 +119,32 @@ describe("HC-WS-059..064 greeks and ladder", () => {
     // long straddle: positive gamma and vega, negative theta
     expect(screen.getByTestId("greek-gamma").className).toContain("");
     expect(screen.getByTestId("greek-theta").textContent).toMatch(/^Theta−|Theta-/);
-    await userEvent.setup().click(screen.getByTestId("analysis-tab-ladder"));
+    // HC-WS-102 vega in currency; HC-WS-101 Δ and Θ across price on the target date
+    expect(screen.getByTestId("greek-vega").textContent).toContain("$");
+    await waitFor(() => expect(screen.getByTestId("chart-delta-price").dataset["state"]).toBe("ready"), { timeout: 8000 });
+    await waitFor(() => expect(screen.getByTestId("chart-theta-price").dataset["state"]).toBe("ready"), { timeout: 8000 });
+    // HC-WS-067 / HC-WS-105 the tab-bar info and the share dialog with a /s/ link
+    expect(screen.getByTestId("pane-strategy-info").textContent).toMatch(/Long Straddle · 25 Sep · 20 lots/);
+    const u = userEvent.setup();
+    await u.click(screen.getByTestId("share-open"));
+    const link = screen.getByTestId<HTMLInputElement>("share-link").value;
+    expect(link).toMatch(/\/s\/[A-Za-z0-9_-]+$/);
+    expect(screen.getAllByText(/BUY/)).toHaveLength(2);
+    await u.click(screen.getByTestId("share-copy"));
+    await waitFor(async () => expect(await navigator.clipboard.readText()).toBe(link));
+    await u.keyboard("{Escape}");
+    await u.click(screen.getByTestId("analysis-tab-ladder"));
     await waitFor(() => expect(Number(screen.getByTestId("ladder-panel").dataset["rows"])).toBeGreaterThan(10));
     const statuses = screen.getAllByTestId("ladder-row").map((r) => r.dataset["status"]);
     expect(statuses.filter((s) => s === "spot")).toHaveLength(1);
     expect(statuses.filter((s) => s === "breakeven")).toHaveLength(2);
     expect(statuses).toContain("profit");
     expect(statuses).toContain("loss");
+    // HC-WS-103 the step is persisted in the store
+    const rowsBefore = Number(screen.getByTestId("ladder-panel").dataset["rows"]);
+    await u.click(screen.getByTestId("ladder-step-4"));
+    expect(useUiStore.getState().ladderStep).toBe(4);
+    expect(Number(screen.getByTestId("ladder-panel").dataset["rows"])).toBeLessThan(rowsBefore);
   });
 });
 

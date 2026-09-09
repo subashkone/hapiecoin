@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakeSocket, renderWithProviders } from "../../../test/helpers";
+import { searchParamsMock } from "../../../test/next-mocks";
 import { useUiStore } from "@/lib/store";
 import { Workspace, clampSplit } from "./Workspace";
 import { WorkspaceLoader } from "./WorkspaceLoader";
@@ -10,7 +11,8 @@ const realFetch = globalThis.fetch;
 beforeEach(() => {
   FakeSocket.reset();
   globalThis.fetch = vi.fn(() => Promise.reject(new Error("no gateway http")));
-  useUiStore.setState({ asset: "BTC", legs: { BTC: [], ETH: [], XAUT: [] }, workspaceTab: "chain", analysisTab: "payoff", builderTab: "builder" });
+  useUiStore.setState({ asset: "BTC", legs: { BTC: [], ETH: [], XAUT: [] }, workspaceTab: "chain", analysisTab: "payoff", builderTab: "builder", analyseCollapse: null });
+  searchParamsMock.value = new URLSearchParams();
 });
 afterEach(() => {
   globalThis.fetch = realFetch;
@@ -100,6 +102,33 @@ describe("[WORKSPACE] HC-WS-001..006 two-pane shell", () => {
     } finally {
       Object.defineProperty(window, "matchMedia", original);
     }
+  });
+
+  it("HC-WS-006 deep links pick the tabs; HC-WS-065 collapse buttons give one pane the full width and the handle restores both; HC-WS-067 tab-bar info", async () => {
+    searchParamsMock.value = new URLSearchParams("tab=paper&panel=ladder");
+    const r = renderWithProviders(<Workspace />);
+    expect(useUiStore.getState().workspaceTab).toBe("paper");
+    expect(useUiStore.getState().analysisTab).toBe("ladder");
+    expect(screen.getByTestId("left-tab-info").textContent).toMatch(/^Lot .* BTC · basis mark$/);
+    expect(screen.getByTestId("pane-strategy-info").textContent).toBe("No strategy");
+    expect(screen.getByTestId("share-open").hasAttribute("disabled")).toBe(true);
+    const u = userEvent.setup();
+    await u.click(screen.getByTestId("collapse-right"));
+    expect(screen.getByTestId("workspace").dataset["collapse"]).toBe("right");
+    expect(screen.getByTestId("right-pane").classList.contains("hidden")).toBe(true); // stays mounted, takes no width
+    await u.click(screen.getByTestId("collapse-restore"));
+    expect(screen.getByTestId("workspace").dataset["collapse"]).toBeUndefined();
+    await u.click(screen.getByTestId("collapse-left"));
+    expect(screen.getByTestId("workspace").dataset["collapse"]).toBe("left");
+    expect(screen.getByTestId("left-pane").parentElement!.classList.contains("hidden")).toBe(true);
+    expect(screen.getByTestId("right-pane").classList.contains("hidden")).toBe(false);
+    r.unmount();
+    // an unknown deep link is ignored
+    searchParamsMock.value = new URLSearchParams("tab=nope&panel=zzz");
+    useUiStore.setState({ workspaceTab: "chain", analysisTab: "payoff", analyseCollapse: null });
+    renderWithProviders(<Workspace />);
+    expect(useUiStore.getState().workspaceTab).toBe("chain");
+    expect(useUiStore.getState().analysisTab).toBe("payoff");
   });
 
   it("WorkspaceLoader code-splits the workspace behind a spinner", async () => {

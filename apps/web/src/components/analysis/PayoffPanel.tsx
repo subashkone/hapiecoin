@@ -4,7 +4,7 @@
 import type { ScenarioOptions } from "@hapiecoin/pricing";
 import { Button, EmptyState, cn } from "@hapiecoin/ui";
 import { useMemo, useState } from "react";
-import { fmtDate, fmtDelta, fmtGamma, fmtPrice, fmtStrike, fmtVega } from "@/lib/format";
+import { fmtDate, fmtDelta, fmtGamma, fmtPrice, fmtStrike } from "@/lib/format";
 import { useChain } from "@/lib/gateway/hooks";
 import { fmtMoney, fmtMoneyCompact } from "@/lib/money";
 import { useScenario } from "@/lib/pricing/client";
@@ -46,7 +46,7 @@ export function GreeksStrip({ a }: { a: StrategyAnalysis }) {
     ["Δ", g ? fmtDelta(g.delta) : "—", "Position delta · units of the underlying"],
     ["Γ", g ? fmtGamma(g.gamma) : "—", "Delta change per 1 USD move"],
     ["Θ / day", g ? fmtMoney(g.theta, a.money, { signed: true }) : "—", "Time decay per calendar day"],
-    ["ν / 1% IV", g ? fmtVega(g.vega) : "—", "P&L per 1 vol point"],
+    ["ν / 1% IV", g ? fmtMoney(g.vega, a.money, { signed: true }) : "—", "P&L per 1 vol point"],
     ["Margin est.", margin === null ? "—" : fmtMoney(margin, a.money), "Worst expiry loss for defined-risk strategies; the exchange margin replaces it once filled"],
   ];
   return (

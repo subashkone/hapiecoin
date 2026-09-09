@@ -1,13 +1,18 @@
 "use client";
-// Greeks tab (HC-WS-059..061): net position Greeks at spot, the per-leg breakdown, and one-line meanings.
+// Greeks tab (HC-WS-059..061, 101, 102): net position Greeks at spot (Θ and ν in currency), the per-leg breakdown,
+// position Δ and Θ across the price axis on the target date (worker scenario rows), and one-line meanings.
 import { EmptyState, cn } from "@hapiecoin/ui";
 import { black76Greeks, yearFraction } from "@hapiecoin/pricing";
 import { useMemo } from "react";
-import { fmtDelta, fmtExpiry, fmtGamma, fmtIv, fmtStrike, fmtVega } from "@/lib/format";
+import { fmtDelta, fmtExpiry, fmtGamma, fmtIv, fmtStrike } from "@/lib/format";
 import { fmtMoney } from "@/lib/money";
+import { useScenario } from "@/lib/pricing/client";
 import { settlementHourUtc } from "@/lib/pricing/legs";
 import { useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
+import { Chart } from "@/components/analytics/Chart";
 import { Tile } from "./PayoffPanel";
+
+const ACROSS_POINTS = 49;
 
 const MEANING: [string, string][] = [
   ["Delta", "How much the position gains for a 1 USD rise in the underlying, in units of the underlying. Positive means long exposure."],
@@ -35,6 +40,15 @@ export function GreeksPanel() {
     [legs, lotSize, spot, a, asset],
   );
 
+  // HC-WS-101: every leg re-priced at 49 prices ±20 % around spot on the target date; the worker returns one row per date
+  const prices = useMemo(() => (spot === null ? [] : Array.from({ length: ACROSS_POINTS }, (_, i) => spot * (0.8 + (0.4 * i) / (ACROSS_POINTS - 1)))), [spot]);
+  const across = (mode: "delta" | "theta") => (result && spot !== null && prices.length ? { prices, dates: [result.targetMs], mode, defaultIv: 0.5, settlementHourUtc: settlementHourUtc(asset) } : null);
+  const deltaRow = useScenario(a.pricingLegs, across("delta"));
+  const thetaRow = useScenario(a.pricingLegs, across("theta"));
+  const spotIdx = Math.round((ACROSS_POINTS - 1) / 2);
+  const xLabels = prices.map((p) => fmtStrike(String(Math.round(p))));
+  const xTip = prices.map((p) => `${fmtStrike(String(Math.round(p)))} (${((p / (spot ?? 1) - 1) * 100).toFixed(0)}%)`);
+
   if (legs.length === 0) return <EmptyState title="No strategy yet" description="Greeks appear once the strategy has legs." className="py-16" data-testid="greeks-empty" />;
 
   const tone = (v: number | undefined) => (v === undefined || !Number.isFinite(v) ? "muted" : v >= 0 ? "profit" : "loss");
@@ -44,7 +58,17 @@ export function GreeksPanel() {
         <Tile label="Delta" value={g ? fmtDelta(g.delta) : "—"} sub={`${asset} exposure`} tone={tone(g?.delta)} testId="greek-delta" />
         <Tile label="Gamma" value={g ? fmtGamma(g.gamma) : "—"} sub="per 1 USD move" tone={tone(g?.gamma)} testId="greek-gamma" />
         <Tile label="Theta" value={g ? fmtMoney(g.theta, money, { signed: true }) : "—"} sub="per day" tone={tone(g?.theta)} testId="greek-theta" />
-        <Tile label="Vega" value={g ? fmtVega(g.vega) : "—"} sub="per vol point" tone={tone(g?.vega)} testId="greek-vega" />
+        <Tile label="Vega" value={g ? fmtMoney(g.vega, money, { signed: true }) : "—"} sub="per 1 vol point" tone={tone(g?.vega)} testId="greek-vega" />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2" data-testid="greeks-across">
+        <div className="rounded border border-border p-2">
+          <div className="micro mb-1">Position Δ across price · {a.targetDays === 0 ? "today" : `+${a.targetDays}d`}</div>
+          <Chart h={150} tight x={xLabels} xTip={xTip} series={[{ label: "Δ", type: "line", data: deltaRow.grid?.values[0] ?? [], color: "hsl(var(--curve))", fmt: (v) => fmtDelta(v) }]} hlines={[{ y: 0, label: "0" }]} labels={deltaRow.grid?.values[0]?.[spotIdx] !== undefined ? [{ i: spotIdx, y: deltaRow.grid.values[0][spotIdx], text: "SPOT", color: "hsl(var(--spot))" }] : []} yFmt={(v) => fmtDelta(v)} legend={false} loading={deltaRow.pending && !deltaRow.grid} empty="Waiting for the position…" testId="chart-delta-price" />
+        </div>
+        <div className="rounded border border-border p-2">
+          <div className="micro mb-1">Position Θ / day across price · {money.currency}</div>
+          <Chart h={150} tight x={xLabels} xTip={xTip} series={[{ label: "Θ / day", type: "line", data: thetaRow.grid?.values[0] ?? [], color: "hsl(var(--warning))", fmt: (v) => fmtMoney(v, money, { signed: true }) }]} hlines={[{ y: 0, label: "0" }]} labels={thetaRow.grid?.values[0]?.[spotIdx] !== undefined ? [{ i: spotIdx, y: thetaRow.grid.values[0][spotIdx], text: "SPOT", color: "hsl(var(--spot))" }] : []} yFmt={(v) => fmtMoney(v, money, { signed: true })} legend={false} loading={thetaRow.pending && !thetaRow.grid} empty="Waiting for the position…" testId="chart-theta-price" />
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs" data-testid="greeks-table">
@@ -55,7 +79,7 @@ export function GreeksPanel() {
               <th className="py-1 pr-2 text-right">Δ</th>
               <th className="py-1 pr-2 text-right">Γ</th>
               <th className="py-1 pr-2 text-right">Θ/d</th>
-              <th className="py-1 text-right">ν</th>
+              <th className="py-1 text-right">ν / 1%</th>
             </tr>
           </thead>
           <tbody>
@@ -70,7 +94,7 @@ export function GreeksPanel() {
                 <td className={cn("num py-1.5 pr-2 text-right", greeks && greeks.delta < 0 && "text-loss")}>{greeks ? fmtDelta(greeks.delta) : "—"}</td>
                 <td className={cn("num py-1.5 pr-2 text-right", greeks && greeks.gamma < 0 && "text-loss")}>{greeks ? fmtGamma(greeks.gamma) : "—"}</td>
                 <td className={cn("num py-1.5 pr-2 text-right", greeks && greeks.theta < 0 && "text-loss")}>{greeks ? fmtMoney(greeks.theta, money, { signed: true }) : "—"}</td>
-                <td className={cn("num py-1.5 text-right", greeks && greeks.vega < 0 && "text-loss")}>{greeks ? fmtVega(greeks.vega) : "—"}</td>
+                <td className={cn("num py-1.5 text-right", greeks && greeks.vega < 0 && "text-loss")}>{greeks ? fmtMoney(greeks.vega, money, { signed: true }) : "—"}</td>
               </tr>
             ))}
           </tbody>
