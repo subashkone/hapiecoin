@@ -6107,7 +6107,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Shows tags and notes; \"Open in Journal\" jumps to the Journal tab",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026): StrategyDetailsDialog details-journal block (tags, notes, \"Open in Journal\"); unit journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022"
  },
  {
   "id": "HC-TR-122",
@@ -6212,7 +6212,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "New .lp-panel[data-tab=\"journal\"] listing ARCHIVED strategies (newest close first) plus squared-off legs of active strategies; rendered on analyse:tab and after every strategies-changed",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png"
  },
  {
   "id": "HC-TR-129",
@@ -6227,7 +6227,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Trades (wins · losses), Win rate, Avg P&L, Best, Worst, Profit factor (gross profit ÷ gross loss, ∞ when no losses) for the filtered trades",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png"
  },
  {
   "id": "HC-TR-130",
@@ -6242,7 +6242,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "SVG of cumulative realised P&L over closedAt starting at the first trade open; faint grid with $ labels, dashed zero, filled area, one dot per trade (hover title: name · P&L · date), emphasised endpoint with the net value; first / last date on the axis",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png"
  },
  {
   "id": "HC-TR-131",
@@ -6257,7 +6257,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "All / Paper / Live / Wins / Losses / BTC / ETH / XAUT chips plus a search over name, template, asset, tags and notes",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png"
  },
  {
   "id": "HC-TR-132",
@@ -6272,7 +6272,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Chips earnings / range / hedge toggle on click; custom tags via the \"+ custom\" input (Enter); custom chips remove with ×; stored on the strategy as tags[]; toasts Tag added / removed",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png"
  },
  {
   "id": "HC-TR-133",
@@ -6287,7 +6287,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Textarea stored as strategy.notes while typing; \"Notes saved\" toast on change",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png"
  },
  {
   "id": "HC-TR-134",
@@ -6302,7 +6302,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Builds id,name,mode,asset,template,legs,opened,closed,days,realized_pnl,tags,notes for the filtered trades, copies to the clipboard (execCommand fallback) and toasts \"CSV copied · N rows\"; CG.trading.journalCsv() / CG.trading.lastCsv",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png · CSV goes to the clipboard (ADR-047)"
  },
  {
   "id": "HC-TR-135",
@@ -6317,7 +6317,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Clicking a trade row or a closed-leg row opens Strategy Details for that strategy",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png"
  },
  {
   "id": "HC-TR-136",
@@ -6332,7 +6332,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "\"No closed trades yet\" with an Open Paper trades button; per-filter empty states",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png"
  },
  {
   "id": "HC-TR-137",
@@ -6347,7 +6347,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Stop (archive) and live Square off all archive the strategy with closedAt so it appears in the Journal immediately",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png"
  },
  {
   "id": "HC-TR-138",

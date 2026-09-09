@@ -248,11 +248,14 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
               <div><span className="micro block">Realised</span><b className={cn("num", (pnl?.realized ?? 0) >= 0 ? "text-profit" : "text-loss")}>{pnl ? fmtMoney(pnl.realized, money, { signed: true }) : "—"}</b></div>
               <div><span className="micro block">Started</span><b className="num">{s.startedAt ? new Date(s.startedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : "—"}</b></div>
             </div>
-            {s.status === "archived" && (s.tags.length || s.notes) ? (
-              <div className="mt-3 rounded border border-border p-2 text-xs">
-                <div className="micro">Journal</div>
-                <div className="flex flex-wrap gap-1">{s.tags.map((t) => <span key={t} className="micro rounded border border-border px-1">{t}</span>)}</div>
-                {s.notes ? <p className="mt-1">{s.notes}</p> : null}
+            {s.status === "archived" && s.startedAt ? (
+              <div className="mt-3 rounded border border-border p-2 text-xs" data-testid="details-journal">
+                <div className="flex items-center gap-2">
+                  <div className="micro">Journal</div>
+                  <Button size="sm" variant="outline" className="ml-auto" onClick={() => { close(); setWorkspaceTab("journal"); }} data-testid="details-open-journal">Open in Journal</Button>
+                </div>
+                <div className="mt-1 flex flex-wrap gap-1" data-testid="details-tags">{s.tags.length ? s.tags.map((t) => <span key={t} className="micro rounded border border-border px-1">#{t}</span>) : <span className="micro">no tags yet</span>}</div>
+                <p className="mt-1 whitespace-pre-wrap" data-testid="details-notes">{s.notes || <span className="text-muted-foreground">No notes yet · add them in the Journal</span>}</p>
               </div>
             ) : null}
           </DialogBody>
