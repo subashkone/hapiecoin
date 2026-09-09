@@ -154,10 +154,18 @@ describe("HC-TR-068..081 details, square off, partial exit, adjustment, stop", (
     const u = userEvent.setup();
     const s = await paperTradeFromBuilder(u);
     await waitFor(() => expect(screen.getByTestId("paper-card")).toBeTruthy());
+    // HC-TR-114 Set alert on the card opens the Alerts center on a P&L form for this strategy
+    await u.click(screen.getByTestId("card-alert"));
+    expect(useUiStore.getState()).toMatchObject({ dialog: "alerts", alertPrefill: { kind: "pnl", strategyId: s.id, asset: "BTC" } });
+    useUiStore.setState({ dialog: null, alertPrefill: null });
     await u.click(screen.getByTestId("card-details"));
     const details = screen.getByTestId("strategy-details");
     expect(details.dataset["status"]).toBe("paper");
     expect(within(details).getAllByTestId("details-leg")).toHaveLength(2);
+    // HC-TR-120 the same from Details
+    await u.click(within(details).getByTestId("details-alert"));
+    expect(useUiStore.getState().alertPrefill).toEqual({ kind: "pnl", strategyId: s.id, asset: "BTC" });
+    useUiStore.setState({ dialog: null, alertPrefill: null });
     expect(within(details).getByTestId("details-total").textContent).toMatch(/\$0\.00/);
     // square off the first leg at a higher exit → realised P&L +1.00 for 10 lots × 0.001 × 100
     await u.click(within(details).getAllByTestId("details-sqoff")[0]!);

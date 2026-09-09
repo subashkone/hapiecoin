@@ -42,6 +42,10 @@ import { SUPPORT_EMAIL, SUPPORT_WHATSAPP } from "@/content/landing";
 import { AssetSwitch, CurrencyToggle, ExchangeChip, FeedStatus, FuturesPrice } from "./widgets";
 import { PlanBanner } from "./PlanBanner";
 import { FlyerPopup } from "@/components/shell/FlyerPopup";
+import { AlertsBell } from "@/components/alerts/AlertsBell";
+import { AlertEngine } from "@/lib/alerts/AlertEngine";
+import { useAlerts } from "@/lib/api/alerts";
+import { alertCounts } from "@hapiecoin/schema";
 
 export const AVATAR_ICON = { rocket: Rocket, diamond: Gem, lightning: Zap } as const;
 
@@ -75,6 +79,8 @@ function SettingsMenu({ user }: { user: User }) {
   const openDialog = useUiStore((s) => s.openDialog);
   const requestTour = useUiStore((s) => s.requestTour);
   const { data: settings } = useSettings();
+  const { data: alerts } = useAlerts();
+  const armedAlerts = alertCounts(alerts ?? []).armed;
   const theme = useTheme();
   const mounted = useMounted();
   const resolvedTheme = mounted ? theme.resolvedTheme : "dark"; // stored theme is browser-only (hydration)
@@ -142,6 +148,9 @@ function SettingsMenu({ user }: { user: User }) {
         </MenuItem>
         <MenuItem onSelect={() => pick("exchanges")} testId="menu-exchanges">
           <Plug /> Exchange Setup
+        </MenuItem>
+        <MenuItem onSelect={() => pick("alerts")} value={`${armedAlerts} armed`} testId="menu-alerts">
+          <Bell /> Alerts
         </MenuItem>
         <MenuItem onSelect={() => { setOpen(false); toggleDensity(); }} value={density}>
           {density === "compact" ? <Rows3 /> : <Rows2 />} Density
@@ -245,7 +254,7 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
           <span className="hidden h-6 w-px bg-border md:block" aria-hidden="true" />
           <ExchangeChip />
           <CurrencyToggle />
-          <Bell className="hidden size-4 text-muted-foreground lg:block" aria-hidden="true" />
+          <AlertsBell />
           <ThemeToggle />
           <PaletteButton className="hidden lg:inline-flex" />
           <SettingsMenu user={user} />
@@ -253,6 +262,7 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
         </header>
         <PlanBanner />
         <FlyerPopup />
+        <AlertEngine />
         <CommandPalette loggedIn referralCode={user.referralCode} admin={user.role === "admin"} />
       </>
     );
@@ -300,10 +310,12 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
           ) : null}
         </nav>
         <span className="flex-1" />
+        {user ? <AlertsBell /> : null}
         <ThemeToggle />
         <PaletteButton className="hidden lg:inline-flex" />
         {user ? (
           <>
+            <AlertEngine />
             <SettingsMenu user={user} />
             <AccountMenu user={user} />
           </>

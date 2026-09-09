@@ -61,6 +61,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const paneSource = useUiStore((s) => s.paneSource);
   const followStrategy = useUiStore((s) => s.followStrategy);
   const openAdjust = useUiStore((s) => s.openAdjust);
+  const openAlerts = useUiStore((s) => s.openAlerts);
   const workspaceTab = useUiStore((s) => s.workspaceTab);
   const [batch, setBatch] = useState(false);
   const [search, setSearch] = useState("");
@@ -208,6 +209,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                   <div className="mt-2 flex flex-wrap gap-1">
                     <Button size="sm" variant="outline" onClick={() => openDetails(s.id)} data-testid="card-details">Details</Button>
                     <Button size="sm" variant="outline" disabled={open.length === 0} title={open.length ? "Adjust: trim, close or add legs with the combined payoff (A)" : "No open legs"} onClick={() => openAdjust(s.id)} data-testid="card-adjust">Adjust</Button>
+                    <Button size="sm" variant="outline" title="Alert me when this strategy's P&L crosses a level" onClick={() => openAlerts({ kind: "pnl", strategyId: s.id, asset: s.asset })} data-testid="card-alert">Set alert</Button>
                     {kind === "paper" ? (
                       <>
                         <Button size="sm" variant="outline" disabled={!connected || open.length === 0} title={connected ? "Place these legs as live orders" : "Connect your exchange first"} onClick={() => openTrade({ strategyId: s.id, mode: "live" })} data-testid="card-golive">Go live</Button>

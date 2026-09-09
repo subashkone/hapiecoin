@@ -570,6 +570,79 @@ test.describe("HC-TR paper trading (Phase 3 item 1)", () => {
   });
 });
 
+test.describe("HC-SH-079 / HC-SH-094..100 alerts (ADR-052)", () => {
+  test.beforeEach(async ({ page, request }) => {
+    await seedUser(request, { email: "alerts@example.com", plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" }, alerts: true });
+    await signIn(page, "alerts@example.com");
+    await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
+    await page.reload();
+    await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 15_000 });
+  });
+
+  test("the bell counts the seeded alerts, a new price alert fires on the next tick, Set alert prefills the P&L form", async ({ page }) => {
+    // seeded: 2 armed, 1 triggered → red badge
+    const bell = page.getByTestId("alerts-bell");
+    await expect(bell).toHaveAttribute("data-armed", "2");
+    await expect(bell).toHaveAttribute("data-triggered", "1");
+    await expect(page.getByTestId("alerts-badge")).toHaveText("1");
+    await bell.click();
+    const dialog = page.getByTestId("alerts-dialog");
+    await expect(dialog.getByTestId("alerts-counts")).toHaveText("3 alerts · 2 armed · 1 triggered");
+    await expect(dialog.getByTestId("alert-row")).toHaveCount(3);
+    await expect(dialog.locator("[data-testid=alert-row][data-kind=price]").getByTestId("alert-now")).toContainText(/now [0-9]/, { timeout: 15_000 });
+    // a price alert just above the live price, "at or below": the next tick meets it
+    await dialog.getByTestId("alerts-new").click();
+    const form = dialog.getByTestId("alert-form");
+    await expect(form.getByTestId("alert-form-now")).toContainText(/now [0-9]/);
+    const now = Number((await form.getByTestId("alert-form-now").textContent())!.replace(/[^0-9.]/g, ""));
+    await form.getByTestId("alert-op").selectOption("<=");
+    await form.getByTestId("alert-value").fill(String(Math.round(now * 1.01)));
+    await form.getByTestId("alert-ch-email").click();
+    await form.getByTestId("alert-save").click();
+    await expect(dialog.getByTestId("alert-row")).toHaveCount(4);
+    await expect(dialog.getByTestId("alerts-counts")).toHaveText(/4 alerts · [12] armed · [12] triggered/);
+    await expect(dialog.getByTestId("alert-row").first()).toHaveAttribute("data-state", "triggered", { timeout: 15_000 });
+    await expect(page.getByText("Alert triggered")).toBeVisible();
+    await expect(dialog.getByTestId("alert-row").first().getByTestId("alert-now")).toContainText("fired");
+    await expect(bell).toHaveAttribute("data-triggered", "2");
+    // re-arm from the switch: it fires again on the still-met price
+    await dialog.getByTestId("alert-row").first().getByTestId("alert-arm").click();
+    await expect(dialog.getByTestId("alert-row").first()).toHaveAttribute("data-state", "triggered", { timeout: 15_000 });
+    // delete with confirm
+    await dialog.getByTestId("alert-row").first().getByTestId("alert-delete").click();
+    await dialog.getByTestId("alert-delete-confirm").click();
+    await expect(dialog.getByTestId("alert-row")).toHaveCount(3);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    // HC-TR-114 / HC-TR-139 a paper trade, then Set alert on its card lands on the P&L form with the strategy chosen
+    const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
+    await page.locator(`[data-testid=chain-row-calls][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-buy-calls").click();
+    await page.getByTestId("tab-builder").click();
+    await page.getByTestId("strategy-name").fill("E2E alert call");
+    await page.getByTestId("builder-paper-trade").click();
+    await page.getByTestId("trade-mode").getByTestId("trade-continue").click();
+    await page.getByTestId("trade-preview").getByTestId("trade-now").click();
+    await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+    await page.getByTestId("paper-card").getByTestId("card-alert").click();
+    await expect(dialog).toBeVisible();
+    await expect(form.getByTestId("alert-kind")).toHaveValue("pnl");
+    await expect(form.getByTestId("alert-strategy")).toHaveValue(/^strat/);
+    await expect(form.getByTestId("alert-form-now")).toContainText("$", { timeout: 15_000 });
+    await form.getByTestId("alert-value").fill("-5");
+    await form.getByTestId("alert-op").selectOption("<=");
+    await form.getByTestId("alert-save").click();
+    await expect(dialog.getByTestId("alert-row").first().getByTestId("alert-condition")).toHaveText("E2E alert call · P&L ≤ −$5.00");
+    await page.keyboard.press("Escape");
+    // HC-SH-079 the palette reaches the center too
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox", { name: "Command" }).fill("alerts center");
+    await page.getByRole("option", { name: "Alerts center" }).click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByTestId("alert-form")).toHaveCount(0);
+  });
+});
+
 test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
   test.beforeEach(async ({ page, request }) => {
     await seedUser(request, { email: "adjust@example.com", plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" } });

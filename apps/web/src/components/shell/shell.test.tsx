@@ -79,6 +79,12 @@ describe("HC-PB-059 command palette", () => {
     inn.find((c) => c.id === "act:builder-save")?.run();
     expect(useUiStore.getState()).toMatchObject({ workspaceTab: "builder", builderTab: "builder", saveDraftRequest: true });
     useUiStore.setState({ saveDraftRequest: false });
+    // HC-SH-079 alerts commands: the center, and the form
+    inn.find((c) => c.id === "act:alerts")?.run();
+    expect(useUiStore.getState()).toMatchObject({ dialog: "alerts", alertPrefill: null });
+    inn.find((c) => c.id === "act:alert-new")?.run();
+    expect(useUiStore.getState()).toMatchObject({ dialog: "alerts", alertPrefill: {} });
+    useUiStore.setState({ dialog: null, alertPrefill: null });
   });
   it("scores substrings above subsequences and filters/sorts", () => {
     const cmds = buildCommands({ loggedIn: false, navigate: vi.fn(), toggleTheme: vi.fn() });

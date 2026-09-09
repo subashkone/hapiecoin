@@ -535,6 +535,30 @@ export const campaignRecipients = pgTable(
 );
 
 /** Every table, for `drizzle(client, { schema })`; declared last so each table exists before it is referenced. */
+/** Alerts (Phase 5 item 2, ADR-052): a trader's price / ATM IV / strategy P&L rules; the client evaluates, the server records and delivers. */
+export const alerts = pgTable(
+  "alerts",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: ["price", "iv", "pnl"] }).notNull(),
+    asset: text("asset", { enum: ["BTC", "ETH", "XAUT"] }).notNull(),
+    strategyId: text("strategy_id").references(() => strategies.id, { onDelete: "cascade" }),
+    strategyName: text("strategy_name"),
+    op: text("op", { enum: [">=", "<="] }).notNull(),
+    value: text("value").notNull(),
+    channels: jsonb("channels").$type<string[]>().notNull().default(sql`'["push"]'::jsonb`),
+    state: text("state", { enum: ["armed", "triggered", "paused"] }).notNull().default("armed"),
+    lastValue: text("last_value"),
+    triggeredAt: timestamp("triggered_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("alerts_user_id_idx").on(t.userId)],
+);
+
 export const schema = {
   users,
   sessions,
@@ -558,5 +582,6 @@ export const schema = {
   payments,
   campaigns,
   campaignRecipients,
+  alerts,
 };
 export type Schema = typeof schema;

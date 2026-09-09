@@ -25,6 +25,8 @@ export interface SeedOptions {
   payments?: number;
   /** Seed this many sent campaigns for the History tab (ADR-035). */
   campaigns?: number;
+  /** Seed the three demo alerts (ADR-052): BTC ≥ 82,000 (push, armed), BTC ATM IV ≤ 30 % (email, triggered), a P&L alert on the first active strategy or a named one (push + email, armed). */
+  alerts?: boolean;
 }
 
 export async function seedUser(request: APIRequestContext, opts: SeedOptions) {

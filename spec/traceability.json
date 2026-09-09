@@ -282,7 +282,7 @@
   "phase": 5,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Same controls as the analyse header",
-  "evidence": "bundle strings: Switch to Dark Mode / Light Mode"
+  "evidence": "bundle strings: Switch to Dark Mode / Light Mode · Phase 5 item 2 (10 Sep 2026, ADR-052): AlertsBell in the default header (alerts-bell) → Alerts dialog"
  },
  {
   "id": "HC-SH-020",
@@ -342,7 +342,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · api contract",
   "acceptance": "Each opens the matching dialog / starts the tour / toggles theme",
-  "evidence": "bundle strings: Preferences, API Settings, Currency Settings, Lot Size Settings, P&L Settings, Exchange Setup, Take a tour, Switch to Dark Mode"
+  "evidence": "bundle strings: Preferences, API Settings, Currency Settings, Lot Size Settings, P&L Settings, Exchange Setup, Take a tour, Switch to Dark Mode · Phase 5 item 2 (10 Sep 2026, ADR-052): menu-alerts \"Alerts · N armed\" opens the Alerts dialog; unit AppHeader.test.tsx"
  },
  {
   "id": "HC-SH-024",
@@ -1183,7 +1183,7 @@
   "phase": 5,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Badge re-rendered on 'alerts-changed' / 'alert-triggered'",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js"
+  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): components/alerts/AlertsBell.tsx: badge = armed count, red with the triggered count once one fired (data-armed / data-triggered); both header variants; unit alerts.test.tsx + AppHeader.test.tsx; e2e analyse.spec.ts alerts block"
  },
  {
   "id": "HC-SH-080",
@@ -1363,7 +1363,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Behaves as in the v2 mock.",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js"
+  "evidence": "v2 brief · verified in pw/check-v2-*.js · Phase 5 item 2 (10 Sep 2026, ADR-052): palette act:alert-new \"New alert…\" and act:alerts \"Alerts center\"; unit shell.test.tsx; e2e analyse.spec.ts"
  },
  {
   "id": "HC-SH-092",
@@ -1408,7 +1408,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · api contract",
   "acceptance": "Fields: id, kind price|ivrank|pnl, asset|strategyId, op >=|<=, value, channels[], state armed|triggered|paused, lastValue, triggeredAt",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js"
+  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): packages/schema/src/alerts.ts (Alert: kind price|iv|pnl, asset, strategyId + strategyName, op ≥|≤, value, channels push|email, state armed|triggered|paused, lastValue, triggeredAt); DB table alerts (migration 0010); e2e seed alerts: true mirrors the three demo rows; unit alerts.test.ts (schema)"
  },
  {
   "id": "HC-SH-095",
@@ -1423,7 +1423,7 @@
   "phase": 5,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Every mutation emits 'alerts-changed'",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js"
+  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): apps/api/src/routes/alerts.ts GET/POST /v1/alerts, PATCH/DELETE /v1/alerts/{id}, POST /v1/alerts/{id}/trigger (email via mailer.sendAlert); web lib/api/alerts.ts useAlerts + mutations patching the cached list; lib/alerts/engine.ts conditionText / nowText / currentValue / dueAlerts; API test alerts.test.ts; unit engine.test.ts"
  },
  {
   "id": "HC-SH-096",
@@ -1438,7 +1438,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · api contract",
   "acceptance": "When met: state='triggered', toast “Alert triggered · BTC crossed 82,000 · Sent via push”, CG.emit('alert-triggered', alert)",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js"
+  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): lib/alerts/AlertEngine.tsx: spot per asset, IvProbe (nearest expiry chain → atmIvOf) per asset with an IV alert, paper book P&L for P&L alerts; 1 s trailing throttle; hit → POST trigger → toast \"Alert triggered · BTC crossed 82,000.0 · Sent via push\" + browser Notification when granted; unit alerts.test.tsx (price + IV); e2e analyse.spec.ts"
  },
  {
   "id": "HC-SH-097",
@@ -1453,7 +1453,7 @@
   "phase": 5,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Delete confirms via CG.modal.confirm; the switch re-arms triggered alerts or pauses armed ones",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js"
+  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): components/alerts/AlertsDialog.tsx: counts line, rows with kind icon, mono condition, \"Price · now …\" (+ fired time), channel chips, state badge, arm Switch (pause / re-arm), inline delete confirm; opens from the bell, settings menu, palette and Set alert; unit alerts.test.tsx; e2e analyse.spec.ts; visual analyse-alerts-{theme}.png"
  },
  {
   "id": "HC-SH-098",
@@ -1468,7 +1468,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · api contract",
   "acceptance": "Saving arms the alert immediately and evaluates it once",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js"
+  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): AlertForm: Type (Price / ATM IV / Strategy P&L), Asset or Strategy select, Condition ≥ / ≤, Value with unit hint and the live \"now\" reading, Channels push / email (Telegram disabled \"soon\", GAPS #64), Save / Cancel with validation toasts; saving arms it and the engine evaluates on the next reading; unit alerts.test.tsx; visual analyse-alerts-form-{theme}.png"
  },
  {
   "id": "HC-SH-099",
@@ -1483,7 +1483,7 @@
   "phase": 5,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Behaves as in the v2 mock.",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js"
+  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): EmptyState \"No alerts yet\" with a New alert button (alerts-empty-new); unit alerts.test.tsx"
  },
  {
   "id": "HC-SH-100",
@@ -1498,7 +1498,7 @@
   "phase": 5,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "prefill: {kind, asset, strategyId, op, value, channels}",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js"
+  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): store.openAlerts(prefill) → dialog \"alerts\" + alertPrefill (transient); the form starts on the prefilled kind / strategy / asset; unit store.test.ts + alerts.test.tsx"
  },
  {
   "id": "HC-SH-101",
@@ -6002,7 +6002,7 @@
   "phase": 5,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Opens CG.alerts.openNew({type:\"pnl\", kind:\"pnl\", strategyId, name, asset}) when the chrome alerts engine exists, else the local mini-dialog",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): PaperPanel card-alert \"Set alert\" → openAlerts({ kind: \"pnl\", strategyId, asset }); unit trading.test.tsx; e2e analyse.spec.ts alerts block"
  },
  {
   "id": "HC-TR-115",
@@ -6047,7 +6047,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Same hook as the paper cards",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): PaperPanel live cards share the card-alert button (kind = live); unit trading.test.tsx (paper) · same code path"
  },
  {
   "id": "HC-TR-118",
@@ -6092,7 +6092,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · api contract",
   "acceptance": "Opens the alerts hook for the strategy (active strategies)",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): StrategyDetailsDialog details-alert \"Set alert\" for active strategies; unit trading.test.tsx"
  },
  {
   "id": "HC-TR-121",
@@ -6377,7 +6377,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · api contract",
   "acceptance": "openAlert(id) → CG.alerts.openNew({type:\"pnl\", kind:\"pnl\", strategyId, name, asset}) when the chrome engine exists; otherwise a local mini-dialog (condition ≥ / ≤, value) stores {id,type:\"pnl\",kind:\"pnl\",strategyId,name,op,value,armed,state,channels,createdAt} into CG.mock.alerts and a tick evaluator toasts and disarms when crossed; CG.portfolio.strategyPnl(id) returns the strategy total P&L for the engine",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): The alerts engine exists (ADR-052): openAlerts prefill lands on the P&L form with the strategy chosen and its name snapshotted on save; unit alerts.test.tsx; e2e analyse.spec.ts"
  },
  {
   "id": "HC-TR-140",

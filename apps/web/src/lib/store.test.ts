@@ -317,3 +317,17 @@ describe("HC-TR-140 / HC-TR-142 broker and save-draft request", () => {
     useUiStore.getState().setBroker(null);
   });
 });
+
+describe("HC-SH-079 / HC-SH-100 alerts dialog and prefill", () => {
+  it("opens the Alerts dialog on the list or on the form with a prefill; the prefill is transient", async () => {
+    const { useUiStore } = await import("./store");
+    useUiStore.getState().openAlerts();
+    expect(useUiStore.getState()).toMatchObject({ dialog: "alerts", alertPrefill: null });
+    useUiStore.getState().openAlerts({ kind: "pnl", strategyId: "strat_1", asset: "BTC" });
+    expect(useUiStore.getState().alertPrefill).toEqual({ kind: "pnl", strategyId: "strat_1", asset: "BTC" });
+    const merge = useUiStore.persist.getOptions().merge as (p: unknown, c: ReturnType<typeof useUiStore.getState>) => ReturnType<typeof useUiStore.getState>;
+    expect(merge({ alertPrefill: { kind: "price" } }, useUiStore.getState()).alertPrefill).toBeNull();
+    useUiStore.getState().closeDialog();
+    useUiStore.setState({ alertPrefill: null });
+  });
+});

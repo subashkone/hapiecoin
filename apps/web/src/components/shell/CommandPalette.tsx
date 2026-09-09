@@ -98,6 +98,20 @@ export function buildCommands(opts: {
           ]
         : []),
       {
+        id: "act:alert-new",
+        label: "New alert…",
+        group: "Actions",
+        keywords: ["alert", "notify", "price", "iv", "pnl", "trigger"],
+        run: () => useUiStore.getState().openAlerts({}),
+      },
+      {
+        id: "act:alerts",
+        label: "Alerts center",
+        group: "Actions",
+        keywords: ["alerts", "bell", "armed", "triggered", "notifications"],
+        run: () => useUiStore.getState().openAlerts(),
+      },
+      {
         id: "act:tour",
         label: "Take a tour",
         group: "Actions",
