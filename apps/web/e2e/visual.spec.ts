@@ -91,6 +91,42 @@ for (const theme of ["dark", "light"] as const) {
       await page.screenshot({ path: `${DIR}/home-${theme}.png` });
     });
 
+    test(`HC-PB-042 /payoff-preview ${theme}`, async ({ page }) => {
+      await page.goto("/payoff-preview");
+      await page.evaluate((t) => {
+        localStorage.setItem("hapiecoin.theme", t);
+      }, theme);
+      await page.reload();
+      await expect(page.getByTestId("pp-summary")).toContainText("@ $100k");
+      await page.getByTestId("pp-target-plus").click();
+      await page.getByTestId("pp-target-plus").click();
+      await page.waitForTimeout(300);
+      await page.screenshot({ path: `${DIR}/public-payoff-preview-${theme}.png`, fullPage: true });
+    });
+
+    test(`HC-SH-064 tour and HC-SH-057 assistant ${theme}`, async ({ page, request }) => {
+      await seedUser(request, { email: `tour-${theme}@example.com` });
+      await signIn(page, `tour-${theme}@example.com`);
+      await page.evaluate((t) => {
+        localStorage.setItem("hapiecoin.theme", t);
+      }, theme);
+      await page.reload();
+      await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 15_000 });
+      await page.getByTestId("settings-gear").click();
+      await page.getByTestId("menu-tour").click();
+      await expect(page.getByTestId("tour")).toHaveAttribute("data-step", "1");
+      await page.screenshot({ path: `${DIR}/analyse-tour-welcome-${theme}.png` });
+      await page.getByTestId("tour-next").click();
+      await expect(page.getByTestId("tour")).toHaveAttribute("data-anchored", "true");
+      await page.screenshot({ path: `${DIR}/analyse-tour-${theme}.png` });
+      await page.keyboard.press("Escape");
+      await page.getByTestId("assistant-launcher").click();
+      await page.getByTestId("assistant-chip").nth(1).click();
+      await expect(page.getByTestId("assistant-msg-bot").last()).toContainText("press B", { timeout: 10_000 });
+      await expect(page.getByTestId("assistant-panel")).toHaveAttribute("data-typing", "false", { timeout: 10_000 });
+      await page.screenshot({ path: `${DIR}/analyse-assistant-${theme}.png` });
+    });
+
     test(`HC-AC-037 /referrals and HC-AD-052 admin commissions ${theme}`, async ({ page, request }) => {
       await seedUser(request, { email: `ref-${theme}@example.com`, role: "admin", referrals: 6 });
       await signIn(page, `ref-${theme}@example.com`);

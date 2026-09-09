@@ -114,7 +114,7 @@ export function Workspace() {
     <Tabs value={tab} onValueChange={(v) => setTab(v as WorkspaceTab)} className="flex h-full min-h-0 min-w-0 flex-col gap-0" data-testid="left-pane">
       <TabsList className="px-2">
         {LEFT_TABS.map((t) => (
-          <TabsTrigger key={t.id} value={t.id} title={t.phase ? `Arrives in Phase ${t.phase}` : undefined} data-testid={`tab-${t.id}`}>
+          <TabsTrigger key={t.id} value={t.id} title={t.phase ? `Arrives in Phase ${t.phase}` : undefined} data-testid={`tab-${t.id}`} data-tour={t.id === "chain" ? "options-chain" : t.id === "paper" ? "paper-tab" : undefined}>
             {t.label}
             {t.id === "builder" && legCount > 0 ? (
               <span className="ml-1 rounded-full bg-muted px-1.5 font-mono text-3xs text-foreground" data-testid="builder-count">

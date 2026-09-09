@@ -1,5 +1,6 @@
 // UI state only (typescript rule 5): selected asset, expiry, feed pause, open dialog. Server data lives in
 // TanStack Query. Persisted keys survive a reload so the trader lands where they left off.
+import { emitTour } from "@/lib/tour";
 import type { Underlying } from "@hapiecoin/schema";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -142,6 +143,11 @@ export interface UiState {
   adminCols: Record<string, string[] | null>;
   /** Bumped by the palette's "Show announcements" (HC-SH-055); the flyer popup reopens every live banner. */
   flyersRequested: number;
+  /** Bumped by "Take a tour" (settings menu, palette); the tour starts on /analyse. */
+  tourRequested: number;
+  /** Bumped to open the assistant, optionally with a question to ask (palette, tour). */
+  assistantRequested: number;
+  assistantQuestion: string | null;
   /** Trading flow dialogs (HC-TR-050..057): null = closed; strategyId null = trade the Builder legs. */
   tradeFlow: { strategyId: string | null; mode?: "paper" | "live" | undefined } | null;
   /** Strategy Details dialog (HC-TR-068): the open strategy id or null. */
@@ -195,6 +201,8 @@ export interface UiState {
   setPaletteOpen: (open: boolean) => void;
   setAdminCols: (page: string, cols: string[] | null) => void;
   requestFlyers: () => void;
+  requestTour: () => void;
+  openAssistant: (question?: string) => void;
 }
 
 export const UI_STORAGE_KEY = "hapiecoin.ui";
@@ -217,6 +225,9 @@ export const useUiStore = create<UiState>()(
       lotsDefault: DEFAULT_LOTS,
       adminCols: {},
       flyersRequested: 0,
+      tourRequested: 0,
+      assistantRequested: 0,
+      assistantQuestion: null,
       optionDetail: null,
       strategy: emptyMetaByAsset(),
       drafts: [],
@@ -297,7 +308,10 @@ export const useUiStore = create<UiState>()(
       setChainColumns: (layout) => set({ chainColumns: normaliseLayout(layout) }),
       addLeg: (input) => {
         const result = addLegPure(get().legs[input.asset], input);
-        if (result.ok) set((s) => ({ legs: { ...s.legs, [input.asset]: result.legs } }));
+        if (result.ok) {
+          set((s) => ({ legs: { ...s.legs, [input.asset]: result.legs } }));
+          emitTour("leg-added"); // the tour's "add a leg" step advances (HC-SH-068)
+        }
         return result;
       },
       removeLeg: (asset, id) => set((s) => ({ legs: { ...s.legs, [asset]: removeLegPure(s.legs[asset], id) } })),
@@ -311,6 +325,8 @@ export const useUiStore = create<UiState>()(
       setPaletteOpen: (paletteOpen) => set({ paletteOpen }),
       setAdminCols: (page, cols) => set((s) => ({ adminCols: { ...s.adminCols, [page]: cols } })),
       requestFlyers: () => set((s) => ({ flyersRequested: s.flyersRequested + 1 })),
+      requestTour: () => set((s) => ({ tourRequested: s.tourRequested + 1 })),
+      openAssistant: (question) => set((s) => ({ assistantRequested: s.assistantRequested + 1, assistantQuestion: question ?? null })),
     }),
     {
       name: UI_STORAGE_KEY,

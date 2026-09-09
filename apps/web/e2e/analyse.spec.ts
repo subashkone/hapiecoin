@@ -518,3 +518,146 @@ test.describe("HC-SH-055 / HC-SH-056 flyer popup", () => {
     await expect(page.getByTestId("flyer")).toHaveAttribute("data-count", "2");
   });
 });
+
+test.describe("HC-SH-064..076 product tour", () => {
+  test.use({ tour: true });
+  test("starts once after sign-in, walks a real paper trade, remembers completion, replays from the settings menu", async ({ page, request }) => {
+    await seedUser(request, { email: "tour@example.com", plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" } });
+    await signIn(page, "tour@example.com");
+    await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 15_000 });
+    const tour = page.getByTestId("tour");
+    await expect(tour).toHaveAttribute("data-step", "1", { timeout: 10_000 }); // HC-SH-076 auto-start
+    await expect(page.getByTestId("tour-title")).toHaveText("Welcome to HapieCoin");
+    await expect(page.getByTestId("tour-next")).toHaveText("Start");
+    await expect(page.getByTestId("tour-prev")).toHaveCount(0);
+    await page.getByTestId("tour-next").click();
+    await expect(tour).toHaveAttribute("data-step", "2");
+    await expect(tour).toHaveAttribute("data-anchored", "true"); // HC-SH-064 cut-out around the asset picker
+    await expect(page.getByTestId("tour-ring")).toBeVisible();
+    await page.keyboard.press("ArrowRight");
+    await expect(tour).toHaveAttribute("data-step", "3");
+    await page.keyboard.press("ArrowLeft");
+    await expect(tour).toHaveAttribute("data-step", "2");
+    await page.getByTestId("tour-next").click();
+    await page.getByTestId("tour-next").click();
+    await expect(tour).toHaveAttribute("data-step", "4"); // HC-SH-068 do it: add a leg
+    await expect(page.getByTestId("tab-chain")).toHaveAttribute("data-state", "active");
+    const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
+    await page.locator(`[data-testid=chain-row-calls][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-buy-calls").click();
+    await expect(tour).toHaveAttribute("data-step", "5"); // advanced by the leg
+    await expect(page.getByTestId("tab-builder")).toHaveAttribute("data-state", "active"); // HC-SH-069
+    await page.getByTestId("tour-next").click();
+    await expect(tour).toHaveAttribute("data-target", "payoff-panel"); // HC-SH-070
+    await page.getByTestId("tour-next").click();
+    await expect(tour).toHaveAttribute("data-step", "7"); // HC-SH-071
+    await page.getByTestId("builder-paper-trade").click();
+    await expect(page.getByTestId("trade-mode")).toBeVisible();
+    await expect(tour).toHaveAttribute("data-step", "8");
+    await expect(page.getByTestId("tour-title")).toHaveText("Paper or Live");
+    await page.getByTestId("trade-continue").click();
+    await expect(page.getByTestId("trade-preview")).toBeVisible();
+    await expect(tour).toHaveAttribute("data-step", "9"); // HC-SH-073 review and start
+    await page.getByTestId("trade-now").click();
+    await expect(page.getByTestId("save-draft-dialog")).toBeVisible(); // unnamed → name dialog
+    await expect(tour).toHaveAttribute("data-step", "10"); // HC-SH-072
+    await page.getByTestId("save-draft-name").fill("Tour call");
+    await page.getByTestId("save-draft-confirm").click();
+    await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+    await expect(tour).toHaveAttribute("data-step", "11"); // HC-SH-074 paper tab
+    await expect(page.getByTestId("tab-paper")).toHaveAttribute("data-state", "active");
+    await page.getByTestId("tour-next").click();
+    await expect(tour).toHaveAttribute("data-target", "paper-pnl");
+    await expect(tour).toHaveAttribute("data-anchored", "true");
+    await page.getByTestId("tour-next").click();
+    await expect(tour).toHaveAttribute("data-target", "paper-stop");
+    await page.getByTestId("tour-next").click();
+    await expect(tour).toHaveAttribute("data-target", "settings-menu"); // HC-SH-075
+    await page.getByTestId("tour-next").click();
+    await expect(tour).toHaveAttribute("data-target", "chat-launcher");
+    await page.getByTestId("tour-next").click();
+    await expect(tour).toHaveAttribute("data-target", "command-palette"); // HC-SH-112
+    await expect(page.getByTestId("tour-progress")).toHaveText("16 / 16");
+    await expect(page.getByTestId("tour-next")).toHaveText("Done");
+    await page.getByTestId("tour-next").click();
+    await expect(tour).toHaveCount(0);
+    await expect(page.getByText("Tour complete")).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem("hapiecoin.tour"))).toBe("done");
+    // once only: a reload does not restart it; the settings menu replays it (HC-SH-076)
+    await page.reload();
+    await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 }); // the Paper tab is the remembered tab
+    await page.waitForTimeout(2500);
+    await expect(tour).toHaveCount(0);
+    await page.getByTestId("settings-gear").click();
+    await page.getByTestId("menu-tour").click();
+    await expect(tour).toHaveAttribute("data-step", "1");
+    await page.keyboard.press("Escape");
+    await expect(tour).toHaveCount(0);
+    // the palette replays it too
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox").fill("take a tour");
+    await page.keyboard.press("Enter");
+    await expect(tour).toHaveAttribute("data-step", "1");
+    await page.getByTestId("tour-close").click();
+    await expect(tour).toHaveCount(0);
+  });
+});
+
+test.describe("HC-SH-057..063 / HC-SH-110 assistant", () => {
+  test("answers platform questions, explains the Builder legs, keeps its dragged position, hands off to email", async ({ page, request }) => {
+    await seedUser(request, { email: "chat@example.com" });
+    await signIn(page, "chat@example.com");
+    await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 15_000 });
+    const launcher = page.getByTestId("assistant-launcher");
+    await expect(launcher).toBeVisible();
+    await launcher.click();
+    const panel = page.getByTestId("assistant-panel");
+    await expect(panel).toBeVisible();
+    await expect(page.getByTestId("assistant-mode")).toContainText("Platform help");
+    await expect(page.getByTestId("assistant-chip")).toHaveCount(4);
+    await expect(page.getByTestId("assistant-chip").first()).toHaveText("Explain this strategy");
+    await page.getByTestId("assistant-chip").first().click();
+    await expect(page.getByTestId("assistant-msg-bot").last()).toContainText("no legs in the Builder yet", { timeout: 10_000 });
+    await expect(page.getByTestId("assistant-email")).toHaveAttribute("href", "mailto:support@hapiecoin.com");
+    await expect(panel).toHaveAttribute("data-typing", "false", { timeout: 10_000 });
+    await page.getByTestId("assistant-input").fill("what is probability of profit");
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("assistant-msg-bot").last()).toContainText("statistical estimate", { timeout: 10_000 });
+    await page.keyboard.press("Escape");
+    await expect(panel).toHaveCount(0);
+    // a leg in the Builder makes the explainer real
+    const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
+    await page.locator(`[data-testid=chain-row-calls][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-buy-calls").click();
+    await page.getByTestId("tab-builder").click();
+    await expect(page.getByTestId("payoff-panel")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await launcher.click();
+    await expect(page.getByTestId("assistant-msg-me")).toHaveCount(2); // conversation kept
+    await expect(panel).toHaveAttribute("data-typing", "false");
+    await page.getByTestId("assistant-explain").click();
+    const last = page.getByTestId("assistant-msg-bot").last();
+    await expect(last).toContainText("not financial advice", { timeout: 10_000 });
+    await expect(last).toContainText("Buy 100 ×");
+    await expect(last).toContainText("Max profit");
+    await expect(last).toContainText("Probability of profit");
+    await page.getByTestId("assistant-close").click();
+    // drag the bubble; the position survives a reload (HC-SH-058)
+    const box = (await launcher.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x - 300, box.y - 200, { steps: 8 });
+    await page.mouse.up();
+    await expect(panel).toHaveCount(0); // a drag is not a click
+    const moved = (await launcher.boundingBox())!;
+    expect(moved.x).toBeLessThan(box.x - 200);
+    await page.reload();
+    await expect(launcher).toBeVisible();
+    const after = (await launcher.boundingBox())!;
+    expect(Math.abs(after.x - moved.x)).toBeLessThan(2);
+    // the palette opens it
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox").fill("assistant");
+    await page.keyboard.press("Enter");
+    await expect(panel).toBeVisible();
+  });
+});

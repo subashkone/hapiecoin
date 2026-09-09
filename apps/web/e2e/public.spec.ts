@@ -20,6 +20,59 @@ test.describe("HC-PB landing and public pages", () => {
     expect(res.headers()["x-content-type-options"]).toBe("nosniff");
   });
 
+  test("HC-SH-057 / HC-SH-063 visitor mode: the assistant is on the landing page with limited answers", async ({ page }) => {
+    await page.goto("/");
+    await page.getByTestId("assistant-launcher").click();
+    await expect(page.getByTestId("assistant-mode")).toContainText("visitor mode");
+    await expect(page.getByTestId("assistant-chip")).toHaveCount(4);
+    await expect(page.getByTestId("assistant-chip").first()).toHaveText("How do I add a leg from the chain?");
+    await page.getByTestId("assistant-chip").nth(2).click();
+    await expect(page.getByTestId("assistant-msg-bot").last()).toContainText("sign in for help with your own strategies", { timeout: 10_000 });
+    await page.getByTestId("assistant-close").click();
+    await expect(page.getByTestId("assistant-panel")).toHaveCount(0);
+  });
+
+  test("HC-PB-042..051 payoff chart preview: presets, legend, zoom, layers, sliders and summary", async ({ page }) => {
+    await page.goto("/payoff-preview");
+    await expect(page).toHaveTitle(/Payoff chart preview/);
+    const root = page.getByTestId("payoff-preview");
+    await expect(page.getByTestId("pp-preset")).toHaveCount(4);
+    await expect(page.getByTestId("pp-summary")).toContainText("@ $100k (+0.0%)");
+    await expect(page.getByTestId("pp-pill")).toHaveText("Profit: $1.2k");
+    await expect(page.getByTestId("pp-sd")).toContainText("Expected move by target date (15d)");
+    await page.getByTestId("pp-zoom-in").click();
+    await expect(root).toHaveAttribute("data-zoom", "125");
+    await page.getByTestId("pp-zoom-label").click();
+    await expect(root).toHaveAttribute("data-zoom", "100");
+    await page.getByTestId("pp-layers-button").click();
+    await expect(page.getByTestId("pp-layers")).toBeVisible();
+    await page.getByTestId("pp-layer-oi").click();
+    await expect(page.getByTestId("pp-legend-item").nth(4)).toHaveAttribute("data-on", "false");
+    await page.mouse.click(10, 300);
+    await expect(page.getByTestId("pp-layers")).toHaveCount(0);
+    await page.getByTestId("pp-legend-item").first().click();
+    await expect(page.getByTestId("pp-legend-item").first()).toHaveAttribute("data-on", "false");
+    await page.getByTestId("pp-target-plus").click();
+    await expect(page.getByTestId("pp-target-value")).toHaveText("$100,500");
+    await expect(page.getByTestId("pp-target-pct")).toHaveText("+0.5%");
+    await page.getByTestId("pp-day-prev").click();
+    await expect(root).toHaveAttribute("data-day", "14");
+    await expect(page.getByTestId("pp-summary")).toContainText("14D:");
+    await page.getByTestId("pp-preset").nth(1).click();
+    await expect(page.getByTestId("pp-pill")).toHaveText("Loss: $1.5k");
+    await expect(page.getByTestId("pp-target-value")).toHaveText("$100,000"); // preset switch resets the target
+    // hover readout over the plot
+    const box = (await page.locator("[data-testid=payoff-preview] canvas").boundingBox())!;
+    await page.mouse.move(box.x + box.width * 0.7, box.y + box.height / 2);
+    await expect(page.getByTestId("pp-hover")).toContainText("Expiry");
+    // reachable from the palette while signed out (HC-PB-059)
+    await page.goto("/");
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox").fill("payoff");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/payoff-preview/);
+  });
+
   test("HC-PB-009 live market tiles connect and show prices", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByTestId("live-badge")).toContainText("Live", { timeout: 15_000 });

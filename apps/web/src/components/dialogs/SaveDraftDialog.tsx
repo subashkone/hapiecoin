@@ -2,6 +2,7 @@
 // Save as Draft / Enter Strategy Name (HC-TR-036): one input, Enter saves, Escape cancels, empty name refused.
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input } from "@hapiecoin/ui";
 import { useEffect, useState } from "react";
+import { emitTour } from "@/lib/tour";
 
 export interface SaveDraftDialogProps {
   open: boolean;
@@ -13,6 +14,9 @@ export interface SaveDraftDialogProps {
 }
 
 export function SaveDraftDialog({ open, onOpenChange, initialName, intent, onSave }: SaveDraftDialogProps) {
+  useEffect(() => {
+    if (open) emitTour("save-dialog-open"); // the tour's "start a paper trade" step advances (HC-SH-071)
+  }, [open]);
   const [name, setName] = useState(initialName);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {

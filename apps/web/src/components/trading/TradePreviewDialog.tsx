@@ -3,7 +3,9 @@
 // spot, margin estimate, then "Trade now".
 import type { Broker, LivePreview, Underlying } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn } from "@hapiecoin/ui";
+import { useEffect } from "react";
 import { fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
+import { emitTour } from "@/lib/tour";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
 import type { FeeEstimate } from "@/lib/strategy/paper";
 import { type TradeLegView, feeLine, netPremium } from "./TradeModeDialog";
@@ -33,12 +35,15 @@ export function legLabel(l: TradeLegView): string {
 }
 
 export function TradePreviewDialog(p: TradePreviewProps) {
+  useEffect(() => {
+    if (p.open) emitTour("trade-preview-open"); // the tour's "paper or live" step advances (HC-SH-072)
+  }, [p.open]);
   const lot = Number(p.lotSize);
   const np = netPremium(p.legs, p.lotSize);
   const net = np - p.fees.total;
   return (
     <Dialog open={p.open} onOpenChange={p.onOpenChange}>
-      <DialogContent className="sm:max-w-[640px]" data-testid="trade-preview" data-tour="trade-modal">
+      <DialogContent className="sm:max-w-[640px]" data-testid="trade-preview" data-tour="trade-preview">
         <DialogHeader>
           <DialogTitle>Trade Preview</DialogTitle>
           <DialogDescription>Review your strategy before trading</DialogDescription>

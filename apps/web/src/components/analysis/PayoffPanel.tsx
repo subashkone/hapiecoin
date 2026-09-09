@@ -100,7 +100,7 @@ export function PayoffPanel() {
 
   if (legs.length === 0) {
     return (
-      <div className="flex h-full flex-col" data-testid="payoff-panel" data-state="empty">
+      <div className="flex h-full flex-col" data-testid="payoff-panel" data-tour="payoff-panel" data-state="empty">
         <EmptyState
           title="No strategy yet"
           description="Add legs from the chain (hover a row and press B or S), pick a template, or open the Builder."
@@ -130,7 +130,7 @@ export function PayoffPanel() {
   const spotZone = result && spot !== null ? spotZoneAt(result, spot, money) : null;
 
   return (
-    <div className="flex h-full min-h-0 flex-col" data-testid="payoff-panel" data-state={result ? "ready" : a.error ? "error" : "pending"}>
+    <div className="flex h-full min-h-0 flex-col" data-testid="payoff-panel" data-tour="payoff-panel" data-state={result ? "ready" : a.error ? "error" : "pending"}>
       <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3" data-testid="payoff-tiles">
         <Tile label="Max profit" value={result ? fmtMoney(result.maxProfit, money, { unlimited: "Unlimited" }) : "—"} sub={where(maxPAt)} tone="profit" testId="tile-max-profit" title="Highest P&L at expiry over the price axis" />
         <Tile label="Max loss" value={result ? fmtMoney(result.maxLoss, money, { unlimited: "Unlimited" }) : "—"} sub={where(maxLAt)} tone="loss" testId="tile-max-loss" title="Lowest P&L at expiry over the price axis" />

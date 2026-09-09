@@ -163,7 +163,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                       <div className="micro flex flex-wrap gap-2"><span className="rounded border border-border px-1">{s.asset}</span><span><b>{open.length}</b>/{s.legs.length} legs</span><span><b>{daysOf(s)}</b> days</span>{s.templateName ? <span>{s.templateName}</span> : null}</div>
                     </div>
                     <div className="ml-auto text-right">
-                      <div className={cn("num text-[15px] font-medium", p.total >= 0 ? "text-profit" : "text-loss")} data-testid="card-pnl">{fmtMoney(p.total, money, { signed: true })}</div>
+                      <div className={cn("num text-[15px] font-medium", p.total >= 0 ? "text-profit" : "text-loss")} data-testid="card-pnl" data-tour="paper-pnl">{fmtMoney(p.total, money, { signed: true })}</div>
                       <div className="micro">unreal {fmtMoney(p.unrealized, money, { signed: true })} · real {fmtMoney(p.realized, money, { signed: true })}</div>
                     </div>
                   </div>

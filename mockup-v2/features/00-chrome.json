@@ -197,7 +197,7 @@
     "feature": "Section 'Support': Email Us (mailto:support@hapiecoin.com), WhatsApp Us (wa.me/919684022369, new tab)",
     "how": "External links with rel=noopener",
     "status": "working",
-    "evidence": "bundle strings: Support, Email Us, WhatsApp Us"
+    "evidence": "bundle strings: Support, Email Us, WhatsApp Us — Phase 4 item 5a (09 Sep 2026, ADR-036): SettingsMenu Support section (Email Us mailto, WhatsApp, Telegram links) verified in settings.spec / analyse.spec; assistant footer repeats the support email (assistant-email)"
   },
   {
     "route": "/analyse",
@@ -405,7 +405,7 @@
     "feature": "Free: 'Your free plan is active.' + Upgrade",
     "how": "Shown when planId is p_free / status free",
     "status": "working",
-    "evidence": "bundle strings: Your free plan is active., Upgrade"
+    "evidence": "bundle strings: Your free plan is active., Upgrade — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: PlanBanner bannerFor(free) → 'Your free plan is active.' + Upgrade → /subscription (PlanBanner.test.tsx)"
   },
   {
     "route": "/analyse",
@@ -413,7 +413,7 @@
     "feature": "Expiring: 'Your plan expires soon — N days left.' + Renew Plan",
     "how": "Shown when expiresAt is within 7 days of CG.NOW",
     "status": "working",
-    "evidence": "bundle strings: Your plan expires soon — ,  left."
+    "evidence": "bundle strings: Your plan expires soon — ,  left. — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: PlanBanner bannerFor(expiring_soon) → 'Your plan expires soon — N days left.' + Renew Plan (PlanBanner.test.tsx)"
   },
   {
     "route": "/analyse",
@@ -453,7 +453,7 @@
     "feature": "Floating 40px chat bubble bottom-right on every screen, docked above the portfolio bar on /analyse (bottom 56px)",
     "how": "CSS var --cgc-dock set on route; data-tour=chat-launcher",
     "status": "working",
-    "evidence": "bundle strings: Ask HapieCoin Assistant (drag to move), chat-launcher"
+    "evidence": "bundle strings: Ask HapieCoin Assistant (drag to move), chat-launcher — Phase 4 item 5a (09 Sep 2026, ADR-036): Assistant launcher mounted in Providers on every route, bottom 56 px on /analyse (assistant-launcher, data-tour=chat-launcher)"
   },
   {
     "route": "/analyse",
@@ -461,7 +461,7 @@
     "feature": "Drag to move (pointer events) with remembered position",
     "how": "Drag > 5px moves the button (clamped to viewport) and stores position in localStorage; a plain click toggles the panel",
     "status": "working",
-    "evidence": "bundle string: drag to move"
+    "evidence": "bundle string: drag to move — Phase 4 item 5a (09 Sep 2026, ADR-036): pointer-capture drag with a 5 px threshold; position saved to hapiecoin.assistant-pos and restored on load (Assistant.test.tsx, analyse.spec assistant)"
   },
   {
     "route": "/analyse",
@@ -469,7 +469,7 @@
     "feature": "Panel header 'HapieCoin Assistant · Platform help · not financial advice' (or visitor mode) with an 'Explain this strategy' quick-action button on /analyse",
     "how": "Subtitle depends on CG.state.loggedIn",
     "status": "working",
-    "evidence": "bundle strings: HapieCoin Assistant, Platform help · not financial advice, Limited visitor mode · log in for full support"
+    "evidence": "bundle strings: HapieCoin Assistant, Platform help · not financial advice, Limited visitor mode · log in for full support — Phase 4 item 5a (09 Sep 2026, ADR-036): assistant-mode reads 'Platform help · not financial advice' signed in and 'Limited visitor mode · sign in for full support' signed out"
   },
   {
     "route": "/analyse",
@@ -477,7 +477,7 @@
     "feature": "Greeting 'Hi! Ask me anything about using HapieCoin — or try one of these:' + 4 suggestion chips",
     "how": "Chips send the question immediately",
     "status": "working",
-    "evidence": "bundle string: Hi! Ask me anything about using HapieCoin — or try one of these:"
+    "evidence": "bundle string: Hi! Ask me anything about using HapieCoin — or try one of these: — Phase 4 item 5a (09 Sep 2026, ADR-036): greeting with four chips from suggestionsFor(): 'Explain this strategy' first on /analyse (assistant-chip)"
   },
   {
     "route": "/analyse",
@@ -485,7 +485,7 @@
     "feature": "Input 'Ask a question…' + Send; mock streamed answers",
     "how": "Keyword matching over 11 canned answers (legs/chain, POP, connect Delta, mark vs bid/ask, paper trades, templates, Greeks, margin, lot size, plans, currency) typed out over ~1.5s; fallback answer otherwise; visitor note when logged out",
     "status": "working",
-    "evidence": "bundle strings: Ask a question…, Send, submit"
+    "evidence": "bundle strings: Ask a question…, Send, submit — Phase 4 item 5a (09 Sep 2026, ADR-036): assistant-input + Send; answers typed in 33 ms slices from answerFor() (lib/assistant.ts), Send disabled while typing"
   },
   {
     "route": "/analyse",
@@ -493,7 +493,7 @@
     "feature": "Footer 'Need a human? Email' (mailto:support@hapiecoin.com, new tab)",
     "how": "External mailto link with rel=noreferrer",
     "status": "working",
-    "evidence": "bundle strings: Need a human?, Email, _blank, noreferrer"
+    "evidence": "bundle strings: Need a human?, Email, _blank, noreferrer — Phase 4 item 5a (09 Sep 2026, ADR-036): assistant-email mailto:support@hapiecoin.com opens in a new tab"
   },
   {
     "route": "/analyse",
@@ -501,7 +501,7 @@
     "feature": "Close button / Escape closes the panel",
     "how": "Panel removed; conversation kept for the session",
     "status": "working",
-    "evidence": "bundle string: Close"
+    "evidence": "bundle string: Close — Phase 4 item 5a (09 Sep 2026, ADR-036): assistant-close and Escape close the panel; the transcript is kept for the session and cleared on route change or sign-out"
   },
   {
     "route": "/analyse",
@@ -509,7 +509,7 @@
     "feature": "driver.js-style overlay with cut-out around the target (SVG mask) + highlight ring + popover (title, description, 'x of N', Previous / Next / Done, close)",
     "how": "CG.chrome.startTour(); targets located by [data-tour=…]; popover centred when the target is not in the DOM; keyboard ← → Esc",
     "status": "working",
-    "evidence": "bundle strings: driver-popover, {{current}} of {{total}}, Previous, Next, Done"
+    "evidence": "bundle strings: driver-popover, {{current}} of {{total}}, Previous, Next, Done — Phase 4 item 5a (09 Sep 2026, ADR-036): TourOverlay: SVG mask cut-out with 6 px pad, accent ring (tour-ring), popover placed below/above/beside (tour-popover) with Previous / Next / progress"
   },
   {
     "route": "/analyse",
@@ -517,7 +517,7 @@
     "feature": "Step 1 'Welcome to HapieCoin' (Start button, no target)",
     "how": "Text from the bundle",
     "status": "working",
-    "evidence": "bundle strings: Welcome to HapieCoin, Let's place a real paper trade together…, Start"
+    "evidence": "bundle strings: Welcome to HapieCoin, Let's place a real paper trade together…, Start — Phase 4 item 5a (09 Sep 2026, ADR-036): TOUR_STEPS[0] centred welcome with the Start button (tour-next 'Start', data-anchored=false)"
   },
   {
     "route": "/analyse",
@@ -525,7 +525,7 @@
     "feature": "Step 2 'Choose your asset' (asset-select)",
     "how": "Highlights the asset selector",
     "status": "working",
-    "evidence": "bundle strings: asset-select, Choose your asset"
+    "evidence": "bundle strings: asset-select, Choose your asset — Phase 4 item 5a (09 Sep 2026, ADR-036): TOUR_STEPS[1] targets data-tour=asset-select on the header asset picker"
   },
   {
     "route": "/analyse",
@@ -533,7 +533,7 @@
     "feature": "Step 3 'Your workspaces' (options-chain)",
     "how": "Highlights the workspace / chain area; emits tour-step with tab 'options-chain'",
     "status": "working",
-    "evidence": "bundle strings: Your workspaces, options-chain"
+    "evidence": "bundle strings: Your workspaces, options-chain — Phase 4 item 5a (09 Sep 2026, ADR-036): TOUR_STEPS[2] targets data-tour=options-chain on the Chain tab and switches to it"
   },
   {
     "route": "/analyse",
@@ -541,7 +541,7 @@
     "feature": "Step 4 'Add a leg — try it now' (advances on 'cg-tour:leg-added')",
     "how": "Waits for the analyse screen to emit CG.emit('cg-tour:leg-added'); Next also works",
     "status": "working",
-    "evidence": "bundle strings: Add a leg — try it now, cg-tour:leg-added"
+    "evidence": "bundle strings: Add a leg — try it now, cg-tour:leg-added — Phase 4 item 5a (09 Sep 2026, ADR-036): TOUR_STEPS[3] waits for hc-tour:leg-added, emitted from the store's addLeg (analyse.spec tour adds a call from the chain)"
   },
   {
     "route": "/analyse",
@@ -549,7 +549,7 @@
     "feature": "Step 5 'Your strategy legs' (strategy-legs, tab builder)",
     "how": "Highlights the legs panel",
     "status": "working",
-    "evidence": "bundle strings: strategy-legs, builder, Your strategy legs"
+    "evidence": "bundle strings: strategy-legs, builder, Your strategy legs — Phase 4 item 5a (09 Sep 2026, ADR-036): TOUR_STEPS[4] targets strategy-legs (alt add-leg-button) and switches to the Builder tab"
   },
   {
     "route": "/analyse",
@@ -557,7 +557,7 @@
     "feature": "Step 6 'Payoff and analytics' (payoff-panel)",
     "how": "Highlights the payoff panel",
     "status": "working",
-    "evidence": "bundle strings: payoff-panel, Payoff and analytics"
+    "evidence": "bundle strings: payoff-panel, Payoff and analytics — Phase 4 item 5a (09 Sep 2026, ADR-036): TOUR_STEPS[5] targets data-tour=payoff-panel on both PayoffPanel roots"
   },
   {
     "route": "/analyse",
@@ -565,7 +565,7 @@
     "feature": "Step 7 'Start a paper trade' (paper-trade-button, advances on 'cg-tour:save-dialog-open')",
     "how": "Highlights the Paper Trade button",
     "status": "working",
-    "evidence": "bundle strings: paper-trade-button, Start a paper trade, cg-tour:save-dialog-open"
+    "evidence": "bundle strings: paper-trade-button, Start a paper trade, cg-tour:save-dialog-open — Phase 4 item 5a (09 Sep 2026, ADR-036): TOUR_STEPS[6] targets paper-trade-button and waits for hc-tour:trade-mode-open (TradeModeDialog on open); HapieCoin shows the mode dialog first, so step 8 'Paper or Live' targets trade-modal and waits for trade-preview-open"
   },
   {
     "route": "/analyse",
@@ -573,7 +573,7 @@
     "feature": "Step 8 'Name your strategy' (save-dialog, advances on 'cg-tour:trade-modal-open')",
     "how": "Popover above the modal (z-index 150)",
     "status": "working",
-    "evidence": "bundle strings: save-dialog, save-button, Name your strategy, cg-tour:trade-modal-open"
+    "evidence": "bundle strings: save-dialog, save-button, Name your strategy, cg-tour:trade-modal-open — Phase 4 item 5a (09 Sep 2026, ADR-036): TOUR_STEPS[9] 'Name your strategy' targets save-dialog (SaveDraftDialog emits hc-tour:save-dialog-open when it opens after Trade now on an unnamed strategy) and waits for paper-started"
   },
   {
     "route": "/analyse",
@@ -581,15 +581,15 @@
     "feature": "Step 9 'Review and start' (trade-modal, advances on 'cg-tour:paper-started')",
     "how": "Highlights the trade preview modal",
     "status": "working",
-    "evidence": "bundle strings: trade-modal, trade-confirm-button, Review and start, cg-tour:paper-started"
+    "evidence": "bundle strings: trade-modal, trade-confirm-button, Review and start, cg-tour:paper-started — Phase 4 item 5a (09 Sep 2026, ADR-036): TOUR_STEPS[8] 'Review and start' targets trade-preview (TradePreviewDialog emits trade-preview-open on open) and waits for save-dialog-open (+1) or hc-tour:paper-started from TradeFlow (+2, named strategy)"
   },
   {
     "route": "/analyse",
     "screen": "Shared chrome · Product tour",
     "feature": "Steps 10–12 'Your trade is running' (paper-tab), 'Track P&L and details' (paper-pnl), 'Stop a paper trade' (paper-stop)",
     "how": "Emit tour-step with tab 'paper' so the workspace can switch tabs; 'Stop a paper trade' has no description in the bundle — a short one was written",
-    "status": "inferred",
-    "evidence": "bundle strings: paper-tab, paper-pnl, paper-stop + titles/descriptions"
+    "status": "working",
+    "evidence": "bundle strings: paper-tab, paper-pnl, paper-stop + titles/descriptions — Phase 4 item 5a (09 Sep 2026, ADR-036): TOUR_STEPS[10..12] paper-tab (Workspace tab), paper-pnl (card-pnl), paper-stop; each switches to the Paper tab"
   },
   {
     "route": "/analyse",
@@ -597,7 +597,7 @@
     "feature": "Steps 13–15 'Settings' (settings-menu), 'Ask the HapieCoin Assistant' (chat-launcher) and 'Command palette' (command-palette)",
     "how": "Highlights the gear and the floating chat button; Done closes with a toast",
     "status": "working",
-    "evidence": "bundle strings: settings-menu, Settings, chat-launcher, Ask the HapieCoin Assistant"
+    "evidence": "bundle strings: settings-menu, Settings, chat-launcher, Ask the HapieCoin Assistant — Phase 4 item 5a (09 Sep 2026, ADR-036): TOUR_STEPS[13..15] settings-menu (gear), chat-launcher (assistant), command-palette (palette button); Done closes with the 'Tour complete' toast"
   },
   {
     "route": "/analyse",
@@ -605,7 +605,7 @@
     "feature": "Auto-start once on /analyse (CG.state.tourDone) after the flyer popup closes; 'Take a tour' restarts; navigates to /analyse first if started elsewhere",
     "how": "cg_tour_done equivalent persisted in CG.state via CG.saveState()",
     "status": "working",
-    "evidence": "bundle strings: cg_tour_done, Take a tour"
+    "evidence": "bundle strings: cg_tour_done, Take a tour — Phase 4 item 5a (09 Sep 2026, ADR-036): Tour mount: starts 1.2 s after landing on /analyse signed in, waits while a flyer is open, records hapiecoin.tour=done; replay via menu-tour 'Take a tour' and palette act:tour (analyse.spec tour, Tour.test.tsx)"
   },
   {
     "route": "/analyse",
@@ -910,7 +910,7 @@
     "feature": "“Explain this strategy” quick action (header sparkle button, first suggestion chip on /analyse, palette command) summarises CG.analyse.legs",
     "how": "CG.chrome.explainStrategy(): classifies the legs (CG.chrome.strategyName), lists legs, net debit/credit, max profit/loss, breakevens with % from spot, POP, reward:risk, margin, Greeks and a bias / risk / theta read-out from CG.analyze",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5a (09 Sep 2026, ADR-036): assistant-explain header button and the first chip on /analyse call explainStrategy() on the live useStrategyAnalysis('builder') result: legs, net credit/debit, max profit/loss, breakevens with % from spot, POP, Greeks, bias/risk/theta read",
     "new": true
   },
   {
@@ -919,7 +919,7 @@
     "feature": "New canned answers for alerts, shortcuts / palette and density",
     "how": "",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5a (09 Sep 2026, ADR-036): ANSWERS covers alerts, shortcuts/palette, density (with lots), templates, Greeks, margin, plans, currency, expiry; all copy is HapieCoin's own (assistant.test.ts asserts no competitor name)",
     "new": true
   },
   {
@@ -928,7 +928,7 @@
     "feature": "Step 15 'Command palette' targets the Ctrl K button (data-tour=command-palette)",
     "how": "CG.chrome.TOUR_STEPS.length === 15",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5a (09 Sep 2026, ADR-036): TOUR_STEPS[15] targets data-tour=command-palette on the header palette button (PaletteButton)",
     "new": true
   },
   {
