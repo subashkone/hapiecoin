@@ -168,6 +168,8 @@ export interface UiState {
   targetDays: number;
   /** Adjustment workbench draft (ADR-044, HC-TR-148): the strategy being adjusted and its proposed changes. Not persisted. */
   adjust: AdjustDraft | null;
+  /** "Alert me if max loss exceeds X" saved from the workbench (ADR-044 extra 5); armed when Alerts (Phase 5 item 2) ship. Persisted. */
+  riskAlerts: RiskAlert[];
   setAsset: (asset: Underlying) => void;
   /** Replace the asset's legs (templates, drafts, Clear); returns false when over the limit. */
   setLegs: (asset: Underlying, legs: StrategyLeg[]) => boolean;
@@ -213,6 +215,27 @@ export interface UiState {
   openAdjust: (strategyId: string) => void;
   closeAdjust: () => void;
   updateAdjust: (fn: (draft: AdjustDraft) => AdjustDraft) => void;
+  addRiskAlert: (strategyId: string, maxLoss: number) => RiskAlert;
+  removeRiskAlert: (id: string) => void;
+}
+
+export interface RiskAlert {
+  id: string;
+  strategyId: string;
+  /** Alert when the position's max loss (USD, negative) falls below this. */
+  maxLoss: number;
+  createdAt: number;
+}
+
+function normaliseRiskAlerts(input: unknown): RiskAlert[] {
+  if (!Array.isArray(input)) return [];
+  const out: RiskAlert[] = [];
+  for (const x of input) {
+    if (typeof x !== "object" || x === null) continue;
+    const a = x as Partial<RiskAlert>;
+    if (typeof a.id === "string" && typeof a.strategyId === "string" && typeof a.maxLoss === "number" && Number.isFinite(a.maxLoss)) out.push({ id: a.id, strategyId: a.strategyId, maxLoss: a.maxLoss, createdAt: typeof a.createdAt === "number" ? a.createdAt : 0 });
+  }
+  return out;
 }
 
 export const UI_STORAGE_KEY = "hapiecoin.ui";
@@ -253,6 +276,7 @@ export const useUiStore = create<UiState>()(
       targetPrice: null,
       targetDays: 0,
       adjust: null,
+      riskAlerts: [],
       setAsset: (asset) => set({ asset, targetPrice: null }),
       setLegs: (asset, legs) => {
         const open = legs.filter((l) => l.status === "open");
@@ -344,6 +368,13 @@ export const useUiStore = create<UiState>()(
       openAdjust: (strategyId) => set({ adjust: newDraft(strategyId), paneSource: { kind: "strategy", id: strategyId }, detailsId: null }),
       closeAdjust: () => set({ adjust: null }),
       updateAdjust: (fn) => set((s) => (s.adjust ? { adjust: fn(s.adjust) } : {})),
+      addRiskAlert: (strategyId, maxLoss) => {
+        const alert: RiskAlert = { id: `ra_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`, strategyId, maxLoss: -Math.abs(maxLoss), createdAt: Date.now() };
+        // one alert per strategy: a new threshold replaces the old one
+        set((s) => ({ riskAlerts: [...s.riskAlerts.filter((a) => a.strategyId !== strategyId), alert] }));
+        return alert;
+      },
+      removeRiskAlert: (id) => set((s) => ({ riskAlerts: s.riskAlerts.filter((a) => a.id !== id) })),
     }),
     {
       name: UI_STORAGE_KEY,
@@ -364,6 +395,7 @@ export const useUiStore = create<UiState>()(
         analysisTab: s.analysisTab,
         targetDays: s.targetDays,
         templatesStrip: s.templatesStrip,
+        riskAlerts: s.riskAlerts,
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<UiState>;
@@ -391,6 +423,7 @@ export const useUiStore = create<UiState>()(
           targetPrice: null,
           targetDays: typeof p.targetDays === "number" && p.targetDays >= 0 ? Math.round(p.targetDays) : 0,
           adjust: null,
+          riskAlerts: normaliseRiskAlerts(p.riskAlerts),
         };
       },
     },

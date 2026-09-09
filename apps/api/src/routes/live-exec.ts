@@ -5,7 +5,7 @@
  * Routes call these; nothing here is reachable without a signed-in user's own vault credential.
  */
 import { type LivePreview, type LivePreviewLeg, type StrategyOrder, toDecimal } from "@hapiecoin/schema";
-import { type DeltaCredentials, type PlaceOrderResult, contractsFor } from "@hapiecoin/venues";
+import { type DeltaCredentials, type PlaceOrderResult, contractsFor, roundToTick } from "@hapiecoin/venues";
 import { and, eq } from "drizzle-orm";
 import { brokerCredentials, brokers, type strategies, strategyLegs, strategyOrders, userSettings, users } from "../db/schema.js";
 import type { SessionUser } from "../security/context.js";
@@ -61,6 +61,8 @@ export function toOrder(o: OrderRow): StrategyOrder {
     legId: o.legId,
     purpose: o.purpose,
     batchId: o.batchId,
+    orderType: o.orderType,
+    limitPrice: o.limitPrice,
     clientOrderId: o.clientOrderId,
     venueOrderId: o.venueOrderId,
     symbol: o.symbol,
@@ -157,10 +159,12 @@ function describeResult(r: PlaceOrderResult): string {
 }
 
 /**
- * Place a market order per leg (entry or adjustment) and record it; fills set the leg's entry premium.
- * Never throws for a venue refusal: failed legs stay open with a `failed` order the user can retry.
+ * Place an order per leg (entry or adjustment) and record it; fills set the leg's entry premium. Market by default;
+ * with `orderType` "limit" a leg that has an `expected` mark is sent as a limit at that mark and may rest open
+ * (pending) until sync reconciles it. Never throws for a venue refusal: failed legs stay open with a `failed`
+ * order the user can retry.
  */
-export async function placeEntries(deps: AppDeps, creds: DeltaCredentials, strategy: StrategyRow, legs: readonly LegRow[], plan: readonly LivePreviewLeg[], batchId: string, purpose: "entry" | "adjustment", expected: Record<string, string>): Promise<PlacementOutcome> {
+export async function placeEntries(deps: AppDeps, creds: DeltaCredentials, strategy: StrategyRow, legs: readonly LegRow[], plan: readonly LivePreviewLeg[], batchId: string, purpose: "entry" | "adjustment", expected: Record<string, string>, orderType: "market" | "limit" = "market"): Promise<PlacementOutcome> {
   const out: PlacementOutcome = { filled: 0, pending: 0, failed: 0, errors: [] };
   const band = deps.config.trading.markBandPct / 100;
   for (const l of legs) {
@@ -181,8 +185,10 @@ export async function placeEntries(deps: AppDeps, creds: DeltaCredentials, strat
     const attempt = await nextAttempt(deps, l.id);
     const clientOrderId = `hc-${l.id}-${attempt}`;
     const product = await deps.trading.getProduct(l.symbol);
-    const result = await deps.trading.placeOrder(creds, { productId: product.id, size: p.contracts, side: l.side, clientOrderId, reduceOnly: false });
-    await applyEntryResult(deps, strategy, l, batchId, purpose, clientOrderId, p, result, out, attempt);
+    // a limit rests at the reviewed mark, snapped onto the product's tick toward the passive side
+    const limit = orderType === "limit" && exp !== undefined ? roundToTick(exp, product.tickSize, l.side) : null;
+    const result = await deps.trading.placeOrder(creds, { productId: product.id, size: p.contracts, side: l.side, clientOrderId, reduceOnly: false, ...(limit === null ? {} : { orderType: "limit", limitPrice: limit }) });
+    await applyEntryResult(deps, strategy, l, batchId, purpose, clientOrderId, p, result, out, attempt, limit === null ? "market" : "limit", limit);
   }
   return out;
 }
@@ -192,35 +198,35 @@ async function nextAttempt(deps: AppDeps, legId: string): Promise<number> {
   return rows.reduce((m, r) => Math.max(m, r.attempts), 0) + 1;
 }
 
-async function recordOrder(deps: AppDeps, strategy: StrategyRow, leg: LegRow, batchId: string, purpose: "entry" | "exit" | "adjustment", clientOrderId: string, plan: LivePreviewLeg, venue: { id: number; fill: string | null } | null, state: OrderRow["state"], error: string | null, attempts = 1): Promise<void> {
+async function recordOrder(deps: AppDeps, strategy: StrategyRow, leg: LegRow, batchId: string, purpose: "entry" | "exit" | "adjustment", clientOrderId: string, plan: LivePreviewLeg, venue: { id: number; fill: string | null } | null, state: OrderRow["state"], error: string | null, attempts = 1, orderType: "market" | "limit" = "market", limitPrice: string | null = null): Promise<void> {
   const product = plan.contracts === null ? null : await deps.trading.getProduct(leg.symbol).catch(() => null);
   await deps.db
     .insert(strategyOrders)
-    .values({ id: newId("ord"), strategyId: strategy.id, legId: leg.id, batchId, purpose, clientOrderId, venueOrderId: venue ? String(venue.id) : null, productId: product?.id ?? 0, symbol: leg.symbol, side: leg.side, size: plan.contracts ?? 0, state, fillPrice: venue?.fill ?? null, error, attempts })
-    .onConflictDoUpdate({ target: strategyOrders.clientOrderId, set: { venueOrderId: venue ? String(venue.id) : null, state, fillPrice: venue?.fill ?? null, error, attempts, updatedAt: new Date() } });
+    .values({ id: newId("ord"), strategyId: strategy.id, legId: leg.id, batchId, purpose, orderType, limitPrice, clientOrderId, venueOrderId: venue ? String(venue.id) : null, productId: product?.id ?? 0, symbol: leg.symbol, side: leg.side, size: plan.contracts ?? 0, state, fillPrice: venue?.fill ?? null, error, attempts })
+    .onConflictDoUpdate({ target: strategyOrders.clientOrderId, set: { venueOrderId: venue ? String(venue.id) : null, state, fillPrice: venue?.fill ?? null, error, attempts, orderType, limitPrice, updatedAt: new Date() } });
 }
 
-async function applyEntryResult(deps: AppDeps, strategy: StrategyRow, leg: LegRow, batchId: string, purpose: "entry" | "adjustment", clientOrderId: string, plan: LivePreviewLeg, result: PlaceOrderResult, out: PlacementOutcome, attempts: number): Promise<void> {
+async function applyEntryResult(deps: AppDeps, strategy: StrategyRow, leg: LegRow, batchId: string, purpose: "entry" | "adjustment", clientOrderId: string, plan: LivePreviewLeg, result: PlaceOrderResult, out: PlacementOutcome, attempts: number, orderType: "market" | "limit" = "market", limitPrice: string | null = null): Promise<void> {
   const now = new Date();
   if (result.ok && result.order.state === "closed" && result.order.averageFillPrice !== null) {
-    await recordOrder(deps, strategy, leg, batchId, purpose, clientOrderId, plan, { id: result.order.id, fill: result.order.averageFillPrice }, "filled", null, attempts);
+    await recordOrder(deps, strategy, leg, batchId, purpose, clientOrderId, plan, { id: result.order.id, fill: result.order.averageFillPrice }, "filled", null, attempts, orderType, limitPrice);
     await deps.db.update(strategyLegs).set({ entryPrice: result.order.averageFillPrice, price: result.order.averageFillPrice, status: "open", openedAt: now, closedAt: null, exitPrice: null, orderId: String(result.order.id), updatedAt: now }).where(eq(strategyLegs.id, leg.id));
     out.filled += 1;
     return;
   }
   if (result.ok) {
-    await recordOrder(deps, strategy, leg, batchId, purpose, clientOrderId, plan, { id: result.order.id, fill: result.order.averageFillPrice }, "pending", null, attempts);
+    await recordOrder(deps, strategy, leg, batchId, purpose, clientOrderId, plan, { id: result.order.id, fill: result.order.averageFillPrice }, "pending", null, attempts, orderType, limitPrice);
     await deps.db.update(strategyLegs).set({ orderId: String(result.order.id), openedAt: now, updatedAt: now }).where(eq(strategyLegs.id, leg.id));
     out.pending += 1;
     return;
   }
   if ("unknown" in result && result.unknown) {
-    await recordOrder(deps, strategy, leg, batchId, purpose, clientOrderId, plan, null, "pending", result.message, attempts);
+    await recordOrder(deps, strategy, leg, batchId, purpose, clientOrderId, plan, null, "pending", result.message, attempts, orderType, limitPrice);
     out.pending += 1;
     out.errors.push(`${leg.symbol}: ${result.message}`);
     return;
   }
-  await recordOrder(deps, strategy, leg, batchId, purpose, clientOrderId, plan, null, "failed", describeResult(result), attempts);
+  await recordOrder(deps, strategy, leg, batchId, purpose, clientOrderId, plan, null, "failed", describeResult(result), attempts, orderType, limitPrice);
   out.failed += 1;
   out.errors.push(`${leg.symbol}: ${result.message}`);
 }
@@ -228,7 +234,8 @@ async function applyEntryResult(deps: AppDeps, strategy: StrategyRow, leg: LegRo
 /** Retry every failed entry / adjustment order of the strategy with the same client order id. */
 export async function retryFailed(deps: AppDeps, creds: DeltaCredentials, user: SessionUser, strategy: StrategyRow): Promise<PlacementOutcome> {
   const out: PlacementOutcome = { filled: 0, pending: 0, failed: 0, errors: [] };
-  const failed = (await ordersOf(deps, strategy.id)).filter((o) => o.state === "failed" && o.purpose !== "exit");
+  // a limit the venue cancelled (sync marks it cancelled) is retried like a refusal, with its type and resting price
+  const failed = (await ordersOf(deps, strategy.id)).filter((o) => (o.state === "failed" || o.state === "cancelled") && o.purpose !== "exit");
   if (failed.length === 0) return out;
   const lotSize = await lotSizeFor(deps, user, strategy.asset);
   for (const o of failed) {
@@ -242,8 +249,9 @@ export async function retryFailed(deps: AppDeps, creds: DeltaCredentials, user: 
       continue;
     }
     const product = await deps.trading.getProduct(leg.symbol);
-    const result = await deps.trading.placeOrder(creds, { productId: product.id, size: p.contracts, side: leg.side, clientOrderId: o.clientOrderId, reduceOnly: false });
-    await applyEntryResult(deps, strategy, leg, o.batchId, o.purpose === "exit" ? "entry" : o.purpose, o.clientOrderId, p, result, out, o.attempts + 1);
+    const limit = o.orderType === "limit" && o.limitPrice !== null ? o.limitPrice : null;
+    const result = await deps.trading.placeOrder(creds, { productId: product.id, size: p.contracts, side: leg.side, clientOrderId: o.clientOrderId, reduceOnly: false, ...(limit === null ? {} : { orderType: "limit", limitPrice: limit }) });
+    await applyEntryResult(deps, strategy, leg, o.batchId, o.purpose === "exit" ? "entry" : o.purpose, o.clientOrderId, p, result, out, o.attempts + 1, limit === null ? "market" : "limit", limit);
   }
   return out;
 }

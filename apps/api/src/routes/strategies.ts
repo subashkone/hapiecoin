@@ -494,7 +494,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
               if (mark !== undefined) expectedById[l.id] = mark;
             }
             // a refused leg stays open with its failed order so Retry (HC-TR-085) can place it again
-            await placeEntries(deps, creds, row, inserted, plan.legs, batchId, "adjustment", expectedById);
+            await placeEntries(deps, creds, row, inserted, plan.legs, batchId, "adjustment", expectedById, body.orderType);
           }
           done.added = inserted.length;
         }

@@ -100,6 +100,19 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("live-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
       await expect(page.getByTestId("live-card").getByTestId("order-chip").first()).toHaveAttribute("data-state", "filled");
       await page.screenshot({ path: `${DIR}/analyse-live-${theme}.png` });
+      // ADR-044 the live confirm (HC-TR-152): venue check, band, order type, hold-to-place
+      await page.getByTestId("live-card").getByTestId("card-adjust").click();
+      const lwb = page.getByTestId("adjust-workbench");
+      await expect(lwb.getByTestId("wb-chain-table")).toHaveAttribute("data-rows", /^[1-9]/, { timeout: 15_000 });
+      // close the sold put and sell a call above: a defined-risk batch the fake venue's wallet can carry
+      await lwb.getByTestId("wb-leg").nth(1).getByTestId("lots-after-input").fill("0");
+      await lwb.getByTestId("wb-chain-row").nth(2).getByTestId("wb-chain-sell-call").click();
+      await lwb.getByTestId("adjust-review").click();
+      await expect(page.getByTestId("adjust-confirm").getByTestId("adjust-venue")).toHaveAttribute("data-ok", /true|false/, { timeout: 15_000 });
+      await page.screenshot({ path: `${DIR}/analyse-adjust-live-${theme}.png` });
+      await page.getByTestId("adjust-cancel").click();
+      await lwb.getByTestId("adjust-exit").click();
+      await expect(lwb).toBeHidden();
       await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
       await page.goto("/");
       await expect(page.getByTestId("tile-BTC")).toHaveAttribute("data-state", "live", { timeout: 15_000 });

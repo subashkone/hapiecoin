@@ -475,6 +475,16 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     await expect(page.getByTestId("before-after")).toBeVisible();
     await expect(wb.getByTestId("adjust-summary")).toContainText("This change", { timeout: 15_000 });
     await expect(page.getByTestId("tile-max-loss")).toContainText("after");
+    // HC-TR-154 / HC-TR-153: a quick fix loads a draft; it can be kept as a plan and compared; Reset returns to the trim
+    await expect(wb.getByTestId("quick-fix").first()).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await wb.getByTestId("quick-fix").first().click(); // roll strikes up
+    await expect(wb.getByTestId("wb-pick")).toHaveCount(2);
+    await wb.getByTestId("plan-save").click();
+    await expect(wb.getByTestId("plans-bar")).toHaveAttribute("data-count", "1");
+    await expect(wb.getByTestId("plan-row").nth(1)).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await wb.getByTestId("adjust-reset").click();
+    await expect(wb).toHaveAttribute("data-empty", "true");
+    await leg.getByTestId("lots-after-down").click();
     // a new sold call two rows into the window (not a held strike)
     await wb.getByTestId("wb-chain-row").nth(2).getByTestId("wb-chain-sell-call").click();
     await expect(wb.getByTestId("wb-pick")).toHaveCount(1);
@@ -508,6 +518,55 @@ test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
     await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
     await page.reload();
     await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 15_000 });
+  });
+
+  test("HC-TR-152 a live adjustment: venue check, hold-to-place, fill states, then the history", async ({ page }) => {
+    const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
+    await page.locator(`[data-testid=chain-row-calls][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-buy-calls").click();
+    await page.getByTestId("tab-builder").click();
+    await page.getByTestId("strategy-name").fill("E2E live adjust");
+    await page.getByTestId("builder-paper-trade").click();
+    const mode = page.getByTestId("trade-mode");
+    await expect(mode.getByTestId("trade-broker")).toHaveValue("brk_delta");
+    await mode.getByTestId("trade-continue").click();
+    await page.getByTestId("trade-preview").getByTestId("trade-now").click();
+    await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+    await page.getByTestId("paper-card").getByTestId("card-golive").click();
+    await expect(mode.getByTestId("mode-live")).toHaveAttribute("aria-pressed", "true");
+    await mode.getByTestId("trade-continue").click();
+    await expect(page.getByTestId("trade-preview").getByTestId("venue-preview")).toHaveAttribute("data-ok", "true");
+    await page.getByTestId("trade-preview").getByTestId("trade-now").click();
+    await expect(page.getByTestId("live-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+    const card = page.getByTestId("live-card");
+    await expect(card.getByTestId("order-chip").first()).toHaveAttribute("data-state", "filled");
+    await card.getByTestId("card-adjust").click();
+    const wb = page.getByTestId("adjust-workbench");
+    await expect(wb.getByTestId("wb-chain-table")).toHaveAttribute("data-rows", /^[1-9]/, { timeout: 15_000 });
+    await wb.getByTestId("wb-chain-row").nth(2).getByTestId("wb-chain-sell-call").click();
+    await wb.getByTestId("adjust-review").click();
+    const confirm = page.getByTestId("adjust-confirm");
+    await expect(confirm).toHaveAttribute("data-mode", "live");
+    await expect(confirm.getByTestId("adjust-venue")).toHaveAttribute("data-ok", "true", { timeout: 15_000 });
+    await expect(confirm.getByTestId("adjust-band")).toContainText("±");
+    const apply = confirm.getByTestId("adjust-apply");
+    await expect(apply).toContainText("Hold to place");
+    // a short press cancels
+    await apply.hover();
+    await page.mouse.down();
+    await page.waitForTimeout(300);
+    await page.mouse.up();
+    await expect(confirm).toHaveAttribute("data-stage", "review");
+    await page.mouse.down();
+    await page.waitForTimeout(1600);
+    await page.mouse.up();
+    await expect(confirm).toHaveAttribute("data-stage", "placed", { timeout: 15_000 });
+    await expect(confirm.getByTestId("adjust-result")).toHaveAttribute("data-state", "filled");
+    await confirm.getByTestId("adjust-done").click();
+    const details = page.getByTestId("strategy-details");
+    await expect(details).toBeVisible();
+    await expect(details.getByTestId("details-adjustment")).toHaveCount(1);
+    await expect(details.getByTestId("adjusted-badge")).toBeVisible();
   });
 
   test("HC-TR-063 go live from a paper card: locked Live mode, exchange preview, orders on the Live tab; HC-TR-086 square off all", async ({ page }) => {

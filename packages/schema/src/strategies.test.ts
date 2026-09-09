@@ -93,6 +93,9 @@ describe("[SCHEMA] strategies (ADR-024)", () => {
     expect(AdjustBody.safeParse({ changes: [change], reason: "x".repeat(MAX_ADJUST_REASON + 1) }).success).toBe(false);
     const full = AdjustBody.parse({ adds: [call], changes: [change], expected: { "C-BTC-80000-250926": "1200" }, idempotencyKey: "key-adj-000001", reason: "  spot ran  " });
     expect(full.reason).toBe("spot ran");
+    expect(full.orderType).toBe("market");
+    expect(AdjustBody.parse({ adds: [call], orderType: "limit" }).orderType).toBe("limit");
+    expect(AdjustBody.safeParse({ adds: [call], orderType: "stop" }).success).toBe(false);
     expect(AdjustBody.parse({ changes: [change] })).toMatchObject({ adds: [], expected: {} });
     expect(StrategyAdjustment.safeParse({ id: "adj_1", at: "2026-09-08T11:00:00Z", reason: null, added: 0, trimmed: 0, closed: 2, realizedPnl: "-1.2", batchId: null }).success).toBe(true);
     expect(StrategyAdjustment.safeParse({ id: "adj_1", at: "2026-09-08T11:00:00Z", reason: null, added: -1, trimmed: 0, closed: 0, realizedPnl: "0", batchId: null }).success).toBe(false);

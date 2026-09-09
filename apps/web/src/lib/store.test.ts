@@ -64,6 +64,7 @@ describe("HC-SH-003 UI store", () => {
       workspaceTab: "chain",
       analysisTab: "payoff",
       targetDays: 0, templatesStrip: true,
+      riskAlerts: [],
     });
   });
   it("HC-TR-020 / HC-TR-045 / HC-TR-047 / HC-TR-048 drafts: save, update, load, archive, delete; meta per asset; tabs and target", () => {
@@ -244,5 +245,28 @@ describe("HC-TR-148 adjustment workbench draft (ADR-044)", () => {
     st.openAdjust("strat_1");
     st.followStrategy(null);
     expect(useUiStore.getState().adjust).toBeNull();
+  });
+});
+
+describe("ADR-044 risk alert stub from the workbench", () => {
+  it("keeps one alert per strategy as a negative USD threshold, persists it and drops bad entries on load", () => {
+    const st = useUiStore.getState();
+    const a = st.addRiskAlert("strat_1", 1200);
+    expect(a.maxLoss).toBe(-1200);
+    st.addRiskAlert("strat_2", -300);
+    st.addRiskAlert("strat_1", 800); // replaces
+    expect(useUiStore.getState().riskAlerts.map((x) => [x.strategyId, x.maxLoss])).toEqual([
+      ["strat_2", -300],
+      ["strat_1", -800],
+    ]);
+    const persisted = JSON.parse(localStorage.getItem(UI_STORAGE_KEY) ?? "{}") as { state: { riskAlerts: unknown[] } };
+    expect(persisted.state.riskAlerts).toHaveLength(2);
+    st.removeRiskAlert(a.id); // already replaced: nothing to remove
+    st.removeRiskAlert(useUiStore.getState().riskAlerts[0]!.id);
+    expect(useUiStore.getState().riskAlerts.map((x) => x.strategyId)).toEqual(["strat_1"]);
+    const merge = useUiStore.persist.getOptions().merge;
+    if (!merge) throw new Error("persist merge missing");
+    const merged = merge({ riskAlerts: [{ id: "ra_ok", strategyId: "s", maxLoss: -5 }, { id: 7 }, "x"] }, useUiStore.getState());
+    expect(merged.riskAlerts).toEqual([{ id: "ra_ok", strategyId: "s", maxLoss: -5, createdAt: 0 }]);
   });
 });

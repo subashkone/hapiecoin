@@ -2,7 +2,7 @@
 // Adjustment workbench (ADR-044; HC-TR-148..152), layout H2: the position and ticket on the left, the live
 // chain on the right, the analysis pane shows the position after the change. The footer carries the change
 // summary, the guard rails and Review; under 720 px the two columns stack and the footer stays in view.
-import { Button, cn } from "@hapiecoin/ui";
+import { Button, cn, toast } from "@hapiecoin/ui";
 import { useEffect, useRef, useState } from "react";
 import { newIdempotencyKey } from "@/lib/api/live";
 import { type AdjustBody } from "@hapiecoin/schema";
@@ -14,7 +14,9 @@ import type { PaperBook } from "@/lib/strategy/usePaper";
 import { ChainPickerBody, type PickerKind, type PickerRow, usePickerChain } from "@/components/builder/ChainPickerBody";
 import { ModePill } from "@/components/trading/StrategyDetailsDialog";
 import { AdjustConfirmDialog } from "./AdjustConfirmDialog";
+import { PlansBar } from "./PlansBar";
 import { PositionTicket } from "./PositionTicket";
+import { QuickFixes } from "./QuickFixes";
 
 export const STACK_BELOW_PX = 720;
 
@@ -37,6 +39,10 @@ export function AdjustWorkbench({ book }: { book: PaperBook }) {
   const w = useAdjustWorkbench();
   const closeAdjust = useUiStore((s) => s.closeAdjust);
   const chainLots = useUiStore((s) => s.chainLots);
+  const riskAlerts = useUiStore((s) => s.riskAlerts);
+  const addRiskAlert = useUiStore((s) => s.addRiskAlert);
+  const removeRiskAlert = useUiStore((s) => s.removeRiskAlert);
+  const [alertInput, setAlertInput] = useState("");
   const box = useRef<HTMLElement>(null);
   const wide = useWide(box, STACK_BELOW_PX);
   const strategy = w?.strategy;
@@ -64,6 +70,16 @@ export function AdjustWorkbench({ book }: { book: PaperBook }) {
     setReview(toBody(draft, open, a.markOf, { idempotencyKey: newIdempotencyKey() }));
   };
   const canReview = !w.empty && !w.overCap;
+  const alert = riskAlerts.find((x) => x.strategyId === strategy.id);
+  const saveAlert = () => {
+    const v = Number(alertInput);
+    if (!Number.isFinite(v) || v <= 0) return;
+    // typed in the display currency, kept in USD like every other figure
+    const usd = a.money.currency === "INR" ? v / (Number(a.money.rate) || 1) : v;
+    addRiskAlert(strategy.id, usd);
+    setAlertInput("");
+    toast("Alert saved", { description: `Max loss beyond ${fmtMoney(-usd, a.money)} on ${strategy.name} · arms when Alerts ship (Phase 5 item 2)` });
+  };
   return (
     <section ref={box} className="flex h-full min-h-0 flex-col" data-testid="adjust-workbench" data-strategy={strategy.id} data-layout={wide ? "columns" : "stacked"} data-empty={w.empty ? "true" : "false"}>
       <header className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-1.5 text-xs">
@@ -83,6 +99,8 @@ export function AdjustWorkbench({ book }: { book: PaperBook }) {
           <PositionTicket w={w} />
         </div>
         <div className={cn("min-w-0 p-3", wide && "overflow-auto")}>
+          <QuickFixes w={w} expiry={chain.expiry} rows={chain.rows} expiries={chain.expiries} />
+          <PlansBar w={w} />
           <div className="mb-1 flex items-center gap-2 text-2xs">
             <span className="micro">Chain</span>
             <span className="text-muted-foreground">B / S on a held strike adds or trims it; on any other strike it proposes a new leg · {chainLots} lots per click</span>
@@ -102,6 +120,21 @@ export function AdjustWorkbench({ book }: { book: PaperBook }) {
             ))}
           </ul>
         ) : null}
+        <div className="flex flex-wrap items-center gap-2 text-2xs" data-testid="risk-alert">
+          <span className="micro">Alert me if max loss exceeds</span>
+          {alert ? (
+            <span className="inline-flex items-center gap-1 rounded border border-warning px-1.5 py-0.5" data-testid="risk-alert-set">
+              <span className="num">{fmtMoney(alert.maxLoss, a.money)}</span>
+              <button type="button" onClick={() => removeRiskAlert(alert.id)} aria-label="Remove the alert" className="text-muted-foreground hover:text-loss" data-testid="risk-alert-remove">✕</button>
+            </span>
+          ) : (
+            <>
+              <input type="number" min={1} value={alertInput} onChange={(e) => setAlertInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveAlert()} placeholder={a.money.currency === "INR" ? "₹" : "$"} className="h-6 w-24 rounded border border-input bg-background px-1 text-right text-xs" aria-label="Max loss threshold" data-testid="risk-alert-input" />
+              <Button size="sm" variant="ghost" disabled={!(Number(alertInput) > 0)} onClick={saveAlert} data-testid="risk-alert-save">Save</Button>
+            </>
+          )}
+          <span className="micro text-muted-foreground" title="Alerts arrive with Phase 5 item 2; thresholds saved here arm then">stub · arms with Alerts</span>
+        </div>
         <div className="flex items-center gap-2">
           <span className="micro text-muted-foreground">Enter reviews · Esc resets · A on a card opens this</span>
           <Button size="sm" variant="ghost" className="ml-auto" disabled={w.empty} onClick={w.reset} data-testid="adjust-reset">

@@ -76,7 +76,12 @@ information.
   basic version A3 extends), Details history + `AdjustedBadge`, `CardFigures`, Workspace left-pane swap, narrow
   stacking at 720 px with a sticky footer. Traceability rows HC-TR-148..154 (153/154 static until A3).
 - **A3 · Live + extras**: live confirm with preview verdict, order type, hold-to-place, fill states; plans compare;
-  quick fixes with ranking; scenario date slider; alert stub.
+  quick fixes with ranking; scenario date slider; alert stub. **Built 09 Sep** (branch `feat/adjust-live`): limit
+  entries end to end (`AdjustBody.orderType`, executor `placeEntries(..., orderType)` with the reviewed mark as the
+  limit, venue clients `orderType` / `limitPrice`, `strategy_orders.order_type` migration 0009; exits stay market
+  reduce-only; a resting limit is a pending order Sync books), `AdjustConfirmDialog` live extras (per-leg band, order
+  type, `HoldButton` 1.2 s, results view with fill states and Done, notional-over-balance rail), `PlansBar` +
+  `useDraftFigures`, `lib/adjust/fixes.ts` + `QuickFixes`, scenario slider on the ticket, `riskAlerts` store stub.
 
 ## 5. Traceability
 Extends HC-TR-071 (+ Add adjustment), HC-TR-088 (Confirm Adjustment Order), HC-TR-118/119 (Details restyle, payoff

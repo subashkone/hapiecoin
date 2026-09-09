@@ -5,7 +5,7 @@
  * Endpoints (docs.delta.exchange, verified 08 Sep 2026):
  *   GET    /v2/products/{symbol}            product id, contract_value, state (public, cached)
  *   GET    /v2/tickers/{symbol}             mark_price (public) for the placement band
- *   POST   /v2/orders                       { product_id, size, side, order_type: "market_order", client_order_id, reduce_only }
+ *   POST   /v2/orders                       { product_id, size, side, order_type: "market_order" | "limit_order", limit_price?, client_order_id, reduce_only }
  *   GET    /v2/orders/{order_id}
  *   GET    /v2/orders?product_ids=&states=  open / pending orders
  *   DELETE /v2/orders                       { id, product_id }
@@ -83,6 +83,8 @@ export interface DeltaTradingClientOptions {
 export type OrderSide = "buy" | "sell";
 export type OrderState = "open" | "pending" | "closed" | "cancelled";
 
+export type OrderType = "market" | "limit";
+
 export interface PlaceOrderInput {
   productId: number;
   /** Number of contracts (whole number ≥ 1). */
@@ -90,6 +92,9 @@ export interface PlaceOrderInput {
   side: OrderSide;
   clientOrderId: string;
   reduceOnly?: boolean;
+  /** Market (default) or a limit at `limitPrice` (ADR-044 adjustment entries); a limit that does not cross rests open. */
+  orderType?: OrderType | undefined;
+  limitPrice?: string | undefined;
 }
 
 export interface VenueOrder {
@@ -110,6 +115,19 @@ export interface VenueProduct {
   contractValue: string;
   contractType: string;
   state: string;
+  /** Price increment of the product when the venue lists one (limit prices must sit on it). */
+  tickSize?: string | undefined;
+}
+
+/** Snap a limit price onto the product's tick toward the passive side: a buy rounds down, a sell rounds up. Without a tick the price is returned as given. */
+export function roundToTick(price: string, tickSize: string | undefined, side: OrderSide): string {
+  const tick = Number(tickSize);
+  const p = Number(price);
+  if (!Number.isFinite(tick) || tick <= 0 || !Number.isFinite(p)) return price;
+  const decimals = tickSize && tickSize.includes(".") ? tickSize.split(".")[1]!.replace(/0+$/, "").length : 0;
+  const n = Math.round((p / tick) * 1e6) / 1e6; // whole ticks, free of float noise
+  const k = side === "buy" ? Math.floor(n + 1e-9) : Math.ceil(n - 1e-9);
+  return (k * tick).toFixed(decimals);
 }
 
 export interface VenuePosition {
@@ -172,6 +190,7 @@ const RawProduct = z.object({
   contract_value: z.union([z.string(), z.number()]),
   contract_type: z.string(),
   state: z.string(),
+  tick_size: z.union([z.string(), z.number()]).nullable().optional(),
 });
 const RawPosition = z.object({
   product_id: z.number(),
@@ -264,7 +283,7 @@ export class DeltaTradingClientImpl implements DeltaTradingClient {
     if ("transport" in res) throw new Error(`Delta product lookup failed for ${symbol}: ${res.transport}`);
     const parsed = res.json?.success ? RawProduct.safeParse(res.json.result) : null;
     if (!parsed?.success) throw new Error(`Delta product lookup failed for ${symbol}: HTTP ${res.status} ${res.json?.error?.code ?? ""}`.trim());
-    const product: VenueProduct = { id: parsed.data.id, symbol: parsed.data.symbol, contractValue: String(parsed.data.contract_value), contractType: parsed.data.contract_type, state: parsed.data.state };
+    const product: VenueProduct = { id: parsed.data.id, symbol: parsed.data.symbol, contractValue: String(parsed.data.contract_value), contractType: parsed.data.contract_type, state: parsed.data.state, ...(parsed.data.tick_size === null || parsed.data.tick_size === undefined ? {} : { tickSize: String(parsed.data.tick_size) }) };
     this.products.set(symbol, { product, at: this.now() * 1000 });
     return product;
   }
@@ -278,7 +297,8 @@ export class DeltaTradingClientImpl implements DeltaTradingClient {
 
   async placeOrder(creds: DeltaCredentials, input: PlaceOrderInput): Promise<PlaceOrderResult> {
     if (!Number.isInteger(input.size) || input.size < 1) return { ok: false, code: "invalid_size", message: "Order size must be a whole number of contracts", retryable: false };
-    const body = { product_id: input.productId, size: input.size, side: input.side, order_type: "market_order", client_order_id: input.clientOrderId, reduce_only: input.reduceOnly === true };
+    const limit = input.orderType === "limit" && input.limitPrice !== undefined;
+    const body = { product_id: input.productId, size: input.size, side: input.side, order_type: limit ? "limit_order" : "market_order", ...(limit ? { limit_price: input.limitPrice } : {}), client_order_id: input.clientOrderId, reduce_only: input.reduceOnly === true };
     const res = await this.call(creds, "POST", "/v2/orders", undefined, body);
     if ("transport" in res) return { ok: false, code: "unknown", message: `Order may not have reached Delta (${res.transport}); reconcile before retrying`, retryable: false, unknown: true };
     if (res.json?.success) {
@@ -363,8 +383,8 @@ export class FakeDeltaTradingClient implements DeltaTradingClient {
   private nextId = 1000;
   private partialNext = false;
 
-  product(symbol: string, id: number, contractValue = "0.001", state = "live"): this {
-    this.productsBySymbol.set(symbol, { id, symbol, contractValue, contractType: symbol.endsWith("USD") ? "perpetual_futures" : symbol.startsWith("C-") ? "call_options" : "put_options", state });
+  product(symbol: string, id: number, contractValue = "0.001", state = "live", tickSize = "0.1"): this {
+    this.productsBySymbol.set(symbol, { id, symbol, contractValue, contractType: symbol.endsWith("USD") ? "perpetual_futures" : symbol.startsWith("C-") ? "call_options" : "put_options", state, tickSize });
     return this;
   }
   markAt(symbol: string, price: string): this {
@@ -420,6 +440,14 @@ export class FakeDeltaTradingClient implements DeltaTradingClient {
     }
     const id = this.nextId++;
     const price = this.fillPrices.get(input.productId) ?? "100";
+    // a limit fills only when it crosses the fake's fill price (buy at or above it, sell at or below it); otherwise it rests open
+    const limit = input.orderType === "limit" && input.limitPrice !== undefined ? Number(input.limitPrice) : null;
+    const crosses = limit === null || (input.side === "buy" ? limit >= Number(price) : limit <= Number(price));
+    if (!crosses) {
+      const resting: VenueOrder = { id, clientOrderId: input.clientOrderId, productId: input.productId, side: input.side, size: input.size, unfilledSize: input.size, state: "open", averageFillPrice: null };
+      this.orders.set(id, resting);
+      return Promise.resolve({ ok: true, order: resting });
+    }
     const partial = this.partialNext;
     this.partialNext = false;
     const order: VenueOrder = { id, clientOrderId: input.clientOrderId, productId: input.productId, side: input.side, size: input.size, unfilledSize: partial ? 1 : 0, state: partial ? "open" : "closed", averageFillPrice: partial ? null : price };

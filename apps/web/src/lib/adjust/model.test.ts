@@ -2,7 +2,8 @@ import type { AnalyzeResult } from "@hapiecoin/pricing";
 import type { StrategyLeg as ServerLeg } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
 import { USD } from "@/lib/money";
-import { VALUE_TODAY, addsZeroDte, afterLegs, beforeLegs, cashflow, combinedExpiries, effects, instrumentOf, isEmptyDraft, lotsAfterOf, newDraft, openCountAfter, overCap, pickOnDraft, removePick, setLotsAfter, setPickLots, setValuation, summarize, toBody, valuationMsOf } from "./model";
+import { MAX_PLANS, VALUE_TODAY, addsZeroDte, afterLegs, beforeLegs, cashflow, combinedExpiries, effects, instrumentOf, isEmptyDraft, isoDaysFrom, loadPlan, lotsAfterOf, newDraft, openCountAfter, overCap, pickOnDraft, planDraft, removePick, removePlan, savePlan, setLotsAfter, setPickLots, setValuation, summarize, toBody, valuationMsOf } from "./model";
+import { type FixContext, quickFixes, rankFixes } from "./fixes";
 
 const EXP = "2026-09-25";
 const LATER = "2026-10-30";
@@ -154,7 +155,10 @@ describe("HC-TR-149 before / after legs, cashflow, cap and valuation date", () =
     expect(valuationMsOf(d, OPEN, "BTC", now)).toBe(Date.UTC(2026, 9, 30, 12)); // latest by default
     expect(valuationMsOf(setValuation(d, EXP), OPEN, "BTC", now)).toBe(Date.UTC(2026, 8, 25, 12));
     expect(valuationMsOf(setValuation(d, VALUE_TODAY), OPEN, "BTC", now)).toBe(now);
-    expect(valuationMsOf(setValuation(d, "2030-01-01"), OPEN, "BTC", now)).toBe(Date.UTC(2026, 9, 30, 12)); // unknown choice → latest
+    expect(valuationMsOf(setValuation(d, "2026-10-10"), OPEN, "BTC", now)).toBe(Date.UTC(2026, 9, 10, 12)); // a scenario date between the expiries
+    expect(valuationMsOf(setValuation(d, "2026-02-30"), OPEN, "BTC", now)).toBe(Date.UTC(2026, 9, 30, 12)); // an impossible date → latest
+    expect(valuationMsOf(setValuation(d, "soon"), OPEN, "BTC", now)).toBe(Date.UTC(2026, 9, 30, 12)); // not a date → latest
+    expect(isoDaysFrom(now, 5)).toBe("2026-09-25");
     expect(valuationMsOf(newDraft("s", 1), [leg({ ...CALL, kind: "future", expiry: "PERP", symbol: "BTCUSD" })], "XAUT", now)).toBeUndefined();
     const closed = setLotsAfter(setLotsAfter(newDraft("s", 1), CALL.id, 0), PUT.id, 0);
     expect(combinedExpiries(closed, OPEN)).toEqual([]);
@@ -180,6 +184,8 @@ describe("HC-TR-151 the API batch and the change summary", () => {
     expect(body.expected).toEqual({ "P-BTC-78000-250926": "800", "C-BTC-82000-250926": "700" });
     expect(body.idempotencyKey).toBe("web-key-000001");
     expect(body.reason).toBe("roll up");
+    expect(body.orderType).toBe("market");
+    expect(toBody(d, OPEN, markOf, { idempotencyKey: "web-key-000009", orderType: "limit" }).orderType).toBe("limit");
     // no quote: the entry / pick price stands in and no band is sent for that symbol; a blank reason is omitted
     const plain = toBody(d, [{ ...CALL, iv: null }, PUT], () => undefined, { idempotencyKey: "web-key-000002", reason: "  " });
     expect(plain.changes[0]!.price).toBe("1200");
@@ -209,5 +215,105 @@ describe("HC-TR-151 the API batch and the change summary", () => {
     expect(summarize(result({}), result({}), 0, USD, flags).line).toBe("max loss unchanged · POP 40% → 40%");
     expect(summarize(null, result({}), -5, USD, flags).line).toBe("you pay $5.00");
     expect(summarize(null, null, 0, USD, flags)).toEqual({ line: "", warnings: [] });
+  });
+});
+
+describe("HC-TR-153 plans: save up to three, load one back, remove", () => {
+  it("names plans A, B, C in order, copies the changes, loads and removes them, and refuses a fourth", () => {
+    let d = setLotsAfter(newDraft("s", 1), CALL.id, 60);
+    d = savePlan(d, 2);
+    expect(d.plans.map((p) => p.name)).toEqual(["Plan A"]);
+    expect(d.plans[0]).toMatchObject({ lotsAfter: { leg_c: 60 }, picks: [], valuation: null });
+    d = pickOnDraft({ ...d, lotsAfter: {} }, OPEN, "BTC", pick());
+    d = savePlan(setValuation(d, VALUE_TODAY), 3);
+    d = savePlan(d, 4);
+    expect(d.plans.map((p) => p.name)).toEqual(["Plan A", "Plan B", "Plan C"]);
+    expect(d.plans.length).toBe(MAX_PLANS);
+    expect(savePlan(d, 5).plans).toHaveLength(MAX_PLANS);
+    const loaded = loadPlan(d, d.plans[0]!.id);
+    expect(loaded.lotsAfter).toEqual({ leg_c: 60 });
+    expect(loaded.picks).toEqual([]);
+    expect(loaded.valuation).toBeNull();
+    expect(loadPlan(d, "plan_nope")).toBe(d);
+    expect(planDraft(d, d.plans[1]!).picks).toHaveLength(1);
+    expect(removePlan(d, d.plans[1]!.id).plans.map((p) => p.name)).toEqual(["Plan A", "Plan C"]);
+    // saving after a removal reuses the free letter
+    expect(savePlan(removePlan(d, d.plans[1]!.id), 6).plans.map((p) => p.name)).toEqual(["Plan A", "Plan C", "Plan B"]);
+  });
+});
+
+describe("HC-TR-154 quick fixes from the position and the chain", () => {
+  const row = (strike: number, callMark: string, putMark: string) => ({ strike: String(strike), call: { mark: callMark, markIv: 0.5 }, put: { mark: putMark, markIv: 0.55 } });
+  const rows = [row(76_000, "3200", "400"), row(78_000, "2000", "900"), row(80_000, "1200", "1500"), row(82_000, "700", "2600"), row(84_000, "350", "4100")];
+  const ctx = (over: Partial<FixContext> = {}): FixContext => ({ open: OPEN, asset: "BTC", expiry: EXP, rows, nextExpiry: LATER, nextRows: rows.map((r) => ({ ...r, strike: String(Number(r.strike) + 1000) })), spot: 79_500, ...over });
+
+  it("roll up moves every option leg on the shown expiry one listed strike up; roll out moves them to the nearest strike of the next expiry", () => {
+    const [up, out] = quickFixes(newDraft("s", 1), ctx());
+    expect(up!.draft).not.toBeNull();
+    expect(effects(up!.draft!, OPEN).map((e) => [e.kind, e.lots])).toEqual([
+      ["close", 100],
+      ["close", 100],
+      ["new", 100],
+      ["new", 100],
+    ]);
+    expect(up!.draft!.picks.map((p) => [p.kind, p.side, p.strike, p.expiry, p.price])).toEqual([
+      ["call", "buy", "82000", EXP, "700"],
+      ["put", "sell", "80000", EXP, "1500"],
+    ]);
+    expect(up!.note).toContain("2 legs one strike up");
+    expect(out!.draft!.picks.map((p) => [p.kind, p.strike, p.expiry])).toEqual([
+      ["call", "81000", LATER],
+      ["put", "79000", LATER],
+    ]);
+    expect(out!.label).toBe("Roll out to 30 Oct");
+    // no strike above the top one: the fix cannot be built and says so
+    const top = [leg({ ...CALL, id: "leg_top", strike: "84000", symbol: "C-BTC-84000-250926" })];
+    expect(quickFixes(newDraft("s", 1), ctx({ open: top }))[0]).toMatchObject({ draft: null, note: expect.stringContaining("no strike above 84,000") as string });
+    expect(quickFixes(newDraft("s", 1), ctx({ nextRows: [] }))[1]).toMatchObject({ draft: null, note: expect.stringContaining("not loaded") as string });
+    expect(quickFixes(newDraft("s", 1), ctx({ expiry: null }))[0]).toMatchObject({ draft: null });
+    expect(quickFixes(newDraft("s", 1), ctx({ open: [] }))[1]).toMatchObject({ draft: null });
+  });
+
+  it("a roll never nets a replacement against a leg it is closing: a vertical spread on adjacent strikes rolls whole", () => {
+    const long = leg({ ...CALL, id: "leg_l", strike: "80000", symbol: "C-BTC-80000-250926" });
+    const short = leg({ ...CALL, id: "leg_s", side: "sell", strike: "82000", symbol: "C-BTC-82000-250926" });
+    const [up, out] = quickFixes(newDraft("s", 1), ctx({ open: [long, short] }));
+    expect(up!.draft!.lotsAfter).toEqual({ leg_l: 0, leg_s: 0 });
+    expect(up!.draft!.picks.map((p) => [p.side, p.strike, p.lots])).toEqual([
+      ["buy", "82000", 100],
+      ["sell", "84000", 100],
+    ]);
+    expect(out!.draft!.picks.map((p) => [p.side, p.strike, p.expiry])).toEqual([
+      ["buy", "81000", LATER],
+      ["sell", "83000", LATER],
+    ]);
+    // two legs landing on the same contract and side merge into one pick
+    const twin = leg({ ...CALL, id: "leg_t", lots: 30 });
+    const [merged] = quickFixes(newDraft("s", 1), ctx({ open: [CALL, twin] }));
+    expect(merged!.draft!.picks.map((p) => [p.strike, p.lots])).toEqual([["82000", 130]]);
+  });
+
+  it("hedge with a call buys one strike above the highest short call, sized like it; above spot when nothing is short", () => {
+    const shortCall = leg({ ...CALL, id: "leg_sc", side: "sell", strike: "80000", lots: 40 });
+    const [, , hedge] = quickFixes(newDraft("s", 1), ctx({ open: [shortCall, PUT] }));
+    expect(hedge!.draft!.picks.map((p) => [p.kind, p.side, p.strike, p.lots])).toEqual([["call", "buy", "82000", 40]]);
+    expect(hedge!.note).toContain("above the short call");
+    const [, , aboveSpot] = quickFixes(newDraft("s", 1), ctx({ open: [PUT] }));
+    expect(aboveSpot!.draft!.picks.map((p) => [p.strike, p.lots])).toEqual([["80000", 100]]);
+    expect(quickFixes(newDraft("s", 1), ctx({ open: [PUT], spot: null }))[2]).toMatchObject({ draft: null, note: "waiting for the spot price" });
+    expect(quickFixes(newDraft("s", 1), ctx({ open: [PUT], rows: rows.slice(0, 2) }))[2]).toMatchObject({ draft: null });
+    expect(quickFixes(newDraft("s", 1), ctx({ expiry: null }))[2]).toMatchObject({ draft: null, note: "no expiry shown" });
+    // a hedge at a strike already held nets into the held leg rather than a new pick
+    const held = leg({ ...CALL, id: "leg_82", strike: "82000", symbol: "C-BTC-82000-250926", lots: 10 });
+    const [, , netted] = quickFixes(newDraft("s", 1), ctx({ open: [shortCall, held] }));
+    expect(netted!.draft!.picks).toEqual([]);
+    expect(netted!.draft!.lotsAfter).toEqual({ leg_82: 50 });
+  });
+
+  it("ranks candidates: smallest max loss, largest credit, closest to delta-neutral; unpriced ones earn nothing", () => {
+    const tags = rankFixes([{ maxLoss: -100, cash: 5, delta: 0.4 }, { maxLoss: -50, cash: -20, delta: -0.1 }, null]);
+    expect(tags).toEqual([["largest credit"], ["smallest max loss", "closest to delta-neutral"], []]);
+    expect(rankFixes([{ maxLoss: Number.NEGATIVE_INFINITY, cash: 0, delta: 0 }, { maxLoss: -1, cash: 0, delta: 0 }])).toEqual([["largest credit", "closest to delta-neutral"], ["smallest max loss"]]);
+    expect(rankFixes([null, null])).toEqual([[], []]);
   });
 });
