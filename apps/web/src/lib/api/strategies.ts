@@ -2,6 +2,7 @@
 // the list so the Builder, Templates, Paper tab and Details read one source of truth.
 import {
   type AddLegsBody,
+  type AdjustBody,
   type CloseAllBody,
   type CloseLegBody,
   type PnlPoint,
@@ -33,6 +34,7 @@ export function strategyFetchers(client: ApiClient = api) {
     remove: (id: string) => client.delete(`/v1/strategies/${enc(id)}`),
     start: (id: string, body: StrategyStart) => client.post(`/v1/strategies/${enc(id)}/start`, body, Strategy),
     addLegs: (id: string, body: AddLegsBody) => client.post(`/v1/strategies/${enc(id)}/legs`, body, Strategy),
+    adjust: (id: string, body: AdjustBody) => client.post(`/v1/strategies/${enc(id)}/adjust`, body, Strategy),
     closeLeg: (id: string, legId: string, body: CloseLegBody) => client.post(`/v1/strategies/${enc(id)}/legs/${enc(legId)}/close`, body, Strategy),
     closeAll: (id: string, body: CloseAllBody) => client.post(`/v1/strategies/${enc(id)}/close`, body, Strategy),
     stop: (id: string, body: StopBody) => client.post(`/v1/strategies/${enc(id)}/stop`, body, Strategy),
@@ -74,6 +76,10 @@ export function useStartStrategy() {
 }
 export function useAddLegs() {
   return useStrategyMutation(({ id, body }: { id: string; body: AddLegsBody }) => f.addLegs(id, body));
+}
+/** One atomic adjustment batch (ADR-044): trims, closes and adds with the marks the trader reviewed. */
+export function useAdjustStrategy() {
+  return useStrategyMutation(({ id, body }: { id: string; body: AdjustBody }) => f.adjust(id, body));
 }
 export function useCloseLeg() {
   return useStrategyMutation(({ id, legId, body }: { id: string; legId: string; body: CloseLegBody }) => f.closeLeg(id, legId, body));

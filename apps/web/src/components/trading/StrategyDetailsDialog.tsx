@@ -5,20 +5,17 @@ import type { Strategy, StrategyLeg as ServerLeg } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { strategyKeys, useAddLegs, useArchiveStrategy, useCloseAll, useDeleteStrategy, useStrategies } from "@/lib/api/strategies";
+import { strategyKeys, useArchiveStrategy, useCloseAll, useDeleteStrategy, useStrategies } from "@/lib/api/strategies";
 import { daysToExpiry, fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
 import { fmtMoney } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
 import { settlementHourUtc, toPricingLegs } from "@/lib/pricing/legs";
 import { useUiStore } from "@/lib/store";
-import { MAX_OPEN_LEGS_UI, daysOf, openLegs, pickToInput, pnlSeries, priceMap, serverLegToLocal } from "@/lib/strategy/paper";
+import { MAX_OPEN_LEGS_UI, daysOf, openLegs, pnlSeries, priceMap, serverLegToLocal } from "@/lib/strategy/paper";
 import { type PaperBook } from "@/lib/strategy/usePaper";
-import { ChainPickerDialog } from "@/components/builder/ChainPickerDialog";
 import { PartialExitDialog } from "./PartialExitDialog";
 import { SquareOffDialog } from "./SquareOffDialog";
 import { StopPaperDialog } from "./StopPaperDialog";
-import { ConfirmAdjustmentDialog } from "./ConfirmAdjustmentDialog";
-import type { NewLegInput } from "@/lib/strategy/legs";
 
 export function ModePill({ status }: { status: Strategy["status"] }) {
   const cls = status === "live" ? "border-loss bg-loss text-white" : status === "paper" ? "border-border" : status === "archived" ? "border-border text-muted-foreground" : "border-border text-muted-foreground";
@@ -52,6 +49,18 @@ export function PnlChart({ series, className }: { series: number[]; className?: 
   );
 }
 
+/** "ADJUSTED · n" once a strategy carries adjustment history (ADR-044). */
+export function AdjustedBadge({ s }: { s: Strategy }) {
+  if (s.adjustments.length === 0) return null;
+  return (
+    <span className="micro inline-flex items-center rounded border border-warning px-1 text-warning" title={`${s.adjustments.length} ${s.adjustments.length === 1 ? "adjustment" : "adjustments"} · history in Details`} data-testid="adjusted-badge" data-count={s.adjustments.length}>
+      Adjusted{s.adjustments.length > 1 ? ` ×${s.adjustments.length}` : ""}
+    </span>
+  );
+}
+
+const fmtWhen = (iso: string) => new Date(iso).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+
 export function legInstrument(l: ServerLeg): string {
   return l.kind === "future" ? `${l.symbol} · perp` : `${fmtStrike(l.strike)} ${l.kind === "call" ? "C" : "P"} · ${fmtExpiry(l.expiry)} · ${daysToExpiry(l.expiry)}d`;
 }
@@ -64,6 +73,7 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
   const setMeta = useUiStore((s) => s.setStrategyMeta);
   const setAsset = useUiStore((s) => s.setAsset);
   const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
+  const openAdjust = useUiStore((s) => s.openAdjust);
   const { data: strategies } = useStrategies();
   const qc = useQueryClient();
   const s = strategies?.find((x) => x.id === id) ?? null;
@@ -71,12 +81,9 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
   const [sqLeg, setSqLeg] = useState<ServerLeg | null>(null);
   const [partial, setPartial] = useState(false);
   const [stop, setStop] = useState(false);
-  const [adjust, setAdjust] = useState(false);
   const [confirmAll, setConfirmAll] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [pendingAdj, setPendingAdj] = useState<NewLegInput[] | null>(null);
   const closeAll = useCloseAll();
-  const addLegs = useAddLegs();
   const del = useDeleteStrategy();
   const archive = useArchiveStrategy();
   const pnl = s ? book.pnlOf(s) : null;
@@ -93,6 +100,11 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
   const orig = shown.filter((l) => !l.isAdjustment);
   const money = book.money;
   const close = () => openDetails(null);
+  // the adjustment workbench (ADR-044): the pane follows this strategy, the left pane becomes the workbench
+  const adjustHere = () => {
+    setWorkspaceTab(s.status === "live" ? "live" : "paper");
+    openAdjust(s.id);
+  };
   const loadInBuilder = () => {
     setAsset(s.asset);
     setLegs(s.asset, s.legs.filter((l) => l.status === "open").map((l) => serverLegToLocal(l, s.asset)));
@@ -139,6 +151,7 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
             <DialogDescription>
               <span className="inline-flex flex-wrap items-center gap-2">
                 <ModePill status={s.status} />
+                <AdjustedBadge s={s} />
                 <span className="micro rounded border border-border px-1">{s.asset}</span>
                 {s.templateName ? <span>{s.templateName}</span> : null}
                 <span className="micro">{s.id}</span>
@@ -157,7 +170,7 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
               {active ? (
                 <>
                   <Button size="sm" variant="outline" onClick={() => void qc.invalidateQueries({ queryKey: strategyKeys.all }).then(() => toast("Refreshed", { description: "Strategy data has been updated" }))}>Refresh</Button>
-                  <Button size="sm" variant="outline" disabled={open.length >= MAX_OPEN_LEGS_UI} title={open.length >= MAX_OPEN_LEGS_UI ? "Maximum 10 active legs reached" : "Add adjustment legs from the options chain"} onClick={() => setAdjust(true)} data-testid="details-adjust">+ Add adjustment</Button>
+                  <Button size="sm" variant="outline" disabled={open.length === 0} title={open.length === 0 ? "No open legs to adjust" : open.length >= MAX_OPEN_LEGS_UI ? "At the 10-leg cap: trim or close legs in the workbench" : "Open the adjustment workbench: trim, close or add legs with the combined payoff"} onClick={adjustHere} data-testid="details-adjust">Adjust…</Button>
                   <Button size="sm" variant="outline" disabled={open.length === 0} onClick={() => setPartial(true)} data-testid="details-partial">Partial exit</Button>
                   {confirmAll ? (
                     <>
@@ -209,6 +222,21 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
             {shown.length === 0 ? <p className="py-4 text-center text-xs text-muted-foreground">{tab === "active" ? "No active legs · All legs have been squared off" : "No squared off legs · Closed legs will appear here"}</p> : null}
             {adj.length ? <><div className="micro mt-2">Adjustments</div><div className="flex flex-col gap-1">{adj.map(legRow)}</div></> : null}
             {orig.length ? <><div className="micro mt-2">{adj.length ? "Original legs" : "Legs"}</div><div className="flex flex-col gap-1">{orig.map(legRow)}</div></> : null}
+            {s.adjustments.length ? (
+              <>
+                <div className="micro mt-3">Adjustment history · {s.adjustments.length}</div>
+                <div className="flex flex-col gap-1" data-testid="details-adjustments">
+                  {[...s.adjustments].reverse().map((adj) => (
+                    <div key={adj.id} className="flex flex-wrap items-center gap-2 rounded border border-border px-2 py-1 text-xs" data-testid="details-adjustment" data-id={adj.id}>
+                      <span className="num text-muted-foreground">{fmtWhen(adj.at)}</span>
+                      <span className="micro rounded border border-border px-1">{[adj.added ? `+${adj.added} ${adj.added === 1 ? "leg" : "legs"}` : "", adj.trimmed ? `trimmed ${adj.trimmed}` : "", adj.closed ? `closed ${adj.closed}` : ""].filter(Boolean).join(" · ") || "no change"}</span>
+                      <span className={cn("num", Number(adj.realizedPnl) >= 0 ? "text-profit" : "text-loss")} title="Realised on the lots closed in this batch">{fmtMoney(Number(adj.realizedPnl), money, { signed: true })}</span>
+                      <span className="min-w-0 flex-1 truncate text-muted-foreground" title={adj.reason ?? undefined}>{adj.reason ?? "—"}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : null}
             <div className="micro mt-3">P&amp;L history · {s.pnlHistory.length + 1} {s.pnlHistory.length + 1 === 1 ? "point" : "points"}</div>
             <PnlChart series={pnlSeries(s, pnl?.total ?? 0)} className="rounded border border-border" />
             <div className="micro mt-3">Trading statistics</div>
@@ -236,54 +264,6 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
       {sqLeg ? <SquareOffDialog open={sqLeg !== null} onOpenChange={(o) => !o && setSqLeg(null)} strategy={s} leg={sqLeg} current={book.priceOf(s, sqLeg)} lotSize={book.lotSizeOf(s.asset)} money={money} /> : null}
       <PartialExitDialog open={partial} onOpenChange={setPartial} strategy={s} priceOf={(l) => book.priceOf(s, l)} />
       <StopPaperDialog open={stop} onOpenChange={setStop} strategy={s} priceOf={(l) => book.priceOf(s, l)} total={pnl?.total ?? 0} money={money} live={feedLive} onDone={(next) => { if (next.status !== "paper" && next.status !== "live") close(); }} />
-      <ChainPickerDialog
-        open={adjust}
-        onOpenChange={setAdjust}
-        remaining={Math.max(0, MAX_OPEN_LEGS_UI - open.length)}
-        asset={s.asset}
-        expiry={s.legs.find((l) => l.kind !== "future")?.expiry ?? null}
-        title="Add adjustment legs"
-        onAdd={(legs) => {
-          if (s.status === "live") {
-            setPendingAdj(legs);
-            return;
-          }
-          addLegs.mutate(
-            { id: s.id, body: { legs: legs.map(pickToInput) } },
-            {
-              onSuccess: () => toast.success("Adjustment added", { description: `${legs.length} adjustment ${legs.length === 1 ? "leg" : "legs"} added successfully` }),
-              onError: (e) => toast.error("Could not add adjustment", { description: e.message }),
-            },
-          );
-        }}
-      />
-      {pendingAdj ? (
-        <ConfirmAdjustmentDialog
-          open={true}
-          onOpenChange={(o) => !o && setPendingAdj(null)}
-          strategy={s}
-          legs={pendingAdj}
-          lotSize={book.lotSizeOf(s.asset)}
-          money={money}
-          brokerName={book.brokerName(s.brokerId)}
-          preview={null}
-          busy={addLegs.isPending}
-          onConfirm={() =>
-            addLegs.mutate(
-              { id: s.id, body: { legs: pendingAdj.map(pickToInput) } },
-              {
-                onSuccess: (r) => {
-                  setPendingAdj(null);
-                  const failed = r ? r.orders.filter((o) => o.purpose === "adjustment" && o.state === "failed").length : 0;
-                  if (failed) toast.error("Adjustment partly refused", { description: `${failed} ${failed === 1 ? "order" : "orders"} failed · use Retry on the Live tab` });
-                  else toast.success("Adjustment orders placed", { description: `${pendingAdj.length} ${pendingAdj.length === 1 ? "order" : "orders"} filled` });
-                },
-                onError: (e) => toast.error("Adjustment refused", { description: e.message }),
-              },
-            )
-          }
-        />
-      ) : null}
     </>
   );
 }

@@ -14,7 +14,8 @@ import { fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
 import { dayPnl, daysOf, fmtLeg, openLegs, pnlSeries } from "@/lib/strategy/paper";
 import type { PaperBook } from "@/lib/strategy/usePaper";
-import { ModePill } from "./StrategyDetailsDialog";
+import { AdjustedBadge, ModePill } from "./StrategyDetailsDialog";
+import { CardFigures } from "./CardFigures";
 import { StopPaperDialog } from "./StopPaperDialog";
 
 export const PAGE = 10;
@@ -58,6 +59,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const openTrade = useUiStore((s) => s.openTrade);
   const paneSource = useUiStore((s) => s.paneSource);
   const followStrategy = useUiStore((s) => s.followStrategy);
+  const openAdjust = useUiStore((s) => s.openAdjust);
   const workspaceTab = useUiStore((s) => s.workspaceTab);
   const [batch, setBatch] = useState(false);
   const [search, setSearch] = useState("");
@@ -148,9 +150,13 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                     followStrategy(s.id);
                   }}
                   onKeyDown={(e) => {
-                    if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+                    if (e.target !== e.currentTarget) return;
+                    if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       followStrategy(s.id);
+                    } else if ((e.key === "a" || e.key === "A") && open.length > 0) {
+                      e.preventDefault();
+                      openAdjust(s.id); // HC-TR-152: A opens the workbench on the focused card
                     }
                   }}
                   data-testid={`${kind}-card`}
@@ -159,7 +165,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                 >
                   <div className="flex flex-wrap items-start gap-2">
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium"><span className="truncate">{s.name}</span><ModePill status={s.status} /></div>
+                      <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium"><span className="truncate">{s.name}</span><ModePill status={s.status} /><AdjustedBadge s={s} /></div>
                       <div className="micro flex flex-wrap gap-2"><span className="rounded border border-border px-1">{s.asset}</span><span><b>{open.length}</b>/{s.legs.length} legs</span><span><b>{daysOf(s)}</b> days</span>{s.templateName ? <span>{s.templateName}</span> : null}</div>
                     </div>
                     <div className="ml-auto text-right">
@@ -167,6 +173,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                       <div className="micro">unreal {fmtMoney(p.unrealized, money, { signed: true })} · real {fmtMoney(p.realized, money, { signed: true })}</div>
                     </div>
                   </div>
+                  <CardFigures s={s} book={book} />
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <Sparkline series={pnlSeries(s, p.total)} />
                     <div className="flex flex-wrap gap-1">
@@ -190,6 +197,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                   ) : null}
                   <div className="mt-2 flex flex-wrap gap-1">
                     <Button size="sm" variant="outline" onClick={() => openDetails(s.id)} data-testid="card-details">Details</Button>
+                    <Button size="sm" variant="outline" disabled={open.length === 0} title={open.length ? "Adjust: trim, close or add legs with the combined payoff (A)" : "No open legs"} onClick={() => openAdjust(s.id)} data-testid="card-adjust">Adjust</Button>
                     {kind === "paper" ? (
                       <>
                         <Button size="sm" variant="outline" disabled={!connected || open.length === 0} title={connected ? "Place these legs as live orders" : "Connect your exchange first"} onClick={() => openTrade({ strategyId: s.id, mode: "live" })} data-testid="card-golive">Go live</Button>

@@ -15,7 +15,7 @@ import {
   rewardRisk,
   scenarioGrid,
 } from "./strategy.js";
-import { MS_PER_DAY, yearFraction } from "./time.js";
+import { MS_PER_DAY, expiryMs, yearFraction } from "./time.js";
 import type { Leg } from "./types.js";
 
 const SPOT = 79_528.1;
@@ -341,5 +341,79 @@ describe("HC-WS-062 scenario grid", () => {
 
   it("HC-WS-062 rejects non-positive prices", () => {
     expect(() => scenarioGrid(bullCallSpread, { prices: [0], dates })).toThrow(RangeError);
+  });
+});
+
+describe("ADR-044 valuation at a date (adjustment workbench, other expiries)", () => {
+  const LATER = "2026-10-30";
+  const calendar: Leg[] = [
+    leg({ kind: "call", side: "sell", strike: 80_000, price: 2500, iv: 0.42 }), // near expiry
+    leg({ kind: "call", side: "buy", strike: 80_000, price: 3400, iv: 0.45, expiry: LATER }), // far expiry
+  ];
+
+  it("valued at the latest expiry, every leg is intrinsic: the same figures as the exact expiry path", () => {
+    const exact = analyze(bullCallSpread, { spot: SPOT, nowMs: NOW, points: 41 });
+    const at = analyze(bullCallSpread, { spot: SPOT, nowMs: NOW, points: 41, valuationMs: expiryMs(EXPIRY) });
+    expect(at.valuationMs).toBe(expiryMs(EXPIRY));
+    expect(exact.valuationMs).toBeNull();
+    expect(at.maxProfit).toBeCloseTo(exact.maxProfit, 6);
+    expect(at.maxLoss).toBeCloseTo(exact.maxLoss, 6);
+    expect(at.breakevens.length).toBe(1);
+    expect(at.breakevens[0]).toBeCloseTo(exact.breakevens[0] as number, 3);
+    expect(at.pop).toBeCloseTo(exact.pop, 6);
+    at.points.forEach((p, i) => expect(p.pnlExpiry).toBeCloseTo(exact.points[i]!.pnlExpiry, 6));
+  });
+
+  it("a calendar valued at the near expiry keeps the far leg's time value: both sides bounded, a profit peak at the strike", () => {
+    const r = analyze(calendar, { spot: SPOT, nowMs: NOW, points: 81, valuationMs: expiryMs(EXPIRY) });
+    expect(Number.isFinite(r.maxProfit)).toBe(true);
+    expect(Number.isFinite(r.maxLoss)).toBe(true);
+    // at the near expiry the short call is intrinsic and the long call is Black-76 at the strike: worth more than intrinsic
+    const atStrike = payoffAtDate(calendar, 80_000, expiryMs(EXPIRY));
+    expect(r.maxProfit).toBeGreaterThanOrEqual(atStrike - 1e-6);
+    expect(r.maxProfit).toBeGreaterThan(payoffAtExpiry(calendar, 80_000));
+    // far from the strike the time value fades, so the curve tends to the net debit paid
+    expect(r.maxLoss).toBeLessThan(0);
+    expect(r.maxLoss).toBeGreaterThanOrEqual(netPremium(calendar) - 1);
+    expect(r.breakevens.length).toBe(2);
+    expect(r.pop).toBeGreaterThan(0);
+    expect(r.pop).toBeLessThan(1);
+    const [lo, hi] = r.breakevens as [number, number];
+    expect(payoffAtDate(calendar, (lo + hi) / 2, expiryMs(EXPIRY))).toBeGreaterThan(0);
+    expect(payoffAtDate(calendar, lo * 0.9, expiryMs(EXPIRY))).toBeLessThan(0);
+  });
+
+  it("the lower tail is the exact limit at price 0: a short put valued before expiry risks the same as at expiry", () => {
+    const shortPut = [leg({ kind: "put", side: "sell", strike: 78_000, price: 900 })];
+    const exact = analyze(shortPut, { spot: SPOT, nowMs: NOW });
+    const at = analyze(shortPut, { spot: SPOT, nowMs: NOW, valuationMs: NOW + 5 * MS_PER_DAY });
+    expect(at.maxLoss).toBeCloseTo(exact.maxLoss, 6); // −(78,000 − 900) × qty at price 0
+    expect(at.maxProfit).toBeCloseTo(exact.maxProfit, 6);
+    expect(at.breakevens).toHaveLength(1);
+  });
+
+  it("the tails stay analytical: a long call valued before expiry is unbounded above and loses at most the premium", () => {
+    const longCall = [leg({ kind: "call", side: "buy", strike: 80_000, price: 2500 })];
+    const at = NOW + 10 * MS_PER_DAY;
+    const r = analyze(longCall, { spot: SPOT, nowMs: NOW, valuationMs: at });
+    expect(r.maxProfit).toBe(Infinity);
+    // far below the strike the call is worthless whatever the date, so the loss reaches the premium and no more
+    expect(r.maxLoss).toBeCloseTo(-2500 * QTY, 6);
+    expect(r.points.every((p) => p.pnlExpiry >= r.maxLoss - 1e-9)).toBe(true);
+    expect(r.breakevens.length).toBe(1);
+    // before expiry the time value lowers the break-even below K + premium
+    expect(r.breakevens[0]).toBeLessThan(82_500);
+    expect(r.rewardRisk).toBe(Infinity);
+    const shortCall = [leg({ kind: "call", side: "sell", strike: 80_000, price: 2500 })];
+    expect(analyze(shortCall, { spot: SPOT, nowMs: NOW, valuationMs: at }).maxLoss).toBe(-Infinity);
+  });
+
+  it("a curve that touches zero reports the touch once, and a non-finite valuation instant throws", () => {
+    // a free long call (price 0) valued after its expiry is intrinsic: zero up to the strike, positive above
+    const free = [leg({ kind: "call", side: "buy", strike: 80_000, price: 0 })];
+    const r = analyze(free, { spot: SPOT, nowMs: NOW, points: 21, valuationMs: expiryMs(EXPIRY) + MS_PER_DAY });
+    expect(r.breakevens).toEqual([80_000]);
+    expect(r.maxLoss).toBe(0);
+    expect(() => analyze(free, { spot: SPOT, nowMs: NOW, valuationMs: NaN })).toThrow(RangeError);
   });
 });

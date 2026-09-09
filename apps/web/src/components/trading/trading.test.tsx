@@ -173,18 +173,26 @@ describe("HC-TR-068..081 details, square off, partial exit, adjustment, stop", (
     await u.click(within(pe).getByTestId("pe-go"));
     await waitFor(() => expect(mine()[0]!.legs).toHaveLength(3));
     expect(mine()[0]!.legs.filter((l) => l.status === "open").map((l) => l.lots)).toEqual([5]);
-    // adjustment through the chain picker
+    // adjustment through the workbench (ADR-044): Details closes, the left pane becomes the workbench
     await u.click(within(details).getByTestId("details-adjust"));
-    const picker = screen.getByTestId("chain-picker");
-    await waitFor(() => expect(within(picker).getAllByTestId("picker-expiry").length).toBeGreaterThan(0));
+    const wb = await screen.findByTestId("adjust-workbench");
+    await waitFor(() => expect(screen.queryByTestId("strategy-details")).toBeNull());
     serveMarket();
-    await waitFor(() => expect(within(picker).getAllByTestId("picker-row").length).toBeGreaterThan(0), { timeout: 5000 });
-    await u.click(within(within(picker).getAllByTestId("picker-row")[3]!).getByTestId("picker-sell-call"));
-    await u.click(within(picker).getByTestId("picker-add"));
+    await waitFor(() => expect(within(wb).getAllByTestId("wb-chain-row").length).toBeGreaterThan(0), { timeout: 5000 });
+    await u.click(within(within(wb).getAllByTestId("wb-chain-row")[3]!).getByTestId("wb-chain-sell-call"));
+    expect(within(wb).getAllByTestId("wb-pick")).toHaveLength(1);
+    await u.click(within(wb).getByTestId("adjust-review"));
+    const confirm = await screen.findByTestId("adjust-confirm");
+    expect(confirm.dataset["mode"]).toBe("paper");
+    await u.click(within(confirm).getByTestId("adjust-apply"));
     await waitFor(() => expect(mine()[0]!.legs).toHaveLength(4));
     expect(mine()[0]!.legs.at(-1)).toMatchObject({ isAdjustment: true, status: "open", side: "sell" });
+    expect(mine()[0]!.adjustments).toHaveLength(1);
+    // Details reopens on the adjusted strategy with its history
+    const after = await screen.findByTestId("strategy-details");
+    await waitFor(() => expect(within(after).getAllByTestId("details-adjustment")).toHaveLength(1));
     // stop → archive at live prices
-    await u.click(within(details).getByTestId("details-stop"));
+    await u.click(within(after).getByTestId("details-stop"));
     const stop = screen.getByTestId("stop-paper");
     expect(within(stop).getAllByTestId("stop-leg")).toHaveLength(2);
     expect(within(stop).getByTestId<HTMLInputElement>("stop-archive").checked).toBe(true);

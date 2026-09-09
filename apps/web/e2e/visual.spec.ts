@@ -71,6 +71,21 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
       await expect(page.getByTestId("paper-card").getByTestId("card-pnl")).not.toHaveText("—");
       await page.screenshot({ path: `${DIR}/analyse-paper-${theme}.png` });
+      // ADR-044 the adjustment workbench (HC-TR-148..151) and its paper confirm
+      await page.getByTestId("card-adjust").click();
+      const wb = page.getByTestId("adjust-workbench");
+      await expect(wb.getByTestId("wb-chain-table")).toHaveAttribute("data-rows", /^[1-9]/, { timeout: 15_000 });
+      await wb.getByTestId("wb-leg").first().getByTestId("lots-after-down").click();
+      await wb.getByTestId("wb-chain-row").nth(2).getByTestId("wb-chain-sell-call").click();
+      await expect(page.getByTestId("before-after")).toBeVisible();
+      await expect(wb.getByTestId("adjust-summary")).toContainText("This change", { timeout: 15_000 });
+      await page.screenshot({ path: `${DIR}/analyse-workbench-${theme}.png` });
+      await wb.getByTestId("adjust-review").click();
+      await expect(page.getByTestId("adjust-confirm")).toBeVisible();
+      await page.screenshot({ path: `${DIR}/analyse-adjust-confirm-${theme}.png` });
+      await page.getByTestId("adjust-cancel").click();
+      await wb.getByTestId("adjust-exit").click();
+      await expect(wb).toBeHidden();
       await page.getByTestId("card-details").click();
       await expect(page.getByTestId("strategy-details")).toBeVisible();
       await page.screenshot({ path: `${DIR}/analyse-details-${theme}.png` });

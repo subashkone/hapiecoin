@@ -435,6 +435,72 @@ test.describe("HC-TR paper trading (Phase 3 item 1)", () => {
   });
 });
 
+test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
+  test.beforeEach(async ({ page, request }) => {
+    await seedUser(request, { email: "adjust@example.com", plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" } });
+    await signIn(page, "adjust@example.com");
+    await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
+    await page.reload();
+    await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 15_000 });
+  });
+
+  test("trim a leg and add one from the chain with the combined payoff, review and apply on paper; history and the badge follow", async ({ page }) => {
+    const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
+    await page.locator(`[data-testid=chain-row-calls][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-buy-calls").click();
+    await page.locator(`[data-testid=chain-row-puts][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-sell-puts").click();
+    await page.getByTestId("tab-builder").click();
+    await page.getByTestId("strategy-name").fill("E2E adjust");
+    await page.getByTestId("builder-paper-trade").click();
+    await page.getByTestId("trade-mode").getByTestId("trade-continue").click();
+    await page.getByTestId("trade-preview").getByTestId("trade-now").click();
+    await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+    const card = page.getByTestId("paper-card");
+    await expect(card.getByTestId("card-figures")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(card.getByTestId("adjusted-badge")).toHaveCount(0);
+    // HC-TR-148: the workbench takes the left pane, the analysis pane follows "after the change"
+    await card.getByTestId("card-adjust").click();
+    const wb = page.getByTestId("adjust-workbench");
+    await expect(wb).toBeVisible();
+    await expect(wb).toHaveAttribute("data-empty", "true");
+    await expect(page.getByTestId("pane-adjusting")).toBeVisible();
+    await expect(wb.getByTestId("wb-chain-table")).toHaveAttribute("data-rows", /^[1-9]/, { timeout: 15_000 });
+    await expect(wb.getByTestId("wb-chain-held")).toHaveCount(2);
+    // HC-TR-150: lots after on an open leg
+    const leg = wb.getByTestId("wb-leg").first();
+    await leg.getByTestId("lots-after-down").click();
+    await expect(leg.getByTestId("effect")).toHaveAttribute("data-kind", "trim");
+    // HC-TR-149: before → after strip and the summary line
+    await expect(page.getByTestId("before-after")).toBeVisible();
+    await expect(wb.getByTestId("adjust-summary")).toContainText("This change", { timeout: 15_000 });
+    await expect(page.getByTestId("tile-max-loss")).toContainText("after");
+    // a new sold call two rows into the window (not a held strike)
+    await wb.getByTestId("wb-chain-row").nth(2).getByTestId("wb-chain-sell-call").click();
+    await expect(wb.getByTestId("wb-pick")).toHaveCount(1);
+    await expect(wb.getByTestId("wb-pick").getByTestId("effect")).toHaveText("NEW LEG");
+    await expect(wb.getByTestId("adjust-review")).toContainText("2 changes");
+    // HC-TR-151: review and apply on paper with a reason
+    await wb.getByTestId("adjust-review").click();
+    const confirm = page.getByTestId("adjust-confirm");
+    await expect(confirm).toHaveAttribute("data-mode", "paper");
+    await expect(confirm.getByTestId("adjust-confirm-row")).toHaveCount(2);
+    await expect(confirm.getByTestId("cf-max-loss")).toContainText("→");
+    await confirm.getByTestId("adjust-reason").fill("e2e roll up");
+    await confirm.getByTestId("adjust-apply").click();
+    const details = page.getByTestId("strategy-details");
+    await expect(details).toBeVisible({ timeout: 15_000 });
+    await expect(details.getByTestId("details-adjustment")).toHaveCount(1);
+    await expect(details.getByTestId("details-adjustment")).toContainText("e2e roll up");
+    await expect(details.getByTestId("adjusted-badge")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(wb).toBeHidden();
+    await expect(page.getByTestId("left-pane")).toBeVisible();
+    await expect(page.getByTestId("paper-card").getByTestId("adjusted-badge")).toHaveAttribute("data-count", "1");
+    await expect(page.getByTestId("paper-card").getByTestId("order-chip")).toHaveCount(4); // two kept, the trimmed split, the new leg
+  });
+});
+
 test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
   test.beforeEach(async ({ page, request }) => {
     await seedUser(request, { email: "live@example.com", plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" }, connected: true });
