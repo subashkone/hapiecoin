@@ -171,6 +171,41 @@ for (const theme of ["dark", "light"] as const) {
       await page.screenshot({ path: `${DIR}/analytics-coin-${theme}.png`, fullPage: true });
     });
 
+    test(`HC-MT-040 /terminal, HC-MT-052 /terminal/spot, HC-MT-102 /terminal/exchanges, HC-MT-119 funding, HC-MT-126 long-short, HC-MT-144 fear-greed, HC-MT-148 cycle ${theme}`, async ({ page, request }) => {
+      await seedUser(request, { email: `mt-${theme}@example.com` });
+      await signIn(page, `mt-${theme}@example.com`);
+      await page.evaluate((t) => {
+        localStorage.setItem("hapiecoin.theme", t);
+      }, theme);
+      await page.goto("/terminal");
+      await expect(page.getByTestId("table-dash-markets")).toHaveAttribute("data-rows", "10", { timeout: 15_000 });
+      await page.getByTestId("table-dash-markets").getByTestId("star").nth(0).click();
+      await page.getByTestId("table-dash-markets").getByTestId("star").nth(1).click();
+      await expect(page.getByTestId("watch-strip")).toHaveAttribute("data-count", "2");
+      await expect(page.getByTestId("chart-ls")).toHaveAttribute("data-state", "ready");
+      await page.evaluate(() => window.scrollTo(0, 0)); // the star clicks scrolled; keep the sticky sidebar at the top of the capture
+      await page.screenshot({ path: `${DIR}/terminal-dashboard-${theme}.png`, fullPage: true });
+      await page.goto("/terminal/spot?compare=BTC,ETH");
+      await expect(page.getByTestId("table-spot")).toHaveAttribute("data-rows", "10", { timeout: 15_000 });
+      await page.screenshot({ path: `${DIR}/terminal-spot-${theme}.png`, fullPage: true });
+      await page.goto("/terminal/exchanges/binance");
+      await expect(page.getByTestId("table-exchange-coins")).toHaveAttribute("data-rows", "10", { timeout: 15_000 });
+      await page.screenshot({ path: `${DIR}/terminal-exchange-${theme}.png`, fullPage: true });
+      await page.goto("/terminal/derivatives/funding");
+      await expect(page.getByTestId("table-funding-venues")).toHaveAttribute("data-rows", "3", { timeout: 15_000 });
+      await expect(page.getByTestId("chart-funding")).toHaveAttribute("data-state", "ready");
+      await page.screenshot({ path: `${DIR}/terminal-funding-${theme}.png`, fullPage: true });
+      await page.goto("/terminal/derivatives/long-short");
+      await expect(page.getByTestId("table-ls-readings")).toHaveAttribute("data-rows", "24", { timeout: 15_000 });
+      await page.screenshot({ path: `${DIR}/terminal-long-short-${theme}.png`, fullPage: true });
+      await page.goto("/terminal/indicators/fear-greed");
+      await expect(page.getByTestId("chart-fg")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+      await page.screenshot({ path: `${DIR}/terminal-fear-greed-${theme}.png`, fullPage: true });
+      await page.goto("/terminal/indicators/cycle");
+      await expect(page.getByTestId("chart-pi")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+      await page.screenshot({ path: `${DIR}/terminal-cycle-${theme}.png`, fullPage: true });
+    });
+
     test(`HC-MA-049 /analytics/options, HC-MA-073 /analytics/sentiment and HC-MA-054 /analytics/etf ${theme}`, async ({ page, request }) => {
       await seedUser(request, { email: `ma4-${theme}@example.com` });
       await signIn(page, `ma4-${theme}@example.com`);

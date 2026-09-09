@@ -5,7 +5,7 @@
   "feature": "Terminal shell: sticky header + 232px sticky sidebar + content (max-width 1600px) + footer note",
   "how": "Shared v2 header (CG.chrome['terminal-header'] → CG2.header, identical to /analytics, Terminal ▾ tab active) + restyled 222px sticky sidebar (CG.chrome['terminal-sidebar']) + content (max-width 1600px) + footer; everything scoped under .terminal.cg-scope.cgx and built only on the shell tokens",
   "status": "working",
-  "evidence": "bundle: ma-panel, ma-mono, ma-up, ma-down, ma-btn, ma-dim, ma-mute, ma-accent"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -13,7 +13,7 @@
   "feature": "Header title 'Market Analytics' + HapieCoin mark",
   "how": "Shared header: logo links to #/analyse, the title reads Market Analytics; the terminal keeps its own left sidebar",
   "status": "working",
-  "evidence": "anchors: header, /terminal, Market, ma-accent, Analytics"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -21,7 +21,7 @@
   "feature": "Header coin search \"Search coin…\"",
   "how": "Shared header search; in the terminal Enter/click opens /terminal/coin/SYM (hint row says \"open in terminal\")",
   "status": "working",
-  "evidence": "anchors: Search coin (BTC, ETH, SOL…)"
+  "evidence": "AnalyticsShell CoinSearch base=/terminal/coin (hint row, Enter → /terminal/coin/SYM, no match → toast \"No coin matches\"); unit terminal-pages.test.tsx \"coin search\"; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal",
@@ -29,7 +29,7 @@
   "feature": "Search dropdown item click",
   "how": "Navigates to /terminal/coin/SYM and clears the input",
   "status": "working",
-  "evidence": ""
+  "evidence": "AnalyticsShell CoinSearch base=/terminal/coin (hint row, Enter → /terminal/coin/SYM, no match → toast \"No coin matches\"); unit terminal-pages.test.tsx \"coin search\"; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal",
@@ -37,7 +37,7 @@
   "feature": "Search keyboard: ArrowUp/ArrowDown highlight, Enter opens highlighted coin, Escape closes",
   "how": "Enter with no match shows destructive toast \"No coin matches “…”\"",
   "status": "working",
-  "evidence": ""
+  "evidence": "AnalyticsShell CoinSearch base=/terminal/coin (hint row, Enter → /terminal/coin/SYM, no match → toast \"No coin matches\"); unit terminal-pages.test.tsx \"coin search\"; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal",
@@ -45,7 +45,7 @@
   "feature": "Search empty state",
   "how": "Dropdown shows \"No coin matches “xyz”\" when nothing matches",
   "status": "working",
-  "evidence": ""
+  "evidence": "AnalyticsShell CoinSearch base=/terminal/coin (hint row, Enter → /terminal/coin/SYM, no match → toast \"No coin matches\"); unit terminal-pages.test.tsx \"coin search\"; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal",
@@ -53,7 +53,7 @@
   "feature": "Header \"Live\" indicator",
   "how": "Live pill (green dot) in the shared header, hidden on small screens",
   "status": "static",
-  "evidence": ""
+  "evidence": "shared header Live pill (analytics shell)"
  },
  {
   "route": "/terminal",
@@ -61,7 +61,7 @@
   "feature": "Header \"Markets Hub\" button",
   "how": "Replaced by the Hub tab of the shared section switcher (and the sidebar \"Markets Hub ↗\" item)",
   "status": "working",
-  "evidence": "bundle: Markets Hub → /analytics/coinglass"
+  "evidence": "Terminal ▾ section switcher (10 entries) + sidebar \"Markets Hub ↗\"; unit analytics.test.tsx shell"
  },
  {
   "route": "/terminal",
@@ -69,7 +69,7 @@
   "feature": "Header \"← Analyse\" link",
   "how": "Shared header link back to the options app (#/analyse)",
   "status": "working",
-  "evidence": "inferred: terminal is a sub-app of hapiecoin.com"
+  "evidence": "shared analytics shell: \"← Analyse\" link, theme from the app header; e2e analytics.spec.ts"
  },
  {
   "route": "/terminal",
@@ -77,7 +77,7 @@
   "feature": "Theme toggle (sun/moon icon)",
   "how": "Calls CG.theme.toggle(); the terminal now follows the page theme (html.dark) — the private terminal theme and cg2-theme localStorage key were removed",
   "status": "working",
-  "evidence": "task spec: localStorage key cg2-theme, dark default"
+  "evidence": "shared analytics shell: \"← Analyse\" link, theme from the app header; e2e analytics.spec.ts"
  },
  {
   "route": "/terminal",
@@ -85,7 +85,7 @@
   "feature": "Sidebar section labels: Markets, Derivatives, ETF, On-chain, Indicators",
   "how": "Grouped navigation with small inline-SVG icons",
   "status": "static",
-  "evidence": "bundle sidebar order"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -93,7 +93,7 @@
   "feature": "Sidebar nav item \"Dashboard\"",
   "how": "Navigates to /terminal",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -101,7 +101,7 @@
   "feature": "Sidebar nav item \"Markets Hub\"",
   "how": "Navigates to /analytics/coinglass (external to the terminal)",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "sidebar \"Markets Hub ↗\" → /analytics/hub (ext, never active); components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -109,7 +109,7 @@
   "feature": "Sidebar nav item \"Spot Markets\"",
   "how": "Navigates to /terminal/spot",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -117,7 +117,7 @@
   "feature": "Sidebar nav item \"Layer-1\"",
   "how": "Navigates to /terminal/sectors/layer-1",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -125,7 +125,7 @@
   "feature": "Sidebar nav item \"Layer-2\"",
   "how": "Navigates to /terminal/sectors/layer-2",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -133,7 +133,7 @@
   "feature": "Sidebar nav item \"DeFi\"",
   "how": "Navigates to /terminal/sectors/defi",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -141,7 +141,7 @@
   "feature": "Sidebar nav item \"Memes\"",
   "how": "Navigates to /terminal/sectors/memes",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -149,7 +149,7 @@
   "feature": "Sidebar nav item \"Exchanges\"",
   "how": "Navigates to /terminal/exchanges/Binance",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -157,7 +157,7 @@
   "feature": "Sidebar nav item \"Open Interest\"",
   "how": "Navigates to /terminal/derivatives/open-interest",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -165,7 +165,7 @@
   "feature": "Sidebar nav item \"Funding Rates\"",
   "how": "Navigates to /terminal/derivatives/funding",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -173,7 +173,7 @@
   "feature": "Sidebar nav item \"Long / Short\"",
   "how": "Navigates to /terminal/derivatives/long-short",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -181,7 +181,7 @@
   "feature": "Sidebar nav item \"Liquidations\"",
   "how": "Navigates to /terminal/derivatives/liquidations",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -189,7 +189,7 @@
   "feature": "Sidebar nav item \"ETF Flows\"",
   "how": "Navigates to /terminal/etf",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -197,7 +197,7 @@
   "feature": "Sidebar nav item \"Exchange Balance\"",
   "how": "Navigates to /terminal/onchain/exchange-balance",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -205,7 +205,7 @@
   "feature": "Sidebar nav item \"Token Unlocks\"",
   "how": "Navigates to /terminal/onchain/unlocks",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -213,7 +213,7 @@
   "feature": "Sidebar nav item \"Fear & Greed\"",
   "how": "Navigates to /terminal/indicators/fear-greed",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -221,7 +221,7 @@
   "feature": "Sidebar nav item \"BTC Cycle\"",
   "how": "Navigates to /terminal/indicators/cycle",
   "status": "working",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -229,7 +229,7 @@
   "feature": "Active nav highlight",
   "how": "Active sidebar item gets an amber (--primary) 2px left rule, foreground text and a muted background; section labels use the .micro style",
   "status": "working",
-  "evidence": ""
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -237,7 +237,7 @@
   "feature": "Sidebar collapses to a top drawer under 900px",
   "how": "\"Navigation\" toggle button shows the current section name and expands/collapses the nav; closes on route change",
   "status": "working",
-  "evidence": ""
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -245,7 +245,7 @@
   "feature": "Footer note \"Market data · auto-refreshing · intervals vary per dataset\"",
   "how": "Rendered by CG.chrome[\"terminal-footer\"] on every terminal screen",
   "status": "static",
-  "evidence": "task spec"
+  "evidence": "analytics shell footer on every terminal screen; unit terminal-pages.test.tsx"
  },
  {
   "route": "/terminal",
@@ -253,7 +253,7 @@
   "feature": "Shared SVG chart helper (line / area / bars / stacked bars / dual axis / reference lines)",
   "how": "MA.chart now adapts its spec to CG2.chart, the single chart helper shared with /analytics (timeframe chips, toggleable legend, crosshair tooltip, last-value tags, faint grid, skeleton)",
   "status": "working",
-  "evidence": "bundle colours hsl(168 100% 44%), hsl(50 90% 56%), hsl(358 78% 58%), hsl(152 76% 45%), hsl(280 60% 60%)"
+  "evidence": "shared components/analytics/Chart.tsx (line / area / bar / stacked / dual axis / hlines, crosshair tooltip); e2e analytics.spec.ts HC-MA-030"
  },
  {
   "route": "/terminal",
@@ -261,7 +261,7 @@
   "feature": "Chart hover crosshair + tooltip",
   "how": "Mouse over any chart shows a dashed crosshair, dots on line series and a tooltip with the time label and every series value",
   "status": "working",
-  "evidence": ""
+  "evidence": "shared components/analytics/Chart.tsx (line / area / bar / stacked / dual axis / hlines, crosshair tooltip); e2e analytics.spec.ts HC-MA-030"
  },
  {
   "route": "/terminal",
@@ -269,7 +269,7 @@
   "feature": "Chart legends",
   "how": "Multi-series charts show a colour legend above the plot",
   "status": "static",
-  "evidence": ""
+  "evidence": "Chart legend with toggles (legend-item); unit terminal-pages.test.tsx long / short (3 items)"
  },
  {
   "route": "/terminal",
@@ -277,7 +277,7 @@
   "feature": "Sortable tables (all terminal tables)",
   "how": "MA.table adapts to CG2.table: sticky headers, sortable, mono right-aligned numbers, heat cells, search, Columns ▾, CSV, star, compare checkbox",
   "status": "working",
-  "evidence": "bundle: Sortable list of all tracked markets"
+  "evidence": "shared components/analytics/DataTable.tsx (sticky header, sort, search, Columns ▾, CSV, ★); e2e terminal.spec.ts spot"
  },
  {
   "route": "/terminal",
@@ -285,7 +285,7 @@
   "feature": "Table rows link to detail pages",
   "how": "Coin rows → /terminal/coin/SYM, exchange rows → /terminal/exchanges/NAME (data-nav)",
   "status": "working",
-  "evidence": ""
+  "evidence": "rowHref on every terminal table → /terminal/coin/SYM or /terminal/exchanges/VENUE; unit terminal-pages.test.tsx dashboard / open interest / coin page"
  },
  {
   "route": "/terminal",
@@ -293,7 +293,7 @@
   "feature": "Number formatting: .ma-mono numbers, .ma-up/.ma-down colours",
   "how": "Prices with 2/4/8 decimals by magnitude, compact USD ($1.23B), signed % in green/red, funding to 4 decimals",
   "status": "static",
-  "evidence": "bundle: ma-mono, ma-up, ma-down, current_price, price_change_percent_24h"
+  "evidence": "lib/analytics/format.ts (price by magnitude, usdCompact, signed pct, funding 4 decimals) + tone classes"
  },
  {
   "route": "/terminal",
@@ -301,7 +301,7 @@
   "feature": "Access control",
   "how": "All terminal screens are data-auth=\"user\"; logged-out users are redirected to /auth",
   "status": "working",
-  "evidence": ""
+  "evidence": "app/terminal/layout.tsx redirects logged-out users to /auth?next=%2Fterminal; e2e terminal.spec.ts HC-MT-038"
  },
  {
   "route": "/terminal",
@@ -309,47 +309,47 @@
   "feature": "Extra coins added to CG.mock.coins at init",
   "how": "MNT, METIS, ZK, COMP, DYDX, SUSHI, 1INCH, MEME, POPCAT, BRETT added with plausible numbers so every sector symbol resolves (50 coins total)",
   "status": "static",
-  "evidence": ""
+  "evidence": "n/a in the real app: the coin list is the ingest's ANALYTICS_SYMBOLS (10 by default); sectors show the tracked coins only"
  },
  {
   "route": "/terminal",
   "screen": "Dashboard",
   "feature": "Page title \"Dashboard · Derivatives market overview\"",
   "how": "Header with \"Updated 14:30\" (mock clock)",
-  "status": "static",
-  "evidence": "bundle: Dashboard, Derivatives market overview"
+  "status": "working",
+  "evidence": "PageTitle \"Dashboard · Derivatives market overview\" + \"Updated <as-of>\" from the overview snapshot; components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "route": "/terminal",
   "screen": "Dashboard",
   "feature": "Stat tile \"Fear & Greed\"",
   "how": "value + label Extreme Fear / Fear / Neutral / Greed / Extreme Greed from CG.mock.fearGreedNow",
-  "status": "static",
-  "evidence": "bundle: Fear & Greed, Extreme Fear, Fear, Neutral, Greed, Extreme Greed"
+  "status": "working",
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "route": "/terminal",
   "screen": "Dashboard",
   "feature": "Stat tile \"Total Open Interest · All tracked coins\"",
   "how": "sum of openInterest over CG.mock.coins",
-  "status": "static",
-  "evidence": "bundle: Total Open Interest, All tracked coins, open_interest_usd"
+  "status": "working",
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "route": "/terminal",
   "screen": "Dashboard",
   "feature": "Stat tile \"24h Volume · Aggregated futures\"",
   "how": "sum of volume24h over CG.mock.coins",
-  "status": "static",
-  "evidence": "bundle: 24h Volume, Aggregated futures, volume_usd_24h"
+  "status": "working",
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "route": "/terminal",
   "screen": "Dashboard",
   "feature": "Stat tile \"BTC Dominance · OI share\"",
   "how": "BTC openInterest / total OI",
-  "status": "static",
-  "evidence": "bundle: BTC Dominance, OI share"
+  "status": "working",
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "route": "/terminal",
@@ -357,15 +357,15 @@
   "feature": "Stat tile \"BTC ETF Net Inflow (USD) · Net Flow\"",
   "how": "last CG.mock.etfFlows flow, green/red by sign",
   "status": "static",
-  "evidence": "bundle: BTC ETF Net Inflow (USD), Net Flow, flow_usd, net_flow"
+  "evidence": "tile shows — · \"coming soon · GAPS #55\" (no ETF flows source, ADR-038); components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "route": "/terminal",
   "screen": "Dashboard",
   "feature": "Stat tile \"Long / Short Ratio · L/S\"",
   "how": "last CG.mock.lsHistory global ratio",
-  "status": "static",
-  "evidence": "bundle: Long / Short Ratio, L/S, long_short_ratio"
+  "status": "working",
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "route": "/terminal",
@@ -373,7 +373,7 @@
   "feature": "Chart \"Aggregated Open Interest\" (area)",
   "how": "CG.mock.oiHistory (96h) as an accent area chart with hover tooltip",
   "status": "working",
-  "evidence": "bundle: Aggregated Open Interest, oi-aggregated-history, hsl(168 100% 44%)"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "route": "/terminal",
@@ -381,7 +381,7 @@
   "feature": "Chart \"Long / Short Ratio\" (line)",
   "how": "CG.mock.lsHistory global ratio as a yellow line with L/S = 1 reference line",
   "status": "working",
-  "evidence": "bundle: Long / Short Ratio, global-ls-ratio, hsl(50 90% 56%)"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "route": "/terminal",
@@ -389,7 +389,7 @@
   "feature": "Table \"Top Gainers (24h)\" — Coin, Price, 24h %",
   "how": "Top 6 coins by chg24 desc; sortable; rows open the coin page",
   "status": "working",
-  "evidence": "bundle: Top Gainers (24h), Coin, Price, 24h %"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "route": "/terminal",
@@ -397,7 +397,7 @@
   "feature": "Table \"Top Losers (24h)\" — Coin, Price, 24h %",
   "how": "Bottom 6 coins by chg24; sortable; rows open the coin page",
   "status": "working",
-  "evidence": "bundle: Top Losers (24h)"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "route": "/terminal",
@@ -405,15 +405,15 @@
   "feature": "Main table \"Markets\" — Coin, Price, 24h %, Open Interest, 24h Vol",
   "how": "All 50 coins sorted by Open Interest desc by default; every column sortable; row click → /terminal/coin/SYM",
   "status": "working",
-  "evidence": "bundle: coins-markets, symbol, current_price, price_change_percent_24h, open_interest_usd, volume_usd_24h"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "route": "/terminal/spot",
   "screen": "Spot Markets",
   "feature": "Page title \"Spot Markets · Sortable list of all tracked markets\"",
   "how": "Header with filter input and live \"N markets\" counter",
-  "status": "static",
-  "evidence": "bundle: Spot Markets, Sortable list of all tracked markets"
+  "status": "working",
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "route": "/terminal/spot",
@@ -421,7 +421,7 @@
   "feature": "Search filter input \"Filter by symbol or name…\"",
   "how": "Filters the table as you type (symbol or name substring); counter updates; empty state \"No markets match “…”\"",
   "status": "working",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "route": "/terminal/spot",
@@ -429,7 +429,7 @@
   "feature": "Column \"Coin\" (sortable)",
   "how": "from CG.mock.coins; click header to sort asc/desc",
   "status": "working",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "route": "/terminal/spot",
@@ -437,7 +437,7 @@
   "feature": "Column \"Price\" (sortable)",
   "how": "from CG.mock.coins; click header to sort asc/desc",
   "status": "working",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "route": "/terminal/spot",
@@ -445,7 +445,7 @@
   "feature": "Column \"24h %\" (sortable)",
   "how": "from CG.mock.coins; click header to sort asc/desc",
   "status": "working",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "route": "/terminal/spot",
@@ -453,7 +453,7 @@
   "feature": "Column \"Market Cap\" (sortable)",
   "how": "from CG.mock.coins; click header to sort asc/desc",
   "status": "working",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "route": "/terminal/spot",
@@ -461,7 +461,7 @@
   "feature": "Column \"24h Volume\" (sortable)",
   "how": "from CG.mock.coins; click header to sort asc/desc",
   "status": "working",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "route": "/terminal/spot",
@@ -469,7 +469,7 @@
   "feature": "Column \"Open Interest\" (sortable)",
   "how": "from CG.mock.coins; click header to sort asc/desc",
   "status": "working",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "route": "/terminal/spot",
@@ -477,7 +477,7 @@
   "feature": "Column \"OI Share\" (sortable)",
   "how": "coin OI / total OI in %",
   "status": "working",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "route": "/terminal/spot",
@@ -485,7 +485,7 @@
   "feature": "Default sort",
   "how": "Market Cap descending",
   "status": "working",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "route": "/terminal/spot",
@@ -493,15 +493,15 @@
   "feature": "Row click",
   "how": "Opens /terminal/coin/SYM",
   "status": "working",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "route": "/terminal/sectors/:slug",
   "screen": "Sector",
   "feature": "Page title \"<Name> Sector · N symbols\"",
   "how": "Layer-1 (13), Layer-2 (8), DeFi (11), Memes (9) symbol lists filtered to coins present in CG.mock.coins",
-  "status": "static",
-  "evidence": "bundle: sectors/:slug"
+  "status": "working",
+  "evidence": "components/terminal/MarketPages.tsx SectorPage (sectorOf map shared with the hub); unit terminal-pages.test.tsx sectors; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/sectors/:slug",
@@ -509,7 +509,7 @@
   "feature": "Sector switcher chips (Layer-1 / Layer-2 / DeFi / Memes)",
   "how": "Chips in the page header navigate between sectors; active chip highlighted",
   "status": "working",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SectorPage (sectorOf map shared with the hub); unit terminal-pages.test.tsx sectors; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/sectors/:slug",
@@ -517,7 +517,7 @@
   "feature": "Sector table (same columns as Spot Markets)",
   "how": "Coin, Price, 24h %, Market Cap, 24h Volume, Open Interest, OI Share; sortable; rows open the coin page",
   "status": "working",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SectorPage (sectorOf map shared with the hub); unit terminal-pages.test.tsx sectors; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/sectors/:slug",
@@ -525,7 +525,7 @@
   "feature": "Unknown slug state \"Unknown sector: xyz\"",
   "how": "Title and empty panel \"Unknown sector: xyz\" with hint to pick a known sector",
   "status": "working",
-  "evidence": "bundle: Unknown sector: "
+  "evidence": "components/terminal/MarketPages.tsx SectorPage (sectorOf map shared with the hub); unit terminal-pages.test.tsx sectors; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/sectors",
@@ -533,7 +533,7 @@
   "feature": "Redirect /terminal/sectors → /terminal/sectors/layer-1",
   "how": "data-redirect screen",
   "status": "working",
-  "evidence": "inferred"
+  "evidence": "app/terminal/sectors/page.tsx redirect → /terminal/sectors/layer-1; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/etf",
@@ -541,7 +541,7 @@
   "feature": "Page title \"Bitcoin Spot ETFs · Issuer flows, AUM and holdings\"",
   "how": "",
   "status": "static",
-  "evidence": "bundle: Bitcoin Spot ETFs, Issuer flows, AUM and holdings"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "route": "/terminal/etf",
@@ -549,7 +549,7 @@
   "feature": "Stat tile \"Total AUM\"",
   "how": "sum of aum over CG.mock.etfs (bitcoin)",
   "status": "static",
-  "evidence": "bundle: Total AUM, Total BTC Held, ETF Count, aum_usd, btc_holdings"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "route": "/terminal/etf",
@@ -557,7 +557,7 @@
   "feature": "Stat tile \"Total BTC Held\"",
   "how": "sum of btcHeld with USD equivalent",
   "status": "static",
-  "evidence": "bundle: Total AUM, Total BTC Held, ETF Count, aum_usd, btc_holdings"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "route": "/terminal/etf",
@@ -565,7 +565,7 @@
   "feature": "Stat tile \"ETF Count\"",
   "how": "number of spot funds tracked",
   "status": "static",
-  "evidence": "bundle: Total AUM, Total BTC Held, ETF Count, aum_usd, btc_holdings"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "route": "/terminal/etf",
@@ -573,63 +573,63 @@
   "feature": "Stat tile \"Net Flow (1d)\"",
   "how": "sum of flow1d, green/red by sign",
   "status": "static",
-  "evidence": "bundle: Total AUM, Total BTC Held, ETF Count, aum_usd, btc_holdings"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "route": "/terminal/etf",
   "screen": "Bitcoin Spot ETFs",
   "feature": "Chart \"Net Inflow History · Net Flow USD\" (bars)",
   "how": "CG.mock.etfFlows daily flows; positive bars accent, negative bars red; hover tooltip",
-  "status": "working",
-  "evidence": "bundle: Net Inflow History, Net Flow USD, etf-btc-flows, hsl(168 100% 44%)"
+  "status": "static",
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "route": "/terminal/etf",
   "screen": "Bitcoin Spot ETFs",
   "feature": "ETF List column \"Ticker\" (sortable)",
   "how": "from CG.mock.etfs",
-  "status": "working",
-  "evidence": "bundle: etf-btc-list, Issuer, BTC Held, Net Flow (1d), Change %, flow_usd_1d, ma-dim"
+  "status": "static",
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "route": "/terminal/etf",
   "screen": "Bitcoin Spot ETFs",
   "feature": "ETF List column \"Issuer\" (sortable)",
   "how": "issuer with fund name underneath (ma-dim)",
-  "status": "working",
-  "evidence": "bundle: etf-btc-list, Issuer, BTC Held, Net Flow (1d), Change %, flow_usd_1d, ma-dim"
+  "status": "static",
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "route": "/terminal/etf",
   "screen": "Bitcoin Spot ETFs",
   "feature": "ETF List column \"AUM\" (sortable)",
   "how": "from CG.mock.etfs",
-  "status": "working",
-  "evidence": "bundle: etf-btc-list, Issuer, BTC Held, Net Flow (1d), Change %, flow_usd_1d, ma-dim"
+  "status": "static",
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "route": "/terminal/etf",
   "screen": "Bitcoin Spot ETFs",
   "feature": "ETF List column \"BTC Held\" (sortable)",
   "how": "from CG.mock.etfs",
-  "status": "working",
-  "evidence": "bundle: etf-btc-list, Issuer, BTC Held, Net Flow (1d), Change %, flow_usd_1d, ma-dim"
+  "status": "static",
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "route": "/terminal/etf",
   "screen": "Bitcoin Spot ETFs",
   "feature": "ETF List column \"Net Flow (1d)\" (sortable)",
   "how": "signed compact USD in green/red",
-  "status": "working",
-  "evidence": "bundle: etf-btc-list, Issuer, BTC Held, Net Flow (1d), Change %, flow_usd_1d, ma-dim"
+  "status": "static",
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "route": "/terminal/etf",
   "screen": "Bitcoin Spot ETFs",
   "feature": "ETF List column \"Change %\" (sortable)",
   "how": "from CG.mock.etfs",
-  "status": "working",
-  "evidence": "bundle: etf-btc-list, Issuer, BTC Held, Net Flow (1d), Change %, flow_usd_1d, ma-dim"
+  "status": "static",
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -637,47 +637,47 @@
   "feature": "\"← Back\" button",
   "how": "Returns to /terminal",
   "status": "working",
-  "evidence": "bundle: ← Back, /terminal, ma-btn"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
   "screen": "Coin detail",
   "feature": "Coin header: icon, symbol, name, rank chip, sector chip, price, 24h %",
   "how": "Sector chip links to the sector page; BTC/ETH/XAUT price updates live on the 2.5s CG tick with a green/red flash",
-  "status": "working",
-  "evidence": "bundle: symbol, current_price, price_change_percent_24h"
+  "status": "static",
+  "evidence": "coin header with rank chip, sector chip → /terminal/sectors/slug, price + 24h from the markets snapshot (refreshes on its TTL, not the 2.5 s tick); components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
   "screen": "Coin detail",
   "feature": "Stat tile \"Price\"",
   "how": "with 24h % underneath",
-  "status": "static",
-  "evidence": "bundle: Price, open_interest_change_percent_24h, 24h Volume, Funding (avg)"
+  "status": "working",
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
   "screen": "Coin detail",
   "feature": "Stat tile \"Open Interest\"",
   "how": "with OI change 24h % underneath",
-  "status": "static",
-  "evidence": "bundle: Price, open_interest_change_percent_24h, 24h Volume, Funding (avg)"
+  "status": "working",
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
   "screen": "Coin detail",
   "feature": "Stat tile \"24h Volume\"",
   "how": "futures volume across exchanges",
-  "status": "static",
-  "evidence": "bundle: Price, open_interest_change_percent_24h, 24h Volume, Funding (avg)"
+  "status": "working",
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
   "screen": "Coin detail",
   "feature": "Stat tile \"Funding (avg)\"",
   "how": "average of per-exchange funding",
-  "status": "static",
-  "evidence": "bundle: Price, open_interest_change_percent_24h, 24h Volume, Funding (avg)"
+  "status": "working",
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -685,7 +685,7 @@
   "feature": "Chart \"Price & Open Interest\" (dual axis)",
   "how": "Price (left axis, accent) and OI USD (right axis, yellow) over 96h from CG.mock.priceHistory + scaled oiHistory",
   "status": "working",
-  "evidence": "bundle: Price & Open Interest, price-history, oi-aggregated-history, hsl(168 100% 44%), hsl(50 90% 56%)"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -693,7 +693,7 @@
   "feature": "Chart \"Long / Short Ratio · L/S\"",
   "how": "lsHistory scaled to the coin lsRatio",
   "status": "working",
-  "evidence": "bundle: Long / Short Ratio, L/S"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -701,7 +701,7 @@
   "feature": "Chart \"Liquidations · Long Liq / Short Liq\" (stacked bars)",
   "how": "CG.mock.liqHistory scaled by the coin liq24h; long red, short green",
   "status": "working",
-  "evidence": "bundle: Liquidations, Long Liq, Short Liq, long_liquidation_usd, short_liquidation_usd, hsl(358 78% 58%), hsl(152 76% 45%)"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -709,7 +709,7 @@
   "feature": "Chart \"OI-Weighted Funding · Funding %\" (bars)",
   "how": "fundingHistory shifted to the coin funding; sign-coloured bars",
   "status": "working",
-  "evidence": "bundle: OI-Weighted Funding, Funding %, funding-oi-weight-history"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -717,7 +717,7 @@
   "feature": "Chart \"Taker Buy / Sell Volume\" (grouped bars)",
   "how": "Buy (green) vs Sell (red) hourly derived from priceHistory volume",
   "status": "working",
-  "evidence": "bundle: Taker Buy / Sell Volume, taker-buy-sell, buy_volume_usd, sell_volume_usd, Sell"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -725,7 +725,7 @@
   "feature": "\"Markets by Exchange\" column \"Exchange\" (sortable)",
   "how": "per-exchange split of the coin OI/volume/funding; row click opens the exchange page",
   "status": "working",
-  "evidence": "bundle: Markets by Exchange, oi-exchange-list, Exchange, OI Share, open_interest_share"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -733,7 +733,7 @@
   "feature": "\"Markets by Exchange\" column \"Open Interest\" (sortable)",
   "how": "per-exchange split of the coin OI/volume/funding; row click opens the exchange page",
   "status": "working",
-  "evidence": "bundle: Markets by Exchange, oi-exchange-list, Exchange, OI Share, open_interest_share"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -741,7 +741,7 @@
   "feature": "\"Markets by Exchange\" column \"24h Vol\" (sortable)",
   "how": "per-exchange split of the coin OI/volume/funding; row click opens the exchange page",
   "status": "working",
-  "evidence": "bundle: Markets by Exchange, oi-exchange-list, Exchange, OI Share, open_interest_share"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -749,7 +749,7 @@
   "feature": "\"Markets by Exchange\" column \"OI Share\" (sortable)",
   "how": "share bar + %",
   "status": "working",
-  "evidence": "bundle: Markets by Exchange, oi-exchange-list, Exchange, OI Share, open_interest_share"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -757,7 +757,7 @@
   "feature": "\"Markets by Exchange\" column \"Funding\" (sortable)",
   "how": "per-exchange split of the coin OI/volume/funding; row click opens the exchange page",
   "status": "working",
-  "evidence": "bundle: Markets by Exchange, oi-exchange-list, Exchange, OI Share, open_interest_share"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -765,7 +765,7 @@
   "feature": "\"Funding by Exchange\" column \"Exchange\" (sortable)",
   "how": "current / predicted 8h funding and annualised rate per exchange; row click opens the exchange page",
   "status": "working",
-  "evidence": "bundle: Funding by Exchange, funding-exchange-list, funding_rate"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -773,7 +773,7 @@
   "feature": "\"Funding by Exchange\" column \"Funding\" (sortable)",
   "how": "current / predicted 8h funding and annualised rate per exchange; row click opens the exchange page",
   "status": "working",
-  "evidence": "bundle: Funding by Exchange, funding-exchange-list, funding_rate"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -781,7 +781,7 @@
   "feature": "\"Funding by Exchange\" column \"Predicted\" (sortable)",
   "how": "current / predicted 8h funding and annualised rate per exchange; row click opens the exchange page",
   "status": "working",
-  "evidence": "bundle: Funding by Exchange, funding-exchange-list, funding_rate"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -789,7 +789,7 @@
   "feature": "\"Funding by Exchange\" column \"Annualised\" (sortable)",
   "how": "current / predicted 8h funding and annualised rate per exchange; row click opens the exchange page",
   "status": "working",
-  "evidence": "bundle: Funding by Exchange, funding-exchange-list, funding_rate"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -797,7 +797,7 @@
   "feature": "\"Liquidation Heatmap (long vs short)\" grid",
   "how": "24 hour columns × Long/Short rows; cell intensity = liquidation USD / max; hover title shows hour and value",
   "status": "working",
-  "evidence": "bundle: Liquidation Heatmap (long vs short)"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -805,15 +805,15 @@
   "feature": "Unknown symbol state \"No data\"",
   "how": "Panel \"No data · No market data for “XYZ”\" with the Back button",
   "status": "working",
-  "evidence": "task spec"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/exchanges/:exchange",
   "screen": "Exchange overview",
   "feature": "Page title \"<Exchange> · Exchange overview\"",
   "how": "Default Binance",
-  "status": "static",
-  "evidence": "bundle: Binance, Exchange overview"
+  "status": "working",
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "route": "/terminal/exchanges/:exchange",
@@ -821,23 +821,23 @@
   "feature": "Exchange switcher chips",
   "how": "One chip per CG.mock.exchanges entry (Binance, OKX, Bybit, Bitget, Gate, HTX, CoinEx, Hyperliquid, Deribit, Kraken); active chip highlighted; click navigates",
   "status": "working",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "route": "/terminal/exchanges/:exchange",
   "screen": "Exchange overview",
   "feature": "Stat tile \"Tracked Coins\"",
   "how": "number of perpetual markets listed (scales with exchange OI share)",
-  "status": "static",
-  "evidence": "bundle: Tracked Coins, Total OI, 24h Volume, BTC Balance, btc_balance, exchange-balance-list"
+  "status": "working",
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "route": "/terminal/exchanges/:exchange",
   "screen": "Exchange overview",
   "feature": "Stat tile \"Total OI\"",
   "how": "exchange openInterest with share of aggregated OI",
-  "status": "static",
-  "evidence": "bundle: Tracked Coins, Total OI, 24h Volume, BTC Balance, btc_balance, exchange-balance-list"
+  "status": "working",
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "route": "/terminal/exchanges/:exchange",
@@ -845,7 +845,7 @@
   "feature": "Stat tile \"24h Volume\"",
   "how": "exchange volume24h",
   "status": "static",
-  "evidence": "bundle: Tracked Coins, Total OI, 24h Volume, BTC Balance, btc_balance, exchange-balance-list"
+  "evidence": "tile shows — · \"needs venue tickers · GAPS #63\"; components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "route": "/terminal/exchanges/:exchange",
@@ -853,7 +853,7 @@
   "feature": "Stat tile \"BTC Balance\"",
   "how": "exchange btcBalance with 24h % change",
   "status": "static",
-  "evidence": "bundle: Tracked Coins, Total OI, 24h Volume, BTC Balance, btc_balance, exchange-balance-list"
+  "evidence": "tile shows — · \"coming soon · GAPS #55\"; components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "route": "/terminal/exchanges/:exchange",
@@ -861,7 +861,7 @@
   "feature": "\"Coins on <Exchange>\" column \"Coin\" (sortable)",
   "how": "per-coin split for this exchange; row click opens the coin page",
   "status": "working",
-  "evidence": "bundle: Coins on , Coin, Open Interest, 24h Vol, Funding, coins-markets"
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "route": "/terminal/exchanges/:exchange",
@@ -869,7 +869,7 @@
   "feature": "\"Coins on <Exchange>\" column \"Open Interest\" (sortable)",
   "how": "per-coin split for this exchange; row click opens the coin page",
   "status": "working",
-  "evidence": "bundle: Coins on , Coin, Open Interest, 24h Vol, Funding, coins-markets"
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "route": "/terminal/exchanges/:exchange",
@@ -877,7 +877,7 @@
   "feature": "\"Coins on <Exchange>\" column \"24h Vol\" (sortable)",
   "how": "per-coin split for this exchange; row click opens the coin page",
   "status": "working",
-  "evidence": "bundle: Coins on , Coin, Open Interest, 24h Vol, Funding, coins-markets"
+  "evidence": "replaced by OI 24h % (per-venue volume is GAPS #63); components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "route": "/terminal/exchanges/:exchange",
@@ -885,7 +885,7 @@
   "feature": "\"Coins on <Exchange>\" column \"Funding\" (sortable)",
   "how": "per-coin split for this exchange; row click opens the coin page",
   "status": "working",
-  "evidence": "bundle: Coins on , Coin, Open Interest, 24h Vol, Funding, coins-markets"
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "route": "/terminal/exchanges/:exchange",
@@ -893,7 +893,7 @@
   "feature": "Unknown exchange state",
   "how": "Title \"Unknown exchange: xyz\" + \"No data\" panel + switcher chips",
   "status": "working",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "route": "/terminal/exchanges",
@@ -901,15 +901,15 @@
   "feature": "Redirect /terminal/exchanges → /terminal/exchanges/Binance",
   "how": "data-redirect screen",
   "status": "working",
-  "evidence": "inferred"
+  "evidence": "app/terminal/exchanges/page.tsx redirect → /terminal/exchanges/binance; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/derivatives/open-interest",
   "screen": "Open Interest",
   "feature": "Page title \"Open Interest\"",
   "how": "Tiles: Aggregated OI, BTC OI (with BTC dominance), Top Exchange",
-  "status": "static",
-  "evidence": "bundle: Open Interest"
+  "status": "working",
+  "evidence": "components/terminal/DerivativesPages.tsx OpenInterestPage; unit terminal-pages.test.tsx open interest; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/derivatives/open-interest",
@@ -917,7 +917,7 @@
   "feature": "Chart \"Aggregated Open Interest\" (area + BTC price on right axis)",
   "how": "CG.mock.oiHistory oi (area, accent) and price (line, yellow)",
   "status": "working",
-  "evidence": "bundle: oi-aggregated-history, hsl(168 100% 44%), ma-panel"
+  "evidence": "components/terminal/DerivativesPages.tsx OpenInterestPage; unit terminal-pages.test.tsx open interest; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/derivatives/open-interest",
@@ -925,7 +925,7 @@
   "feature": "Table column \"Exchange\" (sortable)",
   "how": "from CG.mock.exchanges; row click opens the exchange page",
   "status": "working",
-  "evidence": "bundle: oi-exchange-list, Exchange, Open Interest, Share, open_interest_share"
+  "evidence": "components/terminal/DerivativesPages.tsx OpenInterestPage; unit terminal-pages.test.tsx open interest; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/derivatives/open-interest",
@@ -933,7 +933,7 @@
   "feature": "Table column \"Open Interest\" (sortable)",
   "how": "from CG.mock.exchanges; row click opens the exchange page",
   "status": "working",
-  "evidence": "bundle: oi-exchange-list, Exchange, Open Interest, Share, open_interest_share"
+  "evidence": "components/terminal/DerivativesPages.tsx OpenInterestPage; unit terminal-pages.test.tsx open interest; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/derivatives/open-interest",
@@ -941,15 +941,15 @@
   "feature": "Table column \"Share\" (sortable)",
   "how": "accent share bar + %",
   "status": "working",
-  "evidence": "bundle: oi-exchange-list, Exchange, Open Interest, Share, open_interest_share"
+  "evidence": "components/terminal/DerivativesPages.tsx OpenInterestPage; unit terminal-pages.test.tsx open interest; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/derivatives/funding",
   "screen": "Funding Rates",
   "feature": "Page title \"Funding Rates\"",
   "how": "Tiles: OI-Weighted Funding, Average Funding, Annualised",
-  "status": "static",
-  "evidence": "bundle: Funding Rates"
+  "status": "working",
+  "evidence": "components/terminal/DerivativesPages.tsx FundingPage (coin select, OI-weighted bars, per-exchange table); unit terminal-pages.test.tsx funding; e2e terminal.spec.ts; visual terminal-funding-*.png"
  },
  {
   "route": "/terminal/derivatives/funding",
@@ -957,7 +957,7 @@
   "feature": "Chart \"OI-Weighted Funding · Funding %\" (bars)",
   "how": "CG.mock.fundingHistory oiWeighted, 8h intervals, sign-coloured bars with tooltip",
   "status": "working",
-  "evidence": "bundle: OI-Weighted Funding, Funding %, funding-oi-weight-history, hsl(168 100% 44%)"
+  "evidence": "components/terminal/DerivativesPages.tsx FundingPage (coin select, OI-weighted bars, per-exchange table); unit terminal-pages.test.tsx funding; e2e terminal.spec.ts; visual terminal-funding-*.png"
  },
  {
   "route": "/terminal/derivatives/funding",
@@ -965,7 +965,7 @@
   "feature": "\"Per-exchange Funding\" column \"Exchange\" (sortable)",
   "how": "BTC perpetual funding per venue; row click opens the exchange page",
   "status": "working",
-  "evidence": "bundle: Per-exchange Funding, funding-exchange-list, funding_rate"
+  "evidence": "components/terminal/DerivativesPages.tsx FundingPage (coin select, OI-weighted bars, per-exchange table); unit terminal-pages.test.tsx funding; e2e terminal.spec.ts; visual terminal-funding-*.png"
  },
  {
   "route": "/terminal/derivatives/funding",
@@ -973,7 +973,7 @@
   "feature": "\"Per-exchange Funding\" column \"Funding\" (sortable)",
   "how": "BTC perpetual funding per venue; row click opens the exchange page",
   "status": "working",
-  "evidence": "bundle: Per-exchange Funding, funding-exchange-list, funding_rate"
+  "evidence": "components/terminal/DerivativesPages.tsx FundingPage (coin select, OI-weighted bars, per-exchange table); unit terminal-pages.test.tsx funding; e2e terminal.spec.ts; visual terminal-funding-*.png"
  },
  {
   "route": "/terminal/derivatives/funding",
@@ -981,7 +981,7 @@
   "feature": "\"Per-exchange Funding\" column \"Predicted\" (sortable)",
   "how": "BTC perpetual funding per venue; row click opens the exchange page",
   "status": "working",
-  "evidence": "bundle: Per-exchange Funding, funding-exchange-list, funding_rate"
+  "evidence": "components/terminal/DerivativesPages.tsx FundingPage (coin select, OI-weighted bars, per-exchange table); unit terminal-pages.test.tsx funding; e2e terminal.spec.ts; visual terminal-funding-*.png"
  },
  {
   "route": "/terminal/derivatives/funding",
@@ -989,7 +989,7 @@
   "feature": "\"Per-exchange Funding\" column \"Open Interest\" (sortable)",
   "how": "BTC perpetual funding per venue; row click opens the exchange page",
   "status": "working",
-  "evidence": "bundle: Per-exchange Funding, funding-exchange-list, funding_rate"
+  "evidence": "components/terminal/DerivativesPages.tsx FundingPage (coin select, OI-weighted bars, per-exchange table); unit terminal-pages.test.tsx funding; e2e terminal.spec.ts; visual terminal-funding-*.png"
  },
  {
   "route": "/terminal/derivatives/funding",
@@ -997,15 +997,15 @@
   "feature": "\"Per-exchange Funding\" column \"Annualised\" (sortable)",
   "how": "BTC perpetual funding per venue; row click opens the exchange page",
   "status": "working",
-  "evidence": "bundle: Per-exchange Funding, funding-exchange-list, funding_rate"
+  "evidence": "components/terminal/DerivativesPages.tsx FundingPage (coin select, OI-weighted bars, per-exchange table); unit terminal-pages.test.tsx funding; e2e terminal.spec.ts; visual terminal-funding-*.png"
  },
  {
   "route": "/terminal/derivatives/long-short",
   "screen": "Long / Short",
   "feature": "Page title \"Long / Short\"",
   "how": "Tiles: Global Accounts, Top Trader (Accounts), Top Trader (Positions) — green ≥ 1, red < 1",
-  "status": "static",
-  "evidence": "bundle: Global Accounts, Top Trader (Accounts), Top Trader (Positions), L/S"
+  "status": "working",
+  "evidence": "components/terminal/DerivativesPages.tsx LongShortPage (three lines, hourlyReadings); unit terminal-pages.test.tsx long / short; e2e terminal.spec.ts; visual terminal-long-short-*.png"
  },
  {
   "route": "/terminal/derivatives/long-short",
@@ -1013,7 +1013,7 @@
   "feature": "Chart: three lines Global Accounts / Top Trader (Accounts) / Top Trader (Positions) with legend and L/S axis",
   "how": "CG.mock.lsHistory 72h; colours accent / yellow / purple; L/S = 1 reference line; hover shows all three values",
   "status": "working",
-  "evidence": "bundle: global-ls-ratio, hsl(168 100% 44%), hsl(50 90% 56%), hsl(280 60% 60%), L/S"
+  "evidence": "components/terminal/DerivativesPages.tsx LongShortPage (three lines, hourlyReadings); unit terminal-pages.test.tsx long / short; e2e terminal.spec.ts; visual terminal-long-short-*.png"
  },
  {
   "route": "/terminal/derivatives/long-short",
@@ -1021,15 +1021,15 @@
   "feature": "Table \"Hourly Readings\" (Time, Global Accounts, Top Trader (Accounts), Top Trader (Positions))",
   "how": "Latest 24 readings, sortable",
   "status": "working",
-  "evidence": "inferred"
+  "evidence": "components/terminal/DerivativesPages.tsx LongShortPage (three lines, hourlyReadings); unit terminal-pages.test.tsx long / short; e2e terminal.spec.ts; visual terminal-long-short-*.png"
  },
  {
   "route": "/terminal/derivatives/liquidations",
   "screen": "Liquidations",
   "feature": "Page title \"Liquidations\"",
   "how": "Tiles: 24h Total, Long Liquidations (red), Short Liquidations (green), Largest Coin",
-  "status": "static",
-  "evidence": "bundle: Liquidations"
+  "status": "working",
+  "evidence": "components/terminal/DerivativesPages.tsx TerminalLiquidationsPage (liqWindow chips, by-coin table; long = green / short = red app-wide, ADR-046); unit terminal-pages.test.tsx liquidations; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/derivatives/liquidations",
@@ -1037,7 +1037,7 @@
   "feature": "Chart stacked bars \"Long Liq / Short Liq\"",
   "how": "CG.mock.liqHistory 48h; long red, short green; legend + tooltip",
   "status": "working",
-  "evidence": "bundle: aggregated-history, Long Liq, Short Liq, hsl(358 78% 58%), hsl(152 76% 45%), ma-panel"
+  "evidence": "components/terminal/DerivativesPages.tsx TerminalLiquidationsPage (liqWindow chips, by-coin table; long = green / short = red app-wide, ADR-046); unit terminal-pages.test.tsx liquidations; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/derivatives/liquidations",
@@ -1045,7 +1045,7 @@
   "feature": "\"By Coin (24h)\" column \"Coin\" (sortable)",
   "how": "from CG.mock.coins liq24h / longLiq24h / shortLiq24h; default sort 24h Total desc; row click opens the coin",
   "status": "working",
-  "evidence": "bundle: By Coin (24h), Coin, 24h Total, Long, Short, ma-mono ma-down, ma-mono ma-up, liquidation_usd_24h"
+  "evidence": "components/terminal/DerivativesPages.tsx TerminalLiquidationsPage (liqWindow chips, by-coin table; long = green / short = red app-wide, ADR-046); unit terminal-pages.test.tsx liquidations; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/derivatives/liquidations",
@@ -1053,7 +1053,7 @@
   "feature": "\"By Coin (24h)\" column \"24h Total\" (sortable)",
   "how": "from CG.mock.coins liq24h / longLiq24h / shortLiq24h; default sort 24h Total desc; row click opens the coin",
   "status": "working",
-  "evidence": "bundle: By Coin (24h), Coin, 24h Total, Long, Short, ma-mono ma-down, ma-mono ma-up, liquidation_usd_24h"
+  "evidence": "components/terminal/DerivativesPages.tsx TerminalLiquidationsPage (liqWindow chips, by-coin table; long = green / short = red app-wide, ADR-046); unit terminal-pages.test.tsx liquidations; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/derivatives/liquidations",
@@ -1061,7 +1061,7 @@
   "feature": "\"By Coin (24h)\" column \"Long (red)\" (sortable)",
   "how": "from CG.mock.coins liq24h / longLiq24h / shortLiq24h; default sort 24h Total desc; row click opens the coin",
   "status": "working",
-  "evidence": "bundle: By Coin (24h), Coin, 24h Total, Long, Short, ma-mono ma-down, ma-mono ma-up, liquidation_usd_24h"
+  "evidence": "components/terminal/DerivativesPages.tsx TerminalLiquidationsPage (liqWindow chips, by-coin table; long = green / short = red app-wide, ADR-046); unit terminal-pages.test.tsx liquidations; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/derivatives/liquidations",
@@ -1069,7 +1069,7 @@
   "feature": "\"By Coin (24h)\" column \"Short (green)\" (sortable)",
   "how": "from CG.mock.coins liq24h / longLiq24h / shortLiq24h; default sort 24h Total desc; row click opens the coin",
   "status": "working",
-  "evidence": "bundle: By Coin (24h), Coin, 24h Total, Long, Short, ma-mono ma-down, ma-mono ma-up, liquidation_usd_24h"
+  "evidence": "components/terminal/DerivativesPages.tsx TerminalLiquidationsPage (liqWindow chips, by-coin table; long = green / short = red app-wide, ADR-046); unit terminal-pages.test.tsx liquidations; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/onchain/exchange-balance",
@@ -1077,55 +1077,55 @@
   "feature": "Page title \"Exchange Balance · Bitcoin held on exchanges\"",
   "how": "Tiles: Total BTC Balance, 24h / 7d / 30d change",
   "status": "static",
-  "evidence": "bundle: Exchange Balance, Bitcoin held on exchanges"
+  "evidence": "components/terminal/IndicatorPages.tsx BalancePage: tiles — and a ComingSoon panel (GAPS #55, no on-chain source); unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/onchain/exchange-balance",
   "screen": "Exchange Balance",
   "feature": "Chart \"BTC Balance\" (area, 90 days)",
   "how": "Derived 90-day series anchored to CG.mock.global.btcExchangeBalance (CG.terminal.exchBalance)",
-  "status": "working",
-  "evidence": "bundle: exchange-balance-chart, BTC Balance, balance, hsl(168 100% 44%)"
+  "status": "static",
+  "evidence": "components/terminal/IndicatorPages.tsx BalancePage: tiles — and a ComingSoon panel (GAPS #55, no on-chain source); unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/onchain/exchange-balance",
   "screen": "Exchange Balance",
   "feature": "Table column \"Exchange\" (sortable)",
   "how": "from CG.mock.exchanges btcBalance / btcBalanceChg*; row click opens the exchange page",
-  "status": "working",
-  "evidence": "bundle: exchange-balance-list, BTC Balance"
+  "status": "static",
+  "evidence": "components/terminal/IndicatorPages.tsx BalancePage: tiles — and a ComingSoon panel (GAPS #55, no on-chain source); unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/onchain/exchange-balance",
   "screen": "Exchange Balance",
   "feature": "Table column \"BTC Balance\" (sortable)",
   "how": "from CG.mock.exchanges btcBalance / btcBalanceChg*; row click opens the exchange page",
-  "status": "working",
-  "evidence": "bundle: exchange-balance-list, BTC Balance"
+  "status": "static",
+  "evidence": "components/terminal/IndicatorPages.tsx BalancePage: tiles — and a ComingSoon panel (GAPS #55, no on-chain source); unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/onchain/exchange-balance",
   "screen": "Exchange Balance",
   "feature": "Table column \"24h %\" (sortable)",
   "how": "from CG.mock.exchanges btcBalance / btcBalanceChg*; row click opens the exchange page",
-  "status": "working",
-  "evidence": "bundle: exchange-balance-list, BTC Balance"
+  "status": "static",
+  "evidence": "components/terminal/IndicatorPages.tsx BalancePage: tiles — and a ComingSoon panel (GAPS #55, no on-chain source); unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/onchain/exchange-balance",
   "screen": "Exchange Balance",
   "feature": "Table column \"7d %\" (sortable)",
   "how": "from CG.mock.exchanges btcBalance / btcBalanceChg*; row click opens the exchange page",
-  "status": "working",
-  "evidence": "bundle: exchange-balance-list, BTC Balance"
+  "status": "static",
+  "evidence": "components/terminal/IndicatorPages.tsx BalancePage: tiles — and a ComingSoon panel (GAPS #55, no on-chain source); unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/onchain/exchange-balance",
   "screen": "Exchange Balance",
   "feature": "Table column \"30d %\" (sortable)",
   "how": "from CG.mock.exchanges btcBalance / btcBalanceChg*; row click opens the exchange page",
-  "status": "working",
-  "evidence": "bundle: exchange-balance-list, BTC Balance"
+  "status": "static",
+  "evidence": "components/terminal/IndicatorPages.tsx BalancePage: tiles — and a ComingSoon panel (GAPS #55, no on-chain source); unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/onchain/unlocks",
@@ -1133,7 +1133,7 @@
   "feature": "Page title \"Token Unlock Schedule · Upcoming vesting events\"",
   "how": "",
   "status": "static",
-  "evidence": "bundle: Token Unlock Schedule, Upcoming vesting events"
+  "evidence": "components/terminal/IndicatorPages.tsx UnlocksPage with the exact notice; unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/onchain/unlocks",
@@ -1141,23 +1141,23 @@
   "feature": "Empty panel \"Token unlock data unavailable\"",
   "how": "Exact text: \"This data source is not enabled on the current plan. Enable a token-unlock endpoint in the proxy to populate this view — no mock data shown.\"",
   "status": "static",
-  "evidence": "bundle: Token unlock data unavailable, ma-panel"
+  "evidence": "components/terminal/IndicatorPages.tsx UnlocksPage with the exact notice; unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/indicators/fear-greed",
   "screen": "Fear & Greed Index",
   "feature": "Page title \"Fear & Greed Index\"",
   "how": "",
-  "status": "static",
-  "evidence": "bundle: Fear & Greed Index"
+  "status": "working",
+  "evidence": "components/terminal/IndicatorPages.tsx FearGreedPage (Gauge, history with 25 / 75 hlines, fgAt tiles); unit terminal-pages.test.tsx fear & greed; e2e terminal.spec.ts; visual terminal-fear-greed-*.png"
  },
  {
   "route": "/terminal/indicators/fear-greed",
   "screen": "Fear & Greed Index",
   "feature": "Gauge with value + label",
   "how": "Semicircle gauge with 5 coloured bands (Extreme Fear / Fear / Neutral / Greed / Extreme Greed), marker at the current value, big value and label",
-  "status": "static",
-  "evidence": "bundle: fear-greed, Extreme Fear, Fear, Neutral, Greed, Extreme Greed"
+  "status": "working",
+  "evidence": "components/terminal/IndicatorPages.tsx FearGreedPage (Gauge, history with 25 / 75 hlines, fgAt tiles); unit terminal-pages.test.tsx fear & greed; e2e terminal.spec.ts; visual terminal-fear-greed-*.png"
  },
  {
   "route": "/terminal/indicators/fear-greed",
@@ -1165,39 +1165,39 @@
   "feature": "Chart \"History · F&G\" (area, 90 days)",
   "how": "CG.mock.fearGreed with Extreme Fear (25) and Extreme Greed (75) reference lines; tooltip shows value + label",
   "status": "working",
-  "evidence": "bundle: History, F&G, hsl(168 100% 44%)"
+  "evidence": "components/terminal/IndicatorPages.tsx FearGreedPage (Gauge, history with 25 / 75 hlines, fgAt tiles); unit terminal-pages.test.tsx fear & greed; e2e terminal.spec.ts; visual terminal-fear-greed-*.png"
  },
  {
   "route": "/terminal/indicators/fear-greed",
   "screen": "Fear & Greed Index",
   "feature": "Tiles Now / Yesterday / Last Week / Last Month",
   "how": "Value + label at 0, 1, 7 and 30 days back",
-  "status": "static",
-  "evidence": "inferred"
+  "status": "working",
+  "evidence": "components/terminal/IndicatorPages.tsx FearGreedPage (Gauge, history with 25 / 75 hlines, fgAt tiles); unit terminal-pages.test.tsx fear & greed; e2e terminal.spec.ts; visual terminal-fear-greed-*.png"
  },
  {
   "route": "/terminal/indicators/cycle",
   "screen": "BTC Cycle Indicators",
   "feature": "Page title \"BTC Cycle Indicators\"",
   "how": "Tiles: AHR999, Puell Multiple, Pi Cycle 111DMA / 350DMA×2, Rainbow Band (from CG.mock.cycle)",
-  "status": "static",
-  "evidence": "bundle: BTC Cycle Indicators"
+  "status": "working",
+  "evidence": "components/terminal/IndicatorPages.tsx CyclePage (Pi Cycle + rainbow band from the cycle dataset); unit terminal-pages.test.tsx cycle; e2e terminal.spec.ts; visual terminal-cycle-*.png"
  },
  {
   "route": "/terminal/indicators/cycle",
   "screen": "BTC Cycle Indicators",
   "feature": "Panel \"AHR999\" (area chart)",
   "how": "CG.mock.cycleHistory ahr999 with Bottom 0.45 / Top 1.2 reference lines",
-  "status": "working",
-  "evidence": "bundle: ahr999, AHR999, hsl(168 100% 44%)"
+  "status": "static",
+  "evidence": "ComingSoon panels (AHR999 constants / Puell miner revenue unverified, GAPS #59); components/terminal/IndicatorPages.tsx CyclePage (Pi Cycle + rainbow band from the cycle dataset); unit terminal-pages.test.tsx cycle; e2e terminal.spec.ts; visual terminal-cycle-*.png"
  },
  {
   "route": "/terminal/indicators/cycle",
   "screen": "BTC Cycle Indicators",
   "feature": "Panel \"Puell Multiple\" (area chart)",
   "how": "cycleHistory puell with Undervalued 0.5 reference line",
-  "status": "working",
-  "evidence": "bundle: puell-multiple, Puell Multiple"
+  "status": "static",
+  "evidence": "ComingSoon panels (AHR999 constants / Puell miner revenue unverified, GAPS #59); components/terminal/IndicatorPages.tsx CyclePage (Pi Cycle + rainbow band from the cycle dataset); unit terminal-pages.test.tsx cycle; e2e terminal.spec.ts; visual terminal-cycle-*.png"
  },
  {
   "route": "/terminal/indicators/cycle",
@@ -1205,7 +1205,7 @@
   "feature": "Panel \"Pi Cycle\" (price with 111DMA and 350DMA×2)",
   "how": "Three lines with legend (price accent, 111DMA yellow, 350DMA×2 purple) from cycleHistory",
   "status": "working",
-  "evidence": "bundle: pi-cycle, Pi Cycle"
+  "evidence": "components/terminal/IndicatorPages.tsx CyclePage (Pi Cycle + rainbow band from the cycle dataset); unit terminal-pages.test.tsx cycle; e2e terminal.spec.ts; visual terminal-cycle-*.png"
  },
  {
   "route": "/terminal",
@@ -1214,7 +1214,7 @@
   "how": "Private ma-* palette deleted; tiles/panels/chips/tables/charts share the .cgx classes and shell tokens; light and dark tested",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -1223,7 +1223,7 @@
   "how": "The terminal shows the same Hub … Sentiment tabs as /analytics; Terminal ▾ is active (amber underline) and drops down the grouped terminal pages",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -1232,7 +1232,7 @@
   "how": "Section labels .micro, 30px items, amber left rule on the active item, \"Markets Hub ↗\" external marker; mobile drawer retained",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -1241,7 +1241,7 @@
   "how": "A.applyTheme/A.applyDensity run on every show; rows compact at 28px when CG.state.density === 'compact'",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "route": "/terminal",
@@ -1250,7 +1250,7 @@
   "how": "Same strip as the hub (cards → /terminal/coin/SYM, remove star, empty state, \"Manage in Spot Markets →\")",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "route": "/terminal",
@@ -1259,7 +1259,7 @@
   "how": "1D–1Y",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "route": "/terminal",
@@ -1268,7 +1268,7 @@
   "how": "Sticky header inside a 560px scroll area",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "route": "/terminal/spot",
@@ -1277,7 +1277,7 @@
   "how": "Same compare panel as /analytics/markets (normalised chart with timeframes + stats table), sharing CG.state.compare so a selection made in either app shows in both; ?compare=1 opens it",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "route": "/terminal/spot",
@@ -1286,7 +1286,7 @@
   "how": "★ Watchlist chip shows only starred coins; count updates",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "route": "/terminal/spot",
@@ -1295,7 +1295,7 @@
   "how": "Search box moved into the table toolbar",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "route": "/terminal/sectors/:slug",
@@ -1304,16 +1304,16 @@
   "how": "Shared table",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/MarketPages.tsx SectorPage (sectorOf map shared with the hub); unit terminal-pages.test.tsx sectors; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/etf",
   "screen": "Bitcoin Spot ETFs",
   "feature": "Timeframe chips on Net Inflow History",
   "how": "7D/30D/90D/1Y; CSV on the ETF list",
-  "status": "working",
+  "status": "static",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -1322,7 +1322,7 @@
   "how": "Watch toggles the watchlist; Compare adds the coin and opens /terminal/spot?compare=1",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/coin/:symbol",
@@ -1331,7 +1331,7 @@
   "how": "Per-coin seeded series; exchange tables get CSV",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/exchanges/:exchange",
@@ -1340,7 +1340,7 @@
   "how": "Shared table",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "route": "/terminal/derivatives/open-interest",
@@ -1349,7 +1349,7 @@
   "how": "OI area in --curve, BTC price line in foreground on the right axis",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/DerivativesPages.tsx OpenInterestPage; unit terminal-pages.test.tsx open interest; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/derivatives/funding",
@@ -1358,7 +1358,7 @@
   "how": "Shared chart",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/DerivativesPages.tsx FundingPage (coin select, OI-weighted bars, per-exchange table); unit terminal-pages.test.tsx funding; e2e terminal.spec.ts; visual terminal-funding-*.png"
  },
  {
   "route": "/terminal/derivatives/long-short",
@@ -1367,7 +1367,7 @@
   "how": "Global = foreground, Top accounts = --curve, Top positions = muted dashed",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/DerivativesPages.tsx LongShortPage (three lines, hourlyReadings); unit terminal-pages.test.tsx long / short; e2e terminal.spec.ts; visual terminal-long-short-*.png"
  },
  {
   "route": "/terminal/derivatives/liquidations",
@@ -1376,16 +1376,16 @@
   "how": "Shared chart + table",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/DerivativesPages.tsx TerminalLiquidationsPage (liqWindow chips, by-coin table; long = green / short = red app-wide, ADR-046); unit terminal-pages.test.tsx liquidations; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/onchain/exchange-balance",
   "screen": "Exchange Balance",
   "feature": "Timeframe chips 30D/90D/1Y + heat cells for % + CSV",
   "how": "Shared chart + table",
-  "status": "working",
+  "status": "static",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/IndicatorPages.tsx BalancePage: tiles — and a ComingSoon panel (GAPS #55, no on-chain source); unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "route": "/terminal/indicators/fear-greed",
@@ -1394,7 +1394,7 @@
   "how": "Replaces the v1 segmented gauge; semantic segments, scale labels",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/IndicatorPages.tsx FearGreedPage (Gauge, history with 25 / 75 hlines, fgAt tiles); unit terminal-pages.test.tsx fear & greed; e2e terminal.spec.ts; visual terminal-fear-greed-*.png"
  },
  {
   "route": "/terminal/indicators/fear-greed",
@@ -1403,7 +1403,7 @@
   "how": "7D/30D/90D/1Y",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/IndicatorPages.tsx FearGreedPage (Gauge, history with 25 / 75 hlines, fgAt tiles); unit terminal-pages.test.tsx fear & greed; e2e terminal.spec.ts; visual terminal-fear-greed-*.png"
  },
  {
   "route": "/terminal/indicators/cycle",
@@ -1412,6 +1412,6 @@
   "how": "Shared chart",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/IndicatorPages.tsx CyclePage (Pi Cycle + rainbow band from the cycle dataset); unit terminal-pages.test.tsx cycle; e2e terminal.spec.ts; visual terminal-cycle-*.png"
  }
 ]

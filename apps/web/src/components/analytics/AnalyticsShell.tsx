@@ -2,7 +2,7 @@
 // Market Analytics shell (HC-MA-003..008, 089..091): title row with the mark, "← Analyse", coin search with a
 // dropdown, the section switcher shared by /analytics and /terminal, and the footer note. Sections not yet built
 // still route (to a "next release" page) so navigation never dead-ends (HC-SH-016).
-import { Kbd, cn } from "@hapiecoin/ui";
+import { Kbd, cn, toast } from "@hapiecoin/ui";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -24,14 +24,18 @@ export const SECTIONS = [
 export const TERMINAL = [
   { href: "/terminal", label: "Dashboard" },
   { href: "/terminal/spot", label: "Spot Markets" },
+  { href: "/terminal/exchanges", label: "Exchanges" },
   { href: "/terminal/derivatives/open-interest", label: "Open Interest" },
   { href: "/terminal/derivatives/funding", label: "Funding Rates" },
+  { href: "/terminal/derivatives/long-short", label: "Long / Short" },
   { href: "/terminal/derivatives/liquidations", label: "Liquidations" },
   { href: "/terminal/etf", label: "ETF Flows" },
   { href: "/terminal/indicators/fear-greed", label: "Fear & Greed" },
+  { href: "/terminal/indicators/cycle", label: "BTC Cycle" },
 ] as const;
 
-export function CoinSearch({ className }: { className?: string }) {
+/** `base` is the coin route the search opens: the analytics coin page, or the terminal's inside /terminal (HC-MT-003..006). */
+export function CoinSearch({ className, base = "/analytics/coin" }: { className?: string; base?: "/analytics/coin" | "/terminal/coin" }) {
   const router = useRouter();
   const { data } = useMarkets();
   const [q, setQ] = useState("");
@@ -53,8 +57,9 @@ export function CoinSearch({ className }: { className?: string }) {
   const go = (symbol: string) => {
     setOpen(false);
     setQ("");
-    router.push(`/analytics/coin/${symbol}`);
+    router.push(`${base}/${symbol}`);
   };
+  const inTerminal = base === "/terminal/coin";
   return (
     <div ref={box} className={cn("relative", className)}>
       <input
@@ -65,6 +70,7 @@ export function CoinSearch({ className }: { className?: string }) {
           if (e.key === "ArrowDown") { e.preventDefault(); setActive((a) => Math.min(rows.length - 1, a + 1)); }
           else if (e.key === "ArrowUp") { e.preventDefault(); setActive((a) => Math.max(0, a - 1)); }
           else if (e.key === "Enter" && rows[active]) go(rows[active].symbol);
+          else if (e.key === "Enter" && q.trim()) toast.error(`No coin matches “${q.trim()}”`);
           else if (e.key === "Escape") setOpen(false);
         }}
         placeholder="Search coin…"
@@ -73,7 +79,8 @@ export function CoinSearch({ className }: { className?: string }) {
         data-testid="coin-search"
       />
       {open && q.trim() ? (
-        <div className="absolute left-0 top-full z-30 mt-1 w-[260px] rounded-md border border-border bg-popover p-1 text-xs shadow-md" role="listbox" data-testid="coin-search-list">
+        <div className="absolute left-0 top-full z-30 mt-1 w-[260px] rounded-md border border-border bg-popover p-1 text-xs shadow-md" role="listbox" data-testid="coin-search-list" data-base={base}>
+          {inTerminal && rows.length > 0 ? <div className="micro px-2 pb-1" data-testid="coin-search-hint">Enter · open in the terminal</div> : null}
           {rows.length === 0 ? (
             <div className="px-2 py-1.5 text-muted-foreground" data-testid="coin-search-empty">{data ? `No coin matches “${q.trim()}”` : "Coin list not loaded yet"}</div>
           ) : (
@@ -105,7 +112,7 @@ export function AnalyticsShell({ children }: { children: ReactNode }) {
             <h1 className="text-[15px] font-semibold">Market Analytics</h1>
           </span>
           <Link href="/analyse" className="text-2xs text-muted-foreground hover:text-foreground" data-testid="analytics-back">← Analyse</Link>
-          <CoinSearch className="ml-auto" />
+          <CoinSearch className="ml-auto" base={inTerminal ? "/terminal/coin" : "/analytics/coin"} />
           <button type="button" onClick={() => setPaletteOpen(true)} className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground" title="Command palette (Ctrl K)" aria-label="Command palette" data-testid="analytics-palette">
             <Kbd>Ctrl</Kbd>
             <Kbd>K</Kbd>

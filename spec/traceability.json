@@ -11468,7 +11468,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Shared v2 header (CG.chrome['terminal-header'] → CG2.header, identical to /analytics, Terminal ▾ tab active) + restyled 222px sticky sidebar (CG.chrome['terminal-sidebar']) + content (max-width 1600px) + footer; everything scoped under .terminal.cg-scope.cgx and built only on the shell tokens",
-  "evidence": "bundle: ma-panel, ma-mono, ma-up, ma-down, ma-btn, ma-dim, ma-mute, ma-accent"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-002",
@@ -11483,7 +11483,7 @@
   "phase": 5,
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Shared header: logo links to #/analyse, the title reads Market Analytics; the terminal keeps its own left sidebar",
-  "evidence": "anchors: header, /terminal, Market, ma-accent, Analytics"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-003",
@@ -11498,7 +11498,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Shared header search; in the terminal Enter/click opens /terminal/coin/SYM (hint row says \"open in terminal\")",
-  "evidence": "anchors: Search coin (BTC, ETH, SOL…)"
+  "evidence": "AnalyticsShell CoinSearch base=/terminal/coin (hint row, Enter → /terminal/coin/SYM, no match → toast \"No coin matches\"); unit terminal-pages.test.tsx \"coin search\"; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-004",
@@ -11513,7 +11513,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Navigates to /terminal/coin/SYM and clears the input",
-  "evidence": ""
+  "evidence": "AnalyticsShell CoinSearch base=/terminal/coin (hint row, Enter → /terminal/coin/SYM, no match → toast \"No coin matches\"); unit terminal-pages.test.tsx \"coin search\"; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-005",
@@ -11528,7 +11528,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Enter with no match shows destructive toast \"No coin matches “…”\"",
-  "evidence": ""
+  "evidence": "AnalyticsShell CoinSearch base=/terminal/coin (hint row, Enter → /terminal/coin/SYM, no match → toast \"No coin matches\"); unit terminal-pages.test.tsx \"coin search\"; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-006",
@@ -11543,7 +11543,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Dropdown shows \"No coin matches “xyz”\" when nothing matches",
-  "evidence": ""
+  "evidence": "AnalyticsShell CoinSearch base=/terminal/coin (hint row, Enter → /terminal/coin/SYM, no match → toast \"No coin matches\"); unit terminal-pages.test.tsx \"coin search\"; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-007",
@@ -11558,7 +11558,7 @@
   "phase": 5,
   "test": "unit (pricing) · visual (screenshot diff) · security",
   "acceptance": "Live pill (green dot) in the shared header, hidden on small screens",
-  "evidence": ""
+  "evidence": "shared header Live pill (analytics shell)"
  },
  {
   "id": "HC-MT-008",
@@ -11573,7 +11573,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Replaced by the Hub tab of the shared section switcher (and the sidebar \"Markets Hub ↗\" item)",
-  "evidence": "bundle: Markets Hub → /analytics/coinglass"
+  "evidence": "Terminal ▾ section switcher (10 entries) + sidebar \"Markets Hub ↗\"; unit analytics.test.tsx shell"
  },
  {
   "id": "HC-MT-009",
@@ -11588,7 +11588,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Shared header link back to the options app (#/analyse)",
-  "evidence": "inferred: terminal is a sub-app of hapiecoin.com"
+  "evidence": "shared analytics shell: \"← Analyse\" link, theme from the app header; e2e analytics.spec.ts"
  },
  {
   "id": "HC-MT-010",
@@ -11603,7 +11603,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Calls CG.theme.toggle(); the terminal now follows the page theme (html.dark) — the private terminal theme and cg2-theme localStorage key were removed",
-  "evidence": "task spec: localStorage key cg2-theme, dark default"
+  "evidence": "shared analytics shell: \"← Analyse\" link, theme from the app header; e2e analytics.spec.ts"
  },
  {
   "id": "HC-MT-011",
@@ -11618,7 +11618,7 @@
   "phase": 5,
   "test": "unit (pricing) · visual (screenshot diff)",
   "acceptance": "Grouped navigation with small inline-SVG icons",
-  "evidence": "bundle sidebar order"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-012",
@@ -11633,7 +11633,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Navigates to /terminal",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-013",
@@ -11648,7 +11648,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Navigates to /analytics/coinglass (external to the terminal)",
-  "evidence": "bundle sidebar"
+  "evidence": "sidebar \"Markets Hub ↗\" → /analytics/hub (ext, never active); components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-014",
@@ -11663,7 +11663,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Navigates to /terminal/spot",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-015",
@@ -11678,7 +11678,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Navigates to /terminal/sectors/layer-1",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-016",
@@ -11693,7 +11693,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Navigates to /terminal/sectors/layer-2",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-017",
@@ -11708,7 +11708,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Navigates to /terminal/sectors/defi",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-018",
@@ -11723,7 +11723,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Navigates to /terminal/sectors/memes",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-019",
@@ -11738,7 +11738,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Navigates to /terminal/exchanges/Binance",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-020",
@@ -11753,7 +11753,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Navigates to /terminal/derivatives/open-interest",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-021",
@@ -11768,7 +11768,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Navigates to /terminal/derivatives/funding",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-022",
@@ -11783,7 +11783,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Navigates to /terminal/derivatives/long-short",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-023",
@@ -11798,7 +11798,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Navigates to /terminal/derivatives/liquidations",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-024",
@@ -11813,7 +11813,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Navigates to /terminal/etf",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-025",
@@ -11828,7 +11828,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Navigates to /terminal/onchain/exchange-balance",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-026",
@@ -11843,7 +11843,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Navigates to /terminal/onchain/unlocks",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-027",
@@ -11858,7 +11858,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Navigates to /terminal/indicators/fear-greed",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-028",
@@ -11873,7 +11873,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Navigates to /terminal/indicators/cycle",
-  "evidence": "bundle sidebar"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-029",
@@ -11888,7 +11888,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Active sidebar item gets an amber (--primary) 2px left rule, foreground text and a muted background; section labels use the .micro style",
-  "evidence": ""
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-030",
@@ -11903,7 +11903,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "\"Navigation\" toggle button shows the current section name and expands/collapses the nav; closes on route change",
-  "evidence": ""
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-031",
@@ -11918,7 +11918,7 @@
   "phase": 5,
   "test": "visual (screenshot diff)",
   "acceptance": "Rendered by CG.chrome[\"terminal-footer\"] on every terminal screen",
-  "evidence": "task spec"
+  "evidence": "analytics shell footer on every terminal screen; unit terminal-pages.test.tsx"
  },
  {
   "id": "HC-MT-032",
@@ -11933,7 +11933,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "MA.chart now adapts its spec to CG2.chart, the single chart helper shared with /analytics (timeframe chips, toggleable legend, crosshair tooltip, last-value tags, faint grid, skeleton)",
-  "evidence": "bundle colours hsl(168 100% 44%), hsl(50 90% 56%), hsl(358 78% 58%), hsl(152 76% 45%), hsl(280 60% 60%)"
+  "evidence": "shared components/analytics/Chart.tsx (line / area / bar / stacked / dual axis / hlines, crosshair tooltip); e2e analytics.spec.ts HC-MA-030"
  },
  {
   "id": "HC-MT-033",
@@ -11948,7 +11948,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Mouse over any chart shows a dashed crosshair, dots on line series and a tooltip with the time label and every series value",
-  "evidence": ""
+  "evidence": "shared components/analytics/Chart.tsx (line / area / bar / stacked / dual axis / hlines, crosshair tooltip); e2e analytics.spec.ts HC-MA-030"
  },
  {
   "id": "HC-MT-034",
@@ -11963,7 +11963,7 @@
   "phase": 5,
   "test": "visual (screenshot diff)",
   "acceptance": "Multi-series charts show a colour legend above the plot",
-  "evidence": ""
+  "evidence": "Chart legend with toggles (legend-item); unit terminal-pages.test.tsx long / short (3 items)"
  },
  {
   "id": "HC-MT-035",
@@ -11978,7 +11978,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "MA.table adapts to CG2.table: sticky headers, sortable, mono right-aligned numbers, heat cells, search, Columns ▾, CSV, star, compare checkbox",
-  "evidence": "bundle: Sortable list of all tracked markets"
+  "evidence": "shared components/analytics/DataTable.tsx (sticky header, sort, search, Columns ▾, CSV, ★); e2e terminal.spec.ts spot"
  },
  {
   "id": "HC-MT-036",
@@ -11993,7 +11993,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Coin rows → /terminal/coin/SYM, exchange rows → /terminal/exchanges/NAME (data-nav)",
-  "evidence": ""
+  "evidence": "rowHref on every terminal table → /terminal/coin/SYM or /terminal/exchanges/VENUE; unit terminal-pages.test.tsx dashboard / open interest / coin page"
  },
  {
   "id": "HC-MT-037",
@@ -12008,7 +12008,7 @@
   "phase": 5,
   "test": "visual (screenshot diff)",
   "acceptance": "Prices with 2/4/8 decimals by magnitude, compact USD ($1.23B), signed % in green/red, funding to 4 decimals",
-  "evidence": "bundle: ma-mono, ma-up, ma-down, current_price, price_change_percent_24h"
+  "evidence": "lib/analytics/format.ts (price by magnitude, usdCompact, signed pct, funding 4 decimals) + tone classes"
  },
  {
   "id": "HC-MT-038",
@@ -12023,7 +12023,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "All terminal screens are data-auth=\"user\"; logged-out users are redirected to /auth",
-  "evidence": ""
+  "evidence": "app/terminal/layout.tsx redirects logged-out users to /auth?next=%2Fterminal; e2e terminal.spec.ts HC-MT-038"
  },
  {
   "id": "HC-MT-039",
@@ -12038,7 +12038,7 @@
   "phase": 5,
   "test": "unit (pricing) · visual (screenshot diff)",
   "acceptance": "MNT, METIS, ZK, COMP, DYDX, SUSHI, 1INCH, MEME, POPCAT, BRETT added with plausible numbers so every sector symbol resolves (50 coins total)",
-  "evidence": ""
+  "evidence": "n/a in the real app: the coin list is the ingest's ANALYTICS_SYMBOLS (10 by default); sectors show the tracked coins only"
  },
  {
   "id": "HC-MT-040",
@@ -12048,12 +12048,12 @@
   "route": "/terminal",
   "screen": "Dashboard",
   "feature": "Page title \"Dashboard · Derivatives market overview\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "unit (pricing) · visual (screenshot diff)",
+  "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Header with \"Updated 14:30\" (mock clock)",
-  "evidence": "bundle: Dashboard, Derivatives market overview"
+  "evidence": "PageTitle \"Dashboard · Derivatives market overview\" + \"Updated <as-of>\" from the overview snapshot; components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "id": "HC-MT-041",
@@ -12063,12 +12063,12 @@
   "route": "/terminal",
   "screen": "Dashboard",
   "feature": "Stat tile \"Fear & Greed\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "value + label Extreme Fear / Fear / Neutral / Greed / Extreme Greed from CG.mock.fearGreedNow",
-  "evidence": "bundle: Fear & Greed, Extreme Fear, Fear, Neutral, Greed, Extreme Greed"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "id": "HC-MT-042",
@@ -12078,12 +12078,12 @@
   "route": "/terminal",
   "screen": "Dashboard",
   "feature": "Stat tile \"Total Open Interest · All tracked coins\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "sum of openInterest over CG.mock.coins",
-  "evidence": "bundle: Total Open Interest, All tracked coins, open_interest_usd"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "id": "HC-MT-043",
@@ -12093,12 +12093,12 @@
   "route": "/terminal",
   "screen": "Dashboard",
   "feature": "Stat tile \"24h Volume · Aggregated futures\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "sum of volume24h over CG.mock.coins",
-  "evidence": "bundle: 24h Volume, Aggregated futures, volume_usd_24h"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "id": "HC-MT-044",
@@ -12108,12 +12108,12 @@
   "route": "/terminal",
   "screen": "Dashboard",
   "feature": "Stat tile \"BTC Dominance · OI share\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "BTC openInterest / total OI",
-  "evidence": "bundle: BTC Dominance, OI share"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "id": "HC-MT-045",
@@ -12128,7 +12128,7 @@
   "phase": 5,
   "test": "visual (screenshot diff)",
   "acceptance": "last CG.mock.etfFlows flow, green/red by sign",
-  "evidence": "bundle: BTC ETF Net Inflow (USD), Net Flow, flow_usd, net_flow"
+  "evidence": "tile shows — · \"coming soon · GAPS #55\" (no ETF flows source, ADR-038); components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "id": "HC-MT-046",
@@ -12138,12 +12138,12 @@
   "route": "/terminal",
   "screen": "Dashboard",
   "feature": "Stat tile \"Long / Short Ratio · L/S\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "last CG.mock.lsHistory global ratio",
-  "evidence": "bundle: Long / Short Ratio, L/S, long_short_ratio"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "id": "HC-MT-047",
@@ -12158,7 +12158,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "CG.mock.oiHistory (96h) as an accent area chart with hover tooltip",
-  "evidence": "bundle: Aggregated Open Interest, oi-aggregated-history, hsl(168 100% 44%)"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "id": "HC-MT-048",
@@ -12173,7 +12173,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "CG.mock.lsHistory global ratio as a yellow line with L/S = 1 reference line",
-  "evidence": "bundle: Long / Short Ratio, global-ls-ratio, hsl(50 90% 56%)"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "id": "HC-MT-049",
@@ -12188,7 +12188,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Top 6 coins by chg24 desc; sortable; rows open the coin page",
-  "evidence": "bundle: Top Gainers (24h), Coin, Price, 24h %"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "id": "HC-MT-050",
@@ -12203,7 +12203,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Bottom 6 coins by chg24; sortable; rows open the coin page",
-  "evidence": "bundle: Top Losers (24h)"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "id": "HC-MT-051",
@@ -12218,7 +12218,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "All 50 coins sorted by Open Interest desc by default; every column sortable; row click → /terminal/coin/SYM",
-  "evidence": "bundle: coins-markets, symbol, current_price, price_change_percent_24h, open_interest_usd, volume_usd_24h"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "id": "HC-MT-052",
@@ -12228,12 +12228,12 @@
   "route": "/terminal/spot",
   "screen": "Spot Markets",
   "feature": "Page title \"Spot Markets · Sortable list of all tracked markets\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "unit (pricing) · visual (screenshot diff) · security",
+  "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Header with filter input and live \"N markets\" counter",
-  "evidence": "bundle: Spot Markets, Sortable list of all tracked markets"
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "id": "HC-MT-053",
@@ -12248,7 +12248,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Filters the table as you type (symbol or name substring); counter updates; empty state \"No markets match “…”\"",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "id": "HC-MT-054",
@@ -12263,7 +12263,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "from CG.mock.coins; click header to sort asc/desc",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "id": "HC-MT-055",
@@ -12278,7 +12278,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "from CG.mock.coins; click header to sort asc/desc",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "id": "HC-MT-056",
@@ -12293,7 +12293,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "from CG.mock.coins; click header to sort asc/desc",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "id": "HC-MT-057",
@@ -12308,7 +12308,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "from CG.mock.coins; click header to sort asc/desc",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "id": "HC-MT-058",
@@ -12323,7 +12323,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "from CG.mock.coins; click header to sort asc/desc",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "id": "HC-MT-059",
@@ -12338,7 +12338,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "from CG.mock.coins; click header to sort asc/desc",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "id": "HC-MT-060",
@@ -12353,7 +12353,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "coin OI / total OI in %",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "id": "HC-MT-061",
@@ -12368,7 +12368,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Market Cap descending",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "id": "HC-MT-062",
@@ -12383,7 +12383,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Opens /terminal/coin/SYM",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "id": "HC-MT-063",
@@ -12393,12 +12393,12 @@
   "route": "/terminal/sectors/:slug",
   "screen": "Sector",
   "feature": "Page title \"<Name> Sector · N symbols\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "Layer-1 (13), Layer-2 (8), DeFi (11), Memes (9) symbol lists filtered to coins present in CG.mock.coins",
-  "evidence": "bundle: sectors/:slug"
+  "evidence": "components/terminal/MarketPages.tsx SectorPage (sectorOf map shared with the hub); unit terminal-pages.test.tsx sectors; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-064",
@@ -12413,7 +12413,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Chips in the page header navigate between sectors; active chip highlighted",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SectorPage (sectorOf map shared with the hub); unit terminal-pages.test.tsx sectors; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-065",
@@ -12428,7 +12428,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Coin, Price, 24h %, Market Cap, 24h Volume, Open Interest, OI Share; sortable; rows open the coin page",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx SectorPage (sectorOf map shared with the hub); unit terminal-pages.test.tsx sectors; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-066",
@@ -12443,7 +12443,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Title and empty panel \"Unknown sector: xyz\" with hint to pick a known sector",
-  "evidence": "bundle: Unknown sector: "
+  "evidence": "components/terminal/MarketPages.tsx SectorPage (sectorOf map shared with the hub); unit terminal-pages.test.tsx sectors; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-067",
@@ -12458,7 +12458,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "data-redirect screen",
-  "evidence": "inferred"
+  "evidence": "app/terminal/sectors/page.tsx redirect → /terminal/sectors/layer-1; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-068",
@@ -12473,7 +12473,7 @@
   "phase": 5,
   "test": "visual (screenshot diff)",
   "acceptance": "Behaves as in the v2 mock.",
-  "evidence": "bundle: Bitcoin Spot ETFs, Issuer flows, AUM and holdings"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "id": "HC-MT-069",
@@ -12488,7 +12488,7 @@
   "phase": 5,
   "test": "visual (screenshot diff)",
   "acceptance": "sum of aum over CG.mock.etfs (bitcoin)",
-  "evidence": "bundle: Total AUM, Total BTC Held, ETF Count, aum_usd, btc_holdings"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "id": "HC-MT-070",
@@ -12503,7 +12503,7 @@
   "phase": 5,
   "test": "unit (pricing) · visual (screenshot diff)",
   "acceptance": "sum of btcHeld with USD equivalent",
-  "evidence": "bundle: Total AUM, Total BTC Held, ETF Count, aum_usd, btc_holdings"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "id": "HC-MT-071",
@@ -12518,7 +12518,7 @@
   "phase": 5,
   "test": "visual (screenshot diff)",
   "acceptance": "number of spot funds tracked",
-  "evidence": "bundle: Total AUM, Total BTC Held, ETF Count, aum_usd, btc_holdings"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "id": "HC-MT-072",
@@ -12533,7 +12533,7 @@
   "phase": 5,
   "test": "visual (screenshot diff)",
   "acceptance": "sum of flow1d, green/red by sign",
-  "evidence": "bundle: Total AUM, Total BTC Held, ETF Count, aum_usd, btc_holdings"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "id": "HC-MT-073",
@@ -12543,12 +12543,12 @@
   "route": "/terminal/etf",
   "screen": "Bitcoin Spot ETFs",
   "feature": "Chart \"Net Inflow History · Net Flow USD\" (bars)",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "unit (pricing) · e2e (Playwright)",
+  "test": "unit (pricing) · visual (screenshot diff)",
   "acceptance": "CG.mock.etfFlows daily flows; positive bars accent, negative bars red; hover tooltip",
-  "evidence": "bundle: Net Inflow History, Net Flow USD, etf-btc-flows, hsl(168 100% 44%)"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "id": "HC-MT-074",
@@ -12558,12 +12558,12 @@
   "route": "/terminal/etf",
   "screen": "Bitcoin Spot ETFs",
   "feature": "ETF List column \"Ticker\" (sortable)",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "e2e (Playwright)",
+  "test": "visual (screenshot diff)",
   "acceptance": "from CG.mock.etfs",
-  "evidence": "bundle: etf-btc-list, Issuer, BTC Held, Net Flow (1d), Change %, flow_usd_1d, ma-dim"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "id": "HC-MT-075",
@@ -12573,12 +12573,12 @@
   "route": "/terminal/etf",
   "screen": "Bitcoin Spot ETFs",
   "feature": "ETF List column \"Issuer\" (sortable)",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "e2e (Playwright)",
+  "test": "visual (screenshot diff)",
   "acceptance": "issuer with fund name underneath (ma-dim)",
-  "evidence": "bundle: etf-btc-list, Issuer, BTC Held, Net Flow (1d), Change %, flow_usd_1d, ma-dim"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "id": "HC-MT-076",
@@ -12588,12 +12588,12 @@
   "route": "/terminal/etf",
   "screen": "Bitcoin Spot ETFs",
   "feature": "ETF List column \"AUM\" (sortable)",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "e2e (Playwright)",
+  "test": "visual (screenshot diff)",
   "acceptance": "from CG.mock.etfs",
-  "evidence": "bundle: etf-btc-list, Issuer, BTC Held, Net Flow (1d), Change %, flow_usd_1d, ma-dim"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "id": "HC-MT-077",
@@ -12603,12 +12603,12 @@
   "route": "/terminal/etf",
   "screen": "Bitcoin Spot ETFs",
   "feature": "ETF List column \"BTC Held\" (sortable)",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "e2e (Playwright)",
+  "test": "visual (screenshot diff)",
   "acceptance": "from CG.mock.etfs",
-  "evidence": "bundle: etf-btc-list, Issuer, BTC Held, Net Flow (1d), Change %, flow_usd_1d, ma-dim"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "id": "HC-MT-078",
@@ -12618,12 +12618,12 @@
   "route": "/terminal/etf",
   "screen": "Bitcoin Spot ETFs",
   "feature": "ETF List column \"Net Flow (1d)\" (sortable)",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "e2e (Playwright)",
+  "test": "visual (screenshot diff)",
   "acceptance": "signed compact USD in green/red",
-  "evidence": "bundle: etf-btc-list, Issuer, BTC Held, Net Flow (1d), Change %, flow_usd_1d, ma-dim"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "id": "HC-MT-079",
@@ -12633,12 +12633,12 @@
   "route": "/terminal/etf",
   "screen": "Bitcoin Spot ETFs",
   "feature": "ETF List column \"Change %\" (sortable)",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "e2e (Playwright)",
+  "test": "visual (screenshot diff)",
   "acceptance": "from CG.mock.etfs",
-  "evidence": "bundle: etf-btc-list, Issuer, BTC Held, Net Flow (1d), Change %, flow_usd_1d, ma-dim"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "id": "HC-MT-080",
@@ -12653,7 +12653,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Returns to /terminal",
-  "evidence": "bundle: ← Back, /terminal, ma-btn"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-081",
@@ -12663,12 +12663,12 @@
   "route": "/terminal/coin/:symbol",
   "screen": "Coin detail",
   "feature": "Coin header: icon, symbol, name, rank chip, sector chip, price, 24h %",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "unit (pricing) · e2e (Playwright) · security",
+  "test": "unit (pricing) · visual (screenshot diff) · security",
   "acceptance": "Sector chip links to the sector page; BTC/ETH/XAUT price updates live on the 2.5s CG tick with a green/red flash",
-  "evidence": "bundle: symbol, current_price, price_change_percent_24h"
+  "evidence": "coin header with rank chip, sector chip → /terminal/sectors/slug, price + 24h from the markets snapshot (refreshes on its TTL, not the 2.5 s tick); components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-082",
@@ -12678,12 +12678,12 @@
   "route": "/terminal/coin/:symbol",
   "screen": "Coin detail",
   "feature": "Stat tile \"Price\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "with 24h % underneath",
-  "evidence": "bundle: Price, open_interest_change_percent_24h, 24h Volume, Funding (avg)"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-083",
@@ -12693,12 +12693,12 @@
   "route": "/terminal/coin/:symbol",
   "screen": "Coin detail",
   "feature": "Stat tile \"Open Interest\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "with OI change 24h % underneath",
-  "evidence": "bundle: Price, open_interest_change_percent_24h, 24h Volume, Funding (avg)"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-084",
@@ -12708,12 +12708,12 @@
   "route": "/terminal/coin/:symbol",
   "screen": "Coin detail",
   "feature": "Stat tile \"24h Volume\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "futures volume across exchanges",
-  "evidence": "bundle: Price, open_interest_change_percent_24h, 24h Volume, Funding (avg)"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-085",
@@ -12723,12 +12723,12 @@
   "route": "/terminal/coin/:symbol",
   "screen": "Coin detail",
   "feature": "Stat tile \"Funding (avg)\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "average of per-exchange funding",
-  "evidence": "bundle: Price, open_interest_change_percent_24h, 24h Volume, Funding (avg)"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-086",
@@ -12743,7 +12743,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Price (left axis, accent) and OI USD (right axis, yellow) over 96h from CG.mock.priceHistory + scaled oiHistory",
-  "evidence": "bundle: Price & Open Interest, price-history, oi-aggregated-history, hsl(168 100% 44%), hsl(50 90% 56%)"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-087",
@@ -12758,7 +12758,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "lsHistory scaled to the coin lsRatio",
-  "evidence": "bundle: Long / Short Ratio, L/S"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-088",
@@ -12773,7 +12773,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "CG.mock.liqHistory scaled by the coin liq24h; long red, short green",
-  "evidence": "bundle: Liquidations, Long Liq, Short Liq, long_liquidation_usd, short_liquidation_usd, hsl(358 78% 58%), hsl(152 76% 45%)"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-089",
@@ -12788,7 +12788,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "fundingHistory shifted to the coin funding; sign-coloured bars",
-  "evidence": "bundle: OI-Weighted Funding, Funding %, funding-oi-weight-history"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-090",
@@ -12803,7 +12803,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Buy (green) vs Sell (red) hourly derived from priceHistory volume",
-  "evidence": "bundle: Taker Buy / Sell Volume, taker-buy-sell, buy_volume_usd, sell_volume_usd, Sell"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-091",
@@ -12818,7 +12818,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "per-exchange split of the coin OI/volume/funding; row click opens the exchange page",
-  "evidence": "bundle: Markets by Exchange, oi-exchange-list, Exchange, OI Share, open_interest_share"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-092",
@@ -12833,7 +12833,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "per-exchange split of the coin OI/volume/funding; row click opens the exchange page",
-  "evidence": "bundle: Markets by Exchange, oi-exchange-list, Exchange, OI Share, open_interest_share"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-093",
@@ -12848,7 +12848,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "per-exchange split of the coin OI/volume/funding; row click opens the exchange page",
-  "evidence": "bundle: Markets by Exchange, oi-exchange-list, Exchange, OI Share, open_interest_share"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-094",
@@ -12863,7 +12863,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "share bar + %",
-  "evidence": "bundle: Markets by Exchange, oi-exchange-list, Exchange, OI Share, open_interest_share"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-095",
@@ -12878,7 +12878,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "per-exchange split of the coin OI/volume/funding; row click opens the exchange page",
-  "evidence": "bundle: Markets by Exchange, oi-exchange-list, Exchange, OI Share, open_interest_share"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-096",
@@ -12893,7 +12893,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "current / predicted 8h funding and annualised rate per exchange; row click opens the exchange page",
-  "evidence": "bundle: Funding by Exchange, funding-exchange-list, funding_rate"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-097",
@@ -12908,7 +12908,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "current / predicted 8h funding and annualised rate per exchange; row click opens the exchange page",
-  "evidence": "bundle: Funding by Exchange, funding-exchange-list, funding_rate"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-098",
@@ -12923,7 +12923,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "current / predicted 8h funding and annualised rate per exchange; row click opens the exchange page",
-  "evidence": "bundle: Funding by Exchange, funding-exchange-list, funding_rate"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-099",
@@ -12938,7 +12938,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "current / predicted 8h funding and annualised rate per exchange; row click opens the exchange page",
-  "evidence": "bundle: Funding by Exchange, funding-exchange-list, funding_rate"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-100",
@@ -12953,7 +12953,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "24 hour columns × Long/Short rows; cell intensity = liquidation USD / max; hover title shows hour and value",
-  "evidence": "bundle: Liquidation Heatmap (long vs short)"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-101",
@@ -12968,7 +12968,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Panel \"No data · No market data for “XYZ”\" with the Back button",
-  "evidence": "task spec"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-102",
@@ -12978,12 +12978,12 @@
   "route": "/terminal/exchanges/:exchange",
   "screen": "Exchange overview",
   "feature": "Page title \"<Exchange> · Exchange overview\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "Default Binance",
-  "evidence": "bundle: Binance, Exchange overview"
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "id": "HC-MT-103",
@@ -12998,7 +12998,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "One chip per CG.mock.exchanges entry (Binance, OKX, Bybit, Bitget, Gate, HTX, CoinEx, Hyperliquid, Deribit, Kraken); active chip highlighted; click navigates",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "id": "HC-MT-104",
@@ -13008,12 +13008,12 @@
   "route": "/terminal/exchanges/:exchange",
   "screen": "Exchange overview",
   "feature": "Stat tile \"Tracked Coins\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "number of perpetual markets listed (scales with exchange OI share)",
-  "evidence": "bundle: Tracked Coins, Total OI, 24h Volume, BTC Balance, btc_balance, exchange-balance-list"
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "id": "HC-MT-105",
@@ -13023,12 +13023,12 @@
   "route": "/terminal/exchanges/:exchange",
   "screen": "Exchange overview",
   "feature": "Stat tile \"Total OI\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "exchange openInterest with share of aggregated OI",
-  "evidence": "bundle: Tracked Coins, Total OI, 24h Volume, BTC Balance, btc_balance, exchange-balance-list"
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "id": "HC-MT-106",
@@ -13043,7 +13043,7 @@
   "phase": 5,
   "test": "visual (screenshot diff)",
   "acceptance": "exchange volume24h",
-  "evidence": "bundle: Tracked Coins, Total OI, 24h Volume, BTC Balance, btc_balance, exchange-balance-list"
+  "evidence": "tile shows — · \"needs venue tickers · GAPS #63\"; components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "id": "HC-MT-107",
@@ -13058,7 +13058,7 @@
   "phase": 5,
   "test": "visual (screenshot diff)",
   "acceptance": "exchange btcBalance with 24h % change",
-  "evidence": "bundle: Tracked Coins, Total OI, 24h Volume, BTC Balance, btc_balance, exchange-balance-list"
+  "evidence": "tile shows — · \"coming soon · GAPS #55\"; components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "id": "HC-MT-108",
@@ -13073,7 +13073,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "per-coin split for this exchange; row click opens the coin page",
-  "evidence": "bundle: Coins on , Coin, Open Interest, 24h Vol, Funding, coins-markets"
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "id": "HC-MT-109",
@@ -13088,7 +13088,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "per-coin split for this exchange; row click opens the coin page",
-  "evidence": "bundle: Coins on , Coin, Open Interest, 24h Vol, Funding, coins-markets"
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "id": "HC-MT-110",
@@ -13103,7 +13103,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "per-coin split for this exchange; row click opens the coin page",
-  "evidence": "bundle: Coins on , Coin, Open Interest, 24h Vol, Funding, coins-markets"
+  "evidence": "replaced by OI 24h % (per-venue volume is GAPS #63); components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "id": "HC-MT-111",
@@ -13118,7 +13118,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "per-coin split for this exchange; row click opens the coin page",
-  "evidence": "bundle: Coins on , Coin, Open Interest, 24h Vol, Funding, coins-markets"
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "id": "HC-MT-112",
@@ -13133,7 +13133,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Title \"Unknown exchange: xyz\" + \"No data\" panel + switcher chips",
-  "evidence": ""
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "id": "HC-MT-113",
@@ -13148,7 +13148,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "data-redirect screen",
-  "evidence": "inferred"
+  "evidence": "app/terminal/exchanges/page.tsx redirect → /terminal/exchanges/binance; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-114",
@@ -13158,12 +13158,12 @@
   "route": "/terminal/derivatives/open-interest",
   "screen": "Open Interest",
   "feature": "Page title \"Open Interest\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "Tiles: Aggregated OI, BTC OI (with BTC dominance), Top Exchange",
-  "evidence": "bundle: Open Interest"
+  "evidence": "components/terminal/DerivativesPages.tsx OpenInterestPage; unit terminal-pages.test.tsx open interest; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-115",
@@ -13178,7 +13178,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "CG.mock.oiHistory oi (area, accent) and price (line, yellow)",
-  "evidence": "bundle: oi-aggregated-history, hsl(168 100% 44%), ma-panel"
+  "evidence": "components/terminal/DerivativesPages.tsx OpenInterestPage; unit terminal-pages.test.tsx open interest; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-116",
@@ -13193,7 +13193,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "from CG.mock.exchanges; row click opens the exchange page",
-  "evidence": "bundle: oi-exchange-list, Exchange, Open Interest, Share, open_interest_share"
+  "evidence": "components/terminal/DerivativesPages.tsx OpenInterestPage; unit terminal-pages.test.tsx open interest; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-117",
@@ -13208,7 +13208,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "from CG.mock.exchanges; row click opens the exchange page",
-  "evidence": "bundle: oi-exchange-list, Exchange, Open Interest, Share, open_interest_share"
+  "evidence": "components/terminal/DerivativesPages.tsx OpenInterestPage; unit terminal-pages.test.tsx open interest; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-118",
@@ -13223,7 +13223,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "accent share bar + %",
-  "evidence": "bundle: oi-exchange-list, Exchange, Open Interest, Share, open_interest_share"
+  "evidence": "components/terminal/DerivativesPages.tsx OpenInterestPage; unit terminal-pages.test.tsx open interest; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-119",
@@ -13233,12 +13233,12 @@
   "route": "/terminal/derivatives/funding",
   "screen": "Funding Rates",
   "feature": "Page title \"Funding Rates\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "Tiles: OI-Weighted Funding, Average Funding, Annualised",
-  "evidence": "bundle: Funding Rates"
+  "evidence": "components/terminal/DerivativesPages.tsx FundingPage (coin select, OI-weighted bars, per-exchange table); unit terminal-pages.test.tsx funding; e2e terminal.spec.ts; visual terminal-funding-*.png"
  },
  {
   "id": "HC-MT-120",
@@ -13253,7 +13253,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "CG.mock.fundingHistory oiWeighted, 8h intervals, sign-coloured bars with tooltip",
-  "evidence": "bundle: OI-Weighted Funding, Funding %, funding-oi-weight-history, hsl(168 100% 44%)"
+  "evidence": "components/terminal/DerivativesPages.tsx FundingPage (coin select, OI-weighted bars, per-exchange table); unit terminal-pages.test.tsx funding; e2e terminal.spec.ts; visual terminal-funding-*.png"
  },
  {
   "id": "HC-MT-121",
@@ -13268,7 +13268,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "BTC perpetual funding per venue; row click opens the exchange page",
-  "evidence": "bundle: Per-exchange Funding, funding-exchange-list, funding_rate"
+  "evidence": "components/terminal/DerivativesPages.tsx FundingPage (coin select, OI-weighted bars, per-exchange table); unit terminal-pages.test.tsx funding; e2e terminal.spec.ts; visual terminal-funding-*.png"
  },
  {
   "id": "HC-MT-122",
@@ -13283,7 +13283,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "BTC perpetual funding per venue; row click opens the exchange page",
-  "evidence": "bundle: Per-exchange Funding, funding-exchange-list, funding_rate"
+  "evidence": "components/terminal/DerivativesPages.tsx FundingPage (coin select, OI-weighted bars, per-exchange table); unit terminal-pages.test.tsx funding; e2e terminal.spec.ts; visual terminal-funding-*.png"
  },
  {
   "id": "HC-MT-123",
@@ -13298,7 +13298,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "BTC perpetual funding per venue; row click opens the exchange page",
-  "evidence": "bundle: Per-exchange Funding, funding-exchange-list, funding_rate"
+  "evidence": "components/terminal/DerivativesPages.tsx FundingPage (coin select, OI-weighted bars, per-exchange table); unit terminal-pages.test.tsx funding; e2e terminal.spec.ts; visual terminal-funding-*.png"
  },
  {
   "id": "HC-MT-124",
@@ -13313,7 +13313,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "BTC perpetual funding per venue; row click opens the exchange page",
-  "evidence": "bundle: Per-exchange Funding, funding-exchange-list, funding_rate"
+  "evidence": "components/terminal/DerivativesPages.tsx FundingPage (coin select, OI-weighted bars, per-exchange table); unit terminal-pages.test.tsx funding; e2e terminal.spec.ts; visual terminal-funding-*.png"
  },
  {
   "id": "HC-MT-125",
@@ -13328,7 +13328,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "BTC perpetual funding per venue; row click opens the exchange page",
-  "evidence": "bundle: Per-exchange Funding, funding-exchange-list, funding_rate"
+  "evidence": "components/terminal/DerivativesPages.tsx FundingPage (coin select, OI-weighted bars, per-exchange table); unit terminal-pages.test.tsx funding; e2e terminal.spec.ts; visual terminal-funding-*.png"
  },
  {
   "id": "HC-MT-126",
@@ -13338,12 +13338,12 @@
   "route": "/terminal/derivatives/long-short",
   "screen": "Long / Short",
   "feature": "Page title \"Long / Short\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "Tiles: Global Accounts, Top Trader (Accounts), Top Trader (Positions) — green ≥ 1, red < 1",
-  "evidence": "bundle: Global Accounts, Top Trader (Accounts), Top Trader (Positions), L/S"
+  "evidence": "components/terminal/DerivativesPages.tsx LongShortPage (three lines, hourlyReadings); unit terminal-pages.test.tsx long / short; e2e terminal.spec.ts; visual terminal-long-short-*.png"
  },
  {
   "id": "HC-MT-127",
@@ -13358,7 +13358,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "CG.mock.lsHistory 72h; colours accent / yellow / purple; L/S = 1 reference line; hover shows all three values",
-  "evidence": "bundle: global-ls-ratio, hsl(168 100% 44%), hsl(50 90% 56%), hsl(280 60% 60%), L/S"
+  "evidence": "components/terminal/DerivativesPages.tsx LongShortPage (three lines, hourlyReadings); unit terminal-pages.test.tsx long / short; e2e terminal.spec.ts; visual terminal-long-short-*.png"
  },
  {
   "id": "HC-MT-128",
@@ -13373,7 +13373,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Latest 24 readings, sortable",
-  "evidence": "inferred"
+  "evidence": "components/terminal/DerivativesPages.tsx LongShortPage (three lines, hourlyReadings); unit terminal-pages.test.tsx long / short; e2e terminal.spec.ts; visual terminal-long-short-*.png"
  },
  {
   "id": "HC-MT-129",
@@ -13383,12 +13383,12 @@
   "route": "/terminal/derivatives/liquidations",
   "screen": "Liquidations",
   "feature": "Page title \"Liquidations\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "Tiles: 24h Total, Long Liquidations (red), Short Liquidations (green), Largest Coin",
-  "evidence": "bundle: Liquidations"
+  "evidence": "components/terminal/DerivativesPages.tsx TerminalLiquidationsPage (liqWindow chips, by-coin table; long = green / short = red app-wide, ADR-046); unit terminal-pages.test.tsx liquidations; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-130",
@@ -13403,7 +13403,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "CG.mock.liqHistory 48h; long red, short green; legend + tooltip",
-  "evidence": "bundle: aggregated-history, Long Liq, Short Liq, hsl(358 78% 58%), hsl(152 76% 45%), ma-panel"
+  "evidence": "components/terminal/DerivativesPages.tsx TerminalLiquidationsPage (liqWindow chips, by-coin table; long = green / short = red app-wide, ADR-046); unit terminal-pages.test.tsx liquidations; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-131",
@@ -13418,7 +13418,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "from CG.mock.coins liq24h / longLiq24h / shortLiq24h; default sort 24h Total desc; row click opens the coin",
-  "evidence": "bundle: By Coin (24h), Coin, 24h Total, Long, Short, ma-mono ma-down, ma-mono ma-up, liquidation_usd_24h"
+  "evidence": "components/terminal/DerivativesPages.tsx TerminalLiquidationsPage (liqWindow chips, by-coin table; long = green / short = red app-wide, ADR-046); unit terminal-pages.test.tsx liquidations; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-132",
@@ -13433,7 +13433,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "from CG.mock.coins liq24h / longLiq24h / shortLiq24h; default sort 24h Total desc; row click opens the coin",
-  "evidence": "bundle: By Coin (24h), Coin, 24h Total, Long, Short, ma-mono ma-down, ma-mono ma-up, liquidation_usd_24h"
+  "evidence": "components/terminal/DerivativesPages.tsx TerminalLiquidationsPage (liqWindow chips, by-coin table; long = green / short = red app-wide, ADR-046); unit terminal-pages.test.tsx liquidations; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-133",
@@ -13448,7 +13448,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "from CG.mock.coins liq24h / longLiq24h / shortLiq24h; default sort 24h Total desc; row click opens the coin",
-  "evidence": "bundle: By Coin (24h), Coin, 24h Total, Long, Short, ma-mono ma-down, ma-mono ma-up, liquidation_usd_24h"
+  "evidence": "components/terminal/DerivativesPages.tsx TerminalLiquidationsPage (liqWindow chips, by-coin table; long = green / short = red app-wide, ADR-046); unit terminal-pages.test.tsx liquidations; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-134",
@@ -13463,7 +13463,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "from CG.mock.coins liq24h / longLiq24h / shortLiq24h; default sort 24h Total desc; row click opens the coin",
-  "evidence": "bundle: By Coin (24h), Coin, 24h Total, Long, Short, ma-mono ma-down, ma-mono ma-up, liquidation_usd_24h"
+  "evidence": "components/terminal/DerivativesPages.tsx TerminalLiquidationsPage (liqWindow chips, by-coin table; long = green / short = red app-wide, ADR-046); unit terminal-pages.test.tsx liquidations; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-135",
@@ -13478,7 +13478,7 @@
   "phase": 5,
   "test": "visual (screenshot diff)",
   "acceptance": "Tiles: Total BTC Balance, 24h / 7d / 30d change",
-  "evidence": "bundle: Exchange Balance, Bitcoin held on exchanges"
+  "evidence": "components/terminal/IndicatorPages.tsx BalancePage: tiles — and a ComingSoon panel (GAPS #55, no on-chain source); unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-136",
@@ -13488,12 +13488,12 @@
   "route": "/terminal/onchain/exchange-balance",
   "screen": "Exchange Balance",
   "feature": "Chart \"BTC Balance\" (area, 90 days)",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "unit (pricing) · e2e (Playwright)",
+  "test": "unit (pricing) · visual (screenshot diff)",
   "acceptance": "Derived 90-day series anchored to CG.mock.global.btcExchangeBalance (CG.terminal.exchBalance)",
-  "evidence": "bundle: exchange-balance-chart, BTC Balance, balance, hsl(168 100% 44%)"
+  "evidence": "components/terminal/IndicatorPages.tsx BalancePage: tiles — and a ComingSoon panel (GAPS #55, no on-chain source); unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-137",
@@ -13503,12 +13503,12 @@
   "route": "/terminal/onchain/exchange-balance",
   "screen": "Exchange Balance",
   "feature": "Table column \"Exchange\" (sortable)",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "e2e (Playwright)",
+  "test": "visual (screenshot diff)",
   "acceptance": "from CG.mock.exchanges btcBalance / btcBalanceChg*; row click opens the exchange page",
-  "evidence": "bundle: exchange-balance-list, BTC Balance"
+  "evidence": "components/terminal/IndicatorPages.tsx BalancePage: tiles — and a ComingSoon panel (GAPS #55, no on-chain source); unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-138",
@@ -13518,12 +13518,12 @@
   "route": "/terminal/onchain/exchange-balance",
   "screen": "Exchange Balance",
   "feature": "Table column \"BTC Balance\" (sortable)",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "e2e (Playwright)",
+  "test": "visual (screenshot diff)",
   "acceptance": "from CG.mock.exchanges btcBalance / btcBalanceChg*; row click opens the exchange page",
-  "evidence": "bundle: exchange-balance-list, BTC Balance"
+  "evidence": "components/terminal/IndicatorPages.tsx BalancePage: tiles — and a ComingSoon panel (GAPS #55, no on-chain source); unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-139",
@@ -13533,12 +13533,12 @@
   "route": "/terminal/onchain/exchange-balance",
   "screen": "Exchange Balance",
   "feature": "Table column \"24h %\" (sortable)",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "e2e (Playwright)",
+  "test": "visual (screenshot diff)",
   "acceptance": "from CG.mock.exchanges btcBalance / btcBalanceChg*; row click opens the exchange page",
-  "evidence": "bundle: exchange-balance-list, BTC Balance"
+  "evidence": "components/terminal/IndicatorPages.tsx BalancePage: tiles — and a ComingSoon panel (GAPS #55, no on-chain source); unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-140",
@@ -13548,12 +13548,12 @@
   "route": "/terminal/onchain/exchange-balance",
   "screen": "Exchange Balance",
   "feature": "Table column \"7d %\" (sortable)",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "e2e (Playwright)",
+  "test": "visual (screenshot diff)",
   "acceptance": "from CG.mock.exchanges btcBalance / btcBalanceChg*; row click opens the exchange page",
-  "evidence": "bundle: exchange-balance-list, BTC Balance"
+  "evidence": "components/terminal/IndicatorPages.tsx BalancePage: tiles — and a ComingSoon panel (GAPS #55, no on-chain source); unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-141",
@@ -13563,12 +13563,12 @@
   "route": "/terminal/onchain/exchange-balance",
   "screen": "Exchange Balance",
   "feature": "Table column \"30d %\" (sortable)",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "e2e (Playwright)",
+  "test": "visual (screenshot diff)",
   "acceptance": "from CG.mock.exchanges btcBalance / btcBalanceChg*; row click opens the exchange page",
-  "evidence": "bundle: exchange-balance-list, BTC Balance"
+  "evidence": "components/terminal/IndicatorPages.tsx BalancePage: tiles — and a ComingSoon panel (GAPS #55, no on-chain source); unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-142",
@@ -13583,7 +13583,7 @@
   "phase": 5,
   "test": "visual (screenshot diff)",
   "acceptance": "Behaves as in the v2 mock.",
-  "evidence": "bundle: Token Unlock Schedule, Upcoming vesting events"
+  "evidence": "components/terminal/IndicatorPages.tsx UnlocksPage with the exact notice; unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-143",
@@ -13598,7 +13598,7 @@
   "phase": 5,
   "test": "unit (pricing) · visual (screenshot diff)",
   "acceptance": "Exact text: \"This data source is not enabled on the current plan. Enable a token-unlock endpoint in the proxy to populate this view — no mock data shown.\"",
-  "evidence": "bundle: Token unlock data unavailable, ma-panel"
+  "evidence": "components/terminal/IndicatorPages.tsx UnlocksPage with the exact notice; unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-144",
@@ -13608,12 +13608,12 @@
   "route": "/terminal/indicators/fear-greed",
   "screen": "Fear & Greed Index",
   "feature": "Page title \"Fear & Greed Index\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "Behaves as in the v2 mock.",
-  "evidence": "bundle: Fear & Greed Index"
+  "evidence": "components/terminal/IndicatorPages.tsx FearGreedPage (Gauge, history with 25 / 75 hlines, fgAt tiles); unit terminal-pages.test.tsx fear & greed; e2e terminal.spec.ts; visual terminal-fear-greed-*.png"
  },
  {
   "id": "HC-MT-145",
@@ -13623,12 +13623,12 @@
   "route": "/terminal/indicators/fear-greed",
   "screen": "Fear & Greed Index",
   "feature": "Gauge with value + label",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "Semicircle gauge with 5 coloured bands (Extreme Fear / Fear / Neutral / Greed / Extreme Greed), marker at the current value, big value and label",
-  "evidence": "bundle: fear-greed, Extreme Fear, Fear, Neutral, Greed, Extreme Greed"
+  "evidence": "components/terminal/IndicatorPages.tsx FearGreedPage (Gauge, history with 25 / 75 hlines, fgAt tiles); unit terminal-pages.test.tsx fear & greed; e2e terminal.spec.ts; visual terminal-fear-greed-*.png"
  },
  {
   "id": "HC-MT-146",
@@ -13643,7 +13643,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "CG.mock.fearGreed with Extreme Fear (25) and Extreme Greed (75) reference lines; tooltip shows value + label",
-  "evidence": "bundle: History, F&G, hsl(168 100% 44%)"
+  "evidence": "components/terminal/IndicatorPages.tsx FearGreedPage (Gauge, history with 25 / 75 hlines, fgAt tiles); unit terminal-pages.test.tsx fear & greed; e2e terminal.spec.ts; visual terminal-fear-greed-*.png"
  },
  {
   "id": "HC-MT-147",
@@ -13653,12 +13653,12 @@
   "route": "/terminal/indicators/fear-greed",
   "screen": "Fear & Greed Index",
   "feature": "Tiles Now / Yesterday / Last Week / Last Month",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "Value + label at 0, 1, 7 and 30 days back",
-  "evidence": "inferred"
+  "evidence": "components/terminal/IndicatorPages.tsx FearGreedPage (Gauge, history with 25 / 75 hlines, fgAt tiles); unit terminal-pages.test.tsx fear & greed; e2e terminal.spec.ts; visual terminal-fear-greed-*.png"
  },
  {
   "id": "HC-MT-148",
@@ -13668,12 +13668,12 @@
   "route": "/terminal/indicators/cycle",
   "screen": "BTC Cycle Indicators",
   "feature": "Page title \"BTC Cycle Indicators\"",
-  "status": "static",
+  "status": "working",
   "isNew": false,
   "phase": 5,
-  "test": "visual (screenshot diff)",
+  "test": "e2e (Playwright)",
   "acceptance": "Tiles: AHR999, Puell Multiple, Pi Cycle 111DMA / 350DMA×2, Rainbow Band (from CG.mock.cycle)",
-  "evidence": "bundle: BTC Cycle Indicators"
+  "evidence": "components/terminal/IndicatorPages.tsx CyclePage (Pi Cycle + rainbow band from the cycle dataset); unit terminal-pages.test.tsx cycle; e2e terminal.spec.ts; visual terminal-cycle-*.png"
  },
  {
   "id": "HC-MT-149",
@@ -13683,12 +13683,12 @@
   "route": "/terminal/indicators/cycle",
   "screen": "BTC Cycle Indicators",
   "feature": "Panel \"AHR999\" (area chart)",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "e2e (Playwright)",
+  "test": "visual (screenshot diff)",
   "acceptance": "CG.mock.cycleHistory ahr999 with Bottom 0.45 / Top 1.2 reference lines",
-  "evidence": "bundle: ahr999, AHR999, hsl(168 100% 44%)"
+  "evidence": "ComingSoon panels (AHR999 constants / Puell miner revenue unverified, GAPS #59); components/terminal/IndicatorPages.tsx CyclePage (Pi Cycle + rainbow band from the cycle dataset); unit terminal-pages.test.tsx cycle; e2e terminal.spec.ts; visual terminal-cycle-*.png"
  },
  {
   "id": "HC-MT-150",
@@ -13698,12 +13698,12 @@
   "route": "/terminal/indicators/cycle",
   "screen": "BTC Cycle Indicators",
   "feature": "Panel \"Puell Multiple\" (area chart)",
-  "status": "working",
+  "status": "static",
   "isNew": false,
   "phase": 5,
-  "test": "e2e (Playwright)",
+  "test": "visual (screenshot diff)",
   "acceptance": "cycleHistory puell with Undervalued 0.5 reference line",
-  "evidence": "bundle: puell-multiple, Puell Multiple"
+  "evidence": "ComingSoon panels (AHR999 constants / Puell miner revenue unverified, GAPS #59); components/terminal/IndicatorPages.tsx CyclePage (Pi Cycle + rainbow band from the cycle dataset); unit terminal-pages.test.tsx cycle; e2e terminal.spec.ts; visual terminal-cycle-*.png"
  },
  {
   "id": "HC-MT-151",
@@ -13718,7 +13718,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Three lines with legend (price accent, 111DMA yellow, 350DMA×2 purple) from cycleHistory",
-  "evidence": "bundle: pi-cycle, Pi Cycle"
+  "evidence": "components/terminal/IndicatorPages.tsx CyclePage (Pi Cycle + rainbow band from the cycle dataset); unit terminal-pages.test.tsx cycle; e2e terminal.spec.ts; visual terminal-cycle-*.png"
  },
  {
   "id": "HC-MT-152",
@@ -13733,7 +13733,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Private ma-* palette deleted; tiles/panels/chips/tables/charts share the .cgx classes and shell tokens; light and dark tested",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-153",
@@ -13748,7 +13748,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "The terminal shows the same Hub … Sentiment tabs as /analytics; Terminal ▾ is active (amber underline) and drops down the grouped terminal pages",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-154",
@@ -13763,7 +13763,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Section labels .micro, 30px items, amber left rule on the active item, \"Markets Hub ↗\" external marker; mobile drawer retained",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-155",
@@ -13778,7 +13778,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "A.applyTheme/A.applyDensity run on every show; rows compact at 28px when CG.state.density === 'compact'",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/TerminalShell.tsx + lib/terminal/nav.ts; unit terminal-pages.test.tsx \"terminal shell\"; e2e terminal.spec.ts HC-MT-001..030"
  },
  {
   "id": "HC-MT-156",
@@ -13793,7 +13793,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Same strip as the hub (cards → /terminal/coin/SYM, remove star, empty state, \"Manage in Spot Markets →\")",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "id": "HC-MT-157",
@@ -13808,7 +13808,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "1D–1Y",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "id": "HC-MT-158",
@@ -13823,7 +13823,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Sticky header inside a 560px scroll area",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/MarketPages.tsx DashboardPage; unit terminal-pages.test.tsx dashboard; e2e terminal.spec.ts + visual terminal-dashboard-*.png"
  },
  {
   "id": "HC-MT-159",
@@ -13838,7 +13838,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Same compare panel as /analytics/markets (normalised chart with timeframes + stats table), sharing CG.state.compare so a selection made in either app shows in both; ?compare=1 opens it",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "id": "HC-MT-160",
@@ -13853,7 +13853,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "★ Watchlist chip shows only starred coins; count updates",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "id": "HC-MT-161",
@@ -13868,7 +13868,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Search box moved into the table toolbar",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/MarketPages.tsx SpotPage + Screener; unit terminal-pages.test.tsx spot; e2e terminal.spec.ts spot; visual terminal-spot-*.png"
  },
  {
   "id": "HC-MT-162",
@@ -13883,7 +13883,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Shared table",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/MarketPages.tsx SectorPage (sectorOf map shared with the hub); unit terminal-pages.test.tsx sectors; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-163",
@@ -13893,12 +13893,12 @@
   "route": "/terminal/etf",
   "screen": "Bitcoin Spot ETFs",
   "feature": "Timeframe chips on Net Inflow History",
-  "status": "working",
+  "status": "static",
   "isNew": true,
   "phase": 5,
-  "test": "e2e (Playwright)",
+  "test": "visual (screenshot diff)",
   "acceptance": "7D/30D/90D/1Y; CSV on the ETF list",
-  "evidence": "v2 upgrade"
+  "evidence": "app/terminal/etf/page.tsx renders the analytics EtfPage (coming-soon panels, GAPS #55); e2e terminal.spec.ts etf-page data-state=soon"
  },
  {
   "id": "HC-MT-164",
@@ -13913,7 +13913,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Watch toggles the watchlist; Compare adds the coin and opens /terminal/spot?compare=1",
-  "evidence": "v2 upgrade"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-165",
@@ -13928,7 +13928,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Per-coin seeded series; exchange tables get CSV",
-  "evidence": "v2 upgrade"
+  "evidence": "components/analytics/CoinPage.tsx base=\"terminal\" (links back / compare / sector / venue rows); unit terminal-pages.test.tsx coin page; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-166",
@@ -13943,7 +13943,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Shared table",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/MarketPages.tsx ExchangePage (venueTotals / venueCoins over the per-symbol snapshots, ADR-046); unit terminal-pages.test.tsx exchange; e2e terminal.spec.ts; visual terminal-exchange-*.png"
  },
  {
   "id": "HC-MT-167",
@@ -13958,7 +13958,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "OI area in --curve, BTC price line in foreground on the right axis",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/DerivativesPages.tsx OpenInterestPage; unit terminal-pages.test.tsx open interest; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-168",
@@ -13973,7 +13973,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Shared chart",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/DerivativesPages.tsx FundingPage (coin select, OI-weighted bars, per-exchange table); unit terminal-pages.test.tsx funding; e2e terminal.spec.ts; visual terminal-funding-*.png"
  },
  {
   "id": "HC-MT-169",
@@ -13988,7 +13988,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Global = foreground, Top accounts = --curve, Top positions = muted dashed",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/DerivativesPages.tsx LongShortPage (three lines, hourlyReadings); unit terminal-pages.test.tsx long / short; e2e terminal.spec.ts; visual terminal-long-short-*.png"
  },
  {
   "id": "HC-MT-170",
@@ -14003,7 +14003,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Shared chart + table",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/DerivativesPages.tsx TerminalLiquidationsPage (liqWindow chips, by-coin table; long = green / short = red app-wide, ADR-046); unit terminal-pages.test.tsx liquidations; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-171",
@@ -14013,12 +14013,12 @@
   "route": "/terminal/onchain/exchange-balance",
   "screen": "Exchange Balance",
   "feature": "Timeframe chips 30D/90D/1Y + heat cells for % + CSV",
-  "status": "working",
+  "status": "static",
   "isNew": true,
   "phase": 5,
-  "test": "e2e (Playwright)",
+  "test": "visual (screenshot diff)",
   "acceptance": "Shared chart + table",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/IndicatorPages.tsx BalancePage: tiles — and a ComingSoon panel (GAPS #55, no on-chain source); unit terminal-pages.test.tsx placeholders; e2e terminal.spec.ts"
  },
  {
   "id": "HC-MT-172",
@@ -14033,7 +14033,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Replaces the v1 segmented gauge; semantic segments, scale labels",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/IndicatorPages.tsx FearGreedPage (Gauge, history with 25 / 75 hlines, fgAt tiles); unit terminal-pages.test.tsx fear & greed; e2e terminal.spec.ts; visual terminal-fear-greed-*.png"
  },
  {
   "id": "HC-MT-173",
@@ -14048,7 +14048,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "7D/30D/90D/1Y",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/IndicatorPages.tsx FearGreedPage (Gauge, history with 25 / 75 hlines, fgAt tiles); unit terminal-pages.test.tsx fear & greed; e2e terminal.spec.ts; visual terminal-fear-greed-*.png"
  },
  {
   "id": "HC-MT-174",
@@ -14063,6 +14063,6 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Shared chart",
-  "evidence": "v2 upgrade"
+  "evidence": "components/terminal/IndicatorPages.tsx CyclePage (Pi Cycle + rainbow band from the cycle dataset); unit terminal-pages.test.tsx cycle; e2e terminal.spec.ts; visual terminal-cycle-*.png"
  }
 ]

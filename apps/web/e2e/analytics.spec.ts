@@ -32,7 +32,7 @@ test.describe("HC-MA Market Analytics", () => {
     await page.getByTestId("section-terminal").click();
     await page.getByTestId("terminal-menu").getByText("Funding Rates").click();
     await expect(page).toHaveURL(/\/terminal\/derivatives\/funding$/);
-    await expect(page.getByTestId("section-soon")).toHaveAttribute("data-release", "PR 5.5");
+    await expect(page.getByTestId("funding-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
     await page.getByTestId("analytics-back").click();
     await expect(page).toHaveURL(/\/analyse$/);
   });

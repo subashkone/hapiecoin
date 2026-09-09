@@ -184,3 +184,26 @@ Index chart 1D/7D chips; positions table sort / search / Columns ▾ / CSV, row 
 
 ### Tests
 Unit: `whales.test.ts` (diffs, walls, tracker), `jobs.test.ts` (buildWhales scan → incremental → closed → leaderboard down → nothing reachable), adapters (Hyperliquid, Bybit book), `analytics-pages2.test.tsx` (Whales). E2E: one case in `analytics.spec.ts`; visual `analytics-whales-*`.
+
+## 5.5 · Terminal (this PR)
+
+### Job
+A second, sidebar-driven view of the same market data (HC-MT-001..174): "where is the money in perpetuals right now, per coin, per venue, per sector", answered in the first screen by six tiles and the markets table. First question a trader asks within 2 s: is open interest rising and which side is crowded (the OI tile, the L/S tile, the two charts).
+
+### Layout
+Analytics shell (header, Hub … Sentiment tabs, Terminal ▾ active) + a 232 px sticky sidebar with five groups (Markets · Derivatives · ETF · On-chain · Indicators) and the content column (max-width from the shell). Under `lg` the sidebar becomes a "Navigation" toggle that shows the current section and closes on route change. Screens: Dashboard (6 tiles, watchlist strip with 7D sparklines, Aggregated OI + L/S charts, gainers / losers, markets table), Spot Markets (screener with OI share, compare, watchlist chip), Sector pages (chips), Exchange overview (venue chips, 4 tiles, coins table), Open Interest (dual-axis chart, per-exchange shares), Funding (coin select, ±bars, per-exchange table), Long / Short (three lines, hourly readings), Liquidations (window chips, by-coin table), ETF (the analytics ETF layout), Exchange Balance and Token Unlocks (placeholders), Fear & Greed (gauge, history with the 25 / 75 lines, four lookback tiles), BTC Cycle (Pi Cycle, rainbow band; AHR999 and Puell n/a).
+
+### Data
+Everything derives from the existing snapshots: `overview` (tiles, OI and L/S history, gainers / losers), `markets` (rows, sparklines, spot volume), per-symbol `open-interest` / `funding` / `long-short` (venue pages sum them with `useAnalyticsMany`), `liquidations`, `fear-greed`, `cycle`. `lib/terminal/derive.ts` holds the pure maths (`venueTotals`, `venueCoins`, `fgAt`, `hourlyReadings`, `avgFunding`, `annualised`, `rainbowBandName`, `largestCoin`, `oiShare`), `lib/terminal/nav.ts` the sidebar model. No new ingest job (ADR-046); per-venue volume is GAPS #63.
+
+### States
+Every page carries `data-state` (loading / ready / unavailable / unknown / soon); unknown sector, exchange or coin says so with the known choices; deferred datasets render `ComingSoon` with the gap number; the terminal redirects logged-out visitors to `/auth?next=%2Fterminal`.
+
+### Numbers
+USD compact with 2 decimals, funding to 4 decimals with sign colour, ratios to 2–3 decimals (green ≥ 1, red < 1), OI share as a bar + %, annualised = rate × 3 × 365; every panel prints the source line.
+
+### Interaction
+Sidebar links (aria-current on the active one), header search → `/terminal/coin/SYM` (Enter with no match toasts), rows → coin / exchange pages, ★ pins to the watchlist (strip on the dashboard), Cmp compares up to three on Spot Markets (`?compare=`), timeframe chips on every chart, Columns ▾ and CSV on every table. Palette `nav:terminal-*` (nine entries).
+
+### Tests
+Unit: `lib/terminal/derive.test.ts`, `components/terminal/terminal-pages.test.tsx` (shell, every screen, the coin page in terminal mode). E2E: `e2e/terminal.spec.ts` (redirect, shell + dashboard + search, spot / sectors / exchanges, derivatives / indicators / on-chain + the drawer). Visual: `terminal-{dashboard,spot,exchange,funding,long-short,fear-greed,cycle}-{dark,light}.png`.
