@@ -36,6 +36,14 @@ export interface ChartSpec {
   yTicks?: number;
   min?: number;
   max?: number;
+  /** Logarithmic left axis (cycle charts); values ≤ 0 are skipped. */
+  logY?: boolean;
+  /** Horizontal fills on the left axis (Fear & Greed zones). */
+  bands?: { from: number; to: number; color: string; label?: string }[];
+  /** Fills between two series on the left axis (rainbow bands); drawn under the lines. */
+  regions?: { label: string; lower: (number | null)[]; upper: (number | null)[]; color: string }[];
+  /** Free text anchored at a data index and left-axis value (max-pain per expiry). */
+  labels?: { i: number; y: number; text: string; color?: string }[];
 }
 export interface Extent {
   lo: number;
@@ -58,6 +66,9 @@ export interface Layout {
   bars: { key: string; x: number; y: number; w: number; h: number; color: string; i: number }[];
   tags: { label: string; y: number; color: string; text: string }[];
   hlines: { y: number; label: string | undefined }[];
+  bandRects: { y: number; h: number; color: string; label: string | undefined }[];
+  regionPaths: { key: string; d: string; color: string }[];
+  labelPos: { x: number; y: number; text: string; color: string | undefined }[];
 }
 
 export const SLOT_COLORS = ["hsl(var(--foreground))", "hsl(var(--curve))", "hsl(var(--primary))", "hsl(var(--warning))", "hsl(var(--profit))", "hsl(var(--loss))"];
@@ -78,6 +89,17 @@ export function niceTicks(lo: number, hi: number, n: number): number[] {
 
 const finite = (v: number | null | undefined): v is number => v !== null && v !== undefined && Number.isFinite(v);
 
+/** 1-2-5 × 10^k ticks inside [lo, hi] for a log axis (both positive). */
+export function logTicks(lo: number, hi: number): number[] {
+  if (!(lo > 0) || !(hi > lo)) return [];
+  const out: number[] = [];
+  for (let k = Math.floor(Math.log10(lo)); k <= Math.ceil(Math.log10(hi)); k++) for (const m of [1, 2, 5]) {
+    const v = m * 10 ** k;
+    if (v >= lo && v <= hi) out.push(v);
+  }
+  return out;
+}
+
 function extent(spec: ChartSpec, series: ChartSeries[], axis: "l" | "r", n: number): Extent | null {
   let lo = Infinity;
   let hi = -Infinity;
@@ -87,7 +109,9 @@ function extent(spec: ChartSpec, series: ChartSeries[], axis: "l" | "r", n: numb
   };
   const ax = series.filter((s) => (s.axis ?? "l") === axis);
   const lines = (spec.hlines ?? []).filter((l) => (l.axis ?? "l") === axis);
-  if (!ax.length && !lines.length) return null;
+  const regions = axis === "l" ? (spec.regions ?? []) : [];
+  if (!ax.length && !lines.length && !regions.length) return null;
+  const usable = (v: number | null | undefined): v is number => finite(v) && (!spec.logY || axis !== "l" || v > 0);
   if (spec.stack) {
     const bars = ax.filter((s) => s.type === "bar");
     for (let i = 0; i < n; i++) {
@@ -102,10 +126,11 @@ function extent(spec: ChartSpec, series: ChartSeries[], axis: "l" | "r", n: numb
       add(p);
       add(q);
     }
-    for (const s of ax.filter((b) => b.type !== "bar")) for (const v of s.data) if (finite(v)) add(v);
+    for (const s of ax.filter((b) => b.type !== "bar")) for (const v of s.data) if (usable(v)) add(v);
   } else {
-    for (const s of ax) for (const v of s.data) if (finite(v)) add(v);
+    for (const s of ax) for (const v of s.data) if (usable(v)) add(v);
   }
+  for (const r of regions) for (const v of [...r.lower, ...r.upper]) if (usable(v)) add(v);
   for (const l of lines) add(l.y);
   if (!Number.isFinite(lo)) return null;
   if (ax.some((s) => s.type === "bar") || (axis === "l" && spec.zero)) add(0);
@@ -117,6 +142,10 @@ function extent(spec: ChartSpec, series: ChartSeries[], axis: "l" | "r", n: numb
   }
   const r = hi - lo;
   const padF = spec.tight ? 0 : 0.07;
+  if (axis === "l" && spec.logY && lo > 0) {
+    const f = (hi / lo) ** padF; // pad in log space so the floor never crosses zero
+    return { lo: lo / f, hi: hi * f };
+  }
   return { lo: lo === 0 || (axis === "l" && spec.min !== undefined) ? lo : lo - r * padF, hi: hi === 0 || (axis === "l" && spec.max !== undefined) ? hi : hi + r * padF };
 }
 
@@ -142,14 +171,18 @@ export function layoutChart(spec: ChartSpec, hidden: ReadonlySet<string> = new S
   const ph = Math.max(1, h - pad.t - pad.b);
   const yl = extent(spec, shown, "l", n) ?? { lo: 0, hi: 1 };
   const yr = spec.rightAxis ? extent(spec, shown, "r", n) : null;
+  const logL = spec.logY === true && yl.lo > 0;
+  const tr = (v: number, log: boolean) => (log ? Math.log10(v) : v);
   const sy = (v: number, axis: "l" | "r" = "l"): number => {
     const e = axis === "r" ? (yr ?? yl) : yl;
-    return pad.t + ph - ((v - e.lo) / (e.hi - e.lo || 1)) * ph;
+    const log = axis === "l" && logL;
+    if (log && !(v > 0)) return pad.t + ph;
+    return pad.t + ph - ((tr(v, log) - tr(e.lo, log)) / (tr(e.hi, log) - tr(e.lo, log) || 1)) * ph;
   };
   const slot = pw / n;
   const sx = (i: number): number => (hasBars ? pad.l + slot * (i + 0.5) : pad.l + (n === 1 ? pw / 2 : (i / (n - 1)) * pw));
   const nTicks = spec.yTicks ?? 4;
-  const ticksL = niceTicks(yl.lo, yl.hi, nTicks).filter((v) => v >= yl.lo && v <= yl.hi);
+  const ticksL = logL ? logTicks(yl.lo, yl.hi) : niceTicks(yl.lo, yl.hi, nTicks).filter((v) => v >= yl.lo && v <= yl.hi);
   const ticksR = yr ? niceTicks(yr.lo, yr.hi, nTicks).filter((v) => v >= yr.lo && v <= yr.hi) : [];
   const xstep = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(pw / 100))));
   const xTicks: Layout["xTicks"] = [];
@@ -186,13 +219,14 @@ export function layoutChart(spec: ChartSpec, hidden: ReadonlySet<string> = new S
     }
   });
   const paths: Layout["paths"] = [];
+  const plottable = (v: number | null | undefined, axis: "l" | "r" | undefined): v is number => finite(v) && (!(logL && (axis ?? "l") === "l") || v > 0);
   for (const s of shown.filter((b) => b.type !== "bar")) {
     let d = "";
     let started = false;
     let first = -1;
     let last = -1;
     s.data.forEach((v, i) => {
-      if (!finite(v)) {
+      if (!plottable(v, s.axis)) {
         started = false;
         return;
       }
@@ -203,7 +237,7 @@ export function layoutChart(spec: ChartSpec, hidden: ReadonlySet<string> = new S
     });
     if (last < 0) continue;
     const lastV = s.data[last] as number;
-    const base = sy(Math.max(yl.lo, Math.min(yl.hi, 0)), s.axis).toFixed(1);
+    const base = sy(Math.max(yl.lo, Math.min(yl.hi, logL ? yl.lo : 0)), s.axis).toFixed(1);
     const area = s.type === "area" ? `${d}L${sx(last).toFixed(1)} ${base} L${sx(first).toFixed(1)} ${base} Z` : null;
     paths.push({ key: s.label, d: d.trim(), area, color: s.color ?? colorFor(spec.series.indexOf(s)), width: s.width ?? 1.5, dash: s.dash, last: { x: sx(last), y: sy(lastV, s.axis), v: lastV } });
   }
@@ -219,7 +253,22 @@ export function layoutChart(spec: ChartSpec, hidden: ReadonlySet<string> = new S
     tags.push({ label: s.label, y, color: p.color, text: fmtOf(s)(p.last.v) });
   }
   const hlines = (spec.hlines ?? []).map((l) => ({ y: sy(l.y, l.axis), label: l.label }));
-  return { w, h, pad, n, hasBars, sx, sy, yl, yr, ticksL, ticksR, xTicks, paths, bars, tags, hlines };
+  const clampY = (v: number) => Math.max(pad.t, Math.min(pad.t + ph, sy(Math.max(yl.lo, Math.min(yl.hi, v)))));
+  const bandRects = (spec.bands ?? []).map((b) => {
+    const y0 = clampY(b.to);
+    const y1 = clampY(b.from);
+    return { y: y0, h: Math.max(0, y1 - y0), color: b.color, label: b.label };
+  });
+  const regionPaths: Layout["regionPaths"] = [];
+  for (const r of spec.regions ?? []) {
+    const idx = r.lower.map((_, i) => i).filter((i) => plottable(r.lower[i], "l") && plottable(r.upper[i], "l"));
+    if (idx.length < 2) continue;
+    const top = idx.map((i, k) => `${k === 0 ? "M" : "L"}${sx(i).toFixed(1)} ${sy(r.upper[i] as number).toFixed(1)}`).join(" ");
+    const bottom = [...idx].reverse().map((i) => `L${sx(i).toFixed(1)} ${sy(r.lower[i] as number).toFixed(1)}`).join(" ");
+    regionPaths.push({ key: r.label, d: `${top} ${bottom} Z`, color: r.color });
+  }
+  const labelPos = (spec.labels ?? []).filter((l) => l.i >= 0 && l.i < n).map((l) => ({ x: sx(l.i), y: Math.max(pad.t + 8, sy(l.y) - 6), text: l.text, color: l.color }));
+  return { w, h, pad, n, hasBars, sx, sy, yl, yr, ticksL, ticksR, xTicks, paths, bars, tags, hlines, bandRects, regionPaths, labelPos };
 }
 
 /** Nearest data index for a pointer x in SVG units. */

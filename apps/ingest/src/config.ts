@@ -9,11 +9,13 @@ import { z } from "zod";
 export const LOG_LEVELS = ["debug", "info", "warn", "error", "silent"] as const;
 export type LogLevel = (typeof LOG_LEVELS)[number];
 
-const Symbols = z
-  .string()
-  .default("BTC,ETH,SOL,XRP,BNB,DOGE,ADA,AVAX,LINK,LTC")
-  .transform((s) => s.split(",").map((x) => x.trim().toUpperCase()).filter(Boolean))
-  .pipe(z.array(AnalyticsSymbol).min(1).max(50));
+const symbolList = (defaults: string) =>
+  z
+    .string()
+    .default(defaults)
+    .transform((s) => s.split(",").map((x) => x.trim().toUpperCase()).filter(Boolean))
+    .pipe(z.array(AnalyticsSymbol).min(1).max(50));
+const Symbols = symbolList("BTC,ETH,SOL,XRP,BNB,DOGE,ADA,AVAX,LINK,LTC");
 
 export const IngestEnv = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -31,6 +33,10 @@ export const IngestEnv = z.object({
   BYBIT_WS_URL: z.url({ protocol: /^wss?$/ }).default("wss://stream.bybit.com/v5/public/linear"),
   OKX_URL: z.url({ protocol: /^https?$/ }).default("https://www.okx.com"),
   COINGECKO_URL: z.url({ protocol: /^https?$/ }).default("https://api.coingecko.com/api/v3"),
+  DERIBIT_URL: z.url({ protocol: /^https?$/ }).default("https://www.deribit.com/api/v2"),
+  DELTA_URL: z.url({ protocol: /^https?$/ }).default("https://api.india.delta.exchange"),
+  /** Underlyings for the options dataset (Deribit + Delta list BTC and ETH options). */
+  OPTIONS_SYMBOLS: symbolList("BTC,ETH"),
   /** CoinGecko Demo key (free, 10k calls/month). Optional: without it the markets job is skipped. */
   COINGECKO_API_KEY: z.string().min(8).optional(),
   FNG_URL: z.url({ protocol: /^https?$/ }).default("https://api.alternative.me/fng/"),
@@ -39,6 +45,11 @@ export const IngestEnv = z.object({
   MARKETS_REFRESH_MS: z.coerce.number().int().min(60_000).default(600_000),
   FEAR_GREED_REFRESH_MS: z.coerce.number().int().min(60_000).default(3_600_000),
   LIQUIDATIONS_FLUSH_MS: z.coerce.number().int().min(1_000).default(15_000),
+  OPTIONS_REFRESH_MS: z.coerce.number().int().min(60_000).default(300_000),
+  RSI_REFRESH_MS: z.coerce.number().int().min(60_000).default(300_000),
+  /** Cycle indicators are daily data; the premium history is hourly, both on the CoinGecko / Bybit budgets. */
+  CYCLE_REFRESH_MS: z.coerce.number().int().min(300_000).default(3_600_000),
+  PREMIUM_REFRESH_MS: z.coerce.number().int().min(300_000).default(3_600_000),
   /** Per-attempt HTTP timeout. */
   HTTP_TIMEOUT_MS: z.coerce.number().int().min(500).default(8_000),
   LOG_LEVEL: z.enum(LOG_LEVELS).default("info"),

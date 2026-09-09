@@ -8,7 +8,7 @@ export const AnalyticsVenue = z.enum(ANALYTICS_VENUES);
 export type AnalyticsVenue = z.infer<typeof AnalyticsVenue>;
 export const ANALYTICS_VENUE_LABELS: Record<AnalyticsVenue, string> = { binance: "Binance", bybit: "Bybit", okx: "OKX", delta: "Delta India" };
 
-export const ANALYTICS_DATASETS = ["funding", "open-interest", "long-short", "taker-volume", "liquidations", "markets", "fear-greed", "overview"] as const;
+export const ANALYTICS_DATASETS = ["funding", "open-interest", "long-short", "taker-volume", "liquidations", "markets", "fear-greed", "overview", "options", "cycle", "rsi", "premium"] as const;
 export const AnalyticsDataset = z.enum(ANALYTICS_DATASETS);
 export type AnalyticsDataset = z.infer<typeof AnalyticsDataset>;
 
@@ -17,7 +17,7 @@ export const AnalyticsSymbol = z.string().regex(/^[A-Z0-9]{2,12}$/, "symbol must
 export type AnalyticsSymbol = z.infer<typeof AnalyticsSymbol>;
 
 /** Datasets keyed per symbol; the others have one snapshot ("-" key). */
-export const SYMBOL_DATASETS: ReadonlySet<AnalyticsDataset> = new Set(["funding", "open-interest", "long-short", "taker-volume"]);
+export const SYMBOL_DATASETS: ReadonlySet<AnalyticsDataset> = new Set(["funding", "open-interest", "long-short", "taker-volume", "options"]);
 export function analyticsKey(dataset: AnalyticsDataset, symbol?: string | null): string {
   return `${dataset}:${SYMBOL_DATASETS.has(dataset) ? (symbol ?? "").toUpperCase() : "-"}`;
 }
@@ -167,6 +167,77 @@ export const OverviewData = z.strictObject({
 });
 export type OverviewData = z.infer<typeof OverviewData>;
 
+/** Venues that publish option open interest we ingest (ADR-042). */
+export const OPTIONS_VENUES = ["deribit", "delta"] as const;
+export const OptionsVenue = z.enum(OPTIONS_VENUES);
+export type OptionsVenue = z.infer<typeof OptionsVenue>;
+export const OPTIONS_VENUE_LABELS: Record<OptionsVenue, string> = { deribit: "Deribit", delta: "Delta India" };
+
+/** One expiry of one venue: open interest in underlying units per side and the max-pain strike (HC-MA-051). */
+export const OptionsExpiry = z.strictObject({
+  /** Settlement instant. */
+  expiry: Ms,
+  /** Venue label for the expiry ("25SEP26" or "250926"). */
+  label: z.string(),
+  /** Open interest in underlying units (BTC), calls and puts. */
+  callOi: z.number().nonnegative(),
+  putOi: z.number().nonnegative(),
+  /** Strike at which option holders' aggregate intrinsic value is smallest; null without strikes. */
+  maxPain: z.number().nullable(),
+  strikes: z.number().int().nonnegative(),
+});
+export type OptionsExpiry = z.infer<typeof OptionsExpiry>;
+export const OptionsVenueData = z.strictObject({
+  venue: OptionsVenue,
+  /** Open interest across every listed option, in underlying units and in USD at the venue's underlying price. */
+  oiBase: z.number().nonnegative(),
+  oiUsd: z.number().nonnegative(),
+  volume24hUsd: z.number().nonnegative(),
+  /** Put OI ÷ call OI (underlying units); null when there are no calls. */
+  putCallOi: z.number().nullable(),
+  underlyingPrice: z.number().positive(),
+  instruments: z.number().int().nonnegative(),
+  expiries: z.array(OptionsExpiry),
+});
+export type OptionsVenueData = z.infer<typeof OptionsVenueData>;
+/** Options open interest per venue for one underlying (HC-MA-049..053). */
+export const OptionsData = z.strictObject({ symbol: AnalyticsSymbol, venues: z.array(OptionsVenueData) });
+export type OptionsData = z.infer<typeof OptionsData>;
+
+/** One daily close with the cycle averages (null until enough history); the log-regression fit for the rainbow bands. */
+export const CyclePoint = z.strictObject({ t: Ms, close: z.number().positive(), ma111: z.number().nullable(), ma350x2: z.number().nullable(), ma2y: z.number().nullable(), ma2yX5: z.number().nullable(), fit: z.number().positive() });
+export type CyclePoint = z.infer<typeof CyclePoint>;
+/** Daily BTC cycle indicators computed from spot closes (HC-MA-074..079): Pi Cycle, 2-year MA multiplier, rainbow fit. */
+export const CycleData = z.strictObject({
+  symbol: AnalyticsSymbol,
+  points: z.array(CyclePoint),
+  /** Multipliers applied to `fit` for the rainbow band edges, ascending; bands = multipliers.length − 1. */
+  rainbowMultipliers: z.array(z.number().positive()),
+  rainbowNames: z.array(z.string()),
+  windowDays: z.number().int().positive(),
+});
+export type CycleData = z.infer<typeof CycleData>;
+
+export const RSI_TIMEFRAMES = ["15m", "1h", "4h", "12h", "1d", "1w"] as const;
+export const RsiTimeframe = z.enum(RSI_TIMEFRAMES);
+export type RsiTimeframe = z.infer<typeof RsiTimeframe>;
+export const RsiRow = z.strictObject({ symbol: AnalyticsSymbol, price: z.number().positive(), rsi: z.partialRecord(RsiTimeframe, z.number().min(0).max(100).nullable()) });
+export type RsiRow = z.infer<typeof RsiRow>;
+/** Wilder RSI per timeframe for every tracked symbol (HC-MA-081). */
+export const RsiData = z.strictObject({ period: z.number().int().positive(), rows: z.array(RsiRow) });
+export type RsiData = z.infer<typeof RsiData>;
+
+/** Coinbase BTC-USD minus Binance BTC-USDT (USD), hourly history kept by the ingest (HC-MA-080). */
+export const PremiumData = z.strictObject({
+  symbol: AnalyticsSymbol,
+  coinbaseUsd: z.number().positive(),
+  binanceUsd: z.number().positive(),
+  premiumUsd: z.number(),
+  premiumPct: z.number(),
+  points: z.array(SeriesPoint),
+});
+export type PremiumData = z.infer<typeof PremiumData>;
+
 /** The envelope every dataset travels in. `stale` is set when the last refresh failed and the previous data is being served. */
 function envelope<D extends AnalyticsDataset, T extends z.ZodType>(dataset: D, data: T) {
   return z.strictObject({
@@ -189,7 +260,11 @@ export const LiquidationsSnapshot = envelope("liquidations", LiquidationsData);
 export const MarketsSnapshot = envelope("markets", MarketsData);
 export const FearGreedSnapshot = envelope("fear-greed", FearGreedData);
 export const OverviewSnapshot = envelope("overview", OverviewData);
-export const AnalyticsSnapshot = z.discriminatedUnion("dataset", [FundingSnapshot, OpenInterestSnapshot, LongShortSnapshot, TakerVolumeSnapshot, LiquidationsSnapshot, MarketsSnapshot, FearGreedSnapshot, OverviewSnapshot]);
+export const OptionsSnapshot = envelope("options", OptionsData);
+export const CycleSnapshot = envelope("cycle", CycleData);
+export const RsiSnapshot = envelope("rsi", RsiData);
+export const PremiumSnapshot = envelope("premium", PremiumData);
+export const AnalyticsSnapshot = z.discriminatedUnion("dataset", [FundingSnapshot, OpenInterestSnapshot, LongShortSnapshot, TakerVolumeSnapshot, LiquidationsSnapshot, MarketsSnapshot, FearGreedSnapshot, OverviewSnapshot, OptionsSnapshot, CycleSnapshot, RsiSnapshot, PremiumSnapshot]);
 export type AnalyticsSnapshot = z.infer<typeof AnalyticsSnapshot>;
 export type SnapshotOf<D extends AnalyticsDataset> = Extract<AnalyticsSnapshot, { dataset: D }>;
 
@@ -204,3 +279,82 @@ export function fearGreedLabel(value: number): string {
 
 /** Funding rate per 8 h → annualised decimal fraction. */
 export const fundingApr = (rate: number): number => rate * 3 * 365;
+
+/**
+ * Max pain (Deribit Insights method): the strike at which the aggregate intrinsic value of every open option is
+ * smallest. `oi` is in underlying units per instrument; returns null without instruments.
+ */
+export function maxPain(instruments: readonly { strike: number; type: "call" | "put"; oi: number }[]): number | null {
+  const strikes = [...new Set(instruments.map((i) => i.strike))].sort((a, b) => a - b);
+  let best: { strike: number; pain: number } | null = null;
+  for (const s of strikes) {
+    let pain = 0;
+    for (const i of instruments) pain += i.oi * (i.type === "call" ? Math.max(s - i.strike, 0) : Math.max(i.strike - s, 0));
+    if (best === null || pain < best.pain) best = { strike: s, pain };
+  }
+  return best?.strike ?? null;
+}
+
+/** Wilder's RSI over closes (oldest first); null with fewer than `period + 1` closes. */
+export function rsi(closes: readonly number[], period = 14): number | null {
+  if (closes.length < period + 1) return null;
+  let gain = 0;
+  let loss = 0;
+  for (let i = 1; i <= period; i++) {
+    const d = closes[i]! - closes[i - 1]!;
+    if (d >= 0) gain += d;
+    else loss -= d;
+  }
+  gain /= period;
+  loss /= period;
+  for (let i = period + 1; i < closes.length; i++) {
+    const d = closes[i]! - closes[i - 1]!;
+    gain = (gain * (period - 1) + Math.max(d, 0)) / period;
+    loss = (loss * (period - 1) + Math.max(-d, 0)) / period;
+  }
+  if (loss === 0) return 100;
+  const rs = gain / loss;
+  return 100 - 100 / (1 + rs);
+}
+
+/** Simple moving average ending at each index; null until `n` values exist. */
+export function sma(values: readonly number[], n: number): (number | null)[] {
+  const out: (number | null)[] = [];
+  let sum = 0;
+  for (let i = 0; i < values.length; i++) {
+    sum += values[i]!;
+    if (i >= n) sum -= values[i - n]!;
+    out.push(i >= n - 1 ? sum / n : null);
+  }
+  return out;
+}
+
+/** Least-squares fit of ln(y) = a + b·i over the index; returns the fitted values (a straight line in log space). */
+export function logLinearFit(values: readonly number[]): number[] {
+  const n = values.length;
+  if (n === 0) return [];
+  let sx = 0;
+  let sy = 0;
+  let sxx = 0;
+  let sxy = 0;
+  values.forEach((v, i) => {
+    const y = Math.log(v);
+    sx += i;
+    sy += y;
+    sxx += i * i;
+    sxy += i * y;
+  });
+  const den = n * sxx - sx * sx;
+  const b = den === 0 ? 0 : (n * sxy - sx * sy) / den;
+  const a = (sy - b * sx) / n;
+  return values.map((_, i) => Math.exp(a + b * i));
+}
+export const RAINBOW_MULTIPLIERS = [0.45, 0.6, 0.8, 1.1, 1.45, 1.9, 2.5, 3.3, 4.3, 5.6] as const;
+export const RAINBOW_NAMES = ["Basically a fire sale", "Buy", "Accumulate", "Still cheap", "Hold", "Is this a bubble?", "FOMO intensifies", "Sell, seriously", "Maximum bubble"] as const;
+/** Index of the rainbow band a price sits in relative to the fit (0 = lowest). */
+export function rainbowBand(price: number, fit: number, multipliers: readonly number[] = RAINBOW_MULTIPLIERS): number {
+  const r = price / fit;
+  let k = 0;
+  while (k < multipliers.length - 2 && r > multipliers[k + 1]!) k += 1;
+  return k;
+}

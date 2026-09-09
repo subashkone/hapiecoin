@@ -10,6 +10,9 @@ describe("[INGEST] config", () => {
     expect(c.ANALYTICS_SYMBOLS).toEqual(["BTC", "ETH", "SOL", "XRP", "BNB", "DOGE", "ADA", "AVAX", "LINK", "LTC"]);
     expect(c.DERIVATIVES_REFRESH_MS).toBe(60_000);
     expect(c.BYBIT_WS_URL).toBe("wss://stream.bybit.com/v5/public/linear");
+    expect(c.OPTIONS_SYMBOLS).toEqual(["BTC", "ETH"]);
+    expect(loadConfig({ OPTIONS_SYMBOLS: "btc" }).OPTIONS_SYMBOLS).toEqual(["BTC"]);
+    expect(c.CYCLE_REFRESH_MS).toBe(3_600_000);
     expect(loadConfig({ ANALYTICS_SYMBOLS: " btc, eth ,, sol " }).ANALYTICS_SYMBOLS).toEqual(["BTC", "ETH", "SOL"]);
   });
   it("lists every problem", () => {

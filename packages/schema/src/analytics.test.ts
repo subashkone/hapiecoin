@@ -1,6 +1,36 @@
 // Analytics dataset schemas (ADR-038): keys, envelopes, labels and the funding APR helper.
 import { describe, expect, it } from "vitest";
-import { ANALYTICS_DATASETS, AnalyticsSnapshot, AnalyticsSymbol, FearGreedSnapshot, FundingSnapshot, LiquidationsData, MarketRow, OverviewSnapshot, SYMBOL_DATASETS, analyticsKey, fearGreedLabel, fundingApr } from "./analytics.js";
+import { ANALYTICS_DATASETS, AnalyticsSnapshot, AnalyticsSymbol, CycleSnapshot, FearGreedSnapshot, FundingSnapshot, LiquidationsData, MarketRow, OptionsSnapshot, OverviewSnapshot, PremiumSnapshot, RAINBOW_MULTIPLIERS, RsiSnapshot, SYMBOL_DATASETS, analyticsKey, fearGreedLabel, fundingApr, logLinearFit, maxPain, rainbowBand, rsi, sma } from "./analytics.js";
+
+describe("[SCHEMA] analytics maths (PR 5.4a)", () => {
+  it("finds max pain, computes Wilder RSI, SMA and the log-linear fit, and names rainbow bands", () => {
+    // holders lose most at 100: calls above 100 and puts below 100 both expire worthless
+    expect(maxPain([{ strike: 90, type: "put", oi: 1 }, { strike: 100, type: "call", oi: 2 }, { strike: 100, type: "put", oi: 2 }, { strike: 110, type: "call", oi: 1 }])).toBe(100);
+    expect(maxPain([])).toBeNull();
+    expect(rsi([1, 2, 3], 14)).toBeNull();
+    expect(rsi(Array.from({ length: 20 }, (_, i) => 100 + i), 14)).toBe(100); // only gains
+    const mixed = rsi([44, 44.34, 44.09, 43.61, 44.33, 44.83, 45.1, 45.42, 45.84, 46.08, 45.89, 46.03, 45.61, 46.28, 46.28, 46.0, 46.03, 46.41, 46.22, 45.64], 14);
+    expect(mixed).toBeGreaterThan(50);
+    expect(mixed).toBeLessThan(100);
+    expect(sma([1, 2, 3, 4], 2)).toEqual([null, 1.5, 2.5, 3.5]);
+    const fit = logLinearFit([1, Math.E, Math.E ** 2]);
+    expect(fit[1]).toBeCloseTo(Math.E, 9);
+    expect(logLinearFit([])).toEqual([]);
+    expect(logLinearFit([7])).toEqual([7]);
+    expect(rainbowBand(1, 1)).toBe(2); // ratio 1 sits in the 0.8..1.1 band (index 2)
+    expect(rainbowBand(100, 1)).toBe(RAINBOW_MULTIPLIERS.length - 2);
+    expect(rainbowBand(0.1, 1)).toBe(0);
+  });
+  it("accepts the options, cycle, rsi and premium envelopes", () => {
+    const base = { source: "x", asOf: 1_788_900_000_000, ttlMs: 60_000, stale: false };
+    expect(OptionsSnapshot.safeParse({ ...base, dataset: "options", key: "options:BTC", data: { symbol: "BTC", venues: [{ venue: "deribit", oiBase: 1, oiUsd: 80000, volume24hUsd: 5, putCallOi: 0.5, underlyingPrice: 80000, instruments: 2, expiries: [{ expiry: 1, label: "25SEP26", callOi: 1, putOi: 0.5, maxPain: 80000, strikes: 2 }] }] } }).success).toBe(true);
+    expect(CycleSnapshot.safeParse({ ...base, dataset: "cycle", key: "cycle:-", data: { symbol: "BTC", points: [{ t: 1, close: 1, ma111: null, ma350x2: null, ma2y: null, ma2yX5: null, fit: 1 }], rainbowMultipliers: [...RAINBOW_MULTIPLIERS], rainbowNames: ["a"], windowDays: 1000 } }).success).toBe(true);
+    expect(RsiSnapshot.safeParse({ ...base, dataset: "rsi", key: "rsi:-", data: { period: 14, rows: [{ symbol: "BTC", price: 1, rsi: { "15m": 50, "1h": null } }] } }).success).toBe(true);
+    expect(PremiumSnapshot.safeParse({ ...base, dataset: "premium", key: "premium:-", data: { symbol: "BTC", coinbaseUsd: 80001, binanceUsd: 80000, premiumUsd: 1, premiumPct: 0.0000125, points: [{ t: 1, v: 1 }] } }).success).toBe(true);
+    expect(analyticsKey("options", "eth")).toBe("options:ETH");
+    expect(analyticsKey("rsi")).toBe("rsi:-");
+  });
+});
 
 describe("[SCHEMA] analytics keys", () => {
   it("keys per-symbol datasets by upper-cased symbol and the rest by '-'", () => {

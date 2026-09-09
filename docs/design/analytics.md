@@ -122,3 +122,39 @@ Traceability: HC-MA-046, 060..066, 084 (data side). ADR-041; GAPS #57.
 Long/short: Binance first (global, top accounts, top positions); Bybit global ratio when Binance fails, with empty top-trader series and `source: "Bybit"`. Liquidations: Binance `!forceOrder@arr` and Bybit `allLiquidation.{SYMBOL}USDT` streams share one buffer; `/healthz` shows `stream: { binance, bybit }`; the snapshot's `source` lists every connected venue. Web copy: the long/short empty state now names "Binance or Bybit". Unverified today and therefore not built: OKX taker-volume units, Bybit mark/index tickers for basis.
 
 Tests: `liquidations.test.ts` (Bybit frame parsing, subscribe, ping loop bound to the current socket, reconnect), `jobs.test.ts` (fallback and both-fail paths), `app.test.ts` (two sockets, per-venue health), `config.test.ts` (BYBIT_WS_URL default).
+
+## 5.4a · Options, Sentiment, ETF placeholder (this PR)
+Traceability: HC-MA-049..059, 073..081, 114, 115, 118, 119. ADR-042; gaps #55, #59.
+
+### Job
+Options answers "where is the option book heavy and where does it hurt most at expiry" (OI per expiry, max pain, put/call, venue share). Sentiment answers "how stretched is the market" (Fear & Greed, cycle averages, rainbow band, Coinbase premium, RSI by timeframe). ETF keeps its slot honest until a flows provider exists.
+
+### Layout
+```
+options:   [Deribit · Options · sub · coin ▾ · Deribit | Delta India]  tiles ×4 (OI USD · OI units + put/call · 24h vol · nearest max pain)
+           [Open Interest by Expiry: call/put bars + amber max-pain line + $ labels]
+           [OI by exchange donut][Options markets by exchange table]
+sentiment: [F&G gauge + banded 90D chart][Bull-market peak checklist 8 rows, n/n triggered]
+           [Pi Cycle (log)][Rainbow (log, 9 regions)]  ·  [AHR999 soon][Puell soon][2Y MA multiplier (log)]
+           [Coinbase premium ± bars 1D/7D/30D · now / Coinbase / Binance]  ·  [RSI screener: star · search · Columns ▾ · CSV]
+etf:       [Bitcoin | Ethereum]  tiles ×3 "—"  ·  net flows soon · cumulative soon · Grayscale soon · funds table soon
+```
+At 390 px the gauge stacks above its chart, chart pairs stack, tables scroll in their own container.
+
+### Hierarchy
+Amber only for the max-pain line and labels (HC-MA-114) and the gauge needle. Green/red for call/put bars, RSI zones, premium sign, hit rows. Coming-soon panels dashed and muted.
+
+### States
+loading · ready · unavailable (503 per dataset: each panel names the dataset or env it waits for) · stale badge · n/a rows in the checklist (never a fabricated verdict) · empty premium history ("fills hourly from now on") · 2-year MA note when the window is shorter than 730 days.
+
+### Numbers
+OI in underlying units with the symbol ("1.2K BTC") and in USD at the venue's underlying price; max pain as a price; put/call to two decimals; RSI to whole numbers with oversold < 30 / overbought > 70; premium in USD with sign; cycle prices compact on a log axis with 1-2-5 ticks.
+
+### Interaction
+Exchange chips and coin select rewrite `?symbol=&exchange=`; timeframe chips on F&G (7D..1Y), cycle (30D/90D/180D/ALL), premium (1D/7D/30D); RSI headers sort; star / search / Columns ▾ / CSV as on the other tables. Palette: `nav:analytics-options`, `nav:analytics-sentiment`.
+
+### Tests
+Unit: `analytics-lib.test.ts` (log axis, bands, regions, labels), `derive.test.ts` (rainbow regions, checklist), `analytics-pages2.test.tsx`. E2E: two cases in `analytics.spec.ts`. Visual: `analytics-options-*`, `analytics-sentiment-*`, `analytics-etf-*`. Ingest: `jobs.test.ts` (options fold, cycle, rsi, premium), adapters, store series.
+
+### Real-data check (user's machine, 09 Sep)
+Deribit BTC: $34.8B OI across 11 expiries, nearest max pain 79,000; Delta BTC: $672M across 7 expiries. Cycle: 1000 closes, 2-year averages present. RSI: 10 rows. Premium: −$51.88 on the first hour.

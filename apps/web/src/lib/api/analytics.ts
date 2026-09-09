@@ -33,6 +33,11 @@ export function useAnalytics<D extends AnalyticsDataset>(dataset: D, symbol?: st
 export const useOverview = () => useAnalytics("overview");
 export const useMarkets = () => useAnalytics("markets");
 export const useLiquidations = () => useAnalytics("liquidations");
+export const useOptions = (symbol: string) => useAnalytics("options", symbol);
+export const useCycle = () => useAnalytics("cycle");
+export const useRsi = () => useAnalytics("rsi");
+export const usePremium = () => useAnalytics("premium");
+export const useFearGreed = () => useAnalytics("fear-greed");
 
 /** One dataset for several symbols at once (the funding-arbitrage table); missing symbols come back as undefined. */
 export function useAnalyticsMany<D extends AnalyticsDataset>(dataset: D, symbols: readonly string[]) {

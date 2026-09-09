@@ -2,7 +2,7 @@
 // bands, funding arbitrage and the small formatters.
 import type { LiquidationEvent } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
-import { alignTo, arbRows, binEvents, liqHeatmap, liqWindow, longShare, nextFundingIn, sparklineSeries, takerVolume24h, venueLabel } from "./derive";
+import { FG_BANDS, alignTo, arbRows, binEvents, cycleChecklist, liqHeatmap, liqWindow, longShare, nextFundingIn, rainbowRegions, sparklineSeries, takerVolume24h, venueLabel } from "./derive";
 
 const H = 3600e3;
 const ev = (t: number, symbol: string, side: "long" | "short", price: number, usd: number, venue: LiquidationEvent["venue"] = "binance"): LiquidationEvent => ({ t, venue, symbol, side, price, qty: usd / price, usd });
@@ -48,6 +48,27 @@ describe("derive", () => {
     expect(g.rows.find((r) => r.band === -1)?.cells[11]).toBe(20);
     expect(g.rows.find((r) => r.band === -5)?.cells[11]).toBe(5);
     expect(liqHeatmap(events, "BTC", 0, now).count).toBe(0);
+  });
+  it("builds rainbow regions and the cycle checklist with honest n/a rows", () => {
+    const regions = rainbowRegions([100, 200], [0.5, 1, 2], ["low", "high"]);
+    expect(regions.map((r) => r.label)).toEqual(["low", "high"]);
+    expect(regions[1]).toMatchObject({ lower: [100, 200], upper: [200, 400] });
+    expect(rainbowRegions([1], [0.5, 1, 2, 4], [])[2]?.label).toBe("Band 3");
+    expect(FG_BANDS).toHaveLength(4);
+    const fmt = (v: number) => `$${v}`;
+    const none = cycleChecklist({ cycle: undefined, fearGreed: null, rsiWeekly: null, premiumMax24h: null }, fmt);
+    expect(none).toHaveLength(8);
+    expect(none.every((r) => r.hit === null)).toBe(true);
+    const cycle = { symbol: "BTC", points: [{ t: 1, close: 500, ma111: 400, ma350x2: 300, ma2y: 90, ma2yX5: 450, fit: 100 }], rainbowMultipliers: [0.5, 1, 2, 4, 8], rainbowNames: ["a", "b", "c", "top"], windowDays: 1 };
+    const hot = cycleChecklist({ cycle, fearGreed: 95, rsiWeekly: 92, premiumMax24h: 55 }, fmt);
+    expect(hot.map((r) => r.hit)).toEqual([true, null, null, true, true, true, true, true]);
+    expect(hot[0]?.value).toBe("133% of cross");
+    expect(hot[4]?.value).toBe("top");
+    expect(hot[7]?.value).toBe("+$55.0");
+    const cold = cycleChecklist({ cycle: { ...cycle, points: [{ t: 1, close: 60, ma111: null, ma350x2: null, ma2y: null, ma2yX5: null, fit: 100 }] }, fearGreed: 10, rsiWeekly: 30, premiumMax24h: -12 }, fmt);
+    expect(cold.map((r) => r.hit)).toEqual([null, null, null, null, false, false, false, false]);
+    expect(cold[0]?.sub).toContain("needs 350 daily closes");
+    expect(cold[7]?.value).toBe("-$12.0");
   });
   it("builds the funding arbitrage rows and the small formatters", () => {
     const v = (venue: "binance" | "bybit" | "okx", rate: number, oiUsd: number | null) => ({ venue, rate, predicted: null, nextFundingAt: null, apr: rate * 3 * 365, oiUsd });

@@ -28,7 +28,7 @@ test.describe("HC-MA Market Analytics", () => {
     await page.getByTestId("section-hub").click();
     await expect(page.getByTestId("watch-strip")).toContainText("ETH", { timeout: 15_000 });
     await page.getByTestId("section-whales").click();
-    await expect(page.getByTestId("section-soon")).toHaveAttribute("data-release", "PR 5.4");
+    await expect(page.getByTestId("section-soon")).toHaveAttribute("data-release", "PR 5.4b");
     await page.getByTestId("section-terminal").click();
     await page.getByTestId("terminal-menu").getByText("Funding Rates").click();
     await expect(page).toHaveURL(/\/terminal\/derivatives\/funding$/);
@@ -64,7 +64,7 @@ test.describe("HC-MA Market Analytics", () => {
     await expect(page.getByTestId("gl-list")).toBeVisible();
     await expect(page.getByTestId("treemap")).toHaveAttribute("data-count", "10");
     await page.getByTestId("hub-etf").getByText("View all →").click();
-    await expect(page.getByTestId("section-soon")).toHaveAttribute("data-release", "PR 5.4");
+    await expect(page.getByTestId("etf-page")).toHaveAttribute("data-state", "soon");
   });
 
   test("HC-MA-030..037 Futures overview charts, timeframes, legend, tooltip and gauge", async ({ page }) => {
@@ -169,5 +169,54 @@ test.describe("HC-MA Market Analytics", () => {
     await page.getByRole("combobox").fill("liquidations");
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/analytics\/liquidations$/);
+  });
+
+  test("HC-MA-049..053 / HC-MA-114 Options: exchange toggle, tiles, expiry chart with max pain, donut and table; ETF coming soon", async ({ page }) => {
+    await page.goto("/analytics/options");
+    await expect(page.getByTestId("options-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("section-options")).toHaveAttribute("aria-current", "page");
+    await expect(page.getByTestId("tile-maxpain")).toContainText("$");
+    await expect(page.getByTestId("chart-expiry")).toHaveAttribute("data-state", "ready");
+    await expect(page.getByTestId("chart-expiry").getByTestId("chart-label")).toHaveCount(8);
+    await expect(page.getByTestId("donut")).toHaveAttribute("data-count", "2");
+    await expect(page.getByTestId("table-options-exchanges")).toHaveAttribute("data-rows", "2");
+    await page.getByTestId("options-exchange").getByText("Delta India").click();
+    await expect(page).toHaveURL(/exchange=delta$/);
+    await expect(page.getByTestId("options-page")).toHaveAttribute("data-exchange", "delta");
+    await page.getByTestId("options-symbol").selectOption("ETH");
+    await expect(page).toHaveURL(/symbol=ETH&exchange=delta$/);
+    await expect(page.getByTestId("tile-oi")).toContainText("$", { timeout: 15_000 });
+    await page.getByTestId("section-etf").click();
+    await expect(page.getByTestId("etf-page")).toHaveAttribute("data-state", "soon");
+    await page.getByTestId("etf-asset").getByText("Ethereum").click();
+    await expect(page.getByTestId("etf-page")).toHaveAttribute("data-asset", "ethereum");
+    await expect(page.getByTestId("etf-page").getByTestId("coming-soon")).toHaveCount(4);
+  });
+
+  test("HC-MA-073..081 / HC-MA-118, 119 Sentiment: gauge, checklist, cycle charts, premium and the RSI screener", async ({ page }) => {
+    await page.goto("/analytics/sentiment");
+    await expect(page.getByTestId("sentiment-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("fg-gauge")).toBeVisible();
+    await expect(page.getByTestId("chart-fg").getByTestId("chart-band")).toHaveCount(4);
+    await expect(page.getByTestId("check-summary")).toContainText("triggered", { timeout: 15_000 });
+    await expect(page.getByTestId("check-row")).toHaveCount(8);
+    for (const id of ["chart-pi", "chart-rainbow", "chart-ma2", "chart-premium"]) await expect(page.getByTestId(id)).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("chart-rainbow").getByTestId("chart-region")).toHaveCount(9);
+    await page.getByTestId("cycle-tf").getByText("30D").click();
+    await expect(page.getByTestId("chart-pi")).toHaveAttribute("data-state", "ready");
+    await page.getByTestId("chart-premium").getByTestId("chart-tf").getByText("7D").click();
+    await expect(page.getByTestId("chart-premium")).toHaveAttribute("data-state", "ready");
+    await expect(page.getByTestId("panel-ahr").getByTestId("coming-soon")).toContainText("GAPS #59");
+    await expect(page.getByTestId("table-rsi")).toHaveAttribute("data-rows", "10", { timeout: 15_000 });
+    await page.getByTestId("th-rsi_4h").click();
+    await expect(page.getByTestId("table-rsi")).toHaveAttribute("data-sort", "rsi_4h");
+    await page.getByTestId("table-search").fill("eth");
+    await expect(page.getByTestId("table-rsi")).toHaveAttribute("data-rows", "1");
+    await page.getByTestId("table-row").first().click();
+    await expect(page).toHaveURL(/\/analytics\/coin\/ETH$/);
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox").fill("sentiment");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/analytics\/sentiment$/);
   });
 });

@@ -130,6 +130,25 @@ for (const theme of ["dark", "light"] as const) {
       await page.screenshot({ path: `${DIR}/analytics-coin-${theme}.png`, fullPage: true });
     });
 
+    test(`HC-MA-049 /analytics/options, HC-MA-073 /analytics/sentiment and HC-MA-054 /analytics/etf ${theme}`, async ({ page, request }) => {
+      await seedUser(request, { email: `ma4-${theme}@example.com` });
+      await signIn(page, `ma4-${theme}@example.com`);
+      await page.evaluate((t) => {
+        localStorage.setItem("hapiecoin.theme", t);
+      }, theme);
+      await page.goto("/analytics/options");
+      await expect(page.getByTestId("table-options-exchanges")).toHaveAttribute("data-rows", "2", { timeout: 15_000 });
+      await expect(page.getByTestId("chart-expiry")).toHaveAttribute("data-state", "ready");
+      await page.screenshot({ path: `${DIR}/analytics-options-${theme}.png`, fullPage: true });
+      await page.goto("/analytics/sentiment");
+      await expect(page.getByTestId("table-rsi")).toHaveAttribute("data-rows", "10", { timeout: 15_000 });
+      await expect(page.getByTestId("chart-rainbow")).toHaveAttribute("data-state", "ready");
+      await page.screenshot({ path: `${DIR}/analytics-sentiment-${theme}.png`, fullPage: true });
+      await page.goto("/analytics/etf");
+      await expect(page.getByTestId("etf-page")).toHaveAttribute("data-state", "soon");
+      await page.screenshot({ path: `${DIR}/analytics-etf-${theme}.png`, fullPage: true });
+    });
+
     test(`HC-PB-042 /payoff-preview ${theme}`, async ({ page }) => {
       await page.goto("/payoff-preview");
       await page.evaluate((t) => {

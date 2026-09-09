@@ -2,6 +2,7 @@
  * CoinGecko (Demo plan: free key, 10,000 calls/month; verified 09 Sep 2026). Two calls per refresh:
  *   GET /coins/markets?vs_currency=usd&order=market_cap_desc&per_page=&page=1&sparkline=true&price_change_percentage=1h,24h,7d
  *   GET /global
+ *   GET /exchanges/{id}/tickers?coin_ids=bitcoin   (Coinbase premium: gdax vs binance; Demo cache 2 min)
  * The key travels in the `x-cg-demo-api-key` header. Attribution ("Data by CoinGecko") is shown by the UI.
  */
 import type { MarketRow, MarketsData } from "@hapiecoin/schema";
@@ -21,6 +22,8 @@ const Coin = z.looseObject({
   price_change_percentage_7d_in_currency: nnum.optional(),
   sparkline_in_7d: z.looseObject({ price: z.array(z.number().nullable()) }).nullable().optional(),
 });
+const Ticker = z.looseObject({ base: z.string(), target: z.string(), last: z.number().nullable(), is_stale: z.boolean().optional() });
+const Tickers = z.looseObject({ tickers: z.array(Ticker) });
 const Global = z.looseObject({ data: z.looseObject({ total_market_cap: z.record(z.string(), z.number()).optional(), total_volume: z.record(z.string(), z.number()).optional(), market_cap_percentage: z.record(z.string(), z.number()).optional() }) });
 
 export const SYMBOL_RE = /^[A-Z0-9]{2,12}$/;
@@ -41,6 +44,14 @@ export class CoinGeckoAdapter {
 
   private headers(): Record<string, string> {
     return { "x-cg-demo-api-key": this.apiKey };
+  }
+
+  /** Last traded price of `base`/`target` on one exchange (CoinGecko exchange id, e.g. "gdax", "binance"). */
+  async exchangePrice(exchangeId: string, coinId: string, base: string, target: string): Promise<number> {
+    const body = await this.http.get(`${this.baseUrl}/exchanges/${exchangeId}/tickers`, Tickers, { coin_ids: coinId }, this.headers());
+    const t = body.tickers.find((x) => x.base.toUpperCase() === base && x.target.toUpperCase() === target && x.last !== null && x.is_stale !== true);
+    if (!t || t.last === null) throw new Error(`CoinGecko: no ${base}/${target} ticker on ${exchangeId}`);
+    return t.last;
   }
 
   async markets(perPage = 100): Promise<MarketsData> {

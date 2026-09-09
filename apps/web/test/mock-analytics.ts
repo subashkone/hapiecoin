@@ -1,6 +1,6 @@
 // Deterministic analytics snapshots for unit tests and Playwright (ADR-038): the same shapes the ingest service
 // writes, generated from a seeded random walk so charts and tables have realistic, stable data.
-import { type AnalyticsDataset, type AnalyticsSnapshot, type FundingData, type LiquidationEvent, type LiquidationsData, type LongShortData, type MarketRow, type OpenInterestData, type OverviewData, type SeriesPoint, type TakerVolumeData, analyticsKey, fearGreedLabel, fundingApr } from "@hapiecoin/schema";
+import { type AnalyticsDataset, type AnalyticsSnapshot, type CycleData, type FundingData, type OptionsData, type PremiumData, type RsiData, type LiquidationEvent, type LiquidationsData, type LongShortData, type MarketRow, type OpenInterestData, type OverviewData, type SeriesPoint, type TakerVolumeData, RAINBOW_MULTIPLIERS, RAINBOW_NAMES, RSI_TIMEFRAMES, analyticsKey, fearGreedLabel, fundingApr, logLinearFit, maxPain, sma } from "@hapiecoin/schema";
 
 /** Snapshot time: the current minute, so windowed views (1h liquidations, 12h heatmap) hold real events; values stay seeded. */
 const NOW = Math.floor(Date.now() / 60e3) * 60e3;
@@ -133,6 +133,52 @@ export function mockLiquidations(): LiquidationsData {
   return { windowMs: 24 * 3600e3, bucketMs, buckets, byVenue, bySymbol, total, recent };
 }
 
+/** Options OI per expiry for Deribit and Delta: eight expiries, strikes around the mock price (PR 5.4a). */
+export function mockOptions(symbol: string): OptionsData {
+  const i = coinIndex(symbol);
+  const price = COINS[i]![2];
+  const r = rng(1300 + i);
+  const venues = (["deribit", "delta"] as const).map((venue, k) => {
+    const scale = k === 0 ? 1 : 0.04;
+    const expiries = Array.from({ length: 8 }, (_, e) => {
+      const expiry = Math.ceil(NOW / 864e5) * 864e5 + [1, 2, 3, 9, 16, 44, 79, 170][e]! * 864e5 + 8 * 3600e3;
+      const strikes = Array.from({ length: 9 }, (_, s) => Math.round((price * (0.7 + s * 0.075)) / (price > 1000 ? 1000 : 10)) * (price > 1000 ? 1000 : 10));
+      const instruments = strikes.flatMap((strike) => [
+        { strike, type: "call" as const, oi: scale * (200 + r() * 2000) * (strike > price ? 1.4 : 0.6) },
+        { strike, type: "put" as const, oi: scale * (200 + r() * 1500) * (strike < price ? 1.4 : 0.6) },
+      ]);
+      const d = new Date(expiry);
+      const label = k === 0 ? `${d.getUTCDate()}${["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"][d.getUTCMonth()]}${String(d.getUTCFullYear()).slice(2)}` : `${String(d.getUTCDate()).padStart(2, "0")}${String(d.getUTCMonth() + 1).padStart(2, "0")}${String(d.getUTCFullYear()).slice(2)}`;
+      return { expiry, label, callOi: instruments.filter((x) => x.type === "call").reduce((s, x) => s + x.oi, 0), putOi: instruments.filter((x) => x.type === "put").reduce((s, x) => s + x.oi, 0), maxPain: maxPain(instruments), strikes: strikes.length };
+    });
+    const callOi = expiries.reduce((s, e) => s + e.callOi, 0);
+    const putOi = expiries.reduce((s, e) => s + e.putOi, 0);
+    return { venue, oiBase: callOi + putOi, oiUsd: (callOi + putOi) * price, volume24hUsd: (callOi + putOi) * price * 0.05, putCallOi: putOi / callOi, underlyingPrice: price, instruments: expiries.length * 18, expiries };
+  });
+  return { symbol, venues };
+}
+/** 1000 daily closes with the averages and the log fit (PR 5.4a). */
+export function mockCycle(): CycleData {
+  const closes = walk(1400, 1000, 864e5, 22_000, 0.05, 1000).map((p) => ({ t: p.t, v: p.v * 1.0025 ** 0 }));
+  // drift so the last close lands on the mock BTC price
+  const scale = 80_000 / closes[closes.length - 1]!.v;
+  const c = closes.map((p, i) => ({ t: p.t, close: p.v * (1 + (scale - 1) * (i / (closes.length - 1))) }));
+  const vals = c.map((p) => p.close);
+  const ma111 = sma(vals, 111);
+  const ma350 = sma(vals, 350);
+  const ma730 = sma(vals, 730);
+  const fit = logLinearFit(vals);
+  return { symbol: "BTC", points: c.map((p, i) => ({ t: p.t, close: p.close, ma111: ma111[i] ?? null, ma350x2: ma350[i] === null || ma350[i] === undefined ? null : ma350[i] * 2, ma2y: ma730[i] ?? null, ma2yX5: ma730[i] === null || ma730[i] === undefined ? null : ma730[i] * 5, fit: fit[i]! })), rainbowMultipliers: [...RAINBOW_MULTIPLIERS], rainbowNames: [...RAINBOW_NAMES], windowDays: 1000 };
+}
+export function mockRsi(): RsiData {
+  return { period: 14, rows: COINS.map(([symbol, , price], i) => { const r = rng(1500 + i); const rsi: Partial<Record<(typeof RSI_TIMEFRAMES)[number], number | null>> = {}; RSI_TIMEFRAMES.forEach((tf, k) => { rsi[tf] = i === 2 && k === 0 ? null : Math.round(15 + r() * 70); }); return { symbol, price, rsi }; }) };
+}
+export function mockPremium(): PremiumData {
+  const points = walk(1600, 24 * 30, 3600e3, 0, 0, -1e9).map((p, i) => ({ t: p.t, v: Number((Math.sin(i / 9) * 35 + (rng(i)() - 0.5) * 20).toFixed(2)) }));
+  const last = points[points.length - 1]!.v;
+  return { symbol: "BTC", coinbaseUsd: 80_000 + last, binanceUsd: 80_000, premiumUsd: last, premiumPct: last / 80_000, points };
+}
+
 /** Every snapshot keyed the way the API serves them; the per-symbol datasets cover all ten mock coins. */
 export function mockAnalyticsSnapshots(): Map<string, AnalyticsSnapshot> {
   const map = new Map<string, AnalyticsSnapshot>();
@@ -143,6 +189,10 @@ export function mockAnalyticsSnapshots(): Map<string, AnalyticsSnapshot> {
     map.set(analyticsKey("taker-volume", symbol), envelope("taker-volume", analyticsKey("taker-volume", symbol), "Binance", mockTakerVolume(symbol)));
   }
   map.set(analyticsKey("liquidations"), envelope("liquidations", analyticsKey("liquidations"), "Binance · Bybit · OKX", mockLiquidations(), 15_000));
+  for (const symbol of ["BTC", "ETH"]) map.set(analyticsKey("options", symbol), envelope("options", analyticsKey("options", symbol), "Deribit · Delta India", mockOptions(symbol), 300_000));
+  map.set(analyticsKey("cycle"), envelope("cycle", analyticsKey("cycle"), "Bybit spot · daily closes", mockCycle(), 3_600_000));
+  map.set(analyticsKey("rsi"), envelope("rsi", analyticsKey("rsi"), "Bybit perpetuals", mockRsi(), 300_000));
+  map.set(analyticsKey("premium"), envelope("premium", analyticsKey("premium"), "Coinbase · Binance via CoinGecko", mockPremium(), 3_600_000));
   map.set(analyticsKey("overview"), envelope("overview", analyticsKey("overview"), "Binance · Bybit · OKX · alternative.me · CoinGecko", mockOverview()));
   map.set(analyticsKey("markets"), envelope("markets", analyticsKey("markets"), "CoinGecko", { rows: mockMarketRows(), global: { totalMarketCap: 2.9e12, volume24h: 9e10, btcDominance: 55.1, ethDominance: 12.4 } }, 600_000));
   const fg = mockOverview().fearGreedHistory;

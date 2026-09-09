@@ -211,6 +211,78 @@ export function CoinSelect({ value, symbols, names, onChange, testId }: { value:
   );
 }
 
+/** Share donut with a legend (options OI by exchange, HC-MA-052). */
+export function Donut({ items, size = 150, thick = 22, center, testId }: { items: { label: string; value: number; color: string }[]; size?: number; thick?: number; center?: string; testId?: string }) {
+  const total = items.reduce((s, i) => s + i.value, 0);
+  const r = size / 2 - thick / 2 - 2;
+  const c = 2 * Math.PI * r;
+  let offset = 0;
+  return (
+    <div className="flex flex-wrap items-center gap-4" data-testid={testId ?? "donut"} data-count={items.length}>
+      <svg viewBox={`0 0 ${size} ${size}`} style={{ width: size, height: size }} role="img" aria-label={`Share by exchange${center ? `, total ${center}` : ""}`}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth={thick} />
+        {total > 0
+          ? items.map((i) => {
+              const len = (i.value / total) * c;
+              const el = <circle key={i.label} cx={size / 2} cy={size / 2} r={r} fill="none" stroke={i.color} strokeWidth={thick} strokeDasharray={`${len.toFixed(2)} ${(c - len).toFixed(2)}`} strokeDashoffset={(-offset).toFixed(2)} transform={`rotate(-90 ${size / 2} ${size / 2})`} />;
+              offset += len;
+              return el;
+            })
+          : null}
+        {center ? <text x={size / 2} y={size / 2 + 4} textAnchor="middle" className="num font-medium" fill="currentColor" style={{ fontSize: size * 0.11 }}>{center}</text> : null}
+      </svg>
+      <ul className="space-y-1 text-2xs">
+        {items.map((i) => (
+          <li key={i.label} className="flex items-center gap-2">
+            <i className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: i.color }} aria-hidden="true" />
+            <span>{i.label}</span>
+            <span className="num ml-auto pl-3 text-muted-foreground">{total > 0 ? `${((i.value / total) * 100).toFixed(1)}%` : "—"}</span>
+          </li>
+        ))}
+        {items.length === 0 ? <li className="text-muted-foreground">No venue has reported yet.</li> : null}
+      </ul>
+    </div>
+  );
+}
+
+export interface CheckRow {
+  name: string;
+  sub: string;
+  value: string;
+  /** null = the signal cannot be computed from our sources (coming soon). */
+  hit: boolean | null;
+}
+/** Cycle-top checklist (HC-MA-074): a dot per signal, hit rows in red, unavailable rows muted. */
+export function Checklist({ rows, testId }: { rows: CheckRow[]; testId?: string }) {
+  return (
+    <div className="divide-y divide-border" data-testid={testId ?? "checklist"} data-hits={rows.filter((r) => r.hit === true).length}>
+      {rows.map((r) => (
+        <div key={r.name} className="grid grid-cols-[10px_minmax(0,1fr)_auto_auto] items-center gap-3 py-1.5 text-xs" data-testid="check-row" data-hit={r.hit === null ? "na" : String(r.hit)}>
+          <i className={cn("inline-block h-2.5 w-2.5 rounded-full", r.hit === true ? "bg-loss" : r.hit === false ? "bg-profit/70" : "bg-muted-foreground/40")} aria-hidden="true" />
+          <span className="min-w-0">
+            <b>{r.name}</b>
+            <div className="truncate text-2xs text-muted-foreground">{r.sub}</div>
+          </span>
+          <span className="num text-2xs">{r.value}</span>
+          <Badge variant={r.hit === true ? "loss" : r.hit === false ? "outline" : "secondary"}>{r.hit === true ? "Hit" : r.hit === false ? "Not hit" : "n/a"}</Badge>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** RSI cell: green below 30 (oversold), red above 70 (overbought), intensity by distance (HC-MA-081). */
+export function RsiCell({ v }: { v: number | null | undefined }) {
+  if (v === null || v === undefined) return <span className="text-muted-foreground">—</span>;
+  const over = v >= 70 ? (v - 70) / 30 : v <= 30 ? (30 - v) / 30 : 0;
+  const tone = v >= 70 ? "--loss" : v <= 30 ? "--profit" : null;
+  return (
+    <span className={cn("num inline-block w-10 rounded px-1 py-0.5 text-center", v >= 70 ? "text-loss" : v <= 30 ? "text-profit" : "")} style={tone ? { background: `hsl(var(${tone}) / ${(0.12 + over * 0.4).toFixed(2)})` } : undefined} data-testid="rsi-cell" data-zone={v >= 70 ? "overbought" : v <= 30 ? "oversold" : "neutral"}>
+      {v.toFixed(0)}
+    </span>
+  );
+}
+
 export const usd = usdCompact;
 export function ViewAll({ href, children }: { href: string; children: ReactNode }) {
   return (

@@ -2,7 +2,9 @@
 import { describe, expect, it } from "vitest";
 import { JsonClient } from "../http.js";
 import { FakeFetch } from "../test-support/fake-fetch.js";
-import { T0, binance, bybit, coingecko, fng, healthyFetch, okx } from "../test-support/fixtures.js";
+import { KLINE_DAYS, LAST_CLOSE, T0, binance, bybit, coingecko, fng, healthyFetch, okx } from "../test-support/fixtures.js";
+import { DeltaAdapter, parseDeltaSymbol } from "./delta.js";
+import { DeribitAdapter, parseDeribitName } from "./deribit.js";
 import { BinanceAdapter, perpSymbol } from "./binance.js";
 import { BybitAdapter, BybitError } from "./bybit.js";
 import { CoinGeckoAdapter, thin } from "./coingecko.js";
@@ -41,6 +43,10 @@ describe("[INGEST] Bybit adapter", () => {
     expect(await b.fundingHistory("BTC")).toEqual([{ t: T0 - 16 * 3_600_000, v: 0.00004 }, { t: T0 - 8 * 3_600_000, v: 0.00006 }]);
     expect(await b.openInterestHistory("BTC")).toEqual([{ t: T0 - 600_000, v: 19900 }, { t: T0 - 300_000, v: 20000 }]);
     expect(await b.accountRatio("BTC")).toEqual([{ t: T0 - 7_200_000, long: 0.5, short: 0.5, ratio: 1 }, { t: T0 - 3_600_000, long: 0.55, short: 0.45, ratio: 0.55 / 0.45 }]);
+    const k = await b.klines("BTC", "D", 400, "spot");
+    expect(k).toHaveLength(KLINE_DAYS);
+    expect(k[0]!.t).toBeLessThan(k[1]!.t);
+    expect(k.at(-1)).toEqual({ t: T0, close: LAST_CLOSE });
   });
   it("raises BybitError on a non-zero retCode, an empty ticker list and a zero sell ratio", async () => {
     const f = new FakeFetch().on("/v5/market/tickers", { body: { retCode: 0, result: { list: [] } } }).on("/v5/market/funding/history", { body: bybit.error }).on("/v5/market/account-ratio", { body: { retCode: 0, result: { list: [{ buyRatio: "1", sellRatio: "0", timestamp: "1" }] } } });
@@ -50,6 +56,27 @@ describe("[INGEST] Bybit adapter", () => {
     expect((await b.accountRatio("BTC"))[0]?.ratio).toBe(0);
     const noMsg = new BybitAdapter(client(new FakeFetch().on("/v5/market/funding/history", { body: { retCode: 5, result: { list: [] } } })), "https://bybit");
     await expect(noMsg.fundingHistory("BTC")).rejects.toThrow("Bybit retCode 5");
+  });
+});
+
+describe("[INGEST] Deribit and Delta option adapters", () => {
+  it("parses instrument names and keeps only options with a parseable name", async () => {
+    expect(parseDeribitName("BTC-25SEP26-105000-C")).toEqual({ name: "BTC-25SEP26-105000-C", base: "BTC", expiry: Date.UTC(2026, 8, 25, 8), label: "25SEP26", strike: 105000, type: "call" });
+    expect(parseDeribitName("XRP-9SEP26-0d5-P")?.strike).toBe(0.5);
+    expect(parseDeribitName("BTC-PERPETUAL")).toBeNull();
+    expect(parseDeribitName("BTC-25XXX26-1000-C")).toBeNull();
+    expect(parseDeltaSymbol("P-BTC-97000-271126")).toEqual({ name: "P-BTC-97000-271126", base: "BTC", expiry: Date.UTC(2026, 10, 27, 12), label: "271126", strike: 97000, type: "put" });
+    expect(parseDeltaSymbol("C-ETH-2500.5-090926")?.strike).toBe(2500.5);
+    expect(parseDeltaSymbol("BTCUSD")).toBeNull();
+    expect(parseDeltaSymbol("C-BTC-1-011326")).toBeNull(); // month 13
+    const d = await new DeribitAdapter(client(healthyFetch()), "https://deribit/api/v2").options("btc");
+    expect(d).toHaveLength(7);
+    expect(d[0]).toMatchObject({ strike: 70000, type: "put", oi: 100, volumeUsd: 1000, underlyingPrice: 80000 });
+    expect(d[5]).toMatchObject({ strike: 110000, oi: 0, volumeUsd: 0, underlyingPrice: null }); // sparse row
+    const dl = await new DeltaAdapter(client(healthyFetch()), "https://delta").options("btc");
+    expect(dl).toHaveLength(3);
+    expect(dl[2]).toMatchObject({ strike: 90000, oi: 0, volumeUsd: 0, underlyingPrice: null });
+    expect(dl[1]).toMatchObject({ strike: 75000, type: "put", oi: 0.5, volumeUsd: 100, underlyingPrice: 80100 });
   });
 });
 
@@ -100,6 +127,9 @@ describe("[INGEST] CoinGecko adapter", () => {
     expect(m.global).toEqual({ totalMarketCap: 2.9e12, volume24h: 9e10, btcDominance: 55.1, ethDominance: 12.4 });
     expect(f.calls[0]?.headers["x-cg-demo-api-key"]).toBe("demo-key-123");
     expect(f.calls[0]?.url).toContain("per_page=50");
+    expect(await g.exchangePrice("gdax", "bitcoin", "BTC", "USD")).toBe(80050);
+    expect(await g.exchangePrice("binance", "bitcoin", "BTC", "USDT")).toBe(80000);
+    await expect(g.exchangePrice("binance", "bitcoin", "BTC", "BUSD")).rejects.toThrow("no BTC/BUSD ticker on binance");
     expect(thin([1, null, 3, 4, 5], 3)).toEqual([1, 4, 5]);
     expect(thin([1, 2], 3)).toEqual([1, 2]);
   });

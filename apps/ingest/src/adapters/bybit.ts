@@ -4,6 +4,7 @@
  *   GET /v5/market/funding/history?category=linear&symbol=&limit=
  *   GET /v5/market/open-interest?category=linear&symbol=&intervalTime=5min&limit=   (openInterest in base units)
  *   GET /v5/market/account-ratio?category=linear&symbol=&period=1h&limit=           buyRatio / sellRatio
+ *   GET /v5/market/kline?category=&symbol=&interval=&limit=  [startTime, open, high, low, close, volume, turnover] newest first (limit ≤ 1000)
  * Responses wrap data in { retCode, retMsg, result: { list } }; retCode 0 = ok.
  */
 import type { SeriesPoint } from "@hapiecoin/schema";
@@ -18,6 +19,8 @@ const Ticker = z.looseObject({ symbol: z.string(), lastPrice: num, fundingRate: 
 const FundingRow = z.looseObject({ fundingRate: num, fundingRateTimestamp: num });
 const OiRow = z.looseObject({ openInterest: num, timestamp: num });
 const RatioRow = z.looseObject({ buyRatio: num, sellRatio: num, timestamp: num });
+const KlineRow = z.tuple([num, num, num, num, num]).rest(z.unknown());
+export type BybitInterval = "1" | "3" | "5" | "15" | "30" | "60" | "120" | "240" | "360" | "720" | "D" | "W" | "M";
 
 export class BybitError extends Error {
   constructor(
@@ -64,6 +67,12 @@ export class BybitAdapter {
   async openInterestHistory(symbol: string, intervalTime: "5min" | "15min" | "30min" | "1h" | "4h" | "1d" = "5min", limit = 200): Promise<SeriesPoint[]> {
     const rows = await this.list("/v5/market/open-interest", OiRow, { category: "linear", symbol: perpSymbol(symbol), intervalTime, limit });
     return rows.map((r) => ({ t: r.timestamp, v: r.openInterest })).sort((a, b) => a.t - b.t);
+  }
+
+  /** Closes oldest first. */
+  async klines(symbol: string, interval: BybitInterval, limit = 200, category: "spot" | "linear" = "linear"): Promise<{ t: number; close: number }[]> {
+    const rows = await this.list("/v5/market/kline", KlineRow, { category, symbol: perpSymbol(symbol), interval, limit });
+    return rows.map((r) => ({ t: r[0], close: r[4] })).sort((a, b) => a.t - b.t);
   }
 
   async accountRatio(symbol: string, period: "5min" | "15min" | "30min" | "1h" | "4h" | "1d" = "1h", limit = 168): Promise<RatioPoint[]> {
