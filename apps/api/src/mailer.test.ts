@@ -46,8 +46,12 @@ describe("[MAIL] OTP delivery", () => {
     fail = true;
     await expect(mailer.sendOtp({ email: "u@x.com", otp: "1", type: "sign-in" })).rejects.toThrow(/quota/);
     await expect(mailer.sendInvite({ email: "new@x.com", name: "N", invitedBy: "A", link: "https://x" })).rejects.toThrow(/quota/);
+    await expect(mailer.sendPromo({ email: "new@x.com", subject: "s", text: "t" })).rejects.toThrow(/quota/);
     const silent = new ResendMailer(client, "x");
     await expect(silent.sendOtp({ email: "u@x.com", otp: "1", type: "sign-in" })).rejects.toThrow();
+    fail = false;
+    await mailer.sendPromo({ email: "p@x.com", subject: "Hello", text: "Body" });
+    expect(sent.at(-1)).toMatchObject({ to: "p@x.com", subject: "Hello", text: "Body" });
   });
 
   it("factory picks the capture mailer without a key (logging through the app logger) and Resend with one", async () => {
@@ -57,6 +61,10 @@ describe("[MAIL] OTP delivery", () => {
     await dev.sendOtp({ email: "dev@x.com", otp: "654321", type: "sign-in" });
     await dev.sendInvite({ email: "dev2@x.com", name: "Dev Two", invitedBy: "Demo Admin", link: "https://x" });
     expect((dev as MailCapture).invites[0]?.email).toBe("dev2@x.com");
+    await dev.sendPromo({ email: "dev3@x.com", subject: "s", text: "t" });
+    expect((dev as MailCapture).promos[0]?.email).toBe("dev3@x.com");
+    (dev as MailCapture).bounce.add("bad@x.com");
+    await expect(dev.sendPromo({ email: "Bad@x.com", subject: "s", text: "t" })).rejects.toThrow(/550/);
     expect((dev as MailCapture).last("dev@x.com")?.otp).toBe("654321");
     expect(createMailer({ resendApiKey: "re_test", from: "x", logger, nodeEnv: "production" })).toBeInstanceOf(
       ResendMailer,

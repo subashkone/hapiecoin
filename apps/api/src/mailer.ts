@@ -22,15 +22,26 @@ export interface InviteMail {
   link: string;
 }
 
+/** A promotional campaign message, already rendered for one recipient (ADR-035). Plain text. */
+export interface PromoMail {
+  email: string;
+  subject: string;
+  text: string;
+}
+
 export interface Mailer {
   sendOtp(mail: OtpMail): Promise<void>;
   sendInvite(mail: InviteMail): Promise<void>;
+  sendPromo(mail: PromoMail): Promise<void>;
 }
 
 /** Records every OTP mail (dev/test). `last(email)` returns the most recent code for an address. */
 export class MailCapture implements Mailer {
   readonly sent: OtpMail[] = [];
   readonly invites: InviteMail[] = [];
+  readonly promos: PromoMail[] = [];
+  /** Addresses the capture mailer refuses (tests exercise the failed-delivery path). */
+  readonly bounce = new Set<string>();
 
   constructor(private readonly log?: (line: string) => void) {}
 
@@ -38,6 +49,13 @@ export class MailCapture implements Mailer {
     this.sent.push(mail);
     // Deliberately unscrubbed: this is the development delivery channel. Never enabled in production.
     this.log?.(`[mail] to=${mail.email} otp=${mail.otp} type=${mail.type}`);
+    return Promise.resolve();
+  }
+
+  sendPromo(mail: PromoMail): Promise<void> {
+    if (this.bounce.has(mail.email.toLowerCase())) return Promise.reject(new Error(`550 mailbox unavailable: ${mail.email}`));
+    this.promos.push(mail);
+    this.log?.(`[mail] promo to=${mail.email} subject=${mail.subject}`);
     return Promise.resolve();
   }
 
@@ -105,6 +123,14 @@ export class ResendMailer implements Mailer {
     });
     if (error) {
       this.logger?.error({ to: mail.email, type: mail.type, reason: error.message }, "otp mail failed");
+      throw new Error(`mail delivery failed: ${error.message}`);
+    }
+  }
+
+  async sendPromo(mail: PromoMail): Promise<void> {
+    const { error } = await this.client.emails.send({ from: this.from, to: mail.email, subject: mail.subject, text: mail.text });
+    if (error) {
+      this.logger?.error({ to: mail.email, reason: error.message }, "promo mail failed");
       throw new Error(`mail delivery failed: ${error.message}`);
     }
   }

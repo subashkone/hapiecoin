@@ -565,7 +565,7 @@
     "feature": "Page title 'Promotional Emails' with tabs Compose / History",
     "how": "Tabs switch panels; sending a campaign switches to History automatically",
     "status": "working",
-    "evidence": "bundle strings: Promotional Emails, Compose, History, compose, history"
+    "evidence": "bundle strings: Promotional Emails, Compose, History, compose, history · Phase 4 item 4c (08 Sep 2026, ADR-035): EmailsAdmin tabs Compose / History; sending switches to History (emails-tab-*)"
   },
   {
     "route": "/admin/emails",
@@ -573,7 +573,7 @@
     "feature": "'Recipients' card with 'N selected' badge",
     "how": "Badge tracks the selection set",
     "status": "working",
-    "evidence": "bundle strings: Recipients, selected, secondary"
+    "evidence": "bundle strings: Recipients, selected, secondary · Phase 4 item 4c (08 Sep 2026, ADR-035): Recipients card with 'N selected' badge (email-selected)"
   },
   {
     "route": "/admin/emails",
@@ -581,7 +581,7 @@
     "feature": "Recipient search 'Search users by name or email'",
     "how": "Filters the checkbox list live",
     "status": "working",
-    "evidence": "bundle strings: Search users by name or email, aria-label"
+    "evidence": "bundle strings: Search users by name or email, aria-label · Phase 4 item 4c (08 Sep 2026, ADR-035): search filters the list live via GET /v1/admin/emails/recipients (email-search)"
   },
   {
     "route": "/admin/emails",
@@ -589,7 +589,7 @@
     "feature": "'Segment' select: All users / Paid users / Free users / Expired",
     "how": "Filters CG.mock.users by status/plan",
     "status": "working",
-    "evidence": "bundle strings: Segment, All users"
+    "evidence": "bundle strings: Segment, All users · Phase 4 item 4c (08 Sep 2026, ADR-035): Segment select All / Paid / Free / Expired (email-segment)"
   },
   {
     "route": "/admin/emails",
@@ -597,7 +597,7 @@
     "feature": "'Select all (N)' / 'Clear' buttons",
     "how": "Select all adds every visible user; Clear empties the selection",
     "status": "working",
-    "evidence": "bundle strings: Select all (, Clear"
+    "evidence": "bundle strings: Select all (, Clear · Phase 4 item 4c (08 Sep 2026, ADR-035): Select all (N) / Clear (email-select-all, email-clear)"
   },
   {
     "route": "/admin/emails",
@@ -605,7 +605,7 @@
     "feature": "Recipient checkbox list with status badges; 'No users match the search.'",
     "how": "Toggling a checkbox updates the selection, badge and preview",
     "status": "working",
-    "evidence": "bundle string: No users match the search."
+    "evidence": "bundle string: No users match the search. · Phase 4 item 4c (08 Sep 2026, ADR-035): checkbox list with plan / status badges; 'No users match the search.' (email-recipient, email-no-users)"
   },
   {
     "route": "/admin/emails",
@@ -613,7 +613,7 @@
     "feature": "'Subject' (placeholder 'Your report is ready') and 'Message' textarea",
     "how": "Ids promo-subject / promo-message; both required to enable Send",
     "status": "working",
-    "evidence": "bundle strings: promo-subject, Subject, Your report is ready, promo-message, Message, subject, message"
+    "evidence": "bundle strings: promo-subject, Subject, Your report is ready, promo-message, Message, subject, message · Phase 4 item 4c (08 Sep 2026, ADR-035): Subject and Message required to enable Send (promo-subject, promo-message)"
   },
   {
     "route": "/admin/emails",
@@ -621,7 +621,7 @@
     "feature": "'Insert:' placeholder chips {{name}} {{email}} {{plan}} {{expiry}} ('into the last-focused field')",
     "how": "Inserts at the caret of whichever field was focused last (defaults to Message)",
     "status": "working",
-    "evidence": "bundle strings: Insert:, into the last-focused field, button"
+    "evidence": "bundle strings: Insert:, into the last-focused field, button · Phase 4 item 4c (08 Sep 2026, ADR-035): Insert chips write at the caret of the last focused field (email-insert-*)"
   },
   {
     "route": "/admin/emails",
@@ -629,7 +629,7 @@
     "feature": "'Preview for <first selected user>' card",
     "how": "Renders subject and message with placeholders filled from the first selected user; highlights raw placeholders when nobody is selected",
     "status": "working",
-    "evidence": "bundle string: Preview for"
+    "evidence": "bundle string: Preview for · Phase 4 item 4c (08 Sep 2026, ADR-035): Preview for the first selected user; raw placeholders highlighted when nobody is selected (email-preview)"
   },
   {
     "route": "/admin/emails",
@@ -637,7 +637,7 @@
     "feature": "'Send Email' → confirm 'Send to N user(s)? · N selected user(s). Placeholders are filled per recipient.' Cancel / Confirm",
     "how": "Confirm dialog; button disabled until recipients, subject and message are set",
     "status": "working",
-    "evidence": "bundle strings: Send Email, Send to, user(s)?, selected user(s). Placeholders are filled per recipient., Cancel, Confirm, Send"
+    "evidence": "bundle strings: Send Email, Send to, user(s)?, selected user(s). Placeholders are filled per recipient., Cancel, Confirm, Send · Phase 4 item 4c (08 Sep 2026, ADR-035): Send Email → confirm 'Send to N users?' (email-confirm, email-send-confirm)"
   },
   {
     "route": "/admin/emails",
@@ -645,7 +645,7 @@
     "feature": "Sending: 'Sending...' state, toast 'Emails sent', campaign added to CG.mock.campaigns, compose form reset, switch to History",
     "how": "Simulated delivery with a small failure rate on large sends; 'Send failed · Please try again.' path guarded",
     "status": "working",
-    "evidence": "bundle strings: Emails sent, Send failed, Please try again."
+    "evidence": "bundle strings: Emails sent, Send failed, Please try again. · Phase 4 item 4c (08 Sep 2026, ADR-035): POST /v1/admin/emails/send; 'Emails sent · N delivered, M failed' toast; 'Send failed' path (useSendCampaign)"
   },
   {
     "route": "/admin/emails",
@@ -653,7 +653,7 @@
     "feature": "History table: Subject, Sent at, Recipients, Delivered, Failed, Sent by (click a row for details)",
     "how": "Rendered from CG.mock.campaigns, newest first; rows are keyboard-accessible",
     "status": "working",
-    "evidence": "bundle strings: Sent at, Recipients, Delivered, Failed, Sent by"
+    "evidence": "bundle strings: Sent at, Recipients, Delivered, Failed, Sent by · Phase 4 item 4c (08 Sep 2026, ADR-035): History table Subject / Sent at / Recipients / Delivered / Failed / Sent by, newest first, rows keyboard-reachable (campaign-row)"
   },
   {
     "route": "/admin/emails",
@@ -661,7 +661,7 @@
     "feature": "History empty state 'No campaigns sent yet.'",
     "how": "Shown when CG.mock.campaigns is empty",
     "status": "working",
-    "evidence": "bundle string: No campaigns sent yet."
+    "evidence": "bundle string: No campaigns sent yet. · Phase 4 item 4c (08 Sep 2026, ADR-035): 'No campaigns sent yet.' (history-empty)"
   },
   {
     "route": "/admin/emails",
@@ -669,7 +669,7 @@
     "feature": "Campaign detail: '← Back to campaigns', subject, 'Sent <date> · By <name>', tiles Recipients / Delivered / Failed / Success %",
     "how": "Per-campaign view inside the History tab",
     "status": "working",
-    "evidence": "bundle strings: Back to campaigns, Recipients, Delivered, Failed, Success, Sent, By"
+    "evidence": "bundle strings: Back to campaigns, Recipients, Delivered, Failed, Success, Sent, By · Phase 4 item 4c (08 Sep 2026, ADR-035): campaign detail with Back, subject, sent line, tiles (campaign-detail)"
   },
   {
     "route": "/admin/emails",
@@ -677,7 +677,7 @@
     "feature": "Campaign recipients table: Name, Email, Status, Sent at, Error; 'No recipients recorded.'; pagination 'Page x of y · ← Prev · Next →' (10 per page)",
     "how": "Recipient rows for seeded campaigns are generated deterministically from CG.mock.users; failed rows carry an SMTP-style error",
     "status": "working",
-    "evidence": "bundle strings: Name, Email, Status, Sent at, Error, No recipients recorded., Page, of, Prev, Next"
+    "evidence": "bundle strings: Name, Email, Status, Sent at, Error, No recipients recorded., Page, of, Prev, Next · Phase 4 item 4c (08 Sep 2026, ADR-035): recipients table Name / Email / Status / Sent at / Error (campaign-recipient)"
   },
   {
     "route": "/admin/users",
@@ -1023,7 +1023,7 @@
     "how": "Weekly report / Plan expiring / New feature chips fill subject and message (placeholders included) and toast",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 4c (08 Sep 2026, ADR-035): template chips Weekly report / Plan expiring / New feature fill subject and message (email-template-*)"
   },
   {
     "route": "/admin/emails",
@@ -1032,7 +1032,7 @@
     "how": "Validates subject/message, shows a sending state and toasts a test email to the admin address with placeholders filled from the admin profile",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 4c (08 Sep 2026, ADR-035): Test send to me → POST /v1/admin/emails/test with the admin's own values (email-test)"
   },
   {
     "route": "/admin/emails",
@@ -1041,7 +1041,7 @@
     "how": "Campaign history is a grid with subject/segment search, hideable Segment column, sortable headers and Copy CSV; no bulk actions",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 4c (08 Sep 2026, ADR-035): history search + Columns (Segment hidden by default) + sortable headers + Copy CSV (history-*)"
   },
   {
     "route": "/admin/emails",
@@ -1050,7 +1050,7 @@
     "how": "Campaign detail copies the per-recipient delivery rows as CSV",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 4c (08 Sep 2026, ADR-035): campaign detail Copy CSV of the delivery rows (campaign-csv)"
   },
   {
     "route": "/admin/emails",
@@ -1059,6 +1059,6 @@
     "how": "The amber Send Email button lives in the title row next to the Compose / History tabs and hides on History",
     "status": "working",
     "new": true,
-    "evidence": "v2 improvement"
+    "evidence": "v2 improvement · Phase 4 item 4c (08 Sep 2026, ADR-035): Send Email lives in the title row and hides on History (email-send)"
   }
 ]

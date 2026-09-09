@@ -161,6 +161,8 @@ describe("[DB] schema declares the relationships the API relies on", () => {
         "banners",
         "coupons",
         "payments",
+        "campaigns",
+        "campaignRecipients",
         "strategies",
         "strategyLegs",
         "strategyOrders",

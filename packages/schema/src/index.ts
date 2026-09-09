@@ -11,3 +11,4 @@ export * from "./referrals.js";
 export * from "./admin.js";
 export * from "./banners.js";
 export * from "./payments.js";
+export * from "./emails.js";

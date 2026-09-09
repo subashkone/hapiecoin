@@ -93,3 +93,43 @@ The thumbnail column earns its place because admins recognise banners by picture
 
 ## Server rules (ADR-033)
 Images are stored in Postgres (`banners.image` bytea, ≤ 5 MB, PNG / JPEG / WebP / GIF) and served from `GET /v1/banners/{id}/image?v=<updatedAt>` with a private one-day cache; list and admin JSON never carry bytes. Writes take a data URL (JSON) under a 7 MB body limit; the API re-checks type and decoded size. Admin CRUD is audited (create, update, delete). `GET /v1/banners` returns only banners in the "showing" state so the client never decides the schedule.
+
+# 4c · Promotional Emails (HC-AD-071..085, 124..128)
+
+## 1. Job
+Write one message, pick who gets it, see exactly what one recipient will read, send, and afterwards know who received it and who did not. First question on Compose: "Who am I about to email and how many?" answered by the Recipients badge. First question on History: "Did the last campaign deliver?" answered by the Delivered / Failed columns.
+
+## 2. Layout
+`/admin/emails`: title row with tabs Compose / History and the amber Send Email (Compose only, HC-AD-128).
+Compose, two columns: left "Recipients" card (search, Segment select All / Paid / Free / Expired, Select all (N) / Clear, checkbox list with status badges, "N selected" badge); right the message: Template chips (Weekly report / Plan expiring / New feature), Subject, Message, "Insert:" placeholder chips {{name}} {{email}} {{plan}} {{expiry}} (into the last focused field), "Preview for <first selected>" card, "Test send to me".
+History: sticky search + Columns (Segment hideable) + Copy CSV → table Subject · Sent at · Segment · Recipients · Delivered · Failed · Sent by, sortable, newest first → row opens the campaign detail in place: "← Back to campaigns", subject, "Sent <date> · By <name>", tiles Recipients / Delivered / Failed, recipients table Name · Email · Status · Sent at · Error with Copy CSV.
+Narrow 390: the two Compose columns stack (recipients first); History table scrolls in its box.
+
+## 3. Hierarchy
+Primary: Send Email (header, Compose only). Secondary: Test send to me, Select all, template chips. Delivered counts are plain; Failed turns red only when > 0.
+
+## 4. States
+Send disabled until recipients, subject and message are set; the confirm dialog names the count and reminds that placeholders are filled per recipient. Sending shows "Sending…" and the button locks; success toasts "Emails sent · N delivered, M failed" and switches to History; a transport failure toasts "Send failed · Please try again" and records nothing. Empty recipients: "No users match the search." History empty: "No campaigns sent yet." Without a mail transport (dev), the capture mailer records the messages so the History still fills.
+
+## 5. Numbers
+Counts as integers; dates en-IN with time; the preview shows the subject and message with placeholders filled from the first selected user, and raw {{placeholder}} tokens highlighted when nobody is selected.
+
+## 6. Interaction
+Placeholders: {{name}}, {{email}}, {{plan}} (plan name or "Free"), {{expiry}} (dd Mon yyyy or "no end date"); unknown tokens stay as typed. Insert chips write at the caret of the last focused field, Message by default. Templates fill subject and message and toast; they never send. Test send goes to the acting admin with their own values. History rows are keyboard-reachable (Enter opens the detail).
+
+## 7. Traceability
+HC-AD-071..085, HC-AD-124..128. Playwright `admin.spec.ts` "HC-AD-071..085 emails: compose, preview, send, history, detail"; visuals `admin-emails-<theme>.png`, `admin-emails-history-<theme>.png`. Unit: web `emails.test.tsx`; api `routes/emails.test.ts`; schema `emails.test.ts`.
+
+## 8. Real-data check
+5 recipients: one screen. 5,000 users: the recipients list is server-searched and capped at 200 rows per query with a "showing 200 of N, refine the search" note; Select all adds only the visible rows; sending 5,000 mails runs sequentially on the API with per-recipient results, so a campaign of that size takes minutes and the button stays locked (noted as GAPS #50: a queue when campaigns grow).
+
+## 9. Generic-pattern check
+The preview card exists because placeholders are the one thing admins get wrong; the templates are three because that is what the reference site offers and each is a real use. No open-rate or click tracking: nothing in the product records it, so nothing is shown.
+
+## 10. Confusion check
+1. "Did it send to everyone?" → Delivered and Failed are separate columns and the detail lists each failed address with its error.
+2. "Will the customer see {{name}}?" → the preview renders the real values; Send confirm repeats that placeholders are filled per recipient.
+3. "Is Test send a real send?" → the button says "to me" and the toast names the admin's own address; test sends never appear in History.
+
+## Server rules (ADR-035)
+`POST /v1/admin/emails/send` renders placeholders per recipient on the server, sends through the configured mailer one by one, records a campaign row plus one recipient row each (sent / failed with the transport's message), and is audited. Recipient lists come from the same user rows as User Management (status = active / free / expired / deactivated; deactivated accounts are never emailed and are not offered). `POST /v1/admin/emails/test` sends only to the acting admin and records nothing. Message bodies are plain text (no HTML editor yet), which keeps the mail out of the HTML-injection class.

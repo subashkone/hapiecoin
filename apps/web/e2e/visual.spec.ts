@@ -176,5 +176,22 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("coupon-row")).toHaveCount(4, { timeout: 15_000 });
       await page.screenshot({ path: `${DIR}/admin-coupons-${theme}.png`, fullPage: true });
     });
+
+    test(`HC-AD-071 promotional emails compose and history ${theme}`, async ({ page, request }) => {
+      await seedUser(request, { email: `em-${theme}@example.com`, role: "admin", referrals: 3, campaigns: 3 });
+      await signIn(page, `em-${theme}@example.com`);
+      await page.evaluate((t) => {
+        localStorage.setItem("hapiecoin.theme", t);
+      }, theme);
+      await page.goto("/admin/emails");
+      await expect(page.getByTestId("email-recipient")).toHaveCount(4, { timeout: 15_000 });
+      await page.getByTestId("email-recipient").first().check();
+      await page.getByTestId("email-template-plan_expiring").click();
+      await expect(page.getByTestId("email-preview-subject")).not.toContainText("{{");
+      await page.screenshot({ path: `${DIR}/admin-emails-${theme}.png`, fullPage: true });
+      await page.getByTestId("emails-tab-history").click();
+      await expect(page.getByTestId("campaign-row")).toHaveCount(3);
+      await page.screenshot({ path: `${DIR}/admin-emails-history-${theme}.png`, fullPage: true });
+    });
   });
 }

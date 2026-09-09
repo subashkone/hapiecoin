@@ -23,7 +23,8 @@ const days = (ms: number) => Math.round(ms / 86_400_000);
 /** The admin's row for one user: plan and dates from the active subscription, referrals, overrides, totals (HC-AD-087). */
 export async function adminRow(deps: AppDeps, u: UserRow, at: Date): Promise<AdminUserRow> {
   const db = deps.db;
-  const sub = await activeSubscription(deps, u.id, at);
+  // the active subscription, or the newest one that ran out (so Ends can say "expired N d ago", HC-AD-045)
+  const sub = (await activeSubscription(deps, u.id, at)) ?? (await db.select().from(subscriptions).where(and(eq(subscriptions.userId, u.id), eq(subscriptions.status, "active"))).orderBy(desc(subscriptions.startsAt)).limit(1))[0];
   const [ref] = await db.select({ n: sql<number>`count(*)` }).from(users).where(eq(users.referredBy, u.referralCode));
   const [settings] = await db.select({ lotSizes: userSettings.lotSizes }).from(userSettings).where(eq(userSettings.userId, u.id)).limit(1);
   const [paid] = await db.select({ total: sql<string>`coalesce(sum(cast(coalesce(${subscriptions.paidInr}, '0') as numeric)), 0)` }).from(subscriptions).where(eq(subscriptions.userId, u.id));

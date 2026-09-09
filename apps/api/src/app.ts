@@ -19,6 +19,7 @@ import { registerAdminUserRoutes } from "./routes/admin-users.js";
 import { registerBannerRoutes } from "./routes/banners.js";
 import { registerCheckoutRoutes } from "./routes/checkout.js";
 import { registerCouponRoutes } from "./routes/coupons.js";
+import { registerEmailRoutes } from "./routes/emails.js";
 import { registerStrategyRoutes } from "./routes/strategies.js";
 import { type AppDeps, jsonContent } from "./routes/shared.js";
 import { type AppEnv, CLIENT_IP_HEADER } from "./security/context.js";
@@ -112,6 +113,7 @@ export function createApp(deps: AppDeps): OpenAPIHono<AppEnv> {
   registerBannerRoutes(app, deps);
   registerCheckoutRoutes(app, deps);
   registerCouponRoutes(app, deps);
+  registerEmailRoutes(app, deps);
 
   app.openAPIRegistry.registerComponent("securitySchemes", "cookieAuth", {
     type: "apiKey",

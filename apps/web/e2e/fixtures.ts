@@ -23,6 +23,8 @@ export interface SeedOptions {
   coupons?: boolean;
   /** Seed this many payment rows (paid, paid, failed, pending … cycling). */
   payments?: number;
+  /** Seed this many sent campaigns for the History tab (ADR-035). */
+  campaigns?: number;
 }
 
 export async function seedUser(request: APIRequestContext, opts: SeedOptions) {
