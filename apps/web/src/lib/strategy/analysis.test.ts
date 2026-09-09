@@ -101,3 +101,16 @@ describe("HC-WS-062 ladder", () => {
     for (let i = 1; i < rows.length; i += 1) expect(rows[i]!.price).toBeGreaterThan(rows[i - 1]!.price);
   });
 });
+
+describe("HC-TR-097 / HC-TR-100 ticket total and strategy width", () => {
+  it("width spans the option strikes only; totals include fees on the right side", async () => {
+    const { strategyWidth, ticketTotal } = await import("./analysis");
+    expect(strategyWidth([{ kind: "call", strike: "80000" }, { kind: "put", strike: "76000" }, { kind: "future", strike: "" }], 80000)).toEqual({ width: 4000, strikes: 2, pct: 5 });
+    expect(strategyWidth([{ kind: "call", strike: "80000" }, { kind: "call", strike: "80000" }], 80000)).toBeNull();
+    expect(strategyWidth([{ kind: "call", strike: "80000" }, { kind: "put", strike: "76000" }], null)!.pct).toBeNull();
+    expect(ticketTotal(-4.65, 0.19).kind).toBe("debit");
+    expect(ticketTotal(-4.65, 0.19).amount).toBeCloseTo(4.84);
+    expect(ticketTotal(0.84, 0.19).kind).toBe("credit");
+    expect(ticketTotal(0.84, 0.19).amount).toBeCloseTo(0.65);
+  });
+});

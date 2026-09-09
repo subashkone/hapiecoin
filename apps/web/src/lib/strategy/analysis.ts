@@ -165,3 +165,16 @@ export function ladderRows(result: AnalyzeResult, spot: number, prices: readonly
       return { price, changePct: ((price - spot) / spot) * 100, atExpiry, onTarget, status };
     });
 }
+
+/** Strike width of the option legs (HC-TR-100): max − min strike, how many distinct strikes, and the width as % of spot. */
+export function strategyWidth(legs: readonly { kind: string; strike: string }[], spot: number | null): { width: number; strikes: number; pct: number | null } | null {
+  const ks = [...new Set(legs.filter((l) => l.kind !== "future").map((l) => Number(l.strike)).filter((k) => Number.isFinite(k)))];
+  if (ks.length < 2) return null;
+  const width = Math.max(...ks) - Math.min(...ks);
+  return { width, strikes: ks.length, pct: spot && spot > 0 ? (width / spot) * 100 : null };
+}
+
+/** Total debit / credit of a ticket (HC-TR-097): debits pay premium plus fees, credits receive premium net of fees. */
+export function ticketTotal(netPremium: number, fees: number): { kind: "debit" | "credit"; amount: number } {
+  return netPremium >= 0 ? { kind: "credit", amount: netPremium - fees } : { kind: "debit", amount: -netPremium + fees };
+}

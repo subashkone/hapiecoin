@@ -9,6 +9,7 @@ import { emitTour } from "@/lib/tour";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
 import type { FeeEstimate } from "@/lib/strategy/paper";
 import { type TradeLegView, feeLine, netPremium } from "./TradeModeDialog";
+import { ModePill } from "./StrategyDetailsDialog";
 
 export interface TradePreviewProps {
   open: boolean;
@@ -45,7 +46,7 @@ export function TradePreviewDialog(p: TradePreviewProps) {
     <Dialog open={p.open} onOpenChange={p.onOpenChange}>
       <DialogContent className="sm:max-w-[640px]" data-testid="trade-preview" data-tour="trade-preview">
         <DialogHeader>
-          <DialogTitle>Trade Preview</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">Trade Preview <ModePill status={p.mode} /></DialogTitle>
           <DialogDescription>Review your strategy before trading</DialogDescription>
         </DialogHeader>
         <DialogBody>

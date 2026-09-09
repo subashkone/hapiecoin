@@ -5702,7 +5702,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Rows are 36px comfortable and 28px compact (sub-line hidden); reacts to CG.on(\"density\") and CG.state.density; the class trd-compact is applied to the panels, open dialogs and body",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · rows 28 px in compact via useDensity (data-density), instrument sub-line hidden"
  },
  {
   "id": "HC-TR-095",
@@ -5732,7 +5732,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Per leg: notional × broker fee %, capped at cap % of premium (options), + GST; summed and shown with \"taker · N legs · Delta India 0.05% + GST\"; uses the broker selected in Select Trading Mode (default broker otherwise)",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · ticket-fees from feeFor (notional × fee %, option cap, GST) with the taker · N legs · exchange sub-line"
  },
  {
   "id": "HC-TR-097",
@@ -5747,7 +5747,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "|net premium| + fees for debits (\"= max loss · fees incl.\" when the debit equals the max loss) or net premium − fees for credits",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · ticket-total (data-kind debit / credit) = premium ± fees, \"= max loss · fees incl.\" when the debit equals the worst expiry loss (lib/strategy/analysis.ts ticketTotal)"
  },
  {
   "id": "HC-TR-098",
@@ -5777,7 +5777,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "CG.analyze margin, plus POP % and reward:risk (∞ when unlimited) as the sub-line",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · Margin est. tile with \"POP x% · R:R 1 : y\" as its sub-line (ticket-pop)"
  },
  {
   "id": "HC-TR-100",
@@ -5792,7 +5792,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Max − min strike across option legs with \"N strikes · x% of spot\" (— for single-strike / futures-only)",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · ticket-width: max − min strike, N strikes · % of spot (lib/strategy/analysis.ts strategyWidth)"
  },
  {
   "id": "HC-TR-101",
@@ -5807,7 +5807,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "\"Lot = 0.001 BTC · Net debit 465.5 / BTC → $4.65 · Net Δ · Net Θ/day · Net ν/1%\" in mono, updated every tick",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · builder-netline: Lot · Net debit / credit per unit → currency · Net Δ · Net Θ/day · Net ν/1%"
  },
  {
   "id": "HC-TR-102",
@@ -5822,7 +5822,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Name is an inline editable field next to the BUILDER label (Enter saves via saveCurrent); template / detected structure shown as a tag; asset · expiry · DTE on the right",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · strategy-structure tag (guessTemplateName) next to the inline name; strategy-expiry-line \"asset · expiry · DTE\" on the right"
  },
  {
   "id": "HC-TR-103",
@@ -5852,7 +5852,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Pressing P on /analyse with the builder visible and legs present (focus outside inputs, no dialog open) starts the paper-trade flow",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · window keydown P → openTrade when the Builder is visible with legs and no dialog / palette is open"
  },
  {
   "id": "HC-TR-105",
@@ -5867,7 +5867,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "Builder | Templates tabs show \"N legs · 25 Sep 26 · 19d · status\" on the right (no duplicate lot/basis info)",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · builder-subinfo \"N legs · expiry · DTE · draft | unsaved\""
  },
  {
   "id": "HC-TR-106",
@@ -5882,7 +5882,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Each template is materialised at the current chain (CG.templateLegs + CG.analyze); Bullish = profits at +6% and not at −6%, Bearish mirrored, Neutral = profits at spot and less on both sides, Volatile = profits at ±14%; matches are ranked by POP × 0.6 + reward:risk × 0.4 and numbered #1…; note line \"6 of 28 templates profit in a bullish market…\"; Clear resets",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/TemplatesPanel.tsx + lib/strategy/useTemplateStats.ts (materialise + worker analyze per template, outlook from the payoff at ±6 %); template-outlook-* chips; unit builder.test.tsx; e2e analyse.spec.ts"
  },
  {
   "id": "HC-TR-107",
@@ -5897,7 +5897,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Computed with CG.analyze at the current asset / expiry (R:R ∞ when profit is unlimited, — when undefined); the card tooltip repeats them",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): template-pop \"POP x% · R:R 1 : y\" on every card from useTemplateStats; unit builder.test.tsx"
  },
  {
   "id": "HC-TR-108",
@@ -5912,7 +5912,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Expiry payoff line in the foreground colour with the area above zero filled green and below zero red (clip paths), dashed zero line",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): TemplateSketch: profit / loss fills via clip paths above / below the dashed zero line (templateSketchGeometry); unit builder.test.tsx"
  },
  {
   "id": "HC-TR-109",
@@ -6122,7 +6122,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Paper (hollow pill, \"Simulated positions tracked at live market prices\") and Live (filled pill, \"Real money…\") cards with a check marker; each shows the fee estimate; Paper is disabled for Go live / Trade All",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): TradeModeDialog: filled Live pill, ✓ mode-check on the chosen card; e2e analyse.spec.ts HC-TR-022"
  },
  {
   "id": "HC-TR-123",
@@ -6182,7 +6182,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Fees · est. with the fee formula and a bold \"You will pay\" (debit + fees) or \"You will receive\" (credit − fees) summary; Max loss shown when finite; mode pill",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): TradePreviewDialog title carries the mode pill (ModePill); fees line and You will pay / receive unchanged"
  },
  {
   "id": "HC-TR-127",
@@ -6197,7 +6197,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Calls | Strike | Puts with Δ and OI outboard and Bid / Mark inboard (IV under each price), ITM 4.5% tint, OI bars growing toward the strike, amber ATM band, expiry strip with DTE, B/S buttons filled when selected, lot stepper in the selection list, column settings incl. Δ",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): ChainPickerBody: Δ outboard (picker-delta-call / -put), OI bars toward the strike (picker-oi-* data-pct), ITM tint by ATM index; unit builder.test.tsx"
  },
  {
   "id": "HC-TR-128",
@@ -6392,7 +6392,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "If CG.palette.register exists: New strategy, Save draft, Paper trade current strategy, Open Paper trades, Open Live trades, Open Journal and Load template → … (28) are registered (group Trading / Templates); CG.trading.commands() exposes the same list",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): CommandPalette act:builder-save (store.saveDraftRequest), act:builder-paper, act:open-paper / -live / -journal, plus act:template-* from ADR-049; unit shell.test.tsx; e2e analyse.spec.ts"
  },
  {
   "id": "HC-TR-141",
@@ -6422,7 +6422,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "CG.trading.setBroker(id) / the Select Trading Mode exchange select update the fee estimate in the builder ticket",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): store.brokerId (persisted) written by the trade mode exchange select and read by the Builder ticket fee estimate; unit store.test.ts"
  },
  {
   "id": "HC-TR-143",

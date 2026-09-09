@@ -68,6 +68,17 @@ describe("HC-PB-059 command palette", () => {
     tpl[0]?.run();
     expect(useUiStore.getState()).toMatchObject({ workspaceTab: "builder", builderTab: "templates", templateRequest: "Iron Condor" });
     expect(inn.some((c) => c.id.startsWith("act:expiry-"))).toBe(false); // none without lists
+    // HC-TR-140 trading commands
+    useUiStore.setState({ legs: { BTC: [], ETH: [], XAUT: [] }, asset: "BTC", tradeFlow: null });
+    inn.find((c) => c.id === "act:open-journal")?.run();
+    expect(useUiStore.getState().workspaceTab).toBe("journal");
+    inn.find((c) => c.id === "act:open-live")?.run();
+    expect(useUiStore.getState().workspaceTab).toBe("live");
+    inn.find((c) => c.id === "act:builder-paper")?.run();
+    expect(useUiStore.getState().tradeFlow).toBeNull(); // no legs → a toast, no flow
+    inn.find((c) => c.id === "act:builder-save")?.run();
+    expect(useUiStore.getState()).toMatchObject({ workspaceTab: "builder", builderTab: "builder", saveDraftRequest: true });
+    useUiStore.setState({ saveDraftRequest: false });
   });
   it("scores substrings above subsequences and filters/sorts", () => {
     const cmds = buildCommands({ loggedIn: false, navigate: vi.fn(), toggleTheme: vi.fn() });

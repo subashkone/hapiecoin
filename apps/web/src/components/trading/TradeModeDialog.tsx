@@ -57,9 +57,12 @@ export function TradeModeDialog(p: TradeModeProps) {
   const [brokerId, setBrokerId] = useState("");
   const [err, setErr] = useState(false);
   const openSettings = useUiStore((s) => s.openDialog);
+  const storedBroker = useUiStore((s) => s.brokerId);
+  const setBroker = useUiStore((s) => s.setBroker);
   useEffect(() => {
-    if (p.open && !brokerId && p.brokers[0]) setBrokerId(p.brokers[0].id);
-  }, [p.open, p.brokers, brokerId]);
+    // HC-TR-142: the exchange chosen last time (shared with the Builder ticket) comes back first
+    if (p.open && !brokerId && p.brokers[0]) setBrokerId(storedBroker && p.brokers.some((b) => b.id === storedBroker) ? storedBroker : p.brokers[0].id);
+  }, [p.open, p.brokers, brokerId, storedBroker]);
   useEffect(() => {
     if (p.open && p.lockLive) setMode("live");
   }, [p.open, p.lockLive]);
@@ -80,8 +83,9 @@ export function TradeModeDialog(p: TradeModeProps) {
             {(["paper", "live"] as const).map((m) => (
               <button key={m} type="button" aria-pressed={mode === m} disabled={m === "paper" && p.lockLive === true} onClick={() => setMode(m)} className={cn("rounded border p-3 text-left", mode === m ? "border-foreground/50 bg-muted/40" : "border-border hover:border-foreground/30")} data-testid={`mode-${m}`}>
                 <b className="flex items-center gap-2 text-[13px]">
-                  <span className={cn("micro rounded border px-1", m === "live" ? "border-loss text-loss" : "border-border")}>{m === "live" ? "Live" : "Paper"}</span>
+                  <span className={cn("micro rounded border px-1", m === "live" ? "border-loss bg-loss text-white" : "border-border")}>{m === "live" ? "Live" : "Paper"}</span>
                   {m === "live" ? "Live · Real money" : "Paper · Simulated"}
+                  {mode === m ? <span className="ml-auto text-profit" aria-hidden data-testid="mode-check">✓</span> : null}
                 </b>
                 <span className="mt-1 block text-2xs text-muted-foreground">{m === "live" ? "Real money. Orders are placed on the exchange at market with real funds." : "Simulated positions tracked at live market prices. No real orders are placed."}</span>
                 <span className="micro mt-1 block">{m === "live" ? (p.connected ? "exchange connected" : "exchange not connected") : "fees simulated"} · {fmtMoney(fees.total, p.money)} est.</span>
@@ -90,7 +94,7 @@ export function TradeModeDialog(p: TradeModeProps) {
           </div>
           <div className="mt-3">
             <div className="micro mb-1">Exchange</div>
-            <select className="h-8 w-full rounded border border-input bg-background px-2 text-xs" value={brokerId} onChange={(e) => { setBrokerId(e.target.value); setErr(false); }} aria-label="Exchange" data-testid="trade-broker">
+            <select className="h-8 w-full rounded border border-input bg-background px-2 text-xs" value={brokerId} onChange={(e) => { setBrokerId(e.target.value); setBroker(e.target.value || null); setErr(false); }} aria-label="Exchange" data-testid="trade-broker">
               <option value="">Select exchange...</option>
               {p.brokers.map((b) => (
                 <option key={b.id} value={b.id}>
