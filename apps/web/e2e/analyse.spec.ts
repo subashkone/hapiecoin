@@ -457,6 +457,33 @@ test.describe("HC-TR paper trading (Phase 3 item 1)", () => {
     await stop.getByTestId("stop-go").click();
     await expect(details).toBeHidden();
     await expect(page.getByTestId("paper-empty")).toBeVisible();
+    // HC-TR-128..137: the stopped strategy is a closed trade in the Journal with its realised P&L, tags, notes and CSV
+    await page.getByTestId("tab-journal").click();
+    const journal = page.getByTestId("journal-panel");
+    await expect(journal).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+    await expect(page.getByTestId("stat-trades")).toHaveText("1");
+    await expect(page.getByTestId("chart-equity")).toHaveAttribute("data-state", "ready");
+    await expect(page.getByTestId("journal-trade")).toContainText("E2E straddle");
+    await expect(page.getByTestId("trade-pnl")).not.toHaveText("—");
+    await page.getByTestId("tag-hedge").click();
+    await expect(page.getByText("Tag added").first()).toBeVisible();
+    await expect(page.getByTestId("tag-hedge")).toHaveAttribute("aria-pressed", "true");
+    await page.getByTestId("trade-notes").fill("Closed early on the e2e run.");
+    await page.getByTestId("trade-notes").blur();
+    await expect(page.getByText("Notes saved").first()).toBeVisible();
+    await page.getByTestId("journal-csv").click();
+    await expect(page.getByText("CSV copied · 1 row")).toBeVisible();
+    await page.getByTestId("journal-filter").getByText("Losses").click();
+    const shown = await journal.getAttribute("data-shown");
+    expect(["0", "1"]).toContain(shown);
+    await page.getByTestId("journal-filter").getByText("All").click();
+    await page.getByTestId("trade-row").click();
+    await expect(page.getByTestId("strategy-details")).toBeVisible();
+    await expect(page.getByTestId("details-tags")).toContainText("#hedge");
+    await expect(page.getByTestId("details-notes")).toContainText("Closed early");
+    await page.getByTestId("details-open-journal").click();
+    await expect(page.getByTestId("strategy-details")).toBeHidden();
+    await expect(page.getByTestId("tab-journal")).toHaveAttribute("data-state", "active");
     // the archived strategy is under My templates → Archived
     await page.getByTestId("tab-builder").click();
     await page.getByTestId("builder-tab-templates").click();

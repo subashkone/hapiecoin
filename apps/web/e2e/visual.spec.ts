@@ -126,6 +126,20 @@ for (const theme of ["dark", "light"] as const) {
       await page.getByTestId("adjust-cancel").click();
       await lwb.getByTestId("adjust-exit").click();
       await expect(lwb).toBeHidden();
+      // HC-TR-128 the Journal: square off the live strategy, tag it, capture the closed trade with its stats and equity curve
+      await page.getByTestId("live-card").getByTestId("card-sqall").click();
+      const det = page.getByTestId("strategy-details");
+      await det.getByTestId("details-sqall").click();
+      await det.getByTestId("details-sqall-confirm").click();
+      await expect(det).toHaveAttribute("data-status", "archived");
+      await det.getByTestId("details-open-journal").click();
+      await expect(page.getByTestId("journal-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+      await page.getByTestId("tag-hedge").click();
+      await expect(page.getByTestId("tag-hedge")).toHaveAttribute("aria-pressed", "true");
+      await page.getByTestId("trade-notes").fill("Squared off after the adjustment review; kept the call wing.");
+      await page.getByTestId("trade-notes").blur();
+      await expect(page.getByTestId("chart-equity")).toHaveAttribute("data-state", "ready");
+      await page.screenshot({ path: `${DIR}/analyse-journal-${theme}.png` });
       await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
       await page.goto("/");
       await expect(page.getByTestId("tile-BTC")).toHaveAttribute("data-state", "live", { timeout: 15_000 });

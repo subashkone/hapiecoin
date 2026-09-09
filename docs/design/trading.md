@@ -122,3 +122,16 @@ Shipped as designed with these differences and details:
 - `apps/api/src/live-reconcile.ts`: `reconcilePending(deps)` and `startReconciler(deps, ms)` started in `main.ts` (not under test); `TRADING_RECONCILE_MS`. Live tab polls its list every 10 s while any order chip is pending.
 - `lib/strategy/usePnlWriter.ts` mounted in the Workspace: today's P&L point per active strategy, first after 20 s then every 5 min when moved, never with an unpriced leg, only while the feed is live.
 
+## Journal tab (Phase 5 item 1, ADR-047)
+
+**Job.** Answer "am I making money, and what did I learn" from the trades already closed: stats first (trades, win rate, avg, best, worst, profit factor), then the equity curve, then each closed trade with its tags and notes.
+
+**Layout.** Toolbar: filter chips All · Paper · Live · Wins · Losses · BTC · ETH · XAUT, a search over name / template / asset / tags / notes, Export CSV on the right. Six stat tiles, the equity line (area, one dot per trade, net value at the end), then trade cards: close date block, name + PAPER / LIVE tag + asset, meta (template · legs · days · opened → closed · #tags), realised P&L on the right, TAGS (preset chips, custom chips with ×, "+ custom" input) and NOTES (textarea). Below: "Closed legs from active strategies" rows (date, side pill, symbol, lots, entry → exit, P&L).
+
+**Data.** `lib/strategy/journal.ts` (closedTrades, closedLegs, journalStats, equityCurve, filterTrades, journalCsv, copyText) over `useStrategies`; tags and notes through `usePatchStrategy`. The equity chart reuses the analytics `Chart`.
+
+**States.** Loading, error with Retry, "No closed trades yet" with an Open Paper trades button, per-filter "No trades match"; toasts on every tag / notes save and on CSV copy.
+
+**Interaction.** Trade row and closed-leg rows open Strategy Details (which now shows a Journal block with "Open in Journal"). Tags: click to toggle, Enter adds a custom tag, × removes. Notes: save on idle / blur.
+
+**Tests.** Unit `lib/strategy/journal.test.ts`, `components/trading/journal-panel.test.tsx`; workspace test asserts the tab is live; e2e `analyse.spec.ts` HC-TR-022 block (stop → journal → tag → notes → CSV → details); visual `analyse-journal-{theme}.png`.

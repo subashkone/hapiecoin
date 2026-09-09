@@ -17,12 +17,12 @@ afterEach(() => {
 });
 
 describe("[WORKSPACE] HC-WS-001..006 two-pane shell", () => {
-  it("has every left tab enabled, the Paper and Live tabs live, a Phase 4 placeholder on Journal, and the analysis tabs on the right", async () => {
+  it("has every left tab enabled and live (Paper, Live, Journal) and the analysis tabs on the right", async () => {
     renderWithProviders(<Workspace />);
     for (const id of ["chain", "builder", "paper", "live", "journal"]) expect(screen.getByTestId(`tab-${id}`).hasAttribute("disabled")).toBe(false);
     expect(screen.getByTestId("tab-paper").getAttribute("title")).toBeNull();
     expect(screen.getByTestId("tab-live").getAttribute("title")).toBeNull();
-    expect(screen.getByTestId("tab-journal").getAttribute("title")).toBe("Arrives in Phase 4");
+    expect(screen.getByTestId("tab-journal").getAttribute("title")).toBeNull();
     expect(screen.getByTestId("chain-panel")).toBeTruthy();
     expect(screen.getByTestId("workspace").dataset["layout"]).toBe("split");
     for (const id of ["payoff", "scenarios", "greeks", "vol", "structure", "ladder"]) expect(screen.getByTestId(`analysis-tab-${id}`)).toBeTruthy();
@@ -33,6 +33,8 @@ describe("[WORKSPACE] HC-WS-001..006 two-pane shell", () => {
     expect(screen.getByTestId("paper-panel")).toBeTruthy();
     await u.click(screen.getByTestId("tab-live"));
     expect(screen.getByTestId("live-panel")).toBeTruthy();
+    await u.click(screen.getByTestId("tab-journal"));
+    expect(screen.getByTestId("journal-panel")).toBeTruthy(); // Phase 5 item 1: the Journal is live
     await u.click(screen.getByTestId("analysis-tab-scenarios"));
     expect(useUiStore.getState().analysisTab).toBe("scenarios");
     expect(screen.getByTestId("scenarios-panel").dataset["state"]).toBe("empty"); // Phase 5 item 1: a live tab with its own empty state

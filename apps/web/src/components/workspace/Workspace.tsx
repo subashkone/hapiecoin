@@ -9,6 +9,7 @@ import { AnalysisPane } from "@/components/analysis/AnalysisPane";
 import { BuilderPanel } from "@/components/builder/BuilderPanel";
 import { ChainPanel } from "@/components/chain/ChainPanel";
 import { PaperPanel } from "@/components/trading/PaperPanel";
+import { JournalPanel } from "@/components/trading/JournalPanel";
 import { StrategyDetailsDialog } from "@/components/trading/StrategyDetailsDialog";
 import { TradeFlow } from "@/components/trading/TradeFlow";
 import { useStrategies } from "@/lib/api/strategies";
@@ -22,7 +23,7 @@ export const LEFT_TABS: { id: WorkspaceTab; label: string; phase?: number; blurb
   { id: "builder", label: "Builder" },
   { id: "paper", label: "Paper" },
   { id: "live", label: "Live" },
-  { id: "journal", label: "Journal", phase: 4, blurb: "Closed trades, notes and the performance log." },
+  { id: "journal", label: "Journal" },
 ];
 
 const SPLIT_KEY = "hapiecoin.split";
@@ -152,6 +153,9 @@ export function Workspace() {
       </TabsContent>
       <TabsContent value="live" className="min-h-0 flex-1">
         <PaperPanel book={book} feedLive={feedLive} kind="live" />
+      </TabsContent>
+      <TabsContent value="journal" className="min-h-0 flex-1">
+        <JournalPanel book={book} />
       </TabsContent>
       {LEFT_TABS.filter((t) => t.phase).map((t) => (
         <TabsContent key={t.id} value={t.id} className="min-h-0 flex-1">
