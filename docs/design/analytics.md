@@ -115,3 +115,10 @@ Unit: `lib/analytics/derive.test.ts`, `components/analytics/analytics-pages.test
 
 ### Real-data check
 On the user's machine only Bybit is reachable (GAPS #57): open interest and funding show one venue, the arbitrage table is empty ("No coin has funding from two or more venues yet"), long/short and taker charts show the venue they wait for, the feed says "No liquidations captured yet". With Binance and OKX reachable all panels fill; with 500 tracked symbols the arbitrage fan-out becomes 500 requests per minute — cap ANALYTICS_SYMBOLS or add a server-side `funding-all` dataset before that.
+
+## 5.3b · Ingest venue fallbacks (this PR)
+Traceability: HC-MA-046, 060..066, 084 (data side). ADR-041; GAPS #57.
+
+Long/short: Binance first (global, top accounts, top positions); Bybit global ratio when Binance fails, with empty top-trader series and `source: "Bybit"`. Liquidations: Binance `!forceOrder@arr` and Bybit `allLiquidation.{SYMBOL}USDT` streams share one buffer; `/healthz` shows `stream: { binance, bybit }`; the snapshot's `source` lists every connected venue. Web copy: the long/short empty state now names "Binance or Bybit". Unverified today and therefore not built: OKX taker-volume units, Bybit mark/index tickers for basis.
+
+Tests: `liquidations.test.ts` (Bybit frame parsing, subscribe, ping loop bound to the current socket, reconnect), `jobs.test.ts` (fallback and both-fail paths), `app.test.ts` (two sockets, per-venue health), `config.test.ts` (BYBIT_WS_URL default).

@@ -8,7 +8,7 @@ import { JsonClient } from "./http.js";
 import { type Adapters, type JobContext, NoVenueError, buildFearGreed, buildFunding, buildLiquidations, buildLongShort, buildMarkets, buildOpenInterest, buildTakerVolume, sumSeries, weightedSeries } from "./jobs.js";
 import { LiquidationBuffer } from "./liquidations.js";
 import { FakeFetch } from "./test-support/fake-fetch.js";
-import { T0, healthyFetch, okx } from "./test-support/fixtures.js";
+import { T0, bybit, healthyFetch, okx } from "./test-support/fixtures.js";
 
 function adapters(f: FakeFetch, coingecko = true): Adapters {
   const c = new JsonClient({ fetch: f.fetch, sleep: () => Promise.resolve() });
@@ -73,6 +73,20 @@ describe("[INGEST] dataset builders", () => {
     if (z.dataset !== "open-interest") throw new Error("wrong dataset");
     expect(z.data.venues.find((v) => v.venue === "binance")?.change1h).toBeNull(); // past value 0 → no ratio
   });
+  it("long/short falls back to Bybit's account ratio when Binance is unreachable, and fails only when both do", async () => {
+    const blocked = healthyFetch().on("/futures/data/globalLongShortAccountRatio", { status: 500, text: "reset" });
+    const s = await buildLongShort(ctx(blocked), "BTC");
+    if (s.dataset !== "long-short") throw new Error("wrong dataset");
+    expect(s.source).toBe("Bybit");
+    expect(s.data.venue).toBe("bybit");
+    expect(s.data.global).toHaveLength(2);
+    expect(s.data.latest.global).toMatchObject({ long: 0.55, short: 0.45 }); // newest fixture row
+    expect(s.data.latest.global.ratio).toBeCloseTo(0.55 / 0.45, 9);
+    expect(s.data.topAccounts).toEqual([]);
+    expect(s.data.latest.topPositions).toEqual({ long: 0, short: 0, ratio: 0 });
+    const both = blocked.on("/v5/market/account-ratio", { body: bybit.error });
+    await expect(buildLongShort(ctx(both), "BTC")).rejects.toThrow(/long-short: every venue failed/);
+  });
   it("long/short and taker volume come from Binance", async () => {
     const ls = await buildLongShort(ctx(healthyFetch()), "BTC");
     if (ls.dataset !== "long-short") throw new Error("wrong dataset");
@@ -99,15 +113,16 @@ describe("[INGEST] dataset builders", () => {
   });
   it("liquidations polls OKX into the buffer and reports which venues feed it", async () => {
     const buffer = new LiquidationBuffer({ now: () => T0 });
-    const s = await buildLiquidations(ctx(healthyFetch()), ["BTC", "ETH"], buffer, true);
+    const s = await buildLiquidations(ctx(healthyFetch()), ["BTC", "ETH"], buffer, { binance: true });
     if (s.dataset !== "liquidations") throw new Error("wrong dataset");
     expect(s.source).toBe("Binance · OKX");
+    expect((await buildLiquidations(ctx(healthyFetch()), ["BTC"], buffer, { binance: true, bybit: true })).source).toBe("Binance · Bybit · OKX");
     expect(s.stale).toBe(false);
     expect(s.data.recent).toHaveLength(6); // both symbols get the same three-fill fixture
-    const again = await buildLiquidations(ctx(healthyFetch()), ["BTC"], buffer, false);
+    const again = await buildLiquidations(ctx(healthyFetch()), ["BTC"], buffer, {});
     expect(again.source).toBe("OKX");
     expect(buffer.size()).toBe(6); // re-poll deduped
-    const none = await buildLiquidations(ctx(new FakeFetch().on("/api/v5/public/liquidation-orders", { body: okx.error })), ["BTC"], new LiquidationBuffer(), false);
+    const none = await buildLiquidations(ctx(new FakeFetch().on("/api/v5/public/liquidation-orders", { body: okx.error })), ["BTC"], new LiquidationBuffer(), { bybit: false });
     expect(none.source).toBe("no venue connected");
     expect(none.stale).toBe(true);
   });

@@ -75,7 +75,7 @@ export function DerivativesPage() {
         <Tile label="Open interest" value={usdCompact(oi.data?.data.totalUsd ?? row?.oiUsd)} sub={<><b className={toneClass(row?.oiChange24h)}>{pct(row?.oiChange24h, 2, true)}</b> 24h · {oi.data?.data.venues.length ?? row?.venues ?? 0} venues</>} testId="tile-oi" />
         <Tile label="24h volume" value={usdCompact(takerVol ?? m?.volume24h)} sub={takerVol !== null ? `Perp taker · ${taker.data?.source ?? ""}` : m ? "Spot · CoinGecko" : "waiting for taker volume"} testId="tile-vol" />
         <Tile label="Funding" value={pct(fundNow, 4, true)} tone={fundNow === null ? "muted" : fundNow >= 0 ? "profit" : "loss"} sub={`OI-weighted · 8h · APR ${pct(fundNow === null ? null : fundNow * 3 * 365, 1, true)}`} testId="tile-funding" />
-        <Tile label="L/S ratio · 24h" value={lsNow === null ? "—" : lsNow.toFixed(2)} tone={lsNow === null ? "muted" : lsNow >= 1 ? "profit" : "loss"} sub={lsNow === null ? "waiting for Binance" : <>Global accounts · <span className="text-profit num">L {longShare(lsNow).toFixed(1)}%</span> <span className="text-loss num">S {(100 - longShare(lsNow)).toFixed(1)}%</span></>} extra={lsNow === null ? null : <Split long={longShare(lsNow)} short={100 - longShare(lsNow)} />} testId="tile-ls" />
+        <Tile label="L/S ratio · 24h" value={lsNow === null ? "—" : lsNow.toFixed(2)} tone={lsNow === null ? "muted" : lsNow >= 1 ? "profit" : "loss"} sub={lsNow === null ? "waiting for a venue" : <>Global accounts · <span className="text-profit num">L {longShare(lsNow).toFixed(1)}%</span> <span className="text-loss num">S {(100 - longShare(lsNow)).toFixed(1)}%</span></>} extra={lsNow === null ? null : <Split long={longShare(lsNow)} short={100 - longShare(lsNow)} />} testId="tile-ls" />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Close price" sub={m ? `${sym} · spot · CoinGecko 7-day sparkline` : `${sym} · needs CoinGecko`} testId="panel-px">
@@ -90,7 +90,7 @@ export function DerivativesPage() {
           <SourceLine snapshot={funding.data} />
         </Panel>
         <Panel title="Global account ratio" sub={`L/S Ratio · ${ls.data?.source ?? "Binance"}`} testId="panel-ls">
-          <Chart h={200} x={lsS.x} xTip={lsS.xTip} series={[{ label: "L/S Ratio", type: "line", data: lsS.values, color: "hsl(var(--curve))", fmt: (v) => v.toFixed(2) }]} yFmt={(v) => v.toFixed(2)} hlines={[{ y: 1, label: "1.00" }]} loading={ls.isPending} empty={ls.data ? "Nothing to plot for this range" : "Long/short needs a venue that serves account ratios (Binance)"} tf={{ value: tfLs, onChange: setTfLs }} testId="chart-ls" />
+          <Chart h={200} x={lsS.x} xTip={lsS.xTip} series={[{ label: "L/S Ratio", type: "line", data: lsS.values, color: "hsl(var(--curve))", fmt: (v) => v.toFixed(2) }]} yFmt={(v) => v.toFixed(2)} hlines={[{ y: 1, label: "1.00" }]} loading={ls.isPending} empty={ls.data ? "Nothing to plot for this range" : "Long/short needs a venue that serves account ratios (Binance or Bybit)"} tf={{ value: tfLs, onChange: setTfLs }} testId="chart-ls" />
           <SourceLine snapshot={ls.data} />
         </Panel>
       </div>
