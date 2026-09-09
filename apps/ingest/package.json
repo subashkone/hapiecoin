@@ -1,0 +1,31 @@
+{
+  "name": "@hapiecoin/ingest",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HapieCoin analytics ingestion: pulls public market data (venue derivatives, spot markets, Fear & Greed) on a schedule, normalises it to @hapiecoin/schema snapshots and stores them in Redis for the API to serve",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@hapiecoin/schema": "workspace:*",
+    "ioredis": "5.10.0",
+    "ws": "8.19.0",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@hapiecoin/config": "workspace:*",
+    "@types/ws": "8.18.1",
+    "tsx": "4.23.13"
+  }
+}

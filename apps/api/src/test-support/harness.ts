@@ -17,6 +17,7 @@ import { MailCapture } from "../mailer.js";
 import { FakeRazorpay } from "../razorpay.js";
 import { MemoryRateStore } from "../security/rate-store.js";
 import { createVault, type Vault } from "../vault.js";
+import { MemoryAnalyticsReader } from "../analytics.js";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { AppEnv } from "../security/context.js";
 
@@ -57,6 +58,8 @@ export interface TestApp {
   deps: AppDeps;
   rateStore: MemoryRateStore;
   vault: Vault;
+  /** Seed analytics snapshots for /v1/analytics tests. */
+  analytics: MemoryAnalyticsReader;
   now: { value: number };
   request(path: string, opts?: RequestOptions): Promise<Response>;
   /** Sign up through Better Auth (email + password, then OTP verification). Returns the session cookie. */
@@ -103,6 +106,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
   const now = { value: Date.now() };
   const rateStore = new MemoryRateStore({ now: () => now.value });
   const vault = createVault(config.credentialsEncKey);
+  const analytics = new MemoryAnalyticsReader();
   const auth = createAuth({ config, db: handle.db, mailer: mail, rateStore, logger });
   const deps: AppDeps = {
     config,
@@ -120,6 +124,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
     delta,
     trading,
     authOptions: authOptionsPublic(config),
+    analytics,
   };
   const app = createApp(deps);
 
@@ -181,6 +186,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
     delta,
     rateStore,
     vault,
+    analytics,
     now,
     request,
     async signUp(email, opts = {}) {

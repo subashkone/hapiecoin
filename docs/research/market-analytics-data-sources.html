@@ -1,0 +1,213 @@
+<title>Market Analytics Data Sources</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #F4F3EE; --surface: #FFFFFF; --ink: #1B1D22; --muted: #5E6470; --line: #D9D6CD;
+    --accent: #B77A0F; --accent-ink: #7A5108; --good: #1F7A4D; --warn: #9C6A0B; --bad: #B03A2E;
+    --chip: #ECE9E0; --code: #F0EEE7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0E1116; --surface: #151A21; --ink: #E7E5DF; --muted: #98A0AC; --line: #262C36;
+      --accent: #E5A21A; --accent-ink: #F2C25C; --good: #3FBF7F; --warn: #E5A21A; --bad: #E0654F;
+      --chip: #1D232C; --code: #11151B;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E1116; --surface: #151A21; --ink: #E7E5DF; --muted: #98A0AC; --line: #262C36;
+    --accent: #E5A21A; --accent-ink: #F2C25C; --good: #3FBF7F; --warn: #E5A21A; --bad: #E0654F;
+    --chip: #1D232C; --code: #11151B;
+  }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.55 "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; margin: 0; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1, h2, h3 { font-family: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+  h1 { font-size: 40px; line-height: 1.05; font-weight: 600; }
+  h2 { font-size: 24px; margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line); font-weight: 600; }
+  h3 { font-size: 17px; margin-top: 28px; font-weight: 600; }
+  p { max-width: 68ch; margin: 12px 0; }
+  .eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .lede { font-size: 17px; color: var(--muted); max-width: 64ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 18px 0 0; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); }
+  .decision { margin-top: 28px; border-left: 3px solid var(--accent); background: var(--surface); padding: 16px 20px; max-width: 76ch; }
+  .decision b { color: var(--accent-ink); }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 22px 0; }
+  .tile { background: var(--surface); border: 1px solid var(--line); padding: 14px 16px; }
+  .tile .n { font-family: "IBM Plex Mono", monospace; font-size: 28px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .tile .l { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .tablewrap { overflow-x: auto; margin: 14px 0 0; border: 1px solid var(--line); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+  th { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--chip); position: sticky; top: 0; }
+  tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  code { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; background: var(--code); padding: 1px 5px; border-radius: 3px; }
+  .pill { display: inline-block; font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.06em; padding: 2px 7px; border: 1px solid var(--line); border-radius: 3px; white-space: nowrap; }
+  .pill.free { color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, transparent); }
+  .pill.paid { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+  .pill.tos { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+  .pill.build { color: var(--good); }
+  .pill.soon { color: var(--muted); }
+  .pill.ver { color: var(--accent-ink); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+  ul { padding-left: 20px; max-width: 76ch; } li { margin: 6px 0; }
+  a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; margin: 18px 0; border: 1px solid var(--line); background: var(--surface); }
+  .flow div { padding: 14px 14px; border-right: 1px solid var(--line); }
+  .flow div:last-child { border-right: 0; }
+  .flow .t { font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 600; font-size: 15px; }
+  .flow .s { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+  .note { font-size: 13px; color: var(--muted); max-width: 76ch; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } .flow { grid-template-columns: 1fr; } .flow div { border-right: 0; border-bottom: 1px solid var(--line); } h1 { font-size: 32px; } }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">HapieCoin · Phase 5 item 5 · research for ADR-038</div>
+  <h1 style="margin-top:10px">Market Analytics Data Sources</h1>
+  <p class="lede">Where the analytics block's numbers can come from, what each source costs, which screens each one feeds, who else builds these screens, and how the data would flow into HapieCoin.</p>
+  <div class="meta"><span>09 Sep 2026</span><span>verified against provider pages that day</span><span>prices and limits change · re-check before signing</span></div>
+
+  <div class="decision"><b>Decision taken:</b> hybrid. Free public feeds for venue derivatives, spot markets and indexes; on-chain, ETF-flow and unlock screens ship as "coming soon" panels; a paid provider is bought only when real users ask and usage can size the tier. Budget ceiling: zero for now.</div>
+
+  <div class="grid">
+    <div class="tile"><div class="n">294</div><div class="l">spec rows in the analytics block (29 screens, two route families)</div></div>
+    <div class="tile"><div class="n">≈230</div><div class="l">rows buildable at zero data cost with the hybrid</div></div>
+    <div class="tile"><div class="n">≈60</div><div class="l">rows behind paid or terms-sensitive sources → "coming soon" in v1</div></div>
+  </div>
+
+  <h2>1 · Where it lives in HapieCoin</h2>
+  <p>Two route families, both already reachable from the app: the landing page's "Explore Analytics →", the settings menu's Market Analytics item, and the palette command <code>nav:analytics</code>. Today <code>/analytics</code> is a placeholder route that keeps the default header.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Route</th><th>Screen</th><th class="num">Rows</th><th>What it shows</th></tr></thead>
+    <tbody>
+      <tr><td><code>/analytics/coinglass</code></td><td>Markets Hub</td><td class="num">21</td><td>OI, liquidation, RSI, altcoin season, gold/DXY, dominance, exchange balance, Fear &amp; Greed and long/short tiles; derivatives / spot / categories tables; gainers, heatmap, ETF inflow table</td></tr>
+      <tr><td><code>/analytics/*</code></td><td>Shell</td><td class="num">26</td><td>Header, section switcher, chart helper, sortable DataTable, timeframe chips, CSV, watchlist</td></tr>
+      <tr><td><code>/analytics/overview</code></td><td>Futures overview</td><td class="num">10</td><td>Tiles, BTC price &amp; OI, long/short bars, F&amp;G gauge, gainers/losers, heatmap; footer "Data via Coinglass · every 60s"</td></tr>
+      <tr><td><code>/analytics/markets</code></td><td>Futures screener</td><td class="num">6</td><td>Coin, price, cap, volume, OI, OI 24h %, L/S; compare mode</td></tr>
+      <tr><td><code>/analytics/derivatives</code></td><td>Derivatives</td><td class="num">9</td><td>OI by exchange, OI-weighted funding, global L/S, basis, funding arbitrage table</td></tr>
+      <tr><td><code>/analytics/options</code></td><td>Options</td><td class="num">6</td><td>Call/put OI per expiry with max pain (Deribit header), OI by exchange incl. Delta</td></tr>
+      <tr><td><code>/analytics/etf</code></td><td>ETF</td><td class="num">7</td><td>Daily and cumulative net flows, per-fund AUM and holdings, Grayscale premium</td></tr>
+      <tr><td><code>/analytics/liquidations</code></td><td>Liquidations</td><td class="num">8</td><td>Long/short over time, by exchange, top coins, live feed with a min-USD filter</td></tr>
+      <tr><td><code>/analytics/whales</code></td><td>Whales</td><td class="num">7</td><td>Hyperliquid whale positions, large limit orders on Binance, exchange BTC reserves</td></tr>
+      <tr><td><code>/analytics/sentiment</code></td><td>Sentiment</td><td class="num">11</td><td>F&amp;G, cycle-top checklist, Pi Cycle, Rainbow, AHR999, Puell, 2Y MA, Coinbase premium, RSI screener</td></tr>
+      <tr><td><code>/analytics/coin/:symbol</code></td><td>Coin analytics</td><td class="num">8</td><td>Per-coin OI, L/S, liquidations, funding, taker volume, heatmap, markets and funding by exchange</td></tr>
+      <tr><td><code>/terminal</code> + dashboard</td><td>Terminal shell</td><td class="num">58</td><td>Sidebar terminal (the reference's second app), dashboard tiles, charts and markets table</td></tr>
+      <tr><td><code>/terminal/spot</code>, <code>/sectors</code>, <code>/exchanges</code>, <code>/coin</code></td><td>Screeners and detail</td><td class="num">51</td><td>Spot markets, sector tables, exchange overview, coin detail</td></tr>
+      <tr><td><code>/terminal/derivatives/*</code></td><td>OI, funding, long/short, liquidations</td><td class="num">25</td><td>Aggregated charts and per-exchange tables</td></tr>
+      <tr><td><code>/terminal/etf</code>, <code>/onchain/*</code></td><td>ETF and on-chain</td><td class="num">23</td><td>ETF list and flows, exchange balance, token unlocks (already specced as unavailable)</td></tr>
+      <tr><td><code>/terminal/indicators/*</code></td><td>Fear &amp; Greed, BTC cycle</td><td class="num">11</td><td>Gauge and history, AHR999, Puell, Pi Cycle</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">The reference site runs these as a second app on its own analytics subdomain, mounted under <code>/terminal/*</code>, plus a hub at <code>/analytics/coinglass</code>. Its layouts and vocabulary follow Coinglass, which the spec names outright.</p>
+
+  <h2>2 · Sources by data category</h2>
+  <p>Legend: <span class="pill free">free</span> public or free tier · <span class="pill tos">terms</span> free but usage terms matter · <span class="pill paid">paid</span> · <span class="pill ver">verified 09 Sep</span> checked against the provider page that day.</p>
+
+  <h3>A · Venue derivatives: funding, open interest, long/short, liquidations, taker volume</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Source</th><th>Endpoints (public, no key)</th><th>Limits</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Binance USDⓈ-M <span class="pill free">free</span> <span class="pill ver">verified</span></td><td><code>/fapi/v1/fundingRate</code> · <code>/fapi/v1/openInterest</code> · <code>/futures/data/openInterestHist</code> · <code>globalLongShortAccountRatio</code> · <code>topLongShortAccountRatio</code> · <code>topLongShortPositionRatio</code> · <code>takerlongshortRatio</code> · WS <code>!forceOrder@arr</code></td><td>Weight 2400/min. The <code>/futures/data</code> statistics keep only the last 30 days; limit default 30, max 500</td><td>Exactly the three long/short series the spec's chart needs. Liquidation stream pushes at most one order per symbol per second (confirm wording in the docs)</td></tr>
+      <tr><td>Bybit v5 <span class="pill free">free</span> <span class="pill ver">verified</span></td><td><code>/v5/market/funding/history</code> · <code>/v5/market/open-interest</code> · <code>/v5/market/account-ratio</code> · WS <code>allLiquidation.{symbol}</code></td><td>WebSocket traffic is not counted against REST limits</td><td>Second venue for the "Aggregated across Binance · OKX · Bybit" charts</td></tr>
+      <tr><td>OKX v5 <span class="pill free">free</span> <span class="pill ver">verified</span></td><td><code>/api/v5/public/funding-rate-history</code> · <code>/api/v5/public/open-interest</code> · <code>/api/v5/public/liquidation-orders</code> · <code>/api/v5/rubik/stat/contracts/long-short-account-ratio</code></td><td>Funding settles 00 / 08 / 16 UTC; liquidation channel at most one update per second per contract</td><td>Third venue</td></tr>
+      <tr><td>Delta Exchange India <span class="pill free">free</span></td><td><code>/v2/tickers</code> (OI, funding, mark, IV for options) · history candles incl. funding and OI</td><td>Already integrated in <code>packages/venues</code></td><td>Feeds the Options page's Delta column and our own funding/OI</td></tr>
+      <tr><td>Deribit <span class="pill free">free</span></td><td><code>public/get_book_summary_by_currency?currency=BTC&amp;kind=option</code> → OI and volume per instrument · WS <code>ticker.{instrument}</code></td><td>Public, no auth; rate limit not stated on the page found — confirm</td><td>Options OI per expiry and max pain; the spec's options header reads "Deribit · Options"</td></tr>
+      <tr><td>Hyperliquid <span class="pill free">free</span></td><td><code>POST /info</code> <code>{type:"clearinghouseState", user}</code> for any address, no key</td><td>Not documented on the pages found — confirm</td><td>The basis of every Hyperliquid leaderboard tool; whale positions need a wallet list</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>B · Spot market data: prices, caps, volumes, categories, coin metadata</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Source</th><th>Plan</th><th>Limits</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>CoinGecko Demo <span class="pill free">free</span> <span class="pill ver">verified</span></td><td>Free, key required</td><td>10,000 calls/month; 100 calls/min per the current pricing page (older write-ups say 30/min). Basic $35/mo = 300/min and 100k/month; Analyst $129; Lite $499</td><td>10k/month is about 13 calls an hour: enough for the hub and coin pages refreshed every 5–10 minutes, not for per-second tiles. Attribution required</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>C · Indexes and schedules</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Source</th><th>Cost</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>alternative.me Fear &amp; Greed <code>api.alternative.me/fng/?limit=0</code> <span class="pill free">free</span> <span class="pill ver">verified</span></td><td>No key, no documented cap</td><td>Whole history in one call: gauge, 90-day chart, yesterday / 7d / 30d tiles</td></tr>
+      <tr><td>Cycle indicators: Pi Cycle, Rainbow, 2Y MA, AHR999, Puell</td><td>Computed by us from daily BTC closes</td><td>Four are pure price maths; Puell needs miner revenue from an on-chain source → defer or find a free blockchain API</td></tr>
+      <tr><td>Token unlocks <span class="pill paid">paid</span> <span class="pill ver">verified</span></td><td>DefiLlama Pro API $300/mo (unlocks are Pro-only)</td><td>The spec already ships this panel as "Token unlock data unavailable" — keep it</td></tr>
+      <tr><td>Gold futures and DXY tiles</td><td>No official free API for quote feeds</td><td>Drop or "coming soon"</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>D · On-chain and flows (deferred)</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Source</th><th>Cost</th><th>Covers</th></tr></thead>
+    <tbody>
+      <tr><td>Farside Investors <span class="pill tos">terms</span> <span class="pill ver">verified</span></td><td>Free website tables at farside.co.uk/btc; no official API, only third-party wrappers</td><td>Daily US spot BTC / ETH ETF flows per ticker. Scraping for a product is a terms question: ask Farside or use Coinglass's ETF endpoints</td></tr>
+      <tr><td>Coinglass API <span class="pill paid">paid</span> <span class="pill ver">verified</span></td><td>$29 Hobbyist to $699 Professional per month; commercial use needs Standard $299+; requests per minute 30 / 80 / 300 / 1,200 by tier</td><td>Everything on the hub in one contract, incl. ETF flows, a derived liquidation heatmap and exchange balances</td></tr>
+      <tr><td>CryptoQuant <span class="pill paid">paid</span> <span class="pill ver">verified</span></td><td>API from Professional $99/mo</td><td>Exchange reserves, whale ratio, Coinbase premium, miner data</td></tr>
+      <tr><td>Glassnode <span class="pill paid">paid</span> <span class="pill ver">verified</span></td><td>Full API on Professional (about $999/mo); Advanced $49 carries only a 50-calls-a-day "Light API"</td><td>On-chain reserves, Puell and similar</td></tr>
+      <tr><td>Whale Alert <span class="pill paid">paid</span> <span class="pill ver">verified</span></td><td>Alerts $29.95/mo, personal use only; Quantitative and Enterprise on request</td><td>Large on-chain transfers (not directly in our spec)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>3 · Coverage board: what v1 ships</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Screen or element</th><th>v1 source</th><th>Cost</th><th>v1</th></tr></thead>
+    <tbody>
+      <tr><td>Hub tiles: OI, liquidations, long/short, dominance, Fear &amp; Greed</td><td>Binance / Bybit / OKX + CoinGecko global + alternative.me</td><td>0</td><td><span class="pill build">build</span></td></tr>
+      <tr><td>Hub tiles: exchange balance, gold / DXY, altcoin season, average RSI</td><td>RSI computable from candles; the rest need on-chain or equities feeds</td><td>0</td><td><span class="pill build">RSI</span> <span class="pill soon">rest coming soon</span></td></tr>
+      <tr><td>Hub tables: derivatives, spot, categories, gainers and losers, heatmap</td><td>CoinGecko spot + per-coin OI / funding / liquidations from the venues</td><td>0</td><td><span class="pill build">build</span> top 50–100 coins</td></tr>
+      <tr><td>ETF inflow table, <code>/analytics/etf</code>, <code>/terminal/etf</code></td><td>Farside or Coinglass</td><td>paid or terms</td><td><span class="pill soon">coming soon</span></td></tr>
+      <tr><td>Futures overview, screener, derivatives, coin pages, terminal derivatives</td><td>Three venues' public APIs, aggregated</td><td>0</td><td><span class="pill build">build</span></td></tr>
+      <tr><td>Options page</td><td>Deribit public + Delta, then OKX / Bybit / Binance option tickers</td><td>0</td><td><span class="pill build">build</span> Deribit + Delta first</td></tr>
+      <tr><td>Liquidations page and live feed</td><td>Venue liquidation streams; heatmap is our own estimate from OI and leverage bands, labelled as such</td><td>0</td><td><span class="pill build">build</span></td></tr>
+      <tr><td>Whales: Hyperliquid positions</td><td>Hyperliquid info API with a leaderboard wallet list</td><td>0</td><td><span class="pill build">build</span></td></tr>
+      <tr><td>Whales: large limit orders</td><td>Binance depth snapshots <code>/fapi/v1/depth</code>, threshold configurable</td><td>0</td><td><span class="pill build">build</span></td></tr>
+      <tr><td>Whales: exchange BTC reserves, <code>/onchain/exchange-balance</code></td><td>CryptoQuant or Glassnode</td><td>paid</td><td><span class="pill soon">coming soon</span></td></tr>
+      <tr><td>Sentiment: F&amp;G, Pi Cycle, Rainbow, 2Y MA, AHR999, RSI screener</td><td>alternative.me + our maths on candles</td><td>0</td><td><span class="pill build">build</span></td></tr>
+      <tr><td>Sentiment: Coinbase premium, Puell, cycle-top checklist</td><td>Coinbase public ticker vs Binance spot is free; Puell needs miner revenue</td><td>premium 0 · Puell paid</td><td><span class="pill build">premium</span> <span class="pill soon">Puell + checklist partial</span></td></tr>
+      <tr><td>Token unlocks</td><td>DefiLlama Pro</td><td>$300/mo</td><td><span class="pill soon">keep the specced "unavailable" panel</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>4 · Who builds these screens</h2>
+  <ul>
+    <li><a href="https://www.coinglass.com/" target="_blank" rel="noopener">Coinglass</a> — the template for the hub, overview, liquidations and ETF pages; 30+ exchanges, a derived liquidation heatmap, ETF flows.</li>
+    <li><a href="https://hyblockcapital.com/" target="_blank" rel="noopener">Hyblock Capital</a> — trader-facing liquidation heatmaps and derivatives indicators; free tier limited to majors.</li>
+    <li><a href="https://velo.xyz/" target="_blank" rel="noopener">Velo Data</a> — free liquidation and open-interest dashboards aimed at institutions.</li>
+    <li><a href="https://laevitas.ch/" target="_blank" rel="noopener">Laevitas</a> — options-first analytics (term structure, skew, max pain); API-first, enterprise pricing.</li>
+    <li><a href="https://cryptoquant.com/" target="_blank" rel="noopener">CryptoQuant</a> — exchange flows, whale ratio, Coinbase premium.</li>
+    <li><a href="https://glassnode.com/" target="_blank" rel="noopener">Glassnode</a> — on-chain metrics such as reserves and the Puell multiple.</li>
+    <li><a href="https://farside.co.uk/btc/" target="_blank" rel="noopener">Farside Investors</a> — the canonical daily ETF flow table.</li>
+    <li><a href="https://alternative.me/crypto/fear-and-greed-index/" target="_blank" rel="noopener">alternative.me</a> — the Fear &amp; Greed index and its free API.</li>
+    <li><a href="https://insights.deribit.com/dev-hub/deribit-max-pain-python-code/" target="_blank" rel="noopener">Deribit Insights</a> — the max-pain method with code.</li>
+    <li>Hyperliquid leaderboard and copy-trading tools — all built on the public info API.</li>
+  </ul>
+
+  <h2>5 · How the data would flow</h2>
+  <div class="flow">
+    <div><div class="t">Adapters</div><div class="s">One per source in a new <code>apps/ingest</code> service: schedule, rate budget, normaliser to <code>packages/schema</code></div></div>
+    <div><div class="t">Store</div><div class="s">Redis snapshot per dataset with a TTL; Postgres for history beyond the provider window (Binance stats: 30 days)</div></div>
+    <div><div class="t">Serve</div><div class="s"><code>GET /v1/analytics/{dataset}</code> on the API with cache headers and an <code>asOf</code> stamp on every payload</div></div>
+    <div><div class="t">Show</div><div class="s">Every chart prints its source and "as of"; a stale snapshot shows a badge, never an empty chart</div></div>
+    <div><div class="t">Cadence</div><div class="s">Liquidations live · OI / funding / L/S 60 s · spot 5 min · F&amp;G hourly · cycle indicators daily</div></div>
+  </div>
+  <ul>
+    <li>Provider keys only in the environment; adapters never run in the browser. Every browser request stays on our domain.</li>
+    <li>Aggregation is stated in the UI as "Aggregated across Binance · OKX · Bybit", never "all exchanges".</li>
+    <li>Swapping a source later touches one adapter, not the pages.</li>
+  </ul>
+
+  <h2>6 · Terms of use to respect</h2>
+  <ul>
+    <li>Exchange public market data is free to consume; check each venue's redistribution and attribution wording before launch.</li>
+    <li>CoinGecko Demo requires attribution and is meant for low-volume or non-commercial use; Basic ($35/mo) is the safe commercial floor.</li>
+    <li>Coinglass commercial use starts at the Standard tier.</li>
+    <li>Farside has no official API; do not scrape it for a paid product without permission.</li>
+  </ul>
+
+  <h2>7 · Open points for ADR-038</h2>
+  <ul>
+    <li>Confirm Deribit and Hyperliquid unauthenticated rate limits from their docs before sizing refresh intervals.</li>
+    <li>CoinGecko: start on Demo with 10-minute refreshes, or buy Basic at launch to lift the 10k/month cap.</li>
+    <li>"Coming soon" panels for ETF flows, exchange balances and unlocks in v1 — agreed.</li>
+    <li>Budget ceiling zero for now — agreed; revisit with usage data.</li>
+  </ul>
+  <p class="note">Repo copy: <code>docs/research/market-analytics-data-sources.md</code>. Sources consulted on 09 Sep 2026: Binance, Bybit, OKX and Delta developer docs; CoinGecko pricing; Coinglass pricing reviews; alternative.me API docs; Farside Investors; DefiLlama Pro API docs; Glassnode and CryptoQuant comparisons; Whale Alert pricing; Deribit API reference; Hyperliquid info API references; liquidation-heatmap platform comparisons.</p>
+</div>
