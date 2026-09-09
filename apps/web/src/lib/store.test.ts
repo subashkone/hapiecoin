@@ -210,3 +210,39 @@ describe("HC-SH-003 UI store", () => {
     expect(ASSET_META.XAUT.name).toBe("Tether Gold");
   });
 });
+
+describe("HC-TR-148 adjustment workbench draft (ADR-044)", () => {
+  it("opens on a strategy, follows it in the pane, updates through the pure model and closes; never persisted", () => {
+    const st = useUiStore.getState();
+    st.openDetails("strat_1");
+    st.openAdjust("strat_1");
+    expect(useUiStore.getState().adjust).toMatchObject({ strategyId: "strat_1", picks: [], lotsAfter: {}, valuation: null });
+    expect(useUiStore.getState().paneSource).toEqual({ kind: "strategy", id: "strat_1" });
+    expect(useUiStore.getState().detailsId).toBeNull();
+    st.updateAdjust((d) => ({ ...d, lotsAfter: { leg_1: 40 } }));
+    expect(useUiStore.getState().adjust?.lotsAfter).toEqual({ leg_1: 40 });
+    expect(JSON.parse(localStorage.getItem(UI_STORAGE_KEY) ?? "{}")).not.toHaveProperty("state.adjust");
+    st.closeAdjust();
+    expect(useUiStore.getState().adjust).toBeNull();
+    st.updateAdjust((d) => ({ ...d, valuation: "2026-09-25" })); // no draft: nothing happens
+    expect(useUiStore.getState().adjust).toBeNull();
+    // leaving the followed strategy discards the draft: another strategy, positions, or the Builder / Chain tab
+    st.openAdjust("strat_1");
+    st.followStrategy("strat_1");
+    expect(useUiStore.getState().adjust?.strategyId).toBe("strat_1");
+    st.followStrategy("strat_2");
+    expect(useUiStore.getState().adjust).toBeNull();
+    st.openAdjust("strat_1");
+    st.analysePositions([7]);
+    expect(useUiStore.getState().adjust).toBeNull();
+    st.openAdjust("strat_1");
+    st.setWorkspaceTab("live");
+    expect(useUiStore.getState().adjust?.strategyId).toBe("strat_1");
+    st.setWorkspaceTab("builder");
+    expect(useUiStore.getState().adjust).toBeNull();
+    expect(useUiStore.getState().paneSource).toBeNull();
+    st.openAdjust("strat_1");
+    st.followStrategy(null);
+    expect(useUiStore.getState().adjust).toBeNull();
+  });
+});

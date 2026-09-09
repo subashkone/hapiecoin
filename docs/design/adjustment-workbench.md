@@ -55,6 +55,10 @@ information.
   `POST /live/preview` (exits listed first). The history row stores reason, added / trimmed / closed counts, realised P&L
   and the batch id; `StrategyOrder.batchId` links orders to it; before/after max loss, POP and cash are computed
   client-side from the legs and shown in Details (A2), not stored.
+  **As built (A2, 09 Sep):** the workbench is a mode of `/analyse` (the `adjust` draft in the store swaps the left
+  pane, the pane source follows the strategy), not a route. The Builder's own legs are never touched (ADR-026).
+  Lots edited above the open lots become separate add rows (API data model); the ticket nets them per contract in
+  the effect label. Card figures price each active card once per mount at entry premiums.
 
 ## 4. PR plan
 - **A1 · API + schema**: `AdjustBody`, `/adjust` route, live preview overrides, executor band for adjustments, journal
@@ -63,7 +67,14 @@ information.
   mock parity, 3 API + 1 schema test groups.
 - **A2 · Workbench core (paper)**: store slice, before/after hook, pricing bounds + multi-expiry valuation, chain
   picker body, workbench layout (H2), lots-after steppers, netting labels, summary line + guard rails, paper confirm,
-  post-confirm Details history, keyboard, mobile; unit + Playwright + visuals.
+  post-confirm Details history, keyboard, mobile; unit + Playwright + visuals. **Built 09 Sep** (branch
+  `feat/adjust-workbench`): `analyze({ valuationMs })` in `packages/pricing` (later legs keep time value; grid
+  extremes with analytical tails), `lib/adjust/model.ts` (draft, netting, effects, before / after legs, cashflow,
+  body, summary), store `adjust` slice (not persisted), `useStrategyAnalysis` adjusting mode (after legs on every
+  tab, `before` for the ghost curve and the strip), `ChainPickerBody` extracted (keyboard opt-in, held pills),
+  `AdjustWorkbench` + `PositionTicket` + `AdjustConfirmDialog` (paper amber; live red with the venue check, the
+  basic version A3 extends), Details history + `AdjustedBadge`, `CardFigures`, Workspace left-pane swap, narrow
+  stacking at 720 px with a sticky footer. Traceability rows HC-TR-148..154 (153/154 static until A3).
 - **A3 · Live + extras**: live confirm with preview verdict, order type, hold-to-place, fill states; plans compare;
   quick fixes with ranking; scenario date slider; alert stub.
 

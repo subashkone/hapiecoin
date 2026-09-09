@@ -36,6 +36,8 @@ export interface PayoffFrame {
   fmtMoney: (v: number) => string;
   /** Crosshair price when hovering, or null. */
   hover: number | null;
+  /** The position before an adjustment (ADR-044): drawn as a dashed "ghost" expiry curve behind the live one. */
+  ghost?: readonly PayoffPoint[] | null | undefined;
 }
 
 export interface PayoffScales {
@@ -53,7 +55,7 @@ export function payoffScales(frame: PayoffFrame): PayoffScales {
   const pw = Math.max(1, frame.width - m.l - m.r);
   const ph = Math.max(1, frame.height - m.t - m.b);
   const [lo, hi] = frame.range;
-  const ys = frame.points.flatMap((p) => [p.pnlExpiry, p.pnlTarget]).filter(Number.isFinite);
+  const ys = [...frame.points.flatMap((p) => [p.pnlExpiry, p.pnlTarget]), ...(frame.ghost ?? []).map((p) => p.pnlExpiry)].filter(Number.isFinite);
   let yMin = Math.min(0, ...ys);
   let yMax = Math.max(0, ...ys);
   if (yMax === yMin) {
@@ -158,6 +160,19 @@ export function drawPayoff(ctx: CanvasRenderingContext2D, frame: PayoffFrame): P
   }
 
   const pts = frame.points;
+  // ghost: the position before the change, dashed and faint, so the eye reads what moved
+  const ghost = (frame.ghost ?? []).filter((p) => p.price >= frame.range[0] && p.price <= frame.range[1]);
+  if (layers.expiry && ghost.length) {
+    ctx.strokeStyle = c.text;
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([5, 4]);
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ghost.forEach((p, i) => (i === 0 ? ctx.moveTo(s.x(p.price), s.y(p.pnlExpiry)) : ctx.lineTo(s.x(p.price), s.y(p.pnlExpiry))));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+  }
   if (pts.length) {
     // fills between the expiry line and zero
     if (layers.fill && layers.expiry) {

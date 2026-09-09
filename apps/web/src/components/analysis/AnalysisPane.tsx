@@ -22,6 +22,7 @@ export const ANALYSIS_TABS: { id: AnalysisTab; label: string; phase?: number; bl
 /** Whose legs the pane shows (HC-TR-143, ADR-026): Builder, a followed strategy, or ticked positions, with the way back. */
 export function PaneSourceBar() {
   const source = useUiStore((s) => s.paneSource);
+  const adjusting = useUiStore((s) => s.adjust);
   const followStrategy = useUiStore((s) => s.followStrategy);
   const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
   const { data: strategies } = useStrategies();
@@ -37,6 +38,7 @@ export function PaneSourceBar() {
       <span className="micro">Following</span>
       <span className="truncate font-medium">{label}</span>
       {followed ? <ModePill status={followed.status} /> : null}
+      {followed && adjusting?.strategyId === followed.id ? <span className="micro rounded border border-warning px-1 text-warning" data-testid="pane-adjusting">adjusting · after the change</span> : null}
       <button
         type="button"
         className="ml-auto rounded border border-border px-1.5 py-0.5 text-2xs hover:border-foreground/40"

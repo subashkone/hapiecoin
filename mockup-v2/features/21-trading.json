@@ -1234,5 +1234,75 @@
     "evidence": "ADR-028 (08 Sep 2026): LegInstrument.tsx, setLegInstrument, useExpiries; unit legs.test.ts, builder.test.tsx HC-TR-147, e2e analyse.spec.ts HC-TR-009 block",
     "phase": 3,
     "new": true
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Adjustment workbench",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Adjustment workbench (H2): position + ticket, live chain and the analysis pane after the change",
+    "how": "Adjust on a paper / live card, Details → Adjust… or A on a focused card opens the workbench in the left pane; the pane follows the strategy and shows the position after the change; Exit discards the draft; under 720 px the columns stack with the footer in view",
+    "evidence": "ADR-044 (09 Sep 2026): AdjustWorkbench.tsx, PositionTicket.tsx, useAdjustWorkbench.ts, store openAdjust / closeAdjust / updateAdjust, Workspace left-pane swap; unit workbench.test.tsx, store.test.ts; e2e analyse.spec.ts HC-TR-148 block; visual analyse-workbench-{dark,light}"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Adjustment workbench",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Before → after strip, ghost curve and value at a chosen expiry",
+    "how": "Max loss, max profit, POP and break-evens shown before → after over the payoff tiles; the previous payoff drawn dashed behind the new one; \"Value at\" chips per expiry of the combined position (default the latest): settled legs at intrinsic, later legs keep time value",
+    "evidence": "ADR-044 (09 Sep 2026): packages/pricing analyze valuationMs + curveExtremes, useStrategyAnalysis adjusting mode, BeforeAfterStrip.tsx, payoffDraw ghost; unit strategy.test.ts (pricing), workbench.test.tsx, model.test.ts; e2e analyse.spec.ts HC-TR-148 block"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Adjustment workbench",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Lots after editing in both places with netting: ADDS / TRIMS / CLOSES / FLIPS / NEW LEG",
+    "how": "A lots now → after stepper on every open leg (fewer trims, 0 closes, more adds at the mark) and on every proposed row; B / S on a held strike adds to or trims it, on any other strike proposes a new leg; each row says its effect; ↑ ↓ b s B S Enter Esc on the chain",
+    "evidence": "ADR-044 (09 Sep 2026): lib/adjust/model.ts pickOnDraft / effects / afterLegs, ChainPickerBody.tsx (keyboard, held pills); unit model.test.ts, workbench.test.tsx; e2e analyse.spec.ts HC-TR-148 block"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Adjustment workbench",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Change summary, cash and guard rails; Review → paper confirm with a reason; history, ADJUSTED badge and card figures",
+    "how": "One line: max loss worsens / improves by X · you pay / receive Y · POP a% → b%; warnings for unlimited loss introduced, the 10-leg cap, 0-DTE legs and stale marks; the paper confirm lists the changes with before → after figures and an optional reason; Details shows the adjustment history, cards wear ADJUSTED and show combined max loss / profit / POP",
+    "evidence": "ADR-044 (09 Sep 2026): model.ts summarize / toBody, AdjustConfirmDialog.tsx (paper), StrategyDetailsDialog history + AdjustedBadge, CardFigures.tsx, API /adjust (PR A1); unit model.test.ts, workbench.test.tsx, trading.test.tsx; e2e analyse.spec.ts HC-TR-148 block; visual analyse-adjust-confirm-{dark,light}"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Adjustment workbench",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Live confirm: the venue prices the proposed batch before anything is placed",
+    "how": "A red frame, the exchange check of adds as entries and trims / closes as reduce-only exits (contracts, notional, wallet, mark band), Place N orders disabled until the check passes; the marks reviewed travel as the expected prices (band). PR A3 adds order type, hold-to-place and per-leg fill states",
+    "evidence": "ADR-044 (09 Sep 2026): AdjustConfirmDialog.tsx (live), lib/api/live preview overrides, API adjustPreview (PR A1); unit trading-live.test.tsx HC-TR-088 block, api live.test.ts"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Adjustment workbench",
+    "status": "static",
+    "phase": 5,
+    "new": true,
+    "feature": "Compare plans (Plan A / Plan B) side by side",
+    "how": "Save the current draft as a plan, build another, compare max loss / profit / POP / cash in one table and pick one to review",
+    "evidence": "Mockup docs/design/mockups/adjustment-workbench-v2.html (approved 09 Sep 2026); production build in PR A3"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Adjustment workbench",
+    "status": "static",
+    "phase": 5,
+    "new": true,
+    "feature": "Quick fixes: roll wings up, roll out, hedge with a call, ranked",
+    "how": "One-click drafts of the common repairs ranked by smallest max loss, largest credit or delta-neutral, each landing in the workbench for review",
+    "evidence": "Mockup docs/design/mockups/adjustment-workbench-v2.html (approved 09 Sep 2026); production build in PR A3"
   }
 ]

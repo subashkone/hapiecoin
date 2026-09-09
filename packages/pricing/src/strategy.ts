@@ -11,7 +11,7 @@
 
 import { black76Greeks, black76Price, intrinsicValue } from "./black76.js";
 import { normalCdf } from "./normal.js";
-import { DAYS_PER_YEAR, DEFAULT_SETTLEMENT_HOUR_UTC, MS_PER_DAY, yearFraction } from "./time.js";
+import { DAYS_PER_YEAR, DEFAULT_SETTLEMENT_HOUR_UTC, MS_PER_DAY, MS_PER_YEAR, yearFraction } from "./time.js";
 import type { Leg, LegKind } from "./types.js";
 
 /** Floor for sigma after an IV shift so the model never sees a zero or negative volatility. */
@@ -39,6 +39,13 @@ export interface AnalyzeOptions extends ValuationOptions {
   points?: number | undefined;
   /** ATM IV for POP and expected move; default the IV of the leg whose strike is nearest the spot. */
   atmIv?: number | undefined;
+  /**
+   * Value the position at this instant instead of "every leg at its own expiry" (ADR-044, adjustment workbench):
+   * legs that have settled by then are worth their intrinsic value, later legs keep their time value (Black-76).
+   * The "expiry" curve, the extremes, the break-evens and the probability of profit then all refer to this date;
+   * extremes are searched on the price axis and its tails rather than solved exactly.
+   */
+  valuationMs?: number | undefined;
 }
 
 export interface PayoffPoint {
@@ -79,6 +86,8 @@ export interface AnalyzeResult {
   daysToNearestExpiry: number;
   /** The ATM IV used for POP and expected move (NaN when none was available). */
   atmIv: number;
+  /** The valuation instant of the "expiry" figures when `valuationMs` was given, else null. */
+  valuationMs: number | null;
 }
 
 export type ScenarioMode = "pnl" | "delta" | "theta";
@@ -280,27 +289,74 @@ export function breakevens(legs: readonly Leg[]): number[] {
   return out;
 }
 
+/** Probability mass of the regions between `bes` where `payoff` is positive, under the lognormal on `sigma`, `T`. */
+function profitMass(payoff: (price: number) => number, bes: readonly number[], spot: number, sigma: number, T: number): number {
+  if (Number.isNaN(sigma) || Number.isNaN(T)) return NaN;
+  if (T <= 0 || sigma <= 0) return payoff(spot) > 0 ? 1 : 0;
+  const sq = sigma * Math.sqrt(T);
+  const cdf = (x: number): number => normalCdf((Math.log(x / spot) + 0.5 * sq * sq) / sq);
+  const bounds = [0, ...bes, Infinity];
+  let pop = 0;
+  for (let i = 1; i < bounds.length; i++) {
+    const a = bounds[i - 1] as number;
+    const b = bounds[i] as number;
+    const probe = b === Infinity ? a + Math.max(a, 1) : 0.5 * (a + b);
+    if (payoff(probe) > 0) {
+      pop += (b === Infinity ? 1 : cdf(b)) - (a === 0 ? 0 : cdf(a));
+    }
+  }
+  return Math.min(1, Math.max(0, pop));
+}
+
 /**
  * Probability that the expiry payoff is positive when the underlying at time T is lognormal with median `spot`
  * (zero drift, sigma = ATM IV), i.e. P(S_T < x) = N((ln(x / spot) + sigma² T / 2) / (sigma sqrt T)).
  * With `T <= 0` or `sigma <= 0` the outcome is certain: 1 if the payoff at `spot` is positive, else 0.
  */
 export function probabilityOfProfit(legs: readonly Leg[], spot: number, sigma: number, T: number): number {
-  if (Number.isNaN(sigma) || Number.isNaN(T)) return NaN;
-  if (T <= 0 || sigma <= 0) return payoffAtExpiry(legs, spot) > 0 ? 1 : 0;
-  const sq = sigma * Math.sqrt(T);
-  const cdf = (x: number): number => normalCdf((Math.log(x / spot) + 0.5 * sq * sq) / sq);
-  const bounds = [0, ...breakevens(legs), Infinity];
-  let pop = 0;
-  for (let i = 1; i < bounds.length; i++) {
-    const a = bounds[i - 1] as number;
-    const b = bounds[i] as number;
-    const probe = b === Infinity ? a + Math.max(a, 1) : 0.5 * (a + b);
-    if (payoffAtExpiry(legs, probe) > 0) {
-      pop += (b === Infinity ? 1 : cdf(b)) - (a === 0 ? 0 : cdf(a));
+  return profitMass((price) => payoffAtExpiry(legs, price), breakevens(legs), spot, sigma, T);
+}
+
+/**
+ * Extremes and break-evens of a smooth valuation curve (a position valued before some legs expire): searched on
+ * the price axis `[lo, hi]` with `points` samples plus every strike and a far price; the lower tail is the exact
+ * limit at price 0 (every option is intrinsic there, so it equals the expiry payoff at 0) and the ray above the
+ * top strike still decides the unbounded sides analytically (its slope is the net call and future exposure, which
+ * the time value cannot change).
+ */
+function curveExtremes(legs: readonly Leg[], value: (price: number) => number, lo: number, hi: number, points: number): { maxProfit: number; maxLoss: number; breakevens: number[] } {
+  const strikes = optionStrikes(legs);
+  const far = Math.max(hi, ...strikes) * 10;
+  const candidates = new Set<number>([far, ...strikes]);
+  for (let i = 0; i < points; i++) candidates.add(lo + ((hi - lo) * i) / (points - 1));
+  const prices = [...candidates].filter((p) => p > 0).sort((x, y) => x - y);
+  const atZero = payoffAtExpiry(legs, 0);
+  let maxProfit = atZero;
+  let maxLoss = atZero;
+  const found: number[] = [];
+  let prevPrice = 0;
+  let prevPnl = atZero;
+  for (const price of prices) {
+    const pnl = value(price);
+    if (pnl > maxProfit) maxProfit = pnl;
+    if (pnl < maxLoss) maxLoss = pnl;
+    if (!Number.isNaN(prevPnl)) {
+      // a plateau at zero counts once, where the curve leaves it; a sign change is interpolated
+      if (prevPnl === 0 && pnl !== 0) found.push(prevPrice);
+      else if (prevPnl * pnl < 0) found.push(prevPrice + ((price - prevPrice) * prevPnl) / (prevPnl - pnl));
     }
+    prevPrice = price;
+    prevPnl = pnl;
   }
-  return Math.min(1, Math.max(0, pop));
+  const slope = slopeAbove(legs);
+  if (slope > 0) maxProfit = Infinity;
+  if (slope < 0) maxLoss = -Infinity;
+  const bes: number[] = [];
+  for (const be of found) {
+    const last = bes[bes.length - 1];
+    if (last === undefined || be - last > 1e-9 * Math.max(1, be)) bes.push(be);
+  }
+  return { maxProfit, maxLoss, breakevens: bes };
 }
 
 /** Reward-to-risk ratio from the expiry extremes (see AnalyzeResult.rewardRisk). */
@@ -368,9 +424,14 @@ export function analyze(legs: readonly Leg[], opts: AnalyzeOptions): AnalyzeResu
   const valuation: ValuationOptions = { defaultIv, settlementHourUtc };
   const targetMs = nowMs + targetDays * MS_PER_DAY;
   const atTarget = prepare(legs, targetMs, ivShift, valuation);
+  const valuationMs = opts.valuationMs;
+  if (valuationMs !== undefined && !Number.isFinite(valuationMs)) throw new RangeError(`valuationMs must be a finite epoch time, got ${valuationMs}`);
+  // the "expiry" figures: every leg at its own settlement, or the whole position at the valuation instant
+  const atValuation = valuationMs === undefined ? null : prepare(legs, valuationMs, ivShift, valuation);
+  const settle = (price: number): number => (atValuation ? preparedPnl(atValuation, price) : payoffAtExpiry(legs, price));
   const pointAt = (price: number): PayoffPoint => ({
     price,
-    pnlExpiry: payoffAtExpiry(legs, price),
+    pnlExpiry: settle(price),
     pnlTarget: preparedPnl(atTarget, price),
   });
   const pts: PayoffPoint[] = [];
@@ -379,15 +440,16 @@ export function analyze(legs: readonly Leg[], opts: AnalyzeOptions): AnalyzeResu
   const nearestT = nearestExpiryYears(legs, nowMs, settlementHourUtc);
   const atmIv = opts.atmIv ?? nearestStrikeIv(legs, spot) ?? defaultIv ?? NaN;
   const hasIv = !Number.isNaN(atmIv) && !Number.isNaN(nearestT);
-  const { maxProfit, maxLoss } = expiryExtremes(legs);
+  const { maxProfit, maxLoss, breakevens: bes } = valuationMs === undefined ? { ...expiryExtremes(legs), breakevens: breakevens(legs) } : curveExtremes(legs, settle, lo, hi, points);
+  const popT = valuationMs === undefined ? nearestT : (valuationMs - nowMs) / MS_PER_YEAR;
 
   return {
     points: pts,
     maxProfit,
     maxLoss,
-    breakevens: breakevens(legs),
+    breakevens: bes,
     netPremium: netPremium(legs),
-    pop: hasIv ? probabilityOfProfit(legs, spot, atmIv, nearestT) : NaN,
+    pop: hasIv ? profitMass(settle, bes, spot, atmIv, popT) : NaN,
     greeks: preparedGreeks(prepare(legs, nowMs, ivShift, valuation), spot),
     expectedMove: hasIv ? spot * atmIv * Math.sqrt(Math.max(nearestT, 0)) : NaN,
     rewardRisk: rewardRisk(maxProfit, maxLoss),
@@ -395,6 +457,7 @@ export function analyze(legs: readonly Leg[], opts: AnalyzeOptions): AnalyzeResu
     targetMs,
     daysToNearestExpiry: nearestT * DAYS_PER_YEAR,
     atmIv,
+    valuationMs: valuationMs ?? null,
   };
 }
 
