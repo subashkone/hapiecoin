@@ -9,9 +9,18 @@ import { useAnalytics, useLiquidations, useMarkets, useOverview } from "@/lib/ap
 import { alignTo, binEvents, liqHeatmap, longShare, nextFundingIn, sparklineSeries, venueLabel } from "@/lib/analytics/derive";
 import { type Timeframe, pct, price, sliceSeries, toneClass, usdCompact } from "@/lib/analytics/format";
 import { useUiStore } from "@/lib/store";
+import { isSector, sectorName } from "@/lib/terminal/nav";
 import { Chart } from "./Chart";
 import { type Column, DataTable } from "./DataTable";
+import { sectorOf } from "./HubPage";
 import { Coin, Heat, LiqHeatmap, Panel, SourceLine, Split, Tile } from "./bits";
+
+/** Where the page's links go: the analytics section or the terminal (HC-MT-080, 091, 164). */
+export type CoinBase = "analytics" | "terminal";
+export const coinLinks = (base: CoinBase) =>
+  base === "terminal"
+    ? { back: "/terminal", backLabel: "← Back", compare: (s: string) => `/terminal/spot?compare=${s}`, venue: (v: string) => `/terminal/exchanges/${v}` }
+    : { back: "/analytics/markets", backLabel: "← Back to markets", compare: (s: string) => `/analytics/markets?compare=${s}`, venue: null };
 
 const FUND_TFS: readonly Timeframe[] = ["7D", "30D", "90D", "1Y"];
 interface VenueRow { venue: string; oiUsd: number | null; change24h: number | null; share: number | null; rate: number | null; predicted: number | null; apr: number | null; nextFundingAt: number | null }
@@ -32,8 +41,12 @@ export function fundingCols(now: number): Column<VenueRow>[] {
   ];
 }
 
-export function CoinPage({ symbol }: { symbol: string }) {
+export function CoinPage({ symbol, base = "analytics" }: { symbol: string; base?: CoinBase }) {
   const sym = symbol.toUpperCase();
+  const links = coinLinks(base);
+  const venueHref = links.venue;
+  const venueRow = venueHref ? { rowHref: (r: VenueRow) => venueHref(r.venue) } : {};
+  const sector = sectorOf(sym);
   const router = useRouter();
   const overview = useOverview();
   const markets = useMarkets();
@@ -83,9 +96,9 @@ export function CoinPage({ symbol }: { symbol: string }) {
   const hm = (t: number) => `${String(new Date(t).getHours()).padStart(2, "0")}:${String(new Date(t).getMinutes()).padStart(2, "0")}`;
   const mdt = (t: number) => new Date(t).toLocaleString("en-US", { month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
   return (
-    <div className="space-y-4" data-testid="coin-page" data-symbol={sym} data-state={overview.isPending ? "loading" : known ? "ready" : "unknown"}>
+    <div className="space-y-4" data-testid="coin-page" data-symbol={sym} data-base={base} data-state={overview.isPending ? "loading" : known ? "ready" : "unknown"}>
       <div className="flex flex-wrap items-center gap-3">
-        <Link href="/analytics/markets" className="text-2xs text-muted-foreground hover:text-foreground" data-testid="coin-back">← Back to markets</Link>
+        <Link href={links.back} className="text-2xs text-muted-foreground hover:text-foreground" data-testid="coin-back">{links.backLabel}</Link>
         <h2 className="text-lg">
           <Coin symbol={sym} name={m?.name} rank={m?.rank} />
         </h2>
@@ -97,10 +110,12 @@ export function CoinPage({ symbol }: { symbol: string }) {
           </>
         ) : null}
         <span className="rounded border border-border px-1.5 py-0.5 font-mono text-2xs text-muted-foreground">{sym}USDT · perp</span>
+        {base === "terminal" && m ? <span className="rounded border border-border px-1.5 py-0.5 font-mono text-2xs text-muted-foreground" data-testid="coin-rank">Rank #{m.rank}</span> : null}
+        {base === "terminal" && isSector(sector) ? <Link href={`/terminal/sectors/${sector}`} className="rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground" data-testid="coin-sector">{sectorName(sector)}</Link> : null}
         <button type="button" onClick={() => toggleWatch(sym)} aria-pressed={watch.includes(sym)} className="rounded border border-border px-2 py-0.5 text-2xs" data-testid="coin-watch">
           {watch.includes(sym) ? "★ Watching" : "☆ Watch"}
         </button>
-        <button type="button" onClick={() => router.push(`/analytics/markets?compare=${sym}`)} className="rounded border border-border px-2 py-0.5 text-2xs text-muted-foreground hover:text-foreground" title="Add to compare and open the Markets screener" data-testid="coin-compare">
+        <button type="button" onClick={() => router.push(links.compare(sym))} className="rounded border border-border px-2 py-0.5 text-2xs text-muted-foreground hover:text-foreground" title="Add to compare and open the Markets screener" data-testid="coin-compare">
           ⇄ Compare
         </button>
       </div>
@@ -145,10 +160,10 @@ export function CoinPage({ symbol }: { symbol: string }) {
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Markets by Exchange" sub={`${sym} perpetual · OI share`} testId="panel-markets">
-          <DataTable id="coin-markets" rows={venues} cols={marketCols} rowKey={(r) => r.venue} sortKey="oiUsd" csv={`${sym}-markets`} empty="No venue has reported open interest for this coin yet" search={false} compact />
+          <DataTable id="coin-markets" rows={venues} cols={marketCols} rowKey={(r) => r.venue} sortKey="oiUsd" csv={`${sym}-markets`} empty="No venue has reported open interest for this coin yet" search={false} compact {...venueRow} />
         </Panel>
         <Panel title="Funding by Exchange" sub="current · predicted · next settlement" testId="panel-funding-ex">
-          <DataTable id="coin-funding" rows={venues.filter((v) => v.rate !== null)} cols={fundingCols(now)} rowKey={(r) => r.venue} sortKey="rate" csv={`${sym}-funding`} empty="No venue has reported funding for this coin yet" search={false} compact />
+          <DataTable id="coin-funding" rows={venues.filter((v) => v.rate !== null)} cols={fundingCols(now)} rowKey={(r) => r.venue} sortKey="rate" csv={`${sym}-funding`} empty="No venue has reported funding for this coin yet" search={false} compact {...venueRow} />
         </Panel>
       </div>
     </div>
