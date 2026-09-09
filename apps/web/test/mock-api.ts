@@ -4,6 +4,7 @@
 import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { AdminCommissionRow, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
+import { mockAnalyticsSnapshots } from "./mock-analytics";
 import { INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal } from "@hapiecoin/schema";
 
 export const SESSION_COOKIE = "better-auth.session_token";
@@ -1442,6 +1443,19 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     let updated = 0;
     for (const acc of state.accounts.values()) if (body.ids.includes(acc.user.id) && acc.user.id !== me.user.id) { acc.active = body.active; updated += 1; }
     return c.json({ updated });
+  });
+
+  // Market Analytics snapshots (ADR-038): public (registered on the app ahead of the session-guarded v1 router), deterministic fixtures; per-symbol datasets answer for BTC only.
+  const analytics = mockAnalyticsSnapshots();
+  app.get("/v1/analytics/:dataset", (c) => {
+    const dataset = c.req.param("dataset");
+    const symbol = (c.req.query("symbol") ?? "").toUpperCase();
+    const key = `${dataset}:${["funding", "open-interest", "long-short", "taker-volume"].includes(dataset) ? symbol : "-"}`;
+    const snap = analytics.get(key);
+    if (!snap) return c.json({ code: "UNAVAILABLE", message: `${dataset} is not available yet` }, 503);
+    c.header("Cache-Control", "public, max-age=15");
+    c.header("X-As-Of", new Date(snap.asOf).toISOString());
+    return c.json(snap, 200);
   });
 
   app.route("/v1", v1);

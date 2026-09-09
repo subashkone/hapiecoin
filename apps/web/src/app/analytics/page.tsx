@@ -1,8 +1,6 @@
-import type { Metadata } from "next";
-import { PhasePlaceholder } from "@/components/shell/PhasePlaceholder";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Market Analytics" };
-
+/** /analytics opens the Markets Hub (HC-MA-001). */
 export default function Page() {
-  return <PhasePlaceholder title="Market Analytics" phase={3} blurb="Liquidations, exchange flows, open interest, ETF flows and whale alerts for BTC, ETH and 200+ assets." />;
+  redirect("/analytics/hub");
 }

@@ -60,6 +60,7 @@ describe("HC-SH-003 UI store", () => {
       },
       draftsImported: false,
       adminCols: {},
+      watchlist: [],
       workspaceTab: "chain",
       analysisTab: "payoff",
       targetDays: 0, templatesStrip: true,
