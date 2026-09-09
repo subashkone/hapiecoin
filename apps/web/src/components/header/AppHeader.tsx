@@ -7,6 +7,7 @@ import {
   CreditCard,
   DollarSign,
   Gem,
+  Info,
   KeyRound,
   Layers,
   LogOut,
@@ -72,6 +73,7 @@ function AdminChip() {
 function SettingsMenu({ user }: { user: User }) {
   const [open, setOpen] = useState(false);
   const openDialog = useUiStore((s) => s.openDialog);
+  const requestTour = useUiStore((s) => s.requestTour);
   const { data: settings } = useSettings();
   const theme = useTheme();
   const mounted = useMounted();
@@ -143,6 +145,9 @@ function SettingsMenu({ user }: { user: User }) {
         </MenuItem>
         <MenuItem onSelect={() => { setOpen(false); toggleDensity(); }} value={density}>
           {density === "compact" ? <Rows3 /> : <Rows2 />} Density
+        </MenuItem>
+        <MenuItem onSelect={() => { setOpen(false); requestTour(); }} testId="menu-tour">
+          <Info /> Take a tour
         </MenuItem>
         <MenuItem onSelect={() => { setOpen(false); toggleTheme(); }}>
           {resolvedTheme === "dark" ? <Sun /> : <Moon />} {resolvedTheme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}

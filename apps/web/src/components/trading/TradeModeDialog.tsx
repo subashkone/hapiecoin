@@ -7,6 +7,7 @@ import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFoo
 import { useEffect, useState } from "react";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
+import { emitTour } from "@/lib/tour";
 import { type FeeEstimate, feeFor } from "@/lib/strategy/paper";
 
 export interface TradeLegView {
@@ -49,6 +50,9 @@ export function feeLine(b: Broker | undefined): string {
 }
 
 export function TradeModeDialog(p: TradeModeProps) {
+  useEffect(() => {
+    if (p.open) emitTour("trade-mode-open"); // the tour's "start a paper trade" step advances (HC-SH-071)
+  }, [p.open]);
   const [mode, setMode] = useState<"paper" | "live">(p.lockLive ? "live" : "paper");
   const [brokerId, setBrokerId] = useState("");
   const [err, setErr] = useState(false);

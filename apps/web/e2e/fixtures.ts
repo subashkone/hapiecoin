@@ -47,10 +47,19 @@ export async function fillOtp(page: Page, code = TEST_OTP) {
   await page.keyboard.type(code);
 }
 
-export const test = base.extend<{ freshApi: void }>({
+export const test = base.extend<{ freshApi: void; tour: boolean; tourOff: void }>({
   freshApi: [
     async ({ request }, use) => {
       await resetApi(request);
+      await use();
+    },
+    { auto: true },
+  ],
+  /** Opt in with `test.use({ tour: true })`; otherwise the product tour is marked done so it never auto-starts. */
+  tour: [false, { option: true }],
+  tourOff: [
+    async ({ page, tour }, use) => {
+      if (!tour) await page.addInitScript(() => localStorage.setItem("hapiecoin.tour", "done"));
       await use();
     },
     { auto: true },

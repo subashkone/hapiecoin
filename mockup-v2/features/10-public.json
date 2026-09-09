@@ -13,7 +13,7 @@
   "feature": "Header swaps to “Go to App →” when the visitor is logged in",
   "how": "Listens to CG 'auth' events and CG.state.loggedIn; hides Sign Up / Get Started and shows Go to App → #/analyse",
   "status": "working",
-  "evidence": "bundle string: Go to App"
+  "evidence": "bundle string: Go to App — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: PublicHeader swaps to Go to App → /analyse (landing.test.tsx 'shows Go to App once a session exists', public.spec HC-PB-003)"
  },
  {
   "route": "/",
@@ -21,7 +21,7 @@
   "feature": "Theme toggle (moon / sun icon)",
   "how": "Calls CG.theme.toggle(); icon flips on the 'theme' event; whole page re-skins via CSS variables",
   "status": "working",
-  "evidence": "bundle: Moon icon path M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"
+  "evidence": "bundle: Moon icon path M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: theme-toggle in PublicHeader, persisted in hapiecoin.theme (public.spec HC-PB-003, landing.test.tsx)"
  },
  {
   "route": "/",
@@ -37,7 +37,7 @@
   "feature": "Hero buttons “Start Trading Free →” and “Explore Features ⌄”",
   "how": "Start Trading Free navigates to #/auth; Explore Features smooth-scrolls to the Platform Features section",
   "status": "working",
-  "evidence": "bundle: Start Trading Free, Explore Features, scrollIntoView({behavior:'smooth'})"
+  "evidence": "bundle: Start Trading Free, Explore Features, scrollIntoView({behavior:'smooth'}) — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: hero-cta → /auth and Explore Features → #features (landing-sections.test.tsx)"
  },
  {
   "route": "/",
@@ -45,7 +45,7 @@
   "feature": "Hero product visual: terminal mock built from live CG.chain / CG.analyze data — top bar (asset segments, futures price, ATM IV, expected move, feed, Ctrl K), 11-row mirrored chain (Δ · OI · Mark/IV | Strike | Mark/IV · OI · Δ, ITM tint, amber ATM row, OI bars, leg outlines), builder strip, payoff tiles + chart, scenario matrix, portfolio bar",
   "how": "CG.pubTerminal(kind) (alias CG.pubMock); the BTC price in the mock updates on every tick",
   "status": "static",
-  "evidence": "original uses feature-payoff-diagram png inside a browser frame with hapiecoin.com url pill"
+  "evidence": "original uses feature-payoff-diagram png inside a browser frame with hapiecoin.com url pill — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: TerminalIllustration built from design-system parts, no images (landing.test.tsx HC-PB-004); the live-data top bar, scenario matrix and portfolio bar of the v2 mock are not built (GAPS #54)"
  },
  {
   "route": "/",
@@ -53,7 +53,7 @@
   "feature": "Floating hero chips replaced by data inside the terminal (Bull Call Spread legs with Δ/Θ, max profit / max loss / breakeven / POP tiles, 5×4 P&L matrix)",
   "how": "Absolutely positioned cards around the mock; the mini frame lifts on hover",
   "status": "static",
-  "evidence": "bundle strings: Strategy Templates, Ready to use, Live Greeks, Δ 0.45, Γ 0.02, Θ -12.5"
+  "evidence": "bundle strings: Strategy Templates, Ready to use, Live Greeks, Δ 0.45, Γ 0.02, Θ -12.5 — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: legs table and Max profit / Max loss / Breakeven / POP stat tiles inside the terminal (landing.test.tsx: 4 stat slots); the 5×4 P&L matrix is not built (GAPS #54)"
  },
  {
   "route": "/",
@@ -61,7 +61,7 @@
   "feature": "Stats strip: 28 Built-in Strategies · Real-time Greeks & IV · 2 Assets Supported · Paper Trading (mono values, hairline cells)",
   "how": "Numeric values count up from 0 when the row scrolls into view (IntersectionObserver, 1.5s; skipped under reduced-motion)",
   "status": "working",
-  "evidence": "bundle: ist[] array + count-up hook"
+  "evidence": "bundle: ist[] array + count-up hook — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: STATS from content/landing.ts rendered as the four-cell strip (landing-sections.test.tsx); values are static, the count-up animation is not built (GAPS #54)"
  },
  {
   "route": "/",
@@ -77,7 +77,7 @@
   "feature": "WHY HAPIECOIN? “Stop Guessing. Start Trading Smart” — two-column comparison table: Without HapieCoin (× rows, muted) vs With HapieCoin (✓ rows)",
   "how": "Same 5 + 5 statements as v1 rendered as a table",
   "status": "static",
-  "evidence": "bundle: fst[] and hst[] arrays"
+  "evidence": "bundle: fst[] and hst[] arrays — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: WITHOUT / WITH rows in one table (landing-sections.test.tsx)"
  },
  {
   "route": "/",
@@ -85,7 +85,7 @@
   "feature": "PLATFORM FEATURES tabs (amber underline, auto-rotate progress): Real-time Options Chain / Strategy Builder & Payoff / Paper & Live Trading, each with its terminal mock variant",
   "how": "Variants: chain (chain + builder + payoff + matrix), builder (legs table + templates + payoff + Greeks strip), trading (positions list + wallet tiles + P&L history)",
   "status": "working",
-  "evidence": "bundle: Zu[] array, 8000ms interval with progress state"
+  "evidence": "bundle: Zu[] array, 8000ms interval with progress state — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: FeatureTabs with the three tabs and panels (landing.test.tsx 'feature tabs switch panels', landing-sections.test.tsx); no auto-rotate progress (GAPS #54)"
  },
  {
   "route": "/",
@@ -93,7 +93,7 @@
   "feature": "CAPABILITIES “Built for Serious Traders” — 6 hairline cells (two wide) in one bordered grid",
   "how": "4-column grid; the two “large” cards span 2 columns exactly like the original; hover lift",
   "status": "static",
-  "evidence": "bundle: vst[] array with large flags"
+  "evidence": "bundle: vst[] array with large flags — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: six CAPABILITIES cells, the two large ones span two columns (landing-sections.test.tsx)"
  },
  {
   "route": "/",
@@ -101,7 +101,7 @@
   "feature": "MARKET ANALYTICS “Liquidations & Market Pulse” — 24H Total Liq / Long Liq / Short Liq / Top Coin stat cells",
   "how": "Values come from CG.mock.global (liq24h, longLiq24h, shortLiq24h, topLiqCoin) formatted as $214.00M etc.",
   "status": "static",
-  "evidence": "bundle: 24H Total Liq, Long Liq, Short Liq, Top Coin"
+  "evidence": "bundle: 24H Total Liq, Long Liq, Short Liq, Top Coin — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: section head 'Liquidations & Market Pulse' with the teaser card; the four liquidation stat cells need analytics data and arrive with Phase 5 (GAPS #54)"
  },
  {
   "route": "/",
@@ -109,7 +109,7 @@
   "feature": "“Live liquidation pattern · last 40 intervals” bar sparkline",
   "how": "40 bars from the last 40 entries of CG.mock.liqHistory; height ∝ long+short, red when long liquidations dominate, green otherwise; bars grow in on view and show a tooltip with the hourly values",
   "status": "static",
-  "evidence": "bundle: 40-bar sparkline with bg-loss/bg-profit classes"
+  "evidence": "bundle: 40-bar sparkline with bg-loss/bg-profit classes — Phase 4 item 5c audit (09 Sep 2026): not built: the 40-interval liquidation sparkline needs the analytics feed (Phase 5, GAPS #54)"
  },
  {
   "route": "/",
@@ -117,7 +117,7 @@
   "feature": "“Explore Analytics →” button",
   "how": "Navigates to #/analytics (Market Analytics area)",
   "status": "working",
-  "evidence": "bundle: Explore Analytics; original routes logged-in users to analytics"
+  "evidence": "bundle: Explore Analytics; original routes logged-in users to analytics — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: outline button → /analytics (landing-sections.test.tsx)"
  },
  {
   "route": "/",
@@ -125,7 +125,7 @@
   "feature": "EVERYTHING YOU NEED “Full Feature List” — 6 hairline cards × 6 bullets",
   "how": "Exact bullet copy from the bundle's jot[] array rendered in a 3-column grid",
   "status": "static",
-  "evidence": "bundle: jot[] array"
+  "evidence": "bundle: jot[] array — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: FEATURE_LIST groups and bullets (landing-sections.test.tsx)"
  },
  {
   "route": "/",
@@ -133,7 +133,7 @@
   "feature": "Testimonials marquee removed — replaced by the “What’s new in v2” strip",
   "how": "See the new entries below",
   "status": "working",
-  "evidence": "bundle: wse[] array, D9 marquee component (duration 30, x 0% → -50%)"
+  "evidence": "bundle: wse[] array, D9 marquee component (duration 30, x 0% → -50%) — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: no marquee; WHATS_NEW strip with 'new' badges (landing-sections.test.tsx)"
  },
  {
   "route": "/",
@@ -149,7 +149,7 @@
   "feature": "CTA panel “Ready to Trade Smarter?” with amber accent stripe (no gradient) and “Create Free Account →”",
   "how": "Gradient primary→accent band; button navigates to #/auth",
   "status": "working",
-  "evidence": "bundle: Ready to Trade Smarter?, Create Free Account"
+  "evidence": "bundle: Ready to Trade Smarter?, Create Free Account — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: 'Ready to Trade Smarter?' with Create Free Account → /auth?tab=signup (landing-sections.test.tsx)"
  },
  {
   "route": "/",
@@ -157,7 +157,7 @@
   "feature": "Footer: brand blurb, Quick Links (Features / Markets / Exchanges / What’s new in v2), Legal, Contact Us, mono bottom line",
   "how": "Rendered by the shared CG.chrome['footer'] override so every screen with <div data-cg=\"footer\"> gets the same footer; Quick Links scroll to landing sections (navigating home first when needed), Legal links route, email is a mailto:, phone opens wa.me in a new tab",
   "status": "working",
-  "evidence": "bundle: Iot[], Dot[], Quick Links, Legal, Contact Us, _blank noopener noreferrer"
+  "evidence": "bundle: Iot[], Dot[], Quick Links, Legal, Contact Us, _blank noopener noreferrer — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: Footer with Quick Links (now including Payoff chart preview), Legal, Contact Us, mono bottom line (landing.test.tsx 'footer carries legal links and support contact', public.spec HC-PB-058)"
  },
  {
   "route": "/",
@@ -165,7 +165,7 @@
   "feature": "Smooth-scroll section anchors with sticky-header offset",
   "how": "data-scroll links call scrollIntoView on data-anchor targets (scroll-margin-top 64px) instead of changing the hash, so they never collide with the hash router",
   "status": "working",
-  "evidence": "bundle: #features / #prices / #exchanges anchors, behavior: smooth"
+  "evidence": "bundle: #features / #prices / #exchanges anchors, behavior: smooth — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: section ids whats-new / features / crypto-analytics / exchanges carry scroll-mt-16; header nav uses in-page anchors (landing-sections.test.tsx, landing.test.tsx nav links)"
  },
  {
   "route": "/",
@@ -173,7 +173,7 @@
   "feature": "Dark theme support",
   "how": "All colours use the shell's CSS variables; verified with clone/shots/public-landing-dark.png",
   "status": "working",
-  "evidence": "original ships light + dark themes"
+  "evidence": "original ships light + dark themes — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: visual captures home-dark / home-light (visual.spec)"
  },
  {
   "route": "/auth",
@@ -253,7 +253,7 @@
   "feature": "Live password rules: ✓ Uppercase letter · ✓ Lowercase letter · ✓ Number · ✓ Special character · ✓ 8+ characters (+ strength bar)",
   "how": "Each rule turns green as the typed password satisfies it; bar colour goes red → amber → green",
   "status": "working",
-  "evidence": "bundle strings: ✓ Uppercase letter, ✓ Lowercase letter, ✓ Number, ✓ Special character, ✓ 8+ characters"
+  "evidence": "bundle strings: ✓ Uppercase letter, ✓ Lowercase letter, ✓ Number, ✓ Special character, ✓ 8+ characters — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: PasswordRules turn green per rule with the red → amber → green bar (inputs.test.tsx)"
  },
  {
   "route": "/auth",
@@ -293,7 +293,7 @@
   "feature": "Full-screen spinner “Signing you in with Delta…”, then login",
   "how": "After 1.5s: CG.auth.login(), toast “Welcome! · Signed in with Delta.”, navigate to /analyse (timer cancelled if the user leaves)",
   "status": "working",
-  "evidence": "bundle: Signing you in with Delta…, Welcome!, Signed in with Delta."
+  "evidence": "bundle: Signing you in with Delta…, Welcome!, Signed in with Delta. — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: DeltaSignIn spinner then explanation (AuthScreen.test.tsx, auth.spec HC-PB-037)"
  },
  {
   "route": "/sso",
@@ -301,7 +301,7 @@
   "feature": "“Signing you in…” spinner then redirect",
   "how": "After 1s logs the user in and navigates to ?sso_return= (when it is an in-app path) or /analyse",
   "status": "working",
-  "evidence": "bundle: Signing you in…, sso_return"
+  "evidence": "bundle: Signing you in…, sso_return — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: SsoReturn redirects after the delay (AuthScreen.test.tsx 'redirects to the target after the delay', auth.spec HC-PB-038)"
  },
  {
   "route": "/privacy",
@@ -309,7 +309,7 @@
   "feature": "← Back button, LEGAL eyebrow, title, mono “LAST UPDATED” line, 7 sections in a two-column definition layout",
   "how": "Back goes to the previous screen (history.back) or home when opened directly; sections 1–7 use the bundle's exact headings and paragraphs",
   "status": "working",
-  "evidence": "bundle: Privacy Policy, Last updated: March 30, 2026, 1. Information We Collect … 7. Contact Us"
+  "evidence": "bundle: Privacy Policy, Last updated: March 30, 2026, 1. Information We Collect … 7. Contact Us — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: LegalPage with ← Back, Legal eyebrow, title, mono last-updated line and every section (landing.test.tsx 'legal pages render every section', public.spec HC-SH-016)"
  },
  {
   "route": "/terms",
@@ -317,7 +317,7 @@
   "feature": "← Back button, title, mono last-updated line, 8 two-column sections",
   "how": "Exact copy incl. “provided \"as is\" without warranties”",
   "status": "working",
-  "evidence": "bundle: Terms of Service, 1. Acceptance of Terms … 8. Contact"
+  "evidence": "bundle: Terms of Service, 1. Acceptance of Terms … 8. Contact — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: LegalPage kind terms (public.spec HC-SH-016 checks the h1)"
  },
  {
   "route": "/disclaimer",
@@ -325,7 +325,7 @@
   "feature": "← Back button, title, mono last-updated line, 7 two-column sections (Not Financial Advice … Third-Party Integrations)",
   "how": "Exact copy from the bundle",
   "status": "working",
-  "evidence": "bundle: Disclaimer, Not Financial Advice, Trading Risks, Cryptocurrency Risks, Data Accuracy, Paper Trading, No Guarantee, Third-Party Integrations"
+  "evidence": "bundle: Disclaimer, Not Financial Advice, Trading Risks, Cryptocurrency Risks, Data Accuracy, Paper Trading, No Guarantee, Third-Party Integrations — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: LegalPage kind disclaimer, 7 sections (landing.test.tsx, public.spec HC-PB-059 navigates there)"
  },
  {
   "route": "/payoff-preview",
@@ -333,7 +333,7 @@
   "feature": "Preset chips: Iron Condor · Long Call (Unlimited) · Short Strangle (Both Unlimited) · Wide chain, narrow leg (BTC 78k, chain 69k-87k)",
   "how": "Legs, prices and IVs copied from the bundle (Uot/zot/Vot/Wot); selecting a preset resets zoom, target and date and re-renders; spot 100k (78k for the wide-chain case) is passed to CG.analyze via opts.spot with lots sized so 1 contract = 1 BTC",
   "status": "working",
-  "evidence": "bundle: R9[] presets, Payoff chart preview"
+  "evidence": "bundle: R9[] presets, Payoff chart preview — Phase 4 item 5b (09 Sep 2026, ADR-037): PRESETS in lib/payoff-preview.ts (same legs, prices, IVs, spots); pp-preset buttons reset zoom, target and day (payoff-preview.test.tsx, public.spec)"
  },
  {
   "route": "/payoff-preview",
@@ -341,7 +341,7 @@
   "feature": "Legend: On Expiry (ink) · On Target Date (blue) · Profit · Loss · Call OI · Put OI (faint) — click toggles the layer",
   "how": "Legend items are clickable and toggle the matching chart layer (struck-through when off)",
   "status": "working",
-  "evidence": "bundle: On Expiry, On Target Date, Profit, Loss, Call OI, Put OI"
+  "evidence": "bundle: On Expiry, On Target Date, Profit, Loss, Call OI, Put OI — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-legend-item ×6 toggle expiry/target/fill/oi layers; struck-through when off"
  },
  {
   "route": "/payoff-preview",
@@ -349,7 +349,7 @@
   "feature": "Zoom In / 100% / Zoom Out",
   "how": "Zoom narrows or widens the price range around spot (×1.25 steps, 50%–400%); clicking the percentage resets; the target slider range follows",
   "status": "working",
-  "evidence": "bundle: Zoom In, Zoom Out, Reset Zoom"
+  "evidence": "bundle: Zoom In, Zoom Out, Reset Zoom — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-zoom-in / pp-zoom-label (reset) / pp-zoom-out: ×1.25 steps, 50 %–400 %, price axis ±18 %/zoom around spot, target clamped into the axis"
  },
  {
   "route": "/payoff-preview",
@@ -357,7 +357,7 @@
   "feature": "Layers popover (“Chart Layers”): Expiry P&L, Target Date P&L, Profit / Loss Fill, Open Interest, SD Bands, Breakevens",
   "how": "Switch rows toggle each SVG layer live; closes on outside click",
   "status": "working",
-  "evidence": "bundle: Toggle Layers, Chart Layers, Expiry P&L, Target Date P&L, Profit / Loss Fill, Open Interest, SD Bands, Breakevens"
+  "evidence": "bundle: Toggle Layers, Chart Layers, Expiry P&L, Target Date P&L, Profit / Loss Fill, Open Interest, SD Bands, Breakevens — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-layers-button opens 'Chart Layers' with six role=switch rows (pp-layer-*); closes on outside mousedown"
  },
  {
   "route": "/payoff-preview",
@@ -365,7 +365,7 @@
   "feature": "SD header: −2SD / −1SD / Current / +1SD / +2SD with “Expected move by target date (Nd)”",
   "how": "Log-normal bands from the legs' average IV over the selected horizon; ±1SD is shaded on the chart with dashed edges",
   "status": "working",
-  "evidence": "bundle: -2SD, -1SD, Current, +1SD, +2SD, Expected move by"
+  "evidence": "bundle: -2SD, -1SD, Current, +1SD, +2SD, Expected move by — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-sd: −2SD / −1SD / Current / +1SD / +2SD from sdBands() (average leg IV, lognormal over the slider horizon; 'by expiry (30d)' at day 0); ±1σ shaded by PayoffChart's band layer"
  },
  {
   "route": "/payoff-preview",
@@ -373,7 +373,7 @@
   "feature": "SVG payoff chart restyled to the reference: single ink expiry line with green/red fills, blue target-date curve, amber SPOT pill + line, faint neutral OI bars, dashed ±1σ band labels, dashed breakevens with BE labels, blue target-price marker with P&L label",
   "how": "Colours only via tokens: --foreground, --curve, --spot, --profit, --loss, --muted-foreground",
   "status": "working",
-  "evidence": "pw/pub_payoff-preview.png"
+  "evidence": "pw/pub_payoff-preview.png — Phase 4 item 5b (09 Sep 2026, ADR-037): the workspace's canvas PayoffChart (ink expiry line, profit/loss fills, blue target curve, spot line, ±1σ band, dashed breakevens with BE labels, target marker) reused with the page's token colours"
  },
  {
   "route": "/payoff-preview",
@@ -381,7 +381,7 @@
   "feature": "Hover crosshair + tooltip",
   "how": "Moving over the plot shows a vertical crosshair, markers on both curves and a tooltip with the price, Expiry P&L and target-date P&L",
   "status": "working",
-  "evidence": "original chart tooltip"
+  "evidence": "original chart tooltip — Phase 4 item 5b (09 Sep 2026, ADR-037): PayoffChart draws the crosshair and markers; the summary row shows the pp-hover readout (price, Expiry P&L, ND P&L)"
  },
  {
   "route": "/payoff-preview",
@@ -389,7 +389,7 @@
   "feature": "Summary line “@ $100k (+0.0%) · 15D: +$… · Expiry: +$… · Profit/Loss pill” (mono)",
   "how": "Recomputed from CG.analyze at the target price for both the target date and expiry; the pill turns red “Loss: $…” when negative",
   "status": "working",
-  "evidence": "pw/pub_payoff-preview.png summary row"
+  "evidence": "pw/pub_payoff-preview.png summary row — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-summary: '@ $100k (+0.0%) · 15D: +$… · Expiry: +$… · Profit/Loss pill' from analyze()'s target point (pp-summary-target, pp-summary-expiry, pp-pill)"
  },
  {
   "route": "/payoff-preview",
@@ -397,7 +397,7 @@
   "feature": "BTC TARGET slider with −/+ buttons, % chip and $ label",
   "how": "Range slider (step $100) and ±$500 buttons move a target marker on the chart and update the summary on every input event",
   "status": "working",
-  "evidence": "pw/pub_payoff-preview.png BTC TARGET card"
+  "evidence": "pw/pub_payoff-preview.png BTC TARGET card — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-target range (step $100) with pp-target-minus / pp-target-plus (±$500), pp-target-pct chip and $ label"
  },
  {
   "route": "/payoff-preview",
@@ -405,7 +405,7 @@
   "feature": "TODAY date slider (Today ↔ Expiry) with ‹ › day buttons and info hint — defaults to mid-way so the target curve is visible",
   "how": "Slider from day 0 to expiry (30d); the blue target-date curve, SD header and “ND:” summary value follow the selected day; label shows e.g. “Fri, 18 Sep 02:30 PM”",
   "status": "working",
-  "evidence": "bundle: Expiry (date), Today"
+  "evidence": "bundle: Expiry (date), Today — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-day range 0..30 with pp-day-prev / pp-day-next, defaults to day 15, label 'Fri, 18 Sep 02:30 PM' style via dayLabel()"
  },
  {
   "route": "*",
@@ -413,7 +413,7 @@
   "feature": "Not found: ERROR eyebrow, 64px mono “404”, “Oops! Page not found”, outline “Return to Home”",
   "how": "Catch-all screen; Return to Home → #/",
   "status": "working",
-  "evidence": "bundle: 404, Oops! Page not found, Return to Home"
+  "evidence": "bundle: 404, Oops! Page not found, Return to Home — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: app/not-found.tsx with 'Oops! Page not found' and Return to Home (public.spec HC-SH-016)"
  },
  {
   "route": "/",
@@ -421,7 +421,7 @@
   "feature": "“What’s new in v2” strip (replaces testimonials): Scenario matrix · Vol & Structure tabs · Alerts · Command palette · Journal · Share links, each with an inline SVG icon, NEW tag and one-liner; “Full feature inventory →” link",
   "how": "CG.mock.landing.whatsNew; anchor #whats-new reachable from the header nav and footer",
   "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
+  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: WHATS_NEW strip reachable at #whats-new from the header nav and footer (landing-sections.test.tsx)",
   "new": true
  },
  {
@@ -430,7 +430,7 @@
   "feature": "Terminal mock top bar shows live ATM IV / IV rank / expected move from CG.chrome.marketStats and the Ctrl K hint",
   "how": "",
   "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
+  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): not built: the terminal illustration is static (no live ATM IV / IV rank / expected move); GAPS #54",
   "new": true
  },
  {
@@ -439,7 +439,7 @@
   "feature": "Terminal mock scenario matrix: 5 prices × Today / +6d / +13d / Expiry P&L cells, colour intensity scaled by magnitude",
   "how": "Each cell is a CG.analyze(legs, asset, {targetDays, min, max, points:2}) call",
   "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
+  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): not built: no scenario matrix in the illustration; GAPS #54",
   "new": true
  },
  {
@@ -448,7 +448,7 @@
   "feature": "Terminal mock portfolio bar mirrors the app: strategies, Net Δ, margin used, day P&L, alerts armed, basis, CCY",
   "how": "Reads CG.chrome.portfolioData() when the chrome part is present",
   "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
+  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): not built: no portfolio bar in the illustration; GAPS #54",
   "new": true
  },
  {
@@ -457,7 +457,7 @@
   "feature": "Live Markets tiles gained a 40-point sparkline and the asset IV",
   "how": "",
   "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
+  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: 40-point sparkline on every tile (landing.test.tsx 'renders connecting tiles, then live prices with flash, change, H/L and a sparkline'); the asset IV is not shown (GAPS #54)",
   "new": true
  },
  {
@@ -466,7 +466,7 @@
   "feature": "Hero meta line: FREE PLAN · PAPER TRADING INCLUDED · BTC · ETH · XAUT OPTIONS · DELTA EXCHANGE INDIA (mono micro-labels)",
   "how": "",
   "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
+  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: 'Free plan · paper trading included' meta line (public.spec HC-PB-001, landing-sections.test.tsx)",
   "new": true
  },
  {
@@ -475,7 +475,7 @@
   "feature": "Ctrl K button in the public header opens the command palette (Home / Sign in / legal / payoff preview commands available while logged out)",
   "how": "",
   "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
+  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5b (09 Sep 2026, ADR-037): palette nav:payoff-preview available signed out (public.spec)",
   "new": true
  },
  {
@@ -484,7 +484,7 @@
   "feature": "Both themes: dark-first obsidian ground; light variant is the cool paper/graphite reading — no gradients, no card shadows, hairline separation",
   "how": "",
   "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
+  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: token-driven light and dark, captured in visual.spec home-*/auth-*/analyse-*",
   "new": true
  },
  {
@@ -493,7 +493,7 @@
   "feature": "Live futures ticker (BTC / ETH / XAUT price and 24h %) under the feature rows, updated every tick",
   "how": "",
   "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
+  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: AuthScreen brand column ticker from the gateway (AuthScreen.test.tsx HC-PB-023)",
   "new": true
  },
  {
@@ -502,7 +502,7 @@
   "feature": "Mono inputs for mobile number, referral code and OTP; password strength bar + mono rule list",
   "how": "",
   "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
+  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: OtpInput boxes, mono mobile / referral inputs, PasswordRules with strength bar (inputs.test.tsx, AuthForms.test.tsx)",
   "new": true
  },
  {
@@ -511,7 +511,7 @@
   "feature": "Header note “Spot · amber · Target date · blue · OI · faint bars”; preset buttons use a neutral selected state",
   "how": "",
   "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
+  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5b (09 Sep 2026, ADR-037): 'Spot · amber · Target date · blue · OI · faint bars' note in the page header; selected preset uses variant secondary",
   "new": true
  },
  {
@@ -520,7 +520,7 @@
   "feature": "Target-price marker: dashed blue line, hollow dot on the active curve and “+$… @ price” label when the target differs from spot",
   "how": "",
   "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js",
+  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5b (09 Sep 2026, ADR-037): frame.target set only when the target differs from spot; PayoffChart draws the dashed marker with the P&L label",
   "new": true
  },
  {

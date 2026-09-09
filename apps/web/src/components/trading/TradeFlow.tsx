@@ -2,6 +2,7 @@
 // Trade flow orchestrator (HC-TR-022, 050..057, 046): Select Trading Mode → Trade Preview → start. Trades
 // either the Builder legs (saving them as a draft first) or an existing draft ("Activate"). Also imports the
 // browser-local drafts saved before Phase 3 once (ADR-024).
+import { emitTour } from "@/lib/tour";
 import { type Strategy, toDecimal } from "@hapiecoin/schema";
 import { toast } from "@hapiecoin/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -122,6 +123,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
       return;
     }
     toast.success(target ? "Paper Trading Started" : "Paper Trade Started", { description: target ? `Trading ${s.name} on ${broker?.name ?? "Delta Exchange"}` : s.name });
+    emitTour("paper-started"); // the tour's "review and start" step advances (HC-SH-073)
   };
   /** Live: the draft must exist on the server before the venue preview; returns its id. */
   const ensureDraft = async (name?: string): Promise<string> => {

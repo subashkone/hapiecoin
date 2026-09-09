@@ -42,7 +42,7 @@ export function buildCommands(opts: {
     keywords,
     run: () => opts.navigate(path),
   });
-  const list: PaletteCommand[] = [nav("nav:home", "/", "Home", ["landing", "public", "website"])];
+  const list: PaletteCommand[] = [nav("nav:home", "/", "Home", ["landing", "public", "website"]), nav("nav:payoff-preview", "/payoff-preview", "Payoff chart preview", ["chart", "preview", "demo", "payoff"])];
   if (opts.loggedIn) {
     list.push(
       nav("nav:analyse", "/analyse", "Analyse workspace", ["options chain", "builder", "payoff"]),
@@ -73,6 +73,23 @@ export function buildCommands(opts: {
             },
           ]
         : []),
+      {
+        id: "act:tour",
+        label: "Take a tour",
+        group: "Actions",
+        keywords: ["tour", "help", "walkthrough", "guide", "onboarding"],
+        run: () => {
+          opts.navigate("/analyse");
+          useUiStore.getState().requestTour();
+        },
+      },
+      {
+        id: "act:assistant",
+        label: "Ask the HapieCoin Assistant",
+        group: "Actions",
+        keywords: ["assistant", "chat", "help", "question", "support"],
+        run: () => useUiStore.getState().openAssistant(),
+      },
       {
         id: "act:flyers",
         label: "Show announcements",
@@ -328,6 +345,7 @@ export function PaletteButton({ className }: { className?: string }) {
       onClick={() => setOpen(true)}
       title="Command palette (Ctrl K)"
       aria-label="Command palette"
+      data-tour="command-palette"
       data-testid="palette-button"
       className={cn(
         "inline-flex h-7 items-center gap-1 rounded border border-border bg-transparent px-1.5 text-muted-foreground hover:bg-muted hover:text-foreground",

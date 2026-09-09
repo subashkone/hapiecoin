@@ -22,9 +22,9 @@ describe("HC-PB-059 command palette", () => {
   it("buildCommands offers Sign in when logged out and Analyse when logged in", () => {
     const navigate = vi.fn();
     const out = buildCommands({ loggedIn: false, navigate, toggleTheme: vi.fn() });
-    expect(out.map((c) => c.label)).toEqual(["Home", "Sign in", "Privacy Policy", "Terms of Service", "Disclaimer", "Toggle theme"]);
+    expect(out.map((c) => c.label)).toEqual(["Home", "Payoff chart preview", "Sign in", "Privacy Policy", "Terms of Service", "Disclaimer", "Toggle theme"]);
     const inn = buildCommands({ loggedIn: true, navigate, toggleTheme: vi.fn() });
-    expect(inn[1]?.label).toBe("Analyse workspace");
+    expect(inn[2]?.label).toBe("Analyse workspace"); // after Home and the public payoff preview
     expect(inn.find((c) => c.id === "act:referral-copy")).toBeUndefined();
     // HC-AD-091 the seven Admin commands exist only for admins
     expect(inn.find((c) => c.id === "nav:admin-users")).toBeUndefined();
@@ -37,7 +37,7 @@ describe("HC-PB-059 command palette", () => {
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
     buildCommands({ loggedIn: true, navigate, toggleTheme: vi.fn(), referralCode: "ASHA2026" }).find((c) => c.id === "act:referral-copy")?.run();
     expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/auth?tab=signup&ref=ASHA2026`);
-    inn[1]?.run();
+    inn[2]?.run();
     expect(navigate).toHaveBeenCalledWith("/analyse");
     // chain commands (HC-WS-016) act on the UI store
     const atm = inn.find((c) => c.id === "act:chain-atm");

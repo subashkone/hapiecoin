@@ -24,6 +24,7 @@ export function Footer({ year = new Date().getFullYear() }: { year?: number }) {
               <li><a href="#prices" className="hover:text-foreground">Markets</a></li>
               <li><a href="#exchanges" className="hover:text-foreground">Exchanges</a></li>
               <li><a href="#whats-new" className="hover:text-foreground">What&apos;s new in v2</a></li>
+              <li><Link href="/payoff-preview" className="hover:text-foreground">Payoff chart preview</Link></li>
             </ul>
           </div>
           <div>
