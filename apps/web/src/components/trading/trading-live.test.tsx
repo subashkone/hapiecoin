@@ -103,6 +103,7 @@ describe("HC-TR-063 Go live from a paper card", () => {
     // the Live tab: exchange chip, order chip per leg, Square off all instead of Stop
     await waitFor(() => expect(within(panel()).getByTestId("live-card")).toBeTruthy());
     expect(within(panel()).getByTestId("live-exchange-chip").textContent).toContain("exchange connected");
+    expect(within(panel()).getByTestId("card-batch").textContent).toMatch(/^batch \w{6}$/); // HC-TR-115
     expect(within(panel()).getByTestId("order-chip").dataset["state"]).toBe("filled");
     expect(within(panel()).getByTestId("card-sqall")).toBeTruthy();
     expect(within(panel()).queryByTestId("card-stop")).toBeNull();

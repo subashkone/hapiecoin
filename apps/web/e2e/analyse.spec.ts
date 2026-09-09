@@ -510,9 +510,15 @@ test.describe("HC-TR paper trading (Phase 3 item 1)", () => {
     await expect(card.getByTestId("mode-pill")).toHaveAttribute("data-status", "paper");
     await expect(card.getByTestId("card-pnl")).not.toHaveText("—");
     await expect(page.getByTestId("builder-count")).toHaveCount(0);
-    // details: square off one leg at market, then stop and archive
+    // HC-TR-113 / 138 the strip's net delta and margin come from the worker
+    await expect(page.getByTestId("paper-strip")).toHaveAttribute("data-portfolio", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("paper-net-delta")).not.toHaveText("—");
+    // details: HC-TR-118 / 119 six tiles + the payoff mini chart; then square off one leg at market, stop and archive
     await card.getByTestId("card-details").click();
     const details = page.getByTestId("strategy-details");
+    await expect(details.getByTestId("details-tiles").locator("> div")).toHaveCount(6);
+    await expect(details.getByTestId("details-chart")).toBeVisible();
+    await expect(details.getByTestId("details-margin-tile")).toContainText("POP", { timeout: 15_000 });
     await expect(details.getByTestId("details-leg")).toHaveCount(2);
     await details.getByTestId("details-sqoff").first().click();
     const sq = page.getByTestId("square-off");
@@ -727,6 +733,9 @@ test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
     await expect(page.getByTestId("live-count")).toContainText("1");
     const live = page.getByTestId("live-card");
     await expect(live.getByTestId("mode-pill")).toHaveAttribute("data-status", "live");
+    await expect(live.getByTestId("card-batch")).toContainText("batch"); // HC-TR-115
+    await expect(page.getByTestId("live-strip")).toHaveAttribute("data-portfolio", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("live-margin-used")).toContainText("$"); // HC-TR-116
     await expect(live.getByTestId("order-chip")).toHaveAttribute("data-state", "filled");
     await expect(page.getByTestId("live-exchange-chip")).toHaveText(/exchange connected/);
     // HC-TR-143 the pane follows the new live strategy; HC-TR-144 the venue's net positions with tick-to-analyse

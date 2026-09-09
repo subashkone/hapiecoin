@@ -5987,7 +5987,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Computed from CG.portfolio.compute() for PAPER strategies; margin shown against marginTotal with %; values update on every tick",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-051): PaperPanel strip: Total P&L · Day P&L · Net Δ (paper-net-delta) · Margin used (paper-margin-used) · Prices from usePortfolio; unit trading.test.tsx; e2e analyse.spec.ts HC-TR-022 block"
  },
  {
   "id": "HC-TR-114",
@@ -6017,7 +6017,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Filled LIVE pill with pulsing dot, batch id tag, order-status chips (filled / pending / failed / closed), failed-order alert with Retry, sparkline, Square off all, Delete; toolbar with sort and exchange-connection tag",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-051): PaperPanel live card: filled LIVE pill, card-batch \"batch <last 6>\", order chips, failed banner + Retry, sparkline, Square off all; unit trading-live.test.tsx; e2e analyse.spec.ts HC-TR-063 block"
  },
  {
   "id": "HC-TR-116",
@@ -6032,7 +6032,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Total P&L · Day P&L · Net Δ · Margin used from CG.portfolio (LIVE strategies), live on tick",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-051): PaperPanel live strip: Net Δ + Margin used against the exchange wallet balance (useLivePositions) with a share bar; e2e analyse.spec.ts HC-TR-063 block"
  },
  {
   "id": "HC-TR-117",
@@ -6062,7 +6062,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Hairline header (micro label, name, pills, id, exchange), 6 tiles (Total P&L big, Unrealised, Realised, Days, Legs open/total, Margin est. + POP), actions row, leg rows (side pill, instrument + sub-line, lots, entry → now / exit, P&L pill, Square off), P&L history with axis labels, statistics grid, Close",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-051): StrategyDetailsDialog: six tiles (Total, Unrealised, Realised, Days · since, Legs open/total, Margin est. · POP); unit trading.test.tsx; e2e analyse.spec.ts"
  },
  {
   "id": "HC-TR-119",
@@ -6077,7 +6077,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "CG.analyze on the open legs at their entry premiums: expiry curve, green / red fills, faint grid, amber spot marker, breakeven lines, max profit / loss end labels, x-axis prices; header line with max profit / max loss / BE / net Δ / Θ per day",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-051): StrategyDetailsDialog details-chart: PayoffChart on the open legs at their entry premiums (expiry line, fills, break-evens, spot); unit trading.test.tsx; e2e analyse.spec.ts"
  },
  {
   "id": "HC-TR-120",
@@ -6362,7 +6362,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "CG.portfolio = { compute(), strategyPnl(id), strategy(id), refresh(), cache }; compute() → { open, netDelta, netGamma, netTheta, netVega, marginUsed, marginTotal (wallet.available + marginUsed), dayPnl, unrealized, realized, openPnl, byStrategy:[{id,name,status,asset,pnl,unrealized,realized,dayPnl,delta,theta,gamma,vega,margin,openLegs,legs}], at } using CG.analyze(open legs at entry, asset) per PAPER/LIVE strategy (Greeks in asset units × lot); CG.emit(\"portfolio-changed\", data) after every mutation (renderAll) and once per tick",
-  "evidence": "v2 design brief (Obsidian Desk)"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-051): lib/strategy/usePortfolio.ts (worker analyze per active strategy at the live marks, 400 ms debounce) + foldPortfolio (net Δ Γ Θ ν, marginUsed, undefinedRisk, byStrategy); unit analysis.test.ts"
  },
  {
   "id": "HC-TR-139",

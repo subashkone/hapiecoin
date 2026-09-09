@@ -98,6 +98,10 @@ describe("HC-TR-022 / HC-TR-050..057 paper trade from the Builder", () => {
     serveMarket();
     const u = userEvent.setup();
     const s = await paperTradeFromBuilder(u);
+    // HC-TR-113 / 138: the summary strip carries the net delta and the margin estimate once the worker has priced the book
+    await waitFor(() => expect(screen.getByTestId("paper-strip").dataset["portfolio"]).toBe("ready"), { timeout: 8000 });
+    expect(screen.getByTestId("paper-net-delta").textContent).toMatch(/^[+-]\d\.\d{4}$/);
+    expect(screen.getByTestId("paper-margin-used").textContent).toMatch(/\$|—/);
     expect(s.name).toBe("Risk reversal");
     expect(s.brokerId).toBe("brk_delta");
     expect(s.legs.map((l) => l.entryPrice)).toEqual([call.call!.mark, put.put!.mark]);
@@ -195,6 +199,11 @@ describe("HC-TR-068..081 details, square off, partial exit, adjustment, stop", (
     const after = await screen.findByTestId("strategy-details");
     await waitFor(() => expect(within(after).getAllByTestId("details-adjustment")).toHaveLength(1));
     // stop → archive at live prices
+    // HC-TR-118 / 119: six tiles and the payoff mini chart at the entry premiums
+    expect(within(after).getByTestId("details-tiles").children).toHaveLength(6);
+    expect(within(after).getByTestId("details-legs-tile").textContent).toMatch(/\d\/\d/);
+    await waitFor(() => expect(within(after).getByTestId("details-margin-tile").textContent).toContain("POP"), { timeout: 8000 });
+    expect(within(after).getByTestId("details-chart")).toBeTruthy();
     await u.click(within(after).getByTestId("details-stop"));
     const stop = screen.getByTestId("stop-paper");
     expect(within(stop).getAllByTestId("stop-leg")).toHaveLength(2);

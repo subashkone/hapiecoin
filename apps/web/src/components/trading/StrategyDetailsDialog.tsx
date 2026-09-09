@@ -11,7 +11,9 @@ import { fmtMoney } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
 import { settlementHourUtc, toPricingLegs } from "@/lib/pricing/legs";
 import { useUiStore } from "@/lib/store";
+import { marginEstimate } from "@/lib/strategy/analysis";
 import { MAX_OPEN_LEGS_UI, daysOf, openLegs, pnlSeries, priceMap, serverLegToLocal } from "@/lib/strategy/paper";
+import { PayoffChart, type PayoffChartFrame } from "@/components/analysis/PayoffChart";
 import { type PaperBook } from "@/lib/strategy/usePaper";
 import { PartialExitDialog } from "./PartialExitDialog";
 import { SquareOffDialog } from "./SquareOffDialog";
@@ -100,6 +102,10 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
   const orig = shown.filter((l) => !l.isAdjustment);
   const money = book.money;
   const close = () => openDetails(null);
+  const r = analysis.result;
+  const margin = r ? marginEstimate(r) : null;
+  // HC-TR-119: the expiry payoff of the open legs at their entry premiums, the same renderer as the analysis pane
+  const miniFrame: PayoffChartFrame | null = r && spot !== null ? { points: r.points, spot, breakevens: r.breakevens, band: null, target: null, targetLabel: "", layers: { expiry: true, target: false, fill: true, oi: false, band: false, breakeven: true }, oi: [], range: [r.points[0]?.price ?? spot * 0.8, r.points[r.points.length - 1]?.price ?? spot * 1.2], fmtPrice: (p) => fmtStrike(String(Math.round(p))), fmtMoney: (v) => fmtMoney(v, money, { signed: true }), ghost: null } : null;
   // the adjustment workbench (ADR-044): the pane follows this strategy, the left pane becomes the workbench
   const adjustHere = () => {
     setWorkspaceTab(s.status === "live" ? "live" : "paper");
@@ -160,12 +166,19 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" data-testid="details-tiles">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6" data-testid="details-tiles">
               <div className="rounded border border-border p-2"><div className="micro">Total P&amp;L</div><div className={cn("num text-[15px] font-medium", (pnl?.total ?? 0) >= 0 ? "text-profit" : "text-loss")} data-testid="details-total">{pnl ? fmtMoney(pnl.total, money, { signed: true }) : "—"}</div><div className="micro">{active ? "live · mark basis" : "final"}</div></div>
               <div className="rounded border border-border p-2"><div className="micro">Unrealised</div><div className={cn("num text-[15px] font-medium", (pnl?.unrealized ?? 0) >= 0 ? "text-profit" : "text-loss")}>{pnl ? fmtMoney(pnl.unrealized, money, { signed: true }) : "—"}</div></div>
               <div className="rounded border border-border p-2"><div className="micro">Realised</div><div className={cn("num text-[15px] font-medium", (pnl?.realized ?? 0) >= 0 ? "text-profit" : "text-loss")} data-testid="details-realized">{pnl ? fmtMoney(pnl.realized, money, { signed: true }) : "—"}</div></div>
-              <div className="rounded border border-border p-2"><div className="micro">Days</div><div className="num text-[15px] font-medium">{daysOf(s)}</div><div className="micro">{s.legs.length} legs · {open.length} open</div></div>
+              <div className="rounded border border-border p-2"><div className="micro">Days</div><div className="num text-[15px] font-medium">{daysOf(s)}</div><div className="micro">{s.startedAt ? `since ${new Date(s.startedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}` : "not started"}</div></div>
+              <div className="rounded border border-border p-2" data-testid="details-legs-tile"><div className="micro">Legs</div><div className="num text-[15px] font-medium">{open.length}<span className="text-muted-foreground">/{s.legs.length}</span></div><div className="micro">open / total{s.adjustments.length ? ` · ${s.adjustments.length} adj` : ""}</div></div>
+              <div className="rounded border border-border p-2" data-testid="details-margin-tile"><div className="micro">Margin est.</div><div className="num text-[15px] font-medium">{margin === null ? "—" : fmtMoney(margin, money)}</div><div className="micro">{r ? `POP ${Number.isFinite(r.pop) ? `${(r.pop * 100).toFixed(0)}%` : "—"}${margin === null && open.length ? " · undefined risk" : ""}` : "pricing…"}</div></div>
             </div>
+            {miniFrame ? (
+              <div className="relative mt-3 h-[150px] rounded border border-border" data-testid="details-chart">
+                <PayoffChart frame={miniFrame} className="absolute inset-0 px-1" />
+              </div>
+            ) : null}
             <div className="mt-3 flex flex-wrap gap-2" data-testid="details-actions">
               {active ? (
                 <>

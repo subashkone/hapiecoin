@@ -87,6 +87,7 @@ for (const theme of ["dark", "light"] as const) {
       await page.getByTestId("trade-now").click();
       await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
       await expect(page.getByTestId("paper-card").getByTestId("card-pnl")).not.toHaveText("—");
+      await expect(page.getByTestId("paper-strip")).toHaveAttribute("data-portfolio", "ready", { timeout: 15_000 });
       await page.screenshot({ path: `${DIR}/analyse-paper-${theme}.png` });
       // ADR-044 the adjustment workbench (HC-TR-148..151) and its paper confirm
       await page.getByTestId("card-adjust").click();
