@@ -16,6 +16,7 @@ import { createMailer } from "./mailer.js";
 import { RazorpayHttpClient } from "./razorpay.js";
 import { MemoryRateStore, type RateStore, RedisRateStore } from "./security/rate-store.js";
 import { createVault } from "./vault.js";
+import { MemoryAnalyticsReader, RedisAnalyticsReader } from "./analytics.js";
 
 loadRepoEnv(import.meta.url);
 const config = loadConfig();
@@ -60,6 +61,7 @@ const deps: AppDeps = {
   delta: new DeltaPrivateClientImpl({ baseUrl: config.deltaTradingRestUrl, nodeEnv: config.nodeEnv }),
   trading: new DeltaTradingClientImpl({ baseUrl: config.deltaTradingRestUrl, nodeEnv: config.nodeEnv }),
   authOptions: authOptionsPublic(config),
+  analytics: redis ? new RedisAnalyticsReader(redis) : new MemoryAnalyticsReader(),
 };
 const app = createApp(deps);
 

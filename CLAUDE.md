@@ -35,7 +35,7 @@ HapieCoin is a crypto options strategy builder for Delta Exchange India (BTC/ETH
 
 ## Repo etiquette
 - Branches: `feat/<area>-<short>`, `fix/<area>-<short>`, `chore/<short>`; never commit directly on `main` once the monorepo exists. Commits: conventional prefix + traceability IDs (`/commit` formats this). PRs: one phase item per PR, description lists IDs and the verification run.
-- Env vars (names only; values never in the repo): `DATABASE_URL`, `REDIS_URL`, `BETTER_AUTH_SECRET`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `DELTA_API_KEY`, `DELTA_API_SECRET` (live only, absent in test).
+- Env vars (names only; values never in the repo): `DATABASE_URL`, `REDIS_URL`, `BETTER_AUTH_SECRET`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RESEND_API_KEY`, `COINGECKO_API_KEY` (optional, analytics ingest), `DELTA_API_KEY`, `DELTA_API_SECRET` (live only, absent in test).
 
 ## Non-negotiables
 - Product name is HapieCoin everywhere except when referring to the original site. Package scope `@hapiecoin/*`.

@@ -226,6 +226,31 @@ importers:
         specifier: 4.23.13
         version: 4.23.13
 
+  apps/ingest:
+    dependencies:
+      '@hapiecoin/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
+      ioredis:
+        specifier: 5.10.0
+        version: 5.10.0
+      ws:
+        specifier: 8.19.0
+        version: 8.19.0
+      zod:
+        specifier: 4.5.4
+        version: 4.5.4
+    devDependencies:
+      '@hapiecoin/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@types/ws':
+        specifier: 8.18.1
+        version: 8.18.1
+      tsx:
+        specifier: 4.23.13
+        version: 4.23.13
+
   apps/web:
     dependencies:
       '@hapiecoin/pricing':

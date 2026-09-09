@@ -25,7 +25,7 @@ const settled = async (text: string) =>
   waitFor(() => {
     expect(screen.getByTestId("assistant-panel").dataset["typing"]).toBe("false");
     expect(lastBot().textContent).toContain(text);
-  }, { timeout: 4000 });
+  }, { timeout: 15_000 }); // the typed answer takes ~1.5 s alone; the stop hook runs this suite beside the root gate, so leave headroom
 
 describe("HC-SH-057..063 assistant panel", () => {
   it("opens from the launcher with a greeting and chips, types an answer, and closes on Escape", async () => {

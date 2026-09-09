@@ -12,6 +12,7 @@ import type { RazorpayClient } from "../razorpay.js";
 import type { SessionResolver } from "../security/guards.js";
 import type { RateStore } from "../security/rate-store.js";
 import type { Vault } from "../vault.js";
+import type { AnalyticsReader } from "../analytics.js";
 
 export interface AppDeps {
   config: Config;
@@ -31,6 +32,8 @@ export interface AppDeps {
   delta: DeltaPrivateClient;
   /** The live executor (ADR-025): the only path to order endpoints. */
   trading: DeltaTradingClient;
+  /** Market Analytics snapshots written by the ingest service (ADR-038). */
+  analytics: AnalyticsReader;
   /** Public auth capabilities (Google hidden when unconfigured). */
   authOptions: { emailOtp: true; passkey: true; google: boolean };
 }
