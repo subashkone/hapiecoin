@@ -7,10 +7,14 @@ export interface FakeResponse {
   text?: string;
   headers?: Record<string, string>;
 }
-type Handler = FakeResponse | ((url: URL, call: number) => FakeResponse | Promise<FakeResponse>);
+export interface FakeInit {
+  method: string;
+  body: string | undefined;
+}
+type Handler = FakeResponse | ((url: URL, call: number, init: FakeInit) => FakeResponse | Promise<FakeResponse>);
 
 export class FakeFetch {
-  readonly calls: { url: string; headers: Record<string, string> }[] = [];
+  readonly calls: { url: string; headers: Record<string, string>; method: string; body: string | undefined }[] = [];
   private readonly routes = new Map<string, Handler>();
   private readonly counts = new Map<string, number>();
 
@@ -23,12 +27,13 @@ export class FakeFetch {
   get fetch(): FetchLike {
     return async (input, init) => {
       const url = new URL(input);
-      this.calls.push({ url: input, headers: init.headers });
+      const finit: FakeInit = { method: init.method ?? "GET", body: init.body };
+      this.calls.push({ url: input, headers: init.headers, ...finit });
       const handler = this.routes.get(url.pathname);
       if (!handler) return { status: 404, headers: { get: () => null }, text: () => Promise.resolve(`no route for ${url.pathname}`) };
       const n = (this.counts.get(url.pathname) ?? 0) + 1;
       this.counts.set(url.pathname, n);
-      const r = typeof handler === "function" ? await handler(url, n) : handler;
+      const r = typeof handler === "function" ? await handler(url, n, finit) : handler;
       const text = r.text ?? JSON.stringify(r.body ?? null);
       return { status: r.status ?? 200, headers: { get: (name) => r.headers?.[name.toLowerCase()] ?? null }, text: () => Promise.resolve(text) };
     };

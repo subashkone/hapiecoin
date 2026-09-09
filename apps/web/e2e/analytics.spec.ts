@@ -28,7 +28,7 @@ test.describe("HC-MA Market Analytics", () => {
     await page.getByTestId("section-hub").click();
     await expect(page.getByTestId("watch-strip")).toContainText("ETH", { timeout: 15_000 });
     await page.getByTestId("section-whales").click();
-    await expect(page.getByTestId("section-soon")).toHaveAttribute("data-release", "PR 5.4b");
+    await expect(page.getByTestId("whales-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
     await page.getByTestId("section-terminal").click();
     await page.getByTestId("terminal-menu").getByText("Funding Rates").click();
     await expect(page).toHaveURL(/\/terminal\/derivatives\/funding$/);
@@ -218,5 +218,27 @@ test.describe("HC-MA Market Analytics", () => {
     await page.getByRole("combobox").fill("sentiment");
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/analytics\/sentiment$/);
+  });
+
+  test("HC-MA-067..072 / HC-MA-117 Whales: tiles with the gauge, alerts feed, index chart, positions and large-order tables, reserves placeholder", async ({ page }) => {
+    await page.goto("/analytics/whales");
+    await expect(page.getByTestId("whales-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("section-whales")).toHaveAttribute("aria-current", "page");
+    await expect(page.getByTestId("whale-gauge")).toBeVisible();
+    await expect(page.getByTestId("whale-feed")).toHaveAttribute("data-rows", "20");
+    await expect(page.getByTestId("chart-index")).toHaveAttribute("data-state", "ready");
+    await page.getByTestId("chart-index").getByTestId("chart-tf").getByText("7D").click();
+    await expect(page.getByTestId("chart-index")).toHaveAttribute("data-state", "ready");
+    await expect(page.getByTestId("table-whale-positions")).toHaveAttribute("data-rows", "12");
+    await page.getByTestId("table-whale-positions").getByTestId("th-unrealizedPnl").click();
+    await expect(page.getByTestId("table-whale-positions")).toHaveAttribute("data-sort", "unrealizedPnl");
+    await expect(page.getByTestId("table-large-orders")).toHaveAttribute("data-rows", "8");
+    await expect(page.getByTestId("panel-reserves").getByTestId("coming-soon")).toContainText("GAPS #55");
+    await page.getByTestId("table-whale-positions").getByTestId("table-row").first().click();
+    await expect(page).toHaveURL(/\/analytics\/coin\/[A-Z]+$/);
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox").fill("whales");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/analytics\/whales$/);
   });
 });

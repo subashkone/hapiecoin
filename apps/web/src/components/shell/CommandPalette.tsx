@@ -53,6 +53,7 @@ export function buildCommands(opts: {
       nav("nav:analytics-liquidations", "/analytics/liquidations", "Analytics: Liquidations", ["analytics", "liquidations", "feed", "long short"]),
       nav("nav:analytics-options", "/analytics/options", "Analytics: Options", ["analytics", "options", "max pain", "deribit", "delta"]),
       nav("nav:analytics-sentiment", "/analytics/sentiment", "Analytics: Sentiment", ["analytics", "sentiment", "fear greed", "rsi", "cycle"]),
+      nav("nav:analytics-whales", "/analytics/whales", "Analytics: Whales", ["analytics", "whales", "hyperliquid", "large orders"]),
       nav("nav:subscription", "/subscription", "Subscription: change plan", ["plan", "upgrade", "billing", "renew"]),
       nav("nav:referrals", "/referrals", "Referrals: share link and earnings", ["refer", "commission", "invite", "share"]),
       ...(opts.admin

@@ -1,6 +1,6 @@
 // Analytics dataset schemas (ADR-038): keys, envelopes, labels and the funding APR helper.
 import { describe, expect, it } from "vitest";
-import { ANALYTICS_DATASETS, AnalyticsSnapshot, AnalyticsSymbol, CycleSnapshot, FearGreedSnapshot, FundingSnapshot, LiquidationsData, MarketRow, OptionsSnapshot, OverviewSnapshot, PremiumSnapshot, RAINBOW_MULTIPLIERS, RsiSnapshot, SYMBOL_DATASETS, analyticsKey, fearGreedLabel, fundingApr, logLinearFit, maxPain, rainbowBand, rsi, sma } from "./analytics.js";
+import { ANALYTICS_DATASETS, AnalyticsSnapshot, AnalyticsSymbol, CycleSnapshot, FearGreedSnapshot, FundingSnapshot, LiquidationsData, MarketRow, OptionsSnapshot, OverviewSnapshot, PremiumSnapshot, RAINBOW_MULTIPLIERS, RsiSnapshot, SYMBOL_DATASETS, WhalesSnapshot, analyticsKey, fearGreedLabel, fundingApr, logLinearFit, maxPain, rainbowBand, rsi, sma, whaleIndex, whaleIndexLabel } from "./analytics.js";
 
 describe("[SCHEMA] analytics maths (PR 5.4a)", () => {
   it("finds max pain, computes Wilder RSI, SMA and the log-linear fit, and names rainbow bands", () => {
@@ -29,6 +29,18 @@ describe("[SCHEMA] analytics maths (PR 5.4a)", () => {
     expect(PremiumSnapshot.safeParse({ ...base, dataset: "premium", key: "premium:-", data: { symbol: "BTC", coinbaseUsd: 80001, binanceUsd: 80000, premiumUsd: 1, premiumPct: 0.0000125, points: [{ t: 1, v: 1 }] } }).success).toBe(true);
     expect(analyticsKey("options", "eth")).toBe("options:ETH");
     expect(analyticsKey("rsi")).toBe("rsi:-");
+  });
+  it("accepts the whales envelope and scores the whale index", () => {
+    const base = { source: "x", asOf: 1_788_900_000_000, ttlMs: 60_000, stale: false };
+    const pos = { wallet: "0xabc", coin: "BTC", side: "long", size: 1, notionalUsd: 80000, entryPx: 79000, markPx: 80000, liquidationPx: 60000, unrealizedPnl: 1000, leverage: 5, leverageType: "cross", marginUsed: 16000 };
+    const alert = { t: 1, wallet: "0xabc", coin: "BTC", side: "long", action: "opened", changeUsd: 80000, positionUsd: 80000, entryPx: 79000, leverage: 5 };
+    const order = { venue: "bybit", symbol: "BTC", side: "bid", price: 79000, qty: 20, usd: 1_580_000, firstSeen: 1, lastSeen: 2, resting: true };
+    expect(WhalesSnapshot.safeParse({ ...base, dataset: "whales", key: "whales:-", data: { positions: [pos], alerts: [alert], activity: [{ t: 0, v: 1 }], index: 10, wallets: { candidates: 200, polled: 12, withPositions: 3, source: "leaderboard" }, largeOrders: [order], alertMinUsd: 1e6, wallMinUsd: 1e6 } }).success).toBe(true);
+    const hour = Math.floor(1_788_900_000_000 / 3_600_000) * 3_600_000;
+    expect(whaleIndex([{ t: hour - 3_600_000, v: 50e6 }, { t: hour, v: 25e6 }], 1_788_900_000_000)).toBe(50);
+    expect(whaleIndex([{ t: hour, v: 2e6 }], 1_788_900_000_000)).toBe(20); // against the $10M floor
+    expect(whaleIndex([], 1_788_900_000_000)).toBe(0);
+    expect([whaleIndexLabel(10), whaleIndexLabel(50), whaleIndexLabel(90)]).toEqual(["Quiet", "Active", "Frenzy"]);
   });
 });
 

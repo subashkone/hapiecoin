@@ -8,16 +8,18 @@ import { BybitAdapter } from "./adapters/bybit.js";
 import { CoinGeckoAdapter } from "./adapters/coingecko.js";
 import { DeltaAdapter } from "./adapters/delta.js";
 import { DeribitAdapter } from "./adapters/deribit.js";
+import { HyperliquidAdapter } from "./adapters/hyperliquid.js";
 import { FearGreedAdapter } from "./adapters/feargreed.js";
 import { OkxAdapter } from "./adapters/okx.js";
 import type { IngestConfig } from "./config.js";
 import { type FetchLike, JsonClient } from "./http.js";
-import { type Adapters, buildCycle, buildFearGreed, buildFunding, buildLiquidations, buildLongShort, buildMarkets, buildOpenInterest, buildOptions, buildPremium, buildRsi, buildTakerVolume } from "./jobs.js";
+import { type Adapters, buildCycle, buildFearGreed, buildFunding, buildLiquidations, buildLongShort, buildMarkets, buildOpenInterest, buildOptions, buildPremium, buildRsi, buildTakerVolume, buildWhales } from "./jobs.js";
 import { BybitLiquidationStream, ForceOrderStream, LiquidationBuffer, type LiquidationStream, type SocketLike } from "./liquidations.js";
 import { type Logger, createLogger } from "./log.js";
 import { buildOverview } from "./overview.js";
 import { Scheduler } from "./scheduler.js";
 import { MemoryStore, RedisStore, type SnapshotStore } from "./store.js";
+import { WhaleTracker } from "./whales.js";
 
 type StreamVenue = "binance" | "bybit";
 type StreamState = "open" | "closed" | "error" | "off";
@@ -58,7 +60,10 @@ export function createApp(config: IngestConfig, deps: AppDeps = {}): App {
     fearGreed: new FearGreedAdapter(http, config.FNG_URL),
     deribit: new DeribitAdapter(http, config.DERIBIT_URL),
     delta: new DeltaAdapter(http, config.DELTA_URL),
+    // the leaderboard is ~37 MB: its own client with a long timeout and no retry
+    hyperliquid: new HyperliquidAdapter({ http, leaderboardHttp: new JsonClient({ fetch: deps.fetch ?? globalThis.fetch, timeoutMs: 90_000, maxAttempts: 1 }), baseUrl: config.HYPERLIQUID_URL, leaderboardUrl: config.HYPERLIQUID_LEADERBOARD_URL }),
   };
+  const whales = new WhaleTracker({ alertMinUsd: config.WHALE_ALERT_USD, wallMinUsd: config.WALL_USD });
   const tracked = new Set(config.ANALYTICS_SYMBOLS);
   const buffer = new LiquidationBuffer({ now });
   const streamState: Record<StreamVenue, StreamState> = { binance: "off", bybit: "off" };
@@ -93,6 +98,7 @@ export function createApp(config: IngestConfig, deps: AppDeps = {}): App {
   scheduler.add({ name: analyticsKey("rsi"), intervalMs: config.RSI_REFRESH_MS, run: () => buildRsi(ctx(config.RSI_REFRESH_MS), config.ANALYTICS_SYMBOLS) });
   if (adapters.coingecko) scheduler.add({ name: analyticsKey("premium"), intervalMs: config.PREMIUM_REFRESH_MS, run: () => buildPremium(ctx(config.PREMIUM_REFRESH_MS), store) });
   else log.warn("COINGECKO_API_KEY not set: the premium dataset is skipped");
+  scheduler.add({ name: analyticsKey("whales"), intervalMs: config.WHALES_REFRESH_MS, run: () => buildWhales(ctx(config.WHALES_REFRESH_MS), whales, store, { symbols: config.ANALYTICS_SYMBOLS, wallets: config.WHALE_WALLETS, candidates: config.WHALE_CANDIDATES }) });
   // folds the snapshots above into the hub/overview payload; runs last on boot (stagger order) and then every derivatives interval
   scheduler.add({ name: analyticsKey("overview"), intervalMs: d, run: () => buildOverview(store, config.ANALYTICS_SYMBOLS, now, d) });
 

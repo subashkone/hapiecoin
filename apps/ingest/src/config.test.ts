@@ -13,6 +13,10 @@ describe("[INGEST] config", () => {
     expect(c.OPTIONS_SYMBOLS).toEqual(["BTC", "ETH"]);
     expect(loadConfig({ OPTIONS_SYMBOLS: "btc" }).OPTIONS_SYMBOLS).toEqual(["BTC"]);
     expect(c.CYCLE_REFRESH_MS).toBe(3_600_000);
+    expect(c.WHALE_WALLETS).toEqual([]);
+    expect(c.WHALE_CANDIDATES).toBe(200);
+    expect(loadConfig({ WHALE_WALLETS: " 0x5B5D51203A0F9079F8AEB098A6523A13F298C060 ,, " }).WHALE_WALLETS).toEqual(["0x5b5d51203a0f9079f8aeb098a6523a13f298c060"]);
+    expect(() => loadConfig({ WHALE_WALLETS: "nope" })).toThrow(ConfigError);
     expect(loadConfig({ ANALYTICS_SYMBOLS: " btc, eth ,, sol " }).ANALYTICS_SYMBOLS).toEqual(["BTC", "ETH", "SOL"]);
   });
   it("lists every problem", () => {

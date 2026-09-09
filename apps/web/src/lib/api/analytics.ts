@@ -38,6 +38,7 @@ export const useCycle = () => useAnalytics("cycle");
 export const useRsi = () => useAnalytics("rsi");
 export const usePremium = () => useAnalytics("premium");
 export const useFearGreed = () => useAnalytics("fear-greed");
+export const useWhales = () => useAnalytics("whales");
 
 /** One dataset for several symbols at once (the funding-arbitrage table); missing symbols come back as undefined. */
 export function useAnalyticsMany<D extends AnalyticsDataset>(dataset: D, symbols: readonly string[]) {

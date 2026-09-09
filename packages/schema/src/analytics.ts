@@ -8,7 +8,7 @@ export const AnalyticsVenue = z.enum(ANALYTICS_VENUES);
 export type AnalyticsVenue = z.infer<typeof AnalyticsVenue>;
 export const ANALYTICS_VENUE_LABELS: Record<AnalyticsVenue, string> = { binance: "Binance", bybit: "Bybit", okx: "OKX", delta: "Delta India" };
 
-export const ANALYTICS_DATASETS = ["funding", "open-interest", "long-short", "taker-volume", "liquidations", "markets", "fear-greed", "overview", "options", "cycle", "rsi", "premium"] as const;
+export const ANALYTICS_DATASETS = ["funding", "open-interest", "long-short", "taker-volume", "liquidations", "markets", "fear-greed", "overview", "options", "cycle", "rsi", "premium", "whales"] as const;
 export const AnalyticsDataset = z.enum(ANALYTICS_DATASETS);
 export type AnalyticsDataset = z.infer<typeof AnalyticsDataset>;
 
@@ -238,6 +238,70 @@ export const PremiumData = z.strictObject({
 });
 export type PremiumData = z.infer<typeof PremiumData>;
 
+export const WhaleSide = z.enum(["long", "short"]);
+export type WhaleSide = z.infer<typeof WhaleSide>;
+/** One open perpetual position on Hyperliquid (HC-MA-070); `markPx` comes from the asset contexts, null when unknown. */
+export const WhalePosition = z.strictObject({
+  wallet: z.string(),
+  coin: z.string(),
+  side: WhaleSide,
+  size: z.number().positive(),
+  notionalUsd: z.number().nonnegative(),
+  entryPx: z.number().positive(),
+  markPx: z.number().positive().nullable(),
+  liquidationPx: z.number().positive().nullable(),
+  unrealizedPnl: z.number(),
+  leverage: z.number().positive(),
+  leverageType: z.string(),
+  marginUsed: z.number().nonnegative(),
+});
+export type WhalePosition = z.infer<typeof WhalePosition>;
+export const WHALE_ACTIONS = ["opened", "closed", "increased", "reduced", "flipped"] as const;
+export const WhaleAction = z.enum(WHALE_ACTIONS);
+export type WhaleAction = z.infer<typeof WhaleAction>;
+/** A position change between two polls above the alert threshold (HC-MA-068). */
+export const WhaleAlert = z.strictObject({
+  t: Ms,
+  wallet: z.string(),
+  coin: z.string(),
+  side: WhaleSide,
+  action: WhaleAction,
+  /** Absolute notional that changed hands. */
+  changeUsd: z.number().nonnegative(),
+  /** Notional after the change. */
+  positionUsd: z.number().nonnegative(),
+  entryPx: z.number().positive().nullable(),
+  leverage: z.number().positive().nullable(),
+});
+export type WhaleAlert = z.infer<typeof WhaleAlert>;
+/** A resting order-book level above the wall threshold (HC-MA-071); `resting` false once it left the book. */
+export const LargeOrder = z.strictObject({
+  venue: AnalyticsVenue,
+  symbol: AnalyticsSymbol,
+  side: z.enum(["bid", "ask"]),
+  price: z.number().positive(),
+  qty: z.number().positive(),
+  usd: z.number().positive(),
+  firstSeen: Ms,
+  lastSeen: Ms,
+  resting: z.boolean(),
+});
+export type LargeOrder = z.infer<typeof LargeOrder>;
+export const WhalesData = z.strictObject({
+  positions: z.array(WhalePosition),
+  /** Newest first, capped by the ingest. */
+  alerts: z.array(WhaleAlert),
+  /** Hourly alert notional (USD) kept by the ingest, oldest first. */
+  activity: z.array(SeriesPoint),
+  /** 0–100: the current hour's alert notional against the busiest hour in the kept window (HC-MA-069). */
+  index: z.number().min(0).max(100),
+  wallets: z.strictObject({ candidates: z.number().int().nonnegative(), polled: z.number().int().nonnegative(), withPositions: z.number().int().nonnegative(), source: z.string() }),
+  largeOrders: z.array(LargeOrder),
+  alertMinUsd: z.number().positive(),
+  wallMinUsd: z.number().positive(),
+});
+export type WhalesData = z.infer<typeof WhalesData>;
+
 /** The envelope every dataset travels in. `stale` is set when the last refresh failed and the previous data is being served. */
 function envelope<D extends AnalyticsDataset, T extends z.ZodType>(dataset: D, data: T) {
   return z.strictObject({
@@ -264,7 +328,8 @@ export const OptionsSnapshot = envelope("options", OptionsData);
 export const CycleSnapshot = envelope("cycle", CycleData);
 export const RsiSnapshot = envelope("rsi", RsiData);
 export const PremiumSnapshot = envelope("premium", PremiumData);
-export const AnalyticsSnapshot = z.discriminatedUnion("dataset", [FundingSnapshot, OpenInterestSnapshot, LongShortSnapshot, TakerVolumeSnapshot, LiquidationsSnapshot, MarketsSnapshot, FearGreedSnapshot, OverviewSnapshot, OptionsSnapshot, CycleSnapshot, RsiSnapshot, PremiumSnapshot]);
+export const WhalesSnapshot = envelope("whales", WhalesData);
+export const AnalyticsSnapshot = z.discriminatedUnion("dataset", [FundingSnapshot, OpenInterestSnapshot, LongShortSnapshot, TakerVolumeSnapshot, LiquidationsSnapshot, MarketsSnapshot, FearGreedSnapshot, OverviewSnapshot, OptionsSnapshot, CycleSnapshot, RsiSnapshot, PremiumSnapshot, WhalesSnapshot]);
 export type AnalyticsSnapshot = z.infer<typeof AnalyticsSnapshot>;
 export type SnapshotOf<D extends AnalyticsDataset> = Extract<AnalyticsSnapshot, { dataset: D }>;
 
@@ -351,6 +416,15 @@ export function logLinearFit(values: readonly number[]): number[] {
 }
 export const RAINBOW_MULTIPLIERS = [0.45, 0.6, 0.8, 1.1, 1.45, 1.9, 2.5, 3.3, 4.3, 5.6] as const;
 export const RAINBOW_NAMES = ["Basically a fire sale", "Buy", "Accumulate", "Still cheap", "Hold", "Is this a bubble?", "FOMO intensifies", "Sell, seriously", "Maximum bubble"] as const;
+/** Whale Index: the current hour's alert notional against the busiest kept hour (floor `floorUsd`), 0–100. */
+export function whaleIndex(activity: readonly SeriesPoint[], now: number, floorUsd = 10_000_000): number {
+  const hour = Math.floor(now / 3_600_000) * 3_600_000;
+  const current = activity.find((p) => p.t === hour)?.v ?? 0;
+  const scale = Math.max(floorUsd, ...activity.map((p) => p.v));
+  return Math.max(0, Math.min(100, Math.round((current / scale) * 100)));
+}
+export const whaleIndexLabel = (v: number): string => (v < 30 ? "Quiet" : v < 70 ? "Active" : "Frenzy");
+
 /** Index of the rainbow band a price sits in relative to the fit (0 = lowest). */
 export function rainbowBand(price: number, fit: number, multipliers: readonly number[] = RAINBOW_MULTIPLIERS): number {
   const r = price / fit;

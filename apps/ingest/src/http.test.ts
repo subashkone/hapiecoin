@@ -16,6 +16,12 @@ describe("[INGEST] JsonClient", () => {
     await c.get("https://h/x?z=1", Body, { a: 1 });
     expect(f.calls[1]?.url).toBe("https://h/x?z=1&a=1");
   });
+  it("posts JSON bodies with the content type and validates the reply", async () => {
+    const f = new FakeFetch().on("/info", (_url, _n, init) => ({ body: { ok: init.body === JSON.stringify({ type: "x" }) && init.method === "POST" } }));
+    const c = new JsonClient({ fetch: f.fetch, sleep: noSleep });
+    expect(await c.post("https://h/info", Body, { type: "x" })).toEqual({ ok: true });
+    expect(f.calls[0]?.headers["content-type"]).toBe("application/json");
+  });
   it("rejects non-JSON and schema mismatches without retrying", async () => {
     const f = new FakeFetch().on("/t", { text: "<html>" }).on("/s", { body: { ok: "yes" } });
     const c = new JsonClient({ fetch: f.fetch, sleep: noSleep });

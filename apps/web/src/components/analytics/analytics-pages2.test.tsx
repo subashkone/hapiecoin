@@ -9,6 +9,7 @@ import { useUiStore } from "@/lib/store";
 import { EtfPage } from "./EtfPage";
 import { OptionsPage } from "./OptionsPage";
 import { SentimentPage } from "./SentimentPage";
+import { WhalesPage } from "./WhalesPage";
 import { Checklist, Donut, RsiCell } from "./bits";
 
 let mock: MockFetch;
@@ -117,6 +118,57 @@ describe("HC-MA-073..081, 118, 119 Sentiment", () => {
       expect(screen.getByTestId("fg-label").textContent).toContain("waiting for alternative.me");
       expect(screen.getAllByTestId("check-row").every((r) => r.dataset["hit"] === "na")).toBe(true);
       expect(within(screen.getByTestId("chart-premium")).getByTestId("chart-empty").textContent).toContain("COINGECKO_API_KEY");
+    } finally {
+      globalThis.fetch = original;
+      mock = installMockFetch();
+    }
+  });
+});
+
+describe("HC-MA-067..072, 117 Whales", () => {
+  it("renders tiles with the gauge, the alerts feed, the index chart, both tables and the reserves placeholder", async () => {
+    pathnameMock.value = "/analytics/whales";
+    renderWithProviders(<WhalesPage />);
+    await waitFor(() => expect(screen.getByTestId("whales-page").dataset["state"]).toBe("ready"), { timeout: 4000 });
+    expect(screen.getByTestId("tile-longs").textContent).toContain("positions");
+    expect(screen.getByTestId("tile-shorts").textContent).toContain("uPnL");
+    expect(screen.getByTestId("tile-orders").textContent).toContain("7");
+    expect(screen.getByTestId("whale-gauge").dataset["value"]).toMatch(/^\d+$/);
+    expect(screen.getByTestId("whale-feed").dataset["rows"]).toBe("20");
+    expect(screen.getAllByTestId("whale-row")[0]?.textContent).toContain("$");
+    expect(screen.getByTestId("chart-index").dataset["state"]).toBe("ready");
+    expect(screen.getByTestId("index-note").textContent).toContain("6 with positions of 14 polled");
+    expect(screen.getByTestId("table-whale-positions").dataset["rows"]).toBe("12");
+    expect(screen.getByTestId("table-large-orders").dataset["rows"]).toBe("8");
+    expect(within(screen.getByTestId("table-large-orders")).getAllByText("gone")).toHaveLength(1);
+    expect(within(screen.getByTestId("panel-reserves")).getByTestId("coming-soon").textContent).toContain("GAPS #55");
+    const u = userEvent.setup();
+    await u.click(within(screen.getByTestId("chart-index")).getByText("7D"));
+    expect(screen.getByTestId("chart-index").dataset["state"]).toBe("ready");
+    await u.click(within(screen.getByTestId("chart-index")).getByText("1D"));
+    const positions = screen.getByTestId("table-whale-positions");
+    await u.click(within(positions).getByTestId("th-unrealizedPnl"));
+    expect(positions.dataset["sort"]).toBe("unrealizedPnl");
+    await u.type(within(positions).getByTestId("table-search"), "eth");
+    expect(Number(positions.dataset["rows"])).toBeLessThan(12);
+    await u.click(within(positions).getByTestId("table-columns"));
+    await u.click(within(positions).getByTestId("col-marginUsed"));
+    expect(within(positions).getByTestId("th-marginUsed")).toBeTruthy();
+    await u.click(within(positions).getAllByTestId("table-row")[0]!);
+    expect(routerMock.push).toHaveBeenCalledWith(expect.stringMatching(/^\/analytics\/coin\//));
+    await u.click(within(screen.getByTestId("table-large-orders")).getByTestId("th-resting"));
+    expect(screen.getByTestId("table-large-orders").dataset["sort"]).toBe("resting");
+  });
+  it("shows the unavailable notice and the empty feed", async () => {
+    mock.restore();
+    const original = globalThis.fetch;
+    globalThis.fetch = vi.fn(() => Promise.resolve(new Response(JSON.stringify({ code: "UNAVAILABLE", message: "not yet" }), { status: 503, headers: { "content-type": "application/json" } })));
+    try {
+      renderWithProviders(<WhalesPage />);
+      await waitFor(() => expect(screen.getByTestId("whales-page").dataset["state"]).toBe("unavailable"), { timeout: 4000 });
+      expect(screen.getByTestId("whales-unavailable")).toBeTruthy();
+      expect(screen.getByTestId("whale-feed-empty").textContent).toContain("No alerts yet");
+      expect(screen.getByTestId("tile-index").textContent).toContain("Quiet");
     } finally {
       globalThis.fetch = original;
       mock = installMockFetch();

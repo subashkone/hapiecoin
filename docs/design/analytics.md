@@ -158,3 +158,29 @@ Unit: `analytics-lib.test.ts` (log axis, bands, regions, labels), `derive.test.t
 
 ### Real-data check (user's machine, 09 Sep)
 Deribit BTC: $34.8B OI across 11 expiries, nearest max pain 79,000; Delta BTC: $672M across 7 expiries. Cycle: 1000 closes, 2-year averages present. RSI: 10 rows. Premium: −$51.88 on the first hour.
+
+## 5.4b · Whales (this PR)
+Traceability: HC-MA-067..072, 117. ADR-043; gaps #55, #60.
+
+### Job
+Answers "what are the biggest leveraged traders doing right now": their open positions with liquidation prices, what they just opened or closed, how busy the hour is, and where the resting walls sit.
+
+### Layout
+```
+tiles ×4: Tracked whale longs · Tracked whale shorts · Large limit orders · Whale Index (gauge + Quiet/Active/Frenzy)
+[Hyperliquid Whale Alerts feed (time · wallet · coin · side · action · size)] [Whale Index chart 1D/7D + wallet counts]
+[Open Whale Positions: Wallet · Coin · Side ×lev · Position · Entry · Mark · Liq Price · uPnL (+ Margin hidden)]
+[Large limit orders: Seen · Exchange · Symbol · Side · Limit Price · Value · Placed/resting|gone] [Exchange BTC Reserves · coming soon]
+```
+
+### States
+loading · ready · unavailable (503) · empty feed ("Waiting for the first change above $1M…") · empty tables with a reason · index 0 = Quiet · "gone" walls kept 30 minutes · source line names "leaderboard scan" or "watched wallets".
+
+### Numbers
+Notional in compact USD; entry / mark / liquidation as prices; uPnL signed; leverage as "5×" on the side badge; wallet as 0x1234…abcd with the full address in the tooltip; the index as a whole number 0–100.
+
+### Interaction
+Index chart 1D/7D chips; positions table sort / search / Columns ▾ / CSV, row → coin page; large-orders table sort / CSV. Palette `nav:analytics-whales`.
+
+### Tests
+Unit: `whales.test.ts` (diffs, walls, tracker), `jobs.test.ts` (buildWhales scan → incremental → closed → leaderboard down → nothing reachable), adapters (Hyperliquid, Bybit book), `analytics-pages2.test.tsx` (Whales). E2E: one case in `analytics.spec.ts`; visual `analytics-whales-*`.

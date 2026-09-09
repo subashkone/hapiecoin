@@ -4,7 +4,7 @@
  */
 import type { z } from "zod";
 
-export type FetchLike = (input: string, init: { signal: AbortSignal; headers: Record<string, string> }) => Promise<{
+export type FetchLike = (input: string, init: { signal: AbortSignal; headers: Record<string, string>; method?: string; body?: string }) => Promise<{
   status: number;
   headers: { get(name: string): string | null };
   text(): Promise<string>;
@@ -60,17 +60,26 @@ export class JsonClient {
   }
 
   /** GET `url` (+ query) and validate the JSON body with `schema`. */
-  async get<T extends z.ZodType>(url: string, schema: T, query: Record<string, string | number> = {}, headers: Record<string, string> = {}): Promise<z.infer<T>> {
+  get<T extends z.ZodType>(url: string, schema: T, query: Record<string, string | number> = {}, headers: Record<string, string> = {}): Promise<z.infer<T>> {
     const qs = Object.entries(query)
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
       .join("&");
     const full = qs ? `${url}${url.includes("?") ? "&" : "?"}${qs}` : url;
+    return this.request(full, schema, { headers: { accept: "application/json", ...headers } });
+  }
+
+  /** POST a JSON `body` to `url` and validate the response with `schema` (Hyperliquid's info endpoint). */
+  post<T extends z.ZodType>(url: string, schema: T, body: unknown, headers: Record<string, string> = {}): Promise<z.infer<T>> {
+    return this.request(url, schema, { method: "POST", body: JSON.stringify(body), headers: { accept: "application/json", "content-type": "application/json", ...headers } });
+  }
+
+  private async request<T extends z.ZodType>(full: string, schema: T, init: { headers: Record<string, string>; method?: string; body?: string }): Promise<z.infer<T>> {
     let lastError: Error = new Error(`request failed: ${full}`);
     for (let attempt = 1; attempt <= this.maxAttempts; attempt++) {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), this.timeoutMs);
       try {
-        const res = await this.fetchImpl(full, { signal: ctrl.signal, headers: { accept: "application/json", ...headers } });
+        const res = await this.fetchImpl(full, { signal: ctrl.signal, ...init });
         const text = await res.text();
         if (res.status >= 200 && res.status < 300) {
           let parsed: unknown;

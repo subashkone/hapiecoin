@@ -82,7 +82,7 @@ describe("[INGEST] app", () => {
     sockets[1]!.emit("open");
     expect(app.health().stream.bybit).toBe("open");
     const names = app.scheduler.statuses().map((j) => j.name);
-    expect(names).toEqual(["funding:BTC", "open-interest:BTC", "long-short:BTC", "taker-volume:BTC", "liquidations:-", "markets:-", "fear-greed:-", "options:BTC", "options:ETH", "cycle:-", "rsi:-", "premium:-", "overview:-"]);
+    expect(names).toEqual(["funding:BTC", "open-interest:BTC", "long-short:BTC", "taker-volume:BTC", "liquidations:-", "markets:-", "fear-greed:-", "options:BTC", "options:ETH", "cycle:-", "rsi:-", "premium:-", "whales:-", "overview:-"]);
     for (const n of names) await app.scheduler.tick(n);
     expect(app.health().ok).toBe(true);
     expect((await store.get("markets:-"))?.source).toBe("CoinGecko");
