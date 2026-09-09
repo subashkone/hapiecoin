@@ -1,6 +1,6 @@
 // Live trading flows (Phase 3 item 2, ADR-025) against the mock API's fake venue: Go live from a paper card
 // (HC-TR-063), live from the Builder (HC-TR-055), refused orders and Retry (HC-TR-083), Trade All → Live
-// (HC-TR-089), live adjustments through Confirm Adjustment (HC-TR-088) and the Live tab (HC-TR-082, 084..087).
+// (HC-TR-089), live adjustments through the workbench's confirm (HC-TR-088, ADR-044) and the Live tab (HC-TR-082, 084..087).
 import type { Strategy, StrategyOrder } from "@hapiecoin/schema";
 import { chainTopic } from "@hapiecoin/schema";
 import { act, screen, waitFor, within } from "@testing-library/react";
@@ -22,7 +22,7 @@ const mine = () => acc().strategies;
 const CALL = { id: "leg_a", kind: "call" as const, side: "buy" as const, strike: "80000", expiry: EXPIRY, symbol: "C-BTC-80000-250926", lots: 10, price: "1200", entryPrice: "1200", exitPrice: null, iv: 0.5, status: "open" as const, isAdjustment: false, position: 0, openedAt: "2026-09-08T10:00:00Z", closedAt: null, orderId: null };
 function strat(i: number, over: Partial<Strategy> = {}): Strategy {
   const at = `2026-09-0${(i % 8) + 1}T10:00:00Z`;
-  return { id: `strat_${i}`, name: `Paper ${i}`, asset: "BTC", status: "paper", tradingMode: "paper", templateName: "Custom", brokerId: "brk_delta", legs: [{ ...CALL, id: `leg_${i}` }], realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], startedAt: at, closedAt: null, createdAt: at, updatedAt: at, ...over };
+  return { id: `strat_${i}`, name: `Paper ${i}`, asset: "BTC", status: "paper", tradingMode: "paper", templateName: "Custom", brokerId: "brk_delta", legs: [{ ...CALL, id: `leg_${i}` }], realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: at, closedAt: null, createdAt: at, updatedAt: at, ...over };
 }
 function connect() {
   acc().credential = { brokerId: "brk_delta", apiKeyMasked: "****ab12", connectedAt: "2026-09-08T09:00:00Z", whitelistedIp: "203.0.113.10" };
@@ -228,10 +228,10 @@ describe("HC-TR-055 live from the Builder", () => {
 });
 
 describe("HC-TR-088 live adjustments and square off from Details", () => {
-  it("an adjustment goes through Confirm Adjustment Order and lands as a filled order; Square off all archives with exit orders", async () => {
+  it("an adjustment goes through the workbench's live confirm with the venue check and lands as a filled order; Square off all archives with exit orders", async () => {
     connect();
     const at = "2026-09-08T10:00:00Z";
-    mine().push(strat(1, { status: "live", tradingMode: "live", orderBatchId: "web-seed", orders: [{ id: "ord_1", legId: "leg_1", purpose: "entry", clientOrderId: "hc-leg_1-1", venueOrderId: "700001", symbol: CALL.symbol, side: "buy", size: 10, state: "pending", fillPrice: null, error: null, attempts: 1, createdAt: at, updatedAt: at }] }));
+    mine().push(strat(1, { status: "live", tradingMode: "live", orderBatchId: "web-seed", orders: [{ id: "ord_1", legId: "leg_1", purpose: "entry", batchId: "web-seed", clientOrderId: "hc-leg_1-1", venueOrderId: "700001", symbol: CALL.symbol, side: "buy", size: 10, state: "pending", fillPrice: null, error: null, attempts: 1, createdAt: at, updatedAt: at }] }));
     useUiStore.setState({ workspaceTab: "live" });
     renderWithProviders(<Workspace />);
     act(() => FakeSocket.last().open());
@@ -247,33 +247,64 @@ describe("HC-TR-088 live adjustments and square off from Details", () => {
     expect(details.dataset["status"]).toBe("live");
     expect(within(details).getByTestId("details-mode-note").textContent).toContain("Live trading");
     await u.click(within(details).getByTestId("details-adjust"));
-    const picker = screen.getByTestId("chain-picker");
-    await waitFor(() => expect(within(picker).getAllByTestId("picker-expiry").length).toBeGreaterThan(0));
+    const wb = await screen.findByTestId("adjust-workbench");
     serveMarket();
-    await waitFor(() => expect(within(picker).getAllByTestId("picker-row").length).toBeGreaterThan(0), { timeout: 5000 });
-    await u.click(within(within(picker).getAllByTestId("picker-row")[3]!).getByTestId("picker-sell-call"));
-    await u.click(within(picker).getByTestId("picker-add"));
-    let confirm = await screen.findByTestId("confirm-adjustment");
-    expect(within(confirm).getAllByTestId("adj-row")).toHaveLength(1);
+    await waitFor(() => expect(within(wb).getAllByTestId("wb-chain-row").length).toBeGreaterThan(0), { timeout: 5000 });
+    await u.click(within(within(wb).getAllByTestId("wb-chain-row")[3]!).getByTestId("wb-chain-sell-call"));
+    await u.click(within(wb).getByTestId("adjust-review"));
+    let confirm = await screen.findByTestId("adjust-confirm");
+    expect(confirm.dataset["mode"]).toBe("live");
+    expect(within(confirm).getAllByTestId("adjust-confirm-row")).toHaveLength(1);
+    // the venue prices the proposed batch before anything is placed
+    await waitFor(() => expect(within(confirm).getByTestId("adjust-venue").dataset["ok"]).toBe("true"));
+    expect(within(confirm).getByTestId("adjust-venue").textContent).toContain("band");
     expect(mine()[0]!.legs).toHaveLength(1); // nothing sent before confirm
-    await u.click(within(confirm).getByText("Cancel"));
-    await waitFor(() => expect(screen.queryByTestId("confirm-adjustment")).toBeNull());
+    await u.click(within(confirm).getByTestId("adjust-cancel"));
+    await waitFor(() => expect(screen.queryByTestId("adjust-confirm")).toBeNull());
     expect(mine()[0]!.legs).toHaveLength(1);
-    await u.click(within(details).getByTestId("details-adjust"));
-    const again = screen.getByTestId("chain-picker");
-    await waitFor(() => expect(within(again).getAllByTestId("picker-row").length).toBeGreaterThan(0), { timeout: 5000 });
-    await u.click(within(within(again).getAllByTestId("picker-row")[3]!).getByTestId("picker-sell-call"));
-    await u.click(within(again).getByTestId("picker-add"));
-    confirm = await screen.findByTestId("confirm-adjustment");
-    await u.click(within(confirm).getByTestId("adj-confirm"));
+    await u.click(within(wb).getByTestId("adjust-review"));
+    confirm = await screen.findByTestId("adjust-confirm");
+    await waitFor(() => expect(within(confirm).getByTestId("adjust-venue").dataset["ok"]).toBe("true"));
+    await u.type(within(confirm).getByTestId("adjust-reason"), "hedge the upside");
+    await u.click(within(confirm).getByTestId("adjust-apply"));
     await waitFor(() => expect(mine()[0]!.legs).toHaveLength(2));
     expect(mine()[0]!.orders.at(-1)).toMatchObject({ purpose: "adjustment", state: "filled" });
-    await waitFor(() => expect(screen.queryByTestId("confirm-adjustment")).toBeNull());
-    // square off all: live exits at the venue, strategy archived
-    await u.click(within(details).getByTestId("details-sqall"));
-    await u.click(within(details).getByTestId("details-sqall-confirm"));
+    expect(mine()[0]!.adjustments.at(-1)).toMatchObject({ added: 1, reason: "hedge the upside" });
+    await waitFor(() => expect(screen.queryByTestId("adjust-confirm")).toBeNull());
+    // a second batch: the venue refuses (account blocked) → Place stays disabled with the reason; unblocked, it goes with a fresh key
+    await waitFor(() => expect(screen.queryByTestId("adjust-workbench")).toBeNull());
+    const firstKey = mine()[0]!.adjustments.at(-1)!.batchId;
+    await u.keyboard("{Escape}");
+    await u.click(within(panel()).getByTestId("card-adjust"));
+    const wb2 = await screen.findByTestId("adjust-workbench");
+    serveMarket();
+    await waitFor(() => expect(within(wb2).getAllByTestId("wb-chain-row").length).toBeGreaterThan(0), { timeout: 5000 });
+    await u.click(within(within(wb2).getAllByTestId("wb-chain-row")[4]!).getByTestId("wb-chain-buy-put"));
+    acc().tradingDisabled = true;
+    await u.click(within(wb2).getByTestId("adjust-review"));
+    const refused = await screen.findByTestId("adjust-confirm");
+    await waitFor(() => expect(within(refused).getByTestId("adjust-venue").dataset["ok"]).toBe("false"));
+    expect(within(refused).getByTestId("adjust-venue-verdict").textContent).toContain("disabled");
+    expect(within(refused).getByTestId<HTMLButtonElement>("adjust-apply").disabled).toBe(true);
+    await u.click(within(refused).getByTestId("adjust-cancel"));
+    acc().tradingDisabled = false;
+    await u.click(within(wb2).getByTestId("adjust-review"));
+    const second = await screen.findByTestId("adjust-confirm");
+    await waitFor(() => expect(within(second).getByTestId("adjust-venue").dataset["ok"]).toBe("true"));
+    await u.click(within(second).getByTestId("adjust-apply"));
+    await waitFor(() => expect(mine()[0]!.adjustments).toHaveLength(2));
+    expect(mine()[0]!.adjustments.at(-1)!.batchId).not.toBe(firstKey);
+    expect(mine()[0]!.orders.at(-1)).toMatchObject({ purpose: "adjustment", batchId: mine()[0]!.adjustments.at(-1)!.batchId });
+    await waitFor(() => expect(screen.queryByTestId("adjust-confirm")).toBeNull());
+    // the workbench closes and Details reopens with the history; square off all: live exits at the venue, strategy archived
+    await waitFor(() => expect(screen.queryByTestId("adjust-workbench")).toBeNull());
+    const reopened = await screen.findByTestId("strategy-details");
+    await waitFor(() => expect(within(reopened).getAllByTestId("details-adjustment")).toHaveLength(2));
+    expect(within(reopened).getByTestId("adjusted-badge").dataset["count"]).toBe("2");
+    await u.click(within(reopened).getByTestId("details-sqall"));
+    await u.click(within(reopened).getByTestId("details-sqall-confirm"));
     await waitFor(() => expect(mine()[0]!.status).toBe("archived"));
-    expect(mine()[0]!.orders.filter((o) => o.purpose === "exit")).toHaveLength(2);
+    expect(mine()[0]!.orders.filter((o) => o.purpose === "exit")).toHaveLength(3); // the original leg and both adjustment legs
     expect(mine()[0]!.legs.every((l) => l.status === "squared_off")).toBe(true);
   });
 });

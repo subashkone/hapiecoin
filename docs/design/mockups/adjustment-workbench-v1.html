@@ -1,0 +1,308 @@
+<title>Adjustment Workbench</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0b0d10;--card:#12151a;--card2:#171b21;--border:#242a33;--fg:#e6e8eb;--muted:#8b93a1;--amber:#f0a92c;--amber-bg:rgba(240,169,44,.12);--up:#39b37a;--up-bg:rgba(57,179,122,.14);--down:#e05c5c;--down-bg:rgba(224,92,92,.14);--curve:#5b8def;--font:Inter,system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.45 var(--font)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.micro{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.top{display:flex;align-items:center;gap:14px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--card)}
+.top b{font-size:15px}.top .amber{color:var(--amber)}
+.pill{display:inline-block;border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.pill.paper{border-color:var(--muted)}.pill.live{border-color:var(--amber);background:var(--amber-bg);color:var(--amber)}
+.flow{display:flex;gap:6px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.flow .st{border:1px solid var(--border);border-radius:14px;padding:2px 10px;font-size:11.5px;color:var(--muted)}
+.flow .st.on{border-color:var(--amber);color:var(--fg);background:var(--amber-bg)}.flow .st.done{color:var(--up);border-color:var(--up)}
+.flow .arrow{color:var(--muted)}
+.approach{margin-left:auto;display:flex;gap:4px;align-items:center}
+.approach button{background:var(--card2);border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:5px 12px;font:12.5px var(--font);cursor:pointer}
+.approach button.on{color:var(--fg);border-color:var(--amber);background:var(--amber-bg)}
+.chooser{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.chooser .opt{border:1px solid var(--border);border-radius:6px;padding:10px 12px;cursor:pointer;background:var(--card)}
+.chooser .opt.on{border-color:var(--amber);background:var(--amber-bg)}
+.chooser .opt b{display:block;margin-bottom:3px}.chooser .opt span{color:var(--muted);font-size:12px}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-height:calc(100vh - 92px)}
+.pane{min-width:0;border-right:1px solid var(--border)}.pane:last-child{border-right:0}
+.tabs{display:flex;gap:2px;padding:0 10px;border-bottom:1px solid var(--border)}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:9px 10px;font:13px var(--font);cursor:pointer}
+.tabs button.on{color:var(--fg);border-bottom-color:var(--amber)}.tabs .right{margin-left:auto}
+.body{padding:12px}
+.card{border:1px solid var(--border);background:var(--card);border-radius:6px;padding:10px 12px;margin-bottom:10px}
+.card.sel{border-color:var(--curve)}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{background:var(--card2);border:1px solid var(--border);color:var(--fg);border-radius:5px;padding:5px 11px;font:12.5px var(--font);cursor:pointer}
+.btn.primary{background:var(--amber);border-color:var(--amber);color:#1a1200;font-weight:600}
+.btn.warn{color:var(--amber);border-color:var(--amber)}.btn.danger{color:var(--down);border-color:transparent;background:none}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.legchip{font-family:var(--mono);font-size:11px;border:1px solid var(--border);border-radius:4px;padding:1px 6px;color:var(--muted)}
+.legchip.adj{border-style:dashed;color:var(--fg)}
+.pos{color:var(--up)}.neg{color:var(--down)}
+.side{font-family:var(--mono);font-size:10.5px;border-radius:3px;padding:1px 6px}
+.side.buy{background:var(--up-bg);color:var(--up)}.side.sell{background:var(--down-bg);color:var(--down)}
+table{border-collapse:collapse;width:100%}th{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--muted);text-align:left;padding:5px 6px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:6px;border-bottom:1px solid var(--border);white-space:nowrap}td.r,th.r{text-align:right}
+.bs{display:inline-block;width:20px;height:20px;line-height:18px;text-align:center;border:1px solid var(--border);border-radius:3px;font-family:var(--mono);font-size:11px;cursor:pointer;color:var(--muted);user-select:none}
+.bs.b:hover,.bs.b.on{color:var(--up);border-color:var(--up);background:var(--up-bg)}.bs.s:hover,.bs.s.on{color:var(--down);border-color:var(--down);background:var(--down-bg)}
+.strike{font-family:var(--mono);font-weight:600;background:var(--card2)}
+.chainwrap{max-height:340px;overflow:auto;border:1px solid var(--border);border-radius:6px}
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.tile{border:1px solid var(--border);background:var(--card);border-radius:6px;padding:8px 10px;min-width:0}
+.tile .v{font-family:var(--mono);font-size:16px;font-weight:600;margin-top:2px}
+.tile .d{font-family:var(--mono);font-size:11px;margin-top:2px;color:var(--muted)}
+.tile .d .arr{color:var(--muted);margin:0 4px}
+.legend{display:flex;gap:14px;font-size:11.5px;color:var(--muted);margin:6px 0}
+.legend i{display:inline-block;width:14px;height:0;border-top:2px solid var(--fg);vertical-align:middle;margin-right:5px}
+.legend i.ghost{border-top-style:dashed;border-top-color:var(--muted)}
+canvas{width:100%;height:240px;display:block;background:var(--card);border:1px solid var(--border);border-radius:6px}
+.slider{display:flex;gap:10px;align-items:center;margin-top:8px;font-size:11.5px;color:var(--muted)}
+input[type=range]{accent-color:var(--amber);flex:1}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
+.overlay.open{display:flex}
+.dialog{background:var(--card);border:1px solid var(--border);border-radius:8px;width:min(920px,94vw);max-height:90vh;overflow:auto;padding:16px 18px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.dialog h3{margin:0 0 4px;font-size:16px}
+.toast{position:fixed;right:18px;bottom:18px;background:var(--card2);border:1px solid var(--up);color:var(--fg);padding:10px 14px;border-radius:6px;display:none;z-index:30;font-size:12.5px}
+.toast.show{display:block}
+.note{border:1px dashed var(--border);border-radius:6px;padding:8px 10px;color:var(--muted);font-size:12px}
+.hl{outline:2px solid var(--amber);outline-offset:2px;border-radius:5px;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{outline-color:transparent}}
+.lock{color:var(--muted);font-family:var(--mono);font-size:10.5px}
+.ticket{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ticket .tile .v{font-size:15px}
+.verdict{border-left:3px solid var(--up);background:var(--up-bg);padding:8px 10px;border-radius:4px;font-size:12px}
+.verdict.bad{border-left-color:var(--down);background:var(--down-bg)}
+kbd{font-family:var(--mono);font-size:10.5px;border:1px solid var(--border);border-radius:3px;padding:0 4px;color:var(--muted)}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}.pane{border-right:0;border-bottom:1px solid var(--border)}.strip{grid-template-columns:repeat(2,1fr)}.ticket{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+<div class="top"><span class="amber">⚠</span><b>HapieCoin</b><span>Analyse</span><span class="pill">BTC</span><span class="micro">Futures · BTCUSD</span><span class="num" style="font-size:15px">79,557.2</span><span class="micro">▲ 24h</span><span style="margin-left:auto" class="micro"><span class="pos">●</span> feed live · 1 ms</span><span class="pill">₹ INR</span></div>
+
+<div class="flow" id="flow">
+  <span class="st on" data-step="1">1 · Paper trades</span><span class="arrow">→</span>
+  <span class="st" data-step="2">2 · Strategy details</span><span class="arrow">→</span>
+  <span class="st" data-step="3">3 · Pick adjustment legs</span><span class="arrow">→</span>
+  <span class="st" data-step="4">4 · Review before → after</span><span class="arrow">→</span>
+  <span class="st" data-step="5">5 · Confirm</span><span class="arrow">→</span>
+  <span class="st" data-step="6">6 · Done</span>
+  <span class="approach"><span class="micro">approach</span><button id="apA" class="on" title="Your option: the Builder edits the strategy; existing legs are locked">A · Reuse Builder</button><button id="apB" title="My option: inline chain in the left pane, picks preview live">B · Inline picker</button><button id="modeBtn" title="Switch the strategy between paper and live for the confirm step">○ paper</button><button id="resetBtn">↺ restart</button></span>
+</div>
+
+<div class="wrap">
+  <div class="pane" id="left">
+    <div class="tabs"><button data-lt="chain">Chain</button><button data-lt="builder" id="tabBuilder">Builder <span class="pill" id="builderCount">2</span></button><button data-lt="paper" class="on">Paper <span class="pill">3</span></button><button data-lt="live">Live</button><button data-lt="journal">Journal</button><span class="right micro" style="align-self:center;padding-right:8px">lot · basis mark</span></div>
+    <div class="body" id="leftBody"></div>
+  </div>
+  <div class="pane" id="right">
+    <div class="tabs" id="rtabs"><span id="paneSource" class="micro" style="align-self:center;padding:0 8px"></span><button data-rt="payoff" class="on">Payoff</button><button data-rt="greeks">Greeks</button><button data-rt="ladder">Ladder</button><span class="right"></span><button id="backBuilder" class="btn" style="display:none;margin:5px 8px">Cancel adjustment</button></div>
+    <div class="body" id="rightBody"></div>
+  </div>
+</div>
+
+<div class="overlay" id="ovDetails"><div class="dialog" id="dlgDetails"></div></div>
+<div class="overlay" id="ovPicker"><div class="dialog" id="dlgPicker"></div></div>
+<div class="overlay" id="ovConfirm"><div class="dialog" id="dlgConfirm"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- mock data: a losing Long Call Butterfly on BTC, spot above the wings ----------
+const SPOT = 79557.2, LOT = 0.001, INR = 84.2, IV = 0.40, T_YEARS = 1.2 / 365; // ~1.2 days to the 09 Sep 12:00 UTC settle
+const S = { id: "STRAT_UYMQYLDVKTOU", name: "Long Call Butterfly", status: "paper", asset: "BTC", legs: [
+  { id: "l1", side: "buy", type: "C", strike: 77800, lots: 100, entry: 837.8, mark: 1874.3 },
+  { id: "l2", side: "sell", type: "C", strike: 78200, lots: 200, entry: 603.8, mark: 1475.5 },
+  { id: "l3", side: "buy", type: "C", strike: 78600, lots: 100, entry: 425.9, mark: 1076.8 },
+]};
+const CHAIN = [77200, 77400, 77600, 77800, 78000, 78200, 78400, 78600, 78800, 79000, 79200, 79400, 79600, 79800, 80000, 80200, 80400, 80600].map((k) => {
+  const c = Math.max(SPOT - k, 0) + 120 * Math.exp(-Math.abs(SPOT - k) / 700) + 40; const p = Math.max(k - SPOT, 0) + 120 * Math.exp(-Math.abs(SPOT - k) / 700) + 40;
+  return { strike: k, cMark: Math.round(c * 10) / 10, pMark: Math.round(p * 10) / 10, cIv: (62 - (k - 77200) / 100).toFixed(1), pIv: (55 - (k - 77200) / 120).toFixed(1), cOi: Math.round(3 + Math.random() * 30) + "K", pOi: Math.round(60 + Math.random() * 200) + "K" };
+});
+let approach = "A", mode = "paper", step = 1, adjusting = false, picks = [], leftTab = "paper", rightTab = "payoff", targetPct = 0, confirmed = false, showBefore = true;
+
+// ---------- maths (mock: intrinsic at expiry + a smoothed "today" curve; Black-76 greeks) ----------
+const N = (x) => 0.5 * (1 + erf(x / Math.SQRT2)); function erf(x) { const s = Math.sign(x); x = Math.abs(x); const t = 1 / (1 + 0.3275911 * x); const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return s * y; }
+function greeksOf(leg, spot) { const T = T_YEARS, s = IV * Math.sqrt(T), d1 = (Math.log(spot / leg.strike) + 0.5 * s * s) / s, d2 = d1 - s, nd1 = Math.exp(-0.5 * d1 * d1) / Math.sqrt(2 * Math.PI); const call = leg.type === "C"; const delta = call ? N(d1) : N(d1) - 1; const gamma = nd1 / (spot * s); const theta = -(spot * nd1 * IV) / (2 * Math.sqrt(T)) / 365; const vega = spot * nd1 * Math.sqrt(T) / 100; const q = leg.lots * LOT * (leg.side === "buy" ? 1 : -1); return { delta: delta * q, gamma: gamma * q, theta: theta * q, vega: vega * q }; }
+function pnlAt(legs, price, cost) { let v = 0; for (const l of legs) { const intr = l.type === "C" ? Math.max(price - l.strike, 0) : Math.max(l.strike - price, 0); const sign = l.side === "buy" ? 1 : -1; v += sign * (intr - (cost === "entry" ? l.entry : l.mark)) * l.lots * LOT; } return v * INR; }
+function analyse(legs) { const lo = SPOT * 0.94, hi = SPOT * 1.06, pts = []; for (let i = 0; i <= 160; i++) { const p = lo + (hi - lo) * i / 160; pts.push({ p, exp: pnlAt(legs.map((l) => ({ ...l })), p, "cost") }); }
+  // existing legs carry their entry premium; proposed legs their live mark (cost basis per leg)
+  const withBasis = legs.map((l) => ({ ...l, basis: l.basis ?? l.entry }));
+  const at = (p) => withBasis.reduce((v, l) => v + (l.side === "buy" ? 1 : -1) * ((l.type === "C" ? Math.max(p - l.strike, 0) : Math.max(l.strike - p, 0)) - l.basis) * l.lots * LOT, 0) * INR;
+  const series = pts.map((x) => ({ p: x.p, exp: at(x.p) }));
+  const smooth = series.map((x, i) => { let s = 0, w = 0; for (let k = -12; k <= 12; k++) { const j = Math.min(160, Math.max(0, i + k)); const ww = Math.exp(-k * k / 40); s += series[j].exp * ww; w += ww; } return s / w; });
+  const maxP = Math.max(...series.map((x) => x.exp)), maxL = Math.min(...series.map((x) => x.exp));
+  const unboundedUp = withBasis.reduce((n, l) => n + (l.type === "C" ? (l.side === "buy" ? 1 : -1) * l.lots : 0), 0) > 0, unboundedDn = withBasis.reduce((n, l) => n + (l.type === "C" ? (l.side === "buy" ? 1 : -1) * l.lots : 0), 0) < 0;
+  const be = []; for (let i = 1; i < series.length; i++) if ((series[i - 1].exp < 0) !== (series[i].exp < 0)) be.push(Math.round(series[i].p));
+  const sig = SPOT * IV * Math.sqrt(T_YEARS); let pop = 0, tot = 0; for (const x of series) { const w = Math.exp(-0.5 * ((x.p - SPOT) / sig) ** 2); tot += w; if (x.exp > 0) pop += w; }
+  const g = withBasis.reduce((a, l) => { const gg = greeksOf(l, SPOT); return { delta: a.delta + gg.delta, gamma: a.gamma + gg.gamma, theta: a.theta + gg.theta, vega: a.vega + gg.vega }; }, { delta: 0, gamma: 0, theta: 0, vega: 0 });
+  return { series, smooth, maxProfit: unboundedUp ? Infinity : maxP, maxLoss: unboundedDn ? -Infinity : maxL, breakevens: be, pop: pop / tot, greeks: g, margin: unboundedDn ? null : -maxL };
+}
+const openLegs = () => S.legs.map((l) => ({ ...l, basis: l.entry }));
+const draftLegs = () => picks.map((p) => ({ id: p.key, side: p.side, type: p.type, strike: p.strike, lots: p.lots, entry: p.mark, mark: p.mark, basis: p.mark, adj: true }));
+const fmtInr = (v) => v === Infinity ? "Unlimited" : v === -Infinity ? "Unlimited" : (v < 0 ? "−₹" : "+₹") + Math.abs(Math.round(v)).toLocaleString("en-IN");
+const fmtInr0 = (v) => v === null ? "Unlimited" : "₹" + Math.abs(Math.round(v)).toLocaleString("en-IN");
+const netPremiumUsd = (legs) => legs.reduce((s, l) => s + (l.side === "sell" ? 1 : -1) * l.basis * l.lots * LOT, 0);
+const fees = (legs) => legs.reduce((s, l) => s + Math.min(l.basis * l.lots * LOT * 0.0005, SPOT * l.lots * LOT * 0.0003) * INR * 1.18, 0);
+
+// ---------- rendering ----------
+const $ = (s) => document.querySelector(s);
+function setStep(n) { step = Math.max(step, n); document.querySelectorAll("#flow .st").forEach((el) => { const k = +el.dataset.step; el.classList.toggle("on", k === n); el.classList.toggle("done", k < n); }); }
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2600); }
+function badge() { return `<span class="pill ${mode}">${mode === "paper" ? "○ PAPER" : "● LIVE"}</span>`; }
+
+function renderLeft() {
+  document.querySelectorAll("#left .tabs button").forEach((b) => b.classList.toggle("on", b.dataset.lt === leftTab));
+  const el = $("#leftBody");
+  if (adjusting && approach === "B") return renderInlinePicker(el);
+  if (leftTab === "builder") return renderBuilder(el);
+  if (leftTab === "paper") return renderPaper(el);
+  el.innerHTML = `<div class="note">${leftTab} panel · not part of this mockup</div>`;
+}
+function renderPaper(el) {
+  const a = analyse(openLegs()); const pnl = S.legs.reduce((s, l) => s + (l.side === "buy" ? 1 : -1) * (l.mark - l.entry) * l.lots * LOT, 0) * INR;
+  el.innerHTML = `${step <= 2 ? `<div class="chooser"><div class="opt ${approach === "A" ? "on" : ""}" id="chA"><b>A · Reuse the Builder (your option)</b><span>Details → Builder opens with the 3 open legs locked · the chain picker is the modal used today · the right pane updates after "Add"</span></div><div class="opt ${approach === "B" ? "on" : ""}" id="chB"><b>B · Inline chain picker</b><span>Details → this left pane becomes the chain · every B / S click previews in the right pane at once · no modal until Confirm</span></div></div>` : ""}<div class="strip" style="grid-template-columns:repeat(3,1fr)"><div class="tile"><div class="micro">Total P&L</div><div class="v ${pnl < 0 ? "neg" : "pos"}">${fmtInr(pnl)}</div><div class="d">3 trades · 9 open legs</div></div><div class="tile"><div class="micro">Day P&L</div><div class="v neg">−₹885</div><div class="d">vs previous close</div></div><div class="tile"><div class="micro">Prices</div><div class="v">Live</div><div class="d">mark basis · gateway</div></div></div>
+  <div class="card"><div class="row"><b>Bull Call Spread</b><span class="pill paper">○ PAPER</span><span class="micro">BTC · 2/3 legs · 1 day</span><span class="num pos" style="margin-left:auto">₹0.00</span></div><div class="row" style="margin-top:6px"><span class="legchip">B C 78,200 · 10</span><span class="legchip">S C 78,600 · 10</span></div></div>
+  <div class="card"><div class="row"><b>Iron Butterfly</b><span class="pill paper">○ PAPER</span><span class="micro">BTC · 4/4 legs · 1 day</span><span class="num pos" style="margin-left:auto">₹0.00</span></div></div>
+  <div class="card sel"><div class="row"><b>${S.name}</b>${badge()}<span class="micro">BTC · 3/3 legs · 0 days · custom</span><span class="num neg" style="margin-left:auto">${fmtInr(pnl)}</span></div>
+    <div class="row" style="margin-top:6px">${S.legs.map((l) => `<span class="legchip">${l.side === "buy" ? "B" : "S"} ${l.type} ${l.strike.toLocaleString()} · ${l.lots}</span>`).join("")}${picks.length && confirmed ? draftLegs().map((l) => `<span class="legchip adj">${l.side === "buy" ? "B" : "S"} ${l.type} ${l.strike.toLocaleString()} · ${l.lots} · ADJ</span>`).join("") : ""}</div>
+    <div class="row" style="margin-top:8px"><button class="btn hl" id="openDetails">Details</button><button class="btn">Go live</button><button class="btn warn">Stop</button><span class="micro" style="margin-left:auto">max loss ${fmtInr(a.maxLoss)} · click Details to adjust</span></div></div>`;
+  $("#openDetails").onclick = () => { openDetails(); };
+  if ($("#chA")) { $("#chA").onclick = () => setApproach("A"); $("#chB").onclick = () => setApproach("B"); }
+}
+function renderBuilder(el) {
+  const d = draftLegs();
+  el.innerHTML = `<div class="row" style="margin-bottom:8px"><span class="micro">Builder</span>${adjusting ? `<b>${S.name}</b>${badge()}<span class="pill" style="border-color:var(--amber);color:var(--amber)">ADJUSTING · ${S.legs.length} open legs locked</span>` : `<b>Bull Call Spread</b><span class="pill">BTC</span>`}<span style="margin-left:auto" class="micro">${adjusting ? 10 - S.legs.length - d.length + " more legs allowed" : "2 legs · 09 Sep"}</span></div>
+  <table><thead><tr><th>Side</th><th>Instrument</th><th class="r">Lots</th><th class="r">IV</th><th class="r">Price</th><th class="r">Δ</th><th class="r">Θ/day</th><th></th></tr></thead><tbody>
+  ${adjusting ? S.legs.map((l) => `<tr style="opacity:.75"><td><span class="side ${l.side}">${l.side.toUpperCase()}</span></td><td class="num">${l.type}E ${l.strike.toLocaleString()} · 09 Sep <span class="lock">🔒 open · entry ${l.entry}</span></td><td class="r num">${l.lots}</td><td class="r num">—</td><td class="r num">${l.mark}</td><td class="r num">${greeksOf(l, SPOT).delta.toFixed(3)}</td><td class="r num neg">${fmtInr(greeksOf(l, SPOT).theta * INR)}</td><td><span class="lock" title="Existing open legs cannot be edited here; square off from Details">locked</span></td></tr>`).join("")
+    : `<tr><td><span class="side buy">BUY</span></td><td class="num">CE 79,400 · 09 Sep</td><td class="r num">100</td><td class="r num">28.2%</td><td class="r num">241.8</td><td class="r num">0.064</td><td class="r num neg">−₹4,761</td><td>✕</td></tr><tr><td><span class="side sell">SELL</span></td><td class="num">CE 79,800 · 09 Sep</td><td class="r num">100</td><td class="r num">28.1%</td><td class="r num">72.5</td><td class="r num neg">−0.030</td><td class="r num pos">+₹4,374</td><td>✕</td></tr>`}
+  ${d.map((l, i) => `<tr><td><span class="side ${l.side}">${l.side.toUpperCase()}</span></td><td class="num">${l.type}E ${l.strike.toLocaleString()} · 09 Sep <span class="pill" style="border-style:dashed">ADJUSTMENT</span></td><td class="r num">${l.lots}</td><td class="r num">—</td><td class="r num">${l.mark}</td><td class="r num">${greeksOf(l, SPOT).delta.toFixed(3)}</td><td class="r num ${greeksOf(l, SPOT).theta < 0 ? "neg" : "pos"}">${fmtInr(greeksOf(l, SPOT).theta * INR)}</td><td><button class="btn danger" data-rm="${i}">✕</button></td></tr>`).join("")}
+  </tbody></table>
+  <div class="row" style="margin:10px 0"><button class="btn ${adjusting && !d.length ? "hl" : ""}" id="selChain">Select from chain</button><button class="btn">+ Future</button><span class="micro" style="margin-left:auto">${adjusting ? "picks land here as ADJUSTMENT rows" : "6 of 8 slots left · max 10 active"}</span></div>
+  ${adjusting ? ticket(d) : ""}
+  <div class="row"><button class="btn">Save draft</button><span style="margin-left:auto"></span>${adjusting ? `<button class="btn" id="cancelAdj">Cancel</button><button class="btn primary" id="review" ${d.length ? "" : "disabled"}>Review ${d.length} adjustment leg${d.length === 1 ? "" : "s"} ▸</button>` : `<button class="btn primary">Paper trade</button><button class="btn">Live trade</button>`}</div>`;
+  $("#selChain").onclick = () => { if (adjusting) openPicker(); else toast("Builder mode: the normal chain picker (not part of this mockup)"); };
+  el.querySelectorAll("[data-rm]").forEach((b) => (b.onclick = () => { picks.splice(+b.dataset.rm, 1); refresh(); }));
+  if ($("#cancelAdj")) $("#cancelAdj").onclick = cancelAdjust;
+  if ($("#review")) $("#review").onclick = openConfirm;
+}
+function ticket(d) {
+  const b = analyse(openLegs()), a = analyse([...openLegs(), ...d]); const prem = netPremiumUsd(d);
+  return `<div class="ticket" style="margin-bottom:10px"><div class="tile"><div class="micro">New legs premium</div><div class="v ${prem >= 0 ? "pos" : "neg"}">${d.length ? fmtInr(prem * INR) : "—"}</div><div class="d">${prem >= 0 ? "credit" : "debit"} · at mark · fees ~${fmtInr0(fees(d))}</div></div><div class="tile"><div class="micro">Max loss</div><div class="v ${a.maxLoss === -Infinity ? "neg" : ""}">${fmtInr(a.maxLoss)}</div><div class="d">${fmtInr(b.maxLoss)}<span class="arr">→</span>after</div></div><div class="tile"><div class="micro">POP · R:R</div><div class="v">${Math.round(a.pop * 100)}%</div><div class="d">${Math.round(b.pop * 100)}%<span class="arr">→</span>after</div></div><div class="tile"><div class="micro">Margin est.</div><div class="v">${fmtInr0(a.margin)}</div><div class="d">worst expiry loss · ${mode === "live" ? "venue verdict at confirm" : "paper"}</div></div></div>`;
+}
+function renderInlinePicker(el) {
+  const d = draftLegs();
+  el.innerHTML = `<div class="row" style="margin-bottom:8px"><span class="micro">Adjusting</span><b>${S.name}</b>${badge()}<span class="micro">${S.legs.length} open legs · ${10 - S.legs.length - d.length} more allowed</span><span style="margin-left:auto" class="micro">marks as of 13:56:43</span></div>
+  <div class="row" style="margin-bottom:6px;gap:4px">${["09 Sep 0d", "10 Sep 1d", "11 Sep 2d", "18 Sep 9d", "25 Sep 16d"].map((e, i) => `<span class="pill" style="${i === 0 ? "border-color:var(--fg);color:var(--fg)" : ""}">${e}</span>`).join("")}</div>
+  ${chainTable()}
+  <div class="row" style="margin-top:8px"><span class="micro">Proposed (${d.length})</span>${d.map((l, i) => `<span class="legchip adj">${l.side === "buy" ? "B" : "S"} ${l.type} ${l.strike.toLocaleString()} · ${l.lots} · ${l.mark} <a href="#" data-rm="${i}" style="color:var(--muted);text-decoration:none">✕</a></span>`).join("") || `<span class="micro">click B or S on a row · the right pane previews as you pick</span>`}</div>
+  ${ticket(d)}
+  <div class="row"><span class="micro"><kbd>B</kbd> buy · <kbd>S</kbd> sell on the focused row · <kbd>Esc</kbd> cancels</span><span style="margin-left:auto"></span><button class="btn" id="cancelAdj">Cancel</button><button class="btn primary" id="review" ${d.length ? "" : "disabled"}>Review ${d.length} leg${d.length === 1 ? "" : "s"} ▸</button></div>`;
+  bindChain(el); el.querySelectorAll("[data-rm]").forEach((b) => (b.onclick = (e) => { e.preventDefault(); picks.splice(+b.dataset.rm, 1); refresh(); }));
+  $("#cancelAdj").onclick = cancelAdjust; $("#review").onclick = openConfirm;
+}
+function chainTable() {
+  return `<div class="chainwrap"><table><thead><tr><th>Calls</th><th class="r">Mark / IV</th><th class="r">OI</th><th class="strike" style="text-align:center">Strike</th><th>OI</th><th class="r">Mark / IV</th><th class="r">Puts</th></tr></thead><tbody>
+  ${CHAIN.map((r) => { const pc = picks.find((p) => p.strike === r.strike && p.type === "C"), pp = picks.find((p) => p.strike === r.strike && p.type === "P"); const atm = Math.abs(r.strike - SPOT) < 100; return `<tr ${atm ? 'style="background:var(--amber-bg)"' : ""}><td><span class="bs b ${pc?.side === "buy" ? "on" : ""}" data-k="${r.strike}" data-t="C" data-s="buy">B</span> <span class="bs s ${pc?.side === "sell" ? "on" : ""}" data-k="${r.strike}" data-t="C" data-s="sell">S</span></td><td class="r num">${r.cMark.toFixed(1)} <span class="micro">${r.cIv}%</span></td><td class="r num">${r.cOi}</td><td class="strike" style="text-align:center">${r.strike.toLocaleString()}${atm ? ' <span class="micro" style="color:var(--amber)">ATM</span>' : ""}</td><td class="num">${r.pOi}</td><td class="r num">${r.pMark.toFixed(2)} <span class="micro">${r.pIv}%</span></td><td class="r"><span class="bs b ${pp?.side === "buy" ? "on" : ""}" data-k="${r.strike}" data-t="P" data-s="buy">B</span> <span class="bs s ${pp?.side === "sell" ? "on" : ""}" data-k="${r.strike}" data-t="P" data-s="sell">S</span></td></tr>`; }).join("")}
+  </tbody></table></div>`;
+}
+function bindChain(root) { root.querySelectorAll(".bs").forEach((b) => (b.onclick = () => togglePick(+b.dataset.k, b.dataset.t, b.dataset.s))); }
+function togglePick(strike, type, side) {
+  const i = picks.findIndex((p) => p.strike === strike && p.type === type); const row = CHAIN.find((r) => r.strike === strike);
+  if (i >= 0 && picks[i].side === side) picks.splice(i, 1); else { const pick = { key: `${strike}${type}`, strike, type, side, lots: 100, mark: type === "C" ? row.cMark : row.pMark }; if (i >= 0) picks[i] = pick; else if (S.legs.length + picks.length >= 10) return toast("Limit reached: 10 open legs"); else picks.push(pick); }
+  setStep(3); refresh();
+}
+function renderRight() {
+  document.querySelectorAll("#rtabs button[data-rt]").forEach((b) => b.classList.toggle("on", b.dataset.rt === rightTab));
+  const follow = adjusting || step >= 2; $("#paneSource").innerHTML = follow ? `${adjusting ? "adjusting" : "following"} · ${S.name} · ${mode}` : "builder";
+  $("#backBuilder").style.display = adjusting ? "" : "none"; $("#backBuilder").onclick = cancelAdjust;
+  const el = $("#rightBody"); const d = draftLegs(); const before = analyse(openLegs()); const after = d.length ? analyse([...openLegs(), ...d]) : null;
+  const strip = adjusting ? `<div class="strip">${[["Max loss", before.maxLoss, after?.maxLoss, "lossBetter"], ["Max profit", before.maxProfit, after?.maxProfit, "profitBetter"], ["Probability of profit", before.pop, after?.pop, "pct"], ["Net delta · theta/day", before.greeks, after?.greeks, "greeks"]].map(([lab, b, a, kind]) => tileHtml(lab, b, a, kind)).join("")}</div>
+    <div class="row" style="margin:-4px 0 8px"><span class="micro">breakevens</span><span class="num">${before.breakevens.map((x) => x.toLocaleString()).join(" / ") || "—"}</span>${after ? `<span class="micro">→</span><span class="num">${after.breakevens.map((x) => x.toLocaleString()).join(" / ") || "—"}</span>` : ""}<span style="margin-left:auto" class="micro">existing legs at entry premium · proposed at live mark</span></div>` : "";
+  if (rightTab === "payoff") {
+    el.innerHTML = `${strip}<div class="legend"><span><i></i>${adjusting ? "after (combined position)" : "current position"}</span>${adjusting ? `<span><i class="ghost"></i>before (as it stands)</span><label style="margin-left:auto"><input type="checkbox" id="ghost" ${showBefore ? "checked" : ""}> show before</label>` : ""}</div><canvas id="cv" width="900" height="240"></canvas><div class="slider"><span>target</span><input type="range" id="tgt" min="-6" max="6" step="0.25" value="${targetPct}"><span class="num" id="tgtLab"></span><span class="micro">expiry · today curve is a mock smoothing</span></div>${!adjusting && step < 2 ? `<div class="note" style="margin-top:8px">Start from the Paper tab: open Details on the losing butterfly.</div>` : ""}`;
+    draw(before, after); $("#tgt").oninput = (e) => { targetPct = +e.target.value; draw(before, after); }; if ($("#ghost")) $("#ghost").onchange = (e) => { showBefore = e.target.checked; draw(before, after); };
+  } else if (rightTab === "greeks") {
+    const legs = [...openLegs(), ...d];
+    el.innerHTML = `${strip}<table><thead><tr><th>Leg</th><th class="r">Δ</th><th class="r">Γ</th><th class="r">Θ / day</th><th class="r">Vega</th></tr></thead><tbody>${legs.map((l) => { const g = greeksOf(l, SPOT); return `<tr><td><span class="side ${l.side}">${l.side.toUpperCase()}</span> <span class="num">${l.type}E ${l.strike.toLocaleString()}</span> ${l.adj ? '<span class="pill" style="border-style:dashed">ADJ</span>' : ""}</td><td class="r num">${g.delta.toFixed(3)}</td><td class="r num">${g.gamma.toExponential(2)}</td><td class="r num ${g.theta < 0 ? "neg" : "pos"}">${fmtInr(g.theta * INR)}</td><td class="r num">${(g.vega * INR).toFixed(0)}</td></tr>`; }).join("")}<tr style="font-weight:600"><td>Net ${after ? "(after)" : ""}</td><td class="r num">${(after ?? before).greeks.delta.toFixed(3)}</td><td class="r num">${(after ?? before).greeks.gamma.toExponential(2)}</td><td class="r num">${fmtInr((after ?? before).greeks.theta * INR)}</td><td class="r num">${((after ?? before).greeks.vega * INR).toFixed(0)}</td></tr></tbody></table>`;
+  } else {
+    const rows = [-4, -3, -2, -1, 0, 1, 2, 3, 4].map((k) => SPOT * (1 + k / 100));
+    el.innerHTML = `${strip}<table><thead><tr><th class="r">Price</th><th class="r">Move</th><th class="r">P&L now</th>${after ? '<th class="r">P&L after</th><th class="r">Δ vs now</th>' : ""}</tr></thead><tbody>${rows.map((p) => { const b = before.series.reduce((x, y) => Math.abs(y.p - p) < Math.abs(x.p - p) ? y : x).exp; const a = after ? after.series.reduce((x, y) => Math.abs(y.p - p) < Math.abs(x.p - p) ? y : x).exp : null; return `<tr ${Math.abs(p - SPOT) < 1 ? 'style="background:var(--amber-bg)"' : ""}><td class="r num">${Math.round(p).toLocaleString()}</td><td class="r num">${((p / SPOT - 1) * 100).toFixed(0)}%</td><td class="r num ${b < 0 ? "neg" : "pos"}">${fmtInr(b)}</td>${after ? `<td class="r num ${a < 0 ? "neg" : "pos"}">${fmtInr(a)}</td><td class="r num ${a - b < 0 ? "neg" : "pos"}">${fmtInr(a - b)}</td>` : ""}</tr>`; }).join("")}</tbody></table>`;
+  }
+}
+function tileHtml(lab, b, a, kind) {
+  const f = (v) => kind === "pct" ? Math.round(v * 100) + "%" : kind === "greeks" ? `${v.delta.toFixed(3)} · ${fmtInr(v.theta * INR)}` : fmtInr(v);
+  let verdict = ""; if (a !== null && a !== undefined && kind !== "greeks") { const better = kind === "lossBetter" ? (a === -Infinity ? false : b === -Infinity ? true : a > b) : a > b; const same = a === b; verdict = same ? `<span class="micro">unchanged</span>` : `<span class="${better ? "pos" : "neg"}">${better ? "▲ better" : "▼ worse"}</span>`; }
+  return `<div class="tile"><div class="micro">${lab}</div><div class="v ${kind === "lossBetter" ? "neg" : kind === "profitBetter" ? "pos" : ""}">${a !== null && a !== undefined ? f(a) : f(b)}</div><div class="d">${a !== null && a !== undefined ? `${f(b)}<span class="arr">→</span>${verdict}` : "current position"}</div></div>`;
+}
+function draw(before, after) {
+  const cv = $("#cv"); if (!cv) return; const c = cv.getContext("2d"); const W = cv.width, H = cv.height, pad = { l: 64, r: 16, t: 14, b: 26 };
+  c.clearRect(0, 0, W, H); const all = [...before.series.map((x) => x.exp), ...(after ? after.series.map((x) => x.exp) : [])]; let lo = Math.min(...all, 0), hi = Math.max(...all, 0); const r = hi - lo || 1; lo -= r * .08; hi += r * .08;
+  const sx = (i) => pad.l + (W - pad.l - pad.r) * i / 160, sy = (v) => pad.t + (H - pad.t - pad.b) * (1 - (v - lo) / (hi - lo));
+  c.strokeStyle = "#242a33"; c.setLineDash([2, 4]); for (let k = 0; k <= 4; k++) { const v = lo + (hi - lo) * k / 4; c.beginPath(); c.moveTo(pad.l, sy(v)); c.lineTo(W - pad.r, sy(v)); c.stroke(); c.fillStyle = "#8b93a1"; c.font = "10.5px IBM Plex Mono"; c.textAlign = "right"; c.fillText((v < 0 ? "−" : "") + "₹" + Math.abs(Math.round(v / 100) * 100).toLocaleString("en-IN"), pad.l - 6, sy(v) + 4); } c.setLineDash([]);
+  c.strokeStyle = "#8b93a1"; c.beginPath(); c.moveTo(pad.l, sy(0)); c.lineTo(W - pad.r, sy(0)); c.stroke();
+  const line = (ser, col, dash, width) => { c.strokeStyle = col; c.lineWidth = width; c.setLineDash(dash); c.beginPath(); ser.forEach((v, i) => (i ? c.lineTo(sx(i), sy(v)) : c.moveTo(sx(i), sy(v)))); c.stroke(); c.setLineDash([]); c.lineWidth = 1; };
+  const fill = (ser) => { for (let i = 1; i < ser.length; i++) { const v = ser[i]; c.fillStyle = v >= 0 ? "rgba(57,179,122,.18)" : "rgba(224,92,92,.18)"; c.beginPath(); c.moveTo(sx(i - 1), sy(0)); c.lineTo(sx(i - 1), sy(ser[i - 1])); c.lineTo(sx(i), sy(v)); c.lineTo(sx(i), sy(0)); c.closePath(); c.fill(); } };
+  const main = after ?? before; fill(main.series.map((x) => x.exp));
+  if (after && showBefore) line(before.series.map((x) => x.exp), "#8b93a1", [5, 4], 1.2);
+  line(main.series.map((x) => x.exp), "#e6e8eb", [], 1.8); line(main.smooth, "#5b8def", [], 1.2);
+  const ti = Math.round(80 + targetPct / 6 * 80); const tp = SPOT * (1 + targetPct / 100); c.strokeStyle = "#f0a92c"; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(sx(ti), pad.t); c.lineTo(sx(ti), H - pad.b); c.stroke(); c.setLineDash([]);
+  c.fillStyle = "#f0a92c"; c.textAlign = "center"; c.fillText((targetPct === 0 ? "spot " : "target ") + Math.round(tp).toLocaleString(), sx(ti), H - 8);
+  const v = main.series[ti].exp; c.fillStyle = v >= 0 ? "#39b37a" : "#e05c5c"; c.beginPath(); c.arc(sx(ti), sy(v), 3.5, 0, 7); c.fill();
+  if ($("#tgtLab")) $("#tgtLab").innerHTML = `${Math.round(tp).toLocaleString()} · <span class="${v < 0 ? "neg" : "pos"}">${fmtInr(v)}</span> at expiry${after && showBefore ? ` · was <span class="${before.series[ti].exp < 0 ? "neg" : "pos"}">${fmtInr(before.series[ti].exp)}</span>` : ""}`;
+  c.textAlign = "left"; c.fillStyle = "#8b93a1"; c.fillText("−6%", pad.l, H - 8); c.textAlign = "right"; c.fillText("+6%", W - pad.r, H - 8);
+}
+
+// ---------- dialogs ----------
+function openDetails() {
+  setStep(2); const a = analyse(openLegs()); const pnl = S.legs.reduce((s, l) => s + (l.side === "buy" ? 1 : -1) * (l.mark - l.entry) * l.lots * LOT, 0) * INR;
+  $("#dlgDetails").innerHTML = `<div class="row"><h3>${S.name}</h3>${badge()}<span class="pill">BTC</span><span class="micro">custom · ${S.id} · Delta Exchange India</span><button class="btn" style="margin-left:auto" id="closeDetails">✕</button></div>
+  <div class="strip" style="margin-top:10px"><div class="tile"><div class="micro">Total P&L</div><div class="v neg">${fmtInr(pnl)}</div><div class="d">live · mark basis</div></div><div class="tile"><div class="micro">Unrealised</div><div class="v neg">${fmtInr(pnl)}</div></div><div class="tile"><div class="micro">Max loss now</div><div class="v neg">${fmtInr(a.maxLoss)}</div><div class="d">at expiry</div></div><div class="tile"><div class="micro">Days</div><div class="v">0</div><div class="d">3 legs · 3 open</div></div></div>
+  <div class="row"><button class="btn">Refresh</button><button class="btn hl" id="startAdj">+ Add adjustment</button><button class="btn">Partial exit</button><button class="btn">Square off all</button><button class="btn warn">Stop</button><span style="margin-left:auto" class="btn danger">Delete</span></div>
+  <div class="micro" style="margin:12px 0 6px">Legs · active 3</div>
+  <table><tbody>${S.legs.map((l) => `<tr><td><span class="side ${l.side}">${l.side.toUpperCase()}</span></td><td class="num">${l.strike.toLocaleString()} ${l.type} · 09 Sep · 0d</td><td class="num">${l.lots} lots</td><td class="num">entry ${l.entry} → now ${l.mark}</td><td class="r num ${(l.side === "buy" ? 1 : -1) * (l.mark - l.entry) < 0 ? "neg" : "pos"}">${fmtInr((l.side === "buy" ? 1 : -1) * (l.mark - l.entry) * l.lots * LOT * INR)}</td><td><button class="btn">Square off</button></td></tr>`).join("")}</tbody></table>
+  <div class="note" style="margin-top:12px">${approach === "A" ? "Approach A: '+ Add adjustment' closes this dialog and opens the <b>Builder</b> with these three legs locked; you add legs from the chain like any other strategy and the right pane shows the combined position." : "Approach B: '+ Add adjustment' closes this dialog and replaces the left pane with the <b>chain</b>; every B/S click previews in the right pane immediately."}</div>`;
+  $("#ovDetails").classList.add("open"); $("#closeDetails").onclick = () => $("#ovDetails").classList.remove("open");
+  $("#startAdj").onclick = () => { $("#ovDetails").classList.remove("open"); adjusting = true; picks = []; confirmed = false; leftTab = approach === "A" ? "builder" : "paper"; rightTab = "payoff"; setStep(3); refresh(); if (approach === "A") setTimeout(openPicker, 350); };
+}
+let pickerSnapshot = null, pickerScroll = 0;
+function openPicker() {
+  if (pickerSnapshot === null) pickerSnapshot = picks.map((x) => ({ ...x }));
+  $("#dlgPicker").innerHTML = `<div class="row"><h3>Add adjustment legs</h3><span class="micro">BTC · spot ${SPOT.toLocaleString()} · ${10 - S.legs.length - picks.length} more legs allowed</span><button class="btn" style="margin-left:auto" id="closePicker">✕</button></div>
+  <div class="row" style="margin:8px 0;gap:4px">${["09 Sep 0d", "10 Sep 1d", "11 Sep 2d", "18 Sep 9d"].map((e, i) => `<span class="pill" style="${i === 0 ? "border-color:var(--fg);color:var(--fg)" : ""}">${e}</span>`).join("")}</div>
+  ${chainTable()}
+  <div class="row" style="margin-top:10px"><span class="micro" id="pickSum">${picks.length} selected · B selects a buy leg, S a sell leg; click again to deselect</span><span style="margin-left:auto"></span><button class="btn" id="closePicker2">Close</button><button class="btn primary" id="addPicks" ${picks.length ? "" : "disabled"}>Add ${picks.length} leg${picks.length === 1 ? "" : "s"}</button></div>
+  <div class="note" style="margin-top:8px">Approach A keeps the picker as a modal, exactly as today: the right pane updates only after "Add". You can add, look, remove a row in the Builder and come back.</div>`;
+  $("#ovPicker").classList.add("open"); const wrap = $("#dlgPicker .chainwrap"); if (wrap) wrap.scrollTop = pickerScroll;
+  const close = () => { picks = pickerSnapshot.map((x) => ({ ...x })); pickerSnapshot = null; $("#ovPicker").classList.remove("open"); refresh(); }; $("#closePicker").onclick = close; $("#closePicker2").onclick = close;
+  $("#dlgPicker").querySelectorAll(".bs").forEach((b) => (b.onclick = () => { pickerScroll = wrap ? wrap.scrollTop : 0; togglePickSilent(+b.dataset.k, b.dataset.t, b.dataset.s); openPicker(); }));
+  $("#addPicks").onclick = () => { pickerSnapshot = null; $("#ovPicker").classList.remove("open"); setStep(4); refresh(); toast(`${picks.length} adjustment leg${picks.length === 1 ? "" : "s"} staged in the Builder · nothing sent yet`); };
+}
+function togglePickSilent(strike, type, side) { const i = picks.findIndex((p) => p.strike === strike && p.type === type); const row = CHAIN.find((r) => r.strike === strike); if (i >= 0 && picks[i].side === side) picks.splice(i, 1); else { const pick = { key: `${strike}${type}`, strike, type, side, lots: 100, mark: type === "C" ? row.cMark : row.pMark }; if (i >= 0) picks[i] = pick; else if (S.legs.length + picks.length >= 10) return toast("Limit reached: 10 open legs"); else picks.push(pick); } }
+function openConfirm() {
+  setStep(5); const d = draftLegs(); const b = analyse(openLegs()), a = analyse([...openLegs(), ...d]); const prem = netPremiumUsd(d);
+  $("#dlgConfirm").innerHTML = `<div class="row"><h3>${mode === "paper" ? "Confirm paper adjustment" : "Place live adjustment"}</h3>${badge()}<span class="micro">${S.name} · ${S.legs.length} open + ${d.length} new · Delta Exchange India</span><button class="btn" style="margin-left:auto" id="closeConfirm">✕</button></div>
+  <div class="strip" style="margin-top:10px">${tileHtml("Max loss", b.maxLoss, a.maxLoss, "lossBetter")}${tileHtml("Max profit", b.maxProfit, a.maxProfit, "profitBetter")}${tileHtml("Probability of profit", b.pop, a.pop, "pct")}<div class="tile"><div class="micro">You ${prem >= 0 ? "receive" : "pay"}</div><div class="v ${prem >= 0 ? "pos" : "neg"}">${fmtInr(Math.abs(prem * INR))}</div><div class="d">at mark · fees est. ${fmtInr0(fees(d))}</div></div></div>
+  <table><thead><tr><th>New leg</th><th class="r">Lots</th><th class="r">Mark now</th><th class="r">Value</th><th class="r">Fee est.</th><th class="r">Δ</th></tr></thead><tbody>${d.map((l) => `<tr><td><span class="side ${l.side}">${l.side.toUpperCase()}</span> <span class="num">${l.type}E ${l.strike.toLocaleString()} · 09 Sep</span></td><td class="r num">${l.lots}</td><td class="r num">${l.mark}</td><td class="r num">${fmtInr((l.side === "sell" ? 1 : -1) * l.mark * l.lots * LOT * INR)}</td><td class="r num">${fmtInr0(fees([l]))}</td><td class="r num">${greeksOf(l, SPOT).delta.toFixed(3)}</td></tr>`).join("")}</tbody></table>
+  <div style="margin-top:10px">${mode === "paper" ? `<div class="note">Paper: legs are recorded at the mark shown above (re-read at this moment, not when you clicked). Existing legs are untouched.</div>` : `<div class="verdict"><b>Venue check · ok</b> · margin held now ₹18,420 → after ₹${Math.round(18420 + Math.max(0, -prem) * INR * 0.2).toLocaleString("en-IN")} · available ₹1,24,300 · all products operational · mark band ±5% sent with the order (a moved market rejects instead of filling badly)</div>`}</div>
+  <div class="row" style="margin-top:12px"><span class="micro">marks as of 13:56:51 · <a href="#" style="color:var(--muted)">refresh preview</a></span><span style="margin-left:auto"></span><button class="btn" id="closeConfirm2">Back</button><button class="btn primary" id="doConfirm">${mode === "paper" ? "Confirm paper adjustment" : "Place live adjustment"}</button></div>`;
+  $("#ovConfirm").classList.add("open"); const close = () => $("#ovConfirm").classList.remove("open"); $("#closeConfirm").onclick = close; $("#closeConfirm2").onclick = close;
+  $("#doConfirm").onclick = () => { close(); confirmed = true; adjusting = false; setStep(6); leftTab = "paper"; toast(mode === "paper" ? `Adjustment added · ${d.length} leg${d.length === 1 ? "" : "s"} recorded at mark` : `Live orders placed · ${d.length} filled · strategy updated`); refresh(); setTimeout(openDetailsDone, 500); };
+}
+function openDetailsDone() {
+  const d = draftLegs(); const a = analyse([...openLegs(), ...d]);
+  $("#dlgDetails").innerHTML = `<div class="row"><h3>${S.name}</h3>${badge()}<span class="micro">3 original + ${d.length} adjustment leg${d.length === 1 ? "" : "s"}</span><button class="btn" style="margin-left:auto" id="closeDetails">✕</button></div>
+  <div class="strip" style="margin-top:10px"><div class="tile"><div class="micro">Max loss now</div><div class="v ${a.maxLoss === -Infinity ? "neg" : ""}">${fmtInr(a.maxLoss)}</div><div class="d">after adjustment</div></div><div class="tile"><div class="micro">Max profit</div><div class="v pos">${fmtInr(a.maxProfit)}</div></div><div class="tile"><div class="micro">POP</div><div class="v">${Math.round(a.pop * 100)}%</div></div><div class="tile"><div class="micro">Legs</div><div class="v">${S.legs.length + d.length}</div><div class="d">all open</div></div></div>
+  <div class="micro" style="margin:6px 0">Adjustments</div><table><tbody>${d.map((l) => `<tr><td><span class="side ${l.side}">${l.side.toUpperCase()}</span></td><td class="num">${l.strike.toLocaleString()} ${l.type} · 09 Sep</td><td class="num">${l.lots} lots</td><td class="num">entry ${l.mark} → now ${l.mark}</td><td class="r num">₹0.00</td><td><span class="pill" style="border-style:dashed">ADJUSTMENT</span></td></tr>`).join("")}</tbody></table>
+  <div class="micro" style="margin:10px 0 6px">Original legs</div><table><tbody>${S.legs.map((l) => `<tr><td><span class="side ${l.side}">${l.side.toUpperCase()}</span></td><td class="num">${l.strike.toLocaleString()} ${l.type} · 09 Sep</td><td class="num">${l.lots} lots</td><td class="num">entry ${l.entry} → now ${l.mark}</td><td class="r num ${(l.side === "buy" ? 1 : -1) * (l.mark - l.entry) < 0 ? "neg" : "pos"}">${fmtInr((l.side === "buy" ? 1 : -1) * (l.mark - l.entry) * l.lots * LOT * INR)}</td><td></td></tr>`).join("")}</tbody></table>
+  <div class="row" style="margin-top:12px"><span class="micro">Flow complete. Use ↺ restart to try the other approach or switch paper / live.</span><button class="btn" style="margin-left:auto" id="closeDetails2">Close</button></div>`;
+  $("#ovDetails").classList.add("open"); const close = () => $("#ovDetails").classList.remove("open"); $("#closeDetails").onclick = close; $("#closeDetails2").onclick = close;
+}
+function cancelAdjust() { if (picks.length && !confirm(`Discard ${picks.length} proposed leg${picks.length === 1 ? "" : "s"}?`)) return; adjusting = false; picks = []; leftTab = "paper"; setStep(2); refresh(); toast("Adjustment cancelled · nothing was sent"); }
+function refresh() { $("#builderCount").textContent = adjusting ? S.legs.length + picks.length : 2; renderLeft(); renderRight(); }
+
+// ---------- wiring ----------
+document.querySelectorAll("#left .tabs button[data-lt]").forEach((b) => (b.onclick = () => { if (adjusting && approach === "B") return toast("Finish or cancel the adjustment first"); leftTab = b.dataset.lt; refresh(); }));
+document.querySelectorAll("#rtabs button[data-rt]").forEach((b) => (b.onclick = () => { rightTab = b.dataset.rt; renderRight(); }));
+$("#apA").onclick = () => setApproach("A"); $("#apB").onclick = () => setApproach("B");
+function setApproach(a) { approach = a; $("#apA").classList.toggle("on", a === "A"); $("#apB").classList.toggle("on", a === "B"); reset(); }
+$("#modeBtn").onclick = () => { mode = mode === "paper" ? "live" : "paper"; S.status = mode; $("#modeBtn").textContent = mode === "paper" ? "○ paper" : "● live"; refresh(); };
+$("#resetBtn").onclick = reset;
+function reset() { adjusting = false; picks = []; confirmed = false; step = 1; leftTab = "paper"; rightTab = "payoff"; targetPct = 0; ["ovDetails", "ovPicker", "ovConfirm"].forEach((id) => $("#" + id).classList.remove("open")); setStep(1); refresh(); }
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if ($("#ovConfirm").classList.contains("open")) return $("#ovConfirm").classList.remove("open"); if ($("#ovPicker").classList.contains("open")) return $("#closePicker").click(); if ($("#ovDetails").classList.contains("open")) return $("#ovDetails").classList.remove("open"); if (adjusting) cancelAdjust(); } });
+refresh();
+</script>

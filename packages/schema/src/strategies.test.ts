@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  AdjustBody,
   CloseLegBody,
+  LivePreviewBody,
+  MAX_ADJUST_REASON,
   MAX_NEW_LEGS,
   StopBody,
   Strategy,
   StrategyCreate,
   StrategyLegInput,
+  StrategyAdjustment,
   StrategyStart,
   realizedPnl,
   toDecimal,
@@ -62,12 +66,40 @@ describe("[SCHEMA] strategies (ADR-024)", () => {
       notes: "",
       tags: [],
       orderBatchId: null,
+      adjustments: [{ id: "adj_1", at: "2026-09-08T11:00:00Z", reason: "spot ran above the wings", added: 1, trimmed: 1, closed: 0, realizedPnl: "0.4", batchId: "key-adj-000001" }],
       startedAt: "2026-09-08T10:00:00Z",
       closedAt: null,
       createdAt: "2026-09-08T09:00:00Z",
       updatedAt: "2026-09-08T10:00:00Z",
     };
     expect(Strategy.safeParse(s).success).toBe(true);
+    const { adjustments, ...bare } = s;
+    expect(adjustments).toHaveLength(1);
+    expect(Strategy.parse(bare).adjustments).toEqual([]); // older payloads default to no history
+  });
+
+  it("ADR-044 an adjustment batch needs at least one add or change; lots after are whole and non-negative; the reason is trimmed and capped", () => {
+    const change = { legId: "leg_1", lotsAfter: 4, price: "1300" };
+    expect(AdjustBody.safeParse({ adds: [call] }).success).toBe(true);
+    expect(AdjustBody.safeParse({ changes: [change] }).success).toBe(true);
+    expect(AdjustBody.safeParse({}).success).toBe(false);
+    expect(AdjustBody.safeParse({ adds: [], changes: [] }).success).toBe(false);
+    expect(AdjustBody.safeParse({ changes: [{ ...change, lotsAfter: -1 }] }).success).toBe(false);
+    expect(AdjustBody.safeParse({ changes: [{ ...change, lotsAfter: 1.5 }] }).success).toBe(false);
+    expect(AdjustBody.safeParse({ changes: [{ ...change, price: "-1" }] }).success).toBe(false);
+    expect(AdjustBody.safeParse({ changes: [change], nope: 1 }).success).toBe(false);
+    expect(AdjustBody.safeParse({ changes: [change], idempotencyKey: "short" }).success).toBe(false);
+    expect(AdjustBody.safeParse({ changes: [change], expected: { "C-BTC-80000-250926": "0" } }).success).toBe(false); // a zero mark cannot anchor a band
+    expect(AdjustBody.safeParse({ changes: [change], reason: "x".repeat(MAX_ADJUST_REASON + 1) }).success).toBe(false);
+    const full = AdjustBody.parse({ adds: [call], changes: [change], expected: { "C-BTC-80000-250926": "1200" }, idempotencyKey: "key-adj-000001", reason: "  spot ran  " });
+    expect(full.reason).toBe("spot ran");
+    expect(AdjustBody.parse({ changes: [change] })).toMatchObject({ adds: [], expected: {} });
+    expect(StrategyAdjustment.safeParse({ id: "adj_1", at: "2026-09-08T11:00:00Z", reason: null, added: 0, trimmed: 0, closed: 2, realizedPnl: "-1.2", batchId: null }).success).toBe(true);
+    expect(StrategyAdjustment.safeParse({ id: "adj_1", at: "2026-09-08T11:00:00Z", reason: null, added: -1, trimmed: 0, closed: 0, realizedPnl: "0", batchId: null }).success).toBe(false);
+    // the live preview prices the open legs by default, or the proposed batch when overrides are sent
+    expect(LivePreviewBody.safeParse({ brokerId: "brk_1" }).success).toBe(true);
+    expect(LivePreviewBody.safeParse({ brokerId: "brk_1", adds: [call], changes: [change] }).success).toBe(true);
+    expect(LivePreviewBody.safeParse({ brokerId: "brk_1", changes: [{ legId: "leg_1" }] }).success).toBe(false);
   });
 
   it("realised P&L is (exit − entry) × lots × lot size × side, as a decimal string", () => {

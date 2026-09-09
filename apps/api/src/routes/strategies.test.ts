@@ -162,3 +162,100 @@ describe("HC-TR-071 / HC-TR-079 / HC-TR-080 / HC-TR-081 adjustments, square off,
     expect(audits.map((a) => a.action)).toEqual(["strategy.create", "strategy.start", "strategy.stop_archive"]);
   });
 });
+
+describe("HC-TR-071 / HC-TR-088 adjustment batch on a paper strategy (ADR-044)", () => {
+  const adjust = (cookie: string, id: string, body: Record<string, unknown>) => t.request(`/v1/strategies/${id}/adjust`, { cookie, json: body });
+  const SOLD_CALL = { ...CALL, strike: "82000", symbol: "C-BTC-82000-250926", side: "sell", lots: 5, price: "700" };
+
+  it("trims, closes and adds in one batch, books realised P&L on the closed lots and keeps the reason as history", async () => {
+    const s = await create(alice);
+    const started = await startPaper(alice, s.id, {});
+    const [call, put] = started.legs;
+    const res = await adjust(alice, s.id, {
+      adds: [SOLD_CALL],
+      changes: [
+        { legId: call!.id, lotsAfter: 6, price: "1300" }, // trims 4 of 10: (1300−1200)×4×0.001 = +0.40
+        { legId: put!.id, lotsAfter: 0, price: "800" }, // closes: (800−900)×10×0.001×−1 = +1.00
+      ],
+      expected: { "C-BTC-82000-250926": "700" },
+      idempotencyKey: "key-adj-paper-01",
+      reason: "  spot ran above the wings  ",
+    });
+    expect(res.status).toBe(200);
+    const a = await json<Strategy>(res);
+    expect(Strategy.safeParse(a).success).toBe(true);
+    expect(a.realizedPnl).toBe("1.4");
+    expect(a.legs.find((l) => l.id === call!.id)).toMatchObject({ status: "open", lots: 6 });
+    expect(a.legs.find((l) => l.id === put!.id)).toMatchObject({ status: "squared_off", exitPrice: "800", lots: 10 });
+    expect(a.legs.filter((l) => l.status === "squared_off" && l.kind === "call")).toMatchObject([{ lots: 4, exitPrice: "1300", entryPrice: "1200" }]);
+    expect(a.legs.find((l) => l.symbol === "C-BTC-82000-250926")).toMatchObject({ status: "open", isAdjustment: true, entryPrice: "700", lots: 5, side: "sell", position: 2 });
+    expect(a.adjustments).toMatchObject([{ reason: "spot ran above the wings", added: 1, trimmed: 1, closed: 1, realizedPnl: "1.4", batchId: "key-adj-paper-01" }]);
+    expect(a.adjustments[0]!.at).toBeTruthy();
+    // the same key again is the same batch: nothing changes
+    const again = await json<Strategy>(await adjust(alice, s.id, { adds: [SOLD_CALL], idempotencyKey: "key-adj-paper-01" }));
+    expect(again.legs).toHaveLength(a.legs.length);
+    expect(again.adjustments).toHaveLength(1);
+    expect(again.realizedPnl).toBe("1.4");
+    // a batch without a key or reason still leaves a history row
+    const more = await json<Strategy>(await adjust(alice, s.id, { adds: [SOLD_CALL] }));
+    expect(more.adjustments).toHaveLength(2);
+    expect(more.adjustments[1]).toMatchObject({ reason: null, added: 1, trimmed: 0, closed: 0, realizedPnl: "0" });
+    expect(more.adjustments[1]!.batchId).toMatch(/^adj:/);
+    const audits = await t.db.select().from(auditLog).where(eq(auditLog.target, `strategy:${s.id}`));
+    expect(audits.filter((x) => x.action === "strategy.adjust")).toHaveLength(2);
+  });
+
+  it("refuses unknown, closed or doubled legs, more lots than open, empty batches, drafts and other users' strategies", async () => {
+    const s = await create(alice);
+    expect((await adjust(alice, s.id, { adds: [SOLD_CALL] })).status).toBe(409); // still a draft
+    const started = await startPaper(alice, s.id, {});
+    const [call, put] = started.legs;
+    expect((await adjust(bob, s.id, { adds: [SOLD_CALL] })).status).toBe(404);
+    expect((await adjust(alice, s.id, {})).status).toBe(400);
+    expect((await adjust(alice, s.id, { adds: [], changes: [] })).status).toBe(400);
+    const unknown = await adjust(alice, s.id, { changes: [{ legId: "leg_nope", lotsAfter: 0, price: "1" }] });
+    expect(unknown.status).toBe(400);
+    expect((await json<{ message: string }>(unknown)).message).toContain("not an open leg");
+    const tooMany = await adjust(alice, s.id, { changes: [{ legId: call!.id, lotsAfter: 11, price: "1" }] });
+    expect(tooMany.status).toBe(400);
+    expect((await json<{ message: string }>(tooMany)).message).toContain('add lots through "adds"');
+    const doubled = await adjust(alice, s.id, { changes: [{ legId: call!.id, lotsAfter: 10, price: "1" }, { legId: call!.id, lotsAfter: 0, price: "1" }] }); // even when the first entry is a no-op
+    expect(doubled.status).toBe(400);
+    expect((await json<{ message: string }>(doubled)).message).toContain("listed twice");
+    expect((await adjust(alice, s.id, { adds: [SOLD_CALL], expected: { "C-BTC-82000-250926": "0" } })).status).toBe(400);
+    // lots after equal to the open lots is a no-op, so a batch of only no-ops is empty
+    const noop = await adjust(alice, s.id, { changes: [{ legId: call!.id, lotsAfter: 10, price: "1" }] });
+    expect(noop.status).toBe(400);
+    expect((await json<{ message: string }>(noop)).message).toBe("Nothing to adjust");
+    // a closed leg is no longer open
+    await t.request(`/v1/strategies/${s.id}/legs/${put!.id}/close`, { cookie: alice, json: { exitPrice: "800" } });
+    expect((await adjust(alice, s.id, { changes: [{ legId: put!.id, lotsAfter: 0, price: "1" }] })).status).toBe(400);
+    const after = await json<Strategy>(await t.request(`/v1/strategies/${s.id}`, { cookie: alice }));
+    expect(after.adjustments).toEqual([]);
+    expect(after.legs.find((l) => l.id === call!.id)).toMatchObject({ status: "open", lots: 10 });
+  });
+
+  it("HC-TR-017 counts the cap after the closes in the same batch", async () => {
+    const s = await create(alice);
+    const started = await startPaper(alice, s.id, {});
+    const [call] = started.legs;
+    const nine = Array.from({ length: 9 }, (_, i) => ({ ...SOLD_CALL, strike: String(82000 + i * 500), symbol: `C-BTC-${82000 + i * 500}-250926` }));
+    expect((await adjust(alice, s.id, { adds: nine })).status).toBe(409); // 2 + 9 = 11
+    const ok = await json<Strategy>(await adjust(alice, s.id, { adds: nine, changes: [{ legId: call!.id, lotsAfter: 0, price: "1200" }] })); // 2 − 1 + 9 = 10
+    expect(ok.legs.filter((l) => l.status === "open")).toHaveLength(10);
+    expect(ok.adjustments[0]).toMatchObject({ added: 9, trimmed: 0, closed: 1, realizedPnl: "0" });
+    expect((await adjust(alice, s.id, { adds: [SOLD_CALL] })).status).toBe(409);
+    expect((await adjust(alice, s.id, { adds: Array.from({ length: 11 }, () => SOLD_CALL) })).status).toBe(400); // over the body limit
+  });
+
+  it("two requests with the same key at once apply once: the history row's (strategy, batch) key is unique", async () => {
+    const s = await create(alice);
+    await startPaper(alice, s.id, {});
+    const body = { adds: [SOLD_CALL], idempotencyKey: "key-adj-paper-race" };
+    const [a, b] = await Promise.all([adjust(alice, s.id, body), adjust(alice, s.id, body)]);
+    expect([a.status, b.status]).toEqual([200, 200]);
+    const after = await json<Strategy>(await t.request(`/v1/strategies/${s.id}`, { cookie: alice }));
+    expect(after.legs).toHaveLength(3);
+    expect(after.adjustments).toHaveLength(1);
+  });
+});

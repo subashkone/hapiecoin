@@ -38,6 +38,7 @@ const strat = (over: Partial<Strategy> = {}): Strategy => ({
   tags: [],
   orderBatchId: null,
   orders: [],
+  adjustments: [],
   startedAt: "2026-09-01T10:00:00Z",
   closedAt: null,
   createdAt: "2026-09-01T09:00:00Z",

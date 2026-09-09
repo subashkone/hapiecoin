@@ -2,7 +2,7 @@
  * Live trading routes (Phase 3 item 2, ADR-025): preview, place, retry, sync, Trade All → Live batch,
  * positions, and the admin kill switch. HC-TR-023, 055, 063, 070, 082..089.
  */
-import { Id, LiveBatchBody, LiveBatchResult, LivePlaceBody, LivePositions, LivePositionsExitBody, LivePositionsExitResult, LivePreview, LivePreviewBody, Strategy } from "@hapiecoin/schema";
+import { type AdjustChange, Id, LiveBatchBody, LiveBatchResult, LivePlaceBody, LivePositions, LivePositionsExitBody, LivePositionsExitResult, LivePreview, LivePreviewBody, MAX_OPEN_LEGS, Strategy, type StrategyLegInput } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, asc, eq } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
@@ -11,7 +11,7 @@ import { strategies, strategyLegs, users } from "../db/schema.js";
 import { type AppEnv, type SessionUser, currentUser } from "../security/context.js";
 import { errors } from "../security/errors.js";
 import { requireAdmin, requireUser } from "../security/guards.js";
-import { lotSizeFor, openCredential, ordersOf, placeEntries, preview, retryFailed, syncOrders, tradingBlockedReason, type StrategyRow } from "./live-exec.js";
+import { lotSizeFor, openCredential, ordersOf, placeEntries, preview, retryFailed, syncOrders, tradingBlockedReason, type PlanLeg, type StrategyRow } from "./live-exec.js";
 import { type AppDeps, cookieAuth, errorResponses, jsonContent } from "./shared.js";
 import { addDecimal, closeLegRow, loadStrategy } from "./strategies.js";
 
@@ -36,6 +36,22 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
     const p = await preview(deps, user, row, legs, brokerId, worstLoss);
     return { legs, p };
   }
+  /** Adjustment workbench (ADR-044): price the proposed batch, not the open legs: trims / closes as reduce-only exits, adds as entries. */
+  async function adjustPreview(user: SessionUser, row: StrategyRow, brokerId: string, worstLoss: number | null, adds: readonly StrategyLegInput[], changes: readonly AdjustChange[]) {
+    const open = await openLegs(row.id);
+    const exits: PlanLeg[] = [];
+    for (const ch of changes) {
+      const leg = open.find((l) => l.id === ch.legId);
+      if (!leg) throw errors.badRequest(`Leg ${ch.legId} is not an open leg of this strategy`);
+      if (ch.lotsAfter > leg.lots) throw errors.badRequest(`${leg.symbol}: lots after (${ch.lotsAfter}) exceed the open ${leg.lots}`);
+      if (ch.lotsAfter < leg.lots) exits.push({ id: leg.id, symbol: leg.symbol, side: leg.side === "buy" ? "sell" : "buy", lots: leg.lots - ch.lotsAfter });
+    }
+    const entries: PlanLeg[] = adds.map((l, i) => ({ id: `new-${i + 1}`, symbol: l.symbol, side: l.side, lots: l.lots }));
+    const closes = changes.filter((ch) => ch.lotsAfter === 0).length;
+    const p = await preview(deps, user, row, entries, brokerId, worstLoss, exits);
+    if (open.length - closes + adds.length > MAX_OPEN_LEGS) p.reasons.push(`Maximum ${MAX_OPEN_LEGS} active legs allowed per strategy`);
+    return { ...p, ok: p.reasons.length === 0 };
+  }
 
   app.openapi(
     createRoute({
@@ -52,6 +68,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const me = currentUser(c);
       const row = await owned(me, c.req.valid("param").id);
       const body = c.req.valid("json");
+      if (body.adds !== undefined || body.changes !== undefined) return c.json(await adjustPreview(me, row, body.brokerId, body.worstLoss ?? null, body.adds ?? [], body.changes ?? []), 200);
       const { p } = await checkedPreview(me, row, body.brokerId, body.worstLoss ?? null);
       return c.json(p, 200);
     },

@@ -1,16 +1,16 @@
 # Graph Report - HapieCoin  (2026-09-09)
 
 ## Corpus Check
-- 739 files · ~1,767,345 words
+- 758 files · ~1,814,114 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 5765 nodes · 12921 edges · 270 communities (224 shown, 28 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 171 edges (avg confidence: 0.84)
+- 5976 nodes · 13510 edges · 277 communities (231 shown, 28 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 175 edges (avg confidence: 0.84)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `7634bcf3`
+- Built from commit: `fc596048`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -56,7 +56,7 @@
 - HapieCoin v2 · brief for the improved-UX build
 - merge-v2.js
 - mockup-clone/README.md
-- binance.ts
+- bybit.ts
 - mockup-v2/README.md
 - build.sh
 - test-hooks.js
@@ -77,14 +77,14 @@
 - testing.md
 - workflow.md
 - recalc
-- fmtInr
-- bits.tsx
-- harness.ts
+- api/referrals.ts
+- Chart.tsx
+- schema.ts
 - venues/src/index.ts
 - Coalescer
 - e2e/fixtures.ts
 - src/server.ts
-- api/src/emails.ts
+- src/admin-users.ts
 - AppHeader.tsx
 - api/src/referrals.ts
 - normalize.ts
@@ -92,7 +92,7 @@
 - gateway/src/app.ts
 - fmtDate
 - gateway/package.json
-- ThemeProvider.tsx
+- ui/src/index.ts
 - api/payments.ts
 - ui/package.json
 - web/package.json
@@ -103,8 +103,8 @@
 - cn.ts
 - src/billing.ts
 - pricing/src/index.ts
-- market.ts
-- getServerUser
+- primitives.ts
+- AuthScreen.tsx
 - GatewayServer
 - app/page.tsx
 - strategy.ts
@@ -113,7 +113,7 @@
 - src/payments.ts
 - config/package.json
 - pricing/package.json
-- FakeSocket
+- db/client.ts
 - src/store.ts
 - UsersAdmin.tsx
 - tasks
@@ -122,22 +122,22 @@
 - schema/package.json
 - accounts.ts
 - BuilderPanel.tsx
-- api/referrals.ts
+- AnalyticsShell.tsx
 - compilerOptions
 - black76.ts
 - helpers.tsx
 - schema-adapter.test.ts
 - compilerOptions
-- api/client.ts
+- app/layout.tsx
 - schema/src/analytics.ts
-- rate-store.ts
+- RedisPipelineLike
 - fixtures/chain.ts
 - validation.test.ts
 - gateway.ts
 - ReconnectingSocket
 - devDependencies
-- primitives.ts
-- ui/src/index.ts
+- hooks.tsx
+- Controls.test.tsx
 - raw.ts
 - gateway/src/config.ts
 - MarketFeed
@@ -207,95 +207,102 @@
 - server.test.ts
 - Item 2 · column set and Column Settings dialog · design pass · 2026-09-07
 - scripts
-- api/src/app.ts
+- routes/banners.ts
 - MEMORY.md
 - devDependencies
 - src/strategies.ts
-- assistant.ts
+- money.ts
 - FakeDeltaTradingClient
 - next
-- NetPositionsPanel.tsx
-- TemplatesPanel.tsx
+- useStrategyAnalysis.ts
+- TradeFlow.tsx
 - AuthForms.tsx
 - schema/src/banners.ts
-- next-mocks.ts
+- chain.test.tsx
 - Checkout, coupons, payment history and invoices · design (Phase 4 item 2, 08 Sep 2026, ADR-034)
 - routes/strategies.ts
 - Phase 3 · Paper and live trading · plan and design pass · 2026-09-08
 - api/billing.ts
 - DeltaTradingClientImpl
 - LiquidationsPage.tsx
-- GatewayClient
+- model.ts
 - adapters.test.ts
-- src/checkout.ts
+- routes/billing.ts
 - jobs.ts
 - drizzle-kit
 - api/src/index.ts
 - 5b · Payoff chart preview (`/payoff-preview`)
-- ingest/src/app.test.ts
+- ingest/src/config.ts
 - HubPage.tsx
 - queries.ts
 - okx.ts
-- usePnlWriter.test.tsx
-- chain.test.tsx
-- Assistant and product tour · design note (Phase 4 item 5a)
-- OptionsPage.tsx
 - useUiStore
+- GatewayClient
+- Assistant and product tour · design note (Phase 4 item 5a)
+- api/client.ts
+- TemplatesPanel.tsx
 - mock-analytics.ts
-- lib/store.ts
+- layout.ts
 - SentimentPage.tsx
 - Market Analytics · data-source research (Phase 5 item 5)
 - CoinPage.tsx
 - ingest/tsconfig.build.json
-- trading-live.test.tsx
+- Workspace.tsx
 - src/analytics.test.ts
 - 5.3 · Markets screener, Derivatives, Liquidations, coin-page charts (this PR)
 - ingest/tsconfig.json
 - ingest/config-modules.d.ts
 - d-lists.js
-- Chart.tsx
-- mock-api.ts
-- main.ts
-- schema.ts
-- private-client.ts
+- bits.tsx
 - JsonClient
-- auth/page.tsx
-- Logo.tsx
+- fmtInr
+- api/src/app.ts
+- Adjustment workbench · design (approved 09 Sep 2026)
+- coingecko.ts
+- web/test/setup.ts
+- lib/format.ts
 - Scheduler
-- api/src/env-file.ts
-- AnalyticsShell.tsx
-- PlanBanner.tsx
-- ApiError
-- ui.ts
+- columns.ts
+- mock-api.ts
+- buildWhales
+- WhalesPage.tsx
+- deribit.ts
+- dependencies
+- api/admin.ts
+- Select.tsx
+- OptionsPage.tsx
+- Badge.tsx
+- src/test/setup.ts
+- delta/page.tsx
 
 ## God Nodes (most connected - your core abstractions)
-1. `useUiStore` - 115 edges
+1. `useUiStore` - 123 edges
 2. `cn()` - 58 edges
-3. `fmtDate()` - 44 edges
-4. `HapieCoin · decision log (ADR)` - 43 edges
-5. `AppDeps` - 41 edges
-6. `createTestApp()` - 40 edges
-7. `fmtInr()` - 40 edges
-8. `fmtPrice()` - 39 edges
-9. `drizzle-orm` - 38 edges
-10. `TestApp` - 38 edges
+3. `fmtDate()` - 46 edges
+4. `fmtMoney()` - 45 edges
+5. `HapieCoin · decision log (ADR)` - 45 edges
+6. `fmtPrice()` - 43 edges
+7. `AppDeps` - 41 edges
+8. `createTestApp()` - 40 edges
+9. `fmtInr()` - 40 edges
+10. `fmtStrike()` - 40 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `fixtureInstruments()` --indirect_call--> `toInstrument()`  [INFERRED]
   apps/gateway/src/test-support/fixtures.ts → packages/venues/src/delta/normalize.ts
-- `render()` --indirect_call--> `pct()`  [INFERRED]
-  mockup-v2/src-trd/d-lists.js → apps/web/src/lib/analytics/format.ts
 - `render()` --indirect_call--> `fmtK()`  [INFERRED]
   mockup-v2/src-trd/d-lists.js → apps/web/src/lib/payoff-preview.ts
 - `render()` --indirect_call--> `legs`  [INFERRED]
   mockup-v2/src-trd/c-dialogs.js → packages/pricing/src/worker/worker.test.ts
-- `registerBillingRoutes()` --indirect_call--> `toPlan()`  [INFERRED]
-  apps/api/src/routes/billing.ts → apps/api/src/entitlements.ts
+- `registerBillingRoutes()` --indirect_call--> `MenuItem()`  [INFERRED]
+  apps/api/src/routes/billing.ts → apps/web/src/components/shell/Menu.tsx
+- `RootLayout()` --calls--> `publicEnv`  [EXTRACTED]
+  apps/web/src/app/layout.tsx → apps/web/src/lib/env.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (270 total, 28 thin omitted)
+## Communities (277 total, 28 thin omitted)
 
 ### Community 0 - "b-core.js"
 Cohesion: 0.07
@@ -318,8 +325,8 @@ Cohesion: 0.17
 Nodes (21): AV_ICON, avatarSvg(), basePrice, chg24(), curExpiry(), expLabel(), feedHtml(), headerAction() (+13 more)
 
 ### Community 5 - "PayoffPreview.tsx"
-Cohesion: 0.08
-Nodes (45): ctxCalls, rows, TOPIC, ADR-0028, FALLBACK, PayoffChart(), PayoffChartFrame, token() (+37 more)
+Cohesion: 0.09
+Nodes (42): FALLBACK, PayoffChart(), PayoffChartFrame, token(), useCanvasColors(), drawPayoff(), PayoffColors, PayoffFrame (+34 more)
 
 ### Community 6 - "60-palette.js"
 Cohesion: 0.16
@@ -374,8 +381,8 @@ Cohesion: 0.20
 Nodes (4): AL_CHANNELS, AL_KINDS, alCurrent(), alRowHtml()
 
 ### Community 19 - "HapieCoin · decision log (ADR)"
-Cohesion: 0.05
-Nodes (43): ADR-001 · Product name and reference (2026-09-07), ADR-002 · Two mocks kept side by side (2026-09-06), ADR-003 · Design system: Obsidian Desk, dark-first (2026-09-06), ADR-004 · Stack (2026-09-04, confirmed 2026-09-07), ADR-005 · Monorepo with independently deployable apps (2026-09-07), ADR-006 · Chain driven by the exchange instrument list (2026-09-07), ADR-007 · Traceability as the definition of done (2026-09-07), ADR-008 · Knowledge graph for project memory (2026-09-07) (+35 more)
+Cohesion: 0.04
+Nodes (45): ADR-001 · Product name and reference (2026-09-07), ADR-002 · Two mocks kept side by side (2026-09-06), ADR-003 · Design system: Obsidian Desk, dark-first (2026-09-06), ADR-004 · Stack (2026-09-04, confirmed 2026-09-07), ADR-005 · Monorepo with independently deployable apps (2026-09-07), ADR-006 · Chain driven by the exchange instrument list (2026-09-07), ADR-007 · Traceability as the definition of done (2026-09-07), ADR-008 · Knowledge graph for project memory (2026-09-07) (+37 more)
 
 ### Community 20 - "chunks-report.md"
 Cohesion: 0.20
@@ -453,9 +460,9 @@ Nodes (4): Design system (already in shell-head.html; use the variables, never h
 Cohesion: 0.50
 Nodes (3): files, fs, path
 
-### Community 44 - "binance.ts"
-Cohesion: 0.06
-Nodes (26): BinanceAdapter, BinanceFunding, BinanceOi, FundingRow, num, OiHistRow, OpenInterest, perpSymbol() (+18 more)
+### Community 44 - "bybit.ts"
+Cohesion: 0.07
+Nodes (27): BinanceAdapter, BinanceFunding, BinanceOi, FundingRow, num, OiHistRow, OpenInterest, perpSymbol() (+19 more)
 
 ### Community 47 - "test-hooks.js"
 Cohesion: 0.11
@@ -505,41 +512,41 @@ Nodes (4): Step 0: restate, Step 1: understand, Step 2: decide, Step 3: write th
 Cohesion: 0.23
 Nodes (12): applyDensity(), bindTemplates(), createStrategy(), guessTemplate(), recalc(), registerPalette(), init(), moveOrToggle() (+4 more)
 
-### Community 72 - "fmtInr"
-Cohesion: 0.15
-Nodes (19): metadata, DiffPanel(), LimitsList(), LimitsMatrix(), PlanCard(), SubscriptionPage(), ADR-0030, ADR-0034 (+11 more)
+### Community 72 - "api/referrals.ts"
+Cohesion: 0.11
+Nodes (26): metadata, EarningsChart(), StatusBadge(), ADR-0031, copy(), REFERRALS_PAGE, ReferralsPage(), ShareDialog() (+18 more)
 
-### Community 73 - "bits.tsx"
-Cohesion: 0.17
-Nodes (26): R, CheckRow, ComingSoon(), Gauge(), Heat(), LiqHeatmap(), SourceLine(), Treemap() (+18 more)
+### Community 73 - "Chart.tsx"
+Cohesion: 0.22
+Nodes (15): Chart(), ChartProps, ChartSeries, ChartSpec, colorFor(), Extent, finite(), indexAt() (+7 more)
 
-### Community 74 - "harness.ts"
+### Community 74 - "schema.ts"
 Cohesion: 0.04
-Nodes (64): Auth, AUTH_BASE_PATH, authOptionsPublic, sessionResolver(), Case, Role, SETTINGS, Base64Key32 (+56 more)
+Nodes (82): MemoryAnalyticsReader, Auth, AUTH_BASE_PATH, authOptionsPublic, createAuth(), findReferralCode(), generateReferralCode(), OTP_EXPIRY_SEC (+74 more)
 
 ### Community 75 - "venues/src/index.ts"
 Cohesion: 0.06
 Nodes (52): BINANCE_STALE_MS, BINANCE_STREAM_URL, BinanceSpotClient, BinanceSpotClientOptions, BinanceSpotEvents, binanceStreamName(), buildBinanceStreamUrl(), parseMiniTicker() (+44 more)
 
 ### Community 77 - "e2e/fixtures.ts"
-Cohesion: 0.15
-Nodes (18): ADR-0030, ADR-0006, ADR-0022, ADR-0023, ADR-0027, ADR-0019, API, fillOtp() (+10 more)
+Cohesion: 0.14
+Nodes (20): ADR-0030, ADR-0006, ADR-0022, ADR-0023, ADR-0027, ADR-0019, API, fillOtp() (+12 more)
 
 ### Community 78 - "src/server.ts"
 Cohesion: 0.11
 Nodes (21): ConnState, LOCAL_HOSTS, FakeTransport, Connection, Headers, HttpRequest, HttpResponse, SocketServer (+13 more)
 
-### Community 79 - "api/src/emails.ts"
-Cohesion: 0.21
-Nodes (18): adminRow(), campaignRecipients, campaigns, campaignDetail(), CampaignRow, fmtExpiry(), inSegment(), listCampaigns() (+10 more)
+### Community 79 - "src/admin-users.ts"
+Cohesion: 0.13
+Nodes (28): adminRow(), compare(), days(), listUsers(), matchesStatus(), money(), PlanRow, SubRow (+20 more)
 
 ### Community 80 - "AppHeader.tsx"
-Cohesion: 0.15
-Nodes (21): AccountMenu(), AppHeaderProps, AVATAR_ICON, SettingsMenu(), TABS, NAV, PublicHeader(), buildCommands() (+13 more)
+Cohesion: 0.13
+Nodes (24): AppHeaderProps, AVATAR_ICON, SettingsMenu(), TABS, NAV, PublicHeader(), buildCommands(), CommandPalette() (+16 more)
 
 ### Community 81 - "api/src/referrals.ts"
-Cohesion: 0.23
-Nodes (17): adminCommissionDetail(), adminCommissions(), bulkPay(), byMonth(), CommissionRow, latestByReferred(), markPayment(), money() (+9 more)
+Cohesion: 0.21
+Nodes (18): referralCommissions, adminCommissionDetail(), adminCommissions(), bulkPay(), byMonth(), CommissionRow, latestByReferred(), markPayment() (+10 more)
 
 ### Community 82 - "normalize.ts"
 Cohesion: 0.09
@@ -547,23 +554,23 @@ Nodes (50): canonDecimal(), compareDecimal(), DecimalFormatError, decimalToNumbe
 
 ### Community 83 - "protocol.ts"
 Cohesion: 0.14
-Nodes (26): AnalyzeOptions, AnalyzeResult, ScenarioOptions, ValuationOptions, Leg, isResponse(), Pending, PricingClient (+18 more)
+Nodes (27): AnalyzeOptions, AnalyzeResult, scenarioGrid, ScenarioOptions, ValuationOptions, Leg, isResponse(), Pending (+19 more)
 
 ### Community 84 - "gateway/src/app.ts"
 Cohesion: 0.08
 Nodes (17): App, AppDeps, createApp(), { FakeRedis }, GatewayConfig, make(), InProcessPubSub, PONG (+9 more)
 
 ### Community 85 - "fmtDate"
-Cohesion: 0.14
-Nodes (20): fmtDateTime(), History(), initials(), Limits(), Lots(), Profile(), Referrals(), Subscription() (+12 more)
+Cohesion: 0.10
+Nodes (25): metadata, fmtDateTime(), History(), initials(), Limits(), Lots(), Profile(), Referrals() (+17 more)
 
 ### Community 86 - "gateway/package.json"
 Cohesion: 0.06
 Nodes (35): dependencies, @hapiecoin/schema, @hapiecoin/venues, ioredis, ws, zod, description, devDependencies (+27 more)
 
-### Community 87 - "ThemeProvider.tsx"
-Cohesion: 0.09
-Nodes (26): window(), Toaster(), ToasterProps, applyTheme(), isTheme(), readStored(), ResolvedTheme, systemTheme() (+18 more)
+### Community 87 - "ui/src/index.ts"
+Cohesion: 0.15
+Nodes (22): Toaster(), ToasterProps, fontsCss, themeCss, applyTheme(), isTheme(), readStored(), ResolvedTheme (+14 more)
 
 ### Community 88 - "api/payments.ts"
 Cohesion: 0.09
@@ -571,7 +578,7 @@ Nodes (34): RzOpts, ADR-0034, Breakdown(), CheckoutDialog(), MockCheckout(), tag
 
 ### Community 89 - "ui/package.json"
 Cohesion: 0.05
-Nodes (37): description, files, @hapiecoin/config, jsdom, react, react-dom, tailwindcss, @testing-library/dom (+29 more)
+Nodes (38): description, files, @hapiecoin/config, jsdom, react, react-dom, tailwindcss, @testing-library/dom (+30 more)
 
 ### Community 90 - "web/package.json"
 Cohesion: 0.06
@@ -582,12 +589,12 @@ Cohesion: 0.13
 Nodes (30): Dialog, DialogBody(), DialogClose, DialogContent(), DialogContentProps, dialogContentVariants, DialogDescription(), DialogFooter() (+22 more)
 
 ### Community 92 - "PayoffPanel.tsx"
-Cohesion: 0.10
-Nodes (39): ANALYSIS_TABS, AnalysisPane(), PaneSourceBar(), ADR-0026, LadderPanel(), PILL, LAYER_LABELS, Layers (+31 more)
+Cohesion: 0.13
+Nodes (29): ANALYSIS_TABS, ADR-0026, LadderPanel(), PILL, LAYER_LABELS, Layers, PayoffPanel(), Tile() (+21 more)
 
 ### Community 93 - "devDependencies"
-Cohesion: 0.07
-Nodes (29): dependencies, class-variance-authority, clsx, lucide-react, @radix-ui/react-checkbox, @radix-ui/react-dialog, @radix-ui/react-label, @radix-ui/react-select (+21 more)
+Cohesion: 0.13
+Nodes (15): devDependencies, axe-core, @hapiecoin/config, jsdom, react, react-dom, tailwindcss, @tailwindcss/node (+7 more)
 
 ### Community 94 - "tokens.ts"
 Cohesion: 0.10
@@ -602,36 +609,36 @@ Cohesion: 0.09
 Nodes (32): ActivateBody, AdminUserPatch, AdminUserRow, AdminUsersPage, BILLING_INTERVALS, BulkActiveBody, CurrentSubscription, Entitlement (+24 more)
 
 ### Community 97 - "pricing/src/index.ts"
-Cohesion: 0.16
-Nodes (24): expectedMove(), gammaExposure(), GammaExposureResult, GexPoint, impliedForward(), maxPain(), num(), PainPoint (+16 more)
+Cohesion: 0.22
+Nodes (19): expectedMove(), gammaExposure(), GammaExposureResult, GexPoint, impliedForward(), maxPain(), num(), PainPoint (+11 more)
 
-### Community 98 - "market.ts"
-Cohesion: 0.13
-Nodes (23): DeltaProduct, DeltaTicker, fixturesDir, toInstrument(), toQuote(), trimDecimal(), ChainRow, ChainSnapshot (+15 more)
+### Community 98 - "primitives.ts"
+Cohesion: 0.09
+Nodes (40): DeltaProduct, DeltaTicker, fixturesDir, toInstrument(), toQuote(), trimDecimal(), ChainRow, ChainSnapshot (+32 more)
 
-### Community 99 - "getServerUser"
-Cohesion: 0.30
-Nodes (10): Layout(), AnalyseLayout(), Layout(), Layout(), Layout(), Layout(), AnalyticsShell(), SettingsDialogsLoader() (+2 more)
+### Community 99 - "AuthScreen.tsx"
+Cohesion: 0.12
+Nodes (25): Layout(), AnalyseLayout(), Layout(), AuthPage(), first(), generateMetadata(), SearchParams, TABS (+17 more)
 
 ### Community 100 - "GatewayServer"
 Cohesion: 0.17
 Nodes (4): GatewayServer, Subscription, make(), boot()
 
 ### Community 101 - "app/page.tsx"
-Cohesion: 0.19
-Nodes (13): LandingPage(), metadata, FeatureTabs(), AUTH_FEATURES, CAPABILITIES, EXCHANGES, FEATURE_LIST, FEATURE_TABS (+5 more)
+Cohesion: 0.13
+Nodes (19): LandingPage(), metadata, metadata, FeatureTabs(), Footer(), LiveMarkets(), ROWS, TerminalIllustration() (+11 more)
 
 ### Community 102 - "strategy.ts"
-Cohesion: 0.22
-Nodes (24): analyze(), assertPrice(), breakevens(), defaultPriceRange(), expiryExtremes(), legIv(), legValueAtExpiry(), MIN_IV (+16 more)
+Cohesion: 0.15
+Nodes (31): analyze(), assertPrice(), breakevens(), curveExtremes(), defaultPriceRange(), expiryExtremes(), legIv(), legValueAtExpiry() (+23 more)
 
 ### Community 103 - "venues/package.json"
 Cohesion: 0.08
 Nodes (25): dependencies, @hapiecoin/schema, zod, description, devDependencies, @hapiecoin/config, tsx, exports (+17 more)
 
 ### Community 104 - "mailer.ts"
-Cohesion: 0.09
-Nodes (23): createLogger(), CreateLoggerOptions, isSecretKey(), REDACTED, scrub(), scrubPath(), SECRET_KEY_RE, createMailer() (+15 more)
+Cohesion: 0.10
+Nodes (17): AuthDeps, createMailer(), INVITE_SUBJECT, inviteBody(), InviteMail, MailCapture, Mailer, OTP_SUBJECT (+9 more)
 
 ### Community 105 - "src/payments.ts"
 Cohesion: 0.06
@@ -645,29 +652,29 @@ Nodes (24): description, exports, ./eslint, ./prettier, ./tsconfig/base.json, ./
 Cohesion: 0.08
 Nodes (24): description, devDependencies, @hapiecoin/config, exports, ./worker, files, @hapiecoin/config, main (+16 more)
 
-### Community 108 - "FakeSocket"
-Cohesion: 0.10
-Nodes (8): mine(), paperTradeFromBuilder(), rows, TOPIC, rows, TOPIC, FakeSocket, makeGateway()
+### Community 108 - "db/client.ts"
+Cohesion: 0.07
+Nodes (25): Base64Key32, ConfigError, loadConfig(), LoadConfigOptions, NodeEnv, RawEnv, stripEmpty(), BASE (+17 more)
 
 ### Community 109 - "src/store.ts"
-Cohesion: 0.06
-Nodes (23): sumSeries(), Logger, buildOverview(), latest(), read(), env(), oi(), Job (+15 more)
+Cohesion: 0.08
+Nodes (16): sumSeries(), buildOverview(), latest(), read(), env(), oi(), KEY_PREFIX, MemoryStore (+8 more)
 
 ### Community 110 - "UsersAdmin.tsx"
 Cohesion: 0.08
-Nodes (39): metadata, metadata, CAMPAIGN_COLUMNS, CampaignDetailView(), Compose(), EmailsAdmin(), fmtDateTime(), History() (+31 more)
+Nodes (40): metadata, metadata, AdminHeader(), CAMPAIGN_COLUMNS, CampaignDetailView(), Compose(), EmailsAdmin(), fmtDateTime() (+32 more)
 
 ### Community 111 - "tasks"
 Cohesion: 0.08
 Nodes (23): dependsOn, outputs, cache, persistent, globalEnv, outputs, $schema, tasks (+15 more)
 
 ### Community 112 - "api/package.json"
-Cohesion: 0.09
-Nodes (22): description, exports, files, better-auth, @hapiecoin/config, @hapiecoin/schema, @hapiecoin/venues, hono (+14 more)
+Cohesion: 0.08
+Nodes (23): description, exports, files, better-auth, @hapiecoin/config, @hapiecoin/schema, @hapiecoin/venues, hono (+15 more)
 
 ### Community 113 - "StrategyDetailsDialog.tsx"
-Cohesion: 0.06
-Nodes (75): metadata, BatchLiveDialog(), ADR-0010, PAGE, PaperPanel(), SortKey, sortStrategies(), Sparkline() (+67 more)
+Cohesion: 0.07
+Nodes (54): PaneSourceBar(), CardFigures(), ADR-0044, PaperPanel(), SortKey, sortStrategies(), ADR-0029, exitLots() (+46 more)
 
 ### Community 114 - "schema/package.json"
 Cohesion: 0.09
@@ -678,12 +685,12 @@ Cohesion: 0.14
 Nodes (20): API_KEY_MASKED_RE, ApiKeyMasked, Avatar, Broker, BrokerCredentialPublic, BrokerScope, Density, Id (+12 more)
 
 ### Community 116 - "BuilderPanel.tsx"
-Cohesion: 0.06
-Nodes (52): BuilderPanel(), moneyness(), NEW_STRATEGY_LEGS, PriceCell(), ADR-0022, FutureDialog(), ChainState, QuoteLookup (+44 more)
+Cohesion: 0.09
+Nodes (44): BuilderPanel(), moneyness(), NEW_STRATEGY_LEGS, PriceCell(), ADR-0022, ChainCellState, ChainPickerBodyProps, ChainPickerDialog() (+36 more)
 
-### Community 117 - "api/referrals.ts"
-Cohesion: 0.11
-Nodes (27): metadata, EarningsChart(), StatusBadge(), ADR-0031, copy(), REFERRALS_PAGE, ReferralsPage(), ShareDialog() (+19 more)
+### Community 117 - "AnalyticsShell.tsx"
+Cohesion: 0.19
+Nodes (7): SOON, metadata, CoinSearch(), SECTIONS, SectionSoon(), TERMINAL, useMarkets()
 
 ### Community 118 - "compilerOptions"
 Cohesion: 0.09
@@ -694,8 +701,8 @@ Cohesion: 0.23
 Nodes (18): black76Greeks(), black76Price(), Greeks, impliedVol(), ImpliedVolOptions, intrinsicValue(), rawVega(), validInputs() (+10 more)
 
 ### Community 120 - "helpers.tsx"
-Cohesion: 0.10
-Nodes (24): ADR-0031, ADR-0030, ADR-0034, ADR-0035, ADR-0032, user, lastBot(), rows (+16 more)
+Cohesion: 0.08
+Nodes (30): ADR-0031, ADR-0035, ADR-0032, rows, TOPIC, user, NOW, ADR-0033 (+22 more)
 
 ### Community 121 - "schema-adapter.test.ts"
 Cohesion: 0.13
@@ -705,21 +712,21 @@ Nodes (25): isSchemaInstrument(), ivOrOmit(), latestSpot(), SCHEMA_CURRENCIES, S
 Cohesion: 0.09
 Nodes (21): compilerOptions, declaration, declarationMap, esModuleInterop, exactOptionalPropertyTypes, forceConsistentCasingInFileNames, isolatedModules, lib (+13 more)
 
-### Community 123 - "api/client.ts"
-Cohesion: 0.12
-Nodes (23): InviteUserDialog(), SetPlanDialog(), ADR-0032, adminFetchers(), adminKeys, DEFAULT_USERS_QUERY, f, ADR-0032 (+15 more)
+### Community 123 - "app/layout.tsx"
+Cohesion: 0.43
+Nodes (4): metadata, RootLayout(), THEME_INIT_SCRIPT, THEME_STORAGE_KEY
 
 ### Community 124 - "schema/src/analytics.ts"
-Cohesion: 0.05
-Nodes (41): ANALYTICS_VENUE_LABELS, ANALYTICS_VENUES, AnalyticsDataset, AnalyticsVenue, CycleData, CyclePoint, FearGreedData, FundingData (+33 more)
+Cohesion: 0.04
+Nodes (48): ANALYTICS_VENUE_LABELS, ANALYTICS_VENUES, AnalyticsDataset, AnalyticsVenue, CycleData, CyclePoint, FearGreedData, FundingData (+40 more)
 
-### Community 125 - "rate-store.ts"
-Cohesion: 0.11
-Nodes (6): ConsumeResult, MemoryRateStoreOptions, RedisLike, RedisPipelineLike, RedisRateStore, FakeRedis
+### Community 125 - "RedisPipelineLike"
+Cohesion: 0.14
+Nodes (3): RedisLike, RedisPipelineLike, FakeRedis
 
 ### Community 126 - "fixtures/chain.ts"
-Cohesion: 0.13
-Nodes (20): rows, TOPIC, FakeGateway, FakeGatewayOptions, startFakeGateway(), buildChain(), dec(), expiriesOf() (+12 more)
+Cohesion: 0.08
+Nodes (30): ctxCalls, rows, TOPIC, ADR-0028, AnalysisPane(), mine(), paperTradeFromBuilder(), rows (+22 more)
 
 ### Community 127 - "validation.test.ts"
 Cohesion: 0.16
@@ -737,13 +744,13 @@ Nodes (4): Emitter, backoffDelay(), ReconnectingSocket, resolveCtor()
 Cohesion: 0.11
 Nodes (19): devDependencies, babel-plugin-react-compiler, @hapiecoin/config, hono, @hono/node-server, jsdom, @playwright/test, tailwindcss (+11 more)
 
-### Community 131 - "primitives.ts"
-Cohesion: 0.20
-Nodes (17): compareDecimal(), compareMagnitude(), Currency, DECIMAL_STRING_RE, DecimalParts, DecimalString, isNonNegativeDecimal(), IsoDate (+9 more)
+### Community 131 - "hooks.tsx"
+Cohesion: 0.10
+Nodes (32): TickerItem(), FuturesPrice(), sparkPath(), Tile(), useRecordPnl(), fmtPct(), GatewayContext, GatewayProvider() (+24 more)
 
-### Community 132 - "ui/src/index.ts"
-Cohesion: 0.11
-Nodes (32): EmptyState(), EmptyStateProps, Kbd(), KbdProps, Select(), SelectContent(), SelectGroup, SelectItem() (+24 more)
+### Community 132 - "Controls.test.tsx"
+Cohesion: 0.13
+Nodes (14): EmptyState(), EmptyStateProps, Kbd(), KbdProps, Switch(), SwitchProps, Tooltip(), TooltipContent() (+6 more)
 
 ### Community 133 - "raw.ts"
 Cohesion: 0.07
@@ -762,8 +769,8 @@ Cohesion: 0.11
 Nodes (14): args, buildManifest, first, firstLoad, later, limitKb, nextDir, onDemand (+6 more)
 
 ### Community 138 - "ChainTable.tsx"
-Cohesion: 0.05
-Nodes (93): GreeksPanel(), MEANING, GreeksStrip(), ChainPickerDialog(), ChainPickerProps, Pick, InstrumentPatch, InstrumentQuote (+85 more)
+Cohesion: 0.11
+Nodes (32): CellProps, ChainTable(), ChainTableProps, NO_MARKS, quoteFlashes(), Sides, ADR-0006, ChainFooter() (+24 more)
 
 ### Community 139 - "rest.ts"
 Cohesion: 0.10
@@ -774,16 +781,16 @@ Cohesion: 0.15
 Nodes (7): ADR-0001, identityGuard, ADR-0003, tokenGuard, eslint-config-prettier, @eslint/js, typescript-eslint
 
 ### Community 141 - "Button.tsx"
-Cohesion: 0.17
-Nodes (13): Badge(), BadgeProps, badgeVariants, ADR-0003, Button(), ButtonProps, buttonVariants, ADR-0003 (+5 more)
+Cohesion: 0.27
+Nodes (8): Button(), ButtonProps, buttonVariants, ADR-0003, Spinner(), SpinnerProps, spinnerVariants, @radix-ui/react-slot
 
 ### Community 142 - "dependencies"
 Cohesion: 0.13
 Nodes (15): dependencies, better-auth, @better-auth/passkey, drizzle-orm, @hapiecoin/schema, @hapiecoin/venues, hono, @hono/node-server (+7 more)
 
 ### Community 143 - "tour.ts"
-Cohesion: 0.13
-Nodes (28): SaveDraftDialog(), SaveDraftDialogProps, Box, Tour(), TourOverlay(), ADR-0036, feeLine(), netPremium() (+20 more)
+Cohesion: 0.21
+Nodes (17): Box, anchors(), rect(), Tour(), TourOverlay(), ADR-0036, WorkspaceTab, findTourTarget() (+9 more)
 
 ### Community 144 - "package.json"
 Cohesion: 0.13
@@ -930,8 +937,8 @@ Cohesion: 0.40
 Nodes (5): Health, HTTP_URL, main(), RUN_MS, stamp()
 
 ### Community 182 - "CouponsAdmin.tsx"
-Cohesion: 0.15
-Nodes (21): metadata, AssignUsers(), COLUMNS, CouponDialog(), CouponsAdmin(), discountText(), emptyForm(), expired() (+13 more)
+Cohesion: 0.13
+Nodes (22): metadata, ADR-0034, AssignUsers(), COLUMNS, CouponDialog(), CouponsAdmin(), discountText(), emptyForm() (+14 more)
 
 ### Community 183 - "playwright.config.ts"
 Cohesion: 0.40
@@ -951,11 +958,11 @@ Nodes (4): exclude, extends, ./tsconfig.json, $schema
 
 ### Community 187 - "api/banners.ts"
 Cohesion: 0.09
-Nodes (41): metadata, ADR-0033, BannerDialog(), BannersAdmin(), COLUMNS, emptyForm(), Form, formOf() (+33 more)
+Nodes (39): metadata, ADR-0033, BannerDialog(), BannersAdmin(), COLUMNS, emptyForm(), Form, formOf() (+31 more)
 
 ### Community 203 - "liquidations.ts"
-Cohesion: 0.06
-Nodes (23): AppDeps, FakeSocket, baseOf(), BINANCE_STREAM, BYBIT_STREAM, BybitLiquidationFrame, BybitLiquidationStream, ForceOrderFrame (+15 more)
+Cohesion: 0.07
+Nodes (21): baseOf(), BINANCE_STREAM, BYBIT_STREAM, BybitLiquidationFrame, BybitLiquidationStream, ForceOrderFrame, ForceOrderStream, ForceOrderStreamOptions (+13 more)
 
 ### Community 204 - "4a · User Management (HC-AD-086..109, HC-AD-091..098, HC-SH-024)"
 Cohesion: 0.05
@@ -973,9 +980,9 @@ Nodes (33): 10. Confusion check, 10. Confusion check, 10. Confusion check, 1. Jo
 Cohesion: 0.18
 Nodes (11): scripts, build, db:generate, db:migrate, db:seed, dev, lint, start (+3 more)
 
-### Community 208 - "api/src/app.ts"
-Cohesion: 0.07
-Nodes (72): AuthOptions, createApp(), Health, auditFrom(), activeBanners(), bannerImage(), BannerRow, createBanner() (+64 more)
+### Community 208 - "routes/banners.ts"
+Cohesion: 0.25
+Nodes (16): activeBanners(), bannerImage(), BannerRow, createBanner(), decodeImage(), deleteBanner(), listBanners(), Meta (+8 more)
 
 ### Community 210 - "devDependencies"
 Cohesion: 0.40
@@ -983,51 +990,51 @@ Nodes (5): devDependencies, drizzle-kit, @electric-sql/pglite, @hapiecoin/config
 
 ### Community 211 - "src/strategies.ts"
 Cohesion: 0.05
-Nodes (46): AddLegsBody, CloseAllBody, CloseLegBody, LegExpiry, LiveBatchBody, LiveBatchResult, LivePlaceBody, LivePosition (+38 more)
+Nodes (51): AddLegsBody, AdjustBody, AdjustChange, CloseAllBody, CloseLegBody, LegExpiry, LiveBatchBody, LiveBatchResult (+43 more)
 
-### Community 212 - "assistant.ts"
-Cohesion: 0.09
-Nodes (27): metadata, RootLayout(), Assistant(), ASSISTANT_POS_KEY, Explainer(), Msg, readPos(), SUPPORT_EMAIL (+19 more)
+### Community 212 - "money.ts"
+Cohesion: 0.13
+Nodes (19): Explainer(), Answer, answerFor(), ANSWERS, BASE_SUGGESTIONS, EXPLAIN_QUESTION, explainStrategy(), FALLBACK (+11 more)
 
 ### Community 214 - "next"
-Cohesion: 0.12
-Nodes (11): nextConfig, staticHeaders, metadata, metadata, metadata, metadata, LegalPage(), LEGAL (+3 more)
+Cohesion: 0.07
+Nodes (13): nextConfig, staticHeaders, metadata, metadata, metadata, metadata, metadata, metadata (+5 more)
 
-### Community 215 - "NetPositionsPanel.tsx"
-Cohesion: 0.15
-Nodes (20): ASSET_FILTERS, NetPositionsPanel(), positionLabel(), ADR-0026, acc(), CALL, connect(), liveStrat() (+12 more)
+### Community 215 - "useStrategyAnalysis.ts"
+Cohesion: 0.14
+Nodes (22): ASSET_FILTERS, NetPositionsPanel(), positionLabel(), ADR-0026, useLiveExitPositions(), useLivePositions(), useCredential(), isAsset() (+14 more)
 
-### Community 216 - "TemplatesPanel.tsx"
-Cohesion: 0.08
-Nodes (36): templateSketch(), TemplatesPanel(), ADR-0027, useTemplateLoader(), OUTLOOKS, TemplatesStrip(), ADR-0027, ChainPanel() (+28 more)
+### Community 216 - "TradeFlow.tsx"
+Cohesion: 0.10
+Nodes (39): SaveDraftDialog(), SaveDraftDialogProps, BatchLiveDialog(), ADR-0010, TradeFlow(), ADR-0024, useImportLegacyDrafts(), feeLine() (+31 more)
 
 ### Community 217 - "AuthForms.tsx"
-Cohesion: 0.12
-Nodes (24): AuthForms(), AuthFormsProps, Errors, ForgotForm(), LoginForm(), OtpLoginForm(), OtpVerifyForm(), ResetPasswordForm() (+16 more)
+Cohesion: 0.10
+Nodes (26): metadata, SsoPage(), Errors, ForgotForm(), LoginForm(), OtpLoginForm(), OtpVerifyForm(), ResetPasswordForm() (+18 more)
 
 ### Community 218 - "schema/src/banners.ts"
 Cohesion: 0.16
 Nodes (15): Banner, BANNER_FREQUENCY_LABELS, BANNER_IMAGE_MAX_BYTES, BANNER_IMAGE_TYPES, BannerCreate, BannerFrequency, BannerList, BannerPatch (+7 more)
 
-### Community 219 - "next-mocks.ts"
-Cohesion: 0.12
-Nodes (11): metadata, authHref(), AuthScreen(), PARENT_TAB, DeltaSignIn(), navigationModule, resetNextMocks(), routerMock (+3 more)
+### Community 219 - "chain.test.tsx"
+Cohesion: 0.13
+Nodes (22): rows, tableProps(), TOPIC, ConnectionStatus, GatewayClientOptions, GatewayEvents, WebSocketFactory, applyDeltas() (+14 more)
 
 ### Community 220 - "Checkout, coupons, payment history and invoices · design (Phase 4 item 2, 08 Sep 2026, ADR-034)"
 Cohesion: 0.06
 Nodes (34): 10. Confusion check, 10. Confusion check, 10. Confusion check, 1. Job, 1. Job, 1. Job, 2. Layout, 2. Layout (+26 more)
 
 ### Community 221 - "routes/strategies.ts"
-Cohesion: 0.08
-Nodes (54): brokers, strategies, strategyLegs, strategyOrders, assertEntitled(), reconcilePending(), ReconcileResult, startReconciler() (+46 more)
+Cohesion: 0.06
+Nodes (65): brokers, strategies, strategyLegs, strategyOrders, assertEntitled(), reconcilePending(), ReconcileResult, startReconciler() (+57 more)
 
 ### Community 222 - "Phase 3 · Paper and live trading · plan and design pass · 2026-09-08"
 Cohesion: 0.12
 Nodes (15): 1. Job, 2. Items and order (one PR each), 3. Data model (item 1), 4. API (item 1), 5. Web (item 1), 6. Numbers, 7. Safety (both items), 8. Traceability and tests (+7 more)
 
 ### Community 223 - "api/billing.ts"
-Cohesion: 0.10
-Nodes (35): metadata, metadata, metadata, ADMIN_NAV, AdminHeader(), BulkBar(), Rail(), MenuItemDialog() (+27 more)
+Cohesion: 0.12
+Nodes (30): metadata, metadata, ADMIN_NAV, BulkBar(), Rail(), MenuItemDialog(), MenuItemsAdmin(), emptyForm() (+22 more)
 
 ### Community 224 - "DeltaTradingClientImpl"
 Cohesion: 0.29
@@ -1035,103 +1042,103 @@ Nodes (3): dec(), DeltaTradingClientImpl, toOrder()
 
 ### Community 225 - "LiquidationsPage.tsx"
 Cohesion: 0.14
-Nodes (15): metadata, Coin(), HBars(), Split(), binLabel(), CoinLiq, eventKey(), hms() (+7 more)
+Nodes (17): metadata, CoinSelect(), HBars(), binLabel(), CoinLiq, eventKey(), hms(), LiquidationsPage() (+9 more)
 
-### Community 226 - "GatewayClient"
-Cohesion: 0.15
-Nodes (3): GatewayClient, GatewayProviderProps, RenderWithProvidersOptions
+### Community 226 - "model.ts"
+Cohesion: 0.07
+Nodes (61): AdjustConfirmDialog(), ADR-0044, AdjustWorkbench(), STACK_BELOW_PX, ADR-0044, useWide(), EFFECT_CLS, EffectPill() (+53 more)
 
 ### Community 227 - "adapters.test.ts"
-Cohesion: 0.06
-Nodes (34): Body, num, parseDeltaSymbol(), Row, ADR-0042, Body, MONTHS, num (+26 more)
+Cohesion: 0.12
+Nodes (22): FakeFetch, FakeInit, FakeResponse, Handler, binance, bybit, bybitBook, bybitKlines (+14 more)
 
-### Community 228 - "src/checkout.ts"
-Cohesion: 0.09
-Nodes (49): inviteUser(), setPlan(), cancelCheckout(), confirmCheckout(), failPayment(), handleWebhook(), invoiceFor(), listPayments() (+41 more)
+### Community 228 - "routes/billing.ts"
+Cohesion: 0.06
+Nodes (70): assertRoleChangeAllowed(), cancelCheckout(), confirmCheckout(), failPayment(), handleWebhook(), invoiceFor(), listPayments(), nextInvoiceNo() (+62 more)
 
 ### Community 229 - "jobs.ts"
-Cohesion: 0.13
-Nodes (42): DeltaAdapter, DeribitAdapter, Body, FearGreedAdapter, Row, createApp(), StreamState, StreamVenue (+34 more)
+Cohesion: 0.11
+Nodes (45): CoinGeckoAdapter, DeltaAdapter, DeribitAdapter, FearGreedAdapter, HyperliquidAdapter, createApp(), StreamState, StreamVenue (+37 more)
 
 ### Community 231 - "api/src/index.ts"
-Cohesion: 0.06
-Nodes (49): API_VERSION, AuthDeps, createAuth(), findReferralCode(), generateReferralCode(), OTP_EXPIRY_SEC, OTP_LENGTH, SESSION_TTL_SEC (+41 more)
+Cohesion: 0.04
+Nodes (59): ANALYTICS_KEY_PREFIX, AnalyticsReader, RedisAnalyticsReader, RedisGetLike, ADR-0038, Config, DbKind, DeltaCredentialErrorCode (+51 more)
 
 ### Community 232 - "5b · Payoff chart preview (`/payoff-preview`)"
 Cohesion: 0.14
 Nodes (13): 10. Confusion check, 1. Job, 2. Layout, 3. Hierarchy, 4. States, 5. Numbers, 5b · Payoff chart preview (`/payoff-preview`), 5c · Evidence audit of the Phase 1 public pages (09 Sep 2026) (+5 more)
 
-### Community 233 - "ingest/src/app.test.ts"
-Cohesion: 0.09
-Nodes (20): env, { FakeRedis, FakeWs }, ConfigError, IngestEnv, loadConfig(), LOG_LEVELS, LogLevel, Symbols (+12 more)
+### Community 233 - "ingest/src/config.ts"
+Cohesion: 0.10
+Nodes (15): env, { FakeRedis, FakeWs }, FakeSocket, ConfigError, IngestEnv, loadConfig(), LOG_LEVELS, Symbols (+7 more)
 
 ### Community 234 - "HubPage.tsx"
 Cohesion: 0.09
-Nodes (25): metadata, metadata, ViewAll(), assetCol, catCols, categories(), CategoryRow, derivCols (+17 more)
+Nodes (27): metadata, R, Chips(), cellText(), Column, DataTable(), DataTableProps, rawText() (+19 more)
 
 ### Community 235 - "queries.ts"
-Cohesion: 0.07
-Nodes (52): AdminShell(), ApiSettingsDialog(), CurrencyDialog(), currencyNote(), BrokerForm(), DeleteConfirm(), EMPTY, ExchangeManagementDialog() (+44 more)
+Cohesion: 0.08
+Nodes (49): AdminShell(), ApiSettingsDialog(), CurrencyDialog(), currencyNote(), BrokerForm(), DeleteConfirm(), EMPTY, ExchangeManagementDialog() (+41 more)
 
 ### Community 236 - "okx.ts"
 Cohesion: 0.14
 Nodes (15): envelope(), Funding, FundingHist, LiqDetail, LiqRow, num, Oi, OkxAdapter (+7 more)
 
-### Community 237 - "usePnlWriter.test.tsx"
-Cohesion: 0.24
-Nodes (9): useRecordPnl(), PNL_WRITE_EVERY_MS, PNL_WRITE_FIRST_MS, LEG, ADR-0029, Writer(), todayIso(), ADR-0029 (+1 more)
+### Community 237 - "useUiStore"
+Cohesion: 0.08
+Nodes (37): ADR-0030, ADR-0030, UpgradeRequiredDialog(), AccountMenu(), AssetSwitch(), CurrencyToggle(), ExchangeChip(), FeedStatus() (+29 more)
 
-### Community 238 - "chain.test.tsx"
-Cohesion: 0.12
-Nodes (23): rows, tableProps(), TOPIC, ConnectionStatus, GatewayClientOptions, GatewayEvents, WebSocketFactory, WebSocketLike (+15 more)
+### Community 238 - "GatewayClient"
+Cohesion: 0.16
+Nodes (3): GatewayClient, GatewayProviderProps, RenderWithProvidersOptions
 
 ### Community 239 - "Assistant and product tour · design note (Phase 4 item 5a)"
 Cohesion: 0.17
 Nodes (11): 10. Confusion check, 1. Job, 2. Layout, 3. Hierarchy, 4. States, 5. Numbers, 6. Interaction, 7. Traceability and tests (+3 more)
 
-### Community 240 - "OptionsPage.tsx"
-Cohesion: 0.09
-Nodes (25): metadata, metadata, Checklist(), CoinSelect(), Donut(), Panel(), RsiCell(), Tile() (+17 more)
+### Community 240 - "api/client.ts"
+Cohesion: 0.11
+Nodes (21): Assistant(), ASSISTANT_POS_KEY, Msg, readPos(), SUPPORT_EMAIL, lastBot(), rows, settled() (+13 more)
 
-### Community 241 - "useUiStore"
-Cohesion: 0.17
-Nodes (25): AuthScreenProps, TickerItem(), AssetSwitch(), CurrencyToggle(), ExchangeChip(), FeedStatus(), FuturesPrice(), WalletChip() (+17 more)
+### Community 241 - "TemplatesPanel.tsx"
+Cohesion: 0.08
+Nodes (45): usePickerChain(), InstrumentPatch, InstrumentQuote, LegInstrument(), ADR-0006, ADR-0028, templateSketch(), TemplatesPanel() (+37 more)
 
 ### Community 242 - "mock-analytics.ts"
-Cohesion: 0.27
-Nodes (20): coinIndex(), COINS, envelope(), mockAnalyticsSnapshots(), mockCycle(), mockFunding(), mockLiquidations(), mockLongShort() (+12 more)
+Cohesion: 0.26
+Nodes (21): coinIndex(), COINS, envelope(), mockAnalyticsSnapshots(), mockCycle(), mockFunding(), mockLiquidations(), mockLongShort() (+13 more)
 
-### Community 243 - "lib/store.ts"
-Cohesion: 0.07
-Nodes (46): columnById(), ColumnSettingsDialog(), PRESETS, applyPreset(), ChainLayout, defaultLayout(), greeksShown(), isId() (+38 more)
+### Community 243 - "layout.ts"
+Cohesion: 0.15
+Nodes (25): COLUMN_GROUPS, COLUMNS, OHLC_PLACEHOLDER, ColumnSettingsDialog(), PRESETS, applyPreset(), defaultLayout(), greeksShown() (+17 more)
 
 ### Community 244 - "SentimentPage.tsx"
 Cohesion: 0.13
-Nodes (22): metadata, Chips(), CP_TFS, CYCLE_DAYS, CYCLE_TFS, CycleTf, FG_TFS, fmtPx() (+14 more)
+Nodes (23): metadata, CP_TFS, CYCLE_DAYS, CYCLE_TFS, CycleTf, FG_TFS, fmtPx(), md() (+15 more)
 
 ### Community 245 - "Market Analytics · data-source research (Phase 5 item 5)"
 Cohesion: 0.12
 Nodes (15): 1. What the block is, and where it lives, 2. Data categories and candidate sources, 3. Coverage board (what v1 ships with the hybrid), 4. Who implements these screens (reference implementers), 5. Proposed architecture (for ADR-038), 6. Terms-of-use notes, 7. Open questions for the ADR, 8. Source links (consulted 09 Sep 2026) (+7 more)
 
 ### Community 247 - "CoinPage.tsx"
-Cohesion: 0.10
-Nodes (30): metadata, CoinPage(), FUND_TFS, fundingCols(), marketCols, VenueRow, arbCols, DerivativesPage() (+22 more)
+Cohesion: 0.12
+Nodes (35): Heat(), Treemap(), CoinPage(), FUND_TFS, fundingCols(), marketCols, VenueRow, arbCols (+27 more)
 
 ### Community 248 - "ingest/tsconfig.build.json"
 Cohesion: 0.18
 Nodes (10): compilerOptions, outDir, rootDir, sourceMap, types, exclude, extends, include (+2 more)
 
-### Community 249 - "trading-live.test.tsx"
-Cohesion: 0.22
-Nodes (7): acc(), CALL, connect(), mine(), rows, TOPIC, ADR-0025
+### Community 249 - "Workspace.tsx"
+Cohesion: 0.05
+Nodes (36): metadata, mine(), paperTradeFromBuilder(), rows, rows2, TOPIC, TOPIC2, ADR-0044 (+28 more)
 
 ### Community 250 - "src/analytics.test.ts"
-Cohesion: 0.08
-Nodes (23): ANALYTICS_DATASETS, analyticsKey(), AnalyticsSnapshot, AnalyticsSymbol, CycleSnapshot, fearGreedLabel(), FearGreedSnapshot, fundingApr() (+15 more)
+Cohesion: 0.07
+Nodes (26): ANALYTICS_DATASETS, analyticsKey(), AnalyticsSnapshot, AnalyticsSymbol, CycleSnapshot, fearGreedLabel(), FearGreedSnapshot, fundingApr() (+18 more)
 
 ### Community 251 - "5.3 · Markets screener, Derivatives, Liquidations, coin-page charts (this PR)"
 Cohesion: 0.05
-Nodes (36): 5.1 · Ingestion foundation (this PR), 5.2 · Shell, Markets Hub, Futures overview (PR #22), 5.3 · Markets screener, Derivatives, Liquidations, coin-page charts (this PR), 5.3b · Ingest venue fallbacks (this PR), 5.4a · Options, Sentiment, ETF placeholder (this PR), Cadence and budget, Hierarchy, Hierarchy (+28 more)
+Nodes (43): 5.1 · Ingestion foundation (this PR), 5.2 · Shell, Markets Hub, Futures overview (PR #22), 5.3 · Markets screener, Derivatives, Liquidations, coin-page charts (this PR), 5.3b · Ingest venue fallbacks (this PR), 5.4a · Options, Sentiment, ETF placeholder (this PR), 5.4b · Whales (this PR), Cadence and budget, Hierarchy (+35 more)
 
 ### Community 252 - "ingest/tsconfig.json"
 Cohesion: 0.22
@@ -1141,74 +1148,102 @@ Nodes (8): compilerOptions, noEmit, rootDir, types, extends, include, @hapiecoin
 Cohesion: 0.18
 Nodes (17): bindList(), bindLive(), bindPaper(), filterRows(), legChip(), legRow(), liveRows(), ordersHtml() (+9 more)
 
-### Community 255 - "Chart.tsx"
-Cohesion: 0.21
-Nodes (15): Chart(), ChartProps, ChartSeries, ChartSpec, colorFor(), Extent, finite(), indexAt() (+7 more)
+### Community 255 - "bits.tsx"
+Cohesion: 0.13
+Nodes (17): metadata, Checklist(), CheckRow, Coin(), ComingSoon(), Gauge(), Panel(), RsiCell() (+9 more)
 
-### Community 256 - "mock-api.ts"
-Cohesion: 0.09
-Nodes (18): Account, defaultSettings(), GLOBAL_BROKER, MockBanner, MockCommission, MockSubscription, PlanRecord, SESSION_COOKIE (+10 more)
-
-### Community 257 - "main.ts"
+### Community 256 - "JsonClient"
 Cohesion: 0.07
-Nodes (19): ANALYTICS_KEY_PREFIX, AnalyticsReader, MemoryAnalyticsReader, RedisAnalyticsReader, RedisGetLike, ADR-0038, app, auth (+11 more)
+Nodes (17): client(), Body, Row, HyperliquidAdapterOptions, Leaderboard, MetaCtxs, num, Position (+9 more)
 
-### Community 258 - "schema.ts"
-Cohesion: 0.05
-Nodes (74): assertRoleChangeAllowed(), compare(), days(), listUsers(), matchesStatus(), money(), PlanRow, SubRow (+66 more)
-
-### Community 259 - "private-client.ts"
+### Community 257 - "fmtInr"
 Cohesion: 0.15
-Nodes (11): DeltaCredentialErrorCode, DeltaPrivateClient, DeltaPrivateClientImpl, DeltaPrivateClientOptions, describe(), FakeDeltaPrivateClient, FetchLike, KNOWN_CODES (+3 more)
+Nodes (19): metadata, DiffPanel(), LimitsList(), LimitsMatrix(), PlanCard(), SubscriptionPage(), ADR-0030, ADR-0034 (+11 more)
 
-### Community 260 - "JsonClient"
-Cohesion: 0.12
-Nodes (10): client(), Coin, CoinGeckoAdapter, Global, nnum, SYMBOL_RE, thin(), Ticker (+2 more)
+### Community 258 - "api/src/app.ts"
+Cohesion: 0.05
+Nodes (82): inviteUser(), setPlan(), API_VERSION, AuthOptions, createApp(), Health, AuditEntry, auditFrom() (+74 more)
 
-### Community 261 - "auth/page.tsx"
-Cohesion: 0.22
-Nodes (10): AuthPage(), first(), generateMetadata(), SearchParams, TABS, metadata, SsoPage(), SsoReturn() (+2 more)
+### Community 259 - "Adjustment workbench · design (approved 09 Sep 2026)"
+Cohesion: 0.29
+Nodes (6): 1. Problem, 2. Decisions taken with the user (chronological), 3. Architecture (ADR-044), 4. PR plan, 5. Traceability, Adjustment workbench · design (approved 09 Sep 2026)
 
-### Community 262 - "Logo.tsx"
+### Community 260 - "coingecko.ts"
 Cohesion: 0.18
-Nodes (9): metadata, Footer(), ROWS, TerminalIllustration(), Logo(), LogoMark(), LogoProps, SUPPORT_EMAIL (+1 more)
+Nodes (7): Coin, Global, nnum, SYMBOL_RE, thin(), Ticker, Tickers
+
+### Community 261 - "web/test/setup.ts"
+Cohesion: 0.20
+Nodes (5): navigationModule, resetNextMocks(), MqlListener, mqlListeners, ResizeObserverStub
+
+### Community 262 - "lib/format.ts"
+Cohesion: 0.22
+Nodes (21): BeforeAfterStrip(), figure(), Tone, ADR-0044, GreeksPanel(), MEANING, GreeksStrip(), ChainPickerBody() (+13 more)
 
 ### Community 263 - "Scheduler"
+Cohesion: 0.06
+Nodes (19): App, AppDeps, IngestConfig, LogLevel, FetchLike, createLogger(), LogFields, Logger (+11 more)
+
+### Community 264 - "columns.ts"
+Cohesion: 0.12
+Nodes (21): ChainHeader(), ChainHeaderProps, Track(), callColumns(), ChainColumn, COLUMN_IDS, COLUMN_PX, columnById() (+13 more)
+
+### Community 266 - "mock-api.ts"
+Cohesion: 0.09
+Nodes (19): Account, defaultSettings(), GLOBAL_BROKER, MockBanner, MockCommission, MockSubscription, PlanRecord, SESSION_COOKIE (+11 more)
+
+### Community 267 - "buildWhales"
 Cohesion: 0.19
-Nodes (3): App, IngestConfig, Scheduler
+Nodes (11): OrderBook, buildWhales(), pool(), diffPositions(), hourOf(), key(), mergeWalls(), ADR-0043 (+3 more)
 
-### Community 264 - "api/src/env-file.ts"
-Cohesion: 0.70
-Nodes (3): loadRepoEnv(), repoRootEnvPath(), cleanups
+### Community 268 - "WhalesPage.tsx"
+Cohesion: 0.13
+Nodes (23): metadata, LiqHeatmap(), SourceLine(), ACTION_LABEL, alertKey(), hm(), hms(), orderCols() (+15 more)
 
-### Community 266 - "AnalyticsShell.tsx"
-Cohesion: 0.19
-Nodes (7): SOON, metadata, CoinSearch(), SECTIONS, SectionSoon(), TERMINAL, useMarkets()
+### Community 269 - "deribit.ts"
+Cohesion: 0.14
+Nodes (12): Body, num, parseDeltaSymbol(), Row, ADR-0042, Body, MONTHS, num (+4 more)
 
-### Community 267 - "PlanBanner.tsx"
-Cohesion: 0.52
-Nodes (5): bannerFor(), BannerView, PlanBanner(), PlanBannerView(), usePlan()
+### Community 270 - "dependencies"
+Cohesion: 0.14
+Nodes (14): dependencies, class-variance-authority, clsx, lucide-react, @radix-ui/react-checkbox, @radix-ui/react-dialog, @radix-ui/react-label, @radix-ui/react-select (+6 more)
 
-### Community 268 - "ApiError"
-Cohesion: 0.38
-Nodes (4): ApiError, request(), parseApiError(), user
+### Community 271 - "api/admin.ts"
+Cohesion: 0.20
+Nodes (15): InviteUserDialog(), SetPlanDialog(), ADR-0032, adminFetchers(), adminKeys, DEFAULT_USERS_QUERY, f, ADR-0032 (+7 more)
+
+### Community 272 - "Select.tsx"
+Cohesion: 0.22
+Nodes (13): Select(), SelectContent(), SelectGroup, SelectItem(), SelectLabel(), SelectOption, SelectProps, SelectRoot (+5 more)
+
+### Community 273 - "OptionsPage.tsx"
+Cohesion: 0.22
+Nodes (10): metadata, Donut(), Tile(), compact(), exchangeCols(), expiryTip(), OPTION_SYMBOLS, OptionsPage() (+2 more)
+
+### Community 274 - "Badge.tsx"
+Cohesion: 0.25
+Nodes (8): Badge(), BadgeProps, badgeVariants, ADR-0003, Stat(), StatProps, statValueVariants, class-variance-authority
+
+### Community 275 - "src/test/setup.ts"
+Cohesion: 0.22
+Nodes (5): window(), mockSystemDark(), MqlListener, mqlListeners, ResizeObserverStub
 
 ## Knowledge Gaps
-- **2101 isolated node(s):** `{ spawnSync }`, `{ readInput, deny }`, `input`, `cmd`, `rules` (+2096 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2634 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **2181 isolated node(s):** `{ spawnSync }`, `{ readInput, deny }`, `input`, `cmd`, `rules` (+2176 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2728 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **28 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `registerBillingRoutes()` connect `api/src/app.ts` to `AppHeader.tsx`, `schema.ts`, `src/checkout.ts`, `api/src/emails.ts`?**
-  _High betweenness centrality (0.162) - this node is a cross-community bridge._
-- **Why does `MenuItem()` connect `AppHeader.tsx` to `api/src/app.ts`, `UsersAdmin.tsx`, `api/billing.ts`?**
-  _High betweenness centrality (0.162) - this node is a cross-community bridge._
-- **Why does `isNonNegativeDecimal()` connect `primitives.ts` to `api/src/app.ts`, `accounts.ts`, `src/billing.ts`, `src/strategies.ts`?**
-  _High betweenness centrality (0.098) - this node is a cross-community bridge._
+- **Why does `registerBillingRoutes()` connect `routes/billing.ts` to `routes/banners.ts`, `api/src/app.ts`, `AppHeader.tsx`, `src/admin-users.ts`?**
+  _High betweenness centrality (0.171) - this node is a cross-community bridge._
+- **Why does `MenuItem()` connect `AppHeader.tsx` to `routes/billing.ts`, `UsersAdmin.tsx`, `api/billing.ts`?**
+  _High betweenness centrality (0.171) - this node is a cross-community bridge._
+- **Why does `isNonNegativeDecimal()` connect `primitives.ts` to `src/billing.ts`, `api/src/app.ts`, `accounts.ts`, `src/strategies.ts`?**
+  _High betweenness centrality (0.119) - this node is a cross-community bridge._
 - **What connects `{ spawnSync }`, `{ readInput, deny }`, `input` to the rest of the system?**
-  _2101 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _2181 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `b-core.js` be split into smaller, more focused modules?**
   _Cohesion score 0.07171717171717172 - nodes in this community are weakly interconnected._
 - **Should `routes-report2.md` be split into smaller, more focused modules?**

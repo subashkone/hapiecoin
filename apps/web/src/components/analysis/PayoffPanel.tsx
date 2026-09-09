@@ -10,6 +10,7 @@ import { useUiStore } from "@/lib/store";
 import { cleanStep, pnlAt, popGrade, rrGrade, rrText, spotZoneAt, whereExtreme, winZone } from "@/lib/strategy/analysis";
 import { type StrategyAnalysis, useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
 import { PayoffChart, type PayoffChartFrame } from "./PayoffChart";
+import { BeforeAfterStrip } from "./BeforeAfterStrip";
 
 type Layers = PayoffChartFrame["layers"];
 const LAYER_LABELS: { key: keyof Layers; label: string; title: string }[] = [
@@ -95,8 +96,9 @@ export function PayoffPanel() {
       range,
       fmtPrice: (p) => fmtStrike(String(Math.round(p))),
       fmtMoney: (v) => fmtMoneyCompact(v, money),
+      ghost: a.before?.points ?? null,
     };
-  }, [result, spot, range, a.targetPrice, a.targetDays, layers, oi, money]);
+  }, [result, spot, range, a.targetPrice, a.targetDays, layers, oi, money, a.before]);
 
   if (legs.length === 0) {
     return (
@@ -130,12 +132,13 @@ export function PayoffPanel() {
   const spotZone = result && spot !== null ? spotZoneAt(result, spot, money) : null;
 
   return (
-    <div className="flex h-full min-h-0 flex-col" data-testid="payoff-panel" data-tour="payoff-panel" data-state={result ? "ready" : a.error ? "error" : "pending"}>
+    <div className="flex h-full min-h-0 flex-col" data-testid="payoff-panel" data-tour="payoff-panel" data-state={result ? "ready" : a.error ? "error" : "pending"} data-adjusting={a.adjusting ? "true" : undefined}>
+      {a.adjusting ? <BeforeAfterStrip a={a} /> : null}
       <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3" data-testid="payoff-tiles">
-        <Tile label="Max profit" value={result ? fmtMoney(result.maxProfit, money, { unlimited: "Unlimited" }) : "—"} sub={where(maxPAt)} tone="profit" testId="tile-max-profit" title="Highest P&L at expiry over the price axis" />
-        <Tile label="Max loss" value={result ? fmtMoney(result.maxLoss, money, { unlimited: "Unlimited" }) : "—"} sub={where(maxLAt)} tone="loss" testId="tile-max-loss" title="Lowest P&L at expiry over the price axis" />
-        <Tile label="Break-even" value={result ? (result.breakevens.length ? result.breakevens.map((b) => fmtStrike(String(Math.round(b)))).join(" · ") : "none") : "—"} sub={result && spot ? (result.breakevens.length ? result.breakevens.map((b) => `${((b - spot) / spot) * 100 >= 0 ? "+" : ""}${(((b - spot) / spot) * 100).toFixed(1)}%`).join(" · ") : "") : result ? (result.breakevens.length === 1 ? "one point" : result.breakevens.length ? `${result.breakevens.length} points` : "") : ""} testId="tile-breakeven" title="Underlying prices where the expiry P&L is zero" />
-        <Tile label="POP" value={result && Number.isFinite(result.pop) ? `${(result.pop * 100).toFixed(0)}%` : "—"} sub={pop?.text} tone={pop?.tone} testId="tile-pop" title="Probability of any profit at expiry: lognormal on the ATM IV" />
+        <Tile label={a.adjusting ? "Max profit · after" : "Max profit"} value={result ? fmtMoney(result.maxProfit, money, { unlimited: "Unlimited" }) : "—"} sub={where(maxPAt)} tone="profit" testId="tile-max-profit" title="Highest P&L at expiry over the price axis" />
+        <Tile label={a.adjusting ? "Max loss · after" : "Max loss"} value={result ? fmtMoney(result.maxLoss, money, { unlimited: "Unlimited" }) : "—"} sub={where(maxLAt)} tone="loss" testId="tile-max-loss" title="Lowest P&L at expiry over the price axis" />
+        <Tile label={a.adjusting ? "Break-even · after" : "Break-even"} value={result ? (result.breakevens.length ? result.breakevens.map((b) => fmtStrike(String(Math.round(b)))).join(" · ") : "none") : "—"} sub={result && spot ? (result.breakevens.length ? result.breakevens.map((b) => `${((b - spot) / spot) * 100 >= 0 ? "+" : ""}${(((b - spot) / spot) * 100).toFixed(1)}%`).join(" · ") : "") : result ? (result.breakevens.length === 1 ? "one point" : result.breakevens.length ? `${result.breakevens.length} points` : "") : ""} testId="tile-breakeven" title="Underlying prices where the expiry P&L is zero" />
+        <Tile label={a.adjusting ? "POP · after" : "POP"} value={result && Number.isFinite(result.pop) ? `${(result.pop * 100).toFixed(0)}%` : "—"} sub={pop?.text} tone={pop?.tone} testId="tile-pop" title="Probability of any profit at expiry: lognormal on the ATM IV" />
         <Tile label="R : R" value={result ? rrText(result.rewardRisk, result.maxProfit, result.maxLoss) : "—"} sub={rr?.text} tone={rr?.tone} testId="tile-rr" title="Max profit : max loss" />
         <Tile label="Net premium" value={result ? fmtMoney(result.netPremium, money, { signed: true }) : "—"} sub={result ? (result.netPremium >= 0 ? "credit received" : "debit paid") : ""} tone={result ? (result.netPremium >= 0 ? "profit" : "loss") : "muted"} testId="tile-net" title="Premium received minus premium paid, at the prices in the Builder" />
       </div>

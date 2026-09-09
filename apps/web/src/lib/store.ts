@@ -18,6 +18,7 @@ import {
   normaliseLegs,
   removeLeg as removeLegPure,
 } from "./strategy/legs";
+import { type AdjustDraft, newDraft } from "./adjust/model";
 
 export type DialogKind = "profile" | "api" | "currency" | "lot" | "pnl" | "exchanges" | "logout" | "columns" | "option" | "upgrade" | null;
 
@@ -165,6 +166,8 @@ export interface UiState {
   /** Payoff target price (USD per unit) and days ahead (HC-WS-047/048); null price = spot. */
   targetPrice: number | null;
   targetDays: number;
+  /** Adjustment workbench draft (ADR-044, HC-TR-148): the strategy being adjusted and its proposed changes. Not persisted. */
+  adjust: AdjustDraft | null;
   setAsset: (asset: Underlying) => void;
   /** Replace the asset's legs (templates, drafts, Clear); returns false when over the limit. */
   setLegs: (asset: Underlying, legs: StrategyLeg[]) => boolean;
@@ -206,6 +209,10 @@ export interface UiState {
   requestTour: () => void;
   toggleWatch: (symbol: string) => void;
   openAssistant: (question?: string) => void;
+  /** Open the workbench on a paper / live strategy: the pane follows it and the Builder legs stay untouched (ADR-026). */
+  openAdjust: (strategyId: string) => void;
+  closeAdjust: () => void;
+  updateAdjust: (fn: (draft: AdjustDraft) => AdjustDraft) => void;
 }
 
 export const UI_STORAGE_KEY = "hapiecoin.ui";
@@ -245,6 +252,7 @@ export const useUiStore = create<UiState>()(
       builderTab: "builder",
       targetPrice: null,
       targetDays: 0,
+      adjust: null,
       setAsset: (asset) => set({ asset, targetPrice: null }),
       setLegs: (asset, legs) => {
         const open = legs.filter((l) => l.status === "open");
@@ -296,10 +304,11 @@ export const useUiStore = create<UiState>()(
       openTrade: (target) => set({ tradeFlow: target }),
       closeTrade: () => set({ tradeFlow: null }),
       openDetails: (detailsId) => set({ detailsId }),
-      followStrategy: (id) => set({ paneSource: id === null ? null : { kind: "strategy", id } }),
-      analysePositions: (productIds) => set({ paneSource: productIds.length ? { kind: "positions", productIds: [...productIds] } : null }),
+      // an adjustment draft lives on the followed strategy (ADR-044): following anything else, or a tab that clears the pane source, discards it
+      followStrategy: (id) => set((s) => ({ paneSource: id === null ? null : { kind: "strategy", id }, adjust: s.adjust && s.adjust.strategyId === id ? s.adjust : null })),
+      analysePositions: (productIds) => set({ paneSource: productIds.length ? { kind: "positions", productIds: [...productIds] } : null, adjust: null }),
       setTemplatesStrip: (templatesStrip) => set({ templatesStrip }),
-      setWorkspaceTab: (workspaceTab) => set((s) => ({ workspaceTab, paneSource: workspaceTab === "builder" || workspaceTab === "chain" ? null : s.paneSource })),
+      setWorkspaceTab: (workspaceTab) => set(workspaceTab === "builder" || workspaceTab === "chain" ? { workspaceTab, paneSource: null, adjust: null } : { workspaceTab }),
       setAnalysisTab: (analysisTab) => set({ analysisTab }),
       setBuilderTab: (builderTab) => set({ builderTab }),
       setTarget: (patch) =>
@@ -332,6 +341,9 @@ export const useUiStore = create<UiState>()(
       requestTour: () => set((s) => ({ tourRequested: s.tourRequested + 1 })),
       toggleWatch: (symbol) => set((s) => ({ watchlist: s.watchlist.includes(symbol) ? s.watchlist.filter((x) => x !== symbol) : [...s.watchlist, symbol] })),
       openAssistant: (question) => set((s) => ({ assistantRequested: s.assistantRequested + 1, assistantQuestion: question ?? null })),
+      openAdjust: (strategyId) => set({ adjust: newDraft(strategyId), paneSource: { kind: "strategy", id: strategyId }, detailsId: null }),
+      closeAdjust: () => set({ adjust: null }),
+      updateAdjust: (fn) => set((s) => (s.adjust ? { adjust: fn(s.adjust) } : {})),
     }),
     {
       name: UI_STORAGE_KEY,
@@ -378,6 +390,7 @@ export const useUiStore = create<UiState>()(
           builderTab: current.builderTab,
           targetPrice: null,
           targetDays: typeof p.targetDays === "number" && p.targetDays >= 0 ? Math.round(p.targetDays) : 0,
+          adjust: null,
         };
       },
     },

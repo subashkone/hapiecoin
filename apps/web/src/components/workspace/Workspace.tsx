@@ -4,6 +4,7 @@
 // (35–70 % for the left pane, remembered per browser) and a stacked Chain | Analysis toggle under 1000 px.
 import { EmptyState, Tabs, TabsContent, TabsList, TabsTrigger, cn } from "@hapiecoin/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AdjustWorkbench } from "@/components/adjust/AdjustWorkbench";
 import { AnalysisPane } from "@/components/analysis/AnalysisPane";
 import { BuilderPanel } from "@/components/builder/BuilderPanel";
 import { ChainPanel } from "@/components/chain/ChainPanel";
@@ -60,6 +61,7 @@ function useNarrow(px: number): boolean {
 export function Workspace() {
   const tab = useUiStore((s) => s.workspaceTab);
   const setTab = useUiStore((s) => s.setWorkspaceTab);
+  const adjusting = useUiStore((s) => s.adjust !== null);
   const legCount = useUiStore((s) => s.legs[s.asset].filter((l) => l.status === "open").length);
   const { data: strategies } = useStrategies();
   const book = usePaperBook(strategies ?? []);
@@ -110,7 +112,10 @@ export function Workspace() {
     commit(Number.isNaN(d) ? SPLIT_DEFAULT : clampSplit(split + d));
   };
 
-  const left = (
+  // the adjustment workbench (ADR-044) takes the left pane over while a draft is open; the right pane shows the position after the change
+  const left = adjusting ? (
+    <AdjustWorkbench book={book} />
+  ) : (
     <Tabs value={tab} onValueChange={(v) => setTab(v as WorkspaceTab)} className="flex h-full min-h-0 min-w-0 flex-col gap-0" data-testid="left-pane">
       <TabsList className="px-2">
         {LEFT_TABS.map((t) => (
@@ -170,7 +175,7 @@ export function Workspace() {
         <div className="flex border-b border-border" role="tablist" aria-label="Pane">
           {(["left", "analysis"] as const).map((k) => (
             <button key={k} type="button" role="tab" aria-selected={stacked === k} onClick={() => setStacked(k)} className={cn("flex-1 py-2 text-xs", stacked === k ? "border-b-2 border-foreground text-foreground" : "text-muted-foreground")} data-testid={`stack-${k}`}>
-              {k === "left" ? "Chain & Builder" : "Analysis"}
+              {k === "left" ? (adjusting ? "Workbench" : "Chain & Builder") : "Analysis"}
             </button>
           ))}
         </div>

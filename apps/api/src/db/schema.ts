@@ -373,6 +373,26 @@ export const strategyOrders = pgTable(
   (t) => [index("strategy_orders_strategy_id_idx").on(t.strategyId), uniqueIndex("strategy_orders_client_uq").on(t.clientOrderId)],
 );
 
+/** Adjustment batches on an active strategy (ADR-044): what changed, why, and the realised P&L of the closed lots. */
+export const strategyAdjustments = pgTable(
+  "strategy_adjustments",
+  {
+    id: text("id").primaryKey(),
+    strategyId: text("strategy_id")
+      .notNull()
+      .references(() => strategies.id, { onDelete: "cascade" }),
+    /** The caller's idempotency key, or `adj:<id>` when none was given; also the order batch id for live. Unique per strategy. */
+    batchId: text("batch_id").notNull(),
+    reason: text("reason"),
+    added: integer("added").notNull().default(0),
+    trimmed: integer("trimmed").notNull().default(0),
+    closed: integer("closed").notNull().default(0),
+    realizedPnl: text("realized_pnl").notNull().default("0"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("strategy_adjustments_strategy_id_idx").on(t.strategyId), uniqueIndex("strategy_adjustments_batch_uq").on(t.strategyId, t.batchId)],
+);
+
 /** Referral commissions (Phase 4 item 3, ADR-031): one row per referred subscription, settled by an admin. */
 export const referralCommissions = pgTable(
   "referral_commissions",

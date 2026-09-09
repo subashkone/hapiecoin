@@ -1,6 +1,9 @@
 // Live trading through TanStack Query (Phase 3 item 2, ADR-025): preview, place, retry, sync, batch, positions.
 // Every order goes through the API's executor; the browser never talks to the venue.
-import { type LiveBatchBody, LiveBatchResult, type LivePlaceBody, LivePositions, type LivePositionsExitBody, LivePositionsExitResult, LivePreview, Strategy } from "@hapiecoin/schema";
+import { type LiveBatchBody, LiveBatchResult, type LivePlaceBody, LivePositions, type LivePositionsExitBody, LivePositionsExitResult, LivePreview, type LivePreviewBody, Strategy } from "@hapiecoin/schema";
+
+/** Preview body: the open legs by default, or an adjustment batch's adds / changes (ADR-044). */
+export type PreviewBody = LivePreviewBody & { worstLoss?: number | undefined };
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type ApiClient } from "./client";
 import { strategyKeys } from "./strategies";
@@ -9,7 +12,7 @@ const enc = encodeURIComponent;
 
 export function liveFetchers(client: ApiClient = api) {
   return {
-    preview: (id: string, body: { brokerId: string; worstLoss?: number }) => client.post(`/v1/strategies/${enc(id)}/live/preview`, body, LivePreview),
+    preview: (id: string, body: PreviewBody) => client.post(`/v1/strategies/${enc(id)}/live/preview`, body, LivePreview),
     place: (id: string, body: LivePlaceBody) => client.post(`/v1/strategies/${enc(id)}/live/place`, body, Strategy),
     retry: (id: string) => client.post(`/v1/strategies/${enc(id)}/live/retry`, {}, Strategy),
     sync: (id: string) => client.post(`/v1/strategies/${enc(id)}/live/sync`, {}, Strategy),
@@ -40,7 +43,7 @@ function useLiveMutation<TVars, TResult extends Strategy | void | { placed: stri
 }
 
 export function useLivePreview() {
-  return useMutation({ mutationFn: ({ id, body }: { id: string; body: { brokerId: string; worstLoss?: number } }) => f.preview(id, body) });
+  return useMutation({ mutationFn: ({ id, body }: { id: string; body: PreviewBody }) => f.preview(id, body) });
 }
 export function useLivePlace() {
   return useLiveMutation(({ id, body }: { id: string; body: LivePlaceBody }) => f.place(id, body));
