@@ -99,6 +99,24 @@ function normaliseDrafts(input: unknown): SavedStrategy[] {
 }
 
 export type WorkspaceTab = "chain" | "builder" | "paper" | "live" | "journal";
+export interface ChartLayers {
+  expiry: boolean;
+  target: boolean;
+  fill: boolean;
+  oi: boolean;
+  band: boolean;
+  breakeven: boolean;
+  /** Dashed target-date curves with every leg's IV shifted ±5 vol points (HC-WS-083). */
+  ivUp: boolean;
+  ivDown: boolean;
+}
+export const DEFAULT_LAYERS: ChartLayers = { expiry: true, target: true, fill: true, oi: false, band: true, breakeven: true, ivUp: false, ivDown: false };
+export const LAYER_KEYS = Object.keys(DEFAULT_LAYERS) as (keyof ChartLayers)[];
+function normaliseLayers(raw: unknown): ChartLayers {
+  const out = { ...DEFAULT_LAYERS };
+  if (raw && typeof raw === "object") for (const k of LAYER_KEYS) if (typeof (raw as Record<string, unknown>)[k] === "boolean") out[k] = (raw as Record<string, boolean>)[k]!;
+  return out;
+}
 export type AnalysisTab = "payoff" | "scenarios" | "greeks" | "vol" | "structure" | "ladder";
 export type BuilderSubTab = "builder" | "templates";
 /** What the analysis pane shows (ADR-026): the Builder legs (null), a paper / live strategy, or ticked exchange positions. */
@@ -120,6 +138,8 @@ export interface UiState {
   /** True once any dialog has been opened this session (keeps the lazily loaded dialog chunk mounted). */
   dialogsTouched: boolean;
   paletteOpen: boolean;
+  /** Payoff chart layers (HC-WS-042, 083); persisted so the IV ±5 % curves and the OI bars stay as the trader left them. */
+  chartLayers: ChartLayers;
   /** Strikes shown each side of ATM in the chain (HC-WS-016); 0 = every listed strike. Persisted. */
   chainRange: ChainRange;
   /** Bumped by "recentre on ATM" (keyboard A, palette); the chain scrolls the ATM row into the middle. */
@@ -193,6 +213,7 @@ export interface UiState {
   setBuilderTab: (tab: BuilderSubTab) => void;
   setTarget: (patch: { price?: number | null; days?: number }) => void;
   setChainRange: (range: ChainRange) => void;
+  setChartLayer: (key: keyof ChartLayers, on: boolean) => void;
   recentreChain: () => void;
   setChainColumns: (layout: ChainLayout) => void;
   addLeg: (input: NewLegInput) => AddLegResult;
@@ -250,6 +271,7 @@ export const useUiStore = create<UiState>()(
       upgradeMessage: "",
       dialogsTouched: false,
       paletteOpen: false,
+      chartLayers: { ...DEFAULT_LAYERS },
       chainRange: 12,
       chainRecentre: 0,
       chainColumns: defaultLayout(),
@@ -341,6 +363,7 @@ export const useUiStore = create<UiState>()(
           targetDays: patch.days === undefined ? st.targetDays : Math.max(0, Math.round(patch.days)),
         })),
       setChainRange: (chainRange) => set({ chainRange: isChainRange(chainRange) ? chainRange : 12 }),
+      setChartLayer: (key, on) => set((s) => ({ chartLayers: { ...s.chartLayers, [key]: on } })),
       recentreChain: () => set((s) => ({ chainRecentre: s.chainRecentre + 1 })),
       setChainColumns: (layout) => set({ chainColumns: normaliseLayout(layout) }),
       addLeg: (input) => {
@@ -383,6 +406,7 @@ export const useUiStore = create<UiState>()(
         expiry: s.expiry,
         feedPaused: s.feedPaused,
         chainRange: s.chainRange,
+        chartLayers: s.chartLayers,
         chainColumns: s.chainColumns,
         legs: s.legs,
         chainLots: s.chainLots,
@@ -405,6 +429,7 @@ export const useUiStore = create<UiState>()(
           ...current,
           ...p,
           chainRange: isChainRange(p.chainRange) ? p.chainRange : current.chainRange,
+          chartLayers: normaliseLayers(p.chartLayers),
           chainColumns: p.chainColumns === undefined ? current.chainColumns : normaliseLayout(p.chainColumns),
           legs: p.legs === undefined ? current.legs : normaliseLegsByAsset(p.legs),
           // a browser that persisted lots under an older default (10) gets the new default once; later choices stick

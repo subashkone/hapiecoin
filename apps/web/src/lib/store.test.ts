@@ -38,7 +38,7 @@ describe("HC-SH-003 UI store", () => {
     s.closeDialog();
     expect(useUiStore.getState().dialog).toBeNull();
   });
-  it("persists only asset / expiry / feedPaused / chainRange", () => {
+  it("persists only asset / expiry / feedPaused / chainRange / chartLayers", () => {
     useUiStore.getState().setAsset("XAUT");
     useUiStore.getState().openDialog("profile");
     const raw = window.localStorage.getItem(UI_STORAGE_KEY);
@@ -49,6 +49,7 @@ describe("HC-SH-003 UI store", () => {
       expiry: {},
       feedPaused: false,
       chainRange: 12,
+      chartLayers: { expiry: true, target: true, fill: true, oi: false, band: true, breakeven: true, ivUp: false, ivDown: false },
       chainColumns: defaultLayout(),
       legs: { BTC: [], ETH: [], XAUT: [] },
       chainLots: 10,
@@ -268,5 +269,17 @@ describe("ADR-044 risk alert stub from the workbench", () => {
     if (!merge) throw new Error("persist merge missing");
     const merged = merge({ riskAlerts: [{ id: "ra_ok", strategyId: "s", maxLoss: -5 }, { id: 7 }, "x"] }, useUiStore.getState());
     expect(merged.riskAlerts).toEqual([{ id: "ra_ok", strategyId: "s", maxLoss: -5, createdAt: 0 }]);
+  });
+});
+
+describe("HC-WS-083 chart layers persist", () => {
+  it("toggles one layer, keeps the rest, and normalises a partial persisted object", async () => {
+    const { useUiStore, DEFAULT_LAYERS } = await import("./store");
+    useUiStore.setState({ chartLayers: { ...DEFAULT_LAYERS } });
+    useUiStore.getState().setChartLayer("ivUp", true);
+    expect(useUiStore.getState().chartLayers.ivUp).toBe(true);
+    expect(useUiStore.getState().chartLayers.expiry).toBe(true);
+    const merged = (useUiStore.persist.getOptions().merge as (p: unknown, c: ReturnType<typeof useUiStore.getState>) => ReturnType<typeof useUiStore.getState>)({ chartLayers: { oi: true, ivDown: "yes" } }, useUiStore.getState());
+    expect(merged.chartLayers).toEqual({ ...DEFAULT_LAYERS, oi: true });
   });
 });

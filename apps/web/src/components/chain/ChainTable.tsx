@@ -5,14 +5,15 @@
 // horizontal offset (useMirroredScroll), so a scroll on one side moves the other the mirrored amount and
 // the header parts stay aligned with the body. Rows are exactly the gateway snapshot (ADR-006); the
 // range control only slices them around the ATM row.
-import { cn } from "@hapiecoin/ui";
+import { cn, toast } from "@hapiecoin/ui";
 import type { ChainRow, Quote } from "@hapiecoin/schema";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ChainLayout } from "@/lib/chain/layout";
 import { type ChainRange, chainTotals, itmSide, maxOpenInterest, oiBarPercent, sliceAroundAtm } from "@/lib/chain/range";
-import { fmtChange, fmtDelta, fmtGamma, fmtIv, fmtOi, fmtPrice, fmtQty, fmtStrike, fmtTheta, fmtVega } from "@/lib/format";
+import { fmtChange, fmtDelta, fmtGamma, fmtIv, fmtOiFull, fmtPrice, fmtQty, fmtStrike, fmtTheta, fmtVega } from "@/lib/format";
 import { atmIndex, type ChainState } from "@/lib/gateway/reducer";
+import { chainStats, nearestDelta } from "@/lib/chain/structure";
 import { type LegKind, type LegSide, type RowMarks, type StrategyLeg, rowMarks } from "@/lib/strategy/legs";
 import { ChainHeader } from "./ChainHeader";
 import { RowControls } from "./RowControls";
@@ -78,7 +79,7 @@ function Cell({ col, q, flashes, side, maxOi, markTone }: { col: ChainColumn; q:
       return (
         <div className={cn("num relative flex items-center px-2", align === "right" ? "justify-end" : "justify-start")} data-testid="chain-oi" data-pct={pct} data-col="oi">
           {pct > 0 ? <i className={cn("oi-bar", side === "calls" ? "left-0" : "right-0")} style={{ width: `${pct}%` }} aria-hidden /> : null}
-          <span className="relative">{fmtOi(q?.oi)}</span>
+          <span className="relative">{fmtOiFull(q?.oi)}</span>
         </div>
       );
     }
@@ -236,6 +237,19 @@ export function ChainTable({
   const atm = slice.atm;
   const maxOi = useMemo(() => maxOpenInterest(rows), [rows]);
   const totals = useMemo(() => chainTotals(rows), [rows]);
+  // footer stats read the whole chain, not the slice: max pain and the 25Δ skew live in the wings (HC-WS-029, 080)
+  const spotNum = spot === undefined ? null : Number(spot);
+  const stats = useMemo(() => chainStats(fullRows, spotNum !== null && Number.isFinite(spotNum) ? spotNum : null), [fullRows, spotNum]);
+  // the spot hairline sits between the two strikes bracketing spot (HC-WS-075); on a listed strike the ATM band alone marks it
+  const spotBoundary = useMemo(() => {
+    if (spotNum === null || !Number.isFinite(spotNum) || rows.length < 2) return -1;
+    const above = rows.findIndex((r) => Number(r.strike) > spotNum);
+    if (above <= 0) return -1;
+    return Number(rows[above - 1]!.strike) === spotNum ? -1 : above;
+  }, [rows, spotNum]);
+  // Δ chips (HC-WS-074): remember the hit until the rows (possibly widened to "all") contain it, then scroll + pulse
+  const [pulse, setPulse] = useState<{ call: string; put: string } | null>(null);
+  const pendingDelta = useRef<{ call: string; put: string } | null>(null);
 
   // Keep the previous rows to compute flash direction for changed cells.
   const prevRows = useRef<ChainRow[]>(rows);
@@ -265,6 +279,7 @@ export function ChainTable({
 
   // Roving keyboard focus over the visible rows (HC-WS-016 / design §6) and the hovered row for the controls.
   const [focus, setFocus] = useState<number>(-1);
+  const [rowsTick, setRowsTick] = useState(0); // re-runs the Δ effect when the hit already sits in the slice
   const [hover, setHover] = useState<number>(-1);
   const active = hover >= 0 ? hover : focus;
   const addFromKey = (kind: LegKind, side: LegSide) => {
@@ -306,6 +321,34 @@ export function ChainTable({
   useEffect(() => {
     if (focus >= 0 && focus < rows.length) virtualizer.scrollToIndex(focus, { align: "auto" });
   }, [focus, rows.length, virtualizer]);
+  useEffect(() => {
+    const p = pendingDelta.current;
+    if (!p) return;
+    const ci = rows.findIndex((r) => r.strike === p.call);
+    const pi = rows.findIndex((r) => r.strike === p.put);
+    if (ci < 0 || pi < 0) return;
+    pendingDelta.current = null;
+    virtualizer.scrollToIndex(Math.round((ci + pi) / 2), { align: "center" });
+    setFocus(ci);
+    setPulse(p);
+    const t = setTimeout(() => setPulse(null), 1600);
+    return () => clearTimeout(t);
+  }, [rows, rowsTick, virtualizer]);
+  const findDelta = useCallback(
+    (pct: number) => {
+      const hit = nearestDelta(fullRows, pct / 100);
+      if (!hit.call || !hit.put) {
+        toast.error("No Δ on this chain yet", { description: "Greeks arrive with the first quotes" });
+        return;
+      }
+      const inSlice = (strike: string) => rows.some((r) => r.strike === strike);
+      pendingDelta.current = { call: hit.call.strike, put: hit.put.strike };
+      if (range !== 0 && (!inSlice(hit.call.strike) || !inSlice(hit.put.strike))) onRange(0); // widen so both rows exist
+      else setRowsTick((t) => t + 1);
+      toast(`${pct}Δ strikes`, { description: `Call ${fmtStrike(hit.call.strike)} (Δ ${fmtDelta(hit.call.delta)}) · Put ${fmtStrike(hit.put.strike)} (Δ ${fmtDelta(hit.put.delta)})` });
+    },
+    [fullRows, rows, range, onRange],
+  );
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
@@ -435,6 +478,7 @@ export function ChainTable({
       data-active={active}
       data-hover={hover}
       data-focus-index={focus}
+      data-pulse={pulse ? `${pulse.call}|${pulse.put}` : undefined}
     >
       <ChainTools
         range={range}
@@ -447,6 +491,7 @@ export function ChainTable({
         onRecentre={() => recentre(true)}
         onOpenColumns={onOpenColumns}
         columnsShown={putCols.length}
+        onFindDelta={findDelta}
       />
       <ChainHeader
         x={scroll.x}
@@ -470,7 +515,13 @@ export function ChainTable({
         aria-rowcount={rows.length}
         onKeyDown={onKeyDown}
       >
-        <div className="grid" style={{ gridTemplateColumns: gridCols, height: total }} onMouseLeave={() => setHover(-1)}>
+        <div className="relative grid" style={{ gridTemplateColumns: gridCols, height: total }} onMouseLeave={() => setHover(-1)}>
+          {spotBoundary > 0 ? (
+            <div className="pointer-events-none absolute left-0 right-0 z-10 h-0" style={{ transform: `translateY(${spotBoundary * rowHeight}px)` }} data-testid="spot-hairline" data-y={spotBoundary * rowHeight}>
+              <div className="border-t border-dashed border-spot/80" />
+              <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-[2px] bg-spot px-1.5 font-mono text-[9px] font-medium leading-[14px] text-background">SPOT {fmtPrice(spot)}</span>
+            </div>
+          ) : null}
           {sides !== "puts" ? (
             <div ref={callsRef} className="relative min-w-0 overflow-hidden" data-testid="chain-calls" data-x={scroll.x}>
               <div style={trackStyle(scroll.x)}>
@@ -493,6 +544,7 @@ export function ChainTable({
                         itmSide(row.strike, spot) === "call" && "itm-tint",
                         isAtm && "atm-band",
                         v.index === focus && "chain-focus",
+                        pulse?.call === row.strike && "chain-pulse",
                         marks.call.tone === "buy" && "leg-stripe-buy",
                         marks.call.tone === "sell" && "leg-stripe-sell",
                       )}
@@ -522,12 +574,14 @@ export function ChainTable({
                   data-atm={isAtm || undefined}
                   data-focus={v.index === focus || undefined}
                   data-legs={marks.pills.length > 0 ? marks.pills.map((p) => p.text).join("|") : undefined}
+                  data-pulse={pulse && (pulse.call === row.strike || pulse.put === row.strike) ? "true" : undefined}
                   onClick={() => setFocus(v.index)}
                   onMouseEnter={() => setHover(v.index)}
                   className={cn(
                     "num absolute left-0 right-0 flex flex-col items-center justify-center border-b border-border text-[12.5px] font-medium",
                     isAtm && "atm-band text-spot",
                     v.index === focus && "chain-focus",
+                    pulse && (pulse.call === row.strike || pulse.put === row.strike) && "chain-pulse",
                   )}
                   style={{ height: v.size, transform: `translateY(${v.start}px)` }}
                 >
@@ -571,6 +625,7 @@ export function ChainTable({
                         itmSide(row.strike, spot) === "put" && "itm-tint",
                         isAtm && "atm-band",
                         v.index === focus && "chain-focus",
+                        pulse?.put === row.strike && "chain-pulse",
                         marks.put.tone === "buy" && "leg-stripe-buy-r",
                         marks.put.tone === "sell" && "leg-stripe-sell-r",
                       )}
@@ -586,7 +641,7 @@ export function ChainTable({
           ) : null}
         </div>
       </div>
-      <ChainFooter shown={rows.length} total={fullRows.length} totals={totals} scroll={scroll} trackWidth={SIDE_TRACK_PX} sides={sides} asOf={asOf} />
+      <ChainFooter shown={rows.length} total={fullRows.length} totals={totals} scroll={scroll} trackWidth={SIDE_TRACK_PX} sides={sides} asOf={asOf} stats={stats} />
     </div>
   );
 }

@@ -151,6 +151,26 @@ describe("payoffDraw", () => {
     fmtMoney: (v) => String(v),
     hover: 81000,
   };
+  it("HC-WS-081 / 083 / 086: ROI and margin in the strip, IV ±5 % layers persist in the store, ticks under the sliders, margin in the greeks strip", async () => {
+    seedStraddle();
+    renderWithProviders(<AnalysisPane />);
+    serveMarket();
+    await waitFor(() => expect(screen.getByTestId("payoff-panel").dataset["state"]).toBe("ready"), { timeout: 8000 });
+    expect(screen.getByTestId("max-roi").textContent).toMatch(/%|∞/);
+    expect(screen.getByTestId("strip-margin").textContent).toContain("$");
+    expect(screen.getByTestId("price-ticks").children).toHaveLength(5);
+    expect(screen.getByTestId("price-ticks").textContent).toContain("SPOT");
+    expect(screen.getByTestId("date-ticks").textContent).toContain("Expiry");
+    expect(screen.getByTestId("greeks-strip").textContent).toContain("Margin est.");
+    expect(screen.getByTestId("greeks-basis").textContent).toContain("20 lots");
+    const u = userEvent.setup();
+    await u.click(screen.getByTestId("layer-ivUp"));
+    expect(screen.getByTestId("layer-ivUp").getAttribute("aria-pressed")).toBe("true");
+    expect(useUiStore.getState().chartLayers.ivUp).toBe(true);
+    await u.click(screen.getByTestId("layer-ivUp"));
+    expect(useUiStore.getState().chartLayers.ivUp).toBe(false);
+  });
+
   it("scales map the range onto the plot box and y ticks are clean", () => {
     const s = payoffScales(frame);
     expect(s.x(70000)).toBe(s.m.l);
@@ -171,5 +191,10 @@ describe("payoffDraw", () => {
     });
     drawPayoff(ctx, frame);
     for (const m of ["clearRect", "fillText", "stroke", "fill", "arc", "setLineDash", "fillRect"]) expect(calls).toContain(m);
+    // HC-WS-083: the IV ±5 % layers add two dashed strokes (a null gap lifts the pen without throwing)
+    const strokes = calls.filter((c) => c === "stroke").length;
+    calls.length = 0;
+    drawPayoff(ctx, { ...frame, layers: { ...frame.layers, ivUp: true, ivDown: true }, ivUp: frame.points.map((p) => p.pnlTarget + 1), ivDown: frame.points.map((p, i) => (i === 2 ? null : p.pnlTarget - 1)) });
+    expect(calls.filter((c) => c === "stroke").length).toBe(strokes + 2);
   });
 });

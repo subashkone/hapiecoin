@@ -229,7 +229,7 @@
   "feature": "Chain footer: Σ Call OI · Σ Put OI · PCR · Max pain · Skew 25Δ · Fwd · 'n of 41 strikes · hover a row for B / S'",
   "how": "Skew 25Δ = IV(25Δ put) − IV(25Δ call) in vol points; Fwd from ATM put-call parity (K + C − P); max pain = strike minimising total option value",
   "status": "working",
-  "evidence": "clone design; values derived from CG.chain"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/chain/{ChainTools,ChainTable}.tsx + lib/chain/structure.ts chainStats / nearestDelta; unit structure.test.ts + chain.test.tsx; e2e analyse.spec.ts HC-WS-016 block · max pain / skew 25Δ / Fwd over the whole chain, OI as full integers"
  },
  {
   "route": "/analyse",
@@ -527,7 +527,7 @@
   "feature": "Density: comfortable rows (36px) / compact rows (28px) for the chain and the ladder",
   "how": "root[data-density] follows CG.state.density and CG.on('density')",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): ChainPanel passes rowHeight 36 / 28 from useDensity; LadderPanel drops cell padding in compact (data-density)",
   "new": true
  },
  {
@@ -599,7 +599,7 @@
   "feature": "Find strike by Δ chips (10Δ · 16Δ · 25Δ · 50Δ): scrolls to the call and put strikes nearest that delta, pulses both rows, highlights the call strike and toasts the pair",
   "how": "nearestDelta() over the full chain; widens the strike range when the hits fall outside it; the palette command opens a dialog with a custom Δ input",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/chain/{ChainTools,ChainTable}.tsx + lib/chain/structure.ts chainStats / nearestDelta; unit structure.test.ts + chain.test.tsx; e2e analyse.spec.ts HC-WS-016 block · chips chain-delta-10/16/25/50, widen → scroll → focus call → pulse both (data-pulse) + toast",
   "new": true
  },
  {
@@ -608,7 +608,7 @@
   "feature": "Spot hairline between the two strikes bracketing spot with a 'SPOT 79,521' tag; ATM row as a single amber band",
   "how": "A zero-height spot row is inserted after the last strike ≤ spot and moves on ticks; the neighbouring strike cells get extra padding so the tag never covers a label",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/chain/{ChainTools,ChainTable}.tsx + lib/chain/structure.ts chainStats / nearestDelta; unit structure.test.ts + chain.test.tsx; e2e analyse.spec.ts HC-WS-016 block · spot-hairline overlay (data-y) between the bracketing strikes, skipped on a listed strike",
   "new": true
  },
  {
@@ -617,7 +617,7 @@
   "feature": "Row height 36px (28px compact), IV 1dp under 1dp prices, Δ 2dp, OI integers with thousands separators",
   "how": "Fixed precision per column",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): rows 36 / 28 px by density, OI cells via fmtOiFull (thousands separators), IV 1 dp, Δ 2 dp (lib/format.ts); unit format.test.ts",
   "new": true
  },
  {
@@ -653,7 +653,7 @@
   "feature": "Footer additions: Skew 25Δ (IV put − IV call at 25Δ) and Fwd (from ATM put-call parity)",
   "how": "",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/chain/{ChainTools,ChainTable}.tsx + lib/chain/structure.ts chainStats / nearestDelta; unit structure.test.ts + chain.test.tsx; e2e analyse.spec.ts HC-WS-016 block · chain-skew / chain-fwd in the footer",
   "new": true
  },
  {
@@ -662,7 +662,7 @@
   "feature": "Analytics strip under the tiles (merged Analytics tab): POP with grade · R:R with grade · Max ROI · Margin with risk % · Win if · Spot now zone",
   "how": "Wraps to a second line on narrow panes",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · max-roi (max profit ÷ margin) and strip-margin with risk % of notional",
   "new": true
  },
  {
@@ -680,7 +680,7 @@
   "feature": "IV −5% and IV +5% layers: dashed blue target-date curves computed with CG.analyze(legs, asset, {ivShift:±0.05})",
   "how": "Chips + layers popover; persisted in CG.state.chartLayers",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · layer-ivDown / layer-ivUp: two useScenario calls with ivShift ±0.05 drawn dashed; persisted in store.chartLayers (store.test.ts)",
   "new": true
  },
  {
@@ -689,7 +689,7 @@
   "feature": "Target marker '+$1.7 @ 81,921' on the curve; clicking the chart sets the target price",
   "how": "setTargetPrice(price, true)",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · PayoffChart onSelect → setTarget on click (e2e asserts the slider value changes)",
   "new": true
  },
  {
@@ -698,7 +698,7 @@
   "feature": "Sliders restyled: custom track with fill, knob, amber SPOT tick with label, five price ticks; date ticks Today · mid dates · Expiry",
   "how": "",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · five price ticks with SPOT in amber and Today / mid / Expiry date ticks under the native range inputs (native track kept for keyboard access, ADR-048)",
   "new": true
  },
  {
@@ -707,7 +707,7 @@
   "feature": "Net greeks strip under the sliders: Net Δ · Net Γ · Net Θ / day · Net ν / 1% IV · Margin est. · 'USD per strategy · 20 lots · mark basis'",
   "how": "",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · greeks-strip adds Margin est. and the greeks-basis line \"USD per strategy · N lots\"",
   "new": true
  },
  {
@@ -716,7 +716,7 @@
   "feature": "Tooltip format '16 Sep @ 82,879 +4.2% · +$2.28 · exp +$5.33'",
   "how": "",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · hover-readout \"date @ price ±x% · target · exp\"",
   "new": true
  },
  {

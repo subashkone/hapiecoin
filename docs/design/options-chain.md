@@ -138,3 +138,6 @@ One control per side, no persistent toolbar of buttons; green/red carry side mea
 
 ## 10. Confusion check
 1. "Which side will B buy?" → the control sits on the calls side for calls and the puts side for puts, its aria-label and tooltip say "Buy call 79,400"; the toast names the symbol. 2. "Is 10 lots or 10 contracts?" → stepper tooltip "Lots × 0.001 BTC" and the toast repeats "10 × symbol". 3. "Did the leg go in?" → the pill appears under the strike at once, the B button fills, and the toast confirms; the builder tab badge (item 4) will show the count.
+
+## Amendment · footer stats, find-by-Δ, spot hairline, density (10 Sep 2026, ADR-048)
+Footer (whole chain): Σ call OI · Σ put OI · PCR · Max pain · Skew 25Δ · Fwd · "n of N strikes" · "hover a row for B / S", OI as full integers. Toolbar gains **Find Δ 10Δ · 16Δ · 25Δ · 50Δ** (`chain-delta-<n>`): widens to every strike when needed, scrolls between the call and put hits, focuses the call, pulses both rows (`chain-pulse`, `data-pulse`), toasts the strikes and deltas. A zero-height **spot hairline** with a `SPOT 79,521` tag sits between the two strikes bracketing spot (`spot-hairline`, `data-y`); on a listed strike only the ATM band shows. Rows are 36 px comfortable / 28 px compact from the density provider (`rowHeight` prop); the ladder rows drop their padding in compact.

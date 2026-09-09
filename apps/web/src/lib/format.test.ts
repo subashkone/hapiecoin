@@ -8,6 +8,7 @@ import {
   fmtGamma,
   fmtIv,
   fmtOi,
+  fmtOiFull,
   fmtPct,
   fmtPrice,
   fmtQty,
@@ -58,6 +59,10 @@ describe("[FORMAT] display formatters", () => {
     expect(fmtOi("42")).toBe("42");
     expect(fmtOi(undefined)).toBe("—");
     expect(fmtOi("x")).toBe("—");
+    expect(fmtOiFull("10276")).toBe("10,276");
+    expect(fmtOiFull("1500000")).toBe("1,500,000");
+    expect(fmtOiFull(undefined)).toBe("—");
+    expect(fmtOiFull("x")).toBe("—");
   });
   it("[FORMAT] fmtStrike / fmtUsd", () => {
     expect(fmtStrike("79500")).toBe("79,500");
