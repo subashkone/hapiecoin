@@ -64,6 +64,13 @@
       "when": 1788961530862,
       "tag": "0008_fair_zombie",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788970779097,
+      "tag": "0009_lowly_marten_broadcloak",
+      "breakpoints": true
     }
   ]
 }

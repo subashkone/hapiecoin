@@ -5,7 +5,7 @@
 // show derives from here, and `toBody` is the one place the API request is built.
 import type { AnalyzeResult } from "@hapiecoin/pricing";
 import { expiryMs } from "@hapiecoin/pricing";
-import type { AdjustBody, StrategyLeg as ServerLeg, StrategyLegInput, Underlying } from "@hapiecoin/schema";
+import type { AdjustBody, OrderType, StrategyLeg as ServerLeg, StrategyLegInput, Underlying } from "@hapiecoin/schema";
 import { toDecimal } from "@hapiecoin/schema";
 import { fmtExpiry, fmtStrike } from "@/lib/format";
 import { type MoneyFormat, fmtMoney } from "@/lib/money";
@@ -28,15 +28,50 @@ export interface AdjustPick {
   symbol: string;
 }
 
+/** A saved alternative (Plan A / B / C) the trader can compare and load back (ADR-044 extra 1; HC-TR-153). */
+export interface SavedPlan {
+  id: string;
+  name: string;
+  lotsAfter: Record<string, number>;
+  picks: AdjustPick[];
+  valuation: string | null;
+}
+
 export interface AdjustDraft {
   strategyId: string;
   /** Lots after the change per open leg id; absent = unchanged. */
   lotsAfter: Record<string, number>;
   picks: AdjustPick[];
-  /** "Value at": an expiry (ISO date), "today" (everything at time value now), or null = the latest expiry of the combined position. */
+  /** "Value at": an ISO date (an expiry, or any date from the scenario slider), "today" (everything at time value now), or null = the latest expiry of the combined position. */
   valuation: string | null;
   /** When the draft was opened, for the mark-age counter. */
   startedAt: number;
+  plans: SavedPlan[];
+}
+
+export const MAX_PLANS = 3;
+const PLAN_NAMES = ["Plan A", "Plan B", "Plan C"] as const;
+
+/** Keep the current changes as the next free plan (up to three); a full shelf leaves the draft as it is. */
+export function savePlan(d: AdjustDraft, now = Date.now()): AdjustDraft {
+  if (d.plans.length >= MAX_PLANS) return d;
+  const name = PLAN_NAMES.find((n) => !d.plans.some((p) => p.name === n)) ?? `Plan ${d.plans.length + 1}`;
+  return { ...d, plans: [...d.plans, { id: `plan_${now.toString(36)}_${d.plans.length + 1}`, name, lotsAfter: { ...d.lotsAfter }, picks: d.picks.map((p) => ({ ...p })), valuation: d.valuation }] };
+}
+
+/** Load a saved plan back into the working changes. */
+export function loadPlan(d: AdjustDraft, id: string): AdjustDraft {
+  const p = d.plans.find((x) => x.id === id);
+  return p ? { ...d, lotsAfter: { ...p.lotsAfter }, picks: p.picks.map((x) => ({ ...x })), valuation: p.valuation } : d;
+}
+
+export function removePlan(d: AdjustDraft, id: string): AdjustDraft {
+  return { ...d, plans: d.plans.filter((p) => p.id !== id) };
+}
+
+/** The draft a plan describes (for pricing it next to the working changes). */
+export function planDraft(d: AdjustDraft, p: SavedPlan): AdjustDraft {
+  return { ...d, lotsAfter: p.lotsAfter, picks: p.picks, valuation: p.valuation };
 }
 
 export interface PickInput {
@@ -59,7 +94,7 @@ export function newPickId(now = Date.now()): string {
 }
 
 export function newDraft(strategyId: string, now = Date.now()): AdjustDraft {
-  return { strategyId, lotsAfter: {}, picks: [], valuation: null, startedAt: now };
+  return { strategyId, lotsAfter: {}, picks: [], valuation: null, startedAt: now, plans: [] };
 }
 
 export function lotsAfterOf(d: AdjustDraft, leg: ServerLeg): number {
@@ -223,12 +258,24 @@ export function combinedExpiries(d: AdjustDraft, open: readonly ServerLeg[]): st
 
 export const VALUE_TODAY = "today";
 
-/** The "value at" instant: today, the chosen expiry, else the latest expiry of the combined position; undefined without option legs. */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** The "value at" instant: today, the chosen date (an expiry or a scenario date, at the settlement hour), else the latest expiry of the combined position; undefined without option legs. */
 export function valuationMsOf(d: AdjustDraft, open: readonly ServerLeg[], asset: Underlying, nowMs: number): number | undefined {
   if (d.valuation === VALUE_TODAY) return nowMs;
   const expiries = combinedExpiries(d, open);
-  const chosen = d.valuation && expiries.includes(d.valuation) ? d.valuation : expiries[expiries.length - 1];
-  return chosen === undefined ? undefined : expiryMs(chosen, settlementHourUtc(asset));
+  if (expiries.length === 0) return undefined;
+  const chosen = d.valuation && ISO_DATE.test(d.valuation) ? d.valuation : expiries[expiries.length - 1]!;
+  try {
+    return expiryMs(chosen, settlementHourUtc(asset));
+  } catch {
+    return expiryMs(expiries[expiries.length - 1]!, settlementHourUtc(asset)); // an impossible date falls back to the latest expiry
+  }
+}
+
+/** ISO date `days` after the instant, for the scenario slider. */
+export function isoDaysFrom(nowMs: number, days: number): string {
+  return new Date(nowMs + days * 86_400_000).toISOString().slice(0, 10);
 }
 
 /** True when the change adds a contract that settles today (a 0-DTE leg), which the guard rails call out. */
@@ -241,7 +288,7 @@ export function addsZeroDte(d: AdjustDraft, open: readonly ServerLeg[], nowMs: n
 const dec = (v: string | number): string => toDecimal(Number(v), 4);
 
 /** The API batch (ADR-044): trims and closes as `changes`, picks and extra lots as `adds`, expected marks per added symbol. */
-export function toBody(d: AdjustDraft, open: readonly ServerLeg[], markOf: MarkOf, extra: { idempotencyKey: string; reason?: string | undefined }): AdjustBody {
+export function toBody(d: AdjustDraft, open: readonly ServerLeg[], markOf: MarkOf, extra: { idempotencyKey: string; reason?: string | undefined; orderType?: OrderType | undefined }): AdjustBody {
   const changes: AdjustBody["changes"] = [];
   const adds: StrategyLegInput[] = [];
   const expected: Record<string, string> = {};
@@ -263,7 +310,7 @@ export function toBody(d: AdjustDraft, open: readonly ServerLeg[], markOf: MarkO
     expect(p.symbol);
   }
   const reason = extra.reason?.trim();
-  return { adds, changes, expected, idempotencyKey: extra.idempotencyKey, ...(reason ? { reason } : {}) };
+  return { adds, changes, expected, orderType: extra.orderType ?? "market", idempotencyKey: extra.idempotencyKey, ...(reason ? { reason } : {}) };
 }
 
 export interface ChangeSummary {

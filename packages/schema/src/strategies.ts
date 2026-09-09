@@ -80,6 +80,9 @@ export const StrategyLeg = z.strictObject({
 export type StrategyLeg = z.infer<typeof StrategyLeg>;
 
 export const OrderState = z.enum(["pending", "filled", "failed", "cancelled", "closed"]);
+/** How an entry is sent to the venue: at market, or as a limit at the reviewed mark (ADR-044). Exits are always market, reduce-only. */
+export const OrderType = z.enum(["market", "limit"]);
+export type OrderType = z.infer<typeof OrderType>;
 export type OrderState = z.infer<typeof OrderState>;
 
 /** A venue order behind a live leg (ADR-025). */
@@ -89,6 +92,9 @@ export const StrategyOrder = z.strictObject({
   purpose: z.enum(["entry", "exit", "adjustment"]),
   /** Placement batch (the idempotency key of the placement or adjustment) so history can show each batch's fills. */
   batchId: z.string(),
+  orderType: OrderType,
+  /** The resting price of a limit order (on the product's tick), null for market orders. */
+  limitPrice: DecimalString.nullable(),
   clientOrderId: z.string(),
   venueOrderId: z.string().nullable(),
   symbol: z.string(),
@@ -198,6 +204,8 @@ export const AdjustBody = z
     adds: z.array(StrategyLegInput).max(MAX_OPEN_LEGS).default([]),
     changes: z.array(AdjustChange).max(MAX_OPEN_LEGS).default([]),
     expected: z.record(z.string(), PositiveDecimal).default({}),
+    /** Entries at market, or as limits at the `expected` mark of their symbol (a leg without one goes at market). */
+    orderType: OrderType.default("market"),
     idempotencyKey: z.string().min(8).max(80).optional(),
     reason: z.string().trim().max(MAX_ADJUST_REASON).optional(),
   })

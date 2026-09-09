@@ -523,7 +523,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const s = findStrategy(c);
     if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
     if (!isActive(s)) return err(c, 409, "CONFLICT", "Adjustments apply to a paper or live strategy");
-    const body = await c.req.json<{ adds?: StrategyLegInput[]; changes?: { legId: string; lotsAfter: number; price: string }[]; expected?: Record<string, string>; idempotencyKey?: string; reason?: string }>();
+    const body = await c.req.json<{ adds?: StrategyLegInput[]; changes?: { legId: string; lotsAfter: number; price: string }[]; expected?: Record<string, string>; orderType?: StrategyOrder["orderType"]; idempotencyKey?: string; reason?: string }>();
     const adds = body.adds ?? [];
     const changes = body.changes ?? [];
     if (body.idempotencyKey && s.adjustments.some((a) => a.batchId === body.idempotencyKey)) return c.json(s);
@@ -551,7 +551,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const added = adds.map((l, i) => mkLeg(l, next + i, { entryPrice: s.status === "live" ? null : l.price, isAdjustment: true, openedAt: s.status === "live" ? null : at }));
     s.legs.push(...added);
     const batchId = body.idempotencyKey ?? `adj:${id("b")}`;
-    if (s.status === "live" && added.length) placeLive(c, s, batchId, "adjustment", added, body.expected ?? {});
+    if (s.status === "live" && added.length) placeLive(c, s, batchId, "adjustment", added, body.expected ?? {}, body.orderType ?? "market");
     s.adjustments.push({ id: id("adj"), at, reason: body.reason?.trim() ? body.reason.trim() : null, added: added.length, trimmed: planned.length - closes, closed: closes, realizedPnl: toDecimal(realized, 2), batchId });
     return c.json(touch(s));
   });
@@ -639,7 +639,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (worstLoss !== null && Math.abs(worstLoss) > 4000) reasons.push(`Available USD 4000 is below the worst-loss estimate ${toDecimal(Math.abs(worstLoss), 2)}`);
     return { ok: reasons.length === 0, reasons, legs, notional: toDecimal(notional, 2), available: acc.credential ? "4000" : null, availableAsset: acc.credential ? "USD" : null, marginUsed: acc.credential ? "12" : null, limits: { maxLegs: 10, maxNotionalUsd: 100_000, markBandPct: 5 } };
   };
-  const placeLive = (c: Context, s: Strategy, batchId: string, purpose: StrategyOrder["purpose"], legs: StrategyLeg[], expected: Record<string, string> = {}) => {
+  const placeLive = (c: Context, s: Strategy, batchId: string, purpose: StrategyOrder["purpose"], legs: StrategyLeg[], expected: Record<string, string> = {}, orderType: StrategyOrder["orderType"] = "market") => {
     const at = nowIso();
     const lotSize = lotSizeOf(c, s.asset);
     for (const l of legs) {
@@ -649,14 +649,18 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       // the mark band (5 %): a leg whose mark moved from what Review showed is refused, like the real executor
       const moved = shown !== undefined && Math.abs(Number(fill) - Number(shown)) / Number(shown) > 0.05;
       const fail = l.symbol.includes("FAIL") || moved;
-      s.orders.push({ id: id("ord"), legId: l.id, purpose, batchId, clientOrderId: `hc-${l.id}-${attempt}`, venueOrderId: fail ? null : String(700000 + s.orders.length), symbol: l.symbol, side: l.side, size: contractsOf(l, lotSize), state: fail ? "failed" : "filled", fillPrice: fail ? null : fill, error: fail ? (moved ? `${l.symbol}: mark moved from ${shown} to ${fill}, outside the band` : "Not enough margin on the exchange for this order") : null, attempts: attempt, createdAt: at, updatedAt: at });
-      if (!fail) Object.assign(l, { entryPrice: fill, price: fill, status: "open", openedAt: at, orderId: String(700000 + s.orders.length - 1) });
+      // a limit at the reviewed mark rests (pending) when the venue mark is past it: buys above, sells below
+      const type: StrategyOrder["orderType"] = orderType === "limit" && shown !== undefined ? "limit" : "market";
+      const rests = !fail && type === "limit" && (l.side === "buy" ? Number(fill) > Number(shown) : Number(fill) < Number(shown));
+      s.orders.push({ id: id("ord"), legId: l.id, purpose, batchId, orderType: type, limitPrice: type === "limit" ? shown! : null, clientOrderId: `hc-${l.id}-${attempt}`, venueOrderId: fail ? null : String(700000 + s.orders.length), symbol: l.symbol, side: l.side, size: contractsOf(l, lotSize), state: fail ? "failed" : rests ? "pending" : "filled", fillPrice: fail || rests ? null : fill, error: fail ? (moved ? `${l.symbol}: mark moved from ${shown} to ${fill}, outside the band` : "Not enough margin on the exchange for this order") : null, attempts: attempt, createdAt: at, updatedAt: at });
+      if (!fail && !rests) Object.assign(l, { entryPrice: fill, price: fill, status: "open", openedAt: at, orderId: String(700000 + s.orders.length - 1) });
+      else if (rests) Object.assign(l, { openedAt: at, orderId: String(700000 + s.orders.length - 1) }); // like the executor: opened, not yet entered
     }
   };
   const exitLive = (c: Context, s: Strategy, leg: StrategyLeg, lots: number) => {
     const at = nowIso();
     const fill = markOf(leg);
-    s.orders.push({ id: id("ord"), legId: leg.id, purpose: "exit", batchId: `exit:${leg.id}`, clientOrderId: `hc-${leg.id}-x${s.orders.length + 1}`, venueOrderId: String(800000 + s.orders.length), symbol: leg.symbol, side: leg.side === "buy" ? "sell" : "buy", size: contractsOf({ ...leg, lots }, lotSizeOf(c, s.asset)), state: "closed", fillPrice: fill, error: null, attempts: 1, createdAt: at, updatedAt: at });
+    s.orders.push({ id: id("ord"), legId: leg.id, purpose: "exit", batchId: `exit:${leg.id}`, orderType: "market", limitPrice: null, clientOrderId: `hc-${leg.id}-x${s.orders.length + 1}`, venueOrderId: String(800000 + s.orders.length), symbol: leg.symbol, side: leg.side === "buy" ? "sell" : "buy", size: contractsOf({ ...leg, lots }, lotSizeOf(c, s.asset)), state: "closed", fillPrice: fill, error: null, attempts: 1, createdAt: at, updatedAt: at });
     return fill;
   };
   v1.post("/strategies/live/batch", async (c) => {

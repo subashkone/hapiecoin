@@ -122,7 +122,7 @@ export {
   toSchemaQuote,
 } from "./schema-adapter.js";
 
-export { DeltaTradingClientImpl, FakeDeltaTradingClient, contractsFor, describeOrderError, signDeltaRequest } from "./delta/trading.js";
+export { DeltaTradingClientImpl, FakeDeltaTradingClient, contractsFor, describeOrderError, roundToTick, signDeltaRequest } from "./delta/trading.js";
 export type {
   DeltaCredentials,
   DeltaTradingClient,

@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { DeltaTradingClientImpl, FakeDeltaTradingClient, contractsFor, describeOrderError, signDeltaRequest, type TradingFetch } from "./trading.js";
+import { DeltaTradingClientImpl, FakeDeltaTradingClient, contractsFor, describeOrderError, roundToTick, signDeltaRequest, type TradingFetch } from "./trading.js";
 
 const BASE = "https://cdn-ind.testnet.example";
 const CREDS = { apiKey: "key-1", apiSecret: "secret-1" };
@@ -132,5 +132,40 @@ describe("[VENUES] Delta trading client (ADR-025)", () => {
       expect((await fake.getOrder(CREDS, p.order.id))?.state).toBe("closed");
     }
     expect(fake.placed).toHaveLength(4);
+  });
+
+  it("ADR-044 limit prices snap to the product tick toward the passive side; a product without a tick leaves the price alone", () => {
+    expect(roundToTick("700.1234", "0.1", "buy")).toBe("700.1");
+    expect(roundToTick("700.1234", "0.1", "sell")).toBe("700.2");
+    expect(roundToTick("700", "0.1", "sell")).toBe("700.0");
+    expect(roundToTick("1200.5", "0.5", "buy")).toBe("1200.5");
+    expect(roundToTick("1200.7", "0.5", "buy")).toBe("1200.5");
+    expect(roundToTick("1200.7", "0.5", "sell")).toBe("1201.0");
+    expect(roundToTick("79521.3", "1", "buy")).toBe("79521");
+    expect(roundToTick("700.1234", undefined, "buy")).toBe("700.1234");
+    expect(roundToTick("700.1234", "0", "buy")).toBe("700.1234");
+    expect(roundToTick("abc", "0.1", "buy")).toBe("abc");
+    expect(new FakeDeltaTradingClient().product("C-1", 1)).toBeTruthy();
+  });
+
+  it("ADR-044 limit orders: the real client sends limit_order with the price; the fake rests a limit that does not cross and fills one that does", async () => {
+    const f = fakeFetch(() => ({ body: { success: true, result: ORDER } }));
+    const c = new DeltaTradingClientImpl({ baseUrl: BASE, fetch: f.impl, nodeEnv: "test", now: () => 1_700_000_000, timeoutMs: 20, sleep: () => Promise.resolve() });
+    await c.placeOrder(CREDS, { productId: 27, size: 10, side: "buy", clientOrderId: "hc-leg1-9", orderType: "limit", limitPrice: "1200.5" });
+    expect(JSON.parse(f.calls[0]!.init.body!)).toEqual({ product_id: 27, size: 10, side: "buy", order_type: "limit_order", limit_price: "1200.5", client_order_id: "hc-leg1-9", reduce_only: false });
+    await c.placeOrder(CREDS, { productId: 27, size: 10, side: "buy", clientOrderId: "hc-leg1-10", orderType: "market" });
+    expect((JSON.parse(f.calls[1]!.init.body!) as { order_type: string }).order_type).toBe("market_order");
+    const fake = new FakeDeltaTradingClient().product("BTCUSD", 27).fillAt(27, "1200");
+    const resting = await fake.placeOrder(CREDS, { productId: 27, size: 3, side: "buy", clientOrderId: "r", orderType: "limit", limitPrice: "1190" });
+    expect(resting).toMatchObject({ ok: true, order: { state: "open", unfilledSize: 3, averageFillPrice: null } });
+    const filled = await fake.placeOrder(CREDS, { productId: 27, size: 3, side: "buy", clientOrderId: "f", orderType: "limit", limitPrice: "1200" });
+    expect(filled).toMatchObject({ ok: true, order: { state: "closed", averageFillPrice: "1200" } });
+    const sold = await fake.placeOrder(CREDS, { productId: 27, size: 3, side: "sell", clientOrderId: "s", orderType: "limit", limitPrice: "1250" });
+    expect(sold).toMatchObject({ ok: true, order: { state: "open" } });
+    if (resting.ok) {
+      expect((await fake.listOpenOrders(CREDS, [27])).map((o) => o.id)).toContain(resting.order.id);
+      fake.complete(resting.order.id, "1190");
+      expect((await fake.getOrder(CREDS, resting.order.id))?.averageFillPrice).toBe("1190");
+    }
   });
 });

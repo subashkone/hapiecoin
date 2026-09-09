@@ -238,4 +238,61 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     await screen.findByTestId("adjust-workbench");
     expect(useUiStore.getState().adjust?.strategyId).toBe(mine()[0]!.id);
   });
+
+  it("HC-TR-153 / HC-TR-154 plans compare, quick fixes with ranking, the scenario slider and the alert stub", async () => {
+    const { call } = seedLegs();
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    const u = userEvent.setup();
+    const s = await paperTradeFromBuilder(u);
+    await u.click(within(await screen.findByTestId("paper-card")).getByTestId("card-adjust"));
+    const wb = await screen.findByTestId("adjust-workbench");
+    serveMarket();
+    await waitFor(() => expect(within(wb).getAllByTestId("wb-chain-row").length).toBeGreaterThan(0), { timeout: 5000 });
+    // quick fixes: roll up and hedge can be built from the shown chain; roll out waits for the next expiry's chain
+    const fixes = within(wb).getByTestId("quick-fixes");
+    await waitFor(() => expect(within(fixes).getAllByTestId("quick-fix").map((b) => b.dataset["state"])).toEqual(["ready", "unavailable", "ready"]));
+    expect(within(fixes).getAllByTestId("quick-fix-tag").length).toBeGreaterThan(0);
+    await u.click(within(fixes).getAllByTestId("quick-fix")[0]!); // roll strikes up
+    expect(wb.dataset["empty"]).toBe("false");
+    expect(within(wb).getAllByTestId("effect").map((e) => e.dataset["kind"])).toEqual(["close", "close", "new", "new"]);
+    expect(within(wb).getAllByTestId("wb-pick")).toHaveLength(2);
+    // plans: keep this as Plan A, build another (hedge), compare, load A back, remove it
+    const plans = within(wb).getByTestId("plans-bar");
+    await u.click(within(plans).getByTestId("plan-save"));
+    expect(plans.dataset["count"]).toBe("1");
+    await u.click(within(fixes).getAllByTestId("quick-fix")[2]!); // hedge with a call: nothing is short, so it buys above spot, which is the held call's strike → nets as ADDS
+    expect(within(wb).queryAllByTestId("wb-pick")).toHaveLength(0);
+    expect(within(wb).getAllByTestId("effect").map((e) => e.dataset["kind"])).toEqual(["add"]);
+    await u.click(within(plans).getByTestId("plan-save"));
+    const rows = within(plans).getAllByTestId("plan-row");
+    expect(rows.map((r) => r.dataset["plan"] === "current" ? "current" : "plan")).toEqual(["current", "plan", "plan"]);
+    await waitFor(() => expect(within(plans).getAllByTestId("plan-row").every((r) => r.dataset["state"] === "ready")).toBe(true), { timeout: 5000 });
+    expect(within(plans).getByText("Plan A")).toBeTruthy();
+    expect(within(plans).getByText("Plan B")).toBeTruthy();
+    await u.click(within(plans).getAllByTestId("plan-use")[0]!); // back to Plan A: the roll
+    expect(within(wb).getAllByTestId("wb-pick")).toHaveLength(2);
+    await u.click(within(plans).getAllByTestId("plan-remove")[1]!);
+    expect(plans.dataset["count"]).toBe("1");
+    // the scenario slider values the position on a day between today and the latest expiry
+    const slider = within(wb).getByTestId<HTMLInputElement>("scenario-days");
+    expect(Number(slider.max)).toBeGreaterThan(1);
+    fireEvent.change(slider, { target: { value: "1" } });
+    expect(within(wb).getByTestId("scenario-label").textContent).toMatch(/^\+1d · /);
+    expect(useUiStore.getState().adjust?.valuation).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    fireEvent.change(slider, { target: { value: "0" } });
+    expect(useUiStore.getState().adjust?.valuation).toBe("today");
+    fireEvent.change(slider, { target: { value: slider.max } });
+    expect(useUiStore.getState().adjust?.valuation).toBeNull();
+    // the alert stub keeps one threshold per strategy
+    const alertBox = within(wb).getByTestId("risk-alert");
+    expect(within(alertBox).getByTestId<HTMLButtonElement>("risk-alert-save").disabled).toBe(true);
+    await u.type(within(alertBox).getByTestId("risk-alert-input"), "1500");
+    await u.click(within(alertBox).getByTestId("risk-alert-save"));
+    expect(within(alertBox).getByTestId("risk-alert-set").textContent).toContain("1,500");
+    expect(useUiStore.getState().riskAlerts).toMatchObject([{ strategyId: s.id, maxLoss: -1500 }]);
+    await u.click(within(alertBox).getByTestId("risk-alert-remove"));
+    expect(useUiStore.getState().riskAlerts).toEqual([]);
+    expect(call.strike).toBeTruthy();
+  });
 });

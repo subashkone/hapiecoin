@@ -4,9 +4,9 @@
 // effect of each row in words, and the "value at" chips when the combined position spans several expiries.
 import { cn } from "@hapiecoin/ui";
 import type { StrategyLeg as ServerLeg } from "@hapiecoin/schema";
-import { daysToExpiry, fmtExpiry, fmtPrice } from "@/lib/format";
+import { daysToExpiry, fmtDate, fmtExpiry, fmtPrice } from "@/lib/format";
 import { fmtMoney } from "@/lib/money";
-import { type AdjustPick, type Effect, VALUE_TODAY, instrumentOf, lotsAfterOf } from "@/lib/adjust/model";
+import { type AdjustPick, type Effect, VALUE_TODAY, instrumentOf, isoDaysFrom, lotsAfterOf } from "@/lib/adjust/model";
 import type { AdjustWorkbench } from "@/lib/adjust/useAdjustWorkbench";
 
 const EFFECT_CLS: Record<Effect["kind"], string> = {
@@ -97,8 +97,11 @@ export function PositionTicket({ w }: { w: AdjustWorkbench }) {
     );
   };
   const latest = w.expiries[w.expiries.length - 1];
-  const chosen = draft.valuation === VALUE_TODAY ? VALUE_TODAY : draft.valuation && w.expiries.includes(draft.valuation) ? draft.valuation : latest;
+  const chosen = draft.valuation === VALUE_TODAY ? VALUE_TODAY : draft.valuation && w.expiries.includes(draft.valuation) ? draft.valuation : draft.valuation && /^\d{4}-\d{2}-\d{2}$/.test(draft.valuation) ? "scenario" : latest;
   const chips = [VALUE_TODAY, ...w.expiries];
+  // scenario slider (ADR-044 extra 2): any day between today and the latest expiry
+  const maxDays = latest ? Math.max(0, daysToExpiry(latest, new Date(a.nowMs))) : 0;
+  const sliderDays = chosen === VALUE_TODAY ? 0 : chosen === "scenario" && draft.valuation ? Math.max(0, Math.min(maxDays, Math.round((Date.parse(`${draft.valuation}T12:00:00Z`) - a.nowMs) / 86_400_000))) : chosen === latest ? maxDays : draft.valuation ? Math.max(0, Math.min(maxDays, daysToExpiry(draft.valuation, new Date(a.nowMs)))) : maxDays;
   return (
     <div className="flex flex-col gap-2 p-3" data-testid="position-ticket">
       <div className="flex items-center gap-2">
@@ -119,6 +122,13 @@ export function PositionTicket({ w }: { w: AdjustWorkbench }) {
               {e === VALUE_TODAY ? "today" : <>{fmtExpiry(e)} <span className="font-mono text-3xs">{daysToExpiry(e)}d</span></>}
             </button>
           ))}
+          {maxDays > 0 ? (
+            <label className="flex w-full items-center gap-2 text-2xs" title="Scenario: value the combined position on any day up to its latest expiry (dates are UTC, at the settlement hour)">
+              <span className="micro w-[72px] shrink-0">Scenario</span>
+              <input type="range" min={0} max={maxDays} step={1} value={sliderDays} onChange={(e) => { const d = Number(e.target.value); w.setValuation(d === 0 ? VALUE_TODAY : d >= maxDays ? null : isoDaysFrom(a.nowMs, d)); }} className="flex-1 accent-[hsl(var(--curve))]" aria-label="Scenario date, days ahead" data-testid="scenario-days" />
+              <span className="num w-[120px] text-right" data-testid="scenario-label">{sliderDays === 0 ? "today" : `+${sliderDays}d · ${fmtDate(isoDaysFrom(a.nowMs, sliderDays))}`}</span>
+            </label>
+          ) : null}
         </div>
       ) : null}
       {strategy.adjustments.length ? <div className="micro mt-1 text-muted-foreground">Adjusted {strategy.adjustments.length} {strategy.adjustments.length === 1 ? "time" : "times"} before · history in Details</div> : null}

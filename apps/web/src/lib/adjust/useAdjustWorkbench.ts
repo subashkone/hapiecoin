@@ -9,7 +9,7 @@ import { useSettings } from "@/lib/api/queries";
 import { useUiStore } from "@/lib/store";
 import { openLegs } from "@/lib/strategy/paper";
 import { type StrategyAnalysis, useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
-import { type AdjustDraft, type ChangeSummary, type Effect, type PickInput, addsZeroDte, cashflow, combinedExpiries, effects, isEmptyDraft, openCountAfter, overCap, pickOnDraft, removePick, setLotsAfter, setPickLots, setValuation, summarize } from "./model";
+import { type AdjustDraft, type ChangeSummary, type Effect, type PickInput, addsZeroDte, cashflow, combinedExpiries, effects, isEmptyDraft, loadPlan, openCountAfter, overCap, pickOnDraft, removePick, removePlan, savePlan, setLotsAfter, setPickLots, setValuation, summarize } from "./model";
 
 /** Marks older than this are called stale in the guard rails (Review re-reads them anyway). */
 export const STALE_MARKS_MS = 60_000;
@@ -40,6 +40,11 @@ export interface AdjustWorkbench {
   setValuation: (expiry: string | null) => void;
   reset: () => void;
   exit: () => void;
+  /** Replace the working changes with another draft's (a quick fix), keeping the saved plans. */
+  applyDraft: (next: AdjustDraft) => void;
+  savePlan: () => void;
+  loadPlan: (planId: string) => void;
+  removePlan: (planId: string) => void;
 }
 
 /** Seconds since `version` last changed (or since `startedAt` before the first tick), ticking once a second. */
@@ -101,6 +106,10 @@ export function useAdjustWorkbench(): AdjustWorkbench | null {
       setValuation: (expiry) => updateAdjust((d) => setValuation(d, expiry)),
       reset: () => updateAdjust((d) => ({ ...d, lotsAfter: {}, picks: [] })),
       exit: closeAdjust,
+      applyDraft: (next) => updateAdjust((d) => ({ ...d, lotsAfter: { ...next.lotsAfter }, picks: next.picks.map((p) => ({ ...p })), valuation: next.valuation })),
+      savePlan: () => updateAdjust((d) => savePlan(d)),
+      loadPlan: (planId) => updateAdjust((d) => loadPlan(d, planId)),
+      removePlan: (planId) => updateAdjust((d) => removePlan(d, planId)),
     };
   }, [draft, strategy, open, a, lotSize, markAgeSec, updateAdjust, closeAdjust]);
 }

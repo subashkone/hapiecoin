@@ -3,7 +3,7 @@
 // (HC-TR-089), live adjustments through the workbench's confirm (HC-TR-088, ADR-044) and the Live tab (HC-TR-082, 084..087).
 import type { Strategy, StrategyOrder } from "@hapiecoin/schema";
 import { chainTopic } from "@hapiecoin/schema";
-import { act, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
@@ -36,6 +36,14 @@ function serveMarket() {
   });
 }
 const panel = () => screen.getByTestId("live-panel");
+/** Press and hold the live button for longer than HOLD_MS (real time, the button's interval drives it). */
+async function hold(el: HTMLElement, ms = 1400) {
+  fireEvent.pointerDown(el);
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, ms));
+  });
+  fireEvent.pointerUp(el);
+}
 
 beforeEach(() => {
   FakeSocket.reset();
@@ -231,7 +239,7 @@ describe("HC-TR-088 live adjustments and square off from Details", () => {
   it("an adjustment goes through the workbench's live confirm with the venue check and lands as a filled order; Square off all archives with exit orders", async () => {
     connect();
     const at = "2026-09-08T10:00:00Z";
-    mine().push(strat(1, { status: "live", tradingMode: "live", orderBatchId: "web-seed", orders: [{ id: "ord_1", legId: "leg_1", purpose: "entry", batchId: "web-seed", clientOrderId: "hc-leg_1-1", venueOrderId: "700001", symbol: CALL.symbol, side: "buy", size: 10, state: "pending", fillPrice: null, error: null, attempts: 1, createdAt: at, updatedAt: at }] }));
+    mine().push(strat(1, { status: "live", tradingMode: "live", orderBatchId: "web-seed", orders: [{ id: "ord_1", legId: "leg_1", purpose: "entry", batchId: "web-seed", orderType: "market", limitPrice: null, clientOrderId: "hc-leg_1-1", venueOrderId: "700001", symbol: CALL.symbol, side: "buy", size: 10, state: "pending", fillPrice: null, error: null, attempts: 1, createdAt: at, updatedAt: at }] }));
     useUiStore.setState({ workspaceTab: "live" });
     renderWithProviders(<Workspace />);
     act(() => FakeSocket.last().open());
@@ -266,10 +274,22 @@ describe("HC-TR-088 live adjustments and square off from Details", () => {
     confirm = await screen.findByTestId("adjust-confirm");
     await waitFor(() => expect(within(confirm).getByTestId("adjust-venue").dataset["ok"]).toBe("true"));
     await u.type(within(confirm).getByTestId("adjust-reason"), "hedge the upside");
-    await u.click(within(confirm).getByTestId("adjust-apply"));
+    // HC-TR-152: the band column, the order type, and hold-to-place: a short press cancels, a held press places
+    expect(within(confirm).getByTestId("adjust-band").textContent).toContain("±5%");
+    expect(within(confirm).getByTestId("adjust-type").textContent).toBe("market");
+    const apply = within(confirm).getByTestId("adjust-apply");
+    expect(apply.textContent).toContain("Hold to place 1 order");
+    await hold(apply, 300);
+    expect(mine()[0]!.legs).toHaveLength(1); // let go early: nothing sent
+    expect(apply.dataset["progress"]).toBe("0.00");
+    await hold(apply);
     await waitFor(() => expect(mine()[0]!.legs).toHaveLength(2));
-    expect(mine()[0]!.orders.at(-1)).toMatchObject({ purpose: "adjustment", state: "filled" });
+    expect(mine()[0]!.orders.at(-1)).toMatchObject({ purpose: "adjustment", state: "filled", orderType: "market" });
     expect(mine()[0]!.adjustments.at(-1)).toMatchObject({ added: 1, reason: "hedge the upside" });
+    // the fill states stay on screen until Done
+    await waitFor(() => expect(confirm.dataset["stage"]).toBe("placed"));
+    expect(within(confirm).getAllByTestId("adjust-result").map((r) => r.dataset["state"])).toEqual(["filled"]);
+    await u.click(within(confirm).getByTestId("adjust-done"));
     await waitFor(() => expect(screen.queryByTestId("adjust-confirm")).toBeNull());
     // a second batch: the venue refuses (account blocked) → Place stays disabled with the reason; unblocked, it goes with a fresh key
     await waitFor(() => expect(screen.queryByTestId("adjust-workbench")).toBeNull());
@@ -291,10 +311,18 @@ describe("HC-TR-088 live adjustments and square off from Details", () => {
     await u.click(within(wb2).getByTestId("adjust-review"));
     const second = await screen.findByTestId("adjust-confirm");
     await waitFor(() => expect(within(second).getByTestId("adjust-venue").dataset["ok"]).toBe("true"));
-    await u.click(within(second).getByTestId("adjust-apply"));
+    // a limit at the reviewed mark: the bought put rests on the venue (the mock's mark sits above the reviewed one), so it comes back pending
+    await u.click(within(second).getByTestId("order-type-limit"));
+    expect(within(second).getByTestId("adjust-type").textContent).toBe("limit");
+    await hold(within(second).getByTestId("adjust-apply"));
     await waitFor(() => expect(mine()[0]!.adjustments).toHaveLength(2));
     expect(mine()[0]!.adjustments.at(-1)!.batchId).not.toBe(firstKey);
-    expect(mine()[0]!.orders.at(-1)).toMatchObject({ purpose: "adjustment", batchId: mine()[0]!.adjustments.at(-1)!.batchId });
+    expect(mine()[0]!.orders.at(-1)).toMatchObject({ purpose: "adjustment", orderType: "limit", state: "pending", batchId: mine()[0]!.adjustments.at(-1)!.batchId });
+    expect(mine()[0]!.legs.at(-1)!.entryPrice).toBeNull();
+    await waitFor(() => expect(second.dataset["stage"]).toBe("placed"));
+    expect(within(second).getAllByTestId("adjust-result").map((r) => r.dataset["state"])).toEqual(["pending"]);
+    expect(within(second).getByTestId("adjust-result").textContent).toContain("resting");
+    await u.click(within(second).getByTestId("adjust-done"));
     await waitFor(() => expect(screen.queryByTestId("adjust-confirm")).toBeNull());
     // the workbench closes and Details reopens with the history; square off all: live exits at the venue, strategy archived
     await waitFor(() => expect(screen.queryByTestId("adjust-workbench")).toBeNull());

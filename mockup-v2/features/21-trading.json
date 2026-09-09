@@ -1252,8 +1252,8 @@
     "phase": 5,
     "new": true,
     "feature": "Before → after strip, ghost curve and value at a chosen expiry",
-    "how": "Max loss, max profit, POP and break-evens shown before → after over the payoff tiles; the previous payoff drawn dashed behind the new one; \"Value at\" chips per expiry of the combined position (default the latest): settled legs at intrinsic, later legs keep time value",
-    "evidence": "ADR-044 (09 Sep 2026): packages/pricing analyze valuationMs + curveExtremes, useStrategyAnalysis adjusting mode, BeforeAfterStrip.tsx, payoffDraw ghost; unit strategy.test.ts (pricing), workbench.test.tsx, model.test.ts; e2e analyse.spec.ts HC-TR-148 block"
+    "how": "Max loss, max profit, POP and break-evens shown before → after over the payoff tiles; the previous payoff drawn dashed behind the new one; \"Value at\" chips per expiry of the combined position (default the latest): settled legs at intrinsic, later legs keep time value; a scenario slider values the position on any day up to the latest expiry",
+    "evidence": "ADR-044 (09 Sep 2026): packages/pricing analyze valuationMs + curveExtremes, useStrategyAnalysis adjusting mode, BeforeAfterStrip.tsx, payoffDraw ghost; unit strategy.test.ts (pricing), workbench.test.tsx, model.test.ts; e2e analyse.spec.ts HC-TR-148 block; scenario slider: PositionTicket.tsx, model isoDaysFrom / valuationMsOf (any ISO date), workbench.test.tsx HC-TR-153/154 block (PR A3)"
   },
   {
     "route": "/analyse",
@@ -1272,8 +1272,8 @@
     "phase": 5,
     "new": true,
     "feature": "Change summary, cash and guard rails; Review → paper confirm with a reason; history, ADJUSTED badge and card figures",
-    "how": "One line: max loss worsens / improves by X · you pay / receive Y · POP a% → b%; warnings for unlimited loss introduced, the 10-leg cap, 0-DTE legs and stale marks; the paper confirm lists the changes with before → after figures and an optional reason; Details shows the adjustment history, cards wear ADJUSTED and show combined max loss / profit / POP",
-    "evidence": "ADR-044 (09 Sep 2026): model.ts summarize / toBody, AdjustConfirmDialog.tsx (paper), StrategyDetailsDialog history + AdjustedBadge, CardFigures.tsx, API /adjust (PR A1); unit model.test.ts, workbench.test.tsx, trading.test.tsx; e2e analyse.spec.ts HC-TR-148 block; visual analyse-adjust-confirm-{dark,light}"
+    "how": "One line: max loss worsens / improves by X · you pay / receive Y · POP a% → b%; warnings for unlimited loss introduced, the 10-leg cap, 0-DTE legs and stale marks; the paper confirm lists the changes with before → after figures and an optional reason; Details shows the adjustment history, cards wear ADJUSTED and show combined max loss / profit / POP; \"Alert me if max loss exceeds X\" saved per strategy (stub, arms with Alerts)",
+    "evidence": "ADR-044 (09 Sep 2026): model.ts summarize / toBody, AdjustConfirmDialog.tsx (paper), StrategyDetailsDialog history + AdjustedBadge, CardFigures.tsx, API /adjust (PR A1); unit model.test.ts, workbench.test.tsx, trading.test.tsx; e2e analyse.spec.ts HC-TR-148 block; visual analyse-adjust-confirm-{dark,light}; alert stub: store riskAlerts (persisted), AdjustWorkbench footer, store.test.ts, workbench.test.tsx (PR A3)"
   },
   {
     "route": "/analyse",
@@ -1281,28 +1281,28 @@
     "status": "working",
     "phase": 5,
     "new": true,
-    "feature": "Live confirm: the venue prices the proposed batch before anything is placed",
-    "how": "A red frame, the exchange check of adds as entries and trims / closes as reduce-only exits (contracts, notional, wallet, mark band), Place N orders disabled until the check passes; the marks reviewed travel as the expected prices (band). PR A3 adds order type, hold-to-place and per-leg fill states",
-    "evidence": "ADR-044 (09 Sep 2026): AdjustConfirmDialog.tsx (live), lib/api/live preview overrides, API adjustPreview (PR A1); unit trading-live.test.tsx HC-TR-088 block, api live.test.ts"
+    "feature": "Live confirm: venue check, per-leg band, order type, hold-to-place, fill states",
+    "how": "A red frame; the exchange check of adds as entries and trims / closes as reduce-only exits (contracts, notional, wallet, band); each add shows how far the mark moved from the reviewed one against the band; Market or Limit at mark (entries rest until filled, exits stay market); the button must be held 1.2 s; after placing, every order shows filled @ price / resting / failed until Done → Details; a notional above the available balance warns",
+    "evidence": "ADR-044 (09 Sep 2026, PR A3): AdjustConfirmDialog.tsx HoldButton + results view, API AdjustBody.orderType + limit entries (live-exec placeEntries, venues PlaceOrderInput orderType/limitPrice, migration 0009), mock placeLive limit rests; unit trading-live.test.tsx HC-TR-088 block, api live.test.ts limit entries, venues trading.test.ts; e2e analyse.spec.ts HC-TR-152 test; visual analyse-adjust-live-{dark,light}"
   },
   {
     "route": "/analyse",
     "screen": "Analyse · Adjustment workbench",
-    "status": "static",
+    "status": "working",
     "phase": 5,
     "new": true,
     "feature": "Compare plans (Plan A / Plan B) side by side",
-    "how": "Save the current draft as a plan, build another, compare max loss / profit / POP / cash in one table and pick one to review",
-    "evidence": "Mockup docs/design/mockups/adjustment-workbench-v2.html (approved 09 Sep 2026); production build in PR A3"
+    "how": "Save the current change as Plan A / B / C, build another, compare max loss / max profit / POP / cash per plan next to the current change, Use one to load it back, remove one",
+    "evidence": "ADR-044 (09 Sep 2026, PR A3): PlansBar.tsx + useDraftFigures, model savePlan / loadPlan / removePlan / planDraft; unit model.test.ts HC-TR-153, workbench.test.tsx HC-TR-153/154 block"
   },
   {
     "route": "/analyse",
     "screen": "Analyse · Adjustment workbench",
-    "status": "static",
+    "status": "working",
     "phase": 5,
     "new": true,
     "feature": "Quick fixes: roll wings up, roll out, hedge with a call, ranked",
-    "how": "One-click drafts of the common repairs ranked by smallest max loss, largest credit or delta-neutral, each landing in the workbench for review",
-    "evidence": "Mockup docs/design/mockups/adjustment-workbench-v2.html (approved 09 Sep 2026); production build in PR A3"
+    "how": "Roll strikes up, Roll out to the next expiry, Hedge with a call: each built from the open legs and the listed strikes, priced with the engine and tagged smallest max loss / largest credit / closest to delta-neutral; a click loads the draft for review; an unbuildable fix says why",
+    "evidence": "ADR-044 (09 Sep 2026, PR A3): lib/adjust/fixes.ts quickFixes / rankFixes, QuickFixes.tsx; unit model.test.ts HC-TR-154, workbench.test.tsx HC-TR-153/154 block"
   }
 ]

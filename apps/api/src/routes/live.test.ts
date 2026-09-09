@@ -317,6 +317,60 @@ describe("HC-TR-088 adjustment batch on a live strategy (ADR-044)", () => {
     await t.request(`/v1/admin/users/${aliceId}/trading`, { cookie: admin, json: { disabled: false } });
   });
 
+  it("ADR-044 limit entries go at the reviewed mark: one that crosses fills, one that rests stays pending until sync; exits stay market", async () => {
+    const s = await draft([CALL]);
+    const live = await json<Strategy>(await place(s.id, "key-adj-limit-00"));
+    const [call] = live.legs;
+    t.trading.product("P-BTC-76000-250926", 105).markAt("P-BTC-76000-250926", "500").fillAt(105, "505");
+    // sell C-82000 limit 700 with the venue at 705: crosses (sell at or below the fill) → filled; buy P-76000 limit 500 with the venue at 505: rests → pending
+    const res = await adjust(s.id, { adds: [SOLD_CALL, { ...PUT, strike: "76000", symbol: "P-BTC-76000-250926", side: "buy", lots: 5, price: "500" }], changes: [{ legId: call!.id, lotsAfter: 6, price: "0" }], expected: { "C-BTC-82000-250926": "700", "P-BTC-76000-250926": "500" }, orderType: "limit", idempotencyKey: "key-adj-limit-01" });
+    expect(res.status).toBe(200);
+    const a = await json<Strategy>(res);
+    const batch = a.orders.filter((o) => o.batchId === "key-adj-limit-01");
+    expect(batch.map((o) => [o.purpose, o.orderType, o.state])).toEqual([
+      ["exit", "market", "closed"],
+      ["adjustment", "limit", "filled"],
+      ["adjustment", "limit", "pending"],
+    ]);
+    const sent = t.trading.placed.slice(-2).map((p) => [p.input.orderType, p.input.limitPrice]);
+    expect(sent).toEqual([
+      ["limit", "700.0"], // on the product's 0.1 tick
+      ["limit", "500.0"],
+    ]);
+    const resting = a.legs.find((l) => l.symbol === "P-BTC-76000-250926")!;
+    expect(resting.entryPrice).toBeNull();
+    expect(a.adjustments[0]).toMatchObject({ added: 2, trimmed: 1 });
+    // the venue fills the resting limit later; sync books it
+    t.trading.complete(Number(batch[2]!.venueOrderId), "500");
+    const synced = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/sync`, { cookie: alice, method: "POST" }));
+    expect(synced.orders.find((o) => o.id === batch[2]!.id)).toMatchObject({ state: "filled", fillPrice: "500" });
+    expect(synced.legs.find((l) => l.id === resting.id)!.entryPrice).toBe("500");
+    // a limit without an expected mark for its symbol goes at market
+    const noBand = await json<Strategy>(await adjust(s.id, { adds: [SOLD_CALL], orderType: "limit", idempotencyKey: "key-adj-limit-02" }));
+    expect(noBand.orders.filter((o) => o.batchId === "key-adj-limit-02").map((o) => [o.orderType, o.limitPrice])).toEqual([["market", null]]);
+  });
+
+  it("ADR-044 a limit price snaps to the product tick; a resting limit the venue cancels is retried as the same limit", async () => {
+    const s = await draft([CALL]);
+    await place(s.id, "key-adj-tick-00");
+    t.trading.product("P-BTC-76000-250926", 105, "0.001", "live", "0.5").markAt("P-BTC-76000-250926", "500").fillAt(105, "520");
+    // buy limit 500.3 on a 0.5 tick → 500.0 (down, the passive side for a buy); the venue is at 520 so it rests
+    const a = await json<Strategy>(await adjust(s.id, { adds: [{ ...PUT, strike: "76000", symbol: "P-BTC-76000-250926", side: "buy", lots: 5, price: "500.3" }], expected: { "P-BTC-76000-250926": "500.3" }, orderType: "limit", idempotencyKey: "key-adj-tick-01" }));
+    const resting = a.orders.find((o) => o.batchId === "key-adj-tick-01")!;
+    expect(resting).toMatchObject({ orderType: "limit", limitPrice: "500.0", state: "pending" });
+    expect(t.trading.placed.at(-1)!.input).toMatchObject({ orderType: "limit", limitPrice: "500.0" });
+    // the venue cancels it: sync records that, the leg is still open with no entry, Retry sends the same limit again
+    await t.trading.cancelOrder({ apiKey: "", apiSecret: "" }, Number(resting.venueOrderId));
+    const synced = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/sync`, { cookie: alice, method: "POST" }));
+    expect(synced.orders.find((o) => o.id === resting.id)!.state).toBe("cancelled");
+    expect(synced.legs.at(-1)).toMatchObject({ status: "open", entryPrice: null });
+    t.trading.fillAt(105, "499"); // now the venue is below the limit: the retried buy crosses
+    const retried = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/retry`, { cookie: alice, method: "POST" }));
+    expect(t.trading.placed.at(-1)!.input).toMatchObject({ orderType: "limit", limitPrice: "500.0", clientOrderId: resting.clientOrderId });
+    expect(retried.orders.find((o) => o.id === resting.id)).toMatchObject({ state: "filled", fillPrice: "499", limitPrice: "500.0", attempts: 2 });
+    expect(retried.legs.at(-1)!.entryPrice).toBe("499");
+  });
+
   it("when a later exit fails, the earlier fill stays booked, the batch stops, the key is used up and a new key finishes the rest", async () => {
     const s = await draft([CALL, PUT]);
     const live = await json<Strategy>(await place(s.id, "key-adj-live-004"));

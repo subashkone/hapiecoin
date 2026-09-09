@@ -358,6 +358,9 @@ export const strategyOrders = pgTable(
     /** Batch this order was placed in (idempotency key of the placement). */
     batchId: text("batch_id").notNull(),
     purpose: text("purpose", { enum: ["entry", "exit", "adjustment"] }).notNull(),
+    /** Market, or a limit at the reviewed mark (ADR-044 adjustment entries). */
+    orderType: text("order_type", { enum: ["market", "limit"] }).notNull().default("market"),
+    limitPrice: text("limit_price"),
     clientOrderId: text("client_order_id").notNull(),
     venueOrderId: text("venue_order_id"),
     productId: integer("product_id").notNull(),
