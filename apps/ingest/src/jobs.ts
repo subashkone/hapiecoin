@@ -3,11 +3,13 @@
  * of that refresh (its absence shows in `source`), so one exchange's outage never blanks a chart; the job fails
  * only when no venue answered. Aggregation is stated in `source` as "Binance · Bybit · OKX" (ADR-038).
  */
-import { ANALYTICS_VENUE_LABELS, type AnalyticsSnapshot, type AnalyticsVenue, AnalyticsSnapshot as SnapshotSchema, type CyclePoint, type FundingData, OPTIONS_VENUE_LABELS, type OpenInterestData, type OptionsExpiry, type OptionsVenue, type OptionsVenueData, RAINBOW_MULTIPLIERS, RAINBOW_NAMES, RSI_TIMEFRAMES, type RsiRow, type RsiTimeframe, type SeriesPoint, analyticsKey, fundingApr, logLinearFit, maxPain, rsi, sma } from "@hapiecoin/schema";
+import { ANALYTICS_VENUE_LABELS, type AnalyticsSnapshot, type AnalyticsVenue, AnalyticsSnapshot as SnapshotSchema, type CyclePoint, type FundingData, type LargeOrder, OPTIONS_VENUE_LABELS, type OpenInterestData, type OptionsExpiry, type OptionsVenue, type OptionsVenueData, RAINBOW_MULTIPLIERS, RAINBOW_NAMES, RSI_TIMEFRAMES, type RsiRow, type RsiTimeframe, type SeriesPoint, type WhalePosition, analyticsKey, fundingApr, logLinearFit, maxPain, rsi, sma, whaleIndex } from "@hapiecoin/schema";
 import type { BybitInterval } from "./adapters/bybit.js";
 import type { DeltaAdapter } from "./adapters/delta.js";
 import type { DeribitAdapter, OptionInstrument } from "./adapters/deribit.js";
+import type { HyperliquidAdapter } from "./adapters/hyperliquid.js";
 import type { SnapshotStore } from "./store.js";
+import { type WhaleTracker, hourOf, mergeWalls, wallsFrom } from "./whales.js";
 import type { BinanceAdapter, RatioPoint } from "./adapters/binance.js";
 import type { BybitAdapter } from "./adapters/bybit.js";
 import type { CoinGeckoAdapter } from "./adapters/coingecko.js";
@@ -23,6 +25,7 @@ export interface Adapters {
   fearGreed: FearGreedAdapter;
   deribit: DeribitAdapter;
   delta: DeltaAdapter;
+  hyperliquid: HyperliquidAdapter;
 }
 
 export class NoVenueError extends Error {
@@ -300,6 +303,103 @@ export async function buildPremium(ctx: JobContext, store: SnapshotStore, symbol
   const t = Math.floor(ctx.now() / 3_600_000) * 3_600_000;
   const points = await store.appendSeries(`premium:${symbol}`, { t, v: Number(premiumUsd.toFixed(2)) }, keep);
   return finish({ dataset: "premium", key: analyticsKey("premium"), source: "Coinbase · Binance via CoinGecko", asOf: ctx.now(), ttlMs: ctx.ttlMs, stale: false, data: { symbol, coinbaseUsd, binanceUsd, premiumUsd, premiumPct: premiumUsd / binanceUsd, points } });
+}
+
+export interface WhaleJobOptions {
+  /** Perpetual symbols whose Bybit books are scanned for walls. */
+  symbols: readonly string[];
+  /** Wallets always polled (env). */
+  wallets: readonly string[];
+  candidates: number;
+  /** Re-read the leaderboard after this long. */
+  candidatesTtlMs?: number;
+  /** Every n-th run polls every candidate; the others poll only wallets holding positions. */
+  fullScanEvery?: number;
+  concurrency?: number;
+}
+async function pool<T, R>(items: readonly T[], n: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array<R>(items.length);
+  let i = 0;
+  const worker = async () => {
+    while (i < items.length) {
+      const idx = i++;
+      out[idx] = await fn(items[idx]!);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, worker));
+  return out;
+}
+
+/**
+ * Whales (HC-MA-067..071, ADR-043): candidate wallets from the leaderboard (or WHALE_WALLETS), positions per wallet
+ * with mark prices, alerts from the diff against the previous poll, the hourly activity series kept in the store,
+ * and resting walls from the Bybit books. Source names what fed it; the job fails only when nothing did.
+ */
+export async function buildWhales(ctx: JobContext, tracker: WhaleTracker, store: SnapshotStore, opts: WhaleJobOptions): Promise<AnalyticsSnapshot> {
+  const hl = ctx.adapters.hyperliquid;
+  const now = ctx.now();
+  const errors: Error[] = [];
+  if (opts.candidates > 0 && now - tracker.candidatesAt >= (opts.candidatesTtlMs ?? 3_600_000)) {
+    const lb = await settle("binance", hl.leaderboard(opts.candidates)); // venue label unused; settle only wraps the error
+    if ("value" in lb) {
+      tracker.candidates = lb.value.filter((w) => !opts.wallets.includes(w));
+      tracker.candidatesAt = now;
+      tracker.candidateSource = "leaderboard";
+    } else {
+      errors.push(lb.error);
+      if (tracker.candidates.length === 0) tracker.candidateSource = opts.wallets.length ? "env" : "none";
+    }
+  }
+  const fullScan = tracker.runs % (opts.fullScanEvery ?? 5) === 0;
+  const toPoll = tracker.pollSet(fullScan, opts.wallets);
+  const results = await pool(toPoll, opts.concurrency ?? 8, async (w) => ({ wallet: w, r: await settle("binance", hl.positions(w)) }));
+  const next = new Map<string, WhalePosition[]>();
+  const polled = new Set<string>();
+  for (const { wallet, r } of results) {
+    if ("value" in r) {
+      next.set(wallet, r.value);
+      polled.add(wallet);
+    } else errors.push(r.error);
+  }
+  tracker.runs += 1;
+  if (polled.size === 0 && toPoll.length > 0) throw new NoVenueError("whales", errors);
+  tracker.apply(next, polled, now);
+  const marks = await settle("binance", hl.markPrices());
+  const markMap = "value" in marks ? marks.value : new Map<string, number>();
+  if ("error" in marks) errors.push(marks.error);
+  const activity = await store.appendSeries("whales:activity", { t: hourOf(now), v: Math.round(tracker.hour.v) }, 24 * 7);
+  const books = await Promise.all(opts.symbols.map((s) => settle("bybit", ctx.adapters.bybit.orderbook(s))));
+  const fresh: LargeOrder[] = [];
+  const scope = new Set<string>();
+  books.forEach((b, i) => {
+    const symbol = opts.symbols[i]!.toUpperCase();
+    if ("value" in b) {
+      scope.add(symbol);
+      fresh.push(...wallsFrom(b.value, symbol, "bybit", now, tracker.opts.wallMinUsd));
+    } else errors.push(b.error);
+  });
+  tracker.walls = mergeWalls(tracker.walls, fresh, scope, now);
+  const sources: string[] = [];
+  if (polled.size > 0) sources.push(`Hyperliquid (${tracker.candidateSource === "leaderboard" ? "leaderboard scan" : "watched wallets"})`);
+  if (scope.size > 0) sources.push("Bybit order books");
+  return finish({
+    dataset: "whales",
+    key: analyticsKey("whales"),
+    source: sources.join(" · ") || "no venue connected",
+    asOf: now,
+    ttlMs: ctx.ttlMs,
+    stale: sources.length === 0,
+    data: {
+      positions: tracker.openPositions(markMap),
+      alerts: tracker.alerts,
+      activity,
+      index: whaleIndex(activity, now),
+      wallets: { candidates: tracker.candidates.length + opts.wallets.length, polled: polled.size, withPositions: tracker.walletsWithPositions(), source: tracker.candidateSource },
+      largeOrders: tracker.walls,
+      alertMinUsd: tracker.opts.alertMinUsd,
+      wallMinUsd: tracker.opts.wallMinUsd,
+    },
+  });
 }
 
 /** Polls OKX's recent liquidations for every tracked symbol into the buffer, then folds the buffer (with the Binance and Bybit streams' events) into the snapshot. */

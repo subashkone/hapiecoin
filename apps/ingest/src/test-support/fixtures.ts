@@ -94,6 +94,19 @@ export const coingeckoTickers = {
   binance: { name: "Binance", tickers: [{ base: "BTC", target: "USDT", last: 80000 }, { base: "BTC", target: "BUSD", last: null }] },
 };
 
+/** Two whale wallets: one holds a $160M BTC short and a $2M ETH long, the other nothing; the leaderboard lists both plus a third. */
+export const WHALE_A = "0x5b5d51203a0f9079f8aeb098a6523a13f298c060";
+export const WHALE_B = "0xb83de012e4b7c6e9c5d5d3ac6d55bd9f2c1f2b1a";
+export const WHALE_C = "0x7fdafde5fd1b7c3b5ab7a8e7c6d5e4f3a2b1c0d9";
+export const hyperliquid = {
+  leaderboard: { leaderboardRows: [{ ethAddress: WHALE_B.toUpperCase().replace("0X", "0x"), accountValue: "62000000", windowPerformances: [] }, { ethAddress: WHALE_A, accountValue: "207000000", windowPerformances: [] }, { ethAddress: WHALE_C, accountValue: "57000000", windowPerformances: [] }] },
+  stateA: { marginSummary: { accountValue: "111000000", totalNtlPos: "162000000" }, assetPositions: [{ type: "oneWay", position: { coin: "BTC", szi: "-2024.7", leverage: { type: "cross", value: 5 }, entryPx: "72155.2", positionValue: "160803631.77", unrealizedPnl: "-14705353.3", liquidationPx: "127257.09", marginUsed: "32160726.35" } }, { type: "oneWay", position: { coin: "ETH", szi: "700", leverage: { type: "isolated", value: 3 }, entryPx: "2900", positionValue: "2100000", unrealizedPnl: "70000", liquidationPx: null, marginUsed: "700000" } }, { type: "oneWay", position: { coin: "DOGE", szi: "0", entryPx: null, positionValue: "0" } }] },
+  stateEmpty: { marginSummary: { accountValue: "0", totalNtlPos: "0" }, assetPositions: [] },
+  metaCtxs: [{ universe: [{ name: "BTC" }, { name: "ETH" }, { name: "SOL" }] }, [{ markPx: "79470.0" }, { markPx: "3000.5" }, { markPx: null }]],
+};
+/** Bybit book with one $1.6M bid wall and one $0.8M ask (below a $1M threshold). */
+export const bybitBook = { retCode: 0, retMsg: "OK", result: { s: "BTCUSDT", a: [["79469.9", "10"], ["79470.0", "0.5"]], b: [["79396.0", "20"], ["79300.0", "1"]], ts: String(T0), u: 1 } };
+
 export const fng = { name: "Fear and Greed Index", data: [{ value: "42", value_classification: "Fear", timestamp: String(Math.floor(T0 / 1000)), time_until_update: "1000" }, { value: "60", value_classification: "Greed", timestamp: String(Math.floor(T0 / 1000) - 86_400) }] };
 
 /** A FakeFetch answering every endpoint the jobs call with the fixtures above. */
@@ -116,6 +129,13 @@ export function healthyFetch(): FakeFetch {
     .on("/v2/tickers", { body: delta.options })
     .on("/api/v3/exchanges/gdax/tickers", { body: coingeckoTickers.gdax })
     .on("/api/v3/exchanges/binance/tickers", { body: coingeckoTickers.binance })
+    .on("/Mainnet/leaderboard", { body: hyperliquid.leaderboard })
+    .on("/info", (_url, _n, init) => {
+      const body = JSON.parse(init.body ?? "{}") as { type: string; user?: string };
+      if (body.type === "metaAndAssetCtxs") return { body: hyperliquid.metaCtxs };
+      return { body: body.user === WHALE_A ? hyperliquid.stateA : hyperliquid.stateEmpty };
+    })
+    .on("/v5/market/orderbook", { body: bybitBook })
     .on("/api/v5/public/funding-rate", { body: okx.funding })
     .on("/api/v5/public/funding-rate-history", { body: okx.fundingHistory })
     .on("/api/v5/public/open-interest", { body: okx.oi })

@@ -1,6 +1,6 @@
 // Deterministic analytics snapshots for unit tests and Playwright (ADR-038): the same shapes the ingest service
 // writes, generated from a seeded random walk so charts and tables have realistic, stable data.
-import { type AnalyticsDataset, type AnalyticsSnapshot, type CycleData, type FundingData, type OptionsData, type PremiumData, type RsiData, type LiquidationEvent, type LiquidationsData, type LongShortData, type MarketRow, type OpenInterestData, type OverviewData, type SeriesPoint, type TakerVolumeData, RAINBOW_MULTIPLIERS, RAINBOW_NAMES, RSI_TIMEFRAMES, analyticsKey, fearGreedLabel, fundingApr, logLinearFit, maxPain, sma } from "@hapiecoin/schema";
+import { type AnalyticsDataset, type AnalyticsSnapshot, type CycleData, type FundingData, type OptionsData, type PremiumData, type RsiData, type WhalesData, type LiquidationEvent, type LiquidationsData, type LongShortData, type MarketRow, type OpenInterestData, type OverviewData, type SeriesPoint, type TakerVolumeData, RAINBOW_MULTIPLIERS, RAINBOW_NAMES, RSI_TIMEFRAMES, analyticsKey, fearGreedLabel, fundingApr, logLinearFit, maxPain, sma, whaleIndex } from "@hapiecoin/schema";
 
 /** Snapshot time: the current minute, so windowed views (1h liquidations, 12h heatmap) hold real events; values stay seeded. */
 const NOW = Math.floor(Date.now() / 60e3) * 60e3;
@@ -179,6 +179,43 @@ export function mockPremium(): PremiumData {
   return { symbol: "BTC", coinbaseUsd: 80_000 + last, binanceUsd: 80_000, premiumUsd: last, premiumPct: last / 80_000, points };
 }
 
+/** Twelve whale positions, twenty alerts over the last six hours, a 7-day hourly activity series and eight walls (PR 5.4b). */
+export function mockWhales(): WhalesData {
+  const r = rng(1700);
+  const wallets = Array.from({ length: 6 }, (_, i) => `0x${(0x5b5d5120 + i * 0x1111).toString(16).padStart(8, "0")}${"a1b2c3d4e5f6a7b8c9d0a1b2c3d4e5f6".slice(0, 32)}`);
+  const positions: WhalesData["positions"] = [];
+  for (let i = 0; i < 12; i++) {
+    const c = COINS[i % 5]!;
+    const side = r() > 0.45 ? "long" : "short";
+    const notional = Math.round(2e6 + Math.pow(r(), 2) * 160e6);
+    const entry = c[2] * (1 + (r() - 0.5) * 0.08);
+    const lev = [3, 5, 10, 20][Math.floor(r() * 4)]!;
+    const pnl = (c[2] - entry) * (notional / entry) * (side === "long" ? 1 : -1);
+    positions.push({ wallet: wallets[i % wallets.length]!, coin: c[0], side, size: notional / c[2], notionalUsd: notional, entryPx: entry, markPx: c[2], liquidationPx: side === "long" ? entry * (1 - 0.9 / lev) : entry * (1 + 0.9 / lev), unrealizedPnl: pnl, leverage: lev, leverageType: lev > 5 ? "isolated" : "cross", marginUsed: notional / lev });
+  }
+  positions.sort((a, b) => b.notionalUsd - a.notionalUsd);
+  const alerts: WhalesData["alerts"] = [];
+  for (let k = 0; k < 20; k++) {
+    const p = positions[k % positions.length]!;
+    const action = (["opened", "increased", "reduced", "closed", "flipped"] as const)[Math.floor(r() * 5)]!;
+    const change = Math.round(1e6 + Math.pow(r(), 2) * 40e6);
+    alerts.push({ t: NOW - Math.floor(r() * 6 * 3600e3), wallet: p.wallet, coin: p.coin, side: p.side, action, changeUsd: change, positionUsd: action === "closed" ? 0 : p.notionalUsd, entryPx: p.entryPx, leverage: p.leverage });
+  }
+  alerts.sort((a, b) => b.t - a.t);
+  const hour = Math.floor(NOW / 3600e3) * 3600e3;
+  const activity = Array.from({ length: 24 * 7 }, (_, i) => ({ t: hour - (24 * 7 - 1 - i) * 3600e3, v: Math.round(Math.pow(rng(1800 + i)(), 3) * 120e6) }));
+  activity[activity.length - 1] = { t: hour, v: alerts.filter((a) => a.t >= hour).reduce((s, a) => s + a.changeUsd, 0) };
+  const largeOrders: WhalesData["largeOrders"] = [];
+  for (let k = 0; k < 8; k++) {
+    const c = COINS[k % 3]!;
+    const side = k % 2 === 0 ? "bid" : "ask";
+    const px = c[2] * (side === "bid" ? 1 - (k + 1) * 0.004 : 1 + (k + 1) * 0.004);
+    const usd = Math.round(1e6 + r() * 4e6);
+    largeOrders.push({ venue: "bybit", symbol: c[0], side, price: Math.round(px * 100) / 100, qty: usd / px, usd, firstSeen: NOW - (k + 1) * 7 * 60e3, lastSeen: k === 7 ? NOW - 9 * 60e3 : NOW, resting: k !== 7 });
+  }
+  return { positions, alerts, activity, index: whaleIndex(activity, NOW), wallets: { candidates: 203, polled: 14, withPositions: 6, source: "leaderboard" }, largeOrders, alertMinUsd: 1e6, wallMinUsd: 1e6 };
+}
+
 /** Every snapshot keyed the way the API serves them; the per-symbol datasets cover all ten mock coins. */
 export function mockAnalyticsSnapshots(): Map<string, AnalyticsSnapshot> {
   const map = new Map<string, AnalyticsSnapshot>();
@@ -193,6 +230,7 @@ export function mockAnalyticsSnapshots(): Map<string, AnalyticsSnapshot> {
   map.set(analyticsKey("cycle"), envelope("cycle", analyticsKey("cycle"), "Bybit spot · daily closes", mockCycle(), 3_600_000));
   map.set(analyticsKey("rsi"), envelope("rsi", analyticsKey("rsi"), "Bybit perpetuals", mockRsi(), 300_000));
   map.set(analyticsKey("premium"), envelope("premium", analyticsKey("premium"), "Coinbase · Binance via CoinGecko", mockPremium(), 3_600_000));
+  map.set(analyticsKey("whales"), envelope("whales", analyticsKey("whales"), "Hyperliquid (leaderboard scan) · Bybit order books", mockWhales(), 60_000));
   map.set(analyticsKey("overview"), envelope("overview", analyticsKey("overview"), "Binance · Bybit · OKX · alternative.me · CoinGecko", mockOverview()));
   map.set(analyticsKey("markets"), envelope("markets", analyticsKey("markets"), "CoinGecko", { rows: mockMarketRows(), global: { totalMarketCap: 2.9e12, volume24h: 9e10, btcDominance: 55.1, ethDominance: 12.4 } }, 600_000));
   const fg = mockOverview().fearGreedHistory;

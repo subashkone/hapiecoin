@@ -2,10 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SectionSoon } from "@/components/analytics/AnalyticsShell";
 
-/** Sections that arrive with PR 5.4b keep a real page inside the shell (HC-SH-016). */
-export const SOON: Record<string, { title: string; release: string; blurb: string }> = {
-  whales: { title: "Whales", release: "PR 5.4b", blurb: "Hyperliquid whale positions, large resting orders and exchange reserves." },
-};
+/** Every analytics section now has its own page; this map is kept for the next deferred section (HC-SH-016). */
+export const SOON: Record<string, { title: string; release: string; blurb: string }> = {};
 
 export async function generateMetadata({ params }: { params: Promise<{ section: string }> }): Promise<Metadata> {
   const { section } = await params;

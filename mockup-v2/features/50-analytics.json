@@ -532,8 +532,8 @@
   "screen": "Whales",
   "feature": "Tiles: Tracked whale longs, Tracked whale shorts, Large limit orders",
   "how": "Sums of CG.mock.whalePositions by side (with uPnL) and count/value of CG.mock.largeOrders",
-  "status": "static",
-  "evidence": "bundle strings: Tracked whale longs, Tracked whale shorts, Large limit orders"
+  "status": "working",
+  "evidence": "bundle strings: Tracked whale longs, Tracked whale shorts, Large limit orders — Phase 5 item 5 PR 5.4b (09 Sep 2026, ADR-043): whales-tiles: Tracked whale longs / shorts (notional, positions, uPnL) from the `whales` dataset; Large limit orders (count, resting USD, Bybit)"
  },
  {
   "route": "/analytics/whales",
@@ -541,7 +541,7 @@
   "feature": "Hyperliquid Whale Alerts · Live large position opens/closes (>$1M) feed",
   "how": "Shows 'Waiting for events…' for 1.5 s, then rows from CG.mock.whaleAlerts (time, wallet, coin, Long/Short badge, opened/closed · leverage · entry, value); a new alert arrives every ~20 s with a flash; timers cleared in hide()",
   "status": "working",
-  "evidence": "bundle strings: Hyperliquid Whale Alerts, Live large position opens/closes (>$1M), Waiting for events…, whale-alert"
+  "evidence": "bundle strings: Hyperliquid Whale Alerts, Live large position opens/closes (>$1M), Waiting for events…, whale-alert — Phase 5 item 5 PR 5.4b (09 Sep 2026, ADR-043): whale-feed: newest 100 alerts (opened / closed / added to / trimmed / flipped ≥ $1M) from position diffs between one-minute polls of the scanned Hyperliquid wallets; new rows highlighted"
  },
  {
   "route": "/analytics/whales",
@@ -549,7 +549,7 @@
   "feature": "Chart: Whale Index · Composite large-trader activity score · hourly (area)",
   "how": "CG.mock.whaleIndex 0-100 with a 50 reference line and tooltip",
   "status": "working",
-  "evidence": "bundle strings: Whale Index, Composite large-trader activity score · hourly, whale_index_value, url(#wiFill)"
+  "evidence": "bundle strings: Whale Index, Composite large-trader activity score · hourly, whale_index_value, url(#wiFill) — Phase 5 item 5 PR 5.4b (09 Sep 2026, ADR-043): chart-index: hourly alert notional kept by the ingest (7 days) with 1D/7D chips; the Whale Index is our composite (current hour vs busiest hour), labelled as such"
  },
  {
   "route": "/analytics/whales",
@@ -557,7 +557,7 @@
   "feature": "Table: Open Whale Positions · Largest open positions on Hyperliquid (Wallet, Coin, Side, Position, Entry, Mark, Liq Price, uPnL)",
   "how": "Sortable; Side badge includes leverage; uPnL signed and coloured",
   "status": "working",
-  "evidence": "bundle strings: Open Whale Positions, Largest open positions on Hyperliquid, Wallet, Coin, Side, Position, Entry, Mark, Liq Price, uPnL, whale-position"
+  "evidence": "bundle strings: Open Whale Positions, Largest open positions on Hyperliquid, Wallet, Coin, Side, Position, Entry, Mark, Liq Price, uPnL, whale-position — Phase 5 item 5 PR 5.4b (09 Sep 2026, ADR-043): table-whale-positions: Wallet, Coin, Side ×lev, Position, Entry, Mark (from metaAndAssetCtxs), Liq Price, uPnL (+ Margin hidden); search · Columns ▾ · CSV; row → coin page"
  },
  {
   "route": "/analytics/whales",
@@ -565,15 +565,15 @@
   "feature": "Table: Large limit orders · Resting buy/sell walls on Binance futures (Time, Exchange, Symbol, Side, Limit Price, Value, Placed)",
   "how": "CG.mock.largeOrders; Buy/Sell badges; 'Placed' shows relative time and placed/filled status",
   "status": "working",
-  "evidence": "bundle strings: Resting buy/sell walls on Binance futures, Limit Price, Value, Placed, placed, BTCUSDT, large-limit-orders"
+  "evidence": "bundle strings: Resting buy/sell walls on Binance futures, Limit Price, Value, Placed, placed, BTCUSDT, large-limit-orders — Phase 5 item 5 PR 5.4b (09 Sep 2026, ADR-043): table-large-orders: Seen, Exchange (Bybit; Binance is unreachable from the ingest), Symbol, Side, Limit Price, Value, Placed with resting / gone badge (first-seen tracking, gone walls kept 30 min)"
  },
  {
   "route": "/analytics/whales",
   "screen": "Whales",
   "feature": "Table: Exchange BTC Reserves · On-chain balances · falling reserves = supply leaving exchanges (Exchange, BTC Balance, Δ 24h, Δ 7d, Δ 30d)",
   "how": "CG.mock.exchanges balances with heat cells for each Δ",
-  "status": "working",
-  "evidence": "bundle strings: Exchange BTC Reserves, On-chain balances · falling reserves = supply leaving exchanges, BTC Balance, Δ 24h, Δ 7d, Δ 30d, exchange-balance-list"
+  "status": "static",
+  "evidence": "bundle strings: Exchange BTC Reserves, On-chain balances · falling reserves = supply leaving exchanges, BTC Balance, Δ 24h, Δ 7d, Δ 30d, exchange-balance-list — Phase 5 item 5 PR 5.4b (09 Sep 2026, ADR-043): ComingSoon: exchange reserves need a paid on-chain provider (GAPS #55)"
  },
  {
   "route": "/analytics/sentiment",
@@ -963,7 +963,7 @@
   "how": "New tile with a compact arc gauge (Quiet/Active/Frenzy); the Whale Index chart gets 1D–1Y chips; positions/reserves tables get CSV",
   "status": "working",
   "new": true,
-  "evidence": "v2 upgrade"
+  "evidence": "v2 upgrade — Phase 5 item 5 PR 5.4b (09 Sep 2026, ADR-043): Whale Index gauge in the fourth tile (Quiet / Active / Frenzy) and 1D/7D chips on the index chart"
  },
  {
   "route": "/analytics/sentiment",

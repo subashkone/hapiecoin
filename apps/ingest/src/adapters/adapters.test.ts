@@ -2,9 +2,10 @@
 import { describe, expect, it } from "vitest";
 import { JsonClient } from "../http.js";
 import { FakeFetch } from "../test-support/fake-fetch.js";
-import { KLINE_DAYS, LAST_CLOSE, T0, binance, bybit, coingecko, fng, healthyFetch, okx } from "../test-support/fixtures.js";
+import { KLINE_DAYS, LAST_CLOSE, T0, WHALE_A, WHALE_B, WHALE_C, binance, bybit, coingecko, fng, healthyFetch, okx } from "../test-support/fixtures.js";
 import { DeltaAdapter, parseDeltaSymbol } from "./delta.js";
 import { DeribitAdapter, parseDeribitName } from "./deribit.js";
+import { HyperliquidAdapter } from "./hyperliquid.js";
 import { BinanceAdapter, perpSymbol } from "./binance.js";
 import { BybitAdapter, BybitError } from "./bybit.js";
 import { CoinGeckoAdapter, thin } from "./coingecko.js";
@@ -47,6 +48,12 @@ describe("[INGEST] Bybit adapter", () => {
     expect(k).toHaveLength(KLINE_DAYS);
     expect(k[0]!.t).toBeLessThan(k[1]!.t);
     expect(k.at(-1)).toEqual({ t: T0, close: LAST_CLOSE });
+    const book = await b.orderbook("BTC");
+    expect(book.bids[0]).toEqual({ price: 79396, qty: 20 });
+    expect(book.asks).toHaveLength(2);
+    expect(book.ts).toBe(T0);
+    await expect(new BybitAdapter(client(new FakeFetch().on("/v5/market/orderbook", { body: { retCode: 10001, retMsg: "params error", result: { a: [], b: [], ts: "1" } } })), "https://bybit").orderbook("BTC")).rejects.toBeInstanceOf(BybitError);
+    await expect(new BybitAdapter(client(new FakeFetch().on("/v5/market/orderbook", { body: { retCode: 7, result: { a: [], b: [], ts: "1" } } })), "https://bybit").orderbook("BTC")).rejects.toThrow("Bybit retCode 7");
   });
   it("raises BybitError on a non-zero retCode, an empty ticker list and a zero sell ratio", async () => {
     const f = new FakeFetch().on("/v5/market/tickers", { body: { retCode: 0, result: { list: [] } } }).on("/v5/market/funding/history", { body: bybit.error }).on("/v5/market/account-ratio", { body: { retCode: 0, result: { list: [{ buyRatio: "1", sellRatio: "0", timestamp: "1" }] } } });
@@ -77,6 +84,23 @@ describe("[INGEST] Deribit and Delta option adapters", () => {
     expect(dl).toHaveLength(3);
     expect(dl[2]).toMatchObject({ strike: 90000, oi: 0, volumeUsd: 0, underlyingPrice: null });
     expect(dl[1]).toMatchObject({ strike: 75000, type: "put", oi: 0.5, volumeUsd: 100, underlyingPrice: 80100 });
+  });
+});
+
+describe("[INGEST] Hyperliquid adapter", () => {
+  it("ranks the leaderboard, maps positions (sign → side, zero and priceless rows skipped) and reads mark prices", async () => {
+    const h = new HyperliquidAdapter({ http: client(healthyFetch()), baseUrl: "https://hl/", leaderboardUrl: "https://hl-stats/Mainnet/leaderboard" });
+    expect(await h.leaderboard(2)).toEqual([WHALE_A, WHALE_B]);
+    expect(await h.leaderboard(10)).toEqual([WHALE_A, WHALE_B, WHALE_C]);
+    const ps = await h.positions(WHALE_A);
+    expect(ps).toHaveLength(2);
+    expect(ps[0]).toMatchObject({ wallet: WHALE_A, coin: "BTC", side: "short", size: 2024.7, notionalUsd: 160803631.77, entryPx: 72155.2, markPx: null, liquidationPx: 127257.09, leverage: 5, leverageType: "cross", marginUsed: 32160726.35 });
+    expect(ps[1]).toMatchObject({ coin: "ETH", side: "long", liquidationPx: null, leverage: 3, leverageType: "isolated" });
+    expect(await h.positions(WHALE_B)).toEqual([]);
+    const marks = await h.markPrices();
+    expect([...marks.entries()]).toEqual([["BTC", 79470], ["ETH", 3000.5]]);
+    const bare = new HyperliquidAdapter({ http: client(new FakeFetch().on("/info", { body: { assetPositions: [{ position: { coin: "X", szi: "1", entryPx: "2", positionValue: "2" } }] } })), baseUrl: "https://hl", leaderboardUrl: "https://hl-stats/x" });
+    expect((await bare.positions(WHALE_C))[0]).toMatchObject({ leverage: 1, leverageType: "cross", marginUsed: 0, unrealizedPnl: 0, liquidationPx: null });
   });
 });
 

@@ -5,6 +5,7 @@
  *   GET /v5/market/open-interest?category=linear&symbol=&intervalTime=5min&limit=   (openInterest in base units)
  *   GET /v5/market/account-ratio?category=linear&symbol=&period=1h&limit=           buyRatio / sellRatio
  *   GET /v5/market/kline?category=&symbol=&interval=&limit=  [startTime, open, high, low, close, volume, turnover] newest first (limit ≤ 1000)
+ *   GET /v5/market/orderbook?category=linear&symbol=&limit=500   { s, a: [[price, size]], b: [[price, size]], ts, u }
  * Responses wrap data in { retCode, retMsg, result: { list } }; retCode 0 = ok.
  */
 import type { SeriesPoint } from "@hapiecoin/schema";
@@ -20,6 +21,13 @@ const FundingRow = z.looseObject({ fundingRate: num, fundingRateTimestamp: num }
 const OiRow = z.looseObject({ openInterest: num, timestamp: num });
 const RatioRow = z.looseObject({ buyRatio: num, sellRatio: num, timestamp: num });
 const KlineRow = z.tuple([num, num, num, num, num]).rest(z.unknown());
+const Level = z.tuple([num, num]).rest(z.unknown());
+const Book = z.looseObject({ retCode: num, retMsg: z.string().optional(), result: z.looseObject({ a: z.array(Level), b: z.array(Level), ts: num }) });
+export interface OrderBook {
+  asks: { price: number; qty: number }[];
+  bids: { price: number; qty: number }[];
+  ts: number;
+}
 export type BybitInterval = "1" | "3" | "5" | "15" | "30" | "60" | "120" | "240" | "360" | "720" | "D" | "W" | "M";
 
 export class BybitError extends Error {
@@ -73,6 +81,14 @@ export class BybitAdapter {
   async klines(symbol: string, interval: BybitInterval, limit = 200, category: "spot" | "linear" = "linear"): Promise<{ t: number; close: number }[]> {
     const rows = await this.list("/v5/market/kline", KlineRow, { category, symbol: perpSymbol(symbol), interval, limit });
     return rows.map((r) => ({ t: r[0], close: r[4] })).sort((a, b) => a.t - b.t);
+  }
+
+  /** Up to 500 levels per side of the linear perpetual book. */
+  async orderbook(symbol: string, limit = 500): Promise<OrderBook> {
+    const res = await this.http.get(`${this.baseUrl}/v5/market/orderbook`, Book, { category: "linear", symbol: perpSymbol(symbol), limit });
+    if (res.retCode !== 0) throw new BybitError(res.retCode, res.retMsg ?? `Bybit retCode ${res.retCode}`);
+    const lv = (rows: [number, number, ...unknown[]][]) => rows.map(([price, qty]) => ({ price, qty }));
+    return { asks: lv(res.result.a), bids: lv(res.result.b), ts: res.result.ts };
   }
 
   async accountRatio(symbol: string, period: "5min" | "15min" | "30min" | "1h" | "4h" | "1d" = "1h", limit = 168): Promise<RatioPoint[]> {

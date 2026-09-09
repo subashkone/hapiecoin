@@ -4,18 +4,21 @@ import { BybitAdapter } from "./adapters/bybit.js";
 import { CoinGeckoAdapter } from "./adapters/coingecko.js";
 import { DeltaAdapter } from "./adapters/delta.js";
 import { DeribitAdapter } from "./adapters/deribit.js";
+import { HyperliquidAdapter } from "./adapters/hyperliquid.js";
+import { WhaleTracker } from "./whales.js";
 import { FearGreedAdapter } from "./adapters/feargreed.js";
 import { OkxAdapter } from "./adapters/okx.js";
 import { JsonClient } from "./http.js";
-import { type Adapters, type JobContext, NoVenueError, buildCycle, buildFearGreed, buildFunding, buildLiquidations, buildLongShort, buildMarkets, buildOpenInterest, buildOptions, buildPremium, buildRsi, buildTakerVolume, sumSeries, toError, weightedSeries } from "./jobs.js";
+import { type Adapters, type JobContext, NoVenueError, buildCycle, buildFearGreed, buildFunding, buildLiquidations, buildLongShort, buildMarkets, buildOpenInterest, buildOptions, buildPremium, buildRsi, buildTakerVolume, buildWhales, sumSeries, toError, weightedSeries } from "./jobs.js";
 import { MemoryStore } from "./store.js";
 import { LiquidationBuffer } from "./liquidations.js";
 import { FakeFetch } from "./test-support/fake-fetch.js";
-import { KLINE_DAYS, LAST_CLOSE, T0, bybit, delta, deribit, healthyFetch, okx } from "./test-support/fixtures.js";
+const bybitBookEmpty = { retCode: 0, retMsg: "OK", result: { s: "BTCUSDT", a: [], b: [], ts: String(T0), u: 2 } };
+import { KLINE_DAYS, LAST_CLOSE, T0, WHALE_A, WHALE_B, WHALE_C, bybit, delta, deribit, healthyFetch, hyperliquid, okx } from "./test-support/fixtures.js";
 
 function adapters(f: FakeFetch, coingecko = true): Adapters {
   const c = new JsonClient({ fetch: f.fetch, sleep: () => Promise.resolve() });
-  return { binance: new BinanceAdapter(c, "https://fapi"), bybit: new BybitAdapter(c, "https://bybit"), okx: new OkxAdapter(c, "https://okx"), coingecko: coingecko ? new CoinGeckoAdapter(c, "https://cg/api/v3", "k") : null, fearGreed: new FearGreedAdapter(c, "https://alt/fng/"), deribit: new DeribitAdapter(c, "https://deribit/api/v2"), delta: new DeltaAdapter(c, "https://delta") };
+  return { binance: new BinanceAdapter(c, "https://fapi"), bybit: new BybitAdapter(c, "https://bybit"), okx: new OkxAdapter(c, "https://okx"), coingecko: coingecko ? new CoinGeckoAdapter(c, "https://cg/api/v3", "k") : null, fearGreed: new FearGreedAdapter(c, "https://alt/fng/"), deribit: new DeribitAdapter(c, "https://deribit/api/v2"), delta: new DeltaAdapter(c, "https://delta"), hyperliquid: new HyperliquidAdapter({ http: c, baseUrl: "https://hl", leaderboardUrl: "https://hl-stats/Mainnet/leaderboard" }) };
 }
 const ctx = (f: FakeFetch, coingecko = true): JobContext => ({ adapters: adapters(f, coingecko), now: () => T0, ttlMs: 60_000 });
 
@@ -185,6 +188,62 @@ describe("[INGEST] dataset builders", () => {
     expect(again.dataset === "premium" ? again.data.points : []).toHaveLength(1); // same hour overwrites
     await expect(buildPremium(ctx(healthyFetch(), false), store)).rejects.toThrow("COINGECKO_API_KEY");
     await expect(buildPremium(ctx(healthyFetch().on("/api/v3/exchanges/gdax/tickers", { body: { tickers: [] } })), store)).rejects.toThrow(/no BTC\/USD ticker on gdax/);
+  });
+  it("whales: scans the leaderboard, diffs positions into alerts, keeps the hourly activity and the Bybit walls", async () => {
+    const tracker = new WhaleTracker({ alertMinUsd: 1_000_000, wallMinUsd: 1_000_000 });
+    const store = new MemoryStore();
+    const opts = { symbols: ["BTC"], wallets: [WHALE_C], candidates: 200 };
+    const s = await buildWhales(ctx(healthyFetch()), tracker, store, opts);
+    if (s.dataset !== "whales") throw new Error("wrong dataset");
+    expect(s.source).toBe("Hyperliquid (leaderboard scan) · Bybit order books");
+    expect(tracker.candidates).toEqual([WHALE_A, WHALE_B]); // sorted by account value, env wallet excluded
+    expect(s.data.wallets).toEqual({ candidates: 3, polled: 3, withPositions: 1, source: "leaderboard" });
+    expect(s.data.positions.map((p) => [p.coin, p.side, p.markPx])).toEqual([["BTC", "short", 79470], ["ETH", "long", 3000.5]]);
+    expect(s.data.alerts.map((a) => a.action)).toEqual(["opened", "opened"]);
+    expect(s.data.alerts[0]?.changeUsd).toBeCloseTo(160803631.77, 2);
+    expect(s.data.activity).toEqual([{ t: Math.floor(T0 / 3_600_000) * 3_600_000, v: Math.round(160803631.77 + 2100000) }]);
+    expect(s.data.index).toBe(100); // the busiest (only) hour
+    expect(s.data.largeOrders).toHaveLength(1);
+    expect(s.data.largeOrders[0]).toMatchObject({ venue: "bybit", symbol: "BTC", side: "bid", price: 79396, usd: 1_587_920, resting: true });
+    // second run: incremental poll (only wallets with positions + env), no new alerts, walls carried
+    const again = await buildWhales(ctx(healthyFetch()), tracker, store, opts);
+    if (again.dataset !== "whales") throw new Error("wrong dataset");
+    expect(again.data.wallets.polled).toBe(2);
+    expect(again.data.alerts).toHaveLength(2);
+    expect(again.data.largeOrders[0]?.firstSeen).toBe(T0);
+    // the whale closes everything → closed alerts; the book empties → wall listed as gone
+    const kind = (body: string | undefined) => (JSON.parse(body ?? "{}") as { type: string }).type;
+    const closed = healthyFetch().on("/info", (_u, _n, init) => ({ body: kind(init.body) === "metaAndAssetCtxs" ? hyperliquid.metaCtxs : hyperliquid.stateEmpty })).on("/v5/market/orderbook", { body: { ...bybitBookEmpty } });
+    const gone = await buildWhales({ ...ctx(closed), now: () => T0 + 60_000 }, tracker, store, opts);
+    if (gone.dataset !== "whales") throw new Error("wrong dataset");
+    expect(gone.data.alerts.slice(0, 2).map((a) => a.action)).toEqual(["closed", "closed"]);
+    expect(gone.data.positions).toEqual([]);
+    expect(gone.data.largeOrders[0]?.resting).toBe(false);
+    // leaderboard down after the TTL: candidates kept, error tolerated; marks down: markPx falls back to null
+    tracker.candidatesAt = 0;
+    const lbDown = healthyFetch().on("/Mainnet/leaderboard", { status: 500, text: "down" }).on("/info", (_u, _n, init) => (kind(init.body) === "metaAndAssetCtxs" ? { status: 500, text: "down" } : { body: hyperliquid.stateA }));
+    const kept = await buildWhales({ ...ctx(lbDown), now: () => T0 + 120_000 }, tracker, store, opts);
+    if (kept.dataset !== "whales") throw new Error("wrong dataset");
+    expect(tracker.candidates).toEqual([WHALE_A, WHALE_B]);
+    expect(kept.data.positions[0]?.markPx).toBeNull();
+    expect(kept.data.alerts[0]?.action).toBe("opened");
+    // nothing reachable: the job fails
+    const dead = new FakeFetch();
+    const fresh = new WhaleTracker({ alertMinUsd: 1e6, wallMinUsd: 1e6 });
+    await expect(buildWhales(ctx(dead), fresh, store, opts)).rejects.toBeInstanceOf(NoVenueError);
+    expect(fresh.candidateSource).toBe("env");
+    // leaderboard down and no wallets: an empty but valid snapshot with no source
+    const noneTracker = new WhaleTracker();
+    const none = await buildWhales(ctx(dead), noneTracker, store, { symbols: [], wallets: [], candidates: 1 });
+    expect(none.source).toBe("no venue connected");
+    expect(none.stale).toBe(true);
+    expect(noneTracker.candidateSource).toBe("none");
+    // leaderboard down but the watched wallet answers: source says so
+    const watched = await buildWhales(ctx(healthyFetch().on("/Mainnet/leaderboard", { status: 500, text: "down" })), new WhaleTracker(), store, { symbols: [], wallets: [WHALE_A], candidates: 200 });
+    expect(watched.source).toBe("Hyperliquid (watched wallets)");
+    const bookDown = await buildWhales(ctx(healthyFetch().on("/v5/market/orderbook", { status: 500, text: "down" })), new WhaleTracker(), store, { symbols: ["BTC"], wallets: [WHALE_A], candidates: 0 });
+    expect(bookDown.source).toBe("Hyperliquid (watched wallets)"); // no book, no "Bybit order books" in the source
+    expect(watched.dataset === "whales" ? watched.data.wallets.source : "").toBe("env");
   });
   it("rejects a snapshot that fails the schema", async () => {
     const bad = healthyFetch().on("/fng/", { body: { data: [{ value: "50", timestamp: "-1" }] } });

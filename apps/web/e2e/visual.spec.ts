@@ -147,6 +147,10 @@ for (const theme of ["dark", "light"] as const) {
       await page.goto("/analytics/etf");
       await expect(page.getByTestId("etf-page")).toHaveAttribute("data-state", "soon");
       await page.screenshot({ path: `${DIR}/analytics-etf-${theme}.png`, fullPage: true });
+      await page.goto("/analytics/whales");
+      await expect(page.getByTestId("table-whale-positions")).toHaveAttribute("data-rows", "12", { timeout: 15_000 });
+      await expect(page.getByTestId("chart-index")).toHaveAttribute("data-state", "ready");
+      await page.screenshot({ path: `${DIR}/analytics-whales-${theme}.png`, fullPage: true });
     });
 
     test(`HC-PB-042 /payoff-preview ${theme}`, async ({ page }) => {
