@@ -1,9 +1,9 @@
 # System patterns · HapieCoin
 
 ## Stack (ADR-004, ADR-005)
-- Monorepo: pnpm + Turborepo. `apps/web` (Next.js 16, React 19, TS, Tailwind v4, shadcn), `apps/api` (Hono on Node 22, Zod + OpenAPI, Drizzle), `apps/gateway` (market data on uWebSockets.js), `apps/workers` (BullMQ). `packages/pricing` (Black-76, runs in a Web Worker), `packages/schema` (shared Zod), `packages/venues` (Delta, Binance adapters), `packages/ui`, `packages/config`.
+- Monorepo: pnpm + Turborepo. `apps/web` (Next.js 16, React 19 + React Compiler, TS, Tailwind v4, shadcn), `apps/api` (Hono on Node 24, Zod + OpenAPI, Drizzle; the IV snapshotter, alerts evaluator, reconciler and Telegram poller run inside this process), `apps/gateway` (market data over `ws`, one shared Delta session per process), `apps/ingest` (analytics jobs on a hand-rolled scheduler; no queue, no BullMQ). `packages/pricing` (Black-76, runs in a Web Worker), `packages/schema` (shared Zod), `packages/venues` (Delta, Binance adapters; no generic venue port yet, ADR-060), `packages/ui`, `packages/config`.
 - Data: PostgreSQL 17 + TimescaleDB, Redis 7. Auth: Better Auth. Payments: Razorpay. Deploy: Docker behind Cloudflare.
-- Client state: TanStack Query for server data, Zustand for UI state, TanStack Table/Virtual for the chain, uPlot canvas charts.
+- Client state: TanStack Query for server data, Zustand for UI state, TanStack Virtual for the chain, hand-written canvas charts (no chart library).
 
 ## Market data (see auto-memory `coingreeks-original-site-facts`)
 - Delta Exchange India public REST `/v2/products`, `/v2/tickers`, `/v2/history/candles`; WS `wss://socket.india.delta.exchange` channel `v2/ticker`. Binance `<sym>usdt@miniTicker` for spot.
