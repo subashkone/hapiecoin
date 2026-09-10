@@ -121,7 +121,9 @@ describe("HC-SH-001 analyse header", () => {
       ws.receive({ t: "snap", topic, seq: 0, rows: buildChain("BTC", expiry) });
     });
     await waitFor(() => expect(scr.getByTestId("header-atm-iv").dataset["state"]).toBe("ready"));
-    expect(scr.getByTestId("header-atm-iv").textContent).toMatch(/ATM IV\d+\.\d%IV rank —/);
+    expect(scr.getByTestId("header-atm-iv").textContent).toMatch(/ATM IV\d+\.\d%IV rank (\d+|—)/);
+    // ADR-056: the rank arrives from the market history route
+    await waitFor(() => expect(scr.getByTestId("header-iv-rank").textContent).toMatch(/^IV rank \d+$/));
     expect(scr.getByTestId("header-exp-move").dataset["state"]).toBe("ready");
     expect(scr.getByTestId("header-exp-move").textContent).toMatch(/Exp\. move · 11 Sep± [\d,]+1σ/);
   });

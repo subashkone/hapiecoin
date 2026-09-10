@@ -41,6 +41,8 @@ export {
 } from "./security/rate-limit.js";
 export { createKeyring, createVault, keyIdOf, maskKey, VaultError } from "./vault.js";
 export { resealCredentials } from "./credentials-reseal.js";
+export { snapshotOnce, startIvSnapshotter, atmIvByExpiry, frontExpiry } from "./iv-snapshot.js";
+export { ivHistory, markHistory } from "./market-history.js";
 export type { Sealed, Vault } from "./vault.js";
 export { DEFAULT_SETTINGS } from "./routes/settings.js";
 export { planState, EXPIRING_SOON_DAYS } from "./routes/plan.js";

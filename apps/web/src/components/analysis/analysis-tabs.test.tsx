@@ -138,8 +138,26 @@ describe("HC-WS-094..097 Vol", () => {
     await u.click(within(panel).getByTestId("vol-show-legs-expiry"));
     expect(panel.dataset["expiry"]).toBe(EXPIRY);
     expect(within(panel).queryByTestId("vol-legs-hint")).toBeNull();
-    expect(within(panel).getAllByTestId("coming-soon")).toHaveLength(2);
-    expect(within(panel).getByTestId("panel-iv-rank").textContent).toContain("GAPS #62");
+    // HC-WS-096 / 097 (ADR-056): IV rank on the year's range with the interpretation line; realised vs implied with the spread
+    await waitFor(() => expect(within(panel).getByTestId("iv-rank")).toBeTruthy(), { timeout: 5000 });
+    const rank = within(panel).getByTestId("iv-rank");
+    expect(Number(rank.dataset["rank"])).toBeGreaterThanOrEqual(0);
+    expect(Number(rank.dataset["rank"])).toBeLessThanOrEqual(100);
+    expect(rank.dataset["days"]).toBe("365");
+    expect(within(panel).getByTestId("iv-rank-value").textContent).toMatch(/^\d+$/);
+    expect(within(panel).getByTestId("iv-rank-label").textContent).toMatch(/premium/);
+    expect(within(panel).getByTestId("rv-iv").dataset["days"]).toBe("30");
+    expect(within(panel).getByTestId("chart-rv-iv").dataset["state"]).toBe("ready");
+    expect(within(panel).getByTestId("rv-iv-spread").textContent).toMatch(/[+-]\d+\.\d pts/);
+    expect(within(panel).queryByTestId("coming-soon")).toBeNull();
+  });
+
+  it("HC-WS-096 / 097 read honestly while the API has no history yet (503)", async () => {
+    mock.state.ivHistoryDays = 0;
+    renderWithProviders(<AnalysisPane />);
+    await userEvent.setup().click(screen.getByTestId("analysis-tab-vol"));
+    await waitFor(() => expect(screen.getByTestId("iv-rank-waiting").dataset["state"]).toBe("none"), { timeout: 5000 });
+    expect(screen.getByTestId("rv-iv-waiting").textContent).toContain("No history yet");
   });
 
   it("a chain with rows but no mark IV is an empty smile, not a wait", async () => {

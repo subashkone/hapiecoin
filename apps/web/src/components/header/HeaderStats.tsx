@@ -9,6 +9,7 @@ import { atmIvOf } from "@/lib/chain/structure";
 import { useExpiries } from "@/lib/chain/useExpiries";
 import { daysToExpiry, fmtExpiry, fmtIv, fmtPrice } from "@/lib/format";
 import { useChain, useSpot } from "@/lib/gateway/hooks";
+import { useIvHistory } from "@/lib/api/market";
 import { useUiStore } from "@/lib/store";
 
 export interface HeaderStatValues {
@@ -37,13 +38,16 @@ export function useHeaderStats(): HeaderStatValues {
 
 export function HeaderStats() {
   const { expiry, atmIv, move } = useHeaderStats();
+  const asset = useUiStore((s) => s.asset);
+  const { data: history } = useIvHistory(asset);
+  const rank = history?.rank ? Math.round(history.rank.rank) : null;
   return (
     <>
-      <div className="hidden flex-col leading-tight min-[1180px]:flex" data-testid="header-atm-iv" data-state={atmIv === null ? "pending" : "ready"} title="ATM implied volatility of the shown expiry · IV rank needs the IV history (GAPS #62)">
+      <div className="hidden flex-col leading-tight min-[1180px]:flex" data-testid="header-atm-iv" data-state={atmIv === null ? "pending" : "ready"} title={rank === null ? "ATM implied volatility of the shown expiry · IV rank appears once two days of history exist (ADR-056)" : `ATM implied volatility of the shown expiry · IV rank ${rank} of 100 over the last ${history?.rank?.days ?? 0} days`}>
         <span className="micro text-[9.5px] max-[1000px]:hidden">ATM IV</span>
         <span className="flex items-baseline gap-1.5">
           <span className="num text-[15px] font-medium">{atmIv === null ? "—" : fmtIv(atmIv)}</span>
-          <span className="font-mono text-3xs text-muted-foreground">IV rank —</span>
+          <span className="font-mono text-3xs text-muted-foreground" data-testid="header-iv-rank">IV rank {rank === null ? "—" : rank}</span>
         </span>
       </div>
       <div className={cn("hidden flex-col leading-tight min-[1330px]:flex")} data-testid="header-exp-move" data-state={move === null ? "pending" : "ready"} title="Expected 1σ move of the futures price to the shown expiry (ATM IV × √time)">

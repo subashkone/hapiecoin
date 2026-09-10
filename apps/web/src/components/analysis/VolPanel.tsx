@@ -1,7 +1,7 @@
 "use client";
 // Vol tab (HC-WS-094..097): the smile of the shown expiry with the strategy's strikes marked, the ATM IV term
-// structure across the listed expiries (click switches the expiry), and the two panels that need an IV history
-// (IV rank, realised vs implied) as honest placeholders until the snapshotter lands (GAPS #62).
+// structure across the listed expiries (click switches the expiry), and the two history panels (IV rank, realised
+// vs implied) read from the API's snapshot history (ADR-056).
 import { expectedMove, smile } from "@hapiecoin/pricing";
 import { cn } from "@hapiecoin/ui";
 import { useMemo } from "react";
@@ -12,7 +12,8 @@ import { useChain } from "@/lib/gateway/hooks";
 import { useChains } from "@/lib/gateway/useChains";
 import { useUiStore } from "@/lib/store";
 import { Chart } from "@/components/analytics/Chart";
-import { ComingSoon, Panel } from "@/components/analytics/bits";
+import { Panel } from "@/components/analytics/bits";
+import { IvRankPanel, RvIvPanel } from "./VolHistory";
 
 const ivPct = (v: number | null | undefined) => (v === null || v === undefined || !Number.isFinite(v) ? "—" : `${(v * 100).toFixed(1)}%`);
 
@@ -81,12 +82,8 @@ export function VolPanel() {
         </div>
       </Panel>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Panel title="IV rank" sub="1-year range" testId="panel-iv-rank">
-          <ComingSoon title="IV rank needs an IV history" why="The per-instrument IV snapshotter (GAPS #62) has not landed; until then no 1-year range exists to rank today's IV against." gap={62} />
-        </Panel>
-        <Panel title="Realised vs implied" sub="30-day realised vol vs ATM IV" testId="panel-rv-iv">
-          <ComingSoon title="Realised vol needs price history" why="The 365-day underlying price and IV series arrive with the snapshotter (GAPS #62)." gap={62} />
-        </Panel>
+        <IvRankPanel asset={asset} />
+        <RvIvPanel asset={asset} />
       </div>
     </div>
   );

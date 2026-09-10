@@ -561,6 +561,37 @@ export const alerts = pgTable(
   (t) => [index("alerts_user_id_idx").on(t.userId)],
 );
 
+/** IV history (ADR-056, GAPS #62): ATM IV per listed expiry with the spot, every snapshot; `front` marks the expiry the daily series follows. */
+export const ivSnapshots = pgTable(
+  "iv_snapshots",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    asset: text("asset", { enum: ["BTC", "ETH", "XAUT"] }).notNull(),
+    expiry: text("expiry").notNull(),
+    ts: timestamp("ts", { withTimezone: true }).notNull(),
+    /** ATM implied volatility as a decimal fraction string ("0.42445"). */
+    atmIv: text("atm_iv").notNull(),
+    spot: text("spot").notNull(),
+    atmStrike: text("atm_strike").notNull(),
+    front: boolean("front").notNull().default(false),
+  },
+  (t) => [index("iv_snapshots_asset_ts_idx").on(t.asset, t.ts), index("iv_snapshots_front_idx").on(t.asset, t.front, t.ts)],
+);
+
+/** Per-option mark and mark IV every snapshot, 7 days (ADR-056, GAPS #32: the details sparkline). */
+export const instrumentMarks = pgTable(
+  "instrument_marks",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    asset: text("asset", { enum: ["BTC", "ETH", "XAUT"] }).notNull(),
+    symbol: text("symbol").notNull(),
+    ts: timestamp("ts", { withTimezone: true }).notNull(),
+    mark: text("mark").notNull(),
+    markIv: text("mark_iv"),
+  },
+  (t) => [index("instrument_marks_symbol_ts_idx").on(t.symbol, t.ts), index("instrument_marks_ts_idx").on(t.ts)],
+);
+
 export const schema = {
   users,
   sessions,
@@ -585,5 +616,7 @@ export const schema = {
   campaigns,
   campaignRecipients,
   alerts,
+  ivSnapshots,
+  instrumentMarks,
 };
 export type Schema = typeof schema;
