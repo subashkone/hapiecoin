@@ -6,7 +6,7 @@ import { cn } from "@hapiecoin/ui";
 import { useState } from "react";
 import { daysToExpiry, fmtExpiry } from "@/lib/format";
 import { useUiStore } from "@/lib/store";
-import { TEMPLATES, type TemplateCategory } from "@/lib/strategy/templates";
+import { TEMPLATES, TEMPLATE_COUNT, type TemplateCategory } from "@/lib/strategy/templates";
 import { templateSketch, useTemplateLoader } from "./TemplatesPanel";
 
 const OUTLOOKS: readonly TemplateCategory[] = ["Bullish", "Bearish", "Neutral", "Others"];
@@ -43,7 +43,7 @@ export function TemplatesStrip() {
               ))}
             </select>
             <button type="button" className="text-2xs text-muted-foreground hover:text-foreground" onClick={() => setBuilderTab("templates")} data-testid="strip-see-all">
-              All 28 →
+              All {TEMPLATE_COUNT} →
             </button>
           </>
         ) : (

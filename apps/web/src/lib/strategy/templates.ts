@@ -109,7 +109,7 @@ export type MaterialiseResult = { ok: true; legs: NewLegInput[] } | { ok: false;
 /**
  * Turn a template into concrete legs on the venue list: strike = rows[atm + k].strike (clamped never; a
  * template that reaches past the listed ladder is refused so the trader is not given a made-up strike). A
- * future leg needs only the spot, so a futures-only template loads before the chain does.
+ * future leg needs only the spot.
  */
 export function materialiseTemplate(tpl: StrategyTemplate, input: MaterialiseInput): MaterialiseResult {
   const legs: NewLegInput[] = [];

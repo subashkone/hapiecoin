@@ -1,8 +1,10 @@
-// Landing copy, verbatim from the v2 mock (mockup-v2/public-src/20-landing.js). Server-safe: plain data.
+// Landing copy, verbatim from the v2 mock (mockup-v2/public-src/20-landing.js). Server-safe: plain data; the template
+// count is read from the catalogue so the copy never drifts from it (ADR-060).
+import { TEMPLATE_COUNT } from "@/lib/strategy/templates";
 
 export const HERO_BULLETS = [
   "Real-time Options Chain with Live Greeks",
-  "28 Pre-built Strategy Templates",
+  `${TEMPLATE_COUNT} Pre-built Strategy Templates`,
   "Risk-free Paper Trading Mode",
   "Interactive P&L Payoff Diagrams",
   "WebSocket Streaming Prices",
@@ -10,7 +12,7 @@ export const HERO_BULLETS = [
 ] as const;
 
 export const STATS = [
-  { icon: "layers", value: "28", label: "Built-in Strategies" },
+  { icon: "layers", value: String(TEMPLATE_COUNT), label: "Built-in Strategies" },
   { icon: "activity", value: "Real-time", label: "Greeks & IV" },
   { icon: "coins", value: "3", label: "Assets Supported" },
   { icon: "shield", value: "Paper", label: "Trading" },
@@ -50,7 +52,7 @@ export const FEATURE_TABS = [
       "Build multi-leg strategies visually",
       "Interactive P&L payoff charts",
       "Max profit, max loss & breakevens",
-      "28 pre-built strategy templates",
+      `${TEMPLATE_COUNT} pre-built strategy templates`,
     ],
   },
   {
