@@ -2,17 +2,19 @@
 // ladder whose marks come from Black-76 (so the quotes are arbitrage-free), run through the same path the Builder uses
 // (materialise → addLeg → toPricingLegs → analyze) and checked against the shape a textbook gives it: whether the
 // maximum profit and loss are bounded, how many break-evens the expiry payoff has, and the outlook the payoff expresses.
-// The engine values every leg at its own expiry, so a calendar or diagonal is a flat debit line here (0 break-evens).
+// A calendar-family template is valued at its nearest expiry with the later legs keeping time value, exactly as the
+// Templates tab and the payoff pane do (ADR-059 addendum, nearestExpiryValuationMs).
 // Rows marked "any" are structures whose sign at ±6 % depends on the exact premiums (back and ratio spreads,
 // broken wings, lizards, diagonals); their bounds still catch a flipped side (a sold back spread turns unbounded loss
-// into unbounded profit) and a wrong lot ratio (a 1x1 loses its unbounded side). Calendar-family rows assert the flat
-// debit line (max profit below zero: a reversed calendar would be a flat credit) and that near legs are sold and far
-// legs bought.
+// into unbounded profit) and a wrong lot ratio (a 1x1 loses its unbounded side). Calendar-family rows assert bounded
+// profit and loss with two break-evens around the hump, and that near legs are sold and far legs bought (a reversed
+// calendar has a bounded loss where the hump was and no profit near spot).
 import { analyze, black76Price } from "@hapiecoin/pricing";
 import { describe, expect, it } from "vitest";
 import { toPricingLegs } from "@/lib/pricing/legs";
 import { type StrategyLeg, addLeg } from "./legs";
 import { type ChainStrike, type MaterialiseInput, TEMPLATES, materialiseTemplate } from "./templates";
+import { nearestExpiryValuationMs } from "./analysis";
 import { type Outlook, classifyOutlook } from "./useTemplateStats";
 
 const SPOT = 80_000;
@@ -89,16 +91,16 @@ const SHAPES: Record<string, Shape> = {
   "Long Call Butterfly": { maxProfit: F, maxLoss: F, breakevens: 2, outlook: "Neutral" },
   "Long Put Butterfly": { maxProfit: F, maxLoss: F, breakevens: 2, outlook: "Neutral" },
   "Long Call Condor": { maxProfit: F, maxLoss: F, breakevens: 2, outlook: "Neutral" },
-  "Long Calendar with Calls": { maxProfit: F, maxLoss: F, breakevens: 0, outlook: null },
-  "Long Calendar with Puts": { maxProfit: F, maxLoss: F, breakevens: 0, outlook: null },
+  "Long Calendar with Calls": { maxProfit: F, maxLoss: F, breakevens: 2, outlook: "any" },
+  "Long Calendar with Puts": { maxProfit: F, maxLoss: F, breakevens: 2, outlook: "any" },
   "Long Gut": { maxProfit: U, maxLoss: F, breakevens: 2, outlook: "any" },
   Strip: { maxProfit: U, maxLoss: F, breakevens: 2, outlook: "Bearish" },
   Strap: { maxProfit: U, maxLoss: F, breakevens: 2, outlook: "Bullish" },
   "Synthetic Straddle": { maxProfit: U, maxLoss: F, breakevens: 2, outlook: "any" },
   "Broken-Wing Put Butterfly": { maxProfit: F, maxLoss: F, breakevens: "any", outlook: "any" },
   "Broken-Wing Call Butterfly": { maxProfit: F, maxLoss: F, breakevens: "any", outlook: "any" },
-  "Double Diagonal": { maxProfit: F, maxLoss: F, breakevens: 0, outlook: null },
-  "Calendar Strangle": { maxProfit: F, maxLoss: F, breakevens: 0, outlook: null },
+  "Double Diagonal": { maxProfit: F, maxLoss: F, breakevens: 2, outlook: "any" },
+  "Calendar Strangle": { maxProfit: F, maxLoss: F, breakevens: 2, outlook: "any" },
   // Others
   "Jade Lizard": { maxProfit: F, maxLoss: U, breakevens: 1, outlook: "any" },
   "Reverse Jade Lizard": { maxProfit: F, maxLoss: F, breakevens: 1, outlook: "any" },
@@ -119,7 +121,8 @@ function build(name: string) {
     legs = a.legs;
   }
   const priced = toPricingLegs(legs, "0.001");
-  return analyze(priced, { spot: SPOT, nowMs: NOW, defaultIv: IV, settlementHourUtc: 12, points: 161 });
+  const valuationMs = nearestExpiryValuationMs(legs, 12, NOW);
+  return analyze(priced, { spot: SPOT, nowMs: NOW, defaultIv: IV, settlementHourUtc: 12, points: 161, ...(valuationMs !== undefined ? { valuationMs } : {}) });
 }
 
 describe("ADR-060 every template has its textbook shape on an arbitrage-free ladder", () => {
@@ -133,9 +136,9 @@ describe("ADR-060 every template has its textbook shape on an arbitrage-free lad
     expect(Number.isFinite(res.maxProfit) ? "finite" : "unbounded", "max profit").toBe(want.maxProfit);
     expect(Number.isFinite(res.maxLoss) ? "finite" : "unbounded", "max loss").toBe(want.maxLoss);
     expect(res.maxLoss, "every structure can lose").toBeLessThan(0);
-    if (want.breakevens === 0) expect(res.maxProfit, "a flat debit line never profits at expiry").toBeLessThan(0);
     const tpl = TEMPLATES.find((t) => t.name === name)!;
     if (tpl.tags?.includes("calendar")) {
+      expect(res.maxProfit, "a long calendar profits somewhere near its strikes").toBeGreaterThan(0);
       for (const l of tpl.legs) if (l.kind !== "future") expect(l.side, `${name}: near legs sold, far legs bought`).toBe((l.expiryOffset ?? 0) > 0 ? "buy" : "sell");
     }
     if (want.breakevens !== "any") expect(res.breakevens, "break-evens").toHaveLength(want.breakevens);
