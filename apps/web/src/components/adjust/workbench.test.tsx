@@ -117,10 +117,11 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     fireEvent.change(within(callRow).getByTestId("lots-after-input"), { target: { value: "0" } });
     expect(within(callRow).getByTestId("effect").dataset["kind"]).toBe("close");
     await u.click(within(callRow).getByTestId("lots-after-up"));
-    expect(within(callRow).getByTestId("effect").textContent).toMatch(/^TRIMS .* by 9$/);
+    expect(within(callRow).getByTestId("effect").textContent).toBe("TRIMS by 9");
     expect(within(callRow).getByTestId("lots-after").dataset["value"]).toBe("1");
     fireEvent.change(within(callRow).getByTestId("lots-after-input"), { target: { value: "25" } });
-    expect(within(callRow).getByTestId("effect").textContent).toMatch(/^ADDS \+15 to /);
+    expect(within(callRow).getByTestId("effect").textContent).toBe("ADDS +15");
+    expect(within(callRow).getByTestId("effect").title).toMatch(/^ADDS \+15 to /); // the contract stays on hover
     expect(within(change).getByTestId("adjust-cash").textContent).toContain("debit");
     // reset clears every change
     await u.click(within(wb).getByTestId("adjust-reset"));
@@ -329,7 +330,7 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(cashTile.textContent).toMatch(/fees est\. \$\d/);
     expect(within(wb).getByTestId("adjust-tile-legs").textContent).toContain("of 10 · 2 now");
     // the loss after in the footer is the loss after in the analysis pane, and both show the before figure with a verdict
-    await waitFor(() => expect(screen.getByTestId("ba-max-loss").textContent).toMatch(/→s*(▲ better|▼ worse|unchanged)/), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId("ba-max-loss").textContent).toMatch(/→ (▲ better|▼ worse|unchanged)/), { timeout: 5000 });
     const after = (id: string) => screen.getByTestId(id).querySelector(".num")!.textContent;
     expect(after("adjust-tile-loss")).toBe(after("ba-max-loss"));
     expect(after("adjust-tile-margin")).toBe(after("ba-margin"));

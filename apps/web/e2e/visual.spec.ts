@@ -119,6 +119,7 @@ for (const theme of ["dark", "light"] as const) {
       await wb.getByTestId("wb-chain-row").nth(atmIdx + 3).getByTestId("wb-chain-sell-call").click();
       await expect(page.getByTestId("before-after")).toBeVisible();
       await expect(page.getByTestId("adjust-change-box").getByTestId("adjust-summary")).toContainText("This change", { timeout: 15_000 });
+      await page.getByTestId("position-ticket").scrollIntoViewIfNeeded(); // capture the legs, the change box and the tiles, not the scrolled chain
       await page.screenshot({ path: `${DIR}/analyse-workbench-${theme}.png` });
       await wb.getByTestId("adjust-review").click();
       await expect(page.getByTestId("adjust-confirm")).toBeVisible();
