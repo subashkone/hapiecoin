@@ -181,7 +181,7 @@
     "feature": "Section 'Preferences': API Settings, Currency Settings (value), Lot Size Settings, P&L Settings (value), Exchange Setup, Alerts (armed count), Keyboard shortcuts (?), Density (value), Command palette (Ctrl K), Market Analytics, Take a tour, theme",
     "how": "Each opens the matching dialog / starts the tour / toggles theme",
     "status": "working",
-    "evidence": "bundle strings: Preferences, API Settings, Currency Settings, Lot Size Settings, P&L Settings, Exchange Setup, Take a tour, Switch to Dark Mode · Phase 5 item 2 (10 Sep 2026, ADR-052): menu-alerts \"Alerts · N armed\" opens the Alerts dialog; unit AppHeader.test.tsx"
+    "evidence": "bundle strings: Preferences, API Settings, Currency Settings, Lot Size Settings, P&L Settings, Exchange Setup, Take a tour, Switch to Dark Mode · Phase 5 item 2 (10 Sep 2026, ADR-052): menu-alerts \"Alerts · N armed\" opens the Alerts dialog; unit AppHeader.test.tsx · Phase 5 item 3 (11 Sep 2026, ADR-053): menu-shortcuts \"Keyboard shortcuts · ?\", menu-palette \"Command palette · Ctrl K\", Market Analytics link; unit AppHeader.test.tsx"
   },
   {
     "route": "/analyse",
@@ -613,7 +613,7 @@
     "feature": "ATM IV + 'IV rank N' (mono)",
     "how": "From CG.analyse.stats {atmIv, ivRank} when the analyse part emits 'analyse:stats'; otherwise computed from the ATM row of CG.chain(asset, expiry) and a per-asset IV range (CG.mock.ivRange). Exposed as CG.chrome.marketStats(asset)",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): components/header/HeaderStats.tsx header-atm-iv: ATM IV of the shown expiry (atmIvOf) + \"IV rank —\" until GAPS #62; unit AppHeader.test.tsx; e2e analyse.spec.ts",
     "new": true
   },
   {
@@ -622,7 +622,7 @@
     "feature": "'EXP. MOVE · 25 SEP  ± 7,693 1σ' expected move for the selected expiry",
     "how": "spot × ATM IV × √(dte/365); re-rendered on tick, 'asset', 'expiry', 'analyse:expiry' and 'analyse:stats'",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): HeaderStats header-exp-move \"Exp. move · <expiry> ± N 1σ\" (expectedMove(spot, atmIv, dte)); unit AppHeader.test.tsx; e2e analyse.spec.ts",
     "new": true
   },
   {
@@ -667,7 +667,7 @@
     "feature": "Responsive trimming: venue and Command label hide ≤1500px, expected move ≤1330px, ATM IV ≤1180px, sub-labels ≤1000px",
     "how": "CSS media queries; header never overflows at 1440 / 1280 / 1100 / 960 (pw/check-v2-widths.js)",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): venue + \"Command\" label hide below 1500 px (min-[1500px]), expected move below 1330, ATM IV below 1180, sub-labels below 1000 (widgets.tsx, HeaderStats.tsx, PaletteButton)",
     "new": true
   },
   {
@@ -694,7 +694,7 @@
     "feature": "Search input with fuzzy matching on label + keywords + hint (substring first, then subsequence with word-start bonus); matched characters underlined",
     "how": "Best hit surfaced first as “Best match”",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): lib/palette.ts scoreCommand (substring with word-start bonus, then subsequence) + matchIndices; CommandPalette highlight() underlines the matched characters; unit palette.test.ts + shell.test.tsx",
     "new": true
   },
   {
@@ -703,7 +703,7 @@
     "feature": "Grouped results: Recent · Navigate · Actions · Settings (custom groups appended)",
     "how": "Recent shows the last 5 used commands (CG.state.recentCommands, persisted via CG.saveState)",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): groups Recent (last five ids, hapiecoin.palette.recent) · Navigate · Actions · Settings · custom groups appended (groupOrder); unit palette.test.ts + shell.test.tsx; e2e analyse.spec.ts",
     "new": true
   },
   {
@@ -712,7 +712,7 @@
     "feature": "Keyboard: ↑ ↓ / Tab move, ↵ runs, Esc closes; mouse hover selects, click runs",
     "how": "Footer shows the key hints and the number of registered commands",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js · Phase 5 item 3 (11 Sep 2026, ADR-053): Tab / Shift+Tab move like ↓ / ↑ (CommandPalette onKeyDown); unit shell.test.tsx",
     "new": true
   },
   {
@@ -721,7 +721,7 @@
     "feature": "Registry API for other parts: CG.palette.register({id,label,group,keywords,hint,kbd,icon,when,run}) → unregister fn; CG.palette.unregister(id); CG.palette.list(); CG.palette.run(id)",
     "how": "Emits 'palette:open', 'palette:close', 'palette:run' {id,label}",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): lib/palette.ts registerCommand({ id, label, group, keywords, hint, when, run }) → unregister, unregisterCommand, listRegistered, subscribeCommands; the palette merges them; unit palette.test.ts",
     "new": true
   },
   {
@@ -739,7 +739,7 @@
     "feature": "Default Actions: Switch asset → BTC / ETH / XAUT, Toggle theme (T), Toggle density (D), New alert…, Alerts center, Take a tour, Keyboard shortcuts (?), Explain this strategy (on /analyse), Ask the assistant, Show announcements, Pause / resume live feed, Logout",
     "how": "",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js · Phase 5 item 2 (10 Sep 2026, ADR-052): palette act:alert-new \"New alert…\" and act:alerts \"Alerts center\"; unit shell.test.tsx; e2e analyse.spec.ts",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js · Phase 5 item 2 (10 Sep 2026, ADR-052): palette act:alert-new \"New alert…\" and act:alerts \"Alerts center\"; unit shell.test.tsx; e2e analyse.spec.ts · Phase 5 item 3 (11 Sep 2026, ADR-053): act:density \"Toggle density (D)\", act:shortcuts \"Keyboard shortcuts (?)\"",
     "new": true
   },
   {
@@ -748,7 +748,7 @@
     "feature": "Default Settings: Open API Settings / Currency Settings / Lot Size Settings / P&L Settings / Exchange Setup / Profile, Display currency → INR/USD",
     "how": "",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): Settings group: Open API / Currency / Lot Size / P&L / Exchange Setup / Profile via openDialog, \"Display currency → INR / USD\" via useUpdateSettings; unit shell.test.tsx; e2e analyse.spec.ts",
     "new": true
   },
   {
@@ -757,7 +757,7 @@
     "feature": "Empty state “No commands match …” with hints",
     "how": "",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): palette-empty \"No commands match “q”\" with hints; unit shell.test.tsx",
     "new": true
   },
   {
@@ -829,7 +829,7 @@
     "feature": "Global keydown dispatcher (ignores typing in inputs / textareas / selects / contenteditable and open dialogs, except Ctrl K and Esc)",
     "how": "CG.shortcuts.combo(e) normalises to e.g. 'ctrl+k', 'shift+e', '?'; CG.emit('shortcut', {key, event}) before the handler",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): components/shell/ShortcutsDispatcher.tsx: window keydown, ignores typing targets (isTypingTarget) and open dialogs (dialogOpen) except `always` rows; unit shortcuts.test.tsx",
     "new": true
   },
   {
@@ -838,7 +838,7 @@
     "feature": "Help dialog on “?” (also Settings → Keyboard shortcuts, palette): table of kbd + description grouped Global / Analyse workspace / other",
     "how": "Rows without a handler are marked “handled by the workspace”",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): components/dialogs/ShortcutsDialog.tsx (dialog kind \"shortcuts\") on \"?\", Settings → Keyboard shortcuts (menu-shortcuts), palette act:shortcuts; grouped Global / Analyse workspace / other; unit shortcuts.test.tsx; e2e analyse.spec.ts; visual analyse-shortcuts-{theme}.png",
     "new": true
   },
   {
@@ -847,7 +847,7 @@
     "feature": "Default rows: Ctrl K palette, ? help, T theme, D density, Esc close (menus, palette, assistant), j / k strike cursor, B / S add leg, E next expiry, Shift E previous expiry",
     "how": "E / Shift E fall back to CG.analyse.setExpiry(), then the expiry strip buttons, then CG.state.expiry + events",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): lib/shortcuts.ts DEFAULT_SHORTCUTS (Ctrl K, ?, T, D, Esc; J / K, ↑ / ↓, B / S, Shift+B / S, E / Shift+E, Enter, A, P); T and D handled by the dispatcher; unit shortcuts.test.ts + shortcuts.test.tsx",
     "new": true
   },
   {
@@ -856,7 +856,7 @@
     "feature": "API: CG.shortcuts.register(key, description, handler, {group, always}) → unregister fn; unregister(key); list(); open(); close()",
     "how": "Registering an existing key overrides it (the analyse part owns j/k/B/S)",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): registerShortcut(key, description, handler, { group, always }) → unregister; unregisterShortcut; listShortcuts; subscribeShortcuts; unit shortcuts.test.ts + shortcuts.test.tsx",
     "new": true
   },
   {
@@ -865,7 +865,7 @@
     "feature": "32px status bar rendered into <div data-cg=\"portfolio-bar\"> (or a fixed bottom bar appended to /analyse when the placeholder is absent)",
     "how": "html.cgc-pbar-fixed-on shrinks .an-shell by 32px in the fallback; toasts and the assistant dock above it",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): components/chrome/PortfolioBar.tsx: 32 px sticky footer mounted by the analyse layout (PortfolioBarLoader); the workspace reserves 82 px; unit portfolio-bar.test.tsx; e2e analyse.spec.ts",
     "new": true
   },
   {
@@ -874,7 +874,7 @@
     "feature": "Items: Portfolio · N open strategies (live count) · Net Δ · Net Θ/day · Net ν · Margin used $x / $y with bar · Day P&L · Alerts N armed (+ fired badge) · Basis mark|bid/ask · CCY USD|INR",
     "how": "Values from CG.portfolio.compute() when the trading part provides it, else computed from CG.mock.strategies (PAPER/LIVE, open legs) with CG.analyze; CG.chrome.portfolioData()",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): items Portfolio N open · M live · Net Δ · Net Θ/day · Net ν · Margin used $x / $wallet with bar · Day P&L · Alerts N armed (+ fired) · Basis · CCY from usePortfolio(\"active\"), the paper book, useLivePositions, useAlerts, useSettings; unit portfolio-bar.test.tsx",
     "new": true
   },
   {
@@ -883,7 +883,7 @@
     "feature": "Re-renders on 'tick', 'portfolio-changed', 'analyse:strategies-changed', 'alerts-changed', 'alert-triggered', 'pnl-basis-changed', 'currency-settings-changed', 'lot-sizes-changed', 'broker-balance-changed', 'density'",
     "how": "",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): React Query + gateway subscriptions re-render the bar on every quote version, strategy / alert / settings change (no event bus needed)",
     "new": true
   },
   {
@@ -892,7 +892,7 @@
     "feature": "Clicks: Portfolio → Paper tab (analyse:set-tab), Margin → wallet popover / API settings, Alerts → alerts dialog, Basis → P&L Settings, CCY → Currency Settings",
     "how": "",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): Portfolio → Paper tab, Margin → API settings, Alerts → Alerts center, Basis → P&L settings, CCY → Currency settings; unit portfolio-bar.test.tsx; e2e analyse.spec.ts",
     "new": true
   },
   {

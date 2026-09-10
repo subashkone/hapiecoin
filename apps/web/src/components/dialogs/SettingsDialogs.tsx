@@ -13,6 +13,7 @@ import { UpgradeRequiredDialog } from "./UpgradeRequiredDialog";
 import { PnlDialog } from "./PnlDialog";
 import { ProfileDialog } from "./ProfileDialog";
 import { AlertsDialog } from "@/components/alerts/AlertsDialog";
+import { ShortcutsDialog } from "./ShortcutsDialog";
 
 export function SettingsDialogs() {
   const dialog = useUiStore((s) => s.dialog);
@@ -33,6 +34,7 @@ export function SettingsDialogs() {
       <OptionDetailsDialog open={dialog === "option"} onOpenChange={onOpenChange} />
       <UpgradeRequiredDialog open={dialog === "upgrade"} onOpenChange={onOpenChange} />
       <AlertsDialog open={dialog === "alerts"} onOpenChange={onOpenChange} />
+      <ShortcutsDialog open={dialog === "shortcuts"} onOpenChange={onOpenChange} />
     </>
   );
 }

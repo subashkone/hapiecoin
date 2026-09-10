@@ -51,11 +51,12 @@ export function foldPortfolio(figures: ReadonlyMap<string, StrategyFigures>, pen
   return { open: figures.size, netDelta: d, netGamma: g, netTheta: t, netVega: v, marginUsed: margin, undefinedRisk, byStrategy: new Map(figures), pending };
 }
 
-export function usePortfolio(strategies: readonly Strategy[] | undefined, book: PaperBook, kind: "paper" | "live", debounceMs = 400): Portfolio {
+/** @param kind one tab's strategies, or "active" for paper and live together (the portfolio bar, HC-SH-106). */
+export function usePortfolio(strategies: readonly Strategy[] | undefined, book: PaperBook, kind: "paper" | "live" | "active", debounceMs = 400): Portfolio {
   const [portfolio, setPortfolio] = useState<Portfolio>(EMPTY_PORTFOLIO);
   const seq = useRef(0);
   const lastRun = useRef(0);
-  const active = (strategies ?? []).filter((s) => s.status === kind && openLegs(s).length > 0);
+  const active = (strategies ?? []).filter((s) => (kind === "active" ? s.status === "paper" || s.status === "live" : s.status === kind) && openLegs(s).length > 0);
   const key = active.map((s) => `${s.id}:${s.updatedAt}:${s.legs.length}`).join("|");
   useEffect(() => {
     if (!key) {

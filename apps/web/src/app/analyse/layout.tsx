@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { AppHeader } from "@/components/header/AppHeader";
 import { SettingsDialogsLoader } from "@/components/dialogs/SettingsDialogsLoader";
+import { PortfolioBarLoader } from "@/components/chrome/PortfolioBarLoader";
 import { getServerUser } from "@/lib/auth/server";
 
 export default async function AnalyseLayout({ children }: { children: ReactNode }) {
@@ -12,6 +13,7 @@ export default async function AnalyseLayout({ children }: { children: ReactNode 
     <>
       <AppHeader variant="analyse" initialUser={user} />
       {children}
+      <PortfolioBarLoader />
       <SettingsDialogsLoader />
     </>
   );

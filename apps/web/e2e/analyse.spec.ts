@@ -20,6 +20,50 @@ test.describe("HC-SH analyse header and live chain", () => {
     await expect(page.getByTestId("plan-banner")).toContainText("Congratulations! Your plan is active until 31 Dec 2026");
   });
 
+  test("HC-SH-077 / 078 header stats, HC-SH-105..108 portfolio bar, HC-SH-101..103 shortcuts, HC-SH-086 / 087 palette (ADR-053)", async ({ page }) => {
+    await expect(page.getByTestId("header-atm-iv")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("header-atm-iv")).toContainText(/\d%/);
+    await expect(page.getByTestId("header-exp-move")).toContainText("±");
+    // the portfolio bar reads empty and opens its places
+    const bar = page.getByTestId("portfolio-bar");
+    await expect(bar).toHaveAttribute("data-portfolio", "empty");
+    await expect(bar.getByTestId("bar-portfolio")).toContainText("0 open strategies");
+    await expect(bar.getByTestId("bar-basis")).toContainText("mark");
+    await expect(bar.getByTestId("bar-ccy")).toContainText("USD");
+    await bar.getByTestId("bar-alerts").click();
+    await expect(page.getByTestId("alerts-dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("alerts-dialog")).toBeHidden();
+    await bar.getByTestId("bar-portfolio").click();
+    await expect(page.getByTestId("tab-paper")).toHaveAttribute("data-state", "active");
+    await page.getByTestId("tab-chain").click();
+    // ? opens the help; T and D toggle theme and density; a field swallows them
+    await page.keyboard.press("Shift+?");
+    const help = page.getByTestId("shortcuts-dialog");
+    await expect(help).toBeVisible();
+    await expect(help.getByTestId("shortcuts-group")).toHaveCount(2);
+    await page.keyboard.press("Escape");
+    await expect(help).toBeHidden();
+    await page.keyboard.press("t");
+    await expect(page.locator("html")).toHaveClass(/light/);
+    await page.keyboard.press("t");
+    await expect(page.locator("html")).not.toHaveClass(/light/);
+    await page.keyboard.press("d");
+    await expect(page.locator("html")).toHaveClass(/compact/);
+    await page.keyboard.press("d");
+    await expect(page.locator("html")).not.toHaveClass(/compact/);
+    // the palette underlines the match, remembers the command and lists Settings
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox", { name: "Command" }).fill("open journal");
+    await expect(page.getByRole("option", { name: "Open Journal" }).locator("u").first()).toBeVisible();
+    await page.getByRole("option", { name: "Open Journal" }).click();
+    await expect(page.getByTestId("tab-journal")).toHaveAttribute("data-state", "active");
+    await page.keyboard.press("Control+k");
+    await expect(page.getByRole("listbox").locator(".micro").first()).toHaveText("Recent");
+    await expect(page.getByRole("option", { name: "Open P&L Settings" })).toBeVisible();
+    await page.keyboard.press("Escape");
+  });
+
   test("HC-WS-108 chain panel renders the exact strikes the fake gateway serves, with an ATM band", async ({ page }) => {
     const chips = page.getByTestId("expiry-chip");
     await expect(chips.first()).toBeVisible();
@@ -513,6 +557,10 @@ test.describe("HC-TR paper trading (Phase 3 item 1)", () => {
     // HC-TR-113 / 138 the strip's net delta and margin come from the worker
     await expect(page.getByTestId("paper-strip")).toHaveAttribute("data-portfolio", "ready", { timeout: 15_000 });
     await expect(page.getByTestId("paper-net-delta")).not.toHaveText("—");
+    // HC-SH-106 the portfolio bar counts the strategy and prices it
+    await expect(page.getByTestId("portfolio-bar")).toHaveAttribute("data-portfolio", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("bar-portfolio")).toContainText("1 open strategy");
+    await expect(page.getByTestId("bar-net-delta")).not.toContainText("—");
     // details: HC-TR-118 / 119 six tiles + the payoff mini chart; then square off one leg at market, stop and archive
     await card.getByTestId("card-details").click();
     const details = page.getByTestId("strategy-details");

@@ -1,4 +1,4 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
@@ -22,7 +22,7 @@ describe("HC-PB-059 command palette", () => {
   it("buildCommands offers Sign in when logged out and Analyse when logged in", () => {
     const navigate = vi.fn();
     const out = buildCommands({ loggedIn: false, navigate, toggleTheme: vi.fn() });
-    expect(out.map((c) => c.label)).toEqual(["Home", "Payoff chart preview", "Sign in", "Privacy Policy", "Terms of Service", "Disclaimer", "Toggle theme"]);
+    expect(out.map((c) => c.label)).toEqual(["Home", "Payoff chart preview", "Sign in", "Privacy Policy", "Terms of Service", "Disclaimer", "Toggle theme", "Keyboard shortcuts"]);
     const inn = buildCommands({ loggedIn: true, navigate, toggleTheme: vi.fn() });
     expect(inn[2]?.label).toBe("Analyse workspace"); // after Home and the public payoff preview
     expect(inn.find((c) => c.id === "act:referral-copy")).toBeUndefined();
@@ -114,10 +114,55 @@ describe("HC-PB-059 command palette", () => {
       useUiStore.getState().setPaletteOpen(true);
     });
     await u.type(screen.getByRole("combobox"), "nothing matches this");
-    expect(screen.getByText("No matching command")).toBeTruthy();
+    expect(screen.getByTestId("palette-empty")).toBeTruthy();
     await u.keyboard("{Enter}"); // nothing to run
     await u.keyboard("{Control>}k{/Control}"); // toggles closed
     expect(screen.queryByRole("listbox")).toBeNull();
+  });
+  it("HC-SH-086 / 087 / 088 / 092 / 093 groups, underlined matches, Settings commands, Tab, recents and the empty state", async () => {
+    localStorage.removeItem("hapiecoin.palette.recent");
+    mock.loginAs("asha@example.com");
+    const u = userEvent.setup();
+    renderWithProviders(<CommandPalette loggedIn />);
+    await u.keyboard("{Control>}k{/Control}");
+    const list = screen.getByRole("listbox");
+    // groups in order, Settings present when signed in (HC-SH-087, 092)
+    const groups = [...list.querySelectorAll(".micro")].map((el) => el.textContent);
+    expect(groups.slice(0, 3)).toEqual(["Navigate", "Actions", "Settings"]);
+    expect(screen.getByRole("option", { name: "Open P&L Settings" })).toBeTruthy();
+    await waitFor(() => expect(screen.getByRole("option", { name: /Display currency → INR/ })).toBeTruthy());
+    // typing underlines the matched characters (HC-SH-086); Tab moves (HC-SH-088)
+    await u.type(screen.getByRole("combobox"), "jour");
+    const opt = screen.getByRole("option", { name: "Open Journal" });
+    expect([...opt.querySelectorAll("u")].map((x) => x.textContent).join("")).toBe("Jour");
+    // Tab / Shift+Tab move through a list with several matches
+    await u.clear(screen.getByRole("combobox"));
+    await u.type(screen.getByRole("combobox"), "open");
+    const first = screen.getByRole("combobox").getAttribute("aria-activedescendant");
+    await u.keyboard("{Tab}");
+    expect(screen.getByRole("combobox").getAttribute("aria-activedescendant")).not.toBe(first);
+    await u.keyboard("{Shift>}{Tab}{/Shift}");
+    expect(screen.getByRole("combobox").getAttribute("aria-activedescendant")).toBe(first);
+    await u.clear(screen.getByRole("combobox"));
+    await u.type(screen.getByRole("combobox"), "open journal");
+    await u.keyboard("{Enter}");
+    expect(useUiStore.getState().workspaceTab).toBe("journal");
+    // the command ran lands in Recent on the next open (HC-SH-087)
+    expect(JSON.parse(localStorage.getItem("hapiecoin.palette.recent") ?? "[]")).toEqual(["act:open-journal"]);
+    act(() => useUiStore.getState().setPaletteOpen(true));
+    expect([...screen.getByRole("listbox").querySelectorAll(".micro")][0]?.textContent).toBe("Recent");
+    expect(screen.getAllByRole("option", { name: "Open Journal" })[0]?.id).toBe("hc-cmd-recent:act:open-journal");
+    // empty state (HC-SH-093)
+    await u.type(screen.getByRole("combobox"), "zzzz nothing");
+    expect(screen.getByTestId("palette-empty").textContent).toContain("No commands match “zzzz nothing”");
+    // Display currency → INR writes the setting
+    await u.clear(screen.getByRole("combobox"));
+    await u.type(screen.getByRole("combobox"), "display currency");
+    // (jsdom spaces the underlined characters in the accessible name; browsers do not, so match on the text)
+    const opt2 = screen.getAllByRole("option").find((o) => o.textContent?.startsWith("Display currency → INR"));
+    expect(opt2).toBeTruthy();
+    await u.click(opt2!);
+    await waitFor(() => expect(mock.state.accounts.get("asha@example.com")!.settings.currency).toBe("INR"));
   });
   it("PaletteButton opens the palette", async () => {
     renderWithProviders(<PaletteButton />);

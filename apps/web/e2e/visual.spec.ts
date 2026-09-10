@@ -89,6 +89,12 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("paper-card").getByTestId("card-pnl")).not.toHaveText("—");
       await expect(page.getByTestId("paper-strip")).toHaveAttribute("data-portfolio", "ready", { timeout: 15_000 });
       await page.screenshot({ path: `${DIR}/analyse-paper-${theme}.png` });
+      // ADR-053 the keyboard shortcuts help
+      await page.keyboard.press("Shift+?");
+      await expect(page.getByTestId("shortcuts-dialog")).toBeVisible();
+      await page.screenshot({ path: `${DIR}/analyse-shortcuts-${theme}.png` });
+      await page.keyboard.press("Escape");
+      await expect(page.getByTestId("shortcuts-dialog")).toBeHidden();
       // ADR-052 the Alerts center from the bell, then the New alert form from a card's Set alert
       await page.getByTestId("alerts-bell").click();
       const alerts = page.getByTestId("alerts-dialog");
