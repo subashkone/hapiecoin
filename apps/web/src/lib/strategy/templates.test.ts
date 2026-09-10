@@ -17,6 +17,26 @@ describe("HC-TR-037 / HC-TR-039 the template catalogue", () => {
     expect(templateByName("Iron Condor")?.legs).toHaveLength(4);
     expect(templateByName("nope")).toBeUndefined();
   });
+  // ADR-060: the catalogue of 48 holds futures-only and futures + options structures; tags describe the shape
+  it("holds 48 templates including the futures structures, and tags match the legs", () => {
+    expect(TEMPLATE_COUNT).toBe(48);
+    expect(templateByName("Long Perp")?.legs).toEqual([{ kind: "future", side: "buy" }]);
+    expect(templateByName("Covered Call")?.legs).toEqual([{ kind: "future", side: "buy" }, { kind: "call", side: "sell", k: 2 }]);
+    expect(templateByName("Collar")?.legs.map((l) => l.kind)).toEqual(["future", "put", "call"]);
+    expect(templateByName("Call Back Spread 1x2")?.legs.map((l) => l.lots ?? 1)).toEqual([1, 2]);
+    for (const t of TEMPLATES) {
+      const tags = t.tags ?? [];
+      expect(tags.includes("futures"), t.name).toBe(t.legs.some((l) => l.kind === "future"));
+      expect(tags.includes("calendar"), t.name).toBe(t.legs.some((l) => l.kind !== "future" && (l.expiryOffset ?? 0) > 0));
+      if (tags.includes("ratio")) expect(new Set(t.legs.map((l) => l.lots ?? 1)).size, t.name).toBe(2);
+    }
+    // every futures template materialises on the ladder at the spot; the perp is the first leg
+    for (const t of TEMPLATES.filter((x) => x.tags?.includes("futures"))) {
+      const r = materialiseTemplate(t, { ...base, spot: "80100" });
+      expect(r.ok, t.name).toBe(true);
+      if (r.ok) expect(r.legs[0]).toMatchObject({ kind: "future", expiry: "PERP", strike: "", price: "80100" });
+    }
+  });
 });
 
 describe("HC-TR-040 materialiseTemplate places legs on the venue ladder around ATM (ADR-006)", () => {

@@ -214,7 +214,10 @@ export function TemplatesPanel() {
               <TemplateSketch tpl={t} />
               <span className="min-w-0">
                 <span className="block text-[12.5px] font-medium">{t.name}</span>
-                <span className="micro block">{t.category} · {t.legs.length} {t.legs.length === 1 ? "leg" : "legs"}</span>
+                <span className="micro block" data-testid="template-meta">
+                  {t.category} · {t.legs.length} {t.legs.length === 1 ? "leg" : "legs"}
+                  {t.tags?.length ? ` · ${t.tags.join(" · ")}` : ""}
+                </span>
                 <span className="mt-0.5 block text-2xs leading-snug text-muted-foreground">{t.description}</span>
                 {st ? <span className="num mt-0.5 block text-2xs" data-testid="template-pop">POP {st.pop === null ? "—" : `${(st.pop * 100).toFixed(0)}%`} · R:R {rr}{st.outlook ? <span className="micro ml-1">· {st.outlook}</span> : null}</span> : null}
               </span>
