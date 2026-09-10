@@ -11,6 +11,7 @@ import { strategies, strategyLegs, users } from "../db/schema.js";
 import { type AppEnv, type SessionUser, currentUser } from "../security/context.js";
 import { errors } from "../security/errors.js";
 import { requireAdmin, requireUser } from "../security/guards.js";
+import { orderRateLimit } from "../security/rate-limit.js";
 import { lotSizeFor, openCredential, ordersOf, placeEntries, preview, retryFailed, syncOrders, tradingBlockedReason, type PlanLeg, type StrategyRow } from "./live-exec.js";
 import { type AppDeps, cookieAuth, errorResponses, jsonContent } from "./shared.js";
 import { addDecimal, closeLegRow, loadStrategy } from "./strategies.js";
@@ -20,6 +21,8 @@ const PreviewBody = LivePreviewBody.extend({ worstLoss: z.number().optional() })
 
 export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
   const guard = requireUser(deps.sessions);
+  // GAPS #70: the routes that send orders get a per-user budget on top of the global one (ADR-061)
+  const orderLimit = orderRateLimit(deps.rateStore, { windowMs: 60_000, max: deps.config.orderRateMaxPerMin });
   const db = deps.db;
 
   async function owned(user: SessionUser, id: string): Promise<StrategyRow> {
@@ -81,7 +84,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       tags: ["live"],
       summary: "Place market orders for every open leg through the executor; idempotent per key (HC-TR-057, HC-TR-063)",
       security: cookieAuth,
-      middleware: [guard],
+      middleware: [guard, orderLimit],
       request: { params: IdParam, body: { content: { "application/json": { schema: LivePlaceBody } }, required: true } },
       responses: { 200: jsonContent(Strategy, "Placed"), 400: errorResponses[400], 401: errorResponses[401], 404: errorResponses[404], 409: errorResponses[409], 502: errorResponses[502] },
     }),
@@ -113,7 +116,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       tags: ["live"],
       summary: "Retry failed orders with the same client order ids (HC-TR-085)",
       security: cookieAuth,
-      middleware: [guard],
+      middleware: [guard, orderLimit],
       request: { params: IdParam },
       responses: { 200: jsonContent(Strategy, "Retried"), 401: errorResponses[401], 404: errorResponses[404], 409: errorResponses[409] },
     }),
@@ -162,7 +165,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       tags: ["live"],
       summary: "Trade All → Live: place every ticked paper strategy, stopping at the first failure (HC-TR-089, ADR-010)",
       security: cookieAuth,
-      middleware: [guard],
+      middleware: [guard, orderLimit],
       request: { body: { content: { "application/json": { schema: LiveBatchBody } }, required: true } },
       responses: { 200: jsonContent(LiveBatchResult, "Batch outcome"), 400: errorResponses[400], 401: errorResponses[401], 409: errorResponses[409] },
     }),
@@ -255,7 +258,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       tags: ["live"],
       summary: "Square off exchange positions with reduce-only market orders; matching live legs are closed at the fill (HC-TR-145)",
       security: cookieAuth,
-      middleware: [guard],
+      middleware: [guard, orderLimit],
       request: { body: { content: { "application/json": { schema: LivePositionsExitBody } }, required: true } },
       responses: { 200: jsonContent(LivePositionsExitResult, "Exits"), 400: errorResponses[400], 401: errorResponses[401], 409: errorResponses[409] },
     }),

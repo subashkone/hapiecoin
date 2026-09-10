@@ -2,21 +2,43 @@
  * Rate limiting (spec "API hardening", "Authentication & sessions"):
  * - global: 300 requests / minute per client IP on every route;
  * - OTP sends: 5 / 15 min per email and per IP (sign-up, sign-in code, password reset);
- * - OTP verification: 10 failures / 15 min per email locks that email for 15 minutes.
+ * - OTP verification: 10 failures / 15 min per email locks that email for 15 minutes;
+ * - order routes: 20 requests / minute per signed-in user on the live placement, retry, batch and exit routes
+ *   (GAPS #70, ADR-061), so a runaway client cannot spray orders inside the global budget.
  * Counters live in `RateStore` (Redis when configured, else memory).
  */
 import type { MiddlewareHandler } from "hono";
-import type { AppEnv } from "./context.js";
+import { type AppEnv, currentUser } from "./context.js";
 import { errors } from "./errors.js";
 import type { RateStore } from "./rate-store.js";
 
 export const GLOBAL_LIMIT = { windowMs: 60_000, max: 300 } as const;
 export const OTP_SEND_LIMIT = { windowMs: 15 * 60_000, max: 5 } as const;
 export const OTP_FAIL_LIMIT = { windowMs: 15 * 60_000, max: 10 } as const;
+export const ORDER_LIMIT = { windowMs: 60_000, max: 20 } as const;
 
 export const GLOBAL_LIMIT_MESSAGE = "Too many requests. Slow down and try again in a minute.";
 export const OTP_SEND_LIMIT_MESSAGE = "Too many code requests. Wait 15 minutes and try again.";
 export const OTP_LOCK_MESSAGE = "Too many failed attempts. Sign-in is locked for 15 minutes.";
+export const ORDER_LIMIT_MESSAGE = "Too many order requests. Wait a minute and try again.";
+
+export function orderKey(userId: string): string {
+  return `order:user:${userId}`;
+}
+
+/**
+ * Per-user budget on the routes that send orders to the exchange; mount after the session guard so the user is
+ * known. A refused request never reaches the executor, so nothing is placed.
+ */
+export function orderRateLimit(store: RateStore, limit: { windowMs: number; max: number } = ORDER_LIMIT): MiddlewareHandler<AppEnv> {
+  return async (c, next) => {
+    const result = await store.consume(orderKey(currentUser(c).id), limit.windowMs, limit.max);
+    c.header("X-RateLimit-Limit", String(limit.max));
+    c.header("X-RateLimit-Remaining", String(Math.max(0, limit.max - result.count)));
+    if (!result.allowed) throw errors.rateLimited(ORDER_LIMIT_MESSAGE, Math.ceil(result.retryAfterMs / 1000), "ORDER_RATE_LIMITED");
+    await next();
+  };
+}
 
 export function globalRateLimit(
   store: RateStore,
