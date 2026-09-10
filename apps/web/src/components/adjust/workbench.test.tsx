@@ -264,7 +264,9 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(within(fixes).getAllByTestId("quick-fix-tag").length).toBeGreaterThan(0);
     await u.click(within(fixes).getAllByTestId("quick-fix")[0]!); // roll strikes up
     expect(wb.dataset["empty"]).toBe("false");
-    expect(within(wb).getAllByTestId("effect").map((e) => e.dataset["kind"])).toEqual(["close", "close", "new", "new"]);
+    const kinds = () => [...within(wb).getAllByTestId("wb-leg"), ...within(wb).queryAllByTestId("wb-pick")].map((r) => within(r).queryByTestId("effect")?.dataset["kind"]);
+    expect(kinds()).toEqual(["close", "close", "new", "new"]);
+    expect(within(wb).getAllByTestId("wb-order").map((r) => r.dataset["kind"])).toEqual(["close", "close"]); // the two closes are orders under Proposed too
     expect(within(wb).getAllByTestId("wb-pick")).toHaveLength(2);
     // plans: keep this as Plan A, build another (hedge), compare, load A back, remove it
     const plans = within(wb).getByTestId("plans-bar");
@@ -272,7 +274,8 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(plans.dataset["count"]).toBe("1");
     await u.click(within(fixes).getAllByTestId("quick-fix")[2]!); // hedge with a call: nothing is short, so it buys above spot, which is the held call's strike → nets as ADDS
     expect(within(wb).queryAllByTestId("wb-pick")).toHaveLength(0);
-    expect(within(wb).getAllByTestId("effect").map((e) => e.dataset["kind"])).toEqual(["add"]);
+    expect(kinds()).toEqual(["add", undefined]);
+    expect(within(wb).getAllByTestId("wb-order").map((r) => r.dataset["kind"])).toEqual(["add"]);
     await u.click(within(plans).getByTestId("plan-save"));
     const rows = within(plans).getAllByTestId("plan-row");
     expect(rows.map((r) => r.dataset["plan"] === "current" ? "current" : "plan")).toEqual(["current", "plan", "plan"]);
@@ -329,6 +332,17 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(cashTile.textContent).toContain(credit);
     expect(cashTile.textContent).toMatch(/fees est\. \$\d/);
     expect(within(wb).getByTestId("adjust-tile-legs").textContent).toContain("of 10 · 2 now");
+    // the trim is an order, so it is listed under Proposed (H2 mockup): SELL to close one lot, editable and removable there
+    expect(within(wb).getByTestId("proposed-count").dataset["count"]).toBe("1");
+    const order = within(wb).getByTestId("wb-order");
+    expect(order.dataset["kind"]).toBe("trim");
+    expect(order.textContent).toContain("SELL");
+    expect(within(order).getByTestId("effect").textContent).toBe("TRIMS by 1");
+    await u.click(within(order).getByTestId("order-lots-up"));
+    expect(within(legs[0]!).getByTestId("lots-after").dataset["value"]).toBe("8");
+    expect(within(legs[0]!).getByTestId("effect").textContent).toBe("TRIMS by 2");
+    await u.click(within(order).getByTestId("order-lots-down"));
+    expect(within(legs[0]!).getByTestId("lots-after").dataset["value"]).toBe("9");
     // the loss after in the footer is the loss after in the analysis pane, and both show the before figure with a verdict
     await waitFor(() => expect(screen.getByTestId("ba-max-loss").textContent).toMatch(/→ (▲ better|▼ worse|unchanged)/), { timeout: 5000 });
     const after = (id: string) => screen.getByTestId(id).querySelector(".num")!.textContent;
@@ -340,6 +354,16 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(wb.dataset["empty"]).toBe("true");
     await u.click(within(legs[0]!).getByTestId("wb-leg-close"));
     expect(within(legs[0]!).getByTestId("effect").dataset["kind"]).toBe("close");
+    expect(within(wb).getByTestId("wb-order").dataset["kind"]).toBe("close");
+    expect(within(within(wb).getByTestId("wb-order")).getByTestId("order-lots").dataset["value"]).toBe("10");
+    // adding lots lists a BUY order on the same side; ✕ on the order row puts lots after back
+    fireEvent.change(within(legs[0]!).getByTestId("lots-after-input"), { target: { value: "25" } });
+    expect(within(wb).getByTestId("wb-order").dataset["kind"]).toBe("add");
+    expect(within(wb).getByTestId("wb-order").textContent).toContain("BUY");
+    await u.click(within(wb).getByTestId("wb-order-remove"));
+    expect(within(wb).queryByTestId("wb-order")).toBeNull();
+    expect(wb.dataset["empty"]).toBe("true");
+    await u.click(within(legs[0]!).getByTestId("wb-leg-close"));
     expect(within(wb).getAllByTestId("wb-chain-held").find((p) => p.dataset["after"] === "0")?.textContent).toBe("10→0");
     await u.click(within(legs[0]!).getByTestId("wb-leg-undo"));
     expect(wb.dataset["empty"]).toBe("true");
