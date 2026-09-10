@@ -736,6 +736,8 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     const card = page.getByTestId("paper-card");
     await expect(card.getByTestId("card-figures")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
     await expect(card.getByTestId("adjusted-badge")).toHaveCount(0);
+    await expect(card.getByTestId("card-expiry")).toContainText("expires"); // HC-TR-156
+    await expect(page.getByTestId("paper-life-open")).toHaveAttribute("data-count", "1"); // HC-TR-157
     // HC-TR-148: the workbench takes the left pane, the analysis pane follows "after the change"
     await card.getByTestId("card-adjust").click();
     const wb = page.getByTestId("adjust-workbench");

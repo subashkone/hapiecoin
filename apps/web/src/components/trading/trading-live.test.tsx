@@ -219,6 +219,7 @@ describe("HC-TR-055 live from the Builder", () => {
     await u.click(within(mode).getByTestId("trade-continue"));
     // unnamed: name first, then the server draft is previewed against the venue
     const name = screen.getByTestId("save-draft-dialog");
+    await u.clear(within(name).getByTestId("save-draft-name")); // the box arrives pre-filled (HC-TR-155)
     await u.type(within(name).getByTestId("save-draft-name"), "Long call live");
     await u.click(within(name).getByTestId("save-draft-confirm"));
     const preview = await screen.findByTestId("trade-preview");

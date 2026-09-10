@@ -79,11 +79,15 @@ async function paperTradeFromBuilder(u: ReturnType<typeof userEvent.setup>) {
   expect(within(mode).getByTestId("fee-summary").textContent).toContain("Delta India · fee 0.05% of notional");
   await u.click(within(mode).getByTestId("trade-continue"));
   const preview = screen.getByTestId("trade-preview");
+  // HC-TR-158: capital on the preview (worst loss, fees, wallet when connected)
+  expect(within(preview).getByTestId("preview-capital")).toBeTruthy();
+  expect(within(preview).getByTestId("preview-capital-required").textContent).toMatch(/\$|not capped/);
   expect(within(preview).getAllByTestId("preview-row")).toHaveLength(2);
   expect(within(preview).getByTestId("preview-note").textContent).toContain("Paper trade");
   await u.click(within(preview).getByTestId("trade-now"));
   // unnamed strategy: name it first
   const name = screen.getByTestId("save-draft-dialog");
+  await u.clear(within(name).getByTestId("save-draft-name")); // the box arrives pre-filled (HC-TR-155)
   await u.type(within(name).getByTestId("save-draft-name"), "Risk reversal");
   await u.click(within(name).getByTestId("save-draft-confirm"));
   await waitFor(() => expect(mine()).toHaveLength(1));
@@ -130,6 +134,7 @@ describe("HC-TR-022 / HC-TR-050..057 paper trade from the Builder", () => {
     const u = userEvent.setup();
     await u.click(screen.getByTestId("builder-save"));
     const dialog = screen.getByTestId("save-draft-dialog");
+    await u.clear(within(dialog).getByTestId("save-draft-name")); // the box arrives pre-filled (HC-TR-155)
     await u.type(within(dialog).getByTestId("save-draft-name"), "Draft one");
     await u.click(within(dialog).getByTestId("save-draft-confirm"));
     await waitFor(() => expect(mine()).toHaveLength(1));

@@ -2,6 +2,7 @@
 // marks, day P&L, and the converters between the server's strategy legs and the Builder's local legs.
 // Money here is display-side: every stored figure comes from the API as a decimal string.
 import type { Broker, Strategy, StrategyLeg as ServerLeg, StrategyLegInput, Underlying } from "@hapiecoin/schema";
+import { settlementHourUtc } from "@/lib/pricing/legs";
 import { toDecimal } from "@hapiecoin/schema";
 import { type StrategyLeg, deltaSymbol } from "./legs";
 
@@ -86,6 +87,31 @@ export function dayPnl(s: Strategy, total: number, today = new Date().toISOStrin
 }
 
 /** Calendar days the strategy has been (or was) active. */
+/** Nearest and latest expiry of the open option legs (ISO dates), or null when nothing option-like is open (ADR-059). */
+export function expiryOf(s: Strategy): { nearest: string; latest: string } | null {
+  const ex = openLegs(s)
+    .filter((l) => l.kind !== "future")
+    .map((l) => l.expiry)
+    .sort();
+  const first = ex[0];
+  return first === undefined ? null : { nearest: first, latest: ex[ex.length - 1] ?? first };
+}
+
+/** Days to the settlement instant of an ISO expiry (12:00 UTC; XAUT 16:00 UTC), one decimal, never negative. */
+export function daysLeft(iso: string, now = Date.now(), hourUtc = 12): number {
+  const settle = Date.parse(`${iso}T${String(hourUtc).padStart(2, "0")}:00:00Z`);
+  return Number.isFinite(settle) ? Math.max(0, Math.round(((settle - now) / 86_400_000) * 10) / 10) : 0;
+}
+
+export type Lifecycle = "open" | "expiring" | "closed";
+
+/** closed = archived; expiring = an open leg settles within a day; else open (HC-TR-157). */
+export function lifecycleOf(s: Strategy, now = Date.now()): Lifecycle {
+  if (s.status === "archived") return "closed";
+  const e = expiryOf(s);
+  return e !== null && daysLeft(e.nearest, now, settlementHourUtc(s.asset)) <= 1 ? "expiring" : "open";
+}
+
 export function daysOf(s: Strategy, now = Date.now()): number {
   if (!s.startedAt) return 0;
   const end = s.closedAt ? new Date(s.closedAt).getTime() : now;

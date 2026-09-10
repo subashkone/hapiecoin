@@ -14,6 +14,7 @@ import { ApiSettingsDialog } from "./ApiSettingsDialog";
 import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
 import { OptionDetailsDialog } from "./OptionDetailsDialog";
 import { CurrencyDialog, currencyNote } from "./CurrencyDialog";
+import { SaveDraftDialog } from "./SaveDraftDialog";
 import { ExchangeManagementDialog, validateBrokerForm } from "./ExchangeManagementDialog";
 import { LogoutDialog } from "./LogoutDialog";
 import { LotSizeDialog } from "./LotSizeDialog";
@@ -353,5 +354,35 @@ describe("[SHELL] SettingsDialogsLoader defers the dialog chunk", () => {
     await userEvent.setup().keyboard("{Escape}");
     await waitFor(() => expect(useUiStore.getState().dialog).toBeNull());
     expect(useUiStore.getState().dialogsTouched).toBe(true);
+  });
+});
+
+describe("HC-TR-155 the name dialog arrives filled", () => {
+  it("shows the suggestion selected; typing replaces it; the hint restores it; Enter keeps it; an existing name wins", async () => {
+    const onSave = vi.fn();
+    const suggest = vi.fn(() => "BTC-IBF-11SEP26-1432");
+    const { rerender } = renderWithProviders(<SaveDraftDialog open initialName="" suggest={suggest} intent="trade" onOpenChange={() => undefined} onSave={onSave} />);
+    const box = screen.getByTestId<HTMLInputElement>("save-draft-name");
+    expect(box.value).toBe("BTC-IBF-11SEP26-1432");
+    expect(box.dataset["pristine"]).toBe("true");
+    expect(screen.getByTestId("save-draft-hint").textContent).toContain("Suggested from the legs");
+    expect(suggest).toHaveBeenCalledTimes(1);
+    const u = userEvent.setup();
+    await u.clear(box);
+    await u.type(box, "Mine");
+    expect(box.value).toBe("Mine");
+    expect(box.dataset["pristine"]).toBeUndefined();
+    expect(screen.getByTestId("save-draft-hint").textContent).toContain("Your name");
+    await u.click(within(screen.getByTestId("save-draft-hint")).getByRole("button"));
+    expect(box.value).toBe("BTC-IBF-11SEP26-1432");
+    await u.click(box); // focus back on the box (the restore link had it); the value is untouched
+    await u.keyboard("{Enter}");
+    expect(onSave).toHaveBeenCalledWith("BTC-IBF-11SEP26-1432");
+    expect(suggest).toHaveBeenCalledTimes(1); // never re-read while open
+    // a name the trader already gave wins over the suggestion
+    rerender(<SaveDraftDialog open={false} initialName="" suggest={suggest} intent="trade" onOpenChange={() => undefined} onSave={onSave} />);
+    rerender(<SaveDraftDialog open initialName="Given" suggest={suggest} intent="draft" onOpenChange={() => undefined} onSave={onSave} />);
+    expect(screen.getByTestId<HTMLInputElement>("save-draft-name").value).toBe("Given");
+    expect(screen.queryByTestId("save-draft-hint")).toBeNull();
   });
 });

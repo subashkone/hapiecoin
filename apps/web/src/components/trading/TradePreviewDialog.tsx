@@ -24,10 +24,14 @@ export interface TradePreviewProps {
   fees: FeeEstimate;
   /** Worst defined loss at expiry (margin estimate), or null when unbounded / unknown. */
   maxLoss: number | null;
+  /** False on paths that do not price the worst loss (Go live from a card): "not computed", not "undefined risk". */
+  maxLossKnown?: boolean | undefined;
   customPrices: boolean;
   busy: boolean;
   /** Server-side venue preview (live only): contracts, marks, notional, wallet and safeguard verdicts. */
   venue?: LivePreview | null | undefined;
+  /** Exchange wallet available balance (HC-TR-158), when an exchange is connected; paper shows it too. */
+  available?: { amount: number; asset: string } | null | undefined;
   onTrade: () => void;
 }
 
@@ -42,6 +46,18 @@ export function TradePreviewDialog(p: TradePreviewProps) {
   const lot = Number(p.lotSize);
   const np = netPremium(p.legs, p.lotSize);
   const net = np - p.fees.total;
+  // capital (HC-TR-158): the capital at risk is the worst loss at expiry, which the engine reports net of the premium
+  // (a credit received or a debit paid is already inside it), never less than a debit paid; the exchange's own margin
+  // exists only after placement (ADR-029). "Worst case leaves" = the wallet minus that loss minus fees.
+  const known = p.maxLossKnown ?? true;
+  const debit = np < 0 ? -np : 0;
+  const required = p.maxLoss === null ? null : Math.max(Math.max(0, -p.maxLoss), debit);
+  const toUsd = (amount: number, asset: string): number | null => (asset === "USD" || asset === "USDT" || asset === "USDC" ? amount : asset === "INR" ? amount / (Number(p.money.rate) || 1) : null);
+  // live: the exchange check's own figure (one source of truth on this dialog); paper: the wallet poll
+  const walletRaw = p.venue?.available ? { amount: Number(p.venue.available), asset: p.venue.availableAsset ?? "USD" } : p.available ?? null;
+  const avail = walletRaw ? toUsd(walletRaw.amount, walletRaw.asset) : null;
+  const after = avail === null || required === null ? null : avail - required - p.fees.total;
+  const pct = avail !== null && avail > 0 && required !== null ? Math.round((required / avail) * 100) : null;
   return (
     <Dialog open={p.open} onOpenChange={p.onOpenChange}>
       <DialogContent className="sm:max-w-[640px]" data-testid="trade-preview" data-tour="trade-preview">
@@ -93,6 +109,12 @@ export function TradePreviewDialog(p: TradePreviewProps) {
             <dt className="text-muted-foreground">Exchange</dt>
             <dd>{p.broker?.name ?? "—"}</dd>
           </dl>
+          <div className={cn("mt-3 grid grid-cols-2 gap-2 rounded border p-2 text-2xs sm:grid-cols-4", pct !== null && pct > 100 ? "border-loss/60" : pct !== null && pct > 50 ? "border-warning/60" : "border-border")} data-testid="preview-capital" data-pct={pct ?? undefined}>
+            <div><div className="micro">Capital at risk</div><div className="num text-[13px] font-medium" data-testid="preview-capital-required">{required === null ? (known ? "not capped" : "not computed") : fmtMoney(required, p.money)}</div><div className="micro">{required === null ? (known ? "undefined risk · the exchange sets the margin at placement" : "see the card's max loss · the exchange sets the margin at placement") : debit > 0 && required === debit ? "the premium paid · exchange margin at placement" : "worst loss at expiry · exchange margin at placement"}</div></div>
+            <div><div className="micro">Available</div><div className="num text-[13px] font-medium" data-testid="preview-capital-available">{avail !== null ? fmtMoney(avail, p.money) : walletRaw ? `${walletRaw.amount} ${walletRaw.asset}` : "—"}</div><div className="micro">{walletRaw ? `${walletRaw.asset} wallet · ${pct === null ? (avail === null ? "not a cash asset" : "—") : `${pct}% used by this trade`}` : p.mode === "paper" ? "connect an exchange to see your wallet" : "wallet not read"}</div></div>
+            <div><div className="micro">Fees · est.</div><div className="num text-[13px] font-medium">{fmtMoney(p.fees.total, p.money)}</div><div className="micro">{np >= 0 ? "credit" : "debit"} {fmtMoney(Math.abs(np), p.money)} before fees</div></div>
+            <div><div className="micro">Worst case leaves</div><div className={cn("num text-[13px] font-medium", after !== null && after < 0 && "text-loss")} data-testid="preview-capital-after">{after === null ? "—" : fmtMoney(after, p.money)}</div><div className="micro">{after !== null && after < 0 ? "short of capital" : required === null ? "needs a capped loss to say" : "available − capital at risk − fees"}</div></div>
+          </div>
           {p.venue ? (
             <div className="mt-3 rounded border border-border p-2 text-2xs" data-testid="venue-preview" data-ok={p.venue.ok}>
               <div className="micro mb-1">Exchange check · {p.venue.ok ? "ready to place" : "blocked"}</div>
