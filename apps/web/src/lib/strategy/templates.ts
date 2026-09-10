@@ -25,7 +25,7 @@ export interface TemplateFutureLeg {
 }
 export type TemplateLeg = TemplateOptionLeg | TemplateFutureLeg;
 
-/** Badges on the card: the template holds a perpetual, spans two expiries, or has unequal lots. */
+/** Badges on the card: the template holds a perpetual, spans two expiries, or is a 1x2 spread. */
 export type TemplateTag = "futures" | "calendar" | "ratio";
 
 export interface StrategyTemplate {
@@ -122,7 +122,7 @@ export interface MaterialiseInput {
   /** Rows of the chain for `expiry` (ascending strikes) and the ATM index within them. */
   rows: readonly ChainStrike[];
   atm: number;
-  /** Rows for later expiries, by expiry (calendars); missing expiries fall back to the base rows. */
+  /** Rows for later expiries, by expiry (calendars, diagonals); a later expiry without rows refuses with `no-chain`. */
   rowsByExpiry?: Readonly<Record<string, { rows: readonly ChainStrike[]; atm: number }>>;
   lots: number;
   /** Live spot as the venue decimal string; a template with a future leg refuses without it. */
@@ -147,7 +147,9 @@ export function materialiseTemplate(tpl: StrategyTemplate, input: MaterialiseInp
     if (input.rows.length === 0 || input.atm < 0) return { ok: false, reason: "no-chain" };
     const ei = input.expiries.indexOf(input.expiry);
     const expiry = l.expiryOffset ? (input.expiries[Math.min(Math.max(ei, 0) + l.expiryOffset, input.expiries.length - 1)] ?? input.expiry) : input.expiry;
-    const source = expiry === input.expiry ? { rows: input.rows, atm: input.atm } : (input.rowsByExpiry?.[expiry] ?? { rows: input.rows, atm: input.atm });
+    // GAPS #76: a far leg is never priced off the near expiry's rows; without that chain the template refuses
+    const source = expiry === input.expiry ? { rows: input.rows, atm: input.atm } : input.rowsByExpiry?.[expiry];
+    if (!source) return { ok: false, reason: "no-chain" };
     const idx = source.atm + l.k;
     const row = source.rows[idx];
     if (!row) return { ok: false, reason: "out-of-range" };

@@ -277,7 +277,7 @@
     "feature": "Add Futures Contract dialog",
     "how": "Shows 'USD Future' with the asset future symbol and live spot (updates on tick), Side buttons 'Buy Future' / 'Sell Future', Expiry select (Perpetual + all expiries), Quantity (lots) with lot-size hint, Price and Notional rows, Cancel / Add",
     "status": "working",
-    "evidence": "bundle strings: Add Futures Contract, USD Future, Buy Future, Sell Future, Expiry, Side · Phase 2 item 4 (08 Sep 2026): Add Futures Contract dialog: side, lots, live spot (FutureDialog.tsx); unit builder.test.tsx, e2e analyse.spec.ts HC-TR-035"
+    "evidence": "bundle strings: Add Futures Contract, USD Future, Buy Future, Sell Future, Expiry, Side · Phase 2 item 4 (08 Sep 2026): Add Futures Contract dialog: side, lots, live spot (FutureDialog.tsx); unit builder.test.tsx, e2e analyse.spec.ts HC-TR-035 · ADR-060 (10 Sep 2026): a template may hold a future leg placed the same way (materialiseTemplate: spot → PERP, no strike; `no-spot` refusal); unit templates.test.ts"
   },
   {
     "route": "/analyse",
@@ -291,9 +291,9 @@
     "route": "/analyse",
     "screen": "Analyse · Strategy panel (Templates)",
     "feature": "Category chips All / Bullish / Bearish / Neutral / Others",
-    "how": "Filters the 28 CG.TEMPLATES cards by category",
+    "how": "Filters the template cards (48 since ADR-060) by category",
     "status": "working",
-    "evidence": "bundle strings: Bullish, Bearish, Neutral, Others · Phase 2 item 4 (08 Sep 2026): category chips All / Bullish / Bearish / Neutral / Others; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-040"
+    "evidence": "bundle strings: Bullish, Bearish, Neutral, Others · Phase 2 item 4 (08 Sep 2026): category chips All / Bullish / Bearish / Neutral / Others; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-040 · ADR-060 (10 Sep 2026): the chips filter the catalogue of 48 (count from TEMPLATE_COUNT, never a literal); unit builder.test.tsx"
   },
   {
     "route": "/analyse",
@@ -306,10 +306,10 @@
   {
     "route": "/analyse",
     "screen": "Analyse · Strategy panel (Templates)",
-    "feature": "28 template cards with payoff sketch",
+    "feature": "Template cards (48 since ADR-060) with payoff sketch",
     "how": "Each card draws a small SVG payoff (CG.analyze at expiry, or the target-date curve for calendars) coloured by category, plus name and category label; title tooltip shows the description",
     "status": "working",
-    "evidence": "bundle strings: Buy Call … Reverse Jade Lizard (28 names) · Phase 2 item 4 (08 Sep 2026): 28 template cards with an SVG payoff sketch (templates.ts + TemplatesPanel.tsx); unit templates.test.ts + builder.test.tsx, e2e analyse.spec.ts HC-TR-040, visual analyse-builder / analyse-templates / analyse-greeks"
+    "evidence": "bundle strings: Buy Call … Reverse Jade Lizard (28 names) · Phase 2 item 4 (08 Sep 2026): 28 template cards with an SVG payoff sketch (templates.ts + TemplatesPanel.tsx); unit templates.test.ts + builder.test.tsx, e2e analyse.spec.ts HC-TR-040, visual analyse-builder / analyse-templates / analyse-greeks · ADR-060 (10 Sep 2026): catalogue of 48 with Long / Short Perp, Covered Call, Protective Put, Collar, Covered Put, Synthetic Straddle, back and ratio spreads 1x2, diagonals, double diagonal, calendar strangle, broken-wing butterflies, risk reversal, ladders; tags badge (futures · calendar · ratio) after the leg count; the sketch draws a future as a line through spot; unit templates.test.ts (tags match the legs, every futures template materialises at the spot, name codes) + templates.invariants.test.ts (every template's textbook shape: bounds, break-evens, outlook on a Black-76 ladder); e2e analyse.spec.ts and visual.spec.ts count from TEMPLATE_COUNT"
   },
   {
     "route": "/analyse",
@@ -317,7 +317,7 @@
     "feature": "Template click loads legs into the Builder",
     "how": "CG.analyse.legs = CG.templateLegs(tpl, asset, expiry), name = template name, switches to Builder and toasts 'Strategy · Loaded strategy: <name>'",
     "status": "working",
-    "evidence": "bundle string: Loaded strategy: · Phase 2 item 4 (08 Sep 2026): template click places legs on the venue ladder around ATM (ADR-023) and names the strategy; unit templates.test.ts + builder.test.tsx, e2e analyse.spec.ts HC-TR-040 · ADR-027 (08 Sep 2026): templates strip under the Builder legs, one click loads (Bullish / Bearish / Neutral / Others, expiry select, persisted collapse); unit builder.test.tsx, e2e analyse.spec.ts HC-TR-040 strip"
+    "evidence": "bundle string: Loaded strategy: · Phase 2 item 4 (08 Sep 2026): template click places legs on the venue ladder around ATM (ADR-023) and names the strategy; unit templates.test.ts + builder.test.tsx, e2e analyse.spec.ts HC-TR-040 · ADR-027 (08 Sep 2026): templates strip under the Builder legs, one click loads (Bullish / Bearish / Neutral / Others, expiry select, persisted collapse); unit builder.test.tsx, e2e analyse.spec.ts HC-TR-040 strip · ADR-060 (10 Sep 2026): futures templates load at the live spot; a missing spot shows \"Spot not loaded yet\"; e2e analyse.spec.ts HC-TR-040"
   },
   {
     "route": "/analyse",
@@ -858,7 +858,7 @@
     "feature": "Recommended for outlook filter (Bullish / Bearish / Neutral / Volatile)",
     "how": "Each template is materialised at the current chain (CG.templateLegs + CG.analyze); Bullish = profits at +6% and not at −6%, Bearish mirrored, Neutral = profits at spot and less on both sides, Volatile = profits at ±14%; matches are ranked by POP × 0.6 + reward:risk × 0.4 and numbered #1…; note line \"6 of 28 templates profit in a bullish market…\"; Clear resets",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/TemplatesPanel.tsx + lib/strategy/useTemplateStats.ts (materialise + worker analyze per template, outlook from the payoff at ±6 %); template-outlook-* chips; unit builder.test.tsx; e2e analyse.spec.ts",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/TemplatesPanel.tsx + lib/strategy/useTemplateStats.ts (materialise + worker analyze per template, outlook from the payoff at ±6 %); template-outlook-* chips; unit builder.test.tsx; e2e analyse.spec.ts · ADR-060 (10 Sep 2026): the outlook of every template asserted at ±6 % in templates.invariants.test.ts",
     "new": true
   },
   {
@@ -867,7 +867,7 @@
     "feature": "POP and R:R on every template card",
     "how": "Computed with CG.analyze at the current asset / expiry (R:R ∞ when profit is unlimited, — when undefined); the card tooltip repeats them",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): template-pop \"POP x% · R:R 1 : y\" on every card from useTemplateStats; unit builder.test.tsx",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): template-pop \"POP x% · R:R 1 : y\" on every card from useTemplateStats; unit builder.test.tsx · ADR-060 (10 Sep 2026): useTemplateStats passes the spot so futures templates price too; unit builder.test.tsx",
     "new": true
   },
   {
@@ -876,7 +876,7 @@
     "feature": "Template sketch with green / red fills",
     "how": "Expiry payoff line in the foreground colour with the area above zero filled green and below zero red (clip paths), dashed zero line",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): TemplateSketch: profit / loss fills via clip paths above / below the dashed zero line (templateSketchGeometry); unit builder.test.tsx",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): TemplateSketch: profit / loss fills via clip paths above / below the dashed zero line (templateSketchGeometry); unit builder.test.tsx · ADR-060 (10 Sep 2026): sketchLegs shared by the sketch and its geometry; a future leg is a straight line through spot",
     "new": true
   },
   {

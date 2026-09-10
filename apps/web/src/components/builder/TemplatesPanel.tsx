@@ -147,12 +147,12 @@ function TemplateSketch({ tpl }: { tpl: StrategyTemplate }) {
 }
 
 export function TemplatesPanel() {
-  const { asset, expiry, list, setChosen, load, rows, atm, rowsByExpiry, spot, seq } = useTemplateLoader();
+  const { asset, expiry, list, setChosen, load, rows, atm, rowsByExpiry, spot, seq, farSeq } = useTemplateLoader();
   const chainLots = useUiStore((s) => s.chainLots);
   const { data: settings } = useSettings();
   const [outlook, setOutlook] = useState<Outlook | null>(null);
   // HC-TR-106 / 107: every template priced at the live chain → POP, R:R and the outlook it expresses
-  const stats = useTemplateStats(TEMPLATES, { asset, expiry, expiries: list, rows, atm, lots: chainLots, ...(rowsByExpiry ? { rowsByExpiry } : {}), spot: spot === null ? null : Number(spot), lotSize: settings?.lotSizes[asset], nowMs: Date.now(), version: seq });
+  const stats = useTemplateStats(TEMPLATES, { asset, expiry, expiries: list, rows, atm, lots: chainLots, ...(rowsByExpiry ? { rowsByExpiry } : {}), spot: spot === null ? null : Number(spot), lotSize: settings?.lotSizes[asset], nowMs: Date.now(), version: `${seq}:${farSeq}` });
   const setLegs = useUiStore((s) => s.setLegs);
   const setMeta = useUiStore((s) => s.setStrategyMeta);
   const setBuilderTab = useUiStore((s) => s.setBuilderTab);
@@ -219,7 +219,11 @@ export function TemplatesPanel() {
                   {t.tags?.length ? ` · ${t.tags.join(" · ")}` : ""}
                 </span>
                 <span className="mt-0.5 block text-2xs leading-snug text-muted-foreground">{t.description}</span>
-                {st ? <span className="num mt-0.5 block text-2xs" data-testid="template-pop">POP {st.pop === null ? "—" : `${(st.pop * 100).toFixed(0)}%`} · R:R {rr}{st.outlook ? <span className="micro ml-1">· {st.outlook}</span> : null}</span> : null}
+                {st ? (
+                  <span className="num mt-0.5 block text-2xs" data-testid="template-pop">POP {st.pop === null ? "—" : `${(st.pop * 100).toFixed(0)}%`} · R:R {rr}{st.outlook ? <span className="micro ml-1">· {st.outlook}</span> : null}</span>
+                ) : t.tags?.includes("calendar") ? (
+                  <span className="micro mt-0.5 block" data-testid="template-unpriced">Figures need the later expiry loaded</span>
+                ) : null}
               </span>
             </button>
           );

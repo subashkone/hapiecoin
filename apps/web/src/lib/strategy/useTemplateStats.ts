@@ -7,7 +7,7 @@ import type { Underlying } from "@hapiecoin/schema";
 import { useEffect, useRef, useState } from "react";
 import { getPricingClient } from "@/lib/pricing/client";
 import { settlementHourUtc, toPricingLegs } from "@/lib/pricing/legs";
-import { pnlAt } from "./analysis";
+import { nearestExpiryValuationMs, pnlAt } from "./analysis";
 import { type StrategyLeg, addLeg as addLegPure } from "./legs";
 import { type ChainStrike, type MaterialiseInput, type StrategyTemplate, materialiseTemplate } from "./templates";
 
@@ -42,6 +42,8 @@ export interface TemplateStatsInput {
   expiries: readonly string[];
   rows: readonly ChainStrike[];
   atm: number;
+  /** Chains of later expiries (calendar-family templates); without the far chain those templates stay unpriced. */
+  rowsByExpiry?: MaterialiseInput["rowsByExpiry"];
   lots: number;
   spot: number | null;
   lotSize: string | undefined;
@@ -54,7 +56,8 @@ export interface TemplateStatsInput {
 export function useTemplateStats(templates: readonly StrategyTemplate[], input: TemplateStatsInput, enabled = true): Map<string, TemplateStat> {
   const [stats, setStats] = useState<Map<string, TemplateStat>>(new Map());
   const seq = useRef(0);
-  const key = enabled && input.expiry && input.spot && input.lotSize && input.rows.length ? `${input.asset}|${input.expiry}|${input.lots}|${input.lotSize}|${input.version}` : "";
+  const far = input.rowsByExpiry ? Object.keys(input.rowsByExpiry).sort().join(",") : "";
+  const key = enabled && input.expiry && input.spot && input.lotSize && input.rows.length ? `${input.asset}|${input.expiry}|${input.lots}|${input.lotSize}|${input.version}|${far}` : "";
   useEffect(() => {
     if (key === "") {
       seq.current += 1;
@@ -64,10 +67,12 @@ export function useTemplateStats(templates: readonly StrategyTemplate[], input: 
     const id = (seq.current += 1);
     const client = getPricingClient();
     const spot = input.spot!;
-    const mat: MaterialiseInput = { asset: input.asset, expiry: input.expiry!, expiries: input.expiries, rows: input.rows, atm: input.atm, lots: input.lots, spot: String(spot) };
+    const mat: MaterialiseInput = { asset: input.asset, expiry: input.expiry!, expiries: input.expiries, rows: input.rows, atm: input.atm, lots: input.lots, spot: String(spot), ...(input.rowsByExpiry ? { rowsByExpiry: input.rowsByExpiry } : {}) };
     const run = async () => {
       const out = new Map<string, TemplateStat>();
       for (const tpl of templates) {
+        // GAPS #76: a calendar-family template refuses (`no-chain`) until the far expiry's rows are passed in, so its
+        // card shows no figures rather than figures priced off the near expiry
         const r = materialiseTemplate(tpl, mat);
         if (!r.ok) continue;
         let legs: StrategyLeg[] = [];
@@ -84,7 +89,9 @@ export function useTemplateStats(templates: readonly StrategyTemplate[], input: 
         const priced = toPricingLegs(legs, input.lotSize);
         if (priced.length === 0) continue;
         try {
-          const res = await client.analyze(priced, { spot, nowMs: input.nowMs, defaultIv: 0.5, settlementHourUtc: settlementHourUtc(input.asset), points: 81 });
+          // ADR-059: a calendar-family template values its expiry figures at the nearest expiry, later legs keep time value
+          const valuationMs = nearestExpiryValuationMs(legs, settlementHourUtc(input.asset), input.nowMs);
+          const res = await client.analyze(priced, { spot, nowMs: input.nowMs, defaultIv: 0.5, settlementHourUtc: settlementHourUtc(input.asset), points: 81, ...(valuationMs !== undefined ? { valuationMs } : {}) });
           if (id !== seq.current) return;
           out.set(tpl.name, { pop: Number.isFinite(res.pop) ? res.pop : null, rr: Number.isFinite(res.rewardRisk) ? res.rewardRisk : Number.isFinite(res.maxProfit) ? null : Number.POSITIVE_INFINITY, maxProfit: res.maxProfit, maxLoss: res.maxLoss, outlook: classifyOutlook(res.points, spot) });
         } catch {
