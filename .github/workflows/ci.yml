@@ -34,7 +34,7 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm ci
+      - run: pnpm run ci
       - name: Bundle budget (/analyse first-load JS)
         run: pnpm --filter @hapiecoin/web check:budget
       - name: Coverage reports
