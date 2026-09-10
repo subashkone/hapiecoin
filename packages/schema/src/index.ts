@@ -15,3 +15,4 @@ export * from "./emails.js";
 export * from "./analytics.js";
 export * from "./alerts.js";
 export * from "./market-history.js";
+export * from "./telegram.js";

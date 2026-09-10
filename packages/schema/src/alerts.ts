@@ -16,8 +16,8 @@ export const AlertOp = z.enum([">=", "<="]);
 export type AlertOp = z.infer<typeof AlertOp>;
 export const ALERT_OP_LABELS: Record<AlertOp, string> = { ">=": "≥ at or above", "<=": "≤ at or below" };
 
-/** Delivery channels. `push` is the in-app toast plus a browser notification when permitted; `email` goes through the mailer. */
-export const ALERT_CHANNELS = ["push", "email"] as const;
+/** Delivery channels. `push` is the in-app toast plus a browser notification when permitted; `email` goes through the mailer; `telegram` needs a linked chat (ADR-057). */
+export const ALERT_CHANNELS = ["push", "email", "telegram"] as const;
 export const AlertChannel = z.enum(ALERT_CHANNELS);
 export type AlertChannel = z.infer<typeof AlertChannel>;
 

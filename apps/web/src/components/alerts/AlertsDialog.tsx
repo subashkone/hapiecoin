@@ -6,6 +6,7 @@ import { ALERT_KIND_LABELS, ALERT_KIND_UNITS, ALERT_OP_LABELS, type Alert, type 
 import { Activity, Badge, Bell, Button, Checkbox, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, Percent, Switch, TrendingUp, cn, toast } from "@hapiecoin/ui";
 import { useEffect, useMemo, useState } from "react";
 import { useAlerts, useCreateAlert, useDeleteAlert, usePatchAlert } from "@/lib/api/alerts";
+import { useLinkTelegram, useTelegramStatus, useTestTelegram, useUnlinkTelegram } from "@/lib/api/telegram";
 import { useStrategies } from "@/lib/api/strategies";
 import { conditionText, currentValue, nowText } from "@/lib/alerts/engine";
 import { useReadings } from "@/lib/alerts/readings";
@@ -32,6 +33,8 @@ export function AlertForm({ prefill, onDone }: { prefill: AlertPrefill; onDone: 
   const workspaceAsset = useUiStore((s) => s.asset);
   const readings = useReadings();
   const create = useCreateAlert();
+  const { data: telegram } = useTelegramStatus();
+  const telegramReady = telegram?.linked === true;
   const [kind, setKind] = useState<AlertKind>(prefill.kind ?? "price");
   const [asset, setAsset] = useState<Underlying>(prefill.asset ?? workspaceAsset);
   const [strategyId, setStrategyId] = useState(prefill.strategyId ?? "");
@@ -121,7 +124,9 @@ export function AlertForm({ prefill, onDone }: { prefill: AlertPrefill; onDone: 
           <div className="flex h-8 items-center gap-4">
             <label className="flex items-center gap-1.5 text-xs text-foreground"><Checkbox checked={channels.includes("push")} onCheckedChange={(v) => toggle("push", v === true)} aria-label="Push" data-testid="alert-ch-push" /> push</label>
             <label className="flex items-center gap-1.5 text-xs text-foreground"><Checkbox checked={channels.includes("email")} onCheckedChange={(v) => toggle("email", v === true)} aria-label="Email" data-testid="alert-ch-email" /> email</label>
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground" title="Telegram delivery is planned (GAPS #64)"><Checkbox checked={false} disabled aria-label="Telegram (soon)" /> telegram <span className="micro">soon</span></span>
+            <label className={cn("flex items-center gap-1.5 text-xs", telegramReady ? "text-foreground" : "text-muted-foreground")} title={telegramReady ? "Delivered to your linked Telegram chat" : telegram?.configured === false ? "Telegram delivery is not configured on this server" : "Connect Telegram below to enable this channel"}>
+              <Checkbox checked={channels.includes("telegram")} disabled={!telegramReady} onCheckedChange={(v) => toggle("telegram", v === true)} aria-label="Telegram" data-testid="alert-ch-telegram" /> telegram{telegramReady ? null : <span className="micro">{telegram?.configured === false ? "off" : "connect"}</span>}
+            </label>
           </div>
         </fieldset>
       </div>
@@ -130,6 +135,41 @@ export function AlertForm({ prefill, onDone }: { prefill: AlertPrefill; onDone: 
         <Button type="submit" size="sm" loading={create.isPending} data-testid="alert-save">Save alert</Button>
       </div>
     </form>
+  );
+}
+
+/** Telegram delivery (ADR-057): link the chat through the bot's /start deep link, test it, unlink it. */
+export function TelegramConnect() {
+  const { data: s, isLoading } = useTelegramStatus();
+  const link = useLinkTelegram();
+  const unlink = useUnlinkTelegram();
+  const test = useTestTelegram();
+  if (isLoading || !s) return <div className="text-2xs text-muted-foreground" data-testid="telegram-status" data-state="loading">Telegram · checking…</div>;
+  if (!s.configured) return <div className="text-2xs text-muted-foreground" data-testid="telegram-status" data-state="off">Telegram · not configured on this server (set TELEGRAM_BOT_TOKEN)</div>;
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded border border-border px-3 py-2 text-2xs" data-testid="telegram-status" data-state={s.linked ? "linked" : s.pending ? "pending" : "unlinked"}>
+      <span className="micro">Telegram</span>
+      {s.linked ? (
+        <>
+          <span className="text-profit">connected{s.linkedAt ? ` · ${new Date(s.linkedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}` : ""}</span>
+          <span className="text-muted-foreground">· alerts on the telegram channel reach your chat even with HapieCoin closed</span>
+          <Button size="sm" variant="outline" className="ml-auto" loading={test.isPending} onClick={() => test.mutate(undefined, { onSuccess: () => toast.success("Test message sent", { description: "Check your Telegram chat" }), onError: (e) => toast.error("Telegram did not accept it", { description: e.message }) })} data-testid="telegram-test">Send test</Button>
+          <Button size="sm" variant="ghost" className="text-loss" loading={unlink.isPending} onClick={() => unlink.mutate(undefined, { onSuccess: () => toast("Telegram disconnected") })} data-testid="telegram-unlink">Disconnect</Button>
+        </>
+      ) : s.pending ? (
+        <>
+          <span className="text-muted-foreground">open the link and press Start · waiting…</span>
+          <a href={s.pending.link} target="_blank" rel="noopener noreferrer" className="font-mono text-primary underline underline-offset-2" data-testid="telegram-link">{s.pending.link}</a>
+          <span className="font-mono" data-testid="telegram-code">code {s.pending.code}</span>
+          <Button size="sm" variant="ghost" className="ml-auto" loading={link.isPending} onClick={() => link.mutate()} data-testid="telegram-relink">New code</Button>
+        </>
+      ) : (
+        <>
+          <span className="text-muted-foreground">not connected · get alerts in Telegram when HapieCoin is closed</span>
+          <Button size="sm" variant="outline" className="ml-auto" loading={link.isPending} onClick={() => link.mutate(undefined, { onError: (e) => toast.error("Could not start the link", { description: e.message }) })} data-testid="telegram-connect">Connect Telegram</Button>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -184,7 +224,7 @@ export function AlertsDialog({ open, onOpenChange }: DialogProps) {
       <DialogContent className="sm:max-w-[860px]" data-testid="alerts-dialog" data-count={items.length}>
         <DialogHeader>
           <DialogTitle>Alerts</DialogTitle>
-          <DialogDescription>Price, ATM IV and strategy P&amp;L alerts · in-app push or email</DialogDescription>
+          <DialogDescription>Price, ATM IV and strategy P&amp;L alerts · in-app push, email or Telegram · checked every tick while open and every five minutes by the server</DialogDescription>
         </DialogHeader>
         <DialogBody className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
@@ -207,7 +247,8 @@ export function AlertsDialog({ open, onOpenChange }: DialogProps) {
               ))}
             </div>
           )}
-          <p className="text-2xs text-muted-foreground">Evaluated on every price tick while HapieCoin is open · price vs futures, ATM IV vs the nearest expiry chain, P&amp;L vs your paper and live strategies.</p>
+          <TelegramConnect />
+          <p className="text-2xs text-muted-foreground">Evaluated on every price tick while HapieCoin is open, and by the server on every five-minute snapshot when it is not · price vs futures, ATM IV vs the nearest expiry chain, P&amp;L vs your paper and live strategies.</p>
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>

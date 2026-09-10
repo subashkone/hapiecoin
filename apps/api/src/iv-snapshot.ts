@@ -95,8 +95,8 @@ export async function snapshotOnce(deps: SnapshotDeps, source: MarketSource, now
   return report;
 }
 
-/** Run `snapshotOnce` now and every `intervalMs`, never overlapping; returns the stop function. */
-export function startIvSnapshotter(deps: SnapshotDeps, source: MarketSource, intervalMs: number): () => void {
+/** Run `snapshotOnce` now and every `intervalMs`, never overlapping; `after` runs on each completed snapshot (the alert evaluator, ADR-057). Returns the stop function. */
+export function startIvSnapshotter(deps: SnapshotDeps, source: MarketSource, intervalMs: number, after?: () => Promise<void>): () => void {
   let running = false;
   const tick = async () => {
     if (running) return;
@@ -104,6 +104,7 @@ export function startIvSnapshotter(deps: SnapshotDeps, source: MarketSource, int
     try {
       const report = await snapshotOnce(deps, source);
       deps.logger.info({ at: report.at, assets: report.assets }, "iv snapshot recorded");
+      await after?.();
     } catch (e) {
       deps.logger.warn({ err: e instanceof Error ? e.message : String(e) }, "iv snapshot failed");
     } finally {

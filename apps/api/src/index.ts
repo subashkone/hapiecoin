@@ -43,6 +43,10 @@ export { createKeyring, createVault, keyIdOf, maskKey, VaultError } from "./vaul
 export { resealCredentials } from "./credentials-reseal.js";
 export { snapshotOnce, startIvSnapshotter, atmIvByExpiry, frontExpiry } from "./iv-snapshot.js";
 export { ivHistory, markHistory } from "./market-history.js";
+export { evaluateAlerts, strategyPnlFromMarks } from "./alerts-evaluate.js";
+export { fireAlert, alertSubject } from "./alerts-fire.js";
+export { FakeTelegram, TelegramBotClient } from "./telegram.js";
+export type { TelegramClient } from "./telegram.js";
 export type { Sealed, Vault } from "./vault.js";
 export { DEFAULT_SETTINGS } from "./routes/settings.js";
 export { planState, EXPIRING_SOON_DAYS } from "./routes/plan.js";

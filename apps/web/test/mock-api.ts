@@ -38,6 +38,8 @@ interface Account {
   history: { id: number; action: string; target: string; actorId: string | null; actorEmail: string | null; at: string; after: unknown }[];
   /** Alerts (ADR-052), newest first. */
   alerts: Alert[];
+  /** Telegram link (ADR-057): the chat once /start was pressed, the pending code before. */
+  telegram: { chatId: string | null; code: string | null; linkedAt: string | null; pendingReads: number };
 }
 interface MockSubscription {
   id: string;
@@ -106,6 +108,9 @@ export interface MockState {
   invites: { email: string; name: string; invitedBy: string; link: string }[];
   /** Days of IV history the market routes serve (ADR-056); 0 answers 503 like an API that has not snapshotted yet. */
   ivHistoryDays: number;
+  /** Telegram (ADR-057): whether the bot is "configured", and whether a pending code links itself on the next status read (as if Start was pressed). */
+  telegramConfigured: boolean;
+  telegramAutoLink: boolean;
   sessions: Map<string, string>; // token → email
   /** OTPs issued: `${email}:${type}` → code (always TEST_OTP, but recorded for assertions). */
   otps: Map<string, string>;
@@ -195,6 +200,7 @@ export function createAccount(
     pastSubscriptions: [],
     history: [],
     alerts: [],
+    telegram: { chatId: null, code: null, linkedAt: null, pendingReads: 0 },
   };
   state.accounts.set(email, acc);
   return acc;
@@ -210,10 +216,10 @@ export function createSession(state: MockState, email: string): string {
 
 export function createMockApi(state: MockState = { plans: seedPlans(),
     menuItems: seedMenuItems(),
-    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", ivHistoryDays: 365, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
+    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
-  const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409, code: string, message: string) =>
+  const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409 | 503, code: string, message: string) =>
     c.json({ code, message }, status);
 
   const current = (c: Context): Account | null => {
@@ -343,6 +349,37 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     await next();
   });
   v1.get("/me", (c) => c.json(current(c)!.user));
+  // Telegram linking (ADR-057, mirrors apps/api/src/routes/telegram.ts); the auto-link stands in for the person pressing Start
+  const telegramStatus = (acc: Account) => {
+    const linked = acc.telegram.chatId !== null;
+    return { configured: state.telegramConfigured, bot: state.telegramConfigured ? "HapieCoinMockBot" : null, linked, linkedAt: acc.telegram.linkedAt, pending: !linked && acc.telegram.code && state.telegramConfigured ? { code: acc.telegram.code, link: `https://t.me/HapieCoinMockBot?start=${acc.telegram.code}` } : null };
+  };
+  v1.get("/me/telegram", (c) => {
+    const acc = current(c)!;
+    // the first read after Connect still shows the pending link (the person has not pressed Start yet); the next one links
+    if (acc.telegram.code && acc.telegram.chatId === null && state.telegramAutoLink) {
+      if (acc.telegram.pendingReads >= 1) acc.telegram = { chatId: `chat_${acc.user.id}`, code: null, linkedAt: nowIso(), pendingReads: 0 };
+      else acc.telegram.pendingReads += 1;
+    }
+    return c.json(telegramStatus(acc));
+  });
+  v1.post("/me/telegram/link", (c) => {
+    const acc = current(c)!;
+    if (!state.telegramConfigured) return err(c, 503, "UNAVAILABLE", "Telegram delivery is not configured on this server");
+    acc.telegram = { chatId: null, code: `LINK${String(acc.user.id.length).padStart(4, "0")}`, linkedAt: null, pendingReads: 0 };
+    return c.json(telegramStatus(acc));
+  });
+  v1.delete("/me/telegram", (c) => {
+    const acc = current(c)!;
+    acc.telegram = { chatId: null, code: null, linkedAt: null, pendingReads: 0 };
+    return c.json(telegramStatus(acc));
+  });
+  v1.post("/me/telegram/test", (c) => {
+    const acc = current(c)!;
+    if (!state.telegramConfigured) return err(c, 503, "UNAVAILABLE", "Telegram delivery is not configured on this server");
+    if (acc.telegram.chatId === null) return err(c, 409, "CONFLICT", "Connect Telegram first");
+    return c.json({ ok: true });
+  });
   v1.patch("/me", async (c) => {
     const acc = current(c)!;
     const body = await c.req.json<{ name?: string; mobile?: string; avatar?: User["avatar"] }>();
@@ -416,6 +453,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const parsed = AlertCreate.safeParse(await c.req.json());
     if (!parsed.success) return err(c, 400, "VALIDATION", parsed.error.issues[0]?.message ?? "Invalid alert");
     const body = parsed.data;
+    if (body.channels.includes("telegram") && acc.telegram.chatId === null) return err(c, 400, "BAD_REQUEST", "Connect Telegram first (Alerts → Connect Telegram), then pick the telegram channel");
     if (acc.alerts.length >= MAX_ALERTS) return err(c, 409, "CONFLICT", `You can keep up to ${MAX_ALERTS} alerts; delete one first`);
     let strategyName: string | null = null;
     if (body.strategyId) {
@@ -1605,8 +1643,9 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     return c.json({ ok: true });
   });
   app.post("/__test/seed", async (c) => {
-    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; referrals?: number; banners?: number; coupons?: boolean; payments?: number; campaigns?: number; alerts?: boolean }>();
+    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; referrals?: number; banners?: number; coupons?: boolean; payments?: number; campaigns?: number; alerts?: boolean; telegram?: boolean }>();
     const acc = createAccount(state, body);
+    if (body.telegram) acc.telegram = { chatId: `chat_${acc.user.id}`, code: null, linkedAt: nowIso(), pendingReads: 0 };
     if (body.alerts) {
       const at = new Date().toISOString();
       const hourAgo = new Date(Date.now() - 3_600_000).toISOString();

@@ -18,7 +18,8 @@ describe("HC-SH-094 / HC-SH-098 alert schemas", () => {
     expect(AlertCreate.safeParse({ ...base, kind: "iv", value: "600" }).success).toBe(false);
     // channels
     expect(AlertCreate.safeParse({ ...base, channels: [] }).success).toBe(false);
-    expect(AlertCreate.safeParse({ ...base, channels: ["telegram"] }).success).toBe(false);
+    expect(AlertCreate.safeParse({ ...base, channels: ["telegram"] }).success).toBe(true); // ADR-057
+    expect(AlertCreate.safeParse({ ...base, channels: ["sms"] }).success).toBe(false);
   });
 
   it("patches need at least one field and only re-arm or pause", () => {

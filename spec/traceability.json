@@ -1408,7 +1408,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · api contract",
   "acceptance": "Fields: id, kind price|ivrank|pnl, asset|strategyId, op >=|<=, value, channels[], state armed|triggered|paused, lastValue, triggeredAt",
-  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): packages/schema/src/alerts.ts (Alert: kind price|iv|pnl, asset, strategyId + strategyName, op ≥|≤, value, channels push|email, state armed|triggered|paused, lastValue, triggeredAt); DB table alerts (migration 0010); e2e seed alerts: true mirrors the three demo rows; unit alerts.test.ts (schema)"
+  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): packages/schema/src/alerts.ts (Alert: kind price|iv|pnl, asset, strategyId + strategyName, op ≥|≤, value, channels push|email, state armed|triggered|paused, lastValue, triggeredAt); DB table alerts (migration 0010); e2e seed alerts: true mirrors the three demo rows; unit alerts.test.ts (schema) · ADR-057 (11 Sep 2026): channels now push | email | telegram (users.telegram_chat_id, migration 0013)"
  },
  {
   "id": "HC-SH-095",
@@ -1438,7 +1438,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · api contract",
   "acceptance": "When met: state='triggered', toast “Alert triggered · BTC crossed 82,000 · Sent via push”, CG.emit('alert-triggered', alert)",
-  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): lib/alerts/AlertEngine.tsx: spot per asset, IvProbe (nearest expiry chain → atmIvOf) per asset with an IV alert, paper book P&L for P&L alerts; 1 s trailing throttle; hit → POST trigger → toast \"Alert triggered · BTC crossed 82,000.0 · Sent via push\" + browser Notification when granted; unit alerts.test.tsx (price + IV); e2e analyse.spec.ts"
+  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): lib/alerts/AlertEngine.tsx: spot per asset, IvProbe (nearest expiry chain → atmIvOf) per asset with an IV alert, paper book P&L for P&L alerts; 1 s trailing throttle; hit → POST trigger → toast \"Alert triggered · BTC crossed 82,000.0 · Sent via push\" + browser Notification when granted; unit alerts.test.tsx (price + IV); e2e analyse.spec.ts · ADR-057 (11 Sep 2026): server-side too: apps/api/src/alerts-evaluate.ts after every IV snapshot (price / ATM IV / strategy P&L from marks), shared alerts-fire.ts guard; API alerts-server.test.ts"
  },
  {
   "id": "HC-SH-097",
@@ -1468,7 +1468,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · api contract",
   "acceptance": "Saving arms the alert immediately and evaluates it once",
-  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): AlertForm: Type (Price / ATM IV / Strategy P&L), Asset or Strategy select, Condition ≥ / ≤, Value with unit hint and the live \"now\" reading, Channels push / email (Telegram disabled \"soon\", GAPS #64), Save / Cancel with validation toasts; saving arms it and the engine evaluates on the next reading; unit alerts.test.tsx; visual analyse-alerts-form-{theme}.png"
+  "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): AlertForm: Type (Price / ATM IV / Strategy P&L), Asset or Strategy select, Condition ≥ / ≤, Value with unit hint and the live \"now\" reading, Channels push / email (Telegram disabled \"soon\", GAPS #64), Save / Cancel with validation toasts; saving arms it and the engine evaluates on the next reading; unit alerts.test.tsx; visual analyse-alerts-form-{theme}.png · ADR-057 (11 Sep 2026): telegram checkbox enabled once the chat is linked; TelegramConnect row (connect / deep link + code / test / disconnect) in the dialog; routes /v1/me/telegram*; unit alerts.test.tsx; e2e analyse.spec.ts"
  },
  {
   "id": "HC-SH-099",

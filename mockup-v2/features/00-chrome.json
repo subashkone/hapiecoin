@@ -766,7 +766,7 @@
     "feature": "Alert store CG.mock.alerts seeded with 3 alerts: BTC ≥ 82,000 (push), BTC IV rank ≤ 30 (telegram), s_301 “BTC Bull Call Spread · Sep” P&L ≥ +$20 (email)",
     "how": "Fields: id, kind price|ivrank|pnl, asset|strategyId, op >=|<=, value, channels[], state armed|triggered|paused, lastValue, triggeredAt",
     "status": "working",
-    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): packages/schema/src/alerts.ts (Alert: kind price|iv|pnl, asset, strategyId + strategyName, op ≥|≤, value, channels push|email, state armed|triggered|paused, lastValue, triggeredAt); DB table alerts (migration 0010); e2e seed alerts: true mirrors the three demo rows; unit alerts.test.ts (schema)",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): packages/schema/src/alerts.ts (Alert: kind price|iv|pnl, asset, strategyId + strategyName, op ≥|≤, value, channels push|email, state armed|triggered|paused, lastValue, triggeredAt); DB table alerts (migration 0010); e2e seed alerts: true mirrors the three demo rows; unit alerts.test.ts (schema) · ADR-057 (11 Sep 2026): channels now push | email | telegram (users.telegram_chat_id, migration 0013)",
     "new": true
   },
   {
@@ -784,7 +784,7 @@
     "feature": "Evaluation on every 'tick' (and 'portfolio-changed'): price vs CG.ASSETS[sym].price, IV rank vs CG.analyse.stats.ivRank (fallback CG.chrome.marketStats), strategy P&L via CG.portfolio.strategyPnl(id) if present else CG.mock.strategies totalPnl",
     "how": "When met: state='triggered', toast “Alert triggered · BTC crossed 82,000 · Sent via push”, CG.emit('alert-triggered', alert)",
     "status": "working",
-    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): lib/alerts/AlertEngine.tsx: spot per asset, IvProbe (nearest expiry chain → atmIvOf) per asset with an IV alert, paper book P&L for P&L alerts; 1 s trailing throttle; hit → POST trigger → toast \"Alert triggered · BTC crossed 82,000.0 · Sent via push\" + browser Notification when granted; unit alerts.test.tsx (price + IV); e2e analyse.spec.ts",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): lib/alerts/AlertEngine.tsx: spot per asset, IvProbe (nearest expiry chain → atmIvOf) per asset with an IV alert, paper book P&L for P&L alerts; 1 s trailing throttle; hit → POST trigger → toast \"Alert triggered · BTC crossed 82,000.0 · Sent via push\" + browser Notification when granted; unit alerts.test.tsx (price + IV); e2e analyse.spec.ts · ADR-057 (11 Sep 2026): server-side too: apps/api/src/alerts-evaluate.ts after every IV snapshot (price / ATM IV / strategy P&L from marks), shared alerts-fire.ts guard; API alerts-server.test.ts",
     "new": true
   },
   {
@@ -802,7 +802,7 @@
     "feature": "New alert form: Type (Price / IV rank / Strategy P&L), Asset or Strategy select, Condition ≥ / ≤, Value (unit hint), Channels checkboxes, Save / Cancel with validation toasts",
     "how": "Saving arms the alert immediately and evaluates it once",
     "status": "working",
-    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): AlertForm: Type (Price / ATM IV / Strategy P&L), Asset or Strategy select, Condition ≥ / ≤, Value with unit hint and the live \"now\" reading, Channels push / email (Telegram disabled \"soon\", GAPS #64), Save / Cancel with validation toasts; saving arms it and the engine evaluates on the next reading; unit alerts.test.tsx; visual analyse-alerts-form-{theme}.png",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): AlertForm: Type (Price / ATM IV / Strategy P&L), Asset or Strategy select, Condition ≥ / ≤, Value with unit hint and the live \"now\" reading, Channels push / email (Telegram disabled \"soon\", GAPS #64), Save / Cancel with validation toasts; saving arms it and the engine evaluates on the next reading; unit alerts.test.tsx; visual analyse-alerts-form-{theme}.png · ADR-057 (11 Sep 2026): telegram checkbox enabled once the chat is linked; TelegramConnect row (connect / deep link + code / test / disconnect) in the dialog; routes /v1/me/telegram*; unit alerts.test.tsx; e2e analyse.spec.ts",
     "new": true
   },
   {
