@@ -12,6 +12,10 @@ import { useUiStore } from "@/lib/store";
 import { Workspace } from "@/components/workspace/Workspace";
 import { lotStep } from "./PositionTicket";
 
+// The workbench flows price real legs through the worker and drive Radix dialogs with user-event; under coverage on
+// a shared CI runner the longest one needs well over the package allowance (CI runs measured > 60 s).
+vi.setConfig({ testTimeout: 180_000 });
+
 const EXPIRY = "2026-09-25";
 const LATER = "2026-10-30";
 const TOPIC = chainTopic("delta_india", "BTC", EXPIRY);
