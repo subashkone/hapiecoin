@@ -8,9 +8,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import type { Underlying } from "@hapiecoin/schema";
 import { discoverExpiries, nearestExpiry } from "@/lib/chain/expiries";
-import { sliceAroundAtm } from "@/lib/chain/range";
+import { maxOpenInterest, oiBarPercent, sliceAroundAtm } from "@/lib/chain/range";
 import { publicEnv } from "@/lib/env";
-import { daysToExpiry, fmtExpiry, fmtIv, fmtOi, fmtPrice, fmtStrike } from "@/lib/format";
+import { daysToExpiry, fmtExpiry, fmtIv, fmtOi, fmtPrice, fmtStrike, fmtDelta } from "@/lib/format";
 import { useChain, useSpot } from "@/lib/gateway/hooks";
 import type { ChainState } from "@/lib/gateway/reducer";
 import { atmIndex } from "@/lib/gateway/reducer";
@@ -113,6 +113,7 @@ export function ChainPickerBody({ asset, expiries, expiry, onExpiry, rows, atm, 
         return undefined;
     }
   };
+  const maxOi = useMemo(() => maxOpenInterest(rows), [rows]); // HC-TR-127: OI bars grow toward the strike
   const bs = (kind: PickerKind, r: PickerRow) => {
     const q = kind === "call" ? r.call : r.put;
     const st = stateOf(r.strike, kind);
@@ -156,40 +157,54 @@ export function ChainPickerBody({ asset, expiries, expiry, onExpiry, rows, atm, 
         ))}
       </ExpiryStrip>
       <div className={cn("mt-2 overflow-auto rounded border border-border outline-none focus-visible:ring-1 focus-visible:ring-ring", boxClass)} tabIndex={keyboard ? 0 : undefined} onKeyDown={onKeyDown} aria-label={keyboard ? `${asset} chain: arrows move, B / S pick the call, Shift+B / Shift+S the put, Enter reviews` : undefined} data-testid={`${testId}-box`}>
-        <table className="w-full text-xs" data-testid={`${testId}-table`} data-rows={rows.length}>
+        <table className="w-full text-xs" data-testid={`${testId}-table`} data-rows={rows.length} data-atm={atm}>
           <thead className="sticky top-0 bg-surface-1">
             <tr className="micro">
               <th className="py-1 pl-2 text-left">Calls</th>
-              <th className="py-1 text-right">Mark/IV</th>
+              <th className="py-1 text-right">Δ</th>
               <th className="py-1 text-right">OI</th>
+              <th className="py-1 text-right">Mark/IV</th>
               <th className="py-1 text-center">Strike</th>
-              <th className="py-1 text-left">OI</th>
               <th className="py-1 text-left">Mark/IV</th>
+              <th className="py-1 text-left">OI</th>
+              <th className="py-1 text-left">Δ</th>
               <th className="py-1 pr-2 text-right">Puts</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r, i) => {
               const isAtm = i === atm;
+              const callItm = atm >= 0 && i < atm; // HC-TR-127: calls are in the money below ATM, puts above
+              const putItm = atm >= 0 && i > atm;
+              const cOi = oiBarPercent(r.call?.oi, maxOi);
+              const pOi = oiBarPercent(r.put?.oi, maxOi);
               return (
                 <tr key={r.strike} className={cn("border-t border-border", isAtm && "atm-band", i === focus && "outline outline-1 -outline-offset-1 outline-ring")} data-testid={`${testId}-row`} data-strike={r.strike} data-focused={i === focus ? "true" : undefined}>
-                  <td className="py-1 pl-2">{bs("call", r)}</td>
-                  <td className="num py-1 text-right">
+                  <td className={cn("py-1 pl-2", callItm && "itm-tint")}>{bs("call", r)}</td>
+                  <td className={cn("num py-1 text-right text-muted-foreground", callItm && "itm-tint")} data-testid="picker-delta-call">{fmtDelta(r.call?.greeks?.delta)}</td>
+                  <td className={cn("num relative py-1 text-right", callItm && "itm-tint")} data-testid="picker-oi-call" data-pct={cOi}>
+                    {cOi > 0 ? <i className="oi-bar right-0" style={{ width: `${cOi}%` }} aria-hidden /> : null}
+                    <span className="relative">{fmtOi(r.call?.oi)}</span>
+                  </td>
+                  <td className={cn("num py-1 text-right", callItm && "itm-tint")}>
                     {fmtPrice(r.call?.mark)} <span className="text-3xs text-muted-foreground">{fmtIv(r.call?.markIv)}</span>
                   </td>
-                  <td className="num py-1 text-right">{fmtOi(r.call?.oi)}</td>
                   <td className={cn("num py-1 text-center font-medium", isAtm && "text-spot")}>{fmtStrike(r.strike)}</td>
-                  <td className="num py-1 text-left">{fmtOi(r.put?.oi)}</td>
-                  <td className="num py-1 text-left">
+                  <td className={cn("num py-1 text-left", putItm && "itm-tint")}>
                     {fmtPrice(r.put?.mark)} <span className="text-3xs text-muted-foreground">{fmtIv(r.put?.markIv)}</span>
                   </td>
-                  <td className="py-1 pr-2 text-right">{bs("put", r)}</td>
+                  <td className={cn("num relative py-1 text-left", putItm && "itm-tint")} data-testid="picker-oi-put" data-pct={pOi}>
+                    {pOi > 0 ? <i className="oi-bar left-0" style={{ width: `${pOi}%` }} aria-hidden /> : null}
+                    <span className="relative">{fmtOi(r.put?.oi)}</span>
+                  </td>
+                  <td className={cn("num py-1 text-left text-muted-foreground", putItm && "itm-tint")} data-testid="picker-delta-put">{fmtDelta(r.put?.greeks?.delta)}</td>
+                  <td className={cn("py-1 pr-2 text-right", putItm && "itm-tint")}>{bs("put", r)}</td>
                 </tr>
               );
             })}
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-6 text-center text-muted-foreground">
+                <td colSpan={9} className="py-6 text-center text-muted-foreground">
                   {expiry ? "Waiting for the chain…" : "No expiry"}
                 </td>
               </tr>

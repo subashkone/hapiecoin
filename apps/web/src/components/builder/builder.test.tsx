@@ -98,7 +98,17 @@ describe("HC-TR-001..021 Builder legs table", () => {
     await waitFor(() => expect(within(legRows[0]!).getByTestId("leg-price").textContent).not.toBe("—"));
     // ticket fills once the engine has priced
     await waitFor(() => expect(screen.getByTestId("ticket-net").textContent).not.toBe("—"), { timeout: 4000 });
-    expect(screen.getByTestId("ticket-pop").textContent).toMatch(/%/);
+    expect(screen.getByTestId("ticket-pop").textContent).toMatch(/POP \d+%/);
+    // HC-TR-096 / 097 / 100 / 101 / 102 / 105: fees, total, width, the net line, the structure tag and the DTE lines
+    await waitFor(() => expect(screen.getByTestId("ticket-fees").textContent).toContain("$"));
+    expect(screen.getByTestId("ticket-total").dataset["kind"]).toMatch(/debit|credit/);
+    expect(screen.getByTestId("ticket-total").textContent).toContain("$");
+    expect(screen.getByTestId("ticket-width").textContent).not.toBe("—");
+    expect(screen.getByTestId("ticket-width").parentElement!.textContent).toContain("2 strikes");
+    expect(screen.getByTestId("builder-netline").textContent).toMatch(/Lot = 0\.001 BTC.*Net (debit|credit).*Net Δ.*Net Θ\/day.*Net ν\/1%/);
+    expect(screen.queryByTestId("strategy-structure")).toBeNull(); // a bespoke two-leg mix has no named structure
+    expect(screen.getByTestId("strategy-expiry-line").textContent).toMatch(/^BTC · 25 Sep · \d+d$/);
+    expect(screen.getByTestId("builder-subinfo").textContent).toMatch(/2 legs · 25 Sep · \d+d · unsaved/);
     // side toggle
     await u.click(within(legRows[0]!).getByTestId("leg-side"));
     expect(useUiStore.getState().legs.BTC[0]!.side).toBe("sell");
@@ -114,10 +124,18 @@ describe("HC-TR-001..021 Builder legs table", () => {
     // delete
     await u.click(within(screen.getAllByTestId("leg-row")[1]!).getByTestId("leg-delete"));
     expect(screen.getAllByTestId("leg-row")).toHaveLength(1);
+    // HC-TR-104: P starts the paper-trade flow while legs exist and nothing is open
+    fireEvent.keyDown(window, { key: "p" });
+    expect(useUiStore.getState().tradeFlow).toEqual({ strategyId: null });
+    useUiStore.setState({ tradeFlow: null });
+    fireEvent.keyDown(window, { key: "p", ctrlKey: true });
+    expect(useUiStore.getState().tradeFlow).toBeNull();
     // clear → empty state
     await u.click(screen.getByTestId("builder-clear"));
     expect(screen.getByText("No legs added")).toBeTruthy();
     expect(screen.getByTestId("builder-select-chain")).toBeTruthy();
+    fireEvent.keyDown(window, { key: "p" });
+    expect(useUiStore.getState().tradeFlow).toBeNull(); // no legs, no flow
   });
 
   it("HC-TR-024 custom price mode edits the stored price per leg (and every leg with the basket on)", async () => {
@@ -199,8 +217,20 @@ describe("HC-TR-037..044 templates", () => {
     act(() => FakeSocket.last().open());
     await waitFor(() => expect(subscribedToChain()).toBe(true), { timeout: 5000 });
     serveMarket();
+    // HC-TR-106..108: cards priced at the chain carry POP · R:R and an outlook; the chips filter on it; sketches fill
+    await waitFor(() => expect(Number(screen.getByTestId("template-cards").dataset["priced"])).toBeGreaterThan(0), { timeout: 8000 });
+    expect(screen.getAllByTestId("template-pop")[0]!.textContent).toMatch(/POP \d+%|POP —/);
+    expect(screen.getAllByTestId("template-sketch")[0]!.querySelectorAll("polygon")).toHaveLength(2);
+    await u.click(screen.getByTestId("template-cat-all"));
+    await u.click(screen.getByTestId("template-outlook-bullish"));
+    const bullish = screen.getAllByTestId("template-card");
+    expect(bullish.length).toBeGreaterThan(0);
+    for (const c of bullish) expect(c.dataset["outlook"]).toBe("Bullish");
+    await u.click(screen.getByTestId("template-outlook-bullish")); // toggles off
+    await u.click(screen.getByTestId("template-cat-neutral"));
     await u.click(screen.getByText("Iron Condor"));
     await waitFor(() => expect(useUiStore.getState().legs.BTC).toHaveLength(4));
+    expect(screen.getByTestId("strategy-structure").textContent).toMatch(/Condor/); // HC-TR-102 detected structure
     const legs = useUiStore.getState().legs.BTC;
     // every strike is a listed one and the legs sit on the chosen expiry
     for (const l of legs) {
@@ -299,6 +329,15 @@ describe("HC-TR-027..035 chain picker and future dialog", () => {
     serveMarket();
     await waitFor(() => expect(within(dialog).getAllByTestId("picker-row").length).toBeGreaterThan(0), { timeout: 5000 });
     const picker = within(dialog);
+    // HC-TR-127: Δ outboard, OI bars toward the strike, ITM tint below / above ATM
+    expect(picker.getAllByTestId("picker-delta-call")[0]!.textContent).toMatch(/^-?\d\.\d\d$|^—$/);
+    expect([...picker.getAllByTestId("picker-oi-call"), ...picker.getAllByTestId("picker-oi-put")].some((c) => Number(c.dataset["pct"]) > 0)).toBe(true);
+    await waitFor(() => expect(picker.getAllByTestId("picker-row").some((r) => r.className.includes("atm-band"))).toBe(true), { timeout: 5000 });
+    const rowsEl = picker.getAllByTestId("picker-row");
+    const atmIdx = rowsEl.findIndex((r) => r.className.includes("atm-band"));
+    expect(atmIdx).toBeGreaterThan(0);
+    expect(rowsEl[atmIdx - 1]!.querySelector("td")!.className).toContain("itm-tint"); // calls below ATM
+    expect(rowsEl[atmIdx + 1]!.querySelectorAll("td")[5]!.className).toContain("itm-tint"); // puts above ATM
     const first = picker.getAllByTestId("picker-row")[5]!;
     await u.click(within(first).getByTestId("picker-buy-call"));
     await u.click(within(first).getByTestId("picker-sell-put"));

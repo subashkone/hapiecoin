@@ -149,6 +149,10 @@ export interface UiState {
   analyseCollapse: PaneCollapse;
   /** A template the palette asked the Builder to load once the chain is ready (HC-WS-069); cleared on load. */
   templateRequest: string | null;
+  /** Exchange chosen in the trade dialogs; the Builder ticket's fee estimate follows it (HC-TR-142). Persisted. */
+  brokerId: string | null;
+  /** The palette asked the Builder to save the current legs as a draft (HC-TR-140); cleared once handled. */
+  saveDraftRequest: boolean;
   /** Strikes shown each side of ATM in the chain (HC-WS-016); 0 = every listed strike. Persisted. */
   chainRange: ChainRange;
   /** Bumped by "recentre on ATM" (keyboard A, palette); the chain scrolls the ATM row into the middle. */
@@ -226,6 +230,8 @@ export interface UiState {
   setLadderStep: (step: LadderStep) => void;
   setAnalyseCollapse: (pane: PaneCollapse) => void;
   requestTemplate: (name: string | null) => void;
+  setBroker: (id: string | null) => void;
+  requestSaveDraft: (on: boolean) => void;
   recentreChain: () => void;
   setChainColumns: (layout: ChainLayout) => void;
   addLeg: (input: NewLegInput) => AddLegResult;
@@ -287,6 +293,8 @@ export const useUiStore = create<UiState>()(
       ladderStep: 1,
       analyseCollapse: null,
       templateRequest: null,
+      brokerId: null,
+      saveDraftRequest: false,
       chainRange: 12,
       chainRecentre: 0,
       chainColumns: defaultLayout(),
@@ -382,6 +390,8 @@ export const useUiStore = create<UiState>()(
       setLadderStep: (ladderStep) => set({ ladderStep: isLadderStep(ladderStep) ? ladderStep : 1 }),
       setAnalyseCollapse: (analyseCollapse) => set({ analyseCollapse }),
       requestTemplate: (templateRequest) => set({ templateRequest }),
+      setBroker: (brokerId) => set({ brokerId }),
+      requestSaveDraft: (saveDraftRequest) => set({ saveDraftRequest }),
       recentreChain: () => set((s) => ({ chainRecentre: s.chainRecentre + 1 })),
       setChainColumns: (layout) => set({ chainColumns: normaliseLayout(layout) }),
       addLeg: (input) => {
@@ -427,6 +437,7 @@ export const useUiStore = create<UiState>()(
         chartLayers: s.chartLayers,
         ladderStep: s.ladderStep,
         analyseCollapse: s.analyseCollapse,
+        brokerId: s.brokerId,
         chainColumns: s.chainColumns,
         legs: s.legs,
         chainLots: s.chainLots,
@@ -453,6 +464,8 @@ export const useUiStore = create<UiState>()(
           ladderStep: isLadderStep(p.ladderStep) ? p.ladderStep : 1,
           analyseCollapse: p.analyseCollapse === "left" || p.analyseCollapse === "right" ? p.analyseCollapse : null,
           templateRequest: null,
+          brokerId: typeof p.brokerId === "string" && p.brokerId ? p.brokerId : null,
+          saveDraftRequest: false,
           chainColumns: p.chainColumns === undefined ? current.chainColumns : normaliseLayout(p.chainColumns),
           legs: p.legs === undefined ? current.legs : normaliseLegsByAsset(p.legs),
           // a browser that persisted lots under an older default (10) gets the new default once; later choices stick

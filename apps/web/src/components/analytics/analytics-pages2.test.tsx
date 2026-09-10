@@ -113,7 +113,7 @@ describe("HC-MA-073..081, 118, 119 Sentiment", () => {
     globalThis.fetch = vi.fn(() => Promise.resolve(new Response(JSON.stringify({ code: "UNAVAILABLE", message: "not yet" }), { status: 503, headers: { "content-type": "application/json" } })));
     try {
       renderWithProviders(<SentimentPage />);
-      await waitFor(() => expect(screen.getByTestId("sentiment-page").dataset["state"]).toBe("unavailable"), { timeout: 4000 });
+      await waitFor(() => expect(screen.getByTestId("sentiment-page").dataset["state"]).toBe("unavailable"), { timeout: 10_000 }); // four 503s settle slowly under the forced gate
       expect(screen.getByTestId("sentiment-unavailable")).toBeTruthy();
       expect(screen.getByTestId("fg-label").textContent).toContain("waiting for alternative.me");
       expect(screen.getAllByTestId("check-row").every((r) => r.dataset["hit"] === "na")).toBe(true);

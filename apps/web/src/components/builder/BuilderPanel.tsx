@@ -1,18 +1,19 @@
 "use client";
 // Strategy Builder (HC-TR-001..021, 024..026, 090): the asset's legs as an editable table, the net premium
 // ticket, and the actions. Legs live in the UI store (ADR-022); prices follow the feed in live mode.
-import { Button, EmptyState, Input, Switch, Tabs, TabsContent, TabsList, TabsTrigger, cn, toast } from "@hapiecoin/ui";
+import { Button, EmptyState, Input, Switch, Tabs, TabsContent, TabsList, TabsTrigger, cn, toast, useDensity } from "@hapiecoin/ui";
 import { black76Greeks, yearFraction } from "@hapiecoin/pricing";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { fmtExpiry, fmtIv, fmtPrice, fmtStrike } from "@/lib/format";
+import { fmtExpiry, fmtIv, fmtPrice, fmtStrike, daysToExpiry } from "@/lib/format";
 import { fmtMoney } from "@/lib/money";
 import { settlementHourUtc } from "@/lib/pricing/legs";
 import { useUiStore } from "@/lib/store";
-import { marginEstimate, premiumPerUnit } from "@/lib/strategy/analysis";
+import { marginEstimate, premiumPerUnit, strategyWidth, ticketTotal } from "@/lib/strategy/analysis";
 import { MAX_ACTIVE_LEGS, type StrategyLeg, setLegInstrument, setLegLots, setLegPrice, stepLots, toggleLegEnabled, toggleLegSide } from "@/lib/strategy/legs";
 import { guessTemplateName } from "@/lib/strategy/templates";
+import { useBrokers } from "@/lib/api/queries";
 import { useCreateStrategy, usePatchStrategy } from "@/lib/api/strategies";
-import { localLegToInput } from "@/lib/strategy/paper";
+import { localLegToInput, feeFor } from "@/lib/strategy/paper";
 import { useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
 import { SaveDraftDialog } from "@/components/dialogs/SaveDraftDialog";
 import { ChainPickerDialog } from "./ChainPickerDialog";
@@ -69,6 +70,18 @@ export function BuilderPanel() {
   const [future, setFuture] = useState(false);
   const { asset, legs, result, spot, lotSize, money } = a; // legs = the enabled ones the analysis uses
   const allLegs = useUiStore((s) => s.legs[s.asset]); // the table shows switched-off legs too (HC-TR-146)
+  const compact = useDensity().density === "compact"; // HC-TR-094: 28 px rows, sub-lines hidden
+  // HC-TR-096 / HC-TR-142: the ticket's fee estimate follows the exchange chosen in the trade dialogs
+  const { data: brokers } = useBrokers();
+  const brokerId = useUiStore((s) => s.brokerId);
+  const broker = (brokers ?? []).find((b) => b.id === brokerId) ?? brokers?.[0];
+  const fees = useMemo(() => (spot !== null && lotSize ? feeFor(legs, spot, lotSize, broker) : null), [legs, spot, lotSize, broker]);
+  const structure = legs.length ? guessTemplateName(legs) : "";
+  const nearest = useMemo(() => legs.filter((l) => l.kind !== "future").map((l) => l.expiry).sort()[0] ?? null, [legs]);
+  const dte = nearest ? daysToExpiry(nearest) : null;
+  const width = useMemo(() => strategyWidth(legs, spot), [legs, spot]);
+  const saveRequest = useUiStore((s) => s.saveDraftRequest);
+  const requestSaveDraft = useUiStore((s) => s.requestSaveDraft);
   const remaining = Math.max(0, NEW_STRATEGY_LEGS - allLegs.length);
   const limitTitle = `Maximum ${NEW_STRATEGY_LEGS} legs for a new strategy`;
 
@@ -121,6 +134,37 @@ export function BuilderPanel() {
   const net = result?.netPremium ?? null;
   const perUnit = net === null ? null : premiumPerUnit(net, legs.map((l) => l.lots), lotSize);
   const margin = result ? marginEstimate(result) : null;
+  const total = net === null || fees === null ? null : ticketTotal(net, fees.total);
+  const totalIsMaxLoss = total !== null && total.kind === "debit" && result !== null && Number.isFinite(result.maxLoss) && Math.abs(-result.maxLoss - (-net!)) < 0.005;
+  const g = result?.greeks;
+  // HC-TR-104: P starts a paper trade while the Builder is visible and no dialog is open
+  useEffect(() => {
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "p" && e.key !== "P") return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      const st = useUiStore.getState();
+      if (st.dialog !== null || st.tradeFlow !== null || st.paletteOpen || st.workspaceTab !== "builder" || st.builderTab !== "builder") return;
+      if (st.legs[st.asset].filter((l) => l.status === "open" && l.enabled !== false).length === 0) return;
+      e.preventDefault();
+      st.openTrade({ strategyId: null });
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  // HC-TR-140: the palette's "Builder: save draft"
+  useEffect(() => {
+    if (!saveRequest) return;
+    requestSaveDraft(false);
+    if (legs.length === 0) {
+      toast("No legs", { description: "Add legs before saving a draft" });
+      return;
+    }
+    if (meta.name.trim() && meta.draftId) onSave(meta.name.trim(), "draft");
+    else setSaveIntent("draft");
+    // onSave is recreated every render; the request flag is the only trigger
+  }, [saveRequest]);
 
   return (
     <section className="flex h-full min-h-0 flex-col" data-testid="builder-panel" data-legs={allLegs.length} data-active-legs={legs.length}>
@@ -136,6 +180,8 @@ export function BuilderPanel() {
             {allLegs.length} {allLegs.length === 1 ? "leg" : "legs"}
             {legs.length !== allLegs.length ? ` (${legs.length} on)` : ""}
             {allLegs.length ? ` · ${[...new Set(allLegs.filter((l) => l.kind !== "future").map((l) => fmtExpiry(l.expiry)))].join(" · ")}` : ""}
+            {dte !== null ? ` · ${dte}d` : ""}
+            {allLegs.length ? ` · ${meta.draftId ? "draft" : "unsaved"}` : ""}
           </span>
         </TabsList>
         <TabsContent value="builder" className="min-h-0 flex-1 overflow-auto p-3" data-tour="strategy-legs">
@@ -160,7 +206,9 @@ export function BuilderPanel() {
               {asset}
             </span>
             {meta.draftId ? <span className="micro rounded border border-border px-1.5 py-0.5">draft</span> : null}
+            {structure && structure !== "Custom" && structure !== "Empty" ? <span className="micro rounded border border-border px-1.5 py-0.5 text-muted-foreground" title="Detected structure" data-testid="strategy-structure">{structure}</span> : null}
             <span className="flex-1" />
+            {nearest ? <span className="micro hidden font-mono 2xl:inline" data-testid="strategy-expiry-line">{asset} · {fmtExpiry(nearest)} · {dte}d</span> : null}
             <button
               type="button"
               className={cn("micro rounded border px-1.5 py-0.5", meta.priceMode === "live" ? "border-profit text-profit" : "border-input")}
@@ -236,7 +284,7 @@ export function BuilderPanel() {
                       const q = a.quoteFor(l);
                       const mny = moneyness(l, spot);
                       return (
-                        <tr key={l.id} className={cn("border-t border-border", !on && "opacity-50")} data-testid="leg-row" data-leg-id={l.id} data-side={l.side} data-enabled={on}>
+                        <tr key={l.id} className={cn("border-t border-border", !on && "opacity-50", compact && "[&>td]:py-0.5 [&_.micro]:hidden")} data-testid="leg-row" data-leg-id={l.id} data-side={l.side} data-enabled={on} data-density={compact ? "compact" : "comfortable"}>
                           <td className="py-1.5 pr-1">
                             <input type="checkbox" checked={on} onChange={() => updateLegs(asset, (ls) => toggleLegEnabled(ls, l.id))} aria-label={on ? "Exclude this leg from the analysis" : "Include this leg in the analysis"} title={on ? "Untick to analyse without this leg" : "Tick to include this leg again"} data-testid="leg-enabled" />
                           </td>
@@ -304,6 +352,15 @@ export function BuilderPanel() {
                   </tbody>
                 </table>
               </div>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-2xs text-muted-foreground" data-testid="builder-netline">
+                <span>Lot = {lotSize ?? "…"} {asset}</span>
+                <span>
+                  Net {net !== null && net >= 0 ? "credit" : "debit"} <b className="text-foreground">{perUnit === null ? "—" : Math.abs(perUnit).toFixed(1)}</b> / {asset} → <b className={cn(net !== null && net >= 0 ? "text-profit" : "text-foreground")}>{net === null ? "—" : fmtMoney(Math.abs(net), money)}</b>
+                </span>
+                <span>Net Δ <b className={cn(g && g.delta < 0 ? "text-loss" : "text-foreground")}>{g ? `${g.delta >= 0 ? "+" : ""}${g.delta.toFixed(4)}` : "—"}</b></span>
+                <span>Net Θ/day <b className={cn(g && g.theta < 0 ? "text-loss" : "text-profit")}>{g ? fmtMoney(g.theta, money, { signed: true }) : "—"}</b></span>
+                <span>Net ν/1% <b className={cn(g && g.vega < 0 ? "text-loss" : "text-profit")}>{g ? fmtMoney(g.vega, money, { signed: true }) : "—"}</b></span>
+              </div>
               <div className="mt-2 flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={() => setPicker(true)} disabled={remaining === 0} title={remaining ? "Select option from live options chain" : limitTitle} data-testid="builder-select-chain" data-tour="add-leg-button">
                   Select from chain
@@ -315,20 +372,25 @@ export function BuilderPanel() {
                   {remaining} of {NEW_STRATEGY_LEGS} slots left · max {MAX_ACTIVE_LEGS} active
                 </span>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-3 rounded border border-border p-3 sm:grid-cols-4" data-testid="builder-ticket">
+              <div className="mt-3 grid grid-cols-2 gap-3 rounded border border-border p-3 sm:grid-cols-3" data-testid="builder-ticket">
                 <div>
                   <div className="micro">Premium at mark</div>
                   <div className={cn("num text-[15px] font-medium", net !== null && net >= 0 ? "text-profit" : "")} data-testid="ticket-net">
                     {net === null ? "—" : fmtMoney(net, money, { signed: true })}
                   </div>
-                  <div className="micro">{perUnit === null ? "" : `${Math.abs(perUnit).toFixed(1)} / ${asset} · ${net !== null && net >= 0 ? "credit" : "debit"}`}</div>
+                  <div className="micro">{perUnit === null ? "" : `${Math.abs(perUnit).toFixed(1)} / ${asset} × ${lotSize ?? "…"} ${asset} · ${net !== null && net >= 0 ? "credit" : "debit"}`}</div>
+                </div>
+                <div title="Per leg: notional × exchange fee %, capped at a share of the premium for options, plus GST">
+                  <div className="micro">Fees · est.</div>
+                  <div className="num text-[15px] font-medium" data-testid="ticket-fees">{fees === null ? "—" : fmtMoney(fees.total, money)}</div>
+                  <div className="micro truncate">{broker ? `taker · ${legs.length} ${legs.length === 1 ? "leg" : "legs"} · ${broker.name.replace("Delta Exchange", "Delta")} ${broker.feePct}%${Number(broker.gstPct) ? " + GST" : ""}` : "no exchange configured"}</div>
                 </div>
                 <div>
-                  <div className="micro">Margin est.</div>
-                  <div className="num text-[15px] font-medium" data-testid="ticket-margin">
-                    {margin === null ? "—" : fmtMoney(margin, money)}
+                  <div className="micro">{total === null ? "Total" : total.kind === "debit" ? "Total debit" : "Total credit"}</div>
+                  <div className={cn("num text-[15px] font-medium", total?.kind === "credit" ? "text-profit" : "")} data-testid="ticket-total" data-kind={total?.kind}>
+                    {total === null ? "—" : fmtMoney(total.amount, money)}
                   </div>
-                  <div className="micro">{margin === null ? (result ? "undefined risk · exchange margin shown once filled" : "") : "worst expiry loss"}</div>
+                  <div className="micro">{total === null ? "" : totalIsMaxLoss ? "= max loss · fees incl." : total.kind === "debit" ? "premium + fees" : "premium − fees"}</div>
                 </div>
                 <div>
                   <div className="micro">P&amp;L at target</div>
@@ -338,11 +400,18 @@ export function BuilderPanel() {
                   <div className="micro">{result ? `${fmtStrike(String(a.targetPrice))} · ${a.targetDays === 0 ? "today" : `+${a.targetDays}d`}` : ""}</div>
                 </div>
                 <div>
-                  <div className="micro">POP · R:R</div>
-                  <div className="num text-[15px] font-medium" data-testid="ticket-pop">
-                    {result ? `${Number.isFinite(result.pop) ? `${(result.pop * 100).toFixed(0)}%` : "—"} · ${Number.isFinite(result.rewardRisk) ? result.rewardRisk.toFixed(2) : "∞"}` : "—"}
+                  <div className="micro">Margin est.</div>
+                  <div className="num text-[15px] font-medium" data-testid="ticket-margin">
+                    {margin === null ? "—" : fmtMoney(margin, money)}
                   </div>
-                  <div className="micro">Lot = {lotSize ?? "…"} {asset}</div>
+                  <div className="micro" data-testid="ticket-pop">
+                    {result ? `POP ${Number.isFinite(result.pop) ? `${(result.pop * 100).toFixed(0)}%` : "—"} · R:R ${Number.isFinite(result.rewardRisk) ? `1 : ${result.rewardRisk.toFixed(2)}` : "∞"}` : margin === null ? "" : "worst expiry loss"}
+                  </div>
+                </div>
+                <div>
+                  <div className="micro">Width</div>
+                  <div className="num text-[15px] font-medium" data-testid="ticket-width">{width ? fmtStrike(String(Math.round(width.width))) : "—"}</div>
+                  <div className="micro">{width ? `${width.strikes} strikes${width.pct !== null ? ` · ${width.pct.toFixed(1)}% of spot` : ""}` : legs.length ? "single strike" : ""}</div>
                 </div>
               </div>
             </>

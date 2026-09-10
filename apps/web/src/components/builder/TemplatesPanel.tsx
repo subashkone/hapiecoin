@@ -16,6 +16,29 @@ import { serverLegToLocal } from "@/lib/strategy/paper";
 import type { Strategy } from "@hapiecoin/schema";
 import { MAX_ACTIVE_LEGS, addLeg as addLegPure, type StrategyLeg } from "@/lib/strategy/legs";
 import { type StrategyTemplate, TEMPLATES, TEMPLATE_CATEGORIES, materialiseTemplate } from "@/lib/strategy/templates";
+import { OUTLOOKS, type Outlook, useTemplateStats } from "@/lib/strategy/useTemplateStats";
+import { useSettings } from "@/lib/api/queries";
+
+/** Sketch points plus the zero line, so cards can fill profit green and loss red (HC-TR-108). */
+export function templateSketchGeometry(tpl: StrategyTemplate): { points: string; zeroY: number } {
+  const legs = tpl.legs.map((l) => ({
+    kind: l.kind,
+    side: l.side,
+    strike: 100 + l.k * 2.5,
+    expiry: "2030-01-01",
+    quantity: l.lots ?? 1,
+    price: l.kind === "call" ? Math.max(0.5, 4 - l.k * 1.2) : Math.max(0.5, 4 + l.k * 1.2),
+  }));
+  const xs = Array.from({ length: 41 }, (_, i) => 85 + (30 * i) / 40);
+  const ys = xs.map((x) => payoffAtExpiry(legs, x));
+  const min = Math.min(0, ...ys);
+  const max = Math.max(0, ...ys);
+  const W = 100;
+  const H = 40;
+  const y = (v: number) => H - 3 - ((v - min) / (max - min || 1)) * (H - 6);
+  const x = (i: number) => 3 + (i / 40) * (W - 6);
+  return { points: xs.map((_, i) => `${x(i).toFixed(1)},${y(ys[i]!).toFixed(1)}`).join(" "), zeroY: Number(y(0).toFixed(1)) };
+}
 
 /** Small SVG sketch of the expiry payoff of a template placed around a nominal spot of 100 (shape only). */
 export function templateSketch(tpl: StrategyTemplate): string {
@@ -96,11 +119,35 @@ export function useTemplateLoader() {
     else toast.error("Unknown template", { description: request });
     // `load` reads the latest chain each call; re-running on its identity would double-load
   }, [request, chainReady, expiry, requestTemplate]);
-  return { asset, expiry, list, setChosen, load, chainReady };
+  return { asset, expiry, list, setChosen, load, chainReady, rows, atm, spot: spot?.price ?? null, seq: chain?.seq ?? -1 };
+}
+
+/** Sketch with green / red fills and a dashed zero line (HC-TR-108). */
+function TemplateSketch({ tpl }: { tpl: StrategyTemplate }) {
+  const geo = templateSketchGeometry(tpl);
+  const id = tpl.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const area = `3,${geo.zeroY} ${geo.points} 97,${geo.zeroY}`;
+  return (
+    <svg viewBox="0 0 100 40" width="88" height="36" className="shrink-0 rounded bg-surface-2" aria-hidden data-testid="template-sketch">
+      <defs>
+        <clipPath id={`sk-${id}-up`}><rect x="0" y="0" width="100" height={geo.zeroY} /></clipPath>
+        <clipPath id={`sk-${id}-down`}><rect x="0" y={geo.zeroY} width="100" height={40 - geo.zeroY} /></clipPath>
+      </defs>
+      <polygon points={area} fill="hsl(var(--profit) / 0.35)" clipPath={`url(#sk-${id}-up)`} />
+      <polygon points={area} fill="hsl(var(--loss) / 0.35)" clipPath={`url(#sk-${id}-down)`} />
+      <line x1="0" x2="100" y1={geo.zeroY} y2={geo.zeroY} stroke="hsl(var(--border))" strokeWidth="1" strokeDasharray="2 2" />
+      <polyline points={geo.points} fill="none" stroke="hsl(var(--foreground))" strokeWidth="1.4" />
+    </svg>
+  );
 }
 
 export function TemplatesPanel() {
-  const { expiry, list, setChosen, load } = useTemplateLoader();
+  const { asset, expiry, list, setChosen, load, rows, atm, spot, seq } = useTemplateLoader();
+  const chainLots = useUiStore((s) => s.chainLots);
+  const { data: settings } = useSettings();
+  const [outlook, setOutlook] = useState<Outlook | null>(null);
+  // HC-TR-106 / 107: every template priced at the live chain → POP, R:R and the outlook it expresses
+  const stats = useTemplateStats(TEMPLATES, { asset, expiry, expiries: list, rows, atm, lots: chainLots, spot: spot === null ? null : Number(spot), lotSize: settings?.lotSizes[asset], nowMs: Date.now(), version: seq });
   const setLegs = useUiStore((s) => s.setLegs);
   const setMeta = useUiStore((s) => s.setStrategyMeta);
   const setBuilderTab = useUiStore((s) => s.setBuilderTab);
@@ -115,7 +162,7 @@ export function TemplatesPanel() {
   const [mine, setMine] = useState<"draft" | "archived">("draft");
   const [search, setSearch] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-  const cards = TEMPLATES.filter((t) => category === "All" || t.category === category);
+  const cards = TEMPLATES.filter((t) => (category === "All" || t.category === category) && (outlook === null || stats.get(t.name)?.outlook === outlook));
   const myList = (strategies ?? []).filter((d) => d.status === mine && (search.trim() === "" || `${d.name} ${d.asset} ${d.templateName}`.toLowerCase().includes(search.trim().toLowerCase())));
   const loadDraft = (d: Strategy) => {
     setAsset(d.asset);
@@ -144,20 +191,32 @@ export function TemplatesPanel() {
           </select>
         </label>
       </div>
-      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3" data-testid="template-cards">
-        {cards.map((t) => (
-          <button key={t.name} type="button" onClick={() => load(t)} className="flex gap-3 rounded border border-border p-2 text-left hover:border-foreground/40" data-testid="template-card" data-name={t.name}>
-            <svg viewBox="0 0 100 40" width="88" height="36" className="shrink-0 rounded bg-surface-2" aria-hidden>
-              <line x1="0" x2="100" y1="20" y2="20" stroke="hsl(var(--border))" strokeWidth="1" />
-              <polyline points={templateSketch(t)} fill="none" stroke="hsl(var(--foreground))" strokeWidth="1.4" />
-            </svg>
-            <span className="min-w-0">
-              <span className="block text-[12.5px] font-medium">{t.name}</span>
-              <span className="micro block">{t.category} · {t.legs.length} {t.legs.length === 1 ? "leg" : "legs"}</span>
-              <span className="mt-0.5 block text-2xs leading-snug text-muted-foreground">{t.description}</span>
-            </span>
+      <div className="mt-2 flex flex-wrap items-center gap-1 text-2xs" data-testid="template-outlooks">
+        <span className="micro mr-1">Recommended for outlook</span>
+        {OUTLOOKS.map((o) => (
+          <button key={o} type="button" aria-pressed={outlook === o} onClick={() => setOutlook(outlook === o ? null : o)} disabled={stats.size === 0} title={stats.size === 0 ? "Waiting for the chain to price the templates" : `Templates that profit when ${o === "Bullish" ? "price rises 6 %" : o === "Bearish" ? "price falls 6 %" : o === "Neutral" ? "price stays near spot" : "price moves 6 % either way"}`} className={cn("rounded border px-2 py-0.5", outlook === o ? "border-foreground text-foreground" : "border-border text-muted-foreground hover:text-foreground", stats.size === 0 && "opacity-50")} data-testid={`template-outlook-${o.toLowerCase()}`}>
+            {o}
           </button>
         ))}
+        <span className="micro ml-auto">{stats.size ? `${stats.size} templates priced at the live chain` : "pricing at the live chain…"}</span>
+      </div>
+      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3" data-testid="template-cards" data-priced={stats.size}>
+        {cards.map((t) => {
+          const st = stats.get(t.name);
+          const rr = st ? (st.rr === null ? "—" : Number.isFinite(st.rr) ? `1 : ${st.rr.toFixed(2)}` : "∞") : null;
+          return (
+            <button key={t.name} type="button" onClick={() => load(t)} className="flex gap-3 rounded border border-border p-2 text-left hover:border-foreground/40" title={st ? `POP ${st.pop === null ? "—" : `${(st.pop * 100).toFixed(0)}%`} · R:R ${rr} at the current chain` : undefined} data-testid="template-card" data-name={t.name} data-outlook={st?.outlook ?? undefined}>
+              <TemplateSketch tpl={t} />
+              <span className="min-w-0">
+                <span className="block text-[12.5px] font-medium">{t.name}</span>
+                <span className="micro block">{t.category} · {t.legs.length} {t.legs.length === 1 ? "leg" : "legs"}</span>
+                <span className="mt-0.5 block text-2xs leading-snug text-muted-foreground">{t.description}</span>
+                {st ? <span className="num mt-0.5 block text-2xs" data-testid="template-pop">POP {st.pop === null ? "—" : `${(st.pop * 100).toFixed(0)}%`} · R:R {rr}{st.outlook ? <span className="micro ml-1">· {st.outlook}</span> : null}</span> : null}
+              </span>
+            </button>
+          );
+        })}
+        {cards.length === 0 ? <div className="col-span-full rounded border border-dashed border-border p-4 text-center text-2xs text-muted-foreground" data-testid="template-none">No template in this category profits under that outlook at the current chain.</div> : null}
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border pt-3">

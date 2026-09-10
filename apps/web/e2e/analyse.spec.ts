@@ -269,6 +269,12 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     await page.getByTestId("tab-builder").click();
     await page.getByTestId("builder-tab-templates").click();
     await expect(page.getByTestId("template-card")).toHaveCount(28);
+    // HC-TR-106 / 107 cards priced at the chain; the outlook chips filter on the payoff
+    await expect(page.getByTestId("template-cards")).toHaveAttribute("data-priced", /^[1-9]\d*$/, { timeout: 30_000 });
+    await expect(page.getByTestId("template-pop").first()).toContainText("POP");
+    await page.getByTestId("template-outlook-bearish").click();
+    await expect(page.locator("[data-testid=template-card][data-outlook='Bearish']").first()).toBeVisible();
+    await page.getByTestId("template-outlook-bearish").click();
     await page.getByTestId("template-cat-neutral").click();
     await page.locator("[data-testid=template-card][data-name='Iron Condor']").click();
     await expect(page.getByTestId("builder-panel")).toHaveAttribute("data-legs", "4");
@@ -342,6 +348,23 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     await page.getByTestId("tab-builder").click();
     const row = page.getByTestId("leg-row").first();
     await expect(row).toHaveAttribute("data-side", "buy");
+    // HC-TR-096 / 097 / 100 / 101 / 102 the ticket rows, the net line and the header tags
+    await expect(page.getByTestId("ticket-fees")).toContainText("$", { timeout: 15_000 });
+    await expect(page.getByTestId("ticket-total")).toHaveAttribute("data-kind", /debit|credit/);
+    await expect(page.getByTestId("builder-netline")).toContainText("Net Δ");
+    await expect(page.getByTestId("strategy-expiry-line")).toContainText("BTC");
+    // HC-TR-104 P opens the trade-mode dialog; Escape closes it
+    await page.keyboard.press("p");
+    await expect(page.getByTestId("trade-mode")).toBeVisible();
+    await expect(page.getByTestId("mode-check")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("trade-mode")).toBeHidden();
+    // HC-TR-140 palette: Open Journal
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox", { name: "Command" }).fill("open journal");
+    await page.getByRole("option", { name: "Open Journal" }).click();
+    await expect(page.getByTestId("tab-journal")).toHaveAttribute("data-state", "active");
+    await page.getByTestId("tab-builder").click();
     await row.getByTestId("leg-side").click();
     await expect(row).toHaveAttribute("data-side", "sell");
     await row.getByTestId("leg-lots-up").click();

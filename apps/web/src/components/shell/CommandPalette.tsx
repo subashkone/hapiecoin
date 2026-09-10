@@ -181,6 +181,66 @@ export function buildCommands(opts: {
         },
       },
       {
+        id: "act:builder-save",
+        label: "Builder: save draft",
+        group: "Actions",
+        keywords: ["save", "draft", "strategy", "name"],
+        run: () => {
+          const s = useUiStore.getState();
+          opts.navigate("/analyse");
+          s.setWorkspaceTab("builder");
+          s.setBuilderTab("builder");
+          s.requestSaveDraft(true);
+        },
+      },
+      {
+        id: "act:builder-paper",
+        label: "Paper trade the current strategy",
+        group: "Actions",
+        hint: "P",
+        keywords: ["paper", "trade", "simulate", "start"],
+        run: () => {
+          const s = useUiStore.getState();
+          if (s.legs[s.asset].filter((l) => l.status === "open" && l.enabled !== false).length === 0) {
+            toast("No legs", { description: "Add legs in the Builder before paper trading" });
+            return;
+          }
+          opts.navigate("/analyse");
+          s.setWorkspaceTab("builder");
+          s.openTrade({ strategyId: null });
+        },
+      },
+      {
+        id: "act:open-paper",
+        label: "Open Paper trades",
+        group: "Actions",
+        keywords: ["paper", "trades", "positions", "tab"],
+        run: () => {
+          opts.navigate("/analyse");
+          useUiStore.getState().setWorkspaceTab("paper");
+        },
+      },
+      {
+        id: "act:open-live",
+        label: "Open Live trades",
+        group: "Actions",
+        keywords: ["live", "trades", "orders", "tab"],
+        run: () => {
+          opts.navigate("/analyse");
+          useUiStore.getState().setWorkspaceTab("live");
+        },
+      },
+      {
+        id: "act:open-journal",
+        label: "Open Journal",
+        group: "Actions",
+        keywords: ["journal", "closed", "trades", "notes", "tags"],
+        run: () => {
+          opts.navigate("/analyse");
+          useUiStore.getState().setWorkspaceTab("journal");
+        },
+      },
+      {
         id: "act:analysis-payoff",
         label: "Analysis: payoff chart",
         group: "Actions",

@@ -52,6 +52,7 @@ describe("HC-SH-003 UI store", () => {
       chartLayers: { expiry: true, target: true, fill: true, oi: false, band: true, breakeven: true, ivUp: false, ivDown: false },
       ladderStep: 1,
       analyseCollapse: null,
+      brokerId: null,
       chainColumns: defaultLayout(),
       legs: { BTC: [], ETH: [], XAUT: [] },
       chainLots: 10,
@@ -300,5 +301,19 @@ describe("HC-WS-065 / HC-WS-103 pane collapse and ladder step persist", () => {
     useUiStore.getState().requestTemplate("Iron Condor");
     expect(useUiStore.getState().templateRequest).toBe("Iron Condor");
     useUiStore.getState().setAnalyseCollapse(null);
+  });
+});
+
+describe("HC-TR-140 / HC-TR-142 broker and save-draft request", () => {
+  it("persists the chosen exchange and keeps the save request transient", async () => {
+    const { useUiStore } = await import("./store");
+    useUiStore.getState().setBroker("brk_delta");
+    useUiStore.getState().requestSaveDraft(true);
+    expect(useUiStore.getState()).toMatchObject({ brokerId: "brk_delta", saveDraftRequest: true });
+    const merge = useUiStore.persist.getOptions().merge as (p: unknown, c: ReturnType<typeof useUiStore.getState>) => ReturnType<typeof useUiStore.getState>;
+    expect(merge({ brokerId: "", saveDraftRequest: true }, useUiStore.getState())).toMatchObject({ brokerId: null, saveDraftRequest: false });
+    expect(merge({ brokerId: "brk_x" }, useUiStore.getState()).brokerId).toBe("brk_x");
+    useUiStore.getState().requestSaveDraft(false);
+    useUiStore.getState().setBroker(null);
   });
 });

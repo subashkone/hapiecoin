@@ -72,6 +72,9 @@ async function paperTradeFromBuilder(u: ReturnType<typeof userEvent.setup>) {
   await u.click(screen.getByTestId("builder-paper-trade"));
   const mode = screen.getByTestId("trade-mode");
   expect(within(mode).getByTestId("mode-paper").getAttribute("aria-pressed")).toBe("true");
+  expect(within(mode).getByTestId("mode-check")).toBeTruthy(); // HC-TR-122
+  fireEvent.change(within(mode).getByTestId("trade-broker"), { target: { value: within(mode).getByTestId<HTMLSelectElement>("trade-broker").value } });
+  expect(useUiStore.getState().brokerId).toBe(within(mode).getByTestId<HTMLSelectElement>("trade-broker").value); // HC-TR-142
   await waitFor(() => expect(within(mode).getByTestId<HTMLSelectElement>("trade-broker").value).toBe("brk_delta"));
   expect(within(mode).getByTestId("fee-summary").textContent).toContain("Delta India · fee 0.05% of notional");
   await u.click(within(mode).getByTestId("trade-continue"));
