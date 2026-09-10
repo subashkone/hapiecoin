@@ -64,7 +64,7 @@ export function useTemplateStats(templates: readonly StrategyTemplate[], input: 
     const id = (seq.current += 1);
     const client = getPricingClient();
     const spot = input.spot!;
-    const mat: MaterialiseInput = { asset: input.asset, expiry: input.expiry!, expiries: input.expiries, rows: input.rows, atm: input.atm, lots: input.lots };
+    const mat: MaterialiseInput = { asset: input.asset, expiry: input.expiry!, expiries: input.expiries, rows: input.rows, atm: input.atm, lots: input.lots, spot: String(spot) };
     const run = async () => {
       const out = new Map<string, TemplateStat>();
       for (const tpl of templates) {

@@ -204,7 +204,7 @@ describe("HC-TR-020 / HC-TR-041..049 drafts through the strategy API (ADR-024)",
 });
 
 describe("HC-TR-037..044 templates", () => {
-  it("shows the 28 cards by category and places a template on the venue ladder around ATM", async () => {
+  it("shows every catalogue card by category and places a template on the venue ladder around ATM", async () => {
     useUiStore.setState({ builderTab: "templates" });
     renderWithProviders(<BuilderPanel />);
     serveMarket();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TEMPLATES, TEMPLATE_CATEGORIES, guessTemplateName, isTemplateName, materialiseTemplate, templateByName } from "./templates";
+import { type StrategyTemplate, TEMPLATES, TEMPLATE_CATEGORIES, TEMPLATE_COUNT, guessTemplateName, isTemplateName, materialiseTemplate, templateByName } from "./templates";
 
 const rows = Array.from({ length: 11 }, (_, i) => {
   const strike = String(79_000 + i * 200);
@@ -7,10 +7,11 @@ const rows = Array.from({ length: 11 }, (_, i) => {
 });
 const base = { asset: "BTC" as const, expiry: "2026-09-25", expiries: ["2026-09-25", "2026-10-30", "2026-11-27"], rows, atm: 5, lots: 10 };
 
-describe("HC-TR-037 / HC-TR-039 the 28 templates", () => {
-  it("has 28 named templates across the four categories with ATM-relative legs", () => {
-    expect(TEMPLATES).toHaveLength(28);
-    expect(new Set(TEMPLATES.map((t) => t.name)).size).toBe(28);
+describe("HC-TR-037 / HC-TR-039 the template catalogue", () => {
+  it("has TEMPLATE_COUNT uniquely named templates across the four categories with ATM-relative legs", () => {
+    expect(TEMPLATES).toHaveLength(TEMPLATE_COUNT);
+    expect(TEMPLATE_COUNT).toBeGreaterThanOrEqual(28);
+    expect(new Set(TEMPLATES.map((t) => t.name)).size).toBe(TEMPLATE_COUNT);
     expect(TEMPLATE_CATEGORIES).toEqual(["All", "Bullish", "Bearish", "Neutral", "Others"]);
     for (const cat of ["Bullish", "Bearish", "Neutral", "Others"]) expect(TEMPLATES.some((t) => t.category === cat)).toBe(true);
     expect(templateByName("Iron Condor")?.legs).toHaveLength(4);
@@ -49,6 +50,25 @@ describe("HC-TR-040 materialiseTemplate places legs on the venue ladder around A
     expect(materialiseTemplate(templateByName("Buy Call")!, { ...base, rows: [], atm: -1 })).toEqual({ ok: false, reason: "no-chain" });
     const unquoted = rows.map((r) => ({ strike: r.strike, call: r.call }));
     expect(materialiseTemplate(templateByName("Buy Put")!, { ...base, rows: unquoted })).toEqual({ ok: false, reason: "no-quote" });
+  });
+  // HC-TR-035 / GAPS #74: a future leg is the perpetual at the live spot, as the Add Futures dialog places it
+  const coveredCall: StrategyTemplate = { name: "Test Covered Call", category: "Bullish", description: "", legs: [{ kind: "future", side: "buy" }, { kind: "call", side: "sell", k: 2, lots: 2 }] };
+  const longPerp: StrategyTemplate = { name: "Test Long Perp", category: "Bullish", description: "", legs: [{ kind: "future", side: "buy" }] };
+  it("places a future leg at the spot with expiry PERP and no strike, multiplying lots like an option leg", () => {
+    const r = materialiseTemplate(coveredCall, { ...base, spot: "80100.5" });
+    expect(r.ok).toBe(true);
+    if (!r.ok) throw new Error("expected ok");
+    expect(r.legs.map((l) => [l.kind, l.side, l.strike, l.expiry, l.lots, l.price, l.iv])).toEqual([
+      ["future", "buy", "", "PERP", 10, "80100.5", undefined],
+      ["call", "sell", "80400", "2026-09-25", 20, "650", 0.3],
+    ]);
+  });
+  it("refuses a future leg without a positive spot, and a futures-only template needs no chain", () => {
+    expect(materialiseTemplate(coveredCall, base)).toEqual({ ok: false, reason: "no-spot" });
+    expect(materialiseTemplate(coveredCall, { ...base, spot: "0" })).toEqual({ ok: false, reason: "no-spot" });
+    const r = materialiseTemplate(longPerp, { ...base, rows: [], atm: -1, spot: "80100" });
+    expect(r).toEqual({ ok: true, legs: [{ asset: "BTC", kind: "future", side: "buy", strike: "", expiry: "PERP", lots: 10, price: "80100", iv: undefined }] });
+    expect(materialiseTemplate(templateByName("Buy Call")!, { ...base, rows: [], atm: -1, spot: "80100" })).toEqual({ ok: false, reason: "no-chain" });
   });
 });
 

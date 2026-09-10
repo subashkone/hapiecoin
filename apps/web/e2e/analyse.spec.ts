@@ -1,3 +1,4 @@
+import { TEMPLATE_COUNT } from "../src/lib/strategy/templates";
 import { expect, seedUser, signIn, test } from "./fixtures";
 import { strikesOf } from "../test/fixtures/chain";
 
@@ -315,7 +316,7 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     await expect(page.getByTestId("payoff-panel")).toHaveAttribute("data-state", "empty");
     await page.getByTestId("tab-builder").click();
     await page.getByTestId("builder-tab-templates").click();
-    await expect(page.getByTestId("template-card")).toHaveCount(28);
+    await expect(page.getByTestId("template-card")).toHaveCount(TEMPLATE_COUNT);
     // HC-TR-106 / 107 cards priced at the chain; the outlook chips filter on the payoff
     await expect(page.getByTestId("template-cards")).toHaveAttribute("data-priced", /^[1-9]\d*$/, { timeout: 30_000 });
     await expect(page.getByTestId("template-pop").first()).toContainText("POP");
