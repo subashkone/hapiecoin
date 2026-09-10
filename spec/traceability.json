@@ -6512,7 +6512,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Adjust on a paper / live card, Details → Adjust… or A on a focused card opens the workbench in the left pane; the pane follows the strategy and shows the position after the change; Exit discards the draft; under 720 px the columns stack with the footer in view",
-  "evidence": "ADR-044 (09 Sep 2026): AdjustWorkbench.tsx, PositionTicket.tsx, useAdjustWorkbench.ts, store openAdjust / closeAdjust / updateAdjust, Workspace left-pane swap; unit workbench.test.tsx, store.test.ts; e2e analyse.spec.ts HC-TR-148 block; visual analyse-workbench-{dark,light}"
+  "evidence": "ADR-044 (09 Sep 2026): AdjustWorkbench.tsx, PositionTicket.tsx, useAdjustWorkbench.ts, store openAdjust / closeAdjust / updateAdjust, Workspace left-pane swap; unit workbench.test.tsx, store.test.ts; e2e analyse.spec.ts HC-TR-148 block; visual analyse-workbench-{dark,light}; ADR-058 (11 Sep 2026): WorkbenchChain.tsx (H2 chain form, cap line, held pills), one-line legs with Close / undo in PositionTicket.tsx, footer tiles in AdjustWorkbench.tsx; unit workbench.test.tsx figures checklist; e2e analyse.spec.ts HC-TR-148 block (tiles, Close / undo)"
  },
  {
   "id": "HC-TR-149",
@@ -6527,7 +6527,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Max loss, max profit, POP and break-evens shown before → after over the payoff tiles; the previous payoff drawn dashed behind the new one; \"Value at\" chips per expiry of the combined position (default the latest): settled legs at intrinsic, later legs keep time value; a scenario slider values the position on any day up to the latest expiry",
-  "evidence": "ADR-044 (09 Sep 2026): packages/pricing analyze valuationMs + curveExtremes, useStrategyAnalysis adjusting mode, BeforeAfterStrip.tsx, payoffDraw ghost; unit strategy.test.ts (pricing), workbench.test.tsx, model.test.ts; e2e analyse.spec.ts HC-TR-148 block; scenario slider: PositionTicket.tsx, model isoDaysFrom / valuationMsOf (any ISO date), workbench.test.tsx HC-TR-153/154 block (PR A3)"
+  "evidence": "ADR-044 (09 Sep 2026): packages/pricing analyze valuationMs + curveExtremes, useStrategyAnalysis adjusting mode, BeforeAfterStrip.tsx, payoffDraw ghost; unit strategy.test.ts (pricing), workbench.test.tsx, model.test.ts; e2e analyse.spec.ts HC-TR-148 block; scenario slider: PositionTicket.tsx, model isoDaysFrom / valuationMsOf (any ISO date), workbench.test.tsx HC-TR-153/154 block (PR A3); ADR-058 (11 Sep 2026): AdjustChangeBox.tsx + six before → after tiles in BeforeAfterStrip.tsx (ba-max-loss … ba-margin); unit workbench.test.tsx; e2e analyse.spec.ts"
  },
  {
   "id": "HC-TR-150",
@@ -6542,7 +6542,7 @@
   "phase": 5,
   "test": "e2e (Playwright)",
   "acceptance": "A lots now → after stepper on every open leg (fewer trims, 0 closes, more adds at the mark) and on every proposed row; B / S on a held strike adds to or trims it, on any other strike proposes a new leg; each row says its effect; ↑ ↓ b s B S Enter Esc on the chain",
-  "evidence": "ADR-044 (09 Sep 2026): lib/adjust/model.ts pickOnDraft / effects / afterLegs, ChainPickerBody.tsx (keyboard, held pills); unit model.test.ts, workbench.test.tsx; e2e analyse.spec.ts HC-TR-148 block"
+  "evidence": "ADR-044 (09 Sep 2026): lib/adjust/model.ts pickOnDraft / effects / afterLegs, ChainPickerBody.tsx (keyboard, held pills); unit model.test.ts, workbench.test.tsx; e2e analyse.spec.ts HC-TR-148 block; ADR-058 (11 Sep 2026): WorkbenchChain.tsx replaces the Builder picker in the workbench (same keyboard contract, held pill 10→0 on close); unit workbench.test.tsx"
  },
  {
   "id": "HC-TR-151",
@@ -6557,7 +6557,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · api contract",
   "acceptance": "One line: max loss worsens / improves by X · you pay / receive Y · POP a% → b%; warnings for unlimited loss introduced, the 10-leg cap, 0-DTE legs and stale marks; the paper confirm lists the changes with before → after figures and an optional reason; Details shows the adjustment history, cards wear ADJUSTED and show combined max loss / profit / POP; \"Alert me if max loss exceeds X\" saved per strategy (stub, arms with Alerts)",
-  "evidence": "ADR-044 (09 Sep 2026): model.ts summarize / toBody, AdjustConfirmDialog.tsx (paper), StrategyDetailsDialog history + AdjustedBadge, CardFigures.tsx, API /adjust (PR A1); unit model.test.ts, workbench.test.tsx, trading.test.tsx; e2e analyse.spec.ts HC-TR-148 block; visual analyse-adjust-confirm-{dark,light}; alert stub: store riskAlerts (persisted), AdjustWorkbench footer, store.test.ts, workbench.test.tsx (PR A3)"
+  "evidence": "ADR-044 (09 Sep 2026): model.ts summarize / toBody, AdjustConfirmDialog.tsx (paper), StrategyDetailsDialog history + AdjustedBadge, CardFigures.tsx, API /adjust (PR A1); unit model.test.ts, workbench.test.tsx, trading.test.tsx; e2e analyse.spec.ts HC-TR-148 block; visual analyse-adjust-confirm-{dark,light}; alert stub: store riskAlerts (persisted), AdjustWorkbench footer, store.test.ts, workbench.test.tsx (PR A3); ADR-058 (11 Sep 2026): the alert stub is replaced by a P&L alert line that opens the Alerts center pre-filled (openAlerts kind pnl); unit workbench.test.tsx HC-TR-153/154 block"
  },
  {
   "id": "HC-TR-152",
@@ -6587,7 +6587,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Save the current change as Plan A / B / C, build another, compare max loss / max profit / POP / cash per plan next to the current change, Use one to load it back, remove one",
-  "evidence": "ADR-044 (09 Sep 2026, PR A3): PlansBar.tsx + useDraftFigures, model savePlan / loadPlan / removePlan / planDraft; unit model.test.ts HC-TR-153, workbench.test.tsx HC-TR-153/154 block"
+  "evidence": "ADR-044 (09 Sep 2026, PR A3): PlansBar.tsx + useDraftFigures, model savePlan / loadPlan / removePlan / planDraft; unit model.test.ts HC-TR-153, workbench.test.tsx HC-TR-153/154 block; ADR-058 (11 Sep 2026): plans table folded under plans-toggle, opens once a plan exists; unit workbench.test.tsx"
  },
  {
   "id": "HC-TR-154",
