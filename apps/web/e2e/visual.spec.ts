@@ -85,6 +85,7 @@ for (const theme of ["dark", "light"] as const) {
       await page.getByTestId("trade-continue").click();
       await expect(page.getByTestId("trade-preview")).toBeVisible();
       await page.getByTestId("trade-now").click();
+      await page.getByTestId("save-draft-confirm").click(); // the name is always confirmed (ADR-059)
       await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
       await expect(page.getByTestId("paper-card").getByTestId("card-pnl")).not.toHaveText("—");
       await expect(page.getByTestId("paper-strip")).toHaveAttribute("data-portfolio", "ready", { timeout: 15_000 });

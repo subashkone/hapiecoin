@@ -181,8 +181,10 @@ export function TradeFlow({ book }: { book: PaperBook }) {
       setBusy(false);
     }
   };
+  // ADR-059: a trade from the Builder always confirms its name (the Builder's own name pre-filled, else the suggestion):
+  // paper asks here, after the preview; live asked before the exchange preview (the draft must exist for it)
   const onTradeNow = () => {
-    if (fromBuilder && !meta.name.trim()) {
+    if (fromBuilder && mode === "paper") {
       setStep("name");
       return;
     }
@@ -226,8 +228,8 @@ export function TradeFlow({ book }: { book: PaperBook }) {
           setMode(m);
           setBrokerId(b);
           setFees(f);
-          if (m === "live" && fromBuilder && !meta.name.trim()) {
-            setStep("name");
+          if (m === "live" && fromBuilder) {
+            setStep("name"); // live: the name first, then the exchange preview
             return;
           }
           void toPreview(m, b);
