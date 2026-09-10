@@ -149,7 +149,7 @@ describe("[SEC] global rate limit 300/min per IP", () => {
   });
 });
 
-describe("[SEC] request body limit (GAPS #70, ADR-061)", () => {
+describe("[SEC] HC-SH-114 request body limit (GAPS #70, ADR-061)", () => {
   it("refuses a body over the cap with 413 in the envelope before any handler runs, lets smaller ones through, exempts the banner upload", async () => {
     const big = { name: "x".repeat(DEFAULT_BODY_LIMIT_BYTES + 1) };
     const r = await t.request("/v1/strategies", { cookie, json: big });
@@ -165,20 +165,28 @@ describe("[SEC] request body limit (GAPS #70, ADR-061)", () => {
     expect(small.status).not.toBe(413);
     // a signed-out oversize request is also refused with 413, not 401: the cap sits before the guards
     expect((await t.request("/v1/strategies", { json: big })).status).toBe(413);
+    // the Content-Length branch (what browsers and curl send) refuses before reading a byte
+    const declared = await t.request("/v1/strategies", { cookie, json: { name: "x" }, headers: { "content-length": String(DEFAULT_BODY_LIMIT_BYTES + 1) } });
+    expect(declared.status).toBe(413);
   });
 });
 
-describe("[SEC] order routes 20/min per user (GAPS #70, ADR-061)", () => {
+describe("[SEC] HC-SH-115 order routes 20/min per user (GAPS #70, ADR-061)", () => {
   it("budgets the live batch route per signed-in user with Retry-After, leaves another user alone, recovers when the window slides", async () => {
     const a = (await t.signUp("orders-a@hapiecoin.test")).cookie;
     const b = (await t.signUp("orders-b@hapiecoin.test")).cookie;
     const body = { ids: ["strat_nope"], brokerId: "brk_nope", idempotencyKey: "order-limit-test-1" };
     const me = (await (await t.request("/v1/me", { cookie: a })).json()) as { id: string };
     const spent = await t.rateStore.peek(orderKey(me.id), ORDER_LIMIT.windowMs);
+    let business: number | null = null;
     for (let i = spent; i < ORDER_LIMIT.max; i += 1) {
       const r = await t.request("/v1/strategies/live/batch", { cookie: a, json: body });
-      expect(r.status, `request ${i + 1}`).not.toBe(429); // refused on business grounds (no credential / entitlement), never by the budget
-      expect(r.headers.get("x-ratelimit-remaining")).toBe(String(ORDER_LIMIT.max - i - 1));
+      // refused on business grounds (no such broker / credential), the same way every time, never by the budget
+      expect([400, 402, 404, 409], `request ${i + 1}`).toContain(r.status);
+      business ??= r.status;
+      expect(r.status).toBe(business);
+      expect(r.headers.get("x-order-ratelimit-remaining")).toBe(String(ORDER_LIMIT.max - i - 1));
+      expect(r.headers.get("x-ratelimit-limit")).toBe(String(GLOBAL_LIMIT.max)); // the global headers stay the global budget
     }
     const blocked = await t.request("/v1/strategies/live/batch", { cookie: a, json: body });
     expect(blocked.status).toBe(429);

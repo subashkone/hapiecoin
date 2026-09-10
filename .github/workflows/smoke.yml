@@ -22,6 +22,8 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # the real API and gateway run under tsx and import the workspace packages from dist/
+      - run: pnpm turbo run build --filter="./packages/*"
       - run: pnpm --filter @hapiecoin/web exec playwright install --with-deps chromium
       - run: pnpm --filter @hapiecoin/web test:smoke
         env:

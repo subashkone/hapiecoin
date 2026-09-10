@@ -33,8 +33,9 @@ export function orderKey(userId: string): string {
 export function orderRateLimit(store: RateStore, limit: { windowMs: number; max: number } = ORDER_LIMIT): MiddlewareHandler<AppEnv> {
   return async (c, next) => {
     const result = await store.consume(orderKey(currentUser(c).id), limit.windowMs, limit.max);
-    c.header("X-RateLimit-Limit", String(limit.max));
-    c.header("X-RateLimit-Remaining", String(Math.max(0, limit.max - result.count)));
+    // own header names: X-RateLimit-* already carry the global budget on every response
+    c.header("X-Order-RateLimit-Limit", String(limit.max));
+    c.header("X-Order-RateLimit-Remaining", String(Math.max(0, limit.max - result.count)));
     if (!result.allowed) throw errors.rateLimited(ORDER_LIMIT_MESSAGE, Math.ceil(result.retryAfterMs / 1000), "ORDER_RATE_LIMITED");
     await next();
   };
