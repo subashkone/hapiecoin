@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef } from "react";
 import { fmtPrice } from "@/lib/format";
-import { useUiStore } from "@/lib/store";
+import { hasAdjustWork, useUiStore } from "@/lib/store";
 import { deltaSymbol } from "@/lib/strategy/legs";
 import { decodeShare } from "@/lib/strategy/share";
 
@@ -18,6 +18,13 @@ export function ShareLanding({ code }: { code: string }) {
     if (!shared || applied.current) return;
     applied.current = true;
     const s = useUiStore.getState();
+    if (hasAdjustWork(s.adjust)) {
+      // an adjustment with orders or plans is open in this session: ask about it first, leave the Builder untouched
+      toast("Finish the adjustment first", { description: "Leave the workbench, then open the link again" });
+      s.setWorkspaceTab("builder");
+      router.replace("/analyse");
+      return;
+    }
     s.setAsset(shared.asset);
     s.setLegs(shared.asset, []);
     let added = 0;

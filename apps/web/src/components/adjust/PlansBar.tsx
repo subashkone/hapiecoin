@@ -68,6 +68,7 @@ function PlanRow({ w, plan, kind }: { w: AdjustWorkbench; plan: SavedPlan | null
 
 export function PlansBar({ w }: { w: AdjustWorkbench }) {
   const plans = w.draft.plans;
+  const kept = matchingPlan(w.draft, w.open);
   // ADR-058: the comparison table only opens once a plan exists (or on request); the bar stays one line otherwise
   const [openTable, setOpenTable] = useState(false);
   const shown = plans.length > 0 && (openTable || plans.length > 0);
@@ -76,7 +77,7 @@ export function PlansBar({ w }: { w: AdjustWorkbench }) {
       <div className="flex flex-wrap items-center gap-2 px-2 py-1 text-2xs">
         <button type="button" className="micro rounded border border-border px-1 hover:text-foreground" aria-expanded={shown} onClick={() => setOpenTable((o) => !o)} data-testid="plans-toggle">Plans {shown ? "▾" : "▸"}</button>
         <span className="text-muted-foreground">{plans.length ? (w.empty ? `${plans[plans.length - 1]?.name} kept · build the next change, or Use a plan` : `${plans.length} of ${MAX_PLANS} saved · compare, then Use one`) : "keep this change as a plan, build another, compare"}</span>
-        <Button size="sm" variant="outline" className="ml-auto" disabled={w.empty || plans.length >= MAX_PLANS} title={w.empty ? "Make a change first" : plans.length >= MAX_PLANS ? `At most ${MAX_PLANS} plans` : "Keep this change as a plan and start the next one"} onClick={w.savePlan} data-testid="plan-save">
+        <Button size="sm" variant="outline" className="ml-auto" disabled={w.empty || plans.length >= MAX_PLANS || kept !== undefined} title={w.empty ? "Make a change first" : kept ? `Already kept as ${kept.name} · change something to save another` : plans.length >= MAX_PLANS ? `At most ${MAX_PLANS} plans` : "Keep this change as a plan and start the next one"} onClick={w.savePlan} data-testid="plan-save">
           Save as plan
         </Button>
       </div>

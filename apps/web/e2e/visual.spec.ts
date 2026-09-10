@@ -126,6 +126,7 @@ for (const theme of ["dark", "light"] as const) {
       await page.screenshot({ path: `${DIR}/analyse-adjust-confirm-${theme}.png` });
       await page.getByTestId("adjust-cancel").click();
       await wb.getByTestId("adjust-exit").click();
+      await page.getByTestId("adjust-exit-discard").click(); // the change would be discarded, so Exit asks first
       await expect(wb).toBeHidden();
       await page.getByTestId("card-details").click();
       await expect(page.getByTestId("strategy-details")).toBeVisible();
@@ -153,6 +154,7 @@ for (const theme of ["dark", "light"] as const) {
       await page.screenshot({ path: `${DIR}/analyse-adjust-live-${theme}.png` });
       await page.getByTestId("adjust-cancel").click();
       await lwb.getByTestId("adjust-exit").click();
+      await page.getByTestId("adjust-exit-discard").click();
       await expect(lwb).toBeHidden();
       // HC-TR-128 the Journal: square off the live strategy, tag it, capture the closed trade with its stats and equity curve
       await page.getByTestId("live-card").getByTestId("card-sqall").click();

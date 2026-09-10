@@ -115,7 +115,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
     }
     closeTrade();
     setWorkspaceTab(s.status === "live" ? "live" : "paper");
-    followStrategy(s.id); // the pane follows the new position instead of an empty Builder (HC-TR-143)
+    if (!useUiStore.getState().adjust) followStrategy(s.id); // the pane follows the new position instead of an empty Builder (HC-TR-143); an open workbench keeps its strategy
     if (s.status === "live") {
       const failed = s.orders.filter((o) => o.state === "failed").length;
       if (failed) toast.error("Some orders were refused", { description: `${s.name} · ${failed} ${failed === 1 ? "order" : "orders"} failed · use Retry on the Live tab` });

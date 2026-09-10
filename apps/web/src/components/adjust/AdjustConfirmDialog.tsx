@@ -110,7 +110,7 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
   const overBalance = venue !== null && venue.ok && venue.available !== null && Number(venue.notional) > Number(venue.available);
   const finish = (s: Strategy | null) => {
     onDone();
-    closeAdjust();
+    closeAdjust(true); // applied: nothing to ask about
     if (s) openDetails(s.id);
   };
   const confirm = () =>

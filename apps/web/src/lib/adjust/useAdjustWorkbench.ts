@@ -9,7 +9,7 @@ import { useSettings } from "@/lib/api/queries";
 import { useUiStore } from "@/lib/store";
 import { openLegs } from "@/lib/strategy/paper";
 import { type StrategyAnalysis, useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
-import { type AdjustDraft, type ChangeSummary, type Effect, type PickInput, addsZeroDte, cashflow, combinedExpiries, effects, isEmptyDraft, loadPlan, openCountAfter, overCap, pickOnDraft, removePick, removePlan, savePlan, setLotsAfter, setPickLots, setValuation, summarize } from "./model";
+import { type AdjustDraft, type ChangeSummary, type Effect, type PickInput, addsZeroDte, cashflow, combinedExpiries, effects, isEmptyDraft, loadPlan, normaliseLotsAfter, openCountAfter, overCap, pickOnDraft, removePick, removePlan, savePlan, setLotsAfter, setPickLots, setValuation, summarize } from "./model";
 
 /** Marks older than this are called stale in the guard rails (Review re-reads them anyway). */
 export const STALE_MARKS_MS = 60_000;
@@ -39,7 +39,6 @@ export interface AdjustWorkbench {
   removePick: (pickId: string) => void;
   setValuation: (expiry: string | null) => void;
   reset: () => void;
-  exit: () => void;
   /** Replace the working changes with another draft's (a quick fix), keeping the saved plans. */
   applyDraft: (next: AdjustDraft) => void;
   savePlan: () => void;
@@ -70,7 +69,6 @@ function useAgeSeconds(version: number, startedAt: number): number {
 export function useAdjustWorkbench(): AdjustWorkbench | null {
   const draft = useUiStore((s) => s.adjust);
   const updateAdjust = useUiStore((s) => s.updateAdjust);
-  const closeAdjust = useUiStore((s) => s.closeAdjust);
   const { data: strategies } = useStrategies();
   const { data: settings } = useSettings();
   const a = useStrategyAnalysis();
@@ -80,6 +78,8 @@ export function useAdjustWorkbench(): AdjustWorkbench | null {
   const asset = strategy?.asset ?? "BTC";
   const lotSize = settings?.lotSizes[asset] ?? DEFAULT_LOTS[asset];
   return useMemo(() => {
+    // every write goes through the normaliser, so a lots-after key always means an order (store hasAdjustWork relies on it)
+    const update = (fn: (d: AdjustDraft) => AdjustDraft) => updateAdjust((d) => normaliseLotsAfter(fn(d), open));
     if (!draft || !strategy) return null;
     const cash = cashflow(draft, open, a.markOf, lotSize);
     const stale = markAgeSec * 1000 > STALE_MARKS_MS;
@@ -99,17 +99,16 @@ export function useAdjustWorkbench(): AdjustWorkbench | null {
       markAgeSec,
       stale,
       summary: summarize(a.before, a.result, cash, a.money, { zeroDte: addsZeroDte(draft, open, a.nowMs), overCap: cap, staleMarks: stale }),
-      pick: (input) => updateAdjust((d) => pickOnDraft(d, open, asset, input)),
-      setLotsAfter: (legId, lots) => updateAdjust((d) => setLotsAfter(d, legId, lots)),
-      setPickLots: (pickId, lots) => updateAdjust((d) => setPickLots(d, pickId, lots)),
-      removePick: (pickId) => updateAdjust((d) => removePick(d, pickId)),
-      setValuation: (expiry) => updateAdjust((d) => setValuation(d, expiry)),
-      reset: () => updateAdjust((d) => ({ ...d, lotsAfter: {}, picks: [] })),
-      exit: closeAdjust,
-      applyDraft: (next) => updateAdjust((d) => ({ ...d, lotsAfter: { ...next.lotsAfter }, picks: next.picks.map((p) => ({ ...p })), valuation: next.valuation })),
-      savePlan: () => updateAdjust((d) => savePlan(d)),
-      loadPlan: (planId) => updateAdjust((d) => loadPlan(d, planId)),
-      removePlan: (planId) => updateAdjust((d) => removePlan(d, planId)),
+      pick: (input) => update((d) => pickOnDraft(d, open, asset, input)),
+      setLotsAfter: (legId, lots) => update((d) => setLotsAfter(d, legId, lots)),
+      setPickLots: (pickId, lots) => update((d) => setPickLots(d, pickId, lots)),
+      removePick: (pickId) => update((d) => removePick(d, pickId)),
+      setValuation: (expiry) => update((d) => setValuation(d, expiry)),
+      reset: () => update((d) => ({ ...d, lotsAfter: {}, picks: [] })),
+      applyDraft: (next) => update((d) => ({ ...d, lotsAfter: { ...next.lotsAfter }, picks: next.picks.map((p) => ({ ...p })), valuation: next.valuation })),
+      savePlan: () => update((d) => savePlan(d)),
+      loadPlan: (planId) => update((d) => loadPlan(d, planId)),
+      removePlan: (planId) => update((d) => removePlan(d, planId)),
     };
-  }, [draft, strategy, open, a, lotSize, markAgeSec, updateAdjust, closeAdjust]);
+  }, [draft, strategy, open, a, lotSize, markAgeSec, updateAdjust]);
 }

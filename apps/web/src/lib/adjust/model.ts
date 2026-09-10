@@ -63,13 +63,28 @@ export function savePlan(d: AdjustDraft, now = Date.now()): AdjustDraft {
   return { ...d, lotsAfter: {}, picks: [], plans: [...d.plans, plan] };
 }
 
+/**
+ * Drop lots-after entries that are no order: equal to the leg's lots now, or for a leg no longer open. Every path that
+ * writes lotsAfter (stepper, chain B / S, quick fix, plan load) goes through this, so a key always means an order.
+ */
+export function normaliseLotsAfter(d: AdjustDraft, open: readonly ServerLeg[]): AdjustDraft {
+  const lotsAfter: Record<string, number> = {};
+  let changed = false;
+  for (const [id, lots] of Object.entries(d.lotsAfter)) {
+    const leg = open.find((l) => l.id === id);
+    if (leg && lots !== leg.lots) lotsAfter[id] = lots;
+    else changed = true;
+  }
+  return changed ? { ...d, lotsAfter } : d;
+}
+
 /** The saved plan the working change is a copy of (after Save or Use), if any. */
 export function matchingPlan(d: AdjustDraft, open: readonly ServerLeg[]): SavedPlan | undefined {
   const key = (x: { lotsAfter: Record<string, number>; picks: AdjustPick[]; valuation: string | null }) =>
     JSON.stringify([
       open.map((l) => [l.id, x.lotsAfter[l.id] ?? l.lots]),
-      x.picks.map((p) => [p.symbol, p.side, p.lots]),
-      x.valuation,
+      x.picks.map((p) => `${p.symbol} ${p.side} ${p.lots}`).sort(),
+      x.valuation, // the valuation date is part of a plan's identity: the same legs valued at another date compare differently
     ]);
   const mine = key(d);
   return d.plans.find((p) => key(p) === mine);

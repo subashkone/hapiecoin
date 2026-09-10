@@ -20,6 +20,11 @@ import {
 } from "./strategy/legs";
 import { type AdjustDraft, newDraft } from "./adjust/model";
 
+/** Orders or saved plans a trader would lose if the draft went away (lots-after entries equal to the leg's lots are dropped by the hook, so a key means an order). */
+export function hasAdjustWork(a: AdjustDraft | null): boolean {
+  return a !== null && (a.picks.length > 0 || Object.keys(a.lotsAfter).length > 0 || a.plans.length > 0);
+}
+
 export type DialogKind = "profile" | "api" | "currency" | "lot" | "pnl" | "exchanges" | "logout" | "columns" | "option" | "upgrade" | "alerts" | "shortcuts" | null;
 
 /** What the Alerts dialog's New alert form starts with (HC-SH-100): a "Set alert" button passes the strategy. Transient. */
@@ -231,11 +236,12 @@ export interface UiState {
   /** Open the Alerts center (HC-SH-079); with a prefill, straight on the New alert form (HC-SH-100, HC-TR-139). */
   openAlerts: (prefill?: AlertPrefill | null) => void;
   /** Follow a paper / live strategy in the analysis pane (null = back to the Builder legs). */
-  followStrategy: (id: string | null) => void;
+  /** `force` skips the discard question (used by the workbench once the trader has answered it). */
+  followStrategy: (id: string | null, force?: boolean) => void;
   /** Analyse ticked exchange positions (HC-TR-144); an empty list returns to the Builder legs. */
-  analysePositions: (productIds: number[]) => void;
+  analysePositions: (productIds: number[], force?: boolean) => void;
   setTemplatesStrip: (open: boolean) => void;
-  setWorkspaceTab: (tab: WorkspaceTab) => void;
+  setWorkspaceTab: (tab: WorkspaceTab, force?: boolean) => void;
   setAnalysisTab: (tab: AnalysisTab) => void;
   setBuilderTab: (tab: BuilderSubTab) => void;
   setTarget: (patch: { price?: number | null; days?: number }) => void;
@@ -265,8 +271,11 @@ export interface UiState {
   toggleWatch: (symbol: string) => void;
   openAssistant: (question?: string) => void;
   /** Open the workbench on a paper / live strategy: the pane follows it and the Builder legs stay untouched (ADR-026). */
-  openAdjust: (strategyId: string) => void;
-  closeAdjust: () => void;
+  openAdjust: (strategyId: string, force?: boolean) => void;
+  closeAdjust: (force?: boolean) => void;
+  /** The action that would discard the adjustment work, waiting for the trader's answer (ADR-058 addendum). */
+  adjustDiscard: (() => void) | null;
+  keepAdjust: () => void;
   updateAdjust: (fn: (draft: AdjustDraft) => AdjustDraft) => void;
   addRiskAlert: (strategyId: string, maxLoss: number) => RiskAlert;
   removeRiskAlert: (id: string) => void;
@@ -335,6 +344,7 @@ export const useUiStore = create<UiState>()(
       targetPrice: null,
       targetDays: 0,
       adjust: null,
+      adjustDiscard: null,
       riskAlerts: [],
       alertPrefill: null,
       setAsset: (asset) => set({ asset, targetPrice: null }),
@@ -390,10 +400,31 @@ export const useUiStore = create<UiState>()(
       openDetails: (detailsId) => set({ detailsId }),
       openAlerts: (prefill = null) => set({ dialog: "alerts", alertPrefill: prefill, dialogsTouched: true }),
       // an adjustment draft lives on the followed strategy (ADR-044): following anything else, or a tab that clears the pane source, discards it
-      followStrategy: (id) => set((s) => ({ paneSource: id === null ? null : { kind: "strategy", id }, adjust: s.adjust && s.adjust.strategyId === id ? s.adjust : null })),
-      analysePositions: (productIds) => set({ paneSource: productIds.length ? { kind: "positions", productIds: [...productIds] } : null, adjust: null }),
+      // ADR-058 addendum: any route that would throw the work away asks first; the workbench shows the question
+      followStrategy: (id, force = false) => {
+        const s = get();
+        if (!force && s.adjust && s.adjust.strategyId !== id && hasAdjustWork(s.adjust)) {
+          set({ adjustDiscard: () => get().followStrategy(id, true) });
+          return;
+        }
+        set({ paneSource: id === null ? null : { kind: "strategy", id }, adjust: s.adjust && s.adjust.strategyId === id ? s.adjust : null, adjustDiscard: null });
+      },
+      analysePositions: (productIds, force = false) => {
+        if (!force && hasAdjustWork(get().adjust)) {
+          set({ adjustDiscard: () => get().analysePositions(productIds, true) });
+          return;
+        }
+        set({ paneSource: productIds.length ? { kind: "positions", productIds: [...productIds] } : null, adjust: null, adjustDiscard: null });
+      },
       setTemplatesStrip: (templatesStrip) => set({ templatesStrip }),
-      setWorkspaceTab: (workspaceTab) => set(workspaceTab === "builder" || workspaceTab === "chain" ? { workspaceTab, paneSource: null, adjust: null } : { workspaceTab }),
+      setWorkspaceTab: (workspaceTab, force = false) => {
+        const clears = workspaceTab === "builder" || workspaceTab === "chain";
+        if (clears && !force && hasAdjustWork(get().adjust)) {
+          set({ adjustDiscard: () => get().setWorkspaceTab(workspaceTab, true) });
+          return;
+        }
+        set(clears ? { workspaceTab, paneSource: null, adjust: null, adjustDiscard: null } : { workspaceTab });
+      },
       setAnalysisTab: (analysisTab) => set({ analysisTab }),
       setBuilderTab: (builderTab) => set({ builderTab }),
       setTarget: (patch) =>
@@ -432,8 +463,26 @@ export const useUiStore = create<UiState>()(
       requestTour: () => set((s) => ({ tourRequested: s.tourRequested + 1 })),
       toggleWatch: (symbol) => set((s) => ({ watchlist: s.watchlist.includes(symbol) ? s.watchlist.filter((x) => x !== symbol) : [...s.watchlist, symbol] })),
       openAssistant: (question) => set((s) => ({ assistantRequested: s.assistantRequested + 1, assistantQuestion: question ?? null })),
-      openAdjust: (strategyId) => set({ adjust: newDraft(strategyId), paneSource: { kind: "strategy", id: strategyId }, detailsId: null }),
-      closeAdjust: () => set({ adjust: null }),
+      openAdjust: (strategyId, force = false) => {
+        const s = get();
+        if (s.adjust?.strategyId === strategyId) {
+          set({ paneSource: { kind: "strategy", id: strategyId }, detailsId: null }); // already adjusting it: keep the work
+          return;
+        }
+        if (!force && hasAdjustWork(s.adjust)) {
+          set({ adjustDiscard: () => get().openAdjust(strategyId, true) });
+          return;
+        }
+        set({ adjust: newDraft(strategyId), paneSource: { kind: "strategy", id: strategyId }, detailsId: null, adjustDiscard: null });
+      },
+      closeAdjust: (force = false) => {
+        if (!force && hasAdjustWork(get().adjust)) {
+          set({ adjustDiscard: () => get().closeAdjust(true) });
+          return;
+        }
+        set({ adjust: null, adjustDiscard: null });
+      },
+      keepAdjust: () => set({ adjustDiscard: null }),
       updateAdjust: (fn) => set((s) => (s.adjust ? { adjust: fn(s.adjust) } : {})),
       addRiskAlert: (strategyId, maxLoss) => {
         const alert: RiskAlert = { id: `ra_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`, strategyId, maxLoss: -Math.abs(maxLoss), createdAt: Date.now() };

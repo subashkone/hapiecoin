@@ -133,6 +133,7 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     await u.click(within(heldRow).getByTestId("wb-chain-buy-call")); // same side: adds 100 lots (the chain preset)
     expect(within(legs[0]!).getByTestId("effect").textContent).toContain("ADDS +100");
     await u.click(within(heldRow).getByTestId("wb-chain-sell-call")); // opposite side: trims them back
+    expect(useUiStore.getState().adjust?.lotsAfter).toEqual({}); // back to lots now: no order, no key (hasAdjustWork stays exact)
     expect(within(legs[0]!).getByTestId("effect-none")).toBeTruthy();
     await u.click(within(heldRow).getByTestId("wb-chain-sell-call")); // trims below zero: closes, the rest flips
     expect(within(legs[0]!).getByTestId("effect").dataset["kind"]).toBe("close");
@@ -161,6 +162,15 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     const chips = within(within(wb).getByTestId("value-at")).getAllByTestId("value-at-chip");
     expect(chips.map((c) => c.dataset["expiry"])).toEqual(["today", EXPIRY, LATER]);
     expect(chips[2]!.getAttribute("aria-pressed")).toBe("true"); // the latest expiry by default
+    // the pick belongs to the later expiry and survives switching the chain back to the front one
+    await u.click(within(wb).getAllByTestId("wb-chain-expiry").find((b) => b.dataset["expiry"] === EXPIRY)!);
+    await waitFor(() => expect(within(wb).getAllByTestId("wb-chain-row").length).toBeGreaterThan(0));
+    expect(within(wb).getAllByTestId("wb-pick")).toHaveLength(1);
+    expect(within(wb).getByTestId("wb-pick").textContent).toContain("30 Oct");
+    // only held rows are lit on this chain (the pick belongs to the other expiry)
+    expect(within(wb).getAllByTestId("wb-chain-buy-call").filter((b) => b.getAttribute("aria-pressed") === "true").every((b) => b.closest("tr")?.querySelector("[data-testid=wb-chain-held]") !== null)).toBe(true);
+    await u.click(within(wb).getAllByTestId("wb-chain-expiry").find((b) => b.dataset["expiry"] === LATER)!);
+    await waitFor(() => expect(within(wb).getAllByTestId("wb-chain-row").length).toBeGreaterThan(0));
     await u.click(chips[1]!);
     expect(chips[1]!.getAttribute("aria-pressed")).toBe("true");
     await waitFor(() => expect(screen.getByTestId("before-after").textContent).toContain("valued at"));
@@ -183,7 +193,7 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     fireEvent.change(within(putRow).getByTestId("lots-after-input"), { target: { value: "5" } });
     const freeAgain = within(wb).getAllByTestId("wb-chain-row").find((r) => r.dataset["strike"] === freeRow.dataset["strike"])!;
     await u.click(within(freeAgain).getByTestId("wb-chain-sell-call"));
-    expect(within(wb).getByTestId("adjust-review").textContent).toContain("2 changes");
+    expect(within(wb).getByTestId("adjust-review").textContent).toContain("2 orders");
     fireEvent.keyDown(box, { key: "Enter" });
     const confirm = await screen.findByTestId("adjust-confirm");
     expect(confirm.dataset["mode"]).toBe("paper");
@@ -234,7 +244,15 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(within(wb).getByTestId("adjust-tile-legs").textContent).toContain("11");
     expect(within(wb).getByTestId("wb-chain-cap").textContent).toContain("over the 10 open-leg cap");
     expect(within(wb).getByTestId<HTMLButtonElement>("adjust-review").disabled).toBe(true);
+    // Exit asks before discarding a change; Keep editing leaves everything as it was
     await u.click(within(wb).getByTestId("adjust-exit"));
+    const ask = await screen.findByTestId("adjust-exit-confirm");
+    expect(ask.textContent).toContain("9 orders in this change");
+    await u.click(within(ask).getByTestId("adjust-exit-keep"));
+    await waitFor(() => expect(screen.queryByTestId("adjust-exit-confirm")).toBeNull());
+    expect(within(wb).getAllByTestId("wb-pick")).toHaveLength(9);
+    await u.click(within(wb).getByTestId("adjust-exit"));
+    await u.click(within(await screen.findByTestId("adjust-exit-confirm")).getByTestId("adjust-exit-discard"));
     await waitFor(() => expect(screen.queryByTestId("adjust-workbench")).toBeNull());
     expect(useUiStore.getState().adjust).toBeNull();
     expect(screen.getByTestId("left-pane")).toBeTruthy();
@@ -246,6 +264,14 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     await u.click(within(details).getByTestId("details-adjust"));
     await screen.findByTestId("adjust-workbench");
     expect(useUiStore.getState().adjust?.strategyId).toBe(mine()[0]!.id);
+    // nothing changed: Exit leaves at once, no question asked
+    await u.click(screen.getByTestId("adjust-exit"));
+    await waitFor(() => expect(screen.queryByTestId("adjust-workbench")).toBeNull());
+    expect(screen.queryByTestId("adjust-exit-confirm")).toBeNull();
+    // the strategy went away (archived or deleted elsewhere): the workbench closes itself
+    act(() => useUiStore.getState().openAdjust("str_gone"));
+    await waitFor(() => expect(useUiStore.getState().adjust).toBeNull());
+    expect(screen.queryByTestId("adjust-workbench")).toBeNull();
   });
 
   it("HC-TR-153 / HC-TR-154 plans compare, quick fixes with ranking, the scenario slider and the alert stub", async () => {
@@ -292,11 +318,46 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     // the working change is a copy of Plan A now, and the row says so instead of showing the same figures unexplained
     expect(within(plans).getByTestId("plan-current-note").textContent).toBe("= Plan A");
     expect(within(plans).getAllByTestId("plan-row")[1]!.dataset["same"]).toBe(within(plans).getAllByTestId("plan-row")[2]!.dataset["plan"]);
+    // a copy of a kept plan cannot be saved again; an edit makes it a new change
+    expect(within(plans).getByTestId<HTMLButtonElement>("plan-save").disabled).toBe(true);
+    expect(within(plans).getByTestId("plan-save").title).toContain("Already kept as Plan A");
     await u.click(within(within(wb).getAllByTestId("wb-pick")[0]!).getByTestId("pick-lots-up"));
     expect(within(plans).getByTestId("plan-current-note").textContent).toBe("unsaved");
+    expect(within(plans).getByTestId<HTMLButtonElement>("plan-save").disabled).toBe(false);
     await u.click(within(within(wb).getAllByTestId("wb-pick")[0]!).getByTestId("pick-lots-down"));
+    expect(within(plans).getByTestId<HTMLButtonElement>("plan-save").disabled).toBe(true);
     await u.click(within(plans).getAllByTestId("plan-remove")[1]!);
     expect(plans.dataset["count"]).toBe("1");
+    // removing the plan the change equals makes it a new change again (the table folds away with no plans), so it can be kept once more
+    await u.click(within(plans).getAllByTestId("plan-remove")[0]!);
+    expect(plans.dataset["count"]).toBe("0");
+    expect(within(plans).queryByTestId("plans-table")).toBeNull();
+    expect(within(plans).getByTestId<HTMLButtonElement>("plan-save").disabled).toBe(false);
+    await u.click(within(plans).getByTestId("plan-save"));
+    expect(plans.dataset["count"]).toBe("1");
+    expect(wb.dataset["empty"]).toBe("true");
+    // Clear all on Proposed is Reset: the orders go, the plan stays
+    await u.click(within(fixes).getAllByTestId("quick-fix")[0]!);
+    expect(within(wb).getByTestId("proposed-count").dataset["count"]).toBe("4");
+    await u.click(within(wb).getByTestId("proposed-clear"));
+    expect(within(wb).queryByTestId("proposed-clear")).toBeNull();
+    expect(wb.dataset["empty"]).toBe("true");
+    expect(plans.dataset["count"]).toBe("1");
+    // Exit asks about saved plans even when the change is empty
+    await u.click(within(wb).getByTestId("adjust-exit"));
+    const ask = await screen.findByTestId("adjust-exit-confirm");
+    expect(ask.textContent).toContain("1 saved plan will be discarded");
+    await u.click(within(ask).getByTestId("adjust-exit-keep"));
+    await waitFor(() => expect(screen.queryByTestId("adjust-exit-confirm")).toBeNull());
+    // the side doors ask the same question: Back to Builder on the pane, or a tab change from the palette
+    await u.click(screen.getByTestId("pane-back-to-builder"));
+    await u.click(within(await screen.findByTestId("adjust-exit-confirm")).getByTestId("adjust-exit-keep"));
+    expect(screen.getByTestId("adjust-workbench")).toBeTruthy();
+    expect(useUiStore.getState().adjust?.plans).toHaveLength(1);
+    act(() => useUiStore.getState().setWorkspaceTab("chain"));
+    await u.click(within(await screen.findByTestId("adjust-exit-confirm")).getByTestId("adjust-exit-keep"));
+    expect(useUiStore.getState().workspaceTab).toBe("paper"); // the tab change waited for the answer and was dropped
+    expect(useUiStore.getState().adjust?.plans).toHaveLength(1);
     // the scenario slider values the position on a day between today and the latest expiry
     const slider = within(wb).getByTestId<HTMLInputElement>("scenario-days");
     expect(Number(slider.max)).toBeGreaterThan(1);
@@ -316,6 +377,15 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(useUiStore.getState().alertPrefill).toMatchObject({ kind: "pnl", strategyId: s.id, asset: "BTC", op: "<=", value: "-1500" });
     expect(useUiStore.getState().riskAlerts).toEqual([]);
     expect(call.strike).toBeTruthy();
+    // a side door answered with Discard runs the parked action: Back to Builder leaves the workbench and switches the tab
+    act(() => useUiStore.getState().closeDialog?.());
+    await u.click(screen.getByTestId("pane-back-to-builder"));
+    await u.click(within(await screen.findByTestId("adjust-exit-confirm")).getByTestId("adjust-exit-discard"));
+    await waitFor(() => expect(screen.queryByTestId("adjust-workbench")).toBeNull());
+    expect(useUiStore.getState().workspaceTab).toBe("builder");
+    expect(useUiStore.getState().paneSource).toBeNull();
+    expect(useUiStore.getState().adjust).toBeNull();
+    expect(useUiStore.getState().adjustDiscard).toBeNull();
   });
 
   it("ADR-058 figures checklist: the same change reads the same in the ticket, the change box and the footer tiles", async () => {

@@ -2,7 +2,7 @@ import type { AnalyzeResult } from "@hapiecoin/pricing";
 import type { StrategyLeg as ServerLeg } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
 import { USD } from "@/lib/money";
-import { MAX_PLANS, VALUE_TODAY, addsZeroDte, afterLegs, beforeLegs, cashflow, combinedExpiries, effects, instrumentOf, isEmptyDraft, isoDaysFrom, loadPlan, lotsAfterOf, matchingPlan, newDraft, openCountAfter, overCap, pickOnDraft, planDraft, removePick, removePlan, savePlan, setLotsAfter, setPickLots, setValuation, summarize, toBody, valuationMsOf } from "./model";
+import { MAX_PLANS, VALUE_TODAY, addsZeroDte, afterLegs, beforeLegs, cashflow, combinedExpiries, effects, instrumentOf, isEmptyDraft, isoDaysFrom, loadPlan, lotsAfterOf, matchingPlan, newDraft, normaliseLotsAfter, openCountAfter, overCap, pickOnDraft, planDraft, removePick, removePlan, savePlan, setLotsAfter, setPickLots, setValuation, summarize, toBody, valuationMsOf } from "./model";
 import { type FixContext, quickFixes, rankFixes } from "./fixes";
 
 const EXP = "2026-09-25";
@@ -215,6 +215,16 @@ describe("HC-TR-151 the API batch and the change summary", () => {
     expect(summarize(result({}), result({}), 0, USD, flags).line).toBe("max loss unchanged · POP 40% → 40%");
     expect(summarize(null, result({}), -5, USD, flags).line).toBe("you pay $5.00");
     expect(summarize(null, null, 0, USD, flags)).toEqual({ line: "", warnings: [] });
+  });
+});
+
+describe("lots after is only kept while it is an order", () => {
+  it("normaliseLotsAfter drops entries equal to lots now and entries for legs no longer open, and keeps the rest", () => {
+    const d = setLotsAfter(setLotsAfter(newDraft("s", 1), CALL.id, CALL.lots), PUT.id, 40);
+    const n = normaliseLotsAfter({ ...d, lotsAfter: { ...d.lotsAfter, leg_gone: 5 } }, OPEN);
+    expect(n.lotsAfter).toEqual({ [PUT.id]: 40 });
+    expect(normaliseLotsAfter(n, OPEN)).toBe(n); // nothing to drop: the same object
+    expect(normaliseLotsAfter(newDraft("s", 1), OPEN).lotsAfter).toEqual({});
   });
 });
 
