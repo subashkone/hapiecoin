@@ -67,6 +67,10 @@ describe("HC-WS-026 Option details dialog", () => {
     const q = chainRows[5]!.call!;
     await waitFor(() => expect(screen.getByTestId("option-mark").textContent).toBe(fmtPrice(q.mark)));
     expect(screen.getByTestId("option-stats").textContent).toContain("Gamma");
+    // ADR-056 (GAPS #32): the 24 h mark / IV sparkline from the market history route
+    await waitFor(() => expect(screen.getByTestId("option-sparkline").dataset["state"]).toBe("ready"));
+    expect(Number(screen.getByTestId("option-sparkline").dataset["points"])).toBeGreaterThan(1);
+    expect(screen.getByTestId("chart-option-spark")).toBeTruthy();
     await waitFor(() => expect(screen.getByTestId("option-qty").textContent).toContain("× 0.001"));
     const u = userEvent.setup();
     await u.selectOptions(screen.getByTestId("option-lots"), "25");

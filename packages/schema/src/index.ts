@@ -14,3 +14,4 @@ export * from "./payments.js";
 export * from "./emails.js";
 export * from "./analytics.js";
 export * from "./alerts.js";
+export * from "./market-history.js";

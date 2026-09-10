@@ -1153,7 +1153,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "From CG.analyse.stats {atmIv, ivRank} when the analyse part emits 'analyse:stats'; otherwise computed from the ATM row of CG.chain(asset, expiry) and a per-asset IV range (CG.mock.ivRange). Exposed as CG.chrome.marketStats(asset)",
-  "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): components/header/HeaderStats.tsx header-atm-iv: ATM IV of the shown expiry (atmIvOf) + \"IV rank —\" until GAPS #62; unit AppHeader.test.tsx; e2e analyse.spec.ts"
+  "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): components/header/HeaderStats.tsx header-atm-iv: ATM IV of the shown expiry (atmIvOf) + \"IV rank —\" until GAPS #62; unit AppHeader.test.tsx; e2e analyse.spec.ts · ADR-056 (11 Sep 2026): header-iv-rank shows \"IV rank N\" from useIvHistory once two days of history exist; unit AppHeader.test.tsx; e2e analyse.spec.ts"
  },
  {
   "id": "HC-SH-078",
@@ -3058,7 +3058,7 @@
   "phase": 2,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Dialog shows mark price, IV badge, 24h change, Δ, a 24h sparkline of mark price + IV (mock series), stats grid (Bid / Ask, OI, Volume, Bid / Ask Qty, Delta, Gamma, Theta, Vega, 24h Chg, Last, Open / High, Low) and Buy / Sell buttons with a lots selector",
-  "evidence": "screenshot: chart icon in the hover controls; bundle symbol format C-BTC-60000-250926 · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
+  "evidence": "screenshot: chart icon in the hover controls; bundle symbol format C-BTC-60000-250926 · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022 · ADR-056 (11 Sep 2026): OptionDetailsDialog option-sparkline: 24 h mark + IV lines (chart-option-spark) from GET /v1/market/marks/{symbol}; unit dialogs.test.tsx"
  },
  {
   "id": "HC-WS-027",
@@ -4103,12 +4103,12 @@
   "route": "/analyse",
   "screen": "Vol",
   "feature": "IV rank (1y): rank, percentile, current, 1y low / high on a gauge with an interpretation line",
-  "status": "static",
+  "status": "working",
   "isNew": true,
   "phase": 5,
-  "test": "unit (pricing) · visual (screenshot diff)",
+  "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Generated 365-day ATM IV history (mean-reverting log process seeded per asset, pinned to the current ATM IV)",
-  "evidence": "Phase 5 item 1 (09 Sep 2026): ComingSoon placeholder in VolPanel; needs the IV snapshotter (GAPS #62)"
+  "evidence": "ADR-056 (11 Sep 2026): components/analysis/VolHistory.tsx IvRankPanel: rank + percentile, 1-year low / high gauge, days recorded, ivRankLabel interpretation; API iv-snapshot.ts + market-history.ts + GET /v1/market/iv; unit analysis-tabs.test.tsx, API iv-snapshot.test.ts; e2e analyse.spec.ts"
  },
  {
   "id": "HC-WS-097",
@@ -4118,12 +4118,12 @@
   "route": "/analyse",
   "screen": "Vol",
   "feature": "Realised vs implied: 30-day realised vol (from a generated price series) vs the ATM IV history over 365 days, with the IV − RV spread",
-  "status": "static",
+  "status": "working",
   "isNew": true,
   "phase": 5,
-  "test": "unit (pricing) · visual (screenshot diff)",
+  "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Behaves as in the v2 mock.",
-  "evidence": "Phase 5 item 1 (09 Sep 2026): ComingSoon placeholder in VolPanel; needs the price / IV history (GAPS #62)"
+  "evidence": "ADR-056 (11 Sep 2026): VolHistory.tsx RvIvPanel: ATM IV vs rolling 30-day realised vol chart (chart-rv-iv) with the IV − RV spread (rv-iv-spread), closes counted while short; realisedVolOf in packages/schema; unit analysis-tabs.test.tsx; e2e analyse.spec.ts"
  },
  {
   "id": "HC-WS-098",

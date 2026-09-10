@@ -5,6 +5,7 @@ import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
+import { mockIvHistory, mockMarkHistory } from "./mock-market";
 import { AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal } from "@hapiecoin/schema";
 
 export const SESSION_COOKIE = "better-auth.session_token";
@@ -103,6 +104,8 @@ export interface MockState {
   campaigns: (Campaign & { rows: CampaignRecipient[] })[];
   /** Invitations "sent" by POST /v1/admin/users/invite (the API mails them). */
   invites: { email: string; name: string; invitedBy: string; link: string }[];
+  /** Days of IV history the market routes serve (ADR-056); 0 answers 503 like an API that has not snapshotted yet. */
+  ivHistoryDays: number;
   sessions: Map<string, string>; // token → email
   /** OTPs issued: `${email}:${type}` → code (always TEST_OTP, but recorded for assertions). */
   otps: Map<string, string>;
@@ -207,7 +210,7 @@ export function createSession(state: MockState, email: string): string {
 
 export function createMockApi(state: MockState = { plans: seedPlans(),
     menuItems: seedMenuItems(),
-    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
+    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", ivHistoryDays: 365, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
   const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409, code: string, message: string) =>
@@ -1566,6 +1569,14 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   });
 
   // Market Analytics snapshots (ADR-038): public (registered on the app ahead of the session-guarded v1 router), deterministic fixtures; per-symbol datasets answer for BTC only.
+  // Market history (ADR-056): public, deterministic; `?asset=` outside BTC / ETH / XAUT is 400 like the API
+  app.get("/v1/market/iv", (c) => {
+    const asset = (c.req.query("asset") ?? "").toUpperCase();
+    if (asset !== "BTC" && asset !== "ETH" && asset !== "XAUT") return c.json({ code: "BAD_REQUEST", message: "asset must be BTC, ETH or XAUT" }, 400);
+    if (state.ivHistoryDays === 0) return c.json({ code: "UNAVAILABLE", message: `no IV history for ${asset} yet` }, 503);
+    return c.json(mockIvHistory(asset, state.ivHistoryDays));
+  });
+  app.get("/v1/market/marks/:symbol", (c) => c.json(mockMarkHistory(c.req.param("symbol"), Number(c.req.query("hours") ?? 24))));
   const analytics = mockAnalyticsSnapshots();
   app.get("/v1/analytics/:dataset", (c) => {
     const dataset = c.req.param("dataset");

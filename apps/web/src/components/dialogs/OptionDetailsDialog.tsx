@@ -1,11 +1,13 @@
 "use client";
 // Option details (HC-WS-026): titled with the Delta symbol, the live figures of one option, and Buy / Sell
-// with a lots select that adds a leg the same way the chain's row control does. No price history yet
-// (the sparkline arrives with the Phase 5 snapshotter, GAPS #32).
+// with a lots select that adds a leg the same way the chain's row control does, and the 24 h mark / IV sparkline
+// from the API's snapshot history (ADR-056, GAPS #32).
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { chainTopic } from "@hapiecoin/schema";
 import { useMemo, useState } from "react";
+import { useMarkHistory } from "@/lib/api/market";
 import { useSettings } from "@/lib/api/queries";
+import { Chart } from "@/components/analytics/Chart";
 import { daysToExpiry, fmtChange, fmtDelta, fmtExpiry, fmtGamma, fmtIv, fmtOi, fmtPrice, fmtQty, fmtStrike, fmtTheta, fmtVega } from "@/lib/format";
 import { useSpot, useTopic } from "@/lib/gateway/hooks";
 import { useUiStore } from "@/lib/store";
@@ -36,6 +38,8 @@ export function OptionDetailsDialog({ open, onOpenChange }: DialogProps) {
   const [lots, setLots] = useState<number | null>(null);
   const chosen = lots ?? chainLots;
 
+  const history = useMarkHistory(open && target ? deltaSymbol(target.kind, target.asset, target.strike, target.expiry) : null);
+  const spark = history.data?.points ?? [];
   const row = useMemo(() => (target && chain ? chain.rows.find((r) => Number(r.strike) === Number(target.strike)) : undefined), [chain, target]);
   const q = target ? (target.kind === "call" ? row?.call : row?.put) : undefined;
   const symbol = target ? deltaSymbol(target.kind, target.asset, target.strike, target.expiry) : "";
@@ -85,6 +89,25 @@ export function OptionDetailsDialog({ open, onOpenChange }: DialogProps) {
                   {change.text} 24h
                 </span>
                 <span className="micro ml-auto">USD per {target?.asset ?? "unit"} · mark</span>
+              </div>
+              <div className="mt-3" data-testid="option-sparkline" data-points={spark.length} data-state={history.isLoading ? "loading" : spark.length ? "ready" : "empty"}>
+                <div className="micro mb-1">Mark and IV · last 24 h · {spark.length ? `${spark.length} snapshots` : history.isLoading ? "loading" : "no history yet"}</div>
+                {spark.length > 1 ? (
+                  <Chart
+                    h={72}
+                    yTicks={1}
+                    legend={false}
+                    x={spark.map((p) => new Date(p.ts).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }))}
+                    series={[
+                      { label: "Mark", type: "line", data: spark.map((p) => p.mark), color: "hsl(var(--foreground))", width: 1.2, fmt: (v) => fmtPrice(v) },
+                      { label: "IV", type: "line", axis: "r", data: spark.map((p) => (p.markIv === null ? null : p.markIv * 100)), color: "hsl(var(--spot))", width: 1, fmt: (v) => `${v.toFixed(1)}%` },
+                    ]}
+                    rightAxis
+                    yFmt={(v) => fmtPrice(v, 0)}
+                    y2Fmt={(v) => `${v.toFixed(0)}%`}
+                    testId="chart-option-spark"
+                  />
+                ) : null}
               </div>
               <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3" data-testid="option-stats">
                 <Stat k="Bid / Ask" v={`${fmtPrice(q.bid)} / ${fmtPrice(q.ask)}`} />

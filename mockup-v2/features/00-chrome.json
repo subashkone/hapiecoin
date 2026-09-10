@@ -613,7 +613,7 @@
     "feature": "ATM IV + 'IV rank N' (mono)",
     "how": "From CG.analyse.stats {atmIv, ivRank} when the analyse part emits 'analyse:stats'; otherwise computed from the ATM row of CG.chain(asset, expiry) and a per-asset IV range (CG.mock.ivRange). Exposed as CG.chrome.marketStats(asset)",
     "status": "working",
-    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): components/header/HeaderStats.tsx header-atm-iv: ATM IV of the shown expiry (atmIvOf) + \"IV rank —\" until GAPS #62; unit AppHeader.test.tsx; e2e analyse.spec.ts",
+    "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): components/header/HeaderStats.tsx header-atm-iv: ATM IV of the shown expiry (atmIvOf) + \"IV rank —\" until GAPS #62; unit AppHeader.test.tsx; e2e analyse.spec.ts · ADR-056 (11 Sep 2026): header-iv-rank shows \"IV rank N\" from useIvHistory once two days of history exist; unit AppHeader.test.tsx; e2e analyse.spec.ts",
     "new": true
   },
   {

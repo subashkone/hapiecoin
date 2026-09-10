@@ -17,6 +17,7 @@ import { registerBillingRoutes } from "./routes/billing.js";
 import { registerReferralRoutes } from "./routes/referrals.js";
 import { registerAdminUserRoutes } from "./routes/admin-users.js";
 import { registerAlertRoutes } from "./routes/alerts.js";
+import { registerMarketRoutes } from "./routes/market.js";
 import { registerBannerRoutes } from "./routes/banners.js";
 import { registerCheckoutRoutes } from "./routes/checkout.js";
 import { registerCouponRoutes } from "./routes/coupons.js";
@@ -118,6 +119,7 @@ export function createApp(deps: AppDeps): OpenAPIHono<AppEnv> {
   registerEmailRoutes(app, deps);
   registerAnalyticsRoutes(app, deps);
   registerAlertRoutes(app, deps);
+  registerMarketRoutes(app, deps);
 
   app.openAPIRegistry.registerComponent("securitySchemes", "cookieAuth", {
     type: "apiKey",

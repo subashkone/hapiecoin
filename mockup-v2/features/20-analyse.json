@@ -205,7 +205,7 @@
   "feature": "ⓘ icon (or Enter on the highlighted row) → option details dialog titled with the Delta-style symbol (e.g. C-BTC-79500-250926)",
   "how": "Dialog shows mark price, IV badge, 24h change, Δ, a 24h sparkline of mark price + IV (mock series), stats grid (Bid / Ask, OI, Volume, Bid / Ask Qty, Delta, Gamma, Theta, Vega, 24h Chg, Last, Open / High, Low) and Buy / Sell buttons with a lots selector",
   "status": "working",
-  "evidence": "screenshot: chart icon in the hover controls; bundle symbol format C-BTC-60000-250926 · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
+  "evidence": "screenshot: chart icon in the hover controls; bundle symbol format C-BTC-60000-250926 · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022 · ADR-056 (11 Sep 2026): OptionDetailsDialog option-sparkline: 24 h mark + IV lines (chart-option-spark) from GET /v1/market/marks/{symbol}; unit dialogs.test.tsx"
  },
  {
   "route": "/analyse",
@@ -796,8 +796,8 @@
   "screen": "Vol",
   "feature": "IV rank (1y): rank, percentile, current, 1y low / high on a gauge with an interpretation line",
   "how": "Generated 365-day ATM IV history (mean-reverting log process seeded per asset, pinned to the current ATM IV)",
-  "status": "static",
-  "evidence": "Phase 5 item 1 (09 Sep 2026): ComingSoon placeholder in VolPanel; needs the IV snapshotter (GAPS #62)",
+  "status": "working",
+  "evidence": "ADR-056 (11 Sep 2026): components/analysis/VolHistory.tsx IvRankPanel: rank + percentile, 1-year low / high gauge, days recorded, ivRankLabel interpretation; API iv-snapshot.ts + market-history.ts + GET /v1/market/iv; unit analysis-tabs.test.tsx, API iv-snapshot.test.ts; e2e analyse.spec.ts",
   "new": true
  },
  {
@@ -805,8 +805,8 @@
   "screen": "Vol",
   "feature": "Realised vs implied: 30-day realised vol (from a generated price series) vs the ATM IV history over 365 days, with the IV − RV spread",
   "how": "",
-  "status": "static",
-  "evidence": "Phase 5 item 1 (09 Sep 2026): ComingSoon placeholder in VolPanel; needs the price / IV history (GAPS #62)",
+  "status": "working",
+  "evidence": "ADR-056 (11 Sep 2026): VolHistory.tsx RvIvPanel: ATM IV vs rolling 30-day realised vol chart (chart-rv-iv) with the IV − RV spread (rv-iv-spread), closes counted while short; realisedVolOf in packages/schema; unit analysis-tabs.test.tsx; e2e analyse.spec.ts",
   "new": true
  },
  {

@@ -16,6 +16,8 @@ import { createMailer } from "./mailer.js";
 import { RazorpayHttpClient } from "./razorpay.js";
 import { MemoryRateStore, type RateStore, RedisRateStore } from "./security/rate-store.js";
 import { createKeyring } from "./vault.js";
+import { startIvSnapshotter } from "./iv-snapshot.js";
+import { DeltaRestClient, isSchemaInstrument, toSchemaInstrument, toSchemaQuote } from "@hapiecoin/venues";
 import { MemoryAnalyticsReader, RedisAnalyticsReader } from "./analytics.js";
 
 loadRepoEnv(import.meta.url);
@@ -67,6 +69,20 @@ const app = createApp(deps);
 
 // ADR-029: pending venue orders are reconciled in the background; tests drive reconcilePending directly
 const stopReconciler = config.nodeEnv === "test" ? () => undefined : startReconciler(deps, config.trading.reconcileMs);
+// ADR-056: the IV history snapshotter reads public option tickers (no key) every IV_SNAPSHOT_MS; 0 turns it off
+const publicRest = new DeltaRestClient({ baseUrl: config.deltaRestUrl });
+const stopSnapshotter =
+  config.nodeEnv === "test" || config.ivSnapshotMs === 0
+    ? () => undefined
+    : startIvSnapshotter(
+        deps,
+        {
+          // the venue shapes cross the schema adapter (GAPS #8); a ticker without a spot carries "0" and is skipped as a spot source
+          products: async () => (await publicRest.getProducts({ contractTypes: ["call_options", "put_options"], states: ["live"] })).filter(isSchemaInstrument).map(toSchemaInstrument),
+          tickers: async (u) => (await publicRest.getTickers({ contractTypes: ["call_options", "put_options"], underlying: u })).map((q) => toSchemaQuote(q, "0")),
+        },
+        config.ivSnapshotMs,
+      );
 
 const server = serve({ fetch: app.fetch, port: config.apiPort }, (info) => {
   logger.info(
@@ -83,6 +99,7 @@ const server = serve({ fetch: app.fetch, port: config.apiPort }, (info) => {
 async function shutdown(signal: string): Promise<void> {
   logger.info({ signal }, "shutting down");
   stopReconciler();
+  stopSnapshotter();
   server.close();
   await redis?.quit();
   await handle.close();

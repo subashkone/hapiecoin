@@ -264,6 +264,9 @@ test.describe("HC-SH analyse header and live chain", () => {
     await expect(page.getByTestId("option-description")).toContainText("PUT · BTC");
     await expect(page.getByTestId("option-mark")).not.toHaveText("—", { timeout: 15_000 });
     await expect(page.getByTestId("option-stats")).toContainText("Gamma");
+    // ADR-056 (GAPS #32): the 24 h mark / IV sparkline
+    await expect(page.getByTestId("option-sparkline")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("chart-option-spark")).toBeVisible();
     await page.getByTestId("option-lots").selectOption("5");
     await page.getByTestId("option-buy").click();
     await expect(dialog).toBeHidden();
@@ -508,7 +511,12 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     await expect(vol.getByTestId("chart-smile")).toHaveAttribute("data-state", "ready");
     await expect(vol.getByTestId("skew-25")).toContainText("pts");
     await expect(vol.getByTestId("term-expiry").first()).toBeVisible();
-    await expect(vol.getByTestId("coming-soon")).toHaveCount(2);
+    // HC-WS-096 / 097 (ADR-056): rank and realised vs implied from the market history
+    await expect(vol.getByTestId("iv-rank-value")).toHaveText(/^\d+$/);
+    await expect(vol.getByTestId("iv-rank-label")).toContainText("premium");
+    await expect(vol.getByTestId("chart-rv-iv")).toHaveAttribute("data-state", "ready");
+    await expect(vol.getByTestId("rv-iv-spread")).toContainText("pts");
+    await expect(page.getByTestId("header-iv-rank")).toHaveText(/IV rank \d+/);
     // HC-WS-098..100 Structure: open interest with max pain, the ratios and GEX
     await page.getByTestId("analysis-tab-structure").click();
     const structure = page.getByTestId("structure-panel");
