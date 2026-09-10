@@ -52,11 +52,27 @@ export interface AdjustDraft {
 export const MAX_PLANS = 3;
 const PLAN_NAMES = ["Plan A", "Plan B", "Plan C"] as const;
 
-/** Keep the current changes as the next free plan (up to three); a full shelf leaves the draft as it is. */
+/**
+ * Keep the working change as the next free plan (up to three) and start the next change from the position as it
+ * stands, so the table never shows the plan just saved twice; a full shelf leaves the draft as it is.
+ */
 export function savePlan(d: AdjustDraft, now = Date.now()): AdjustDraft {
   if (d.plans.length >= MAX_PLANS) return d;
   const name = PLAN_NAMES.find((n) => !d.plans.some((p) => p.name === n)) ?? `Plan ${d.plans.length + 1}`;
-  return { ...d, plans: [...d.plans, { id: `plan_${now.toString(36)}_${d.plans.length + 1}`, name, lotsAfter: { ...d.lotsAfter }, picks: d.picks.map((p) => ({ ...p })), valuation: d.valuation }] };
+  const plan: SavedPlan = { id: `plan_${now.toString(36)}_${d.plans.length + 1}`, name, lotsAfter: { ...d.lotsAfter }, picks: d.picks.map((p) => ({ ...p })), valuation: d.valuation };
+  return { ...d, lotsAfter: {}, picks: [], plans: [...d.plans, plan] };
+}
+
+/** The saved plan the working change is a copy of (after Save or Use), if any. */
+export function matchingPlan(d: AdjustDraft, open: readonly ServerLeg[]): SavedPlan | undefined {
+  const key = (x: { lotsAfter: Record<string, number>; picks: AdjustPick[]; valuation: string | null }) =>
+    JSON.stringify([
+      open.map((l) => [l.id, x.lotsAfter[l.id] ?? l.lots]),
+      x.picks.map((p) => [p.symbol, p.side, p.lots]),
+      x.valuation,
+    ]);
+  const mine = key(d);
+  return d.plans.find((p) => key(p) === mine);
 }
 
 /** Load a saved plan back into the working changes. */

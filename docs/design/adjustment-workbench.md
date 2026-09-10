@@ -91,6 +91,9 @@ which the user does not want. Kept: the workbench as a pane mode, the model and 
 one-line legs with Close / undo, `AdjustChangeBox` + six before → after tiles at the top of the analysis pane, footer
 tiles You receive / pay (fees est.) · Max loss after · Margin est. · Open legs after, a real P&L alert line (opens the
 Alerts center pre-filled), Plans table under a toggle. Checklist test: the same change reads the same everywhere.
+Follow-ups from the user's tests (11 Sep): rows and tiles fit the pane (PR #43); lots-after edits are orders under
+Proposed (PR #44, GAPS #65); Save as plan starts the next change, the table has a Before row and the working row
+says which plan it equals.
 
 ## 6. Traceability
 Extends HC-TR-071 (+ Add adjustment), HC-TR-088 (Confirm Adjustment Order), HC-TR-118/119 (Details restyle, payoff
