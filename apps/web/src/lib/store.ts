@@ -112,6 +112,9 @@ export interface ChartLayers {
 }
 export const DEFAULT_LAYERS: ChartLayers = { expiry: true, target: true, fill: true, oi: false, band: true, breakeven: true, ivUp: false, ivDown: false };
 export const LAYER_KEYS = Object.keys(DEFAULT_LAYERS) as (keyof ChartLayers)[];
+export type LadderStep = 1 | 2 | 4;
+export const isLadderStep = (v: unknown): v is LadderStep => v === 1 || v === 2 || v === 4;
+export type PaneCollapse = "left" | "right" | null;
 function normaliseLayers(raw: unknown): ChartLayers {
   const out = { ...DEFAULT_LAYERS };
   if (raw && typeof raw === "object") for (const k of LAYER_KEYS) if (typeof (raw as Record<string, unknown>)[k] === "boolean") out[k] = (raw as Record<string, boolean>)[k]!;
@@ -140,6 +143,12 @@ export interface UiState {
   paletteOpen: boolean;
   /** Payoff chart layers (HC-WS-042, 083); persisted so the IV ±5 % curves and the OI bars stay as the trader left them. */
   chartLayers: ChartLayers;
+  /** Ladder step multiplier (HC-WS-103). Persisted. */
+  ladderStep: LadderStep;
+  /** Which workspace pane is collapsed (HC-WS-065): the other takes the full width. Persisted. */
+  analyseCollapse: PaneCollapse;
+  /** A template the palette asked the Builder to load once the chain is ready (HC-WS-069); cleared on load. */
+  templateRequest: string | null;
   /** Strikes shown each side of ATM in the chain (HC-WS-016); 0 = every listed strike. Persisted. */
   chainRange: ChainRange;
   /** Bumped by "recentre on ATM" (keyboard A, palette); the chain scrolls the ATM row into the middle. */
@@ -214,6 +223,9 @@ export interface UiState {
   setTarget: (patch: { price?: number | null; days?: number }) => void;
   setChainRange: (range: ChainRange) => void;
   setChartLayer: (key: keyof ChartLayers, on: boolean) => void;
+  setLadderStep: (step: LadderStep) => void;
+  setAnalyseCollapse: (pane: PaneCollapse) => void;
+  requestTemplate: (name: string | null) => void;
   recentreChain: () => void;
   setChainColumns: (layout: ChainLayout) => void;
   addLeg: (input: NewLegInput) => AddLegResult;
@@ -272,6 +284,9 @@ export const useUiStore = create<UiState>()(
       dialogsTouched: false,
       paletteOpen: false,
       chartLayers: { ...DEFAULT_LAYERS },
+      ladderStep: 1,
+      analyseCollapse: null,
+      templateRequest: null,
       chainRange: 12,
       chainRecentre: 0,
       chainColumns: defaultLayout(),
@@ -364,6 +379,9 @@ export const useUiStore = create<UiState>()(
         })),
       setChainRange: (chainRange) => set({ chainRange: isChainRange(chainRange) ? chainRange : 12 }),
       setChartLayer: (key, on) => set((s) => ({ chartLayers: { ...s.chartLayers, [key]: on } })),
+      setLadderStep: (ladderStep) => set({ ladderStep: isLadderStep(ladderStep) ? ladderStep : 1 }),
+      setAnalyseCollapse: (analyseCollapse) => set({ analyseCollapse }),
+      requestTemplate: (templateRequest) => set({ templateRequest }),
       recentreChain: () => set((s) => ({ chainRecentre: s.chainRecentre + 1 })),
       setChainColumns: (layout) => set({ chainColumns: normaliseLayout(layout) }),
       addLeg: (input) => {
@@ -407,6 +425,8 @@ export const useUiStore = create<UiState>()(
         feedPaused: s.feedPaused,
         chainRange: s.chainRange,
         chartLayers: s.chartLayers,
+        ladderStep: s.ladderStep,
+        analyseCollapse: s.analyseCollapse,
         chainColumns: s.chainColumns,
         legs: s.legs,
         chainLots: s.chainLots,
@@ -430,6 +450,9 @@ export const useUiStore = create<UiState>()(
           ...p,
           chainRange: isChainRange(p.chainRange) ? p.chainRange : current.chainRange,
           chartLayers: normaliseLayers(p.chartLayers),
+          ladderStep: isLadderStep(p.ladderStep) ? p.ladderStep : 1,
+          analyseCollapse: p.analyseCollapse === "left" || p.analyseCollapse === "right" ? p.analyseCollapse : null,
+          templateRequest: null,
           chainColumns: p.chainColumns === undefined ? current.chainColumns : normaliseLayout(p.chainColumns),
           legs: p.legs === undefined ? current.legs : normaliseLegsByAsset(p.legs),
           // a browser that persisted lots under an older default (10) gets the new default once; later choices stick

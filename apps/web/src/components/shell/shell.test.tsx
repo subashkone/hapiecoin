@@ -55,6 +55,19 @@ describe("HC-PB-059 command palette", () => {
     expect(useUiStore.getState().chainColumns.visible).toEqual(expect.arrayContaining(["gamma", "theta", "vega"]));
     inn.find((c) => c.id === "act:chain-greeks")?.run();
     expect(useUiStore.getState().chainColumns.visible).not.toContain("gamma");
+    // HC-WS-069 / HC-TR-140 one command per listed expiry and per template
+    const withLists = buildCommands({ loggedIn: true, navigate, toggleTheme: vi.fn(), expiries: ["2026-09-25", "2026-10-30"], templates: ["Iron Condor", "Long Straddle"] });
+    const exp = withLists.filter((c) => c.id.startsWith("act:expiry-"));
+    expect(exp.map((c) => c.label)).toEqual(["Switch expiry → 25 Sep", "Switch expiry → 30 Oct"]);
+    exp[1]?.run();
+    expect(navigate).toHaveBeenCalledWith("/analyse");
+    expect(useUiStore.getState().expiry[useUiStore.getState().asset]).toBe("2026-10-30");
+    expect(useUiStore.getState().workspaceTab).toBe("chain");
+    const tpl = withLists.filter((c) => c.id.startsWith("act:template-"));
+    expect(tpl.map((c) => c.label)).toEqual(["Load template → Iron Condor", "Load template → Long Straddle"]);
+    tpl[0]?.run();
+    expect(useUiStore.getState()).toMatchObject({ workspaceTab: "builder", builderTab: "templates", templateRequest: "Iron Condor" });
+    expect(inn.some((c) => c.id.startsWith("act:expiry-"))).toBe(false); // none without lists
   });
   it("scores substrings above subsequences and filters/sorts", () => {
     const cmds = buildCommands({ loggedIn: false, navigate: vi.fn(), toggleTheme: vi.fn() });

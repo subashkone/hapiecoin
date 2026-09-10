@@ -4,7 +4,7 @@
 import { Button, cn, toast } from "@hapiecoin/ui";
 import { payoffAtExpiry } from "@hapiecoin/pricing";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { discoverExpiries, nearestExpiry } from "@/lib/chain/expiries";
 import { publicEnv } from "@/lib/env";
 import { daysToExpiry, fmtDate, fmtExpiry } from "@/lib/format";
@@ -84,7 +84,19 @@ export function useTemplateLoader() {
     setBuilderTab("builder");
     toast(`${tpl.name} loaded`, { description: `${legs.length} ${legs.length === 1 ? "leg" : "legs"} on ${fmtExpiry(expiry)} · ${chainLots} lots each` });
   };
-  return { asset, expiry, list, setChosen, load, chainReady: rows.length > 0 };
+  // HC-WS-069: the palette's "Load template → <name>" waits here until the chain rows exist
+  const request = useUiStore((s) => s.templateRequest);
+  const requestTemplate = useUiStore((s) => s.requestTemplate);
+  const chainReady = rows.length > 0;
+  useEffect(() => {
+    if (!request || !chainReady || !expiry) return;
+    const tpl = TEMPLATES.find((t) => t.name === request);
+    requestTemplate(null);
+    if (tpl) load(tpl);
+    else toast.error("Unknown template", { description: request });
+    // `load` reads the latest chain each call; re-running on its identity would double-load
+  }, [request, chainReady, expiry, requestTemplate]);
+  return { asset, expiry, list, setChosen, load, chainReady };
 }
 
 export function TemplatesPanel() {

@@ -2,9 +2,10 @@
 // Ladder tab (HC-WS-062..064): P&L at expiry and on the target date for a ladder of prices around spot,
 // with the spot row and each break-even inserted, and a status pill per row.
 import { EmptyState, cn, useDensity } from "@hapiecoin/ui";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { fmtStrike } from "@/lib/format";
 import { fmtMoney } from "@/lib/money";
+import { useUiStore } from "@/lib/store";
 import { type LadderStatus, cleanStep, ladderPrices, ladderRows } from "@/lib/strategy/analysis";
 import { useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
 
@@ -20,7 +21,8 @@ export function LadderPanel() {
   const compact = useDensity().density === "compact"; // HC-WS-066
   const a = useStrategyAnalysis();
   const { result, spot, money, legs } = a;
-  const [stepMul, setStepMul] = useState<1 | 2 | 4>(1);
+  const stepMul = useUiStore((s) => s.ladderStep); // HC-WS-103: persisted
+  const setStepMul = useUiStore((s) => s.setLadderStep);
   const step = spot ? cleanStep(spot * 0.0025 * stepMul) : 1;
   const rows = useMemo(() => (result && spot ? ladderRows(result, spot, ladderPrices(spot, step)) : []), [result, spot, step]);
   if (legs.length === 0) return <EmptyState title="No strategy yet" description="The ladder shows P&L at each price once the strategy has legs." className="py-16" data-testid="ladder-empty" />;

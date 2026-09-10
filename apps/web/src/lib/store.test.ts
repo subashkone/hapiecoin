@@ -50,6 +50,8 @@ describe("HC-SH-003 UI store", () => {
       feedPaused: false,
       chainRange: 12,
       chartLayers: { expiry: true, target: true, fill: true, oi: false, band: true, breakeven: true, ivUp: false, ivDown: false },
+      ladderStep: 1,
+      analyseCollapse: null,
       chainColumns: defaultLayout(),
       legs: { BTC: [], ETH: [], XAUT: [] },
       chainLots: 10,
@@ -281,5 +283,22 @@ describe("HC-WS-083 chart layers persist", () => {
     expect(useUiStore.getState().chartLayers.expiry).toBe(true);
     const merged = (useUiStore.persist.getOptions().merge as (p: unknown, c: ReturnType<typeof useUiStore.getState>) => ReturnType<typeof useUiStore.getState>)({ chartLayers: { oi: true, ivDown: "yes" } }, useUiStore.getState());
     expect(merged.chartLayers).toEqual({ ...DEFAULT_LAYERS, oi: true });
+  });
+});
+
+describe("HC-WS-065 / HC-WS-103 pane collapse and ladder step persist", () => {
+  it("stores the collapsed pane and the ladder step, and drops bad persisted values", async () => {
+    const { useUiStore } = await import("./store");
+    useUiStore.getState().setAnalyseCollapse("right");
+    useUiStore.getState().setLadderStep(4);
+    expect(useUiStore.getState()).toMatchObject({ analyseCollapse: "right", ladderStep: 4 });
+    useUiStore.getState().setLadderStep(3 as unknown as 1);
+    expect(useUiStore.getState().ladderStep).toBe(1);
+    const merge = useUiStore.persist.getOptions().merge as (p: unknown, c: ReturnType<typeof useUiStore.getState>) => ReturnType<typeof useUiStore.getState>;
+    const merged = merge({ ladderStep: 9, analyseCollapse: "up", templateRequest: "Iron Condor" }, useUiStore.getState());
+    expect(merged).toMatchObject({ ladderStep: 1, analyseCollapse: null, templateRequest: null });
+    useUiStore.getState().requestTemplate("Iron Condor");
+    expect(useUiStore.getState().templateRequest).toBe("Iron Condor");
+    useUiStore.getState().setAnalyseCollapse(null);
   });
 });

@@ -304,6 +304,35 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     await page.locator("[data-testid=strip-card][data-name='Iron Condor']").click();
     await expect(page.getByTestId("builder-panel")).toHaveAttribute("data-legs", "4");
     await expect(page.getByTestId("strategy-name")).toHaveValue("Iron Condor");
+    // HC-WS-067 tab-bar info; HC-WS-105 / 106 share link round trip; HC-WS-101 greeks across price
+    await expect(page.getByTestId("pane-strategy-info")).toContainText("Iron Condor");
+    await page.getByTestId("share-open").click();
+    const link = await page.getByTestId("share-link").inputValue();
+    expect(link).toMatch(/\/s\/[A-Za-z0-9_-]+$/);
+    await page.getByTestId("share-copy").click();
+    await expect(page.getByText("Link copied to clipboard")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.getByTestId("analysis-tab-greeks").click();
+    await expect(page.getByTestId("chart-delta-price")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("greek-vega")).toContainText("$");
+    await page.goto(link);
+    await expect(page).toHaveURL(/\/analyse$/, { timeout: 15_000 });
+    await expect(page.getByText("Strategy loaded from link")).toBeVisible();
+    await expect(page.getByTestId("builder-panel")).toHaveAttribute("data-legs", "4", { timeout: 15_000 });
+    await expect(page.getByTestId("strategy-name")).toHaveValue("Iron Condor");
+    // HC-WS-006 deep link; HC-WS-065 collapse
+    await page.goto("/analyse?tab=paper&panel=ladder");
+    await expect(page.getByTestId("tab-paper")).toHaveAttribute("data-state", "active", { timeout: 15_000 });
+    await expect(page.getByTestId("analysis-tab-ladder")).toHaveAttribute("data-state", "active");
+    await page.getByTestId("collapse-right").click();
+    await expect(page.getByTestId("workspace")).toHaveAttribute("data-collapse", "right");
+    await page.getByTestId("collapse-restore").click();
+    await expect(page.getByTestId("workspace")).not.toHaveAttribute("data-collapse", /./);
+    // HC-WS-069 palette: switch expiry
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox", { name: "Command" }).fill("switch expiry");
+    await page.getByRole("option", { name: /Switch expiry →/ }).nth(1).click();
+    await expect(page.getByTestId("tab-chain")).toHaveAttribute("data-state", "active");
   });
 
   test("HC-TR-009 / HC-TR-011 / HC-TR-013 builder edits: side, lots, custom price, delete; HC-TR-020 / HC-TR-044 save draft, list, load, delete", async ({ page }) => {

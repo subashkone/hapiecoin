@@ -16,7 +16,8 @@ import { useStrategies } from "@/lib/api/strategies";
 import { useConnectionStatus } from "@/lib/gateway/hooks";
 import { usePaperBook } from "@/lib/strategy/usePaper";
 import { usePnlWriter } from "@/lib/strategy/usePnlWriter";
-import { type WorkspaceTab, useUiStore } from "@/lib/store";
+import { useSearchParams } from "next/navigation";
+import { type AnalysisTab, type WorkspaceTab, useUiStore } from "@/lib/store";
 
 export const LEFT_TABS: { id: WorkspaceTab; label: string; phase?: number; blurb?: string }[] = [
   { id: "chain", label: "Chain" },
@@ -59,9 +60,24 @@ function useNarrow(px: number): boolean {
   return narrow;
 }
 
+const WORKSPACE_TABS: readonly WorkspaceTab[] = ["chain", "builder", "paper", "live", "journal"];
+const PANELS: readonly AnalysisTab[] = ["payoff", "scenarios", "greeks", "vol", "structure", "ladder"];
+
 export function Workspace() {
   const tab = useUiStore((s) => s.workspaceTab);
   const setTab = useUiStore((s) => s.setWorkspaceTab);
+  const asset = useUiStore((s) => s.asset);
+  const collapse = useUiStore((s) => s.analyseCollapse);
+  const setCollapse = useUiStore((s) => s.setAnalyseCollapse);
+  // HC-WS-006 deep links: /analyse?tab=paper&panel=ladder selects the tabs once on arrival
+  const params = useSearchParams();
+  const linkTab = params.get("tab");
+  const linkPanel = params.get("panel");
+  useEffect(() => {
+    const st = useUiStore.getState();
+    if (linkTab && (WORKSPACE_TABS as readonly string[]).includes(linkTab)) st.setWorkspaceTab(linkTab as WorkspaceTab);
+    if (linkPanel && (PANELS as readonly string[]).includes(linkPanel)) st.setAnalysisTab(linkPanel as AnalysisTab);
+  }, [linkTab, linkPanel]);
   const adjusting = useUiStore((s) => s.adjust !== null);
   const legCount = useUiStore((s) => s.legs[s.asset].filter((l) => l.status === "open").length);
   const { data: strategies } = useStrategies();
@@ -140,7 +156,12 @@ export function Workspace() {
             ) : null}
           </TabsTrigger>
         ))}
-        <span className="ml-auto self-center pr-2 font-mono text-3xs uppercase tracking-[0.1em] text-muted-foreground">Lot · basis mark</span>
+        <span className="ml-auto flex items-center gap-2 self-center pr-1">
+          <span className="font-mono text-3xs uppercase tracking-[0.1em] text-muted-foreground" data-testid="left-tab-info">Lot {book.lotSizeOf(asset)} {asset} · basis mark</span>
+          <button type="button" onClick={() => setCollapse("left")} className="rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground" title="Give the analysis the full width" aria-label="Collapse the chain and Builder pane" data-testid="collapse-left">
+            ‹
+          </button>
+        </span>
       </TabsList>
       <TabsContent value="chain" className="min-h-0 flex-1">
         <ChainPanel />
@@ -184,6 +205,22 @@ export function Workspace() {
           ))}
         </div>
         <div className="min-h-0 flex-1">{stacked === "left" ? left : <AnalysisPane />}</div>
+      </div>
+    );
+  }
+
+  // HC-WS-065: a collapsed pane gives the other the full width; the ⋮ handle restores both
+  if (collapse) {
+    return (
+      <div ref={grid} className="grid min-h-[calc(100vh-50px)]" style={{ gridTemplateColumns: collapse === "left" ? "0 16px minmax(0, 1fr)" : "minmax(0, 1fr) 16px 0" }} data-testid="workspace" data-layout="split" data-collapse={collapse}>
+        {overlays}
+        <div className={cn("min-w-0 overflow-hidden", collapse === "left" && "hidden")}>{left}</div>
+        <button type="button" onClick={() => setCollapse(null)} className="flex items-center justify-center border-x border-border bg-muted/40 font-mono text-xs text-muted-foreground hover:bg-muted hover:text-foreground" title={collapse === "left" ? "Restore the chain and Builder pane" : "Restore the analysis pane"} aria-label="Restore both panes" data-testid="collapse-restore">
+          ⋮
+        </button>
+        <aside className={cn("min-w-0 overflow-hidden", collapse === "right" && "hidden")} data-testid="right-pane">
+          <AnalysisPane />
+        </aside>
       </div>
     );
   }
