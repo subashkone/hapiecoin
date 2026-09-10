@@ -25,9 +25,9 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 16. ⬜ Paid-data analytics rows — only with the user's go-ahead on spend
 
 ## D. Strategy catalogue (ADR-060; docs/research/platform-roadmap-2026-09.md §1–2; runs beside A)
-17. ⬜ Templates can hold a perpetual future leg (`TemplateLeg` union, `no-spot` refusal, count derived from the catalogue) (GAPS #74)
-18. ⬜ Catalogue to 48: Long / Short Perp, Covered Call, Protective Put, Collar, Covered Put, Synthetic Straddle, back and ratio spreads 1x2, diagonals, double diagonal, calendar strangle, broken-wing butterflies, risk reversal, ladders; `tags` badge, no new tab
-19. ⬜ Per-template textbook invariants test (max profit / loss shape, breakeven count, outlook) on an arbitrage-free synthetic ladder (GAPS #75)
+17. ✅ (PR #50) Templates can hold a perpetual future leg (`TemplateLeg` union, `no-spot` refusal, count derived from the catalogue) (GAPS #74)
+18. ✅ (PR #51) Catalogue to 48: Long / Short Perp, Covered Call, Protective Put, Collar, Covered Put, Synthetic Straddle, back and ratio spreads 1x2, diagonals, double diagonal, calendar strangle, broken-wing butterflies, risk reversal, ladders; `tags` badge, no new tab
+19. ✅ (PR #52) Per-template textbook invariants test (max profit / loss shape, breakeven count, outlook) on an arbitrage-free synthetic ladder (GAPS #75)
 
 ## E. Platform (ADR-060; docs/research/platform-roadmap-2026-09.md §3–5; after C13)
 20. ⬜ E1 venue port: `VenueAdapter` + `VENUE_REGISTRY` + `DeltaIndiaAdapter` (no behaviour change) → `venue` column and instrument-id widening → pricing with `q`, `TradingCalendar`, American flagged → Deribit data-only adapter and per-venue gateway feed
@@ -44,6 +44,7 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 29. ⬜ `zod/mini` for `@hapiecoin/schema`; bundle check inside `pnpm ci` (GAPS #19)
 
 ## Done this week
+- ✅ Platform assessment, ADR-060, GAPS #68-76 (PR #49); strategy catalogue D17-D19 (PRs #50-#52); calendar fix (PR #48)
 - ✅ Trade lifecycle item 1 (PR #47, ADR-059)
 - ✅ Workbench H2 pass and four follow-ups (PRs #42–#46, ADR-058)
 - ✅ Key rotation + smoke (PR #39), IV history (PR #40), server alerts + Telegram (PR #41)
