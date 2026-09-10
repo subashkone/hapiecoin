@@ -42,6 +42,8 @@ export interface TemplateStatsInput {
   expiries: readonly string[];
   rows: readonly ChainStrike[];
   atm: number;
+  /** Chains of later expiries (calendar-family templates); without the far chain those templates stay unpriced. */
+  rowsByExpiry?: MaterialiseInput["rowsByExpiry"];
   lots: number;
   spot: number | null;
   lotSize: string | undefined;
@@ -54,7 +56,8 @@ export interface TemplateStatsInput {
 export function useTemplateStats(templates: readonly StrategyTemplate[], input: TemplateStatsInput, enabled = true): Map<string, TemplateStat> {
   const [stats, setStats] = useState<Map<string, TemplateStat>>(new Map());
   const seq = useRef(0);
-  const key = enabled && input.expiry && input.spot && input.lotSize && input.rows.length ? `${input.asset}|${input.expiry}|${input.lots}|${input.lotSize}|${input.version}` : "";
+  const far = input.rowsByExpiry ? Object.keys(input.rowsByExpiry).sort().join(",") : "";
+  const key = enabled && input.expiry && input.spot && input.lotSize && input.rows.length ? `${input.asset}|${input.expiry}|${input.lots}|${input.lotSize}|${input.version}|${far}` : "";
   useEffect(() => {
     if (key === "") {
       seq.current += 1;
@@ -64,13 +67,12 @@ export function useTemplateStats(templates: readonly StrategyTemplate[], input: 
     const id = (seq.current += 1);
     const client = getPricingClient();
     const spot = input.spot!;
-    const mat: MaterialiseInput = { asset: input.asset, expiry: input.expiry!, expiries: input.expiries, rows: input.rows, atm: input.atm, lots: input.lots, spot: String(spot) };
+    const mat: MaterialiseInput = { asset: input.asset, expiry: input.expiry!, expiries: input.expiries, rows: input.rows, atm: input.atm, lots: input.lots, spot: String(spot), ...(input.rowsByExpiry ? { rowsByExpiry: input.rowsByExpiry } : {}) };
     const run = async () => {
       const out = new Map<string, TemplateStat>();
       for (const tpl of templates) {
-        // GAPS #76: only the chosen expiry's chain is loaded here, so a leg on a later expiry would carry the near
-        // expiry's mark and IV; calendar-family cards show no figures rather than wrong ones.
-        if (tpl.legs.some((l) => l.kind !== "future" && (l.expiryOffset ?? 0) > 0)) continue;
+        // GAPS #76: a calendar-family template refuses (`no-chain`) until the far expiry's rows are passed in, so its
+        // card shows no figures rather than figures priced off the near expiry
         const r = materialiseTemplate(tpl, mat);
         if (!r.ok) continue;
         let legs: StrategyLeg[] = [];

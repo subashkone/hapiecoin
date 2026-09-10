@@ -53,11 +53,12 @@ describe("HC-TR-040 materialiseTemplate places legs on the venue ladder around A
     expect(fly.legs.map((l) => l.lots)).toEqual([10, 20, 10]);
     expect(fly.legs[1]?.strike).toBe("80000");
   });
-  it("calendars take the next listed expiry and fall back to the base rows when that chain is unknown", () => {
-    const cal = materialiseTemplate(templateByName("Long Calendar with Calls")!, base);
+  it("calendars take the next listed expiry from its own chain and refuse when that chain is unknown (GAPS #76)", () => {
+    expect(materialiseTemplate(templateByName("Long Calendar with Calls")!, base)).toEqual({ ok: false, reason: "no-chain" });
+    const other = { rows: rows.slice(2), atm: 3 };
+    const cal = materialiseTemplate(templateByName("Long Calendar with Calls")!, { ...base, rowsByExpiry: { "2026-10-30": other } });
     if (!cal.ok) throw new Error("expected ok");
     expect(cal.legs.map((l) => l.expiry)).toEqual(["2026-09-25", "2026-10-30"]);
-    const other = { rows: rows.slice(2), atm: 3 };
     const withRows = materialiseTemplate(templateByName("Long Calendar with Puts")!, { ...base, rowsByExpiry: { "2026-10-30": other } });
     if (!withRows.ok) throw new Error("expected ok");
     expect(withRows.legs[1]?.strike).toBe(other.rows[3]!.strike);
