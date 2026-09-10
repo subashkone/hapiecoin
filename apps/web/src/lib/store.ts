@@ -1,7 +1,7 @@
 // UI state only (typescript rule 5): selected asset, expiry, feed pause, open dialog. Server data lives in
 // TanStack Query. Persisted keys survive a reload so the trader lands where they left off.
 import { emitTour } from "@/lib/tour";
-import type { Underlying } from "@hapiecoin/schema";
+import type { AlertChannel, AlertKind, AlertOp, Underlying } from "@hapiecoin/schema";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { type ChainLayout, defaultLayout, normaliseLayout } from "./chain/layout";
@@ -20,7 +20,17 @@ import {
 } from "./strategy/legs";
 import { type AdjustDraft, newDraft } from "./adjust/model";
 
-export type DialogKind = "profile" | "api" | "currency" | "lot" | "pnl" | "exchanges" | "logout" | "columns" | "option" | "upgrade" | null;
+export type DialogKind = "profile" | "api" | "currency" | "lot" | "pnl" | "exchanges" | "logout" | "columns" | "option" | "upgrade" | "alerts" | null;
+
+/** What the Alerts dialog's New alert form starts with (HC-SH-100): a "Set alert" button passes the strategy. Transient. */
+export interface AlertPrefill {
+  kind?: AlertKind;
+  asset?: Underlying;
+  strategyId?: string;
+  op?: AlertOp;
+  value?: string;
+  channels?: AlertChannel[];
+}
 
 /** Which option the details dialog shows (HC-WS-026); transient. */
 export interface OptionDetailTarget {
@@ -201,8 +211,10 @@ export interface UiState {
   targetDays: number;
   /** Adjustment workbench draft (ADR-044, HC-TR-148): the strategy being adjusted and its proposed changes. Not persisted. */
   adjust: AdjustDraft | null;
-  /** "Alert me if max loss exceeds X" saved from the workbench (ADR-044 extra 5); armed when Alerts (Phase 5 item 2) ship. Persisted. */
+  /** "Alert me if max loss exceeds X" saved from the workbench (ADR-044 extra 5); a local note, separate from the server alerts (ADR-052). Persisted. */
   riskAlerts: RiskAlert[];
+  /** Null = the Alerts dialog opens on the list; an object opens it on the New alert form with these values (HC-SH-100). Transient. */
+  alertPrefill: AlertPrefill | null;
   setAsset: (asset: Underlying) => void;
   /** Replace the asset's legs (templates, drafts, Clear); returns false when over the limit. */
   setLegs: (asset: Underlying, legs: StrategyLeg[]) => boolean;
@@ -216,6 +228,8 @@ export interface UiState {
   openTrade: (target: { strategyId: string | null; mode?: "paper" | "live" | undefined }) => void;
   closeTrade: () => void;
   openDetails: (id: string | null) => void;
+  /** Open the Alerts center (HC-SH-079); with a prefill, straight on the New alert form (HC-SH-100, HC-TR-139). */
+  openAlerts: (prefill?: AlertPrefill | null) => void;
   /** Follow a paper / live strategy in the analysis pane (null = back to the Builder legs). */
   followStrategy: (id: string | null) => void;
   /** Analyse ticked exchange positions (HC-TR-144); an empty list returns to the Builder legs. */
@@ -322,6 +336,7 @@ export const useUiStore = create<UiState>()(
       targetDays: 0,
       adjust: null,
       riskAlerts: [],
+      alertPrefill: null,
       setAsset: (asset) => set({ asset, targetPrice: null }),
       setLegs: (asset, legs) => {
         const open = legs.filter((l) => l.status === "open");
@@ -373,6 +388,7 @@ export const useUiStore = create<UiState>()(
       openTrade: (target) => set({ tradeFlow: target }),
       closeTrade: () => set({ tradeFlow: null }),
       openDetails: (detailsId) => set({ detailsId }),
+      openAlerts: (prefill = null) => set({ dialog: "alerts", alertPrefill: prefill, dialogsTouched: true }),
       // an adjustment draft lives on the followed strategy (ADR-044): following anything else, or a tab that clears the pane source, discards it
       followStrategy: (id) => set((s) => ({ paneSource: id === null ? null : { kind: "strategy", id }, adjust: s.adjust && s.adjust.strategyId === id ? s.adjust : null })),
       analysePositions: (productIds) => set({ paneSource: productIds.length ? { kind: "positions", productIds: [...productIds] } : null, adjust: null }),
@@ -464,6 +480,7 @@ export const useUiStore = create<UiState>()(
           ladderStep: isLadderStep(p.ladderStep) ? p.ladderStep : 1,
           analyseCollapse: p.analyseCollapse === "left" || p.analyseCollapse === "right" ? p.analyseCollapse : null,
           templateRequest: null,
+          alertPrefill: null,
           brokerId: typeof p.brokerId === "string" && p.brokerId ? p.brokerId : null,
           saveDraftRequest: false,
           chainColumns: p.chainColumns === undefined ? current.chainColumns : normaliseLayout(p.chainColumns),

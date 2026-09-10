@@ -76,6 +76,7 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
   const setAsset = useUiStore((s) => s.setAsset);
   const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
   const openAdjust = useUiStore((s) => s.openAdjust);
+  const openAlerts = useUiStore((s) => s.openAlerts);
   const { data: strategies } = useStrategies();
   const qc = useQueryClient();
   const s = strategies?.find((x) => x.id === id) ?? null;
@@ -185,6 +186,7 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
                   <Button size="sm" variant="outline" onClick={() => void qc.invalidateQueries({ queryKey: strategyKeys.all }).then(() => toast("Refreshed", { description: "Strategy data has been updated" }))}>Refresh</Button>
                   <Button size="sm" variant="outline" disabled={open.length === 0} title={open.length === 0 ? "No open legs to adjust" : open.length >= MAX_OPEN_LEGS_UI ? "At the 10-leg cap: trim or close legs in the workbench" : "Open the adjustment workbench: trim, close or add legs with the combined payoff"} onClick={adjustHere} data-testid="details-adjust">Adjust…</Button>
                   <Button size="sm" variant="outline" disabled={open.length === 0} onClick={() => setPartial(true)} data-testid="details-partial">Partial exit</Button>
+                  <Button size="sm" variant="outline" title="Alert me when this strategy's P&L crosses a level" onClick={() => openAlerts({ kind: "pnl", strategyId: s.id, asset: s.asset })} data-testid="details-alert">Set alert</Button>
                   {confirmAll ? (
                     <>
                       <Button size="sm" variant="destructive" loading={closeAll.isPending} onClick={squareOffAll} data-testid="details-sqall-confirm">Square off {open.length} {open.length === 1 ? "leg" : "legs"} at market</Button>

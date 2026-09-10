@@ -29,10 +29,18 @@ export interface PromoMail {
   text: string;
 }
 
+/** A triggered alert (ADR-052): one plain-text line per alert, sent to the trader who set it. */
+export interface AlertMail {
+  email: string;
+  subject: string;
+  text: string;
+}
+
 export interface Mailer {
   sendOtp(mail: OtpMail): Promise<void>;
   sendInvite(mail: InviteMail): Promise<void>;
   sendPromo(mail: PromoMail): Promise<void>;
+  sendAlert(mail: AlertMail): Promise<void>;
 }
 
 /** Records every OTP mail (dev/test). `last(email)` returns the most recent code for an address. */
@@ -40,6 +48,7 @@ export class MailCapture implements Mailer {
   readonly sent: OtpMail[] = [];
   readonly invites: InviteMail[] = [];
   readonly promos: PromoMail[] = [];
+  readonly alerts: AlertMail[] = [];
   /** Addresses the capture mailer refuses (tests exercise the failed-delivery path). */
   readonly bounce = new Set<string>();
 
@@ -56,6 +65,13 @@ export class MailCapture implements Mailer {
     if (this.bounce.has(mail.email.toLowerCase())) return Promise.reject(new Error(`550 mailbox unavailable: ${mail.email}`));
     this.promos.push(mail);
     this.log?.(`[mail] promo to=${mail.email} subject=${mail.subject}`);
+    return Promise.resolve();
+  }
+
+  sendAlert(mail: AlertMail): Promise<void> {
+    if (this.bounce.has(mail.email.toLowerCase())) return Promise.reject(new Error(`550 mailbox unavailable: ${mail.email}`));
+    this.alerts.push(mail);
+    this.log?.(`[mail] alert to=${mail.email} subject=${mail.subject}`);
     return Promise.resolve();
   }
 
@@ -139,6 +155,14 @@ export class ResendMailer implements Mailer {
     const { error } = await this.client.emails.send({ from: this.from, to: mail.email, subject: INVITE_SUBJECT, text: inviteBody(mail) });
     if (error) {
       this.logger?.error({ to: mail.email, reason: error.message }, "invite mail failed");
+      throw new Error(`mail delivery failed: ${error.message}`);
+    }
+  }
+
+  async sendAlert(mail: AlertMail): Promise<void> {
+    const { error } = await this.client.emails.send({ from: this.from, to: mail.email, subject: mail.subject, text: mail.text });
+    if (error) {
+      this.logger?.error({ to: mail.email, reason: error.message }, "alert mail failed");
       throw new Error(`mail delivery failed: ${error.message}`);
     }
   }

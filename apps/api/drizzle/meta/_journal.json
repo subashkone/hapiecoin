@@ -71,6 +71,13 @@
       "when": 1788970779097,
       "tag": "0009_lowly_marten_broadcloak",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788992154189,
+      "tag": "0010_careful_proudstar",
+      "breakpoints": true
     }
   ]
 }

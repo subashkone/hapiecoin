@@ -149,7 +149,7 @@
     "feature": "Alerts bell, density toggle, theme toggle, Ctrl K button, settings gear on the default header",
     "how": "Same controls as the analyse header",
     "status": "working",
-    "evidence": "bundle strings: Switch to Dark Mode / Light Mode"
+    "evidence": "bundle strings: Switch to Dark Mode / Light Mode · Phase 5 item 2 (10 Sep 2026, ADR-052): AlertsBell in the default header (alerts-bell) → Alerts dialog"
   },
   {
     "route": "/subscription",
@@ -181,7 +181,7 @@
     "feature": "Section 'Preferences': API Settings, Currency Settings (value), Lot Size Settings, P&L Settings (value), Exchange Setup, Alerts (armed count), Keyboard shortcuts (?), Density (value), Command palette (Ctrl K), Market Analytics, Take a tour, theme",
     "how": "Each opens the matching dialog / starts the tour / toggles theme",
     "status": "working",
-    "evidence": "bundle strings: Preferences, API Settings, Currency Settings, Lot Size Settings, P&L Settings, Exchange Setup, Take a tour, Switch to Dark Mode"
+    "evidence": "bundle strings: Preferences, API Settings, Currency Settings, Lot Size Settings, P&L Settings, Exchange Setup, Take a tour, Switch to Dark Mode · Phase 5 item 2 (10 Sep 2026, ADR-052): menu-alerts \"Alerts · N armed\" opens the Alerts dialog; unit AppHeader.test.tsx"
   },
   {
     "route": "/analyse",
@@ -631,7 +631,7 @@
     "feature": "Alerts bell with armed-count badge (red when an alert has triggered) → Alerts dialog",
     "how": "Badge re-rendered on 'alerts-changed' / 'alert-triggered'",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): components/alerts/AlertsBell.tsx: badge = armed count, red with the triggered count once one fired (data-armed / data-triggered); both header variants; unit alerts.test.tsx + AppHeader.test.tsx; e2e analyse.spec.ts alerts block",
     "new": true
   },
   {
@@ -739,7 +739,7 @@
     "feature": "Default Actions: Switch asset → BTC / ETH / XAUT, Toggle theme (T), Toggle density (D), New alert…, Alerts center, Take a tour, Keyboard shortcuts (?), Explain this strategy (on /analyse), Ask the assistant, Show announcements, Pause / resume live feed, Logout",
     "how": "",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js · Phase 5 item 2 (10 Sep 2026, ADR-052): palette act:alert-new \"New alert…\" and act:alerts \"Alerts center\"; unit shell.test.tsx; e2e analyse.spec.ts",
     "new": true
   },
   {
@@ -766,7 +766,7 @@
     "feature": "Alert store CG.mock.alerts seeded with 3 alerts: BTC ≥ 82,000 (push), BTC IV rank ≤ 30 (telegram), s_301 “BTC Bull Call Spread · Sep” P&L ≥ +$20 (email)",
     "how": "Fields: id, kind price|ivrank|pnl, asset|strategyId, op >=|<=, value, channels[], state armed|triggered|paused, lastValue, triggeredAt",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): packages/schema/src/alerts.ts (Alert: kind price|iv|pnl, asset, strategyId + strategyName, op ≥|≤, value, channels push|email, state armed|triggered|paused, lastValue, triggeredAt); DB table alerts (migration 0010); e2e seed alerts: true mirrors the three demo rows; unit alerts.test.ts (schema)",
     "new": true
   },
   {
@@ -775,7 +775,7 @@
     "feature": "API: CG.alerts.add(a), update(id, patch), remove(id), list(), get(id), arm(id, bool), counts(), conditionText(a), currentValue(a), evaluate(subset?), open(prefill?), openNew(prefill), close()",
     "how": "Every mutation emits 'alerts-changed'",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): apps/api/src/routes/alerts.ts GET/POST /v1/alerts, PATCH/DELETE /v1/alerts/{id}, POST /v1/alerts/{id}/trigger (email via mailer.sendAlert); web lib/api/alerts.ts useAlerts + mutations patching the cached list; lib/alerts/engine.ts conditionText / nowText / currentValue / dueAlerts; API test alerts.test.ts; unit engine.test.ts",
     "new": true
   },
   {
@@ -784,7 +784,7 @@
     "feature": "Evaluation on every 'tick' (and 'portfolio-changed'): price vs CG.ASSETS[sym].price, IV rank vs CG.analyse.stats.ivRank (fallback CG.chrome.marketStats), strategy P&L via CG.portfolio.strategyPnl(id) if present else CG.mock.strategies totalPnl",
     "how": "When met: state='triggered', toast “Alert triggered · BTC crossed 82,000 · Sent via push”, CG.emit('alert-triggered', alert)",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): lib/alerts/AlertEngine.tsx: spot per asset, IvProbe (nearest expiry chain → atmIvOf) per asset with an IV alert, paper book P&L for P&L alerts; 1 s trailing throttle; hit → POST trigger → toast \"Alert triggered · BTC crossed 82,000.0 · Sent via push\" + browser Notification when granted; unit alerts.test.tsx (price + IV); e2e analyse.spec.ts",
     "new": true
   },
   {
@@ -793,7 +793,7 @@
     "feature": "Alerts dialog (bell, portfolio bar, settings menu, palette): counts line, rows with kind icon, condition text (mono), current value, channel chips push/email/telegram, state badge armed/triggered/paused, arm switch, delete",
     "how": "Delete confirms via CG.modal.confirm; the switch re-arms triggered alerts or pauses armed ones",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): components/alerts/AlertsDialog.tsx: counts line, rows with kind icon, mono condition, \"Price · now …\" (+ fired time), channel chips, state badge, arm Switch (pause / re-arm), inline delete confirm; opens from the bell, settings menu, palette and Set alert; unit alerts.test.tsx; e2e analyse.spec.ts; visual analyse-alerts-{theme}.png",
     "new": true
   },
   {
@@ -802,7 +802,7 @@
     "feature": "New alert form: Type (Price / IV rank / Strategy P&L), Asset or Strategy select, Condition ≥ / ≤, Value (unit hint), Channels checkboxes, Save / Cancel with validation toasts",
     "how": "Saving arms the alert immediately and evaluates it once",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): AlertForm: Type (Price / ATM IV / Strategy P&L), Asset or Strategy select, Condition ≥ / ≤, Value with unit hint and the live \"now\" reading, Channels push / email (Telegram disabled \"soon\", GAPS #64), Save / Cancel with validation toasts; saving arms it and the engine evaluates on the next reading; unit alerts.test.tsx; visual analyse-alerts-form-{theme}.png",
     "new": true
   },
   {
@@ -811,7 +811,7 @@
     "feature": "Empty state “No alerts yet” with a New alert button",
     "how": "",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): EmptyState \"No alerts yet\" with a New alert button (alerts-empty-new); unit alerts.test.tsx",
     "new": true
   },
   {
@@ -820,7 +820,7 @@
     "feature": "CG.alerts.openNew(prefill) for other parts (e.g. a “Set alert” button on a strategy)",
     "how": "prefill: {kind, asset, strategyId, op, value, channels}",
     "status": "working",
-    "evidence": "v2 brief · verified in pw/check-v2-*.js",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): store.openAlerts(prefill) → dialog \"alerts\" + alertPrefill (transient); the form starts on the prefilled kind / strategy / asset; unit store.test.ts + alerts.test.tsx",
     "new": true
   },
   {

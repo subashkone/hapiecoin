@@ -66,6 +66,7 @@ describe("HC-SH-001 analyse header", () => {
       ["menu-lot", "lot"],
       ["menu-pnl", "pnl"],
       ["menu-exchanges", "exchanges"],
+      ["menu-alerts", "alerts"],
       ["menu-logout", "logout"],
     ] as const) {
       await u.click(screen.getByTestId("settings-gear"));
@@ -83,6 +84,12 @@ describe("HC-SH-001 analyse header", () => {
     await u.click(screen.getByTestId("settings-gear"));
     await u.keyboard("{Escape}");
     expect(screen.queryByTestId("settings-menu")).toBeNull();
+    // HC-SH-079 the bell opens the Alerts center; the menu row carries the armed count
+    useUiStore.setState({ dialog: null });
+    await u.click(screen.getByTestId("alerts-bell"));
+    expect(useUiStore.getState()).toMatchObject({ dialog: "alerts", alertPrefill: null });
+    await u.click(screen.getByTestId("settings-gear"));
+    expect(within(screen.getByTestId("menu-alerts")).getByText("0 armed")).toBeTruthy();
   });
   it("HC-SH-020 account menu shows name/email and Logout", async () => {
     const u = userEvent.setup();

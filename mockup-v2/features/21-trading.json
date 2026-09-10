@@ -930,7 +930,7 @@
     "feature": "Set alert on every paper card",
     "how": "Opens CG.alerts.openNew({type:\"pnl\", kind:\"pnl\", strategyId, name, asset}) when the chrome alerts engine exists, else the local mini-dialog",
     "status": "working",
-    "evidence": "v2 design brief (Obsidian Desk)",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): PaperPanel card-alert \"Set alert\" → openAlerts({ kind: \"pnl\", strategyId, asset }); unit trading.test.tsx; e2e analyse.spec.ts alerts block",
     "new": true
   },
   {
@@ -957,7 +957,7 @@
     "feature": "Set alert on every live card",
     "how": "Same hook as the paper cards",
     "status": "working",
-    "evidence": "v2 design brief (Obsidian Desk)",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): PaperPanel live cards share the card-alert button (kind = live); unit trading.test.tsx (paper) · same code path",
     "new": true
   },
   {
@@ -984,7 +984,7 @@
     "feature": "Set alert button",
     "how": "Opens the alerts hook for the strategy (active strategies)",
     "status": "working",
-    "evidence": "v2 design brief (Obsidian Desk)",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): StrategyDetailsDialog details-alert \"Set alert\" for active strategies; unit trading.test.tsx",
     "new": true
   },
   {
@@ -1155,7 +1155,7 @@
     "feature": "Alerts hook",
     "how": "openAlert(id) → CG.alerts.openNew({type:\"pnl\", kind:\"pnl\", strategyId, name, asset}) when the chrome engine exists; otherwise a local mini-dialog (condition ≥ / ≤, value) stores {id,type:\"pnl\",kind:\"pnl\",strategyId,name,op,value,armed,state,channels,createdAt} into CG.mock.alerts and a tick evaluator toasts and disarms when crossed; CG.portfolio.strategyPnl(id) returns the strategy total P&L for the engine",
     "status": "working",
-    "evidence": "v2 design brief (Obsidian Desk)",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): The alerts engine exists (ADR-052): openAlerts prefill lands on the P&L form with the strategy chosen and its name snapshotted on save; unit alerts.test.tsx; e2e analyse.spec.ts",
     "new": true
   },
   {

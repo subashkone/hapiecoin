@@ -3,9 +3,9 @@
 // deliberately simple: one OTP (123456), sessions in a Map, settings/brokers/credentials per user.
 import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import type { AdminCommissionRow, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
+import type { AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
-import { INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal } from "@hapiecoin/schema";
+import { AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal } from "@hapiecoin/schema";
 
 export const SESSION_COOKIE = "better-auth.session_token";
 export const TEST_OTP = "123456";
@@ -35,6 +35,8 @@ interface Account {
   pastSubscriptions: MockSubscription[];
   /** Audit lines targeting this user, newest first (drawer History tab). */
   history: { id: number; action: string; target: string; actorId: string | null; actorEmail: string | null; at: string; after: unknown }[];
+  /** Alerts (ADR-052), newest first. */
+  alerts: Alert[];
 }
 interface MockSubscription {
   id: string;
@@ -189,6 +191,7 @@ export function createAccount(
     lastLoginAt: null,
     pastSubscriptions: [],
     history: [],
+    alerts: [],
   };
   state.accounts.set(email, acc);
   return acc;
@@ -402,6 +405,64 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   });
   v1.get("/credentials/whitelist-ip", (c) => c.json({ ip: WHITELIST_IP }));
   v1.get("/plan", (c) => c.json(current(c)!.plan));
+
+  /* ---------------- alerts (Phase 5 item 2, mirrors apps/api/src/routes/alerts.ts) ---------------- */
+  v1.get("/alerts", (c) => c.json({ items: [...current(c)!.alerts] }));
+  v1.post("/alerts", async (c) => {
+    const acc = current(c)!;
+    const parsed = AlertCreate.safeParse(await c.req.json());
+    if (!parsed.success) return err(c, 400, "VALIDATION", parsed.error.issues[0]?.message ?? "Invalid alert");
+    const body = parsed.data;
+    if (acc.alerts.length >= MAX_ALERTS) return err(c, 409, "CONFLICT", `You can keep up to ${MAX_ALERTS} alerts; delete one first`);
+    let strategyName: string | null = null;
+    if (body.strategyId) {
+      const s = acc.strategies.find((x) => x.id === body.strategyId);
+      if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+      if (s.asset !== body.asset) return err(c, 400, "VALIDATION", "The alert's asset must match the strategy's asset");
+      strategyName = s.name;
+    }
+    const at = new Date().toISOString();
+    const a: Alert = { id: id("alr"), kind: body.kind, asset: body.asset, strategyId: body.strategyId ?? null, strategyName, op: body.op, value: body.value, channels: body.channels, state: "armed", lastValue: null, triggeredAt: null, createdAt: at, updatedAt: at };
+    acc.alerts.unshift(a);
+    return c.json(a, 201);
+  });
+  v1.patch("/alerts/:id", async (c) => {
+    const a = current(c)!.alerts.find((x) => x.id === c.req.param("id"));
+    if (!a) return err(c, 404, "NOT_FOUND", "Alert not found");
+    const parsed = AlertPatch.safeParse(await c.req.json());
+    if (!parsed.success) return err(c, 400, "VALIDATION", parsed.error.issues[0]?.message ?? "Invalid patch");
+    const body = parsed.data;
+    if (body.op) a.op = body.op;
+    if (body.value) a.value = body.value;
+    if (body.channels) a.channels = body.channels;
+    if (body.state === "armed" || (body.state === undefined && (body.op || body.value))) {
+      a.state = "armed";
+      a.triggeredAt = null;
+    }
+    if (body.state === "paused") a.state = "paused";
+    a.updatedAt = new Date().toISOString();
+    return c.json(a);
+  });
+  v1.delete("/alerts/:id", (c) => {
+    const acc = current(c)!;
+    const i = acc.alerts.findIndex((x) => x.id === c.req.param("id"));
+    if (i < 0) return err(c, 404, "NOT_FOUND", "Alert not found");
+    acc.alerts.splice(i, 1);
+    return c.body(null, 204);
+  });
+  v1.post("/alerts/:id/trigger", async (c) => {
+    const a = current(c)!.alerts.find((x) => x.id === c.req.param("id"));
+    if (!a) return err(c, 404, "NOT_FOUND", "Alert not found");
+    if (a.state !== "armed") return err(c, 409, "CONFLICT", "Only an armed alert can trigger");
+    const parsed = AlertTrigger.safeParse(await c.req.json());
+    if (!parsed.success) return err(c, 400, "VALIDATION", "Invalid value");
+    const at = new Date().toISOString();
+    a.state = "triggered";
+    a.lastValue = parsed.data.value;
+    a.triggeredAt = at;
+    a.updatedAt = at;
+    return c.json(a);
+  });
 
   /* ---------------- strategies (Phase 3 item 1, mirrors apps/api/src/routes/strategies.ts) ---------------- */
   const nowIso = () => new Date().toISOString();
@@ -1533,8 +1594,18 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     return c.json({ ok: true });
   });
   app.post("/__test/seed", async (c) => {
-    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; referrals?: number; banners?: number; coupons?: boolean; payments?: number; campaigns?: number }>();
+    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; referrals?: number; banners?: number; coupons?: boolean; payments?: number; campaigns?: number; alerts?: boolean }>();
     const acc = createAccount(state, body);
+    if (body.alerts) {
+      const at = new Date().toISOString();
+      const hourAgo = new Date(Date.now() - 3_600_000).toISOString();
+      const strat = acc.strategies.find((s) => s.status === "paper" || s.status === "live");
+      acc.alerts.push(
+        { id: id("alr"), kind: "pnl", asset: "BTC", strategyId: strat?.id ?? null, strategyName: strat?.name ?? "BTC Bull Call Spread · Sep", op: ">=", value: "20", channels: ["push", "email"], state: "armed", lastValue: null, triggeredAt: null, createdAt: at, updatedAt: at },
+        { id: id("alr"), kind: "iv", asset: "BTC", strategyId: null, strategyName: null, op: "<=", value: "30", channels: ["email"], state: "triggered", lastValue: "22", triggeredAt: hourAgo, createdAt: hourAgo, updatedAt: hourAgo },
+        { id: id("alr"), kind: "price", asset: "BTC", strategyId: null, strategyName: null, op: ">=", value: "82000", channels: ["push"], state: "armed", lastValue: null, triggeredAt: null, createdAt: hourAgo, updatedAt: hourAgo },
+      );
+    }
     if (body.coupons) {
       const at = nowIso();
       const mk = (x: Partial<Coupon> & Pick<Coupon, "code" | "discountType" | "discountValue" | "planIds">): Coupon => ({ id: id("cpn"), description: "", minOrderInr: "0", maxUses: null, usedCount: 0, perUserLimit: 1, startsAt: null, endsAt: null, scope: "public", intervals: ["monthly", "quarterly", "yearly"], assignedUserIds: [], active: true, createdAt: at, updatedAt: at, ...x });

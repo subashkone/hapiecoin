@@ -23,7 +23,7 @@ for (const theme of ["dark", "light"] as const) {
     });
 
     test(`HC-SH-001 /analyse ${theme}`, async ({ page, request }) => {
-      await seedUser(request, { email: `shot-${theme}@example.com`, plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" }, connected: true });
+      await seedUser(request, { email: `shot-${theme}@example.com`, plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" }, connected: true, alerts: true });
       await signIn(page, `shot-${theme}@example.com`);
       await page.evaluate((t) => {
         localStorage.setItem("hapiecoin.theme", t);
@@ -89,6 +89,20 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("paper-card").getByTestId("card-pnl")).not.toHaveText("—");
       await expect(page.getByTestId("paper-strip")).toHaveAttribute("data-portfolio", "ready", { timeout: 15_000 });
       await page.screenshot({ path: `${DIR}/analyse-paper-${theme}.png` });
+      // ADR-052 the Alerts center from the bell, then the New alert form from a card's Set alert
+      await page.getByTestId("alerts-bell").click();
+      const alerts = page.getByTestId("alerts-dialog");
+      await expect(alerts.getByTestId("alert-row")).toHaveCount(3);
+      await expect(alerts.locator("[data-testid=alert-row][data-kind=price]").getByTestId("alert-now")).toContainText(/now [0-9]/, { timeout: 15_000 });
+      await page.screenshot({ path: `${DIR}/analyse-alerts-${theme}.png` });
+      await page.keyboard.press("Escape");
+      await expect(alerts).toBeHidden();
+      await page.getByTestId("paper-card").getByTestId("card-alert").click();
+      await expect(alerts.getByTestId("alert-form")).toBeVisible();
+      await expect(alerts.getByTestId("alert-form-now")).toContainText("$", { timeout: 15_000 });
+      await page.screenshot({ path: `${DIR}/analyse-alerts-form-${theme}.png` });
+      await page.keyboard.press("Escape");
+      await expect(alerts).toBeHidden();
       // ADR-044 the adjustment workbench (HC-TR-148..151) and its paper confirm
       await page.getByTestId("card-adjust").click();
       const wb = page.getByTestId("adjust-workbench");
