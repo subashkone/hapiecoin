@@ -25,16 +25,21 @@ export interface TemplateFutureLeg {
 }
 export type TemplateLeg = TemplateOptionLeg | TemplateFutureLeg;
 
+/** Badges on the card: the template holds a perpetual, spans two expiries, or has unequal lots. */
+export type TemplateTag = "futures" | "calendar" | "ratio";
+
 export interface StrategyTemplate {
   name: string;
   category: TemplateCategory;
   description: string;
   legs: TemplateLeg[];
+  tags?: readonly TemplateTag[] | undefined;
 }
 
-const t = (name: string, category: TemplateCategory, description: string, legs: TemplateLeg[]): StrategyTemplate => ({ name, category, description, legs });
+const t = (name: string, category: TemplateCategory, description: string, legs: TemplateLeg[], tags?: readonly TemplateTag[]): StrategyTemplate => ({ name, category, description, legs, tags });
 const C = "call" as const;
 const P = "put" as const;
+const F = "future" as const;
 const B = "buy" as const;
 const S = "sell" as const;
 
@@ -44,11 +49,22 @@ export const TEMPLATES: readonly StrategyTemplate[] = [
   t("Bull Call Spread", "Bullish", "Buy ATM call, sell OTM call. Limited risk and reward.", [{ kind: C, side: B, k: 0 }, { kind: C, side: S, k: 2 }]),
   t("Bull Put Spread", "Bullish", "Sell ATM put, buy OTM put. Credit spread strategy.", [{ kind: P, side: S, k: 0 }, { kind: P, side: B, k: -2 }]),
   t("Long Synthetic Future", "Bullish", "Buy call and sell put at same strike. Mimics long futures position.", [{ kind: C, side: B, k: 0 }, { kind: P, side: S, k: 0 }]),
+  t("Long Perp", "Bullish", "Buy the perpetual. Gains one for one as price rises, loses the same way as it falls.", [{ kind: F, side: B }], ["futures"]),
+  t("Covered Call", "Bullish", "Long perpetual plus a sold OTM call. Premium income; gain capped at the call strike.", [{ kind: F, side: B }, { kind: C, side: S, k: 2 }], ["futures"]),
+  t("Protective Put", "Bullish", "Long perpetual plus a bought OTM put. Loss stopped below the put; upside open.", [{ kind: F, side: B }, { kind: P, side: B, k: -2 }], ["futures"]),
+  t("Collar", "Bullish", "Long perpetual, bought OTM put, sold OTM call. Loss floored, gain capped, little net premium.", [{ kind: F, side: B }, { kind: P, side: B, k: -2 }, { kind: C, side: S, k: 2 }], ["futures"]),
+  t("Call Back Spread 1x2", "Bullish", "Sell 1 ATM call, buy 2 OTM calls. Small risk between the strikes; open gain on a big rise.", [{ kind: C, side: S, k: 0 }, { kind: C, side: B, k: 2, lots: 2 }], ["ratio"]),
+  t("Diagonal Call", "Bullish", "Sell a near-term OTM call, buy a longer-term ATM call. Time decay income with room to rise.", [{ kind: C, side: S, k: 2, expiryOffset: 0 }, { kind: C, side: B, k: 0, expiryOffset: 1 }], ["calendar"]),
+  t("Risk Reversal", "Bullish", "Sell an OTM put to pay for an OTM call. Bullish; exposed below the put strike.", [{ kind: P, side: S, k: -2 }, { kind: C, side: B, k: 2 }]),
   t("Buy Put", "Bearish", "Buy a put. Profits from a fall, risk limited to premium paid.", [{ kind: P, side: B, k: 0 }]),
   t("Sell Call", "Bearish", "Bearish strategy earning premium. Profit if price stays below strike.", [{ kind: C, side: S, k: 0 }]),
   t("Bear Put Spread", "Bearish", "Buy ATM put, sell OTM put. Limited risk debit spread.", [{ kind: P, side: B, k: 0 }, { kind: P, side: S, k: -2 }]),
   t("Bear Call Spread", "Bearish", "Sell ATM call, buy OTM call. Credit spread strategy.", [{ kind: C, side: S, k: 0 }, { kind: C, side: B, k: 2 }]),
   t("Short Synthetic Future", "Bearish", "Sell call and buy put at same strike. Mimics short futures position.", [{ kind: C, side: S, k: 0 }, { kind: P, side: B, k: 0 }]),
+  t("Short Perp", "Bearish", "Sell the perpetual. Gains one for one as price falls, loses the same way as it rises.", [{ kind: F, side: S }], ["futures"]),
+  t("Covered Put", "Bearish", "Short perpetual plus a sold OTM put. Premium income; gain capped at the put strike.", [{ kind: F, side: S }, { kind: P, side: S, k: -2 }], ["futures"]),
+  t("Put Back Spread 1x2", "Bearish", "Sell 1 ATM put, buy 2 OTM puts. Small risk between the strikes; large gain on a sharp fall.", [{ kind: P, side: S, k: 0 }, { kind: P, side: B, k: -2, lots: 2 }], ["ratio"]),
+  t("Diagonal Put", "Bearish", "Sell a near-term OTM put, buy a longer-term ATM put. Time decay income with room to fall.", [{ kind: P, side: S, k: -2, expiryOffset: 0 }, { kind: P, side: B, k: 0, expiryOffset: 1 }], ["calendar"]),
   t("Long Straddle", "Neutral", "Buy call and put at same strike. Profit from big move in either direction.", [{ kind: C, side: B, k: 0 }, { kind: P, side: B, k: 0 }]),
   t("Short Straddle", "Neutral", "Sell call and put at same strike. Profit from low volatility.", [{ kind: C, side: S, k: 0 }, { kind: P, side: S, k: 0 }]),
   t("Long Strangle", "Neutral", "Buy OTM call and put. Cheaper than straddle, needs bigger move.", [{ kind: C, side: B, k: 2 }, { kind: P, side: B, k: -2 }]),
@@ -60,13 +76,22 @@ export const TEMPLATES: readonly StrategyTemplate[] = [
   t("Long Call Butterfly", "Neutral", "Buy 1 ITM call, sell 2 ATM calls, buy 1 OTM call. Max profit at ATM.", [{ kind: C, side: B, k: -2 }, { kind: C, side: S, k: 0, lots: 2 }, { kind: C, side: B, k: 2 }]),
   t("Long Put Butterfly", "Neutral", "Buy 1 ITM put, sell 2 ATM puts, buy 1 OTM put. Max profit at ATM.", [{ kind: P, side: B, k: 2 }, { kind: P, side: S, k: 0, lots: 2 }, { kind: P, side: B, k: -2 }]),
   t("Long Call Condor", "Neutral", "Buy ITM call, sell 2 different ATM calls, buy OTM call. Wider profit zone than butterfly.", [{ kind: C, side: B, k: -3 }, { kind: C, side: S, k: -1 }, { kind: C, side: S, k: 1 }, { kind: C, side: B, k: 3 }]),
-  t("Long Calendar with Calls", "Neutral", "Sell near-term call, buy longer-term call at same strike. Profits from time decay.", [{ kind: C, side: S, k: 0, expiryOffset: 0 }, { kind: C, side: B, k: 0, expiryOffset: 1 }]),
-  t("Long Calendar with Puts", "Neutral", "Sell near-term put, buy longer-term put at same strike. Profits from time decay.", [{ kind: P, side: S, k: 0, expiryOffset: 0 }, { kind: P, side: B, k: 0, expiryOffset: 1 }]),
+  t("Long Calendar with Calls", "Neutral", "Sell near-term call, buy longer-term call at same strike. Profits from time decay.", [{ kind: C, side: S, k: 0, expiryOffset: 0 }, { kind: C, side: B, k: 0, expiryOffset: 1 }], ["calendar"]),
+  t("Long Calendar with Puts", "Neutral", "Sell near-term put, buy longer-term put at same strike. Profits from time decay.", [{ kind: P, side: S, k: 0, expiryOffset: 0 }, { kind: P, side: B, k: 0, expiryOffset: 1 }], ["calendar"]),
   t("Long Gut", "Neutral", "Buy ITM call and ITM put. High cost but profits from large moves.", [{ kind: C, side: B, k: -2 }, { kind: P, side: B, k: 2 }]),
   t("Strip", "Neutral", "Buy 1 ATM call and 2 ATM puts. Profits more from downside move.", [{ kind: C, side: B, k: 0 }, { kind: P, side: B, k: 0, lots: 2 }]),
   t("Strap", "Neutral", "Buy 2 ATM calls and 1 ATM put. Profits more from upside move.", [{ kind: C, side: B, k: 0, lots: 2 }, { kind: P, side: B, k: 0 }]),
+  t("Synthetic Straddle", "Neutral", "Long perpetual plus 2 bought ATM puts. Behaves like a long straddle: profits from a big move either way.", [{ kind: F, side: B }, { kind: P, side: B, k: 0, lots: 2 }], ["futures"]),
+  t("Broken-Wing Put Butterfly", "Neutral", "Put butterfly with the far wing set wider. Credit or small debit; the risk sits on the downside.", [{ kind: P, side: B, k: 0 }, { kind: P, side: S, k: -2, lots: 2 }, { kind: P, side: B, k: -5 }]),
+  t("Broken-Wing Call Butterfly", "Neutral", "Call butterfly with the far wing set wider. Credit or small debit; the risk sits on the upside.", [{ kind: C, side: B, k: 0 }, { kind: C, side: S, k: 2, lots: 2 }, { kind: C, side: B, k: 5 }]),
+  t("Double Diagonal", "Neutral", "Sell a near-term strangle, buy a wider longer-term strangle. Range income with defined risk.", [{ kind: P, side: S, k: -2, expiryOffset: 0 }, { kind: P, side: B, k: -4, expiryOffset: 1 }, { kind: C, side: S, k: 2, expiryOffset: 0 }, { kind: C, side: B, k: 4, expiryOffset: 1 }], ["calendar"]),
+  t("Calendar Strangle", "Neutral", "Sell a near-term strangle, buy the same strikes at a later expiry. Time decay while price stays in range.", [{ kind: P, side: S, k: -2, expiryOffset: 0 }, { kind: P, side: B, k: -2, expiryOffset: 1 }, { kind: C, side: S, k: 2, expiryOffset: 0 }, { kind: C, side: B, k: 2, expiryOffset: 1 }], ["calendar"]),
   t("Jade Lizard", "Others", "Sell put spread + sell OTM call. No upside risk with premium collection.", [{ kind: P, side: B, k: -4 }, { kind: P, side: S, k: -2 }, { kind: C, side: S, k: 2 }]),
   t("Reverse Jade Lizard", "Others", "Sell call spread + sell OTM put. No downside risk with premium collection.", [{ kind: C, side: B, k: 4 }, { kind: C, side: S, k: 2 }, { kind: P, side: S, k: -2 }]),
+  t("Call Ratio Spread 1x2", "Others", "Buy 1 ATM call, sell 2 OTM calls. Profit on a modest rise; open risk above the sold strike.", [{ kind: C, side: B, k: 0 }, { kind: C, side: S, k: 2, lots: 2 }], ["ratio"]),
+  t("Put Ratio Spread 1x2", "Others", "Buy 1 ATM put, sell 2 OTM puts. Profit on a modest fall; open risk below the sold strike.", [{ kind: P, side: B, k: 0 }, { kind: P, side: S, k: -2, lots: 2 }], ["ratio"]),
+  t("Short Call Ladder", "Others", "Sell an ATM call, buy two higher calls. Limited loss between the strikes; open gain on a big rise.", [{ kind: C, side: S, k: 0 }, { kind: C, side: B, k: 2 }, { kind: C, side: B, k: 4 }]),
+  t("Short Put Ladder", "Others", "Sell an ATM put, buy two lower puts. Limited loss between the strikes; large gain on a big fall.", [{ kind: P, side: S, k: 0 }, { kind: P, side: B, k: -2 }, { kind: P, side: B, k: -4 }]),
 ];
 
 /** True when the Builder's name is just the template it was loaded from ("Iron Butterfly"): not a name the trader gave (ADR-059). */
