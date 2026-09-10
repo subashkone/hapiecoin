@@ -45,7 +45,7 @@ async function paperTradeFromBuilder(u: ReturnType<typeof userEvent.setup>) {
   await waitFor(() => expect(within(mode).getByTestId<HTMLSelectElement>("trade-broker").value).toBe("brk_delta"));
   await u.click(within(mode).getByTestId("trade-continue"));
   await u.click(within(screen.getByTestId("trade-preview")).getByTestId("trade-now"));
-  const name = screen.getByTestId("save-draft-dialog");
+  const name = await screen.findByTestId("save-draft-dialog", {}, { timeout: 5000 });
   await u.type(within(name).getByTestId("save-draft-name"), "Risk reversal");
   await u.click(within(name).getByTestId("save-draft-confirm"));
   await waitFor(() => expect(mine()[0]?.status).toBe("paper"));

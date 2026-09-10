@@ -2,7 +2,10 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { User } from "@hapiecoin/schema";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
+import { act, screen as scr } from "@testing-library/react";
+import { chainTopic } from "@hapiecoin/schema";
+import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
+import { buildChain } from "../../../test/fixtures/chain";
 import { pathnameMock } from "../../../test/next-mocks";
 import { useUiStore } from "@/lib/store";
 import { AppHeader, Avatar } from "./AppHeader";
@@ -67,6 +70,7 @@ describe("HC-SH-001 analyse header", () => {
       ["menu-pnl", "pnl"],
       ["menu-exchanges", "exchanges"],
       ["menu-alerts", "alerts"],
+      ["menu-shortcuts", "shortcuts"],
       ["menu-logout", "logout"],
     ] as const) {
       await u.click(screen.getByTestId("settings-gear"));
@@ -90,6 +94,36 @@ describe("HC-SH-001 analyse header", () => {
     expect(useUiStore.getState()).toMatchObject({ dialog: "alerts", alertPrefill: null });
     await u.click(screen.getByTestId("settings-gear"));
     expect(within(screen.getByTestId("menu-alerts")).getByText("0 armed")).toBeTruthy();
+    // HC-SH-023 Command palette and Market Analytics rows
+    await u.click(screen.getByTestId("menu-palette"));
+    expect(useUiStore.getState().paletteOpen).toBe(true);
+    useUiStore.setState({ paletteOpen: false });
+    await u.click(screen.getByTestId("settings-gear"));
+    expect(within(screen.getByTestId("settings-menu")).getByText("Market Analytics").closest("a")?.getAttribute("href")).toBe("/analytics");
+  });
+
+  it("HC-SH-077 / HC-SH-078 header stats read the ATM IV and the expected move of the shown expiry from the chain", async () => {
+    FakeSocket.reset();
+    mock.loginAs("asha@example.com");
+    useUiStore.setState({ asset: "BTC", expiry: {} });
+    renderWithProviders(<AppHeader variant="analyse" initialUser={user} />);
+    expect(scr.getByTestId("header-atm-iv").dataset["state"]).toBe("pending");
+    const ws = FakeSocket.last();
+    const expiry = "2026-09-11"; // the first default expiry
+    const topic = chainTopic("delta_india", "BTC", expiry);
+    act(() => {
+      ws.open();
+      ws.receive({ t: "spot", s: "BTC", p: "79521", c24: 0.4 });
+    });
+    // the chain subscription follows the (async) expiry discovery: serve the snapshot once it is requested
+    await waitFor(() => expect(ws.sentFrames().some((f) => JSON.stringify(f).includes(topic))).toBe(true));
+    act(() => {
+      ws.receive({ t: "snap", topic, seq: 0, rows: buildChain("BTC", expiry) });
+    });
+    await waitFor(() => expect(scr.getByTestId("header-atm-iv").dataset["state"]).toBe("ready"));
+    expect(scr.getByTestId("header-atm-iv").textContent).toMatch(/ATM IV\d+\.\d%IV rank —/);
+    expect(scr.getByTestId("header-exp-move").dataset["state"]).toBe("ready");
+    expect(scr.getByTestId("header-exp-move").textContent).toMatch(/Exp\. move · 11 Sep± [\d,]+1σ/);
   });
   it("HC-SH-020 account menu shows name/email and Logout", async () => {
     const u = userEvent.setup();

@@ -195,7 +195,7 @@ export function Workspace() {
 
   if (narrow) {
     return (
-      <div className="flex min-h-[calc(100vh-50px)] flex-col" data-testid="workspace" data-layout="stacked">
+      <div className="flex min-h-[calc(100vh-82px)] flex-col" data-testid="workspace" data-layout="stacked">
         {overlays}
         <div className="flex border-b border-border" role="tablist" aria-label="Pane">
           {(["left", "analysis"] as const).map((k) => (
@@ -212,7 +212,7 @@ export function Workspace() {
   // HC-WS-065: a collapsed pane gives the other the full width; the ⋮ handle restores both
   if (collapse) {
     return (
-      <div ref={grid} className="grid min-h-[calc(100vh-50px)]" style={{ gridTemplateColumns: collapse === "left" ? "0 16px minmax(0, 1fr)" : "minmax(0, 1fr) 16px 0" }} data-testid="workspace" data-layout="split" data-collapse={collapse}>
+      <div ref={grid} className="grid min-h-[calc(100vh-82px)]" style={{ gridTemplateColumns: collapse === "left" ? "0 16px minmax(0, 1fr)" : "minmax(0, 1fr) 16px 0" }} data-testid="workspace" data-layout="split" data-collapse={collapse}>
         {overlays}
         <div className={cn("min-w-0 overflow-hidden", collapse === "left" && "hidden")}>{left}</div>
         <button type="button" onClick={() => setCollapse(null)} className="flex items-center justify-center border-x border-border bg-muted/40 font-mono text-xs text-muted-foreground hover:bg-muted hover:text-foreground" title={collapse === "left" ? "Restore the chain and Builder pane" : "Restore the analysis pane"} aria-label="Restore both panes" data-testid="collapse-restore">
@@ -226,7 +226,7 @@ export function Workspace() {
   }
 
   return (
-    <div ref={grid} className="grid min-h-[calc(100vh-50px)]" style={{ gridTemplateColumns: `minmax(0, ${split}fr) 6px minmax(360px, ${1 - split}fr)` }} data-testid="workspace" data-layout="split" data-split={split.toFixed(2)}>
+    <div ref={grid} className="grid min-h-[calc(100vh-82px)]" style={{ gridTemplateColumns: `minmax(0, ${split}fr) 6px minmax(360px, ${1 - split}fr)` }} data-testid="workspace" data-layout="split" data-split={split.toFixed(2)}>
       {overlays}
       <div className="min-w-0 border-r border-border">{left}</div>
       <div

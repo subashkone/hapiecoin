@@ -1,6 +1,7 @@
 "use client";
-// Minimal command palette (HC-PB-059): Ctrl K / ⌘ K opens a filterable list of navigation commands.
-// Navigation, chain actions (Phase 2 items 1–3), Builder / analysis actions (Phase 2 item 4), theme toggle.
+// Command palette (HC-PB-059; HC-SH-085..093, ADR-053): Ctrl K / ⌘ K opens a fuzzy-filtered list of navigation,
+// action and settings commands grouped Recent · Navigate · Actions · Settings (+ groups other parts register),
+// with the matched characters underlined and the last five commands remembered.
 import {
   Dialog,
   DialogContent,
@@ -9,24 +10,21 @@ import {
   Search,
   cn,
   toast,
+  useDensity,
   useTheme,
 } from "@hapiecoin/ui";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, type KeyboardEvent } from "react";
+import { useSettings, useUpdateSettings } from "@/lib/api/queries";
 import { greeksShown, setGreeks } from "@/lib/chain/layout";
 import { useExpiries } from "@/lib/chain/useExpiries";
 import { fmtExpiry } from "@/lib/format";
+import { type PaletteCommand, filterCommands, groupOrder, listRegistered, matchIndices, pushRecent, readRecent, subscribeCommands } from "@/lib/palette";
 import { useUiStore } from "@/lib/store";
 import { TEMPLATES } from "@/lib/strategy/templates";
 
-export interface PaletteCommand {
-  id: string;
-  label: string;
-  group: "Navigate" | "Actions";
-  hint?: string;
-  keywords?: string[];
-  run: () => void;
-}
+export { filterCommands, scoreCommand } from "@/lib/palette";
+export type { PaletteCommand } from "@/lib/palette";
 
 export function buildCommands(opts: {
   loggedIn: boolean;
@@ -40,6 +38,11 @@ export function buildCommands(opts: {
   expiries?: readonly string[];
   /** Template names → "Load template → <name>" per template (HC-WS-069, HC-TR-140). */
   templates?: readonly string[];
+  /** Density toggle (HC-SH-091 "Toggle density (D)"). */
+  toggleDensity?: () => void;
+  /** The display currency and its setter for "Display currency → INR / USD" (HC-SH-092). */
+  currency?: "USD" | "INR";
+  setCurrency?: (c: "USD" | "INR") => void;
 }): PaletteCommand[] {
   const nav = (id: string, path: string, label: string, keywords: string[] = []): PaletteCommand => ({
     id,
@@ -323,35 +326,32 @@ export function buildCommands(opts: {
     nav("nav:privacy", "/privacy", "Privacy Policy", ["legal"]),
     nav("nav:terms", "/terms", "Terms of Service", ["legal"]),
     nav("nav:disclaimer", "/disclaimer", "Disclaimer", ["legal", "risk"]),
-    { id: "act:theme", label: "Toggle theme", group: "Actions", keywords: ["dark", "light", "mode"], run: opts.toggleTheme },
+    { id: "act:theme", label: "Toggle theme", group: "Actions", hint: "T", keywords: ["dark", "light", "mode"], run: opts.toggleTheme },
   );
-  return list;
-}
-
-/** Case-insensitive subsequence match on label + keywords; returns a score (higher is better) or -1. */
-export function scoreCommand(cmd: PaletteCommand, query: string): number {
-  const q = query.trim().toLowerCase();
-  if (!q) return 0;
-  const hay = [cmd.label, ...(cmd.keywords ?? []), cmd.hint ?? ""].map((s) => s.toLowerCase());
-  let best = -1;
-  for (const h of hay) {
-    if (h.includes(q)) best = Math.max(best, 100 - h.indexOf(q));
-    else {
-      let i = 0;
-      for (const ch of h) if (ch === q[i]) i++;
-      if (i === q.length) best = Math.max(best, 10);
+  if (opts.toggleDensity) list.push({ id: "act:density", label: "Toggle density", group: "Actions", hint: "D", keywords: ["compact", "comfortable", "rows", "dense"], run: opts.toggleDensity });
+  list.push({ id: "act:shortcuts", label: "Keyboard shortcuts", group: "Actions", hint: "?", keywords: ["keys", "help", "hotkeys", "kbd"], run: () => useUiStore.getState().openDialog("shortcuts") });
+  if (opts.loggedIn) {
+    const setting = (id: string, label: string, kind: "api" | "currency" | "lot" | "pnl" | "exchanges" | "profile", keywords: string[]): PaletteCommand => ({
+      id,
+      label,
+      group: "Settings",
+      keywords,
+      run: () => useUiStore.getState().openDialog(kind),
+    });
+    list.push(
+      setting("set:api", "Open API Settings", "api", ["api", "key", "exchange", "delta", "connect"]),
+      setting("set:currency", "Open Currency Settings", "currency", ["currency", "inr", "usd", "rate"]),
+      setting("set:lot", "Open Lot Size Settings", "lot", ["lot", "size", "contracts"]),
+      setting("set:pnl", "Open P&L Settings", "pnl", ["pnl", "basis", "mark", "bid ask"]),
+      setting("set:exchanges", "Open Exchange Setup", "exchanges", ["exchange", "broker", "setup"]),
+      setting("set:profile", "Open Profile", "profile", ["profile", "name", "avatar", "password"]),
+    );
+    if (opts.setCurrency) {
+      const next = opts.currency === "INR" ? "USD" : "INR";
+      list.push({ id: "set:display-currency", label: `Display currency → ${next}`, group: "Settings", hint: opts.currency ?? "USD", keywords: ["currency", "inr", "usd", "rupee", "dollar"], run: () => opts.setCurrency?.(next) });
     }
   }
-  return best;
-}
-
-export function filterCommands(cmds: PaletteCommand[], query: string): PaletteCommand[] {
-  if (!query.trim()) return cmds;
-  return cmds
-    .map((c) => ({ c, s: scoreCommand(c, query) }))
-    .filter((x) => x.s >= 0)
-    .sort((a, b) => b.s - a.s)
-    .map((x) => x.c);
+  return list.sort((a, b) => groupOrder(a.group) - groupOrder(b.group));
 }
 
 export function CommandPalette({ loggedIn, referralCode = null, admin = false }: { loggedIn: boolean; referralCode?: string | null; admin?: boolean }) {
@@ -359,16 +359,30 @@ export function CommandPalette({ loggedIn, referralCode = null, admin = false }:
   const setOpen = useUiStore((s) => s.setPaletteOpen);
   const router = useRouter();
   const { toggleTheme } = useTheme();
+  const { toggleDensity } = useDensity();
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
+  const [recent, setRecent] = useState<string[]>([]);
+  useEffect(() => {
+    if (open) setRecent(readRecent());
+  }, [open]);
 
   const asset = useUiStore((s) => s.asset);
   const expiries = useExpiries(asset);
   const templates = useMemo(() => TEMPLATES.map((t) => t.name), []);
-  const commands = useMemo(
-    () => buildCommands({ loggedIn, navigate: (p) => router.push(p), toggleTheme, referralCode, admin, expiries: loggedIn ? expiries : [], templates: loggedIn ? templates : [] }),
-    [admin, loggedIn, referralCode, router, toggleTheme, expiries, templates],
-  );
+  const { data: settings } = useSettings();
+  const update = useUpdateSettings();
+  const currency = settings?.currency;
+  const registered = useSyncExternalStore(subscribeCommands, listRegistered, listRegistered);
+  const commands = useMemo(() => {
+    const setCurrency = settings ? (c: "USD" | "INR") => update.mutate({ ...settings, currency: c }, { onSuccess: () => toast.success("Display currency", { description: c }) }) : undefined;
+    const base = buildCommands({ loggedIn, navigate: (p) => router.push(p), toggleTheme, toggleDensity, referralCode, admin, expiries: loggedIn ? expiries : [], templates: loggedIn ? templates : [], ...(currency ? { currency } : {}), ...(setCurrency ? { setCurrency } : {}) });
+    const all = [...base, ...registered].sort((a, b) => groupOrder(a.group) - groupOrder(b.group));
+    // HC-SH-087 the last commands run lead the list, as their own group
+    const recents = recent.map((id) => all.find((c) => c.id === id)).filter((c): c is PaletteCommand => c !== undefined).map((c) => ({ ...c, id: `recent:${c.id}`, group: "Recent" as const }));
+    return [...recents, ...all];
+    // `settings` stands in for the currency and the setter; `update` is stable
+  }, [admin, loggedIn, referralCode, router, toggleTheme, toggleDensity, expiries, templates, settings, registered, recent, currency]);
   const items = useMemo(() => filterCommands(commands, query), [commands, query]);
 
   useEffect(() => {
@@ -392,14 +406,15 @@ export function CommandPalette({ loggedIn, referralCode = null, admin = false }:
   const run = (cmd: PaletteCommand | undefined) => {
     if (!cmd) return;
     setOpen(false);
+    pushRecent(cmd.id.replace(/^recent:/, ""));
     cmd.run();
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "ArrowDown") {
+    if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
       e.preventDefault();
       setActive((a) => Math.min(items.length - 1, a + 1));
-    } else if (e.key === "ArrowUp") {
+    } else if (e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
       e.preventDefault();
       setActive((a) => Math.max(0, a - 1));
     } else if (e.key === "Enter") {
@@ -435,7 +450,10 @@ export function CommandPalette({ loggedIn, referralCode = null, admin = false }:
         </div>
         <ul id="hc-palette-list" role="listbox" className="max-h-[320px] overflow-auto p-1.5">
           {items.length === 0 ? (
-            <li className="px-3 py-6 text-center text-muted-foreground">No matching command</li>
+            <li className="px-3 py-6 text-center text-muted-foreground" data-testid="palette-empty">
+              <div>No commands match “{query.trim()}”</div>
+              <div className="micro mt-1">Try a screen name (analytics, journal), an action (alert, template) or a setting (currency)</div>
+            </li>
           ) : null}
           {items.map((cmd, i) => {
             const showGroup = cmd.group !== lastGroup;
@@ -455,7 +473,7 @@ export function CommandPalette({ loggedIn, referralCode = null, admin = false }:
                     i === active ? "bg-muted text-foreground" : "text-foreground/90",
                   )}
                 >
-                  <span className="flex-1">{cmd.label}</span>
+                  <span className="flex-1">{highlight(cmd.label, query)}</span>
                   {cmd.hint ? <span className="font-mono text-2xs text-muted-foreground">{cmd.hint}</span> : null}
                 </button>
               </li>
@@ -465,6 +483,13 @@ export function CommandPalette({ loggedIn, referralCode = null, admin = false }:
       </DialogContent>
     </Dialog>
   );
+}
+
+/** The label with the matched characters underlined (HC-SH-086). */
+export function highlight(label: string, query: string) {
+  const idx = new Set(matchIndices(label, query));
+  if (idx.size === 0) return label;
+  return [...label].map((ch, i) => (idx.has(i) ? <u key={i} className="decoration-primary underline-offset-2">{ch}</u> : ch));
 }
 
 /** Header button that opens the palette (shows the Ctrl K hint). */
@@ -485,6 +510,7 @@ export function PaletteButton({ className }: { className?: string }) {
     >
       <Kbd>Ctrl</Kbd>
       <Kbd>K</Kbd>
+      <span className="hidden text-xs min-[1500px]:inline">Command</span>
     </button>
   );
 }

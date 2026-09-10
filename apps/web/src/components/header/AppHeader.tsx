@@ -43,6 +43,9 @@ import { AssetSwitch, CurrencyToggle, ExchangeChip, FeedStatus, FuturesPrice } f
 import { PlanBanner } from "./PlanBanner";
 import { FlyerPopup } from "@/components/shell/FlyerPopup";
 import { AlertsBell } from "@/components/alerts/AlertsBell";
+import { HeaderStats } from "./HeaderStats";
+import { ShortcutsDispatcher } from "@/components/shell/ShortcutsDispatcher";
+import { Keyboard } from "@hapiecoin/ui";
 import { AlertEngine } from "@/lib/alerts/AlertEngine";
 import { useAlerts } from "@/lib/api/alerts";
 import { alertCounts } from "@hapiecoin/schema";
@@ -78,6 +81,7 @@ function SettingsMenu({ user }: { user: User }) {
   const [open, setOpen] = useState(false);
   const openDialog = useUiStore((s) => s.openDialog);
   const requestTour = useUiStore((s) => s.requestTour);
+  const setPaletteOpen = useUiStore((s) => s.setPaletteOpen);
   const { data: settings } = useSettings();
   const { data: alerts } = useAlerts();
   const armedAlerts = alertCounts(alerts ?? []).armed;
@@ -152,8 +156,17 @@ function SettingsMenu({ user }: { user: User }) {
         <MenuItem onSelect={() => pick("alerts")} value={`${armedAlerts} armed`} testId="menu-alerts">
           <Bell /> Alerts
         </MenuItem>
+        <MenuItem onSelect={() => pick("shortcuts")} value="?" testId="menu-shortcuts">
+          <Keyboard /> Keyboard shortcuts
+        </MenuItem>
         <MenuItem onSelect={() => { setOpen(false); toggleDensity(); }} value={density}>
           {density === "compact" ? <Rows3 /> : <Rows2 />} Density
+        </MenuItem>
+        <MenuItem onSelect={() => { setOpen(false); setPaletteOpen(true); }} value="Ctrl K" testId="menu-palette">
+          <Zap /> Command palette
+        </MenuItem>
+        <MenuItem href="/analytics" onSelect={() => setOpen(false)}>
+          <Gem /> Market Analytics
         </MenuItem>
         <MenuItem onSelect={() => { setOpen(false); requestTour(); }} testId="menu-tour">
           <Info /> Take a tour
@@ -248,6 +261,7 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
           <AssetSwitch />
           <span className="hidden h-6 w-px bg-border md:block" aria-hidden="true" />
           <FuturesPrice />
+          <HeaderStats />
           <span className="sr-only">{ASSET_META[asset].name}</span>
           <span className="flex-1" />
           <FeedStatus />
@@ -263,6 +277,7 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
         <PlanBanner />
         <FlyerPopup />
         <AlertEngine />
+        <ShortcutsDispatcher />
         <CommandPalette loggedIn referralCode={user.referralCode} admin={user.role === "admin"} />
       </>
     );
@@ -316,6 +331,7 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
         {user ? (
           <>
             <AlertEngine />
+            <ShortcutsDispatcher />
             <SettingsMenu user={user} />
             <AccountMenu user={user} />
           </>

@@ -43,7 +43,7 @@ export function AssetSwitch() {
           </button>
         ))}
       </div>
-      <div className="hidden flex-col leading-tight lg:flex">
+      <div className="hidden flex-col leading-tight min-[1500px]:flex" data-testid="header-venue">
         <span className="micro text-[9.5px]">Venue</span>
         <span className="text-xs">Delta India</span>
       </div>
@@ -58,7 +58,7 @@ export function FuturesPrice() {
   const c = spot?.c24;
   return (
     <div className="flex flex-col leading-tight" data-testid="futures-price" data-asset={asset}>
-      <span className="micro text-[9.5px]">Futures · {ASSET_META[asset].symbol}</span>
+      <span className="micro text-[9.5px] max-[1000px]:hidden">Futures · {ASSET_META[asset].symbol}</span>
       <span className="flex items-baseline gap-2">
         <span className={cn("num text-[17px] font-medium", flash)} data-testid="futures-price-value">
           {spot ? fmtPrice(spot.price) : "—"}

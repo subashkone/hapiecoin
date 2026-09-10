@@ -29,7 +29,7 @@
   "feature": "Shared chrome placeholders: app header (variant 'analyse'), plan banner and portfolio bar",
   "how": "<div data-cg=\"app-header\" data-variant=\"analyse\">, <div data-cg=\"plan-banner\"> and <div data-cg=\"portfolio-bar\"> are rendered by the chrome part; the workspace measures them",
   "status": "working",
-  "evidence": "header with asset selector, futures price, Futures Live, Exchange, wallet in the screenshot"
+  "evidence": "header with asset selector, futures price, Futures Live, Exchange, wallet in the screenshot · Phase 5 item 3 (11 Sep 2026, ADR-053): analyse layout: AppHeader (analyse), PlanBanner, WorkspaceLoader, PortfolioBarLoader (sticky footer)"
  },
  {
   "route": "/analyse",
@@ -545,7 +545,7 @@
   "feature": "Header stats feed: CG.emit('analyse:stats', {atmIv, ivRank, ivPercentile, expectedMove, expiry, spot, pcr, maxPain, skew25}) on show, expiry, asset and every tick; also stored in CG.analyse.stats",
   "how": "Consumed by the chrome header (ATM IV · IV rank · expected move)",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): useHeaderStats (HeaderStats.tsx) derives atmIv / expectedMove / expiry / spot from the shown-expiry chain and spot topics; the chain footer carries pcr / max pain / skew (ADR-048)",
   "new": true
  },
  {
@@ -563,7 +563,7 @@
   "feature": "Keyboard shortcuts listed in the ? help: J / K, ↑ / ↓, B / S, Shift+B / Shift+S, E / Shift+E, Enter",
   "how": "CG.shortcuts.register(key, description, handler, {group:\"Analyse workspace\"}) with a document fallback when the registry is absent",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules",
+  "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): DEFAULT_SHORTCUTS \"Analyse workspace\" rows in the ? help (ShortcutsDialog); unit shortcuts.test.ts",
   "new": true
  },
  {

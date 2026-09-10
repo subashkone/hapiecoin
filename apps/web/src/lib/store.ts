@@ -20,7 +20,7 @@ import {
 } from "./strategy/legs";
 import { type AdjustDraft, newDraft } from "./adjust/model";
 
-export type DialogKind = "profile" | "api" | "currency" | "lot" | "pnl" | "exchanges" | "logout" | "columns" | "option" | "upgrade" | "alerts" | null;
+export type DialogKind = "profile" | "api" | "currency" | "lot" | "pnl" | "exchanges" | "logout" | "columns" | "option" | "upgrade" | "alerts" | "shortcuts" | null;
 
 /** What the Alerts dialog's New alert form starts with (HC-SH-100): a "Set alert" button passes the strategy. Transient. */
 export interface AlertPrefill {
