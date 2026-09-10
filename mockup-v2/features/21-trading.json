@@ -1252,7 +1252,7 @@
     "phase": 5,
     "new": true,
     "feature": "Before → after strip, ghost curve and value at a chosen expiry",
-    "how": "Max loss, max profit, POP and break-evens shown before → after over the payoff tiles; the previous payoff drawn dashed behind the new one; \"Value at\" chips per expiry of the combined position (default the latest): settled legs at intrinsic, later legs keep time value; a scenario slider values the position on any day up to the latest expiry",
+    "how": "Max loss, max profit, POP and break-evens shown before → after over the payoff tiles; the previous payoff drawn dashed behind the new one; \"Value at\" chips per expiry of the combined position (default the nearest expiry, later legs keep time value; ADR-059): settled legs at intrinsic, later legs keep time value; a scenario slider values the position on any day up to the latest expiry",
     "evidence": "ADR-044 (09 Sep 2026): packages/pricing analyze valuationMs + curveExtremes, useStrategyAnalysis adjusting mode, BeforeAfterStrip.tsx, payoffDraw ghost; unit strategy.test.ts (pricing), workbench.test.tsx, model.test.ts; e2e analyse.spec.ts HC-TR-148 block; scenario slider: PositionTicket.tsx, model isoDaysFrom / valuationMsOf (any ISO date), workbench.test.tsx HC-TR-153/154 block (PR A3); ADR-058 (11 Sep 2026): AdjustChangeBox.tsx + six before → after tiles in BeforeAfterStrip.tsx (ba-max-loss … ba-margin); unit workbench.test.tsx; e2e analyse.spec.ts"
   },
   {
@@ -1312,7 +1312,7 @@
     "new": true,
     "feature": "Pre-filled strategy name",
     "how": "The name box arrives filled as ASSET-CODE-DDMMMYY-HHMM (template code, or the legs as 2C1P, and the trader's clock), selected; typing replaces it, Enter keeps it; a clash gets -2; the same default for Save as Draft",
-    "evidence": "ADR-059 (11 Sep 2026): lib/strategy/naming.ts, SaveDraftDialog.tsx suggested / pristine, TradeFlow.tsx, BuilderPanel.tsx; unit naming.test.ts HC-TR-155, trading.test.tsx"
+    "evidence": "ADR-059 (11 Sep 2026): lib/strategy/naming.ts, SaveDraftDialog.tsx suggest / pristine (read once per open), TradeFlow.tsx (always confirmed from the Builder), BuilderPanel.tsx, templates.ts isTemplateName (a template name is not a trader's name); unit naming.test.ts HC-TR-155, templates.test.ts, dialogs.test.tsx HC-TR-155, trading.test.tsx; e2e analyse / visual / account specs"
   },
   {
     "screen": "Trading · Paper / Live tabs",

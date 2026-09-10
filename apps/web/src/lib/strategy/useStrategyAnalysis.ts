@@ -10,6 +10,7 @@ import type { AnalyzeOptions, AnalyzeResult, Leg as PricingLeg } from "@hapiecoi
 import type { Quote, Strategy, StrategyLeg as ServerLeg, Underlying } from "@hapiecoin/schema";
 import { useEffect, useMemo, useState } from "react";
 import { type AdjustDraft, type MarkOf, afterLegs, beforeLegs, pickToLeg, valuationMsOf } from "@/lib/adjust/model";
+import { nearestExpiryValuationMs } from "@/lib/strategy/analysis";
 import { useLivePositions } from "@/lib/api/live";
 import { useCredential, useSettings } from "@/lib/api/queries";
 import { useStrategies } from "@/lib/api/strategies";
@@ -144,7 +145,9 @@ export function useStrategyAnalysis(scope: "pane" | "builder" = "pane"): Strateg
   const lotSize = settings?.lotSizes[asset];
   const money: MoneyFormat = settings ? { currency: settings.currency === "INR" ? "INR" : "USD", rate: settings.conversionRate } : USD;
   const nowMs = useClock();
-  const valuationMs = useMemo(() => (adjusting ? valuationMsOf(adjusting, openLegs, asset, nowMs) : undefined), [adjusting, openLegs, asset, nowMs]);
+  // ADR-059: a calendar or diagonal values its expiry curve at the nearest expiry (later legs keep time value); the
+  // workbench's own valuation rule takes over while adjusting
+  const valuationMs = useMemo(() => (adjusting ? valuationMsOf(adjusting, openLegs, asset, nowMs) : nearestExpiryValuationMs(legs, settlementHourUtc(asset), nowMs)), [adjusting, openLegs, asset, nowMs, legs]);
   const spot = spotState?.price !== undefined && Number.isFinite(Number(spotState.price)) ? Number(spotState.price) : null;
 
   const priceFor = useMemo(

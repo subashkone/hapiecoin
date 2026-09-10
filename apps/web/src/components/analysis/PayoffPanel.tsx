@@ -196,6 +196,13 @@ export function PayoffPanel() {
           <span className="text-muted-foreground">Nearest expiry </span>
           <span className="num">{result && Number.isFinite(result.daysToNearestExpiry) ? `${result.daysToNearestExpiry.toFixed(1)}d` : "—"}</span>
         </span>
+        {!a.adjusting && a.valuationMs !== undefined ? (
+          <span title="Legs that settle by then are intrinsic; later legs keep their time value at today's IV (the calendar convention)" data-testid="valued-on" data-trace="HC-WS-109">
+            <span className="text-muted-foreground">Expiry figures on </span>
+            <span className="num">{fmtDate(new Date(a.valuationMs).toISOString().slice(0, 10))}</span>
+            <span className="text-muted-foreground"> · later legs keep time value</span>
+          </span>
+        ) : null}
         <span title="Max profit ÷ margin estimate">
           <span className="text-muted-foreground">Max ROI </span>
           <span className="num" data-testid="max-roi">{maxRoi === null ? (result && !Number.isFinite(result.maxProfit) ? "∞" : "—") : `${(maxRoi * 100).toFixed(0)}%`}</span>

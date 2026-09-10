@@ -61,6 +61,12 @@ export const TEMPLATES: readonly StrategyTemplate[] = [
   t("Reverse Jade Lizard", "Others", "Sell call spread + sell OTM put. No downside risk with premium collection.", [{ kind: C, side: B, k: 4 }, { kind: C, side: S, k: 2 }, { kind: P, side: S, k: -2 }]),
 ];
 
+/** True when the Builder's name is just the template it was loaded from ("Iron Butterfly"): not a name the trader gave (ADR-059). */
+export function isTemplateName(name: string): boolean {
+  const n = name.trim().toLowerCase();
+  return n !== "" && TEMPLATES.some((t) => t.name.toLowerCase() === n);
+}
+
 export function templateByName(name: string): StrategyTemplate | undefined {
   return TEMPLATES.find((x) => x.name === name);
 }
@@ -109,7 +115,7 @@ export function materialiseTemplate(tpl: StrategyTemplate, input: MaterialiseInp
 }
 
 /** Rough name for a hand-built strategy (HC-TR-044 "template" column for drafts). */
-export function guessTemplateName(legs: readonly { kind: LegKind; side: LegSide; strike: string }[]): string {
+export function guessTemplateName(legs: readonly { kind: LegKind; side: LegSide; strike: string; expiry?: string | undefined }[]): string {
   if (legs.length === 0) return "Empty";
   if (legs.length === 1) {
     const l = legs[0]!;
@@ -118,7 +124,11 @@ export function guessTemplateName(legs: readonly { kind: LegKind; side: LegSide;
   }
   if (legs.length === 2) {
     const [a, b] = legs as [typeof legs[number], typeof legs[number]];
-    if (a.kind === b.kind && a.side !== b.side) return `${a.kind === "call" ? "Call" : "Put"} Spread`;
+    if (a.kind === b.kind && a.side !== b.side) {
+      const kind = a.kind === "call" ? "Call" : "Put";
+      if (a.expiry && b.expiry && a.expiry !== b.expiry) return Number(a.strike) === Number(b.strike) ? `${kind} Calendar` : `${kind} Diagonal`;
+      return `${kind} Spread`;
+    }
     if (a.kind !== b.kind && a.side === b.side && Number(a.strike) === Number(b.strike)) return a.side === "buy" ? "Long Straddle" : "Short Straddle";
     if (a.kind !== b.kind && a.side === b.side) return a.side === "buy" ? "Long Strangle" : "Short Strangle";
   }

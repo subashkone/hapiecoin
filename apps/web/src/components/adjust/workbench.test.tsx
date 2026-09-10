@@ -162,7 +162,7 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     await u.click(within(within(wb).getAllByTestId("wb-chain-row")[2]!).getByTestId("wb-chain-buy-call"));
     const chips = within(within(wb).getByTestId("value-at")).getAllByTestId("value-at-chip");
     expect(chips.map((c) => c.dataset["expiry"])).toEqual(["today", EXPIRY, LATER]);
-    expect(chips[2]!.getAttribute("aria-pressed")).toBe("true"); // the latest expiry by default
+    expect(chips[1]!.getAttribute("aria-pressed")).toBe("true"); // the nearest expiry by default (ADR-059): the later leg keeps its time value
     // the pick belongs to the later expiry and survives switching the chain back to the front one
     await u.click(within(wb).getAllByTestId("wb-chain-expiry").find((b) => b.dataset["expiry"] === EXPIRY)!);
     await waitFor(() => expect(within(wb).getAllByTestId("wb-chain-row").length).toBeGreaterThan(0));
@@ -368,7 +368,7 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     fireEvent.change(slider, { target: { value: "0" } });
     expect(useUiStore.getState().adjust?.valuation).toBe("today");
     fireEvent.change(slider, { target: { value: slider.max } });
-    expect(useUiStore.getState().adjust?.valuation).toBeNull();
+    expect(useUiStore.getState().adjust?.valuation).toBe("2026-09-25"); // the far end of the slider is the latest expiry, an explicit choice now
     // ADR-058: the P&L alert line opens the Alerts center with a real strategy P&L rule filled in (ADR-052), no local stub
     const alertBox = within(wb).getByTestId("risk-alert");
     expect(within(alertBox).getByTestId<HTMLButtonElement>("risk-alert-save").disabled).toBe(true);

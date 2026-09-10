@@ -11,7 +11,7 @@ import { useUiStore } from "@/lib/store";
 import { marginEstimate, premiumPerUnit, strategyWidth, ticketTotal } from "@/lib/strategy/analysis";
 import { MAX_ACTIVE_LEGS, type StrategyLeg, setLegInstrument, setLegLots, setLegPrice, stepLots, toggleLegEnabled, toggleLegSide } from "@/lib/strategy/legs";
 import { suggestStrategyName } from "@/lib/strategy/naming";
-import { guessTemplateName } from "@/lib/strategy/templates";
+import { guessTemplateName, isTemplateName } from "@/lib/strategy/templates";
 import { useBrokers } from "@/lib/api/queries";
 import { useCreateStrategy, usePatchStrategy, useStrategies } from "@/lib/api/strategies";
 import { localLegToInput, feeFor } from "@/lib/strategy/paper";
@@ -437,7 +437,7 @@ export function BuilderPanel() {
           <TemplatesPanel />
         </TabsContent>
       </Tabs>
-      <SaveDraftDialog open={saveIntent !== null} onOpenChange={(o) => !o && setSaveIntent(null)} initialName={meta.name} suggest={suggest} intent={saveIntent ?? "draft"} onSave={(n) => onSave(n, saveIntent ?? "draft")} />
+      <SaveDraftDialog open={saveIntent !== null} onOpenChange={(o) => !o && setSaveIntent(null)} initialName={isTemplateName(meta.name) ? "" : meta.name} suggest={suggest} intent={saveIntent ?? "draft"} onSave={(n) => onSave(n, saveIntent ?? "draft")} />
       <ChainPickerDialog open={picker} onOpenChange={setPicker} remaining={remaining} />
       <FutureDialog open={future} onOpenChange={setFuture} />
     </section>

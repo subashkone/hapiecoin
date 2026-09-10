@@ -1,6 +1,6 @@
 import { type AnalyzeResult, analyze } from "@hapiecoin/pricing";
 import { describe, expect, it } from "vitest";
-import { cleanStep, ladderPrices, ladderRows, marginEstimate, pnlAt, popGrade, premiumPerUnit, rrGrade, rrText, whereExtreme, winZone } from "./analysis";
+import { cleanStep, ladderPrices, ladderRows, marginEstimate, pnlAt, popGrade, premiumPerUnit, rrGrade, rrText, whereExtreme, winZone, nearestExpiryValuationMs } from "./analysis";
 
 const NOW = Date.UTC(2026, 8, 7, 6, 0, 0);
 const spread = analyze(
@@ -130,5 +130,19 @@ describe("HC-TR-138 portfolio fold", () => {
     expect(p.marginUsed).toBe(100);
     expect(p.undefinedRisk).toBe(1);
     expect(foldPortfolio(new Map()).open).toBe(0);
+  });
+});
+
+describe("HC-WS-109 multi-expiry positions value at the nearest expiry (ADR-059)", () => {
+  it("returns the nearest settlement instant only when option legs span more than one expiry", () => {
+    const c = (expiry: string, kind = "call") => ({ kind, expiry });
+    expect(nearestExpiryValuationMs([c("2026-09-12"), c("2026-09-13")], 12)).toBe(Date.UTC(2026, 8, 12, 12));
+    expect(nearestExpiryValuationMs([c("2026-09-13"), c("2026-09-12")], 16)).toBe(Date.UTC(2026, 8, 12, 16)); // XAUT hour
+    expect(nearestExpiryValuationMs([c("2026-09-12"), c("2026-09-12", "put")], 12)).toBeUndefined(); // one expiry: intrinsic curve
+    expect(nearestExpiryValuationMs([c("2026-09-12"), c("PERP", "future")], 12)).toBeUndefined(); // a future is not an expiry
+    expect(nearestExpiryValuationMs([], 12)).toBeUndefined();
+    // an expiry already settled is skipped; when only the last one is left there is nothing to value at
+    expect(nearestExpiryValuationMs([c("2026-09-12"), c("2026-09-13")], 12, Date.UTC(2026, 8, 12, 13))).toBe(Date.UTC(2026, 8, 13, 12));
+    expect(nearestExpiryValuationMs([c("2026-09-12"), c("2026-09-13")], 12, Date.UTC(2026, 8, 13, 13))).toBeUndefined();
   });
 });

@@ -69,6 +69,8 @@ beforeEach(() => {
 afterEach(() => mock.restore());
 
 async function paperTradeFromBuilder(u: ReturnType<typeof userEvent.setup>) {
+  // HC-TR-155: a Builder name that is only the loaded template's name gives way to the suggested format
+  act(() => useUiStore.getState().setStrategyMeta("BTC", { name: "Iron Butterfly" }));
   await u.click(screen.getByTestId("builder-paper-trade"));
   const mode = screen.getByTestId("trade-mode");
   expect(within(mode).getByTestId("mode-paper").getAttribute("aria-pressed")).toBe("true");
@@ -85,8 +87,9 @@ async function paperTradeFromBuilder(u: ReturnType<typeof userEvent.setup>) {
   expect(within(preview).getAllByTestId("preview-row")).toHaveLength(2);
   expect(within(preview).getByTestId("preview-note").textContent).toContain("Paper trade");
   await u.click(within(preview).getByTestId("trade-now"));
-  // unnamed strategy: name it first
+  // the name is always confirmed: the template name is not a trader's name, so the suggested format shows
   const name = screen.getByTestId("save-draft-dialog");
+  expect(within(name).getByTestId<HTMLInputElement>("save-draft-name").value).toMatch(/^BTC-[A-Z0-9]+-[0-9]{2}[A-Z]{3}[0-9]{2}-[0-9]{4}$/);
   await u.clear(within(name).getByTestId("save-draft-name")); // the box arrives pre-filled (HC-TR-155)
   await u.type(within(name).getByTestId("save-draft-name"), "Risk reversal");
   await u.click(within(name).getByTestId("save-draft-confirm"));

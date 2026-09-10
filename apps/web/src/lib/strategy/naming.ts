@@ -33,6 +33,10 @@ export const TEMPLATE_CODES: Readonly<Record<string, string>> = {
   "Reverse Jade Lizard": "RJL",
   "Call Spread": "CS",
   "Put Spread": "PS",
+  "Call Calendar": "CCAL",
+  "Put Calendar": "PCAL",
+  "Call Diagonal": "CDIAG",
+  "Put Diagonal": "PDIAG",
   "Condor / Butterfly": "CBF",
   Futures: "FUT",
 };

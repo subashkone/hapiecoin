@@ -178,3 +178,17 @@ export function strategyWidth(legs: readonly { kind: string; strike: string }[],
 export function ticketTotal(netPremium: number, fees: number): { kind: "debit" | "credit"; amount: number } {
   return netPremium >= 0 ? { kind: "credit", amount: netPremium - fees } : { kind: "debit", amount: -netPremium + fees };
 }
+
+/**
+ * ADR-059: a position whose option legs span more than one expiry values its "on expiry" curve at the **nearest**
+ * expiry, with the later legs keeping their time value (the calendar / diagonal convention every strategy tool
+ * uses; valuing at the latest expiry makes same-strike legs cancel into a flat line). Single-expiry positions
+ * return undefined and keep the exact intrinsic curve. Futures never count.
+ */
+export function nearestExpiryValuationMs(legs: readonly { kind: string; expiry: string }[], hourUtc: number, nowMs = 0): number | undefined {
+  const expiries = [...new Set(legs.filter((l) => l.kind !== "future").map((l) => l.expiry))].sort();
+  if (expiries.length < 2) return undefined;
+  // a leg past its settlement is intrinsic either way (nothing settles it yet, GAPS #66): value at the next one to come
+  const settle = expiries.map((e) => Date.parse(`${e}T${String(hourUtc).padStart(2, "0")}:00:00Z`)).filter((ms) => Number.isFinite(ms) && ms > nowMs);
+  return settle[0];
+}

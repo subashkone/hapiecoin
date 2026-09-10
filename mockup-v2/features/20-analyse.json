@@ -907,5 +907,15 @@
   "status": "working",
   "evidence": "Phase 1 build, 07 Sep 2026: chain.test.tsx, reducer.test.ts",
   "phase": 1
+ },
+ {
+  "route": "/analyse",
+  "screen": "Payoff Diagram",
+  "feature": "Multi-expiry positions (calendars, diagonals) value their expiry figures at the nearest expiry",
+  "how": "When the option legs span more than one expiry the payoff pane values max profit, max loss, break-evens and POP at the nearest expiry with the later legs keeping their time value (the calendar convention); the strip says “Expiry figures on <date> · later legs keep time value”; a settled expiry is skipped; single-expiry positions keep the exact intrinsic curve; two legs across expiries are named Call / Put Calendar (same strike) or Diagonal; the built-in calendar templates take their far leg from the next listed expiry’s chain (its strike and mark used to come from the near chain)",
+  "status": "working",
+  "evidence": "ADR-059 addendum (11 Sep 2026): lib/strategy/analysis.ts nearestExpiryValuationMs, useStrategyAnalysis.ts, PayoffPanel.tsx valued-on, templates.ts guessTemplateName + TemplatesPanel.tsx rowsByExpiry, naming.ts codes; unit analysis.test.ts, templates.test.ts, packages/pricing strategy.test.ts (calendar at the near expiry); numeric check 11 Sep: sell 12 Sep 77,200 C / buy 13 Sep 77,200 C at the user's marks → max profit ₹4,113, max loss −₹620, break-evens 75,481 / 78,974 (was a flat −₹620)",
+  "phase": 5,
+  "new": true
  }
 ]
