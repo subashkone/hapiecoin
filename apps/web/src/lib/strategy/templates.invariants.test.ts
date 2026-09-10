@@ -4,7 +4,10 @@
 // maximum profit and loss are bounded, how many break-evens the expiry payoff has, and the outlook the payoff expresses.
 // The engine values every leg at its own expiry, so a calendar or diagonal is a flat debit line here (0 break-evens).
 // Rows marked "any" are structures whose sign at ±6 % depends on the exact premiums (back and ratio spreads,
-// broken wings, lizards, diagonals); only their bounds are asserted.
+// broken wings, lizards, diagonals); their bounds still catch a flipped side (a sold back spread turns unbounded loss
+// into unbounded profit) and a wrong lot ratio (a 1x1 loses its unbounded side). Calendar-family rows assert the flat
+// debit line (max profit below zero: a reversed calendar would be a flat credit) and that near legs are sold and far
+// legs bought.
 import { analyze, black76Price } from "@hapiecoin/pricing";
 import { describe, expect, it } from "vitest";
 import { toPricingLegs } from "@/lib/pricing/legs";
@@ -129,7 +132,12 @@ describe("ADR-060 every template has its textbook shape on an arbitrage-free lad
     const res = build(name);
     expect(Number.isFinite(res.maxProfit) ? "finite" : "unbounded", "max profit").toBe(want.maxProfit);
     expect(Number.isFinite(res.maxLoss) ? "finite" : "unbounded", "max loss").toBe(want.maxLoss);
-    if (res.maxProfit !== Number.POSITIVE_INFINITY) expect(res.maxProfit, "max profit is not below the max loss").toBeGreaterThanOrEqual(res.maxLoss);
+    expect(res.maxLoss, "every structure can lose").toBeLessThan(0);
+    if (want.breakevens === 0) expect(res.maxProfit, "a flat debit line never profits at expiry").toBeLessThan(0);
+    const tpl = TEMPLATES.find((t) => t.name === name)!;
+    if (tpl.tags?.includes("calendar")) {
+      for (const l of tpl.legs) if (l.kind !== "future") expect(l.side, `${name}: near legs sold, far legs bought`).toBe((l.expiryOffset ?? 0) > 0 ? "buy" : "sell");
+    }
     if (want.breakevens !== "any") expect(res.breakevens, "break-evens").toHaveLength(want.breakevens);
     for (const be of res.breakevens) expect(Math.abs(be - SPOT) / SPOT, "break-evens sit within 20 % of spot").toBeLessThan(0.2);
     if (want.outlook !== "any") expect(classifyOutlook(res.points, SPOT), "outlook at ±6 %").toBe(want.outlook);

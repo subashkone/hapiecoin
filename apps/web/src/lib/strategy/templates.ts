@@ -25,7 +25,7 @@ export interface TemplateFutureLeg {
 }
 export type TemplateLeg = TemplateOptionLeg | TemplateFutureLeg;
 
-/** Badges on the card: the template holds a perpetual, spans two expiries, or has unequal lots. */
+/** Badges on the card: the template holds a perpetual, spans two expiries, or is a 1x2 spread. */
 export type TemplateTag = "futures" | "calendar" | "ratio";
 
 export interface StrategyTemplate {

@@ -68,6 +68,9 @@ export function useTemplateStats(templates: readonly StrategyTemplate[], input: 
     const run = async () => {
       const out = new Map<string, TemplateStat>();
       for (const tpl of templates) {
+        // GAPS #76: only the chosen expiry's chain is loaded here, so a leg on a later expiry would carry the near
+        // expiry's mark and IV; calendar-family cards show no figures rather than wrong ones.
+        if (tpl.legs.some((l) => l.kind !== "future" && (l.expiryOffset ?? 0) > 0)) continue;
         const r = materialiseTemplate(tpl, mat);
         if (!r.ok) continue;
         let legs: StrategyLeg[] = [];
