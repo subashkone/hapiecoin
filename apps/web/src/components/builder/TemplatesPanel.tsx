@@ -1,5 +1,5 @@
 "use client";
-// Templates (HC-TR-037..049): 28 cards by category with a payoff sketch, placed on the venue ladder around
+// Templates (HC-TR-037..049): the catalogue's cards by category with a payoff sketch, placed on the venue ladder around
 // ATM at the chosen expiry; and My templates (drafts | archived) with search, Load, Archive and Delete.
 import { Button, cn, toast } from "@hapiecoin/ui";
 import { payoffAtExpiry } from "@hapiecoin/pricing";
@@ -19,16 +19,18 @@ import { type StrategyTemplate, TEMPLATES, TEMPLATE_CATEGORIES, materialiseTempl
 import { OUTLOOKS, type Outlook, useTemplateStats } from "@/lib/strategy/useTemplateStats";
 import { useSettings } from "@/lib/api/queries";
 
+/** A template's legs around a nominal spot of 100 for the sketch: options 2.5 apart per row, a future at spot. */
+function sketchLegs(tpl: StrategyTemplate) {
+  return tpl.legs.map((l) =>
+    l.kind === "future"
+      ? { kind: l.kind, side: l.side, strike: 0, expiry: "", quantity: l.lots ?? 1, price: 100 }
+      : { kind: l.kind, side: l.side, strike: 100 + l.k * 2.5, expiry: "2030-01-01", quantity: l.lots ?? 1, price: l.kind === "call" ? Math.max(0.5, 4 - l.k * 1.2) : Math.max(0.5, 4 + l.k * 1.2) },
+  );
+}
+
 /** Sketch points plus the zero line, so cards can fill profit green and loss red (HC-TR-108). */
 export function templateSketchGeometry(tpl: StrategyTemplate): { points: string; zeroY: number } {
-  const legs = tpl.legs.map((l) => ({
-    kind: l.kind,
-    side: l.side,
-    strike: 100 + l.k * 2.5,
-    expiry: "2030-01-01",
-    quantity: l.lots ?? 1,
-    price: l.kind === "call" ? Math.max(0.5, 4 - l.k * 1.2) : Math.max(0.5, 4 + l.k * 1.2),
-  }));
+  const legs = sketchLegs(tpl);
   const xs = Array.from({ length: 41 }, (_, i) => 85 + (30 * i) / 40);
   const ys = xs.map((x) => payoffAtExpiry(legs, x));
   const min = Math.min(0, ...ys);
@@ -42,14 +44,7 @@ export function templateSketchGeometry(tpl: StrategyTemplate): { points: string;
 
 /** Small SVG sketch of the expiry payoff of a template placed around a nominal spot of 100 (shape only). */
 export function templateSketch(tpl: StrategyTemplate): string {
-  const legs = tpl.legs.map((l) => ({
-    kind: l.kind,
-    side: l.side,
-    strike: 100 + l.k * 2.5,
-    expiry: "2030-01-01",
-    quantity: l.lots ?? 1,
-    price: l.kind === "call" ? Math.max(0.5, 4 - l.k * 1.2) : Math.max(0.5, 4 + l.k * 1.2),
-  }));
+  const legs = sketchLegs(tpl);
   const xs = Array.from({ length: 41 }, (_, i) => 85 + (30 * i) / 40);
   const ys = xs.map((x) => payoffAtExpiry(legs, x));
   const min = Math.min(0, ...ys);
@@ -96,9 +91,9 @@ export function useTemplateLoader() {
 
   const load = (tpl: StrategyTemplate) => {
     if (!expiry) return;
-    const r = materialiseTemplate(tpl, { asset, expiry, expiries: list, rows, atm, lots: chainLots, ...(rowsByExpiry ? { rowsByExpiry } : {}) });
+    const r = materialiseTemplate(tpl, { asset, expiry, expiries: list, rows, atm, lots: chainLots, spot: spot?.price, ...(rowsByExpiry ? { rowsByExpiry } : {}) });
     if (!r.ok) {
-      toast.error(r.reason === "no-chain" ? "Chain not loaded yet" : r.reason === "out-of-range" ? "Not enough listed strikes around ATM for this template" : "A leg has no quote yet");
+      toast.error(r.reason === "no-chain" ? "Chain not loaded yet" : r.reason === "no-spot" ? "Spot not loaded yet" : r.reason === "out-of-range" ? "Not enough listed strikes around ATM for this template" : "A leg has no quote yet");
       return;
     }
     let legs: StrategyLeg[] = [];

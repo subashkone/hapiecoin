@@ -1,14 +1,15 @@
-// The 28 strategy templates (HC-TR-037..040) and how they become legs on a real chain: `k` is a number of
-// listed strikes away from the ATM row (never a price step, ADR-006), `expiryOffset` picks a later listed
-// expiry, `lots` multiplies the chosen lot count.
+// The strategy templates (HC-TR-037..040; count in TEMPLATE_COUNT) and how they become legs on a real chain: `k`
+// is a number of listed strikes away from the ATM row (never a price step, ADR-006), `expiryOffset` picks a later
+// listed expiry, `lots` multiplies the chosen lot count. A `future` leg is the asset's perpetual at the live spot,
+// exactly as the Builder's Add Futures dialog places it (HC-TR-035; GAPS #74).
 import type { Underlying } from "@hapiecoin/schema";
 import type { LegKind, LegSide, NewLegInput } from "./legs";
 
 export type TemplateCategory = "Bullish" | "Bearish" | "Neutral" | "Others";
 export const TEMPLATE_CATEGORIES: readonly ("All" | TemplateCategory)[] = ["All", "Bullish", "Bearish", "Neutral", "Others"];
 
-export interface TemplateLeg {
-  kind: LegKind;
+export interface TemplateOptionLeg {
+  kind: "call" | "put";
   side: LegSide;
   /** Rows away from the ATM strike in the venue list (+ above, − below). */
   k: number;
@@ -16,6 +17,13 @@ export interface TemplateLeg {
   /** Later listed expiry index (calendars). */
   expiryOffset?: number;
 }
+/** The perpetual future at the live spot: no strike, expiry PERP. */
+export interface TemplateFutureLeg {
+  kind: "future";
+  side: LegSide;
+  lots?: number;
+}
+export type TemplateLeg = TemplateOptionLeg | TemplateFutureLeg;
 
 export interface StrategyTemplate {
   name: string;
@@ -67,6 +75,9 @@ export function isTemplateName(name: string): boolean {
   return n !== "" && TEMPLATES.some((t) => t.name.toLowerCase() === n);
 }
 
+/** How many templates the gallery holds; tests and copy derive from it instead of a literal. */
+export const TEMPLATE_COUNT = TEMPLATES.length;
+
 export function templateByName(name: string): StrategyTemplate | undefined {
   return TEMPLATES.find((x) => x.name === name);
 }
@@ -89,18 +100,26 @@ export interface MaterialiseInput {
   /** Rows for later expiries, by expiry (calendars); missing expiries fall back to the base rows. */
   rowsByExpiry?: Readonly<Record<string, { rows: readonly ChainStrike[]; atm: number }>>;
   lots: number;
+  /** Live spot as the venue decimal string; a template with a future leg refuses without it. */
+  spot?: string | undefined;
 }
 
-export type MaterialiseResult = { ok: true; legs: NewLegInput[] } | { ok: false; reason: "no-chain" | "out-of-range" | "no-quote" };
+export type MaterialiseResult = { ok: true; legs: NewLegInput[] } | { ok: false; reason: "no-chain" | "out-of-range" | "no-quote" | "no-spot" };
 
 /**
  * Turn a template into concrete legs on the venue list: strike = rows[atm + k].strike (clamped never; a
- * template that reaches past the listed ladder is refused so the trader is not given a made-up strike).
+ * template that reaches past the listed ladder is refused so the trader is not given a made-up strike). A
+ * future leg needs only the spot, so a futures-only template loads before the chain does.
  */
 export function materialiseTemplate(tpl: StrategyTemplate, input: MaterialiseInput): MaterialiseResult {
-  if (input.rows.length === 0 || input.atm < 0) return { ok: false, reason: "no-chain" };
   const legs: NewLegInput[] = [];
   for (const l of tpl.legs) {
+    if (l.kind === "future") {
+      if (input.spot === undefined || !(Number(input.spot) > 0)) return { ok: false, reason: "no-spot" };
+      legs.push({ asset: input.asset, kind: "future", side: l.side, strike: "", expiry: "PERP", lots: input.lots * (l.lots ?? 1), price: input.spot, iv: undefined });
+      continue;
+    }
+    if (input.rows.length === 0 || input.atm < 0) return { ok: false, reason: "no-chain" };
     const ei = input.expiries.indexOf(input.expiry);
     const expiry = l.expiryOffset ? (input.expiries[Math.min(Math.max(ei, 0) + l.expiryOffset, input.expiries.length - 1)] ?? input.expiry) : input.expiry;
     const source = expiry === input.expiry ? { rows: input.rows, atm: input.atm } : (input.rowsByExpiry?.[expiry] ?? { rows: input.rows, atm: input.atm });

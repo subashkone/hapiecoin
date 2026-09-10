@@ -1,5 +1,6 @@
 // Visual captures for comparison with mockup-v2/shots (v2-public-auth-login*.png, qa-dark/analyse.jpg …).
 // Saved under e2e/__screenshots__/ in both themes; not pixel-asserted yet (tolerance comes with the spec's visual gate).
+import { TEMPLATE_COUNT } from "../src/lib/strategy/templates";
 import { expect, seedUser, signIn, test } from "./fixtures";
 
 const DIR = "e2e/__screenshots__";
@@ -53,7 +54,7 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("ticket-net")).not.toHaveText("—");
       await page.screenshot({ path: `${DIR}/analyse-builder-${theme}.png` });
       await page.getByTestId("builder-tab-templates").click();
-      await expect(page.getByTestId("template-card")).toHaveCount(28);
+      await expect(page.getByTestId("template-card")).toHaveCount(TEMPLATE_COUNT);
       await page.screenshot({ path: `${DIR}/analyse-templates-${theme}.png` });
       await page.getByTestId("analysis-tab-greeks").click();
       await expect(page.getByTestId("greek-delta")).not.toContainText("—");
