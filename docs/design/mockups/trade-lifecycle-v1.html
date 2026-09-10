@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HapieCoin · trade lifecycle mockup v1</title>
+<style>
+  :root { --bg:#0b0e14; --s1:#12161f; --s2:#171c27; --bd:#232a36; --fg:#e6e9ef; --mut:#8b93a7; --amber:#f5a524; --up:#22c55e; --dn:#ef4444; --warn:#f5a524; --blue:#60a5fa; }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg); font:13px/1.45 "IBM Plex Sans", system-ui, sans-serif }
+  .num, .mono, kbd, code { font-family:"JetBrains Mono","IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums }
+  .micro { font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--mut) }
+  header.top { display:flex; align-items:center; gap:14px; padding:10px 16px; border-bottom:1px solid var(--bd); background:var(--s1); position:sticky; top:0; z-index:5 }
+  header.top b { color:var(--amber) }
+  nav.screens { display:flex; gap:6px; margin-left:auto }
+  nav.screens button { background:transparent; color:var(--mut); border:1px solid var(--bd); border-radius:4px; padding:5px 10px; cursor:pointer; font:inherit }
+  nav.screens button.on { color:var(--fg); border-color:var(--amber); background:#1c1a12 }
+  main { max-width:1180px; margin:0 auto; padding:16px }
+  section.screen { display:none } section.screen.on { display:block }
+  h2 { font-size:15px; margin:0 0 4px } .lead { color:var(--mut); margin:0 0 14px; max-width:70ch }
+  .panel { background:var(--s1); border:1px solid var(--bd); border-radius:6px; padding:12px }
+  .row { display:flex; align-items:center; gap:8px; flex-wrap:wrap }
+  .chip { border:1px solid var(--bd); border-radius:999px; padding:3px 10px; font-size:12px; color:var(--mut); cursor:pointer; background:transparent }
+  .chip.on { color:var(--fg); border-color:var(--fg) } .chip .n { color:var(--mut); margin-left:4px }
+  .pill { display:inline-block; border:1px solid var(--bd); border-radius:3px; padding:1px 6px; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase }
+  .pill.live { border-color:var(--dn); color:var(--dn) } .pill.paper { border-color:var(--mut); color:var(--mut) }
+  .pill.warn { border-color:var(--warn); color:var(--warn) } .pill.sl { border-color:var(--dn); color:var(--dn) } .pill.tp { border-color:var(--up); color:var(--up) }
+  .pill.sync { border-color:var(--dn); color:var(--dn); background:#2a1414 } .pill.ok { border-color:var(--up); color:var(--up) }
+  .up { color:var(--up) } .dn { color:var(--dn) } .mut { color:var(--mut) } .amber { color:var(--amber) }
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:10px; margin-top:10px }
+  .card { background:var(--s2); border:1px solid var(--bd); border-radius:6px; padding:10px 12px }
+  .card.closed { opacity:.75 }
+  .card h3 { margin:0; font-size:13px; display:flex; align-items:center; gap:8px }
+  .card .figs { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:8px 0 }
+  .card .fig { border:1px solid var(--bd); border-radius:4px; padding:4px 6px } .fig b { display:block; font-size:14px; font-weight:500 }
+  .legs { display:flex; flex-direction:column; gap:3px; font-size:12px }
+  .legs .leg { display:grid; grid-template-columns:34px 1fr auto auto; gap:8px; align-items:center }
+  .side { border-radius:3px; padding:0 4px; font-size:10.5px; font-weight:700; text-align:center }
+  .side.b { border:1px solid var(--up); color:var(--up) } .side.s { border:1px solid var(--dn); color:var(--dn) }
+  .btns { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap }
+  .btn { border:1px solid var(--bd); background:transparent; color:var(--fg); border-radius:4px; padding:4px 9px; font:inherit; cursor:pointer }
+  .btn.primary { background:var(--amber); color:#000; border-color:var(--amber); font-weight:600 } .btn.ghost { color:var(--mut) } .btn.danger { border-color:var(--dn); color:var(--dn) }
+  .bar { height:4px; background:#222833; border-radius:2px; overflow:hidden } .bar i { display:block; height:100%; background:var(--up) }
+  .dialog { max-width:460px; margin:20px auto; background:var(--s1); border:1px solid var(--bd); border-radius:8px; padding:16px; box-shadow:0 20px 60px #000a }
+  .dialog h3 { margin:0 0 4px; font-size:15px } .dialog p { color:var(--mut); margin:0 0 12px }
+  input[type=text], input[type=number] { width:100%; background:var(--bg); color:var(--fg); border:1px solid var(--bd); border-radius:4px; padding:8px 10px; font:inherit }
+  .hint { font-size:11.5px; color:var(--mut); margin-top:6px }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:10px }
+  .callout { border:1px solid var(--warn); background:#1d1809; border-radius:6px; padding:8px 10px; margin:8px 0; font-size:12.5px }
+  .callout.red { border-color:var(--dn); background:#2a1414 }
+  .steps { display:flex; gap:6px; margin-bottom:10px } .steps span { border:1px solid var(--bd); border-radius:999px; padding:2px 9px; font-size:11px; color:var(--mut) } .steps span.on { color:var(--fg); border-color:var(--amber) }
+  table { border-collapse:collapse; width:100%; font-size:12px } td, th { padding:5px 8px; border-top:1px solid var(--bd); text-align:right } th { color:var(--mut); font-weight:500; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase } td:first-child, th:first-child { text-align:left }
+  .toggle { display:inline-flex; gap:0; border:1px solid var(--bd); border-radius:4px; overflow:hidden } .toggle button { background:transparent; color:var(--mut); border:0; padding:4px 10px; cursor:pointer; font:inherit } .toggle button.on { background:#1c1a12; color:var(--fg) }
+  .note { font-size:11.5px; color:var(--mut); border-left:2px solid var(--bd); padding-left:8px; margin-top:10px }
+  .where { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin-top:12px }
+  .where .panel b { display:block; margin-bottom:4px }
+</style>
+</head>
+<body>
+<header class="top"><b>HapieCoin</b><span class="mut">trade lifecycle · mockup v1 · 11 Sep 2026 · for review</span>
+  <nav class="screens">
+    <button class="on" data-s="name">1 · Name</button>
+    <button data-s="protect">2 · Stop loss / target</button>
+    <button data-s="overlap">3 · Overlap warning</button>
+    <button data-s="tabs">4 · Paper / Live tabs</button>
+  </nav>
+</header>
+<main>
+
+<!-- 1 NAME -->
+<section class="screen on" id="s-name">
+  <h2>1 · Trade name is pre-filled</h2>
+  <p class="lead">Same dialog as today, one change: the box arrives filled and selected. Typing replaces it; Enter keeps it. Format: asset · template code · trade date · time.</p>
+  <div class="dialog">
+    <h3>Enter Strategy Name</h3><p>Name the strategy, then choose paper or live.</p>
+    <input type="text" id="nm" value="BTC-IBF-11SEP26-1432" onfocus="this.select()">
+    <div class="hint">Suggested from the legs: Iron Butterfly on BTC, today 14:32. Edit it or press Enter to keep it. A name already in use gets “-2”.</div>
+    <div class="row" style="margin-top:12px"><button class="btn ghost">Cancel</button><span style="flex:1"></span><button class="btn primary">Continue →</button></div>
+  </div>
+  <div class="panel" style="max-width:720px;margin:14px auto 0">
+    <b>Template codes (first release)</b>
+    <table><tr><th>Template</th><th>Code</th><th>Template</th><th>Code</th></tr>
+      <tr><td>Iron Butterfly</td><td class="mono">IBF</td><td>Iron Condor</td><td class="mono">IC</td></tr>
+      <tr><td>Short Strangle</td><td class="mono">SSTG</td><td>Long Strangle</td><td class="mono">LSTG</td></tr>
+      <tr><td>Short Straddle</td><td class="mono">SSTD</td><td>Long Straddle</td><td class="mono">LSTD</td></tr>
+      <tr><td>Bull Call / Bear Put spread</td><td class="mono">BCS · BPS</td><td>Bear Call / Bull Put spread</td><td class="mono">BECS · BUPS</td></tr>
+      <tr><td>Calendar / Diagonal</td><td class="mono">CAL · DIAG</td><td>Custom (from legs)</td><td class="mono">2C1P</td></tr>
+    </table>
+    <div class="note">Question for the user: dashes as shown (readable, sortable) or none (<span class="mono">BTCIBF11SEP261432</span>)?</div>
+  </div>
+</section>
+
+<!-- 2 PROTECT -->
+<section class="screen" id="s-protect">
+  <h2>2 · Stop loss and target, run by HapieCoin</h2>
+  <p class="lead">A new step in the trade flow, after Preview and before the order is sent. Off by default. The same panel opens later from the card (“Protect”), from Details and from the workbench alert line. Nothing is sent to the exchange for this: HapieCoin watches the strategy's P&amp;L and sends <em>this strategy's</em> exit orders when a level is crossed.</p>
+  <div class="dialog" style="max-width:540px">
+    <div class="steps"><span>Mode</span><span>Preview</span><span class="on">Protect</span><span>Place</span></div>
+    <h3>Protect BTC-SSTG-11SEP26-1432</h3><p>Exit every leg of this strategy when its P&amp;L crosses a level. Only this strategy's lots are sent; other strategies on the same strikes are untouched.</p>
+    <div class="two">
+      <div><div class="micro">Stop loss · exit when P&amp;L ≤</div><input type="number" value="5000"><div class="hint">−₹5,000 · 62% of max loss · about 1.4× the credit</div></div>
+      <div><div class="micro">Target · exit when P&amp;L ≥</div><input type="number" value="4200"><div class="hint">+₹4,200 · 50% of max profit (the usual credit-strategy exit)</div></div>
+    </div>
+    <div class="row" style="margin-top:10px"><span class="micro">Checked</span><span class="toggle"><button class="on">every tick (≈1 s)</button><button>every 5 min</button></span><span class="mut" style="font-size:11.5px">by the HapieCoin server, and by this browser while a tab is open</span></div>
+    <div class="callout">
+      <b>What this is and is not.</b> It is a rule on HapieCoin's server, not an order at the exchange. If HapieCoin is down at that moment nothing fires. Exits go as market orders at the mark of that second; in a fast market the fill can be worse than the level. You get a Telegram and in-app message when it fires. An exchange-level stop is the only hard guarantee, but it acts on the whole position at the exchange, across every strategy that shares the contract.
+    </div>
+    <div class="row"><label class="row" style="gap:6px"><input type="checkbox" checked> Also notify me when P&amp;L reaches −₹3,000 (alert only)</label></div>
+    <div class="row" style="margin-top:12px"><button class="btn ghost">Skip · trade unprotected</button><span style="flex:1"></span><button class="btn primary">Arm and continue →</button></div>
+  </div>
+  <div class="where">
+    <div class="panel"><b>On the card</b><div class="row"><span class="pill sl">SL −₹5,000</span><span class="pill tp">TP +₹4,200</span><span class="mut" style="font-size:11.5px">armed · checked 1 s ago</span></div><div class="hint">Click to edit. A fired stop shows “stopped −₹5,120 · 14:02 · slippage −₹120”.</div></div>
+    <div class="panel"><b>Live tab banner</b><div class="row"><span class="pill ok">server watching 3 strategies</span></div><div class="hint">Turns red with “server unreachable · stops paused” if the API stops answering; the browser keeps checking while open.</div></div>
+    <div class="panel"><b>Workbench alert line</b><div class="hint">“Alert me if P&amp;L falls below” gains a second button: <span class="pill sl">Exit at</span>. Same rule, same panel.</div></div>
+    <div class="panel"><b>Audit</b><div class="hint">Details → history: “Stop loss fired at 14:02 · 4 orders · filled 4 · realised −₹5,120”. Journal gets the reason “stopped”.</div></div>
+  </div>
+</section>
+
+<!-- 3 OVERLAP -->
+<section class="screen" id="s-overlap">
+  <h2>3 · Overlap warning before an order</h2>
+  <p class="lead">Shown in the paper and live Preview, and in the workbench Review, whenever a leg's contract is already held in another open strategy. It never blocks: the trader may intend it.</p>
+  <div class="dialog" style="max-width:560px">
+    <div class="steps"><span>Mode</span><span class="on">Preview</span><span>Protect</span><span>Place</span></div>
+    <h3>Preview · BTC-SSTG-11SEP26-1432 · live</h3><p>4 legs · 200 lots each · credit ₹8,410 · margin ₹1.2L</p>
+    <div class="legs">
+      <div class="leg"><span class="side s">SELL</span><span class="mono">BTC 80,000 C 11 Sep</span><span class="mono">200</span><span class="mono mut">mark 1,673.0</span></div>
+      <div class="leg"><span class="side s">SELL</span><span class="mono">BTC 76,000 P 11 Sep</span><span class="mono">200</span><span class="mono mut">mark 1,120.5</span></div>
+    </div>
+    <div class="callout red">
+      <b>Shared contract.</b> You already hold <span class="mono">800</span> lots sold of <span class="mono">BTC 76,000 P 11 Sep</span> in <em>BTC-SSTG-09SEP26-1010</em>. After this order the exchange holds <span class="mono">1,000</span> sold as one position. A stop or close you set <em>on the exchange</em> for that contract acts on all 1,000 and would close both strategies. Stops set here in HapieCoin act per strategy.
+      <div class="btns"><button class="btn">Open the other strategy</button><button class="btn">Protect this one instead (step 3)</button></div>
+    </div>
+    <div class="row" style="margin-top:8px"><button class="btn ghost">Back</button><span style="flex:1"></span><button class="btn primary">Continue · I understand →</button></div>
+  </div>
+  <div class="panel" style="max-width:720px;margin:14px auto 0">
+    <b>Out of sync at the exchange (Live tab card badge)</b>
+    <div class="row" style="margin-top:6px"><span class="pill live">live</span><b>BTC-SSTG-09SEP26-1010</b><span class="pill sync">out of sync · exchange holds 0 of 800 expected</span></div>
+    <div class="hint">Seen when the exchange changed the position without HapieCoin (a stop, a manual close, a liquidation, expiry). Actions: <b>Reconcile</b> (mark the legs closed outside the app at the exchange's last fill, keep the reason) or <b>Re-enter</b> (send the missing lots as new orders, with a preview).</div>
+  </div>
+</section>
+
+<!-- 4 TABS -->
+<section class="screen" id="s-tabs">
+  <h2>4 · Paper / Live tabs with lifecycle chips and expiry</h2>
+  <p class="lead">Chips filter the same list; nothing moves to another tab. Each card carries start and expiry, days left, and figures that answer a question. Closed cards say why.</p>
+  <div class="panel">
+    <div class="row">
+      <span class="chip on" data-f="open">Open<span class="n">4</span></span>
+      <span class="chip" data-f="expiring">Expiring ≤ 1d<span class="n">2</span></span>
+      <span class="chip" data-f="closed">Closed<span class="n">3</span></span>
+      <span style="flex:1"></span>
+      <select class="btn" style="padding:3px 6px"><option>All assets</option><option>BTC</option><option>ETH</option><option>XAUT</option></select>
+      <select class="btn" style="padding:3px 6px"><option>Sort · expiry</option><option>P&amp;L</option><option>date</option><option>name</option></select>
+      <input type="text" placeholder="search name · template · tag" style="width:220px;padding:4px 8px">
+    </div>
+    <div class="cards" id="cards"></div>
+  </div>
+  <div class="note">Expiry settlement (needed underneath): at Delta's settlement instant a server job settles paper legs at the settlement value and books the realised P&amp;L; live legs are read from the exchange going to zero. The strategy closes with reason “expired” and appears under Closed and in the Journal.</div>
+</section>
+</main>
+<script>
+  const cards = [
+    { st:"live", name:"BTC-SSTG-09SEP26-1010", tmpl:"Short Strangle", start:"09 Sep", exp:"11 Sep", dte:1.3, pnl:+2140, maxP:4200, theta:+312, margin:"₹1.2L", sl:"−₹5,000", tp:"+₹4,200", sync:true, f:["open","expiring"],
+      legs:[["s","BTC 80,000 C 11 Sep","800","1,673 → 1,412"],["s","BTC 76,000 P 11 Sep","800","1,120 → 990"]] },
+    { st:"live", name:"BTC-SSTG-11SEP26-1432", tmpl:"Short Strangle", start:"11 Sep", exp:"11 Sep", dte:0.3, pnl:-380, maxP:3800, theta:+401, margin:"₹0.4L", sl:"−₹3,000", tp:null, f:["open","expiring"],
+      legs:[["s","BTC 80,500 C 11 Sep","200","1,590 → 1,610"],["s","BTC 76,000 P 11 Sep","200","1,120 → 1,140"]] },
+    { st:"paper", name:"ETH-IC-10SEP26-0915", tmpl:"Iron Condor", start:"10 Sep", exp:"18 Sep → 25 Sep", dte:7.2, pnl:+610, maxP:1900, theta:+88, margin:"₹0.6L", sl:null, tp:null, f:["open"],
+      legs:[["b","ETH 4,000 P 18 Sep","50","..."],["s","ETH 4,200 P 18 Sep","50","..."],["s","ETH 4,700 C 25 Sep","50","..."],["b","ETH 4,900 C 25 Sep","50","..."]] },
+    { st:"paper", name:"XAUT-BCS-08SEP26-1120", tmpl:"Bull Call Spread", start:"08 Sep", exp:"25 Sep", dte:14.2, pnl:-120, maxP:900, theta:-14, margin:"₹0.1L", sl:null, tp:null, f:["open"],
+      legs:[["b","XAUT 3,400 C 25 Sep","10","..."],["s","XAUT 3,450 C 25 Sep","10","..."]] },
+    { st:"live", name:"BTC-IBF-04SEP26-1305", tmpl:"Iron Butterfly", start:"04 Sep", exp:"05 Sep", dte:0, pnl:+1980, maxP:2600, theta:0, margin:"—", reason:"expired · settled at 78,410", f:["closed"], legs:[] },
+    { st:"live", name:"BTC-SSTG-02SEP26-1000", tmpl:"Short Strangle", start:"02 Sep", exp:"05 Sep", dte:0, pnl:-5120, maxP:4100, theta:0, margin:"—", reason:"stopped · SL −₹5,000 fired 03 Sep 14:02 · slippage −₹120", f:["closed"], legs:[] },
+    { st:"paper", name:"ETH-LSTD-01SEP26-0930", tmpl:"Long Straddle", start:"01 Sep", exp:"04 Sep", dte:0, pnl:+340, maxP:Infinity, theta:0, margin:"—", reason:"squared off by you · 03 Sep", f:["closed"], legs:[] },
+  ];
+  const inr = (v) => (v < 0 ? "−" : "+") + "₹" + Math.abs(v).toLocaleString("en-IN");
+  function render(f) {
+    const el = document.getElementById("cards"); el.innerHTML = "";
+    for (const c of cards.filter((c) => c.f.includes(f))) {
+      const closed = c.f.includes("closed");
+      const cap = Number.isFinite(c.maxP) && c.pnl > 0 ? Math.min(100, Math.round((c.pnl / c.maxP) * 100)) : 0;
+      el.insertAdjacentHTML("beforeend", `<div class="card ${closed ? "closed" : ""}">
+        <h3><span class="pill ${c.st}">${c.st}</span>${c.name}<span class="mut" style="font-weight:400">· ${c.tmpl}</span>${c.sync ? '<span class="pill sync" title="the exchange position differs from these legs">out of sync</span>' : ""}</h3>
+        <div class="row mono mut" style="font-size:11.5px;margin-top:3px">started ${c.start} · expires <span class="${c.dte > 0 && c.dte <= 1 ? "amber" : ""}" style="color:${c.dte > 0 && c.dte <= 1 ? "var(--warn)" : "inherit"}">${c.exp}${c.dte > 0 ? ` (${c.dte}d)` : ""}</span>${closed ? ` · <span class="dn">${c.reason}</span>` : ""}</div>
+        <div class="figs">
+          <div class="fig"><span class="micro">P&amp;L</span><b class="num ${c.pnl >= 0 ? "up" : "dn"}">${inr(c.pnl)}</b></div>
+          <div class="fig"><span class="micro">of max profit</span><b class="num">${Number.isFinite(c.maxP) ? cap + "%" : "∞"}</b><div class="bar"><i style="width:${cap}%"></i></div></div>
+          <div class="fig"><span class="micro">θ / day</span><b class="num ${c.theta >= 0 ? "up" : "dn"}">${closed ? "—" : inr(c.theta)}</b></div>
+          <div class="fig"><span class="micro">margin</span><b class="num">${c.margin}</b></div>
+        </div>
+        ${c.legs.length ? `<div class="legs">${c.legs.map((l) => `<div class="leg"><span class="side ${l[0]}">${l[0] === "b" ? "BUY" : "SELL"}</span><span class="mono">${l[1]}</span><span class="mono">${l[2]}</span><span class="mono mut">${l[3]}</span></div>`).join("")}</div>` : ""}
+        <div class="btns">${closed ? '<button class="btn ghost">Details</button><button class="btn ghost">Journal</button>' : `${c.sl ? `<span class="pill sl">SL ${c.sl}</span>` : '<button class="btn">Protect</button>'}${c.tp ? `<span class="pill tp">TP ${c.tp}</span>` : ""}<span style="flex:1"></span><button class="btn">Adjust</button><button class="btn ghost">Details</button><button class="btn danger">Square off</button>`}</div>
+      </div>`);
+    }
+  }
+  render("open");
+  document.querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => { document.querySelectorAll(".chip").forEach((x) => x.classList.remove("on")); b.classList.add("on"); render(b.dataset.f); }));
+  document.querySelectorAll("nav.screens button").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll("nav.screens button").forEach((x) => x.classList.remove("on")); b.classList.add("on");
+    document.querySelectorAll("section.screen").forEach((s) => s.classList.toggle("on", s.id === "s-" + b.dataset.s));
+  }));
+</script>
+</body>
+</html>

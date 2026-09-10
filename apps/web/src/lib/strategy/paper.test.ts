@@ -97,3 +97,24 @@ describe("leg converters", () => {
     expect(priceMap([leg(), leg({ id: "leg_2" })], (l) => (l.id === "leg_1" ? 1300.55555 : null))).toEqual({ leg_1: "1300.5556", leg_2: "1200" });
   });
 });
+
+describe("HC-TR-156 / HC-TR-157 expiry and lifecycle helpers", () => {
+  it("expiryOf reads the open option legs; daysLeft honours the settlement hour; lifecycleOf classifies", async () => {
+    const { daysLeft, expiryOf, lifecycleOf } = await import("./paper");
+    const now = Date.parse("2026-09-10T08:00:00Z");
+    expect(daysLeft("2026-09-10", now)).toBe(0.2);
+    expect(daysLeft("2026-09-10", now, 16)).toBe(0.3);
+    expect(daysLeft("2026-09-09", now)).toBe(0);
+    expect(daysLeft("nonsense", now)).toBe(0);
+    const leg = (over: Record<string, unknown>) => ({ id: "l", kind: "call", side: "buy", strike: "80000", expiry: "2026-09-25", symbol: "C-BTC-80000-250926", lots: 1, price: "1", entryPrice: "1", exitPrice: null, iv: 0.5, status: "open", isAdjustment: false, position: 0, openedAt: "2026-09-01T00:00:00Z", closedAt: null, orderId: null, ...over });
+    const strat = (legs: unknown[], over: Record<string, unknown> = {}) => ({ id: "s", name: "s", asset: "BTC", status: "paper", tradingMode: "paper", templateName: "", brokerId: null, legs, realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: null, closedAt: null, createdAt: "2026-09-01T00:00:00Z", updatedAt: "2026-09-01T00:00:00Z", ...over }) as unknown as Parameters<typeof expiryOf>[0];
+    expect(expiryOf(strat([leg({}), leg({ id: "m", expiry: "2026-09-10" }), leg({ id: "f", kind: "future", expiry: "2026-09-01" }), leg({ id: "c", expiry: "2026-09-05", status: "squared_off" })]))).toEqual({ nearest: "2026-09-10", latest: "2026-09-25" });
+    expect(expiryOf(strat([leg({ id: "f", kind: "future" })]))).toBeNull();
+    expect(lifecycleOf(strat([leg({})]), now)).toBe("open");
+    expect(lifecycleOf(strat([leg({ expiry: "2026-09-10" })]), now)).toBe("expiring");
+    // XAUT settles at 16:00 UTC: at 14:00 the day before that is 26 h (1.1 d, open); BTC's 12:00 would be 22 h (0.9 d, expiring)
+    expect(lifecycleOf(strat([leg({ expiry: "2026-09-10" })], { asset: "XAUT" }), Date.parse("2026-09-09T14:00:00Z"))).toBe("open");
+    expect(lifecycleOf(strat([leg({ expiry: "2026-09-10" })]), Date.parse("2026-09-09T14:00:00Z"))).toBe("expiring");
+    expect(lifecycleOf(strat([leg({})], { status: "archived" }), now)).toBe("closed");
+  });
+});

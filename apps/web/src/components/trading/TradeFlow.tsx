@@ -7,6 +7,7 @@ import { type Strategy, toDecimal } from "@hapiecoin/schema";
 import { toast } from "@hapiecoin/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useBrokers, useCredential } from "@/lib/api/queries";
+import { useLivePositions } from "@/lib/api/live";
 import { useCreateStrategy, usePatchStrategy, useStartStrategy, useStrategies } from "@/lib/api/strategies";
 import { newIdempotencyKey, useLivePlace, useLivePreview } from "@/lib/api/live";
 import { handleUpgradeRequired } from "@/lib/api/upgrade";
@@ -17,6 +18,7 @@ import { guessTemplateName } from "@/lib/strategy/templates";
 import type { PaperBook } from "@/lib/strategy/usePaper";
 import { useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
 import { SaveDraftDialog } from "@/components/dialogs/SaveDraftDialog";
+import { suggestStrategyName } from "@/lib/strategy/naming";
 import { type TradeLegView, TradeModeDialog } from "./TradeModeDialog";
 import { TradePreviewDialog } from "./TradePreviewDialog";
 
@@ -92,6 +94,15 @@ export function TradeFlow({ book }: { book: PaperBook }) {
     if (target) return openLegs(target).map((l) => ({ id: l.id, kind: l.kind, side: l.side, strike: l.strike, expiry: l.expiry, symbol: l.symbol, lots: l.lots, price: book.priceOf(target, l)?.toString() ?? l.price }));
     return builder.legs.map((l) => ({ id: l.id, kind: l.kind, side: l.side, strike: l.strike, expiry: l.expiry, symbol: l.symbol, lots: l.lots, price: builder.priceFor(l) }));
   }, [target, builder, book]);
+  // ADR-059: the name box arrives filled from the legs and the clock, read when the dialog opens
+  const suggest = () => suggestStrategyName({ asset: builder.asset, templateName: guessTemplateName(builder.legs), legs: builder.legs, taken: (strategies ?? []).map((x) => x.name) });
+  // capital on the preview (HC-TR-158): the exchange wallet, read only while a trade flow is open on a connected exchange
+  const wallet = useLivePositions(flow !== null && (credential?.items.length ?? 0) > 0 && brokerId ? brokerId : null);
+  const available = useMemo(() => {
+    const rows = wallet.data?.balances ?? [];
+    const row = ["USD", "USDT", "INR"].map((a) => rows.find((b) => b.asset === a)).find((b) => b !== undefined) ?? rows[0];
+    return row ? { amount: Number(row.availableBalance), asset: row.asset } : null;
+  }, [wallet.data]);
   if (!flow) return null;
   if (legs.length === 0) {
     toast.error("No legs", { description: "Add at least one leg to trade" });
@@ -222,8 +233,8 @@ export function TradeFlow({ book }: { book: PaperBook }) {
           void toPreview(m, b);
         }}
       />
-      <TradePreviewDialog open={step === "preview"} onOpenChange={(o) => !o && closeTrade()} mode={mode} asset={asset} legs={legs} spot={spot} lotSize={lotSize} money={money} broker={broker} fees={fees} maxLoss={maxLoss} customPrices={customPrices} busy={busy} venue={venue} onTrade={onTradeNow} />
-      <SaveDraftDialog open={step === "name"} onOpenChange={(o) => !o && setStep("preview")} initialName={meta.name} intent="trade" onSave={(n) => { setMeta(builder.asset, { name: n }); if (mode === "live") void toPreview("live", brokerId, n); else { setStep("preview"); void trade(n); } }} />
+      <TradePreviewDialog open={step === "preview"} onOpenChange={(o) => !o && closeTrade()} mode={mode} asset={asset} legs={legs} spot={spot} lotSize={lotSize} money={money} broker={broker} fees={fees} maxLoss={maxLoss} maxLossKnown={fromBuilder} customPrices={customPrices} busy={busy} venue={venue} available={available} onTrade={onTradeNow} />
+      <SaveDraftDialog open={step === "name"} onOpenChange={(o) => !o && setStep("preview")} initialName={meta.name} suggest={fromBuilder ? suggest : undefined} intent="trade" onSave={(n) => { setMeta(builder.asset, { name: n }); if (mode === "live") void toPreview("live", brokerId, n); else { setStep("preview"); void trade(n); } }} />
     </>
   );
 }

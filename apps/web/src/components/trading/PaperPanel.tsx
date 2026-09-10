@@ -1,6 +1,7 @@
 "use client";
-// Paper Trades tab (HC-TR-058..067): search, sort, refresh, the P&L strip, strategy cards with live P&L
-// and a sparkline, Details / Go live / Stop / Delete, pagination and the empty state.
+// Paper Trades tab (HC-TR-058..067; HC-TR-156, 157 lifecycle): search, sort (incl. expiry), lifecycle chips Open ·
+// Expiring ≤ 1d · Closed, refresh, the P&L strip, strategy cards with start / expiry, live P&L and a sparkline,
+// Details / Go live / Stop / Delete, pagination and the empty state.
 import type { Strategy } from "@hapiecoin/schema";
 import { Button, EmptyState, cn, toast } from "@hapiecoin/ui";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,7 +13,9 @@ import { BatchLiveDialog } from "./BatchLiveDialog";
 import { NetPositionsPanel } from "./NetPositionsPanel";
 import { fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
-import { dayPnl, daysOf, fmtLeg, openLegs, pnlSeries } from "@/lib/strategy/paper";
+import { fmtDate, fmtExpiry } from "@/lib/format";
+import { settlementHourUtc } from "@/lib/pricing/legs";
+import { type Lifecycle, dayPnl, daysLeft, daysOf, expiryOf, fmtLeg, lifecycleOf, openLegs, pnlSeries } from "@/lib/strategy/paper";
 import type { PaperBook } from "@/lib/strategy/usePaper";
 import { usePortfolio } from "@/lib/strategy/usePortfolio";
 import { AdjustedBadge, ModePill } from "./StrategyDetailsDialog";
@@ -20,7 +23,12 @@ import { CardFigures } from "./CardFigures";
 import { StopPaperDialog } from "./StopPaperDialog";
 
 export const PAGE = 10;
-type SortKey = "pnl" | "date" | "name";
+type SortKey = "pnl" | "date" | "name" | "expiry";
+const LIFE: readonly { key: Lifecycle; label: string }[] = [
+  { key: "open", label: "Open" },
+  { key: "expiring", label: "Expiring ≤ 1d" },
+  { key: "closed", label: "Closed" },
+];
 
 export function Sparkline({ series, className }: { series: number[]; className?: string }) {
   const W = 150;
@@ -43,6 +51,7 @@ export function sortStrategies(rows: Strategy[], key: SortKey, totalOf: (s: Stra
   const r = rows.slice();
   if (key === "date") r.sort((a, b) => new Date(b.startedAt ?? b.createdAt).getTime() - new Date(a.startedAt ?? a.createdAt).getTime());
   else if (key === "name") r.sort((a, b) => a.name.localeCompare(b.name));
+  else if (key === "expiry") r.sort((a, b) => (expiryOf(a)?.nearest ?? "9999").localeCompare(expiryOf(b)?.nearest ?? "9999") || a.name.localeCompare(b.name));
   else r.sort((a, b) => totalOf(b) - totalOf(a));
   return r;
 }
@@ -63,6 +72,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const openAdjust = useUiStore((s) => s.openAdjust);
   const openAlerts = useUiStore((s) => s.openAlerts);
   const workspaceTab = useUiStore((s) => s.workspaceTab);
+  const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
   const [batch, setBatch] = useState(false);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("pnl");
@@ -70,7 +80,12 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const [stopId, setStopId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const q = search.trim().toLowerCase();
+  const [life, setLife] = useState<Lifecycle>("open");
   const all = useMemo(() => (data ?? []).filter((s) => s.status === kind), [data, kind]);
+  // closed = archived strategies that were traded in this mode; they stay on this tab under the Closed chip (ADR-059)
+  const closed = useMemo(() => (data ?? []).filter((s) => s.status === "archived" && s.tradingMode === kind), [data, kind]);
+  const expiring = all.filter((s) => lifecycleOf(s) === "expiring"); // per render: the clock moves, the list does not
+  const lifeRows = life === "closed" ? closed : life === "expiring" ? expiring : all;
   // ADR-029: the API reconciles pending orders in the background; while any are pending, poll the list so chips update
   const anyPending = kind === "live" && all.some((s) => s.orders.some((o) => o.state === "pending"));
   useEffect(() => {
@@ -84,7 +99,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
     const first = all[0];
     if (first) followStrategy(first.id);
   }, [workspaceTab, kind, paneSource, all, followStrategy]);
-  const rows = useMemo(() => sortStrategies(all.filter((s) => !q || `${s.name} ${s.asset} ${s.templateName}`.toLowerCase().includes(q)), sort, (s) => book.pnlOf(s).total), [all, q, sort, book]);
+  const rows = useMemo(() => sortStrategies(lifeRows.filter((s) => !q || `${s.name} ${s.asset} ${s.templateName}`.toLowerCase().includes(q)), sort, (s) => book.pnlOf(s).total), [lifeRows, q, sort, book]);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const current = Math.min(page, pages);
   const slice = rows.slice((current - 1) * PAGE, current * PAGE);
@@ -115,7 +130,18 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
           <option value="pnl">Sort · P&L</option>
           <option value="date">Sort · Date</option>
           <option value="name">Sort · Name</option>
+          <option value="expiry">Sort · Expiry</option>
         </select>
+        <div className="flex items-center gap-1" role="group" aria-label="Lifecycle" data-testid={`${kind}-life`}>
+          {LIFE.map((l) => {
+            const n = l.key === "closed" ? closed.length : l.key === "expiring" ? expiring.length : all.length;
+            return (
+              <button key={l.key} type="button" aria-pressed={life === l.key} onClick={() => { setLife(l.key); setPage(1); }} className={cn("rounded-full border px-2.5 py-0.5 text-xs", life === l.key ? "border-foreground text-foreground" : "border-border text-muted-foreground hover:text-foreground", l.key === "expiring" && n > 0 && life !== l.key && "text-warning")} data-testid={`${kind}-life-${l.key}`} data-count={n}>
+                {l.label} <span className="text-muted-foreground">{n}</span>
+              </button>
+            );
+          })}
+        </div>
         <Button size="sm" variant="outline" onClick={() => void refetch().then(() => toast("Refreshed", { description: "Strategy data has been updated" }))} data-testid={`${kind}-refresh`}>
           Refresh
         </Button>
@@ -143,12 +169,15 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
         ) : isError ? (
           <EmptyState title="Could not load strategies" description="Check your connection and try again." action={<Button size="sm" variant="outline" onClick={() => void refetch()}>Retry</Button>} />
         ) : rows.length === 0 ? (
-          <EmptyState title={q ? `No matching ${kind} trades` : kind === "paper" ? "No paper trades yet" : "No live trades"} description={q ? "Try a different search" : kind === "paper" ? "Click Paper trade in the Builder to begin" : "Go live from a paper card, or pick Live in the Builder's trade dialog."} className="py-12" data-testid={`${kind}-empty`} />
+          <EmptyState title={q ? `No matching ${kind} trades` : life === "closed" ? `No closed ${kind} trades yet` : life === "expiring" ? "Nothing expires within a day" : kind === "paper" ? "No paper trades yet" : "No live trades"} description={q ? "Try a different search" : life !== "open" ? "The Open chip shows what is running" : kind === "paper" ? "Click Paper trade in the Builder to begin" : "Go live from a paper card, or pick Live in the Builder's trade dialog."} className="py-12" data-testid={`${kind}-empty`} />
         ) : (
           <div className="flex flex-col gap-2">
             {slice.map((s) => {
               const p = book.pnlOf(s);
               const open = openLegs(s);
+              const lc = lifecycleOf(s);
+              const ex = expiryOf(s);
+              const left = ex ? daysLeft(ex.nearest, Date.now(), settlementHourUtc(s.asset)) : null;
               return (
                 <div
                   key={s.id}
@@ -172,12 +201,23 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                   }}
                   data-testid={`${kind}-card`}
                   data-id={s.id}
+                  data-life={lc}
                   data-followed={paneSource?.kind === "strategy" && paneSource.id === s.id ? "true" : undefined}
                 >
                   <div className="flex flex-wrap items-start gap-2">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium"><span className="truncate">{s.name}</span><ModePill status={s.status} /><AdjustedBadge s={s} />{kind === "live" && s.orderBatchId ? <span className="micro rounded border border-border px-1 font-mono" title={`Order batch ${s.orderBatchId}`} data-testid="card-batch">batch {s.orderBatchId.slice(-6)}</span> : null}</div>
-                      <div className="micro flex flex-wrap gap-2"><span className="rounded border border-border px-1">{s.asset}</span><span><b>{open.length}</b>/{s.legs.length} legs</span><span><b>{daysOf(s)}</b> days</span>{s.templateName ? <span>{s.templateName}</span> : null}</div>
+                      <div className="micro flex flex-wrap gap-2"><span className="rounded border border-border px-1">{s.asset}</span><span><b>{open.length}</b>/{s.legs.length} legs</span>{s.templateName ? <span>{s.templateName}</span> : null}</div>
+                      <div className="micro mt-0.5 flex flex-wrap gap-x-2 normal-case tracking-normal" data-testid="card-expiry" data-days={left ?? undefined}>
+                        <span>started <b className="num">{s.startedAt ? fmtDate(s.startedAt) : "—"}</b> · {daysOf(s)}d</span>
+                        {lc === "closed" ? (
+                          <span>closed <b className="num">{s.closedAt ? fmtDate(s.closedAt) : "—"}</b></span>
+                        ) : ex ? (
+                          <span>expires <b className={cn("num", left !== null && left <= 1 && "text-warning")}>{ex.nearest === ex.latest ? fmtExpiry(ex.nearest) : `${fmtExpiry(ex.nearest)} → ${fmtExpiry(ex.latest)}`}</b>{left !== null ? <span className={cn(left <= 1 && "text-warning")}> ({left}d)</span> : null}</span>
+                        ) : (
+                          <span>no open option legs</span>
+                        )}
+                      </div>
                     </div>
                     <div className="ml-auto text-right">
                       <div className={cn("num text-[15px] font-medium", p.total >= 0 ? "text-profit" : "text-loss")} data-testid="card-pnl" data-tour="paper-pnl">{fmtMoney(p.total, money, { signed: true })}</div>
@@ -208,9 +248,10 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                   ) : null}
                   <div className="mt-2 flex flex-wrap gap-1">
                     <Button size="sm" variant="outline" onClick={() => openDetails(s.id)} data-testid="card-details">Details</Button>
-                    <Button size="sm" variant="outline" disabled={open.length === 0} title={open.length ? "Adjust: trim, close or add legs with the combined payoff (A)" : "No open legs"} onClick={() => openAdjust(s.id)} data-testid="card-adjust">Adjust</Button>
-                    <Button size="sm" variant="outline" title="Alert me when this strategy's P&L crosses a level" onClick={() => openAlerts({ kind: "pnl", strategyId: s.id, asset: s.asset })} data-testid="card-alert">Set alert</Button>
-                    {kind === "paper" ? (
+                    {lc === "closed" ? <Button size="sm" variant="outline" onClick={() => setWorkspaceTab("journal")} title="This trade in the Journal" data-testid="card-journal">Journal</Button> : null}
+                    {lc !== "closed" ? <Button size="sm" variant="outline" disabled={open.length === 0} title={open.length ? "Adjust: trim, close or add legs with the combined payoff (A)" : "No open legs"} onClick={() => openAdjust(s.id)} data-testid="card-adjust">Adjust</Button> : null}
+                    {lc !== "closed" ? <Button size="sm" variant="outline" title="Alert me when this strategy's P&L crosses a level" onClick={() => openAlerts({ kind: "pnl", strategyId: s.id, asset: s.asset })} data-testid="card-alert">Set alert</Button> : null}
+                    {lc === "closed" ? null : kind === "paper" ? (
                       <>
                         <Button size="sm" variant="outline" disabled={!connected || open.length === 0} title={connected ? "Place these legs as live orders" : "Connect your exchange first"} onClick={() => openTrade({ strategyId: s.id, mode: "live" })} data-testid="card-golive">Go live</Button>
                         <Button size="sm" variant="outline" className="text-warning" onClick={() => setStopId(s.id)} data-testid="card-stop" data-tour="paper-stop">Stop</Button>
@@ -222,7 +263,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                       </>
                     )}
                     <span className="ml-auto flex gap-1">
-                      {deleteId === s.id ? (
+                      {lc === "closed" ? null : deleteId === s.id ? (
                         <>
                           <Button size="sm" variant="destructive" loading={del.isPending} onClick={() => del.mutate(s.id, { onSuccess: () => { setDeleteId(null); toast("Deleted", { description: s.name }); }, onError: (e) => toast.error("Could not delete", { description: e.message }) })} data-testid="card-delete-confirm">Confirm delete</Button>
                           <Button size="sm" variant="ghost" onClick={() => setDeleteId(null)}>Cancel</Button>

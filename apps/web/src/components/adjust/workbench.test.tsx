@@ -47,6 +47,7 @@ async function paperTradeFromBuilder(u: ReturnType<typeof userEvent.setup>) {
   await u.click(within(mode).getByTestId("trade-continue"));
   await u.click(within(screen.getByTestId("trade-preview")).getByTestId("trade-now"));
   const name = await screen.findByTestId("save-draft-dialog", {}, { timeout: 5000 });
+  await u.clear(within(name).getByTestId("save-draft-name")); // the box arrives pre-filled (HC-TR-155)
   await u.type(within(name).getByTestId("save-draft-name"), "Risk reversal");
   await u.click(within(name).getByTestId("save-draft-confirm"));
   await waitFor(() => expect(mine()[0]?.status).toBe("paper"));

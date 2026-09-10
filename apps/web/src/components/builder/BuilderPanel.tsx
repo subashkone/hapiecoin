@@ -10,9 +10,10 @@ import { settlementHourUtc } from "@/lib/pricing/legs";
 import { useUiStore } from "@/lib/store";
 import { marginEstimate, premiumPerUnit, strategyWidth, ticketTotal } from "@/lib/strategy/analysis";
 import { MAX_ACTIVE_LEGS, type StrategyLeg, setLegInstrument, setLegLots, setLegPrice, stepLots, toggleLegEnabled, toggleLegSide } from "@/lib/strategy/legs";
+import { suggestStrategyName } from "@/lib/strategy/naming";
 import { guessTemplateName } from "@/lib/strategy/templates";
 import { useBrokers } from "@/lib/api/queries";
-import { useCreateStrategy, usePatchStrategy } from "@/lib/api/strategies";
+import { useCreateStrategy, usePatchStrategy, useStrategies } from "@/lib/api/strategies";
 import { localLegToInput, feeFor } from "@/lib/strategy/paper";
 import { useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
 import { SaveDraftDialog } from "@/components/dialogs/SaveDraftDialog";
@@ -77,6 +78,8 @@ export function BuilderPanel() {
   const broker = (brokers ?? []).find((b) => b.id === brokerId) ?? brokers?.[0];
   const fees = useMemo(() => (spot !== null && lotSize ? feeFor(legs, spot, lotSize, broker) : null), [legs, spot, lotSize, broker]);
   const structure = legs.length ? guessTemplateName(legs) : "";
+  const { data: allStrategies } = useStrategies();
+  const suggest = () => (legs.length ? suggestStrategyName({ asset: a.asset, templateName: guessTemplateName(legs), legs, taken: (allStrategies ?? []).map((x) => x.name) }) : "");
   const nearest = useMemo(() => legs.filter((l) => l.kind !== "future").map((l) => l.expiry).sort()[0] ?? null, [legs]);
   const dte = nearest ? daysToExpiry(nearest) : null;
   const width = useMemo(() => strategyWidth(legs, spot), [legs, spot]);
@@ -434,7 +437,7 @@ export function BuilderPanel() {
           <TemplatesPanel />
         </TabsContent>
       </Tabs>
-      <SaveDraftDialog open={saveIntent !== null} onOpenChange={(o) => !o && setSaveIntent(null)} initialName={meta.name} intent={saveIntent ?? "draft"} onSave={(n) => onSave(n, saveIntent ?? "draft")} />
+      <SaveDraftDialog open={saveIntent !== null} onOpenChange={(o) => !o && setSaveIntent(null)} initialName={meta.name} suggest={suggest} intent={saveIntent ?? "draft"} onSave={(n) => onSave(n, saveIntent ?? "draft")} />
       <ChainPickerDialog open={picker} onOpenChange={setPicker} remaining={remaining} />
       <FutureDialog open={future} onOpenChange={setFuture} />
     </section>
