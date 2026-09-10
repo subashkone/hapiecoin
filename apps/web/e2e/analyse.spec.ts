@@ -779,7 +779,11 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     await expect(wb.getByTestId("wb-pick")).toHaveCount(2);
     await wb.getByTestId("plan-save").click();
     await expect(wb.getByTestId("plans-bar")).toHaveAttribute("data-count", "1");
-    await expect(wb.getByTestId("plan-row").nth(1)).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(wb.getByTestId("plan-row").last()).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(wb.getByTestId("plan-row").first()).toHaveAttribute("data-plan", "before");
+    await expect(wb).toHaveAttribute("data-empty", "true"); // saving keeps Plan A and starts the next change
+    await wb.getByTestId("plan-use").click();
+    await expect(wb.getByTestId("plan-current-note")).toHaveText("= Plan A");
     await wb.getByTestId("adjust-reset").click();
     await expect(wb).toHaveAttribute("data-empty", "true");
     await leg.getByTestId("lots-after-down").click();

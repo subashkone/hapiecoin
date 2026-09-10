@@ -272,18 +272,29 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     const plans = within(wb).getByTestId("plans-bar");
     await u.click(within(plans).getByTestId("plan-save"));
     expect(plans.dataset["count"]).toBe("1");
+    // saving keeps Plan A and starts the next change: the ticket is back to the position as it stands
+    expect(wb.dataset["empty"]).toBe("true");
+    expect(within(wb).queryAllByTestId("wb-pick")).toHaveLength(0);
+    expect(within(plans).getByTestId("plan-current-note").textContent).toBe("nothing yet");
+    expect(plans.textContent).toContain("Plan A kept");
     await u.click(within(fixes).getAllByTestId("quick-fix")[2]!); // hedge with a call: nothing is short, so it buys above spot, which is the held call's strike → nets as ADDS
     expect(within(wb).queryAllByTestId("wb-pick")).toHaveLength(0);
     expect(kinds()).toEqual(["add", undefined]);
     expect(within(wb).getAllByTestId("wb-order").map((r) => r.dataset["kind"])).toEqual(["add"]);
     await u.click(within(plans).getByTestId("plan-save"));
     const rows = within(plans).getAllByTestId("plan-row");
-    expect(rows.map((r) => r.dataset["plan"] === "current" ? "current" : "plan")).toEqual(["current", "plan", "plan"]);
+    expect(rows.map((r) => (r.dataset["plan"] === "current" || r.dataset["plan"] === "before" ? r.dataset["plan"] : "plan"))).toEqual(["before", "current", "plan", "plan"]);
     await waitFor(() => expect(within(plans).getAllByTestId("plan-row").every((r) => r.dataset["state"] === "ready")).toBe(true), { timeout: 5000 });
     expect(within(plans).getByText("Plan A")).toBeTruthy();
     expect(within(plans).getByText("Plan B")).toBeTruthy();
     await u.click(within(plans).getAllByTestId("plan-use")[0]!); // back to Plan A: the roll
     expect(within(wb).getAllByTestId("wb-pick")).toHaveLength(2);
+    // the working change is a copy of Plan A now, and the row says so instead of showing the same figures unexplained
+    expect(within(plans).getByTestId("plan-current-note").textContent).toBe("= Plan A");
+    expect(within(plans).getAllByTestId("plan-row")[1]!.dataset["same"]).toBe(within(plans).getAllByTestId("plan-row")[2]!.dataset["plan"]);
+    await u.click(within(within(wb).getAllByTestId("wb-pick")[0]!).getByTestId("pick-lots-up"));
+    expect(within(plans).getByTestId("plan-current-note").textContent).toBe("unsaved");
+    await u.click(within(within(wb).getAllByTestId("wb-pick")[0]!).getByTestId("pick-lots-down"));
     await u.click(within(plans).getAllByTestId("plan-remove")[1]!);
     expect(plans.dataset["count"]).toBe("1");
     // the scenario slider values the position on a day between today and the latest expiry

@@ -2,7 +2,7 @@ import type { AnalyzeResult } from "@hapiecoin/pricing";
 import type { StrategyLeg as ServerLeg } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
 import { USD } from "@/lib/money";
-import { MAX_PLANS, VALUE_TODAY, addsZeroDte, afterLegs, beforeLegs, cashflow, combinedExpiries, effects, instrumentOf, isEmptyDraft, isoDaysFrom, loadPlan, lotsAfterOf, newDraft, openCountAfter, overCap, pickOnDraft, planDraft, removePick, removePlan, savePlan, setLotsAfter, setPickLots, setValuation, summarize, toBody, valuationMsOf } from "./model";
+import { MAX_PLANS, VALUE_TODAY, addsZeroDte, afterLegs, beforeLegs, cashflow, combinedExpiries, effects, instrumentOf, isEmptyDraft, isoDaysFrom, loadPlan, lotsAfterOf, matchingPlan, newDraft, openCountAfter, overCap, pickOnDraft, planDraft, removePick, removePlan, savePlan, setLotsAfter, setPickLots, setValuation, summarize, toBody, valuationMsOf } from "./model";
 import { type FixContext, quickFixes, rankFixes } from "./fixes";
 
 const EXP = "2026-09-25";
@@ -221,12 +221,17 @@ describe("HC-TR-151 the API batch and the change summary", () => {
 describe("HC-TR-153 plans: save up to three, load one back, remove", () => {
   it("names plans A, B, C in order, copies the changes, loads and removes them, and refuses a fourth", () => {
     let d = setLotsAfter(newDraft("s", 1), CALL.id, 60);
+    expect(matchingPlan(d, OPEN)).toBeUndefined();
     d = savePlan(d, 2);
     expect(d.plans.map((p) => p.name)).toEqual(["Plan A"]);
     expect(d.plans[0]).toMatchObject({ lotsAfter: { leg_c: 60 }, picks: [], valuation: null });
-    d = pickOnDraft({ ...d, lotsAfter: {} }, OPEN, "BTC", pick());
+    // saving starts the next change from the position as it stands
+    expect(d.lotsAfter).toEqual({});
+    expect(d.picks).toEqual([]);
+    expect(matchingPlan(d, OPEN)).toBeUndefined();
+    d = pickOnDraft(d, OPEN, "BTC", pick());
     d = savePlan(setValuation(d, VALUE_TODAY), 3);
-    d = savePlan(d, 4);
+    d = savePlan(setLotsAfter(d, CALL.id, 0), 4);
     expect(d.plans.map((p) => p.name)).toEqual(["Plan A", "Plan B", "Plan C"]);
     expect(d.plans.length).toBe(MAX_PLANS);
     expect(savePlan(d, 5).plans).toHaveLength(MAX_PLANS);
@@ -234,6 +239,9 @@ describe("HC-TR-153 plans: save up to three, load one back, remove", () => {
     expect(loaded.lotsAfter).toEqual({ leg_c: 60 });
     expect(loaded.picks).toEqual([]);
     expect(loaded.valuation).toBeNull();
+    expect(matchingPlan(loaded, OPEN)?.name).toBe("Plan A"); // the working change is now a copy of Plan A
+    expect(matchingPlan(setLotsAfter(loaded, CALL.id, 61), OPEN)).toBeUndefined();
+    expect(matchingPlan(setLotsAfter(loaded, CALL.id, CALL.lots), OPEN)).toBeUndefined();
     expect(loadPlan(d, "plan_nope")).toBe(d);
     expect(planDraft(d, d.plans[1]!).picks).toHaveLength(1);
     expect(removePlan(d, d.plans[1]!.id).plans.map((p) => p.name)).toEqual(["Plan A", "Plan C"]);

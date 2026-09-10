@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { fmtMoney } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
 import { settlementHourUtc, toPricingLegs } from "@/lib/pricing/legs";
-import { type AdjustDraft, MAX_PLANS, type SavedPlan, afterLegs, cashflow, planDraft, valuationMsOf } from "@/lib/adjust/model";
+import { type AdjustDraft, MAX_PLANS, type SavedPlan, afterLegs, cashflow, matchingPlan, planDraft, valuationMsOf } from "@/lib/adjust/model";
 import type { AdjustWorkbench } from "@/lib/adjust/useAdjustWorkbench";
 
 export interface PlanFigures {
@@ -29,15 +29,21 @@ export function useDraftFigures(w: AdjustWorkbench, draft: AdjustDraft | null): 
   return result ? { maxLoss: result.maxLoss, maxProfit: result.maxProfit, pop: result.pop, delta: result.greeks.delta, cash } : null;
 }
 
-function PlanRow({ w, plan, current }: { w: AdjustWorkbench; plan: SavedPlan | null; current: boolean }) {
-  const draft = plan ? planDraft(w.draft, plan) : w.draft;
+type RowKind = "before" | "current" | "plan";
+
+function PlanRow({ w, plan, kind }: { w: AdjustWorkbench; plan: SavedPlan | null; kind: RowKind }) {
+  // "before" prices the position as it stands (no change, no cash); "current" the working change; a plan its copy
+  const draft = kind === "before" ? { ...w.draft, lotsAfter: {}, picks: [] } : plan ? planDraft(w.draft, plan) : w.draft;
   const f = useDraftFigures(w, draft);
   const money = w.a.money;
+  const same = kind === "current" ? matchingPlan(w.draft, w.open) : undefined;
   const cell = (v: string, cls?: string) => <td className={cn("num py-1 pr-2 text-right", cls)}>{v}</td>;
   return (
-    <tr className={cn("border-t border-border", current && "bg-warning/5")} data-testid="plan-row" data-plan={plan?.id ?? "current"} data-state={f ? "ready" : "pending"}>
+    <tr className={cn("border-t border-border", kind === "current" && "bg-warning/5", kind === "before" && "text-muted-foreground")} data-testid="plan-row" data-plan={kind === "plan" ? plan?.id : kind} data-state={f ? "ready" : "pending"} data-same={same?.id}>
       <td className="py-1 pr-2 text-left">
-        <b>{plan ? plan.name : "Current"}</b>
+        <b>{kind === "before" ? "Before" : kind === "current" ? "Working change" : plan?.name}</b>
+        {kind === "before" ? <span className="micro ml-1">the position as it stands</span> : null}
+        {kind === "current" ? <span className="micro ml-1 text-muted-foreground" data-testid="plan-current-note">{w.empty ? "nothing yet" : same ? `= ${same.name}` : "unsaved"}</span> : null}
         {plan ? <span className="micro ml-1 text-muted-foreground">{plan.picks.length + Object.keys(plan.lotsAfter).length} edits</span> : null}
       </td>
       {cell(f ? fmtMoney(f.maxLoss, money, { unlimited: "Unlimited" }) : "—", "text-loss")}
@@ -69,8 +75,8 @@ export function PlansBar({ w }: { w: AdjustWorkbench }) {
     <div className="mb-2 rounded border border-border" data-testid="plans-bar" data-count={plans.length}>
       <div className="flex flex-wrap items-center gap-2 px-2 py-1 text-2xs">
         <button type="button" className="micro rounded border border-border px-1 hover:text-foreground" aria-expanded={shown} onClick={() => setOpenTable((o) => !o)} data-testid="plans-toggle">Plans {shown ? "▾" : "▸"}</button>
-        <span className="text-muted-foreground">{plans.length ? `${plans.length} of ${MAX_PLANS} saved · compare, then Use one` : "keep this change as a plan, build another, compare"}</span>
-        <Button size="sm" variant="outline" className="ml-auto" disabled={w.empty || plans.length >= MAX_PLANS} title={w.empty ? "Make a change first" : plans.length >= MAX_PLANS ? `At most ${MAX_PLANS} plans` : "Save the current change as a plan"} onClick={w.savePlan} data-testid="plan-save">
+        <span className="text-muted-foreground">{plans.length ? (w.empty ? `${plans[plans.length - 1]?.name} kept · build the next change, or Use a plan` : `${plans.length} of ${MAX_PLANS} saved · compare, then Use one`) : "keep this change as a plan, build another, compare"}</span>
+        <Button size="sm" variant="outline" className="ml-auto" disabled={w.empty || plans.length >= MAX_PLANS} title={w.empty ? "Make a change first" : plans.length >= MAX_PLANS ? `At most ${MAX_PLANS} plans` : "Keep this change as a plan and start the next one"} onClick={w.savePlan} data-testid="plan-save">
           Save as plan
         </Button>
       </div>
@@ -88,9 +94,10 @@ export function PlansBar({ w }: { w: AdjustWorkbench }) {
               </tr>
             </thead>
             <tbody>
-              <PlanRow w={w} plan={null} current />
+              <PlanRow w={w} plan={null} kind="before" />
+              <PlanRow w={w} plan={null} kind="current" />
               {plans.map((p) => (
-                <PlanRow key={p.id} w={w} plan={p} current={false} />
+                <PlanRow key={p.id} w={w} plan={p} kind="plan" />
               ))}
             </tbody>
           </table>
