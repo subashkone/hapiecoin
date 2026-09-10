@@ -40,6 +40,8 @@ const RawEnv = z.object({
   GOOGLE_CLIENT_ID: z.string().min(1).optional(),
   GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
   RESEND_API_KEY: z.string().min(1).optional(),
+  /** Telegram bot token for alert delivery (ADR-057); absent = the channel is not offered. */
+  TELEGRAM_BOT_TOKEN: z.string().min(1).optional(),
   RAZORPAY_KEY_ID: z.string().min(1).optional(),
   RAZORPAY_KEY_SECRET: z.string().min(1).optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().min(1).optional(),
@@ -88,6 +90,7 @@ export interface Config {
   trustedProxyIps: string[];
   google: { clientId: string; clientSecret: string } | undefined;
   resendApiKey: string | undefined;
+  telegramBotToken: string | undefined;
   emailFrom: string;
   /** Razorpay test or live keys (ADR-034); undefined = checkout answers 503. Values never leave the process. */
   razorpay: { keyId: string; keySecret: string; webhookSecret: string | undefined } | undefined;
@@ -215,6 +218,7 @@ export function loadConfig(
     trustedProxyIps,
     google,
     resendApiKey: e.RESEND_API_KEY,
+    telegramBotToken: e.TELEGRAM_BOT_TOKEN,
     emailFrom: e.EMAIL_FROM,
     razorpay: e.RAZORPAY_KEY_ID && e.RAZORPAY_KEY_SECRET ? { keyId: e.RAZORPAY_KEY_ID, keySecret: e.RAZORPAY_KEY_SECRET, webhookSecret: e.RAZORPAY_WEBHOOK_SECRET } : undefined,
     invoiceSeller: { name: e.INVOICE_SELLER_NAME, address: e.INVOICE_SELLER_ADDRESS, gstin: e.INVOICE_SELLER_GSTIN, email: e.INVOICE_SELLER_EMAIL },

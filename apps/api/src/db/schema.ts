@@ -43,6 +43,10 @@ export const users = pgTable(
     tradingDisabled: boolean("trading_disabled").notNull().default(false),
     /** Admin account toggle (HC-AD-047): false refuses trading and plan activation. */
     active: boolean("active").notNull().default(true),
+    /** Telegram alert delivery (ADR-057): the linked chat, the pending /start code, and when the link was made. */
+    telegramChatId: text("telegram_chat_id"),
+    telegramLinkCode: text("telegram_link_code"),
+    telegramLinkedAt: timestamp("telegram_linked_at", { withTimezone: true }),
     /** Per-user feature limit overrides (HC-AD-048), same keys as plan limits; > 0 replaces the plan number. */
     limitOverrides: jsonb("limit_overrides").$type<Record<string, number>>().notNull().default(sql`'{}'::jsonb`),
     /** Referral commission percentage (HC-AD-046), decimal string. */

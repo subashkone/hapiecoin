@@ -17,6 +17,9 @@ import { RazorpayHttpClient } from "./razorpay.js";
 import { MemoryRateStore, type RateStore, RedisRateStore } from "./security/rate-store.js";
 import { createKeyring } from "./vault.js";
 import { startIvSnapshotter } from "./iv-snapshot.js";
+import { evaluateAlerts } from "./alerts-evaluate.js";
+import { TelegramBotClient } from "./telegram.js";
+import { startTelegramLinker } from "./routes/telegram.js";
 import { DeltaRestClient, isSchemaInstrument, toSchemaInstrument, toSchemaQuote } from "@hapiecoin/venues";
 import { MemoryAnalyticsReader, RedisAnalyticsReader } from "./analytics.js";
 
@@ -64,6 +67,8 @@ const deps: AppDeps = {
   trading: new DeltaTradingClientImpl({ baseUrl: config.deltaTradingRestUrl, nodeEnv: config.nodeEnv }),
   authOptions: authOptionsPublic(config),
   analytics: redis ? new RedisAnalyticsReader(redis) : new MemoryAnalyticsReader(),
+  // ADR-057: the bot token never leaves the client; without it the telegram channel is not offered
+  telegram: config.telegramBotToken ? new TelegramBotClient(config.telegramBotToken, { nodeEnv: config.nodeEnv, logger }) : null,
 };
 const app = createApp(deps);
 
@@ -82,7 +87,14 @@ const stopSnapshotter =
           tickers: async (u) => (await publicRest.getTickers({ contractTypes: ["call_options", "put_options"], underlying: u })).map((q) => toSchemaQuote(q, "0")),
         },
         config.ivSnapshotMs,
+        // ADR-057: every snapshot evaluates the armed alerts server-side, so they fire with the app closed
+        async () => {
+          const report = await evaluateAlerts(deps);
+          if (report.fired.length) logger.info({ fired: report.fired, checked: report.checked }, "alerts fired server-side");
+        },
       );
+// ADR-057: link Telegram chats through the bot's /start messages (long-polled; no public URL needed)
+const stopLinker = config.nodeEnv === "test" || deps.telegram === null ? () => undefined : startTelegramLinker(deps);
 
 const server = serve({ fetch: app.fetch, port: config.apiPort }, (info) => {
   logger.info(
@@ -100,6 +112,7 @@ async function shutdown(signal: string): Promise<void> {
   logger.info({ signal }, "shutting down");
   stopReconciler();
   stopSnapshotter();
+  stopLinker();
   server.close();
   await redis?.quit();
   await handle.close();

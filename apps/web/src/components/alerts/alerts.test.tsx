@@ -179,3 +179,46 @@ describe("HC-SH-100 / HC-TR-139 the Set alert hook", () => {
     expect(within(screen.getByTestId("alerts-dialog")).queryByTestId("alert-form")).toBeNull();
   });
 });
+
+describe("ADR-057 Telegram delivery", () => {
+  it("connects through the bot deep link, enables the telegram channel, sends a test, disconnects; an unconfigured server says so", async () => {
+    renderWithProviders(<Harness />);
+    serveSpot("79521");
+    const u = userEvent.setup();
+    await u.click(screen.getByTestId("alerts-bell"));
+    const dialog = screen.getByTestId("alerts-dialog");
+    await waitFor(() => expect(within(dialog).getByTestId("telegram-status").dataset["state"]).toBe("unlinked"));
+    await u.click(within(dialog).getByTestId("alerts-empty-new"));
+    // the channel is disabled until the chat is linked
+    expect(within(dialog).getByTestId("alert-ch-telegram").hasAttribute("disabled")).toBe(true);
+    await u.click(within(dialog).getByTestId("telegram-connect"));
+    await waitFor(() => expect(within(dialog).getByTestId("telegram-status").dataset["state"]).toBe("pending"));
+    expect(within(dialog).getByTestId("telegram-link").getAttribute("href")).toMatch(/^https:\/\/t\.me\/HapieCoinMockBot\?start=LINK/);
+    expect(within(dialog).getByTestId("telegram-code").textContent).toMatch(/^code LINK/);
+    // the mock links on the next status poll (the person pressed Start)
+    await waitFor(() => expect(within(dialog).getByTestId("telegram-status").dataset["state"]).toBe("linked"), { timeout: 6000 });
+    expect(within(dialog).getByTestId("telegram-status").textContent).toContain("connected");
+    await waitFor(() => expect(within(dialog).getByTestId("alert-ch-telegram").hasAttribute("disabled")).toBe(false));
+    await u.click(within(dialog).getByTestId("alert-ch-telegram"));
+    fireEvent.change(within(dialog).getByTestId("alert-value"), { target: { value: "95000" } });
+    await u.click(within(dialog).getByTestId("alert-save"));
+    await waitFor(() => expect(within(dialog).getAllByTestId("alert-row")).toHaveLength(1));
+    expect(within(dialog).getAllByTestId("alert-channel").map((c) => c.textContent)).toEqual(["push", "telegram"]);
+    expect(mine()[0]!.channels).toEqual(["push", "telegram"]);
+    await u.click(within(dialog).getByTestId("telegram-test"));
+    await waitFor(() => expect(screen.getByText("Test message sent")).toBeTruthy());
+    await u.click(within(dialog).getByTestId("telegram-unlink"));
+    await waitFor(() => expect(within(dialog).getByTestId("telegram-status").dataset["state"]).toBe("unlinked"));
+    expect(mock.state.accounts.get(EMAIL)!.telegram.chatId).toBeNull();
+  });
+
+  it("reads 'not configured' when the server has no bot token", async () => {
+    mock.state.telegramConfigured = false;
+    renderWithProviders(<Harness />);
+    act(() => useUiStore.getState().openAlerts({}));
+    const dialog = await screen.findByTestId("alerts-dialog");
+    await waitFor(() => expect(within(dialog).getByTestId("telegram-status").dataset["state"]).toBe("off"));
+    expect(within(dialog).getByTestId("alert-ch-telegram").hasAttribute("disabled")).toBe(true);
+    expect(within(dialog).getByTestId("alert-form").textContent).toContain("telegramoff");
+  });
+});

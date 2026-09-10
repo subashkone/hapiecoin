@@ -9,11 +9,12 @@
  *   DELETE /v1/alerts/{id}          (HC-SH-097)
  *   POST   /v1/alerts/{id}/trigger  the condition was met at `value`: mark triggered, send the email (HC-SH-096)
  */
-import { Alert, AlertCreate, AlertList, AlertPatch, AlertTrigger, Id, MAX_ALERTS, type AlertChannel } from "@hapiecoin/schema";
+import { Alert, AlertCreate, AlertList, AlertPatch, AlertTrigger, Id, MAX_ALERTS } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, desc, eq } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
-import { alerts, strategies } from "../db/schema.js";
+import { fireAlert, toAlert } from "../alerts-fire.js";
+import { alerts, strategies, users } from "../db/schema.js";
 import { type AppEnv, type SessionUser, currentUser } from "../security/context.js";
 import { errors } from "../security/errors.js";
 import { requireUser } from "../security/guards.js";
@@ -21,40 +22,7 @@ import { type AppDeps, cookieAuth, errorResponses, jsonContent, newId } from "./
 
 type AlertRow = typeof alerts.$inferSelect;
 const IdParam = z.object({ id: Id });
-
-const CHANNELS: readonly string[] = ["push", "email"];
-
-export function toAlert(row: AlertRow): Alert {
-  return {
-    id: row.id,
-    kind: row.kind,
-    asset: row.asset,
-    strategyId: row.strategyId,
-    strategyName: row.strategyName,
-    op: row.op,
-    value: row.value,
-    channels: row.channels.filter((c): c is AlertChannel => CHANNELS.includes(c)),
-    state: row.state,
-    lastValue: row.lastValue,
-    triggeredAt: row.triggeredAt === null ? null : row.triggeredAt.toISOString(),
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-  };
-}
-
-const fmtNum = (v: string) => {
-  const n = Number(v);
-  return Number.isFinite(n) ? n.toLocaleString("en-US", { maximumFractionDigits: 2 }) : v;
-};
-
-/** The one-line condition used in the alert mail: "BTC ≥ 82,000", "ETH ATM IV ≤ 30%", "BTC Bull Call Spread · P&L ≥ +20". */
-export function alertSubject(a: Pick<Alert, "kind" | "asset" | "strategyName" | "op" | "value">): string {
-  const op = a.op === ">=" ? "≥" : "≤";
-  if (a.kind === "price") return `${a.asset} ${op} ${fmtNum(a.value)}`;
-  if (a.kind === "iv") return `${a.asset} ATM IV ${op} ${fmtNum(a.value)}%`;
-  const signed = Number(a.value) > 0 ? `+${fmtNum(a.value)}` : fmtNum(a.value);
-  return `${a.strategyName ?? a.asset} · P&L ${op} ${signed}`;
-}
+export { alertSubject, toAlert } from "../alerts-fire.js";
 
 export function registerAlertRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, now: () => Date = () => new Date()): void {
   const db = deps.db;
@@ -99,6 +67,12 @@ export function registerAlertRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, now
       const body = c.req.valid("json");
       const mine = await db.select({ id: alerts.id }).from(alerts).where(eq(alerts.userId, me.id));
       if (mine.length >= MAX_ALERTS) throw errors.conflict(`You can keep up to ${MAX_ALERTS} alerts; delete one first`);
+      // ADR-057: the telegram channel needs a linked chat (and a configured bot)
+      if (body.channels.includes("telegram")) {
+        if (!deps.telegram) throw errors.badRequest("Telegram delivery is not configured on this server");
+        const [u] = await db.select({ chatId: users.telegramChatId }).from(users).where(eq(users.id, me.id)).limit(1);
+        if (!u?.chatId) throw errors.badRequest("Connect Telegram first (Alerts → Connect Telegram), then pick the telegram channel");
+      }
       let strategyName: string | null = null;
       if (body.strategyId) {
         const [s] = await db.select({ name: strategies.name, asset: strategies.asset }).from(strategies).where(and(eq(strategies.id, body.strategyId), eq(strategies.userId, me.id))).limit(1);
@@ -134,6 +108,11 @@ export function registerAlertRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, now
       const me = currentUser(c);
       const row = await loadOwned(me, c.req.valid("param").id);
       const body = c.req.valid("json");
+      if (body.channels?.includes("telegram")) {
+        if (!deps.telegram) throw errors.badRequest("Telegram delivery is not configured on this server");
+        const [u] = await db.select({ chatId: users.telegramChatId }).from(users).where(eq(users.id, me.id)).limit(1);
+        if (!u?.chatId) throw errors.badRequest("Connect Telegram first (Alerts → Connect Telegram), then pick the telegram channel");
+      }
       const [updated] = await db
         .update(alerts)
         .set({
@@ -188,21 +167,8 @@ export function registerAlertRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, now
       const row = await loadOwned(me, c.req.valid("param").id);
       if (row.state !== "armed") throw errors.conflict("Only an armed alert can trigger");
       const { value } = c.req.valid("json");
-      const at = now();
-      const [updated] = await db.update(alerts).set({ state: "triggered", lastValue: value, triggeredAt: at, updatedAt: at }).where(eq(alerts.id, row.id)).returning();
-      if (!updated) throw errors.notFound("Alert");
-      const out = toAlert(updated);
-      await auditFrom(c, db)({ action: "alert.trigger", target: `alert:${row.id}`, before: null, after: { value, channels: out.channels } });
-      if (out.channels.includes("email")) {
-        const subject = `HapieCoin alert · ${alertSubject(out)}`;
-        const text = `Your alert fired at ${at.toISOString()}.\n\n${alertSubject(out)}\nNow: ${fmtNum(value)}\n\nOpen HapieCoin to re-arm or edit it: ${deps.config.webUrl}/analyse\n`;
-        // delivery must not undo the trigger: a bounced mailbox is logged, the alert stays triggered
-        try {
-          await deps.mailer.sendAlert({ email: me.email, subject, text });
-        } catch (e) {
-          deps.logger.warn({ alert: row.id, reason: e instanceof Error ? e.message : String(e) }, "alert mail failed");
-        }
-      }
+      const out = await fireAlert(deps, row, value, { source: "client", ip: c.get("clientIp"), ua: c.req.header("user-agent") ?? null }, now);
+      if (!out) throw errors.conflict("Only an armed alert can trigger");
       return c.json(out, 200);
     },
   );

@@ -13,6 +13,7 @@ import type { SessionResolver } from "../security/guards.js";
 import type { RateStore } from "../security/rate-store.js";
 import type { Vault } from "../vault.js";
 import type { AnalyticsReader } from "../analytics.js";
+import type { TelegramClient } from "../telegram.js";
 
 export interface AppDeps {
   config: Config;
@@ -34,6 +35,8 @@ export interface AppDeps {
   trading: DeltaTradingClient;
   /** Market Analytics snapshots written by the ingest service (ADR-038). */
   analytics: AnalyticsReader;
+  /** Telegram bot for alert delivery and chat linking (ADR-057); null without TELEGRAM_BOT_TOKEN. */
+  telegram: TelegramClient | null;
   /** Public auth capabilities (Google hidden when unconfigured). */
   authOptions: { emailOtp: true; passkey: true; google: boolean };
 }

@@ -27,6 +27,8 @@ export interface SeedOptions {
   campaigns?: number;
   /** Seed the three demo alerts (ADR-052): BTC ≥ 82,000 (push, armed), BTC ATM IV ≤ 30 % (email, triggered), a P&L alert on the first active strategy or a named one (push + email, armed). */
   alerts?: boolean;
+  /** Seed the account with a linked Telegram chat (ADR-057). */
+  telegram?: boolean;
 }
 
 export async function seedUser(request: APIRequestContext, opts: SeedOptions) {

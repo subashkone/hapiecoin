@@ -668,6 +668,19 @@ test.describe("HC-SH-079 / HC-SH-094..100 alerts (ADR-052)", () => {
     await dialog.getByTestId("alert-row").first().getByTestId("alert-delete").click();
     await dialog.getByTestId("alert-delete-confirm").click();
     await expect(dialog.getByTestId("alert-row")).toHaveCount(3);
+    // ADR-057 Telegram: connect through the deep link (the mock links on the next poll), then an alert on that channel
+    await expect(dialog.getByTestId("telegram-status")).toHaveAttribute("data-state", "unlinked");
+    await dialog.getByTestId("telegram-connect").click();
+    await expect(dialog.getByTestId("telegram-link")).toHaveAttribute("href", /t\.me\/HapieCoinMockBot\?start=/);
+    await expect(dialog.getByTestId("telegram-status")).toHaveAttribute("data-state", "linked", { timeout: 10_000 });
+    await dialog.getByTestId("alerts-new").click();
+    await expect(form.getByTestId("alert-ch-telegram")).toBeEnabled();
+    await form.getByTestId("alert-ch-telegram").click();
+    await form.getByTestId("alert-value").fill("990000");
+    await form.getByTestId("alert-save").click();
+    await expect(dialog.getByTestId("alert-row").first().getByTestId("alert-channel").nth(1)).toHaveText("telegram");
+    await dialog.getByTestId("telegram-test").click();
+    await expect(page.getByText("Test message sent")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
     // HC-TR-114 / HC-TR-139 a paper trade, then Set alert on its card lands on the P&L form with the strategy chosen

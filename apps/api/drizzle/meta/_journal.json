@@ -92,6 +92,13 @@
       "when": 1789007412761,
       "tag": "0012_sad_black_widow",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789009680186,
+      "tag": "0013_handy_klaw",
+      "breakpoints": true
     }
   ]
 }
