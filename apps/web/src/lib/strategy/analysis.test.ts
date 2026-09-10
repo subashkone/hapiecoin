@@ -1,4 +1,4 @@
-import { analyze } from "@hapiecoin/pricing";
+import { type AnalyzeResult, analyze } from "@hapiecoin/pricing";
 import { describe, expect, it } from "vitest";
 import { cleanStep, ladderPrices, ladderRows, marginEstimate, pnlAt, popGrade, premiumPerUnit, rrGrade, rrText, whereExtreme, winZone } from "./analysis";
 
@@ -112,5 +112,23 @@ describe("HC-TR-097 / HC-TR-100 ticket total and strategy width", () => {
     expect(ticketTotal(-4.65, 0.19).amount).toBeCloseTo(4.84);
     expect(ticketTotal(0.84, 0.19).kind).toBe("credit");
     expect(ticketTotal(0.84, 0.19).amount).toBeCloseTo(0.65);
+  });
+});
+
+describe("HC-TR-138 portfolio fold", () => {
+  it("sums greeks, counts undefined-risk strategies out of the margin", async () => {
+    const { foldPortfolio } = await import("./usePortfolio");
+    type Figures = Parameters<typeof foldPortfolio>[0] extends ReadonlyMap<string, infer F> ? F : never;
+    const g = (delta: number) => ({ delta, gamma: 0.1, theta: -1, vega: 2, rho: 0 });
+    const res: AnalyzeResult = { points: [], maxProfit: 1, maxLoss: -1, breakevens: [], netPremium: 0, pop: 0.5, greeks: g(0), expectedMove: 0, rewardRisk: 1, target: { price: 0, pnlExpiry: 0, pnlTarget: 0 }, targetMs: 0, daysToNearestExpiry: 1, atmIv: 0.5, valuationMs: null };
+    const p = foldPortfolio(new Map<string, Figures>([["a", { greeks: g(0.5), margin: 100, result: res }], ["b", { greeks: g(-0.2), margin: null, result: res }]]));
+    expect(p.open).toBe(2);
+    expect(p.netDelta).toBeCloseTo(0.3);
+    expect(p.netGamma).toBeCloseTo(0.2);
+    expect(p.netTheta).toBeCloseTo(-2);
+    expect(p.netVega).toBeCloseTo(4);
+    expect(p.marginUsed).toBe(100);
+    expect(p.undefinedRisk).toBe(1);
+    expect(foldPortfolio(new Map()).open).toBe(0);
   });
 });

@@ -6,7 +6,7 @@ import { Button, EmptyState, cn, toast } from "@hapiecoin/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState, useEffect } from "react";
 import { strategyKeys, useDeleteStrategy, useStrategies } from "@/lib/api/strategies";
-import { useLiveRetry, useLiveSync } from "@/lib/api/live";
+import { useLiveRetry, useLiveSync, useLivePositions } from "@/lib/api/live";
 import { useBrokers, useCredential } from "@/lib/api/queries";
 import { BatchLiveDialog } from "./BatchLiveDialog";
 import { NetPositionsPanel } from "./NetPositionsPanel";
@@ -14,6 +14,7 @@ import { fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
 import { dayPnl, daysOf, fmtLeg, openLegs, pnlSeries } from "@/lib/strategy/paper";
 import type { PaperBook } from "@/lib/strategy/usePaper";
+import { usePortfolio } from "@/lib/strategy/usePortfolio";
 import { AdjustedBadge, ModePill } from "./StrategyDetailsDialog";
 import { CardFigures } from "./CardFigures";
 import { StopPaperDialog } from "./StopPaperDialog";
@@ -98,6 +99,13 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
     { total: 0, day: 0, open: 0 },
   );
   const stopping = stopId ? all.find((s) => s.id === stopId) ?? null : null;
+  // HC-TR-113 / 116 / 138: net greeks and the margin estimate across this tab's strategies, priced in the worker
+  const portfolio = usePortfolio(data, book, kind);
+  const liveBrokerId = kind === "live" ? (credential?.items[0]?.brokerId ?? null) : null;
+  const wallet = useLivePositions(liveBrokerId, kind === "live" && connected);
+  const balances = wallet.data?.balances ?? [];
+  const walletRow = ["USD", "USDT", "INR"].map((a) => balances.find((b) => b.asset === a)).find((b) => b !== undefined) ?? balances[0];
+  const marginTotal = walletRow ? Number(walletRow.balance) : null;
   return (
     <section className="flex h-full min-h-0 flex-col" data-testid={`${kind}-panel`} data-count={all.length}>
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
@@ -121,9 +129,11 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
         )}
       </div>
       {kind === "live" ? <NetPositionsPanel money={money} /> : null}
-      <div className="grid grid-cols-3 gap-2 px-3 py-2" data-testid={`${kind}-strip`}>
+      <div className="grid grid-cols-2 gap-2 px-3 py-2 sm:grid-cols-5" data-testid={`${kind}-strip`} data-portfolio={portfolio.pending ? "pending" : portfolio.open ? "ready" : "empty"}>
         <div className="rounded border border-border px-2 py-1.5"><div className="micro">Total P&amp;L</div><div className={cn("num text-[15px] font-medium", totals.total >= 0 ? "text-profit" : "text-loss")} data-testid={`${kind}-total`}>{fmtMoney(totals.total, money, { signed: true })}</div><div className="micro">{all.length} {all.length === 1 ? "trade" : "trades"} · {totals.open} open {totals.open === 1 ? "leg" : "legs"}</div></div>
         <div className="rounded border border-border px-2 py-1.5"><div className="micro">Day P&amp;L</div><div className={cn("num text-[15px] font-medium", totals.day >= 0 ? "text-profit" : "text-loss")}>{fmtMoney(totals.day, money, { signed: true })}</div><div className="micro">vs previous close</div></div>
+        <div className="rounded border border-border px-2 py-1.5" title="Net position delta across the open strategies, in units of the underlying (Black-76 at the live marks)"><div className="micro">Net Δ</div><div className={cn("num text-[15px] font-medium", portfolio.open ? (portfolio.netDelta >= 0 ? "text-profit" : "text-loss") : "text-muted-foreground")} data-testid={`${kind}-net-delta`}>{portfolio.open ? `${portfolio.netDelta >= 0 ? "+" : ""}${portfolio.netDelta.toFixed(4)}` : "—"}</div><div className="micro">{portfolio.open ? `Θ/day ${fmtMoney(portfolio.netTheta, money, { signed: true })} · ν ${fmtMoney(portfolio.netVega, money, { signed: true })}` : portfolio.pending ? "pricing the book…" : "no open strategy"}</div></div>
+        <div className="rounded border border-border px-2 py-1.5" title="Σ worst expiry loss of the defined-risk strategies (the exchange margin replaces it for live positions)"><div className="micro">Margin used</div><div className="num text-[15px] font-medium" data-testid={`${kind}-margin-used`}>{portfolio.open ? fmtMoney(portfolio.marginUsed, money) : "—"}</div>{marginTotal !== null && marginTotal > 0 ? <div className="micro"><span className="mr-1">of {fmtMoney(marginTotal, money)} · {Math.min(999, (portfolio.marginUsed / marginTotal) * 100).toFixed(0)}%</span><span className="inline-block h-1 w-12 overflow-hidden rounded bg-muted align-middle"><i className="block h-full bg-[hsl(var(--curve))]" style={{ width: `${Math.min(100, (portfolio.marginUsed / marginTotal) * 100).toFixed(0)}%` }} /></span></div> : <div className="micro">{portfolio.undefinedRisk ? `${portfolio.undefinedRisk} undefined-risk ${portfolio.undefinedRisk === 1 ? "strategy" : "strategies"} excluded` : portfolio.pending && !portfolio.open ? "pricing the book…" : kind === "live" ? "wallet balance once connected" : "worst expiry loss · defined risk"}</div>}</div>
         <div className="rounded border border-border px-2 py-1.5"><div className="micro">Prices</div><div className="num text-[15px] font-medium">{feedLive ? "Live" : "Waiting"}</div><div className="micro">{feedLive ? "mark basis · gateway" : "connecting to the feed"}</div></div>
       </div>
       <div className="min-h-0 flex-1 overflow-auto px-3 pb-3">
@@ -165,7 +175,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                 >
                   <div className="flex flex-wrap items-start gap-2">
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium"><span className="truncate">{s.name}</span><ModePill status={s.status} /><AdjustedBadge s={s} /></div>
+                      <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium"><span className="truncate">{s.name}</span><ModePill status={s.status} /><AdjustedBadge s={s} />{kind === "live" && s.orderBatchId ? <span className="micro rounded border border-border px-1 font-mono" title={`Order batch ${s.orderBatchId}`} data-testid="card-batch">batch {s.orderBatchId.slice(-6)}</span> : null}</div>
                       <div className="micro flex flex-wrap gap-2"><span className="rounded border border-border px-1">{s.asset}</span><span><b>{open.length}</b>/{s.legs.length} legs</span><span><b>{daysOf(s)}</b> days</span>{s.templateName ? <span>{s.templateName}</span> : null}</div>
                     </div>
                     <div className="ml-auto text-right">
