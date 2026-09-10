@@ -15,6 +15,7 @@ dist/
 coverage/
 playwright-report/
 test-results/
+test-results-smoke/
 
 # generated knowledge graph cache (graph.json and report are kept)
 graphify-out/cache/

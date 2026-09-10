@@ -15,7 +15,7 @@ import { createLogger } from "./logger.js";
 import { createMailer } from "./mailer.js";
 import { RazorpayHttpClient } from "./razorpay.js";
 import { MemoryRateStore, type RateStore, RedisRateStore } from "./security/rate-store.js";
-import { createVault } from "./vault.js";
+import { createKeyring } from "./vault.js";
 import { MemoryAnalyticsReader, RedisAnalyticsReader } from "./analytics.js";
 
 loadRepoEnv(import.meta.url);
@@ -57,7 +57,7 @@ const deps: AppDeps = {
   razorpay: config.razorpay ? new RazorpayHttpClient({ ...config.razorpay, nodeEnv: config.nodeEnv }) : null,
   rateStore,
   logger,
-  vault: createVault(config.credentialsEncKey),
+  vault: createKeyring(config.credentialsEncKey, config.credentialsPrevKeys),
   delta: new DeltaPrivateClientImpl({ baseUrl: config.deltaTradingRestUrl, nodeEnv: config.nodeEnv }),
   trading: new DeltaTradingClientImpl({ baseUrl: config.deltaTradingRestUrl, nodeEnv: config.nodeEnv }),
   authOptions: authOptionsPublic(config),

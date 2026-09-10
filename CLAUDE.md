@@ -23,7 +23,7 @@ HapieCoin is a crypto options strategy builder for Delta Exchange India (BTC/ETH
 - Rebuild v2 mock: `cd mockup-v2 && node assemble.js` · QA: `node qa.js dark|light` (Playwright)
 - Regenerate spec traceability: `cd spec && node buildspec.js`
 - Refresh knowledge graph after changes: `graphify update .` (query with `/graphify`)
-- Real build: `pnpm install` · `pnpm ci` (typecheck+lint+coverage+build) · `pnpm dev` · `pnpm db:up` (Postgres+Redis via Docker) · web e2e: `pnpm --filter @hapiecoin/web test:e2e`
+- Real build: `pnpm install` · `pnpm ci` (typecheck+lint+coverage+build) · `pnpm dev` · `pnpm db:up` (Postgres+Redis via Docker) · web e2e: `pnpm --filter @hapiecoin/web test:e2e` · real-API smoke (needs Delta network): `pnpm --filter @hapiecoin/web test:smoke`
 
 ## Where to look (load only what the task needs)
 - Product and users: `.claude/memory/productContext.md`
@@ -35,7 +35,7 @@ HapieCoin is a crypto options strategy builder for Delta Exchange India (BTC/ETH
 
 ## Repo etiquette
 - Branches: `feat/<area>-<short>`, `fix/<area>-<short>`, `chore/<short>`; never commit directly on `main` once the monorepo exists. Commits: conventional prefix + traceability IDs (`/commit` formats this). PRs: one phase item per PR, description lists IDs and the verification run.
-- Env vars (names only; values never in the repo): `DATABASE_URL`, `REDIS_URL`, `BETTER_AUTH_SECRET`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RESEND_API_KEY`, `COINGECKO_API_KEY` (optional, analytics ingest), `DELTA_API_KEY`, `DELTA_API_SECRET` (live only, absent in test).
+- Env vars (names only; values never in the repo): `DATABASE_URL`, `REDIS_URL`, `BETTER_AUTH_SECRET`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RESEND_API_KEY`, `CREDENTIALS_ENC_KEY` + `CREDENTIALS_ENC_KEYS_PREVIOUS` (vault key and the previous keys after a rotation, ADR-054), `COINGECKO_API_KEY` (optional, analytics ingest), `DELTA_API_KEY`, `DELTA_API_SECRET` (live only, absent in test).
 
 ## Non-negotiables
 - Product name is HapieCoin everywhere except when referring to the original site. Package scope `@hapiecoin/*`.

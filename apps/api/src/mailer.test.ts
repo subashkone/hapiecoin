@@ -47,11 +47,14 @@ describe("[MAIL] OTP delivery", () => {
     await expect(mailer.sendOtp({ email: "u@x.com", otp: "1", type: "sign-in" })).rejects.toThrow(/quota/);
     await expect(mailer.sendInvite({ email: "new@x.com", name: "N", invitedBy: "A", link: "https://x" })).rejects.toThrow(/quota/);
     await expect(mailer.sendPromo({ email: "new@x.com", subject: "s", text: "t" })).rejects.toThrow(/quota/);
+    await expect(mailer.sendAlert({ email: "new@x.com", subject: "s", text: "t" })).rejects.toThrow(/quota/);
     const silent = new ResendMailer(client, "x");
     await expect(silent.sendOtp({ email: "u@x.com", otp: "1", type: "sign-in" })).rejects.toThrow();
     fail = false;
     await mailer.sendPromo({ email: "p@x.com", subject: "Hello", text: "Body" });
     expect(sent.at(-1)).toMatchObject({ to: "p@x.com", subject: "Hello", text: "Body" });
+    await mailer.sendAlert({ email: "a@x.com", subject: "HapieCoin alert · BTC ≥ 82,000", text: "fired" });
+    expect(sent.at(-1)).toMatchObject({ to: "a@x.com", subject: "HapieCoin alert · BTC ≥ 82,000", text: "fired" });
   });
 
   it("factory picks the capture mailer without a key (logging through the app logger) and Resend with one", async () => {

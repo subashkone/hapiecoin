@@ -16,7 +16,7 @@ import { createLogger } from "../logger.js";
 import { MailCapture } from "../mailer.js";
 import { FakeRazorpay } from "../razorpay.js";
 import { MemoryRateStore } from "../security/rate-store.js";
-import { createVault, type Vault } from "../vault.js";
+import { createKeyring, type Vault } from "../vault.js";
 import { MemoryAnalyticsReader } from "../analytics.js";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { AppEnv } from "../security/context.js";
@@ -105,7 +105,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
   const trading = new FakeDeltaTradingClient();
   const now = { value: Date.now() };
   const rateStore = new MemoryRateStore({ now: () => now.value });
-  const vault = createVault(config.credentialsEncKey);
+  const vault = createKeyring(config.credentialsEncKey, config.credentialsPrevKeys);
   const analytics = new MemoryAnalyticsReader();
   const auth = createAuth({ config, db: handle.db, mailer: mail, rateStore, logger });
   const deps: AppDeps = {

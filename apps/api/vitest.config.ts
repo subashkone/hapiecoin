@@ -24,6 +24,7 @@ export default mergeConfig(
           "src/main.ts",
           "src/db/migrate-cli.ts",
           "src/db/seed-cli.ts",
+          "src/db/reseal-cli.ts",
         ],
         thresholds: { lines: 95, functions: 95, branches: 90, statements: 95 },
       },

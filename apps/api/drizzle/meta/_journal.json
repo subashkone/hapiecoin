@@ -78,6 +78,13 @@
       "when": 1788992154189,
       "tag": "0010_careful_proudstar",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789005482521,
+      "tag": "0011_furry_silver_centurion",
+      "breakpoints": true
     }
   ]
 }
