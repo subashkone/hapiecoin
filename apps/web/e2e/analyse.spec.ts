@@ -755,6 +755,8 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     const leg = wb.getByTestId("wb-leg").first();
     await leg.getByTestId("lots-after-down").click();
     await expect(leg.getByTestId("effect")).toHaveAttribute("data-kind", "trim");
+    await expect(wb.getByTestId("wb-order")).toHaveCount(1); // the trim is listed as an order under Proposed
+    await expect(wb.getByTestId("wb-order")).toContainText("SELL");
     // HC-TR-149: before → after strip and the summary line
     await expect(page.getByTestId("before-after")).toBeVisible();
     await expect(page.getByTestId("adjust-change-box").getByTestId("adjust-summary")).toContainText("This change", { timeout: 15_000 });

@@ -122,6 +122,30 @@ export function PositionTicket({ w }: { w: AdjustWorkbench }) {
       </div>
     );
   };
+  // ADR-044 §2.5 / H2 mockup: a lots-after edit is an order too, so it appears under Proposed where it can be edited
+  // (the stepper moves lots after: fewer trims, all closes, more adds) or removed (lots after back to lots now)
+  const orders = w.effects.filter((e): e is Effect & { legId: string } => e.legId !== undefined && (e.kind === "trim" || e.kind === "close" || e.kind === "add"));
+  const orderRow = (e: Effect & { legId: string }) => {
+    const l = open.find((x) => x.id === e.legId);
+    if (!l) return null;
+    const side = e.kind === "add" ? l.side : l.side === "buy" ? "sell" : "buy";
+    const setLots = (v: number) => w.setLotsAfter(l.id, e.kind === "add" ? l.lots + v : Math.max(0, l.lots - v));
+    return (
+      <div key={`order-${l.id}`} className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] items-center gap-x-2 rounded border border-warning/60 px-2 py-1 text-xs" data-testid="wb-order" data-leg-id={l.id} data-kind={e.kind}>
+        <SidePill side={side} />
+        <span className="num min-w-0 truncate">
+          <span className="font-medium">{instrumentOf(l)}</span>
+          <span className="text-muted-foreground"> · mark {fmtPrice(a.markOf(l.symbol), 1)}</span>
+        </span>
+        <Stepper value={e.lots} min={1} step={lotStep(l.lots)} onChange={setLots} testId="order-lots" label={`${e.kind === "add" ? "add to" : "close from"} ${instrumentOf(l)}`} />
+        <span className="min-w-[76px] text-right"><EffectPill e={e} /></span>
+        <button type="button" onClick={() => w.setLotsAfter(l.id, l.lots)} aria-label={`Remove the change to ${instrumentOf(l)}`} title="Remove · keep this leg as it is" className="rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:border-loss hover:text-loss" data-testid="wb-order-remove">
+          ✕
+        </button>
+      </div>
+    );
+  };
+  const proposedCount = orders.length + draft.picks.length;
   const latest = w.expiries[w.expiries.length - 1];
   const chosen = draft.valuation === VALUE_TODAY ? VALUE_TODAY : draft.valuation && w.expiries.includes(draft.valuation) ? draft.valuation : draft.valuation && /^\d{4}-\d{2}-\d{2}$/.test(draft.valuation) ? "scenario" : latest;
   const chips = [VALUE_TODAY, ...w.expiries];
@@ -138,10 +162,15 @@ export function PositionTicket({ w }: { w: AdjustWorkbench }) {
       <div className="flex flex-col gap-1">{open.map(legRow)}</div>
       <p className="text-2xs text-muted-foreground">Set the lots you want to hold after: fewer trims, 0 (or Close) closes, more adds at the mark. The chain's B / S on a strike you hold does the same.</p>
       <div className="mt-1 flex items-center gap-2">
-        <span className="micro">Proposed · {draft.picks.length}</span>
-        {draft.picks.length === 0 ? <span className="micro ml-auto text-muted-foreground">pick B / S on the chain, or change lots after on a leg</span> : <span className="micro ml-auto">lots · mark · effect</span>}
+        <span className="micro" data-testid="proposed-count" data-count={proposedCount}>Proposed · {proposedCount}</span>
+        {proposedCount === 0 ? <span className="micro ml-auto text-muted-foreground">pick B / S on the chain, or change lots after on a leg</span> : <span className="micro ml-auto">every order this change sends · lots · mark · effect</span>}
       </div>
-      {draft.picks.length ? <div className="flex flex-col gap-1">{draft.picks.map(pickRow)}</div> : null}
+      {proposedCount ? (
+        <div className="flex flex-col gap-1">
+          {orders.map(orderRow)}
+          {draft.picks.map(pickRow)}
+        </div>
+      ) : null}
       {w.expiries.length > 0 ? (
         <div className="mt-1 flex flex-wrap items-center gap-1" data-testid="value-at">
           <span className="micro mr-1" title="Today: every leg at its time value now. An expiry: legs settled by then are intrinsic, later legs keep their time value">Value at</span>
