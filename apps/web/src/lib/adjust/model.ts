@@ -42,7 +42,7 @@ export interface AdjustDraft {
   /** Lots after the change per open leg id; absent = unchanged. */
   lotsAfter: Record<string, number>;
   picks: AdjustPick[];
-  /** "Value at": an ISO date (an expiry, or any date from the scenario slider), "today" (everything at time value now), or null = the latest expiry of the combined position. */
+  /** "Value at": an ISO date (an expiry, or any date from the scenario slider), "today" (everything at time value now), or null = the nearest expiry of the combined position (ADR-059). */
   valuation: string | null;
   /** When the draft was opened, for the mark-age counter. */
   startedAt: number;
@@ -291,16 +291,17 @@ export const VALUE_TODAY = "today";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** The "value at" instant: today, the chosen date (an expiry or a scenario date, at the settlement hour), else the latest expiry of the combined position; undefined without option legs. */
+/** The "value at" instant: today, the chosen date (an expiry or a scenario date, at the settlement hour), else the nearest expiry of the combined position (ADR-059); undefined without option legs. */
 export function valuationMsOf(d: AdjustDraft, open: readonly ServerLeg[], asset: Underlying, nowMs: number): number | undefined {
   if (d.valuation === VALUE_TODAY) return nowMs;
   const expiries = combinedExpiries(d, open);
   if (expiries.length === 0) return undefined;
-  const chosen = d.valuation && ISO_DATE.test(d.valuation) ? d.valuation : expiries[expiries.length - 1]!;
+  // ADR-059: no explicit choice values at the nearest expiry (later legs keep time value); the chips pick any other
+  const chosen = d.valuation && ISO_DATE.test(d.valuation) ? d.valuation : expiries[0]!;
   try {
     return expiryMs(chosen, settlementHourUtc(asset));
   } catch {
-    return expiryMs(expiries[expiries.length - 1]!, settlementHourUtc(asset)); // an impossible date falls back to the latest expiry
+    return expiryMs(expiries[0]!, settlementHourUtc(asset)); // an impossible date falls back to the nearest expiry
   }
 }
 

@@ -147,11 +147,13 @@ export function PositionTicket({ w }: { w: AdjustWorkbench }) {
   };
   const proposedCount = orders.length + draft.picks.length;
   const latest = w.expiries[w.expiries.length - 1];
-  const chosen = draft.valuation === VALUE_TODAY ? VALUE_TODAY : draft.valuation && w.expiries.includes(draft.valuation) ? draft.valuation : draft.valuation && /^\d{4}-\d{2}-\d{2}$/.test(draft.valuation) ? "scenario" : latest;
+  const nearest = w.expiries[0];
+  // no explicit choice = the nearest expiry (ADR-059); later legs keep their time value there
+  const chosen = draft.valuation === VALUE_TODAY ? VALUE_TODAY : draft.valuation && w.expiries.includes(draft.valuation) ? draft.valuation : draft.valuation && /^\d{4}-\d{2}-\d{2}$/.test(draft.valuation) ? "scenario" : nearest;
   const chips = [VALUE_TODAY, ...w.expiries];
   // scenario slider (ADR-044 extra 2): any day between today and the latest expiry
   const maxDays = latest ? Math.max(0, daysToExpiry(latest, new Date(a.nowMs))) : 0;
-  const sliderDays = chosen === VALUE_TODAY ? 0 : chosen === "scenario" && draft.valuation ? Math.max(0, Math.min(maxDays, Math.round((Date.parse(`${draft.valuation}T12:00:00Z`) - a.nowMs) / 86_400_000))) : chosen === latest ? maxDays : draft.valuation ? Math.max(0, Math.min(maxDays, daysToExpiry(draft.valuation, new Date(a.nowMs)))) : maxDays;
+  const sliderDays = chosen === VALUE_TODAY ? 0 : chosen === "scenario" && draft.valuation ? Math.max(0, Math.min(maxDays, Math.round((Date.parse(`${draft.valuation}T12:00:00Z`) - a.nowMs) / 86_400_000))) : chosen === latest ? maxDays : chosen && chosen !== VALUE_TODAY ? Math.max(0, Math.min(maxDays, daysToExpiry(chosen, new Date(a.nowMs)))) : maxDays;
   return (
     <div className="flex flex-col gap-2 p-3" data-testid="position-ticket">
       <div className="flex items-center gap-2">
@@ -184,14 +186,14 @@ export function PositionTicket({ w }: { w: AdjustWorkbench }) {
         <div className="mt-1 flex flex-wrap items-center gap-1" data-testid="value-at">
           <span className="micro mr-1" title="Today: every leg at its time value now. An expiry: legs settled by then are intrinsic, later legs keep their time value">Value at</span>
           {chips.map((e) => (
-            <button key={e} type="button" aria-pressed={e === chosen} onClick={() => w.setValuation(e === latest ? null : e)} className={cn("rounded border px-1.5 py-0.5 text-2xs", e === chosen ? "border-foreground/40 text-foreground" : "border-border text-muted-foreground hover:text-foreground")} data-testid="value-at-chip" data-expiry={e}>
+            <button key={e} type="button" aria-pressed={e === chosen} onClick={() => w.setValuation(e === nearest ? null : e)} className={cn("rounded border px-1.5 py-0.5 text-2xs", e === chosen ? "border-foreground/40 text-foreground" : "border-border text-muted-foreground hover:text-foreground")} data-testid="value-at-chip" data-expiry={e}>
               {e === VALUE_TODAY ? "today" : <>{fmtExpiry(e)} <span className="font-mono text-3xs">{daysToExpiry(e)}d</span></>}
             </button>
           ))}
           {maxDays > 0 ? (
             <label className="flex w-full items-center gap-2 text-2xs" title="Scenario: value the combined position on any day up to its latest expiry (dates are UTC, at the settlement hour)">
               <span className="micro w-[72px] shrink-0">Scenario</span>
-              <input type="range" min={0} max={maxDays} step={1} value={sliderDays} onChange={(e) => { const d = Number(e.target.value); w.setValuation(d === 0 ? VALUE_TODAY : d >= maxDays ? null : isoDaysFrom(a.nowMs, d)); }} className="flex-1 accent-[hsl(var(--curve))]" aria-label="Scenario date, days ahead" data-testid="scenario-days" />
+              <input type="range" min={0} max={maxDays} step={1} value={sliderDays} onChange={(e) => { const d = Number(e.target.value); w.setValuation(d === 0 ? VALUE_TODAY : d >= maxDays && latest ? latest : isoDaysFrom(a.nowMs, d)); }} className="flex-1 accent-[hsl(var(--curve))]" aria-label="Scenario date, days ahead" data-testid="scenario-days" />
               <span className="num w-[120px] text-right" data-testid="scenario-label">{sliderDays === 0 ? "today" : `+${sliderDays}d · ${fmtDate(isoDaysFrom(a.nowMs, sliderDays))}`}</span>
             </label>
           ) : null}

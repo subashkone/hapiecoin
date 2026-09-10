@@ -19,7 +19,8 @@ import type { PaperBook } from "@/lib/strategy/usePaper";
 import { useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
 import { SaveDraftDialog } from "@/components/dialogs/SaveDraftDialog";
 import { suggestStrategyName } from "@/lib/strategy/naming";
-import { type TradeLegView, TradeModeDialog } from "./TradeModeDialog";
+import { isTemplateName } from "@/lib/strategy/templates";
+import { type TradeLegView, TradeModeDialog, netPremium } from "./TradeModeDialog";
 import { TradePreviewDialog } from "./TradePreviewDialog";
 
 /** One-time import of the Phase 2 browser drafts into the API (ADR-024). */
@@ -181,8 +182,10 @@ export function TradeFlow({ book }: { book: PaperBook }) {
       setBusy(false);
     }
   };
+  // ADR-059: a trade from the Builder always confirms its name (the Builder's own name pre-filled, else the suggestion):
+  // paper asks here, after the preview; live asked before the exchange preview (the draft must exist for it)
   const onTradeNow = () => {
-    if (fromBuilder && !meta.name.trim()) {
+    if (fromBuilder && mode === "paper") {
       setStep("name");
       return;
     }
@@ -197,7 +200,10 @@ export function TradeFlow({ book }: { book: PaperBook }) {
     setBusy(true);
     try {
       const id = await ensureDraft(name);
-      const v = await livePreview.mutateAsync({ id, body: { brokerId: b, ...(maxLoss !== null ? { worstLoss: maxLoss } : {}) } });
+      // the same figure the preview's capital block shows: never less than the debit paid (HC-TR-158)
+      const debit = Math.max(0, -netPremium(legs, lotSize));
+      const worstLoss = maxLoss === null ? null : Math.min(maxLoss, -debit);
+      const v = await livePreview.mutateAsync({ id, body: { brokerId: b, ...(worstLoss !== null ? { worstLoss } : {}) } });
       setVenue(v);
       setStep("preview");
     } catch (e) {
@@ -226,15 +232,15 @@ export function TradeFlow({ book }: { book: PaperBook }) {
           setMode(m);
           setBrokerId(b);
           setFees(f);
-          if (m === "live" && fromBuilder && !meta.name.trim()) {
-            setStep("name");
+          if (m === "live" && fromBuilder) {
+            setStep("name"); // live: the name first, then the exchange preview
             return;
           }
           void toPreview(m, b);
         }}
       />
       <TradePreviewDialog open={step === "preview"} onOpenChange={(o) => !o && closeTrade()} mode={mode} asset={asset} legs={legs} spot={spot} lotSize={lotSize} money={money} broker={broker} fees={fees} maxLoss={maxLoss} maxLossKnown={fromBuilder} customPrices={customPrices} busy={busy} venue={venue} available={available} onTrade={onTradeNow} />
-      <SaveDraftDialog open={step === "name"} onOpenChange={(o) => !o && setStep("preview")} initialName={meta.name} suggest={fromBuilder ? suggest : undefined} intent="trade" onSave={(n) => { setMeta(builder.asset, { name: n }); if (mode === "live") void toPreview("live", brokerId, n); else { setStep("preview"); void trade(n); } }} />
+      <SaveDraftDialog open={step === "name"} onOpenChange={(o) => !o && setStep("preview")} initialName={isTemplateName(meta.name) ? "" : meta.name} suggest={fromBuilder ? suggest : undefined} intent="trade" onSave={(n) => { setMeta(builder.asset, { name: n }); if (mode === "live") void toPreview("live", brokerId, n); else { setStep("preview"); void trade(n); } }} />
     </>
   );
 }

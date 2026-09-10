@@ -152,12 +152,12 @@ describe("HC-TR-149 before / after legs, cashflow, cap and valuation date", () =
     expect(valuationMsOf(d, OPEN, "BTC", now)).toBe(Date.UTC(2026, 8, 25, 12));
     d = pickOnDraft(d, OPEN, "BTC", pick({ expiry: LATER }));
     expect(combinedExpiries(d, OPEN)).toEqual([EXP, LATER]);
-    expect(valuationMsOf(d, OPEN, "BTC", now)).toBe(Date.UTC(2026, 9, 30, 12)); // latest by default
-    expect(valuationMsOf(setValuation(d, EXP), OPEN, "BTC", now)).toBe(Date.UTC(2026, 8, 25, 12));
+    expect(valuationMsOf(d, OPEN, "BTC", now)).toBe(Date.UTC(2026, 8, 25, 12)); // nearest by default (ADR-059): later legs keep time value
+    expect(valuationMsOf(setValuation(d, LATER), OPEN, "BTC", now)).toBe(Date.UTC(2026, 9, 30, 12));
     expect(valuationMsOf(setValuation(d, VALUE_TODAY), OPEN, "BTC", now)).toBe(now);
     expect(valuationMsOf(setValuation(d, "2026-10-10"), OPEN, "BTC", now)).toBe(Date.UTC(2026, 9, 10, 12)); // a scenario date between the expiries
-    expect(valuationMsOf(setValuation(d, "2026-02-30"), OPEN, "BTC", now)).toBe(Date.UTC(2026, 9, 30, 12)); // an impossible date → latest
-    expect(valuationMsOf(setValuation(d, "soon"), OPEN, "BTC", now)).toBe(Date.UTC(2026, 9, 30, 12)); // not a date → latest
+    expect(valuationMsOf(setValuation(d, "2026-02-30"), OPEN, "BTC", now)).toBe(Date.UTC(2026, 8, 25, 12)); // an impossible date → nearest
+    expect(valuationMsOf(setValuation(d, "soon"), OPEN, "BTC", now)).toBe(Date.UTC(2026, 8, 25, 12)); // not a date → nearest
     expect(isoDaysFrom(now, 5)).toBe("2026-09-25");
     expect(valuationMsOf(newDraft("s", 1), [leg({ ...CALL, kind: "future", expiry: "PERP", symbol: "BTCUSD" })], "XAUT", now)).toBeUndefined();
     const closed = setLotsAfter(setLotsAfter(newDraft("s", 1), CALL.id, 0), PUT.id, 0);

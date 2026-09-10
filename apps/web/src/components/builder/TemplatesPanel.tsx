@@ -85,10 +85,18 @@ export function useTemplateLoader() {
   const spot = useSpot(asset);
   const rows = chain?.rows ?? [];
   const atm = useMemo(() => atmIndex(rows, spot?.price), [rows, spot?.price]);
+  // calendars (expiryOffset 1) take their far leg from the next listed expiry's chain (ADR-059); without it the
+  // template fell back to the near expiry and both legs cancelled
+  const nextExpiry = expiry ? (list[list.indexOf(expiry) + 1] ?? null) : null;
+  const nextChain = useChain(asset, nextExpiry);
+  const rowsByExpiry = useMemo(() => {
+    const nr = nextChain?.rows ?? [];
+    return nextExpiry && nr.length ? { [nextExpiry]: { rows: nr, atm: atmIndex(nr, spot?.price) } } : undefined;
+  }, [nextExpiry, nextChain?.rows, spot?.price]);
 
   const load = (tpl: StrategyTemplate) => {
     if (!expiry) return;
-    const r = materialiseTemplate(tpl, { asset, expiry, expiries: list, rows, atm, lots: chainLots });
+    const r = materialiseTemplate(tpl, { asset, expiry, expiries: list, rows, atm, lots: chainLots, ...(rowsByExpiry ? { rowsByExpiry } : {}) });
     if (!r.ok) {
       toast.error(r.reason === "no-chain" ? "Chain not loaded yet" : r.reason === "out-of-range" ? "Not enough listed strikes around ATM for this template" : "A leg has no quote yet");
       return;
@@ -105,7 +113,8 @@ export function useTemplateLoader() {
     setLegs(asset, legs);
     setMeta(asset, { name: tpl.name, draftId: null });
     setBuilderTab("builder");
-    toast(`${tpl.name} loaded`, { description: `${legs.length} ${legs.length === 1 ? "leg" : "legs"} on ${fmtExpiry(expiry)} · ${chainLots} lots each` });
+    const spans = [...new Set(legs.map((l) => l.expiry))].sort();
+    toast(`${tpl.name} loaded`, { description: `${legs.length} ${legs.length === 1 ? "leg" : "legs"} on ${spans.length > 1 ? `${fmtExpiry(spans[0]!)} → ${fmtExpiry(spans[spans.length - 1]!)}` : fmtExpiry(expiry)} · ${chainLots} lots each` });
   };
   // HC-WS-069: the palette's "Load template → <name>" waits here until the chain rows exist
   const request = useUiStore((s) => s.templateRequest);
@@ -119,7 +128,8 @@ export function useTemplateLoader() {
     else toast.error("Unknown template", { description: request });
     // `load` reads the latest chain each call; re-running on its identity would double-load
   }, [request, chainReady, expiry, requestTemplate]);
-  return { asset, expiry, list, setChosen, load, chainReady, rows, atm, spot: spot?.price ?? null, seq: chain?.seq ?? -1 };
+  // farSeq: the next expiry's chain sequence, so template statistics recompute when the far rows arrive (calendars)
+  return { asset, expiry, list, setChosen, load, chainReady, rows, atm, rowsByExpiry, spot: spot?.price ?? null, seq: chain?.seq ?? -1, farSeq: nextChain?.seq ?? -1 };
 }
 
 /** Sketch with green / red fills and a dashed zero line (HC-TR-108). */
@@ -142,12 +152,12 @@ function TemplateSketch({ tpl }: { tpl: StrategyTemplate }) {
 }
 
 export function TemplatesPanel() {
-  const { asset, expiry, list, setChosen, load, rows, atm, spot, seq } = useTemplateLoader();
+  const { asset, expiry, list, setChosen, load, rows, atm, rowsByExpiry, spot, seq } = useTemplateLoader();
   const chainLots = useUiStore((s) => s.chainLots);
   const { data: settings } = useSettings();
   const [outlook, setOutlook] = useState<Outlook | null>(null);
   // HC-TR-106 / 107: every template priced at the live chain → POP, R:R and the outlook it expresses
-  const stats = useTemplateStats(TEMPLATES, { asset, expiry, expiries: list, rows, atm, lots: chainLots, spot: spot === null ? null : Number(spot), lotSize: settings?.lotSizes[asset], nowMs: Date.now(), version: seq });
+  const stats = useTemplateStats(TEMPLATES, { asset, expiry, expiries: list, rows, atm, lots: chainLots, ...(rowsByExpiry ? { rowsByExpiry } : {}), spot: spot === null ? null : Number(spot), lotSize: settings?.lotSizes[asset], nowMs: Date.now(), version: seq });
   const setLegs = useUiStore((s) => s.setLegs);
   const setMeta = useUiStore((s) => s.setStrategyMeta);
   const setBuilderTab = useUiStore((s) => s.setBuilderTab);

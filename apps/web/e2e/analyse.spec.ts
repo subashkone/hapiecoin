@@ -556,6 +556,8 @@ test.describe("HC-TR paper trading (Phase 3 item 1)", () => {
     const preview = page.getByTestId("trade-preview");
     await expect(preview.getByTestId("preview-row")).toHaveCount(2);
     await preview.getByTestId("trade-now").click();
+    await expect(page.getByTestId("save-draft-name")).toHaveValue("E2E straddle"); // the name is always confirmed (ADR-059)
+    await page.getByTestId("save-draft-confirm").click();
     await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
     await expect(page.getByTestId("paper-count")).toHaveText("1");
     const card = page.getByTestId("paper-card");
@@ -692,6 +694,7 @@ test.describe("HC-SH-079 / HC-SH-094..100 alerts (ADR-052)", () => {
     await page.getByTestId("builder-paper-trade").click();
     await page.getByTestId("trade-mode").getByTestId("trade-continue").click();
     await page.getByTestId("trade-preview").getByTestId("trade-now").click();
+    await page.getByTestId("save-draft-confirm").click();
     await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
     await page.getByTestId("paper-card").getByTestId("card-alert").click();
     await expect(dialog).toBeVisible();
@@ -732,6 +735,7 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     await page.getByTestId("builder-paper-trade").click();
     await page.getByTestId("trade-mode").getByTestId("trade-continue").click();
     await page.getByTestId("trade-preview").getByTestId("trade-now").click();
+    await page.getByTestId("save-draft-confirm").click();
     await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
     const card = page.getByTestId("paper-card");
     await expect(card.getByTestId("card-figures")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
@@ -823,6 +827,7 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     await page.getByTestId("builder-paper-trade").click();
     await page.getByTestId("trade-mode").getByTestId("trade-continue").click();
     await page.getByTestId("trade-preview").getByTestId("trade-now").click();
+    await page.getByTestId("save-draft-confirm").click();
     await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
     await page.getByTestId("paper-card").getByTestId("card-adjust").click();
     const wb = page.getByTestId("adjust-workbench");
@@ -863,6 +868,7 @@ test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
     await expect(mode.getByTestId("trade-broker")).toHaveValue("brk_delta");
     await mode.getByTestId("trade-continue").click();
     await page.getByTestId("trade-preview").getByTestId("trade-now").click();
+    await page.getByTestId("save-draft-confirm").click();
     await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
     await page.getByTestId("paper-card").getByTestId("card-golive").click();
     await expect(mode.getByTestId("mode-live")).toHaveAttribute("aria-pressed", "true");
@@ -912,6 +918,7 @@ test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
     await expect(mode.getByTestId("trade-broker")).toHaveValue("brk_delta");
     await mode.getByTestId("trade-continue").click();
     await page.getByTestId("trade-preview").getByTestId("trade-now").click();
+    await page.getByTestId("save-draft-confirm").click();
     await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
     // Go live from the card
     const card = page.getByTestId("paper-card");

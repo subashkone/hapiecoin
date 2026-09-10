@@ -21,7 +21,7 @@ information.
    available after, mark freshness (age counter, re-read at Review, per-leg band in ticks for live), a live confirm that
    is visually and mechanically different (red frame, order type, per-leg fill state, hold-to-place).
 3. Adjustments on **other expiries** (expiry tabs on the chain; "value at" chips for today and each expiry; later legs
-   keep time value when valued at an earlier date; default valuation date = latest expiry of the combined position).
+   keep time value when valued at an earlier date; default valuation date = latest expiry of the combined position, changed to the **nearest** expiry on 11 Sep, ADR-059).
 4. After a live adjustment the card and Details show the **combined max loss / profit / POP**, realised P&L on closed
    lots and unrealised on open legs, plus an ADJUSTED badge.
 5. Lots are edited **in both places**: a "lots now → after" stepper on each open leg (fewer = trim, 0 = close, more =
