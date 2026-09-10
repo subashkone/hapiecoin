@@ -39,7 +39,8 @@ export {
   OTP_LOCK_MESSAGE,
   GLOBAL_LIMIT_MESSAGE,
 } from "./security/rate-limit.js";
-export { createVault, maskKey, VaultError } from "./vault.js";
+export { createKeyring, createVault, keyIdOf, maskKey, VaultError } from "./vault.js";
+export { resealCredentials } from "./credentials-reseal.js";
 export type { Sealed, Vault } from "./vault.js";
 export { DEFAULT_SETTINGS } from "./routes/settings.js";
 export { planState, EXPIRING_SOON_DAYS } from "./routes/plan.js";

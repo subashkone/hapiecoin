@@ -191,6 +191,8 @@ export const brokerCredentials = pgTable(
     apiSecretTag: text("api_secret_tag").notNull(),
     connectedAt: timestamp("connected_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
     whitelistedIp: text("whitelisted_ip").notNull(),
+    /** Id of the vault key that sealed this row (ADR-054); null for rows written before key rotation existed. */
+    keyId: text("key_id"),
   },
   (t) => [
     uniqueIndex("broker_credentials_user_broker_uq").on(t.userId, t.brokerId),

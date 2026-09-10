@@ -1,0 +1,1 @@
+ALTER TABLE "broker_credentials" ADD COLUMN "key_id" text;

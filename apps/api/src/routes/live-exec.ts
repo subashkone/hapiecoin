@@ -9,6 +9,7 @@ import { type DeltaCredentials, type PlaceOrderResult, contractsFor, roundToTick
 import { and, eq } from "drizzle-orm";
 import { brokerCredentials, brokers, type strategies, strategyLegs, strategyOrders, userSettings, users } from "../db/schema.js";
 import type { SessionUser } from "../security/context.js";
+import { resealRow } from "../credentials-reseal.js";
 import { HttpError, errors } from "../security/errors.js";
 import { type AppDeps, newId } from "./shared.js";
 
@@ -36,16 +37,27 @@ export async function openCredential(deps: AppDeps, user: SessionUser, brokerId:
   if (!own) throw errors.badRequest("Select an exchange...");
   const [row] = await deps.db.select().from(brokerCredentials).where(and(eq(brokerCredentials.userId, user.id), eq(brokerCredentials.brokerId, brokerId))).limit(1);
   if (!row) throw errors.conflict("Connect your exchange in Settings → API Settings to enable live trading");
+  let creds: DeltaCredentials;
   try {
-    return {
-      apiKey: deps.vault.open({ ct: row.apiKeyCt, iv: row.apiKeyIv, tag: row.apiKeyTag }),
-      apiSecret: deps.vault.open({ ct: row.apiSecretCt, iv: row.apiSecretIv, tag: row.apiSecretTag }),
+    creds = {
+      apiKey: deps.vault.open({ ct: row.apiKeyCt, iv: row.apiKeyIv, tag: row.apiKeyTag, kid: row.keyId }),
+      apiSecret: deps.vault.open({ ct: row.apiSecretCt, iv: row.apiSecretIv, tag: row.apiSecretTag, kid: row.keyId }),
     };
   } catch (e) {
-    // sealed under another CREDENTIALS_ENC_KEY (or tampered): the only way forward is to reconnect (GAPS #42)
-    deps.logger.warn({ err: e instanceof Error ? e.message : String(e), userId: user.id, brokerId }, "stored exchange credential cannot be opened");
+    // sealed under a key that is neither current nor in CREDENTIALS_ENC_KEYS_PREVIOUS (or tampered): reconnect (GAPS #42, ADR-054)
+    deps.logger.warn({ err: e instanceof Error ? e.message : String(e), userId: user.id, brokerId, kid: row.keyId }, "stored exchange credential cannot be opened");
     throw errors.conflict("Your saved exchange key cannot be decrypted because the server's encryption key changed. Reconnect it in Settings → API Settings.");
   }
+  // rotation (ADR-054): a row still under a previous key is re-sealed under the current one on first use
+  if (!deps.vault.isCurrent({ kid: row.keyId })) {
+    try {
+      await resealRow(deps.db, deps.vault, row, creds.apiKey, creds.apiSecret);
+      deps.logger.info({ userId: user.id, brokerId, from: row.keyId ?? "legacy", to: deps.vault.kid }, "exchange credential re-sealed under the current key");
+    } catch (e) {
+      deps.logger.warn({ err: e instanceof Error ? e.message : String(e), userId: user.id, brokerId }, "exchange credential re-seal failed; will retry on next use");
+    }
+  }
+  return creds;
 }
 
 /** Kill switches (ADR-025): the operator's env flag and the account flag. */

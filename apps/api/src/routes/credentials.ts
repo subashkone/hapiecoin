@@ -136,6 +136,7 @@ export function registerCredentialRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps
         apiSecretTag: secret.tag,
         connectedAt: new Date(),
         whitelistedIp: deps.config.egressIp,
+        keyId: key.kid,
       };
       const [row] = await deps.db
         .insert(brokerCredentials)

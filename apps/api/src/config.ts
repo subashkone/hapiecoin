@@ -49,6 +49,8 @@ const RawEnv = z.object({
   INVOICE_SELLER_EMAIL: z.string().min(3).default("billing@hapiecoin.com"),
   EMAIL_FROM: z.string().min(3).default("HapieCoin <no-reply@hapiecoin.com>"),
   CREDENTIALS_ENC_KEY: Base64Key32.optional(),
+  /** Comma-separated previous keys still allowed to open old records after a rotation (ADR-054); each base64, 32 bytes. */
+  CREDENTIALS_ENC_KEYS_PREVIOUS: z.string().optional(),
   DELTA_REST_URL: z.url().default("https://api.india.delta.exchange"),
   /** Egress IP users must whitelist at the exchange (HC-SH-036). Placeholder until the production egress is fixed. */
   EGRESS_IP: z.ipv4().default("172.236.179.136"),
@@ -90,6 +92,8 @@ export interface Config {
   invoiceSeller: { name: string; address: string; gstin: string; email: string };
   /** 32-byte AES-256-GCM key for exchange credentials at rest. */
   credentialsEncKey: Buffer;
+  /** Previous keys (newest first) the vault may still open records with; empty when never rotated (ADR-054). */
+  credentialsPrevKeys: Buffer[];
   deltaRestUrl: string;
   deltaTradingRestUrl: string;
   trading: { disabled: boolean; maxNotionalUsd: number; maxLegs: number; markBandPct: number; reconcileMs: number };
@@ -170,6 +174,12 @@ export function loadConfig(
   } else {
     credentialsEncKey = Buffer.from(e.CREDENTIALS_ENC_KEY, "base64");
   }
+  const credentialsPrevKeys: Buffer[] = [];
+  for (const [i, part] of (e.CREDENTIALS_ENC_KEYS_PREVIOUS ?? "").split(",").map((s) => s.trim()).filter(Boolean).entries()) {
+    if (!Base64Key32.safeParse(part).success) throw new ConfigError(`CREDENTIALS_ENC_KEYS_PREVIOUS entry #${i + 1} must be a base64 string that decodes to 32 bytes`);
+    const key = Buffer.from(part, "base64");
+    if (!key.equals(credentialsEncKey)) credentialsPrevKeys.push(key);
+  }
 
   // Production must never fall back to the embedded database or the OTP-logging mailer (GAPS #23, #25).
   if (isProd && e.DATABASE_URL === undefined) {
@@ -205,6 +215,7 @@ export function loadConfig(
     razorpay: e.RAZORPAY_KEY_ID && e.RAZORPAY_KEY_SECRET ? { keyId: e.RAZORPAY_KEY_ID, keySecret: e.RAZORPAY_KEY_SECRET, webhookSecret: e.RAZORPAY_WEBHOOK_SECRET } : undefined,
     invoiceSeller: { name: e.INVOICE_SELLER_NAME, address: e.INVOICE_SELLER_ADDRESS, gstin: e.INVOICE_SELLER_GSTIN, email: e.INVOICE_SELLER_EMAIL },
     credentialsEncKey,
+    credentialsPrevKeys,
     deltaRestUrl: e.DELTA_REST_URL,
     deltaTradingRestUrl: e.DELTA_TRADING_REST_URL ?? e.DELTA_REST_URL,
     trading: { disabled: e.TRADING_DISABLED === "1" || e.TRADING_DISABLED === "true", maxNotionalUsd: e.TRADING_MAX_NOTIONAL_USD, maxLegs: e.TRADING_MAX_LEGS, markBandPct: e.TRADING_MARK_BAND_PCT, reconcileMs: e.TRADING_RECONCILE_MS },

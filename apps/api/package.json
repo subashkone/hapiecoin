@@ -25,7 +25,8 @@
     "test:coverage": "vitest run --coverage",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate-cli.ts",
-    "db:seed": "tsx src/db/seed-cli.ts"
+    "db:seed": "tsx src/db/seed-cli.ts",
+    "db:reseal": "tsx src/db/reseal-cli.ts"
   },
   "dependencies": {
     "@better-auth/passkey": "1.7.3",

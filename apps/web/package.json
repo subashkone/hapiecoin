@@ -14,6 +14,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:smoke": "playwright test -c playwright.smoke.config.ts",
     "check:budget": "node scripts/check-budget.mjs",
     "mock:servers": "tsx test/servers.ts"
   },

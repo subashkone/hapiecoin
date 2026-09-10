@@ -131,3 +131,14 @@ describe("[CONFIG] environment parsing", () => {
     ).not.toThrow();
   });
 });
+
+describe("ADR-054 CREDENTIALS_ENC_KEYS_PREVIOUS", () => {
+  it("parses the comma-separated previous keys, drops one equal to the current key, refuses a malformed entry", () => {
+    const old1 = Buffer.alloc(32, 7).toString("base64");
+    const old2 = Buffer.alloc(32, 9).toString("base64");
+    const c = loadConfig({ ...BASE, CREDENTIALS_ENC_KEYS_PREVIOUS: ` ${old1} , ${old2},${BASE.CREDENTIALS_ENC_KEY} ` }, { warn: () => undefined });
+    expect(c.credentialsPrevKeys.map((k) => k.toString("base64"))).toEqual([old1, old2]);
+    expect(loadConfig(BASE, { warn: () => undefined }).credentialsPrevKeys).toEqual([]);
+    expect(() => loadConfig({ ...BASE, CREDENTIALS_ENC_KEYS_PREVIOUS: "short" }, { warn: () => undefined })).toThrow(/CREDENTIALS_ENC_KEYS_PREVIOUS entry #1/);
+  });
+});
