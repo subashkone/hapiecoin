@@ -17,11 +17,27 @@ const EFFECT_CLS: Record<Effect["kind"], string> = {
   flip: "border-loss text-loss",
 };
 
+/** The effect without the contract, for a row that already names it: CLOSES · TRIMS by 10 · ADDS +15 · FLIPS +5 · NEW LEG. */
+export function shortEffect(e: Effect): string {
+  switch (e.kind) {
+    case "close":
+      return "CLOSES";
+    case "trim":
+      return `TRIMS by ${e.lots}`;
+    case "add":
+      return `ADDS +${e.lots}`;
+    case "flip":
+      return `FLIPS +${e.lots}`;
+    default:
+      return "NEW LEG";
+  }
+}
+
 export function EffectPill({ e }: { e: Effect | undefined }) {
   if (!e) return <span className="micro text-muted-foreground" data-testid="effect-none">unchanged</span>;
   return (
-    <span className={cn("micro whitespace-nowrap rounded border px-1", EFFECT_CLS[e.kind])} data-testid="effect" data-kind={e.kind}>
-      {e.label}
+    <span className={cn("micro whitespace-nowrap rounded border px-1", EFFECT_CLS[e.kind])} title={e.label} data-testid="effect" data-kind={e.kind}>
+      {shortEffect(e)}
     </span>
   );
 }
@@ -76,7 +92,7 @@ export function PositionTicket({ w }: { w: AdjustWorkbench }) {
           <span className="num text-muted-foreground">{l.lots} →</span>
           <Stepper value={after} min={0} step={lotStep(l.lots)} onChange={(v) => w.setLotsAfter(l.id, v)} testId="lots-after" label={instrumentOf(l)} />
         </span>
-        <span className="w-[72px] text-right"><EffectPill e={effectOf(l.id)} /></span>
+        <span className="min-w-[76px] text-right"><EffectPill e={effectOf(l.id)} /></span>
         {changed ? (
           <button type="button" onClick={() => w.setLotsAfter(l.id, l.lots)} className="rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground" title="Undo · keep this leg as it is" aria-label={`Undo the change to ${instrumentOf(l)}`} data-testid="wb-leg-undo">
             ↺
@@ -99,7 +115,7 @@ export function PositionTicket({ w }: { w: AdjustWorkbench }) {
           <span className="text-muted-foreground"> · mark {fmtPrice(mark, 1)}</span>
         </span>
         <Stepper value={p.lots} min={1} step={lotStep(p.lots)} onChange={(v) => w.setPickLots(p.id, v)} testId="pick-lots" label={instrumentOf(p)} />
-        <span className="w-[72px] text-right"><EffectPill e={pickEffect(p)} /></span>
+        <span className="min-w-[76px] text-right"><EffectPill e={pickEffect(p)} /></span>
         <button type="button" onClick={() => w.removePick(p.id)} aria-label={`Remove ${instrumentOf(p)}`} className="rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:border-loss hover:text-loss" data-testid="wb-pick-remove">
           ✕
         </button>

@@ -11,15 +11,21 @@ import { AdjustChangeBox } from "@/components/adjust/AdjustChangeBox";
 
 type Tone = "profit" | "loss" | "muted";
 
-function figure(label: string, before: string, after: string, tone: Tone, verdict: string, testId: string) {
+function figure(label: string, before: string, after: string, tone: Tone, verdict: string | null, testId: string) {
+  // the tile never wraps: the after figure is the reading, the line under it is "before → verdict" (or "was before"
+  // where a verdict makes no sense), and the full sentence is on hover for the cases the width still clips
   return (
-    <div className="min-w-0 rounded border border-border px-2 py-1.5" data-testid={testId} data-tone={tone}>
+    <div className="min-w-0 rounded border border-border px-2 py-1.5" title={`${label}: ${before} → ${after}${verdict ? ` (${verdict})` : ""}`} data-testid={testId} data-tone={tone}>
       <div className="micro truncate">{label}</div>
       <div className={cn("num truncate text-[15px] font-medium", tone === "profit" && "text-profit", tone === "loss" && "text-loss")}>{after}</div>
-      <div className="num flex flex-wrap items-baseline gap-x-1 text-2xs text-muted-foreground">
-        <span>{before}</span>
-        <span aria-hidden>→</span>
-        <span className={cn(tone === "profit" && "text-profit", tone === "loss" && "text-loss")}>{verdict}</span>
+      <div className="num truncate text-2xs text-muted-foreground">
+        {verdict === null ? (
+          <>was {before}</>
+        ) : (
+          <>
+            {before} <span aria-hidden>→</span> <span className={cn(tone === "profit" && "text-profit", tone === "loss" && "text-loss")}>{verdict}</span>
+          </>
+        )}
       </div>
     </div>
   );
@@ -53,12 +59,12 @@ export function BeforeAfterStrip({ a }: { a: StrategyAnalysis }) {
         {!before || !after ? <span className="ml-auto text-muted-foreground">pricing…</span> : null}
       </div>
       <AdjustChangeBox />
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6" data-testid="before-after-tiles">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2" data-testid="before-after-tiles">
         {figure("Max loss", money$(before?.maxLoss, "Unlimited"), money$(after?.maxLoss, "Unlimited"), lossTone, verdictOf(lossTone, "better", "worse"), "ba-max-loss")}
         {figure("Max profit", money$(before?.maxProfit, "Unlimited"), money$(after?.maxProfit, "Unlimited"), profitTone, verdictOf(profitTone, "better", "worse"), "ba-max-profit")}
         {figure("Prob. of profit", pct(before?.pop), pct(after?.pop), popTone, verdictOf(popTone, "better", "worse"), "ba-pop")}
-        {figure("Break-evens", bes(before), bes(after), "muted", "at the valuation date", "ba-breakeven")}
-        {figure("Net Δ · Θ/day", greeks(before), greeks(after), "muted", "after the change", "ba-greeks")}
+        {figure("Break-evens", bes(before), bes(after), "muted", null, "ba-breakeven")}
+        {figure("Net Δ · Θ/day", greeks(before), greeks(after), "muted", null, "ba-greeks")}
         {figure("Margin est.", margin$(marginB, before), margin$(marginA, after), marginTone, verdictOf(marginTone, "less held", "more held"), "ba-margin")}
       </div>
     </div>
