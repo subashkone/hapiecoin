@@ -163,7 +163,16 @@ export function PositionTicket({ w }: { w: AdjustWorkbench }) {
       <p className="text-2xs text-muted-foreground">Set the lots you want to hold after: fewer trims, 0 (or Close) closes, more adds at the mark. The chain's B / S on a strike you hold does the same.</p>
       <div className="mt-1 flex items-center gap-2">
         <span className="micro" data-testid="proposed-count" data-count={proposedCount}>Proposed · {proposedCount}</span>
-        {proposedCount === 0 ? <span className="micro ml-auto text-muted-foreground">pick B / S on the chain, or change lots after on a leg</span> : <span className="micro ml-auto">every order this change sends · lots · mark · effect</span>}
+        {proposedCount === 0 ? (
+          <span className="micro ml-auto text-muted-foreground">pick B / S on the chain, or change lots after on a leg</span>
+        ) : (
+          <>
+            <span className="micro ml-auto">every order this change sends · lots · mark · effect</span>
+            <button type="button" onClick={w.reset} className="micro rounded border border-border px-1 text-muted-foreground hover:border-loss hover:text-loss" title="Remove every order · the same as Reset (saved plans stay)" data-testid="proposed-clear">
+              Clear all
+            </button>
+          </>
+        )}
       </div>
       {proposedCount ? (
         <div className="flex flex-col gap-1">

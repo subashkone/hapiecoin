@@ -64,7 +64,7 @@ export function AdjustWorkbench({ book }: { book: PaperBook }) {
   const [review, setReview] = useState<AdjustBody | null>(null);
   // the strategy went away (archived, deleted, or the list refreshed without it): leave the workbench
   useEffect(() => {
-    if (w === null) closeAdjust();
+    if (w === null) closeAdjust(true);
   }, [w, closeAdjust]);
   // HC-TR-096 model: fees on what the change trades (new legs, added lots, trimmed lots), at the mark
   const fees = useMemo(() => {
@@ -104,6 +104,7 @@ export function AdjustWorkbench({ book }: { book: PaperBook }) {
   const money$ = (v: number | undefined, unlimited = "Unlimited") => (v === undefined ? "—" : fmtMoney(v, money, { unlimited }));
   const lossWorse = a.before && a.result ? a.result.maxLoss < a.before.maxLoss : false;
   const lossBetter = a.before && a.result ? a.result.maxLoss > a.before.maxLoss : false;
+  // Exit goes through the guarded closeAdjust: with orders or saved plans the store parks it and AdjustDiscardDialog asks
   const setAlert = () => {
     const v = Number(alertInput);
     if (!Number.isFinite(v) || v <= 0) return;
@@ -123,7 +124,7 @@ export function AdjustWorkbench({ book }: { book: PaperBook }) {
         <span className={cn("micro ml-auto", w.stale ? "text-warning" : "text-muted-foreground")} title="Time since the last quote for the legs in this change" data-testid="adjust-mark-age">
           marks {w.markAgeSec}s ago
         </span>
-        <Button size="sm" variant="ghost" onClick={w.exit} title="Leave the workbench · the draft is discarded" data-testid="adjust-exit">
+        <Button size="sm" variant="ghost" onClick={() => closeAdjust()} title="Leave the workbench · the change and saved plans are discarded" data-testid="adjust-exit">
           Exit
         </Button>
       </header>
@@ -155,7 +156,7 @@ export function AdjustWorkbench({ book }: { book: PaperBook }) {
             Reset
           </Button>
           <Button size="sm" disabled={!canReview} onClick={openReview} title={w.overCap ? "Over the open-leg cap" : w.empty ? "Nothing to review yet · pick B / S on the chain or change lots after on a leg" : "Review the change before it is applied · marks are re-read when Review opens (Enter on the chain does the same)"} data-testid="adjust-review">
-            Review {w.effects.length ? `${w.effects.length} ${w.effects.length === 1 ? "change" : "changes"}` : ""} →
+            Review {w.effects.length ? `${w.effects.length} ${w.effects.length === 1 ? "order" : "orders"}` : ""} →
           </Button>
         </div>
       </footer>

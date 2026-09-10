@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { newDraft } from "./adjust/model";
 import { LAYOUT_IDS, defaultLayout } from "./chain/layout";
-import { ASSET_META, UI_STORAGE_KEY, useUiStore } from "./store";
+import { ASSET_META, UI_STORAGE_KEY, hasAdjustWork, useUiStore } from "./store";
 
 beforeEach(() => {
   useUiStore.setState({
@@ -227,8 +228,38 @@ describe("HC-TR-148 adjustment workbench draft (ADR-044)", () => {
     st.updateAdjust((d) => ({ ...d, lotsAfter: { leg_1: 40 } }));
     expect(useUiStore.getState().adjust?.lotsAfter).toEqual({ leg_1: 40 });
     expect(JSON.parse(localStorage.getItem(UI_STORAGE_KEY) ?? "{}")).not.toHaveProperty("state.adjust");
+    // with work in the draft every route out asks first (ADR-058 addendum): the action waits in adjustDiscard
+    st.closeAdjust();
+    expect(useUiStore.getState().adjust?.lotsAfter).toEqual({ leg_1: 40 });
+    expect(useUiStore.getState().adjustDiscard).toBeTypeOf("function");
+    st.keepAdjust();
+    expect(useUiStore.getState().adjustDiscard).toBeNull();
+    st.followStrategy("strat_2");
+    expect(useUiStore.getState().paneSource).toEqual({ kind: "strategy", id: "strat_1" });
+    st.setWorkspaceTab("builder");
+    expect(useUiStore.getState().workspaceTab).not.toBe("builder"); // parked, not switched
+    st.analysePositions([7]);
+    st.openAdjust("strat_2");
+    expect(useUiStore.getState().adjust?.strategyId).toBe("strat_1");
+    st.openAdjust("strat_1"); // the same strategy keeps the work
+    expect(useUiStore.getState().adjust?.lotsAfter).toEqual({ leg_1: 40 });
+    useUiStore.getState().adjustDiscard!(); // answering the last question runs it
+    expect(useUiStore.getState().adjust?.strategyId).toBe("strat_2");
+    expect(useUiStore.getState().adjustDiscard).toBeNull();
     st.closeAdjust();
     expect(useUiStore.getState().adjust).toBeNull();
+    // what counts as work: an order key, a pick, or a saved plan; a forced close clears a pending question
+    expect(hasAdjustWork(null)).toBe(false);
+    expect(hasAdjustWork(newDraft("s"))).toBe(false);
+    expect(hasAdjustWork({ ...newDraft("s"), lotsAfter: { leg_1: 40 } })).toBe(true);
+    expect(hasAdjustWork({ ...newDraft("s"), plans: [{ id: "plan_1", name: "Plan A", lotsAfter: {}, picks: [], valuation: null }] })).toBe(true);
+    st.openAdjust("strat_1");
+    st.updateAdjust((d) => ({ ...d, plans: [{ id: "plan_1", name: "Plan A", lotsAfter: {}, picks: [], valuation: null }] }));
+    st.closeAdjust();
+    expect(useUiStore.getState().adjustDiscard).toBeTypeOf("function");
+    st.closeAdjust(true);
+    expect(useUiStore.getState().adjust).toBeNull();
+    expect(useUiStore.getState().adjustDiscard).toBeNull();
     st.updateAdjust((d) => ({ ...d, valuation: "2026-09-25" })); // no draft: nothing happens
     expect(useUiStore.getState().adjust).toBeNull();
     // leaving the followed strategy discards the draft: another strategy, positions, or the Builder / Chain tab

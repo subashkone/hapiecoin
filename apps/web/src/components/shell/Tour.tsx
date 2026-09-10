@@ -107,6 +107,14 @@ export function Tour() {
   const requested = useUiStore((s) => s.tourRequested);
   const [active, setActive] = useState(false);
   const lastRequest = useRef(requested);
+  // the tour switches tabs, which would ask about an open adjustment on every step: not while the workbench has work
+  const start = () => {
+    if (useUiStore.getState().adjust) {
+      toast("Tour later", { description: "Finish or leave the adjustment workbench first" });
+      return;
+    }
+    setActive(true);
+  };
   useEffect(() => {
     if (!onAnalyse) setActive(false); // leaving the workspace ends the tour
   }, [onAnalyse]);
@@ -117,7 +125,7 @@ export function Tour() {
       if (cancelled) return;
       if (document.querySelector("[data-testid=flyer]")) { setTimeout(tryStart, 500); return; } // after the flyer (HC-SH-076)
       markTourDone();
-      setActive(true);
+      start();
     };
     const t = setTimeout(tryStart, 1200);
     return () => { cancelled = true; clearTimeout(t); };
@@ -125,7 +133,7 @@ export function Tour() {
   useEffect(() => {
     if (requested === lastRequest.current) return;
     lastRequest.current = requested;
-    if (onAnalyse) { markTourDone(); setActive(true); }
+    if (onAnalyse) { markTourDone(); start(); }
   }, [requested, onAnalyse]);
   const close = useCallback((completed: boolean) => {
     setActive(false);

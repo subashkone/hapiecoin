@@ -6512,7 +6512,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Adjust on a paper / live card, Details → Adjust… or A on a focused card opens the workbench in the left pane; the pane follows the strategy and shows the position after the change; Exit discards the draft; under 720 px the columns stack with the footer in view",
-  "evidence": "ADR-044 (09 Sep 2026): AdjustWorkbench.tsx, PositionTicket.tsx, useAdjustWorkbench.ts, store openAdjust / closeAdjust / updateAdjust, Workspace left-pane swap; unit workbench.test.tsx, store.test.ts; e2e analyse.spec.ts HC-TR-148 block; visual analyse-workbench-{dark,light}; ADR-058 (11 Sep 2026): WorkbenchChain.tsx (H2 chain form, cap line, held pills), one-line legs with Close / undo in PositionTicket.tsx, footer tiles in AdjustWorkbench.tsx; unit workbench.test.tsx figures checklist; e2e analyse.spec.ts HC-TR-148 block (tiles, Close / undo)"
+  "evidence": "ADR-044 (09 Sep 2026): AdjustWorkbench.tsx, PositionTicket.tsx, useAdjustWorkbench.ts, store openAdjust / closeAdjust / updateAdjust, Workspace left-pane swap; unit workbench.test.tsx, store.test.ts; e2e analyse.spec.ts HC-TR-148 block; visual analyse-workbench-{dark,light}; ADR-058 (11 Sep 2026): WorkbenchChain.tsx (H2 chain form, cap line, held pills), one-line legs with Close / undo in PositionTicket.tsx, footer tiles in AdjustWorkbench.tsx; unit workbench.test.tsx figures checklist; e2e analyse.spec.ts HC-TR-148 block (tiles, Close / undo); ADR-058 addenda (11 Sep 2026): lots-after orders under Proposed with Clear all, Exit and every other route out ask before discarding (store adjustDiscard / keepAdjust, hasAdjustWork), stacked layout under 720 px; unit workbench.test.tsx (cap, Details, plans blocks), store.test.ts; e2e analyse.spec.ts HC-TR-148 narrow test"
  },
  {
   "id": "HC-TR-149",
@@ -6587,7 +6587,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "Save the current change as Plan A / B / C, build another, compare max loss / max profit / POP / cash per plan next to the current change, Use one to load it back, remove one",
-  "evidence": "ADR-044 (09 Sep 2026, PR A3): PlansBar.tsx + useDraftFigures, model savePlan / loadPlan / removePlan / planDraft; unit model.test.ts HC-TR-153, workbench.test.tsx HC-TR-153/154 block; ADR-058 (11 Sep 2026): plans table folded under plans-toggle, opens once a plan exists; unit workbench.test.tsx"
+  "evidence": "ADR-044 (09 Sep 2026, PR A3): PlansBar.tsx + useDraftFigures, model savePlan / loadPlan / removePlan / planDraft; unit model.test.ts HC-TR-153, workbench.test.tsx HC-TR-153/154 block; ADR-058 (11 Sep 2026): plans table folded under plans-toggle, opens once a plan exists; unit workbench.test.tsx; ADR-058 addenda: Before row, Working change row with '= Plan A' (matchingPlan), Save starts the next change and is refused for a copy of a kept plan; unit workbench.test.tsx HC-TR-153/154 block, model.test.ts plans; e2e analyse.spec.ts HC-TR-148 block"
  },
  {
   "id": "HC-TR-154",

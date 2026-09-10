@@ -4,6 +4,7 @@
 // (35–70 % for the left pane, remembered per browser) and a stacked Chain | Analysis toggle under 1000 px.
 import { EmptyState, Tabs, TabsContent, TabsList, TabsTrigger, cn } from "@hapiecoin/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AdjustDiscardDialog } from "@/components/adjust/AdjustDiscardDialog";
 import { AdjustWorkbench } from "@/components/adjust/AdjustWorkbench";
 import { AnalysisPane } from "@/components/analysis/AnalysisPane";
 import { BuilderPanel } from "@/components/builder/BuilderPanel";
@@ -190,6 +191,7 @@ export function Workspace() {
     <>
       <TradeFlow book={book} />
       <StrategyDetailsDialog book={book} feedLive={feedLive} />
+      <AdjustDiscardDialog />
     </>
   );
 

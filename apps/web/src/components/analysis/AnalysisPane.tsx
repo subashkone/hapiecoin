@@ -38,7 +38,7 @@ export function PaneSourceBar() {
   const followed = source?.kind === "strategy" ? strategies?.find((s) => s.id === source.id && (s.status === "paper" || s.status === "live")) : undefined;
   // a followed strategy that was archived or deleted: back to the Builder legs without a stale pill
   useEffect(() => {
-    if (source?.kind === "strategy" && strategies && !followed) followStrategy(null);
+    if (source?.kind === "strategy" && strategies && !followed) followStrategy(null, true); // gone: nothing left to keep
   }, [source, strategies, followed, followStrategy]);
   if (!source) return null;
   const label = source.kind === "positions" ? `${source.productIds.length} exchange ${source.productIds.length === 1 ? "position" : "positions"}` : (followed?.name ?? "…");

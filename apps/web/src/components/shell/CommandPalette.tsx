@@ -20,7 +20,7 @@ import { greeksShown, setGreeks } from "@/lib/chain/layout";
 import { useExpiries } from "@/lib/chain/useExpiries";
 import { fmtExpiry } from "@/lib/format";
 import { type PaletteCommand, filterCommands, groupOrder, listRegistered, matchIndices, pushRecent, readRecent, subscribeCommands } from "@/lib/palette";
-import { useUiStore } from "@/lib/store";
+import { hasAdjustWork, useUiStore } from "@/lib/store";
 import { TEMPLATES } from "@/lib/strategy/templates";
 
 export { filterCommands, scoreCommand } from "@/lib/palette";
@@ -192,6 +192,10 @@ export function buildCommands(opts: {
         keywords: ["new", "clear", "reset", "legs", "strategy"],
         run: () => {
           const s = useUiStore.getState();
+          if (hasAdjustWork(s.adjust)) {
+            opts.navigate("/analyse"); // the question is asked in the workspace; run the command again after answering
+            return s.setWorkspaceTab("builder");
+          }
           s.setLegs(s.asset, []);
           s.setStrategyMeta(s.asset, { name: "", draftId: null, priceMode: "live" });
           s.setWorkspaceTab("builder");
@@ -204,6 +208,10 @@ export function buildCommands(opts: {
         keywords: ["save", "draft", "strategy", "name"],
         run: () => {
           const s = useUiStore.getState();
+          if (hasAdjustWork(s.adjust)) {
+            opts.navigate("/analyse");
+            return s.setWorkspaceTab("builder");
+          }
           opts.navigate("/analyse");
           s.setWorkspaceTab("builder");
           s.setBuilderTab("builder");
@@ -221,6 +229,10 @@ export function buildCommands(opts: {
           if (s.legs[s.asset].filter((l) => l.status === "open" && l.enabled !== false).length === 0) {
             toast("No legs", { description: "Add legs in the Builder before paper trading" });
             return;
+          }
+          if (hasAdjustWork(s.adjust)) {
+            opts.navigate("/analyse");
+            return s.setWorkspaceTab("builder");
           }
           opts.navigate("/analyse");
           s.setWorkspaceTab("builder");
@@ -301,6 +313,10 @@ export function buildCommands(opts: {
           keywords: ["template", "load", "strategy", name],
           run: () => {
             const s = useUiStore.getState();
+            if (hasAdjustWork(s.adjust)) {
+              opts.navigate("/analyse");
+              return s.setWorkspaceTab("builder");
+            }
             opts.navigate("/analyse");
             s.setWorkspaceTab("builder");
             s.setBuilderTab("templates");

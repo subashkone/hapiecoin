@@ -95,7 +95,33 @@ Follow-ups from the user's tests (11 Sep): rows and tiles fit the pane (PR #43);
 Proposed (PR #44, GAPS #65); Save as plan starts the next change, the table has a Before row and the working row
 says which plan it equals.
 
-## 6. Traceability
+## 6. Edge cases (11 Sep 2026, kept current with the tests)
+Each line names the test that proves it. `unit` = apps/web/src/components/adjust/workbench.test.tsx unless stated,
+`model` = apps/web/src/lib/adjust/model.test.ts, `e2e` = apps/web/e2e/analyse.spec.ts.
+| Case | Expected | Test |
+|---|---|---|
+| Save a change that equals a kept plan (after Use, or rebuilt by hand) | Save disabled, "Already kept as Plan A" | unit HC-TR-153/154 |
+| Use a plan, edit it, save | note "unsaved", Save enabled, becomes the next plan | unit HC-TR-153/154 |
+| Remove the plan the change equals | note "unsaved", Save enabled again | unit HC-TR-153/154 |
+| Fourth plan | refused, shelf stays at three | model plans |
+| Exit with orders, with plans only, with nothing | asks / asks / leaves at once | unit cap test, unit plans test, unit Details test; e2e narrow test |
+| Another card, A or Adjust on another card, Back to Builder, Builder / Chain tab, palette command, Analyse positions, while orders or plans exist | the same question; Keep editing leaves everything as it was; Adjust on the strategy already being adjusted keeps the work | store.test.ts adjust block; unit plans test (Back to Builder, tab change) |
+| Clear all on Proposed | orders go, saved plans stay | unit HC-TR-153/154 |
+| Pick on one expiry, switch the chain to another | pick stays, listed with its expiry; no B/S lit on the other chain | unit main test |
+| Close a leg, then add to it | order flips from SELL close to BUY add; ✕ restores | unit checklist |
+| Over the open-leg cap | Review disabled, cap line and warning, tile shows the count | unit cap test |
+| Strategy archived or deleted mid-edit | workbench closes itself; with work in the draft the close is forced (nothing left to keep) | unit Details test (no work); with work: not unit-tested (AdjustWorkbench + AnalysisPane pass `force`) |
+| Builder palette command (new, save, paper, template) while orders or plans exist | asks and stops; nothing else runs until the answer; run the command again after | not unit-tested (early return on `hasAdjustWork` in CommandPalette.tsx) |
+| Paper / live trade placed from the palette while adjusting | the workbench keeps its strategy; the pane does not jump | not unit-tested (TradeFlow.tsx skips the follow) |
+| Tour requested while the workbench is open | declines with a toast | not unit-tested (Tour.tsx start guard) |
+| Share link opened in a session with orders or plans | asks first; the Builder is left untouched; open the link again after | not unit-tested (ShareLanding.tsx guard) |
+| Mark missing for a leg | row and order show "—", P&L "—" (fmtPrice / pnlOf guard) | not unit-tested: the Workspace test serves every leg's mark; covered by the guards in PositionTicket.tsx |
+| Alert threshold typed in INR | converted to USD for the rule | not unit-tested: settings come from the API mock in USD; conversion in AdjustWorkbench.tsx setAlert |
+| Under 720 px | columns stack, Review stays reachable | e2e narrow test |
+| Stale marks at Review | warning line; Review re-reads marks | model summarize (wording only); the UI line and the re-read are not tested |
+| Same legs valued at another date | a different plan: the valuation date is part of a plan's identity | model plans (matchingPlan) |
+
+## 7. Traceability
 Extends HC-TR-071 (+ Add adjustment), HC-TR-088 (Confirm Adjustment Order), HC-TR-118/119 (Details restyle, payoff
 mini chart), HC-TR-125/126 (per-leg value and fee). New rows HC-TR-148..154 (HC-TR-146/147 are Builder rows; workbench, before → after strip and ghost
 curve, lots-after editing with netting, paper confirm, live confirm with band and hold, plans compare, quick fixes)

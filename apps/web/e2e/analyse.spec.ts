@@ -791,7 +791,7 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     await wb.getByTestId("wb-chain-row").nth(2).getByTestId("wb-chain-sell-call").click();
     await expect(wb.getByTestId("wb-pick")).toHaveCount(1);
     await expect(wb.getByTestId("wb-pick").getByTestId("effect")).toHaveText("NEW LEG");
-    await expect(wb.getByTestId("adjust-review")).toContainText("2 changes");
+    await expect(wb.getByTestId("adjust-review")).toContainText("2 orders");
     // HC-TR-151: review and apply on paper with a reason
     await wb.getByTestId("adjust-review").click();
     const confirm = page.getByTestId("adjust-confirm");
@@ -810,6 +810,34 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     await expect(page.getByTestId("left-pane")).toBeVisible();
     await expect(page.getByTestId("paper-card").getByTestId("adjusted-badge")).toHaveAttribute("data-count", "1");
     await expect(page.getByTestId("paper-card").getByTestId("order-chip")).toHaveCount(4); // two kept, the trimmed split, the new leg
+  });
+
+  test("HC-TR-148 under 720 px the workbench stacks its columns (ADR-044 extra 6), and Exit asks before discarding a change", async ({ page }) => {
+    const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
+    await page.locator(`[data-testid=chain-row-calls][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-buy-calls").click();
+    await page.getByTestId("tab-builder").click();
+    await page.getByTestId("strategy-name").fill("E2E narrow");
+    await page.getByTestId("builder-paper-trade").click();
+    await page.getByTestId("trade-mode").getByTestId("trade-continue").click();
+    await page.getByTestId("trade-preview").getByTestId("trade-now").click();
+    await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+    await page.getByTestId("paper-card").getByTestId("card-adjust").click();
+    const wb = page.getByTestId("adjust-workbench");
+    await page.setViewportSize({ width: 1600, height: 900 }); // the left pane is wider than 720 px here
+    await expect(wb).toHaveAttribute("data-layout", "columns");
+    await page.setViewportSize({ width: 640, height: 900 });
+    await expect(wb).toHaveAttribute("data-layout", "stacked");
+    await expect(wb.getByTestId("adjust-review")).toBeVisible();
+    await wb.getByTestId("wb-leg").first().getByTestId("wb-leg-close").click();
+    await wb.getByTestId("adjust-exit").click();
+    const ask = page.getByTestId("adjust-exit-confirm");
+    await expect(ask).toContainText("1 order in this change");
+    await ask.getByTestId("adjust-exit-keep").click();
+    await expect(wb).toHaveAttribute("data-empty", "false");
+    await wb.getByTestId("adjust-exit").click();
+    await ask.getByTestId("adjust-exit-discard").click();
+    await expect(wb).toHaveCount(0);
   });
 });
 
