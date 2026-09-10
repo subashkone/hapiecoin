@@ -83,7 +83,16 @@ information.
   type, `HoldButton` 1.2 s, results view with fill states and Done, notional-over-balance rail), `PlansBar` +
   `useDraftFigures`, `lib/adjust/fixes.ts` + `QuickFixes`, scenario slider on the ticket, `riskAlerts` store stub.
 
-## 5. Traceability
+## 5. Presentation pass (ADR-058, 11 Sep 2026)
+The user compared the shipped workbench against the H2 mockup: chain cramped (Δ / OI columns from the Builder picker),
+open legs on two lines without Close, "This change" in the footer. Competitor moved to a popup with leg selection,
+which the user does not want. Kept: the workbench as a pane mode, the model and figures. Changed to the H2 form:
+`WorkbenchChain` (B/S · Mark · IV | Strike | Mark · IV · B/S, held pill, cap line, legend, Δ / OI / bid-ask on hover),
+one-line legs with Close / undo, `AdjustChangeBox` + six before → after tiles at the top of the analysis pane, footer
+tiles You receive / pay (fees est.) · Max loss after · Margin est. · Open legs after, a real P&L alert line (opens the
+Alerts center pre-filled), Plans table under a toggle. Checklist test: the same change reads the same everywhere.
+
+## 6. Traceability
 Extends HC-TR-071 (+ Add adjustment), HC-TR-088 (Confirm Adjustment Order), HC-TR-118/119 (Details restyle, payoff
 mini chart), HC-TR-125/126 (per-leg value and fee). New rows HC-TR-148..154 (HC-TR-146/147 are Builder rows; workbench, before → after strip and ghost
 curve, lots-after editing with netting, paper confirm, live confirm with band and hold, plans compare, quick fixes)

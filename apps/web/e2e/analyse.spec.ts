@@ -744,14 +744,33 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     await expect(page.getByTestId("pane-adjusting")).toBeVisible();
     await expect(wb.getByTestId("wb-chain-table")).toHaveAttribute("data-rows", /^[1-9]/, { timeout: 15_000 });
     await expect(wb.getByTestId("wb-chain-held")).toHaveCount(2);
+    // ADR-058: the chain opens with the ATM row in view, not the top of the window
+    await expect.poll(() => wb.getByTestId("wb-chain-box").evaluate((box) => {
+      const row = box.querySelector<HTMLElement>("tr[data-atm]");
+      if (!row) return "no atm row";
+      const top = row.offsetTop - box.scrollTop;
+      return top >= 0 && top + row.offsetHeight <= box.clientHeight ? "in view" : `row at ${top} of ${box.clientHeight} (scrollTop ${box.scrollTop})`;
+    })).toBe("in view");
     // HC-TR-150: lots after on an open leg
     const leg = wb.getByTestId("wb-leg").first();
     await leg.getByTestId("lots-after-down").click();
     await expect(leg.getByTestId("effect")).toHaveAttribute("data-kind", "trim");
     // HC-TR-149: before → after strip and the summary line
     await expect(page.getByTestId("before-after")).toBeVisible();
-    await expect(wb.getByTestId("adjust-summary")).toContainText("This change", { timeout: 15_000 });
+    await expect(page.getByTestId("adjust-change-box").getByTestId("adjust-summary")).toContainText("This change", { timeout: 15_000 });
+    await expect(page.getByTestId("before-after-tiles").getByTestId("ba-margin")).toContainText("→");
     await expect(page.getByTestId("tile-max-loss")).toContainText("after");
+    // ADR-058 footer tiles: what the change pays, loss after, margin estimate, open legs after
+    await expect(wb.getByTestId("adjust-tile-cash")).toContainText("fees est.");
+    await expect(wb.getByTestId("adjust-tile-loss")).toContainText("→");
+    await expect(wb.getByTestId("adjust-tile-legs")).toContainText("of 10 · 2 now");
+    // a leg closes with one click and undoes with the next
+    await leg.getByTestId("wb-leg-undo").click();
+    await expect(wb).toHaveAttribute("data-empty", "true");
+    await leg.getByTestId("wb-leg-close").click();
+    await expect(leg.getByTestId("effect")).toHaveAttribute("data-kind", "close");
+    await leg.getByTestId("wb-leg-undo").click();
+    await leg.getByTestId("lots-after-down").click();
     // HC-TR-154 / HC-TR-153: a quick fix loads a draft; it can be kept as a plan and compared; Reset returns to the trim
     await expect(wb.getByTestId("quick-fix").first()).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
     await wb.getByTestId("quick-fix").first().click(); // roll strikes up

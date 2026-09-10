@@ -2,7 +2,7 @@
 // Compare plans (ADR-044 extra 1; HC-TR-153): keep the working changes as Plan A / B / C, see every plan's
 // max loss, max profit, POP and cash next to the current draft, load one back or drop it.
 import { Button, cn } from "@hapiecoin/ui";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { fmtMoney } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
 import { settlementHourUtc, toPricingLegs } from "@/lib/pricing/legs";
@@ -62,16 +62,19 @@ function PlanRow({ w, plan, current }: { w: AdjustWorkbench; plan: SavedPlan | n
 
 export function PlansBar({ w }: { w: AdjustWorkbench }) {
   const plans = w.draft.plans;
+  // ADR-058: the comparison table only opens once a plan exists (or on request); the bar stays one line otherwise
+  const [openTable, setOpenTable] = useState(false);
+  const shown = plans.length > 0 && (openTable || plans.length > 0);
   return (
     <div className="mb-2 rounded border border-border" data-testid="plans-bar" data-count={plans.length}>
       <div className="flex flex-wrap items-center gap-2 px-2 py-1 text-2xs">
-        <span className="micro">Plans</span>
+        <button type="button" className="micro rounded border border-border px-1 hover:text-foreground" aria-expanded={shown} onClick={() => setOpenTable((o) => !o)} data-testid="plans-toggle">Plans {shown ? "▾" : "▸"}</button>
         <span className="text-muted-foreground">{plans.length ? `${plans.length} of ${MAX_PLANS} saved · compare, then Use one` : "keep this change as a plan, build another, compare"}</span>
         <Button size="sm" variant="outline" className="ml-auto" disabled={w.empty || plans.length >= MAX_PLANS} title={w.empty ? "Make a change first" : plans.length >= MAX_PLANS ? `At most ${MAX_PLANS} plans` : "Save the current change as a plan"} onClick={w.savePlan} data-testid="plan-save">
           Save as plan
         </Button>
       </div>
-      {plans.length ? (
+      {shown ? (
         <div className="overflow-x-auto">
           <table className="w-full text-xs" data-testid="plans-table">
             <thead>

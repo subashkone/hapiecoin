@@ -114,9 +114,11 @@ for (const theme of ["dark", "light"] as const) {
       const wb = page.getByTestId("adjust-workbench");
       await expect(wb.getByTestId("wb-chain-table")).toHaveAttribute("data-rows", /^[1-9]/, { timeout: 15_000 });
       await wb.getByTestId("wb-leg").first().getByTestId("lots-after-down").click();
-      await wb.getByTestId("wb-chain-row").nth(2).getByTestId("wb-chain-sell-call").click();
+      // a sold call three rows above the ATM row, so the capture shows the chain centred on ATM (ADR-058)
+      const atmIdx = Number(await wb.getByTestId("wb-chain-table").getAttribute("data-atm"));
+      await wb.getByTestId("wb-chain-row").nth(atmIdx + 3).getByTestId("wb-chain-sell-call").click();
       await expect(page.getByTestId("before-after")).toBeVisible();
-      await expect(wb.getByTestId("adjust-summary")).toContainText("This change", { timeout: 15_000 });
+      await expect(page.getByTestId("adjust-change-box").getByTestId("adjust-summary")).toContainText("This change", { timeout: 15_000 });
       await page.screenshot({ path: `${DIR}/analyse-workbench-${theme}.png` });
       await wb.getByTestId("adjust-review").click();
       await expect(page.getByTestId("adjust-confirm")).toBeVisible();

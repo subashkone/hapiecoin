@@ -7,6 +7,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
 import { buildChain } from "../../../test/fixtures/chain";
+import { fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
 import { Workspace } from "@/components/workspace/Workspace";
 import { lotStep } from "./PositionTicket";
@@ -103,8 +104,13 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(within(callRow).getByTestId("effect").dataset["kind"]).toBe("trim");
     expect(within(callRow).getByTestId("effect").textContent).toContain("by 1");
     expect(wb.dataset["empty"]).toBe("false");
-    await waitFor(() => expect(within(wb).getByTestId("adjust-summary").textContent).toContain("This change"));
     await waitFor(() => expect(screen.getByTestId("before-after")).toBeTruthy());
+    // ADR-058: "This change" sits at the top of the analysis pane with the six before → after tiles, not in the footer
+    const change = screen.getByTestId("adjust-change-box");
+    await waitFor(() => expect(within(change).getByTestId("adjust-summary").textContent).toContain("This change"));
+    expect(change.dataset["empty"]).toBe("false");
+    expect(within(wb).queryByTestId("adjust-summary")).toBeNull();
+    for (const id of ["ba-max-loss", "ba-max-profit", "ba-pop", "ba-breakeven", "ba-greeks", "ba-margin"]) expect(within(screen.getByTestId("before-after-tiles")).getByTestId(id)).toBeTruthy();
     expect(screen.getByTestId("tile-max-loss").textContent).toContain("after");
     fireEvent.change(within(callRow).getByTestId("lots-after-input"), { target: { value: "" } }); // an emptied field changes nothing
     expect(within(callRow).getByTestId("effect").dataset["kind"]).toBe("trim");
@@ -115,7 +121,7 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(within(callRow).getByTestId("lots-after").dataset["value"]).toBe("1");
     fireEvent.change(within(callRow).getByTestId("lots-after-input"), { target: { value: "25" } });
     expect(within(callRow).getByTestId("effect").textContent).toMatch(/^ADDS \+15 to /);
-    expect(within(wb).getByTestId("adjust-cash").textContent).toContain("debit");
+    expect(within(change).getByTestId("adjust-cash").textContent).toContain("debit");
     // reset clears every change
     await u.click(within(wb).getByTestId("adjust-reset"));
     expect(wb.dataset["empty"]).toBe("true");
@@ -223,7 +229,9 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     const free = within(wb).getAllByTestId("wb-chain-row").filter((r) => within(r).queryByTestId("wb-chain-held") === null).slice(0, 9);
     for (const r of free) await u.click(within(r).getByTestId("wb-chain-buy-put"));
     expect(within(wb).getAllByTestId("wb-pick")).toHaveLength(9);
-    expect(within(wb).getByTestId("adjust-warnings").textContent).toContain("open-leg cap");
+    expect(screen.getByTestId("adjust-warnings").textContent).toContain("open-leg cap");
+    expect(within(wb).getByTestId("adjust-tile-legs").textContent).toContain("11");
+    expect(within(wb).getByTestId("wb-chain-cap").textContent).toContain("over the 10 open-leg cap");
     expect(within(wb).getByTestId<HTMLButtonElement>("adjust-review").disabled).toBe(true);
     await u.click(within(wb).getByTestId("adjust-exit"));
     await waitFor(() => expect(screen.queryByTestId("adjust-workbench")).toBeNull());
@@ -284,15 +292,58 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(useUiStore.getState().adjust?.valuation).toBe("today");
     fireEvent.change(slider, { target: { value: slider.max } });
     expect(useUiStore.getState().adjust?.valuation).toBeNull();
-    // the alert stub keeps one threshold per strategy
+    // ADR-058: the P&L alert line opens the Alerts center with a real strategy P&L rule filled in (ADR-052), no local stub
     const alertBox = within(wb).getByTestId("risk-alert");
     expect(within(alertBox).getByTestId<HTMLButtonElement>("risk-alert-save").disabled).toBe(true);
     await u.type(within(alertBox).getByTestId("risk-alert-input"), "1500");
     await u.click(within(alertBox).getByTestId("risk-alert-save"));
-    expect(within(alertBox).getByTestId("risk-alert-set").textContent).toContain("1,500");
-    expect(useUiStore.getState().riskAlerts).toMatchObject([{ strategyId: s.id, maxLoss: -1500 }]);
-    await u.click(within(alertBox).getByTestId("risk-alert-remove"));
+    expect(useUiStore.getState().dialog).toBe("alerts");
+    expect(useUiStore.getState().alertPrefill).toMatchObject({ kind: "pnl", strategyId: s.id, asset: "BTC", op: "<=", value: "-1500" });
     expect(useUiStore.getState().riskAlerts).toEqual([]);
     expect(call.strike).toBeTruthy();
+  });
+
+  it("ADR-058 figures checklist: the same change reads the same in the ticket, the change box and the footer tiles", async () => {
+    const { call } = seedLegs();
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    const u = userEvent.setup();
+    await paperTradeFromBuilder(u);
+    await u.click(within(await screen.findByTestId("paper-card")).getByTestId("card-adjust"));
+    const wb = await screen.findByTestId("adjust-workbench");
+    serveMarket();
+    await waitFor(() => expect(within(wb).getAllByTestId("wb-chain-row").length).toBeGreaterThan(0), { timeout: 5000 });
+    // the served chain is the one the legs were entered from, so every leg marks at its entry: P&L is zero on each line
+    const legs = within(wb).getAllByTestId("wb-leg");
+    for (const l of legs) expect(within(l).getByTestId("wb-leg-pnl").textContent).toBe("$0.00");
+    expect(within(wb).getByTestId("adjust-tile-cash").textContent).toContain("—");
+    expect(within(wb).getByTestId("adjust-tile-legs").textContent).toContain("2");
+    // trim the bought call by one lot: a credit of one lot at the mark (BTC lot = 0.001), read identically in three places
+    await u.click(within(legs[0]!).getByTestId("lots-after-down"));
+    const credit = fmtMoney(Number(call.call!.mark) * 0.001);
+    const change = screen.getByTestId("adjust-change-box");
+    await waitFor(() => expect(within(change).getByTestId("adjust-cash").textContent).toBe(`credit ${credit}`));
+    const cashTile = within(wb).getByTestId("adjust-tile-cash");
+    expect(cashTile.textContent).toContain("You receive");
+    expect(cashTile.textContent).toContain(credit);
+    expect(cashTile.textContent).toMatch(/fees est\. \$\d/);
+    expect(within(wb).getByTestId("adjust-tile-legs").textContent).toContain("of 10 · 2 now");
+    // the loss after in the footer is the loss after in the analysis pane, and both show the before figure with a verdict
+    await waitFor(() => expect(screen.getByTestId("ba-max-loss").textContent).toMatch(/→s*(▲ better|▼ worse|unchanged)/), { timeout: 5000 });
+    const after = (id: string) => screen.getByTestId(id).querySelector(".num")!.textContent;
+    expect(after("adjust-tile-loss")).toBe(after("ba-max-loss"));
+    expect(after("adjust-tile-margin")).toBe(after("ba-margin"));
+    expect(within(wb).getByTestId("adjust-tile-loss").textContent).toContain("→");
+    // undo restores the trimmed line; Close then sets lots after to 0 and the chain pill shows the strike going to zero
+    await u.click(within(legs[0]!).getByTestId("wb-leg-undo"));
+    expect(wb.dataset["empty"]).toBe("true");
+    await u.click(within(legs[0]!).getByTestId("wb-leg-close"));
+    expect(within(legs[0]!).getByTestId("effect").dataset["kind"]).toBe("close");
+    expect(within(wb).getAllByTestId("wb-chain-held").find((p) => p.dataset["after"] === "0")?.textContent).toBe("10→0");
+    await u.click(within(legs[0]!).getByTestId("wb-leg-undo"));
+    expect(wb.dataset["empty"]).toBe("true");
+    // the plans table stays folded until a plan exists
+    expect(within(wb).queryByTestId("plans-table")).toBeNull();
+    expect(within(wb).getByTestId("plans-toggle").getAttribute("aria-expanded")).toBe("false");
   });
 });
