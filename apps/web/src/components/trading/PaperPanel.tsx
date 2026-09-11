@@ -2,11 +2,11 @@
 // Paper Trades tab (HC-TR-058..067; HC-TR-156, 157 lifecycle): search, sort (incl. expiry), lifecycle chips Open ·
 // Expiring ≤ 1d · Closed, refresh, the P&L strip, strategy cards with start / expiry, live P&L and a sparkline,
 // Details / Go live / Stop / Delete, pagination and the empty state.
-import { type Strategy, type StrategyLeg, CLOSE_REASON_LABELS, settlementMsOf } from "@hapiecoin/schema";
+import { type Strategy, type StrategyLeg, CLOSE_REASON_LABELS, MAX_STRATEGY_NAME, nearestSettlement, settlementMsOf, toDecimal } from "@hapiecoin/schema";
 import { Button, EmptyState, cn, toast } from "@hapiecoin/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState, useEffect } from "react";
-import { strategyKeys, useDeleteStrategy, useStrategies } from "@/lib/api/strategies";
+import { strategyKeys, useCreateStrategy, useDeleteStrategy, useStrategies } from "@/lib/api/strategies";
 import { useLiveRetry, useLiveSync, useLivePositions } from "@/lib/api/live";
 import { useBrokers, useCredential } from "@/lib/api/queries";
 import { BatchLiveDialog } from "./BatchLiveDialog";
@@ -21,7 +21,7 @@ import { type Lifecycle, dayPnl, daysLeft, daysOf, expiryOf, fmtLeg, lifecycleOf
 import type { PaperBook } from "@/lib/strategy/usePaper";
 import { usePortfolio } from "@/lib/strategy/usePortfolio";
 import { AdjustedBadge, ModePill } from "./StrategyDetailsDialog";
-import { firedRule, rulesLine } from "./RuleDialog";
+import { FIRED_LABELS, firedRule, rulesLine } from "./RuleDialog";
 import { CardFigures } from "./CardFigures";
 import { StopPaperDialog } from "./StopPaperDialog";
 
@@ -59,11 +59,32 @@ export function sortStrategies(rows: Strategy[], key: SortKey, totalOf: (s: Stra
   return r;
 }
 
+/**
+ * The position a closed strategy held at the moment it closed (HC-TR-172): the legs booked in that closing batch (a
+ * partial exit or a rolled-out leg closed earlier and is not part of it), same-symbol rows merged.
+ */
+export function heldAtClose(s: Strategy): { kind: StrategyLeg["kind"]; side: StrategyLeg["side"]; strike: string; expiry: string; symbol: string; lots: number; price: string; iv: number | null }[] {
+  const out: ReturnType<typeof heldAtClose> = [];
+  for (const l of s.legs) {
+    if (l.entryPrice === null || l.closedAt === null || l.closedAt !== s.closedAt) continue;
+    const same = out.find((o) => o.symbol === l.symbol && o.side === l.side);
+    if (same) same.lots += l.lots;
+    else out.push({ kind: l.kind, side: l.side, strike: l.strike, expiry: l.expiry, symbol: l.symbol, lots: l.lots, price: l.exitPrice ?? l.price, iv: l.iv });
+  }
+  return out;
+}
+/** True when a dated leg of the closed position has already settled: the same contracts cannot be traded again. */
+export function reenterExpired(s: Strategy, now = Date.now()): boolean {
+  const n = nearestSettlement(heldAtClose(s), s.asset);
+  return n !== null && n.ms <= now;
+}
+
 export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook; feedLive: boolean; kind?: "paper" | "live" }) {
   const { data, isLoading, isError, refetch } = useStrategies();
   const qc = useQueryClient();
   const openDetails = useUiStore((s) => s.openDetails);
   const del = useDeleteStrategy();
+  const create = useCreateStrategy();
   const retry = useLiveRetry();
   const sync = useLiveSync();
   const { data: brokers } = useBrokers();
@@ -85,6 +106,31 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const [page, setPage] = useState(1);
   const [stopId, setStopId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [reenterId, setReenterId] = useState<string | null>(null);
+  // Re-enter (HC-TR-172): the legs this strategy held, as a fresh draft at today's marks, handed to the trade dialog
+  // of this tab; the entry prices and the capital check happen there, nothing is placed here
+  const reenter = (s: Strategy) => {
+    const legs = heldAtClose(s).map((l) => {
+      const mark = book.priceOf(s, { ...l, id: "", entryPrice: null, exitPrice: null, status: "open", isAdjustment: false, position: 0, openedAt: null, closedAt: null, orderId: null });
+      return { kind: l.kind, side: l.side, strike: l.strike, expiry: l.expiry, symbol: l.symbol, lots: l.lots, price: mark !== null ? toDecimal(mark, 2) : l.price, ...(l.iv !== null ? { iv: l.iv } : {}) };
+    });
+    setReenterId(s.id);
+    create.mutate(
+      { name: `${s.name} re-entry`.slice(0, MAX_STRATEGY_NAME), asset: s.asset, venue: s.venue, templateName: s.templateName, legs },
+      {
+        onSuccess: (d) => {
+          setReenterId(null);
+          // the trade dialog reads the draft from the list: it goes into the cache now, before the refetch lands
+          qc.setQueryData<Strategy[]>(strategyKeys.list(), (old) => (old && !old.some((x) => x.id === d.id) ? [d, ...old] : old));
+          openTrade({ strategyId: d.id, mode: kind });
+        },
+        onError: (e) => {
+          setReenterId(null);
+          toast.error("Could not re-enter", { description: e.message });
+        },
+      },
+    );
+  };
   const q = search.trim().toLowerCase();
   const [life, setLife] = useState<Lifecycle>("open");
   const all = useMemo(() => (data ?? []).filter((s) => s.status === kind), [data, kind]);
@@ -249,8 +295,8 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                         ) : (
                           <span>no open option legs</span>
                         )}
-                        {lc !== "closed" && rulesLine(s.rules, money) ? <span className="text-accent" title="Stop / target run by the server (ADR-059 §2.3)" data-testid="card-rules">{rulesLine(s.rules, money)}</span> : lc !== "closed" && open.length ? <span className="text-muted-foreground" data-testid="card-rules" data-state="none">no stop</span> : null}
-                        {firedRule(s.rules) ? <span className={cn("rounded border px-1", firedRule(s.rules)!.outcome === "partial" ? "border-loss text-loss" : "border-border text-muted-foreground")} title={firedRule(s.rules)!.note ?? undefined} data-testid="card-rule-fired" data-kind={firedRule(s.rules)!.kind} data-outcome={firedRule(s.rules)!.outcome ?? undefined}>{firedRule(s.rules)!.kind === "stop" ? "stop fired" : "target hit"}{firedRule(s.rules)!.outcome === "partial" ? " · a leg still open" : ""}</span> : null}
+                        {lc !== "closed" && rulesLine(s.rules, money, s.legs) ? <span className="text-accent" title="Exit rules run by the server (ADR-059 §2.3)" data-testid="card-rules">{rulesLine(s.rules, money, s.legs)}</span> : lc !== "closed" && open.length ? <span className="text-muted-foreground" data-testid="card-rules" data-state="none">no stop</span> : null}
+                        {firedRule(s.rules) ? <span className={cn("rounded border px-1", firedRule(s.rules)!.outcome === "partial" ? "border-loss text-loss" : "border-border text-muted-foreground")} title={firedRule(s.rules)!.note ?? undefined} data-testid="card-rule-fired" data-kind={firedRule(s.rules)!.kind} data-outcome={firedRule(s.rules)!.outcome ?? undefined}>{FIRED_LABELS[firedRule(s.rules)!.kind]}{firedRule(s.rules)!.outcome === "partial" ? " · a leg still open" : ""}</span> : null}
                       </div>
                     </div>
                     <div className="ml-auto text-right">
@@ -283,8 +329,13 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                   <div className="mt-2 flex flex-wrap gap-1">
                     <Button size="sm" variant="outline" onClick={() => openDetails(s.id)} data-testid="card-details">Details</Button>
                     {lc === "closed" ? <Button size="sm" variant="outline" onClick={() => setWorkspaceTab("journal")} title="This trade in the Journal" data-testid="card-journal">Journal</Button> : null}
+                    {lc === "closed" && heldAtClose(s).length ? (
+                      <Button size="sm" variant="outline" disabled={reenterExpired(s) || (create.isPending && reenterId !== s.id)} loading={reenterId === s.id} title={reenterExpired(s) ? "Its expiry has passed · build it afresh in the Builder" : `Re-enter: the legs it held when it closed, as a new draft at today's marks, then the ${kind} trade dialog · nothing is placed until you confirm`} onClick={() => reenter(s)} data-testid="card-reenter" data-expired={reenterExpired(s)}>
+                        Re-enter
+                      </Button>
+                    ) : null}
                     {lc !== "closed" ? <Button size="sm" variant="outline" disabled={open.length === 0} title={open.length ? "Adjust: trim, close or add legs with the combined payoff (A)" : "No open legs"} onClick={() => openAdjust(s.id)} data-testid="card-adjust">Adjust</Button> : null}
-                    {lc !== "closed" && open.length ? <Button size="sm" variant="outline" title="Stop loss and target run by the server: exits every leg when crossed (ADR-059 §2.3)" onClick={() => openRules(s.id)} data-testid="card-protect">{rulesLine(s.rules, money) ? "Protect…" : "Protect"}</Button> : null}
+                    {lc !== "closed" && open.length ? <Button size="sm" variant="outline" title="Exit rules run by the server: stop / target, leg stop, spot level, time exit (ADR-059 §2.3)" onClick={() => openRules(s.id)} data-testid="card-protect">{rulesLine(s.rules, money, s.legs) ? "Protect…" : "Protect"}</Button> : null}
                     {lc !== "closed" ? <Button size="sm" variant="outline" title="Alert me when this strategy's P&L crosses a level" onClick={() => openAlerts({ kind: "pnl", strategyId: s.id, asset: s.asset })} data-testid="card-alert">Set alert</Button> : null}
                     {lc === "closed" ? null : kind === "paper" ? (
                       <>

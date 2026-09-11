@@ -17,8 +17,8 @@ const json = async <T>(res: Response): Promise<T> => (await res.json()) as T;
 const T0 = Date.UTC(2026, 8, 11, 9);
 const CALL = { kind: "call", side: "buy", strike: "80000", expiry: "2026-09-25", symbol: "C-BTC-80000-250926", lots: 10, price: "1200" };
 const PUT = { kind: "put", side: "sell", strike: "78000", expiry: "2026-09-25", symbol: "P-BTC-78000-250926", lots: 10, price: "900" };
-const ticks = (m: Record<string, number>): RulesTickSource => ({ marks: () => Promise.resolve(new Map(Object.entries(m))) });
-const down: RulesTickSource = { marks: () => Promise.reject(new Error("tickers offline")) };
+const ticks = (m: Record<string, number>, spot: number | null = null): RulesTickSource => ({ tick: () => Promise.resolve({ marks: new Map(Object.entries(m)), spot }) });
+const down: RulesTickSource = { tick: () => Promise.reject(new Error("tickers offline")) };
 const get = async (id: string) => json<Strategy>(await t.request(`/v1/strategies/${id}`, { cookie: alice }));
 const arm = (id: string, rules: unknown[]) => t.request(`/v1/strategies/${id}/rules`, { method: "PUT", cookie: alice, json: { rules } });
 const credential = () => t.request("/v1/credentials", { cookie: alice, json: { brokerId: SEED.brokerId, apiKey: "live-key", apiSecret: "live-secret" } });
@@ -285,7 +285,7 @@ describe("HC-TR-166 the order sync books resting exits; the timer runs a pass", 
     expect((await arm(a.id, [{ kind: "stop", trigger: "money", value: "1", channels: ["push", "telegram"] }])).status).toBe(200);
     expect((await arm(b.id, [{ kind: "stop", trigger: "money", value: "1" }])).status).toBe(200);
     let reads = 0;
-    const counted: RulesTickSource = { marks: () => { reads += 1; return Promise.resolve(new Map([["P-BTC-78000-250926", 1100]])); } };
+    const counted: RulesTickSource = { tick: () => { reads += 1; return Promise.resolve({ marks: new Map([["P-BTC-78000-250926", 1100]]), spot: null }); } };
     const telegrams = t.telegram.sent.length;
     const report = await evaluateRules(t.deps, counted, () => T0);
     expect(reads).toBe(1);
@@ -299,10 +299,10 @@ describe("HC-TR-166 the order sync books resting exits; the timer runs a pass", 
     expect((await arm(s.id, [{ kind: "stop", trigger: "money", value: "1" }])).status).toBe(200);
     let reads = 0;
     const slow: RulesTickSource = {
-      marks: async () => {
+      tick: async () => {
         reads += 1;
         await new Promise((r) => setTimeout(r, 120)); // longer than the interval: the next tick finds a pass running
-        return new Map([["C-BTC-80000-250926", 1000], ["C-BTC-82000-250926", 1000]]);
+        return { marks: new Map([["C-BTC-80000-250926", 1000], ["C-BTC-82000-250926", 1000]]), spot: null };
       },
     };
     const stop = startRulesEngine(t.deps, slow, 30);
@@ -316,5 +316,128 @@ describe("HC-TR-166 the order sync books resting exits; the timer runs a pass", 
     expect(done.status).toBe("archived");
     expect(done.closeReason).toBe("stopped");
     expect(done.legs.map((l) => l.status)).toEqual(["squared_off", "squared_off"]);
+  });
+});
+
+describe("HC-TR-170 leg stop, spot level and time exit", () => {
+  it("a leg stop at a multiple of the entry exits that leg alone and leaves the strategy stop armed, which then fires on what is left", async () => {
+    const s = await paper();
+    const put = s.legs.find((l) => l.symbol === PUT.symbol)!;
+    expect((await arm(s.id, [{ kind: "stop", trigger: "money", value: "12" }, { kind: "leg_stop", trigger: "multiple", value: "2", legId: put.id }])).status).toBe(200);
+    expect((await get(s.id)).rules!.find((r) => r.kind === "leg_stop")).toMatchObject({ thresholdUsd: "1800", legId: put.id, scope: "leg", state: "armed" });
+    // the put at 1,700 is below twice its 900 entry; the P&L (−8) is above the −12 stop
+    expect((await evaluateRules(t.deps, ticks({ "C-BTC-80000-250926": 1200, "P-BTC-78000-250926": 1700 }), () => T0)).fired).toEqual([]);
+    const report = await evaluateRules(t.deps, ticks({ "C-BTC-80000-250926": 1200, "P-BTC-78000-250926": 1800 }), () => T0 + 1000);
+    expect(report.fired).toHaveLength(1);
+    const after = await get(s.id);
+    expect(after.status).toBe("paper");
+    expect(after.legs.map((l) => [l.symbol, l.status, l.exitPrice, l.closeReason])).toEqual([
+      ["C-BTC-80000-250926", "open", null, null],
+      ["P-BTC-78000-250926", "squared_off", "1800", "stopped"],
+    ]);
+    expect(after.realizedPnl).toBe("-9");
+    const legStop = after.rules!.find((r) => r.kind === "leg_stop")!;
+    expect(legStop).toMatchObject({ state: "fired", outcome: "closed", firedPnl: "-9" });
+    expect(legStop.note).toBe("Leg stop fired at P&L -9 USD (P-BTC-78000-250926 at 1800, entry 900): 1 leg exited");
+    expect(after.rules!.find((r) => r.kind === "stop")).toMatchObject({ state: "armed" });
+    // the call at 700 takes the total to −14: the strategy stop fires on the leg that is left
+    expect((await evaluateRules(t.deps, ticks({ "C-BTC-80000-250926": 700, "P-BTC-78000-250926": 1800 }), () => T0 + 2000)).fired).toHaveLength(1);
+    const done = await get(s.id);
+    expect(done).toMatchObject({ status: "archived", closeReason: "stopped", realizedPnl: "-14" });
+    expect(done.rules!.map((r) => [r.kind, r.state])).toEqual([["stop", "fired"], ["leg_stop", "fired"]]);
+  });
+
+  it("a leg stop at a price with strategy scope exits every leg and disarms the rest", async () => {
+    const s = await paper([CALL, PUT], "Rules leg all");
+    const put = s.legs.find((l) => l.symbol === PUT.symbol)!;
+    expect((await arm(s.id, [{ kind: "leg_stop", trigger: "price", value: "1500", legId: put.id, scope: "strategy" }, { kind: "target", trigger: "money", value: "1" }])).status).toBe(200);
+    expect((await evaluateRules(t.deps, ticks({ "C-BTC-80000-250926": 1200, "P-BTC-78000-250926": 1500 }), () => T0)).fired).toHaveLength(1);
+    const done = await get(s.id);
+    expect(done).toMatchObject({ status: "archived", closeReason: "stopped", realizedPnl: "-6" });
+    expect(done.legs.map((l) => [l.status, l.closeReason])).toEqual([["squared_off", "stopped"], ["squared_off", "stopped"]]);
+    expect(done.rules!.find((r) => r.kind === "target")).toMatchObject({ state: "disarmed", note: "disarmed: the leg stop fired" });
+  });
+
+  it("a leg stop whose leg was closed by a click is disarmed and says so; a spot rule waits for a spot and fires on it", async () => {
+    const s = await paper();
+    const call = s.legs.find((l) => l.symbol === CALL.symbol)!;
+    expect((await arm(s.id, [{ kind: "leg_stop", trigger: "price", value: "500", legId: call.id }, { kind: "spot", trigger: "below", value: "78000" }])).status).toBe(200);
+    expect((await t.request(`/v1/strategies/${s.id}/legs/${call.id}/close`, { method: "POST", cookie: alice, json: { exitPrice: "1100" } })).status).toBe(200);
+    // no spot this tick: the spot rule waits; the leg stop has nothing to watch any more
+    expect((await evaluateRules(t.deps, ticks({ "P-BTC-78000-250926": 900 }), () => T0)).fired).toEqual([]);
+    expect((await get(s.id)).rules!.map((r) => [r.kind, r.state, r.note])).toEqual([["leg_stop", "disarmed", "disarmed: the leg it watched is closed"], ["spot", "armed", null]]);
+    expect((await evaluateRules(t.deps, ticks({ "P-BTC-78000-250926": 900 }, 78_500), () => T0 + 1000)).fired).toEqual([]);
+    expect((await evaluateRules(t.deps, ticks({ "P-BTC-78000-250926": 850 }, 77_990), () => T0 + 2000)).fired).toHaveLength(1);
+    const done = await get(s.id);
+    expect(done).toMatchObject({ status: "archived", closeReason: "stopped", realizedPnl: "-0.5" });
+    const spot = done.rules!.find((r) => r.kind === "spot")!;
+    expect(spot.note).toBe("Spot level fired at P&L -0.5 USD (spot 77990): 1 leg exited");
+    const audits = await t.db.select().from(auditLog).where(eq(auditLog.target, `strategy:${s.id}`));
+    expect(audits.filter((a) => a.action === "strategy.rule_fire").at(-1)?.before).toMatchObject({ kind: "spot", spot: 77_990, level: "78000" });
+  });
+
+  it("live: a leg-scope stop sends one exit for its leg only; a leg whose exit is still filling is never sent another by the next rule that crosses", async () => {
+    const s = await live([CALL, PUT], "Rules live leg");
+    const put = s.legs.find((l) => l.symbol === PUT.symbol)!;
+    expect((await arm(s.id, [{ kind: "leg_stop", trigger: "price", value: "1500", legId: put.id }, { kind: "stop", trigger: "money", value: "15" }])).status).toBe(200);
+    const before = t.trading.placed.length;
+    t.trading.partialNextOrder(); // the put's exit rests on the exchange
+    expect((await evaluateRules(t.deps, ticks({ "C-BTC-80000-250926": 1200, "P-BTC-78000-250926": 1500 }), () => T0, { attempts: 3, backoffMs: 0 })).fired).toHaveLength(1);
+    expect(t.trading.placed.length).toBe(before + 1); // exactly one order, for the put
+    let now = await get(s.id);
+    expect(now.status).toBe("live");
+    expect(now.legs.map((l) => [l.symbol, l.status])).toEqual([["C-BTC-80000-250926", "open"], ["P-BTC-78000-250926", "open"]]);
+    expect(now.orders.filter((o) => o.purpose === "exit").map((o) => [o.legId, o.state])).toEqual([[put.id, "pending"]]);
+    expect(now.rules!.find((r) => r.kind === "leg_stop")).toMatchObject({ state: "fired", outcome: "partial" });
+    expect(now.rules!.find((r) => r.kind === "stop")).toMatchObject({ state: "armed" });
+    // the call at 100 takes the P&L to −17: the strategy stop fires, exits the call, and leaves the put to its resting exit
+    expect((await evaluateRules(t.deps, ticks({ "C-BTC-80000-250926": 100, "P-BTC-78000-250926": 1500 }), () => T0 + 1000, { attempts: 3, backoffMs: 0 })).fired).toHaveLength(1);
+    expect(t.trading.placed.length).toBe(before + 2); // one more, for the call; nothing again for the put
+    now = await get(s.id);
+    expect(now.legs.map((l) => [l.symbol, l.status, l.closeReason])).toEqual([["C-BTC-80000-250926", "squared_off", "stopped"], ["P-BTC-78000-250926", "open", null]]);
+    const stop = now.rules!.find((r) => r.kind === "stop")!;
+    expect(stop).toMatchObject({ state: "fired", outcome: "partial" });
+    expect(stop.note).toContain("1 still filling on the exchange: P-BTC-78000-250926 (an earlier exit is still filling · sync)");
+    expect(now.orders.filter((o) => o.purpose === "exit" && o.legId === put.id)).toHaveLength(1);
+  });
+
+  it("a leg stop on a long leg fires when its mark falls to the level, not while it is above", async () => {
+    const s = await paper([CALL], "Rules long leg");
+    const call = s.legs[0]!;
+    expect((await arm(s.id, [{ kind: "leg_stop", trigger: "price", value: "1000", legId: call.id }])).status).toBe(200);
+    expect((await evaluateRules(t.deps, ticks({ "C-BTC-80000-250926": 1100 }), () => T0)).fired).toEqual([]);
+    expect((await get(s.id)).legs[0]!.status).toBe("open");
+    expect((await evaluateRules(t.deps, ticks({ "C-BTC-80000-250926": 1000 }), () => T0 + 1000)).fired).toHaveLength(1);
+    const done = await get(s.id);
+    expect(done).toMatchObject({ status: "archived", closeReason: "stopped", realizedPnl: "-2" });
+    expect(done.legs[0]).toMatchObject({ status: "squared_off", exitPrice: "1000", closeReason: "stopped" });
+  });
+
+  it("a time exit fires at the instant or at the days to expiry with the reason squared off; with only a perpetual open a days rule is void", async () => {
+    const s = await paper();
+    // the route refuses an instant already passed on the real clock, so the exit is an hour from now
+    const atMs = Date.now() + 3_600_000;
+    const at = new Date(atMs).toISOString();
+    expect((await arm(s.id, [{ kind: "time", trigger: "at", value: at }])).status).toBe(200);
+    expect((await evaluateRules(t.deps, ticks({ "C-BTC-80000-250926": 1200, "P-BTC-78000-250926": 900 }), () => atMs - 1000)).fired).toEqual([]);
+    expect((await get(s.id)).rules![0]).toMatchObject({ state: "armed" });
+    expect((await evaluateRules(t.deps, ticks({ "C-BTC-80000-250926": 1200, "P-BTC-78000-250926": 900 }), () => atMs)).fired).toHaveLength(1);
+    const done = await get(s.id);
+    expect(done).toMatchObject({ status: "archived", closeReason: "squared_off", realizedPnl: "0" });
+    expect(done.legs.map((l) => l.closeReason)).toEqual(["squared_off", "squared_off"]);
+    expect(done.rules![0]!.note).toBe(`Time exit fired at P&L 0 USD (at ${at}): 2 legs exited`);
+    // two days to the 25 Sep 12:00 UTC settlement
+    const s2 = await paper([CALL, PUT], "Rules dte");
+    expect((await arm(s2.id, [{ kind: "time", trigger: "dte", value: "2" }])).status).toBe(200);
+    const settle = Date.UTC(2026, 8, 25, 12);
+    const day = 86_400_000;
+    expect((await evaluateRules(t.deps, ticks({ "C-BTC-80000-250926": 1200, "P-BTC-78000-250926": 900 }), () => settle - 2.1 * day)).fired).toEqual([]);
+    expect((await evaluateRules(t.deps, ticks({ "C-BTC-80000-250926": 1200, "P-BTC-78000-250926": 900 }), () => settle - 1.9 * day)).fired).toHaveLength(1);
+    expect((await get(s2.id)).rules![0]!.note).toContain("(1.9 days to expiry)");
+    // only the perpetual: there is no expiry to count to
+    const s3 = await paper([{ kind: "future", side: "buy", strike: "", expiry: "PERP", symbol: "BTCUSD", lots: 1, price: "79000" }], "Rules perp");
+    expect((await arm(s3.id, [{ kind: "time", trigger: "dte", value: "1" }])).status).toBe(200);
+    expect((await evaluateRules(t.deps, ticks({ BTCUSD: 79_000 }), () => T0)).fired).toEqual([]);
+    expect((await get(s3.id)).rules![0]).toMatchObject({ state: "disarmed", note: "disarmed: no dated leg is open" });
   });
 });
