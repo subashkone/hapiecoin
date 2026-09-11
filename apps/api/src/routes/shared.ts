@@ -64,3 +64,8 @@ export const cookieAuth = [{ cookieAuth: [] }];
 export function newId(prefix: string): string {
   return `${prefix}_${randomBytes(9).toString("base64url")}`;
 }
+
+/** The message of anything thrown, for logs and notes. */
+export function errorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}

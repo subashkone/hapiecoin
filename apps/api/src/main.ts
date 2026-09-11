@@ -19,6 +19,7 @@ import { MemoryRateStore, type RateStore, RedisRateStore } from "./security/rate
 import { createKeyring } from "./vault.js";
 import { startIvSnapshotter } from "./iv-snapshot.js";
 import { snapshotSpotSource, startSettler } from "./settlement.js";
+import { startRulesEngine } from "./rules-engine.js";
 import { evaluateAlerts } from "./alerts-evaluate.js";
 import { TelegramBotClient } from "./telegram.js";
 import { startTelegramLinker } from "./routes/telegram.js";
@@ -115,6 +116,28 @@ if (config.settlementMs !== 0)
           return q ? Number(q.spot) : null;
         }),
         config.settlementMs,
+      ),
+  });
+// ADR-059 §2.3: stop / target rules judged from the venue's public marks every RULES_TICK_MS (0 turns it off); one
+// request per underlying per tick, options and the perpetual together, keyed by venue symbol
+if (config.rulesTickMs !== 0)
+  starters.push({
+    name: "rules",
+    start: () =>
+      startRulesEngine(
+        deps,
+        {
+          marks: async (u) => {
+            const quotes = await publicRest.getTickers({ contractTypes: ["call_options", "put_options", "perpetual_futures"], underlying: u });
+            return new Map(
+              quotes.map((q) => {
+                const sq = venue.schema.quote(q, "0"); // through the venue port (ADR-063), like the snapshotter
+                return [sq.instrumentId.slice(sq.instrumentId.indexOf(":") + 1), Number(sq.mark)];
+              }),
+            );
+          },
+        },
+        config.rulesTickMs,
       ),
   });
 // ADR-057: link Telegram chats through the bot's /start messages (long-polled; no public URL needed)

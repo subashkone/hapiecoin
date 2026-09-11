@@ -1,6 +1,7 @@
 // Alerts center, bell and engine against the in-memory API and the fake gateway (ADR-052; HC-SH-079, 094..100,
 // HC-TR-114, 120, 139).
 import { chainTopic, type Alert, type Strategy } from "@hapiecoin/schema";
+import { expiryMs } from "@hapiecoin/pricing";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -13,7 +14,11 @@ import { AlertsBell } from "./AlertsBell";
 import { AlertsDialog } from "./AlertsDialog";
 
 const EMAIL = "alerts@example.com";
-const EXPIRY = "2026-09-11"; // the first default expiry: what the IV probe subscribes to
+// the first default expiry that is still live at the clock: what the IV probe subscribes to (the list is env.ts's
+// default; an expiry drops out of it after its settlement hour, so a literal date would fail after 12:00 UTC that day)
+const DEFAULT_EXPIRIES = "2026-09-11,2026-09-18,2026-09-25,2026-10-30,2026-11-27".split(",");
+const firstLiveDefault = () => DEFAULT_EXPIRIES.find((d) => expiryMs(d, 12) > Date.now()) ?? DEFAULT_EXPIRIES[DEFAULT_EXPIRIES.length - 1]!;
+const EXPIRY = firstLiveDefault();
 const rows = buildChain("BTC", EXPIRY);
 let mock: MockFetch;
 const mine = () => mock.state.accounts.get(EMAIL)!.alerts;

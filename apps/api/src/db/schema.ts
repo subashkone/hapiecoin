@@ -303,7 +303,7 @@ export const strategies = pgTable(
     startedAt: timestamp("started_at", { withTimezone: true, mode: "date" }),
     closedAt: timestamp("closed_at", { withTimezone: true, mode: "date" }),
     /** Why it closed (ADR-059 §2.4); null while active or for an archived draft. */
-    closeReason: text("close_reason", { enum: ["expired", "squared_off", "stopped", "outside_app"] }),
+    closeReason: text("close_reason", { enum: ["expired", "squared_off", "stopped", "target", "outside_app"] }),
     ...timestamps,
   },
   (t) => [index("strategies_user_id_idx").on(t.userId), index("strategies_user_status_idx").on(t.userId, t.status)],
@@ -332,7 +332,7 @@ export const strategyLegs = pgTable(
     position: integer("position").notNull().default(0),
     openedAt: timestamp("opened_at", { withTimezone: true, mode: "date" }),
     closedAt: timestamp("closed_at", { withTimezone: true, mode: "date" }),
-    closeReason: text("close_reason", { enum: ["expired", "squared_off", "stopped", "outside_app"] }),
+    closeReason: text("close_reason", { enum: ["expired", "squared_off", "stopped", "target", "outside_app"] }),
     orderId: text("order_id"),
     ...timestamps,
   },
@@ -386,6 +386,32 @@ export const strategyOrders = pgTable(
 );
 
 /** Adjustment batches on an active strategy (ADR-044): what changed, why, and the realised P&L of the closed lots. */
+/** Stop and target rules on a strategy (ADR-059 §2.3): the engine fires them from the venue's marks. */
+export const strategyRules = pgTable(
+  "strategy_rules",
+  {
+    id: text("id").primaryKey(),
+    strategyId: text("strategy_id")
+      .notNull()
+      .references(() => strategies.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: ["stop", "target"] }).notNull(),
+    trigger: text("trigger", { enum: ["money", "pct"] }).notNull(),
+    value: text("value").notNull(),
+    basis: text("basis", { enum: ["credit", "debit", "max_loss"] }),
+    basisUsd: text("basis_usd"),
+    thresholdUsd: text("threshold_usd").notNull(),
+    channels: jsonb("channels").$type<string[]>().notNull().default(sql`'["push"]'::jsonb`),
+    state: text("state", { enum: ["armed", "fired", "disarmed"] }).notNull().default("armed"),
+    firedAt: timestamp("fired_at", { withTimezone: true }),
+    firedPnl: text("fired_pnl"),
+    outcome: text("outcome", { enum: ["closed", "partial"] }),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("strategy_rules_strategy_id_idx").on(t.strategyId), index("strategy_rules_state_idx").on(t.state)],
+);
+
 export const strategyAdjustments = pgTable(
   "strategy_adjustments",
   {

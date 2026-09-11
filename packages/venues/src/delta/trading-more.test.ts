@@ -164,6 +164,8 @@ describe("[VENUES] fake trading client bookkeeping", () => {
     fake.failWith(2, "market_disrupted", { retryable: true });
     expect(await fake.placeOrder(CREDS, { productId: 2, size: 1, side: "buy", clientOrderId: "b" })).toMatchObject({ ok: false, code: "market_disrupted", retryable: true });
     expect(await fake.placeOrder(CREDS, { productId: 2, size: 1, side: "buy", clientOrderId: "b" })).toMatchObject({ ok: false }); // sticky until cleared
+    fake.succeed(2);
+    expect((await fake.placeOrder(CREDS, { productId: 2, size: 1, side: "buy", clientOrderId: "b2" })).ok).toBe(true); // cleared
     fake.failWith(3, "unknown");
     expect(await fake.placeOrder(CREDS, { productId: 3, size: 1, side: "buy", clientOrderId: "c" })).toMatchObject({ ok: false, code: "unknown", unknown: true });
     expect(await fake.getOrder(CREDS, 424242)).toBeNull();

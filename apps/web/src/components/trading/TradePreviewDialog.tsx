@@ -57,7 +57,8 @@ export function TradePreviewDialog(p: TradePreviewProps) {
   // the exchange margins each expiry on its own: a calendar's short leg is margined as if naked (GAPS #77)
   const multiExpiry = new Set(p.legs.filter((l) => l.kind !== "future").map((l) => l.expiry)).size > 1;
   const debit = np < 0 ? -np : 0;
-  const required = p.maxLoss === null ? null : Math.max(Math.max(0, -p.maxLoss), debit);
+  // with no loss figure (a calendar) the premium paid is still capital that leaves the wallet at placement (GAPS #81)
+  const required = p.maxLoss === null ? (debit > 0 ? debit : null) : Math.max(Math.max(0, -p.maxLoss), debit);
   const toUsd = (amount: number, asset: string): number | null => (asset === "USD" || asset === "USDT" || asset === "USDC" ? amount : asset === "INR" ? amount / (Number(p.money.rate) || 1) : null);
   // live: the exchange check's own figure (one source of truth on this dialog); paper: the wallet poll
   const walletRaw = p.venue?.available ? { amount: Number(p.venue.available), asset: p.venue.availableAsset ?? "USD" } : p.available ?? null;

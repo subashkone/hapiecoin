@@ -203,6 +203,8 @@ export interface UiState {
   tradeFlow: { strategyId: string | null; mode?: "paper" | "live" | undefined } | null;
   /** Strategy Details dialog (HC-TR-068): the open strategy id or null. */
   detailsId: string | null;
+  /** Protect dialog (HC-TR-167): the strategy whose stop / target is being set; afterTrade marks the Protect step of the trade flow. Not persisted. */
+  rulesFor: { strategyId: string; afterTrade: boolean } | null;
   /** Analysis pane source (HC-TR-143, ADR-026); cleared when the Builder or Chain tab is opened. Not persisted. */
   paneSource: PaneSource;
   /** Strategy templates strip under the Builder legs (HC-TR-040, ADR-027): open or collapsed. Persisted. */
@@ -233,6 +235,11 @@ export interface UiState {
   openTrade: (target: { strategyId: string | null; mode?: "paper" | "live" | undefined }) => void;
   closeTrade: () => void;
   openDetails: (id: string | null) => void;
+  openRules: (strategyId: string, opts?: { afterTrade?: boolean }) => void;
+  closeRules: () => void;
+  /** Offer the Protect step after every trade from the Builder (HC-TR-167). Persisted. */
+  protectPrompt: boolean;
+  setProtectPrompt: (on: boolean) => void;
   /** Open the Alerts center (HC-SH-079); with a prefill, straight on the New alert form (HC-SH-100, HC-TR-139). */
   openAlerts: (prefill?: AlertPrefill | null) => void;
   /** Follow a paper / live strategy in the analysis pane (null = back to the Builder legs). */
@@ -336,6 +343,8 @@ export const useUiStore = create<UiState>()(
       draftsImported: false,
       tradeFlow: null,
       detailsId: null,
+      rulesFor: null,
+      protectPrompt: true,
       paneSource: null,
       templatesStrip: true,
       workspaceTab: "chain",
@@ -398,6 +407,9 @@ export const useUiStore = create<UiState>()(
       openTrade: (target) => set({ tradeFlow: target }),
       closeTrade: () => set({ tradeFlow: null }),
       openDetails: (detailsId) => set({ detailsId }),
+      openRules: (strategyId, opts = {}) => set({ rulesFor: { strategyId, afterTrade: opts.afterTrade ?? false } }),
+      closeRules: () => set({ rulesFor: null }),
+      setProtectPrompt: (protectPrompt) => set({ protectPrompt }),
       openAlerts: (prefill = null) => set({ dialog: "alerts", alertPrefill: prefill, dialogsTouched: true }),
       // an adjustment draft lives on the followed strategy (ADR-044): following anything else, or a tab that clears the pane source, discards it
       // ADR-058 addendum: any route that would throw the work away asks first; the workbench shows the question
@@ -515,6 +527,7 @@ export const useUiStore = create<UiState>()(
         analysisTab: s.analysisTab,
         targetDays: s.targetDays,
         templatesStrip: s.templatesStrip,
+        protectPrompt: s.protectPrompt,
         riskAlerts: s.riskAlerts,
       }),
       merge: (persisted, current) => {

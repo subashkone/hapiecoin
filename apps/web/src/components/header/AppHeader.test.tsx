@@ -9,6 +9,13 @@ import { buildChain } from "../../../test/fixtures/chain";
 import { pathnameMock } from "../../../test/next-mocks";
 import { useUiStore } from "@/lib/store";
 import { AppHeader, Avatar } from "./AppHeader";
+import { expiryMs } from "@hapiecoin/pricing";
+import { fmtExpiry } from "@/lib/format";
+
+// the first default expiry that is still live at the clock: what the IV probe subscribes to (the list is env.ts's
+// default; an expiry drops out of it after its settlement hour, so a literal date would fail after 12:00 UTC that day)
+const DEFAULT_EXPIRIES = "2026-09-11,2026-09-18,2026-09-25,2026-10-30,2026-11-27".split(",");
+const firstLiveDefault = () => DEFAULT_EXPIRIES.find((d) => expiryMs(d, 12) > Date.now()) ?? DEFAULT_EXPIRIES[DEFAULT_EXPIRIES.length - 1]!;
 
 const user: User = {
   id: "usr_1",
@@ -109,7 +116,7 @@ describe("HC-SH-001 analyse header", () => {
     renderWithProviders(<AppHeader variant="analyse" initialUser={user} />);
     expect(scr.getByTestId("header-atm-iv").dataset["state"]).toBe("pending");
     const ws = FakeSocket.last();
-    const expiry = "2026-09-11"; // the first default expiry
+    const expiry = firstLiveDefault(); // the first default expiry still live at the clock
     const topic = chainTopic("delta_india", "BTC", expiry);
     act(() => {
       ws.open();
@@ -125,7 +132,8 @@ describe("HC-SH-001 analyse header", () => {
     // ADR-056: the rank arrives from the market history route
     await waitFor(() => expect(scr.getByTestId("header-iv-rank").textContent).toMatch(/^IV rank \d+$/));
     expect(scr.getByTestId("header-exp-move").dataset["state"]).toBe("ready");
-    expect(scr.getByTestId("header-exp-move").textContent).toMatch(/Exp\. move · 11 Sep± [\d,]+1σ/);
+    expect(scr.getByTestId("header-exp-move").textContent).toContain(`Exp. move · ${fmtExpiry(expiry)}± `);
+    expect(scr.getByTestId("header-exp-move").textContent).toMatch(/[0-9,]+1σ$/);
   });
   it("HC-SH-020 account menu shows name/email and Logout", async () => {
     const u = userEvent.setup();

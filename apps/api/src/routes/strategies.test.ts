@@ -207,6 +207,36 @@ describe("HC-TR-071 / HC-TR-088 adjustment batch on a paper strategy (ADR-044)",
     expect(audits.filter((x) => x.action === "strategy.adjust")).toHaveLength(2);
   });
 
+  it("HC-TR-165 rules: arm a stop and a target, replace the set, refuse drafts and duplicates, Reconcile disarms, clear", async () => {
+    const rules = (id: string, body: unknown) => t.request(`/v1/strategies/${id}/rules`, { method: "PUT", cookie: alice, json: body });
+    const s = await create(alice);
+    expect((await rules(s.id, { rules: [{ kind: "stop", trigger: "money", value: "60" }] })).status).toBe(409); // a draft
+    const started = await startPaper(alice, s.id, {});
+    const armed = await json<Strategy>(await rules(s.id, { rules: [{ kind: "stop", trigger: "money", value: "60" }, { kind: "target", trigger: "pct", value: "50", basis: "credit", basisUsd: "3" }] }));
+    expect(armed.rules!.map((r) => [r.kind, r.state, r.thresholdUsd, r.channels])).toEqual([["stop", "armed", "-60", ["push"]], ["target", "armed", "1.5", ["push"]]]);
+    expect(armed.rules![1]).toMatchObject({ trigger: "pct", basis: "credit", basisUsd: "3", value: "50" });
+    // the set is replaced
+    const one = await json<Strategy>(await rules(s.id, { rules: [{ kind: "stop", trigger: "money", value: "30", channels: ["push", "telegram"] }] }));
+    expect(one.rules!.map((r) => [r.kind, r.thresholdUsd, r.channels])).toEqual([["stop", "-30", ["push", "telegram"]]]);
+    expect((await rules(s.id, { rules: [{ kind: "stop", trigger: "money", value: "1" }, { kind: "stop", trigger: "money", value: "2" }] })).status).toBe(400);
+    expect((await rules(s.id, { rules: [{ kind: "stop", trigger: "pct", value: "200" }] })).status).toBe(400); // no basis
+    // lots closed outside the app: the rule no longer watches what it was set on
+    const [call] = started.legs;
+    const rec = await json<Strategy>(await reconcile(alice, s.id, { legs: [{ legId: call!.id, lots: 4, price: "1300" }] }));
+    expect(rec.rules![0]).toMatchObject({ kind: "stop", state: "disarmed" });
+    expect(rec.rules![0]!.note).toContain("closed outside the app");
+    // the list (what the cards read) carries the rules too
+    const listed = await json<{ items: Strategy[] }>(await t.request("/v1/strategies", { cookie: alice }));
+    expect(listed.items.find((x) => x.id === s.id)?.rules?.map((r) => [r.kind, r.state])).toEqual([["stop", "disarmed"]]);
+    const again = await json<Strategy>(await rules(s.id, { rules: [{ kind: "target", trigger: "money", value: "9" }] }));
+    expect(again.rules!.map((r) => [r.kind, r.state])).toEqual([["target", "armed"]]); // a disarmed rule is replaced with the set
+    const cleared = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/rules`, { method: "DELETE", cookie: alice }));
+    expect(cleared.rules!).toEqual([]); // only armed rules were left
+    expect((await rules(s.id, { rules: [] })).status).toBe(200);
+    const audits = await t.db.select().from(auditLog).where(eq(auditLog.target, `strategy:${s.id}`));
+    expect(audits.map((a) => a.action)).toEqual(expect.arrayContaining(["strategy.rules_set", "strategy.rules_clear"]));
+  });
+
   it("HC-TR-161 reconcile books lots closed outside the app at the given price, keeps the reason, archives when nothing is open, refuses bad legs", async () => {
     const s = await create(alice);
     const started = await startPaper(alice, s.id, {});

@@ -38,6 +38,7 @@ test.describe("HC-AC My Subscription", () => {
       await page.getByTestId("trade-continue").click();
       await page.getByTestId("trade-now").click();
       await page.getByTestId("save-draft-confirm").click();
+      if (i < 4) await page.getByTestId("rule-skip").click(); // the Protect step (HC-TR-167) follows a trade that went through; the fourth is refused
       if (i < 4) await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", String(i), { timeout: 15_000 });
     }
     const dlg = page.getByTestId("upgrade-required");

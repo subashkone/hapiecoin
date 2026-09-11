@@ -58,6 +58,7 @@ beforeEach(() => {
     drafts: [],
     draftsImported: true,
     tradeFlow: null,
+    protectPrompt: false, // the Protect step is covered by rules.test.tsx
     detailsId: null,
     workspaceTab: "paper",
     builderTab: "builder",

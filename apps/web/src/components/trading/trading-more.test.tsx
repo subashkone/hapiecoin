@@ -195,10 +195,17 @@ describe("HC-TR-158 capital on the trade preview", () => {
     expect(within(block).getByTestId("preview-capital-available").textContent).toBe("$10,000.00");
     expect(within(block).getByTestId("preview-capital-after").textContent).toBe("—");
     r3.unmount();
-    renderWithProviders(<TradePreviewDialog {...base} legs={[leg("buy", "1200")]} maxLoss={null} maxLossKnown={false} available={{ amount: 0.5, asset: "BTC" }} />);
+    // a debit with no loss figure (a calendar) still names the premium paid as the capital required (GAPS #81)
+    const r4 = renderWithProviders(<TradePreviewDialog {...base} legs={[leg("buy", "1200")]} maxLoss={null} maxLossKnown={false} available={{ amount: 0.5, asset: "BTC" }} />);
     block = screen.getByTestId("preview-capital");
-    expect(within(block).getByTestId("preview-capital-required").textContent).toBe("not computed");
+    expect(within(block).getByTestId("preview-capital-required").textContent).toBe("$1.20");
+    expect(block.textContent).toContain("the premium paid");
     expect(within(block).getByTestId("preview-capital-available").textContent).toBe("0.5 BTC");
     expect(block.textContent).toContain("not a cash asset");
+    r4.unmount();
+    // a credit with no loss figure has nothing to promise
+    renderWithProviders(<TradePreviewDialog {...base} legs={[leg("sell", "1200")]} maxLoss={null} maxLossKnown={false} available={{ amount: 0.5, asset: "BTC" }} />);
+    block = screen.getByTestId("preview-capital");
+    expect(within(block).getByTestId("preview-capital-required").textContent).toBe("not computed");
   });
 });

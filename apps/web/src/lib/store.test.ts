@@ -68,7 +68,7 @@ describe("HC-SH-003 UI store", () => {
       watchlist: [],
       workspaceTab: "chain",
       analysisTab: "payoff",
-      targetDays: 0, templatesStrip: true,
+      targetDays: 0, templatesStrip: true, protectPrompt: true,
       riskAlerts: [],
     });
   });
