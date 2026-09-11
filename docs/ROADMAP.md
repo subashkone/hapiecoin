@@ -44,6 +44,7 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 29. ⬜ `zod/mini` for `@hapiecoin/schema`; bundle check inside `pnpm ci` (GAPS #19)
 
 ## Done this week
+- ✅ Platform assessment, ADR-060, GAPS #68-76 (PR #49); strategy catalogue D17-D19 (PRs #50-#52); calendar fix (PR #48)
 - ✅ Trade lifecycle item 1 (PR #47, ADR-059)
 - ✅ Workbench H2 pass and four follow-ups (PRs #42–#46, ADR-058)
 - ✅ Key rotation + smoke (PR #39), IV history (PR #40), server alerts + Telegram (PR #41)
