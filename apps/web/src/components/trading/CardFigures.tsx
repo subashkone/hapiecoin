@@ -7,9 +7,10 @@ import { cn } from "@hapiecoin/ui";
 import { useEffect, useMemo, useState } from "react";
 import { fmtMoney } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
-import { settlementHourUtc, toPricingLegs } from "@/lib/pricing/legs";
+import { toPricingLegs } from "@/lib/pricing/legs";
 import { openLegs, serverLegToLocal } from "@/lib/strategy/paper";
 import type { PaperBook } from "@/lib/strategy/usePaper";
+import { venueCalendar } from "@/lib/venue";
 
 export function CardFigures({ s, book }: { s: Strategy; book: PaperBook }) {
   const open = useMemo(() => openLegs(s), [s]);
@@ -21,7 +22,7 @@ export function CardFigures({ s, book }: { s: Strategy; book: PaperBook }) {
   }, [spot, live]);
   const nowMs = useMemo(() => Date.now(), []);
   const legs = useMemo(() => toPricingLegs(open.map((l) => serverLegToLocal(l, s.asset)), book.lotSizeOf(s.asset), { spot: spot === null ? undefined : String(spot) }), [open, s.asset, book, spot]);
-  const options = useMemo(() => (spot === null || legs.length === 0 ? null : { spot, nowMs, settlementHourUtc: settlementHourUtc(s.asset), defaultIv: 0.5, points: 41 }), [spot, legs.length, nowMs, s.asset]);
+  const options = useMemo(() => (spot === null || legs.length === 0 ? null : { spot, nowMs, calendar: venueCalendar(s.asset), defaultIv: 0.5, points: 41 }), [spot, legs.length, nowMs, s.asset]);
   const { result } = useAnalysis(legs, options);
   if (open.length === 0) return null;
   const money = book.money;

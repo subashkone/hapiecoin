@@ -13,6 +13,7 @@ import { useScenario } from "@/lib/pricing/client";
 import { settlementHourUtc } from "@/lib/pricing/legs";
 import { useUiStore } from "@/lib/store";
 import { useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
+import { venueCalendar } from "@/lib/venue";
 import { type HeatFrame, drawHeat, hslTokenToRgb } from "./heatDraw";
 
 type Mode = NonNullable<ScenarioOptions["mode"]>;
@@ -76,7 +77,7 @@ export function ScenariosPanel() {
   const axes = useMemo(() => (spot === null ? null : scenarioAxes(spot, range, maxDte, a.nowMs, expiryAtMs)), [spot, range, maxDte, a.nowMs, expiryAtMs]);
   // the slider shifts every leg's IV by a share of the ATM IV (the engine takes an additive vol-point shift)
   const ivShift = (result?.atmIv && Number.isFinite(result.atmIv) ? result.atmIv : 0.5) * (ivPct / 100);
-  const options = useMemo<ScenarioOptions | null>(() => (axes ? { prices: axes.prices, dates: axes.dates, ivShift, mode, defaultIv: 0.5, settlementHourUtc: settlementHourUtc(asset) } : null), [axes, ivShift, mode, asset]);
+  const options = useMemo<ScenarioOptions | null>(() => (axes ? { prices: axes.prices, dates: axes.dates, ivShift, mode, defaultIv: 0.5, calendar: venueCalendar(asset) } : null), [axes, ivShift, mode, asset]);
   const { grid, error, pending } = useScenario(a.pricingLegs, options);
   // values[dateIndex][priceIndex] → cells[row = price][col = date]
   const cells = useMemo(() => (grid && axes ? axes.prices.map((_, i) => axes.dates.map((__, j) => grid.values[j]?.[i] ?? Number.NaN)) : []), [grid, axes]);

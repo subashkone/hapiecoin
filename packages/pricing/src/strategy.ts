@@ -4,14 +4,17 @@
  *
  * Every figure is in quote currency for the whole position (leg quantities are in underlying units).
  * "At expiry" values each option leg at its own settlement; a future is perpetual and is worth the price.
- * Before expiry a leg is valued with Black-76 on F = price (spot as the forward, zero rate; see black76.ts).
+ * Before expiry a leg is valued with Black-76 on F = price · e^{(r − q) T} (spot as the forward under the rate and carry
+ * of the options, both 0 by default, see bsm.ts) with time measured on the injected trading calendar (ADR-066).
  * `ivShift` is additive in vol points of sigma (+0.05 = five vol points) and applies to scenario valuation and
  * greeks, not to the probability of profit, which is a market figure on the unshifted ATM IV.
  */
 
-import { black76Greeks, black76Price, intrinsicValue } from "./black76.js";
+import { intrinsicValue } from "./black76.js";
+import { bsmGreeks, bsmPrice } from "./bsm.js";
 import { normalCdf } from "./normal.js";
-import { DAYS_PER_YEAR, DEFAULT_SETTLEMENT_HOUR_UTC, MS_PER_DAY, MS_PER_YEAR, yearFraction } from "./time.js";
+import { ACT_365, type TradingCalendar, calendarFor, yearFractionOf } from "./calendar.js";
+import { DEFAULT_SETTLEMENT_HOUR_UTC, MS_PER_DAY } from "./time.js";
 import type { Leg, LegKind } from "./types.js";
 
 /** Floor for sigma after an IV shift so the model never sees a zero or negative volatility. */
@@ -20,8 +23,14 @@ export const MIN_IV = 1e-4;
 export interface ValuationOptions {
   /** Volatility used for legs that carry no `iv`. Without it such a leg throws when valued before expiry. */
   defaultIv?: number | undefined;
-  /** Settlement hour (UTC) for `YYYY-MM-DD` expiries; default 12 (BTC/ETH), XAUT uses 16. */
+  /** Settlement hour (UTC) for `YYYY-MM-DD` expiries; default 12 (BTC/ETH), XAUT uses 16. Ignored when `calendar` is given. */
   settlementHourUtc?: number | undefined;
+  /** The trading calendar time is measured on (ADR-066); default act/365 at `settlementHourUtc`. */
+  calendar?: TradingCalendar | undefined;
+  /** Continuous risk-free rate used to discount and to grow the forward; default 0. */
+  rate?: number | undefined;
+  /** Continuous carry (dividend or foreign-rate) yield; default 0. */
+  dividendYield?: number | undefined;
 }
 
 export interface AnalyzeOptions extends ValuationOptions {
@@ -119,6 +128,9 @@ interface PreparedLeg {
   T: number;
   sigma: number;
   isCall: boolean;
+  /** Continuous rate and carry yield the option is valued under (both 0 by default). */
+  r: number;
+  q: number;
 }
 
 const sideSign = (leg: Leg): number => (leg.side === "buy" ? 1 : -1);
@@ -139,23 +151,37 @@ function legIv(leg: Leg, ivShift: number, defaultIv: number | undefined): number
   return Math.max(iv + ivShift, MIN_IV);
 }
 
+/** The calendar an options bag names, or act/365 at its settlement hour. */
+function calendarOf(opts: ValuationOptions): TradingCalendar {
+  return opts.calendar ?? (opts.settlementHourUtc === undefined ? ACT_365 : calendarFor(opts.settlementHourUtc));
+}
+
+function carryOf(opts: ValuationOptions): { r: number; q: number } {
+  const r = opts.rate ?? 0;
+  const q = opts.dividendYield ?? 0;
+  if (!Number.isFinite(r) || !Number.isFinite(q)) throw new RangeError(`rate and dividendYield must be finite, got ${r} and ${q}`);
+  return { r, q };
+}
+
 function prepare(legs: readonly Leg[], atMs: number, ivShift: number, opts: ValuationOptions): PreparedLeg[] {
-  const hour = opts.settlementHourUtc ?? DEFAULT_SETTLEMENT_HOUR_UTC;
+  const calendar = calendarOf(opts);
+  const { r, q } = carryOf(opts);
   return legs.map((leg) => {
     const w = sideSign(leg) * leg.quantity;
     if (leg.kind === "future") {
-      return { w, kind: leg.kind, strike: 0, price: leg.price, T: 0, sigma: 0, isCall: false };
+      return { w, kind: leg.kind, strike: 0, price: leg.price, T: 0, sigma: 0, isCall: false, r: 0, q: 0 };
     }
-    const T = yearFraction(atMs, leg.expiry, hour);
+    const T = yearFractionOf(calendar, atMs, leg.expiry);
     const sigma = T > 0 ? legIv(leg, ivShift, opts.defaultIv) : 0;
-    return { w, kind: leg.kind, strike: leg.strike, price: leg.price, T, sigma, isCall: leg.kind === "call" };
+    return { w, kind: leg.kind, strike: leg.strike, price: leg.price, T, sigma, isCall: leg.kind === "call", r, q };
   });
 }
 
 function preparedValue(p: PreparedLeg, price: number): number {
   if (p.kind === "future") return price;
   if (p.T <= 0) return intrinsicValue(price, p.strike, p.isCall);
-  return black76Price(price, p.strike, p.T, p.sigma, p.isCall);
+  // without a rate and carry the forward is price · e^0 = price · 1, bit for bit the Black-76 value on the price
+  return bsmPrice(price, p.strike, p.T, p.sigma, p.isCall, p.r, p.q);
 }
 
 function preparedPnl(prepared: readonly PreparedLeg[], price: number): number {
@@ -171,7 +197,7 @@ function preparedGreeks(prepared: readonly PreparedLeg[], price: number): NetGre
       g.delta += p.w;
       continue;
     }
-    const lg = black76Greeks(price, p.strike, p.T, p.sigma, p.isCall);
+    const lg = bsmGreeks(price, p.strike, p.T, p.sigma, p.isCall, p.r, p.q);
     g.delta += p.w * lg.delta;
     g.gamma += p.w * lg.gamma;
     g.theta += p.w * lg.theta;
@@ -368,11 +394,11 @@ export function rewardRisk(maxProfit: number, maxLoss: number): number {
   return maxProfit / -maxLoss;
 }
 
-function nearestExpiryYears(legs: readonly Leg[], nowMs: number, hour: number): number {
+function nearestExpiryYears(legs: readonly Leg[], nowMs: number, calendar: TradingCalendar): number {
   let nearest = NaN;
   for (const leg of legs) {
     if (leg.kind === "future") continue;
-    const T = yearFraction(nowMs, leg.expiry, hour);
+    const T = yearFractionOf(calendar, nowMs, leg.expiry);
     if (Number.isNaN(nearest) || T < nearest) nearest = T;
   }
   return nearest;
@@ -414,14 +440,17 @@ export function analyze(legs: readonly Leg[], opts: AnalyzeOptions): AnalyzeResu
     points = 161,
     defaultIv,
     settlementHourUtc = DEFAULT_SETTLEMENT_HOUR_UTC,
+    rate,
+    dividendYield,
   } = opts;
+  const calendar = opts.calendar ?? calendarFor(settlementHourUtc);
   assertPrice(spot);
   if (!Number.isFinite(nowMs)) throw new RangeError(`nowMs must be a finite epoch time, got ${nowMs}`);
   if (!Number.isInteger(points) || points < 2) throw new RangeError(`points must be an integer >= 2, got ${points}`);
   const [lo, hi] = opts.priceRange ?? defaultPriceRange(legs, spot);
   if (!(lo > 0) || !(hi > lo)) throw new RangeError(`priceRange must satisfy 0 < lo < hi, got [${lo}, ${hi}]`);
 
-  const valuation: ValuationOptions = { defaultIv, settlementHourUtc };
+  const valuation: ValuationOptions = { defaultIv, calendar, rate, dividendYield };
   const targetMs = nowMs + targetDays * MS_PER_DAY;
   const atTarget = prepare(legs, targetMs, ivShift, valuation);
   const valuationMs = opts.valuationMs;
@@ -437,11 +466,11 @@ export function analyze(legs: readonly Leg[], opts: AnalyzeOptions): AnalyzeResu
   const pts: PayoffPoint[] = [];
   for (let i = 0; i < points; i++) pts.push(pointAt(lo + ((hi - lo) * i) / (points - 1)));
 
-  const nearestT = nearestExpiryYears(legs, nowMs, settlementHourUtc);
+  const nearestT = nearestExpiryYears(legs, nowMs, calendar);
   const atmIv = opts.atmIv ?? nearestStrikeIv(legs, spot) ?? defaultIv ?? NaN;
   const hasIv = !Number.isNaN(atmIv) && !Number.isNaN(nearestT);
   const { maxProfit, maxLoss, breakevens: bes } = valuationMs === undefined ? { ...expiryExtremes(legs), breakevens: breakevens(legs) } : curveExtremes(legs, settle, lo, hi, points);
-  const popT = valuationMs === undefined ? nearestT : (valuationMs - nowMs) / MS_PER_YEAR;
+  const popT = valuationMs === undefined ? nearestT : (valuationMs - nowMs) / (MS_PER_DAY * calendar.daysPerYear);
 
   return {
     points: pts,
@@ -455,7 +484,7 @@ export function analyze(legs: readonly Leg[], opts: AnalyzeOptions): AnalyzeResu
     rewardRisk: rewardRisk(maxProfit, maxLoss),
     target: pointAt(targetSpot),
     targetMs,
-    daysToNearestExpiry: nearestT * DAYS_PER_YEAR,
+    daysToNearestExpiry: nearestT * calendar.daysPerYear,
     atmIv,
     valuationMs: valuationMs ?? null,
   };

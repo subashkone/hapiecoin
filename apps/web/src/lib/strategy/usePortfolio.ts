@@ -6,7 +6,8 @@ import type { AnalyzeResult } from "@hapiecoin/pricing";
 import type { Strategy } from "@hapiecoin/schema";
 import { useEffect, useRef, useState } from "react";
 import { getPricingClient } from "@/lib/pricing/client";
-import { settlementHourUtc, toPricingLegs } from "@/lib/pricing/legs";
+import { toPricingLegs } from "@/lib/pricing/legs";
+import { venueCalendar } from "@/lib/venue";
 import { marginEstimate } from "./analysis";
 import { openLegs, serverLegToLocal } from "./paper";
 import type { PaperBook } from "./usePaper";
@@ -87,7 +88,7 @@ export function usePortfolio(strategies: readonly Strategy[] | undefined, book: 
           });
           if (priced.length === 0) continue;
           try {
-            const result = await client.analyze(priced, { spot, nowMs: Date.now(), defaultIv: 0.5, settlementHourUtc: settlementHourUtc(s.asset), points: 81 });
+            const result = await client.analyze(priced, { spot, nowMs: Date.now(), defaultIv: 0.5, calendar: venueCalendar(s.asset), points: 81 });
             if (id !== seq.current) return;
             out.set(s.id, { greeks: result.greeks, margin: marginEstimate(result), result });
           } catch {
