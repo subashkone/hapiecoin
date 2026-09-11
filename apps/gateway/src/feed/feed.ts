@@ -14,7 +14,7 @@
 import type { ChainRow, QuoteDelta, Quote as SchemaQuote, ServerMessage, Topic, Underlying } from "@hapiecoin/schema";
 import { ChainSnapshot, UNDERLYINGS, chainTopic, parseTopic } from "@hapiecoin/schema";
 import type { MarketDataStatus, Quote as VenueQuote } from "@hapiecoin/venues";
-import { toSchemaChainRows, toSchemaQuote } from "@hapiecoin/venues";
+import { DEFAULT_VENUE, toSchemaChainRows, toSchemaQuote } from "@hapiecoin/venues";
 import type { Logger } from "../log.js";
 import type { PubSub } from "../pubsub/types.js";
 import type { SnapshotStore } from "../coordination/snapshots.js";
@@ -257,7 +257,7 @@ export class MarketFeed {
     }
     const spot = chain.spot ?? this.spots.get(parsed.underlying)?.p ?? null;
     const validated = ChainSnapshot.safeParse({
-      venue: "delta_india",
+      venue: DEFAULT_VENUE,
       underlying: parsed.underlying,
       expiry: parsed.expiry,
       ts: this.now(),
@@ -464,7 +464,7 @@ export class MarketFeed {
     )
       return;
 
-    const topic = chainTopic("delta_india", underlying, instrument.expiryDate);
+    const topic = chainTopic(DEFAULT_VENUE, underlying, instrument.expiryDate);
     let next: SchemaQuote;
     try {
       next = toSchemaQuote(quote, this.spots.get(underlying)?.p ?? null);

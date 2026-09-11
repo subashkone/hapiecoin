@@ -25,12 +25,12 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 16. ⬜ Paid-data analytics rows — only with the user's go-ahead on spend
 
 ## D. Strategy catalogue (ADR-060; docs/research/platform-roadmap-2026-09.md §1–2; runs beside A)
-17. ⬜ Templates can hold a perpetual future leg (`TemplateLeg` union, `no-spot` refusal, count derived from the catalogue) (GAPS #74)
-18. ⬜ Catalogue to 48: Long / Short Perp, Covered Call, Protective Put, Collar, Covered Put, Synthetic Straddle, back and ratio spreads 1x2, diagonals, double diagonal, calendar strangle, broken-wing butterflies, risk reversal, ladders; `tags` badge, no new tab
-19. ⬜ Per-template textbook invariants test (max profit / loss shape, breakeven count, outlook) on an arbitrage-free synthetic ladder (GAPS #75)
+17. ✅ (PR #50) Templates can hold a perpetual future leg (`TemplateLeg` union, `no-spot` refusal, count derived from the catalogue) (GAPS #74)
+18. ✅ (PR #51) Catalogue to 48: Long / Short Perp, Covered Call, Protective Put, Collar, Covered Put, Synthetic Straddle, back and ratio spreads 1x2, diagonals, double diagonal, calendar strangle, broken-wing butterflies, risk reversal, ladders; `tags` badge, no new tab
+19. ✅ (PR #52) Per-template textbook invariants test (max profit / loss shape, breakeven count, outlook) on an arbitrage-free synthetic ladder (GAPS #75)
 
 ## E. Platform (ADR-060; docs/research/platform-roadmap-2026-09.md §3–5; after C13)
-20. ⬜ E1 venue port: `VenueAdapter` + `VENUE_REGISTRY` + `DeltaIndiaAdapter` (no behaviour change) → `venue` column and instrument-id widening → pricing with `q`, `TradingCalendar`, American flagged → Deribit data-only adapter and per-venue gateway feed
+20. 🔨 E1 venue port: ✅ step 1 (ADR-063) `VenueAdapter` + `VENUE_REGISTRY` + `DELTA_INDIA` (no behaviour change) → ⬜ `venue` column and instrument-id widening → pricing with `q`, `TradingCalendar`, American flagged → Deribit data-only adapter and per-venue gateway feed
 21. ⬜ E2 currency: `Money { amount, ccy }`, ISO-4217 display list, ECB reference rates via ingest (`fx_rates`, `GET /fx`), manual override with a basis badge; billing stays INR
 22. ⬜ E3 languages: next-intl, cookie locale, chrome → dialogs → settings → content; Hindi, Tamil and Telugu together; per-locale assistant match tables
 23. ⬜ E4 mobile: viewport, manifest, icons, service worker, Playwright Pixel 7 + iPhone 14 phone specs, tap targets on the chain → Capacitor shell with native push and biometric unlock (Play Store, App Store)

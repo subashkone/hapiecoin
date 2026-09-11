@@ -979,5 +979,15 @@
     "how": "The gateway holding the feed lease runs the Delta socket and publishes; followers register their clients' topics in a Redis hash so the leader watches them, serve first snapshots from the store the leader writes and live frames from the fan-out; takeover within LEADER_TTL_MS; GATEWAY_ROLE auto / follower; /healthz role, /metrics hapiecoin_gateway_leader",
     "evidence": "ADR-062 (11 Sep 2026): apps/gateway/src/leader.ts, coordination/registry.ts, coordination/snapshots.ts, feed/role.ts, feed/feed.ts promote / demote / setRemoteTopics, server.ts queued first frames, app.ts election; unit leader.test.ts, coordination.test.ts, role.test.ts, fanout.test.ts",
     "test": "unit (gateway)"
+  },
+  {
+    "screen": "Venues · port",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "One venue port in front of Delta India",
+    "how": "The API and the gateway take their REST, trading and market-data clients, the schema mapping, lot-size defaults, seed fees and the venue id from getVenue(DEFAULT_VENUE) in @hapiecoin/venues; DELTA_INDIA carries the contract specs (0.001 BTC / 0.01 ETH / 0.001 XAUT, ticks 0.1 / 0.01 / 0.01, settlement 12:00 UTC, XAUT 16:00, USD), the symbol codec, fee defaults 0.05 / 18 / 10 and capability flags; an unknown venue or a missing trading client is a typed error",
+    "evidence": "ADR-063 (11 Sep 2026): packages/venues/src/port/adapter.ts, delta-india.ts, registry.ts; apps/api/src/main.ts, routes/settings.ts, routes/live-exec.ts, alerts-evaluate.ts, db/seed.ts; apps/gateway/src/feed/market-data.ts, feed.ts; unit port.test.ts against the products fixture and the web formatter vectors",
+    "test": "unit (venues)"
   }
 ]

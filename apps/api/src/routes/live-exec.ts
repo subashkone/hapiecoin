@@ -5,7 +5,7 @@
  * Routes call these; nothing here is reachable without a signed-in user's own vault credential.
  */
 import { type LivePreview, type LivePreviewLeg, type StrategyOrder, toDecimal } from "@hapiecoin/schema";
-import { type DeltaCredentials, type PlaceOrderResult, contractsFor, roundToTick } from "@hapiecoin/venues";
+import { DEFAULT_VENUE, type DeltaCredentials, type PlaceOrderResult, contractsFor, defaultLotSizes, getVenue, roundToTick } from "@hapiecoin/venues";
 import { and, eq } from "drizzle-orm";
 import { brokerCredentials, brokers, type strategies, strategyLegs, strategyOrders, userSettings, users } from "../db/schema.js";
 import type { SessionUser } from "../security/context.js";
@@ -17,7 +17,7 @@ export type LegRow = typeof strategyLegs.$inferSelect;
 export type OrderRow = typeof strategyOrders.$inferSelect;
 export type StrategyRow = typeof strategies.$inferSelect;
 
-const DEFAULT_LOTS: Record<string, string> = { BTC: "0.001", ETH: "0.01", XAUT: "0.001" };
+const DEFAULT_LOTS: Record<string, string> = defaultLotSizes(getVenue(DEFAULT_VENUE)); // ADR-063
 /** Settling assets whose available balance we compare with the worst-loss estimate, in preference order. */
 const SETTLING_ASSETS = ["USD", "USDT", "USDC"];
 

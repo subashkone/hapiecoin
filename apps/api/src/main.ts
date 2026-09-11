@@ -10,7 +10,6 @@ import { AUTH_BASE_PATH, authOptionsPublic, createAuth, sessionResolver } from "
 import { loadConfig } from "./config.js";
 import { createDb } from "./db/client.js";
 import { seed } from "./db/seed.js";
-import { DeltaTradingClientImpl } from "@hapiecoin/venues";
 import { DeltaPrivateClientImpl } from "./delta/private-client.js";
 import { loadRepoEnv } from "./env-file.js";
 import { createLogger } from "./logger.js";
@@ -24,11 +23,13 @@ import { startRulesEngine } from "./rules-engine.js";
 import { evaluateAlerts } from "./alerts-evaluate.js";
 import { TelegramBotClient } from "./telegram.js";
 import { startTelegramLinker } from "./routes/telegram.js";
-import { DeltaRestClient, isSchemaInstrument, toSchemaInstrument, toSchemaQuote } from "@hapiecoin/venues";
+import { DEFAULT_VENUE, getVenue, tradingClientOf } from "@hapiecoin/venues";
 import { MemoryAnalyticsReader, RedisAnalyticsReader } from "./analytics.js";
 
 loadRepoEnv(import.meta.url);
 const config = loadConfig();
+// ADR-063: every venue-specific client and mapping comes from the port; the venue column arrives in E20 step 2
+const venue = getVenue(DEFAULT_VENUE);
 const logger = createLogger({ level: config.logLevel, base: { env: config.nodeEnv } });
 
 const handle = await createDb({ databaseUrl: config.databaseUrl, pgliteDataDir: config.pgliteDataDir });
@@ -68,7 +69,7 @@ const deps: AppDeps = {
   logger,
   vault: createKeyring(config.credentialsEncKey, config.credentialsPrevKeys),
   delta: new DeltaPrivateClientImpl({ baseUrl: config.deltaTradingRestUrl, nodeEnv: config.nodeEnv }),
-  trading: new DeltaTradingClientImpl({ baseUrl: config.deltaTradingRestUrl, nodeEnv: config.nodeEnv }),
+  trading: tradingClientOf(venue, { baseUrl: config.deltaTradingRestUrl, nodeEnv: config.nodeEnv }),
   authOptions: authOptionsPublic(config),
   analytics: redis ? new RedisAnalyticsReader(redis) : new MemoryAnalyticsReader(),
   // ADR-057: the bot token never leaves the client; without it the telegram channel is not offered
@@ -78,7 +79,7 @@ const app = createApp(deps);
 
 // ADR-062: the background jobs run in exactly one API replica (Redis leader lease; the memory lock without Redis);
 // tests drive reconcilePending, the snapshotter and the linker directly, so none start under test
-const publicRest = new DeltaRestClient({ baseUrl: config.deltaRestUrl });
+const publicRest = venue.rest({ baseUrl: config.deltaRestUrl });
 const starters: JobStarter[] = [];
 // ADR-029: pending venue orders are reconciled in the background
 starters.push({ name: "reconciler", start: () => startReconciler(deps, config.trading.reconcileMs) });
@@ -91,8 +92,8 @@ if (config.ivSnapshotMs !== 0)
         deps,
         {
           // the venue shapes cross the schema adapter (GAPS #8); a ticker without a spot carries "0" and is skipped as a spot source
-          products: async () => (await publicRest.getProducts({ contractTypes: ["call_options", "put_options"], states: ["live"] })).filter(isSchemaInstrument).map(toSchemaInstrument),
-          tickers: async (u) => (await publicRest.getTickers({ contractTypes: ["call_options", "put_options"], underlying: u })).map((q) => toSchemaQuote(q, "0")),
+          products: async () => (await publicRest.getProducts({ contractTypes: ["call_options", "put_options"], states: ["live"] })).filter(venue.schema.isSupported).map(venue.schema.instrument),
+          tickers: async (u) => (await publicRest.getTickers({ contractTypes: ["call_options", "put_options"], underlying: u })).map((q) => venue.schema.quote(q, "0")),
         },
         config.ivSnapshotMs,
         // ADR-057: every snapshot evaluates the armed alerts server-side, so they fire with the app closed
@@ -111,7 +112,7 @@ if (config.settlementMs !== 0)
       startSettler(
         deps,
         snapshotSpotSource(deps, async (u) => {
-          const q = (await publicRest.getTickers({ contractTypes: ["call_options", "put_options"], underlying: u })).map((x) => toSchemaQuote(x, "0")).find((x) => Number(x.spot) > 0);
+          const q = (await publicRest.getTickers({ contractTypes: ["call_options", "put_options"], underlying: u })).map((x) => venue.schema.quote(x, "0")).find((x) => Number(x.spot) > 0);
           return q ? Number(q.spot) : null;
         }),
         config.settlementMs,
@@ -130,7 +131,7 @@ if (config.rulesTickMs !== 0)
             const quotes = await publicRest.getTickers({ contractTypes: ["call_options", "put_options", "perpetual_futures"], underlying: u });
             return new Map(
               quotes.map((q) => {
-                const sq = toSchemaQuote(q, "0");
+                const sq = venue.schema.quote(q, "0"); // through the venue port (ADR-063), like the snapshotter
                 return [sq.instrumentId.slice(sq.instrumentId.indexOf(":") + 1), Number(sq.mark)];
               }),
             );
