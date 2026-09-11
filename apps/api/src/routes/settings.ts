@@ -1,5 +1,6 @@
 /** Per-user preferences (HC-SH-038..044): currency + conversion rate, P&L basis, lot sizes, theme, density. */
 import { UNDERLYINGS, type Underlying, UserSettings } from "@hapiecoin/schema";
+import { DEFAULT_VENUE, defaultLotSizes, getVenue } from "@hapiecoin/venues";
 import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
 import { eq } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
@@ -13,7 +14,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   currency: "USD",
   conversionRate: "83.5",
   pnlBasis: "mark",
-  lotSizes: { BTC: "0.001", ETH: "0.01", XAUT: "0.001" },
+  lotSizes: defaultLotSizes(getVenue(DEFAULT_VENUE)), // ADR-063: the venue's contract sizes
   theme: "dark",
   density: "comfortable",
 };
