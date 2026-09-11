@@ -16,6 +16,7 @@ import { MAX_OPEN_LEGS_UI, feeFor } from "@/lib/strategy/paper";
 import type { PaperBook } from "@/lib/strategy/usePaper";
 import { type PickerKind, type PickerRow, usePickerChain } from "@/components/builder/ChainPickerBody";
 import { ModePill } from "@/components/trading/StrategyDetailsDialog";
+import { rulesLine } from "@/components/trading/RuleDialog";
 import { AdjustConfirmDialog } from "./AdjustConfirmDialog";
 import { PlansBar } from "./PlansBar";
 import { PositionTicket } from "./PositionTicket";
@@ -54,6 +55,7 @@ export function AdjustWorkbench({ book }: { book: PaperBook }) {
   const closeAdjust = useUiStore((s) => s.closeAdjust);
   const chainLots = useUiStore((s) => s.chainLots);
   const openAlerts = useUiStore((s) => s.openAlerts);
+  const openRules = useUiStore((s) => s.openRules);
   const { data: brokers } = useBrokers();
   const [alertInput, setAlertInput] = useState("");
   const box = useRef<HTMLElement>(null);
@@ -151,6 +153,10 @@ export function AdjustWorkbench({ book }: { book: PaperBook }) {
             <span className="micro">Alert me if P&amp;L falls below</span>
             <input type="number" min={1} value={alertInput} onChange={(e) => setAlertInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && setAlert()} placeholder={money.currency === "INR" ? "₹ loss" : "$ loss"} className="h-6 w-20 rounded border border-input bg-background px-1.5 text-xs" aria-label="Loss threshold for a P&L alert" data-testid="risk-alert-input" />
             <Button size="sm" variant="ghost" disabled={!(Number(alertInput) > 0)} onClick={setAlert} data-testid="risk-alert-save">Set alert</Button>
+          </span>
+          <span className="flex items-center gap-1.5" title="Exit rules run by the server: stop / target, leg stop, spot level, time exit (ADR-059 §2.3) · an alert only tells you; a rule exits" data-testid="risk-protect">
+            <span className="micro">{rulesLine(strategy.rules, money, strategy.legs) ?? "No exit rule"}</span>
+            <Button size="sm" variant="ghost" onClick={() => openRules(strategy.id)} data-testid="adjust-protect">{rulesLine(strategy.rules, money, strategy.legs) ? "Protect…" : "Protect"}</Button>
           </span>
           <Button size="sm" variant="ghost" className="ml-auto" disabled={w.empty} onClick={w.reset} title="Discard the change (Esc on the chain does the same)" data-testid="adjust-reset">
             Reset

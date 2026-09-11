@@ -566,12 +566,18 @@ test.describe("HC-TR paper trading (Phase 3 item 1)", () => {
     await protect.getByTestId("rule-stop-on").click();
     await protect.getByTestId("rule-stop-value").fill("5");
     await expect(protect.getByTestId("rule-stop-level")).toContainText("5");
+    // HC-TR-171: a spot level beside it
+    await protect.getByTestId("rule-spot-on").click();
+    await protect.getByTestId("rule-spot-below").click();
+    await protect.getByTestId("rule-spot-value").fill("70000");
+    await expect(protect.getByTestId("rule-arm")).toHaveText("Arm stop loss + spot level");
     await protect.getByTestId("rule-arm").click();
     await expect(protect).toBeHidden();
     await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
     await expect(page.getByTestId("paper-count")).toHaveText("1");
     const card = page.getByTestId("paper-card");
     await expect(card.getByTestId("card-rules")).toContainText("stop at");
+    await expect(card.getByTestId("card-rules")).toContainText("spot ≤ 70,000");
     await expect(card.getByTestId("mode-pill")).toHaveAttribute("data-status", "paper");
     await expect(card.getByTestId("card-pnl")).not.toHaveText("—");
     await expect(page.getByTestId("builder-count")).toHaveCount(0);
