@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AdjustBody,
   CloseLegBody,
+  ReconcileBody,
   LivePreviewBody,
   MAX_ADJUST_REASON,
   MAX_NEW_LEGS,
@@ -47,6 +48,11 @@ describe("[SCHEMA] strategies (ADR-024)", () => {
     expect(StrategyStart.safeParse({ mode: "paper", brokerId: "brk_1", entries: { leg_1: "abc" } }).success).toBe(false);
     expect(CloseLegBody.safeParse({ exitPrice: "10", lots: 3 }).success).toBe(true);
     expect(CloseLegBody.safeParse({ exitPrice: "10", lots: 0 }).success).toBe(false);
+    // HC-TR-161: reconcile books lots closed outside the app; at least one leg, whole lots, a price, an optional reason
+    expect(ReconcileBody.safeParse({ legs: [{ legId: "leg_1", price: "10" }, { legId: "leg_2", lots: 3, price: "0" }], reason: " stop hit " }).success).toBe(true);
+    expect(ReconcileBody.safeParse({ legs: [] }).success).toBe(false);
+    expect(ReconcileBody.safeParse({ legs: [{ legId: "leg_1", lots: 0, price: "10" }] }).success).toBe(false);
+    expect(ReconcileBody.safeParse({ legs: [{ legId: "leg_1", price: "-1" }] }).success).toBe(false);
     const stop = StopBody.parse({ archive: false });
     expect(stop.exits).toEqual({});
   });

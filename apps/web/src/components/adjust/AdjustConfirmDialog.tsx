@@ -8,10 +8,12 @@ import type { AdjustBody, OrderType, Strategy } from "@hapiecoin/schema";
 import { MAX_ADJUST_REASON } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ApiError } from "@/lib/api/client";
 import { useLivePreview } from "@/lib/api/live";
-import { strategyKeys, useAdjustStrategy } from "@/lib/api/strategies";
+import { strategyKeys, useAdjustStrategy, useStrategies } from "@/lib/api/strategies";
+import { overlapsFor } from "@/lib/strategy/overlap";
+import { OverlapNotice } from "@/components/trading/OverlapNotice";
 import { fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
 import { fmtMoney } from "@/lib/money";
 import { instrumentOf } from "@/lib/adjust/model";
@@ -84,6 +86,18 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
   const closeAdjust = useUiStore((s) => s.closeAdjust);
   const openDetails = useUiStore((s) => s.openDetails);
   const qc = useQueryClient();
+  // HC-TR-159: every contract this batch touches that another open strategy of the same mode holds
+  const { data: allStrategies } = useStrategies();
+  const overlaps = useMemo(() => {
+    const proposed = [
+      ...body.adds.map((l) => ({ symbol: l.symbol, side: l.side, lots: l.lots, label: l.kind === "future" ? l.symbol : `${fmtStrike(l.strike)} ${l.kind === "call" ? "C" : "P"} ${fmtExpiry(l.expiry)}` })),
+      ...body.changes.flatMap((c) => {
+        const leg = w.open.find((x) => x.id === c.legId);
+        return leg && leg.lots > c.lotsAfter ? [{ symbol: leg.symbol, side: leg.side === "buy" ? ("sell" as const) : ("buy" as const), lots: leg.lots - c.lotsAfter, label: instrumentOf(leg) }] : [];
+      }),
+    ];
+    return overlapsFor(proposed, allStrategies ?? [], live ? "live" : "paper", strategy.id);
+  }, [body, w.open, allStrategies, live, strategy.id]);
   const [reason, setReason] = useState("");
   const [orderType, setOrderType] = useState<OrderType>("market");
   const [placed, setPlaced] = useState<Strategy | null>(null);
@@ -242,6 +256,7 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
                   })}
                 </tbody>
               </table>
+              <OverlapNotice rows={overlaps} mode={live ? "live" : "paper"} />
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4" data-testid="adjust-confirm-figures">
                 {fig("Max loss", money$(before?.maxLoss, "Unlimited"), money$(after?.maxLoss, "Unlimited"), "cf-max-loss")}
                 {fig("Max profit", money$(before?.maxProfit, "Unlimited"), money$(after?.maxProfit, "Unlimited"), "cf-max-profit")}

@@ -6704,6 +6704,48 @@
   "evidence": "ADR-059 (11 Sep 2026): TradePreviewDialog.tsx preview-capital, TradeFlow.tsx wallet via useLivePositions while a flow is open; unit trading-more.test.tsx HC-TR-158 (debit, credit, undefined, INR and coin wallets), trading.test.tsx"
  },
  {
+  "id": "HC-TR-159",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Trade Preview / Adjustment Review",
+  "feature": "Overlap line: a contract another open strategy already holds",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright) · api contract · security",
+  "acceptance": "The paper and live previews and the workbench Review list every contract in the order that another open strategy of the same mode holds, with who holds how much and what the exchange holds after the order as one position; live adds the warning that an exchange-level stop or close acts on all of it; never blocks",
+  "evidence": "ADR-059 (11 Sep 2026): lib/strategy/overlap.ts overlapsFor, OverlapNotice.tsx, TradeFlow.tsx / TradePreviewDialog.tsx, AdjustConfirmDialog.tsx; unit overlap.test.ts HC-TR-159; e2e analyse.spec.ts (E2E straddle test)"
+ },
+ {
+  "id": "HC-TR-160",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Live tab",
+  "feature": "Out of sync with the exchange: drift badge and banner",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright) · security",
+  "acceptance": "On every positions refresh the exchange's net position per contract is compared with the open live legs across strategies; a strategy on a contract that differs gets an out-of-sync badge (title: exchange holds X · Y expected across N strategies) and the tab a banner; contracts the app does not track are ignored",
+  "evidence": "ADR-059 (11 Sep 2026): lib/strategy/drift.ts driftFor / shortfallFor, PaperPanel.tsx card-drift / live-drift-banner; unit drift.test.ts HC-TR-160, trading-live.test.tsx HC-TR-160/161"
+ },
+ {
+  "id": "HC-TR-161",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Live tab",
+  "feature": "Reconcile: book lots closed outside the app, no orders",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright) · api contract · security",
+  "acceptance": "Reconcile on an out-of-sync card lists the legs whose lots the exchange no longer holds with their share of the shortfall, a price (the exchange mark, else the entry) and a reason; confirming books them closed through POST /v1/strategies/{id}/reconcile, which sends nothing to the exchange, records the batch as 'closed outside the app: <reason>' in the history and archives the strategy when nothing is open",
+  "evidence": "ADR-059 (11 Sep 2026): packages/schema ReconcileBody, apps/api routes/strategies.ts reconcile route, mock-api reconcile, lib/api/strategies.ts useReconcileStrategy, ReconcileDialog.tsx; unit strategies.test.ts (api) HC-TR-161, strategies.test.ts (schema), trading-live.test.tsx HC-TR-160/161"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

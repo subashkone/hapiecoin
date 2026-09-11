@@ -117,13 +117,15 @@ describe("[VENUES] trading client edges", () => {
     ]);
     expect(await c.getBalances(CREDS)).toEqual([{ asset: "USDT", balance: "55", availableBalance: "55" }]);
     failNext = true;
-    expect(await c.getPositions(CREDS)).toEqual([]);
+    await expect(c.getPositions(CREDS)).rejects.toThrow(/positions_unavailable/); // never an empty list: "could not read" is not "holds nothing"
     failNext = true;
     expect(await c.getBalances(CREDS)).toEqual([]);
     expect(await c.cancelOrder(CREDS, 9, 1)).toBe(false); // 500 from the fallback
     const down = new DeltaTradingClientImpl({ baseUrl: BASE, nodeEnv: "test", minIntervalMs: 0, fetch: () => Promise.reject(new Error("offline")) });
-    expect(await down.getPositions(CREDS)).toEqual([]);
+    await expect(down.getPositions(CREDS)).rejects.toThrow(/positions_unavailable/);
     expect(await down.getBalances(CREDS)).toEqual([]);
+    const refused = new DeltaTradingClientImpl({ baseUrl: BASE, nodeEnv: "test", minIntervalMs: 0, fetch: () => json({ success: false, error: { code: "nope" } }, 500) });
+    await expect(refused.getPositions(CREDS)).rejects.toThrow(/positions_unavailable/); // a 500 is not "no positions" either
   });
 
   it("names every documented order error and ignores a context without the margin figure", () => {
@@ -152,6 +154,9 @@ describe("[VENUES] fake trading client bookkeeping", () => {
     fake.setBalances([{ asset: "BTC", balance: "1", availableBalance: "0.5" }]).setPositions([{ productId: 1, symbol: "BTCUSD", size: 3, entryPrice: "1", realizedPnl: "0", margin: "1" }]);
     expect((await fake.getBalances())[0]!.asset).toBe("BTC");
     expect((await fake.getPositions())[0]!.size).toBe(3);
+    fake.positionsDown = true;
+    await expect(fake.getPositions()).rejects.toThrow(/positions_unavailable/);
+    fake.positionsDown = false;
     fake.forget("P-BTC-1");
     await expect(fake.getProduct("P-BTC-1")).rejects.toThrow(/not listed/);
     const filled = await fake.placeOrder(CREDS, { productId: 1, size: 1, side: "buy", clientOrderId: "a" });
