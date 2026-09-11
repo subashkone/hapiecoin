@@ -1,19 +1,18 @@
 /**
- * Delta Exchange India behind the venue port (ADR-063). Every value here is what the apps hard-coded before:
- * contract sizes and ticks from the recorded product list (spec/fixtures/delta-products.json), settlement at
- * 12:00 UTC (16:00 for XAUT), USD quoting and settlement, the seed broker's fee defaults, the symbol format
- * the web client already produces.
+ * Delta Exchange India behind the venue port (ADR-063), the browser-safe core: every value here is what the
+ * apps hard-coded before. Contract sizes and ticks from the recorded product list
+ * (spec/fixtures/delta-products.json), settlement at 12:00 UTC (16:00 for XAUT), USD quoting and settlement,
+ * the seed broker's fee defaults, the symbol format the web client already produced. The REST, market-data
+ * and trading factories live in ./delta-india-clients.ts, which pulls in node:crypto and stays server-side
+ * (ADR-064).
  */
 import type { Underlying } from "@hapiecoin/schema";
-import { DeltaMarketData } from "../delta/market-data.js";
 import {
   DEFAULT_SETTLEMENT_HOUR_UTC,
   expirySettlementIso,
   isOptionSymbol,
   parseOptionSymbol,
 } from "../delta/normalize.js";
-import { DeltaRestClient } from "../delta/rest.js";
-import { DeltaTradingClientImpl } from "../delta/trading.js";
 import {
   SCHEMA_VENUE,
   isSchemaInstrument,
@@ -23,7 +22,7 @@ import {
   toSchemaInstrument,
   toSchemaQuote,
 } from "../schema-adapter.js";
-import { type MarketSpec, type OptionKind, type VenueAdapter, ownMarket } from "./adapter.js";
+import { type MarketSpec, type OptionKind, type VenueCore, ownMarket } from "./adapter.js";
 
 function market(underlying: Underlying, multiplier: string, tickSize: string, settlementHourUtc: number): MarketSpec {
   return {
@@ -48,7 +47,7 @@ export const DELTA_INDIA_MARKETS: Readonly<Record<Underlying, MarketSpec>> = {
   XAUT: market("XAUT", "0.001", "0.01", 16),
 };
 
-/** The option half of the web client's `deltaSymbol` (its future branch is `symbols.perpetual`): integral strikes print without decimals, the expiry as DDMMYY; an unparseable date passes through. */
+/** The option half of the web client's former `deltaSymbol` (its future branch is `symbols.perpetual`): integral strikes print without decimals, the expiry as DDMMYY; an unparseable date passes through. */
 export function formatDeltaOption(kind: OptionKind, underlying: string, strike: string, expiryDate: string): string {
   const [y, m, d] = expiryDate.split("-");
   const code = d && m && y ? `${d}${m}${y.slice(2)}` : expiryDate;
@@ -57,11 +56,19 @@ export function formatDeltaOption(kind: OptionKind, underlying: string, strike: 
   return `${kind === "call" ? "C" : "P"}-${underlying}-${s}-${code}`;
 }
 
+const PERPETUAL = /^([A-Z]+)USD$/;
+
+/** "BTCUSD" -> "BTC"; null for anything that is not a perpetual symbol. */
+export function parseDeltaPerpetual(symbol: string): string | null {
+  const m = PERPETUAL.exec(symbol);
+  return m?.[1] ?? null;
+}
+
 function settlementHour(underlying: string): number {
   return ownMarket(DELTA_INDIA_MARKETS, underlying)?.settlementHourUtc ?? DEFAULT_SETTLEMENT_HOUR_UTC;
 }
 
-export const DELTA_INDIA: VenueAdapter = {
+export const DELTA_INDIA_CORE: VenueCore = {
   id: SCHEMA_VENUE,
   label: "Delta Exchange India",
   underlyings: ["BTC", "ETH", "XAUT"],
@@ -71,6 +78,7 @@ export const DELTA_INDIA: VenueAdapter = {
     parseOption: parseOptionSymbol,
     formatOption: formatDeltaOption,
     perpetual: (underlying) => `${underlying}USD`,
+    parsePerpetual: parseDeltaPerpetual,
   },
   calendar: {
     settlementHourUtc: settlementHour,
@@ -93,7 +101,4 @@ export const DELTA_INDIA: VenueAdapter = {
     chainRows: toSchemaChainRows,
     chainSnapshot: toSchemaChainSnapshot,
   },
-  rest: (options) => new DeltaRestClient(options),
-  marketData: (options) => new DeltaMarketData(options),
-  trading: (options) => new DeltaTradingClientImpl(options),
 };

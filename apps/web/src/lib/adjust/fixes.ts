@@ -3,7 +3,7 @@
 // The workbench ranks them with the engine (smallest max loss, largest credit, closest to delta-neutral).
 import type { StrategyLeg as ServerLeg, Underlying } from "@hapiecoin/schema";
 import { fmtExpiry, fmtStrike } from "@/lib/format";
-import { deltaSymbol } from "@/lib/strategy/legs";
+import { venueSymbol } from "@/lib/strategy/legs";
 import { type AdjustDraft, type OptionKind, type PickInput, newPickId, pickOnDraft, setLotsAfter } from "./model";
 
 /** One strike row of a chain window: the strike and the marks the picker shows. */
@@ -45,7 +45,7 @@ const blank = (d: AdjustDraft): AdjustDraft => ({ ...d, lotsAfter: {}, picks: []
  * replacements on the same contract and side merge.
  */
 function addPick(d: AdjustDraft, asset: Underlying, input: PickInput): AdjustDraft {
-  const symbol = deltaSymbol(input.kind, asset, input.strike, input.expiry);
+  const symbol = venueSymbol(input.kind, asset, input.strike, input.expiry);
   const same = d.picks.find((p) => p.symbol === symbol && p.side === input.side);
   if (same) return { ...d, picks: d.picks.map((p) => (p.id === same.id ? { ...p, lots: p.lots + input.lots } : p)) };
   return { ...d, picks: [...d.picks, { id: newPickId(), kind: input.kind, side: input.side, strike: input.strike, expiry: input.expiry, lots: input.lots, price: input.price, iv: input.iv, symbol }] };

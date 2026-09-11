@@ -2,6 +2,7 @@
 // React binding for GatewayClient: one client per tab (provider), `useTopic` for a chain topic and
 // `useSpot` for spot ticks. Updates are batched per animation frame so a burst of `q` frames renders once.
 import { chainTopic, spotTopic, type Topic, type Underlying } from "@hapiecoin/schema";
+import { CURRENT_VENUE } from "@/lib/venue";
 import {
   createContext,
   useContext,
@@ -103,7 +104,7 @@ export function useTopic(topic: Topic | null): ChainState | undefined {
 }
 
 export function useChain(underlying: Underlying, expiry: string | null): ChainState | undefined {
-  const topic = expiry ? chainTopic("delta_india", underlying, expiry) : null;
+  const topic = expiry ? chainTopic(CURRENT_VENUE, underlying, expiry) : null;
   return useTopic(topic);
 }
 

@@ -262,6 +262,9 @@ importers:
       '@hapiecoin/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@hapiecoin/venues':
+        specifier: workspace:*
+        version: link:../../packages/venues
       '@tanstack/react-query':
         specifier: 5.102.8
         version: 5.102.8(react@19.2.8)

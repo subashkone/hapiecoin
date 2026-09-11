@@ -2,6 +2,7 @@
 // Several expiries of one asset at once (HC-WS-095 term structure): one gateway subscription per expiry and
 // one frame-batched re-render per burst of ticks, like useLegQuotes.
 import { type Underlying, chainTopic } from "@hapiecoin/schema";
+import { CURRENT_VENUE } from "@/lib/venue";
 import { useEffect, useMemo, useState } from "react";
 import type { ChainState } from "@/lib/gateway/reducer";
 import { useGateway } from "./hooks";
@@ -12,7 +13,7 @@ export function useChains(asset: Underlying, expiries: readonly string[]): Map<s
   const [version, setVersion] = useState(0);
   useEffect(() => {
     if (expiries.length === 0) return;
-    const topics = expiries.map((e) => chainTopic("delta_india", asset, e));
+    const topics = expiries.map((e) => chainTopic(CURRENT_VENUE, asset, e));
     const offs = topics.map((t) => gw.subscribe(t));
     let frame: number | null = null;
     const bump = () => {
@@ -37,7 +38,7 @@ export function useChains(asset: Underlying, expiries: readonly string[]): Map<s
   return useMemo(() => {
     const m = new Map<string, ChainState>();
     for (const e of key ? key.split(",") : []) {
-      const c = gw.getChain(chainTopic("delta_india", asset, e));
+      const c = gw.getChain(chainTopic(CURRENT_VENUE, asset, e));
       if (c) m.set(e, c);
     }
     return m;

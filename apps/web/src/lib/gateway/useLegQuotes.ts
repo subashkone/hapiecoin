@@ -3,6 +3,7 @@
 // distinct expiry, one frame-batched re-render per burst of ticks (HC-TR-018, HC-TR-019).
 import { type Quote, chainTopic } from "@hapiecoin/schema";
 import type { Underlying } from "@hapiecoin/schema";
+import { CURRENT_VENUE } from "@/lib/venue";
 import { useEffect, useMemo, useState } from "react";
 import type { ChainState } from "@/lib/gateway/reducer";
 import type { StrategyLeg } from "@/lib/strategy/legs";
@@ -17,7 +18,7 @@ export function useLegQuotes(asset: Underlying, legs: readonly StrategyLeg[]): {
   const [version, setVersion] = useState(0);
   useEffect(() => {
     if (expiries.length === 0) return;
-    const topics = expiries.map((e) => chainTopic("delta_india", asset, e));
+    const topics = expiries.map((e) => chainTopic(CURRENT_VENUE, asset, e));
     const offs = topics.map((t) => gw.subscribe(t));
     let frame: number | null = null;
     const bump = () => {
@@ -42,7 +43,7 @@ export function useLegQuotes(asset: Underlying, legs: readonly StrategyLeg[]): {
   const chains = useMemo(() => {
     const m = new Map<string, ChainState>();
     for (const e of expiries) {
-      const c = gw.getChain(chainTopic("delta_india", asset, e));
+      const c = gw.getChain(chainTopic(CURRENT_VENUE, asset, e));
       if (c) m.set(e, c);
     }
     return m;

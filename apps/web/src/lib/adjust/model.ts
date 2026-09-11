@@ -10,7 +10,7 @@ import { toDecimal } from "@hapiecoin/schema";
 import { fmtExpiry, fmtStrike } from "@/lib/format";
 import { type MoneyFormat, fmtMoney } from "@/lib/money";
 import { settlementHourUtc } from "@/lib/pricing/legs";
-import { type LegSide, type StrategyLeg, deltaSymbol } from "@/lib/strategy/legs";
+import { type LegSide, type StrategyLeg, venueSymbol } from "@/lib/strategy/legs";
 import { MAX_OPEN_LEGS_UI, serverLegToLocal } from "@/lib/strategy/paper";
 
 export type OptionKind = "call" | "put";
@@ -161,7 +161,7 @@ const sameContract = (l: ServerLeg, kind: OptionKind, strike: string, expiry: st
  */
 export function pickOnDraft(d: AdjustDraft, open: readonly ServerLeg[], asset: Underlying, input: PickInput, now = Date.now()): AdjustDraft {
   const held = open.filter((l) => sameContract(l, input.kind, input.strike, input.expiry));
-  const symbol = deltaSymbol(input.kind, asset, input.strike, input.expiry);
+  const symbol = venueSymbol(input.kind, asset, input.strike, input.expiry);
   const lots = wholeLots(input.lots, 1);
   if (held.length === 0) {
     const existing = d.picks.find((p) => p.symbol === symbol);

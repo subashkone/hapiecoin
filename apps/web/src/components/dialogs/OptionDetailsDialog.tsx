@@ -4,6 +4,7 @@
 // from the API's snapshot history (ADR-056, GAPS #32).
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { chainTopic } from "@hapiecoin/schema";
+import { CURRENT_VENUE } from "@/lib/venue";
 import { useMemo, useState } from "react";
 import { useMarkHistory } from "@/lib/api/market";
 import { useSettings } from "@/lib/api/queries";
@@ -11,7 +12,7 @@ import { Chart } from "@/components/analytics/Chart";
 import { daysToExpiry, fmtChange, fmtDelta, fmtExpiry, fmtGamma, fmtIv, fmtOi, fmtPrice, fmtQty, fmtStrike, fmtTheta, fmtVega } from "@/lib/format";
 import { useSpot, useTopic } from "@/lib/gateway/hooks";
 import { useUiStore } from "@/lib/store";
-import { LOT_PRESETS, type LegSide, MAX_ACTIVE_LEGS, deltaSymbol, legQuantity } from "@/lib/strategy/legs";
+import { LOT_PRESETS, type LegSide, MAX_ACTIVE_LEGS, venueSymbol, legQuantity } from "@/lib/strategy/legs";
 import type { DialogProps } from "./SettingsDialogs";
 
 function Stat({ k, v, className }: { k: string; v: string; className?: string }) {
@@ -32,17 +33,17 @@ export function OptionDetailsDialog({ open, onOpenChange }: DialogProps) {
   const legsByAsset = useUiStore((s) => s.legs);
   const assetLegs = target ? legsByAsset[target.asset] : [];
   const { data: settings } = useSettings();
-  const topic = target && open ? chainTopic("delta_india", target.asset, target.expiry) : null;
+  const topic = target && open ? chainTopic(CURRENT_VENUE, target.asset, target.expiry) : null;
   const chain = useTopic(topic);
   const spot = useSpot(target?.asset ?? "BTC");
   const [lots, setLots] = useState<number | null>(null);
   const chosen = lots ?? chainLots;
 
-  const history = useMarkHistory(open && target ? deltaSymbol(target.kind, target.asset, target.strike, target.expiry) : null);
+  const history = useMarkHistory(open && target ? venueSymbol(target.kind, target.asset, target.strike, target.expiry) : null);
   const spark = history.data?.points ?? [];
   const row = useMemo(() => (target && chain ? chain.rows.find((r) => Number(r.strike) === Number(target.strike)) : undefined), [chain, target]);
   const q = target ? (target.kind === "call" ? row?.call : row?.put) : undefined;
-  const symbol = target ? deltaSymbol(target.kind, target.asset, target.strike, target.expiry) : "";
+  const symbol = target ? venueSymbol(target.kind, target.asset, target.strike, target.expiry) : "";
   const lotSize = target ? settings?.lotSizes[target.asset] : undefined;
   const qty = legQuantity(chosen, lotSize);
   const atLimit = assetLegs.filter((l) => l.status === "open").length >= MAX_ACTIVE_LEGS;

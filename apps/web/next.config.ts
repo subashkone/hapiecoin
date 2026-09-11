@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
   // No raster images are used; the optimizer would only add a server route.
   images: { unoptimized: true },
   reactCompiler: true,
-  transpilePackages: ["@hapiecoin/ui", "@hapiecoin/schema", "@hapiecoin/pricing"],
+  transpilePackages: ["@hapiecoin/ui", "@hapiecoin/schema", "@hapiecoin/pricing", "@hapiecoin/venues"],
   // `@hapiecoin/schema` and `@hapiecoin/pricing` sources use TypeScript-style `./x.js` imports for `.ts` files;
   // Turbopack in `next dev` follows the package's `development` export condition to src/ and cannot map that
   // extension, so dev resolves the built dist (the same file `next build` picks through the `import` condition).
@@ -34,6 +34,8 @@ const nextConfig: NextConfig = {
     resolveAlias: {
       "@hapiecoin/schema": "./node_modules/@hapiecoin/schema/dist/index.js",
       "@hapiecoin/pricing": "./node_modules/@hapiecoin/pricing/dist/index.js",
+      // only the browser-safe core of the venue port (ADR-064); the package root pulls in node:crypto
+      "@hapiecoin/venues/core": "./node_modules/@hapiecoin/venues/dist/port/core.js",
     },
   },
   headers() {
