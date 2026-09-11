@@ -1430,5 +1430,41 @@
     "feature": "Fired rules: the card chip, the history and the reason",
     "how": "A fired rule shows on the card as 'stop fired' / 'target hit', red with 'a leg still open' when an exit was refused; Details lists every rule with its state, level, time and note; the strategy closes with the reason stopped or target hit, shown on the Closed chip and in the Journal",
     "evidence": "ADR-059 §2.3 (11 Sep 2026): PaperPanel.tsx card-rule-fired, StrategyDetailsDialog.tsx details-rule, CLOSE_REASON_LABELS target; unit rules.test.tsx HC-TR-168, rules-engine.test.ts"
+  },
+  {
+    "screen": "Trading · Paper and Live tabs",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Leg stop, spot level and time exit rules (API and schema)",
+    "how": "PUT /v1/strategies/{id}/rules also takes a leg stop per open leg (a multiple of the leg's entry, priced on the server, or a price; exits that leg alone or the whole strategy), one spot level (above / below the underlying) and one time exit (an ISO instant, or days to the nearest expiry); the level is stored in the kind's own unit; a leg stop on a leg that is not open is refused; the rules come back in judging order (stop, leg stop, spot, time, target)",
+    "evidence": "ADR-059 §2.3 A4b (11 Sep 2026): packages/schema RULE_KINDS / RULE_TRIGGERS_OF / RuleScope / ruleLevel / RULE_KIND_ORDER / CLOSE_REASON_OF_KIND, apps/api routes/strategies.ts rules route, migration 0016 leg_id + scope, mock-api; unit strategies.test.ts (api HC-TR-169, schema HC-TR-169)"
+  },
+  {
+    "screen": "Trading · server",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Rules engine judges every kind from the marks and the spot",
+    "how": "The tick carries the marks and the spot; a leg stop fires when a short leg's mark rises (a long leg's falls) to the level and exits that leg only under leg scope, leaving the other rules armed; a spot rule waits while the tick has no spot; a time exit fires at the instant or when the nearest settlement is within the days, booking squared off; a leg stop whose leg closed and a days rule with only a perpetual open are disarmed as void; the note names the mark, spot or days; the audit carries the spot, leg and scope",
+    "evidence": "ADR-059 §2.3 A4b (11 Sep 2026): apps/api/src/rules-engine.ts RulesTick / evaluateRules, main.ts tick source with spot; unit rules-engine.test.ts HC-TR-170"
+  },
+  {
+    "screen": "Trading · cards · Details · workbench",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Protect dialog: leg stops, spot level, time exit; the workbench entry",
+    "how": "The Protect dialog lists one Leg stop row per held leg (× entry or price, the level and the current mark, exit this leg only / the whole strategy), a Spot level row (at or below / at or above, the spot now) and a Time exit row (at a time on the trader's clock, or days before the nearest expiry with the days now); the card line and Details name every kind ('S P 78,000 25 Sep stop at 1,800.0 (2× entry) · spot ≥ 82,000 · exit at 1 day to expiry'); the adjustment workbench footer shows the armed rules with a Protect button beside the P&L alert line",
+    "evidence": "ADR-059 §2.3 A4b (11 Sep 2026): RuleDialog.tsx rule-leg-{legId}-* / rule-spot-* / rule-time-* / ruleText / rulesLine, AdjustWorkbench.tsx risk-protect / adjust-protect, StrategyDetailsDialog.tsx details-rule, PaperPanel.tsx card-rules; unit rules.test.tsx HC-TR-171; e2e analyse.spec.ts paper flow (spot level)"
+  },
+  {
+    "screen": "Trading · Paper and Live tabs · Closed",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Re-enter from a closed card",
+    "how": "Re-enter on a closed card (while its expiry has not passed) creates a fresh draft of the legs the strategy held, at today's marks, named '<name> re-entry', and opens the trade dialog of that tab on it; the entry prices, the capital check and the Protect step happen in the dialog, nothing is placed by the button; a card whose expiry passed says to build afresh",
+    "evidence": "ADR-059 §2.3 A4b (11 Sep 2026): PaperPanel.tsx card-reenter / reenter, store openTrade with a draft; unit rules.test.tsx HC-TR-172"
   }
 ]

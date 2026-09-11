@@ -27,7 +27,9 @@ import {
   type CloseReason,
   type StrategyRule,
   RulesBody,
-  ruleThresholdUsd,
+  ruleLevel,
+  RULE_KIND_ORDER,
+  CLOSE_REASON_OF_KIND,
 } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
@@ -56,6 +58,8 @@ export function toRule(r: RuleRow): StrategyRule {
     basis: r.basis,
     basisUsd: r.basisUsd,
     thresholdUsd: r.thresholdUsd,
+    legId: r.legId,
+    scope: r.scope,
     channels: r.channels as StrategyRule["channels"],
     state: r.state,
     firedAt: r.firedAt ? r.firedAt.toISOString() : null,
@@ -90,7 +94,7 @@ export async function bookExitFills(deps: AppDeps, strategy: StrategyRow, fills:
     let reason: CloseReason = "squared_off";
     if (f.batchId.startsWith("rule:")) {
       const [rule] = await deps.db.select({ kind: strategyRules.kind }).from(strategyRules).where(eq(strategyRules.id, f.batchId.slice(5))).limit(1);
-      if (rule) reason = rule.kind === "stop" ? "stopped" : "target";
+      if (rule) reason = CLOSE_REASON_OF_KIND[rule.kind];
       ruleBatches.add(f.batchId.slice(5));
     }
     // contracts back to lots: a partial exit books its part, anything at or above the leg closes it; without the
@@ -116,7 +120,7 @@ export async function bookExitFills(deps: AppDeps, strategy: StrategyRow, fills:
   for (const id of ruleBatches) {
     const [rule] = await deps.db.select({ kind: strategyRules.kind, note: strategyRules.note }).from(strategyRules).where(eq(strategyRules.id, id)).limit(1);
     if (!rule) continue;
-    closeReason = rule.kind === "stop" ? "stopped" : "target";
+    closeReason = CLOSE_REASON_OF_KIND[rule.kind];
     const suffix = "the resting exit filled and was booked by the order sync";
     const note = rule.note?.endsWith(suffix) ? rule.note : `${rule.note ?? ""} · ${suffix}`.replace(/^ · /, "");
     await deps.db.update(strategyRules).set({ ...(archive ? { outcome: "closed" as const } : {}), note, updatedAt: now }).where(eq(strategyRules.id, id));
@@ -201,7 +205,7 @@ export function toStrategy(row: StrategyRow, legs: LegRow[], pnl: PnlRow[], orde
     orderBatchId: row.orderBatchId,
     orders: orders.map(toOrder),
     adjustments: adjustments.map((a) => ({ id: a.id, at: a.createdAt.toISOString(), reason: a.reason, added: a.added, trimmed: a.trimmed, closed: a.closed, realizedPnl: a.realizedPnl, batchId: a.batchId })),
-    rules: rules.map(toRule).sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "stop" ? -1 : 1)), // the stop first
+    rules: rules.map(toRule).sort((a, b) => RULE_KIND_ORDER[a.kind] - RULE_KIND_ORDER[b.kind]), // the protective kinds first
     startedAt: iso(row.startedAt),
     closedAt: iso(row.closedAt),
     closeReason: row.closeReason,
@@ -715,10 +719,22 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const body = c.req.valid("json");
       const before = await full(row);
       const now = new Date();
+      // a leg stop names one of the strategy's open legs; a multiple is priced off that leg's entry
+      const openLegs = (await legsOf(row.id)).filter((l) => l.status === "open");
+      const levels = body.rules.map((r) => {
+        if (r.kind === "time" && r.trigger === "at" && Date.parse(r.value) <= now.getTime()) throw errors.badRequest("The exit time has already passed");
+        if (r.kind !== "leg_stop") return ruleLevel(r);
+        const leg = openLegs.find((l) => l.id === r.legId);
+        if (!leg) throw errors.badRequest(`Leg ${r.legId ?? ""} is not an open leg of this strategy`);
+        if (r.trigger === "multiple" && leg.entryPrice === null) throw errors.badRequest(`${leg.symbol}: no entry price yet for a multiple`);
+        const level = ruleLevel(r, leg.entryPrice ?? leg.price);
+        if (Number(level) <= 0) throw errors.badRequest(`${leg.symbol}: the level rounds to nothing`); // it would fire at once
+        return level;
+      });
       // the set is replaced in one transaction: an armed or disarmed rule of any kind goes, fired ones stay as history
       await db.transaction(async (tx) => {
         await tx.delete(strategyRules).where(and(eq(strategyRules.strategyId, row.id), inArray(strategyRules.state, ["armed", "disarmed"])));
-        for (const r of body.rules) {
+        for (const [i, r] of body.rules.entries()) {
           await tx.insert(strategyRules).values({
             id: newId("rule"),
             strategyId: row.id,
@@ -727,7 +743,9 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
             value: r.value,
             basis: r.trigger === "pct" ? (r.basis ?? null) : null,
             basisUsd: r.trigger === "pct" ? (r.basisUsd ?? null) : null,
-            thresholdUsd: ruleThresholdUsd(r),
+            thresholdUsd: levels[i]!,
+            legId: r.kind === "leg_stop" ? (r.legId ?? null) : null,
+            scope: r.kind === "leg_stop" ? (r.scope ?? "leg") : "strategy",
             channels: r.channels,
             state: "armed",
             createdAt: now,
