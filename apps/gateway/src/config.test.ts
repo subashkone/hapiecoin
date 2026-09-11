@@ -18,6 +18,9 @@ describe("[GATEWAY] config", () => {
       INSTRUMENT_REFRESH_MS: 300_000,
       MAX_BUFFERED_BYTES: 1_048_576,
       MAX_CONNECTIONS_PER_IP: 20,
+      GATEWAY_ROLE: "auto",
+      LEADER_TTL_MS: 15_000,
+      HOLD_SYNC_MS: 2_000,
       LOG_LEVEL: "info",
     });
     expect(config.REDIS_URL).toBeUndefined();
@@ -88,5 +91,16 @@ describe("[GATEWAY] config", () => {
     expect(GatewayEnv.safeParse({ LOG_LEVEL: "trace" }).success).toBe(false);
     expect(GatewayEnv.safeParse({ DELTA_WS_CHANNEL: "v3/ticker" }).success).toBe(false);
     expect(GatewayEnv.safeParse({ NODE_ENV: "staging" }).success).toBe(false);
+  });
+});
+
+describe("[GATEWAY] config: ADR-062 replica settings", () => {
+  it("refuses a hold sync slower than a third of the lease, accepts the roles", async () => {
+    const { ConfigError, loadConfig } = await import("./config.js");
+    expect(() => loadConfig({ HOLD_SYNC_MS: "6000", LEADER_TTL_MS: "15000" })).toThrow(ConfigError);
+    expect(loadConfig({ HOLD_SYNC_MS: "5000", LEADER_TTL_MS: "15000" })).toMatchObject({ HOLD_SYNC_MS: 5_000 });
+    expect(loadConfig({ GATEWAY_ROLE: "follower" }).GATEWAY_ROLE).toBe("follower");
+    expect(() => loadConfig({ GATEWAY_ROLE: "leader" })).toThrow(ConfigError);
+    expect(() => loadConfig({ LEADER_TTL_MS: "1000" })).toThrow(ConfigError);
   });
 });

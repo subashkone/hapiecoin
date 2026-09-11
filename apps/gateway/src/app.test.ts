@@ -5,36 +5,10 @@ import { createLogger } from "./log.js";
 import { InProcessPubSub } from "./pubsub/in-process.js";
 import { RedisPubSub } from "./pubsub/redis.js";
 import { FakeMarketData } from "./test-support/fake-market.js";
+import { FakeRedis } from "./test-support/fake-redis.js";
 import { createFakeTransport } from "./test-support/fake-transport.js";
 
-const { FakeRedis } = vi.hoisted(() => {
-  class FakeRedis {
-    static instances: FakeRedis[] = [];
-    readonly errorListeners: ((error: Error) => void)[] = [];
-    constructor(readonly url: string) {
-      FakeRedis.instances.push(this);
-    }
-    publish(): Promise<number> {
-      return Promise.resolve(0);
-    }
-    subscribe(): Promise<number> {
-      return Promise.resolve(1);
-    }
-    unsubscribe(): Promise<number> {
-      return Promise.resolve(1);
-    }
-    on(event: string, listener: (error: Error) => void): this {
-      if (event === "error") this.errorListeners.push(listener);
-      return this;
-    }
-    quit(): Promise<string> {
-      return Promise.resolve("OK");
-    }
-  }
-  return { FakeRedis };
-});
-
-vi.mock("ioredis", () => ({ default: FakeRedis }));
+vi.mock("ioredis", async () => ({ default: (await import("./test-support/fake-redis.js")).FakeRedis }));
 
 describe("[GATEWAY] createApp", () => {
   it("[GATEWAY] wires config, feed, in-process pubsub and server; start binds then loads; stop tears down", async () => {
@@ -78,16 +52,17 @@ describe("[GATEWAY] createApp", () => {
   });
 
   it("[GATEWAY] with REDIS_URL the fan-out goes through RedisPubSub and its errors are logged", async () => {
+    FakeRedis.reset();
     const config = loadConfig({ REDIS_URL: "redis://localhost:6379", LOG_LEVEL: "silent" });
     const transport = createFakeTransport();
     const app = createApp(config, { transport: transport.factory, market: new FakeMarketData() });
     expect(app.pubsub).toBeInstanceOf(RedisPubSub);
-    expect(FakeRedis.instances.map((r) => r.url)).toEqual([
-      "redis://localhost:6379",
-      "redis://localhost:6379",
-    ]);
-    FakeRedis.instances[0]?.errorListeners[0]?.(new Error("redis down"));
+    // pub, sub and one coordination client (lock, registry, snapshot store; ADR-062)
+    expect(FakeRedis.clients.map((r) => r.url)).toEqual(["redis://localhost:6379", "redis://localhost:6379", "redis://localhost:6379"]);
+    FakeRedis.clients[0]?.emitError(new Error("redis down"));
     await app.start();
+    expect(app.role.role()).toBe("leader");
     await app.stop();
+    expect(FakeRedis.clients.every((c) => c.quitCalls === 1)).toBe(true);
   });
 });

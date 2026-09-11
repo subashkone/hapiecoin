@@ -41,6 +41,8 @@ const Health = z.object({
   dbOk: z.boolean(),
   uptimeSec: z.number().int().nonnegative(),
   version: z.string(),
+  /** ADR-062: the background jobs role of this replica and whether they run here; null when not configured. */
+  jobs: z.object({ role: z.enum(["leader", "always", "off"]), active: z.boolean() }).nullable(),
 });
 
 const AuthOptions = z.object({ emailOtp: z.literal(true), passkey: z.literal(true), google: z.boolean() });
@@ -90,6 +92,7 @@ export function createApp(deps: AppDeps): OpenAPIHono<AppEnv> {
         dbOk,
         uptimeSec: Math.floor((Date.now() - startedAt) / 1000),
         version: API_VERSION,
+        jobs: deps.jobsStatus?.() ?? null,
       };
       return dbOk ? c.json(body, 200) : c.json(body, 503);
     },

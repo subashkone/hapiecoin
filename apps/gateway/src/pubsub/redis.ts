@@ -2,9 +2,8 @@
  * Redis pub/sub fan-out (ioredis). Used only when `REDIS_URL` is set. One connection publishes, a second
  * one subscribes (a subscribed Redis connection cannot issue other commands). Frames travel as JSON.
  *
- * Deployment note: every gateway process runs its own Delta feed, so with several processes behind one
- * Redis each frame would be published once per process. Run a single feed process (or one gateway) per
- * Redis until a feed-leader election is added; that is a Phase 2 item, not a Phase 1 one.
+ * Deployment note (ADR-062): only the gateway holding the feed lease runs the Delta feed and publishes, so
+ * several processes behind one Redis see each frame once; the others subscribe here and serve clients.
  */
 import type { ServerMessage } from "@hapiecoin/schema";
 import Redis from "ioredis";

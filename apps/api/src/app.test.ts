@@ -24,6 +24,7 @@ describe("[OPS] health and API contract", () => {
       dbOk: true,
       uptimeSec: expect.any(Number) as number,
       version: API_VERSION,
+      jobs: null,
     });
   });
 
