@@ -38,7 +38,7 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 ## F. Hardening (docs/research/platform-roadmap-2026-09.md §6; with C13)
 24. ✅ (ADR-061) `.github/workflows/ci.yml` (`pnpm ci` + `check:budget` + e2e), dependabot, LICENSE (GAPS #69)
 25. ✅ (ADR-061) API `bodyLimit` and a per-route limiter on `/live/place`, `/live/batch`, `/live/positions/exit` (GAPS #70)
-26. ⬜ Replica guards for the reconciler and Telegram poller; gateway feed-leader lock (GAPS #16, #71)
+26. ✅ (ADR-062) Replica guards for the reconciler and Telegram poller; gateway feed-leader lock (GAPS #16, #71)
 27. ⬜ Error tracking and API metrics (GAPS #72)
 28. ⬜ TOTP second factor and a typed LIVE confirmation before a live order (GAPS #73)
 29. ⬜ `zod/mini` for `@hapiecoin/schema`; bundle check inside `pnpm ci` (GAPS #19)

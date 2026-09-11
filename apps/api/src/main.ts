@@ -1,6 +1,8 @@
 // Process entrypoint: `pnpm dev` (tsx watch) and `pnpm start` (node dist/main.js).
 import { serve } from "@hono/node-server";
 import { startReconciler } from "./live-reconcile.js";
+import { type JobStarter, startJobs } from "./jobs.js";
+import { MemoryLeaderLock, RedisLeaderLock } from "./leader.js";
 import type { AppDeps } from "./routes/shared.js";
 import { Redis } from "ioredis";
 import { createApp } from "./app.js";
@@ -72,14 +74,18 @@ const deps: AppDeps = {
 };
 const app = createApp(deps);
 
-// ADR-029: pending venue orders are reconciled in the background; tests drive reconcilePending directly
-const stopReconciler = config.nodeEnv === "test" ? () => undefined : startReconciler(deps, config.trading.reconcileMs);
-// ADR-056: the IV history snapshotter reads public option tickers (no key) every IV_SNAPSHOT_MS; 0 turns it off
+// ADR-062: the background jobs run in exactly one API replica (Redis leader lease; the memory lock without Redis);
+// tests drive reconcilePending, the snapshotter and the linker directly, so none start under test
 const publicRest = new DeltaRestClient({ baseUrl: config.deltaRestUrl });
-const stopSnapshotter =
-  config.nodeEnv === "test" || config.ivSnapshotMs === 0
-    ? () => undefined
-    : startIvSnapshotter(
+const starters: JobStarter[] = [];
+// ADR-029: pending venue orders are reconciled in the background
+starters.push({ name: "reconciler", start: () => startReconciler(deps, config.trading.reconcileMs) });
+// ADR-056: the IV history snapshotter reads public option tickers (no key) every IV_SNAPSHOT_MS; 0 turns it off
+if (config.ivSnapshotMs !== 0)
+  starters.push({
+    name: "iv-snapshotter",
+    start: () =>
+      startIvSnapshotter(
         deps,
         {
           // the venue shapes cross the schema adapter (GAPS #8); a ticker without a spot carries "0" and is skipped as a spot source
@@ -92,9 +98,18 @@ const stopSnapshotter =
           const report = await evaluateAlerts(deps);
           if (report.fired.length) logger.info({ fired: report.fired, checked: report.checked }, "alerts fired server-side");
         },
-      );
+      ),
+  });
 // ADR-057: link Telegram chats through the bot's /start messages (long-polled; no public URL needed)
-const stopLinker = config.nodeEnv === "test" || deps.telegram === null ? () => undefined : startTelegramLinker(deps);
+if (deps.telegram !== null) starters.push({ name: "telegram-linker", start: () => startTelegramLinker(deps) });
+const jobs = startJobs({
+  role: config.nodeEnv === "test" ? "off" : config.jobsRole,
+  lock: redis ? new RedisLeaderLock(redis) : new MemoryLeaderLock(),
+  ttlMs: config.leaderTtlMs,
+  starters,
+  log: logger,
+});
+deps.jobsStatus = () => jobs.status();
 
 const server = serve({ fetch: app.fetch, port: config.apiPort }, (info) => {
   logger.info(
@@ -110,9 +125,7 @@ const server = serve({ fetch: app.fetch, port: config.apiPort }, (info) => {
 
 async function shutdown(signal: string): Promise<void> {
   logger.info({ signal }, "shutting down");
-  stopReconciler();
-  stopSnapshotter();
-  stopLinker();
+  await jobs.stop();
   server.close();
   await redis?.quit();
   await handle.close();

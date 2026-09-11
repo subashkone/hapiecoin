@@ -1705,7 +1705,7 @@
   "status": "working",
   "isNew": true,
   "phase": 5,
-  "test": "e2e (Playwright) · api contract",
+  "test": "unit (api)",
   "acceptance": "A 1 MB cap (env API_BODY_LIMIT_BYTES) on every request body, applied before the auth handler, the guards and the validators; over the cap the API answers 413 PAYLOAD_TOO_LARGE in the error envelope; the banner image upload keeps its own 5 MB limit",
   "evidence": "ADR-061 (11 Sep 2026): apps/api/src/security/body-limit.ts jsonBodyLimit mounted in app.ts; errors.payloadTooLarge; unit security.test.ts (stream and Content-Length branches, exemption, signed-out), config.test.ts"
  },
@@ -1719,9 +1719,37 @@
   "status": "working",
   "isNew": true,
   "phase": 5,
-  "test": "unit (pricing) · e2e (Playwright) · api contract · security",
+  "test": "unit (api)",
   "acceptance": "The live placement, retry, batch and positions-exit routes accept 20 requests per minute per signed-in user (env ORDER_RATE_MAX_PER_MIN) on top of the global 300 per minute per IP; the 21st answers 429 ORDER_RATE_LIMITED with Retry-After before the executor runs; X-Order-RateLimit-* headers carry the budget",
   "evidence": "ADR-061 (11 Sep 2026): apps/api/src/security/rate-limit.ts orderRateLimit on routes/live.ts; unit security.test.ts (budget, another user, window slide, read-only route unbudgeted), config.test.ts"
+ },
+ {
+  "id": "HC-SH-116",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "screen": "API · replicas",
+  "feature": "Background jobs run in one API replica",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api)",
+  "acceptance": "The reconciler, IV snapshotter (+ alerts) and Telegram linker start only in the replica holding the Redis lease hapiecoin:leader:api-jobs (API_JOBS_ROLE leader / always / off, LEADER_TTL_MS); a standby replica takes over within the lease; /healthz reports jobs { role, active }",
+  "evidence": "ADR-062 (11 Sep 2026): apps/api/src/leader.ts, jobs.ts, main.ts startJobs; unit leader.test.ts, jobs.test.ts, app.test.ts healthz"
+ },
+ {
+  "id": "HC-SH-117",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "screen": "Gateway · replicas",
+  "feature": "One venue feed across several gateways",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (gateway)",
+  "acceptance": "The gateway holding the feed lease runs the Delta socket and publishes; followers register their clients' topics in a Redis hash so the leader watches them, serve first snapshots from the store the leader writes and live frames from the fan-out; takeover within LEADER_TTL_MS; GATEWAY_ROLE auto / follower; /healthz role, /metrics hapiecoin_gateway_leader",
+  "evidence": "ADR-062 (11 Sep 2026): apps/gateway/src/leader.ts, coordination/registry.ts, coordination/snapshots.ts, feed/role.ts, feed/feed.ts promote / demote / setRemoteTopics, server.ts queued first frames, app.ts election; unit leader.test.ts, coordination.test.ts, role.test.ts, fanout.test.ts"
  },
  {
   "id": "HC-PB-001",

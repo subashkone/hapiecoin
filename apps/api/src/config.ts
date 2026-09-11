@@ -75,6 +75,10 @@ const RawEnv = z.object({
   API_BODY_LIMIT_BYTES: z.coerce.number().int().min(1024).default(1_048_576),
   /** Order-route budget per signed-in user per minute: live place, retry, batch, positions exit (GAPS #70). */
   ORDER_RATE_MAX_PER_MIN: z.coerce.number().int().min(1).max(1000).default(20),
+  /** ADR-062: leader = run the background jobs while holding the Redis lease; always = run unconditionally; off = HTTP only. */
+  API_JOBS_ROLE: z.enum(["leader", "always", "off"]).default("leader"),
+  /** Jobs lease length; a dead leader is replaced within this time. */
+  LEADER_TTL_MS: z.coerce.number().int().min(3_000).default(15_000),
   DELTA_API_KEY: z.string().optional(),
   DELTA_API_SECRET: z.string().optional(),
 });
@@ -113,6 +117,9 @@ export interface Config {
   bodyLimitBytes: number;
   /** Order-route budget per user per minute (GAPS #70). */
   orderRateMaxPerMin: number;
+  /** ADR-062 background jobs role. */
+  jobsRole: "leader" | "always" | "off";
+  leaderTtlMs: number;
   logLevel: string;
   pgliteDataDir: string | undefined;
 }
@@ -239,6 +246,8 @@ export function loadConfig(
     ivSnapshotMs: e.IV_SNAPSHOT_MS,
     bodyLimitBytes: e.API_BODY_LIMIT_BYTES,
     orderRateMaxPerMin: e.ORDER_RATE_MAX_PER_MIN,
+    jobsRole: e.API_JOBS_ROLE,
+    leaderTtlMs: e.LEADER_TTL_MS,
     logLevel: e.LOG_LEVEL ?? (isTest ? "silent" : "info"),
     pgliteDataDir: e.PGLITE_DATA_DIR,
   };
