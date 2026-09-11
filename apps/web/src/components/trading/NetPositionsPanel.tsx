@@ -9,13 +9,13 @@ import { useCredential } from "@/lib/api/queries";
 import { fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
-import { parseDeltaSymbol, positionPnl } from "@/lib/strategy/positions";
+import { parseVenueSymbol, positionPnl } from "@/lib/strategy/positions";
 
 const ASSET_FILTERS = ["All", "BTC", "ETH", "XAUT"] as const;
 
 /** "SHORT 78,000 CE · 25 Sep 26" from a position, or the raw symbol when it cannot be parsed. */
 export function positionLabel(p: LivePosition): { title: string; sub: string } {
-  const parsed = p.symbol ? parseDeltaSymbol(p.symbol) : null;
+  const parsed = p.symbol ? parseVenueSymbol(p.symbol) : null;
   const side = p.size > 0 ? "LONG" : "SHORT";
   if (!parsed) return { title: `${side} ${p.symbol ?? p.productId}`, sub: "" };
   if (parsed.kind === "future") return { title: `${side} ${parsed.asset} perpetual`, sub: p.symbol ?? "" };
@@ -33,7 +33,7 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
   const [confirm, setConfirm] = useState<number[] | null>(null);
   const [key, setKey] = useState("");
 
-  const rows = useMemo(() => (positions.data?.positions ?? []).filter((p) => p.size !== 0).filter((p) => asset === "All" || (p.symbol ? parseDeltaSymbol(p.symbol)?.asset === asset : false)), [positions.data, asset]);
+  const rows = useMemo(() => (positions.data?.positions ?? []).filter((p) => p.size !== 0).filter((p) => asset === "All" || (p.symbol ? parseVenueSymbol(p.symbol)?.asset === asset : false)), [positions.data, asset]);
   const ticked = paneSource?.kind === "positions" ? paneSource.productIds : [];
   const total = rows.reduce((s, p) => s + (positionPnl(p) ?? 0), 0);
   useEffect(() => {

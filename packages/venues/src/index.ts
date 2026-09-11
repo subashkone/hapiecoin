@@ -141,7 +141,9 @@ export type {
 
 // ADR-063: the venue port; apps look venues up here instead of importing Delta clients directly
 export { DEFAULT_VENUE, VENUE_REGISTRY, getVenue, listVenues } from "./port/registry.js";
-export { DELTA_INDIA, DELTA_INDIA_MARKETS, formatDeltaOption } from "./port/delta-india.js";
+export { DELTA_INDIA } from "./port/delta-india-clients.js";
+export { DELTA_INDIA_CORE, DELTA_INDIA_MARKETS, formatDeltaOption, parseDeltaPerpetual } from "./port/delta-india.js";
+export { VENUE_CORES, getVenueCore, listVenueCores } from "./port/core.js";
 export { UnknownVenueError, VenueCapabilityError, defaultLotSizes, marketOf, ownMarket, tradingClientOf } from "./port/adapter.js";
 export type {
   ExerciseStyle,
@@ -153,5 +155,6 @@ export type {
   VenueAdapter,
   VenueCalendar,
   VenueCapabilities,
+  VenueCore,
   VenueId,
 } from "./port/adapter.js";

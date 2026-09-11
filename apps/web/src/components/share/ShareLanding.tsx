@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef } from "react";
 import { fmtPrice } from "@/lib/format";
 import { hasAdjustWork, useUiStore } from "@/lib/store";
-import { deltaSymbol } from "@/lib/strategy/legs";
+import { venueSymbol } from "@/lib/strategy/legs";
 import { decodeShare } from "@/lib/strategy/share";
 
 export function ShareLanding({ code }: { code: string }) {
@@ -51,7 +51,7 @@ export function ShareLanding({ code }: { code: string }) {
       <ul className="mt-2 space-y-0.5 font-mono text-2xs">
         {shared.legs.map((l, i) => (
           <li key={i}>
-            <span className={l.side === "buy" ? "text-buy" : "text-sell"}>{l.side.toUpperCase()}</span> {l.lots} × {deltaSymbol(l.kind, l.asset, l.strike, l.expiry)} @ {fmtPrice(l.price)}
+            <span className={l.side === "buy" ? "text-buy" : "text-sell"}>{l.side.toUpperCase()}</span> {l.lots} × {venueSymbol(l.kind, l.asset, l.strike, l.expiry)} @ {fmtPrice(l.price)}
           </li>
         ))}
       </ul>

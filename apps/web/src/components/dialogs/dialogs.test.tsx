@@ -9,7 +9,7 @@ import { routerMock } from "../../../test/next-mocks";
 import { useUiStore } from "@/lib/store";
 import { defaultLayout } from "@/lib/chain/layout";
 import { fmtPrice } from "@/lib/format";
-import { deltaSymbol } from "@/lib/strategy/legs";
+import { venueSymbol } from "@/lib/strategy/legs";
 import { ApiSettingsDialog } from "./ApiSettingsDialog";
 import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
 import { OptionDetailsDialog } from "./OptionDetailsDialog";
@@ -52,7 +52,7 @@ describe("HC-WS-026 Option details dialog", () => {
     useUiStore.getState().openOptionDetail(target);
     const onOpenChange = vi.fn();
     renderWithProviders(<OptionDetailsDialog open onOpenChange={onOpenChange} />);
-    expect(screen.getByTestId("option-symbol").textContent).toBe(deltaSymbol("call", "BTC", target.strike, EXPIRY));
+    expect(screen.getByTestId("option-symbol").textContent).toBe(venueSymbol("call", "BTC", target.strike, EXPIRY));
     expect(screen.getByTestId("option-description").textContent).toContain("CALL · BTC · 25 Sep");
     expect(screen.getByTestId("option-empty")).toBeTruthy();
     // the live quote arrives over the gateway

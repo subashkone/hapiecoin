@@ -989,5 +989,15 @@
     "how": "The API and the gateway take their REST, trading and market-data clients, the schema mapping, lot-size defaults, seed fees and the venue id from getVenue(DEFAULT_VENUE) in @hapiecoin/venues; DELTA_INDIA carries the contract specs (0.001 BTC / 0.01 ETH / 0.001 XAUT, ticks 0.1 / 0.01 / 0.01, settlement 12:00 UTC, XAUT 16:00, USD), the symbol codec, fee defaults 0.05 / 18 / 10 and capability flags; an unknown venue or a missing trading client is a typed error",
     "evidence": "ADR-063 (11 Sep 2026): packages/venues/src/port/adapter.ts, delta-india.ts, registry.ts; apps/api/src/main.ts, routes/settings.ts, routes/live-exec.ts, alerts-evaluate.ts, db/seed.ts; apps/gateway/src/feed/market-data.ts, feed.ts; unit port.test.ts against the products fixture and the web formatter vectors",
     "test": "unit (venues)"
+  },
+  {
+    "screen": "Venues · port (web)",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The web client asks the venue port, never Delta",
+    "how": "@hapiecoin/venues/core is the browser-safe part of the port (no client factory, no node:crypto); the web client formats and parses symbols through the codec (venueSymbol, parseVenueSymbol), takes lot defaults from defaultLotSizes, the settlement hour from the venue calendar and the venue id from DEFAULT_VENUE; an impossible calendar date in an exchange position symbol is refused",
+    "evidence": "ADR-064 (11 Sep 2026): packages/venues/src/port/core.ts, delta-india.ts, delta-india-clients.ts; apps/web/src/lib/strategy/legs.ts, positions.ts, lib/chain/expiries.ts, lib/adjust/useAdjustWorkbench.ts, lib/gateway/*; unit port.test.ts, legs.test.ts, positions.test.ts",
+    "test": "unit (web)"
   }
 ]
