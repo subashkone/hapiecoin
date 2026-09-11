@@ -67,6 +67,7 @@ export async function seed(db: Db, now: () => Date = () => new Date()): Promise<
       gstPct: fees.gstPct,
       feeCapPct: fees.feeCapPct,
       scope: "GLOBAL",
+      venue: DEFAULT_VENUE,
       ownerId: null,
     });
     result.broker = "created";

@@ -3,7 +3,7 @@
 // posts the trigger (HC-SH-094..100, HC-TR-114, 117, 120, 139).
 import { z } from "zod";
 import { Id } from "./accounts.js";
-import { DecimalString, IsoDateTime, Underlying } from "./primitives.js";
+import { DecimalString, IsoDateTime, Underlying, VENUES, Venue } from "./primitives.js";
 
 export const ALERT_KINDS = ["price", "iv", "pnl"] as const;
 export const AlertKind = z.enum(ALERT_KINDS);
@@ -30,6 +30,8 @@ export const Alert = z.strictObject({
   id: Id,
   kind: AlertKind,
   asset: Underlying,
+  /** The venue whose prices, IV or strategy the alert watches (ADR-065). */
+  venue: Venue,
   /** The strategy a P&L alert watches; null for price and IV alerts. */
   strategyId: Id.nullable(),
   /** The strategy name when the alert was set (kept so the row still reads after the strategy is archived). */
@@ -61,6 +63,8 @@ export const AlertCreate = z
   .strictObject({
     kind: AlertKind,
     asset: Underlying,
+    /** Defaults to the only venue; a P&L alert takes its strategy's venue on the server (ADR-065). */
+    venue: Venue.default(VENUES[0]),
     strategyId: Id.optional(),
     op: AlertOp,
     value: DecimalString,

@@ -16,7 +16,7 @@ let mock: MockFetch;
 const CALL = { id: "leg_a", kind: "call" as const, side: "buy" as const, strike: "80000", expiry: "2026-09-25", symbol: "C-BTC-80000-250926", lots: 10, price: "1200", entryPrice: "1200", exitPrice: null, iv: 0.5, status: "open" as const, isAdjustment: false, position: 0, openedAt: "2026-09-08T10:00:00Z", closedAt: null, orderId: null };
 function strat(i: number, over: Partial<Strategy> = {}): Strategy {
   const at = `2026-09-0${(i % 8) + 1}T10:00:00Z`;
-  return { id: `strat_${i}`, name: `Paper ${i}`, asset: i % 2 ? "ETH" : "BTC", status: "paper", tradingMode: "paper", templateName: "Custom", brokerId: "brk_delta", legs: [{ ...CALL, id: `leg_${i}` }], realizedPnl: String(i), pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: at, closedAt: null, createdAt: at, updatedAt: at, ...over };
+  return { id: `strat_${i}`, name: `Paper ${i}`, asset: i % 2 ? "ETH" : "BTC", venue: "delta_india", status: "paper", tradingMode: "paper", templateName: "Custom", brokerId: "brk_delta", legs: [{ ...CALL, id: `leg_${i}` }], realizedPnl: String(i), pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: at, closedAt: null, createdAt: at, updatedAt: at, ...over };
 }
 
 beforeEach(() => {
@@ -117,7 +117,7 @@ describe("HC-TR-050..055 trading mode dialog branches", () => {
   it("live needs a connected exchange; once connected Continue is enabled; a missing exchange shows the error", async () => {
     const onContinue = () => undefined;
     const legs = [{ id: "a", kind: "call" as const, side: "buy" as const, strike: "80000", expiry: "2026-09-25", symbol: "C", lots: 10, price: "1200" }];
-    const brokers = [{ id: "b1", name: "Delta Exchange India", feePct: "0.05", gstPct: "18", feeCapPct: "10", scope: "GLOBAL" as const }];
+    const brokers = [{ id: "b1", name: "Delta Exchange India", feePct: "0.05", gstPct: "18", feeCapPct: "10", scope: "GLOBAL" as const, venue: "delta_india" as const }];
     const { rerender } = renderWithProviders(<TradeModeDialog open title="x" asset="BTC" legs={legs} spot={80_000} lotSize="0.001" money={{ currency: "USD", rate: "1" }} brokers={[]} connected={false} priceModeLabel="Live" onContinue={onContinue} onOpenChange={() => undefined} />);
     const u = userEvent.setup();
     await u.click(screen.getByTestId("trade-continue"));
@@ -140,7 +140,7 @@ describe("HC-TR-050..055 trading mode dialog branches", () => {
 describe("HC-TR-078 Details for drafts and archived strategies", () => {
   it("draft: Load in builder and Activate; archived: Restore; delete with confirm", async () => {
     const acc = mock.state.accounts.get(EMAIL)!;
-    acc.strategies.push(strat(1, { asset: "BTC", status: "draft", tradingMode: null, startedAt: null, legs: [{ ...CALL, entryPrice: null, openedAt: null }] }), strat(2, { status: "archived", tradingMode: "paper", closedAt: "2026-09-05T10:00:00Z" }));
+    acc.strategies.push(strat(1, { asset: "BTC", venue: "delta_india", status: "draft", tradingMode: null, startedAt: null, legs: [{ ...CALL, entryPrice: null, openedAt: null }] }), strat(2, { status: "archived", tradingMode: "paper", closedAt: "2026-09-05T10:00:00Z" }));
     renderWithProviders(<Workspace />);
     act(() => FakeSocket.last().open());
     const u = userEvent.setup();

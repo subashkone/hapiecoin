@@ -4,7 +4,7 @@
  */
 import { z } from "zod";
 import { Id } from "./accounts.js";
-import { DecimalString, IsoDateTime, Underlying, isNonNegativeDecimal, isPositiveDecimal } from "./primitives.js";
+import { DecimalString, IsoDateTime, Underlying, VENUES, Venue, isNonNegativeDecimal, isPositiveDecimal } from "./primitives.js";
 
 const NonNegativeDecimal = DecimalString.refine(isNonNegativeDecimal, { message: "must not be negative" });
 const PositiveDecimal = DecimalString.refine(isPositiveDecimal, { message: "must be greater than zero" });
@@ -232,6 +232,8 @@ export const Strategy = z.strictObject({
   id: Id,
   name: z.string().min(1).max(MAX_STRATEGY_NAME),
   asset: Underlying,
+  /** The venue the legs trade on (ADR-065); a broker of another venue cannot start or place it. */
+  venue: Venue,
   status: StrategyStatus,
   tradingMode: TradingMode.nullable(),
   templateName: z.string().max(80),
@@ -264,6 +266,8 @@ export type StrategyList = z.infer<typeof StrategyList>;
 export const StrategyCreate = z.strictObject({
   name: z.string().trim().min(1, "Strategy name is required").max(MAX_STRATEGY_NAME),
   asset: Underlying,
+  /** Defaults to the only venue until the client offers a choice (ADR-065). */
+  venue: Venue.default(VENUES[0]),
   templateName: z.string().trim().max(80).default("Custom"),
   legs: z.array(StrategyLegInput).min(1, "Add at least one leg").max(MAX_NEW_LEGS, `Maximum ${MAX_NEW_LEGS} legs allowed for a new strategy`),
 });

@@ -16,6 +16,7 @@ import { useBrokers } from "@/lib/api/queries";
 import { useCreateStrategy, usePatchStrategy, useStrategies } from "@/lib/api/strategies";
 import { localLegToInput, feeFor } from "@/lib/strategy/paper";
 import { useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
+import { CURRENT_VENUE } from "@/lib/venue";
 import { SaveDraftDialog } from "@/components/dialogs/SaveDraftDialog";
 import { ChainPickerDialog } from "./ChainPickerDialog";
 import { FutureDialog } from "./FutureDialog";
@@ -131,7 +132,7 @@ export function BuilderPanel() {
     };
     const fail = (e: Error) => toast.error("Could not save", { description: e.message });
     if (meta.draftId) patchStrategy.mutate({ id: meta.draftId, body }, { onSuccess: done, onError: fail });
-    else createStrategy.mutate({ asset, ...body }, { onSuccess: done, onError: fail });
+    else createStrategy.mutate({ asset, venue: CURRENT_VENUE, ...body }, { onSuccess: done, onError: fail });
   };
 
   const net = result?.netPremium ?? null;

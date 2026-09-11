@@ -17,6 +17,7 @@ export function toAlert(row: AlertRow): Alert {
     id: row.id,
     kind: row.kind,
     asset: row.asset,
+    venue: row.venue,
     strategyId: row.strategyId,
     strategyName: row.strategyName,
     op: row.op,

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { driftFor, isSettling, shortfallFor } from "./drift";
 
 const leg = (symbol: string, side: "buy" | "sell", lots: number, status: "open" | "squared_off" = "open") => ({ id: `l_${symbol}_${side}_${lots}`, kind: "put" as const, side, strike: "78000", expiry: "2026-09-25", symbol, lots, price: "900", entryPrice: "900", exitPrice: null, iv: 0.5, status, isAdjustment: false, position: 0, openedAt: "2026-09-08T10:00:00Z", closedAt: null, orderId: null });
-const strat = (id: string, status: Strategy["status"], legs: Strategy["legs"]): Strategy => ({ id, name: id, asset: "BTC", status, tradingMode: status === "paper" ? "paper" : "live", templateName: "", brokerId: "brk_delta", legs, realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: null, closedAt: null, createdAt: "2026-09-08T10:00:00Z", updatedAt: "2026-09-08T10:00:00Z" });
+const strat = (id: string, status: Strategy["status"], legs: Strategy["legs"]): Strategy => ({ id, name: id, asset: "BTC", venue: "delta_india", status, tradingMode: status === "paper" ? "paper" : "live", templateName: "", brokerId: "brk_delta", legs, realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: null, closedAt: null, createdAt: "2026-09-08T10:00:00Z", updatedAt: "2026-09-08T10:00:00Z" });
 const pos = (symbol: string, size: number, contractValue = "0.001"): LivePosition => ({ productId: 1, symbol, size, entryPrice: "900", realizedPnl: "0", margin: "10", contractValue, mark: "950" });
 const lotSize = () => "0.001";
 

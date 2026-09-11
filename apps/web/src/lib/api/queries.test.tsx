@@ -92,7 +92,7 @@ describe("[API] queries and mutations against the mock API", () => {
       { wrapper },
     );
     await waitFor(() => expect(result.current.list.data).toHaveLength(1));
-    act(() => result.current.create.mutate({ name: "CoinDCX", feePct: "0.1", gstPct: "18", feeCapPct: "10" }));
+    act(() => result.current.create.mutate({ name: "CoinDCX", feePct: "0.1", gstPct: "18", feeCapPct: "10", venue: "delta_india" }));
     await waitFor(() => expect(qc.getQueryData(queryKeys.brokers)).toHaveLength(2));
     const created = (qc.getQueryData(queryKeys.brokers) as { id: string }[])[1]!;
     act(() => result.current.update.mutate({ id: created.id, body: { name: "CoinDCX Pro" } }));

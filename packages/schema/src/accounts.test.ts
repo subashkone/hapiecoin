@@ -44,6 +44,7 @@ const settings: UserSettings = {
 
 const broker: Broker = {
   id: "brk_delta",
+  venue: "delta_india",
   name: "Delta Exchange India",
   feePct: "0.05",
   gstPct: "18",

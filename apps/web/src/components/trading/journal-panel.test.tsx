@@ -14,7 +14,7 @@ const EMAIL = "journal@example.com";
 let mock: MockFetch;
 const mine = () => mock.state.accounts.get(EMAIL)!.strategies;
 const leg = (o: Partial<StrategyLeg> = {}): StrategyLeg => ({ id: "leg_1", kind: "call", side: "buy", strike: "80000", expiry: "2026-09-25", symbol: "C-BTC-80000-250926", lots: 10, price: "1000", entryPrice: "1000", exitPrice: "1100", iv: null, status: "squared_off", isAdjustment: false, position: 0, openedAt: "2026-07-30T00:00:00Z", closedAt: "2026-08-28T00:00:00Z", orderId: null, ...o });
-const strat = (o: Partial<Strategy> = {}): Strategy => ({ id: "s1", name: "BTC Iron Butterfly · Aug", asset: "BTC", status: "archived", tradingMode: "paper", templateName: "Iron Butterfly", brokerId: null, legs: [leg()], realizedPnl: "1.44", pnlHistory: [], notes: "", tags: ["range"], orderBatchId: null, orders: [], adjustments: [], startedAt: "2026-07-30T00:00:00Z", closedAt: "2026-08-28T00:00:00Z", createdAt: "2026-07-30T00:00:00Z", updatedAt: "2026-08-28T00:00:00Z", ...o });
+const strat = (o: Partial<Strategy> = {}): Strategy => ({ id: "s1", name: "BTC Iron Butterfly · Aug", asset: "BTC", venue: "delta_india", status: "archived", tradingMode: "paper", templateName: "Iron Butterfly", brokerId: null, legs: [leg()], realizedPnl: "1.44", pnlHistory: [], notes: "", tags: ["range"], orderBatchId: null, orders: [], adjustments: [], startedAt: "2026-07-30T00:00:00Z", closedAt: "2026-08-28T00:00:00Z", createdAt: "2026-07-30T00:00:00Z", updatedAt: "2026-08-28T00:00:00Z", ...o });
 const book: PaperBook = { priceOf: () => null, pnlOf: () => ({ unrealized: 0, realized: 0, total: 0, openLegs: 0, byLeg: new Map() }), spotOf: () => null, lotSizeOf: () => "0.001", money: USD, brokerName: () => "Delta India", version: 0 };
 
 beforeEach(() => {

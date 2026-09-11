@@ -11,7 +11,7 @@ const EMAIL = "pnl@example.com";
 let mock: MockFetch;
 const AT = "2026-09-08T10:00:00Z";
 const LEG = { id: "leg_1", kind: "call" as const, side: "buy" as const, strike: "80000", expiry: "2026-09-25", symbol: "C-BTC-80000-250926", lots: 10, price: "1200", entryPrice: "1200", exitPrice: null, iv: 0.5, status: "open" as const, isAdjustment: false, position: 0, openedAt: AT, closedAt: null, orderId: null };
-const strat = (id: string, status: Strategy["status"] = "paper"): Strategy => ({ id, name: id, asset: "BTC", status, tradingMode: status === "draft" ? null : "paper", templateName: "Custom", brokerId: "brk_delta", legs: [LEG], realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: AT, closedAt: null, createdAt: AT, updatedAt: AT });
+const strat = (id: string, status: Strategy["status"] = "paper"): Strategy => ({ id, name: id, asset: "BTC", venue: "delta_india", status, tradingMode: status === "draft" ? null : "paper", templateName: "Custom", brokerId: "brk_delta", legs: [LEG], realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: AT, closedAt: null, createdAt: AT, updatedAt: AT });
 
 function bookWith(total: number, priced = true): PaperBook {
   return {
