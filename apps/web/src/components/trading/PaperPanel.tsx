@@ -2,7 +2,7 @@
 // Paper Trades tab (HC-TR-058..067; HC-TR-156, 157 lifecycle): search, sort (incl. expiry), lifecycle chips Open ·
 // Expiring ≤ 1d · Closed, refresh, the P&L strip, strategy cards with start / expiry, live P&L and a sparkline,
 // Details / Go live / Stop / Delete, pagination and the empty state.
-import type { Strategy, StrategyLeg } from "@hapiecoin/schema";
+import { type Strategy, type StrategyLeg, CLOSE_REASON_LABELS, settlementMsOf } from "@hapiecoin/schema";
 import { Button, EmptyState, cn, toast } from "@hapiecoin/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState, useEffect } from "react";
@@ -12,7 +12,7 @@ import { useBrokers, useCredential } from "@/lib/api/queries";
 import { BatchLiveDialog } from "./BatchLiveDialog";
 import { NetPositionsPanel } from "./NetPositionsPanel";
 import { ReconcileDialog, driftTitle } from "./ReconcileDialog";
-import { type DriftRow, driftFor } from "@/lib/strategy/drift";
+import { type DriftRow, driftFor, isSettling } from "@/lib/strategy/drift";
 import { fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
 import { fmtDate, fmtExpiry } from "@/lib/format";
@@ -129,7 +129,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   // only a fresh, successful read counts: a venue that did not answer is 503 (never an empty list), and a stale
   // snapshot kept after an error must not be compared with fresh legs
   const driftReady = kind === "live" && wallet.isSuccess && !wallet.isError && wallet.data !== undefined;
-  const drift = useMemo(() => (driftReady && wallet.data ? driftFor(wallet.data.positions, all, (a) => book.lotSizeOf(a)) : new Map<string, DriftRow[]>()), [driftReady, wallet.data, all, book]);
+  const drift = useMemo(() => (driftReady && wallet.data ? driftFor(wallet.data.positions, all, (a) => book.lotSizeOf(a), Date.now()) : new Map<string, DriftRow[]>()), [driftReady, wallet.data, wallet.dataUpdatedAt, all, book]); // dataUpdatedAt: an unchanged read still moves the clock past the settling window
   const [reconcileId, setReconcileId] = useState<string | null>(null);
   const reconciling = reconcileId ? (all.find((s) => s.id === reconcileId) ?? null) : null;
   // the price a gone leg is booked at: the exchange's mark while it still quotes the contract, else the pane's mark
@@ -205,6 +205,9 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
               const lc = lifecycleOf(s);
               const ex = expiryOf(s);
               const left = ex ? daysLeft(ex.nearest, Date.now(), settlementHourUtc(s.asset)) : null;
+              const settleMs = ex ? settlementMsOf(ex.nearest, s.asset) : null;
+              const expired = lc !== "closed" && settleMs !== null && settleMs <= Date.now();
+              const settling = expired && isSettling(ex!.nearest, s.asset, Date.now());
               return (
                 <div
                   key={s.id}
@@ -238,9 +241,9 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                       <div className="micro mt-0.5 flex flex-wrap gap-x-2 normal-case tracking-normal" data-testid="card-expiry" data-days={left ?? undefined}>
                         <span>started <b className="num">{s.startedAt ? fmtDate(s.startedAt) : "—"}</b> · {daysOf(s)}d</span>
                         {lc === "closed" ? (
-                          <span>closed <b className="num">{s.closedAt ? fmtDate(s.closedAt) : "—"}</b></span>
+                          <span>closed <b className="num">{s.closedAt ? fmtDate(s.closedAt) : "—"}</b>{s.closeReason ? <span className="ml-1 rounded border border-border px-1" title="Why it closed (ADR-059)" data-testid="card-close-reason" data-reason={s.closeReason}>{CLOSE_REASON_LABELS[s.closeReason]}</span> : null}</span>
                         ) : ex ? (
-                          <span>expires <b className={cn("num", left !== null && left <= 1 && "text-warning")}>{ex.nearest === ex.latest ? fmtExpiry(ex.nearest) : `${fmtExpiry(ex.nearest)} → ${fmtExpiry(ex.latest)}`}</b>{left !== null ? <span className={cn(left <= 1 && "text-warning")}> ({left}d)</span> : null}</span>
+                          <span>expires <b className={cn("num", left !== null && left <= 1 && "text-warning")}>{ex.nearest === ex.latest ? fmtExpiry(ex.nearest) : `${fmtExpiry(ex.nearest)} → ${fmtExpiry(ex.latest)}`}</b>{expired ? <span className="text-warning" data-testid="card-settling" data-state={settling ? "settling" : "unsettled"}> · {settling ? "expired, settling" : "expired, not settled yet"}</span> : left !== null ? <span className={cn(left <= 1 && "text-warning")}> ({left}d)</span> : null}</span>
                         ) : (
                           <span>no open option legs</span>
                         )}

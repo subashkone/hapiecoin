@@ -24,6 +24,7 @@ import {
   realizedPnl,
   toDecimal,
   type StrategyLegInput,
+  type CloseReason,
 } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
@@ -91,6 +92,7 @@ export function toStrategy(row: StrategyRow, legs: LegRow[], pnl: PnlRow[], orde
         position: l.position,
         openedAt: iso(l.openedAt),
         closedAt: iso(l.closedAt),
+        closeReason: l.closeReason,
         orderId: l.orderId,
       })),
     realizedPnl: row.realizedPnl,
@@ -105,6 +107,7 @@ export function toStrategy(row: StrategyRow, legs: LegRow[], pnl: PnlRow[], orde
     adjustments: adjustments.map((a) => ({ id: a.id, at: a.createdAt.toISOString(), reason: a.reason, added: a.added, trimmed: a.trimmed, closed: a.closed, realizedPnl: a.realizedPnl, batchId: a.batchId })),
     startedAt: iso(row.startedAt),
     closedAt: iso(row.closedAt),
+    closeReason: row.closeReason,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -135,26 +138,32 @@ export function addDecimal(a: string, b: string): string {
  * Square off `lots` of a leg (all of it when undefined) at `exitPrice`, splitting a partial exit into a closed
  * copy; returns the realised P&L of the closed part. Shared by the strategy routes and the positions exit (HC-TR-145).
  */
-export async function closeLegRow(deps: AppDeps, strategy: StrategyRow, leg: LegRow, exitPrice: string, lots: number | undefined, lotSize: string, now: Date): Promise<string> {
+export async function closeLegRow(deps: AppDeps, strategy: StrategyRow, leg: LegRow, exitPrice: string, lots: number | undefined, lotSize: string, now: Date, reason: CloseReason = "squared_off"): Promise<string> {
   const db = deps.db;
   if (leg.status !== "open") throw errors.conflict("This leg is already squared off");
   const qty = lots ?? leg.lots;
   if (qty > leg.lots) throw errors.badRequest(`Exit quantity exceeds the leg's ${leg.lots} lots`);
   const closedPart = { side: leg.side, lots: qty, entryPrice: leg.entryPrice ?? leg.price, exitPrice };
   const realized = realizedPnl(closedPart, lotSize);
+  // the write itself is guarded on status: a close that landed since the caller read the leg (the settler, another
+  // request) must not be overwritten, and its P&L must not be booked twice
+  const stillOpen = and(eq(strategyLegs.id, leg.id), eq(strategyLegs.status, "open"));
   if (qty < leg.lots) {
-    await db.update(strategyLegs).set({ lots: leg.lots - qty, updatedAt: now }).where(eq(strategyLegs.id, leg.id));
+    const trimmed = await db.update(strategyLegs).set({ lots: leg.lots - qty, updatedAt: now }).where(stillOpen).returning({ id: strategyLegs.id });
+    if (trimmed.length === 0) throw errors.conflict("This leg was squared off meanwhile");
     await db.insert(strategyLegs).values({
       ...legValues(strategy.id, { kind: leg.kind, side: leg.side, strike: leg.strike, expiry: leg.expiry, symbol: leg.symbol, lots: qty, price: leg.price, ...(leg.iv === null ? {} : { iv: Number(leg.iv) }) }, leg.position),
       entryPrice: leg.entryPrice ?? leg.price,
       exitPrice,
       status: "squared_off",
+      closeReason: reason,
       isAdjustment: leg.isAdjustment,
       openedAt: leg.openedAt,
       closedAt: now,
     });
   } else {
-    await db.update(strategyLegs).set({ exitPrice, status: "squared_off", closedAt: now, updatedAt: now }).where(eq(strategyLegs.id, leg.id));
+    const closed = await db.update(strategyLegs).set({ exitPrice, status: "squared_off", closeReason: reason, closedAt: now, updatedAt: now }).where(stillOpen).returning({ id: strategyLegs.id });
+    if (closed.length === 0) throw errors.conflict("This leg was squared off meanwhile");
   }
   return realized;
 }
@@ -189,6 +198,9 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
   const touch = (id: string, patch: Partial<typeof strategies.$inferInsert> = {}) =>
     db.update(strategies).set({ ...patch, updatedAt: new Date() }).where(eq(strategies.id, id));
   const active = (row: StrategyRow) => row.status === "paper" || row.status === "live";
+  // the running total is re-read at write time: the settler (ADR-059 §2.4) or another request may have booked
+  // a close since this request loaded the row
+  const freshPnl = async (id: string) => (await db.select({ realizedPnl: strategies.realizedPnl }).from(strategies).where(eq(strategies.id, id)).limit(1))[0]?.realizedPnl ?? "0";
 
   app.openapi(
     createRoute({
@@ -344,9 +356,9 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const now = new Date();
       for (const l of legs) {
         const entry = body.entries[l.id] ?? l.price;
-        await db.update(strategyLegs).set({ entryPrice: entry, exitPrice: null, status: "open", openedAt: now, closedAt: null, price: entry, updatedAt: now }).where(eq(strategyLegs.id, l.id));
+        await db.update(strategyLegs).set({ entryPrice: entry, exitPrice: null, status: "open", closeReason: null, openedAt: now, closedAt: null, price: entry, updatedAt: now }).where(eq(strategyLegs.id, l.id));
       }
-      await touch(row.id, { status: "paper", tradingMode: "paper", brokerId: body.brokerId, startedAt: now, closedAt: null, realizedPnl: "0" });
+      await touch(row.id, { status: "paper", tradingMode: "paper", brokerId: body.brokerId, startedAt: now, closedAt: null, closeReason: null, realizedPnl: "0" });
       await db.delete(strategyPnl).where(eq(strategyPnl.strategyId, row.id));
       const after = await reload(row.id);
       await auditFrom(c, db)({ action: "strategy.start", target: `strategy:${row.id}`, before, after });
@@ -401,7 +413,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
     },
   );
 
-  const closeLeg = (strategy: StrategyRow, leg: LegRow, exitPrice: string, lots: number | undefined, lotSize: string, now: Date) => closeLegRow(deps, strategy, leg, exitPrice, lots, lotSize, now);
+  const closeLeg = (strategy: StrategyRow, leg: LegRow, exitPrice: string, lots: number | undefined, lotSize: string, now: Date, reason?: CloseReason) => closeLegRow(deps, strategy, leg, exitPrice, lots, lotSize, now, reason);
 
   app.openapi(
     createRoute({
@@ -537,7 +549,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const now = new Date();
       const exitPrice = row.status === "live" ? await placeExit(deps, await openCredential(deps, me, row.brokerId ?? ""), me, row, leg, body.lots ?? leg.lots, `exit:${newId("b")}`) : body.exitPrice;
       const realized = await closeLeg(row, leg, exitPrice, body.lots, await lotSizeFor(me, row.asset), now);
-      await touch(row.id, { realizedPnl: addDecimal(row.realizedPnl, realized) });
+      await touch(row.id, { realizedPnl: addDecimal(await freshPnl(row.id), realized) });
       const after = await reload(row.id);
       await auditFrom(c, db)({ action: "leg.close", target: `strategy:${row.id}:leg:${legId}`, before, after });
       return c.json(after, 200);
@@ -566,14 +578,15 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const before = await full(row);
       const lotSize = await lotSizeFor(me, row.asset);
       const now = new Date();
-      let realized = row.realizedPnl;
+      let realized = "0";
       const creds = row.status === "live" ? await openCredential(deps, me, row.brokerId ?? "") : null;
       const batch = `exit:${newId("b")}`;
       for (const l of legs) {
         const exit = creds ? await placeExit(deps, creds, me, row, l, l.lots, batch) : body.exits[l.id]!;
         realized = addDecimal(realized, await closeLeg(row, l, exit, undefined, lotSize, now));
       }
-      await touch(row.id, row.status === "live" ? { realizedPnl: realized, status: "archived", closedAt: now } : { realizedPnl: realized });
+      const total = addDecimal(await freshPnl(row.id), realized);
+      await touch(row.id, row.status === "live" ? { realizedPnl: total, status: "archived", closedAt: now, closeReason: "squared_off" } : { realizedPnl: total });
       const after = await reload(row.id);
       await auditFrom(c, db)({ action: "strategy.close_all", target: `strategy:${row.id}`, before, after });
       return c.json(after, 200);
@@ -613,11 +626,11 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const batchId = `reconcile:${newId("b")}`;
       await db.insert(strategyAdjustments).values({ id: adjId, strategyId: row.id, batchId, reason: `closed outside the app${body.reason ? `: ${body.reason}` : ""}`, createdAt: now });
       const done = { added: 0, trimmed: 0, closed: 0, realizedPnl: "0" };
-      let total = row.realizedPnl;
+      let total = "0";
       for (const x of body.legs) {
         const l = open.find((y) => y.id === x.legId)!;
         const whole = x.lots === undefined || x.lots === l.lots;
-        const realized = await closeLeg(row, l, x.price, whole ? undefined : x.lots, lotSize, now);
+        const realized = await closeLeg(row, l, x.price, whole ? undefined : x.lots, lotSize, now, "outside_app");
         done.realizedPnl = addDecimal(done.realizedPnl, realized);
         total = addDecimal(total, realized);
         if (whole) done.closed += 1;
@@ -625,7 +638,8 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       }
       await db.update(strategyAdjustments).set(done).where(eq(strategyAdjustments.id, adjId));
       const left = (await legsOf(row.id)).filter((l) => l.status === "open").length;
-      await touch(row.id, left === 0 ? { realizedPnl: total, status: "archived", closedAt: now } : { realizedPnl: total });
+      const running = addDecimal(await freshPnl(row.id), total);
+      await touch(row.id, left === 0 ? { realizedPnl: running, status: "archived", closedAt: now, closeReason: "outside_app" } : { realizedPnl: running });
       const after = await reload(row.id);
       await auditFrom(c, db)({ action: "strategy.reconcile", target: `strategy:${row.id}`, before, after });
       return c.json(after, 200);
@@ -655,12 +669,12 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       if (body.archive) {
         for (const l of open) if (body.exits[l.id] === undefined) throw errors.badRequest(`Missing exit price for leg ${l.id}`);
         const lotSize = await lotSizeFor(me, row.asset);
-        let realized = row.realizedPnl;
+        let realized = "0";
         for (const l of open) realized = addDecimal(realized, await closeLeg(row, l, body.exits[l.id]!, undefined, lotSize, now));
-        await touch(row.id, { realizedPnl: realized, status: "archived", closedAt: now });
+        await touch(row.id, { realizedPnl: addDecimal(await freshPnl(row.id), realized), status: "archived", closedAt: now, closeReason: "squared_off" });
       } else {
         for (const l of open) await db.update(strategyLegs).set({ price: l.entryPrice ?? l.price, entryPrice: null, openedAt: null, updatedAt: now }).where(eq(strategyLegs.id, l.id));
-        await touch(row.id, { status: "draft", tradingMode: null, startedAt: null, closedAt: null });
+        await touch(row.id, { status: "draft", tradingMode: null, startedAt: null, closedAt: null, closeReason: null });
       }
       const after = await reload(row.id);
       await auditFrom(c, db)({ action: body.archive ? "strategy.stop_archive" : "strategy.stop_draft", target: `strategy:${row.id}`, before, after });
@@ -687,7 +701,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
         if (row.status !== from) throw errors.conflict(`Only a ${from} strategy can be ${kind}d`);
         const before = await full(row);
         const now = new Date();
-        await touch(row.id, kind === "archive" ? { status: "archived", closedAt: now } : { status: "draft", tradingMode: null, closedAt: null });
+        await touch(row.id, kind === "archive" ? { status: "archived", closedAt: now } : { status: "draft", tradingMode: null, closedAt: null, closeReason: null });
         const after = await reload(row.id);
         await auditFrom(c, db)({ action: `strategy.${kind}`, target: `strategy:${row.id}`, before, after });
         return c.json(after, 200);

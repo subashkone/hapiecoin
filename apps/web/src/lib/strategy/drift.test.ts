@@ -1,6 +1,6 @@
 import type { LivePosition, Strategy } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
-import { driftFor, shortfallFor } from "./drift";
+import { driftFor, isSettling, shortfallFor } from "./drift";
 
 const leg = (symbol: string, side: "buy" | "sell", lots: number, status: "open" | "squared_off" = "open") => ({ id: `l_${symbol}_${side}_${lots}`, kind: "put" as const, side, strike: "78000", expiry: "2026-09-25", symbol, lots, price: "900", entryPrice: "900", exitPrice: null, iv: 0.5, status, isAdjustment: false, position: 0, openedAt: "2026-09-08T10:00:00Z", closedAt: null, orderId: null });
 const strat = (id: string, status: Strategy["status"], legs: Strategy["legs"]): Strategy => ({ id, name: id, asset: "BTC", status, tradingMode: status === "paper" ? "paper" : "live", templateName: "", brokerId: "brk_delta", legs, realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: null, closedAt: null, createdAt: "2026-09-08T10:00:00Z", updatedAt: "2026-09-08T10:00:00Z" });
@@ -27,6 +27,14 @@ describe("HC-TR-160 drift between the exchange and the strategies", () => {
     // a squared-off leg, and a leg whose entry never filled (resting limit, refused order), are not expected at the exchange
     expect(driftFor([pos(C, -800)], [strat("a", "live", [leg(P, "sell", 800, "squared_off"), leg(C, "sell", 800)])], lotSize).size).toBe(0);
     expect(driftFor([pos(C, -800)], [strat("a", "live", [{ ...leg(P, "sell", 800), entryPrice: null }, leg(C, "sell", 800)])], lotSize).size).toBe(0);
+    // a leg past its settlement instant (25 Sep 12:00 UTC for BTC) belongs to the settler, not the drift check
+    const after = Date.UTC(2026, 8, 25, 12, 1);
+    expect(driftFor([], [strat("a", "live", [leg(P, "sell", 800)])], lotSize, after).size).toBe(0);
+    expect(driftFor([], [strat("a", "live", [leg(P, "sell", 800)])], lotSize, after - 120_000).size).toBe(1);
+    // still open long after the window (no spot, no credential): out of sync again, Reconcile is the way out
+    expect(driftFor([], [strat("a", "live", [leg(P, "sell", 800)])], lotSize, after + 20 * 60_000).size).toBe(1);
+    expect(isSettling("2026-09-25", "BTC", after)).toBe(true);
+    expect(isSettling("PERP", "BTC", after)).toBe(false);
   });
   it("shortfallFor gives a leg its share of the missing lots, only on the side that went", () => {
     const row = { symbol: P, expected: -1000, held: -200, strategies: ["a", "b"] };

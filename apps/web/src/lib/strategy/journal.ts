@@ -1,7 +1,7 @@
 // Journal arithmetic (HC-TR-128..136): closed trades from archived strategies, squared-off legs of active ones,
 // the stats strip, the equity curve, filters, search and the CSV export. Pure functions over the server's
 // strategies; the panel calls them on every list refresh.
-import type { Strategy, StrategyLeg } from "@hapiecoin/schema";
+import { type CloseReason, type Strategy, type StrategyLeg, CLOSE_REASON_LABELS } from "@hapiecoin/schema";
 import { daysOf, legPnl } from "./paper";
 
 export interface Trade {
@@ -12,7 +12,11 @@ export interface Trade {
   days: number;
   openedAt: string;
   closedAt: string;
+  /** Why it closed (ADR-059 §2.4); null for trades closed before reasons were recorded. */
+  reason: CloseReason | null;
 }
+/** The reason as shown: "expired", "squared off", "stopped", "closed outside the app"; "" when unknown. */
+export const reasonLabel = (reason: CloseReason | null | undefined): string => (reason ? CLOSE_REASON_LABELS[reason] : "");
 export const PRESET_TAGS = ["earnings", "range", "hedge"] as const;
 export const JOURNAL_FILTERS = ["all", "paper", "live", "wins", "losses", "BTC", "ETH", "XAUT"] as const;
 export type JournalFilter = (typeof JOURNAL_FILTERS)[number];
@@ -23,7 +27,7 @@ export function closedTrades(all: readonly Strategy[]): Trade[] {
   const out: Trade[] = [];
   for (const s of all) {
     if (s.status !== "archived" || !s.startedAt || !s.closedAt) continue;
-    out.push({ s, pnl: Number(s.realizedPnl), mode: s.tradingMode === "live" ? "live" : "paper", days: daysOf(s), openedAt: s.startedAt, closedAt: s.closedAt });
+    out.push({ s, pnl: Number(s.realizedPnl), mode: s.tradingMode === "live" ? "live" : "paper", days: daysOf(s), openedAt: s.startedAt, closedAt: s.closedAt, reason: s.closeReason ?? null });
   }
   return out.sort((a, b) => new Date(b.closedAt).getTime() - new Date(a.closedAt).getTime());
 }
@@ -124,10 +128,10 @@ const csvCell = (v: string | number): string => {
   const s = String(v);
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
-/** id,name,mode,asset,template,legs,opened,closed,days,realized_pnl,tags,notes for the given trades. */
+/** id,name,mode,asset,template,legs,opened,closed,days,realized_pnl,close_reason,tags,notes for the given trades. */
 export function journalCsv(trades: readonly Trade[]): string {
-  const head = "id,name,mode,asset,template,legs,opened,closed,days,realized_pnl,tags,notes";
-  const lines = trades.map((t) => [t.s.id, t.s.name, t.mode, t.s.asset, t.s.templateName, t.s.legs.length, t.openedAt.slice(0, 10), t.closedAt.slice(0, 10), t.days, t.pnl.toFixed(2), t.s.tags.join(" "), t.s.notes].map(csvCell).join(","));
+  const head = "id,name,mode,asset,template,legs,opened,closed,days,realized_pnl,close_reason,tags,notes";
+  const lines = trades.map((t) => [t.s.id, t.s.name, t.mode, t.s.asset, t.s.templateName, t.s.legs.length, t.openedAt.slice(0, 10), t.closedAt.slice(0, 10), t.days, t.pnl.toFixed(2), reasonLabel(t.reason), t.s.tags.join(" "), t.s.notes].map(csvCell).join(","));
   return [head, ...lines].join("\n");
 }
 

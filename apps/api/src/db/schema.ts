@@ -302,6 +302,8 @@ export const strategies = pgTable(
     orderBatchId: text("order_batch_id"),
     startedAt: timestamp("started_at", { withTimezone: true, mode: "date" }),
     closedAt: timestamp("closed_at", { withTimezone: true, mode: "date" }),
+    /** Why it closed (ADR-059 §2.4); null while active or for an archived draft. */
+    closeReason: text("close_reason", { enum: ["expired", "squared_off", "stopped", "outside_app"] }),
     ...timestamps,
   },
   (t) => [index("strategies_user_id_idx").on(t.userId), index("strategies_user_status_idx").on(t.userId, t.status)],
@@ -330,6 +332,7 @@ export const strategyLegs = pgTable(
     position: integer("position").notNull().default(0),
     openedAt: timestamp("opened_at", { withTimezone: true, mode: "date" }),
     closedAt: timestamp("closed_at", { withTimezone: true, mode: "date" }),
+    closeReason: text("close_reason", { enum: ["expired", "squared_off", "stopped", "outside_app"] }),
     orderId: text("order_id"),
     ...timestamps,
   },

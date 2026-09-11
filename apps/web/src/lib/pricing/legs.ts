@@ -3,13 +3,10 @@
 // quantity is lots × lot size. Numbers here feed maths only; money shown to the trader is formatted once
 // at the edge (typescript rule 3).
 import type { Leg as PricingLeg } from "@hapiecoin/pricing";
-import type { Underlying } from "@hapiecoin/schema";
 import type { StrategyLeg } from "@/lib/strategy/legs";
 
-/** Delta settles BTC / ETH options at 12:00 UTC and XAUT at 16:00 UTC (ADR-012). */
-export function settlementHourUtc(asset: Underlying): number {
-  return asset === "XAUT" ? 16 : 12;
-}
+/** Delta settles BTC / ETH options at 12:00 UTC and XAUT at 16:00 UTC (ADR-012); one definition, in the schema. */
+export { settlementHourUtc } from "@hapiecoin/schema";
 
 export interface LegPriceSource {
   /** Live mark per underlying unit for an option leg, or undefined to keep the stored price. */

@@ -6,7 +6,7 @@ import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
 import { mockIvHistory, mockMarkHistory } from "./mock-market";
-import { AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal } from "@hapiecoin/schema";
+import { AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal, type CloseReason } from "@hapiecoin/schema";
 
 export const SESSION_COOKIE = "better-auth.session_token";
 export const TEST_OTP = "123456";
@@ -538,18 +538,19 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     s.updatedAt = nowIso();
     return s;
   };
-  const closeLeg = (s: Strategy, leg: StrategyLeg, exitPrice: string, lots: number | undefined, lotSize: string) => {
+  const closeLeg = (s: Strategy, leg: StrategyLeg, exitPrice: string, lots: number | undefined, lotSize: string, reason: CloseReason = "squared_off") => {
     const qty = lots ?? leg.lots;
     const realized = realizedPnl({ side: leg.side, lots: qty, entryPrice: leg.entryPrice ?? leg.price, exitPrice }, lotSize);
     const at = nowIso();
     if (qty < leg.lots) {
       leg.lots -= qty;
       const idx = s.legs.indexOf(leg);
-      s.legs.splice(idx + 1, 0, { ...leg, id: id("leg"), lots: qty, exitPrice, status: "squared_off", closedAt: at });
+      s.legs.splice(idx + 1, 0, { ...leg, id: id("leg"), lots: qty, exitPrice, status: "squared_off", closedAt: at, closeReason: reason });
     } else {
       leg.exitPrice = exitPrice;
       leg.status = "squared_off";
       leg.closedAt = at;
+      leg.closeReason = reason;
     }
     s.realizedPnl = toDecimal(Number(s.realizedPnl) + Number(realized));
   };
@@ -687,7 +688,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       else trimmed += 1;
     }
     s.adjustments.push({ id: id("adj"), at, reason: `closed outside the app${body.reason?.trim() ? `: ${body.reason.trim()}` : ""}`, added: 0, trimmed, closed, realizedPnl: toDecimal(Number(s.realizedPnl) - was, 2), batchId: `reconcile:${id("b")}` });
-    if (!s.legs.some((l) => l.status === "open")) Object.assign(s, { status: "archived", closedAt: at });
+    if (!s.legs.some((l) => l.status === "open")) Object.assign(s, { status: "archived", closedAt: at, closeReason: "outside_app" });
     return c.json(touch(s));
   });
   v1.post("/strategies/:id/legs/:legId/close", async (c) => {
@@ -712,7 +713,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (!open.length) return err(c, 409, "CONFLICT", "Nothing to square off");
     if (s.status !== "live") for (const l of open) if (body.exits[l.id] === undefined) return err(c, 400, "BAD_REQUEST", `Missing exit price for leg ${l.id}`);
     for (const l of open) closeLeg(s, l, s.status === "live" ? exitLive(c, s, l, l.lots) : body.exits[l.id]!, undefined, lotSizeOf(c, s.asset));
-    if (s.status === "live") Object.assign(s, { status: "archived", closedAt: nowIso() });
+    if (s.status === "live") Object.assign(s, { status: "archived", closedAt: nowIso(), closeReason: "squared_off" });
     return c.json(touch(s));
   });
   v1.post("/strategies/:id/stop", async (c) => {
@@ -724,7 +725,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (body.archive) {
       for (const l of open) if (body.exits?.[l.id] === undefined) return err(c, 400, "BAD_REQUEST", `Missing exit price for leg ${l.id}`);
       for (const l of open) closeLeg(s, l, body.exits![l.id]!, undefined, lotSizeOf(c, s.asset));
-      Object.assign(s, { status: "archived", closedAt: nowIso() });
+      Object.assign(s, { status: "archived", closedAt: nowIso(), closeReason: "squared_off" });
     } else {
       for (const l of open) Object.assign(l, { price: l.entryPrice ?? l.price, entryPrice: null, openedAt: null });
       Object.assign(s, { status: "draft", tradingMode: null, startedAt: null, closedAt: null });

@@ -6718,6 +6718,48 @@
   "evidence": "ADR-059 (11 Sep 2026): packages/schema ReconcileBody, apps/api routes/strategies.ts reconcile route, mock-api reconcile, lib/api/strategies.ts useReconcileStrategy, ReconcileDialog.tsx; unit strategies.test.ts (api) HC-TR-161, strategies.test.ts (schema), trading-live.test.tsx HC-TR-160/161"
  },
  {
+  "id": "HC-TR-162",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Paper and Live tabs",
+  "feature": "Expiry settlement of paper legs",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright) · api contract · security",
+  "acceptance": "An API job (settlement.ts, every SETTLEMENT_MS) books every open paper leg two minutes past its settlement instant (12:00 UTC BTC / ETH, 16:00 UTC XAUT) closed at intrinsic value from the IV-snapshot spot nearest the instant (else the venue's live spot while fresh, else it waits), records a 'settle:' batch in the history, archives the strategy with closeReason expired when nothing stays open, audits strategy.settle; a perpetual never settles",
+  "evidence": "ADR-059 §2.4 (11 Sep 2026): apps/api/src/settlement.ts settleExpired / snapshotSpotSource / startSettler, config SETTLEMENT_MS, migration 0014 close_reason; unit settlement.test.ts HC-TR-162"
+ },
+ {
+  "id": "HC-TR-163",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Live tab",
+  "feature": "Expiry bookkeeping of live legs from the exchange",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright) · api contract · security",
+  "acceptance": "The same job settles a live leg past its instant only after a successful exchange positions read shows the contract gone; a contract the exchange still holds waits, an unreadable exchange skips the strategy, no order is ever sent; the Live tab's out-of-sync check leaves legs past their settlement instant to the settler and the card says 'expired, settling'",
+  "evidence": "ADR-059 §2.4 (11 Sep 2026): apps/api/src/settlement.ts (live branch), lib/strategy/drift.ts nowMs guard, PaperPanel.tsx expiry line; unit settlement.test.ts HC-TR-163, drift.test.ts"
+ },
+ {
+  "id": "HC-TR-164",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Closed chip · Journal",
+  "feature": "Close reasons on cards and in the Journal",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright)",
+  "acceptance": "Every close path records why (expired · squared off · closed outside the app; stopped reserved for the strategy stop): closeReason on each squared-off leg and on the archived strategy; the Closed chip card shows it next to the close date, the Journal row shows it and the CSV carries a close_reason column",
+  "evidence": "ADR-059 §2.4 (11 Sep 2026): packages/schema CloseReason / CLOSE_REASON_LABELS / settlementMsOf, apps/api routes/strategies.ts closeLegRow reason, live.ts, mock-api; PaperPanel.tsx card-close-reason, JournalPanel.tsx trade-reason, lib/strategy/journal.ts reasonLabel; unit strategies.test.ts (api + schema), live.test.ts, journal.test.ts, trading.test.tsx HC-TR-164; e2e analyse.spec.ts"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

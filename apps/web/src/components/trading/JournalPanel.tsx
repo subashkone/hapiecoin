@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePatchStrategy, useStrategies } from "@/lib/api/strategies";
 import { fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
-import { FILTER_LABELS, JOURNAL_FILTERS, type JournalFilter, PRESET_TAGS, type Trade, closedLegs, closedTrades, copyText, equityCurve, filterTrades, journalCsv, journalStats } from "@/lib/strategy/journal";
+import { FILTER_LABELS, JOURNAL_FILTERS, type JournalFilter, PRESET_TAGS, type Trade, closedLegs, closedTrades, copyText, equityCurve, filterTrades, journalCsv, journalStats, reasonLabel } from "@/lib/strategy/journal";
 import { fmtLeg } from "@/lib/strategy/paper";
 import type { PaperBook } from "@/lib/strategy/usePaper";
 import { Chart } from "@/components/analytics/Chart";
@@ -162,6 +162,7 @@ export function JournalPanel({ book }: { book: PaperBook }) {
                           <span><b>{t.s.legs.length}</b> {t.s.legs.length === 1 ? "leg" : "legs"}</span>
                           <span><b>{t.days}</b> days</span>
                           <span>{dm(t.openedAt)} → {dm(t.closedAt)}</span>
+                          {t.reason ? <span className="rounded border border-border px-1" title="Why it closed (ADR-059)" data-testid="trade-reason" data-reason={t.reason}>{reasonLabel(t.reason)}</span> : null}
                           {t.s.tags.map((tag) => <span key={tag} className="text-accent">#{tag}</span>)}
                         </div>
                       </div>

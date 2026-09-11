@@ -156,7 +156,8 @@ describe("HC-TR-071 / HC-TR-079 / HC-TR-080 / HC-TR-081 adjustments, square off,
     const archived = await json<Strategy>(await t.request(`/v1/strategies/${arch.id}/stop`, { cookie: alice, json: { archive: true, exits } }));
     expect(archived.status).toBe("archived");
     expect(archived.closedAt).not.toBeNull();
-    expect(archived.legs.every((l) => l.status === "squared_off")).toBe(true);
+    expect(archived.legs.every((l) => l.status === "squared_off" && l.closeReason === "squared_off")).toBe(true);
+    expect(archived.closeReason).toBe("squared_off"); // HC-TR-164
     expect(archived.realizedPnl).toBe("0");
     const audits = await t.db.select().from(auditLog).where(eq(auditLog.target, `strategy:${arch.id}`));
     expect(audits.map((a) => a.action)).toEqual(["strategy.create", "strategy.start", "strategy.stop_archive"]);
@@ -219,13 +220,16 @@ describe("HC-TR-071 / HC-TR-088 adjustment batch on a paper strategy (ADR-044)",
     expect(a.status).toBe("paper");
     expect(a.realizedPnl).toBe("0.4"); // (1300 − 1200) × 4 × 0.001, booked without any order
     expect(a.legs.find((l) => l.id === call!.id)).toMatchObject({ status: "open", lots: 6 });
+    expect(a.legs.find((l) => l.status === "squared_off")).toMatchObject({ lots: 4, closeReason: "outside_app" }); // HC-TR-164
+    expect(a.closeReason ?? null).toBeNull();
     const last = a.adjustments[a.adjustments.length - 1]!;
     expect(last).toMatchObject({ reason: "closed outside the app: stop hit on the exchange", added: 0, trimmed: 1, closed: 0, realizedPnl: "0.4" });
     expect(last.batchId).toMatch(/^reconcile:/);
     const done = await json<Strategy>(await reconcile(alice, s.id, { legs: [{ legId: call!.id, price: "1300" }, { legId: put!.id, price: "800" }] }));
     expect(done.status).toBe("archived");
     expect(done.closedAt).toBeTruthy();
-    expect(done.legs.every((l) => l.status === "squared_off")).toBe(true);
+    expect(done.closeReason).toBe("outside_app");
+    expect(done.legs.every((l) => l.status === "squared_off" && l.closeReason === "outside_app")).toBe(true);
     expect(done.adjustments[done.adjustments.length - 1]).toMatchObject({ reason: "closed outside the app", closed: 2, trimmed: 0 });
     expect((await reconcile(alice, s.id, { legs: [{ legId: put!.id, price: "1" }] })).status).toBe(409);
     const draft = await create(alice);

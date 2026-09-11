@@ -1,11 +1,11 @@
 import type { Strategy, StrategyLeg } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
-import { closedLegs, closedTrades, equityCurve, filterTrades, journalCsv, journalStats } from "./journal";
+import { closedLegs, closedTrades, equityCurve, filterTrades, journalCsv, journalStats, reasonLabel } from "./journal";
 
 const leg = (o: Partial<StrategyLeg> = {}): StrategyLeg => ({ id: "leg_1", kind: "call", side: "buy", strike: "80000", expiry: "2026-09-25", symbol: "C-BTC-80000-250926", lots: 10, price: "1000", entryPrice: "1000", exitPrice: null, iv: null, status: "open", isAdjustment: false, position: 0, openedAt: "2026-09-01T00:00:00Z", closedAt: null, orderId: null, ...o });
 const strat = (o: Partial<Strategy> = {}): Strategy => ({ id: "s1", name: "BTC Iron Butterfly", asset: "BTC", status: "archived", tradingMode: "paper", templateName: "Iron Butterfly", brokerId: null, legs: [leg()], realizedPnl: "1.44", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: "2026-07-30T00:00:00Z", closedAt: "2026-08-28T00:00:00Z", createdAt: "2026-07-30T00:00:00Z", updatedAt: "2026-08-28T00:00:00Z", ...o });
 
-const win = strat();
+const win = strat({ closeReason: "expired" });
 const loss = strat({ id: "s2", name: "ETH Short Straddle", asset: "ETH", tradingMode: "live", templateName: "Short Straddle", realizedPnl: "-1.32", startedAt: "2026-07-10T00:00:00Z", closedAt: "2026-07-24T00:00:00Z", tags: ["earnings", "hedge"], notes: "got run over, \"call\" side" });
 const flat = strat({ id: "s3", name: "XAUT flat", asset: "XAUT", templateName: "Custom", realizedPnl: "0", closedAt: "2026-08-01T00:00:00Z" });
 const archivedDraft = strat({ id: "s4", name: "never traded", startedAt: null, closedAt: "2026-08-02T00:00:00Z", tradingMode: null });
@@ -69,8 +69,14 @@ describe("HC-TR-131, 134 filters, search and CSV", () => {
   it("csv quotes commas and quotes", () => {
     const csv = journalCsv(filterTrades(trades, "live", ""));
     const lines = csv.split("\n");
-    expect(lines[0]).toBe("id,name,mode,asset,template,legs,opened,closed,days,realized_pnl,tags,notes");
-    expect(lines[1]).toBe('s2,ETH Short Straddle,live,ETH,Short Straddle,1,2026-07-10,2026-07-24,14,-1.32,earnings hedge,"got run over, ""call"" side"');
+    expect(lines[0]).toBe("id,name,mode,asset,template,legs,opened,closed,days,realized_pnl,close_reason,tags,notes");
+    expect(lines[1]).toBe('s2,ETH Short Straddle,live,ETH,Short Straddle,1,2026-07-10,2026-07-24,14,-1.32,,earnings hedge,"got run over, ""call"" side"');
     expect(lines).toHaveLength(2);
+  });
+  it("HC-TR-164 carries why a trade closed into the row and the CSV, blank when it was closed before reasons existed", () => {
+    expect(closedTrades([win, loss]).map((t) => [t.s.id, t.reason])).toEqual([["s1", "expired"], ["s2", null]]);
+    expect(reasonLabel("outside_app")).toBe("closed outside the app");
+    expect(reasonLabel(null)).toBe("");
+    expect(journalCsv(closedTrades([win])).split(String.fromCharCode(10))[1]).toContain(",1.44,expired,");
   });
 });

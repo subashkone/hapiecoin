@@ -71,6 +71,8 @@ const RawEnv = z.object({
   TRADING_RECONCILE_MS: z.coerce.number().int().min(1000).default(15_000),
   /** IV history snapshot interval (ADR-056); 0 disables the snapshotter (tests, a second API replica). */
   IV_SNAPSHOT_MS: z.coerce.number().int().min(0).default(300_000),
+  /** Expiry settlement pass interval (ADR-059 §2.4); 0 disables the settler. */
+  SETTLEMENT_MS: z.coerce.number().int().min(0).default(60_000),
   DELTA_API_KEY: z.string().optional(),
   DELTA_API_SECRET: z.string().optional(),
 });
@@ -105,6 +107,8 @@ export interface Config {
   egressIp: string;
   /** Milliseconds between IV history snapshots; 0 = off (ADR-056). */
   ivSnapshotMs: number;
+  /** Milliseconds between expiry settlement passes; 0 = off (ADR-059). */
+  settlementMs: number;
   logLevel: string;
   pgliteDataDir: string | undefined;
 }
@@ -229,6 +233,7 @@ export function loadConfig(
     trading: { disabled: e.TRADING_DISABLED === "1" || e.TRADING_DISABLED === "true", maxNotionalUsd: e.TRADING_MAX_NOTIONAL_USD, maxLegs: e.TRADING_MAX_LEGS, markBandPct: e.TRADING_MARK_BAND_PCT, reconcileMs: e.TRADING_RECONCILE_MS },
     egressIp: e.EGRESS_IP,
     ivSnapshotMs: e.IV_SNAPSHOT_MS,
+    settlementMs: e.SETTLEMENT_MS,
     logLevel: e.LOG_LEVEL ?? (isTest ? "silent" : "info"),
     pgliteDataDir: e.PGLITE_DATA_DIR,
   };

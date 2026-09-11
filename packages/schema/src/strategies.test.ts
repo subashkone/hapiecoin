@@ -14,6 +14,11 @@ import {
   StrategyStart,
   realizedPnl,
   toDecimal,
+  CLOSE_REASONS,
+  CLOSE_REASON_LABELS,
+  CloseReason,
+  settlementHourUtc,
+  settlementMsOf,
 } from "./strategies.js";
 
 const call = { kind: "call", side: "buy", strike: "80000", expiry: "2026-09-25", symbol: "C-BTC-80000-250926", lots: 10, price: "1200.5", iv: 0.52 } as const;
@@ -119,5 +124,17 @@ describe("[SCHEMA] strategies (ADR-024)", () => {
     expect(toDecimal(-0.001)).toBe("0");
     expect(toDecimal(12.345)).toBe("12.35");
     expect(toDecimal(Number.NaN)).toBe("0");
+  });
+});
+
+describe("close reasons and settlement instants (ADR-059 §2.4)", () => {
+  it("names every reason and settles BTC / ETH at 12:00 UTC, XAUT at 16:00 UTC, never the perpetual", () => {
+    expect(CLOSE_REASONS.map((r) => CLOSE_REASON_LABELS[r])).toEqual(["expired", "squared off", "stopped", "closed outside the app"]);
+    expect(CloseReason.safeParse("liquidated").success).toBe(false);
+    expect(settlementMsOf("2026-09-25", "BTC")).toBe(Date.UTC(2026, 8, 25, 12));
+    expect(settlementMsOf("2026-09-25", "XAUT")).toBe(Date.UTC(2026, 8, 25, 16));
+    expect(settlementMsOf("PERP", "ETH")).toBeNull();
+    expect(settlementMsOf("2026-02-30", "ETH")).toBeNull();
+    expect(settlementHourUtc("ETH")).toBe(12);
   });
 });
