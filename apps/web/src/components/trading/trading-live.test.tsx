@@ -6,7 +6,7 @@ import { chainTopic } from "@hapiecoin/schema";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
+import { FakeSocket, installMockFetch, makeQueryClient, renderWithProviders, type MockFetch } from "../../../test/helpers";
 import { buildChain } from "../../../test/fixtures/chain";
 import { useUiStore } from "@/lib/store";
 import { Workspace } from "@/components/workspace/Workspace";
@@ -336,5 +336,64 @@ describe("HC-TR-088 live adjustments and square off from Details", () => {
     await waitFor(() => expect(mine()[0]!.status).toBe("archived"));
     expect(mine()[0]!.orders.filter((o) => o.purpose === "exit")).toHaveLength(3); // the original leg and both adjustment legs
     expect(mine()[0]!.legs.every((l) => l.status === "squared_off")).toBe(true);
+  });
+});
+
+describe("HC-TR-160 / HC-TR-161 out of sync with the exchange", () => {
+  it("flags the live strategy whose contract the exchange no longer holds; Reconcile books it closed without an order", async () => {
+    connect();
+    mine().push(strat(1, { status: "live", tradingMode: "live", name: "Live A", legs: [{ ...CALL, id: "leg_ok" }] }));
+    // a filled sold put the exchange no longer holds (a stop closed it): the mock's venueGone knob drops it from the positions
+    mine().push(strat(2, { status: "live", tradingMode: "live", name: "Live B", legs: [{ ...CALL, id: "leg_gone", kind: "put", side: "sell", strike: "78000", symbol: "P-BTC-78000-250926", price: "900", entryPrice: "900" }] }));
+    acc().venueGone = new Set(["P-BTC-78000-250926"]);
+    useUiStore.setState({ workspaceTab: "live" });
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    const u = userEvent.setup();
+    await waitFor(() => expect(panel().dataset["count"]).toBe("2"));
+    await waitFor(() => expect(screen.getByTestId("live-drift-banner").dataset["count"]).toBe("1"), { timeout: 5000 });
+    const cards = screen.getAllByTestId("live-card");
+    const bad = cards.find((c) => c.dataset["id"] === "strat_2")!;
+    expect(within(bad).getByTestId("card-drift").title).toContain("exchange holds flat · 10 sold expected");
+    expect(within(cards.find((c) => c.dataset["id"] === "strat_1")!).queryByTestId("card-drift")).toBeNull();
+    await u.click(within(bad).getByTestId("card-reconcile"));
+    const dlg = await screen.findByTestId("reconcile-dialog");
+    const rows = within(dlg).getAllByTestId("reconcile-row");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.dataset["lots"]).toBe("10");
+    await u.clear(within(dlg).getByTestId("reconcile-price"));
+    await u.type(within(dlg).getByTestId("reconcile-price"), "1100");
+    await u.type(within(dlg).getByTestId("reconcile-reason"), "stop hit");
+    await u.click(within(dlg).getByTestId("reconcile-confirm"));
+    await waitFor(() => expect(mine().find((s) => s.id === "strat_2")?.status).toBe("archived"));
+    const done = mine().find((s) => s.id === "strat_2")!;
+    expect(done.adjustments[0]).toMatchObject({ reason: "closed outside the app: stop hit", closed: 1, trimmed: 0 });
+    expect(done.legs[0]).toMatchObject({ status: "squared_off", exitPrice: "1100" });
+    expect(done.orders).toEqual([]); // nothing was sent to the exchange
+    await waitFor(() => expect(screen.queryByTestId("live-drift-banner")).toBeNull());
+    await waitFor(() => expect(screen.queryByTestId("reconcile-dialog")).toBeNull());
+  });
+
+  it("a venue that does not answer pauses the check: no banner, no badge, a paused note", async () => {
+    connect();
+    mine().push(strat(1, { status: "live", tradingMode: "live", name: "Live A", legs: [{ ...CALL, id: "leg_ok" }] }));
+    acc().venueGone = new Set(["C-BTC-80000-250926"]);
+    acc().venueDown = true;
+    useUiStore.setState({ workspaceTab: "live" });
+    const queryClient = makeQueryClient();
+    renderWithProviders(<Workspace />, { queryClient });
+    serveMarket();
+    await waitFor(() => expect(panel().dataset["count"]).toBe("1"));
+    await waitFor(() => expect(screen.getByTestId("live-drift-paused")).toBeTruthy(), { timeout: 5000 });
+    expect(screen.queryByTestId("live-drift-banner")).toBeNull();
+    expect(screen.queryByTestId("card-drift")).toBeNull();
+    expect(screen.queryByTestId("card-reconcile")).toBeNull();
+    // the next successful read resumes the check: the paused note goes, the banner and the card badge come back
+    acc().venueDown = false;
+    await queryClient.invalidateQueries({ queryKey: ["live", "positions"] });
+    await waitFor(() => expect(screen.getByTestId("live-drift-banner").dataset["count"]).toBe("1"), { timeout: 5000 });
+    expect(screen.queryByTestId("live-drift-paused")).toBeNull();
+    expect(screen.getByTestId("card-drift")).toBeTruthy();
+    expect(screen.getByTestId("card-reconcile")).toBeTruthy();
   });
 });

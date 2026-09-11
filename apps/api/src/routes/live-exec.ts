@@ -143,9 +143,14 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
     const creds = await openCredential(deps, user, brokerId);
     const balances = await deps.trading.getBalances(creds);
     const row = SETTLING_ASSETS.map((a) => balances.find((b) => b.asset === a)).find((b) => b !== undefined);
-    // the venue has no pre-trade margin estimate; show what it holds right now so the trader sees the real headroom (ADR-029)
-    const positions = await deps.trading.getPositions(creds);
-    marginUsed = toDecimal(positions.reduce((s, p) => s + (p.margin ? Number(p.margin) : 0), 0), 2);
+    // the venue has no pre-trade margin estimate; show what it holds right now so the trader sees the real headroom (ADR-029).
+    // The figure is informational: when the positions read fails it stays null ("—"), it never blocks the preview
+    try {
+      const positions = await deps.trading.getPositions(creds);
+      marginUsed = toDecimal(positions.reduce((s, p) => s + (p.margin ? Number(p.margin) : 0), 0), 2);
+    } catch (e) {
+      deps.logger.warn({ err: e instanceof Error ? e.message : String(e), userId: user.id, brokerId }, "live preview: positions read failed; margin in use unknown");
+    }
     if (row) {
       available = row.availableBalance;
       availableAsset = row.asset;

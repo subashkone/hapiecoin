@@ -21,7 +21,8 @@ import { SaveDraftDialog } from "@/components/dialogs/SaveDraftDialog";
 import { suggestStrategyName } from "@/lib/strategy/naming";
 import { isTemplateName } from "@/lib/strategy/templates";
 import { type TradeLegView, TradeModeDialog, netPremium } from "./TradeModeDialog";
-import { TradePreviewDialog } from "./TradePreviewDialog";
+import { TradePreviewDialog, legLabel } from "./TradePreviewDialog";
+import { overlapsFor } from "@/lib/strategy/overlap";
 
 /** One-time import of the Phase 2 browser drafts into the API (ADR-024). */
 export function useImportLegacyDrafts() {
@@ -95,6 +96,8 @@ export function TradeFlow({ book }: { book: PaperBook }) {
     if (target) return openLegs(target).map((l) => ({ id: l.id, kind: l.kind, side: l.side, strike: l.strike, expiry: l.expiry, symbol: l.symbol, lots: l.lots, price: book.priceOf(target, l)?.toString() ?? l.price }));
     return builder.legs.map((l) => ({ id: l.id, kind: l.kind, side: l.side, strike: l.strike, expiry: l.expiry, symbol: l.symbol, lots: l.lots, price: builder.priceFor(l) }));
   }, [target, builder, book]);
+  // HC-TR-159: contracts other open strategies of this mode already hold; the exchange nets them into one position
+  const overlaps = useMemo(() => overlapsFor(legs.map((l) => ({ symbol: l.symbol, side: l.side, lots: l.lots, label: legLabel(l) })), strategies ?? [], mode, target?.id ?? null), [legs, strategies, mode, target]);
   // ADR-059: the name box arrives filled from the legs and the clock, read when the dialog opens
   const suggest = () => suggestStrategyName({ asset: builder.asset, templateName: guessTemplateName(builder.legs), legs: builder.legs, taken: (strategies ?? []).map((x) => x.name) });
   // capital on the preview (HC-TR-158): the exchange wallet, read only while a trade flow is open on a connected exchange
@@ -239,7 +242,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
           void toPreview(m, b);
         }}
       />
-      <TradePreviewDialog open={step === "preview"} onOpenChange={(o) => !o && closeTrade()} mode={mode} asset={asset} legs={legs} spot={spot} lotSize={lotSize} money={money} broker={broker} fees={fees} maxLoss={maxLoss} maxLossKnown={fromBuilder} customPrices={customPrices} busy={busy} venue={venue} available={available} onTrade={onTradeNow} />
+      <TradePreviewDialog open={step === "preview"} onOpenChange={(o) => !o && closeTrade()} mode={mode} asset={asset} legs={legs} spot={spot} lotSize={lotSize} money={money} broker={broker} fees={fees} maxLoss={maxLoss} maxLossKnown={fromBuilder} customPrices={customPrices} busy={busy} venue={venue} available={available} overlaps={overlaps} onTrade={onTradeNow} />
       <SaveDraftDialog open={step === "name"} onOpenChange={(o) => !o && setStep("preview")} initialName={isTemplateName(meta.name) ? "" : meta.name} suggest={fromBuilder ? suggest : undefined} intent="trade" onSave={(n) => { setMeta(builder.asset, { name: n }); if (mode === "live") void toPreview("live", brokerId, n); else { setStep("preview"); void trade(n); } }} />
     </>
   );

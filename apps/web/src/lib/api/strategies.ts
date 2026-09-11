@@ -4,6 +4,7 @@ import {
   type AddLegsBody,
   type AdjustBody,
   type CloseAllBody,
+  type ReconcileBody,
   type CloseLegBody,
   type PnlPoint,
   type StopBody,
@@ -37,6 +38,7 @@ export function strategyFetchers(client: ApiClient = api) {
     adjust: (id: string, body: AdjustBody) => client.post(`/v1/strategies/${enc(id)}/adjust`, body, Strategy),
     closeLeg: (id: string, legId: string, body: CloseLegBody) => client.post(`/v1/strategies/${enc(id)}/legs/${enc(legId)}/close`, body, Strategy),
     closeAll: (id: string, body: CloseAllBody) => client.post(`/v1/strategies/${enc(id)}/close`, body, Strategy),
+    reconcile: (id: string, body: ReconcileBody) => client.post(`/v1/strategies/${enc(id)}/reconcile`, body, Strategy),
     stop: (id: string, body: StopBody) => client.post(`/v1/strategies/${enc(id)}/stop`, body, Strategy),
     archive: (id: string) => client.post(`/v1/strategies/${enc(id)}/archive`, {}, Strategy),
     restore: (id: string) => client.post(`/v1/strategies/${enc(id)}/restore`, {}, Strategy),
@@ -58,6 +60,7 @@ function useStrategyMutation<TVars, TResult extends Strategy | void>(run: (vars:
     onSuccess: (s: TResult) => {
       if (s) qc.setQueryData(strategyKeys.one(s.id), s);
       void qc.invalidateQueries({ queryKey: strategyKeys.all });
+      void qc.invalidateQueries({ queryKey: ["live", "positions"] }); // the exchange side of the drift check (HC-TR-160) moves with the legs
     },
   });
 }
@@ -86,6 +89,10 @@ export function useCloseLeg() {
 }
 export function useCloseAll() {
   return useStrategyMutation(({ id, body }: { id: string; body: CloseAllBody }) => f.closeAll(id, body));
+}
+/** HC-TR-161: book lots closed outside the app; no order is sent. */
+export function useReconcileStrategy() {
+  return useStrategyMutation(({ id, body }: { id: string; body: ReconcileBody }) => f.reconcile(id, body));
 }
 export function useStopStrategy() {
   return useStrategyMutation(({ id, body }: { id: string; body: StopBody }) => f.stop(id, body));

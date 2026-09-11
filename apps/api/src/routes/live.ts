@@ -2,7 +2,7 @@
  * Live trading routes (Phase 3 item 2, ADR-025): preview, place, retry, sync, Trade All → Live batch,
  * positions, and the admin kill switch. HC-TR-023, 055, 063, 070, 082..089.
  */
-import { type AdjustChange, Id, LiveBatchBody, LiveBatchResult, LivePlaceBody, LivePositions, LivePositionsExitBody, LivePositionsExitResult, LivePreview, LivePreviewBody, MAX_OPEN_LEGS, Strategy, type StrategyLegInput } from "@hapiecoin/schema";
+import { type AdjustChange, Id, LiveBatchBody, LiveBatchResult, LivePlaceBody, LivePositions, LivePositionsExitBody, LivePositionsExitResult, LivePreview, LivePreviewBody, MAX_OPEN_LEGS, Strategy, type StrategyLegInput, ApiError } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, asc, eq } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
@@ -13,6 +13,9 @@ import { errors } from "../security/errors.js";
 import { requireAdmin, requireUser } from "../security/guards.js";
 import { lotSizeFor, openCredential, ordersOf, placeEntries, preview, retryFailed, syncOrders, tradingBlockedReason, type PlanLeg, type StrategyRow } from "./live-exec.js";
 import { type AppDeps, cookieAuth, errorResponses, jsonContent } from "./shared.js";
+
+/** The exchange did not answer the positions read (never an empty list, HC-TR-160). */
+const exchangeUnavailable = jsonContent(ApiError, "Exchange unavailable");
 import { addDecimal, closeLegRow, loadStrategy } from "./strategies.js";
 
 const IdParam = z.object({ id: Id });
@@ -216,12 +219,16 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       security: cookieAuth,
       middleware: [guard],
       request: { query: z.object({ brokerId: Id }) },
-      responses: { 200: jsonContent(LivePositions, "Positions"), 400: errorResponses[400], 401: errorResponses[401], 409: errorResponses[409] },
+      responses: { 200: jsonContent(LivePositions, "Positions"), 400: errorResponses[400], 401: errorResponses[401], 409: errorResponses[409], 503: exchangeUnavailable },
     }),
     async (c) => {
       const me = currentUser(c);
       const creds = await openCredential(deps, me, c.req.valid("query").brokerId);
-      const [raw, balances] = await Promise.all([deps.trading.getPositions(creds), deps.trading.getBalances(creds)]);
+      const [raw, balances] = await Promise.all([deps.trading.getPositions(creds), deps.trading.getBalances(creds)]).catch((e: unknown) => {
+        // an unreadable venue is 503, never "no positions": the Live tab's drift check must not read it as "holds nothing"
+        deps.logger.warn({ err: e instanceof Error ? e.message : String(e), userId: me.id }, "positions read failed");
+        throw errors.unavailable("The exchange did not answer the positions read · try again in a moment");
+      });
       // HC-TR-144: the client sizes lots and P&L from contract value and mark; unknown products stay null
       const positions = await Promise.all(
         raw.map(async (p) => {
@@ -257,7 +264,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       security: cookieAuth,
       middleware: [guard],
       request: { body: { content: { "application/json": { schema: LivePositionsExitBody } }, required: true } },
-      responses: { 200: jsonContent(LivePositionsExitResult, "Exits"), 400: errorResponses[400], 401: errorResponses[401], 409: errorResponses[409] },
+      responses: { 200: jsonContent(LivePositionsExitResult, "Exits"), 400: errorResponses[400], 401: errorResponses[401], 409: errorResponses[409], 503: exchangeUnavailable },
     }),
     async (c) => {
       const me = currentUser(c);
@@ -265,7 +272,10 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const blocked = await tradingBlockedReason(deps, me);
       if (blocked) throw errors.conflict(blocked);
       const creds = await openCredential(deps, me, body.brokerId);
-      const positions = await deps.trading.getPositions(creds);
+      const positions = await deps.trading.getPositions(creds).catch((e: unknown) => {
+        deps.logger.warn({ err: e instanceof Error ? e.message : String(e), userId: me.id }, "positions read failed");
+        throw errors.unavailable("The exchange did not answer the positions read · nothing was sent");
+      });
       const closed: LivePositionsExitResult["closed"] = [];
       const failed: LivePositionsExitResult["failed"] = [];
       const keyTail = body.idempotencyKey.replace(/[^A-Za-z0-9]/g, "").slice(-10);

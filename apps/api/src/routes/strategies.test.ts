@@ -165,6 +165,7 @@ describe("HC-TR-071 / HC-TR-079 / HC-TR-080 / HC-TR-081 adjustments, square off,
 
 describe("HC-TR-071 / HC-TR-088 adjustment batch on a paper strategy (ADR-044)", () => {
   const adjust = (cookie: string, id: string, body: Record<string, unknown>) => t.request(`/v1/strategies/${id}/adjust`, { cookie, json: body });
+  const reconcile = (cookie: string, id: string, body: Record<string, unknown>) => t.request(`/v1/strategies/${id}/reconcile`, { cookie, json: body });
   const SOLD_CALL = { ...CALL, strike: "82000", symbol: "C-BTC-82000-250926", side: "sell", lots: 5, price: "700" };
 
   it("trims, closes and adds in one batch, books realised P&L on the closed lots and keeps the reason as history", async () => {
@@ -203,6 +204,34 @@ describe("HC-TR-071 / HC-TR-088 adjustment batch on a paper strategy (ADR-044)",
     expect(more.adjustments[1]!.batchId).toMatch(/^adj:/);
     const audits = await t.db.select().from(auditLog).where(eq(auditLog.target, `strategy:${s.id}`));
     expect(audits.filter((x) => x.action === "strategy.adjust")).toHaveLength(2);
+  });
+
+  it("HC-TR-161 reconcile books lots closed outside the app at the given price, keeps the reason, archives when nothing is open, refuses bad legs", async () => {
+    const s = await create(alice);
+    const started = await startPaper(alice, s.id, {});
+    const [call, put] = started.legs;
+    expect((await reconcile(alice, s.id, { legs: [{ legId: "leg_nope", price: "1" }] })).status).toBe(400);
+    expect((await reconcile(alice, s.id, { legs: [{ legId: call!.id, lots: 99, price: "1" }] })).status).toBe(400);
+    expect((await reconcile(alice, s.id, { legs: [{ legId: call!.id, price: "1" }, { legId: call!.id, price: "1" }] })).status).toBe(400);
+    const res = await reconcile(alice, s.id, { legs: [{ legId: call!.id, lots: 4, price: "1300" }], reason: "stop hit on the exchange" });
+    expect(res.status).toBe(200);
+    const a = await json<Strategy>(res);
+    expect(a.status).toBe("paper");
+    expect(a.realizedPnl).toBe("0.4"); // (1300 − 1200) × 4 × 0.001, booked without any order
+    expect(a.legs.find((l) => l.id === call!.id)).toMatchObject({ status: "open", lots: 6 });
+    const last = a.adjustments[a.adjustments.length - 1]!;
+    expect(last).toMatchObject({ reason: "closed outside the app: stop hit on the exchange", added: 0, trimmed: 1, closed: 0, realizedPnl: "0.4" });
+    expect(last.batchId).toMatch(/^reconcile:/);
+    const done = await json<Strategy>(await reconcile(alice, s.id, { legs: [{ legId: call!.id, price: "1300" }, { legId: put!.id, price: "800" }] }));
+    expect(done.status).toBe("archived");
+    expect(done.closedAt).toBeTruthy();
+    expect(done.legs.every((l) => l.status === "squared_off")).toBe(true);
+    expect(done.adjustments[done.adjustments.length - 1]).toMatchObject({ reason: "closed outside the app", closed: 2, trimmed: 0 });
+    expect((await reconcile(alice, s.id, { legs: [{ legId: put!.id, price: "1" }] })).status).toBe(409);
+    const draft = await create(alice);
+    expect((await reconcile(alice, draft.id, { legs: [{ legId: draft.legs[0]!.id, price: "1" }] })).status).toBe(409);
+    const audits = await t.db.select().from(auditLog).where(eq(auditLog.target, `strategy:${s.id}`));
+    expect(audits.filter((x) => x.action === "strategy.reconcile")).toHaveLength(2);
   });
 
   it("refuses unknown, closed or doubled legs, more lots than open, empty batches, drafts and other users' strategies", async () => {
