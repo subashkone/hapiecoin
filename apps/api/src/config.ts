@@ -71,6 +71,8 @@ const RawEnv = z.object({
   TRADING_RECONCILE_MS: z.coerce.number().int().min(1000).default(15_000),
   /** IV history snapshot interval (ADR-056); 0 disables the snapshotter (tests, a second API replica). */
   IV_SNAPSHOT_MS: z.coerce.number().int().min(0).default(300_000),
+  /** Expiry settlement pass interval (ADR-059 §2.4); 0 disables the settler. */
+  SETTLEMENT_MS: z.coerce.number().int().min(0).default(60_000),
   /** Cap on any request body, bytes (GAPS #70, ADR-061); the banner image upload keeps its own 5 MB. */
   API_BODY_LIMIT_BYTES: z.coerce.number().int().min(1024).default(1_048_576),
   /** Order-route budget per signed-in user per minute: live place, retry, batch, positions exit (GAPS #70). */
@@ -113,6 +115,8 @@ export interface Config {
   egressIp: string;
   /** Milliseconds between IV history snapshots; 0 = off (ADR-056). */
   ivSnapshotMs: number;
+  /** Milliseconds between expiry settlement passes; 0 = off (ADR-059). */
+  settlementMs: number;
   /** Cap on any request body, bytes (GAPS #70). */
   bodyLimitBytes: number;
   /** Order-route budget per user per minute (GAPS #70). */
@@ -244,6 +248,7 @@ export function loadConfig(
     trading: { disabled: e.TRADING_DISABLED === "1" || e.TRADING_DISABLED === "true", maxNotionalUsd: e.TRADING_MAX_NOTIONAL_USD, maxLegs: e.TRADING_MAX_LEGS, markBandPct: e.TRADING_MARK_BAND_PCT, reconcileMs: e.TRADING_RECONCILE_MS },
     egressIp: e.EGRESS_IP,
     ivSnapshotMs: e.IV_SNAPSHOT_MS,
+    settlementMs: e.SETTLEMENT_MS,
     bodyLimitBytes: e.API_BODY_LIMIT_BYTES,
     orderRateMaxPerMin: e.ORDER_RATE_MAX_PER_MIN,
     jobsRole: e.API_JOBS_ROLE,

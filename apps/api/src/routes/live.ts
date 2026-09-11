@@ -254,7 +254,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const realized = await closeLegRow(deps, strategy, leg, fill, undefined, await lotSizeFor(deps, me, strategy.asset), new Date());
       const [fresh] = await db.select({ realizedPnl: strategies.realizedPnl }).from(strategies).where(eq(strategies.id, strategy.id)).limit(1);
       const stillOpen = await db.select({ id: strategyLegs.id }).from(strategyLegs).where(and(eq(strategyLegs.strategyId, strategy.id), eq(strategyLegs.status, "open"))).limit(1);
-      await touch(strategy.id, { realizedPnl: addDecimal(fresh?.realizedPnl ?? strategy.realizedPnl, realized), ...(stillOpen.length === 0 ? { status: "archived", closedAt: new Date() } : {}) });
+      await touch(strategy.id, { realizedPnl: addDecimal(fresh?.realizedPnl ?? strategy.realizedPnl, realized), ...(stillOpen.length === 0 ? { status: "archived" as const, closedAt: new Date(), closeReason: "squared_off" as const } : {}) });
     }
   }
 

@@ -23,6 +23,27 @@ export type StrategyLegSide = z.infer<typeof StrategyLegSide>;
 export const StrategyLegStatus = z.enum(["open", "squared_off"]);
 export type StrategyLegStatus = z.infer<typeof StrategyLegStatus>;
 
+/** Why a leg or a strategy closed (ADR-059 §2.4): shown on the Closed chip and in the Journal. */
+export const CLOSE_REASONS = ["expired", "squared_off", "stopped", "outside_app"] as const;
+export const CloseReason = z.enum(CLOSE_REASONS);
+export type CloseReason = z.infer<typeof CloseReason>;
+export const CLOSE_REASON_LABELS: Record<CloseReason, string> = { expired: "expired", squared_off: "squared off", stopped: "stopped", outside_app: "closed outside the app" };
+
+/** Delta settles BTC / ETH options at 12:00 UTC and XAUT at 16:00 UTC (ADR-012). */
+export function settlementHourUtc(asset: Underlying): number {
+  return asset === "XAUT" ? 16 : 12;
+}
+
+/** Epoch milliseconds of the settlement instant of a dated expiry; null for the perpetual or an impossible date. */
+export function settlementMsOf(expiry: string, asset: Underlying): number | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(expiry);
+  if (!m) return null;
+  const [year, month, day] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const ms = Date.UTC(year, month - 1, day, settlementHourUtc(asset));
+  const d = new Date(ms);
+  return d.getUTCFullYear() === year && d.getUTCMonth() === month - 1 && d.getUTCDate() === day ? ms : null;
+}
+
 /** "YYYY-MM-DD" for options and dated futures, "PERP" for the perpetual. */
 export const LegExpiry = z.string().regex(/^(\d{4}-\d{2}-\d{2}|PERP)$/, "expected YYYY-MM-DD or PERP");
 export type LegExpiry = z.infer<typeof LegExpiry>;
@@ -74,6 +95,8 @@ export const StrategyLeg = z.strictObject({
   position: z.number().int().nonnegative(),
   openedAt: IsoDateTime.nullable(),
   closedAt: IsoDateTime.nullable(),
+  /** Why the leg closed; null while open (ADR-059 §2.4). */
+  closeReason: CloseReason.nullable().optional(),
   /** Venue order id (live only, Phase 3 item 2). */
   orderId: z.string().nullable(),
 });
@@ -147,6 +170,8 @@ export const Strategy = z.strictObject({
   adjustments: z.array(StrategyAdjustment).default([]),
   startedAt: IsoDateTime.nullable(),
   closedAt: IsoDateTime.nullable(),
+  /** Why the strategy closed: the reason of the action that archived it; null while active or for an archived draft. */
+  closeReason: CloseReason.nullable().optional(),
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
 });

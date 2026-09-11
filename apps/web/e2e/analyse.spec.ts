@@ -606,6 +606,10 @@ test.describe("HC-TR paper trading (Phase 3 item 1)", () => {
     await stop.getByTestId("stop-go").click();
     await expect(details).toBeHidden();
     await expect(page.getByTestId("paper-empty")).toBeVisible();
+    // HC-TR-164: the Closed chip carries why it closed
+    await page.getByTestId("paper-life-closed").click();
+    await expect(page.getByTestId("card-close-reason")).toHaveText("squared off");
+    await page.getByTestId("paper-life-open").click();
     // HC-TR-128..137: the stopped strategy is a closed trade in the Journal with its realised P&L, tags, notes and CSV
     await page.getByTestId("tab-journal").click();
     const journal = page.getByTestId("journal-panel");
@@ -613,6 +617,7 @@ test.describe("HC-TR paper trading (Phase 3 item 1)", () => {
     await expect(page.getByTestId("stat-trades")).toHaveText("1");
     await expect(page.getByTestId("chart-equity")).toHaveAttribute("data-state", "ready");
     await expect(page.getByTestId("journal-trade")).toContainText("E2E straddle");
+    await expect(page.getByTestId("trade-reason")).toHaveText("squared off"); // HC-TR-164
     await expect(page.getByTestId("trade-pnl")).not.toHaveText("—");
     await page.getByTestId("tag-hedge").click();
     await expect(page.getByText("Tag added").first()).toBeVisible();

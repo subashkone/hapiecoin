@@ -96,7 +96,7 @@ describe("HC-TR-128..131, 134..137 journal", () => {
     await waitFor(async () => expect(await navigator.clipboard.readText()).toContain("id,name,mode"));
     const csv = await navigator.clipboard.readText();
     expect(csv.split("\n")).toHaveLength(2);
-    expect(csv).toContain("s2,ETH Short Straddle · Jul,live,ETH,Short Straddle,1,2026-07-10,2026-07-24,14,-1.32,earnings hedge,Straddle sold into the ETF headline.");
+    expect(csv).toContain("s2,ETH Short Straddle · Jul,live,ETH,Short Straddle,1,2026-07-10,2026-07-24,14,-1.32,,earnings hedge,Straddle sold into the ETF headline.");
   });
 
   it("empty state points at the Paper tab", async () => {

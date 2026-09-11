@@ -19,6 +19,7 @@ import { RazorpayHttpClient } from "./razorpay.js";
 import { MemoryRateStore, type RateStore, RedisRateStore } from "./security/rate-store.js";
 import { createKeyring } from "./vault.js";
 import { startIvSnapshotter } from "./iv-snapshot.js";
+import { snapshotSpotSource, startSettler } from "./settlement.js";
 import { evaluateAlerts } from "./alerts-evaluate.js";
 import { TelegramBotClient } from "./telegram.js";
 import { startTelegramLinker } from "./routes/telegram.js";
@@ -98,6 +99,21 @@ if (config.ivSnapshotMs !== 0)
           const report = await evaluateAlerts(deps);
           if (report.fired.length) logger.info({ fired: report.fired, checked: report.checked }, "alerts fired server-side");
         },
+      ),
+  });
+// ADR-059 §2.4: legs past their expiry settle at intrinsic value from the spot at the settlement instant; 0 turns it
+// off. Registered like the snapshotter so only the leader replica books settlements (ADR-062).
+if (config.settlementMs !== 0)
+  starters.push({
+    name: "settler",
+    start: () =>
+      startSettler(
+        deps,
+        snapshotSpotSource(deps, async (u) => {
+          const q = (await publicRest.getTickers({ contractTypes: ["call_options", "put_options"], underlying: u })).map((x) => toSchemaQuote(x, "0")).find((x) => Number(x.spot) > 0);
+          return q ? Number(q.spot) : null;
+        }),
+        config.settlementMs,
       ),
   });
 // ADR-057: link Telegram chats through the bot's /start messages (long-polled; no public URL needed)

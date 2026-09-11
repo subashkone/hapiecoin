@@ -180,7 +180,8 @@ describe("HC-TR-070 / HC-TR-072 / HC-TR-086 / HC-TR-088 exits and adjustments on
     // square off all: exits for every open leg, then archived
     const all = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/close`, { cookie: alice, json: { exits: {} } }));
     expect(all.status).toBe("archived");
-    expect(all.legs.every((l) => l.status === "squared_off")).toBe(true);
+    expect(all.closeReason).toBe("squared_off"); // HC-TR-164
+    expect(all.legs.every((l) => l.status === "squared_off" && l.closeReason === "squared_off")).toBe(true);
     expect(all.orders.filter((o) => o.purpose === "exit" && o.state === "closed")).toHaveLength(3); // partial exit + two full exits
   });
 

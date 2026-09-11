@@ -229,6 +229,10 @@ describe("HC-TR-068..081 details, square off, partial exit, adjustment, stop", (
     expect(mine()[0]!.legs.every((l) => l.status === "squared_off")).toBe(true);
     await waitFor(() => expect(screen.queryByTestId("strategy-details")).toBeNull());
     await waitFor(() => expect(screen.getByTestId("paper-empty")).toBeTruthy());
+    // HC-TR-164: the Closed chip shows why it closed
+    await u.click(screen.getByTestId("paper-life-closed"));
+    await waitFor(() => expect(screen.getByTestId("card-close-reason").textContent).toBe("squared off"));
+    expect(screen.getByTestId("card-close-reason").dataset["reason"]).toBe("squared_off");
   });
 
   it("HC-TR-064 Stop from the card keeps the strategy as a draft when unticked; HC-TR-065 delete with confirm", async () => {

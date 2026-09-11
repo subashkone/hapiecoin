@@ -374,6 +374,32 @@ describe("HC-TR-160 / HC-TR-161 out of sync with the exchange", () => {
     await waitFor(() => expect(screen.queryByTestId("reconcile-dialog")).toBeNull());
   });
 
+  it("a leg just past its expiry is settling, not out of sync; still open after the window it is out of sync again (HC-TR-163)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(Date.UTC(2026, 8, 25, 12, 5)); // five minutes after the 25 Sep BTC settlement
+      connect();
+      mine().push(strat(1, { status: "live", tradingMode: "live", name: "Live A", legs: [{ ...CALL, id: "leg_x", expiry: "2026-09-25", symbol: "C-BTC-80000-250925" }] }));
+      acc().venueGone = new Set(["C-BTC-80000-250925"]); // the exchange settled it
+      useUiStore.setState({ workspaceTab: "live" });
+      const queryClient = makeQueryClient();
+      renderWithProviders(<Workspace />, { queryClient });
+      serveMarket();
+      await waitFor(() => expect(panel().dataset["count"]).toBe("1"));
+      await waitFor(() => expect(screen.getByTestId("card-settling").dataset["state"]).toBe("settling"));
+      expect(screen.getByTestId("card-settling").textContent).toContain("expired, settling");
+      expect(screen.queryByTestId("card-drift")).toBeNull();
+      expect(screen.queryByTestId("live-drift-banner")).toBeNull();
+      vi.setSystemTime(Date.UTC(2026, 8, 25, 12, 30)); // the settler never booked it
+      await queryClient.invalidateQueries({ queryKey: ["live", "positions"] });
+      await waitFor(() => expect(screen.getByTestId("card-drift")).toBeTruthy(), { timeout: 5000 });
+      expect(screen.getByTestId("card-settling").dataset["state"]).toBe("unsettled");
+      expect(screen.getByTestId("card-reconcile")).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("a venue that does not answer pauses the check: no banner, no badge, a paused note", async () => {
     connect();
     mine().push(strat(1, { status: "live", tradingMode: "live", name: "Live A", legs: [{ ...CALL, id: "leg_ok" }] }));

@@ -1367,5 +1367,32 @@
     "feature": "Reconcile: book lots closed outside the app, no orders",
     "how": "Reconcile on an out-of-sync card lists the legs whose lots the exchange no longer holds with their share of the shortfall, a price (the exchange mark, else the entry) and a reason; confirming books them closed through POST /v1/strategies/{id}/reconcile, which sends nothing to the exchange, records the batch as 'closed outside the app: <reason>' in the history and archives the strategy when nothing is open",
     "evidence": "ADR-059 (11 Sep 2026): packages/schema ReconcileBody, apps/api routes/strategies.ts reconcile route, mock-api reconcile, lib/api/strategies.ts useReconcileStrategy, ReconcileDialog.tsx; unit strategies.test.ts (api) HC-TR-161, strategies.test.ts (schema), trading-live.test.tsx HC-TR-160/161"
+  },
+  {
+    "screen": "Trading · Paper and Live tabs",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Expiry settlement of paper legs",
+    "how": "An API job (settlement.ts, every SETTLEMENT_MS) books every open paper leg two minutes past its settlement instant (12:00 UTC BTC / ETH, 16:00 UTC XAUT) closed at intrinsic value from the IV-snapshot spot nearest the instant (else the venue's live spot while fresh, else it waits), records a 'settle:' batch in the history, archives the strategy with closeReason expired when nothing stays open, audits strategy.settle; a perpetual never settles",
+    "evidence": "ADR-059 §2.4 (11 Sep 2026): apps/api/src/settlement.ts settleExpired / snapshotSpotSource / startSettler, config SETTLEMENT_MS, migration 0014 close_reason; unit settlement.test.ts HC-TR-162"
+  },
+  {
+    "screen": "Trading · Live tab",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Expiry bookkeeping of live legs from the exchange",
+    "how": "The same job settles a live leg past its instant only after a successful exchange positions read shows the contract gone; a contract the exchange still holds waits, an unreadable exchange skips the strategy, no order is ever sent; the Live tab's out-of-sync check leaves legs past their settlement instant to the settler and the card says 'expired, settling'",
+    "evidence": "ADR-059 §2.4 (11 Sep 2026): apps/api/src/settlement.ts (live branch), lib/strategy/drift.ts nowMs guard, PaperPanel.tsx expiry line; unit settlement.test.ts HC-TR-163, drift.test.ts"
+  },
+  {
+    "screen": "Trading · Closed chip · Journal",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Close reasons on cards and in the Journal",
+    "how": "Every close path records why (expired · squared off · closed outside the app; stopped reserved for the strategy stop): closeReason on each squared-off leg and on the archived strategy; the Closed chip card shows it next to the close date, the Journal row shows it and the CSV carries a close_reason column",
+    "evidence": "ADR-059 §2.4 (11 Sep 2026): packages/schema CloseReason / CLOSE_REASON_LABELS / settlementMsOf, apps/api routes/strategies.ts closeLegRow reason, live.ts, mock-api; PaperPanel.tsx card-close-reason, JournalPanel.tsx trade-reason, lib/strategy/journal.ts reasonLabel; unit strategies.test.ts (api + schema), live.test.ts, journal.test.ts, trading.test.tsx HC-TR-164; e2e analyse.spec.ts"
   }
 ]
