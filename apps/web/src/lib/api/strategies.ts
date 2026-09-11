@@ -13,8 +13,7 @@ import {
   StrategyList,
   type StrategyPatch,
   type StrategyStart,
-  type StrategyStatus,
-} from "@hapiecoin/schema";
+  type StrategyStatus, type RulesBody } from "@hapiecoin/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type ApiClient } from "./client";
 
@@ -39,6 +38,8 @@ export function strategyFetchers(client: ApiClient = api) {
     closeLeg: (id: string, legId: string, body: CloseLegBody) => client.post(`/v1/strategies/${enc(id)}/legs/${enc(legId)}/close`, body, Strategy),
     closeAll: (id: string, body: CloseAllBody) => client.post(`/v1/strategies/${enc(id)}/close`, body, Strategy),
     reconcile: (id: string, body: ReconcileBody) => client.post(`/v1/strategies/${enc(id)}/reconcile`, body, Strategy),
+    setRules: (id: string, body: RulesBody) => client.put(`/v1/strategies/${enc(id)}/rules`, body, Strategy),
+    clearRules: (id: string) => client.delete(`/v1/strategies/${enc(id)}/rules`),
     stop: (id: string, body: StopBody) => client.post(`/v1/strategies/${enc(id)}/stop`, body, Strategy),
     archive: (id: string) => client.post(`/v1/strategies/${enc(id)}/archive`, {}, Strategy),
     restore: (id: string) => client.post(`/v1/strategies/${enc(id)}/restore`, {}, Strategy),
@@ -81,6 +82,13 @@ export function useAddLegs() {
   return useStrategyMutation(({ id, body }: { id: string; body: AddLegsBody }) => f.addLegs(id, body));
 }
 /** One atomic adjustment batch (ADR-044): trims, closes and adds with the marks the trader reviewed. */
+/** Arm the stop / target set of a strategy (HC-TR-165); the list refreshes so the card badge follows. */
+export function useSetRules() {
+  return useStrategyMutation(({ id, body }: { id: string; body: RulesBody }) => f.setRules(id, body));
+}
+export function useClearRules() {
+  return useStrategyMutation((id: string) => f.clearRules(id));
+}
 export function useAdjustStrategy() {
   return useStrategyMutation(({ id, body }: { id: string; body: AdjustBody }) => f.adjust(id, body));
 }

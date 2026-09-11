@@ -60,6 +60,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
   const flow = useUiStore((s) => s.tradeFlow);
   const closeTrade = useUiStore((s) => s.closeTrade);
   const followStrategy = useUiStore((s) => s.followStrategy);
+  const openRules = useUiStore((s) => s.openRules);
   const setLegs = useUiStore((s) => s.setLegs);
   const setMeta = useUiStore((s) => s.setStrategyMeta);
   const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
@@ -131,6 +132,9 @@ export function TradeFlow({ book }: { book: PaperBook }) {
     closeTrade();
     setWorkspaceTab(s.status === "live" ? "live" : "paper");
     if (!useUiStore.getState().adjust) followStrategy(s.id); // the pane follows the new position instead of an empty Builder (HC-TR-143); an open workbench keeps its strategy
+    // the Protect step (HC-TR-167): a trade from the Builder is offered its stop and target right away; a live trade
+    // with refused legs is not (Retry first)
+    if (fromBuilder && useUiStore.getState().protectPrompt && (s.status === "paper" || (s.status === "live" && !s.orders.some((o) => o.state === "failed")))) openRules(s.id, { afterTrade: true });
     if (s.status === "live") {
       const failed = s.orders.filter((o) => o.state === "failed").length;
       if (failed) toast.error("Some orders were refused", { description: `${s.name} · ${failed} ${failed === 1 ? "order" : "orders"} failed · use Retry on the Live tab` });
@@ -205,7 +209,8 @@ export function TradeFlow({ book }: { book: PaperBook }) {
       const id = await ensureDraft(name);
       // the same figure the preview's capital block shows: never less than the debit paid (HC-TR-158)
       const debit = Math.max(0, -netPremium(legs, lotSize));
-      const worstLoss = maxLoss === null ? null : Math.min(maxLoss, -debit);
+      // a debit with no loss figure (a calendar) still sends the debit: the wallet must cover it (GAPS #81)
+      const worstLoss = maxLoss === null ? (debit > 0 ? -debit : null) : Math.min(maxLoss, -debit);
       const v = await livePreview.mutateAsync({ id, body: { brokerId: b, ...(worstLoss !== null ? { worstLoss } : {}) } });
       setVenue(v);
       setStep("preview");

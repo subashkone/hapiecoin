@@ -405,6 +405,11 @@ export class FakeDeltaTradingClient implements DeltaTradingClient {
     this.failures.set(productId, { code, ...opts });
     return this;
   }
+  /** Forget a scripted failure (tests reset between cases). */
+  succeed(productId: number): this {
+    this.failures.delete(productId);
+    return this;
+  }
   /** The next placement fills only partially (state open, unfilled 1). */
   partialNextOrder(): this {
     this.partialNext = true;

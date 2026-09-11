@@ -11,7 +11,7 @@ import { brokerCredentials, brokers, type strategies, strategyLegs, strategyOrde
 import type { SessionUser } from "../security/context.js";
 import { resealRow } from "../credentials-reseal.js";
 import { HttpError, errors } from "../security/errors.js";
-import { type AppDeps, newId } from "./shared.js";
+import { type AppDeps, newId, errorMessage } from "./shared.js";
 
 export type LegRow = typeof strategyLegs.$inferSelect;
 export type OrderRow = typeof strategyOrders.$inferSelect;
@@ -45,7 +45,7 @@ export async function openCredential(deps: AppDeps, user: SessionUser, brokerId:
     };
   } catch (e) {
     // sealed under a key that is neither current nor in CREDENTIALS_ENC_KEYS_PREVIOUS (or tampered): reconnect (GAPS #42, ADR-054)
-    deps.logger.warn({ err: e instanceof Error ? e.message : String(e), userId: user.id, brokerId, kid: row.keyId }, "stored exchange credential cannot be opened");
+    deps.logger.warn({ err: errorMessage(e), userId: user.id, brokerId, kid: row.keyId }, "stored exchange credential cannot be opened");
     throw errors.conflict("Your saved exchange key cannot be decrypted because the server's encryption key changed. Reconnect it in Settings → API Settings.");
   }
   // rotation (ADR-054): a row still under a previous key is re-sealed under the current one on first use
@@ -54,7 +54,7 @@ export async function openCredential(deps: AppDeps, user: SessionUser, brokerId:
       await resealRow(deps.db, deps.vault, row, creds.apiKey, creds.apiSecret);
       deps.logger.info({ userId: user.id, brokerId, from: row.keyId ?? "legacy", to: deps.vault.kid }, "exchange credential re-sealed under the current key");
     } catch (e) {
-      deps.logger.warn({ err: e instanceof Error ? e.message : String(e), userId: user.id, brokerId }, "exchange credential re-seal failed; will retry on next use");
+      deps.logger.warn({ err: errorMessage(e), userId: user.id, brokerId }, "exchange credential re-seal failed; will retry on next use");
     }
   }
   return creds;
@@ -149,16 +149,20 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
       const positions = await deps.trading.getPositions(creds);
       marginUsed = toDecimal(positions.reduce((s, p) => s + (p.margin ? Number(p.margin) : 0), 0), 2);
     } catch (e) {
-      deps.logger.warn({ err: e instanceof Error ? e.message : String(e), userId: user.id, brokerId }, "live preview: positions read failed; margin in use unknown");
+      deps.logger.warn({ err: errorMessage(e), userId: user.id, brokerId }, "live preview: positions read failed; margin in use unknown");
     }
     if (row) {
       available = row.availableBalance;
       availableAsset = row.asset;
       if (worstLoss !== null && Number.isFinite(worstLoss) && Math.abs(worstLoss) > Number(row.availableBalance)) reasons.push(`Available ${row.asset} ${row.availableBalance} is below the worst-loss estimate ${toDecimal(Math.abs(worstLoss), 2)}`);
+      // the premium a net debit pays leaves the wallet at placement whatever the worst loss is, and whether or not the
+      // client could estimate one (a calendar's is unknown): the exchange refuses it for margin, so refuse it here (GAPS #81)
+      const debit = plan.legs.reduce((sum, l) => sum + (l.side === "buy" ? 1 : -1) * Number(l.notional), 0);
+      if (debit > Number(row.availableBalance)) reasons.push(`Available ${row.asset} ${row.availableBalance} is below the premium this trade pays (${toDecimal(debit, 2)})`);
     }
   } catch (e) {
     // the reason matters to the trader (vault, venue, network); log it and show it, never the key material
-    deps.logger.warn({ err: e instanceof Error ? e.message : String(e), userId: user.id, brokerId }, "live preview: wallet read failed");
+    deps.logger.warn({ err: errorMessage(e), userId: user.id, brokerId }, "live preview: wallet read failed");
     reasons.push(e instanceof HttpError ? e.message : `Could not read the exchange wallet (${e instanceof Error ? e.message : "unknown error"})`);
   }
   return { ok: reasons.length === 0, reasons, legs: [...exitPlan.legs, ...plan.legs], notional: toDecimal(notional, 2), available, availableAsset, marginUsed, limits: { maxLegs: trading.maxLegs, maxNotionalUsd: trading.maxNotionalUsd, markBandPct: trading.markBandPct } };
@@ -274,7 +278,16 @@ export async function retryFailed(deps: AppDeps, creds: DeltaCredentials, user: 
 }
 
 /** Reduce-only market order that closes `lots` of a live leg; returns the fill price or throws 502. */
-export async function placeExit(deps: AppDeps, creds: DeltaCredentials, user: SessionUser, strategy: StrategyRow, leg: LegRow, lots: number, batchId: string): Promise<string> {
+/** What one reduce-only exit did at the venue: the engine (ADR-059 §2.3) decides per outcome whether to retry. */
+export type ExitOutcome =
+  | { status: "filled"; fill: string }
+  /** Accepted and still filling: the order exists, never re-send it; syncOrders books the fill. */
+  | { status: "pending"; orderId: number }
+  /** The request may or may not have reached the venue: never re-send it; reconcile first. */
+  | { status: "unknown"; message: string }
+  | { status: "refused"; message: string; retryable: boolean };
+
+export async function tryExit(deps: AppDeps, creds: DeltaCredentials, user: SessionUser, strategy: StrategyRow, leg: LegRow, lots: number, batchId: string): Promise<ExitOutcome> {
   const lotSize = await lotSizeFor(deps, user, strategy.asset);
   const product = await deps.trading.getProduct(leg.symbol).catch((e: unknown) => {
     throw exchangeError(e instanceof Error ? e.message : "product lookup failed");
@@ -286,22 +299,58 @@ export async function placeExit(deps: AppDeps, creds: DeltaCredentials, user: Se
   const side = leg.side === "buy" ? "sell" : "buy";
   const plan: LivePreviewLeg = { legId: leg.id, symbol: leg.symbol, side, lots, contracts, contractValue: product.contractValue, productState: product.state, mark: null, notional: "0" };
   const result = await deps.trading.placeOrder(creds, { productId: product.id, size: contracts, side, clientOrderId, reduceOnly: true });
+  // the order may exist at the venue from here on: a failure to record it is reported as unknown, never as refused
+  const record = async (venue: { id: number; fill: string | null } | null, state: OrderRow["state"], error: string | null): Promise<string | null> => {
+    try {
+      await recordOrder(deps, strategy, { ...leg, side }, batchId, "exit", clientOrderId, plan, venue, state, error, attempt);
+      return null;
+    } catch (e) {
+      return errorMessage(e);
+    }
+  };
   if (result.ok && result.order.state === "closed" && result.order.averageFillPrice !== null) {
-    await recordOrder(deps, strategy, { ...leg, side }, batchId, "exit", clientOrderId, plan, { id: result.order.id, fill: result.order.averageFillPrice }, "closed", null, attempt);
-    return result.order.averageFillPrice;
+    const lost = await record({ id: result.order.id, fill: result.order.averageFillPrice }, "closed", null);
+    return lost === null ? { status: "filled", fill: result.order.averageFillPrice } : { status: "unknown", message: `filled at the exchange but not recorded (${lost}); sync` };
   }
   if (result.ok) {
-    await recordOrder(deps, strategy, { ...leg, side }, batchId, "exit", clientOrderId, plan, { id: result.order.id, fill: result.order.averageFillPrice }, "pending", null, attempt);
-    throw exchangeError(`${leg.symbol}: the exit order is still filling on the exchange; sync the strategy in a moment`, { orderId: result.order.id });
+    const lost = await record({ id: result.order.id, fill: result.order.averageFillPrice }, "pending", null);
+    return lost === null ? { status: "pending", orderId: result.order.id } : { status: "unknown", message: `accepted at the exchange but not recorded (${lost}); sync` };
   }
-  await recordOrder(deps, strategy, { ...leg, side }, batchId, "exit", clientOrderId, plan, null, "failed", result.message, attempt);
-  throw exchangeError(`${leg.symbol}: ${result.message}`, { code: result.code });
+  if ("unknown" in result && result.unknown) {
+    // kept pending so the order sync can find it by client order id, or mark it failed when the venue never saw it
+    await record(null, "pending", result.message);
+    return { status: "unknown", message: result.message };
+  }
+  await record(null, "failed", result.message);
+  return { status: "refused", message: result.message, retryable: result.retryable };
 }
 
-/** Reconcile pending orders with the venue: fills set entry premiums, cancellations mark the order failed. */
-export async function syncOrders(deps: AppDeps, creds: DeltaCredentials, strategy: StrategyRow): Promise<{ updated: number }> {
+/** The click paths: a fill returns its price, anything else is an error for the trader to act on. */
+export async function placeExit(deps: AppDeps, creds: DeltaCredentials, user: SessionUser, strategy: StrategyRow, leg: LegRow, lots: number, batchId: string): Promise<string> {
+  const outcome = await tryExit(deps, creds, user, strategy, leg, lots, batchId);
+  if (outcome.status === "filled") return outcome.fill;
+  if (outcome.status === "pending") throw exchangeError(`${leg.symbol}: the exit order is still filling on the exchange; sync the strategy in a moment`, { orderId: outcome.orderId });
+  throw exchangeError(`${leg.symbol}: ${outcome.message}`, outcome.status === "refused" ? { retryable: outcome.retryable } : { unknown: true });
+}
+
+/** A pending exit that filled since it was sent (a resting reduce-only order): the caller books the leg (bookExitFills). */
+export interface SyncedExitFill {
+  legId: string;
+  batchId: string;
+  symbol: string;
+  /** Contracts the order carried. */
+  size: number;
+  fill: string;
+}
+
+/**
+ * Reconcile pending orders with the venue: fills set entry premiums, cancellations mark the order failed. Exit fills
+ * are returned for the caller to book, so the leg and the running total follow (ADR-059 §2.3).
+ */
+export async function syncOrders(deps: AppDeps, creds: DeltaCredentials, strategy: StrategyRow): Promise<{ updated: number; exitFills: SyncedExitFill[] }> {
   const pending = (await ordersOf(deps, strategy.id)).filter((o) => o.state === "pending");
   let updated = 0;
+  const exitFills: SyncedExitFill[] = [];
   const now = new Date();
   for (const o of pending) {
     let venue = o.venueOrderId ? await deps.trading.getOrder(creds, Number(o.venueOrderId)) : null;
@@ -316,6 +365,7 @@ export async function syncOrders(deps: AppDeps, creds: DeltaCredentials, strateg
     if (venue.state === "closed" && venue.averageFillPrice !== null) {
       await deps.db.update(strategyOrders).set({ state: o.purpose === "exit" ? "closed" : "filled", venueOrderId: String(venue.id), fillPrice: venue.averageFillPrice, error: null, updatedAt: now }).where(eq(strategyOrders.id, o.id));
       if (o.purpose !== "exit") await deps.db.update(strategyLegs).set({ entryPrice: venue.averageFillPrice, price: venue.averageFillPrice, orderId: String(venue.id), updatedAt: now }).where(eq(strategyLegs.id, o.legId));
+      else exitFills.push({ legId: o.legId, batchId: o.batchId, symbol: o.symbol, size: o.size, fill: venue.averageFillPrice });
       updated += 1;
     } else if (venue.state === "cancelled") {
       await deps.db.update(strategyOrders).set({ state: "cancelled", venueOrderId: String(venue.id), error: "cancelled on the exchange", updatedAt: now }).where(eq(strategyOrders.id, o.id));
@@ -325,5 +375,5 @@ export async function syncOrders(deps: AppDeps, creds: DeltaCredentials, strateg
       updated += 1;
     }
   }
-  return { updated };
+  return { updated, exitFills };
 }

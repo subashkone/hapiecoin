@@ -21,6 +21,7 @@ import { type Lifecycle, dayPnl, daysLeft, daysOf, expiryOf, fmtLeg, lifecycleOf
 import type { PaperBook } from "@/lib/strategy/usePaper";
 import { usePortfolio } from "@/lib/strategy/usePortfolio";
 import { AdjustedBadge, ModePill } from "./StrategyDetailsDialog";
+import { firedRule, rulesLine } from "./RuleDialog";
 import { CardFigures } from "./CardFigures";
 import { StopPaperDialog } from "./StopPaperDialog";
 
@@ -73,6 +74,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const followStrategy = useUiStore((s) => s.followStrategy);
   const openAdjust = useUiStore((s) => s.openAdjust);
   const openAlerts = useUiStore((s) => s.openAlerts);
+  const openRules = useUiStore((s) => s.openRules);
   const workspaceTab = useUiStore((s) => s.workspaceTab);
   const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
   const [batch, setBatch] = useState(false);
@@ -247,6 +249,8 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                         ) : (
                           <span>no open option legs</span>
                         )}
+                        {lc !== "closed" && rulesLine(s.rules, money) ? <span className="text-accent" title="Stop / target run by the server (ADR-059 §2.3)" data-testid="card-rules">{rulesLine(s.rules, money)}</span> : lc !== "closed" && open.length ? <span className="text-muted-foreground" data-testid="card-rules" data-state="none">no stop</span> : null}
+                        {firedRule(s.rules) ? <span className={cn("rounded border px-1", firedRule(s.rules)!.outcome === "partial" ? "border-loss text-loss" : "border-border text-muted-foreground")} title={firedRule(s.rules)!.note ?? undefined} data-testid="card-rule-fired" data-kind={firedRule(s.rules)!.kind} data-outcome={firedRule(s.rules)!.outcome ?? undefined}>{firedRule(s.rules)!.kind === "stop" ? "stop fired" : "target hit"}{firedRule(s.rules)!.outcome === "partial" ? " · a leg still open" : ""}</span> : null}
                       </div>
                     </div>
                     <div className="ml-auto text-right">
@@ -280,6 +284,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                     <Button size="sm" variant="outline" onClick={() => openDetails(s.id)} data-testid="card-details">Details</Button>
                     {lc === "closed" ? <Button size="sm" variant="outline" onClick={() => setWorkspaceTab("journal")} title="This trade in the Journal" data-testid="card-journal">Journal</Button> : null}
                     {lc !== "closed" ? <Button size="sm" variant="outline" disabled={open.length === 0} title={open.length ? "Adjust: trim, close or add legs with the combined payoff (A)" : "No open legs"} onClick={() => openAdjust(s.id)} data-testid="card-adjust">Adjust</Button> : null}
+                    {lc !== "closed" && open.length ? <Button size="sm" variant="outline" title="Stop loss and target run by the server: exits every leg when crossed (ADR-059 §2.3)" onClick={() => openRules(s.id)} data-testid="card-protect">{rulesLine(s.rules, money) ? "Protect…" : "Protect"}</Button> : null}
                     {lc !== "closed" ? <Button size="sm" variant="outline" title="Alert me when this strategy's P&L crosses a level" onClick={() => openAlerts({ kind: "pnl", strategyId: s.id, asset: s.asset })} data-testid="card-alert">Set alert</Button> : null}
                     {lc === "closed" ? null : kind === "paper" ? (
                       <>

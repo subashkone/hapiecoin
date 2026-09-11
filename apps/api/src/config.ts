@@ -73,6 +73,8 @@ const RawEnv = z.object({
   IV_SNAPSHOT_MS: z.coerce.number().int().min(0).default(300_000),
   /** Expiry settlement pass interval (ADR-059 §2.4); 0 disables the settler. */
   SETTLEMENT_MS: z.coerce.number().int().min(0).default(60_000),
+  /** Stop / target rules tick (ADR-059 §2.3): the public marks are read this often; 0 disables the engine. */
+  RULES_TICK_MS: z.coerce.number().int().min(0).default(2_000),
   /** Cap on any request body, bytes (GAPS #70, ADR-061); the banner image upload keeps its own 5 MB. */
   API_BODY_LIMIT_BYTES: z.coerce.number().int().min(1024).default(1_048_576),
   /** Order-route budget per signed-in user per minute: live place, retry, batch, positions exit (GAPS #70). */
@@ -117,6 +119,8 @@ export interface Config {
   ivSnapshotMs: number;
   /** Milliseconds between expiry settlement passes; 0 = off (ADR-059). */
   settlementMs: number;
+  /** Milliseconds between stop / target rule ticks; 0 = off (ADR-059 §2.3). */
+  rulesTickMs: number;
   /** Cap on any request body, bytes (GAPS #70). */
   bodyLimitBytes: number;
   /** Order-route budget per user per minute (GAPS #70). */
@@ -249,6 +253,7 @@ export function loadConfig(
     egressIp: e.EGRESS_IP,
     ivSnapshotMs: e.IV_SNAPSHOT_MS,
     settlementMs: e.SETTLEMENT_MS,
+    rulesTickMs: e.RULES_TICK_MS,
     bodyLimitBytes: e.API_BODY_LIMIT_BYTES,
     orderRateMaxPerMin: e.ORDER_RATE_MAX_PER_MIN,
     jobsRole: e.API_JOBS_ROLE,

@@ -5,6 +5,7 @@
 import { and, eq } from "drizzle-orm";
 import { strategies, strategyOrders } from "./db/schema.js";
 import { openCredential, syncOrders } from "./routes/live-exec.js";
+import { bookExitFills } from "./routes/strategies.js";
 import type { AppDeps } from "./routes/shared.js";
 
 export interface ReconcileResult {
@@ -26,6 +27,7 @@ export async function reconcilePending(deps: AppDeps): Promise<ReconcileResult> 
     try {
       const creds = await openCredential(deps, { id: strategy.userId, email: "", name: "", role: "user" }, strategy.brokerId);
       const r = await syncOrders(deps, creds, strategy);
+      await bookExitFills(deps, strategy, r.exitFills);
       out.updated += r.updated;
       if (r.updated) await deps.db.update(strategies).set({ updatedAt: new Date() }).where(eq(strategies.id, strategy.id));
     } catch (e) {

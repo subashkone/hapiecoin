@@ -1394,5 +1394,41 @@
     "feature": "Close reasons on cards and in the Journal",
     "how": "Every close path records why (expired · squared off · closed outside the app; stopped reserved for the strategy stop): closeReason on each squared-off leg and on the archived strategy; the Closed chip card shows it next to the close date, the Journal row shows it and the CSV carries a close_reason column",
     "evidence": "ADR-059 §2.4 (11 Sep 2026): packages/schema CloseReason / CLOSE_REASON_LABELS / settlementMsOf, apps/api routes/strategies.ts closeLegRow reason, live.ts, mock-api; PaperPanel.tsx card-close-reason, JournalPanel.tsx trade-reason, lib/strategy/journal.ts reasonLabel; unit strategies.test.ts (api + schema), live.test.ts, journal.test.ts, trading.test.tsx HC-TR-164; e2e analyse.spec.ts"
+  },
+  {
+    "screen": "Trading · Paper and Live tabs",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Stop and target rules on a strategy (API and schema)",
+    "how": "PUT /v1/strategies/{id}/rules arms at most one stop and one target on a paper or live strategy, typed in money (USD internally) or as a percentage of the credit received, the debit paid or the max loss (the basis amount stored with the rule); the set is replaced, fired rules stay as history; DELETE disarms; Reconcile disarms armed rules; rules ride on the strategy",
+    "evidence": "ADR-059 §2.3 (11 Sep 2026): packages/schema StrategyRule / RuleBody / RulesBody / ruleThresholdUsd, apps/api routes/strategies.ts rules routes, migration 0015 strategy_rules, mock-api; unit strategies.test.ts (api + schema) HC-TR-165"
+  },
+  {
+    "screen": "Trading · server",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Rules engine: exits every leg when a level is crossed",
+    "how": "A leader-only job every RULES_TICK_MS reads the venue's public tickers per underlying, values each strategy with armed rules from its filled open legs, fires the stop at P&L ≤ level or the target at ≥ level (stop first), claims the rule once, exits short legs first then longs at market through the exit path with three attempts, books the close reason stopped / target, disarms the other rule, writes the history batch and the audit, mails / Telegrams the trader; paper fires without orders; the kill switch holds a live fire; a refused leg is named as still open",
+    "evidence": "ADR-059 §2.3 (11 Sep 2026): apps/api/src/rules-engine.ts evaluateRules / startRulesEngine, config RULES_TICK_MS, main.ts starter rules; unit rules-engine.test.ts HC-TR-166"
+  },
+  {
+    "screen": "Trading · cards · Details · trade flow",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Protect: arming from the card, Details and after a trade",
+    "how": "Protect on an active card or in Details opens the Protect dialog: stop and target each on / off, money or %, the basis picked from the strategy (credit / debit / max loss with the amount), the level shown in both units, email / Telegram delivery, a plain sentence of what will be sent; the card line reads 'stop at −₹5,000 · target at +₹4,200' or 'no stop'; a trade from the Builder is followed by the Protect step (Skip, or 'do not ask after trades')",
+    "evidence": "ADR-059 §2.3 (11 Sep 2026): RuleDialog.tsx rule-dialog / rule-stop-* / rule-target-* / rule-arm / rule-disarm / rule-skip / rule-no-prompt, PaperPanel.tsx card-protect / card-rules, StrategyDetailsDialog.tsx details-protect / details-rules, TradeFlow.tsx Protect step, store rulesFor / protectPrompt; unit rules.test.tsx HC-TR-167; e2e analyse.spec.ts paper flow"
+  },
+  {
+    "screen": "Trading · cards · Details · Journal",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Fired rules: the card chip, the history and the reason",
+    "how": "A fired rule shows on the card as 'stop fired' / 'target hit', red with 'a leg still open' when an exit was refused; Details lists every rule with its state, level, time and note; the strategy closes with the reason stopped or target hit, shown on the Closed chip and in the Journal",
+    "evidence": "ADR-059 §2.3 (11 Sep 2026): PaperPanel.tsx card-rule-fired, StrategyDetailsDialog.tsx details-rule, CLOSE_REASON_LABELS target; unit rules.test.tsx HC-TR-168, rules-engine.test.ts"
   }
 ]

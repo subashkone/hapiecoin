@@ -24,10 +24,10 @@ export const StrategyLegStatus = z.enum(["open", "squared_off"]);
 export type StrategyLegStatus = z.infer<typeof StrategyLegStatus>;
 
 /** Why a leg or a strategy closed (ADR-059 §2.4): shown on the Closed chip and in the Journal. */
-export const CLOSE_REASONS = ["expired", "squared_off", "stopped", "outside_app"] as const;
+export const CLOSE_REASONS = ["expired", "squared_off", "stopped", "target", "outside_app"] as const;
 export const CloseReason = z.enum(CLOSE_REASONS);
 export type CloseReason = z.infer<typeof CloseReason>;
-export const CLOSE_REASON_LABELS: Record<CloseReason, string> = { expired: "expired", squared_off: "squared off", stopped: "stopped", outside_app: "closed outside the app" };
+export const CLOSE_REASON_LABELS: Record<CloseReason, string> = { expired: "expired", squared_off: "squared off", stopped: "stopped", target: "target hit", outside_app: "closed outside the app" };
 
 /** Delta settles BTC / ETH options at 12:00 UTC and XAUT at 16:00 UTC (ADR-012). */
 export function settlementHourUtc(asset: Underlying): number {
@@ -149,6 +149,85 @@ export const StrategyAdjustment = z.strictObject({
 });
 export type StrategyAdjustment = z.infer<typeof StrategyAdjustment>;
 
+/**
+ * Stop and target rules on a whole strategy (ADR-059 §2.3; roadmap A4). A rule watches the strategy's P&L and, when
+ * the level is crossed, HapieCoin exits every open leg of that strategy: short legs first, market at the mark of that
+ * tick, through the same exit path a click uses. Paper strategies fire too (no orders). A fired rule never re-arms.
+ */
+export const RULE_KINDS = ["stop", "target"] as const;
+export const RuleKind = z.enum(RULE_KINDS);
+export type RuleKind = z.infer<typeof RuleKind>;
+/** How the trader typed the level: an amount (USD internally, shown in the trader's currency) or a percentage of a basis. */
+export const RULE_TRIGGERS = ["money", "pct"] as const;
+export const RuleTrigger = z.enum(RULE_TRIGGERS);
+export type RuleTrigger = z.infer<typeof RuleTrigger>;
+/** The percentage basis: the credit received, the debit paid, or the max loss (defined risk). */
+export const RULE_BASES = ["credit", "debit", "max_loss"] as const;
+export const RuleBasis = z.enum(RULE_BASES);
+export type RuleBasis = z.infer<typeof RuleBasis>;
+export const RULE_BASIS_LABELS: Record<RuleBasis, string> = { credit: "of the credit received", debit: "of the debit paid", max_loss: "of the max loss" };
+export const RULE_STATES = ["armed", "fired", "disarmed"] as const;
+export const RuleState = z.enum(RULE_STATES);
+export type RuleState = z.infer<typeof RuleState>;
+export const RULE_CHANNELS = ["push", "email", "telegram"] as const;
+export const RuleChannel = z.enum(RULE_CHANNELS);
+export type RuleChannel = z.infer<typeof RuleChannel>;
+export const RULE_KIND_LABELS: Record<RuleKind, string> = { stop: "Stop loss", target: "Target" };
+
+export const StrategyRule = z.strictObject({
+  id: Id,
+  kind: RuleKind,
+  trigger: RuleTrigger,
+  /** The number typed: USD for money, a percentage for pct. */
+  value: DecimalString,
+  basis: RuleBasis.nullable(),
+  /** The basis amount in USD the percentage was applied to (null for money). */
+  basisUsd: DecimalString.nullable(),
+  /** The P&L level in USD the engine compares with: negative for a stop, positive for a target. */
+  thresholdUsd: DecimalString,
+  channels: z.array(RuleChannel),
+  state: RuleState,
+  firedAt: IsoDateTime.nullable(),
+  /** The strategy P&L in USD at the tick that fired. */
+  firedPnl: DecimalString.nullable(),
+  /** After a fire: every leg exited, or a leg still open (its own note says which). */
+  outcome: z.enum(["closed", "partial"]).nullable(),
+  note: z.string().nullable(),
+  createdAt: IsoDateTime,
+  updatedAt: IsoDateTime,
+});
+export type StrategyRule = z.infer<typeof StrategyRule>;
+
+/** Arm or edit one rule. `basisUsd` is required for a percentage: the client sends the figure it showed. */
+export const RuleBody = z
+  .strictObject({
+    kind: RuleKind,
+    trigger: RuleTrigger,
+    value: PositiveDecimal,
+    basis: RuleBasis.optional(),
+    basisUsd: PositiveDecimal.optional(),
+    channels: z.array(RuleChannel).min(1).default(["push"]),
+  })
+  .superRefine((r, ctx) => {
+    if (r.trigger === "pct" && (r.basis === undefined || r.basisUsd === undefined)) ctx.addIssue({ code: "custom", message: "a percentage rule needs its basis and the basis amount", path: ["basis"] });
+    if (r.trigger === "pct" && Number(r.value) > 1000) ctx.addIssue({ code: "custom", message: "at most 1000 %", path: ["value"] });
+    if (ruleThresholdUsd(r) === "0") ctx.addIssue({ code: "custom", message: "the level rounds to nothing", path: ["value"] });
+  });
+export type RuleBody = z.infer<typeof RuleBody>;
+/** The full set for a strategy: at most one stop and one target; rules not listed are removed (fired ones stay as history). */
+export const RulesBody = z
+  .strictObject({ rules: z.array(RuleBody).max(2) })
+  .superRefine((b, ctx) => {
+    if (new Set(b.rules.map((r) => r.kind)).size !== b.rules.length) ctx.addIssue({ code: "custom", message: "one rule per kind", path: ["rules"] });
+  });
+export type RulesBody = z.infer<typeof RulesBody>;
+
+/** The USD P&L level a rule fires at: stops are negative, targets positive. */
+export function ruleThresholdUsd(r: Pick<RuleBody, "kind" | "trigger" | "value" | "basisUsd">): string {
+  const amount = r.trigger === "money" ? Number(r.value) : (Number(r.value) / 100) * Number(r.basisUsd ?? "0");
+  return toDecimal(r.kind === "stop" ? -amount : amount, 2);
+}
+
 export const Strategy = z.strictObject({
   id: Id,
   name: z.string().min(1).max(MAX_STRATEGY_NAME),
@@ -168,6 +247,8 @@ export const Strategy = z.strictObject({
   orders: z.array(StrategyOrder).default([]),
   /** Adjustment batches, oldest first (ADR-044). */
   adjustments: z.array(StrategyAdjustment).default([]),
+  /** Stop and target rules (ADR-059 §2.3); fired ones stay as history. Absent on fixtures written before rules. */
+  rules: z.array(StrategyRule).optional(),
   startedAt: IsoDateTime.nullable(),
   closedAt: IsoDateTime.nullable(),
   /** Why the strategy closed: the reason of the action that archived it; null while active or for an archived draft. */

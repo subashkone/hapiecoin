@@ -12,6 +12,7 @@ import { ChainPanel } from "@/components/chain/ChainPanel";
 import { PaperPanel } from "@/components/trading/PaperPanel";
 import { JournalPanel } from "@/components/trading/JournalPanel";
 import { StrategyDetailsDialog } from "@/components/trading/StrategyDetailsDialog";
+import { RuleDialog } from "@/components/trading/RuleDialog";
 import { TradeFlow } from "@/components/trading/TradeFlow";
 import { useStrategies } from "@/lib/api/strategies";
 import { useConnectionStatus } from "@/lib/gateway/hooks";
@@ -191,6 +192,7 @@ export function Workspace() {
     <>
       <TradeFlow book={book} />
       <StrategyDetailsDialog book={book} feedLive={feedLive} />
+      <RuleDialog book={book} />
       <AdjustDiscardDialog />
     </>
   );

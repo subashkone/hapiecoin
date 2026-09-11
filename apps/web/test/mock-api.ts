@@ -6,7 +6,7 @@ import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
 import { mockIvHistory, mockMarkHistory } from "./mock-market";
-import { AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal, type CloseReason } from "@hapiecoin/schema";
+import { AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal, type CloseReason, RulesBody, ruleThresholdUsd } from "@hapiecoin/schema";
 
 export const SESSION_COOKIE = "better-auth.session_token";
 export const TEST_OTP = "123456";
@@ -565,7 +565,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (!body.name?.trim()) return err(c, 400, "VALIDATION", "Strategy name is required");
     if (!body.legs?.length || body.legs.length > 8) return err(c, 400, "VALIDATION", "1..8 legs");
     const at = nowIso();
-    const s: Strategy = { id: id("strat"), name: body.name.trim(), asset: body.asset, status: "draft", tradingMode: null, templateName: body.templateName ?? "Custom", brokerId: null, legs: body.legs.map((l, i) => mkLeg(l, i)), realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: null, closedAt: null, createdAt: at, updatedAt: at };
+    const s: Strategy = { id: id("strat"), name: body.name.trim(), asset: body.asset, status: "draft", tradingMode: null, templateName: body.templateName ?? "Custom", brokerId: null, legs: body.legs.map((l, i) => mkLeg(l, i)), realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], rules: [], startedAt: null, closedAt: null, createdAt: at, updatedAt: at };
     acc.strategies.unshift(s);
     return c.json(s, 201);
   });
@@ -662,6 +662,25 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     s.adjustments.push({ id: id("adj"), at, reason: body.reason?.trim() ? body.reason.trim() : null, added: added.length, trimmed: planned.length - closes, closed: closes, realizedPnl: toDecimal(realized, 2), batchId });
     return c.json(touch(s));
   });
+  v1.put("/strategies/:id/rules", async (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (!isActive(s)) return err(c, 409, "CONFLICT", "Rules arm on a paper or live strategy");
+    const body = RulesBody.safeParse(await c.req.json());
+    if (!body.success) return err(c, 400, "BAD_REQUEST", body.error.issues.map((i) => i.message).join(" · "));
+    const at = nowIso();
+    s.rules = [
+      ...(s.rules ?? []).filter((r) => r.state === "fired"),
+      ...body.data.rules.map((r) => ({ id: id("rule"), kind: r.kind, trigger: r.trigger, value: r.value, basis: r.trigger === "pct" ? (r.basis ?? null) : null, basisUsd: r.trigger === "pct" ? (r.basisUsd ?? null) : null, thresholdUsd: ruleThresholdUsd(r), channels: r.channels, state: "armed" as const, firedAt: null, firedPnl: null, outcome: null, note: null, createdAt: at, updatedAt: at })),
+    ];
+    return c.json(touch(s));
+  });
+  v1.delete("/strategies/:id/rules", (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    s.rules = (s.rules ?? []).filter((r) => r.state !== "armed");
+    return c.json(touch(s));
+  });
   v1.post("/strategies/:id/reconcile", async (c) => {
     const s = findStrategy(c);
     if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
@@ -688,6 +707,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       else trimmed += 1;
     }
     s.adjustments.push({ id: id("adj"), at, reason: `closed outside the app${body.reason?.trim() ? `: ${body.reason.trim()}` : ""}`, added: 0, trimmed, closed, realizedPnl: toDecimal(Number(s.realizedPnl) - was, 2), batchId: `reconcile:${id("b")}` });
+    for (const r of s.rules ?? []) if (r.state === "armed") Object.assign(r, { state: "disarmed", note: "disarmed: lots were closed outside the app; arm it again if the rest should still be protected", updatedAt: at });
     if (!s.legs.some((l) => l.status === "open")) Object.assign(s, { status: "archived", closedAt: at, closeReason: "outside_app" });
     return c.json(touch(s));
   });
@@ -773,6 +793,9 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const notional = legs.reduce((a, l) => a + Number(l.notional), 0);
     if (notional > 100_000) reasons.push(`Notional ${toDecimal(notional, 2)} USD exceeds the 100000 USD limit per placement`);
     if (worstLoss !== null && Math.abs(worstLoss) > 4000) reasons.push(`Available USD 4000 is below the worst-loss estimate ${toDecimal(Math.abs(worstLoss), 2)}`);
+    // GAPS #81: a net debit larger than the wallet is refused without any worst-loss figure from the client
+    const debit = legs.reduce((a, l) => a + (l.side === "buy" ? 1 : -1) * Number(l.notional), 0);
+    if (acc.credential && debit > 4000) reasons.push(`Available USD 4000 is below the premium this trade pays (${toDecimal(debit, 2)})`);
     return { ok: reasons.length === 0, reasons, legs, notional: toDecimal(notional, 2), available: acc.credential ? "4000" : null, availableAsset: acc.credential ? "USD" : null, marginUsed: acc.credential ? "12" : null, limits: { maxLegs: 10, maxNotionalUsd: 100_000, markBandPct: 5 } };
   };
   const placeLive = (c: Context, s: Strategy, batchId: string, purpose: StrategyOrder["purpose"], legs: StrategyLeg[], expected: Record<string, string> = {}, orderType: StrategyOrder["orderType"] = "market") => {

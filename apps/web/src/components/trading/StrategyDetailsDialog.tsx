@@ -6,7 +6,7 @@ import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFoo
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { strategyKeys, useArchiveStrategy, useCloseAll, useDeleteStrategy, useStrategies } from "@/lib/api/strategies";
-import { daysToExpiry, fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
+import { daysToExpiry, fmtDate, fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
 import { fmtMoney } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
 import { settlementHourUtc, toPricingLegs } from "@/lib/pricing/legs";
@@ -18,6 +18,7 @@ import { type PaperBook } from "@/lib/strategy/usePaper";
 import { PartialExitDialog } from "./PartialExitDialog";
 import { SquareOffDialog } from "./SquareOffDialog";
 import { StopPaperDialog } from "./StopPaperDialog";
+import { levelText } from "./RuleDialog";
 
 export function ModePill({ status }: { status: Strategy["status"] }) {
   const cls = status === "live" ? "border-loss bg-loss text-white" : status === "paper" ? "border-border" : status === "archived" ? "border-border text-muted-foreground" : "border-border text-muted-foreground";
@@ -77,6 +78,7 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
   const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
   const openAdjust = useUiStore((s) => s.openAdjust);
   const openAlerts = useUiStore((s) => s.openAlerts);
+  const openRules = useUiStore((s) => s.openRules);
   const { data: strategies } = useStrategies();
   const qc = useQueryClient();
   const s = strategies?.find((x) => x.id === id) ?? null;
@@ -186,6 +188,7 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
                   <Button size="sm" variant="outline" onClick={() => void qc.invalidateQueries({ queryKey: strategyKeys.all }).then(() => toast("Refreshed", { description: "Strategy data has been updated" }))}>Refresh</Button>
                   <Button size="sm" variant="outline" disabled={open.length === 0} title={open.length === 0 ? "No open legs to adjust" : open.length >= MAX_OPEN_LEGS_UI ? "At the 10-leg cap: trim or close legs in the workbench" : "Open the adjustment workbench: trim, close or add legs with the combined payoff"} onClick={adjustHere} data-testid="details-adjust">Adjust…</Button>
                   <Button size="sm" variant="outline" disabled={open.length === 0} onClick={() => setPartial(true)} data-testid="details-partial">Partial exit</Button>
+                  {open.length ? <Button size="sm" variant="outline" title="Stop loss and target run by the server (ADR-059 §2.3)" onClick={() => openRules(s.id)} data-testid="details-protect">Protect…</Button> : null}
                   <Button size="sm" variant="outline" title="Alert me when this strategy's P&L crosses a level" onClick={() => openAlerts({ kind: "pnl", strategyId: s.id, asset: s.asset })} data-testid="details-alert">Set alert</Button>
                   {confirmAll ? (
                     <>
@@ -237,6 +240,21 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
             {shown.length === 0 ? <p className="py-4 text-center text-xs text-muted-foreground">{tab === "active" ? "No active legs · All legs have been squared off" : "No squared off legs · Closed legs will appear here"}</p> : null}
             {adj.length ? <><div className="micro mt-2">Adjustments</div><div className="flex flex-col gap-1">{adj.map(legRow)}</div></> : null}
             {orig.length ? <><div className="micro mt-2">{adj.length ? "Original legs" : "Legs"}</div><div className="flex flex-col gap-1">{orig.map(legRow)}</div></> : null}
+            {s.rules?.length ? (
+              <>
+                <div className="micro mt-3">Stop and target · {s.rules.length}</div>
+                <div className="flex flex-col gap-1" data-testid="details-rules">
+                  {s.rules.map((r) => (
+                    <div key={r.id} className="flex flex-wrap items-center gap-2 rounded border border-border px-2 py-1 text-xs" data-testid="details-rule" data-kind={r.kind} data-state={r.state}>
+                      <span className="font-medium">{r.kind === "stop" ? "Stop" : "Target"}</span>
+                      <span className="num">{levelText(Number(r.thresholdUsd), money)}{r.trigger === "pct" ? ` (${r.value} % ${r.basis === "credit" ? "of the credit" : r.basis === "debit" ? "of the debit" : "of the max loss"})` : ""}</span>
+                      <span className={cn("micro rounded border px-1", r.state === "armed" ? "border-accent text-accent" : r.state === "fired" ? (r.outcome === "partial" ? "border-loss text-loss" : "border-border") : "border-border text-muted-foreground")}>{r.state}{r.firedAt ? ` ${fmtDate(r.firedAt)}` : ""}</span>
+                      {r.note ? <span className="text-muted-foreground">{r.note}</span> : null}
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : null}
             {s.adjustments.length ? (
               <>
                 <div className="micro mt-3">Adjustment history · {s.adjustments.length}</div>

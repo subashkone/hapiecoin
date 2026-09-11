@@ -50,6 +50,12 @@ describe("HC-TR-056 / HC-TR-088 live preview and safeguards", () => {
     expect(p.available).toBe("4000");
     expect(p.availableAsset).toBe("USD");
     expect(p.limits).toEqual({ maxLegs: 10, maxNotionalUsd: 100_000, markBandPct: 5 });
+    // GAPS #81: a net debit larger than the wallet is refused without any worst-loss figure from the client
+    t.trading.setBalances([{ asset: "USD", balance: "2", availableBalance: "2" }]);
+    const poor = await json<LivePreview>(await preview(s.id));
+    expect(poor.ok).toBe(false);
+    expect(poor.reasons.join(" | ")).toMatch(/below the premium this trade pays [(]3[)]/); // 12 paid for the call - 9 received for the put
+    t.trading.setBalances([{ asset: "USD", balance: "5000", availableBalance: "4000" }]);
     // the margin-in-use figure is informational: a failed positions read leaves it unknown and does not block the preview
     t.trading.positionsDown = true;
     const p2 = await json<LivePreview>(await preview(s.id));

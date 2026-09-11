@@ -13,11 +13,11 @@ import { errors } from "../security/errors.js";
 import { requireAdmin, requireUser } from "../security/guards.js";
 import { orderRateLimit } from "../security/rate-limit.js";
 import { lotSizeFor, openCredential, ordersOf, placeEntries, preview, retryFailed, syncOrders, tradingBlockedReason, type PlanLeg, type StrategyRow } from "./live-exec.js";
-import { type AppDeps, cookieAuth, errorResponses, jsonContent } from "./shared.js";
+import { type AppDeps, cookieAuth, errorResponses, jsonContent, errorMessage } from "./shared.js";
 
 /** The exchange did not answer the positions read (never an empty list, HC-TR-160). */
 const exchangeUnavailable = jsonContent(ApiError, "Exchange unavailable");
-import { addDecimal, closeLegRow, loadStrategy } from "./strategies.js";
+import { addDecimal, bookExitFills, closeLegRow, disarmRules, freshTotal, loadStrategy } from "./strategies.js";
 
 const IdParam = z.object({ id: Id });
 const PreviewBody = LivePreviewBody.extend({ worstLoss: z.number().optional() });
@@ -155,7 +155,8 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const row = await owned(me, c.req.valid("param").id);
       if (row.status !== "live" || !row.brokerId) throw errors.conflict("Only a live strategy can be synced");
       const creds = await openCredential(deps, me, row.brokerId);
-      const { updated } = await syncOrders(deps, creds, row);
+      const { updated, exitFills } = await syncOrders(deps, creds, row);
+      await bookExitFills(deps, row, exitFills);
       if (updated) await touch(row.id);
       return c.json(await loadStrategy(deps, row.id), 200);
     },
@@ -229,7 +230,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const creds = await openCredential(deps, me, c.req.valid("query").brokerId);
       const [raw, balances] = await Promise.all([deps.trading.getPositions(creds), deps.trading.getBalances(creds)]).catch((e: unknown) => {
         // an unreadable venue is 503, never "no positions": the Live tab's drift check must not read it as "holds nothing"
-        deps.logger.warn({ err: e instanceof Error ? e.message : String(e), userId: me.id }, "positions read failed");
+        deps.logger.warn({ err: errorMessage(e), userId: me.id }, "positions read failed");
         throw errors.unavailable("The exchange did not answer the positions read · try again in a moment");
       });
       // HC-TR-144: the client sizes lots and P&L from contract value and mark; unknown products stay null
@@ -252,9 +253,9 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       .where(and(eq(strategies.userId, me.id), eq(strategies.status, "live"), eq(strategyLegs.symbol, symbol), eq(strategyLegs.status, "open")));
     for (const { strategy, leg } of rows) {
       const realized = await closeLegRow(deps, strategy, leg, fill, undefined, await lotSizeFor(deps, me, strategy.asset), new Date());
-      const [fresh] = await db.select({ realizedPnl: strategies.realizedPnl }).from(strategies).where(eq(strategies.id, strategy.id)).limit(1);
       const stillOpen = await db.select({ id: strategyLegs.id }).from(strategyLegs).where(and(eq(strategyLegs.strategyId, strategy.id), eq(strategyLegs.status, "open"))).limit(1);
-      await touch(strategy.id, { realizedPnl: addDecimal(fresh?.realizedPnl ?? strategy.realizedPnl, realized), ...(stillOpen.length === 0 ? { status: "archived" as const, closedAt: new Date(), closeReason: "squared_off" as const } : {}) });
+      await touch(strategy.id, { realizedPnl: addDecimal(await freshTotal(deps, strategy.id, strategy.realizedPnl), realized), ...(stillOpen.length === 0 ? { status: "archived" as const, closedAt: new Date(), closeReason: "squared_off" as const } : {}) });
+      if (stillOpen.length === 0) await disarmRules(deps, strategy.id, "disarmed: the strategy was squared off from the positions list");
     }
   }
 
@@ -276,7 +277,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       if (blocked) throw errors.conflict(blocked);
       const creds = await openCredential(deps, me, body.brokerId);
       const positions = await deps.trading.getPositions(creds).catch((e: unknown) => {
-        deps.logger.warn({ err: e instanceof Error ? e.message : String(e), userId: me.id }, "positions read failed");
+        deps.logger.warn({ err: errorMessage(e), userId: me.id }, "positions read failed");
         throw errors.unavailable("The exchange did not answer the positions read · nothing was sent");
       });
       const closed: LivePositionsExitResult["closed"] = [];

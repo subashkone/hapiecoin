@@ -11,8 +11,8 @@ import { and, eq, gte, inArray, lte, ne } from "drizzle-orm";
 import { writeAudit } from "./audit.js";
 import { ivSnapshots, strategies, strategyAdjustments, strategyLegs } from "./db/schema.js";
 import { lotSizeFor, openCredential } from "./routes/live-exec.js";
-import { type AppDeps, newId } from "./routes/shared.js";
-import { addDecimal, closeLegRow } from "./routes/strategies.js";
+import { type AppDeps, errorMessage, newId } from "./routes/shared.js";
+import { addDecimal, closeLegRow, disarmRules, freshTotal } from "./routes/strategies.js";
 
 /** Legs settle this long after the instant, so a snapshot taken at the minute can land first. */
 export const SETTLEMENT_GRACE_MS = 2 * 60_000;
@@ -178,12 +178,7 @@ export async function settleExpired(
         .limit(1);
       const archive = left.length === 0;
       // the running total is re-read now: a close the trader booked during this pass must not be overwritten
-      const [fresh] = await deps.db
-        .select({ realizedPnl: strategies.realizedPnl })
-        .from(strategies)
-        .where(eq(strategies.id, strategy.id))
-        .limit(1);
-      const runningPnl = fresh?.realizedPnl ?? strategy.realizedPnl;
+      const runningPnl = await freshTotal(deps, strategy.id, strategy.realizedPnl);
       const realized = addDecimal(runningPnl, batchPnl);
       await deps.db
         .update(strategies)
@@ -193,7 +188,10 @@ export async function settleExpired(
           ...(archive ? { status: "archived" as const, closedAt: at, closeReason: "expired" as const } : {}),
         })
         .where(eq(strategies.id, strategy.id));
-      if (archive) out.archived += 1;
+      if (archive) {
+        out.archived += 1;
+        await disarmRules(deps, strategy.id, "disarmed: the strategy expired", at);
+      }
       await writeAudit(deps.db, {
         actorId: null,
         action: "strategy.settle",
@@ -205,7 +203,7 @@ export async function settleExpired(
       out.skipped += legs.length;
       // info, not warn: a removed credential or an unreadable exchange repeats every pass until the trader reconciles
       deps.logger.info(
-        { strategyId: strategy.id, err: e instanceof Error ? e.message : String(e) },
+        { strategyId: strategy.id, err: errorMessage(e) },
         "settlement: strategy skipped",
       );
     }

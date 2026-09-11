@@ -19,6 +19,9 @@ import {
   CloseReason,
   settlementHourUtc,
   settlementMsOf,
+  RuleBody,
+  RulesBody,
+  ruleThresholdUsd,
 } from "./strategies.js";
 
 const call = { kind: "call", side: "buy", strike: "80000", expiry: "2026-09-25", symbol: "C-BTC-80000-250926", lots: 10, price: "1200.5", iv: 0.52 } as const;
@@ -127,9 +130,25 @@ describe("[SCHEMA] strategies (ADR-024)", () => {
   });
 });
 
+describe("HC-TR-165 stop and target rules (ADR-059 §2.3)", () => {
+  it("validates one rule per kind, a basis for percentages, and turns a rule into its USD level", () => {
+    expect(RulesBody.safeParse({ rules: [{ kind: "stop", trigger: "money", value: "60" }, { kind: "target", trigger: "pct", value: "50", basis: "credit", basisUsd: "100" }] }).success).toBe(true);
+    expect(RulesBody.safeParse({ rules: [{ kind: "stop", trigger: "money", value: "60" }, { kind: "stop", trigger: "money", value: "70" }] }).success).toBe(false);
+    expect(RuleBody.safeParse({ kind: "stop", trigger: "pct", value: "200" }).success).toBe(false); // no basis
+    expect(RuleBody.safeParse({ kind: "stop", trigger: "money", value: "0" }).success).toBe(false);
+    expect(RuleBody.safeParse({ kind: "stop", trigger: "pct", value: "1500", basis: "credit", basisUsd: "1" }).success).toBe(false); // over 1000 %
+    expect(RuleBody.safeParse({ kind: "target", trigger: "pct", value: "1", basis: "credit", basisUsd: "0.3" }).success).toBe(false); // rounds to 0
+    expect(RuleBody.parse({ kind: "stop", trigger: "money", value: "60" }).channels).toEqual(["push"]);
+    expect(ruleThresholdUsd({ kind: "stop", trigger: "money", value: "60" })).toBe("-60");
+    expect(ruleThresholdUsd({ kind: "target", trigger: "pct", value: "50", basisUsd: "100" })).toBe("50");
+    expect(ruleThresholdUsd({ kind: "stop", trigger: "pct", value: "200", basisUsd: "84" })).toBe("-168");
+    expect(CLOSE_REASON_LABELS.target).toBe("target hit");
+  });
+});
+
 describe("close reasons and settlement instants (ADR-059 §2.4)", () => {
   it("names every reason and settles BTC / ETH at 12:00 UTC, XAUT at 16:00 UTC, never the perpetual", () => {
-    expect(CLOSE_REASONS.map((r) => CLOSE_REASON_LABELS[r])).toEqual(["expired", "squared off", "stopped", "closed outside the app"]);
+    expect(CLOSE_REASONS.map((r) => CLOSE_REASON_LABELS[r])).toEqual(["expired", "squared off", "stopped", "target hit", "closed outside the app"]);
     expect(CloseReason.safeParse("liquidated").success).toBe(false);
     expect(settlementMsOf("2026-09-25", "BTC")).toBe(Date.UTC(2026, 8, 25, 12));
     expect(settlementMsOf("2026-09-25", "XAUT")).toBe(Date.UTC(2026, 8, 25, 16));
