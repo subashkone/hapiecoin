@@ -939,5 +939,23 @@
     "status": "working",
     "evidence": "v2 brief · verified in pw/check-v2-*.js",
     "new": true
+  },
+  {
+    "screen": "API · hardening",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Every request body bounded",
+    "how": "A 1 MB cap (env API_BODY_LIMIT_BYTES) on every request body, applied before the auth handler, the guards and the validators; over the cap the API answers 413 PAYLOAD_TOO_LARGE in the error envelope; the banner image upload keeps its own 5 MB limit",
+    "evidence": "ADR-061 (11 Sep 2026): apps/api/src/security/body-limit.ts jsonBodyLimit mounted in app.ts; errors.payloadTooLarge; unit security.test.ts (stream and Content-Length branches, exemption, signed-out), config.test.ts"
+  },
+  {
+    "screen": "API · hardening",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Order-route budget per user",
+    "how": "The live placement, retry, batch and positions-exit routes accept 20 requests per minute per signed-in user (env ORDER_RATE_MAX_PER_MIN) on top of the global 300 per minute per IP; the 21st answers 429 ORDER_RATE_LIMITED with Retry-After before the executor runs; X-Order-RateLimit-* headers carry the budget",
+    "evidence": "ADR-061 (11 Sep 2026): apps/api/src/security/rate-limit.ts orderRateLimit on routes/live.ts; unit security.test.ts (budget, another user, window slide, read-only route unbudgeted), config.test.ts"
   }
 ]

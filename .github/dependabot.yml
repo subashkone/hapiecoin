@@ -1,0 +1,13 @@
+# Dependency updates (roadmap F24; GAPS #69).
+# npm is off for now: Dependabot's updater cannot fetch the pnpm 12 binary its sandbox needs (first run on main,
+# 11 Sep 2026: "Could not download the pnpm 12.3.4 binary ... fetch failed", then an unknown error on
+# `pnpm update --lockfile-only`), so every weekly run would fail. Re-enable the npm block once Dependabot
+# supports pnpm 12 (or pin packageManager to a pnpm 10.x it can run); until then `pnpm outdated` by hand.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependencies]

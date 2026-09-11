@@ -31,6 +31,12 @@ describe("[CONFIG] environment parsing", () => {
     expect(c.logLevel).toBe("silent");
     expect(c.google).toBeUndefined();
     expect(c.credentialsEncKey.equals(Buffer.alloc(32, 1))).toBe(true);
+    // GAPS #70 (ADR-061): bounded bodies and an order-route budget, both env-tunable
+    expect(c.bodyLimitBytes).toBe(1_048_576);
+    expect(c.orderRateMaxPerMin).toBe(20);
+    expect(loadConfig({ ...BASE, API_BODY_LIMIT_BYTES: "65536", ORDER_RATE_MAX_PER_MIN: "5" })).toMatchObject({ bodyLimitBytes: 65_536, orderRateMaxPerMin: 5 });
+    expect(() => loadConfig({ ...BASE, API_BODY_LIMIT_BYTES: "512" })).toThrow(ConfigError);
+    expect(() => loadConfig({ ...BASE, ORDER_RATE_MAX_PER_MIN: "0" })).toThrow(ConfigError);
   });
 
   it("treats empty strings as unset (Google button hidden when either value is blank)", () => {

@@ -15,7 +15,8 @@ const config: ViteUserConfig = mergeConfig(
       css: false,
       // jsdom + user-event flows price real legs and open Radix dialogs; under the full turbo gate (every
       // package's coverage and build at once) the default 5 s per test timed out on a loaded laptop.
-      testTimeout: 20_000,
+      testTimeout: 60_000,
+      hookTimeout: 60_000,
       // 88 test files each fork a jsdom worker; at one fork per core on a 16 GB machine that also runs the dev
       // stack the forks died of memory pressure (exit 134 / 0xC0000409) after their tests had passed (GAPS #78).
       maxWorkers: "50%",

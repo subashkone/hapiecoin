@@ -73,6 +73,10 @@ const RawEnv = z.object({
   IV_SNAPSHOT_MS: z.coerce.number().int().min(0).default(300_000),
   /** Expiry settlement pass interval (ADR-059 §2.4); 0 disables the settler. */
   SETTLEMENT_MS: z.coerce.number().int().min(0).default(60_000),
+  /** Cap on any request body, bytes (GAPS #70, ADR-061); the banner image upload keeps its own 5 MB. */
+  API_BODY_LIMIT_BYTES: z.coerce.number().int().min(1024).default(1_048_576),
+  /** Order-route budget per signed-in user per minute: live place, retry, batch, positions exit (GAPS #70). */
+  ORDER_RATE_MAX_PER_MIN: z.coerce.number().int().min(1).max(1000).default(20),
   DELTA_API_KEY: z.string().optional(),
   DELTA_API_SECRET: z.string().optional(),
 });
@@ -109,6 +113,10 @@ export interface Config {
   ivSnapshotMs: number;
   /** Milliseconds between expiry settlement passes; 0 = off (ADR-059). */
   settlementMs: number;
+  /** Cap on any request body, bytes (GAPS #70). */
+  bodyLimitBytes: number;
+  /** Order-route budget per user per minute (GAPS #70). */
+  orderRateMaxPerMin: number;
   logLevel: string;
   pgliteDataDir: string | undefined;
 }
@@ -234,6 +242,8 @@ export function loadConfig(
     egressIp: e.EGRESS_IP,
     ivSnapshotMs: e.IV_SNAPSHOT_MS,
     settlementMs: e.SETTLEMENT_MS,
+    bodyLimitBytes: e.API_BODY_LIMIT_BYTES,
+    orderRateMaxPerMin: e.ORDER_RATE_MAX_PER_MIN,
     logLevel: e.LOG_LEVEL ?? (isTest ? "silent" : "info"),
     pgliteDataDir: e.PGLITE_DATA_DIR,
   };

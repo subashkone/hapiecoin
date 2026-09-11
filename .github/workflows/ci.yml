@@ -1,0 +1,90 @@
+# CI for every pull request and every push to main (roadmap F24; GAPS #69; ADR-061).
+# checks: pnpm ci (typecheck, lint, unit + coverage gates, build) and the /analyse bundle budget.
+# e2e:    Playwright against the mock API and fake gateway (apps/web/test/servers.ts), Chromium only.
+# docker: the API and gateway images build (no push), on main only, so the Dockerfiles do not rot.
+# Not here: prettier --check (the tree is not formatted yet) and the real-API smoke run (smoke.yml, manual).
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # superseded pull-request runs are cancelled; runs on main all finish so every merge gets its image build
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CI: "true"
+
+jobs:
+  checks:
+    name: typecheck · lint · tests · build · budget
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run ci
+      - name: Bundle budget (/analyse first-load JS; a warning until GAPS #19 / roadmap F29 trims it under 350 KB)
+        run: pnpm --filter @hapiecoin/web check:budget
+        continue-on-error: true
+      - name: Coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            apps/*/coverage/coverage-summary.json
+            packages/*/coverage/coverage-summary.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+  e2e:
+    name: playwright (mock API + fake gateway)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # the mock API and fake gateway run under tsx and import the workspace packages from dist/
+      - run: pnpm turbo run build --filter="./packages/*"
+      - run: pnpm --filter @hapiecoin/web exec playwright install --with-deps chromium
+      - name: e2e
+        run: pnpm --filter @hapiecoin/web test:e2e
+        env:
+          PW_CHANNEL: chromium
+      - name: Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  docker:
+    name: images build (api, gateway)
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f apps/api/Dockerfile -t hapiecoin-api:ci .
+      - run: docker build -f apps/gateway/Dockerfile -t hapiecoin-gateway:ci .

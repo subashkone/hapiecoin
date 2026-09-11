@@ -25,7 +25,7 @@ Two public hostnames: the app (`hapiecoin.com`) and the feed (`ws.hapiecoin.com`
 
 ## 3. Steps
 1. **Images.** Add `apps/web/Dockerfile` (Next `output: "standalone"`) and `apps/ingest/Dockerfile` on the pattern of the API one; tag by git SHA.
-2. **CI.** `.github/workflows/ci.yml`: `pnpm ci` (typecheck, lint, coverage, build) on every PR; `docker build` of the four images on `main`; the smoke run (`pnpm --filter @hapiecoin/web test:smoke`, ADR-055) as a manual or nightly job because it needs Delta network access.
+2. **CI.** Done (ADR-061): `.github/workflows/ci.yml` runs `pnpm ci` (typecheck, lint, coverage, build) plus the bundle budget and the Playwright e2e on every PR, and builds the api and gateway images on `main`; `smoke.yml` runs the real-API smoke (`pnpm --filter @hapiecoin/web test:smoke`, ADR-055) on manual dispatch because it needs Delta network access. Still to add with deployment: web and ingest Dockerfiles in the image job, and a deploy job.
 3. **Secrets.** Provider secret store → container env. Never in the repo (CLAUDE.md env list). Generate `BETTER_AUTH_SECRET` and `CREDENTIALS_ENC_KEY` once; rotate the vault key per ADR-054.
 4. **Database.** Managed Postgres with TimescaleDB, or the compose image on a volume with nightly `pg_dump` to object storage; migrations run by the API at boot (single API replica during a deploy, or run `pnpm --filter @hapiecoin/api db:migrate` as a release step).
 5. **Proxy and TLS.** Caddy or the provider's load balancer: HTTP/2, WebSocket upgrade to the gateway, `X-Forwarded-For` trusted via `TRUSTED_PROXY_IPS`.

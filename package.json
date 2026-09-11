@@ -2,6 +2,7 @@
   "name": "hapiecoin",
   "version": "0.1.0",
   "private": true,
+  "license": "UNLICENSED",
   "description": "HapieCoin · crypto options strategy builder for Delta Exchange India",
   "packageManager": "pnpm@12.3.4",
   "engines": {
