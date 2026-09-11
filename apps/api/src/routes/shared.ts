@@ -37,6 +37,8 @@ export interface AppDeps {
   analytics: AnalyticsReader;
   /** Telegram bot for alert delivery and chat linking (ADR-057); null without TELEGRAM_BOT_TOKEN. */
   telegram: TelegramClient | null;
+  /** ADR-062: whether this replica runs the background jobs (set by main.ts; absent in tests). */
+  jobsStatus?: () => { role: "leader" | "always" | "off"; active: boolean };
   /** Public auth capabilities (Google hidden when unconfigured). */
   authOptions: { emailOtp: true; passkey: true; google: boolean };
 }

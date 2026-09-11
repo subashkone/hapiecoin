@@ -33,8 +33,9 @@ export interface FeedLike {
   status(): FeedStatus;
   supports(topic: Topic): boolean;
   seq(topic: Topic): number;
-  snapshot(topic: Topic): Snapshot | null;
-  spot(underlying: Underlying): SpotState | null;
+  /** Sync on the leader; a follower gateway reads the shared store (ADR-062). */
+  snapshot(topic: Topic): Snapshot | null | Promise<Snapshot | null>;
+  spot(underlying: Underlying): SpotState | null | Promise<SpotState | null>;
   acquire(topic: Topic): void;
   release(topic: Topic): void;
 }
@@ -62,6 +63,8 @@ const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 /** One subscribed topic of one connection; `subscribe` receives the instance so the pubsub handler can refer to it. */
 class Subscription {
   readonly unsubscribe: () => void;
+  /** Frames that arrived before the first snapshot went out; replayed after it (ADR-062), null once caught up. */
+  pending: ServerMessage[] | null = [];
   constructor(
     readonly topic: Topic,
     readonly parsed: Extract<ParsedTopic, { kind: "chain" | "spot" }>,
@@ -167,6 +170,8 @@ export class GatewayServer {
       `hapiecoin_gateway_messages_per_second ${rate.toFixed(3)}`,
       "# TYPE hapiecoin_gateway_feed_ready gauge",
       `hapiecoin_gateway_feed_ready ${feed.ready ? 1 : 0}`,
+      "# TYPE hapiecoin_gateway_leader gauge",
+      `hapiecoin_gateway_leader ${feed.role === "follower" ? 0 : 1}`,
       "# TYPE hapiecoin_gateway_feed_instruments gauge",
       `hapiecoin_gateway_feed_instruments ${feed.market.instruments}`,
       "# TYPE hapiecoin_gateway_feed_upstream_symbols gauge",
@@ -204,6 +209,7 @@ export class GatewayServer {
       const body = {
         ok: feed.ready,
         status: feed.ready ? "ok" : "starting",
+        role: feed.role ?? "leader",
         uptimeMs: this.now() - this.startedAt,
         connections: this.conns.size,
         encoder: this.encoder.name,
@@ -299,7 +305,7 @@ export class GatewayServer {
         this.send(state, { t: "pong" });
         return;
       case "sub":
-        this.subscribe(state, message.topics);
+        this.subscribe(state, message.topics).catch((error: unknown) => this.log.error("subscribe failed", { error: error as Error }));
         return;
       case "unsub":
         this.unsubscribe(state, message.topics);
@@ -334,7 +340,7 @@ export class GatewayServer {
     }
   }
 
-  private subscribe(state: ConnState, topics: readonly Topic[]): void {
+  private async subscribe(state: ConnState, topics: readonly Topic[]): Promise<void> {
     for (const topic of topics) {
       if (state.topics.has(topic)) continue;
       if (!this.feed.supports(topic)) {
@@ -356,24 +362,57 @@ export class GatewayServer {
       // supports() already rejected every unparsable or fut topic, so this is a chain or spot topic
       const parsed = parseTopic(topic) as Subscription["parsed"];
       this.feed.acquire(topic);
-      if (parsed.kind === "chain") {
-        const snapshot = this.feed.snapshot(topic);
-        if (snapshot === null) {
-          this.feed.release(topic);
-          this.send(state, {
-            t: "err",
-            code: "unknown_topic",
-            message: `${topic}: no such expiry in the instrument list`,
-          });
-          continue;
+      // subscribe to the fan-out before the first frame is fetched, so nothing published meanwhile is lost: frames
+      // queue on the subscription and are replayed after the snapshot (those at or below its seq are dropped)
+      const sub = this.track(state, topic, parsed);
+      state.topics.set(topic, sub);
+      const drop = () => {
+        sub.unsubscribe();
+        state.topics.delete(topic);
+        this.feed.release(topic);
+      };
+      try {
+        if (parsed.kind === "chain") {
+          const answer = this.feed.snapshot(topic);
+          const snapshot = isThenable(answer) ? await answer : answer;
+          if (state.topics.get(topic) !== sub) continue; // unsubscribed or closed while waiting
+          if (snapshot === null) {
+            drop();
+            this.send(state, {
+              t: "err",
+              code: "unknown_topic",
+              message: `${topic}: no such expiry in the instrument list`,
+            });
+            continue;
+          }
+          this.sendSnapshot(state, topic, snapshot);
+          this.flushPending(state, sub, snapshot.seq);
+        } else {
+          const answer = this.feed.spot(parsed.underlying);
+          const spot = isThenable(answer) ? await answer : answer;
+          if (state.topics.get(topic) !== sub) continue;
+          if (spot !== null) this.send(state, { t: "spot", s: parsed.underlying, p: spot.p });
+          this.flushPending(state, sub, -1);
         }
-        state.topics.set(topic, this.track(state, topic, parsed));
-        this.sendSnapshot(state, topic, snapshot);
-      } else {
-        state.topics.set(topic, this.track(state, topic, parsed));
-        const spot = this.feed.spot(parsed.underlying);
-        if (spot !== null) this.send(state, { t: "spot", s: parsed.underlying, p: spot.p });
+      } catch (error) {
+        // the first frame could not be produced (a follower's store read failed): close the topic cleanly so the
+        // client can subscribe again, instead of leaving frames queued behind a snapshot that never comes
+        this.log.warn("first frame failed", { topic, error: error as Error });
+        if (state.topics.get(topic) === sub) {
+          drop();
+          this.send(state, { t: "err", code: "feed_unavailable", message: `${topic}: the feed is not available right now; subscribe again in a moment` });
+        }
       }
+    }
+  }
+
+  private flushPending(state: ConnState, subscription: Subscription, seq: number): void {
+    const queued = subscription.pending ?? [];
+    subscription.pending = null;
+    for (const message of queued) {
+      if (message.t === "snap") continue; // the snapshot just sent supersedes any announced while waiting
+      if (message.t === "q" && message.seq <= seq) continue;
+      this.deliver(state, subscription, message);
     }
   }
 
@@ -397,6 +436,10 @@ export class GatewayServer {
 
   private deliver(state: ConnState, subscription: Subscription, message: ServerMessage): void {
     if (!state.conn.isOpen) return;
+    if (subscription.pending !== null) {
+      subscription.pending.push(message);
+      return;
+    }
     if (state.conn.bufferedAmount() > this.config.MAX_BUFFERED_BYTES) {
       state.stalled.add(subscription);
       this.droppedTotal += 1;
@@ -404,22 +447,28 @@ export class GatewayServer {
     }
     if (state.stalled.has(subscription)) {
       state.stalled.delete(subscription);
-      this.resync(state, subscription);
+      void this.resync(state, subscription);
       return;
     }
     this.send(state, message);
-    if (message.t === "q") state.seq.set(subscription.topic, message.seq);
+    if (message.t === "q" || message.t === "snap") state.seq.set(subscription.topic, message.seq);
   }
 
   /** After a stall, replace whatever was dropped with the current state of the topic. */
-  private resync(state: ConnState, subscription: Subscription): void {
+  private async resync(state: ConnState, subscription: Subscription): Promise<void> {
     const { topic, parsed } = subscription;
-    if (parsed.kind === "chain") {
-      const snapshot = this.feed.snapshot(topic);
-      if (snapshot !== null) this.sendSnapshot(state, topic, snapshot);
-    } else {
-      const spot = this.feed.spot(parsed.underlying);
-      if (spot !== null) this.send(state, { t: "spot", s: parsed.underlying, p: spot.p });
+    try {
+      if (parsed.kind === "chain") {
+        const answer = this.feed.snapshot(topic);
+        const snapshot = isThenable(answer) ? await answer : answer;
+        if (snapshot !== null && state.topics.get(topic) === subscription) this.sendSnapshot(state, topic, snapshot);
+      } else {
+        const answer = this.feed.spot(parsed.underlying);
+        const spot = isThenable(answer) ? await answer : answer;
+        if (spot !== null && state.topics.get(topic) === subscription) this.send(state, { t: "spot", s: parsed.underlying, p: spot.p });
+      }
+    } catch (error) {
+      this.log.warn("resync failed", { topic, error: error as Error });
     }
   }
 
@@ -429,7 +478,7 @@ export class GatewayServer {
       if (state.conn.bufferedAmount() > this.config.MAX_BUFFERED_BYTES) continue;
       const subscriptions = [...state.stalled];
       state.stalled.clear();
-      for (const subscription of subscriptions) this.resync(state, subscription);
+      for (const subscription of subscriptions) void this.resync(state, subscription);
     }
   }
 
@@ -442,4 +491,8 @@ export class GatewayServer {
     state.conn.send(this.encoder.encode(message));
     this.sentTotal += 1;
   }
+}
+
+function isThenable<T>(value: T | Promise<T>): value is Promise<T> {
+  return typeof value === "object" && value !== null && typeof (value as { then?: unknown }).then === "function";
 }

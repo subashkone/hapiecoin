@@ -18,7 +18,10 @@ function make(options: { seed?: boolean; graceMs?: number; refreshMs?: number } 
   const pubsub = new InProcessPubSub();
   const published: { topic: string; message: ServerMessage }[] = [];
   for (const topic of [TOPIC, NOV, SPOT_BTC, "spot:ETH", "spot:XAUT"]) {
-    pubsub.subscribe(topic, (message) => published.push({ topic, message }));
+    // the snapshot a leader announces on every (re)watch (ADR-062) is covered in feed-roles.test.ts; here the deltas matter
+    pubsub.subscribe(topic, (message) => {
+      if (message.t !== "snap") published.push({ topic, message });
+    });
   }
   const lines: string[] = [];
   const log = createLogger(

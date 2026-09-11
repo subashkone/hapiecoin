@@ -37,6 +37,12 @@ describe("[CONFIG] environment parsing", () => {
     expect(loadConfig({ ...BASE, API_BODY_LIMIT_BYTES: "65536", ORDER_RATE_MAX_PER_MIN: "5" })).toMatchObject({ bodyLimitBytes: 65_536, orderRateMaxPerMin: 5 });
     expect(() => loadConfig({ ...BASE, API_BODY_LIMIT_BYTES: "512" })).toThrow(ConfigError);
     expect(() => loadConfig({ ...BASE, ORDER_RATE_MAX_PER_MIN: "0" })).toThrow(ConfigError);
+    // ADR-062: jobs role and lease
+    expect(c.jobsRole).toBe("leader");
+    expect(c.leaderTtlMs).toBe(15_000);
+    expect(loadConfig({ ...BASE, API_JOBS_ROLE: "off", LEADER_TTL_MS: "5000" })).toMatchObject({ jobsRole: "off", leaderTtlMs: 5_000 });
+    expect(() => loadConfig({ ...BASE, API_JOBS_ROLE: "maybe" })).toThrow(ConfigError);
+    expect(() => loadConfig({ ...BASE, LEADER_TTL_MS: "1000" })).toThrow(ConfigError);
   });
 
   it("treats empty strings as unset (Google button hidden when either value is blank)", () => {

@@ -33,6 +33,7 @@ function phaseFor(f) {
   return 5;
 }
 function testType(f) {
+  if (f.test) return f.test; // infra rows name their own evidence (unit tests, no screen)
   const txt = ((f.feature || '') + ' ' + (f.how || '')).toLowerCase();
   const t = [];
   if (/greek|payoff|breakeven|pop|margin|premium|iv|delta|theta|scenario|max pain|gex|p&l|fee/.test(txt)) t.push('unit (pricing)');
