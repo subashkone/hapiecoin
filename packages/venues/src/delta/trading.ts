@@ -22,6 +22,7 @@
  */
 import { createHmac } from "node:crypto";
 import { z } from "zod";
+import { DeltaApiError } from "../errors.js";
 
 export interface SignedRequest {
   url: string;
@@ -330,11 +331,13 @@ export class DeltaTradingClientImpl implements DeltaTradingClient {
     return !("transport" in res) && res.json?.success === true;
   }
 
+  /** Throws when the venue does not answer or answers badly: "no positions" and "could not read positions" must never look alike (ADR-059 §2.2 drift). */
   async getPositions(creds: DeltaCredentials): Promise<VenuePosition[]> {
     const res = await this.call(creds, "GET", "/v2/positions/margined");
-    if ("transport" in res || !res.json?.success) return [];
+    if ("transport" in res) throw new DeltaApiError("/v2/positions/margined", "positions_unavailable", { transport: true });
+    if (!res.json?.success) throw new DeltaApiError("/v2/positions/margined", "positions_unavailable", { status: res.status });
     const parsed = z.array(RawPosition).safeParse(res.json.result);
-    if (!parsed.success) return [];
+    if (!parsed.success) throw new DeltaApiError("/v2/positions/margined", "positions_unavailable", { parse: true });
     return parsed.data.map((p) => ({ productId: p.product_id, symbol: p.product_symbol ?? p.product?.symbol ?? null, size: p.size, entryPrice: dec(p.entry_price), realizedPnl: dec(p.realized_pnl), margin: dec(p.margin) }));
   }
 
@@ -467,8 +470,10 @@ export class FakeDeltaTradingClient implements DeltaTradingClient {
     this.cancelled.push(orderId);
     return Promise.resolve(true);
   }
+  /** Test knob: the venue does not answer the positions read. */
+  positionsDown = false;
   getPositions(): Promise<VenuePosition[]> {
-    return Promise.resolve(this.positions);
+    return this.positionsDown ? Promise.reject(new DeltaApiError("/v2/positions/margined", "positions_unavailable", { fake: true })) : Promise.resolve(this.positions);
   }
   getBalances(): Promise<VenueBalance[]> {
     return Promise.resolve(this.balances);

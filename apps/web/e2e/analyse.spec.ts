@@ -565,6 +565,19 @@ test.describe("HC-TR paper trading (Phase 3 item 1)", () => {
     await expect(card.getByTestId("mode-pill")).toHaveAttribute("data-status", "paper");
     await expect(card.getByTestId("card-pnl")).not.toHaveText("—");
     await expect(page.getByTestId("builder-count")).toHaveCount(0);
+    // HC-TR-159: the same contract again shows the overlap line in the preview, naming the strategy that holds it
+    await page.getByTestId("tab-chain").click();
+    await page.locator(`[data-testid=chain-row-puts][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-sell-puts").click();
+    await page.getByTestId("tab-builder").click();
+    await page.getByTestId("builder-paper-trade").click();
+    await page.getByTestId("trade-mode").getByTestId("trade-continue").click();
+    await expect(page.getByTestId("trade-preview").getByTestId("overlap-notice")).toHaveAttribute("data-count", "1");
+    await expect(page.getByTestId("overlap-row").first()).toContainText("E2E straddle");
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("trade-preview")).toBeHidden();
+    await page.getByTestId("builder-new").click();
+    await page.getByTestId("tab-paper").click();
     // HC-TR-113 / 138 the strip's net delta and margin come from the worker
     await expect(page.getByTestId("paper-strip")).toHaveAttribute("data-portfolio", "ready", { timeout: 15_000 });
     await expect(page.getByTestId("paper-net-delta")).not.toHaveText("—");

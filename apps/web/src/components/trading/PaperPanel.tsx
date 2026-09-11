@@ -2,15 +2,17 @@
 // Paper Trades tab (HC-TR-058..067; HC-TR-156, 157 lifecycle): search, sort (incl. expiry), lifecycle chips Open ·
 // Expiring ≤ 1d · Closed, refresh, the P&L strip, strategy cards with start / expiry, live P&L and a sparkline,
 // Details / Go live / Stop / Delete, pagination and the empty state.
-import type { Strategy } from "@hapiecoin/schema";
+import type { Strategy, StrategyLeg } from "@hapiecoin/schema";
 import { Button, EmptyState, cn, toast } from "@hapiecoin/ui";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { strategyKeys, useDeleteStrategy, useStrategies } from "@/lib/api/strategies";
 import { useLiveRetry, useLiveSync, useLivePositions } from "@/lib/api/live";
 import { useBrokers, useCredential } from "@/lib/api/queries";
 import { BatchLiveDialog } from "./BatchLiveDialog";
 import { NetPositionsPanel } from "./NetPositionsPanel";
+import { ReconcileDialog, driftTitle } from "./ReconcileDialog";
+import { type DriftRow, driftFor } from "@/lib/strategy/drift";
 import { fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
 import { fmtDate, fmtExpiry } from "@/lib/format";
@@ -74,6 +76,8 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const workspaceTab = useUiStore((s) => s.workspaceTab);
   const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
   const [batch, setBatch] = useState(false);
+  // the Reconcile click re-reads the exchange first; only that click shows a spinner, never the background poll
+  const [reconcilePending, setReconcilePending] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("pnl");
   const [page, setPage] = useState(1);
@@ -120,6 +124,17 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const liveBrokerId = kind === "live" ? (credential?.items[0]?.brokerId ?? null) : null;
   const wallet = useLivePositions(liveBrokerId, kind === "live" && connected);
   const balances = wallet.data?.balances ?? [];
+  // HC-TR-160: the exchange's net position per contract against the open live legs; a stop, a manual close or a
+  // liquidation on the exchange leaves a strategy out of sync until it is reconciled (HC-TR-161)
+  // only a fresh, successful read counts: a venue that did not answer is 503 (never an empty list), and a stale
+  // snapshot kept after an error must not be compared with fresh legs
+  const driftReady = kind === "live" && wallet.isSuccess && !wallet.isError && wallet.data !== undefined;
+  const drift = useMemo(() => (driftReady && wallet.data ? driftFor(wallet.data.positions, all, (a) => book.lotSizeOf(a)) : new Map<string, DriftRow[]>()), [driftReady, wallet.data, all, book]);
+  const [reconcileId, setReconcileId] = useState<string | null>(null);
+  const reconciling = reconcileId ? (all.find((s) => s.id === reconcileId) ?? null) : null;
+  // the price a gone leg is booked at: the exchange's mark while it still quotes the contract, else the pane's mark
+  // (the position is usually gone, so the venue has none), else the dialog falls back to the entry
+  const venueMarkOf = useCallback((l: StrategyLeg) => wallet.data?.positions.find((p) => p.symbol === l.symbol)?.mark ?? (reconciling ? (book.priceOf(reconciling, l)?.toString() ?? null) : null), [wallet.data, reconciling, book]);
   const walletRow = ["USD", "USDT", "INR"].map((a) => balances.find((b) => b.asset === a)).find((b) => b !== undefined) ?? balances[0];
   const marginTotal = walletRow ? Number(walletRow.balance) : null;
   return (
@@ -172,6 +187,18 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
           <EmptyState title={q ? `No matching ${kind} trades` : life === "closed" ? `No closed ${kind} trades yet` : life === "expiring" ? "Nothing expires within a day" : kind === "paper" ? "No paper trades yet" : "No live trades"} description={q ? "Try a different search" : life !== "open" ? "The Open chip shows what is running" : kind === "paper" ? "Click Paper trade in the Builder to begin" : "Go live from a paper card, or pick Live in the Builder's trade dialog."} className="py-12" data-testid={`${kind}-empty`} />
         ) : (
           <div className="flex flex-col gap-2">
+            {kind === "live" && connected && wallet.isError ? (
+              <div className="flex flex-wrap items-center gap-2 rounded border border-warning/50 bg-warning/5 px-2 py-1.5 text-2xs" data-testid="live-drift-paused">
+                <b className="text-warning">Exchange positions could not be read</b>
+                <span className="text-muted-foreground">the out-of-sync check is paused until the next successful read · {wallet.error instanceof Error ? wallet.error.message : "try again in a moment"}</span>
+              </div>
+            ) : null}
+            {drift.size > 0 ? (
+              <div className="flex flex-wrap items-center gap-2 rounded border border-loss/50 bg-loss/5 px-2 py-1.5 text-2xs" data-testid="live-drift-banner" data-count={drift.size}>
+                <b className="text-loss">{drift.size} {drift.size === 1 ? "strategy is" : "strategies are"} out of sync with the exchange</b>
+                <span className="text-muted-foreground">a stop, a manual close or a liquidation changed a position outside HapieCoin · open the card and Reconcile</span>
+              </div>
+            ) : null}
             {slice.map((s) => {
               const p = book.pnlOf(s);
               const open = openLegs(s);
@@ -206,7 +233,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                 >
                   <div className="flex flex-wrap items-start gap-2">
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium"><span className="truncate">{s.name}</span><ModePill status={s.status} /><AdjustedBadge s={s} />{kind === "live" && s.orderBatchId ? <span className="micro rounded border border-border px-1 font-mono" title={`Order batch ${s.orderBatchId}`} data-testid="card-batch">batch {s.orderBatchId.slice(-6)}</span> : null}</div>
+                      <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium"><span className="truncate">{s.name}</span><ModePill status={s.status} /><AdjustedBadge s={s} />{drift.get(s.id) ? <span className="micro rounded border border-loss bg-loss/10 px-1 text-loss" title={driftTitle(drift.get(s.id)!)} data-testid="card-drift" data-state="out-of-sync">out of sync</span> : null}{kind === "live" && s.orderBatchId ? <span className="micro rounded border border-border px-1 font-mono" title={`Order batch ${s.orderBatchId}`} data-testid="card-batch">batch {s.orderBatchId.slice(-6)}</span> : null}</div>
                       <div className="micro flex flex-wrap gap-2"><span className="rounded border border-border px-1">{s.asset}</span><span><b>{open.length}</b>/{s.legs.length} legs</span>{s.templateName ? <span>{s.templateName}</span> : null}</div>
                       <div className="micro mt-0.5 flex flex-wrap gap-x-2 normal-case tracking-normal" data-testid="card-expiry" data-days={left ?? undefined}>
                         <span>started <b className="num">{s.startedAt ? fmtDate(s.startedAt) : "—"}</b> · {daysOf(s)}d</span>
@@ -259,6 +286,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                     ) : (
                       <>
                         {s.orders.some((o) => o.state === "pending") ? <Button size="sm" variant="outline" loading={sync.isPending} onClick={() => sync.mutate(s.id, { onSuccess: () => toast("Synced", { description: "Order states refreshed from the exchange" }) })} data-testid="card-sync">Sync</Button> : null}
+                        {drift.get(s.id) ? <Button size="sm" variant="destructive" loading={reconcilePending === s.id} onClick={() => { setReconcilePending(s.id); void wallet.refetch().then((r) => { setReconcilePending(null); if (r.isSuccess) setReconcileId(s.id); }); }} title="Re-reads the exchange first, then books the lots it no longer holds as closed · no orders are sent" data-testid="card-reconcile">Reconcile</Button> : null}
                         <Button size="sm" variant="outline" className="text-loss" disabled={open.length === 0} onClick={() => openDetails(s.id)} title="Square off from Details" data-testid="card-sqall">Square off all</Button>
                       </>
                     )}
@@ -287,6 +315,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
         )}
       </div>
       {kind === "paper" ? <BatchLiveDialog open={batch} onOpenChange={setBatch} strategies={all} brokers={brokers ?? []} connected={connected} money={money} totalOf={(s) => book.pnlOf(s).total} /> : null}
+      <ReconcileDialog strategy={reconciling} rows={reconciling ? (drift.get(reconciling.id) ?? []) : []} markOf={venueMarkOf} onOpenChange={(o) => { if (!o) { setReconcileId(null); void refetch(); void wallet.refetch(); } }} />
       {stopping ? <StopPaperDialog open={true} onOpenChange={(o) => !o && setStopId(null)} strategy={stopping} priceOf={(l) => book.priceOf(stopping, l)} total={book.pnlOf(stopping).total} money={money} live={feedLive} onDone={() => void qc.invalidateQueries({ queryKey: strategyKeys.all })} /> : null}
     </section>
   );

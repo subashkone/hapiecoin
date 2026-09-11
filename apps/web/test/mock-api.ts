@@ -19,6 +19,10 @@ interface Account {
   settings: UserSettings;
   brokers: Broker[];
   credential: BrokerCredentialPublic | null;
+  /** Test knob (HC-TR-160): contracts the exchange no longer holds although live legs still track them. */
+  venueGone?: Set<string>;
+  /** Test knob (HC-TR-160): the exchange does not answer the positions read (503). */
+  venueDown?: boolean;
   plan: PlanRecord;
   strategies: Strategy[];
   tradingDisabled: boolean;
@@ -657,6 +661,35 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     s.adjustments.push({ id: id("adj"), at, reason: body.reason?.trim() ? body.reason.trim() : null, added: added.length, trimmed: planned.length - closes, closed: closes, realizedPnl: toDecimal(realized, 2), batchId });
     return c.json(touch(s));
   });
+  v1.post("/strategies/:id/reconcile", async (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (!isActive(s)) return err(c, 409, "CONFLICT", "Only a paper or live strategy can be reconciled");
+    const body = await c.req.json<{ legs: { legId: string; lots?: number; price: string }[]; reason?: string }>();
+    const open = s.legs.filter((l) => l.status === "open");
+    const seen = new Set<string>();
+    for (const x of body.legs) {
+      const leg = open.find((l) => l.id === x.legId);
+      if (!leg) return err(c, 400, "BAD_REQUEST", `Leg ${x.legId} is not an open leg of this strategy`);
+      if (seen.has(leg.id)) return err(c, 400, "BAD_REQUEST", `${leg.symbol}: listed twice`);
+      seen.add(leg.id);
+      if (x.lots !== undefined && x.lots > leg.lots) return err(c, 400, "BAD_REQUEST", `${leg.symbol}: ${x.lots} lots exceed the open ${leg.lots}`);
+    }
+    const at = nowIso();
+    const was = Number(s.realizedPnl);
+    let trimmed = 0;
+    let closed = 0;
+    for (const x of body.legs) {
+      const leg = open.find((l) => l.id === x.legId)!;
+      const whole = x.lots === undefined || x.lots === leg.lots;
+      closeLeg(s, leg, x.price, whole ? undefined : x.lots, lotSizeOf(c, s.asset));
+      if (whole) closed += 1;
+      else trimmed += 1;
+    }
+    s.adjustments.push({ id: id("adj"), at, reason: `closed outside the app${body.reason?.trim() ? `: ${body.reason.trim()}` : ""}`, added: 0, trimmed, closed, realizedPnl: toDecimal(Number(s.realizedPnl) - was, 2), batchId: `reconcile:${id("b")}` });
+    if (!s.legs.some((l) => l.status === "open")) Object.assign(s, { status: "archived", closedAt: at });
+    return c.json(touch(s));
+  });
   v1.post("/strategies/:id/legs/:legId/close", async (c) => {
     const s = findStrategy(c);
     if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
@@ -803,7 +836,8 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   v1.get("/strategies/live/positions", (c) => {
     const acc = current(c)!;
     if (!acc.credential) return err(c, 409, "CONFLICT", "Connect your exchange in Settings → API Settings to enable live trading");
-    const positions = acc.strategies.filter((s) => s.status === "live").flatMap((s) => s.legs.filter((l) => l.status === "open" && l.entryPrice).map((l) => ({ productId: 100 + s.legs.indexOf(l), symbol: l.symbol, size: (l.side === "buy" ? 1 : -1) * contractsOf(l, lotSizeOf(c, s.asset)), entryPrice: l.entryPrice, realizedPnl: "0", margin: "12", contractValue: lotSizeOf(c, s.asset), mark: markOf(l) })));
+    if (acc.venueDown) return err(c, 503, "UNAVAILABLE", "The exchange did not answer the positions read · try again in a moment");
+    const positions = acc.strategies.filter((s) => s.status === "live").flatMap((s) => s.legs.filter((l) => l.status === "open" && l.entryPrice && !acc.venueGone?.has(l.symbol)).map((l) => ({ productId: 100 + s.legs.indexOf(l), symbol: l.symbol, size: (l.side === "buy" ? 1 : -1) * contractsOf(l, lotSizeOf(c, s.asset)), entryPrice: l.entryPrice, realizedPnl: "0", margin: "12", contractValue: lotSizeOf(c, s.asset), mark: markOf(l) })));
     return c.json({ positions, balances: [{ asset: "USD", balance: "5000", availableBalance: "4000" }] });
   });
   v1.post("/strategies/live/positions/exit", async (c) => {

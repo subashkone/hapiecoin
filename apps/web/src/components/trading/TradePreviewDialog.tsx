@@ -9,6 +9,8 @@ import { emitTour } from "@/lib/tour";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
 import type { FeeEstimate } from "@/lib/strategy/paper";
 import { type TradeLegView, feeLine, netPremium } from "./TradeModeDialog";
+import { OverlapNotice } from "./OverlapNotice";
+import type { OverlapRow } from "@/lib/strategy/overlap";
 import { ModePill } from "./StrategyDetailsDialog";
 
 export interface TradePreviewProps {
@@ -32,6 +34,8 @@ export interface TradePreviewProps {
   venue?: LivePreview | null | undefined;
   /** Exchange wallet available balance (HC-TR-158), when an exchange is connected; paper shows it too. */
   available?: { amount: number; asset: string } | null | undefined;
+  /** Contracts other open strategies already hold (HC-TR-159). */
+  overlaps?: readonly OverlapRow[] | undefined;
   onTrade: () => void;
 }
 
@@ -97,6 +101,7 @@ export function TradePreviewDialog(p: TradePreviewProps) {
               </tbody>
             </table>
           </div>
+          <OverlapNotice rows={p.overlaps ?? []} mode={p.mode} />
           <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-2xs">
             <dt className="text-muted-foreground">Net premium</dt>
             <dd className={cn("num", np >= 0 && "text-profit")}>{np >= 0 ? "Credit " : "Debit "}{fmtMoney(Math.abs(np), p.money)}</dd>

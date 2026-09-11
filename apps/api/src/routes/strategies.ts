@@ -9,6 +9,7 @@ import {
   AddLegsBody,
   AdjustBody,
   CloseAllBody,
+  ReconcileBody,
   CloseLegBody,
   Id,
   MAX_OPEN_LEGS,
@@ -575,6 +576,58 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       await touch(row.id, row.status === "live" ? { realizedPnl: realized, status: "archived", closedAt: now } : { realizedPnl: realized });
       const after = await reload(row.id);
       await auditFrom(c, db)({ action: "strategy.close_all", target: `strategy:${row.id}`, before, after });
+      return c.json(after, 200);
+    },
+  );
+
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/v1/strategies/{id}/reconcile",
+      tags: ["strategies"],
+      summary: "Book lots closed outside the app at the given prices; no order is sent (HC-TR-161, ADR-059)",
+      security: cookieAuth,
+      middleware: [guard],
+      request: { params: IdParam, body: { content: { "application/json": { schema: ReconcileBody } }, required: true } },
+      responses: { 200: jsonContent(Strategy, "Updated"), 400: errorResponses[400], 401: errorResponses[401], 404: errorResponses[404], 409: errorResponses[409] },
+    }),
+    async (c) => {
+      const me = currentUser(c);
+      const row = await loadOwned(me, c.req.valid("param").id);
+      if (!active(row)) throw errors.conflict("Only a paper or live strategy can be reconciled");
+      const body = c.req.valid("json");
+      const open = (await legsOf(row.id)).filter((l) => l.status === "open");
+      const seen = new Set<string>();
+      for (const x of body.legs) {
+        const l = open.find((y) => y.id === x.legId);
+        if (!l) throw errors.badRequest(`Leg ${x.legId} is not an open leg of this strategy`);
+        if (seen.has(l.id)) throw errors.badRequest(`${l.symbol}: listed twice`);
+        seen.add(l.id);
+        if (x.lots !== undefined && x.lots > l.lots) throw errors.badRequest(`${l.symbol}: ${x.lots} lots exceed the open ${l.lots}`);
+      }
+      const before = await full(row);
+      const lotSize = await lotSizeFor(me, row.asset);
+      const now = new Date();
+      // the exchange already closed these lots (a stop, a manual close, a liquidation): book them, send nothing
+      const adjId = newId("adj");
+      const batchId = `reconcile:${newId("b")}`;
+      await db.insert(strategyAdjustments).values({ id: adjId, strategyId: row.id, batchId, reason: `closed outside the app${body.reason ? `: ${body.reason}` : ""}`, createdAt: now });
+      const done = { added: 0, trimmed: 0, closed: 0, realizedPnl: "0" };
+      let total = row.realizedPnl;
+      for (const x of body.legs) {
+        const l = open.find((y) => y.id === x.legId)!;
+        const whole = x.lots === undefined || x.lots === l.lots;
+        const realized = await closeLeg(row, l, x.price, whole ? undefined : x.lots, lotSize, now);
+        done.realizedPnl = addDecimal(done.realizedPnl, realized);
+        total = addDecimal(total, realized);
+        if (whole) done.closed += 1;
+        else done.trimmed += 1;
+      }
+      await db.update(strategyAdjustments).set(done).where(eq(strategyAdjustments.id, adjId));
+      const left = (await legsOf(row.id)).filter((l) => l.status === "open").length;
+      await touch(row.id, left === 0 ? { realizedPnl: total, status: "archived", closedAt: now } : { realizedPnl: total });
+      const after = await reload(row.id);
+      await auditFrom(c, db)({ action: "strategy.reconcile", target: `strategy:${row.id}`, before, after });
       return c.json(after, 200);
     },
   );

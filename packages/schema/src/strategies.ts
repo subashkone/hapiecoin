@@ -223,6 +223,13 @@ export type CloseLegBody = z.infer<typeof CloseLegBody>;
 export const CloseAllBody = z.strictObject({ exits: PriceMap });
 export type CloseAllBody = z.infer<typeof CloseAllBody>;
 
+/** Book lots closed outside the app (an exchange stop, a manual close, a liquidation) at the given prices; no order is sent (ADR-059, HC-TR-161). */
+export const ReconcileBody = z.strictObject({
+  legs: z.array(z.strictObject({ legId: Id, lots: z.number().int().min(1).optional(), price: NonNegativeDecimal })).min(1).max(MAX_OPEN_LEGS),
+  reason: z.string().trim().max(MAX_ADJUST_REASON).optional(),
+});
+export type ReconcileBody = z.infer<typeof ReconcileBody>;
+
 /** Stop paper trading (HC-TR-081): archive (legs closed at `exits`) or back to draft (legs kept). */
 export const StopBody = z.strictObject({
   archive: z.boolean(),

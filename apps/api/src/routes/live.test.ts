@@ -50,6 +50,13 @@ describe("HC-TR-056 / HC-TR-088 live preview and safeguards", () => {
     expect(p.available).toBe("4000");
     expect(p.availableAsset).toBe("USD");
     expect(p.limits).toEqual({ maxLegs: 10, maxNotionalUsd: 100_000, markBandPct: 5 });
+    // the margin-in-use figure is informational: a failed positions read leaves it unknown and does not block the preview
+    t.trading.positionsDown = true;
+    const p2 = await json<LivePreview>(await preview(s.id));
+    t.trading.positionsDown = false;
+    expect(p2.ok).toBe(true);
+    expect(p2.marginUsed).toBeNull();
+    expect(p2.available).toBe("4000");
   });
 
   it("reports every blocker: fractional contracts, unlisted product, notional over the limit, wallet below the worst loss, and the account kill switch", async () => {
@@ -205,6 +212,13 @@ describe("HC-TR-070 / HC-TR-072 / HC-TR-086 / HC-TR-088 exits and adjustments on
     const pos = await json<{ positions: unknown[]; balances: unknown[] }>(await t.request(`/v1/strategies/live/positions?brokerId=${SEED.brokerId}`, { cookie: alice }));
     expect(pos.positions).toHaveLength(1);
     expect(pos.balances[0]).toMatchObject({ asset: "USD", availableBalance: "4000" });
+    // HC-TR-160: a venue that does not answer is 503, never an empty list the client could read as "holds nothing"
+    t.trading.positionsDown = true;
+    const placedBefore = t.trading.placed.length;
+    expect((await t.request(`/v1/strategies/live/positions?brokerId=${SEED.brokerId}`, { cookie: alice })).status).toBe(503);
+    expect((await t.request("/v1/strategies/live/positions/exit", { cookie: alice, json: { brokerId: SEED.brokerId, productIds: [101], idempotencyKey: "key-exit-down-001" } })).status).toBe(503);
+    expect(t.trading.placed.length).toBe(placedBefore); // nothing was sent
+    t.trading.positionsDown = false;
   });
 });
 
@@ -400,5 +414,24 @@ describe("HC-TR-088 adjustment batch on a live strategy (ADR-044)", () => {
     expect(rest.legs).toHaveLength(3);
     expect(rest.adjustments).toHaveLength(2);
     expect(rest.adjustments[1]).toMatchObject({ added: 1, closed: 1, batchId: "key-adj-live-006" });
+  });
+});
+
+describe("HC-TR-161 reconcile on a live strategy sends nothing to the venue", () => {
+  it("books the leg closed at the given price, leaves the other leg live, and the fake venue sees no order", async () => {
+    const s = await draft();
+    const live = await json<Strategy>(await place(s.id, "key-reconcile-0001", { [s.legs[0]!.id]: "1200", [s.legs[1]!.id]: "900" }));
+    const put = live.legs.find((l) => l.kind === "put")!;
+    const before = t.trading.placed.length;
+    const res = await t.request(`/v1/strategies/${s.id}/reconcile`, { cookie: alice, json: { legs: [{ legId: put.id, price: "850" }], reason: "stop hit on the exchange" } });
+    expect(res.status).toBe(200);
+    const after = await json<Strategy>(res);
+    expect(t.trading.placed.length).toBe(before); // no order, no reduce-only exit, nothing
+    expect(after.status).toBe("live");
+    expect(after.orders).toHaveLength(live.orders.length); // no exit order row either
+    expect(after.legs.find((l) => l.id === put.id)).toMatchObject({ status: "squared_off", exitPrice: "850" });
+    expect(after.legs.find((l) => l.kind === "call")).toMatchObject({ status: "open" });
+    expect(after.realizedPnl).toBe("0.49"); // (899 − 850) × 10 × 0.001 on the sold put filled at 899
+    expect(after.adjustments[after.adjustments.length - 1]).toMatchObject({ reason: "closed outside the app: stop hit on the exchange", closed: 1, trimmed: 0, added: 0 });
   });
 });
