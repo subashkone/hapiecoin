@@ -24,7 +24,7 @@ let mock: MockFetch;
 const mine = () => mock.state.accounts.get(EMAIL)!.alerts;
 const seed = (a: Partial<Alert>): Alert => {
   const at = "2026-09-10T00:00:00.000Z";
-  const alert: Alert = { id: `alr_${mine().length + 1}`, kind: "price", asset: "BTC", strategyId: null, strategyName: null, op: ">=", value: "82000", channels: ["push"], state: "armed", lastValue: null, triggeredAt: null, createdAt: at, updatedAt: at, ...a };
+  const alert: Alert = { id: `alr_${mine().length + 1}`, kind: "price", asset: "BTC", venue: "delta_india", strategyId: null, strategyName: null, op: ">=", value: "82000", channels: ["push"], state: "armed", lastValue: null, triggeredAt: null, createdAt: at, updatedAt: at, ...a };
   mine().unshift(alert);
   return alert;
 };
@@ -162,7 +162,7 @@ describe("HC-SH-096 the engine", () => {
 describe("HC-SH-100 / HC-TR-139 the Set alert hook", () => {
   it("openAlerts with a strategy prefill lands on the P&L form with the strategy chosen; saving snapshots its name", async () => {
     const at = "2026-09-10T00:00:00.000Z";
-    const s: Strategy = { id: "strat_1", name: "Bull Call Spread", asset: "BTC", status: "paper", tradingMode: "paper", templateName: "Bull Call Spread", brokerId: "brk_delta", legs: [], realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orders: [], adjustments: [], orderBatchId: null, startedAt: at, closedAt: null, createdAt: at, updatedAt: at };
+    const s: Strategy = { id: "strat_1", name: "Bull Call Spread", asset: "BTC", venue: "delta_india", status: "paper", tradingMode: "paper", templateName: "Bull Call Spread", brokerId: "brk_delta", legs: [], realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orders: [], adjustments: [], orderBatchId: null, startedAt: at, closedAt: null, createdAt: at, updatedAt: at };
     mock.state.accounts.get(EMAIL)!.strategies.push(s);
     renderWithProviders(<Harness />);
     serveSpot("79521");

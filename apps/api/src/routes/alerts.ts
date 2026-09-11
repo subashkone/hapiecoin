@@ -74,17 +74,19 @@ export function registerAlertRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, now
         if (!u?.chatId) throw errors.badRequest("Connect Telegram first (Alerts → Connect Telegram), then pick the telegram channel");
       }
       let strategyName: string | null = null;
+      let venue = body.venue;
       if (body.strategyId) {
-        const [s] = await db.select({ name: strategies.name, asset: strategies.asset }).from(strategies).where(and(eq(strategies.id, body.strategyId), eq(strategies.userId, me.id))).limit(1);
+        const [s] = await db.select({ name: strategies.name, asset: strategies.asset, venue: strategies.venue }).from(strategies).where(and(eq(strategies.id, body.strategyId), eq(strategies.userId, me.id))).limit(1);
         if (!s) throw errors.notFound("Strategy");
         if (s.asset !== body.asset) throw errors.badRequest("The alert's asset must match the strategy's asset");
         strategyName = s.name;
+        venue = s.venue; // ADR-065: a P&L alert watches its strategy's venue
       }
       const at = now();
       const id = newId("alr");
       const [row] = await db
         .insert(alerts)
-        .values({ id, userId: me.id, kind: body.kind, asset: body.asset, strategyId: body.strategyId ?? null, strategyName, op: body.op, value: body.value, channels: body.channels, state: "armed", createdAt: at, updatedAt: at })
+        .values({ id, userId: me.id, kind: body.kind, asset: body.asset, venue, strategyId: body.strategyId ?? null, strategyName, op: body.op, value: body.value, channels: body.channels, state: "armed", createdAt: at, updatedAt: at })
         .returning();
       if (!row) throw errors.conflict("Alert could not be created");
       const out = toAlert(row);

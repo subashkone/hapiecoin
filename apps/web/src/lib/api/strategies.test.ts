@@ -16,7 +16,7 @@ const CALL = { kind: "call" as const, side: "buy" as const, strike: "80000", exp
 describe("[API] strategy fetchers (ADR-024)", () => {
   it("create, list by status, get one, patch, start, pnl, close all, archive / restore, delete", async () => {
     const f = strategyFetchers(createApiClient());
-    const s = await f.create({ name: "Fetch me", asset: "BTC", templateName: "Custom", legs: [CALL] });
+    const s = await f.create({ name: "Fetch me", asset: "BTC", templateName: "Custom", venue: "delta_india", legs: [CALL] });
     expect(s.status).toBe("draft");
     expect((await f.list("draft")).map((x) => x.id)).toEqual([s.id]);
     expect(await f.list("paper")).toEqual([]);

@@ -2,7 +2,7 @@ import type { Broker, Strategy, StrategyLeg } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
 import { dayPnl, daysOf, feeFor, legPnl, localLegToInput, pickToInput, pnlSeries, priceMap, serverLegToLocal, strategyPnl } from "./paper";
 
-const BROKER: Broker = { id: "brk", name: "Delta Exchange India", feePct: "0.05", gstPct: "18", feeCapPct: "10", scope: "GLOBAL" };
+const BROKER: Broker = { id: "brk", name: "Delta Exchange India", feePct: "0.05", gstPct: "18", feeCapPct: "10", scope: "GLOBAL", venue: "delta_india" };
 const leg = (over: Partial<StrategyLeg> = {}): StrategyLeg => ({
   id: "leg_1",
   kind: "call",
@@ -26,6 +26,7 @@ const leg = (over: Partial<StrategyLeg> = {}): StrategyLeg => ({
 const strat = (over: Partial<Strategy> = {}): Strategy => ({
   id: "strat_1",
   name: "Test",
+  venue: "delta_india",
   asset: "BTC",
   status: "paper",
   tradingMode: "paper",

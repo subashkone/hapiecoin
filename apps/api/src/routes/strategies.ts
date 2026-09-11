@@ -163,6 +163,7 @@ export function toStrategy(row: StrategyRow, legs: LegRow[], pnl: PnlRow[], orde
     id: row.id,
     name: row.name,
     asset: row.asset,
+    venue: row.venue,
     status: row.status,
     tradingMode: row.tradingMode,
     templateName: row.templateName,
@@ -283,13 +284,14 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
   const full = (row: StrategyRow) => loadStrategy(deps, row.id);
   const reload = (id: string) => loadStrategy(deps, id);
   const lotSizeFor = (user: SessionUser, asset: string) => lotSizeOf(deps, user, asset);
-  async function brokerVisible(user: SessionUser, brokerId: string): Promise<boolean> {
+  /** The broker when the user may use it (global or their own), with the venue it trades on (ADR-065). */
+  async function brokerVisible(user: SessionUser, brokerId: string): Promise<{ id: string; venue: string } | undefined> {
     const [b] = await db
-      .select({ id: brokers.id })
+      .select({ id: brokers.id, venue: brokers.venue })
       .from(brokers)
       .where(and(eq(brokers.id, brokerId), or(eq(brokers.scope, "GLOBAL"), eq(brokers.ownerId, user.id))))
       .limit(1);
-    return b !== undefined;
+    return b;
   }
   const touch = (id: string, patch: Partial<typeof strategies.$inferInsert> = {}) =>
     db.update(strategies).set({ ...patch, updatedAt: new Date() }).where(eq(strategies.id, id));
@@ -354,7 +356,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const me = currentUser(c);
       const body = c.req.valid("json");
       const id = newId("strat");
-      await db.insert(strategies).values({ id, userId: me.id, name: body.name, asset: body.asset, status: "draft", templateName: body.templateName });
+      await db.insert(strategies).values({ id, userId: me.id, name: body.name, asset: body.asset, venue: body.venue, status: "draft", templateName: body.templateName });
       await db.insert(strategyLegs).values(body.legs.map((l, i) => legValues(id, l, i)));
       const out = await reload(id);
       await auditFrom(c, db)({ action: "strategy.create", target: `strategy:${id}`, before: null, after: out });
@@ -448,7 +450,9 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       if (row.status !== "draft") throw errors.conflict(`Only a draft can be started; this strategy is ${row.status}`);
       if (body.mode === "live") throw errors.conflict("Live placement goes through /live/preview and /live/place (ADR-025)");
       await assertEntitled(deps, me.id, "paper_trading"); // HC-SH-054: plan limit per calendar month (ADR-030)
-      if (!(await brokerVisible(me, body.brokerId))) throw errors.badRequest("Select an exchange...");
+      const broker = await brokerVisible(me, body.brokerId);
+      if (!broker) throw errors.badRequest("Select an exchange...");
+      if (broker.venue !== row.venue) throw errors.conflict(`This exchange trades on ${broker.venue}; the strategy is on ${row.venue}`); // ADR-065
       const legs = await legsOf(row.id);
       if (legs.length === 0) throw errors.badRequest("Add at least one leg to trade");
       const before = toStrategy(row, legs, []);

@@ -39,6 +39,7 @@ function sourceFor(day: number, opts: { spot?: number; ivShift?: number } = {}):
     { ...inst("C-BTC-70000-250926", "call", 70_000, "2026-09-25"), isActive: false },
   ];
   return {
+    venue: "delta_india",
     products: () => Promise.resolve(products),
     tickers: (u) => {
       if (u === "BTC")

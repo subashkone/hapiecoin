@@ -2,8 +2,8 @@
 // Everything the workbench screens read (ADR-044, HC-TR-148..151): the followed strategy under adjustment,
 // its open legs, the draft, the pane's before / after analysis, the marks and their age, the ticket figures
 // (effects, cashflow, cap, summary and guard rails) and the actions that change the draft.
-import type { Strategy, StrategyLeg as ServerLeg, Underlying } from "@hapiecoin/schema";
-import { defaultLotSizes } from "@hapiecoin/venues/core";
+import type { Strategy, StrategyLeg as ServerLeg } from "@hapiecoin/schema";
+import { defaultLotSizes, getVenueCore } from "@hapiecoin/venues/core";
 import { currentVenue } from "@/lib/venue";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useStrategies } from "@/lib/api/strategies";
@@ -15,7 +15,6 @@ import { type AdjustDraft, type ChangeSummary, type Effect, type PickInput, adds
 
 /** Marks older than this are called stale in the guard rails (Review re-reads them anyway). */
 export const STALE_MARKS_MS = 60_000;
-const DEFAULT_LOTS: Record<Underlying, string> = defaultLotSizes(currentVenue()); // ADR-064
 
 export interface AdjustWorkbench {
   a: StrategyAnalysis;
@@ -78,7 +77,7 @@ export function useAdjustWorkbench(): AdjustWorkbench | null {
   const open = useMemo(() => (strategy ? openLegs(strategy) : []), [strategy]);
   const markAgeSec = useAgeSeconds(a.quoteVersion, draft?.startedAt ?? 0);
   const asset = strategy?.asset ?? "BTC";
-  const lotSize = settings?.lotSizes[asset] ?? DEFAULT_LOTS[asset];
+  const lotSize = settings?.lotSizes[asset] ?? defaultLotSizes(strategy ? getVenueCore(strategy.venue) : currentVenue())[asset]; // ADR-065: the strategy's own venue
   return useMemo(() => {
     // every write goes through the normaliser, so a lots-after key always means an order (store hasAdjustWork relies on it)
     const update = (fn: (d: AdjustDraft) => AdjustDraft) => updateAdjust((d) => normaliseLotsAfter(fn(d), open));

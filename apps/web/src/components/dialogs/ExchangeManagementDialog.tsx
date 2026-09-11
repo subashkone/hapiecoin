@@ -22,6 +22,7 @@ import {
 import { DECIMAL_STRING_RE, isNonNegativeDecimal, type Broker } from "@hapiecoin/schema";
 import { useState } from "react";
 import { useBrokers, useCreateBroker, useDeleteBroker, useUpdateBroker } from "@/lib/api/queries";
+import { CURRENT_VENUE } from "@/lib/venue";
 import type { DialogProps } from "./SettingsDialogs";
 
 type FormState = { name: string; feePct: string; gstPct: string; feeCapPct: string };
@@ -30,7 +31,7 @@ const EMPTY: FormState = { name: "", feePct: "0.05", gstPct: "18", feeCapPct: "1
 export function validateBrokerForm(f: FormState): { nameError?: string; body?: Omit<Broker, "id" | "scope"> } {
   if (!f.name.trim()) return { nameError: "Exchange name is required" };
   const pct = (v: string) => (DECIMAL_STRING_RE.test(v.trim()) && isNonNegativeDecimal(v.trim()) ? v.trim() : "0");
-  return { body: { name: f.name.trim(), feePct: pct(f.feePct), gstPct: pct(f.gstPct), feeCapPct: pct(f.feeCapPct) } };
+  return { body: { name: f.name.trim(), feePct: pct(f.feePct), gstPct: pct(f.gstPct), feeCapPct: pct(f.feeCapPct), venue: CURRENT_VENUE } };
 }
 
 function BrokerForm({ initial, onDone, onCancel }: { initial?: Broker; onDone: () => void; onCancel: () => void }) {

@@ -31,6 +31,7 @@ export function mockIvHistory(asset: Underlying, days = 365, today = new Date())
   const rv = realisedVolOf(series.slice(-30).map((p) => p.spot));
   return {
     asset,
+    venue: "delta_india",
     asOf: today.toISOString(),
     current,
     rank,
@@ -54,5 +55,5 @@ export function mockMarkHistory(symbol: string, hours = 24, now = new Date()): M
     iv = Math.max(0.1, iv + (r() - 0.5) * 0.004);
     points.push({ ts: new Date(now.getTime() - i * 300_000).toISOString(), mark: Number(mark.toFixed(1)), markIv: Number(iv.toFixed(4)) });
   }
-  return { symbol, hours, points };
+  return { symbol, venue: "delta_india", hours, points };
 }

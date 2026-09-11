@@ -5,16 +5,25 @@
  *   GET /v1/market/iv?asset=BTC              front-expiry ATM IV series, IV rank, realised vol, 24 h spot range
  *   GET /v1/market/marks/{symbol}?hours=24   one option's mark and mark IV history for the details sparkline
  */
-import { IvHistory, MarkHistory, Underlying } from "@hapiecoin/schema";
+import { IvHistory, MarkHistory, Underlying, Venue } from "@hapiecoin/schema";
+import { DEFAULT_VENUE } from "@hapiecoin/venues";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { ivHistory, markHistory } from "../market-history.js";
 import type { AppEnv } from "../security/context.js";
 import { errors } from "../security/errors.js";
 import { type AppDeps, errorResponses, jsonContent } from "./shared.js";
 
-const IvQuery = z.object({ asset: z.string().optional() });
+const IvQuery = z.object({ asset: z.string().optional(), venue: z.string().optional() });
 const SymbolParam = z.object({ symbol: z.string().min(1).max(64) });
-const MarksQuery = z.object({ hours: z.coerce.number().int().min(1).max(168).default(24) });
+const MarksQuery = z.object({ hours: z.coerce.number().int().min(1).max(168).default(24), venue: z.string().optional() });
+
+/** ADR-065: an optional `venue` query; absent means the default venue, unknown is a 400. */
+function venueOf(raw: string | undefined): Venue {
+  if (raw === undefined) return DEFAULT_VENUE;
+  const parsed = Venue.safeParse(raw);
+  if (!parsed.success) throw errors.badRequest(`unknown venue ${raw}`);
+  return parsed.data;
+}
 
 export function registerMarketRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, now: () => number = Date.now): void {
   app.openapi(
@@ -29,7 +38,7 @@ export function registerMarketRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, no
     async (c) => {
       const parsed = Underlying.safeParse((c.req.valid("query").asset ?? "").toUpperCase());
       if (!parsed.success) throw errors.badRequest("asset must be BTC, ETH or XAUT");
-      const out = await ivHistory(deps.db, parsed.data, now);
+      const out = await ivHistory(deps.db, parsed.data, now, venueOf(c.req.valid("query").venue));
       if (out.asOf === null) throw errors.unavailable(`no IV history for ${parsed.data} yet; the snapshotter records the first point within minutes of the API start`);
       c.header("Cache-Control", "public, max-age=60");
       return c.json(out, 200);
@@ -47,9 +56,9 @@ export function registerMarketRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, no
     }),
     async (c) => {
       const { symbol } = c.req.valid("param");
-      const { hours } = c.req.valid("query");
+      const { hours, venue } = c.req.valid("query");
       c.header("Cache-Control", "public, max-age=60");
-      return c.json(await markHistory(deps.db, symbol, hours, now), 200);
+      return c.json(await markHistory(deps.db, symbol, hours, now, venueOf(venue)), 200);
     },
   );
 }

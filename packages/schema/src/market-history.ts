@@ -2,7 +2,7 @@
 // from the venue, and the derived IV rank / realised-vol figures the Vol tab, the header and the alerts read.
 // Figures here are chart data (fractions and prices as numbers), never money.
 import { z } from "zod";
-import { IsoDate, IsoDateTime, Underlying } from "./primitives.js";
+import { IsoDate, IsoDateTime, Underlying, Venue } from "./primitives.js";
 
 /** One day of the front-expiry ATM IV series: the last snapshot of that UTC day. */
 export const IvPoint = z.strictObject({
@@ -40,6 +40,8 @@ export type RealisedVol = z.infer<typeof RealisedVol>;
 
 export const IvHistory = z.strictObject({
   asset: Underlying,
+  /** The venue the snapshots were taken on (ADR-065). */
+  venue: Venue,
   /** Time of the newest snapshot; null when nothing has been recorded yet. */
   asOf: IsoDateTime.nullable(),
   current: z.strictObject({ atmIv: z.number().finite().nonnegative(), spot: z.number().finite().positive(), expiry: IsoDate, ts: IsoDateTime }).nullable(),
@@ -61,7 +63,7 @@ export const MarkPoint = z.strictObject({
   markIv: z.number().finite().nonnegative().nullable(),
 });
 export type MarkPoint = z.infer<typeof MarkPoint>;
-export const MarkHistory = z.strictObject({ symbol: z.string().min(1), hours: z.number().int().positive(), points: z.array(MarkPoint) });
+export const MarkHistory = z.strictObject({ symbol: z.string().min(1), venue: Venue, hours: z.number().int().positive(), points: z.array(MarkPoint) });
 export type MarkHistory = z.infer<typeof MarkHistory>;
 
 /** IV rank and percentile of `current` against `values` (the daily series); null with fewer than two points. */

@@ -23,6 +23,7 @@ import { isTemplateName } from "@/lib/strategy/templates";
 import { type TradeLegView, TradeModeDialog, netPremium } from "./TradeModeDialog";
 import { TradePreviewDialog, legLabel } from "./TradePreviewDialog";
 import { overlapsFor } from "@/lib/strategy/overlap";
+import { CURRENT_VENUE } from "@/lib/venue";
 
 /** One-time import of the Phase 2 browser drafts into the API (ADR-024). */
 export function useImportLegacyDrafts() {
@@ -43,7 +44,7 @@ export function useImportLegacyDrafts() {
       for (const d of drafts) {
         if (d.legs.length === 0) continue;
         try {
-          await create.mutateAsync({ name: d.name, asset: d.asset, templateName: d.templateName, legs: d.legs.slice(0, 8).map(localLegToInput) });
+          await create.mutateAsync({ name: d.name, asset: d.asset, venue: CURRENT_VENUE, templateName: d.templateName, legs: d.legs.slice(0, 8).map(localLegToInput) });
           n += 1;
         } catch {
           /* keep going: a failed row is not worth losing the rest */
@@ -148,7 +149,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
   const ensureDraft = async (name?: string): Promise<string> => {
     if (target) return target.id;
     const finalName = (name ?? meta.name).trim();
-    const body = { name: finalName, asset: builder.asset, templateName: guessTemplateName(builder.legs), legs: builder.legs.map((l) => ({ ...localLegToInput(l), price: toDecimal(Number(builder.priceFor(l)), 4) })) };
+    const body = { name: finalName, asset: builder.asset, venue: CURRENT_VENUE, templateName: guessTemplateName(builder.legs), legs: builder.legs.map((l) => ({ ...localLegToInput(l), price: toDecimal(Number(builder.priceFor(l)), 4) })) };
     if (meta.draftId) {
       await patch.mutateAsync({ id: meta.draftId, body: { name: body.name, templateName: body.templateName, legs: body.legs } });
       return meta.draftId;
@@ -168,6 +169,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
         const body = {
           name: finalName,
           asset: builder.asset,
+          venue: CURRENT_VENUE,
           templateName: guessTemplateName(builder.legs),
           legs: builder.legs.map((l) => ({ ...localLegToInput(l), price: toDecimal(Number(builder.priceFor(l)), 4) })),
         };

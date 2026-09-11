@@ -30,7 +30,7 @@ describe("HC-SH-094 / HC-SH-098 alert schemas", () => {
   });
 
   it("a stored alert round-trips", () => {
-    const a = { id: "alr_1", ...base, channels: ["push"], strategyId: null, strategyName: null, state: "armed", lastValue: null, triggeredAt: null, createdAt: "2026-09-10T00:00:00.000Z", updatedAt: "2026-09-10T00:00:00.000Z" };
+    const a = { id: "alr_1", ...base, venue: "delta_india", channels: ["push"], strategyId: null, strategyName: null, state: "armed", lastValue: null, triggeredAt: null, createdAt: "2026-09-10T00:00:00.000Z", updatedAt: "2026-09-10T00:00:00.000Z" };
     expect(Alert.safeParse(a).success).toBe(true);
     expect(Alert.safeParse({ ...a, extra: 1 }).success).toBe(false);
   });

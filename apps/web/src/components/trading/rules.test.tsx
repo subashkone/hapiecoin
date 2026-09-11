@@ -23,7 +23,7 @@ const CALL = { id: "leg_a", kind: "call" as const, side: "buy" as const, strike:
 const PUT = { ...CALL, id: "leg_b", kind: "put" as const, side: "sell" as const, strike: "78000", symbol: "P-BTC-78000-250926", price: "900", entryPrice: "900", position: 1 };
 function strat(i: number, over: Partial<Strategy> = {}): Strategy {
   const at = `2026-09-0${(i % 8) + 1}T10:00:00Z`;
-  return { id: `strat_${i}`, name: `Paper ${i}`, asset: "BTC", status: "paper", tradingMode: "paper", templateName: "Custom", brokerId: "brk_delta", legs: [{ ...CALL, id: `leg_${i}` }], realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], rules: [], startedAt: at, closedAt: null, createdAt: at, updatedAt: at, ...over };
+  return { id: `strat_${i}`, name: `Paper ${i}`, asset: "BTC", venue: "delta_india", status: "paper", tradingMode: "paper", templateName: "Custom", brokerId: "brk_delta", legs: [{ ...CALL, id: `leg_${i}` }], realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], rules: [], startedAt: at, closedAt: null, createdAt: at, updatedAt: at, ...over };
 }
 const rule = (over: Partial<StrategyRule> = {}): StrategyRule => ({ id: "rule_1", kind: "stop", trigger: "money", value: "60", basis: null, basisUsd: null, thresholdUsd: "-60", channels: ["push"], state: "armed", firedAt: null, firedPnl: null, outcome: null, note: null, createdAt: "2026-09-10T10:00:00Z", updatedAt: "2026-09-10T10:00:00Z", ...over });
 function serveMarket() {

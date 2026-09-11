@@ -999,5 +999,15 @@
     "how": "@hapiecoin/venues/core is the browser-safe part of the port (no client factory, no node:crypto); the web client formats and parses symbols through the codec (venueSymbol, parseVenueSymbol), takes lot defaults from defaultLotSizes, the settlement hour from the venue calendar and the venue id from DEFAULT_VENUE; an impossible calendar date in an exchange position symbol is refused",
     "evidence": "ADR-064 (11 Sep 2026): packages/venues/src/port/core.ts, delta-india.ts, delta-india-clients.ts; apps/web/src/lib/strategy/legs.ts, positions.ts, lib/chain/expiries.ts, lib/adjust/useAdjustWorkbench.ts, lib/gateway/*; unit port.test.ts, legs.test.ts, positions.test.ts",
     "test": "unit (web)"
+  },
+  {
+    "screen": "Venues · column",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Every strategy, exchange, alert and history row names its venue",
+    "how": "Migration 0016 adds venue (default delta_india) to strategies, brokers, alerts, iv_snapshots and instrument_marks; Strategy / Alert / Broker / IvHistory / MarkHistory carry venue; a P&L alert takes its strategy's venue; history reads and the market routes are scoped to a venue (?venue=, unknown is 400); paper start and live placement refuse an exchange of another venue with a 409; the web client sends its venue on create and the workbench sizes lots by the strategy's venue",
+    "evidence": "ADR-065 (11 Sep 2026): apps/api/drizzle/0016_thankful_loners.sql, src/db/schema.ts, routes/strategies.ts, routes/live-exec.ts, routes/live.ts, routes/alerts.ts, routes/brokers.ts, routes/market.ts, market-history.ts, alerts-evaluate.ts, settlement.ts, iv-snapshot.ts, db/seed.ts; packages/schema strategies.ts, alerts.ts, accounts.ts, market-history.ts; apps/web AlertsDialog, BuilderPanel, TradeFlow, ExchangeManagementDialog, useAdjustWorkbench; unit venue-column.test.ts",
+    "test": "unit (api)"
   }
 ]

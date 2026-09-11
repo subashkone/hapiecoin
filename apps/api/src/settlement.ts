@@ -6,7 +6,8 @@
 // exchange settles it itself, HapieCoin does the bookkeeping, and an unreadable exchange books nothing on a guess.
 // Without a spot for the instant the leg stays open and is retried on the next pass. Never runs under NODE_ENV=test
 // unless a test calls `settleExpired` itself.
-import { type Underlying, settlementMsOf, toDecimal } from "@hapiecoin/schema";
+import { type Underlying, type Venue, settlementMsOf, toDecimal } from "@hapiecoin/schema";
+import { DEFAULT_VENUE } from "@hapiecoin/venues";
 import { and, eq, gte, inArray, lte, ne } from "drizzle-orm";
 import { writeAudit } from "./audit.js";
 import { ivSnapshots, strategies, strategyAdjustments, strategyLegs } from "./db/schema.js";
@@ -18,8 +19,8 @@ import { addDecimal, closeLegRow, disarmRules, freshTotal } from "./routes/strat
 export const SETTLEMENT_GRACE_MS = 2 * 60_000;
 
 export interface SettlementSource {
-  /** The underlying's spot at the settlement instant, or null when nothing trustworthy is known yet. */
-  spotAt(asset: Underlying, settlementMs: number): Promise<number | null>;
+  /** The underlying's spot at the settlement instant on `venue` (the default venue when absent), or null when nothing trustworthy is known yet. */
+  spotAt(asset: Underlying, settlementMs: number, venue?: Venue): Promise<number | null>;
 }
 
 export interface SettlementReport {
@@ -74,9 +75,9 @@ export async function settleExpired(
   }
   const out: SettlementReport = { strategies: due.size, settled: 0, archived: 0, skipped: 0 };
   const spots = new Map<string, number | null>();
-  const spotFor = async (asset: Underlying, ms: number): Promise<number | null> => {
-    const key = `${asset}:${ms}`;
-    if (!spots.has(key)) spots.set(key, await source.spotAt(asset, ms));
+  const spotFor = async (asset: Underlying, ms: number, venue: Venue): Promise<number | null> => {
+    const key = `${venue}:${asset}:${ms}`;
+    if (!spots.has(key)) spots.set(key, await source.spotAt(asset, ms, venue));
     return spots.get(key) ?? null;
   };
   for (const { strategy, legs } of due.values()) {
@@ -121,7 +122,7 @@ export async function settleExpired(
         }
         // the spot read is the last await before the write, so the leg is re-read after it: the trader may have
         // closed the leg since the pass started (an exit, an adjustment, Reconcile) and that close must stand
-        const spot = seen.entryPrice === null ? null : await spotFor(strategy.asset, settlementMs);
+        const spot = seen.entryPrice === null ? null : await spotFor(strategy.asset, settlementMs, strategy.venue);
         if (seen.entryPrice !== null && spot === null) {
           out.skipped += 1;
           continue;
@@ -223,12 +224,13 @@ export function snapshotSpotSource(
   windowMs = 30 * 60_000,
 ): SettlementSource {
   return {
-    async spotAt(asset, settlementMs) {
+    async spotAt(asset, settlementMs, venue = DEFAULT_VENUE) {
       const rows = await deps.db
         .select({ spot: ivSnapshots.spot, ts: ivSnapshots.ts })
         .from(ivSnapshots)
         .where(
           and(
+            eq(ivSnapshots.venue, venue),
             eq(ivSnapshots.asset, asset),
             gte(ivSnapshots.ts, new Date(settlementMs - windowMs)),
             lte(ivSnapshots.ts, new Date(settlementMs + windowMs)),

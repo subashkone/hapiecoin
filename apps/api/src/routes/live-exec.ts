@@ -6,6 +6,7 @@
  */
 import { type LivePreview, type LivePreviewLeg, type StrategyOrder, toDecimal } from "@hapiecoin/schema";
 import { DEFAULT_VENUE, type DeltaCredentials, type PlaceOrderResult, contractsFor, defaultLotSizes, getVenue, roundToTick } from "@hapiecoin/venues";
+import type { Venue } from "@hapiecoin/schema";
 import { and, eq } from "drizzle-orm";
 import { brokerCredentials, brokers, type strategies, strategyLegs, strategyOrders, userSettings, users } from "../db/schema.js";
 import type { SessionUser } from "../security/context.js";
@@ -31,10 +32,23 @@ export async function lotSizeFor(deps: AppDeps, user: SessionUser, asset: string
 }
 
 /** The caller's own exchange credential for `brokerId`, unsealed for this call only. */
-export async function openCredential(deps: AppDeps, user: SessionUser, brokerId: string): Promise<DeltaCredentials> {
-  const [b] = await deps.db.select({ id: brokers.id }).from(brokers).where(and(eq(brokers.id, brokerId), eq(brokers.scope, "GLOBAL"))).limit(1);
-  const [own] = b ? [b] : await deps.db.select({ id: brokers.id }).from(brokers).where(and(eq(brokers.id, brokerId), eq(brokers.ownerId, user.id))).limit(1);
-  if (!own) throw errors.badRequest("Select an exchange...");
+/** The venue a broker the user may use (global or their own) trades on; null when there is no such broker. */
+export async function brokerVenueOf(deps: AppDeps, user: SessionUser, brokerId: string): Promise<Venue | null> {
+  const [b] = await deps.db.select({ venue: brokers.venue }).from(brokers).where(and(eq(brokers.id, brokerId), eq(brokers.scope, "GLOBAL"))).limit(1);
+  const [own] = b ? [b] : await deps.db.select({ venue: brokers.venue }).from(brokers).where(and(eq(brokers.id, brokerId), eq(brokers.ownerId, user.id))).limit(1);
+  return own?.venue ?? null;
+}
+
+/** ADR-065: the refusal a broker of another venue earns for a strategy. */
+export function venueMismatch(brokerVenue: Venue, strategyVenue: Venue): string {
+  return `This exchange trades on ${brokerVenue}; the strategy is on ${strategyVenue}`;
+}
+
+/** ADR-065: a broker of another venue cannot place a strategy; `expectedVenue` is the strategy's venue when one is in hand. */
+export async function openCredential(deps: AppDeps, user: SessionUser, brokerId: string, expectedVenue?: Venue): Promise<DeltaCredentials> {
+  const brokerVenue = await brokerVenueOf(deps, user, brokerId);
+  if (brokerVenue === null) throw errors.badRequest("Select an exchange...");
+  if (expectedVenue !== undefined && brokerVenue !== expectedVenue) throw errors.conflict(venueMismatch(brokerVenue, expectedVenue));
   const [row] = await deps.db.select().from(brokerCredentials).where(and(eq(brokerCredentials.userId, user.id), eq(brokerCredentials.brokerId, brokerId))).limit(1);
   if (!row) throw errors.conflict("Connect your exchange in Settings → API Settings to enable live trading");
   let creds: DeltaCredentials;
@@ -127,6 +141,10 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
   const reasons: string[] = [];
   const blocked = await tradingBlockedReason(deps, user);
   if (blocked) reasons.push(blocked);
+  // ADR-065: a broker of another venue is refused before any call reaches that venue
+  const brokerVenue = await brokerVenueOf(deps, user, brokerId);
+  const wrongVenue = brokerVenue !== null && brokerVenue !== strategy.venue;
+  if (wrongVenue) reasons.push(venueMismatch(brokerVenue, strategy.venue));
   const { trading } = deps.config;
   if (legs.length === 0 && exits.length === 0) reasons.push("Add at least one leg to trade");
   if (legs.length > trading.maxLegs) reasons.push(`At most ${trading.maxLegs} legs per live placement`);
@@ -139,8 +157,11 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
   let available: string | null = null;
   let availableAsset: string | null = null;
   let marginUsed: string | null = null;
+  if (wrongVenue) {
+    return { ok: false, reasons, legs: [...exitPlan.legs, ...plan.legs], notional: toDecimal(notional, 2), available, availableAsset, marginUsed, limits: { maxLegs: trading.maxLegs, maxNotionalUsd: trading.maxNotionalUsd, markBandPct: trading.markBandPct } };
+  }
   try {
-    const creds = await openCredential(deps, user, brokerId);
+    const creds = await openCredential(deps, user, brokerId, strategy.venue);
     const balances = await deps.trading.getBalances(creds);
     const row = SETTLING_ASSETS.map((a) => balances.find((b) => b.asset === a)).find((b) => b !== undefined);
     // the venue has no pre-trade margin estimate; show what it holds right now so the trader sees the real headroom (ADR-029).
