@@ -1,0 +1,39 @@
+# Real-integration smoke run (ADR-055): the web app against apps/api and apps/gateway with the live Delta feed.
+# Manual only: it needs network access to Delta Exchange India, which a hosted runner may not have.
+name: smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # the real API and gateway run under tsx and import the workspace packages from dist/
+      - run: pnpm turbo run build --filter="./packages/*"
+      - run: pnpm --filter @hapiecoin/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @hapiecoin/web test:smoke
+        env:
+          PW_CHANNEL: chromium
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+          if-no-files-found: ignore
+          retention-days: 7

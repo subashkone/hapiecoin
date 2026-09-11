@@ -9,17 +9,19 @@ FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
 COPY packages/config/package.json packages/config/
 COPY packages/schema/package.json packages/schema/
+COPY packages/venues/package.json packages/venues/
 COPY apps/api/package.json apps/api/
 # Dev dependencies are needed here (tsc, drizzle-kit); NODE_ENV is unset in this stage so pnpm installs them.
 RUN pnpm install --frozen-lockfile --filter @hapiecoin/api...
 
-# 2. Build schema then the API.
+# 2. Build the workspace packages the API depends on (config, schema, venues), then the API.
 FROM deps AS build
 COPY packages/config packages/config
 COPY packages/schema packages/schema
+COPY packages/venues packages/venues
 COPY apps/api apps/api
 COPY tsconfig.base.json ./
-RUN pnpm --filter @hapiecoin/schema build && pnpm --filter @hapiecoin/api build
+RUN pnpm --filter @hapiecoin/api... build
 # Production-only tree of the API and its workspace dependencies (single project; `...` would select many).
 RUN pnpm --filter @hapiecoin/api --prod --legacy deploy /out
 

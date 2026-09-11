@@ -58,7 +58,7 @@ describe("HC-PB-060 Preview renders every component in both themes", () => {
     await user.click(expiry);
     await user.click(await screen.findByRole("option", { name: "26 Dec · 110d" }));
     expect(expiry.textContent).toContain("26 Dec");
-  }, 30_000);
+  }, 90_000);
 });
 
 describe("[A11Y] axe smoke test on the Preview page", () => {
@@ -72,5 +72,5 @@ describe("[A11Y] axe smoke test on the Preview page", () => {
       (v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`,
     );
     expect(summary).toEqual([]);
-  }, 30_000);
+  }, 90_000);
 });

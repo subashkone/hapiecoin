@@ -8,7 +8,8 @@ import { createTestApp, type TestApp } from "../test-support/harness.js";
 import { type AppEnv, clientIp, currentUser } from "./context.js";
 import { HttpError, errors, notFound, onError } from "./errors.js";
 import { adminOnly, requireAdmin } from "./guards.js";
-import { GLOBAL_LIMIT, GLOBAL_LIMIT_MESSAGE } from "./rate-limit.js";
+import { BODY_LIMIT_MESSAGE, DEFAULT_BODY_LIMIT_BYTES } from "./body-limit.js";
+import { GLOBAL_LIMIT, GLOBAL_LIMIT_MESSAGE, ORDER_LIMIT, ORDER_LIMIT_MESSAGE, orderKey } from "./rate-limit.js";
 import { MemoryRateStore } from "./rate-store.js";
 import { requestContext } from "./request.js";
 
@@ -145,6 +146,59 @@ describe("[SEC] global rate limit 300/min per IP", () => {
     expect(otherIp.status).toBe(200);
     t.now.value += GLOBAL_LIMIT.windowMs + 1;
     expect((await t.request("/healthz", { ip })).status).toBe(200);
+  });
+});
+
+describe("[SEC] HC-SH-114 request body limit (GAPS #70, ADR-061)", () => {
+  it("refuses a body over the cap with 413 in the envelope before any handler runs, lets smaller ones through, exempts the banner upload", async () => {
+    const big = { name: "x".repeat(DEFAULT_BODY_LIMIT_BYTES + 1) };
+    const r = await t.request("/v1/strategies", { cookie, json: big });
+    expect(r.status).toBe(413);
+    const refused = (await r.json()) as { code: string; message: string };
+    expect(refused.code).toBe("PAYLOAD_TOO_LARGE");
+    expect(refused.message).toContain(BODY_LIMIT_MESSAGE);
+    // the same oversize body on the banner route is not cut by the global cap: the admin guard answers first (403), the route keeps its own 5 MB limit
+    expect((await t.request("/v1/admin/banners", { cookie, json: big })).status).toBe(403);
+    // under the cap the request reaches validation as before
+    const small = await t.request("/v1/strategies", { cookie, json: { name: "x".repeat(4096) } });
+    expect([200, 201, 400]).toContain(small.status);
+    expect(small.status).not.toBe(413);
+    // a signed-out oversize request is also refused with 413, not 401: the cap sits before the guards
+    expect((await t.request("/v1/strategies", { json: big })).status).toBe(413);
+    // the Content-Length branch (what browsers and curl send) refuses before reading a byte
+    const declared = await t.request("/v1/strategies", { cookie, json: { name: "x" }, headers: { "content-length": String(DEFAULT_BODY_LIMIT_BYTES + 1) } });
+    expect(declared.status).toBe(413);
+  });
+});
+
+describe("[SEC] HC-SH-115 order routes 20/min per user (GAPS #70, ADR-061)", () => {
+  it("budgets the live batch route per signed-in user with Retry-After, leaves another user alone, recovers when the window slides", async () => {
+    const a = (await t.signUp("orders-a@hapiecoin.test")).cookie;
+    const b = (await t.signUp("orders-b@hapiecoin.test")).cookie;
+    const body = { ids: ["strat_nope"], brokerId: "brk_nope", idempotencyKey: "order-limit-test-1" };
+    const me = (await (await t.request("/v1/me", { cookie: a })).json()) as { id: string };
+    const spent = await t.rateStore.peek(orderKey(me.id), ORDER_LIMIT.windowMs);
+    let business: number | null = null;
+    for (let i = spent; i < ORDER_LIMIT.max; i += 1) {
+      const r = await t.request("/v1/strategies/live/batch", { cookie: a, json: body });
+      // refused on business grounds (no such broker / credential), the same way every time, never by the budget
+      expect([400, 402, 404, 409], `request ${i + 1}`).toContain(r.status);
+      business ??= r.status;
+      expect(r.status).toBe(business);
+      expect(r.headers.get("x-order-ratelimit-remaining")).toBe(String(ORDER_LIMIT.max - i - 1));
+      expect(r.headers.get("x-ratelimit-limit")).toBe(String(GLOBAL_LIMIT.max)); // the global headers stay the global budget
+    }
+    const blocked = await t.request("/v1/strategies/live/batch", { cookie: a, json: body });
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers.get("retry-after")).toMatch(/^[0-9]+$/);
+    expect(await blocked.json()).toMatchObject({ code: "ORDER_RATE_LIMITED", message: ORDER_LIMIT_MESSAGE });
+    // the exit route shares the same per-user budget
+    expect((await t.request("/v1/strategies/live/positions/exit", { cookie: a, json: { brokerId: "brk_nope", productIds: [1], idempotencyKey: "order-limit-test-2" } })).status).toBe(429);
+    // another user is not affected; a read-only live route is not budgeted
+    expect((await t.request("/v1/strategies/live/batch", { cookie: b, json: body })).status).not.toBe(429);
+    expect((await t.request("/v1/strategies/live/positions?brokerId=brk_nope", { cookie: a })).status).not.toBe(429);
+    t.now.value += ORDER_LIMIT.windowMs + 1;
+    expect((await t.request("/v1/strategies/live/batch", { cookie: a, json: body })).status).not.toBe(429);
   });
 });
 

@@ -71,6 +71,10 @@ const RawEnv = z.object({
   TRADING_RECONCILE_MS: z.coerce.number().int().min(1000).default(15_000),
   /** IV history snapshot interval (ADR-056); 0 disables the snapshotter (tests, a second API replica). */
   IV_SNAPSHOT_MS: z.coerce.number().int().min(0).default(300_000),
+  /** Cap on any request body, bytes (GAPS #70, ADR-061); the banner image upload keeps its own 5 MB. */
+  API_BODY_LIMIT_BYTES: z.coerce.number().int().min(1024).default(1_048_576),
+  /** Order-route budget per signed-in user per minute: live place, retry, batch, positions exit (GAPS #70). */
+  ORDER_RATE_MAX_PER_MIN: z.coerce.number().int().min(1).max(1000).default(20),
   DELTA_API_KEY: z.string().optional(),
   DELTA_API_SECRET: z.string().optional(),
 });
@@ -105,6 +109,10 @@ export interface Config {
   egressIp: string;
   /** Milliseconds between IV history snapshots; 0 = off (ADR-056). */
   ivSnapshotMs: number;
+  /** Cap on any request body, bytes (GAPS #70). */
+  bodyLimitBytes: number;
+  /** Order-route budget per user per minute (GAPS #70). */
+  orderRateMaxPerMin: number;
   logLevel: string;
   pgliteDataDir: string | undefined;
 }
@@ -229,6 +237,8 @@ export function loadConfig(
     trading: { disabled: e.TRADING_DISABLED === "1" || e.TRADING_DISABLED === "true", maxNotionalUsd: e.TRADING_MAX_NOTIONAL_USD, maxLegs: e.TRADING_MAX_LEGS, markBandPct: e.TRADING_MARK_BAND_PCT, reconcileMs: e.TRADING_RECONCILE_MS },
     egressIp: e.EGRESS_IP,
     ivSnapshotMs: e.IV_SNAPSHOT_MS,
+    bodyLimitBytes: e.API_BODY_LIMIT_BYTES,
+    orderRateMaxPerMin: e.ORDER_RATE_MAX_PER_MIN,
     logLevel: e.LOG_LEVEL ?? (isTest ? "silent" : "info"),
     pgliteDataDir: e.PGLITE_DATA_DIR,
   };

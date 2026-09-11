@@ -105,7 +105,8 @@ describe("HC-MA-041..048, 113 Derivatives", () => {
     await waitFor(() => expect(screen.getByTestId("derivatives-page").dataset["state"]).toBe("unavailable"), { timeout: 4000 });
     expect(screen.getByTestId("derivatives-unavailable").textContent).toContain("ZZZ");
     expect(screen.getByTestId("tile-vol").textContent).toContain("waiting for taker volume");
-    expect(within(screen.getByTestId("chart-ls")).getByTestId("chart-empty").textContent).toContain("Binance");
+    // the chart draws its empty state a tick after the page state flips; wait for it (a CI runner is slower than a laptop)
+    expect((await within(screen.getByTestId("chart-ls")).findByTestId("chart-empty", {}, { timeout: 4000 })).textContent).toContain("Binance");
   });
 });
 

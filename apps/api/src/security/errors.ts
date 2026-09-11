@@ -37,6 +37,7 @@ export const errors = {
   conflict: (message: string) => new HttpError(409, "CONFLICT", message),
   paymentRequired: (message: string) => new HttpError(402, "PAYMENT_REQUIRED", message),
   unavailable: (message: string) => new HttpError(503, "UNAVAILABLE", message),
+  payloadTooLarge: (message = "Request body is too large.") => new HttpError(413, "PAYLOAD_TOO_LARGE", message),
   validation: (issues: unknown) =>
     new HttpError(400, "VALIDATION_ERROR", "Request failed validation", { issues }),
   rateLimited: (message: string, retryAfterSec: number, code = "RATE_LIMITED") =>

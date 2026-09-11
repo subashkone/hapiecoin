@@ -29,6 +29,7 @@ import { type AppDeps, jsonContent } from "./routes/shared.js";
 import { type AppEnv, CLIENT_IP_HEADER } from "./security/context.js";
 import { errors, notFound, onError, zodIssues } from "./security/errors.js";
 import { DOCS_PATH, apiCors, apiSecureHeaders, originCheck } from "./security/headers.js";
+import { jsonBodyLimit } from "./security/body-limit.js";
 import { globalRateLimit, otpRateLimit } from "./security/rate-limit.js";
 import { requestContext } from "./security/request.js";
 
@@ -56,6 +57,7 @@ export function createApp(deps: AppDeps): OpenAPIHono<AppEnv> {
   const headerOpts = { isProd: config.isProd, webUrl: config.webUrl, selfUrl: config.betterAuthUrl };
 
   app.use("*", requestContext(deps.logger, config.trustedProxyIps));
+  app.use("*", jsonBodyLimit(config.bodyLimitBytes)); // GAPS #70: every body bounded before anything reads it
   app.use("*", apiSecureHeaders(headerOpts));
   app.use("*", apiCors(headerOpts));
   app.use("*", originCheck(headerOpts));
