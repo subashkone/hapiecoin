@@ -116,7 +116,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
     });
     setReenterId(s.id);
     create.mutate(
-      { name: `${s.name} re-entry`.slice(0, MAX_STRATEGY_NAME), asset: s.asset, templateName: s.templateName, legs },
+      { name: `${s.name} re-entry`.slice(0, MAX_STRATEGY_NAME), asset: s.asset, venue: s.venue, templateName: s.templateName, legs },
       {
         onSuccess: (d) => {
           setReenterId(null);

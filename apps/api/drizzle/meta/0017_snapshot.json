@@ -1,6 +1,6 @@
 {
-  "id": "b24be12d-33d7-4428-bbfe-79fd6d2f2e96",
-  "prevId": "3c4961b0-5fa7-464e-8342-11f29265c13c",
+  "id": "1468daec-7015-4b54-a09f-37500262cd08",
+  "prevId": "b24be12d-33d7-4428-bbfe-79fd6d2f2e96",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2964,6 +2964,19 @@
           "primaryKey": false,
           "notNull": true
         },
+        "leg_id": {
+          "name": "leg_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'strategy'"
+        },
         "channels": {
           "name": "channels",
           "type": "jsonb",
@@ -3056,6 +3069,19 @@
           "tableTo": "strategies",
           "columnsFrom": [
             "strategy_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "strategy_rules_leg_id_strategy_legs_id_fk": {
+          "name": "strategy_rules_leg_id_strategy_legs_id_fk",
+          "tableFrom": "strategy_rules",
+          "tableTo": "strategy_legs",
+          "columnsFrom": [
+            "leg_id"
           ],
           "columnsTo": [
             "id"

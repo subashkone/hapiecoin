@@ -6,6 +6,7 @@ import {
   PnlBasis,
   Role,
   Underlying,
+  Venue,
   isNonNegativeDecimal,
   isPositiveDecimal,
 } from "./primitives.js";
@@ -70,6 +71,8 @@ export const Broker = z.strictObject({
   gstPct: NonNegativeDecimal,
   feeCapPct: NonNegativeDecimal,
   scope: BrokerScope,
+  /** The venue the broker's credentials trade on (ADR-065). */
+  venue: Venue,
 });
 export type Broker = z.infer<typeof Broker>;
 

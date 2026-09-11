@@ -21,6 +21,7 @@ function paperStrategy(): Strategy {
   return {
     id: "strat_bar",
     name: "Bar call",
+    venue: "delta_india",
     asset: "BTC",
     status: "paper",
     tradingMode: "paper",
@@ -86,7 +87,7 @@ describe("HC-SH-105..108 portfolio bar", () => {
   });
 
   it("reads empty without strategies and counts armed alerts", async () => {
-    mock.state.accounts.get(EMAIL)!.alerts.push({ id: "alr_1", kind: "price", asset: "BTC", strategyId: null, strategyName: null, op: ">=", value: "1", channels: ["push"], state: "armed", lastValue: null, triggeredAt: null, createdAt: "2026-09-10T00:00:00.000Z", updatedAt: "2026-09-10T00:00:00.000Z" });
+    mock.state.accounts.get(EMAIL)!.alerts.push({ id: "alr_1", kind: "price", asset: "BTC", venue: "delta_india", strategyId: null, strategyName: null, op: ">=", value: "1", channels: ["push"], state: "armed", lastValue: null, triggeredAt: null, createdAt: "2026-09-10T00:00:00.000Z", updatedAt: "2026-09-10T00:00:00.000Z" });
     renderWithProviders(<PortfolioBar />);
     await waitFor(() => expect(screen.getByTestId("bar-alerts").textContent).toContain("1 armed"));
     expect(screen.getByTestId("portfolio-bar").dataset["portfolio"]).toBe("empty");

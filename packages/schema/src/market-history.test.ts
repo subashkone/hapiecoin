@@ -52,6 +52,7 @@ describe("shapes", () => {
     expect(IvPoint.safeParse({ ...point, extra: 1 }).success).toBe(false);
     const history = {
       asset: "BTC",
+      venue: "delta_india",
       asOf: "2026-09-10T06:00:00.000Z",
       current: { atmIv: 0.42, spot: 79_521.5, expiry: "2026-09-25", ts: "2026-09-10T06:00:00.000Z" },
       rank: { rank: 55, percentile: 60, low: 0.3, high: 0.6, days: 120 },
@@ -63,7 +64,7 @@ describe("shapes", () => {
     expect(IvHistory.safeParse({ ...history, current: null, rank: null, realised: null, spot24h: null, series: [] }).success).toBe(true);
     expect(IvHistory.safeParse({ ...history, rank: { ...history.rank, rank: 101 } }).success).toBe(false);
     expect(IvHistory.safeParse({ ...history, asset: "DOGE" }).success).toBe(false);
-    expect(MarkHistory.safeParse({ symbol: "C-BTC-80000-250926", hours: 24, points: [{ ts: "2026-09-10T06:00:00.000Z", mark: 1200.5, markIv: null }] }).success).toBe(true);
-    expect(MarkHistory.safeParse({ symbol: "", hours: 24, points: [] }).success).toBe(false);
+    expect(MarkHistory.safeParse({ symbol: "C-BTC-80000-250926", venue: "delta_india", hours: 24, points: [{ ts: "2026-09-10T06:00:00.000Z", mark: 1200.5, markIv: null }] }).success).toBe(true);
+    expect(MarkHistory.safeParse({ symbol: "", venue: "delta_india", hours: 24, points: [] }).success).toBe(false);
   });
 });

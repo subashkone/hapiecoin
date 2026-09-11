@@ -2,7 +2,8 @@
  * Read side of the IV history (ADR-056): the daily front-expiry ATM IV series, IV rank and percentile over a year,
  * 30-day realised volatility from the daily spot closes, the 24 h spot range, and a per-instrument mark history.
  */
-import { type IvHistory, type IvPoint, type MarkHistory, type Underlying, ivRankOf, realisedVolOf } from "@hapiecoin/schema";
+import { type IvHistory, type IvPoint, type MarkHistory, type Underlying, type Venue, ivRankOf, realisedVolOf } from "@hapiecoin/schema";
+import { DEFAULT_VENUE } from "@hapiecoin/venues";
 import { and, asc, desc, eq, gte } from "drizzle-orm";
 import type { Db } from "./db/client.js";
 import { instrumentMarks, ivSnapshots } from "./db/schema.js";
@@ -11,13 +12,13 @@ const DAY_MS = 86_400_000;
 export const SERIES_DAYS = 365;
 export const RV_DAYS = 30;
 
-export async function ivHistory(db: Db, asset: Underlying, now: () => number = Date.now): Promise<IvHistory> {
+export async function ivHistory(db: Db, asset: Underlying, now: () => number = Date.now, venue: Venue = DEFAULT_VENUE): Promise<IvHistory> {
   const nowMs = now();
   const since = new Date(nowMs - (SERIES_DAYS + 1) * DAY_MS);
   const rows = await db
     .select({ ts: ivSnapshots.ts, atmIv: ivSnapshots.atmIv, spot: ivSnapshots.spot, expiry: ivSnapshots.expiry })
     .from(ivSnapshots)
-    .where(and(eq(ivSnapshots.asset, asset), eq(ivSnapshots.front, true), gte(ivSnapshots.ts, since)))
+    .where(and(eq(ivSnapshots.venue, venue), eq(ivSnapshots.asset, asset), eq(ivSnapshots.front, true), gte(ivSnapshots.ts, since)))
     .orderBy(asc(ivSnapshots.ts));
   const last = rows.at(-1);
   // the last snapshot of each UTC day is that day's point
@@ -31,15 +32,15 @@ export async function ivHistory(db: Db, asset: Underlying, now: () => number = D
   const dayAgo = nowMs - DAY_MS;
   const recent = rows.filter((r) => r.ts.getTime() >= dayAgo).map((r) => Number(r.spot));
   const spot24h = recent.length ? { high: Math.max(...recent), low: Math.min(...recent) } : null;
-  return { asset, asOf: last ? last.ts.toISOString() : null, current, rank, realised, spot24h, series };
+  return { asset, venue, asOf: last ? last.ts.toISOString() : null, current, rank, realised, spot24h, series };
 }
 
-export async function markHistory(db: Db, symbol: string, hours: number, now: () => number = Date.now): Promise<MarkHistory> {
+export async function markHistory(db: Db, symbol: string, hours: number, now: () => number = Date.now, venue: Venue = DEFAULT_VENUE): Promise<MarkHistory> {
   const since = new Date(now() - hours * 3_600_000);
   const rows = await db
     .select({ ts: instrumentMarks.ts, mark: instrumentMarks.mark, markIv: instrumentMarks.markIv })
     .from(instrumentMarks)
-    .where(and(eq(instrumentMarks.symbol, symbol), gte(instrumentMarks.ts, since)))
+    .where(and(eq(instrumentMarks.venue, venue), eq(instrumentMarks.symbol, symbol), gte(instrumentMarks.ts, since)))
     .orderBy(asc(instrumentMarks.ts), desc(instrumentMarks.id));
-  return { symbol, hours, points: rows.map((r) => ({ ts: r.ts.toISOString(), mark: Number(r.mark), markIv: r.markIv === null ? null : Number(r.markIv) })) };
+  return { symbol, venue, hours, points: rows.map((r) => ({ ts: r.ts.toISOString(), mark: Number(r.mark), markIv: r.markIv === null ? null : Number(r.markIv) })) };
 }

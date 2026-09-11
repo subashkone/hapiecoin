@@ -12,7 +12,7 @@ import { type AppEnv, type SessionUser, currentUser } from "../security/context.
 import { errors } from "../security/errors.js";
 import { requireAdmin, requireUser } from "../security/guards.js";
 import { orderRateLimit } from "../security/rate-limit.js";
-import { lotSizeFor, openCredential, ordersOf, placeEntries, preview, retryFailed, syncOrders, tradingBlockedReason, type PlanLeg, type StrategyRow } from "./live-exec.js";
+import { lotSizeFor, openCredential, ordersOf, placeEntries, preview, retryFailed, syncOrders, tradingBlockedReason, type PlanLeg, type StrategyRow, brokerVenueOf, venueMismatch } from "./live-exec.js";
 import { type AppDeps, cookieAuth, errorResponses, jsonContent, errorMessage } from "./shared.js";
 
 /** The exchange did not answer the positions read (never an empty list, HC-TR-160). */
@@ -101,7 +101,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       await assertEntitled(deps, me.id, "live_trading"); // HC-SH-054 (ADR-030)
       const { legs, p } = await checkedPreview(me, row, body.brokerId, null);
       if (!p.ok) throw errors.conflict(p.reasons.join(" · "));
-      const creds = await openCredential(deps, me, body.brokerId);
+      const creds = await openCredential(deps, me, body.brokerId, row.venue); // ADR-065
       const before = await loadStrategy(deps, row.id);
       const now = new Date();
       await touch(row.id, { status: "live", tradingMode: "live", brokerId: body.brokerId, orderBatchId: body.idempotencyKey, startedAt: row.startedAt ?? now, closedAt: null });
@@ -180,6 +180,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       if (blocked) throw errors.conflict(blocked);
       await assertEntitled(deps, me.id, "live_trading"); // one check per batch: the batch counts as one placement per strategy below
       const creds = await openCredential(deps, me, body.brokerId);
+      const brokerVenue = await brokerVenueOf(deps, me, body.brokerId);
       const placed: string[] = [];
       const skipped: string[] = [];
       let failed: { id: string; error: string } | null = null;
@@ -193,6 +194,10 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
         if (!row || row.status !== "paper") {
           skipped.push(id);
           continue;
+        }
+        if (brokerVenue !== null && brokerVenue !== row.venue) {
+          failed = { id, error: venueMismatch(brokerVenue, row.venue) }; // ADR-065: the batch stops here, placed so far reported
+          break;
         }
         const { legs, p } = await checkedPreview(me, row, body.brokerId, null);
         if (!p.ok) {

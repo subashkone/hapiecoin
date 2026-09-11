@@ -33,6 +33,7 @@ describe("HC-SH-045..049 exchange management", () => {
       gstPct: "18",
       feeCapPct: "10",
       scope: "GLOBAL",
+      venue: "delta_india",
     });
     expect(Broker.safeParse(delta).success).toBe(true);
   });

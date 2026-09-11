@@ -5,14 +5,17 @@
  * never enters the year's range), and (2) every option's mark and mark IV for the details sparkline. Retention:
  * 400 days of IV rows, 7 days of marks. Public data only: no key, no order path, never a private endpoint.
  */
-import type { Instrument, Quote, Underlying } from "@hapiecoin/schema";
+import type { Instrument, Quote, Underlying, Venue } from "@hapiecoin/schema";
 import { UNDERLYINGS } from "@hapiecoin/schema";
+import { DEFAULT_VENUE } from "@hapiecoin/venues";
 import { and, lt } from "drizzle-orm";
 import type { Db } from "./db/client.js";
 import { instrumentMarks, ivSnapshots } from "./db/schema.js";
 import type { Logger } from "./logger.js";
 
 export interface MarketSource {
+  /** The venue the products and tickers come from (ADR-065); the default venue when absent. */
+  venue?: Venue;
   /** Active option instruments (every underlying). */
   products(): Promise<Instrument[]>;
   /** Option tickers for one underlying. */
@@ -68,6 +71,7 @@ export interface SnapshotReport {
 /** One pass over every underlying; failures on one underlying are logged and the others still land. */
 export async function snapshotOnce(deps: SnapshotDeps, source: MarketSource, now: () => number = Date.now): Promise<SnapshotReport> {
   const at = new Date(now());
+  const venue = source.venue ?? DEFAULT_VENUE;
   const instruments = (await source.products()).filter((i) => i.isActive && (i.kind === "call" || i.kind === "put"));
   const report: SnapshotReport = { at: at.toISOString(), assets: {} };
   for (const asset of UNDERLYINGS) {
@@ -79,10 +83,10 @@ export async function snapshotOnce(deps: SnapshotDeps, source: MarketSource, now
       const byExpiry = spot === null ? [] : atmIvByExpiry(mine, quotes, spot);
       const front = frontExpiry(byExpiry.map((e) => e.expiry), at.getTime());
       if (spot !== null && byExpiry.length) {
-        await deps.db.insert(ivSnapshots).values(byExpiry.map((e) => ({ asset, expiry: e.expiry, ts: at, atmIv: String(e.atmIv), spot: String(spot), atmStrike: String(e.strike), front: e.expiry === front })));
+        await deps.db.insert(ivSnapshots).values(byExpiry.map((e) => ({ asset, venue, expiry: e.expiry, ts: at, atmIv: String(e.atmIv), spot: String(spot), atmStrike: String(e.strike), front: e.expiry === front })));
       }
       const known = new Set(mine.map((i) => i.id));
-      const marks = quotes.filter((q) => known.has(q.instrumentId)).map((q) => ({ asset, symbol: q.instrumentId.slice(q.instrumentId.indexOf(":") + 1), ts: at, mark: q.mark, markIv: q.markIv === undefined ? null : String(q.markIv) }));
+      const marks = quotes.filter((q) => known.has(q.instrumentId)).map((q) => ({ asset, venue, symbol: q.instrumentId.slice(q.instrumentId.indexOf(":") + 1), ts: at, mark: q.mark, markIv: q.markIv === undefined ? null : String(q.markIv) }));
       for (let i = 0; i < marks.length; i += 500) await deps.db.insert(instrumentMarks).values(marks.slice(i, i + 500));
       report.assets[asset] = { expiries: byExpiry.length, marks: marks.length, spot };
     } catch (e) {

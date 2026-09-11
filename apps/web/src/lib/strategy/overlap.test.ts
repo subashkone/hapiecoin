@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { lotsWord, overlapsFor } from "./overlap";
 
 const leg = (symbol: string, side: "buy" | "sell", lots: number, status: "open" | "squared_off" = "open") => ({ id: `l_${symbol}_${side}`, kind: "put" as const, side, strike: "78000", expiry: "2026-09-25", symbol, lots, price: "900", entryPrice: "900", exitPrice: null, iv: 0.5, status, isAdjustment: false, position: 0, openedAt: "2026-09-08T10:00:00Z", closedAt: null, orderId: null });
-const strat = (id: string, name: string, status: Strategy["status"], legs: Strategy["legs"]): Strategy => ({ id, name, asset: "BTC", status, tradingMode: status === "archived" ? "live" : status === "draft" ? null : status, templateName: "", brokerId: "brk_delta", legs, realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: null, closedAt: null, createdAt: "2026-09-08T10:00:00Z", updatedAt: "2026-09-08T10:00:00Z" });
+const strat = (id: string, name: string, status: Strategy["status"], legs: Strategy["legs"]): Strategy => ({ id, name, asset: "BTC", venue: "delta_india", status, tradingMode: status === "archived" ? "live" : status === "draft" ? null : status, templateName: "", brokerId: "brk_delta", legs, realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: null, closedAt: null, createdAt: "2026-09-08T10:00:00Z", updatedAt: "2026-09-08T10:00:00Z" });
 
 describe("HC-TR-159 overlapping contracts across strategies", () => {
   const P = "P-BTC-78000-250926";

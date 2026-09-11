@@ -3,7 +3,7 @@ import type { Alert } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
 import { EMPTY_READINGS, conditionText, currentValue, decimalOf, dueAlerts, firedText, nowText } from "./engine";
 
-const base: Alert = { id: "alr_1", kind: "price", asset: "BTC", strategyId: null, strategyName: null, op: ">=", value: "82000", channels: ["push"], state: "armed", lastValue: null, triggeredAt: null, createdAt: "2026-09-10T00:00:00.000Z", updatedAt: "2026-09-10T00:00:00.000Z" };
+const base: Alert = { id: "alr_1", kind: "price", asset: "BTC", venue: "delta_india", strategyId: null, strategyName: null, op: ">=", value: "82000", channels: ["push"], state: "armed", lastValue: null, triggeredAt: null, createdAt: "2026-09-10T00:00:00.000Z", updatedAt: "2026-09-10T00:00:00.000Z" };
 const iv: Alert = { ...base, id: "alr_2", kind: "iv", op: "<=", value: "30", channels: ["email"] };
 const pnl: Alert = { ...base, id: "alr_3", kind: "pnl", strategyId: "strat_1", strategyName: "Bull Call Spread", op: ">=", value: "20", channels: ["push", "email"] };
 const readings = { spot: { BTC: 79506.5 }, atmIv: { BTC: 0.424 }, pnl: { strat_1: -0.64 } };

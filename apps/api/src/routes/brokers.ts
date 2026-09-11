@@ -2,7 +2,7 @@
  * Exchange fee profiles (HC-SH-045..049). GLOBAL brokers are visible to everyone and managed by admins;
  * USER brokers belong to the user who created them. Deleting a broker that stored credentials reference is refused.
  */
-import { Broker, BrokerScope, DecimalString, Id, isNonNegativeDecimal, paginated } from "@hapiecoin/schema";
+import { Broker, BrokerScope, DecimalString, Id, VENUES, Venue, isNonNegativeDecimal, paginated } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, count, eq, or } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
@@ -22,6 +22,8 @@ export const BrokerCreate = z
     feeCapPct: NonNegativeDecimal,
     /** GLOBAL requires admin; defaults to USER. */
     scope: BrokerScope.default("USER"),
+    /** The venue the exchange trades on; defaults to the only one (ADR-065). */
+    venue: Venue.default(VENUES[0]),
   })
   .strict();
 export type BrokerCreate = z.infer<typeof BrokerCreate>;
@@ -50,6 +52,7 @@ export function toBroker(row: Row): Broker {
     gstPct: row.gstPct,
     feeCapPct: row.feeCapPct,
     scope: row.scope,
+    venue: row.venue,
   };
 }
 
@@ -127,6 +130,7 @@ export function registerBrokerRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): v
           gstPct: body.gstPct,
           feeCapPct: body.feeCapPct,
           scope: body.scope,
+          venue: body.venue,
           ownerId: body.scope === "GLOBAL" ? null : me.id,
         })
         .returning();

@@ -91,6 +91,7 @@ if (config.ivSnapshotMs !== 0)
       startIvSnapshotter(
         deps,
         {
+          venue: venue.id, // ADR-065: every snapshot row names the venue it came from
           // the venue shapes cross the schema adapter (GAPS #8); a ticker without a spot carries "0" and is skipped as a spot source
           products: async () => (await publicRest.getProducts({ contractTypes: ["call_options", "put_options"], states: ["live"] })).filter(venue.schema.isSupported).map(venue.schema.instrument),
           tickers: async (u) => (await publicRest.getTickers({ contractTypes: ["call_options", "put_options"], underlying: u })).map((q) => venue.schema.quote(q, "0")),

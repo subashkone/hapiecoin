@@ -166,6 +166,8 @@ export const brokers = pgTable(
     feeCapPct: text("fee_cap_pct").notNull(),
     scope: text("scope", { enum: ["GLOBAL", "USER"] }).notNull(),
     ownerId: text("owner_id").references(() => users.id, { onDelete: "cascade" }),
+    /** ADR-065: the venue this row belongs to; every row so far is Delta India. */
+    venue: text("venue", { enum: ["delta_india"] }).notNull().default("delta_india"),
     ...timestamps,
   },
   (t) => [index("brokers_owner_id_idx").on(t.ownerId)],
@@ -304,6 +306,8 @@ export const strategies = pgTable(
     closedAt: timestamp("closed_at", { withTimezone: true, mode: "date" }),
     /** Why it closed (ADR-059 §2.4); null while active or for an archived draft. */
     closeReason: text("close_reason", { enum: ["expired", "squared_off", "stopped", "target", "outside_app"] }),
+    /** ADR-065: the venue this row belongs to; every row so far is Delta India. */
+    venue: text("venue", { enum: ["delta_india"] }).notNull().default("delta_india"),
     ...timestamps,
   },
   (t) => [index("strategies_user_id_idx").on(t.userId), index("strategies_user_status_idx").on(t.userId, t.status)],
@@ -592,6 +596,8 @@ export const alerts = pgTable(
     state: text("state", { enum: ["armed", "triggered", "paused"] }).notNull().default("armed"),
     lastValue: text("last_value"),
     triggeredAt: timestamp("triggered_at", { withTimezone: true }),
+    /** ADR-065: the venue this row belongs to; every row so far is Delta India. */
+    venue: text("venue", { enum: ["delta_india"] }).notNull().default("delta_india"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -611,8 +617,10 @@ export const ivSnapshots = pgTable(
     spot: text("spot").notNull(),
     atmStrike: text("atm_strike").notNull(),
     front: boolean("front").notNull().default(false),
+    /** ADR-065: the venue this row belongs to; every row so far is Delta India. */
+    venue: text("venue", { enum: ["delta_india"] }).notNull().default("delta_india"),
   },
-  (t) => [index("iv_snapshots_asset_ts_idx").on(t.asset, t.ts), index("iv_snapshots_front_idx").on(t.asset, t.front, t.ts)],
+  (t) => [index("iv_snapshots_asset_ts_idx").on(t.venue, t.asset, t.ts), index("iv_snapshots_front_idx").on(t.venue, t.asset, t.front, t.ts)],
 );
 
 /** Per-option mark and mark IV every snapshot, 7 days (ADR-056, GAPS #32: the details sparkline). */
@@ -625,8 +633,10 @@ export const instrumentMarks = pgTable(
     ts: timestamp("ts", { withTimezone: true }).notNull(),
     mark: text("mark").notNull(),
     markIv: text("mark_iv"),
+    /** ADR-065: the venue this row belongs to; every row so far is Delta India. */
+    venue: text("venue", { enum: ["delta_india"] }).notNull().default("delta_india"),
   },
-  (t) => [index("instrument_marks_symbol_ts_idx").on(t.symbol, t.ts), index("instrument_marks_ts_idx").on(t.ts)],
+  (t) => [index("instrument_marks_symbol_ts_idx").on(t.venue, t.symbol, t.ts), index("instrument_marks_ts_idx").on(t.ts)],
 );
 
 export const schema = {

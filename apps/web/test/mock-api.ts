@@ -122,6 +122,7 @@ export interface MockState {
 
 const GLOBAL_BROKER: Broker = {
   id: "brk_delta",
+  venue: "delta_india",
   name: "Delta Exchange India",
   feePct: "0.05",
   gstPct: "18",
@@ -460,14 +461,16 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (body.channels.includes("telegram") && acc.telegram.chatId === null) return err(c, 400, "BAD_REQUEST", "Connect Telegram first (Alerts → Connect Telegram), then pick the telegram channel");
     if (acc.alerts.length >= MAX_ALERTS) return err(c, 409, "CONFLICT", `You can keep up to ${MAX_ALERTS} alerts; delete one first`);
     let strategyName: string | null = null;
+    let venue = body.venue;
     if (body.strategyId) {
       const s = acc.strategies.find((x) => x.id === body.strategyId);
       if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
       if (s.asset !== body.asset) return err(c, 400, "VALIDATION", "The alert's asset must match the strategy's asset");
       strategyName = s.name;
+      venue = s.venue; // ADR-065: a P&L alert watches its strategy's venue
     }
     const at = new Date().toISOString();
-    const a: Alert = { id: id("alr"), kind: body.kind, asset: body.asset, strategyId: body.strategyId ?? null, strategyName, op: body.op, value: body.value, channels: body.channels, state: "armed", lastValue: null, triggeredAt: null, createdAt: at, updatedAt: at };
+    const a: Alert = { id: id("alr"), kind: body.kind, asset: body.asset, venue, strategyId: body.strategyId ?? null, strategyName, op: body.op, value: body.value, channels: body.channels, state: "armed", lastValue: null, triggeredAt: null, createdAt: at, updatedAt: at };
     acc.alerts.unshift(a);
     return c.json(a, 201);
   });
@@ -565,7 +568,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (!body.name?.trim()) return err(c, 400, "VALIDATION", "Strategy name is required");
     if (!body.legs?.length || body.legs.length > 8) return err(c, 400, "VALIDATION", "1..8 legs");
     const at = nowIso();
-    const s: Strategy = { id: id("strat"), name: body.name.trim(), asset: body.asset, status: "draft", tradingMode: null, templateName: body.templateName ?? "Custom", brokerId: null, legs: body.legs.map((l, i) => mkLeg(l, i)), realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], rules: [], startedAt: null, closedAt: null, createdAt: at, updatedAt: at };
+    const s: Strategy = { id: id("strat"), name: body.name.trim(), asset: body.asset, venue: "delta_india", status: "draft", tradingMode: null, templateName: body.templateName ?? "Custom", brokerId: null, legs: body.legs.map((l, i) => mkLeg(l, i)), realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], rules: [], startedAt: null, closedAt: null, createdAt: at, updatedAt: at };
     acc.strategies.unshift(s);
     return c.json(s, 201);
   });
@@ -1717,9 +1720,9 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       const hourAgo = new Date(Date.now() - 3_600_000).toISOString();
       const strat = acc.strategies.find((s) => s.status === "paper" || s.status === "live");
       acc.alerts.push(
-        { id: id("alr"), kind: "pnl", asset: "BTC", strategyId: strat?.id ?? null, strategyName: strat?.name ?? "BTC Bull Call Spread · Sep", op: ">=", value: "20", channels: ["push", "email"], state: "armed", lastValue: null, triggeredAt: null, createdAt: at, updatedAt: at },
-        { id: id("alr"), kind: "iv", asset: "BTC", strategyId: null, strategyName: null, op: "<=", value: "30", channels: ["email"], state: "triggered", lastValue: "22", triggeredAt: hourAgo, createdAt: hourAgo, updatedAt: hourAgo },
-        { id: id("alr"), kind: "price", asset: "BTC", strategyId: null, strategyName: null, op: ">=", value: "82000", channels: ["push"], state: "armed", lastValue: null, triggeredAt: null, createdAt: hourAgo, updatedAt: hourAgo },
+        { id: id("alr"), kind: "pnl", asset: "BTC", venue: "delta_india", strategyId: strat?.id ?? null, strategyName: strat?.name ?? "BTC Bull Call Spread · Sep", op: ">=", value: "20", channels: ["push", "email"], state: "armed", lastValue: null, triggeredAt: null, createdAt: at, updatedAt: at },
+        { id: id("alr"), kind: "iv", asset: "BTC", venue: "delta_india", strategyId: null, strategyName: null, op: "<=", value: "30", channels: ["email"], state: "triggered", lastValue: "22", triggeredAt: hourAgo, createdAt: hourAgo, updatedAt: hourAgo },
+        { id: id("alr"), kind: "price", asset: "BTC", venue: "delta_india", strategyId: null, strategyName: null, op: ">=", value: "82000", channels: ["push"], state: "armed", lastValue: null, triggeredAt: null, createdAt: hourAgo, updatedAt: hourAgo },
       );
     }
     if (body.coupons) {

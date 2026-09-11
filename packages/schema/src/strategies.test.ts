@@ -73,6 +73,7 @@ describe("[SCHEMA] strategies (ADR-024)", () => {
   it("a full Strategy round-trips", () => {
     const s = {
       id: "strat_1",
+      venue: "delta_india",
       name: "Long straddle",
       asset: "BTC",
       status: "paper",
