@@ -109,9 +109,24 @@ export type { BinanceSpotClientOptions, BinanceSpotEvents } from "./binance/spot
 
 export { DeltaMarketData, createDeltaMarketData } from "./delta/market-data.js";
 export type { DeltaMarketDataOptions, DeltaMarketDataEvents, MarketDataStatus } from "./delta/market-data.js";
+export type { MarketDataEvents, VenueMarketData, VenueMarketDataOptions } from "./market-data.js";
+export { JsonHttp, snippet } from "./http.js";
+export { VenueApiError, VenueHttpError, VenueSchemaError } from "./errors.js";
+
+// ADR-067: Deribit, data-only
+export * as deribitRaw from "./deribit/raw.js";
+export { DERIBIT_SETTLEMENT_HOUR_UTC, bookSummaryToQuote, coinToUsd, formatDeribitOption, isDeribitOption, parseDeribitOption, parseDeribitPerpetual, toDeribitInstrument, toDeribitQuote } from "./deribit/normalize.js";
+export type { ParsedDeribitOption } from "./deribit/normalize.js";
+export { DeribitRestClient } from "./deribit/rest.js";
+export type { DeribitRestClientOptions } from "./deribit/rest.js";
+export { DERIBIT_HEARTBEAT_INTERVAL_S, DERIBIT_HEARTBEAT_TIMEOUT_MS, DeribitWsClient } from "./deribit/ws.js";
+export type { DeribitTickerInterval, DeribitWsClientOptions, DeribitWsEvents } from "./deribit/ws.js";
+export { DeribitMarketData, createDeribitMarketData } from "./deribit/market-data.js";
+export type { DeribitMarketDataOptions } from "./deribit/market-data.js";
 
 export {
   SCHEMA_VENUE,
+  schemaVenueOf,
   SchemaAdapterError,
   isSchemaInstrument,
   latestSpot,
@@ -141,7 +156,9 @@ export type {
 
 // ADR-063: the venue port; apps look venues up here instead of importing Delta clients directly
 export { DEFAULT_VENUE, VENUE_REGISTRY, getVenue, listVenues } from "./port/registry.js";
-export { DELTA_INDIA } from "./port/delta-india-clients.js";
+export { DELTA_INDIA, deltaIndiaRest } from "./port/delta-india-clients.js";
+export { DERIBIT, deribitRest } from "./port/deribit-clients.js";
+export { DERIBIT_CORE, DERIBIT_MARKETS, deribitLabelToExpiryCode, deribitMarket } from "./port/deribit.js";
 export { DELTA_INDIA_CORE, DELTA_INDIA_MARKETS, formatDeltaOption, parseDeltaPerpetual } from "./port/delta-india.js";
 export { VENUE_CORES, getVenueCore, listVenueCores } from "./port/core.js";
 export { UnknownVenueError, VenueCapabilityError, defaultLotSizes, marketOf, ownMarket, tradingClientOf } from "./port/adapter.js";
@@ -157,4 +174,6 @@ export type {
   VenueCapabilities,
   VenueCore,
   VenueId,
+  VenueRest,
+  VenueRestOptions,
 } from "./port/adapter.js";

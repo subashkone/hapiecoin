@@ -8,6 +8,7 @@ import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, eq, or } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
 import { brokerCredentials, brokers } from "../db/schema.js";
+import { dataOnlyReason } from "./live-exec.js";
 import type { DeltaCredentialErrorCode } from "../delta/private-client.js";
 import { type AppEnv, currentUser } from "../security/context.js";
 import { HttpError, errors } from "../security/errors.js";
@@ -105,13 +106,15 @@ export function registerCredentialRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps
       const me = currentUser(c);
       const body = c.req.valid("json");
       const [broker] = await deps.db
-        .select({ id: brokers.id })
+        .select({ id: brokers.id, venue: brokers.venue })
         .from(brokers)
         .where(
           and(eq(brokers.id, body.brokerId), or(eq(brokers.scope, "GLOBAL"), eq(brokers.ownerId, me.id))),
         )
         .limit(1);
       if (!broker) throw errors.notFound("Exchange");
+      const dataOnly = dataOnlyReason(broker.venue);
+      if (dataOnly !== null) throw errors.conflict(dataOnly); // ADR-067: no keys for a data-only venue
 
       const check = await deps.delta.verifyCredentials({ apiKey: body.apiKey, apiSecret: body.apiSecret });
       if (!check.ok) throw deltaFailure(check.code, check.message);

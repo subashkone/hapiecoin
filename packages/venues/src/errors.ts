@@ -100,3 +100,53 @@ export class VenueWsError extends Error {
     this.payload = payload;
   }
 }
+
+/** HTTP failure of a venue REST call (any venue); `status` 0 when no response arrived. */
+export class VenueHttpError extends Error {
+  readonly venue: string;
+  readonly status: number;
+  readonly url: string;
+  readonly bodySnippet: string;
+  readonly retryable: boolean;
+  readonly attempts: number;
+  constructor(venue: string, opts: { status: number; url: string; bodySnippet: string; retryable: boolean; attempts: number }) {
+    super(`${venue} HTTP ${opts.status} for ${opts.url} after ${opts.attempts} attempt(s): ${opts.bodySnippet}`);
+    this.name = "VenueHttpError";
+    this.venue = venue;
+    this.status = opts.status;
+    this.url = opts.url;
+    this.bodySnippet = opts.bodySnippet;
+    this.retryable = opts.retryable;
+    this.attempts = opts.attempts;
+  }
+}
+
+/** A venue payload that failed validation. */
+export class VenueSchemaError extends Error {
+  readonly venue: string;
+  readonly source: string;
+  readonly issues: readonly string[];
+  constructor(venue: string, source: string, issues: readonly string[]) {
+    super(`${venue} payload from ${source} failed validation: ${issues.slice(0, 5).join("; ")}`);
+    this.name = "VenueSchemaError";
+    this.venue = venue;
+    this.source = source;
+    this.issues = issues;
+  }
+}
+
+/** A venue answered with its own error envelope. */
+export class VenueApiError extends Error {
+  readonly venue: string;
+  readonly url: string;
+  readonly code: string;
+  readonly detail: unknown;
+  constructor(venue: string, url: string, code: string, detail: unknown) {
+    super(`${venue} API error ${code} for ${url}`);
+    this.name = "VenueApiError";
+    this.venue = venue;
+    this.url = url;
+    this.code = code;
+    this.detail = detail;
+  }
+}

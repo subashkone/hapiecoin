@@ -93,8 +93,8 @@ if (config.ivSnapshotMs !== 0)
         {
           venue: venue.id, // ADR-065: every snapshot row names the venue it came from
           // the venue shapes cross the schema adapter (GAPS #8); a ticker without a spot carries "0" and is skipped as a spot source
-          products: async () => (await publicRest.getProducts({ contractTypes: ["call_options", "put_options"], states: ["live"] })).filter(venue.schema.isSupported).map(venue.schema.instrument),
-          tickers: async (u) => (await publicRest.getTickers({ contractTypes: ["call_options", "put_options"], underlying: u })).map((q) => venue.schema.quote(q, "0")),
+          products: async () => (await publicRest.products()).filter(venue.schema.isSupported).map(venue.schema.instrument),
+          tickers: async (u) => (await publicRest.tickers(u)).map((q) => venue.schema.quote(q, "0")),
         },
         config.ivSnapshotMs,
         // ADR-057: every snapshot evaluates the armed alerts server-side, so they fire with the app closed
@@ -113,7 +113,7 @@ if (config.settlementMs !== 0)
       startSettler(
         deps,
         snapshotSpotSource(deps, async (u) => {
-          const q = (await publicRest.getTickers({ contractTypes: ["call_options", "put_options"], underlying: u })).map((x) => venue.schema.quote(x, "0")).find((x) => Number(x.spot) > 0);
+          const q = (await publicRest.tickers(u)).map((x) => venue.schema.quote(x, "0")).find((x) => Number(x.spot) > 0);
           return q ? Number(q.spot) : null;
         }),
         config.settlementMs,
@@ -129,7 +129,7 @@ if (config.rulesTickMs !== 0)
         deps,
         {
           marks: async (u) => {
-            const quotes = await publicRest.getTickers({ contractTypes: ["call_options", "put_options", "perpetual_futures"], underlying: u });
+            const quotes = await publicRest.tickers(u, { perpetuals: true });
             return new Map(
               quotes.map((q) => {
                 const sq = venue.schema.quote(q, "0"); // through the venue port (ADR-063), like the snapshotter

@@ -10,6 +10,8 @@ import { type HoldRegistry, MemoryHoldRegistry, RedisHoldRegistry, type RedisReg
 import { MemorySnapshotStore, RedisSnapshotStore, type RedisStoreClient, type SnapshotStore } from "./coordination/snapshots.js";
 import { MarketFeed } from "./feed/feed.js";
 import type { MarketDataLike } from "./feed/market-data.js";
+import type { Venue as VenueId } from "@hapiecoin/schema";
+import { DEFAULT_VENUE } from "@hapiecoin/venues";
 import { createMarketData } from "./feed/market-data.js";
 import { RoleFeed } from "./feed/role.js";
 import { type LeaderHandle, type LeaderLock, MemoryLeaderLock, RedisLeaderLock, type RedisLockClient, leaderOwnerId, runAsLeader } from "./leader.js";
@@ -30,6 +32,8 @@ export type CoordinationRedis = RedisLockClient & RedisRegistryClient & RedisSto
 export interface AppDeps {
   transport?: SocketServerFactory;
   market?: MarketDataLike;
+  /** ADR-067: sessions of the other enabled venues (tests inject fakes). */
+  markets?: Partial<Record<VenueId, MarketDataLike>>;
   pubsub?: PubSub;
   log?: Logger;
   /** Coordination (ADR-062); defaults: Redis-backed when REDIS_URL is set, else in-memory. */
@@ -73,9 +77,11 @@ export function createApp(config: GatewayConfig, deps: AppDeps = {}): App {
   const lock: LeaderLock = deps.lock ?? (redis ? new RedisLeaderLock(redis) : new MemoryLeaderLock());
   const registry: HoldRegistry = deps.registry ?? (redis ? new RedisHoldRegistry({ redis, instance: instanceId, leaseMs: config.LEADER_TTL_MS }) : new MemoryHoldRegistry());
   const store: SnapshotStore = deps.store ?? (redis ? new RedisSnapshotStore({ redis }) : new MemorySnapshotStore());
-  const market = deps.market ?? createMarketData(config);
+  const market = deps.market ?? createMarketData(config, DEFAULT_VENUE);
+  const markets: Partial<Record<VenueId, MarketDataLike>> = deps.markets ?? Object.fromEntries(config.GATEWAY_VENUES.filter((v) => v !== DEFAULT_VENUE).map((v) => [v, createMarketData(config, v)]));
   const feed = new MarketFeed({
     market,
+    markets,
     pubsub,
     coalesceMs: config.COALESCE_MS,
     graceMs: config.UNSUBSCRIBE_GRACE_MS,
@@ -109,6 +115,7 @@ export function createApp(config: GatewayConfig, deps: AppDeps = {}): App {
         pubsub: config.REDIS_URL === undefined ? "in-process" : "redis",
         role: config.GATEWAY_ROLE,
         instance: instanceId,
+        venues: config.GATEWAY_VENUES,
       });
       await role.start();
       if (config.GATEWAY_ROLE === "auto") {

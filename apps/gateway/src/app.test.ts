@@ -65,4 +65,14 @@ describe("[GATEWAY] createApp", () => {
     await app.stop();
     expect(FakeRedis.clients.every((c) => c.quitCalls === 1)).toBe(true);
   });
+
+  it("HC-SH-122 opens one session per enabled venue from GATEWAY_VENUES, the default venue first (ADR-067)", () => {
+    const config = loadConfig({ GATEWAY_VENUES: "deribit", LOG_LEVEL: "silent" });
+    const app = createApp(config, { market: new FakeMarketData() });
+    expect(Object.keys(app.feed.status().venues)).toEqual(["delta_india", "deribit"]);
+    expect(app.feed.status().venues["deribit"]?.market.socket).toBe("idle"); // built, never started: no network in tests
+    expect(app.feed.supports("chain:deribit:BTC:2026-09-12")).toBe(true);
+    const solo = createApp(loadConfig({ LOG_LEVEL: "silent" }), { market: new FakeMarketData() });
+    expect(Object.keys(solo.feed.status().venues)).toEqual(["delta_india"]);
+  });
 });

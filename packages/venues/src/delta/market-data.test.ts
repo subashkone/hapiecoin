@@ -150,3 +150,16 @@ describe("[VENUES] createDeltaMarketData", () => {
     defaults.stop();
   });
 });
+
+describe("HC-SH-122 [VENUES] the Delta session on the venue-neutral interface (ADR-067)", () => {
+  it("subscribes and unsubscribes raw venue symbols (the perpetual for spot) beside the watched options", () => {
+    const { md } = make();
+    md.subscribeSymbols(["BTCUSD", "ETHUSD"]);
+    expect(md.status().subscribed).toBe(2);
+    expect(md.ws.symbols).toEqual(["BTCUSD", "ETHUSD"]);
+    md.unsubscribeSymbols(["ETHUSD"]);
+    expect(md.ws.symbols).toEqual(["BTCUSD"]);
+    md.unsubscribeSymbols(["BTCUSD", "unknown"]);
+    expect(md.status().subscribed).toBe(0);
+  });
+});

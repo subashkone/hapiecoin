@@ -94,4 +94,21 @@ describe("HC-SH-120 [API] the venue column", () => {
     expect(mh.points).toHaveLength(1);
     expect((await t.request("/v1/market/marks/C-ETH-4000-250926?venue=nse")).status).toBe(400);
   });
+
+  it("HC-SH-122 a data-only venue (Deribit) takes exchanges and paper strategies but no keys and no live orders (ADR-067)", async () => {
+    const b = await json<Broker>(await t.request("/v1/brokers", { cookie: alice, json: { name: "Deribit", feePct: "0", gstPct: "0", feeCapPct: "0", venue: "deribit" } }));
+    expect(b.venue).toBe("deribit");
+    const s = await json<Strategy>(await t.request("/v1/strategies", { cookie: alice, json: { name: "Deribit paper", asset: "BTC", venue: "deribit", legs: [{ ...CALL, symbol: "BTC-25SEP26-80000-C" }] } }));
+    expect(s.venue).toBe("deribit");
+    expect((await t.request(`/v1/strategies/${s.id}/start`, { cookie: alice, json: { mode: "paper", brokerId: b.id, entries: {} } })).status).toBe(200);
+    const keys = await t.request("/v1/credentials", { cookie: alice, json: { brokerId: b.id, apiKey: "k", apiSecret: "s" } });
+    expect(keys.status).toBe(409);
+    expect((await json<{ message: string }>(keys)).message).toContain("data-only");
+    const p = await json<LivePreview>(await t.request(`/v1/strategies/${s.id}/live/preview`, { cookie: alice, json: { brokerId: b.id } }));
+    expect(p.ok).toBe(false);
+    expect(p.reasons.some((r) => r.includes("data-only"))).toBe(true);
+    const place = await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: alice, json: { brokerId: b.id, idempotencyKey: "key-deribit-0001", expected: {} } });
+    expect(place.status).toBe(409);
+    expect((await json<{ message: string }>(place)).message).toContain("data-only");
+  });
 });

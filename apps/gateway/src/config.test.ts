@@ -11,6 +11,10 @@ describe("[GATEWAY] config", () => {
       DELTA_REST_URL: "https://api.india.delta.exchange",
       DELTA_WS_URL: "wss://socket.india.delta.exchange",
       DELTA_WS_CHANNEL: "v2/ticker",
+      DERIBIT_REST_URL: "https://www.deribit.com/api/v2",
+      DERIBIT_WS_URL: "wss://www.deribit.com/ws/api/v2",
+      DERIBIT_WS_INTERVAL: "100ms",
+      GATEWAY_VENUES: ["delta_india"],
       WEB_URL: "http://localhost:3000",
       COALESCE_MS: 250,
       MAX_TOPICS_PER_CONN: 50,
@@ -102,5 +106,16 @@ describe("[GATEWAY] config: ADR-062 replica settings", () => {
     expect(loadConfig({ GATEWAY_ROLE: "follower" }).GATEWAY_ROLE).toBe("follower");
     expect(() => loadConfig({ GATEWAY_ROLE: "leader" })).toThrow(ConfigError);
     expect(() => loadConfig({ LEADER_TTL_MS: "1000" })).toThrow(ConfigError);
+  });
+});
+
+describe("HC-SH-122 [GATEWAY] GATEWAY_VENUES (ADR-067)", () => {
+  it("parses a comma-separated list of schema venue ids, dedupes, always keeps the default venue first, and refuses an unknown one", () => {
+    expect(loadConfig({ GATEWAY_VENUES: "deribit" }).GATEWAY_VENUES).toEqual(["delta_india", "deribit"]);
+    expect(loadConfig({ GATEWAY_VENUES: " delta_india , deribit,deribit, " }).GATEWAY_VENUES).toEqual(["delta_india", "deribit"]);
+    expect(loadConfig({ GATEWAY_VENUES: "" }).GATEWAY_VENUES).toEqual(["delta_india"]);
+    expect(() => loadConfig({ GATEWAY_VENUES: "delta_india,nse" })).toThrow(/unknown venue nse/);
+    expect(loadConfig({ DERIBIT_WS_INTERVAL: "agg2" }).DERIBIT_WS_INTERVAL).toBe("agg2");
+    expect(() => loadConfig({ DERIBIT_REST_URL: "ftp://nope" })).toThrow();
   });
 });

@@ -115,7 +115,7 @@ export function buildChain(input: BuildChainInput): ChainSnapshot {
   const rows = [...rowsByStrike.values()].sort((a, b) => compareDecimal(a.strike, b.strike));
   const first = options[0] as Instrument;
   return {
-    venue: "delta",
+    venue: first.venue,
     underlying: input.underlying,
     expiry: makeExpiry(code, settlementFor(first, code), nowMs),
     spot,

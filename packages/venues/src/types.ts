@@ -9,7 +9,7 @@
  * fractions (0.42 = 42 %); greeks are plain numbers (pure math inputs); timestamps are epoch ms.
  */
 
-export type Venue = "delta";
+export type Venue = "delta" | "deribit";
 
 export type InstrumentKind = "call" | "put" | "future" | "perpetual" | "other";
 

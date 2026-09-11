@@ -1,16 +1,17 @@
 /**
- * The slice of `@hapiecoin/venues`' DeltaMarketData the feed depends on, as an interface so tests inject
- * a fake. `createMarketData` asks the venue port for the real session (ADR-063).
+ * The slice of a venue session the feed depends on, as an interface so tests inject a fake (ADR-067: every venue's
+ * session implements it; `createMarketData` asks the port for the real one of a venue).
  */
+import type { Venue as VenueId } from "@hapiecoin/schema";
 import type {
   ChainSnapshot as VenueChainSnapshot,
   DeltaMarketDataEvents,
-  DeltaMarketDataOptions,
   Expiry,
   Instrument as VenueInstrument,
   Listener,
   MarketDataStatus,
   Quote as VenueQuote,
+  VenueMarketDataOptions,
 } from "@hapiecoin/venues";
 import { DEFAULT_VENUE, getVenue } from "@hapiecoin/venues";
 
@@ -40,40 +41,23 @@ export interface MarketDataConfig {
   DELTA_REST_URL: string;
   DELTA_WS_URL: string;
   DELTA_WS_CHANNEL: "v2/ticker" | "ticker";
+  DERIBIT_REST_URL: string;
+  DERIBIT_WS_URL: string;
+  DERIBIT_WS_INTERVAL: "100ms" | "agg2";
 }
 
-/** Real Delta market data. `overrides` lets tests inject `fetch` and `WebSocket` fakes. */
+/** The endpoints a venue's session dials, from the gateway config. */
+export function marketDataUrls(config: MarketDataConfig, venue: VenueId): { restUrl: string; wsUrl: string; channel: string } {
+  return venue === "deribit"
+    ? { restUrl: config.DERIBIT_REST_URL, wsUrl: config.DERIBIT_WS_URL, channel: config.DERIBIT_WS_INTERVAL }
+    : { restUrl: config.DELTA_REST_URL, wsUrl: config.DELTA_WS_URL, channel: config.DELTA_WS_CHANNEL };
+}
+
+/** The real session of `venue`. `overrides` lets tests inject `fetch` and `WebSocket` fakes. */
 export function createMarketData(
   config: MarketDataConfig,
-  overrides: Pick<DeltaMarketDataOptions, "fetch" | "WebSocket" | "now"> = {},
+  venue: VenueId = DEFAULT_VENUE,
+  overrides: Pick<VenueMarketDataOptions, "fetch" | "WebSocket" | "now"> = {},
 ): MarketDataLike {
-  const md = getVenue(DEFAULT_VENUE).marketData({
-    restUrl: config.DELTA_REST_URL,
-    wsUrl: config.DELTA_WS_URL,
-    channel: config.DELTA_WS_CHANNEL,
-    ...overrides,
-  });
-  return {
-    load: () => md.load(),
-    start: () => {
-      md.start();
-    },
-    stop: () => {
-      md.stop();
-    },
-    watch: (underlying, expiry) => md.watch(underlying, expiry),
-    unwatch: (underlying, expiry) => md.unwatch(underlying, expiry),
-    subscribeSymbols: (symbols) => {
-      md.ws.subscribe(symbols);
-    },
-    unsubscribeSymbols: (symbols) => {
-      md.ws.unsubscribe(symbols);
-    },
-    chain: (underlying, expiry) => md.chain(underlying, expiry),
-    expiries: (underlying) => md.expiries(underlying),
-    instrument: (symbol) => md.instrument(symbol),
-    quote: (symbol) => md.quote(symbol),
-    status: () => md.status(),
-    on: (event, listener) => md.on(event, listener),
-  };
+  return getVenue(venue).marketData({ ...marketDataUrls(config, venue), ...overrides });
 }
