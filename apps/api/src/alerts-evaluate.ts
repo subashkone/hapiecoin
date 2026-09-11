@@ -6,13 +6,14 @@
  * path while a tab is open; both go through `fireAlert`, whose update is the single guard against double firing.
  */
 import { type Underlying, UNDERLYINGS, alertMet } from "@hapiecoin/schema";
+import { DEFAULT_VENUE, defaultLotSizes, getVenue } from "@hapiecoin/venues";
 import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import { fireAlert } from "./alerts-fire.js";
 import { alerts, instrumentMarks, ivSnapshots, strategies, strategyLegs, userSettings } from "./db/schema.js";
 import type { AppDeps } from "./routes/shared.js";
 
 const MARK_FRESH_MS = 20 * 60_000;
-const DEFAULT_LOTS: Record<string, string> = { BTC: "0.001", ETH: "0.01", XAUT: "0.001" };
+const DEFAULT_LOTS: Record<string, string> = defaultLotSizes(getVenue(DEFAULT_VENUE)); // ADR-063
 
 export interface EvaluationReport {
   checked: number;

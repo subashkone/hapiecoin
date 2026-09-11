@@ -6,6 +6,7 @@
 import { eq } from "drizzle-orm";
 import type { Db } from "./client.js";
 import type { PlanIntervals } from "@hapiecoin/schema";
+import { DEFAULT_VENUE, getVenue } from "@hapiecoin/venues";
 import { brokers, menuItems, plans, subscriptions, users } from "./schema.js";
 
 export const SEED = {
@@ -57,12 +58,14 @@ export async function seed(db: Db, now: () => Date = () => new Date()): Promise<
     .where(eq(brokers.id, SEED.brokerId))
     .limit(1);
   if (!broker) {
+    const { fees } = getVenue(DEFAULT_VENUE);
     await db.insert(brokers).values({
       id: SEED.brokerId,
       name: SEED.brokerName,
-      feePct: "0.05",
-      gstPct: "18",
-      feeCapPct: "10",
+      // ADR-063: the venue's fee defaults (0.05 % fee, 18 % GST, cap 10 % of premium)
+      feePct: fees.feePct,
+      gstPct: fees.gstPct,
+      feeCapPct: fees.feeCapPct,
       scope: "GLOBAL",
       ownerId: null,
     });

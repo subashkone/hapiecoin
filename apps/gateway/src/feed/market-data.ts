@@ -1,6 +1,6 @@
 /**
  * The slice of `@hapiecoin/venues`' DeltaMarketData the feed depends on, as an interface so tests inject
- * a fake. `createMarketData` wraps the real `createDeltaMarketData`.
+ * a fake. `createMarketData` asks the venue port for the real session (ADR-063).
  */
 import type {
   ChainSnapshot as VenueChainSnapshot,
@@ -12,7 +12,7 @@ import type {
   MarketDataStatus,
   Quote as VenueQuote,
 } from "@hapiecoin/venues";
-import { createDeltaMarketData } from "@hapiecoin/venues";
+import { DEFAULT_VENUE, getVenue } from "@hapiecoin/venues";
 
 export interface MarketDataLike {
   /** Load the instrument list and seed quotes over REST; safe to call again to refresh. */
@@ -47,7 +47,7 @@ export function createMarketData(
   config: MarketDataConfig,
   overrides: Pick<DeltaMarketDataOptions, "fetch" | "WebSocket" | "now"> = {},
 ): MarketDataLike {
-  const md = createDeltaMarketData({
+  const md = getVenue(DEFAULT_VENUE).marketData({
     restUrl: config.DELTA_REST_URL,
     wsUrl: config.DELTA_WS_URL,
     channel: config.DELTA_WS_CHANNEL,
