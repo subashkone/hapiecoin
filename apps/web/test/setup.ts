@@ -6,8 +6,32 @@ import { navigationModule, resetNextMocks } from "./next-mocks";
 
 vi.mock("next/navigation", () => navigationModule);
 
+// sonner's deleteToast schedules a 200 ms removeToast after a toast closes and never clears it, so a toast that
+// closes late in a file's last test fires a state update after jsdom is torn down ("window is not defined", an
+// unhandled error that fails the whole run on the slower CI runner; GAPS #80). Real timers still pending when a
+// test ends are cleared here; fake-timer tests are untouched because vi.useFakeTimers swaps these globals.
+const pendingTimers = new Set<ReturnType<typeof setTimeout>>();
+const realSetTimeout = globalThis.setTimeout;
+const realClearTimeout = globalThis.clearTimeout;
+const trackingSetTimeout = ((handler: (...a: unknown[]) => void, ms?: number, ...args: unknown[]) => {
+  const id = realSetTimeout(() => {
+    pendingTimers.delete(id);
+    handler(...args);
+  }, ms);
+  pendingTimers.add(id);
+  return id;
+}) as typeof setTimeout;
+trackingSetTimeout.__promisify__ = realSetTimeout.__promisify__;
+globalThis.setTimeout = trackingSetTimeout;
+globalThis.clearTimeout = (id: Parameters<typeof clearTimeout>[0]) => {
+  if (id !== undefined && typeof id !== "string" && typeof id !== "number") pendingTimers.delete(id);
+  realClearTimeout(id);
+};
+
 afterEach(() => {
   cleanup();
+  for (const id of pendingTimers) realClearTimeout(id);
+  pendingTimers.clear();
   resetNextMocks();
   window.localStorage.clear();
   window.sessionStorage.clear();
