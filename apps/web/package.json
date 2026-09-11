@@ -22,6 +22,7 @@
     "@hapiecoin/pricing": "workspace:*",
     "@hapiecoin/schema": "workspace:*",
     "@hapiecoin/ui": "workspace:*",
+    "@hapiecoin/venues": "workspace:*",
     "@tanstack/react-query": "5.102.8",
     "@tanstack/react-virtual": "3.14.10",
     "better-auth": "1.7.3",

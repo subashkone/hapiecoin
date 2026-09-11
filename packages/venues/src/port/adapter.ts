@@ -3,7 +3,8 @@
  * `VenueAdapter` found in the registry, not through Delta-specific imports: the contract specs, the symbol
  * codec, the settlement calendar, the fee defaults, the capability flags, the schema bridge and the client
  * factories. Step 1 wraps today's Delta India code without changing a single value; a second venue
- * (Deribit, data-only) implements the same port later.
+ * (Deribit, data-only) implements the same port later. `VenueCore` is the browser-safe part (no client
+ * factory, published as `@hapiecoin/venues/core`, ADR-064); `VenueAdapter` adds the server-side factories.
  */
 import type {
   ChainRow as SchemaChainRow,
@@ -57,6 +58,8 @@ export interface SymbolCodec {
   formatOption: (kind: OptionKind, underlying: string, strike: string, expiryDate: string) => string;
   /** "BTC" -> "BTCUSD". */
   perpetual: (underlying: string) => string;
+  /** "BTCUSD" -> "BTC"; null for anything that is not a perpetual symbol. */
+  parsePerpetual: (symbol: string) => string | null;
 }
 
 export interface VenueCalendar {
@@ -101,7 +104,8 @@ export interface SchemaBridge {
   chainSnapshot: (chain: ChainSnapshot, fallbackSpot?: string | null) => SchemaChainSnapshot;
 }
 
-export interface VenueAdapter {
+/** What a venue is, without any client: safe to import in the browser. */
+export interface VenueCore {
   readonly id: VenueId;
   readonly label: string;
   readonly underlyings: readonly Underlying[];
@@ -111,6 +115,10 @@ export interface VenueAdapter {
   readonly fees: FeeDefaults;
   readonly capabilities: VenueCapabilities;
   readonly schema: SchemaBridge;
+}
+
+/** A venue with its client factories (server-side: the trading client signs with node:crypto). */
+export interface VenueAdapter extends VenueCore {
   /** Public REST client (products, tickers, candles). */
   readonly rest: (options: DeltaRestClientOptions) => DeltaRestClient;
   /** Instruments over REST, quotes over the socket, chains on demand. Step 1 types the factories with the Delta classes; step 4 narrows them to venue-agnostic slices (the gateway's `MarketDataLike` is one). */
@@ -140,14 +148,14 @@ export class VenueCapabilityError extends Error {
 }
 
 /** The spec of one underlying on a venue; throws when the venue does not list it. */
-export function marketOf(adapter: VenueAdapter, underlying: string): MarketSpec {
+export function marketOf(adapter: VenueCore, underlying: string): MarketSpec {
   const spec = ownMarket(adapter.markets, underlying);
   if (spec === undefined) throw new VenueCapabilityError(adapter.id, `market ${underlying}`);
   return spec;
 }
 
 /** The venue's spec for `underlying` when it lists one (own keys only, so "constructor" is not a market). */
-export function ownMarket(markets: VenueAdapter["markets"], underlying: string): MarketSpec | undefined {
+export function ownMarket(markets: VenueCore["markets"], underlying: string): MarketSpec | undefined {
   return Object.hasOwn(markets, underlying) ? (markets as Readonly<Record<string, MarketSpec>>)[underlying] : undefined;
 }
 
@@ -158,7 +166,7 @@ export function tradingClientOf(adapter: VenueAdapter, options: DeltaTradingClie
 }
 
 /** Default lot size per schema underlying: the venue's lot where it lists the market, "1" elsewhere (the value the routes fell back to before the port). */
-export function defaultLotSizes(adapter: VenueAdapter): Record<Underlying, string> {
+export function defaultLotSizes(adapter: VenueCore): Record<Underlying, string> {
   const out = {} as Record<Underlying, string>;
   for (const u of UNDERLYINGS) out[u] = adapter.markets[u]?.lotSize ?? "1";
   return out;

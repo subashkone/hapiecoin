@@ -30,7 +30,7 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 19. ✅ (PR #52) Per-template textbook invariants test (max profit / loss shape, breakeven count, outlook) on an arbitrage-free synthetic ladder (GAPS #75)
 
 ## E. Platform (ADR-060; docs/research/platform-roadmap-2026-09.md §3–5; after C13)
-20. 🔨 E1 venue port: ✅ step 1 (ADR-063) `VenueAdapter` + `VENUE_REGISTRY` + `DELTA_INDIA` (no behaviour change) → ⬜ `venue` column and instrument-id widening → pricing with `q`, `TradingCalendar`, American flagged → Deribit data-only adapter and per-venue gateway feed
+20. 🔨 E1 venue port: ✅ step 1 (ADR-063) `VenueAdapter` + `VENUE_REGISTRY` + `DELTA_INDIA` (no behaviour change) → ✅ step 2a (ADR-064) browser-safe `@hapiecoin/venues/core`, the web client on the port → ⬜ step 2b `venue` column and instrument-id widening → pricing with `q`, `TradingCalendar`, American flagged → Deribit data-only adapter and per-venue gateway feed
 21. ⬜ E2 currency: `Money { amount, ccy }`, ISO-4217 display list, ECB reference rates via ingest (`fx_rates`, `GET /fx`), manual override with a basis badge; billing stays INR
 22. ⬜ E3 languages: next-intl, cookie locale, chrome → dialogs → settings → content; Hindi, Tamil and Telugu together; per-locale assistant match tables
 23. ⬜ E4 mobile: viewport, manifest, icons, service worker, Playwright Pixel 7 + iPhone 14 phone specs, tap targets on the chain → Capacitor shell with native push and biometric unlock (Play Store, App Store)

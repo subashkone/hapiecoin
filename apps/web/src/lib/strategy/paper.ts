@@ -4,7 +4,7 @@
 import type { Broker, Strategy, StrategyLeg as ServerLeg, StrategyLegInput, Underlying } from "@hapiecoin/schema";
 import { settlementHourUtc } from "@/lib/pricing/legs";
 import { toDecimal } from "@hapiecoin/schema";
-import { type StrategyLeg, deltaSymbol } from "./legs";
+import { type StrategyLeg, venueSymbol } from "./legs";
 
 /** UI mirror of the API limit (HC-TR-017). */
 export const MAX_OPEN_LEGS_UI = 10;
@@ -183,7 +183,7 @@ export function pickToInput(l: { asset: Underlying; kind: StrategyLeg["kind"]; s
     side: l.side,
     strike: l.kind === "future" ? "" : l.strike,
     expiry: l.kind === "future" ? "PERP" : l.expiry,
-    symbol: deltaSymbol(l.kind, l.asset, l.strike, l.expiry),
+    symbol: venueSymbol(l.kind, l.asset, l.strike, l.expiry),
     lots: l.lots,
     price: toDecimal(Number(l.price), 4),
     ...(l.iv === undefined ? {} : { iv: l.iv }),

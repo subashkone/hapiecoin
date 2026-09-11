@@ -1,16 +1,21 @@
 // HC-TR-144: exchange positions back to legs, lots and P&L.
 import { describe, expect, it } from "vitest";
-import { lotsFor, parseDeltaSymbol, positionPnl, positionToLeg } from "./positions";
+import { lotsFor, parseVenueSymbol, positionPnl, positionToLeg } from "./positions";
 
 const POS = { productId: 101, symbol: "C-BTC-80000-250926", size: -10, entryPrice: "1200", realizedPnl: "0", margin: "12", contractValue: "0.001", mark: "1250" };
 
-describe("[STRATEGY] positions → legs", () => {
+describe("[STRATEGY] HC-TR-144 / HC-SH-119 positions → legs through the port codec", () => {
   it("HC-TR-144 parses Delta option and perpetual symbols and rejects the rest", () => {
-    expect(parseDeltaSymbol("C-BTC-80000-250926")).toEqual({ kind: "call", asset: "BTC", strike: "80000", expiry: "2026-09-25" });
-    expect(parseDeltaSymbol("P-XAUT-4410.5-080926")).toEqual({ kind: "put", asset: "XAUT", strike: "4410.5", expiry: "2026-09-08" });
-    expect(parseDeltaSymbol("ETHUSD")).toEqual({ kind: "future", asset: "ETH", strike: "0", expiry: "" });
-    expect(parseDeltaSymbol("SOLUSD")).toBeNull();
-    expect(parseDeltaSymbol("C-BTC-80000")).toBeNull();
+    expect(parseVenueSymbol("C-BTC-80000-250926")).toEqual({ kind: "call", asset: "BTC", strike: "80000", expiry: "2026-09-25" });
+    expect(parseVenueSymbol("P-XAUT-4410.5-080926")).toEqual({ kind: "put", asset: "XAUT", strike: "4410.5", expiry: "2026-09-08" });
+    expect(parseVenueSymbol("ETHUSD")).toEqual({ kind: "future", asset: "ETH", strike: "0", expiry: "" });
+    expect(parseVenueSymbol("SOLUSD")).toBeNull();
+    expect(parseVenueSymbol("C-BTC-80000")).toBeNull();
+    expect(parseVenueSymbol("C-BTC-80000-310226")).toBeNull(); // 31 Feb is not a calendar date (the port's codec, ADR-064)
+    expect(parseVenueSymbol("C-SOL-80-250926")).toBeNull();
+    // the codec returns the strike in canonical decimal form
+    expect(parseVenueSymbol("C-BTC-080000-250926")?.strike).toBe("80000");
+    expect(parseVenueSymbol("P-XAUT-4410.50-080926")?.strike).toBe("4410.5");
   });
 
   it("HC-TR-144 sizes lots from contracts and contract value", () => {

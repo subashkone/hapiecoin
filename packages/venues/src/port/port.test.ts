@@ -12,8 +12,10 @@ import { FakeWebSocket } from "../test-support/fake-ws.js";
 import { loadProductsFixture, loadTickersFixture } from "../test-support/fixtures.js";
 import { UnknownVenueError, VenueCapabilityError, defaultLotSizes, marketOf, ownMarket, tradingClientOf } from "./adapter.js";
 import type { VenueAdapter } from "./adapter.js";
-import { DELTA_INDIA, DELTA_INDIA_MARKETS, formatDeltaOption } from "./delta-india.js";
-import { DEFAULT_VENUE, VENUE_REGISTRY, getVenue, listVenues } from "./registry.js";
+import { DEFAULT_VENUE, VENUE_CORES, getVenueCore, listVenueCores } from "./core.js";
+import { DELTA_INDIA } from "./delta-india-clients.js";
+import { DELTA_INDIA_CORE, DELTA_INDIA_MARKETS, formatDeltaOption, parseDeltaPerpetual } from "./delta-india.js";
+import { VENUE_REGISTRY, getVenue, listVenues } from "./registry.js";
 
 const products = RawProductsResponse.parse(loadProductsFixture()).result;
 const tickers = RawTickersResponse.parse(loadTickersFixture()).result;
@@ -27,6 +29,17 @@ describe("HC-SH-118 [VENUES] registry", () => {
     expect(listVenues()).toEqual([DELTA_INDIA]);
     expect(DELTA_INDIA.id).toBe("delta_india");
     expect(DELTA_INDIA.label).toBe("Delta Exchange India");
+  });
+
+  it("HC-SH-119 the browser-safe core lists the same venues without any client factory (ADR-064)", () => {
+    expect(Object.keys(VENUE_CORES)).toEqual(Object.keys(VENUE_REGISTRY));
+    expect(getVenueCore(DEFAULT_VENUE)).toBe(DELTA_INDIA_CORE);
+    expect(listVenueCores()).toEqual([DELTA_INDIA_CORE]);
+    expect("rest" in DELTA_INDIA_CORE).toBe(false);
+    expect("marketData" in DELTA_INDIA_CORE).toBe(false);
+    expect("trading" in DELTA_INDIA_CORE).toBe(false);
+    for (const key of Object.keys(DELTA_INDIA_CORE) as (keyof typeof DELTA_INDIA_CORE)[]) expect(DELTA_INDIA[key]).toBe(DELTA_INDIA_CORE[key]);
+    for (const key of ["toString", "constructor", "__proto__"]) expect(() => getVenueCore(key), key).toThrowError(UnknownVenueError);
   });
 
   it("throws UnknownVenueError for an id that is not registered", () => {
@@ -110,6 +123,11 @@ describe("HC-SH-118 [VENUES] Delta India symbol codec", () => {
 
   it("names the perpetual and rejects non-option symbols", () => {
     expect(DELTA_INDIA.symbols.perpetual("BTC")).toBe("BTCUSD");
+    expect(DELTA_INDIA.symbols.parsePerpetual).toBe(parseDeltaPerpetual);
+    expect(parseDeltaPerpetual("BTCUSD")).toBe("BTC");
+    expect(parseDeltaPerpetual("SOLUSD")).toBe("SOL"); // the codec knows the shape, not the listing; callers check the underlying
+    expect(parseDeltaPerpetual("C-BTC-80000-250926")).toBeNull();
+    expect(parseDeltaPerpetual("btcusd")).toBeNull();
     expect(DELTA_INDIA.symbols.isOption("BTCUSD")).toBe(false);
     expect(() => DELTA_INDIA.symbols.parseOption("BTCUSD")).toThrowError(InvalidSymbolError);
   });

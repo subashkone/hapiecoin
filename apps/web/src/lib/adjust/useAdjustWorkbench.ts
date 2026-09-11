@@ -3,6 +3,8 @@
 // its open legs, the draft, the pane's before / after analysis, the marks and their age, the ticket figures
 // (effects, cashflow, cap, summary and guard rails) and the actions that change the draft.
 import type { Strategy, StrategyLeg as ServerLeg, Underlying } from "@hapiecoin/schema";
+import { defaultLotSizes } from "@hapiecoin/venues/core";
+import { currentVenue } from "@/lib/venue";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useStrategies } from "@/lib/api/strategies";
 import { useSettings } from "@/lib/api/queries";
@@ -13,7 +15,7 @@ import { type AdjustDraft, type ChangeSummary, type Effect, type PickInput, adds
 
 /** Marks older than this are called stale in the guard rails (Review re-reads them anyway). */
 export const STALE_MARKS_MS = 60_000;
-const DEFAULT_LOTS: Record<Underlying, string> = { BTC: "0.001", ETH: "0.01", XAUT: "0.001" };
+const DEFAULT_LOTS: Record<Underlying, string> = defaultLotSizes(currentVenue()); // ADR-064
 
 export interface AdjustWorkbench {
   a: StrategyAnalysis;

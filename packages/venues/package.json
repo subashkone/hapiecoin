@@ -2,7 +2,7 @@
   "name": "@hapiecoin/venues",
   "version": "0.1.0",
   "private": true,
-  "description": "HapieCoin venue adapters: Delta Exchange India market data (REST + WebSocket) and Binance spot",
+  "description": "HapieCoin venue adapters: the venue port (ADR-063) with Delta Exchange India behind it, Binance spot; `./core` is the browser-safe part",
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -10,6 +10,11 @@
       "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./core": {
+      "development": "./src/port/core.ts",
+      "types": "./dist/port/core.d.ts",
+      "default": "./dist/port/core.js"
     }
   },
   "files": [

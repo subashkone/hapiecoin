@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_LOTS, LOT_PRESETS, MAX_ACTIVE_LEGS, activeLegs, addLeg, deltaSymbol, isLotPreset, legQuantity, legsForChain, normaliseLegs, removeLeg, rowMarks, setLegInstrument, stepLots, toggleLegEnabled, type StrategyLeg } from "./legs";
+import { DEFAULT_LOTS, LOT_PRESETS, MAX_ACTIVE_LEGS, activeLegs, addLeg, venueSymbol, isLotPreset, legQuantity, legsForChain, normaliseLegs, removeLeg, rowMarks, setLegInstrument, stepLots, toggleLegEnabled, type StrategyLeg } from "./legs";
 
 const base = { asset: "BTC" as const, kind: "call" as const, side: "buy" as const, strike: "79400", expiry: "2026-09-07", lots: 10, price: "807.5", iv: 0.27 };
 
@@ -19,12 +19,13 @@ describe("HC-WS-025 stepLots walks the presets both ways and clamps", () => {
   });
 });
 
-describe("HC-WS-026 deltaSymbol formats the venue symbol", () => {
-  it("uses C/P, the asset, an integral strike and DDMMYY", () => {
-    expect(deltaSymbol("call", "BTC", "79400", "2026-09-07")).toBe("C-BTC-79400-070926");
-    expect(deltaSymbol("put", "ETH", "4200.00", "2026-10-30")).toBe("P-ETH-4200-301026");
-    expect(deltaSymbol("call", "XAUT", "3425.5", "2026-09-11")).toBe("C-XAUT-3425.5-110926");
-    expect(deltaSymbol("call", "BTC", "80000", "bad")).toBe("C-BTC-80000-bad");
+describe("HC-WS-026 / HC-SH-119 venueSymbol formats the venue symbol through the port (ADR-064)", () => {
+  it("uses C/P, the asset, an integral strike and DDMMYY; the perpetual for a future", () => {
+    expect(venueSymbol("future", "BTC", "0", "")).toBe("BTCUSD");
+    expect(venueSymbol("call", "BTC", "79400", "2026-09-07")).toBe("C-BTC-79400-070926");
+    expect(venueSymbol("put", "ETH", "4200.00", "2026-10-30")).toBe("P-ETH-4200-301026");
+    expect(venueSymbol("call", "XAUT", "3425.5", "2026-09-11")).toBe("C-XAUT-3425.5-110926");
+    expect(venueSymbol("call", "BTC", "80000", "bad")).toBe("C-BTC-80000-bad");
   });
 });
 

@@ -1766,6 +1766,20 @@
   "evidence": "ADR-063 (11 Sep 2026): packages/venues/src/port/adapter.ts, delta-india.ts, registry.ts; apps/api/src/main.ts, routes/settings.ts, routes/live-exec.ts, alerts-evaluate.ts, db/seed.ts; apps/gateway/src/feed/market-data.ts, feed.ts; unit port.test.ts against the products fixture and the web formatter vectors"
  },
  {
+  "id": "HC-SH-119",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "screen": "Venues · port (web)",
+  "feature": "The web client asks the venue port, never Delta",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web)",
+  "acceptance": "@hapiecoin/venues/core is the browser-safe part of the port (no client factory, no node:crypto); the web client formats and parses symbols through the codec (venueSymbol, parseVenueSymbol), takes lot defaults from defaultLotSizes, the settlement hour from the venue calendar and the venue id from DEFAULT_VENUE; an impossible calendar date in an exchange position symbol is refused",
+  "evidence": "ADR-064 (11 Sep 2026): packages/venues/src/port/core.ts, delta-india.ts, delta-india-clients.ts; apps/web/src/lib/strategy/legs.ts, positions.ts, lib/chain/expiries.ts, lib/adjust/useAdjustWorkbench.ts, lib/gateway/*; unit port.test.ts, legs.test.ts, positions.test.ts"
+ },
+ {
   "id": "HC-PB-001",
   "area": "10-public",
   "areaName": "Public site & authentication",

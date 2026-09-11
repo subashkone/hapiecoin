@@ -2,6 +2,7 @@
 // per-asset list kept in the UI store. Prices and IVs are copied from the live quote; the quantity in
 // underlying units is derived (lots × lot size) when needed and never stored twice (typescript rule 3).
 import type { Underlying } from "@hapiecoin/schema";
+import { currentVenue } from "@/lib/venue";
 
 /** Options from the chain, or a perpetual future added from the Builder (HC-TR-016, HC-TR-035). */
 export type LegKind = "call" | "put" | "future";
@@ -55,14 +56,10 @@ export function stepLots(lots: number, delta: 1 | -1): number {
   return stepLots(nearest, delta);
 }
 
-/** Delta-style symbol: C-BTC-79400-070926 (strike without decimals when integral; expiry as DDMMYY); BTCUSD for the perpetual. */
-export function deltaSymbol(kind: LegKind, asset: Underlying, strike: string, expiryIso: string): string {
-  if (kind === "future") return `${asset}USD`;
-  const [y, m, d] = expiryIso.split("-");
-  const code = d && m && y ? `${d}${m}${y.slice(2)}` : expiryIso;
-  const k = Number(strike);
-  const s = Number.isFinite(k) && Number.isInteger(k) ? String(k) : strike;
-  return `${kind === "call" ? "C" : "P"}-${asset}-${s}-${code}`;
+/** The venue's symbol for a leg through the port's codec (ADR-064): C-BTC-79400-070926 for an option, BTCUSD for the perpetual. */
+export function venueSymbol(kind: LegKind, asset: Underlying, strike: string, expiryIso: string): string {
+  const { symbols } = currentVenue();
+  return kind === "future" ? symbols.perpetual(asset) : symbols.formatOption(kind, asset, strike, expiryIso);
 }
 
 export interface NewLegInput {
@@ -98,7 +95,7 @@ export function addLeg(legs: readonly StrategyLeg[], input: NewLegInput, now = D
     lots: input.lots,
     price: input.price,
     iv: input.iv,
-    symbol: deltaSymbol(input.kind, input.asset, input.strike, input.expiry),
+    symbol: venueSymbol(input.kind, input.asset, input.strike, input.expiry),
     status: "open",
     createdAt: now,
   };
@@ -145,7 +142,7 @@ export function setLegInstrument(legs: readonly StrategyLeg[], id: string, patch
     const kind = patch.kind ?? l.kind;
     const strike = patch.strike ?? l.strike;
     const expiry = patch.expiry ?? l.expiry;
-    return { ...l, kind, strike, expiry, symbol: deltaSymbol(kind, l.asset, strike, expiry), ...(quote ? { price: quote.price, iv: quote.iv } : {}) };
+    return { ...l, kind, strike, expiry, symbol: venueSymbol(kind, l.asset, strike, expiry), ...(quote ? { price: quote.price, iv: quote.iv } : {}) };
   });
 }
 

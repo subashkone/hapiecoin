@@ -2,6 +2,7 @@
 // then the env default list. Nothing here invents a strike; expiries only pick which topic to subscribe.
 import { expiryMs } from "@hapiecoin/pricing";
 import type { Underlying } from "@hapiecoin/schema";
+import { currentVenue } from "@/lib/venue";
 import { GatewayHealth } from "../api/schemas";
 import { defaultExpiries, gatewayHttpUrl } from "../env";
 
@@ -16,10 +17,10 @@ export async function discoverExpiries(
 ): Promise<ExpirySource> {
   const fallback = defaultExpiries(opts.defaultsCsv);
   const today = opts.today ?? new Date().toISOString().slice(0, 10);
-  // An expiry stays listed until its settlement instant (12:00 UTC BTC / ETH, 16:00 UTC XAUT); on the expiry
-  // day after settlement the options are gone from the venue, so the list moves to the next date.
+  // An expiry stays listed until its settlement instant (the venue calendar: 12:00 UTC BTC / ETH, 16:00 UTC XAUT);
+  // on the expiry day after settlement the options are gone from the venue, so the list moves to the next date.
   const nowMs = opts.nowMs ?? (opts.today ? Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)) - 1, Number(today.slice(8, 10))) : Date.now());
-  const live = (d: string) => d >= today && expiryMs(d, opts.settlementHourUtc ?? (underlying === "XAUT" ? 16 : 12)) > nowMs;
+  const live = (d: string) => d >= today && expiryMs(d, opts.settlementHourUtc ?? currentVenue().calendar.settlementHourUtc(underlying)) > nowMs;
   const doFetch = opts.fetch ?? (typeof fetch === "function" ? fetch : undefined);
   if (doFetch) {
     try {

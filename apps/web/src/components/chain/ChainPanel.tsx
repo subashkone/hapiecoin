@@ -4,6 +4,7 @@
 // The table itself (layout, range, keyboard) is ChainTable; this panel owns expiry selection and the states.
 import { Button, EmptyState, cn, toast, useDensity } from "@hapiecoin/ui";
 import { type Quote, chainTopic } from "@hapiecoin/schema";
+import { CURRENT_VENUE } from "@/lib/venue";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo } from "react";
 import { useSettings } from "@/lib/api/queries";
@@ -29,7 +30,7 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
   });
   const list = expiries.data?.expiries ?? [];
   const expiry = selected && list.includes(selected) ? selected : nearestExpiry(list);
-  const topic = expiry ? chainTopic("delta_india", asset, expiry) : null;
+  const topic = expiry ? chainTopic(CURRENT_VENUE, asset, expiry) : null;
   const chain = useTopic(topic);
   const spot = useSpot(asset);
   const status = useConnectionStatus();
