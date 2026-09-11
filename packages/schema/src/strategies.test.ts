@@ -22,6 +22,11 @@ import {
   RuleBody,
   RulesBody,
   ruleThresholdUsd,
+  ruleLevel,
+  nearestSettlement,
+  RULE_KINDS,
+  RULE_KIND_ORDER,
+  CLOSE_REASON_OF_KIND,
 } from "./strategies.js";
 
 const call = { kind: "call", side: "buy", strike: "80000", expiry: "2026-09-25", symbol: "C-BTC-80000-250926", lots: 10, price: "1200.5", iv: 0.52 } as const;
@@ -144,6 +149,33 @@ describe("HC-TR-165 stop and target rules (ADR-059 §2.3)", () => {
     expect(ruleThresholdUsd({ kind: "target", trigger: "pct", value: "50", basisUsd: "100" })).toBe("50");
     expect(ruleThresholdUsd({ kind: "stop", trigger: "pct", value: "200", basisUsd: "84" })).toBe("-168");
     expect(CLOSE_REASON_LABELS.target).toBe("target hit");
+  });
+  it("HC-TR-169 leg stop, spot level and time exit: triggers per kind, the leg for a leg stop, the stored level per kind", () => {
+    expect(RuleBody.safeParse({ kind: "leg_stop", trigger: "multiple", value: "2.5", legId: "leg_1" }).success).toBe(true);
+    expect(RuleBody.safeParse({ kind: "leg_stop", trigger: "multiple", value: "2.5" }).success).toBe(false); // no leg
+    expect(RuleBody.safeParse({ kind: "leg_stop", trigger: "money", value: "5", legId: "leg_1" }).success).toBe(false); // wrong trigger
+    expect(RuleBody.safeParse({ kind: "spot", trigger: "below", value: "78000" }).success).toBe(true);
+    expect(RuleBody.safeParse({ kind: "spot", trigger: "below", value: "78000", scope: "leg" }).success).toBe(false); // only a leg stop exits one leg
+    expect(RuleBody.safeParse({ kind: "time", trigger: "at", value: "2026-09-12T11:30:00.000Z" }).success).toBe(true);
+    expect(RuleBody.safeParse({ kind: "time", trigger: "at", value: "tomorrow" }).success).toBe(false);
+    expect(RuleBody.safeParse({ kind: "time", trigger: "at", value: "2026-09-12T11:30" }).success).toBe(false); // no zone: whose clock?
+    expect(RuleBody.safeParse({ kind: "time", trigger: "at", value: "2026-09-12T17:00:00+05:30" }).success).toBe(true);
+    expect(RulesBody.safeParse({ rules: Array.from({ length: 15 }, (_, i) => ({ kind: "leg_stop", trigger: "price", value: "1", legId: `l${i}` })) }).success).toBe(false); // 14 is the most: ten leg stops and the four others
+    expect(nearestSettlement([{ expiry: "PERP" }], "BTC")).toBeNull();
+    expect(nearestSettlement([{ expiry: "2026-09-25" }, { expiry: "2026-09-18" }, { expiry: "PERP" }], "BTC")).toEqual({ ms: Date.UTC(2026, 8, 18, 12), expiry: "2026-09-18" });
+    expect(RuleBody.safeParse({ kind: "time", trigger: "dte", value: "0" }).success).toBe(true);
+    expect(RuleBody.safeParse({ kind: "time", trigger: "dte", value: "1.5" }).success).toBe(false);
+    expect(RulesBody.safeParse({ rules: [{ kind: "leg_stop", trigger: "price", value: "50", legId: "a" }, { kind: "leg_stop", trigger: "price", value: "60", legId: "b" }, { kind: "spot", trigger: "above", value: "82000" }] }).success).toBe(true);
+    expect(RulesBody.safeParse({ rules: [{ kind: "leg_stop", trigger: "price", value: "50", legId: "a" }, { kind: "leg_stop", trigger: "price", value: "60", legId: "a" }] }).success).toBe(false);
+    expect(ruleLevel({ kind: "leg_stop", trigger: "multiple", value: "2.5", basisUsd: undefined }, "48.10")).toBe("120.25");
+    expect(ruleLevel({ kind: "leg_stop", trigger: "price", value: "150", basisUsd: undefined })).toBe("150");
+    expect(ruleLevel({ kind: "spot", trigger: "below", value: "78000", basisUsd: undefined })).toBe("78000");
+    expect(ruleLevel({ kind: "time", trigger: "at", value: "2026-09-12T11:30:00.000Z", basisUsd: undefined })).toBe(String(Date.UTC(2026, 8, 12, 11, 30)));
+    expect(ruleLevel({ kind: "time", trigger: "dte", value: "1", basisUsd: undefined })).toBe("1");
+    expect(ruleLevel({ kind: "stop", trigger: "money", value: "60", basisUsd: undefined })).toBe("-60");
+    expect(RULE_KINDS.map((k) => RULE_KIND_ORDER[k])).toEqual([0, 4, 1, 2, 3]);
+    expect(CLOSE_REASON_OF_KIND.time).toBe("squared_off");
+    expect(CLOSE_REASON_OF_KIND.leg_stop).toBe("stopped");
   });
 });
 

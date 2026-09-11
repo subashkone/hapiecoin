@@ -237,6 +237,45 @@ describe("HC-TR-071 / HC-TR-088 adjustment batch on a paper strategy (ADR-044)",
     expect(audits.map((a) => a.action)).toEqual(expect.arrayContaining(["strategy.rules_set", "strategy.rules_clear"]));
   });
 
+  it("HC-TR-169 leg stop, spot level and time exit: the leg must be open, a multiple is priced off the entry, one leg stop per leg, the kinds come back in judging order", async () => {
+    const rules = (id: string, body: unknown) => t.request(`/v1/strategies/${id}/rules`, { method: "PUT", cookie: alice, json: body });
+    const s = await create(alice);
+    const started = await startPaper(alice, s.id, {});
+    const [call, put] = started.legs;
+    expect((await rules(s.id, { rules: [{ kind: "leg_stop", trigger: "multiple", value: "2", legId: "leg_nope" }] })).status).toBe(400);
+    expect((await rules(s.id, { rules: [{ kind: "leg_stop", trigger: "multiple", value: "2" }] })).status).toBe(400); // no leg named
+    expect((await rules(s.id, { rules: [{ kind: "leg_stop", trigger: "price", value: "1", legId: put!.id }, { kind: "leg_stop", trigger: "price", value: "2", legId: put!.id }] })).status).toBe(400);
+    expect((await rules(s.id, { rules: [{ kind: "time", trigger: "at", value: "next week" }] })).status).toBe(400);
+    expect((await rules(s.id, { rules: [{ kind: "spot", trigger: "money", value: "80000" }] })).status).toBe(400); // wrong trigger for the kind
+    expect((await rules(s.id, { rules: [{ kind: "time", trigger: "at", value: "2020-01-01T00:00:00.000Z" }] })).status).toBe(400); // already passed
+    expect((await rules(s.id, { rules: [{ kind: "leg_stop", trigger: "multiple", value: "0.000001", legId: put!.id }] })).status).toBe(400); // rounds to nothing
+    const armed = await json<Strategy>(
+      await rules(s.id, {
+        rules: [
+          { kind: "time", trigger: "dte", value: "1" },
+          { kind: "spot", trigger: "above", value: "82000" },
+          { kind: "leg_stop", trigger: "multiple", value: "2.5", legId: put!.id },
+          { kind: "leg_stop", trigger: "price", value: "1500", legId: call!.id, scope: "strategy" },
+          { kind: "target", trigger: "money", value: "9" },
+        ],
+      }),
+    );
+    const rows = armed.rules!.map((r) => [r.kind, r.trigger, r.thresholdUsd, r.legId, r.scope, r.state]);
+    expect(rows.map((r) => r[0])).toEqual(["leg_stop", "leg_stop", "spot", "time", "target"]); // the protective kinds first, the target last
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        ["leg_stop", "multiple", "2250", put!.id, "leg", "armed"], // 2.5 × the 900 entry
+        ["leg_stop", "price", "1500", call!.id, "strategy", "armed"],
+        ["spot", "above", "82000", null, "strategy", "armed"],
+        ["time", "dte", "1", null, "strategy", "armed"],
+        ["target", "money", "9", null, "strategy", "armed"],
+      ]),
+    );
+    const at = "2026-09-12T11:30:00.000Z";
+    const timed = await json<Strategy>(await rules(s.id, { rules: [{ kind: "time", trigger: "at", value: at }] }));
+    expect(timed.rules!.map((r) => [r.kind, r.value, r.thresholdUsd])).toEqual([["time", at, String(Date.parse(at))]]);
+  });
+
   it("HC-TR-161 reconcile books lots closed outside the app at the given price, keeps the reason, archives when nothing is open, refuses bad legs", async () => {
     const s = await create(alice);
     const started = await startPaper(alice, s.id, {});

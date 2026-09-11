@@ -119,8 +119,9 @@ if (config.settlementMs !== 0)
         config.settlementMs,
       ),
   });
-// ADR-059 §2.3: stop / target rules judged from the venue's public marks every RULES_TICK_MS (0 turns it off); one
-// request per underlying per tick, options and the perpetual together, keyed by venue symbol
+// ADR-059 §2.3: exit rules judged from the venue's public marks and spot every RULES_TICK_MS (0 turns it off); one
+// request per underlying per tick, options and the perpetual together, keyed by venue symbol; spot from the first
+// ticker that carries one
 if (config.rulesTickMs !== 0)
   starters.push({
     name: "rules",
@@ -128,14 +129,10 @@ if (config.rulesTickMs !== 0)
       startRulesEngine(
         deps,
         {
-          marks: async (u) => {
-            const quotes = await publicRest.getTickers({ contractTypes: ["call_options", "put_options", "perpetual_futures"], underlying: u });
-            return new Map(
-              quotes.map((q) => {
-                const sq = venue.schema.quote(q, "0"); // through the venue port (ADR-063), like the snapshotter
-                return [sq.instrumentId.slice(sq.instrumentId.indexOf(":") + 1), Number(sq.mark)];
-              }),
-            );
+          tick: async (u) => {
+            const quotes = (await publicRest.getTickers({ contractTypes: ["call_options", "put_options", "perpetual_futures"], underlying: u })).map((q) => venue.schema.quote(q, "0")); // through the venue port (ADR-063), like the snapshotter
+            const spot = quotes.map((q) => Number(q.spot)).find((x) => x > 0) ?? null;
+            return { marks: new Map(quotes.map((sq) => [sq.instrumentId.slice(sq.instrumentId.indexOf(":") + 1), Number(sq.mark)])), spot };
           },
         },
         config.rulesTickMs,

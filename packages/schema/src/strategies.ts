@@ -154,13 +154,25 @@ export type StrategyAdjustment = z.infer<typeof StrategyAdjustment>;
  * the level is crossed, HapieCoin exits every open leg of that strategy: short legs first, market at the mark of that
  * tick, through the same exit path a click uses. Paper strategies fire too (no orders). A fired rule never re-arms.
  */
-export const RULE_KINDS = ["stop", "target"] as const;
+/**
+ * stop / target watch the strategy P&L; leg_stop watches one leg's mark (a short leg tested to N × its entry, or a
+ * price); spot watches the underlying; time fires at an instant or when the nearest expiry is d days away.
+ */
+export const RULE_KINDS = ["stop", "target", "leg_stop", "spot", "time"] as const;
 export const RuleKind = z.enum(RULE_KINDS);
 export type RuleKind = z.infer<typeof RuleKind>;
-/** How the trader typed the level: an amount (USD internally, shown in the trader's currency) or a percentage of a basis. */
-export const RULE_TRIGGERS = ["money", "pct"] as const;
+/**
+ * How the trader typed the level. stop / target: money (USD internally, shown in the trader's currency) or pct of a
+ * basis. leg_stop: multiple (× the leg's entry) or price. spot: above / below a price. time: at (an ISO instant) or
+ * dte (days to the nearest expiry, inclusive).
+ */
+export const RULE_TRIGGERS = ["money", "pct", "multiple", "price", "above", "below", "at", "dte"] as const;
 export const RuleTrigger = z.enum(RULE_TRIGGERS);
 export type RuleTrigger = z.infer<typeof RuleTrigger>;
+export const RULE_TRIGGERS_OF: Record<RuleKind, readonly RuleTrigger[]> = { stop: ["money", "pct"], target: ["money", "pct"], leg_stop: ["multiple", "price"], spot: ["above", "below"], time: ["at", "dte"] };
+/** What a fire exits: the whole strategy, or (leg_stop only) the watched leg alone. */
+export const RuleScope = z.enum(["strategy", "leg"]);
+export type RuleScope = z.infer<typeof RuleScope>;
 /** The percentage basis: the credit received, the debit paid, or the max loss (defined risk). */
 export const RULE_BASES = ["credit", "debit", "max_loss"] as const;
 export const RuleBasis = z.enum(RULE_BASES);
@@ -172,19 +184,29 @@ export type RuleState = z.infer<typeof RuleState>;
 export const RULE_CHANNELS = ["push", "email", "telegram"] as const;
 export const RuleChannel = z.enum(RULE_CHANNELS);
 export type RuleChannel = z.infer<typeof RuleChannel>;
-export const RULE_KIND_LABELS: Record<RuleKind, string> = { stop: "Stop loss", target: "Target" };
+export const RULE_KIND_LABELS: Record<RuleKind, string> = { stop: "Stop loss", target: "Target", leg_stop: "Leg stop", spot: "Spot level", time: "Time exit" };
+/** Judging and display order: the protective kinds first, the target last (were two crossed at once, the protective one wins). */
+export const RULE_KIND_ORDER: Record<RuleKind, number> = { stop: 0, leg_stop: 1, spot: 2, time: 3, target: 4 };
+/** The close reason a fire books on the legs and the strategy. */
+export const CLOSE_REASON_OF_KIND: Record<RuleKind, CloseReason> = { stop: "stopped", target: "target", leg_stop: "stopped", spot: "stopped", time: "squared_off" };
 
 export const StrategyRule = z.strictObject({
   id: Id,
   kind: RuleKind,
   trigger: RuleTrigger,
-  /** The number typed: USD for money, a percentage for pct. */
-  value: DecimalString,
+  /** What was typed: USD for money, a percentage for pct, a multiple, a price, a spot level, an ISO instant for at, days for dte. */
+  value: z.string(),
   basis: RuleBasis.nullable(),
-  /** The basis amount in USD the percentage was applied to (null for money). */
+  /** The basis amount in USD the percentage was applied to (null unless pct). */
   basisUsd: DecimalString.nullable(),
-  /** The P&L level in USD the engine compares with: negative for a stop, positive for a target. */
+  /**
+   * The level the engine compares with, in the kind's own unit: stop / target the strategy P&L in USD (negative for a
+   * stop); leg_stop the leg's mark; spot the underlying; time the epoch milliseconds (at) or the days (dte).
+   */
   thresholdUsd: DecimalString,
+  /** The watched leg (leg_stop only). */
+  legId: Id.nullable(),
+  scope: RuleScope,
   channels: z.array(RuleChannel),
   state: RuleState,
   firedAt: IsoDateTime.nullable(),
@@ -203,29 +225,67 @@ export const RuleBody = z
   .strictObject({
     kind: RuleKind,
     trigger: RuleTrigger,
-    value: PositiveDecimal,
+    /** A positive decimal, except an ISO instant for `at` and a whole number of days (0 allowed) for `dte`. */
+    value: z.string().trim().min(1).max(40),
     basis: RuleBasis.optional(),
     basisUsd: PositiveDecimal.optional(),
+    legId: Id.optional(),
+    scope: RuleScope.optional(),
     channels: z.array(RuleChannel).min(1).default(["push"]),
   })
   .superRefine((r, ctx) => {
+    if (!RULE_TRIGGERS_OF[r.kind].includes(r.trigger)) ctx.addIssue({ code: "custom", message: `${r.kind} takes ${RULE_TRIGGERS_OF[r.kind].join(" or ")}`, path: ["trigger"] });
+    if (r.trigger === "at") {
+      // the zone must be written: a bare local time would mean the server's clock, not the trader's
+      if (Number.isNaN(Date.parse(r.value)) || !/(Z|[+-]\d{2}:\d{2})$/.test(r.value)) ctx.addIssue({ code: "custom", message: "expected an ISO date-time with its zone", path: ["value"] });
+    } else if (r.trigger === "dte") {
+      if (!/^\d{1,3}$/.test(r.value)) ctx.addIssue({ code: "custom", message: "expected whole days", path: ["value"] });
+    } else if (!isPositiveDecimal(r.value)) ctx.addIssue({ code: "custom", message: "must be greater than zero", path: ["value"] });
     if (r.trigger === "pct" && (r.basis === undefined || r.basisUsd === undefined)) ctx.addIssue({ code: "custom", message: "a percentage rule needs its basis and the basis amount", path: ["basis"] });
     if (r.trigger === "pct" && Number(r.value) > 1000) ctx.addIssue({ code: "custom", message: "at most 1000 %", path: ["value"] });
-    if (ruleThresholdUsd(r) === "0") ctx.addIssue({ code: "custom", message: "the level rounds to nothing", path: ["value"] });
+    if (r.kind === "leg_stop" && r.legId === undefined) ctx.addIssue({ code: "custom", message: "a leg stop names its leg", path: ["legId"] });
+    if (r.kind !== "leg_stop" && r.scope === "leg") ctx.addIssue({ code: "custom", message: "only a leg stop can exit one leg", path: ["scope"] });
+    if ((r.kind === "stop" || r.kind === "target") && ruleThresholdUsd(r) === "0") ctx.addIssue({ code: "custom", message: "the level rounds to nothing", path: ["value"] });
   });
 export type RuleBody = z.infer<typeof RuleBody>;
-/** The full set for a strategy: at most one stop and one target; rules not listed are removed (fired ones stay as history). */
+/** The full set for a strategy: one rule per kind (leg stops one per leg); rules not listed are removed (fired ones stay as history). */
 export const RulesBody = z
-  .strictObject({ rules: z.array(RuleBody).max(2) })
+  .strictObject({ rules: z.array(RuleBody).max(4 + MAX_OPEN_LEGS) })
   .superRefine((b, ctx) => {
-    if (new Set(b.rules.map((r) => r.kind)).size !== b.rules.length) ctx.addIssue({ code: "custom", message: "one rule per kind", path: ["rules"] });
+    const keys = b.rules.map((r) => `${r.kind}:${r.kind === "leg_stop" ? (r.legId ?? "") : ""}`);
+    if (new Set(keys).size !== keys.length) ctx.addIssue({ code: "custom", message: "one rule per kind (one leg stop per leg)", path: ["rules"] });
   });
 export type RulesBody = z.infer<typeof RulesBody>;
 
-/** The USD P&L level a rule fires at: stops are negative, targets positive. */
+/** The USD P&L level a stop or target fires at: stops are negative, targets positive. */
 export function ruleThresholdUsd(r: Pick<RuleBody, "kind" | "trigger" | "value" | "basisUsd">): string {
   const amount = r.trigger === "money" ? Number(r.value) : (Number(r.value) / 100) * Number(r.basisUsd ?? "0");
   return toDecimal(r.kind === "stop" ? -amount : amount, 2);
+}
+
+/**
+ * The level stored for any rule kind (the `thresholdUsd` column): stop / target the USD P&L; leg_stop the leg's mark
+ * (a multiple needs the leg's entry price); spot the underlying; time the epoch ms (at) or the days (dte).
+ */
+/**
+ * The nearest settlement of the dated legs (options and dated futures, never the perpetual), as the engine and the
+ * dialog count a `dte` rule: epoch ms and the expiry it belongs to, or null with nothing dated.
+ */
+export function nearestSettlement(legs: readonly Pick<StrategyLeg, "expiry">[], asset: Underlying): { ms: number; expiry: string } | null {
+  let best: { ms: number; expiry: string } | null = null;
+  for (const l of legs) {
+    if (l.expiry === "PERP") continue;
+    const ms = settlementMsOf(l.expiry, asset);
+    if (ms !== null && (best === null || ms < best.ms)) best = { ms, expiry: l.expiry };
+  }
+  return best;
+}
+
+export function ruleLevel(r: Pick<RuleBody, "kind" | "trigger" | "value" | "basisUsd">, entryPrice?: string | null): string {
+  if (r.kind === "stop" || r.kind === "target") return ruleThresholdUsd(r);
+  if (r.kind === "leg_stop") return r.trigger === "multiple" ? toDecimal(Number(r.value) * Number(entryPrice ?? "0"), 2) : r.value;
+  if (r.kind === "spot") return r.value;
+  return r.trigger === "at" ? String(Date.parse(r.value)) : r.value;
 }
 
 export const Strategy = z.strictObject({
