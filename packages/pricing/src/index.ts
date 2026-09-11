@@ -10,6 +10,8 @@ export {
   yearFraction,
 } from "./time.js";
 export { black76Greeks, black76Price, impliedVol, intrinsicValue, type Greeks, type ImpliedVolOptions } from "./black76.js";
+export { bsmGreeks, bsmImpliedVol, bsmPrice, forwardPrice, type BsmImpliedVolOptions } from "./bsm.js";
+export { ACT_365, calendarFor, daysToExpiryOf, settlementMsOf, yearFractionOf, type TradingCalendar } from "./calendar.js";
 export {
   MIN_IV,
   analyze,

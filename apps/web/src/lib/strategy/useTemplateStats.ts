@@ -7,6 +7,7 @@ import type { Underlying } from "@hapiecoin/schema";
 import { useEffect, useRef, useState } from "react";
 import { getPricingClient } from "@/lib/pricing/client";
 import { settlementHourUtc, toPricingLegs } from "@/lib/pricing/legs";
+import { venueCalendar } from "@/lib/venue";
 import { nearestExpiryValuationMs, pnlAt } from "./analysis";
 import { type StrategyLeg, addLeg as addLegPure } from "./legs";
 import { type ChainStrike, type MaterialiseInput, type StrategyTemplate, materialiseTemplate } from "./templates";
@@ -91,7 +92,7 @@ export function useTemplateStats(templates: readonly StrategyTemplate[], input: 
         try {
           // ADR-059: a calendar-family template values its expiry figures at the nearest expiry, later legs keep time value
           const valuationMs = nearestExpiryValuationMs(legs, settlementHourUtc(input.asset), input.nowMs);
-          const res = await client.analyze(priced, { spot, nowMs: input.nowMs, defaultIv: 0.5, settlementHourUtc: settlementHourUtc(input.asset), points: 81, ...(valuationMs !== undefined ? { valuationMs } : {}) });
+          const res = await client.analyze(priced, { spot, nowMs: input.nowMs, defaultIv: 0.5, calendar: venueCalendar(input.asset), points: 81, ...(valuationMs !== undefined ? { valuationMs } : {}) });
           if (id !== seq.current) return;
           out.set(tpl.name, { pop: Number.isFinite(res.pop) ? res.pop : null, rr: Number.isFinite(res.rewardRisk) ? res.rewardRisk : Number.isFinite(res.maxProfit) ? null : Number.POSITIVE_INFINITY, maxProfit: res.maxProfit, maxLoss: res.maxLoss, outlook: classifyOutlook(res.points, spot) });
         } catch {

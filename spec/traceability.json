@@ -1794,6 +1794,20 @@
   "evidence": "ADR-065 (11 Sep 2026): apps/api/drizzle/0016_thankful_loners.sql, src/db/schema.ts, routes/strategies.ts, routes/live-exec.ts, routes/live.ts, routes/alerts.ts, routes/brokers.ts, routes/market.ts, market-history.ts, alerts-evaluate.ts, settlement.ts, iv-snapshot.ts, db/seed.ts; packages/schema strategies.ts, alerts.ts, accounts.ts, market-history.ts; apps/web AlertsDialog, BuilderPanel, TradeFlow, ExchangeManagementDialog, useAdjustWorkbench; unit venue-column.test.ts"
  },
  {
+  "id": "HC-SH-121",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "screen": "Pricing · calendar and carry",
+  "feature": "The engine prices with a rate and carry on an injected trading calendar; exercise style is shown",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing)",
+  "acceptance": "packages/pricing gains Black-Scholes-Merton (forward S·e^((r−q)T), bsmPrice / bsmGreeks / bsmImpliedVol) and a data TradingCalendar (days per year, settlement hour) that ValuationOptions take with rate and dividendYield; defaults keep every figure bit-identical; the web client takes the calendar and the settlement hour from the venue port and names the exercise style on the Greeks caption and the option details (American flagged as a European-model estimate); the settler and the snapshotter read the settlement instant from the venue's calendar",
+  "evidence": "ADR-066 (11 Sep 2026): packages/pricing/src/bsm.ts, calendar.ts, strategy.ts; apps/web/src/lib/venue.ts, lib/pricing/legs.ts, useStrategyAnalysis and the panels' options, GreeksPanel, OptionDetailsDialog; apps/api/src/settlement.ts, iv-snapshot.ts; unit bsm.test.ts, calendar.test.ts, strategy.test.ts, venue.test.ts, iv-snapshot.test.ts"
+ },
+ {
   "id": "HC-PB-001",
   "area": "10-public",
   "areaName": "Public site & authentication",

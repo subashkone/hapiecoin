@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 import { auditLog, ivSnapshots, strategies, strategyLegs } from "./db/schema.js";
 import { SEED } from "./db/seed.js";
 import { closeLegRow } from "./routes/strategies.js";
-import { type SettlementSource, intrinsicAt, settleExpired, snapshotSpotSource, startSettler } from "./settlement.js";
+import { type SettlementSource, intrinsicAt, settleExpired, settlementInstant, snapshotSpotSource, startSettler } from "./settlement.js";
 import { createTestApp, type TestApp } from "./test-support/harness.js";
 
 let t: TestApp;
@@ -401,5 +401,15 @@ describe("HC-TR-162 snapshotSpotSource", () => {
       },
     ]);
     expect(await source.spotAt("BTC", SETTLE)).toBe(81050); // nearest within 30 min, the 45-minute row is outside the window
+  });
+});
+
+describe("HC-SH-121 settlementInstant reads the venue calendar (ADR-066)", () => {
+  it("BTC and ETH settle at 12:00 UTC, XAUT at 16:00; the perpetual and an impossible date give null", () => {
+    expect(settlementInstant("2026-09-25", "BTC", "delta_india")).toBe(Date.UTC(2026, 8, 25, 12));
+    expect(settlementInstant("2026-09-25", "ETH", "delta_india")).toBe(Date.UTC(2026, 8, 25, 12));
+    expect(settlementInstant("2026-09-25", "XAUT", "delta_india")).toBe(Date.UTC(2026, 8, 25, 16));
+    expect(settlementInstant("PERP", "BTC", "delta_india")).toBeNull();
+    expect(settlementInstant("2026-02-30", "BTC", "delta_india")).toBeNull();
   });
 });

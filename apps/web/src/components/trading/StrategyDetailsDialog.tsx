@@ -9,12 +9,13 @@ import { strategyKeys, useArchiveStrategy, useCloseAll, useDeleteStrategy, useSt
 import { daysToExpiry, fmtDate, fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
 import { fmtMoney } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
-import { settlementHourUtc, toPricingLegs } from "@/lib/pricing/legs";
+import { toPricingLegs } from "@/lib/pricing/legs";
 import { useUiStore } from "@/lib/store";
 import { marginEstimate } from "@/lib/strategy/analysis";
 import { MAX_OPEN_LEGS_UI, daysOf, openLegs, pnlSeries, priceMap, serverLegToLocal } from "@/lib/strategy/paper";
 import { PayoffChart, type PayoffChartFrame } from "@/components/analysis/PayoffChart";
 import { type PaperBook } from "@/lib/strategy/usePaper";
+import { venueCalendar } from "@/lib/venue";
 import { PartialExitDialog } from "./PartialExitDialog";
 import { SquareOffDialog } from "./SquareOffDialog";
 import { StopPaperDialog } from "./StopPaperDialog";
@@ -97,7 +98,7 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
   const payLegs = s ? (open.length ? open : s.legs) : [];
   const pricingLegs = useMemo(() => (s ? toPricingLegs(payLegs.map((l) => serverLegToLocal(l, s.asset)), book.lotSizeOf(s.asset), { spot: undefined }) : []), [s, payLegs, book]);
   const spot = s ? book.spotOf(s.asset) : null;
-  const analysis = useAnalysis(pricingLegs, s && spot !== null && pricingLegs.length ? { spot, nowMs: Date.now(), settlementHourUtc: settlementHourUtc(s.asset), defaultIv: 0.5 } : null);
+  const analysis = useAnalysis(pricingLegs, s && spot !== null && pricingLegs.length ? { spot, nowMs: Date.now(), calendar: venueCalendar(s.asset), defaultIv: 0.5 } : null);
   if (!s) return null;
   const closed = s.legs.filter((l) => l.status === "squared_off");
   const shown = tab === "active" ? open : closed;

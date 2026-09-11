@@ -7,7 +7,7 @@
  */
 import type { Instrument, Quote, Underlying, Venue } from "@hapiecoin/schema";
 import { UNDERLYINGS } from "@hapiecoin/schema";
-import { DEFAULT_VENUE } from "@hapiecoin/venues";
+import { DEFAULT_VENUE, getVenue } from "@hapiecoin/venues";
 import { and, lt } from "drizzle-orm";
 import type { Db } from "./db/client.js";
 import { instrumentMarks, ivSnapshots } from "./db/schema.js";
@@ -56,10 +56,11 @@ export function atmIvByExpiry(instruments: readonly Instrument[], quotes: readon
     .sort((a, b) => (a.expiry < b.expiry ? -1 : 1));
 }
 
-/** The expiry the daily series follows: the nearest listed with ≥ 2 days left, else the nearest. */
-export function frontExpiry(expiries: readonly string[], nowMs: number): string | null {
+/** The expiry the daily series follows: the nearest listed with ≥ 2 days left at the venue's settlement hour, else the nearest. */
+export function frontExpiry(expiries: readonly string[], nowMs: number, settlementHourUtc = 12): string | null {
   const sorted = [...expiries].sort();
-  const twoDays = sorted.find((e) => Date.parse(`${e}T12:00:00Z`) - nowMs >= 2 * DAY_MS);
+  const hh = String(settlementHourUtc).padStart(2, "0");
+  const twoDays = sorted.find((e) => Date.parse(`${e}T${hh}:00:00Z`) - nowMs >= 2 * DAY_MS);
   return twoDays ?? sorted[0] ?? null;
 }
 
@@ -81,7 +82,7 @@ export async function snapshotOnce(deps: SnapshotDeps, source: MarketSource, now
       const spot = spotQuote ? Number(spotQuote.spot) : null;
       const mine = instruments.filter((i) => i.underlying === asset);
       const byExpiry = spot === null ? [] : atmIvByExpiry(mine, quotes, spot);
-      const front = frontExpiry(byExpiry.map((e) => e.expiry), at.getTime());
+      const front = frontExpiry(byExpiry.map((e) => e.expiry), at.getTime(), getVenue(venue).calendar.settlementHourUtc(asset)); // ADR-066: XAUT settles at 16:00
       if (spot !== null && byExpiry.length) {
         await deps.db.insert(ivSnapshots).values(byExpiry.map((e) => ({ asset, venue, expiry: e.expiry, ts: at, atmIv: String(e.atmIv), spot: String(spot), atmStrike: String(e.strike), front: e.expiry === front })));
       }

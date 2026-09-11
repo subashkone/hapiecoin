@@ -20,6 +20,7 @@ import { type MoneyFormat, USD } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
 import { settlementHourUtc, toPricingLegs } from "@/lib/pricing/legs";
 import { type PaneSource, useUiStore } from "@/lib/store";
+import { venueCalendar } from "@/lib/venue";
 import type { StrategyLeg } from "./legs";
 
 import { positionToLeg } from "./positions";
@@ -172,13 +173,13 @@ export function useStrategyAnalysis(scope: "pane" | "builder" = "pane"): Strateg
     () =>
       spot === null || pricingLegs.length === 0
         ? null
-        : { spot, nowMs, targetDays, targetSpot: targetPrice, settlementHourUtc: settlementHourUtc(asset), defaultIv: 0.5, ...(valuationMs === undefined ? {} : { valuationMs }) },
+        : { spot, nowMs, targetDays, targetSpot: targetPrice, calendar: venueCalendar(asset), defaultIv: 0.5, ...(valuationMs === undefined ? {} : { valuationMs }) },
     [spot, pricingLegs.length, nowMs, targetDays, targetPrice, asset, valuationMs],
   );
   const { result, error, pending } = useAnalysis(pricingLegs, options);
   // the position before the change, on the same axis and date, for the ghost curve and the before → after strip
   const beforePricing = useMemo(() => (adjusting ? toPricingLegs(heldLegs, lotSize, { iv: (l) => quoteFor(l)?.markIv, spot: spotState?.price }) : []), [adjusting, heldLegs, lotSize, quoteFor, spotState?.price]);
-  const beforeOptions = useMemo(() => (adjusting && spot !== null && beforePricing.length ? { spot, nowMs, targetDays, targetSpot: targetPrice, settlementHourUtc: settlementHourUtc(asset), defaultIv: 0.5, ...(valuationMs === undefined ? {} : { valuationMs }) } : null), [adjusting, spot, beforePricing.length, nowMs, targetDays, targetPrice, asset, valuationMs]);
+  const beforeOptions = useMemo(() => (adjusting && spot !== null && beforePricing.length ? { spot, nowMs, targetDays, targetSpot: targetPrice, calendar: venueCalendar(asset), defaultIv: 0.5, ...(valuationMs === undefined ? {} : { valuationMs }) } : null), [adjusting, spot, beforePricing.length, nowMs, targetDays, targetPrice, asset, valuationMs]);
   const { result: before } = useAnalysis(beforePricing, beforeOptions);
   return { asset, legs, pricingLegs, result, error, pending, spot, spotText: spotState?.price, lotSize, money, quoteFor, priceFor, targetPrice, targetDays, nowMs, source, adjusting, openLegs, before: adjusting ? before : null, markOf, quoteVersion, valuationMs };
 }

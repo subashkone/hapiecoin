@@ -4,9 +4,12 @@
 // at the edge (typescript rule 3).
 import type { Leg as PricingLeg } from "@hapiecoin/pricing";
 import type { StrategyLeg } from "@/lib/strategy/legs";
+import { currentVenue } from "@/lib/venue";
 
-/** Delta settles BTC / ETH options at 12:00 UTC and XAUT at 16:00 UTC (ADR-012); one definition, in the schema. */
-export { settlementHourUtc } from "@hapiecoin/schema";
+/** The hour (UTC) the venue settles `asset` options at (ADR-066: from the venue port; Delta 12:00, XAUT 16:00). */
+export function settlementHourUtc(asset: string): number {
+  return currentVenue().calendar.settlementHourUtc(asset);
+}
 
 export interface LegPriceSource {
   /** Live mark per underlying unit for an option leg, or undefined to keep the stored price. */
