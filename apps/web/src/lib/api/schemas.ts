@@ -13,6 +13,8 @@ export type CredentialResponse = z.infer<typeof CredentialResponse>;
 /** POST /v1/credentials body. The secret is sent once and never returned. */
 export const ConnectCredentialBody = z.object({
   brokerId: z.string().min(1),
+  /** The account's name (ADR-068): a new one adds a key, a known one replaces it. */
+  label: z.string().trim().min(1).max(32).optional(),
   apiKey: z.string().min(1),
   apiSecret: z.string().min(1),
 });

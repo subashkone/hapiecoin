@@ -56,12 +56,14 @@ export function installMockFetch(): MockFetch {
       if (!state.accounts.has(email.toLowerCase())) {
         const acc = createAccount(state, { email, ...(opts.role ? { role: opts.role } : {}) });
         if (opts.connected) {
-          acc.credential = {
+          acc.credentials.push({
+            id: "crd_main",
+            label: "Main",
             brokerId: "brk_delta",
             apiKeyMasked: "****ab12",
             connectedAt: "2026-09-07T10:00:00.000Z",
             whitelistedIp: "172.236.179.136",
-          };
+          });
         }
       }
       jar.set(SESSION_COOKIE, createSession(state, email));

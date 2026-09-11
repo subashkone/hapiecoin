@@ -9,10 +9,10 @@ import { auditFrom } from "../audit.js";
 import { assertEntitled } from "../entitlements.js";
 import { strategies, strategyLegs, users } from "../db/schema.js";
 import { type AppEnv, type SessionUser, currentUser } from "../security/context.js";
-import { errors } from "../security/errors.js";
+import { HttpError, errors } from "../security/errors.js";
 import { requireAdmin, requireUser } from "../security/guards.js";
 import { orderRateLimit } from "../security/rate-limit.js";
-import { lotSizeFor, openCredential, ordersOf, placeEntries, preview, retryFailed, syncOrders, tradingBlockedReason, type PlanLeg, type StrategyRow, brokerVenueOf, venueMismatch } from "./live-exec.js";
+import { lotSizeFor, openCredential, ordersOf, placeEntries, preview, resolveAccount, retryFailed, syncOrders, tradingBlockedReason, type PlanLeg, type StrategyRow, brokerVenueOf, venueMismatch } from "./live-exec.js";
 import { type AppDeps, cookieAuth, errorResponses, jsonContent, errorMessage } from "./shared.js";
 
 /** The exchange did not answer the positions read (never an empty list, HC-TR-160). */
@@ -37,13 +37,15 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
   const touch = (id: string, patch: Partial<typeof strategies.$inferInsert> = {}) => db.update(strategies).set({ ...patch, updatedAt: new Date() }).where(eq(strategies.id, id));
 
   /** Preview or place: shared checks. Returns the plan or throws 409 with every reason. */
-  async function checkedPreview(user: SessionUser, row: StrategyRow, brokerId: string, worstLoss: number | null) {
+  /** The account a call trades through: the body's, else the one the strategy already names (ADR-068). */
+  const accountOf = (row: StrategyRow, body: { accountId?: string | undefined }): string | null => body.accountId ?? row.accountId ?? null;
+  async function checkedPreview(user: SessionUser, row: StrategyRow, brokerId: string, worstLoss: number | null, accountId: string | null) {
     const legs = await openLegs(row.id);
-    const p = await preview(deps, user, row, legs, brokerId, worstLoss);
+    const p = await preview(deps, user, row, legs, brokerId, worstLoss, [], accountId);
     return { legs, p };
   }
   /** Adjustment workbench (ADR-044): price the proposed batch, not the open legs: trims / closes as reduce-only exits, adds as entries. */
-  async function adjustPreview(user: SessionUser, row: StrategyRow, brokerId: string, worstLoss: number | null, adds: readonly StrategyLegInput[], changes: readonly AdjustChange[]) {
+  async function adjustPreview(user: SessionUser, row: StrategyRow, brokerId: string, worstLoss: number | null, adds: readonly StrategyLegInput[], changes: readonly AdjustChange[], accountId: string | null) {
     const open = await openLegs(row.id);
     const exits: PlanLeg[] = [];
     for (const ch of changes) {
@@ -54,7 +56,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
     }
     const entries: PlanLeg[] = adds.map((l, i) => ({ id: `new-${i + 1}`, symbol: l.symbol, side: l.side, lots: l.lots }));
     const closes = changes.filter((ch) => ch.lotsAfter === 0).length;
-    const p = await preview(deps, user, row, entries, brokerId, worstLoss, exits);
+    const p = await preview(deps, user, row, entries, brokerId, worstLoss, exits, accountId);
     if (open.length - closes + adds.length > MAX_OPEN_LEGS) p.reasons.push(`Maximum ${MAX_OPEN_LEGS} active legs allowed per strategy`);
     return { ...p, ok: p.reasons.length === 0 };
   }
@@ -74,8 +76,8 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const me = currentUser(c);
       const row = await owned(me, c.req.valid("param").id);
       const body = c.req.valid("json");
-      if (body.adds !== undefined || body.changes !== undefined) return c.json(await adjustPreview(me, row, body.brokerId, body.worstLoss ?? null, body.adds ?? [], body.changes ?? []), 200);
-      const { p } = await checkedPreview(me, row, body.brokerId, body.worstLoss ?? null);
+      if (body.adds !== undefined || body.changes !== undefined) return c.json(await adjustPreview(me, row, body.brokerId, body.worstLoss ?? null, body.adds ?? [], body.changes ?? [], accountOf(row, body)), 200);
+      const { p } = await checkedPreview(me, row, body.brokerId, body.worstLoss ?? null, accountOf(row, body));
       return c.json(p, 200);
     },
   );
@@ -99,12 +101,13 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       if (existing) return c.json(await loadStrategy(deps, row.id), 200); // repeat of the same placement (idempotency key)
       if (row.status !== "draft" && row.status !== "paper") throw errors.conflict(`Only a draft or paper strategy can go live; this strategy is ${row.status}`);
       await assertEntitled(deps, me.id, "live_trading"); // HC-SH-054 (ADR-030)
-      const { legs, p } = await checkedPreview(me, row, body.brokerId, null);
+      const accountId = accountOf(row, body);
+      const { legs, p } = await checkedPreview(me, row, body.brokerId, null, accountId);
       if (!p.ok) throw errors.conflict(p.reasons.join(" · "));
-      const creds = await openCredential(deps, me, body.brokerId, row.venue); // ADR-065
+      const { creds, accountId: keyId } = await resolveAccount(deps, me, body.brokerId, row.venue, accountId); // ADR-065, ADR-068
       const before = await loadStrategy(deps, row.id);
       const now = new Date();
-      await touch(row.id, { status: "live", tradingMode: "live", brokerId: body.brokerId, orderBatchId: body.idempotencyKey, startedAt: row.startedAt ?? now, closedAt: null });
+      await touch(row.id, { status: "live", tradingMode: "live", brokerId: body.brokerId, accountId: keyId, orderBatchId: body.idempotencyKey, startedAt: row.startedAt ?? now, closedAt: null });
       const outcome = await placeEntries(deps, creds, row, legs, p.legs, body.idempotencyKey, "entry", body.expected);
       const after = await loadStrategy(deps, row.id);
       await auditFrom(c, db)({ action: "strategy.live_place", target: `strategy:${row.id}`, before, after: { ...after, outcome } });
@@ -129,7 +132,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       if (row.status !== "live" || !row.brokerId) throw errors.conflict("Only a live strategy has orders to retry");
       const blocked = await tradingBlockedReason(deps, me);
       if (blocked) throw errors.conflict(blocked);
-      const creds = await openCredential(deps, me, row.brokerId);
+      const creds = await openCredential(deps, me, row.brokerId, undefined, row.accountId);
       const before = await loadStrategy(deps, row.id);
       const outcome = await retryFailed(deps, creds, me, row);
       await touch(row.id);
@@ -154,7 +157,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const me = currentUser(c);
       const row = await owned(me, c.req.valid("param").id);
       if (row.status !== "live" || !row.brokerId) throw errors.conflict("Only a live strategy can be synced");
-      const creds = await openCredential(deps, me, row.brokerId);
+      const creds = await openCredential(deps, me, row.brokerId, undefined, row.accountId);
       const { updated, exitFills } = await syncOrders(deps, creds, row);
       await bookExitFills(deps, row, exitFills);
       if (updated) await touch(row.id);
@@ -179,8 +182,11 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const blocked = await tradingBlockedReason(deps, me);
       if (blocked) throw errors.conflict(blocked);
       await assertEntitled(deps, me.id, "live_trading"); // one check per batch: the batch counts as one placement per strategy below
-      const creds = await openCredential(deps, me, body.brokerId);
+      // ADR-068: each strategy goes through the account it already names (paper started on Sub 1 stays on Sub 1),
+      // else the batch's chosen account, else the exchange's only key; one key opened per distinct account
       const brokerVenue = await brokerVenueOf(deps, me, body.brokerId);
+      if (brokerVenue === null) throw errors.badRequest("Select an exchange..."); // an exchange the trader cannot see: refused before any row is touched
+      const opened = new Map<string, Awaited<ReturnType<typeof resolveAccount>>>();
       const placed: string[] = [];
       const skipped: string[] = [];
       let failed: { id: string; error: string } | null = null;
@@ -199,14 +205,25 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
           failed = { id, error: venueMismatch(brokerVenue, row.venue) }; // ADR-065: the batch stops here, placed so far reported
           break;
         }
-        const { legs, p } = await checkedPreview(me, row, body.brokerId, null);
+        const rowAccount = row.accountId ?? body.accountId ?? null;
+        let resolved = opened.get(rowAccount ?? "");
+        if (!resolved) {
+          try {
+            resolved = await resolveAccount(deps, me, body.brokerId, undefined, rowAccount);
+          } catch (e) {
+            failed = { id, error: e instanceof HttpError ? e.message : errorMessage(e) }; // no key to trade through: the batch stops here
+            break;
+          }
+          opened.set(rowAccount ?? "", resolved);
+        }
+        const { legs, p } = await checkedPreview(me, row, body.brokerId, null, rowAccount);
         if (!p.ok) {
           failed = { id, error: p.reasons.join(" · ") };
           break;
         }
         const before = await loadStrategy(deps, row.id);
-        await touch(row.id, { status: "live", tradingMode: "live", brokerId: body.brokerId, orderBatchId: key });
-        const outcome = await placeEntries(deps, creds, row, legs, p.legs, key, "entry", {});
+        await touch(row.id, { status: "live", tradingMode: "live", brokerId: body.brokerId, accountId: resolved.accountId, orderBatchId: key });
+        const outcome = await placeEntries(deps, resolved.creds, row, legs, p.legs, key, "entry", {});
         const after = await loadStrategy(deps, row.id);
         await auditFrom(c, db)({ action: "strategy.live_place", target: `strategy:${row.id}`, before, after: { ...after, outcome, batch: body.idempotencyKey } });
         placed.push(id);
@@ -227,12 +244,13 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       summary: "Exchange positions and wallet balances for the connected broker (HC-TR-082)",
       security: cookieAuth,
       middleware: [guard],
-      request: { query: z.object({ brokerId: Id }) },
+      request: { query: z.object({ brokerId: Id, accountId: Id.optional() }) },
       responses: { 200: jsonContent(LivePositions, "Positions"), 400: errorResponses[400], 401: errorResponses[401], 409: errorResponses[409], 503: exchangeUnavailable },
     }),
     async (c) => {
       const me = currentUser(c);
-      const creds = await openCredential(deps, me, c.req.valid("query").brokerId);
+      const q = c.req.valid("query");
+      const creds = await openCredential(deps, me, q.brokerId, undefined, q.accountId ?? null);
       const [raw, balances] = await Promise.all([deps.trading.getPositions(creds), deps.trading.getBalances(creds)]).catch((e: unknown) => {
         // an unreadable venue is 503, never "no positions": the Live tab's drift check must not read it as "holds nothing"
         deps.logger.warn({ err: errorMessage(e), userId: me.id }, "positions read failed");
@@ -280,7 +298,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const body = c.req.valid("json");
       const blocked = await tradingBlockedReason(deps, me);
       if (blocked) throw errors.conflict(blocked);
-      const creds = await openCredential(deps, me, body.brokerId);
+      const creds = await openCredential(deps, me, body.brokerId, undefined, body.accountId ?? null);
       const positions = await deps.trading.getPositions(creds).catch((e: unknown) => {
         deps.logger.warn({ err: errorMessage(e), userId: me.id }, "positions read failed");
         throw errors.unavailable("The exchange did not answer the positions read · nothing was sent");

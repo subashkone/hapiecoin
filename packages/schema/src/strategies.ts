@@ -298,6 +298,8 @@ export const Strategy = z.strictObject({
   tradingMode: TradingMode.nullable(),
   templateName: z.string().max(80),
   brokerId: Id.nullable(),
+  /** The exchange key (account) this strategy trades through (ADR-068); null until it is started, or for rows older than accounts. */
+  accountId: Id.nullable().optional(),
   legs: z.array(StrategyLeg),
   /** Sum of (exit − entry) × lots × lot size × side over squared-off legs, in USD. */
   realizedPnl: DecimalString,
@@ -350,6 +352,8 @@ export type PriceMap = z.infer<typeof PriceMap>;
 export const StrategyStart = z.strictObject({
   mode: TradingMode,
   brokerId: Id,
+  /** Which of the broker's keys; required once the broker has more than one (ADR-068). */
+  accountId: Id.optional(),
   entries: PriceMap,
 });
 export type StrategyStart = z.infer<typeof StrategyStart>;
@@ -457,6 +461,7 @@ export type LivePreview = z.infer<typeof LivePreview>;
 
 export const LivePlaceBody = z.strictObject({
   brokerId: Id,
+  accountId: Id.optional(),
   /** Idempotency key chosen by the client; a repeat returns the stored outcome. */
   idempotencyKey: z.string().min(8).max(80),
   /** Marks shown in the preview, per leg id; the placement is refused when the venue mark moved past the band. */
@@ -467,6 +472,7 @@ export type LivePlaceBody = z.infer<typeof LivePlaceBody>;
 /** Preview the open legs, or (adjustment workbench) the proposed batch: `adds` as entries and `changes` as exits. */
 export const LivePreviewBody = z.strictObject({
   brokerId: Id,
+  accountId: Id.optional(),
   adds: z.array(StrategyLegInput).max(MAX_OPEN_LEGS).optional(),
   changes: z.array(AdjustChange).max(MAX_OPEN_LEGS).optional(),
 });
@@ -475,6 +481,7 @@ export type LivePreviewBody = z.infer<typeof LivePreviewBody>;
 export const LiveBatchBody = z.strictObject({
   ids: z.array(Id).min(1).max(20),
   brokerId: Id,
+  accountId: Id.optional(),
   idempotencyKey: z.string().min(8).max(80),
 });
 export type LiveBatchBody = z.infer<typeof LiveBatchBody>;
@@ -508,6 +515,7 @@ export type LivePositions = z.infer<typeof LivePositions>;
 /** Square off exchange positions from the Live tab's net-positions table (HC-TR-145): reduce-only market orders. */
 export const LivePositionsExitBody = z.strictObject({
   brokerId: Id,
+  accountId: Id.optional(),
   productIds: z.array(z.number().int()).min(1).max(20),
   idempotencyKey: z.string().min(8).max(80),
 });

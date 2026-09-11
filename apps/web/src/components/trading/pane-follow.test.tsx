@@ -22,7 +22,7 @@ function strat(i: number, over: Partial<Strategy> = {}): Strategy {
 const liveStrat = (i: number, legs: Strategy["legs"] = [{ ...CALL, id: `leg_${i}` }]) =>
   strat(i, { status: "live", tradingMode: "live", orderBatchId: "web-seed", legs, orders: legs.map((l, k) => ({ id: `ord_${i}_${k}`, legId: l.id, purpose: "entry" as const, batchId: "web-seed", orderType: "market" as const, limitPrice: null, clientOrderId: `hc-${l.id}-1`, venueOrderId: `70000${k}`, symbol: l.symbol, side: l.side, size: 10, state: "filled" as const, fillPrice: "1200", error: null, attempts: 1, createdAt: AT, updatedAt: AT })) });
 function connect() {
-  acc().credential = { brokerId: "brk_delta", apiKeyMasked: "****ab12", connectedAt: AT, whitelistedIp: "203.0.113.10" };
+  acc().credentials = [{ id: "crd_main", label: "Main", brokerId: "brk_delta", apiKeyMasked: "****ab12", connectedAt: AT, whitelistedIp: "203.0.113.10" }];
 }
 
 beforeEach(() => {

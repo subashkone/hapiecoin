@@ -5,7 +5,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Strategy } from "@hapiecoin/schema";
 import { eq } from "drizzle-orm";
-import { auditLog, ivSnapshots, strategies, strategyLegs } from "./db/schema.js";
+import { auditLog, brokerCredentials, ivSnapshots, strategies, strategyLegs } from "./db/schema.js";
 import { SEED } from "./db/seed.js";
 import { closeLegRow } from "./routes/strategies.js";
 import { type SettlementSource, intrinsicAt, settleExpired, snapshotSpotSource, startSettler } from "./settlement.js";
@@ -269,7 +269,10 @@ describe("HC-TR-163 live settlement", () => {
 describe("HC-TR-163 a live strategy whose credential is gone", () => {
   it("is skipped and left for the next pass, nothing booked", async () => {
     const s = await live();
-    expect((await t.request(`/v1/credentials/${SEED.brokerId}`, { method: "DELETE", cookie: alice })).status).toBe(204);
+    // the key vanishes underneath a live strategy (the route refuses that, ADR-068; a vault or database loss would not)
+    const meId = ((await (await t.request("/v1/me", { cookie: alice })).json()) as { id: string }).id;
+    await t.db.update(strategies).set({ accountId: null }).where(eq(strategies.userId, meId));
+    await t.db.delete(brokerCredentials).where(eq(brokerCredentials.userId, meId));
     t.trading.setPositions([]);
     expect(await settleExpired(t.deps, fixed(81000), () => LATER)).toMatchObject({ strategies: 1, settled: 0, archived: 0, skipped: 2 });
     expect((await get(s.id)).status).toBe("live");

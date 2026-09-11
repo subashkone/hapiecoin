@@ -1009,5 +1009,15 @@
     "how": "Migration 0016 adds venue (default delta_india) to strategies, brokers, alerts, iv_snapshots and instrument_marks; Strategy / Alert / Broker / IvHistory / MarkHistory carry venue; a P&L alert takes its strategy's venue; history reads and the market routes are scoped to a venue (?venue=, unknown is 400); paper start and live placement refuse an exchange of another venue with a 409; the web client sends its venue on create and the workbench sizes lots by the strategy's venue",
     "evidence": "ADR-065 (11 Sep 2026): apps/api/drizzle/0016_thankful_loners.sql, src/db/schema.ts, routes/strategies.ts, routes/live-exec.ts, routes/live.ts, routes/alerts.ts, routes/brokers.ts, routes/market.ts, market-history.ts, alerts-evaluate.ts, settlement.ts, iv-snapshot.ts, db/seed.ts; packages/schema strategies.ts, alerts.ts, accounts.ts, market-history.ts; apps/web AlertsDialog, BuilderPanel, TradeFlow, ExchangeManagementDialog, useAdjustWorkbench; unit venue-column.test.ts",
     "test": "unit (api)"
+  },
+  {
+    "screen": "Shared chrome · API Settings dialog",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Accounts: several labelled keys per exchange (Delta sub-accounts)",
+    "how": "API Settings lists every connected key with its name, masked key, date and its own Disconnect; the form proposes the next free name (Main, Sub 1, …), a known name replaces that key, at most five per exchange; the wallet chip names the account it reads once there is more than one; a key a live strategy trades through cannot be removed (409 with the count)",
+    "evidence": "ADR-068 (11 Sep 2026): packages/schema accounts.ts AccountLabel / MAX_ACCOUNTS_PER_BROKER / BrokerCredentialPublic id + label, apps/api routes/credentials.ts (label, delete by id, live refusal), migration 0018; ApiSettingsDialog.tsx api-label / api-account / api-replacing / disconnect-exchange, widgets.tsx wallet-account, lib/accounts.ts; unit credentials.test.ts HC-SH-123, dialogs.test.tsx; e2e settings.spec.ts",
+    "test": "unit (api + web), e2e"
   }
 ]

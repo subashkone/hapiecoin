@@ -6,7 +6,7 @@ import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
 import { mockIvHistory, mockMarkHistory } from "./mock-market";
-import { AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal, type CloseReason, RulesBody, ruleLevel } from "@hapiecoin/schema";
+import { AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal, type CloseReason, RulesBody, ruleLevel, MAX_ACCOUNTS_PER_BROKER } from "@hapiecoin/schema";
 
 export const SESSION_COOKIE = "better-auth.session_token";
 export const TEST_OTP = "123456";
@@ -18,7 +18,8 @@ interface Account {
   emailVerified: boolean;
   settings: UserSettings;
   brokers: Broker[];
-  credential: BrokerCredentialPublic | null;
+  /** Connected keys (accounts, ADR-068): several per broker, told apart by their label. */
+  credentials: BrokerCredentialPublic[];
   /** Test knob (HC-TR-160): contracts the exchange no longer holds although live legs still track them. */
   venueGone?: Set<string>;
   /** Test knob (HC-TR-160): the exchange does not answer the positions read (503). */
@@ -191,7 +192,7 @@ export function createAccount(
     emailVerified: input.verified ?? true,
     settings: defaultSettings(),
     brokers: [GLOBAL_BROKER],
-    credential: null,
+    credentials: [],
     plan: { state: "free" },
     strategies: [],
     tradingDisabled: false,
@@ -424,28 +425,30 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     acc.brokers.splice(i, 1);
     return c.body(null, 204);
   });
-  v1.get("/credentials", (c) => {
-    const cred = current(c)!.credential;
-    return c.json({ items: cred ? [cred] : [] });
-  });
+  v1.get("/credentials", (c) => c.json({ items: current(c)!.credentials }));
   v1.post("/credentials", async (c) => {
     const acc = current(c)!;
-    const body = await c.req.json<{ brokerId?: string; apiKey?: string; apiSecret?: string }>();
+    const body = await c.req.json<{ brokerId?: string; label?: string; apiKey?: string; apiSecret?: string }>();
     if (!body.brokerId || !body.apiKey || !body.apiSecret) return err(c, 400, "VALIDATION", "brokerId, apiKey and apiSecret are required");
-    acc.credential = {
-      brokerId: body.brokerId,
-      apiKeyMasked: maskApiKey(body.apiKey),
-      connectedAt: new Date().toISOString(),
-      whitelistedIp: WHITELIST_IP,
-    };
-    return c.json(acc.credential, 201);
+    const label = (body.label ?? "Main").trim();
+    if (!label || label.length > 32) return err(c, 400, "BAD_REQUEST", "Name the account");
+    const mine = acc.credentials.filter((k) => k.brokerId === body.brokerId);
+    const existing = mine.find((k) => k.label === label);
+    if (!existing && mine.length >= MAX_ACCOUNTS_PER_BROKER) return err(c, 400, "BAD_REQUEST", `At most ${MAX_ACCOUNTS_PER_BROKER} accounts per exchange`);
+    // like the route: the strategies placed through the first key stay bound to it once a second one arrives
+    const first = mine[0];
+    if (!existing && mine.length === 1 && first) for (const s of acc.strategies) if (s.brokerId === body.brokerId && !s.accountId && (s.status === "paper" || s.status === "live")) s.accountId = first.id;
+    const row: BrokerCredentialPublic = { id: existing?.id ?? id("crd"), brokerId: body.brokerId, label, apiKeyMasked: maskApiKey(body.apiKey), connectedAt: new Date().toISOString(), whitelistedIp: WHITELIST_IP };
+    acc.credentials = existing ? acc.credentials.map((k) => (k.id === existing.id ? row : k)) : [...acc.credentials, row];
+    return c.json(row, 201);
   });
-  v1.delete("/credentials/:brokerId", (c) => {
+  v1.delete("/credentials/:id", (c) => {
     const acc = current(c)!;
-    if (!acc.credential || acc.credential.brokerId !== c.req.param("brokerId")) {
-      return err(c, 404, "NOT_FOUND", "no credential for that broker");
-    }
-    acc.credential = null;
+    const row = acc.credentials.find((k) => k.id === c.req.param("id"));
+    if (!row) return err(c, 404, "NOT_FOUND", "Connected exchange not found");
+    const live = acc.strategies.filter((s) => s.status === "live" && (s.accountId === row.id || (s.brokerId === row.brokerId && !s.accountId)));
+    if (live.length) return err(c, 409, "CONFLICT", `${live.length} live ${live.length === 1 ? "strategy trades" : "strategies trade"} through this key · square off or stop them first`);
+    acc.credentials = acc.credentials.filter((k) => k.id !== row.id);
     return c.body(null, 204);
   });
   v1.get("/credentials/whitelist-ip", (c) => c.json({ ip: WHITELIST_IP }));
@@ -600,18 +603,19 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   v1.post("/strategies/:id/start", async (c) => {
     const s = findStrategy(c);
     if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
-    const body = await c.req.json<{ mode: "paper" | "live"; brokerId: string; entries: Record<string, string> }>();
+    const body = await c.req.json<{ mode: "paper" | "live"; brokerId: string; accountId?: string; entries: Record<string, string> }>();
     if (s.status !== "draft") return err(c, 409, "CONFLICT", `Only a draft can be started; this strategy is ${s.status}`);
     if (body.mode === "live") return err(c, 409, "CONFLICT", "Live placement goes through /live/preview and /live/place (ADR-025)");
     const blockedPaper = assertEntitled(c, current(c)!, "paper_trading");
     if (blockedPaper) return blockedPaper;
     if (!current(c)!.brokers.some((b) => b.id === body.brokerId)) return err(c, 400, "BAD_REQUEST", "Select an exchange...");
+    if (body.accountId && !current(c)!.credentials.some((k) => k.id === body.accountId && k.brokerId === body.brokerId)) return err(c, 400, "BAD_REQUEST", "That account is not connected on this exchange");
     const at = nowIso();
     for (const l of s.legs) {
       const entry = body.entries[l.id] ?? l.price;
       Object.assign(l, { entryPrice: entry, price: entry, exitPrice: null, status: "open", openedAt: at, closedAt: null });
     }
-    Object.assign(s, { status: "paper", tradingMode: "paper", brokerId: body.brokerId, startedAt: at, closedAt: null, realizedPnl: "0", pnlHistory: [] });
+    Object.assign(s, { status: "paper", tradingMode: "paper", brokerId: body.brokerId, accountId: accountFor(c, body.brokerId, body.accountId), startedAt: at, closedAt: null, realizedPnl: "0", pnlHistory: [] });
     return c.json(touch(s));
   });
   v1.post("/strategies/:id/legs", async (c) => {
@@ -792,11 +796,17 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   /* ---------------- live trading (Phase 3 item 2, mirrors apps/api/src/routes/live.ts on a fake venue) ---------------- */
   const markOf = (l: StrategyLeg) => toDecimal(Number(l.price) * 1.001, 4);
   const contractsOf = (l: StrategyLeg, lotSize: string) => Math.round((l.lots * Number(lotSize)) / 0.001);
+  /** The key row a call trades through (ADR-068): the named one, else the broker's only key, else null. */
+  const accountFor = (c: Context, brokerId: string, accountId: string | null | undefined): string | null => {
+    const mine = current(c)!.credentials.filter((k) => k.brokerId === brokerId);
+    if (accountId) return mine.find((k) => k.id === accountId)?.id ?? null;
+    return mine.length === 1 ? (mine[0]?.id ?? null) : null;
+  };
   const livePreview = (c: Context, s: Strategy, worstLoss: number | null) => {
     const acc = current(c)!;
     const reasons: string[] = [];
     if (acc.tradingDisabled) reasons.push("Live trading is disabled for this account");
-    if (!acc.credential) reasons.push("Connect your exchange in Settings → API Settings to enable live trading");
+    if (!acc.credentials.length) reasons.push("Connect your exchange in Settings → API Settings to enable live trading");
     const open = s.legs.filter((l) => l.status === "open");
     if (!open.length) reasons.push("Add at least one leg to trade");
     const lotSize = lotSizeOf(c, s.asset);
@@ -806,8 +816,8 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (worstLoss !== null && Math.abs(worstLoss) > 4000) reasons.push(`Available USD 4000 is below the worst-loss estimate ${toDecimal(Math.abs(worstLoss), 2)}`);
     // GAPS #81: a net debit larger than the wallet is refused without any worst-loss figure from the client
     const debit = legs.reduce((a, l) => a + (l.side === "buy" ? 1 : -1) * Number(l.notional), 0);
-    if (acc.credential && debit > 4000) reasons.push(`Available USD 4000 is below the premium this trade pays (${toDecimal(debit, 2)})`);
-    return { ok: reasons.length === 0, reasons, legs, notional: toDecimal(notional, 2), available: acc.credential ? "4000" : null, availableAsset: acc.credential ? "USD" : null, marginUsed: acc.credential ? "12" : null, limits: { maxLegs: 10, maxNotionalUsd: 100_000, markBandPct: 5 } };
+    if (acc.credentials.length > 0 && debit > 4000) reasons.push(`Available USD 4000 is below the premium this trade pays (${toDecimal(debit, 2)})`);
+    return { ok: reasons.length === 0, reasons, legs, notional: toDecimal(notional, 2), available: acc.credentials.length ? "4000" : null, availableAsset: acc.credentials.length ? "USD" : null, marginUsed: acc.credentials.length ? "12" : null, limits: { maxLegs: 10, maxNotionalUsd: 100_000, markBandPct: 5 } };
   };
   const placeLive = (c: Context, s: Strategy, batchId: string, purpose: StrategyOrder["purpose"], legs: StrategyLeg[], expected: Record<string, string> = {}, orderType: StrategyOrder["orderType"] = "market") => {
     const at = nowIso();
@@ -835,9 +845,9 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   };
   v1.post("/strategies/live/batch", async (c) => {
     const acc = current(c)!;
-    const body = await c.req.json<{ ids: string[]; brokerId: string; idempotencyKey: string }>();
+    const body = await c.req.json<{ ids: string[]; brokerId: string; accountId?: string; idempotencyKey: string }>();
     if (acc.tradingDisabled) return err(c, 409, "CONFLICT", "Live trading is disabled for this account");
-    if (!acc.credential) return err(c, 409, "CONFLICT", "Connect your exchange in Settings → API Settings to enable live trading");
+    if (!acc.credentials.length) return err(c, 409, "CONFLICT", "Connect your exchange in Settings → API Settings to enable live trading");
     const placed: string[] = [];
     const skipped: string[] = [];
     let failed: { id: string; error: string } | null = null;
@@ -857,7 +867,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
         failed = { id: sid, error: p.reasons.join(" · ") };
         break;
       }
-      Object.assign(s, { status: "live", tradingMode: "live", brokerId: body.brokerId, orderBatchId: key });
+      Object.assign(s, { status: "live", tradingMode: "live", brokerId: body.brokerId, accountId: accountFor(c, body.brokerId, body.accountId), orderBatchId: key });
       placeLive(c, s, key, "entry", s.legs.filter((l) => l.status === "open"));
       touch(s);
       placed.push(sid);
@@ -870,15 +880,21 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   });
   v1.get("/strategies/live/positions", (c) => {
     const acc = current(c)!;
-    if (!acc.credential) return err(c, 409, "CONFLICT", "Connect your exchange in Settings → API Settings to enable live trading");
+    if (!acc.credentials.length) return err(c, 409, "CONFLICT", "Connect your exchange in Settings → API Settings to enable live trading");
     if (acc.venueDown) return err(c, 503, "UNAVAILABLE", "The exchange did not answer the positions read · try again in a moment");
-    const positions = acc.strategies.filter((s) => s.status === "live").flatMap((s) => s.legs.filter((l) => l.status === "open" && l.entryPrice && !acc.venueGone?.has(l.symbol)).map((l) => ({ productId: 100 + s.legs.indexOf(l), symbol: l.symbol, size: (l.side === "buy" ? 1 : -1) * contractsOf(l, lotSizeOf(c, s.asset)), entryPrice: l.entryPrice, realizedPnl: "0", margin: "12", contractValue: lotSizeOf(c, s.asset), mark: markOf(l) })));
+    // per account (ADR-068): the named key, else the broker's only one; several keys with none named is a refusal
+    const brokerId = c.req.query("brokerId") ?? "";
+    const wanted = accountFor(c, brokerId, c.req.query("accountId"));
+    if (wanted === null) return err(c, 409, "CONFLICT", `This exchange has ${acc.credentials.filter((k) => k.brokerId === brokerId).length} accounts connected · pick one`);
+    const firstKey = acc.credentials.find((k) => k.brokerId === brokerId)?.id ?? null;
+    const positions = acc.strategies.filter((s) => s.status === "live" && (s.accountId ?? firstKey) === wanted).flatMap((s) => s.legs.filter((l) => l.status === "open" && l.entryPrice && !acc.venueGone?.has(l.symbol)).map((l) => ({ productId: 100 + s.legs.indexOf(l), symbol: l.symbol, size: (l.side === "buy" ? 1 : -1) * contractsOf(l, lotSizeOf(c, s.asset)), entryPrice: l.entryPrice, realizedPnl: "0", margin: "12", contractValue: lotSizeOf(c, s.asset), mark: markOf(l) })));
     return c.json({ positions, balances: [{ asset: "USD", balance: "5000", availableBalance: "4000" }] });
   });
   v1.post("/strategies/live/positions/exit", async (c) => {
     const acc = current(c)!;
-    if (!acc.credential) return err(c, 409, "CONFLICT", "Connect your exchange in Settings → API Settings to enable live trading");
-    const body = await c.req.json<{ brokerId: string; productIds: number[]; idempotencyKey: string }>();
+    if (!acc.credentials.length) return err(c, 409, "CONFLICT", "Connect your exchange in Settings → API Settings to enable live trading");
+    const body = await c.req.json<{ brokerId: string; accountId?: string; productIds: number[]; idempotencyKey: string }>();
+    if (accountFor(c, body.brokerId, body.accountId) === null) return err(c, 409, "CONFLICT", `This exchange has ${acc.credentials.filter((k) => k.brokerId === body.brokerId).length} accounts connected · pick one`);
     const closed: { productId: number; fillPrice: string | null; state: string }[] = [];
     const failed: { productId: number; error: string }[] = [];
     for (const productId of body.productIds) {
@@ -926,14 +942,18 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   v1.post("/strategies/:id/live/place", async (c) => {
     const s = findStrategy(c);
     if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
-    const body = await c.req.json<{ brokerId: string; idempotencyKey: string; expected?: Record<string, string> }>();
+    const body = await c.req.json<{ brokerId: string; accountId?: string; idempotencyKey: string; expected?: Record<string, string> }>();
     if (s.orderBatchId === body.idempotencyKey) return c.json(s);
     if (s.status !== "draft" && s.status !== "paper") return err(c, 409, "CONFLICT", `Only a draft or paper strategy can go live; this strategy is ${s.status}`);
     const blockedLive = assertEntitled(c, current(c)!, "live_trading");
     if (blockedLive) return blockedLive;
     const p = livePreview(c, s, null);
     if (!p.ok) return err(c, 409, "CONFLICT", p.reasons.join(" · "));
-    Object.assign(s, { status: "live", tradingMode: "live", brokerId: body.brokerId, orderBatchId: body.idempotencyKey, startedAt: s.startedAt ?? nowIso(), closedAt: null });
+    // like the route: the named key must be one of this exchange's; several keys with none named is a refusal
+    const wantedKey = body.accountId ?? s.accountId ?? undefined;
+    const placeAccount = accountFor(c, body.brokerId, wantedKey);
+    if (placeAccount === null) return err(c, 409, "CONFLICT", wantedKey ? "The account this strategy traded through is no longer connected · reconnect it in Settings → API Settings" : `This exchange has ${current(c)!.credentials.filter((k) => k.brokerId === body.brokerId).length} accounts connected · pick one`);
+    Object.assign(s, { status: "live", tradingMode: "live", brokerId: body.brokerId, accountId: placeAccount, orderBatchId: body.idempotencyKey, startedAt: s.startedAt ?? nowIso(), closedAt: null });
     placeLive(c, s, body.idempotencyKey, "entry", s.legs.filter((l) => l.status === "open"));
     return c.json(touch(s));
   });
@@ -1712,7 +1732,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     return c.json({ ok: true });
   });
   app.post("/__test/seed", async (c) => {
-    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; referrals?: number; banners?: number; coupons?: boolean; payments?: number; campaigns?: number; alerts?: boolean; telegram?: boolean }>();
+    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; subAccount?: boolean; referrals?: number; banners?: number; coupons?: boolean; payments?: number; campaigns?: number; alerts?: boolean; telegram?: boolean }>();
     const acc = createAccount(state, body);
     if (body.telegram) acc.telegram = { chatId: `chat_${acc.user.id}`, code: null, linkedAt: nowIso(), pendingReads: 0 };
     if (body.alerts) {
@@ -1799,7 +1819,9 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       if (body.plan.state === "free") acc.subscription = null;
     }
     if (body.connected) {
-      acc.credential = { brokerId: "brk_delta", apiKeyMasked: "****ab12", connectedAt: new Date().toISOString(), whitelistedIp: WHITELIST_IP };
+      acc.credentials = [{ id: "crd_main", brokerId: "brk_delta", label: "Main", apiKeyMasked: "****ab12", connectedAt: new Date().toISOString(), whitelistedIp: WHITELIST_IP }];
+      // a second key (a Delta sub-account) for the accounts flows (HC-TR-173..175)
+      if (body.subAccount) acc.credentials.push({ id: "crd_sub1", brokerId: "brk_delta", label: "Sub 1", apiKeyMasked: "****cd34", connectedAt: new Date().toISOString(), whitelistedIp: WHITELIST_IP });
     }
     return c.json({ ok: true, user: acc.user });
   });

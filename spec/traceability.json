@@ -1794,6 +1794,20 @@
   "evidence": "ADR-065 (11 Sep 2026): apps/api/drizzle/0016_thankful_loners.sql, src/db/schema.ts, routes/strategies.ts, routes/live-exec.ts, routes/live.ts, routes/alerts.ts, routes/brokers.ts, routes/market.ts, market-history.ts, alerts-evaluate.ts, settlement.ts, iv-snapshot.ts, db/seed.ts; packages/schema strategies.ts, alerts.ts, accounts.ts, market-history.ts; apps/web AlertsDialog, BuilderPanel, TradeFlow, ExchangeManagementDialog, useAdjustWorkbench; unit venue-column.test.ts"
  },
  {
+  "id": "HC-SH-121",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "screen": "Shared chrome · API Settings dialog",
+  "feature": "Accounts: several labelled keys per exchange (Delta sub-accounts)",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + web), e2e",
+  "acceptance": "API Settings lists every connected key with its name, masked key, date and its own Disconnect; the form proposes the next free name (Main, Sub 1, …), a known name replaces that key, at most five per exchange; the wallet chip names the account it reads once there is more than one; a key a live strategy trades through cannot be removed (409 with the count)",
+  "evidence": "ADR-068 (11 Sep 2026): packages/schema accounts.ts AccountLabel / MAX_ACCOUNTS_PER_BROKER / BrokerCredentialPublic id + label, apps/api routes/credentials.ts (label, delete by id, live refusal), migration 0018; ApiSettingsDialog.tsx api-label / api-account / api-replacing / disconnect-exchange, widgets.tsx wallet-account, lib/accounts.ts; unit credentials.test.ts HC-SH-123, dialogs.test.tsx; e2e settings.spec.ts"
+ },
+ {
   "id": "HC-PB-001",
   "area": "10-public",
   "areaName": "Public site & authentication",
@@ -6968,6 +6982,48 @@
   "test": "e2e (Playwright) · api contract",
   "acceptance": "Re-enter on a closed card (while its expiry has not passed) creates a fresh draft of the legs the strategy held, at today's marks, named '<name> re-entry', and opens the trade dialog of that tab on it; the entry prices, the capital check and the Protect step happen in the dialog, nothing is placed by the button; a card whose expiry passed says to build afresh",
   "evidence": "ADR-059 §2.3 A4b (11 Sep 2026): PaperPanel.tsx card-reenter / reenter, store openTrade with a draft; unit rules.test.tsx HC-TR-172"
+ },
+ {
+  "id": "HC-TR-173",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · trade dialog · cards · Details",
+  "feature": "A strategy trades through one account",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright) · security",
+  "acceptance": "The trade-mode dialog shows an Account select when the chosen exchange has more than one key (the strategy's own account preselected on Go live; the choice is remembered for the chrome); paper start and live place record the account on the strategy (the exchange's only key when none is named); every later call for that strategy (retry, sync, exits, adjustments, close, the reconciler, the settler, the rules engine) opens that same key; the card chip and Details name the account once an exchange has several keys",
+  "evidence": "ADR-068 (11 Sep 2026): packages/schema Strategy.accountId, StrategyStart / LivePlaceBody / LivePreviewBody / LiveBatchBody accountId; apps/api routes/live-exec.ts openCredential accountId, routes/live.ts accountOf / accountRowId, routes/strategies.ts start; TradeModeDialog.tsx trade-account, TradeFlow.tsx, PaperPanel.tsx card-account, StrategyDetailsDialog.tsx details-account, store accountId; unit trading-live.test.tsx HC-TR-173, accounts.test.ts (api) HC-TR-173..174"
+ },
+ {
+  "id": "HC-TR-174",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · server",
+  "feature": "The key is resolved once and never guessed",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright) · api contract · security",
+  "acceptance": "openCredential takes the strategy's account: the named key, else the exchange's only key; several keys with none named is a 409 (never an order or an exit through the wrong sub-account); when a second key arrives for an exchange the running strategies with no account named are stamped with the first key they were placed through",
+  "evidence": "ADR-068 (11 Sep 2026): apps/api routes/live-exec.ts openCredential, routes/credentials.ts POST stamping; unit accounts.test.ts (api) HC-TR-174: entry, retry, sync, close and the rules engine all through the named key; credentials.test.ts HC-SH-123"
+ },
+ {
+  "id": "HC-TR-175",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Live tab · net positions",
+  "feature": "Positions and the out-of-sync check per account",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright) · security",
+  "acceptance": "GET /v1/strategies/live/positions takes accountId; the Live tab makes one positions read per distinct account and compares each live strategy with its own account's positions, so a stop on one sub-account flags only the strategies there; Reconcile re-reads that account; a strategy from before accounts on an exchange with several keys shows 'no account named' and is left out of the check; the net-positions panel and the portfolio bar read the account chosen last, with a select in the panel",
+  "evidence": "ADR-068 (11 Sep 2026): apps/api routes/live.ts positions accountId; lib/api/live.ts useAccountPositions, lib/accounts.ts accountRefOf / useCurrentAccount, PaperPanel.tsx drift per account, NetPositionsPanel.tsx net-account, PortfolioBar.tsx; unit trading-live.test.tsx HC-TR-174, HC-TR-175"
  },
  {
   "id": "HC-AC-001",

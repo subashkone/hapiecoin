@@ -45,12 +45,26 @@ export function venueMismatch(brokerVenue: Venue, strategyVenue: Venue): string 
 }
 
 /** ADR-065: a broker of another venue cannot place a strategy; `expectedVenue` is the strategy's venue when one is in hand. */
-export async function openCredential(deps: AppDeps, user: SessionUser, brokerId: string, expectedVenue?: Venue): Promise<DeltaCredentials> {
+/**
+ * The key to trade through (ADR-068): the named account, else the broker's only key. Several keys with none
+ * named is a refusal, never a guess: an order or an exit through the wrong sub-account is worse than none.
+ */
+export async function openCredential(deps: AppDeps, user: SessionUser, brokerId: string, expectedVenue?: Venue, accountId: string | null = null): Promise<DeltaCredentials> {
+  return (await resolveAccount(deps, user, brokerId, expectedVenue, accountId)).creds;
+}
+/** `openCredential` plus the id of the key row it opened, for the routes that record the account on the strategy. */
+export async function resolveAccount(deps: AppDeps, user: SessionUser, brokerId: string, expectedVenue?: Venue, accountId: string | null = null): Promise<{ creds: DeltaCredentials; accountId: string }> {
   const brokerVenue = await brokerVenueOf(deps, user, brokerId);
   if (brokerVenue === null) throw errors.badRequest("Select an exchange...");
   if (expectedVenue !== undefined && brokerVenue !== expectedVenue) throw errors.conflict(venueMismatch(brokerVenue, expectedVenue));
-  const [row] = await deps.db.select().from(brokerCredentials).where(and(eq(brokerCredentials.userId, user.id), eq(brokerCredentials.brokerId, brokerId))).limit(1);
-  if (!row) throw errors.conflict("Connect your exchange in Settings → API Settings to enable live trading");
+  const rows = await deps.db.select().from(brokerCredentials).where(and(eq(brokerCredentials.userId, user.id), eq(brokerCredentials.brokerId, brokerId))).orderBy(brokerCredentials.connectedAt);
+  if (rows.length === 0) throw errors.conflict("Connect your exchange in Settings → API Settings to enable live trading");
+  let row: (typeof rows)[number] | undefined;
+  if (accountId !== null) {
+    row = rows.find((r) => r.id === accountId);
+    if (!row) throw errors.conflict("The account this strategy traded through is no longer connected · reconnect it in Settings → API Settings");
+  } else if (rows.length === 1 && rows[0]) row = rows[0];
+  else throw errors.conflict(`This exchange has ${rows.length} accounts connected · pick one`);
   let creds: DeltaCredentials;
   try {
     creds = {
@@ -71,7 +85,7 @@ export async function openCredential(deps: AppDeps, user: SessionUser, brokerId:
       deps.logger.warn({ err: errorMessage(e), userId: user.id, brokerId }, "exchange credential re-seal failed; will retry on next use");
     }
   }
-  return creds;
+  return { creds, accountId: row.id };
 }
 
 /** Kill switches (ADR-025): the operator's env flag and the account flag. */
@@ -137,7 +151,7 @@ export async function planLegs(deps: AppDeps, legs: readonly PlanLeg[], lotSize:
  * `exits` are reduce-only rows of an adjustment batch (ADR-044): planned for product state and sizing, listed first,
  * never counted against the entry caps because they reduce risk.
  */
-export async function preview(deps: AppDeps, user: SessionUser, strategy: StrategyRow, legs: readonly PlanLeg[], brokerId: string, worstLoss: number | null, exits: readonly PlanLeg[] = []): Promise<LivePreview> {
+export async function preview(deps: AppDeps, user: SessionUser, strategy: StrategyRow, legs: readonly PlanLeg[], brokerId: string, worstLoss: number | null, exits: readonly PlanLeg[] = [], accountId: string | null = null): Promise<LivePreview> {
   const reasons: string[] = [];
   const blocked = await tradingBlockedReason(deps, user);
   if (blocked) reasons.push(blocked);
@@ -161,7 +175,7 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
     return { ok: false, reasons, legs: [...exitPlan.legs, ...plan.legs], notional: toDecimal(notional, 2), available, availableAsset, marginUsed, limits: { maxLegs: trading.maxLegs, maxNotionalUsd: trading.maxNotionalUsd, markBandPct: trading.markBandPct } };
   }
   try {
-    const creds = await openCredential(deps, user, brokerId, strategy.venue);
+    const creds = await openCredential(deps, user, brokerId, strategy.venue, accountId);
     const balances = await deps.trading.getBalances(creds);
     const row = SETTLING_ASSETS.map((a) => balances.find((b) => b.asset === a)).find((b) => b !== undefined);
     // the venue has no pre-trade margin estimate; show what it holds right now so the trader sees the real headroom (ADR-029).

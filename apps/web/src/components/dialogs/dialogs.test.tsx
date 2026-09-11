@@ -262,6 +262,39 @@ describe("HC-SH-045..049 Exchange Management", () => {
   });
 });
 
+describe("HC-SH-123 accounts in API Settings (ADR-068)", () => {
+  it("a second key with its own name lists two accounts; the same name replaces its key; one can be disconnected alone", async () => {
+    const u = userEvent.setup();
+    renderWithProviders(<ApiSettingsDialog open onOpenChange={noop} />);
+    await waitFor(() => expect(screen.getByTestId("api-status").dataset["state"]).toBe("disconnected"));
+    await waitFor(() => expect(screen.getByTestId<HTMLInputElement>("api-label").value).toBe("Main")); // the first key is Main
+    await u.type(screen.getByTestId("api-key"), "key-main-abcd");
+    await u.type(screen.getByTestId("api-secret"), "s3cret");
+    await u.click(screen.getByTestId("connect-save"));
+    await waitFor(() => expect(screen.getByTestId("api-status").dataset["count"]).toBe("1"));
+    await waitFor(() => expect(screen.getByTestId<HTMLInputElement>("api-label").value).toBe("Sub 1")); // the next free name
+    await u.type(screen.getByTestId("api-key"), "key-sub-ef01");
+    await u.type(screen.getByTestId("api-secret"), "s3cret2");
+    await u.click(screen.getByTestId("connect-save"));
+    await waitFor(() => expect(screen.getByTestId("api-status").dataset["count"]).toBe("2"));
+    expect(screen.getAllByTestId("api-account").map((r) => r.dataset["label"])).toEqual(["Main", "Sub 1"]);
+    expect(account().credentials.map((c) => [c.label, c.apiKeyMasked])).toEqual([["Main", "****abcd"], ["Sub 1", "****ef01"]]);
+    // the same name again replaces that key
+    await u.clear(screen.getByTestId("api-label"));
+    await u.type(screen.getByTestId("api-label"), "Sub 1");
+    expect(screen.getByTestId("api-replacing").textContent).toContain("replaces the key stored for Sub 1");
+    await u.type(screen.getByTestId("api-key"), "key-sub-2222");
+    await u.type(screen.getByTestId("api-secret"), "s3cret3");
+    await u.click(screen.getByTestId("connect-save"));
+    await waitFor(() => expect(account().credentials.map((c) => c.apiKeyMasked)).toEqual(["****abcd", "****2222"]));
+    expect(screen.getAllByTestId("api-account")).toHaveLength(2);
+    // disconnect the sub-account alone
+    await u.click(screen.getAllByTestId("disconnect-exchange")[1]!);
+    await waitFor(() => expect(screen.getByTestId("api-status").dataset["count"]).toBe("1"));
+    expect(account().credentials.map((c) => c.label)).toEqual(["Main"]);
+  });
+});
+
 describe("HC-SH-031..037 Delta Exchange API Settings", () => {
   it("HC-SH-035 checks the connection, validates credentials, connects, copies the IP and disconnects", async () => {
     const u = userEvent.setup();
@@ -279,7 +312,8 @@ describe("HC-SH-031..037 Delta Exchange API Settings", () => {
     await u.click(screen.getByTestId("connect-save"));
     await waitFor(() => expect(screen.getByTestId("api-status").dataset["state"]).toBe("connected"));
     expect(screen.getByText("API Key: ****abcd")).toBeTruthy();
-    expect(account().credential?.apiKeyMasked).toBe("****abcd");
+    expect(account().credentials[0]?.apiKeyMasked).toBe("****abcd");
+    expect(account().credentials[0]?.label).toBe("Main");
     const connectCall = mock.calls.find((c) => c.url.endsWith("/v1/credentials") && c.method === "POST");
     expect(connectCall?.body).toContain('"apiSecret":"s3cret"');
     expect(screen.getByTestId<HTMLInputElement>("api-secret").value).toBe(""); // secret cleared after save
@@ -287,7 +321,7 @@ describe("HC-SH-031..037 Delta Exchange API Settings", () => {
     expect(await screen.findByText("IP address copied to clipboard")).toBeTruthy();
     await u.click(screen.getByTestId("disconnect-exchange"));
     await waitFor(() => expect(screen.getByTestId("api-status").dataset["state"]).toBe("disconnected"));
-    expect(account().credential).toBeNull();
+    expect(account().credentials).toEqual([]);
   });
 });
 

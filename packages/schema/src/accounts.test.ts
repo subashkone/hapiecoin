@@ -4,7 +4,9 @@ import {
   ApiKeyMasked,
   Avatar,
   Broker,
+  AccountLabel,
   BrokerCredentialPublic,
+  MAX_ACCOUNTS_PER_BROKER,
   BrokerScope,
   Density,
   Id,
@@ -53,7 +55,9 @@ const broker: Broker = {
 };
 
 const credential: BrokerCredentialPublic = {
+  id: "crd_main",
   brokerId: "brk_delta",
+  label: "Main",
   apiKeyMasked: "****ab12",
   connectedAt: "2026-09-07T10:00:00Z",
   whitelistedIp: "172.236.179.136",
@@ -141,6 +145,12 @@ describe("HC-SH-032 Broker", () => {
 describe("HC-SH-031 BrokerCredentialPublic", () => {
   it("accepts a masked credential", () => {
     expect(BrokerCredentialPublic.safeParse(credential).success).toBe(true);
+  });
+  it("HC-SH-123 an account has a name of 1 to 32 characters; the cap per exchange is five (ADR-068)", () => {
+    expect(BrokerCredentialPublic.safeParse({ ...credential, label: "" }).success).toBe(false);
+    expect(BrokerCredentialPublic.safeParse({ ...credential, label: "x".repeat(33) }).success).toBe(false);
+    expect(AccountLabel.parse("  Sub 1  ")).toBe("Sub 1");
+    expect(MAX_ACCOUNTS_PER_BROKER).toBe(5);
   });
   it("HC-SH-033 refuses any secret or raw key material", () => {
     expect(BrokerCredentialPublic.safeParse({ ...credential, apiSecret: "s3cr3t" }).success).toBe(false);

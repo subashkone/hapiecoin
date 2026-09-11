@@ -4,6 +4,7 @@
 import { Plug, Tooltip, Wallet, cn, toast } from "@hapiecoin/ui";
 import { UNDERLYINGS, type Underlying } from "@hapiecoin/schema";
 import { useCredential, useSettings, useUpdateSettings } from "@/lib/api/queries";
+import { useCurrentAccount } from "@/lib/accounts";
 import { useLivePositions } from "@/lib/api/live";
 import { fmtPct, fmtPrice } from "@/lib/format";
 import { useConnectionStatus, useFlash, useGateway, useLatency, useSpot } from "@/lib/gateway/hooks";
@@ -119,6 +120,7 @@ export function FeedStatus() {
 
 export function ExchangeChip() {
   const { data, isLoading } = useCredential();
+  const { account } = useCurrentAccount();
   const openDialog = useUiStore((s) => s.openDialog);
   const connected = (data?.items.length ?? 0) > 0;
   return (
@@ -137,14 +139,14 @@ export function ExchangeChip() {
         <Plug className="size-3.5" aria-hidden="true" />
         <span>{isLoading ? "…" : connected ? "Connected" : "Not connected"}</span>
       </button>
-      {connected ? <WalletChip brokerId={data?.items[0]?.brokerId ?? null} /> : null}
+      {connected ? <WalletChip brokerId={account?.brokerId ?? null} accountId={account?.id ?? null} label={(data?.items.length ?? 0) > 1 ? (account?.label ?? null) : null} /> : null}
     </>
   );
 }
 
 /** Available balance on the connected exchange (HC-SH-011): the settling asset first, refreshed with the positions query. */
-export function WalletChip({ brokerId }: { brokerId: string | null }) {
-  const { data, isError, error } = useLivePositions(brokerId);
+export function WalletChip({ brokerId, accountId = null, label = null }: { brokerId: string | null; accountId?: string | null; label?: string | null }) {
+  const { data, isError, error } = useLivePositions(brokerId, true, accountId);
   const openDialog = useUiStore((s) => s.openDialog);
   const row = data ? (["USD", "USDT", "INR"].map((a) => data.balances.find((b) => b.asset === a)).find((b) => b !== undefined) ?? data.balances[0]) : undefined;
   const needsReconnect = isError && /decrypt|reconnect/i.test(error.message);
@@ -159,6 +161,7 @@ export function WalletChip({ brokerId }: { brokerId: string | null }) {
         className={cn("inline-flex h-7 items-center gap-1.5 rounded border px-2 font-mono text-xs", isError ? "border-warning/60 text-warning" : "border-border text-foreground")}
       >
         <Wallet className="size-3.5" aria-hidden="true" />
+        {label ? <span className="text-muted-foreground" data-testid="wallet-account">{label} ·</span> : null}
         {text}
       </button>
     </Tooltip>

@@ -125,6 +125,7 @@ describe("[DB] schema declares the relationships the API relies on", () => {
     expect(fks(strategies)).toEqual([
       { from: "user_id", to: "users.id", onDelete: "cascade" },
       { from: "broker_id", to: "brokers.id", onDelete: "set null" },
+      { from: "account_id", to: "broker_credentials.id", onDelete: "restrict" }, // a key a strategy names cannot vanish underneath it (ADR-068)
     ]);
     expect(fks(strategyLegs)).toEqual([{ from: "strategy_id", to: "strategies.id", onDelete: "cascade" }]);
     expect(fks(strategyPnl)).toEqual([{ from: "strategy_id", to: "strategies.id", onDelete: "cascade" }]);
@@ -146,7 +147,7 @@ describe("[DB] schema declares the relationships the API relies on", () => {
         .map((i) => i.config.name);
     expect(uniqueNames(users)).toEqual(["users_email_uq", "users_referral_code_uq"]);
     expect(uniqueNames(sessions)).toEqual(["sessions_token_uq"]);
-    expect(uniqueNames(brokerCredentials)).toEqual(["broker_credentials_user_broker_uq"]);
+    expect(uniqueNames(brokerCredentials)).toEqual(["broker_credentials_user_broker_label_uq"]); // several keys per exchange, one per label (ADR-068)
     expect(Object.keys(schema).sort()).toEqual(
       [
         "accounts",
