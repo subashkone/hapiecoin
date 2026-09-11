@@ -30,11 +30,11 @@ export class FakeMarketData extends Emitter<DeltaMarketDataEvents> implements Ma
   socket: SocketState = "idle";
   nowMs = NOW;
 
-  constructor(options: { seed?: boolean } = {}) {
+  constructor(options: { seed?: boolean; instruments?: Instrument[]; quotes?: Quote[] } = {}) {
     super();
-    this.instrumentList = fixtureInstruments();
+    this.instrumentList = options.instruments ?? fixtureInstruments();
     for (const instrument of this.instrumentList) this.bySymbol.set(instrument.symbol, instrument);
-    this.seeds = options.seed === false ? [] : fixtureQuotes();
+    this.seeds = options.seed === false ? [] : (options.quotes ?? fixtureQuotes());
   }
 
   load(): Promise<{ instruments: number; quotes: number }> {

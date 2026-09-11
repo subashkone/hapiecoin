@@ -26,7 +26,7 @@ export const Timestamp = z.number().int().nonnegative();
 export type Timestamp = z.infer<typeof Timestamp>;
 
 /** Trading venues. Only Delta Exchange India today; add new venues here and every venue-keyed schema follows. */
-export const VENUES = ["delta_india"] as const;
+export const VENUES = ["delta_india", "deribit"] as const;
 export const Venue = z.enum(VENUES);
 export type Venue = z.infer<typeof Venue>;
 

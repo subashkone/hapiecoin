@@ -14,6 +14,7 @@
 import type { ChainRow, QuoteDelta, Quote as SchemaQuote, ServerMessage, Topic, Underlying } from "@hapiecoin/schema";
 import { ChainSnapshot, UNDERLYINGS, chainTopic, parseTopic } from "@hapiecoin/schema";
 import type { MarketDataStatus, Quote as VenueQuote } from "@hapiecoin/venues";
+import type { Venue as VenueId } from "@hapiecoin/schema";
 import { DEFAULT_VENUE, toSchemaChainRows, toSchemaQuote } from "@hapiecoin/venues";
 import type { Logger } from "../log.js";
 import type { PubSub } from "../pubsub/types.js";
@@ -27,7 +28,10 @@ import type { MarketDataLike } from "./market-data.js";
 export const SPOT_SYMBOLS: Record<Underlying, string> = { BTC: "BTCUSD", ETH: "ETHUSD", XAUT: "XAUTUSD" };
 
 export interface MarketFeedOptions {
+  /** The default venue's session (spot topics and the `expiries` in the status come from it). */
   market: MarketDataLike;
+  /** ADR-067: sessions of the other enabled venues, keyed by schema venue id. */
+  markets?: Partial<Record<VenueId, MarketDataLike>> | undefined;
   pubsub: PubSub;
   coalesceMs: number;
   /** Keep upstream subscriptions this long after the last client leaves (default 30 s). */
@@ -63,6 +67,8 @@ export interface FeedStatus {
   pending: number;
   loadedAt: number | null;
   lastError: string | null;
+  /** ADR-067: every enabled venue's socket status and live expiries per underlying. */
+  venues: Record<string, { market: MarketDataStatus; expiries: Record<Underlying, string[]> }>;
   /** Set by the role wrapper (ADR-062); a bare MarketFeed is the leader. */
   role?: "leader" | "follower";
 }
@@ -83,6 +89,9 @@ function isUnderlying(value: string): value is Underlying {
 
 export class MarketFeed {
   private readonly market: MarketDataLike;
+  /** Every session, the default venue's first (ADR-067). */
+  private readonly sessions = new Map<VenueId, MarketDataLike>();
+  private readonly loadedVenues = new Set<VenueId>();
   private readonly pubsub: PubSub;
   private readonly coalescer: Coalescer;
   private readonly graceMs: number;
@@ -105,11 +114,16 @@ export class MarketFeed {
   private readonly offListeners: (() => void)[] = [];
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
   private loadedAt: number | null = null;
+  /** Venues whose last load failed: retried after `retryMs` on their own, the healthy ones keep the refresh cadence (ADR-067). */
+  private readonly failedVenues = new Set<VenueId>();
+  private nextRefreshAt = 0;
   private lastError: string | null = null;
   private running = false;
 
   constructor(options: MarketFeedOptions) {
     this.market = options.market;
+    this.sessions.set(DEFAULT_VENUE, options.market);
+    for (const [venue, session] of Object.entries(options.markets ?? {}) as [VenueId, MarketDataLike][]) if (venue !== DEFAULT_VENUE) this.sessions.set(venue, session);
     this.pubsub = options.pubsub;
     this.graceMs = options.graceMs ?? 30_000;
     this.refreshMs = options.refreshMs ?? 300_000;
@@ -139,11 +153,11 @@ export class MarketFeed {
     if (this.running) return;
     this.running = true;
     // the venue listeners run in every mode: REST seeds and (as leader) socket ticks keep the quote and spot caches
-    this.offListeners.push(this.market.on("ticker", (quote) => this.onTicker(quote)));
-    this.offListeners.push(this.market.on("error", (error) => this.log.warn("venue error", { error })));
-    this.offListeners.push(
-      this.market.on("status", (status) => this.log.info("venue socket", { ...status })),
-    );
+    for (const [venue, session] of this.sessions) {
+      this.offListeners.push(session.on("ticker", (quote) => this.onTicker(venue, session, quote)));
+      this.offListeners.push(session.on("error", (error) => this.log.warn("venue error", { venue, error })));
+      this.offListeners.push(session.on("status", (status) => this.log.info("venue socket", { venue, ...status })));
+    }
     await this.load();
   }
 
@@ -151,7 +165,7 @@ export class MarketFeed {
   promote(): void {
     if (this.upstream) return;
     this.upstream = true;
-    this.market.start();
+    for (const session of this.sessions.values()) session.start();
     this.rewatchHeld();
     if (this.store !== null && this.keepaliveTimer === null) this.keepaliveTimer = setInterval(() => this.keepalive(), this.snapshotKeepaliveMs);
     // the spots learnt from the REST seeds go to the store at once, so followers have one before the first tick
@@ -183,7 +197,7 @@ export class MarketFeed {
     }
     this.dirty.clear();
     this.coalescer.close();
-    this.market.stop();
+    for (const session of this.sessions.values()) session.stop();
   }
 
   /** True while this feed owns the venue socket. */
@@ -205,23 +219,16 @@ export class MarketFeed {
   }
 
   status(): FeedStatus {
-    const expiries = {} as Record<Underlying, string[]>;
     const spot = {} as Record<Underlying, string | null>;
-    for (const underlying of UNDERLYINGS) {
-      expiries[underlying] =
-        this.loadedAt === null
-          ? []
-          : this.market
-              .expiries(underlying)
-              .filter((e) => e.dte > 0)
-              .map((e) => e.date);
-      spot[underlying] = this.spots.get(underlying)?.p ?? null;
-    }
+    for (const underlying of UNDERLYINGS) spot[underlying] = this.spots.get(underlying)?.p ?? null;
+    const venues: FeedStatus["venues"] = {};
+    for (const [venue, session] of this.sessions) venues[venue] = { market: session.status(), expiries: this.liveExpiries(venue, session) };
     return {
       ready: this.loadedAt !== null,
       market: this.market.status(),
-      expiries,
+      expiries: this.liveExpiries(DEFAULT_VENUE, this.market),
       spot,
+      venues,
       topics: this.refs.size,
       pending: this.coalescer.pending(),
       loadedAt: this.loadedAt,
@@ -229,10 +236,28 @@ export class MarketFeed {
     };
   }
 
-  /** True for topics this feed can serve (chain and spot; `fut:` comes with the futures ticker in Phase 2). */
+  private liveExpiries(venue: VenueId, session: MarketDataLike): Record<Underlying, string[]> {
+    const out = {} as Record<Underlying, string[]>;
+    for (const underlying of UNDERLYINGS) {
+      out[underlying] = this.loadedVenues.has(venue)
+        ? session
+            .expiries(underlying)
+            .filter((e) => e.dte > 0)
+            .map((e) => e.date)
+        : [];
+    }
+    return out;
+  }
+
+  /** The session of a topic's venue; null when this gateway does not open that venue (spot topics are the default venue's). */
+  private session(venue: VenueId | undefined): MarketDataLike | null {
+    return this.sessions.get(venue ?? DEFAULT_VENUE) ?? null;
+  }
+
+  /** True for topics this feed can serve: chain and spot topics of an enabled venue (`fut:` comes with the futures ticker in Phase 2). */
   supports(topic: Topic): boolean {
     const parsed = parseTopic(topic);
-    return parsed !== null && parsed.kind !== "fut";
+    return parsed !== null && parsed.kind !== "fut" && this.session(parsed.kind === "chain" ? parsed.venue : undefined) !== null;
   }
 
   /** Last flushed sequence number for a topic. */
@@ -248,16 +273,18 @@ export class MarketFeed {
   snapshot(topic: Topic): Snapshot | null {
     const parsed = parseTopic(topic);
     if (parsed === null || parsed.kind !== "chain") return null;
+    const session = this.session(parsed.venue);
+    if (session === null) return null;
     let chain;
     try {
-      chain = this.market.chain(parsed.underlying, parsed.expiry);
+      chain = session.chain(parsed.underlying, parsed.expiry);
     } catch (error) {
       this.log.debug("snapshot unavailable", { topic, error: error as Error });
       return null;
     }
     const spot = chain.spot ?? this.spots.get(parsed.underlying)?.p ?? null;
     const validated = ChainSnapshot.safeParse({
-      venue: DEFAULT_VENUE,
+      venue: parsed.venue,
       underlying: parsed.underlying,
       expiry: parsed.expiry,
       ts: this.now(),
@@ -371,7 +398,9 @@ export class MarketFeed {
     const parsed = parseTopic(topic);
     if (parsed === null || parsed.kind === "fut") return;
     if (parsed.kind === "chain") {
-      this.market.watch(parsed.underlying, parsed.expiry);
+      const session = this.session(parsed.venue);
+      if (session === null) return;
+      session.watch(parsed.underlying, parsed.expiry);
       this.announce(topic);
     } else this.market.subscribeSymbols([SPOT_SYMBOLS[parsed.underlying]]);
   }
@@ -408,23 +437,36 @@ export class MarketFeed {
     if (!this.upstream) return;
     const parsed = parseTopic(topic);
     if (parsed === null || parsed.kind === "fut") return;
-    if (parsed.kind === "chain") this.market.unwatch(parsed.underlying, parsed.expiry);
+    if (parsed.kind === "chain") this.session(parsed.venue)?.unwatch(parsed.underlying, parsed.expiry);
     else this.market.unsubscribeSymbols([SPOT_SYMBOLS[parsed.underlying]]);
   }
 
+  /**
+   * Every session loads in turn; the feed is ready once the default venue has loaded. A failed venue is retried after
+   * `retryMs` on its own (a Deribit outage never reloads Delta 30 times an hour); the full pass runs on the refresh cadence (ADR-067).
+   */
   private async load(): Promise<void> {
-    try {
-      const loaded = await this.market.load();
-      this.loadedAt = this.now();
-      this.lastError = null;
-      this.log.info("instruments loaded", { ...loaded });
-      this.rewatchHeld();
-      this.scheduleLoad(this.refreshMs);
-    } catch (error) {
-      this.lastError = error instanceof Error ? error.message : String(error);
-      this.log.error("instrument load failed", { error: error as Error });
-      this.scheduleLoad(this.retryMs);
+    const full = this.failedVenues.size === 0 || this.now() >= this.nextRefreshAt;
+    if (full) this.nextRefreshAt = this.now() + this.refreshMs;
+    for (const [venue, session] of this.sessions) {
+      if (!full && !this.failedVenues.has(venue)) continue;
+      try {
+        const loaded = await session.load();
+        this.loadedVenues.add(venue);
+        this.failedVenues.delete(venue);
+        if (venue === DEFAULT_VENUE) {
+          this.loadedAt = this.now();
+          this.lastError = null;
+        }
+        this.log.info("instruments loaded", { venue, ...loaded });
+      } catch (error) {
+        this.failedVenues.add(venue);
+        this.lastError = error instanceof Error ? error.message : String(error);
+        this.log.error("instrument load failed", { venue, error: error as Error });
+      }
     }
+    if (this.loadedAt !== null) this.rewatchHeld();
+    this.scheduleLoad(this.failedVenues.size > 0 ? this.retryMs : this.refreshMs);
   }
 
   /**
@@ -438,7 +480,9 @@ export class MarketFeed {
       const parsed = parseTopic(topic);
       if (parsed === null || parsed.kind === "fut") continue;
       if (parsed.kind === "chain") {
-        this.market.watch(parsed.underlying, parsed.expiry);
+        const session = this.session(parsed.venue);
+        if (session === null) continue;
+        session.watch(parsed.underlying, parsed.expiry);
         this.announce(topic);
       } else this.market.subscribeSymbols([SPOT_SYMBOLS[parsed.underlying]]);
     }
@@ -452,11 +496,12 @@ export class MarketFeed {
     }, delayMs);
   }
 
-  private onTicker(quote: VenueQuote): void {
-    const instrument = this.market.instrument(quote.symbol);
-    const underlying = instrument?.underlying ?? underlyingForSpotSymbol(quote.symbol);
+  private onTicker(venue: VenueId, session: MarketDataLike, quote: VenueQuote): void {
+    const instrument = session.instrument(quote.symbol);
+    const underlying = instrument?.underlying ?? (venue === DEFAULT_VENUE ? underlyingForSpotSymbol(quote.symbol) : null);
     if (underlying === null || !isUnderlying(underlying)) return;
-    this.updateSpot(underlying, quote);
+    // the venue-free `spot:` topics are the default venue's index; another venue's quotes carry their own
+    if (venue === DEFAULT_VENUE) this.updateSpot(underlying, quote);
     if (
       !instrument ||
       (instrument.kind !== "call" && instrument.kind !== "put") ||
@@ -464,7 +509,7 @@ export class MarketFeed {
     )
       return;
 
-    const topic = chainTopic(DEFAULT_VENUE, underlying, instrument.expiryDate);
+    const topic = chainTopic(venue, underlying, instrument.expiryDate);
     let next: SchemaQuote;
     try {
       next = toSchemaQuote(quote, this.spots.get(underlying)?.p ?? null);
@@ -472,8 +517,9 @@ export class MarketFeed {
       this.log.debug("quote skipped", { symbol: quote.symbol, error: error as Error });
       return;
     }
-    const delta: QuoteDelta | null = quoteDelta(this.lastQuote.get(quote.symbol), next);
-    this.lastQuote.set(quote.symbol, next);
+    const key = `${venue}:${quote.symbol}`;
+    const delta: QuoteDelta | null = quoteDelta(this.lastQuote.get(key), next);
+    this.lastQuote.set(key, next);
     if (!this.upstream || delta === null || !this.heldAnywhere(topic)) return; // a follower only caches
     this.coalescer.addQuote(topic, delta);
   }

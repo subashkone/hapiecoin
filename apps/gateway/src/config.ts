@@ -3,7 +3,7 @@
  * Empty strings are treated as unset so an `.env` line such as `REDIS_URL=` means "no Redis".
  * The Delta endpoints are public market data and default to Delta Exchange India; nothing here is a secret.
  */
-import { MAX_TOPICS_PER_MESSAGE } from "@hapiecoin/schema";
+import { MAX_TOPICS_PER_MESSAGE, VENUES, Venue } from "@hapiecoin/schema";
 import { z } from "zod";
 
 export const LOG_LEVELS = ["debug", "info", "warn", "error", "silent"] as const;
@@ -18,6 +18,29 @@ export const GatewayEnv = z.object({
   DELTA_WS_URL: z.url({ protocol: /^wss?$/ }).default("wss://socket.india.delta.exchange"),
   /** "v2/ticker" (verbose, what the original site uses) or "ticker" (compact public endpoint). */
   DELTA_WS_CHANNEL: z.enum(["v2/ticker", "ticker"]).default("v2/ticker"),
+  /** ADR-067: Deribit public endpoints (data-only, no key). */
+  DERIBIT_REST_URL: z.url({ protocol: /^https?$/ }).default("https://www.deribit.com/api/v2"),
+  DERIBIT_WS_URL: z.url({ protocol: /^wss?$/ }).default("wss://www.deribit.com/ws/api/v2"),
+  /** Ticker aggregation on the Deribit socket: every 100 ms or every 2 s. */
+  DERIBIT_WS_INTERVAL: z.enum(["100ms", "agg2"]).default("100ms"),
+  /** Venues this gateway opens a feed for, comma-separated schema ids; the default venue is always included. */
+  GATEWAY_VENUES: z
+    .string()
+    .default("delta_india")
+    .transform((raw, ctx) => {
+      const ids = raw.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+      const out: Venue[] = [];
+      for (const id of ids) {
+        const parsed = Venue.safeParse(id);
+        if (!parsed.success) {
+          ctx.addIssue({ code: "custom", message: `unknown venue ${id}` });
+          continue;
+        }
+        if (!out.includes(parsed.data)) out.push(parsed.data);
+      }
+      if (!out.includes(VENUES[0])) out.unshift(VENUES[0]);
+      return out;
+    }),
   /** When set, frames fan out through Redis pub/sub so several gateway processes share one feed. */
   REDIS_URL: z.url({ protocol: /^rediss?$/ }).optional(),
   /** Browser origin allowed to open sockets (plus localhost outside production). */

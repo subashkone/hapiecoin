@@ -1,6 +1,6 @@
 /** Test-only loader for the recorded Delta fixtures in spec/fixtures/ (single source of truth). */
 import { readFileSync } from "node:fs";
-import { deltaRaw, toInstrument, toQuote } from "@hapiecoin/venues";
+import { bookSummaryToQuote, deltaRaw, deribitRaw, toDeribitInstrument, toInstrument, toQuote } from "@hapiecoin/venues";
 import type { Instrument, Quote } from "@hapiecoin/venues";
 
 const FIXTURE_DIR = new URL("../../../../spec/fixtures/", import.meta.url);
@@ -20,4 +20,19 @@ export function fixtureInstruments(): Instrument[] {
 /** 307 BTC call tickers with greeks, IV, OI and spot. */
 export function fixtureQuotes(): Quote[] {
   return deltaRaw.RawTickersResponse.parse(loadJson("delta-tickers.json")).result.map((t) => toQuote(t, NOW));
+}
+
+/** 950 live Deribit BTC options recorded 11 Sep 2026 (ADR-067), in USD per underlying unit after the adapter. */
+export function deribitFixtureInstruments(): Instrument[] {
+  return deribitRaw.RawInstrumentsResponse.parse(loadJson("deribit-instruments-btc.json")).result.map(toDeribitInstrument);
+}
+
+/** The book-summary seed of those options (no greeks), keyed to the instrument ids. */
+export function deribitFixtureQuotes(instruments: readonly Instrument[] = deribitFixtureInstruments()): Quote[] {
+  const ids = new Map(instruments.map((i) => [i.symbol, i.id]));
+  return deribitRaw.RawBookSummaryResponse.parse(loadJson("deribit-book-summary-btc.json")).result.flatMap((row) => {
+    const id = ids.get(row.instrument_name);
+    const quote = id === undefined ? null : bookSummaryToQuote(row, id, NOW);
+    return quote ? [quote] : [];
+  });
 }

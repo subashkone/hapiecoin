@@ -1,11 +1,15 @@
 import { ChainRow, ChainSnapshot, Instrument, Quote } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
 import { buildChain, listExpiries } from "./delta/chain.js";
+import { toDeribitInstrument, toDeribitQuote } from "./deribit/normalize.js";
+import { RawInstrumentsResponse, RawTickerResponse } from "./deribit/raw.js";
+import { loadDeribitInstrumentsFixture, loadDeribitTickerFixture } from "./test-support/fixtures.js";
 import { compactToQuote, toInstrument, toQuote } from "./delta/normalize.js";
 import { RawProductsResponse, RawTickersResponse, RawWsCompactTicker } from "./delta/raw.js";
 import type { RawProduct } from "./delta/raw.js";
 import {
   SCHEMA_VENUE,
+  schemaVenueOf,
   SchemaAdapterError,
   isSchemaInstrument,
   latestSpot,
@@ -247,5 +251,23 @@ describe("[GAPS-1] schema adapter: chain rows keep the instrument-list strikes",
     const solChain = { ...btc, underlying: "SOL", rows: [], strikes: [] };
     expect(() => toSchemaChainSnapshot(solChain)).toThrow(/underlying SOL/);
     expect(isSchemaInstrument(bad)).toBe(false);
+  });
+});
+
+describe("HC-SH-122 [VENUES] the bridge stamps every venue's own id (ADR-067)", () => {
+  it("a Deribit instrument, quote and chain carry deribit ids and venue", () => {
+    const inst = toDeribitInstrument(RawInstrumentsResponse.parse(loadDeribitInstrumentsFixture()).result[0]!);
+    expect(schemaVenueOf("deribit")).toBe("deribit");
+    expect(schemaVenueOf("delta")).toBe("delta_india");
+    const out = toSchemaInstrument(inst);
+    expect(out.venue).toBe("deribit");
+    expect(out.id).toBe("deribit:BTC-12SEP26-69000-C");
+    expect(out.isActive).toBe(true); // Deribit is_active maps onto the shared "live" state
+    expect(schemaInstrumentId("X", "deribit")).toBe("deribit:X");
+    const quote = toDeribitQuote(RawTickerResponse.parse(loadDeribitTickerFixture()).result, inst.id, 1)!;
+    expect(toSchemaQuote(quote).instrumentId).toBe("deribit:BTC-12SEP26-69000-C");
+    const chain = buildChain({ instruments: [inst], quotes: [quote], underlying: "BTC", expiry: "2026-09-12", nowMs: 1 });
+    expect(chain.venue).toBe("deribit");
+    expect(toSchemaChainSnapshot(chain).venue).toBe("deribit");
   });
 });

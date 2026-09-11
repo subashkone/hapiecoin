@@ -1019,5 +1019,15 @@
     "how": "packages/pricing gains Black-Scholes-Merton (forward S·e^((r−q)T), bsmPrice / bsmGreeks / bsmImpliedVol) and a data TradingCalendar (days per year, settlement hour) that ValuationOptions take with rate and dividendYield; defaults keep every figure bit-identical; the web client takes the calendar and the settlement hour from the venue port and names the exercise style on the Greeks caption and the option details (American flagged as a European-model estimate); the settler and the snapshotter read the settlement instant from the venue's calendar",
     "evidence": "ADR-066 (11 Sep 2026): packages/pricing/src/bsm.ts, calendar.ts, strategy.ts; apps/web/src/lib/venue.ts, lib/pricing/legs.ts, useStrategyAnalysis and the panels' options, GreeksPanel, OptionDetailsDialog; apps/api/src/settlement.ts, iv-snapshot.ts; unit bsm.test.ts, calendar.test.ts, strategy.test.ts, venue.test.ts, iv-snapshot.test.ts",
     "test": "unit (pricing)"
+  },
+  {
+    "screen": "Venues · Deribit (data-only)",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Deribit BTC and ETH option chains behind the venue port, data-only",
+    "how": "packages/venues gains a Deribit adapter (public REST and JSON-RPC socket, no key): inverse coin contracts are converted to USD per underlying unit with the index at the adapter, greeks pass through, names round-trip, settlement 08:00 UTC; VENUES lists deribit; the gateway opens one session per venue in GATEWAY_VENUES and routes chain:deribit:* topics to it (healthz feed.venues); the API accepts Deribit exchanges and paper strategies but refuses API keys and live orders for a data-only venue with a 409",
+    "evidence": "ADR-067 (11 Sep 2026): packages/venues/src/deribit/*, port/deribit.ts, port/deribit-clients.ts, http.ts, market-data.ts, schema-adapter.ts; packages/schema/src/primitives.ts VENUES; apps/gateway/src/config.ts, feed/market-data.ts, feed/feed.ts, app.ts; apps/api/src/routes/live-exec.ts dataOnlyReason, routes/credentials.ts; spec/fixtures/deribit-*.json; unit deribit/*.test.ts, port/deribit.test.ts, feed-venues.test.ts, venue-column.test.ts",
+    "test": "unit (venues)"
   }
 ]

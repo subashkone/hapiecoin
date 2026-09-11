@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { toInstrument, toQuote } from "../delta/normalize.js";
 import { RawProductsResponse, RawTickersResponse } from "../delta/raw.js";
 import type { FetchLike } from "../delta/rest.js";
-import { DeltaRestClient } from "../delta/rest.js";
 import { DeltaTradingClientImpl } from "../delta/trading.js";
 import type { TradingFetch } from "../delta/trading.js";
 import { InvalidSymbolError } from "../errors.js";
@@ -14,6 +13,8 @@ import { UnknownVenueError, VenueCapabilityError, defaultLotSizes, marketOf, own
 import type { VenueAdapter } from "./adapter.js";
 import { DEFAULT_VENUE, VENUE_CORES, getVenueCore, listVenueCores } from "./core.js";
 import { DELTA_INDIA } from "./delta-india-clients.js";
+import { DERIBIT } from "./deribit-clients.js";
+import { DERIBIT_CORE } from "./deribit.js";
 import { DELTA_INDIA_CORE, DELTA_INDIA_MARKETS, formatDeltaOption, parseDeltaPerpetual } from "./delta-india.js";
 import { VENUE_REGISTRY, getVenue, listVenues } from "./registry.js";
 
@@ -23,10 +24,10 @@ const options = products.filter((p) => p.contract_type === "call_options" || p.c
 
 describe("HC-SH-118 [VENUES] registry", () => {
   it("lists Delta India under its schema id and resolves the default venue", () => {
-    expect(Object.keys(VENUE_REGISTRY)).toEqual(["delta_india"]);
+    expect(Object.keys(VENUE_REGISTRY)).toEqual(["delta_india", "deribit"]);
     expect(DEFAULT_VENUE).toBe("delta_india");
     expect(getVenue(DEFAULT_VENUE)).toBe(DELTA_INDIA);
-    expect(listVenues()).toEqual([DELTA_INDIA]);
+    expect(listVenues()).toEqual([DELTA_INDIA, DERIBIT]);
     expect(DELTA_INDIA.id).toBe("delta_india");
     expect(DELTA_INDIA.label).toBe("Delta Exchange India");
   });
@@ -34,7 +35,7 @@ describe("HC-SH-118 [VENUES] registry", () => {
   it("HC-SH-119 the browser-safe core lists the same venues without any client factory (ADR-064)", () => {
     expect(Object.keys(VENUE_CORES)).toEqual(Object.keys(VENUE_REGISTRY));
     expect(getVenueCore(DEFAULT_VENUE)).toBe(DELTA_INDIA_CORE);
-    expect(listVenueCores()).toEqual([DELTA_INDIA_CORE]);
+    expect(listVenueCores()).toEqual([DELTA_INDIA_CORE, DERIBIT_CORE]);
     expect("rest" in DELTA_INDIA_CORE).toBe(false);
     expect("marketData" in DELTA_INDIA_CORE).toBe(false);
     expect("trading" in DELTA_INDIA_CORE).toBe(false);
@@ -185,8 +186,9 @@ describe("HC-SH-118 [VENUES] Delta India schema bridge and client factories", ()
         text: () => Promise.resolve(JSON.stringify({ success: true, result: [] })),
       });
     const rest = DELTA_INDIA.rest({ baseUrl: "https://api.example", fetch });
-    expect(rest).toBeInstanceOf(DeltaRestClient);
-    expect(await rest.getProducts({ contractTypes: ["call_options"] })).toEqual([]);
+    expect(await rest.products()).toEqual([]);
+    expect(await rest.tickers("BTC")).toEqual([]);
+    expect(await rest.tickers("BTC", { perpetuals: true })).toEqual([]);
     const md = DELTA_INDIA.marketData({ restUrl: "https://api.example", wsUrl: "wss://ws.example", fetch, WebSocket: FakeWebSocket });
     expect(md.status().instruments).toBe(0);
     // the trading safety guard refuses a real fetch under NODE_ENV=test, exactly as in the apps

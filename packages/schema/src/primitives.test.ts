@@ -62,7 +62,7 @@ describe("[SCHEMA] enums", () => {
   it("Venue accepts delta_india only", () => {
     expect(Venue.parse("delta_india")).toBe("delta_india");
     expect(Venue.safeParse("binance").success).toBe(false);
-    expect(Venue.options).toEqual(["delta_india"]);
+    expect(Venue.options).toEqual(["delta_india", "deribit"]);
   });
   it("Underlying accepts BTC, ETH, XAUT", () => {
     expect(Underlying.options).toEqual(["BTC", "ETH", "XAUT"]);

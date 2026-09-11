@@ -379,7 +379,7 @@ describe("[GATEWAY] backpressure", () => {
         ready: true,
         market: { instruments: 0, quotes: 0, socket: "open", subscribed: 0 },
         expiries: { BTC: [], ETH: [], XAUT: [] },
-        spot: { BTC: null, ETH: null, XAUT: null },
+        spot: { BTC: null, ETH: null, XAUT: null }, venues: {},
         topics: 0,
         pending: 0,
         loadedAt: NOW,

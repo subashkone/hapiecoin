@@ -24,10 +24,17 @@ import type {
   Underlying as SchemaUnderlying,
   Venue as SchemaVenue,
 } from "@hapiecoin/schema";
-import type { ChainRow, ChainSnapshot, Instrument, Quote } from "./types.js";
+import type { ChainRow, ChainSnapshot, Instrument, Quote, Venue } from "./types.js";
 
-/** The schema venue id this adapter emits for every `venue: "delta"` record. */
+/** The schema venue id of Delta records; every venue maps through `schemaVenueOf` (ADR-067). */
 export const SCHEMA_VENUE: SchemaVenue = "delta_india";
+
+const SCHEMA_VENUES: Readonly<Record<Venue, SchemaVenue>> = { delta: "delta_india", deribit: "deribit" };
+
+/** The shared-schema id of a venue-native record's venue tag. */
+export function schemaVenueOf(venue: Venue): SchemaVenue {
+  return SCHEMA_VENUES[venue];
+}
 
 const SCHEMA_UNDERLYINGS: readonly string[] = ["BTC", "ETH", "XAUT"];
 const SCHEMA_CURRENCIES: readonly string[] = ["USD", "INR"];
@@ -56,8 +63,8 @@ function schemaUnderlying(symbol: string, underlying: string): SchemaUnderlying 
   return underlying as SchemaUnderlying;
 }
 
-export function schemaInstrumentId(symbol: string): string {
-  return `${SCHEMA_VENUE}:${symbol}`;
+export function schemaInstrumentId(symbol: string, venue: SchemaVenue = SCHEMA_VENUE): string {
+  return `${venue}:${symbol}`;
 }
 
 /** Venue Instrument -> schema Instrument. Throws SchemaAdapterError for records the schema cannot hold. */
@@ -75,8 +82,8 @@ export function toSchemaInstrument(inst: Instrument): SchemaInstrument {
     throw new SchemaAdapterError(inst.symbol, "dated contract without an expiry");
   }
   const out: SchemaInstrument = {
-    id: schemaInstrumentId(inst.symbol),
-    venue: SCHEMA_VENUE,
+    id: schemaInstrumentId(inst.symbol, schemaVenueOf(inst.venue)),
+    venue: schemaVenueOf(inst.venue),
     symbol: inst.symbol,
     underlying,
     kind,
@@ -105,7 +112,7 @@ export function toSchemaQuote(q: Quote, fallbackSpot?: string | null): SchemaQuo
   const spot = q.spot ?? fallbackSpot ?? null;
   if (spot === null) throw new SchemaAdapterError(q.symbol, "quote without a spot price and no fallback");
   const out: SchemaQuote = {
-    instrumentId: schemaInstrumentId(q.symbol),
+    instrumentId: schemaInstrumentId(q.symbol, schemaVenueOf(q.venue)),
     ts: q.venueTs,
     mark: q.mark,
     oi: q.oiContracts ?? "0",
@@ -174,7 +181,7 @@ export function toSchemaChainSnapshot(
   if (spot === null)
     throw new SchemaAdapterError(chain.underlying, "chain without a spot price and no fallback");
   return {
-    venue: SCHEMA_VENUE,
+    venue: schemaVenueOf(chain.venue),
     underlying: schemaUnderlying(chain.underlying, chain.underlying),
     expiry: chain.expiry.date,
     ts: chain.asOf,

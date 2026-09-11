@@ -27,7 +27,7 @@ function make() {
   const spots: Deferred<{ p: string; ts: number } | null>[] = [];
   const held: string[] = [];
   const feed: FeedLike = {
-    status: () => ({ ready: true, role: "follower", market: { instruments: 1, quotes: 1, socket: "idle", subscribed: 0 } as never, expiries: { BTC: [], ETH: [], XAUT: [] }, spot: { BTC: null, ETH: null, XAUT: null }, topics: 0, pending: 0, loadedAt: 0, lastError: null }),
+    status: () => ({ ready: true, role: "follower", market: { instruments: 1, quotes: 1, socket: "idle", subscribed: 0 } as never, expiries: { BTC: [], ETH: [], XAUT: [] }, spot: { BTC: null, ETH: null, XAUT: null }, venues: {}, topics: 0, pending: 0, loadedAt: 0, lastError: null }),
     supports: () => true,
     seq: () => 0,
     snapshot: () => {

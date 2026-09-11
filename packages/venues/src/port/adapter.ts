@@ -15,10 +15,10 @@ import type {
   Venue as VenueId,
 } from "@hapiecoin/schema";
 import { UNDERLYINGS } from "@hapiecoin/schema";
-import type { DeltaMarketData, DeltaMarketDataOptions } from "../delta/market-data.js";
 import type { ParsedOptionSymbol } from "../delta/normalize.js";
-import type { DeltaRestClient, DeltaRestClientOptions } from "../delta/rest.js";
 import type { DeltaTradingClient, DeltaTradingClientOptions } from "../delta/trading.js";
+import type { FetchLike } from "../http.js";
+import type { VenueMarketData, VenueMarketDataOptions } from "../market-data.js";
 import type { ChainRow, ChainSnapshot, Instrument, Quote } from "../types.js";
 
 export type { VenueId };
@@ -117,12 +117,29 @@ export interface VenueCore {
   readonly schema: SchemaBridge;
 }
 
+/** Options of a venue's public REST client. */
+export interface VenueRestOptions {
+  baseUrl: string;
+  fetch?: FetchLike | undefined;
+  sleep?: ((ms: number) => Promise<void>) | undefined;
+  maxAttempts?: number | undefined;
+  backoffBaseMs?: number | undefined;
+  timeoutMs?: number | undefined;
+  now?: (() => number) | undefined;
+}
+
+/** The public REST surface the API reads (ADR-067): live options and their quotes per underlying (the perpetual's too when asked and listed). */
+export interface VenueRest {
+  products: () => Promise<Instrument[]>;
+  tickers: (underlying: string, opts?: { perpetuals?: boolean }) => Promise<Quote[]>;
+}
+
 /** A venue with its client factories (server-side: the trading client signs with node:crypto). */
 export interface VenueAdapter extends VenueCore {
-  /** Public REST client (products, tickers, candles). */
-  readonly rest: (options: DeltaRestClientOptions) => DeltaRestClient;
-  /** Instruments over REST, quotes over the socket, chains on demand. Step 1 types the factories with the Delta classes; step 4 narrows them to venue-agnostic slices (the gateway's `MarketDataLike` is one). */
-  readonly marketData: (options: DeltaMarketDataOptions) => DeltaMarketData;
+  /** Public REST: live option instruments and quotes. */
+  readonly rest: (options: VenueRestOptions) => VenueRest;
+  /** Instruments over REST, quotes over the socket, chains on demand (one session per venue in the gateway). */
+  readonly marketData: (options: VenueMarketDataOptions) => VenueMarketData;
   /** Signed private client; absent on a data-only venue. */
   readonly trading?: (options: DeltaTradingClientOptions) => DeltaTradingClient;
 }

@@ -3,49 +3,28 @@
  * chains built on demand from the instrument list (ADR-006).
  */
 import { Emitter } from "../emitter.js";
+import type { MarketDataEvents, MarketDataStatus, VenueMarketData, VenueMarketDataOptions } from "../market-data.js";
 import type { ChainSnapshot, Expiry, Instrument, Quote } from "../types.js";
-import type { WebSocketCtor, BackoffOptions } from "../ws/reconnecting.js";
 import { buildChain, listExpiries } from "./chain.js";
 import { resolveExpiryCode } from "./normalize.js";
-import type { DeltaContractType, FetchLike } from "./rest.js";
+import type { DeltaContractType } from "./rest.js";
 import { DeltaRestClient } from "./rest.js";
 import type { DeltaTickerChannel } from "./ws.js";
 import { DeltaWsClient } from "./ws.js";
 
-export interface DeltaMarketDataOptions {
-  /** e.g. "https://api.india.delta.exchange". */
-  restUrl: string;
-  /** e.g. "wss://socket.india.delta.exchange". */
-  wsUrl: string;
-  channel?: DeltaTickerChannel;
-  fetch?: FetchLike;
-  WebSocket?: WebSocketCtor;
-  sleep?: (ms: number) => Promise<void>;
-  backoff?: Partial<BackoffOptions>;
-  heartbeatMs?: number;
-  now?: () => number;
+export interface DeltaMarketDataOptions extends Omit<VenueMarketDataOptions, "channel"> {
+  channel?: DeltaTickerChannel | undefined;
   /** Contract types loaded by `load()` (default: call and put options). */
-  contractTypes?: readonly DeltaContractType[];
+  contractTypes?: readonly DeltaContractType[] | undefined;
 }
 
-export interface MarketDataStatus {
-  instruments: number;
-  quotes: number;
-  socket: DeltaWsClient["state"];
-  subscribed: number;
-}
-
-export interface DeltaMarketDataEvents extends Record<string, unknown> {
-  /** Every normalised quote (REST seed and WS ticks). */
-  ticker: Quote;
-  /** Socket lifecycle changes. */
-  status: MarketDataStatus;
-  error: Error;
-}
+export type { MarketDataStatus };
+/** The venue-neutral event set (ADR-067); kept under its old name for the gateway. */
+export type DeltaMarketDataEvents = MarketDataEvents;
 
 const DEFAULT_CONTRACT_TYPES: readonly DeltaContractType[] = ["call_options", "put_options"];
 
-export class DeltaMarketData extends Emitter<DeltaMarketDataEvents> {
+export class DeltaMarketData extends Emitter<MarketDataEvents> implements VenueMarketData {
   readonly rest: DeltaRestClient;
   readonly ws: DeltaWsClient;
   private readonly now: () => number;
@@ -112,6 +91,15 @@ export class DeltaMarketData extends Emitter<DeltaMarketDataEvents> {
     const symbols = this.symbolsFor(underlying, expiry);
     this.ws.unsubscribe(symbols);
     return symbols;
+  }
+
+  /** Raw venue symbols outside the option list (the perpetual for spot). */
+  subscribeSymbols(symbols: readonly string[]): void {
+    this.ws.subscribe(symbols);
+  }
+
+  unsubscribeSymbols(symbols: readonly string[]): void {
+    this.ws.unsubscribe(symbols);
   }
 
   /** Chain for the underlying/expiry from the latest quotes (throws UnknownExpiryError when unknown). */

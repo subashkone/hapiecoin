@@ -1,8 +1,9 @@
 import type { FetchLike, Quote } from "@hapiecoin/venues";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DeribitMarketData } from "@hapiecoin/venues";
 import { FakeWebSocket } from "../test-support/fake-ws.js";
 import { NOW, loadJson } from "../test-support/fixtures.js";
-import { createMarketData } from "./market-data.js";
+import { createMarketData, marketDataUrls } from "./market-data.js";
 
 const products = loadJson("delta-products.json");
 const tickers = loadJson("delta-tickers.json") as { result: Record<string, unknown>[] };
@@ -37,8 +38,9 @@ describe("[VENUES] createMarketData wraps the real Delta market-data session", (
       {
         DELTA_REST_URL: "https://api.example.test",
         DELTA_WS_URL: "wss://socket.example.test",
-        DELTA_WS_CHANNEL: "v2/ticker",
+        DELTA_WS_CHANNEL: "v2/ticker", DERIBIT_REST_URL: "https://www.deribit.com/api/v2", DERIBIT_WS_URL: "wss://www.deribit.com/ws/api/v2", DERIBIT_WS_INTERVAL: "100ms",
       },
+      "delta_india",
       { fetch: fetchFixtures, WebSocket: FakeWebSocket, now: () => NOW },
     );
     expect(md.status()).toEqual({ instruments: 0, quotes: 0, socket: "idle", subscribed: 0 });
@@ -83,5 +85,16 @@ describe("[VENUES] createMarketData wraps the real Delta market-data session", (
     expect(md.status().subscribed).toBe(0);
     md.stop();
     expect(md.status().socket).toBe("closed");
+  });
+});
+
+describe("HC-SH-122 [GATEWAY] createMarketData per venue (ADR-067)", () => {
+  it("dials the Deribit endpoints and aggregation from the config and returns that venue's session", () => {
+    const config = { DELTA_REST_URL: "https://delta.example", DELTA_WS_URL: "wss://delta.example", DELTA_WS_CHANNEL: "ticker" as const, DERIBIT_REST_URL: "https://deribit.example/api/v2", DERIBIT_WS_URL: "wss://deribit.example/ws", DERIBIT_WS_INTERVAL: "agg2" as const };
+    expect(marketDataUrls(config, "deribit")).toEqual({ restUrl: "https://deribit.example/api/v2", wsUrl: "wss://deribit.example/ws", channel: "agg2" });
+    expect(marketDataUrls(config, "delta_india")).toEqual({ restUrl: "https://delta.example", wsUrl: "wss://delta.example", channel: "ticker" });
+    const md = createMarketData(config, "deribit", { WebSocket: FakeWebSocket, fetch: () => Promise.reject(new Error("offline")) });
+    expect(md).toBeInstanceOf(DeribitMarketData);
+    expect((md as DeribitMarketData).ws.interval).toBe("agg2");
   });
 });

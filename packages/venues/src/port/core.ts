@@ -7,6 +7,7 @@
 import type { Venue as VenueId } from "@hapiecoin/schema";
 import { UnknownVenueError, type VenueCore } from "./adapter.js";
 import { DELTA_INDIA_CORE } from "./delta-india.js";
+import { DERIBIT_CORE } from "./deribit.js";
 
 export type {
   ExerciseStyle,
@@ -23,9 +24,11 @@ export type {
 export { UnknownVenueError, VenueCapabilityError, defaultLotSizes, marketOf, ownMarket } from "./adapter.js";
 export { InvalidExpiryError, InvalidSymbolError } from "../errors.js";
 export { DELTA_INDIA_CORE, DELTA_INDIA_MARKETS, formatDeltaOption, parseDeltaPerpetual } from "./delta-india.js";
+export { DERIBIT_CORE, DERIBIT_MARKETS } from "./deribit.js";
 
 export const VENUE_CORES: Readonly<Record<VenueId, VenueCore>> = {
   delta_india: DELTA_INDIA_CORE,
+  deribit: DERIBIT_CORE,
 };
 
 /** The venue the apps run against until the `venue` column lands (E20 step 2b). */
