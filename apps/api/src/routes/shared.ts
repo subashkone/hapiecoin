@@ -1,4 +1,5 @@
 /** Shared route plumbing: dependency bag, OpenAPI response helpers, id generation. */
+import type { Auth } from "../auth.js";
 import type { DeltaTradingClient } from "@hapiecoin/venues";
 import { randomBytes } from "node:crypto";
 import { ApiError } from "@hapiecoin/schema";
@@ -22,7 +23,8 @@ export interface AppDeps {
   db: Db;
   dbKind: DbKind;
   ping: () => Promise<boolean>;
-  auth: { handler(request: Request): Promise<Response> };
+  /** Better Auth: the handler behind the auth wildcard and the server API (the second-factor re-check, ADR-086). */
+  auth: Pick<Auth, "handler" | "api">;
   authBasePath: string;
   sessions: SessionResolver;
   /** Transactional mail (OTP through Better Auth, admin invitations through routes). */

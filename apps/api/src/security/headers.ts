@@ -57,7 +57,7 @@ export function apiCors(opts: HeaderOptions): MiddlewareHandler<AppEnv> {
     origin: (origin) => (allowed.has(normalise(origin)) ? origin : null),
     credentials: true,
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "X-Request-Id"],
+    allowHeaders: ["Content-Type", "X-Request-Id", "X-Second-Factor"], // the step-up code (ADR-086) must pass a cross-origin preflight (the Capacitor shell, ADR-060)
     exposeHeaders: ["X-Request-Id", "Retry-After"],
     maxAge: 600,
   });

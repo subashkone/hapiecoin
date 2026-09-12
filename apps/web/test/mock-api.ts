@@ -255,7 +255,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", clientErrors: [], backtestDays: 12, replayDays: 12, ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
-  const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409 | 503, code: string, message: string) =>
+  const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409 | 429 | 503, code: string, message: string) =>
     c.json({ code, message }, status);
 
   const current = (c: Context): Account | null => {
@@ -499,6 +499,12 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   v1.put("/settings", async (c) => {
     const acc = current(c)!;
     const patch = await c.req.json<Partial<UserSettings>>();
+    // ADR-086: the safety knobs ask for the authenticator code; the rest never does
+    const knobs = (patch.mindful !== undefined && stableJson(patch.mindful) !== stableJson(acc.settings.mindful)) || (patch.lotSizes !== undefined && stableJson(patch.lotSizes) !== stableJson(acc.settings.lotSizes));
+    if (knobs) {
+      const refused = secondFactorRefusal(c);
+      if (refused) return refused;
+    }
     acc.settings = { ...acc.settings, ...patch };
     return c.json(acc.settings);
   });
@@ -617,8 +623,30 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (acc.verifiedDown) return c.json({ accounts: acc.credentials.length, read: 0, added: 0, skipped: 0, errors: acc.credentials.map((k) => `${k.label}: The exchange did not answer the fills read`) });
     return c.json({ accounts: acc.credentials.length, read: acc.fills.length, added: 0, skipped: 0, errors: [] });
   });
+  // ADR-086: an account with the authenticator on confirms a sensitive change with the current code in a header
+  const secondFactorFails = new Map<string, number>();
+  const secondFactorRefusal = (c: Context) => {
+    const acc = current(c)!;
+    if (!acc.twoFactor?.enabled) return null;
+    const code = (c.req.header("x-second-factor") ?? "").trim();
+    if (!code) return err(c, 403, "SECOND_FACTOR_REQUIRED", "Enter the code from your authenticator app to confirm this change");
+    const fails = secondFactorFails.get(acc.user.id) ?? 0;
+    if (fails >= 5) {
+      c.header("Retry-After", "900");
+      return err(c, 429, "SECOND_FACTOR_LOCKED", "Too many wrong codes. Try again in 15 min");
+    }
+    if (code !== TEST_TOTP) {
+      secondFactorFails.set(acc.user.id, fails + 1);
+      return err(c, 403, "SECOND_FACTOR_INVALID", "That code is not right. Codes change every 30 seconds; try the current one");
+    }
+    secondFactorFails.delete(acc.user.id);
+    return null;
+  };
+  const stableJson = (v: unknown): string => JSON.stringify(v, (_k, x: unknown) => (x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) : x));
   v1.post("/credentials", async (c) => {
     const acc = current(c)!;
+    const refused = secondFactorRefusal(c);
+    if (refused) return refused;
     const body = await c.req.json<{ brokerId?: string; label?: string; apiKey?: string; apiSecret?: string }>();
     if (!body.brokerId || !body.apiKey || !body.apiSecret) return err(c, 400, "VALIDATION", "brokerId, apiKey and apiSecret are required");
     const label = (body.label ?? "Main").trim();
@@ -635,6 +663,8 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   });
   v1.delete("/credentials/:id", (c) => {
     const acc = current(c)!;
+    const refused = secondFactorRefusal(c); // like the route: the code first, then the row
+    if (refused) return refused;
     const row = acc.credentials.find((k) => k.id === c.req.param("id"));
     if (!row) return err(c, 404, "NOT_FOUND", "Connected exchange not found");
     const live = acc.strategies.filter((s) => s.status === "live" && (s.accountId === row.id || (s.brokerId === row.brokerId && !s.accountId)));
@@ -1734,6 +1764,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       referralCode: acc.user.referralCode,
       paidInr: money([...acc.pastSubscriptions, ...(acc.subscription ? [acc.subscription] : [])].reduce((t, s) => t + Number(s.paidInr), 0)),
       lastLoginAt: acc.lastLoginAt,
+      twoFactorEnabled: acc.twoFactor?.enabled === true, // ADR-086
     };
   };
   const accByUserId = (uid: string) => [...state.accounts.values()].find((a) => a.user.id === uid);

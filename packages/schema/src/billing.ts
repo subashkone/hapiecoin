@@ -182,6 +182,8 @@ export const AdminUserRow = z.strictObject({
   /** Sum of paidInr over every subscription the user ever had. */
   paidInr: DecimalString,
   lastLoginAt: IsoDateTime.nullable(),
+  /** The authenticator is on for this account (ADR-078); shown to admins (ADR-086, HC-AD-129). */
+  twoFactorEnabled: z.boolean(),
 });
 export type AdminUserRow = z.infer<typeof AdminUserRow>;
 export const AdminUsersPage = z.strictObject({ items: z.array(AdminUserRow), total: z.number().int(), page: z.number().int(), pageSize: z.number().int() });
