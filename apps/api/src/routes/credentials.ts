@@ -1,13 +1,15 @@
 /**
- * Exchange API credentials (HC-SH-031..037). The secret is validated once against Delta with a
+ * Exchange API credentials (HC-SH-031..037, HC-SH-123). The secret is validated once against Delta with a
  * read-only call, sealed with the vault and never serialised again; clients only ever see the
  * masked key (`BrokerCredentialPublic` is a strict schema, so a stray field fails validation).
+ * Several keys per exchange, told apart by a label, are the "accounts" of ADR-068 (Delta sub-accounts): a
+ * strategy names the key it trades through, and a key a live strategy still names cannot be removed.
  */
-import { BrokerCredentialPublic, Id } from "@hapiecoin/schema";
+import { AccountLabel, BrokerCredentialPublic, Id, MAX_ACCOUNTS_PER_BROKER } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
-import { brokerCredentials, brokers } from "../db/schema.js";
+import { brokerCredentials, brokers, strategies } from "../db/schema.js";
 import { dataOnlyReason } from "./live-exec.js";
 import type { DeltaCredentialErrorCode } from "../delta/private-client.js";
 import { type AppEnv, currentUser } from "../security/context.js";
@@ -19,6 +21,7 @@ import { type AppDeps, cookieAuth, errorResponses, jsonContent, newId } from "./
 export const CredentialCreate = z
   .object({
     brokerId: Id,
+    label: AccountLabel.default("Main"),
     apiKey: z.string().trim().min(1, "API key is required").max(128),
     apiSecret: z.string().trim().min(1, "API secret is required").max(128),
   })
@@ -27,13 +30,15 @@ export type CredentialCreate = z.infer<typeof CredentialCreate>;
 
 const CredentialList = z.object({ items: z.array(BrokerCredentialPublic) });
 const WhitelistIp = z.object({ ip: z.ipv4() });
-const BrokerIdParam = z.object({ brokerId: Id });
+const IdParam = z.object({ id: Id });
 
 type Row = typeof brokerCredentials.$inferSelect;
 
 export function toPublic(row: Row): BrokerCredentialPublic {
   return {
+    id: row.id,
     brokerId: row.brokerId,
+    label: row.label,
     apiKeyMasked: row.apiKeyMasked,
     connectedAt: row.connectedAt.toISOString(),
     whitelistedIp: row.whitelistedIp,
@@ -90,7 +95,7 @@ export function registerCredentialRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps
       path: "/v1/credentials",
       tags: ["credentials"],
       summary:
-        "Connect & Save: verify with one read-only Delta call, then store encrypted (HC-SH-033, HC-SH-034)",
+        "Connect & Save: verify with one read-only Delta call, then store encrypted; a new label adds an account, a known one replaces its key (HC-SH-033, HC-SH-034, HC-SH-123)",
       security: cookieAuth,
       middleware: [guard],
       request: { body: { content: { "application/json": { schema: CredentialCreate } }, required: true } },
@@ -121,15 +126,27 @@ export function registerCredentialRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps
 
       const key = deps.vault.seal(body.apiKey);
       const secret = deps.vault.seal(body.apiSecret);
-      const [existing] = await deps.db
+      const mine = await deps.db
         .select()
         .from(brokerCredentials)
         .where(and(eq(brokerCredentials.userId, me.id), eq(brokerCredentials.brokerId, body.brokerId)))
-        .limit(1);
+        .orderBy(brokerCredentials.connectedAt);
+      const existing = mine.find((r) => r.label === body.label);
+      if (!existing && mine.length >= MAX_ACCOUNTS_PER_BROKER) throw errors.badRequest(`At most ${MAX_ACCOUNTS_PER_BROKER} accounts per exchange`);
+      // the second key for this exchange: the strategies placed through the first one stay bound to it, so no
+      // running strategy is ever left to guess between keys (ADR-068)
+      const first = mine[0];
+      if (!existing && mine.length === 1 && first) {
+        await deps.db
+          .update(strategies)
+          .set({ accountId: first.id })
+          .where(and(eq(strategies.userId, me.id), eq(strategies.brokerId, body.brokerId), isNull(strategies.accountId), or(eq(strategies.status, "paper"), eq(strategies.status, "live"))));
+      }
       const values = {
         id: existing?.id ?? newId("crd"),
         userId: me.id,
         brokerId: body.brokerId,
+        label: body.label,
         apiKeyMasked: maskKey(body.apiKey),
         apiKeyCt: key.ct,
         apiKeyIv: key.iv,
@@ -145,7 +162,7 @@ export function registerCredentialRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps
         .insert(brokerCredentials)
         .values(values)
         .onConflictDoUpdate({
-          target: [brokerCredentials.userId, brokerCredentials.brokerId],
+          target: [brokerCredentials.userId, brokerCredentials.brokerId, brokerCredentials.label],
           set: { ...values, id: values.id },
         })
         .returning();
@@ -156,7 +173,7 @@ export function registerCredentialRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps
         deps.db,
       )({
         action: "credentials.connect",
-        target: `broker:${body.brokerId}`,
+        target: `credential:${row.id}`,
         before: existing ? toPublic(existing) : null,
         after: pub,
       });
@@ -167,29 +184,50 @@ export function registerCredentialRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps
   app.openapi(
     createRoute({
       method: "delete",
-      path: "/v1/credentials/{brokerId}",
+      path: "/v1/credentials/{id}",
       tags: ["credentials"],
-      summary: "Disconnect exchange: credentials removed (HC-SH-037)",
+      summary: "Disconnect one account by its id (or an exchange id when it has one key): the key is removed; refused while a live strategy still trades through it (HC-SH-037, HC-SH-123)",
       security: cookieAuth,
       middleware: [guard],
-      request: { params: BrokerIdParam },
-      responses: { 204: { description: "Disconnected" }, 401: errorResponses[401], 404: errorResponses[404] },
+      request: { params: IdParam },
+      responses: { 204: { description: "Disconnected" }, 401: errorResponses[401], 404: errorResponses[404], 409: errorResponses[409] },
     }),
     async (c) => {
       const me = currentUser(c);
-      const { brokerId } = c.req.valid("param");
-      const [existing] = await deps.db
-        .delete(brokerCredentials)
-        .where(and(eq(brokerCredentials.userId, me.id), eq(brokerCredentials.brokerId, brokerId)))
-        .returning();
-      if (!existing) throw errors.notFound("Connected exchange");
+      const { id } = c.req.valid("param");
+      // the key row by id; an exchange id still works while that exchange has a single key (older clients, HC-SH-037)
+      let [row] = await deps.db
+        .select()
+        .from(brokerCredentials)
+        .where(and(eq(brokerCredentials.userId, me.id), eq(brokerCredentials.id, id)))
+        .limit(1);
+      if (!row) {
+        const ofBroker = await deps.db
+          .select()
+          .from(brokerCredentials)
+          .where(and(eq(brokerCredentials.userId, me.id), eq(brokerCredentials.brokerId, id)))
+          .limit(2);
+        if (ofBroker.length > 1) throw errors.conflict("This exchange has several accounts connected · disconnect one by its id");
+        row = ofBroker[0];
+      }
+      if (!row) throw errors.notFound("Connected exchange");
+      // a live strategy that trades through this key (or, from before accounts, through this broker with no key
+      // named) would be cut off from its exits: square it off or move it first
+      const live = await deps.db
+        .select({ id: strategies.id })
+        .from(strategies)
+        .where(and(eq(strategies.userId, me.id), eq(strategies.status, "live"), or(eq(strategies.accountId, row.id), and(eq(strategies.brokerId, row.brokerId), isNull(strategies.accountId)))));
+      if (live.length) throw errors.conflict(`${live.length} live ${live.length === 1 ? "strategy trades" : "strategies trade"} through this key · square off or stop them first`);
+      // drafts, paper and closed strategies stop naming the key (the column is `restrict`, never a silent fallback)
+      await deps.db.update(strategies).set({ accountId: null }).where(and(eq(strategies.userId, me.id), eq(strategies.accountId, row.id)));
+      await deps.db.delete(brokerCredentials).where(eq(brokerCredentials.id, row.id));
       await auditFrom(
         c,
         deps.db,
       )({
         action: "credentials.disconnect",
-        target: `broker:${brokerId}`,
-        before: toPublic(existing),
+        target: `credential:${row.id}`,
+        before: toPublic(row),
         after: null,
       });
       return c.body(null, 204);

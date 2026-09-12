@@ -91,8 +91,17 @@ export function maskApiKey(apiKey: string): ApiKeyMasked {
  * What a client may ever learn about stored exchange credentials (HC-SH-031, HC-SH-036).
  * Strict: any extra field, and in particular a secret, fails validation.
  */
+/** A trader's name for one exchange key: "Main", "Sub 1", "Hedge book" (HC-SH-123; ADR-068). */
+export const AccountLabel = z.string().trim().min(1, "Name the account").max(32);
+export type AccountLabel = z.infer<typeof AccountLabel>;
+/** Keys per exchange per trader: Delta sub-accounts are few, and every key is one more secret to keep. */
+export const MAX_ACCOUNTS_PER_BROKER = 5;
+
+/** One connected key (an "account"): several may exist per exchange, told apart by their label. */
 export const BrokerCredentialPublic = z.strictObject({
+  id: Id,
   brokerId: Id,
+  label: AccountLabel,
   apiKeyMasked: ApiKeyMasked,
   connectedAt: IsoDateTime,
   /** Egress IP the user must whitelist at the exchange. */

@@ -2,10 +2,11 @@
 // Select Trading Mode (HC-TR-050..055): Paper · Simulated or Live · Real money, exchange select with the fee
 // summary, and the warnings. Live continues only when the exchange is connected; in Phase 3 item 1 the live
 // path is disabled with a note (item 2 adds the venue calls).
-import type { Broker, Underlying } from "@hapiecoin/schema";
+import type { Broker, BrokerCredentialPublic, Underlying } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn } from "@hapiecoin/ui";
 import { useEffect, useState } from "react";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
+import { accountsOf } from "@/lib/accounts";
 import { useUiStore } from "@/lib/store";
 import { emitTour } from "@/lib/tour";
 import { type FeeEstimate, feeFor } from "@/lib/strategy/paper";
@@ -32,13 +33,17 @@ export interface TradeModeProps {
   lotSize: string;
   money: MoneyFormat;
   brokers: Broker[];
+  /** The connected keys (ADR-068): a select appears when the chosen exchange has more than one. */
+  accounts: BrokerCredentialPublic[];
+  /** The account a strategy already trades through (Go live from paper): preselected. */
+  initialAccountId?: string | null | undefined;
   connected: boolean;
   /** The plain sentence that blocks Live on a data-only venue (ADR-067 / ADR-069); null on a trading venue. */
   dataOnly?: string | null | undefined;
   priceModeLabel: string;
   /** Preselect Live and disable the Paper card (Go live from a paper strategy). */
   lockLive?: boolean | undefined;
-  onContinue: (mode: "paper" | "live", brokerId: string, fees: FeeEstimate) => void;
+  onContinue: (mode: "paper" | "live", brokerId: string, fees: FeeEstimate, accountId: string | null) => void;
 }
 
 /** Net premium in USD: credit positive, debit negative. */
@@ -57,10 +62,22 @@ export function TradeModeDialog(p: TradeModeProps) {
   }, [p.open]);
   const [mode, setMode] = useState<"paper" | "live">(p.lockLive ? "live" : "paper");
   const [brokerId, setBrokerId] = useState("");
+  const [accountId, setAccountId] = useState<string | null>(null);
   const [err, setErr] = useState(false);
+  const [noAccount, setNoAccount] = useState(false);
   const openSettings = useUiStore((s) => s.openDialog);
   const storedBroker = useUiStore((s) => s.brokerId);
   const setBroker = useUiStore((s) => s.setBroker);
+  const storedAccount = useUiStore((s) => s.accountId);
+  const setAccount = useUiStore((s) => s.setAccount);
+  const mine = accountsOf(p.accounts, brokerId);
+  useEffect(() => {
+    // the account the strategy already names, else the one chosen last, else the exchange's first key
+    if (!p.open || !brokerId) return;
+    const pick = [p.initialAccountId, storedAccount].find((id) => id && mine.some((m) => m.id === id)) ?? mine[0]?.id ?? null;
+    setAccountId(pick);
+    // per open and per exchange chosen, on purpose (a later poll must not move the select under the trader)
+  }, [p.open, brokerId, p.accounts.length]);
   useEffect(() => {
     // HC-TR-142: the exchange chosen last time (shared with the Builder ticket) comes back first
     if (p.open && !brokerId && p.brokers[0]) setBrokerId(storedBroker && p.brokers.some((b) => b.id === storedBroker) ? storedBroker : p.brokers[0].id);
@@ -105,6 +122,20 @@ export function TradeModeDialog(p: TradeModeProps) {
               ))}
             </select>
             {err ? <div className="mt-1 text-2xs text-loss">Please select an exchange</div> : null}
+            {mine.length > 1 ? (
+              <div className="mt-2">
+                <div className="micro mb-1">Account</div>
+                <select className="h-8 w-full rounded border border-input bg-background px-2 text-xs" value={accountId ?? ""} onChange={(e) => { setAccountId(e.target.value || null); setAccount(e.target.value || null); }} aria-label="Account" data-testid="trade-account">
+                  {mine.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label} · {m.apiKeyMasked}
+                    </option>
+                  ))}
+                </select>
+                <div className="mt-1 text-2xs text-muted-foreground">The key this strategy trades through; its exits and the out-of-sync check use the same one.</div>
+                {noAccount && !accountId ? <div className="mt-1 text-2xs text-loss">Please pick an account</div> : null}
+              </div>
+            ) : null}
           </div>
           <div className="mt-3 rounded border border-border p-2 text-2xs" data-testid="fee-summary">
             <div className="micro">Fee summary</div>
@@ -162,7 +193,11 @@ export function TradeModeDialog(p: TradeModeProps) {
                 setErr(true);
                 return;
               }
-              p.onContinue(mode, brokerId, fees);
+              if (mine.length > 1 && !accountId) {
+                setNoAccount(true);
+                return;
+              }
+              p.onContinue(mode, brokerId, fees, mine.length ? accountId : null);
             }}
             data-testid="trade-continue"
             data-tour="trade-confirm-button"

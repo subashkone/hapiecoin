@@ -1,6 +1,9 @@
 "use client";
-// Delta Exchange API Settings (HC-SH-031..037): status block, exchange select with fee line, credentials,
-// whitelist IP copy, Connect & Save → POST /v1/credentials, Disconnect → DELETE. The secret never echoes.
+// Delta Exchange API Settings (HC-SH-031..037, HC-SH-123): status block, the connected keys (one row per account,
+// each with its label, masked key and Disconnect), exchange select with fee line, a label and the credentials for a
+// new key, whitelist IP copy, Connect & Save → POST /v1/credentials, Disconnect → DELETE. The secret never echoes.
+// Several keys per exchange are the accounts of ADR-068 (Delta sub-accounts): a strategy trades through one of them.
+import { MAX_ACCOUNTS_PER_BROKER } from "@hapiecoin/schema";
 import {
   Button,
   Check,
@@ -28,8 +31,16 @@ import {
   useWhitelistIp,
 } from "@/lib/api/queries";
 import { useLivePositions } from "@/lib/api/live";
+import { accountsOf, useCurrentAccount } from "@/lib/accounts";
 import { fmtDate } from "@/lib/format";
 import type { DialogProps } from "./SettingsDialogs";
+
+/** The next free label for a broker: "Main" first, then "Sub 1", "Sub 2", … */
+export function nextLabel(taken: readonly string[]): string {
+  if (!taken.includes("Main")) return "Main";
+  for (let i = 1; i < 100; i += 1) if (!taken.includes(`Sub ${i}`)) return `Sub ${i}`;
+  return "Account";
+}
 
 export function ApiSettingsDialog({ open, onOpenChange }: DialogProps) {
   const credential = useCredential();
@@ -37,22 +48,32 @@ export function ApiSettingsDialog({ open, onOpenChange }: DialogProps) {
   const ip = useWhitelistIp();
   const connect = useConnectExchange();
   const disconnect = useDisconnectExchange();
+  const { account } = useCurrentAccount();
   const [brokerId, setBrokerId] = useState("");
+  const [label, setLabel] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
 
   const list = brokers.data ?? [];
+  const items = credential.data?.items ?? [];
   useEffect(() => {
     if (!brokerId) {
-      const first = credential.data?.items[0]?.brokerId ?? list[0]?.id;
+      const first = items[0]?.brokerId ?? list[0]?.id;
       if (first) setBrokerId(first);
     }
-  }, [brokerId, credential.data, list]);
+  }, [brokerId, items, list]);
   const broker = list.find((b) => b.id === brokerId);
-  const connected = credential.data?.items[0] ?? null;
+  const mine = accountsOf(items, brokerId);
+  // the label box proposes the next free name; a name already connected replaces that key
+  useEffect(() => {
+    if (open && brokerId) setLabel(nextLabel(mine.map((m) => m.label)));
+    // once per open and per broker chosen, on purpose: the trader's typing must stay
+  }, [open, brokerId, credential.data?.items.length]);
+  const connected = items.length > 0;
   // GAPS #42: a stored key sealed under another server key answers 409 on every private call; say so here, where the fix is
-  const wallet = useLivePositions(connected?.brokerId ?? null);
+  const wallet = useLivePositions(account?.brokerId ?? null, account !== null, account?.id ?? null);
   const staleKey = wallet.isError && /decrypt|reconnect/i.test(wallet.error.message);
+  const replacing = mine.find((m) => m.label === label.trim());
 
   const copyIp = async () => {
     if (!ip.data) return;
@@ -73,23 +94,30 @@ export function ApiSettingsDialog({ open, onOpenChange }: DialogProps) {
       toast.error("Save Failed", { description: "Select an exchange..." });
       return;
     }
+    if (!label.trim()) {
+      toast.error("Save Failed", { description: "Name the account (Main, Sub 1, …)" });
+      return;
+    }
+    if (!replacing && mine.length >= MAX_ACCOUNTS_PER_BROKER) {
+      toast.error("Save Failed", { description: `At most ${MAX_ACCOUNTS_PER_BROKER} accounts per exchange` });
+      return;
+    }
     connect.mutate(
-      { brokerId, apiKey: apiKey.trim(), apiSecret: apiSecret.trim() },
+      { brokerId, label: label.trim(), apiKey: apiKey.trim(), apiSecret: apiSecret.trim() },
       {
         onSuccess: () => {
           setApiSecret("");
           setApiKey("");
-          toast.success("Exchange Connected", { description: "API credentials saved to server" });
+          toast.success("Exchange Connected", { description: replacing ? `Key for ${label.trim()} replaced` : "API credentials saved to server" });
         },
         onError: (e) => toast.error("Save Failed", { description: e.message }),
       },
     );
   };
 
-  const remove = () => {
-    if (!connected) return;
-    disconnect.mutate(connected.brokerId, {
-      onSuccess: () => toast("Exchange Disconnected", { description: "Delta Exchange credentials removed" }),
+  const remove = (id: string, name: string) => {
+    disconnect.mutate(id, {
+      onSuccess: () => toast("Exchange Disconnected", { description: `${name} · Delta Exchange credentials removed` }),
       onError: (e) => toast.error("Could not disconnect", { description: e.message }),
     });
   };
@@ -99,12 +127,13 @@ export function ApiSettingsDialog({ open, onOpenChange }: DialogProps) {
       <DialogContent size="md" data-testid="api-dialog">
         <DialogHeader>
           <DialogTitle>Delta Exchange API Settings</DialogTitle>
-          <DialogDescription>Connect your exchange account for live trading and wallet balance.</DialogDescription>
+          <DialogDescription>Connect your exchange account for live trading and wallet balance. A sub-account is one more key with its own name.</DialogDescription>
         </DialogHeader>
         <DialogBody>
           <div
             data-testid="api-status"
             data-state={credential.isLoading ? "checking" : connected ? "connected" : "disconnected"}
+            data-count={items.length}
             className="flex items-start gap-3 rounded-md border border-border bg-surface-1 p-3 text-[12.5px]"
           >
             {credential.isLoading ? (
@@ -115,16 +144,25 @@ export function ApiSettingsDialog({ open, onOpenChange }: DialogProps) {
             ) : connected ? (
               <>
                 <Check className="size-4 text-profit" aria-hidden="true" />
-                <div>
-                  <b>{staleKey ? "Connected · key needs re-entering" : "Connected"}</b>
+                <div className="min-w-0 flex-1">
+                  <b>{staleKey ? "Connected · key needs re-entering" : items.length === 1 ? "Connected" : `Connected · ${items.length} accounts`}</b>
                   {staleKey ? (
                     <div className="mt-1 rounded border border-warning/60 p-2 text-2xs text-warning" data-testid="api-stale-key">
                       {wallet.error.message} Paste the key and secret again below and press Connect &amp; Save.
                     </div>
                   ) : null}
-                  <div className="font-mono text-2xs text-muted-foreground">API Key: {connected.apiKeyMasked}</div>
-                  <div className="font-mono text-2xs text-muted-foreground">Connected: {fmtDate(connected.connectedAt)}</div>
-                  <div className="font-mono text-2xs text-muted-foreground">Wallet: — (arrives with live trading)</div>
+                  <div className="mt-1 flex flex-col gap-1" data-testid="api-accounts">
+                    {items.map((it) => (
+                      <div key={it.id} className="flex flex-wrap items-center gap-2 rounded border border-border px-2 py-1 font-mono text-2xs" data-testid="api-account" data-label={it.label}>
+                        <b className="font-sans">{it.label}</b>
+                        <span className="text-muted-foreground">API Key: {it.apiKeyMasked}</span>
+                        <span className="text-muted-foreground">Connected: {fmtDate(it.connectedAt)}</span>
+                        <Button variant="ghost" size="sm" className="ml-auto text-destructive" loading={disconnect.isPending && disconnect.variables === it.id} onClick={() => remove(it.id, it.label)} title="Remove this key · refused while a live strategy still trades through it" data-testid="disconnect-exchange" data-account-id={it.id}>
+                          Disconnect
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </>
             ) : (
@@ -150,7 +188,11 @@ export function ApiSettingsDialog({ open, onOpenChange }: DialogProps) {
             {broker ? `Fee: ${broker.feePct}% · GST: ${broker.gstPct}% · Cap: ${broker.feeCapPct}%` : ""}
           </div>
 
-          <div className="micro mt-4 mb-1.5">API Credentials</div>
+          <div className="micro mt-4 mb-1.5">{mine.length ? "Add a key (a sub-account) or replace one" : "API Credentials"}</div>
+          <Field label="Account name">
+            <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Main, Sub 1, Hedge book…" maxLength={32} data-testid="api-label" />
+          </Field>
+          {replacing ? <p className="mb-1 text-2xs text-warning" data-testid="api-replacing">Saving replaces the key stored for {replacing.label}.</p> : null}
           <Field label="API Key">
             <Input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="Enter your Delta Exchange API key" autoComplete="off" className="font-mono" data-testid="api-key" />
           </Field>
@@ -162,6 +204,7 @@ export function ApiSettingsDialog({ open, onOpenChange }: DialogProps) {
             <a href="https://www.delta.exchange/app/account/manageapikeys" target="_blank" rel="noopener noreferrer" className="underline">
               Delta Exchange → Account → API Keys
             </a>
+            . For a sub-account, switch to it on Delta before creating the key; its margin and positions stay apart from the main account's.
           </p>
 
           <div className="micro mt-4 mb-1.5">Whitelisted IP Address</div>
@@ -176,11 +219,6 @@ export function ApiSettingsDialog({ open, onOpenChange }: DialogProps) {
           <p className="mt-1 text-2xs text-muted-foreground">Add this IP to your Delta Exchange API key whitelist for secure access.</p>
         </DialogBody>
         <DialogFooter>
-          {connected ? (
-            <Button variant="outline" className="mr-auto text-destructive" loading={disconnect.isPending} onClick={remove} data-testid="disconnect-exchange">
-              Disconnect Exchange
-            </Button>
-          ) : null}
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>

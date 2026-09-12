@@ -4,7 +4,7 @@
 import type { Strategy, StrategyLeg as ServerLeg, Underlying } from "@hapiecoin/schema";
 import { UNDERLYINGS } from "@hapiecoin/schema";
 import { useMemo } from "react";
-import { useBrokers, useSettings } from "@/lib/api/queries";
+import { useBrokers, useCredential, useSettings } from "@/lib/api/queries";
 import { useSpot } from "@/lib/gateway/hooks";
 import { DEFAULT_VENUE, type VenueId } from "@hapiecoin/venues/core";
 import { lotSizeFor } from "@/lib/venue";
@@ -23,6 +23,8 @@ export interface PaperBook {
   lotSizeOf: (asset: Underlying, venue?: string) => string;
   money: MoneyFormat;
   brokerName: (id: string | null) => string;
+  /** The label of the key a strategy trades through (ADR-068), or null when unknown. */
+  accountLabel: (id: string | null | undefined) => string | null;
   /** Bumps when any subscribed quote changes, so memoised rows recompute. */
   version: number;
 }
@@ -30,6 +32,7 @@ export interface PaperBook {
 export function usePaperBook(strategies: readonly Strategy[]): PaperBook {
   const { data: settings } = useSettings();
   const { data: brokers } = useBrokers();
+  const { data: credential } = useCredential();
   // one subscription set per venue and asset (ADR-069): a strategy's quotes come from its own venue's chain
   const legsBy = useMemo(() => {
     const empty = (): Record<Underlying, ReturnType<typeof serverLegToLocal>[]> => ({ BTC: [], ETH: [], XAUT: [] });
@@ -71,9 +74,10 @@ export function usePaperBook(strategies: readonly Strategy[]): PaperBook {
       lotSizeOf,
       money,
       brokerName: (id: string | null) => brokers?.find((b) => b.id === id)?.name ?? "Delta Exchange",
+      accountLabel: (id: string | null | undefined) => (id ? (credential?.items.find((i) => i.id === id)?.label ?? null) : null),
       version,
     };
-  }, [version, quotes, spots, settings, brokers, money]);
+  }, [version, quotes, spots, settings, brokers, credential, money]);
 }
 
 export const ASSETS = UNDERLYINGS;

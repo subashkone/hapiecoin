@@ -93,8 +93,16 @@ test.describe("HC-SH settings dialogs persist through the API", () => {
     await page.reload();
     await expect(page.getByTestId("exchange-chip")).toHaveAttribute("data-state", "connected");
     await page.getByTestId("exchange-chip").click();
+    // HC-SH-123: a second key with its own name is another account; it can go alone
+    await expect(page.getByTestId("api-label")).toHaveValue("Sub 1");
+    await page.getByTestId("api-key").fill("key-5678efgh");
+    await page.getByTestId("api-secret").fill("s3cret2");
+    await page.getByTestId("connect-save").click();
+    await expect(page.getByTestId("api-status")).toHaveAttribute("data-count", "2");
+    await page.getByTestId("disconnect-exchange").nth(1).click();
+    await expect(page.getByTestId("api-status")).toHaveAttribute("data-count", "1");
     await page.getByTestId("disconnect-exchange").click();
-    await expect(page.getByText("Exchange Disconnected")).toBeVisible();
+    await expect(page.getByText("Exchange Disconnected").last()).toBeVisible(); // the second toast of this flow (the sub-account's is still fading)
     await expect(page.getByTestId("api-status")).toHaveAttribute("data-state", "disconnected");
   });
 

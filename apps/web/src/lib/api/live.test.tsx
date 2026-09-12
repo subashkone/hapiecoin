@@ -11,7 +11,7 @@ let mock: MockFetch;
 beforeEach(() => {
   mock = installMockFetch();
   mock.loginAs(EMAIL);
-  mock.state.accounts.get(EMAIL)!.credential = { brokerId: "brk_delta", apiKeyMasked: "****ab12", connectedAt: "2026-09-08T09:00:00Z", whitelistedIp: "203.0.113.10" };
+  mock.state.accounts.get(EMAIL)!.credentials = [{ id: "crd_main", label: "Main", brokerId: "brk_delta", apiKeyMasked: "****ab12", connectedAt: "2026-09-08T09:00:00Z", whitelistedIp: "203.0.113.10" }];
 });
 afterEach(() => mock.restore());
 

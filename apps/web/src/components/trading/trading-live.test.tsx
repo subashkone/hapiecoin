@@ -24,8 +24,10 @@ function strat(i: number, over: Partial<Strategy> = {}): Strategy {
   const at = `2026-09-0${(i % 8) + 1}T10:00:00Z`;
   return { id: `strat_${i}`, name: `Paper ${i}`, asset: "BTC", venue: "delta_india", status: "paper", tradingMode: "paper", templateName: "Custom", brokerId: "brk_delta", legs: [{ ...CALL, id: `leg_${i}` }], realizedPnl: "0", pnlHistory: [], notes: "", tags: [], orderBatchId: null, orders: [], adjustments: [], startedAt: at, closedAt: null, createdAt: at, updatedAt: at, ...over };
 }
-function connect() {
-  acc().credential = { brokerId: "brk_delta", apiKeyMasked: "****ab12", connectedAt: "2026-09-08T09:00:00Z", whitelistedIp: "203.0.113.10" };
+function connect(subAccount = false) {
+  acc().credentials = [{ id: "crd_main", label: "Main", brokerId: "brk_delta", apiKeyMasked: "****ab12", connectedAt: "2026-09-08T09:00:00Z", whitelistedIp: "203.0.113.10" }];
+  // a second key: a Delta sub-account (ADR-068)
+  if (subAccount) acc().credentials.push({ id: "crd_sub1", label: "Sub 1", brokerId: "brk_delta", apiKeyMasked: "****cd34", connectedAt: "2026-09-09T09:00:00Z", whitelistedIp: "203.0.113.10" });
 }
 function serveMarket() {
   const ws = FakeSocket.last();
@@ -422,5 +424,72 @@ describe("HC-TR-160 / HC-TR-161 out of sync with the exchange", () => {
     expect(screen.queryByTestId("live-drift-paused")).toBeNull();
     expect(screen.getByTestId("card-drift")).toBeTruthy();
     expect(screen.getByTestId("card-reconcile")).toBeTruthy();
+  });
+});
+
+describe("HC-TR-173..175 accounts: several keys per exchange (ADR-068)", () => {
+  it("with two keys the mode dialog asks for the account; Go live records it and the card names it", async () => {
+    connect(true);
+    mine().push(strat(1));
+    renderWithProviders(<Workspace />);
+    act(() => FakeSocket.last().open());
+    const u = userEvent.setup();
+    await waitFor(() => expect(screen.getByTestId("card-golive").hasAttribute("disabled")).toBe(false));
+    await u.click(screen.getByTestId("card-golive"));
+    const mode = screen.getByTestId("trade-mode");
+    await waitFor(() => expect(within(mode).getByTestId<HTMLSelectElement>("trade-broker").value).toBe("brk_delta"));
+    const pick = within(mode).getByTestId<HTMLSelectElement>("trade-account");
+    expect([...pick.options].map((o) => o.textContent)).toEqual(["Main · ****ab12", "Sub 1 · ****cd34"]);
+    expect(pick.value).toBe("crd_main"); // the first key until one is chosen
+    await u.selectOptions(pick, "crd_sub1");
+    expect(useUiStore.getState().accountId).toBe("crd_sub1"); // the chrome follows the choice
+    await u.click(within(mode).getByTestId("trade-continue"));
+    const preview = await screen.findByTestId("trade-preview");
+    await within(preview).findByTestId("venue-preview");
+    await u.click(within(preview).getByTestId("trade-now"));
+    await waitFor(() => expect(mine()[0]!.status).toBe("live"));
+    expect(mine()[0]!.accountId).toBe("crd_sub1");
+    await waitFor(() => expect(within(panel()).getByTestId("live-card")).toBeTruthy());
+    const chip = within(panel()).getByTestId("card-account");
+    expect(chip.textContent).toBe("Sub 1");
+    expect(chip.dataset["accountId"]).toBe("crd_sub1");
+    // the net-positions panel (and the header's wallet chip, outside this render) read the chosen account
+    expect(screen.getByTestId<HTMLSelectElement>("net-account").value).toBe("crd_sub1");
+  });
+
+  it("the out-of-sync check reads each strategy's own account: a contract gone from one sub-account flags only that strategy", async () => {
+    connect(true);
+    mine().push(strat(1, { status: "live", tradingMode: "live", name: "Main book", accountId: "crd_main", legs: [{ ...CALL, id: "leg_main" }] }));
+    mine().push(strat(2, { status: "live", tradingMode: "live", name: "Sub book", accountId: "crd_sub1", legs: [{ ...CALL, id: "leg_sub", kind: "put", side: "sell", strike: "78000", symbol: "P-BTC-78000-250926", price: "900", entryPrice: "900" }] }));
+    acc().venueGone = new Set(["P-BTC-78000-250926"]); // the sub-account's stop closed it on the exchange
+    useUiStore.setState({ workspaceTab: "live" });
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    await waitFor(() => expect(panel().dataset["count"]).toBe("2"));
+    await waitFor(() => expect(screen.getByTestId("live-drift-banner").dataset["count"]).toBe("1"), { timeout: 5000 });
+    const cards = screen.getAllByTestId("live-card");
+    const main = cards.find((c) => c.dataset["id"] === "strat_1")!;
+    const sub1 = cards.find((c) => c.dataset["id"] === "strat_2")!;
+    expect(within(main).getByTestId("card-account").textContent).toBe("Main");
+    expect(within(sub1).getByTestId("card-account").textContent).toBe("Sub 1");
+    expect(within(main).queryByTestId("card-drift")).toBeNull();
+    expect(within(sub1).getByTestId("card-drift").title).toContain("exchange holds flat · 10 sold expected");
+    // one positions read per account
+    const reads = mock.calls.filter((c) => c.url.includes("/v1/strategies/live/positions?"));
+    expect(reads.some((c) => c.url.includes("accountId=crd_main"))).toBe(true);
+    expect(reads.some((c) => c.url.includes("accountId=crd_sub1"))).toBe(true);
+  });
+
+  it("a live strategy from before accounts on an exchange with two keys says it names none and is left out of the check", async () => {
+    connect(true);
+    mine().push(strat(1, { status: "live", tradingMode: "live", name: "Old book", legs: [{ ...CALL, id: "leg_old" }] })); // accountId undefined
+    useUiStore.setState({ workspaceTab: "live" });
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    await waitFor(() => expect(panel().dataset["count"]).toBe("1"));
+    const chip = within(screen.getByTestId("live-card")).getByTestId("card-account");
+    expect(chip.textContent).toBe("no account named");
+    expect(chip.dataset["accountId"]).toBe("");
+    expect(screen.queryByTestId("live-drift-banner")).toBeNull();
   });
 });

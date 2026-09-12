@@ -56,6 +56,7 @@ describe("HC-SH-003 UI store", () => {
       ladderStep: 1,
       analyseCollapse: null,
       brokerId: null,
+      accountId: null,
       chainColumns: defaultLayout(),
       legs: { BTC: [], ETH: [], XAUT: [] },
       chainLots: 10,
@@ -346,6 +347,8 @@ describe("HC-TR-140 / HC-TR-142 broker and save-draft request", () => {
     const merge = useUiStore.persist.getOptions().merge as (p: unknown, c: ReturnType<typeof useUiStore.getState>) => ReturnType<typeof useUiStore.getState>;
     expect(merge({ brokerId: "", saveDraftRequest: true }, useUiStore.getState())).toMatchObject({ brokerId: null, saveDraftRequest: false });
     expect(merge({ brokerId: "brk_x" }, useUiStore.getState()).brokerId).toBe("brk_x");
+    expect(merge({ accountId: "crd_sub1" }, useUiStore.getState()).accountId).toBe("crd_sub1"); // the account chosen last (ADR-068)
+    expect(merge({ accountId: "" }, useUiStore.getState()).accountId).toBeNull();
     useUiStore.getState().requestSaveDraft(false);
     useUiStore.getState().setBroker(null);
   });

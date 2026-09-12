@@ -83,6 +83,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
   const [step, setStep] = useState<"mode" | "preview" | "name">("mode");
   const [mode, setMode] = useState<"paper" | "live">("paper");
   const [brokerId, setBrokerId] = useState("");
+  const [accountId, setAccountId] = useState<string | null>(null);
   const [fees, setFees] = useState<FeeEstimate>({ fee: 0, gst: 0, total: 0, per: [] });
   const [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -109,7 +110,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
   // ADR-059: the name box arrives filled from the legs and the clock, read when the dialog opens
   const suggest = () => suggestStrategyName({ asset: builder.asset, templateName: guessTemplateName(builder.legs), legs: builder.legs, taken: (strategies ?? []).map((x) => x.name) });
   // capital on the preview (HC-TR-158): the exchange wallet, read only while a trade flow is open on a connected exchange
-  const wallet = useLivePositions(flow !== null && (credential?.items.length ?? 0) > 0 && brokerId ? brokerId : null);
+  const wallet = useLivePositions(flow !== null && (credential?.items.length ?? 0) > 0 && brokerId ? brokerId : null, true, accountId);
   const available = useMemo(() => {
     const rows = wallet.data?.balances ?? [];
     const row = ["USD", "USDT", "INR"].map((a) => rows.find((b) => b.asset === a)).find((b) => b !== undefined) ?? rows[0];
@@ -185,11 +186,11 @@ export function TradeFlow({ book }: { book: PaperBook }) {
         } else id = (await create.mutateAsync(body)).id;
       }
       if (mode === "live") {
-        const placed = await livePlace.mutateAsync({ id, body: { brokerId, idempotencyKey: idemKey, expected: Object.fromEntries((venue?.legs ?? []).filter((l) => l.mark !== null).map((l) => [l.legId, l.mark!])) } });
+        const placed = await livePlace.mutateAsync({ id, body: { brokerId, ...(accountId ? { accountId } : {}), idempotencyKey: idemKey, expected: Object.fromEntries((venue?.legs ?? []).filter((l) => l.mark !== null).map((l) => [l.legId, l.mark!])) } });
         finish(placed);
         return;
       }
-      const saved = await start.mutateAsync({ id, body: { mode, brokerId, entries: target ? entries() : {} } });
+      const saved = await start.mutateAsync({ id, body: { mode, brokerId, ...(accountId ? { accountId } : {}), entries: target ? entries() : {} } });
       finish(saved);
     } catch (e) {
       if (!handleUpgradeRequired(e)) toast.error("Could not start the trade", { description: e instanceof Error ? e.message : "request failed" });
@@ -207,7 +208,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
     void trade();
   };
   /** Live: after the mode step, ask the server for the venue preview before showing Trade Preview. */
-  const toPreview = async (m: "paper" | "live", b: string, name?: string) => {
+  const toPreview = async (m: "paper" | "live", b: string, a: string | null, name?: string) => {
     if (m !== "live") {
       setStep("preview");
       return;
@@ -219,7 +220,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
       const debit = Math.max(0, -netPremium(legs, lotSize));
       // a debit with no loss figure (a calendar) still sends the debit: the wallet must cover it (GAPS #81)
       const worstLoss = maxLoss === null ? (debit > 0 ? -debit : null) : Math.min(maxLoss, -debit);
-      const v = await livePreview.mutateAsync({ id, body: { brokerId: b, ...(worstLoss !== null ? { worstLoss } : {}) } });
+      const v = await livePreview.mutateAsync({ id, body: { brokerId: b, ...(a ? { accountId: a } : {}), ...(worstLoss !== null ? { worstLoss } : {}) } });
       setVenue(v);
       setStep("preview");
     } catch (e) {
@@ -241,23 +242,26 @@ export function TradeFlow({ book }: { book: PaperBook }) {
         lotSize={lotSize}
         money={money}
         brokers={venueBrokers}
+        accounts={credential?.items ?? []}
+        initialAccountId={target?.accountId ?? null}
         connected={connected}
         dataOnly={dataOnly(tradeVenue) ? dataOnlyNote(tradeVenue) : null}
         priceModeLabel={customPrices ? "Custom (entered prices)" : `Live (${getVenueCore(tradeVenue).label})`}
         lockLive={flow.mode === "live"}
-        onContinue={(m, b, f) => {
+        onContinue={(m, b, f, a) => {
           setMode(m);
           setBrokerId(b);
+          setAccountId(a);
           setFees(f);
           if (m === "live" && fromBuilder) {
             setStep("name"); // live: the name first, then the exchange preview
             return;
           }
-          void toPreview(m, b);
+          void toPreview(m, b, a);
         }}
       />
       <TradePreviewDialog open={step === "preview"} onOpenChange={(o) => !o && closeTrade()} mode={mode} asset={asset} legs={legs} spot={spot} lotSize={lotSize} money={money} broker={broker} fees={fees} maxLoss={maxLoss} maxLossKnown={fromBuilder} customPrices={customPrices} busy={busy} venue={venue} available={available} overlaps={overlaps} onTrade={onTradeNow} />
-      <SaveDraftDialog open={step === "name"} onOpenChange={(o) => !o && setStep("preview")} initialName={isTemplateName(meta.name) ? "" : meta.name} suggest={fromBuilder ? suggest : undefined} intent="trade" onSave={(n) => { setMeta(builder.asset, { name: n }); if (mode === "live") void toPreview("live", brokerId, n); else { setStep("preview"); void trade(n); } }} />
+      <SaveDraftDialog open={step === "name"} onOpenChange={(o) => !o && setStep("preview")} initialName={isTemplateName(meta.name) ? "" : meta.name} suggest={fromBuilder ? suggest : undefined} intent="trade" onSave={(n) => { setMeta(builder.asset, { name: n }); if (mode === "live") void toPreview("live", brokerId, accountId, n); else { setStep("preview"); void trade(n); } }} />
     </>
   );
 }

@@ -118,11 +118,12 @@ describe("[API] queries and mutations against the mock API", () => {
     act(() => result.current.connect.mutate({ brokerId: "brk_delta", apiKey: "key-abcd1234", apiSecret: "s" }));
     await waitFor(() => expect(result.current.connect.isSuccess).toBe(true));
     expect(qc.getQueryData(queryKeys.credential)).toMatchObject({ items: [{ apiKeyMasked: "****1234", brokerId: "brk_delta" }] });
-    act(() => result.current.disconnect.mutate("brk_delta"));
+    const keyId = result.current.connect.data!.id; // a key row (account) is removed by its id (ADR-068)
+    act(() => result.current.disconnect.mutate(keyId));
     await waitFor(() => expect(result.current.disconnect.isSuccess).toBe(true));
     expect(qc.getQueryData(queryKeys.credential)).toEqual({ items: [] });
     expect(mock.calls.at(-1)?.method).toBe("DELETE");
-    expect(mock.calls.at(-1)?.url).toContain("/v1/credentials/brk_delta");
+    expect(mock.calls.at(-1)?.url).toContain(`/v1/credentials/${keyId}`);
     clearServerCache(qc);
     expect(qc.getQueryData(queryKeys.credential)).toBeUndefined();
   });

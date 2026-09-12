@@ -170,6 +170,8 @@ export interface UiState {
   templateRequest: string | null;
   /** Exchange chosen in the trade dialogs; the Builder ticket's fee estimate follows it (HC-TR-142). Persisted. */
   brokerId: string | null;
+  /** The exchange key (account, ADR-068) chosen last in a trade dialog or the net-positions panel; the chrome reads it. Persisted. */
+  accountId: string | null;
   /** The palette asked the Builder to save the current legs as a draft (HC-TR-140); cleared once handled. */
   saveDraftRequest: boolean;
   /** Strikes shown each side of ATM in the chain (HC-WS-016); 0 = every listed strike. Persisted. */
@@ -270,6 +272,7 @@ export interface UiState {
   setAnalyseCollapse: (pane: PaneCollapse) => void;
   requestTemplate: (name: string | null) => void;
   setBroker: (id: string | null) => void;
+  setAccount: (id: string | null) => void;
   requestSaveDraft: (on: boolean) => void;
   recentreChain: () => void;
   setChainColumns: (layout: ChainLayout) => void;
@@ -337,6 +340,7 @@ export const useUiStore = create<UiState>()(
       analyseCollapse: null,
       templateRequest: null,
       brokerId: null,
+      accountId: null,
       saveDraftRequest: false,
       chainRange: 12,
       chainRecentre: 0,
@@ -493,6 +497,7 @@ export const useUiStore = create<UiState>()(
       setAnalyseCollapse: (analyseCollapse) => set({ analyseCollapse }),
       requestTemplate: (templateRequest) => set({ templateRequest }),
       setBroker: (brokerId) => set({ brokerId }),
+      setAccount: (accountId) => set({ accountId }),
       requestSaveDraft: (saveDraftRequest) => set({ saveDraftRequest }),
       recentreChain: () => set((s) => ({ chainRecentre: s.chainRecentre + 1 })),
       setChainColumns: (layout) => set({ chainColumns: normaliseLayout(layout) }),
@@ -564,6 +569,7 @@ export const useUiStore = create<UiState>()(
         ladderStep: s.ladderStep,
         analyseCollapse: s.analyseCollapse,
         brokerId: s.brokerId,
+        accountId: s.accountId,
         chainColumns: s.chainColumns,
         legs: s.legs,
         chainLots: s.chainLots,
@@ -596,6 +602,7 @@ export const useUiStore = create<UiState>()(
           templateRequest: null,
           alertPrefill: null,
           brokerId: typeof p.brokerId === "string" && p.brokerId ? p.brokerId : null,
+          accountId: typeof p.accountId === "string" && p.accountId ? p.accountId : null,
           saveDraftRequest: false,
           chainColumns: p.chainColumns === undefined ? current.chainColumns : normaliseLayout(p.chainColumns),
           legs: p.legs === undefined ? current.legs : normaliseLegsByAsset(p.legs),

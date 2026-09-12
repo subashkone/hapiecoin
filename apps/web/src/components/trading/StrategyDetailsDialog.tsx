@@ -169,6 +169,7 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
                 {s.templateName ? <span>{s.templateName}</span> : null}
                 <span className="micro">{s.id}</span>
                 {s.brokerId ? <span className="micro">· {book.brokerName(s.brokerId)}</span> : null}
+                {book.accountLabel(s.accountId) ? <span className="micro" data-testid="details-account">· {book.accountLabel(s.accountId)}</span> : null}
               </span>
             </DialogDescription>
           </DialogHeader>
