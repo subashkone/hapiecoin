@@ -145,11 +145,16 @@ describe("[SCHEMA] Greeks", () => {
 });
 
 describe("[SCHEMA] Quote", () => {
-  it("accepts a full quote and a minimal quote", () => {
+  it("accepts a full quote and a minimal quote; open interest may be absent (HC-WS-116)", () => {
     expect(Quote.safeParse(quote).success).toBe(true);
     expect(
       Quote.safeParse({ instrumentId: quote.instrumentId, ts: 1, mark: "1", oi: "0", spot: "79521" }).success,
     ).toBe(true);
+    // GAPS #15 (ADR-085): open interest the venue did not send is omitted, never "0"
+    const noOi = Quote.safeParse({ instrumentId: quote.instrumentId, ts: 1, mark: "1", spot: "79521" });
+    expect(noOi.success).toBe(true);
+    expect(noOi.data).not.toHaveProperty("oi");
+    expect(Quote.safeParse({ ...quote, oi: null }).success).toBe(false); // omitted, not null
   });
   it("rejects numeric prices, negative IV and bad ids", () => {
     expect(Quote.safeParse({ ...quote, mark: 1290.81 }).success).toBe(false);

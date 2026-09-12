@@ -93,8 +93,8 @@ export const Quote = z.object({
   markIv: Iv.optional(),
   bidIv: Iv.optional(),
   askIv: Iv.optional(),
-  /** Open interest in contracts (venue units). */
-  oi: DecimalString,
+  /** Open interest in contracts (venue units); omitted when the venue sent none (GAPS #15, ADR-085): a real zero is "0". */
+  oi: DecimalString.optional(),
   volume24h: DecimalString.optional(),
   bidQty: DecimalString.optional(),
   askQty: DecimalString.optional(),

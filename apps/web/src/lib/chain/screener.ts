@@ -36,7 +36,8 @@ export interface StrikeRow {
   yieldPerDay: number | null;
   /** (strike ± mark) ÷ spot − 1 in percent: + above spot for a call, − below for a put; null without spot. */
   breakEvenPct: number | null;
-  oi: number;
+  /** Open interest in contracts; null when the venue sent none (GAPS #15): shown as "—", sorted last, never treated as 0. */
+  oi: number | null;
 }
 
 export interface ExpiryRow {
@@ -97,7 +98,7 @@ function strikeRow(expiry: string, strike: string, side: ScreenSide, q: Quote, d
     premiumPerDay,
     yieldPerDay: spot ? (premiumPerDay / spot) * 100 : null,
     breakEvenPct: spot ? (be / spot - 1) * 100 : null,
-    oi: num(q.oi) ?? 0,
+    oi: num(q.oi) ?? null,
   };
 }
 
@@ -168,5 +169,5 @@ export function inDeltaBand(delta: number | null, band: DeltaBand): boolean {
 }
 
 export function filterStrikes(rows: readonly StrikeRow[], f: StrikeFilters): StrikeRow[] {
-  return rows.filter((r) => (f.side === "both" || r.side === f.side) && inDeltaBand(r.delta, f.delta) && (f.expiries.size === 0 || f.expiries.has(r.expiry)) && r.oi >= f.minOi);
+  return rows.filter((r) => (f.side === "both" || r.side === f.side) && inDeltaBand(r.delta, f.delta) && (f.expiries.size === 0 || f.expiries.has(r.expiry)) && (f.minOi <= 0 || (r.oi !== null && r.oi >= f.minOi)));
 }
