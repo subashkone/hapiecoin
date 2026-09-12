@@ -1069,5 +1069,15 @@
     "how": "schema: spot:<venue>:<asset> (the bare spot:<asset> aliases Delta India) and a v field on the spot frame; gateway: one spot per venue and asset, the perpetual watched on the topic's venue session, store keys per venue, /healthz feed.venues[id].spot; venues: the Deribit session knows its perpetuals so BTC-PERPETUAL ticks; web: spot cached per venue, useSpot follows the workspace venue, the paper book and the alert engine read each strategy's / alert's venue, the landing and sign-in strips stay on Delta India, the futures label names the venue's perpetual",
     "evidence": "ADR-071 (12 Sep 2026): packages/schema/src/gateway.ts; packages/venues/src/deribit/market-data.ts; apps/gateway/src/feed/feed.ts, coalescer.ts, coordination/snapshots.ts, feed/role.ts, server.ts; apps/web/src/lib/gateway/client.ts, hooks.tsx, lib/venue.ts, lib/strategy/usePaper.ts, useStrategyAnalysis.ts, lib/alerts/engine.ts, AlertEngine.tsx, components/header/widgets.tsx, builder/FutureDialog.tsx, test/fake-gateway.ts; unit gateway.test.ts, market-data.test.ts, feed-venues.test.ts, server.test.ts, client.test.ts, hooks.test.tsx, engine.test.ts",
     "test": "unit (gateway)"
+  },
+  {
+    "screen": "Shared chrome · Settings menu · Public page dialog",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Public page settings: choose a handle, switch the page on, pick what it shows, get the link and the share bar",
+    "how": "Account menu → Public page (both headers). Handle input (3–20 letters, digits or underscores, lower-cased; reserved words refused; a taken handle refuses with That handle is taken), the on/off switch disabled until the handle is valid, checkboxes Daily chart / Accounts / Monthly table, Save; once on: the /t/<handle> link with Open and the share bar (X, Telegram, copy link, download image); renaming warns that shared links break. GET/PUT /v1/public-page behind the session, audited",
+    "evidence": "ADR-075 (12 Sep 2026): apps/api routes/public-page.ts, db trader_pages; packages/schema public-page.ts Handle / PublicPageSettings; apps/web components/dialogs/PublicPageDialog.tsx, lib/api/public-page.ts, header/AppHeader.tsx menu-public; unit public-page.test.ts (api) HC-SH-127, public-page-dialog.test.tsx HC-SH-127; e2e settings.spec.ts HC-SH-127",
+    "test": "unit (api + web), e2e"
   }
 ]

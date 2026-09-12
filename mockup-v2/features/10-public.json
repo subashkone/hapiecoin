@@ -531,5 +531,27 @@
   "status": "working",
   "evidence": "Phase 1 build, 07 Sep 2026: e2e auth.spec.ts against the mock provider; GAPS #27",
   "phase": 1
+ },
+ {
+  "route": "/t/<handle>",
+  "screen": "Public trader page",
+  "status": "working",
+  "phase": 5,
+  "new": true,
+  "feature": "A trader's verified P&L on a public page: totals net of fees always, the daily chart, accounts and months when the trader turned them on, 404 alike for an unknown handle or a page that is off",
+  "how": "PublicHeader + Footer like /s/<code>; the body reads GET /v1/public/traders/<handle> (unauthenticated, Cache-Control public max-age=60) whose shape is publicTraderFrom: name, handle, all / 30-day / 7-day net, fills, since, last read, partial flag, and only the opted-in sections; never account ids, commissions, balances, positions, products or the Journal comparison; generateMetadata carries the 30-day figure into the title and description for link previews; USD only",
+  "evidence": "ADR-075 (12 Sep 2026): apps/web app/t/[handle]/page.tsx, components/public/TraderPage.tsx (trader-page[data-state], trader-total / d7 / d30, trader-days, trader-account, trader-month, trader-partial); apps/api routes/public-page.ts; packages/schema public-page.ts publicTraderFrom; unit public-page.test.ts (schema + api) HC-PB-066, trader-page.test.tsx HC-PB-066; e2e public.spec.ts HC-PB-066",
+  "test": "unit (schema + api + web), e2e"
+ },
+ {
+  "route": "/t/<handle>",
+  "screen": "Public trader page · share",
+  "status": "working",
+  "phase": 5,
+  "new": true,
+  "feature": "Share the page: post on X, send on Telegram, copy the link, download a 1200×630 PNG card",
+  "how": "Intent links built from the 30-day figure net of fees and the page URL (twitter.com/intent/tweet, t.me/share/url), opened in a new tab; Copy link through the clipboard; the card drawn on a canvas in the browser (dark, amber rule, name, handle, three figures, fills and since, the URL) and saved as hapiecoin-<handle>-verified-pnl.png through a data URL, no library and no server rendering; the same bar sits in the Public page dialog",
+  "evidence": "ADR-075 (12 Sep 2026): apps/web lib/public/share.ts shareText / xShareUrl / telegramShareUrl / cardFigures / drawShareCard / shareCardPng, components/public/ShareBar.tsx (share-x, share-telegram, share-copy-link, share-image); unit share.test.ts HC-PB-067, trader-page.test.tsx HC-PB-067; e2e public.spec.ts HC-PB-067",
+  "test": "unit (web), e2e"
  }
 ]

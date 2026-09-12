@@ -1878,6 +1878,20 @@
   "evidence": "ADR-071 (12 Sep 2026): packages/schema/src/gateway.ts; packages/venues/src/deribit/market-data.ts; apps/gateway/src/feed/feed.ts, coalescer.ts, coordination/snapshots.ts, feed/role.ts, server.ts; apps/web/src/lib/gateway/client.ts, hooks.tsx, lib/venue.ts, lib/strategy/usePaper.ts, useStrategyAnalysis.ts, lib/alerts/engine.ts, AlertEngine.tsx, components/header/widgets.tsx, builder/FutureDialog.tsx, test/fake-gateway.ts; unit gateway.test.ts, market-data.test.ts, feed-venues.test.ts, server.test.ts, client.test.ts, hooks.test.tsx, engine.test.ts"
  },
  {
+  "id": "HC-SH-127",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "screen": "Shared chrome · Settings menu · Public page dialog",
+  "feature": "Public page settings: choose a handle, switch the page on, pick what it shows, get the link and the share bar",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + web), e2e",
+  "acceptance": "Account menu → Public page (both headers). Handle input (3–20 letters, digits or underscores, lower-cased; reserved words refused; a taken handle refuses with That handle is taken), the on/off switch disabled until the handle is valid, checkboxes Daily chart / Accounts / Monthly table, Save; once on: the /t/<handle> link with Open and the share bar (X, Telegram, copy link, download image); renaming warns that shared links break. GET/PUT /v1/public-page behind the session, audited",
+  "evidence": "ADR-075 (12 Sep 2026): apps/api routes/public-page.ts, db trader_pages; packages/schema public-page.ts Handle / PublicPageSettings; apps/web components/dialogs/PublicPageDialog.tsx, lib/api/public-page.ts, header/AppHeader.tsx menu-public; unit public-page.test.ts (api) HC-SH-127, public-page-dialog.test.tsx HC-SH-127; e2e settings.spec.ts HC-SH-127"
+ },
+ {
   "id": "HC-PB-001",
   "area": "10-public",
   "areaName": "Public site & authentication",
@@ -2851,6 +2865,36 @@
   "test": "e2e (Playwright) · api contract",
   "acceptance": "authClient.signIn.social({ provider: \"google\", callbackURL: next }); BETTER_AUTH_URL = web origin (ADR-019)",
   "evidence": "Phase 1 build, 07 Sep 2026: e2e auth.spec.ts against the mock provider; GAPS #27"
+ },
+ {
+  "id": "HC-PB-066",
+  "area": "10-public",
+  "areaName": "Public site & authentication",
+  "owner": "Platform engineer",
+  "route": "/t/<handle>",
+  "screen": "Public trader page",
+  "feature": "A trader's verified P&L on a public page: totals net of fees always, the daily chart, accounts and months when the trader turned them on, 404 alike for an unknown handle or a page that is off",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (schema + api + web), e2e",
+  "acceptance": "PublicHeader + Footer like /s/<code>; the body reads GET /v1/public/traders/<handle> (unauthenticated, Cache-Control public max-age=60) whose shape is publicTraderFrom: name, handle, all / 30-day / 7-day net, fills, since, last read, partial flag, and only the opted-in sections; never account ids, commissions, balances, positions, products or the Journal comparison; generateMetadata carries the 30-day figure into the title and description for link previews; USD only",
+  "evidence": "ADR-075 (12 Sep 2026): apps/web app/t/[handle]/page.tsx, components/public/TraderPage.tsx (trader-page[data-state], trader-total / d7 / d30, trader-days, trader-account, trader-month, trader-partial); apps/api routes/public-page.ts; packages/schema public-page.ts publicTraderFrom; unit public-page.test.ts (schema + api) HC-PB-066, trader-page.test.tsx HC-PB-066; e2e public.spec.ts HC-PB-066"
+ },
+ {
+  "id": "HC-PB-067",
+  "area": "10-public",
+  "areaName": "Public site & authentication",
+  "owner": "Platform engineer",
+  "route": "/t/<handle>",
+  "screen": "Public trader page · share",
+  "feature": "Share the page: post on X, send on Telegram, copy the link, download a 1200×630 PNG card",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web), e2e",
+  "acceptance": "Intent links built from the 30-day figure net of fees and the page URL (twitter.com/intent/tweet, t.me/share/url), opened in a new tab; Copy link through the clipboard; the card drawn on a canvas in the browser (dark, amber rule, name, handle, three figures, fills and since, the URL) and saved as hapiecoin-<handle>-verified-pnl.png through a data URL, no library and no server rendering; the same bar sits in the Public page dialog",
+  "evidence": "ADR-075 (12 Sep 2026): apps/web lib/public/share.ts shareText / xShareUrl / telegramShareUrl / cardFigures / drawShareCard / shareCardPng, components/public/ShareBar.tsx (share-x, share-telegram, share-copy-link, share-image); unit share.test.ts HC-PB-067, trader-page.test.tsx HC-PB-067; e2e public.spec.ts HC-PB-067"
  },
  {
   "id": "HC-WS-001",
