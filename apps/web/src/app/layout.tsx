@@ -1,10 +1,13 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
 import { Providers } from "@/components/shell/Providers";
 import { publicEnv } from "@/lib/env";
 import { THEME_INIT_SCRIPT } from "@/lib/theme-init";
 import "./globals.css";
+
+/** Phones (ADR-080): device width, no forced zoom-out, the notch area painted. */
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 export const metadata: Metadata = {
   title: { default: "HapieCoin", template: "%s · HapieCoin" },

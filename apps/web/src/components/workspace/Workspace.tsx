@@ -4,6 +4,7 @@
 // (35–70 % for the left pane, remembered per browser) and a stacked Chain | Analysis toggle under 1000 px.
 import { EmptyState, Tabs, TabsContent, TabsList, TabsTrigger, cn } from "@hapiecoin/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useNarrow } from "@/lib/useMediaQuery";
 import { AdjustDiscardDialog } from "@/components/adjust/AdjustDiscardDialog";
 import { VenueSwitchDialog } from "@/components/header/VenueSwitchDialog";
 import { AdjustWorkbench } from "@/components/adjust/AdjustWorkbench";
@@ -53,18 +54,6 @@ function readSplit(): number {
   }
 }
 
-/** True when the viewport is narrower than `px`; false during SSR. */
-function useNarrow(px: number): boolean {
-  const [narrow, setNarrow] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${px - 1}px)`);
-    const on = () => setNarrow(mq.matches);
-    on();
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, [px]);
-  return narrow;
-}
 
 const WORKSPACE_TABS: readonly WorkspaceTab[] = ["chain", "builder", "paper", "live", "journal", "screener"];
 const PANELS: readonly AnalysisTab[] = ["payoff", "scenarios", "greeks", "vol", "structure", "ladder", "backtest", "replay"];
@@ -178,7 +167,7 @@ export function Workspace() {
             ) : null}
           </TabsTrigger>
         ))}
-        <span className="ml-auto flex items-center gap-2 self-center pr-1">
+        <span className="ml-auto hidden items-center gap-2 self-center pr-1 min-[1000px]:flex">
           <span className="font-mono text-3xs uppercase tracking-[0.1em] text-muted-foreground" data-testid="left-tab-info">Lot {book.lotSizeOf(asset, venue)} {asset} · basis mark</span>
           <button type="button" onClick={() => setCollapse("left")} className="rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground" title="Give the analysis the full width" aria-label="Collapse the chain and Builder pane" data-testid="collapse-left">
             ‹

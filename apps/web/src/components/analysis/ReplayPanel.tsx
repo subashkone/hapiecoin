@@ -172,7 +172,8 @@ export function ReplayPanel() {
               <span className="text-muted-foreground">Loading the instant…</span>
             )}
           </div>
-          <table className="w-full text-2xs" data-testid="replay-ladder" data-rows={c.rows.length}>
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[360px] text-2xs" data-testid="replay-ladder" data-rows={c.rows.length}>
             <thead className="text-muted-foreground">
               <tr>
                 <th className="py-1 text-right font-normal">Call mark</th>
@@ -204,6 +205,7 @@ export function ReplayPanel() {
               })}
             </tbody>
           </table>
+          </div>
           <p className="text-2xs text-muted-foreground">Marks as the venue published them at that instant; no fills, no orders, nothing modelled.</p>
         </>
       )}

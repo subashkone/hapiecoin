@@ -32,7 +32,7 @@ export function TabsList({ className, ...props }: ComponentProps<typeof TabsPrim
       className={cn(
         variant === "segmented"
           ? "inline-flex w-fit gap-0.5 rounded border border-border bg-muted p-0.5"
-          : "flex gap-0.5 border-b border-border",
+          : "flex min-w-0 gap-0.5 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         className,
       )}
       {...props}
@@ -51,7 +51,7 @@ export function TabsTrigger({ className, ...props }: ComponentProps<typeof TabsP
         "focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2",
         variant === "segmented"
           ? "rounded-sm px-[11px] py-[5px] data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-[inset_0_0_0_1px_hsl(var(--border))]"
-          : "-mb-px border-b-2 border-transparent px-[11px] py-2 data-[state=active]:border-primary data-[state=active]:text-foreground",
+          : "px-[11px] py-2 focus-visible:-outline-offset-2 data-[state=active]:text-foreground data-[state=active]:shadow-[inset_0_-2px_0_0_hsl(var(--primary))]",
         className,
       )}
       {...props}

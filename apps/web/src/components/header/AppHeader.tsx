@@ -268,7 +268,7 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
         <header
           data-testid="app-header"
           data-variant="analyse"
-          className="flex h-[50px] items-center gap-4 border-b border-border bg-header-bg px-4 text-header-fg"
+          className="flex h-[50px] items-center gap-2 border-b border-border bg-header-bg px-2 text-header-fg md:gap-4 md:px-4"
         >
           <div className="flex items-center gap-2">
             <Logo href="/analyse" sub="Analyse" />
@@ -282,10 +282,14 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
           <span className="flex-1" />
           <FeedStatus />
           <span className="hidden h-6 w-px bg-border md:block" aria-hidden="true" />
-          <ExchangeChip />
-          <CurrencyToggle />
+          <span className="hidden md:contents">
+            <ExchangeChip />
+            <CurrencyToggle />
+          </span>
           <AlertsBell />
-          <ThemeToggle />
+          <span className="hidden md:contents">
+            <ThemeToggle />
+          </span>
           <PaletteButton className="hidden lg:inline-flex" />
           <SettingsMenu user={user} />
           <AccountMenu user={user} />
