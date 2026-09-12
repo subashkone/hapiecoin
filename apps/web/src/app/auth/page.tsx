@@ -6,7 +6,7 @@ import { publicEnv } from "@/lib/env";
 import { getServerUser } from "@/lib/auth/server";
 import { safeNext } from "@/lib/auth/client";
 
-const TABS: AuthTab[] = ["login", "otp-login", "otp-verify", "signup", "verify-email", "forgot", "reset-password"];
+const TABS: AuthTab[] = ["login", "otp-login", "otp-verify", "signup", "verify-email", "forgot", "reset-password", "totp"]; // totp: the second factor after a password sign-in (ADR-078)
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 

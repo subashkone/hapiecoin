@@ -1,14 +1,8 @@
 import { TEMPLATE_COUNT } from "../src/lib/strategy/templates";
-import { expect, seedUser, signIn, test } from "./fixtures";
+import { expect, seedUser, signIn, test, typeLiveIfShown } from "./fixtures";
 import { strikesOf } from "../test/fixtures/chain";
-import type { Page } from "@playwright/test";
 
 /** HC-TR-186: a live confirm needs the word typed first; a paper dialog has no field. */
-async function typeLiveIfShown(page: Page) {
-  const f = page.getByTestId("live-confirm");
-  if ((await f.count()) > 0) await f.fill("LIVE");
-}
-
 test.describe("HC-SH analyse header and live chain", () => {
   test.beforeEach(async ({ page, request }) => {
     await seedUser(request, { email: "trader@example.com", plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" } });

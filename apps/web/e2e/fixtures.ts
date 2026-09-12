@@ -51,6 +51,12 @@ export async function signIn(page: Page, email: string, password = "Passw0rd!") 
   await page.waitForURL(/\/analyse/);
 }
 
+/** HC-TR-186: a live entry dialog asks for the word before its destructive button enables; a paper dialog has no field. */
+export async function typeLiveIfShown(page: Page) {
+  const f = page.getByTestId("live-confirm");
+  if ((await f.count()) > 0) await f.fill("LIVE");
+}
+
 export async function fillOtp(page: Page, code = TEST_OTP) {
   const boxes = page.getByTestId("otp-input").getByRole("textbox");
   await boxes.first().click();
