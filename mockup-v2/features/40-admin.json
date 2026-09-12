@@ -514,10 +514,10 @@
   {
     "route": "/admin/banners",
     "screen": "Banner Master",
-    "feature": "Dialog fields: Title (Welcome Offer), Description (Get 20% off your first plan), Link URL (https://coingreek.com/offers), 'Starts At (optional)' / 'Ends At (optional)' datetime-local, Frequency select (once_per_day / every_time / once_per_session)",
+    "feature": "Dialog fields: Title (Welcome Offer), Description (Get 20% off your first plan), Link URL (https://hapiecoin.com/offers), 'Starts At (optional)' / 'Ends At (optional)' datetime-local, Frequency select (once_per_day / every_time / once_per_session)",
     "how": "Ids banner-title, banner-description, banner-link, banner-starts, banner-ends; link must be http(s); end must be after start",
     "status": "working",
-    "evidence": "bundle strings: banner-title, Welcome Offer, banner-description, Get 20% off your first plan, banner-link, Link URL, https://coingreek.com/offers, banner-starts, Starts At, (optional), datetime-local, banner-ends, Ends At, once_per_day · Phase 4 item 4b (08 Sep 2026, ADR-033): dialog fields title / description / link / frequency / starts / ends with http(s) and window validation (banner-*)"
+    "evidence": "bundle strings: banner-title, Welcome Offer, banner-description, Get 20% off your first plan, banner-link, Link URL, https://hapiecoin.com/offers, banner-starts, Starts At, (optional), datetime-local, banner-ends, Ends At, once_per_day · Phase 4 item 4b (08 Sep 2026, ADR-033): dialog fields title / description / link / frequency / starts / ends with http(s) and window validation (banner-*)"
   },
   {
     "route": "/admin/banners",

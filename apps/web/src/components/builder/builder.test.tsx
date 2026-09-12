@@ -55,7 +55,6 @@ beforeEach(() => {
     expiry: { BTC: EXPIRY },
     legs: { BTC: [], ETH: [], XAUT: [] },
     strategy: { BTC: { name: "", basket: false, priceMode: "live", draftId: null }, ETH: { name: "", basket: false, priceMode: "live", draftId: null }, XAUT: { name: "", basket: false, priceMode: "live", draftId: null } },
-    drafts: [],
     chainLots: 10,
     workspaceTab: "builder",
     builderTab: "builder",

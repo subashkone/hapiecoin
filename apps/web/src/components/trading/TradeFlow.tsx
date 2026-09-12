@@ -1,11 +1,11 @@
 "use client";
 // Trade flow orchestrator (HC-TR-022, 050..057, 046): Select Trading Mode → Trade Preview → start. Trades
-// either the Builder legs (saving them as a draft first) or an existing draft ("Activate"). Also imports the
-// browser-local drafts saved before Phase 3 once (ADR-024).
+// either the Builder legs (saving them as a draft first) or an existing draft ("Activate"); every draft is a server
+// row (ADR-024; the Phase 2 browser hopper went with ADR-088).
 import { emitTour } from "@/lib/tour";
 import { type Strategy, toDecimal } from "@hapiecoin/schema";
 import { toast } from "@hapiecoin/ui";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useBrokers, useCredential, useSettings } from "@/lib/api/queries";
 import { type MindfulPauseInfo, mindfulFor } from "@/lib/strategy/mindful";
 import { useConnectionStatus } from "@/lib/gateway/hooks";
@@ -25,43 +25,11 @@ import { isTemplateName } from "@/lib/strategy/templates";
 import { type TradeLegView, TradeModeDialog, netPremium } from "./TradeModeDialog";
 import { TradePreviewDialog, legLabel } from "./TradePreviewDialog";
 import { overlapsFor } from "@/lib/strategy/overlap";
-import { DEFAULT_VENUE, getVenueCore } from "@hapiecoin/venues/core";
+import { getVenueCore } from "@hapiecoin/venues/core";
 import { dataOnly, dataOnlyNote } from "@/lib/venue";
 import { useVenueId } from "@/lib/useVenue";
 
-/** One-time import of the Phase 2 browser drafts into the API (ADR-024). */
-export function useImportLegacyDrafts() {
-  const drafts = useUiStore((s) => s.drafts);
-  const imported = useUiStore((s) => s.draftsImported);
-  const mark = useUiStore((s) => s.markDraftsImported);
-  const create = useCreateStrategy();
-  const ran = useRef(false);
-  useEffect(() => {
-    if (imported || ran.current) return;
-    ran.current = true;
-    if (drafts.length === 0) {
-      mark();
-      return;
-    }
-    void (async () => {
-      let n = 0;
-      for (const d of drafts) {
-        if (d.legs.length === 0) continue;
-        try {
-          await create.mutateAsync({ name: d.name, asset: d.asset, venue: DEFAULT_VENUE, templateName: d.templateName, legs: d.legs.slice(0, 8).map(localLegToInput) }); // Phase 2 browser drafts predate the venue choice: Delta India
-          n += 1;
-        } catch {
-          /* keep going: a failed row is not worth losing the rest */
-        }
-      }
-      mark();
-      if (n) toast("Drafts imported", { description: `${n} saved ${n === 1 ? "strategy" : "strategies"} moved to your account` });
-    })();
-  }, [drafts, imported, mark, create]);
-}
-
 export function TradeFlow({ book }: { book: PaperBook }) {
-  useImportLegacyDrafts();
   const flow = useUiStore((s) => s.tradeFlow);
   const closeTrade = useUiStore((s) => s.closeTrade);
   const followStrategy = useUiStore((s) => s.followStrategy);

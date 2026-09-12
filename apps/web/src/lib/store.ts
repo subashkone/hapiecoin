@@ -81,40 +81,6 @@ function normaliseMetaByAsset(input: unknown): StrategyMetaByAsset {
   return { BTC: one(o.BTC), ETH: one(o.ETH), XAUT: one(o.XAUT) };
 }
 
-/** A saved strategy (HC-TR-020, 036, 041..049): local until the Phase 3 strategy API (ADR-023). */
-export interface SavedStrategy {
-  id: string;
-  name: string;
-  asset: Underlying;
-  status: "draft" | "archived";
-  templateName: string;
-  legs: StrategyLeg[];
-  createdAt: number;
-  updatedAt: number;
-  archivedAt?: number | undefined;
-}
-function normaliseDrafts(input: unknown): SavedStrategy[] {
-  if (!Array.isArray(input)) return [];
-  const out: SavedStrategy[] = [];
-  for (const x of input) {
-    if (typeof x !== "object" || x === null) continue;
-    const s = x as Partial<SavedStrategy>;
-    if (typeof s.id !== "string" || typeof s.name !== "string" || (s.asset !== "BTC" && s.asset !== "ETH" && s.asset !== "XAUT")) continue;
-    out.push({
-      id: s.id,
-      name: s.name,
-      asset: s.asset,
-      status: s.status === "archived" ? "archived" : "draft",
-      templateName: typeof s.templateName === "string" ? s.templateName : "Custom",
-      legs: normaliseLegs(s.legs),
-      createdAt: typeof s.createdAt === "number" ? s.createdAt : 0,
-      updatedAt: typeof s.updatedAt === "number" ? s.updatedAt : 0,
-      archivedAt: typeof s.archivedAt === "number" ? s.archivedAt : undefined,
-    });
-  }
-  return out;
-}
-
 export type WorkspaceTab = "chain" | "builder" | "paper" | "live" | "journal" | "screener";
 export interface ChartLayers {
   expiry: boolean;
@@ -190,10 +156,6 @@ export interface UiState {
   optionDetail: OptionDetailTarget | null;
   /** Builder meta per asset (name, basket, price mode, loaded draft). Persisted. */
   strategy: StrategyMetaByAsset;
-  /** Drafts saved before Phase 3 (ADR-023), read once from the old persisted state and imported to the API (ADR-024). */
-  drafts: SavedStrategy[];
-  /** True once the browser-local drafts were imported (or there were none), so a reload never imports twice. Persisted. */
-  draftsImported: boolean;
   /** Visible admin table columns per page (HC-AD-093); null or absent = the page's default. Persisted. */
   adminCols: Record<string, string[] | null>;
   /** Bumped by the palette's "Show announcements" (HC-SH-055); the flyer popup reopens every live banner. */
@@ -241,11 +203,6 @@ export interface UiState {
   setLegs: (asset: Underlying, legs: StrategyLeg[]) => boolean;
   updateLegs: (asset: Underlying, fn: (legs: StrategyLeg[]) => StrategyLeg[]) => void;
   setStrategyMeta: (asset: Underlying, patch: Partial<StrategyMeta>) => void;
-  saveDraft: (asset: Underlying, name: string, templateName: string) => SavedStrategy;
-  loadDraft: (id: string) => SavedStrategy | null;
-  archiveDraft: (id: string, archived: boolean) => void;
-  deleteDraft: (id: string) => void;
-  markDraftsImported: () => void;
   openTrade: (target: { strategyId: string | null; mode?: "paper" | "live" | undefined }) => void;
   closeTrade: () => void;
   openDetails: (id: string | null) => void;
@@ -356,8 +313,6 @@ export const useUiStore = create<UiState>()(
       assistantQuestion: null,
       optionDetail: null,
       strategy: emptyMetaByAsset(),
-      drafts: [],
-      draftsImported: false,
       tradeFlow: null,
       detailsId: null,
       rulesFor: null,
@@ -412,45 +367,6 @@ export const useUiStore = create<UiState>()(
       },
       updateLegs: (asset, fn) => set((s) => ({ legs: { ...s.legs, [asset]: fn(s.legs[asset]) } })),
       setStrategyMeta: (asset, patch) => set((s) => ({ strategy: { ...s.strategy, [asset]: { ...s.strategy[asset], ...patch } } })),
-      saveDraft: (asset, name, templateName) => {
-        const s = get();
-        const now = Date.now();
-        const existingId = s.strategy[asset].draftId;
-        const existing = existingId ? s.drafts.find((d) => d.id === existingId) : undefined;
-        const legs = s.legs[asset].map((l) => ({ ...l }));
-        const draft: SavedStrategy = existing
-          ? { ...existing, name, templateName, legs, updatedAt: now }
-          : { id: `strat_${now.toString(36)}_${Math.random().toString(36).slice(2, 6)}`, name, asset, status: "draft", templateName, legs, createdAt: now, updatedAt: now };
-        set((st) => ({
-          drafts: existing ? st.drafts.map((d) => (d.id === draft.id ? draft : d)) : [draft, ...st.drafts],
-          strategy: { ...st.strategy, [asset]: { ...st.strategy[asset], name, draftId: draft.id } },
-        }));
-        return draft;
-      },
-      loadDraft: (id) => {
-        const d = get().drafts.find((x) => x.id === id);
-        if (!d) return null;
-        set((st) => ({
-          asset: d.asset,
-          legs: { ...st.legs, [d.asset]: d.legs.map((l) => ({ ...l })) },
-          strategy: { ...st.strategy, [d.asset]: { ...st.strategy[d.asset], name: d.name, draftId: d.id } },
-          workspaceTab: "builder",
-          builderTab: "builder",
-        }));
-        return d;
-      },
-      archiveDraft: (id, archived) =>
-        set((st) => ({
-          drafts: st.drafts.map((d) => (d.id === id ? { ...d, status: archived ? "archived" : "draft", archivedAt: archived ? Date.now() : undefined, updatedAt: Date.now() } : d)),
-        })),
-      deleteDraft: (id) =>
-        set((st) => ({
-          drafts: st.drafts.filter((d) => d.id !== id),
-          strategy: Object.fromEntries(
-            Object.entries(st.strategy).map(([k, m]) => [k, m.draftId === id ? { ...m, draftId: null } : m]),
-          ) as StrategyMetaByAsset,
-        })),
-      markDraftsImported: () => set({ drafts: [], draftsImported: true }),
       openTrade: (target) => set({ tradeFlow: target }),
       closeTrade: () => set({ tradeFlow: null }),
       openDetails: (detailsId) => set({ detailsId }),
@@ -575,7 +491,6 @@ export const useUiStore = create<UiState>()(
         chainLots: s.chainLots,
         lotsDefault: s.lotsDefault,
         strategy: s.strategy,
-        draftsImported: s.draftsImported,
         adminCols: s.adminCols,
         watchlist: s.watchlist,
         workspaceTab: s.workspaceTab,
@@ -586,7 +501,11 @@ export const useUiStore = create<UiState>()(
         riskAlerts: s.riskAlerts,
       }),
       merge: (persisted, current) => {
-        const p = (persisted ?? {}) as Partial<UiState>;
+        // ADR-088: an old browser's Phase 2 draft keys are dropped here, never carried into the state
+        const raw = { ...((persisted ?? {}) as Record<string, unknown>) };
+        delete raw["drafts"];
+        delete raw["draftsImported"];
+        const p = raw as Partial<UiState>;
         const venue = (VENUES as readonly string[]).includes(p.venue ?? "") ? (p.venue as VenueId) : DEFAULT_VENUE;
         const tabs: WorkspaceTab[] = ["chain", "builder", "paper", "live", "journal", "screener"];
         const atabs: AnalysisTab[] = ["payoff", "scenarios", "greeks", "vol", "structure", "ladder", "backtest", "replay"];
@@ -611,11 +530,9 @@ export const useUiStore = create<UiState>()(
           lotsDefault: DEFAULT_LOTS,
           optionDetail: null,
           strategy: p.strategy === undefined ? current.strategy : normaliseMetaByAsset(p.strategy),
-          draftsImported: p.draftsImported === true,
           adminCols: p.adminCols && typeof p.adminCols === "object" ? p.adminCols : {},
           watchlist: Array.isArray(p.watchlist) ? p.watchlist.filter((x): x is string => typeof x === "string") : [],
           templatesStrip: p.templatesStrip !== false,
-          drafts: p.draftsImported === true || p.drafts === undefined ? [] : normaliseDrafts(p.drafts),
           workspaceTab: tabs.includes(p.workspaceTab as WorkspaceTab) ? (p.workspaceTab as WorkspaceTab) : current.workspaceTab,
           analysisTab: atabs.includes(p.analysisTab as AnalysisTab) ? (p.analysisTab as AnalysisTab) : current.analysisTab,
           builderTab: current.builderTab,
