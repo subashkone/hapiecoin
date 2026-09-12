@@ -10,8 +10,10 @@ import { fmtMoney, type MoneyFormat } from "@/lib/money";
 import { accountsOf } from "@/lib/accounts";
 import { useUiStore } from "@/lib/store";
 import { openLegs } from "@/lib/strategy/paper";
+import type { MindfulPauseInfo } from "@/lib/strategy/mindful";
+import { MindfulCountdownButton, MindfulPause, useMindfulCountdown } from "./MindfulPause";
 
-export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accounts, connected, money, totalOf }: { open: boolean; onOpenChange: (o: boolean) => void; strategies: Strategy[]; brokers: Broker[]; accounts: BrokerCredentialPublic[]; connected: boolean; money: MoneyFormat; totalOf: (s: Strategy) => number }) {
+export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accounts, connected, money, totalOf, mindful = null }: { open: boolean; onOpenChange: (o: boolean) => void; strategies: Strategy[]; brokers: Broker[]; accounts: BrokerCredentialPublic[]; connected: boolean; money: MoneyFormat; totalOf: (s: Strategy) => number; /** Mindful pause (HC-TR-182): the trader is down on the day on live strategies. */ mindful?: MindfulPauseInfo | null | undefined }) {
   const batch = useLiveBatch();
   const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
   const [sel, setSel] = useState<Set<string>>(new Set());
@@ -21,6 +23,7 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
   const storedAccount = useUiStore((s) => s.accountId);
   const setAccount = useUiStore((s) => s.setAccount);
   const mine = accountsOf(accounts, brokerId);
+  const pauseLeft = useMindfulCountdown(open ? mindful : null, key);
   useEffect(() => {
     if (open) {
       setSel(new Set(strategies.filter((s) => openLegs(s).length > 0).map((s) => s.id)));
@@ -91,6 +94,7 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
               </div>
             ) : null}
           </div>
+          {mindful ? <MindfulPause info={mindful} money={money} left={pauseLeft} atRisk={{ text: "each strategy's own worst case · see its card", loss: false }} marginText="—" /> : null}
           <div className="mt-3 rounded border border-loss/40 p-2 text-2xs" data-testid="batch-warning">
             <b className="text-loss">Real Money Trading</b>
             <div>Each strategy is previewed against the exchange (contracts, marks, wallet, limits) and placed in order; the batch stops at the first refusal and tells you which strategy.</div>
@@ -99,9 +103,13 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button variant="destructive" disabled={sel.size === 0 || !connected || !brokerId} loading={batch.isPending} onClick={go} data-testid="batch-go">
-            Trade {sel.size} {sel.size === 1 ? "strategy" : "strategies"} live →
-          </Button>
+          {mindful && pauseLeft > 0 ? (
+            <MindfulCountdownButton left={pauseLeft} />
+          ) : (
+            <Button variant="destructive" disabled={sel.size === 0 || !connected || !brokerId} loading={batch.isPending} onClick={go} data-testid="batch-go">
+              Trade {sel.size} {sel.size === 1 ? "strategy" : "strategies"} live →
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -42,6 +42,7 @@ const settings: UserSettings = {
   lotSizes: { BTC: "0.001", ETH: "0.01", XAUT: "0.001" },
   theme: "dark",
   density: "comfortable",
+  mindful: { enabled: true, thresholdUsd: "0", pauseSeconds: 30 },
 };
 
 const broker: Broker = {
@@ -101,6 +102,18 @@ describe("HC-SH-038 UserSettings", () => {
     expect(UserSettings.safeParse({ ...settings, currency: "USD", pnlBasis: "bid_ask", theme: "light" }).success).toBe(
       true,
     );
+  });
+  it("HC-TR-183 mindful: defaults when absent, a non-negative USD threshold, a pause of 10 to 300 whole seconds", () => {
+    const { mindful: _omit, ...without } = settings;
+    void _omit;
+    expect(UserSettings.parse(without).mindful).toEqual({ enabled: true, thresholdUsd: "0", pauseSeconds: 30 });
+    expect(UserSettings.safeParse({ ...settings, mindful: { enabled: false, thresholdUsd: "25.5", pauseSeconds: 300 } }).success).toBe(true);
+    expect(UserSettings.safeParse({ ...settings, mindful: { enabled: true, thresholdUsd: "-1", pauseSeconds: 30 } }).success).toBe(false);
+    expect(UserSettings.safeParse({ ...settings, mindful: { enabled: true, thresholdUsd: 10, pauseSeconds: 30 } }).success).toBe(false);
+    expect(UserSettings.safeParse({ ...settings, mindful: { enabled: true, thresholdUsd: "0", pauseSeconds: 9 } }).success).toBe(false);
+    expect(UserSettings.safeParse({ ...settings, mindful: { enabled: true, thresholdUsd: "0", pauseSeconds: 301 } }).success).toBe(false);
+    expect(UserSettings.safeParse({ ...settings, mindful: { enabled: true, thresholdUsd: "0", pauseSeconds: 30.5 } }).success).toBe(false);
+    expect(UserSettings.safeParse({ ...settings, mindful: { enabled: true, thresholdUsd: "0", pauseSeconds: 30, extra: 1 } }).success).toBe(false);
   });
   it("HC-SH-040 conversion rate must be a positive decimal string", () => {
     expect(UserSettings.safeParse({ ...settings, conversionRate: "0" }).success).toBe(false);

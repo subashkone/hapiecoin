@@ -24,3 +24,4 @@
 
 ## Knowledge graph
 - graphify indexes this folder into `graphify-out/`. Ask structural questions through `/graphify` before grepping large mock bundles.
+- Mindful pause (ADR-074): a live entry can be delayed, never refused, by the browser: `lib/strategy/mindful.ts` reads today's live P&L from the same book as the bar (UTC day, shown as since 05:30 IST), `TradeFlow` latches the decision when the live preview opens, and the Place button becomes a countdown; adjustments, exits and paper are never paused; the preference is `UserSettings.mindful` (defaulted in zod, jsonb column).

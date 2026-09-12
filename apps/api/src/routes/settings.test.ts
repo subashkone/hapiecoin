@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import type { userSettings } from "../db/schema.js";
 import { auditLog } from "../db/schema.js";
 import { createTestApp, type TestApp } from "../test-support/harness.js";
+import { DEFAULT_MINDFUL } from "@hapiecoin/schema";
 import { DEFAULT_SETTINGS, toSettings } from "./settings.js";
 
 let t: TestApp;
@@ -34,9 +35,11 @@ describe("HC-SH-038 currency & conversion rate, HC-SH-041 lot sizes, HC-SH-043 P
     };
     const put = await t.request("/v1/settings", { method: "PUT", cookie, json: next });
     expect(put.status).toBe(200);
-    expect(await put.json()).toEqual(next);
+    // HC-TR-183: a PUT without the mindful block keeps the default pause (an older client)
+    const saved = { ...next, mindful: DEFAULT_MINDFUL };
+    expect(await put.json()).toEqual(saved);
     const get = await t.request("/v1/settings", { cookie });
-    expect(await get.json()).toEqual(next);
+    expect(await get.json()).toEqual(saved);
 
     const again = await t.request("/v1/settings", {
       method: "PUT",
@@ -48,8 +51,8 @@ describe("HC-SH-038 currency & conversion rate, HC-SH-041 lot sizes, HC-SH-043 P
     const rows = await t.db.select().from(auditLog).where(eq(auditLog.action, "settings.update"));
     expect(rows.length).toBe(2);
     expect(rows[0]?.before).toEqual(DEFAULT_SETTINGS);
-    expect(rows[0]?.after).toEqual(next);
-    expect(rows[1]?.before).toEqual(next);
+    expect(rows[0]?.after).toEqual(saved);
+    expect(rows[1]?.before).toEqual(saved);
     expect((rows[1]?.after as { theme: string }).theme).toBe("dark");
     expect(rows[0]?.actorId).toBeTruthy();
     expect(rows[0]?.ip).toBe("203.0.113.10");
@@ -73,6 +76,11 @@ describe("HC-SH-038 currency & conversion rate, HC-SH-041 lot sizes, HC-SH-043 P
       [{ ...good, conversionRate: "0" }, "conversionRate"],
       [{ ...good, currency: "EUR" }, "currency"],
       [{ ...good, extra: 1 }, ""],
+      // HC-TR-183 mindful bounds: a negative threshold, a pause under 10 s or over 300 s, a fractional pause
+      [{ ...good, mindful: { enabled: true, thresholdUsd: "-1", pauseSeconds: 30 } }, "mindful"],
+      [{ ...good, mindful: { enabled: true, thresholdUsd: "0", pauseSeconds: 5 } }, "mindful"],
+      [{ ...good, mindful: { enabled: true, thresholdUsd: "0", pauseSeconds: 301 } }, "mindful"],
+      [{ ...good, mindful: { enabled: true, thresholdUsd: "0", pauseSeconds: 12.5 } }, "mindful"],
     ];
     for (const [body, path] of attempts) {
       const res = await t.request("/v1/settings", { method: "PUT", cookie, json: body });
@@ -85,7 +93,17 @@ describe("HC-SH-038 currency & conversion rate, HC-SH-041 lot sizes, HC-SH-043 P
     expect(((await stillSaved.json()) as { currency: string }).currency).toBe("INR");
   });
 
-  it("fills a lot size missing from an old row with the default", () => {
+  it("HC-TR-183 saves the mindful pause and reads it back", async () => {
+    const mindful = { enabled: false, thresholdUsd: "25", pauseSeconds: 60 };
+    const good = { currency: "USD", conversionRate: "83.5", pnlBasis: "mark", lotSizes: { BTC: "0.001", ETH: "0.01", XAUT: "0.001" }, theme: "dark", density: "comfortable", mindful };
+    const put = await t.request("/v1/settings", { method: "PUT", cookie, json: good });
+    expect(put.status).toBe(200);
+    expect(((await put.json()) as { mindful: unknown }).mindful).toEqual(mindful);
+    const get = await t.request("/v1/settings", { cookie });
+    expect(((await get.json()) as { mindful: unknown }).mindful).toEqual(mindful);
+  });
+
+  it("fills a lot size missing from an old row with the default, and an out-of-shape mindful block reads as the default", () => {
     const row: typeof userSettings.$inferSelect = {
       userId: "u",
       currency: "USD",
@@ -94,9 +112,13 @@ describe("HC-SH-038 currency & conversion rate, HC-SH-041 lot sizes, HC-SH-043 P
       lotSizes: { BTC: "0.003" },
       theme: "dark",
       density: "comfortable",
+      mindful: { enabled: true, thresholdUsd: "0", pauseSeconds: 30 },
       updatedAt: new Date(),
     };
     expect(toSettings(row).lotSizes).toEqual({ BTC: "0.003", ETH: "0.01", XAUT: "0.001" });
+    expect(toSettings(row).mindful).toEqual(DEFAULT_MINDFUL);
+    expect(toSettings({ ...row, mindful: { enabled: false, thresholdUsd: "10", pauseSeconds: 45 } }).mindful).toEqual({ enabled: false, thresholdUsd: "10", pauseSeconds: 45 });
+    expect(toSettings({ ...row, mindful: { nope: true } as unknown as typeof row.mindful }).mindful).toEqual(DEFAULT_MINDFUL);
   });
 
   it("malformed JSON is a 400 envelope, not a crash", async () => {

@@ -14,7 +14,7 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 7. 🔨 Verified P&L: B7a fills read per key + realised P&L from fills + the Journal block with the agreement line · MERGED 12 Sep 2026 as PR #78 (ADR-073; HC-TR-179..181; GAPS #89) · B7b public page per trader at /t/<handle> (chosen handle, off by default, totals net of fees, opt-in daily chart / accounts / months) + share to X, Telegram, copy link, PNG card · BUILT on feat/verified-public (ADR-075; HC-SH-127, HC-PB-066, HC-PB-067; GAPS #91)
 8. ✅ Easy Options / Strategy Wizard: view + target + date → ranked defined-risk strategies over the templates and the fix ranking · BUILT 12 Sep 2026 on feat/strategy-wizard (ADR-072; HC-TR-176..178; GAPS #88): the Wizard sub-tab in the Builder (view chips, move % ↔ target price, expiry), three cards ranked by return on risk at the thesis with one earned tag each, Use this → Builder + payoff target, palette command and `W`
 9. ⬜ Backtest and replay on our own IV / mark snapshots (EOD strategy backtest; replay an expiry's chain)
-10. ⬜ Mindful Trading pause before a live order when down on the day
+10. ✅ Mindful Trading pause before a live order when down on the day · BUILT 12 Sep 2026 on feat/mindful-pause (ADR-074; HC-TR-182..183; GAPS #90): today's live P&L, the order's worst case and the margin in the live preview and the batch dialog with a countdown in place of the Place button; the Mindful trading preference (on / off, threshold, seconds) in settings, the palette and the Day P&L tile
 11. ⬜ Options screener on the chain data (IV rank, premium per day, skew)
 12. ⬜ Phone pass on the workspace, cards and dialogs
 

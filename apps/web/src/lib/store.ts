@@ -27,7 +27,7 @@ export function hasAdjustWork(a: AdjustDraft | null): boolean {
   return a !== null && (a.picks.length > 0 || Object.keys(a.lotsAfter).length > 0 || a.plans.length > 0);
 }
 
-export type DialogKind = "profile" | "public" | "api" | "currency" | "lot" | "pnl" | "exchanges" | "logout" | "columns" | "option" | "upgrade" | "alerts" | "shortcuts" | null;
+export type DialogKind = "profile" | "public" | "api" | "currency" | "lot" | "pnl" | "mindful" | "exchanges" | "logout" | "columns" | "option" | "upgrade" | "alerts" | "shortcuts" | null;
 
 /** What the Alerts dialog's New alert form starts with (HC-SH-100): a "Set alert" button passes the strategy. Transient. */
 export interface AlertPrefill {

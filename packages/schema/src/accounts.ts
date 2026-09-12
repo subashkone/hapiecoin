@@ -14,6 +14,18 @@ import {
 const PositiveDecimal = DecimalString.refine(isPositiveDecimal, { message: "must be greater than zero" });
 const NonNegativeDecimal = DecimalString.refine(isNonNegativeDecimal, { message: "must not be negative" });
 
+export const MINDFUL_PAUSE_MIN_S = 10;
+export const MINDFUL_PAUSE_MAX_S = 300;
+/** Mindful Trading pause (ADR-074; HC-TR-182..183): a pause before a live order on a day the trader is already down. */
+export const MindfulSettings = z.strictObject({
+  enabled: z.boolean(),
+  /** Today's live loss (USD) beyond which the pause starts; "0" = any loss. */
+  thresholdUsd: NonNegativeDecimal,
+  pauseSeconds: z.number().int().min(MINDFUL_PAUSE_MIN_S).max(MINDFUL_PAUSE_MAX_S),
+});
+export type MindfulSettings = z.infer<typeof MindfulSettings>;
+export const DEFAULT_MINDFUL: MindfulSettings = { enabled: true, thresholdUsd: "0", pauseSeconds: 30 };
+
 /** Opaque identifier issued by the auth layer / database. */
 export const Id = z.string().min(1).max(128);
 export type Id = z.infer<typeof Id>;
@@ -57,6 +69,8 @@ export const UserSettings = z.strictObject({
   lotSizes: z.record(Underlying, PositiveDecimal),
   theme: Theme,
   density: Density,
+  /** Absent from an older client's PUT: the default (on, any loss, 30 s). */
+  mindful: MindfulSettings.default(() => ({ ...DEFAULT_MINDFUL })),
 });
 export type UserSettings = z.infer<typeof UserSettings>;
 

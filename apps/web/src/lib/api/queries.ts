@@ -77,7 +77,8 @@ export function usePlan() {
 export function useUpdateSettings() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: f.updateSettings,
+    // PUT /v1/settings replaces the whole strict object (GAPS #45): a partial patch is completed from the cache
+    mutationFn: (patch: Partial<UserSettings>) => f.updateSettings({ ...(qc.getQueryData<UserSettings>(queryKeys.settings) ?? {}), ...patch }),
     onMutate: async (patch) => {
       await qc.cancelQueries({ queryKey: queryKeys.settings });
       const previous = qc.getQueryData<UserSettings>(queryKeys.settings);

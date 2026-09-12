@@ -1,6 +1,6 @@
 {
-  "id": "62d59e51-2cc9-4dd5-922d-e646cec0392d",
-  "prevId": "645fe59b-7d9c-4fa3-8074-639842d6c75c",
+  "id": "4b2e3cb3-0689-40d3-89a3-f2d3bd696ac5",
+  "prevId": "62d59e51-2cc9-4dd5-922d-e646cec0392d",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -3361,6 +3361,96 @@
             "id"
           ],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.trader_pages": {
+      "name": "trader_pages",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "handle": {
+          "name": "handle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "show_days": {
+          "name": "show_days",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "show_accounts": {
+          "name": "show_accounts",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "show_months": {
+          "name": "show_months",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "trader_pages_handle_uq": {
+          "name": "trader_pages_handle_uq",
+          "columns": [
+            {
+              "expression": "handle",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "trader_pages_user_id_users_id_fk": {
+          "name": "trader_pages_user_id_users_id_fk",
+          "tableFrom": "trader_pages",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

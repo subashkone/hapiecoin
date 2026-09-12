@@ -6,7 +6,7 @@
  * Money-shaped values (fee percentages, conversion rate, lot sizes) are stored as decimal strings in
  * text/jsonb columns, never as floats (brief: decimal strings cross package boundaries).
  */
-import type { PlanIntervals } from "@hapiecoin/schema";
+import { DEFAULT_MINDFUL, type MindfulSettings, type PlanIntervals } from "@hapiecoin/schema";
 import { sql } from "drizzle-orm";
 import { bigserial, boolean, customType, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
@@ -152,6 +152,8 @@ export const userSettings = pgTable("user_settings", {
   density: text("density", { enum: ["comfortable", "compact"] })
     .notNull()
     .default("comfortable"),
+  /** Mindful Trading pause (ADR-074): { enabled, thresholdUsd, pauseSeconds }. */
+  mindful: jsonb("mindful").$type<MindfulSettings>().notNull().default(DEFAULT_MINDFUL),
   updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
 });
 
