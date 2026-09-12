@@ -49,4 +49,6 @@ export {
   type SmilePoint,
 } from "./chain.js";
 export type { ChainRow, Leg, LegKind, OptionKind, Side } from "./types.js";
+export * from "./templates.js";
+export * from "./backtest.js";
 export * from "./worker/index.js";

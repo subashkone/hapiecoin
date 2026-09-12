@@ -137,7 +137,7 @@ function normaliseLayers(raw: unknown): ChartLayers {
   if (raw && typeof raw === "object") for (const k of LAYER_KEYS) if (typeof (raw as Record<string, unknown>)[k] === "boolean") out[k] = (raw as Record<string, boolean>)[k]!;
   return out;
 }
-export type AnalysisTab = "payoff" | "scenarios" | "greeks" | "vol" | "structure" | "ladder";
+export type AnalysisTab = "payoff" | "scenarios" | "greeks" | "vol" | "structure" | "ladder" | "backtest";
 export type BuilderSubTab = "builder" | "templates" | "wizard";
 /** What the analysis pane shows (ADR-026): the Builder legs (null), a paper / live strategy, or ticked exchange positions. */
 export type PaneSource = { kind: "strategy"; id: string } | { kind: "positions"; productIds: number[] } | null;
@@ -589,7 +589,7 @@ export const useUiStore = create<UiState>()(
         const p = (persisted ?? {}) as Partial<UiState>;
         const venue = (VENUES as readonly string[]).includes(p.venue ?? "") ? (p.venue as VenueId) : DEFAULT_VENUE;
         const tabs: WorkspaceTab[] = ["chain", "builder", "paper", "live", "journal"];
-        const atabs: AnalysisTab[] = ["payoff", "scenarios", "greeks", "vol", "structure", "ladder"];
+        const atabs: AnalysisTab[] = ["payoff", "scenarios", "greeks", "vol", "structure", "ladder", "backtest"];
         return {
           ...current,
           ...p,
