@@ -1,10 +1,10 @@
 // Settings dialogs against the in-memory mock API: every dialog saves through /v1 and the change persists.
-import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { chainTopic } from "@hapiecoin/schema";
 import { buildChain } from "../../../test/fixtures/chain";
-import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
+import { FakeSocket, installFakeWebAuthn, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
 import { routerMock } from "../../../test/next-mocks";
 import { useUiStore } from "@/lib/store";
 import { defaultLayout } from "@/lib/chain/layout";
@@ -229,6 +229,65 @@ describe("HC-SH-129 Security: the TOTP second factor (ADR-078)", () => {
     renderWithProviders(<SettingsDialogs />);
     act(() => useUiStore.getState().openDialog("security"));
     expect(await screen.findByTestId("security-dialog")).toBeTruthy();
+  });
+  it("HC-SH-137 passkeys (ADR-089): the list starts empty, Add records the browser's credential under the name given, Rename and Remove round-trip, a closed prompt is one sentence", async () => {
+    const webauthn = installFakeWebAuthn("laptop-key");
+    try {
+      const u = userEvent.setup();
+      renderWithProviders(<SecurityDialog open onOpenChange={noop} />);
+      expect(await screen.findByTestId("passkey-empty")).toBeTruthy();
+      expect(screen.getByTestId<HTMLInputElement>("passkey-add-name").value).toBe("This device");
+      await u.clear(screen.getByTestId("passkey-add-name"));
+      await u.type(screen.getByTestId("passkey-add-name"), "Work laptop");
+      await u.click(screen.getByTestId("passkey-add"));
+      await waitFor(() => expect(screen.getAllByTestId("passkey-row")).toHaveLength(1));
+      expect(screen.getByTestId("passkey-name").textContent).toBe("Work laptop");
+      expect(account().passkeys).toMatchObject([{ name: "Work laptop", credentialID: webauthn.credentialId }]);
+      expect(webauthn.credentials.create).toHaveBeenCalledTimes(1);
+      // rename
+      await u.click(screen.getByTestId("passkey-rename"));
+      await u.clear(screen.getByTestId("passkey-rename-input"));
+      await u.click(screen.getByTestId("passkey-rename-save"));
+      expect(screen.getByTestId("passkey-error").textContent).toContain("name");
+      await u.type(screen.getByTestId("passkey-rename-input"), "Home laptop");
+      await u.click(screen.getByTestId("passkey-rename-save"));
+      await waitFor(() => expect(screen.getByTestId("passkey-name").textContent).toBe("Home laptop"));
+      expect(account().passkeys?.[0]?.name).toBe("Home laptop");
+      // a second add whose prompt the user closes: the sentence, nothing recorded
+      webauthn.credentials.create.mockRejectedValueOnce(Object.assign(new Error("The operation either timed out or was not allowed."), { name: "NotAllowedError" }));
+      await u.click(screen.getByTestId("passkey-add"));
+      await waitFor(() => expect(screen.getByTestId("passkey-error").textContent).toMatch(/prompt was closed|not allowed|could not add/i));
+      expect(account().passkeys).toHaveLength(1);
+      // remove asks inline and can be kept; then the confirm removes it
+      await u.click(screen.getByTestId("passkey-delete"));
+      await u.click(screen.getByTestId("passkey-delete-cancel"));
+      expect(screen.queryByTestId("passkey-delete-confirm")).toBeNull();
+      await u.click(screen.getByTestId("passkey-delete"));
+      await u.click(screen.getByTestId("passkey-delete-confirm"));
+      await waitFor(() => expect(screen.queryByTestId("passkey-row")).toBeNull());
+      expect(await screen.findByTestId("passkey-empty")).toBeTruthy();
+      expect(account().passkeys).toEqual([]);
+    } finally {
+      webauthn.restore();
+    }
+  });
+  it("HC-SH-137 without WebAuthn the section says so instead of offering Add; a session older than a day is told to sign in again", async () => {
+    renderWithProviders(<SecurityDialog open onOpenChange={noop} />);
+    expect(await screen.findByTestId("passkey-unsupported")).toBeTruthy();
+    expect(screen.queryByTestId("passkey-add")).toBeNull();
+    cleanup();
+    const webauthn = installFakeWebAuthn("late-key");
+    try {
+      account().staleSession = true;
+      const u = userEvent.setup();
+      renderWithProviders(<SecurityDialog open onOpenChange={noop} />);
+      await u.click(await screen.findByTestId("passkey-add"));
+      await waitFor(() => expect(screen.getByTestId("passkey-error").textContent).toContain("Sign in again to add a passkey"));
+      expect(account().passkeys ?? []).toEqual([]);
+    } finally {
+      delete account().staleSession;
+      webauthn.restore();
+    }
   });
 });
 

@@ -195,4 +195,24 @@ test.describe("HC-SH-127 public page settings", () => {
     await expect(page.getByTestId("trader-days")).toHaveAttribute("data-count", "2");
     await expect(page.getByTestId("trader-accounts")).toHaveCount(0); // not turned on
   });
+
+  test("HC-SH-137 Security: add a passkey on a virtual authenticator, rename it, remove it (ADR-089)", async ({ page }) => {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("WebAuthn.enable");
+    await cdp.send("WebAuthn.addVirtualAuthenticator", { options: { protocol: "ctap2", transport: "internal", hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true } });
+    await page.getByTestId("settings-gear").click();
+    await page.getByTestId("menu-security").click();
+    await expect(page.getByTestId("passkey-empty")).toBeVisible();
+    await page.getByTestId("passkey-add-name").fill("Test laptop");
+    await page.getByTestId("passkey-add").click();
+    await expect(page.getByTestId("passkey-row")).toHaveCount(1);
+    await expect(page.getByTestId("passkey-name")).toHaveText("Test laptop");
+    await page.getByTestId("passkey-rename").click();
+    await page.getByTestId("passkey-rename-input").fill("Desk");
+    await page.getByTestId("passkey-rename-save").click();
+    await expect(page.getByTestId("passkey-name")).toHaveText("Desk");
+    await page.getByTestId("passkey-delete").click();
+    await page.getByTestId("passkey-delete-confirm").click();
+    await expect(page.getByTestId("passkey-empty")).toBeVisible();
+  });
 });

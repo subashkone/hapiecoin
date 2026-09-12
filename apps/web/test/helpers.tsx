@@ -176,3 +176,50 @@ export async function typeLiveIf(u: ReturnType<typeof userEvent.setup>, scope: H
     await u.type(f, "LIVE");
   }
 }
+
+/* ---------------- WebAuthn stub (ADR-089) ---------------- */
+
+/** base64url of a short ASCII string, the way the browser reports a credential id. */
+function b64url(text: string): string {
+  return Buffer.from(text).toString("base64url");
+}
+
+/**
+ * jsdom has no `navigator.credentials`: this puts one in that answers `create` and `get` with a credential-shaped object
+ * the WebAuthn client library accepts, whose id is base64url(`credentialId`). Returns the id the mock will record,
+ * and a restore. The `PublicKeyCredential` constructor is defined so the support check passes.
+ */
+export function installFakeWebAuthn(credentialId = "fake-credential-1") {
+  const enc = new TextEncoder();
+  const buf = (text: string): ArrayBuffer => enc.encode(text).buffer;
+  const id = b64url(credentialId);
+  const credential = (kind: "create" | "get") => ({
+    id,
+    rawId: buf(credentialId),
+    type: "public-key",
+    authenticatorAttachment: "platform",
+    getClientExtensionResults: () => ({}),
+    response:
+      kind === "create"
+        ? { clientDataJSON: buf("{}"), attestationObject: buf("attestation"), getTransports: () => ["internal"], getPublicKeyAlgorithm: () => -7, getPublicKey: () => buf("public-key"), getAuthenticatorData: () => buf("authenticator-data") }
+        : { clientDataJSON: buf("{}"), authenticatorData: buf("authenticator-data"), signature: buf("signature"), userHandle: null },
+  });
+  const credentials = {
+    create: vi.fn(() => Promise.resolve(credential("create"))),
+    get: vi.fn(() => Promise.resolve(credential("get"))),
+  };
+  const hadPkc = Object.getOwnPropertyDescriptor(window, "PublicKeyCredential");
+  const hadCreds = Object.getOwnPropertyDescriptor(navigator, "credentials");
+  Object.defineProperty(window, "PublicKeyCredential", { value: function PublicKeyCredential() {}, configurable: true, writable: true });
+  Object.defineProperty(navigator, "credentials", { value: credentials, configurable: true });
+  return {
+    credentialId: id,
+    credentials,
+    restore() {
+      if (hadPkc) Object.defineProperty(window, "PublicKeyCredential", hadPkc);
+      else delete (window as unknown as Record<string, unknown>)["PublicKeyCredential"];
+      if (hadCreds) Object.defineProperty(navigator, "credentials", hadCreds);
+      else delete (navigator as unknown as Record<string, unknown>)["credentials"];
+    },
+  };
+}
