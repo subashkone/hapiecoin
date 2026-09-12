@@ -1,6 +1,6 @@
 // Live trading through TanStack Query (Phase 3 item 2, ADR-025): preview, place, retry, sync, batch, positions.
 // Every order goes through the API's executor; the browser never talks to the venue.
-import { type LiveBatchBody, LiveBatchResult, type LivePlaceBody, LivePositions, type LivePositionsExitBody, LivePositionsExitResult, LivePreview, type LivePreviewBody, Strategy } from "@hapiecoin/schema";
+import { type LiveBatchBody, LiveBatchResult, type LivePlaceBody, LivePositions, type LivePositionsExitBody, LivePositionsExitResult, LivePreview, type LivePreviewBody, Strategy, LiveRetryBody } from "@hapiecoin/schema";
 
 /** Preview body: the open legs by default, or an adjustment batch's adds / changes (ADR-044). */
 export type PreviewBody = LivePreviewBody & { worstLoss?: number | undefined };
@@ -15,7 +15,7 @@ export function liveFetchers(client: ApiClient = api) {
   return {
     preview: (id: string, body: PreviewBody) => client.post(`/v1/strategies/${enc(id)}/live/preview`, body, LivePreview),
     place: (id: string, body: LivePlaceBody) => client.post(`/v1/strategies/${enc(id)}/live/place`, body, Strategy),
-    retry: (id: string) => client.post(`/v1/strategies/${enc(id)}/live/retry`, {}, Strategy),
+    retry: (id: string, body: LiveRetryBody) => client.post(`/v1/strategies/${enc(id)}/live/retry`, body, Strategy), // HC-TR-186: the word as typed
     sync: (id: string) => client.post(`/v1/strategies/${enc(id)}/live/sync`, {}, Strategy),
     batch: (body: LiveBatchBody) => client.post("/v1/strategies/live/batch", body, LiveBatchResult),
     positions: (brokerId: string, accountId: string | null = null) => client.get(`/v1/strategies/live/positions?brokerId=${enc(brokerId)}${accountId ? `&accountId=${enc(accountId)}` : ""}`, LivePositions),
@@ -50,7 +50,7 @@ export function useLivePlace() {
   return useLiveMutation(({ id, body }: { id: string; body: LivePlaceBody }) => f.place(id, body));
 }
 export function useLiveRetry() {
-  return useLiveMutation((id: string) => f.retry(id));
+  return useLiveMutation(({ id, confirm }: { id: string; confirm: string }) => f.retry(id, { confirm }));
 }
 export function useLiveSync() {
   return useLiveMutation((id: string) => f.sync(id));

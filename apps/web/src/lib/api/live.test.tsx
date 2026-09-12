@@ -32,16 +32,16 @@ describe("[API] live fetchers", () => {
     expect(p.legs[0]).toMatchObject({ symbol: "C-BTC-FAIL-250926", contracts: 10 });
     const key = newIdempotencyKey();
     expect(key).toMatch(/^web-[0-9a-f-]{36}$/);
-    const live = await f.place(d.id, { brokerId: "brk_delta", idempotencyKey: key, expected: {} });
+    const live = await f.place(d.id, { confirm: "LIVE", brokerId: "brk_delta", idempotencyKey: key, expected: {} });
     expect(live.status).toBe("live");
     expect(live.orders[0]!.state).toBe("failed");
-    expect((await f.place(d.id, { brokerId: "brk_delta", idempotencyKey: key, expected: {} })).orders).toHaveLength(1); // idempotent
-    const retried = await f.retry(d.id);
+    expect((await f.place(d.id, { confirm: "LIVE", brokerId: "brk_delta", idempotencyKey: key, expected: {} })).orders).toHaveLength(1); // idempotent
+    const retried = await f.retry(d.id, { confirm: "LIVE" });
     expect(retried.orders[0]).toMatchObject({ state: "filled", attempts: 2 });
     expect((await f.sync(d.id)).id).toBe(d.id);
     const other = await s.create({ name: "Batch me", asset: "BTC", templateName: "Custom", venue: "delta_india", legs: [CALL] });
     await s.start(other.id, { mode: "paper", brokerId: "brk_delta", entries: { [other.legs[0]!.id]: "1200" } });
-    const batch = await f.batch({ ids: [other.id, "strat_nope"], brokerId: "brk_delta", idempotencyKey: newIdempotencyKey() });
+    const batch = await f.batch({ confirm: "LIVE", ids: [other.id, "strat_nope"], brokerId: "brk_delta", idempotencyKey: newIdempotencyKey() });
     expect(batch).toEqual({ placed: [other.id], failed: null, skipped: ["strat_nope"] });
     const pos = await f.positions("brk_delta");
     expect(pos.positions.map((x) => x.symbol).sort()).toEqual(["C-BTC-80000-250926", "C-BTC-OK-250926"]);
@@ -51,7 +51,7 @@ describe("[API] live fetchers", () => {
     const f = liveFetchers(createApiClient());
     const s = strategyFetchers(createApiClient());
     const d = await s.create({ name: "Pos", asset: "BTC", templateName: "Custom", venue: "delta_india", legs: [CALL] });
-    await f.place(d.id, { brokerId: "brk_delta", idempotencyKey: newIdempotencyKey(), expected: {} });
+    await f.place(d.id, { confirm: "LIVE", brokerId: "brk_delta", idempotencyKey: newIdempotencyKey(), expected: {} });
     const { rerender } = renderWithProviders(<Positions brokerId={null} />);
     expect(screen.getByTestId("positions").textContent).toBe("pending");
     act(() => rerender(<Positions brokerId="brk_delta" />));

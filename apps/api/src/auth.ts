@@ -11,13 +11,14 @@ import { randomBytes } from "node:crypto";
 import { passkey } from "@better-auth/passkey";
 import { Mobile } from "@hapiecoin/schema";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { APIError } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
+import { twoFactor } from "better-auth/plugins/two-factor";
 import { betterAuth } from "better-auth/minimal";
 import { emailOTP } from "better-auth/plugins/email-otp";
 import { eq } from "drizzle-orm";
 import type { Config } from "./config.js";
 import type { Db } from "./db/client.js";
-import { accounts, passkeys, sessions, users, verifications } from "./db/schema.js";
+import { accounts, passkeys, sessions, users, verifications , twoFactors } from "./db/schema.js";
 import type { Logger } from "./logger.js";
 import type { Mailer } from "./mailer.js";
 import { CLIENT_IP_HEADER, type SessionUser } from "./security/context.js";
@@ -53,11 +54,22 @@ export interface AuthOptionsPublic {
   emailOtp: true;
   passkey: true;
   google: boolean;
+  /** TOTP second factor through an authenticator app (ADR-078). */
+  totp: true;
 }
 
 export function authOptionsPublic(config: Config): AuthOptionsPublic {
-  return { emailOtp: true, passkey: true, google: config.google !== undefined };
+  return { emailOtp: true, passkey: true, google: config.google !== undefined, totp: true };
 }
+
+/** The code and sentence the sign-in paths answer when an account with an authenticator must use its password (ADR-078). */
+export const TWO_FACTOR_REQUIRED = { code: "TWO_FACTOR_REQUIRED", message: "This account uses an authenticator app: sign in with your password and the code" } as const;
+/** ADR-078: a trusted-device cookie would let the next 30 days of sign-ins skip the code; HapieCoin asks every time. */
+const TRUST_DEVICE_REFUSED = { code: "TRUST_DEVICE_REFUSED", message: "HapieCoin asks for the code on every sign-in" } as const;
+/** Session creations that are part of the password + code sign-in itself; every other path is refused for a 2FA account.
+ *  /change-password asks for the current password on a live session, and better-auth re-creates the session there when
+ *  the other sessions are revoked. */
+const TWO_FACTOR_SESSION_PATHS = new Set(["/sign-in/email", "/two-factor/verify-totp", "/two-factor/verify-backup-code", "/two-factor/verify-otp", "/change-password"]);
 
 export function createAuth(deps: AuthDeps) {
   const { config, db, mailer, rateStore } = deps;
@@ -76,6 +88,7 @@ export function createAuth(deps: AuthDeps) {
         account: accounts,
         verification: verifications,
         passkey: passkeys,
+        twoFactor: twoFactors, // ADR-078
       },
     }),
     trustedOrigins: [config.webUrl],
@@ -112,6 +125,10 @@ export function createAuth(deps: AuthDeps) {
         "/email-otp/send-verification-otp": { window: 15 * 60, max: 5 },
         "/sign-up/email": { window: 15 * 60, max: 5 },
         "/sign-in/email-otp": { window: 15 * 60, max: 10 },
+        // ADR-078: the plugin's own rule is 3 calls per 10 s on /two-factor/*; a trader who mistypes the first code twice
+        // must not meet a 429. The plugin still counts failed codes and locks the account.
+        "/two-factor/verify-totp": { window: 60, max: 10 },
+        "/two-factor/verify-backup-code": { window: 60, max: 10 },
       },
       customStorage: {
         consume: async (key, rule) => {
@@ -120,7 +137,31 @@ export function createAuth(deps: AuthDeps) {
         },
       },
     },
+    // ADR-078: with an authenticator on, the account signs in with password + code only. The two-factor plugin guards
+    // the password path; the email-OTP path is refused up front with a plain sentence, and any other session (Google,
+    // passkey, the verify-email sign-in) is refused where it would be created, so no path around the second factor
+    // exists. A trusted-device cookie would skip the code for 30 days, so the verify endpoints refuse `trustDevice`.
+    hooks: {
+      before: createAuthMiddleware(async (ctx) => {
+        const body = (ctx.body ?? {}) as { email?: unknown; type?: unknown; trustDevice?: unknown };
+        if (ctx.path.startsWith("/two-factor/verify-") && body.trustDevice === true) throw new APIError("BAD_REQUEST", TRUST_DEVICE_REFUSED);
+        const otpSignIn = ctx.path === "/sign-in/email-otp" || (ctx.path === "/email-otp/send-verification-otp" && body.type === "sign-in");
+        if (!otpSignIn || typeof body.email !== "string") return;
+        const found = await ctx.context.internalAdapter.findUserByEmail(body.email.toLowerCase());
+        const user = (found && "user" in found ? found.user : found) as { twoFactorEnabled?: boolean } | null;
+        if (user?.twoFactorEnabled) throw new APIError("FORBIDDEN", TWO_FACTOR_REQUIRED);
+      }),
+    },
     databaseHooks: {
+      session: {
+        create: {
+          before: async (session, ctx) => {
+            if (!ctx || TWO_FACTOR_SESSION_PATHS.has(ctx.path)) return;
+            const user = (await ctx.context.internalAdapter.findUserById(session.userId)) as { twoFactorEnabled?: boolean } | null;
+            if (user?.twoFactorEnabled) throw new APIError("FORBIDDEN", TWO_FACTOR_REQUIRED);
+          },
+        },
+      },
       user: {
         create: {
           before: async (user, ctx) => {
@@ -149,6 +190,8 @@ export function createAuth(deps: AuthDeps) {
       },
     },
     plugins: [
+      // ADR-078: TOTP second factor (authenticator app) with backup codes; the first code is verified before it turns on
+      twoFactor({ issuer: "HapieCoin", skipVerificationOnEnable: false }),
       emailOTP({
         otpLength: OTP_LENGTH,
         expiresIn: OTP_EXPIRY_SEC,

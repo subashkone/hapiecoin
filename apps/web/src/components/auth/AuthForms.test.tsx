@@ -1,5 +1,5 @@
 // Each /auth view against the in-memory mock API (Better Auth routes) via the fetch stub.
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installMockFetch, type MockFetch } from "../../../test/helpers";
@@ -198,5 +198,47 @@ describe("HC-PB-034 / HC-PB-035 password reset", () => {
     await user.click(screen.getByRole("button", { name: "Reset Password" }));
     await waitFor(() => expect(screen.getAllByText("Enter valid OTP").length).toBeGreaterThan(0));
     expect(props.go).not.toHaveBeenCalled();
+  });
+});
+
+describe("HC-PB-068 the second factor after a password sign-in (ADR-078)", () => {
+  it("a 2FA account goes to the code step instead of finishing; the code step signs in with the app code or a backup code", async () => {
+    const acc = createAccount(mock.state, { email: "totp@example.com", password: "Passw0rd!", verified: true });
+    acc.twoFactor = { enabled: true, pending: false, backupCodes: ["AAAA-1111", "BBBB-2222"] };
+    const { user, props } = setup({ tab: "login" });
+    await user.type(screen.getByLabelText("Email"), "totp@example.com");
+    await user.type(screen.getByLabelText("Password"), "Passw0rd!");
+    await user.click(screen.getByRole("button", { name: "Sign In" }));
+    await waitFor(() => expect(props.go).toHaveBeenCalledWith("totp"));
+    expect(props.finish).not.toHaveBeenCalled();
+    expect(props.setEmail).toHaveBeenCalledWith("totp@example.com");
+    // the code step: a wrong code is refused with a plain sentence, the right one finishes
+    const step = setup({ tab: "totp", email: "totp@example.com" });
+    expect(step.getByTestId("auth-totp")).toBeTruthy();
+    await step.user.click(step.getByTestId("totp-verify"));
+    expect(step.getByTestId("totp-error").textContent).toContain("6-digit code");
+    const boxes = within(step.getByTestId("otp-input")).getAllByRole("textbox");
+    await step.user.click(boxes[0]!);
+    await step.user.keyboard("111111");
+    await step.user.click(step.getByTestId("totp-verify"));
+    await waitFor(() => expect(step.getByTestId("totp-error").textContent).toContain("not right"));
+    expect(step.props.finish).not.toHaveBeenCalled();
+    await step.user.click(boxes[0]!);
+    await step.user.keyboard("{Control>}a{/Control}{Backspace}");
+    await step.user.click(step.getByTestId("totp-toggle-backup"));
+    await step.user.type(step.getByTestId("totp-backup"), "AAAA-1111");
+    await step.user.click(step.getByTestId("totp-verify"));
+    await waitFor(() => expect(step.props.finish).toHaveBeenCalled());
+    expect(acc.twoFactor.backupCodes).toEqual(["BBBB-2222"]); // each backup code works once
+  });
+});
+
+describe("HC-PB-068 a refused social sign-in comes back with its reason (ADR-078)", () => {
+  it("shows the server's sentence from the error params and clears them from the URL", async () => {
+    window.history.replaceState(null, "", "/auth?tab=login&next=%2Fanalyse&error=TWO_FACTOR_REQUIRED&error_description=This+account+uses+an+authenticator+app%3A+sign+in+with+your+password+and+the+code");
+    setup({ tab: "login", googleEnabled: true });
+    expect((await screen.findByTestId("login-notice")).textContent).toContain("authenticator app");
+    expect(window.location.search).toBe("?tab=login&next=%2Fanalyse");
+    window.history.replaceState(null, "", "/");
   });
 });

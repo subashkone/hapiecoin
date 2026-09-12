@@ -1568,5 +1568,14 @@
     "feature": "Mindful trading preference: on / off, threshold, seconds",
     "how": "UserSettings.mindful { enabled, thresholdUsd, pauseSeconds } (defaults on, any loss, 30 s; 10–300 s; defaulted so an older client's PUT keeps validating; jsonb column with the same default); the Mindful trading dialog from the settings menu (the row reads '30 s' or 'off'), the palette ('Open Mindful trading') and the bar's Day P&L tile; switching it off shows 'The pause is there for the day you most want to skip it'",
     "evidence": "ADR-074: packages/schema accounts.ts MindfulSettings, apps/api db/schema.ts + drizzle migration, routes/settings.ts; apps/web components/dialogs/MindfulDialog.tsx, SettingsDialogs.tsx, header/AppHeader.tsx menu-mindful, shell/CommandPalette.tsx set:mindful, chrome/PortfolioBar.tsx bar-day-pnl; unit accounts.test.ts, settings.test.ts (api), dialogs.test.tsx, shell.test.tsx; e2e settings.spec.ts HC-TR-183"
+  },
+  {
+    "screen": "Trading · Trade Preview · Trade All · Adjust confirm · Retry",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Typed LIVE confirmation on every live entry; the API refuses a live entry without it",
+    "how": "A field 'Type LIVE to place / retry / adjust' under the red block of the live Trade Preview, the Trade All → Live dialog, the Adjust confirm (only when the change adds entry orders) and a Retry dialog that names the refused legs; the destructive button is disabled, not hidden, until the word is in (case-insensitive, trimmed, Enter submits); during the Mindful pause the countdown still replaces the button. The word travels in the order body and routes/live-exec.ts requireLiveConfirm answers 400 'Type LIVE to confirm a real order' on place, batch, retry, a live adjustment with adds and add-legs on a live strategy; exits, square-offs and paper never ask",
+    "evidence": "ADR-078 (12 Sep 2026): packages/schema strategies.ts LIVE_CONFIRM_WORD / LiveConfirm / isLiveConfirm / LiveRetryBody; apps/api routes/live-exec.ts requireLiveConfirm, routes/live.ts, routes/strategies.ts; apps/web components/trading/TypedConfirm.tsx, RetryDialog.tsx, TradePreviewDialog.tsx, BatchLiveDialog.tsx, adjust/AdjustConfirmDialog.tsx, PaperPanel.tsx, lib/api/live.ts; unit strategies.test.ts (schema) HC-TR-186, live.test.ts (api) HC-TR-186, trading-live.test.tsx HC-TR-186; e2e analyse.spec.ts (typeLiveIfShown before every live click)"
   }
 ]

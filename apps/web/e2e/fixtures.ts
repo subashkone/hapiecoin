@@ -29,6 +29,8 @@ export interface SeedOptions {
   alerts?: boolean;
   /** Seed the account with a linked Telegram chat (ADR-057). */
   telegram?: boolean;
+  /** Two-factor sign-in on (ADR-078): the password sign-in stops at the code step; the mock accepts 654321. */
+  twoFactor?: boolean;
   /** Seed a closed round trip of exchange fills on the Main key for the verified P&L block (ADR-073); needs `connected`. */
   fills?: boolean;
   /** Turn the public trader page on at this handle with every section shown (ADR-075). */

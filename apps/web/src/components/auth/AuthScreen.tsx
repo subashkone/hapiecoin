@@ -13,13 +13,14 @@ import { useSpot } from "@/lib/gateway/hooks";
 import { Logo } from "@/components/shell/Logo";
 import { AuthForms } from "./AuthForms";
 
-export type AuthTab = "login" | "otp-login" | "otp-verify" | "signup" | "verify-email" | "forgot" | "reset-password";
+export type AuthTab = "login" | "otp-login" | "otp-verify" | "signup" | "verify-email" | "forgot" | "reset-password" | "totp";
 
 /** Sub-steps that need an email fall back to their parent on a cold visit. */
 export const PARENT_TAB: Partial<Record<AuthTab, AuthTab>> = {
   "otp-verify": "otp-login",
   "verify-email": "signup",
   "reset-password": "forgot",
+  totp: "login", // HC-PB-068: the second factor follows a password sign-in
 };
 
 export function authHref(tab: AuthTab, next: string, ref: string): string {

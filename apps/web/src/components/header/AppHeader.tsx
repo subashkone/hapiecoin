@@ -10,6 +10,7 @@ import {
   Globe,
   Info,
   KeyRound,
+  ShieldCheck,
   Layers,
   LogOut,
   Mail,
@@ -81,6 +82,7 @@ function AdminChip() {
 
 function SettingsMenu({ user }: { user: User }) {
   const [open, setOpen] = useState(false);
+  const { data: me } = useMe(); // the 2FA flag moves while the app is open (HC-SH-129)
   const openDialog = useUiStore((s) => s.openDialog);
   const requestTour = useUiStore((s) => s.requestTour);
   const setPaletteOpen = useUiStore((s) => s.setPaletteOpen);
@@ -157,6 +159,9 @@ function SettingsMenu({ user }: { user: User }) {
         </MenuItem>
         <MenuItem onSelect={() => pick("mindful")} value={settings ? (settings.mindful.enabled ? `${settings.mindful.pauseSeconds} s` : "off") : undefined} testId="menu-mindful">
           <Pause /> Mindful trading
+        </MenuItem>
+        <MenuItem onSelect={() => pick("security")} value={(me ?? user).twoFactorEnabled ? "2FA on" : "2FA off"} testId="menu-security">
+          <ShieldCheck /> Security
         </MenuItem>
         <MenuItem onSelect={() => pick("exchanges")} testId="menu-exchanges">
           <Plug /> Exchange Setup

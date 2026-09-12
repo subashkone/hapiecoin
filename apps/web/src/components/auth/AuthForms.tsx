@@ -3,7 +3,7 @@
 // the network calls are Better Auth email/password + email-OTP plugin routes.
 import { Button, Field, Input, Mail, toast } from "@hapiecoin/ui";
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { authClient, authErrorMessage } from "@/lib/auth/client";
 import { emailError, isReferralInput, passwordStrength } from "@/lib/password";
 import type { AuthTab } from "./AuthScreen";
@@ -50,7 +50,7 @@ function Providers({ googleEnabled, next }: { googleEnabled: boolean; next: stri
           onClick={() => {
             setBusy(true);
             void authClient.signIn
-              .social({ provider: "google", callbackURL: next && next.startsWith("/") ? next : "/analyse" })
+              .social({ provider: "google", callbackURL: next && next.startsWith("/") ? next : "/analyse", errorCallbackURL: "/auth?tab=login" })
               .finally(() => setBusy(false));
           }}
         >
@@ -100,6 +100,8 @@ export function AuthForms(props: AuthFormsProps) {
       return <ForgotForm {...props} />;
     case "reset-password":
       return <ResetPasswordForm {...props} />;
+    case "totp":
+      return <TotpForm {...props} />;
   }
 }
 
@@ -108,6 +110,18 @@ function LoginForm({ email, setEmail, googleEnabled, next, go, finish }: AuthFor
   const [values, setValues] = useState({ email, password: "" });
   const [errors, setErrors] = useState<Errors>({});
   const [busy, setBusy] = useState(false);
+  // ADR-078: a social sign-in the server refused (a 2FA account through Google) comes back here with the reason in the URL
+  const [notice, setNotice] = useState<string | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("error");
+    if (!code) return;
+    setNotice(params.get("error_description") || (code === "TWO_FACTOR_REQUIRED" ? "This account uses an authenticator app: sign in with your password and the code" : "Sign-in did not go through. Try again."));
+    params.delete("error");
+    params.delete("error_description");
+    const rest = params.toString();
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${rest ? `?${rest}` : ""}`);
+  }, []);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -118,7 +132,7 @@ function LoginForm({ email, setEmail, googleEnabled, next, go, finish }: AuthFor
     setErrors(errs);
     if (Object.keys(errs).length) return;
     setBusy(true);
-    const { error } = await authClient.signIn.email({ email: values.email.trim(), password: values.password });
+    const { data, error } = await authClient.signIn.email({ email: values.email.trim(), password: values.password });
     setBusy(false);
     if (error) {
       const msg = authErrorMessage(error, "Invalid credentials.");
@@ -127,6 +141,11 @@ function LoginForm({ email, setEmail, googleEnabled, next, go, finish }: AuthFor
       return;
     }
     setEmail(values.email.trim());
+    // HC-PB-068 (ADR-078): an account with an authenticator app has no session yet; the code step finishes the sign-in
+    if ((data as { twoFactorRedirect?: boolean } | null)?.twoFactorRedirect) {
+      go("totp");
+      return;
+    }
     toast.success("Welcome back!", { description: "Logged in successfully." });
     finish();
   };
@@ -135,6 +154,11 @@ function LoginForm({ email, setEmail, googleEnabled, next, go, finish }: AuthFor
     <div data-testid="auth-login">
       <Title title="Welcome back" desc="Sign in to your trading dashboard" />
       <Providers googleEnabled={googleEnabled} next={next} />
+      {notice ? (
+        <p className="mb-3 rounded border border-loss/40 px-2 py-1.5 text-xs text-loss" role="alert" data-testid="login-notice">
+          {notice}
+        </p>
+      ) : null}
       <form onSubmit={(e) => void submit(e)} noValidate>
         <Field label="Email" error={errors["email"]}>
           <Input
@@ -534,6 +558,71 @@ function ResetPasswordForm({ email, go }: AuthFormsProps) {
       </p>
       <div className="mt-4 text-center">
         <LinkButton onClick={() => go("forgot")}>← Back</LinkButton>
+      </div>
+    </div>
+  );
+}
+
+/** The second factor after a password sign-in (HC-PB-068, ADR-078): the 6-digit code from the authenticator app, or a backup code. */
+function TotpForm({ email, go, finish }: AuthFormsProps) {
+  const [code, setCode] = useState("");
+  const [backup, setBackup] = useState(false);
+  const [error, setError] = useState<string | undefined>();
+  const [busy, setBusy] = useState(false);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    const trimmed = code.trim();
+    if (!backup && trimmed.length < 6) {
+      setError("Enter the 6-digit code from your authenticator app");
+      return;
+    }
+    if (backup && trimmed.length < 6) {
+      setError("Enter one of your backup codes");
+      return;
+    }
+    setBusy(true);
+    setError(undefined);
+    const { error: err } = backup ? await authClient.twoFactor.verifyBackupCode({ code: trimmed }) : await authClient.twoFactor.verifyTotp({ code: trimmed, trustDevice: false });
+    setBusy(false);
+    if (err) {
+      const msg = authErrorMessage(err, backup ? "That backup code is not right, or it was used already." : "That code is not right.");
+      setError(msg);
+      toast.error("Could not sign in", { description: msg });
+      return;
+    }
+    toast.success("Welcome back!", { description: "Signed in with your authenticator." });
+    finish();
+  };
+  return (
+    <div data-testid="auth-totp">
+      <h2 className="text-2xl">Two-factor code</h2>
+      <p className="mt-1 text-sm text-muted-foreground">{backup ? "Enter one of the backup codes you saved when you turned two-factor sign-in on." : `Enter the 6-digit code your authenticator app shows for HapieCoin${email ? ` (${email})` : ""}.`}</p>
+      <form onSubmit={(e) => void submit(e)} className="mt-6 flex flex-col gap-4" noValidate>
+        {backup ? (
+          <Field label="Backup code" error={error}>
+            <Input value={code} onChange={(e) => setCode(e.target.value)} autoFocus autoComplete="off" spellCheck={false} className="font-mono" data-testid="totp-backup" />
+          </Field>
+        ) : (
+          <div>
+            <OtpInput value={code} onChange={setCode} invalid={Boolean(error)} autoFocus name="totp" />
+            {error ? (
+              <p className="mt-1 text-xs text-loss" role="alert" data-testid="totp-error">
+                {error}
+              </p>
+            ) : null}
+          </div>
+        )}
+        <Button type="submit" loading={busy} className="w-full" data-testid="totp-verify">
+          Verify →
+        </Button>
+      </form>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[13px]">
+        <button type="button" onClick={() => { setBackup((b) => !b); setCode(""); setError(undefined); }} className="text-primary hover:underline" data-testid="totp-toggle-backup">
+          {backup ? "Use the authenticator app instead" : "Use a backup code instead"}
+        </button>
+        <button type="button" onClick={() => go("login")} className="text-muted-foreground hover:underline" data-testid="totp-back">
+          Back to sign in
+        </button>
       </div>
     </div>
   );

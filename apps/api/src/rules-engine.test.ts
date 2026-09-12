@@ -47,7 +47,7 @@ async function paper(legs: unknown[] = [CALL, PUT], name = "Rules paper") {
 }
 async function live(legs: unknown[] = [CALL, PUT], name = "Rules live") {
   const s = await json<Strategy>(await t.request("/v1/strategies", { cookie: alice, json: { name, asset: "BTC", legs } }));
-  expect((await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: alice, json: { brokerId: SEED.brokerId, idempotencyKey: `key-rules-${s.id.slice(-6)}`, expected: {} } })).status).toBe(200);
+  expect((await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: alice, json: { confirm: "LIVE", brokerId: SEED.brokerId, idempotencyKey: `key-rules-${s.id.slice(-6)}`, expected: {} } })).status).toBe(200);
   return get(s.id);
 }
 const BOTH = { "C-BTC-80000-250926": 700, "P-BTC-78000-250926": 900 }; // call −5, put 0 → −5

@@ -30,6 +30,7 @@ export function toUser(row: UserRow): User {
     avatar: row.avatar,
     referralCode: row.referralCode,
     createdAt: row.createdAt.toISOString(),
+    twoFactorEnabled: row.twoFactorEnabled, // ADR-078
   };
   if (row.mobile) user.mobile = row.mobile;
   return user;

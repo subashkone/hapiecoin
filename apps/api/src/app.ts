@@ -47,7 +47,7 @@ const Health = z.object({
   jobs: z.object({ role: z.enum(["leader", "always", "off"]), active: z.boolean() }).nullable(),
 });
 
-const AuthOptions = z.object({ emailOtp: z.literal(true), passkey: z.literal(true), google: z.boolean() });
+const AuthOptions = z.object({ emailOtp: z.literal(true), passkey: z.literal(true), google: z.boolean(), totp: z.literal(true) });
 
 export function createApp(deps: AppDeps): OpenAPIHono<AppEnv> {
   const { config } = deps;

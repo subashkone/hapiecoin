@@ -63,10 +63,10 @@ describe("HC-SH-054 limits are enforced where the reference shows Upgrade Requir
     const d = await json<Strategy>(await t.request("/v1/strategies", { cookie: alice, json: { name: "live try", asset: "BTC", legs: [CALL] } }));
     t.delta.accept("alice-key");
     await t.request("/v1/credentials", { cookie: alice, json: { brokerId: SEED.brokerId, apiKey: "alice-key", apiSecret: "alice-secret" } });
-    const live = await t.request(`/v1/strategies/${d.id}/live/place`, { cookie: alice, json: { brokerId: SEED.brokerId, idempotencyKey: "key-billing-live-01" } });
+    const live = await t.request(`/v1/strategies/${d.id}/live/place`, { cookie: alice, json: { confirm: "LIVE", brokerId: SEED.brokerId, idempotencyKey: "key-billing-live-01" } });
     expect(live.status).toBe(403);
     expect((await json<{ message: string }>(live)).message).toBe("Live trading is not included in your Free plan. Upgrade to unlock it.");
-    const batch = await t.request("/v1/strategies/live/batch", { cookie: alice, json: { ids: [d.id], brokerId: SEED.brokerId, idempotencyKey: "key-billing-batch-1" } });
+    const batch = await t.request("/v1/strategies/live/batch", { cookie: alice, json: { confirm: "LIVE", ids: [d.id], brokerId: SEED.brokerId, idempotencyKey: "key-billing-batch-1" } });
     expect(batch.status).toBe(403);
   });
 

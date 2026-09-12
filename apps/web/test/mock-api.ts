@@ -10,6 +10,13 @@ import { DEFAULT_PUBLIC_PAGE, Handle, publicTraderFrom, AlertCreate, AlertPatch,
 
 export const SESSION_COOKIE = "better-auth.session_token";
 export const TEST_OTP = "123456";
+/** The authenticator code the mock accepts (ADR-078); the real plugin verifies a time-based one. */
+export const TEST_TOTP = "654321";
+const TWO_FACTOR_COOKIE = "better-auth.two_factor";
+const TWO_FACTOR_REQUIRED = { code: "TWO_FACTOR_REQUIRED", message: "This account uses an authenticator app: sign in with your password and the code" };
+const newBackupCodes = () => Array.from({ length: 10 }, (_, i) => `${(1000 + i * 7919).toString(36)}-${(90000 + i * 104729).toString(36)}`.toUpperCase());
+/** The typed confirmation the routes require on a live entry (ADR-078). */
+const isLiveWord = (w: string | undefined): boolean => (w ?? "").trim().toUpperCase() === "LIVE";
 export const WHITELIST_IP = "172.236.179.136";
 
 interface Account {
@@ -35,6 +42,8 @@ interface Account {
   plan: PlanRecord;
   strategies: Strategy[];
   tradingDisabled: boolean;
+  /** Two-factor sign-in (ADR-078): pending between enable and the first code; enabled after it. */
+  twoFactor?: { enabled: boolean; pending: boolean; backupCodes: string[] };
   referredBy?: string;
   /** Billing (ADR-030): the catalogue subscription behind the banner, admin toggles and overrides. */
   subscription: MockSubscription | null;
@@ -288,8 +297,74 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const acc = body.email ? state.accounts.get(body.email.toLowerCase()) : undefined;
     if (!acc || acc.password !== body.password) return err(c, 401, "INVALID_EMAIL_OR_PASSWORD", "Invalid email or password");
     if (!acc.emailVerified) return err(c, 403, "EMAIL_NOT_VERIFIED", "Email not verified");
+    if (acc.twoFactor?.enabled) {
+      // ADR-078: no session until the code; the pending sign-in lives in the two-factor cookie
+      setCookie(c, TWO_FACTOR_COOKIE, acc.user.email, { path: "/", httpOnly: true, sameSite: "Lax" });
+      return c.json({ twoFactorRedirect: true });
+    }
     const token = setSession(c, acc.user.email);
     return c.json({ redirect: false, token, user: sessionBody(acc, token).user });
+  });
+
+  /* ---------------- two-factor (ADR-078) ---------------- */
+  const totpUri = (email: string) => `otpauth://totp/HapieCoin:${encodeURIComponent(email)}?secret=JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP&issuer=HapieCoin&digits=6&period=30`;
+  app.post("/api/auth/two-factor/enable", async (c) => {
+    const acc = current(c);
+    if (!acc) return err(c, 401, "UNAUTHORIZED", "Sign in first");
+    const body = await c.req.json<{ password?: string }>();
+    if (body.password !== acc.password) return err(c, 400, "INVALID_PASSWORD", "Invalid password");
+    if (acc.twoFactor?.enabled) return err(c, 400, "TOTP_ALREADY_ENABLED", "TOTP already enabled"); // the plugin refuses too
+    acc.twoFactor = { enabled: false, pending: true, backupCodes: newBackupCodes() };
+    return c.json({ method: "totp", totpURI: totpUri(acc.user.email), backupCodes: acc.twoFactor.backupCodes });
+  });
+  app.post("/api/auth/two-factor/verify-totp", async (c) => {
+    const body = await c.req.json<{ code?: string; trustDevice?: boolean }>();
+    if (body.trustDevice === true) return err(c, 400, "TRUST_DEVICE_REFUSED", "HapieCoin asks for the code on every sign-in"); // ADR-078
+    const signedIn = current(c);
+    if (signedIn) {
+      if (!signedIn.twoFactor) return err(c, 400, "TOTP_NOT_ENABLED", "TOTP not enabled");
+      if (body.code !== TEST_TOTP) return err(c, 401, "INVALID_CODE", "Invalid code");
+      signedIn.twoFactor = { ...signedIn.twoFactor, enabled: true, pending: false };
+      return c.json({ status: true });
+    }
+    const pendingEmail = getCookie(c, TWO_FACTOR_COOKIE);
+    const acc = pendingEmail ? state.accounts.get(pendingEmail) : undefined;
+    if (!acc?.twoFactor?.enabled) return err(c, 401, "INVALID_TWO_FACTOR_COOKIE", "Invalid two factor cookie");
+    if (body.code !== TEST_TOTP) return err(c, 401, "INVALID_CODE", "Invalid code");
+    deleteCookie(c, TWO_FACTOR_COOKIE, { path: "/" });
+    const token = setSession(c, acc.user.email);
+    return c.json({ token, user: sessionBody(acc, token).user });
+  });
+  app.post("/api/auth/two-factor/verify-backup-code", async (c) => {
+    const body = await c.req.json<{ code?: string; trustDevice?: boolean }>();
+    if (body.trustDevice === true) return err(c, 400, "TRUST_DEVICE_REFUSED", "HapieCoin asks for the code on every sign-in"); // ADR-078
+    const pendingEmail = getCookie(c, TWO_FACTOR_COOKIE);
+    const signedIn = current(c);
+    const acc = pendingEmail ? state.accounts.get(pendingEmail) : signedIn;
+    if (!acc?.twoFactor?.enabled) return err(c, 401, "INVALID_TWO_FACTOR_COOKIE", "Invalid two factor cookie");
+    const i = acc.twoFactor.backupCodes.indexOf(body.code ?? "");
+    if (i < 0) return err(c, 401, "INVALID_BACKUP_CODE", "Invalid backup code");
+    acc.twoFactor.backupCodes.splice(i, 1); // each code works once
+    if (!pendingEmail && signedIn) return c.json({ status: true }); // signed in already: the real endpoint keeps that session
+    deleteCookie(c, TWO_FACTOR_COOKIE, { path: "/" });
+    const token = setSession(c, acc.user.email);
+    return c.json({ token, user: sessionBody(acc, token).user });
+  });
+  app.post("/api/auth/two-factor/disable", async (c) => {
+    const acc = current(c);
+    if (!acc) return err(c, 401, "UNAUTHORIZED", "Sign in first");
+    const body = await c.req.json<{ password?: string }>();
+    if (body.password !== acc.password) return err(c, 400, "INVALID_PASSWORD", "Invalid password");
+    delete acc.twoFactor;
+    return c.json({ status: true });
+  });
+  app.post("/api/auth/two-factor/generate-backup-codes", async (c) => {
+    const acc = current(c);
+    if (!acc?.twoFactor) return err(c, 400, "TWO_FACTOR_NOT_ENABLED", "Two factor isn't enabled");
+    const body = await c.req.json<{ password?: string }>();
+    if (body.password !== acc.password) return err(c, 400, "INVALID_PASSWORD", "Invalid password");
+    acc.twoFactor.backupCodes = newBackupCodes();
+    return c.json({ status: true, backupCodes: acc.twoFactor.backupCodes });
   });
 
   // Google sign-in the way production is wired (ADR-019): the client posts to sign-in/social and navigates
@@ -319,6 +394,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   app.post("/api/auth/email-otp/send-verification-otp", async (c) => {
     const body = await c.req.json<{ email?: string; type?: string }>();
     if (!body.email || !body.type) return err(c, 400, "INVALID_BODY", "email and type are required");
+    if (body.type === "sign-in" && state.accounts.get(body.email.toLowerCase())?.twoFactor?.enabled) return err(c, 403, TWO_FACTOR_REQUIRED.code, TWO_FACTOR_REQUIRED.message); // ADR-078
     state.otps.set(`${body.email.toLowerCase()}:${body.type}`, TEST_OTP);
     return c.json({ success: true });
   });
@@ -326,6 +402,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   app.post("/api/auth/sign-in/email-otp", async (c) => {
     const body = await c.req.json<{ email?: string; otp?: string }>();
     const email = body.email?.toLowerCase() ?? "";
+    if (state.accounts.get(email)?.twoFactor?.enabled) return err(c, 403, TWO_FACTOR_REQUIRED.code, TWO_FACTOR_REQUIRED.message); // ADR-078
     if (state.otps.get(`${email}:sign-in`) !== body.otp) return err(c, 400, "INVALID_OTP", "Invalid OTP");
     let acc = state.accounts.get(email);
     if (!acc) acc = createAccount(state, { email, name: email.split("@")[0] ?? "Trader" });
@@ -366,7 +443,10 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (!current(c)) return err(c, 401, "UNAUTHORIZED", "Sign in required");
     await next();
   });
-  v1.get("/me", (c) => c.json(current(c)!.user));
+  v1.get("/me", (c) => {
+    const acc = current(c)!;
+    return c.json({ ...acc.user, twoFactorEnabled: acc.twoFactor?.enabled ?? false }); // ADR-078
+  });
   // Telegram linking (ADR-057, mirrors apps/api/src/routes/telegram.ts); the auto-link stands in for the person pressing Start
   const telegramStatus = (acc: Account) => {
     const linked = acc.telegram.chatId !== null;
@@ -710,6 +790,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       planned.push({ leg, exitLots: leg.lots - ch.lotsAfter, price: ch.price });
     }
     if (planned.length === 0 && adds.length === 0) return err(c, 400, "BAD_REQUEST", "Nothing to adjust");
+    if (s.status === "live" && adds.length > 0 && !isLiveWord((body as { confirm?: string }).confirm)) return err(c, 400, "BAD_REQUEST", "Type LIVE to confirm a real order"); // ADR-078
     const closes = planned.filter((p) => p.exitLots === p.leg.lots).length;
     if (open.length - closes + adds.length > 10) return err(c, 409, "CONFLICT", "Maximum 10 active legs allowed per strategy");
     const at = nowIso();
@@ -901,7 +982,8 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   };
   v1.post("/strategies/live/batch", async (c) => {
     const acc = current(c)!;
-    const body = await c.req.json<{ ids: string[]; brokerId: string; accountId?: string; idempotencyKey: string }>();
+    const body = await c.req.json<{ confirm?: string; ids: string[]; brokerId: string; accountId?: string; idempotencyKey: string }>();
+    if (!isLiveWord(body.confirm)) return err(c, 400, "BAD_REQUEST", "Type LIVE to confirm a real order"); // ADR-078
     if (acc.tradingDisabled) return err(c, 409, "CONFLICT", "Live trading is disabled for this account");
     if (!acc.credentials.length) return err(c, 409, "CONFLICT", "Connect your exchange in Settings → API Settings to enable live trading");
     const placed: string[] = [];
@@ -998,8 +1080,9 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   v1.post("/strategies/:id/live/place", async (c) => {
     const s = findStrategy(c);
     if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
-    const body = await c.req.json<{ brokerId: string; accountId?: string; idempotencyKey: string; expected?: Record<string, string> }>();
+    const body = await c.req.json<{ confirm?: string; brokerId: string; accountId?: string; idempotencyKey: string; expected?: Record<string, string> }>();
     if (s.orderBatchId === body.idempotencyKey) return c.json(s);
+    if (!isLiveWord(body.confirm)) return err(c, 400, "BAD_REQUEST", "Type LIVE to confirm a real order"); // ADR-078
     if (s.status !== "draft" && s.status !== "paper") return err(c, 409, "CONFLICT", `Only a draft or paper strategy can go live; this strategy is ${s.status}`);
     const blockedLive = assertEntitled(c, current(c)!, "live_trading");
     if (blockedLive) return blockedLive;
@@ -1013,9 +1096,11 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     placeLive(c, s, body.idempotencyKey, "entry", s.legs.filter((l) => l.status === "open"));
     return c.json(touch(s));
   });
-  v1.post("/strategies/:id/live/retry", (c) => {
+  v1.post("/strategies/:id/live/retry", async (c) => {
     const s = findStrategy(c);
     if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    const body = await c.req.json<{ confirm?: string }>();
+    if (!isLiveWord(body.confirm)) return err(c, 400, "BAD_REQUEST", "Type LIVE to confirm a real order"); // ADR-078
     if (s.status !== "live") return err(c, 409, "CONFLICT", "Only a live strategy has orders to retry");
     for (const o of s.orders.filter((x) => x.state === "failed")) {
       const leg = s.legs.find((l) => l.id === o.legId);
@@ -1797,8 +1882,9 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     return c.json({ ok: true });
   });
   app.post("/__test/seed", async (c) => {
-    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; subAccount?: boolean; fills?: boolean; publicHandle?: string; referrals?: number; banners?: number; coupons?: boolean; payments?: number; campaigns?: number; alerts?: boolean; telegram?: boolean }>();
+    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; subAccount?: boolean; fills?: boolean; publicHandle?: string; referrals?: number; banners?: number; coupons?: boolean; payments?: number; campaigns?: number; alerts?: boolean; telegram?: boolean; twoFactor?: boolean }>();
     const acc = createAccount(state, body);
+    if (body.twoFactor) acc.twoFactor = { enabled: true, pending: false, backupCodes: newBackupCodes() }; // ADR-078
     if (body.telegram) acc.telegram = { chatId: `chat_${acc.user.id}`, code: null, linkedAt: nowIso(), pendingReads: 0 };
     if (body.alerts) {
       const at = new Date().toISOString();

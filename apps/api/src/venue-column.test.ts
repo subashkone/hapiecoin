@@ -58,7 +58,7 @@ describe("HC-SH-120 [API] the venue column", () => {
     const p = await json<LivePreview>(await t.request(`/v1/strategies/${s.id}/live/preview`, { cookie: alice, json: { brokerId: "brk_other" } }));
     expect(p.ok).toBe(false);
     expect(p.reasons.some((r) => r.includes("other_venue"))).toBe(true); // the dialog shows the refusal before any placement
-    const place = await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: alice, json: { brokerId: "brk_other", idempotencyKey: "key-venue-0001", expected: {} } });
+    const place = await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: alice, json: { confirm: "LIVE", brokerId: "brk_other", idempotencyKey: "key-venue-0001", expected: {} } });
     expect(place.status).toBe(409);
     expect((await json<{ message: string }>(place)).message).toContain("other_venue");
     const [row] = await t.db.select({ status: strategies.status, brokerId: strategies.brokerId }).from(strategies).where(eq(strategies.id, s.id));
@@ -66,7 +66,7 @@ describe("HC-SH-120 [API] the venue column", () => {
     // batch: a paper strategy on the seed broker; the foreign broker is the batch's failed item, not a thrown 409
     const paper = await json<Strategy>(await t.request("/v1/strategies", { cookie: alice, json: { name: "Venue batch", asset: "BTC", legs: [CALL] } }));
     expect((await t.request(`/v1/strategies/${paper.id}/start`, { cookie: alice, json: { mode: "paper", brokerId: SEED.brokerId, entries: {} } })).status).toBe(200);
-    const batch = await json<{ placed: string[]; failed: { id: string; error: string } | null; skipped: string[] }>(await t.request("/v1/strategies/live/batch", { cookie: alice, json: { ids: [paper.id], brokerId: "brk_other", idempotencyKey: "key-venue-0002" } }));
+    const batch = await json<{ placed: string[]; failed: { id: string; error: string } | null; skipped: string[] }>(await t.request("/v1/strategies/live/batch", { cookie: alice, json: { confirm: "LIVE", ids: [paper.id], brokerId: "brk_other", idempotencyKey: "key-venue-0002" } }));
     expect(batch.placed).toEqual([]);
     expect(batch.failed?.id).toBe(paper.id);
     expect(batch.failed?.error).toContain("other_venue");
@@ -113,7 +113,7 @@ describe("HC-SH-120 [API] the venue column", () => {
     const p = await json<LivePreview>(await t.request(`/v1/strategies/${s.id}/live/preview`, { cookie: alice, json: { brokerId: b.id } }));
     expect(p.ok).toBe(false);
     expect(p.reasons.some((r) => r.includes("data-only"))).toBe(true);
-    const place = await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: alice, json: { brokerId: b.id, idempotencyKey: "key-deribit-0001", expected: {} } });
+    const place = await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: alice, json: { confirm: "LIVE", brokerId: b.id, idempotencyKey: "key-deribit-0001", expected: {} } });
     expect(place.status).toBe(409);
     expect((await json<{ message: string }>(place)).message).toContain("data-only");
   });

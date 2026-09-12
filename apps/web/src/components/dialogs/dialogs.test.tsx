@@ -19,6 +19,7 @@ import { ExchangeManagementDialog, validateBrokerForm } from "./ExchangeManageme
 import { LogoutDialog } from "./LogoutDialog";
 import { LotSizeDialog } from "./LotSizeDialog";
 import { MindfulDialog, readMindful } from "./MindfulDialog";
+import { SecurityDialog, groupKey, keyOf } from "./SecurityDialog";
 import { PnlDialog } from "./PnlDialog";
 import { ProfileDialog } from "./ProfileDialog";
 import { SettingsDialogs } from "./SettingsDialogs";
@@ -179,6 +180,55 @@ describe("HC-SH-038..040 Currency Settings", () => {
     await u.click(screen.getByTestId("currency-save"));
     await waitFor(() => expect(account().settings).toMatchObject({ currency: "INR", conversionRate: "84.25" }));
     expect(currencyNote("USD", "")).toContain("₹0");
+  });
+});
+
+describe("HC-SH-129 Security: the TOTP second factor (ADR-078)", () => {
+  it("turns on with the password, the key and the first code, shows the backup codes once, and turns off with the password", async () => {
+    const u = userEvent.setup();
+    const { rerender } = renderWithProviders(<SecurityDialog open onOpenChange={() => useUiStore.getState().closeDialog()} />);
+    expect((await screen.findByTestId("security-status")).textContent).toBe("off");
+    await u.click(screen.getByTestId("security-enable"));
+    await u.click(screen.getByTestId("security-password-next"));
+    expect(screen.getByTestId("security-error").textContent).toContain("password");
+    await u.type(screen.getByTestId("security-password"), "wrong");
+    await u.click(screen.getByTestId("security-password-next"));
+    await waitFor(() => expect(screen.getByTestId("security-error").textContent).toBe("Invalid credentials."));
+    await u.clear(screen.getByTestId("security-password"));
+    await u.type(screen.getByTestId("security-password"), "Passw0rd!");
+    await u.click(screen.getByTestId("security-password-next"));
+    const key = await screen.findByTestId("security-secret");
+    expect(key.textContent).toBe(groupKey("JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP"));
+    expect(screen.getByTestId("security-uri").getAttribute("href")).toMatch(/^otpauth:\/\/totp\/HapieCoin/);
+    expect(account().twoFactor).toMatchObject({ enabled: false, pending: true }); // nothing changes before the first code
+    const boxes = within(screen.getByTestId("otp-input")).getAllByRole("textbox");
+    await u.click(boxes[0]!);
+    await u.keyboard("000000");
+    await u.click(screen.getByTestId("security-verify"));
+    await waitFor(() => expect(screen.getByTestId("security-error").textContent).toContain("not right"));
+    await u.click(boxes[0]!);
+    await u.keyboard("{Control>}a{/Control}{Backspace}654321");
+    await u.click(screen.getByTestId("security-verify"));
+    await waitFor(() => expect(screen.getAllByTestId("security-backup-code")).toHaveLength(10));
+    expect(account().twoFactor?.enabled).toBe(true);
+    await waitFor(() => expect(screen.getByTestId("security-status").textContent).toBe("on"));
+    await u.click(screen.getByTestId("security-done"));
+    // off again: the dialog re-opens on the idle step with the flag on
+    rerender(<SecurityDialog open={false} onOpenChange={() => undefined} />);
+    rerender(<SecurityDialog open onOpenChange={() => undefined} />);
+    await waitFor(() => expect(screen.getByTestId("security-dialog").getAttribute("data-step")).toBe("idle"));
+    expect(screen.getByTestId("security-status").textContent).toBe("on");
+    await u.click(screen.getByTestId("security-disable"));
+    await u.type(screen.getByTestId("security-password"), "Passw0rd!");
+    await u.click(screen.getByTestId("security-disable-confirm"));
+    await waitFor(() => expect(account().twoFactor).toBeUndefined());
+    expect(keyOf("not-a-uri")).toBe("not-a-uri");
+    expect(groupKey("ABCDEFGH")).toBe("ABCD EFGH");
+  });
+  it("mounts through SettingsDialogs when the store opens it", async () => {
+    renderWithProviders(<SettingsDialogs />);
+    act(() => useUiStore.getState().openDialog("security"));
+    expect(await screen.findByTestId("security-dialog")).toBeTruthy();
   });
 });
 

@@ -222,13 +222,13 @@ describe("[SEC] OTP rate limits", () => {
 describe("HC-PB-029 Google sign-in visibility", () => {
   it("is hidden without GOOGLE_CLIENT_ID/SECRET and offered when both exist", async () => {
     const res = await t.request("/v1/auth-options");
-    expect(await res.json()).toEqual({ emailOtp: true, passkey: true, google: false });
+    expect(await res.json()).toEqual({ emailOtp: true, passkey: true, google: false, totp: true });
     expect(t.auth.options.socialProviders).toBeUndefined();
 
     const withGoogle = await createTestApp({ GOOGLE_CLIENT_ID: "gid", GOOGLE_CLIENT_SECRET: "gsecret" });
     try {
       const r = await withGoogle.request("/v1/auth-options");
-      expect(await r.json()).toEqual({ emailOtp: true, passkey: true, google: true });
+      expect(await r.json()).toEqual({ emailOtp: true, passkey: true, google: true, totp: true });
       expect(withGoogle.auth.options.socialProviders?.google).toBeDefined();
       expect(
         authOptionsPublic(loadConfig({ ...TEST_ENV, GOOGLE_CLIENT_ID: "a", GOOGLE_CLIENT_SECRET: "b" }))
@@ -245,5 +245,112 @@ describe("[AUTH] referral codes", () => {
     expect(generateReferralCode()).toMatch(/^REF[A-Z2-7]{7}$/);
     expect(generateReferralCode((n) => Buffer.alloc(n, 0))).toBe("REFAAAAAAA");
     expect(generateReferralCode((n) => Buffer.alloc(n, 31))).toBe("REF7777777");
+  });
+});
+
+describe("HC-PB-068 / HC-SH-129 the TOTP second factor (ADR-078)", () => {
+  const email = "totp@hapiecoin.test";
+  const password = "correct horse battery";
+  // its own app: the shared one's clock is moved far ahead by the rate-limit tests, which expires its sessions
+  let tt: TestApp;
+  let cookie: string;
+  let secret: string;
+  beforeAll(async () => {
+    tt = await createTestApp();
+  });
+  afterAll(() => tt.close());
+  /** The otpauth URI carries the key base32-encoded (RFC 4648, no padding); the server's generator takes the raw key. */
+  const base32Decode = (text: string): string => {
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    let bits = "";
+    for (const ch of text.replace(/=+$/, "")) bits += alphabet.indexOf(ch).toString(2).padStart(5, "0");
+    const bytes: number[] = [];
+    for (let i = 0; i + 8 <= bits.length; i += 8) bytes.push(parseInt(bits.slice(i, i + 8), 2));
+    return Buffer.from(bytes).toString("utf8");
+  };
+  const code = async () => (await tt.auth.api.generateTOTP({ body: { secret: base32Decode(secret) } })).code;
+
+  it("turns on only after the first code from the authenticator, hands out backup codes once, and shows on /v1/me", async () => {
+    cookie = (await tt.signUp(email)).cookie;
+    tt.now.value += 11_000; // the plugin allows 3 two-factor calls per 10 s
+    const enable = await tt.request(`${AUTH_BASE_PATH}/two-factor/enable`, { cookie, json: { password } });
+    expect(enable.status).toBe(200);
+    const body = (await enable.json()) as { totpURI: string; backupCodes: string[] };
+    expect(body.totpURI).toMatch(/^otpauth:\/\/totp\/HapieCoin/);
+    expect(body.backupCodes.length).toBeGreaterThanOrEqual(8);
+    secret = new URL(body.totpURI).searchParams.get("secret")!;
+    expect(secret.length).toBeGreaterThan(10);
+    // not on yet: the first code proves the app holds the key
+    expect(((await (await tt.request("/v1/me", { cookie })).json()) as { twoFactorEnabled?: boolean }).twoFactorEnabled).toBe(false);
+    tt.now.value += 11_000; // the plugin allows 3 two-factor calls per 10 s
+    const wrong = await tt.request(`${AUTH_BASE_PATH}/two-factor/verify-totp`, { cookie, json: { code: "000000" } });
+    expect(wrong.status).toBeGreaterThanOrEqual(400);
+    tt.now.value += 11_000; // the plugin allows 3 two-factor calls per 10 s
+    const verify = await tt.request(`${AUTH_BASE_PATH}/two-factor/verify-totp`, { cookie, json: { code: await code() } });
+    expect(verify.status).toBe(200);
+    cookie = cookieHeaderFrom(verify, cookie); // the verify answer refreshes the session cookie
+    expect(((await (await tt.request("/v1/me", { cookie })).json()) as { twoFactorEnabled?: boolean }).twoFactorEnabled).toBe(true);
+  });
+
+  it("a password sign-in stops at the second factor until the code is right; the email-OTP path is refused for this account", async () => {
+    const first = await tt.request(`${AUTH_BASE_PATH}/sign-in/email`, { json: { email, password } });
+    expect(first.status).toBe(200);
+    expect((await first.json()) as Record<string, unknown>).toMatchObject({ twoFactorRedirect: true });
+    const pending = cookieHeaderFrom(first);
+    expect(pending).toContain("two_factor");
+    expect(pending).not.toContain("session_token=");
+    tt.now.value += 11_000; // the plugin allows 3 two-factor calls per 10 s
+    const bad = await tt.request(`${AUTH_BASE_PATH}/two-factor/verify-totp`, { cookie: pending, json: { code: "123456" } });
+    expect(bad.status).toBeGreaterThanOrEqual(400);
+    tt.now.value += 11_000; // the plugin allows 3 two-factor calls per 10 s
+    const ok = await tt.request(`${AUTH_BASE_PATH}/two-factor/verify-totp`, { cookie: pending, json: { code: await code() } });
+    expect(ok.status).toBe(200);
+    const session = cookieHeaderFrom(ok, pending);
+    expect(session).toContain("session_token=");
+    expect((await tt.request("/v1/me", { cookie: session })).status).toBe(200);
+    // the passwordless paths cannot go round the authenticator
+    const send = await tt.request(`${AUTH_BASE_PATH}/email-otp/send-verification-otp`, { json: { email, type: "sign-in" } });
+    expect(send.status).toBe(403);
+    expect(((await send.json()) as { code?: string; message?: string }).message).toContain("authenticator app");
+    const otpSignIn = await tt.request(`${AUTH_BASE_PATH}/sign-in/email-otp`, { json: { email, otp: "123456" } });
+    expect(otpSignIn.status).toBe(403);
+    cookie = session;
+  });
+
+  it("refuses a trusted device, and refuses the session a verify-email sign-in would create for this account", async () => {
+    // a trusted-device cookie would skip the code for 30 days (the plugin honours the flag from any caller)
+    const again = await tt.request(`${AUTH_BASE_PATH}/sign-in/email`, { json: { email, password } });
+    const pending = cookieHeaderFrom(again);
+    const trusted = await tt.request(`${AUTH_BASE_PATH}/two-factor/verify-totp`, { cookie: pending, json: { code: await code(), trustDevice: true } });
+    expect(trusted.status).toBe(400);
+    expect(((await trusted.json()) as { code?: string }).code).toBe("TRUST_DEVICE_REFUSED");
+    expect(cookieHeaderFrom(trusted)).not.toContain("session_token=");
+    // the email-verification OTP signs the account in after a successful verify on any other account; here the session is refused
+    const send = await tt.request(`${AUTH_BASE_PATH}/email-otp/send-verification-otp`, { json: { email, type: "email-verification" } });
+    expect(send.status).toBe(200);
+    const otp = tt.mail.last(email, "email-verification")?.otp;
+    expect(otp).toMatch(/^[0-9]{6}$/);
+    const verify = await tt.request(`${AUTH_BASE_PATH}/email-otp/verify-email`, { json: { email, otp } });
+    expect(verify.status).toBe(403);
+    expect(((await verify.json()) as { code?: string }).code).toBe("TWO_FACTOR_REQUIRED");
+    expect(cookieHeaderFrom(verify)).not.toContain("session_token=");
+    // the honest path still works: the code without the flag
+    const ok = await tt.request(`${AUTH_BASE_PATH}/two-factor/verify-totp`, { cookie: pending, json: { code: await code() } });
+    expect(ok.status).toBe(200);
+    expect(cookieHeaderFrom(ok, pending)).toContain("session_token=");
+  });
+
+  it("turns off with the password, after which the email-OTP path works again", async () => {
+    tt.now.value += 11_000; // the plugin allows 3 two-factor calls per 10 s
+    const off = await tt.request(`${AUTH_BASE_PATH}/two-factor/disable`, { cookie, json: { password } });
+    expect(off.status).toBe(200);
+    cookie = cookieHeaderFrom(off, cookie);
+    const me = await tt.request("/v1/me", { cookie });
+    expect(me.status).toBe(200);
+    expect(((await me.json()) as { twoFactorEnabled?: boolean }).twoFactorEnabled).toBe(false);
+    const send = await tt.request(`${AUTH_BASE_PATH}/email-otp/send-verification-otp`, { json: { email, type: "sign-in" } });
+    expect(send.status).toBe(200);
+    const plain = await tt.request(`${AUTH_BASE_PATH}/sign-in/email`, { json: { email, password } });
+    expect(cookieHeaderFrom(plain)).toContain("session_token=");
   });
 });

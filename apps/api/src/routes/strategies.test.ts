@@ -102,10 +102,10 @@ describe("HC-TR-071 / HC-TR-079 / HC-TR-080 / HC-TR-081 adjustments, square off,
     const started = await startPaper(alice, s.id, {});
     const [call, put] = started.legs;
     // adjustment
-    const adj = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/legs`, { cookie: alice, json: { legs: [{ ...CALL, strike: "82000", symbol: "C-BTC-82000-250926", side: "sell", lots: 5 }] } }));
+    const adj = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/legs`, { cookie: alice, json: { confirm: "LIVE", legs: [{ ...CALL, strike: "82000", symbol: "C-BTC-82000-250926", side: "sell", lots: 5 }] } }));
     expect(adj.legs).toHaveLength(3);
     expect(adj.legs[2]).toMatchObject({ isAdjustment: true, status: "open", entryPrice: "1200", position: 2 });
-    const tooMany = await t.request(`/v1/strategies/${s.id}/legs`, { cookie: alice, json: { legs: Array.from({ length: 8 }, () => CALL) } });
+    const tooMany = await t.request(`/v1/strategies/${s.id}/legs`, { cookie: alice, json: { confirm: "LIVE", legs: Array.from({ length: 8 }, () => CALL) } });
     expect(tooMany.status).toBe(409);
     // full square off of the sold put: entry 900, exit 800, 10 lots × 0.001 BTC, sell → +1.00
     const closed = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/legs/${put!.id}/close`, { cookie: alice, json: { exitPrice: "800" } }));

@@ -362,7 +362,7 @@ export function buildCommands(opts: {
   if (opts.toggleDensity) list.push({ id: "act:density", label: "Toggle density", group: "Actions", hint: "D", keywords: ["compact", "comfortable", "rows", "dense"], run: opts.toggleDensity });
   list.push({ id: "act:shortcuts", label: "Keyboard shortcuts", group: "Actions", hint: "?", keywords: ["keys", "help", "hotkeys", "kbd"], run: () => useUiStore.getState().openDialog("shortcuts") });
   if (opts.loggedIn) {
-    const setting = (id: string, label: string, kind: "api" | "currency" | "lot" | "pnl" | "mindful" | "exchanges" | "profile", keywords: string[]): PaletteCommand => ({
+    const setting = (id: string, label: string, kind: "api" | "currency" | "lot" | "pnl" | "mindful" | "security" | "exchanges" | "profile", keywords: string[]): PaletteCommand => ({
       id,
       label,
       group: "Settings",
@@ -375,6 +375,7 @@ export function buildCommands(opts: {
       setting("set:lot", "Open Lot Size Settings", "lot", ["lot", "size", "contracts"]),
       setting("set:pnl", "Open P&L Settings", "pnl", ["pnl", "basis", "mark", "bid ask"]),
       setting("set:mindful", "Open Mindful trading", "mindful", ["mindful", "pause", "cooldown", "tilt", "down on the day"]),
+      setting("set:security", "Open Security", "security", ["security", "2fa", "two-factor", "authenticator", "totp", "backup codes"]),
       setting("set:exchanges", "Open Exchange Setup", "exchanges", ["exchange", "broker", "setup"]),
       setting("set:profile", "Open Profile", "profile", ["profile", "name", "avatar", "password"]),
     );

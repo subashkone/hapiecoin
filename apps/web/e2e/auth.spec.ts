@@ -116,3 +116,23 @@ test.describe("HC-PB-026 login validation and HC-PB-027 password eye", () => {
     await expect(page.getByText("Login failed")).toBeVisible();
   });
 });
+
+test("HC-PB-068 an account with an authenticator app stops at the code step; the code signs it in (ADR-078)", async ({ page, request }) => {
+  await seedUser(request, { email: "totp@example.com", twoFactor: true });
+  await page.goto("/auth");
+  await page.getByRole("textbox", { name: "Email", exact: true }).fill("totp@example.com");
+  await page.getByRole("textbox", { name: "Password", exact: true }).fill("Passw0rd!");
+  await page.getByRole("button", { name: "Sign In", exact: true }).click();
+  await expect(page).toHaveURL(/tab=totp/);
+  await expect(page.getByTestId("auth-totp")).toBeVisible();
+  await fillOtp(page, "111111");
+  await page.getByTestId("totp-verify").click();
+  await expect(page.getByTestId("totp-error")).toContainText("not right");
+  await page.getByTestId("otp-input").getByRole("textbox").first().click();
+  await page.keyboard.press("Control+A");
+  await page.keyboard.press("Backspace");
+  await fillOtp(page, "654321");
+  await page.getByTestId("totp-verify").click();
+  await page.waitForURL(/\/analyse/);
+  await expect(page.getByTestId("app-header")).toHaveAttribute("data-variant", "analyse");
+});

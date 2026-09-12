@@ -24,7 +24,7 @@ const CALL = { kind: "call", side: "buy", strike: "80000", expiry: "2026-09-25",
 const PUT = { kind: "put", side: "sell", strike: "78000", expiry: "2026-09-25", symbol: "P-BTC-78000-250926", lots: 10, price: "900" };
 const json = async <T>(res: Response): Promise<T> => (await res.json()) as T;
 const draft = async (legs: unknown[] = [CALL]) => json<Strategy>(await t.request("/v1/strategies", { cookie: alice, json: { name: "Edge", asset: "BTC", legs } }));
-const place = (id: string, key: string) => t.request(`/v1/strategies/${id}/live/place`, { cookie: alice, json: { brokerId: SEED.brokerId, idempotencyKey: key } });
+const place = (id: string, key: string) => t.request(`/v1/strategies/${id}/live/place`, { cookie: alice, json: { confirm: "LIVE", brokerId: SEED.brokerId, idempotencyKey: key } });
 
 describe("unknown outcomes and reconciliation", () => {
   it("a timed-out placement stays pending; sync adopts the venue order by client id or marks it failed when the venue has nothing", async () => {
@@ -85,11 +85,11 @@ describe("retry, adjustment and preview edges", () => {
     const live = await json<Strategy>(await place(s.id, "key-retry-00001"));
     expect(live.orders[0]!.state).toBe("failed");
     t.trading.product("C-BTC-80000-250926", 101, "0.003"); // no longer a whole number of contracts
-    const retried = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/retry`, { cookie: alice, method: "POST" }));
+    const retried = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/retry`, { cookie: alice, json: { confirm: "LIVE" } }));
     expect(retried.orders[0]!.state).toBe("failed");
     const paper = await draft([CALL]);
     await t.request(`/v1/strategies/${paper.id}/start`, { cookie: alice, json: { mode: "paper", brokerId: SEED.brokerId, entries: {} } });
-    expect((await t.request(`/v1/strategies/${paper.id}/live/retry`, { cookie: alice, method: "POST" })).status).toBe(409);
+    expect((await t.request(`/v1/strategies/${paper.id}/live/retry`, { cookie: alice, json: { confirm: "LIVE" } })).status).toBe(409);
     expect((await t.request(`/v1/strategies/${paper.id}/live/sync`, { cookie: alice, method: "POST" })).status).toBe(409);
   });
 
@@ -97,7 +97,7 @@ describe("retry, adjustment and preview edges", () => {
     const s = await draft([CALL]);
     await place(s.id, "key-adj-edge-01");
     t.trading.product("C-BTC-90000-250926", 109, "0.003");
-    const bad = await t.request(`/v1/strategies/${s.id}/legs`, { cookie: alice, json: { legs: [{ ...CALL, strike: "90000", symbol: "C-BTC-90000-250926" }] } });
+    const bad = await t.request(`/v1/strategies/${s.id}/legs`, { cookie: alice, json: { confirm: "LIVE", legs: [{ ...CALL, strike: "90000", symbol: "C-BTC-90000-250926" }] } });
     expect(bad.status).toBe(409);
     expect((await json<{ message: string }>(bad)).message).toMatch(/not a whole number/);
     expect((await json<Strategy>(await t.request(`/v1/strategies/${s.id}`, { cookie: alice }))).legs).toHaveLength(1);
@@ -107,7 +107,7 @@ describe("retry, adjustment and preview edges", () => {
       const d = await json<Strategy>(await off.request("/v1/strategies", { cookie, json: { name: "k", asset: "BTC", legs: [CALL] } }));
       const p = await json<LivePreview>(await off.request(`/v1/strategies/${d.id}/live/preview`, { cookie, json: { brokerId: SEED.brokerId } }));
       expect(p.reasons[0]).toBe("Live trading is paused by the operator");
-      expect((await off.request("/v1/strategies/live/batch", { cookie, json: { ids: [d.id], brokerId: SEED.brokerId, idempotencyKey: "key-batch-off-01" } })).status).toBe(409);
+      expect((await off.request("/v1/strategies/live/batch", { cookie, json: { confirm: "LIVE", ids: [d.id], brokerId: SEED.brokerId, idempotencyKey: "key-batch-off-01" } })).status).toBe(409);
     } finally {
       await off.close();
     }

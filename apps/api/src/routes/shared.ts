@@ -42,7 +42,7 @@ export interface AppDeps {
   /** ADR-062: whether this replica runs the background jobs (set by main.ts; absent in tests). */
   jobsStatus?: () => { role: "leader" | "always" | "off"; active: boolean };
   /** Public auth capabilities (Google hidden when unconfigured). */
-  authOptions: { emailOtp: true; passkey: true; google: boolean };
+  authOptions: { emailOtp: true; passkey: true; google: boolean; totp: true };
 }
 
 export function jsonContent<T extends z.ZodType>(schema: T, description: string) {

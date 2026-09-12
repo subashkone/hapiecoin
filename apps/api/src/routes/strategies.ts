@@ -41,7 +41,7 @@ import { type AppEnv, type SessionUser, currentUser } from "../security/context.
 import { errors } from "../security/errors.js";
 import { requireUser } from "../security/guards.js";
 import { type AppDeps, cookieAuth, errorResponses, jsonContent, newId, errorMessage } from "./shared.js";
-import { type OrderRow, type PlanLeg, lotSizeFor as lotSizeOf, openCredential, ordersOf, placeEntries, placeExit, planLegs, preview, toOrder, tradingBlockedReason, type SyncedExitFill } from "./live-exec.js";
+import { type OrderRow, type PlanLeg, lotSizeFor as lotSizeOf, openCredential, ordersOf, placeEntries, placeExit, planLegs, preview, toOrder, tradingBlockedReason, type SyncedExitFill, requireLiveConfirm } from "./live-exec.js";
 
 type StrategyRow = typeof strategies.$inferSelect;
 type LegRow = typeof strategyLegs.$inferSelect;
@@ -498,6 +498,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const legs = await legsOf(row.id);
       const open = legs.filter((l) => l.status === "open").length;
       const body = c.req.valid("json");
+      if (row.status === "live") requireLiveConfirm(body.confirm); // ADR-078: legs added to a live strategy are real entries
       if (open + body.legs.length > MAX_OPEN_LEGS) throw errors.conflict(`Maximum ${MAX_OPEN_LEGS} active legs allowed per strategy`);
       const before = await full(row);
       const now = new Date();
@@ -578,6 +579,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
         // venue sees anything.
         const exits: PlanLeg[] = changes.map((x) => ({ id: x.leg.id, symbol: x.leg.symbol, side: x.leg.side === "buy" ? "sell" : "buy", lots: x.exitLots }));
         const entries: PlanLeg[] = body.adds.map((l, i) => ({ id: `new-${i + 1}`, symbol: l.symbol, side: l.side, lots: l.lots }));
+        if (entries.length > 0) requireLiveConfirm(body.confirm); // ADR-078: adding exposure to a live strategy is a real entry
         const p = await preview(deps, me, row, entries, row.brokerId ?? "", null, exits, row.accountId);
         if (p.reasons.length) throw errors.conflict(p.reasons.join(" · "));
         creds = await openCredential(deps, me, row.brokerId ?? "", undefined, row.accountId);

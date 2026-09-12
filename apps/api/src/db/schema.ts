@@ -40,6 +40,8 @@ export const users = pgTable(
     /** Referral code of the inviter, captured from `ref` at sign-up. */
     referredBy: text("referred_by"),
     /** Per-account kill switch (ADR-025): true refuses every live placement for this user. */
+    /** Two-factor sign-in with an authenticator app (ADR-078); the two_factors row holds the secret. */
+    twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
     tradingDisabled: boolean("trading_disabled").notNull().default(false),
     /** Admin account toggle (HC-AD-047): false refuses trading and plan activation. */
     active: boolean("active").notNull().default(true),
@@ -130,6 +132,23 @@ export const passkeys = pgTable(
 // ---------------------------------------------------------------------------------------------
 // HapieCoin tables
 // ---------------------------------------------------------------------------------------------
+
+/** Better Auth two-factor plugin (ADR-078; HC-PB-068, HC-SH-129): the encrypted TOTP secret and backup codes per user. */
+export const twoFactors = pgTable(
+  "two_factors",
+  {
+    id: text("id").primaryKey(),
+    secret: text("secret").notNull(),
+    backupCodes: text("backup_codes").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    verified: boolean("verified").notNull().default(true),
+    failedVerificationCount: integer("failed_verification_count").notNull().default(0),
+    lockedUntil: timestamp("locked_until", { withTimezone: true, mode: "date" }),
+  },
+  (t) => [index("two_factors_user_id_idx").on(t.userId), index("two_factors_secret_idx").on(t.secret)],
+);
 
 /** Per-user preferences (HC-SH-038..044). One row per user; absent row = defaults. */
 export const userSettings = pgTable("user_settings", {

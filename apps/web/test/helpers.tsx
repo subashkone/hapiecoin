@@ -2,7 +2,8 @@
 // and a render wrapper with every provider the components expect.
 import { DensityProvider, ThemeProvider, Toaster, TooltipProvider } from "@hapiecoin/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, type RenderOptions } from "@testing-library/react";
+import { render, within, type RenderOptions } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ReactElement, ReactNode } from "react";
 import { vi } from "vitest";
 import { GatewayClient, type WebSocketLike } from "@/lib/gateway/client";
@@ -166,3 +167,12 @@ export function renderWithProviders(ui: ReactElement, opts: RenderWithProvidersO
 
 /** Flush microtasks + a macrotask so effects and query resolutions settle. */
 export const tick = (ms = 0) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** HC-TR-186: a live confirm needs the word typed first; a paper dialog has no field, so this is a no-op there. */
+export async function typeLiveIf(u: ReturnType<typeof userEvent.setup>, scope: HTMLElement): Promise<void> {
+  const f = within(scope).queryByTestId<HTMLInputElement>("live-confirm");
+  if (f && !f.disabled) {
+    await u.clear(f);
+    await u.type(f, "LIVE");
+  }
+}
