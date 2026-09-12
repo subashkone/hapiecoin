@@ -3,9 +3,11 @@
 // deliberately simple: one OTP (123456), sessions in a Map, settings/brokers/credentials per user.
 import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import type { PublicPageSettings, AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
+import type { Underlying, PublicPageSettings, AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
 import { mockBacktest } from "./mock-backtest";
+import { mockReplayChain, mockReplayExpiries, mockReplaySteps } from "./mock-replay";
+import { expiriesOf } from "./fixtures/chain";
 import { mockIvHistory, mockMarkHistory } from "./mock-market";
 import { DEFAULT_PUBLIC_PAGE, Handle, publicTraderFrom, AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal, type CloseReason, RulesBody, ruleLevel, MAX_ACCOUNTS_PER_BROKER, type FillLike, verifiedFromFills, sumSince, dayBack } from "@hapiecoin/schema";
 
@@ -107,6 +109,8 @@ interface PlanRecord {
 export interface MockState {
   /** ADR-077 test knob: recorded end-of-day days for the backtest; 0 answers 503 like the API before its first day. */
   backtestDays: number;
+  /** ADR-079 test knob: recorded days for the replay; 0 answers 503 like the API before its first day. */
+  replayDays: number;
   plans: Plan[];
   menuItems: MenuItem[];
   accounts: Map<string, Account>;
@@ -237,7 +241,7 @@ export function createSession(state: MockState, email: string): string {
 
 export function createMockApi(state: MockState = { plans: seedPlans(),
     menuItems: seedMenuItems(),
-    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", backtestDays: 12, ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
+    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", backtestDays: 12, replayDays: 12, ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
   const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409 | 503, code: string, message: string) =>
@@ -477,6 +481,36 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const venue = q["venue"] === "deribit" ? "deribit" : "delta_india";
     const out = mockBacktest({ asset, template: q["template"] ?? "", lots, minDte, from: q["from"], to: q["to"], days: state.backtestDays, venue });
     if (!out) return err(c, 400, "BAD_REQUEST", `Unknown template "${q["template"] ?? ""}"`);
+    c.header("Cache-Control", "private, max-age=300");
+    return c.json(out);
+  });
+  // ADR-079: replay of an expiry's chain over synthetic recorded instants
+  const assetOf = (c: Context): Underlying | null => {
+    const a = c.req.query("asset");
+    return a === "BTC" || a === "ETH" || a === "XAUT" ? a : null;
+  };
+  v1.get("/replay/expiries", (c) => {
+    const asset = assetOf(c);
+    if (!asset) return err(c, 400, "BAD_REQUEST", "asset must be BTC, ETH or XAUT");
+    if (state.replayDays === 0) return err(c, 503, "UNAVAILABLE", `no recorded chain for ${asset} yet`);
+    c.header("Cache-Control", "private, max-age=60");
+    return c.json(mockReplayExpiries(asset, state.replayDays, c.req.query("venue")));
+  });
+  v1.get("/replay/steps", (c) => {
+    const asset = assetOf(c);
+    const expiry = c.req.query("expiry") ?? "";
+    if (!asset || !/^\d{4}-\d{2}-\d{2}$/.test(expiry)) return err(c, 400, "BAD_REQUEST", "asset and expiry are required");
+    if (state.replayDays === 0 || !expiriesOf()[asset].includes(expiry)) return err(c, 503, "UNAVAILABLE", `no recorded chain for ${asset} ${expiry}`);
+    c.header("Cache-Control", "private, max-age=60");
+    return c.json(mockReplaySteps(asset, expiry, state.replayDays, Date.now(), c.req.query("venue")));
+  });
+  v1.get("/replay/chain", (c) => {
+    const asset = assetOf(c);
+    const expiry = c.req.query("expiry") ?? "";
+    const at = c.req.query("at") ?? "";
+    if (!asset || !expiry || !at) return err(c, 400, "BAD_REQUEST", "asset, expiry and at are required");
+    const out = state.replayDays === 0 ? null : mockReplayChain(asset, expiry, at, state.replayDays, Date.now(), c.req.query("venue"));
+    if (!out) return err(c, 404, "NOT_FOUND", "Recorded chain at that instant not found");
     c.header("Cache-Control", "private, max-age=300");
     return c.json(out);
   });
@@ -1806,6 +1840,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   app.post("/__test/reset", (c) => {
     state.accounts.clear();
     state.backtestDays = 12;
+    state.replayDays = 12;
     state.commissions.length = 0;
     state.banners.length = 0;
     state.coupons.length = 0;
