@@ -1,6 +1,6 @@
 // Live trading through TanStack Query (Phase 3 item 2, ADR-025): preview, place, retry, sync, batch, positions.
 // Every order goes through the API's executor; the browser never talks to the venue.
-import { type LiveBatchBody, LiveBatchResult, type LivePlaceBody, LivePositions, type LivePositionsExitBody, LivePositionsExitResult, LivePreview, type LivePreviewBody, Strategy, LiveRetryBody } from "@hapiecoin/schema";
+import { type LiveBatchBody, LiveBatchResult, type LivePlaceBody, LivePositions, type LivePositionsExitBody, LivePositionsExitResult, LivePreview, type LivePreviewBody, type LiveRetryBody, Strategy } from "@hapiecoin/schema";
 
 /** Preview body: the open legs by default, or an adjustment batch's adds / changes (ADR-044). */
 export type PreviewBody = LivePreviewBody & { worstLoss?: number | undefined };
