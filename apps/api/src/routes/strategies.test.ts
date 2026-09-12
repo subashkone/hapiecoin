@@ -271,7 +271,8 @@ describe("HC-TR-071 / HC-TR-088 adjustment batch on a paper strategy (ADR-044)",
         ["target", "money", "9", null, "strategy", "armed"],
       ]),
     );
-    const at = "2026-09-12T11:30:00.000Z";
+    // a time exit must lie ahead of the clock: one day from now (a fixed date turned this test red once the day passed)
+    const at = new Date(Date.now() + 86_400_000).toISOString();
     const timed = await json<Strategy>(await rules(s.id, { rules: [{ kind: "time", trigger: "at", value: at }] }));
     expect(timed.rules!.map((r) => [r.kind, r.value, r.thresholdUsd])).toEqual([["time", at, String(Date.parse(at))]]);
   });
