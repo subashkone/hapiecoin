@@ -3,7 +3,7 @@ import { chainTopic } from "@hapiecoin/schema";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
+import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch , typeLiveIf } from "../../../test/helpers";
 import { buildChain } from "../../../test/fixtures/chain";
 import { useUiStore } from "@/lib/store";
 import { Workspace } from "@/components/workspace/Workspace";
@@ -87,6 +87,7 @@ async function paperTradeFromBuilder(u: ReturnType<typeof userEvent.setup>) {
   expect(within(preview).getByTestId("preview-capital-required").textContent).toMatch(/\$|not capped/);
   expect(within(preview).getAllByTestId("preview-row")).toHaveLength(2);
   expect(within(preview).getByTestId("preview-note").textContent).toContain("Paper trade");
+  await typeLiveIf(u, preview);
   await u.click(within(preview).getByTestId("trade-now"));
   // the name is always confirmed: the template name is not a trader's name, so the suggested format shows
   const name = screen.getByTestId("save-draft-dialog");
@@ -149,6 +150,7 @@ describe("HC-TR-022 / HC-TR-050..057 paper trade from the Builder", () => {
     expect(mode.textContent).toContain("“Draft one”");
     await waitFor(() => expect(within(mode).getByTestId<HTMLSelectElement>("trade-broker").value).toBe("brk_delta"));
     await u.click(within(mode).getByTestId("trade-continue"));
+    await typeLiveIf(u, screen.getByTestId("trade-preview"));
     await u.click(within(screen.getByTestId("trade-preview")).getByTestId("trade-now"));
     await waitFor(() => expect(mine()[0]!.status).toBe("paper"));
     expect(useUiStore.getState().workspaceTab).toBe("paper");
@@ -208,6 +210,7 @@ describe("HC-TR-068..081 details, square off, partial exit, adjustment, stop", (
     await u.click(within(wb).getByTestId("adjust-review"));
     const confirm = await screen.findByTestId("adjust-confirm");
     expect(confirm.dataset["mode"]).toBe("paper");
+    await typeLiveIf(u, confirm);
     await u.click(within(confirm).getByTestId("adjust-apply"));
     await waitFor(() => expect(mine()[0]!.legs).toHaveLength(4));
     expect(mine()[0]!.legs.at(-1)).toMatchObject({ isAdjustment: true, status: "open", side: "sell" });

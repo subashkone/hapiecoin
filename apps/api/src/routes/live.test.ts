@@ -1,5 +1,5 @@
 // Live trading routes against the recording executor fake (trading-safety rule 2; ADR-025).
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { LivePreview, Strategy } from "@hapiecoin/schema";
 import { eq } from "drizzle-orm";
 import { auditLog, users } from "../db/schema.js";
@@ -35,7 +35,44 @@ async function draft(legs: unknown[] = [CALL, PUT], name = "Live test") {
   return json<Strategy>(await t.request("/v1/strategies", { cookie: alice, json: { name, asset: "BTC", legs } }));
 }
 const preview = (id: string, extra: Record<string, unknown> = {}) => t.request(`/v1/strategies/${id}/live/preview`, { cookie: alice, json: { brokerId: SEED.brokerId, ...extra } });
-const place = (id: string, key: string, expected: Record<string, string> = {}) => t.request(`/v1/strategies/${id}/live/place`, { cookie: alice, json: { brokerId: SEED.brokerId, idempotencyKey: key, expected } });
+const place = (id: string, key: string, expected: Record<string, string> = {}) => t.request(`/v1/strategies/${id}/live/place`, { cookie: alice, json: { confirm: "LIVE", brokerId: SEED.brokerId, idempotencyKey: key, expected } });
+
+describe("HC-TR-186 the typed LIVE confirmation (ADR-078)", () => {
+  // these refusals and placements burn the 20 / min order-route budget: a fresh window before and after
+  beforeEach(() => {
+    t.now.value += 61_000;
+  });
+  afterEach(() => {
+    t.now.value += 61_000;
+  });
+  it("refuses a placement, a batch, a retry, a live adjustment that adds exposure and legs added to a live strategy without the word; a trim and a paper add need none", async () => {
+    const s = await draft();
+    const noWord = await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: alice, json: { brokerId: SEED.brokerId, idempotencyKey: "key-noword-001", expected: {} } });
+    expect(noWord.status).toBe(400);
+    expect(((await noWord.json()) as { message: string }).message).toBe("Type LIVE to confirm a real order");
+    const wrong = await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: alice, json: { confirm: "yes", brokerId: SEED.brokerId, idempotencyKey: "key-noword-002", expected: {} } });
+    expect(wrong.status).toBe(400);
+    expect((await t.request("/v1/strategies/live/batch", { cookie: alice, json: { ids: [s.id], brokerId: SEED.brokerId, idempotencyKey: "key-noword-003" } })).status).toBe(400);
+    expect(((await t.request(`/v1/strategies/${s.id}`, { cookie: alice }).then((r) => r.json())) as Strategy).status).toBe("draft"); // nothing moved
+    // the word is read case-insensitively with spaces around it
+    const live = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: alice, json: { confirm: " live ", brokerId: SEED.brokerId, idempotencyKey: "key-noword-004", expected: {} } }));
+    expect(live.status).toBe("live");
+    expect((await t.request(`/v1/strategies/${s.id}/live/retry`, { cookie: alice, json: {} })).status).toBe(400);
+    const call = live.legs.find((l) => l.kind === "call")!;
+    const trim = await t.request(`/v1/strategies/${s.id}/adjust`, { cookie: alice, json: { changes: [{ legId: call.id, lotsAfter: call.lots - 1, price: "0" }], idempotencyKey: "key-noword-005" } });
+    expect(trim.status).toBe(200); // reducing risk never asks for the word
+    const add = await t.request(`/v1/strategies/${s.id}/adjust`, { cookie: alice, json: { adds: [{ ...CALL, strike: "82000", symbol: "C-BTC-82000-250926", side: "sell", lots: 5, price: "700" }], idempotencyKey: "key-noword-006" } });
+    expect(add.status).toBe(400);
+    expect(((await add.json()) as { message: string }).message).toBe("Type LIVE to confirm a real order");
+    const legs = await t.request(`/v1/strategies/${s.id}/legs`, { cookie: alice, json: { legs: [{ ...CALL, strike: "82000", symbol: "C-BTC-82000-250926", side: "sell", lots: 5, price: "700" }] } });
+    expect(legs.status).toBe(400); // the older add-legs route is a live entry too
+    // paper: an add needs no word on either route
+    const paper = await json<Strategy>(await t.request("/v1/strategies", { cookie: alice, json: { name: "Paper add", asset: "BTC", legs: [CALL] } }));
+    await t.request(`/v1/strategies/${paper.id}/start`, { cookie: alice, json: { mode: "paper", brokerId: SEED.brokerId, entries: {} } });
+    const paperAdd = await t.request(`/v1/strategies/${paper.id}/adjust`, { cookie: alice, json: { adds: [{ ...PUT, strike: "76000", symbol: "P-BTC-76000-250926", side: "buy", lots: 5, price: "500" }], idempotencyKey: "key-noword-007" } });
+    expect(paperAdd.status).toBe(200);
+  });
+});
 
 describe("HC-TR-056 / HC-TR-088 live preview and safeguards", () => {
   it("sizes contracts from lots × lot size ÷ contract value, prices notional at the venue mark and reads the wallet", async () => {
@@ -96,7 +133,7 @@ describe("HC-TR-056 / HC-TR-088 live preview and safeguards", () => {
     const s = await json<Strategy>(await t.request("/v1/strategies", { cookie: bob, json: { name: "x", asset: "BTC", legs: [CALL] } }));
     const p = await json<LivePreview>(await t.request(`/v1/strategies/${s.id}/live/preview`, { cookie: bob, json: { brokerId: SEED.brokerId } }));
     expect(p.reasons).toContain("Connect your exchange in Settings → API Settings to enable live trading");
-    expect((await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: bob, json: { brokerId: SEED.brokerId, idempotencyKey: "key-bob-0001" } })).status).toBe(409);
+    expect((await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: bob, json: { confirm: "LIVE", brokerId: SEED.brokerId, idempotencyKey: "key-bob-0001" } })).status).toBe(409);
   });
 });
 
@@ -141,7 +178,7 @@ describe("HC-TR-057 / HC-TR-063 / HC-TR-084 / HC-TR-085 placement, idempotency, 
     expect(byLeg(s.legs[1]!.id)).toMatchObject({ state: "failed" });
     expect(byLeg(s.legs[1]!.id).error).toMatch(/margin/);
     expect(live.legs.every((l) => l.entryPrice === null)).toBe(true);
-    const retried = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/retry`, { cookie: alice, method: "POST" }));
+    const retried = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/retry`, { cookie: alice, json: { confirm: "LIVE" } }));
     expect(retried.orders.map((o) => [o.legId === s.legs[0]!.id ? "call" : "put", o.state, o.attempts])).toEqual(expect.arrayContaining([["call", "filled", 2], ["put", "filled", 2]]));
     expect(retried.orders.every((o) => o.clientOrderId.endsWith("-1"))).toBe(true); // same client order ids
     expect(retried.legs.map((l) => l.entryPrice)).toEqual(["1201", "899"]);
@@ -196,7 +233,7 @@ describe("HC-TR-070 / HC-TR-072 / HC-TR-086 / HC-TR-088 exits and adjustments on
     await place(s.id, "key-adj-000001");
     t.trading.product("C-BTC-82000-250926", 103).markAt("C-BTC-82000-250926", "700").fillAt(103, "705");
     t.trading.product("P-BTC-76000-250926", 104).markAt("P-BTC-76000-250926", "500").failWith(104, "insufficient_margin");
-    const adj = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/legs`, { cookie: alice, json: { legs: [{ ...CALL, strike: "82000", symbol: "C-BTC-82000-250926", side: "sell", lots: 5 }, { ...PUT, strike: "76000", symbol: "P-BTC-76000-250926", lots: 5 }] } }));
+    const adj = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/legs`, { cookie: alice, json: { confirm: "LIVE", legs: [{ ...CALL, strike: "82000", symbol: "C-BTC-82000-250926", side: "sell", lots: 5 }, { ...PUT, strike: "76000", symbol: "P-BTC-76000-250926", lots: 5 }] } }));
     expect(adj.legs).toHaveLength(3);
     expect(adj.legs[1]).toMatchObject({ isAdjustment: true, entryPrice: "705", symbol: "C-BTC-82000-250926" });
     expect(adj.legs[2]).toMatchObject({ isAdjustment: true, entryPrice: null, symbol: "P-BTC-76000-250926", status: "open" });
@@ -209,7 +246,7 @@ describe("HC-TR-070 / HC-TR-072 / HC-TR-086 / HC-TR-088 exits and adjustments on
     const c = await draft([CALL], "batch c");
     for (const s of [a, b, c]) await t.request(`/v1/strategies/${s.id}/start`, { cookie: alice, json: { mode: "paper", brokerId: SEED.brokerId, entries: {} } });
     t.trading.failWith(102, "insufficient_margin", { once: true });
-    const res = await json<{ placed: string[]; failed: { id: string; error: string } | null; skipped: string[] }>(await t.request("/v1/strategies/live/batch", { cookie: alice, json: { ids: [a.id, b.id, c.id, "strat_nope"], brokerId: SEED.brokerId, idempotencyKey: "key-batch-00001" } }));
+    const res = await json<{ placed: string[]; failed: { id: string; error: string } | null; skipped: string[] }>(await t.request("/v1/strategies/live/batch", { cookie: alice, json: { confirm: "LIVE", ids: [a.id, b.id, c.id, "strat_nope"], brokerId: SEED.brokerId, idempotencyKey: "key-batch-00001" } }));
     expect(res.placed).toEqual([a.id, b.id]);
     expect(res.failed?.id).toBe(b.id);
     expect(res.failed?.error).toMatch(/margin/);
@@ -235,7 +272,7 @@ describe("kill switch env", () => {
     try {
       const cookie = (await off.signUp("kill@hapiecoin.test")).cookie;
       const s = await (await off.request("/v1/strategies", { cookie, json: { name: "k", asset: "BTC", legs: [CALL] } })).json() as Strategy;
-      const res = await off.request(`/v1/strategies/${s.id}/live/place`, { cookie, json: { brokerId: SEED.brokerId, idempotencyKey: "key-kill-000001" } });
+      const res = await off.request(`/v1/strategies/${s.id}/live/place`, { cookie, json: { confirm: "LIVE", brokerId: SEED.brokerId, idempotencyKey: "key-kill-000001" } });
       expect(res.status).toBe(409);
       expect((await res.json() as { message: string }).message).toContain("paused by the operator");
     } finally {
@@ -279,7 +316,7 @@ describe("HC-TR-088 adjustment batch on a live strategy (ADR-044)", () => {
     const live = await json<Strategy>(await place(s.id, "key-adj-live-001"));
     const [call, put] = live.legs;
     t.trading.fillAt(101, "1300").fillAt(102, "800");
-    const res = await adjust(s.id, { adds: [SOLD_CALL], changes: [{ legId: call!.id, lotsAfter: 4, price: "0" }, { legId: put!.id, lotsAfter: 0, price: "0" }], expected: { "C-BTC-82000-250926": "700" }, idempotencyKey: "key-adj-live-002", reason: "roll up" });
+    const res = await adjust(s.id, { confirm: "LIVE", adds: [SOLD_CALL], changes: [{ legId: call!.id, lotsAfter: 4, price: "0" }, { legId: put!.id, lotsAfter: 0, price: "0" }], expected: { "C-BTC-82000-250926": "700" }, idempotencyKey: "key-adj-live-002", reason: "roll up" });
     expect(res.status).toBe(200);
     const a = await json<Strategy>(res);
     // call entered at 1201 (fill), 6 lots out at 1300: +0.594 → 0.59 (P&L is booked to 2 dp); put entered at 899, 10 lots out at 800, sold: +0.99
@@ -296,7 +333,7 @@ describe("HC-TR-088 adjustment batch on a live strategy (ADR-044)", () => {
     expect(batch.every((o) => o.batchId === "key-adj-live-002")).toBe(true);
     expect(a.adjustments).toMatchObject([{ added: 1, trimmed: 1, closed: 1, realizedPnl: "1.58", batchId: "key-adj-live-002", reason: "roll up" }]);
     // repeating the key does not place again
-    const again = await json<Strategy>(await adjust(s.id, { adds: [SOLD_CALL], idempotencyKey: "key-adj-live-002" }));
+    const again = await json<Strategy>(await adjust(s.id, { confirm: "LIVE", adds: [SOLD_CALL], idempotencyKey: "key-adj-live-002" }));
     expect(again.orders).toHaveLength(a.orders.length);
     expect(again.adjustments).toHaveLength(1);
   });
@@ -306,13 +343,13 @@ describe("HC-TR-088 adjustment batch on a live strategy (ADR-044)", () => {
     const live = await json<Strategy>(await place(s.id, "key-adj-live-003"));
     const [call] = live.legs;
     // band: the Review showed 100, the venue mark is 700
-    const off = await json<Strategy>(await adjust(s.id, { adds: [SOLD_CALL], expected: { "C-BTC-82000-250926": "100" } }));
+    const off = await json<Strategy>(await adjust(s.id, { confirm: "LIVE", adds: [SOLD_CALL], expected: { "C-BTC-82000-250926": "100" } }));
     const added = off.legs.find((l) => l.symbol === "C-BTC-82000-250926");
     expect(added).toMatchObject({ status: "open", entryPrice: null });
     expect(off.orders.filter((o) => o.purpose === "adjustment").map((o) => o.state)).toEqual(["failed"]);
     expect(off.adjustments).toHaveLength(1);
     // plan refused (unknown product) with a close in the same batch: refused before the venue sees anything, the close included
-    const unknown = await adjust(s.id, { adds: [{ ...SOLD_CALL, symbol: "C-BTC-99000-250926", strike: "99000" }], changes: [{ legId: call!.id, lotsAfter: 0, price: "0" }] });
+    const unknown = await adjust(s.id, { confirm: "LIVE", adds: [{ ...SOLD_CALL, symbol: "C-BTC-99000-250926", strike: "99000" }], changes: [{ legId: call!.id, lotsAfter: 0, price: "0" }] });
     expect(unknown.status).toBe(409);
     expect((await json<{ message: string }>(unknown)).message).toContain("C-BTC-99000-250926");
     const afterUnknown = await json<Strategy>(await t.request(`/v1/strategies/${s.id}`, { cookie: alice }));
@@ -322,7 +359,7 @@ describe("HC-TR-088 adjustment batch on a live strategy (ADR-044)", () => {
     expect(afterUnknown.adjustments).toHaveLength(1);
     // a failed exit stops the batch: the leg stays open, the adds are not inserted, the history row says why
     t.trading.failWith(101, "insufficient_margin", { once: true });
-    const failed = await adjust(s.id, { changes: [{ legId: call!.id, lotsAfter: 0, price: "0" }], adds: [SOLD_CALL], reason: "hedge" });
+    const failed = await adjust(s.id, { confirm: "LIVE", changes:[{ legId: call!.id, lotsAfter: 0, price: "0" }], adds: [SOLD_CALL], reason: "hedge" });
     expect(failed.status).toBe(502);
     const afterFail = await json<Strategy>(await t.request(`/v1/strategies/${s.id}`, { cookie: alice }));
     expect(afterFail.legs.find((l) => l.id === call!.id)).toMatchObject({ status: "open", lots: 10 });
@@ -344,7 +381,7 @@ describe("HC-TR-088 adjustment batch on a live strategy (ADR-044)", () => {
     const [call] = live.legs;
     t.trading.product("P-BTC-76000-250926", 105).markAt("P-BTC-76000-250926", "500").fillAt(105, "505");
     // sell C-82000 limit 700 with the venue at 705: crosses (sell at or below the fill) → filled; buy P-76000 limit 500 with the venue at 505: rests → pending
-    const res = await adjust(s.id, { adds: [SOLD_CALL, { ...PUT, strike: "76000", symbol: "P-BTC-76000-250926", side: "buy", lots: 5, price: "500" }], changes: [{ legId: call!.id, lotsAfter: 6, price: "0" }], expected: { "C-BTC-82000-250926": "700", "P-BTC-76000-250926": "500" }, orderType: "limit", idempotencyKey: "key-adj-limit-01" });
+    const res = await adjust(s.id, { confirm: "LIVE", adds: [SOLD_CALL, { ...PUT, strike: "76000", symbol: "P-BTC-76000-250926", side: "buy", lots: 5, price: "500" }], changes: [{ legId: call!.id, lotsAfter: 6, price: "0" }], expected: { "C-BTC-82000-250926": "700", "P-BTC-76000-250926": "500" }, orderType: "limit", idempotencyKey: "key-adj-limit-01" });
     expect(res.status).toBe(200);
     const a = await json<Strategy>(res);
     const batch = a.orders.filter((o) => o.batchId === "key-adj-limit-01");
@@ -367,7 +404,7 @@ describe("HC-TR-088 adjustment batch on a live strategy (ADR-044)", () => {
     expect(synced.orders.find((o) => o.id === batch[2]!.id)).toMatchObject({ state: "filled", fillPrice: "500" });
     expect(synced.legs.find((l) => l.id === resting.id)!.entryPrice).toBe("500");
     // a limit without an expected mark for its symbol goes at market
-    const noBand = await json<Strategy>(await adjust(s.id, { adds: [SOLD_CALL], orderType: "limit", idempotencyKey: "key-adj-limit-02" }));
+    const noBand = await json<Strategy>(await adjust(s.id, { confirm: "LIVE", adds: [SOLD_CALL], orderType: "limit", idempotencyKey: "key-adj-limit-02" }));
     expect(noBand.orders.filter((o) => o.batchId === "key-adj-limit-02").map((o) => [o.orderType, o.limitPrice])).toEqual([["market", null]]);
   });
 
@@ -376,7 +413,7 @@ describe("HC-TR-088 adjustment batch on a live strategy (ADR-044)", () => {
     await place(s.id, "key-adj-tick-00");
     t.trading.product("P-BTC-76000-250926", 105, "0.001", "live", "0.5").markAt("P-BTC-76000-250926", "500").fillAt(105, "520");
     // buy limit 500.3 on a 0.5 tick → 500.0 (down, the passive side for a buy); the venue is at 520 so it rests
-    const a = await json<Strategy>(await adjust(s.id, { adds: [{ ...PUT, strike: "76000", symbol: "P-BTC-76000-250926", side: "buy", lots: 5, price: "500.3" }], expected: { "P-BTC-76000-250926": "500.3" }, orderType: "limit", idempotencyKey: "key-adj-tick-01" }));
+    const a = await json<Strategy>(await adjust(s.id, { confirm: "LIVE", adds: [{ ...PUT, strike: "76000", symbol: "P-BTC-76000-250926", side: "buy", lots: 5, price: "500.3" }], expected: { "P-BTC-76000-250926": "500.3" }, orderType: "limit", idempotencyKey: "key-adj-tick-01" }));
     const resting = a.orders.find((o) => o.batchId === "key-adj-tick-01")!;
     expect(resting).toMatchObject({ orderType: "limit", limitPrice: "500.0", state: "pending" });
     expect(t.trading.placed.at(-1)!.input).toMatchObject({ orderType: "limit", limitPrice: "500.0" });
@@ -386,7 +423,7 @@ describe("HC-TR-088 adjustment batch on a live strategy (ADR-044)", () => {
     expect(synced.orders.find((o) => o.id === resting.id)!.state).toBe("cancelled");
     expect(synced.legs.at(-1)).toMatchObject({ status: "open", entryPrice: null });
     t.trading.fillAt(105, "499"); // now the venue is below the limit: the retried buy crosses
-    const retried = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/retry`, { cookie: alice, method: "POST" }));
+    const retried = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/retry`, { cookie: alice, json: { confirm: "LIVE" } }));
     expect(t.trading.placed.at(-1)!.input).toMatchObject({ orderType: "limit", limitPrice: "500.0", clientOrderId: resting.clientOrderId });
     expect(retried.orders.find((o) => o.id === resting.id)).toMatchObject({ state: "filled", fillPrice: "499", limitPrice: "500.0", attempts: 2 });
     expect(retried.legs.at(-1)!.entryPrice).toBe("499");
@@ -397,7 +434,7 @@ describe("HC-TR-088 adjustment batch on a live strategy (ADR-044)", () => {
     const live = await json<Strategy>(await place(s.id, "key-adj-live-004"));
     const [call, put] = live.legs;
     t.trading.fillAt(101, "1300").failWith(102, "insufficient_margin", { once: true });
-    const res = await adjust(s.id, { changes: [{ legId: call!.id, lotsAfter: 0, price: "0" }, { legId: put!.id, lotsAfter: 0, price: "0" }], adds: [SOLD_CALL], idempotencyKey: "key-adj-live-005", reason: "flatten" });
+    const res = await adjust(s.id, { confirm: "LIVE", changes:[{ legId: call!.id, lotsAfter: 0, price: "0" }, { legId: put!.id, lotsAfter: 0, price: "0" }], adds: [SOLD_CALL], idempotencyKey: "key-adj-live-005", reason: "flatten" });
     expect(res.status).toBe(502);
     const after = await json<Strategy>(await t.request(`/v1/strategies/${s.id}`, { cookie: alice }));
     // the call's exit filled at 1300 against the 1201 entry: (1300 − 1201) × 10 × 0.001 = 0.99, booked
@@ -416,7 +453,7 @@ describe("HC-TR-088 adjustment batch on a live strategy (ADR-044)", () => {
     expect(same.adjustments).toHaveLength(1);
     expect(same.legs.find((l) => l.id === put!.id)).toMatchObject({ status: "open" });
     // a new key finishes the rest
-    const rest = await json<Strategy>(await adjust(s.id, { changes: [{ legId: put!.id, lotsAfter: 0, price: "0" }], adds: [SOLD_CALL], idempotencyKey: "key-adj-live-006" }));
+    const rest = await json<Strategy>(await adjust(s.id, { confirm: "LIVE", changes:[{ legId: put!.id, lotsAfter: 0, price: "0" }], adds: [SOLD_CALL], idempotencyKey: "key-adj-live-006" }));
     expect(rest.legs.every((l) => l.id === put!.id ? l.status === "squared_off" : true)).toBe(true);
     expect(rest.legs).toHaveLength(3);
     expect(rest.adjustments).toHaveLength(2);

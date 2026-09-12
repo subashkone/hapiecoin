@@ -172,7 +172,8 @@ export function TradeFlow({ book }: { book: PaperBook }) {
     setMeta(builder.asset, { draftId: created.id, name: created.name });
     return created.id;
   };
-  const trade = async (name?: string) => {
+  /** `confirm` is the word typed in the preview (live); the API refuses a live placement without it (HC-TR-186). */
+  const trade = async (name?: string, confirm = "") => {
     setBusy(true);
     try {
       let id: string;
@@ -193,7 +194,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
         } else id = (await create.mutateAsync(body)).id;
       }
       if (mode === "live") {
-        const placed = await livePlace.mutateAsync({ id, body: { brokerId, ...(accountId ? { accountId } : {}), idempotencyKey: idemKey, expected: Object.fromEntries((venue?.legs ?? []).filter((l) => l.mark !== null).map((l) => [l.legId, l.mark!])) } });
+        const placed = await livePlace.mutateAsync({ id, body: { confirm, brokerId, ...(accountId ? { accountId } : {}), idempotencyKey: idemKey, expected: Object.fromEntries((venue?.legs ?? []).filter((l) => l.mark !== null).map((l) => [l.legId, l.mark!])) } });
         finish(placed);
         return;
       }
@@ -207,12 +208,12 @@ export function TradeFlow({ book }: { book: PaperBook }) {
   };
   // ADR-059: a trade from the Builder always confirms its name (the Builder's own name pre-filled, else the suggestion):
   // paper asks here, after the preview; live asked before the exchange preview (the draft must exist for it)
-  const onTradeNow = () => {
+  const onTradeNow = (confirm: string) => {
     if (fromBuilder && mode === "paper") {
       setStep("name");
       return;
     }
-    void trade();
+    void trade(undefined, confirm);
   };
   /** Live: after the mode step, ask the server for the venue preview before showing Trade Preview. */
   const toPreview = async (m: "paper" | "live", b: string, a: string | null, name?: string) => {

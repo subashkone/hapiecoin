@@ -79,28 +79,27 @@ export function OtpInput({ value, onChange, length = 6, invalid = false, autoFoc
     if (autoFocus) focus(0);
   }, [autoFocus, focus]);
 
-  const setAt = (i: number, ch: string) => {
-    const next = digits.slice();
-    next[i] = ch;
-    onChange(next.join(""));
+  // The value is the typed digits in order with no gaps: a digit typed over a filled box replaces it, a box past the
+  // typed digits appends, and Backspace clears from that box on. (Clearing one middle box used to shift the rest left,
+  // and a box's one-character limit refused a digit typed over a filled box unless it was selected.)
+  const write = (i: number, ch: string) => {
+    const pos = Math.min(i, value.length);
+    onChange(value.slice(0, pos) + ch + value.slice(pos + 1));
+    focus(pos + 1);
   };
 
   const onInput = (i: number, raw: string) => {
     const ch = raw.replace(/\D/g, "").slice(-1);
-    setAt(i, ch);
-    if (ch) focus(i + 1);
+    if (ch) write(i, ch);
   };
 
   const onKeyDown = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace") {
-      if (digits[i]) {
-        e.preventDefault();
-        setAt(i, "");
-      } else if (i > 0) {
-        e.preventDefault();
-        setAt(i - 1, "");
-        focus(i - 1);
-      }
+      e.preventDefault();
+      const pos = digits[i] ? i : i - 1;
+      if (pos < 0) return;
+      onChange(value.slice(0, pos));
+      focus(pos);
     } else if (e.key === "ArrowLeft") {
       e.preventDefault();
       focus(i - 1);
@@ -134,7 +133,6 @@ export function OtpInput({ value, onChange, length = 6, invalid = false, autoFoc
           onFocus={(e) => e.target.select()}
           inputMode="numeric"
           autoComplete={i === 0 ? "one-time-code" : "off"}
-          maxLength={1}
           aria-label={`Digit ${i + 1}`}
           aria-invalid={invalid || undefined}
           className={cn(

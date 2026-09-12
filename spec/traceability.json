@@ -1906,6 +1906,20 @@
   "evidence": "ADR-077 (12 Sep 2026): apps/api/src/chain-eod.ts recordEodIfDue / backfillEodFromMarks / pruneEod / eodDays / eodDayCount, iv-snapshot.ts, db chain_eod; unit chain-eod.test.ts HC-SH-128"
  },
  {
+  "id": "HC-SH-129",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "screen": "Shared chrome · Settings menu · Security",
+  "feature": "Security settings: turn two-factor sign-in on with an authenticator app, see the backup codes once, turn it off",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + web), e2e",
+  "acceptance": "Settings menu → Security (the row reads '2FA on' or '2FA off'; palette 'Open Security'). Turning on: 1 the password, 2 the key in groups of four with Copy and the otpauth link for an app on the same device (no QR image, GAPS #94), 3 the first code the app shows; nothing changes until that code is right; then ten backup codes, shown once, with Copy all. Turning off asks for the password. With it on, the account signs in with password + code only",
+  "evidence": "ADR-078 (12 Sep 2026): apps/api auth.ts twoFactor plugin, db/schema.ts two_factors + users.two_factor_enabled, routes/me.ts twoFactorEnabled; apps/web components/dialogs/SecurityDialog.tsx, SettingsDialogs.tsx, header/AppHeader.tsx menu-security, shell/CommandPalette.tsx set:security; unit auth.test.ts (api) HC-SH-129, dialogs.test.tsx HC-SH-129, shell.test.tsx; e2e settings.spec.ts HC-SH-129"
+ },
+ {
   "id": "HC-PB-001",
   "area": "10-public",
   "areaName": "Public site & authentication",
@@ -2909,6 +2923,21 @@
   "test": "unit (web), e2e",
   "acceptance": "Intent links built from the 30-day figure net of fees and the page URL (twitter.com/intent/tweet, t.me/share/url), opened in a new tab; Copy link through the clipboard; the card drawn on a canvas in the browser (dark, amber rule, name, handle, three figures, fills and since, the URL) and saved as hapiecoin-<handle>-verified-pnl.png through a data URL, no library and no server rendering; the same bar sits in the Public page dialog",
   "evidence": "ADR-075 (12 Sep 2026): apps/web lib/public/share.ts shareText / xShareUrl / telegramShareUrl / cardFigures / drawShareCard / shareCardPng, components/public/ShareBar.tsx (share-x, share-telegram, share-copy-link, share-image); unit share.test.ts HC-PB-067, trader-page.test.tsx HC-PB-067; e2e public.spec.ts HC-PB-067"
+ },
+ {
+  "id": "HC-PB-068",
+  "area": "10-public",
+  "areaName": "Public site & authentication",
+  "owner": "Platform engineer",
+  "route": "/auth?tab=totp",
+  "screen": "Auth · Two-factor code",
+  "feature": "Second factor at sign-in: the 6-digit code from the authenticator app, or a backup code",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + web), e2e",
+  "acceptance": "A password sign-in on an account with 2FA on answers twoFactorRedirect and the form moves to the code step (no session yet); six boxes for the app code, 'Use a backup code instead' for a saved code (each works once), 'Back to sign in'; a wrong code says 'That code is not right.' Email codes and Google are refused for such an account with 'This account uses an authenticator app: sign in with your password and the code'",
+  "evidence": "ADR-078 (12 Sep 2026): apps/api auth.ts twoFactor plugin + the sign-in hooks; apps/web lib/auth/client.ts twoFactorClient, components/auth/AuthScreen.tsx AuthTab totp, AuthForms.tsx TotpForm; unit auth.test.ts (api) HC-PB-068, AuthForms.test.tsx HC-PB-068; e2e auth.spec.ts HC-PB-068"
  },
  {
   "id": "HC-WS-001",
@@ -7367,6 +7396,20 @@
   "test": "unit (web), e2e",
   "acceptance": "Analysis pane tab (and the palette command Analysis: Backtest): template select by category, lots, min DTE (1 / 3 / 7 / 14 / 30), 7D / 30D / 90D / 1Y; the coverage line names recorded days, entries, skipped days, open and modelled trades and says no fees, no slippage; tiles Realised, Win rate, Average, Max drawdown, Profit factor; the realised equity curve on the SVG chart; trades newest first with entry, expiry, legs, cost, exit (open · marked <day>, modelled) and P&L; before the first recorded day an honest empty state instead of zeros; the mock API runs the same engine over synthetic end-of-day chains",
   "evidence": "ADR-077 (12 Sep 2026): apps/web/src/components/analysis/BacktestPanel.tsx (backtest-panel[data-state], backtest-coverage, backtest-total / winrate / average / drawdown / pf, chart-backtest, backtest-trade), lib/api/backtest.ts, AnalysisPane.tsx, CommandPalette.tsx, test/mock-backtest.ts; unit backtest-panel.test.tsx HC-TR-185; e2e analyse.spec.ts HC-TR-185"
+ },
+ {
+  "id": "HC-TR-186",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Trade Preview · Trade All · Adjust confirm · Retry",
+  "feature": "Typed LIVE confirmation on every live entry; the API refuses a live entry without it",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright) · api contract · security",
+  "acceptance": "A field 'Type LIVE to place / retry / adjust' under the red block of the live Trade Preview, the Trade All → Live dialog, the Adjust confirm (only when the change adds entry orders) and a Retry dialog that names the refused legs; the destructive button is disabled, not hidden, until the word is in (case-insensitive, trimmed, Enter submits); during the Mindful pause the countdown still replaces the button. The word travels in the order body and routes/live-exec.ts requireLiveConfirm answers 400 'Type LIVE to confirm a real order' on place, batch, retry, a live adjustment with adds and add-legs on a live strategy; exits, square-offs and paper never ask",
+  "evidence": "ADR-078 (12 Sep 2026): packages/schema strategies.ts LIVE_CONFIRM_WORD / LiveConfirm / isLiveConfirm / LiveRetryBody; apps/api routes/live-exec.ts requireLiveConfirm, routes/live.ts, routes/strategies.ts; apps/web components/trading/TypedConfirm.tsx, RetryDialog.tsx, TradePreviewDialog.tsx, BatchLiveDialog.tsx, adjust/AdjustConfirmDialog.tsx, PaperPanel.tsx, lib/api/live.ts; unit strategies.test.ts (schema) HC-TR-186, live.test.ts (api) HC-TR-186, trading-live.test.tsx HC-TR-186; e2e analyse.spec.ts (typeLiveIfShown before every live click)"
  },
  {
   "id": "HC-AC-001",

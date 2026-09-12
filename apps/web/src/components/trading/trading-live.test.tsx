@@ -6,7 +6,7 @@ import { chainTopic } from "@hapiecoin/schema";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeSocket, installMockFetch, makeQueryClient, renderWithProviders, type MockFetch } from "../../../test/helpers";
+import { FakeSocket, installMockFetch, makeQueryClient, renderWithProviders, type MockFetch , typeLiveIf } from "../../../test/helpers";
 import { buildChain } from "../../../test/fixtures/chain";
 import { useUiStore } from "@/lib/store";
 import { Workspace } from "@/components/workspace/Workspace";
@@ -96,6 +96,7 @@ describe("HC-TR-063 Go live from a paper card", () => {
     expect(within(venue).getAllByTestId("venue-leg")[0]!.textContent).toContain("C-BTC-80000-250926");
     expect(within(preview).getByTestId("trade-now").textContent).toContain("Place live orders");
     expect(within(venue).getByTestId("venue-margin-used").textContent).toContain("12 USD"); // exchange margin in use (ADR-029)
+    await typeLiveIf(u, preview);
     await u.click(within(preview).getByTestId("trade-now"));
     await waitFor(() => expect(mine()[0]!.status).toBe("live"));
     expect(mine()[0]!.orderBatchId).toMatch(/^web-/);
@@ -138,6 +139,7 @@ describe("HC-TR-083 refused orders and Retry", () => {
     await u.click(within(mode).getByTestId("trade-continue"));
     const preview = await screen.findByTestId("trade-preview");
     await within(preview).findByTestId("venue-preview");
+    await typeLiveIf(u, preview);
     await u.click(within(preview).getByTestId("trade-now"));
     await waitFor(() => expect(mine()[0]!.status).toBe("live"));
     expect(mine()[0]!.orders[0]).toMatchObject({ state: "failed", attempts: 1 });
@@ -146,6 +148,12 @@ describe("HC-TR-083 refused orders and Retry", () => {
     expect(within(panel()).getByTestId("order-chip").dataset["state"]).toBe("failed");
     expect(within(panel()).getByTestId("order-chip").getAttribute("title")).toContain("Not enough margin");
     await u.click(within(banner).getByTestId("card-retry"));
+    // HC-TR-186: a retry sends real orders again, so it asks for the word
+    const retryDlg = await screen.findByTestId("retry-dialog");
+    expect(within(retryDlg).getAllByTestId("retry-leg")).toHaveLength(1);
+    expect(within(retryDlg).getByTestId<HTMLButtonElement>("retry-confirm").disabled).toBe(true);
+    await typeLiveIf(u, retryDlg);
+    await u.click(within(retryDlg).getByTestId("retry-confirm"));
     await waitFor(() => expect(mine()[0]!.orders[0]).toMatchObject({ state: "filled", attempts: 2 }));
     await waitFor(() => expect(within(panel()).queryByTestId("failed-banner")).toBeNull());
     expect(within(panel()).getByTestId("order-chip").dataset["state"]).toBe("filled");
@@ -203,6 +211,7 @@ describe("HC-TR-182 Mindful pause before a live order when down on the day (ADR-
     await waitFor(() => expect(within(preview).queryByTestId("trade-now")).not.toBeNull(), { timeout: 5000 });
     expect(within(preview).queryByTestId("mindful-countdown")).toBeNull();
     expect(within(pause).getByTestId("mindful-copy").textContent).toContain("The pause has ended");
+    await typeLiveIf(u, preview);
     await u.click(within(preview).getByTestId("trade-now"));
     await waitFor(() => expect(mine().some((x) => x.name === "After the pause" && x.status === "live")).toBe(true));
   });
@@ -218,6 +227,7 @@ describe("HC-TR-182 Mindful pause before a live order when down on the day (ADR-
     const preview = await toLivePreview(u);
     expect(within(preview).queryByTestId("mindful-pause")).toBeNull();
     expect(within(preview).getByTestId("trade-now").textContent).toContain("Place live orders");
+    await typeLiveIf(u, preview);
     await u.click(within(preview).getByTestId("trade-now"));
     await waitFor(() => expect(mine().some((x) => x.name === "After the pause" && x.status === "live")).toBe(true));
   });
@@ -233,6 +243,37 @@ describe("HC-TR-182 Mindful pause before a live order when down on the day (ADR-
     const preview = await toLivePreview(u);
     expect(within(preview).queryByTestId("mindful-pause")).toBeNull();
     expect(within(preview).getByTestId("trade-now").textContent).toContain("Place live orders");
+  });
+
+  it("HC-TR-186 the typed word gates the live preview and the batch; a paper preview has no field", async () => {
+    connect();
+    acc().settings.mindful = { enabled: false, thresholdUsd: "0", pauseSeconds: 10 };
+    mine().push(strat(1));
+    addBuilderLeg();
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    const u = userEvent.setup();
+    const preview = await toLivePreview(u);
+    const field = within(preview).getByTestId<HTMLInputElement>("live-confirm");
+    expect(within(preview).getByTestId<HTMLButtonElement>("trade-now").disabled).toBe(true);
+    await u.type(field, "liv");
+    expect(within(preview).getByTestId<HTMLButtonElement>("trade-now").disabled).toBe(true);
+    await u.type(field, "e"); // the field uppercases: "live" reads LIVE
+    expect(field.value).toBe("LIVE");
+    expect(within(preview).getByTestId<HTMLButtonElement>("trade-now").disabled).toBe(false);
+    // the word travels to the API as typed: the mock refuses anything else, so the placement landing proves it
+    await u.click(within(preview).getByTestId("trade-now"));
+    await waitFor(() => expect(mine().some((x) => x.name === "After the pause" && x.status === "live")).toBe(true));
+    await waitFor(() => expect(useUiStore.getState().workspaceTab).toBe("live"));
+    // the batch: the same rule
+    useUiStore.setState({ workspaceTab: "paper" });
+    await waitFor(() => expect(screen.getAllByTestId("paper-card")).toHaveLength(1));
+    await u.click(screen.getByTestId("trade-all-live"));
+    const dlg = screen.getByTestId("batch-live");
+    await waitFor(() => expect(within(dlg).getByTestId<HTMLSelectElement>("batch-broker").value).toBe("brk_delta"));
+    expect(within(dlg).getByTestId<HTMLButtonElement>("batch-go").disabled).toBe(true);
+    await u.type(within(dlg).getByTestId("live-confirm"), "LIVE");
+    expect(within(dlg).getByTestId<HTMLButtonElement>("batch-go").disabled).toBe(false);
   });
 
   it("never pauses a paper trade, however the day went", async () => {
@@ -297,6 +338,7 @@ describe("HC-TR-089 Trade All → Live", () => {
     expect(within(dlg).getByTestId("batch-go").textContent).toContain("Trade 1 strategy live");
     await u.click(checks[1]!);
     await u.selectOptions(within(dlg).getByTestId("batch-broker"), "brk_delta");
+    await typeLiveIf(u, dlg);
     await u.click(within(dlg).getByTestId("batch-go"));
     await waitFor(() => expect(mine().filter((s) => s.status === "live")).toHaveLength(2));
     expect(mine()[0]!.orderBatchId).toMatch(/^web-.*:strat_1$/);
@@ -314,6 +356,7 @@ describe("HC-TR-089 Trade All → Live", () => {
     await u.click(screen.getByTestId("trade-all-live"));
     const dlg = screen.getByTestId("batch-live");
     await waitFor(() => expect(within(dlg).getByTestId<HTMLSelectElement>("batch-broker").value).toBe("brk_delta"));
+    await typeLiveIf(u, dlg);
     await u.click(within(dlg).getByTestId("batch-go"));
     await waitFor(() => expect(mine()[0]!.status).toBe("live"));
     expect(mine()[1]!.status).toBe("paper"); // stopped at the first refusal
@@ -356,6 +399,7 @@ describe("HC-TR-055 live from the Builder", () => {
     expect(within(preview).getByTestId("preview-note").textContent).not.toContain("Paper trade");
     await waitFor(() => expect(mine()).toHaveLength(1));
     expect(mine()[0]!.status).toBe("draft");
+    await typeLiveIf(u, preview);
     await u.click(within(preview).getByTestId("trade-now"));
     await waitFor(() => expect(mine()[0]!.status).toBe("live"));
     expect(mine()[0]!.name).toBe("Long call live");
@@ -409,6 +453,7 @@ describe("HC-TR-088 live adjustments and square off from Details", () => {
     expect(within(confirm).getByTestId("adjust-type").textContent).toBe("market");
     const apply = within(confirm).getByTestId("adjust-apply");
     expect(apply.textContent).toContain("Hold to place 1 order");
+    await typeLiveIf(u, confirm); // HC-TR-186: the word first, so the short press below exercises the early release, not a disabled button
     await hold(apply, 300);
     expect(mine()[0]!.legs).toHaveLength(1); // let go early: nothing sent
     expect(apply.dataset["progress"]).toBe("0.00");
@@ -444,6 +489,7 @@ describe("HC-TR-088 live adjustments and square off from Details", () => {
     // a limit at the reviewed mark: the bought put rests on the venue (the mock's mark sits above the reviewed one), so it comes back pending
     await u.click(within(second).getByTestId("order-type-limit"));
     expect(within(second).getByTestId("adjust-type").textContent).toBe("limit");
+    await typeLiveIf(u, second);
     await hold(within(second).getByTestId("adjust-apply"));
     await waitFor(() => expect(mine()[0]!.adjustments).toHaveLength(2));
     expect(mine()[0]!.adjustments.at(-1)!.batchId).not.toBe(firstKey);
@@ -571,6 +617,7 @@ describe("HC-TR-173..175 accounts: several keys per exchange (ADR-068)", () => {
     await u.click(within(mode).getByTestId("trade-continue"));
     const preview = await screen.findByTestId("trade-preview");
     await within(preview).findByTestId("venue-preview");
+    await typeLiveIf(u, preview);
     await u.click(within(preview).getByTestId("trade-now"));
     await waitFor(() => expect(mine()[0]!.status).toBe("live"));
     expect(mine()[0]!.accountId).toBe("crd_sub1");

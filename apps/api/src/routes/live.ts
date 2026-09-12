@@ -2,7 +2,7 @@
  * Live trading routes (Phase 3 item 2, ADR-025): preview, place, retry, sync, Trade All → Live batch,
  * positions, and the admin kill switch. HC-TR-023, 055, 063, 070, 082..089.
  */
-import { type AdjustChange, Id, LiveBatchBody, LiveBatchResult, LivePlaceBody, LivePositions, LivePositionsExitBody, LivePositionsExitResult, LivePreview, LivePreviewBody, MAX_OPEN_LEGS, Strategy, type StrategyLegInput, ApiError } from "@hapiecoin/schema";
+import { type AdjustChange, Id, LiveBatchBody, LiveBatchResult, LivePlaceBody, LivePositions, LivePositionsExitBody, LivePositionsExitResult, LivePreview, LivePreviewBody, MAX_OPEN_LEGS, Strategy, type StrategyLegInput, ApiError, LiveRetryBody } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, asc, eq } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
@@ -12,7 +12,7 @@ import { type AppEnv, type SessionUser, currentUser } from "../security/context.
 import { HttpError, errors } from "../security/errors.js";
 import { requireAdmin, requireUser } from "../security/guards.js";
 import { orderRateLimit } from "../security/rate-limit.js";
-import { lotSizeFor, openCredential, ordersOf, placeEntries, preview, resolveAccount, retryFailed, syncOrders, tradingBlockedReason, type PlanLeg, type StrategyRow, brokerVenueOf, venueMismatch } from "./live-exec.js";
+import { lotSizeFor, openCredential, ordersOf, placeEntries, preview, resolveAccount, retryFailed, syncOrders, tradingBlockedReason, type PlanLeg, type StrategyRow, brokerVenueOf, venueMismatch, requireLiveConfirm } from "./live-exec.js";
 import { type AppDeps, cookieAuth, errorResponses, jsonContent, errorMessage } from "./shared.js";
 
 /** The exchange did not answer the positions read (never an empty list, HC-TR-160). */
@@ -99,6 +99,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const body = c.req.valid("json");
       const existing = (await ordersOf(deps, row.id)).some((o) => o.batchId === body.idempotencyKey);
       if (existing) return c.json(await loadStrategy(deps, row.id), 200); // repeat of the same placement (idempotency key)
+      requireLiveConfirm(body.confirm); // ADR-078: the typed word, before any other check
       if (row.status !== "draft" && row.status !== "paper") throw errors.conflict(`Only a draft or paper strategy can go live; this strategy is ${row.status}`);
       await assertEntitled(deps, me.id, "live_trading"); // HC-SH-054 (ADR-030)
       const accountId = accountOf(row, body);
@@ -123,12 +124,13 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       summary: "Retry failed orders with the same client order ids (HC-TR-085)",
       security: cookieAuth,
       middleware: [guard, orderLimit],
-      request: { params: IdParam },
-      responses: { 200: jsonContent(Strategy, "Retried"), 401: errorResponses[401], 404: errorResponses[404], 409: errorResponses[409] },
+      request: { params: IdParam, body: { content: { "application/json": { schema: LiveRetryBody } }, required: true } },
+      responses: { 200: jsonContent(Strategy, "Retried"), 400: errorResponses[400], 401: errorResponses[401], 404: errorResponses[404], 409: errorResponses[409] },
     }),
     async (c) => {
       const me = currentUser(c);
       const row = await owned(me, c.req.valid("param").id);
+      requireLiveConfirm(c.req.valid("json").confirm); // ADR-078: a retry sends real orders again
       if (row.status !== "live" || !row.brokerId) throw errors.conflict("Only a live strategy has orders to retry");
       const blocked = await tradingBlockedReason(deps, me);
       if (blocked) throw errors.conflict(blocked);
@@ -179,6 +181,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
     async (c) => {
       const me = currentUser(c);
       const body = c.req.valid("json");
+      requireLiveConfirm(body.confirm); // ADR-078
       const blocked = await tradingBlockedReason(deps, me);
       if (blocked) throw errors.conflict(blocked);
       await assertEntitled(deps, me.id, "live_trading"); // one check per batch: the batch counts as one placement per strategy below

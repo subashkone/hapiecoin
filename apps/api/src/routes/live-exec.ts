@@ -5,7 +5,7 @@
  * reconciles pending orders.
  * Routes call these; nothing here is reachable without a signed-in user's own vault credential.
  */
-import { type LivePreview, type LivePreviewLeg, type StrategyOrder, toDecimal } from "@hapiecoin/schema";
+import { type LivePreview, type LivePreviewLeg, type StrategyOrder, toDecimal, isLiveConfirm } from "@hapiecoin/schema";
 import { DEFAULT_VENUE, type DeltaCredentials, type PlaceOrderResult, VENUE_REGISTRY, contractsFor, defaultLotSizes, getVenue, getVenueCore, roundToTick } from "@hapiecoin/venues";
 import type { Venue } from "@hapiecoin/schema";
 import { and, eq } from "drizzle-orm";
@@ -101,6 +101,11 @@ export async function resolveAccount(deps: AppDeps, user: SessionUser, brokerId:
 }
 
 /** Kill switches (ADR-025): the operator's env flag and the account flag. */
+/** The typed confirmation (ADR-078; HC-TR-186): every live entry names the word, or the route answers 400 with the sentence the dialog shows. */
+export function requireLiveConfirm(word: string | undefined | null): void {
+  if (!isLiveConfirm(word)) throw errors.badRequest("Type LIVE to confirm a real order");
+}
+
 export async function tradingBlockedReason(deps: AppDeps, user: SessionUser): Promise<string | null> {
   if (deps.config.trading.disabled) return "Live trading is paused by the operator";
   const [u] = await deps.db.select({ disabled: users.tradingDisabled }).from(users).where(eq(users.id, user.id)).limit(1);

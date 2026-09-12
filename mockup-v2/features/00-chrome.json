@@ -1089,5 +1089,15 @@
     "how": "iv-snapshot.ts hands each pass's quotes to chain-eod.ts: at or after the asset's settlement hour (12:00 UTC, XAUT 16:00) and with no rows for the day yet, every listed option's mark, mark IV and the spot land in chain_eod (unique per venue / asset / day / expiry / strike / kind), kept 400 days; the first write for a venue and underlying backfills up to seven earlier days from instrument_marks (the last pass at or before the hour, symbols parsed through the venue codec, the spot from the same pass's IV snapshot); the read side folds rows into ladders per expiry",
     "evidence": "ADR-077 (12 Sep 2026): apps/api/src/chain-eod.ts recordEodIfDue / backfillEodFromMarks / pruneEod / eodDays / eodDayCount, iv-snapshot.ts, db chain_eod; unit chain-eod.test.ts HC-SH-128",
     "test": "unit (api)"
+  },
+  {
+    "screen": "Shared chrome · Settings menu · Security",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Security settings: turn two-factor sign-in on with an authenticator app, see the backup codes once, turn it off",
+    "how": "Settings menu → Security (the row reads '2FA on' or '2FA off'; palette 'Open Security'). Turning on: 1 the password, 2 the key in groups of four with Copy and the otpauth link for an app on the same device (no QR image, GAPS #94), 3 the first code the app shows; nothing changes until that code is right; then ten backup codes, shown once, with Copy all. Turning off asks for the password. With it on, the account signs in with password + code only",
+    "evidence": "ADR-078 (12 Sep 2026): apps/api auth.ts twoFactor plugin, db/schema.ts two_factors + users.two_factor_enabled, routes/me.ts twoFactorEnabled; apps/web components/dialogs/SecurityDialog.tsx, SettingsDialogs.tsx, header/AppHeader.tsx menu-security, shell/CommandPalette.tsx set:security; unit auth.test.ts (api) HC-SH-129, dialogs.test.tsx HC-SH-129, shell.test.tsx; e2e settings.spec.ts HC-SH-129",
+    "test": "unit (api + web), e2e"
   }
 ]

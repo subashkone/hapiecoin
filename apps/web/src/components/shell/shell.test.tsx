@@ -137,6 +137,7 @@ describe("HC-PB-059 command palette", () => {
     expect(groups.slice(0, 3)).toEqual(["Navigate", "Actions", "Settings"]);
     expect(screen.getByRole("option", { name: "Open P&L Settings" })).toBeTruthy();
     expect(screen.getByRole("option", { name: "Open Mindful trading" })).toBeTruthy(); // HC-TR-183
+    expect(screen.getByRole("option", { name: "Open Security" })).toBeTruthy(); // HC-SH-129
     expect(screen.getByRole("option", { name: /Options screener/ })).toBeTruthy(); // HC-WS-112 (a nav row reads its path as the hint)
     await waitFor(() => expect(screen.getByRole("option", { name: /Display currency → INR/ })).toBeTruthy());
     // typing underlines the matched characters (HC-SH-086); Tab moves (HC-SH-088)

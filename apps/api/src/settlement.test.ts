@@ -93,7 +93,7 @@ async function live(legs: unknown[] = [CALL, PUT], name = "Settle live") {
   );
   const res = await t.request(`/v1/strategies/${s.id}/live/place`, {
     cookie: alice,
-    json: { brokerId: SEED.brokerId, idempotencyKey: `key-settle-${s.id.slice(-6)}`, expected: {} },
+    json: { confirm: "LIVE", brokerId: SEED.brokerId, idempotencyKey: `key-settle-${s.id.slice(-6)}`, expected: {} },
   });
   expect(res.status).toBe(200);
   return get(s.id);

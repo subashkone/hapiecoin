@@ -59,6 +59,7 @@ export {
   Settings2,
   Share2,
   Shield,
+  ShieldCheck,
   SlidersHorizontal,
   Sparkles,
   Sun,

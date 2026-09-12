@@ -40,7 +40,7 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 25. ✅ (ADR-061) API `bodyLimit` and a per-route limiter on `/live/place`, `/live/batch`, `/live/positions/exit` (GAPS #70)
 26. ✅ (ADR-062) Replica guards for the reconciler and Telegram poller; gateway feed-leader lock (GAPS #16, #71)
 27. ⬜ Error tracking and API metrics (GAPS #72)
-28. ⬜ TOTP second factor and a typed LIVE confirmation before a live order (GAPS #73)
+28. ✅ (ADR-078) TOTP second factor and a typed LIVE confirmation before a live order (GAPS #73 closed; leftovers #94)
 29. ⬜ `zod/mini` for `@hapiecoin/schema`; bundle check inside `pnpm ci` (GAPS #19)
 
 ## Done this week

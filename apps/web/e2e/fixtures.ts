@@ -29,6 +29,8 @@ export interface SeedOptions {
   alerts?: boolean;
   /** Seed the account with a linked Telegram chat (ADR-057). */
   telegram?: boolean;
+  /** Two-factor sign-in on (ADR-078): the password sign-in stops at the code step; the mock accepts 654321. */
+  twoFactor?: boolean;
   /** Seed a closed round trip of exchange fills on the Main key for the verified P&L block (ADR-073); needs `connected`. */
   fills?: boolean;
   /** Turn the public trader page on at this handle with every section shown (ADR-075). */
@@ -47,6 +49,12 @@ export async function signIn(page: Page, email: string, password = "Passw0rd!") 
   await page.getByRole("textbox", { name: "Password", exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign In", exact: true }).click();
   await page.waitForURL(/\/analyse/);
+}
+
+/** HC-TR-186: a live entry dialog asks for the word before its destructive button enables; a paper dialog has no field. */
+export async function typeLiveIfShown(page: Page) {
+  const f = page.getByTestId("live-confirm");
+  if ((await f.count()) > 0) await f.fill("LIVE");
 }
 
 export async function fillOtp(page: Page, code = TEST_OTP) {

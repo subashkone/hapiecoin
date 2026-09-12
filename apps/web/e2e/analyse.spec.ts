@@ -1,7 +1,8 @@
 import { TEMPLATE_COUNT } from "../src/lib/strategy/templates";
-import { expect, seedUser, signIn, test } from "./fixtures";
+import { expect, seedUser, signIn, test, typeLiveIfShown } from "./fixtures";
 import { strikesOf } from "../test/fixtures/chain";
 
+/** HC-TR-186: a live confirm needs the word typed first; a paper dialog has no field. */
 test.describe("HC-SH analyse header and live chain", () => {
   test.beforeEach(async ({ page, request }) => {
     await seedUser(request, { email: "trader@example.com", plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" } });
@@ -630,6 +631,7 @@ test.describe("HC-TR paper trading (Phase 3 item 1)", () => {
     await mode.getByTestId("trade-continue").click();
     const preview = page.getByTestId("trade-preview");
     await expect(preview.getByTestId("preview-row")).toHaveCount(2);
+    await typeLiveIfShown(page);
     await preview.getByTestId("trade-now").click();
     await expect(page.getByTestId("save-draft-name")).toHaveValue("E2E straddle"); // the name is always confirmed (ADR-059)
     await page.getByTestId("save-draft-confirm").click();
@@ -802,6 +804,7 @@ test.describe("HC-SH-079 / HC-SH-094..100 alerts (ADR-052)", () => {
     await page.getByTestId("strategy-name").fill("E2E alert call");
     await page.getByTestId("builder-paper-trade").click();
     await page.getByTestId("trade-mode").getByTestId("trade-continue").click();
+    await typeLiveIfShown(page);
     await page.getByTestId("trade-preview").getByTestId("trade-now").click();
     await page.getByTestId("save-draft-confirm").click();
     await page.getByTestId("rule-skip").click(); // the Protect step, skipped here
@@ -844,6 +847,7 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     await page.getByTestId("strategy-name").fill("E2E adjust");
     await page.getByTestId("builder-paper-trade").click();
     await page.getByTestId("trade-mode").getByTestId("trade-continue").click();
+    await typeLiveIfShown(page);
     await page.getByTestId("trade-preview").getByTestId("trade-now").click();
     await page.getByTestId("save-draft-confirm").click();
     await page.getByTestId("rule-skip").click(); // the Protect step (HC-TR-167), skipped here
@@ -916,6 +920,7 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     await expect(confirm.getByTestId("adjust-confirm-row")).toHaveCount(2);
     await expect(confirm.getByTestId("cf-max-loss")).toContainText("→");
     await confirm.getByTestId("adjust-reason").fill("e2e roll up");
+    await typeLiveIfShown(page);
     await confirm.getByTestId("adjust-apply").click();
     const details = page.getByTestId("strategy-details");
     await expect(details).toBeVisible({ timeout: 15_000 });
@@ -937,6 +942,7 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     await page.getByTestId("strategy-name").fill("E2E narrow");
     await page.getByTestId("builder-paper-trade").click();
     await page.getByTestId("trade-mode").getByTestId("trade-continue").click();
+    await typeLiveIfShown(page);
     await page.getByTestId("trade-preview").getByTestId("trade-now").click();
     await page.getByTestId("save-draft-confirm").click();
     await page.getByTestId("rule-skip").click(); // the Protect step (HC-TR-167), skipped here
@@ -992,6 +998,7 @@ test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
     const mode = page.getByTestId("trade-mode");
     await expect(mode.getByTestId("trade-broker")).toHaveValue("brk_delta");
     await mode.getByTestId("trade-continue").click();
+    await typeLiveIfShown(page);
     await page.getByTestId("trade-preview").getByTestId("trade-now").click();
     await page.getByTestId("save-draft-confirm").click();
     await page.getByTestId("rule-skip").click(); // the Protect step (HC-TR-167), skipped here
@@ -1000,6 +1007,7 @@ test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
     await expect(mode.getByTestId("mode-live")).toHaveAttribute("aria-pressed", "true");
     await mode.getByTestId("trade-continue").click();
     await expect(page.getByTestId("trade-preview").getByTestId("venue-preview")).toHaveAttribute("data-ok", "true");
+    await typeLiveIfShown(page);
     await page.getByTestId("trade-preview").getByTestId("trade-now").click();
     await expect(page.getByTestId("live-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
     const card = page.getByTestId("live-card");
@@ -1013,6 +1021,7 @@ test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
     await expect(confirm).toHaveAttribute("data-mode", "live");
     await expect(confirm.getByTestId("adjust-venue")).toHaveAttribute("data-ok", "true", { timeout: 15_000 });
     await expect(confirm.getByTestId("adjust-band")).toContainText("±");
+    await typeLiveIfShown(page);
     const apply = confirm.getByTestId("adjust-apply");
     await expect(apply).toContainText("Hold to place");
     // a short press cancels
@@ -1043,6 +1052,7 @@ test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
     const mode = page.getByTestId("trade-mode");
     await expect(mode.getByTestId("trade-broker")).toHaveValue("brk_delta");
     await mode.getByTestId("trade-continue").click();
+    await typeLiveIfShown(page);
     await page.getByTestId("trade-preview").getByTestId("trade-now").click();
     await page.getByTestId("save-draft-confirm").click();
     await page.getByTestId("rule-skip").click(); // the Protect step (HC-TR-167), skipped here
@@ -1059,6 +1069,7 @@ test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
     await expect(preview.getByTestId("venue-preview")).toHaveAttribute("data-ok", "true");
     await expect(preview.getByTestId("venue-leg")).toHaveCount(1);
     await expect(preview.getByTestId("trade-now")).toHaveText(/Place live orders/);
+    await typeLiveIfShown(page);
     await preview.getByTestId("trade-now").click();
     await expect(page.getByTestId("live-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
     await expect(page.getByTestId("live-count")).toContainText("1");
@@ -1152,6 +1163,7 @@ test.describe("HC-SH-064..076 product tour", () => {
     await page.getByTestId("trade-continue").click();
     await expect(page.getByTestId("trade-preview")).toBeVisible();
     await expect(tour).toHaveAttribute("data-step", "9"); // HC-SH-073 review and start
+    await typeLiveIfShown(page);
     await page.getByTestId("trade-now").click();
     await expect(page.getByTestId("save-draft-dialog")).toBeVisible(); // unnamed → name dialog
     await expect(tour).toHaveAttribute("data-step", "10"); // HC-SH-072
