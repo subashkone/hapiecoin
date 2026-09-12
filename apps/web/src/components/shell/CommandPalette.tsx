@@ -312,6 +312,13 @@ export function buildCommands(opts: {
         keywords: ["backtest", "history", "template", "eod"],
         run: () => useUiStore.getState().setAnalysisTab("backtest"),
       },
+      {
+        id: "act:analysis-replay",
+        label: "Analysis: Replay",
+        group: "Actions",
+        keywords: ["replay", "history", "chain", "expiry", "scrub"],
+        run: () => useUiStore.getState().setAnalysisTab("replay"),
+      },
       ...(opts.expiries ?? []).map(
         (e): PaletteCommand => ({
           id: `act:expiry-${e}`,
