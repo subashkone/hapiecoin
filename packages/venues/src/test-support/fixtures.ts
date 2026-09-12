@@ -120,3 +120,28 @@ export const LIVE_BINANCE_FRAME = {
     q: "698628557.86822230",
   },
 };
+
+/** 950 live Deribit BTC options recorded 11 Sep 2026 (`{ jsonrpc, result[] }` of public/get_instruments). */
+export function loadDeribitInstrumentsFixture(): unknown {
+  return loadJson("deribit-instruments-btc.json");
+}
+
+/** public/get_book_summary_by_currency for BTC options, same capture. */
+export function loadDeribitBookSummaryFixture(): unknown {
+  return loadJson("deribit-book-summary-btc.json");
+}
+
+/** 16 near-the-money BTC option tickers (`{ result: RawTicker[] }`) with greeks, same capture. */
+export function loadDeribitTickersFixture(): unknown {
+  return loadJson("deribit-tickers.json");
+}
+
+/** One public/ticker reply, same capture. */
+export function loadDeribitTickerFixture(): unknown {
+  return loadJson("deribit-ticker.json");
+}
+
+/** Live WebSocket frames: subscribe reply, heartbeat test_request, a BTC and an ETH ticker notification, an index notification, the public/test reply. */
+export function loadDeribitWsFrames(): Record<string, unknown> {
+  return loadJson("deribit-ws-frames.json") as Record<string, unknown>;
+}

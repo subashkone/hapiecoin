@@ -6,8 +6,8 @@
 // exchange settles it itself, HapieCoin does the bookkeeping, and an unreadable exchange books nothing on a guess.
 // Without a spot for the instant the leg stays open and is retried on the next pass. Never runs under NODE_ENV=test
 // unless a test calls `settleExpired` itself.
-import { type Underlying, type Venue, settlementMsOf, toDecimal } from "@hapiecoin/schema";
-import { DEFAULT_VENUE } from "@hapiecoin/venues";
+import { type Underlying, type Venue, toDecimal } from "@hapiecoin/schema";
+import { DEFAULT_VENUE, dateToExpiryCode, getVenue } from "@hapiecoin/venues";
 import { and, eq, gte, inArray, lte, ne } from "drizzle-orm";
 import { writeAudit } from "./audit.js";
 import { ivSnapshots, strategies, strategyAdjustments, strategyLegs } from "./db/schema.js";
@@ -32,6 +32,15 @@ export interface SettlementReport {
   archived: number;
   /** Legs left open for the next pass (no spot, exchange still holds them, exchange unreadable). */
   skipped: number;
+}
+
+/** Epoch ms of a dated expiry's settlement on the strategy's venue (ADR-066); null for the perpetual or an impossible date. */
+export function settlementInstant(expiry: string, asset: Underlying, venue: Venue): number | null {
+  try {
+    return Date.parse(getVenue(venue).calendar.expirySettlementIso(dateToExpiryCode(expiry), asset));
+  } catch {
+    return null;
+  }
 }
 
 /** Settlement value per underlying unit: intrinsic for options, the spot for a dated future. */
@@ -67,7 +76,7 @@ export async function settleExpired(
     { strategy: Row["strategy"]; legs: { leg: Row["leg"]; settlementMs: number }[] }
   >();
   for (const { strategy, leg } of rows) {
-    const ms = settlementMsOf(leg.expiry, strategy.asset);
+    const ms = settlementInstant(leg.expiry, strategy.asset, strategy.venue);
     if (ms === null || ms + SETTLEMENT_GRACE_MS > nowMs) continue;
     const entry = due.get(strategy.id) ?? { strategy, legs: [] };
     entry.legs.push({ leg, settlementMs: ms });

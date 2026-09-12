@@ -116,6 +116,7 @@ describe("HC-WS-059..064 greeks and ladder", () => {
     await waitFor(() => expect(screen.getByTestId("greek-delta").textContent).not.toContain("—"), { timeout: 4000 });
     expect(screen.getAllByTestId("greeks-row")).toHaveLength(2);
     expect(screen.getByTestId("greeks-meaning").textContent).toContain("Theta");
+    expect(screen.getByTestId("greeks-model").textContent).toContain("European exercise"); // ADR-066
     // long straddle: positive gamma and vega, negative theta
     expect(screen.getByTestId("greek-gamma").className).toContain("");
     expect(screen.getByTestId("greek-theta").textContent).toMatch(/^Theta−|Theta-/);

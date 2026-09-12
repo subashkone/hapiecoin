@@ -15,6 +15,8 @@ import {
   rewardRisk,
   scenarioGrid,
 } from "./strategy.js";
+import { ACT_365, calendarFor } from "./calendar.js";
+import { bsmGreeks, bsmPrice } from "./bsm.js";
 import { MS_PER_DAY, expiryMs, yearFraction } from "./time.js";
 import type { Leg } from "./types.js";
 
@@ -415,5 +417,48 @@ describe("ADR-044 valuation at a date (adjustment workbench, other expiries)", (
     expect(r.breakevens).toEqual([80_000]);
     expect(r.maxLoss).toBe(0);
     expect(() => analyze(free, { spot: SPOT, nowMs: NOW, valuationMs: NaN })).toThrow(RangeError);
+  });
+});
+
+describe("HC-SH-121 [PRICING] injected calendar and carry (ADR-066)", () => {
+  const NOW = Date.UTC(2026, 8, 7, 6, 0, 0);
+  const legs: Leg[] = [
+    { kind: "call", side: "buy", strike: 80_000, expiry: "2026-09-25", quantity: 0.01, price: 1_200, iv: 0.5 },
+    { kind: "put", side: "sell", strike: 78_000, expiry: "2026-09-25", quantity: 0.01, price: 900, iv: 0.55 },
+    { kind: "future", side: "buy", strike: 0, expiry: "PERP", quantity: 0.01, price: 79_000 },
+  ];
+  const opts = { spot: 79_500, nowMs: NOW, targetDays: 5, points: 41 };
+
+  it("a calendar option gives exactly the numbers the settlement hour gave, at 12:00 and 16:00", () => {
+    expect(analyze(legs, { ...opts, calendar: ACT_365 })).toEqual(analyze(legs, { ...opts, settlementHourUtc: 12 }));
+    expect(analyze(legs, { ...opts, calendar: calendarFor(16) })).toEqual(analyze(legs, { ...opts, settlementHourUtc: 16 }));
+    expect(analyze(legs, { ...opts, calendar: calendarFor(16) })).not.toEqual(analyze(legs, opts));
+    const grid = { prices: [78_000, 79_500, 81_000], dates: [NOW + 2 * MS_PER_DAY] };
+    expect(scenarioGrid(legs, { ...grid, calendar: calendarFor(16) })).toEqual(scenarioGrid(legs, { ...grid, settlementHourUtc: 16 }));
+    expect(scenarioGrid(legs, grid)).toEqual(scenarioGrid(legs, { ...grid, calendar: ACT_365 })); // no hour at all: act/365 at 12:00
+    // another day count stretches the year fraction (the expected move grows with sqrt T) but the calendar days stay
+    const act360 = analyze(legs, { ...opts, calendar: { daysPerYear: 360, settlementHourUtc: 12 } });
+    expect(act360.daysToNearestExpiry).toBe(analyze(legs, opts).daysToNearestExpiry);
+    expect(act360.expectedMove).toBeCloseTo(analyze(legs, opts).expectedMove * Math.sqrt(365 / 360), 9);
+  });
+
+  it("a rate and a carry yield move every valued leg the BSM way and leave the expiry payoff alone", () => {
+    const flat = analyze(legs, opts);
+    const carried = analyze(legs, { ...opts, rate: 0.05, dividendYield: 0.02 });
+    expect(carried.maxProfit).toBe(flat.maxProfit);
+    expect(carried.maxLoss).toBe(flat.maxLoss);
+    expect(carried.points.map((p) => p.pnlExpiry)).toEqual(flat.points.map((p) => p.pnlExpiry));
+    // the target-date value of each option leg is bsmPrice on the axis price, delta and gamma per unit of spot
+    const T = yearFraction(NOW + 5 * MS_PER_DAY, "2026-09-25");
+    const pnlAt = (price: number) => 0.01 * (bsmPrice(price, 80_000, T, 0.5, true, 0.05, 0.02) - 1_200) - 0.01 * (bsmPrice(price, 78_000, T, 0.55, false, 0.05, 0.02) - 900) + 0.01 * (price - 79_000);
+    for (const p of carried.points) expect(p.pnlTarget).toBeCloseTo(pnlAt(p.price), 8);
+    const T0 = yearFraction(NOW, "2026-09-25");
+    const c = bsmGreeks(79_500, 80_000, T0, 0.5, true, 0.05, 0.02);
+    const put = bsmGreeks(79_500, 78_000, T0, 0.55, false, 0.05, 0.02);
+    expect(carried.greeks.delta).toBeCloseTo(0.01 * c.delta - 0.01 * put.delta + 0.01, 12);
+    expect(carried.greeks.gamma).toBeCloseTo(0.01 * c.gamma - 0.01 * put.gamma, 12);
+    expect(carried.greeks.delta).not.toBeCloseTo(flat.greeks.delta, 6);
+    expect(() => analyze(legs, { ...opts, rate: Number.NaN })).toThrow(RangeError);
+    expect(() => scenarioGrid(legs, { prices: [79_500], dates: [NOW], dividendYield: Number.POSITIVE_INFINITY })).toThrow(RangeError);
   });
 });

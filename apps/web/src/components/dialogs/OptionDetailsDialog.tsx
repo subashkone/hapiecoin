@@ -4,7 +4,7 @@
 // from the API's snapshot history (ADR-056, GAPS #32).
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { chainTopic } from "@hapiecoin/schema";
-import { CURRENT_VENUE } from "@/lib/venue";
+import { CURRENT_VENUE, exerciseLabel, exerciseStyleOf } from "@/lib/venue";
 import { useMemo, useState } from "react";
 import { useMarkHistory } from "@/lib/api/market";
 import { useSettings } from "@/lib/api/queries";
@@ -70,7 +70,7 @@ export function OptionDetailsDialog({ open, onOpenChange }: DialogProps) {
           </DialogTitle>
           <DialogDescription data-testid="option-description">
             {target
-              ? `${target.kind.toUpperCase()} · ${target.asset} · ${fmtExpiry(target.expiry)} · ${daysToExpiry(target.expiry)} d to expiry · Spot ${fmtPrice(spot?.price)}`
+              ? `${target.kind.toUpperCase()} · ${target.asset} · ${fmtExpiry(target.expiry)} · ${daysToExpiry(target.expiry)} d to expiry · Spot ${fmtPrice(spot?.price)} · ${exerciseLabel(exerciseStyleOf(target.asset))}`
               : ""}
           </DialogDescription>
         </DialogHeader>

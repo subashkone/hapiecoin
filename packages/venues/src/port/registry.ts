@@ -3,11 +3,13 @@ import type { Venue as VenueId } from "@hapiecoin/schema";
 import { UnknownVenueError, type VenueAdapter } from "./adapter.js";
 import { DEFAULT_VENUE } from "./core.js";
 import { DELTA_INDIA } from "./delta-india-clients.js";
+import { DERIBIT } from "./deribit-clients.js";
 
 export { DEFAULT_VENUE };
 
 export const VENUE_REGISTRY: Readonly<Record<VenueId, VenueAdapter>> = {
   delta_india: DELTA_INDIA,
+  deribit: DERIBIT,
 };
 
 /** Own keys only: a prototype name ("toString") is an unknown venue, not a function. */

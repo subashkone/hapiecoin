@@ -66,12 +66,16 @@ describe("ADR-056 atmIvByExpiry / frontExpiry", () => {
     // nearer strike wins even when it has one side only
     expect(atmIvByExpiry(products, quotes, 79_900)).toEqual([{ expiry: "2026-09-25", strike: 80_000, atmIv: 0.9 }]);
   });
-  it("front expiry is the nearest with two or more days left, else the nearest", () => {
+  it("HC-SH-121 front expiry is the nearest with two or more days left at the venue's settlement hour, else the nearest", () => {
     const now = Date.UTC(2026, 8, 10, 6);
     expect(frontExpiry(["2026-09-25", "2026-09-11", "2026-10-30"], now)).toBe("2026-09-25");
     expect(frontExpiry(["2026-09-11"], now)).toBe("2026-09-11");
     expect(frontExpiry(["2026-09-13", "2026-09-11"], now)).toBe("2026-09-13");
     expect(frontExpiry([], now)).toBeNull();
+    // ADR-066: the two-day rule counts to the venue's settlement hour; at 13:00 two days before, XAUT (16:00) still has two days, BTC (12:00) does not
+    const at13 = Date.UTC(2026, 8, 9, 13, 0, 0);
+    expect(frontExpiry(["2026-09-11", "2026-09-18"], at13)).toBe("2026-09-18");
+    expect(frontExpiry(["2026-09-11", "2026-09-18"], at13, 16)).toBe("2026-09-11");
   });
 });
 

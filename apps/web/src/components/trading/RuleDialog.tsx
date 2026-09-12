@@ -14,10 +14,11 @@ import { useTelegramStatus } from "@/lib/api/telegram";
 import { fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
 import { type MoneyFormat, USD, fmtMoney } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
-import { settlementHourUtc, toPricingLegs } from "@/lib/pricing/legs";
+import { toPricingLegs } from "@/lib/pricing/legs";
 import { useUiStore } from "@/lib/store";
 import { openLegs, serverLegToLocal } from "@/lib/strategy/paper";
 import type { PaperBook } from "@/lib/strategy/usePaper";
+import { venueCalendar } from "@/lib/venue";
 
 interface Draft {
   on: boolean;
@@ -128,7 +129,7 @@ export function RuleDialog({ book }: { book: PaperBook }) {
   const netPremiumUsd = useMemo(() => open.reduce((sum, l) => sum + (l.side === "sell" ? 1 : -1) * Number(l.entryPrice ?? l.price) * l.lots * Number(lotSize), 0), [open, lotSize]);
   const pricingLegs = useMemo(() => (s ? toPricingLegs(open.map((l) => serverLegToLocal(l, s.asset)), lotSize, { spot: undefined }) : []), [s, open, lotSize]);
   const spot = s ? book.spotOf(s.asset) : null;
-  const analysis = useAnalysis(pricingLegs, s && spot !== null && pricingLegs.length ? { spot, nowMs: Date.now(), settlementHourUtc: settlementHourUtc(s.asset), defaultIv: 0.5 } : null);
+  const analysis = useAnalysis(pricingLegs, s && spot !== null && pricingLegs.length ? { spot, nowMs: Date.now(), calendar: venueCalendar(s.asset), defaultIv: 0.5 } : null);
   const maxLossUsd = analysis.result && Number.isFinite(analysis.result.maxLoss) && analysis.result.maxLoss < 0 ? -analysis.result.maxLoss : null;
   const defaultBasis: RuleBasis = netPremiumUsd > 0 ? "credit" : netPremiumUsd < 0 ? "debit" : "max_loss";
   const basisUsd = (b: RuleBasis): number | null => (b === "credit" ? (netPremiumUsd > 0 ? netPremiumUsd : null) : b === "debit" ? (netPremiumUsd < 0 ? -netPremiumUsd : null) : maxLossUsd);

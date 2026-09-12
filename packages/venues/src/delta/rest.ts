@@ -12,6 +12,7 @@
  */
 import { numberToDecimal, canonDecimal } from "../decimal.js";
 import { DeltaApiError, DeltaHttpError, DeltaSchemaError } from "../errors.js";
+import { type FetchLike, JsonHttp } from "../http.js";
 import type { Candle, Instrument, Quote } from "../types.js";
 import { toInstrument, toQuote } from "./normalize.js";
 import {
@@ -24,27 +25,23 @@ import {
 } from "./raw.js";
 import type { z } from "zod";
 
-export type FetchLike = (input: string, init: { signal: AbortSignal; headers: Record<string, string> }) => Promise<{
-  status: number;
-  headers: { get(name: string): string | null };
-  text(): Promise<string>;
-}>;
+export type { FetchLike };
 
 export interface DeltaRestClientOptions {
   /** e.g. "https://api.india.delta.exchange" (no trailing slash needed). */
   baseUrl: string;
   /** Injectable fetch (tests pass a fake; defaults to globalThis.fetch). */
-  fetch?: FetchLike;
+  fetch?: FetchLike | undefined;
   /** Injectable sleep for backoff (tests pass a recorder). */
-  sleep?: (ms: number) => Promise<void>;
+  sleep?: ((ms: number) => Promise<void>) | undefined;
   /** Total attempts per request including the first (default 3). */
-  maxAttempts?: number;
+  maxAttempts?: number | undefined;
   /** First backoff delay; doubles per retry (default 250 ms). */
-  backoffBaseMs?: number;
+  backoffBaseMs?: number | undefined;
   /** Per-attempt timeout (default 5000 ms). */
-  timeoutMs?: number;
+  timeoutMs?: number | undefined;
   /** Clock used for `Quote.receivedAt` (default Date.now). */
-  now?: () => number;
+  now?: (() => number) | undefined;
 }
 
 export type DeltaContractType =
@@ -78,43 +75,21 @@ export interface GetCandlesParams {
   end: number;
 }
 
-const DEFAULT_MAX_ATTEMPTS = 3;
-const DEFAULT_BACKOFF_BASE_MS = 250;
-const DEFAULT_TIMEOUT_MS = 5000;
-const SNIPPET_LENGTH = 200;
-
-function defaultSleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function snippet(text: string): string {
-  return text.length > SNIPPET_LENGTH ? `${text.slice(0, SNIPPET_LENGTH)}…` : text;
-}
-
-function retryAfterMs(header: string | null): number | null {
-  if (header === null) return null;
-  const seconds = Number(header);
-  return Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : null;
-}
 
 export class DeltaRestClient {
-  private readonly baseUrl: string;
-  private readonly fetchImpl: FetchLike;
-  private readonly sleep: (ms: number) => Promise<void>;
-  private readonly maxAttempts: number;
-  private readonly backoffBaseMs: number;
-  private readonly timeoutMs: number;
+  private readonly http: JsonHttp;
   private readonly now: () => number;
 
   constructor(options: DeltaRestClientOptions) {
-    this.baseUrl = options.baseUrl.replace(/\/+$/, "");
-    const fetchImpl: FetchLike | undefined = options.fetch ?? globalThis.fetch;
-    if (!fetchImpl) throw new Error("DeltaRestClient: no fetch implementation available; pass options.fetch");
-    this.fetchImpl = fetchImpl;
-    this.sleep = options.sleep ?? defaultSleep;
-    this.maxAttempts = Math.max(1, options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS);
-    this.backoffBaseMs = options.backoffBaseMs ?? DEFAULT_BACKOFF_BASE_MS;
-    this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    this.http = new JsonHttp({
+      baseUrl: options.baseUrl,
+      fetch: options.fetch,
+      sleep: options.sleep,
+      maxAttempts: options.maxAttempts,
+      backoffBaseMs: options.backoffBaseMs,
+      timeoutMs: options.timeoutMs,
+      errors: { http: (opts) => new DeltaHttpError(opts), schema: (source, issues) => new DeltaSchemaError(source, issues) },
+    });
     this.now = options.now ?? Date.now;
   }
 
@@ -175,82 +150,8 @@ export class DeltaRestClient {
     }));
   }
 
-  private buildUrl(path: string, query: Record<string, string>): string {
-    const url = new URL(this.baseUrl + path);
-    for (const [key, value] of Object.entries(query)) url.searchParams.set(key, value);
-    return url.toString();
-  }
-
-  private async request<S extends z.ZodType>(
-    path: string,
-    query: Record<string, string>,
-    schema: S,
-  ): Promise<z.infer<S>> {
-    const url = this.buildUrl(path, query);
-    let attempt = 0;
-    for (;;) {
-      attempt += 1;
-      const outcome = await this.attemptOnce(url);
-      if (outcome.kind === "response" && !(outcome.status === 429 || outcome.status >= 500)) {
-        if (outcome.status < 200 || outcome.status >= 300) {
-          throw new DeltaHttpError({
-            status: outcome.status,
-            url,
-            bodySnippet: snippet(outcome.text),
-            retryable: false,
-            attempts: attempt,
-          });
-        }
-        return this.decode(url, outcome.text, schema);
-      }
-      if (attempt >= this.maxAttempts) {
-        throw new DeltaHttpError({
-          status: outcome.kind === "response" ? outcome.status : 0,
-          url,
-          bodySnippet: snippet(outcome.kind === "response" ? outcome.text : outcome.message),
-          retryable: true,
-          attempts: attempt,
-        });
-      }
-      const hinted = outcome.kind === "response" ? outcome.retryAfterMs : null;
-      await this.sleep(hinted ?? this.backoffBaseMs * 2 ** (attempt - 1));
-    }
-  }
-
-  private async attemptOnce(
-    url: string,
-  ): Promise<
-    | { kind: "response"; status: number; text: string; retryAfterMs: number | null }
-    | { kind: "transport"; message: string }
-  > {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-    try {
-      const response = await this.fetchImpl(url, {
-        signal: controller.signal,
-        headers: { Accept: "application/json" },
-      });
-      const text = await response.text();
-      return {
-        kind: "response",
-        status: response.status,
-        text,
-        retryAfterMs: retryAfterMs(response.headers.get("retry-after")),
-      };
-    } catch (error) {
-      return { kind: "transport", message: error instanceof Error ? error.message : String(error) };
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-
-  private decode<S extends z.ZodType>(url: string, text: string, schema: S): z.infer<S> {
-    let json: unknown;
-    try {
-      json = JSON.parse(text);
-    } catch {
-      throw new DeltaSchemaError(url, [`body is not JSON: ${snippet(text)}`]);
-    }
+  private async request<S extends z.ZodType>(path: string, query: Record<string, string>, schema: S): Promise<z.infer<S>> {
+    const { url, json } = await this.http.getJson(path, query);
     const failure = RawErrorResponse.safeParse(json);
     if (failure.success) {
       throw new DeltaApiError(url, failure.data.error?.code ?? "unknown", failure.data.error?.context ?? null);

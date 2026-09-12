@@ -5,7 +5,7 @@
  * Routes call these; nothing here is reachable without a signed-in user's own vault credential.
  */
 import { type LivePreview, type LivePreviewLeg, type StrategyOrder, toDecimal } from "@hapiecoin/schema";
-import { DEFAULT_VENUE, type DeltaCredentials, type PlaceOrderResult, contractsFor, defaultLotSizes, getVenue, roundToTick } from "@hapiecoin/venues";
+import { DEFAULT_VENUE, type DeltaCredentials, type PlaceOrderResult, VENUE_REGISTRY, contractsFor, defaultLotSizes, getVenue, roundToTick } from "@hapiecoin/venues";
 import type { Venue } from "@hapiecoin/schema";
 import { and, eq } from "drizzle-orm";
 import { brokerCredentials, brokers, type strategies, strategyLegs, strategyOrders, userSettings, users } from "../db/schema.js";
@@ -44,6 +44,13 @@ export function venueMismatch(brokerVenue: Venue, strategyVenue: Venue): string 
   return `This exchange trades on ${brokerVenue}; the strategy is on ${strategyVenue}`;
 }
 
+/** ADR-067: the refusal a data-only venue earns for anything live; null when the venue trades. */
+export function dataOnlyReason(venue: string): string | null {
+  if (!Object.hasOwn(VENUE_REGISTRY, venue)) return null; // a venue the registry does not know is left to the venue-mismatch guard
+  const adapter = getVenue(venue);
+  return adapter.capabilities.liveTrading ? null : `${adapter.label} is data-only in HapieCoin: no API keys, no live orders (paper trading only)`;
+}
+
 /** ADR-065: a broker of another venue cannot place a strategy; `expectedVenue` is the strategy's venue when one is in hand. */
 /**
  * The key to trade through (ADR-068): the named account, else the broker's only key. Several keys with none
@@ -57,6 +64,8 @@ export async function resolveAccount(deps: AppDeps, user: SessionUser, brokerId:
   const brokerVenue = await brokerVenueOf(deps, user, brokerId);
   if (brokerVenue === null) throw errors.badRequest("Select an exchange...");
   if (expectedVenue !== undefined && brokerVenue !== expectedVenue) throw errors.conflict(venueMismatch(brokerVenue, expectedVenue));
+  const dataOnly = dataOnlyReason(brokerVenue);
+  if (dataOnly !== null) throw errors.conflict(dataOnly);
   const rows = await deps.db.select().from(brokerCredentials).where(and(eq(brokerCredentials.userId, user.id), eq(brokerCredentials.brokerId, brokerId))).orderBy(brokerCredentials.connectedAt);
   if (rows.length === 0) throw errors.conflict("Connect your exchange in Settings → API Settings to enable live trading");
   let row: (typeof rows)[number] | undefined;
@@ -157,8 +166,10 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
   if (blocked) reasons.push(blocked);
   // ADR-065: a broker of another venue is refused before any call reaches that venue
   const brokerVenue = await brokerVenueOf(deps, user, brokerId);
-  const wrongVenue = brokerVenue !== null && brokerVenue !== strategy.venue;
-  if (wrongVenue) reasons.push(venueMismatch(brokerVenue, strategy.venue));
+  const dataOnly = brokerVenue === null ? null : dataOnlyReason(brokerVenue);
+  const wrongVenue = (brokerVenue !== null && brokerVenue !== strategy.venue) || dataOnly !== null;
+  if (brokerVenue !== null && brokerVenue !== strategy.venue) reasons.push(venueMismatch(brokerVenue, strategy.venue));
+  if (dataOnly !== null) reasons.push(dataOnly); // ADR-067
   const { trading } = deps.config;
   if (legs.length === 0 && exits.length === 0) reasons.push("Add at least one leg to trade");
   if (legs.length > trading.maxLegs) reasons.push(`At most ${trading.maxLegs} legs per live placement`);
