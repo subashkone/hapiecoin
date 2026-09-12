@@ -99,7 +99,7 @@ export async function settleExpired(
           continue;
         }
         const user = { id: strategy.userId, email: "", name: "", role: "user" as const };
-        const creds = await openCredential(deps, user, strategy.brokerId);
+        const creds = await openCredential(deps, user, strategy.brokerId, undefined, strategy.accountId);
         const positions = await deps.trading.getPositions(creds);
         if (positions.some((p) => p.size !== 0 && !p.symbol)) {
           // a position the venue could not name might be one of ours: the read says nothing usable, book nothing

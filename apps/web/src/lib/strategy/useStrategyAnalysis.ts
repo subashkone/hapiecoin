@@ -12,7 +12,8 @@ import { useEffect, useMemo, useState } from "react";
 import { type AdjustDraft, type MarkOf, afterLegs, beforeLegs, pickToLeg, valuationMsOf } from "@/lib/adjust/model";
 import { nearestExpiryValuationMs } from "@/lib/strategy/analysis";
 import { useLivePositions } from "@/lib/api/live";
-import { useCredential, useSettings } from "@/lib/api/queries";
+import { useSettings } from "@/lib/api/queries";
+import { useCurrentAccount } from "@/lib/accounts";
 import { useStrategies } from "@/lib/api/strategies";
 import { useSpot } from "@/lib/gateway/hooks";
 import { useLegQuotes } from "@/lib/gateway/useLegQuotes";
@@ -83,9 +84,8 @@ function useFollowedStrategy(source: PaneSource): Strategy | undefined {
 /** Ticked exchange positions as legs (all on one asset: the first parsable position's). */
 function usePositionLegs(source: PaneSource, lotSizes: Record<Underlying, string> | undefined): { legs: StrategyLeg[]; asset: Underlying | null } {
   const ids = source?.kind === "positions" ? source.productIds : null;
-  const { data: credential } = useCredential();
-  const brokerId = credential?.items[0]?.brokerId ?? null;
-  const { data } = useLivePositions(brokerId, ids !== null);
+  const { account } = useCurrentAccount();
+  const { data } = useLivePositions(account?.brokerId ?? null, ids !== null, account?.id ?? null);
   return useMemo(() => {
     if (ids === null || !data) return { legs: NO_LEGS, asset: null };
     const legs: StrategyLeg[] = [];

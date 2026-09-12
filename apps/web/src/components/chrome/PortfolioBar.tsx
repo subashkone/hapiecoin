@@ -7,11 +7,12 @@ import { cn } from "@hapiecoin/ui";
 import { useMemo } from "react";
 import { useAlerts } from "@/lib/api/alerts";
 import { useLivePositions } from "@/lib/api/live";
-import { useCredential, useSettings } from "@/lib/api/queries";
+import { useSettings } from "@/lib/api/queries";
 import { useStrategies } from "@/lib/api/strategies";
 import { fmtMoney, fmtMoneyCompact } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
 import { dayPnl } from "@/lib/strategy/paper";
+import { useCurrentAccount } from "@/lib/accounts";
 import { usePaperBook } from "@/lib/strategy/usePaper";
 import { usePortfolio } from "@/lib/strategy/usePortfolio";
 
@@ -21,7 +22,6 @@ const item = "inline-flex h-8 items-center gap-1.5 whitespace-nowrap px-2.5 font
 export function PortfolioBar() {
   const { data: strategies } = useStrategies();
   const { data: settings } = useSettings();
-  const { data: credential } = useCredential();
   const { data: alerts } = useAlerts();
   const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
   const openDialog = useUiStore((s) => s.openDialog);
@@ -31,8 +31,8 @@ export function PortfolioBar() {
   const portfolio = usePortfolio(strategies, book, "active");
   const live = active.filter((s) => s.status === "live").length;
   const day = active.reduce((acc, s) => acc + dayPnl(s, book.pnlOf(s).total), 0);
-  const brokerId = credential?.items[0]?.brokerId ?? null;
-  const wallet = useLivePositions(brokerId, brokerId !== null);
+  const { account } = useCurrentAccount();
+  const wallet = useLivePositions(account?.brokerId ?? null, account !== null, account?.id ?? null);
   const balances = wallet.data?.balances ?? [];
   const walletRow = ["USD", "USDT", "INR"].map((a) => balances.find((b) => b.asset === a)).find((b) => b !== undefined) ?? balances[0];
   const walletTotal = walletRow ? Number(walletRow.balance) : null;

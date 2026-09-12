@@ -35,7 +35,7 @@ import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
 import { assertEntitled } from "../entitlements.js";
-import { brokers, strategies, strategyAdjustments, strategyLegs, strategyOrders, strategyPnl, strategyRules } from "../db/schema.js";
+import { brokerCredentials, brokers, strategies, strategyAdjustments, strategyLegs, strategyOrders, strategyPnl, strategyRules } from "../db/schema.js";
 import { type AppEnv, type SessionUser, currentUser } from "../security/context.js";
 import { errors } from "../security/errors.js";
 import { requireUser } from "../security/guards.js";
@@ -172,6 +172,7 @@ export function toStrategy(row: StrategyRow, legs: LegRow[], pnl: PnlRow[], orde
     tradingMode: row.tradingMode,
     templateName: row.templateName,
     brokerId: row.brokerId,
+    accountId: row.accountId,
     legs: legs
       .slice()
       .sort((a, b) => a.position - b.position || a.createdAt.getTime() - b.createdAt.getTime())
@@ -459,13 +460,17 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       if (broker.venue !== row.venue) throw errors.conflict(`This exchange trades on ${broker.venue}; the strategy is on ${row.venue}`); // ADR-065
       const legs = await legsOf(row.id);
       if (legs.length === 0) throw errors.badRequest("Add at least one leg to trade");
+      // paper needs no key, but the account is recorded so Go live and the drift check read the right one (ADR-068)
+      const keys = await db.select({ id: brokerCredentials.id }).from(brokerCredentials).where(and(eq(brokerCredentials.userId, me.id), eq(brokerCredentials.brokerId, body.brokerId))).limit(2);
+      if (body.accountId !== undefined && !keys.some((k) => k.id === body.accountId)) throw errors.badRequest("That account is not connected on this exchange");
+      const accountId = body.accountId ?? (keys.length === 1 ? (keys[0]?.id ?? null) : null);
       const before = toStrategy(row, legs, []);
       const now = new Date();
       for (const l of legs) {
         const entry = body.entries[l.id] ?? l.price;
         await db.update(strategyLegs).set({ entryPrice: entry, exitPrice: null, status: "open", closeReason: null, openedAt: now, closedAt: null, price: entry, updatedAt: now }).where(eq(strategyLegs.id, l.id));
       }
-      await touch(row.id, { status: "paper", tradingMode: "paper", brokerId: body.brokerId, startedAt: now, closedAt: null, closeReason: null, realizedPnl: "0" });
+      await touch(row.id, { status: "paper", tradingMode: "paper", brokerId: body.brokerId, accountId, startedAt: now, closedAt: null, closeReason: null, realizedPnl: "0" });
       await db.delete(strategyPnl).where(eq(strategyPnl.strategyId, row.id));
       const after = await reload(row.id);
       await auditFrom(c, db)({ action: "strategy.start", target: `strategy:${row.id}`, before, after });
@@ -504,7 +509,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
           await db.delete(strategyLegs).where(inArray(strategyLegs.id, inserted.map((l) => l.id)));
           throw errors.conflict(blocked);
         }
-        const creds = await openCredential(deps, me, row.brokerId ?? "");
+        const creds = await openCredential(deps, me, row.brokerId ?? "", undefined, row.accountId);
         const plan = await planLegs(deps, inserted, await lotSizeFor(me, row.asset));
         if (plan.reasons.length) {
           await db.delete(strategyLegs).where(inArray(strategyLegs.id, inserted.map((l) => l.id)));
@@ -571,9 +576,9 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
         // venue sees anything.
         const exits: PlanLeg[] = changes.map((x) => ({ id: x.leg.id, symbol: x.leg.symbol, side: x.leg.side === "buy" ? "sell" : "buy", lots: x.exitLots }));
         const entries: PlanLeg[] = body.adds.map((l, i) => ({ id: `new-${i + 1}`, symbol: l.symbol, side: l.side, lots: l.lots }));
-        const p = await preview(deps, me, row, entries, row.brokerId ?? "", null, exits);
+        const p = await preview(deps, me, row, entries, row.brokerId ?? "", null, exits, row.accountId);
         if (p.reasons.length) throw errors.conflict(p.reasons.join(" · "));
-        creds = await openCredential(deps, me, row.brokerId ?? "");
+        creds = await openCredential(deps, me, row.brokerId ?? "", undefined, row.accountId);
       }
       // The history row goes in first: (strategy, batch) is unique, so a concurrent repeat of the same key sees the
       // strategy as it is instead of placing twice. The key wins over the body: a different body under a used key is
@@ -654,7 +659,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const body = c.req.valid("json");
       const before = await full(row);
       const now = new Date();
-      const exitPrice = row.status === "live" ? await placeExit(deps, await openCredential(deps, me, row.brokerId ?? ""), me, row, leg, body.lots ?? leg.lots, `exit:${newId("b")}`) : body.exitPrice;
+      const exitPrice = row.status === "live" ? await placeExit(deps, await openCredential(deps, me, row.brokerId ?? "", undefined, row.accountId), me, row, leg, body.lots ?? leg.lots, `exit:${newId("b")}`) : body.exitPrice;
       const realized = await closeLeg(row, leg, exitPrice, body.lots, await lotSizeFor(me, row.asset), now);
       await touch(row.id, { realizedPnl: addDecimal(await freshPnl(row.id), realized) });
       const after = await reload(row.id);
@@ -686,7 +691,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const lotSize = await lotSizeFor(me, row.asset);
       const now = new Date();
       let realized = "0";
-      const creds = row.status === "live" ? await openCredential(deps, me, row.brokerId ?? "") : null;
+      const creds = row.status === "live" ? await openCredential(deps, me, row.brokerId ?? "", undefined, row.accountId) : null;
       const batch = `exit:${newId("b")}`;
       for (const l of legs) {
         const exit = creds ? await placeExit(deps, creds, me, row, l, l.lots, batch) : body.exits[l.id]!;

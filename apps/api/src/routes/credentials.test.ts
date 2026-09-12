@@ -153,16 +153,61 @@ describe("HC-SH-031..037 exchange API credentials", () => {
   });
 
   it("HC-SH-037 Disconnect removes the credentials and audits it; a second disconnect is 404", async () => {
-    const del = await t.request(`/v1/credentials/${SEED.brokerId}`, { method: "DELETE", cookie });
+    const { items } = (await (await t.request("/v1/credentials", { cookie })).json()) as { items: BrokerCredentialPublic[] };
+    const del = await t.request(`/v1/credentials/${items[0]!.id}`, { method: "DELETE", cookie });
     expect(del.status).toBe(204);
     expect(await (await t.request("/v1/credentials", { cookie })).json()).toEqual({ items: [] });
-    expect((await t.request(`/v1/credentials/${SEED.brokerId}`, { method: "DELETE", cookie })).status).toBe(
+    expect((await t.request(`/v1/credentials/${items[0]!.id}`, { method: "DELETE", cookie })).status).toBe(
       404,
     );
     const audits = await t.db.select().from(auditLog).where(eq(auditLog.action, "credentials.disconnect"));
     expect(audits.length).toBe(1);
     expect(audits[0]?.after).toBeNull();
     expect(audits[0]?.before).toMatchObject({ apiKeyMasked: "****1a2b" });
+  });
+});
+
+describe("HC-SH-123 accounts: several labelled keys per exchange (ADR-068)", () => {
+  const connect = (c: string, label: string | undefined, apiKey: string) => t.request("/v1/credentials", { cookie: c, json: { brokerId: SEED.brokerId, ...(label ? { label } : {}), apiKey, apiSecret: "s" } });
+  const list = async (c: string) => ((await (await t.request("/v1/credentials", { cookie: c })).json()) as { items: BrokerCredentialPublic[] }).items;
+
+  it("a new label adds a key, a known one replaces it, the default label is Main, and the cap holds", async () => {
+    const c = (await t.signUp("accounts@hapiecoin.test")).cookie;
+    t.delta.accept("main-key-AAAA").accept("sub-key-BBBB").accept("sub-key-CCCC");
+    expect((await connect(c, undefined, "main-key-AAAA")).status).toBe(201);
+    const sub1 = (await (await connect(c, "Sub 1", "sub-key-BBBB")).json()) as BrokerCredentialPublic;
+    expect(sub1).toMatchObject({ label: "Sub 1", apiKeyMasked: "****BBBB", brokerId: SEED.brokerId });
+    expect((await list(c)).map((i) => [i.label, i.apiKeyMasked])).toEqual([["Main", "****AAAA"], ["Sub 1", "****BBBB"]]);
+    // the same label again replaces that key and keeps its id
+    const again = (await (await connect(c, "Sub 1", "sub-key-CCCC")).json()) as BrokerCredentialPublic;
+    expect(again.id).toBe(sub1.id);
+    expect((await list(c)).map((i) => [i.label, i.apiKeyMasked])).toEqual([["Main", "****AAAA"], ["Sub 1", "****CCCC"]]);
+    for (const n of [2, 3, 4]) {
+      t.delta.accept(`sub-key-${n}${n}${n}${n}`);
+      expect((await connect(c, `Sub ${n}`, `sub-key-${n}${n}${n}${n}`)).status).toBe(201);
+    }
+    t.delta.accept("sub-key-5555");
+    expect((await connect(c, "Sub 5", "sub-key-5555")).status).toBe(400); // five is the most
+    expect((await connect(c, "   ", "sub-key-5555")).status).toBe(400); // an empty name
+  });
+
+  it("a key a live strategy trades through cannot be removed; once the strategy is stopped it can", async () => {
+    const c = (await t.signUp("accounts2@hapiecoin.test")).cookie;
+    t.delta.accept("live-main-DDDD");
+    expect((await connect(c, "Main", "live-main-DDDD")).status).toBe(201);
+    const [main] = await list(c);
+    const legs = [{ kind: "call", side: "buy", strike: "80000", expiry: "2026-09-25", symbol: "C-BTC-80000-250926", lots: 1, price: "1200" }];
+    const s = (await (await t.request("/v1/strategies", { cookie: c, json: { name: "Key holder", asset: "BTC", legs } })).json()) as { id: string; accountId: string | null };
+    t.trading.product("C-BTC-80000-250926", 101, "0.001").markAt("C-BTC-80000-250926", "1200").fillAt(101, "1200");
+    t.trading.setBalances([{ asset: "USD", balance: "5000", availableBalance: "4000" }]);
+    const placed = await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: c, json: { brokerId: SEED.brokerId, idempotencyKey: "key-holder-0001", expected: {} } });
+    expect(placed.status).toBe(200);
+    expect(((await placed.json()) as { accountId: string | null }).accountId).toBe(main!.id); // the only key is recorded on the strategy
+    const refused = await t.request(`/v1/credentials/${main!.id}`, { method: "DELETE", cookie: c });
+    expect(refused.status).toBe(409);
+    expect(((await refused.json()) as { message: string }).message).toContain("1 live strategy trades through this key");
+    expect((await t.request(`/v1/strategies/${s.id}/close`, { cookie: c, json: { exits: {} } })).status).toBe(200); // live: exit orders through the key, filled by the fake venue
+    expect((await t.request(`/v1/credentials/${main!.id}`, { method: "DELETE", cookie: c })).status).toBe(204);
   });
 });
 

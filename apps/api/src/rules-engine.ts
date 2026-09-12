@@ -176,7 +176,7 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
           }
           // everything a fire needs is in hand before the claim
           try {
-            creds = await openCredential(deps, user, strategy.brokerId ?? "");
+            creds = await openCredential(deps, user, strategy.brokerId ?? "", undefined, strategy.accountId);
           } catch (e) {
             await hold(errorMessage(e));
             continue;

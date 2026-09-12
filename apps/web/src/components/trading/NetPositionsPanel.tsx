@@ -5,7 +5,8 @@ import type { LivePosition } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { useEffect, useMemo, useState } from "react";
 import { newIdempotencyKey, useLiveExitPositions, useLivePositions } from "@/lib/api/live";
-import { useCredential } from "@/lib/api/queries";
+import { useBrokers } from "@/lib/api/queries";
+import { useCurrentAccount } from "@/lib/accounts";
 import { fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
@@ -23,9 +24,12 @@ export function positionLabel(p: LivePosition): { title: string; sub: string } {
 }
 
 export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
-  const { data: credential } = useCredential();
-  const brokerId = credential?.items[0]?.brokerId ?? null;
-  const positions = useLivePositions(brokerId);
+  const { account, items } = useCurrentAccount();
+  const { data: brokers } = useBrokers();
+  const setAccount = useUiStore((s) => s.setAccount);
+  const brokerId = account?.brokerId ?? null;
+  const accountId = account?.id ?? null;
+  const positions = useLivePositions(brokerId, true, accountId);
   const exit = useLiveExitPositions();
   const paneSource = useUiStore((s) => s.paneSource);
   const analysePositions = useUiStore((s) => s.analysePositions);
@@ -55,7 +59,7 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
   const go = () => {
     if (!confirm || !brokerId) return;
     exit.mutate(
-      { brokerId, productIds: confirm, idempotencyKey: key },
+      { brokerId, ...(accountId ? { accountId } : {}), productIds: confirm, idempotencyKey: key },
       {
         onSuccess: (r) => {
           setConfirm(null);
@@ -79,6 +83,16 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
       <div className="flex flex-wrap items-center gap-2 px-3 py-2">
         <span className="micro">Net positions</span>
         <span className="micro inline-flex items-center gap-1 text-profit"><i className="inline-block h-1.5 w-1.5 rounded-full bg-profit" />exchange</span>
+        {items.length > 1 ? (
+          <select value={accountId ?? ""} onChange={(e) => setAccount(e.target.value || null)} className="h-6 rounded border border-input bg-background px-1 text-2xs" aria-label="Account" title="Which connected key to read (ADR-068)" data-testid="net-account">
+            {items.map((it) => (
+              <option key={it.id} value={it.id}>
+                {it.label}
+                {new Set(items.map((i) => i.brokerId)).size > 1 ? ` · ${brokers?.find((b) => b.id === it.brokerId)?.name ?? it.brokerId}` : ""}
+              </option>
+            ))}
+          </select>
+        ) : null}
         <div className="ml-auto flex gap-1">
           {ASSET_FILTERS.map((a) => (
             <button key={a} type="button" aria-pressed={asset === a} onClick={() => setAsset(a)} className={cn("rounded px-1.5 py-0.5 text-2xs", asset === a ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground")} data-testid={`positions-asset-${a.toLowerCase()}`}>

@@ -1,21 +1,26 @@
 "use client";
 // Trade All → Live (HC-TR-089, ADR-010): an explicit batch selector over the open paper strategies, one
 // exchange, one confirm; the API places one strategy at a time and stops at the first failure.
-import type { Broker, Strategy } from "@hapiecoin/schema";
+import type { Broker, BrokerCredentialPublic, Strategy } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { useEffect, useState } from "react";
 import { newIdempotencyKey, useLiveBatch } from "@/lib/api/live";
 import { handleUpgradeRequired } from "@/lib/api/upgrade";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
+import { accountsOf } from "@/lib/accounts";
 import { useUiStore } from "@/lib/store";
 import { openLegs } from "@/lib/strategy/paper";
 
-export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, connected, money, totalOf }: { open: boolean; onOpenChange: (o: boolean) => void; strategies: Strategy[]; brokers: Broker[]; connected: boolean; money: MoneyFormat; totalOf: (s: Strategy) => number }) {
+export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accounts, connected, money, totalOf }: { open: boolean; onOpenChange: (o: boolean) => void; strategies: Strategy[]; brokers: Broker[]; accounts: BrokerCredentialPublic[]; connected: boolean; money: MoneyFormat; totalOf: (s: Strategy) => number }) {
   const batch = useLiveBatch();
   const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [brokerId, setBrokerId] = useState("");
+  const [accountId, setAccountId] = useState<string | null>(null);
   const [key, setKey] = useState("");
+  const storedAccount = useUiStore((s) => s.accountId);
+  const setAccount = useUiStore((s) => s.setAccount);
+  const mine = accountsOf(accounts, brokerId);
   useEffect(() => {
     if (open) {
       setSel(new Set(strategies.filter((s) => openLegs(s).length > 0).map((s) => s.id)));
@@ -23,9 +28,13 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, conne
       setKey(newIdempotencyKey());
     }
   }, [open, strategies, brokers]);
+  useEffect(() => {
+    // ADR-068: the account chosen last, else the exchange's first key; a strategy that already names one keeps its own
+    if (open && brokerId) setAccountId(mine.find((m) => m.id === storedAccount)?.id ?? mine[0]?.id ?? null);
+  }, [open, brokerId, accounts.length]);
   const go = () =>
     batch.mutate(
-      { ids: [...sel], brokerId, idempotencyKey: key },
+      { ids: [...sel], brokerId, ...(accountId ? { accountId } : {}), idempotencyKey: key },
       {
         onSuccess: (r) => {
           onOpenChange(false);
@@ -68,6 +77,19 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, conne
                 </option>
               ))}
             </select>
+            {mine.length > 1 ? (
+              <div className="mt-2">
+                <div className="micro mb-1">Account</div>
+                <select className="h-8 w-full rounded border border-input bg-background px-2 text-xs" value={accountId ?? ""} onChange={(e) => { setAccountId(e.target.value || null); setAccount(e.target.value || null); }} aria-label="Account" data-testid="batch-account">
+                  {mine.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label} · {m.apiKeyMasked}
+                    </option>
+                  ))}
+                </select>
+                <div className="mt-1 text-2xs text-muted-foreground">For strategies that do not name an account yet; one started on another account keeps its own.</div>
+              </div>
+            ) : null}
           </div>
           <div className="mt-3 rounded border border-loss/40 p-2 text-2xs" data-testid="batch-warning">
             <b className="text-loss">Real Money Trading</b>

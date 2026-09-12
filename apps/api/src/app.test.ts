@@ -46,7 +46,7 @@ describe("[OPS] health and API contract", () => {
       "/v1/brokers",
       "/v1/brokers/{id}",
       "/v1/credentials",
-      "/v1/credentials/{brokerId}",
+      "/v1/credentials/{id}",
       "/v1/credentials/whitelist-ip",
       "/v1/plan",
       "/v1/auth-options",

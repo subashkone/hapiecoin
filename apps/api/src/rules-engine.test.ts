@@ -5,7 +5,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Strategy } from "@hapiecoin/schema";
 import { eq } from "drizzle-orm";
-import { auditLog, users } from "./db/schema.js";
+import { auditLog, brokerCredentials, strategies, users } from "./db/schema.js";
 import { SEED } from "./db/seed.js";
 import { type RulesTickSource, evaluateRules, startRulesEngine } from "./rules-engine.js";
 import { createTestApp, type TestApp } from "./test-support/harness.js";
@@ -216,7 +216,9 @@ describe("HC-TR-166 live", () => {
     expect(s.legs.map((l) => [l.symbol, l.entryPrice])).toEqual([["C-BTC-80000-250926", null], ["P-BTC-78000-250926", "900"]]);
     expect((await arm(s.id, [{ kind: "stop", trigger: "money", value: "5" }])).status).toBe(200);
     // the credential is gone: crossed, but nothing can be sent and the rule stays armed
-    expect((await t.request(`/v1/credentials/${SEED.brokerId}`, { method: "DELETE", cookie: alice })).status).toBe(204);
+    // the key vanishes underneath a live strategy (the route refuses that, ADR-068; a vault or database loss would not)
+    await t.db.update(strategies).set({ accountId: null }).where(eq(strategies.userId, aliceId));
+    await t.db.delete(brokerCredentials).where(eq(brokerCredentials.userId, aliceId));
     const placedBefore = t.trading.placed.length;
     expect(await evaluateRules(t.deps, ticks({ "P-BTC-78000-250926": 1500 }), () => T0, { backoffMs: 0 })).toEqual({ checked: 1, fired: [], skipped: 1 });
     const held = (await get(s.id)).rules![0]!;

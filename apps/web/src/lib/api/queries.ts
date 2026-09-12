@@ -48,7 +48,7 @@ export function fetchers(client: ApiClient = api) {
     deleteBroker: (id: string) => client.delete(`/v1/brokers/${encodeURIComponent(id)}`),
     connect: (body: ConnectBody) =>
       client.post("/v1/credentials", ConnectCredentialBody.parse(body), BrokerCredentialPublic),
-    disconnect: (brokerId: string) => client.delete(`/v1/credentials/${encodeURIComponent(brokerId)}`),
+    disconnect: (id: string) => client.delete(`/v1/credentials/${encodeURIComponent(id)}`), // the key row (account), ADR-068
   };
 }
 
@@ -167,7 +167,7 @@ export function useConnectExchange() {
     mutationFn: f.connect,
     onSuccess: (created) =>
       qc.setQueryData<CredentialResponse>(queryKeys.credential, (prev) => ({
-        items: [...(prev?.items ?? []).filter((c) => c.brokerId !== created.brokerId), created],
+        items: [...(prev?.items ?? []).filter((c) => c.id !== created.id), created], // a replaced key keeps its id; a new label is one more account (ADR-068)
       })),
   });
 }
@@ -176,10 +176,12 @@ export function useDisconnectExchange() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: f.disconnect,
-    onSuccess: (_void, brokerId) =>
+    onSuccess: (_void, id) => {
       qc.setQueryData<CredentialResponse>(queryKeys.credential, (prev) => ({
-        items: (prev?.items ?? []).filter((c) => c.brokerId !== brokerId),
-      })),
+        items: (prev?.items ?? []).filter((c) => c.id !== id), // one key row (account) goes, the broker's others stay (ADR-068)
+      }));
+      void qc.invalidateQueries({ queryKey: ["strategies"] }); // the strategies that named the key come back without it
+    },
   });
 }
 

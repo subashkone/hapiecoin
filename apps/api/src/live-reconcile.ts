@@ -25,7 +25,7 @@ export async function reconcilePending(deps: AppDeps): Promise<ReconcileResult> 
   for (const { strategy } of rows) {
     if (!strategy.brokerId) continue;
     try {
-      const creds = await openCredential(deps, { id: strategy.userId, email: "", name: "", role: "user" }, strategy.brokerId);
+      const creds = await openCredential(deps, { id: strategy.userId, email: "", name: "", role: "user" }, strategy.brokerId, undefined, strategy.accountId);
       const r = await syncOrders(deps, creds, strategy);
       await bookExitFills(deps, strategy, r.exitFills);
       out.updated += r.updated;

@@ -188,6 +188,8 @@ export const brokerCredentials = pgTable(
     brokerId: text("broker_id")
       .notNull()
       .references(() => brokers.id, { onDelete: "restrict" }),
+    /** The trader's name for this key; several keys per broker are told apart by it (ADR-068). */
+    label: text("label").notNull().default("Main"),
     apiKeyMasked: text("api_key_masked").notNull(),
     apiKeyCt: text("api_key_ct").notNull(),
     apiKeyIv: text("api_key_iv").notNull(),
@@ -201,7 +203,7 @@ export const brokerCredentials = pgTable(
     keyId: text("key_id"),
   },
   (t) => [
-    uniqueIndex("broker_credentials_user_broker_uq").on(t.userId, t.brokerId),
+    uniqueIndex("broker_credentials_user_broker_label_uq").on(t.userId, t.brokerId, t.label),
     index("broker_credentials_broker_id_idx").on(t.brokerId),
   ],
 );
@@ -297,6 +299,12 @@ export const strategies = pgTable(
     tradingMode: text("trading_mode", { enum: ["paper", "live"] }),
     templateName: text("template_name").notNull().default("Custom"),
     brokerId: text("broker_id").references(() => brokers.id, { onDelete: "set null" }),
+    /**
+     * The key (account) the strategy trades through (ADR-068). `restrict`: a key row cannot vanish underneath a
+     * strategy and leave it to fall back to another sub-account; the route refuses the delete for live strategies
+     * and clears the reference on the others first.
+     */
+    accountId: text("account_id").references(() => brokerCredentials.id, { onDelete: "restrict" }),
     /** Sum of realised leg P&L in USD, decimal string. */
     realizedPnl: text("realized_pnl").notNull().default("0"),
     notes: text("notes").notNull().default(""),
