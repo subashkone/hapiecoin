@@ -7107,7 +7107,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "Templates with a finite worst case on one expiry (StrategyTemplate.risk, proven by the invariants test) are placed on the venue ladder and priced once per chain snapshot; each card shows the sketch, the legs, P&L if right (expiry payoff at the target price; the least inside the band for Neutral; the smaller band edge for Volatile), POP, max loss (the most you can lose), max profit and R:R, ranked by return on risk then POP then name, at most three, one earned tag each (best return on risk, highest POP, smallest max loss); fewer fits say '2 of 3 fit this ladder'; no fit shows the reason and a link to Templates",
-  "evidence": "ADR-072: lib/strategy/wizard.ts (eligibleTemplates, thesisPnl, pnlAtExpiry, fitsView, rankCandidates, tagBest), lib/strategy/useWizardCandidates.ts (one pass per chain, never abandoned, at most one every 2 s), lib/strategy/placeTemplate.ts (shared with the Templates tab), lib/strategy/templates.ts risk; unit wizard.test.ts, templates.invariants.test.ts, builder.test.tsx HC-TR-177"
+  "evidence": "ADR-072: lib/strategy/wizard.ts (eligibleTemplates, thesisPnl, pnlAtExpiry, fitsView, rankCandidates, tagBest), lib/strategy/useWizardCandidates.ts (one pass per chain, never abandoned, at most one every 2 s), lib/strategy/placeTemplate.ts (shared with the Templates tab), lib/strategy/templates.ts risk; unit wizard.test.ts, useWizardCandidates.test.tsx (StrictMode double mount), templates.invariants.test.ts, builder.test.tsx HC-TR-177"
  },
  {
   "id": "HC-TR-178",
