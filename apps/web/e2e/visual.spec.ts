@@ -85,6 +85,7 @@ for (const theme of ["dark", "light"] as const) {
       await page.getByTestId("tab-screener").click();
       await expect(page.getByTestId("screener-panel")).toHaveAttribute("data-state", "ready", { timeout: 30_000 });
       await page.screenshot({ path: `${DIR}/analyse-screener-${theme}.png` });
+      await page.getByTestId("tab-builder").click(); // back to the Builder for the paper trade below
       // HC-TR-058 / HC-TR-068 a paper trade on the Paper tab and its details
       await page.getByTestId("builder-tab-builder").click();
       await page.getByTestId("strategy-name").fill("Visual straddle");
