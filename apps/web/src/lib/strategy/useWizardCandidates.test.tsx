@@ -68,7 +68,7 @@ describe("HC-TR-177 useWizardCandidates", () => {
     expect(Number(probe.dataset["count"])).toBe(ELIGIBLE.length);
     // the inputs go away: back to waiting with nothing shown
     rerender(<Probe inp={input({ rows: [] })} />);
-    await act(async () => undefined);
+    await act(() => Promise.resolve());
     expect(probe.dataset["state"]).toBe("waiting");
     expect(probe.dataset["count"]).toBe("0");
   });
