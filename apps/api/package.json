@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@better-auth/passkey": "1.7.3",
+    "@hapiecoin/pricing": "workspace:*",
     "@hapiecoin/schema": "workspace:*",
     "@hapiecoin/venues": "workspace:*",
     "@hono/node-server": "2.1.1",

@@ -3,12 +3,14 @@
  * tickers for each underlying and records (1) the ATM implied volatility per listed expiry with the spot, flagging the
  * "front" expiry the daily series is built from (the nearest with two or more days left, so the expiry-day collapse
  * never enters the year's range), and (2) every option's mark and mark IV for the details sparkline. Retention:
- * 400 days of IV rows, 7 days of marks. Public data only: no key, no order path, never a private endpoint.
+ * 400 days of IV rows, 7 days of marks. The first pass at or after the settlement hour also records the end-of-day
+ * chain (ADR-077, chain-eod.ts). Public data only: no key, no order path, never a private endpoint.
  */
 import type { Instrument, Quote, Underlying, Venue } from "@hapiecoin/schema";
 import { UNDERLYINGS } from "@hapiecoin/schema";
 import { DEFAULT_VENUE, getVenue } from "@hapiecoin/venues";
 import { and, lt } from "drizzle-orm";
+import { pruneEod, recordEodIfDue } from "./chain-eod.js";
 import type { Db } from "./db/client.js";
 import { instrumentMarks, ivSnapshots } from "./db/schema.js";
 import type { Logger } from "./logger.js";
@@ -66,7 +68,7 @@ export function frontExpiry(expiries: readonly string[], nowMs: number, settleme
 
 export interface SnapshotReport {
   at: string;
-  assets: Record<string, { expiries: number; marks: number; spot: number | null }>;
+  assets: Record<string, { expiries: number; marks: number; spot: number | null; eod?: number }>;
 }
 
 /** One pass over every underlying; failures on one underlying are logged and the others still land. */
@@ -75,6 +77,7 @@ export async function snapshotOnce(deps: SnapshotDeps, source: MarketSource, now
   const venue = source.venue ?? DEFAULT_VENUE;
   const instruments = (await source.products()).filter((i) => i.isActive && (i.kind === "call" || i.kind === "put"));
   const report: SnapshotReport = { at: at.toISOString(), assets: {} };
+  let eodWritten = false;
   for (const asset of UNDERLYINGS) {
     try {
       const quotes = await source.tickers(asset);
@@ -82,14 +85,19 @@ export async function snapshotOnce(deps: SnapshotDeps, source: MarketSource, now
       const spot = spotQuote ? Number(spotQuote.spot) : null;
       const mine = instruments.filter((i) => i.underlying === asset);
       const byExpiry = spot === null ? [] : atmIvByExpiry(mine, quotes, spot);
-      const front = frontExpiry(byExpiry.map((e) => e.expiry), at.getTime(), getVenue(venue).calendar.settlementHourUtc(asset)); // ADR-066: XAUT settles at 16:00
+      const settlementHourUtc = getVenue(venue).calendar.settlementHourUtc(asset); // ADR-066: XAUT settles at 16:00
+      const front = frontExpiry(byExpiry.map((e) => e.expiry), at.getTime(), settlementHourUtc);
       if (spot !== null && byExpiry.length) {
         await deps.db.insert(ivSnapshots).values(byExpiry.map((e) => ({ asset, venue, expiry: e.expiry, ts: at, atmIv: String(e.atmIv), spot: String(spot), atmStrike: String(e.strike), front: e.expiry === front })));
       }
       const known = new Set(mine.map((i) => i.id));
       const marks = quotes.filter((q) => known.has(q.instrumentId)).map((q) => ({ asset, venue, symbol: q.instrumentId.slice(q.instrumentId.indexOf(":") + 1), ts: at, mark: q.mark, markIv: q.markIv === undefined ? null : String(q.markIv) }));
       for (let i = 0; i < marks.length; i += 500) await deps.db.insert(instrumentMarks).values(marks.slice(i, i + 500));
-      report.assets[asset] = { expiries: byExpiry.length, marks: marks.length, spot };
+      // ADR-077: the day's end-of-day chain, once, from this pass's quotes
+      const eod = spot === null ? { written: 0, backfilledDays: 0 } : await recordEodIfDue(deps.db, { venue, asset, at, spot, instruments: mine, quotes, settlementHourUtc });
+      if (eod.written) eodWritten = true;
+      if (eod.backfilledDays) deps.logger.info({ venue, asset, days: eod.backfilledDays }, "end-of-day chains backfilled from the mark stream");
+      report.assets[asset] = { expiries: byExpiry.length, marks: marks.length, spot, eod: eod.written };
     } catch (e) {
       deps.logger.warn({ asset, err: e instanceof Error ? e.message : String(e) }, "iv snapshot failed for one underlying");
       report.assets[asset] = { expiries: 0, marks: 0, spot: null };
@@ -97,6 +105,7 @@ export async function snapshotOnce(deps: SnapshotDeps, source: MarketSource, now
   }
   await deps.db.delete(ivSnapshots).where(lt(ivSnapshots.ts, new Date(at.getTime() - IV_ROWS_RETENTION_DAYS * DAY_MS)));
   await deps.db.delete(instrumentMarks).where(and(lt(instrumentMarks.ts, new Date(at.getTime() - MARK_ROWS_RETENTION_DAYS * DAY_MS))));
+  if (eodWritten) await pruneEod(deps.db, at); // once a day, with the write, not every five minutes
   return report;
 }
 

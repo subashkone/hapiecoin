@@ -1079,5 +1079,15 @@
     "how": "Account menu → Public page (both headers). Handle input (3–20 letters, digits or underscores, lower-cased; reserved words refused; a taken handle refuses with That handle is taken), the on/off switch disabled until the handle is valid, checkboxes Daily chart / Accounts / Monthly table, Save; once on: the /t/<handle> link with Open and the share bar (X, Telegram, copy link, download image); renaming warns that shared links break. GET/PUT /v1/public-page behind the session, audited",
     "evidence": "ADR-075 (12 Sep 2026): apps/api routes/public-page.ts, db trader_pages; packages/schema public-page.ts Handle / PublicPageSettings; apps/web components/dialogs/PublicPageDialog.tsx, lib/api/public-page.ts, header/AppHeader.tsx menu-public; unit public-page.test.ts (api) HC-SH-127, public-page-dialog.test.tsx HC-SH-127; e2e settings.spec.ts HC-SH-127",
     "test": "unit (api + web), e2e"
+  },
+  {
+    "screen": "API · market history",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "End-of-day option chains recorded once a day per venue and underlying at the settlement hour, a week backfilled from the mark stream",
+    "how": "iv-snapshot.ts hands each pass's quotes to chain-eod.ts: at or after the asset's settlement hour (12:00 UTC, XAUT 16:00) and with no rows for the day yet, every listed option's mark, mark IV and the spot land in chain_eod (unique per venue / asset / day / expiry / strike / kind), kept 400 days; the first write for a venue and underlying backfills up to seven earlier days from instrument_marks (the last pass at or before the hour, symbols parsed through the venue codec, the spot from the same pass's IV snapshot); the read side folds rows into ladders per expiry",
+    "evidence": "ADR-077 (12 Sep 2026): apps/api/src/chain-eod.ts recordEodIfDue / backfillEodFromMarks / pruneEod / eodDays / eodDayCount, iv-snapshot.ts, db chain_eod; unit chain-eod.test.ts HC-SH-128",
+    "test": "unit (api)"
   }
 ]
