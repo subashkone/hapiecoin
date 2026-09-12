@@ -3,6 +3,8 @@
 // feed status text (HC-SH-006), exchange chip (HC-SH-007), wallet placeholder (HC-SH-008).
 import { Plug, Tooltip, Wallet, cn, toast } from "@hapiecoin/ui";
 import { UNDERLYINGS, type Underlying } from "@hapiecoin/schema";
+import { type VenueId, getVenueCore, listVenueCores } from "@hapiecoin/venues/core";
+import { dataOnly } from "@/lib/venue";
 import { useCredential, useSettings, useUpdateSettings } from "@/lib/api/queries";
 import { useLivePositions } from "@/lib/api/live";
 import { fmtPct, fmtPrice } from "@/lib/format";
@@ -12,8 +14,11 @@ import { ASSET_META, useUiStore } from "@/lib/store";
 export function AssetSwitch() {
   const asset = useUiStore((s) => s.asset);
   const setAsset = useUiStore((s) => s.setAsset);
+  const venue = useUiStore((s) => s.venue);
+  const core = getVenueCore(venue);
+  const listed = (a: Underlying) => (core.underlyings as readonly string[]).includes(a);
   const pick = (a: Underlying) => {
-    if (a === asset) return;
+    if (a === asset || !listed(a)) return;
     setAsset(a);
     toast(`${ASSET_META[a].name} (${a})`, { description: "Chain switched." });
   };
@@ -31,21 +36,52 @@ export function AssetSwitch() {
             role="tab"
             type="button"
             aria-selected={a === asset}
+            aria-disabled={!listed(a)}
             data-testid={`asset-${a}`}
-            title={ASSET_META[a].name}
+            title={listed(a) ? ASSET_META[a].name : `${ASSET_META[a].name}: not listed on ${core.label}`}
             onClick={() => pick(a)}
             className={cn(
               "rounded-sm px-2.5 py-1 font-mono text-xs transition-colors",
-              a === asset ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground",
+              a === asset ? "bg-foreground text-background" : listed(a) ? "text-muted-foreground hover:text-foreground" : "cursor-not-allowed text-muted-foreground/40",
             )}
           >
             {a}
           </button>
         ))}
       </div>
-      <div className="hidden flex-col leading-tight min-[1500px]:flex" data-testid="header-venue">
-        <span className="micro text-[9.5px]">Venue</span>
-        <span className="text-xs">Delta India</span>
+      <VenueSwitch />
+    </div>
+  );
+}
+
+/** The venue chip (ADR-069, HC-SH-124): every chain, symbol, lot size and create body follows it; switching clears the Builder, so the store asks first when legs exist (VenueSwitchDialog). */
+const SHORT_LABEL: Partial<Record<VenueId, string>> = { delta_india: "Delta India" };
+
+export function VenueSwitch() {
+  const venue = useUiStore((s) => s.venue);
+  const requestVenue = useUiStore((s) => s.requestVenue);
+  const pick = (id: VenueId) => {
+    if (id === venue) return;
+    requestVenue(id, () => toast(getVenueCore(id).label, { description: dataOnly(id) ? "Venue switched. Data-only: chains, analysis and paper trading." : "Venue switched." }));
+  };
+  return (
+    <div className="flex flex-col leading-tight" data-testid="header-venue" data-venue={venue}>
+      <span className="micro text-[9.5px]">Venue</span>
+      <div role="tablist" aria-label="Venue" className="inline-flex overflow-hidden rounded border border-border bg-muted p-0.5">
+        {listVenueCores().map((c) => (
+          <button
+            key={c.id}
+            role="tab"
+            type="button"
+            aria-selected={c.id === venue}
+            data-testid={`venue-${c.id}`}
+            title={dataOnly(c.id) ? `${c.label} (data-only)` : c.label}
+            onClick={() => pick(c.id)}
+            className={cn("rounded-sm px-2 py-0.5 text-2xs transition-colors", c.id === venue ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground")}
+          >
+            {SHORT_LABEL[c.id] ?? c.label}
+          </button>
+        ))}
       </div>
     </div>
   );

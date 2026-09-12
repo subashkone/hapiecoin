@@ -5,6 +5,7 @@
  * exit premiums at the live mark, the server validates, records and audits them. No route here reaches a
  * venue; live trading (item 2) adds its own guarded routes.
  */
+import { getVenueCore } from "@hapiecoin/venues";
 import {
   AddLegsBody,
   AdjustBody,
@@ -359,6 +360,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
     async (c) => {
       const me = currentUser(c);
       const body = c.req.valid("json");
+      if (!(getVenueCore(body.venue).underlyings as readonly string[]).includes(body.asset)) throw errors.badRequest(`${body.asset} is not listed on ${getVenueCore(body.venue).label}`); // ADR-069
       const id = newId("strat");
       await db.insert(strategies).values({ id, userId: me.id, name: body.name, asset: body.asset, venue: body.venue, status: "draft", templateName: body.templateName });
       await db.insert(strategyLegs).values(body.legs.map((l, i) => legValues(id, l, i)));

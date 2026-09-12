@@ -1,7 +1,8 @@
 // UI state only (typescript rule 5): selected asset, expiry, feed pause, open dialog. Server data lives in
 // TanStack Query. Persisted keys survive a reload so the trader lands where they left off.
 import { emitTour } from "@/lib/tour";
-import type { AlertChannel, AlertKind, AlertOp, Underlying } from "@hapiecoin/schema";
+import { type AlertChannel, type AlertKind, type AlertOp, UNDERLYINGS, type Underlying, VENUES } from "@hapiecoin/schema";
+import { DEFAULT_VENUE, type VenueId, getVenueCore } from "@hapiecoin/venues/core";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { type ChainLayout, defaultLayout, normaliseLayout } from "./chain/layout";
@@ -19,6 +20,7 @@ import {
   removeLeg as removeLegPure,
 } from "./strategy/legs";
 import { type AdjustDraft, newDraft } from "./adjust/model";
+import { bindVenueSource } from "./venue";
 
 /** Orders or saved plans a trader would lose if the draft went away (lots-after entries equal to the leg's lots are dropped by the hook, so a key means an order). */
 export function hasAdjustWork(a: AdjustDraft | null): boolean {
@@ -146,6 +148,8 @@ function normaliseLegsByAsset(input: unknown): LegsByAsset {
 }
 
 export interface UiState {
+  /** The venue the workspace works against (ADR-069): every chain topic, symbol, calendar, lot size and create body follows it. Persisted. */
+  venue: VenueId;
   asset: Underlying;
   /** Selected expiry per asset (ISO date) or null for "nearest". */
   expiry: Partial<Record<Underlying, string | null>>;
@@ -223,6 +227,14 @@ export interface UiState {
   /** Null = the Alerts dialog opens on the list; an object opens it on the New alert form with these values (HC-SH-100). Transient. */
   alertPrefill: AlertPrefill | null;
   setAsset: (asset: Underlying) => void;
+  /** Switch venue (ADR-069): clears the builder legs, strategy meta and adjust state of every asset and moves the asset to one the venue lists. Callers use `requestVenue`, which asks first when legs exist. */
+  setVenue: (venue: VenueId) => void;
+  /** A venue switch waiting for the trader because Builder legs exist; `then` runs after the switch. */
+  venueSwitch: { venue: VenueId; then?: (() => void) | undefined } | null;
+  /** Switch venue, asking first when Builder legs exist (the venue-switch dialog); `then` runs after the switch, or at once on the same venue. */
+  requestVenue: (venue: VenueId, then?: () => void) => void;
+  confirmVenueSwitch: () => void;
+  cancelVenueSwitch: () => void;
   /** Replace the asset's legs (templates, drafts, Clear); returns false when over the limit. */
   setLegs: (asset: Underlying, legs: StrategyLeg[]) => boolean;
   updateLegs: (asset: Underlying, fn: (legs: StrategyLeg[]) => StrategyLeg[]) => void;
@@ -277,8 +289,8 @@ export interface UiState {
   requestTour: () => void;
   toggleWatch: (symbol: string) => void;
   openAssistant: (question?: string) => void;
-  /** Open the workbench on a paper / live strategy: the pane follows it and the Builder legs stay untouched (ADR-026). */
-  openAdjust: (strategyId: string, force?: boolean) => void;
+  /** Open the workbench on a paper / live strategy: the pane follows it and the Builder legs stay untouched (ADR-026), unless `venue` (the strategy's, ADR-069) differs from the workspace venue: then the switch is requested first (asked when legs exist) so the chain and the pick symbols are the strategy's. */
+  openAdjust: (strategyId: string, force?: boolean, venue?: VenueId) => void;
   closeAdjust: (force?: boolean) => void;
   /** The action that would discard the adjustment work, waiting for the trader's answer (ADR-058 addendum). */
   adjustDiscard: (() => void) | null;
@@ -312,6 +324,7 @@ export const UI_STORAGE_KEY = "hapiecoin.ui";
 export const useUiStore = create<UiState>()(
   persist(
     (set, get) => ({
+      venue: DEFAULT_VENUE,
       asset: "BTC",
       expiry: {},
       feedPaused: false,
@@ -357,6 +370,36 @@ export const useUiStore = create<UiState>()(
       riskAlerts: [],
       alertPrefill: null,
       setAsset: (asset) => set({ asset, targetPrice: null }),
+      setVenue: (venue) => {
+        const s = get();
+        if (venue === s.venue) return;
+        // a workspace reset: legs, names and adjust work belong to the venue they were built on; the asset moves to one the venue lists
+        const listed = getVenueCore(venue).underlyings;
+        const asset = (listed as readonly string[]).includes(s.asset) ? s.asset : (listed[0] ?? s.asset);
+        set({ venue, asset, legs: emptyLegs(), strategy: emptyMetaByAsset(), adjust: null, adjustDiscard: null, paneSource: null, targetPrice: null, optionDetail: null, templateRequest: null, venueSwitch: null });
+      },
+      venueSwitch: null,
+      requestVenue: (venue, then) => {
+        const s = get();
+        if (venue === s.venue) {
+          then?.();
+          return;
+        }
+        if (UNDERLYINGS.some((a) => s.legs[a].length > 0)) {
+          set({ venueSwitch: { venue, then } });
+          return;
+        }
+        get().setVenue(venue);
+        then?.();
+      },
+      confirmVenueSwitch: () => {
+        const pending = get().venueSwitch;
+        if (!pending) return;
+        set({ venueSwitch: null });
+        get().setVenue(pending.venue);
+        pending.then?.();
+      },
+      cancelVenueSwitch: () => set({ venueSwitch: null }),
       setLegs: (asset, legs) => {
         const open = legs.filter((l) => l.status === "open");
         if (open.length > MAX_ACTIVE_LEGS) return false;
@@ -475,14 +518,19 @@ export const useUiStore = create<UiState>()(
       requestTour: () => set((s) => ({ tourRequested: s.tourRequested + 1 })),
       toggleWatch: (symbol) => set((s) => ({ watchlist: s.watchlist.includes(symbol) ? s.watchlist.filter((x) => x !== symbol) : [...s.watchlist, symbol] })),
       openAssistant: (question) => set((s) => ({ assistantRequested: s.assistantRequested + 1, assistantQuestion: question ?? null })),
-      openAdjust: (strategyId, force = false) => {
+      openAdjust: (strategyId, force = false, venue) => {
         const s = get();
         if (s.adjust?.strategyId === strategyId) {
           set({ paneSource: { kind: "strategy", id: strategyId }, detailsId: null }); // already adjusting it: keep the work
           return;
         }
         if (!force && hasAdjustWork(s.adjust)) {
-          set({ adjustDiscard: () => get().openAdjust(strategyId, true) });
+          set({ adjustDiscard: () => get().openAdjust(strategyId, true, venue) });
+          return;
+        }
+        if (venue !== undefined && venue !== s.venue) {
+          set({ adjustDiscard: null }); // the discard question (if there was one) is answered; the venue question takes over, the draft stays until it is confirmed
+          get().requestVenue(venue, () => get().openAdjust(strategyId, true, venue)); // the workbench picks from the strategy's own chain
           return;
         }
         set({ adjust: newDraft(strategyId), paneSource: { kind: "strategy", id: strategyId }, detailsId: null, adjustDiscard: null });
@@ -507,6 +555,7 @@ export const useUiStore = create<UiState>()(
     {
       name: UI_STORAGE_KEY,
       partialize: (s) => ({
+        venue: s.venue,
         asset: s.asset,
         expiry: s.expiry,
         feedPaused: s.feedPaused,
@@ -532,11 +581,14 @@ export const useUiStore = create<UiState>()(
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<UiState>;
+        const venue = (VENUES as readonly string[]).includes(p.venue ?? "") ? (p.venue as VenueId) : DEFAULT_VENUE;
         const tabs: WorkspaceTab[] = ["chain", "builder", "paper", "live", "journal"];
         const atabs: AnalysisTab[] = ["payoff", "scenarios", "greeks", "vol", "structure", "ladder"];
         return {
           ...current,
           ...p,
+          venue,
+          asset: (getVenueCore(venue).underlyings as readonly string[]).includes(p.asset ?? current.asset) ? (p.asset ?? current.asset) : (getVenueCore(venue).underlyings[0] ?? current.asset),
           chainRange: isChainRange(p.chainRange) ? p.chainRange : current.chainRange,
           chartLayers: normaliseLayers(p.chartLayers),
           ladderStep: isLadderStep(p.ladderStep) ? p.ladderStep : 1,
@@ -563,12 +615,16 @@ export const useUiStore = create<UiState>()(
           targetPrice: null,
           targetDays: typeof p.targetDays === "number" && p.targetDays >= 0 ? Math.round(p.targetDays) : 0,
           adjust: null,
+          venueSwitch: null,
           riskAlerts: normaliseRiskAlerts(p.riskAlerts),
         };
       },
     },
   ),
 );
+
+// the plain modules (symbol codec, calendar, lot sizes) read the venue through lib/venue without importing the store
+bindVenueSource(() => useUiStore.getState().venue);
 
 export const ASSET_META: Record<Underlying, { name: string; symbol: string; glyph: string }> = {
   BTC: { name: "Bitcoin", symbol: "BTCUSD", glyph: "₿" },

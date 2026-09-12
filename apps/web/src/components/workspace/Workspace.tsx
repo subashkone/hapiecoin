@@ -5,6 +5,7 @@
 import { EmptyState, Tabs, TabsContent, TabsList, TabsTrigger, cn } from "@hapiecoin/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AdjustDiscardDialog } from "@/components/adjust/AdjustDiscardDialog";
+import { VenueSwitchDialog } from "@/components/header/VenueSwitchDialog";
 import { AdjustWorkbench } from "@/components/adjust/AdjustWorkbench";
 import { AnalysisPane } from "@/components/analysis/AnalysisPane";
 import { BuilderPanel } from "@/components/builder/BuilderPanel";
@@ -69,6 +70,7 @@ export function Workspace() {
   const tab = useUiStore((s) => s.workspaceTab);
   const setTab = useUiStore((s) => s.setWorkspaceTab);
   const asset = useUiStore((s) => s.asset);
+  const venue = useUiStore((s) => s.venue);
   const collapse = useUiStore((s) => s.analyseCollapse);
   const setCollapse = useUiStore((s) => s.setAnalyseCollapse);
   // HC-WS-006 deep links: /analyse?tab=paper&panel=ladder selects the tabs once on arrival
@@ -159,7 +161,7 @@ export function Workspace() {
           </TabsTrigger>
         ))}
         <span className="ml-auto flex items-center gap-2 self-center pr-1">
-          <span className="font-mono text-3xs uppercase tracking-[0.1em] text-muted-foreground" data-testid="left-tab-info">Lot {book.lotSizeOf(asset)} {asset} · basis mark</span>
+          <span className="font-mono text-3xs uppercase tracking-[0.1em] text-muted-foreground" data-testid="left-tab-info">Lot {book.lotSizeOf(asset, venue)} {asset} · basis mark</span>
           <button type="button" onClick={() => setCollapse("left")} className="rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground" title="Give the analysis the full width" aria-label="Collapse the chain and Builder pane" data-testid="collapse-left">
             ‹
           </button>
@@ -194,6 +196,7 @@ export function Workspace() {
       <StrategyDetailsDialog book={book} feedLive={feedLive} />
       <RuleDialog book={book} />
       <AdjustDiscardDialog />
+      <VenueSwitchDialog />
     </>
   );
 

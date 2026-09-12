@@ -20,7 +20,8 @@ import { type MoneyFormat, USD } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
 import { settlementHourUtc, toPricingLegs } from "@/lib/pricing/legs";
 import { type PaneSource, useUiStore } from "@/lib/store";
-import { venueCalendar } from "@/lib/venue";
+import { lotSizeFor, venueCalendar } from "@/lib/venue";
+import { DEFAULT_VENUE, type VenueId } from "@hapiecoin/venues/core";
 import type { StrategyLeg } from "./legs";
 
 import { positionToLeg } from "./positions";
@@ -29,6 +30,8 @@ export type AnalysisSource = { kind: "builder" } | { kind: "strategy"; id: strin
 
 export interface StrategyAnalysis {
   asset: Underlying;
+  /** The venue the legs are priced on: a followed strategy's, else the workspace venue (ADR-069). */
+  venue: VenueId;
   legs: StrategyLeg[];
   pricingLegs: PricingLeg[];
   result: AnalyzeResult | null;
@@ -92,9 +95,10 @@ function usePositionLegs(source: PaneSource, lotSizes: Record<Underlying, string
     let asset: Underlying | null = null;
     for (const p of data.positions) {
       if (!ids.includes(p.productId) || !p.symbol) continue;
-      const probe = positionToLeg(p, "1");
+      // exchange positions come from the connected exchange (Delta India, the only venue with live trading); 4c keys them by the credential's venue
+      const probe = positionToLeg(p, "1", DEFAULT_VENUE);
       if (!probe) continue;
-      const leg = positionToLeg(p, lotSizes?.[probe.asset] ?? DEFAULT_LOTS[probe.asset]);
+      const leg = positionToLeg(p, lotSizes?.[probe.asset] ?? DEFAULT_LOTS[probe.asset], DEFAULT_VENUE);
       if (!leg) continue;
       asset ??= leg.asset;
       if (leg.asset === asset) legs.push(leg);
@@ -109,6 +113,7 @@ function usePositionLegs(source: PaneSource, lotSizes: Record<Underlying, string
  */
 export function useStrategyAnalysis(scope: "pane" | "builder" = "pane"): StrategyAnalysis {
   const builderAsset = useUiStore((s) => s.asset);
+  const workspaceVenue = useUiStore((s) => s.venue);
   const allLegs = useUiStore((s) => s.legs[s.asset]);
   const meta = useUiStore((s) => s.strategy[s.asset]);
   const targetPriceState = useUiStore((s) => s.targetPrice);
@@ -133,7 +138,9 @@ export function useStrategyAnalysis(scope: "pane" | "builder" = "pane"): Strateg
   // a followed position keeps its entry premiums (like custom prices); the Builder follows its own price mode
   const priceMode = source.kind === "builder" ? meta.priceMode : "custom";
 
-  const { quoteFor, version: quoteVersion } = useLegQuotes(asset, quoteLegs);
+  // a followed strategy is priced on its own venue; exchange positions on the connected exchange; the Builder on the workspace venue (ADR-069)
+  const venue = followed?.venue ?? (positions.asset ? DEFAULT_VENUE : workspaceVenue);
+  const { quoteFor, version: quoteVersion } = useLegQuotes(asset, quoteLegs, venue);
   const markOf = useMemo<MarkOf>(() => {
     const bySymbol = new Map(quoteLegs.map((l) => [l.symbol, l] as const));
     return (symbol) => {
@@ -143,12 +150,12 @@ export function useStrategyAnalysis(scope: "pane" | "builder" = "pane"): Strateg
   }, [quoteLegs, quoteFor]);
   const legs = useMemo(() => (adjusting ? afterLegs(adjusting, openLegs, asset, markOf) : heldLegs), [adjusting, openLegs, asset, markOf, heldLegs]);
   const spotState = useSpot(asset);
-  const lotSize = settings?.lotSizes[asset];
+  const lotSize = lotSizeFor(venue, asset, settings);
   const money: MoneyFormat = settings ? { currency: settings.currency === "INR" ? "INR" : "USD", rate: settings.conversionRate } : USD;
   const nowMs = useClock();
   // ADR-059: a calendar or diagonal values its expiry curve at the nearest expiry (later legs keep time value); the
   // workbench's own valuation rule takes over while adjusting
-  const valuationMs = useMemo(() => (adjusting ? valuationMsOf(adjusting, openLegs, asset, nowMs) : nearestExpiryValuationMs(legs, settlementHourUtc(asset), nowMs)), [adjusting, openLegs, asset, nowMs, legs]);
+  const valuationMs = useMemo(() => (adjusting ? valuationMsOf(adjusting, openLegs, asset, nowMs) : nearestExpiryValuationMs(legs, settlementHourUtc(asset, venue), nowMs)), [adjusting, openLegs, asset, venue, nowMs, legs]);
   const spot = spotState?.price !== undefined && Number.isFinite(Number(spotState.price)) ? Number(spotState.price) : null;
 
   const priceFor = useMemo(
@@ -173,13 +180,13 @@ export function useStrategyAnalysis(scope: "pane" | "builder" = "pane"): Strateg
     () =>
       spot === null || pricingLegs.length === 0
         ? null
-        : { spot, nowMs, targetDays, targetSpot: targetPrice, calendar: venueCalendar(asset), defaultIv: 0.5, ...(valuationMs === undefined ? {} : { valuationMs }) },
-    [spot, pricingLegs.length, nowMs, targetDays, targetPrice, asset, valuationMs],
+        : { spot, nowMs, targetDays, targetSpot: targetPrice, calendar: venueCalendar(asset, venue), defaultIv: 0.5, ...(valuationMs === undefined ? {} : { valuationMs }) },
+    [spot, pricingLegs.length, nowMs, targetDays, targetPrice, asset, venue, valuationMs],
   );
   const { result, error, pending } = useAnalysis(pricingLegs, options);
   // the position before the change, on the same axis and date, for the ghost curve and the before → after strip
   const beforePricing = useMemo(() => (adjusting ? toPricingLegs(heldLegs, lotSize, { iv: (l) => quoteFor(l)?.markIv, spot: spotState?.price }) : []), [adjusting, heldLegs, lotSize, quoteFor, spotState?.price]);
-  const beforeOptions = useMemo(() => (adjusting && spot !== null && beforePricing.length ? { spot, nowMs, targetDays, targetSpot: targetPrice, calendar: venueCalendar(asset), defaultIv: 0.5, ...(valuationMs === undefined ? {} : { valuationMs }) } : null), [adjusting, spot, beforePricing.length, nowMs, targetDays, targetPrice, asset, valuationMs]);
+  const beforeOptions = useMemo(() => (adjusting && spot !== null && beforePricing.length ? { spot, nowMs, targetDays, targetSpot: targetPrice, calendar: venueCalendar(asset, venue), defaultIv: 0.5, ...(valuationMs === undefined ? {} : { valuationMs }) } : null), [adjusting, spot, beforePricing.length, nowMs, targetDays, targetPrice, asset, venue, valuationMs]);
   const { result: before } = useAnalysis(beforePricing, beforeOptions);
-  return { asset, legs, pricingLegs, result, error, pending, spot, spotText: spotState?.price, lotSize, money, quoteFor, priceFor, targetPrice, targetDays, nowMs, source, adjusting, openLegs, before: adjusting ? before : null, markOf, quoteVersion, valuationMs };
+  return { asset, venue, legs, pricingLegs, result, error, pending, spot, spotText: spotState?.price, lotSize, money, quoteFor, priceFor, targetPrice, targetDays, nowMs, source, adjusting, openLegs, before: adjusting ? before : null, markOf, quoteVersion, valuationMs };
 }

@@ -24,7 +24,7 @@ export function useDraftFigures(w: AdjustWorkbench, draft: AdjustDraft | null): 
   const legs = useMemo(() => (draft ? afterLegs(draft, open, strategy.asset, a.markOf) : []), [draft, open, strategy.asset, a.markOf]);
   const pricing = useMemo(() => toPricingLegs(legs, lotSize, { iv: (l) => a.quoteFor(l)?.markIv, spot: a.spotText }), [legs, lotSize, a]);
   const valuationMs = useMemo(() => (draft ? valuationMsOf(draft, open, strategy.asset, a.nowMs) : undefined), [draft, open, strategy.asset, a.nowMs]);
-  const options = useMemo(() => (draft && a.spot !== null && pricing.length ? { spot: a.spot, nowMs: a.nowMs, calendar: venueCalendar(strategy.asset), defaultIv: 0.5, points: 81, ...(valuationMs === undefined ? {} : { valuationMs }) } : null), [draft, a.spot, a.nowMs, pricing.length, strategy.asset, valuationMs]);
+  const options = useMemo(() => (draft && a.spot !== null && pricing.length ? { spot: a.spot, nowMs: a.nowMs, calendar: venueCalendar(strategy.asset, strategy.venue), defaultIv: 0.5, points: 81, ...(valuationMs === undefined ? {} : { valuationMs }) } : null), [draft, a.spot, a.nowMs, pricing.length, strategy.asset, strategy.venue, valuationMs]);
   const { result } = useAnalysis(pricing, options);
   const cash = draft ? cashflow(draft, open, a.markOf, lotSize) : 0;
   return result ? { maxLoss: result.maxLoss, maxProfit: result.maxProfit, pop: result.pop, delta: result.greeks.delta, cash } : null;

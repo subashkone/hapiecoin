@@ -1822,6 +1822,20 @@
   "evidence": "ADR-067 (11 Sep 2026): packages/venues/src/deribit/*, port/deribit.ts, port/deribit-clients.ts, http.ts, market-data.ts, schema-adapter.ts; packages/schema/src/primitives.ts VENUES; apps/gateway/src/config.ts, feed/market-data.ts, feed/feed.ts, app.ts; apps/api/src/routes/live-exec.ts dataOnlyReason, routes/credentials.ts; spec/fixtures/deribit-*.json; unit deribit/*.test.ts, port/deribit.test.ts, feed-venues.test.ts, venue-column.test.ts"
  },
  {
+  "id": "HC-SH-123",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "screen": "Venues · venue switch",
+  "feature": "Header venue chip: the workspace follows the chosen venue (chains, quotes, expiries, lot sizes, create bodies), data-only venues gated",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web)",
+  "acceptance": "the workspace store owns the venue (persisted, unknown ids fall back to Delta India); switching clears the Builder after a confirm when legs exist and moves the asset to one the venue lists; useChain / useChains / useLegQuotes, the chain panel and the option details subscribe on the venue; expiries come from the gateway's feed.venues[id] with that venue's settlement hour; market history sends venue=; lot sizes take the venue's listed lot off the default; the trade-mode dialog blocks Live on a data-only venue with the plain reason, the exchange form names its venue; loading a strategy, opening the workbench or a share link switches to the strategy's venue first; strategy figures use the strategy's venue lot size and settlement hour; the API refuses an asset the venue does not list; spot stays the default venue's index (GAPS #86)",
+  "evidence": "ADR-069 (12 Sep 2026): apps/web/src/lib/store.ts (venue, setVenue, merge guard), lib/venue.ts (bindVenueSource, lotSizeFor, dataOnly), lib/useVenue.ts, lib/gateway/hooks.tsx, useChains.ts, useLegQuotes.ts, lib/chain/expiries.ts, useExpiries.ts, lib/api/market.ts, schemas.ts, components/header/widgets.tsx (VenueSwitch), chain/ChainPanel.tsx, dialogs/OptionDetailsDialog.tsx, trading/TradeFlow.tsx, TradeModeDialog.tsx, dialogs/ExchangeManagementDialog.tsx; unit venue.test.ts, store.test.ts, hooks.test.tsx, expiries.test.ts, market.test.ts, widgets.test.tsx, trading-more.test.tsx, lib/strategy/share.ts, apps/api/src/routes/strategies.ts (listed-asset guard), api venue-column.test.ts"
+ },
+ {
   "id": "HC-PB-001",
   "area": "10-public",
   "areaName": "Public site & authentication",

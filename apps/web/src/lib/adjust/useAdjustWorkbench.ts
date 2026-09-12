@@ -4,7 +4,7 @@
 // (effects, cashflow, cap, summary and guard rails) and the actions that change the draft.
 import type { Strategy, StrategyLeg as ServerLeg } from "@hapiecoin/schema";
 import { defaultLotSizes, getVenueCore } from "@hapiecoin/venues/core";
-import { currentVenue } from "@/lib/venue";
+import { currentVenueId, lotSizeFor } from "@/lib/venue";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useStrategies } from "@/lib/api/strategies";
 import { useSettings } from "@/lib/api/queries";
@@ -77,7 +77,8 @@ export function useAdjustWorkbench(): AdjustWorkbench | null {
   const open = useMemo(() => (strategy ? openLegs(strategy) : []), [strategy]);
   const markAgeSec = useAgeSeconds(a.quoteVersion, draft?.startedAt ?? 0);
   const asset = strategy?.asset ?? "BTC";
-  const lotSize = settings?.lotSizes[asset] ?? defaultLotSizes(strategy ? getVenueCore(strategy.venue) : currentVenue())[asset]; // ADR-065: the strategy's own venue
+  const venue = strategy?.venue ?? currentVenueId();
+  const lotSize = lotSizeFor(venue, asset, settings) ?? defaultLotSizes(getVenueCore(venue))[asset]; // ADR-065 / ADR-069: the strategy's own venue and its lot size
   return useMemo(() => {
     // every write goes through the normaliser, so a lots-after key always means an order (store hasAdjustWork relies on it)
     const update = (fn: (d: AdjustDraft) => AdjustDraft) => updateAdjust((d) => normaliseLotsAfter(fn(d), open));

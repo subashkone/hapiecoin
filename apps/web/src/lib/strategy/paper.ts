@@ -109,7 +109,7 @@ export type Lifecycle = "open" | "expiring" | "closed";
 export function lifecycleOf(s: Strategy, now = Date.now()): Lifecycle {
   if (s.status === "archived") return "closed";
   const e = expiryOf(s);
-  return e !== null && daysLeft(e.nearest, now, settlementHourUtc(s.asset)) <= 1 ? "expiring" : "open";
+  return e !== null && daysLeft(e.nearest, now, settlementHourUtc(s.asset, s.venue)) <= 1 ? "expiring" : "open";
 }
 
 export function daysOf(s: Strategy, now = Date.now()): number {

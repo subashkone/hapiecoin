@@ -4,11 +4,12 @@
 // at the edge (typescript rule 3).
 import type { Leg as PricingLeg } from "@hapiecoin/pricing";
 import type { StrategyLeg } from "@/lib/strategy/legs";
-import { currentVenue } from "@/lib/venue";
+import { currentVenueId } from "@/lib/venue";
+import { getVenueCore } from "@hapiecoin/venues/core";
 
 /** The hour (UTC) the venue settles `asset` options at (ADR-066: from the venue port; Delta 12:00, XAUT 16:00). */
-export function settlementHourUtc(asset: string): number {
-  return currentVenue().calendar.settlementHourUtc(asset);
+export function settlementHourUtc(asset: string, venue: string = currentVenueId()): number {
+  return getVenueCore(venue).calendar.settlementHourUtc(asset);
 }
 
 export interface LegPriceSource {

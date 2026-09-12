@@ -3,14 +3,14 @@
 // ATM at the chosen expiry; and My templates (drafts | archived) with search, Load, Archive and Delete.
 import { Button, cn, toast } from "@hapiecoin/ui";
 import { payoffAtExpiry } from "@hapiecoin/pricing";
-import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState, useEffect } from "react";
-import { discoverExpiries, nearestExpiry } from "@/lib/chain/expiries";
-import { publicEnv } from "@/lib/env";
+import { nearestExpiry } from "@/lib/chain/expiries";
+import { useExpiriesQuery } from "@/lib/chain/useExpiries";
 import { daysToExpiry, fmtDate, fmtExpiry } from "@/lib/format";
 import { useChain, useSpot } from "@/lib/gateway/hooks";
 import { atmIndex } from "@/lib/gateway/reducer";
 import { useUiStore } from "@/lib/store";
+import { lotSizeFor } from "@/lib/venue";
 import { useArchiveStrategy, useDeleteStrategy, useStrategies } from "@/lib/api/strategies";
 import { serverLegToLocal } from "@/lib/strategy/paper";
 import type { Strategy } from "@hapiecoin/schema";
@@ -67,12 +67,7 @@ export function useTemplateLoader() {
   const setLegs = useUiStore((s) => s.setLegs);
   const setMeta = useUiStore((s) => s.setStrategyMeta);
   const setBuilderTab = useUiStore((s) => s.setBuilderTab);
-  const env = publicEnv();
-  const expiries = useQuery({
-    queryKey: ["expiries", asset],
-    queryFn: () => discoverExpiries(asset, { gatewayWsUrl: env.NEXT_PUBLIC_GATEWAY_URL, defaultsCsv: env.NEXT_PUBLIC_DEFAULT_EXPIRIES }),
-    staleTime: 5 * 60_000,
-  });
+  const expiries = useExpiriesQuery(asset); // keyed by venue (ADR-069)
   const list = expiries.data?.expiries ?? [];
   const [chosen, setChosen] = useState<string | null>(null);
   const expiry = chosen && list.includes(chosen) ? chosen : (workspaceExpiry && list.includes(workspaceExpiry) ? workspaceExpiry : nearestExpiry(list));
@@ -149,10 +144,11 @@ function TemplateSketch({ tpl }: { tpl: StrategyTemplate }) {
 export function TemplatesPanel() {
   const { asset, expiry, list, setChosen, load, rows, atm, rowsByExpiry, spot, seq, farSeq } = useTemplateLoader();
   const chainLots = useUiStore((s) => s.chainLots);
+  const venue = useUiStore((s) => s.venue);
   const { data: settings } = useSettings();
   const [outlook, setOutlook] = useState<Outlook | null>(null);
   // HC-TR-106 / 107: every template priced at the live chain → POP, R:R and the outlook it expresses
-  const stats = useTemplateStats(TEMPLATES, { asset, expiry, expiries: list, rows, atm, lots: chainLots, ...(rowsByExpiry ? { rowsByExpiry } : {}), spot: spot === null ? null : Number(spot), lotSize: settings?.lotSizes[asset], nowMs: Date.now(), version: `${seq}:${farSeq}` });
+  const stats = useTemplateStats(TEMPLATES, { asset, expiry, expiries: list, rows, atm, lots: chainLots, ...(rowsByExpiry ? { rowsByExpiry } : {}), spot: spot === null ? null : Number(spot), lotSize: lotSizeFor(venue, asset, settings), nowMs: Date.now(), version: `${seq}:${farSeq}` });
   const setLegs = useUiStore((s) => s.setLegs);
   const setMeta = useUiStore((s) => s.setStrategyMeta);
   const setBuilderTab = useUiStore((s) => s.setBuilderTab);
@@ -170,11 +166,14 @@ export function TemplatesPanel() {
   const cards = TEMPLATES.filter((t) => (category === "All" || t.category === category) && (outlook === null || stats.get(t.name)?.outlook === outlook));
   const myList = (strategies ?? []).filter((d) => d.status === mine && (search.trim() === "" || `${d.name} ${d.asset} ${d.templateName}`.toLowerCase().includes(search.trim().toLowerCase())));
   const loadDraft = (d: Strategy) => {
-    setAsset(d.asset);
-    setLegs(d.asset, d.legs.filter((l) => l.status === "open").map((l) => serverLegToLocal(l, d.asset)));
-    setMeta(d.asset, { name: d.name, draftId: d.status === "draft" ? d.id : null });
-    setWorkspaceTab("builder");
-    setBuilderTab("builder");
+    // the Builder works on the draft's venue (ADR-069): the switch asks first when legs of another venue exist
+    useUiStore.getState().requestVenue(d.venue, () => {
+      setAsset(d.asset);
+      setLegs(d.asset, d.legs.filter((l) => l.status === "open").map((l) => serverLegToLocal(l, d.asset)));
+      setMeta(d.asset, { name: d.name, draftId: d.status === "draft" ? d.id : null });
+      setWorkspaceTab("builder");
+      setBuilderTab("builder");
+    });
   };
 
   return (

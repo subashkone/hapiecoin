@@ -14,7 +14,7 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   const a = useStrategyAnalysis();
   const storedName = useUiStore((s) => s.strategy[s.asset].name);
   const name = storedName.trim() || guessTemplateName(a.legs);
-  const link = useMemo(() => (a.legs.length ? shareUrl(typeof window === "undefined" ? "" : window.location.origin, encodeShare({ asset: a.asset, name, legs: a.legs })) : ""), [a.legs, a.asset, name]);
+  const link = useMemo(() => (a.legs.length ? shareUrl(typeof window === "undefined" ? "" : window.location.origin, encodeShare({ asset: a.asset, venue: a.venue, name, legs: a.legs })) : ""), [a.legs, a.asset, a.venue, name]);
   const copy = async () => {
     const ok = await copyText(link);
     if (ok) toast("Link copied to clipboard", { description: link.length > 80 ? `${link.slice(0, 80)}…` : link });

@@ -25,14 +25,17 @@ export function ShareLanding({ code }: { code: string }) {
       router.replace("/analyse");
       return;
     }
-    s.setAsset(shared.asset);
-    s.setLegs(shared.asset, []);
-    let added = 0;
-    for (const leg of shared.legs) if (s.addLeg(leg).ok) added += 1;
-    s.setStrategyMeta(shared.asset, { name: shared.name, draftId: null, priceMode: "custom" });
-    s.setWorkspaceTab("builder");
-    s.setAnalysisTab("payoff");
-    toast("Strategy loaded from link", { description: `${shared.name || "Shared strategy"} · ${added} ${added === 1 ? "leg" : "legs"} at the shared entry prices` });
+    // the link names its venue (ADR-069); a Builder holding another venue's legs is asked first, on /analyse
+    s.requestVenue(shared.venue, () => {
+      s.setAsset(shared.asset);
+      s.setLegs(shared.asset, []);
+      let added = 0;
+      for (const leg of shared.legs) if (s.addLeg(leg).ok) added += 1;
+      s.setStrategyMeta(shared.asset, { name: shared.name, draftId: null, priceMode: "custom" });
+      s.setWorkspaceTab("builder");
+      s.setAnalysisTab("payoff");
+      toast("Strategy loaded from link", { description: `${shared.name || "Shared strategy"} · ${added} ${added === 1 ? "leg" : "legs"} at the shared entry prices` });
+    });
     router.replace("/analyse");
   }, [shared, router]);
   if (!shared) {
@@ -51,7 +54,7 @@ export function ShareLanding({ code }: { code: string }) {
       <ul className="mt-2 space-y-0.5 font-mono text-2xs">
         {shared.legs.map((l, i) => (
           <li key={i}>
-            <span className={l.side === "buy" ? "text-buy" : "text-sell"}>{l.side.toUpperCase()}</span> {l.lots} × {venueSymbol(l.kind, l.asset, l.strike, l.expiry)} @ {fmtPrice(l.price)}
+            <span className={l.side === "buy" ? "text-buy" : "text-sell"}>{l.side.toUpperCase()}</span> {l.lots} × {venueSymbol(l.kind, l.asset, l.strike, l.expiry, shared.venue)} @ {fmtPrice(l.price)}
           </li>
         ))}
       </ul>

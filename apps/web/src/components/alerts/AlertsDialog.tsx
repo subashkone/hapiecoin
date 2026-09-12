@@ -11,7 +11,7 @@ import { useStrategies } from "@/lib/api/strategies";
 import { conditionText, currentValue, nowText } from "@/lib/alerts/engine";
 import { useReadings } from "@/lib/alerts/readings";
 import { ASSET_META, type AlertPrefill, useUiStore } from "@/lib/store";
-import { CURRENT_VENUE } from "@/lib/venue";
+import { useVenueId } from "@/lib/useVenue";
 import type { DialogProps } from "@/components/dialogs/SettingsDialogs";
 
 const KINDS: AlertKind[] = ["price", "iv", "pnl"];
@@ -34,6 +34,7 @@ export function AlertForm({ prefill, onDone }: { prefill: AlertPrefill; onDone: 
   const workspaceAsset = useUiStore((s) => s.asset);
   const readings = useReadings();
   const create = useCreateAlert();
+  const venue = useVenueId();
   const { data: telegram } = useTelegramStatus();
   const telegramReady = telegram?.linked === true;
   const [kind, setKind] = useState<AlertKind>(prefill.kind ?? "price");
@@ -55,7 +56,7 @@ export function AlertForm({ prefill, onDone }: { prefill: AlertPrefill; onDone: 
     if (channels.length === 0) return toast.error("Pick a channel", { description: "Push or email, or both" });
     if (channels.includes("push") && typeof Notification !== "undefined" && Notification.permission === "default") void Notification.requestPermission().catch(() => undefined);
     create.mutate(
-      { kind, asset: effectiveAsset, venue: CURRENT_VENUE, ...(kind === "pnl" ? { strategyId } : {}), op, value: v, channels },
+      { kind, asset: effectiveAsset, venue: kind === "pnl" && strategy ? strategy.venue : venue, ...(kind === "pnl" ? { strategyId } : {}), op, value: v, channels },
       {
         onSuccess: (a) => {
           toast.success("Alert saved", { description: `${conditionText(a)} · armed` });

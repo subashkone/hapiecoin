@@ -2,7 +2,8 @@
 // per-asset list kept in the UI store. Prices and IVs are copied from the live quote; the quantity in
 // underlying units is derived (lots × lot size) when needed and never stored twice (typescript rule 3).
 import type { Underlying } from "@hapiecoin/schema";
-import { currentVenue } from "@/lib/venue";
+import { currentVenueId } from "@/lib/venue";
+import { getVenueCore } from "@hapiecoin/venues/core";
 
 /** Options from the chain, or a perpetual future added from the Builder (HC-TR-016, HC-TR-035). */
 export type LegKind = "call" | "put" | "future";
@@ -57,8 +58,8 @@ export function stepLots(lots: number, delta: 1 | -1): number {
 }
 
 /** The venue's symbol for a leg through the port's codec (ADR-064): C-BTC-79400-070926 for an option, BTCUSD for the perpetual. */
-export function venueSymbol(kind: LegKind, asset: Underlying, strike: string, expiryIso: string): string {
-  const { symbols } = currentVenue();
+export function venueSymbol(kind: LegKind, asset: Underlying, strike: string, expiryIso: string, venue: string = currentVenueId()): string {
+  const { symbols } = getVenueCore(venue);
   return kind === "future" ? symbols.perpetual(asset) : symbols.formatOption(kind, asset, strike, expiryIso);
 }
 

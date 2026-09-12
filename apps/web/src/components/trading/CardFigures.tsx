@@ -21,8 +21,8 @@ export function CardFigures({ s, book }: { s: Strategy; book: PaperBook }) {
     if (spot === null && live !== null) setSpot(live);
   }, [spot, live]);
   const nowMs = useMemo(() => Date.now(), []);
-  const legs = useMemo(() => toPricingLegs(open.map((l) => serverLegToLocal(l, s.asset)), book.lotSizeOf(s.asset), { spot: spot === null ? undefined : String(spot) }), [open, s.asset, book, spot]);
-  const options = useMemo(() => (spot === null || legs.length === 0 ? null : { spot, nowMs, calendar: venueCalendar(s.asset), defaultIv: 0.5, points: 41 }), [spot, legs.length, nowMs, s.asset]);
+  const legs = useMemo(() => toPricingLegs(open.map((l) => serverLegToLocal(l, s.asset)), book.lotSizeOf(s.asset, s.venue), { spot: spot === null ? undefined : String(spot) }), [open, s.asset, s.venue, book, spot]);
+  const options = useMemo(() => (spot === null || legs.length === 0 ? null : { spot, nowMs, calendar: venueCalendar(s.asset, s.venue), defaultIv: 0.5, points: 41 }), [spot, legs.length, nowMs, s.asset, s.venue]);
   const { result } = useAnalysis(legs, options);
   if (open.length === 0) return null;
   const money = book.money;

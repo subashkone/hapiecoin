@@ -5,6 +5,7 @@ import { ASSET_META, UI_STORAGE_KEY, hasAdjustWork, useUiStore } from "./store";
 
 beforeEach(() => {
   useUiStore.setState({
+    venue: "delta_india",
     asset: "BTC",
     expiry: {},
     feedPaused: false,
@@ -46,6 +47,7 @@ describe("HC-SH-003 UI store", () => {
     expect(raw).toBeTruthy();
     const parsed = JSON.parse(raw!) as { state: Record<string, unknown> };
     expect(parsed.state).toEqual({
+      venue: "delta_india",
       asset: "XAUT",
       expiry: {},
       feedPaused: false,
@@ -360,5 +362,126 @@ describe("HC-SH-079 / HC-SH-100 alerts dialog and prefill", () => {
     expect(merge({ alertPrefill: { kind: "price" } }, useUiStore.getState()).alertPrefill).toBeNull();
     useUiStore.getState().closeDialog();
     useUiStore.setState({ alertPrefill: null });
+  });
+});
+
+describe("HC-SH-124 the workspace venue (ADR-069)", () => {
+  it("defaults to Delta India, persists, and a stale persisted id falls back to the default", () => {
+    expect(useUiStore.getState().venue).toBe("delta_india");
+    useUiStore.getState().setVenue("deribit");
+    const parsed = JSON.parse(window.localStorage.getItem(UI_STORAGE_KEY)!) as { state: { venue: string } };
+    expect(parsed.state.venue).toBe("deribit");
+    const merge = useUiStore.persist.getOptions().merge;
+    if (!merge) throw new Error("persist merge missing");
+    const current = useUiStore.getState();
+    expect(merge({ venue: "okx" }, current).venue).toBe("delta_india");
+    expect(merge({ venue: "deribit" }, current).venue).toBe("deribit");
+    expect(merge({}, current).venue).toBe("delta_india");
+  });
+
+  it("switching venue clears the Builder of every asset, drops adjust work and moves an asset the venue does not list", () => {
+    const s = useUiStore.getState();
+    s.setAsset("XAUT");
+    expect(s.addLeg({ asset: "XAUT", kind: "call", side: "buy", strike: "4400", expiry: "2026-09-25", lots: 10, price: "10", iv: 0.3 }).ok).toBe(true);
+    s.setStrategyMeta("XAUT", { name: "Gold call" });
+    s.setTarget({ price: 4500 });
+    s.setVenue("deribit");
+    const after = useUiStore.getState();
+    expect(after.venue).toBe("deribit");
+    expect(after.asset).toBe("BTC"); // Deribit lists BTC and ETH only
+    expect(after.legs).toEqual({ BTC: [], ETH: [], XAUT: [] });
+    expect(after.strategy.XAUT.name).toBe("");
+    expect(after.targetPrice).toBeNull();
+    after.setAsset("ETH");
+    after.setVenue("delta_india");
+    expect(useUiStore.getState().asset).toBe("ETH"); // listed on both venues: kept
+    useUiStore.getState().setVenue("delta_india"); // the same venue: a no-op
+    expect(useUiStore.getState().venue).toBe("delta_india");
+  });
+});
+
+describe("HC-SH-124 the workbench and the persisted asset follow the venue (ADR-069)", () => {
+  it("requestVenue switches at once without Builder legs, parks the switch behind a question with them, and runs the follow-up", () => {
+    const s = useUiStore.getState();
+    const ran: string[] = [];
+    s.requestVenue("delta_india", () => ran.push("same"));
+    expect(ran).toEqual(["same"]); // the same venue: no switch, the follow-up runs
+    s.requestVenue("deribit", () => ran.push("switched"));
+    expect(useUiStore.getState().venue).toBe("deribit");
+    expect(ran).toEqual(["same", "switched"]);
+    expect(useUiStore.getState().addLeg({ asset: "BTC", kind: "call", side: "buy", strike: "70000", expiry: "2026-09-12", lots: 1, price: "800", iv: 0.5 }).ok).toBe(true);
+    useUiStore.getState().requestVenue("delta_india", () => ran.push("back"));
+    expect(useUiStore.getState().venue).toBe("deribit"); // legs exist: parked
+    expect(useUiStore.getState().venueSwitch?.venue).toBe("delta_india");
+    useUiStore.getState().cancelVenueSwitch();
+    expect(useUiStore.getState().venueSwitch).toBeNull();
+    expect(useUiStore.getState().legs.BTC).toHaveLength(1);
+    useUiStore.getState().requestVenue("delta_india", () => ran.push("back"));
+    useUiStore.getState().confirmVenueSwitch();
+    expect(useUiStore.getState().venue).toBe("delta_india");
+    expect(useUiStore.getState().legs.BTC).toEqual([]);
+    expect(ran).toEqual(["same", "switched", "back"]);
+    useUiStore.getState().confirmVenueSwitch(); // nothing parked: a no-op
+  });
+
+  it("openAdjust on another venue's strategy asks first when Builder legs exist, then opens the workbench on that venue", () => {
+    const s = useUiStore.getState();
+    expect(s.addLeg({ asset: "BTC", kind: "call", side: "buy", strike: "70000", expiry: "2026-09-25", lots: 1, price: "800", iv: 0.5 }).ok).toBe(true);
+    s.openAdjust("strat_d", false, "deribit");
+    expect(useUiStore.getState().venue).toBe("delta_india");
+    expect(useUiStore.getState().adjust).toBeNull();
+    expect(useUiStore.getState().venueSwitch?.venue).toBe("deribit");
+    useUiStore.getState().confirmVenueSwitch();
+    expect(useUiStore.getState().venue).toBe("deribit");
+    expect(useUiStore.getState().adjust?.strategyId).toBe("strat_d");
+    expect(useUiStore.getState().legs.BTC).toEqual([]);
+    useUiStore.setState({ adjust: null, paneSource: null, venue: "delta_india" });
+  });
+
+  it("openAdjust with unsaved workbench work on another venue's strategy: the discard question first, then the venue question, nothing lost silently", () => {
+    const s = useUiStore.getState();
+    expect(s.addLeg({ asset: "BTC", kind: "call", side: "buy", strike: "70000", expiry: "2026-09-25", lots: 1, price: "800", iv: 0.5 }).ok).toBe(true);
+    s.openAdjust("strat_a"); // on the workspace venue
+    useUiStore.setState({ adjust: { ...useUiStore.getState().adjust!, lotsAfter: { leg_1: 2 } } }); // an order in the working change
+    useUiStore.getState().openAdjust("strat_d", false, "deribit");
+    expect(typeof useUiStore.getState().adjustDiscard).toBe("function"); // the discard question comes first
+    expect(useUiStore.getState().venueSwitch).toBeNull();
+    useUiStore.getState().adjustDiscard!(); // "Discard and leave"
+    expect(useUiStore.getState().adjustDiscard).toBeNull(); // that question is closed
+    expect(useUiStore.getState().venueSwitch?.venue).toBe("deribit"); // the venue question takes over
+    expect(useUiStore.getState().adjust?.strategyId).toBe("strat_a"); // the draft is still there until the switch is confirmed
+    useUiStore.getState().cancelVenueSwitch();
+    expect(useUiStore.getState().adjust?.strategyId).toBe("strat_a");
+    expect(useUiStore.getState().legs.BTC).toHaveLength(1);
+    useUiStore.getState().openAdjust("strat_d", false, "deribit");
+    useUiStore.getState().adjustDiscard!();
+    useUiStore.getState().confirmVenueSwitch();
+    expect(useUiStore.getState().venue).toBe("deribit");
+    expect(useUiStore.getState().adjust?.strategyId).toBe("strat_d");
+    expect(useUiStore.getState().adjustDiscard).toBeNull();
+    expect(useUiStore.getState().legs.BTC).toEqual([]);
+    useUiStore.setState({ adjust: null, paneSource: null, venue: "delta_india" });
+  });
+
+  it("openAdjust on another venue's strategy switches the workspace venue first; the same venue keeps it", () => {
+    const s = useUiStore.getState();
+    s.openAdjust("strat_d", false, "deribit");
+    expect(useUiStore.getState().venue).toBe("deribit");
+    expect(useUiStore.getState().adjust?.strategyId).toBe("strat_d");
+    expect(useUiStore.getState().paneSource).toEqual({ kind: "strategy", id: "strat_d" });
+    useUiStore.getState().openAdjust("strat_d2", false, "deribit");
+    expect(useUiStore.getState().venue).toBe("deribit");
+    useUiStore.getState().openAdjust("strat_x", false, "delta_india");
+    expect(useUiStore.getState().venue).toBe("delta_india");
+    expect(useUiStore.getState().adjust?.strategyId).toBe("strat_x");
+  });
+  it("a persisted asset the persisted venue does not list rehydrates as the venue's first asset", () => {
+    const merge = useUiStore.persist.getOptions().merge;
+    if (!merge) throw new Error("persist merge missing");
+    const current = useUiStore.getState();
+    expect(merge({ venue: "deribit", asset: "XAUT" }, current).asset).toBe("BTC");
+    expect(merge({ venue: "deribit", asset: "ETH" }, current).asset).toBe("ETH");
+    expect(merge({ venue: "delta_india", asset: "XAUT" }, current).asset).toBe("XAUT");
+    expect(merge({ venue: "deribit" }, current).asset).toBe(current.asset === "XAUT" ? "BTC" : current.asset);
   });
 });
