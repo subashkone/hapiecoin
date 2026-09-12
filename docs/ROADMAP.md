@@ -12,7 +12,7 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 
 ## B. From the competitor research (docs/research/competitors-sensibull-opstra.md)
 7. ⬜ Verified P&L: P&L from Delta fills, public page per trader, share to X / Telegram, one exchange account per HapieCoin account
-8. ⬜ Easy Options / Strategy Wizard: view + target + date → ranked defined-risk strategies over the templates and the fix ranking
+8. ✅ Easy Options / Strategy Wizard: view + target + date → ranked defined-risk strategies over the templates and the fix ranking · BUILT 12 Sep 2026 on feat/strategy-wizard (ADR-072; HC-TR-176..178; GAPS #88): the Wizard sub-tab in the Builder (view chips, move % ↔ target price, expiry), three cards ranked by return on risk at the thesis with one earned tag each, Use this → Builder + payoff target, palette command and `W`
 9. ⬜ Backtest and replay on our own IV / mark snapshots (EOD strategy backtest; replay an expiry's chain)
 10. ⬜ Mindful Trading pause before a live order when down on the day
 11. ⬜ Options screener on the chain data (IV rank, premium per day, skew)

@@ -73,8 +73,8 @@ describe("HC-TR-040 materialiseTemplate places legs on the venue ladder around A
     expect(materialiseTemplate(templateByName("Buy Put")!, { ...base, rows: unquoted })).toEqual({ ok: false, reason: "no-quote" });
   });
   // HC-TR-035 / GAPS #74: a future leg is the perpetual at the live spot, as the Add Futures dialog places it
-  const coveredCall: StrategyTemplate = { name: "Test Covered Call", category: "Bullish", description: "", legs: [{ kind: "future", side: "buy" }, { kind: "call", side: "sell", k: 2, lots: 2 }] };
-  const longPerp: StrategyTemplate = { name: "Test Long Perp", category: "Bullish", description: "", legs: [{ kind: "future", side: "buy" }] };
+  const coveredCall: StrategyTemplate = { name: "Test Covered Call", category: "Bullish", description: "", risk: "defined", legs: [{ kind: "future", side: "buy" }, { kind: "call", side: "sell", k: 2, lots: 2 }] };
+  const longPerp: StrategyTemplate = { name: "Test Long Perp", category: "Bullish", description: "", risk: "defined", legs: [{ kind: "future", side: "buy" }] };
   it("places a future leg at the spot with expiry PERP and no strike, multiplying lots like an option leg", () => {
     const r = materialiseTemplate(coveredCall, { ...base, spot: "80100.5" });
     expect(r.ok).toBe(true);

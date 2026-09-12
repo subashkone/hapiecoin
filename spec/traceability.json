@@ -7096,6 +7096,48 @@
   "evidence": "ADR-068 (11 Sep 2026): apps/api routes/live.ts positions accountId; lib/api/live.ts useAccountPositions, lib/accounts.ts accountRefOf / useCurrentAccount, PaperPanel.tsx drift per account, NetPositionsPanel.tsx net-account, PortfolioBar.tsx; unit trading-live.test.tsx HC-TR-174, HC-TR-175"
  },
  {
+  "id": "HC-TR-176",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Analyse · Strategy panel (Wizard)",
+  "feature": "Strategy Wizard sub-tab: view, move and date",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright)",
+  "acceptance": "Third Builder sub-tab Builder | Templates | Wizard (also the Builder empty state's 'Ask the wizard'): view chips Bullish / Bearish / Neutral / Volatile, an unsigned move in percent with the derived target price beside it (typing the price sets the move; neutral and volatile show the ±band), the target expiry from the venue's listed expiries; a basis line names lots × lot size, marks and the expiry; inputs are disabled until the spot exists",
+  "evidence": "ADR-072 (12 Sep 2026): apps/web components/builder/WizardPanel.tsx, BuilderPanel.tsx third tab, lib/store.ts BuilderSubTab; unit builder.test.tsx HC-TR-176; e2e analyse.spec.ts HC-TR-176..178, visual analyse-wizard-{dark,light}"
+ },
+ {
+  "id": "HC-TR-177",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Analyse · Strategy panel (Wizard)",
+  "feature": "Three defined-risk strategies ranked at the thesis, priced at the live chain",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright) · security",
+  "acceptance": "Templates with a finite worst case on one expiry (StrategyTemplate.risk, proven by the invariants test) are placed on the venue ladder and priced once per chain snapshot; each card shows the sketch, the legs, P&L if right (expiry payoff at the target price; the least inside the band for Neutral; the smaller band edge for Volatile), POP, max loss (the most you can lose), max profit and R:R, ranked by return on risk then POP then name, at most three, one earned tag each (best return on risk, highest POP, smallest max loss); fewer fits say '2 of 3 fit this ladder'; no fit shows the reason and a link to Templates",
+  "evidence": "ADR-072: lib/strategy/wizard.ts (eligibleTemplates, thesisPnl, pnlAtExpiry, fitsView, rankCandidates, tagBest), lib/strategy/useWizardCandidates.ts (one pass per chain, never abandoned, at most one every 2 s), lib/strategy/placeTemplate.ts (shared with the Templates tab), lib/strategy/templates.ts risk; unit wizard.test.ts, useWizardCandidates.test.tsx (StrictMode double mount), templates.invariants.test.ts, builder.test.tsx HC-TR-177"
+ },
+ {
+  "id": "HC-TR-178",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Analyse · Strategy panel (Wizard)",
+  "feature": "Use this loads the Builder on the thesis; palette and W open the wizard",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright)",
+  "acceptance": "Use this (amber on card 1, outline on 2 and 3) loads the template exactly as the Templates tab does (legs on listed strikes, the name, the Builder sub-tab) and sets the payoff target to the thesis price and the days to the expiry, so the chart opens on it; the palette command 'Strategy wizard' (hint W) and the W shortcut (Analyse workspace, listed in the ? help) open the tab; the assistant points 'which strategy' questions at it",
+  "evidence": "ADR-072: WizardPanel.tsx use(), components/shell/CommandPalette.tsx act:builder-wizard, components/workspace/Workspace.tsx registerShortcut W, lib/assistant.ts; unit builder.test.tsx HC-TR-178, shell.test.tsx, workspace.test.tsx, assistant.test.ts; e2e analyse.spec.ts HC-TR-176..178"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

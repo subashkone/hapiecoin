@@ -29,6 +29,8 @@ describe("HC-SH-060 / HC-SH-061 answers", () => {
     expect(answerFor("start a paper trade", { loggedIn: true })).toContain("No real orders");
     expect(answerFor("shortcuts?", { loggedIn: true })).toContain("Ctrl K");
     expect(answerFor("iron condor template", { loggedIn: true })).toContain("templates strip");
+    expect(answerFor("which strategy should I trade?", { loggedIn: true })).toContain("Wizard"); // HC-TR-178
+    expect(answerFor("iron condor template", { loggedIn: true })).toContain("Wizard tab (W)");
     expect(answerFor("what is theta", { loggedIn: true })).toContain("Theta");
     expect(answerFor("how much margin", { loggedIn: true })).toContain("Margin");
     expect(answerFor("lot size", { loggedIn: true })).toContain("0.001 BTC");

@@ -122,8 +122,8 @@ export function useTemplateLoader() {
   return { asset, expiry, list, setChosen, load, chainReady, rows, atm, rowsByExpiry, spot: spot?.price ?? null, seq: chain?.seq ?? -1, farSeq: nextChain?.seq ?? -1 };
 }
 
-/** Sketch with green / red fills and a dashed zero line (HC-TR-108). */
-function TemplateSketch({ tpl }: { tpl: StrategyTemplate }) {
+/** Sketch with green / red fills and a dashed zero line (HC-TR-108); the wizard's cards use it too (ADR-072). */
+export function TemplateSketch({ tpl }: { tpl: StrategyTemplate }) {
   const geo = templateSketchGeometry(tpl);
   const id = tpl.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const area = `3,${geo.zeroY} ${geo.points} 97,${geo.zeroY}`;
