@@ -1035,12 +1035,36 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     s.orders.push({ id: id("ord"), legId: leg.id, purpose: "exit", batchId: `exit:${leg.id}`, orderType: "market", limitPrice: null, clientOrderId: `hc-${leg.id}-x${s.orders.length + 1}`, venueOrderId: String(800000 + s.orders.length), symbol: leg.symbol, side: leg.side === "buy" ? "sell" : "buy", size: contractsOf({ ...leg, lots }, lotSizeOf(c, s.asset)), state: "closed", fillPrice: fill, error: null, attempts: 1, createdAt: at, updatedAt: at });
     return fill;
   };
+  // ADR-087: the batch previewed as one: every paper strategy's own check, then the wallet against the premiums together
+  const batchPreview = (c: Context, ids: string[]) => {
+    const acc = current(c)!;
+    const items = ids.map((sid) => {
+      const s = acc.strategies.find((x) => x.id === sid);
+      if (!s || s.status !== "paper") return { id: sid, name: s?.name ?? sid, paper: false, ok: false, reasons: [s ? `Already ${s.status}: skipped` : "Not one of your strategies: skipped"], legs: [], notional: "0.00", debit: "0.00" };
+      const p = livePreview(c, s, null);
+      const debit = p.legs.reduce((a, l) => a + (l.side === "buy" ? 1 : -1) * Number(l.notional), 0);
+      return { id: sid, name: s.name, paper: true, ok: p.ok, reasons: p.reasons, legs: p.legs, notional: p.notional, debit: toDecimal(debit, 2) };
+    });
+    const paper = items.filter((i) => i.paper);
+    const notional = paper.reduce((a, i) => a + Number(i.notional), 0);
+    const debit = paper.reduce((a, i) => a + Number(i.debit), 0);
+    const reasons: string[] = [];
+    const paid = paper.reduce((a, i) => a + Math.max(Number(i.debit), 0), 0); // like the route: premiums received are not netted
+    if (acc.credentials.length > 0 && paper.length > 1 && paid > 4000) reasons.push(`Available USD 4000 is below the premium these ${paper.length} trades pay together (${toDecimal(paid, 2)})`);
+    return { items, ok: reasons.length === 0 && paper.every((i) => i.ok), reasons, notional: toDecimal(notional, 2), debit: toDecimal(debit, 2), available: acc.credentials.length ? "4000" : null, availableAsset: acc.credentials.length ? "USD" : null, marginUsed: acc.credentials.length ? "12" : null, limits: { maxLegs: 10, maxNotionalUsd: 100_000, markBandPct: 5 } };
+  };
+  v1.post("/strategies/live/batch/preview", async (c) => {
+    const body = await c.req.json<{ ids: string[]; brokerId: string; accountId?: string }>();
+    return c.json(batchPreview(c, body.ids));
+  });
   v1.post("/strategies/live/batch", async (c) => {
     const acc = current(c)!;
     const body = await c.req.json<{ confirm?: string; ids: string[]; brokerId: string; accountId?: string; idempotencyKey: string }>();
     if (!isLiveWord(body.confirm)) return err(c, 400, "BAD_REQUEST", "Type LIVE to confirm a real order"); // ADR-078
     if (acc.tradingDisabled) return err(c, 409, "CONFLICT", "Live trading is disabled for this account");
     if (!acc.credentials.length) return err(c, 409, "CONFLICT", "Connect your exchange in Settings → API Settings to enable live trading");
+    const whole = batchPreview(c, body.ids);
+    if (!whole.ok) return err(c, 409, "CONFLICT", [...whole.items.filter((i) => i.paper && !i.ok).map((i) => `${i.name}: ${i.reasons.join(" · ")}`), ...whole.reasons].join(" · "));
     const placed: string[] = [];
     const skipped: string[] = [];
     let failed: { id: string; error: string } | null = null;
