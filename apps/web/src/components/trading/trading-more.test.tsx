@@ -135,6 +135,20 @@ describe("HC-TR-050..055 trading mode dialog branches", () => {
     expect(screen.getByTestId("trade-continue").hasAttribute("disabled")).toBe(false);
     expect(screen.getByTestId("trade-net").textContent).toContain("Debit");
   });
+
+  it("HC-SH-124 a data-only venue blocks Live with the plain reason, paper stays open (ADR-069)", async () => {
+    const legs = [{ id: "a", kind: "call" as const, side: "buy" as const, strike: "80000", expiry: "2026-09-25", symbol: "BTC-25SEP26-80000-C", lots: 10, price: "1200" }];
+    const brokers = [{ id: "b2", name: "Deribit paper", feePct: "0", gstPct: "0", feeCapPct: "0", scope: "USER" as const, venue: "deribit" as const }];
+    const note = "Deribit is data-only on HapieCoin: chains, analysis and paper trading. API keys and live orders are not available.";
+    renderWithProviders(<TradeModeDialog open title="x" asset="BTC" legs={legs} spot={80_000} lotSize="0.1" money={{ currency: "USD", rate: "1" }} brokers={brokers} accounts={[]} connected={true} dataOnly={note} priceModeLabel="Live (Deribit)" onContinue={() => undefined} onOpenChange={() => undefined} />);
+    expect(screen.getByTestId("trade-continue").hasAttribute("disabled")).toBe(false);
+    const u = userEvent.setup();
+    await u.click(screen.getByTestId("mode-live"));
+    expect(screen.getByTestId("trade-data-only").textContent).toContain(note);
+    expect(screen.queryByTestId("trade-not-connected")).toBeNull();
+    expect(screen.getByTestId("trade-continue").hasAttribute("disabled")).toBe(true);
+    expect(screen.getByTestId("trade-continue").getAttribute("title")).toBe(note);
+  });
 });
 
 describe("HC-TR-078 Details for drafts and archived strategies", () => {

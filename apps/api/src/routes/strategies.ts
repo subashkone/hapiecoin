@@ -5,6 +5,7 @@
  * exit premiums at the live mark, the server validates, records and audits them. No route here reaches a
  * venue; live trading (item 2) adds its own guarded routes.
  */
+import { getVenueCore } from "@hapiecoin/venues";
 import {
   AddLegsBody,
   AdjustBody,
@@ -84,7 +85,7 @@ export async function freshTotal(deps: AppDeps, strategyId: string, fallback: st
  */
 export async function bookExitFills(deps: AppDeps, strategy: StrategyRow, fills: readonly SyncedExitFill[], now: Date = new Date()): Promise<number> {
   if (fills.length === 0) return 0;
-  const lotSize = await lotSizeOf(deps, { id: strategy.userId, email: "", name: "", role: "user" }, strategy.asset);
+  const lotSize = await lotSizeOf(deps, { id: strategy.userId, email: "", name: "", role: "user" }, strategy.asset, strategy.venue);
   let batchPnl = "0";
   let booked = 0;
   const ruleBatches = new Set<string>();
@@ -99,7 +100,7 @@ export async function bookExitFills(deps: AppDeps, strategy: StrategyRow, fills:
     }
     // contracts back to lots: a partial exit books its part, anything at or above the leg closes it; without the
     // product the size cannot be read, so the fill is left for the trader (Reconcile) rather than booked whole
-    const product = await deps.trading.getProduct(f.symbol).catch(() => null);
+    const product = await Promise.resolve().then(() => deps.tradingFor(strategy.venue).getProduct(f.symbol)).catch(() => null); // ADR-070
     if (!product) {
       deps.logger.warn({ strategyId: strategy.id, legId: f.legId, symbol: f.symbol }, "exit fill not booked: product unknown");
       continue;
@@ -288,7 +289,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
   }
   const full = (row: StrategyRow) => loadStrategy(deps, row.id);
   const reload = (id: string) => loadStrategy(deps, id);
-  const lotSizeFor = (user: SessionUser, asset: string) => lotSizeOf(deps, user, asset);
+  const lotSizeFor = (user: SessionUser, asset: string, venue: string) => lotSizeOf(deps, user, asset, venue); // ADR-070: the strategy's venue
   /** The broker when the user may use it (global or their own), with the venue it trades on (ADR-065). */
   async function brokerVisible(user: SessionUser, brokerId: string): Promise<{ id: string; venue: string } | undefined> {
     const [b] = await db
@@ -360,6 +361,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
     async (c) => {
       const me = currentUser(c);
       const body = c.req.valid("json");
+      if (!(getVenueCore(body.venue).underlyings as readonly string[]).includes(body.asset)) throw errors.badRequest(`${body.asset} is not listed on ${getVenueCore(body.venue).label}`); // ADR-069
       const id = newId("strat");
       await db.insert(strategies).values({ id, userId: me.id, name: body.name, asset: body.asset, venue: body.venue, status: "draft", templateName: body.templateName });
       await db.insert(strategyLegs).values(body.legs.map((l, i) => legValues(id, l, i)));
@@ -510,7 +512,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
           throw errors.conflict(blocked);
         }
         const creds = await openCredential(deps, me, row.brokerId ?? "", undefined, row.accountId);
-        const plan = await planLegs(deps, inserted, await lotSizeFor(me, row.asset));
+        const plan = await planLegs(deps, inserted, await lotSizeFor(me, row.asset, row.venue), row.venue);
         if (plan.reasons.length) {
           await db.delete(strategyLegs).where(inArray(strategyLegs.id, inserted.map((l) => l.id)));
           throw errors.conflict(plan.reasons.join(" · "));
@@ -566,7 +568,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       if (open.length - closes + body.adds.length > MAX_OPEN_LEGS) throw errors.conflict(`Maximum ${MAX_OPEN_LEGS} active legs allowed per strategy`);
       const before = await full(row);
       const now = new Date();
-      const lotSize = await lotSizeFor(me, row.asset);
+      const lotSize = await lotSizeFor(me, row.asset, row.venue);
       const batchId = body.idempotencyKey ?? `adj:${newId("b")}`;
       const nextPos = legs.reduce((m, l) => Math.max(m, l.position), -1) + 1;
       let creds: Awaited<ReturnType<typeof openCredential>> | null = null;
@@ -607,7 +609,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
           // paper: the client price is the entry; live: the entry is the venue fill, set by the executor
           const inserted = await db.insert(strategyLegs).values(body.adds.map((l, i) => legValues(row.id, l, nextPos + i, { entryPrice: creds ? null : l.price, status: "open", isAdjustment: true, openedAt: creds ? null : now }))).returning();
           if (creds) {
-            const plan = await planLegs(deps, inserted, lotSize);
+            const plan = await planLegs(deps, inserted, lotSize, row.venue);
             if (plan.reasons.length) {
               // the venue changed between the checks and now: the legs go again, nothing was placed
               await db.delete(strategyLegs).where(inArray(strategyLegs.id, inserted.map((l) => l.id)));
@@ -660,7 +662,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const before = await full(row);
       const now = new Date();
       const exitPrice = row.status === "live" ? await placeExit(deps, await openCredential(deps, me, row.brokerId ?? "", undefined, row.accountId), me, row, leg, body.lots ?? leg.lots, `exit:${newId("b")}`) : body.exitPrice;
-      const realized = await closeLeg(row, leg, exitPrice, body.lots, await lotSizeFor(me, row.asset), now);
+      const realized = await closeLeg(row, leg, exitPrice, body.lots, await lotSizeFor(me, row.asset, row.venue), now);
       await touch(row.id, { realizedPnl: addDecimal(await freshPnl(row.id), realized) });
       const after = await reload(row.id);
       await auditFrom(c, db)({ action: "leg.close", target: `strategy:${row.id}:leg:${legId}`, before, after });
@@ -688,7 +690,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       if (legs.length === 0) throw errors.conflict("Nothing to square off");
       if (row.status !== "live") for (const l of legs) if (body.exits[l.id] === undefined) throw errors.badRequest(`Missing exit price for leg ${l.id}`);
       const before = await full(row);
-      const lotSize = await lotSizeFor(me, row.asset);
+      const lotSize = await lotSizeFor(me, row.asset, row.venue);
       const now = new Date();
       let realized = "0";
       const creds = row.status === "live" ? await openCredential(deps, me, row.brokerId ?? "", undefined, row.accountId) : null;
@@ -814,7 +816,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
         if (x.lots !== undefined && x.lots > l.lots) throw errors.badRequest(`${l.symbol}: ${x.lots} lots exceed the open ${l.lots}`);
       }
       const before = await full(row);
-      const lotSize = await lotSizeFor(me, row.asset);
+      const lotSize = await lotSizeFor(me, row.asset, row.venue);
       const now = new Date();
       // the exchange already closed these lots (a stop, a manual close, a liquidation): book them, send nothing
       const adjId = newId("adj");
@@ -865,7 +867,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const now = new Date();
       if (body.archive) {
         for (const l of open) if (body.exits[l.id] === undefined) throw errors.badRequest(`Missing exit price for leg ${l.id}`);
-        const lotSize = await lotSizeFor(me, row.asset);
+        const lotSize = await lotSizeFor(me, row.asset, row.venue);
         let realized = "0";
         for (const l of open) realized = addDecimal(realized, await closeLeg(row, l, body.exits[l.id]!, undefined, lotSize, now));
         await touch(row.id, { realizedPnl: addDecimal(await freshPnl(row.id), realized), status: "archived", closedAt: now, closeReason: "squared_off" });

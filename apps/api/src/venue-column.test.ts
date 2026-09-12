@@ -6,6 +6,9 @@ import { eq } from "drizzle-orm";
 import { brokers, instrumentMarks, ivSnapshots, strategies } from "./db/schema.js";
 import { SEED } from "./db/seed.js";
 import { ivHistory, markHistory } from "./market-history.js";
+import { DEFAULT_VENUE } from "@hapiecoin/venues";
+import { lotSizeFor } from "./routes/live-exec.js";
+import { type RulesTickSource, evaluateRules } from "./rules-engine.js";
 import { createTestApp, type TestApp } from "./test-support/harness.js";
 
 let t: TestApp;
@@ -100,6 +103,9 @@ describe("HC-SH-120 [API] the venue column", () => {
     expect(b.venue).toBe("deribit");
     const s = await json<Strategy>(await t.request("/v1/strategies", { cookie: alice, json: { name: "Deribit paper", asset: "BTC", venue: "deribit", legs: [{ ...CALL, symbol: "BTC-25SEP26-80000-C" }] } }));
     expect(s.venue).toBe("deribit");
+    const gold = await t.request("/v1/strategies", { cookie: alice, json: { name: "Gold on Deribit", asset: "XAUT", venue: "deribit", legs: [{ ...CALL, symbol: "XAUT-25SEP26-4000-C" }] } });
+    expect(gold.status).toBe(400); // HC-SH-124 / ADR-069: an asset the venue does not list is refused
+    expect((await json<{ message: string }>(gold)).message).toContain("not listed on Deribit");
     expect((await t.request(`/v1/strategies/${s.id}/start`, { cookie: alice, json: { mode: "paper", brokerId: b.id, entries: {} } })).status).toBe(200);
     const keys = await t.request("/v1/credentials", { cookie: alice, json: { brokerId: b.id, apiKey: "k", apiSecret: "s" } });
     expect(keys.status).toBe(409);
@@ -110,5 +116,46 @@ describe("HC-SH-120 [API] the venue column", () => {
     const place = await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: alice, json: { brokerId: b.id, idempotencyKey: "key-deribit-0001", expected: {} } });
     expect(place.status).toBe(409);
     expect((await json<{ message: string }>(place)).message).toContain("data-only");
+  });
+
+  it("HC-SH-125 lot defaults, the rules tick and the positions payload follow the strategy's / account's venue (ADR-070)", async () => {
+    const me = { id: "nobody", email: "", name: "", role: "user" as const };
+    expect(await lotSizeFor(t.deps, me, "BTC", DEFAULT_VENUE)).toBe("0.001"); // Delta India: the Settings lot, else the venue's default
+    expect(await lotSizeFor(t.deps, me, "BTC", "deribit")).toBe("0.1"); // Deribit lists 0.1 BTC per lot
+    expect(await lotSizeFor(t.deps, me, "XAUT", "deribit")).toBe("1"); // not listed there
+    // a Deribit paper strategy with a money stop: valued from the Deribit tick with the Deribit lot
+    const b = await json<Broker>(await t.request("/v1/brokers", { cookie: alice, json: { name: "Deribit paper stop", feePct: "0", gstPct: "0", feeCapPct: "0", venue: "deribit" } }));
+    const s = await json<Strategy>(await t.request("/v1/strategies", { cookie: alice, json: { name: "Deribit stop", asset: "BTC", venue: "deribit", legs: [{ ...CALL, symbol: "BTC-25SEP26-80000-C" }] } }));
+    expect((await t.request(`/v1/strategies/${s.id}/start`, { cookie: alice, json: { mode: "paper", brokerId: b.id, entries: { [s.legs[0]!.id]: "1200" } } })).status).toBe(200);
+    expect((await t.request(`/v1/strategies/${s.id}/rules`, { method: "PUT", cookie: alice, json: { rules: [{ kind: "stop", trigger: "money", value: "50" }] } })).status).toBe(200);
+    const seen: string[] = [];
+    const source: RulesTickSource = {
+      tick: (asset, venue) => {
+        seen.push(`${venue}:${asset}`);
+        return Promise.resolve(venue === "deribit" ? { marks: new Map([["BTC-25SEP26-80000-C", 600]]), spot: 80_000 } : null);
+      },
+    };
+    // bought at 1200, marked 600: (600 − 1200) × 10 lots × 0.1 = −600, past the 50 stop → fires; Delta's 0.001 lot would give −6 and nothing
+    const report = await evaluateRules(t.deps, source, () => Date.UTC(2026, 8, 11, 9), { backoffMs: 0 });
+    expect(report.fired).toHaveLength(1);
+    expect(seen).toEqual(["deribit:BTC"]);
+    const done = await json<Strategy>(await t.request(`/v1/strategies/${s.id}`, { cookie: alice }));
+    expect(done.status).toBe("archived");
+    expect(done.closeReason).toBe("stopped");
+    expect(done.legs[0]?.exitPrice).toBe("600");
+    // the positions payload names the account's venue, so the client parses the symbols with that codec
+    t.delta.accept("delta-key-125");
+    expect((await t.request("/v1/credentials", { cookie: alice, json: { brokerId: SEED.brokerId, apiKey: "delta-key-125", apiSecret: "s" } })).status).toBe(201);
+    const positions = await json<{ positions: unknown[]; venue?: string }>(await t.request(`/v1/strategies/live/positions?brokerId=${SEED.brokerId}`, { cookie: alice }));
+    expect(positions.venue).toBe("delta_india");
+    // a live preview of a data-only strategy never reaches an executor: with an unknown broker or a Delta one it answers reasons, not a 500
+    const draft = await json<Strategy>(await t.request("/v1/strategies", { cookie: alice, json: { name: "Deribit draft", asset: "BTC", venue: "deribit", legs: [{ ...CALL, symbol: "BTC-25SEP26-80000-C" }] } }));
+    const unknown = await json<LivePreview>(await t.request(`/v1/strategies/${draft.id}/live/preview`, { cookie: alice, json: { brokerId: "brk_nowhere" } }));
+    expect(unknown.ok).toBe(false);
+    expect(unknown.reasons.some((r) => r.includes("data-only"))).toBe(true);
+    expect(unknown.legs.every((l) => l.contracts === null)).toBe(true);
+    const crossed = await json<LivePreview>(await t.request(`/v1/strategies/${draft.id}/live/preview`, { cookie: alice, json: { brokerId: SEED.brokerId } }));
+    expect(crossed.ok).toBe(false);
+    expect(crossed.reasons.some((r) => r.includes("the strategy is on deribit"))).toBe(true);
   });
 });

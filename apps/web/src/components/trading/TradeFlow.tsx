@@ -23,7 +23,9 @@ import { isTemplateName } from "@/lib/strategy/templates";
 import { type TradeLegView, TradeModeDialog, netPremium } from "./TradeModeDialog";
 import { TradePreviewDialog, legLabel } from "./TradePreviewDialog";
 import { overlapsFor } from "@/lib/strategy/overlap";
-import { CURRENT_VENUE } from "@/lib/venue";
+import { DEFAULT_VENUE, getVenueCore } from "@hapiecoin/venues/core";
+import { dataOnly, dataOnlyNote } from "@/lib/venue";
+import { useVenueId } from "@/lib/useVenue";
 
 /** One-time import of the Phase 2 browser drafts into the API (ADR-024). */
 export function useImportLegacyDrafts() {
@@ -44,7 +46,7 @@ export function useImportLegacyDrafts() {
       for (const d of drafts) {
         if (d.legs.length === 0) continue;
         try {
-          await create.mutateAsync({ name: d.name, asset: d.asset, venue: CURRENT_VENUE, templateName: d.templateName, legs: d.legs.slice(0, 8).map(localLegToInput) });
+          await create.mutateAsync({ name: d.name, asset: d.asset, venue: DEFAULT_VENUE, templateName: d.templateName, legs: d.legs.slice(0, 8).map(localLegToInput) }); // Phase 2 browser drafts predate the venue choice: Delta India
           n += 1;
         } catch {
           /* keep going: a failed row is not worth losing the rest */
@@ -70,6 +72,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
   const { data: strategies } = useStrategies();
   const { data: brokers } = useBrokers();
   const { data: credential } = useCredential();
+  const workspaceVenue = useVenueId();
   const create = useCreateStrategy();
   const patch = usePatchStrategy();
   const start = useStartStrategy();
@@ -95,6 +98,9 @@ export function TradeFlow({ book }: { book: PaperBook }) {
   const target: Strategy | null = flow?.strategyId ? strategies?.find((s) => s.id === flow.strategyId) ?? null : null;
   const fromBuilder = flow !== null && flow.strategyId === null;
   const asset = target ? target.asset : builder.asset;
+  // the trade runs on the strategy's venue, else the workspace venue the Builder legs were built on (ADR-069)
+  const tradeVenue = target ? target.venue : workspaceVenue;
+  const venueBrokers = useMemo(() => (brokers ?? []).filter((b) => b.venue === tradeVenue), [brokers, tradeVenue]);
   const legs: TradeLegView[] = useMemo(() => {
     if (target) return openLegs(target).map((l) => ({ id: l.id, kind: l.kind, side: l.side, strike: l.strike, expiry: l.expiry, symbol: l.symbol, lots: l.lots, price: book.priceOf(target, l)?.toString() ?? l.price }));
     return builder.legs.map((l) => ({ id: l.id, kind: l.kind, side: l.side, strike: l.strike, expiry: l.expiry, symbol: l.symbol, lots: l.lots, price: builder.priceFor(l) }));
@@ -116,7 +122,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
     closeTrade();
     return null;
   }
-  const lotSize = target ? book.lotSizeOf(target.asset) : builder.lotSize ?? book.lotSizeOf(asset);
+  const lotSize = target ? book.lotSizeOf(target.asset, target.venue) : builder.lotSize ?? book.lotSizeOf(asset, workspaceVenue);
   const spot = target ? book.spotOf(target.asset) : builder.spot;
   const money = book.money;
   const broker = brokers?.find((b) => b.id === brokerId);
@@ -150,7 +156,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
   const ensureDraft = async (name?: string): Promise<string> => {
     if (target) return target.id;
     const finalName = (name ?? meta.name).trim();
-    const body = { name: finalName, asset: builder.asset, venue: CURRENT_VENUE, templateName: guessTemplateName(builder.legs), legs: builder.legs.map((l) => ({ ...localLegToInput(l), price: toDecimal(Number(builder.priceFor(l)), 4) })) };
+    const body = { name: finalName, asset: builder.asset, venue: workspaceVenue, templateName: guessTemplateName(builder.legs), legs: builder.legs.map((l) => ({ ...localLegToInput(l), price: toDecimal(Number(builder.priceFor(l)), 4) })) };
     if (meta.draftId) {
       await patch.mutateAsync({ id: meta.draftId, body: { name: body.name, templateName: body.templateName, legs: body.legs } });
       return meta.draftId;
@@ -170,7 +176,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
         const body = {
           name: finalName,
           asset: builder.asset,
-          venue: CURRENT_VENUE,
+          venue: workspaceVenue,
           templateName: guessTemplateName(builder.legs),
           legs: builder.legs.map((l) => ({ ...localLegToInput(l), price: toDecimal(Number(builder.priceFor(l)), 4) })),
         };
@@ -235,11 +241,12 @@ export function TradeFlow({ book }: { book: PaperBook }) {
         spot={spot}
         lotSize={lotSize}
         money={money}
-        brokers={brokers ?? []}
+        brokers={venueBrokers}
         accounts={credential?.items ?? []}
         initialAccountId={target?.accountId ?? null}
         connected={connected}
-        priceModeLabel={customPrices ? "Custom (entered prices)" : "Live (Delta Exchange)"}
+        dataOnly={dataOnly(tradeVenue) ? dataOnlyNote(tradeVenue) : null}
+        priceModeLabel={customPrices ? "Custom (entered prices)" : `Live (${getVenueCore(tradeVenue).label})`}
         lockLive={flow.mode === "live"}
         onContinue={(m, b, f, a) => {
           setMode(m);

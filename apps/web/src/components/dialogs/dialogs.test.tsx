@@ -216,6 +216,7 @@ describe("HC-SH-045..049 Exchange Management", () => {
   it("validateBrokerForm requires a name and normalises percentages", () => {
     expect(validateBrokerForm({ name: " ", feePct: "1", gstPct: "1", feeCapPct: "1" }).nameError).toBe("Exchange name is required");
     expect(validateBrokerForm({ name: "X", feePct: "abc", gstPct: "-1", feeCapPct: "10" }).body).toEqual({ name: "X", feePct: "0", gstPct: "0", feeCapPct: "10", venue: "delta_india" });
+    expect(validateBrokerForm({ name: "D", feePct: "0", gstPct: "0", feeCapPct: "0" }, "deribit").body?.venue).toBe("deribit"); // HC-SH-124: an exchange belongs to the venue it is created on
   });
   it("lists brokers, adds with validation, edits and deletes with confirmation", async () => {
     const u = userEvent.setup();

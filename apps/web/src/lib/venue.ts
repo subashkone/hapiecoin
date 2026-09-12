@@ -1,27 +1,58 @@
 /**
- * The venue the client works against (ADR-064). One seam: E20 step 2b replaces the constant with the
- * strategy's `venue` column, and every symbol, lot default, settlement hour and topic follows.
+ * The venue the client works against (ADR-064, ADR-069). The workspace store owns the choice (`UiState.venue`) and
+ * binds it here at load, so the symbol codec, the settlement hour, the calendar and every create body follow the
+ * header's venue chip. The store depends on this module (through the legs helpers), never the reverse.
  */
 import { type TradingCalendar, calendarFor } from "@hapiecoin/pricing";
-import { DEFAULT_VENUE, type ExerciseStyle, type VenueCore, getVenueCore, ownMarket } from "@hapiecoin/venues/core";
+import type { Underlying } from "@hapiecoin/schema";
+import { DEFAULT_VENUE, type ExerciseStyle, type VenueCore, type VenueId, defaultLotSizes, getVenueCore, ownMarket } from "@hapiecoin/venues/core";
 
-export const CURRENT_VENUE = DEFAULT_VENUE;
+let readVenue: () => VenueId = () => DEFAULT_VENUE;
 
-export function currentVenue(): VenueCore {
-  return getVenueCore(CURRENT_VENUE);
+/** The store registers its `venue` reader once at load; tests may bind their own. */
+export function bindVenueSource(read: () => VenueId): void {
+  readVenue = read;
 }
 
-/** The pricing calendar of an underlying on the current venue (ADR-066): act/365 at the venue's settlement hour. */
-export function venueCalendar(asset: string): TradingCalendar {
-  return calendarFor(currentVenue().calendar.settlementHourUtc(asset));
+/** The selected venue id (the default until the store binds). */
+export function currentVenueId(): VenueId {
+  return readVenue();
+}
+
+export function currentVenue(): VenueCore {
+  return getVenueCore(readVenue());
+}
+
+/** The pricing calendar of an underlying on `venue` (ADR-066): act/365 at the venue's settlement hour. */
+export function venueCalendar(asset: string, venue: string = readVenue()): TradingCalendar {
+  return calendarFor(getVenueCore(venue).calendar.settlementHourUtc(asset));
 }
 
 /** How the venue's options on `asset` exercise; European when the venue does not list the market. */
-export function exerciseStyleOf(asset: string): ExerciseStyle {
-  return ownMarket(currentVenue().markets, asset)?.exerciseStyle ?? "european";
+export function exerciseStyleOf(asset: string, venue: string = readVenue()): ExerciseStyle {
+  return ownMarket(getVenueCore(venue).markets, asset)?.exerciseStyle ?? "european";
 }
 
 /** The model caption for an exercise style: the engine prices European options, so American is flagged as an estimate. */
 export function exerciseLabel(style: ExerciseStyle): string {
   return style === "american" ? "American exercise (European-model estimate)" : "European exercise";
+}
+
+/**
+ * Units per lot for `asset` on `venue`: the trader's own lot sizes (Settings, kept per asset for the default venue)
+ * on the default venue, the venue's listed lot size elsewhere (ADR-069; 4c moves the setting itself per venue).
+ * Undefined only while the settings of the default venue are still loading, as before.
+ */
+export function lotSizeFor(venue: string, asset: Underlying, settings: { lotSizes: Record<Underlying, string> } | undefined): string | undefined {
+  return venue === DEFAULT_VENUE ? settings?.lotSizes[asset] : defaultLotSizes(getVenueCore(venue))[asset];
+}
+
+/** True when the venue serves data only: chains, analysis and paper trading, no API keys, no live orders (ADR-067). */
+export function dataOnly(venue: string): boolean {
+  return !getVenueCore(venue).capabilities.liveTrading;
+}
+
+/** The plain sentence the UI shows wherever a live path is refused on a data-only venue (mirrors the API's 409). */
+export function dataOnlyNote(venue: string): string {
+  return `${getVenueCore(venue).label} is data-only on HapieCoin: chains, analysis and paper trading. API keys and live orders are not available.`;
 }

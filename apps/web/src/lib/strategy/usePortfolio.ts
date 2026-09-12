@@ -78,7 +78,7 @@ export function usePortfolio(strategies: readonly Strategy[] | undefined, book: 
           const spot = book.spotOf(s.asset);
           if (spot === null) continue;
           const legs = openLegs(s).map((l) => serverLegToLocal(l, s.asset));
-          const priced = toPricingLegs(legs, book.lotSizeOf(s.asset), {
+          const priced = toPricingLegs(legs, book.lotSizeOf(s.asset, s.venue), {
             mark: (leg) => {
               const server = openLegs(s).find((l) => l.id === leg.id);
               const p = server ? book.priceOf(s, server) : null;
@@ -88,7 +88,7 @@ export function usePortfolio(strategies: readonly Strategy[] | undefined, book: 
           });
           if (priced.length === 0) continue;
           try {
-            const result = await client.analyze(priced, { spot, nowMs: Date.now(), defaultIv: 0.5, calendar: venueCalendar(s.asset), points: 81 });
+            const result = await client.analyze(priced, { spot, nowMs: Date.now(), defaultIv: 0.5, calendar: venueCalendar(s.asset, s.venue), points: 81 });
             if (id !== seq.current) return;
             out.set(s.id, { greeks: result.greeks, margin: marginEstimate(result), result });
           } catch {

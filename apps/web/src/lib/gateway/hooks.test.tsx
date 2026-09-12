@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildChain } from "../../../test/fixtures/chain";
 import { FakeSocket, makeGateway } from "../../../test/helpers";
+import { useUiStore } from "@/lib/store";
 import {
   GatewayProvider,
   useChain,
@@ -84,6 +85,20 @@ describe("[GATEWAY] React hooks", () => {
       FakeSocket.last().open();
     });
     expect(FakeSocket.last().sentFrames()).toContainEqual({ op: "sub", topics: [chainTopic("delta_india", "ETH", "2026-09-25")] });
+  });
+  it("HC-SH-124 useChain follows the workspace venue and takes a strategy's own venue (ADR-069)", () => {
+    const { wrapper } = wrapperFor();
+    useUiStore.setState({ venue: "deribit" });
+    try {
+      renderHook(() => [useChain("BTC", "2026-09-12"), useChain("ETH", "2026-09-25", "delta_india")] as const, { wrapper });
+      act(() => {
+        FakeSocket.last().open();
+      });
+      const subscribed = (FakeSocket.last().sentFrames() as { op: string; topics?: string[] }[]).filter((f) => f.op === "sub").flatMap((f) => f.topics ?? []);
+      expect(subscribed).toEqual(expect.arrayContaining([chainTopic("deribit", "BTC", "2026-09-12"), chainTopic("delta_india", "ETH", "2026-09-25")]));
+    } finally {
+      useUiStore.setState({ venue: "delta_india" });
+    }
   });
   it("useSpot / useLatency / useConnectionStatus follow the client", async () => {
     const gateway = makeGateway({ pingIntervalMs: 50, now: () => 5, setTimer: () => 0, clearTimer: () => {} });

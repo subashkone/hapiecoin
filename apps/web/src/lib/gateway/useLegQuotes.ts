@@ -3,7 +3,8 @@
 // distinct expiry, one frame-batched re-render per burst of ticks (HC-TR-018, HC-TR-019).
 import { type Quote, chainTopic } from "@hapiecoin/schema";
 import type { Underlying } from "@hapiecoin/schema";
-import { CURRENT_VENUE } from "@/lib/venue";
+import type { VenueId } from "@hapiecoin/venues/core";
+import { useVenueId } from "@/lib/useVenue";
 import { useEffect, useMemo, useState } from "react";
 import type { ChainState } from "@/lib/gateway/reducer";
 import type { StrategyLeg } from "@/lib/strategy/legs";
@@ -11,14 +12,17 @@ import { useGateway } from "./hooks";
 
 export type QuoteLookup = (leg: StrategyLeg) => Quote | undefined;
 
-export function useLegQuotes(asset: Underlying, legs: readonly StrategyLeg[]): { chains: Map<string, ChainState>; quoteFor: QuoteLookup; version: number } {
+/** Quotes for `legs` on the workspace venue, or on `venue` when the strategy names its own (ADR-069). */
+export function useLegQuotes(asset: Underlying, legs: readonly StrategyLeg[], venue?: VenueId): { chains: Map<string, ChainState>; quoteFor: QuoteLookup; version: number } {
   const gw = useGateway();
+  const current = useVenueId();
+  const v = venue ?? current;
   const expiries = useMemo(() => [...new Set(legs.filter((l) => l.kind !== "future").map((l) => l.expiry))].sort(), [legs]);
   const key = expiries.join(",");
   const [version, setVersion] = useState(0);
   useEffect(() => {
     if (expiries.length === 0) return;
-    const topics = expiries.map((e) => chainTopic(CURRENT_VENUE, asset, e));
+    const topics = expiries.map((e) => chainTopic(v, asset, e));
     const offs = topics.map((t) => gw.subscribe(t));
     let frame: number | null = null;
     const bump = () => {
@@ -38,17 +42,17 @@ export function useLegQuotes(asset: Underlying, legs: readonly StrategyLeg[]): {
       offChain();
       if (frame !== null && typeof cancelAnimationFrame === "function") cancelAnimationFrame(frame);
     };
-    // `key` is the sorted expiry list; `asset` and `gw` complete the subscription identity.
-  }, [gw, asset, key]);
+    // `key` is the sorted expiry list; `v`, `asset` and `gw` complete the subscription identity.
+  }, [gw, v, asset, key]);
   const chains = useMemo(() => {
     const m = new Map<string, ChainState>();
     for (const e of expiries) {
-      const c = gw.getChain(chainTopic(CURRENT_VENUE, asset, e));
+      const c = gw.getChain(chainTopic(v, asset, e));
       if (c) m.set(e, c);
     }
     return m;
     // `version` is the change counter for the gateway state read here.
-  }, [gw, asset, key, version]);
+  }, [gw, v, asset, key, version]);
   const quoteFor: QuoteLookup = useMemo(
     () => (leg) => {
       if (leg.kind === "future") return undefined;

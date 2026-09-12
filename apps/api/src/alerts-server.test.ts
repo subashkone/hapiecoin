@@ -61,6 +61,17 @@ describe("ADR-057 evaluateAlerts", () => {
     expect((await evaluateAlerts(t.deps, () => T0 + 303_000)).fired).toEqual([price.id]);
   });
 
+  it("HC-SH-125 values a Deribit paper strategy with the Deribit lot from Deribit marks (ADR-070)", async () => {
+    const broker = await json<{ id: string }>(await t.request("/v1/brokers", { cookie, json: { name: "Deribit alerts", feePct: "0", gstPct: "0", feeCapPct: "0", venue: "deribit" } }));
+    const s = await json<Strategy>(await t.request("/v1/strategies", { cookie, json: { name: "Deribit P&L", asset: "BTC", venue: "deribit", templateName: "Custom", legs: [{ ...CALL, symbol: "BTC-25SEP26-80000-C" }] } }));
+    expect((await json<Strategy>(await t.request(`/v1/strategies/${s.id}/start`, { cookie, json: { mode: "paper", brokerId: broker.id, entries: { [s.legs[0]!.id]: "1200" } } }))).status).toBe("paper");
+    const at = T0 + 7_200_000;
+    await t.db.insert(instrumentMarks).values({ asset: "BTC", venue: "delta_india", symbol: "BTC-25SEP26-80000-C", ts: new Date(at), mark: "1300", markIv: "0.5" });
+    expect(await strategyPnlFromMarks(t.deps, s.id, at)).toBeNull(); // a Delta row never values a Deribit leg
+    await t.db.insert(instrumentMarks).values({ asset: "BTC", venue: "deribit", symbol: "BTC-25SEP26-80000-C", ts: new Date(at), mark: "1300", markIv: "0.5" });
+    expect(await strategyPnlFromMarks(t.deps, s.id, at)).toBeCloseTo(100, 9); // +100 × 10 lots × 0.1 BTC
+  });
+
   it("values a paper strategy from the latest marks and fires its P&L alert; a leg without a fresh mark is skipped", async () => {
     const s = await json<Strategy>(await t.request("/v1/strategies", { cookie, json: { name: "Server RR", asset: "BTC", templateName: "Custom", legs: [CALL, PUT] } }));
     const started = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/start`, { cookie, json: { mode: "paper", brokerId: SEED.brokerId, entries: { [s.legs[0]!.id]: "1200", [s.legs[1]!.id]: "900" } } }));

@@ -23,13 +23,15 @@ import { startRulesEngine } from "./rules-engine.js";
 import { evaluateAlerts } from "./alerts-evaluate.js";
 import { TelegramBotClient } from "./telegram.js";
 import { startTelegramLinker } from "./routes/telegram.js";
-import { DEFAULT_VENUE, getVenue, tradingClientOf } from "@hapiecoin/venues";
+import { DEFAULT_VENUE } from "@hapiecoin/venues";
+import { createVenueClients } from "./venues.js";
 import { MemoryAnalyticsReader, RedisAnalyticsReader } from "./analytics.js";
 
 loadRepoEnv(import.meta.url);
 const config = loadConfig();
-// ADR-063: every venue-specific client and mapping comes from the port; the venue column arrives in E20 step 2
-const venue = getVenue(DEFAULT_VENUE);
+// ADR-063 / ADR-070: every venue-specific client comes from the port; one trading client per venue that trades, one public
+// REST client, snapshotter source, settlement spot and rules tick per venue in API_VENUES
+const clients = createVenueClients(config);
 const logger = createLogger({ level: config.logLevel, base: { env: config.nodeEnv } });
 
 const handle = await createDb({ databaseUrl: config.databaseUrl, pgliteDataDir: config.pgliteDataDir });
@@ -69,7 +71,8 @@ const deps: AppDeps = {
   logger,
   vault: createKeyring(config.credentialsEncKey, config.credentialsPrevKeys),
   delta: new DeltaPrivateClientImpl({ baseUrl: config.deltaTradingRestUrl, nodeEnv: config.nodeEnv }),
-  trading: tradingClientOf(venue, { baseUrl: config.deltaTradingRestUrl, nodeEnv: config.nodeEnv }),
+  trading: clients.tradingFor(DEFAULT_VENUE),
+  tradingFor: (venue) => clients.tradingFor(venue),
   authOptions: authOptionsPublic(config),
   analytics: redis ? new RedisAnalyticsReader(redis) : new MemoryAnalyticsReader(),
   // ADR-057: the bot token never leaves the client; without it the telegram channel is not offered
@@ -79,31 +82,31 @@ const app = createApp(deps);
 
 // ADR-062: the background jobs run in exactly one API replica (Redis leader lease; the memory lock without Redis);
 // tests drive reconcilePending, the snapshotter and the linker directly, so none start under test
-const publicRest = venue.rest({ baseUrl: config.deltaRestUrl });
 const starters: JobStarter[] = [];
 // ADR-029: pending venue orders are reconciled in the background
 starters.push({ name: "reconciler", start: () => startReconciler(deps, config.trading.reconcileMs) });
-// ADR-056: the IV history snapshotter reads public option tickers (no key) every IV_SNAPSHOT_MS; 0 turns it off
+// ADR-056: the IV history snapshotter reads public option tickers (no key) every IV_SNAPSHOT_MS; 0 turns it off.
+// ADR-070: one snapshotter per venue in API_VENUES; the first venue's snapshotter evaluates the armed alerts once per interval
 if (config.ivSnapshotMs !== 0)
-  starters.push({
-    name: "iv-snapshotter",
-    start: () =>
-      startIvSnapshotter(
-        deps,
-        {
-          venue: venue.id, // ADR-065: every snapshot row names the venue it came from
-          // the venue shapes cross the schema adapter (GAPS #8); a ticker without a spot carries "0" and is skipped as a spot source
-          products: async () => (await publicRest.products()).filter(venue.schema.isSupported).map(venue.schema.instrument),
-          tickers: async (u) => (await publicRest.tickers(u)).map((q) => venue.schema.quote(q, "0")),
-        },
-        config.ivSnapshotMs,
-        // ADR-057: every snapshot evaluates the armed alerts server-side, so they fire with the app closed
-        async () => {
-          const report = await evaluateAlerts(deps);
-          if (report.fired.length) logger.info({ fired: report.fired, checked: report.checked }, "alerts fired server-side");
-        },
-      ),
-  });
+  clients.sources.forEach((source, i) =>
+    starters.push({
+      name: `iv-snapshotter:${source.venue ?? DEFAULT_VENUE}`,
+      start: () =>
+        startIvSnapshotter(
+          deps,
+          source, // ADR-065: every snapshot row names the venue it came from
+          config.ivSnapshotMs,
+          // ADR-057: every snapshot evaluates the armed alerts server-side, so they fire with the app closed; the
+          // alerts are venue-scoped and read the tables, so one evaluation per interval (after the first venue) is enough
+          i === 0
+            ? async () => {
+                const report = await evaluateAlerts(deps);
+                if (report.fired.length) logger.info({ fired: report.fired, checked: report.checked }, "alerts fired server-side");
+              }
+            : undefined,
+        ),
+    }),
+  );
 // ADR-059 §2.4: legs past their expiry settle at intrinsic value from the spot at the settlement instant; 0 turns it
 // off. Registered like the snapshotter so only the leader replica books settlements (ADR-062).
 if (config.settlementMs !== 0)
@@ -112,31 +115,16 @@ if (config.settlementMs !== 0)
     start: () =>
       startSettler(
         deps,
-        snapshotSpotSource(deps, async (u) => {
-          const q = (await publicRest.tickers(u)).map((x) => venue.schema.quote(x, "0")).find((x) => Number(x.spot) > 0);
-          return q ? Number(q.spot) : null;
-        }),
+        snapshotSpotSource(deps, (u, v) => clients.liveSpot(u, v)), // ADR-070: the strategy's venue names the spot
         config.settlementMs,
       ),
   });
 // ADR-059 §2.3: exit rules judged from the venue's public marks and spot every RULES_TICK_MS (0 turns it off); one
-// request per underlying per tick, options and the perpetual together, keyed by venue symbol; spot from the first
-// ticker that carries one
+// request per underlying per venue per tick (ADR-070), options and the perpetual together, keyed by venue symbol
 if (config.rulesTickMs !== 0)
   starters.push({
     name: "rules",
-    start: () =>
-      startRulesEngine(
-        deps,
-        {
-          tick: async (u) => {
-            const quotes = (await publicRest.tickers(u, { perpetuals: true })).map((q) => venue.schema.quote(q, "0")); // through the venue port (ADR-063), like the snapshotter
-            const spot = quotes.map((q) => Number(q.spot)).find((x) => x > 0) ?? null;
-            return { marks: new Map(quotes.map((sq) => [sq.instrumentId.slice(sq.instrumentId.indexOf(":") + 1), Number(sq.mark)])), spot };
-          },
-        },
-        config.rulesTickMs,
-      ),
+    start: () => startRulesEngine(deps, { tick: (u, v) => clients.tick(u, v) }, config.rulesTickMs),
   });
 // ADR-057: link Telegram chats through the bot's /start messages (long-polled; no public URL needed)
 if (deps.telegram !== null) starters.push({ name: "telegram-linker", start: () => startTelegramLinker(deps) });

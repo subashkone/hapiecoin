@@ -96,9 +96,9 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
   const active = s ? s.status === "paper" || s.status === "live" : false;
   const open = s ? openLegs(s) : [];
   const payLegs = s ? (open.length ? open : s.legs) : [];
-  const pricingLegs = useMemo(() => (s ? toPricingLegs(payLegs.map((l) => serverLegToLocal(l, s.asset)), book.lotSizeOf(s.asset), { spot: undefined }) : []), [s, payLegs, book]);
+  const pricingLegs = useMemo(() => (s ? toPricingLegs(payLegs.map((l) => serverLegToLocal(l, s.asset)), book.lotSizeOf(s.asset, s.venue), { spot: undefined }) : []), [s, payLegs, book]);
   const spot = s ? book.spotOf(s.asset) : null;
-  const analysis = useAnalysis(pricingLegs, s && spot !== null && pricingLegs.length ? { spot, nowMs: Date.now(), calendar: venueCalendar(s.asset), defaultIv: 0.5 } : null);
+  const analysis = useAnalysis(pricingLegs, s && spot !== null && pricingLegs.length ? { spot, nowMs: Date.now(), calendar: venueCalendar(s.asset, s.venue), defaultIv: 0.5 } : null);
   if (!s) return null;
   const closed = s.legs.filter((l) => l.status === "squared_off");
   const shown = tab === "active" ? open : closed;
@@ -113,15 +113,18 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
   // the adjustment workbench (ADR-044): the pane follows this strategy, the left pane becomes the workbench
   const adjustHere = () => {
     setWorkspaceTab(s.status === "live" ? "live" : "paper");
-    openAdjust(s.id);
+    openAdjust(s.id, false, s.venue);
   };
   const loadInBuilder = () => {
-    setAsset(s.asset);
-    setLegs(s.asset, s.legs.filter((l) => l.status === "open").map((l) => serverLegToLocal(l, s.asset)));
-    setMeta(s.asset, { name: s.name, draftId: s.status === "draft" ? s.id : null });
-    setWorkspaceTab("builder");
-    close();
-    toast("Loaded", { description: `${s.name} loaded into the Builder` });
+    // the Builder works on the strategy's venue (ADR-069): the switch asks first when legs of another venue exist
+    useUiStore.getState().requestVenue(s.venue, () => {
+      setAsset(s.asset);
+      setLegs(s.asset, s.legs.filter((l) => l.status === "open").map((l) => serverLegToLocal(l, s.asset)));
+      setMeta(s.asset, { name: s.name, draftId: s.status === "draft" ? s.id : null });
+      setWorkspaceTab("builder");
+      close();
+      toast("Loaded", { description: `${s.name} loaded into the Builder` });
+    });
   };
   const squareOffAll = () =>
     closeAll.mutate(
@@ -300,7 +303,7 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {sqLeg ? <SquareOffDialog open={sqLeg !== null} onOpenChange={(o) => !o && setSqLeg(null)} strategy={s} leg={sqLeg} current={book.priceOf(s, sqLeg)} lotSize={book.lotSizeOf(s.asset)} money={money} /> : null}
+      {sqLeg ? <SquareOffDialog open={sqLeg !== null} onOpenChange={(o) => !o && setSqLeg(null)} strategy={s} leg={sqLeg} current={book.priceOf(s, sqLeg)} lotSize={book.lotSizeOf(s.asset, s.venue)} money={money} /> : null}
       <PartialExitDialog open={partial} onOpenChange={setPartial} strategy={s} priceOf={(l) => book.priceOf(s, l)} />
       <StopPaperDialog open={stop} onOpenChange={setStop} strategy={s} priceOf={(l) => book.priceOf(s, l)} total={pnl?.total ?? 0} money={money} live={feedLive} onDone={(next) => { if (next.status !== "paper" && next.status !== "live") close(); }} />
     </>

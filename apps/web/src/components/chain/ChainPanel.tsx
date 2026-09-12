@@ -1,15 +1,15 @@
 "use client";
 // Live chain panel (HC-WS-107): expiry chips from the gateway / env, subscribe to
-// chain:delta_india:<asset>:<expiry>, render snap + q frames with designed empty, stale and error states.
+// chain:<venue>:<asset>:<expiry> (the header's venue chip, ADR-069), render snap + q frames with designed empty, stale and error states.
 // The table itself (layout, range, keyboard) is ChainTable; this panel owns expiry selection and the states.
 import { Button, EmptyState, cn, toast, useDensity } from "@hapiecoin/ui";
 import { type Quote, chainTopic } from "@hapiecoin/schema";
-import { CURRENT_VENUE } from "@/lib/venue";
-import { useQuery } from "@tanstack/react-query";
+import { lotSizeFor } from "@/lib/venue";
+import { useVenueId } from "@/lib/useVenue";
 import { useCallback, useEffect, useMemo } from "react";
 import { useSettings } from "@/lib/api/queries";
-import { discoverExpiries, nearestExpiry } from "@/lib/chain/expiries";
-import { publicEnv } from "@/lib/env";
+import { nearestExpiry } from "@/lib/chain/expiries";
+import { useExpiriesQuery } from "@/lib/chain/useExpiries";
 import { daysToExpiry, fmtExpiry, fmtPrice } from "@/lib/format";
 import { useConnectionStatus, useGateway, useSpot, useTopic } from "@/lib/gateway/hooks";
 import { useUiStore } from "@/lib/store";
@@ -22,15 +22,11 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
   const asset = useUiStore((s) => s.asset);
   const selected = useUiStore((s) => s.expiry[s.asset] ?? null);
   const setExpiry = useUiStore((s) => s.setExpiry);
-  const env = publicEnv();
-  const expiries = useQuery({
-    queryKey: ["expiries", asset],
-    queryFn: () => discoverExpiries(asset, { gatewayWsUrl: env.NEXT_PUBLIC_GATEWAY_URL, defaultsCsv: env.NEXT_PUBLIC_DEFAULT_EXPIRIES }),
-    staleTime: 5 * 60_000,
-  });
+  const venue = useVenueId();
+  const expiries = useExpiriesQuery(asset);
   const list = expiries.data?.expiries ?? [];
   const expiry = selected && list.includes(selected) ? selected : nearestExpiry(list);
-  const topic = expiry ? chainTopic(CURRENT_VENUE, asset, expiry) : null;
+  const topic = expiry ? chainTopic(venue, asset, expiry) : null;
   const chain = useTopic(topic);
   const spot = useSpot(asset);
   const status = useConnectionStatus();
@@ -50,7 +46,7 @@ export function ChainPanel({ height = 520 }: { height?: number }) {
   const addLeg = useUiStore((s) => s.addLeg);
   const openOptionDetail = useUiStore((s) => s.openOptionDetail);
   const { data: settings } = useSettings();
-  const lotSize = settings?.lotSizes[asset];
+  const lotSize = lotSizeFor(venue, asset, settings);
   const { density } = useDensity(); // HC-WS-066: 36 px rows comfortable, 28 px compact
   const rowHeight = density === "compact" ? 28 : 36;
 

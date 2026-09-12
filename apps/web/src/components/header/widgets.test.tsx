@@ -3,13 +3,14 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { FakeSocket, installMockFetch, makeGateway, renderWithProviders, type MockFetch } from "../../../test/helpers";
 import { useUiStore } from "@/lib/store";
+import { VenueSwitchDialog } from "./VenueSwitchDialog";
 import { CurrencyToggle, AssetSwitch, ExchangeChip, FeedStatus, FuturesPrice } from "./widgets";
 
 let mock: MockFetch;
 beforeEach(() => {
   mock = installMockFetch();
   FakeSocket.reset();
-  useUiStore.setState({ asset: "BTC", expiry: {}, feedPaused: false, dialog: null, dialogsTouched: false, paletteOpen: false });
+  useUiStore.setState({ venue: "delta_india", asset: "BTC", expiry: {}, feedPaused: false, dialog: null, dialogsTouched: false, paletteOpen: false, legs: { BTC: [], ETH: [], XAUT: [] } });
 });
 afterEach(() => mock.restore());
 
@@ -21,7 +22,8 @@ describe("HC-SH-003 asset switch", () => {
     expect(useUiStore.getState().asset).toBe("ETH");
     expect(screen.getByRole("tab", { name: "ETH" }).getAttribute("aria-selected")).toBe("true");
     await userEvent.setup().click(screen.getByTestId("asset-ETH")); // no-op
-    expect(screen.getByText("Delta India")).toBeTruthy();
+    expect(screen.getByTestId("venue-delta_india").textContent).toBe("Delta India"); // the venue chip names the venue (short label; the title carries the full one)
+    expect(screen.getByTestId("venue-delta_india").getAttribute("title")).toBe("Delta Exchange India");
   });
 });
 
@@ -117,5 +119,39 @@ describe("HC-SH-007 / HC-SH-008 exchange chip", () => {
     await userEvent.setup().click(screen.getByTestId("currency-toggle"));
     await waitFor(() => expect(screen.getByTestId("currency-toggle").dataset["currency"]).toBe("INR"));
     expect(screen.getByTestId("currency-toggle").textContent).toContain("INR");
+  });
+});
+
+describe("HC-SH-124 venue chip (ADR-069)", () => {
+  it("switches the workspace venue, greys the assets the venue does not list, and asks before clearing Builder legs", async () => {
+    const u = userEvent.setup();
+    useUiStore.setState({ asset: "XAUT", venueSwitch: null });
+    renderWithProviders(
+      <>
+        <AssetSwitch />
+        <VenueSwitchDialog />
+      </>,
+    );
+    expect(screen.getByTestId("header-venue").dataset["venue"]).toBe("delta_india");
+    await u.click(screen.getByTestId("venue-deribit"));
+    expect(useUiStore.getState().venue).toBe("deribit");
+    expect(useUiStore.getState().asset).toBe("BTC"); // XAUT is not listed on Deribit
+    expect(screen.getByTestId("asset-XAUT").getAttribute("aria-disabled")).toBe("true");
+    expect(screen.getByTestId("asset-XAUT").getAttribute("title")).toContain("not listed on Deribit");
+    await u.click(screen.getByTestId("asset-XAUT")); // a no-op
+    expect(useUiStore.getState().asset).toBe("BTC");
+    // with legs in the Builder the switch asks first
+    expect(useUiStore.getState().addLeg({ asset: "BTC", kind: "call", side: "buy", strike: "70000", expiry: "2026-09-12", lots: 1, price: "800", iv: 0.5 }).ok).toBe(true);
+    await u.click(screen.getByTestId("venue-delta_india"));
+    expect(screen.getByTestId("venue-switch-confirm")).toBeTruthy();
+    await u.click(screen.getByTestId("venue-switch-keep"));
+    expect(useUiStore.getState().venue).toBe("deribit");
+    expect(useUiStore.getState().legs.BTC).toHaveLength(1);
+    await u.click(screen.getByTestId("venue-delta_india"));
+    await u.click(screen.getByTestId("venue-switch-go"));
+    expect(useUiStore.getState().venue).toBe("delta_india");
+    expect(useUiStore.getState().legs.BTC).toEqual([]);
+    await u.click(screen.getByTestId("venue-delta_india")); // the same venue: nothing happens
+    expect(screen.queryByTestId("venue-switch-confirm")).toBeNull();
   });
 });

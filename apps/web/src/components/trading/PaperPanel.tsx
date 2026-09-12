@@ -16,6 +16,7 @@ import { ReconcileDialog, driftTitle } from "./ReconcileDialog";
 import { type DriftRow, driftFor, isSettling } from "@/lib/strategy/drift";
 import { fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
+import { dataOnly } from "@/lib/venue";
 import { fmtDate, fmtExpiry } from "@/lib/format";
 import { settlementHourUtc } from "@/lib/pricing/legs";
 import { type Lifecycle, dayPnl, daysLeft, daysOf, expiryOf, fmtLeg, lifecycleOf, openLegs, pnlSeries } from "@/lib/strategy/paper";
@@ -178,6 +179,9 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   // HC-TR-175 (ADR-068): every live strategy is compared with the positions of the account it trades through, one
   // read per distinct account; a strategy from before accounts on an exchange with several keys names none and is
   // left out of the check (its card says so)
+  // stable inputs for the batch dialog: its selection effect keys on these arrays, so a fresh filter per render would reset what the trader unticked (ADR-069 fix)
+  const batchStrategies = useMemo(() => all.filter((s) => !dataOnly(s.venue)), [all]);
+  const batchBrokers = useMemo(() => (brokers ?? []).filter((b) => !dataOnly(b.venue)), [brokers]);
   const refs = useMemo(() => {
     const m = new Map<string, AccountRef>();
     if (kind === "live") for (const s of all) {
@@ -291,7 +295,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
               const open = openLegs(s);
               const lc = lifecycleOf(s);
               const ex = expiryOf(s);
-              const left = ex ? daysLeft(ex.nearest, Date.now(), settlementHourUtc(s.asset)) : null;
+              const left = ex ? daysLeft(ex.nearest, Date.now(), settlementHourUtc(s.asset, s.venue)) : null;
               const settleMs = ex ? settlementMsOf(ex.nearest, s.asset) : null;
               const expired = lc !== "closed" && settleMs !== null && settleMs <= Date.now();
               const settling = expired && isSettling(ex!.nearest, s.asset, Date.now());
@@ -313,7 +317,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                       followStrategy(s.id);
                     } else if ((e.key === "a" || e.key === "A") && open.length > 0) {
                       e.preventDefault();
-                      openAdjust(s.id); // HC-TR-152: A opens the workbench on the focused card
+                      openAdjust(s.id, false, s.venue); // HC-TR-152: A opens the workbench on the focused card
                     }
                   }}
                   data-testid={`${kind}-card`}
@@ -373,7 +377,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                         Re-enter
                       </Button>
                     ) : null}
-                    {lc !== "closed" ? <Button size="sm" variant="outline" disabled={open.length === 0} title={open.length ? "Adjust: trim, close or add legs with the combined payoff (A)" : "No open legs"} onClick={() => openAdjust(s.id)} data-testid="card-adjust">Adjust</Button> : null}
+                    {lc !== "closed" ? <Button size="sm" variant="outline" disabled={open.length === 0} title={open.length ? "Adjust: trim, close or add legs with the combined payoff (A)" : "No open legs"} onClick={() => openAdjust(s.id, false, s.venue)} data-testid="card-adjust">Adjust</Button> : null}
                     {lc !== "closed" && open.length ? <Button size="sm" variant="outline" title="Exit rules run by the server: stop / target, leg stop, spot level, time exit (ADR-059 §2.3)" onClick={() => openRules(s.id)} data-testid="card-protect">{rulesLine(s.rules, money, s.legs) ? "Protect…" : "Protect"}</Button> : null}
                     {lc !== "closed" ? <Button size="sm" variant="outline" title="Alert me when this strategy's P&L crosses a level" onClick={() => openAlerts({ kind: "pnl", strategyId: s.id, asset: s.asset })} data-testid="card-alert">Set alert</Button> : null}
                     {lc === "closed" ? null : kind === "paper" ? (
@@ -412,7 +416,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
           </div>
         )}
       </div>
-      {kind === "paper" ? <BatchLiveDialog open={batch} onOpenChange={setBatch} strategies={all} brokers={brokers ?? []} accounts={accounts} connected={connected} money={money} totalOf={(s) => book.pnlOf(s).total} /> : null}
+      {kind === "paper" ? <BatchLiveDialog open={batch} onOpenChange={setBatch} strategies={batchStrategies} brokers={batchBrokers} accounts={accounts} connected={connected} money={money} totalOf={(s) => book.pnlOf(s).total} /> : null}
       <ReconcileDialog strategy={reconciling} rows={reconciling ? (drift.get(reconciling.id) ?? []) : []} markOf={venueMarkOf} onOpenChange={(o) => { if (!o) { setReconcileId(null); void refetch(); void wallet.refetch(); } }} />
       {stopping ? <StopPaperDialog open={true} onOpenChange={(o) => !o && setStopId(null)} strategy={stopping} priceOf={(l) => book.priceOf(stopping, l)} total={book.pnlOf(stopping).total} money={money} live={feedLive} onDone={() => void qc.invalidateQueries({ queryKey: strategyKeys.all })} /> : null}
     </section>

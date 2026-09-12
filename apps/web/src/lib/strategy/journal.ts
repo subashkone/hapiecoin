@@ -41,11 +41,11 @@ export interface ClosedLeg {
   closedAt: string | null;
 }
 /** Squared-off legs of strategies that are still active, newest close first (their P&L is already realised). */
-export function closedLegs(all: readonly Strategy[], lotSizeOf: (asset: Strategy["asset"]) => string): ClosedLeg[] {
+export function closedLegs(all: readonly Strategy[], lotSizeOf: (asset: Strategy["asset"], venue: Strategy["venue"]) => string): ClosedLeg[] {
   const out: ClosedLeg[] = [];
   for (const s of all) {
     if (s.status !== "paper" && s.status !== "live") continue;
-    for (const leg of s.legs) if (leg.status === "squared_off") out.push({ s, leg, pnl: legPnl(leg, null, lotSizeOf(s.asset)).pnl, closedAt: leg.closedAt });
+    for (const leg of s.legs) if (leg.status === "squared_off") out.push({ s, leg, pnl: legPnl(leg, null, lotSizeOf(s.asset, s.venue)).pnl, closedAt: leg.closedAt });
   }
   return out.sort((a, b) => (b.closedAt ? new Date(b.closedAt).getTime() : 0) - (a.closedAt ? new Date(a.closedAt).getTime() : 0));
 }

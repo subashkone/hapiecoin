@@ -4,12 +4,11 @@
 // says what each cell shows: a pick, a held position (lots now → after) or nothing. With `keyboard` on,
 // the table takes focus: ↑ ↓ (j k) move, b / s pick the call, B / S the put, Enter reviews, Esc clears.
 import { cn } from "@hapiecoin/ui";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import type { Underlying } from "@hapiecoin/schema";
-import { discoverExpiries, nearestExpiry } from "@/lib/chain/expiries";
+import { nearestExpiry } from "@/lib/chain/expiries";
+import { useExpiriesQuery } from "@/lib/chain/useExpiries";
 import { maxOpenInterest, oiBarPercent, sliceAroundAtm } from "@/lib/chain/range";
-import { publicEnv } from "@/lib/env";
 import { daysToExpiry, fmtExpiry, fmtIv, fmtOi, fmtPrice, fmtStrike, fmtDelta } from "@/lib/format";
 import { useChain, useSpot } from "@/lib/gateway/hooks";
 import type { ChainState } from "@/lib/gateway/reducer";
@@ -29,13 +28,7 @@ export interface ChainCellState {
 
 /** Expiries, the chosen expiry and the chain window around ATM for one asset; `open` gates the subscriptions. */
 export function usePickerChain(asset: Underlying, open: boolean, preferredExpiry: string | null | undefined) {
-  const env = publicEnv();
-  const expiries = useQuery({
-    queryKey: ["expiries", asset],
-    queryFn: () => discoverExpiries(asset, { gatewayWsUrl: env.NEXT_PUBLIC_GATEWAY_URL, defaultsCsv: env.NEXT_PUBLIC_DEFAULT_EXPIRIES }),
-    staleTime: 5 * 60_000,
-    enabled: open,
-  });
+  const expiries = useExpiriesQuery(asset, { enabled: open }); // keyed by venue (ADR-069)
   const list = useMemo(() => expiries.data?.expiries ?? [], [expiries.data]);
   const [expiry, setExpiry] = useState<string | null>(null);
   useEffect(() => {

@@ -24,7 +24,8 @@ export interface RulesTick {
   spot: number | null;
 }
 export interface RulesTickSource {
-  tick(asset: Underlying): Promise<RulesTick>;
+  /** The marks and spot of `asset` on `venue` (ADR-070); null when this API reads no market data for that venue (its rules wait). */
+  tick(asset: Underlying, venue: string): Promise<RulesTick | null>;
 }
 
 export interface RulesReport {
@@ -63,17 +64,19 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
     byStrategy.set(strategy.id, e);
   }
   const out: RulesReport = { checked: 0, fired: [], skipped: 0 };
-  // one ticker read per underlying per pass; a read that failed is remembered so the outage is logged once, not per strategy
+  // one ticker read per underlying per venue per pass; a read that failed is remembered so the outage is logged once, not per strategy
   const tickCache = new Map<string, RulesTick | null>();
-  const tickFor = async (asset: Underlying): Promise<RulesTick | null> => {
-    if (tickCache.has(asset)) return tickCache.get(asset) ?? null;
+  const tickFor = async (asset: Underlying, venue: string): Promise<RulesTick | null> => {
+    const key = `${venue}:${asset}`;
+    if (tickCache.has(key)) return tickCache.get(key) ?? null;
     let m: RulesTick | null = null;
     try {
-      m = await source.tick(asset);
+      m = await source.tick(asset, venue);
+      if (m === null) deps.logger.debug({ asset, venue }, "rules: this API reads no market data for the venue; its rules wait (API_VENUES)");
     } catch (e) {
-      deps.logger.warn({ asset, err: errorMessage(e) }, "rules: marks unavailable this tick");
+      deps.logger.warn({ asset, venue, err: errorMessage(e) }, "rules: marks unavailable this tick");
     }
-    tickCache.set(asset, m);
+    tickCache.set(key, m);
     return m;
   };
   for (const { strategy, rules } of byStrategy.values()) {
@@ -81,13 +84,13 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
       const user = { id: strategy.userId, email: "", name: "", role: "user" as const };
       // only legs the exchange (or the paper book) actually holds count: a never-filled entry is not a position
       const legs = (await deps.db.select().from(strategyLegs).where(and(eq(strategyLegs.strategyId, strategy.id), eq(strategyLegs.status, "open")))).filter((l) => l.entryPrice !== null);
-      const tick = legs.length ? await tickFor(strategy.asset) : null;
+      const tick = legs.length ? await tickFor(strategy.asset, strategy.venue) : null;
       if (legs.length === 0 || tick === null) {
         out.skipped += rules.length;
         continue;
       }
       const marks = tick.marks;
-      const lotSize = Number(await lotSizeFor(deps, user, strategy.asset));
+      const lotSize = Number(await lotSizeFor(deps, user, strategy.asset, strategy.venue));
       let pnl = Number(strategy.realizedPnl);
       let missing = false;
       for (const l of legs) {

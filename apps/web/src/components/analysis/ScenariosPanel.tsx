@@ -69,15 +69,15 @@ export function ScenariosPanel() {
   const [ivPct, setIvPct] = useState(0);
   const [smooth, setSmooth] = useState(false);
   const [hover, setHover] = useState<{ i: number; j: number } | null>(null);
-  const { legs, result, spot, money, asset } = a;
+  const { legs, result, spot, money, asset, venue } = a;
   const nearestExpiry = useMemo(() => legs.filter((l) => l.kind !== "future").map((l) => l.expiry).sort()[0] ?? null, [legs]);
-  const expiryAtMs = nearestExpiry ? expiryMs(nearestExpiry, settlementHourUtc(asset)) : undefined;
+  const expiryAtMs = nearestExpiry ? expiryMs(nearestExpiry, settlementHourUtc(asset, venue)) : undefined;
   // the expiry column is valued at the settlement instant; the day count follows it, the way the payoff slider counts
   const maxDte = expiryAtMs !== undefined ? Math.max(1, Math.ceil((expiryAtMs - a.nowMs) / 86_400_000)) : result && Number.isFinite(result.daysToNearestExpiry) ? Math.max(1, Math.ceil(result.daysToNearestExpiry)) : 30;
   const axes = useMemo(() => (spot === null ? null : scenarioAxes(spot, range, maxDte, a.nowMs, expiryAtMs)), [spot, range, maxDte, a.nowMs, expiryAtMs]);
   // the slider shifts every leg's IV by a share of the ATM IV (the engine takes an additive vol-point shift)
   const ivShift = (result?.atmIv && Number.isFinite(result.atmIv) ? result.atmIv : 0.5) * (ivPct / 100);
-  const options = useMemo<ScenarioOptions | null>(() => (axes ? { prices: axes.prices, dates: axes.dates, ivShift, mode, defaultIv: 0.5, calendar: venueCalendar(asset) } : null), [axes, ivShift, mode, asset]);
+  const options = useMemo<ScenarioOptions | null>(() => (axes ? { prices: axes.prices, dates: axes.dates, ivShift, mode, defaultIv: 0.5, calendar: venueCalendar(asset, venue) } : null), [axes, ivShift, mode, asset, venue]);
   const { grid, error, pending } = useScenario(a.pricingLegs, options);
   // values[dateIndex][priceIndex] → cells[row = price][col = date]
   const cells = useMemo(() => (grid && axes ? axes.prices.map((_, i) => axes.dates.map((__, j) => grid.values[j]?.[i] ?? Number.NaN)) : []), [grid, axes]);
