@@ -1,6 +1,6 @@
 {
-  "id": "645fe59b-7d9c-4fa3-8074-639842d6c75c",
-  "prevId": "44cdddab-853e-45b5-9815-a0a07153b2c6",
+  "id": "62d59e51-2cc9-4dd5-922d-e646cec0392d",
+  "prevId": "645fe59b-7d9c-4fa3-8074-639842d6c75c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -3420,6 +3420,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'comfortable'"
+        },
+        "mindful": {
+          "name": "mindful",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{\"enabled\":true,\"thresholdUsd\":\"0\",\"pauseSeconds\":30}'::jsonb"
         },
         "updated_at": {
           "name": "updated_at",

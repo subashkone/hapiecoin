@@ -128,3 +128,52 @@ describe("HC-TR-173 the journal per account (ADR-068)", () => {
     expect(lines[1]?.endsWith(",Sub 1")).toBe(true);
   });
 });
+
+describe("HC-TR-181 verified P&L on the Journal (ADR-073)", () => {
+  it("shows the figures from the exchange fills per account with the agreement line, and Refresh re-reads", async () => {
+    const u = userEvent.setup();
+    const acc = mock.state.accounts.get(EMAIL)!;
+    acc.credentials = [
+      { id: "crd_main", label: "Main", brokerId: "brk_delta", apiKeyMasked: "****ab12", connectedAt: "2026-09-08T09:00:00.000Z", whitelistedIp: "203.0.113.10" },
+      { id: "crd_sub1", label: "Sub 1", brokerId: "brk_delta", apiKeyMasked: "****cd34", connectedAt: "2026-09-09T09:00:00.000Z", whitelistedIp: "203.0.113.10" },
+    ];
+    const dayAgo = new Date(Date.now() - 86_400_000).toISOString();
+    acc.fills = [
+      { id: "f-1", accountId: "crd_main", productId: 101, symbol: "C-BTC-80000-250926", side: "buy", size: 10, price: "1200", commission: "0.6", filledAt: new Date(Date.now() - 2 * 86_400_000).toISOString() },
+      { id: "f-2", accountId: "crd_main", productId: 101, symbol: "C-BTC-80000-250926", side: "sell", size: 10, price: "1500", commission: "0.75", filledAt: dayAgo },
+      { id: "s-1", accountId: "crd_sub1", productId: 102, symbol: "P-BTC-78000-250926", side: "sell", size: 5, price: "1000", commission: "0", filledAt: dayAgo },
+      { id: "s-2", accountId: "crd_sub1", productId: 102, symbol: "P-BTC-78000-250926", side: "buy", size: 5, price: "900", commission: "0.1", filledAt: dayAgo },
+    ];
+    acc.verifiedReads = 1;
+    mine().push(strat({ id: "j_live", status: "archived", tradingMode: "live", realizedPnl: "3", closedAt: dayAgo, accountId: "crd_main" })); // the Journal's own figure for Main's round trip: gross, as HapieCoin books it
+    renderWithProviders(<JournalPanel book={book} />);
+    const block = await screen.findByTestId("verified-block");
+    await waitFor(() => expect(block.dataset["state"]).toBe("ready"));
+    expect(screen.getByTestId("verified-total").textContent).toBe("+$2.05"); // 1.65 (Main) + 0.40 (Sub 1)
+    expect(screen.getByTestId("verified-d7").textContent).toBe("+$2.05");
+    expect(screen.getByTestId("verified-commission").textContent).toBe("$1.45");
+    expect(screen.getByTestId("verified-since").textContent).toContain("4 fills since");
+    expect(screen.getByTestId("verified-agree").dataset["diff"]).toBe("0.5"); // gross 3.50 against the Journal's 3.00: the sub-account's manual trade
+    expect(screen.getByTestId("verified-agree").textContent).toContain("before fees +$3.50, differs from the Journal's +$3.00 by +$0.50");
+    expect(screen.getAllByTestId("verified-account").map((r) => r.dataset["label"])).toEqual(["Main", "Sub 1"]);
+    await u.click(screen.getByTestId("verified-refresh"));
+    await waitFor(() => expect(acc.verifiedReads).toBe(2));
+    expect(await screen.findByText("Fills refreshed")).toBeTruthy();
+    // the exchange stops answering: the block names the accounts' errors and Refresh says so
+    acc.verifiedDown = true;
+    await u.click(screen.getByTestId("verified-refresh"));
+    expect(await screen.findByText("Some accounts could not be read")).toBeTruthy();
+    await waitFor(() => expect(screen.getAllByTestId("verified-account")[0]!.textContent).toContain("The exchange did not answer the fills read"));
+  });
+
+  it("without a connected key there is no block; with a key and no fills it says so", async () => {
+    renderWithProviders(<JournalPanel book={book} />);
+    await waitFor(() => expect(screen.getByTestId("journal-panel")).toBeTruthy());
+    expect(screen.queryByTestId("verified-block")).toBeNull();
+    mock.state.accounts.get(EMAIL)!.credentials = [{ id: "crd_main", label: "Main", brokerId: "brk_delta", apiKeyMasked: "****ab12", connectedAt: "2026-09-08T09:00:00.000Z", whitelistedIp: "203.0.113.10" }];
+    renderWithProviders(<JournalPanel book={book} />);
+    const block = await screen.findByTestId("verified-block");
+    await waitFor(() => expect(block.dataset["state"]).toBe("empty"));
+    expect(screen.getByTestId("verified-empty").textContent).toContain("No fills read yet");
+  });
+});

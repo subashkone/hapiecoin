@@ -6,7 +6,7 @@ import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
 import { mockIvHistory, mockMarkHistory } from "./mock-market";
-import { AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal, type CloseReason, RulesBody, ruleLevel, MAX_ACCOUNTS_PER_BROKER } from "@hapiecoin/schema";
+import { AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal, type CloseReason, RulesBody, ruleLevel, MAX_ACCOUNTS_PER_BROKER, type FillLike, verifiedFromFills, sumSince, dayBack } from "@hapiecoin/schema";
 
 export const SESSION_COOKIE = "better-auth.session_token";
 export const TEST_OTP = "123456";
@@ -20,6 +20,12 @@ interface Account {
   brokers: Broker[];
   /** Connected keys (accounts, ADR-068): several per broker, told apart by their label. */
   credentials: BrokerCredentialPublic[];
+  /** Fills "read from the exchange" per key (ADR-073); every product is a 0.001 BTC contract here. */
+  fills: (FillLike & { id: string; accountId: string })[];
+  /** Refresh presses (tests assert the read happened). */
+  verifiedReads: number;
+  /** Test knob: the exchange does not answer the fills read (the block shows the error, the toast names it). */
+  verifiedDown?: boolean;
   /** Test knob (HC-TR-160): contracts the exchange no longer holds although live legs still track them. */
   venueGone?: Set<string>;
   /** Test knob (HC-TR-160): the exchange does not answer the positions read (503). */
@@ -194,6 +200,8 @@ export function createAccount(
     settings: defaultSettings(),
     brokers: [GLOBAL_BROKER],
     credentials: [],
+    fills: [],
+    verifiedReads: 0,
     plan: { state: "free" },
     strategies: [],
     tradingDisabled: false,
@@ -427,6 +435,34 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     return c.body(null, 204);
   });
   v1.get("/credentials", (c) => c.json({ items: current(c)!.credentials }));
+  // ADR-073: verified P&L from the fills held per key, the same arithmetic as the API
+  v1.get("/verified/pnl", (c) => {
+    const acc = current(c)!;
+    const nowMs = Date.now();
+    const allDays = new Map<string, number>();
+    let since: string | null = null;
+    const accounts = acc.credentials.map((k) => {
+      const mine = acc.fills.filter((f) => f.accountId === k.id);
+      const t = verifiedFromFills(mine, () => "0.001");
+      for (const d of t.byDay) allDays.set(d.day, (allDays.get(d.day) ?? 0) + Number(d.pnl));
+      const oldest = mine.map((f) => f.filledAt).sort()[0] ?? null;
+      if (oldest && (since === null || oldest < since)) since = oldest;
+      return { accountId: k.id, label: k.label, fills: mine.length, lastReadAt: acc.verifiedReads ? nowIso() : null, lastFillAt: mine.map((f) => f.filledAt).sort().at(-1) ?? null, since: oldest, realizedUsd: toDecimal(t.realizedUsd, 2), commissionUsd: toDecimal(t.commissionUsd, 2), byDay: t.byDay, skipped: t.skipped, partialProducts: 0, backfilling: false, error: acc.verifiedDown ? "The exchange did not answer the fills read" : null };
+    });
+    const byDay = [...allDays.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([day, pnl]) => ({ day, pnl: toDecimal(pnl, 2) }));
+    const all = accounts.reduce((sum, a) => sum + Number(a.realizedUsd), 0);
+    const commission = accounts.reduce((sum, a) => sum + Number(a.commissionUsd), 0);
+    const gross = all + commission;
+    // like the API: gross to gross, over the live strategies closed since the oldest fill held
+    const journal = acc.strategies.filter((s) => s.status === "archived" && s.tradingMode === "live" && (!since || (s.closedAt ?? "") >= since)).reduce((sum, s) => sum + Number(s.realizedPnl), 0);
+    return c.json({ accounts, total: { all: toDecimal(all, 2), gross: toDecimal(gross, 2), d7: toDecimal(sumSince(byDay, dayBack(nowMs, 7)), 2), d30: toDecimal(sumSince(byDay, dayBack(nowMs, 30)), 2), commission: toDecimal(commission, 2) }, fills: acc.fills.length, lastReadAt: acc.verifiedReads ? nowIso() : null, since, journalRealizedUsd: toDecimal(journal, 2), difference: toDecimal(gross - journal, 2) });
+  });
+  v1.post("/verified/refresh", (c) => {
+    const acc = current(c)!;
+    acc.verifiedReads += 1;
+    if (acc.verifiedDown) return c.json({ accounts: acc.credentials.length, read: 0, added: 0, skipped: 0, errors: acc.credentials.map((k) => `${k.label}: The exchange did not answer the fills read`) });
+    return c.json({ accounts: acc.credentials.length, read: acc.fills.length, added: 0, skipped: 0, errors: [] });
+  });
   v1.post("/credentials", async (c) => {
     const acc = current(c)!;
     const body = await c.req.json<{ brokerId?: string; label?: string; apiKey?: string; apiSecret?: string }>();
@@ -1733,7 +1769,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     return c.json({ ok: true });
   });
   app.post("/__test/seed", async (c) => {
-    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; subAccount?: boolean; referrals?: number; banners?: number; coupons?: boolean; payments?: number; campaigns?: number; alerts?: boolean; telegram?: boolean }>();
+    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; subAccount?: boolean; fills?: boolean; referrals?: number; banners?: number; coupons?: boolean; payments?: number; campaigns?: number; alerts?: boolean; telegram?: boolean }>();
     const acc = createAccount(state, body);
     if (body.telegram) acc.telegram = { chatId: `chat_${acc.user.id}`, code: null, linkedAt: nowIso(), pendingReads: 0 };
     if (body.alerts) {
@@ -1823,6 +1859,15 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       acc.credentials = [{ id: "crd_main", brokerId: "brk_delta", label: "Main", apiKeyMasked: "****ab12", connectedAt: new Date().toISOString(), whitelistedIp: WHITELIST_IP }];
       // a second key (a Delta sub-account) for the accounts flows (HC-TR-173..175)
       if (body.subAccount) acc.credentials.push({ id: "crd_sub1", brokerId: "brk_delta", label: "Sub 1", apiKeyMasked: "****cd34", connectedAt: new Date().toISOString(), whitelistedIp: WHITELIST_IP });
+      // a closed long round trip on Main for the verified P&L block (HC-TR-180): 3.00 less 1.35 of commissions
+      if (body.fills) {
+        const dayAgo = new Date(Date.now() - 86_400_000).toISOString();
+        acc.fills = [
+          { id: "f-1", accountId: "crd_main", productId: 101, symbol: "C-BTC-80000-250926", side: "buy", size: 10, price: "1200", commission: "0.6", filledAt: new Date(Date.now() - 2 * 86_400_000).toISOString() },
+          { id: "f-2", accountId: "crd_main", productId: 101, symbol: "C-BTC-80000-250926", side: "sell", size: 10, price: "1500", commission: "0.75", filledAt: dayAgo },
+        ];
+        acc.verifiedReads = 1;
+      }
     }
     return c.json({ ok: true, user: acc.user });
   });

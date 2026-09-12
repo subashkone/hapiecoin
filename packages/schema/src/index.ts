@@ -16,3 +16,4 @@ export * from "./analytics.js";
 export * from "./alerts.js";
 export * from "./market-history.js";
 export * from "./telegram.js";
+export * from "./verified.js";

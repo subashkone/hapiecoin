@@ -15,6 +15,7 @@ import { fmtLeg } from "@/lib/strategy/paper";
 import type { PaperBook } from "@/lib/strategy/usePaper";
 import { Chart } from "@/components/analytics/Chart";
 import { Chips } from "@/components/analytics/Chips";
+import { VerifiedPnlBlock } from "./VerifiedPnlBlock";
 
 const dm = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
 const dmy = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
@@ -131,6 +132,7 @@ export function JournalPanel({ book }: { book: PaperBook }) {
         </Button>
       </div>
       <div className="min-h-0 flex-1 overflow-auto px-3 pb-3">
+        <VerifiedPnlBlock money={money} />
         {isLoading ? (
           <p className="py-6 text-center text-xs text-muted-foreground">Loading the journal…</p>
         ) : isError ? (
