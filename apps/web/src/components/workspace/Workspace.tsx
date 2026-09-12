@@ -20,6 +20,7 @@ import { useConnectionStatus } from "@/lib/gateway/hooks";
 import { usePaperBook } from "@/lib/strategy/usePaper";
 import { usePnlWriter } from "@/lib/strategy/usePnlWriter";
 import { useSearchParams } from "next/navigation";
+import { registerShortcut } from "@/lib/shortcuts";
 import { type AnalysisTab, type WorkspaceTab, useUiStore } from "@/lib/store";
 
 export const LEFT_TABS: { id: WorkspaceTab; label: string; phase?: number; blurb?: string }[] = [
@@ -96,6 +97,21 @@ export function Workspace() {
   const narrow = useNarrow(STACK_BELOW_PX);
   const grid = useRef<HTMLDivElement>(null);
   useEffect(() => setSplit(readSplit()), []);
+  // HC-TR-178: W opens the Strategy Wizard (ADR-072); listed under "Analyse workspace" in the ? help
+  useEffect(
+    () =>
+      registerShortcut(
+        "W",
+        "Strategy wizard (view, move and date → strategies)",
+        () => {
+          const st = useUiStore.getState();
+          st.setWorkspaceTab("builder");
+          st.setBuilderTab("wizard");
+        },
+        { group: "Analyse workspace" },
+      ),
+    [],
+  );
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();

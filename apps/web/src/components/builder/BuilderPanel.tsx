@@ -23,6 +23,7 @@ import { FutureDialog } from "./FutureDialog";
 import { LegInstrument } from "./LegInstrument";
 import { TemplatesPanel } from "./TemplatesPanel";
 import { TemplatesStrip } from "./TemplatesStrip";
+import { WizardPanel } from "./WizardPanel";
 
 /** Price cell that flashes green / red for 800 ms when the value moves (HC-TR-012). */
 export function PriceCell({ value, title }: { value: string; title: string }) {
@@ -173,13 +174,16 @@ export function BuilderPanel() {
 
   return (
     <section className="flex h-full min-h-0 flex-col" data-testid="builder-panel" data-legs={allLegs.length} data-active-legs={legs.length}>
-      <Tabs value={builderTab} onValueChange={(v) => setBuilderTab(v === "templates" ? "templates" : "builder")} className="flex min-h-0 flex-1 flex-col gap-0">
+      <Tabs value={builderTab} onValueChange={(v) => setBuilderTab(v === "templates" || v === "wizard" ? v : "builder")} className="flex min-h-0 flex-1 flex-col gap-0">
         <TabsList className="px-2">
           <TabsTrigger value="builder" data-testid="builder-tab-builder">
             Builder
           </TabsTrigger>
           <TabsTrigger value="templates" data-testid="builder-tab-templates" data-tour="templates-tab">
             Templates
+          </TabsTrigger>
+          <TabsTrigger value="wizard" data-testid="builder-tab-wizard" title="View, move and date → the defined-risk strategies that fit (W)">
+            Wizard
           </TabsTrigger>
           <span className="ml-auto self-center pr-2 font-mono text-3xs uppercase tracking-[0.1em] text-muted-foreground" data-testid="builder-subinfo">
             {allLegs.length} {allLegs.length === 1 ? "leg" : "legs"}
@@ -247,6 +251,9 @@ export function BuilderPanel() {
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => setBuilderTab("templates")} data-testid="builder-goto-templates">
                     Browse templates
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setBuilderTab("wizard")} title="Tell the wizard your view, move and date" data-testid="builder-goto-wizard">
+                    Ask the wizard
                   </Button>
                 </div>
               }
@@ -437,6 +444,9 @@ export function BuilderPanel() {
         </TabsContent>
         <TabsContent value="templates" className="min-h-0 flex-1 overflow-auto">
           <TemplatesPanel />
+        </TabsContent>
+        <TabsContent value="wizard" className="min-h-0 flex-1 overflow-hidden">
+          <WizardPanel />
         </TabsContent>
       </Tabs>
       <SaveDraftDialog open={saveIntent !== null} onOpenChange={(o) => !o && setSaveIntent(null)} initialName={isTemplateName(meta.name) ? "" : meta.name} suggest={suggest} intent={saveIntent ?? "draft"} onSave={(n) => onSave(n, saveIntent ?? "draft")} />

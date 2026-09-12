@@ -97,7 +97,7 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
   const open = s ? openLegs(s) : [];
   const payLegs = s ? (open.length ? open : s.legs) : [];
   const pricingLegs = useMemo(() => (s ? toPricingLegs(payLegs.map((l) => serverLegToLocal(l, s.asset)), book.lotSizeOf(s.asset, s.venue), { spot: undefined }) : []), [s, payLegs, book]);
-  const spot = s ? book.spotOf(s.asset) : null;
+  const spot = s ? book.spotOf(s.asset, s.venue) : null;
   const analysis = useAnalysis(pricingLegs, s && spot !== null && pricingLegs.length ? { spot, nowMs: Date.now(), calendar: venueCalendar(s.asset, s.venue), defaultIv: 0.5 } : null);
   if (!s) return null;
   const closed = s.legs.filter((l) => l.status === "squared_off");

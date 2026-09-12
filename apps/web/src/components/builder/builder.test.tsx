@@ -7,10 +7,12 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
 import { buildChain } from "../../../test/fixtures/chain";
 import { useUiStore } from "@/lib/store";
+import { daysToExpiry } from "@/lib/format";
 import { TEMPLATES } from "@/lib/strategy/templates";
 import { BuilderPanel, PriceCell } from "./BuilderPanel";
 
 const EXPIRY = "2026-09-25";
+const SPOT = 79521; // the spot serveMarket() sends
 const TOPIC = chainTopic("delta_india", "BTC", EXPIRY);
 const rows = buildChain("BTC", EXPIRY);
 let mock: MockFetch;
@@ -38,7 +40,7 @@ function serveMarket() {
   const ws = FakeSocket.last();
   act(() => {
     ws.open();
-    ws.receive({ t: "spot", s: "BTC", p: "79521", c24: 0.4 });
+    ws.receive({ t: "spot", s: "BTC", p: String(SPOT), c24: 0.4 });
     ws.receive({ t: "snap", topic: TOPIC, seq: 0, rows });
   });
   return ws;
@@ -239,6 +241,107 @@ describe("HC-TR-037..044 templates", () => {
     }
     expect(useUiStore.getState().strategy.BTC.name).toBe("Iron Condor");
     expect(useUiStore.getState().builderTab).toBe("builder");
+  });
+});
+
+describe("HC-TR-176..178 strategy wizard (ADR-072)", () => {
+  /** The templates test's dance: the loader subscribes once the expiry list is known, then the chain is served. */
+  async function serveForWizard() {
+    serveMarket();
+    await waitFor(() => expect(screen.getByTestId<HTMLSelectElement>("wizard-expiry").value).toBe(EXPIRY));
+    act(() => FakeSocket.last().open());
+    await waitFor(() => expect(subscribedToChain()).toBe(true), { timeout: 5000 });
+    serveMarket();
+    await waitFor(() => expect(screen.getByTestId("wizard-panel").dataset["state"]).toBe("ready"), { timeout: 20_000 });
+  }
+
+  it("HC-TR-176 / 177 ranks up to three defined-risk templates for the view, move and date at the live chain, with units on every figure", async () => {
+    useUiStore.setState({ builderTab: "wizard" });
+    renderWithProviders(<BuilderPanel />);
+    expect(screen.getByTestId("wizard-panel").dataset["state"]).toBe("no-spot");
+    expect(screen.getByTestId<HTMLInputElement>("wizard-move").disabled).toBe(true);
+    await serveForWizard();
+    const u = userEvent.setup();
+    const cards = screen.getAllByTestId("wizard-card");
+    expect(cards.length).toBeGreaterThan(0);
+    expect(cards.length).toBeLessThanOrEqual(3);
+    expect(cards.map((c) => c.dataset["rank"])).toEqual(cards.map((_, i) => String(i + 1)));
+    for (const c of cards) expect(TEMPLATES.find((t) => t.name === c.dataset["name"])!.risk).toBe("defined");
+    // card 1 carries the amber button and the return-on-risk tag; the tags never repeat
+    expect(within(cards[0]!).getByTestId("wizard-tag").textContent).toBe("best return on risk");
+    const tags = cards.flatMap((c) => within(c).queryAllByTestId("wizard-tag").map((t) => t.textContent));
+    expect(new Set(tags).size).toBe(tags.length);
+    expect(within(cards[0]!).getByTestId("wizard-pnl").textContent).toMatch(/^\+\$[\d,]+\.\d\d$/);
+    expect(within(cards[0]!).getByTestId("wizard-maxloss").textContent).toMatch(/^−\$[\d,]+\.\d\d$/);
+    expect(within(cards[0]!).getByTestId("wizard-pop").textContent).toMatch(/^\d+ %$|^—$/);
+    expect(within(cards[0]!).getByTestId("wizard-legs").textContent).toMatch(/(Buy|Sell) [\d,]+ [CP]/);
+    expect(screen.getByTestId("wizard-basis").textContent).toMatch(/^Priced at the live chain · 10 lots × 0\.001 BTC · marks · 25 Sep/);
+    expect(screen.getAllByTestId("template-sketch")).toHaveLength(cards.length);
+    // the move derives the target: +3 % of the spot
+    const price = () => screen.getByTestId<HTMLInputElement>("wizard-price");
+    const move = () => screen.getByTestId<HTMLInputElement>("wizard-move");
+    expect(price().value).toBe((SPOT * 1.03).toFixed(1));
+    // a typed price is kept while typing and becomes the move on blur, at full precision (the price is not rewritten)
+    fireEvent.change(price(), { target: { value: "81000" } });
+    expect(move().value).toBe("3");
+    fireEvent.blur(price());
+    expect(move().value).toBe(String(Number(((81000 / SPOT - 1) * 100).toFixed(2))));
+    expect(price().value).toBe("81000.0");
+    // Enter commits too; a price on the other side of spot switches the view
+    fireEvent.change(price(), { target: { value: String(SPOT * 0.95) } });
+    fireEvent.keyDown(price(), { key: "Enter" });
+    expect(screen.getByTestId("wizard-view-bearish").getAttribute("aria-pressed")).toBe("true");
+    expect(move().value).toBe("5");
+    expect(price().value).toBe((SPOT * 0.95).toFixed(1));
+    // the bullish view again: the default move comes back; the bearish list differs from the bullish one
+    await u.click(screen.getByTestId("wizard-view-bullish"));
+    expect(move().value).toBe("3");
+    const bullNames = screen.getAllByTestId("wizard-card").map((c) => c.dataset["name"]);
+    await u.click(screen.getByTestId("wizard-view-bearish"));
+    expect(price().value).toBe((SPOT * 0.97).toFixed(1));
+    expect(screen.getByTestId("wizard-panel").dataset["state"]).toBe("ready");
+    expect(screen.getAllByTestId("wizard-card").map((c) => c.dataset["name"])).not.toEqual(bullNames);
+    // neutral and volatile views show a band instead of one price
+    await u.click(screen.getByTestId("wizard-view-neutral"));
+    expect(screen.getByTestId("wizard-band").textContent).toContain(`${(SPOT * 0.98).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} – ${(SPOT * 1.02).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`);
+    // arrow keys move between the view chips
+    screen.getByTestId("wizard-view-neutral").focus();
+    fireEvent.keyDown(screen.getByTestId("wizard-views"), { key: "ArrowRight" });
+    expect(screen.getByTestId("wizard-view-volatile").getAttribute("aria-pressed")).toBe("true");
+    fireEvent.keyDown(screen.getByTestId("wizard-views"), { key: "ArrowLeft" });
+    expect(screen.getByTestId("wizard-view-neutral").getAttribute("aria-pressed")).toBe("true");
+    expect(screen.queryByTestId("wizard-price")).toBeNull();
+    // nothing fits: a volatile view with no move at all
+    await u.click(screen.getByTestId("wizard-view-volatile"));
+    fireEvent.change(screen.getByTestId("wizard-move"), { target: { value: "0" } });
+    expect(screen.getByTestId("wizard-panel").dataset["state"]).toBe("no-fit");
+    expect(screen.getByText(/No defined-risk template fits a Volatile view at ±0\.0 % by 25 Sep/)).toBeTruthy();
+    await u.click(screen.getByTestId("wizard-goto-templates"));
+    expect(useUiStore.getState().builderTab).toBe("templates");
+  });
+
+  it("HC-TR-178 Use this loads the template into the Builder and opens the payoff on the thesis; the empty state links to the wizard", async () => {
+    renderWithProviders(<BuilderPanel />);
+    const u = userEvent.setup();
+    await u.click(screen.getByTestId("builder-goto-wizard"));
+    expect(useUiStore.getState().builderTab).toBe("wizard");
+    await serveForWizard();
+    fireEvent.change(screen.getByTestId("wizard-move"), { target: { value: "5" } });
+    const first = screen.getAllByTestId("wizard-card")[0]!;
+    const name = first.dataset["name"]!;
+    await u.click(within(first).getByTestId("wizard-use"));
+    await waitFor(() => expect(useUiStore.getState().legs.BTC.length).toBeGreaterThan(0));
+    const st = useUiStore.getState();
+    expect(st.strategy.BTC.name).toBe(name);
+    expect(st.builderTab).toBe("builder");
+    for (const l of st.legs.BTC) {
+      expect(rows.some((r) => r.strike === l.strike) || l.kind === "future").toBe(true);
+      if (l.kind !== "future") expect(l.expiry).toBe(EXPIRY);
+    }
+    expect(st.targetPrice).toBeCloseTo(SPOT * 1.05, 6);
+    // the loaded legs are the ones the card showed
+    expect(screen.getByTestId("strategy-name")).toBeTruthy();
+    expect(st.targetDays).toBe(daysToExpiry(EXPIRY));
   });
 });
 

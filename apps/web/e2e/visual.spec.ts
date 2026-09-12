@@ -56,6 +56,10 @@ for (const theme of ["dark", "light"] as const) {
       await page.getByTestId("builder-tab-templates").click();
       await expect(page.getByTestId("template-card")).toHaveCount(TEMPLATE_COUNT);
       await page.screenshot({ path: `${DIR}/analyse-templates-${theme}.png` });
+      // HC-TR-176..178 the wizard with its three ranked cards
+      await page.getByTestId("builder-tab-wizard").click();
+      await expect(page.getByTestId("wizard-panel")).toHaveAttribute("data-state", "ready", { timeout: 30_000 });
+      await page.screenshot({ path: `${DIR}/analyse-wizard-${theme}.png` });
       await page.getByTestId("analysis-tab-greeks").click();
       await expect(page.getByTestId("greek-delta")).not.toContainText("—");
       await page.screenshot({ path: `${DIR}/analyse-greeks-${theme}.png` });

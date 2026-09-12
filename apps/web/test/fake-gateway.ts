@@ -4,7 +4,7 @@
 // Also answers GET /healthz with the expiries it serves, so the web app's expiry discovery is exercised.
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
-import { ClientMessage, parseTopic, type ChainRow, type ServerMessage, type Underlying } from "@hapiecoin/schema";
+import { type ChainRow, ClientMessage, type ServerMessage, type Underlying, canonicalTopic, parseTopic, spotTopic } from "@hapiecoin/schema";
 
 import { SPOT0, buildChain, dec, expiriesOf, loadFixtureFile, mulberry32, type Fixture } from "./fixtures/chain";
 
@@ -90,25 +90,26 @@ export async function startFakeGateway(opts: FakeGatewayOptions): Promise<FakeGa
       if (msg.op === "ping") {
         send(ws, { t: "pong" });
       } else if (msg.op === "sub") {
-        for (const topic of msg.topics) {
+        for (const raw of msg.topics) {
+          const topic = canonicalTopic(raw); // a bare spot topic is the default venue's (ADR-071)
           mine.add(topic);
           const p = parseTopic(topic);
           if (p?.kind === "chain") {
             const c = chainFor(topic);
             if (c) send(ws, { t: "snap", topic, seq: c.seq, rows: c.rows });
           } else if (p?.kind === "spot") {
-            send(ws, { t: "spot", s: p.underlying, p: dec(spot[p.underlying], 1), c24: -1.89 });
+            send(ws, { t: "spot", s: p.underlying, v: p.venue, p: dec(spot[p.underlying], 1), c24: -1.89 });
           }
         }
       } else {
-        for (const topic of msg.topics) mine.delete(topic);
+        for (const raw of msg.topics) mine.delete(canonicalTopic(raw));
       }
     });
     ws.on("close", () => subs.delete(ws));
   });
 
   const broadcast = (msg: ServerMessage) => {
-    const topic = msg.t === "snap" || msg.t === "q" ? msg.topic : msg.t === "spot" ? `spot:${msg.s}` : null;
+    const topic = msg.t === "snap" || msg.t === "q" ? msg.topic : msg.t === "spot" ? spotTopic(msg.s, msg.v ?? "delta_india") : null;
     for (const [ws, topics] of subs) if (!topic || topics.has(topic)) send(ws, msg);
   };
 
@@ -118,7 +119,8 @@ export async function startFakeGateway(opts: FakeGatewayOptions): Promise<FakeGa
       // spot ticks
       for (const u of Object.keys(spot) as Underlying[]) {
         spot[u] = spot[u] * (1 + (rnd() - 0.5) * 0.0006);
-        broadcast({ t: "spot", s: u, p: dec(spot[u], 1), c24: Number((-1.89 + (rnd() - 0.5) * 0.1).toFixed(2)) });
+        // the tick loop quotes the default venue only: a Deribit-venue e2e gets the initial frame from the sub answer, never a tick (extend here when one is written)
+        broadcast({ t: "spot", s: u, v: "delta_india", p: dec(spot[u], 1), c24: Number((-1.89 + (rnd() - 0.5) * 0.1).toFixed(2)) });
       }
       // chain deltas: 3 random instruments per subscribed chain
       for (const [topic, c] of chains) {

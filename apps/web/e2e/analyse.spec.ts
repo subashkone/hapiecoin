@@ -312,6 +312,47 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 15_000 });
   });
 
+  test("HC-TR-176..178 strategy wizard: view, move and date → ranked defined-risk cards at the live chain; Use this loads the Builder on the thesis; W and the palette open it (ADR-072)", async ({ page }) => {
+    await page.getByTestId("tab-builder").click();
+    await page.getByTestId("builder-goto-wizard").click();
+    const panel = page.getByTestId("wizard-panel");
+    await expect(panel).toHaveAttribute("data-state", "ready", { timeout: 30_000 });
+    const cards = page.getByTestId("wizard-card");
+    await expect(cards.first()).toHaveAttribute("data-rank", "1");
+    await expect(cards.first().getByTestId("wizard-tag")).toHaveText("best return on risk");
+    await expect(cards.first().getByTestId("wizard-pnl")).toContainText("$");
+    await expect(cards.first().getByTestId("wizard-maxloss")).toContainText("−$");
+    await expect(page.getByTestId("wizard-basis")).toContainText("Priced at the live chain");
+    // the move derives the target price; a bearish view puts it below spot
+    const price = page.getByTestId("wizard-price");
+    const at3 = Number(await price.inputValue());
+    await page.getByTestId("wizard-move").fill("5");
+    await expect.poll(async () => Number(await price.inputValue())).toBeGreaterThan(at3);
+    await page.getByTestId("wizard-view-bearish").click();
+    await expect.poll(async () => Number(await price.inputValue())).toBeLessThan(at3);
+    await page.getByTestId("wizard-view-neutral").click();
+    await expect(page.getByTestId("wizard-band")).toContainText("stays inside");
+    await page.getByTestId("wizard-view-bullish").click();
+    await expect(panel).toHaveAttribute("data-state", "ready");
+    // HC-TR-178 Use this → the Builder holds the template's legs, the payoff opens on the thesis
+    const name = (await cards.first().getAttribute("data-name"))!;
+    await cards.first().getByTestId("wizard-use").click();
+    await expect(page.getByTestId("strategy-name")).toHaveValue(name);
+    await expect(page.getByTestId("builder-panel")).not.toHaveAttribute("data-legs", "0");
+    await expect(page.getByTestId("payoff-panel")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    const target = Number(await page.getByTestId("target-price").inputValue());
+    expect(target).toBeGreaterThan(at3 * 0.99); // the slider sits on the +3 % thesis, not on spot
+    // W opens the wizard from the chain; the palette from anywhere
+    await page.getByTestId("tab-chain").click();
+    await page.keyboard.press("w");
+    await expect(panel).toBeVisible();
+    await page.getByTestId("builder-tab-builder").click();
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox", { name: "Command" }).fill("wizard");
+    await page.getByRole("option", { name: /Strategy wizard/ }).click();
+    await expect(panel).toBeVisible();
+  });
+
   test("HC-TR-040 / HC-WS-033 / HC-WS-039 a template loads legs into the Builder and the payoff tiles and chart appear", async ({ page }) => {
     await expect(page.getByTestId("payoff-panel")).toHaveAttribute("data-state", "empty");
     await page.getByTestId("tab-builder").click();

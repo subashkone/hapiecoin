@@ -1864,6 +1864,20 @@
   "evidence": "ADR-070 (12 Sep 2026): apps/api/src/venues.ts, config.ts (API_VENUES, DERIBIT_REST_URL), main.ts, routes/shared.ts (tradingFor), routes/live-exec.ts (lotSizeFor venue, resolveAccount venue, planLegs venue), routes/live.ts, routes/strategies.ts, rules-engine.ts, settlement.ts, alerts-evaluate.ts, test-support/harness.ts; packages/schema LivePositions.venue; apps/web NetPositionsPanel / useStrategyAnalysis read it; unit venues.test.ts, config.test.ts, venue-column.test.ts, rules-engine.test.ts, settlement.test.ts, alerts-server.test.ts"
  },
  {
+  "id": "HC-SH-126",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "screen": "Venues · spot per venue",
+  "feature": "The header price and every spot-based figure follow the chosen venue: spot topics carry the venue and each venue session feeds its own index",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (gateway)",
+  "acceptance": "schema: spot:<venue>:<asset> (the bare spot:<asset> aliases Delta India) and a v field on the spot frame; gateway: one spot per venue and asset, the perpetual watched on the topic's venue session, store keys per venue, /healthz feed.venues[id].spot; venues: the Deribit session knows its perpetuals so BTC-PERPETUAL ticks; web: spot cached per venue, useSpot follows the workspace venue, the paper book and the alert engine read each strategy's / alert's venue, the landing and sign-in strips stay on Delta India, the futures label names the venue's perpetual",
+  "evidence": "ADR-071 (12 Sep 2026): packages/schema/src/gateway.ts; packages/venues/src/deribit/market-data.ts; apps/gateway/src/feed/feed.ts, coalescer.ts, coordination/snapshots.ts, feed/role.ts, server.ts; apps/web/src/lib/gateway/client.ts, hooks.tsx, lib/venue.ts, lib/strategy/usePaper.ts, useStrategyAnalysis.ts, lib/alerts/engine.ts, AlertEngine.tsx, components/header/widgets.tsx, builder/FutureDialog.tsx, test/fake-gateway.ts; unit gateway.test.ts, market-data.test.ts, feed-venues.test.ts, server.test.ts, client.test.ts, hooks.test.tsx, engine.test.ts"
+ },
+ {
   "id": "HC-PB-001",
   "area": "10-public",
   "areaName": "Public site & authentication",
@@ -7086,6 +7100,48 @@
   "area": "21-trading",
   "areaName": "Builder, paper & live trading, journal",
   "owner": "Trading engineer",
+  "screen": "Analyse · Strategy panel (Wizard)",
+  "feature": "Strategy Wizard sub-tab: view, move and date",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright)",
+  "acceptance": "Third Builder sub-tab Builder | Templates | Wizard (also the Builder empty state's 'Ask the wizard'): view chips Bullish / Bearish / Neutral / Volatile, an unsigned move in percent with the derived target price beside it (typing the price sets the move; neutral and volatile show the ±band), the target expiry from the venue's listed expiries; a basis line names lots × lot size, marks and the expiry; inputs are disabled until the spot exists",
+  "evidence": "ADR-072 (12 Sep 2026): apps/web components/builder/WizardPanel.tsx, BuilderPanel.tsx third tab, lib/store.ts BuilderSubTab; unit builder.test.tsx HC-TR-176; e2e analyse.spec.ts HC-TR-176..178, visual analyse-wizard-{dark,light}"
+ },
+ {
+  "id": "HC-TR-177",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Analyse · Strategy panel (Wizard)",
+  "feature": "Three defined-risk strategies ranked at the thesis, priced at the live chain",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright) · security",
+  "acceptance": "Templates with a finite worst case on one expiry (StrategyTemplate.risk, proven by the invariants test) are placed on the venue ladder and priced once per chain snapshot; each card shows the sketch, the legs, P&L if right (expiry payoff at the target price; the least inside the band for Neutral; the smaller band edge for Volatile), POP, max loss (the most you can lose), max profit and R:R, ranked by return on risk then POP then name, at most three, one earned tag each (best return on risk, highest POP, smallest max loss); fewer fits say '2 of 3 fit this ladder'; no fit shows the reason and a link to Templates",
+  "evidence": "ADR-072: lib/strategy/wizard.ts (eligibleTemplates, thesisPnl, pnlAtExpiry, fitsView, rankCandidates, tagBest), lib/strategy/useWizardCandidates.ts (one pass per chain, never abandoned, at most one every 2 s), lib/strategy/placeTemplate.ts (shared with the Templates tab), lib/strategy/templates.ts risk; unit wizard.test.ts, useWizardCandidates.test.tsx (StrictMode double mount), templates.invariants.test.ts, builder.test.tsx HC-TR-177"
+ },
+ {
+  "id": "HC-TR-178",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Analyse · Strategy panel (Wizard)",
+  "feature": "Use this loads the Builder on the thesis; palette and W open the wizard",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright)",
+  "acceptance": "Use this (amber on card 1, outline on 2 and 3) loads the template exactly as the Templates tab does (legs on listed strikes, the name, the Builder sub-tab) and sets the payoff target to the thesis price and the days to the expiry, so the chart opens on it; the palette command 'Strategy wizard' (hint W) and the W shortcut (Analyse workspace, listed in the ? help) open the tab; the assistant points 'which strategy' questions at it",
+  "evidence": "ADR-072: WizardPanel.tsx use(), components/shell/CommandPalette.tsx act:builder-wizard, components/workspace/Workspace.tsx registerShortcut W, lib/assistant.ts; unit builder.test.tsx HC-TR-178, shell.test.tsx, workspace.test.tsx, assistant.test.ts; e2e analyse.spec.ts HC-TR-176..178"
+ },
+ {
+  "id": "HC-TR-179",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
   "screen": "Trading · server",
   "feature": "Fills read from the exchange per key",
   "status": "working",
@@ -7096,7 +7152,7 @@
   "evidence": "ADR-073 (12 Sep 2026): packages/venues trading.ts listFills / VenueFill / FillsPage, apps/api verified.ts ingestFills / startFillsIngest, db venue_fills + fill_watermarks, migration 0019, config FILLS_INGEST_MS, routes/verified.ts POST /v1/verified/refresh; unit verified.test.ts (api) HC-TR-179"
  },
  {
-  "id": "HC-TR-177",
+  "id": "HC-TR-180",
   "area": "21-trading",
   "areaName": "Builder, paper & live trading, journal",
   "owner": "Trading engineer",
@@ -7110,7 +7166,7 @@
   "evidence": "ADR-073 (12 Sep 2026): packages/schema verified.ts verifiedFromFills / sumSince / VerifiedPnl, apps/api verified.ts computeVerified (partial products against the venue's positions, gross for the Journal comparison), routes/verified.ts GET /v1/verified/pnl; unit verified.test.ts (schema + api) HC-TR-180"
  },
  {
-  "id": "HC-TR-178",
+  "id": "HC-TR-181",
   "area": "21-trading",
   "areaName": "Builder, paper & live trading, journal",
   "owner": "Trading engineer",

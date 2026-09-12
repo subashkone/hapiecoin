@@ -75,7 +75,7 @@ export function usePortfolio(strategies: readonly Strategy[] | undefined, book: 
       const run = async () => {
         const out = new Map<string, StrategyFigures>();
         for (const s of active) {
-          const spot = book.spotOf(s.asset);
+          const spot = book.spotOf(s.asset, s.venue);
           if (spot === null) continue;
           const legs = openLegs(s).map((l) => serverLegToLocal(l, s.asset));
           const priced = toPricingLegs(legs, book.lotSizeOf(s.asset, s.venue), {

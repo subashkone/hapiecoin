@@ -111,18 +111,23 @@ export function useChain(underlying: Underlying, expiry: string | null, venue?: 
   return useTopic(topic);
 }
 
-/** Subscribe to spot ticks of one underlying. */
-export function useSpot(underlying: Underlying): SpotState | undefined {
+/**
+ * Subscribe to spot ticks of one underlying on `venue` (ADR-071): the workspace venue when omitted, a strategy's own
+ * when given; `null` subscribes nothing (a pair the venue does not list).
+ */
+export function useSpot(underlying: Underlying, venue?: VenueId | null): SpotState | undefined {
   const gw = useGateway();
-  useEffect(() => gw.subscribe(spotTopic(underlying)), [gw, underlying]);
+  const current = useVenueId();
+  const v = venue === undefined ? current : venue;
+  useEffect(() => (v === null ? undefined : gw.subscribe(spotTopic(underlying, v))), [gw, underlying, v]);
   const source = useMemo(
     () => (notify: () => void) =>
-      gw.on("spot", (u) => {
-        if (u === underlying) notify();
+      gw.on("spot", (u, _state, ven) => {
+        if (u === underlying && ven === v) notify();
       }),
-    [gw, underlying],
+    [gw, underlying, v],
   );
-  return useFrameBatched(source, () => gw.getSpot(underlying));
+  return useFrameBatched(source, () => (v === null ? undefined : gw.getSpot(underlying, v)));
 }
 
 /**

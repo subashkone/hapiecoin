@@ -125,6 +125,12 @@ function build(name: string) {
   return analyze(priced, { spot: SPOT, nowMs: NOW, defaultIv: IV, settlementHourUtc: 12, points: 161, ...(valuationMs !== undefined ? { valuationMs } : {}) });
 }
 
+describe("HC-TR-177 every template's risk matches the bound of its priced loss (ADR-072)", () => {
+  it.each(TEMPLATES.map((t) => [t.name, t.risk] as const))("%s is %s risk", (name, risk) => {
+    expect(Number.isFinite(build(name).maxLoss) ? "defined" : "undefined").toBe(risk);
+  });
+});
+
 describe("ADR-060 every template has its textbook shape on an arbitrage-free ladder", () => {
   it("has a shape row for every template and no row for a template that does not exist", () => {
     expect(Object.keys(SHAPES).sort()).toEqual(TEMPLATES.map((t) => t.name).sort());

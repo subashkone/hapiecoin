@@ -6,11 +6,13 @@ import { EMPTY_READINGS, conditionText, currentValue, decimalOf, dueAlerts, fire
 const base: Alert = { id: "alr_1", kind: "price", asset: "BTC", venue: "delta_india", strategyId: null, strategyName: null, op: ">=", value: "82000", channels: ["push"], state: "armed", lastValue: null, triggeredAt: null, createdAt: "2026-09-10T00:00:00.000Z", updatedAt: "2026-09-10T00:00:00.000Z" };
 const iv: Alert = { ...base, id: "alr_2", kind: "iv", op: "<=", value: "30", channels: ["email"] };
 const pnl: Alert = { ...base, id: "alr_3", kind: "pnl", strategyId: "strat_1", strategyName: "Bull Call Spread", op: ">=", value: "20", channels: ["push", "email"] };
-const readings = { spot: { BTC: 79506.5 }, atmIv: { BTC: 0.424 }, pnl: { strat_1: -0.64 } };
+const readings = { spot: { "delta_india:BTC": 79506.5, "deribit:BTC": 79400 }, atmIv: { "delta_india:BTC": 0.424 }, pnl: { strat_1: -0.64 } }; // readings per venue and asset (ADR-071)
 
 describe("currentValue", () => {
   it("reads the price, the IV in % and the strategy P&L; null when unknown", () => {
     expect(currentValue(base, readings)).toBe(79506.5);
+    expect(currentValue({ ...base, venue: "deribit" }, readings)).toBe(79400); // HC-SH-126: a Deribit price alert reads Deribit's index
+    expect(currentValue({ ...base, venue: "deribit", asset: "ETH" }, readings)).toBeNull();
     expect(currentValue(iv, readings)).toBeCloseTo(42.4, 9);
     expect(currentValue(pnl, readings)).toBe(-0.64);
     expect(currentValue(base, EMPTY_READINGS)).toBeNull();
@@ -38,7 +40,7 @@ describe("copy", () => {
 describe("dueAlerts", () => {
   it("returns the armed alerts the readings meet, with the reading", () => {
     expect(dueAlerts([base, iv, pnl], readings)).toEqual([]);
-    const hot = { spot: { BTC: 82000 }, atmIv: { BTC: 0.29 }, pnl: { strat_1: 25 } };
+    const hot = { spot: { "delta_india:BTC": 82000 }, atmIv: { "delta_india:BTC": 0.29 }, pnl: { strat_1: 25 } };
     expect(dueAlerts([base, iv, pnl], hot).map((d) => [d.alert.id, d.current])).toEqual([
       ["alr_1", 82000],
       ["alr_2", 29],

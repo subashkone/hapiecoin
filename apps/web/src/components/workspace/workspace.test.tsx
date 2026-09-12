@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakeSocket, renderWithProviders } from "../../../test/helpers";
 import { searchParamsMock } from "../../../test/next-mocks";
+import { findRegistered, listShortcuts, resetShortcuts } from "@/lib/shortcuts";
 import { useUiStore } from "@/lib/store";
 import { Workspace, clampSplit } from "./Workspace";
 import { WorkspaceLoader } from "./WorkspaceLoader";
@@ -129,6 +130,22 @@ describe("[WORKSPACE] HC-WS-001..006 two-pane shell", () => {
     renderWithProviders(<Workspace />);
     expect(useUiStore.getState().workspaceTab).toBe("chain");
     expect(useUiStore.getState().analysisTab).toBe("payoff");
+  });
+
+  it("HC-TR-178 registers W → Strategy wizard while mounted, listed under Analyse workspace (ADR-072)", () => {
+    const { unmount } = renderWithProviders(<Workspace />);
+    const row = listShortcuts().find((r) => r.key === "W");
+    expect(row?.group).toBe("Analyse workspace");
+    expect(row?.description).toContain("Strategy wizard");
+    const reg = findRegistered({ key: "w", shiftKey: false, ctrlKey: false, metaKey: false, altKey: false }, false);
+    expect(reg).not.toBeNull();
+    reg!.handler(new KeyboardEvent("keydown", { key: "w" }));
+    expect(useUiStore.getState()).toMatchObject({ workspaceTab: "builder", builderTab: "wizard" });
+    // typing in a field never triggers it
+    expect(findRegistered({ key: "w", shiftKey: false, ctrlKey: false, metaKey: false, altKey: false }, true)).toBeNull();
+    unmount();
+    expect(listShortcuts().some((r) => r.key === "W")).toBe(false);
+    resetShortcuts();
   });
 
   it("WorkspaceLoader code-splits the workspace behind a spinner", async () => {

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AUTH_FEATURES } from "@/content/landing";
 import { fmtPct, fmtPrice } from "@/lib/format";
+import { DEFAULT_VENUE } from "@hapiecoin/venues/core";
 import { useSpot } from "@/lib/gateway/hooks";
 import { Logo } from "@/components/shell/Logo";
 import { AuthForms } from "./AuthForms";
@@ -31,7 +32,7 @@ export function authHref(tab: AuthTab, next: string, ref: string): string {
 const EMAIL_KEY = "hapiecoin.auth.email";
 
 function TickerItem({ asset }: { asset: Underlying }) {
-  const spot = useSpot(asset);
+  const spot = useSpot(asset, DEFAULT_VENUE); // the sign-in strip quotes the default venue (ADR-071)
   const c = spot?.c24;
   return (
     <span className="inline-flex items-baseline gap-1.5 font-mono text-xs" data-testid={`ticker-${asset}`}>

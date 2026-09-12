@@ -5,13 +5,15 @@ import { useState } from "react";
 import { fmtPrice } from "@/lib/format";
 import { useSpot } from "@/lib/gateway/hooks";
 import { ASSET_META, useUiStore } from "@/lib/store";
+import { perpetualSymbolOf } from "@/lib/venue";
 import { LOT_PRESETS, type LegSide, MAX_ACTIVE_LEGS } from "@/lib/strategy/legs";
 
 export function FutureDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const asset = useUiStore((s) => s.asset);
   const chainLots = useUiStore((s) => s.chainLots);
   const addLeg = useUiStore((s) => s.addLeg);
-  const spot = useSpot(asset);
+  const venue = useUiStore((s) => s.venue);
+  const spot = useSpot(asset); // the workspace venue's index (ADR-071)
   const [side, setSide] = useState<LegSide>("buy");
   const [lots, setLots] = useState<number>(chainLots);
   const price = spot?.price;
@@ -29,7 +31,7 @@ export function FutureDialog({ open, onOpenChange }: { open: boolean; onOpenChan
         <DialogHeader>
           <DialogTitle>Add Futures Contract</DialogTitle>
           <DialogDescription>
-            USD Future · {ASSET_META[asset].symbol} · Spot {fmtPrice(price)}
+            USD Future · {perpetualSymbolOf(asset, venue) ?? ASSET_META[asset].symbol} · Spot {fmtPrice(price)}
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
