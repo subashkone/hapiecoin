@@ -1298,3 +1298,36 @@ test.describe("HC-TR-185 backtest tab (ADR-077)", () => {
     await expect(page.getByTestId("backtest-panel")).toBeVisible();
   });
 });
+
+test.describe("HC-WS-114 replay tab (ADR-079)", () => {
+  test.beforeEach(async ({ page, request }) => {
+    await seedUser(request, { email: "replay@example.com", plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z", daysLeft: 100 } });
+    await signIn(page, "replay@example.com");
+  });
+
+  test("HC-WS-114 the recorded chain scrubs by day and by 5-minute pass; the palette opens the tab", async ({ page }) => {
+    await page.getByTestId("analysis-tab-replay").click();
+    const panel = page.getByTestId("replay-panel");
+    await expect(panel).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(panel).toHaveAttribute("data-steps", "12");
+    await expect(panel.getByTestId("replay-source")).toContainText("recorded end of day · 12 of 12");
+    await expect(panel.getByTestId("replay-row").first()).toBeVisible();
+    const atBefore = await panel.getAttribute("data-at");
+    await panel.getByTestId("replay-prev").click();
+    await expect(panel.getByTestId("replay-source")).toContainText("11 of 12");
+    expect(await panel.getAttribute("data-at")).not.toBe(atBefore);
+    await panel.getByTestId("replay-res-fine").click();
+    await expect(panel).toHaveAttribute("data-steps", "25");
+    await expect(panel).toHaveAttribute("data-source", "marks", { timeout: 10_000 });
+    await panel.getByTestId("replay-play").click();
+    await expect(panel.getByTestId("replay-play")).toHaveText("Pause");
+    await expect(panel.getByTestId("replay-source")).toContainText(/[3-9] of 25|1\d of 25/, { timeout: 10_000 });
+    await panel.getByTestId("replay-play").click();
+    await expect(panel.getByTestId("replay-play")).toHaveText("Play");
+    await page.getByTestId("analysis-tab-payoff").click();
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox", { name: "Command" }).fill("replay");
+    await page.getByRole("option", { name: "Analysis: Replay" }).click();
+    await expect(page.getByTestId("replay-panel")).toBeVisible();
+  });
+});

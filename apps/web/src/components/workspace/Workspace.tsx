@@ -67,7 +67,7 @@ function useNarrow(px: number): boolean {
 }
 
 const WORKSPACE_TABS: readonly WorkspaceTab[] = ["chain", "builder", "paper", "live", "journal", "screener"];
-const PANELS: readonly AnalysisTab[] = ["payoff", "scenarios", "greeks", "vol", "structure", "ladder", "backtest"];
+const PANELS: readonly AnalysisTab[] = ["payoff", "scenarios", "greeks", "vol", "structure", "ladder", "backtest", "replay"];
 
 export function Workspace() {
   const tab = useUiStore((s) => s.workspaceTab);

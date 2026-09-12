@@ -4620,6 +4620,36 @@
   "evidence": "ADR-076: ScreenerPanel.tsx add / showInChain, components/shell/CommandPalette.tsx nav:screener, lib/store.ts WorkspaceTab; unit screener.test.tsx HC-WS-112, shell.test.tsx, workspace.test.tsx; e2e analyse.spec.ts HC-WS-110..112"
  },
  {
+  "id": "HC-WS-113",
+  "area": "20-analyse",
+  "areaName": "Workspace: chain & analysis pane",
+  "owner": "Workspace engineer",
+  "route": "/analyse",
+  "screen": "Analyse · Replay (API)",
+  "feature": "The instants an expiry's chain was recorded at and the ladder at one of them: daily over the end-of-day history, every five minutes over the last week",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api)",
+  "acceptance": "GET /v1/replay/expiries (expiries with a recorded chain, days held, listed now), GET /v1/replay/steps (daily instants from chain_eod, 5-minute passes of the last week from instrument_marks through one symbol of the expiry, the spot from the same pass's IV snapshot), GET /v1/replay/chain?at= (end-of-day rows stamped then, else the marks of that pass parsed through the venue codec; 404 when nothing was recorded then); behind the session, cached a minute; 503 before anything is recorded",
+  "evidence": "ADR-079 (12 Sep 2026): apps/api/src/replay.ts replayExpiries / replaySteps / replayChain, routes/replay.ts; packages/schema/src/replay.ts; unit routes/replay.test.ts HC-WS-113"
+ },
+ {
+  "id": "HC-WS-114",
+  "area": "20-analyse",
+  "areaName": "Workspace: chain & analysis pane",
+  "owner": "Workspace engineer",
+  "route": "/analyse",
+  "screen": "Analyse · Replay tab",
+  "feature": "Scrub an expiry's recorded chain by day or by 5-minute pass, with the Builder's legs marked at that instant",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web), e2e",
+  "acceptance": "Analysis pane tab (and the palette command Analysis: Replay): expiry select with the recorded days, Daily / 5-min with the step counts, a slider with previous / next / play (400 ms per step, restarts from the first instant when at the end), the readout (instant, spot, recorded end of day or recorded 5-minute pass, n of N), the ladder with call mark / IV, strike, put IV / mark and the ATM row marked; the Builder's legs on that expiry show B / S on their strike and the position's mark-to-market versus entry from recorded marks only (a leg without a recorded mark says so); an honest empty state before anything is recorded; the mock API serves synthetic instants",
+  "evidence": "ADR-079 (12 Sep 2026): apps/web/src/components/analysis/ReplayPanel.tsx (replay-panel[data-state,data-at,data-source,data-steps], replay-expiry, replay-res-daily / fine, replay-prev / play / next, replay-slider, replay-readout, replay-ladder, replay-row[data-atm], replay-leg, replay-mtm, replay-empty), lib/api/replay.ts, AnalysisPane.tsx, CommandPalette.tsx, test/mock-replay.ts; unit replay-panel.test.tsx HC-WS-114; e2e analyse.spec.ts HC-WS-114"
+ },
+ {
   "id": "HC-TR-001",
   "area": "21-trading",
   "areaName": "Builder, paper & live trading, journal",
