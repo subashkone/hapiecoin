@@ -28,15 +28,23 @@ export type TemplateLeg = TemplateOptionLeg | TemplateFutureLeg;
 /** Badges on the card: the template holds a perpetual, spans two expiries, or is a 1x2 spread. */
 export type TemplateTag = "futures" | "calendar" | "ratio";
 
+/** Whether the worst case at expiry is a finite number ("defined") or open ("undefined": a naked short option side, a short perpetual). */
+export type TemplateRisk = "defined" | "undefined";
+
 export interface StrategyTemplate {
   name: string;
   category: TemplateCategory;
   description: string;
   legs: TemplateLeg[];
   tags?: readonly TemplateTag[] | undefined;
+  /** The bound of the loss at expiry (ADR-072); the invariants test proves it against the priced payoff. */
+  risk: TemplateRisk;
 }
 
-const t = (name: string, category: TemplateCategory, description: string, legs: TemplateLeg[], tags?: readonly TemplateTag[]): StrategyTemplate => ({ name, category, description, legs, tags });
+/** The templates whose loss at expiry has no bound: the Strategy Wizard never offers them (ADR-072). */
+const UNDEFINED_RISK: ReadonlySet<string> = new Set(["Sell Call", "Short Synthetic Future", "Short Perp", "Covered Put", "Short Straddle", "Short Strangle", "Jade Lizard", "Call Ratio Spread 1x2"]);
+
+const t = (name: string, category: TemplateCategory, description: string, legs: TemplateLeg[], tags?: readonly TemplateTag[]): StrategyTemplate => ({ name, category, description, legs, tags, risk: UNDEFINED_RISK.has(name) ? "undefined" : "defined" });
 const C = "call" as const;
 const P = "put" as const;
 const F = "future" as const;

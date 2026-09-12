@@ -138,7 +138,7 @@ function normaliseLayers(raw: unknown): ChartLayers {
   return out;
 }
 export type AnalysisTab = "payoff" | "scenarios" | "greeks" | "vol" | "structure" | "ladder";
-export type BuilderSubTab = "builder" | "templates";
+export type BuilderSubTab = "builder" | "templates" | "wizard";
 /** What the analysis pane shows (ADR-026): the Builder legs (null), a paper / live strategy, or ticked exchange positions. */
 export type PaneSource = { kind: "strategy"; id: string } | { kind: "positions"; productIds: number[] } | null;
 

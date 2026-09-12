@@ -186,6 +186,20 @@ export function buildCommands(opts: {
         },
       },
       {
+        // HC-TR-178: the wizard from anywhere (ADR-072)
+        id: "act:builder-wizard",
+        label: "Strategy wizard: view, move and date → strategies",
+        group: "Actions",
+        hint: "W",
+        keywords: ["wizard", "recommend", "which strategy", "bullish", "bearish", "neutral", "volatile", "defined risk", "target"],
+        run: () => {
+          const s = useUiStore.getState();
+          opts.navigate("/analyse");
+          s.setWorkspaceTab("builder");
+          s.setBuilderTab("wizard");
+        },
+      },
+      {
         id: "act:builder-new",
         label: "Builder: new strategy (clear legs)",
         group: "Actions",

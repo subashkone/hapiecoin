@@ -6,17 +6,17 @@ import type { AnalyzeResult } from "@hapiecoin/pricing";
 import type { Underlying } from "@hapiecoin/schema";
 import { useEffect, useRef, useState } from "react";
 import { getPricingClient } from "@/lib/pricing/client";
-import { settlementHourUtc, toPricingLegs } from "@/lib/pricing/legs";
+import { settlementHourUtc } from "@/lib/pricing/legs";
 import { venueCalendar } from "@/lib/venue";
 import { nearestExpiryValuationMs, pnlAt } from "./analysis";
-import { type StrategyLeg, addLeg as addLegPure } from "./legs";
-import { type ChainStrike, type MaterialiseInput, type StrategyTemplate, materialiseTemplate } from "./templates";
+import { placeTemplate } from "./placeTemplate";
+import type { ChainStrike, MaterialiseInput, StrategyTemplate } from "./templates";
 
 export const OUTLOOKS = ["Bullish", "Bearish", "Neutral", "Volatile"] as const;
 export type Outlook = (typeof OUTLOOKS)[number];
 
 /** Outlook from the expiry payoff: profit at +6 % / −6 % / spot decides the bucket; null when nothing is clear. */
-export function classifyOutlook(points: AnalyzeResult["points"], spot: number): Outlook | null {
+export function classifyOutlook(points: readonly AnalyzeResult["points"][number][], spot: number): Outlook | null {
   if (points.length === 0 || !(spot > 0)) return null;
   const up = pnlAt(points, spot * 1.06) > 0;
   const down = pnlAt(points, spot * 0.94) > 0;
@@ -74,21 +74,9 @@ export function useTemplateStats(templates: readonly StrategyTemplate[], input: 
       for (const tpl of templates) {
         // GAPS #76: a calendar-family template refuses (`no-chain`) until the far expiry's rows are passed in, so its
         // card shows no figures rather than figures priced off the near expiry
-        const r = materialiseTemplate(tpl, mat);
-        if (!r.ok) continue;
-        let legs: StrategyLeg[] = [];
-        let ok = true;
-        for (const l of r.legs) {
-          const a = addLegPure(legs, l);
-          if (!a.ok) {
-            ok = false;
-            break;
-          }
-          legs = a.legs;
-        }
-        if (!ok) continue;
-        const priced = toPricingLegs(legs, input.lotSize);
-        if (priced.length === 0) continue;
+        const placed = placeTemplate(tpl, mat, input.lotSize);
+        if (!placed) continue;
+        const { legs, priced } = placed;
         try {
           // ADR-059: a calendar-family template values its expiry figures at the nearest expiry, later legs keep time value
           const valuationMs = nearestExpiryValuationMs(legs, settlementHourUtc(input.asset), input.nowMs);

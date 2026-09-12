@@ -68,6 +68,12 @@ describe("HC-PB-059 command palette", () => {
     tpl[0]?.run();
     expect(useUiStore.getState()).toMatchObject({ workspaceTab: "builder", builderTab: "templates", templateRequest: "Iron Condor" });
     expect(inn.some((c) => c.id.startsWith("act:expiry-"))).toBe(false); // none without lists
+    // HC-TR-178 the Strategy wizard from anywhere (ADR-072)
+    const wizard = inn.find((c) => c.id === "act:builder-wizard");
+    expect(wizard?.hint).toBe("W");
+    wizard?.run();
+    expect(navigate).toHaveBeenLastCalledWith("/analyse");
+    expect(useUiStore.getState()).toMatchObject({ workspaceTab: "builder", builderTab: "wizard" });
     // HC-TR-140 trading commands
     useUiStore.setState({ legs: { BTC: [], ETH: [], XAUT: [] }, asset: "BTC", tradeFlow: null });
     inn.find((c) => c.id === "act:open-journal")?.run();

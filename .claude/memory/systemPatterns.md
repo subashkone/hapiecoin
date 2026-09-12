@@ -16,6 +16,7 @@
 - Paper and live trading share one order model but different executors; the live executor is the only code that may call an order endpoint.
 - Tests: Vitest for units, Playwright for e2e and visual diffs; each test title carries its traceability ID.
 - Design tokens live in one file; amber is only for spot/ATM/primary action; green/red only for P&L and side (ADR-003).
+- Templates carry `risk` ("defined" = finite loss at expiry, proven by the invariants test); the Strategy Wizard (ADR-072, Builder sub-tab `wizard`, `W`) prices the eligible templates once per chain snapshot and derives every thesis figure from the expiry curve (`lib/strategy/wizard.ts`), loading a card through the same `useTemplateLoader().load` as the Templates tab.
 
 ## Mocks (pre-build reference)
 - `mockup-clone/`: faithful clone of the original, hash-routed single HTML. Read-only reference (ADR-002).
