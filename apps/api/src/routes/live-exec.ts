@@ -5,7 +5,7 @@
  * reconciles pending orders.
  * Routes call these; nothing here is reachable without a signed-in user's own vault credential.
  */
-import { type LivePreview, type LivePreviewLeg, type StrategyOrder, toDecimal, isLiveConfirm } from "@hapiecoin/schema";
+import { type LivePreview, type LivePreviewLeg, type MindfulPreview, type StrategyOrder, toDecimal, isLiveConfirm } from "@hapiecoin/schema";
 import { DEFAULT_VENUE, type DeltaCredentials, type PlaceOrderResult, VENUE_REGISTRY, contractsFor, defaultLotSizes, getVenue, getVenueCore, roundToTick } from "@hapiecoin/venues";
 import type { Venue } from "@hapiecoin/schema";
 import { and, eq } from "drizzle-orm";
@@ -174,7 +174,7 @@ export async function planLegs(deps: AppDeps, legs: readonly PlanLeg[], lotSize:
  * `exits` are reduce-only rows of an adjustment batch (ADR-044): planned for product state and sizing, listed first,
  * never counted against the entry caps because they reduce risk.
  */
-export async function preview(deps: AppDeps, user: SessionUser, strategy: StrategyRow, legs: readonly PlanLeg[], brokerId: string, worstLoss: number | null, exits: readonly PlanLeg[] = [], accountId: string | null = null): Promise<LivePreview> {
+export async function preview(deps: AppDeps, user: SessionUser, strategy: StrategyRow, legs: readonly PlanLeg[], brokerId: string, worstLoss: number | null, exits: readonly PlanLeg[] = [], accountId: string | null = null, mindful: MindfulPreview | null = null): Promise<LivePreview> {
   const reasons: string[] = [];
   const blocked = await tradingBlockedReason(deps, user);
   if (blocked) reasons.push(blocked);
@@ -201,7 +201,7 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
   let availableAsset: string | null = null;
   let marginUsed: string | null = null;
   if (wrongVenue) {
-    return { ok: false, reasons, legs: [...exitPlan.legs, ...plan.legs], notional: toDecimal(notional, 2), available, availableAsset, marginUsed, limits: { maxLegs: trading.maxLegs, maxNotionalUsd: trading.maxNotionalUsd, markBandPct: trading.markBandPct } };
+    return { ok: false, reasons, legs: [...exitPlan.legs, ...plan.legs], notional: toDecimal(notional, 2), available, availableAsset, marginUsed, limits: { maxLegs: trading.maxLegs, maxNotionalUsd: trading.maxNotionalUsd, markBandPct: trading.markBandPct }, mindful };
   }
   try {
     const creds = await openCredential(deps, user, brokerId, strategy.venue, accountId);
@@ -230,7 +230,8 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
     deps.logger.warn({ err: errorMessage(e), userId: user.id, brokerId }, "live preview: wallet read failed");
     reasons.push(e instanceof HttpError ? e.message : `Could not read the exchange wallet (${e instanceof Error ? e.message : "unknown error"})`);
   }
-  return { ok: reasons.length === 0, reasons, legs: [...exitPlan.legs, ...plan.legs], notional: toDecimal(notional, 2), available, availableAsset, marginUsed, limits: { maxLegs: trading.maxLegs, maxNotionalUsd: trading.maxNotionalUsd, markBandPct: trading.markBandPct } };
+  // ADR-084: the pause rides outside `reasons`, so `ok` keeps meaning "refuse" and the pause means "delay"
+  return { ok: reasons.length === 0, reasons, legs: [...exitPlan.legs, ...plan.legs], notional: toDecimal(notional, 2), available, availableAsset, marginUsed, limits: { maxLegs: trading.maxLegs, maxNotionalUsd: trading.maxNotionalUsd, markBandPct: trading.markBandPct }, mindful };
 }
 
 export interface PlacementOutcome {

@@ -15,6 +15,7 @@ import { loadRepoEnv } from "./env-file.js";
 import { createLogger } from "./logger.js";
 import { captureFromLog, createErrorSink } from "./error-sink.js";
 import { createApiMetrics } from "./metrics.js";
+import { MindfulGate, startDayPnlWriter } from "./day-pnl.js";
 import { createMailer } from "./mailer.js";
 import { RazorpayHttpClient } from "./razorpay.js";
 import { MemoryRateStore, type RateStore, RedisRateStore } from "./security/rate-store.js";
@@ -97,6 +98,7 @@ const deps: AppDeps = {
   authOptions: authOptionsPublic(config),
   errors: errorSink,
   metrics: createApiMetrics(),
+  mindful: new MindfulGate(),
   analytics: redis ? new RedisAnalyticsReader(redis) : new MemoryAnalyticsReader(),
   // ADR-057: the bot token never leaves the client; without it the telegram channel is not offered
   telegram: config.telegramBotToken ? new TelegramBotClient(config.telegramBotToken, { nodeEnv: config.nodeEnv, logger }) : null,
@@ -153,6 +155,8 @@ if (config.rulesTickMs !== 0)
 // ADR-073: every account's fills re-read for the verified P&L (read-only against the venue); 0 turns it off
 if (config.fillsIngestMs !== 0) starters.push({ name: "fills-ingest", start: () => startFillsIngest(deps, config.fillsIngestMs) });
 if (deps.telegram !== null) starters.push({ name: "telegram-linker", start: () => startTelegramLinker(deps) });
+// ADR-084: today's P&L point for every live strategy from the recorded marks, so the Mindful pause has its baseline without a browser
+if (config.dayPnlMs !== 0) starters.push({ name: "day-pnl", start: () => startDayPnlWriter(deps, config.dayPnlMs) });
 const jobs = startJobs({
   role: config.nodeEnv === "test" ? "off" : config.jobsRole,
   lock: redis ? new RedisLeaderLock(redis) : new MemoryLeaderLock(),
