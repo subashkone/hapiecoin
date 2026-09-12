@@ -175,6 +175,9 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   // read per distinct account; a strategy from before accounts on an exchange with several keys names none and is
   // left out of the check (its card says so)
   const accounts = useMemo(() => credential?.items ?? [], [credential]);
+  // stable inputs for the batch dialog: its selection effect keys on these arrays, so a fresh filter per render would reset what the trader unticked (ADR-069 fix)
+  const batchStrategies = useMemo(() => all.filter((s) => !dataOnly(s.venue)), [all]);
+  const batchBrokers = useMemo(() => (brokers ?? []).filter((b) => !dataOnly(b.venue)), [brokers]);
   const refs = useMemo(() => {
     const m = new Map<string, AccountRef>();
     if (kind === "live") for (const s of all) {
@@ -396,7 +399,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
           </div>
         )}
       </div>
-      {kind === "paper" ? <BatchLiveDialog open={batch} onOpenChange={setBatch} strategies={all.filter((s) => !dataOnly(s.venue))} brokers={(brokers ?? []).filter((b) => !dataOnly(b.venue))} accounts={accounts} connected={connected} money={money} totalOf={(s) => book.pnlOf(s).total} /> : null}
+      {kind === "paper" ? <BatchLiveDialog open={batch} onOpenChange={setBatch} strategies={batchStrategies} brokers={batchBrokers} accounts={accounts} connected={connected} money={money} totalOf={(s) => book.pnlOf(s).total} /> : null}
       <ReconcileDialog strategy={reconciling} rows={reconciling ? (drift.get(reconciling.id) ?? []) : []} markOf={venueMarkOf} onOpenChange={(o) => { if (!o) { setReconcileId(null); void refetch(); void wallet.refetch(); } }} />
       {stopping ? <StopPaperDialog open={true} onOpenChange={(o) => !o && setStopId(null)} strategy={stopping} priceOf={(l) => book.priceOf(stopping, l)} total={book.pnlOf(stopping).total} money={money} live={feedLive} onDone={() => void qc.invalidateQueries({ queryKey: strategyKeys.all })} /> : null}
     </section>
