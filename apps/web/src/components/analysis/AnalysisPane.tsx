@@ -98,12 +98,12 @@ export function AnalysisPane() {
             {t.label}
           </TabsTrigger>
         ))}
-        <span className="ml-auto flex min-w-0 shrink items-center gap-1.5 self-center whitespace-nowrap pr-1">
+        <span className="ml-auto flex shrink-0 items-center gap-1.5 self-center whitespace-nowrap pr-1 max-[999px]:pr-2">
           <span className="hidden min-w-0 xl:inline"><StrategyInfo /></span>
           <button type="button" disabled={!hasLegs} onClick={() => setShare(true)} className="rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground disabled:opacity-40" title="Share this strategy as a link" aria-label="Share strategy" data-testid="share-open">
             ↗
           </button>
-          <button type="button" onClick={() => setCollapse("right")} className="rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground" title="Give the chain and Builder the full width" aria-label="Collapse the analysis pane" data-testid="collapse-right">
+          <button type="button" onClick={() => setCollapse("right")} className="hidden rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground min-[1000px]:inline-block" title="Give the chain and Builder the full width" aria-label="Collapse the analysis pane" data-testid="collapse-right">
             ›
           </button>
         </span>

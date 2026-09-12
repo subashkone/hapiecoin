@@ -13,6 +13,7 @@ import type { ChainLayout } from "@/lib/chain/layout";
 import { type ChainRange, chainTotals, itmSide, maxOpenInterest, oiBarPercent, sliceAroundAtm } from "@/lib/chain/range";
 import { fmtChange, fmtDelta, fmtGamma, fmtIv, fmtOiFull, fmtPrice, fmtQty, fmtStrike, fmtTheta, fmtVega } from "@/lib/format";
 import { atmIndex, type ChainState } from "@/lib/gateway/reducer";
+import { useCoarsePointer } from "@/lib/useMediaQuery";
 import { chainStats, nearestDelta } from "@/lib/chain/structure";
 import { type LegKind, type LegSide, type RowMarks, type StrategyLeg, rowMarks } from "@/lib/strategy/legs";
 import { ChainHeader } from "./ChainHeader";
@@ -31,6 +32,9 @@ import {
   trackWidth as layoutTrackWidth,
 } from "./columns";
 import { useMirroredScroll } from "./useMirroredScroll";
+
+/** A touch drag pans the chain sideways only once it has moved this far more sideways than up or down. */
+const TOUCH_PAN_SLOP_PX = 10;
 
 type Sides = "both" | "calls" | "puts";
 
@@ -282,6 +286,9 @@ export function ChainTable({
   const [rowsTick, setRowsTick] = useState(0); // re-runs the Δ effect when the hit already sits in the slice
   const [hover, setHover] = useState<number>(-1);
   const active = hover >= 0 ? hover : focus;
+  // a touch screen has no hover: a tapped row becomes the focused row, which carries the controls (ADR-080)
+  const coarse = useCoarsePointer();
+  const tapRow = coarse ? (index: number) => setFocus(index) : undefined;
   const addFromKey = (kind: LegKind, side: LegSide) => {
     const row = rows[focus];
     if (!row || !onAddLeg) return;
@@ -430,21 +437,56 @@ export function ChainTable({
         lotsTitle={lotsTitle}
         marks={side === "calls" ? marks.call : marks.put}
         atLimit={atLimit}
+        coarse={coarse}
         onAdd={(kind, legSide) => onAddLeg(kind, legSide, row.strike, side === "calls" ? row.call : row.put)}
         onLots={(delta) => onLots?.(delta)}
         onInfo={(kind) => onInfo?.(kind, row.strike)}
       />
     ) : null;
 
-  // Wheel on either track moves the shared offset (non-passive so the page does not also scroll sideways).
+  // Wheel on either track moves the shared offset (non-passive so the page does not also scroll sideways); a touch
+  // drag pans the same way once it is clearly horizontal, and leaves vertical scrolling to the browser otherwise.
   useEffect(() => {
     const bind = (el: HTMLDivElement | null, side: "calls" | "puts") => {
       if (!el) return () => undefined;
       const handler = (e: WheelEvent) => {
         if (scroll.onWheel(e, side)) e.preventDefault();
       };
+      let startX = 0;
+      let startY = 0;
+      let lastX = 0;
+      let panning: boolean | null = null; // null until the gesture's direction is known
+      const onTouchStart = (e: TouchEvent) => {
+        const t = e.touches[0];
+        if (!t) return;
+        startX = lastX = t.clientX;
+        startY = t.clientY;
+        panning = null;
+      };
+      const onTouchMove = (e: TouchEvent) => {
+        const t = e.touches[0];
+        if (!t) return;
+        if (panning === null) {
+          const dx = Math.abs(t.clientX - startX);
+          const dy = Math.abs(t.clientY - startY);
+          if (dx < TOUCH_PAN_SLOP_PX && dy < TOUCH_PAN_SLOP_PX) return;
+          panning = dx > dy;
+        }
+        if (!panning) return;
+        const delta = lastX - t.clientX;
+        lastX = t.clientX;
+        // once the browser has committed to its own scroll the event is no longer cancelable; the tracks carry
+        // touch-action: pan-y so that only happens for a vertical gesture
+        if (scroll.onWheel({ deltaX: delta, deltaY: 0, shiftKey: false }, side) && e.cancelable) e.preventDefault();
+      };
       el.addEventListener("wheel", handler, { passive: false });
-      return () => el.removeEventListener("wheel", handler);
+      el.addEventListener("touchstart", onTouchStart, { passive: true });
+      el.addEventListener("touchmove", onTouchMove, { passive: false });
+      return () => {
+        el.removeEventListener("wheel", handler);
+        el.removeEventListener("touchstart", onTouchStart);
+        el.removeEventListener("touchmove", onTouchMove);
+      };
     };
     const offCalls = bind(callsRef.current, "calls");
     const offPuts = bind(putsRef.current, "puts");
@@ -523,7 +565,7 @@ export function ChainTable({
             </div>
           ) : null}
           {sides !== "puts" ? (
-            <div ref={callsRef} className="relative min-w-0 overflow-hidden" data-testid="chain-calls" data-x={scroll.x}>
+            <div ref={callsRef} className="relative min-w-0 touch-pan-y overflow-hidden" data-testid="chain-calls" data-x={scroll.x}>
               <div style={trackStyle(scroll.x)}>
                 {items.map((v) => {
                   const row = rows[v.index];
@@ -539,6 +581,7 @@ export function ChainTable({
                       data-strike={row.strike}
                       data-leg={marks.call.tone ?? undefined}
                       onMouseEnter={() => setHover(v.index)}
+                      onClick={tapRow && (() => tapRow(v.index))}
                       className={cn(
                         "absolute left-0 grid w-full border-b border-border text-xs",
                         itmSide(row.strike, spot) === "call" && "itm-tint",
@@ -604,7 +647,7 @@ export function ChainTable({
             })}
           </div>
           {sides !== "calls" ? (
-            <div ref={putsRef} className="relative min-w-0 overflow-hidden" data-testid="chain-puts" data-x={scroll.putsX}>
+            <div ref={putsRef} className="relative min-w-0 touch-pan-y overflow-hidden" data-testid="chain-puts" data-x={scroll.putsX}>
               <div style={trackStyle(scroll.putsX)}>
                 {items.map((v) => {
                   const row = rows[v.index];
@@ -620,6 +663,7 @@ export function ChainTable({
                       data-strike={row.strike}
                       data-leg={marks.put.tone ?? undefined}
                       onMouseEnter={() => setHover(v.index)}
+                      onClick={tapRow && (() => tapRow(v.index))}
                       className={cn(
                         "absolute left-0 grid w-full border-b border-border text-xs",
                         itmSide(row.strike, spot) === "put" && "itm-tint",

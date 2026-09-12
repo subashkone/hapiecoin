@@ -25,7 +25,7 @@ describe("[UI-TABS] Tabs (Radix)", () => {
     expect(list.className).toContain("border-b");
     const active = screen.getByRole("tab", { name: "Payoff" });
     expect(active.getAttribute("aria-selected")).toBe("true");
-    expect(active.className).toContain("data-[state=active]:border-primary");
+    expect(active.className).toContain("data-[state=active]:shadow-[inset_0_-2px_0_0_hsl(var(--primary))]"); // drawn inside the trigger: the scrolling strip has no overflow to clip (ADR-080)
     expect(screen.getByText("Payoff panel")).toBeTruthy();
     expect(screen.queryByText("Greeks panel")).toBeNull();
   });

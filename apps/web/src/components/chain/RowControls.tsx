@@ -17,20 +17,24 @@ export interface RowControlsProps {
   onAdd: (kind: LegKind, side: LegSide) => void;
   onLots: (delta: 1 | -1) => void;
   onInfo: (kind: LegKind) => void;
+  /** finger-sized targets on a touch screen (ADR-080); the table owns the media query */
+  coarse?: boolean;
 }
 
-export function RowControls({ side, strike, lots, lotsTitle, marks, atLimit, onAdd, onLots, onInfo }: RowControlsProps) {
+export function RowControls({ side, strike, lots, lotsTitle, marks, atLimit, onAdd, onLots, onInfo, coarse = false }: RowControlsProps) {
   const kind: LegKind = side === "calls" ? "call" : "put";
   const label = `${kind} ${fmtStrike(strike)}`;
-  const btn = "grid h-[18px] w-5 place-items-center rounded-[2px] border text-[10.5px] font-bold leading-none disabled:cursor-not-allowed disabled:opacity-40";
+  const btn = cn("grid place-items-center rounded-[2px] border font-bold leading-none disabled:cursor-not-allowed disabled:opacity-40", coarse ? "h-9 w-9 text-sm" : "h-[18px] w-5 text-[10.5px]");
   return (
     <div
       className={cn(
-        "absolute top-1/2 z-[5] flex -translate-y-1/2 items-center gap-[3px] rounded-[3px] border border-input bg-popover p-[3px] shadow-sm",
+        "absolute top-1/2 z-[5] flex -translate-y-1/2 items-center rounded-[3px] border border-input bg-popover shadow-sm",
+        coarse ? "gap-1.5 p-1.5" : "gap-[3px] p-[3px]",
         side === "calls" ? "right-1" : "left-1",
       )}
       data-testid={`row-controls-${side}`}
       data-strike={strike}
+      data-coarse={coarse || undefined}
       onMouseDown={(e) => e.stopPropagation()}
     >
       <button
@@ -57,20 +61,20 @@ export function RowControls({ side, strike, lots, lotsTitle, marks, atLimit, onA
       >
         S
       </button>
-      <span className="inline-flex h-[18px] items-center rounded-[2px] border border-input font-mono text-[10.5px]" title={lotsTitle} data-testid={`row-lots-${side}`}>
-        <button type="button" className="px-1 text-muted-foreground hover:text-foreground" aria-label="Fewer lots" onClick={() => onLots(-1)} data-testid={`row-lots-down-${side}`}>
+      <span className={cn("inline-flex items-center rounded-[2px] border border-input font-mono", coarse ? "h-9 text-sm" : "h-[18px] text-[10.5px]")} title={lotsTitle} data-testid={`row-lots-${side}`}>
+        <button type="button" className={cn("text-muted-foreground hover:text-foreground", coarse ? "px-2.5" : "px-1")} aria-label="Fewer lots" onClick={() => onLots(-1)} data-testid={`row-lots-down-${side}`}>
           −
         </button>
         <span className="min-w-[22px] text-center" data-testid={`row-lots-value-${side}`}>
           {lots}
         </span>
-        <button type="button" className="px-1 text-muted-foreground hover:text-foreground" aria-label="More lots" onClick={() => onLots(1)} data-testid={`row-lots-up-${side}`}>
+        <button type="button" className={cn("text-muted-foreground hover:text-foreground", coarse ? "px-2.5" : "px-1")} aria-label="More lots" onClick={() => onLots(1)} data-testid={`row-lots-up-${side}`}>
           +
         </button>
       </span>
       <button
         type="button"
-        className="grid h-[18px] w-[18px] place-items-center rounded-[2px] border border-input text-[10px] text-muted-foreground hover:text-foreground"
+        className={cn("grid place-items-center rounded-[2px] border border-input text-muted-foreground hover:text-foreground", coarse ? "h-9 w-9 text-sm" : "h-[18px] w-[18px] text-[10px]")}
         title={`Details for ${label} (Enter)`}
         aria-label={`Details for ${label}`}
         onClick={() => onInfo(kind)}

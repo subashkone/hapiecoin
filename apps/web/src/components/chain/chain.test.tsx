@@ -553,3 +553,68 @@ describe("HC-WS-029 / HC-WS-074 / HC-WS-075 / HC-WS-080 footer stats, the Δ fin
     expect(onRange).toHaveBeenCalledWith(0);
   });
 });
+
+describe("HC-SH-131 the chain on a touch screen (ADR-080)", () => {
+  const touch = (el: Element, type: "touchstart" | "touchmove", x: number, y: number) => {
+    const e = new Event(type, { bubbles: true, cancelable: true });
+    Object.defineProperty(e, "touches", { value: [{ clientX: x, clientY: y }] });
+    el.dispatchEvent(e);
+    return e;
+  };
+
+  it("a horizontal drag on a side track pans the mirrored offset like the wheel; a vertical drag is left to the page", () => {
+    renderWithProviders(<ChainTable {...tableProps({ layout: applyPreset(defaultLayout(), "all"), range: 0 })} />);
+    const calls = screen.getByTestId("chain-calls");
+    const initial = calls.dataset["x"]; // the calls side opens on its inboard columns (mirrored), not at 0
+    act(() => {
+      touch(calls, "touchstart", 150, 100);
+      touch(calls, "touchmove", 154, 101); // inside the slop: nothing yet
+    });
+    expect(calls.dataset["x"]).toBe(initial);
+    let moved: Event | undefined;
+    act(() => {
+      moved = touch(calls, "touchmove", 200, 102); // 50 px to the right, clearly sideways: the outboard columns come into view
+    });
+    expect(moved!.defaultPrevented).toBe(true);
+    expect(Number(calls.dataset["x"])).toBeLessThan(Number(initial)); // the same direction as a wheel with a negative deltaX
+    // a gesture decided as vertical stays vertical even when the finger later drifts sideways
+    const decided = calls.dataset["x"];
+    let drift: Event | undefined;
+    act(() => {
+      touch(calls, "touchstart", 200, 100);
+      touch(calls, "touchmove", 202, 140);
+      drift = touch(calls, "touchmove", 260, 150);
+    });
+    expect(drift!.defaultPrevented).toBe(false);
+    expect(calls.dataset["x"]).toBe(decided);
+    // a mostly vertical gesture never pans and is not cancelled
+    const before = calls.dataset["x"];
+    let vertical: Event | undefined;
+    act(() => {
+      touch(calls, "touchstart", 200, 100);
+      vertical = touch(calls, "touchmove", 203, 160);
+    });
+    expect(vertical!.defaultPrevented).toBe(false);
+    expect(calls.dataset["x"]).toBe(before);
+  });
+
+  it("on a coarse pointer a tapped row carries finger-sized controls, and the tap alone adds nothing", () => {
+    const spy = vi.spyOn(window, "matchMedia").mockImplementation((query: string) => ({ matches: query === "(pointer: coarse)", media: query, onchange: null, addEventListener: () => undefined, removeEventListener: () => undefined, addListener: () => undefined, removeListener: () => undefined, dispatchEvent: () => false }));
+    try {
+      const onAddLeg = vi.fn();
+      renderWithProviders(<ChainTable {...tableProps({ onAddLeg, range: 0 })} />);
+      expect(screen.queryByTestId("row-controls-calls")).toBeNull();
+      const row = screen.getAllByTestId("chain-row-calls")[1]!;
+      fireEvent.click(row);
+      const controls = screen.getByTestId("row-controls-calls");
+      expect(controls.dataset["strike"]).toBe(row.dataset["strike"]);
+      expect(controls.dataset["coarse"]).toBe("true");
+      expect(screen.getByTestId("row-buy-calls").className).toContain("h-9");
+      expect(onAddLeg).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByTestId("row-buy-calls"));
+      expect(onAddLeg).toHaveBeenCalledTimes(1);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});

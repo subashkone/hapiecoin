@@ -231,7 +231,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   return (
     <section className="flex h-full min-h-0 flex-col" data-testid={`${kind}-panel`} data-count={all.length}>
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder={`Search ${kind} trades...`} className="h-7 w-[200px] rounded border border-input bg-background px-2 text-xs" aria-label={`Search ${kind} trades`} data-testid={`${kind}-search`} />
+        <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder={`Search ${kind} trades...`} className="h-7 w-full rounded sm:w-[200px] border border-input bg-background px-2 text-xs" aria-label={`Search ${kind} trades`} data-testid={`${kind}-search`} />
         <select value={sort} onChange={(e) => { setSort(e.target.value as SortKey); setPage(1); }} className="h-7 rounded border border-input bg-background px-2 text-xs" aria-label="Sort" data-testid={`${kind}-sort`}>
           <option value="pnl">Sort · P&L</option>
           <option value="date">Sort · Date</option>

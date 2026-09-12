@@ -66,8 +66,8 @@ export function VenueSwitch() {
     requestVenue(id, () => toast(getVenueCore(id).label, { description: dataOnly(id) ? "Venue switched. Data-only: chains, analysis and paper trading." : "Venue switched." }));
   };
   return (
-    <div className="flex flex-col leading-tight" data-testid="header-venue" data-venue={venue}>
-      <span className="micro text-[9.5px]">Venue</span>
+    <div className="hidden flex-col leading-tight md:flex" data-testid="header-venue" data-venue={venue}>
+      <span className="micro hidden text-[9.5px] md:block">Venue</span>
       <div role="tablist" aria-label="Venue" className="inline-flex overflow-hidden rounded border border-border bg-muted p-0.5">
         {listVenueCores().map((c) => (
           <button
@@ -102,12 +102,12 @@ export function FuturesPrice() {
           {spot ? fmtPrice(spot.price) : "—"}
         </span>
         <span
-          className={cn("num text-xs", c === undefined ? "text-muted-foreground" : c >= 0 ? "text-profit" : "text-loss")}
+          className={cn("num hidden text-xs md:inline", c === undefined ? "text-muted-foreground" : c >= 0 ? "text-profit" : "text-loss")}
           data-testid="futures-change"
         >
           {fmtPct(c)}
         </span>
-        <span className="text-3xs text-muted-foreground">24h</span>
+        <span className="hidden text-3xs text-muted-foreground md:inline">24h</span>
       </span>
     </div>
   );
@@ -149,8 +149,8 @@ export function FeedStatus() {
         )}
         aria-hidden="true"
       />
-      <span className={live ? "text-profit" : "text-muted-foreground"}>{label}</span>
-      {live ? <span className="text-muted-foreground">· {latency} ms</span> : null}
+      <span className={cn("hidden sm:inline", live ? "text-profit" : "text-muted-foreground")}>{label}</span>
+      {live ? <span className="hidden text-muted-foreground sm:inline">· {latency} ms</span> : null}
     </button>
   );
 }
