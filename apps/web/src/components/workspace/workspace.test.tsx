@@ -22,7 +22,7 @@ afterEach(() => {
 describe("[WORKSPACE] HC-WS-001..006 two-pane shell", () => {
   it("has every left tab enabled and live (Paper, Live, Journal) and the analysis tabs on the right", async () => {
     renderWithProviders(<Workspace />);
-    for (const id of ["chain", "builder", "paper", "live", "journal"]) expect(screen.getByTestId(`tab-${id}`).hasAttribute("disabled")).toBe(false);
+    for (const id of ["chain", "builder", "paper", "live", "journal", "screener"]) expect(screen.getByTestId(`tab-${id}`).hasAttribute("disabled")).toBe(false); // HC-WS-110 the Screener tab
     expect(screen.getByTestId("tab-paper").getAttribute("title")).toBeNull();
     expect(screen.getByTestId("tab-live").getAttribute("title")).toBeNull();
     expect(screen.getByTestId("tab-journal").getAttribute("title")).toBeNull();

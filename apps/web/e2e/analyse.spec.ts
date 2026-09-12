@@ -90,6 +90,39 @@ test.describe("HC-SH analyse header and live chain", () => {
     await expect(page.getByTestId("chain-panel")).toHaveAttribute("data-topic", /chain:delta_india:BTC:2026-/);
   });
 
+  test("HC-WS-110..112 options screener: every expiry's options ranked by premium per day, filters, the Expiries view, Buy into the Builder, Chain to the chain (ADR-076)", async ({ page }) => {
+    await page.getByTestId("tab-screener").click();
+    const panel = page.getByTestId("screener-panel");
+    await expect(panel).toHaveAttribute("data-state", "ready", { timeout: 30_000 });
+    await expect(page.getByTestId("screener-basis")).toContainText("options on");
+    const table = page.getByTestId("table-screener-strikes");
+    await expect(table).toHaveAttribute("data-sort", "premiumPerDay");
+    const rows = table.locator("tbody tr");
+    await expect.poll(async () => rows.count()).toBeGreaterThan(1);
+    const first = rows.first();
+    await expect(first.locator("td").nth(2)).toHaveText(/^[CP]$/);
+    // filters narrow the list
+    await page.getByTestId("screener-side-put").click();
+    await expect.poll(async () => new Set(await rows.locator("td:nth-child(3)").allTextContents())).toEqual(new Set(["P"]));
+    await page.getByTestId("screener-side-both").click();
+    // the Expiries view
+    await page.getByTestId("screener-view-expiries").click();
+    const expiries = page.getByTestId("table-screener-expiries");
+    await expect(expiries.locator("tbody tr").first()).toContainText("pts");
+    await page.getByTestId("screener-view-strikes").click();
+    // Buy adds a Builder leg at the chain lots
+    await first.getByTestId("screener-buy").click();
+    await expect(page.getByTestId("tab-builder")).toContainText("1");
+    // Chain opens that expiry in the chain tab
+    await first.getByTestId("screener-chain").click();
+    await expect(page.getByTestId("tab-chain")).toHaveAttribute("data-state", "active");
+    // the palette reaches it
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox", { name: "Command" }).fill("options screener");
+    await page.getByRole("option", { name: "Options screener" }).click();
+    await expect(page.getByTestId("tab-screener")).toHaveAttribute("data-state", "active");
+  });
+
   test("HC-WS-016 chain opens centred on ATM and the range control filters rows", async ({ page }) => {
     const table = page.getByTestId("chain-table");
     await expect(table).toHaveAttribute("data-range", "12");

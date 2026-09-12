@@ -115,7 +115,7 @@ function normaliseDrafts(input: unknown): SavedStrategy[] {
   return out;
 }
 
-export type WorkspaceTab = "chain" | "builder" | "paper" | "live" | "journal";
+export type WorkspaceTab = "chain" | "builder" | "paper" | "live" | "journal" | "screener";
 export interface ChartLayers {
   expiry: boolean;
   target: boolean;
@@ -588,7 +588,7 @@ export const useUiStore = create<UiState>()(
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<UiState>;
         const venue = (VENUES as readonly string[]).includes(p.venue ?? "") ? (p.venue as VenueId) : DEFAULT_VENUE;
-        const tabs: WorkspaceTab[] = ["chain", "builder", "paper", "live", "journal"];
+        const tabs: WorkspaceTab[] = ["chain", "builder", "paper", "live", "journal", "screener"];
         const atabs: AnalysisTab[] = ["payoff", "scenarios", "greeks", "vol", "structure", "ladder", "backtest"];
         return {
           ...current,
