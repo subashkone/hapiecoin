@@ -138,8 +138,13 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const all = useMemo(() => (data ?? []).filter((s) => s.status === kind), [data, kind]);
   // closed = archived strategies that were traded in this mode; they stay on this tab under the Closed chip (ADR-059)
   const closed = useMemo(() => (data ?? []).filter((s) => s.status === "archived" && s.tradingMode === kind), [data, kind]);
+  // ADR-068: with several keys on an exchange the tab can be read per account (every strategy stays tagged with its key)
+  const accounts = useMemo(() => credential?.items ?? [], [credential]);
+  const [accountFilter, setAccountFilter] = useState<string | null>(null);
+  const accountOf = (s: Strategy) => accountRefOf(s, accounts)?.accountId ?? null;
   const expiring = all.filter((s) => lifecycleOf(s) === "expiring"); // per render: the clock moves, the list does not
   const lifeRows = life === "closed" ? closed : life === "expiring" ? expiring : all;
+  const accountRows = accountFilter === null ? lifeRows : lifeRows.filter((s) => accountOf(s) === accountFilter);
   // ADR-029: the API reconciles pending orders in the background; while any are pending, poll the list so chips update
   const anyPending = kind === "live" && all.some((s) => s.orders.some((o) => o.state === "pending"));
   useEffect(() => {
@@ -153,7 +158,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
     const first = all[0];
     if (first) followStrategy(first.id);
   }, [workspaceTab, kind, paneSource, all, followStrategy]);
-  const rows = useMemo(() => sortStrategies(lifeRows.filter((s) => !q || `${s.name} ${s.asset} ${s.templateName}`.toLowerCase().includes(q)), sort, (s) => book.pnlOf(s).total), [lifeRows, q, sort, book]);
+  const rows = useMemo(() => sortStrategies(accountRows.filter((s) => !q || `${s.name} ${s.asset} ${s.templateName}`.toLowerCase().includes(q)), sort, (s) => book.pnlOf(s).total), [accountRows, q, sort, book]);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const current = Math.min(page, pages);
   const slice = rows.slice((current - 1) * PAGE, current * PAGE);
@@ -174,7 +179,6 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   // HC-TR-175 (ADR-068): every live strategy is compared with the positions of the account it trades through, one
   // read per distinct account; a strategy from before accounts on an exchange with several keys names none and is
   // left out of the check (its card says so)
-  const accounts = useMemo(() => credential?.items ?? [], [credential]);
   // stable inputs for the batch dialog: its selection effect keys on these arrays, so a fresh filter per render would reset what the trader unticked (ADR-069 fix)
   const batchStrategies = useMemo(() => all.filter((s) => !dataOnly(s.venue)), [all]);
   const batchBrokers = useMemo(() => (brokers ?? []).filter((b) => !dataOnly(b.venue)), [brokers]);
@@ -187,7 +191,9 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
     return [...m.values()];
   }, [all, accounts, kind]);
   const wallet = useAccountPositions(refs, kind === "live" && connected);
-  const balances = wallet.first?.balances ?? [];
+  // the wallet behind the tab: the settling-asset balance of every account the tab's strategies trade through (ADR-068)
+  const walletRows = [...wallet.byKey.values()].map((d) => ["USD", "USDT", "INR"].map((a) => d.balances.find((b) => b.asset === a)).find((b) => b !== undefined) ?? d.balances[0]).filter((r) => r !== undefined);
+  const walletAccounts = wallet.byKey.size;
   // HC-TR-160: the exchange's net position per contract against the open live legs; a stop, a manual close or a
   // liquidation on the exchange leaves a strategy out of sync until it is reconciled (HC-TR-161)
   // only a fresh, successful read counts: a venue that did not answer is 503 (never an empty list), and a stale
@@ -209,8 +215,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   // the price a gone leg is booked at: the exchange's mark while it still quotes the contract, else the pane's mark
   // (the position is usually gone, so the venue has none), else the dialog falls back to the entry
   const venueMarkOf = useCallback((l: StrategyLeg) => wallet.positions.find((p) => p.symbol === l.symbol)?.mark ?? (reconciling ? (book.priceOf(reconciling, l)?.toString() ?? null) : null), [wallet.positions, reconciling, book]);
-  const walletRow = ["USD", "USDT", "INR"].map((a) => balances.find((b) => b.asset === a)).find((b) => b !== undefined) ?? balances[0];
-  const marginTotal = walletRow ? Number(walletRow.balance) : null;
+  const marginTotal = walletRows.length ? walletRows.reduce((sum, r) => sum + Number(r.balance), 0) : null;
   return (
     <section className="flex h-full min-h-0 flex-col" data-testid={`${kind}-panel`} data-count={all.length}>
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
@@ -231,6 +236,18 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
             );
           })}
         </div>
+        {accounts.length > 1 ? (
+          <div className="flex items-center gap-1" role="group" aria-label="Account" data-testid={`${kind}-accounts`}>
+            {[null, ...accounts.map((a) => a.id)].map((id) => {
+              const n = id === null ? lifeRows.length : lifeRows.filter((s) => accountOf(s) === id).length;
+              return (
+                <button key={id ?? "all"} type="button" aria-pressed={accountFilter === id} onClick={() => { setAccountFilter(id); setPage(1); }} className={cn("rounded-full border px-2.5 py-0.5 text-xs", accountFilter === id ? "border-foreground text-foreground" : "border-border text-muted-foreground hover:text-foreground")} title={id === null ? "Every account" : "Strategies trading through this key (ADR-068)"} data-testid={`${kind}-account-${id ?? "all"}`} data-count={n}>
+                  {id === null ? "All accounts" : accountLabel(accounts, id)} <span className="text-muted-foreground">{n}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
         <Button size="sm" variant="outline" onClick={() => void refetch().then(() => toast("Refreshed", { description: "Strategy data has been updated" }))} data-testid={`${kind}-refresh`}>
           Refresh
         </Button>
@@ -249,7 +266,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
         <div className="rounded border border-border px-2 py-1.5"><div className="micro">Total P&amp;L</div><div className={cn("num text-[15px] font-medium", totals.total >= 0 ? "text-profit" : "text-loss")} data-testid={`${kind}-total`}>{fmtMoney(totals.total, money, { signed: true })}</div><div className="micro">{all.length} {all.length === 1 ? "trade" : "trades"} · {totals.open} open {totals.open === 1 ? "leg" : "legs"}</div></div>
         <div className="rounded border border-border px-2 py-1.5"><div className="micro">Day P&amp;L</div><div className={cn("num text-[15px] font-medium", totals.day >= 0 ? "text-profit" : "text-loss")}>{fmtMoney(totals.day, money, { signed: true })}</div><div className="micro">vs previous close</div></div>
         <div className="rounded border border-border px-2 py-1.5" title="Net position delta across the open strategies, in units of the underlying (Black-76 at the live marks)"><div className="micro">Net Δ</div><div className={cn("num text-[15px] font-medium", portfolio.open ? (portfolio.netDelta >= 0 ? "text-profit" : "text-loss") : "text-muted-foreground")} data-testid={`${kind}-net-delta`}>{portfolio.open ? `${portfolio.netDelta >= 0 ? "+" : ""}${portfolio.netDelta.toFixed(4)}` : "—"}</div><div className="micro">{portfolio.open ? `Θ/day ${fmtMoney(portfolio.netTheta, money, { signed: true })} · ν ${fmtMoney(portfolio.netVega, money, { signed: true })}` : portfolio.pending ? "pricing the book…" : "no open strategy"}</div></div>
-        <div className="rounded border border-border px-2 py-1.5" title="Σ worst expiry loss of the defined-risk strategies (the exchange margin replaces it for live positions)"><div className="micro">Margin used</div><div className="num text-[15px] font-medium" data-testid={`${kind}-margin-used`}>{portfolio.open ? fmtMoney(portfolio.marginUsed, money) : "—"}</div>{marginTotal !== null && marginTotal > 0 ? <div className="micro"><span className="mr-1">of {fmtMoney(marginTotal, money)} · {Math.min(999, (portfolio.marginUsed / marginTotal) * 100).toFixed(0)}%</span><span className="inline-block h-1 w-12 overflow-hidden rounded bg-muted align-middle"><i className="block h-full bg-[hsl(var(--curve))]" style={{ width: `${Math.min(100, (portfolio.marginUsed / marginTotal) * 100).toFixed(0)}%` }} /></span></div> : <div className="micro">{portfolio.undefinedRisk ? `${portfolio.undefinedRisk} undefined-risk ${portfolio.undefinedRisk === 1 ? "strategy" : "strategies"} excluded` : portfolio.pending && !portfolio.open ? "pricing the book…" : kind === "live" ? "wallet balance once connected" : "worst expiry loss · defined risk"}</div>}</div>
+        <div className="rounded border border-border px-2 py-1.5" title="Σ worst expiry loss of the defined-risk strategies (the exchange margin replaces it for live positions)"><div className="micro">Margin used</div><div className="num text-[15px] font-medium" data-testid={`${kind}-margin-used`}>{portfolio.open ? fmtMoney(portfolio.marginUsed, money) : "—"}</div>{marginTotal !== null && marginTotal > 0 ? <div className="micro"><span className="mr-1">of {fmtMoney(marginTotal, money)}{walletAccounts > 1 ? ` · ${walletAccounts} accounts` : ""} · {Math.min(999, (portfolio.marginUsed / marginTotal) * 100).toFixed(0)}%</span><span className="inline-block h-1 w-12 overflow-hidden rounded bg-muted align-middle"><i className="block h-full bg-[hsl(var(--curve))]" style={{ width: `${Math.min(100, (portfolio.marginUsed / marginTotal) * 100).toFixed(0)}%` }} /></span></div> : <div className="micro">{portfolio.undefinedRisk ? `${portfolio.undefinedRisk} undefined-risk ${portfolio.undefinedRisk === 1 ? "strategy" : "strategies"} excluded` : portfolio.pending && !portfolio.open ? "pricing the book…" : kind === "live" ? "wallet balance once connected" : "worst expiry loss · defined risk"}</div>}</div>
         <div className="rounded border border-border px-2 py-1.5"><div className="micro">Prices</div><div className="num text-[15px] font-medium">{feedLive ? "Live" : "Waiting"}</div><div className="micro">{feedLive ? "mark basis · gateway" : "connecting to the feed"}</div></div>
       </div>
       <div className="min-h-0 flex-1 overflow-auto px-3 pb-3">
