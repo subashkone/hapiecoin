@@ -81,6 +81,10 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("structure-panel")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
       await page.screenshot({ path: `${DIR}/analyse-structure-${theme}.png` });
       await page.getByTestId("analysis-tab-payoff").click();
+      // HC-WS-110 the options screener
+      await page.getByTestId("tab-screener").click();
+      await expect(page.getByTestId("screener-panel")).toHaveAttribute("data-state", "ready", { timeout: 30_000 });
+      await page.screenshot({ path: `${DIR}/analyse-screener-${theme}.png` });
       // HC-TR-058 / HC-TR-068 a paper trade on the Paper tab and its details
       await page.getByTestId("builder-tab-builder").click();
       await page.getByTestId("strategy-name").fill("Visual straddle");

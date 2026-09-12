@@ -1,6 +1,6 @@
 "use client";
 // Two-pane workspace under the analyse header (HC-WS-001..006, HC-WS-029..032): left tabs Chain | Builder
-// (with a leg-count pill) | Paper | Live | Journal, the analysis pane on the right, a draggable divider
+// (with a leg-count pill) | Paper | Live | Journal | Screener (HC-WS-110), the analysis pane on the right, a draggable divider
 // (35–70 % for the left pane, remembered per browser) and a stacked Chain | Analysis toggle under 1000 px.
 import { EmptyState, Tabs, TabsContent, TabsList, TabsTrigger, cn } from "@hapiecoin/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -10,6 +10,7 @@ import { AdjustWorkbench } from "@/components/adjust/AdjustWorkbench";
 import { AnalysisPane } from "@/components/analysis/AnalysisPane";
 import { BuilderPanel } from "@/components/builder/BuilderPanel";
 import { ChainPanel } from "@/components/chain/ChainPanel";
+import { ScreenerPanel } from "@/components/screener/ScreenerPanel";
 import { PaperPanel } from "@/components/trading/PaperPanel";
 import { JournalPanel } from "@/components/trading/JournalPanel";
 import { StrategyDetailsDialog } from "@/components/trading/StrategyDetailsDialog";
@@ -29,6 +30,7 @@ export const LEFT_TABS: { id: WorkspaceTab; label: string; phase?: number; blurb
   { id: "paper", label: "Paper" },
   { id: "live", label: "Live" },
   { id: "journal", label: "Journal" },
+  { id: "screener", label: "Screener" },
 ];
 
 const SPLIT_KEY = "hapiecoin.split";
@@ -64,7 +66,7 @@ function useNarrow(px: number): boolean {
   return narrow;
 }
 
-const WORKSPACE_TABS: readonly WorkspaceTab[] = ["chain", "builder", "paper", "live", "journal"];
+const WORKSPACE_TABS: readonly WorkspaceTab[] = ["chain", "builder", "paper", "live", "journal", "screener"];
 const PANELS: readonly AnalysisTab[] = ["payoff", "scenarios", "greeks", "vol", "structure", "ladder"];
 
 export function Workspace() {
@@ -197,6 +199,9 @@ export function Workspace() {
       </TabsContent>
       <TabsContent value="journal" className="min-h-0 flex-1">
         <JournalPanel book={book} />
+      </TabsContent>
+      <TabsContent value="screener" className="min-h-0 flex-1">
+        <ScreenerPanel />
       </TabsContent>
       {LEFT_TABS.filter((t) => t.phase).map((t) => (
         <TabsContent key={t.id} value={t.id} className="min-h-0 flex-1">

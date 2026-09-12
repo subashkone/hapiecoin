@@ -15,7 +15,7 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 8. ✅ Easy Options / Strategy Wizard: view + target + date → ranked defined-risk strategies over the templates and the fix ranking · BUILT 12 Sep 2026 on feat/strategy-wizard (ADR-072; HC-TR-176..178; GAPS #88): the Wizard sub-tab in the Builder (view chips, move % ↔ target price, expiry), three cards ranked by return on risk at the thesis with one earned tag each, Use this → Builder + payoff target, palette command and `W`
 9. ⬜ Backtest and replay on our own IV / mark snapshots (EOD strategy backtest; replay an expiry's chain)
 10. ✅ Mindful Trading pause before a live order when down on the day · BUILT 12 Sep 2026 on feat/mindful-pause (ADR-074; HC-TR-182..183; GAPS #90): today's live P&L, the order's worst case and the margin in the live preview and the batch dialog with a countdown in place of the Place button; the Mindful trading preference (on / off, threshold, seconds) in settings, the palette and the Day P&L tile
-11. ⬜ Options screener on the chain data (IV rank, premium per day, skew)
+11. ✅ Options screener on the chain data (IV rank, premium per day, skew) · BUILT 12 Sep 2026 on feat/options-screener (ADR-076; HC-WS-110..112; GAPS #92): the Screener tab folds every listed expiry's chain into sortable strike rows (premium per day, yield per day, IV−ATM, |Δ|, break-even %, OI) with side / |Δ| / expiry / OI filters, an Expiries view (ATM IV, 25Δ skew, expected move, OI, PCR), Buy / Sell into the Builder, Chain to the chain, the palette command
 12. ⬜ Phone pass on the workspace, cards and dialogs
 
 ## C. Go-live and business
