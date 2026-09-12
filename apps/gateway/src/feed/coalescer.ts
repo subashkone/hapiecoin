@@ -4,7 +4,8 @@
  * at most one delta per instrument per flush. Each flushed `q` frame carries a per-topic `seq` that
  * increases by exactly one; snapshots report the last flushed `seq` so clients can detect gaps.
  */
-import type { QuoteDelta, ServerMessage, Topic, Underlying } from "@hapiecoin/schema";
+import { spotTopic } from "@hapiecoin/schema";
+import type { QuoteDelta, ServerMessage, Topic, Underlying, Venue as VenueId } from "@hapiecoin/schema";
 import { mergeDelta } from "./diff.js";
 
 export interface SpotTick {
@@ -21,7 +22,8 @@ export class Coalescer {
   private readonly intervalMs: number;
   private readonly emit: CoalescerOptions["emit"];
   private readonly pendingQuotes = new Map<Topic, Map<string, QuoteDelta>>();
-  private readonly pendingSpots = new Map<Underlying, SpotTick>();
+  /** Pending spot per `${venue}:${underlying}` (ADR-071). */
+  private readonly pendingSpots = new Map<string, { venue: VenueId; underlying: Underlying; tick: SpotTick }>();
   private readonly seqs = new Map<Topic, number>();
   private timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -42,8 +44,8 @@ export class Coalescer {
     this.arm();
   }
 
-  setSpot(underlying: Underlying, tick: SpotTick): void {
-    this.pendingSpots.set(underlying, tick);
+  setSpot(venue: VenueId, underlying: Underlying, tick: SpotTick): void {
+    this.pendingSpots.set(`${venue}:${underlying}`, { venue, underlying, tick });
     this.arm();
   }
 
@@ -71,10 +73,10 @@ export class Coalescer {
       this.emit(topic, { t: "q", topic, seq, d: [...byInstrument.values()] });
     }
     this.pendingQuotes.clear();
-    for (const [underlying, tick] of this.pendingSpots) {
-      const message: ServerMessage = { t: "spot", s: underlying, p: tick.p };
+    for (const { venue, underlying, tick } of this.pendingSpots.values()) {
+      const message: ServerMessage = { t: "spot", s: underlying, v: venue, p: tick.p };
       if (tick.c24 !== undefined) message.c24 = tick.c24;
-      this.emit(`spot:${underlying}`, message);
+      this.emit(spotTopic(underlying, venue), message);
     }
     this.pendingSpots.clear();
   }

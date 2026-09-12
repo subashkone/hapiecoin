@@ -45,7 +45,8 @@ export class DeribitMarketData extends Emitter<MarketDataEvents> implements Venu
     });
     this.ws.on("ticker", (raw) => {
       const instrument = this.bySymbol.get(raw.instrument_name);
-      const quote = instrument ? toDeribitQuote(raw, instrument.id, this.now()) : null;
+      // options are quoted in the coin (converted to USD with the index); the perpetual is quoted in USD already
+      const quote = instrument ? toDeribitQuote(raw, instrument.id, this.now(), { usdPriced: instrument.kind !== "call" && instrument.kind !== "put" }) : null;
       if (quote) this.accept(quote);
     });
     this.ws.on("error", (error) => this.emit("error", error));
@@ -58,11 +59,23 @@ export class DeribitMarketData extends Emitter<MarketDataEvents> implements Venu
     const instruments: Instrument[] = [];
     for (const currency of this.underlyings) instruments.push(...(await this.rest.getInstruments(currency)));
     this.instrumentList = instruments;
+    const knownPerpetuals = [...this.bySymbol.values()].filter((i) => i.kind === "perpetual");
     this.bySymbol.clear();
     const ids = new Map<string, number>();
     for (const instrument of instruments) {
       this.bySymbol.set(instrument.symbol, instrument);
       ids.set(instrument.symbol, instrument.id);
+    }
+    // the perpetual is known by symbol only (not listed as an option): its ticker carries the index the gateway serves as spot (ADR-071).
+    // Optional: a failed futures listing keeps the option chain (and the spot the option quotes carry); the error is reported, not thrown
+    for (const currency of this.underlyings) {
+      try {
+        for (const future of await this.rest.getInstruments(currency, "future")) if (future.kind === "perpetual") this.bySymbol.set(future.symbol, future);
+      } catch (error) {
+        // the perpetuals of the previous load stay known, so a subscribed perpetual keeps ticking through a failed refresh
+        for (const perpetual of knownPerpetuals) if (perpetual.underlying === currency && !this.bySymbol.has(perpetual.symbol)) this.bySymbol.set(perpetual.symbol, perpetual);
+        this.emit("error", error instanceof Error ? error : new Error(String(error)));
+      }
     }
     let seeded = 0;
     for (const currency of this.underlyings) {

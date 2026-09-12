@@ -4,19 +4,22 @@ import { type Alert, type Underlying, alertMet } from "@hapiecoin/schema";
 import { fmtPrice } from "@/lib/format";
 import { USD, fmtMoney } from "@/lib/money";
 
-/** What the engine knows right now: futures price per asset, ATM IV (fraction) per asset, P&L (USD) per strategy. */
+/** The key of a per-venue reading (ADR-071): a price alert on Deribit reads Deribit's index, like the server evaluator. */
+export const readingKey = (venue: string, asset: Underlying): string => `${venue}:${asset}`;
+
+/** What the engine knows right now: spot per venue and asset, ATM IV (fraction) per venue and asset, P&L (USD) per strategy. */
 export interface AlertReadings {
-  spot: Partial<Record<Underlying, number | null>>;
-  atmIv: Partial<Record<Underlying, number | null>>;
+  spot: Partial<Record<string, number | null>>;
+  atmIv: Partial<Record<string, number | null>>;
   pnl: Record<string, number | null>;
 }
 export const EMPTY_READINGS: AlertReadings = { spot: {}, atmIv: {}, pnl: {} };
 
 /** The reading an alert compares against, in the unit the alert was typed in (price USD, IV %, P&L USD); null when unknown. */
-export function currentValue(a: Pick<Alert, "kind" | "asset" | "strategyId">, r: AlertReadings): number | null {
-  if (a.kind === "price") return r.spot[a.asset] ?? null;
+export function currentValue(a: Pick<Alert, "kind" | "asset" | "venue" | "strategyId">, r: AlertReadings): number | null {
+  if (a.kind === "price") return r.spot[readingKey(a.venue, a.asset)] ?? null;
   if (a.kind === "iv") {
-    const iv = r.atmIv[a.asset];
+    const iv = r.atmIv[readingKey(a.venue, a.asset)];
     // vol points to 4 decimals, so 0.29 reads as 29 and not 28.999999999999996
     return iv === null || iv === undefined ? null : Math.round(iv * 1_000_000) / 10_000;
   }

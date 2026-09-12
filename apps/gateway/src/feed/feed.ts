@@ -12,10 +12,10 @@
  * - `fut:` topics are accepted by the schema but not served in Phase 1 (`supports()` is false).
  */
 import type { ChainRow, QuoteDelta, Quote as SchemaQuote, ServerMessage, Topic, Underlying } from "@hapiecoin/schema";
-import { ChainSnapshot, UNDERLYINGS, chainTopic, parseTopic } from "@hapiecoin/schema";
+import { ChainSnapshot, UNDERLYINGS, canonicalTopic, chainTopic, parseTopic } from "@hapiecoin/schema";
 import type { MarketDataStatus, Quote as VenueQuote } from "@hapiecoin/venues";
 import type { Venue as VenueId } from "@hapiecoin/schema";
-import { DEFAULT_VENUE, toSchemaChainRows, toSchemaQuote } from "@hapiecoin/venues";
+import { DEFAULT_VENUE, getVenueCore, ownMarket, toSchemaChainRows, toSchemaQuote } from "@hapiecoin/venues";
 import type { Logger } from "../log.js";
 import type { PubSub } from "../pubsub/types.js";
 import type { SnapshotStore } from "../coordination/snapshots.js";
@@ -24,11 +24,15 @@ import { Coalescer } from "./coalescer.js";
 import { quoteDelta } from "./diff.js";
 import type { MarketDataLike } from "./market-data.js";
 
-/** Perpetual symbol whose ticker carries the underlying's spot price (Delta India naming: `<asset>USD`). */
-export const SPOT_SYMBOLS: Record<Underlying, string> = { BTC: "BTCUSD", ETH: "ETHUSD", XAUT: "XAUTUSD" };
+/** The perpetual whose ticker carries `underlying`'s spot on `venue`, from the venue port; null when the venue lists no such market (ADR-071). */
+export function spotSymbolFor(venue: VenueId, underlying: Underlying): string | null {
+  return ownMarket(getVenueCore(venue).markets, underlying)?.perpetualSymbol ?? null;
+}
+
+const spotKey = (venue: VenueId, underlying: Underlying): string => `${venue}:${underlying}`;
 
 export interface MarketFeedOptions {
-  /** The default venue's session (spot topics and the `expiries` in the status come from it). */
+  /** The default venue's session (the flat `expiries` and `spot` in the status come from it). */
   market: MarketDataLike;
   /** ADR-067: sessions of the other enabled venues, keyed by schema venue id. */
   markets?: Partial<Record<VenueId, MarketDataLike>> | undefined;
@@ -67,8 +71,8 @@ export interface FeedStatus {
   pending: number;
   loadedAt: number | null;
   lastError: string | null;
-  /** ADR-067: every enabled venue's socket status and live expiries per underlying. */
-  venues: Record<string, { market: MarketDataStatus; expiries: Record<Underlying, string[]> }>;
+  /** ADR-067 / ADR-071: every enabled venue's socket status, live expiries and spot per underlying. */
+  venues: Record<string, { market: MarketDataStatus; expiries: Record<Underlying, string[]>; spot: Record<Underlying, string | null> }>;
   /** Set by the role wrapper (ADR-062); a bare MarketFeed is the leader. */
   role?: "leader" | "follower";
 }
@@ -100,7 +104,8 @@ export class MarketFeed {
   private readonly now: () => number;
   private readonly log: Logger;
   private readonly lastQuote = new Map<string, SchemaQuote>();
-  private readonly spots = new Map<Underlying, SpotState>();
+  /** Spot per `${venue}:${underlying}` (ADR-071). */
+  private readonly spots = new Map<string, SpotState>();
   private readonly refs = new Map<Topic, RefEntry>();
   /** Topics other gateways hold (ADR-062); watched upstream like local ones, never counted as local holders. */
   private readonly remote = new Set<Topic>();
@@ -170,8 +175,10 @@ export class MarketFeed {
     if (this.store !== null && this.keepaliveTimer === null) this.keepaliveTimer = setInterval(() => this.keepalive(), this.snapshotKeepaliveMs);
     // the spots learnt from the REST seeds go to the store at once, so followers have one before the first tick
     if (this.store !== null)
-      for (const [underlying, spot] of this.spots)
-        this.store.putSpot(underlying, { p: spot.p, ts: spot.ts }).catch((error: unknown) => this.log.warn("spot store write failed", { error: toError(error) }));
+      for (const [key, spot] of this.spots) {
+        const [venue, underlying] = key.split(":") as [VenueId, Underlying];
+        this.store.putSpot(venue, underlying, { p: spot.p, ts: spot.ts }).catch((error: unknown) => this.log.warn("spot store write failed", { error: toError(error) }));
+      }
   }
 
   /** ADR-062: stop being the feed: drop every upstream subscription and close the socket; holders are kept. */
@@ -219,15 +226,18 @@ export class MarketFeed {
   }
 
   status(): FeedStatus {
-    const spot = {} as Record<Underlying, string | null>;
-    for (const underlying of UNDERLYINGS) spot[underlying] = this.spots.get(underlying)?.p ?? null;
+    const spotsOf = (venue: VenueId): Record<Underlying, string | null> => {
+      const spot = {} as Record<Underlying, string | null>;
+      for (const underlying of UNDERLYINGS) spot[underlying] = this.spots.get(spotKey(venue, underlying))?.p ?? null;
+      return spot;
+    };
     const venues: FeedStatus["venues"] = {};
-    for (const [venue, session] of this.sessions) venues[venue] = { market: session.status(), expiries: this.liveExpiries(venue, session) };
+    for (const [venue, session] of this.sessions) venues[venue] = { market: session.status(), expiries: this.liveExpiries(venue, session), spot: spotsOf(venue) };
     return {
       ready: this.loadedAt !== null,
       market: this.market.status(),
       expiries: this.liveExpiries(DEFAULT_VENUE, this.market),
-      spot,
+      spot: spotsOf(DEFAULT_VENUE),
       venues,
       topics: this.refs.size,
       pending: this.coalescer.pending(),
@@ -249,15 +259,16 @@ export class MarketFeed {
     return out;
   }
 
-  /** The session of a topic's venue; null when this gateway does not open that venue (spot topics are the default venue's). */
-  private session(venue: VenueId | undefined): MarketDataLike | null {
-    return this.sessions.get(venue ?? DEFAULT_VENUE) ?? null;
+  /** The session of a topic's venue; null when this gateway does not open that venue. */
+  private session(venue: VenueId): MarketDataLike | null {
+    return this.sessions.get(venue) ?? null;
   }
 
-  /** True for topics this feed can serve: chain and spot topics of an enabled venue (`fut:` comes with the futures ticker in Phase 2). */
+  /** True for topics this feed can serve: chain topics of an enabled venue and spot topics of an underlying that venue lists (`fut:` comes with the futures ticker in Phase 2). */
   supports(topic: Topic): boolean {
     const parsed = parseTopic(topic);
-    return parsed !== null && parsed.kind !== "fut" && this.session(parsed.kind === "chain" ? parsed.venue : undefined) !== null;
+    if (parsed === null || parsed.kind === "fut" || this.session(parsed.venue) === null) return false;
+    return parsed.kind === "chain" || spotSymbolFor(parsed.venue, parsed.underlying) !== null;
   }
 
   /** Last flushed sequence number for a topic. */
@@ -282,7 +293,7 @@ export class MarketFeed {
       this.log.debug("snapshot unavailable", { topic, error: error as Error });
       return null;
     }
-    const spot = chain.spot ?? this.spots.get(parsed.underlying)?.p ?? null;
+    const spot = chain.spot ?? this.spots.get(spotKey(parsed.venue, parsed.underlying))?.p ?? null; // the same venue's index only (ADR-071)
     const validated = ChainSnapshot.safeParse({
       venue: parsed.venue,
       underlying: parsed.underlying,
@@ -304,12 +315,14 @@ export class MarketFeed {
     return { seq: this.coalescer.seq(topic), rows: validated.data.rows };
   }
 
-  spot(underlying: Underlying): SpotState | null {
-    return this.spots.get(underlying) ?? null;
+  /** The last spot of `underlying` on `venue` (the default venue when omitted). */
+  spot(underlying: Underlying, venue: string = DEFAULT_VENUE): SpotState | null {
+    return this.spots.get(spotKey(venue as VenueId, underlying)) ?? null;
   }
 
   /** A client subscribed: on the first holder start the upstream subscription (cancelling any grace timer). */
-  acquire(topic: Topic): void {
+  acquire(raw: Topic): void {
+    const topic = canonicalTopic(raw); // ADR-071: the bare spot spelling and the venue form are one hold
     const entry = this.refs.get(topic);
     if (entry) {
       entry.count += 1;
@@ -325,7 +338,8 @@ export class MarketFeed {
   }
 
   /** A client left: when the last holder leaves, keep the upstream subscription for `graceMs`, then drop it. */
-  release(topic: Topic): void {
+  release(raw: Topic): void {
+    const topic = canonicalTopic(raw);
     const entry = this.refs.get(topic);
     if (!entry) return;
     entry.count -= 1;
@@ -337,8 +351,8 @@ export class MarketFeed {
   }
 
   /** Holder count for a topic (tests and metrics). */
-  holders(topic: Topic): number {
-    return this.refs.get(topic)?.count ?? 0;
+  holders(raw: Topic): number {
+    return this.refs.get(canonicalTopic(raw))?.count ?? 0;
   }
 
   /**
@@ -346,7 +360,8 @@ export class MarketFeed {
    * topics are watched upstream (and a first snapshot written for the followers); topics gone from the registry are
    * dropped unless a local client still holds them.
    */
-  setRemoteTopics(topics: ReadonlySet<Topic>): void {
+  setRemoteTopics(rawTopics: ReadonlySet<Topic>): void {
+    const topics = new Set([...rawTopics].map(canonicalTopic)); // remote holds arrive in either spelling (ADR-071)
     for (const topic of topics) {
       if (this.remote.has(topic)) continue;
       this.remote.add(topic);
@@ -369,7 +384,7 @@ export class MarketFeed {
     if (this.store === null) return;
     if (message.t === "q") this.markDirty(topic);
     else if (message.t === "spot") {
-      this.store.putSpot(message.s, { p: message.p, ts: this.now() }).catch((error: unknown) => this.log.warn("spot store write failed", { error: toError(error) }));
+      this.store.putSpot(message.v ?? DEFAULT_VENUE, message.s, { p: message.p, ts: this.now() }).catch((error: unknown) => this.log.warn("spot store write failed", { error: toError(error) }));
     }
   }
 
@@ -402,7 +417,16 @@ export class MarketFeed {
       if (session === null) return;
       session.watch(parsed.underlying, parsed.expiry);
       this.announce(topic);
-    } else this.market.subscribeSymbols([SPOT_SYMBOLS[parsed.underlying]]);
+    } else this.spotSession(parsed.venue, parsed.underlying, "sub");
+  }
+
+  /** Subscribe or drop the venue's perpetual for a spot topic; nothing when the venue is not open here or lists no such market. */
+  private spotSession(venue: VenueId, underlying: Underlying, op: "sub" | "unsub"): void {
+    const session = this.session(venue);
+    const symbol = spotSymbolFor(venue, underlying);
+    if (session === null || symbol === null) return;
+    if (op === "sub") session.subscribeSymbols([symbol]);
+    else session.unsubscribeSymbols([symbol]);
   }
 
   /**
@@ -438,7 +462,7 @@ export class MarketFeed {
     const parsed = parseTopic(topic);
     if (parsed === null || parsed.kind === "fut") return;
     if (parsed.kind === "chain") this.session(parsed.venue)?.unwatch(parsed.underlying, parsed.expiry);
-    else this.market.unsubscribeSymbols([SPOT_SYMBOLS[parsed.underlying]]);
+    else this.spotSession(parsed.venue, parsed.underlying, "unsub");
   }
 
   /**
@@ -484,7 +508,7 @@ export class MarketFeed {
         if (session === null) continue;
         session.watch(parsed.underlying, parsed.expiry);
         this.announce(topic);
-      } else this.market.subscribeSymbols([SPOT_SYMBOLS[parsed.underlying]]);
+      } else this.spotSession(parsed.venue, parsed.underlying, "sub");
     }
   }
 
@@ -498,10 +522,10 @@ export class MarketFeed {
 
   private onTicker(venue: VenueId, session: MarketDataLike, quote: VenueQuote): void {
     const instrument = session.instrument(quote.symbol);
-    const underlying = instrument?.underlying ?? (venue === DEFAULT_VENUE ? underlyingForSpotSymbol(quote.symbol) : null);
+    const underlying = instrument?.underlying ?? underlyingForSpotSymbol(venue, quote.symbol);
     if (underlying === null || !isUnderlying(underlying)) return;
-    // the venue-free `spot:` topics are the default venue's index; another venue's quotes carry their own
-    if (venue === DEFAULT_VENUE) this.updateSpot(underlying, quote);
+    // every quote carries its venue's index: the spot of that venue (ADR-071), never another's
+    this.updateSpot(venue, underlying, quote);
     if (
       !instrument ||
       (instrument.kind !== "call" && instrument.kind !== "put") ||
@@ -512,7 +536,7 @@ export class MarketFeed {
     const topic = chainTopic(venue, underlying, instrument.expiryDate);
     let next: SchemaQuote;
     try {
-      next = toSchemaQuote(quote, this.spots.get(underlying)?.p ?? null);
+      next = toSchemaQuote(quote, this.spots.get(spotKey(venue, underlying))?.p ?? null);
     } catch (error) {
       this.log.debug("quote skipped", { symbol: quote.symbol, error: error as Error });
       return;
@@ -524,24 +548,23 @@ export class MarketFeed {
     this.coalescer.addQuote(topic, delta);
   }
 
-  private updateSpot(underlying: Underlying, quote: VenueQuote): void {
+  private updateSpot(venue: VenueId, underlying: Underlying, quote: VenueQuote): void {
     if (quote.spot === null) return;
-    const current = this.spots.get(underlying);
+    const key = spotKey(venue, underlying);
+    const current = this.spots.get(key);
     if (current && current.ts > quote.venueTs) return;
     if (current && current.p === quote.spot) {
       current.ts = quote.venueTs;
       return;
     }
-    this.spots.set(underlying, { p: quote.spot, ts: quote.venueTs });
-    if (this.upstream) this.coalescer.setSpot(underlying, { p: quote.spot });
+    this.spots.set(key, { p: quote.spot, ts: quote.venueTs });
+    if (this.upstream) this.coalescer.setSpot(venue, underlying, { p: quote.spot });
   }
 }
 
-function underlyingForSpotSymbol(symbol: string): Underlying | null {
-  for (const underlying of UNDERLYINGS) {
-    if (SPOT_SYMBOLS[underlying] === symbol) return underlying;
-  }
-  return null;
+/** The underlying whose perpetual `symbol` is on `venue` (the port's codec), or null. */
+function underlyingForSpotSymbol(venue: VenueId, symbol: string): string | null {
+  return getVenueCore(venue).symbols.parsePerpetual(symbol);
 }
 
 function toError(error: unknown): Error {

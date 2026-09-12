@@ -118,6 +118,22 @@ describe("[GATEWAY] React hooks", () => {
     await waitFor(() => expect(result.current.spot?.price).toBe("1"));
     expect(result.current.latency).toBe(0);
   });
+  it("HC-SH-126 useSpot follows the venue it is given and ignores the other venue's ticks (ADR-071)", async () => {
+    const { wrapper } = wrapperFor();
+    const { result } = renderHook(() => ({ deribit: useSpot("BTC", "deribit"), none: useSpot("XAUT", null) }), { wrapper });
+    const ws = FakeSocket.last();
+    act(() => {
+      ws.open();
+    });
+    expect(ws.sentFrames()).toContainEqual({ op: "sub", topics: ["spot:deribit:BTC"] });
+    expect(ws.sentFrames().some((f) => JSON.stringify(f).includes("XAUT"))).toBe(false); // null venue: nothing subscribed
+    act(() => {
+      ws.receive({ t: "spot", s: "BTC", p: "79000" }); // the default venue's frame: not this hook's
+      ws.receive({ t: "spot", s: "BTC", v: "deribit", p: "77000" });
+    });
+    await waitFor(() => expect(result.current.deribit?.price).toBe("77000"));
+    expect(result.current.none).toBeUndefined();
+  });
   it("useFlash returns a class for ~800ms only when the timestamp changes", () => {
     vi.useFakeTimers();
     const { result, rerender } = renderHook(({ dir, at }: { dir: "up" | "down" | null; at: number | undefined }) => useFlash(dir, at), {

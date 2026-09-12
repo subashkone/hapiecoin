@@ -4,7 +4,7 @@
  * header's venue chip. The store depends on this module (through the legs helpers), never the reverse.
  */
 import { type TradingCalendar, calendarFor } from "@hapiecoin/pricing";
-import type { Underlying } from "@hapiecoin/schema";
+import { type Underlying, VENUES } from "@hapiecoin/schema";
 import { DEFAULT_VENUE, type ExerciseStyle, type VenueCore, type VenueId, defaultLotSizes, getVenueCore, ownMarket } from "@hapiecoin/venues/core";
 
 let readVenue: () => VenueId = () => DEFAULT_VENUE;
@@ -46,6 +46,22 @@ export function exerciseLabel(style: ExerciseStyle): string {
 export function lotSizeFor(venue: string, asset: Underlying, settings: { lotSizes: Record<Underlying, string> } | undefined): string | undefined {
   return venue === DEFAULT_VENUE ? settings?.lotSizes[asset] : defaultLotSizes(getVenueCore(venue))[asset];
 }
+
+/** The venue's perpetual for `asset` ("BTCUSD" on Delta India, "BTC-PERPETUAL" on Deribit); null when the venue lists no such market (ADR-071). */
+export function perpetualSymbolOf(asset: string, venue: string = readVenue()): string | null {
+  return ownMarket(getVenueCore(venue).markets, asset)?.perpetualSymbol ?? null;
+}
+
+/** `venue` when it lists `asset`, else null: the spot subscription of a pair the venue does not trade is skipped (Deribit has no XAUT). */
+export function listedVenue(venue: VenueId, asset: string): VenueId | null {
+  return ownMarket(getVenueCore(venue).markets, asset) === undefined ? null : venue;
+}
+
+/**
+ * The venues the static per-venue hook tables enumerate (`usePaperBook`, `AlertEngine`: one `useSpot` / `useLegQuotes` per venue and
+ * asset, hook counts must be static). `satisfies` pins the tuple: when `VENUES` grows this line stops compiling and those tables get their row.
+ */
+export const HOOK_VENUES = VENUES satisfies readonly ["delta_india", "deribit"];
 
 /** True when the venue serves data only: chains, analysis and paper trading, no API keys, no live orders (ADR-067). */
 export function dataOnly(venue: string): boolean {

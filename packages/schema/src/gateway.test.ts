@@ -1,16 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  ClientMessage,
-  MAX_TOPICS_PER_MESSAGE,
-  QuoteDelta,
-  Seq,
-  ServerMessage,
-  Topic,
-  chainTopic,
-  futTopic,
-  parseTopic,
-  spotTopic,
-} from "./gateway.js";
+import { ClientMessage, MAX_TOPICS_PER_MESSAGE, QuoteDelta, Seq, ServerMessage, Topic, canonicalTopic, chainTopic, futTopic, parseTopic, spotTopic } from "./gateway.js";
 
 describe("HC-WS-009 Topic patterns", () => {
   it.each([
@@ -18,6 +7,8 @@ describe("HC-WS-009 Topic patterns", () => {
     "chain:delta_india:XAUT:2026-09-11",
     "spot:BTC",
     "spot:ETH",
+    "spot:deribit:BTC",
+    "spot:delta_india:XAUT",
     "fut:delta_india:BTCUSD",
     "fut:delta_india:ETHUSD-250926",
   ])("accepts %s", (t) => {
@@ -34,6 +25,9 @@ describe("HC-WS-009 Topic patterns", () => {
     "spot:",
     "spot:SOL",
     "spot:BTC:extra",
+    "spot:okx:BTC",
+    "spot:deribit:SOL",
+    "spot:deribit:",
     "fut:delta_india:",
     "fut:delta_india:BTC USD",
     "fut:binance:BTCUSDT",
@@ -48,6 +42,10 @@ describe("HC-WS-009 Topic patterns", () => {
   it("builders produce valid topics", () => {
     expect(Topic.parse(chainTopic("delta_india", "BTC", "2026-09-25"))).toBe("chain:delta_india:BTC:2026-09-25");
     expect(Topic.parse(spotTopic("ETH"))).toBe("spot:ETH");
+    expect(Topic.parse(spotTopic("ETH", "deribit"))).toBe("spot:deribit:ETH"); // HC-SH-126 / ADR-071
+    expect(canonicalTopic("spot:ETH")).toBe("spot:delta_india:ETH");
+    expect(canonicalTopic("spot:deribit:ETH")).toBe("spot:deribit:ETH");
+    expect(canonicalTopic("chain:delta_india:BTC:2026-09-25")).toBe("chain:delta_india:BTC:2026-09-25");
     expect(Topic.parse(futTopic("delta_india", "BTCUSD"))).toBe("fut:delta_india:BTCUSD");
   });
   it("parseTopic splits every pattern and returns null otherwise", () => {
@@ -57,7 +55,8 @@ describe("HC-WS-009 Topic patterns", () => {
       underlying: "BTC",
       expiry: "2026-09-25",
     });
-    expect(parseTopic("spot:XAUT")).toEqual({ kind: "spot", underlying: "XAUT" });
+    expect(parseTopic("spot:XAUT")).toEqual({ kind: "spot", venue: "delta_india", underlying: "XAUT" }); // the bare form is the default venue's
+    expect(parseTopic("spot:deribit:BTC")).toEqual({ kind: "spot", venue: "deribit", underlying: "BTC" });
     expect(parseTopic("fut:delta_india:BTCUSD")).toEqual({ kind: "fut", venue: "delta_india", symbol: "BTCUSD" });
     expect(parseTopic("nope")).toBeNull();
   });
@@ -126,6 +125,8 @@ describe("HC-WS-009 ServerMessage", () => {
     ).toBe(true);
     expect(ServerMessage.safeParse({ t: "spot", s: "BTC", p: "79521.5", c24: -1.2 }).success).toBe(true);
     expect(ServerMessage.safeParse({ t: "spot", s: "ETH", p: "4200" }).success).toBe(true);
+    expect(ServerMessage.safeParse({ t: "spot", s: "BTC", v: "deribit", p: "77000" }).success).toBe(true);
+    expect(ServerMessage.safeParse({ t: "spot", s: "BTC", v: "okx", p: "77000" }).success).toBe(false);
     expect(ServerMessage.safeParse({ t: "pong" }).success).toBe(true);
     expect(ServerMessage.safeParse({ t: "err", code: "BAD_TOPIC", message: "unknown topic" }).success).toBe(true);
   });

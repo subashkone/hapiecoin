@@ -64,7 +64,7 @@ describe("[GATEWAY] RoleFeed (ADR-062)", () => {
     expect(await role.spot("ETH")).toBeNull();
     // the leader wrote a snapshot meanwhile: served as is, with its seq
     await store.putSnapshot(TOPIC, { seq: 7, rows: local!.rows.slice(0, 3), ts: NOW });
-    await store.putSpot("BTC", { p: "81000", ts: NOW });
+    await store.putSpot("delta_india", "BTC", { p: "81000", ts: NOW });
     const stored = await waitSnapshot(role, TOPIC);
     expect(stored).toEqual({ seq: 7, rows: local!.rows.slice(0, 3) });
     expect(await role.spot("BTC")).toEqual({ p: "81000", ts: NOW });
@@ -98,7 +98,7 @@ describe("[GATEWAY] RoleFeed (ADR-062)", () => {
     expect(a.feed.seq(TOPIC)).toBe(1);
     expect(store.snapshots.get(TOPIC)?.seq).toBe(1);
     expect(store.snapshots.has(NOV)).toBe(true);
-    expect(store.spots.get("BTC")?.p).toMatch(/^\d/);
+    expect(store.spots.get("delta_india:BTC")?.p).toMatch(/^\d/);
     // the other gateway drops its hold: the next sync unwatches it
     b.role.release(NOV);
     await vi.advanceTimersByTimeAsync(1_100);
@@ -159,6 +159,15 @@ describe("[GATEWAY] RoleFeed edges", () => {
     role.acquire(TOPIC);
     expect(market.watchCalls).toEqual(["BTC:2026-09-25"]);
     expect(role.spot("BTC")).not.toBeInstanceOf(Promise);
+    role.acquire("spot:BTC");
+    role.acquire("spot:delta_india:BTC"); // HC-SH-126: the same hold under its canonical spelling
+    expect(market.symbolCalls.filter((c) => c.op === "sub")).toHaveLength(1);
+    role.release("spot:BTC");
+    vi.advanceTimersByTime(0);
+    expect(market.symbolCalls.filter((c) => c.op === "unsub")).toHaveLength(0);
+    role.release("spot:delta_india:BTC");
+    vi.advanceTimersByTime(0);
+    expect(market.symbolCalls.filter((c) => c.op === "unsub")).toHaveLength(1);
     role.release(TOPIC);
     vi.advanceTimersByTime(0);
     expect(market.unwatchCalls).toEqual(["BTC:2026-09-25"]);

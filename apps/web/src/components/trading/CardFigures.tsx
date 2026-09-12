@@ -14,7 +14,7 @@ import { venueCalendar } from "@/lib/venue";
 
 export function CardFigures({ s, book }: { s: Strategy; book: PaperBook }) {
   const open = useMemo(() => openLegs(s), [s]);
-  const live = book.spotOf(s.asset);
+  const live = book.spotOf(s.asset, s.venue);
   // the first spot seen is kept, so the card prices once per mount (and per leg change) rather than per tick
   const [spot, setSpot] = useState(live);
   useEffect(() => {

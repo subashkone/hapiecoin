@@ -90,7 +90,7 @@ describe("[GATEWAY] follower first frames (ADR-062)", () => {
     spots[0]!.resolve({ p: "80000", ts: 1 });
     await flush();
     expect(conn.frames()).toEqual([]);
-    expect(held).toEqual([`+${TOPIC}`, `-${TOPIC}`, "+spot:BTC", "-spot:BTC"]);
+    expect(held).toEqual([`+${TOPIC}`, `-${TOPIC}`, "+spot:delta_india:BTC", "-spot:delta_india:BTC"]); // held under the canonical spelling (ADR-071)
     transport.send(conn, { op: "sub", topics: [TOPIC] });
     await flush();
     snapshots[1]!.resolve(null);
@@ -102,7 +102,7 @@ describe("[GATEWAY] follower first frames (ADR-062)", () => {
     await flush();
     spots[1]!.resolve({ p: "80100", ts: 2 });
     await flush();
-    expect(conn.last()).toEqual({ t: "spot", s: "BTC", p: "80100" });
+    expect(conn.last()).toEqual({ t: "spot", s: "BTC", v: "delta_india", p: "80100" });
     await server.close();
   });
 
@@ -130,22 +130,22 @@ describe("[GATEWAY] follower first frames (ADR-062)", () => {
     spots[0]!.resolve({ p: "80000", ts: 1 });
     await flush();
     conn.buffered = 4_096;
-    pubsub.publish("spot:BTC", { t: "spot", s: "BTC", p: "1" });
+    pubsub.publish("spot:delta_india:BTC", { t: "spot", s: "BTC", p: "1" });
     conn.buffered = 0;
-    pubsub.publish("spot:BTC", { t: "spot", s: "BTC", p: "2" });
+    pubsub.publish("spot:delta_india:BTC", { t: "spot", s: "BTC", p: "2" });
     await flush();
     spots[1]!.reject(new Error("store down"));
     await flush();
     expect(lines.some((l) => l.includes("resync failed"))).toBe(true);
     // and a resync that resolves sends the fresh spot
     conn.buffered = 4_096;
-    pubsub.publish("spot:BTC", { t: "spot", s: "BTC", p: "3" });
+    pubsub.publish("spot:delta_india:BTC", { t: "spot", s: "BTC", p: "3" });
     conn.buffered = 0;
-    pubsub.publish("spot:BTC", { t: "spot", s: "BTC", p: "4" });
+    pubsub.publish("spot:delta_india:BTC", { t: "spot", s: "BTC", p: "4" });
     await flush();
     spots[2]!.resolve({ p: "80200", ts: 3 });
     await flush();
-    expect(conn.last()).toEqual({ t: "spot", s: "BTC", p: "80200" });
+    expect(conn.last()).toEqual({ t: "spot", s: "BTC", v: "delta_india", p: "80200" });
     await server.close();
   });
 });

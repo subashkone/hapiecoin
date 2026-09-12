@@ -128,7 +128,7 @@ export function RuleDialog({ book }: { book: PaperBook }) {
   // the bases: credit received / debit paid from the entry premiums; max loss from the pricing engine at the nearest expiry
   const netPremiumUsd = useMemo(() => open.reduce((sum, l) => sum + (l.side === "sell" ? 1 : -1) * Number(l.entryPrice ?? l.price) * l.lots * Number(lotSize), 0), [open, lotSize]);
   const pricingLegs = useMemo(() => (s ? toPricingLegs(open.map((l) => serverLegToLocal(l, s.asset)), lotSize, { spot: undefined }) : []), [s, open, lotSize]);
-  const spot = s ? book.spotOf(s.asset) : null;
+  const spot = s ? book.spotOf(s.asset, s.venue) : null;
   const analysis = useAnalysis(pricingLegs, s && spot !== null && pricingLegs.length ? { spot, nowMs: Date.now(), calendar: venueCalendar(s.asset, s.venue), defaultIv: 0.5 } : null);
   const maxLossUsd = analysis.result && Number.isFinite(analysis.result.maxLoss) && analysis.result.maxLoss < 0 ? -analysis.result.maxLoss : null;
   const defaultBasis: RuleBasis = netPremiumUsd > 0 ? "credit" : netPremiumUsd < 0 ? "debit" : "max_loss";

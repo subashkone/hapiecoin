@@ -7,7 +7,7 @@ import { useMemo } from "react";
 import { useBrokers, useCredential, useSettings } from "@/lib/api/queries";
 import { useSpot } from "@/lib/gateway/hooks";
 import { DEFAULT_VENUE, type VenueId } from "@hapiecoin/venues/core";
-import { lotSizeFor } from "@/lib/venue";
+import { listedVenue, lotSizeFor } from "@/lib/venue";
 import { useLegQuotes } from "@/lib/gateway/useLegQuotes";
 import { type MoneyFormat, USD } from "@/lib/money";
 import { type StrategyPnl, serverLegToLocal, strategyPnl } from "./paper";
@@ -18,7 +18,8 @@ export interface PaperBook {
   /** Current price of a leg (live mark, spot for futures) or null when no quote yet. */
   priceOf: (s: Strategy, leg: ServerLeg) => number | null;
   pnlOf: (s: Strategy) => StrategyPnl;
-  spotOf: (asset: Underlying) => number | null;
+  /** The venue's index for `asset` (ADR-071); every caller names the strategy's venue. */
+  spotOf: (asset: Underlying, venue: string) => number | null;
   /** Units per lot on `venue` (the strategy's; the default venue when omitted). */
   lotSizeOf: (asset: Underlying, venue?: string) => string;
   money: MoneyFormat;
@@ -47,23 +48,28 @@ export function usePaperBook(strategies: readonly Strategy[]): PaperBook {
   const rBtc = useLegQuotes("BTC", legsBy.deribit.BTC, "deribit");
   const rEth = useLegQuotes("ETH", legsBy.deribit.ETH, "deribit");
   const rXaut = useLegQuotes("XAUT", legsBy.deribit.XAUT, "deribit");
-  const spotBtc = useSpot("BTC");
-  const spotEth = useSpot("ETH");
-  const spotXaut = useSpot("XAUT");
+  // one spot per venue and asset (ADR-071): a strategy's future legs and its expected-move figures read its own venue's index
+  // (HOOK_VENUES in lib/venue.ts pins the two venues these static tables enumerate)
+  const sBtc = useSpot("BTC", listedVenue("delta_india", "BTC"));
+  const sEth = useSpot("ETH", listedVenue("delta_india", "ETH"));
+  const sXaut = useSpot("XAUT", listedVenue("delta_india", "XAUT"));
+  const rSBtc = useSpot("BTC", listedVenue("deribit", "BTC"));
+  const rSEth = useSpot("ETH", listedVenue("deribit", "ETH"));
+  const rSXaut = useSpot("XAUT", listedVenue("deribit", "XAUT"));
   const quotes: Record<VenueId, Record<Underlying, ReturnType<typeof useLegQuotes>>> = { delta_india: { BTC: dBtc, ETH: dEth, XAUT: dXaut }, deribit: { BTC: rBtc, ETH: rEth, XAUT: rXaut } };
-  const spots = { BTC: spotBtc, ETH: spotEth, XAUT: spotXaut };
+  const spots: Record<VenueId, Record<Underlying, ReturnType<typeof useSpot>>> = { delta_india: { BTC: sBtc, ETH: sEth, XAUT: sXaut }, deribit: { BTC: rSBtc, ETH: rSEth, XAUT: rSXaut } };
   const version = dBtc.version + dEth.version + dXaut.version + rBtc.version + rEth.version + rXaut.version;
   const money: MoneyFormat = settings ? { currency: settings.currency === "INR" ? "INR" : "USD", rate: settings.conversionRate } : USD;
 
   return useMemo(() => {
     void version; // quote change counter: the gateway state behind quoteFor is read on demand
-    const spotOf = (asset: Underlying) => {
-      const p = spots[asset]?.price;
+    const spotOf = (asset: Underlying, venue: string) => {
+      const p = (spots as Record<string, Record<Underlying, ReturnType<typeof useSpot>>>)[venue]?.[asset]?.price;
       return p !== undefined && Number.isFinite(Number(p)) ? Number(p) : null;
     };
     const lotSizeOf = (asset: Underlying, venue: string = DEFAULT_VENUE) => lotSizeFor(venue, asset, settings) ?? DEFAULT_LOTS[asset];
     const priceOf = (s: Strategy, leg: ServerLeg) => {
-      if (leg.kind === "future") return spotOf(s.asset);
+      if (leg.kind === "future") return spotOf(s.asset, s.venue);
       const q = quotes[s.venue][s.asset].quoteFor(serverLegToLocal(leg, s.asset));
       return q?.mark !== undefined && Number.isFinite(Number(q.mark)) ? Number(q.mark) : null;
     };

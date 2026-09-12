@@ -1864,6 +1864,20 @@
   "evidence": "ADR-070 (12 Sep 2026): apps/api/src/venues.ts, config.ts (API_VENUES, DERIBIT_REST_URL), main.ts, routes/shared.ts (tradingFor), routes/live-exec.ts (lotSizeFor venue, resolveAccount venue, planLegs venue), routes/live.ts, routes/strategies.ts, rules-engine.ts, settlement.ts, alerts-evaluate.ts, test-support/harness.ts; packages/schema LivePositions.venue; apps/web NetPositionsPanel / useStrategyAnalysis read it; unit venues.test.ts, config.test.ts, venue-column.test.ts, rules-engine.test.ts, settlement.test.ts, alerts-server.test.ts"
  },
  {
+  "id": "HC-SH-126",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "screen": "Venues · spot per venue",
+  "feature": "The header price and every spot-based figure follow the chosen venue: spot topics carry the venue and each venue session feeds its own index",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (gateway)",
+  "acceptance": "schema: spot:<venue>:<asset> (the bare spot:<asset> aliases Delta India) and a v field on the spot frame; gateway: one spot per venue and asset, the perpetual watched on the topic's venue session, store keys per venue, /healthz feed.venues[id].spot; venues: the Deribit session knows its perpetuals so BTC-PERPETUAL ticks; web: spot cached per venue, useSpot follows the workspace venue, the paper book and the alert engine read each strategy's / alert's venue, the landing and sign-in strips stay on Delta India, the futures label names the venue's perpetual",
+  "evidence": "ADR-071 (12 Sep 2026): packages/schema/src/gateway.ts; packages/venues/src/deribit/market-data.ts; apps/gateway/src/feed/feed.ts, coalescer.ts, coordination/snapshots.ts, feed/role.ts, server.ts; apps/web/src/lib/gateway/client.ts, hooks.tsx, lib/venue.ts, lib/strategy/usePaper.ts, useStrategyAnalysis.ts, lib/alerts/engine.ts, AlertEngine.tsx, components/header/widgets.tsx, builder/FutureDialog.tsx, test/fake-gateway.ts; unit gateway.test.ts, market-data.test.ts, feed-venues.test.ts, server.test.ts, client.test.ts, hooks.test.tsx, engine.test.ts"
+ },
+ {
   "id": "HC-PB-001",
   "area": "10-public",
   "areaName": "Public site & authentication",

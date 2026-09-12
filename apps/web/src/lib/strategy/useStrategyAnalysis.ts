@@ -21,7 +21,7 @@ import { type MoneyFormat, USD } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
 import { settlementHourUtc, toPricingLegs } from "@/lib/pricing/legs";
 import { type PaneSource, useUiStore } from "@/lib/store";
-import { lotSizeFor, venueCalendar } from "@/lib/venue";
+import { listedVenue, lotSizeFor, venueCalendar } from "@/lib/venue";
 import { DEFAULT_VENUE, type VenueId } from "@hapiecoin/venues/core";
 import type { StrategyLeg } from "./legs";
 
@@ -150,7 +150,7 @@ export function useStrategyAnalysis(scope: "pane" | "builder" = "pane"): Strateg
     };
   }, [quoteLegs, quoteFor]);
   const legs = useMemo(() => (adjusting ? afterLegs(adjusting, openLegs, asset, markOf) : heldLegs), [adjusting, openLegs, asset, markOf, heldLegs]);
-  const spotState = useSpot(asset);
+  const spotState = useSpot(asset, listedVenue(venue, asset)); // the analysis venue's index (ADR-071)
   const lotSize = lotSizeFor(venue, asset, settings);
   const money: MoneyFormat = settings ? { currency: settings.currency === "INR" ? "INR" : "USD", rate: settings.conversionRate } : USD;
   const nowMs = useClock();
