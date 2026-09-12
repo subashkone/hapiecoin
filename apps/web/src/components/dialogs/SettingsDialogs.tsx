@@ -11,6 +11,7 @@ import { LotSizeDialog } from "./LotSizeDialog";
 import { OptionDetailsDialog } from "./OptionDetailsDialog";
 import { UpgradeRequiredDialog } from "./UpgradeRequiredDialog";
 import { MindfulDialog } from "./MindfulDialog";
+import { SecurityDialog } from "./SecurityDialog";
 import { PnlDialog } from "./PnlDialog";
 import { ProfileDialog } from "./ProfileDialog";
 import { PublicPageDialog } from "./PublicPageDialog";
@@ -32,6 +33,7 @@ export function SettingsDialogs() {
       <LotSizeDialog open={dialog === "lot"} onOpenChange={onOpenChange} />
       <PnlDialog open={dialog === "pnl"} onOpenChange={onOpenChange} />
       <MindfulDialog open={dialog === "mindful"} onOpenChange={onOpenChange} />
+      <SecurityDialog open={dialog === "security"} onOpenChange={onOpenChange} />
       <ExchangeManagementDialog open={dialog === "exchanges"} onOpenChange={onOpenChange} />
       <LogoutDialog open={dialog === "logout"} onOpenChange={onOpenChange} />
       <ColumnSettingsDialog open={dialog === "columns"} onOpenChange={onOpenChange} />

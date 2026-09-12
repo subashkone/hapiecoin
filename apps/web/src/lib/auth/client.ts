@@ -1,10 +1,11 @@
 // Better Auth browser client. Same-origin: Next rewrites /api/auth/* to apps/api, so the session cookie
 // is first-party. Email OTP flows come from the email-otp plugin (sign-in, email-verification, forget-password).
 import { createAuthClient } from "better-auth/react";
-import { emailOTPClient } from "better-auth/client/plugins";
+import { emailOTPClient, twoFactorClient } from "better-auth/client/plugins";
 
 export const authClient = createAuthClient({
-  plugins: [emailOTPClient()],
+  // ADR-078: the TOTP second factor; the forms read `twoFactorRedirect` themselves and move to the code step
+  plugins: [emailOTPClient(), twoFactorClient()],
   // Resolve `fetch` per call rather than at module load so test stubs and instrumentation apply.
   fetchOptions: { customFetchImpl: (input, init) => globalThis.fetch(input, init) },
 });
@@ -22,6 +23,9 @@ export function authErrorMessage(
   if (err.code === "TOO_MANY_ATTEMPTS") return "Too many attempts. Request a new code.";
   if (err.code === "INVALID_EMAIL_OR_PASSWORD" || err.code === "INVALID_PASSWORD") return "Invalid credentials.";
   if (err.code === "USER_ALREADY_EXISTS") return "An account with this email already exists.";
+  if (err.code === "INVALID_CODE") return "That code is not right.";
+  if (err.code === "INVALID_BACKUP_CODE") return "That backup code is not right, or it was used already.";
+  if (err.code === "INVALID_TWO_FACTOR_COOKIE") return "The sign-in timed out. Start again with your password.";
   return err.message && err.message.length < 140 ? err.message : fallback;
 }
 

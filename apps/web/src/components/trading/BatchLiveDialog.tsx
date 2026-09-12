@@ -12,6 +12,7 @@ import { useUiStore } from "@/lib/store";
 import { openLegs } from "@/lib/strategy/paper";
 import type { MindfulPauseInfo } from "@/lib/strategy/mindful";
 import { MindfulCountdownButton, MindfulPause, useMindfulCountdown } from "./MindfulPause";
+import { TypedConfirm, isLiveConfirm } from "./TypedConfirm";
 
 export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accounts, connected, money, totalOf, mindful = null }: { open: boolean; onOpenChange: (o: boolean) => void; strategies: Strategy[]; brokers: Broker[]; accounts: BrokerCredentialPublic[]; connected: boolean; money: MoneyFormat; totalOf: (s: Strategy) => number; /** Mindful pause (HC-TR-182): the trader is down on the day on live strategies. */ mindful?: MindfulPauseInfo | null | undefined }) {
   const batch = useLiveBatch();
@@ -20,15 +21,18 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
   const [brokerId, setBrokerId] = useState("");
   const [accountId, setAccountId] = useState<string | null>(null);
   const [key, setKey] = useState("");
+  const [word, setWord] = useState(""); // HC-TR-186
   const storedAccount = useUiStore((s) => s.accountId);
   const setAccount = useUiStore((s) => s.setAccount);
   const mine = accountsOf(accounts, brokerId);
   const pauseLeft = useMindfulCountdown(open ? mindful : null, key);
+  const canGo = sel.size > 0 && connected && Boolean(brokerId) && isLiveConfirm(word);
   useEffect(() => {
     if (open) {
       setSel(new Set(strategies.filter((s) => openLegs(s).length > 0).map((s) => s.id)));
       setBrokerId(brokers[0]?.id ?? "");
       setKey(newIdempotencyKey());
+      setWord("");
     }
   }, [open, strategies, brokers]);
   useEffect(() => {
@@ -37,7 +41,7 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
   }, [open, brokerId, accounts.length]);
   const go = () =>
     batch.mutate(
-      { ids: [...sel], brokerId, ...(accountId ? { accountId } : {}), idempotencyKey: key },
+      { confirm: word, ids: [...sel], brokerId, ...(accountId ? { accountId } : {}), idempotencyKey: key },
       {
         onSuccess: (r) => {
           onOpenChange(false);
@@ -100,13 +104,14 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
             <div>Each strategy is previewed against the exchange (contracts, marks, wallet, limits) and placed in order; the batch stops at the first refusal and tells you which strategy.</div>
             {!connected ? <div className="mt-1 text-warning">Connect your exchange in Settings → API Settings first.</div> : null}
           </div>
+          <TypedConfirm value={word} onChange={setWord} onSubmit={() => canGo && pauseLeft === 0 && go()} disabled={batch.isPending} focusKey={open && pauseLeft === 0} verb="place" />
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           {mindful && pauseLeft > 0 ? (
             <MindfulCountdownButton left={pauseLeft} />
           ) : (
-            <Button variant="destructive" disabled={sel.size === 0 || !connected || !brokerId} loading={batch.isPending} onClick={go} data-testid="batch-go">
+            <Button variant="destructive" disabled={!canGo} loading={batch.isPending} onClick={go} data-testid="batch-go">
               Trade {sel.size} {sel.size === 1 ? "strategy" : "strategies"} live →
             </Button>
           )}

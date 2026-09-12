@@ -71,6 +71,30 @@ test.describe("HC-SH settings dialogs persist through the API", () => {
     await expect(page.getByTestId("menu-mindful")).toContainText("off");
   });
 
+  test("HC-SH-129 Security: turn two-factor sign-in on with the first code, see the backup codes once, turn it off (ADR-078)", async ({ page }) => {
+    await page.getByTestId("settings-gear").click();
+    await expect(page.getByTestId("menu-security")).toContainText("2FA off");
+    await page.getByTestId("menu-security").click();
+    await page.getByTestId("security-enable").click();
+    await page.getByTestId("security-password").fill("Passw0rd!");
+    await page.getByTestId("security-password-next").click();
+    await expect(page.getByTestId("security-secret")).toContainText("JBSW");
+    await page.getByTestId("otp-input").getByRole("textbox").first().click();
+    await page.keyboard.type("654321");
+    await page.getByTestId("security-verify").click();
+    await expect(page.getByTestId("security-backup-code")).toHaveCount(10);
+    await expect(page.getByTestId("security-status")).toHaveText("on");
+    await page.getByTestId("security-done").click();
+    await page.reload();
+    await page.getByTestId("settings-gear").click();
+    await expect(page.getByTestId("menu-security")).toContainText("2FA on");
+    await page.getByTestId("menu-security").click();
+    await page.getByTestId("security-disable").click();
+    await page.getByTestId("security-password").fill("Passw0rd!");
+    await page.getByTestId("security-disable-confirm").click();
+    await expect(page.getByText("Two-factor sign-in is off")).toBeVisible();
+  });
+
   test("HC-SH-046..049 exchange management: add, edit, delete", async ({ page }) => {
     await page.getByTestId("settings-gear").click();
     await page.getByTestId("menu-exchanges").click();

@@ -5,7 +5,7 @@ import { chainTopic } from "@hapiecoin/schema";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
+import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch , typeLiveIf } from "../../../test/helpers";
 import { buildChain } from "../../../test/fixtures/chain";
 import { fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
@@ -49,6 +49,7 @@ async function paperTradeFromBuilder(u: ReturnType<typeof userEvent.setup>) {
   const mode = screen.getByTestId("trade-mode");
   await waitFor(() => expect(within(mode).getByTestId<HTMLSelectElement>("trade-broker").value).toBe("brk_delta"));
   await u.click(within(mode).getByTestId("trade-continue"));
+  await typeLiveIf(u, screen.getByTestId("trade-preview"));
   await u.click(within(screen.getByTestId("trade-preview")).getByTestId("trade-now"));
   const name = await screen.findByTestId("save-draft-dialog", {}, { timeout: 5000 });
   await u.clear(within(name).getByTestId("save-draft-name")); // the box arrives pre-filled (HC-TR-155)
@@ -207,6 +208,7 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(crows.map((r) => r.dataset["kind"])).toEqual(["trim", "add"]);
     expect(within(confirm).getByTestId("adjust-paper-note")).toBeTruthy();
     await u.type(within(confirm).getByTestId("adjust-reason"), "spot ran above the wings");
+    await typeLiveIf(u, confirm);
     await u.click(within(confirm).getByTestId("adjust-apply"));
     await waitFor(() => expect(mine()[0]!.adjustments).toHaveLength(1));
     expect(mine()[0]!.adjustments[0]).toMatchObject({ added: 1, trimmed: 1, closed: 0, reason: "spot ran above the wings" });

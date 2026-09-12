@@ -5,6 +5,7 @@
 // band per leg, the order type (market, or a limit at the reviewed mark), hold-to-place, and the fill state of
 // every order once placed; the marks reviewed here travel with the batch as the expected prices.
 import type { AdjustBody, OrderType, Strategy } from "@hapiecoin/schema";
+import { TypedConfirm, isLiveConfirm } from "@/components/trading/TypedConfirm";
 import { MAX_ADJUST_REASON } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { useQueryClient } from "@tanstack/react-query";
@@ -121,6 +122,13 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
   const anyOver = live && body.adds.some((l) => band(l.symbol, l.price).over);
   // live: nothing is placeable until the venue has priced this exact batch and passed it, and every mark is still inside the band
   const blocked = live && (venue?.ok !== true || anyOver);
+  // HC-TR-186: adding exposure to a live strategy is a real entry: the word is typed; trims and closes need none
+  const needsWord = live && body.adds.length > 0;
+  const [word, setWord] = useState("");
+  useEffect(() => {
+    if (open) setWord("");
+  }, [open]);
+  const wordOk = !needsWord || isLiveConfirm(word);
   const overBalance = venue !== null && venue.ok && venue.available !== null && Number(venue.notional) > Number(venue.available);
   const finish = (s: Strategy | null) => {
     onDone();
@@ -129,7 +137,7 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
   };
   const confirm = () =>
     adjust.mutate(
-      { id: strategy.id, body: { ...body, orderType: live ? orderType : "market", ...(reason.trim() ? { reason: reason.trim() } : {}) } },
+      { id: strategy.id, body: { ...body, orderType: live ? orderType : "market", ...(reason.trim() ? { reason: reason.trim() } : {}), ...(needsWord ? { confirm: word } : {}) } },
       {
         onSuccess: (s) => {
           const batch = s ? s.orders.filter((o) => o.batchId === body.idempotencyKey) : [];
@@ -311,6 +319,7 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
               </label>
             </>
           )}
+          {needsWord && !results ? <TypedConfirm value={word} onChange={setWord} disabled={adjust.isPending} focusKey={open} verb="place" /> : null}
         </DialogBody>
         <DialogFooter>
           {results ? (
@@ -319,7 +328,7 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
             <>
               <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="adjust-cancel">Back</Button>
               {live ? (
-                <HoldButton ms={HOLD_MS} disabled={blocked || adjust.isPending} onFire={confirm} testId="adjust-apply">
+                <HoldButton ms={HOLD_MS} disabled={blocked || adjust.isPending || !wordOk} onFire={confirm} testId="adjust-apply">
                   {adjust.isPending ? "Placing…" : `Hold to place ${orders} ${orders === 1 ? "order" : "orders"}`}
                 </HoldButton>
               ) : (

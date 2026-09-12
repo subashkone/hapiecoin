@@ -12,6 +12,7 @@ import { type AccountRef, accountKey, accountLabel, accountRefOf } from "@/lib/a
 import { useBrokers, useCredential, useSettings } from "@/lib/api/queries";
 import { type MindfulPauseInfo, mindfulFor } from "@/lib/strategy/mindful";
 import { BatchLiveDialog } from "./BatchLiveDialog";
+import { RetryDialog } from "./RetryDialog";
 import { NetPositionsPanel } from "./NetPositionsPanel";
 import { ReconcileDialog, driftTitle } from "./ReconcileDialog";
 import { type DriftRow, driftFor, isSettling } from "@/lib/strategy/drift";
@@ -95,6 +96,13 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const { data: settings } = useSettings();
   // HC-TR-182: the Mindful pause for Trade All → Live is decided when the dialog opens and holds while it is open
   const [batchMindful, setBatchMindful] = useState<MindfulPauseInfo | null>(null);
+  // HC-TR-186: a retry sends real orders again, so it asks for the word in its own dialog
+  const [retryForId, setRetryForId] = useState<string | null>(null);
+  const retryFor = retryForId ? (data ?? []).find((x) => x.id === retryForId) ?? null : null; // the live row, not a snapshot
+  useEffect(() => {
+    // the list polls: once nothing is failed any more (a retry landed, or the reconciler filled it) the dialog has nothing to send
+    if (retryForId && retryFor && !retryFor.orders.some((o) => o.state === "failed")) setRetryForId(null);
+  }, [retryForId, retryFor]);
   const connected = (credential?.items.length ?? 0) > 0;
   const openTrade = useUiStore((s) => s.openTrade);
   const paneSource = useUiStore((s) => s.paneSource);
@@ -370,7 +378,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                     <div className="mt-2 flex flex-wrap items-center gap-2 rounded border border-loss/40 p-2 text-2xs" data-testid="failed-banner">
                       <b className="text-loss">Order placement failed</b>
                       <span className="text-muted-foreground">{s.orders.filter((o) => o.state === "failed").length} {s.orders.filter((o) => o.state === "failed").length === 1 ? "leg" : "legs"} · retried {Math.max(...s.orders.filter((o) => o.state === "failed").map((o) => o.attempts)) - 1} {Math.max(...s.orders.filter((o) => o.state === "failed").map((o) => o.attempts)) - 1 === 1 ? "time" : "times"}</span>
-                      <Button size="sm" variant="destructive" className="ml-auto" loading={retry.isPending} onClick={() => retry.mutate(s.id, { onSuccess: (r) => { const left = r ? r.orders.filter((o) => o.state === "failed").length : 0; if (left) toast.error("Still failing", { description: `${left} ${left === 1 ? "order" : "orders"} refused again` }); else toast.success("Orders placed", { description: "All legs are filled" }); }, onError: (e) => toast.error("Retry refused", { description: e.message }) })} data-testid="card-retry">Retry Failed Orders</Button>
+                      <Button size="sm" variant="destructive" className="ml-auto" loading={retry.isPending} onClick={() => setRetryForId(s.id)} data-testid="card-retry">Retry Failed Orders</Button>
                     </div>
                   ) : null}
                   <div className="mt-2 flex flex-wrap gap-1">
@@ -420,6 +428,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
           </div>
         )}
       </div>
+      <RetryDialog strategy={retryFor} open={retryFor !== null} onOpenChange={(o) => !o && setRetryForId(null)} busy={retry.isPending} brokerName={book.brokerName(retryFor?.brokerId ?? null)} onRetry={(id, confirm) => retry.mutate({ id, confirm }, { onSuccess: (r) => { const left = r ? r.orders.filter((o) => o.state === "failed").length : 0; if (left) toast.error("Still failing", { description: `${left} ${left === 1 ? "order" : "orders"} refused again` }); else toast.success("Orders placed", { description: "All legs are filled" }); }, onError: (e) => toast.error("Retry refused", { description: e.message }), onSettled: () => setRetryForId(null) })} />
       {kind === "paper" ? <BatchLiveDialog open={batch} onOpenChange={(o) => { setBatch(o); if (!o) setBatchMindful(null); }} strategies={batchStrategies} brokers={batchBrokers} accounts={accounts} connected={connected} money={money} totalOf={(s) => book.pnlOf(s).total} mindful={batchMindful} /> : null}
       <ReconcileDialog strategy={reconciling} rows={reconciling ? (drift.get(reconciling.id) ?? []) : []} markOf={venueMarkOf} onOpenChange={(o) => { if (!o) { setReconcileId(null); void refetch(); void wallet.refetch(); } }} />
       {stopping ? <StopPaperDialog open={true} onOpenChange={(o) => !o && setStopId(null)} strategy={stopping} priceOf={(l) => book.priceOf(stopping, l)} total={book.pnlOf(stopping).total} money={money} live={feedLive} onDone={() => void qc.invalidateQueries({ queryKey: strategyKeys.all })} /> : null}

@@ -5,7 +5,7 @@ import { chainTopic } from "@hapiecoin/schema";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
+import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch , typeLiveIf } from "../../../test/helpers";
 import { buildChain } from "../../../test/fixtures/chain";
 import { useUiStore } from "@/lib/store";
 import { Workspace } from "@/components/workspace/Workspace";
@@ -111,6 +111,7 @@ describe("HC-TR-167 Protect from the card", () => {
     serveMarket();
     await u.click(await screen.findByTestId("builder-paper-trade"));
     await u.click(await screen.findByTestId("trade-continue"));
+    await typeLiveIf(u, await screen.findByTestId("trade-preview"));
     await u.click(await screen.findByTestId("trade-now"));
     const name = await screen.findByTestId("save-draft-dialog");
     await u.click(within(name).getByTestId("save-draft-confirm"));

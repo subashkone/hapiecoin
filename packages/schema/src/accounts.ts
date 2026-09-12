@@ -50,6 +50,8 @@ export const User = z.strictObject({
   avatar: Avatar,
   referralCode: ReferralCode,
   createdAt: IsoDateTime,
+  /** Two-factor sign-in with an authenticator app is on (ADR-078). */
+  twoFactorEnabled: z.boolean().optional(),
 });
 export type User = z.infer<typeof User>;
 

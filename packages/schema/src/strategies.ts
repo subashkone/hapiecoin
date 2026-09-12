@@ -358,7 +358,20 @@ export const StrategyStart = z.strictObject({
 });
 export type StrategyStart = z.infer<typeof StrategyStart>;
 
-export const AddLegsBody = z.strictObject({ legs: z.array(StrategyLegInput).min(1).max(MAX_OPEN_LEGS) });
+/** The word a trader types before a real order (ADR-078; HC-TR-186); the API refuses a live entry without it. */
+export const LIVE_CONFIRM_WORD = "LIVE";
+/** Sent as typed; the routes compare case-insensitively and answer 400 "Type LIVE to confirm a real order" otherwise. */
+export const LiveConfirm = z.string().trim().max(16);
+/** True when the typed word is the confirmation word (case-insensitive, surrounding spaces ignored). */
+export function isLiveConfirm(word: string | undefined | null): boolean {
+  return (word ?? "").trim().toUpperCase() === LIVE_CONFIRM_WORD;
+}
+
+export const AddLegsBody = z.strictObject({
+  legs: z.array(StrategyLegInput).min(1).max(MAX_OPEN_LEGS),
+  /** The typed confirmation (ADR-078): required by the route on a live strategy. */
+  confirm: LiveConfirm.optional(),
+});
 export type AddLegsBody = z.infer<typeof AddLegsBody>;
 
 /** One open leg's lots after the adjustment: fewer trims, 0 closes; `price` is the paper exit (client mark), ignored live. */
@@ -382,6 +395,8 @@ export const AdjustBody = z
     orderType: OrderType.default("market"),
     idempotencyKey: z.string().min(8).max(80).optional(),
     reason: z.string().trim().max(MAX_ADJUST_REASON).optional(),
+    /** The typed confirmation (ADR-078): required by the route when a live adjustment adds exposure. */
+    confirm: LiveConfirm.optional(),
   })
   .refine((b) => b.adds.length + b.changes.length > 0, { message: "Nothing to adjust", path: ["adds"] });
 export type AdjustBody = z.infer<typeof AdjustBody>;
@@ -466,8 +481,14 @@ export const LivePlaceBody = z.strictObject({
   idempotencyKey: z.string().min(8).max(80),
   /** Marks shown in the preview, per leg id; the placement is refused when the venue mark moved past the band. */
   expected: z.record(Id, DecimalString).default({}),
+  /** The typed confirmation (ADR-078): must read LIVE. */
+  confirm: LiveConfirm.optional(),
 });
 export type LivePlaceBody = z.infer<typeof LivePlaceBody>;
+
+/** Retry refused entry orders: a real order again, so the word is typed again (HC-TR-186). */
+export const LiveRetryBody = z.strictObject({ confirm: LiveConfirm.optional() });
+export type LiveRetryBody = z.infer<typeof LiveRetryBody>;
 
 /** Preview the open legs, or (adjustment workbench) the proposed batch: `adds` as entries and `changes` as exits. */
 export const LivePreviewBody = z.strictObject({
@@ -483,6 +504,8 @@ export const LiveBatchBody = z.strictObject({
   brokerId: Id,
   accountId: Id.optional(),
   idempotencyKey: z.string().min(8).max(80),
+  /** The typed confirmation (ADR-078): must read LIVE. */
+  confirm: LiveConfirm.optional(),
 });
 export type LiveBatchBody = z.infer<typeof LiveBatchBody>;
 

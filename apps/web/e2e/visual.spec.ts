@@ -1,7 +1,7 @@
 // Visual captures for comparison with mockup-v2/shots (v2-public-auth-login*.png, qa-dark/analyse.jpg …).
 // Saved under e2e/__screenshots__/ in both themes; not pixel-asserted yet (tolerance comes with the spec's visual gate).
 import { TEMPLATE_COUNT } from "../src/lib/strategy/templates";
-import { expect, seedUser, signIn, test } from "./fixtures";
+import { expect, seedUser, signIn, test, typeLiveIfShown } from "./fixtures";
 
 const DIR = "e2e/__screenshots__";
 
@@ -150,6 +150,7 @@ for (const theme of ["dark", "light"] as const) {
       await page.getByTestId("trade-continue").click();
       await expect(page.getByTestId("venue-preview")).toHaveAttribute("data-ok", "true");
       await page.screenshot({ path: `${DIR}/analyse-live-preview-${theme}.png` });
+      await typeLiveIfShown(page); // HC-TR-186: the word before a real order
       await page.getByTestId("trade-now").click();
       await expect(page.getByTestId("live-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
       await expect(page.getByTestId("live-card").getByTestId("order-chip").first()).toHaveAttribute("data-state", "filled");

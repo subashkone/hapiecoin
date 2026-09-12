@@ -82,6 +82,28 @@ describe("HC-PB-030 OtpInput", () => {
     await user.paste("!!"); // no digits: ignored
     expect(onChange).toHaveBeenLastCalledWith("987654");
   });
+  it("HC-PB-068 a digit typed over a filled box replaces it, and Backspace clears from that box on without shifting the rest", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<Otp onChange={onChange} />);
+    const boxes = screen.getAllByRole<HTMLInputElement>("textbox");
+    await user.keyboard("111111");
+    expect(onChange).toHaveBeenLastCalledWith("111111");
+    await user.click(boxes[0]!); // fix the first digit: no selection needed, the box's old digit goes
+    await user.keyboard("6");
+    expect(onChange).toHaveBeenLastCalledWith("611111");
+    expect(document.activeElement).toBe(boxes[1]);
+    await user.click(boxes[2]!);
+    await user.keyboard("{Backspace}"); // clears box 3 and everything after it: the digits never shift left
+    expect(onChange).toHaveBeenLastCalledWith("61");
+    expect(document.activeElement).toBe(boxes[2]);
+    expect(boxes.map((b) => b.value)).toEqual(["6", "1", "", "", "", ""]);
+    await user.keyboard("4321");
+    expect(onChange).toHaveBeenLastCalledWith("614321");
+    await user.click(boxes[5]!);
+    await user.keyboard("9"); // a digit over the last box replaces it and focus stays on it
+    expect(onChange).toHaveBeenLastCalledWith("614329");
+  });
   it("marks boxes invalid and skips autofocus when asked", () => {
     render(<OtpInput value="12" onChange={() => {}} invalid autoFocus={false} />);
     const boxes = screen.getAllByRole("textbox");

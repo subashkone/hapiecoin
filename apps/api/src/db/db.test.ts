@@ -3,8 +3,9 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { eq, getTableName, sql } from "drizzle-orm";
-import { getTableConfig } from "drizzle-orm/pg-core";
+import { eq, getTableName, is, sql } from "drizzle-orm";
+import { PgTable, getTableConfig } from "drizzle-orm/pg-core";
+import * as schemaModule from "./schema.js";
 import { writeAudit } from "../audit.js";
 import { createDb, defaultMigrationsFolder, type DbHandle } from "./client.js";
 import {
@@ -119,6 +120,30 @@ describe("[DB] schema declares the relationships the API relies on", () => {
     ]);
     expect(fks(auditLog)).toEqual([]);
     expect(fks(verifications)).toEqual([]);
+  });
+
+  it("HC-SH-129 two_factors cascades from users and is indexed by user and secret (ADR-078)", () => {
+    expect(fks(schemaModule.twoFactors)).toEqual([{ from: "user_id", to: "users.id", onDelete: "cascade" }]);
+    const cfg = getTableConfig(schemaModule.twoFactors);
+    expect(cfg.indexes.map((i) => i.config.name)).toEqual(["two_factors_user_id_idx", "two_factors_secret_idx"]);
+    expect(cfg.columns.map((c) => c.name)).toEqual(expect.arrayContaining(["secret", "backup_codes", "user_id", "verified", "failed_verification_count", "locked_until"]));
+    expect(getTableConfig(schemaModule.users).columns.find((c) => c.name === "two_factor_enabled")?.notNull).toBe(true);
+  });
+
+  it("every index in the schema carries its table's name and no two tables share an index name", () => {
+    const tables = Object.values(schemaModule as Record<string, unknown>).filter((v): v is PgTable => is(v, PgTable));
+    expect(tables.length).toBeGreaterThan(20);
+    const seen = new Map<string, string>();
+    for (const table of tables) {
+      const cfg = getTableConfig(table);
+      for (const idx of cfg.indexes) {
+        const name = idx.config.name ?? "";
+        expect(name, `${cfg.name} has an unnamed index`).not.toBe("");
+        expect(name.startsWith(cfg.name), `${name} should start with ${cfg.name}`).toBe(true);
+        expect(seen.get(name), `${name} is declared on ${seen.get(name)} and ${cfg.name}`).toBeUndefined();
+        seen.set(name, cfg.name);
+      }
+    }
   });
 
   it("strategy tables cascade from users and strategies; a deleted broker leaves the strategy (broker null)", () => {

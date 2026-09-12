@@ -200,7 +200,7 @@ describe("HC-SH-123 accounts: several labelled keys per exchange (ADR-068)", () 
     const s = (await (await t.request("/v1/strategies", { cookie: c, json: { name: "Key holder", asset: "BTC", legs } })).json()) as { id: string; accountId: string | null };
     t.trading.product("C-BTC-80000-250926", 101, "0.001").markAt("C-BTC-80000-250926", "1200").fillAt(101, "1200");
     t.trading.setBalances([{ asset: "USD", balance: "5000", availableBalance: "4000" }]);
-    const placed = await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: c, json: { brokerId: SEED.brokerId, idempotencyKey: "key-holder-0001", expected: {} } });
+    const placed = await t.request(`/v1/strategies/${s.id}/live/place`, { cookie: c, json: { confirm: "LIVE", brokerId: SEED.brokerId, idempotencyKey: "key-holder-0001", expected: {} } });
     expect(placed.status).toBe(200);
     expect(((await placed.json()) as { accountId: string | null }).accountId).toBe(main!.id); // the only key is recorded on the strategy
     const refused = await t.request(`/v1/credentials/${main!.id}`, { method: "DELETE", cookie: c });

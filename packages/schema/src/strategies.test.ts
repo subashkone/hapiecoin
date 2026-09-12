@@ -190,3 +190,23 @@ describe("close reasons and settlement instants (ADR-059 §2.4)", () => {
     expect(settlementHourUtc("ETH")).toBe(12);
   });
 });
+
+describe("HC-TR-186 the typed LIVE confirmation (ADR-078)", () => {
+  it("reads the word case-insensitively with spaces around it, and nothing else", async () => {
+    const { isLiveConfirm, LIVE_CONFIRM_WORD, LivePlaceBody, LiveBatchBody, LiveRetryBody, AdjustBody } = await import("./strategies.js");
+    expect(LIVE_CONFIRM_WORD).toBe("LIVE");
+    expect(isLiveConfirm("LIVE")).toBe(true);
+    expect(isLiveConfirm(" live ")).toBe(true);
+    expect(isLiveConfirm("Live")).toBe(true);
+    for (const bad of ["", "LIV", "LIVE!", "yes", undefined, null]) expect(isLiveConfirm(bad)).toBe(false);
+    const place = { brokerId: "brk_1", idempotencyKey: "key-12345678", expected: {} };
+    expect(LivePlaceBody.safeParse(place).success).toBe(true); // the route, not the schema, refuses the missing word with its sentence
+    expect(LivePlaceBody.safeParse({ ...place, confirm: "LIVE" }).success).toBe(true);
+    expect(LivePlaceBody.safeParse({ ...place, confirm: "x".repeat(17) }).success).toBe(false);
+    expect(LiveBatchBody.safeParse({ ids: ["s_1"], brokerId: "brk_1", idempotencyKey: "key-12345678", confirm: "LIVE" }).success).toBe(true);
+    expect(LiveRetryBody.safeParse({ confirm: "LIVE" }).success).toBe(true);
+    expect(LiveRetryBody.safeParse({}).success).toBe(true);
+    expect(LiveRetryBody.safeParse({ confirm: "LIVE", extra: 1 }).success).toBe(false);
+    expect(AdjustBody.safeParse({ changes: [{ legId: "leg_1", lotsAfter: 0, price: "1" }], confirm: "LIVE" }).success).toBe(true);
+  });
+});

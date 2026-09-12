@@ -3,7 +3,7 @@
 // spot, margin estimate, then "Trade now". Live, down on the day: the Mindful pause block and countdown (HC-TR-182).
 import type { Broker, LivePreview, Underlying } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn } from "@hapiecoin/ui";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
 import { emitTour } from "@/lib/tour";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
@@ -14,6 +14,7 @@ import type { OverlapRow } from "@/lib/strategy/overlap";
 import { ModePill } from "./StrategyDetailsDialog";
 import type { MindfulPauseInfo } from "@/lib/strategy/mindful";
 import { MindfulCountdownButton, MindfulPause, useMindfulCountdown } from "./MindfulPause";
+import { TypedConfirm, isLiveConfirm } from "./TypedConfirm";
 
 export interface TradePreviewProps {
   open: boolean;
@@ -44,7 +45,8 @@ export interface TradePreviewProps {
   mindfulKey?: string | number | undefined;
   /** The market feed is live; false marks the pause figures as from the last tick. */
   feedLive?: boolean | undefined;
-  onTrade: () => void;
+  /** Place; `confirm` is the word as typed (live), sent to the API as the interlock (HC-TR-186). */
+  onTrade: (confirm: string) => void;
 }
 
 export function legLabel(l: TradeLegView): string {
@@ -64,6 +66,13 @@ export function TradePreviewDialog(p: TradePreviewProps) {
   const known = p.maxLossKnown ?? true;
   const mindful = p.mode === "live" ? (p.mindful ?? null) : null;
   const pauseLeft = useMindfulCountdown(mindful, p.mindfulKey ?? 0);
+  // HC-TR-186: the typed word, once per opening; live only
+  const [word, setWord] = useState("");
+  useEffect(() => {
+    if (p.open) setWord("");
+  }, [p.open]);
+  const wordOk = p.mode !== "live" || isLiveConfirm(word);
+  const canTrade = !(p.venue !== null && p.venue !== undefined && !p.venue.ok) && wordOk && !p.busy;
   // the exchange margins each expiry on its own: a calendar's short leg is margined as if naked (GAPS #77)
   const multiExpiry = new Set(p.legs.filter((l) => l.kind !== "future").map((l) => l.expiry)).size > 1;
   const debit = np < 0 ? -np : 0;
@@ -168,6 +177,7 @@ export function TradePreviewDialog(p: TradePreviewProps) {
               ? "You are about to trade this strategy. Orders will be placed on Delta Exchange. Prices may differ from displayed estimates. Ensure you have sufficient margin."
               : `Paper trade · positions will be tracked at ${p.customPrices ? "your entered prices" : "live market prices"}. No real orders are placed.`}
           </div>
+          {p.mode === "live" ? <TypedConfirm value={word} onChange={setWord} onSubmit={() => canTrade && pauseLeft === 0 && p.onTrade(word)} disabled={p.busy} focusKey={p.open && pauseLeft === 0} verb="place" /> : null}
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={() => p.onOpenChange(false)}>
@@ -176,7 +186,7 @@ export function TradePreviewDialog(p: TradePreviewProps) {
           {mindful && pauseLeft > 0 ? (
             <MindfulCountdownButton left={pauseLeft} />
           ) : (
-            <Button onClick={p.onTrade} loading={p.busy} disabled={p.venue !== null && p.venue !== undefined && !p.venue.ok} variant={p.mode === "live" ? "destructive" : "primary"} data-testid="trade-now" data-tour="trade-confirm-button">
+            <Button onClick={() => p.onTrade(word)} loading={p.busy} disabled={!canTrade && !p.busy} variant={p.mode === "live" ? "destructive" : "primary"} data-testid="trade-now" data-tour="trade-confirm-button">
               {p.mode === "live" ? "Place live orders →" : "Trade now →"}
             </Button>
           )}
