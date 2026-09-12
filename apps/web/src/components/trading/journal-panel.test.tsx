@@ -107,3 +107,24 @@ describe("HC-TR-128..131, 134..137 journal", () => {
     act(() => undefined);
   });
 });
+
+describe("HC-TR-173 the journal per account (ADR-068)", () => {
+  it("with two keys each trade names its account, the select keeps one account's trades, and the CSV carries the column", async () => {
+    const u = userEvent.setup();
+    mock.state.accounts.get(EMAIL)!.credentials = [
+      { id: "crd_main", label: "Main", brokerId: "brk_delta", apiKeyMasked: "****ab12", connectedAt: "2026-09-08T09:00:00Z", whitelistedIp: "203.0.113.10" },
+      { id: "crd_sub1", label: "Sub 1", brokerId: "brk_delta", apiKeyMasked: "****cd34", connectedAt: "2026-09-09T09:00:00Z", whitelistedIp: "203.0.113.10" },
+    ];
+    mine().push(strat({ id: "j_main", name: "Main book", accountId: "crd_main" }), strat({ id: "j_sub", name: "Sub book", accountId: "crd_sub1", realizedPnl: "-3" }));
+    renderWithProviders(<JournalPanel book={book} />);
+    await waitFor(() => expect(screen.getAllByTestId("journal-trade")).toHaveLength(2));
+    expect(screen.getAllByTestId("trade-account").map((el) => el.textContent)).toEqual(["Main", "Sub 1"]);
+    await u.selectOptions(screen.getByTestId("journal-account"), "crd_sub1");
+    await waitFor(() => expect(screen.getAllByTestId("journal-trade").map((t) => t.dataset["id"])).toEqual(["j_sub"]));
+    await u.click(screen.getByTestId("journal-csv"));
+    await waitFor(async () => expect(await navigator.clipboard.readText()).toContain(",account"));
+    const lines = (await navigator.clipboard.readText()).split(String.fromCharCode(10));
+    expect(lines).toHaveLength(2);
+    expect(lines[1]?.endsWith(",Sub 1")).toBe(true);
+  });
+});
