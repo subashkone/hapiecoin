@@ -9,7 +9,7 @@
  *
  * Frames are JSON text (see ./encoder.ts for the msgpack plan).
  */
-import { ClientMessage, parseTopic } from "@hapiecoin/schema";
+import { ClientMessage, canonicalTopic, parseTopic } from "@hapiecoin/schema";
 import type { ParsedTopic, ServerMessage, Topic, Underlying } from "@hapiecoin/schema";
 import type { GatewayConfig } from "./config.js";
 import type { FrameEncoder } from "./encoder.js";
@@ -35,7 +35,8 @@ export interface FeedLike {
   seq(topic: Topic): number;
   /** Sync on the leader; a follower gateway reads the shared store (ADR-062). */
   snapshot(topic: Topic): Snapshot | null | Promise<Snapshot | null>;
-  spot(underlying: Underlying): SpotState | null | Promise<SpotState | null>;
+  /** The last spot of `underlying` on `venue` (ADR-071); the server always names the venue. */
+  spot(underlying: Underlying, venue: string): SpotState | null | Promise<SpotState | null>;
   acquire(topic: Topic): void;
   release(topic: Topic): void;
 }
@@ -341,7 +342,8 @@ export class GatewayServer {
   }
 
   private async subscribe(state: ConnState, topics: readonly Topic[]): Promise<void> {
-    for (const topic of topics) {
+    for (const raw of topics) {
+      const topic = canonicalTopic(raw); // ADR-071: a bare spot topic is the default venue's; one subscription, one channel
       if (state.topics.has(topic)) continue;
       if (!this.feed.supports(topic)) {
         this.send(state, {
@@ -388,10 +390,10 @@ export class GatewayServer {
           this.sendSnapshot(state, topic, snapshot);
           this.flushPending(state, sub, snapshot.seq);
         } else {
-          const answer = this.feed.spot(parsed.underlying);
+          const answer = this.feed.spot(parsed.underlying, parsed.venue);
           const spot = isThenable(answer) ? await answer : answer;
           if (state.topics.get(topic) !== sub) continue;
-          if (spot !== null) this.send(state, { t: "spot", s: parsed.underlying, p: spot.p });
+          if (spot !== null) this.send(state, { t: "spot", s: parsed.underlying, v: parsed.venue, p: spot.p });
           this.flushPending(state, sub, -1);
         }
       } catch (error) {
@@ -423,7 +425,8 @@ export class GatewayServer {
   }
 
   private unsubscribe(state: ConnState, topics: readonly Topic[]): void {
-    for (const topic of topics) {
+    for (const raw of topics) {
+      const topic = canonicalTopic(raw);
       const subscription = state.topics.get(topic);
       if (!subscription) continue;
       subscription.unsubscribe();
@@ -463,9 +466,9 @@ export class GatewayServer {
         const snapshot = isThenable(answer) ? await answer : answer;
         if (snapshot !== null && state.topics.get(topic) === subscription) this.sendSnapshot(state, topic, snapshot);
       } else {
-        const answer = this.feed.spot(parsed.underlying);
+        const answer = this.feed.spot(parsed.underlying, parsed.venue);
         const spot = isThenable(answer) ? await answer : answer;
-        if (spot !== null && state.topics.get(topic) === subscription) this.send(state, { t: "spot", s: parsed.underlying, p: spot.p });
+        if (spot !== null && state.topics.get(topic) === subscription) this.send(state, { t: "spot", s: parsed.underlying, v: parsed.venue, p: spot.p });
       }
     } catch (error) {
       this.log.warn("resync failed", { topic, error: error as Error });

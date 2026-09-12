@@ -88,6 +88,9 @@ describe("HC-SH-122 [VENUES] Deribit instruments and quotes in USD per underlyin
     expect(coinToUsd(Number.NaN, 100)).toBeNull();
     expect(coinToUsd(0.25, 80_000)).toBe("20000");
     expect(toDeribitQuote({ ...ticker, index_price: 0 }, 1)).toBeNull(); // nothing to convert with: the tick is dropped, like the seed
+    // HC-SH-126: a USD-priced instrument (the perpetual) keeps its prices; the spot is still the index
+    const perp = toDeribitQuote({ ...ticker, instrument_name: "BTC-PERPETUAL", mark_price: 77650.5, best_bid_price: 77650, best_ask_price: 77651 }, 1, 5, { usdPriced: true })!;
+    expect(perp).toMatchObject({ mark: "77650.5", bid: "77650", ask: "77651", spot: "77698.01" });
   });
 
   it("the venue's greeks are the engine's per-unit greeks: mark × index and the greeks agree with the forward-priced model", () => {

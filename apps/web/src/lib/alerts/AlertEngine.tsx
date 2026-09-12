@@ -1,4 +1,6 @@
 "use client";
+import { listedVenue } from "@/lib/venue";
+import type { VenueId } from "@hapiecoin/venues/core";
 // The alert engine (Phase 5 item 2, ADR-052; HC-SH-096): mounted once in the app header while signed in. Reads
 // the futures price of every asset, the ATM IV of the nearest expiry for assets with an IV alert, and the live
 // P&L of strategies with a P&L alert; evaluates the armed alerts at most once a second (trailing throttle, so a
@@ -11,10 +13,10 @@ import { useAlerts, useTriggerAlert } from "@/lib/api/alerts";
 import { useStrategies } from "@/lib/api/strategies";
 import { nearestExpiry } from "@/lib/chain/expiries";
 import { atmIvOf } from "@/lib/chain/structure";
-import { useExpiries } from "@/lib/chain/useExpiries";
+import { useExpiriesQuery } from "@/lib/chain/useExpiries";
 import { useChain, useSpot } from "@/lib/gateway/hooks";
 import { usePaperBook } from "@/lib/strategy/usePaper";
-import { type AlertReadings, decimalOf, dueAlerts, firedText } from "./engine";
+import { type AlertReadings, decimalOf, dueAlerts, firedText, readingKey } from "./engine";
 import { publishReadings } from "./readings";
 
 const NONE: Strategy[] = [];
@@ -30,29 +32,39 @@ export function browserNotify(title: string, body: string): void {
   }
 }
 
-/** Reads the ATM IV of the asset's nearest listed expiry and hands it up; renders nothing. */
-function IvProbe({ asset, onValue }: { asset: Underlying; onValue: (asset: Underlying, iv: number | null) => void }) {
-  const expiries = useExpiries(asset);
+/** Reads the ATM IV of the asset's nearest listed expiry on `venue` and hands it up under its reading key; renders nothing. */
+function IvProbe({ venue, asset, onValue }: { venue: VenueId; asset: Underlying; onValue: (key: string, iv: number | null) => void }) {
+  const expiries = useExpiriesQuery(asset, { venue }).data?.expiries ?? NO_EXPIRIES;
   const expiry = useMemo(() => nearestExpiry(expiries), [expiries]);
-  const chain = useChain(asset, expiry);
-  const spot = useSpot(asset);
+  const chain = useChain(asset, expiry, venue);
+  const spot = useSpot(asset, listedVenue(venue, asset));
   const iv = atmIvOf(chain?.rows ?? [], spot ? Number(spot.price) : null);
-  useEffect(() => onValue(asset, iv), [asset, iv, onValue]);
+  const key = readingKey(venue, asset);
+  useEffect(() => onValue(key, iv), [key, iv, onValue]);
   return null;
 }
+const NO_EXPIRIES: string[] = [];
 
 export function AlertEngine({ throttleMs = EVAL_THROTTLE_MS }: { throttleMs?: number }) {
   const { data: alerts } = useAlerts();
   const list = useMemo(() => alerts ?? [], [alerts]);
   const needPnl = list.some((a) => a.kind === "pnl");
-  const ivAssets = useMemo(() => [...new Set(list.filter((a) => a.kind === "iv").map((a) => a.asset))], [list]);
-  const btc = useSpot("BTC");
-  const eth = useSpot("ETH");
-  const xaut = useSpot("XAUT");
+  const ivProbes = useMemo(() => {
+    const seen = new Map<string, { venue: VenueId; asset: Underlying }>();
+    for (const a of list) if (a.kind === "iv") seen.set(readingKey(a.venue, a.asset), { venue: a.venue, asset: a.asset });
+    return [...seen.entries()];
+  }, [list]);
+  // one spot per venue and asset (ADR-071), skipped where the venue lists no such market (HOOK_VENUES in lib/venue.ts pins the two)
+  const dBtc = useSpot("BTC", listedVenue("delta_india", "BTC"));
+  const dEth = useSpot("ETH", listedVenue("delta_india", "ETH"));
+  const dXaut = useSpot("XAUT", listedVenue("delta_india", "XAUT"));
+  const rBtc = useSpot("BTC", listedVenue("deribit", "BTC"));
+  const rEth = useSpot("ETH", listedVenue("deribit", "ETH"));
+  const rXaut = useSpot("XAUT", listedVenue("deribit", "XAUT"));
   const { data: strategies } = useStrategies();
   const book = usePaperBook(needPnl ? (strategies ?? NONE) : NONE);
-  const [ivs, setIvs] = useState<Partial<Record<Underlying, number | null>>>({});
-  const onIv = useCallback((asset: Underlying, iv: number | null) => setIvs((prev) => (prev[asset] === iv ? prev : { ...prev, [asset]: iv })), []);
+  const [ivs, setIvs] = useState<Partial<Record<string, number | null>>>({});
+  const onIv = useCallback((key: string, iv: number | null) => setIvs((prev) => (prev[key] === iv ? prev : { ...prev, [key]: iv })), []);
   const trigger = useTriggerAlert();
   const triggerRef = useRef(trigger);
   triggerRef.current = trigger;
@@ -63,12 +75,19 @@ export function AlertEngine({ throttleMs = EVAL_THROTTLE_MS }: { throttleMs?: nu
     const pnl: Record<string, number | null> = {};
     if (needPnl) for (const s of strategies ?? NONE) if (s.status === "paper" || s.status === "live") pnl[s.id] = book.pnlOf(s).total;
     return {
-      spot: { BTC: btc ? Number(btc.price) : null, ETH: eth ? Number(eth.price) : null, XAUT: xaut ? Number(xaut.price) : null },
+      spot: {
+        [readingKey("delta_india", "BTC")]: dBtc ? Number(dBtc.price) : null,
+        [readingKey("delta_india", "ETH")]: dEth ? Number(dEth.price) : null,
+        [readingKey("delta_india", "XAUT")]: dXaut ? Number(dXaut.price) : null,
+        [readingKey("deribit", "BTC")]: rBtc ? Number(rBtc.price) : null,
+        [readingKey("deribit", "ETH")]: rEth ? Number(rEth.price) : null,
+        [readingKey("deribit", "XAUT")]: rXaut ? Number(rXaut.price) : null,
+      },
       atmIv: ivs,
       pnl,
     };
     // `book` is rebuilt on every quote version, so pnlOf re-reads the marks
-  }, [needPnl, strategies, book, btc, eth, xaut, ivs]);
+  }, [needPnl, strategies, book, dBtc, dEth, dXaut, rBtc, rEth, rXaut, ivs]);
 
   useEffect(() => publishReadings(readings), [readings]);
 
@@ -102,8 +121,8 @@ export function AlertEngine({ throttleMs = EVAL_THROTTLE_MS }: { throttleMs?: nu
 
   return (
     <>
-      {ivAssets.map((asset) => (
-        <IvProbe key={asset} asset={asset} onValue={onIv} />
+      {ivProbes.map(([key, probe]) => (
+        <IvProbe key={key} venue={probe.venue} asset={probe.asset} onValue={onIv} />
       ))}
     </>
   );

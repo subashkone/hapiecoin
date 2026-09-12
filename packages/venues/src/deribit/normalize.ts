@@ -131,17 +131,22 @@ function coinAmount(value: number | null | undefined): string | null {
   return value === null || value === undefined || !Number.isFinite(value) ? null : numberToDecimal(value);
 }
 
-/** Ticker (REST result or WS notification data) -> Quote in USD per underlying unit; `instrumentId` from the instrument list. Null without a usable index (nothing to convert with). */
-export function toDeribitQuote(ticker: RawTicker, instrumentId: number, nowMs: number = Date.now()): Quote | null {
+/**
+ * Ticker (REST result or WS notification data) -> Quote in USD per underlying unit; `instrumentId` from the instrument list.
+ * Options are quoted in the coin and converted with the index; a USD-priced instrument (the perpetual) keeps its prices
+ * (`usdPriced`). Null without a usable index (nothing to convert with, and no spot to serve).
+ */
+export function toDeribitQuote(ticker: RawTicker, instrumentId: number, nowMs: number = Date.now(), opts: { usdPriced?: boolean } = {}): Quote | null {
   const index = ticker.index_price;
   if (!(index > 0)) return null;
+  const usd = (price: number | null | undefined): string | null => (opts.usdPriced ? coinAmount(price) : coinToUsd(price, index));
   return {
     venue: "deribit",
     symbol: ticker.instrument_name,
     instrumentId,
-    mark: coinToUsd(ticker.mark_price, index) ?? "0",
-    bid: coinToUsd(ticker.best_bid_price, index),
-    ask: coinToUsd(ticker.best_ask_price, index),
+    mark: usd(ticker.mark_price) ?? "0",
+    bid: usd(ticker.best_bid_price),
+    ask: usd(ticker.best_ask_price),
     bidSize: coinAmount(ticker.best_bid_amount),
     askSize: coinAmount(ticker.best_ask_amount),
     markIv: pct(ticker.mark_iv),

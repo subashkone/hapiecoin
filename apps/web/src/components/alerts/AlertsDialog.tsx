@@ -46,7 +46,8 @@ export function AlertForm({ prefill, onDone }: { prefill: AlertPrefill; onDone: 
   // a P&L alert follows its strategy's asset
   const strategy = active.find((s) => s.id === strategyId);
   const effectiveAsset = kind === "pnl" && strategy ? strategy.asset : asset;
-  const now = currentValue({ kind, asset: effectiveAsset, strategyId: kind === "pnl" ? strategyId || null : null }, readings);
+  const alertVenue = kind === "pnl" && strategy ? strategy.venue : venue;
+  const now = currentValue({ kind, asset: effectiveAsset, venue: alertVenue, strategyId: kind === "pnl" ? strategyId || null : null }, readings);
   const toggle = (ch: AlertChannel, on: boolean) => setChannels((prev) => (on ? [...new Set([...prev, ch])] : prev.filter((c) => c !== ch)));
   const save = () => {
     const v = value.trim();
@@ -56,7 +57,7 @@ export function AlertForm({ prefill, onDone }: { prefill: AlertPrefill; onDone: 
     if (channels.length === 0) return toast.error("Pick a channel", { description: "Push or email, or both" });
     if (channels.includes("push") && typeof Notification !== "undefined" && Notification.permission === "default") void Notification.requestPermission().catch(() => undefined);
     create.mutate(
-      { kind, asset: effectiveAsset, venue: kind === "pnl" && strategy ? strategy.venue : venue, ...(kind === "pnl" ? { strategyId } : {}), op, value: v, channels },
+      { kind, asset: effectiveAsset, venue: alertVenue, ...(kind === "pnl" ? { strategyId } : {}), op, value: v, channels },
       {
         onSuccess: (a) => {
           toast.success("Alert saved", { description: `${conditionText(a)} · armed` });

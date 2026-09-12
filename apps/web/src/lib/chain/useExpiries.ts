@@ -4,15 +4,17 @@
 import type { Underlying } from "@hapiecoin/schema";
 import { useQuery } from "@tanstack/react-query";
 import { publicEnv } from "@/lib/env";
+import type { VenueId } from "@hapiecoin/venues/core";
 import { useVenueId } from "@/lib/useVenue";
 import { type ExpirySource, discoverExpiries } from "./expiries";
 
 export const expiriesQueryKey = (venue: string, asset: Underlying) => ["expiries", venue, asset] as const;
 
 /** The expiries query of `asset` on the workspace venue; `enabled: false` parks it (the chain picker while closed). */
-export function useExpiriesQuery(asset: Underlying, opts: { enabled?: boolean } = {}) {
+export function useExpiriesQuery(asset: Underlying, opts: { enabled?: boolean; venue?: VenueId } = {}) {
   const env = publicEnv();
-  const venue = useVenueId();
+  const current = useVenueId();
+  const venue = opts.venue ?? current;
   return useQuery<ExpirySource>({
     queryKey: expiriesQueryKey(venue, asset),
     queryFn: () => discoverExpiries(asset, { gatewayWsUrl: env.NEXT_PUBLIC_GATEWAY_URL, defaultsCsv: env.NEXT_PUBLIC_DEFAULT_EXPIRIES, venue }),

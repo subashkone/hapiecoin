@@ -4,6 +4,7 @@
 import { Badge, cn } from "@hapiecoin/ui";
 import { UNDERLYINGS, type Underlying } from "@hapiecoin/schema";
 import { fmtPct, fmtPrice } from "@/lib/format";
+import { DEFAULT_VENUE } from "@hapiecoin/venues/core";
 import { useConnectionStatus, useFlash, useSpot } from "@/lib/gateway/hooks";
 import { ASSET_META } from "@/lib/store";
 
@@ -23,7 +24,7 @@ export function sparkPath(values: readonly string[], w = 160, h = 36): string {
 }
 
 function Tile({ asset }: { asset: Underlying }) {
-  const spot = useSpot(asset);
+  const spot = useSpot(asset, DEFAULT_VENUE); // the public tiles quote the default venue (ADR-071)
   const flash = useFlash(spot?.dir ?? null, spot?.updatedAt);
   const meta = ASSET_META[asset];
   const up = (spot?.c24 ?? 0) >= 0;

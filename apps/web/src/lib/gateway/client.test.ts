@@ -84,6 +84,11 @@ describe("HC-SH-006 GatewayClient connection lifecycle", () => {
     expect(gw.getSpot("BTC")).toMatchObject({ price: "79521.5", c24: -1.2 });
     ws.receive({ t: "spot", s: "BTC", p: "79530" });
     expect(gw.getSpot("BTC")).toMatchObject({ prev: "79521.5", dir: "up", c24: -1.2 });
+    // HC-SH-126 (ADR-071): a frame that names a venue lands in that venue's slot; the default venue's is untouched
+    ws.receive({ t: "spot", s: "BTC", v: "deribit", p: "77000" });
+    expect(gw.getSpot("BTC", "deribit")).toMatchObject({ price: "77000" });
+    expect(gw.getSpot("BTC")).toMatchObject({ price: "79530" });
+    expect(gw.getSpot("BTC", "delta_india")).toMatchObject({ price: "79530" });
     ws.receive({ t: "err", code: "RATE_LIMIT", message: "slow down" });
     ws.receive("{not json");
     ws.receive({ t: "bogus" });

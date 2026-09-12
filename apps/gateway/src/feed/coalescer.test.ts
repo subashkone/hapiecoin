@@ -75,14 +75,16 @@ describe("[GATEWAY] coalescer", () => {
 
   it("[GATEWAY] batches spot ticks per underlying (last price wins) and carries c24 when present", () => {
     const { coalescer, emitted } = make(100);
-    coalescer.setSpot("BTC", { p: "79500" });
-    coalescer.setSpot("BTC", { p: "79510", c24: -0.95 });
-    coalescer.setSpot("ETH", { p: "2400" });
-    expect(coalescer.pending()).toBe(2);
+    coalescer.setSpot("delta_india", "BTC", { p: "79500" });
+    coalescer.setSpot("delta_india", "BTC", { p: "79510", c24: -0.95 });
+    coalescer.setSpot("deribit", "BTC", { p: "79400" }); // another venue: its own key and topic (ADR-071)
+    coalescer.setSpot("delta_india", "ETH", { p: "2400" });
+    expect(coalescer.pending()).toBe(3);
     vi.advanceTimersByTime(100);
     expect(emitted).toEqual([
-      { topic: "spot:BTC", message: { t: "spot", s: "BTC", p: "79510", c24: -0.95 } },
-      { topic: "spot:ETH", message: { t: "spot", s: "ETH", p: "2400" } },
+      { topic: "spot:delta_india:BTC", message: { t: "spot", s: "BTC", v: "delta_india", p: "79510", c24: -0.95 } },
+      { topic: "spot:deribit:BTC", message: { t: "spot", s: "BTC", v: "deribit", p: "79400" } },
+      { topic: "spot:delta_india:ETH", message: { t: "spot", s: "ETH", v: "delta_india", p: "2400" } },
     ]);
     for (const e of emitted) expect(ServerMessage.parse(e.message)).toEqual(e.message);
   });
@@ -92,7 +94,7 @@ describe("[GATEWAY] coalescer", () => {
     coalescer.addQuote(TOPIC, { i: A, mark: "1" });
     coalescer.flush();
     coalescer.addQuote(TOPIC, { i: A, mark: "2" });
-    coalescer.setSpot("BTC", { p: "1" });
+    coalescer.setSpot("delta_india", "BTC", { p: "1" });
     coalescer.close();
     coalescer.close(); // idempotent
     expect(coalescer.pending()).toBe(0);

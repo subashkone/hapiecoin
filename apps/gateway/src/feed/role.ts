@@ -10,6 +10,8 @@
 import type { Topic, Underlying } from "@hapiecoin/schema";
 import type { HoldRegistry } from "../coordination/registry.js";
 import type { SnapshotStore } from "../coordination/snapshots.js";
+import { canonicalTopic } from "@hapiecoin/schema";
+import { DEFAULT_VENUE } from "@hapiecoin/venues";
 import type { Logger } from "../log.js";
 import { silentLogger } from "../log.js";
 import type { FeedStatus, MarketFeed, Snapshot, SpotState } from "./feed.js";
@@ -117,14 +119,16 @@ export class RoleFeed {
   }
 
   /** Holds are counted once, in the feed (its upstream work is a no-op while it is not the feed); the registry sees the first and the last. */
-  acquire(topic: Topic): void {
+  acquire(raw: Topic): void {
+    const topic = canonicalTopic(raw); // ADR-071: one hold per canonical topic, like the feed
     const count = (this.holds.get(topic) ?? 0) + 1;
     this.holds.set(topic, count);
     this.feed.acquire(topic);
     if (count === 1) this.registry.hold(topic).catch((error: unknown) => this.log.warn("registry hold failed", { topic, error: toError(error) }));
   }
 
-  release(topic: Topic): void {
+  release(raw: Topic): void {
+    const topic = canonicalTopic(raw);
     const count = this.holds.get(topic);
     if (count === undefined) return;
     if (count > 1) {
@@ -159,15 +163,15 @@ export class RoleFeed {
     return local === null ? null : { seq: 0, rows: local.rows };
   }
 
-  spot(underlying: Underlying): SpotState | null | Promise<SpotState | null> {
-    if (this.mode === "leader") return this.feed.spot(underlying);
-    return this.followerSpot(underlying);
+  spot(underlying: Underlying, venue: string = DEFAULT_VENUE): SpotState | null | Promise<SpotState | null> {
+    if (this.mode === "leader") return this.feed.spot(underlying, venue);
+    return this.followerSpot(underlying, venue);
   }
 
-  private async followerSpot(underlying: Underlying): Promise<SpotState | null> {
-    const stored = await this.store.getSpot(underlying).catch(() => null);
+  private async followerSpot(underlying: Underlying, venue: string): Promise<SpotState | null> {
+    const stored = await this.store.getSpot(venue, underlying).catch(() => null);
     if (stored !== null) return { p: stored.p, ts: stored.ts };
-    return this.feed.spot(underlying);
+    return this.feed.spot(underlying, venue);
   }
 
   /** Re-lease our holds; as leader also watch what other gateways hold. Exposed for tests. */
