@@ -6,18 +6,18 @@ import { createLogger } from "../log.js";
 import { InProcessPubSub } from "../pubsub/in-process.js";
 import { FakeMarketData } from "../test-support/fake-market.js";
 import { NOW, fixtureQuotes } from "../test-support/fixtures.js";
-import { MarketFeed, SPOT_SYMBOLS } from "./feed.js";
+import { MarketFeed, spotSymbolFor } from "./feed.js";
 
 const TOPIC: Topic = "chain:delta_india:BTC:2026-09-25";
 const NOV: Topic = "chain:delta_india:BTC:2026-11-27";
-const SPOT_BTC: Topic = "spot:BTC";
+const SPOT_BTC: Topic = "spot:delta_india:BTC"; // the fan-out topic is always the venue form (ADR-071)
 const CALL = "C-BTC-80000-250926";
 
 function make(options: { seed?: boolean; graceMs?: number; refreshMs?: number } = {}) {
   const market = new FakeMarketData({ seed: options.seed ?? true });
   const pubsub = new InProcessPubSub();
   const published: { topic: string; message: ServerMessage }[] = [];
-  for (const topic of [TOPIC, NOV, SPOT_BTC, "spot:ETH", "spot:XAUT"]) {
+  for (const topic of [TOPIC, NOV, SPOT_BTC, "spot:delta_india:ETH", "spot:delta_india:XAUT"]) {
     // the snapshot a leader announces on every (re)watch (ADR-062) is covered in feed-roles.test.ts; here the deltas matter
     pubsub.subscribe(topic, (message) => {
       if (message.t !== "snap") published.push({ topic, message });
@@ -256,20 +256,26 @@ describe("[GATEWAY] MarketFeed reference counting with a 30 s grace", () => {
   it("[GATEWAY] spot topics subscribe the perpetual; fut topics touch nothing; stop drops every upstream subscription", async () => {
     const { feed, market } = make({ graceMs: 0 });
     await feed.start();
-    feed.acquire(SPOT_BTC);
+    feed.acquire("spot:BTC"); // the bare form names the default venue (ADR-071)
+    feed.acquire("spot:delta_india:BTC"); // the canonical spelling of the same topic: a second holder, no second subscription
     feed.acquire("spot:XAUT");
     expect(market.symbolCalls).toEqual([
-      { op: "sub", symbols: [SPOT_SYMBOLS.BTC] },
+      { op: "sub", symbols: [spotSymbolFor("delta_india", "BTC")] },
       { op: "sub", symbols: ["XAUTUSD"] },
     ]);
-    feed.release(SPOT_BTC);
+    expect(spotSymbolFor("deribit", "XAUT")).toBeNull(); // Deribit lists no XAUT: such a spot topic is unsupported
+    expect(feed.supports("spot:deribit:XAUT")).toBe(false);
+    feed.release("spot:BTC");
+    vi.advanceTimersByTime(0);
+    expect(market.symbolCalls.at(-1)).toEqual({ op: "sub", symbols: ["XAUTUSD"] }); // one holder left under the other spelling: still subscribed
+    feed.release("spot:delta_india:BTC");
     vi.advanceTimersByTime(0);
     expect(market.symbolCalls.at(-1)).toEqual({ op: "unsub", symbols: ["BTCUSD"] });
 
     feed.acquire("fut:delta_india:BTCUSD");
     feed.release("fut:delta_india:BTCUSD");
     vi.advanceTimersByTime(0);
-    expect(market.symbolCalls).toHaveLength(3);
+    expect(market.symbolCalls).toHaveLength(3); // sub BTC, sub XAUT, unsub BTC: the fut topic and the alias added nothing
 
     feed.acquire(TOPIC);
     feed.acquire(NOV);
@@ -362,7 +368,7 @@ describe("[GATEWAY] MarketFeed publishes coalesced deltas with only changed fiel
     market.tick(market.later(CALL, { spot: null }, 7_000));
     vi.advanceTimersByTime(250);
     const spots = published.filter((p) => p.topic === SPOT_BTC).map((p) => p.message);
-    expect(spots).toEqual([{ t: "spot", s: "BTC", p: "80000" }]);
+    expect(spots).toEqual([{ t: "spot", s: "BTC", v: "delta_india", p: "80000" }]);
 
     // the perpetual's ticker (not in the option list) feeds spot too; unknown symbols are ignored
     const perp: Quote = {
@@ -391,6 +397,7 @@ describe("[GATEWAY] MarketFeed publishes coalesced deltas with only changed fiel
     expect(published.filter((p) => p.topic === SPOT_BTC).at(-1)?.message).toEqual({
       t: "spot",
       s: "BTC",
+      v: "delta_india",
       p: "80100",
     });
     expect(published.filter((p) => p.topic !== SPOT_BTC && p.message.t === "spot")).toEqual([]);

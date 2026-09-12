@@ -48,7 +48,7 @@ describe("HC-PB-009 live markets", () => {
     });
     await waitFor(() => expect(screen.getByTestId("live-badge").textContent).toContain("Live"));
     expect(ws.sentFrames().flatMap((f) => (f as { topics?: string[] }).topics ?? [])).toEqual(
-      expect.arrayContaining(["spot:BTC", "spot:ETH", "spot:XAUT"]),
+      expect.arrayContaining(["spot:delta_india:BTC", "spot:delta_india:ETH", "spot:delta_india:XAUT"]), // the public tiles quote the default venue (ADR-071)
     );
     act(() => {
       ws.receive({ t: "spot", s: "BTC", p: "79521.5", c24: -1.89 });

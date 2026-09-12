@@ -2,6 +2,7 @@
 // (typescript rule 2). Reconnects with exponential backoff and resubscribes to every live topic; a chain
 // topic always gets a fresh `snap` after resubscribe, which also heals seq gaps (reducer `stale`).
 import { ServerMessage, parseTopic, type ClientMessage, type Topic, type Underlying } from "@hapiecoin/schema";
+import { DEFAULT_VENUE } from "@hapiecoin/venues/core";
 import {
   applyServerMessage,
   applySpot,
@@ -15,7 +16,8 @@ export type ConnectionStatus = "idle" | "connecting" | "open" | "reconnecting" |
 export interface GatewayEvents {
   status: (status: ConnectionStatus) => void;
   chain: (topic: string, state: ChainState) => void;
-  spot: (underlying: Underlying, state: SpotState) => void;
+  /** A spot tick of `underlying` on `venue` (ADR-071). */
+  spot: (underlying: Underlying, state: SpotState, venue: string) => void;
   latency: (ms: number) => void;
   error: (code: string, message: string) => void;
 }
@@ -59,7 +61,8 @@ export class GatewayClient {
   /** topic → subscriber count. */
   private readonly refs = new Map<string, number>();
   private readonly chains = new Map<string, ChainState>();
-  private readonly spots = new Map<Underlying, SpotState>();
+  /** Spot per `${venue}:${underlying}` (ADR-071). */
+  private readonly spots = new Map<string, SpotState>();
   private readonly listeners: { [K in keyof GatewayEvents]: Set<GatewayEvents[K]> } = {
     status: new Set(),
     chain: new Set(),
@@ -93,8 +96,8 @@ export class GatewayClient {
   getChain(topic: string): ChainState | undefined {
     return this.chains.get(topic);
   }
-  getSpot(underlying: Underlying): SpotState | undefined {
-    return this.spots.get(underlying);
+  getSpot(underlying: Underlying, venue: string = DEFAULT_VENUE): SpotState | undefined {
+    return this.spots.get(`${venue}:${underlying}`);
   }
   /** Topics with at least one subscriber. */
   topics(): string[] {
@@ -278,9 +281,11 @@ export class GatewayClient {
         break;
       }
       case "spot": {
-        const next = applySpot(this.spots.get(msg.s), msg.p, msg.c24, now);
-        this.spots.set(msg.s, next);
-        this.emit("spot", msg.s, next);
+        const venue = msg.v ?? DEFAULT_VENUE; // a frame without a venue is the default venue's (ADR-071)
+        const key = `${venue}:${msg.s}`;
+        const next = applySpot(this.spots.get(key), msg.p, msg.c24, now);
+        this.spots.set(key, next);
+        this.emit("spot", msg.s, next, venue);
         break;
       }
       case "pong": {

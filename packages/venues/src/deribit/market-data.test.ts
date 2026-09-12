@@ -7,14 +7,18 @@ import { DeribitMarketData, createDeribitMarketData } from "./market-data.js";
 
 const NOW = 1_789_148_000_000;
 const frames = loadDeribitWsFrames();
+/** The BTC perpetual as get_instruments?kind=future lists it (fields the adapter reads; no expiry in practice). */
+const PERPETUAL = { instrument_name: "BTC-PERPETUAL", instrument_id: 1, kind: "future", expiration_timestamp: 32503680000000, base_currency: "BTC", quote_currency: "USD", counter_currency: "USD", settlement_currency: "BTC", settlement_period: "perpetual", contract_size: 10, tick_size: 0.5, min_trade_amount: 1, is_active: true, state: "open", instrument_type: "reversed", price_index: "btc_usd" };
 
 const fetchFixtures: FetchLike = (input) => {
   const url = new URL(input);
   const body =
     url.pathname === "/api/v2/public/get_instruments"
-      ? url.searchParams.get("currency") === "BTC"
-        ? loadDeribitInstrumentsFixture()
-        : { jsonrpc: "2.0", result: [] }
+      ? url.searchParams.get("currency") !== "BTC"
+        ? { jsonrpc: "2.0", result: [] }
+        : url.searchParams.get("kind") === "future"
+          ? { jsonrpc: "2.0", result: [PERPETUAL] }
+          : loadDeribitInstrumentsFixture()
       : url.pathname === "/api/v2/public/get_book_summary_by_currency"
         ? url.searchParams.get("currency") === "BTC"
           ? loadDeribitBookSummaryFixture()
@@ -51,6 +55,7 @@ describe("HC-SH-122 [VENUES] Deribit market data session", () => {
     expect(md.instruments()).toHaveLength(950);
     expect(md.instrument("BTC-12SEP26-69000-C")?.id).toBe(691120);
     expect(md.instrument("nope")).toBeUndefined();
+    expect(md.instrument("BTC-PERPETUAL")?.kind).toBe("perpetual"); // HC-SH-126: known by symbol for the spot, not part of the option list
     expect(md.quote("BTC-12SEP26-69000-C")?.greeks).toBeNull(); // the seed has no greeks
     expect(md.quote("nope")).toBeUndefined();
     const expiries = md.expiries("BTC");
@@ -66,7 +71,28 @@ describe("HC-SH-122 [VENUES] Deribit market data session", () => {
     expect(md.status()).toEqual({ instruments: 950, quotes: 950, socket: "idle", subscribed: 0 });
   });
 
-  it("watches an expiry's options over the socket, applies ticker frames by instrument name, ignores unknown names, and stops", async () => {
+  it("HC-SH-126 a failed futures listing is reported and the option chain still loads (ADR-071)", async () => {
+    const flaky: FetchLike = (input, init) => {
+      const url = new URL(input);
+      if (url.pathname === "/api/v2/public/get_instruments" && url.searchParams.get("kind") === "future") return Promise.resolve({ status: 503, headers: { get: () => null }, text: () => Promise.resolve("down") });
+      return fetchFixtures(input, init);
+    };
+    const md = createDeribitMarketData({ restUrl: "https://www.deribit.com/api/v2", wsUrl: "wss://ws.example.test", fetch: flaky, WebSocket: FakeWebSocket, now: () => NOW, sleep: () => Promise.resolve(), underlyings: ["BTC"] });
+    const errors: unknown[] = [];
+    md.on("error", (e) => errors.push(e));
+    expect(await md.load()).toEqual({ instruments: 950, quotes: 950 });
+    expect(errors).toHaveLength(1);
+    expect(md.instrument("BTC-PERPETUAL")).toBeUndefined();
+    // a refresh that fails the futures listing keeps the perpetual a previous load knew
+    const { md: steady } = make(undefined);
+    await steady.load();
+    expect(steady.instrument("BTC-PERPETUAL")?.kind).toBe("perpetual");
+    (steady as unknown as { rest: { getInstruments: (c: string, k?: string) => Promise<unknown[]> } }).rest.getInstruments = (c: string, k?: string) => (k === "future" ? Promise.reject(new Error("503")) : Promise.resolve([]));
+    await steady.load().catch(() => undefined);
+    expect(steady.instrument("BTC-PERPETUAL")?.kind).toBe("perpetual");
+  });
+
+  it("HC-SH-126 watches an expiry's options over the socket, applies ticker frames by instrument name (the perpetual too), ignores unknown names, and stops", async () => {
     const { md, tickers, statuses } = make(["BTC"]);
     await md.load();
     tickers.length = 0;
@@ -95,6 +121,12 @@ describe("HC-SH-122 [VENUES] Deribit market data session", () => {
     ws.simulateMessage({ jsonrpc: "2.0", method: "subscription", params: { channel: "ticker.BTC-12SEP26-69000-C.100ms", data: { ...(frames["tickerBtc"] as { params: { data: object } }).params.data, timestamp: data.timestamp + 5, index_price: 0 } } }); // no index: dropped
     expect(tickers).toHaveLength(1);
     expect(md.unwatch("BTC", "2026-09-12")).toHaveLength(54);
+    // HC-SH-126 (ADR-071): the perpetual's ticker becomes a quote whose spot is the index, so the gateway serves a Deribit spot
+    md.subscribeSymbols(["BTC-PERPETUAL"]);
+    ws.simulateMessage({ jsonrpc: "2.0", method: "subscription", params: { channel: "ticker.BTC-PERPETUAL.100ms", data: { ...(frames["tickerBtc"] as { params: { data: object } }).params.data, instrument_name: "BTC-PERPETUAL", timestamp: data.timestamp + 9 } } });
+    expect(md.quote("BTC-PERPETUAL")?.spot).toBe(String(data.index_price));
+    expect(md.quote("BTC-PERPETUAL")?.mark).toBe(String(data.mark_price)); // USD-priced: not multiplied by the index
+    expect(tickers).toHaveLength(2);
     md.unsubscribeSymbols(["BTC-PERPETUAL"]);
     expect(md.status().subscribed).toBe(0);
     md.stop();

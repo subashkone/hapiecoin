@@ -16,7 +16,7 @@ function make(store: SnapshotStore | undefined, graceMs = 0) {
   const market = new FakeMarketData();
   const pubsub = new InProcessPubSub();
   const published: ServerMessage[] = [];
-  for (const topic of [TOPIC, NOV, "spot:BTC"]) pubsub.subscribe(topic, (m) => published.push(m));
+  for (const topic of [TOPIC, NOV, "spot:delta_india:BTC"]) pubsub.subscribe(topic, (m) => published.push(m)); // the fan-out spot topic carries the venue (ADR-071)
   const lines: string[] = [];
   const log = createLogger("debug", (line) => lines.push(line), () => NOW);
   const feed = new MarketFeed({ market, pubsub, coalesceMs: 250, graceMs, store, snapshotWriteMs: 100, now: () => NOW, log });
@@ -84,13 +84,13 @@ describe("[GATEWAY] MarketFeed follower mode", () => {
     feed.acquire(TOPIC);
     vi.advanceTimersByTime(100);
     expect(store.snapshots.get(TOPIC)?.seq).toBe(0); // written on watch
-    expect(store.spots.get("BTC")?.p).toMatch(/^\d/); // known spots go out on promotion
+    expect(store.spots.get("delta_india:BTC")?.p).toMatch(/^\d/); // known spots go out on promotion (keyed by venue, ADR-071)
     market.tick(market.later(CALL, { mark: "1300", spot: "80600" }));
     vi.advanceTimersByTime(250);
     feed.setRemoteTopics(new Set([TOPIC])); // a remote hold on a topic already dirty: the pending write covers it
     expect(published.map((m) => m.t)).toEqual(["snap", "q", "spot"]); // the watch announces a snapshot, then the deltas
     expect(published[0]).toMatchObject({ t: "snap", topic: TOPIC, seq: 0 });
-    expect(store.spots.get("BTC")?.p).toBe("80600");
+    expect(store.spots.get("delta_india:BTC")?.p).toBe("80600");
     vi.advanceTimersByTime(100);
     expect(store.snapshots.get(TOPIC)?.seq).toBe(1);
     feed.setRemoteTopics(new Set()); // the remote hold goes away; the local one remains
@@ -154,7 +154,7 @@ describe("[GATEWAY] MarketFeed snapshot keepalive", () => {
   it("rewrites every held chain on the keepalive interval without ticks, and stops on demote", async () => {
     let writes = 0;
     const store = new MemorySnapshotStore();
-    const counting: SnapshotStore = { ...store, putSnapshot: (t, s) => (writes += 1, store.putSnapshot(t, s)), putSpot: (u, s) => store.putSpot(u, s), getSnapshot: (t) => store.getSnapshot(t), getSpot: (u) => store.getSpot(u) };
+    const counting: SnapshotStore = { ...store, putSnapshot: (t, s) => (writes += 1, store.putSnapshot(t, s)), putSpot: (v, u, s) => store.putSpot(v, u, s), getSnapshot: (t) => store.getSnapshot(t), getSpot: (v, u) => store.getSpot(v, u) };
     const market = new FakeMarketData();
     const feed = new MarketFeed({ market, pubsub: new InProcessPubSub(), coalesceMs: 250, graceMs: 0, store: counting, snapshotWriteMs: 100, snapshotKeepaliveMs: 1_000, now: () => NOW });
     await feed.start();

@@ -253,14 +253,20 @@ describe("[GATEWAY] subscribe: snapshot then coalesced deltas", () => {
     await server.close();
   });
 
-  it("[GATEWAY] sub spot sends the current spot and later spot ticks; ping answers pong", async () => {
+  it("[GATEWAY] HC-SH-126 sub spot sends the current spot and later spot ticks (the bare spelling aliases the default venue, ADR-071); ping answers pong", async () => {
     const { market, transport } = await make();
     const conn = transport.connect() as NonNullable<ReturnType<typeof transport.connect>>;
     transport.send(conn, { op: "sub", topics: ["spot:BTC", "spot:ETH"] });
-    expect(conn.frames()).toEqual([{ t: "spot", s: "BTC", p: market.quote(CALL)?.spot }]); // ETH spot unknown: nothing yet
+    expect(conn.frames()).toEqual([{ t: "spot", s: "BTC", v: "delta_india", p: market.quote(CALL)?.spot }]); // ETH spot unknown: nothing yet; the bare topic is the default venue's (ADR-071)
     market.tick(market.later(CALL, { spot: "80000" }));
     vi.advanceTimersByTime(250);
-    expect(conn.last()).toEqual({ t: "spot", s: "BTC", p: "80000" });
+    expect(conn.last()).toEqual({ t: "spot", s: "BTC", v: "delta_india", p: "80000" });
+    transport.send(conn, { op: "sub", topics: ["spot:delta_india:BTC"] }); // the canonical spelling of a topic already held: no second frame
+    expect(conn.last()).toEqual({ t: "spot", s: "BTC", v: "delta_india", p: "80000" });
+    transport.send(conn, { op: "unsub", topics: ["spot:BTC"] });
+    market.tick(market.later(CALL, { spot: "80500" }));
+    vi.advanceTimersByTime(250);
+    expect(conn.last()).toEqual({ t: "spot", s: "BTC", v: "delta_india", p: "80000" }); // unsubscribed through the bare spelling: no more spot frames
     transport.send(conn, { op: "ping" });
     expect(conn.last()).toEqual({ t: "pong" });
   });
@@ -328,12 +334,12 @@ describe("[GATEWAY] backpressure", () => {
     // drained: the next frame for the topic is replaced by a fresh snapshot (and spot by the current spot)
     conn.buffered = 0;
     pubsub.publish(TOPIC, { t: "q", topic: TOPIC, seq: 99, d: [{ i: `delta_india:${CALL}`, mark: "0" }] });
-    pubsub.publish("spot:BTC", { t: "spot", s: "BTC", p: "0" });
+    pubsub.publish("spot:delta_india:BTC", { t: "spot", s: "BTC", p: "0" });
     expect(conn.frames().map((f) => f.t)).toEqual(["snap", "spot"]);
     const snap = conn.frames()[0] as Extract<ServerMessage, { t: "snap" }>;
     expect(snap.seq).toBe(1);
     expect(snap.rows.find((r) => r.strike === "80000")?.call?.mark).toBe("1300");
-    expect(conn.frames()[1]).toEqual({ t: "spot", s: "BTC", p: "80000" });
+    expect(conn.frames()[1]).toEqual({ t: "spot", s: "BTC", v: "delta_india", p: "80000" });
 
     // back to normal deltas afterwards
     conn.clear();
@@ -408,10 +414,10 @@ describe("[GATEWAY] backpressure", () => {
     conn.clear();
     conn.buffered = 5_000;
     pubsub.publish(TOPIC, { t: "q", topic: TOPIC, seq: 1, d: [{ i: "delta_india:X", mark: "1" }] });
-    pubsub.publish("spot:BTC", { t: "spot", s: "BTC", p: "1" });
+    pubsub.publish("spot:delta_india:BTC", { t: "spot", s: "BTC", p: "1" });
     conn.buffered = 0;
     pubsub.publish(TOPIC, { t: "q", topic: TOPIC, seq: 2, d: [{ i: "delta_india:X", mark: "2" }] });
-    pubsub.publish("spot:BTC", { t: "spot", s: "BTC", p: "2" });
+    pubsub.publish("spot:delta_india:BTC", { t: "spot", s: "BTC", p: "2" });
     expect(conn.frames()).toEqual([]);
     // the following frames flow again
     pubsub.publish(TOPIC, { t: "q", topic: TOPIC, seq: 3, d: [{ i: "delta_india:X", mark: "3" }] });

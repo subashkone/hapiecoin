@@ -19,8 +19,9 @@ export interface StoredSpot {
 export interface SnapshotStore {
   putSnapshot(topic: Topic, snapshot: StoredSnapshot): Promise<void>;
   getSnapshot(topic: Topic): Promise<StoredSnapshot | null>;
-  putSpot(underlying: Underlying, spot: StoredSpot): Promise<void>;
-  getSpot(underlying: Underlying): Promise<StoredSpot | null>;
+  /** ADR-071: one spot per venue and underlying. */
+  putSpot(venue: string, underlying: Underlying, spot: StoredSpot): Promise<void>;
+  getSpot(venue: string, underlying: Underlying): Promise<StoredSpot | null>;
 }
 
 export interface RedisStoreClient {
@@ -58,12 +59,12 @@ export class RedisSnapshotStore implements SnapshotStore {
     return parse<StoredSnapshot>(await this.redis.get(`${this.prefix}snap:${topic}`), (v) => typeof v.seq === "number" && Array.isArray(v.rows));
   }
 
-  async putSpot(underlying: Underlying, spot: StoredSpot): Promise<void> {
-    await this.redis.set(`${this.prefix}spot:${underlying}`, JSON.stringify(spot), "PX", this.spotTtlMs);
+  async putSpot(venue: string, underlying: Underlying, spot: StoredSpot): Promise<void> {
+    await this.redis.set(`${this.prefix}spot:${venue}:${underlying}`, JSON.stringify(spot), "PX", this.spotTtlMs);
   }
 
-  async getSpot(underlying: Underlying): Promise<StoredSpot | null> {
-    return parse<StoredSpot>(await this.redis.get(`${this.prefix}spot:${underlying}`), (v) => typeof v.p === "string");
+  async getSpot(venue: string, underlying: Underlying): Promise<StoredSpot | null> {
+    return parse<StoredSpot>(await this.redis.get(`${this.prefix}spot:${venue}:${underlying}`), (v) => typeof v.p === "string");
   }
 }
 
@@ -80,7 +81,8 @@ function parse<T>(raw: string | null, valid: (v: Record<string, unknown>) => boo
 /** Single process: nothing to share, but the leader still writes and reads its own entries in tests. */
 export class MemorySnapshotStore implements SnapshotStore {
   readonly snapshots = new Map<Topic, StoredSnapshot>();
-  readonly spots = new Map<Underlying, StoredSpot>();
+  /** Keyed `${venue}:${underlying}` (ADR-071). */
+  readonly spots = new Map<string, StoredSpot>();
   putSnapshot(topic: Topic, snapshot: StoredSnapshot): Promise<void> {
     this.snapshots.set(topic, snapshot);
     return Promise.resolve();
@@ -88,11 +90,11 @@ export class MemorySnapshotStore implements SnapshotStore {
   getSnapshot(topic: Topic): Promise<StoredSnapshot | null> {
     return Promise.resolve(this.snapshots.get(topic) ?? null);
   }
-  putSpot(underlying: Underlying, spot: StoredSpot): Promise<void> {
-    this.spots.set(underlying, spot);
+  putSpot(venue: string, underlying: Underlying, spot: StoredSpot): Promise<void> {
+    this.spots.set(`${venue}:${underlying}`, spot);
     return Promise.resolve();
   }
-  getSpot(underlying: Underlying): Promise<StoredSpot | null> {
-    return Promise.resolve(this.spots.get(underlying) ?? null);
+  getSpot(venue: string, underlying: Underlying): Promise<StoredSpot | null> {
+    return Promise.resolve(this.spots.get(`${venue}:${underlying}`) ?? null);
   }
 }

@@ -62,11 +62,12 @@ describe("[GATEWAY] snapshot store (ADR-062)", () => {
     const s = new RedisSnapshotStore({ redis, snapshotTtlMs: 1_000, spotTtlMs: 500 });
     expect(await s.getSnapshot(T1)).toBeNull();
     await s.putSnapshot(T1, { seq: 3, rows: [{ strike: "80000" }], ts: t });
-    await s.putSpot("BTC", { p: "80000", ts: t });
+    await s.putSpot("delta_india", "BTC", { p: "80000", ts: t });
+    await s.putSpot("deribit", "BTC", { p: "79900", ts: t }); // ADR-071: keyed by venue too
     expect(await s.getSnapshot(T1)).toEqual({ seq: 3, rows: [{ strike: "80000" }], ts: t });
-    expect(await s.getSpot("BTC")).toEqual({ p: "80000", ts: t });
+    expect(await s.getSpot("delta_india", "BTC")).toEqual({ p: "80000", ts: t });
     t += 600;
-    expect(await s.getSpot("BTC")).toBeNull();
+    expect(await s.getSpot("delta_india", "BTC")).toBeNull();
     expect(await s.getSnapshot(T1)).not.toBeNull();
     t += 500;
     expect(await s.getSnapshot(T1)).toBeNull();
@@ -76,9 +77,10 @@ describe("[GATEWAY] snapshot store (ADR-062)", () => {
     expect(await s.getSnapshot("y")).toBeNull();
     const m = new MemorySnapshotStore();
     await m.putSnapshot(T1, { seq: 1, rows: [], ts: t });
-    await m.putSpot("ETH", { p: "3000", ts: t });
+    await m.putSpot("delta_india", "ETH", { p: "3000", ts: t });
     expect(await m.getSnapshot(T1)).toEqual({ seq: 1, rows: [], ts: t });
-    expect(await m.getSpot("ETH")).toEqual({ p: "3000", ts: t });
+    expect(await m.getSpot("delta_india", "ETH")).toEqual({ p: "3000", ts: t });
+    expect(await m.getSpot("deribit", "ETH")).toBeNull(); // another venue: its own slot (ADR-071)
     expect(await m.getSnapshot(T2)).toBeNull();
   });
 });

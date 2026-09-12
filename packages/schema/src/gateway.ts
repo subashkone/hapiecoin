@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DecimalString, UNDERLYINGS, Underlying, VENUES, type Venue } from "./primitives.js";
+import { DecimalString, UNDERLYINGS, Underlying, VENUES, Venue } from "./primitives.js";
 import { ChainRow, InstrumentId, Quote } from "./market.js";
 
 const venueAlt = VENUES.join("|");
@@ -9,8 +9,8 @@ const datePat = "[0-9]{4}-[0-9]{2}-[0-9]{2}";
 
 /** `chain:<venue>:<underlying>:<expiry>` — every quote of one chain (expiry is YYYY-MM-DD). */
 export const CHAIN_TOPIC_RE = new RegExp(`^chain:(${venueAlt}):(${underlyingAlt}):(${datePat})$`);
-/** `spot:<underlying>` — underlying spot price ticks. */
-export const SPOT_TOPIC_RE = new RegExp(`^spot:(${underlyingAlt})$`);
+/** `spot:<venue>:<underlying>` — the underlying's spot ticks on a venue; the bare `spot:<underlying>` form names the default venue (ADR-071). */
+export const SPOT_TOPIC_RE = new RegExp(`^spot:(?:(${venueAlt}):)?(${underlyingAlt})$`);
 /** `fut:<venue>:<symbol>` — one future or perpetual. */
 export const FUT_TOPIC_RE = new RegExp(`^fut:(${venueAlt}):(${symbolPat})$`);
 
@@ -18,15 +18,16 @@ export const FUT_TOPIC_RE = new RegExp(`^fut:(${venueAlt}):(${symbolPat})$`);
 export const Topic = z
   .string()
   .refine((t) => CHAIN_TOPIC_RE.test(t) || SPOT_TOPIC_RE.test(t) || FUT_TOPIC_RE.test(t), {
-    message: "expected chain:<venue>:<underlying>:<YYYY-MM-DD>, spot:<underlying> or fut:<venue>:<symbol>",
+    message: "expected chain:<venue>:<underlying>:<YYYY-MM-DD>, spot:[<venue>:]<underlying> or fut:<venue>:<symbol>",
   });
 export type Topic = z.infer<typeof Topic>;
 
 export function chainTopic(venue: Venue, underlying: Underlying, expiry: string): Topic {
   return `chain:${venue}:${underlying}:${expiry}`;
 }
-export function spotTopic(underlying: Underlying): Topic {
-  return `spot:${underlying}`;
+/** The spot topic of `underlying` on `venue`; without a venue the bare form, which the gateway reads as the default venue's. */
+export function spotTopic(underlying: Underlying, venue?: Venue): Topic {
+  return venue === undefined ? `spot:${underlying}` : `spot:${venue}:${underlying}`;
 }
 export function futTopic(venue: Venue, symbol: string): Topic {
   return `fut:${venue}:${symbol}`;
@@ -34,7 +35,7 @@ export function futTopic(venue: Venue, symbol: string): Topic {
 
 export type ParsedTopic =
   | { kind: "chain"; venue: Venue; underlying: Underlying; expiry: string }
-  | { kind: "spot"; underlying: Underlying }
+  | { kind: "spot"; venue: Venue; underlying: Underlying }
   | { kind: "fut"; venue: Venue; symbol: string };
 
 /** Split a topic into its parts, or return null when it matches no pattern. */
@@ -44,10 +45,16 @@ export function parseTopic(topic: string): ParsedTopic | null {
     return { kind: "chain", venue: chain[1] as Venue, underlying: chain[2] as Underlying, expiry: chain[3] as string };
   }
   const spot = SPOT_TOPIC_RE.exec(topic);
-  if (spot) return { kind: "spot", underlying: spot[1] as Underlying };
+  if (spot) return { kind: "spot", venue: (spot[1] as Venue | undefined) ?? VENUES[0], underlying: spot[2] as Underlying };
   const fut = FUT_TOPIC_RE.exec(topic);
   if (fut) return { kind: "fut", venue: fut[1] as Venue, symbol: fut[2] as string };
   return null;
+}
+
+/** The one spelling the gateway keys subscriptions and fan-out channels by: a bare spot topic becomes the default venue's (ADR-071). */
+export function canonicalTopic(topic: Topic): Topic {
+  const parsed = parseTopic(topic);
+  return parsed?.kind === "spot" ? spotTopic(parsed.underlying, parsed.venue) : topic;
 }
 
 /** Upper bound on topics per sub/unsub frame; keeps a single frame small and bounded. */
@@ -79,8 +86,8 @@ export const ServerMessage = z.discriminatedUnion("t", [
   z.object({ t: z.literal("snap"), topic: Topic, seq: Seq, rows: z.array(ChainRow) }),
   /** Quote deltas for a topic, to be applied on top of the last snapshot. */
   z.object({ t: z.literal("q"), topic: Topic, seq: Seq, d: z.array(QuoteDelta).min(1) }),
-  /** Spot tick: underlying, price and optional 24h change in percent. */
-  z.object({ t: z.literal("spot"), s: Underlying, p: DecimalString, c24: z.number().finite().optional() }),
+  /** Spot tick: underlying, the venue (absent = the default venue, ADR-071), price and optional 24h change in percent. */
+  z.object({ t: z.literal("spot"), s: Underlying, v: Venue.optional(), p: DecimalString, c24: z.number().finite().optional() }),
   z.object({ t: z.literal("pong") }),
   z.object({ t: z.literal("err"), code: z.string().min(1), message: z.string().min(1) }),
 ]);

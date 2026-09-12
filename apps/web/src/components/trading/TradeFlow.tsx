@@ -123,7 +123,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
     return null;
   }
   const lotSize = target ? book.lotSizeOf(target.asset, target.venue) : builder.lotSize ?? book.lotSizeOf(asset, workspaceVenue);
-  const spot = target ? book.spotOf(target.asset) : builder.spot;
+  const spot = target ? book.spotOf(target.asset, target.venue) : builder.spot;
   const money = book.money;
   const broker = brokers?.find((b) => b.id === brokerId);
   const title = target ? `“${target.name}”` : "this strategy";

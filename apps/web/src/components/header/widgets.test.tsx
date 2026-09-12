@@ -36,7 +36,7 @@ describe("HC-SH-004 / HC-SH-005 futures price", () => {
     act(() => {
       ws.open();
     });
-    expect(ws.sentFrames()).toContainEqual({ op: "sub", topics: ["spot:BTC"] });
+    expect(ws.sentFrames()).toContainEqual({ op: "sub", topics: ["spot:delta_india:BTC"] }); // the workspace venue's spot (ADR-071)
     act(() => {
       ws.receive({ t: "spot", s: "BTC", p: "79521.5", c24: -1.89 });
     });
@@ -57,7 +57,7 @@ describe("HC-SH-004 / HC-SH-005 futures price", () => {
       useUiStore.getState().setAsset("ETH");
     });
     await waitFor(() => expect(screen.getByText("Futures · ETHUSD")).toBeTruthy());
-    await waitFor(() => expect(ws.sentFrames()).toContainEqual({ op: "sub", topics: ["spot:ETH"] }));
+    await waitFor(() => expect(ws.sentFrames()).toContainEqual({ op: "sub", topics: ["spot:delta_india:ETH"] }));
   });
 });
 
