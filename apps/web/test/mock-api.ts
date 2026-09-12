@@ -3,10 +3,10 @@
 // deliberately simple: one OTP (123456), sessions in a Map, settings/brokers/credentials per user.
 import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import type { AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
+import type { PublicPageSettings, AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
 import { mockIvHistory, mockMarkHistory } from "./mock-market";
-import { AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal, type CloseReason, RulesBody, ruleLevel, MAX_ACCOUNTS_PER_BROKER, type FillLike, verifiedFromFills, sumSince, dayBack } from "@hapiecoin/schema";
+import { DEFAULT_PUBLIC_PAGE, Handle, publicTraderFrom, AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal, type CloseReason, RulesBody, ruleLevel, MAX_ACCOUNTS_PER_BROKER, type FillLike, verifiedFromFills, sumSince, dayBack } from "@hapiecoin/schema";
 
 export const SESSION_COOKIE = "better-auth.session_token";
 export const TEST_OTP = "123456";
@@ -24,6 +24,8 @@ interface Account {
   fills: (FillLike & { id: string; accountId: string })[];
   /** Refresh presses (tests assert the read happened). */
   verifiedReads: number;
+  /** The public trader page (ADR-075): handle, on/off, what it shows. */
+  publicPage: PublicPageSettings;
   /** Test knob: the exchange does not answer the fills read (the block shows the error, the toast names it). */
   verifiedDown?: boolean;
   /** Test knob (HC-TR-160): contracts the exchange no longer holds although live legs still track them. */
@@ -201,6 +203,7 @@ export function createAccount(
     credentials: [],
     fills: [],
     verifiedReads: 0,
+    publicPage: { ...DEFAULT_PUBLIC_PAGE },
     plan: { state: "free" },
     strategies: [],
     tradingDisabled: false,
@@ -435,8 +438,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   });
   v1.get("/credentials", (c) => c.json({ items: current(c)!.credentials }));
   // ADR-073: verified P&L from the fills held per key, the same arithmetic as the API
-  v1.get("/verified/pnl", (c) => {
-    const acc = current(c)!;
+  const verifiedOf = (acc: Account) => {
     const nowMs = Date.now();
     const allDays = new Map<string, number>();
     let since: string | null = null;
@@ -454,7 +456,24 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const gross = all + commission;
     // like the API: gross to gross, over the live strategies closed since the oldest fill held
     const journal = acc.strategies.filter((s) => s.status === "archived" && s.tradingMode === "live" && (!since || (s.closedAt ?? "") >= since)).reduce((sum, s) => sum + Number(s.realizedPnl), 0);
-    return c.json({ accounts, total: { all: toDecimal(all, 2), gross: toDecimal(gross, 2), d7: toDecimal(sumSince(byDay, dayBack(nowMs, 7)), 2), d30: toDecimal(sumSince(byDay, dayBack(nowMs, 30)), 2), commission: toDecimal(commission, 2) }, fills: acc.fills.length, lastReadAt: acc.verifiedReads ? nowIso() : null, since, journalRealizedUsd: toDecimal(journal, 2), difference: toDecimal(gross - journal, 2) });
+    return { accounts, total: { all: toDecimal(all, 2), gross: toDecimal(gross, 2), d7: toDecimal(sumSince(byDay, dayBack(nowMs, 7)), 2), d30: toDecimal(sumSince(byDay, dayBack(nowMs, 30)), 2), commission: toDecimal(commission, 2) }, fills: acc.fills.length, lastReadAt: acc.verifiedReads ? nowIso() : null, since, journalRealizedUsd: toDecimal(journal, 2), difference: toDecimal(gross - journal, 2) };
+  };
+  v1.get("/verified/pnl", (c) => c.json(verifiedOf(current(c)!)));
+  // ADR-075: the public page settings; a handle is unique across accounts, the page cannot be on without one
+  v1.get("/public-page", (c) => c.json(current(c)!.publicPage));
+  v1.put("/public-page", async (c) => {
+    const acc = current(c)!;
+    const body = await c.req.json<PublicPageSettings>();
+    let handle: string | null = null;
+    if (body.handle !== null) {
+      const parsed = Handle.safeParse(body.handle);
+      if (!parsed.success) return err(c, 400, "BAD_REQUEST", parsed.error.issues[0]?.message ?? "bad handle");
+      handle = parsed.data;
+      for (const other of state.accounts.values()) if (other !== acc && other.publicPage.handle === handle) return err(c, 409, "CONFLICT", "That handle is taken");
+    }
+    if (body.enabled && handle === null) return err(c, 400, "BAD_REQUEST", "Choose a handle before turning the page on");
+    acc.publicPage = { handle, enabled: body.enabled, showDays: body.showDays, showAccounts: body.showAccounts, showMonths: body.showMonths };
+    return c.json(acc.publicPage);
   });
   v1.post("/verified/refresh", (c) => {
     const acc = current(c)!;
@@ -1752,6 +1771,15 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     return c.json(snap, 200);
   });
 
+  // ADR-075: a trader's public page, 404 alike for an unknown handle and a page that is off
+  app.get("/v1/public/traders/:handle", (c) => {
+    const parsed = Handle.safeParse(c.req.param("handle"));
+    const acc = parsed.success ? [...state.accounts.values()].find((a) => a.publicPage.enabled && a.publicPage.handle === parsed.data) : undefined;
+    if (!acc) return err(c, 404, "NOT_FOUND", "Trader not found");
+    c.header("Cache-Control", "public, max-age=60");
+    return c.json(publicTraderFrom(verifiedOf(acc), acc.publicPage, acc.user.name));
+  });
+
   app.route("/v1", v1);
 
   /* ---------------- test hooks ---------------- */
@@ -1768,7 +1796,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     return c.json({ ok: true });
   });
   app.post("/__test/seed", async (c) => {
-    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; subAccount?: boolean; fills?: boolean; referrals?: number; banners?: number; coupons?: boolean; payments?: number; campaigns?: number; alerts?: boolean; telegram?: boolean }>();
+    const body = await c.req.json<{ email: string; password?: string; role?: "user" | "admin"; plan?: PlanRecord; connected?: boolean; subAccount?: boolean; fills?: boolean; publicHandle?: string; referrals?: number; banners?: number; coupons?: boolean; payments?: number; campaigns?: number; alerts?: boolean; telegram?: boolean }>();
     const acc = createAccount(state, body);
     if (body.telegram) acc.telegram = { chatId: `chat_${acc.user.id}`, code: null, linkedAt: nowIso(), pendingReads: 0 };
     if (body.alerts) {
@@ -1868,6 +1896,8 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
         acc.verifiedReads = 1;
       }
     }
+    // a public page on at the given handle with every section shown (ADR-075)
+    if (body.publicHandle) acc.publicPage = { handle: body.publicHandle, enabled: true, showDays: true, showAccounts: true, showMonths: true };
     return c.json({ ok: true, user: acc.user });
   });
   app.post("/__test/login", async (c) => {

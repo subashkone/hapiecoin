@@ -7,6 +7,7 @@ import {
   CreditCard,
   DollarSign,
   Gem,
+  Globe,
   Info,
   KeyRound,
   Layers,
@@ -123,6 +124,9 @@ function SettingsMenu({ user }: { user: User }) {
         <MenuItem href="/referrals" onSelect={() => setOpen(false)}>
           <Users /> My Referrals
         </MenuItem>
+        <MenuItem onSelect={() => pick("public")} testId="menu-public">
+          <Globe /> Public page
+        </MenuItem>
         {user.role === "admin" ? (
           <>
             <MenuSeparator />
@@ -223,6 +227,9 @@ function AccountMenu({ user }: { user: User }) {
         </MenuItem>
         <MenuItem href="/referrals" onSelect={() => setOpen(false)}>
           <Users /> My Referrals
+        </MenuItem>
+        <MenuItem onSelect={() => { setOpen(false); openDialog("public"); }}>
+          <Globe /> Public page
         </MenuItem>
         <MenuSeparator />
         <MenuItem onSelect={() => { setOpen(false); openDialog("logout"); }} danger testId="account-logout">

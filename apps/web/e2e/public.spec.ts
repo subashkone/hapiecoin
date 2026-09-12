@@ -121,3 +121,43 @@ test.describe("HC-PB landing and public pages", () => {
     await expect(page.getByText("Oops! Page not found")).toBeVisible();
   });
 });
+
+test.describe("HC-PB-066 / HC-PB-067 a trader's public page", () => {
+  test("HC-PB-066 opens without a session with totals, sections and a 404 state for an unknown handle", async ({ page, request }) => {
+    await seedUser(request, { email: "asha@example.com", connected: true, fills: true, publicHandle: "asha_trades" });
+    await page.goto("/t/Asha_Trades");
+    await expect(page).toHaveTitle(/Asha Trader · Verified P&L/);
+    await expect(page.getByTestId("trader-page")).toHaveAttribute("data-state", "ready");
+    await expect(page.getByTestId("trader-name")).toHaveText("Asha Trader");
+    await expect(page.getByTestId("trader-handle")).toHaveText("@asha_trades");
+    await expect(page.getByTestId("trader-d30")).toHaveText("+$1.65");
+    await expect(page.getByTestId("trader-since")).toContainText("2 fills since");
+    await expect(page.getByTestId("trader-days")).toHaveAttribute("data-count", "2");
+    await expect(page.getByTestId("trader-account")).toHaveCount(1);
+    await expect(page.getByTestId("trader-account")).toContainText("Main");
+    await expect(page.getByTestId("trader-month")).toHaveCount(1);
+    await expect(page.getByTestId("trader-basis")).toContainText("net of fees");
+    await page.goto("/t/nobody_here");
+    await expect(page.getByTestId("trader-page")).toHaveAttribute("data-state", "missing");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("No public page here");
+  });
+
+  test("HC-PB-067 share: X and Telegram intents carry the figure and the link, copy copies it, the card downloads", async ({ page, request, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await seedUser(request, { email: "asha@example.com", connected: true, fills: true, publicHandle: "asha_trades" });
+    await page.goto("/t/asha_trades");
+    await expect(page.getByTestId("trader-page")).toHaveAttribute("data-state", "ready");
+    const url = page.url();
+    const x = (await page.getByTestId("share-x").getAttribute("href")) ?? "";
+    expect(decodeURIComponent(x)).toContain(`+$1.65 over the last 30 days (net of fees, from exchange fills). ${url}`);
+    expect((await page.getByTestId("share-telegram").getAttribute("href")) ?? "").toContain(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=`);
+    await expect(page.getByTestId("share-x")).toHaveAttribute("target", "_blank");
+    await page.getByTestId("share-copy-link").click();
+    await expect(page.getByText("Link copied")).toBeVisible();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(url);
+    const download = page.waitForEvent("download");
+    await page.getByTestId("share-image").click();
+    expect((await download).suggestedFilename()).toBe("hapiecoin-asha_trades-verified-pnl.png");
+    await expect(page.getByText("Card saved")).toBeVisible();
+  });
+});

@@ -12,6 +12,7 @@ import { OptionDetailsDialog } from "./OptionDetailsDialog";
 import { UpgradeRequiredDialog } from "./UpgradeRequiredDialog";
 import { PnlDialog } from "./PnlDialog";
 import { ProfileDialog } from "./ProfileDialog";
+import { PublicPageDialog } from "./PublicPageDialog";
 import { AlertsDialog } from "@/components/alerts/AlertsDialog";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 
@@ -24,6 +25,7 @@ export function SettingsDialogs() {
   return (
     <>
       <ProfileDialog open={dialog === "profile"} onOpenChange={onOpenChange} />
+      <PublicPageDialog open={dialog === "public"} onOpenChange={onOpenChange} />
       <ApiSettingsDialog open={dialog === "api"} onOpenChange={onOpenChange} />
       <CurrencyDialog open={dialog === "currency"} onOpenChange={onOpenChange} />
       <LotSizeDialog open={dialog === "lot"} onOpenChange={onOpenChange} />
