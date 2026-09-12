@@ -14,6 +14,8 @@ export interface Trade {
   closedAt: string;
   /** Why it closed (ADR-059 §2.4); null for trades closed before reasons were recorded. */
   reason: CloseReason | null;
+  /** The exchange key (account, ADR-068) the strategy traded through; null before accounts existed. */
+  accountId: string | null;
 }
 /** The reason as shown: "expired", "squared off", "stopped", "closed outside the app"; "" when unknown. */
 export const reasonLabel = (reason: CloseReason | null | undefined): string => (reason ? CLOSE_REASON_LABELS[reason] : "");
@@ -27,7 +29,7 @@ export function closedTrades(all: readonly Strategy[]): Trade[] {
   const out: Trade[] = [];
   for (const s of all) {
     if (s.status !== "archived" || !s.startedAt || !s.closedAt) continue;
-    out.push({ s, pnl: Number(s.realizedPnl), mode: s.tradingMode === "live" ? "live" : "paper", days: daysOf(s), openedAt: s.startedAt, closedAt: s.closedAt, reason: s.closeReason ?? null });
+    out.push({ s, pnl: Number(s.realizedPnl), mode: s.tradingMode === "live" ? "live" : "paper", days: daysOf(s), openedAt: s.startedAt, closedAt: s.closedAt, reason: s.closeReason ?? null, accountId: s.accountId ?? null });
   }
   return out.sort((a, b) => new Date(b.closedAt).getTime() - new Date(a.closedAt).getTime());
 }
@@ -51,10 +53,11 @@ export function closedLegs(all: readonly Strategy[], lotSizeOf: (asset: Strategy
 export const isWin = (t: Trade): boolean => t.pnl > 0;
 export const isLoss = (t: Trade): boolean => t.pnl < 0;
 
-/** One chip plus a search over name, template, asset, tags and notes. */
-export function filterTrades(trades: readonly Trade[], filter: JournalFilter, query: string): Trade[] {
+/** One chip plus a search over name, template, asset, tags and notes; `accountId` keeps one account's trades (ADR-068). */
+export function filterTrades(trades: readonly Trade[], filter: JournalFilter, query: string, accountId: string | null = null): Trade[] {
   const q = query.trim().toLowerCase();
   return trades.filter((t) => {
+    if (accountId !== null && t.accountId !== accountId) return false;
     if (filter === "paper" || filter === "live") {
       if (t.mode !== filter) return false;
     } else if (filter === "wins") {
@@ -128,10 +131,10 @@ const csvCell = (v: string | number): string => {
   const s = String(v);
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
-/** id,name,mode,asset,template,legs,opened,closed,days,realized_pnl,close_reason,tags,notes for the given trades. */
-export function journalCsv(trades: readonly Trade[]): string {
-  const head = "id,name,mode,asset,template,legs,opened,closed,days,realized_pnl,close_reason,tags,notes";
-  const lines = trades.map((t) => [t.s.id, t.s.name, t.mode, t.s.asset, t.s.templateName, t.s.legs.length, t.openedAt.slice(0, 10), t.closedAt.slice(0, 10), t.days, t.pnl.toFixed(2), reasonLabel(t.reason), t.s.tags.join(" "), t.s.notes].map(csvCell).join(","));
+/** id,name,mode,asset,template,legs,opened,closed,days,realized_pnl,close_reason,tags,notes,account for the given trades; `accountLabel` names the key (blank when unknown). */
+export function journalCsv(trades: readonly Trade[], accountLabel: (id: string | null) => string = () => ""): string {
+  const head = "id,name,mode,asset,template,legs,opened,closed,days,realized_pnl,close_reason,tags,notes,account";
+  const lines = trades.map((t) => [t.s.id, t.s.name, t.mode, t.s.asset, t.s.templateName, t.s.legs.length, t.openedAt.slice(0, 10), t.closedAt.slice(0, 10), t.days, t.pnl.toFixed(2), reasonLabel(t.reason), t.s.tags.join(" "), t.s.notes, accountLabel(t.accountId)].map(csvCell).join(","));
   return [head, ...lines].join("\n");
 }
 

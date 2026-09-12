@@ -5,7 +5,9 @@
 import type { Strategy } from "@hapiecoin/schema";
 import { Button, EmptyState, cn, toast } from "@hapiecoin/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useCredential } from "@/lib/api/queries";
 import { usePatchStrategy, useStrategies } from "@/lib/api/strategies";
+import { accountLabel } from "@/lib/accounts";
 import { fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
 import { FILTER_LABELS, JOURNAL_FILTERS, type JournalFilter, PRESET_TAGS, type Trade, closedLegs, closedTrades, copyText, equityCurve, filterTrades, journalCsv, journalStats, reasonLabel } from "@/lib/strategy/journal";
@@ -89,16 +91,21 @@ export function JournalPanel({ book }: { book: PaperBook }) {
   const setTab = useUiStore((s) => s.setWorkspaceTab);
   const [filter, setFilter] = useState<JournalFilter>("all");
   const [search, setSearch] = useState("");
+  // ADR-068: with several keys on an exchange the journal can be read per account
+  const { data: credential } = useCredential();
+  const accounts = useMemo(() => credential?.items ?? [], [credential]);
+  const [account, setAccount] = useState<string | null>(null);
+  const labelOf = (id: string | null) => accountLabel(accounts, id) ?? "";
   const money = book.money;
   const all = useMemo(() => closedTrades(data ?? []), [data]);
-  const trades = useMemo(() => filterTrades(all, filter, search), [all, filter, search]);
+  const trades = useMemo(() => filterTrades(all, filter, search, account), [all, filter, search, account]);
   const legs = useMemo(() => closedLegs(data ?? [], book.lotSizeOf), [data, book.lotSizeOf]);
   const stats = useMemo(() => journalStats(trades), [trades]);
   const curve = useMemo(() => equityCurve(trades), [trades]);
   const net = curve.at(-1)?.v ?? 0;
   const pf = stats.profitFactor;
   const exportCsv = async () => {
-    const ok = await copyText(journalCsv(trades));
+    const ok = await copyText(journalCsv(trades, labelOf));
     if (ok) toast(`CSV copied · ${trades.length} ${trades.length === 1 ? "row" : "rows"}`, { description: "Paste into a spreadsheet" });
     else toast.error("Could not copy", { description: "Clipboard blocked by the browser" });
   };
@@ -108,6 +115,16 @@ export function JournalPanel({ book }: { book: PaperBook }) {
     <section className="flex h-full min-h-0 flex-col" data-testid="journal-panel" data-count={all.length} data-shown={trades.length}>
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
         <Chips items={JOURNAL_FILTERS} labels={FILTER_LABELS} value={filter} onChange={setFilter} testId="journal-filter" />
+        {accounts.length > 1 ? (
+          <select value={account ?? ""} onChange={(e) => setAccount(e.target.value || null)} className="h-7 rounded border border-input bg-background px-2 text-xs" aria-label="Account" title="Trades through one exchange key (ADR-068)" data-testid="journal-account">
+            <option value="">All accounts</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.label}
+              </option>
+            ))}
+          </select>
+        ) : null}
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search trades, tags, notes…" className="h-7 w-[220px] rounded border border-input bg-background px-2 text-xs" aria-label="Search the journal" data-testid="journal-search" />
         <Button size="sm" variant="outline" className="ml-auto" disabled={trades.length === 0} onClick={() => void exportCsv()} title="Copy the filtered trades as CSV" data-testid="journal-csv">
           Export CSV
@@ -156,7 +173,7 @@ export function JournalPanel({ book }: { book: PaperBook }) {
                     <div role="button" tabIndex={0} onClick={() => openDetails(t.s.id)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetails(t.s.id); } }} className="flex flex-wrap items-start gap-3 rounded outline-none focus-visible:ring-1 focus-visible:ring-ring" title="Open Strategy Details" data-testid="trade-row">
                       <div className="w-12 shrink-0 text-center"><div className="num text-[13px] font-medium leading-tight">{dm(t.closedAt)}</div><div className="micro">{new Date(t.closedAt).getFullYear()}</div></div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium"><span className="truncate">{t.s.name}</span><ModeTag mode={t.mode} /><span className="micro rounded border border-border px-1">{t.s.asset}</span></div>
+                        <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium"><span className="truncate">{t.s.name}</span><ModeTag mode={t.mode} /><span className="micro rounded border border-border px-1">{t.s.asset}</span>{accounts.length > 1 && labelOf(t.accountId) ? <span className="micro rounded border border-border px-1" title="The exchange key it traded through (ADR-068)" data-testid="trade-account">{labelOf(t.accountId)}</span> : null}</div>
                         <div className="micro flex flex-wrap gap-x-2">
                           <span>{t.s.templateName}</span>
                           <span><b>{t.s.legs.length}</b> {t.s.legs.length === 1 ? "leg" : "legs"}</span>

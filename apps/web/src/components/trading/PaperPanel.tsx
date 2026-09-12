@@ -137,8 +137,13 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const all = useMemo(() => (data ?? []).filter((s) => s.status === kind), [data, kind]);
   // closed = archived strategies that were traded in this mode; they stay on this tab under the Closed chip (ADR-059)
   const closed = useMemo(() => (data ?? []).filter((s) => s.status === "archived" && s.tradingMode === kind), [data, kind]);
+  // ADR-068: with several keys on an exchange the tab can be read per account (every strategy stays tagged with its key)
+  const accounts = useMemo(() => credential?.items ?? [], [credential]);
+  const [accountFilter, setAccountFilter] = useState<string | null>(null);
+  const accountOf = (s: Strategy) => accountRefOf(s, accounts)?.accountId ?? null;
   const expiring = all.filter((s) => lifecycleOf(s) === "expiring"); // per render: the clock moves, the list does not
   const lifeRows = life === "closed" ? closed : life === "expiring" ? expiring : all;
+  const accountRows = accountFilter === null ? lifeRows : lifeRows.filter((s) => accountOf(s) === accountFilter);
   // ADR-029: the API reconciles pending orders in the background; while any are pending, poll the list so chips update
   const anyPending = kind === "live" && all.some((s) => s.orders.some((o) => o.state === "pending"));
   useEffect(() => {
@@ -152,7 +157,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
     const first = all[0];
     if (first) followStrategy(first.id);
   }, [workspaceTab, kind, paneSource, all, followStrategy]);
-  const rows = useMemo(() => sortStrategies(lifeRows.filter((s) => !q || `${s.name} ${s.asset} ${s.templateName}`.toLowerCase().includes(q)), sort, (s) => book.pnlOf(s).total), [lifeRows, q, sort, book]);
+  const rows = useMemo(() => sortStrategies(accountRows.filter((s) => !q || `${s.name} ${s.asset} ${s.templateName}`.toLowerCase().includes(q)), sort, (s) => book.pnlOf(s).total), [accountRows, q, sort, book]);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const current = Math.min(page, pages);
   const slice = rows.slice((current - 1) * PAGE, current * PAGE);
@@ -173,7 +178,6 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   // HC-TR-175 (ADR-068): every live strategy is compared with the positions of the account it trades through, one
   // read per distinct account; a strategy from before accounts on an exchange with several keys names none and is
   // left out of the check (its card says so)
-  const accounts = useMemo(() => credential?.items ?? [], [credential]);
   const refs = useMemo(() => {
     const m = new Map<string, AccountRef>();
     if (kind === "live") for (const s of all) {
@@ -228,6 +232,18 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
             );
           })}
         </div>
+        {accounts.length > 1 ? (
+          <div className="flex items-center gap-1" role="group" aria-label="Account" data-testid={`${kind}-accounts`}>
+            {[null, ...accounts.map((a) => a.id)].map((id) => {
+              const n = id === null ? lifeRows.length : lifeRows.filter((s) => accountOf(s) === id).length;
+              return (
+                <button key={id ?? "all"} type="button" aria-pressed={accountFilter === id} onClick={() => { setAccountFilter(id); setPage(1); }} className={cn("rounded-full border px-2.5 py-0.5 text-xs", accountFilter === id ? "border-foreground text-foreground" : "border-border text-muted-foreground hover:text-foreground")} title={id === null ? "Every account" : "Strategies trading through this key (ADR-068)"} data-testid={`${kind}-account-${id ?? "all"}`} data-count={n}>
+                  {id === null ? "All accounts" : accountLabel(accounts, id)} <span className="text-muted-foreground">{n}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
         <Button size="sm" variant="outline" onClick={() => void refetch().then(() => toast("Refreshed", { description: "Strategy data has been updated" }))} data-testid={`${kind}-refresh`}>
           Refresh
         </Button>

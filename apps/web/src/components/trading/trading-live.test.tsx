@@ -467,6 +467,7 @@ describe("HC-TR-173..175 accounts: several keys per exchange (ADR-068)", () => {
     serveMarket();
     await waitFor(() => expect(panel().dataset["count"]).toBe("2"));
     await waitFor(() => expect(screen.getByTestId("live-drift-banner").dataset["count"]).toBe("1"), { timeout: 5000 });
+    const u = userEvent.setup();
     const cards = screen.getAllByTestId("live-card");
     const main = cards.find((c) => c.dataset["id"] === "strat_1")!;
     const sub1 = cards.find((c) => c.dataset["id"] === "strat_2")!;
@@ -474,6 +475,14 @@ describe("HC-TR-173..175 accounts: several keys per exchange (ADR-068)", () => {
     expect(within(sub1).getByTestId("card-account").textContent).toBe("Sub 1");
     expect(within(main).queryByTestId("card-drift")).toBeNull();
     expect(within(sub1).getByTestId("card-drift").title).toContain("exchange holds flat · 10 sold expected");
+    // the account chips keep one key's strategies on the tab; the search and lifecycle chips still apply on top
+    const chips = screen.getByTestId("live-accounts");
+    expect(within(chips).getByTestId("live-account-all").dataset["count"]).toBe("2");
+    expect(within(chips).getByTestId("live-account-crd_sub1").textContent).toContain("Sub 1");
+    await u.click(within(chips).getByTestId("live-account-crd_sub1"));
+    await waitFor(() => expect(screen.getAllByTestId("live-card").map((c) => c.dataset["id"])).toEqual(["strat_2"]));
+    await u.click(within(chips).getByTestId("live-account-all"));
+    await waitFor(() => expect(screen.getAllByTestId("live-card")).toHaveLength(2));
     // the margin tile's wallet is both accounts' (the mock answers 5,000 USD per account), and says so
     expect(screen.getByTestId("live-margin-used").parentElement?.textContent).toMatch(/of \$10,000(\.00)? · 2 accounts/);
     // one positions read per account
