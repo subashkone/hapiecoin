@@ -6,7 +6,9 @@ import type { z } from "@hono/zod-openapi";
 import type { Config } from "../config.js";
 import type { Db, DbKind } from "../db/client.js";
 import type { DeltaPrivateClient } from "../delta/private-client.js";
+import type { ErrorSink } from "../error-sink.js";
 import type { Logger } from "../logger.js";
+import type { ApiMetrics } from "../metrics.js";
 import type { Mailer } from "../mailer.js";
 import type { RazorpayClient } from "../razorpay.js";
 import type { SessionResolver } from "../security/guards.js";
@@ -43,6 +45,10 @@ export interface AppDeps {
   jobsStatus?: () => { role: "leader" | "always" | "off"; active: boolean };
   /** Public auth capabilities (Google hidden when unconfigured). */
   authOptions: { emailOtp: true; passkey: true; google: boolean; totp: true };
+  /** ADR-081: the error tracker; off without ERROR_SINK_DSN. Error-level logs reach it through the logger hook. */
+  errors: ErrorSink;
+  /** ADR-081: request counters and latency for GET /metrics. */
+  metrics: ApiMetrics;
 }
 
 export function jsonContent<T extends z.ZodType>(schema: T, description: string) {

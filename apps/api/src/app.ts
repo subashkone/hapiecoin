@@ -6,6 +6,7 @@
  * OTP rate limits → Better Auth at /v1/auth/* → typed /v1 routes → uniform error envelope.
  */
 import { swaggerUI } from "@hono/swagger-ui";
+import { timingSafeEqual } from "node:crypto";
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { registerBrokerRoutes } from "./routes/brokers.js";
 import { registerCredentialRoutes } from "./routes/credentials.js";
@@ -29,6 +30,7 @@ import { registerCouponRoutes } from "./routes/coupons.js";
 import { registerEmailRoutes } from "./routes/emails.js";
 import { registerAnalyticsRoutes } from "./routes/analytics.js";
 import { registerStrategyRoutes } from "./routes/strategies.js";
+import { registerClientErrorRoutes } from "./routes/client-errors.js";
 import { type AppDeps, jsonContent } from "./routes/shared.js";
 import { type AppEnv, CLIENT_IP_HEADER } from "./security/context.js";
 import { errors, notFound, onError, zodIssues } from "./security/errors.js";
@@ -51,6 +53,16 @@ const Health = z.object({
 
 const AuthOptions = z.object({ emailOtp: z.literal(true), passkey: z.literal(true), google: z.boolean(), totp: z.literal(true) });
 
+/** Prometheus text exposition, as the gateway serves it. */
+export const METRICS_CONTENT_TYPE = "text/plain; version=0.0.4; charset=utf-8";
+
+/** `Authorization: Bearer <token>` compared in constant time. */
+export function bearerMatches(header: string | undefined, token: string): boolean {
+  const expected = Buffer.from(`Bearer ${token}`);
+  const got = Buffer.from(header ?? "");
+  return got.length === expected.length && timingSafeEqual(got, expected);
+}
+
 export function createApp(deps: AppDeps): OpenAPIHono<AppEnv> {
   const { config } = deps;
   const startedAt = Date.now();
@@ -62,7 +74,7 @@ export function createApp(deps: AppDeps): OpenAPIHono<AppEnv> {
   });
   const headerOpts = { isProd: config.isProd, webUrl: config.webUrl, selfUrl: config.betterAuthUrl };
 
-  app.use("*", requestContext(deps.logger, config.trustedProxyIps));
+  app.use("*", requestContext(deps.logger, config.trustedProxyIps, deps.metrics));
   app.use("*", jsonBodyLimit(config.bodyLimitBytes)); // GAPS #70: every body bounded before anything reads it
   app.use("*", apiSecureHeaders(headerOpts));
   app.use("*", apiCors(headerOpts));
@@ -101,6 +113,17 @@ export function createApp(deps: AppDeps): OpenAPIHono<AppEnv> {
       return dbOk ? c.json(body, 200) : c.json(body, 503);
     },
   );
+
+  // ADR-081: request counters and latency by route pattern; bearer-guarded when METRICS_TOKEN is set (the gateway's rule)
+  app.get("/metrics", (c) => {
+    const token = config.metricsToken;
+    if (token !== undefined && !bearerMatches(c.req.header("authorization"), token)) {
+      c.header("WWW-Authenticate", "Bearer");
+      return c.json(errors.unauthenticated().toBody(), 401);
+    }
+    return c.text(deps.metrics.render({ jobsActive: deps.jobsStatus?.().active, sink: deps.errors.stats() }), 200, { "Content-Type": METRICS_CONTENT_TYPE });
+  });
+  registerClientErrorRoutes(app, deps);
 
   app.openapi(
     createRoute({
@@ -155,7 +178,7 @@ export function createApp(deps: AppDeps): OpenAPIHono<AppEnv> {
     app.get(DOCS_PATH, swaggerUI({ url: "/v1/openapi.json" }));
   }
 
-  app.onError(onError);
+  app.onError((err, c) => onError(err, c, deps.metrics));
   app.notFound(notFound);
   return app;
 }

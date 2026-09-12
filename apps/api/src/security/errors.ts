@@ -3,6 +3,8 @@
  * Stack traces never leave the process; unknown errors become 500 INTERNAL_ERROR and are logged with the request id.
  */
 import type { ApiError } from "@hapiecoin/schema";
+import { scrubPath } from "../logger.js";
+import { type ApiMetrics, routeLabel } from "../metrics.js";
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
@@ -49,7 +51,7 @@ export function zodIssues(err: ZodError): { path: string; message: string }[] {
 }
 
 /** `app.onError` handler: converts anything thrown into the envelope. */
-export function onError(err: Error, c: Context<AppEnv>): Response {
+export function onError(err: Error, c: Context<AppEnv>, metrics?: ApiMetrics): Response {
   if (err instanceof HttpError) {
     for (const [k, v] of Object.entries(err.headers ?? {})) c.header(k, v);
     return c.json(err.toBody(), err.status);
@@ -61,7 +63,12 @@ export function onError(err: Error, c: Context<AppEnv>): Response {
     const body: ApiError = { code: codeForStatus(err.status), message: err.message || "Request failed" };
     return c.json(body, err.status);
   }
-  c.get("logger")?.error({ err: { name: err.name, message: err.message } }, "unhandled error");
+  // ADR-081: the Error itself (stack included) plus the request facts; the logger hook hands the record to the error sink
+  c.get("logger")?.error(
+    { err, requestId: c.get("requestId"), method: c.req.method, path: scrubPath(c.req.path), route: routeLabel(c), userId: c.get("user")?.id },
+    "unhandled error",
+  );
+  metrics?.error("unhandled");
   const body: ApiError = {
     code: "INTERNAL_ERROR",
     message: "Something went wrong",

@@ -3,6 +3,9 @@
  * client and an in-memory rate store. Each test file creates its own instance (isolated database).
  */
 import { eq } from "drizzle-orm";
+import { Writable } from "node:stream";
+import { type ErrorContext, type ErrorSink, captureFromLog } from "../error-sink.js";
+import { type ApiMetrics, createApiMetrics } from "../metrics.js";
 import { createApp } from "../app.js";
 import type { AppDeps } from "../routes/shared.js";
 import { AUTH_BASE_PATH, authOptionsPublic, createAuth, sessionResolver, type Auth } from "../auth.js";
@@ -63,6 +66,9 @@ export interface TestApp {
   analytics: MemoryAnalyticsReader;
   /** Telegram bot double (ADR-057): sends recorded, /start messages pushed by tests. */
   telegram: FakeTelegram;
+  /** ADR-081: every error-level log and relayed browser report lands here (the logger runs at "error" in tests). */
+  errors: FakeErrorSink;
+  metrics: ApiMetrics;
   now: { value: number };
   request(path: string, opts?: RequestOptions): Promise<Response>;
   /** Sign up through Better Auth (email + password, then OTP verification). Returns the session cookie. */
@@ -76,6 +82,22 @@ export interface TestApp {
   signInOtp(email: string): Promise<{ cookie: string }>;
   adminCookie(): Promise<string>;
   close(): Promise<void>;
+}
+
+/** Records every capture; ids are "evt-1", "evt-2"… */
+export class FakeErrorSink implements ErrorSink {
+  readonly enabled = true;
+  readonly captured: { error: unknown; ctx: ErrorContext }[] = [];
+  capture(error: unknown, ctx: ErrorContext = {}): string {
+    this.captured.push({ error, ctx });
+    return `evt-${this.captured.length}`;
+  }
+  flush(): Promise<void> {
+    return Promise.resolve();
+  }
+  stats(): { sent: number; dropped: number; failed: number } {
+    return { sent: this.captured.length, dropped: 0, failed: 0 };
+  }
 }
 
 export function cookieHeaderFrom(res: Response, previous = ""): string {
@@ -98,7 +120,9 @@ export function cookieHeaderFrom(res: Response, previous = ""): string {
 
 export async function createTestApp(envOverrides: Record<string, string> = {}): Promise<TestApp> {
   const config = loadConfig({ ...TEST_ENV, ...envOverrides }, { warn: () => undefined });
-  const logger = createLogger({ level: "silent" });
+  const errors = new FakeErrorSink();
+  // "error" not "silent": the ADR-081 logger hook only runs for enabled levels; the lines themselves go nowhere
+  const logger = createLogger({ level: "error", destination: new Writable({ write: (_chunk, _enc, cb) => cb() }), onError: (record) => captureFromLog(errors, record) });
   const handle = await createDb();
   await handle.migrate();
   await seed(handle.db);
@@ -107,6 +131,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
   const delta = new FakeDeltaPrivateClient();
   const trading = new FakeDeltaTradingClient();
   const now = { value: Date.now() };
+  const metrics = createApiMetrics({ now: () => now.value });
   const rateStore = new MemoryRateStore({ now: () => now.value });
   const vault = createKeyring(config.credentialsEncKey, config.credentialsPrevKeys);
   const analytics = new MemoryAnalyticsReader();
@@ -133,6 +158,8 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
       throw new VenueCapabilityError(venue, "trading client");
     },
     authOptions: authOptionsPublic(config),
+    errors,
+    metrics,
     analytics,
     telegram,
   };
@@ -198,6 +225,8 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
     vault,
     analytics,
     telegram,
+    errors,
+    metrics,
     now,
     request,
     async signUp(email, opts = {}) {

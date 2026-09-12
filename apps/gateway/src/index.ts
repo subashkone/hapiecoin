@@ -26,6 +26,15 @@ function shutdown(signal: string): void {
 }
 process.once("SIGTERM", () => shutdown("SIGTERM"));
 process.once("SIGINT", () => shutdown("SIGINT"));
+// ADR-081: process-level faults reach the error sink through the logger, are flushed, and still end the process (Node's semantics)
+process.on("unhandledRejection", (reason: unknown) => {
+  app.log.error("unhandled rejection", { error: reason instanceof Error ? reason : new Error(String(reason)), kind: "unhandledRejection" });
+  void app.errors.flush().finally(() => process.exit(1));
+});
+process.on("uncaughtException", (error: Error) => {
+  app.log.error("uncaught exception", { error, kind: "uncaughtException" });
+  void app.errors.flush().finally(() => process.exit(1));
+});
 
 app.start().catch((error: unknown) => {
   console.error("gateway failed to start:", error);
