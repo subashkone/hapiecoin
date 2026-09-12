@@ -153,4 +153,17 @@ describe("ADR-054 CREDENTIALS_ENC_KEYS_PREVIOUS", () => {
     expect(loadConfig(BASE, { warn: () => undefined }).credentialsPrevKeys).toEqual([]);
     expect(() => loadConfig({ ...BASE, CREDENTIALS_ENC_KEYS_PREVIOUS: "short" }, { warn: () => undefined })).toThrow(/CREDENTIALS_ENC_KEYS_PREVIOUS entry #1/);
   });
+  it("HC-SH-125 API_VENUES names the venues whose public data the jobs read; each venue has a REST base (ADR-070)", () => {
+    const c = loadConfig(BASE, { warn: () => undefined });
+    expect(c.apiVenues).toEqual(["delta_india"]);
+    expect(c.venueRestUrls).toEqual({ delta_india: "https://api.india.delta.exchange", deribit: "https://www.deribit.com/api/v2" });
+    expect(loadConfig({ ...BASE, API_VENUES: " deribit, delta_india ,deribit" }).apiVenues).toEqual(["deribit", "delta_india"]);
+    expect(loadConfig({ ...BASE, DERIBIT_REST_URL: "https://test.deribit.com/api/v2" }).venueRestUrls.deribit).toBe("https://test.deribit.com/api/v2");
+    expect(() => loadConfig({ ...BASE, API_VENUES: "delta_india,okx" })).toThrow(ConfigError);
+    expect(() => loadConfig({ ...BASE, API_VENUES: " , " })).toThrow(ConfigError);
+    const warned: string[] = [];
+    expect(loadConfig({ ...BASE, API_VENUES: "deribit" }, { warn: (m) => warned.push(m) }).apiVenues).toEqual(["deribit"]);
+    expect(warned.some((m) => m.includes("omits delta_india"))).toBe(true); // the default venue still trades: say so at boot
+  });
+
 });

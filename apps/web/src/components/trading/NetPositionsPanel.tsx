@@ -31,8 +31,8 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
   const setAccount = useUiStore((s) => s.setAccount);
   const brokerId = account?.brokerId ?? null;
   const accountId = account?.id ?? null;
-  const venue = brokers?.find((b) => b.id === brokerId)?.venue ?? DEFAULT_VENUE; // the selected account's exchange names the codec (ADR-069)
   const positions = useLivePositions(brokerId, true, accountId);
+  const venue = positions.data?.venue ?? brokers?.find((b) => b.id === brokerId)?.venue ?? DEFAULT_VENUE; // the account's exchange names the codec (ADR-069 / ADR-070)
   const exit = useLiveExitPositions();
   const paneSource = useUiStore((s) => s.paneSource);
   const analysePositions = useUiStore((s) => s.analysePositions);

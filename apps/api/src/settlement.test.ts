@@ -109,6 +109,31 @@ describe("HC-TR-162 intrinsicAt", () => {
   });
 });
 
+describe("HC-SH-125 settlement per venue (ADR-070)", () => {
+  it("asks the spot source for the strategy's venue and books with that venue's lot", async () => {
+    const broker = await json<{ id: string }>(await t.request("/v1/brokers", { cookie: alice, json: { name: "Deribit paper settle", feePct: "0", gstPct: "0", feeCapPct: "0", venue: "deribit" } }));
+    const created = await json<Strategy>(await t.request("/v1/strategies", { cookie: alice, json: { name: "Deribit settle", asset: "BTC", venue: "deribit", legs: [{ ...CALL, symbol: "BTC-25SEP26-80000-C" }] } }));
+    const s = await json<Strategy>(await t.request(`/v1/strategies/${created.id}/start`, { cookie: alice, json: { mode: "paper", brokerId: broker.id, entries: { [created.legs[0]!.id]: "1200" } } }));
+    expect(s.status).toBe("paper");
+    const asked: string[] = [];
+    const source: SettlementSource = {
+      spotAt: (asset, ms, venue) => {
+        asked.push(`${venue ?? "?"}:${asset}:${ms}`);
+        return Promise.resolve(venue === "deribit" ? 81_000 : null);
+      },
+    };
+    // Deribit settles at 08:00 UTC (ADR-067): the instant is four hours before Delta's
+    const deribitSettle = Date.UTC(2026, 8, 25, 8);
+    const report = await settleExpired(t.deps, source, () => deribitSettle + 5 * 60_000);
+    expect(report.settled).toBeGreaterThanOrEqual(1);
+    expect(asked).toContain(`deribit:BTC:${deribitSettle}`);
+    const done = await get(s.id);
+    expect(done.status).toBe("archived");
+    // intrinsic 1000 − 1200 entry = −200 per unit × 10 lots × 0.1 BTC = −200 (Delta's 0.001 lot would book −2)
+    expect(Number(done.realizedPnl)).toBeCloseTo(-200, 6);
+  });
+});
+
 describe("HC-TR-162 paper settlement", () => {
   it("does nothing before the instant plus grace, then books both legs at intrinsic, archives with closeReason expired and audits", async () => {
     const s = await paper();

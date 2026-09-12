@@ -508,6 +508,8 @@ export const LivePosition = z.strictObject({
 export type LivePosition = z.infer<typeof LivePosition>;
 export const LivePositions = z.strictObject({
   positions: z.array(LivePosition),
+  /** The venue the account trades on (ADR-070): the symbol codec the client parses these positions with. Absent from older payloads. */
+  venue: Venue.optional(),
   balances: z.array(z.strictObject({ asset: z.string(), balance: DecimalString, availableBalance: DecimalString })),
 });
 export type LivePositions = z.infer<typeof LivePositions>;

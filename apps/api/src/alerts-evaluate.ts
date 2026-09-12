@@ -6,14 +6,13 @@
  * path while a tab is open; both go through `fireAlert`, whose update is the single guard against double firing.
  */
 import { type Underlying, type Venue, alertMet } from "@hapiecoin/schema";
-import { DEFAULT_VENUE, defaultLotSizes, getVenue } from "@hapiecoin/venues";
 import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import { fireAlert } from "./alerts-fire.js";
-import { alerts, instrumentMarks, ivSnapshots, strategies, strategyLegs, userSettings } from "./db/schema.js";
+import { lotSizeFor } from "./routes/live-exec.js";
+import { alerts, instrumentMarks, ivSnapshots, strategies, strategyLegs } from "./db/schema.js";
 import type { AppDeps } from "./routes/shared.js";
 
 const MARK_FRESH_MS = 20 * 60_000;
-const DEFAULT_LOTS: Record<string, string> = defaultLotSizes(getVenue(DEFAULT_VENUE)); // ADR-063
 
 export interface EvaluationReport {
   checked: number;
@@ -32,8 +31,7 @@ export async function strategyPnlFromMarks(deps: AppDeps, strategyId: string, no
   const [s] = await deps.db.select({ id: strategies.id, userId: strategies.userId, asset: strategies.asset, venue: strategies.venue, status: strategies.status, realizedPnl: strategies.realizedPnl }).from(strategies).where(eq(strategies.id, strategyId)).limit(1);
   if (!s || (s.status !== "paper" && s.status !== "live")) return null;
   const legs = await deps.db.select({ symbol: strategyLegs.symbol, side: strategyLegs.side, lots: strategyLegs.lots, entryPrice: strategyLegs.entryPrice, price: strategyLegs.price }).from(strategyLegs).where(and(eq(strategyLegs.strategyId, s.id), eq(strategyLegs.status, "open")));
-  const [settings] = await deps.db.select({ lotSizes: userSettings.lotSizes }).from(userSettings).where(eq(userSettings.userId, s.userId)).limit(1);
-  const lotSize = Number(settings?.lotSizes[s.asset] ?? DEFAULT_LOTS[s.asset] ?? "1");
+  const lotSize = Number(await lotSizeFor(deps, { id: s.userId, email: "", name: "", role: "user" }, s.asset, s.venue)); // ADR-070: the strategy's venue
   let total = Number(s.realizedPnl);
   if (legs.length === 0) return total;
   const symbols = [...new Set(legs.map((l) => l.symbol))];

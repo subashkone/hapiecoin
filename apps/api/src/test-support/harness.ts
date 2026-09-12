@@ -10,7 +10,7 @@ import { type Config, loadConfig } from "../config.js";
 import { createDb, type Db, type DbHandle } from "../db/client.js";
 import { plans, subscriptions } from "../db/schema.js";
 import { SEED, seed } from "../db/seed.js";
-import { FakeDeltaTradingClient } from "@hapiecoin/venues";
+import { DEFAULT_VENUE, FakeDeltaTradingClient, VenueCapabilityError } from "@hapiecoin/venues";
 import { FakeDeltaPrivateClient } from "../delta/private-client.js";
 import { createLogger } from "../logger.js";
 import { MailCapture } from "../mailer.js";
@@ -127,6 +127,11 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
     vault,
     delta,
     trading,
+    // ADR-070: the one fake stands for the default venue; a data-only venue has no client, as in production
+    tradingFor: (venue) => {
+      if (venue === DEFAULT_VENUE) return trading;
+      throw new VenueCapabilityError(venue, "trading client");
+    },
     authOptions: authOptionsPublic(config),
     analytics,
     telegram,

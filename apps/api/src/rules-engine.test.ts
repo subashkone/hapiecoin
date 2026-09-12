@@ -53,6 +53,27 @@ async function live(legs: unknown[] = [CALL, PUT], name = "Rules live") {
 const BOTH = { "C-BTC-80000-250926": 700, "P-BTC-78000-250926": 900 }; // call −5, put 0 → −5
 
 describe("HC-TR-166 paper", () => {
+  it("HC-SH-125 reads the tick once per venue and asset, and a venue this API does not read leaves its rules waiting (ADR-070)", async () => {
+    const a = await paper();
+    const b = await paper([CALL, PUT], "Rules paper two");
+    expect((await arm(a.id, [{ kind: "stop", trigger: "money", value: "5" }])).status).toBe(200);
+    expect((await arm(b.id, [{ kind: "stop", trigger: "money", value: "5" }])).status).toBe(200);
+    const seen: string[] = [];
+    const counting: RulesTickSource = {
+      tick: (asset, venue) => {
+        seen.push(`${venue}:${asset}`);
+        return Promise.resolve({ marks: new Map([["C-BTC-80000-250926", 1200], ["P-BTC-78000-250926", 900]]), spot: null });
+      },
+    };
+    expect(await evaluateRules(t.deps, counting, () => T0)).toEqual({ checked: 2, fired: [], skipped: 0 });
+    expect(seen).toEqual(["delta_india:BTC"]); // two strategies, one venue, one asset: one read
+    const silent: RulesTickSource = { tick: () => Promise.resolve(null) };
+    expect(await evaluateRules(t.deps, silent, () => T0)).toEqual({ checked: 0, fired: [], skipped: 2 });
+    // leave nothing armed for the cases that follow in this file
+    expect((await arm(a.id, [])).status).toBe(200);
+    expect((await arm(b.id, [])).status).toBe(200);
+  });
+
   it("fires the stop when the P&L reaches the level, not before; exits every leg at the mark without any order; disarms the target; never fires twice", async () => {
     const s = await paper();
     const placed = t.trading.placed.length;
