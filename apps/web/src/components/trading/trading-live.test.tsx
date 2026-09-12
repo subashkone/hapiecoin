@@ -474,6 +474,8 @@ describe("HC-TR-173..175 accounts: several keys per exchange (ADR-068)", () => {
     expect(within(sub1).getByTestId("card-account").textContent).toBe("Sub 1");
     expect(within(main).queryByTestId("card-drift")).toBeNull();
     expect(within(sub1).getByTestId("card-drift").title).toContain("exchange holds flat · 10 sold expected");
+    // the margin tile's wallet is both accounts' (the mock answers 5,000 USD per account), and says so
+    expect(screen.getByTestId("live-margin-used").parentElement?.textContent).toMatch(/of \$10,000(\.00)? · 2 accounts/);
     // one positions read per account
     const reads = mock.calls.filter((c) => c.url.includes("/v1/strategies/live/positions?"));
     expect(reads.some((c) => c.url.includes("accountId=crd_main"))).toBe(true);
