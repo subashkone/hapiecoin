@@ -15,6 +15,7 @@ import { DEFAULT_VENUE } from "@hapiecoin/venues";
 import { createMarketData } from "./feed/market-data.js";
 import { RoleFeed } from "./feed/role.js";
 import { type LeaderHandle, type LeaderLock, MemoryLeaderLock, RedisLeaderLock, type RedisLockClient, leaderOwnerId, runAsLeader } from "./leader.js";
+import { type ErrorSink, captureFromLog, createErrorSink } from "./error-sink.js";
 import type { Logger } from "./log.js";
 import { createLogger } from "./log.js";
 import { InProcessPubSub } from "./pubsub/in-process.js";
@@ -42,6 +43,10 @@ export interface AppDeps {
   store?: SnapshotStore;
   redis?: CoordinationRedis;
   instanceId?: string;
+  /** ADR-081: the error tracker (tests inject a fake); default from ERROR_SINK_DSN, off without it. */
+  errors?: ErrorSink;
+  /** ADR-081: the fetch the default sink posts with (tests inject a failing one). */
+  fetch?: typeof fetch;
 }
 
 export interface App {
@@ -51,6 +56,8 @@ export interface App {
   readonly server: GatewayServer;
   readonly pubsub: PubSub;
   readonly log: Logger;
+  /** ADR-081: every error-level log of this process reaches it; `index.ts` adds the process-level faults. */
+  readonly errors: ErrorSink;
   readonly instanceId: string;
   /** Null before start and when GATEWAY_ROLE is follower. */
   leader(): LeaderHandle | null;
@@ -60,7 +67,18 @@ export interface App {
 }
 
 export function createApp(config: GatewayConfig, deps: AppDeps = {}): App {
-  const log = deps.log ?? createLogger(config.LOG_LEVEL);
+  // ADR-081: one error tracker per process; the default logger hands it every error-level record
+  const errors =
+    deps.errors ??
+    createErrorSink({
+      dsn: config.ERROR_SINK_DSN,
+      environment: config.NODE_ENV,
+      release: config.RELEASE,
+      client: "hapiecoin-gateway",
+      fetch: deps.fetch,
+      onFailure: (message) => log.warn("error sink", { sink: message }), // warn, never error: no loop through the hook
+    });
+  const log = deps.log ?? createLogger(config.LOG_LEVEL, undefined, undefined, (record) => captureFromLog(errors, record));
   // always unique per process: a shared GATEWAY_INSTANCE_ID (one env file, several replicas) must never share a lock owner or registry entries
   const instanceId = deps.instanceId ?? (config.GATEWAY_INSTANCE_ID !== undefined ? `${config.GATEWAY_INSTANCE_ID}:${leaderOwnerId()}` : leaderOwnerId());
   const pubsub =
@@ -96,6 +114,7 @@ export function createApp(config: GatewayConfig, deps: AppDeps = {}): App {
     pubsub,
     transport: deps.transport ?? createWsServer,
     log,
+    errors,
   });
   let leader: LeaderHandle | null = null;
   return {
@@ -105,6 +124,7 @@ export function createApp(config: GatewayConfig, deps: AppDeps = {}): App {
     server,
     pubsub,
     log,
+    errors,
     instanceId,
     leader: () => leader,
     start: async () => {
@@ -142,6 +162,7 @@ export function createApp(config: GatewayConfig, deps: AppDeps = {}): App {
       await pubsub.close();
       if (ownRedis !== null) await ownRedis.quit().catch(() => undefined);
       log.info("gateway stopped");
+      await errors.flush();
     },
   };
 }

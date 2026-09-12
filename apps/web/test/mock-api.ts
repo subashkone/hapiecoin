@@ -116,6 +116,8 @@ interface PlanRecord {
 }
 
 export interface MockState {
+  /** ADR-081: browser error reports the page posted (the real API relays them to the tracker). */
+  clientErrors: { message: string; name?: string; stack?: string; path?: string; kind?: string }[];
   /** ADR-077 test knob: recorded end-of-day days for the backtest; 0 answers 503 like the API before its first day. */
   backtestDays: number;
   /** ADR-079 test knob: recorded days for the replay; 0 answers 503 like the API before its first day. */
@@ -250,7 +252,7 @@ export function createSession(state: MockState, email: string): string {
 
 export function createMockApi(state: MockState = { plans: seedPlans(),
     menuItems: seedMenuItems(),
-    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", backtestDays: 12, replayDays: 12, ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
+    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", clientErrors: [], backtestDays: 12, replayDays: 12, ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
   const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409 | 503, code: string, message: string) =>
@@ -1919,11 +1921,20 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     return c.json(publicTraderFrom(verifiedOf(acc), acc.publicPage, acc.user.name));
   });
 
+  // ADR-081: the browser's error reports; no session needed, the real API relays them to the tracker
+  app.post("/v1/client-errors", async (c) => {
+    const body = await c.req.json<{ message?: unknown; name?: string; stack?: string; path?: string; kind?: string }>();
+    if (typeof body.message !== "string" || body.message.trim() === "") return err(c, 400, "VALIDATION", "message is required");
+    state.clientErrors.push({ ...body, message: body.message });
+    return c.json({ eventId: `mock-${state.clientErrors.length}` }, 202);
+  });
+
   app.route("/v1", v1);
 
   /* ---------------- test hooks ---------------- */
   app.post("/__test/reset", (c) => {
     state.accounts.clear();
+    state.clientErrors.length = 0;
     state.backtestDays = 12;
     state.replayDays = 12;
     state.commissions.length = 0;

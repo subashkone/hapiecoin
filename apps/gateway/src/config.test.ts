@@ -119,3 +119,14 @@ describe("HC-SH-122 [GATEWAY] GATEWAY_VENUES (ADR-067)", () => {
     expect(() => loadConfig({ DERIBIT_REST_URL: "ftp://nope" })).toThrow();
   });
 });
+
+describe("HC-SH-133 error sink and release settings (ADR-081)", () => {
+  it("reads ERROR_SINK_DSN and RELEASE, leaves them unset by default, and lists a malformed DSN", () => {
+    expect(loadConfig({}).ERROR_SINK_DSN).toBeUndefined();
+    expect(loadConfig({}).RELEASE).toBeUndefined();
+    const config = loadConfig({ ERROR_SINK_DSN: "https://key@track.hapiecoin.com/2", RELEASE: "abc123" });
+    expect(config.ERROR_SINK_DSN).toBe("https://key@track.hapiecoin.com/2");
+    expect(config.RELEASE).toBe("abc123");
+    expect(() => loadConfig({ ERROR_SINK_DSN: "not a url" })).toThrow(/ERROR_SINK_DSN/);
+  });
+});

@@ -42,3 +42,33 @@ describe("[GATEWAY] logger", () => {
     expect(String(write.mock.calls[0]?.[0])).toMatch(/"msg":"to stdout".*"a":1/);
   });
 });
+
+describe("HC-SH-133 the error-level hook (ADR-081)", () => {
+  it("hands every enabled error call to onError with the raw fields, never warn or a suppressed level; a throwing hook does not break the log", () => {
+    const lines: string[] = [];
+    const records: { fields: Record<string, unknown>; msg: string; level: number }[] = [];
+    const log = createLogger(
+      "warn",
+      (line) => lines.push(line),
+      () => 0,
+      (record) => {
+        records.push(record);
+        if (record.msg === "explode") throw new Error("hook");
+      },
+    );
+    const error = new Error("boom");
+    log.error("upstream failed", { error, venue: "deribit" });
+    log.warn("not forwarded", { error });
+    log.error("explode");
+    log.debug("suppressed and not forwarded");
+    expect(records).toEqual([
+      { fields: { error, venue: "deribit" }, msg: "upstream failed", level: 50 },
+      { fields: {}, msg: "explode", level: 50 },
+    ]);
+    expect(lines).toHaveLength(3);
+    expect(lines[2]).toContain('"msg":"explode"');
+    const silent = createLogger("silent", (line) => lines.push(line), () => 0, (record) => records.push(record));
+    silent.error("nothing enabled");
+    expect(records).toHaveLength(2);
+  });
+});

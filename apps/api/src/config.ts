@@ -62,6 +62,12 @@ const RawEnv = z.object({
   /** Egress IP users must whitelist at the exchange (HC-SH-036). Placeholder until the production egress is fixed. */
   EGRESS_IP: z.ipv4().default("172.236.179.136"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).optional(),
+  /** ADR-081: the error tracker's DSN (Sentry envelope protocol: Sentry, GlitchTip, Bugsink); unset = no error tracking. */
+  ERROR_SINK_DSN: z.url().optional(),
+  /** ADR-081: when set, GET /metrics requires `Authorization: Bearer <token>` (the gateway's rule, GAPS #30). */
+  METRICS_TOKEN: z.string().min(8).optional(),
+  /** ADR-081: the deployed version (git SHA or tag) stamped on every error event. */
+  RELEASE: z.string().min(1).max(64).optional(),
   /** Persistent PGlite directory for development (in-memory when unset). */
   PGLITE_DATA_DIR: z.string().min(1).optional(),
   // Read only for the trading-safety guard; the API never uses live keys itself.
@@ -142,6 +148,12 @@ export interface Config {
   leaderTtlMs: number;
   logLevel: string;
   pgliteDataDir: string | undefined;
+  /** ADR-081: error tracker DSN; undefined = the sink is off. Never logged. */
+  errorSinkDsn: string | undefined;
+  /** ADR-081: bearer token for GET /metrics; undefined = open (a private network is assumed). */
+  metricsToken: string | undefined;
+  /** ADR-081: release stamped on error events. */
+  release: string | undefined;
 }
 
 export class ConfigError extends Error {
@@ -282,5 +294,8 @@ export function loadConfig(
     leaderTtlMs: e.LEADER_TTL_MS,
     logLevel: e.LOG_LEVEL ?? (isTest ? "silent" : "info"),
     pgliteDataDir: e.PGLITE_DATA_DIR,
+    errorSinkDsn: e.ERROR_SINK_DSN,
+    metricsToken: e.METRICS_TOKEN,
+    release: e.RELEASE,
   };
 }

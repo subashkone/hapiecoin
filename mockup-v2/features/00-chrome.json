@@ -1099,5 +1099,25 @@
     "how": "Settings menu → Security (the row reads '2FA on' or '2FA off'; palette 'Open Security'). Turning on: 1 the password, 2 the key in groups of four with Copy and the otpauth link for an app on the same device (no QR image, GAPS #94), 3 the first code the app shows; nothing changes until that code is right; then ten backup codes, shown once, with Copy all. Turning off asks for the password. With it on, the account signs in with password + code only",
     "evidence": "ADR-078 (12 Sep 2026): apps/api auth.ts twoFactor plugin, db/schema.ts two_factors + users.two_factor_enabled, routes/me.ts twoFactorEnabled; apps/web components/dialogs/SecurityDialog.tsx, SettingsDialogs.tsx, header/AppHeader.tsx menu-security, shell/CommandPalette.tsx set:security; unit auth.test.ts (api) HC-SH-129, dialogs.test.tsx HC-SH-129, shell.test.tsx; e2e settings.spec.ts HC-SH-129",
     "test": "unit (api + web), e2e"
+  },
+  {
+    "screen": "Shared chrome · Error screen · browser error report",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "A page error is reported and the trader sees a reference, Try again and Reload; uncaught browser errors are reported once a minute per message",
+    "how": "app/error.tsx (and global-error.tsx for the root layout): 'Something broke on our side. It has been reported.', a reference (the tracker's event id, else Next's digest), Try again (the boundary reset) and Reload, and the plain sentence that a page error cannot change strategies or orders on the exchange. The shell mounts window error + unhandledrejection listeners once; reports go to POST /v1/client-errors (message, name, stack ≤ 4000, path, kind), one per message per minute; a failed report is swallowed",
+    "evidence": "ADR-081 (12 Sep 2026): apps/web src/lib/errors/report.ts, components/shell/ErrorReporting.tsx, Providers.tsx, app/error.tsx, app/global-error.tsx; apps/api routes/client-errors.ts; unit report.test.ts HC-SH-132, error.test.tsx HC-SH-132, client-errors.test.ts (api) HC-SH-132",
+    "test": "unit (api + web)"
+  },
+  {
+    "screen": "Ops · API /metrics and the error sink",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Error tracking for the API and the gateway through one DSN, and Prometheus request metrics on the API",
+    "how": "ERROR_SINK_DSN (Sentry envelope protocol; no SDK) turns on an in-process sink that posts scrubbed events (tags, extra, path query redacted; no body, cookie or authorization; user id only) with a 3 s timeout and a 60-a-minute cap; every error-level log line is the capture seam (pino hook in the API, the gateway logger's error level), so 500s, job failures, feed faults and process-level faults reach the tracker once. GET /metrics on the API: requests by method, route pattern and status, a latency histogram per route, errors by kind, sink counts, jobs active, uptime, process memory; METRICS_TOKEN guards it with a bearer like the gateway",
+    "evidence": "ADR-081 (12 Sep 2026): apps/api src/error-sink.ts, metrics.ts, logger.ts (hooks.logMethod), security/errors.ts, security/request.ts, app.ts, config.ts, main.ts; apps/gateway src/error-sink.ts, log.ts, app.ts, index.ts, config.ts; unit error-sink.test.ts (api + gateway) HC-SH-133, metrics.test.ts HC-SH-133, observability.test.ts HC-SH-133, gateway log.test.ts / config.test.ts / app.test.ts HC-SH-133",
+    "test": "unit (api + gateway)"
   }
 ]

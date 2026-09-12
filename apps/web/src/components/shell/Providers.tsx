@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { GatewayProvider } from "@/lib/gateway/hooks";
 import { Assistant } from "@/components/shell/Assistant";
+import { ErrorReporting } from "@/components/shell/ErrorReporting";
 import { Tour } from "@/components/shell/Tour";
 import { ApiError } from "@/lib/api/client";
 
@@ -34,6 +35,7 @@ export function Providers({ children, gatewayUrl }: ProvidersProps) {
           <GatewayProvider url={gatewayUrl}>
             <TooltipProvider>
               {children}
+              <ErrorReporting />
               <Assistant />
               <Tour />
             </TooltipProvider>

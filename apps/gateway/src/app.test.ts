@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createApp } from "./app.js";
+import type { ErrorContext, ErrorSink } from "./error-sink.js";
 import { loadConfig } from "./config.js";
 import { createLogger } from "./log.js";
 import { InProcessPubSub } from "./pubsub/in-process.js";
@@ -74,5 +75,52 @@ describe("[GATEWAY] createApp", () => {
     expect(app.feed.supports("chain:deribit:BTC:2026-09-12")).toBe(true);
     const solo = createApp(loadConfig({ LOG_LEVEL: "silent" }), { market: new FakeMarketData() });
     expect(Object.keys(solo.feed.status().venues)).toEqual(["delta_india"]);
+  });
+});
+
+describe("HC-SH-133 the gateway error sink (ADR-081)", () => {
+  it("every error-level log of the default logger reaches the injected sink with its fields; stop flushes it; no DSN means an off sink", async () => {
+    const captured: { error: unknown; ctx: ErrorContext }[] = [];
+    let flushed = 0;
+    const errors: ErrorSink = {
+      enabled: true,
+      capture: (error, ctx = {}) => {
+        captured.push({ error, ctx });
+        return "evt";
+      },
+      flush: () => {
+        flushed += 1;
+        return Promise.resolve();
+      },
+      stats: () => ({ sent: captured.length, dropped: 0, failed: 0 }),
+    };
+    const config = loadConfig({ GATEWAY_PORT: "0", LOG_LEVEL: "error" });
+    const transport = createFakeTransport(4322);
+    const app = createApp(config, { transport: transport.factory, market: new FakeMarketData(), errors });
+    expect(app.errors).toBe(errors);
+    const boom = new Error("upstream closed");
+    app.log.error("feed failed", { error: boom, venue: "delta_india" });
+    expect(captured).toEqual([{ error: boom, ctx: { level: "error", logger: "log", tags: { msg: "feed failed", venue: "delta_india" }, handled: false } }]);
+    await app.start();
+    const metrics = app.server.handlers.http({ method: "GET", url: "/metrics", headers: {} });
+    expect(metrics.body).toContain('hapiecoin_gateway_error_sink_events_total{outcome="sent"} 1\n');
+    expect(metrics.body).toContain('hapiecoin_gateway_error_sink_events_total{outcome="failed"} 0\n');
+    await app.stop();
+    expect(flushed).toBe(1);
+
+    const quiet = createApp(loadConfig({ GATEWAY_PORT: "0", LOG_LEVEL: "silent" }), { transport: createFakeTransport(4323).factory, market: new FakeMarketData() });
+    expect(quiet.errors.enabled).toBe(false);
+    expect(quiet.errors.capture(new Error("x"))).toBeNull();
+
+    // a DSN with a tracker that is down: the failed send is counted and reported through the logger, never thrown
+    const down = createApp(loadConfig({ GATEWAY_PORT: "0", LOG_LEVEL: "silent", ERROR_SINK_DSN: "https://key@track.local/1", RELEASE: "g1" }), {
+      transport: createFakeTransport(4324).factory,
+      market: new FakeMarketData(),
+      fetch: () => Promise.reject(new Error("tracker down")),
+    });
+    expect(down.errors.enabled).toBe(true);
+    expect(down.errors.capture(new Error("feed broke"))).toMatch(/^[0-9a-f]{32}$/);
+    await down.errors.flush();
+    expect(down.errors.stats()).toEqual({ sent: 0, dropped: 0, failed: 1 });
   });
 });
