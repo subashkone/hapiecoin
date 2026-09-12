@@ -93,12 +93,13 @@ function usePositionLegs(source: PaneSource, lotSizes: Record<Underlying, string
     if (ids === null || !data) return { legs: NO_LEGS, asset: null };
     const legs: StrategyLeg[] = [];
     let asset: Underlying | null = null;
+    // exchange positions parse with the codec of the venue the payload names (ADR-070); older payloads are Delta India's
+    const venue = data.venue ?? DEFAULT_VENUE;
     for (const p of data.positions) {
       if (!ids.includes(p.productId) || !p.symbol) continue;
-      // exchange positions come from the connected exchange (Delta India, the only venue with live trading); 4c keys them by the credential's venue
-      const probe = positionToLeg(p, "1", DEFAULT_VENUE);
+      const probe = positionToLeg(p, "1", venue);
       if (!probe) continue;
-      const leg = positionToLeg(p, lotSizes?.[probe.asset] ?? DEFAULT_LOTS[probe.asset], DEFAULT_VENUE);
+      const leg = positionToLeg(p, lotSizes?.[probe.asset] ?? DEFAULT_LOTS[probe.asset], venue);
       if (!leg) continue;
       asset ??= leg.asset;
       if (leg.asset === asset) legs.push(leg);

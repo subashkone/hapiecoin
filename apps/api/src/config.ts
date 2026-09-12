@@ -6,6 +6,7 @@
  * - Trading safety rule 2: live Delta keys must be absent when NODE_ENV=test. Boot throws otherwise.
  */
 import { createHash, randomBytes } from "node:crypto";
+import { VENUES, type Venue } from "@hapiecoin/schema";
 import { z } from "zod";
 
 const NodeEnv = z.enum(["development", "test", "production"]);
@@ -54,6 +55,10 @@ const RawEnv = z.object({
   /** Comma-separated previous keys still allowed to open old records after a rotation (ADR-054); each base64, 32 bytes. */
   CREDENTIALS_ENC_KEYS_PREVIOUS: z.string().optional(),
   DELTA_REST_URL: z.url().default("https://api.india.delta.exchange"),
+  /** Deribit public REST (ADR-067, data-only); read only when API_VENUES lists deribit. */
+  DERIBIT_REST_URL: z.url().default("https://www.deribit.com/api/v2"),
+  /** Venues whose public market data this API reads (IV snapshots, settlement spot, rule ticks), comma-separated (ADR-070). */
+  API_VENUES: z.string().default("delta_india"),
   /** Egress IP users must whitelist at the exchange (HC-SH-036). Placeholder until the production egress is fixed. */
   EGRESS_IP: z.ipv4().default("172.236.179.136"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).optional(),
@@ -113,6 +118,10 @@ export interface Config {
   credentialsPrevKeys: Buffer[];
   deltaRestUrl: string;
   deltaTradingRestUrl: string;
+  /** Public REST base per venue (ADR-070). */
+  venueRestUrls: Record<Venue, string>;
+  /** Venues whose public market data the jobs read, in the order given (ADR-070). */
+  apiVenues: Venue[];
   trading: { disabled: boolean; maxNotionalUsd: number; maxLegs: number; markBandPct: number; reconcileMs: number };
   egressIp: string;
   /** Milliseconds between IV history snapshots; 0 = off (ADR-056). */
@@ -180,6 +189,13 @@ export function loadConfig(
     .split(",")
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
+  const apiVenues: Venue[] = [];
+  for (const raw of e.API_VENUES.split(",").map((s) => s.trim()).filter((s) => s.length > 0)) {
+    if (!(VENUES as readonly string[]).includes(raw)) throw new ConfigError(`API_VENUES names an unknown venue "${raw}" (known: ${VENUES.join(", ")})`);
+    if (!apiVenues.includes(raw as Venue)) apiVenues.push(raw as Venue);
+  }
+  if (apiVenues.length === 0) throw new ConfigError("API_VENUES must name at least one venue");
+  if (!apiVenues.includes(VENUES[0])) warn(`API_VENUES omits ${VENUES[0]}: its rule ticks, settlement spot and IV history are off while its exchange still trades`);
 
   let betterAuthSecret = e.BETTER_AUTH_SECRET;
   if (betterAuthSecret === undefined) {
@@ -249,6 +265,8 @@ export function loadConfig(
     credentialsPrevKeys,
     deltaRestUrl: e.DELTA_REST_URL,
     deltaTradingRestUrl: e.DELTA_TRADING_REST_URL ?? e.DELTA_REST_URL,
+    venueRestUrls: { delta_india: e.DELTA_REST_URL, deribit: e.DERIBIT_REST_URL },
+    apiVenues,
     trading: { disabled: e.TRADING_DISABLED === "1" || e.TRADING_DISABLED === "true", maxNotionalUsd: e.TRADING_MAX_NOTIONAL_USD, maxLegs: e.TRADING_MAX_LEGS, markBandPct: e.TRADING_MARK_BAND_PCT, reconcileMs: e.TRADING_RECONCILE_MS },
     egressIp: e.EGRESS_IP,
     ivSnapshotMs: e.IV_SNAPSHOT_MS,

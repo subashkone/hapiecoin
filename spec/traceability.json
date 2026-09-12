@@ -1850,6 +1850,20 @@
   "evidence": "ADR-069 (12 Sep 2026): apps/web/src/lib/store.ts (venue, setVenue, merge guard), lib/venue.ts (bindVenueSource, lotSizeFor, dataOnly), lib/useVenue.ts, lib/gateway/hooks.tsx, useChains.ts, useLegQuotes.ts, lib/chain/expiries.ts, useExpiries.ts, lib/api/market.ts, schemas.ts, components/header/widgets.tsx (VenueSwitch), chain/ChainPanel.tsx, dialogs/OptionDetailsDialog.tsx, trading/TradeFlow.tsx, TradeModeDialog.tsx, dialogs/ExchangeManagementDialog.tsx; unit venue.test.ts, store.test.ts, hooks.test.tsx, expiries.test.ts, market.test.ts, widgets.test.tsx, trading-more.test.tsx, lib/strategy/share.ts, apps/api/src/routes/strategies.ts (listed-asset guard), api venue-column.test.ts"
  },
  {
+  "id": "HC-SH-125",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "screen": "Venues · API per venue",
+  "feature": "The API trades, values and settles each strategy on its own venue: trading client per broker venue, lot defaults per strategy venue, market-data jobs per venue",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api)",
+  "acceptance": "apps/api/src/venues.ts builds the venue clients from the port: a trading client for every venue that trades (deps.tradingFor; a data-only venue has none) and, for every venue in API_VENUES (default delta_india; DERIBIT_REST_URL), a public REST client, an IV snapshotter source, a settlement spot and a rules tick; lotSizeFor takes the strategy's venue (Settings lots on Delta India, the venue's listed lot elsewhere); the rules tick is read once per venue and asset and a venue the API does not read leaves its rules waiting; the positions payload names the account's venue",
+  "evidence": "ADR-070 (12 Sep 2026): apps/api/src/venues.ts, config.ts (API_VENUES, DERIBIT_REST_URL), main.ts, routes/shared.ts (tradingFor), routes/live-exec.ts (lotSizeFor venue, resolveAccount venue, planLegs venue), routes/live.ts, routes/strategies.ts, rules-engine.ts, settlement.ts, alerts-evaluate.ts, test-support/harness.ts; packages/schema LivePositions.venue; apps/web NetPositionsPanel / useStrategyAnalysis read it; unit venues.test.ts, config.test.ts, venue-column.test.ts, rules-engine.test.ts, settlement.test.ts, alerts-server.test.ts"
+ },
+ {
   "id": "HC-PB-001",
   "area": "10-public",
   "areaName": "Public site & authentication",

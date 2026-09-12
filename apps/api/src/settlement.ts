@@ -100,7 +100,7 @@ export async function settleExpired(
         }
         const user = { id: strategy.userId, email: "", name: "", role: "user" as const };
         const creds = await openCredential(deps, user, strategy.brokerId, undefined, strategy.accountId);
-        const positions = await deps.trading.getPositions(creds);
+        const positions = await deps.tradingFor(strategy.venue).getPositions(creds); // ADR-070
         if (positions.some((p) => p.size !== 0 && !p.symbol)) {
           // a position the venue could not name might be one of ours: the read says nothing usable, book nothing
           out.skipped += legs.length;
@@ -119,6 +119,7 @@ export async function settleExpired(
         deps,
         { id: strategy.userId, email: "", name: "", role: "user" },
         strategy.asset,
+        strategy.venue, // ADR-070
       );
       const at = new Date(nowMs);
       let batchPnl = "0";
@@ -228,7 +229,7 @@ export async function settleExpired(
  */
 export function snapshotSpotSource(
   deps: Pick<AppDeps, "db">,
-  live: (asset: Underlying) => Promise<number | null>,
+  live: (asset: Underlying, venue: Venue) => Promise<number | null>,
   now: () => number = Date.now,
   windowMs = 30 * 60_000,
 ): SettlementSource {
@@ -253,7 +254,7 @@ export function snapshotSpotSource(
       }
       if (best) return best.spot;
       if (now() - settlementMs <= windowMs) {
-        const spot = await live(asset).catch(() => null);
+        const spot = await live(asset, venue).catch(() => null);
         if (spot !== null && spot > 0) return spot;
       }
       return null;

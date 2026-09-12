@@ -1,11 +1,12 @@
 /**
  * Live execution service (ADR-025): everything between a strategy and the venue executor. Plans contracts
- * per leg, runs the safeguards, places entry / exit / adjustment orders through `deps.trading` (the only
- * order path, trading-safety rule 1), records `strategy_orders`, and reconciles pending orders.
+ * per leg, runs the safeguards, places entry / exit / adjustment orders through the venue's executor
+ * (`deps.tradingFor(venue)`, the only order path, trading-safety rule 1; ADR-070), records `strategy_orders`, and
+ * reconciles pending orders.
  * Routes call these; nothing here is reachable without a signed-in user's own vault credential.
  */
 import { type LivePreview, type LivePreviewLeg, type StrategyOrder, toDecimal } from "@hapiecoin/schema";
-import { DEFAULT_VENUE, type DeltaCredentials, type PlaceOrderResult, VENUE_REGISTRY, contractsFor, defaultLotSizes, getVenue, roundToTick } from "@hapiecoin/venues";
+import { DEFAULT_VENUE, type DeltaCredentials, type PlaceOrderResult, VENUE_REGISTRY, contractsFor, defaultLotSizes, getVenue, getVenueCore, roundToTick } from "@hapiecoin/venues";
 import type { Venue } from "@hapiecoin/schema";
 import { and, eq } from "drizzle-orm";
 import { brokerCredentials, brokers, type strategies, strategyLegs, strategyOrders, userSettings, users } from "../db/schema.js";
@@ -26,7 +27,9 @@ export function exchangeError(message: string, details?: Record<string, unknown>
   return new HttpError(502, "EXCHANGE_ERROR", message, details);
 }
 
-export async function lotSizeFor(deps: AppDeps, user: SessionUser, asset: string): Promise<string> {
+/** Units per lot for `asset` on `venue` (ADR-070, the web's rule from ADR-069): the trader's Settings lot sizes on the default venue, the venue's listed lot elsewhere. */
+export async function lotSizeFor(deps: AppDeps, user: SessionUser, asset: string, venue: string): Promise<string> {
+  if (venue !== DEFAULT_VENUE) return (defaultLotSizes(getVenueCore(venue)) as Record<string, string>)[asset] ?? "1";
   const [s] = await deps.db.select({ lotSizes: userSettings.lotSizes }).from(userSettings).where(eq(userSettings.userId, user.id)).limit(1);
   return s?.lotSizes[asset] ?? DEFAULT_LOTS[asset] ?? "1";
 }
@@ -60,7 +63,7 @@ export async function openCredential(deps: AppDeps, user: SessionUser, brokerId:
   return (await resolveAccount(deps, user, brokerId, expectedVenue, accountId)).creds;
 }
 /** `openCredential` plus the id of the key row it opened, for the routes that record the account on the strategy. */
-export async function resolveAccount(deps: AppDeps, user: SessionUser, brokerId: string, expectedVenue?: Venue, accountId: string | null = null): Promise<{ creds: DeltaCredentials; accountId: string }> {
+export async function resolveAccount(deps: AppDeps, user: SessionUser, brokerId: string, expectedVenue?: Venue, accountId: string | null = null): Promise<{ creds: DeltaCredentials; accountId: string; venue: Venue }> {
   const brokerVenue = await brokerVenueOf(deps, user, brokerId);
   if (brokerVenue === null) throw errors.badRequest("Select an exchange...");
   if (expectedVenue !== undefined && brokerVenue !== expectedVenue) throw errors.conflict(venueMismatch(brokerVenue, expectedVenue));
@@ -94,7 +97,7 @@ export async function resolveAccount(deps: AppDeps, user: SessionUser, brokerId:
       deps.logger.warn({ err: errorMessage(e), userId: user.id, brokerId }, "exchange credential re-seal failed; will retry on next use");
     }
   }
-  return { creds, accountId: row.id };
+  return { creds, accountId: row.id, venue: brokerVenue };
 }
 
 /** Kill switches (ADR-025): the operator's env flag and the account flag. */
@@ -132,23 +135,29 @@ export async function ordersOf(deps: AppDeps, strategyId: string): Promise<Order
 
 /** The slice of a leg row the planner and the preview read; the adjustment preview passes synthetic rows for proposed legs. */
 export type PlanLeg = Pick<LegRow, "id" | "symbol" | "side" | "lots">;
-/** Contracts, product state and current mark for each leg; reasons collect what would block a placement. */
-export async function planLegs(deps: AppDeps, legs: readonly PlanLeg[], lotSize: string): Promise<{ legs: LivePreviewLeg[]; reasons: string[] }> {
+/** Legs listed without sizing: no venue was asked (a wrong or data-only venue, or a product lookup that failed). */
+export function unsizedLegs(legs: readonly PlanLeg[]): LivePreviewLeg[] {
+  return legs.map((l) => ({ legId: l.id, symbol: l.symbol, side: l.side, lots: l.lots, contracts: null, contractValue: "0", productState: "unknown", mark: null, notional: "0" }));
+}
+
+/** Contracts, product state and current mark for each leg through the executor of `venue` (ADR-070: the caller names the strategy venue, never a default); reasons collect what would block a placement. */
+export async function planLegs(deps: AppDeps, legs: readonly PlanLeg[], lotSize: string, venue: string): Promise<{ legs: LivePreviewLeg[]; reasons: string[] }> {
   const reasons: string[] = [];
   const out: LivePreviewLeg[] = [];
+  const client = deps.tradingFor(venue); // ADR-070
   for (const l of legs) {
     let product;
     try {
-      product = await deps.trading.getProduct(l.symbol);
+      product = await client.getProduct(l.symbol);
     } catch (e) {
       reasons.push(`${l.symbol}: ${e instanceof Error ? e.message : "product lookup failed"}`);
-      out.push({ legId: l.id, symbol: l.symbol, side: l.side, lots: l.lots, contracts: null, contractValue: "0", productState: "unknown", mark: null, notional: "0" });
+      out.push(...unsizedLegs([l]));
       continue;
     }
     const contracts = contractsFor(l.lots, lotSize, product.contractValue);
     if (contracts === null) reasons.push(`${l.symbol}: ${l.lots} lots × ${lotSize} is not a whole number of ${product.contractValue}-unit contracts`);
     if (product.state !== "live") reasons.push(`${l.symbol}: product is ${product.state} on the exchange`);
-    const mark = await deps.trading.getMark(l.symbol);
+    const mark = await client.getMark(l.symbol);
     const notional = contracts !== null && mark !== null ? toDecimal(contracts * Number(product.contractValue) * Number(mark), 2) : "0";
     out.push({ legId: l.id, symbol: l.symbol, side: l.side, lots: l.lots, contracts, contractValue: product.contractValue, productState: product.state, mark, notional });
   }
@@ -167,15 +176,19 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
   // ADR-065: a broker of another venue is refused before any call reaches that venue
   const brokerVenue = await brokerVenueOf(deps, user, brokerId);
   const dataOnly = brokerVenue === null ? null : dataOnlyReason(brokerVenue);
-  const wrongVenue = (brokerVenue !== null && brokerVenue !== strategy.venue) || dataOnly !== null;
+  // ADR-070: a strategy on a data-only venue has no executor at all, whichever broker was named (or none)
+  const strategyDataOnly = dataOnlyReason(strategy.venue);
+  const wrongVenue = (brokerVenue !== null && brokerVenue !== strategy.venue) || dataOnly !== null || strategyDataOnly !== null;
   if (brokerVenue !== null && brokerVenue !== strategy.venue) reasons.push(venueMismatch(brokerVenue, strategy.venue));
   if (dataOnly !== null) reasons.push(dataOnly); // ADR-067
+  else if (strategyDataOnly !== null) reasons.push(strategyDataOnly);
   const { trading } = deps.config;
   if (legs.length === 0 && exits.length === 0) reasons.push("Add at least one leg to trade");
   if (legs.length > trading.maxLegs) reasons.push(`At most ${trading.maxLegs} legs per live placement`);
-  const lotSize = await lotSizeFor(deps, user, strategy.asset);
-  const exitPlan = await planLegs(deps, exits, lotSize);
-  const plan = await planLegs(deps, legs, lotSize);
+  const lotSize = await lotSizeFor(deps, user, strategy.asset, strategy.venue);
+  // a wrong or data-only venue asks nobody: the legs are listed unsized and the reasons above already say why
+  const exitPlan = wrongVenue ? { legs: unsizedLegs(exits), reasons: [] } : await planLegs(deps, exits, lotSize, strategy.venue);
+  const plan = wrongVenue ? { legs: unsizedLegs(legs), reasons: [] } : await planLegs(deps, legs, lotSize, strategy.venue);
   reasons.push(...exitPlan.reasons, ...plan.reasons);
   const notional = plan.legs.reduce((s, l) => s + Number(l.notional), 0);
   if (notional > trading.maxNotionalUsd) reasons.push(`Notional ${toDecimal(notional, 2)} USD exceeds the ${trading.maxNotionalUsd} USD limit per placement`);
@@ -187,12 +200,13 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
   }
   try {
     const creds = await openCredential(deps, user, brokerId, strategy.venue, accountId);
-    const balances = await deps.trading.getBalances(creds);
+    const client = deps.tradingFor(strategy.venue);
+    const balances = await client.getBalances(creds);
     const row = SETTLING_ASSETS.map((a) => balances.find((b) => b.asset === a)).find((b) => b !== undefined);
     // the venue has no pre-trade margin estimate; show what it holds right now so the trader sees the real headroom (ADR-029).
     // The figure is informational: when the positions read fails it stays null ("—"), it never blocks the preview
     try {
-      const positions = await deps.trading.getPositions(creds);
+      const positions = await client.getPositions(creds);
       marginUsed = toDecimal(positions.reduce((s, p) => s + (p.margin ? Number(p.margin) : 0), 0), 2);
     } catch (e) {
       deps.logger.warn({ err: errorMessage(e), userId: user.id, brokerId }, "live preview: positions read failed; margin in use unknown");
@@ -234,6 +248,7 @@ function describeResult(r: PlaceOrderResult): string {
 export async function placeEntries(deps: AppDeps, creds: DeltaCredentials, strategy: StrategyRow, legs: readonly LegRow[], plan: readonly LivePreviewLeg[], batchId: string, purpose: "entry" | "adjustment", expected: Record<string, string>, orderType: "market" | "limit" = "market"): Promise<PlacementOutcome> {
   const out: PlacementOutcome = { filled: 0, pending: 0, failed: 0, errors: [] };
   const band = deps.config.trading.markBandPct / 100;
+  const client = deps.tradingFor(strategy.venue); // ADR-070
   for (const l of legs) {
     const p = plan.find((x) => x.legId === l.id);
     if (!p || p.contracts === null) {
@@ -251,10 +266,10 @@ export async function placeEntries(deps: AppDeps, creds: DeltaCredentials, strat
     }
     const attempt = await nextAttempt(deps, l.id);
     const clientOrderId = `hc-${l.id}-${attempt}`;
-    const product = await deps.trading.getProduct(l.symbol);
+    const product = await client.getProduct(l.symbol);
     // a limit rests at the reviewed mark, snapped onto the product's tick toward the passive side
     const limit = orderType === "limit" && exp !== undefined ? roundToTick(exp, product.tickSize, l.side) : null;
-    const result = await deps.trading.placeOrder(creds, { productId: product.id, size: p.contracts, side: l.side, clientOrderId, reduceOnly: false, ...(limit === null ? {} : { orderType: "limit", limitPrice: limit }) });
+    const result = await client.placeOrder(creds, { productId: product.id, size: p.contracts, side: l.side, clientOrderId, reduceOnly: false, ...(limit === null ? {} : { orderType: "limit", limitPrice: limit }) });
     await applyEntryResult(deps, strategy, l, batchId, purpose, clientOrderId, p, result, out, attempt, limit === null ? "market" : "limit", limit);
   }
   return out;
@@ -266,7 +281,7 @@ async function nextAttempt(deps: AppDeps, legId: string): Promise<number> {
 }
 
 async function recordOrder(deps: AppDeps, strategy: StrategyRow, leg: LegRow, batchId: string, purpose: "entry" | "exit" | "adjustment", clientOrderId: string, plan: LivePreviewLeg, venue: { id: number; fill: string | null } | null, state: OrderRow["state"], error: string | null, attempts = 1, orderType: "market" | "limit" = "market", limitPrice: string | null = null): Promise<void> {
-  const product = plan.contracts === null ? null : await deps.trading.getProduct(leg.symbol).catch(() => null);
+  const product = plan.contracts === null ? null : await Promise.resolve().then(() => deps.tradingFor(strategy.venue).getProduct(leg.symbol)).catch(() => null);
   await deps.db
     .insert(strategyOrders)
     .values({ id: newId("ord"), strategyId: strategy.id, legId: leg.id, batchId, purpose, orderType, limitPrice, clientOrderId, venueOrderId: venue ? String(venue.id) : null, productId: product?.id ?? 0, symbol: leg.symbol, side: leg.side, size: plan.contracts ?? 0, state, fillPrice: venue?.fill ?? null, error, attempts })
@@ -304,20 +319,21 @@ export async function retryFailed(deps: AppDeps, creds: DeltaCredentials, user: 
   // a limit the venue cancelled (sync marks it cancelled) is retried like a refusal, with its type and resting price
   const failed = (await ordersOf(deps, strategy.id)).filter((o) => (o.state === "failed" || o.state === "cancelled") && o.purpose !== "exit");
   if (failed.length === 0) return out;
-  const lotSize = await lotSizeFor(deps, user, strategy.asset);
+  const lotSize = await lotSizeFor(deps, user, strategy.asset, strategy.venue);
+  const client = deps.tradingFor(strategy.venue); // ADR-070
   for (const o of failed) {
     const [leg] = await deps.db.select().from(strategyLegs).where(eq(strategyLegs.id, o.legId)).limit(1);
     if (!leg || leg.status !== "open") continue;
-    const plan = await planLegs(deps, [leg], lotSize);
+    const plan = await planLegs(deps, [leg], lotSize, strategy.venue);
     const p = plan.legs[0]!;
     if (p.contracts === null) {
       out.failed += 1;
       out.errors.push(plan.reasons.join("; "));
       continue;
     }
-    const product = await deps.trading.getProduct(leg.symbol);
+    const product = await client.getProduct(leg.symbol);
     const limit = o.orderType === "limit" && o.limitPrice !== null ? o.limitPrice : null;
-    const result = await deps.trading.placeOrder(creds, { productId: product.id, size: p.contracts, side: leg.side, clientOrderId: o.clientOrderId, reduceOnly: false, ...(limit === null ? {} : { orderType: "limit", limitPrice: limit }) });
+    const result = await client.placeOrder(creds, { productId: product.id, size: p.contracts, side: leg.side, clientOrderId: o.clientOrderId, reduceOnly: false, ...(limit === null ? {} : { orderType: "limit", limitPrice: limit }) });
     await applyEntryResult(deps, strategy, leg, o.batchId, o.purpose === "exit" ? "entry" : o.purpose, o.clientOrderId, p, result, out, o.attempts + 1, limit === null ? "market" : "limit", limit);
   }
   return out;
@@ -334,8 +350,9 @@ export type ExitOutcome =
   | { status: "refused"; message: string; retryable: boolean };
 
 export async function tryExit(deps: AppDeps, creds: DeltaCredentials, user: SessionUser, strategy: StrategyRow, leg: LegRow, lots: number, batchId: string): Promise<ExitOutcome> {
-  const lotSize = await lotSizeFor(deps, user, strategy.asset);
-  const product = await deps.trading.getProduct(leg.symbol).catch((e: unknown) => {
+  const lotSize = await lotSizeFor(deps, user, strategy.asset, strategy.venue);
+  const client = deps.tradingFor(strategy.venue); // ADR-070
+  const product = await client.getProduct(leg.symbol).catch((e: unknown) => {
     throw exchangeError(e instanceof Error ? e.message : "product lookup failed");
   });
   const contracts = contractsFor(lots, lotSize, product.contractValue);
@@ -344,7 +361,7 @@ export async function tryExit(deps: AppDeps, creds: DeltaCredentials, user: Sess
   const clientOrderId = `hc-${leg.id}-x${attempt}`;
   const side = leg.side === "buy" ? "sell" : "buy";
   const plan: LivePreviewLeg = { legId: leg.id, symbol: leg.symbol, side, lots, contracts, contractValue: product.contractValue, productState: product.state, mark: null, notional: "0" };
-  const result = await deps.trading.placeOrder(creds, { productId: product.id, size: contracts, side, clientOrderId, reduceOnly: true });
+  const result = await client.placeOrder(creds, { productId: product.id, size: contracts, side, clientOrderId, reduceOnly: true });
   // the order may exist at the venue from here on: a failure to record it is reported as unknown, never as refused
   const record = async (venue: { id: number; fill: string | null } | null, state: OrderRow["state"], error: string | null): Promise<string | null> => {
     try {
@@ -398,9 +415,10 @@ export async function syncOrders(deps: AppDeps, creds: DeltaCredentials, strateg
   let updated = 0;
   const exitFills: SyncedExitFill[] = [];
   const now = new Date();
+  const client = deps.tradingFor(strategy.venue); // ADR-070
   for (const o of pending) {
-    let venue = o.venueOrderId ? await deps.trading.getOrder(creds, Number(o.venueOrderId)) : null;
-    if (!venue && o.productId) venue = (await deps.trading.listOpenOrders(creds, [o.productId])).find((v) => v.clientOrderId === o.clientOrderId) ?? null;
+    let venue = o.venueOrderId ? await client.getOrder(creds, Number(o.venueOrderId)) : null;
+    if (!venue && o.productId) venue = (await client.listOpenOrders(creds, [o.productId])).find((v) => v.clientOrderId === o.clientOrderId) ?? null;
     if (!venue) {
       if (!o.venueOrderId) {
         await deps.db.update(strategyOrders).set({ state: "failed", error: o.error ?? "not found on the exchange", updatedAt: now }).where(eq(strategyOrders.id, o.id));

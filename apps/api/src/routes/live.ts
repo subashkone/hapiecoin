@@ -250,8 +250,9 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
     async (c) => {
       const me = currentUser(c);
       const q = c.req.valid("query");
-      const creds = await openCredential(deps, me, q.brokerId, undefined, q.accountId ?? null);
-      const [raw, balances] = await Promise.all([deps.trading.getPositions(creds), deps.trading.getBalances(creds)]).catch((e: unknown) => {
+      const { creds, venue } = await resolveAccount(deps, me, q.brokerId, undefined, q.accountId ?? null);
+      const client = deps.tradingFor(venue); // ADR-070: the account's exchange answers
+      const [raw, balances] = await Promise.all([client.getPositions(creds), client.getBalances(creds)]).catch((e: unknown) => {
         // an unreadable venue is 503, never "no positions": the Live tab's drift check must not read it as "holds nothing"
         deps.logger.warn({ err: errorMessage(e), userId: me.id }, "positions read failed");
         throw errors.unavailable("The exchange did not answer the positions read · try again in a moment");
@@ -259,11 +260,11 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       // HC-TR-144: the client sizes lots and P&L from contract value and mark; unknown products stay null
       const positions = await Promise.all(
         raw.map(async (p) => {
-          const [product, mark] = p.symbol ? await Promise.all([deps.trading.getProduct(p.symbol).catch(() => null), deps.trading.getMark(p.symbol).catch(() => null)]) : [null, null];
+          const [product, mark] = p.symbol ? await Promise.all([client.getProduct(p.symbol).catch(() => null), client.getMark(p.symbol).catch(() => null)]) : [null, null];
           return { ...p, contractValue: product?.contractValue ?? null, mark };
         }),
       );
-      return c.json({ positions, balances }, 200);
+      return c.json({ positions, balances, venue }, 200); // the venue names the symbol codec for the client (ADR-070)
     },
   );
 
@@ -275,7 +276,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       .innerJoin(strategies, eq(strategyLegs.strategyId, strategies.id))
       .where(and(eq(strategies.userId, me.id), eq(strategies.status, "live"), eq(strategyLegs.symbol, symbol), eq(strategyLegs.status, "open")));
     for (const { strategy, leg } of rows) {
-      const realized = await closeLegRow(deps, strategy, leg, fill, undefined, await lotSizeFor(deps, me, strategy.asset), new Date());
+      const realized = await closeLegRow(deps, strategy, leg, fill, undefined, await lotSizeFor(deps, me, strategy.asset, strategy.venue), new Date());
       const stillOpen = await db.select({ id: strategyLegs.id }).from(strategyLegs).where(and(eq(strategyLegs.strategyId, strategy.id), eq(strategyLegs.status, "open"))).limit(1);
       await touch(strategy.id, { realizedPnl: addDecimal(await freshTotal(deps, strategy.id, strategy.realizedPnl), realized), ...(stillOpen.length === 0 ? { status: "archived" as const, closedAt: new Date(), closeReason: "squared_off" as const } : {}) });
       if (stillOpen.length === 0) await disarmRules(deps, strategy.id, "disarmed: the strategy was squared off from the positions list");
@@ -298,8 +299,9 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const body = c.req.valid("json");
       const blocked = await tradingBlockedReason(deps, me);
       if (blocked) throw errors.conflict(blocked);
-      const creds = await openCredential(deps, me, body.brokerId, undefined, body.accountId ?? null);
-      const positions = await deps.trading.getPositions(creds).catch((e: unknown) => {
+      const { creds, venue } = await resolveAccount(deps, me, body.brokerId, undefined, body.accountId ?? null);
+      const client = deps.tradingFor(venue); // ADR-070
+      const positions = await client.getPositions(creds).catch((e: unknown) => {
         deps.logger.warn({ err: errorMessage(e), userId: me.id }, "positions read failed");
         throw errors.unavailable("The exchange did not answer the positions read · nothing was sent");
       });
@@ -313,7 +315,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
           continue;
         }
         // one reduce-only market order per position; the client id ties a repeat of the same key to the same order
-        const result = await deps.trading.placeOrder(creds, { productId, size: Math.abs(p.size), side: p.size > 0 ? "sell" : "buy", clientOrderId: `hc-pos-${productId}-${keyTail}`, reduceOnly: true });
+        const result = await client.placeOrder(creds, { productId, size: Math.abs(p.size), side: p.size > 0 ? "sell" : "buy", clientOrderId: `hc-pos-${productId}-${keyTail}`, reduceOnly: true });
         if (!result.ok) {
           failed.push({ productId, error: result.message });
           continue;

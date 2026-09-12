@@ -31,8 +31,10 @@ export interface AppDeps {
   logger: Logger;
   vault: Vault;
   delta: DeltaPrivateClient;
-  /** The live executor (ADR-025): the only path to order endpoints. */
+  /** @deprecated ADR-070: the default venue's executor, kept for the test harness; production code takes `tradingFor(venue)`. */
   trading: DeltaTradingClient;
+  /** ADR-070: the executor of a broker's or strategy's venue; a data-only venue throws VenueCapabilityError (the routes refuse with a 409 first). */
+  tradingFor: (venue: string) => DeltaTradingClient;
   /** Market Analytics snapshots written by the ingest service (ADR-038). */
   analytics: AnalyticsReader;
   /** Telegram bot for alert delivery and chat linking (ADR-057); null without TELEGRAM_BOT_TOKEN. */
