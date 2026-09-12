@@ -12,7 +12,8 @@ export function RetryDialog({ strategy, open, onOpenChange, busy, brokerName, on
   useEffect(() => {
     if (open) setWord("");
   }, [open]);
-  const failed = strategy ? strategy.orders.filter((o) => o.state === "failed") : [];
+  // a cancelled entry (by the exchange or from the card, ADR-083) is re-sent like a refused one
+  const failed = strategy ? strategy.orders.filter((o) => (o.state === "failed" || o.state === "cancelled") && o.purpose !== "exit") : [];
   const legs = failed.map((o) => strategy?.legs.find((l) => l.id === o.legId)).filter((l): l is Strategy["legs"][number] => l !== undefined);
   const go = () => {
     if (strategy && isLiveConfirm(word) && !busy) onRetry(strategy.id, word);

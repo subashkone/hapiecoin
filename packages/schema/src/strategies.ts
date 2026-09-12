@@ -490,6 +490,10 @@ export type LivePlaceBody = z.infer<typeof LivePlaceBody>;
 export const LiveRetryBody = z.strictObject({ confirm: LiveConfirm.optional() });
 export type LiveRetryBody = z.infer<typeof LiveRetryBody>;
 
+/** Re-price a resting limit entry in place (ADR-083): it stays an entry that can fill, so the typed word applies; the API snaps the price to the product tick. */
+export const LiveRepriceBody = z.strictObject({ limitPrice: PositiveDecimal, confirm: LiveConfirm.optional() });
+export type LiveRepriceBody = z.infer<typeof LiveRepriceBody>;
+
 /** Preview the open legs, or (adjustment workbench) the proposed batch: `adds` as entries and `changes` as exits. */
 export const LivePreviewBody = z.strictObject({
   brokerId: Id,

@@ -172,9 +172,13 @@ describe("[VENUES] fake trading client bookkeeping", () => {
     if (!filled.ok) throw new Error("expected a fill");
     expect(await fake.cancelOrder(CREDS, filled.order.id, 99)).toBe(false); // wrong product
     expect(await fake.cancelOrder(CREDS, 424242)).toBe(false);
-    expect(await fake.cancelOrder(CREDS, filled.order.id)).toBe(true);
-    expect(fake.cancelled).toEqual([filled.order.id]);
-    expect((await fake.getOrder(CREDS, filled.order.id))?.state).toBe("cancelled");
+    expect(await fake.cancelOrder(CREDS, filled.order.id)).toBe(false); // a filled order cannot be cancelled (ADR-083): the venue refuses too
+    fake.fillAt(filled.order.productId, "200");
+    const resting = await fake.placeOrder(CREDS, { productId: filled.order.productId, size: 1, side: "buy", clientOrderId: "r", orderType: "limit", limitPrice: "100" });
+    if (!resting.ok) throw new Error("expected a resting order");
+    expect(await fake.cancelOrder(CREDS, resting.order.id)).toBe(true);
+    expect(fake.cancelled).toEqual([resting.order.id]);
+    expect((await fake.getOrder(CREDS, resting.order.id))?.state).toBe("cancelled");
     fake.complete(424242, "1"); // unknown id: no-op
   });
 });
