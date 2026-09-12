@@ -136,6 +136,7 @@ describe("HC-PB-059 command palette", () => {
     const groups = [...list.querySelectorAll(".micro")].map((el) => el.textContent);
     expect(groups.slice(0, 3)).toEqual(["Navigate", "Actions", "Settings"]);
     expect(screen.getByRole("option", { name: "Open P&L Settings" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "Open Mindful trading" })).toBeTruthy(); // HC-TR-183
     await waitFor(() => expect(screen.getByRole("option", { name: /Display currency → INR/ })).toBeTruthy());
     // typing underlines the matched characters (HC-SH-086); Tab moves (HC-SH-088)
     await u.type(screen.getByRole("combobox"), "jour");

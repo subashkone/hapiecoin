@@ -6,7 +6,9 @@ import { emitTour } from "@/lib/tour";
 import { type Strategy, toDecimal } from "@hapiecoin/schema";
 import { toast } from "@hapiecoin/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useBrokers, useCredential } from "@/lib/api/queries";
+import { useBrokers, useCredential, useSettings } from "@/lib/api/queries";
+import { type MindfulPauseInfo, mindfulFor } from "@/lib/strategy/mindful";
+import { useConnectionStatus } from "@/lib/gateway/hooks";
 import { useLivePositions } from "@/lib/api/live";
 import { useCreateStrategy, usePatchStrategy, useStartStrategy, useStrategies } from "@/lib/api/strategies";
 import { newIdempotencyKey, useLivePlace, useLivePreview } from "@/lib/api/live";
@@ -72,6 +74,8 @@ export function TradeFlow({ book }: { book: PaperBook }) {
   const { data: strategies } = useStrategies();
   const { data: brokers } = useBrokers();
   const { data: credential } = useCredential();
+  const { data: settings } = useSettings();
+  const feedLive = useConnectionStatus() === "open";
   const workspaceVenue = useVenueId();
   const create = useCreateStrategy();
   const patch = usePatchStrategy();
@@ -86,11 +90,14 @@ export function TradeFlow({ book }: { book: PaperBook }) {
   const [accountId, setAccountId] = useState<string | null>(null);
   const [fees, setFees] = useState<FeeEstimate>({ fee: 0, gst: 0, total: 0, per: [] });
   const [busy, setBusy] = useState(false);
+  // HC-TR-182: the Mindful pause is decided once, when the live preview opens, and holds for this flow
+  const [mindful, setMindful] = useState<MindfulPauseInfo | null>(null);
   useEffect(() => {
     if (flow) {
       setStep("mode");
       setMode(flow.mode ?? "paper");
       setVenue(null);
+      setMindful(null);
       setIdemKey(newIdempotencyKey());
     }
   }, [flow]);
@@ -222,6 +229,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
       const worstLoss = maxLoss === null ? (debit > 0 ? -debit : null) : Math.min(maxLoss, -debit);
       const v = await livePreview.mutateAsync({ id, body: { brokerId: b, ...(a ? { accountId: a } : {}), ...(worstLoss !== null ? { worstLoss } : {}) } });
       setVenue(v);
+      setMindful(mindfulFor(settings?.mindful, strategies, book));
       setStep("preview");
     } catch (e) {
       toast.error("Could not preview the live order", { description: e instanceof Error ? e.message : "request failed" });
@@ -260,7 +268,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
           void toPreview(m, b, a);
         }}
       />
-      <TradePreviewDialog open={step === "preview"} onOpenChange={(o) => !o && closeTrade()} mode={mode} asset={asset} legs={legs} spot={spot} lotSize={lotSize} money={money} broker={broker} fees={fees} maxLoss={maxLoss} maxLossKnown={fromBuilder} customPrices={customPrices} busy={busy} venue={venue} available={available} overlaps={overlaps} onTrade={onTradeNow} />
+      <TradePreviewDialog open={step === "preview"} onOpenChange={(o) => !o && closeTrade()} mode={mode} asset={asset} legs={legs} spot={spot} lotSize={lotSize} money={money} broker={broker} fees={fees} maxLoss={maxLoss} maxLossKnown={fromBuilder} customPrices={customPrices} busy={busy} venue={venue} available={available} overlaps={overlaps} mindful={mindful} mindfulKey={idemKey} feedLive={feedLive} onTrade={onTradeNow} />
       <SaveDraftDialog open={step === "name"} onOpenChange={(o) => !o && setStep("preview")} initialName={isTemplateName(meta.name) ? "" : meta.name} suggest={fromBuilder ? suggest : undefined} intent="trade" onSave={(n) => { setMeta(builder.asset, { name: n }); if (mode === "live") void toPreview("live", brokerId, accountId, n); else { setStep("preview"); void trade(n); } }} />
     </>
   );

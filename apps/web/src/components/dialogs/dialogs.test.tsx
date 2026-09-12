@@ -18,6 +18,7 @@ import { SaveDraftDialog } from "./SaveDraftDialog";
 import { ExchangeManagementDialog, validateBrokerForm } from "./ExchangeManagementDialog";
 import { LogoutDialog } from "./LogoutDialog";
 import { LotSizeDialog } from "./LotSizeDialog";
+import { MindfulDialog, readMindful } from "./MindfulDialog";
 import { PnlDialog } from "./PnlDialog";
 import { ProfileDialog } from "./ProfileDialog";
 import { SettingsDialogs } from "./SettingsDialogs";
@@ -178,6 +179,43 @@ describe("HC-SH-038..040 Currency Settings", () => {
     await u.click(screen.getByTestId("currency-save"));
     await waitFor(() => expect(account().settings).toMatchObject({ currency: "INR", conversionRate: "84.25" }));
     expect(currencyNote("USD", "")).toContain("₹0");
+  });
+});
+
+describe("HC-TR-183 Mindful trading settings (ADR-074)", () => {
+  it("prefills the stored pause, validates the threshold and the seconds, warns when switched off, and persists", async () => {
+    const u = userEvent.setup();
+    renderWithProviders(<MindfulDialog open onOpenChange={() => useUiStore.getState().closeDialog()} />);
+    const threshold = await screen.findByTestId<HTMLInputElement>("mindful-threshold");
+    await waitFor(() => expect(threshold.value).toBe("0"));
+    expect(screen.getByTestId<HTMLInputElement>("mindful-seconds").value).toBe("30");
+    expect(screen.getByTestId("mindful-enabled").getAttribute("aria-checked")).toBe("true");
+    expect(screen.queryByTestId("mindful-off-note")).toBeNull();
+    await u.clear(threshold);
+    await u.type(threshold, "-5");
+    await u.click(screen.getByTestId("mindful-save"));
+    expect(screen.getByTestId("mindful-error").textContent).toContain("0 or a positive amount");
+    await u.clear(threshold);
+    await u.type(threshold, "25");
+    const seconds = screen.getByTestId<HTMLInputElement>("mindful-seconds");
+    await u.clear(seconds);
+    await u.type(seconds, "5");
+    await u.click(screen.getByTestId("mindful-save"));
+    expect(screen.getByTestId("mindful-error").textContent).toContain("10 to 300");
+    await u.clear(seconds);
+    await u.type(seconds, "60");
+    await u.click(screen.getByTestId("mindful-enabled"));
+    expect(screen.getByTestId("mindful-off-note").textContent).toContain("the day you most want to skip it");
+    await u.click(screen.getByTestId("mindful-save"));
+    await waitFor(() => expect(account().settings.mindful).toEqual({ enabled: false, thresholdUsd: "25", pauseSeconds: 60 }));
+    expect(readMindful(true, "abc", "30")).toEqual({ ok: false, error: "Threshold must be 0 or a positive amount in USD" });
+    expect(readMindful(true, "0", "30.5").ok).toBe(false);
+    expect(readMindful(true, " 12.5 ", "300")).toEqual({ ok: true, value: { enabled: true, thresholdUsd: "12.5", pauseSeconds: 300 } });
+  });
+  it("mounts through SettingsDialogs when the store opens it (menu, palette, Day P&L tile)", async () => {
+    renderWithProviders(<SettingsDialogs />);
+    act(() => useUiStore.getState().openDialog("mindful"));
+    expect(await screen.findByTestId("mindful-dialog")).toBeTruthy();
   });
 });
 

@@ -14,6 +14,7 @@ import {
   Mail,
   MessageCircle,
   Moon,
+  Pause,
   Percent,
   Plug,
   Rocket,
@@ -149,6 +150,9 @@ function SettingsMenu({ user }: { user: User }) {
         </MenuItem>
         <MenuItem onSelect={() => pick("pnl")} value={settings ? (settings.pnlBasis === "bid_ask" ? "bid/ask" : "mark") : undefined} testId="menu-pnl">
           <Percent /> P&amp;L Settings
+        </MenuItem>
+        <MenuItem onSelect={() => pick("mindful")} value={settings ? (settings.mindful.enabled ? `${settings.mindful.pauseSeconds} s` : "off") : undefined} testId="menu-mindful">
+          <Pause /> Mindful trading
         </MenuItem>
         <MenuItem onSelect={() => pick("exchanges")} testId="menu-exchanges">
           <Plug /> Exchange Setup

@@ -1,6 +1,6 @@
 "use client";
 // Trade Preview (HC-TR-056, HC-TR-057): the legs as they will be tracked, fees, what you pay or receive,
-// spot, margin estimate, then "Trade now".
+// spot, margin estimate, then "Trade now". Live, down on the day: the Mindful pause block and countdown (HC-TR-182).
 import type { Broker, LivePreview, Underlying } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn } from "@hapiecoin/ui";
 import { useEffect } from "react";
@@ -12,6 +12,8 @@ import { type TradeLegView, feeLine, netPremium } from "./TradeModeDialog";
 import { OverlapNotice } from "./OverlapNotice";
 import type { OverlapRow } from "@/lib/strategy/overlap";
 import { ModePill } from "./StrategyDetailsDialog";
+import type { MindfulPauseInfo } from "@/lib/strategy/mindful";
+import { MindfulCountdownButton, MindfulPause, useMindfulCountdown } from "./MindfulPause";
 
 export interface TradePreviewProps {
   open: boolean;
@@ -36,6 +38,12 @@ export interface TradePreviewProps {
   available?: { amount: number; asset: string } | null | undefined;
   /** Contracts other open strategies already hold (HC-TR-159). */
   overlaps?: readonly OverlapRow[] | undefined;
+  /** Mindful pause (HC-TR-182): set when the trader is down on the day on live strategies; live mode only. */
+  mindful?: MindfulPauseInfo | null | undefined;
+  /** Changes when the flow reopens, so the pause restarts. */
+  mindfulKey?: string | number | undefined;
+  /** The market feed is live; false marks the pause figures as from the last tick. */
+  feedLive?: boolean | undefined;
   onTrade: () => void;
 }
 
@@ -54,6 +62,8 @@ export function TradePreviewDialog(p: TradePreviewProps) {
   // (a credit received or a debit paid is already inside it), never less than a debit paid; the exchange's own margin
   // exists only after placement (ADR-029). "Worst case leaves" = the wallet minus that loss minus fees.
   const known = p.maxLossKnown ?? true;
+  const mindful = p.mode === "live" ? (p.mindful ?? null) : null;
+  const pauseLeft = useMindfulCountdown(mindful, p.mindfulKey ?? 0);
   // the exchange margins each expiry on its own: a calendar's short leg is margined as if naked (GAPS #77)
   const multiExpiry = new Set(p.legs.filter((l) => l.kind !== "future").map((l) => l.expiry)).size > 1;
   const debit = np < 0 ? -np : 0;
@@ -143,6 +153,16 @@ export function TradePreviewDialog(p: TradePreviewProps) {
               {p.venue.reasons.length ? <ul className="mt-1 list-disc pl-4 text-loss" data-testid="venue-reasons">{p.venue.reasons.map((r) => <li key={r}>{r}</li>)}</ul> : null}
             </div>
           ) : null}
+          {mindful ? (
+            <MindfulPause
+              info={mindful}
+              money={p.money}
+              left={pauseLeft}
+              atRisk={required === null ? { text: known ? "undefined risk" : "not computed · see the card's max loss", loss: false } : { text: fmtMoney(-required, p.money, { signed: true }), loss: true }}
+              marginText={p.venue?.marginUsed ? `${p.venue.marginUsed} ${p.venue.availableAsset ?? "USD"}` : "—"}
+              stale={p.feedLive === false}
+            />
+          ) : null}
           <div className={cn("mt-3 rounded border p-2 text-2xs", p.mode === "live" ? "border-loss/40" : "border-info/30 bg-info-bg text-info")} data-testid="preview-note">
             {p.mode === "live"
               ? "You are about to trade this strategy. Orders will be placed on Delta Exchange. Prices may differ from displayed estimates. Ensure you have sufficient margin."
@@ -153,9 +173,13 @@ export function TradePreviewDialog(p: TradePreviewProps) {
           <Button variant="outline" onClick={() => p.onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={p.onTrade} loading={p.busy} disabled={p.venue !== null && p.venue !== undefined && !p.venue.ok} variant={p.mode === "live" ? "destructive" : "primary"} data-testid="trade-now" data-tour="trade-confirm-button">
-            {p.mode === "live" ? "Place live orders →" : "Trade now →"}
-          </Button>
+          {mindful && pauseLeft > 0 ? (
+            <MindfulCountdownButton left={pauseLeft} />
+          ) : (
+            <Button onClick={p.onTrade} loading={p.busy} disabled={p.venue !== null && p.venue !== undefined && !p.venue.ok} variant={p.mode === "live" ? "destructive" : "primary"} data-testid="trade-now" data-tour="trade-confirm-button">
+              {p.mode === "live" ? "Place live orders →" : "Trade now →"}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

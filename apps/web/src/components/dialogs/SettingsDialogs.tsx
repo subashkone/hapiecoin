@@ -10,6 +10,7 @@ import { LogoutDialog } from "./LogoutDialog";
 import { LotSizeDialog } from "./LotSizeDialog";
 import { OptionDetailsDialog } from "./OptionDetailsDialog";
 import { UpgradeRequiredDialog } from "./UpgradeRequiredDialog";
+import { MindfulDialog } from "./MindfulDialog";
 import { PnlDialog } from "./PnlDialog";
 import { ProfileDialog } from "./ProfileDialog";
 import { AlertsDialog } from "@/components/alerts/AlertsDialog";
@@ -28,6 +29,7 @@ export function SettingsDialogs() {
       <CurrencyDialog open={dialog === "currency"} onOpenChange={onOpenChange} />
       <LotSizeDialog open={dialog === "lot"} onOpenChange={onOpenChange} />
       <PnlDialog open={dialog === "pnl"} onOpenChange={onOpenChange} />
+      <MindfulDialog open={dialog === "mindful"} onOpenChange={onOpenChange} />
       <ExchangeManagementDialog open={dialog === "exchanges"} onOpenChange={onOpenChange} />
       <LogoutDialog open={dialog === "logout"} onOpenChange={onOpenChange} />
       <ColumnSettingsDialog open={dialog === "columns"} onOpenChange={onOpenChange} />
