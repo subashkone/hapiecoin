@@ -24,7 +24,15 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
+      testIgnore: /phone\.spec\.ts/,
       use: { ...devices["Desktop Chrome"], channel: process.env["PW_CHANNEL"] ?? "chrome" },
+    },
+    {
+      // ADR-080: the phone pass runs on a Pixel 7 profile (412 × 839, touch, mobile viewport) in the same Chrome
+      name: "phone",
+      testMatch: /phone\.spec\.ts/,
+      timeout: 120_000, // the first phone test pays for the cold compile of /auth and /analyse under mobile emulation
+      use: { ...devices["Pixel 7"], channel: process.env["PW_CHANNEL"] ?? "chrome" },
     },
   ],
   webServer: [

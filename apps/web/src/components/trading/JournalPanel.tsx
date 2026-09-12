@@ -126,7 +126,7 @@ export function JournalPanel({ book }: { book: PaperBook }) {
             ))}
           </select>
         ) : null}
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search trades, tags, notes…" className="h-7 w-[220px] rounded border border-input bg-background px-2 text-xs" aria-label="Search the journal" data-testid="journal-search" />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search trades, tags, notes…" className="h-7 w-full rounded sm:w-[220px] border border-input bg-background px-2 text-xs" aria-label="Search the journal" data-testid="journal-search" />
         <Button size="sm" variant="outline" className="ml-auto" disabled={trades.length === 0} onClick={() => void exportCsv()} title="Copy the filtered trades as CSV" data-testid="journal-csv">
           Export CSV
         </Button>
@@ -141,7 +141,7 @@ export function JournalPanel({ book }: { book: PaperBook }) {
           <EmptyState title="No closed trades yet" description="Stop a paper strategy or square off a live one and it lands here with its realised P&L, tags and notes." className="py-16" action={<Button size="sm" variant="outline" onClick={() => setTab("paper")} data-testid="journal-open-paper">Open Paper trades</Button>} data-testid="journal-empty" />
         ) : (
           <>
-            <div className="grid grid-cols-3 gap-2 py-2 sm:grid-cols-6" data-testid="journal-stats">
+            <div className="grid grid-cols-2 gap-2 py-2 sm:grid-cols-3 md:grid-cols-6" data-testid="journal-stats">
               <div className="rounded border border-border px-2 py-1.5"><div className="micro">Trades</div><div className="num text-[15px] font-medium" data-testid="stat-trades">{stats.trades}</div><div className="micro">{stats.wins} wins · {stats.losses} losses</div></div>
               <div className="rounded border border-border px-2 py-1.5"><div className="micro">Win rate</div><div className="num text-[15px] font-medium" data-testid="stat-winrate">{stats.winRate === null ? "—" : `${Math.round(stats.winRate * 100)}%`}</div><div className="micro">closed strategies</div></div>
               <div className="rounded border border-border px-2 py-1.5"><div className="micro">Avg P&amp;L</div><div className={cn("num text-[15px] font-medium", tone(stats.avg))} data-testid="stat-avg">{money$(stats.avg)}</div><div className="micro">per trade</div></div>

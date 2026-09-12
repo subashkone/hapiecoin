@@ -140,7 +140,8 @@ export function BacktestPanel() {
                 empty="No closed trades yet"
                 testId="chart-backtest"
               />
-              <table className="w-full text-2xs" data-testid="backtest-trades">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[520px] text-2xs" data-testid="backtest-trades">
                 <thead className="text-muted-foreground">
                   <tr>
                     <th className="py-1 text-left font-normal">Entry</th>
@@ -167,6 +168,7 @@ export function BacktestPanel() {
                   ))}
                 </tbody>
               </table>
+              </div>
               {trades.length > 60 ? <p className="text-2xs text-muted-foreground">and {trades.length - 60} earlier trades</p> : null}
             </>
           )}

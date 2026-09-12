@@ -1089,5 +1089,25 @@
     "how": "iv-snapshot.ts hands each pass's quotes to chain-eod.ts: at or after the asset's settlement hour (12:00 UTC, XAUT 16:00) and with no rows for the day yet, every listed option's mark, mark IV and the spot land in chain_eod (unique per venue / asset / day / expiry / strike / kind), kept 400 days; the first write for a venue and underlying backfills up to seven earlier days from instrument_marks (the last pass at or before the hour, symbols parsed through the venue codec, the spot from the same pass's IV snapshot); the read side folds rows into ladders per expiry",
     "evidence": "ADR-077 (12 Sep 2026): apps/api/src/chain-eod.ts recordEodIfDue / backfillEodFromMarks / pruneEod / eodDays / eodDayCount, iv-snapshot.ts, db chain_eod; unit chain-eod.test.ts HC-SH-128",
     "test": "unit (api)"
+  },
+  {
+    "screen": "Shared chrome · phone",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The workspace on a phone: a compact header, stacked panes, tab strips that scroll to their last tab, no sideways page scroll",
+    "how": "Below 768 px the analyse header tightens its gaps; the exchange chip, currency toggle, theme toggle and venue switch step back into their menus, the logo keeps its mark, the futures price keeps its figure (no 24 h change), the feed status keeps its dot; below 1000 px the panes stack behind the Chain & Builder / Analysis switch, the strip info and collapse buttons hide, and both tab strips scroll sideways with a hidden scrollbar; an explicit viewport (device width, no forced zoom, notch painted); one shared useMediaQuery hook",
+    "evidence": "ADR-080 (12 Sep 2026): packages/ui/src/components/Tabs.tsx, apps/web/src/lib/useMediaQuery.ts, app/layout.tsx viewport, components/header/AppHeader.tsx + widgets.tsx, workspace/Workspace.tsx, analysis/AnalysisPane.tsx; e2e phone.spec.ts HC-SH-130 (Pixel 7 project) with analyse-phone-dark/light captures",
+    "test": "e2e (phone)"
+  },
+  {
+    "screen": "Analyse · Chain · phone",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The chain on touch: one side at a time, a drag pans the columns, a tapped row shows finger-sized B / S / lots / details controls",
+    "how": "A touch drag on either side track moves the mirrored offset through the wheel path once it is clearly horizontal (10 px slop), otherwise the page scrolls; on a coarse pointer a tapped row becomes the focused row that carries the controls, and the controls are 36 px targets; a tap alone never adds a leg",
+    "evidence": "ADR-080 (12 Sep 2026): apps/web/src/components/chain/ChainTable.tsx (touchstart / touchmove on the tracks, tapRow), RowControls.tsx (data-coarse, h-9 targets); unit chain.test.tsx HC-SH-131; e2e phone.spec.ts HC-SH-131",
+    "test": "unit (web), e2e (phone)"
   }
 ]

@@ -115,7 +115,8 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
       ) : rows.length === 0 ? (
         <div className="px-3 pb-2 text-2xs text-muted-foreground" data-testid="positions-empty">{positions.data ? "No open positions on the exchange." : "Loading positions…"}</div>
       ) : (
-        <table className="w-full text-xs" data-testid="positions-table">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] text-xs" data-testid="positions-table">
           <thead>
             <tr className="micro text-left">
               <th className="w-6 px-3 py-1">
@@ -161,6 +162,7 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
             </tr>
           </tfoot>
         </table>
+        </div>
       )}
       <Dialog open={confirm !== null} onOpenChange={(o) => !o && setConfirm(null)}>
         <DialogContent className="sm:max-w-[520px]" data-testid="exit-positions">

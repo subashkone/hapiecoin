@@ -92,7 +92,7 @@ export function PositionTicket({ w }: { w: AdjustWorkbench }) {
           <span className="num text-muted-foreground">{l.lots} →</span>
           <Stepper value={after} min={0} step={lotStep(l.lots)} onChange={(v) => w.setLotsAfter(l.id, v)} testId="lots-after" label={instrumentOf(l)} />
         </span>
-        <span className="min-w-[76px] text-right"><EffectPill e={effectOf(l.id)} /></span>
+        <span className="min-w-[56px] text-right sm:min-w-[76px]"><EffectPill e={effectOf(l.id)} /></span>
         {changed ? (
           <button type="button" onClick={() => w.setLotsAfter(l.id, l.lots)} className="rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground" title="Undo · keep this leg as it is" aria-label={`Undo the change to ${instrumentOf(l)}`} data-testid="wb-leg-undo">
             ↺
@@ -115,7 +115,7 @@ export function PositionTicket({ w }: { w: AdjustWorkbench }) {
           <span className="text-muted-foreground"> · mark {fmtPrice(mark, 1)}</span>
         </span>
         <Stepper value={p.lots} min={1} step={lotStep(p.lots)} onChange={(v) => w.setPickLots(p.id, v)} testId="pick-lots" label={instrumentOf(p)} />
-        <span className="min-w-[76px] text-right"><EffectPill e={pickEffect(p)} /></span>
+        <span className="min-w-[56px] text-right sm:min-w-[76px]"><EffectPill e={pickEffect(p)} /></span>
         <button type="button" onClick={() => w.removePick(p.id)} aria-label={`Remove ${instrumentOf(p)}`} className="rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:border-loss hover:text-loss" data-testid="wb-pick-remove">
           ✕
         </button>
@@ -138,7 +138,7 @@ export function PositionTicket({ w }: { w: AdjustWorkbench }) {
           <span className="text-muted-foreground"> · mark {fmtPrice(a.markOf(l.symbol), 1)}</span>
         </span>
         <Stepper value={e.lots} min={1} step={lotStep(l.lots)} onChange={setLots} testId="order-lots" label={`${e.kind === "add" ? "add to" : "close from"} ${instrumentOf(l)}`} />
-        <span className="min-w-[76px] text-right"><EffectPill e={e} /></span>
+        <span className="min-w-[56px] text-right sm:min-w-[76px]"><EffectPill e={e} /></span>
         <button type="button" onClick={() => w.setLotsAfter(l.id, l.lots)} aria-label={`Remove the change to ${instrumentOf(l)}`} title="Remove · keep this leg as it is" className="rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:border-loss hover:text-loss" data-testid="wb-order-remove">
           ✕
         </button>
@@ -194,7 +194,7 @@ export function PositionTicket({ w }: { w: AdjustWorkbench }) {
             <label className="flex w-full items-center gap-2 text-2xs" title="Scenario: value the combined position on any day up to its latest expiry (dates are UTC, at the settlement hour)">
               <span className="micro w-[72px] shrink-0">Scenario</span>
               <input type="range" min={0} max={maxDays} step={1} value={sliderDays} onChange={(e) => { const d = Number(e.target.value); w.setValuation(d === 0 ? VALUE_TODAY : d >= maxDays && latest ? latest : isoDaysFrom(a.nowMs, d)); }} className="flex-1 accent-[hsl(var(--curve))]" aria-label="Scenario date, days ahead" data-testid="scenario-days" />
-              <span className="num w-[120px] text-right" data-testid="scenario-label">{sliderDays === 0 ? "today" : `+${sliderDays}d · ${fmtDate(isoDaysFrom(a.nowMs, sliderDays))}`}</span>
+              <span className="num w-[96px] text-right sm:w-[120px]" data-testid="scenario-label">{sliderDays === 0 ? "today" : `+${sliderDays}d · ${fmtDate(isoDaysFrom(a.nowMs, sliderDays))}`}</span>
             </label>
           ) : null}
         </div>

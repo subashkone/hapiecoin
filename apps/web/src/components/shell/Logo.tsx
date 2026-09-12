@@ -27,8 +27,8 @@ export function Logo({ href = "/", sub, className }: LogoProps) {
       title="HapieCoin"
     >
       <LogoMark />
-      <span>HapieCoin</span>
-      {sub ? <span className="text-[13px] font-normal text-muted-foreground">{sub}</span> : null}
+      <span className={sub ? "hidden md:inline" : undefined}>HapieCoin</span>
+      {sub ? <span className="hidden text-[13px] font-normal text-muted-foreground md:inline">{sub}</span> : null}
     </Link>
   );
 }
