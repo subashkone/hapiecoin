@@ -24,7 +24,7 @@ const MEANING: [string, string][] = [
 
 export function GreeksPanel() {
   const a = useStrategyAnalysis();
-  const { legs, result, spot, lotSize, money, asset } = a;
+  const { legs, result, spot, lotSize, money, asset, venue } = a;
   const g = result?.greeks;
   const rows = useMemo(
     () =>
@@ -33,17 +33,17 @@ export function GreeksPanel() {
         if (l.kind === "future") return { leg: l, iv: undefined, greeks: { delta: sign, gamma: 0, theta: 0, vega: 0 } };
         const iv = a.quoteFor(l)?.markIv ?? l.iv;
         if (spot === null || iv === undefined || !lotSize) return { leg: l, iv, greeks: null };
-        const T = Math.max(0, yearFraction(a.nowMs, l.expiry, settlementHourUtc(asset)));
+        const T = Math.max(0, yearFraction(a.nowMs, l.expiry, settlementHourUtc(asset, venue)));
         const k = black76Greeks(spot, Number(l.strike), T, iv, l.kind === "call");
         if (!Number.isFinite(k.delta)) return { leg: l, iv, greeks: null };
         return { leg: l, iv, greeks: { delta: k.delta * sign, gamma: k.gamma * sign, theta: k.theta * sign, vega: k.vega * sign } };
       }),
-    [legs, lotSize, spot, a, asset],
+    [legs, lotSize, spot, a, asset, venue],
   );
 
   // HC-WS-101: every leg re-priced at 49 prices ±20 % around spot on the target date; the worker returns one row per date
   const prices = useMemo(() => (spot === null ? [] : Array.from({ length: ACROSS_POINTS }, (_, i) => spot * (0.8 + (0.4 * i) / (ACROSS_POINTS - 1)))), [spot]);
-  const across = (mode: "delta" | "theta") => (result && spot !== null && prices.length ? { prices, dates: [result.targetMs], mode, defaultIv: 0.5, calendar: venueCalendar(asset) } : null);
+  const across = (mode: "delta" | "theta") => (result && spot !== null && prices.length ? { prices, dates: [result.targetMs], mode, defaultIv: 0.5, calendar: venueCalendar(asset, venue) } : null);
   const deltaRow = useScenario(a.pricingLegs, across("delta"));
   const thetaRow = useScenario(a.pricingLegs, across("theta"));
   const spotIdx = Math.round((ACROSS_POINTS - 1) / 2);
@@ -101,7 +101,7 @@ export function GreeksPanel() {
           </tbody>
         </table>
       </div>
-      <p className="micro" data-testid="greeks-model">{exerciseLabel(exerciseStyleOf(asset))} · Black-76 on spot, r = 0, live mark IV per leg · position = per-unit greek × lots × lot size ({lotSize ?? "…"} {asset}) · settlement {settlementHourUtc(asset)}:00 UTC</p>
+      <p className="micro" data-testid="greeks-model">{exerciseLabel(exerciseStyleOf(asset, venue))} · Black-76 on spot, r = 0, live mark IV per leg · position = per-unit greek × lots × lot size ({lotSize ?? "…"} {asset}) · settlement {settlementHourUtc(asset, venue)}:00 UTC</p>
       <dl className="grid grid-cols-1 gap-x-4 gap-y-1 text-2xs sm:grid-cols-2" data-testid="greeks-meaning">
         {MEANING.map(([k, v]) => (
           <div key={k}>

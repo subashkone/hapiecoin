@@ -1,7 +1,8 @@
 // Shareable strategy links (HC-WS-105, 106): the legs, lots and entry prices are encoded in the URL itself as
 // base64url JSON, so nothing is uploaded and no account is needed to open one. `decodeShare` validates every field
 // before the legs reach the store; a link that fails validation opens nothing.
-import type { Underlying } from "@hapiecoin/schema";
+import { type Underlying, VENUES, type Venue as VenueId } from "@hapiecoin/schema";
+import { DEFAULT_VENUE } from "@hapiecoin/venues/core";
 import { type LegKind, type LegSide, MAX_ACTIVE_LEGS, type NewLegInput, type StrategyLeg } from "./legs";
 
 export const SHARE_VERSION = 1;
@@ -12,12 +13,14 @@ const MAX_NAME = 80;
 
 export interface SharedStrategy {
   asset: Underlying;
+  /** The venue the legs were built on; links from before ADR-069 are Delta India. */
+  venue: VenueId;
   name: string;
   legs: NewLegInput[];
 }
 
-/** Compact wire form: `[kind, side, strike, expiry, lots, price, iv?]` per leg. */
-type Wire = { v: number; a: Underlying; n?: string; l: (string | number)[][] };
+/** Compact wire form: `[kind, side, strike, expiry, lots, price, iv?]` per leg; `e` names the venue (absent = Delta India). */
+type Wire = { v: number; a: Underlying; e?: string; n?: string; l: (string | number)[][] };
 
 function toBase64Url(s: string): string {
   const bytes = new TextEncoder().encode(s);
@@ -36,10 +39,11 @@ function fromBase64Url(s: string): string | null {
   }
 }
 
-export function encodeShare(input: { asset: Underlying; name?: string | undefined; legs: readonly Pick<StrategyLeg, "kind" | "side" | "strike" | "expiry" | "lots" | "price" | "iv">[] }): string {
+export function encodeShare(input: { asset: Underlying; venue?: VenueId | undefined; name?: string | undefined; legs: readonly Pick<StrategyLeg, "kind" | "side" | "strike" | "expiry" | "lots" | "price" | "iv">[] }): string {
   const wire: Wire = {
     v: SHARE_VERSION,
     a: input.asset,
+    ...(input.venue && input.venue !== DEFAULT_VENUE ? { e: input.venue } : {}),
     ...(input.name?.trim() ? { n: input.name.trim().slice(0, MAX_NAME) } : {}),
     l: input.legs.map((l) => [l.kind, l.side, l.kind === "future" ? "" : l.strike, l.kind === "future" ? "PERP" : l.expiry, l.lots, l.price, ...(l.iv === undefined ? [] : [Number(l.iv.toFixed(4))])]),
   };
@@ -76,7 +80,8 @@ export function decodeShare(code: string): SharedStrategy | null {
     legs.push({ asset: w.a as Underlying, kind: kind as LegKind, side: side as LegSide, strike: strike, expiry: expiry, lots, price: price, ...(iv === undefined ? {} : { iv: iv }) });
   }
   const name = typeof w.n === "string" ? w.n.trim().slice(0, MAX_NAME) : "";
-  return { asset: w.a as Underlying, name, legs };
+  if (w.e !== undefined && !(VENUES as readonly string[]).includes(w.e)) return null;
+  return { asset: w.a as Underlying, venue: (w.e as VenueId | undefined) ?? DEFAULT_VENUE, name, legs };
 }
 
 export const shareUrl = (origin: string, code: string): string => `${origin}/s/${code}`;

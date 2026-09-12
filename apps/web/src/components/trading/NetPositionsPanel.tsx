@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { newIdempotencyKey, useLiveExitPositions, useLivePositions } from "@/lib/api/live";
 import { useBrokers } from "@/lib/api/queries";
 import { useCurrentAccount } from "@/lib/accounts";
+import { DEFAULT_VENUE } from "@hapiecoin/venues/core";
 import { fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
@@ -15,8 +16,9 @@ import { parseVenueSymbol, positionPnl } from "@/lib/strategy/positions";
 const ASSET_FILTERS = ["All", "BTC", "ETH", "XAUT"] as const;
 
 /** "SHORT 78,000 CE · 25 Sep 26" from a position, or the raw symbol when it cannot be parsed. */
-export function positionLabel(p: LivePosition): { title: string; sub: string } {
-  const parsed = p.symbol ? parseVenueSymbol(p.symbol) : null;
+/** Exchange positions come from the connected exchange, so their symbols parse with that venue's codec (Delta India, the only venue with live trading, by default). */
+export function positionLabel(p: LivePosition, venue: string = DEFAULT_VENUE): { title: string; sub: string } {
+  const parsed = p.symbol ? parseVenueSymbol(p.symbol, venue) : null;
   const side = p.size > 0 ? "LONG" : "SHORT";
   if (!parsed) return { title: `${side} ${p.symbol ?? p.productId}`, sub: "" };
   if (parsed.kind === "future") return { title: `${side} ${parsed.asset} perpetual`, sub: p.symbol ?? "" };
@@ -29,6 +31,7 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
   const setAccount = useUiStore((s) => s.setAccount);
   const brokerId = account?.brokerId ?? null;
   const accountId = account?.id ?? null;
+  const venue = brokers?.find((b) => b.id === brokerId)?.venue ?? DEFAULT_VENUE; // the selected account's exchange names the codec (ADR-069)
   const positions = useLivePositions(brokerId, true, accountId);
   const exit = useLiveExitPositions();
   const paneSource = useUiStore((s) => s.paneSource);
@@ -37,7 +40,7 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
   const [confirm, setConfirm] = useState<number[] | null>(null);
   const [key, setKey] = useState("");
 
-  const rows = useMemo(() => (positions.data?.positions ?? []).filter((p) => p.size !== 0).filter((p) => asset === "All" || (p.symbol ? parseVenueSymbol(p.symbol)?.asset === asset : false)), [positions.data, asset]);
+  const rows = useMemo(() => (positions.data?.positions ?? []).filter((p) => p.size !== 0).filter((p) => asset === "All" || (p.symbol ? parseVenueSymbol(p.symbol, venue)?.asset === asset : false)), [positions.data, asset, venue]);
   const ticked = paneSource?.kind === "positions" ? paneSource.productIds : [];
   const total = rows.reduce((s, p) => s + (positionPnl(p) ?? 0), 0);
   useEffect(() => {
@@ -128,7 +131,7 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
           </thead>
           <tbody>
             {rows.map((p) => {
-              const l = positionLabel(p);
+              const l = positionLabel(p, venue);
               const pnl = positionPnl(p);
               const on = ticked.includes(p.productId);
               return (
@@ -170,7 +173,7 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
               {(confirm ?? []).map((id) => {
                 const p = rows.find((r) => r.productId === id);
                 if (!p) return null;
-                const l = positionLabel(p);
+                const l = positionLabel(p, venue);
                 return (
                   <li key={id} className="flex justify-between border-t border-border py-1" data-testid="exit-row">
                     <span>{l.title} <span className="micro">{l.sub}</span></span>

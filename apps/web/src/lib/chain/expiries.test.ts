@@ -35,6 +35,17 @@ describe("HC-WS-107 expiry discovery", () => {
     expect(r3.source).toBe("default");
   });
 
+  it("HC-SH-124 another venue reads its own list from feed.venues, keeps its settlement hour and has no env fallback (ADR-069)", async () => {
+    const health = { ok: true, feed: { ready: true, expiries: { BTC: ["2026-09-25", "2026-09-11"] }, venues: { delta_india: { expiries: { BTC: ["2026-09-25", "2026-09-11"] } }, deribit: { expiries: { BTC: ["2026-09-12", "2026-09-11"] } } } } };
+    const fetch = vi.fn(() => json(health));
+    // 11 Sep 09:00 UTC: Deribit's 11 Sep expiry settled at 08:00, Delta's stays listed until 12:00
+    const nowMs = Date.UTC(2026, 8, 11, 9);
+    expect(await discoverExpiries("BTC", { gatewayWsUrl: "ws://gw", defaultsCsv: defaults, fetch, today: "2026-09-11", nowMs, venue: "deribit" })).toEqual({ expiries: ["2026-09-12"], source: "gateway" });
+    expect(await discoverExpiries("BTC", { gatewayWsUrl: "ws://gw", defaultsCsv: defaults, fetch, today: "2026-09-11", nowMs, venue: "delta_india" })).toEqual({ expiries: ["2026-09-11", "2026-09-25"], source: "gateway" });
+    const none = vi.fn(() => json({ ok: true, feed: { ready: true, expiries: { BTC: ["2026-09-25"] } } }));
+    expect(await discoverExpiries("BTC", { gatewayWsUrl: "ws://gw", defaultsCsv: defaults, fetch: none, today: "2026-09-11", venue: "deribit" })).toEqual({ expiries: [], source: "default" });
+  });
+
   it("works without any fetch implementation and defaults today to now", async () => {
     const r = await discoverExpiries("BTC", { gatewayWsUrl: "ws://x", defaultsCsv: "2099-01-01", fetch: undefined as unknown as typeof globalThis.fetch });
     expect(r.expiries).toEqual(["2099-01-01"]);

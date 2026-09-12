@@ -4,7 +4,8 @@
 // from the API's snapshot history (ADR-056, GAPS #32).
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { chainTopic } from "@hapiecoin/schema";
-import { CURRENT_VENUE, exerciseLabel, exerciseStyleOf } from "@/lib/venue";
+import { exerciseLabel, exerciseStyleOf, lotSizeFor } from "@/lib/venue";
+import { useVenueId } from "@/lib/useVenue";
 import { useMemo, useState } from "react";
 import { useMarkHistory } from "@/lib/api/market";
 import { useSettings } from "@/lib/api/queries";
@@ -33,7 +34,8 @@ export function OptionDetailsDialog({ open, onOpenChange }: DialogProps) {
   const legsByAsset = useUiStore((s) => s.legs);
   const assetLegs = target ? legsByAsset[target.asset] : [];
   const { data: settings } = useSettings();
-  const topic = target && open ? chainTopic(CURRENT_VENUE, target.asset, target.expiry) : null;
+  const venue = useVenueId();
+  const topic = target && open ? chainTopic(venue, target.asset, target.expiry) : null;
   const chain = useTopic(topic);
   const spot = useSpot(target?.asset ?? "BTC");
   const [lots, setLots] = useState<number | null>(null);
@@ -44,7 +46,7 @@ export function OptionDetailsDialog({ open, onOpenChange }: DialogProps) {
   const row = useMemo(() => (target && chain ? chain.rows.find((r) => Number(r.strike) === Number(target.strike)) : undefined), [chain, target]);
   const q = target ? (target.kind === "call" ? row?.call : row?.put) : undefined;
   const symbol = target ? venueSymbol(target.kind, target.asset, target.strike, target.expiry) : "";
-  const lotSize = target ? settings?.lotSizes[target.asset] : undefined;
+  const lotSize = target ? lotSizeFor(venue, target.asset, settings) : undefined;
   const qty = legQuantity(chosen, lotSize);
   const atLimit = assetLegs.filter((l) => l.status === "open").length >= MAX_ACTIVE_LEGS;
   const change = fmtChange(q?.change24hPct);

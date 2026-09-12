@@ -38,11 +38,17 @@ export type ProfileUpdate = z.infer<typeof ProfileUpdate>;
 /** Brokers list envelope. */
 export const BrokerList = z.object({ items: z.array(z.unknown()) });
 
-/** Gateway GET /healthz: apps/gateway reports the expiries it serves under `feed.expiries` (503 while loading). */
+/** Gateway GET /healthz: apps/gateway reports the default venue's expiries under `feed.expiries` and every venue's under `feed.venues[id].expiries` (ADR-067; 503 while loading). */
 const ExpiryMap = z.record(z.string(), z.array(z.string()));
 export const GatewayHealth = z.object({
   ok: z.boolean().optional(),
   expiries: ExpiryMap.optional(),
-  feed: z.object({ ready: z.boolean().optional(), expiries: ExpiryMap.optional() }).optional(),
+  feed: z
+    .object({
+      ready: z.boolean().optional(),
+      expiries: ExpiryMap.optional(),
+      venues: z.record(z.string(), z.object({ expiries: ExpiryMap.optional() }).passthrough()).optional(),
+    })
+    .optional(),
 });
 export type GatewayHealth = z.infer<typeof GatewayHealth>;

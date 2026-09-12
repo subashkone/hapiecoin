@@ -22,16 +22,19 @@ import {
 import { DECIMAL_STRING_RE, isNonNegativeDecimal, type Broker } from "@hapiecoin/schema";
 import { useState } from "react";
 import { useBrokers, useCreateBroker, useDeleteBroker, useUpdateBroker } from "@/lib/api/queries";
-import { CURRENT_VENUE } from "@/lib/venue";
+import { DEFAULT_VENUE, getVenueCore } from "@hapiecoin/venues/core";
+import { currentVenueId, dataOnly } from "@/lib/venue";
+import { useVenueId } from "@/lib/useVenue";
 import type { DialogProps } from "./SettingsDialogs";
 
 type FormState = { name: string; feePct: string; gstPct: string; feeCapPct: string };
 const EMPTY: FormState = { name: "", feePct: "0.05", gstPct: "18", feeCapPct: "10" };
 
-export function validateBrokerForm(f: FormState): { nameError?: string; body?: Omit<Broker, "id" | "scope"> } {
+/** The create / update body; an exchange belongs to the venue it is created on (the workspace venue, ADR-069). */
+export function validateBrokerForm(f: FormState, venue: Broker["venue"] = currentVenueId()): { nameError?: string; body?: Omit<Broker, "id" | "scope"> } {
   if (!f.name.trim()) return { nameError: "Exchange name is required" };
   const pct = (v: string) => (DECIMAL_STRING_RE.test(v.trim()) && isNonNegativeDecimal(v.trim()) ? v.trim() : "0");
-  return { body: { name: f.name.trim(), feePct: pct(f.feePct), gstPct: pct(f.gstPct), feeCapPct: pct(f.feeCapPct), venue: CURRENT_VENUE } };
+  return { body: { name: f.name.trim(), feePct: pct(f.feePct), gstPct: pct(f.gstPct), feeCapPct: pct(f.feeCapPct), venue } };
 }
 
 function BrokerForm({ initial, onDone, onCancel }: { initial?: Broker; onDone: () => void; onCancel: () => void }) {
@@ -42,8 +45,10 @@ function BrokerForm({ initial, onDone, onCancel }: { initial?: Broker; onDone: (
   );
   const [nameError, setNameError] = useState<string | undefined>();
   const busy = create.isPending || update.isPending;
+  const workspaceVenue = useVenueId();
+  const venue = initial?.venue ?? workspaceVenue;
   const submit = () => {
-    const v = validateBrokerForm(f);
+    const v = validateBrokerForm(f, venue);
     if (v.nameError || !v.body) {
       setNameError(v.nameError);
       toast.error("Validation Error", { description: v.nameError });
@@ -65,7 +70,7 @@ function BrokerForm({ initial, onDone, onCancel }: { initial?: Broker; onDone: (
     <div data-testid="broker-form">
       <div className="px-5 pt-4">
         <h3>{initial ? "Edit Exchange" : "Add New Exchange"}</h3>
-        <p className="text-xs text-muted-foreground">Configure exchange fee structure</p>
+        <p className="text-xs text-muted-foreground" data-testid="broker-form-venue">Fee structure on {getVenueCore(venue).label}{dataOnly(venue) ? " (data-only: paper trading)" : ""}</p>
       </div>
       <DialogBody>
         <Field label="Exchange Name" error={nameError}>
@@ -185,6 +190,7 @@ export function ExchangeManagementDialog({ open, onOpenChange }: DialogProps) {
                           {b.scope === "GLOBAL" ? <Badge variant="outline">GLOBAL</Badge> : null}
                         </b>
                         <div className="flex gap-3 text-2xs text-muted-foreground">
+                          {b.venue !== DEFAULT_VENUE ? <span data-testid="broker-venue">{getVenueCore(b.venue).label}</span> : null}
                           <span>Fee: <span className="font-mono">{b.feePct}%</span></span>
                           <span>GST: <span className="font-mono">{b.gstPct}%</span></span>
                           <span>Fee Cap: <span className="font-mono">{b.feeCapPct}%</span></span>

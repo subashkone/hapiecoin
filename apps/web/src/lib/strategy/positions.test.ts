@@ -18,6 +18,14 @@ describe("[STRATEGY] HC-TR-144 / HC-SH-119 positions → legs through the port c
     expect(parseVenueSymbol("P-XAUT-4410.50-080926")?.strike).toBe("4410.5");
   });
 
+  it("HC-SH-124 parses with the codec of the venue asked for (ADR-069)", () => {
+    expect(parseVenueSymbol("BTC-25SEP26-80000-C", "deribit")).toEqual({ kind: "call", asset: "BTC", strike: "80000", expiry: "2026-09-25" });
+    expect(parseVenueSymbol("BTC-PERPETUAL", "deribit")).toEqual({ kind: "future", asset: "BTC", strike: "0", expiry: "" });
+    expect(parseVenueSymbol("C-BTC-80000-250926", "deribit")).toBeNull();
+    expect(positionToLeg({ ...POS, symbol: "BTC-25SEP26-80000-C", contractValue: "1" }, "0.1", "deribit")?.strike).toBe("80000");
+    expect(positionToLeg({ ...POS, symbol: "BTC-25SEP26-80000-C", contractValue: "1" }, "0.1", "delta_india")).toBeNull();
+  });
+
   it("HC-TR-144 sizes lots from contracts and contract value", () => {
     expect(lotsFor(10, "0.001", "0.001")).toBe(10);
     expect(lotsFor(30, "0.001", "0.01")).toBe(3);

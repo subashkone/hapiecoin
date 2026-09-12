@@ -36,4 +36,13 @@ describe("HC-WS-105 / HC-WS-106 share links", () => {
     expect(bad({ v: 1, a: "BTC", l: Array.from({ length: 11 }, () => ["call", "buy", "1", "2026-09-25", 1, "1"]) })).toBeNull(); // over the limit
     expect(bad({ v: 1, a: "BTC", n: 5, l: [["put", "sell", "1", "2026-09-25", 1, "1"]] })!.name).toBe(""); // a non-string name is dropped, not fatal
   });
+
+  it("HC-SH-124 carries the venue off Delta India and reads old links as Delta India (ADR-069)", () => {
+    const legs = [{ kind: "call" as const, side: "buy" as const, strike: "80000", expiry: "2026-09-25", lots: 1, price: "1200" }];
+    expect(decodeShare(encodeShare({ asset: "BTC", legs }))?.venue).toBe("delta_india");
+    expect(decodeShare(encodeShare({ asset: "BTC", venue: "deribit", legs }))?.venue).toBe("deribit");
+    expect(encodeShare({ asset: "BTC", venue: "delta_india", legs })).toBe(encodeShare({ asset: "BTC", legs })); // the default venue adds nothing to the code
+    const tampered = btoa(JSON.stringify({ v: 1, a: "BTC", e: "okx", l: [["call", "buy", "80000", "2026-09-25", 1, "1200"]] })).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    expect(decodeShare(tampered)).toBeNull();
+  });
 });

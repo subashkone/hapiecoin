@@ -16,7 +16,7 @@ import { useBrokers } from "@/lib/api/queries";
 import { useCreateStrategy, usePatchStrategy, useStrategies } from "@/lib/api/strategies";
 import { localLegToInput, feeFor } from "@/lib/strategy/paper";
 import { useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
-import { CURRENT_VENUE } from "@/lib/venue";
+import { useVenueId } from "@/lib/useVenue";
 import { SaveDraftDialog } from "@/components/dialogs/SaveDraftDialog";
 import { ChainPickerDialog } from "./ChainPickerDialog";
 import { FutureDialog } from "./FutureDialog";
@@ -58,6 +58,7 @@ function moneyness(leg: StrategyLeg, spot: number | null): "ATM" | "ITM" | "OTM"
 export function BuilderPanel() {
   const a = useStrategyAnalysis("builder");
   const meta = useUiStore((s) => s.strategy[s.asset]);
+  const venue = useVenueId();
   const setMeta = useUiStore((s) => s.setStrategyMeta);
   const updateLegs = useUiStore((s) => s.updateLegs);
   const setLegs = useUiStore((s) => s.setLegs);
@@ -132,7 +133,7 @@ export function BuilderPanel() {
     };
     const fail = (e: Error) => toast.error("Could not save", { description: e.message });
     if (meta.draftId) patchStrategy.mutate({ id: meta.draftId, body }, { onSuccess: done, onError: fail });
-    else createStrategy.mutate({ asset, venue: CURRENT_VENUE, ...body }, { onSuccess: done, onError: fail });
+    else createStrategy.mutate({ asset, venue, ...body }, { onSuccess: done, onError: fail });
   };
 
   const net = result?.netPremium ?? null;

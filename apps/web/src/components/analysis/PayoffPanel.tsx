@@ -91,7 +91,7 @@ export function PayoffPanel() {
 
   // IV ±5 % target-date curves (HC-WS-083): the worker prices the same price axis on the target date with every leg's sigma shifted
   const ivPrices = useMemo(() => (result ? result.points.map((p) => p.price) : []), [result]);
-  const ivOptions = (shift: number, on: boolean): ScenarioOptions | null => (on && result && spot !== null ? { prices: ivPrices, dates: [result.targetMs], ivShift: shift, mode: "pnl", defaultIv: 0.5, calendar: venueCalendar(a.asset) } : null);
+  const ivOptions = (shift: number, on: boolean): ScenarioOptions | null => (on && result && spot !== null ? { prices: ivPrices, dates: [result.targetMs], ivShift: shift, mode: "pnl", defaultIv: 0.5, calendar: venueCalendar(a.asset, a.venue) } : null);
   const ivUp = useScenario(a.pricingLegs, ivOptions(IV_SHIFT, layers.ivUp));
   const ivDown = useScenario(a.pricingLegs, ivOptions(-IV_SHIFT, layers.ivDown));
   const ivUpRow = ivUp.grid?.values[0] ?? null;

@@ -2,8 +2,8 @@
 // contracts back to lots, and the position's P&L at the venue mark. Pure functions, unit-tested.
 import type { LivePosition, Underlying } from "@hapiecoin/schema";
 import { UNDERLYINGS } from "@hapiecoin/schema";
-import { InvalidExpiryError } from "@hapiecoin/venues/core";
-import { currentVenue } from "@/lib/venue";
+import { InvalidExpiryError, getVenueCore } from "@hapiecoin/venues/core";
+import { currentVenueId } from "@/lib/venue";
 import type { StrategyLeg } from "./legs";
 
 export interface ParsedSymbol {
@@ -17,9 +17,9 @@ export interface ParsedSymbol {
 
 const isAsset = (s: string): s is Underlying => (UNDERLYINGS as readonly string[]).includes(s);
 
-/** `C-BTC-80000-250926` → call BTC 80000 2026-09-25; `BTCUSD` → the perpetual; null for anything else, including an underlying the app does not list and an impossible calendar date (the port's codec, ADR-064). */
-export function parseVenueSymbol(symbol: string): ParsedSymbol | null {
-  const { symbols } = currentVenue();
+/** `C-BTC-80000-250926` → call BTC 80000 2026-09-25; `BTCUSD` → the perpetual; null for anything else, including an underlying the app does not list and an impossible calendar date (the port's codec of `venue`, ADR-064; the workspace venue by default). */
+export function parseVenueSymbol(symbol: string, venue: string = currentVenueId()): ParsedSymbol | null {
+  const { symbols } = getVenueCore(venue);
   const perp = symbols.parsePerpetual(symbol);
   if (perp !== null) return isAsset(perp) ? { kind: "future", asset: perp, strike: "0", expiry: "" } : null;
   if (!symbols.isOption(symbol)) return null;
@@ -43,9 +43,9 @@ export function lotsFor(contracts: number, contractValue: string, lotSize: strin
 }
 
 /** A position as a Builder-style leg at its entry price; null when the symbol, size or sizing is unusable. */
-export function positionToLeg(p: LivePosition, lotSize: string): StrategyLeg | null {
+export function positionToLeg(p: LivePosition, lotSize: string, venue?: string): StrategyLeg | null {
   if (!p.symbol || p.size === 0 || !p.entryPrice || !p.contractValue) return null;
-  const parsed = parseVenueSymbol(p.symbol);
+  const parsed = parseVenueSymbol(p.symbol, venue);
   if (!parsed) return null;
   const lots = lotsFor(Math.abs(p.size), p.contractValue, lotSize);
   if (lots === null) return null;

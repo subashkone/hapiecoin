@@ -38,6 +38,8 @@ export interface TradeModeProps {
   /** The account a strategy already trades through (Go live from paper): preselected. */
   initialAccountId?: string | null | undefined;
   connected: boolean;
+  /** The plain sentence that blocks Live on a data-only venue (ADR-067 / ADR-069); null on a trading venue. */
+  dataOnly?: string | null | undefined;
   priceModeLabel: string;
   /** Preselect Live and disable the Paper card (Go live from a paper strategy). */
   lockLive?: boolean | undefined;
@@ -87,7 +89,7 @@ export function TradeModeDialog(p: TradeModeProps) {
   const fees = feeFor(p.legs, p.spot ?? 0, p.lotSize, broker);
   const np = netPremium(p.legs, p.lotSize);
   const live = mode === "live";
-  const liveBlocked = live && !p.connected;
+  const liveBlocked = live && (!p.connected || Boolean(p.dataOnly));
   return (
     <Dialog open={p.open} onOpenChange={p.onOpenChange}>
       <DialogContent className="sm:max-w-[560px]" data-testid="trade-mode">
@@ -152,7 +154,12 @@ export function TradeModeDialog(p: TradeModeProps) {
             <dt className="text-muted-foreground">Price mode</dt>
             <dd>{p.priceModeLabel}</dd>
           </dl>
-          {live && !p.connected ? (
+          {live && p.dataOnly ? (
+            <div className="mt-3 rounded border border-warning/40 bg-warning-bg p-2 text-2xs" data-testid="trade-data-only">
+              <b>Data-only venue</b>
+              <div>{p.dataOnly}</div>
+            </div>
+          ) : live && !p.connected ? (
             <div className="mt-3 rounded border border-warning/40 bg-warning-bg p-2 text-2xs" data-testid="trade-not-connected">
               <b>Not Connected</b>
               <div>Connect your exchange in Settings → API Settings to enable live trading</div>
@@ -180,7 +187,7 @@ export function TradeModeDialog(p: TradeModeProps) {
           </Button>
           <Button
             disabled={liveBlocked}
-            title={liveBlocked ? "Connect your exchange first" : undefined}
+            title={liveBlocked ? (p.dataOnly ?? "Connect your exchange first") : undefined}
             onClick={() => {
               if (!brokerId) {
                 setErr(true);

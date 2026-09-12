@@ -100,6 +100,9 @@ describe("HC-SH-120 [API] the venue column", () => {
     expect(b.venue).toBe("deribit");
     const s = await json<Strategy>(await t.request("/v1/strategies", { cookie: alice, json: { name: "Deribit paper", asset: "BTC", venue: "deribit", legs: [{ ...CALL, symbol: "BTC-25SEP26-80000-C" }] } }));
     expect(s.venue).toBe("deribit");
+    const gold = await t.request("/v1/strategies", { cookie: alice, json: { name: "Gold on Deribit", asset: "XAUT", venue: "deribit", legs: [{ ...CALL, symbol: "XAUT-25SEP26-4000-C" }] } });
+    expect(gold.status).toBe(400); // HC-SH-124 / ADR-069: an asset the venue does not list is refused
+    expect((await json<{ message: string }>(gold)).message).toContain("not listed on Deribit");
     expect((await t.request(`/v1/strategies/${s.id}/start`, { cookie: alice, json: { mode: "paper", brokerId: b.id, entries: {} } })).status).toBe(200);
     const keys = await t.request("/v1/credentials", { cookie: alice, json: { brokerId: b.id, apiKey: "k", apiSecret: "s" } });
     expect(keys.status).toBe(409);
