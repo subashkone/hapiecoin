@@ -143,3 +143,32 @@ test.describe("HC-SH settings dialogs persist through the API", () => {
     await expect(page.getByTestId("account-menu")).toContainText("Asha T.");
   });
 });
+
+test.describe("HC-SH-127 public page settings", () => {
+  test("HC-SH-127 choose a handle, switch the page on, get the link and the share bar; the page opens", async ({ page, request }) => {
+    await seedUser(request, { email: "asha@example.com", connected: true, fills: true });
+    await signIn(page, "asha@example.com");
+    await page.getByTestId("settings-gear").click();
+    await page.getByTestId("menu-public").click();
+    const dialog = page.getByTestId("public-dialog");
+    await expect(dialog.getByTestId("public-off-note")).toContainText("Choose a handle and save");
+    await expect(dialog.getByTestId("public-enabled")).toBeDisabled();
+    await dialog.getByTestId("public-handle").fill("Asha_Trades");
+    await expect(dialog.getByTestId("public-enabled")).toBeEnabled();
+    await dialog.getByTestId("public-enabled").click();
+    await dialog.getByTestId("public-showDays").click();
+    await dialog.getByTestId("public-save").click();
+    await expect(page.getByText("Public page is on")).toBeVisible();
+    await expect(dialog.getByTestId("public-link")).toHaveValue(/\/t\/asha_trades$/);
+    await expect(dialog.getByTestId("share-x")).toHaveAttribute("href", /twitter\.com\/intent\/tweet\?text=.*asha_trades/);
+    await expect(dialog.getByTestId("share-telegram")).toHaveAttribute("href", /t\.me\/share\/url\?url=.*asha_trades/);
+    const link = await dialog.getByTestId("public-link").inputValue();
+    // the page itself, in the same browser: the trader's own figures net of fees
+    await page.goto(link);
+    await expect(page).toHaveTitle(/Asha Trader · Verified P&L/);
+    await expect(page.getByTestId("trader-page")).toHaveAttribute("data-state", "ready");
+    await expect(page.getByTestId("trader-total")).toHaveText("+$1.65");
+    await expect(page.getByTestId("trader-days")).toHaveAttribute("data-count", "2");
+    await expect(page.getByTestId("trader-accounts")).toHaveCount(0); // not turned on
+  });
+});

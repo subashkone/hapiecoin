@@ -31,6 +31,8 @@ export interface SeedOptions {
   telegram?: boolean;
   /** Seed a closed round trip of exchange fills on the Main key for the verified P&L block (ADR-073); needs `connected`. */
   fills?: boolean;
+  /** Turn the public trader page on at this handle with every section shown (ADR-075). */
+  publicHandle?: string;
 }
 
 export async function seedUser(request: APIRequestContext, opts: SeedOptions) {

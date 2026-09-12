@@ -732,3 +732,21 @@ export const fillWatermarks = pgTable("fill_watermarks", {
   error: text("error"),
   updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
 });
+
+/** The public trader page (ADR-075): a handle and what the page discloses; off until the trader turns it on. */
+export const traderPages = pgTable(
+  "trader_pages",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Lower-case, unique across users; null until chosen. */
+    handle: text("handle"),
+    enabled: boolean("enabled").notNull().default(false),
+    showDays: boolean("show_days").notNull().default(false),
+    showAccounts: boolean("show_accounts").notNull().default(false),
+    showMonths: boolean("show_months").notNull().default(false),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("trader_pages_handle_uq").on(t.handle)],
+);
