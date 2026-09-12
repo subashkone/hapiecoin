@@ -9,7 +9,8 @@ import { useCallback, useMemo, useState, useEffect } from "react";
 import { strategyKeys, useCreateStrategy, useDeleteStrategy, useStrategies } from "@/lib/api/strategies";
 import { useAccountPositions, useLiveRetry, useLiveSync } from "@/lib/api/live";
 import { type AccountRef, accountKey, accountLabel, accountRefOf } from "@/lib/accounts";
-import { useBrokers, useCredential } from "@/lib/api/queries";
+import { useBrokers, useCredential, useSettings } from "@/lib/api/queries";
+import { type MindfulPauseInfo, mindfulFor } from "@/lib/strategy/mindful";
 import { BatchLiveDialog } from "./BatchLiveDialog";
 import { NetPositionsPanel } from "./NetPositionsPanel";
 import { ReconcileDialog, driftTitle } from "./ReconcileDialog";
@@ -91,6 +92,9 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const sync = useLiveSync();
   const { data: brokers } = useBrokers();
   const { data: credential } = useCredential();
+  const { data: settings } = useSettings();
+  // HC-TR-182: the Mindful pause for Trade All → Live is decided when the dialog opens and holds while it is open
+  const [batchMindful, setBatchMindful] = useState<MindfulPauseInfo | null>(null);
   const connected = (credential?.items.length ?? 0) > 0;
   const openTrade = useUiStore((s) => s.openTrade);
   const paneSource = useUiStore((s) => s.paneSource);
@@ -252,7 +256,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
           Refresh
         </Button>
         {kind === "paper" ? (
-          <Button size="sm" variant="outline" className="ml-auto" disabled={all.length === 0} title={all.length ? "Place every open paper strategy as live orders (batch selector)" : "No paper strategies"} onClick={() => setBatch(true)} data-testid="trade-all-live">
+          <Button size="sm" variant="outline" className="ml-auto" disabled={all.length === 0} title={all.length ? "Place every open paper strategy as live orders (batch selector)" : "No paper strategies"} onClick={() => { setBatchMindful(mindfulFor(settings?.mindful, data, book)); setBatch(true); }} data-testid="trade-all-live">
             Trade All → Live
           </Button>
         ) : (
@@ -416,7 +420,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
           </div>
         )}
       </div>
-      {kind === "paper" ? <BatchLiveDialog open={batch} onOpenChange={setBatch} strategies={batchStrategies} brokers={batchBrokers} accounts={accounts} connected={connected} money={money} totalOf={(s) => book.pnlOf(s).total} /> : null}
+      {kind === "paper" ? <BatchLiveDialog open={batch} onOpenChange={(o) => { setBatch(o); if (!o) setBatchMindful(null); }} strategies={batchStrategies} brokers={batchBrokers} accounts={accounts} connected={connected} money={money} totalOf={(s) => book.pnlOf(s).total} mindful={batchMindful} /> : null}
       <ReconcileDialog strategy={reconciling} rows={reconciling ? (drift.get(reconciling.id) ?? []) : []} markOf={venueMarkOf} onOpenChange={(o) => { if (!o) { setReconcileId(null); void refetch(); void wallet.refetch(); } }} />
       {stopping ? <StopPaperDialog open={true} onOpenChange={(o) => !o && setStopId(null)} strategy={stopping} priceOf={(l) => book.priceOf(stopping, l)} total={book.pnlOf(stopping).total} money={money} live={feedLive} onDone={() => void qc.invalidateQueries({ queryKey: strategyKeys.all })} /> : null}
     </section>

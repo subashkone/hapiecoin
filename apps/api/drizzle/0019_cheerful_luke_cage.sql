@@ -1,0 +1,1 @@
+ALTER TABLE "user_settings" ADD COLUMN "mindful" jsonb DEFAULT '{"enabled":true,"thresholdUsd":"0","pauseSeconds":30}'::jsonb NOT NULL;

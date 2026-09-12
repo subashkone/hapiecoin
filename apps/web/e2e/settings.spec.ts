@@ -49,6 +49,28 @@ test.describe("HC-SH settings dialogs persist through the API", () => {
     await expect(page.getByTestId("menu-pnl")).toContainText("bid/ask");
   });
 
+  test("HC-TR-183 Mindful trading settings persist and show in the menu (ADR-074)", async ({ page }) => {
+    await page.getByTestId("settings-gear").click();
+    await expect(page.getByTestId("menu-mindful")).toContainText("30 s");
+    await page.getByTestId("menu-mindful").click();
+    await expect(page.getByTestId("mindful-threshold")).toHaveValue("0");
+    await page.getByTestId("mindful-threshold").fill("25");
+    await page.getByTestId("mindful-seconds").fill("60");
+    await page.getByTestId("mindful-save").click();
+    await expect(page.getByText("Mindful trading saved")).toBeVisible();
+    await page.reload();
+    await page.getByTestId("settings-gear").click();
+    await expect(page.getByTestId("menu-mindful")).toContainText("60 s");
+    await page.getByTestId("menu-mindful").click();
+    await expect(page.getByTestId("mindful-threshold")).toHaveValue("25");
+    await page.getByTestId("mindful-enabled").click();
+    await expect(page.getByTestId("mindful-off-note")).toBeVisible();
+    await page.getByTestId("mindful-save").click();
+    await page.reload();
+    await page.getByTestId("settings-gear").click();
+    await expect(page.getByTestId("menu-mindful")).toContainText("off");
+  });
+
   test("HC-SH-046..049 exchange management: add, edit, delete", async ({ page }) => {
     await page.getByTestId("settings-gear").click();
     await page.getByTestId("menu-exchanges").click();

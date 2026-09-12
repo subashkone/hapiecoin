@@ -10,6 +10,7 @@ import { FakeSocket, installMockFetch, makeQueryClient, renderWithProviders, typ
 import { buildChain } from "../../../test/fixtures/chain";
 import { useUiStore } from "@/lib/store";
 import { Workspace } from "@/components/workspace/Workspace";
+import { setMindfulTickMsForTests } from "./MindfulPause";
 
 const EXPIRY = "2026-09-25";
 const TOPIC = chainTopic("delta_india", "BTC", EXPIRY);
@@ -148,6 +149,130 @@ describe("HC-TR-083 refused orders and Retry", () => {
     await waitFor(() => expect(mine()[0]!.orders[0]).toMatchObject({ state: "filled", attempts: 2 }));
     await waitFor(() => expect(within(panel()).queryByTestId("failed-banner")).toBeNull());
     expect(within(panel()).getByTestId("order-chip").dataset["state"]).toBe("filled");
+  });
+});
+
+describe("HC-TR-182 Mindful pause before a live order when down on the day (ADR-074)", () => {
+  // the schema's shortest pause is 10 s; a test second is 100 ms
+  beforeEach(() => setMindfulTickMsForTests(100));
+  afterEach(() => setMindfulTickMsForTests(null));
+  /** A live strategy that stood at 5,000 by an earlier point and holds far less now: down on the day whatever the mark. */
+  const downToday = () => strat(9, { name: "Down today", status: "live", tradingMode: "live", pnlHistory: [{ day: "2026-09-01", pnl: "5000" }] });
+  /** The Builder's live path up to the exchange preview (the HC-TR-055 dance). */
+  async function toLivePreview(u: ReturnType<typeof userEvent.setup>) {
+    await u.click(screen.getByTestId("builder-paper-trade"));
+    const mode = screen.getByTestId("trade-mode");
+    await waitFor(() => expect(within(mode).getByTestId<HTMLSelectElement>("trade-broker").value).toBe("brk_delta"));
+    await waitFor(() => expect(within(mode).getByTestId("mode-live").hasAttribute("disabled")).toBe(false));
+    await u.click(within(mode).getByTestId("mode-live"));
+    await u.click(within(mode).getByTestId("trade-continue"));
+    const name = screen.getByTestId("save-draft-dialog");
+    await u.clear(within(name).getByTestId("save-draft-name"));
+    await u.type(within(name).getByTestId("save-draft-name"), "After the pause");
+    await u.click(within(name).getByTestId("save-draft-confirm"));
+    return screen.findByTestId("trade-preview");
+  }
+  function addBuilderLeg() {
+    const atm = rows.findIndex((r) => Number(r.strike) >= 79521);
+    const call = rows[atm]!;
+    useUiStore.getState().addLeg({ asset: "BTC", kind: "call", side: "buy", strike: call.strike, expiry: EXPIRY, lots: 10, price: call.call!.mark, iv: call.call!.markIv });
+    useUiStore.setState({ workspaceTab: "builder" });
+  }
+
+  it("shows today's live loss, this order's worst case and a countdown in place of the Place button; the button returns when the pause ends", async () => {
+    connect();
+    acc().settings.mindful = { enabled: true, thresholdUsd: "0", pauseSeconds: 10 };
+    mine().push(downToday());
+    addBuilderLeg();
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    const u = userEvent.setup();
+    const preview = await toLivePreview(u);
+    const pause = await within(preview).findByTestId("mindful-pause");
+    expect(within(pause).getByTestId("mindful-day-pnl").textContent).toMatch(/^−\$[\d,]+\.\d\d$/);
+    expect(within(pause).getByTestId("mindful-at-risk").textContent).toMatch(/^−\$[\d,]+\.\d\d$/); // a bought call: the premium
+    expect(within(pause).getByTestId("mindful-basis").textContent).toBe("1 live strategy · since 05:30 IST (00:00 UTC)");
+    expect(within(pause).getByTestId("mindful-copy").textContent).toContain("Take 10 seconds. Nothing is blocked");
+    expect(within(preview).queryByTestId("trade-now")).toBeNull();
+    const countdown = within(preview).getByTestId("mindful-countdown");
+    expect(countdown.hasAttribute("disabled")).toBe(true);
+    // a test second is 100 ms, so a tick may already have passed under load: the count is between 1 and 10
+    expect(Number(countdown.dataset["left"])).toBeGreaterThan(0);
+    expect(Number(countdown.dataset["left"])).toBeLessThanOrEqual(10);
+    expect(countdown.textContent).toMatch(/Pause · \d+ s/);
+    await waitFor(() => expect(within(preview).queryByTestId("trade-now")).not.toBeNull(), { timeout: 5000 });
+    expect(within(preview).queryByTestId("mindful-countdown")).toBeNull();
+    expect(within(pause).getByTestId("mindful-copy").textContent).toContain("The pause has ended");
+    await u.click(within(preview).getByTestId("trade-now"));
+    await waitFor(() => expect(mine().some((x) => x.name === "After the pause" && x.status === "live")).toBe(true));
+  });
+
+  it("never pauses when the pause is off (a wider threshold is the same rule, unit-tested)", async () => {
+    connect();
+    acc().settings.mindful = { enabled: false, thresholdUsd: "0", pauseSeconds: 10 };
+    mine().push(downToday());
+    addBuilderLeg();
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    const u = userEvent.setup();
+    const preview = await toLivePreview(u);
+    expect(within(preview).queryByTestId("mindful-pause")).toBeNull();
+    expect(within(preview).getByTestId("trade-now").textContent).toContain("Place live orders");
+    await u.click(within(preview).getByTestId("trade-now"));
+    await waitFor(() => expect(mine().some((x) => x.name === "After the pause" && x.status === "live")).toBe(true));
+  });
+
+  it("never pauses on a guess: a live leg the chain has not priced leaves the day unknown and the preview unpaused", async () => {
+    connect();
+    acc().settings.mindful = { enabled: true, thresholdUsd: "0", pauseSeconds: 10 };
+    mine().push(strat(9, { name: "Unpriced", status: "live", tradingMode: "live", legs: [{ ...CALL, id: "leg_9", strike: "123456", symbol: "C-BTC-123456-250926" }], pnlHistory: [{ day: "2026-09-01", pnl: "5000" }] }));
+    addBuilderLeg();
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    const u = userEvent.setup();
+    const preview = await toLivePreview(u);
+    expect(within(preview).queryByTestId("mindful-pause")).toBeNull();
+    expect(within(preview).getByTestId("trade-now").textContent).toContain("Place live orders");
+  });
+
+  it("never pauses a paper trade, however the day went", async () => {
+    connect();
+    acc().settings.mindful = { enabled: true, thresholdUsd: "0", pauseSeconds: 10 };
+    mine().push(downToday());
+    addBuilderLeg();
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    const u = userEvent.setup();
+    await u.click(screen.getByTestId("builder-paper-trade"));
+    const mode = screen.getByTestId("trade-mode");
+    await waitFor(() => expect(within(mode).getByTestId("mode-live").hasAttribute("disabled")).toBe(false));
+    await u.click(within(mode).getByTestId("trade-continue")); // paper
+    const paper = await screen.findByTestId("trade-preview");
+    expect(within(paper).queryByTestId("mindful-pause")).toBeNull();
+    expect(within(paper).getByTestId("trade-now").textContent).toContain("Trade now");
+  });
+
+  it("pauses Trade All → Live the same way, with the batch button returning after the countdown", async () => {
+    connect();
+    acc().settings.mindful = { enabled: true, thresholdUsd: "0", pauseSeconds: 10 };
+    mine().push(strat(1), downToday());
+    renderWithProviders(<Workspace />);
+    const u = userEvent.setup();
+    await waitFor(() => expect(screen.getAllByTestId("paper-card")).toHaveLength(1));
+    serveMarket(); // after the cards: the book's leg quotes are subscribed by then, so the live leg is priced and the day is known
+    await u.click(screen.getByTestId("trade-all-live"));
+    const dlg = screen.getByTestId("batch-live");
+    const pause = await within(dlg).findByTestId("mindful-pause");
+    expect(within(pause).getByTestId("mindful-at-risk").textContent).toContain("each strategy's own worst case");
+    expect(within(dlg).queryByTestId("batch-go")).toBeNull();
+    expect(within(dlg).getByTestId("mindful-countdown").hasAttribute("disabled")).toBe(true);
+    // a tick that lifts the day above zero mid-pause does not cut the pause short: the decision was made when the dialog opened
+    const lifted = rows.map((r) => (r.strike === "80000" && r.call ? { ...r, call: { ...r.call, mark: "600000" } } : r));
+    act(() => FakeSocket.last().receive({ t: "snap", topic: TOPIC, seq: 1, rows: lifted }));
+    expect(within(dlg).getByTestId("mindful-countdown")).toBeTruthy();
+    expect(within(dlg).queryByTestId("batch-go")).toBeNull();
+    await waitFor(() => expect(within(dlg).queryByTestId("batch-go")).not.toBeNull(), { timeout: 5000 });
+    expect(within(dlg).getByTestId("batch-go").textContent).toContain("Trade 1 strategy live");
   });
 });
 

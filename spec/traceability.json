@@ -7138,6 +7138,34 @@
   "evidence": "ADR-072: WizardPanel.tsx use(), components/shell/CommandPalette.tsx act:builder-wizard, components/workspace/Workspace.tsx registerShortcut W, lib/assistant.ts; unit builder.test.tsx HC-TR-178, shell.test.tsx, workspace.test.tsx, assistant.test.ts; e2e analyse.spec.ts HC-TR-176..178"
  },
  {
+  "id": "HC-TR-179",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · live entry",
+  "feature": "Mindful pause before a live order when down on the day",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright) · api contract · security",
+  "acceptance": "When today's live P&L (live strategies at their day move, live trades closed today included; the UTC day, shown as since 05:30 IST) is below the trader's threshold, the live Trade Preview and the Trade All → Live dialog show a block with today's live P&L, this order's worst case (the preview's capital at risk) and the exchange's margin in use, the basis line naming what is counted, and 'Nothing is blocked: the button returns when the pause ends'; the Place / batch button is replaced in place by a disabled countdown for the chosen seconds, then returns; decided once per flow when the preview opens; never on paper trades, adjustments, exits or square-offs; browser-side (GAPS #90)",
+  "evidence": "ADR-074 (12 Sep 2026): apps/web lib/strategy/mindful.ts (liveDayPnl, shouldPause, mindfulFor), components/trading/MindfulPause.tsx, TradePreviewDialog.tsx, BatchLiveDialog.tsx, TradeFlow.tsx latch; unit mindful.test.ts, trading-live.test.tsx HC-TR-182"
+ },
+ {
+  "id": "HC-TR-180",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Settings · Mindful trading",
+  "feature": "Mindful trading preference: on / off, threshold, seconds",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing) · e2e (Playwright)",
+  "acceptance": "UserSettings.mindful { enabled, thresholdUsd, pauseSeconds } (defaults on, any loss, 30 s; 10–300 s; defaulted so an older client's PUT keeps validating; jsonb column with the same default); the Mindful trading dialog from the settings menu (the row reads '30 s' or 'off'), the palette ('Open Mindful trading') and the bar's Day P&L tile; switching it off shows 'The pause is there for the day you most want to skip it'",
+  "evidence": "ADR-074: packages/schema accounts.ts MindfulSettings, apps/api db/schema.ts + drizzle migration, routes/settings.ts; apps/web components/dialogs/MindfulDialog.tsx, SettingsDialogs.tsx, header/AppHeader.tsx menu-mindful, shell/CommandPalette.tsx set:mindful, chrome/PortfolioBar.tsx bar-day-pnl; unit accounts.test.ts, settings.test.ts (api), dialogs.test.tsx, shell.test.tsx; e2e settings.spec.ts HC-TR-183"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

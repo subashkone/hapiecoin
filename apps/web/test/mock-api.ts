@@ -139,6 +139,7 @@ function defaultSettings(): UserSettings {
     lotSizes: { BTC: "0.001", ETH: "0.01", XAUT: "0.001" },
     theme: "dark",
     density: "comfortable",
+    mindful: { enabled: true, thresholdUsd: "0", pauseSeconds: 30 },
   };
 }
 

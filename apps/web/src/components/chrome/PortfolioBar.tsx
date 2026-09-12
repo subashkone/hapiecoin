@@ -79,10 +79,10 @@ export function PortfolioBar() {
           </>
         ) : null}
       </button>
-      <span className={cn(item, "hover:bg-transparent")} title="Today's P&L across the open strategies" data-testid="bar-day-pnl">
+      <button type="button" className={item} onClick={() => openDialog("mindful")} title="Today's P&L across the open strategies · click for Mindful trading" data-testid="bar-day-pnl">
         <span className="micro">Day P&amp;L</span>
         <b className={cn("num", signed(day))}>{active.length ? fmtMoney(day, money, { signed: true }) : "—"}</b>
-      </span>
+      </button>
       <button type="button" className={item} onClick={() => openAlerts()} title="Open the Alerts center" data-testid="bar-alerts" data-triggered={counts.triggered}>
         <span className="micro">Alerts</span>
         <b>{counts.armed} armed</b>

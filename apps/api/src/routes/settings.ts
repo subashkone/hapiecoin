@@ -1,5 +1,5 @@
-/** Per-user preferences (HC-SH-038..044): currency + conversion rate, P&L basis, lot sizes, theme, density. */
-import { UNDERLYINGS, type Underlying, UserSettings } from "@hapiecoin/schema";
+/** Per-user preferences (HC-SH-038..044, HC-TR-183): currency + conversion rate, P&L basis, lot sizes, theme, density, the Mindful pause. */
+import { DEFAULT_MINDFUL, MindfulSettings, UNDERLYINGS, type Underlying, UserSettings } from "@hapiecoin/schema";
 import { DEFAULT_VENUE, defaultLotSizes, getVenue } from "@hapiecoin/venues";
 import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
 import { eq } from "drizzle-orm";
@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   lotSizes: defaultLotSizes(getVenue(DEFAULT_VENUE)), // ADR-063: the venue's contract sizes
   theme: "dark",
   density: "comfortable",
+  mindful: DEFAULT_MINDFUL, // ADR-074: on, any loss, 30 s
 };
 
 type Row = typeof userSettings.$inferSelect;
@@ -32,6 +33,8 @@ export function toSettings(row: Row): UserSettings {
     lotSizes,
     theme: row.theme,
     density: row.density,
+    // a row from before the column, or one hand-edited out of shape, reads as the default
+    mindful: MindfulSettings.safeParse(row.mindful).success ? row.mindful : DEFAULT_MINDFUL,
   };
 }
 
