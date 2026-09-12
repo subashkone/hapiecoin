@@ -11,6 +11,7 @@
  *   DELETE /v2/orders                       { id, product_id }
  *   GET    /v2/positions/margined
  *   GET    /v2/wallet/balances
+ *   GET    /v2/fills?page_size=&after=      the account's fills, newest first, cursor-paged (read-only; verified P&L, ADR-073)
  *
  * Signing (docs "Authentication"): signature = hex(HMAC_SHA256(secret, method + timestamp + path + query + body)),
  * headers api-key / timestamp / signature / User-Agent; Delta rejects timestamps older than 5 s.
@@ -110,6 +111,37 @@ export interface VenueOrder {
   averageFillPrice: string | null;
 }
 
+/** One fill as the venue reports it (ADR-073): the trader's own trades, whether or not HapieCoin placed the order. */
+export interface VenueFill {
+  /** The venue's fill id, unique per account. */
+  id: string;
+  orderId: string | null;
+  productId: number;
+  symbol: string | null;
+  side: OrderSide;
+  /** Contracts. */
+  size: number;
+  /** Decimal string, the venue's quote unit. */
+  price: string;
+  /** Decimal string in the settling asset; "0" when the venue reports none. */
+  commission: string;
+  role: string | null;
+  /** ISO instant. */
+  filledAt: string;
+  /** The venue's row as received (every field, for the first real shape and later disputes). */
+  raw: unknown;
+}
+export interface FillsPage {
+  fills: VenueFill[];
+  /** Cursor for the next (older) page; null on the last page. */
+  after: string | null;
+}
+export interface ListFillsOptions {
+  after?: string | null | undefined;
+  /** 1..100 (the venue's page cap). */
+  pageSize?: number | undefined;
+}
+
 export interface VenueProduct {
   id: number;
   symbol: string;
@@ -162,6 +194,8 @@ export interface DeltaTradingClient {
   cancelOrder(creds: DeltaCredentials, orderId: number, productId: number): Promise<boolean>;
   getPositions(creds: DeltaCredentials): Promise<VenuePosition[]>;
   getBalances(creds: DeltaCredentials): Promise<VenueBalance[]>;
+  /** The account's fills, newest first, one page per call; throws DeltaApiError when the venue does not answer or answers badly. */
+  listFills(creds: DeltaCredentials, opts?: ListFillsOptions): Promise<FillsPage>;
 }
 
 /** Contracts for `lots` of `lotSize` units when one contract is `contractValue` units; null unless a whole number ≥ 1. */
@@ -207,7 +241,38 @@ const RawBalance = z.object({
   balance: z.union([z.string(), z.number()]),
   available_balance: z.union([z.string(), z.number()]).optional(),
 });
-const Envelope = z.object({ success: z.boolean(), result: z.unknown().optional(), error: z.object({ code: z.string().optional(), context: z.unknown().optional() }).optional() });
+const Envelope = z.object({
+  success: z.boolean(),
+  result: z.unknown().optional(),
+  error: z.object({ code: z.string().optional(), context: z.unknown().optional() }).optional(),
+  /** Cursor paging (fills): `after` names the next page. */
+  meta: z.object({ after: z.string().nullable().optional(), before: z.string().nullable().optional() }).passthrough().optional(),
+});
+// a fill as documented; tolerant of extra fields and of numbers arriving as strings (the first live read settles the exact shape, GAPS #89)
+const RawFill = z
+  .object({
+    id: z.union([z.number(), z.string()]),
+    size: z.union([z.number(), z.string()]),
+    price: z.union([z.string(), z.number()]),
+    side: z.enum(["buy", "sell"]),
+    product_id: z.number(),
+    product_symbol: z.string().nullable().optional(),
+    order_id: z.union([z.number(), z.string()]).nullable().optional(),
+    role: z.string().nullable().optional(),
+    commission: z.union([z.string(), z.number()]).nullable().optional(),
+    /** ISO text, or an epoch in seconds, milliseconds or microseconds. */
+    created_at: z.union([z.string(), z.number()]),
+  })
+  .passthrough();
+/** An epoch of any of the usual units to an ISO instant; ISO text passes through. */
+export function fillInstant(v: string | number): string {
+  if (typeof v === "string") return v;
+  const ms = v > 1e14 ? v / 1000 : v > 1e11 ? v : v * 1000;
+  return new Date(ms).toISOString();
+}
+function toFill(r: z.infer<typeof RawFill>): VenueFill {
+  return { id: String(r.id), orderId: r.order_id === null || r.order_id === undefined ? null : String(r.order_id), productId: r.product_id, symbol: r.product_symbol ?? null, side: r.side, size: Number(r.size), price: String(r.price), commission: dec(r.commission) ?? "0", role: r.role ?? null, filledAt: fillInstant(r.created_at), raw: r };
+}
 
 function dec(v: string | number | null | undefined): string | null {
   return v === null || v === undefined ? null : String(v);
@@ -348,6 +413,18 @@ export class DeltaTradingClientImpl implements DeltaTradingClient {
     if (!parsed.success) return [];
     return parsed.data.map((b) => ({ asset: b.asset_symbol, balance: String(b.balance), availableBalance: String(b.available_balance ?? b.balance) }));
   }
+
+  /** Read-only. Like positions, an unreadable page throws: "no fills" and "could not read fills" must never look alike. */
+  async listFills(creds: DeltaCredentials, opts: ListFillsOptions = {}): Promise<FillsPage> {
+    const size = Math.min(100, Math.max(1, opts.pageSize ?? 100));
+    const query = `page_size=${size}${opts.after ? `&after=${encodeURIComponent(opts.after)}` : ""}`;
+    const res = await this.call(creds, "GET", "/v2/fills", query);
+    if ("transport" in res) throw new DeltaApiError("/v2/fills", "fills_unavailable", { transport: true });
+    if (!res.json?.success) throw new DeltaApiError("/v2/fills", "fills_unavailable", { status: res.status, code: res.json?.error?.code });
+    const parsed = z.array(RawFill).safeParse(res.json.result);
+    if (!parsed.success) throw new DeltaApiError("/v2/fills", "fills_unavailable", { parse: true, keys: Array.isArray(res.json.result) && res.json.result[0] && typeof res.json.result[0] === "object" ? Object.keys(res.json.result[0] as object) : [] });
+    return { fills: parsed.data.map(toFill), after: res.json.meta?.after ?? null };
+  }
 }
 
 export function describeOrderError(code: string, context?: unknown): string {
@@ -482,5 +559,30 @@ export class FakeDeltaTradingClient implements DeltaTradingClient {
   }
   getBalances(): Promise<VenueBalance[]> {
     return Promise.resolve(this.balances);
+  }
+  /** Fills the fake venue reports, newest first, keyed by the key that reads them (a sub-account sees only its own). */
+  private readonly fillsByKey = new Map<string, VenueFill[]>();
+  /** Test knob: the venue does not answer the fills read. */
+  fillsDown = false;
+  /** Record a fill for the account behind `apiKey`; defaults make a filled BTC option trade. */
+  addFill(apiKey: string, fill: Partial<VenueFill> & { productId: number; side: OrderSide; size: number; price: string }): VenueFill {
+    const list = this.fillsByKey.get(apiKey) ?? [];
+    const id = fill.id ?? `fill_${apiKey}_${list.length + 1}`;
+    const filledAt = fill.filledAt ?? new Date(Date.UTC(2026, 8, 12, 9, list.length)).toISOString();
+    const symbol = fill.symbol ?? [...this.productsBySymbol.values()].find((p) => p.id === fill.productId)?.symbol ?? null;
+    // the fake's "venue row" is spelt like the documented one, so the stored raw rows look like a real read
+    const raw = fill.raw ?? { id, size: fill.size, price: fill.price, side: fill.side, product_id: fill.productId, product_symbol: symbol, commission: fill.commission ?? "0", role: fill.role ?? "taker", created_at: filledAt };
+    const full: VenueFill = { id, orderId: fill.orderId ?? null, symbol, commission: fill.commission ?? "0", role: fill.role ?? "taker", filledAt, productId: fill.productId, side: fill.side, size: fill.size, price: fill.price, raw };
+    list.push(full);
+    this.fillsByKey.set(apiKey, list);
+    return full;
+  }
+  listFills(creds: DeltaCredentials, opts: ListFillsOptions = {}): Promise<FillsPage> {
+    if (this.fillsDown) return Promise.reject(new DeltaApiError("/v2/fills", "fills_unavailable", { transport: true, fake: true }));
+    const all = [...(this.fillsByKey.get(creds.apiKey) ?? [])].sort((a, b) => b.filledAt.localeCompare(a.filledAt));
+    const size = Math.min(100, Math.max(1, opts.pageSize ?? 100));
+    const start = opts.after ? Number(opts.after) : 0;
+    const page = all.slice(start, start + size);
+    return Promise.resolve({ fills: page, after: start + size < all.length ? String(start + size) : null });
   }
 }

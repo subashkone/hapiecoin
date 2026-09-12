@@ -675,3 +675,58 @@ export const schema = {
   instrumentMarks,
 };
 export type Schema = typeof schema;
+
+/**
+ * Fills read from the venue per account (ADR-073): the trader's own trades, whether or not HapieCoin placed them;
+ * verified P&L is computed from these alone. Disconnecting a key drops its fills (cascade); reconnecting re-reads
+ * what the venue still offers.
+ */
+export const venueFills = pgTable(
+  "venue_fills",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    accountId: text("account_id")
+      .notNull()
+      .references(() => brokerCredentials.id, { onDelete: "cascade" }),
+    /** The venue's own fill id; unique per account. */
+    venueFillId: text("venue_fill_id").notNull(),
+    orderId: text("order_id"),
+    productId: integer("product_id").notNull(),
+    symbol: text("symbol"),
+    side: text("side", { enum: ["buy", "sell"] }).notNull(),
+    /** Contracts. */
+    size: integer("size").notNull(),
+    price: text("price").notNull(),
+    commission: text("commission").notNull().default("0"),
+    role: text("role"),
+    /** The product's contract value looked up at ingest, while the product is still served; null when it was not. */
+    contractValue: text("contract_value"),
+    filledAt: timestamp("filled_at", { withTimezone: true, mode: "date" }).notNull(),
+    /** The venue's row as received (the first live read settles the exact shape; disputes read it). */
+    raw: jsonb("raw"),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("venue_fills_account_fill_uq").on(t.accountId, t.venueFillId), index("venue_fills_user_filled_idx").on(t.userId, t.filledAt)],
+);
+
+/** Where the fills read of each account stands: when it last ran, the newest fill held, what went wrong. */
+export const fillWatermarks = pgTable("fill_watermarks", {
+  accountId: text("account_id")
+    .primaryKey()
+    .references(() => brokerCredentials.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  lastReadAt: timestamp("last_read_at", { withTimezone: true, mode: "date" }).notNull(),
+  lastFillAt: timestamp("last_fill_at", { withTimezone: true, mode: "date" }),
+  fills: integer("fills").notNull().default(0),
+  /** Where an earlier walk stopped on its page cap; the next pass carries on from here (older pages). */
+  resumeAfter: text("resume_after"),
+  /** Products whose venue position is not what the held fills add up to (opened before the read, or beyond the venue's history). */
+  partialProducts: jsonb("partial_products").$type<number[]>().notNull().default(sql`'[]'::jsonb`),
+  error: text("error"),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+});

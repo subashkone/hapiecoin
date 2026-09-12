@@ -929,11 +929,24 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
 
 test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
   test.beforeEach(async ({ page, request }) => {
-    await seedUser(request, { email: "live@example.com", plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" }, connected: true });
+    await seedUser(request, { email: "live@example.com", plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" }, connected: true, fills: true });
     await signIn(page, "live@example.com");
     await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
     await page.reload();
     await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 15_000 });
+  });
+
+  test("HC-TR-181 the Journal shows the verified P&L from the exchange's fills and Refresh re-reads them (ADR-073)", async ({ page }) => {
+    await page.getByTestId("tab-journal").click();
+    const block = page.getByTestId("verified-block");
+    await expect(block).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(block).toHaveAttribute("data-fills", "2");
+    await expect(page.getByTestId("verified-total")).toHaveText("+$1.65"); // (1,500 − 1,200) × 10 × 0.001 less 1.35 of commissions
+    await expect(page.getByTestId("verified-d7")).toHaveText("+$1.65");
+    await expect(page.getByTestId("verified-commission")).toHaveText("$1.35");
+    await expect(page.getByTestId("verified-agree")).toContainText("before fees +$3.00, differs from the Journal's $0.00 by +$3.00"); // no live strategy closed in the app yet
+    await page.getByTestId("verified-refresh").click();
+    await expect(page.getByText("Fills refreshed")).toBeVisible();
   });
 
   test("HC-TR-152 a live adjustment: venue check, hold-to-place, fill states, then the history", async ({ page }) => {

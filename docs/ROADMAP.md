@@ -11,7 +11,7 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 6. ✅ Re-enter a stopped strategy from the card (one click, with preview) · shipped with A4b (HC-TR-172, PR #69)
 
 ## B. From the competitor research (docs/research/competitors-sensibull-opstra.md)
-7. ⬜ Verified P&L: P&L from Delta fills, public page per trader, share to X / Telegram, one exchange account per HapieCoin account
+7. 🔨 Verified P&L: B7a fills read per key + realised P&L from fills + the Journal block with the agreement line · BUILT on feat/verified-pnl (ADR-073; HC-TR-179..181; GAPS #89) · B7b next: public page per trader, share to X / Telegram
 8. ✅ Easy Options / Strategy Wizard: view + target + date → ranked defined-risk strategies over the templates and the fix ranking · BUILT 12 Sep 2026 on feat/strategy-wizard (ADR-072; HC-TR-176..178; GAPS #88): the Wizard sub-tab in the Builder (view chips, move % ↔ target price, expiry), three cards ranked by return on risk at the thesis with one earned tag each, Use this → Builder + payoff target, palette command and `W`
 9. ⬜ Backtest and replay on our own IV / mark snapshots (EOD strategy backtest; replay an expiry's chain)
 10. ⬜ Mindful Trading pause before a live order when down on the day

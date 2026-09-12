@@ -20,6 +20,7 @@ import { createKeyring } from "./vault.js";
 import { startIvSnapshotter } from "./iv-snapshot.js";
 import { snapshotSpotSource, startSettler } from "./settlement.js";
 import { startRulesEngine } from "./rules-engine.js";
+import { startFillsIngest } from "./verified.js";
 import { evaluateAlerts } from "./alerts-evaluate.js";
 import { TelegramBotClient } from "./telegram.js";
 import { startTelegramLinker } from "./routes/telegram.js";
@@ -127,6 +128,8 @@ if (config.rulesTickMs !== 0)
     start: () => startRulesEngine(deps, { tick: (u, v) => clients.tick(u, v) }, config.rulesTickMs),
   });
 // ADR-057: link Telegram chats through the bot's /start messages (long-polled; no public URL needed)
+// ADR-073: every account's fills re-read for the verified P&L (read-only against the venue); 0 turns it off
+if (config.fillsIngestMs !== 0) starters.push({ name: "fills-ingest", start: () => startFillsIngest(deps, config.fillsIngestMs) });
 if (deps.telegram !== null) starters.push({ name: "telegram-linker", start: () => startTelegramLinker(deps) });
 const jobs = startJobs({
   role: config.nodeEnv === "test" ? "off" : config.jobsRole,

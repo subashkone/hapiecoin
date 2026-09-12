@@ -7138,6 +7138,48 @@
   "evidence": "ADR-072: WizardPanel.tsx use(), components/shell/CommandPalette.tsx act:builder-wizard, components/workspace/Workspace.tsx registerShortcut W, lib/assistant.ts; unit builder.test.tsx HC-TR-178, shell.test.tsx, workspace.test.tsx, assistant.test.ts; e2e analyse.spec.ts HC-TR-176..178"
  },
  {
+  "id": "HC-TR-179",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · server",
+  "feature": "Fills read from the exchange per key",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api)",
+  "acceptance": "The trading client reads the account's fills (read-only, newest first, cursor-paged); a leader-only job every FILLS_INGEST_MS and the Journal's Refresh keep venue_fills per key, deduped on the venue's fill id, the venue's row kept raw; a pass stops at the first fill already held or after its page cap; a failed read is recorded on the account's watermark and shown, never thrown",
+  "evidence": "ADR-073 (12 Sep 2026): packages/venues trading.ts listFills / VenueFill / FillsPage, apps/api verified.ts ingestFills / startFillsIngest, db venue_fills + fill_watermarks, migration 0019, config FILLS_INGEST_MS, routes/verified.ts POST /v1/verified/refresh; unit verified.test.ts (api) HC-TR-179"
+ },
+ {
+  "id": "HC-TR-180",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Journal",
+  "feature": "Verified P&L: realised from the fills, per account and in total",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (schema + api)",
+  "acceptance": "Average cost per contract over the fills in time order, shorts signed, a flipping fill split, commissions off on their day, unknown products skipped and counted; GET /v1/verified/pnl answers all-time, 7-day and 30-day totals, commissions, fills and since when, per account with its last read and error, and the Journal's own realised figure with the difference",
+  "evidence": "ADR-073 (12 Sep 2026): packages/schema verified.ts verifiedFromFills / sumSince / VerifiedPnl, apps/api verified.ts computeVerified (partial products against the venue's positions, gross for the Journal comparison), routes/verified.ts GET /v1/verified/pnl; unit verified.test.ts (schema + api) HC-TR-180"
+ },
+ {
+  "id": "HC-TR-181",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Journal",
+  "feature": "The Verified P&L block on the Journal",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web), e2e",
+  "acceptance": "Above the Journal stats once a key is connected: All time / Last 7 days / Last 30 days / Commissions tiles, fills and since, an agreement line against the Journal's own figure (matches, or differs by X with why), per-account rows when there is more than one key with their errors, and Refresh, which re-reads the accounts now and reports read / new; no fills yet says so",
+  "evidence": "ADR-073 (12 Sep 2026): VerifiedPnlBlock.tsx verified-block / verified-total / verified-d7 / verified-d30 / verified-commission / verified-since / verified-agree / verified-account / verified-refresh / verified-empty, JournalPanel.tsx, lib/api/verified.ts, mock-api verified routes + seed fills; unit journal-panel.test.tsx HC-TR-181; e2e analyse.spec.ts live flow HC-TR-181"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",
