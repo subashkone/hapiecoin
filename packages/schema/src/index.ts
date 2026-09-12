@@ -18,3 +18,4 @@ export * from "./market-history.js";
 export * from "./telegram.js";
 export * from "./verified.js";
 export * from "./public-page.js";
+export * from "./backtest.js";

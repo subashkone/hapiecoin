@@ -1274,3 +1274,33 @@ test.describe("HC-SH-057..063 / HC-SH-110 assistant", () => {
     await expect(panel).toBeVisible();
   });
 });
+
+test.describe("HC-TR-185 backtest tab (ADR-077)", () => {
+  test.beforeEach(async ({ page, request }) => {
+    await seedUser(request, { email: "backtest@example.com", plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z", daysLeft: 100 } });
+    await signIn(page, "backtest@example.com");
+  });
+
+  test("HC-TR-185 a template runs over the recorded days: coverage, stats, the curve and the trades; the range and template re-run it", async ({ page }) => {
+    await page.getByTestId("analysis-tab-backtest").click();
+    const panel = page.getByTestId("backtest-panel");
+    await expect(panel).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(panel.getByTestId("backtest-coverage")).toContainText(/12 recorded days from .* · \d+ entries/);
+    await expect(panel.getByTestId("backtest-coverage")).toContainText("no fees, no slippage");
+    await expect(panel.getByTestId("backtest-total")).toHaveText(/[\d$]/);
+    await expect(panel.getByTestId("chart-backtest")).toHaveAttribute("data-state", "ready");
+    await expect(panel.getByTestId("backtest-trade").first()).toContainText(/B C \d+ · S C \d+/);
+    await panel.getByTestId("backtest-template").selectOption("Buy Call");
+    await expect(panel.getByTestId("backtest-trade").first()).toContainText(/B C \d+/);
+    await expect(panel.getByTestId("backtest-trade").first()).not.toContainText("S C");
+    await panel.getByTestId("backtest-range-7D").click();
+    await expect(panel.getByTestId("backtest-range-7D")).toHaveAttribute("aria-pressed", "true");
+    await expect(panel).toHaveAttribute("data-state", "ready");
+    // the palette opens the tab too
+    await page.getByTestId("analysis-tab-payoff").click();
+    await page.keyboard.press("Control+k");
+    await page.getByRole("combobox", { name: "Command" }).fill("backtest");
+    await page.getByRole("option", { name: "Analysis: Backtest" }).click();
+    await expect(page.getByTestId("backtest-panel")).toBeVisible();
+  });
+});

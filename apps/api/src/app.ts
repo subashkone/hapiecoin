@@ -15,6 +15,7 @@ import { registerSettingsRoutes } from "./routes/settings.js";
 import { registerLiveRoutes } from "./routes/live.js";
 import { registerVerifiedRoutes } from "./routes/verified.js";
 import { registerPublicPageRoutes } from "./routes/public-page.js";
+import { registerBacktestRoutes } from "./routes/backtest.js";
 import { registerBillingRoutes } from "./routes/billing.js";
 import { registerReferralRoutes } from "./routes/referrals.js";
 import { registerAdminUserRoutes } from "./routes/admin-users.js";
@@ -129,6 +130,7 @@ export function createApp(deps: AppDeps): OpenAPIHono<AppEnv> {
   registerAlertRoutes(app, deps);
   registerVerifiedRoutes(app, deps);
   registerPublicPageRoutes(app, deps);
+  registerBacktestRoutes(app, deps);
   registerMarketRoutes(app, deps);
   registerTelegramRoutes(app, deps);
 

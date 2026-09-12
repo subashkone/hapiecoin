@@ -769,3 +769,27 @@ export const traderPages = pgTable(
   },
   (t) => [uniqueIndex("trader_pages_handle_uq").on(t.handle)],
 );
+
+/**
+ * End-of-day option chains (ADR-077): every listed option's mark and mark IV with the spot, once a day per venue and
+ * underlying at the asset's settlement hour, kept 400 days. The backtest's ground truth: a template is placed on
+ * these ladders and settled on these spots.
+ */
+export const chainEod = pgTable(
+  "chain_eod",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    venue: text("venue", { enum: ["delta_india", "deribit"] }).notNull().default("delta_india"),
+    asset: text("asset", { enum: ["BTC", "ETH", "XAUT"] }).notNull(),
+    /** UTC calendar day, YYYY-MM-DD. */
+    day: text("day").notNull(),
+    expiry: text("expiry").notNull(),
+    strike: text("strike").notNull(),
+    kind: text("kind", { enum: ["call", "put"] }).notNull(),
+    mark: text("mark").notNull(),
+    markIv: text("mark_iv"),
+    spot: text("spot").notNull(),
+    ts: timestamp("ts", { withTimezone: true }).notNull(),
+  },
+  (t) => [uniqueIndex("chain_eod_row_uq").on(t.venue, t.asset, t.day, t.expiry, t.strike, t.kind), index("chain_eod_asset_day_idx").on(t.venue, t.asset, t.day), index("chain_eod_ts_idx").on(t.ts)],
+);

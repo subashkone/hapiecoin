@@ -5,6 +5,7 @@ import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { PublicPageSettings, AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
+import { mockBacktest } from "./mock-backtest";
 import { mockIvHistory, mockMarkHistory } from "./mock-market";
 import { DEFAULT_PUBLIC_PAGE, Handle, publicTraderFrom, AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal, type CloseReason, RulesBody, ruleLevel, MAX_ACCOUNTS_PER_BROKER, type FillLike, verifiedFromFills, sumSince, dayBack } from "@hapiecoin/schema";
 
@@ -113,6 +114,8 @@ interface PlanRecord {
 }
 
 export interface MockState {
+  /** ADR-077 test knob: recorded end-of-day days for the backtest; 0 answers 503 like the API before its first day. */
+  backtestDays: number;
   plans: Plan[];
   menuItems: MenuItem[];
   accounts: Map<string, Account>;
@@ -243,7 +246,7 @@ export function createSession(state: MockState, email: string): string {
 
 export function createMockApi(state: MockState = { plans: seedPlans(),
     menuItems: seedMenuItems(),
-    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
+    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", backtestDays: 12, ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
   const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409 | 503, code: string, message: string) =>
@@ -541,6 +544,22 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   };
   v1.get("/verified/pnl", (c) => c.json(verifiedOf(current(c)!)));
   // ADR-075: the public page settings; a handle is unique across accounts, the page cannot be on without one
+  // ADR-077: the backtest over synthetic end-of-day chains, the same engine as the API
+  v1.get("/backtest", (c) => {
+    const q = c.req.query();
+    const asset = q["asset"];
+    if (asset !== "BTC" && asset !== "ETH" && asset !== "XAUT") return err(c, 400, "BAD_REQUEST", "asset must be BTC, ETH or XAUT");
+    const lots = Number(q["lots"] ?? 10);
+    const minDte = Number(q["minDte"] ?? 7);
+    if (!Number.isInteger(lots) || lots < 1 || lots > 1000 || !Number.isInteger(minDte) || minDte < 1 || minDte > 365) return err(c, 400, "VALIDATION", "lots must be 1..1000 and minDte 1..365");
+    if (q["from"] && q["to"] && q["from"] > q["to"]) return err(c, 400, "BAD_REQUEST", "from must not be after to");
+    if (state.backtestDays === 0) return err(c, 503, "UNAVAILABLE", `no end-of-day chains recorded for ${asset} yet`);
+    const venue = q["venue"] === "deribit" ? "deribit" : "delta_india";
+    const out = mockBacktest({ asset, template: q["template"] ?? "", lots, minDte, from: q["from"], to: q["to"], days: state.backtestDays, venue });
+    if (!out) return err(c, 400, "BAD_REQUEST", `Unknown template "${q["template"] ?? ""}"`);
+    c.header("Cache-Control", "private, max-age=300");
+    return c.json(out);
+  });
   v1.get("/public-page", (c) => c.json(current(c)!.publicPage));
   v1.put("/public-page", async (c) => {
     const acc = current(c)!;
@@ -1871,6 +1890,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   /* ---------------- test hooks ---------------- */
   app.post("/__test/reset", (c) => {
     state.accounts.clear();
+    state.backtestDays = 12;
     state.commissions.length = 0;
     state.banners.length = 0;
     state.coupons.length = 0;

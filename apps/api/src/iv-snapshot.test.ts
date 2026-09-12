@@ -82,8 +82,8 @@ describe("ADR-056 atmIvByExpiry / frontExpiry", () => {
 describe("ADR-056 snapshotOnce, retention and the read side", () => {
   it("records every expiry with the front flag and every known option's mark; one failing underlying does not stop the others", async () => {
     const report = await snapshotOnce(t.deps, sourceFor(0), () => T0);
-    expect(report.assets["BTC"]).toEqual({ expiries: 2, marks: 5, spot: 79_000 });
-    expect(report.assets["ETH"]).toEqual({ expiries: 1, marks: 1, spot: 4_000 });
+    expect(report.assets["BTC"]).toEqual({ expiries: 2, marks: 5, spot: 79_000, eod: 0 }); // 06:00: before the settlement hour, no end-of-day chain (ADR-077)
+    expect(report.assets["ETH"]).toEqual({ expiries: 1, marks: 1, spot: 4_000, eod: 0 });
     expect(report.assets["XAUT"]).toEqual({ expiries: 0, marks: 0, spot: null });
     const rows = await t.db.select().from(ivSnapshots);
     expect(rows.map((r) => [r.asset, r.expiry, r.front, r.atmStrike])).toEqual([

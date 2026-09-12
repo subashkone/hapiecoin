@@ -305,6 +305,13 @@ export function buildCommands(opts: {
         keywords: ["ladder", "pnl", "price", "table"],
         run: () => useUiStore.getState().setAnalysisTab("ladder"),
       },
+      {
+        id: "act:analysis-backtest",
+        label: "Analysis: Backtest",
+        group: "Actions",
+        keywords: ["backtest", "history", "template", "eod"],
+        run: () => useUiStore.getState().setAnalysisTab("backtest"),
+      },
       ...(opts.expiries ?? []).map(
         (e): PaletteCommand => ({
           id: `act:expiry-${e}`,

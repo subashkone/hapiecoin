@@ -16,6 +16,7 @@ import { PayoffPanel } from "./PayoffPanel";
 import { ScenariosPanel } from "./ScenariosPanel";
 import { StructurePanel } from "./StructurePanel";
 import { VolPanel } from "./VolPanel";
+import { BacktestPanel } from "./BacktestPanel";
 
 export const ANALYSIS_TABS: { id: AnalysisTab; label: string; title: string }[] = [
   { id: "payoff", label: "Payoff", title: "P&L at expiry and on the target date" },
@@ -24,9 +25,10 @@ export const ANALYSIS_TABS: { id: AnalysisTab; label: string; title: string }[] 
   { id: "vol", label: "Vol", title: "IV smile and term structure across the listed strikes" },
   { id: "structure", label: "Structure", title: "Open interest, put / call ratio and gamma exposure by strike with max pain" },
   { id: "ladder", label: "Ladder", title: "P&L per price step" },
+  { id: "backtest", label: "Backtest", title: "A template entered every recorded day on our own chain history, held to expiry" },
 ];
 
-const PANELS: Record<AnalysisTab, () => ReactElement> = { payoff: PayoffPanel, scenarios: ScenariosPanel, greeks: GreeksPanel, vol: VolPanel, structure: StructurePanel, ladder: LadderPanel };
+const PANELS: Record<AnalysisTab, () => ReactElement> = { payoff: PayoffPanel, scenarios: ScenariosPanel, greeks: GreeksPanel, vol: VolPanel, structure: StructurePanel, ladder: LadderPanel, backtest: BacktestPanel };
 
 /** Whose legs the pane shows (HC-TR-143, ADR-026): Builder, a followed strategy, or ticked positions, with the way back. */
 export function PaneSourceBar() {
