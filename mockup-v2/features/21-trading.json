@@ -1617,5 +1617,25 @@
     "how": "Re-price on the resting row opens the dialog with the leg, the resting price, the mark and a New limit price field; the word LIVE is typed (the order stays a live entry that can fill); the exchange edits the same order (PUT /v2/orders), the price snapped to the product tick; a price across the market fills at once and the leg gets its entry ('Filled at the new price'), else the chip reads the new resting price ('Price moved'). A refused edit re-reads the exchange first, so a fill or cancel that beat the edit is booked before the refusal is shown",
     "evidence": "ADR-083 (13 Sep 2026): packages/venues delta/trading.ts editOrder + FakeDeltaTradingClient.editOrder; packages/schema strategies.ts LiveRepriceBody; apps/api routes/live-exec.ts repriceResting, routes/live.ts POST …/orders/{orderId}/reprice; apps/web RestingOrderDialog.tsx, PaperPanel.tsx order-reprice, lib/api/live.ts useLiveRepriceOrder; unit trading.test.ts (venues) HC-TR-188, live.test.ts (api) HC-TR-188, trading-live.test.tsx HC-TR-188",
     "test": "unit (api + venues + web)"
+  },
+  {
+    "screen": "Trading · Trade Preview · Trade All",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The Mindful pause decided on the server: the server's live day P&L in the preview, the entry delayed until the pause has elapsed",
+    "how": "The live preview and GET /v1/me/day-pnl carry the server's figure (open live strategies at the recorded marks against the day's baseline, live trades closed today at their realised figure; unknown without a fresh mark) and the pause it decides from the trader's Mindful settings. The trade preview and the batch dialog show the server's figure ('the server's figure' on the basis line) and fall back to this tab's book only while the server has none. Place and Trade All → Live answer 409 MINDFUL_PAUSE with the seconds left until the pause shown at preview time has elapsed; a script that skips the preview is refused once and waits the same pause (the refusal starts the clock). A refusal the preview did not foresee (the day moved after it) shows the block and the countdown in the dialog. Going live from paper resets the paper run's realised P&L and points. A leader job writes today's P&L point for every live strategy",
+    "evidence": "ADR-084 (13 Sep 2026): apps/api day-pnl.ts (liveDayPnl, mindfulFor, MindfulGate, enforceMindful, writeDayPnlPoints), routes/live-exec.ts preview mindful, routes/live.ts (preview stamps, place / batch enforce, GET /v1/me/day-pnl), config DAY_PNL_MS, main.ts day-pnl job; packages/schema strategies.ts LiveDayFigure / MindfulPreview / LivePreview.mindful; apps/web lib/strategy/mindful.ts serverMindful, components/trading/MindfulPause.tsx, TradeFlow.tsx, BatchLiveDialog.tsx, lib/api/live.ts useLiveDay; unit day-pnl.test.ts (api) HC-TR-189, trading-live.test.tsx HC-TR-189, mindful.test.ts",
+    "test": "unit (api + web)"
+  },
+  {
+    "screen": "Trading · Adjustment workbench · Review",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "A live adjustment that adds a leg waits for the Mindful pause",
+    "how": "An add is a new bet: the workbench's live preview carries the server's pause; the Review dialog shows the Mindful block with the day figure, this batch's worst case and the margin in use, and the countdown replaces the hold button until the pause ends; the adjust route answers 409 MINDFUL_PAUSE until the pause shown at preview time has elapsed. POST /strategies/{id}/legs on a live strategy waits the same way. Trims and closes never wait; a body mixing a trim with an add waits as a whole",
+    "evidence": "ADR-084 (13 Sep 2026): apps/api routes/live.ts adjustPreview, routes/strategies.ts adjust and legs (enforceMindful on adds); apps/web components/adjust/AdjustConfirmDialog.tsx; unit day-pnl.test.ts (api) HC-TR-190, trading-live.test.tsx HC-TR-190",
+    "test": "unit (api + web)"
   }
 ]

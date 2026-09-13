@@ -461,6 +461,24 @@ export const LivePreviewLeg = z.strictObject({
 });
 export type LivePreviewLeg = z.infer<typeof LivePreviewLeg>;
 
+/** Today's live P&L as the server knows it (ADR-084): open live strategies at the latest recorded marks against the day's baseline, live trades closed today at their realised figure. */
+export const LiveDayFigure = z.strictObject({
+  pnlUsd: DecimalString,
+  /** Live strategies counted (active plus closed today). */
+  count: z.number().int().nonnegative(),
+  closedCount: z.number().int().nonnegative(),
+  /** False while an open live leg has no fresh mark on the server: no pause is decided on it. */
+  known: z.boolean(),
+});
+export type LiveDayFigure = z.infer<typeof LiveDayFigure>;
+
+/** What a live preview says about the Mindful pause (ADR-084): the server's day figure and the pause this entry waits, or null when none applies. */
+export const MindfulPreview = z.strictObject({
+  day: LiveDayFigure,
+  pause: z.strictObject({ seconds: z.number().int().positive(), thresholdUsd: DecimalString, basis: z.string() }).nullable(),
+});
+export type MindfulPreview = z.infer<typeof MindfulPreview>;
+
 export const LivePreview = z.strictObject({
   ok: z.boolean(),
   reasons: z.array(z.string()),
@@ -471,6 +489,8 @@ export const LivePreview = z.strictObject({
   /** Margin the exchange currently holds against open positions (sum of position margins); null when unknown. Delta has no pre-trade margin estimate endpoint (ADR-029). */
   marginUsed: DecimalString.nullable(),
   limits: z.strictObject({ maxLegs: z.number().int(), maxNotionalUsd: z.number(), markBandPct: z.number() }),
+  /** ADR-084: the server's Mindful figure for this trader; null on paths that do not compute it. */
+  mindful: MindfulPreview.nullable(),
 });
 export type LivePreview = z.infer<typeof LivePreview>;
 

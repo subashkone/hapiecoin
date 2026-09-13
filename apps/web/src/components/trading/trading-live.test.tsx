@@ -758,3 +758,162 @@ describe("HC-TR-187 / HC-TR-188 resting limit orders on the Live card (ADR-083)"
     await waitFor(() => expect(mine()[0]!.orders[0]!.state).toBe("filled")); // the mock's venue accepts the retry
   });
 });
+
+describe("HC-TR-189 / HC-TR-190 the server's figure decides the Mindful pause (ADR-084)", () => {
+  beforeEach(() => setMindfulTickMsForTests(100));
+  afterEach(() => setMindfulTickMsForTests(null));
+  async function toLivePreview(u: ReturnType<typeof userEvent.setup>) {
+    await u.click(screen.getByTestId("builder-paper-trade"));
+    const mode = screen.getByTestId("trade-mode");
+    await waitFor(() => expect(within(mode).getByTestId<HTMLSelectElement>("trade-broker").value).toBe("brk_delta"));
+    await waitFor(() => expect(within(mode).getByTestId("mode-live").hasAttribute("disabled")).toBe(false));
+    await u.click(within(mode).getByTestId("mode-live"));
+    await u.click(within(mode).getByTestId("trade-continue"));
+    const name = screen.getByTestId("save-draft-dialog");
+    await u.clear(within(name).getByTestId("save-draft-name"));
+    await u.type(within(name).getByTestId("save-draft-name"), "Server pause");
+    await u.click(within(name).getByTestId("save-draft-confirm"));
+    return screen.findByTestId("trade-preview");
+  }
+  function addBuilderLeg() {
+    const atm = rows.findIndex((r) => Number(r.strike) >= 79521);
+    const call = rows[atm]!;
+    useUiStore.getState().addLeg({ asset: "BTC", kind: "call", side: "buy", strike: call.strike, expiry: EXPIRY, lots: 10, price: call.call!.mark, iv: call.call!.markIv });
+    useUiStore.setState({ workspaceTab: "builder" });
+  }
+
+  it("the trade preview shows the server's day figure and countdown when the server knows the trader is down, even with no live strategy in this tab", async () => {
+    connect();
+    acc().settings.mindful = { enabled: true, thresholdUsd: "0", pauseSeconds: 10 };
+    acc().dayPnlUsd = -500;
+    addBuilderLeg();
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    const u = userEvent.setup();
+    const preview = await toLivePreview(u);
+    const pause = await within(preview).findByTestId("mindful-pause");
+    expect(pause.dataset["source"]).toBe("server");
+    expect(within(pause).getByTestId("mindful-day-pnl").textContent).toBe("−$500.00");
+    expect(within(pause).getByTestId("mindful-basis").textContent).toContain("the server's figure");
+    expect(within(preview).queryByTestId("trade-now")).toBeNull();
+    expect(Number(within(preview).getByTestId("mindful-countdown").dataset["left"])).toBeGreaterThan(0);
+    await waitFor(() => expect(within(preview).queryByTestId("trade-now")).toBeTruthy(), { timeout: 5000 });
+  });
+
+  it("a place the server refuses with its pause after a preview that showed none: the block and the countdown appear, the button returns, the order goes through", async () => {
+    connect();
+    acc().settings.mindful = { enabled: true, thresholdUsd: "0", pauseSeconds: 10 };
+    addBuilderLeg();
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    const u = userEvent.setup();
+    const preview = await toLivePreview(u);
+    await waitFor(() => expect(within(preview).getByTestId("venue-preview").dataset["ok"]).toBe("true"));
+    expect(within(preview).queryByTestId("mindful-pause")).toBeNull();
+    acc().dayPnlUsd = -500; // the day moved after the preview: the server decides at place time
+    await typeLiveIf(u, preview);
+    await u.click(within(preview).getByTestId("trade-now"));
+    const pause = await within(preview).findByTestId("mindful-pause");
+    expect(pause.dataset["source"]).toBe("server");
+    expect(within(pause).getByTestId("mindful-day-pnl").textContent).toBe("−$500.00");
+    expect(within(preview).queryByTestId("trade-now")).toBeNull();
+    expect(mine().some((x) => x.name === "Server pause" && x.status === "live")).toBe(false);
+    await waitFor(() => expect(within(preview).queryByTestId("trade-now")).not.toBeNull(), { timeout: 5000 });
+    await typeLiveIf(u, preview);
+    await u.click(within(preview).getByTestId("trade-now"));
+    await waitFor(() => expect(mine().some((x) => x.name === "Server pause" && x.status === "live")).toBe(true));
+  });
+
+  it("Trade All → Live shows the server's figure and its countdown with no live strategy in this tab", async () => {
+    connect();
+    acc().settings.mindful = { enabled: true, thresholdUsd: "0", pauseSeconds: 10 };
+    acc().dayPnlUsd = -250;
+    mine().push(strat(1));
+    renderWithProviders(<Workspace />);
+    const u = userEvent.setup();
+    await waitFor(() => expect(screen.getAllByTestId("paper-card")).toHaveLength(1));
+    serveMarket();
+    await u.click(screen.getByTestId("trade-all-live"));
+    const dlg = screen.getByTestId("batch-live");
+    const pause = await within(dlg).findByTestId("mindful-pause");
+    expect(pause.dataset["source"]).toBe("server");
+    expect(within(pause).getByTestId("mindful-day-pnl").textContent).toBe("−$250.00");
+    expect(within(pause).getByTestId("mindful-basis").textContent).toContain("the server's figure");
+    expect(within(dlg).queryByTestId("batch-go")).toBeNull();
+    await waitFor(() => expect(within(dlg).queryByTestId("batch-go")).not.toBeNull(), { timeout: 5000 });
+  });
+
+  it("Trade All → Live refused by the server after its figure moved shows the block and the countdown, then goes through", async () => {
+    connect();
+    acc().settings.mindful = { enabled: true, thresholdUsd: "0", pauseSeconds: 10 };
+    mine().push(strat(1));
+    renderWithProviders(<Workspace />);
+    const u = userEvent.setup();
+    await waitFor(() => expect(screen.getAllByTestId("paper-card")).toHaveLength(1));
+    serveMarket();
+    await u.click(screen.getByTestId("trade-all-live"));
+    const dlg = screen.getByTestId("batch-live");
+    await u.selectOptions(within(dlg).getByTestId("batch-broker"), "brk_delta");
+    await typeLiveIf(u, dlg);
+    await waitFor(() => expect(within(dlg).getByTestId<HTMLButtonElement>("batch-go").disabled).toBe(false)); // the server's figure was asked for
+    expect(within(dlg).queryByTestId("mindful-pause")).toBeNull();
+    acc().dayPnlUsd = -250; // the day moved after the dialog read it
+    await u.click(within(dlg).getByTestId("batch-go"));
+    const pause = await within(dlg).findByTestId("mindful-pause");
+    expect(pause.dataset["source"]).toBe("server");
+    expect(within(pause).getByTestId("mindful-day-pnl").textContent).toBe("−$250.00");
+    expect(within(dlg).queryByTestId("batch-go")).toBeNull();
+    expect(mine().filter((x) => x.status === "live")).toHaveLength(0);
+    await waitFor(() => expect(within(dlg).queryByTestId("batch-go")).not.toBeNull(), { timeout: 5000 });
+    await typeLiveIf(u, dlg);
+    await u.click(within(dlg).getByTestId("batch-go"));
+    await waitFor(() => expect(mine().filter((x) => x.status === "live")).toHaveLength(1));
+  });
+
+  it("when the server's figure is known and not down, no pause applies even though this tab's book would have paused", async () => {
+    connect();
+    acc().settings.mindful = { enabled: true, thresholdUsd: "0", pauseSeconds: 10 };
+    acc().dayPnlUsd = 12;
+    mine().push(strat(9, { name: "Down in this tab", status: "live", tradingMode: "live", pnlHistory: [{ day: "2026-09-01", pnl: "5000" }] }));
+    addBuilderLeg();
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    const u = userEvent.setup();
+    const preview = await toLivePreview(u);
+    await waitFor(() => expect(within(preview).getByTestId("venue-preview").dataset["ok"]).toBe("true"));
+    expect(within(preview).queryByTestId("mindful-pause")).toBeNull();
+    expect(within(preview).getByTestId("trade-now")).toBeTruthy();
+  });
+
+  it("a live add in the workbench waits for the server's pause: the block and the countdown replace the hold button until it ends", async () => {
+    connect();
+    acc().settings.mindful = { enabled: true, thresholdUsd: "0", pauseSeconds: 10 };
+    acc().dayPnlUsd = -250;
+    const at = "2026-09-08T10:00:00Z";
+    mine().push(strat(1, { status: "live", tradingMode: "live", orderBatchId: "web-seed", orders: [{ id: "ord_1", legId: "leg_1", purpose: "entry", batchId: "web-seed", orderType: "market", limitPrice: null, clientOrderId: "hc-leg_1-1", venueOrderId: "700001", symbol: CALL.symbol, side: "buy", size: 10, state: "filled", fillPrice: "1200", error: null, attempts: 1, createdAt: at, updatedAt: at }] }));
+    useUiStore.setState({ workspaceTab: "live" });
+    renderWithProviders(<Workspace />);
+    act(() => FakeSocket.last().open());
+    const u = userEvent.setup();
+    await waitFor(() => expect(within(panel()).getByTestId("live-card")).toBeTruthy());
+    await u.click(within(panel()).getByTestId("card-adjust"));
+    const wb = await screen.findByTestId("adjust-workbench");
+    serveMarket();
+    await waitFor(() => expect(within(wb).getAllByTestId("wb-chain-row").length).toBeGreaterThan(0), { timeout: 5000 });
+    await u.click(within(within(wb).getAllByTestId("wb-chain-row")[4]!).getByTestId("wb-chain-buy-put"));
+    await u.click(within(wb).getByTestId("adjust-review"));
+    const confirm = await screen.findByTestId("adjust-confirm");
+    await waitFor(() => expect(within(confirm).getByTestId("adjust-venue").dataset["ok"]).toBe("true"));
+    const pause = within(confirm).getByTestId("mindful-pause");
+    expect(pause.dataset["source"]).toBe("server");
+    expect(within(pause).getByTestId("mindful-day-pnl").textContent).toBe("−$250.00");
+    expect(within(confirm).queryByTestId("adjust-apply")).toBeNull();
+    expect(within(confirm).getByTestId("mindful-countdown")).toBeTruthy();
+    const apply = await within(confirm).findByTestId("adjust-apply", {}, { timeout: 5000 });
+    await typeLiveIf(u, confirm);
+    await hold(apply);
+    await waitFor(() => expect(mine()[0]!.legs).toHaveLength(2));
+    await u.click(within(confirm).getByTestId("adjust-done"));
+    await waitFor(() => expect(screen.queryByTestId("adjust-confirm")).toBeNull());
+  });
+});

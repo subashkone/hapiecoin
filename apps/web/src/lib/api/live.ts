@@ -1,6 +1,6 @@
 // Live trading through TanStack Query (Phase 3 item 2, ADR-025): preview, place, retry, sync, batch, positions.
 // Every order goes through the API's executor; the browser never talks to the venue.
-import { type LiveBatchBody, LiveBatchResult, type LivePlaceBody, LivePositions, type LivePositionsExitBody, LivePositionsExitResult, LivePreview, type LivePreviewBody, type LiveRetryBody, type LiveRepriceBody, Strategy } from "@hapiecoin/schema";
+import { type LiveBatchBody, LiveBatchResult, type LivePlaceBody, LivePositions, type LivePositionsExitBody, LivePositionsExitResult, LivePreview, type LivePreviewBody, type LiveRetryBody, MindfulPreview, Strategy, type LiveRepriceBody } from "@hapiecoin/schema";
 
 /** Preview body: the open legs by default, or an adjustment batch's adds / changes (ADR-044). */
 export type PreviewBody = LivePreviewBody & { worstLoss?: number | undefined };
@@ -21,6 +21,8 @@ export function liveFetchers(client: ApiClient = api) {
     cancelOrder: (id: string, orderId: string) => client.post(`/v1/strategies/${enc(id)}/live/orders/${enc(orderId)}/cancel`, {}, Strategy),
     repriceOrder: (id: string, orderId: string, body: LiveRepriceBody) => client.post(`/v1/strategies/${enc(id)}/live/orders/${enc(orderId)}/reprice`, body, Strategy),
     batch: (body: LiveBatchBody) => client.post("/v1/strategies/live/batch", body, LiveBatchResult),
+    // ADR-084: the server's day figure and the pause it decides; reading it starts the batch's pause clock on the server
+    dayPnl: () => client.get("/v1/me/day-pnl", MindfulPreview),
     positions: (brokerId: string, accountId: string | null = null) => client.get(`/v1/strategies/live/positions?brokerId=${enc(brokerId)}${accountId ? `&accountId=${enc(accountId)}` : ""}`, LivePositions),
     exitPositions: (body: LivePositionsExitBody) => client.post("/v1/strategies/live/positions/exit", body, LivePositionsExitResult),
   };
@@ -68,6 +70,10 @@ export function useLiveRepriceOrder() {
 }
 export function useLiveBatch() {
   return useLiveMutation((body: LiveBatchBody) => f.batch(body));
+}
+/** The server's live day P&L for the batch dialog (HC-TR-189): fetched when the dialog opens, never cached across openings. */
+export function useLiveDay(enabled: boolean) {
+  return useQuery({ queryKey: ["live", "day"], queryFn: () => f.dayPnl(), enabled, staleTime: 0, gcTime: 0 });
 }
 /** Square off ticked exchange positions (HC-TR-145): reduce-only market orders through the executor. */
 export function useLiveExitPositions() {
