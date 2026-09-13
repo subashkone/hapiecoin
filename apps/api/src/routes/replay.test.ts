@@ -2,8 +2,8 @@
 // instants of one expiry, the ladder at a day and at a pass, 404 for an instant nothing was recorded at, 503 before
 // anything is recorded.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { Instrument, Quote, ReplayChain, ReplayExpiries, ReplaySteps } from "@hapiecoin/schema";
-import { snapshotOnce, type MarketSource } from "../iv-snapshot.js";
+import { type Instrument, type Quote, REPLAY_FINE_DAYS, type ReplayChain, type ReplayExpiries, type ReplaySteps } from "@hapiecoin/schema";
+import { MARK_ROWS_RETENTION_DAYS, snapshotOnce, type MarketSource } from "../iv-snapshot.js";
 import { createTestApp, type TestApp } from "../test-support/harness.js";
 
 let t: TestApp;
@@ -68,8 +68,11 @@ describe("HC-WS-113 replay routes", () => {
     const steps = await json<ReplaySteps>(stepsRes);
     expect(steps.daily).toHaveLength(10);
     expect(steps.daily[0]).toEqual({ day: dayOf(T0), ts: new Date(T0 + HOUR).toISOString(), spot: 80_000 });
-    // the 5-minute window is the last week of real time: the daily passes inside it plus the three late passes
-    const since = Date.now() - 7 * DAY;
+    // the 5-minute window is the last week of real time, and the marks themselves are kept for a week measured from the
+    // last pass written (MARK_ROWS_RETENTION_DAYS): a pass older than either bound is not listed. The two bounds differ by
+    // the time of day the suite runs at, which is why the expectation takes the later of them
+    const lastPass = T0 + 9 * DAY + HOUR + 3 * 5 * 60_000;
+    const since = Math.max(Date.now() - REPLAY_FINE_DAYS * DAY, lastPass - MARK_ROWS_RETENTION_DAYS * DAY);
     const expected = [...Array.from({ length: 10 }, (_, d) => ({ ts: T0 + d * DAY + HOUR, spot: 80_000 + d * 100 })), ...[1, 2, 3].map((m) => ({ ts: T0 + 9 * DAY + HOUR + m * 5 * 60_000, spot: 81_000 + m }))].filter((x) => x.ts >= since);
     expect(steps.fine.map((s) => s.spot)).toEqual(expected.map((x) => x.spot));
     expect(steps.fine.length).toBeGreaterThanOrEqual(3);
