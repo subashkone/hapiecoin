@@ -196,7 +196,9 @@ test.describe("HC-SH-127 public page settings", () => {
     await expect(page.getByTestId("trader-accounts")).toHaveCount(0); // not turned on
   });
 
-  test("HC-SH-137 Security: add a passkey on a virtual authenticator, rename it, remove it (ADR-089)", async ({ page }) => {
+  test("HC-SH-137 Security: add a passkey on a virtual authenticator, rename it, remove it (ADR-089)", async ({ page, request }) => {
+    await seedUser(request, { email: "passkeys@example.com" });
+    await signIn(page, "passkeys@example.com");
     const cdp = await page.context().newCDPSession(page);
     await cdp.send("WebAuthn.enable");
     await cdp.send("WebAuthn.addVirtualAuthenticator", { options: { protocol: "ctap2", transport: "internal", hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true } });
