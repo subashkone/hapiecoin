@@ -142,7 +142,7 @@ describe("[VENUES] schema adapter: quotes", () => {
     }
   });
 
-  it("[VENUES] omits nullable fields instead of emitting null, and uses the fallback spot", () => {
+  it("[VENUES] omits nullable fields instead of emitting null (open interest included, HC-WS-116), and uses the fallback spot", () => {
     const first = quotes[0]!;
     const sparse: VenueQuote = {
       ...first,
@@ -165,9 +165,10 @@ describe("[VENUES] schema adapter: quotes", () => {
       instrumentId: `delta_india:${first.symbol}`,
       ts: first.venueTs,
       mark: first.mark,
-      oi: "0",
       spot: "79521",
     });
+    expect(adapted).not.toHaveProperty("oi"); // GAPS #15: none sent is no field, never "0"
+    expect(toSchemaQuote({ ...sparse, oiContracts: "0" }, "79521").oi).toBe("0"); // a real zero stays
     expect(() => toSchemaQuote(sparse)).toThrow(SchemaAdapterError);
     expect(() => toSchemaQuote(sparse, null)).toThrow(/without a spot/);
   });

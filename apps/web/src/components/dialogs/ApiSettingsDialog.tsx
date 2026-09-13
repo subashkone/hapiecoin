@@ -27,9 +27,15 @@ import {
   useBrokers,
   useConnectExchange,
   useCredential,
+  disconnectId,
+  queryKeys,
   useDisconnectExchange,
+  useMe,
   useWhitelistIp,
 } from "@/lib/api/queries";
+import { useQueryClient } from "@tanstack/react-query";
+import { isSecondFactorError } from "@/lib/api/second-factor";
+import { SECOND_FACTOR_MISSING_MESSAGE, SecondFactorField, secondFactorMissing } from "./SecondFactorField";
 import { useLivePositions } from "@/lib/api/live";
 import { accountsOf, useCurrentAccount } from "@/lib/accounts";
 import { fmtDate } from "@/lib/format";
@@ -49,6 +55,28 @@ export function ApiSettingsDialog({ open, onOpenChange }: DialogProps) {
   const connect = useConnectExchange();
   const disconnect = useDisconnectExchange();
   const { account } = useCurrentAccount();
+  // ADR-086: an account with the authenticator on confirms a key change with its current code
+  const { data: me } = useMe();
+  const qc = useQueryClient();
+  const needsCode = me?.twoFactorEnabled === true;
+  const [code, setCode] = useState("");
+  const [codeError, setCodeError] = useState<string | null>(null);
+  useEffect(() => {
+    if (open) {
+      setCode("");
+      setCodeError(null);
+    }
+  }, [open]);
+  /** A refusal for want of a code: under the field when it is shown, else a toast and a fresh /v1/me so the field appears (2FA turned on elsewhere). */
+  const refused = (e: Error, title: string): boolean => {
+    if (!isSecondFactorError(e)) return false;
+    if (needsCode) setCodeError(e.message);
+    else {
+      toast.error(title, { description: e.message });
+      void qc.invalidateQueries({ queryKey: queryKeys.me });
+    }
+    return true;
+  };
   const [brokerId, setBrokerId] = useState("");
   const [label, setLabel] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -102,23 +130,41 @@ export function ApiSettingsDialog({ open, onOpenChange }: DialogProps) {
       toast.error("Save Failed", { description: `At most ${MAX_ACCOUNTS_PER_BROKER} accounts per exchange` });
       return;
     }
+    if (secondFactorMissing(needsCode, code)) {
+      setCodeError(SECOND_FACTOR_MISSING_MESSAGE);
+      return;
+    }
     connect.mutate(
-      { brokerId, label: label.trim(), apiKey: apiKey.trim(), apiSecret: apiSecret.trim() },
+      { brokerId, label: label.trim(), apiKey: apiKey.trim(), apiSecret: apiSecret.trim(), ...(needsCode ? { secondFactor: code } : {}) },
       {
         onSuccess: () => {
           setApiSecret("");
           setApiKey("");
+          setCode("");
+          setCodeError(null);
           toast.success("Exchange Connected", { description: replacing ? `Key for ${label.trim()} replaced` : "API credentials saved to server" });
         },
-        onError: (e) => toast.error("Save Failed", { description: e.message }),
+        onError: (e) => {
+          if (!refused(e, "Save Failed")) toast.error("Save Failed", { description: e.message });
+        },
       },
     );
   };
 
   const remove = (id: string, name: string) => {
-    disconnect.mutate(id, {
-      onSuccess: () => toast("Exchange Disconnected", { description: `${name} · Delta Exchange credentials removed` }),
-      onError: (e) => toast.error("Could not disconnect", { description: e.message }),
+    if (secondFactorMissing(needsCode, code)) {
+      setCodeError(SECOND_FACTOR_MISSING_MESSAGE);
+      return;
+    }
+    disconnect.mutate(needsCode ? { id, secondFactor: code } : id, {
+      onSuccess: () => {
+        setCode("");
+        setCodeError(null);
+        toast("Exchange Disconnected", { description: `${name} · Delta Exchange credentials removed` });
+      },
+      onError: (e) => {
+        if (!refused(e, "Could not disconnect")) toast.error("Could not disconnect", { description: e.message });
+      },
     });
   };
 
@@ -157,7 +203,7 @@ export function ApiSettingsDialog({ open, onOpenChange }: DialogProps) {
                         <b className="font-sans">{it.label}</b>
                         <span className="text-muted-foreground">API Key: {it.apiKeyMasked}</span>
                         <span className="text-muted-foreground">Connected: {fmtDate(it.connectedAt)}</span>
-                        <Button variant="ghost" size="sm" className="ml-auto text-destructive" loading={disconnect.isPending && disconnect.variables === it.id} onClick={() => remove(it.id, it.label)} title="Remove this key · refused while a live strategy still trades through it" data-testid="disconnect-exchange" data-account-id={it.id}>
+                        <Button variant="ghost" size="sm" className="ml-auto text-destructive" loading={disconnect.isPending && disconnect.variables !== undefined && disconnectId(disconnect.variables) === it.id} onClick={() => remove(it.id, it.label)} title="Remove this key · refused while a live strategy still trades through it" data-testid="disconnect-exchange" data-account-id={it.id}>
                           Disconnect
                         </Button>
                       </div>
@@ -217,6 +263,7 @@ export function ApiSettingsDialog({ open, onOpenChange }: DialogProps) {
             </Button>
           </div>
           <p className="mt-1 text-2xs text-muted-foreground">Add this IP to your Delta Exchange API key whitelist for secure access.</p>
+          {needsCode ? <SecondFactorField value={code} onChange={(v) => { setCode(v); setCodeError(null); }} error={codeError} what="a key change" /> : null}
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

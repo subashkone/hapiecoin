@@ -5,13 +5,13 @@
 import type { Broker, BrokerCredentialPublic, Strategy } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { useEffect, useMemo, useState } from "react";
-import { newIdempotencyKey, useBatchPreview, useLiveBatch } from "@/lib/api/live";
+import { newIdempotencyKey, useBatchPreview, useLiveBatch, useLiveDay } from "@/lib/api/live";
 import { handleUpgradeRequired } from "@/lib/api/upgrade";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
 import { accountsOf } from "@/lib/accounts";
 import { useUiStore } from "@/lib/store";
 import { openLegs } from "@/lib/strategy/paper";
-import type { MindfulPauseInfo } from "@/lib/strategy/mindful";
+import { type MindfulPauseInfo, refusedMindful, serverMindful } from "@/lib/strategy/mindful";
 import { MindfulCountdownButton, MindfulPause, useMindfulCountdown } from "./MindfulPause";
 import { TypedConfirm, isLiveConfirm } from "./TypedConfirm";
 
@@ -26,7 +26,13 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
   const storedAccount = useUiStore((s) => s.accountId);
   const setAccount = useUiStore((s) => s.setAccount);
   const mine = accountsOf(accounts, brokerId);
-  const pauseLeft = useMindfulCountdown(open ? mindful : null, key);
+  // ADR-084: the server's figure decides when it is known (and its read starts the server's pause clock); the tab's fold otherwise
+  const day = useLiveDay(open);
+  const fromServer = serverMindful(day.data);
+  // a refusal the preview did not foresee (the day moved after it) shows the block and restarts the countdown
+  const [refused, setRefused] = useState<{ info: MindfulPauseInfo; run: number } | null>(null);
+  const info = refused?.info ?? (fromServer === undefined ? mindful : fromServer);
+  const pauseLeft = useMindfulCountdown(open ? info : null, refused ? `${key}:${refused.run}` : key);
   // ADR-087: the ticked strategies previewed as one batch; the button waits for it and stays off while it refuses
   const ids = useMemo(() => [...sel].sort(), [sel]);
   const preview = useBatchPreview(open && connected && brokerId && ids.length ? { ids, brokerId, ...(accountId ? { accountId } : {}) } : null);
@@ -34,13 +40,15 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
   const itemOf = (id: string) => preview.data?.items.find((i) => i.id === id);
   /** A cash figure from the exchange in the display currency when it is USD, else as the exchange states it. */
   const cash = (v: string | null, asset: string | null) => (v === null ? "—" : asset === null || asset === "USD" ? fmtMoney(Number(v), money) : `${v} ${asset}`);
-  const canGo = sel.size > 0 && connected && Boolean(brokerId) && isLiveConfirm(word) && batchOk;
+  // nothing goes until the server's figure has been asked for (its read starts the server's pause clock) and the batch preview says ok
+  const canGo = sel.size > 0 && connected && Boolean(brokerId) && isLiveConfirm(word) && !day.isPending && batchOk;
   useEffect(() => {
     if (open) {
       setSel(new Set(strategies.filter((s) => openLegs(s).length > 0).map((s) => s.id)));
       setBrokerId(brokers[0]?.id ?? "");
       setKey(newIdempotencyKey());
       setWord("");
+      setRefused(null);
     }
   }, [open, strategies, brokers]);
   useEffect(() => {
@@ -58,7 +66,9 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
           else toast.success("Live Orders Placed", { description: `${r.placed.length} ${r.placed.length === 1 ? "strategy" : "strategies"} moved to live` });
         },
         onError: (e) => {
-          if (!handleUpgradeRequired(e)) toast.error("Batch refused", { description: e.message });
+          const pause = refusedMindful(e);
+          if (pause) setRefused((r) => ({ info: pause, run: (r?.run ?? 0) + 1 }));
+          else if (!handleUpgradeRequired(e)) toast.error("Batch refused", { description: e.message });
         },
       },
     );
@@ -137,7 +147,7 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
               </div>
             ) : null}
           </div>
-          {mindful ? <MindfulPause info={mindful} money={money} left={pauseLeft} atRisk={preview.data ? { text: `${fmtMoney(Math.abs(Number(preview.data.debit)), money)} premium ${Number(preview.data.debit) >= 0 ? "paid" : "received"} across the batch · each strategy's own worst case on its card`, loss: Number(preview.data.debit) > 0 } : { text: "each strategy's own worst case · see its card", loss: false }} marginText={preview.data ? cash(preview.data.marginUsed, preview.data.availableAsset) : "—"} /> : null}
+          {info ? <MindfulPause info={info} money={money} left={pauseLeft} atRisk={preview.data ? { text: `${fmtMoney(Math.abs(Number(preview.data.debit)), money)} premium ${Number(preview.data.debit) >= 0 ? "paid" : "received"} across the batch · each strategy's own worst case on its card`, loss: Number(preview.data.debit) > 0 } : { text: "each strategy's own worst case · see its card", loss: false }} marginText={preview.data ? cash(preview.data.marginUsed, preview.data.availableAsset) : "—"} /> : null}
           <div className="mt-3 rounded border border-loss/40 p-2 text-2xs" data-testid="batch-warning">
             <b className="text-loss">Real Money Trading</b>
             <div>The batch is previewed as one against the exchange (contracts, marks, limits, and the wallet against the premiums together): nothing is placed until every check passes; then the strategies go in order, and a refusal at the venue stops the batch and names the strategy.</div>
@@ -147,7 +157,7 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          {mindful && pauseLeft > 0 ? (
+          {info && pauseLeft > 0 ? (
             <MindfulCountdownButton left={pauseLeft} />
           ) : (
             <Button variant="destructive" disabled={!canGo} loading={batch.isPending} onClick={go} data-testid="batch-go">

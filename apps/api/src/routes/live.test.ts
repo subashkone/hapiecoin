@@ -429,6 +429,111 @@ describe("HC-TR-088 adjustment batch on a live strategy (ADR-044)", () => {
     expect(retried.legs.at(-1)!.entryPrice).toBe("499");
   });
 
+  it("HC-TR-187 a resting limit is cancelled from the app: the venue is read back, the leg stays open without an entry, Retry sends it again; a filled order is booked as filled instead", async () => {
+    t.now.value += 61_000; // a fresh order-rate window (20 order calls a minute per user)
+    const s = await draft([CALL]);
+    await place(s.id, "key-cancel-00");
+    t.trading.product("P-BTC-76000-250926", 105, "0.001", "live", "0.5").markAt("P-BTC-76000-250926", "500").fillAt(105, "520");
+    const a = await json<Strategy>(await adjust(s.id, { confirm: "LIVE", adds: [{ ...PUT, strike: "76000", symbol: "P-BTC-76000-250926", side: "buy", lots: 5, price: "500.3" }], expected: { "P-BTC-76000-250926": "500.3" }, orderType: "limit", idempotencyKey: "key-cancel-01" }));
+    const resting = a.orders.find((o) => o.batchId === "key-cancel-01")!;
+    expect(resting.state).toBe("pending");
+    // a filled order, a market order and an exit order cannot be cancelled
+    const filledEntry = a.orders.find((o) => o.state === "filled")!;
+    expect((await t.request(`/v1/strategies/${s.id}/live/orders/${filledEntry.id}/cancel`, { cookie: alice, method: "POST" })).status).toBe(409);
+    expect((await t.request(`/v1/strategies/${s.id}/live/orders/ord_nope/cancel`, { cookie: alice, method: "POST" })).status).toBe(404);
+    // the cancel, without the typed word (it reduces exposure)
+    const res = await t.request(`/v1/strategies/${s.id}/live/orders/${resting.id}/cancel`, { cookie: alice, method: "POST" });
+    expect(res.status).toBe(200);
+    const cancelled = await json<Strategy>(res);
+    expect(cancelled.orders.find((o) => o.id === resting.id)).toMatchObject({ state: "cancelled", error: "cancelled from HapieCoin", limitPrice: "500.0" });
+    expect(cancelled.legs.at(-1)).toMatchObject({ status: "open", entryPrice: null });
+    expect(t.trading.cancelled).toContain(Number(resting.venueOrderId));
+    // a second cancel is refused: the row is no longer resting
+    expect((await t.request(`/v1/strategies/${s.id}/live/orders/${resting.id}/cancel`, { cookie: alice, method: "POST" })).status).toBe(409);
+    // Retry sends the same limit again
+    t.trading.fillAt(105, "499");
+    const retried = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/retry`, { cookie: alice, json: { confirm: "LIVE" } }));
+    expect(retried.orders.find((o) => o.id === resting.id)).toMatchObject({ state: "filled", fillPrice: "499", attempts: 2 });
+    // a fill that beats the click: the cancel answers 200 with the fill booked
+    t.trading.fillAt(105, "520");
+    const b = await json<Strategy>(await adjust(s.id, { confirm: "LIVE", adds: [{ ...PUT, strike: "76000", symbol: "P-BTC-76000-250926", side: "buy", lots: 5, price: "500.3" }], expected: { "P-BTC-76000-250926": "500.3" }, orderType: "limit", idempotencyKey: "key-cancel-02" }));
+    const resting2 = b.orders.find((o) => o.batchId === "key-cancel-02")!;
+    t.trading.complete(Number(resting2.venueOrderId), "501"); // filled on the exchange just before the click
+    const raced = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/orders/${resting2.id}/cancel`, { cookie: alice, method: "POST" }));
+    expect(raced.orders.find((o) => o.id === resting2.id)).toMatchObject({ state: "filled", fillPrice: "501" });
+    expect(raced.legs.at(-1)!.entryPrice).toBe("501");
+  });
+
+  it("HC-TR-187 the venue's word decides: a cancel whose read-back fails is booked on the accepted cancel, an exchange-side cancel found by the click keeps the exchange's reason, an unread refusal is a 409; sync learns a price the app never got", async () => {
+    t.now.value += 61_000;
+    const s = await draft([CALL]);
+    await place(s.id, "key-cancel2-00");
+    t.trading.product("P-BTC-76000-250926", 105, "0.001", "live", "0.5").markAt("P-BTC-76000-250926", "500").fillAt(105, "520");
+    const rest = async (key: string) => (await json<Strategy>(await adjust(s.id, { confirm: "LIVE", adds: [{ ...PUT, strike: "76000", symbol: "P-BTC-76000-250926", side: "buy", lots: 5, price: "500.3" }], expected: { "P-BTC-76000-250926": "500.3" }, orderType: "limit", idempotencyKey: key }))).orders.find((o) => o.batchId === key)!;
+    // accepted, read-back down: cancelled on the venue's word
+    const a = await rest("key-cancel2-01");
+    t.trading.ordersDown = true;
+    const r1 = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/orders/${a.id}/cancel`, { cookie: alice, method: "POST" }));
+    t.trading.ordersDown = false;
+    expect(r1.orders.find((o) => o.id === a.id)).toMatchObject({ state: "cancelled", error: "cancelled from HapieCoin" });
+    // the exchange had cancelled it a moment earlier: the click finds it cancelled and keeps the exchange's reason
+    const b = await rest("key-cancel2-02");
+    await t.trading.cancelOrder({ apiKey: "", apiSecret: "" }, Number(b.venueOrderId));
+    const r2 = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/orders/${b.id}/cancel`, { cookie: alice, method: "POST" }));
+    expect(r2.orders.find((o) => o.id === b.id)).toMatchObject({ state: "cancelled", error: "cancelled on the exchange" });
+    // refused and unreadable: nothing is booked, the trader is told to sync
+    const c = await rest("key-cancel2-03");
+    await t.trading.cancelOrder({ apiKey: "", apiSecret: "" }, Number(c.venueOrderId));
+    t.trading.ordersDown = true;
+    const r3 = await t.request(`/v1/strategies/${s.id}/live/orders/${c.id}/cancel`, { cookie: alice, method: "POST" });
+    t.trading.ordersDown = false;
+    expect(r3.status).toBe(409);
+    expect(((await r3.json()) as { message: string }).message).toContain("sync");
+    expect((await json<Strategy>(await t.request(`/v1/strategies/${s.id}`, { cookie: alice }))).orders.find((o) => o.id === c.id)!.state).toBe("pending");
+    // a re-price refused because the exchange had cancelled the order: booked as cancelled, the refusal says so
+    const d = await rest("key-cancel2-04");
+    await t.trading.cancelOrder({ apiKey: "", apiSecret: "" }, Number(d.venueOrderId));
+    const r4 = await t.request(`/v1/strategies/${s.id}/live/orders/${d.id}/reprice`, { cookie: alice, json: { limitPrice: "505", confirm: "LIVE" } });
+    expect(r4.status).toBe(409);
+    expect(((await r4.json()) as { message: string }).message).toContain("already cancelled");
+    // sync writes back a price the venue holds that the app never learned (an edit whose answer was lost)
+    const e = await rest("key-cancel2-05");
+    await t.trading.editOrder({ apiKey: "", apiSecret: "" }, { orderId: Number(e.venueOrderId), productId: 105, limitPrice: "507.5" });
+    const synced = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/sync`, { cookie: alice, method: "POST" }));
+    expect(synced.orders.find((o) => o.id === e.id)).toMatchObject({ state: "pending", limitPrice: "507.5" });
+  });
+
+  it("HC-TR-188 a resting limit is re-priced in place: the typed word, the tick snap, a fill at the new price; a refused edit re-reads the venue first", async () => {
+    t.now.value += 61_000; // a fresh order-rate window (20 order calls a minute per user)
+    const s = await draft([CALL]);
+    await place(s.id, "key-reprice-00");
+    t.trading.product("P-BTC-76000-250926", 105, "0.001", "live", "0.5").markAt("P-BTC-76000-250926", "500").fillAt(105, "520");
+    const a = await json<Strategy>(await adjust(s.id, { confirm: "LIVE", adds: [{ ...PUT, strike: "76000", symbol: "P-BTC-76000-250926", side: "buy", lots: 5, price: "500.3" }], expected: { "P-BTC-76000-250926": "500.3" }, orderType: "limit", idempotencyKey: "key-reprice-01" }));
+    const resting = a.orders.find((o) => o.batchId === "key-reprice-01")!;
+    const url = `/v1/strategies/${s.id}/live/orders/${resting.id}/reprice`;
+    expect((await t.request(url, { cookie: alice, json: { limitPrice: "505.3" } })).status).toBe(400); // no word
+    expect((await t.request(url, { cookie: alice, json: { limitPrice: "0", confirm: "LIVE" } })).status).toBe(400); // not a price
+    // 505.3 on a 0.5 tick, a buy → 505.0; the venue is at 520 so it still rests
+    const moved = await json<Strategy>(await t.request(url, { cookie: alice, json: { limitPrice: "505.3", confirm: "LIVE" } }));
+    expect(moved.orders.find((o) => o.id === resting.id)).toMatchObject({ state: "pending", limitPrice: "505.0", clientOrderId: resting.clientOrderId, venueOrderId: resting.venueOrderId });
+    expect(t.trading.edited.at(-1)).toEqual({ orderId: Number(resting.venueOrderId), productId: 105, limitPrice: "505.0" });
+    // a price across the venue's fill price fills at once and the leg gets its entry
+    const filled = await json<Strategy>(await t.request(url, { cookie: alice, json: { limitPrice: "521", confirm: "LIVE" } }));
+    expect(filled.orders.find((o) => o.id === resting.id)).toMatchObject({ state: "filled", fillPrice: "520", limitPrice: "521.0" });
+    expect(filled.legs.at(-1)!.entryPrice).toBe("520");
+    // no longer resting: a further re-price is refused
+    expect((await t.request(url, { cookie: alice, json: { limitPrice: "530", confirm: "LIVE" } })).status).toBe(409);
+    // a refused edit because the venue filled it a moment earlier: the fill is booked and the refusal says so
+    const b = await json<Strategy>(await adjust(s.id, { confirm: "LIVE", adds: [{ ...PUT, strike: "76000", symbol: "P-BTC-76000-250926", side: "buy", lots: 5, price: "500.3" }], expected: { "P-BTC-76000-250926": "500.3" }, orderType: "limit", idempotencyKey: "key-reprice-02" }));
+    const resting2 = b.orders.find((o) => o.batchId === "key-reprice-02")!;
+    t.trading.complete(Number(resting2.venueOrderId), "502");
+    const raced = await t.request(`/v1/strategies/${s.id}/live/orders/${resting2.id}/reprice`, { cookie: alice, json: { limitPrice: "510", confirm: "LIVE" } });
+    expect(raced.status).toBe(409);
+    expect(((await raced.json()) as { message: string }).message).toContain("filled before");
+    const after = await json<Strategy>(await t.request(`/v1/strategies/${s.id}`, { cookie: alice }));
+    expect(after.orders.find((o) => o.id === resting2.id)).toMatchObject({ state: "filled", fillPrice: "502" });
+  });
+
   it("when a later exit fails, the earlier fill stays booked, the batch stops, the key is used up and a new key finishes the rest", async () => {
     const s = await draft([CALL, PUT]);
     const live = await json<Strategy>(await place(s.id, "key-adj-live-004"));

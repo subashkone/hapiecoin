@@ -3,6 +3,7 @@
  * chains built on demand from the instrument list (ADR-006).
  */
 import { Emitter } from "../emitter.js";
+import { carryOpenInterest } from "../open-interest.js";
 import type { MarketDataEvents, MarketDataStatus, VenueMarketData, VenueMarketDataOptions } from "../market-data.js";
 import type { ChainSnapshot, Expiry, Instrument, Quote } from "../types.js";
 import { buildChain, listExpiries } from "./chain.js";
@@ -149,8 +150,9 @@ export class DeltaMarketData extends Emitter<MarketDataEvents> implements VenueM
   private accept(quote: Quote): void {
     const current = this.quotes.get(quote.instrumentId);
     if (current && current.venueTs > quote.venueTs) return; // keep the newer quote
-    this.quotes.set(quote.instrumentId, quote);
-    this.emit("ticker", quote);
+    const next = carryOpenInterest(current, quote); // GAPS #15: a compact tick without its oi cell keeps the last figure
+    this.quotes.set(quote.instrumentId, next);
+    this.emit("ticker", next);
   }
 }
 

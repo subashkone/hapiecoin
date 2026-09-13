@@ -1,7 +1,8 @@
 // Mindful Trading pause: the day figure and the pause rule (ADR-074; HC-TR-182).
 import type { MindfulSettings, Strategy } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
-import { type DayBook, liveDayPnl, mindfulFor, shouldPause } from "./mindful";
+import { ApiError } from "@/lib/api/client";
+import { type DayBook, liveDayPnl, mindfulFor, refusedMindful, serverMindful, shouldPause } from "./mindful";
 
 const TODAY = "2026-09-12";
 const AT = "2026-09-08T10:00:00Z";
@@ -49,8 +50,27 @@ describe("HC-TR-182 today's live P&L", () => {
     expect(shouldPause(ON, liveDayPnl([strat("a")], book({ a: 0 }), TODAY))).toBe(false); // flat is not down
     expect(shouldPause(ON, liveDayPnl([], book({}), TODAY))).toBe(false);
     const info = mindfulFor({ ...ON, thresholdUsd: "10", pauseSeconds: 45 }, [strat("a")], book({ a: -80 }), TODAY);
-    expect(info).toEqual({ day: down, seconds: 45, thresholdUsd: 10 });
+    expect(info).toEqual({ day: down, seconds: 45, thresholdUsd: 10, source: "browser" });
     expect(mindfulFor(ON, [strat("a")], book({ a: 80 }), TODAY)).toBeNull();
     expect(mindfulFor(undefined, [strat("a")], book({ a: -80 }), TODAY)).toBeNull();
+  });
+});
+
+describe("HC-TR-189 the server's verdict (ADR-084)", () => {
+  const day = { pnlUsd: "-80.00", count: 2, closedCount: 1, known: true };
+  it("is undefined while the server has no figure, null when the server says no pause, and the pause otherwise", () => {
+    expect(serverMindful(undefined)).toBeUndefined();
+    expect(serverMindful(null)).toBeUndefined();
+    expect(serverMindful({ day: { ...day, known: false }, pause: { seconds: 30, thresholdUsd: "0", basis: "since 05:30 IST (00:00 UTC)" } })).toBeUndefined();
+    expect(serverMindful({ day, pause: null })).toBeNull();
+    expect(serverMindful({ day, pause: { seconds: 45, thresholdUsd: "10", basis: "since 05:30 IST (00:00 UTC)" } })).toEqual({ day: { pnl: -80, count: 2, closedCount: 1, known: true }, seconds: 45, thresholdUsd: 10, source: "server" });
+  });
+  it("a refused entry carries the pause with the server's seconds left; any other error is not a pause", () => {
+    const pause = { seconds: 45, thresholdUsd: "10", basis: "since 05:30 IST (00:00 UTC)" };
+    expect(refusedMindful(new ApiError(409, "MINDFUL_PAUSE", "wait", { waitS: 12, day, pause }))).toEqual({ day: { pnl: -80, count: 2, closedCount: 1, known: true }, seconds: 12, thresholdUsd: 10, source: "server" });
+    expect(refusedMindful(new ApiError(409, "MINDFUL_PAUSE", "wait", { day, pause }))?.seconds).toBe(45); // no seconds given: the whole pause
+    expect(refusedMindful(new ApiError(409, "MINDFUL_PAUSE", "wait"))).toBeNull(); // no figures to show
+    expect(refusedMindful(new ApiError(409, "CONFLICT", "kill switch", { waitS: 12, day, pause }))).toBeNull();
+    expect(refusedMindful(new Error("network"))).toBeNull();
   });
 });

@@ -69,7 +69,7 @@ describe("[VENUES] Delta trading client (ADR-025)", () => {
     const sleeps: number[] = [];
     const c = new DeltaTradingClientImpl({ baseUrl: BASE, fetch: f.impl, nodeEnv: "test", now: () => 1_700_000_000, timeoutMs: 20, sleep: (ms) => { sleeps.push(ms); return Promise.resolve(); } });
     const ok = await c.placeOrder(CREDS, { productId: 27, size: 10, side: "buy", clientOrderId: "hc-leg1-1" });
-    expect(ok).toEqual({ ok: true, order: { id: 501, clientOrderId: "hc-leg1-1", productId: 27, side: "buy", size: 10, unfilledSize: 0, state: "closed", averageFillPrice: "1201.5" } });
+    expect(ok).toEqual({ ok: true, order: { id: 501, clientOrderId: "hc-leg1-1", productId: 27, side: "buy", size: 10, unfilledSize: 0, state: "closed", averageFillPrice: "1201.5", limitPrice: null } });
     expect(f.calls[0]!.init.method).toBe("POST");
     expect(JSON.parse(f.calls[0]!.init.body!)).toEqual({ product_id: 27, size: 10, side: "buy", order_type: "market_order", client_order_id: "hc-leg1-1", reduce_only: false });
     expect(f.calls[0]!.init.headers["api-key"]).toBe("key-1");
@@ -167,5 +167,43 @@ describe("[VENUES] Delta trading client (ADR-025)", () => {
       fake.complete(resting.order.id, "1190");
       expect((await fake.getOrder(CREDS, resting.order.id))?.averageFillPrice).toBe("1190");
     }
+  });
+});
+
+describe("HC-TR-188 editOrder re-prices a resting limit in place (ADR-083)", () => {
+  it("sends PUT /v2/orders with the id, product and price, and reads the venue's order back", async () => {
+    const f = fakeFetch(() => ({ body: { success: true, result: { id: 501, client_order_id: "hc-leg-1", product_id: 27, side: "buy", size: 2, unfilled_size: 2, state: "open" } } }));
+    const c = new DeltaTradingClientImpl({ baseUrl: BASE, fetch: f.impl, nodeEnv: "test", now: () => 1_700_000_000, minIntervalMs: 0 });
+    const res = await c.editOrder(CREDS, { orderId: 501, productId: 27, limitPrice: "500.0" });
+    expect(res).toEqual({ ok: true, order: { id: 501, clientOrderId: "hc-leg-1", productId: 27, side: "buy", size: 2, unfilledSize: 2, state: "open", averageFillPrice: null, limitPrice: null } });
+    const call = f.calls.at(-1)!;
+    expect(call.init.method).toBe("PUT");
+    expect(call.url.pathname).toBe("/v2/orders");
+    expect(JSON.parse(call.init.body!)).toEqual({ id: 501, product_id: 27, limit_price: "500.0" });
+    expect(call.init.headers["api-key"]).toBe("key-1"); // signed like every private call
+  });
+  it("a refusal carries the venue's code; a transport failure is an unknown outcome", async () => {
+    const refused = new DeltaTradingClientImpl({ baseUrl: BASE, fetch: fakeFetch(() => ({ status: 400, body: { success: false, error: { code: "order_not_found" } } })).impl, nodeEnv: "test", now: () => 1_700_000_000, minIntervalMs: 0 });
+    expect(await refused.editOrder(CREDS, { orderId: 1, productId: 27, limitPrice: "1" })).toMatchObject({ ok: false, code: "order_not_found" });
+    const down = new DeltaTradingClientImpl({ baseUrl: BASE, fetch: fakeFetch(() => ({ throwError: new Error("ECONNRESET") })).impl, nodeEnv: "test", now: () => 1_700_000_000, minIntervalMs: 0 });
+    expect(await down.editOrder(CREDS, { orderId: 1, productId: 27, limitPrice: "1" })).toMatchObject({ ok: false, code: "unknown", unknown: true });
+    const unreadable = new DeltaTradingClientImpl({ baseUrl: BASE, fetch: fakeFetch(() => ({ body: { success: true, result: { nope: 1 } } })).impl, nodeEnv: "test", now: () => 1_700_000_000, minIntervalMs: 0 });
+    expect(await unreadable.editOrder(CREDS, { orderId: 1, productId: 27, limitPrice: "1" })).toMatchObject({ ok: false, code: "unknown", unknown: true, message: expect.stringContaining("could not be read") as string });
+  });
+  it("the fake moves a resting order's price: it fills when the new limit crosses the fill price, else keeps resting; a filled order cannot be edited or cancelled", async () => {
+    const fake = new FakeDeltaTradingClient().product("C-BTC-80000-250926", 27).fillAt(27, "520");
+    const placed = await fake.placeOrder(CREDS, { productId: 27, size: 1, side: "buy", clientOrderId: "hc-1-1", orderType: "limit", limitPrice: "500" });
+    expect(placed).toMatchObject({ ok: true, order: { state: "open" } });
+    const id = placed.ok ? placed.order.id : -1;
+    expect(await fake.editOrder(CREDS, { orderId: id, productId: 27, limitPrice: "510" })).toMatchObject({ ok: true, order: { state: "open", unfilledSize: 1, limitPrice: "510" } });
+    expect((await fake.getOrder(CREDS, id))?.limitPrice).toBe("510"); // the venue holds the new price
+    fake.ordersDown = true;
+    expect(await fake.getOrder(CREDS, id)).toBeNull();
+    fake.ordersDown = false;
+    expect(await fake.editOrder(CREDS, { orderId: id, productId: 27, limitPrice: "525" })).toMatchObject({ ok: true, order: { state: "closed", averageFillPrice: "520" } });
+    expect(fake.edited.map((e) => e.limitPrice)).toEqual(["510", "525"]);
+    expect(await fake.editOrder(CREDS, { orderId: id, productId: 27, limitPrice: "530" })).toMatchObject({ ok: false, code: "order_not_open" });
+    expect(await fake.cancelOrder(CREDS, id, 27)).toBe(false);
+    expect(await fake.editOrder(CREDS, { orderId: 999, productId: 27, limitPrice: "1" })).toMatchObject({ ok: false, code: "order_not_found" });
   });
 });
