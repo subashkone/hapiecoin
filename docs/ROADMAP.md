@@ -1,6 +1,6 @@
-# HapieCoin roadmap (kept current; last edit 10 Sep 2026)
+# HapieCoin roadmap (kept current; last edit 13 Sep 2026 · feature freeze at main 933dcdc, ADR-090: open items live in docs/BACKLOG.md; go-live status in docs/GO-LIVE-READINESS.md)
 
-Order agreed with the user. One PR per line unless grouped. Status: ⬜ not started · 🔨 in progress · ✅ merged.
+Order agreed with the user. One PR per line unless grouped. Status: ⬜ not started · 🔨 in progress · ✅ merged · ⏸ backlog (not scheduled).
 
 ## A. Trade lifecycle (ADR-059; docs/design/trade-lifecycle.md; mockup trade-lifecycle-v1.html)
 1. ✅ Pre-filled strategy names · start and expiry with days left on every card · lifecycle chips Open / Expiring ≤ 1d / Closed · sort by expiry · capital block on the trade preview (required, available, fees, after) (HC-TR-155..158)
@@ -31,9 +31,9 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 
 ## E. Platform (ADR-060; docs/research/platform-roadmap-2026-09.md §3–5; after C13)
 20. ✅ E1 venue port: ✅ step 1 (ADR-063) `VenueAdapter` + `VENUE_REGISTRY` + `DELTA_INDIA` (no behaviour change) → ✅ step 2a (ADR-064) browser-safe `@hapiecoin/venues/core`, the web client on the port → ✅ step 2b (ADR-065) the `venue` column on strategies / brokers / alerts / history, venue-scoped reads, broker-venue guard → ✅ step 3 (ADR-066) BSM carry (r, q), injected `TradingCalendar`, exercise style shown → ✅ step 4a (ADR-067) Deribit data-only adapter, `VENUES` + `deribit`, one gateway session per venue, data-only guard in the API → ✅ step 4b (ADR-069) venue switch in the client: store venue + header chip, venue-keyed chain / term-structure / leg-quote subscriptions, expiries and market history per venue, lot sizes per venue, data-only gating → ✅ step 4c (ADR-070) the API per venue: trading client by broker venue, lot defaults by strategy venue, IV snapshots / settlement spot / rule ticks per venue in `API_VENUES`, the positions venue (GAPS #83 closed; #87 lists the leftovers) → ✅ venue-keyed spot topics (ADR-071, GAPS #86 closed)
-21. ⬜ E2 currency: `Money { amount, ccy }`, ISO-4217 display list, ECB reference rates via ingest (`fx_rates`, `GET /fx`), manual override with a basis badge; billing stays INR
-22. ⬜ E3 languages: next-intl, cookie locale, chrome → dialogs → settings → content; Hindi, Tamil and Telugu together; per-locale assistant match tables
-23. 🔨 E4 mobile · PWA half BUILT on feat/pwa (ADR-082; HC-SH-134..135; GAPS #98): manifest + icons, deny-by-default service worker with an offline page, Install entry in the settings menu + a one-time phone hint, iPhone 14 Playwright project on Chromium · then the Capacitor shell with native push and biometric unlock (Play Store, App Store) once the store accounts exist
+21. ⏸ E2 currency · BACKLOG (feature freeze 13 Sep 2026, ADR-090; docs/BACKLOG.md §1): `Money { amount, ccy }`, ISO-4217 display list, ECB reference rates via ingest (`fx_rates`, `GET /fx`), manual override with a basis badge; billing stays INR
+22. ⏸ E3 languages · BACKLOG (feature freeze 13 Sep 2026, ADR-090): next-intl, cookie locale, chrome → dialogs → settings → content; Hindi, Tamil and Telugu together; per-locale assistant match tables
+23. ✅ E4 mobile · PWA half MERGED 13 Sep 2026 as PR #95 (ADR-082; HC-SH-134..135; GAPS #98): manifest + icons, deny-by-default service worker with an offline page, Install entry in the settings menu + a one-time phone hint, iPhone 14 Playwright project · ⏸ Capacitor half (native push, biometric unlock, Play Store / App Store) · BACKLOG until the store accounts exist
 
 ## F. Hardening (docs/research/platform-roadmap-2026-09.md §6; with C13)
 24. ✅ (ADR-061) `.github/workflows/ci.yml` (`pnpm ci` + `check:budget` + e2e), dependabot, LICENSE (GAPS #69)
@@ -41,7 +41,7 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 26. ✅ (ADR-062) Replica guards for the reconciler and Telegram poller; gateway feed-leader lock (GAPS #16, #71)
 27. ✅ (ADR-081) Error tracking and API metrics (GAPS #72 closed; leftovers #97)
 28. ✅ (ADR-078) TOTP second factor and a typed LIVE confirmation before a live order (GAPS #73 closed; leftovers #94)
-29. ⬜ `zod/mini` for `@hapiecoin/schema`; bundle check inside `pnpm ci` (GAPS #19)
+29. ⏸ `zod/mini` for `@hapiecoin/schema`; bundle check inside `pnpm ci` (GAPS #19) · BACKLOG (feature freeze 13 Sep 2026, ADR-090)
 
 ## Done this week
 - ✅ Trade lifecycle item 1 (PR #47, ADR-059)

@@ -241,4 +241,20 @@ test.describe("HC-MA Market Analytics", () => {
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/analytics\/whales$/);
   });
+
+  test("HC-MA-038 / HC-MA-041 / HC-MA-049 the markets, derivatives and options pages hydrate without a mismatch (GAPS #106)", async ({ page }) => {
+    // the analytics shell fetches the markets snapshot for its coin search; a page that hydrated later than the shell
+    // used to render "ready" against a server render of "loading" and React threw "Hydration failed"
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    page.on("console", (m) => {
+      if (m.type() === "error") errors.push(m.text());
+    });
+    for (const route of ["/analytics/markets?compare=BTC,ETH", "/analytics/derivatives", "/analytics/options"]) {
+      await page.goto(route);
+      await expect(page.getByTestId("analytics-shell")).toBeVisible({ timeout: 15_000 });
+      await page.waitForTimeout(1500);
+    }
+    expect(errors.filter((e) => /hydrat/i.test(e)), "hydration errors").toEqual([]);
+  });
 });

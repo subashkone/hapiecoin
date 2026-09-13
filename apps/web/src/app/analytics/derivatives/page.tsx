@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { DerivativesPage } from "@/components/analytics/DerivativesPage";
 
 export const metadata: Metadata = { title: "Derivatives · Market Analytics" };
 
+// No Suspense boundary around the page (GAPS #106): see analytics/markets/page.tsx.
 export default function Page() {
-  return (
-    <Suspense fallback={null}>
-      <DerivativesPage />
-    </Suspense>
-  );
+  return <DerivativesPage />;
 }

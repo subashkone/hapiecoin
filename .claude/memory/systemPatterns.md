@@ -15,6 +15,7 @@
 - Validate every external boundary (HTTP, WS, env) with Zod schemas from `packages/schema`.
 - Paper and live trading share one order model but different executors; the live executor is the only code that may call an order endpoint.
 - Tests: Vitest for units, Playwright for e2e and visual diffs; each test title carries its traceability ID.
+- Phones and the home-screen app (ADR-080, ADR-082): one media-query hook (`apps/web/src/lib/useMediaQuery.ts`), the workspace stacks below 1000 px and the header compacts below 768; `apps/web/public/sw.js` is a hand-written deny-by-default worker (navigations network-first with the cached `/offline` page, immutable `/_next/static` assets cache-first, everything else untouched, never the API); Playwright projects `chromium`, `phone` (Pixel 7) and `phone-ios` (iPhone 14 on Chromium) with per-profile captures.
 - Design tokens live in one file; amber is only for spot/ATM/primary action; green/red only for P&L and side (ADR-003).
 - Templates carry `risk` ("defined" = finite loss at expiry, proven by the invariants test); the Strategy Wizard (ADR-072, Builder sub-tab `wizard`, `W`) prices the eligible templates once per chain snapshot and derives every thesis figure from the expiry curve (`lib/strategy/wizard.ts`), loading a card through the same `useTemplateLoader().load` as the Templates tab.
 
