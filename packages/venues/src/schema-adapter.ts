@@ -6,7 +6,7 @@
  *   expiryCode+Date    "250926" + "2026-09-25" -> expiry "2026-09-25"
  *   contractValue      -> contractSize          tickSize unchanged
  *   venueTs            -> ts                    bidSize/askSize -> bidQty/askQty
- *   oi (underlying units) / oiContracts         -> oi in contracts (schema unit); "0" when the venue sent none
+ *   oi (underlying units) / oiContracts         -> oi in contracts (schema unit); omitted when the venue sent none (GAPS #15)
  *   nullable fields    -> omitted optionals (schema uses `.optional()`, never null)
  *   spot null          -> the caller's fallback (latest spot of the chain), otherwise SchemaAdapterError
  *
@@ -115,9 +115,9 @@ export function toSchemaQuote(q: Quote, fallbackSpot?: string | null): SchemaQuo
     instrumentId: schemaInstrumentId(q.symbol, schemaVenueOf(q.venue)),
     ts: q.venueTs,
     mark: q.mark,
-    oi: q.oiContracts ?? "0",
     spot,
   };
+  if (q.oiContracts !== null) out.oi = q.oiContracts; // a real zero is "0"; none sent is no field (ADR-085)
   if (q.bid !== null) out.bid = q.bid;
   if (q.ask !== null) out.ask = q.ask;
   const markIv = ivOrOmit(q.markIv);

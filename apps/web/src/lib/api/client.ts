@@ -32,6 +32,8 @@ export interface RequestOptions<T> {
   /** Response schema; omit for 204 / empty responses. */
   schema?: z.ZodType<T>;
   signal?: AbortSignal;
+  /** Headers for this call only (the second-factor code, ADR-086). */
+  headers?: Record<string, string>;
 }
 
 /** Build the error thrown for a non-2xx response; tolerant of non-JSON bodies. */
@@ -55,7 +57,7 @@ export function createApiClient(options: ApiClientOptions = {}) {
   const doFetch: FetchLike = options.fetch ?? ((input, init) => fetch(input, init));
 
   async function request<T = void>(path: string, opts: RequestOptions<T> = {}): Promise<T> {
-    const headers: Record<string, string> = { Accept: "application/json", ...options.headers };
+    const headers: Record<string, string> = { Accept: "application/json", ...options.headers, ...opts.headers };
     let body: string | undefined;
     if (opts.body !== undefined) {
       headers["Content-Type"] = "application/json";

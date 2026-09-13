@@ -1,13 +1,13 @@
 "use client";
 // Trade flow orchestrator (HC-TR-022, 050..057, 046): Select Trading Mode → Trade Preview → start. Trades
-// either the Builder legs (saving them as a draft first) or an existing draft ("Activate"). Also imports the
-// browser-local drafts saved before Phase 3 once (ADR-024).
+// either the Builder legs (saving them as a draft first) or an existing draft ("Activate"); every draft is a server
+// row (ADR-024; the Phase 2 browser hopper went with ADR-088).
 import { emitTour } from "@/lib/tour";
 import { type Strategy, toDecimal } from "@hapiecoin/schema";
 import { toast } from "@hapiecoin/ui";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useBrokers, useCredential, useSettings } from "@/lib/api/queries";
-import { type MindfulPauseInfo, mindfulFor } from "@/lib/strategy/mindful";
+import { type MindfulPauseInfo, mindfulFor, refusedMindful, serverMindful } from "@/lib/strategy/mindful";
 import { useConnectionStatus } from "@/lib/gateway/hooks";
 import { useLivePositions } from "@/lib/api/live";
 import { useCreateStrategy, usePatchStrategy, useStartStrategy, useStrategies } from "@/lib/api/strategies";
@@ -25,43 +25,11 @@ import { isTemplateName } from "@/lib/strategy/templates";
 import { type TradeLegView, TradeModeDialog, netPremium } from "./TradeModeDialog";
 import { TradePreviewDialog, legLabel } from "./TradePreviewDialog";
 import { overlapsFor } from "@/lib/strategy/overlap";
-import { DEFAULT_VENUE, getVenueCore } from "@hapiecoin/venues/core";
+import { getVenueCore } from "@hapiecoin/venues/core";
 import { dataOnly, dataOnlyNote } from "@/lib/venue";
 import { useVenueId } from "@/lib/useVenue";
 
-/** One-time import of the Phase 2 browser drafts into the API (ADR-024). */
-export function useImportLegacyDrafts() {
-  const drafts = useUiStore((s) => s.drafts);
-  const imported = useUiStore((s) => s.draftsImported);
-  const mark = useUiStore((s) => s.markDraftsImported);
-  const create = useCreateStrategy();
-  const ran = useRef(false);
-  useEffect(() => {
-    if (imported || ran.current) return;
-    ran.current = true;
-    if (drafts.length === 0) {
-      mark();
-      return;
-    }
-    void (async () => {
-      let n = 0;
-      for (const d of drafts) {
-        if (d.legs.length === 0) continue;
-        try {
-          await create.mutateAsync({ name: d.name, asset: d.asset, venue: DEFAULT_VENUE, templateName: d.templateName, legs: d.legs.slice(0, 8).map(localLegToInput) }); // Phase 2 browser drafts predate the venue choice: Delta India
-          n += 1;
-        } catch {
-          /* keep going: a failed row is not worth losing the rest */
-        }
-      }
-      mark();
-      if (n) toast("Drafts imported", { description: `${n} saved ${n === 1 ? "strategy" : "strategies"} moved to your account` });
-    })();
-  }, [drafts, imported, mark, create]);
-}
-
 export function TradeFlow({ book }: { book: PaperBook }) {
-  useImportLegacyDrafts();
   const flow = useUiStore((s) => s.tradeFlow);
   const closeTrade = useUiStore((s) => s.closeTrade);
   const followStrategy = useUiStore((s) => s.followStrategy);
@@ -92,6 +60,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
   const [busy, setBusy] = useState(false);
   // HC-TR-182: the Mindful pause is decided once, when the live preview opens, and holds for this flow
   const [mindful, setMindful] = useState<MindfulPauseInfo | null>(null);
+  const [pauseRun, setPauseRun] = useState(0); // bumped by a refusal so the countdown restarts even at the same seconds
   useEffect(() => {
     if (flow) {
       setStep("mode");
@@ -201,7 +170,12 @@ export function TradeFlow({ book }: { book: PaperBook }) {
       const saved = await start.mutateAsync({ id, body: { mode, brokerId, ...(accountId ? { accountId } : {}), entries: target ? entries() : {} } });
       finish(saved);
     } catch (e) {
-      if (!handleUpgradeRequired(e)) toast.error("Could not start the trade", { description: e instanceof Error ? e.message : "request failed" });
+      const refused = refusedMindful(e);
+      if (refused) {
+        // ADR-084: the server decided a pause the preview did not show (the day moved after it): the block and the countdown, not an error toast
+        setMindful(refused);
+        setPauseRun((n) => n + 1);
+      } else if (!handleUpgradeRequired(e)) toast.error("Could not start the trade", { description: e instanceof Error ? e.message : "request failed" });
     } finally {
       setBusy(false);
     }
@@ -230,7 +204,9 @@ export function TradeFlow({ book }: { book: PaperBook }) {
       const worstLoss = maxLoss === null ? (debit > 0 ? -debit : null) : Math.min(maxLoss, -debit);
       const v = await livePreview.mutateAsync({ id, body: { brokerId: b, ...(a ? { accountId: a } : {}), ...(worstLoss !== null ? { worstLoss } : {}) } });
       setVenue(v);
-      setMindful(mindfulFor(settings?.mindful, strategies, book));
+      // ADR-084: the server's figure decides when it is known; this tab's fold only while the server has none
+      const fromServer = serverMindful(v.mindful);
+      setMindful(fromServer === undefined ? mindfulFor(settings?.mindful, strategies, book) : fromServer);
       setStep("preview");
     } catch (e) {
       toast.error("Could not preview the live order", { description: e instanceof Error ? e.message : "request failed" });
@@ -269,7 +245,7 @@ export function TradeFlow({ book }: { book: PaperBook }) {
           void toPreview(m, b, a);
         }}
       />
-      <TradePreviewDialog open={step === "preview"} onOpenChange={(o) => !o && closeTrade()} mode={mode} asset={asset} legs={legs} spot={spot} lotSize={lotSize} money={money} broker={broker} fees={fees} maxLoss={maxLoss} maxLossKnown={fromBuilder} customPrices={customPrices} busy={busy} venue={venue} available={available} overlaps={overlaps} mindful={mindful} mindfulKey={idemKey} feedLive={feedLive} onTrade={onTradeNow} />
+      <TradePreviewDialog open={step === "preview"} onOpenChange={(o) => !o && closeTrade()} mode={mode} asset={asset} legs={legs} spot={spot} lotSize={lotSize} money={money} broker={broker} fees={fees} maxLoss={maxLoss} maxLossKnown={fromBuilder} customPrices={customPrices} busy={busy} venue={venue} available={available} overlaps={overlaps} mindful={mindful} mindfulKey={`${idemKey}:${pauseRun}`} feedLive={feedLive} onTrade={onTradeNow} />
       <SaveDraftDialog open={step === "name"} onOpenChange={(o) => !o && setStep("preview")} initialName={isTemplateName(meta.name) ? "" : meta.name} suggest={fromBuilder ? suggest : undefined} intent="trade" onSave={(n) => { setMeta(builder.asset, { name: n }); if (mode === "live") void toPreview("live", brokerId, accountId, n); else { setStep("preview"); void trade(n); } }} />
     </>
   );

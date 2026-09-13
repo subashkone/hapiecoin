@@ -6,6 +6,8 @@
 // every order once placed; the marks reviewed here travel with the batch as the expected prices.
 import type { AdjustBody, OrderType, Strategy } from "@hapiecoin/schema";
 import { TypedConfirm, isLiveConfirm } from "@/components/trading/TypedConfirm";
+import { MindfulCountdownButton, MindfulPause, useMindfulCountdown } from "@/components/trading/MindfulPause";
+import { type MindfulPauseInfo, refusedMindful, serverMindful } from "@/lib/strategy/mindful";
 import { MAX_ADJUST_REASON } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { useQueryClient } from "@tanstack/react-query";
@@ -124,9 +126,17 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
   const blocked = live && (venue?.ok !== true || anyOver);
   // HC-TR-186: adding exposure to a live strategy is a real entry: the word is typed; trims and closes need none
   const needsWord = live && body.adds.length > 0;
+  // HC-TR-190 (ADR-084): an add is a new bet, so the server's pause applies here too; trims and closes never wait
+  // a refusal the preview did not foresee (the day moved after it) shows the block and restarts the countdown
+  const [refused, setRefused] = useState<{ info: MindfulPauseInfo; run: number } | null>(null);
+  const mindfulInfo = needsWord ? (refused?.info ?? serverMindful(venue?.mindful) ?? null) : null;
+  const pauseLeft = useMindfulCountdown(open ? mindfulInfo : null, open ? (refused?.run ?? 0) + 1 : 0);
   const [word, setWord] = useState("");
   useEffect(() => {
-    if (open) setWord("");
+    if (open) {
+      setWord("");
+      setRefused(null);
+    }
   }, [open]);
   const wordOk = !needsWord || isLiveConfirm(word);
   const overBalance = venue !== null && venue.ok && venue.available !== null && Number(venue.notional) > Number(venue.available);
@@ -154,6 +164,11 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
           toast.success("Adjustment applied", { description: `${orders} ${orders === 1 ? "change" : "changes"} at the marks shown` });
         },
         onError: (e) => {
+          const pause = refusedMindful(e);
+          if (pause) {
+            setRefused((r) => ({ info: pause, run: (r?.run ?? 0) + 1 })); // nothing was placed: the block and the countdown
+            return;
+          }
           // the position may have moved on the server (a batch stopped after some fills is 502): refresh it and start the draft again from what is open now
           void qc.invalidateQueries({ queryKey: strategyKeys.all });
           const partly = e instanceof ApiError && e.status === 502;
@@ -319,6 +334,7 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
               </label>
             </>
           )}
+          {mindfulInfo && !results ? <MindfulPause info={mindfulInfo} money={money} left={pauseLeft} atRisk={worst === null ? { text: "not computed · see the change box", loss: false } : { text: fmtMoney(worst, money, { signed: true }), loss: true }} marginText={venue?.marginUsed ? `${venue.marginUsed} ${venue.availableAsset ?? "USD"}` : "—"} /> : null}
           {needsWord && !results ? <TypedConfirm value={word} onChange={setWord} disabled={adjust.isPending} focusKey={open} verb="place" /> : null}
         </DialogBody>
         <DialogFooter>
@@ -327,7 +343,9 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
           ) : (
             <>
               <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="adjust-cancel">Back</Button>
-              {live ? (
+              {live && mindfulInfo && pauseLeft > 0 ? (
+                <MindfulCountdownButton left={pauseLeft} />
+              ) : live ? (
                 <HoldButton ms={HOLD_MS} disabled={blocked || adjust.isPending || !wordOk} onFire={confirm} testId="adjust-apply">
                   {adjust.isPending ? "Placing…" : `Hold to place ${orders} ${orders === 1 ? "order" : "orders"}`}
                 </HoldButton>

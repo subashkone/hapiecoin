@@ -1981,6 +1981,21 @@
   "areaName": "App shell, settings, tour, assistant, palette, alerts",
   "owner": "Platform engineer",
   "route": "/analyse",
+  "screen": "Settings · API Settings / Mindful trading / Lot Size",
+  "feature": "A fresh authenticator code before a sensitive change on an account with two-factor sign-in on",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + web)",
+  "acceptance": "When /v1/me says the authenticator is on, the API Settings dialog (Connect & Save, Disconnect), the Mindful dialog and the Lot Size dialog show a six-box Authenticator code field; the mutations send it as the X-Second-Factor header; the API refuses 403 SECOND_FACTOR_REQUIRED without it, 403 SECOND_FACTOR_INVALID on a wrong code and 429 SECOND_FACTOR_LOCKED after five wrong codes in fifteen minutes; the refusal shows under the field; the code is cleared after each save. Theme, density, currency and P&L basis never ask; an account without the authenticator is never asked",
+  "evidence": "ADR-086 (13 Sep 2026): apps/api/src/security/second-factor.ts requireSecondFactor, routes/credentials.ts, routes/settings.ts safetyKnobsChanged, auth.ts sessionResolver twoFactorEnabled; apps/web lib/api/second-factor.ts, lib/api/queries.ts, components/dialogs/SecondFactorField.tsx, ApiSettingsDialog.tsx, MindfulDialog.tsx, LotSizeDialog.tsx; unit second-factor.test.ts (api), dialogs.test.tsx HC-SH-136 (web)"
+ },
+ {
+  "id": "HC-SH-135",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "route": "/analyse",
   "screen": "Settings · Security · Passkeys",
   "feature": "Passkeys: add one with a name, see the list, rename, remove",
   "status": "working",
@@ -3968,7 +3983,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "State object created here; leg mutations belong to the trading part (chain only emits analyse:addLeg, with a local fallback); the right pane re-renders on analyse:legs-changed and on every tick",
-  "evidence": "integration contract between the /analyse parts · Phase 2 item 4 (08 Sep 2026): shared workspace state in the UI store: legs, strategy meta, drafts, tabs, target (store.ts); unit store.test.ts"
+  "evidence": "integration contract between the /analyse parts · Phase 2 item 4 (08 Sep 2026): shared workspace state in the UI store: legs, strategy meta, tabs, target (store.ts; drafts are server rows since ADR-024, the browser slice retired by ADR-088); unit store.test.ts"
  },
  {
   "id": "HC-WS-064",
@@ -4751,6 +4766,21 @@
   "evidence": "ADR-080 (12 Sep 2026): apps/web/src/components/trading/NetPositionsPanel.tsx, PaperPanel.tsx, JournalPanel.tsx, adjust/PositionTicket.tsx, analysis/BacktestPanel.tsx, ReplayPanel.tsx; e2e phone.spec.ts HC-WS-115"
  },
  {
+  "id": "HC-WS-116",
+  "area": "20-analyse",
+  "areaName": "Workspace: chain & analysis pane",
+  "owner": "Workspace engineer",
+  "route": "/analyse",
+  "screen": "Analyse · Chain",
+  "feature": "Open interest the venue did not send shows as a dash, never as 0",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (schema + venues + gateway + web)",
+  "acceptance": "Quote.oi is optional: the venue adapter omits it when the venue sent none and keeps a real zero as 0; both venue sessions carry the last figure forward over a tick that omits it, so a snapshot shows the last known figure. The chain cell, the strike picker, option details and the workbench chain show — with no OI bar; Σ OI and the put/call ratio sum only the figures that exist; the screener shows — for an unknown figure, sorts it last, keeps it under a zero minimum and drops it under a positive one",
+  "evidence": "ADR-085 (13 Sep 2026): packages/schema market.ts Quote.oi optional; packages/venues schema-adapter.ts toSchemaQuote, delta/market-data.ts accept carry-forward; apps/web lib/chain/range.ts maxOpenInterest / chainTotals, lib/chain/screener.ts StrikeRow.oi null + filterStrikes, components/screener/ScreenerPanel.tsx; unit market.test.ts (schema), schema-adapter.test.ts + delta/market-data.test.ts (venues), diff.test.ts (gateway), range.test.ts + screener.test.ts + chain.test.tsx HC-WS-116 (web)"
+ },
+ {
   "id": "HC-TR-001",
   "area": "21-trading",
   "areaName": "Builder, paper & live trading, journal",
@@ -5388,13 +5418,13 @@
   "owner": "Trading engineer",
   "route": "/analyse",
   "screen": "Analyse · Strategy panel (Templates)",
-  "feature": "Refresh strategies button",
+  "feature": "Strategies list refreshes itself (no Refresh strategies button)",
   "status": "working",
   "isNew": false,
   "phase": 2,
-  "test": "unit (pricing) · e2e (Playwright)",
-  "acceptance": "Recalculates P&L and re-renders; toast 'Refreshed · Strategy data has been updated'",
-  "evidence": "bundle strings: Refresh strategies, Refreshed, Strategy data has been updated · Phase 3 item 1 (08 Sep 2026): not needed: the list is a TanStack query refreshed after every mutation"
+  "test": "unit (web)",
+  "acceptance": "The strategies list is a TanStack query: it is refetched after every mutation on this device (save, activate, archive, delete, trade) and when the My templates list mounts after its 15 s stale time; the app does not refetch on window focus, so a draft saved on another device appears on the next mutation or mount here. The Paper and Live panels keep their own Refresh for the exchange-side read. The original's 'Refresh strategies' button and its toast are not reproduced",
+  "evidence": "bundle strings: Refresh strategies, Refreshed, Strategy data has been updated · Phase 3 item 1 (08 Sep 2026): not needed: the list is a TanStack query refreshed after every mutation · ADR-088 (13 Sep 2026): restated as the self-refreshing list; drafts are server rows (ADR-024), the Phase 2 browser hopper retired"
  },
  {
   "id": "HC-TR-044",
@@ -7513,6 +7543,76 @@
   "evidence": "ADR-078 (12 Sep 2026): packages/schema strategies.ts LIVE_CONFIRM_WORD / LiveConfirm / isLiveConfirm / LiveRetryBody; apps/api routes/live-exec.ts requireLiveConfirm, routes/live.ts, routes/strategies.ts; apps/web components/trading/TypedConfirm.tsx, RetryDialog.tsx, TradePreviewDialog.tsx, BatchLiveDialog.tsx, adjust/AdjustConfirmDialog.tsx, PaperPanel.tsx, lib/api/live.ts; unit strategies.test.ts (schema) HC-TR-186, live.test.ts (api) HC-TR-186, trading-live.test.tsx HC-TR-186; e2e analyse.spec.ts (typeLiveIfShown before every live click)"
  },
  {
+  "id": "HC-TR-187",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Live tab · resting order",
+  "feature": "Cancel a resting limit entry from the card",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + venues + web)",
+  "acceptance": "A resting limit's chip reads 'resting @ price'; a row under the chips carries Cancel order per resting order. One plain click (no typed word: it reduces exposure) pulls the order from the exchange; the API reads the order back and books the exchange's truth, so a fill that beat the click is booked as a fill with the leg's entry, and a cancel is booked as 'cancelled from HapieCoin'. The leg stays on the card with no entry; the banner reads 'Order cancelled' and Retry re-sends it",
+  "evidence": "ADR-083 (13 Sep 2026): apps/api routes/live-exec.ts cancelResting, routes/live.ts POST /v1/strategies/{id}/live/orders/{orderId}/cancel; packages/venues delta/trading.ts (the fake refuses to cancel a filled order); apps/web components/trading/RestingOrderDialog.tsx, PaperPanel.tsx (order-chip data-resting, resting-row, order-cancel-order), RetryDialog.tsx, lib/api/live.ts useLiveCancelOrder; unit live.test.ts (api) HC-TR-187, trading-live.test.tsx HC-TR-187"
+ },
+ {
+  "id": "HC-TR-188",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Live tab · resting order",
+  "feature": "Re-price a resting limit entry in place",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + venues + web)",
+  "acceptance": "Re-price on the resting row opens the dialog with the leg, the resting price, the mark and a New limit price field; the word LIVE is typed (the order stays a live entry that can fill); the exchange edits the same order (PUT /v2/orders), the price snapped to the product tick; a price across the market fills at once and the leg gets its entry ('Filled at the new price'), else the chip reads the new resting price ('Price moved'). A refused edit re-reads the exchange first, so a fill or cancel that beat the edit is booked before the refusal is shown",
+  "evidence": "ADR-083 (13 Sep 2026): packages/venues delta/trading.ts editOrder + FakeDeltaTradingClient.editOrder; packages/schema strategies.ts LiveRepriceBody; apps/api routes/live-exec.ts repriceResting, routes/live.ts POST …/orders/{orderId}/reprice; apps/web RestingOrderDialog.tsx, PaperPanel.tsx order-reprice, lib/api/live.ts useLiveRepriceOrder; unit trading.test.ts (venues) HC-TR-188, live.test.ts (api) HC-TR-188, trading-live.test.tsx HC-TR-188"
+ },
+ {
+  "id": "HC-TR-189",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Trade Preview · Trade All",
+  "feature": "The Mindful pause decided on the server: the server's live day P&L in the preview, the entry delayed until the pause has elapsed",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + web)",
+  "acceptance": "The live preview and GET /v1/me/day-pnl carry the server's figure (open live strategies at the recorded marks against the day's baseline, live trades closed today at their realised figure; unknown without a fresh mark) and the pause it decides from the trader's Mindful settings. The trade preview and the batch dialog show the server's figure ('the server's figure' on the basis line) and fall back to this tab's book only while the server has none. Place and Trade All → Live answer 409 MINDFUL_PAUSE with the seconds left until the pause shown at preview time has elapsed; a script that skips the preview is refused once and waits the same pause (the refusal starts the clock). A refusal the preview did not foresee (the day moved after it) shows the block and the countdown in the dialog. Going live from paper resets the paper run's realised P&L and points. A leader job writes today's P&L point for every live strategy",
+  "evidence": "ADR-084 (13 Sep 2026): apps/api day-pnl.ts (liveDayPnl, mindfulFor, MindfulGate, enforceMindful, writeDayPnlPoints), routes/live-exec.ts preview mindful, routes/live.ts (preview stamps, place / batch enforce, GET /v1/me/day-pnl), config DAY_PNL_MS, main.ts day-pnl job; packages/schema strategies.ts LiveDayFigure / MindfulPreview / LivePreview.mindful; apps/web lib/strategy/mindful.ts serverMindful, components/trading/MindfulPause.tsx, TradeFlow.tsx, BatchLiveDialog.tsx, lib/api/live.ts useLiveDay; unit day-pnl.test.ts (api) HC-TR-189, trading-live.test.tsx HC-TR-189, mindful.test.ts"
+ },
+ {
+  "id": "HC-TR-190",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Adjustment workbench · Review",
+  "feature": "A live adjustment that adds a leg waits for the Mindful pause",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + web)",
+  "acceptance": "An add is a new bet: the workbench's live preview carries the server's pause; the Review dialog shows the Mindful block with the day figure, this batch's worst case and the margin in use, and the countdown replaces the hold button until the pause ends; the adjust route answers 409 MINDFUL_PAUSE until the pause shown at preview time has elapsed. POST /strategies/{id}/legs on a live strategy waits the same way. Trims and closes never wait; a body mixing a trim with an add waits as a whole",
+  "evidence": "ADR-084 (13 Sep 2026): apps/api routes/live.ts adjustPreview, routes/strategies.ts adjust and legs (enforceMindful on adds); apps/web components/adjust/AdjustConfirmDialog.tsx; unit day-pnl.test.ts (api) HC-TR-190, trading-live.test.tsx HC-TR-190"
+ },
+ {
+  "id": "HC-TR-191",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Trade All → Live",
+  "feature": "The batch previewed as one: every strategy's exchange check and the wallet against the premiums together, nothing placed until all pass",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (schema + api + web)",
+  "acceptance": "POST /v1/strategies/live/batch/preview answers per-strategy items (check passed or the reasons, legs with marks, notional, premium paid or received) and the whole (Σ notional, Σ premium, available, margin in use, the batch's own reasons); the batch route runs the same preview first and refuses the whole batch by name before any order goes out; the dialog shows each ticked row's check, a batch line and the Mindful at-risk line as the batch's premium, and keeps the button off until the batch is ok (untick a refused strategy to go on)",
+  "evidence": "ADR-087 (13 Sep 2026): apps/api/src/routes/live.ts batchPreview + the preview route + the batch route pre-pass; packages/schema strategies.ts LiveBatchPreview*; apps/web lib/api/live.ts useBatchPreview, components/trading/BatchLiveDialog.tsx; unit live-batch.test.ts + live-cover.test.ts + accounts.test.ts + venue-column.test.ts (api), strategies.test.ts (schema), trading-live.test.tsx HC-TR-191 (web)"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",
@@ -9592,13 +9692,13 @@
   "owner": "Platform engineer",
   "route": "/admin/banners",
   "screen": "Banner Master",
-  "feature": "Dialog fields: Title (Welcome Offer), Description (Get 20% off your first plan), Link URL (https://coingreek.com/offers), 'Starts At (optional)' / 'Ends At (optional)' datetime-local, Frequency select (once_per_day / every_time / once_per_session)",
+  "feature": "Dialog fields: Title (Welcome Offer), Description (Get 20% off your first plan), Link URL (https://hapiecoin.com/offers), 'Starts At (optional)' / 'Ends At (optional)' datetime-local, Frequency select (once_per_day / every_time / once_per_session)",
   "status": "working",
   "isNew": false,
   "phase": 4,
-  "test": "unit (pricing) · e2e (Playwright)",
+  "test": "e2e (Playwright) · api contract",
   "acceptance": "Ids banner-title, banner-description, banner-link, banner-starts, banner-ends; link must be http(s); end must be after start",
-  "evidence": "bundle strings: banner-title, Welcome Offer, banner-description, Get 20% off your first plan, banner-link, Link URL, https://coingreek.com/offers, banner-starts, Starts At, (optional), datetime-local, banner-ends, Ends At, once_per_day · Phase 4 item 4b (08 Sep 2026, ADR-033): dialog fields title / description / link / frequency / starts / ends with http(s) and window validation (banner-*)"
+  "evidence": "bundle strings: banner-title, Welcome Offer, banner-description, Get 20% off your first plan, banner-link, Link URL, https://hapiecoin.com/offers, banner-starts, Starts At, (optional), datetime-local, banner-ends, Ends At, once_per_day · Phase 4 item 4b (08 Sep 2026, ADR-033): dialog fields title / description / link / frequency / starts / ends with http(s) and window validation (banner-*)"
  },
  {
   "id": "HC-AD-066",
@@ -10547,6 +10647,21 @@
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "The amber Send Email button lives in the title row next to the Compose / History tabs and hides on History",
   "evidence": "v2 improvement · Phase 4 item 4c (08 Sep 2026, ADR-035): Send Email lives in the title row and hides on History (email-send)"
+ },
+ {
+  "id": "HC-AD-129",
+  "area": "40-admin",
+  "areaName": "Admin console",
+  "owner": "Platform engineer",
+  "route": "/admin/users",
+  "screen": "User Management",
+  "feature": "2FA column: whether the account has the authenticator on",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + web)",
+  "acceptance": "AdminUserRow.twoFactorEnabled from users.two_factor_enabled; a 2FA column (on / off) in the users table and its CSV",
+  "evidence": "ADR-086 (13 Sep 2026): apps/api/src/admin-users.ts adminRow, packages/schema billing.ts AdminUserRow, apps/web components/admin/UsersAdmin.tsx; unit second-factor.test.ts (api), users.test.tsx HC-AD-129 (web)"
  },
  {
   "id": "HC-MA-001",

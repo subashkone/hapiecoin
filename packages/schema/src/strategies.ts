@@ -461,6 +461,24 @@ export const LivePreviewLeg = z.strictObject({
 });
 export type LivePreviewLeg = z.infer<typeof LivePreviewLeg>;
 
+/** Today's live P&L as the server knows it (ADR-084): open live strategies at the latest recorded marks against the day's baseline, live trades closed today at their realised figure. */
+export const LiveDayFigure = z.strictObject({
+  pnlUsd: DecimalString,
+  /** Live strategies counted (active plus closed today). */
+  count: z.number().int().nonnegative(),
+  closedCount: z.number().int().nonnegative(),
+  /** False while an open live leg has no fresh mark on the server: no pause is decided on it. */
+  known: z.boolean(),
+});
+export type LiveDayFigure = z.infer<typeof LiveDayFigure>;
+
+/** What a live preview says about the Mindful pause (ADR-084): the server's day figure and the pause this entry waits, or null when none applies. */
+export const MindfulPreview = z.strictObject({
+  day: LiveDayFigure,
+  pause: z.strictObject({ seconds: z.number().int().positive(), thresholdUsd: DecimalString, basis: z.string() }).nullable(),
+});
+export type MindfulPreview = z.infer<typeof MindfulPreview>;
+
 export const LivePreview = z.strictObject({
   ok: z.boolean(),
   reasons: z.array(z.string()),
@@ -471,6 +489,8 @@ export const LivePreview = z.strictObject({
   /** Margin the exchange currently holds against open positions (sum of position margins); null when unknown. Delta has no pre-trade margin estimate endpoint (ADR-029). */
   marginUsed: DecimalString.nullable(),
   limits: z.strictObject({ maxLegs: z.number().int(), maxNotionalUsd: z.number(), markBandPct: z.number() }),
+  /** ADR-084: the server's Mindful figure for this trader; null on paths that do not compute it. */
+  mindful: MindfulPreview.nullable(),
 });
 export type LivePreview = z.infer<typeof LivePreview>;
 
@@ -490,6 +510,10 @@ export type LivePlaceBody = z.infer<typeof LivePlaceBody>;
 export const LiveRetryBody = z.strictObject({ confirm: LiveConfirm.optional() });
 export type LiveRetryBody = z.infer<typeof LiveRetryBody>;
 
+/** Re-price a resting limit entry in place (ADR-083): it stays an entry that can fill, so the typed word applies; the API snaps the price to the product tick. */
+export const LiveRepriceBody = z.strictObject({ limitPrice: PositiveDecimal, confirm: LiveConfirm.optional() });
+export type LiveRepriceBody = z.infer<typeof LiveRepriceBody>;
+
 /** Preview the open legs, or (adjustment workbench) the proposed batch: `adds` as entries and `changes` as exits. */
 export const LivePreviewBody = z.strictObject({
   brokerId: Id,
@@ -499,8 +523,11 @@ export const LivePreviewBody = z.strictObject({
 });
 export type LivePreviewBody = z.infer<typeof LivePreviewBody>;
 
+/** Each strategy once: a repeated id would count twice in the batch's wallet rule (ADR-087). */
+const uniqueIds = (ids: readonly string[]) => new Set(ids).size === ids.length;
+
 export const LiveBatchBody = z.strictObject({
-  ids: z.array(Id).min(1).max(20),
+  ids: z.array(Id).min(1).max(20).refine(uniqueIds, { message: "Each strategy once" }),
   brokerId: Id,
   accountId: Id.optional(),
   idempotencyKey: z.string().min(8).max(80),
@@ -515,6 +542,43 @@ export const LiveBatchResult = z.strictObject({
   skipped: z.array(Id),
 });
 export type LiveBatchResult = z.infer<typeof LiveBatchResult>;
+
+/** Trade All → Live previewed as one batch (GAPS #4, ADR-087): every strategy's own check, then the wallet against the batch as a whole. */
+export const LiveBatchPreviewBody = z.strictObject({
+  ids: z.array(Id).min(1).max(20).refine(uniqueIds, { message: "Each strategy once" }),
+  brokerId: Id,
+  accountId: Id.optional(),
+});
+export type LiveBatchPreviewBody = z.infer<typeof LiveBatchPreviewBody>;
+
+export const LiveBatchPreviewItem = z.strictObject({
+  id: Id,
+  name: z.string(),
+  /** False when the id is not one of the trader's paper strategies: the batch skips it, it takes no part in the totals. */
+  paper: z.boolean(),
+  ok: z.boolean(),
+  reasons: z.array(z.string()),
+  legs: z.array(LivePreviewLeg),
+  notional: DecimalString,
+  /** The net premium this strategy pays (positive) or receives (negative) at the marks shown. */
+  debit: DecimalString,
+});
+export type LiveBatchPreviewItem = z.infer<typeof LiveBatchPreviewItem>;
+
+export const LiveBatchPreview = z.strictObject({
+  items: z.array(LiveBatchPreviewItem),
+  /** Every paper strategy passes its own check and the batch passes the wallet rule. */
+  ok: z.boolean(),
+  /** Reasons that belong to the batch as a whole (the wallet against the premiums together), not to one strategy. */
+  reasons: z.array(z.string()),
+  notional: DecimalString,
+  debit: DecimalString,
+  available: DecimalString.nullable(),
+  availableAsset: z.string().nullable(),
+  marginUsed: DecimalString.nullable(),
+  limits: z.strictObject({ maxLegs: z.number().int(), maxNotionalUsd: z.number(), markBandPct: z.number() }),
+});
+export type LiveBatchPreview = z.infer<typeof LiveBatchPreview>;
 
 export const LivePosition = z.strictObject({
   productId: z.number().int(),
