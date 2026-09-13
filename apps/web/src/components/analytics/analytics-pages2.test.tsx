@@ -117,7 +117,8 @@ describe("HC-MA-073..081, 118, 119 Sentiment", () => {
       expect(screen.getByTestId("sentiment-unavailable")).toBeTruthy();
       expect(screen.getByTestId("fg-label").textContent).toContain("waiting for alternative.me");
       expect(screen.getAllByTestId("check-row").every((r) => r.dataset["hit"] === "na")).toBe(true);
-      expect(within(screen.getByTestId("chart-premium")).getByTestId("chart-empty").textContent).toContain("COINGECKO_API_KEY");
+      // the premium chart's own request settles after the page's state flips: wait for its empty state rather than read it at once
+      await waitFor(() => expect(within(screen.getByTestId("chart-premium")).getByTestId("chart-empty").textContent).toContain("COINGECKO_API_KEY"), { timeout: 10_000 });
     } finally {
       globalThis.fetch = original;
       mock = installMockFetch();
