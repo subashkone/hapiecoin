@@ -44,7 +44,7 @@ export interface MindfulPauseProps {
 export function MindfulPause({ info, money, left, atRisk, marginText, stale }: MindfulPauseProps) {
   const { day, seconds, thresholdUsd } = info;
   return (
-    <div className="mt-3 rounded border border-warning/60 p-2 text-2xs" data-testid="mindful-pause" data-left={left}>
+    <div className="mt-3 rounded border border-warning/60 p-2 text-2xs" data-testid="mindful-pause" data-left={left} data-source={info.source}>
       <div className="micro mb-1">Mindful pause · you are down today</div>
       <dl className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-3">
         <div className="flex items-baseline justify-between gap-2 sm:block">
@@ -70,6 +70,7 @@ export function MindfulPause({ info, money, left, atRisk, marginText, stale }: M
         {day.count} live {day.count === 1 ? "strategy" : "strategies"}
         {day.closedCount ? ` · ${day.closedCount} closed today included` : ""} · {DAY_BASIS}
         {thresholdUsd > 0 ? ` · pause below ${fmtMoney(-thresholdUsd, money, { signed: true })}` : ""}
+        {info.source === "server" ? " · the server's figure" : ""}
         {stale ? " · figures from the last tick" : ""}
       </p>
       <p className="mt-1" data-testid="mindful-copy">

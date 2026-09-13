@@ -1060,5 +1060,16 @@
     "status": "working",
     "new": true,
     "evidence": "v2 improvement · Phase 4 item 4c (08 Sep 2026, ADR-035): Send Email lives in the title row and hides on History (email-send)"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "feature": "2FA column: whether the account has the authenticator on",
+    "how": "AdminUserRow.twoFactorEnabled from users.two_factor_enabled; a 2FA column (on / off) in the users table and its CSV",
+    "status": "working",
+    "new": true,
+    "phase": 5,
+    "evidence": "ADR-086 (13 Sep 2026): apps/api/src/admin-users.ts adminRow, packages/schema billing.ts AdminUserRow, apps/web components/admin/UsersAdmin.tsx; unit second-factor.test.ts (api), users.test.tsx HC-AD-129 (web)",
+    "test": "unit (api + web)"
   }
 ]

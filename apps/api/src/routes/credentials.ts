@@ -5,6 +5,7 @@
  * Several keys per exchange, told apart by a label, are the "accounts" of ADR-068 (Delta sub-accounts): a
  * strategy names the key it trades through, and a key a live strategy still names cannot be removed.
  */
+import { requireSecondFactor } from "../security/second-factor.js";
 import { AccountLabel, BrokerCredentialPublic, Id, MAX_ACCOUNTS_PER_BROKER } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, eq, isNull, or } from "drizzle-orm";
@@ -103,13 +104,16 @@ export function registerCredentialRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps
         201: jsonContent(BrokerCredentialPublic, "Connected"),
         400: errorResponses[400],
         401: errorResponses[401],
+        403: errorResponses[403],
         404: errorResponses[404],
+        429: errorResponses[429],
         502: jsonContent(z.object({ code: z.string(), message: z.string() }), "Exchange unreachable"),
       },
     }),
     async (c) => {
       const me = currentUser(c);
       const body = c.req.valid("json");
+      await requireSecondFactor(deps, c, me); // ADR-086: a key is secret material; an account with the authenticator on confirms with its code
       const [broker] = await deps.db
         .select({ id: brokers.id, venue: brokers.venue })
         .from(brokers)
@@ -190,11 +194,12 @@ export function registerCredentialRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps
       security: cookieAuth,
       middleware: [guard],
       request: { params: IdParam },
-      responses: { 204: { description: "Disconnected" }, 401: errorResponses[401], 404: errorResponses[404], 409: errorResponses[409] },
+      responses: { 204: { description: "Disconnected" }, 401: errorResponses[401], 403: errorResponses[403], 404: errorResponses[404], 409: errorResponses[409], 429: errorResponses[429] },
     }),
     async (c) => {
       const me = currentUser(c);
       const { id } = c.req.valid("param");
+      await requireSecondFactor(deps, c, me); // ADR-086
       // the key row by id; an exchange id still works while that exchange has a single key (older clients, HC-SH-037)
       let [row] = await deps.db
         .select()

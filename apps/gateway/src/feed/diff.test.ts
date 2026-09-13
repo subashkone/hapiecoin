@@ -21,7 +21,7 @@ const BASE: Quote = {
 };
 
 describe("[GATEWAY] quote diff", () => {
-  it("[GATEWAY] with no previous quote every present field is included and the delta validates", () => {
+  it("[GATEWAY] with no previous quote every present field is included (an absent open interest stays absent, HC-WS-116) and the delta validates", () => {
     const delta = quoteDelta(undefined, BASE);
     expect(delta).toEqual({ i: BASE.instrumentId, ...omit(BASE, "instrumentId") });
     expect(QuoteDelta.parse(delta)).toEqual(delta);
@@ -45,12 +45,11 @@ describe("[GATEWAY] quote diff", () => {
     });
     expect(QuoteDelta.parse(delta)).toEqual(delta);
 
-    const sparse: Quote = { instrumentId: BASE.instrumentId, ts: 1, mark: "1", oi: "0", spot: "1" };
+    const sparse: Quote = { instrumentId: BASE.instrumentId, ts: 1, mark: "1", spot: "1" }; // no open interest sent (GAPS #15)
     expect(quoteDelta(undefined, sparse)).toEqual({
       i: BASE.instrumentId,
       ts: 1,
       mark: "1",
-      oi: "0",
       spot: "1",
     });
     // a quote that gains greeks reports them; one that had none and still has none reports nothing about them
