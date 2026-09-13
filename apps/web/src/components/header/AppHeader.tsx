@@ -23,6 +23,7 @@ import {
   Rows2,
   Rows3,
   Settings,
+  Smartphone,
   Sun,
   User as UserIcon,
   Users,
@@ -51,6 +52,7 @@ import { ShortcutsDispatcher } from "@/components/shell/ShortcutsDispatcher";
 import { Keyboard } from "@hapiecoin/ui";
 import { AlertEngine } from "@/lib/alerts/AlertEngine";
 import { useAlerts } from "@/lib/api/alerts";
+import { useInstallState } from "@/lib/pwa/install";
 import { alertCounts } from "@hapiecoin/schema";
 
 export const AVATAR_ICON = { rocket: Rocket, diamond: Gem, lightning: Zap } as const;
@@ -96,6 +98,7 @@ function SettingsMenu({ user }: { user: User }) {
   const densityCtx = useDensity();
   const density = mounted ? densityCtx.density : "comfortable";
   const { toggleDensity } = densityCtx;
+  const install = useInstallState();
   const pick = (kind: Parameters<typeof openDialog>[0]) => {
     setOpen(false);
     openDialog(kind);
@@ -172,6 +175,11 @@ function SettingsMenu({ user }: { user: User }) {
         <MenuItem onSelect={() => pick("shortcuts")} value="?" testId="menu-shortcuts">
           <Keyboard /> Keyboard shortcuts
         </MenuItem>
+        {install === "ready" || install === "ios" ? (
+          <MenuItem onSelect={() => pick("install")} value={install === "ios" ? "iPhone" : "Ready"} testId="menu-install">
+            <Smartphone /> Install app
+          </MenuItem>
+        ) : null}
         <MenuItem onSelect={() => { setOpen(false); toggleDensity(); }} value={density}>
           {density === "compact" ? <Rows3 /> : <Rows2 />} Density
         </MenuItem>
