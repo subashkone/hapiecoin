@@ -3,12 +3,15 @@
 // is three acts: the password, the key into the app (shown in groups of four with the otpauth link; no QR image,
 // GAPS #94), the first code; then the backup codes, shown once. Turning it off asks for the password. With it on,
 // the account signs in with password + code only (the email-OTP and Google paths are refused for it, ADR-078).
-// Design: docs/design/live-confirm-2fa.md.
-import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, cn, toast } from "@hapiecoin/ui";
+// Passkeys (GAPS #12, ADR-089; HC-SH-137): listed from the plugin, added with a name, renamed, removed; the client and
+// its WebAuthn library load on first use. Design: docs/design/live-confirm-2fa.md.
+import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Field, Input, cn, toast } from "@hapiecoin/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { queryKeys, useMe } from "@/lib/api/queries";
 import { authClient, authErrorMessage } from "@/lib/auth/client";
+import type { PasskeyRow } from "@/lib/auth/passkey";
+import { fmtDate } from "@/lib/format";
 import { OtpInput, PasswordInput } from "@/components/auth/inputs";
 import type { DialogProps } from "./SettingsDialogs";
 
@@ -60,6 +63,92 @@ export function SecurityDialog({ open, onOpenChange }: DialogProps) {
     }
   }, [open]);
   const refresh = () => qc.invalidateQueries({ queryKey: queryKeys.me });
+
+  // passkeys (ADR-089)
+  const [passkeys, setPasskeys] = useState<PasskeyRow[] | null>(null);
+  const [pkSupported, setPkSupported] = useState(true);
+  const [pkName, setPkName] = useState("This device");
+  const [pkBusy, setPkBusy] = useState<string | null>(null); // "add" or the passkey id being renamed / removed
+  const [pkError, setPkError] = useState<string | null>(null);
+  const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
+  const loadPasskeys = async () => {
+    const { passkeyAuth, passkeysSupported } = await import("@/lib/auth/passkey");
+    setPkSupported(passkeysSupported());
+    const { data, error: err } = await passkeyAuth().passkey.listUserPasskeys();
+    if (err) {
+      setPkError(authErrorMessage(err, "Could not read your passkeys"));
+      return;
+    }
+    setPasskeys((data ?? []) as PasskeyRow[]);
+  };
+  useEffect(() => {
+    if (open) {
+      setPasskeys(null);
+      setPkError(null);
+      setRenaming(null);
+      setRemoving(null);
+      setPkName("This device");
+      setPkSupported(typeof window.PublicKeyCredential === "function"); // known before the client loads, so an unsupported browser never sees Add
+      void loadPasskeys();
+    }
+  }, [open]);
+  const addPasskey = async () => {
+    setPkBusy("add");
+    setPkError(null);
+    try {
+      const { passkeyAuth } = await import("@/lib/auth/passkey");
+      const { error: err } = await passkeyAuth().passkey.addPasskey({ name: pkName.trim() || "This device" });
+      if (err) {
+        setPkError(authErrorMessage(err, "Could not add the passkey"));
+        return;
+      }
+      toast.success("Passkey added", { description: "This device can sign you in without the password" });
+      setPkName("This device");
+      await loadPasskeys();
+    } finally {
+      setPkBusy(null);
+    }
+  };
+  const renamePasskey = async () => {
+    if (!renaming) return;
+    const name = renaming.name.trim();
+    if (!name) {
+      setPkError("Give the passkey a name");
+      return;
+    }
+    setPkBusy(renaming.id);
+    setPkError(null);
+    try {
+      const { passkeyAuth } = await import("@/lib/auth/passkey");
+      const { error: err } = await passkeyAuth().passkey.updatePasskey({ id: renaming.id, name });
+      if (err) {
+        setPkError(authErrorMessage(err, "Could not rename the passkey"));
+        return;
+      }
+      setRenaming(null);
+      await loadPasskeys();
+    } finally {
+      setPkBusy(null);
+    }
+  };
+  const removePasskey = async (id: string) => {
+    setPkBusy(id);
+    setPkError(null);
+    try {
+      const { passkeyAuth } = await import("@/lib/auth/passkey");
+      const { error: err } = await passkeyAuth().passkey.deletePasskey({ id });
+      if (err) {
+        setPkError(authErrorMessage(err, "Could not remove the passkey"));
+        return;
+      }
+      setRemoving(null);
+      toast("Passkey removed", { description: "That device signs in with the password again" });
+      await loadPasskeys();
+    } finally {
+      setPkBusy(null);
+    }
+  };
 
   const begin = async () => {
     if (!password) {
@@ -119,7 +208,7 @@ export function SecurityDialog({ open, onOpenChange }: DialogProps) {
       <DialogContent size="sm" data-testid="security-dialog" data-step={step}>
         <DialogHeader>
           <DialogTitle>Security</DialogTitle>
-          <DialogDescription>Two-factor sign-in with an authenticator app (Google Authenticator, Aegis, 1Password …). With it on, this account signs in with the password and a code; email codes and Google sign-in are refused for it.</DialogDescription>
+          <DialogDescription>Two-factor sign-in with an authenticator app (Google Authenticator, Aegis, 1Password …), and passkeys for the devices you trust. With two-factor on, this account signs in with the password and a code; email codes, Google and passkey sign-in are refused for it.</DialogDescription>
         </DialogHeader>
         <DialogBody>
           <div className="flex items-center justify-between gap-3 rounded border border-border px-2 py-1.5 text-xs">
@@ -188,6 +277,83 @@ export function SecurityDialog({ open, onOpenChange }: DialogProps) {
             <p className="mt-2 text-2xs text-loss" role="alert" data-testid="security-error">
               {error}
             </p>
+          ) : null}
+          {step === "idle" ? (
+            <div className="mt-4 rounded border border-border p-2 text-xs" data-testid="passkeys">
+              <div className="flex items-center justify-between gap-2">
+                <span>Passkeys</span>
+                <span className="micro text-muted-foreground">Face ID · Touch ID · Windows Hello · a security key</span>
+              </div>
+              <p className="micro mt-1 text-muted-foreground">A passkey signs you in without the password on the device that holds it. It never signs in an account with two-factor on: the password and the code are asked instead.</p>
+              {passkeys === null && !pkError ? (
+                <div className="micro mt-2 text-muted-foreground" data-testid="passkey-loading">
+                  reading…
+                </div>
+              ) : null}
+              {passkeys && passkeys.length === 0 ? (
+                <div className="micro mt-2 text-muted-foreground" data-testid="passkey-empty">
+                  No passkey yet
+                </div>
+              ) : null}
+              {passkeys?.map((p) => (
+                <div key={p.id} className="mt-1 flex flex-wrap items-center gap-2 rounded border border-border px-2 py-1" data-testid="passkey-row" data-id={p.id}>
+                  {renaming?.id === p.id ? (
+                    <>
+                      <Input size="sm" className="w-40" value={renaming.name} onChange={(e) => setRenaming({ id: p.id, name: e.target.value })} aria-label="Passkey name" data-testid="passkey-rename-input" />
+                      <Button size="sm" onClick={() => void renamePasskey()} loading={pkBusy === p.id} data-testid="passkey-rename-save">
+                        Save
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setRenaming(null)}>
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-medium" data-testid="passkey-name">
+                        {p.name || "Passkey"}
+                      </span>
+                      <span className="micro text-muted-foreground">added {fmtDate(typeof p.createdAt === "string" ? p.createdAt : p.createdAt.toISOString())}</span>
+                      <span className="ml-auto flex items-center gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => { setRemoving(null); setRenaming({ id: p.id, name: p.name ?? "" }); }} aria-label={`Rename ${p.name || "passkey"}`} data-testid="passkey-rename">
+                          Rename
+                        </Button>
+                        {removing === p.id ? (
+                          <>
+                            <Button size="sm" variant="destructive" onClick={() => void removePasskey(p.id)} loading={pkBusy === p.id} data-testid="passkey-delete-confirm">
+                              Remove this passkey
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setRemoving(null)} data-testid="passkey-delete-cancel">
+                              Keep it
+                            </Button>
+                          </>
+                        ) : (
+                          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setRemoving(p.id)} aria-label={`Remove ${p.name || "passkey"}`} data-testid="passkey-delete">
+                            Remove
+                          </Button>
+                        )}
+                      </span>
+                    </>
+                  )}
+                </div>
+              ))}
+              {pkSupported ? (
+                <div className="mt-2 flex items-center gap-2">
+                  <Input size="sm" value={pkName} onChange={(e) => setPkName(e.target.value)} placeholder="Name this passkey" aria-label="New passkey name" data-testid="passkey-add-name" />
+                  <Button size="sm" onClick={() => void addPasskey()} loading={pkBusy === "add"} data-testid="passkey-add">
+                    Add a passkey
+                  </Button>
+                </div>
+              ) : (
+                <div className="micro mt-2 text-warning" data-testid="passkey-unsupported">
+                  This browser cannot create passkeys; use a recent Chrome, Safari or Edge.
+                </div>
+              )}
+              {pkError ? (
+                <p className="mt-2 text-2xs text-loss" role="alert" data-testid="passkey-error">
+                  {pkError}
+                </p>
+              ) : null}
+            </div>
           ) : null}
         </DialogBody>
         <DialogFooter>

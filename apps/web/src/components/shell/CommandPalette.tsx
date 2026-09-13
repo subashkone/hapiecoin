@@ -389,7 +389,7 @@ export function buildCommands(opts: {
       setting("set:lot", "Open Lot Size Settings", "lot", ["lot", "size", "contracts"]),
       setting("set:pnl", "Open P&L Settings", "pnl", ["pnl", "basis", "mark", "bid ask"]),
       setting("set:mindful", "Open Mindful trading", "mindful", ["mindful", "pause", "cooldown", "tilt", "down on the day"]),
-      setting("set:security", "Open Security", "security", ["security", "2fa", "two-factor", "authenticator", "totp", "backup codes"]),
+      setting("set:security", "Open Security", "security", ["security", "2fa", "two-factor", "authenticator", "totp", "backup codes", "passkey", "webauthn", "face id", "touch id"]),
       setting("set:exchanges", "Open Exchange Setup", "exchanges", ["exchange", "broker", "setup"]),
       setting("set:profile", "Open Profile", "profile", ["profile", "name", "avatar", "password"]),
     );

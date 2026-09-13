@@ -49,6 +49,10 @@ interface Account {
   twoFactor?: { enabled: boolean; pending: boolean; backupCodes: string[] };
   /** ADR-084 test knob: the server's live day P&L; undefined = no fresh mark (unknown), so the browser's fold decides. */
   dayPnlUsd?: number;
+  /** Passkeys (ADR-089): the credential id the browser reported at registration is what a sign-in is matched on. */
+  passkeys?: { id: string; name: string; credentialID: string; createdAt: string; deviceType: string; backedUp: boolean }[];
+  /** Test knob (ADR-089): the session is older than the plugin's fresh age (a day), so adding a passkey is refused like the API does. */
+  staleSession?: boolean;
   referredBy?: string;
   /** Billing (ADR-030): the catalogue subscription behind the banner, admin toggles and overrides. */
   subscription: MockSubscription | null;
@@ -257,7 +261,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", clientErrors: [], backtestDays: 12, replayDays: 12, ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
-  const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409 | 503, code: string, message: string, details?: Record<string, unknown>) =>
+  const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409 | 429 | 503, code: string, message: string, details?: Record<string, unknown>) =>
     c.json({ code, message, ...(details ? { details } : {}) }, status);
 
   const current = (c: Context): Account | null => {
@@ -381,6 +385,70 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   // Google sign-in the way production is wired (ADR-019): the client posts to sign-in/social and navigates
   // to `url`; the provider callback is served under /v1/auth on the web origin (Next rewrite), so the
   // session cookie is first-party. The "provider" here signs in a fixed Google account without leaving.
+  /* ---- passkeys (ADR-089): the plugin's seven routes with its shapes; no attestation or signature is checked (the
+     same fidelity as the fixed TOTP code): registration records the credential id the browser reported, a sign-in looks
+     it up; a 2FA account is refused like the API's session hook does. rp.id is the e2e / jsdom host. */
+  const PASSKEY_RP = { id: "localhost", name: "HapieCoin" };
+  const challenge = () => Buffer.from(`${Date.now()}-${Math.random()}`).toString("base64url");
+  app.get("/api/auth/passkey/generate-register-options", (c) => {
+    const acc = current(c);
+    if (!acc) return err(c, 401, "UNAUTHORIZED", "Sign in required");
+    if (acc.staleSession) return err(c, 403, "SESSION_NOT_FRESH", "Session is not fresh"); // the plugin's freshSessionMiddleware (fresh age one day)
+    const name = c.req.query("name");
+    return c.json({
+      challenge: challenge(),
+      rp: PASSKEY_RP,
+      user: { id: Buffer.from(acc.user.id).toString("base64url"), name: acc.user.email, displayName: name ?? acc.user.name },
+      pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+      timeout: 60_000,
+      attestation: "none",
+      excludeCredentials: (acc.passkeys ?? []).map((p) => ({ id: p.credentialID, type: "public-key" })),
+      authenticatorSelection: { residentKey: "preferred", userVerification: "preferred" },
+    });
+  });
+  app.post("/api/auth/passkey/verify-registration", async (c) => {
+    const acc = current(c);
+    if (!acc) return err(c, 401, "UNAUTHORIZED", "Sign in required");
+    const body = await c.req.json<{ response?: { id?: string }; name?: string }>();
+    if (!body.response?.id) return err(c, 400, "INVALID_BODY", "response is required");
+    const row = { id: id("pk"), name: body.name?.trim() || "Passkey", credentialID: body.response.id, createdAt: nowIso(), deviceType: "singleDevice", backedUp: false };
+    acc.passkeys = [...(acc.passkeys ?? []), row];
+    return c.json({ ...row, userId: acc.user.id, transports: "internal", aaguid: "00000000-0000-0000-0000-000000000000" });
+  });
+  app.get("/api/auth/passkey/generate-authenticate-options", (c) => c.json({ challenge: challenge(), rpId: PASSKEY_RP.id, timeout: 60_000, userVerification: "preferred", allowCredentials: [] }));
+  app.post("/api/auth/passkey/verify-authentication", async (c) => {
+    const body = await c.req.json<{ response?: { id?: string } }>();
+    const credentialID = body.response?.id;
+    const acc = credentialID ? [...state.accounts.values()].find((a) => (a.passkeys ?? []).some((p) => p.credentialID === credentialID)) : undefined;
+    if (!acc) return err(c, 401, "PASSKEY_NOT_FOUND", "Passkey not found");
+    if (acc.twoFactor?.enabled) return err(c, 403, "TWO_FACTOR_REQUIRED", "This account uses an authenticator app: sign in with your password and the code"); // ADR-078
+    const token = setSession(c, acc.user.email);
+    return c.json(sessionBody(acc, token));
+  });
+  app.get("/api/auth/passkey/list-user-passkeys", (c) => {
+    const acc = current(c);
+    if (!acc) return err(c, 401, "UNAUTHORIZED", "Sign in required");
+    return c.json((acc.passkeys ?? []).map((p) => ({ ...p, userId: acc.user.id })));
+  });
+  app.post("/api/auth/passkey/delete-passkey", async (c) => {
+    const acc = current(c);
+    if (!acc) return err(c, 401, "UNAUTHORIZED", "Sign in required");
+    const body = await c.req.json<{ id?: string }>();
+    if (!(acc.passkeys ?? []).some((p) => p.id === body.id)) return err(c, 404, "PASSKEY_NOT_FOUND", "Passkey not found");
+    acc.passkeys = (acc.passkeys ?? []).filter((p) => p.id !== body.id);
+    return c.json({ status: true });
+  });
+  app.post("/api/auth/passkey/update-passkey", async (c) => {
+    const acc = current(c);
+    if (!acc) return err(c, 401, "UNAUTHORIZED", "Sign in required");
+    const body = await c.req.json<{ id?: string; name?: string }>();
+    const row = (acc.passkeys ?? []).find((p) => p.id === body.id);
+    if (!row) return err(c, 404, "PASSKEY_NOT_FOUND", "Passkey not found");
+    if (!body.name?.trim()) return err(c, 400, "INVALID_BODY", "name is required");
+    row.name = body.name.trim();
+    return c.json({ passkey: { ...row, userId: acc.user.id } });
+  });
+
   app.post("/api/auth/sign-in/social", async (c) => {
     const body = await c.req.json<{ provider?: string; callbackURL?: string }>();
     if (body.provider !== "google") return err(c, 400, "PROVIDER_NOT_FOUND", "Provider not found");
@@ -501,6 +569,12 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   v1.put("/settings", async (c) => {
     const acc = current(c)!;
     const patch = await c.req.json<Partial<UserSettings>>();
+    // ADR-086: the safety knobs ask for the authenticator code; the rest never does
+    const knobs = (patch.mindful !== undefined && stableJson(patch.mindful) !== stableJson(acc.settings.mindful)) || (patch.lotSizes !== undefined && stableJson(patch.lotSizes) !== stableJson(acc.settings.lotSizes));
+    if (knobs) {
+      const refused = secondFactorRefusal(c);
+      if (refused) return refused;
+    }
     acc.settings = { ...acc.settings, ...patch };
     return c.json(acc.settings);
   });
@@ -619,8 +693,30 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (acc.verifiedDown) return c.json({ accounts: acc.credentials.length, read: 0, added: 0, skipped: 0, errors: acc.credentials.map((k) => `${k.label}: The exchange did not answer the fills read`) });
     return c.json({ accounts: acc.credentials.length, read: acc.fills.length, added: 0, skipped: 0, errors: [] });
   });
+  // ADR-086: an account with the authenticator on confirms a sensitive change with the current code in a header
+  const secondFactorFails = new Map<string, number>();
+  const secondFactorRefusal = (c: Context) => {
+    const acc = current(c)!;
+    if (!acc.twoFactor?.enabled) return null;
+    const code = (c.req.header("x-second-factor") ?? "").trim();
+    if (!code) return err(c, 403, "SECOND_FACTOR_REQUIRED", "Enter the code from your authenticator app to confirm this change");
+    const fails = secondFactorFails.get(acc.user.id) ?? 0;
+    if (fails >= 5) {
+      c.header("Retry-After", "900");
+      return err(c, 429, "SECOND_FACTOR_LOCKED", "Too many wrong codes. Try again in 15 min");
+    }
+    if (code !== TEST_TOTP) {
+      secondFactorFails.set(acc.user.id, fails + 1);
+      return err(c, 403, "SECOND_FACTOR_INVALID", "That code is not right. Codes change every 30 seconds; try the current one");
+    }
+    secondFactorFails.delete(acc.user.id);
+    return null;
+  };
+  const stableJson = (v: unknown): string => JSON.stringify(v, (_k, x: unknown) => (x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) : x));
   v1.post("/credentials", async (c) => {
     const acc = current(c)!;
+    const refused = secondFactorRefusal(c);
+    if (refused) return refused;
     const body = await c.req.json<{ brokerId?: string; label?: string; apiKey?: string; apiSecret?: string }>();
     if (!body.brokerId || !body.apiKey || !body.apiSecret) return err(c, 400, "VALIDATION", "brokerId, apiKey and apiSecret are required");
     const label = (body.label ?? "Main").trim();
@@ -637,6 +733,8 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   });
   v1.delete("/credentials/:id", (c) => {
     const acc = current(c)!;
+    const refused = secondFactorRefusal(c); // like the route: the code first, then the row
+    if (refused) return refused;
     const row = acc.credentials.find((k) => k.id === c.req.param("id"));
     if (!row) return err(c, 404, "NOT_FOUND", "Connected exchange not found");
     const live = acc.strategies.filter((s) => s.status === "live" && (s.accountId === row.id || (s.brokerId === row.brokerId && !s.accountId)));
@@ -1070,6 +1168,28 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     s.orders.push({ id: id("ord"), legId: leg.id, purpose: "exit", batchId: `exit:${leg.id}`, orderType: "market", limitPrice: null, clientOrderId: `hc-${leg.id}-x${s.orders.length + 1}`, venueOrderId: String(800000 + s.orders.length), symbol: leg.symbol, side: leg.side === "buy" ? "sell" : "buy", size: contractsOf({ ...leg, lots }, lotSizeOf(c, s.asset)), state: "closed", fillPrice: fill, error: null, attempts: 1, createdAt: at, updatedAt: at });
     return fill;
   };
+  // ADR-087: the batch previewed as one: every paper strategy's own check, then the wallet against the premiums together
+  const batchPreview = (c: Context, ids: string[]) => {
+    const acc = current(c)!;
+    const items = ids.map((sid) => {
+      const s = acc.strategies.find((x) => x.id === sid);
+      if (!s || s.status !== "paper") return { id: sid, name: s?.name ?? sid, paper: false, ok: false, reasons: [s ? `Already ${s.status}: skipped` : "Not one of your strategies: skipped"], legs: [], notional: "0.00", debit: "0.00" };
+      const p = livePreview(c, s, null);
+      const debit = p.legs.reduce((a, l) => a + (l.side === "buy" ? 1 : -1) * Number(l.notional), 0);
+      return { id: sid, name: s.name, paper: true, ok: p.ok, reasons: p.reasons, legs: p.legs, notional: p.notional, debit: toDecimal(debit, 2) };
+    });
+    const paper = items.filter((i) => i.paper);
+    const notional = paper.reduce((a, i) => a + Number(i.notional), 0);
+    const debit = paper.reduce((a, i) => a + Number(i.debit), 0);
+    const reasons: string[] = [];
+    const paid = paper.reduce((a, i) => a + Math.max(Number(i.debit), 0), 0); // like the route: premiums received are not netted
+    if (acc.credentials.length > 0 && paper.length > 1 && paid > 4000) reasons.push(`Available USD 4000 is below the premium these ${paper.length} trades pay together (${toDecimal(paid, 2)})`);
+    return { items, ok: reasons.length === 0 && paper.every((i) => i.ok), reasons, notional: toDecimal(notional, 2), debit: toDecimal(debit, 2), available: acc.credentials.length ? "4000" : null, availableAsset: acc.credentials.length ? "USD" : null, marginUsed: acc.credentials.length ? "12" : null, limits: { maxLegs: 10, maxNotionalUsd: 100_000, markBandPct: 5 } };
+  };
+  v1.post("/strategies/live/batch/preview", async (c) => {
+    const body = await c.req.json<{ ids: string[]; brokerId: string; accountId?: string }>();
+    return c.json(batchPreview(c, body.ids));
+  });
   v1.post("/strategies/live/batch", async (c) => {
     const acc = current(c)!;
     const body = await c.req.json<{ confirm?: string; ids: string[]; brokerId: string; accountId?: string; idempotencyKey: string }>();
@@ -1078,6 +1198,8 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (!acc.credentials.length) return err(c, 409, "CONFLICT", "Connect your exchange in Settings → API Settings to enable live trading");
     const paused = mindfulRefusal(c, "batch");
     if (paused) return paused;
+    const whole = batchPreview(c, body.ids);
+    if (!whole.ok) return err(c, 409, "CONFLICT", [...whole.items.filter((i) => i.paper && !i.ok).map((i) => `${i.name}: ${i.reasons.join(" · ")}`), ...whole.reasons].join(" · "));
     const placed: string[] = [];
     const skipped: string[] = [];
     let failed: { id: string; error: string } | null = null;
@@ -1804,6 +1926,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       referralCode: acc.user.referralCode,
       paidInr: money([...acc.pastSubscriptions, ...(acc.subscription ? [acc.subscription] : [])].reduce((t, s) => t + Number(s.paidInr), 0)),
       lastLoginAt: acc.lastLoginAt,
+      twoFactorEnabled: acc.twoFactor?.enabled === true, // ADR-086
     };
   };
   const accByUserId = (uid: string) => [...state.accounts.values()].find((a) => a.user.id === uid);

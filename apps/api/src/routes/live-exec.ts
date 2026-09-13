@@ -174,7 +174,10 @@ export async function planLegs(deps: AppDeps, legs: readonly PlanLeg[], lotSize:
  * `exits` are reduce-only rows of an adjustment batch (ADR-044): planned for product state and sizing, listed first,
  * never counted against the entry caps because they reduce risk.
  */
-export async function preview(deps: AppDeps, user: SessionUser, strategy: StrategyRow, legs: readonly PlanLeg[], brokerId: string, worstLoss: number | null, exits: readonly PlanLeg[] = [], accountId: string | null = null, mindful: MindfulPreview | null = null): Promise<LivePreview> {
+/** What one exchange wallet read gave, shared across the strategies of a batch (ADR-087): the balances and the margin the exchange holds. */
+export type WalletCache = Map<string, { balances: { asset: string; balance: string; availableBalance: string }[]; marginUsed: string | null }>;
+
+export async function preview(deps: AppDeps, user: SessionUser, strategy: StrategyRow, legs: readonly PlanLeg[], brokerId: string, worstLoss: number | null, exits: readonly PlanLeg[] = [], accountId: string | null = null, mindful: MindfulPreview | null = null, wallets?: WalletCache): Promise<LivePreview> {
   const reasons: string[] = [];
   const blocked = await tradingBlockedReason(deps, user);
   if (blocked) reasons.push(blocked);
@@ -206,16 +209,25 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
   try {
     const creds = await openCredential(deps, user, brokerId, strategy.venue, accountId);
     const client = deps.tradingFor(strategy.venue);
-    const balances = await client.getBalances(creds);
-    const row = SETTLING_ASSETS.map((a) => balances.find((b) => b.asset === a)).find((b) => b !== undefined);
-    // the venue has no pre-trade margin estimate; show what it holds right now so the trader sees the real headroom (ADR-029).
-    // The figure is informational: when the positions read fails it stays null ("—"), it never blocks the preview
-    try {
-      const positions = await client.getPositions(creds);
-      marginUsed = toDecimal(positions.reduce((s, p) => s + (p.margin ? Number(p.margin) : 0), 0), 2);
-    } catch (e) {
-      deps.logger.warn({ err: errorMessage(e), userId: user.id, brokerId }, "live preview: positions read failed; margin in use unknown");
+    // a batch previews many strategies against one wallet: the exchange is asked once per account (ADR-087)
+    const walletKey = `${brokerId}:${accountId ?? ""}`;
+    let wallet = wallets?.get(walletKey);
+    if (!wallet) {
+      const balances = await client.getBalances(creds);
+      let held: string | null = null;
+      // the venue has no pre-trade margin estimate; show what it holds right now so the trader sees the real headroom (ADR-029).
+      // The figure is informational: when the positions read fails it stays null ("—"), it never blocks the preview
+      try {
+        const positions = await client.getPositions(creds);
+        held = toDecimal(positions.reduce((s, p) => s + (p.margin ? Number(p.margin) : 0), 0), 2);
+      } catch (e) {
+        deps.logger.warn({ err: errorMessage(e), userId: user.id, brokerId }, "live preview: positions read failed; margin in use unknown");
+      }
+      wallet = { balances, marginUsed: held };
+      wallets?.set(walletKey, wallet);
     }
+    marginUsed = wallet.marginUsed;
+    const row = SETTLING_ASSETS.map((a) => wallet.balances.find((b) => b.asset === a)).find((b) => b !== undefined);
     if (row) {
       available = row.availableBalance;
       availableAsset = row.asset;

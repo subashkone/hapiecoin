@@ -1976,6 +1976,36 @@
   "evidence": "ADR-081 (12 Sep 2026): apps/api src/error-sink.ts, metrics.ts, logger.ts (hooks.logMethod), security/errors.ts, security/request.ts, app.ts, config.ts, main.ts; apps/gateway src/error-sink.ts, log.ts, app.ts, index.ts, config.ts; unit error-sink.test.ts (api + gateway) HC-SH-133, metrics.test.ts HC-SH-133, observability.test.ts HC-SH-133, gateway log.test.ts / config.test.ts / app.test.ts HC-SH-133"
  },
  {
+  "id": "HC-SH-134",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "route": "/analyse",
+  "screen": "Settings · API Settings / Mindful trading / Lot Size",
+  "feature": "A fresh authenticator code before a sensitive change on an account with two-factor sign-in on",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + web)",
+  "acceptance": "When /v1/me says the authenticator is on, the API Settings dialog (Connect & Save, Disconnect), the Mindful dialog and the Lot Size dialog show a six-box Authenticator code field; the mutations send it as the X-Second-Factor header; the API refuses 403 SECOND_FACTOR_REQUIRED without it, 403 SECOND_FACTOR_INVALID on a wrong code and 429 SECOND_FACTOR_LOCKED after five wrong codes in fifteen minutes; the refusal shows under the field; the code is cleared after each save. Theme, density, currency and P&L basis never ask; an account without the authenticator is never asked",
+  "evidence": "ADR-086 (13 Sep 2026): apps/api/src/security/second-factor.ts requireSecondFactor, routes/credentials.ts, routes/settings.ts safetyKnobsChanged, auth.ts sessionResolver twoFactorEnabled; apps/web lib/api/second-factor.ts, lib/api/queries.ts, components/dialogs/SecondFactorField.tsx, ApiSettingsDialog.tsx, MindfulDialog.tsx, LotSizeDialog.tsx; unit second-factor.test.ts (api), dialogs.test.tsx HC-SH-136 (web)"
+ },
+ {
+  "id": "HC-SH-135",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "route": "/analyse",
+  "screen": "Settings · Security · Passkeys",
+  "feature": "Passkeys: add one with a name, see the list, rename, remove",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web + api), e2e",
+  "acceptance": "The Security dialog lists the account's passkeys from the auth plugin (name, added date); Add a passkey asks the browser (Face ID, Touch ID, Windows Hello, a security key) and records it under the name given (default 'This device'); Rename is inline; Remove asks once inline; a browser without WebAuthn sees a note instead of Add. The client plugin and its WebAuthn library load on first use, in their own chunk. The copy says a passkey never signs in an account with two-factor on",
+  "evidence": "ADR-089 (13 Sep 2026): apps/web/src/lib/auth/passkey.ts, components/dialogs/SecurityDialog.tsx; apps/web/test/mock-api.ts passkey routes, test/helpers.tsx installFakeWebAuthn; unit dialogs.test.tsx HC-SH-137; e2e settings.spec.ts HC-SH-137 (CDP virtual authenticator); api auth.test.ts"
+ },
+ {
   "id": "HC-PB-001",
   "area": "10-public",
   "areaName": "Public site & authentication",
@@ -2996,6 +3026,21 @@
   "evidence": "ADR-078 (12 Sep 2026): apps/api auth.ts twoFactor plugin + the sign-in hooks; apps/web lib/auth/client.ts twoFactorClient, components/auth/AuthScreen.tsx AuthTab totp, AuthForms.tsx TotpForm; unit auth.test.ts (api) HC-PB-068, AuthForms.test.tsx HC-PB-068; e2e auth.spec.ts HC-PB-068"
  },
  {
+  "id": "HC-PB-069",
+  "area": "10-public",
+  "areaName": "Public site & authentication",
+  "owner": "Platform engineer",
+  "route": "/auth",
+  "screen": "Auth · Sign in",
+  "feature": "Sign in with a passkey",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web), e2e",
+  "acceptance": "Above the Delta and Google buttons when the browser has WebAuthn: one tap asks the device for the passkey and signs the account in without the password; an account with two-factor on is refused with 'This account uses an authenticator app: sign in with your password and the code' (ADR-078); a closed prompt and a device without a passkey each get one sentence",
+  "evidence": "ADR-089 (13 Sep 2026): apps/web/src/components/auth/AuthForms.tsx Providers (continue-passkey), lib/auth/client.ts authErrorMessage; unit AuthForms.test.tsx HC-PB-069; e2e auth.spec.ts HC-PB-069 (CDP virtual authenticator)"
+ },
+ {
   "id": "HC-WS-001",
   "area": "20-analyse",
   "areaName": "Workspace: chain & analysis pane",
@@ -3938,7 +3983,7 @@
   "phase": 5,
   "test": "unit (pricing) · e2e (Playwright)",
   "acceptance": "State object created here; leg mutations belong to the trading part (chain only emits analyse:addLeg, with a local fallback); the right pane re-renders on analyse:legs-changed and on every tick",
-  "evidence": "integration contract between the /analyse parts · Phase 2 item 4 (08 Sep 2026): shared workspace state in the UI store: legs, strategy meta, drafts, tabs, target (store.ts); unit store.test.ts"
+  "evidence": "integration contract between the /analyse parts · Phase 2 item 4 (08 Sep 2026): shared workspace state in the UI store: legs, strategy meta, tabs, target (store.ts; drafts are server rows since ADR-024, the browser slice retired by ADR-088); unit store.test.ts"
  },
  {
   "id": "HC-WS-064",
@@ -5373,13 +5418,13 @@
   "owner": "Trading engineer",
   "route": "/analyse",
   "screen": "Analyse · Strategy panel (Templates)",
-  "feature": "Refresh strategies button",
+  "feature": "Strategies list refreshes itself (no Refresh strategies button)",
   "status": "working",
   "isNew": false,
   "phase": 2,
-  "test": "unit (pricing) · e2e (Playwright)",
-  "acceptance": "Recalculates P&L and re-renders; toast 'Refreshed · Strategy data has been updated'",
-  "evidence": "bundle strings: Refresh strategies, Refreshed, Strategy data has been updated · Phase 3 item 1 (08 Sep 2026): not needed: the list is a TanStack query refreshed after every mutation"
+  "test": "unit (web)",
+  "acceptance": "The strategies list is a TanStack query: it is refetched after every mutation on this device (save, activate, archive, delete, trade) and when the My templates list mounts after its 15 s stale time; the app does not refetch on window focus, so a draft saved on another device appears on the next mutation or mount here. The Paper and Live panels keep their own Refresh for the exchange-side read. The original's 'Refresh strategies' button and its toast are not reproduced",
+  "evidence": "bundle strings: Refresh strategies, Refreshed, Strategy data has been updated · Phase 3 item 1 (08 Sep 2026): not needed: the list is a TanStack query refreshed after every mutation · ADR-088 (13 Sep 2026): restated as the self-refreshing list; drafts are server rows (ADR-024), the Phase 2 browser hopper retired"
  },
  {
   "id": "HC-TR-044",
@@ -7554,6 +7599,20 @@
   "evidence": "ADR-084 (13 Sep 2026): apps/api routes/live.ts adjustPreview, routes/strategies.ts adjust and legs (enforceMindful on adds); apps/web components/adjust/AdjustConfirmDialog.tsx; unit day-pnl.test.ts (api) HC-TR-190, trading-live.test.tsx HC-TR-190"
  },
  {
+  "id": "HC-TR-191",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Trade All → Live",
+  "feature": "The batch previewed as one: every strategy's exchange check and the wallet against the premiums together, nothing placed until all pass",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (schema + api + web)",
+  "acceptance": "POST /v1/strategies/live/batch/preview answers per-strategy items (check passed or the reasons, legs with marks, notional, premium paid or received) and the whole (Σ notional, Σ premium, available, margin in use, the batch's own reasons); the batch route runs the same preview first and refuses the whole batch by name before any order goes out; the dialog shows each ticked row's check, a batch line and the Mindful at-risk line as the batch's premium, and keeps the button off until the batch is ok (untick a refused strategy to go on)",
+  "evidence": "ADR-087 (13 Sep 2026): apps/api/src/routes/live.ts batchPreview + the preview route + the batch route pre-pass; packages/schema strategies.ts LiveBatchPreview*; apps/web lib/api/live.ts useBatchPreview, components/trading/BatchLiveDialog.tsx; unit live-batch.test.ts + live-cover.test.ts + accounts.test.ts + venue-column.test.ts (api), strategies.test.ts (schema), trading-live.test.tsx HC-TR-191 (web)"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",
@@ -9633,13 +9692,13 @@
   "owner": "Platform engineer",
   "route": "/admin/banners",
   "screen": "Banner Master",
-  "feature": "Dialog fields: Title (Welcome Offer), Description (Get 20% off your first plan), Link URL (https://coingreek.com/offers), 'Starts At (optional)' / 'Ends At (optional)' datetime-local, Frequency select (once_per_day / every_time / once_per_session)",
+  "feature": "Dialog fields: Title (Welcome Offer), Description (Get 20% off your first plan), Link URL (https://hapiecoin.com/offers), 'Starts At (optional)' / 'Ends At (optional)' datetime-local, Frequency select (once_per_day / every_time / once_per_session)",
   "status": "working",
   "isNew": false,
   "phase": 4,
-  "test": "unit (pricing) · e2e (Playwright)",
+  "test": "e2e (Playwright) · api contract",
   "acceptance": "Ids banner-title, banner-description, banner-link, banner-starts, banner-ends; link must be http(s); end must be after start",
-  "evidence": "bundle strings: banner-title, Welcome Offer, banner-description, Get 20% off your first plan, banner-link, Link URL, https://coingreek.com/offers, banner-starts, Starts At, (optional), datetime-local, banner-ends, Ends At, once_per_day · Phase 4 item 4b (08 Sep 2026, ADR-033): dialog fields title / description / link / frequency / starts / ends with http(s) and window validation (banner-*)"
+  "evidence": "bundle strings: banner-title, Welcome Offer, banner-description, Get 20% off your first plan, banner-link, Link URL, https://hapiecoin.com/offers, banner-starts, Starts At, (optional), datetime-local, banner-ends, Ends At, once_per_day · Phase 4 item 4b (08 Sep 2026, ADR-033): dialog fields title / description / link / frequency / starts / ends with http(s) and window validation (banner-*)"
  },
  {
   "id": "HC-AD-066",
@@ -10588,6 +10647,21 @@
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "The amber Send Email button lives in the title row next to the Compose / History tabs and hides on History",
   "evidence": "v2 improvement · Phase 4 item 4c (08 Sep 2026, ADR-035): Send Email lives in the title row and hides on History (email-send)"
+ },
+ {
+  "id": "HC-AD-129",
+  "area": "40-admin",
+  "areaName": "Admin console",
+  "owner": "Platform engineer",
+  "route": "/admin/users",
+  "screen": "User Management",
+  "feature": "2FA column: whether the account has the authenticator on",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + web)",
+  "acceptance": "AdminUserRow.twoFactorEnabled from users.two_factor_enabled; a 2FA column (on / off) in the users table and its CSV",
+  "evidence": "ADR-086 (13 Sep 2026): apps/api/src/admin-users.ts adminRow, packages/schema billing.ts AdminUserRow, apps/web components/admin/UsersAdmin.tsx; unit second-factor.test.ts (api), users.test.tsx HC-AD-129 (web)"
  },
  {
   "id": "HC-MA-001",

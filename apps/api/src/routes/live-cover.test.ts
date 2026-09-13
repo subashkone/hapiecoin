@@ -35,32 +35,31 @@ const paper = async (name: string, legs: unknown[] = [CALL]) => {
 const get = async (id: string) => json<Strategy>(await t.request(`/v1/strategies/${id}`, { cookie: alice }));
 
 describe("HC-TR-089 batch bookkeeping", () => {
-  it("skips non-paper ids, places in order, stops at the first refusal, and a repeat with the same key places nothing twice", async () => {
+  it("skips non-paper ids, refuses the whole batch by name while one strategy fails its check (ADR-087), places in order once all pass, and a repeat with the same key places nothing twice", async () => {
     const d = await draft("still a draft");
     const a = await paper("A");
     t.trading.product("C-BTC-70000-250926", 107, "0.003"); // 10 lots × 0.001 ÷ 0.003 is not whole → preview refuses
     const b = await paper("B", [{ ...CALL, strike: "70000", symbol: "C-BTC-70000-250926" }]);
     const c = await paper("C");
     const body = { confirm: "LIVE", ids: [d.id, a.id, b.id, c.id], brokerId: SEED.brokerId, idempotencyKey: "key-batch-cover-1" };
-    const r1 = await json<LiveBatchResult>(await t.request("/v1/strategies/live/batch", { cookie: alice, json: body }));
-    expect(r1).toEqual({ placed: [a.id], failed: { id: b.id, error: expect.stringMatching(/not a whole number/) as string }, skipped: [d.id] });
-    expect((await get(a.id)).status).toBe("live");
-    expect((await get(b.id)).status).toBe("paper");
-    expect((await get(c.id)).status).toBe("paper"); // never reached
     const placedBefore = t.trading.placed.length;
-    // same key again: A is reported as placed from its recorded batch, B refuses again, C is still not reached
-    const r2 = await json<LiveBatchResult>(await t.request("/v1/strategies/live/batch", { cookie: alice, json: body }));
-    expect(r2.placed).toEqual([a.id]);
-    expect(r2.skipped).toEqual([d.id]);
-    expect(r2.failed?.id).toBe(b.id);
+    // one combined preview first: B's refusal keeps A and C on paper, no order goes out
+    const r1 = await t.request("/v1/strategies/live/batch", { cookie: alice, json: body });
+    expect(r1.status).toBe(409);
+    expect((await json<{ message: string }>(r1)).message).toMatch(/^B: .*not a whole number/);
+    expect((await get(a.id)).status).toBe("paper");
+    expect((await get(b.id)).status).toBe("paper");
+    expect((await get(c.id)).status).toBe("paper");
     expect(t.trading.placed.length).toBe(placedBefore);
-    // once B is fixed, a new key continues with B and C
+    // once B is fixed the batch goes: the draft is skipped, the three are placed in order
     t.trading.product("C-BTC-70000-250926", 107, "0.001").markAt("C-BTC-70000-250926", "2000").fillAt(107, "2001");
-    const r3 = await json<LiveBatchResult>(await t.request("/v1/strategies/live/batch", { cookie: alice, json: { ...body, ids: [b.id, c.id], idempotencyKey: "key-batch-cover-2" } }));
-    expect(r3).toEqual({ placed: [b.id, c.id], failed: null, skipped: [] });
-    const again = await json<LiveBatchResult>(await t.request("/v1/strategies/live/batch", { cookie: alice, json: { ...body, ids: [b.id, c.id], idempotencyKey: "key-batch-cover-2" } }));
-    expect(again).toEqual({ placed: [b.id, c.id], failed: null, skipped: [] });
-    expect(t.trading.placed.length).toBe(placedBefore + 2);
+    const r2 = await json<LiveBatchResult>(await t.request("/v1/strategies/live/batch", { cookie: alice, json: body }));
+    expect(r2).toEqual({ placed: [a.id, b.id, c.id], failed: null, skipped: [d.id] });
+    expect(t.trading.placed.length).toBe(placedBefore + 3);
+    // same key again: the live rows are reported as placed from their recorded batch, nothing is sent twice
+    const again = await json<LiveBatchResult>(await t.request("/v1/strategies/live/batch", { cookie: alice, json: body }));
+    expect(again).toEqual({ placed: [a.id, b.id, c.id], failed: null, skipped: [d.id] });
+    expect(t.trading.placed.length).toBe(placedBefore + 3);
   });
 });
 

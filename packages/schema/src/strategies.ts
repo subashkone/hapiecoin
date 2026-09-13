@@ -523,8 +523,11 @@ export const LivePreviewBody = z.strictObject({
 });
 export type LivePreviewBody = z.infer<typeof LivePreviewBody>;
 
+/** Each strategy once: a repeated id would count twice in the batch's wallet rule (ADR-087). */
+const uniqueIds = (ids: readonly string[]) => new Set(ids).size === ids.length;
+
 export const LiveBatchBody = z.strictObject({
-  ids: z.array(Id).min(1).max(20),
+  ids: z.array(Id).min(1).max(20).refine(uniqueIds, { message: "Each strategy once" }),
   brokerId: Id,
   accountId: Id.optional(),
   idempotencyKey: z.string().min(8).max(80),
@@ -539,6 +542,43 @@ export const LiveBatchResult = z.strictObject({
   skipped: z.array(Id),
 });
 export type LiveBatchResult = z.infer<typeof LiveBatchResult>;
+
+/** Trade All → Live previewed as one batch (GAPS #4, ADR-087): every strategy's own check, then the wallet against the batch as a whole. */
+export const LiveBatchPreviewBody = z.strictObject({
+  ids: z.array(Id).min(1).max(20).refine(uniqueIds, { message: "Each strategy once" }),
+  brokerId: Id,
+  accountId: Id.optional(),
+});
+export type LiveBatchPreviewBody = z.infer<typeof LiveBatchPreviewBody>;
+
+export const LiveBatchPreviewItem = z.strictObject({
+  id: Id,
+  name: z.string(),
+  /** False when the id is not one of the trader's paper strategies: the batch skips it, it takes no part in the totals. */
+  paper: z.boolean(),
+  ok: z.boolean(),
+  reasons: z.array(z.string()),
+  legs: z.array(LivePreviewLeg),
+  notional: DecimalString,
+  /** The net premium this strategy pays (positive) or receives (negative) at the marks shown. */
+  debit: DecimalString,
+});
+export type LiveBatchPreviewItem = z.infer<typeof LiveBatchPreviewItem>;
+
+export const LiveBatchPreview = z.strictObject({
+  items: z.array(LiveBatchPreviewItem),
+  /** Every paper strategy passes its own check and the batch passes the wallet rule. */
+  ok: z.boolean(),
+  /** Reasons that belong to the batch as a whole (the wallet against the premiums together), not to one strategy. */
+  reasons: z.array(z.string()),
+  notional: DecimalString,
+  debit: DecimalString,
+  available: DecimalString.nullable(),
+  availableAsset: z.string().nullable(),
+  marginUsed: DecimalString.nullable(),
+  limits: z.strictObject({ maxLegs: z.number().int(), maxNotionalUsd: z.number(), markBandPct: z.number() }),
+});
+export type LiveBatchPreview = z.infer<typeof LiveBatchPreview>;
 
 export const LivePosition = z.strictObject({
   productId: z.number().int(),

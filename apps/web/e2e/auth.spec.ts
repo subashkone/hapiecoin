@@ -136,3 +136,21 @@ test("HC-PB-068 an account with an authenticator app stops at the code step; the
   await page.waitForURL(/\/analyse/);
   await expect(page.getByTestId("app-header")).toHaveAttribute("data-variant", "analyse");
 });
+
+test("HC-PB-069 a passkey added in Security signs the account in without the password (ADR-089)", async ({ page, request }) => {
+  await seedUser(request, { email: "passkey@example.com" });
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("WebAuthn.enable");
+  await cdp.send("WebAuthn.addVirtualAuthenticator", { options: { protocol: "ctap2", transport: "internal", hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true } });
+  await signIn(page, "passkey@example.com");
+  await page.getByTestId("settings-gear").click();
+  await page.getByTestId("menu-security").click();
+  await page.getByTestId("passkey-add").click();
+  await expect(page.getByTestId("passkey-row")).toHaveCount(1);
+  // the same browser, no session: the passkey is enough
+  await page.context().clearCookies();
+  await page.goto("/auth");
+  await page.getByTestId("continue-passkey").click();
+  await page.waitForURL(/\/analyse/);
+  await expect(page.getByTestId("app-header")).toHaveAttribute("data-variant", "analyse");
+});

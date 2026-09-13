@@ -564,5 +564,16 @@
   "how": "A password sign-in on an account with 2FA on answers twoFactorRedirect and the form moves to the code step (no session yet); six boxes for the app code, 'Use a backup code instead' for a saved code (each works once), 'Back to sign in'; a wrong code says 'That code is not right.' Email codes and Google are refused for such an account with 'This account uses an authenticator app: sign in with your password and the code'",
   "evidence": "ADR-078 (12 Sep 2026): apps/api auth.ts twoFactor plugin + the sign-in hooks; apps/web lib/auth/client.ts twoFactorClient, components/auth/AuthScreen.tsx AuthTab totp, AuthForms.tsx TotpForm; unit auth.test.ts (api) HC-PB-068, AuthForms.test.tsx HC-PB-068; e2e auth.spec.ts HC-PB-068",
   "test": "unit (api + web), e2e"
+ },
+ {
+  "route": "/auth",
+  "screen": "Auth · Sign in",
+  "feature": "Sign in with a passkey",
+  "how": "Above the Delta and Google buttons when the browser has WebAuthn: one tap asks the device for the passkey and signs the account in without the password; an account with two-factor on is refused with 'This account uses an authenticator app: sign in with your password and the code' (ADR-078); a closed prompt and a device without a passkey each get one sentence",
+  "status": "working",
+  "new": true,
+  "phase": 5,
+  "evidence": "ADR-089 (13 Sep 2026): apps/web/src/components/auth/AuthForms.tsx Providers (continue-passkey), lib/auth/client.ts authErrorMessage; unit AuthForms.test.tsx HC-PB-069; e2e auth.spec.ts HC-PB-069 (CDP virtual authenticator)",
+  "test": "unit (web), e2e"
  }
 ]

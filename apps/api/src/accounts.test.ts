@@ -54,8 +54,8 @@ describe("HC-TR-174 the key is resolved once and never guessed", () => {
     // Trade All only takes paper strategies: started with two keys and no account, it names none
     expect((await t.request(`/v1/strategies/${s.id}/start`, { cookie, json: { mode: "paper", brokerId: SEED.brokerId, entries: {} } })).status).toBe(200);
     const batch = await t.request("/v1/strategies/live/batch", { cookie, json: { confirm: "LIVE", ids: [s.id], brokerId: SEED.brokerId, idempotencyKey: "acct-batch-none-01" } });
-    expect(batch.status).toBe(200); // the batch reports the refusal on the first strategy and stops
-    expect(await json<{ placed: string[]; failed: { id: string; error: string } | null }>(batch)).toMatchObject({ placed: [], failed: { id: s.id, error: expect.stringContaining("2 accounts connected") as string } });
+    expect(batch.status).toBe(409); // ADR-087: the combined preview refuses the whole batch, naming the strategy and the count
+    expect((await json<{ message: string }>(batch)).message).toContain("2 accounts connected");
     expect((await t.request(`/v1/strategies/${s.id}`, { cookie }).then((r) => json<Strategy>(r))).status).toBe("paper");
     expect((await t.request(`/v1/credentials/${SEED.brokerId}`, { method: "DELETE", cookie })).status).toBe(409); // by exchange id with two keys: which one?
   });

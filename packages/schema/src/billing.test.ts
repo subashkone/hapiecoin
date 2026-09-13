@@ -61,7 +61,7 @@ describe("[SCHEMA] billing", () => {
   });
 
   it("admin rows and patches: validity, commission 0..100, lot sizes > 0, and nothing-to-update", () => {
-    const row = AdminUserRow.parse({ id: "usr_1", email: "a@b.c", name: "A", role: "user", active: true, planName: null, planId: null, interval: null, startsAt: null, expiresAt: null, validityDays: null, referrals: 0, commissionPct: "0", limitOverrides: {}, lotSizes: { BTC: "0.001" }, createdAt: AT, mobile: null, referralCode: "ASHA2026", paidInr: "0", lastLoginAt: null });
+    const row = AdminUserRow.parse({ id: "usr_1", email: "a@b.c", name: "A", role: "user", active: true, planName: null, planId: null, interval: null, startsAt: null, expiresAt: null, validityDays: null, referrals: 0, commissionPct: "0", limitOverrides: {}, lotSizes: { BTC: "0.001" }, createdAt: AT, mobile: null, referralCode: "ASHA2026", paidInr: "0", lastLoginAt: null, twoFactorEnabled: false });
     expect(row.lotSizes).toEqual({ BTC: "0.001" });
     expect(AdminUsersPage.parse({ items: [row], total: 1, page: 1, pageSize: 10 }).total).toBe(1);
     expect(AdminUserPatch.parse({ validityDays: 30 })).toEqual({ validityDays: 30 });

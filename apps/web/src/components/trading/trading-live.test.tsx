@@ -58,8 +58,6 @@ beforeEach(() => {
     expiry: { BTC: EXPIRY },
     legs: { BTC: [], ETH: [], XAUT: [] },
     strategy: { BTC: { name: "", basket: false, priceMode: "live", draftId: null }, ETH: { name: "", basket: false, priceMode: "live", draftId: null }, XAUT: { name: "", basket: false, priceMode: "live", draftId: null } },
-    drafts: [],
-    draftsImported: true,
     tradeFlow: null,
     protectPrompt: false, // the Protect step is covered by rules.test.tsx
     detailsId: null,
@@ -344,6 +342,42 @@ describe("HC-TR-089 Trade All → Live", () => {
     expect(mine()[0]!.orderBatchId).toMatch(/^web-.*:strat_1$/);
     expect(useUiStore.getState().workspaceTab).toBe("live");
     await waitFor(() => expect(screen.getByTestId("live-count").textContent).toContain("2"));
+  });
+
+  it("HC-TR-191 previews the batch as one: a refused strategy shows its reason and holds the button, the wallet is checked against the premiums together, unticking clears it", async () => {
+    connect();
+    // 2 000 lots × 0.001 × 1201.2 = 2 402 USD each: fine alone, 4 805 together against the 4 000 wallet; 90 000 lots is over the cap
+    mine().push(strat(1, { legs: [{ ...CALL, id: "leg_1", lots: 2000 }] }), strat(2, { legs: [{ ...CALL, id: "leg_2", lots: 2000 }] }), strat(3, { name: "Too big", legs: [{ ...CALL, id: "leg_3", lots: 90_000 }] }));
+    renderWithProviders(<Workspace />);
+    act(() => FakeSocket.last().open());
+    const u = userEvent.setup();
+    await waitFor(() => expect(screen.getAllByTestId("paper-card")).toHaveLength(3));
+    await u.click(screen.getByTestId("trade-all-live"));
+    const dlg = screen.getByTestId("batch-live");
+    await waitFor(() => expect(within(dlg).getByTestId<HTMLSelectElement>("batch-broker").value).toBe("brk_delta"));
+    const checks = () => within(dlg).getAllByTestId<HTMLInputElement>("batch-check");
+    const rowChecks = () => within(dlg).getAllByTestId("batch-row-check");
+    await waitFor(() => expect(within(dlg).getByTestId("batch-preview").dataset["ok"]).toBe("false"));
+    expect(rowChecks().map((r) => r.dataset["ok"])).toEqual(["true", "true", "false"]);
+    expect(rowChecks()[2]!.textContent).toMatch(/exceeds the 100000 USD limit/);
+    expect(rowChecks()[0]!.textContent).toContain("Exchange check passed");
+    expect(within(dlg).getByTestId("batch-preview-reason").textContent).toContain("pay together");
+    await typeLiveIf(u, dlg);
+    expect(within(dlg).getByTestId<HTMLButtonElement>("batch-go").disabled).toBe(true);
+    // untick the one over the cap: its own check clears, the wallet rule still holds for the two left
+    await u.click(checks()[2]!);
+    await waitFor(() => expect(within(dlg).getAllByTestId("batch-row-check")).toHaveLength(2));
+    await waitFor(() => expect(within(dlg).getByTestId("batch-preview-reason").textContent).toContain("these 2 trades pay together"));
+    expect(within(dlg).getByTestId<HTMLButtonElement>("batch-go").disabled).toBe(true);
+    // untick one more: the batch is one strategy, well inside the wallet
+    await u.click(checks()[1]!);
+    await waitFor(() => expect(within(dlg).getByTestId("batch-preview").dataset["ok"]).toBe("true"));
+    expect(within(dlg).queryByTestId("batch-preview-reason")).toBeNull();
+    expect(within(dlg).getByTestId("batch-preview").textContent).toContain("Available: $4,000.00");
+    await waitFor(() => expect(within(dlg).getByTestId("batch-preview").dataset["fetching"]).toBe("false"));
+    await waitFor(() => expect(within(dlg).getByTestId<HTMLButtonElement>("batch-go").disabled).toBe(false));
+    await u.click(within(dlg).getByTestId("batch-go"));
+    await waitFor(() => expect(mine().filter((s) => s.status === "live").map((s) => s.id)).toEqual(["strat_1"]));
   });
 
   it("reports the strategy at which the batch stopped", async () => {
