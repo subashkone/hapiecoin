@@ -1976,6 +1976,21 @@
   "evidence": "ADR-081 (12 Sep 2026): apps/api src/error-sink.ts, metrics.ts, logger.ts (hooks.logMethod), security/errors.ts, security/request.ts, app.ts, config.ts, main.ts; apps/gateway src/error-sink.ts, log.ts, app.ts, index.ts, config.ts; unit error-sink.test.ts (api + gateway) HC-SH-133, metrics.test.ts HC-SH-133, observability.test.ts HC-SH-133, gateway log.test.ts / config.test.ts / app.test.ts HC-SH-133"
  },
  {
+  "id": "HC-SH-134",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "route": "/analyse",
+  "screen": "Settings · API Settings / Mindful trading / Lot Size",
+  "feature": "A fresh authenticator code before a sensitive change on an account with two-factor sign-in on",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + web)",
+  "acceptance": "When /v1/me says the authenticator is on, the API Settings dialog (Connect & Save, Disconnect), the Mindful dialog and the Lot Size dialog show a six-box Authenticator code field; the mutations send it as the X-Second-Factor header; the API refuses 403 SECOND_FACTOR_REQUIRED without it, 403 SECOND_FACTOR_INVALID on a wrong code and 429 SECOND_FACTOR_LOCKED after five wrong codes in fifteen minutes; the refusal shows under the field; the code is cleared after each save. Theme, density, currency and P&L basis never ask; an account without the authenticator is never asked",
+  "evidence": "ADR-086 (13 Sep 2026): apps/api/src/security/second-factor.ts requireSecondFactor, routes/credentials.ts, routes/settings.ts safetyKnobsChanged, auth.ts sessionResolver twoFactorEnabled; apps/web lib/api/second-factor.ts, lib/api/queries.ts, components/dialogs/SecondFactorField.tsx, ApiSettingsDialog.tsx, MindfulDialog.tsx, LotSizeDialog.tsx; unit second-factor.test.ts (api), dialogs.test.tsx HC-SH-136 (web)"
+ },
+ {
   "id": "HC-PB-001",
   "area": "10-public",
   "areaName": "Public site & authentication",
@@ -10588,6 +10603,21 @@
   "test": "unit (pricing) · e2e (Playwright) · security",
   "acceptance": "The amber Send Email button lives in the title row next to the Compose / History tabs and hides on History",
   "evidence": "v2 improvement · Phase 4 item 4c (08 Sep 2026, ADR-035): Send Email lives in the title row and hides on History (email-send)"
+ },
+ {
+  "id": "HC-AD-129",
+  "area": "40-admin",
+  "areaName": "Admin console",
+  "owner": "Platform engineer",
+  "route": "/admin/users",
+  "screen": "User Management",
+  "feature": "2FA column: whether the account has the authenticator on",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + web)",
+  "acceptance": "AdminUserRow.twoFactorEnabled from users.two_factor_enabled; a 2FA column (on / off) in the users table and its CSV",
+  "evidence": "ADR-086 (13 Sep 2026): apps/api/src/admin-users.ts adminRow, packages/schema billing.ts AdminUserRow, apps/web components/admin/UsersAdmin.tsx; unit second-factor.test.ts (api), users.test.tsx HC-AD-129 (web)"
  },
  {
   "id": "HC-MA-001",

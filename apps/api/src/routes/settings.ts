@@ -1,4 +1,5 @@
 /** Per-user preferences (HC-SH-038..044, HC-TR-183): currency + conversion rate, P&L basis, lot sizes, theme, density, the Mindful pause. */
+import { requireSecondFactor } from "../security/second-factor.js";
 import { DEFAULT_MINDFUL, MindfulSettings, UNDERLYINGS, type Underlying, UserSettings } from "@hapiecoin/schema";
 import { DEFAULT_VENUE, defaultLotSizes, getVenue } from "@hapiecoin/venues";
 import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
@@ -71,6 +72,8 @@ export function registerSettingsRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
         200: jsonContent(UserSettings, "Saved settings"),
         400: errorResponses[400],
         401: errorResponses[401],
+        403: errorResponses[403],
+        429: errorResponses[429],
       },
     }),
     async (c) => {
@@ -81,6 +84,8 @@ export function registerSettingsRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
         .from(userSettings)
         .where(eq(userSettings.userId, me.id))
         .limit(1);
+      // ADR-086: the safety knobs (the Mindful pause, the lot sizes) ask an account with the authenticator on for its code; theme, density, currency and P&L basis never do
+      if (safetyKnobsChanged(before ? toSettings(before) : DEFAULT_SETTINGS, next)) await requireSecondFactor(deps, c, me);
       const values = { userId: me.id, ...next, updatedAt: new Date() };
       const [row] = await deps.db
         .insert(userSettings)
@@ -100,4 +105,14 @@ export function registerSettingsRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       return c.json(saved, 200);
     },
   );
+}
+
+/** Key-order-free comparison of the settings that change what a live order can do (ADR-086). */
+function stable(value: unknown): string {
+  return JSON.stringify(value, (_k, v: unknown) => (v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.entries(v as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) : v));
+}
+
+/** True when `next` changes the Mindful pause or the lot sizes against `current`. */
+export function safetyKnobsChanged(current: UserSettings, next: UserSettings): boolean {
+  return stable(current.mindful) !== stable(next.mindful) || stable(current.lotSizes) !== stable(next.lotSizes);
 }
