@@ -22,12 +22,17 @@ describe("[VENUES] trading client edges", () => {
       seen.push(url);
       return json({ success: true, result: { id: 1, symbol: "BTCUSD", contract_value: 0.001, contract_type: "perpetual_futures", state: "live" } });
     });
-    const c = new DeltaTradingClientImpl({ baseUrl: `${BASE}/`, nodeEnv: "development", minIntervalMs: 5 });
+    // a frozen clock: the bucket's second slot is always 5 ms away, so the default sleep (a real timer) is asked for it
+    // every run; on the real whole-second clock the two calls could straddle a second and skip the wait (CI saw that)
+    const c = new DeltaTradingClientImpl({ baseUrl: `${BASE}/`, nodeEnv: "development", minIntervalMs: 5, now: () => 1_700_000_000 });
     const before = Date.now();
     expect((await c.getProduct("BTCUSD")).contractValue).toBe("0.001");
     expect(await c.getMark("BTCUSD")).toBeNull(); // the stub answers a product, not a ticker: no mark_price
     expect(Date.now() - before).toBeGreaterThanOrEqual(4); // the second call waited for the bucket
-    expect(seen).toEqual([`${BASE}/v2/products/BTCUSD`, `${BASE}/v2/tickers/BTCUSD`]);
+    // a client built without `now` reads the default whole-second clock
+    const live = new DeltaTradingClientImpl({ baseUrl: BASE, nodeEnv: "development", minIntervalMs: 0 });
+    expect((await live.getProduct("BTCUSD")).contractValue).toBe("0.001");
+    expect(seen).toEqual([`${BASE}/v2/products/BTCUSD`, `${BASE}/v2/tickers/BTCUSD`, `${BASE}/v2/products/BTCUSD`]);
   });
 
   it("non-JSON, non-envelope and transport failures are reported without throwing", async () => {
