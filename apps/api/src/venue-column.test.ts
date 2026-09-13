@@ -63,13 +63,14 @@ describe("HC-SH-120 [API] the venue column", () => {
     expect((await json<{ message: string }>(place)).message).toContain("other_venue");
     const [row] = await t.db.select({ status: strategies.status, brokerId: strategies.brokerId }).from(strategies).where(eq(strategies.id, s.id));
     expect(row).toEqual({ status: "draft", brokerId: null }); // nothing was stamped
-    // batch: a paper strategy on the seed broker; the foreign broker is the batch's failed item, not a thrown 409
+    // batch: a paper strategy on the seed broker; the foreign broker refuses the whole batch at its combined preview (ADR-087), naming the strategy
     const paper = await json<Strategy>(await t.request("/v1/strategies", { cookie: alice, json: { name: "Venue batch", asset: "BTC", legs: [CALL] } }));
     expect((await t.request(`/v1/strategies/${paper.id}/start`, { cookie: alice, json: { mode: "paper", brokerId: SEED.brokerId, entries: {} } })).status).toBe(200);
-    const batch = await json<{ placed: string[]; failed: { id: string; error: string } | null; skipped: string[] }>(await t.request("/v1/strategies/live/batch", { cookie: alice, json: { confirm: "LIVE", ids: [paper.id], brokerId: "brk_other", idempotencyKey: "key-venue-0002" } }));
-    expect(batch.placed).toEqual([]);
-    expect(batch.failed?.id).toBe(paper.id);
-    expect(batch.failed?.error).toContain("other_venue");
+    const batch = await t.request("/v1/strategies/live/batch", { cookie: alice, json: { confirm: "LIVE", ids: [paper.id], brokerId: "brk_other", idempotencyKey: "key-venue-0002" } });
+    expect(batch.status).toBe(409);
+    const refusal = (await json<{ message: string }>(batch)).message;
+    expect(refusal).toContain("Venue batch: ");
+    expect(refusal).toContain("other_venue");
     const [after] = await t.db.select({ status: strategies.status, brokerId: strategies.brokerId }).from(strategies).where(eq(strategies.id, paper.id));
     expect(after).toEqual({ status: "paper", brokerId: SEED.brokerId });
   });

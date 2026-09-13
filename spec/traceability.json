@@ -7569,6 +7569,20 @@
   "evidence": "ADR-084 (13 Sep 2026): apps/api routes/live.ts adjustPreview, routes/strategies.ts adjust and legs (enforceMindful on adds); apps/web components/adjust/AdjustConfirmDialog.tsx; unit day-pnl.test.ts (api) HC-TR-190, trading-live.test.tsx HC-TR-190"
  },
  {
+  "id": "HC-TR-191",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Trade All → Live",
+  "feature": "The batch previewed as one: every strategy's exchange check and the wallet against the premiums together, nothing placed until all pass",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (schema + api + web)",
+  "acceptance": "POST /v1/strategies/live/batch/preview answers per-strategy items (check passed or the reasons, legs with marks, notional, premium paid or received) and the whole (Σ notional, Σ premium, available, margin in use, the batch's own reasons); the batch route runs the same preview first and refuses the whole batch by name before any order goes out; the dialog shows each ticked row's check, a batch line and the Mindful at-risk line as the batch's premium, and keeps the button off until the batch is ok (untick a refused strategy to go on)",
+  "evidence": "ADR-087 (13 Sep 2026): apps/api/src/routes/live.ts batchPreview + the preview route + the batch route pre-pass; packages/schema strategies.ts LiveBatchPreview*; apps/web lib/api/live.ts useBatchPreview, components/trading/BatchLiveDialog.tsx; unit live-batch.test.ts + live-cover.test.ts + accounts.test.ts + venue-column.test.ts (api), strategies.test.ts (schema), trading-live.test.tsx HC-TR-191 (web)"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

@@ -1,10 +1,10 @@
 // Live trading through TanStack Query (Phase 3 item 2, ADR-025): preview, place, retry, sync, batch, positions.
 // Every order goes through the API's executor; the browser never talks to the venue.
-import { type LiveBatchBody, LiveBatchResult, type LivePlaceBody, LivePositions, type LivePositionsExitBody, LivePositionsExitResult, LivePreview, type LivePreviewBody, type LiveRetryBody, MindfulPreview, Strategy, type LiveRepriceBody } from "@hapiecoin/schema";
+import { type LiveBatchBody, LiveBatchPreview, type LiveBatchPreviewBody, LiveBatchResult, type LivePlaceBody, LivePositions, type LivePositionsExitBody, LivePositionsExitResult, LivePreview, type LivePreviewBody, type LiveRetryBody, MindfulPreview, Strategy, type LiveRepriceBody } from "@hapiecoin/schema";
 
 /** Preview body: the open legs by default, or an adjustment batch's adds / changes (ADR-044). */
 export type PreviewBody = LivePreviewBody & { worstLoss?: number | undefined };
-import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type AccountRef, accountKey } from "@/lib/accounts";
 import { api, type ApiClient } from "./client";
 import { strategyKeys } from "./strategies";
@@ -21,6 +21,7 @@ export function liveFetchers(client: ApiClient = api) {
     cancelOrder: (id: string, orderId: string) => client.post(`/v1/strategies/${enc(id)}/live/orders/${enc(orderId)}/cancel`, {}, Strategy),
     repriceOrder: (id: string, orderId: string, body: LiveRepriceBody) => client.post(`/v1/strategies/${enc(id)}/live/orders/${enc(orderId)}/reprice`, body, Strategy),
     batch: (body: LiveBatchBody) => client.post("/v1/strategies/live/batch", body, LiveBatchResult),
+    batchPreview: (body: LiveBatchPreviewBody) => client.post("/v1/strategies/live/batch/preview", body, LiveBatchPreview), // ADR-087
     // ADR-084: the server's day figure and the pause it decides; reading it starts the batch's pause clock on the server
     dayPnl: () => client.get("/v1/me/day-pnl", MindfulPreview),
     positions: (brokerId: string, accountId: string | null = null) => client.get(`/v1/strategies/live/positions?brokerId=${enc(brokerId)}${accountId ? `&accountId=${enc(accountId)}` : ""}`, LivePositions),
@@ -70,6 +71,16 @@ export function useLiveRepriceOrder() {
 }
 export function useLiveBatch() {
   return useLiveMutation((body: LiveBatchBody) => f.batch(body));
+}
+/** The batch preview for the ticked strategies (ADR-087); off while nothing is ticked or no exchange is chosen. */
+export function useBatchPreview(body: LiveBatchPreviewBody | null) {
+  return useQuery({
+    queryKey: ["live", "batch-preview", body?.brokerId ?? "", body?.accountId ?? "", [...(body?.ids ?? [])].sort().join(",")],
+    queryFn: () => f.batchPreview(body!),
+    enabled: body !== null && body.ids.length > 0 && body.brokerId !== "",
+    staleTime: 15_000,
+    placeholderData: keepPreviousData, // the rows keep their last check while a tick change re-asks; the button waits for the fresh answer
+  });
 }
 /** The server's live day P&L for the batch dialog (HC-TR-189): fetched when the dialog opens, never cached across openings. */
 export function useLiveDay(enabled: boolean) {

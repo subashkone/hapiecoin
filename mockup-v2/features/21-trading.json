@@ -1637,5 +1637,15 @@
     "how": "An add is a new bet: the workbench's live preview carries the server's pause; the Review dialog shows the Mindful block with the day figure, this batch's worst case and the margin in use, and the countdown replaces the hold button until the pause ends; the adjust route answers 409 MINDFUL_PAUSE until the pause shown at preview time has elapsed. POST /strategies/{id}/legs on a live strategy waits the same way. Trims and closes never wait; a body mixing a trim with an add waits as a whole",
     "evidence": "ADR-084 (13 Sep 2026): apps/api routes/live.ts adjustPreview, routes/strategies.ts adjust and legs (enforceMindful on adds); apps/web components/adjust/AdjustConfirmDialog.tsx; unit day-pnl.test.ts (api) HC-TR-190, trading-live.test.tsx HC-TR-190",
     "test": "unit (api + web)"
+  },
+  {
+    "screen": "Trading · Trade All → Live",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The batch previewed as one: every strategy's exchange check and the wallet against the premiums together, nothing placed until all pass",
+    "how": "POST /v1/strategies/live/batch/preview answers per-strategy items (check passed or the reasons, legs with marks, notional, premium paid or received) and the whole (Σ notional, Σ premium, available, margin in use, the batch's own reasons); the batch route runs the same preview first and refuses the whole batch by name before any order goes out; the dialog shows each ticked row's check, a batch line and the Mindful at-risk line as the batch's premium, and keeps the button off until the batch is ok (untick a refused strategy to go on)",
+    "evidence": "ADR-087 (13 Sep 2026): apps/api/src/routes/live.ts batchPreview + the preview route + the batch route pre-pass; packages/schema strategies.ts LiveBatchPreview*; apps/web lib/api/live.ts useBatchPreview, components/trading/BatchLiveDialog.tsx; unit live-batch.test.ts + live-cover.test.ts + accounts.test.ts + venue-column.test.ts (api), strategies.test.ts (schema), trading-live.test.tsx HC-TR-191 (web)",
+    "test": "unit (schema + api + web)"
   }
 ]
