@@ -1599,6 +1599,26 @@
     "evidence": "ADR-078 (12 Sep 2026): packages/schema strategies.ts LIVE_CONFIRM_WORD / LiveConfirm / isLiveConfirm / LiveRetryBody; apps/api routes/live-exec.ts requireLiveConfirm, routes/live.ts, routes/strategies.ts; apps/web components/trading/TypedConfirm.tsx, RetryDialog.tsx, TradePreviewDialog.tsx, BatchLiveDialog.tsx, adjust/AdjustConfirmDialog.tsx, PaperPanel.tsx, lib/api/live.ts; unit strategies.test.ts (schema) HC-TR-186, live.test.ts (api) HC-TR-186, trading-live.test.tsx HC-TR-186; e2e analyse.spec.ts (typeLiveIfShown before every live click)"
   },
   {
+    "screen": "Trading · Live tab · resting order",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Cancel a resting limit entry from the card",
+    "how": "A resting limit's chip reads 'resting @ price'; a row under the chips carries Cancel order per resting order. One plain click (no typed word: it reduces exposure) pulls the order from the exchange; the API reads the order back and books the exchange's truth, so a fill that beat the click is booked as a fill with the leg's entry, and a cancel is booked as 'cancelled from HapieCoin'. The leg stays on the card with no entry; the banner reads 'Order cancelled' and Retry re-sends it",
+    "evidence": "ADR-083 (13 Sep 2026): apps/api routes/live-exec.ts cancelResting, routes/live.ts POST /v1/strategies/{id}/live/orders/{orderId}/cancel; packages/venues delta/trading.ts (the fake refuses to cancel a filled order); apps/web components/trading/RestingOrderDialog.tsx, PaperPanel.tsx (order-chip data-resting, resting-row, order-cancel-order), RetryDialog.tsx, lib/api/live.ts useLiveCancelOrder; unit live.test.ts (api) HC-TR-187, trading-live.test.tsx HC-TR-187",
+    "test": "unit (api + venues + web)"
+  },
+  {
+    "screen": "Trading · Live tab · resting order",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Re-price a resting limit entry in place",
+    "how": "Re-price on the resting row opens the dialog with the leg, the resting price, the mark and a New limit price field; the word LIVE is typed (the order stays a live entry that can fill); the exchange edits the same order (PUT /v2/orders), the price snapped to the product tick; a price across the market fills at once and the leg gets its entry ('Filled at the new price'), else the chip reads the new resting price ('Price moved'). A refused edit re-reads the exchange first, so a fill or cancel that beat the edit is booked before the refusal is shown",
+    "evidence": "ADR-083 (13 Sep 2026): packages/venues delta/trading.ts editOrder + FakeDeltaTradingClient.editOrder; packages/schema strategies.ts LiveRepriceBody; apps/api routes/live-exec.ts repriceResting, routes/live.ts POST …/orders/{orderId}/reprice; apps/web RestingOrderDialog.tsx, PaperPanel.tsx order-reprice, lib/api/live.ts useLiveRepriceOrder; unit trading.test.ts (venues) HC-TR-188, live.test.ts (api) HC-TR-188, trading-live.test.tsx HC-TR-188",
+    "test": "unit (api + venues + web)"
+  },
+  {
     "screen": "Trading · Trade Preview · Trade All",
     "status": "working",
     "phase": 5,

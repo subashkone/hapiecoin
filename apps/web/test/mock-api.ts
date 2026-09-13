@@ -1199,13 +1199,41 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const body = await c.req.json<{ confirm?: string }>();
     if (!isLiveWord(body.confirm)) return err(c, 400, "BAD_REQUEST", "Type LIVE to confirm a real order"); // ADR-078
     if (s.status !== "live") return err(c, 409, "CONFLICT", "Only a live strategy has orders to retry");
-    for (const o of s.orders.filter((x) => x.state === "failed")) {
+    for (const o of s.orders.filter((x) => (x.state === "failed" || x.state === "cancelled") && x.purpose !== "exit")) {
       const leg = s.legs.find((l) => l.id === o.legId);
       if (!leg) continue;
       leg.symbol = leg.symbol.replace("FAIL", "OK"); // the venue accepts on retry in the mock
       Object.assign(o, { state: "filled", venueOrderId: String(700000 + s.orders.length), fillPrice: markOf(leg), error: null, attempts: o.attempts + 1, updatedAt: nowIso() });
       Object.assign(leg, { entryPrice: markOf(leg), price: markOf(leg), openedAt: nowIso() });
     }
+    return c.json(touch(s));
+  });
+  // GAPS #61 / ADR-083: a resting limit entry pulled or moved; the real API reads the exchange back, the mock decides from the mark
+  const restingOf = (s: Strategy, orderId: string) => s.orders.find((o) => o.id === orderId && o.state === "pending" && o.orderType === "limit" && o.purpose !== "exit");
+  v1.post("/strategies/:id/live/orders/:orderId/cancel", (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    const o = restingOf(s, c.req.param("orderId"));
+    if (!o) return err(c, 409, "CONFLICT", "Only a resting limit entry can be cancelled or re-priced; sync first if the order state looks stale");
+    Object.assign(o, { state: "cancelled", error: "cancelled from HapieCoin", updatedAt: nowIso() });
+    return c.json(touch(s));
+  });
+  v1.post("/strategies/:id/live/orders/:orderId/reprice", async (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    const body = await c.req.json<{ limitPrice?: string; confirm?: string }>();
+    if (!isLiveWord(body.confirm)) return err(c, 400, "BAD_REQUEST", "Type LIVE to confirm a real order"); // ADR-078
+    if (typeof body.limitPrice !== "string" || !(Number(body.limitPrice) > 0)) return err(c, 400, "VALIDATION", "limitPrice must be a positive decimal");
+    const o = restingOf(s, c.req.param("orderId"));
+    if (!o) return err(c, 409, "CONFLICT", "Only a resting limit entry can be cancelled or re-priced; sync first if the order state looks stale");
+    const leg = s.legs.find((l) => l.id === o.legId)!;
+    const mark = markOf(leg);
+    // the exchange fills at once when the new limit crosses the market: a buy at or above the mark, a sell at or below it
+    const crosses = o.side === "buy" ? Number(body.limitPrice) >= Number(mark) : Number(body.limitPrice) <= Number(mark);
+    if (crosses) {
+      Object.assign(o, { limitPrice: body.limitPrice, state: "filled", fillPrice: mark, error: null, updatedAt: nowIso() });
+      Object.assign(leg, { entryPrice: mark, price: mark, openedAt: leg.openedAt ?? nowIso() });
+    } else Object.assign(o, { limitPrice: body.limitPrice, updatedAt: nowIso() });
     return c.json(touch(s));
   });
   v1.post("/strategies/:id/live/sync", (c) => {

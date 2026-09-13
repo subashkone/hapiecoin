@@ -2,7 +2,7 @@
  * Live trading routes (Phase 3 item 2, ADR-025): preview, place, retry, sync, Trade All → Live batch,
  * positions, and the admin kill switch. HC-TR-023, 055, 063, 070, 082..089.
  */
-import { type AdjustChange, Id, LiveBatchBody, LiveBatchResult, LivePlaceBody, LivePositions, LivePositionsExitBody, LivePositionsExitResult, LivePreview, LivePreviewBody, MAX_OPEN_LEGS, Strategy, type StrategyLegInput, ApiError, LiveRetryBody, MindfulPreview } from "@hapiecoin/schema";
+import { type AdjustChange, Id, LiveBatchBody, LiveBatchResult, LivePlaceBody, LivePositions, LivePositionsExitBody, LivePositionsExitResult, LivePreview, LivePreviewBody, MAX_OPEN_LEGS, Strategy, type StrategyLegInput, ApiError, LiveRetryBody, MindfulPreview, LiveRepriceBody } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, asc, eq } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
@@ -13,7 +13,7 @@ import { type AppEnv, type SessionUser, currentUser } from "../security/context.
 import { HttpError, errors } from "../security/errors.js";
 import { requireAdmin, requireUser } from "../security/guards.js";
 import { orderRateLimit } from "../security/rate-limit.js";
-import { lotSizeFor, openCredential, ordersOf, placeEntries, preview, resolveAccount, retryFailed, syncOrders, tradingBlockedReason, type PlanLeg, type StrategyRow, brokerVenueOf, venueMismatch, requireLiveConfirm } from "./live-exec.js";
+import { lotSizeFor, openCredential, ordersOf, placeEntries, preview, resolveAccount, retryFailed, syncOrders, tradingBlockedReason, type PlanLeg, type StrategyRow, brokerVenueOf, venueMismatch, requireLiveConfirm, cancelResting, repriceResting } from "./live-exec.js";
 import { type AppDeps, cookieAuth, errorResponses, jsonContent, errorMessage } from "./shared.js";
 
 /** The exchange did not answer the positions read (never an empty list, HC-TR-160). */
@@ -21,6 +21,7 @@ const exchangeUnavailable = jsonContent(ApiError, "Exchange unavailable");
 import { addDecimal, bookExitFills, closeLegRow, disarmRules, freshTotal, loadStrategy } from "./strategies.js";
 
 const IdParam = z.object({ id: Id });
+const OrderParam = z.object({ id: Id, orderId: Id });
 const PreviewBody = LivePreviewBody.extend({ worstLoss: z.number().optional() });
 
 export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
@@ -147,6 +148,64 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       await touch(row.id);
       const after = await loadStrategy(deps, row.id);
       await auditFrom(c, db)({ action: "strategy.live_retry", target: `strategy:${row.id}`, before, after: { ...after, outcome } });
+      return c.json(after, 200);
+    },
+  );
+
+  // GAPS #61 / ADR-083: a resting limit entry can be pulled or moved from the app
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/v1/strategies/{id}/live/orders/{orderId}/cancel",
+      tags: ["live"],
+      summary: "Cancel a resting limit entry on the exchange (HC-TR-187)",
+      security: cookieAuth,
+      middleware: [guard, orderLimit],
+      request: { params: OrderParam },
+      responses: { 200: jsonContent(Strategy, "Cancelled, or filled before the cancel reached the exchange"), 401: errorResponses[401], 404: errorResponses[404], 409: errorResponses[409] },
+    }),
+    async (c) => {
+      const me = currentUser(c);
+      const { id, orderId } = c.req.valid("param");
+      const row = await owned(me, id);
+      if (row.status !== "live" || !row.brokerId) throw errors.conflict("Only a live strategy has orders to cancel");
+      // no typed word and no kill-switch refusal: pulling a resting order reduces exposure (ADR-078's line)
+      const creds = await openCredential(deps, me, row.brokerId, undefined, row.accountId);
+      const before = await loadStrategy(deps, row.id);
+      const outcome = await cancelResting(deps, creds, row, orderId);
+      await touch(row.id);
+      const after = await loadStrategy(deps, row.id);
+      await auditFrom(c, db)({ action: "strategy.live_cancel_order", target: `strategy:${row.id}`, before, after: { ...after, outcome, orderId } });
+      return c.json(after, 200);
+    },
+  );
+
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/v1/strategies/{id}/live/orders/{orderId}/reprice",
+      tags: ["live"],
+      summary: "Move a resting limit entry's price in place (HC-TR-188)",
+      security: cookieAuth,
+      middleware: [guard, orderLimit],
+      request: { params: OrderParam, body: { content: { "application/json": { schema: LiveRepriceBody } }, required: true } },
+      responses: { 200: jsonContent(Strategy, "Re-priced, or filled at the new price"), 400: errorResponses[400], 401: errorResponses[401], 404: errorResponses[404], 409: errorResponses[409] },
+    }),
+    async (c) => {
+      const me = currentUser(c);
+      const { id, orderId } = c.req.valid("param");
+      const body = c.req.valid("json");
+      const row = await owned(me, id);
+      requireLiveConfirm(body.confirm); // ADR-078: the order stays live at a new price and can fill
+      if (row.status !== "live" || !row.brokerId) throw errors.conflict("Only a live strategy has orders to re-price");
+      const blocked = await tradingBlockedReason(deps, me);
+      if (blocked) throw errors.conflict(blocked);
+      const creds = await openCredential(deps, me, row.brokerId, undefined, row.accountId);
+      const before = await loadStrategy(deps, row.id);
+      const outcome = await repriceResting(deps, creds, row, orderId, body.limitPrice);
+      await touch(row.id);
+      const after = await loadStrategy(deps, row.id);
+      await auditFrom(c, db)({ action: "strategy.live_reprice_order", target: `strategy:${row.id}`, before, after: { ...after, outcome, orderId } });
       return c.json(after, 200);
     },
   );
