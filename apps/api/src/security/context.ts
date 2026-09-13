@@ -8,6 +8,8 @@ export interface SessionUser {
   email: string;
   name: string;
   role: "user" | "admin";
+  /** The authenticator is on (ADR-078); sensitive changes then ask for the current code (ADR-086). The session resolver sets it; a user built without it (jobs, tests) is looked up, never assumed off. */
+  twoFactorEnabled?: boolean;
 }
 
 export interface AppVariables {

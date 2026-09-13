@@ -237,8 +237,8 @@ export function sessionResolver(auth: Auth): SessionResolver {
     async resolve(headers: Headers): Promise<SessionUser | null> {
       const result = await auth.api.getSession({ headers });
       if (!result) return null;
-      const u = result.user as { id: string; email: string; name: string; role?: string | null };
-      return { id: u.id, email: u.email, name: u.name, role: u.role === "admin" ? "admin" : "user" };
+      const u = result.user as { id: string; email: string; name: string; role?: string | null; twoFactorEnabled?: boolean | null };
+      return { id: u.id, email: u.email, name: u.name, role: u.role === "admin" ? "admin" : "user", twoFactorEnabled: u.twoFactorEnabled === true };
     },
   };
 }

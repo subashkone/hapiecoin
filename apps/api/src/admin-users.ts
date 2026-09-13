@@ -52,6 +52,7 @@ export async function adminRow(deps: AppDeps, u: UserRow, at: Date): Promise<Adm
     referralCode: u.referralCode,
     paidInr: money(Number(paid?.total ?? 0)),
     lastLoginAt: lastAt && !Number.isNaN(lastAt.getTime()) ? lastAt.toISOString() : null,
+    twoFactorEnabled: u.twoFactorEnabled, // ADR-086 (HC-AD-129)
   };
 }
 

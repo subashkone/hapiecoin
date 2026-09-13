@@ -23,7 +23,7 @@ beforeEach(() => {
   FakeSocket.reset();
   mock = installMockFetch();
   mock.loginAs(EMAIL);
-  useUiStore.setState({ asset: "BTC", legs: { BTC: [], ETH: [], XAUT: [] }, drafts: [], draftsImported: true, tradeFlow: null, detailsId: null, workspaceTab: "paper", builderTab: "builder" });
+  useUiStore.setState({ asset: "BTC", legs: { BTC: [], ETH: [], XAUT: [] }, tradeFlow: null, detailsId: null, workspaceTab: "paper", builderTab: "builder" });
 });
 afterEach(() => {
   vi.useRealTimers();

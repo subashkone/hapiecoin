@@ -14,13 +14,28 @@ import {
 } from "@hapiecoin/ui";
 import { DECIMAL_STRING_RE, UNDERLYINGS, isPositiveDecimal, type Underlying } from "@hapiecoin/schema";
 import { useEffect, useState } from "react";
-import { useSettings, useUpdateSettings } from "@/lib/api/queries";
+import { queryKeys, useMe, useSettings, useUpdateSettings } from "@/lib/api/queries";
+import { useQueryClient } from "@tanstack/react-query";
+import { isSecondFactorError } from "@/lib/api/second-factor";
+import { SECOND_FACTOR_MISSING_MESSAGE, SecondFactorField, secondFactorMissing } from "./SecondFactorField";
 import type { DialogProps } from "./SettingsDialogs";
 
 export function LotSizeDialog({ open, onOpenChange }: DialogProps) {
   const { data: settings } = useSettings();
   const update = useUpdateSettings();
   const [lots, setLots] = useState<Record<Underlying, string>>({ BTC: "", ETH: "", XAUT: "" });
+  // ADR-086: the lot size is the size of every order; an account with the authenticator on confirms a change with its code
+  const { data: me } = useMe();
+  const qc = useQueryClient();
+  const needsCode = me?.twoFactorEnabled === true;
+  const [code, setCode] = useState("");
+  const [codeError, setCodeError] = useState<string | null>(null);
+  useEffect(() => {
+    if (open) {
+      setCode("");
+      setCodeError(null);
+    }
+  }, [open]);
   useEffect(() => {
     if (open && settings) setLots({ ...settings.lotSizes });
   }, [open, settings]);
@@ -33,14 +48,28 @@ export function LotSizeDialog({ open, onOpenChange }: DialogProps) {
         return;
       }
     }
+    const next = { BTC: lots.BTC.trim(), ETH: lots.ETH.trim(), XAUT: lots.XAUT.trim() };
+    // the server asks for the code only when a lot size changes; the same values save without one
+    const changed = !settings || UNDERLYINGS.some((s) => settings.lotSizes[s] !== next[s]);
+    if (changed && secondFactorMissing(needsCode, code)) {
+      setCodeError(SECOND_FACTOR_MISSING_MESSAGE);
+      return;
+    }
     update.mutate(
-      { lotSizes: { BTC: lots.BTC.trim(), ETH: lots.ETH.trim(), XAUT: lots.XAUT.trim() } },
+      { lotSizes: next, ...(changed && needsCode ? { secondFactor: code } : {}) },
       {
         onSuccess: () => {
           toast("Lot sizes saved");
+          setCode("");
           onOpenChange(false);
         },
-        onError: (e) => toast.error("Failed to save lot sizes", { description: e.message }),
+        onError: (e) => {
+          if (isSecondFactorError(e) && needsCode) setCodeError(e.message);
+          else {
+            toast.error("Failed to save lot sizes", { description: e.message });
+            if (isSecondFactorError(e)) void qc.invalidateQueries({ queryKey: queryKeys.me }); // 2FA turned on elsewhere: the field appears on the next render
+          }
+        },
       },
     );
   };
@@ -65,6 +94,7 @@ export function LotSizeDialog({ open, onOpenChange }: DialogProps) {
               </div>
             </div>
           ))}
+          {needsCode ? <SecondFactorField value={code} onChange={(v) => { setCode(v); setCodeError(null); }} error={codeError} what="a lot size change" /> : null}
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

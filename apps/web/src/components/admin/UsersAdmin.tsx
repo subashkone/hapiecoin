@@ -34,6 +34,7 @@ export const USER_COLUMNS: ColumnDef<AdminUserRow>[] = [
   { key: "createdAt", label: "Joined", sort: "createdAt", csv: (u) => u.createdAt.slice(0, 10) },
   { key: "referralCode", label: "Referral code", csv: (u) => u.referralCode },
   { key: "commissionPct", label: "Commission", align: "right", csv: (u) => `${u.commissionPct}%` },
+  { key: "twoFactor", label: "2FA", csv: (u) => (u.twoFactorEnabled ? "on" : "off") }, // ADR-086 (HC-AD-129)
   { key: "paidInr", label: "Paid", sort: "paidInr", align: "right", hidden: true, csv: (u) => u.paidInr },
   { key: "mobile", label: "Mobile", hidden: true, csv: (u) => u.mobile ?? "" },
   { key: "lastLoginAt", label: "Last login", sort: "lastLoginAt", hidden: true, csv: (u) => u.lastLoginAt ?? "" },
@@ -64,6 +65,8 @@ function Cell({ col, u }: { col: ColumnDef<AdminUserRow>; u: AdminUserRow }) {
       return <span className="font-mono text-2xs">{u.referralCode}</span>;
     case "commissionPct":
       return <span className="num">{u.commissionPct}%</span>;
+    case "twoFactor":
+      return <span className={cn("rounded border px-1.5 py-0.5 font-mono text-3xs", u.twoFactorEnabled ? "border-profit/60 text-profit" : "border-border text-muted-foreground")} data-testid="user-2fa" data-on={u.twoFactorEnabled ? "true" : "false"}>{u.twoFactorEnabled ? "on" : "off"}</span>;
     case "paidInr":
       return <span className="num">{fmtInr(u.paidInr, { decimals: true })}</span>;
     case "mobile":
