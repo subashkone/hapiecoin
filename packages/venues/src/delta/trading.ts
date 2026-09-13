@@ -9,6 +9,7 @@
  *   GET    /v2/orders/{order_id}
  *   GET    /v2/orders?product_ids=&states=  open / pending orders
  *   DELETE /v2/orders                       { id, product_id }
+ *   PUT    /v2/orders                       { id, product_id, limit_price }  re-price a resting limit in place (GAPS #61, ADR-083)
  *   GET    /v2/positions/margined
  *   GET    /v2/wallet/balances
  *   GET    /v2/fills?page_size=&after=      the account's fills, newest first, cursor-paged (read-only; verified P&L, ADR-073)
@@ -87,6 +88,13 @@ export type OrderState = "open" | "pending" | "closed" | "cancelled";
 
 export type OrderType = "market" | "limit";
 
+/** Re-price a resting limit in place (ADR-083): the venue keeps the order (and its client order id) and moves the price. */
+export interface EditOrderInput {
+  orderId: number;
+  productId: number;
+  limitPrice: string;
+}
+
 export interface PlaceOrderInput {
   productId: number;
   /** Number of contracts (whole number ≥ 1). */
@@ -109,6 +117,8 @@ export interface VenueOrder {
   state: OrderState;
   /** Decimal string or null until something filled. */
   averageFillPrice: string | null;
+  /** The resting price of a limit order as the venue holds it (ADR-083), null for a market order or when the venue sent none. */
+  limitPrice: string | null;
 }
 
 /** One fill as the venue reports it (ADR-073): the trader's own trades, whether or not HapieCoin placed the order. */
@@ -192,6 +202,8 @@ export interface DeltaTradingClient {
   getOrder(creds: DeltaCredentials, orderId: number): Promise<VenueOrder | null>;
   listOpenOrders(creds: DeltaCredentials, productIds: readonly number[]): Promise<VenueOrder[]>;
   cancelOrder(creds: DeltaCredentials, orderId: number, productId: number): Promise<boolean>;
+  /** Move a resting limit's price (ADR-083); the venue's answer as for a placement (a fill that beat the edit comes back closed). */
+  editOrder(creds: DeltaCredentials, input: EditOrderInput): Promise<PlaceOrderResult>;
   getPositions(creds: DeltaCredentials): Promise<VenuePosition[]>;
   getBalances(creds: DeltaCredentials): Promise<VenueBalance[]>;
   /** The account's fills, newest first, one page per call; throws DeltaApiError when the venue does not answer or answers badly. */
@@ -218,6 +230,7 @@ const RawOrder = z.object({
   unfilled_size: z.number().optional(),
   state: z.enum(["open", "pending", "closed", "cancelled"]),
   average_fill_price: z.union([z.string(), z.number()]).nullable().optional(),
+  limit_price: z.union([z.string(), z.number()]).nullable().optional(),
 });
 const RawProduct = z.object({
   id: z.number(),
@@ -278,7 +291,7 @@ function dec(v: string | number | null | undefined): string | null {
   return v === null || v === undefined ? null : String(v);
 }
 function toOrder(r: z.infer<typeof RawOrder>): VenueOrder {
-  return { id: r.id, clientOrderId: r.client_order_id ?? null, productId: r.product_id, side: r.side, size: r.size, unfilledSize: r.unfilled_size ?? 0, state: r.state, averageFillPrice: dec(r.average_fill_price) };
+  return { id: r.id, clientOrderId: r.client_order_id ?? null, productId: r.product_id, side: r.side, size: r.size, unfilledSize: r.unfilled_size ?? 0, state: r.state, averageFillPrice: dec(r.average_fill_price), limitPrice: dec(r.limit_price) };
 }
 
 /** Error codes the venue documents for order placement that do not improve on retry. */
@@ -316,7 +329,7 @@ export class DeltaTradingClientImpl implements DeltaTradingClient {
     if (wait > 0) await this.sleep(wait);
   }
 
-  private async call(creds: DeltaCredentials | null, method: "GET" | "POST" | "DELETE", path: string, query?: string, body?: unknown): Promise<{ status: number; json: z.infer<typeof Envelope> | null; text: string } | { transport: string }> {
+  private async call(creds: DeltaCredentials | null, method: "GET" | "POST" | "PUT" | "DELETE", path: string, query?: string, body?: unknown): Promise<{ status: number; json: z.infer<typeof Envelope> | null; text: string } | { transport: string }> {
     await this.throttle();
     const raw = body === undefined ? undefined : JSON.stringify(body);
     const req = creds
@@ -396,6 +409,18 @@ export class DeltaTradingClientImpl implements DeltaTradingClient {
     return !("transport" in res) && res.json?.success === true;
   }
 
+  async editOrder(creds: DeltaCredentials, input: EditOrderInput): Promise<PlaceOrderResult> {
+    const res = await this.call(creds, "PUT", "/v2/orders", undefined, { id: input.orderId, product_id: input.productId, limit_price: input.limitPrice });
+    if ("transport" in res) return { ok: false, code: "unknown", message: `The new price may not have reached Delta (${res.transport}); sync before trying again`, retryable: false, unknown: true };
+    if (res.json?.success) {
+      const parsed = RawOrder.safeParse(res.json.result);
+      if (parsed.success) return { ok: true, order: toOrder(parsed.data) };
+      return { ok: false, code: "unknown", message: "Delta accepted the new price but the response could not be read; sync before trying again", retryable: false, unknown: true };
+    }
+    const code = res.json?.error?.code ?? (res.status === 429 ? "rate_limited" : `http_${res.status}`);
+    return { ok: false, code, message: describeOrderError(code, res.json?.error?.context), retryable: !FINAL_ORDER_ERRORS.has(code) };
+  }
+
   /** Throws when the venue does not answer or answers badly: "no positions" and "could not read positions" must never look alike (ADR-059 §2.2 drift). */
   async getPositions(creds: DeltaCredentials): Promise<VenuePosition[]> {
     const res = await this.call(creds, "GET", "/v2/positions/margined");
@@ -453,6 +478,8 @@ export function describeOrderError(code: string, context?: unknown): string {
 export class FakeDeltaTradingClient implements DeltaTradingClient {
   readonly placed: { creds: DeltaCredentials; input: PlaceOrderInput }[] = [];
   readonly cancelled: number[] = [];
+  /** Every re-price the executor asked for (ADR-083). */
+  readonly edited: EditOrderInput[] = [];
   private readonly productsBySymbol = new Map<string, VenueProduct>();
   private readonly marks = new Map<string, string>();
   private readonly fillPrices = new Map<number, string>();
@@ -529,18 +556,18 @@ export class FakeDeltaTradingClient implements DeltaTradingClient {
     const limit = input.orderType === "limit" && input.limitPrice !== undefined ? Number(input.limitPrice) : null;
     const crosses = limit === null || (input.side === "buy" ? limit >= Number(price) : limit <= Number(price));
     if (!crosses) {
-      const resting: VenueOrder = { id, clientOrderId: input.clientOrderId, productId: input.productId, side: input.side, size: input.size, unfilledSize: input.size, state: "open", averageFillPrice: null };
+      const resting: VenueOrder = { id, clientOrderId: input.clientOrderId, productId: input.productId, side: input.side, size: input.size, unfilledSize: input.size, state: "open", averageFillPrice: null, limitPrice: input.limitPrice ?? null };
       this.orders.set(id, resting);
       return Promise.resolve({ ok: true, order: resting });
     }
     const partial = this.partialNext;
     this.partialNext = false;
-    const order: VenueOrder = { id, clientOrderId: input.clientOrderId, productId: input.productId, side: input.side, size: input.size, unfilledSize: partial ? 1 : 0, state: partial ? "open" : "closed", averageFillPrice: partial ? null : price };
+    const order: VenueOrder = { id, clientOrderId: input.clientOrderId, productId: input.productId, side: input.side, size: input.size, unfilledSize: partial ? 1 : 0, state: partial ? "open" : "closed", averageFillPrice: partial ? null : price, limitPrice: limit === null ? null : input.limitPrice ?? null };
     this.orders.set(id, order);
     return Promise.resolve({ ok: true, order });
   }
   getOrder(_creds: DeltaCredentials, orderId: number): Promise<VenueOrder | null> {
-    return Promise.resolve(this.orders.get(orderId) ?? null);
+    return Promise.resolve(this.ordersDown ? null : (this.orders.get(orderId) ?? null));
   }
   listOpenOrders(_creds: DeltaCredentials, productIds: readonly number[]): Promise<VenueOrder[]> {
     return Promise.resolve([...this.orders.values()].filter((o) => productIds.includes(o.productId) && (o.state === "open" || o.state === "pending")));
@@ -548,12 +575,27 @@ export class FakeDeltaTradingClient implements DeltaTradingClient {
   cancelOrder(_creds: DeltaCredentials, orderId: number, productId?: number): Promise<boolean> {
     const o = this.orders.get(orderId);
     if (!o || (productId !== undefined && o.productId !== productId)) return Promise.resolve(false); // the venue keys cancels by product
+    if (o.state !== "open" && o.state !== "pending") return Promise.resolve(false); // a filled or cancelled order cannot be cancelled again
     this.orders.set(orderId, { ...o, state: "cancelled" });
     this.cancelled.push(orderId);
     return Promise.resolve(true);
   }
+  /** A resting order takes the new price; it fills at the fake's fill price when the new limit crosses it, else keeps resting. */
+  editOrder(_creds: DeltaCredentials, input: EditOrderInput): Promise<PlaceOrderResult> {
+    this.edited.push(input);
+    const o = this.orders.get(input.orderId);
+    if (!o || o.productId !== input.productId) return Promise.resolve({ ok: false, code: "order_not_found", message: describeOrderError("order_not_found"), retryable: false });
+    if (o.state !== "open") return Promise.resolve({ ok: false, code: "order_not_open", message: "The order is no longer open on the exchange", retryable: false });
+    const price = this.fillPrices.get(o.productId) ?? "100";
+    const crosses = o.side === "buy" ? Number(input.limitPrice) >= Number(price) : Number(input.limitPrice) <= Number(price);
+    const next: VenueOrder = crosses ? { ...o, unfilledSize: 0, state: "closed", averageFillPrice: price, limitPrice: input.limitPrice } : { ...o, limitPrice: input.limitPrice };
+    this.orders.set(input.orderId, next);
+    return Promise.resolve({ ok: true, order: next });
+  }
   /** Test knob: the venue does not answer the positions read. */
   positionsDown = false;
+  /** Test knob: the venue does not answer an order read (getOrder answers null). */
+  ordersDown = false;
   getPositions(): Promise<VenuePosition[]> {
     return this.positionsDown ? Promise.reject(new DeltaApiError("/v2/positions/margined", "positions_unavailable", { fake: true })) : Promise.resolve(this.positions);
   }

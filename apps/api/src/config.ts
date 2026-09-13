@@ -82,6 +82,8 @@ const RawEnv = z.object({
   TRADING_RECONCILE_MS: z.coerce.number().int().min(1000).default(15_000),
   /** IV history snapshot interval (ADR-056); 0 disables the snapshotter (tests, a second API replica). */
   IV_SNAPSHOT_MS: z.coerce.number().int().min(0).default(300_000),
+  /** ADR-084: milliseconds between the day P&L writer's passes (today's point for every live strategy); 0 = off. */
+  DAY_PNL_MS: z.coerce.number().int().min(0).default(300_000),
   /** Expiry settlement pass interval (ADR-059 §2.4); 0 disables the settler. */
   SETTLEMENT_MS: z.coerce.number().int().min(0).default(60_000),
   /** Stop / target rules tick (ADR-059 §2.3): the public marks are read this often; 0 disables the engine. */
@@ -134,6 +136,8 @@ export interface Config {
   egressIp: string;
   /** Milliseconds between IV history snapshots; 0 = off (ADR-056). */
   ivSnapshotMs: number;
+  /** ADR-084: day P&L writer interval; 0 = off. */
+  dayPnlMs: number;
   /** Milliseconds between expiry settlement passes; 0 = off (ADR-059). */
   settlementMs: number;
   /** Milliseconds between stop / target rule ticks; 0 = off (ADR-059 §2.3). */
@@ -285,6 +289,7 @@ export function loadConfig(
     trading: { disabled: e.TRADING_DISABLED === "1" || e.TRADING_DISABLED === "true", maxNotionalUsd: e.TRADING_MAX_NOTIONAL_USD, maxLegs: e.TRADING_MAX_LEGS, markBandPct: e.TRADING_MARK_BAND_PCT, reconcileMs: e.TRADING_RECONCILE_MS },
     egressIp: e.EGRESS_IP,
     ivSnapshotMs: e.IV_SNAPSHOT_MS,
+    dayPnlMs: e.DAY_PNL_MS,
     settlementMs: e.SETTLEMENT_MS,
     rulesTickMs: e.RULES_TICK_MS,
     fillsIngestMs: e.FILLS_INGEST_MS,

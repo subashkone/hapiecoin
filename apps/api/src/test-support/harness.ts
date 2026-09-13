@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { Writable } from "node:stream";
 import { type ErrorContext, type ErrorSink, captureFromLog } from "../error-sink.js";
 import { type ApiMetrics, createApiMetrics } from "../metrics.js";
+import { MindfulGate } from "../day-pnl.js";
 import { createApp } from "../app.js";
 import type { AppDeps } from "../routes/shared.js";
 import { AUTH_BASE_PATH, authOptionsPublic, createAuth, sessionResolver, type Auth } from "../auth.js";
@@ -160,6 +161,7 @@ export async function createTestApp(envOverrides: Record<string, string> = {}): 
     authOptions: authOptionsPublic(config),
     errors,
     metrics,
+    mindful: new MindfulGate(() => now.value), // ADR-084: the harness clock decides the pause
     analytics,
     telegram,
   };

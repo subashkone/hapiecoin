@@ -2,17 +2,18 @@
  * Live trading routes (Phase 3 item 2, ADR-025): preview, place, retry, sync, Trade All → Live batch,
  * positions, and the admin kill switch. HC-TR-023, 055, 063, 070, 082..089.
  */
-import { type AdjustChange, Id, LiveBatchBody, LiveBatchResult, LivePlaceBody, LivePositions, LivePositionsExitBody, LivePositionsExitResult, LivePreview, LivePreviewBody, MAX_OPEN_LEGS, Strategy, type StrategyLegInput, ApiError, LiveRetryBody } from "@hapiecoin/schema";
+import { type AdjustChange, Id, LiveBatchBody, LiveBatchResult, LivePlaceBody, LivePositions, LivePositionsExitBody, LivePositionsExitResult, LivePreview, LivePreviewBody, MAX_OPEN_LEGS, Strategy, type StrategyLegInput, ApiError, LiveRetryBody, MindfulPreview, LiveRepriceBody } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, asc, eq } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
+import { enforceMindful, mindfulFor } from "../day-pnl.js";
 import { assertEntitled } from "../entitlements.js";
-import { strategies, strategyLegs, users } from "../db/schema.js";
+import { strategies, strategyLegs, strategyPnl, users } from "../db/schema.js";
 import { type AppEnv, type SessionUser, currentUser } from "../security/context.js";
 import { HttpError, errors } from "../security/errors.js";
 import { requireAdmin, requireUser } from "../security/guards.js";
 import { orderRateLimit } from "../security/rate-limit.js";
-import { lotSizeFor, openCredential, ordersOf, placeEntries, preview, resolveAccount, retryFailed, syncOrders, tradingBlockedReason, type PlanLeg, type StrategyRow, brokerVenueOf, venueMismatch, requireLiveConfirm } from "./live-exec.js";
+import { lotSizeFor, openCredential, ordersOf, placeEntries, preview, resolveAccount, retryFailed, syncOrders, tradingBlockedReason, type PlanLeg, type StrategyRow, brokerVenueOf, venueMismatch, requireLiveConfirm, cancelResting, repriceResting } from "./live-exec.js";
 import { type AppDeps, cookieAuth, errorResponses, jsonContent, errorMessage } from "./shared.js";
 
 /** The exchange did not answer the positions read (never an empty list, HC-TR-160). */
@@ -20,6 +21,7 @@ const exchangeUnavailable = jsonContent(ApiError, "Exchange unavailable");
 import { addDecimal, bookExitFills, closeLegRow, disarmRules, freshTotal, loadStrategy } from "./strategies.js";
 
 const IdParam = z.object({ id: Id });
+const OrderParam = z.object({ id: Id, orderId: Id });
 const PreviewBody = LivePreviewBody.extend({ worstLoss: z.number().optional() });
 
 export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): void {
@@ -39,9 +41,11 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
   /** Preview or place: shared checks. Returns the plan or throws 409 with every reason. */
   /** The account a call trades through: the body's, else the one the strategy already names (ADR-068). */
   const accountOf = (row: StrategyRow, body: { accountId?: string | undefined }): string | null => body.accountId ?? row.accountId ?? null;
-  async function checkedPreview(user: SessionUser, row: StrategyRow, brokerId: string, worstLoss: number | null, accountId: string | null) {
+  async function checkedPreview(user: SessionUser, row: StrategyRow, brokerId: string, worstLoss: number | null, accountId: string | null, mindful?: MindfulPreview) {
     const legs = await openLegs(row.id);
-    const p = await preview(deps, user, row, legs, brokerId, worstLoss, [], accountId);
+    // ADR-084: the server's day figure, computed once per request (the batch hands the same one to every strategy)
+    const m = mindful ?? (await mindfulFor(deps, user, deps.mindful.now()));
+    const p = await preview(deps, user, row, legs, brokerId, worstLoss, [], accountId, m);
     return { legs, p };
   }
   /** Adjustment workbench (ADR-044): price the proposed batch, not the open legs: trims / closes as reduce-only exits, adds as entries. */
@@ -56,7 +60,9 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
     }
     const entries: PlanLeg[] = adds.map((l, i) => ({ id: `new-${i + 1}`, symbol: l.symbol, side: l.side, lots: l.lots }));
     const closes = changes.filter((ch) => ch.lotsAfter === 0).length;
-    const p = await preview(deps, user, row, entries, brokerId, worstLoss, exits, accountId);
+    // ADR-084: adds are a new bet, so the workbench preview carries the pause too; trims and closes never wait
+    const m = entries.length > 0 ? await mindfulFor(deps, user, deps.mindful.now()) : null;
+    const p = await preview(deps, user, row, entries, brokerId, worstLoss, exits, accountId, m);
     if (open.length - closes + adds.length > MAX_OPEN_LEGS) p.reasons.push(`Maximum ${MAX_OPEN_LEGS} active legs allowed per strategy`);
     return { ...p, ok: p.reasons.length === 0 };
   }
@@ -76,8 +82,8 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const me = currentUser(c);
       const row = await owned(me, c.req.valid("param").id);
       const body = c.req.valid("json");
-      if (body.adds !== undefined || body.changes !== undefined) return c.json(await adjustPreview(me, row, body.brokerId, body.worstLoss ?? null, body.adds ?? [], body.changes ?? [], accountOf(row, body)), 200);
-      const { p } = await checkedPreview(me, row, body.brokerId, body.worstLoss ?? null, accountOf(row, body));
+      const p = body.adds !== undefined || body.changes !== undefined ? await adjustPreview(me, row, body.brokerId, body.worstLoss ?? null, body.adds ?? [], body.changes ?? [], accountOf(row, body)) : (await checkedPreview(me, row, body.brokerId, body.worstLoss ?? null, accountOf(row, body))).p;
+      if (p.mindful?.pause) deps.mindful.note(me.id, row.id); // ADR-084: the pause starts when the trader sees it
       return c.json(p, 200);
     },
   );
@@ -105,10 +111,12 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const accountId = accountOf(row, body);
       const { legs, p } = await checkedPreview(me, row, body.brokerId, null, accountId);
       if (!p.ok) throw errors.conflict(p.reasons.join(" · "));
+      if (p.mindful) enforceMindful(deps, me, row.id, p.mindful); // ADR-084: delayed, not refused, until the pause shown at preview has passed
       const { creds, accountId: keyId } = await resolveAccount(deps, me, body.brokerId, row.venue, accountId); // ADR-065, ADR-068
       const before = await loadStrategy(deps, row.id);
       const now = new Date();
-      await touch(row.id, { status: "live", tradingMode: "live", brokerId: body.brokerId, accountId: keyId, orderBatchId: body.idempotencyKey, startedAt: row.startedAt ?? now, closedAt: null });
+      await touch(row.id, { status: "live", tradingMode: "live", brokerId: body.brokerId, accountId: keyId, orderBatchId: body.idempotencyKey, startedAt: row.startedAt ?? now, closedAt: null, realizedPnl: "0" });
+      await db.delete(strategyPnl).where(eq(strategyPnl.strategyId, row.id)); // ADR-084: the paper run's realised P&L and its points are not this live run's day figure
       const outcome = await placeEntries(deps, creds, row, legs, p.legs, body.idempotencyKey, "entry", body.expected);
       const after = await loadStrategy(deps, row.id);
       await auditFrom(c, db)({ action: "strategy.live_place", target: `strategy:${row.id}`, before, after: { ...after, outcome } });
@@ -140,6 +148,64 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       await touch(row.id);
       const after = await loadStrategy(deps, row.id);
       await auditFrom(c, db)({ action: "strategy.live_retry", target: `strategy:${row.id}`, before, after: { ...after, outcome } });
+      return c.json(after, 200);
+    },
+  );
+
+  // GAPS #61 / ADR-083: a resting limit entry can be pulled or moved from the app
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/v1/strategies/{id}/live/orders/{orderId}/cancel",
+      tags: ["live"],
+      summary: "Cancel a resting limit entry on the exchange (HC-TR-187)",
+      security: cookieAuth,
+      middleware: [guard, orderLimit],
+      request: { params: OrderParam },
+      responses: { 200: jsonContent(Strategy, "Cancelled, or filled before the cancel reached the exchange"), 401: errorResponses[401], 404: errorResponses[404], 409: errorResponses[409] },
+    }),
+    async (c) => {
+      const me = currentUser(c);
+      const { id, orderId } = c.req.valid("param");
+      const row = await owned(me, id);
+      if (row.status !== "live" || !row.brokerId) throw errors.conflict("Only a live strategy has orders to cancel");
+      // no typed word and no kill-switch refusal: pulling a resting order reduces exposure (ADR-078's line)
+      const creds = await openCredential(deps, me, row.brokerId, undefined, row.accountId);
+      const before = await loadStrategy(deps, row.id);
+      const outcome = await cancelResting(deps, creds, row, orderId);
+      await touch(row.id);
+      const after = await loadStrategy(deps, row.id);
+      await auditFrom(c, db)({ action: "strategy.live_cancel_order", target: `strategy:${row.id}`, before, after: { ...after, outcome, orderId } });
+      return c.json(after, 200);
+    },
+  );
+
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/v1/strategies/{id}/live/orders/{orderId}/reprice",
+      tags: ["live"],
+      summary: "Move a resting limit entry's price in place (HC-TR-188)",
+      security: cookieAuth,
+      middleware: [guard, orderLimit],
+      request: { params: OrderParam, body: { content: { "application/json": { schema: LiveRepriceBody } }, required: true } },
+      responses: { 200: jsonContent(Strategy, "Re-priced, or filled at the new price"), 400: errorResponses[400], 401: errorResponses[401], 404: errorResponses[404], 409: errorResponses[409] },
+    }),
+    async (c) => {
+      const me = currentUser(c);
+      const { id, orderId } = c.req.valid("param");
+      const body = c.req.valid("json");
+      const row = await owned(me, id);
+      requireLiveConfirm(body.confirm); // ADR-078: the order stays live at a new price and can fill
+      if (row.status !== "live" || !row.brokerId) throw errors.conflict("Only a live strategy has orders to re-price");
+      const blocked = await tradingBlockedReason(deps, me);
+      if (blocked) throw errors.conflict(blocked);
+      const creds = await openCredential(deps, me, row.brokerId, undefined, row.accountId);
+      const before = await loadStrategy(deps, row.id);
+      const outcome = await repriceResting(deps, creds, row, orderId, body.limitPrice);
+      await touch(row.id);
+      const after = await loadStrategy(deps, row.id);
+      await auditFrom(c, db)({ action: "strategy.live_reprice_order", target: `strategy:${row.id}`, before, after: { ...after, outcome, orderId } });
       return c.json(after, 200);
     },
   );
@@ -193,6 +259,9 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const placed: string[] = [];
       const skipped: string[] = [];
       let failed: { id: string; error: string } | null = null;
+      // ADR-084: one day figure for the whole batch; a pause not yet taken refuses the batch before any placement
+      const mindful = await mindfulFor(deps, me, deps.mindful.now());
+      enforceMindful(deps, me, "batch", mindful);
       for (const id of body.ids) {
         const [row] = await db.select().from(strategies).where(and(eq(strategies.id, id), eq(strategies.userId, me.id))).limit(1);
         const key = `${body.idempotencyKey}:${id}`;
@@ -219,13 +288,14 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
           }
           opened.set(rowAccount ?? "", resolved);
         }
-        const { legs, p } = await checkedPreview(me, row, body.brokerId, null, rowAccount);
+        const { legs, p } = await checkedPreview(me, row, body.brokerId, null, rowAccount, mindful);
         if (!p.ok) {
           failed = { id, error: p.reasons.join(" · ") };
           break;
         }
         const before = await loadStrategy(deps, row.id);
-        await touch(row.id, { status: "live", tradingMode: "live", brokerId: body.brokerId, accountId: resolved.accountId, orderBatchId: key });
+        await touch(row.id, { status: "live", tradingMode: "live", brokerId: body.brokerId, accountId: resolved.accountId, orderBatchId: key, realizedPnl: "0" });
+        await db.delete(strategyPnl).where(eq(strategyPnl.strategyId, row.id)); // ADR-084: the paper run's realised P&L and its points are not the live run's day figure
         const outcome = await placeEntries(deps, resolved.creds, row, legs, p.legs, key, "entry", {});
         const after = await loadStrategy(deps, row.id);
         await auditFrom(c, db)({ action: "strategy.live_place", target: `strategy:${row.id}`, before, after: { ...after, outcome, batch: body.idempotencyKey } });
@@ -236,6 +306,25 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
         }
       }
       return c.json({ placed, failed, skipped }, 200);
+    },
+  );
+
+  // ADR-084: the server's day figure and the pause it decides; reading it starts the batch's pause clock
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/v1/me/day-pnl",
+      tags: ["live"],
+      summary: "Today's live P&L as the server knows it, and the Mindful pause it decides (HC-TR-189)",
+      security: cookieAuth,
+      middleware: [guard],
+      responses: { 200: jsonContent(MindfulPreview, "The day figure and the pause"), 401: errorResponses[401] },
+    }),
+    async (c) => {
+      const me = currentUser(c);
+      const m = await mindfulFor(deps, me, deps.mindful.now());
+      if (m.pause) deps.mindful.note(me.id, "batch");
+      return c.json(m, 200);
     },
   );
 
