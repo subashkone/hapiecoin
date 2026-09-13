@@ -293,6 +293,23 @@ describe("HC-WS-015 / HC-WS-017 / HC-WS-018 / HC-WS-019 / HC-WS-020 chain layout
     expect(above.className).toContain("itm-tint");
     expect(aboveCall.className).not.toContain("itm-tint");
   });
+  it("HC-WS-116 (GAPS #15) shows open interest the venue did not send as a dash with no bar, never as 0", () => {
+    const at = rows.findIndex((r) => r.call && r.put && Number(r.put.oi) > 0);
+    const { oi: _oi, ...noOi } = rows[at]!.call!;
+    void _oi;
+    const withGap = rows.map((r, i) => (i === at ? { ...r, call: noOi } : r));
+    renderWithProviders(<ChainTable {...tableProps({ chain: applySnapshot(emptyChain(TOPIC), 0, withGap, 1) })} />);
+    const strike = rows[at]!.strike;
+    const callsRow = screen.getAllByTestId("chain-row-calls").find((r) => r.dataset["strike"] === strike)!;
+    const putsRow = screen.getAllByTestId("chain-row-puts").find((r) => r.dataset["strike"] === strike)!;
+    const callOi = within(callsRow).getByTestId("chain-oi");
+    expect(callOi.dataset["pct"]).toBe("0");
+    expect(callOi.textContent).toBe("—");
+    expect(callOi.querySelector(".oi-bar")).toBeNull();
+    const putOi = within(putsRow).getByTestId("chain-oi");
+    expect(putOi.textContent).not.toBe("—"); // the put side still has its figure
+  });
+
   it("HC-WS-018 / HC-WS-019 aligns price cells towards the strike and draws OI bars relative to the max OI", () => {
     renderWithProviders(<ChainTable {...tableProps()} />);
     const calls = screen.getAllByTestId("chain-row-calls")[0]!;

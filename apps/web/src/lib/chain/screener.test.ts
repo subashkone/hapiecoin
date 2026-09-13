@@ -49,6 +49,20 @@ describe("HC-WS-110 strike rows", () => {
     expect(call.oi).toBe(Number(row.call!.oi));
   });
 
+  it("GAPS #15: open interest the venue did not send is null, kept by a zero minimum and dropped by a positive one", () => {
+    const row = near.find((r) => r.call && r.put)!;
+    const { oi: _oi, ...noOi } = row.call!;
+    void _oi;
+    const gapped = near.map((r) => (r === row ? { ...r, call: noOi } : r));
+    const s = screen({ asset: "BTC", chains: new Map([[NEAR, gapped]]), spot: SPOT, nowMs: NOW, calendar: CAL });
+    const call = s.strikes.find((r) => r.strike === row.strike && r.side === "call")!;
+    expect(call.oi).toBeNull();
+    expect(s.strikes.find((r) => r.strike === row.strike && r.side === "put")!.oi).toBe(Number(row.put!.oi));
+    const all = { ...DEFAULT_FILTERS, expiries: new Set<string>() };
+    expect(filterStrikes(s.strikes, { ...all, minOi: 0 })).toContain(call);
+    expect(filterStrikes(s.strikes, { ...all, minOi: 1 })).not.toContain(call);
+  });
+
   it("drops a settled expiry and floors the per-day divisor at one hour; without spot the spot-based figures are null", () => {
     const late = Date.UTC(2026, 8, 25, 11, 59, 0); // one minute before the near settlement
     const s = screen({ asset: "BTC", chains, spot: SPOT, nowMs: late, calendar: CAL });
@@ -129,7 +143,7 @@ describe("HC-WS-110 filters", () => {
     expect(inDeltaBand(0.51, ">0.50")).toBe(true);
     expect(filterStrikes(s.strikes, { ...DEFAULT_FILTERS, expiries: new Set([FAR]) }).every((r) => r.expiry === FAR)).toBe(true);
     const oi = filterStrikes(s.strikes, { ...DEFAULT_FILTERS, minOi: 1 });
-    expect(oi.every((r) => r.oi >= 1)).toBe(true);
+    expect(oi.every((r) => r.oi !== null && r.oi >= 1)).toBe(true);
     expect(oi.length).toBeLessThanOrEqual(s.strikes.length);
   });
 });
