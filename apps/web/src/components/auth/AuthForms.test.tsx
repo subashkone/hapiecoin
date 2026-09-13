@@ -2,7 +2,8 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { installMockFetch, type MockFetch } from "../../../test/helpers";
+import { toast } from "@hapiecoin/ui";
+import { installFakeWebAuthn, installMockFetch, type MockFetch } from "../../../test/helpers";
 import { createAccount } from "../../../test/mock-api";
 import { AuthForms, type AuthFormsProps } from "./AuthForms";
 
@@ -240,5 +241,49 @@ describe("HC-PB-068 a refused social sign-in comes back with its reason (ADR-078
     expect((await screen.findByTestId("login-notice")).textContent).toContain("authenticator app");
     expect(window.location.search).toBe("?tab=login&next=%2Fanalyse");
     window.history.replaceState(null, "", "/");
+  });
+});
+
+describe("HC-PB-069 Sign in with a passkey (ADR-089)", () => {
+  it("is hidden without WebAuthn, signs in the account that holds the credential, and refuses a 2FA account with the authenticator sentence", async () => {
+    const first = setup({ tab: "login" });
+    expect(screen.queryByTestId("continue-passkey")).toBeNull();
+    first.unmount();
+    const webauthn = installFakeWebAuthn("phone-key");
+    try {
+      const acc = createAccount(mock.state, { email: "pk@example.com", password: "Passw0rd!", verified: true });
+      acc.passkeys = [{ id: "pk_1", name: "Phone", credentialID: webauthn.credentialId, createdAt: "2026-09-10T10:00:00Z", deviceType: "singleDevice", backedUp: true }];
+      const again = setup({ tab: "login" });
+      await again.user.click(await again.findByTestId("continue-passkey"));
+      await waitFor(() => expect(again.props.finish).toHaveBeenCalled());
+      expect(webauthn.credentials.get).toHaveBeenCalledTimes(1);
+      expect([...mock.state.sessions.values()]).toContain("pk@example.com");
+      again.unmount();
+      // a 2FA account: the passkey answers, the sign-in is refused (ADR-078) and the sentence names the way in
+      acc.twoFactor = { enabled: true, pending: false, backupCodes: [] };
+      const errors = vi.spyOn(toast, "error");
+      const sessionsBefore = mock.state.sessions.size;
+      const third = setup({ tab: "login" });
+      await third.user.click(await third.findByTestId("continue-passkey"));
+      await waitFor(() => expect(errors).toHaveBeenCalledWith("Passkey sign-in failed", expect.objectContaining({ description: expect.stringContaining("authenticator app: sign in with your password and the code") as string })));
+      expect(third.props.finish).not.toHaveBeenCalled();
+      expect(mock.state.sessions.size).toBe(sessionsBefore); // refused: no session
+      third.unmount();
+      // no passkey for this site on the device: the sentence points at Security
+      acc.passkeys = [];
+      delete acc.twoFactor;
+      const fourth = setup({ tab: "login" });
+      await fourth.user.click(await fourth.findByTestId("continue-passkey"));
+      await waitFor(() => expect(errors).toHaveBeenCalledWith("Passkey sign-in failed", expect.objectContaining({ description: expect.stringContaining("No passkey for HapieCoin on this device") as string })));
+      expect(fourth.props.finish).not.toHaveBeenCalled();
+      expect(mock.state.sessions.size).toBe(sessionsBefore);
+      fourth.unmount();
+      // the Create account tab never offers it
+      const signup = setup({ tab: "signup" });
+      expect(signup.queryByTestId("continue-passkey")).toBeNull();
+      errors.mockRestore();
+    } finally {
+      webauthn.restore();
+    }
   });
 });

@@ -1,10 +1,10 @@
 // Settings dialogs against the in-memory mock API: every dialog saves through /v1 and the change persists.
-import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { chainTopic } from "@hapiecoin/schema";
 import { buildChain } from "../../../test/fixtures/chain";
-import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
+import { FakeSocket, installFakeWebAuthn, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
 import { routerMock } from "../../../test/next-mocks";
 import { useUiStore } from "@/lib/store";
 import { defaultLayout } from "@/lib/chain/layout";
@@ -230,6 +230,65 @@ describe("HC-SH-129 Security: the TOTP second factor (ADR-078)", () => {
     act(() => useUiStore.getState().openDialog("security"));
     expect(await screen.findByTestId("security-dialog")).toBeTruthy();
   });
+  it("HC-SH-137 passkeys (ADR-089): the list starts empty, Add records the browser's credential under the name given, Rename and Remove round-trip, a closed prompt is one sentence", async () => {
+    const webauthn = installFakeWebAuthn("laptop-key");
+    try {
+      const u = userEvent.setup();
+      renderWithProviders(<SecurityDialog open onOpenChange={noop} />);
+      expect(await screen.findByTestId("passkey-empty")).toBeTruthy();
+      expect(screen.getByTestId<HTMLInputElement>("passkey-add-name").value).toBe("This device");
+      await u.clear(screen.getByTestId("passkey-add-name"));
+      await u.type(screen.getByTestId("passkey-add-name"), "Work laptop");
+      await u.click(screen.getByTestId("passkey-add"));
+      await waitFor(() => expect(screen.getAllByTestId("passkey-row")).toHaveLength(1));
+      expect(screen.getByTestId("passkey-name").textContent).toBe("Work laptop");
+      expect(account().passkeys).toMatchObject([{ name: "Work laptop", credentialID: webauthn.credentialId }]);
+      expect(webauthn.credentials.create).toHaveBeenCalledTimes(1);
+      // rename
+      await u.click(screen.getByTestId("passkey-rename"));
+      await u.clear(screen.getByTestId("passkey-rename-input"));
+      await u.click(screen.getByTestId("passkey-rename-save"));
+      expect(screen.getByTestId("passkey-error").textContent).toContain("name");
+      await u.type(screen.getByTestId("passkey-rename-input"), "Home laptop");
+      await u.click(screen.getByTestId("passkey-rename-save"));
+      await waitFor(() => expect(screen.getByTestId("passkey-name").textContent).toBe("Home laptop"));
+      expect(account().passkeys?.[0]?.name).toBe("Home laptop");
+      // a second add whose prompt the user closes: the sentence, nothing recorded
+      webauthn.credentials.create.mockRejectedValueOnce(Object.assign(new Error("The operation either timed out or was not allowed."), { name: "NotAllowedError" }));
+      await u.click(screen.getByTestId("passkey-add"));
+      await waitFor(() => expect(screen.getByTestId("passkey-error").textContent).toMatch(/prompt was closed|not allowed|could not add/i));
+      expect(account().passkeys).toHaveLength(1);
+      // remove asks inline and can be kept; then the confirm removes it
+      await u.click(screen.getByTestId("passkey-delete"));
+      await u.click(screen.getByTestId("passkey-delete-cancel"));
+      expect(screen.queryByTestId("passkey-delete-confirm")).toBeNull();
+      await u.click(screen.getByTestId("passkey-delete"));
+      await u.click(screen.getByTestId("passkey-delete-confirm"));
+      await waitFor(() => expect(screen.queryByTestId("passkey-row")).toBeNull());
+      expect(await screen.findByTestId("passkey-empty")).toBeTruthy();
+      expect(account().passkeys).toEqual([]);
+    } finally {
+      webauthn.restore();
+    }
+  });
+  it("HC-SH-137 without WebAuthn the section says so instead of offering Add; a session older than a day is told to sign in again", async () => {
+    renderWithProviders(<SecurityDialog open onOpenChange={noop} />);
+    expect(await screen.findByTestId("passkey-unsupported")).toBeTruthy();
+    expect(screen.queryByTestId("passkey-add")).toBeNull();
+    cleanup();
+    const webauthn = installFakeWebAuthn("late-key");
+    try {
+      account().staleSession = true;
+      const u = userEvent.setup();
+      renderWithProviders(<SecurityDialog open onOpenChange={noop} />);
+      await u.click(await screen.findByTestId("passkey-add"));
+      await waitFor(() => expect(screen.getByTestId("passkey-error").textContent).toContain("Sign in again to add a passkey"));
+      expect(account().passkeys ?? []).toEqual([]);
+    } finally {
+      delete account().staleSession;
+      webauthn.restore();
+    }
+  });
 });
 
 describe("HC-TR-183 Mindful trading settings (ADR-074)", () => {
@@ -381,6 +440,60 @@ describe("HC-SH-123 accounts in API Settings (ADR-068)", () => {
     await u.click(screen.getAllByTestId("disconnect-exchange")[1]!);
     await waitFor(() => expect(screen.getByTestId("api-status").dataset["count"]).toBe("1"));
     expect(account().credentials.map((c) => c.label)).toEqual(["Main"]);
+  });
+});
+
+describe("HC-SH-136 a sensitive change asks an account with the authenticator on for its code (ADR-086)", () => {
+  const armTwoFactor = () => {
+    account().twoFactor = { enabled: true, pending: false, backupCodes: [] };
+  };
+  it("API Settings: the code field appears, Save needs six digits, a wrong code is refused in the dialog, the right one connects; Disconnect asks too", async () => {
+    armTwoFactor();
+    const u = userEvent.setup();
+    renderWithProviders(<ApiSettingsDialog open onOpenChange={noop} />);
+    await waitFor(() => expect(screen.getByTestId("api-status").dataset["state"]).toBe("disconnected"));
+    const field = await screen.findByTestId("second-factor");
+    expect(field.textContent).toContain("Two-factor sign-in is on");
+    await u.type(screen.getByTestId("api-key"), "key-1234abcd");
+    await u.type(screen.getByTestId("api-secret"), "s3cret");
+    await u.click(screen.getByTestId("connect-save"));
+    expect(screen.getByTestId("second-factor-error").textContent).toContain("6-digit code");
+    expect(account().credentials).toEqual([]);
+    const boxes = () => within(screen.getByTestId("second-factor")).getAllByRole("textbox");
+    await u.type(boxes()[0]!, "000000");
+    await u.click(screen.getByTestId("connect-save"));
+    await waitFor(() => expect(screen.getByTestId("second-factor-error").textContent).toContain("not right"));
+    expect(account().credentials).toEqual([]);
+    expect(mock.calls.find((c) => c.url.endsWith("/v1/credentials") && c.method === "POST")?.headers?.["x-second-factor"]).toBe("000000");
+    for (const b of boxes()) await u.clear(b);
+    await u.type(boxes()[0]!, "654321");
+    await u.click(screen.getByTestId("connect-save"));
+    await waitFor(() => expect(screen.getByTestId("api-status").dataset["state"]).toBe("connected"));
+    expect(screen.queryByTestId("second-factor-error")).toBeNull();
+    // the code was cleared after the save: Disconnect asks again
+    await u.click(screen.getByTestId("disconnect-exchange"));
+    expect(screen.getByTestId("second-factor-error").textContent).toContain("6-digit code");
+    expect(account().credentials).toHaveLength(1);
+    await u.type(boxes()[0]!, "654321");
+    await u.click(screen.getByTestId("disconnect-exchange"));
+    await waitFor(() => expect(screen.getByTestId("api-status").dataset["state"]).toBe("disconnected"));
+  });
+  it("Mindful and Lot size ask the same way", async () => {
+    armTwoFactor();
+    const u = userEvent.setup();
+    const { unmount } = renderWithProviders(<MindfulDialog open onOpenChange={noop} />);
+    await screen.findByTestId("second-factor");
+    await u.click(screen.getByTestId("mindful-enabled"));
+    await u.click(screen.getByTestId("mindful-save"));
+    expect(screen.getByTestId("second-factor-error").textContent).toContain("6-digit code");
+    expect(account().settings.mindful.enabled).toBe(true);
+    await u.type(within(screen.getByTestId("second-factor")).getAllByRole("textbox")[0]!, "654321");
+    await u.click(screen.getByTestId("mindful-save"));
+    await waitFor(() => expect(account().settings.mindful.enabled).toBe(false));
+    expect(mock.calls.filter((c) => c.url.endsWith("/v1/settings") && c.method === "PUT").at(-1)?.headers?.["x-second-factor"]).toBe("654321");
+    unmount();
+    renderWithProviders(<LotSizeDialog open onOpenChange={noop} />);
+    expect(await screen.findByTestId("second-factor")).toBeTruthy();
   });
 });
 

@@ -61,6 +61,14 @@ describe("HC-AD-086..099 users list", () => {
     await u.click(screen.getByTestId("um-columns-reset"));
     expect(useUiStore.getState().adminCols["users"]).toBeNull();
     await waitFor(() => expect(screen.getByTestId("um-sort-email")).toBeTruthy());
+    // HC-AD-129 (ADR-086): the 2FA column reads the authenticator state
+    mock.state.accounts.get("user5@example.com")!.twoFactor = { enabled: true, pending: false, backupCodes: [] };
+    await u.type(screen.getByTestId("um-search"), "user5");
+    await waitFor(() => expect(screen.getAllByTestId("um-row")).toHaveLength(1));
+    await waitFor(() => expect(within(screen.getByTestId("um-row")).getByTestId("user-2fa").dataset["on"]).toBe("true"));
+    expect(within(screen.getByTestId("um-row")).getByTestId("user-2fa").textContent).toBe("on");
+    await u.click(screen.getByTestId("um-clear"));
+    await waitFor(() => expect(screen.getAllByTestId("um-row")).toHaveLength(10));
     // CSV of the page
     await u.click(screen.getByTestId("um-csv"));
     const csv = await clipboard();
