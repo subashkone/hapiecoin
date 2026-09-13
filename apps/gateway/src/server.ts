@@ -10,6 +10,7 @@
  * Frames are JSON text (see ./encoder.ts for the msgpack plan).
  */
 import { ClientMessage, canonicalTopic, parseTopic } from "@hapiecoin/schema";
+import type { ErrorSink } from "./error-sink.js";
 import type { ParsedTopic, ServerMessage, Topic, Underlying } from "@hapiecoin/schema";
 import type { GatewayConfig } from "./config.js";
 import type { FrameEncoder } from "./encoder.js";
@@ -54,6 +55,8 @@ export interface GatewayServerOptions {
   encoder?: FrameEncoder;
   log?: Logger;
   now?: () => number;
+  /** ADR-081: the error sink whose sent / dropped / failed counts /metrics renders. */
+  errors?: ErrorSink;
 }
 
 /** Invalid inbound messages tolerated before the connection is closed with 1008. */
@@ -92,6 +95,7 @@ export class GatewayServer {
   private readonly pubsub: PubSub;
   private readonly encoder: FrameEncoder;
   private readonly log: Logger;
+  private readonly errors: ErrorSink | null;
   private readonly now: () => number;
   private readonly socket: SocketServer;
   private readonly conns = new Map<number, ConnState>();
@@ -109,6 +113,7 @@ export class GatewayServer {
     this.pubsub = options.pubsub;
     this.encoder = options.encoder ?? jsonEncoder;
     this.log = options.log ?? silentLogger;
+    this.errors = options.errors ?? null;
     this.now = options.now ?? Date.now;
     this.allowedOrigin = new URL(this.config.WEB_URL).origin;
     this.startedAt = this.now();
@@ -177,8 +182,21 @@ export class GatewayServer {
       `hapiecoin_gateway_feed_instruments ${feed.market.instruments}`,
       "# TYPE hapiecoin_gateway_feed_upstream_symbols gauge",
       `hapiecoin_gateway_feed_upstream_symbols ${feed.market.subscribed}`,
+      ...this.sinkLines(),
       "",
     ].join("\n");
+  }
+
+  /** ADR-081: the error sink's counts, when a sink is wired (the API renders the same block). */
+  private sinkLines(): string[] {
+    if (this.errors === null) return [];
+    const stats = this.errors.stats();
+    return [
+      "# TYPE hapiecoin_gateway_error_sink_events_total counter",
+      `hapiecoin_gateway_error_sink_events_total{outcome="sent"} ${stats.sent}`,
+      `hapiecoin_gateway_error_sink_events_total{outcome="dropped"} ${stats.dropped}`,
+      `hapiecoin_gateway_error_sink_events_total{outcome="failed"} ${stats.failed}`,
+    ];
   }
 
   private onHttp(request: HttpRequest): HttpResponse {

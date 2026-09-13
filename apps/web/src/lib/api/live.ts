@@ -1,6 +1,6 @@
 // Live trading through TanStack Query (Phase 3 item 2, ADR-025): preview, place, retry, sync, batch, positions.
 // Every order goes through the API's executor; the browser never talks to the venue.
-import { type LiveBatchBody, LiveBatchResult, type LivePlaceBody, LivePositions, type LivePositionsExitBody, LivePositionsExitResult, LivePreview, type LivePreviewBody, type LiveRetryBody, Strategy } from "@hapiecoin/schema";
+import { type LiveBatchBody, LiveBatchResult, type LivePlaceBody, LivePositions, type LivePositionsExitBody, LivePositionsExitResult, LivePreview, type LivePreviewBody, type LiveRetryBody, type LiveRepriceBody, Strategy } from "@hapiecoin/schema";
 
 /** Preview body: the open legs by default, or an adjustment batch's adds / changes (ADR-044). */
 export type PreviewBody = LivePreviewBody & { worstLoss?: number | undefined };
@@ -17,6 +17,9 @@ export function liveFetchers(client: ApiClient = api) {
     place: (id: string, body: LivePlaceBody) => client.post(`/v1/strategies/${enc(id)}/live/place`, body, Strategy),
     retry: (id: string, body: LiveRetryBody) => client.post(`/v1/strategies/${enc(id)}/live/retry`, body, Strategy), // HC-TR-186: the word as typed
     sync: (id: string) => client.post(`/v1/strategies/${enc(id)}/live/sync`, {}, Strategy),
+    // GAPS #61 / ADR-083: a resting limit entry pulled (no word: it reduces exposure) or moved (the word: it stays a live entry)
+    cancelOrder: (id: string, orderId: string) => client.post(`/v1/strategies/${enc(id)}/live/orders/${enc(orderId)}/cancel`, {}, Strategy),
+    repriceOrder: (id: string, orderId: string, body: LiveRepriceBody) => client.post(`/v1/strategies/${enc(id)}/live/orders/${enc(orderId)}/reprice`, body, Strategy),
     batch: (body: LiveBatchBody) => client.post("/v1/strategies/live/batch", body, LiveBatchResult),
     positions: (brokerId: string, accountId: string | null = null) => client.get(`/v1/strategies/live/positions?brokerId=${enc(brokerId)}${accountId ? `&accountId=${enc(accountId)}` : ""}`, LivePositions),
     exitPositions: (body: LivePositionsExitBody) => client.post("/v1/strategies/live/positions/exit", body, LivePositionsExitResult),
@@ -54,6 +57,14 @@ export function useLiveRetry() {
 }
 export function useLiveSync() {
   return useLiveMutation((id: string) => f.sync(id));
+}
+/** Cancel a resting limit entry (HC-TR-187). */
+export function useLiveCancelOrder() {
+  return useLiveMutation(({ id, orderId }: { id: string; orderId: string }) => f.cancelOrder(id, orderId));
+}
+/** Move a resting limit entry's price (HC-TR-188); the word as typed. */
+export function useLiveRepriceOrder() {
+  return useLiveMutation(({ id, orderId, limitPrice, confirm }: { id: string; orderId: string; limitPrice: string; confirm: string }) => f.repriceOrder(id, orderId, { limitPrice, confirm }));
 }
 export function useLiveBatch() {
   return useLiveMutation((body: LiveBatchBody) => f.batch(body));

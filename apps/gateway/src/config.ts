@@ -65,6 +65,10 @@ export const GatewayEnv = z.object({
   GATEWAY_INSTANCE_ID: z.string().min(1).optional(),
   /** When set, GET /metrics requires `Authorization: Bearer <token>` (GAPS #30). */
   METRICS_TOKEN: z.string().min(8).optional(),
+  /** ADR-081: the error tracker's DSN (Sentry envelope protocol); unset = no error tracking. */
+  ERROR_SINK_DSN: z.url().optional(),
+  /** ADR-081: the deployed version stamped on every error event. */
+  RELEASE: z.string().min(1).max(64).optional(),
   /** Open WebSocket connections allowed per client address; extra ones are closed with 1013 (GAPS #30). */
   MAX_CONNECTIONS_PER_IP: z.coerce.number().int().min(1).default(20),
 }).refine((c) => c.HOLD_SYNC_MS * 3 <= c.LEADER_TTL_MS, { message: "HOLD_SYNC_MS must be at most a third of LEADER_TTL_MS, or follower holds lapse between heartbeats", path: ["HOLD_SYNC_MS"] });

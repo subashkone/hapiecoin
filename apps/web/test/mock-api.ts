@@ -116,6 +116,8 @@ interface PlanRecord {
 }
 
 export interface MockState {
+  /** ADR-081: browser error reports the page posted (the real API relays them to the tracker). */
+  clientErrors: { message: string; name?: string; stack?: string; path?: string; kind?: string }[];
   /** ADR-077 test knob: recorded end-of-day days for the backtest; 0 answers 503 like the API before its first day. */
   backtestDays: number;
   /** ADR-079 test knob: recorded days for the replay; 0 answers 503 like the API before its first day. */
@@ -250,7 +252,7 @@ export function createSession(state: MockState, email: string): string {
 
 export function createMockApi(state: MockState = { plans: seedPlans(),
     menuItems: seedMenuItems(),
-    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", backtestDays: 12, replayDays: 12, ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
+    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", clientErrors: [], backtestDays: 12, replayDays: 12, ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
   const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409 | 503, code: string, message: string) =>
@@ -1155,13 +1157,41 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const body = await c.req.json<{ confirm?: string }>();
     if (!isLiveWord(body.confirm)) return err(c, 400, "BAD_REQUEST", "Type LIVE to confirm a real order"); // ADR-078
     if (s.status !== "live") return err(c, 409, "CONFLICT", "Only a live strategy has orders to retry");
-    for (const o of s.orders.filter((x) => x.state === "failed")) {
+    for (const o of s.orders.filter((x) => (x.state === "failed" || x.state === "cancelled") && x.purpose !== "exit")) {
       const leg = s.legs.find((l) => l.id === o.legId);
       if (!leg) continue;
       leg.symbol = leg.symbol.replace("FAIL", "OK"); // the venue accepts on retry in the mock
       Object.assign(o, { state: "filled", venueOrderId: String(700000 + s.orders.length), fillPrice: markOf(leg), error: null, attempts: o.attempts + 1, updatedAt: nowIso() });
       Object.assign(leg, { entryPrice: markOf(leg), price: markOf(leg), openedAt: nowIso() });
     }
+    return c.json(touch(s));
+  });
+  // GAPS #61 / ADR-083: a resting limit entry pulled or moved; the real API reads the exchange back, the mock decides from the mark
+  const restingOf = (s: Strategy, orderId: string) => s.orders.find((o) => o.id === orderId && o.state === "pending" && o.orderType === "limit" && o.purpose !== "exit");
+  v1.post("/strategies/:id/live/orders/:orderId/cancel", (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    const o = restingOf(s, c.req.param("orderId"));
+    if (!o) return err(c, 409, "CONFLICT", "Only a resting limit entry can be cancelled or re-priced; sync first if the order state looks stale");
+    Object.assign(o, { state: "cancelled", error: "cancelled from HapieCoin", updatedAt: nowIso() });
+    return c.json(touch(s));
+  });
+  v1.post("/strategies/:id/live/orders/:orderId/reprice", async (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    const body = await c.req.json<{ limitPrice?: string; confirm?: string }>();
+    if (!isLiveWord(body.confirm)) return err(c, 400, "BAD_REQUEST", "Type LIVE to confirm a real order"); // ADR-078
+    if (typeof body.limitPrice !== "string" || !(Number(body.limitPrice) > 0)) return err(c, 400, "VALIDATION", "limitPrice must be a positive decimal");
+    const o = restingOf(s, c.req.param("orderId"));
+    if (!o) return err(c, 409, "CONFLICT", "Only a resting limit entry can be cancelled or re-priced; sync first if the order state looks stale");
+    const leg = s.legs.find((l) => l.id === o.legId)!;
+    const mark = markOf(leg);
+    // the exchange fills at once when the new limit crosses the market: a buy at or above the mark, a sell at or below it
+    const crosses = o.side === "buy" ? Number(body.limitPrice) >= Number(mark) : Number(body.limitPrice) <= Number(mark);
+    if (crosses) {
+      Object.assign(o, { limitPrice: body.limitPrice, state: "filled", fillPrice: mark, error: null, updatedAt: nowIso() });
+      Object.assign(leg, { entryPrice: mark, price: mark, openedAt: leg.openedAt ?? nowIso() });
+    } else Object.assign(o, { limitPrice: body.limitPrice, updatedAt: nowIso() });
     return c.json(touch(s));
   });
   v1.post("/strategies/:id/live/sync", (c) => {
@@ -1919,11 +1949,20 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     return c.json(publicTraderFrom(verifiedOf(acc), acc.publicPage, acc.user.name));
   });
 
+  // ADR-081: the browser's error reports; no session needed, the real API relays them to the tracker
+  app.post("/v1/client-errors", async (c) => {
+    const body = await c.req.json<{ message?: unknown; name?: string; stack?: string; path?: string; kind?: string }>();
+    if (typeof body.message !== "string" || body.message.trim() === "") return err(c, 400, "VALIDATION", "message is required");
+    state.clientErrors.push({ ...body, message: body.message });
+    return c.json({ eventId: `mock-${state.clientErrors.length}` }, 202);
+  });
+
   app.route("/v1", v1);
 
   /* ---------------- test hooks ---------------- */
   app.post("/__test/reset", (c) => {
     state.accounts.clear();
+    state.clientErrors.length = 0;
     state.backtestDays = 12;
     state.replayDays = 12;
     state.commissions.length = 0;

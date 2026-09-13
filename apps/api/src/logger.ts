@@ -57,6 +57,29 @@ export interface CreateLoggerOptions {
   base?: Record<string, unknown>;
   /** Test hook: capture log lines instead of writing to stdout. */
   destination?: pino.DestinationStream;
+  /**
+   * ADR-081: every error- and fatal-level call (child loggers included) is handed over as one record before it is
+   * written, so the error sink sees the same failures the log does; never throws into the caller.
+   */
+  onError?: ((record: ErrorLogRecord) => void) | undefined;
+}
+
+export interface ErrorLogRecord {
+  fields: Record<string, unknown>;
+  msg: string;
+  /** pino numbers: 50 error, 60 fatal. */
+  level: number;
+}
+
+/** pino's error level number; fatal is 60. */
+export const ERROR_LEVEL = 50;
+
+/** pino accepts (obj, msg, ...), (msg, ...) or (err); one shape for the hook. */
+export function toErrorLogRecord(args: readonly unknown[], level: number): ErrorLogRecord {
+  const [first, second] = args;
+  if (first instanceof Error) return { fields: { err: first }, msg: typeof second === "string" ? second : first.message, level };
+  if (first !== null && typeof first === "object") return { fields: { ...(first as Record<string, unknown>) }, msg: typeof second === "string" ? second : "", level };
+  return { fields: {}, msg: typeof first === "string" ? first : String(first), level };
 }
 
 export function createLogger(opts: CreateLoggerOptions): Logger {
@@ -84,10 +107,33 @@ export function createLogger(opts: CreateLoggerOptions): Logger {
         'headers["set-cookie"]',
         "req.headers.cookie",
         "req.headers.authorization",
+        // ADR-081: a failed drizzle query carries its bound values (an OTP, a token) as `params`
+        "err.params",
+        "err.query",
+        "error.params",
+        "error.query",
       ],
       censor: REDACTED,
     },
     formatters: { level: (label) => ({ level: label }) },
   };
+  const onError = opts.onError;
+  if (onError) {
+    options.hooks = {
+      logMethod(args, method, level) {
+        if (level >= ERROR_LEVEL) {
+          try {
+            // a child logger's bindings (the request id) travel with the record; the call's own fields win
+            const record = toErrorLogRecord(args, level);
+            const bound = typeof this.bindings === "function" ? this.bindings() : {};
+            onError({ ...record, fields: { ...bound, ...record.fields } });
+          } catch {
+            // the sink never breaks the log call
+          }
+        }
+        method.apply(this, args);
+      },
+    };
+  }
   return opts.destination ? pino(options, opts.destination) : pino(options);
 }

@@ -1952,6 +1952,34 @@
   "area": "00-chrome",
   "areaName": "App shell, settings, tour, assistant, palette, alerts",
   "owner": "Platform engineer",
+  "screen": "Shared chrome · Error screen · browser error report",
+  "feature": "A page error is reported and the trader sees a reference, Try again and Reload; uncaught browser errors are reported once a minute per message",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + web)",
+  "acceptance": "app/error.tsx (and global-error.tsx for the root layout): 'Something broke on our side. It has been reported.', a reference (the tracker's event id, else Next's digest), Try again (the boundary reset) and Reload, and the plain sentence that a page error cannot change strategies or orders on the exchange. The shell mounts window error + unhandledrejection listeners once; reports go to POST /v1/client-errors (message, name, stack ≤ 4000, path, kind), one per message per minute; a failed report is swallowed",
+  "evidence": "ADR-081 (12 Sep 2026): apps/web src/lib/errors/report.ts, components/shell/ErrorReporting.tsx, Providers.tsx, app/error.tsx, app/global-error.tsx; apps/api routes/client-errors.ts; unit report.test.ts HC-SH-132, error.test.tsx HC-SH-132, client-errors.test.ts (api) HC-SH-132"
+ },
+ {
+  "id": "HC-SH-133",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "screen": "Ops · API /metrics and the error sink",
+  "feature": "Error tracking for the API and the gateway through one DSN, and Prometheus request metrics on the API",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + gateway)",
+  "acceptance": "ERROR_SINK_DSN (Sentry envelope protocol; no SDK) turns on an in-process sink that posts scrubbed events (tags, extra, path query redacted; no body, cookie or authorization; user id only) with a 3 s timeout and a 60-a-minute cap; every error-level log line is the capture seam (pino hook in the API, the gateway logger's error level), so 500s, job failures, feed faults and process-level faults reach the tracker once. GET /metrics on the API: requests by method, route pattern and status, a latency histogram per route, errors by kind, sink counts, jobs active, uptime, process memory; METRICS_TOKEN guards it with a bearer like the gateway",
+  "evidence": "ADR-081 (12 Sep 2026): apps/api src/error-sink.ts, metrics.ts, logger.ts (hooks.logMethod), security/errors.ts, security/request.ts, app.ts, config.ts, main.ts; apps/gateway src/error-sink.ts, log.ts, app.ts, index.ts, config.ts; unit error-sink.test.ts (api + gateway) HC-SH-133, metrics.test.ts HC-SH-133, observability.test.ts HC-SH-133, gateway log.test.ts / config.test.ts / app.test.ts HC-SH-133"
+ },
+ {
+  "id": "HC-SH-134",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
   "screen": "Shared chrome · home-screen app",
   "feature": "HapieCoin installs to the home screen: a manifest with 192 / 512 px icons, an Install entry in the settings menu (native prompt on Chrome, Share-sheet steps on an iPhone), one hint on a phone",
   "status": "working",
@@ -1962,7 +1990,7 @@
   "evidence": "ADR-082 (13 Sep 2026): apps/web/src/app/manifest.ts, public/icons, app/layout.tsx, lib/pwa/install.ts, components/shell/Pwa.tsx, components/dialogs/InstallDialog.tsx, header/AppHeader.tsx menu-install; unit install.test.ts + pwa.test.tsx HC-SH-134; e2e phone.spec.ts HC-SH-134 on the Pixel 7 and iPhone 14 projects"
  },
  {
-  "id": "HC-SH-133",
+  "id": "HC-SH-135",
   "area": "00-chrome",
   "areaName": "App shell, settings, tour, assistant, palette, alerts",
   "owner": "Platform engineer",
@@ -7481,6 +7509,34 @@
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "A field 'Type LIVE to place / retry / adjust' under the red block of the live Trade Preview, the Trade All → Live dialog, the Adjust confirm (only when the change adds entry orders) and a Retry dialog that names the refused legs; the destructive button is disabled, not hidden, until the word is in (case-insensitive, trimmed, Enter submits); during the Mindful pause the countdown still replaces the button. The word travels in the order body and routes/live-exec.ts requireLiveConfirm answers 400 'Type LIVE to confirm a real order' on place, batch, retry, a live adjustment with adds and add-legs on a live strategy; exits, square-offs and paper never ask",
   "evidence": "ADR-078 (12 Sep 2026): packages/schema strategies.ts LIVE_CONFIRM_WORD / LiveConfirm / isLiveConfirm / LiveRetryBody; apps/api routes/live-exec.ts requireLiveConfirm, routes/live.ts, routes/strategies.ts; apps/web components/trading/TypedConfirm.tsx, RetryDialog.tsx, TradePreviewDialog.tsx, BatchLiveDialog.tsx, adjust/AdjustConfirmDialog.tsx, PaperPanel.tsx, lib/api/live.ts; unit strategies.test.ts (schema) HC-TR-186, live.test.ts (api) HC-TR-186, trading-live.test.tsx HC-TR-186; e2e analyse.spec.ts (typeLiveIfShown before every live click)"
+ },
+ {
+  "id": "HC-TR-187",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Live tab · resting order",
+  "feature": "Cancel a resting limit entry from the card",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + venues + web)",
+  "acceptance": "A resting limit's chip reads 'resting @ price'; a row under the chips carries Cancel order per resting order. One plain click (no typed word: it reduces exposure) pulls the order from the exchange; the API reads the order back and books the exchange's truth, so a fill that beat the click is booked as a fill with the leg's entry, and a cancel is booked as 'cancelled from HapieCoin'. The leg stays on the card with no entry; the banner reads 'Order cancelled' and Retry re-sends it",
+  "evidence": "ADR-083 (13 Sep 2026): apps/api routes/live-exec.ts cancelResting, routes/live.ts POST /v1/strategies/{id}/live/orders/{orderId}/cancel; packages/venues delta/trading.ts (the fake refuses to cancel a filled order); apps/web components/trading/RestingOrderDialog.tsx, PaperPanel.tsx (order-chip data-resting, resting-row, order-cancel-order), RetryDialog.tsx, lib/api/live.ts useLiveCancelOrder; unit live.test.ts (api) HC-TR-187, trading-live.test.tsx HC-TR-187"
+ },
+ {
+  "id": "HC-TR-188",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Live tab · resting order",
+  "feature": "Re-price a resting limit entry in place",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + venues + web)",
+  "acceptance": "Re-price on the resting row opens the dialog with the leg, the resting price, the mark and a New limit price field; the word LIVE is typed (the order stays a live entry that can fill); the exchange edits the same order (PUT /v2/orders), the price snapped to the product tick; a price across the market fills at once and the leg gets its entry ('Filled at the new price'), else the chip reads the new resting price ('Price moved'). A refused edit re-reads the exchange first, so a fill or cancel that beat the edit is booked before the refusal is shown",
+  "evidence": "ADR-083 (13 Sep 2026): packages/venues delta/trading.ts editOrder + FakeDeltaTradingClient.editOrder; packages/schema strategies.ts LiveRepriceBody; apps/api routes/live-exec.ts repriceResting, routes/live.ts POST …/orders/{orderId}/reprice; apps/web RestingOrderDialog.tsx, PaperPanel.tsx order-reprice, lib/api/live.ts useLiveRepriceOrder; unit trading.test.ts (venues) HC-TR-188, live.test.ts (api) HC-TR-188, trading-live.test.tsx HC-TR-188"
  },
  {
   "id": "HC-AC-001",

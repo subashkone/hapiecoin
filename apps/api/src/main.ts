@@ -13,6 +13,8 @@ import { seed } from "./db/seed.js";
 import { DeltaPrivateClientImpl } from "./delta/private-client.js";
 import { loadRepoEnv } from "./env-file.js";
 import { createLogger } from "./logger.js";
+import { captureFromLog, createErrorSink } from "./error-sink.js";
+import { createApiMetrics } from "./metrics.js";
 import { createMailer } from "./mailer.js";
 import { RazorpayHttpClient } from "./razorpay.js";
 import { MemoryRateStore, type RateStore, RedisRateStore } from "./security/rate-store.js";
@@ -33,7 +35,25 @@ const config = loadConfig();
 // ADR-063 / ADR-070: every venue-specific client comes from the port; one trading client per venue that trades, one public
 // REST client, snapshotter source, settlement spot and rules tick per venue in API_VENUES
 const clients = createVenueClients(config);
-const logger = createLogger({ level: config.logLevel, base: { env: config.nodeEnv } });
+// ADR-081: one error tracker for the whole process; error-level logs, 500s, job failures and process-level faults all
+// reach it through the logger hook, so nothing is captured twice and nothing is missed
+const errorSink = createErrorSink({
+  dsn: config.errorSinkDsn,
+  environment: config.nodeEnv,
+  release: config.release,
+  client: "hapiecoin-api",
+  onFailure: (message) => logger.warn({ sink: message }, "error sink"),
+});
+const logger = createLogger({ level: config.logLevel, base: { env: config.nodeEnv }, onError: (record) => captureFromLog(errorSink, record) });
+// both keep Node's semantics: the event is flushed, then the process ends (a half-done tick must not run on)
+process.on("unhandledRejection", (reason) => {
+  logger.fatal({ err: reason instanceof Error ? reason : new Error(String(reason)), kind: "unhandledRejection" }, "unhandled rejection");
+  void errorSink.flush().finally(() => process.exit(1));
+});
+process.on("uncaughtException", (err) => {
+  logger.fatal({ err, kind: "uncaughtException" }, "uncaught exception");
+  void errorSink.flush().finally(() => process.exit(1));
+});
 
 const handle = await createDb({ databaseUrl: config.databaseUrl, pgliteDataDir: config.pgliteDataDir });
 await handle.migrate();
@@ -75,6 +95,8 @@ const deps: AppDeps = {
   trading: clients.tradingFor(DEFAULT_VENUE),
   tradingFor: (venue) => clients.tradingFor(venue),
   authOptions: authOptionsPublic(config),
+  errors: errorSink,
+  metrics: createApiMetrics(),
   analytics: redis ? new RedisAnalyticsReader(redis) : new MemoryAnalyticsReader(),
   // ADR-057: the bot token never leaves the client; without it the telegram channel is not offered
   telegram: config.telegramBotToken ? new TelegramBotClient(config.telegramBotToken, { nodeEnv: config.nodeEnv, logger }) : null,
@@ -158,6 +180,7 @@ async function shutdown(signal: string): Promise<void> {
   server.close();
   await redis?.quit();
   await handle.close();
+  await errorSink.flush();
   process.exit(0);
 }
 process.on("SIGINT", () => void shutdown("SIGINT"));

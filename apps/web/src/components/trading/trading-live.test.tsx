@@ -676,3 +676,85 @@ describe("HC-TR-173..175 accounts: several keys per exchange (ADR-068)", () => {
     expect(screen.queryByTestId("live-drift-banner")).toBeNull();
   });
 });
+
+describe("HC-TR-187 / HC-TR-188 resting limit orders on the Live card (ADR-083)", () => {
+  const seedResting = () => {
+    connect();
+    const at = "2026-09-08T10:00:00Z";
+    mine().push(strat(1, { status: "live", tradingMode: "live", orderBatchId: "web-seed", legs: [{ ...CALL, id: "leg_1", entryPrice: null }], orders: [{ id: "ord_1", legId: "leg_1", purpose: "entry", batchId: "web-seed", orderType: "limit", limitPrice: "1150.0", clientOrderId: "hc-leg_1-1", venueOrderId: "700001", symbol: CALL.symbol, side: "buy", size: 10, state: "pending", fillPrice: null, error: null, attempts: 1, createdAt: at, updatedAt: at }] }));
+    useUiStore.setState({ workspaceTab: "live" });
+    renderWithProviders(<Workspace />);
+    act(() => FakeSocket.last().open());
+  };
+
+  it("the chip names the resting price; Re-price asks for a new price and the word and moves it; a price across the mark fills", async () => {
+    seedResting();
+    const u = userEvent.setup();
+    await waitFor(() => expect(within(panel()).getByTestId("live-card")).toBeTruthy());
+    const chip = within(panel()).getByTestId("order-chip");
+    expect(chip.dataset["state"]).toBe("pending");
+    expect(chip.dataset["resting"]).toBe("true");
+    expect(chip.textContent).toContain("resting @ 1150.0");
+    await u.click(within(panel()).getByTestId("order-reprice"));
+    const dlg = await screen.findByTestId("resting-dialog");
+    expect(dlg.dataset["mode"]).toBe("reprice");
+    expect(within(dlg).getByTestId("resting-leg").textContent).toContain("resting @ 1150.0");
+    const confirm = within(dlg).getByTestId<HTMLButtonElement>("resting-confirm");
+    expect(confirm.disabled).toBe(true); // the same price and no word
+    await u.clear(within(dlg).getByTestId("resting-price"));
+    await u.type(within(dlg).getByTestId("resting-price"), "1150");
+    await typeLiveIf(u, dlg);
+    expect(confirm.disabled).toBe(true); // "1150" is the price it already rests at
+    await u.clear(within(dlg).getByTestId("resting-price"));
+    await u.type(within(dlg).getByTestId("resting-price"), "1160");
+    await u.clear(within(dlg).getByTestId("live-confirm"));
+    expect(confirm.disabled).toBe(true); // no word yet
+    await typeLiveIf(u, dlg);
+    expect(confirm.disabled).toBe(false);
+    await u.click(confirm);
+    await waitFor(() => expect(screen.queryByTestId("resting-dialog")).toBeNull());
+    expect(mine()[0]!.orders[0]).toMatchObject({ state: "pending", limitPrice: "1160" });
+    await waitFor(() => expect(within(panel()).getByTestId("order-chip").textContent).toContain("resting @ 1160"));
+    expect(screen.getByText("Price moved")).toBeTruthy();
+    // across the mark: filled at the mark, the leg has its entry, the actions go
+    await u.click(within(panel()).getByTestId("order-reprice"));
+    const dlg2 = await screen.findByTestId("resting-dialog");
+    await u.clear(within(dlg2).getByTestId("resting-price"));
+    await u.type(within(dlg2).getByTestId("resting-price"), "1250");
+    await typeLiveIf(u, dlg2);
+    await u.click(within(dlg2).getByTestId("resting-confirm"));
+    await waitFor(() => expect(mine()[0]!.orders[0]!.state).toBe("filled"));
+    expect(mine()[0]!.legs[0]!.entryPrice).toBe(mine()[0]!.orders[0]!.fillPrice);
+    await waitFor(() => expect(within(panel()).getByTestId("order-chip").dataset["state"]).toBe("filled"));
+    expect(within(panel()).queryByTestId("resting-row")).toBeNull();
+    expect(screen.getByText("Filled at the new price")).toBeTruthy();
+  });
+
+  it("Cancel order pulls the order with one click and no word; the chip reads cancelled and the banner offers a retry of the cancelled entry", async () => {
+    seedResting();
+    const u = userEvent.setup();
+    await waitFor(() => expect(within(panel()).getByTestId("live-card")).toBeTruthy());
+    await u.click(within(panel()).getByTestId("order-cancel-order"));
+    const dlg = await screen.findByTestId("resting-dialog");
+    expect(dlg.dataset["mode"]).toBe("cancel");
+    expect(within(dlg).queryByTestId("live-confirm")).toBeNull(); // no word: it reduces exposure
+    await u.click(within(dlg).getByTestId("resting-dismiss"));
+    await waitFor(() => expect(screen.queryByTestId("resting-dialog")).toBeNull());
+    expect(mine()[0]!.orders[0]!.state).toBe("pending");
+    await u.click(within(panel()).getByTestId("order-cancel-order"));
+    await u.click(within(await screen.findByTestId("resting-dialog")).getByTestId("resting-confirm"));
+    await waitFor(() => expect(mine()[0]!.orders[0]).toMatchObject({ state: "cancelled", error: "cancelled from HapieCoin" }));
+    await waitFor(() => expect(within(panel()).getByTestId("order-chip").dataset["state"]).toBe("cancelled"));
+    expect(within(panel()).getByTestId("order-chip").className).toContain("text-muted-foreground"); // muted, not red: nothing failed
+    expect(within(panel()).queryByTestId("resting-row")).toBeNull();
+    const banner = within(panel()).getByTestId("failed-banner");
+    expect(banner.dataset["kind"]).toBe("cancelled");
+    expect(within(banner).getByTestId("card-retry").textContent).toContain("Retry Cancelled Orders");
+    await u.click(within(banner).getByTestId("card-retry"));
+    const retry = await screen.findByTestId("retry-dialog");
+    expect(within(retry).getAllByTestId("retry-leg")).toHaveLength(1);
+    await typeLiveIf(u, retry);
+    await u.click(within(retry).getByTestId("retry-confirm"));
+    await waitFor(() => expect(mine()[0]!.orders[0]!.state).toBe("filled")); // the mock's venue accepts the retry
+  });
+});
