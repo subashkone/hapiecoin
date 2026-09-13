@@ -114,7 +114,7 @@ describe("[INGEST] BybitLiquidationStream", () => {
 });
 
 describe("[INGEST] ForceOrderStream", () => {
-  it("connects to the all-market stream, feeds parsed frames into the buffer, reconnects after close and stops cleanly", () => {
+  it("connects to the all-market stream, feeds parsed frames into the buffer, reconnects after close and stops cleanly", async () => {
     FakeSocket.all = [];
     const buffer = new LiquidationBuffer({ now: () => 2_000_000 });
     const timers: (() => void)[] = [];
@@ -157,6 +157,11 @@ describe("[INGEST] ForceOrderStream", () => {
     FakeSocket.all.at(-1)!.emit("close");
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
+    const sockets = FakeSocket.all.length;
     real.stop();
+    // the 1 ms reconnect timer still fires after stop: connect() must return without opening another socket
+    // (awaited here, so the check does not depend on the process outliving the timer)
+    await new Promise((r) => setTimeout(r, 10));
+    expect(FakeSocket.all).toHaveLength(sockets);
   });
 });
