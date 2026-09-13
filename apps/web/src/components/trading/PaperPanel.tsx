@@ -2,17 +2,18 @@
 // Paper Trades tab (HC-TR-058..067; HC-TR-156, 157 lifecycle): search, sort (incl. expiry), lifecycle chips Open ·
 // Expiring ≤ 1d · Closed, refresh, the P&L strip, strategy cards with start / expiry, live P&L and a sparkline,
 // Details / Go live / Stop / Delete, pagination and the empty state.
-import { type Strategy, type StrategyLeg, CLOSE_REASON_LABELS, MAX_STRATEGY_NAME, nearestSettlement, settlementMsOf, toDecimal } from "@hapiecoin/schema";
+import { type Strategy, type StrategyLeg, type StrategyOrder, CLOSE_REASON_LABELS, MAX_STRATEGY_NAME, nearestSettlement, settlementMsOf, toDecimal } from "@hapiecoin/schema";
 import { Button, EmptyState, cn, toast } from "@hapiecoin/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState, useEffect } from "react";
 import { strategyKeys, useCreateStrategy, useDeleteStrategy, useStrategies } from "@/lib/api/strategies";
-import { useAccountPositions, useLiveRetry, useLiveSync } from "@/lib/api/live";
+import { useAccountPositions, useLiveCancelOrder, useLiveRepriceOrder, useLiveRetry, useLiveSync } from "@/lib/api/live";
 import { type AccountRef, accountKey, accountLabel, accountRefOf } from "@/lib/accounts";
 import { useBrokers, useCredential, useSettings } from "@/lib/api/queries";
 import { type MindfulPauseInfo, mindfulFor } from "@/lib/strategy/mindful";
 import { BatchLiveDialog } from "./BatchLiveDialog";
 import { RetryDialog } from "./RetryDialog";
+import { RestingOrderDialog, type RestingMode } from "./RestingOrderDialog";
 import { NetPositionsPanel } from "./NetPositionsPanel";
 import { ReconcileDialog, driftTitle } from "./ReconcileDialog";
 import { type DriftRow, driftFor, isSettling } from "@/lib/strategy/drift";
@@ -36,6 +37,16 @@ const LIFE: readonly { key: Lifecycle; label: string }[] = [
   { key: "expiring", label: "Expiring ≤ 1d" },
   { key: "closed", label: "Closed" },
 ];
+
+/** A resting limit entry (ADR-083): pending, a limit, not an exit; it can be cancelled or re-priced from the card. */
+function isResting(o: StrategyOrder): boolean {
+  return o.state === "pending" && o.orderType === "limit" && o.limitPrice !== null && o.purpose !== "exit";
+}
+/** Entries the trader can retry: refused by the venue, or cancelled (by the exchange or from the card), on a leg still open (the executor retries those only). */
+function unplaced(s: Strategy): StrategyOrder[] {
+  const openLegs = new Set(s.legs.filter((l) => l.status === "open").map((l) => l.id));
+  return s.orders.filter((o) => (o.state === "failed" || o.state === "cancelled") && o.purpose !== "exit" && openLegs.has(o.legId));
+}
 
 export function Sparkline({ series, className }: { series: number[]; className?: string }) {
   const W = 150;
@@ -91,6 +102,10 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const create = useCreateStrategy();
   const retry = useLiveRetry();
   const sync = useLiveSync();
+  const cancelOrder = useLiveCancelOrder();
+  const repriceOrder = useLiveRepriceOrder();
+  // GAPS #61 / ADR-083: the resting limit entry a dialog is open for
+  const [resting, setResting] = useState<{ strategyId: string; orderId: string; mode: RestingMode } | null>(null);
   const { data: brokers } = useBrokers();
   const { data: credential } = useCredential();
   const { data: settings } = useSettings();
@@ -99,9 +114,11 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   // HC-TR-186: a retry sends real orders again, so it asks for the word in its own dialog
   const [retryForId, setRetryForId] = useState<string | null>(null);
   const retryFor = retryForId ? (data ?? []).find((x) => x.id === retryForId) ?? null : null; // the live row, not a snapshot
+  const restingStrategy = resting ? (data ?? []).find((x) => x.id === resting.strategyId) ?? null : null;
+  const restingOrder = resting && restingStrategy ? restingStrategy.orders.find((o) => o.id === resting.orderId) ?? null : null;
   useEffect(() => {
     // the list polls: once nothing is failed any more (a retry landed, or the reconciler filled it) the dialog has nothing to send
-    if (retryForId && retryFor && !retryFor.orders.some((o) => o.state === "failed")) setRetryForId(null);
+    if (retryForId && retryFor && !unplaced(retryFor).length) setRetryForId(null);
   }, [retryForId, retryFor]);
   const connected = (credential?.items.length ?? 0) > 0;
   const openTrade = useUiStore((s) => s.openTrade);
@@ -226,6 +243,11 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const reconciling = reconcileId ? (all.find((s) => s.id === reconcileId) ?? null) : null;
   // the price a gone leg is booked at: the exchange's mark while it still quotes the contract, else the pane's mark
   // (the position is usually gone, so the venue has none), else the dialog falls back to the entry
+  const markFor = (st: Strategy, o: StrategyOrder): string | null => {
+    const leg = st.legs.find((l) => l.id === o.legId);
+    const p = leg ? book.priceOf(st, leg) : null;
+    return p === null || p === undefined || !Number.isFinite(p) ? null : toDecimal(p, 4);
+  };
   const venueMarkOf = useCallback((l: StrategyLeg) => wallet.positions.find((p) => p.symbol === l.symbol)?.mark ?? (reconciling ? (book.priceOf(reconciling, l)?.toString() ?? null) : null), [wallet.positions, reconciling, book]);
   const marginTotal = walletRows.length ? walletRows.reduce((sum, r) => sum + Number(r.balance), 0) : null;
   return (
@@ -366,19 +388,34 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                       {s.legs.map((l) => {
                         const order = kind === "live" ? s.orders.filter((o) => o.legId === l.id && o.purpose !== "exit").at(-1) : undefined;
                         const state = l.status === "squared_off" ? "closed" : order?.state ?? (kind === "live" ? "pending" : "open");
+                        const restingAt = order && isResting(order) ? order.limitPrice : null; // ADR-083: a resting limit names its price
                         return (
-                          <span key={l.id} className={cn("micro rounded border px-1", state === "closed" ? "border-border/50 text-muted-foreground line-through" : state === "failed" ? "border-loss text-loss" : state === "pending" ? "border-warning text-warning" : "border-border")} title={order?.error ?? (order?.venueOrderId ? `Order ${order.venueOrderId}` : fmtLeg(l))} data-testid="order-chip" data-state={state}>
-                            {l.side[0]!.toUpperCase()} {l.kind === "future" ? "FUT" : `${l.kind[0]!.toUpperCase()} ${Number(l.strike).toLocaleString("en-US")}`} · {kind === "live" ? state : l.lots}
+                          <span key={l.id} className={cn("micro rounded border px-1", state === "closed" ? "border-border/50 text-muted-foreground line-through" : state === "failed" ? "border-loss text-loss" : state === "pending" ? "border-warning text-warning" : state === "cancelled" ? "border-border/50 text-muted-foreground" : "border-border")} title={restingAt !== null ? `Resting on the exchange at ${restingAt} · not filled yet` : (order?.error ?? (order?.venueOrderId ? `Order ${order.venueOrderId}` : fmtLeg(l)))} data-testid="order-chip" data-state={state} data-resting={restingAt !== null ? "true" : undefined}>
+                            {l.side[0]!.toUpperCase()} {l.kind === "future" ? "FUT" : `${l.kind[0]!.toUpperCase()} ${Number(l.strike).toLocaleString("en-US")}`} · {kind === "live" ? (restingAt !== null ? `resting @ ${restingAt}` : state) : l.lots}
                           </span>
                         );
                       })}
                     </div>
                   </div>
-                  {kind === "live" && s.orders.some((o) => o.state === "failed") ? (
-                    <div className="mt-2 flex flex-wrap items-center gap-2 rounded border border-loss/40 p-2 text-2xs" data-testid="failed-banner">
-                      <b className="text-loss">Order placement failed</b>
-                      <span className="text-muted-foreground">{s.orders.filter((o) => o.state === "failed").length} {s.orders.filter((o) => o.state === "failed").length === 1 ? "leg" : "legs"} · retried {Math.max(...s.orders.filter((o) => o.state === "failed").map((o) => o.attempts)) - 1} {Math.max(...s.orders.filter((o) => o.state === "failed").map((o) => o.attempts)) - 1 === 1 ? "time" : "times"}</span>
-                      <Button size="sm" variant="destructive" className="ml-auto" loading={retry.isPending} onClick={() => setRetryForId(s.id)} data-testid="card-retry">Retry Failed Orders</Button>
+                  {kind === "live" && s.orders.some(isResting) ? (
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-2xs" data-testid="resting-row">
+                      {s.orders.filter(isResting).map((o) => {
+                        const leg = s.legs.find((l) => l.id === o.legId);
+                        return (
+                          <span key={o.id} className="flex flex-wrap items-center gap-1">
+                            <span className="micro">{leg ? fmtLeg(leg) : o.symbol} · resting @ {o.limitPrice}</span>
+                            <Button size="sm" variant="outline" title="Move the order's price on the exchange (the order stays live)" onClick={() => setResting({ strategyId: s.id, orderId: o.id, mode: "reprice" })} data-testid="order-reprice">Re-price</Button>
+                            <Button size="sm" variant="outline" className="text-loss" title="Pull the order from the exchange; nothing is placed" onClick={() => setResting({ strategyId: s.id, orderId: o.id, mode: "cancel" })} data-testid="order-cancel-order">Cancel order</Button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                  {kind === "live" && unplaced(s).length ? (
+                    <div className="mt-2 flex flex-wrap items-center gap-2 rounded border border-loss/40 p-2 text-2xs" data-testid="failed-banner" data-kind={unplaced(s).some((o) => o.state === "failed") ? "failed" : "cancelled"}>
+                      <b className="text-loss">{unplaced(s).some((o) => o.state === "failed") ? "Order placement failed" : "Order cancelled"}</b>
+                      <span className="text-muted-foreground">{unplaced(s).length} {unplaced(s).length === 1 ? "leg" : "legs"} · retried {Math.max(...unplaced(s).map((o) => o.attempts)) - 1} {Math.max(...unplaced(s).map((o) => o.attempts)) - 1 === 1 ? "time" : "times"}</span>
+                      <Button size="sm" variant="destructive" className="ml-auto" loading={retry.isPending} onClick={() => setRetryForId(s.id)} data-testid="card-retry">{unplaced(s).some((o) => o.state === "failed") ? "Retry Failed Orders" : "Retry Cancelled Orders"}</Button>
                     </div>
                   ) : null}
                   <div className="mt-2 flex flex-wrap gap-1">
@@ -428,7 +465,45 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
           </div>
         )}
       </div>
-      <RetryDialog strategy={retryFor} open={retryFor !== null} onOpenChange={(o) => !o && setRetryForId(null)} busy={retry.isPending} brokerName={book.brokerName(retryFor?.brokerId ?? null)} onRetry={(id, confirm) => retry.mutate({ id, confirm }, { onSuccess: (r) => { const left = r ? r.orders.filter((o) => o.state === "failed").length : 0; if (left) toast.error("Still failing", { description: `${left} ${left === 1 ? "order" : "orders"} refused again` }); else toast.success("Orders placed", { description: "All legs are filled" }); }, onError: (e) => toast.error("Retry refused", { description: e.message }), onSettled: () => setRetryForId(null) })} />
+      <RetryDialog strategy={retryFor} open={retryFor !== null} onOpenChange={(o) => !o && setRetryForId(null)} busy={retry.isPending} brokerName={book.brokerName(retryFor?.brokerId ?? null)} onRetry={(id, confirm) => retry.mutate({ id, confirm }, { onSuccess: (r) => { const left = r ? r.orders.filter((o) => o.state === "failed").length : 0; const restingNow = r ? r.orders.filter(isResting).length : 0; if (left) toast.error("Still failing", { description: `${left} ${left === 1 ? "order" : "orders"} refused again` }); else if (restingNow) toast("Orders sent", { description: `${restingNow} resting on the exchange at the stored price` }); else toast.success("Orders placed", { description: "All legs are filled" }); }, onError: (e) => toast.error("Retry refused", { description: e.message }), onSettled: () => setRetryForId(null) })} />
+      <RestingOrderDialog
+        strategy={restingStrategy}
+        order={restingOrder}
+        mode={resting?.mode ?? "cancel"}
+        open={resting !== null && restingOrder !== null && isResting(restingOrder)}
+        onOpenChange={(o) => !o && setResting(null)}
+        busy={cancelOrder.isPending || repriceOrder.isPending}
+        brokerName={book.brokerName(restingStrategy?.brokerId ?? null)}
+        mark={restingStrategy && restingOrder ? markFor(restingStrategy, restingOrder) : null}
+        onCancel={(id, orderId) =>
+          cancelOrder.mutate(
+            { id, orderId },
+            {
+              onSuccess: (r) => {
+                const o = r?.orders.find((x) => x.id === orderId);
+                if (o?.state === "filled") toast("Filled before the cancel", { description: `The exchange filled it at ${o.fillPrice ?? "the market"} a moment earlier` });
+                else toast("Order cancelled", { description: "Pulled from the exchange; the leg stays on the card" });
+              },
+              onError: (e) => toast.error("Could not cancel", { description: e.message }),
+              onSettled: () => setResting(null),
+            },
+          )
+        }
+        onReprice={(id, orderId, limitPrice, confirm) =>
+          repriceOrder.mutate(
+            { id, orderId, limitPrice, confirm },
+            {
+              onSuccess: (r) => {
+                const o = r?.orders.find((x) => x.id === orderId);
+                if (o?.state === "filled") toast.success("Filled at the new price", { description: `Entry ${o.fillPrice ?? ""}` });
+                else toast("Price moved", { description: `Resting at ${o?.limitPrice ?? limitPrice}` });
+              },
+              onError: (e) => toast.error("Could not re-price", { description: e.message }),
+              onSettled: () => setResting(null),
+            },
+          )
+        }
+      />
       {kind === "paper" ? <BatchLiveDialog open={batch} onOpenChange={(o) => { setBatch(o); if (!o) setBatchMindful(null); }} strategies={batchStrategies} brokers={batchBrokers} accounts={accounts} connected={connected} money={money} totalOf={(s) => book.pnlOf(s).total} mindful={batchMindful} /> : null}
       <ReconcileDialog strategy={reconciling} rows={reconciling ? (drift.get(reconciling.id) ?? []) : []} markOf={venueMarkOf} onOpenChange={(o) => { if (!o) { setReconcileId(null); void refetch(); void wallet.refetch(); } }} />
       {stopping ? <StopPaperDialog open={true} onOpenChange={(o) => !o && setStopId(null)} strategy={stopping} priceOf={(l) => book.priceOf(stopping, l)} total={book.pnlOf(stopping).total} money={money} live={feedLive} onDone={() => void qc.invalidateQueries({ queryKey: strategyKeys.all })} /> : null}

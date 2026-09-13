@@ -51,6 +51,7 @@ describe("HC-WS-019 OI bars scale to the chain's largest open interest", () => {
     { strike: "1", call: { oi: "100" }, put: { oi: "400" } },
     { strike: "2", call: { oi: "250" }, put: undefined },
     { strike: "3", call: undefined, put: { oi: "bad" } },
+    { strike: "4", call: {}, put: { oi: undefined } }, // GAPS #15: the venue sent no open interest
   ];
   it("finds the max across both sides and converts each OI to a percent", () => {
     expect(maxOpenInterest(quoted)).toBe(400);

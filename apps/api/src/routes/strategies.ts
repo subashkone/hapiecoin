@@ -6,6 +6,7 @@
  * venue; live trading (item 2) adds its own guarded routes.
  */
 import { getVenueCore } from "@hapiecoin/venues";
+import { enforceMindful, mindfulFor } from "../day-pnl.js";
 import {
   AddLegsBody,
   AdjustBody,
@@ -498,7 +499,10 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const legs = await legsOf(row.id);
       const open = legs.filter((l) => l.status === "open").length;
       const body = c.req.valid("json");
-      if (row.status === "live") requireLiveConfirm(body.confirm); // ADR-078: legs added to a live strategy are real entries
+      if (row.status === "live") {
+        requireLiveConfirm(body.confirm); // ADR-078: legs added to a live strategy are real entries
+        enforceMindful(deps, me, row.id, await mindfulFor(deps, me, deps.mindful.now())); // ADR-084: a live add is a new bet; the pause applies before any row is written
+      }
       if (open + body.legs.length > MAX_OPEN_LEGS) throw errors.conflict(`Maximum ${MAX_OPEN_LEGS} active legs allowed per strategy`);
       const before = await full(row);
       const now = new Date();
@@ -580,8 +584,10 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
         const exits: PlanLeg[] = changes.map((x) => ({ id: x.leg.id, symbol: x.leg.symbol, side: x.leg.side === "buy" ? "sell" : "buy", lots: x.exitLots }));
         const entries: PlanLeg[] = body.adds.map((l, i) => ({ id: `new-${i + 1}`, symbol: l.symbol, side: l.side, lots: l.lots }));
         if (entries.length > 0) requireLiveConfirm(body.confirm); // ADR-078: adding exposure to a live strategy is a real entry
-        const p = await preview(deps, me, row, entries, row.brokerId ?? "", null, exits, row.accountId);
+        const mindful = entries.length > 0 ? await mindfulFor(deps, me, deps.mindful.now()) : null; // ADR-084: an add is a new bet
+        const p = await preview(deps, me, row, entries, row.brokerId ?? "", null, exits, row.accountId, mindful);
         if (p.reasons.length) throw errors.conflict(p.reasons.join(" · "));
+        if (mindful) enforceMindful(deps, me, row.id, mindful);
         creds = await openCredential(deps, me, row.brokerId ?? "", undefined, row.accountId);
       }
       // The history row goes in first: (strategy, batch) is unique, so a concurrent repeat of the same key sees the

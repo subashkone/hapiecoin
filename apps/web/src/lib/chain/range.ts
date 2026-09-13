@@ -40,12 +40,15 @@ export function itmSide(strike: string, spot: string | undefined): "call" | "put
   return k < s ? "call" : "put";
 }
 
+/** A side's open interest as read from a quote: `oi` is absent when the venue sent none (GAPS #15). */
+type OiSide = { oi?: string | undefined } | undefined;
+
 /** Largest open interest across both sides of the given rows (for the OI bars); 0 when nothing is quoted. */
-export function maxOpenInterest(rows: readonly { call?: { oi: string } | undefined; put?: { oi: string } | undefined }[]): number {
+export function maxOpenInterest(rows: readonly { call?: OiSide; put?: OiSide }[]): number {
   let max = 0;
   for (const r of rows) {
     for (const q of [r.call, r.put]) {
-      const n = q ? Number(q.oi) : 0;
+      const n = q?.oi !== undefined ? Number(q.oi) : 0;
       if (Number.isFinite(n) && n > max) max = n;
     }
   }
@@ -67,13 +70,13 @@ export interface ChainTotals {
   pcr: number | null;
 }
 
-/** Σ call OI, Σ put OI and their ratio over the given rows (display only, no money math). */
-export function chainTotals(rows: readonly { call?: { oi: string } | undefined; put?: { oi: string } | undefined }[]): ChainTotals {
+/** Σ call OI, Σ put OI and their ratio over the given rows (display only, no money math); a side without a figure adds nothing. */
+export function chainTotals(rows: readonly { call?: OiSide; put?: OiSide }[]): ChainTotals {
   let callOi = 0;
   let putOi = 0;
   for (const r of rows) {
-    const c = r.call ? Number(r.call.oi) : 0;
-    const p = r.put ? Number(r.put.oi) : 0;
+    const c = r.call?.oi !== undefined ? Number(r.call.oi) : 0;
+    const p = r.put?.oi !== undefined ? Number(r.put.oi) : 0;
     if (Number.isFinite(c)) callOi += c;
     if (Number.isFinite(p)) putOi += p;
   }

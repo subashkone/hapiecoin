@@ -3,6 +3,7 @@
  * second), quotes seeded from the book summary and kept fresh from `ticker.<name>.100ms`, chains on demand.
  */
 import { Emitter } from "../emitter.js";
+import { carryOpenInterest } from "../open-interest.js";
 import type { MarketDataEvents, MarketDataStatus, VenueMarketData, VenueMarketDataOptions } from "../market-data.js";
 import type { ChainSnapshot, Expiry, Instrument, Quote } from "../types.js";
 import { buildChain, listExpiries } from "../delta/chain.js";
@@ -148,8 +149,9 @@ export class DeribitMarketData extends Emitter<MarketDataEvents> implements Venu
   private accept(quote: Quote): void {
     const current = this.quotes.get(quote.instrumentId);
     if (current && current.venueTs > quote.venueTs) return;
-    this.quotes.set(quote.instrumentId, quote);
-    this.emit("ticker", quote);
+    const next = carryOpenInterest(current, quote); // GAPS #15: a ticker without open_interest keeps the last figure
+    this.quotes.set(quote.instrumentId, next);
+    this.emit("ticker", next);
   }
 }
 

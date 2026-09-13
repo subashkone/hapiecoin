@@ -4,13 +4,13 @@
 import type { Broker, BrokerCredentialPublic, Strategy } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { useEffect, useState } from "react";
-import { newIdempotencyKey, useLiveBatch } from "@/lib/api/live";
+import { newIdempotencyKey, useLiveBatch, useLiveDay } from "@/lib/api/live";
 import { handleUpgradeRequired } from "@/lib/api/upgrade";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
 import { accountsOf } from "@/lib/accounts";
 import { useUiStore } from "@/lib/store";
 import { openLegs } from "@/lib/strategy/paper";
-import type { MindfulPauseInfo } from "@/lib/strategy/mindful";
+import { type MindfulPauseInfo, refusedMindful, serverMindful } from "@/lib/strategy/mindful";
 import { MindfulCountdownButton, MindfulPause, useMindfulCountdown } from "./MindfulPause";
 import { TypedConfirm, isLiveConfirm } from "./TypedConfirm";
 
@@ -25,14 +25,22 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
   const storedAccount = useUiStore((s) => s.accountId);
   const setAccount = useUiStore((s) => s.setAccount);
   const mine = accountsOf(accounts, brokerId);
-  const pauseLeft = useMindfulCountdown(open ? mindful : null, key);
-  const canGo = sel.size > 0 && connected && Boolean(brokerId) && isLiveConfirm(word);
+  // ADR-084: the server's figure decides when it is known (and its read starts the server's pause clock); the tab's fold otherwise
+  const day = useLiveDay(open);
+  const fromServer = serverMindful(day.data);
+  // a refusal the preview did not foresee (the day moved after it) shows the block and restarts the countdown
+  const [refused, setRefused] = useState<{ info: MindfulPauseInfo; run: number } | null>(null);
+  const info = refused?.info ?? (fromServer === undefined ? mindful : fromServer);
+  const pauseLeft = useMindfulCountdown(open ? info : null, refused ? `${key}:${refused.run}` : key);
+  // nothing goes until the server's figure has been asked for: its read is what starts the server's pause clock
+  const canGo = sel.size > 0 && connected && Boolean(brokerId) && isLiveConfirm(word) && !day.isPending;
   useEffect(() => {
     if (open) {
       setSel(new Set(strategies.filter((s) => openLegs(s).length > 0).map((s) => s.id)));
       setBrokerId(brokers[0]?.id ?? "");
       setKey(newIdempotencyKey());
       setWord("");
+      setRefused(null);
     }
   }, [open, strategies, brokers]);
   useEffect(() => {
@@ -50,7 +58,9 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
           else toast.success("Live Orders Placed", { description: `${r.placed.length} ${r.placed.length === 1 ? "strategy" : "strategies"} moved to live` });
         },
         onError: (e) => {
-          if (!handleUpgradeRequired(e)) toast.error("Batch refused", { description: e.message });
+          const pause = refusedMindful(e);
+          if (pause) setRefused((r) => ({ info: pause, run: (r?.run ?? 0) + 1 }));
+          else if (!handleUpgradeRequired(e)) toast.error("Batch refused", { description: e.message });
         },
       },
     );
@@ -98,7 +108,7 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
               </div>
             ) : null}
           </div>
-          {mindful ? <MindfulPause info={mindful} money={money} left={pauseLeft} atRisk={{ text: "each strategy's own worst case · see its card", loss: false }} marginText="—" /> : null}
+          {info ? <MindfulPause info={info} money={money} left={pauseLeft} atRisk={{ text: "each strategy's own worst case · see its card", loss: false }} marginText="—" /> : null}
           <div className="mt-3 rounded border border-loss/40 p-2 text-2xs" data-testid="batch-warning">
             <b className="text-loss">Real Money Trading</b>
             <div>Each strategy is previewed against the exchange (contracts, marks, wallet, limits) and placed in order; the batch stops at the first refusal and tells you which strategy.</div>
@@ -108,7 +118,7 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          {mindful && pauseLeft > 0 ? (
+          {info && pauseLeft > 0 ? (
             <MindfulCountdownButton left={pauseLeft} />
           ) : (
             <Button variant="destructive" disabled={!canGo} loading={batch.isPending} onClick={go} data-testid="batch-go">

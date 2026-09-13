@@ -8,6 +8,7 @@ import type { Config } from "../config.js";
 import type { Db, DbKind } from "../db/client.js";
 import type { DeltaPrivateClient } from "../delta/private-client.js";
 import type { ErrorSink } from "../error-sink.js";
+import type { MindfulGate } from "../day-pnl.js";
 import type { Logger } from "../logger.js";
 import type { ApiMetrics } from "../metrics.js";
 import type { Mailer } from "../mailer.js";
@@ -51,6 +52,8 @@ export interface AppDeps {
   errors: ErrorSink;
   /** ADR-081: request counters and latency for GET /metrics. */
   metrics: ApiMetrics;
+  /** ADR-084: when each trader last saw the Mindful pause, so a live entry can wait for it. */
+  mindful: MindfulGate;
 }
 
 export function jsonContent<T extends z.ZodType>(schema: T, description: string) {

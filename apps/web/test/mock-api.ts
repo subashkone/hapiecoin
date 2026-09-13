@@ -47,6 +47,8 @@ interface Account {
   tradingDisabled: boolean;
   /** Two-factor sign-in (ADR-078): pending between enable and the first code; enabled after it. */
   twoFactor?: { enabled: boolean; pending: boolean; backupCodes: string[] };
+  /** ADR-084 test knob: the server's live day P&L; undefined = no fresh mark (unknown), so the browser's fold decides. */
+  dayPnlUsd?: number;
   referredBy?: string;
   /** Billing (ADR-030): the catalogue subscription behind the banner, admin toggles and overrides. */
   subscription: MockSubscription | null;
@@ -255,8 +257,8 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", clientErrors: [], backtestDays: 12, replayDays: 12, ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
-  const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409 | 429 | 503, code: string, message: string) =>
-    c.json({ code, message }, status);
+  const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409 | 429 | 503, code: string, message: string, details?: Record<string, unknown>) =>
+    c.json({ code, message, ...(details ? { details } : {}) }, status);
 
   const current = (c: Context): Account | null => {
     const token = getCookie(c, SESSION_COOKIE);
@@ -862,6 +864,10 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const adds = body.adds ?? [];
     const changes = body.changes ?? [];
     if (body.idempotencyKey && s.adjustments.some((a) => a.batchId === body.idempotencyKey)) return c.json(s);
+    if (s.status === "live" && adds.length) {
+      const paused = mindfulRefusal(c, s.id); // ADR-084: a live add is a new bet
+      if (paused) return paused;
+    }
     const open = s.legs.filter((l) => l.status === "open");
     const planned: { leg: StrategyLeg; exitLots: number; price: string }[] = [];
     const seen = new Set<string>();
@@ -1024,6 +1030,30 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (accountId) return mine.find((k) => k.id === accountId)?.id ?? null;
     return mine.length === 1 ? (mine[0]?.id ?? null) : null;
   };
+  // ADR-084: the server's day figure and the pause it decides, from the account's Mindful settings and the test knob
+  const mockMindful = (acc: Account) => {
+    const m = acc.settings.mindful;
+    const known = acc.dayPnlUsd !== undefined;
+    const pnl = acc.dayPnlUsd ?? 0;
+    const pause = m.enabled && known && pnl < -Number(m.thresholdUsd) ? { seconds: m.pauseSeconds, thresholdUsd: m.thresholdUsd, basis: "since 05:30 IST (00:00 UTC)" } : null;
+    return { day: { pnlUsd: toDecimal(pnl, 2), count: known ? 1 : 0, closedCount: 0, known }, pause };
+  };
+  // ADR-084: the pause the trader saw, per strategy or "batch"; an entry with none shown within ten minutes is refused once
+  // with the server's shape, and the refusal counts as shown (the browser's own countdown is trusted after that)
+  const mindfulSeen = new Map<string, number>();
+  const mindfulNote = (acc: Account, scope: string) => mindfulSeen.set(`${acc.user.id}:${scope}`, Date.now());
+  const mindfulRefusal = (c: Context, scope: string) => {
+    const acc = current(c)!;
+    const m = mockMindful(acc);
+    if (!m.pause) return null;
+    const at = mindfulSeen.get(`${acc.user.id}:${scope}`);
+    if (at !== undefined && Date.now() - at <= 600_000) {
+      mindfulSeen.delete(`${acc.user.id}:${scope}`); // the entry goes through and consumes the stamp
+      return null;
+    }
+    mindfulNote(acc, scope);
+    return err(c, 409, "MINDFUL_PAUSE", `Mindful pause: ${m.pause.seconds} s to go before this order. You are down ${Math.abs(Number(m.day.pnlUsd)).toFixed(2)} USD today on live strategies; take the pause, then place.`, { waitS: m.pause.seconds, day: m.day, pause: m.pause });
+  };
   const livePreview = (c: Context, s: Strategy, worstLoss: number | null) => {
     const acc = current(c)!;
     const reasons: string[] = [];
@@ -1039,8 +1069,13 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     // GAPS #81: a net debit larger than the wallet is refused without any worst-loss figure from the client
     const debit = legs.reduce((a, l) => a + (l.side === "buy" ? 1 : -1) * Number(l.notional), 0);
     if (acc.credentials.length > 0 && debit > 4000) reasons.push(`Available USD 4000 is below the premium this trade pays (${toDecimal(debit, 2)})`);
-    return { ok: reasons.length === 0, reasons, legs, notional: toDecimal(notional, 2), available: acc.credentials.length ? "4000" : null, availableAsset: acc.credentials.length ? "USD" : null, marginUsed: acc.credentials.length ? "12" : null, limits: { maxLegs: 10, maxNotionalUsd: 100_000, markBandPct: 5 } };
+    return { ok: reasons.length === 0, reasons, legs, notional: toDecimal(notional, 2), available: acc.credentials.length ? "4000" : null, availableAsset: acc.credentials.length ? "USD" : null, marginUsed: acc.credentials.length ? "12" : null, limits: { maxLegs: 10, maxNotionalUsd: 100_000, markBandPct: 5 }, mindful: mockMindful(acc) };
   };
+  v1.get("/me/day-pnl", (c) => {
+    const m = mockMindful(current(c)!);
+    if (m.pause) mindfulNote(current(c)!, "batch");
+    return c.json(m);
+  });
   const placeLive = (c: Context, s: Strategy, batchId: string, purpose: StrategyOrder["purpose"], legs: StrategyLeg[], expected: Record<string, string> = {}, orderType: StrategyOrder["orderType"] = "market") => {
     const at = nowIso();
     const lotSize = lotSizeOf(c, s.asset);
@@ -1071,6 +1106,8 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (!isLiveWord(body.confirm)) return err(c, 400, "BAD_REQUEST", "Type LIVE to confirm a real order"); // ADR-078
     if (acc.tradingDisabled) return err(c, 409, "CONFLICT", "Live trading is disabled for this account");
     if (!acc.credentials.length) return err(c, 409, "CONFLICT", "Connect your exchange in Settings → API Settings to enable live trading");
+    const paused = mindfulRefusal(c, "batch");
+    if (paused) return paused;
     const placed: string[] = [];
     const skipped: string[] = [];
     let failed: { id: string; error: string } | null = null;
@@ -1158,9 +1195,12 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       const p = livePreview(c, { ...s, legs: rows }, body.worstLoss ?? null);
       const closes = (body.changes ?? []).filter((ch) => ch.lotsAfter === 0).length;
       if (open.length - closes + (body.adds ?? []).length > 10) p.reasons.push("Maximum 10 active legs allowed per strategy");
+      if (p.mindful.pause) mindfulNote(current(c)!, s.id);
       return c.json({ ...p, ok: p.reasons.length === 0 });
     }
-    return c.json(livePreview(c, s, body.worstLoss ?? null));
+    const pv = livePreview(c, s, body.worstLoss ?? null);
+    if (pv.mindful.pause) mindfulNote(current(c)!, s.id);
+    return c.json(pv);
   });
   v1.post("/strategies/:id/live/place", async (c) => {
     const s = findStrategy(c);
@@ -1173,6 +1213,8 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (blockedLive) return blockedLive;
     const p = livePreview(c, s, null);
     if (!p.ok) return err(c, 409, "CONFLICT", p.reasons.join(" · "));
+    const paused = mindfulRefusal(c, s.id);
+    if (paused) return paused;
     // like the route: the named key must be one of this exchange's; several keys with none named is a refusal
     const wantedKey = body.accountId ?? s.accountId ?? undefined;
     const placeAccount = accountFor(c, body.brokerId, wantedKey);
@@ -1187,13 +1229,41 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const body = await c.req.json<{ confirm?: string }>();
     if (!isLiveWord(body.confirm)) return err(c, 400, "BAD_REQUEST", "Type LIVE to confirm a real order"); // ADR-078
     if (s.status !== "live") return err(c, 409, "CONFLICT", "Only a live strategy has orders to retry");
-    for (const o of s.orders.filter((x) => x.state === "failed")) {
+    for (const o of s.orders.filter((x) => (x.state === "failed" || x.state === "cancelled") && x.purpose !== "exit")) {
       const leg = s.legs.find((l) => l.id === o.legId);
       if (!leg) continue;
       leg.symbol = leg.symbol.replace("FAIL", "OK"); // the venue accepts on retry in the mock
       Object.assign(o, { state: "filled", venueOrderId: String(700000 + s.orders.length), fillPrice: markOf(leg), error: null, attempts: o.attempts + 1, updatedAt: nowIso() });
       Object.assign(leg, { entryPrice: markOf(leg), price: markOf(leg), openedAt: nowIso() });
     }
+    return c.json(touch(s));
+  });
+  // GAPS #61 / ADR-083: a resting limit entry pulled or moved; the real API reads the exchange back, the mock decides from the mark
+  const restingOf = (s: Strategy, orderId: string) => s.orders.find((o) => o.id === orderId && o.state === "pending" && o.orderType === "limit" && o.purpose !== "exit");
+  v1.post("/strategies/:id/live/orders/:orderId/cancel", (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    const o = restingOf(s, c.req.param("orderId"));
+    if (!o) return err(c, 409, "CONFLICT", "Only a resting limit entry can be cancelled or re-priced; sync first if the order state looks stale");
+    Object.assign(o, { state: "cancelled", error: "cancelled from HapieCoin", updatedAt: nowIso() });
+    return c.json(touch(s));
+  });
+  v1.post("/strategies/:id/live/orders/:orderId/reprice", async (c) => {
+    const s = findStrategy(c);
+    if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    const body = await c.req.json<{ limitPrice?: string; confirm?: string }>();
+    if (!isLiveWord(body.confirm)) return err(c, 400, "BAD_REQUEST", "Type LIVE to confirm a real order"); // ADR-078
+    if (typeof body.limitPrice !== "string" || !(Number(body.limitPrice) > 0)) return err(c, 400, "VALIDATION", "limitPrice must be a positive decimal");
+    const o = restingOf(s, c.req.param("orderId"));
+    if (!o) return err(c, 409, "CONFLICT", "Only a resting limit entry can be cancelled or re-priced; sync first if the order state looks stale");
+    const leg = s.legs.find((l) => l.id === o.legId)!;
+    const mark = markOf(leg);
+    // the exchange fills at once when the new limit crosses the market: a buy at or above the mark, a sell at or below it
+    const crosses = o.side === "buy" ? Number(body.limitPrice) >= Number(mark) : Number(body.limitPrice) <= Number(mark);
+    if (crosses) {
+      Object.assign(o, { limitPrice: body.limitPrice, state: "filled", fillPrice: mark, error: null, updatedAt: nowIso() });
+      Object.assign(leg, { entryPrice: mark, price: mark, openedAt: leg.openedAt ?? nowIso() });
+    } else Object.assign(o, { limitPrice: body.limitPrice, updatedAt: nowIso() });
     return c.json(touch(s));
   });
   v1.post("/strategies/:id/live/sync", (c) => {

@@ -980,5 +980,16 @@
   "how": "Net positions, the backtest trades and the replay ladder scroll sideways inside their own container instead of squashing; the paper and journal search boxes are full width below 640 px; the journal stats go 2-up, then 3-up, then 6-up; the workbench ticket pills relax below 640 px; dialogs keep their calc(100% − 40 px) width with stacked footers; the public trader page fits",
   "evidence": "ADR-080 (12 Sep 2026): apps/web/src/components/trading/NetPositionsPanel.tsx, PaperPanel.tsx, JournalPanel.tsx, adjust/PositionTicket.tsx, analysis/BacktestPanel.tsx, ReplayPanel.tsx; e2e phone.spec.ts HC-WS-115",
   "test": "e2e (phone)"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse · Chain",
+  "status": "working",
+  "phase": 5,
+  "new": true,
+  "feature": "Open interest the venue did not send shows as a dash, never as 0",
+  "how": "Quote.oi is optional: the venue adapter omits it when the venue sent none and keeps a real zero as 0; both venue sessions carry the last figure forward over a tick that omits it, so a snapshot shows the last known figure. The chain cell, the strike picker, option details and the workbench chain show — with no OI bar; Σ OI and the put/call ratio sum only the figures that exist; the screener shows — for an unknown figure, sorts it last, keeps it under a zero minimum and drops it under a positive one",
+  "evidence": "ADR-085 (13 Sep 2026): packages/schema market.ts Quote.oi optional; packages/venues schema-adapter.ts toSchemaQuote, delta/market-data.ts accept carry-forward; apps/web lib/chain/range.ts maxOpenInterest / chainTotals, lib/chain/screener.ts StrikeRow.oi null + filterStrikes, components/screener/ScreenerPanel.tsx; unit market.test.ts (schema), schema-adapter.test.ts + delta/market-data.test.ts (venues), diff.test.ts (gateway), range.test.ts + screener.test.ts + chain.test.tsx HC-WS-116 (web)",
+  "test": "unit (schema + venues + gateway + web)"
  }
 ]

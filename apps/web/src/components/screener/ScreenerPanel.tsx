@@ -121,7 +121,7 @@ export function ScreenerPanel() {
     { key: "yieldPerDay", label: "Yield/day", align: "r", render: (r) => <span className="num" title="Premium per day as a percent of spot">{r.yieldPerDay === null ? "—" : `${r.yieldPerDay.toFixed(3)} %`}</span>, sortVal: (r) => r.yieldPerDay },
     { key: "breakEvenPct", label: "BE %", align: "r", render: (r) => <span className="num" title="Break-even vs spot at expiry: strike + mark for a call, strike − mark for a put">{signed(r.breakEvenPct, 2, " %")}</span>, sortVal: (r) => r.breakEvenPct },
     { key: "days", label: "Days", align: "r", render: (r) => <span className="num">{daysLabel(r.days)}</span>, sortVal: (r) => r.days, hidden: true },
-    { key: "oi", label: "OI", align: "r", render: (r) => <span className="num">{fmtOi(String(r.oi))}</span>, sortVal: (r) => r.oi },
+    { key: "oi", label: "OI", align: "r", render: (r) => <span className="num">{fmtOi(r.oi === null ? undefined : String(r.oi))}</span>, sortVal: (r) => r.oi },
     {
       key: "act",
       label: "Act.",
