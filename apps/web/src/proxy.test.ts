@@ -10,6 +10,11 @@ describe("[SECURITY] Content-Security-Policy", () => {
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("upgrade-insecure-requests");
   });
+  it("HC-SH-135 allows the same-origin service worker and manifest (ADR-082)", () => {
+    const csp = buildCsp("abc", { dev: false, gatewayUrl: "wss://gw.hapiecoin.com" });
+    expect(csp).toContain("worker-src 'self'");
+    expect(csp).toContain("manifest-src 'self'");
+  });
   it("adds eval and localhost origins in development only", () => {
     const csp = buildCsp("n", { dev: true, gatewayUrl: "ws://127.0.0.1:3102" });
     expect(csp).toContain("'unsafe-eval'");

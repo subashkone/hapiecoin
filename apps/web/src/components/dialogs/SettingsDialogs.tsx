@@ -17,6 +17,7 @@ import { ProfileDialog } from "./ProfileDialog";
 import { PublicPageDialog } from "./PublicPageDialog";
 import { AlertsDialog } from "@/components/alerts/AlertsDialog";
 import { ShortcutsDialog } from "./ShortcutsDialog";
+import { InstallDialog } from "./InstallDialog";
 
 export function SettingsDialogs() {
   const dialog = useUiStore((s) => s.dialog);
@@ -41,6 +42,7 @@ export function SettingsDialogs() {
       <UpgradeRequiredDialog open={dialog === "upgrade"} onOpenChange={onOpenChange} />
       <AlertsDialog open={dialog === "alerts"} onOpenChange={onOpenChange} />
       <ShortcutsDialog open={dialog === "shortcuts"} onOpenChange={onOpenChange} />
+      <InstallDialog open={dialog === "install"} onOpenChange={onOpenChange} />
     </>
   );
 }

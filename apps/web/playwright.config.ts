@@ -34,6 +34,14 @@ export default defineConfig({
       timeout: 120_000, // the first phone test pays for the cold compile of /auth and /analyse under mobile emulation
       use: { ...devices["Pixel 7"], channel: process.env["PW_CHANNEL"] ?? "chrome" },
     },
+    {
+      // ADR-082: the iPhone 14 profile (390 × 664, Safari UA, touch) on the same Chrome; WebKit is not installed here,
+      // so real Safari stays a manual check (GAPS #98)
+      name: "phone-ios",
+      testMatch: /phone\.spec\.ts/,
+      timeout: 120_000,
+      use: { ...devices["iPhone 14"], browserName: "chromium", channel: process.env["PW_CHANNEL"] ?? "chrome" },
+    },
   ],
   webServer: [
     {

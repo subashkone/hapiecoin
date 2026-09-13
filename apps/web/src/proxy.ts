@@ -17,6 +17,9 @@ export function buildCsp(nonce: string, opts: { dev: boolean; gatewayUrl: string
     `script-src ${scriptSrc.join(" ")}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
+    // the service worker and the manifest are same-origin files (ADR-082); strict-dynamic does not cover workers
+    "worker-src 'self'",
+    "manifest-src 'self'",
     "font-src 'self'",
     `connect-src ${connectSrc.join(" ")}`,
     "frame-ancestors 'none'",
