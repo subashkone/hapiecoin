@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { UnknownExpiryError } from "../errors.js";
 import { FakeWebSocket } from "../test-support/fake-ws.js";
-import { LIVE_V2_TICKER_FRAME, loadProductsFixture, loadTickersFixture } from "../test-support/fixtures.js";
+import { LIVE_COMPACT_TICKER_FRAME, LIVE_V2_TICKER_FRAME, loadProductsFixture, loadTickersFixture } from "../test-support/fixtures.js";
 import type { Quote } from "../types.js";
 import { DeltaMarketData, createDeltaMarketData } from "./market-data.js";
 import type { MarketDataStatus } from "./market-data.js";
@@ -70,7 +70,7 @@ describe("[VENUES] createDeltaMarketData", () => {
     expect(() => md.chain("BTC", "010130")).toThrow(UnknownExpiryError);
   });
 
-  it("[VENUES] watch() subscribes the expiry's options, the socket keeps quotes fresh, stop() closes", async () => {
+  it("[VENUES] watch() subscribes the expiry's options, the socket keeps quotes fresh and carries open interest over a tick without one (HC-WS-116), stop() closes", async () => {
     const { md, statuses, tickerEvents, errors } = make();
     await md.load();
     tickerEvents.length = 0;
@@ -103,6 +103,15 @@ describe("[VENUES] createDeltaMarketData", () => {
     // a newer one replaces it
     FakeWebSocket.last.simulateMessage({ ...LIVE_V2_TICKER_FRAME, mark_price: "2", timestamp: LIVE_V2_TICKER_FRAME.timestamp + 1_000_000 });
     expect(md.quote("P-BTC-80000-250926")?.mark).toBe("2");
+    // GAPS #15: a newer frame without open interest keeps the last figure the venue sent (and the tick carries it)
+    expect(md.quote("P-BTC-80000-250926")?.oiContracts).toBe("18947");
+    FakeWebSocket.last.simulateMessage({ ...LIVE_V2_TICKER_FRAME, mark_price: "3", oi: null, oi_contracts: null, timestamp: LIVE_V2_TICKER_FRAME.timestamp + 2_000_000 });
+    expect(md.quote("P-BTC-80000-250926")).toMatchObject({ mark: "3", oi: "18.947", oiContracts: "18947" });
+    expect(tickerEvents.at(-1)).toMatchObject({ mark: "3", oiContracts: "18947" });
+    // the production trigger: a compact tick whose oi cell is missing keeps the pair as well
+    const compact = { ...LIVE_COMPACT_TICKER_FRAME, sy: "P-BTC-80000-250926", ts: LIVE_V2_TICKER_FRAME.timestamp + 3_000_000, d: [{ ...LIVE_COMPACT_TICKER_FRAME.d[0], i: LIVE_V2_TICKER_FRAME.product_id, s: "P-BTC-80000-250926", m: "4", oi: undefined }] };
+    FakeWebSocket.last.simulateMessage(compact);
+    expect(md.quote("P-BTC-80000-250926")).toMatchObject({ mark: "4", oi: "18.947", oiContracts: "18947" });
 
     FakeWebSocket.last.simulateMessage("{bad");
     expect(errors).toHaveLength(1);

@@ -60,7 +60,7 @@ async function main(): Promise<void> {
         console.log(
           `${stamp()} snap ${frame.topic} seq=${frame.seq} rows=${frame.rows.length} quoted=${quoted} strikes=${frame.rows[0]?.strike}..${frame.rows.at(-1)?.strike}` +
             (atm
-              ? ` sample ${atm.strike}C mark=${atm.call?.mark} iv=${atm.call?.markIv} oi=${atm.call?.oi}`
+              ? ` sample ${atm.strike}C mark=${atm.call?.mark} iv=${atm.call?.markIv} oi=${atm.call?.oi ?? "—"}`
               : ""),
         );
         lastSeq = frame.seq;
