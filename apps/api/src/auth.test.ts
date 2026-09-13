@@ -354,3 +354,27 @@ describe("HC-PB-068 / HC-SH-129 the TOTP second factor (ADR-078)", () => {
     expect(cookieHeaderFrom(plain)).toContain("session_token=");
   });
 });
+
+describe("HC-SH-137 / HC-PB-069 the passkey plugin routes are mounted (ADR-089)", () => {
+  it("register options for a session name HapieCoin on the web host, the list starts empty and needs a session, an assertion without the challenge cookie is refused", async () => {
+    const tt = await createTestApp();
+    try {
+      const { cookie } = await tt.signUp("passkey@hapiecoin.test");
+      const options = await tt.request(`${AUTH_BASE_PATH}/passkey/generate-register-options?name=Laptop`, { cookie });
+      expect(options.status).toBe(200);
+      const body = (await options.json()) as { rp: { id: string; name: string }; challenge: string; user: { name: string }; authenticatorSelection: { residentKey: string } };
+      expect(body.rp).toEqual({ id: "localhost", name: "HapieCoin" });
+      expect(body.challenge.length).toBeGreaterThan(10);
+      expect(body.user.name).toBe("Laptop"); // the name given labels the credential on the authenticator
+      const list = await tt.request(`${AUTH_BASE_PATH}/passkey/list-user-passkeys`, { cookie });
+      expect(list.status).toBe(200);
+      expect(await list.json()).toEqual([]);
+      expect((await tt.request(`${AUTH_BASE_PATH}/passkey/list-user-passkeys`)).status).toBe(401);
+      const bogus = await tt.request(`${AUTH_BASE_PATH}/passkey/verify-authentication`, { json: { response: { id: "bm9wZQ", rawId: "bm9wZQ", type: "public-key", response: { clientDataJSON: "e30", authenticatorData: "AA", signature: "AA" }, clientExtensionResults: {} } } });
+      expect(bogus.status).toBe(400);
+      expect(((await bogus.json()) as { code?: string }).code).toBe("CHALLENGE_NOT_FOUND"); // the challenge cookie is checked before any credential lookup
+    } finally {
+      await tt.close();
+    }
+  });
+});

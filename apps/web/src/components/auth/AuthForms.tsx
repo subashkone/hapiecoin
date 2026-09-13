@@ -1,7 +1,7 @@
 "use client";
 // The seven /auth views (HC-PB-026, 028..036): copy and validation messages follow the v2 mock verbatim;
 // the network calls are Better Auth email/password + email-OTP plugin routes.
-import { Button, Field, Input, Mail, toast } from "@hapiecoin/ui";
+import { Button, Field, Input, Mail, toast, KeyRound } from "@hapiecoin/ui";
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { authClient, authErrorMessage } from "@/lib/auth/client";
@@ -30,10 +30,38 @@ function DeltaMark() {
   );
 }
 
-function Providers({ googleEnabled, next }: { googleEnabled: boolean; next: string }) {
+function Providers({ googleEnabled, next, onSignedIn }: { googleEnabled: boolean; next: string; /** Sign-in tabs only: with it the passkey button is offered, without it (Create account) it is not. */ onSignedIn?: (() => void) | undefined }) {
   const [busy, setBusy] = useState(false);
+  // ADR-089: the passkey button appears only where the browser can answer a WebAuthn prompt (read after mount, never on the server)
+  const [passkeys, setPasskeys] = useState(false);
+  const [pkBusy, setPkBusy] = useState(false);
+  useEffect(() => {
+    setPasskeys(onSignedIn !== undefined && typeof window.PublicKeyCredential === "function" && typeof navigator.credentials?.get === "function");
+  }, [onSignedIn]);
+  const signInWithPasskey = async () => {
+    setPkBusy(true);
+    try {
+      const { passkeyAuth } = await import("@/lib/auth/passkey");
+      const { error } = await passkeyAuth().signIn.passkey();
+      if (error) {
+        toast.error("Passkey sign-in failed", { description: authErrorMessage(error, "The passkey was not accepted") });
+        return;
+      }
+      toast.success("Welcome back!", { description: "Signed in with your passkey." });
+      authClient.$store.notify("$sessionSignal"); // the main client's useSession learns of the cookie the passkey client set
+      onSignedIn?.();
+    } finally {
+      setPkBusy(false);
+    }
+  };
   return (
     <div className="mb-5">
+      {passkeys ? (
+        <Button variant="outline" className="mb-2 w-full" size="lg" loading={pkBusy} onClick={() => void signInWithPasskey()} data-testid="continue-passkey">
+          <KeyRound aria-hidden="true" />
+          Sign in with a passkey
+        </Button>
+      ) : null}
       <Button asChild variant="outline" className="w-full" size="lg">
         <Link href="/auth/delta" data-testid="continue-delta">
           <DeltaMark />
@@ -153,7 +181,7 @@ function LoginForm({ email, setEmail, googleEnabled, next, go, finish }: AuthFor
   return (
     <div data-testid="auth-login">
       <Title title="Welcome back" desc="Sign in to your trading dashboard" />
-      <Providers googleEnabled={googleEnabled} next={next} />
+      <Providers googleEnabled={googleEnabled} next={next} onSignedIn={finish} />
       {notice ? (
         <p className="mb-3 rounded border border-loss/40 px-2 py-1.5 text-xs text-loss" role="alert" data-testid="login-notice">
           {notice}

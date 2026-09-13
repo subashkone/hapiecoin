@@ -1150,5 +1150,16 @@
     "phase": 5,
     "evidence": "ADR-086 (13 Sep 2026): apps/api/src/security/second-factor.ts requireSecondFactor, routes/credentials.ts, routes/settings.ts safetyKnobsChanged, auth.ts sessionResolver twoFactorEnabled; apps/web lib/api/second-factor.ts, lib/api/queries.ts, components/dialogs/SecondFactorField.tsx, ApiSettingsDialog.tsx, MindfulDialog.tsx, LotSizeDialog.tsx; unit second-factor.test.ts (api), dialogs.test.tsx HC-SH-136 (web)",
     "test": "unit (api + web)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Settings · Security · Passkeys",
+    "feature": "Passkeys: add one with a name, see the list, rename, remove",
+    "how": "The Security dialog lists the account's passkeys from the auth plugin (name, added date); Add a passkey asks the browser (Face ID, Touch ID, Windows Hello, a security key) and records it under the name given (default 'This device'); Rename is inline; Remove asks once inline; a browser without WebAuthn sees a note instead of Add. The client plugin and its WebAuthn library load on first use, in their own chunk. The copy says a passkey never signs in an account with two-factor on",
+    "status": "working",
+    "new": true,
+    "phase": 5,
+    "evidence": "ADR-089 (13 Sep 2026): apps/web/src/lib/auth/passkey.ts, components/dialogs/SecurityDialog.tsx; apps/web/test/mock-api.ts passkey routes, test/helpers.tsx installFakeWebAuthn; unit dialogs.test.tsx HC-SH-137; e2e settings.spec.ts HC-SH-137 (CDP virtual authenticator); api auth.test.ts",
+    "test": "unit (web + api), e2e"
   }
 ]

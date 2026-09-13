@@ -49,6 +49,10 @@ interface Account {
   twoFactor?: { enabled: boolean; pending: boolean; backupCodes: string[] };
   /** ADR-084 test knob: the server's live day P&L; undefined = no fresh mark (unknown), so the browser's fold decides. */
   dayPnlUsd?: number;
+  /** Passkeys (ADR-089): the credential id the browser reported at registration is what a sign-in is matched on. */
+  passkeys?: { id: string; name: string; credentialID: string; createdAt: string; deviceType: string; backedUp: boolean }[];
+  /** Test knob (ADR-089): the session is older than the plugin's fresh age (a day), so adding a passkey is refused like the API does. */
+  staleSession?: boolean;
   referredBy?: string;
   /** Billing (ADR-030): the catalogue subscription behind the banner, admin toggles and overrides. */
   subscription: MockSubscription | null;
@@ -381,6 +385,70 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   // Google sign-in the way production is wired (ADR-019): the client posts to sign-in/social and navigates
   // to `url`; the provider callback is served under /v1/auth on the web origin (Next rewrite), so the
   // session cookie is first-party. The "provider" here signs in a fixed Google account without leaving.
+  /* ---- passkeys (ADR-089): the plugin's seven routes with its shapes; no attestation or signature is checked (the
+     same fidelity as the fixed TOTP code): registration records the credential id the browser reported, a sign-in looks
+     it up; a 2FA account is refused like the API's session hook does. rp.id is the e2e / jsdom host. */
+  const PASSKEY_RP = { id: "localhost", name: "HapieCoin" };
+  const challenge = () => Buffer.from(`${Date.now()}-${Math.random()}`).toString("base64url");
+  app.get("/api/auth/passkey/generate-register-options", (c) => {
+    const acc = current(c);
+    if (!acc) return err(c, 401, "UNAUTHORIZED", "Sign in required");
+    if (acc.staleSession) return err(c, 403, "SESSION_NOT_FRESH", "Session is not fresh"); // the plugin's freshSessionMiddleware (fresh age one day)
+    const name = c.req.query("name");
+    return c.json({
+      challenge: challenge(),
+      rp: PASSKEY_RP,
+      user: { id: Buffer.from(acc.user.id).toString("base64url"), name: acc.user.email, displayName: name ?? acc.user.name },
+      pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+      timeout: 60_000,
+      attestation: "none",
+      excludeCredentials: (acc.passkeys ?? []).map((p) => ({ id: p.credentialID, type: "public-key" })),
+      authenticatorSelection: { residentKey: "preferred", userVerification: "preferred" },
+    });
+  });
+  app.post("/api/auth/passkey/verify-registration", async (c) => {
+    const acc = current(c);
+    if (!acc) return err(c, 401, "UNAUTHORIZED", "Sign in required");
+    const body = await c.req.json<{ response?: { id?: string }; name?: string }>();
+    if (!body.response?.id) return err(c, 400, "INVALID_BODY", "response is required");
+    const row = { id: id("pk"), name: body.name?.trim() || "Passkey", credentialID: body.response.id, createdAt: nowIso(), deviceType: "singleDevice", backedUp: false };
+    acc.passkeys = [...(acc.passkeys ?? []), row];
+    return c.json({ ...row, userId: acc.user.id, transports: "internal", aaguid: "00000000-0000-0000-0000-000000000000" });
+  });
+  app.get("/api/auth/passkey/generate-authenticate-options", (c) => c.json({ challenge: challenge(), rpId: PASSKEY_RP.id, timeout: 60_000, userVerification: "preferred", allowCredentials: [] }));
+  app.post("/api/auth/passkey/verify-authentication", async (c) => {
+    const body = await c.req.json<{ response?: { id?: string } }>();
+    const credentialID = body.response?.id;
+    const acc = credentialID ? [...state.accounts.values()].find((a) => (a.passkeys ?? []).some((p) => p.credentialID === credentialID)) : undefined;
+    if (!acc) return err(c, 401, "PASSKEY_NOT_FOUND", "Passkey not found");
+    if (acc.twoFactor?.enabled) return err(c, 403, "TWO_FACTOR_REQUIRED", "This account uses an authenticator app: sign in with your password and the code"); // ADR-078
+    const token = setSession(c, acc.user.email);
+    return c.json(sessionBody(acc, token));
+  });
+  app.get("/api/auth/passkey/list-user-passkeys", (c) => {
+    const acc = current(c);
+    if (!acc) return err(c, 401, "UNAUTHORIZED", "Sign in required");
+    return c.json((acc.passkeys ?? []).map((p) => ({ ...p, userId: acc.user.id })));
+  });
+  app.post("/api/auth/passkey/delete-passkey", async (c) => {
+    const acc = current(c);
+    if (!acc) return err(c, 401, "UNAUTHORIZED", "Sign in required");
+    const body = await c.req.json<{ id?: string }>();
+    if (!(acc.passkeys ?? []).some((p) => p.id === body.id)) return err(c, 404, "PASSKEY_NOT_FOUND", "Passkey not found");
+    acc.passkeys = (acc.passkeys ?? []).filter((p) => p.id !== body.id);
+    return c.json({ status: true });
+  });
+  app.post("/api/auth/passkey/update-passkey", async (c) => {
+    const acc = current(c);
+    if (!acc) return err(c, 401, "UNAUTHORIZED", "Sign in required");
+    const body = await c.req.json<{ id?: string; name?: string }>();
+    const row = (acc.passkeys ?? []).find((p) => p.id === body.id);
+    if (!row) return err(c, 404, "PASSKEY_NOT_FOUND", "Passkey not found");
+    if (!body.name?.trim()) return err(c, 400, "INVALID_BODY", "name is required");
+    row.name = body.name.trim();
+    return c.json({ passkey: { ...row, userId: acc.user.id } });
+  });
+
   app.post("/api/auth/sign-in/social", async (c) => {
     const body = await c.req.json<{ provider?: string; callbackURL?: string }>();
     if (body.provider !== "google") return err(c, 400, "PROVIDER_NOT_FOUND", "Provider not found");
