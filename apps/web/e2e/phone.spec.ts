@@ -1,5 +1,6 @@
 // Phone pass (ADR-080; HC-SH-130, HC-SH-131, HC-WS-115): the Analyse workspace, the chain, the cards and the dialogs on
-// a Pixel 7 profile (412 × 839, touch). Runs under the `phone` Playwright project only.
+// a Pixel 7 profile (412 × 839, touch). Runs under the `phone` (Pixel 7) and `phone-ios` (iPhone 14 on Chromium)
+// Playwright projects only. The home-screen app (ADR-082; HC-SH-134, HC-SH-135) is proven here too.
 import type { Page } from "@playwright/test";
 import { expect, seedUser, signIn, test } from "./fixtures";
 
@@ -16,7 +17,7 @@ test.describe("HC-SH-130 the workspace on a phone", () => {
     await signIn(page, "phone@example.com");
   });
 
-  test("HC-SH-130 the header compacts, the panes stack, the tab strips scroll to their last tab, and nothing scrolls sideways", async ({ page }) => {
+  test("HC-SH-130 the header compacts, the panes stack, the tab strips scroll to their last tab, and nothing scrolls sideways", async ({ page }, testInfo) => {
     await expect(page.getByTestId("workspace")).toHaveAttribute("data-layout", "stacked");
     await expect(page.getByTestId("chain-table")).toHaveAttribute("data-rows", /^[1-9][0-9]?$/, { timeout: 15_000 });
     await expect(page.getByTestId("exchange-chip")).toBeHidden();
@@ -47,7 +48,9 @@ test.describe("HC-SH-130 the workspace on a phone", () => {
       await page.evaluate((t) => localStorage.setItem("hapiecoin.theme", t), theme);
       await page.reload();
       await expect(page.getByTestId("chain-table")).toHaveAttribute("data-rows", /^[1-9][0-9]?$/, { timeout: 15_000 });
-      await page.screenshot({ path: `${DIR}/analyse-phone-${theme}.png` });
+      // one capture per profile: analyse-phone-* is the Pixel 7, analyse-iphone-* the iPhone 14 (ADR-082)
+      const device = testInfo.project.name === "phone-ios" ? "iphone" : "phone";
+      await page.screenshot({ path: `${DIR}/analyse-${device}-${theme}.png` });
     }
   });
 
@@ -98,5 +101,61 @@ test.describe("HC-SH-130 the workspace on a phone", () => {
     await expect(page.getByTestId("trader-page")).toHaveAttribute("data-state", "ready");
     await expect(page.getByTestId("share-bar")).toBeVisible();
     await noSidewaysScroll(page);
+  });
+
+  test("HC-SH-134 the manifest names HapieCoin with 192 and 512 px icons, and the settings menu offers Install (iPhone: the Share-sheet steps)", async ({ page, request }, testInfo) => {
+    const manifest = await request.get("/manifest.webmanifest");
+    expect(manifest.ok()).toBe(true);
+    const body = (await manifest.json()) as { name: string; display: string; start_url: string; icons: { src: string; sizes: string; purpose?: string }[] };
+    expect(body.name).toBe("HapieCoin");
+    expect(body.display).toBe("standalone");
+    expect(body.start_url).toBe("/analyse");
+    expect(body.icons.map((i) => i.sizes)).toEqual(expect.arrayContaining(["192x192", "512x512"]));
+    expect(body.icons.some((i) => i.purpose === "maskable"), "a maskable icon").toBe(true);
+    for (const icon of body.icons) expect((await request.get(icon.src)).headers()["content-type"]).toContain("image/png");
+    await expect(page.locator('link[rel="manifest"]')).toHaveAttribute("href", "/manifest.webmanifest");
+    const ios = testInfo.project.name === "phone-ios";
+    await page.getByTestId("settings-gear").click();
+    const item = page.getByTestId("menu-install");
+    if (ios) {
+      // Safari has no install prompt: the hint toast and the menu item both lead to the two Share-sheet steps
+      await expect(item).toContainText("iPhone");
+      await item.click();
+      const dialog = page.getByTestId("install-dialog");
+      await expect(dialog).toHaveAttribute("data-state-install", "ios");
+      await expect(dialog.getByTestId("install-ios-steps")).toContainText("Add to Home Screen");
+      await page.keyboard.press("Escape");
+      await expect(page.evaluate(() => localStorage.getItem("hapiecoin.install-hint"))).resolves.toBe("1");
+    } else {
+      // headless Chrome never fires beforeinstallprompt, so the item is absent rather than misleading
+      await expect(item).toHaveCount(0);
+      await page.keyboard.press("Escape");
+    }
+  });
+
+  test("HC-SH-135 the service worker registers, an offline navigation shows the offline page, and the live chain never comes from a cache", async ({ page, context }) => {
+    await expect(page.getByTestId("chain-table")).toHaveAttribute("data-rows", /^[1-9][0-9]?$/, { timeout: 15_000 });
+    const scope = await page.evaluate(async () => {
+      const reg = await navigator.serviceWorker.ready;
+      return reg.scope;
+    });
+    expect(scope).toMatch(/\/$/);
+    const cached = await page.evaluate(async () => {
+      const names = await caches.keys();
+      const keys: string[] = [];
+      for (const n of names) for (const r of await (await caches.open(n)).keys()) keys.push(new URL(r.url).pathname);
+      return keys;
+    });
+    expect(cached).toContain("/offline");
+    expect(cached.filter((k) => k.startsWith("/icons/"))).toEqual([]); // the manifest fetches icons itself
+    expect(cached.filter((k) => k.startsWith("/v1/") || k.startsWith("/api/") || k === "/analyse")).toEqual([]);
+    await context.setOffline(true);
+    await page.goto("/analytics", { waitUntil: "commit" }).catch(() => undefined);
+    await expect(page.getByTestId("offline-page")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("offline-page")).toContainText("You are offline");
+    await noSidewaysScroll(page);
+    await context.setOffline(false);
+    await page.getByTestId("offline-retry").click();
+    await expect(page.getByTestId("chain-table")).toHaveAttribute("data-rows", /^[1-9][0-9]?$/, { timeout: 20_000 });
   });
 });
