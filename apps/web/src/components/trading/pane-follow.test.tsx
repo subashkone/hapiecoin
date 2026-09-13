@@ -30,7 +30,7 @@ beforeEach(() => {
   mock = installMockFetch();
   mock.loginAs(EMAIL);
   HTMLCanvasElement.prototype.getContext = vi.fn(() => new Proxy({} as CanvasRenderingContext2D, { get: () => () => undefined, set: () => true })) as unknown as typeof HTMLCanvasElement.prototype.getContext;
-  useUiStore.setState({ asset: "BTC", legs: { BTC: [], ETH: [], XAUT: [] }, drafts: [], draftsImported: true, tradeFlow: null, detailsId: null, paneSource: null, workspaceTab: "paper", builderTab: "builder", analysisTab: "payoff" });
+  useUiStore.setState({ asset: "BTC", legs: { BTC: [], ETH: [], XAUT: [] }, tradeFlow: null, detailsId: null, paneSource: null, workspaceTab: "paper", builderTab: "builder", analysisTab: "payoff" });
 });
 afterEach(() => mock.restore());
 

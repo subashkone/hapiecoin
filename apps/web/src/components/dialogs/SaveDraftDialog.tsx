@@ -54,7 +54,7 @@ export function SaveDraftDialog({ open, onOpenChange, initialName, suggest, inte
       <DialogContent className="sm:max-w-[420px]" data-testid="save-draft-dialog" data-tour="save-dialog">
         <DialogHeader>
           <DialogTitle>{intent === "trade" ? "Enter Strategy Name" : "Save as Draft"}</DialogTitle>
-          <DialogDescription>{intent === "trade" ? "Name the strategy, then choose paper or live." : "Drafts stay on this device until strategies sync in Phase 3."}</DialogDescription>
+          <DialogDescription>{intent === "trade" ? "Name the strategy, then choose paper or live." : "Saved to your account: open it from Templates → My templates on any device."}</DialogDescription>
         </DialogHeader>
         <DialogBody>
           <Input

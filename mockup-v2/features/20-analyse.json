@@ -501,7 +501,7 @@
   "feature": "Shared workspace state CG.analyse {legs, name, strategyId, asset, expiry, targetDays, targetPrice, mode, stats, setExpiry(), setRightTab(), findDelta()} and events analyse:addLeg / analyse:legs-changed / analyse:tab / analyse:set-tab / analyse:right-tab / analyse:expiry / analyse:target / analyse:stats",
   "how": "State object created here; leg mutations belong to the trading part (chain only emits analyse:addLeg, with a local fallback); the right pane re-renders on analyse:legs-changed and on every tick",
   "status": "working",
-  "evidence": "integration contract between the /analyse parts · Phase 2 item 4 (08 Sep 2026): shared workspace state in the UI store: legs, strategy meta, drafts, tabs, target (store.ts); unit store.test.ts"
+  "evidence": "integration contract between the /analyse parts · Phase 2 item 4 (08 Sep 2026): shared workspace state in the UI store: legs, strategy meta, tabs, target (store.ts; drafts are server rows since ADR-024, the browser slice retired by ADR-088); unit store.test.ts"
  },
  {
   "route": "/analyse",

@@ -529,7 +529,7 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     await page.getByTestId("mine-delete").click();
     await page.getByTestId("mine-delete-confirm").click();
     await expect(page.getByTestId("mine-empty")).toBeVisible();
-    // drafts live in the browser until Phase 3 (ADR-023): none left after a reload
+    // the draft is a server row (ADR-024): deleted above, so none is listed after a reload either
     await page.reload();
     await page.getByTestId("tab-builder").click();
     await page.getByTestId("builder-tab-templates").click();
