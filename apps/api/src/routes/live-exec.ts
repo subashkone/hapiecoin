@@ -6,7 +6,7 @@
  * Routes call these; nothing here is reachable without a signed-in user's own vault credential.
  */
 import { type LivePreview, type LivePreviewLeg, type StrategyOrder, toDecimal, isLiveConfirm } from "@hapiecoin/schema";
-import { DEFAULT_VENUE, type DeltaCredentials, type PlaceOrderResult, VENUE_REGISTRY, contractsFor, defaultLotSizes, getVenue, getVenueCore, roundToTick } from "@hapiecoin/venues";
+import { DEFAULT_VENUE, type DeltaCredentials, type PlaceOrderResult, VENUE_REGISTRY, type VenueOrder, contractsFor, defaultLotSizes, getVenue, getVenueCore, roundToTick } from "@hapiecoin/venues";
 import type { Venue } from "@hapiecoin/schema";
 import { and, eq } from "drizzle-orm";
 import { brokerCredentials, brokers, type strategies, strategyLegs, strategyOrders, userSettings, users } from "../db/schema.js";
@@ -415,6 +415,95 @@ export interface SyncedExitFill {
  * Reconcile pending orders with the venue: fills set entry premiums, cancellations mark the order failed. Exit fills
  * are returned for the caller to book, so the leg and the running total follow (ADR-059 §2.3).
  */
+/** The trader's own reason on a cancelled row, distinct from the reconciler's "cancelled on the exchange". */
+export const CANCELLED_FROM_APP = "cancelled from HapieCoin";
+
+/** A resting limit entry the trader can act on (GAPS #61, ADR-083): pending, a limit, not an exit, known to the venue. */
+async function restingOrder(deps: AppDeps, strategyId: string, orderId: string): Promise<OrderRow> {
+  const [o] = await deps.db.select().from(strategyOrders).where(and(eq(strategyOrders.id, orderId), eq(strategyOrders.strategyId, strategyId))).limit(1);
+  if (!o) throw errors.notFound("Order");
+  if (o.state !== "pending" || o.orderType !== "limit" || o.purpose === "exit" || o.venueOrderId === null) throw errors.conflict("Only a resting limit entry can be cancelled or re-priced; sync first if the order state looks stale");
+  return o;
+}
+
+/** The row as it was read: still pending and still that venue order, so a reconciler or a retry that moved it in between is never overwritten. */
+function stillThatOrder(o: OrderRow) {
+  return and(eq(strategyOrders.id, o.id), eq(strategyOrders.state, "pending"), eq(strategyOrders.venueOrderId, o.venueOrderId ?? ""));
+}
+
+/**
+ * Book what the venue reports after a cancel or an edit: a fill that beat the click is a fill, a cancel is a cancel
+ * with the given reason, an order still resting has the venue's price written back (an edit whose answer was lost).
+ */
+async function bookVenueAnswer(deps: AppDeps, o: OrderRow, venue: VenueOrder | null, cancelReason: string): Promise<"filled" | "cancelled" | "resting" | "unknown"> {
+  const now = new Date();
+  if (venue && venue.state === "closed" && venue.averageFillPrice !== null) {
+    await deps.db.update(strategyOrders).set({ state: "filled", fillPrice: venue.averageFillPrice, error: null, updatedAt: now }).where(stillThatOrder(o));
+    await deps.db.update(strategyLegs).set({ entryPrice: venue.averageFillPrice, price: venue.averageFillPrice, orderId: String(venue.id), updatedAt: now }).where(eq(strategyLegs.id, o.legId));
+    return "filled";
+  }
+  if (venue && venue.state === "cancelled") {
+    await deps.db.update(strategyOrders).set({ state: "cancelled", error: cancelReason, updatedAt: now }).where(stillThatOrder(o));
+    return "cancelled";
+  }
+  if (venue) {
+    if (venue.limitPrice !== null && venue.limitPrice !== o.limitPrice) await deps.db.update(strategyOrders).set({ limitPrice: venue.limitPrice, updatedAt: now }).where(stillThatOrder(o));
+    return "resting";
+  }
+  return "unknown";
+}
+
+/**
+ * Cancel a resting limit entry on the exchange (HC-TR-187). Risk-reducing, so no typed word; the venue is read back after
+ * the cancel so a fill that beat the click is booked as a fill, never reported as a failed cancel. The leg stays open with
+ * no entry price, as after an exchange-side cancel, so Retry keeps working.
+ */
+export async function cancelResting(deps: AppDeps, creds: DeltaCredentials, strategy: StrategyRow, orderId: string): Promise<"cancelled" | "filled"> {
+  const o = await restingOrder(deps, strategy.id, orderId);
+  const client = deps.tradingFor(strategy.venue); // ADR-070
+  const productId = o.productId || (await client.getProduct(o.symbol)).id; // 0 when the product lookup failed at placement
+  const venueId = Number(o.venueOrderId);
+  const accepted = await client.cancelOrder(creds, venueId, productId);
+  // a cancel the venue refused because it had already cancelled the order is the exchange's cancel, not the trader's
+  const outcome = await bookVenueAnswer(deps, o, await client.getOrder(creds, venueId), accepted ? CANCELLED_FROM_APP : "cancelled on the exchange");
+  if (outcome === "cancelled" || outcome === "filled") return outcome;
+  if (accepted && outcome === "unknown") {
+    // the venue took the cancel but the read-back failed: the cancel is the venue's last word
+    await deps.db.update(strategyOrders).set({ state: "cancelled", error: CANCELLED_FROM_APP, updatedAt: new Date() }).where(stillThatOrder(o));
+    return "cancelled";
+  }
+  throw errors.conflict(accepted ? "The exchange accepted the cancel but still reports the order open; sync again in a moment" : "The exchange did not cancel the order; sync and try again");
+}
+
+/**
+ * Move a resting limit entry's price in place (HC-TR-188): the same venue order and client order id, the price snapped to
+ * the product tick toward the passive side like a fresh limit. A fill on the new price comes back booked; a refusal is
+ * re-read from the venue so a fill or a cancel that beat the edit is booked before the refusal is reported.
+ */
+export async function repriceResting(deps: AppDeps, creds: DeltaCredentials, strategy: StrategyRow, orderId: string, limitPrice: string): Promise<{ outcome: "filled" | "resting"; limitPrice: string }> {
+  const o = await restingOrder(deps, strategy.id, orderId);
+  const client = deps.tradingFor(strategy.venue); // ADR-070
+  const product = await client.getProduct(o.symbol);
+  const price = roundToTick(limitPrice, product.tickSize, o.side);
+  const venueId = Number(o.venueOrderId);
+  const result = await client.editOrder(creds, { orderId: venueId, productId: o.productId || product.id, limitPrice: price });
+  const now = new Date();
+  if (result.ok) {
+    const held = result.order.limitPrice ?? price; // what the venue says it holds, else what it accepted
+    if (result.order.state === "closed" && result.order.averageFillPrice !== null) {
+      await deps.db.update(strategyOrders).set({ state: "filled", fillPrice: result.order.averageFillPrice, limitPrice: held, error: null, updatedAt: now }).where(stillThatOrder(o));
+      await deps.db.update(strategyLegs).set({ entryPrice: result.order.averageFillPrice, price: result.order.averageFillPrice, orderId: String(result.order.id), updatedAt: now }).where(eq(strategyLegs.id, o.legId));
+      return { outcome: "filled", limitPrice: held };
+    }
+    await deps.db.update(strategyOrders).set({ limitPrice: held, error: null, updatedAt: now }).where(stillThatOrder(o));
+    return { outcome: "resting", limitPrice: held };
+  }
+  const outcome = await bookVenueAnswer(deps, o, await client.getOrder(creds, venueId), "cancelled on the exchange");
+  if (outcome === "filled") throw errors.conflict("The order filled before the new price reached the exchange; it is booked at the fill");
+  if (outcome === "cancelled") throw errors.conflict("The exchange had already cancelled the order; it is booked as cancelled, Retry sends it again");
+  throw errors.conflict(result.message);
+}
+
 export async function syncOrders(deps: AppDeps, creds: DeltaCredentials, strategy: StrategyRow): Promise<{ updated: number; exitFills: SyncedExitFill[] }> {
   const pending = (await ordersOf(deps, strategy.id)).filter((o) => o.state === "pending");
   let updated = 0;
@@ -441,6 +530,10 @@ export async function syncOrders(deps: AppDeps, creds: DeltaCredentials, strateg
       updated += 1;
     } else if (!o.venueOrderId) {
       await deps.db.update(strategyOrders).set({ venueOrderId: String(venue.id), updatedAt: now }).where(eq(strategyOrders.id, o.id));
+      updated += 1;
+    } else if (venue.limitPrice !== null && o.orderType === "limit" && venue.limitPrice !== o.limitPrice) {
+      // ADR-083: the venue holds a price the app never learned (an edit whose answer was lost)
+      await deps.db.update(strategyOrders).set({ limitPrice: venue.limitPrice, updatedAt: now }).where(eq(strategyOrders.id, o.id));
       updated += 1;
     }
   }
