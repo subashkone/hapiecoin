@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { DeltaTradingClientImpl, FakeDeltaTradingClient, contractsFor, describeOrderError, roundToTick, signDeltaRequest, type TradingFetch } from "./trading.js";
+import { DeltaTradingClientImpl, FakeDeltaTradingClient, contractsFor, describeOrderError, roundToTick, shortOptionMarginUsd, signDeltaRequest, type TradingFetch } from "./trading.js";
 
 const BASE = "https://cdn-ind.testnet.example";
 const CREDS = { apiKey: "key-1", apiSecret: "secret-1" };
@@ -51,6 +51,28 @@ describe("[VENUES] Delta trading client (ADR-025)", () => {
     expect(contractsFor(1, "0.0005", "0.001")).toBeNull();
     expect(contractsFor(0, "0.001", "0.001")).toBeNull();
     expect(contractsFor(1, "0.001", "0")).toBeNull();
+  });
+
+  it("HC-TR-192 short option margin = (pct + factor x contracts) / 100 x spot x contract value + mark x contract value, per contract, conservative", () => {
+    // 100 contracts of 0.001 BTC at spot 77,000, mark 450, 1 % + 0.000005 % per contract: 1.0005 % x 77,000 x 0.001 + 0.45 = 0.770385 + 0.45 per contract
+    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: "0.000005" })).toBe("122.04");
+    // the scaling grows with size: 10,000 contracts (10 BTC) add 0.05 %, 1.05 % x 77 + 0.45 = 1.2585 per contract
+    expect(shortOptionMarginUsd({ contracts: 10_000, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: "0.000005" })).toBe("12585");
+    // without a scaling factor the percent alone applies
+    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: undefined })).toBe("122");
+    // any missing input answers null: the caller says "unknown", never a guess
+    expect(shortOptionMarginUsd({ contracts: null, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: undefined })).toBeNull();
+    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: null, mark: "450", initialMarginPct: "1", initialMarginScalingFactor: undefined })).toBeNull();
+    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "77000", mark: null, initialMarginPct: "1", initialMarginScalingFactor: undefined })).toBeNull();
+    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "77000", mark: "450", initialMarginPct: undefined, initialMarginScalingFactor: undefined })).toBeNull();
+    expect(shortOptionMarginUsd({ contracts: 100, contractValue: "0.001", spot: "nope", mark: "450", initialMarginPct: "1", initialMarginScalingFactor: undefined })).toBeNull();
+    // the fake carries the parameters and the spot the same way
+    const fake = new FakeDeltaTradingClient().product("P-BTC-76400-150926", 9, "0.001", "live", "0.1", { pct: "1", factor: "0.000005" }).markAt("P-BTC-76400-150926", "450", "77000");
+    fake.markAt("P-BTC-76400-150926", "460"); // a re-mark without a spot keeps the spot
+    return Promise.all([fake.getProduct("P-BTC-76400-150926"), fake.getTicker("P-BTC-76400-150926")]).then(([p, t]) => {
+      expect(p).toMatchObject({ initialMarginPct: "1", initialMarginScalingFactor: "0.000005" });
+      expect(t).toEqual({ mark: "460", spot: "77000" });
+    });
   });
 
   it("refuses to run under NODE_ENV=test without an injected fetch (trading safety rule 2)", () => {

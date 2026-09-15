@@ -311,6 +311,7 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
                       <span>notional <b className="num text-foreground">{venue.notional} USD</b></span>
                       <span>available <b className="num text-foreground">{venue.available ? `${venue.available} ${venue.availableAsset ?? ""}` : "—"}</b></span>
                       <span>margin held <b className="num text-foreground">{venue.marginUsed ?? "—"}</b></span>
+                      {venue.marginRequired !== null ? <span title="Estimated margin for the short legs plus the premium paid (ADR-091)">needed for shorts · est. <b className={cn("num", venue.available !== null && Number(venue.marginRequired) > Number(venue.available) ? "text-loss" : "text-foreground")} data-testid="venue-margin-required">{venue.marginRequired} {venue.availableAsset ?? "USD"}</b></span> : null}
                       <span>band <b className="num text-foreground">±{venue.limits.markBandPct}%</b> of the marks shown</span>
                     </div>
                   ) : null}

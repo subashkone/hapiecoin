@@ -7641,6 +7641,20 @@
   "evidence": "ADR-087 (13 Sep 2026): apps/api/src/routes/live.ts batchPreview + the preview route + the batch route pre-pass; packages/schema strategies.ts LiveBatchPreview*; apps/web lib/api/live.ts useBatchPreview, components/trading/BatchLiveDialog.tsx; unit live-batch.test.ts + live-cover.test.ts + accounts.test.ts + venue-column.test.ts (api), strategies.test.ts (schema), trading-live.test.tsx HC-TR-191 (web)"
  },
  {
+  "id": "HC-TR-192",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "screen": "Trading · Trade Preview / Adjustment review",
+  "feature": "Short-leg margin estimate: a sold option's initial margin is estimated before placement and the whole order set is refused when the wallet cannot cover the shorts plus the premium; buys go out before sells",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (venues + api + web)",
+  "acceptance": "packages/venues: VenueProduct keeps Delta's initial_margin and initial_margin_scaling_factor, getTicker returns mark + spot_price, shortOptionMarginUsd = (((pct + factor × contracts) / 100) × spot + mark) × contractValue × contracts (conservative: scaling from the first contract, no spread relief; the factor's unit is GAPS #109); apps/api planLegs fills LivePreviewLeg.marginEstimate for sells, the preview sums LivePreview.marginRequired = Σ estimates + premium paid and pushes 'Available … is below the margin the exchange will hold for the short legs plus the premium paid (estimate …); nothing was sent' when above the wallet, so place / Trade All batch (which also sums the estimates against the one wallet, LiveBatchPreview.marginRequired) / adjustment batch / add-legs refuse before any order, and a short the venue could not price next to one it did is refused by name; placeEntries and retryFailed sort buys before sells; the dialogs show 'Needed for shorts · est.' in red when above the wallet",
+  "evidence": "ADR-091, GAPS #108 (15 Sep 2026): packages/venues/src/delta/trading.ts shortOptionMarginUsd + getTicker; apps/api/src/routes/live-exec.ts planLegs / preview / placeEntries; packages/schema strategies.ts LivePreviewLeg.marginEstimate, LivePreview.marginRequired; apps/web TradePreviewDialog.tsx + AdjustConfirmDialog.tsx venue-margin-required; tests: venues trading.test.ts + trading-more.test.ts, api live.test.ts HC-TR-192, web trading-live.test.tsx HC-TR-192"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

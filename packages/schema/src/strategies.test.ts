@@ -218,7 +218,7 @@ describe("HC-TR-191 [SCHEMA] the batch preview (ADR-087)", () => {
     expect(LiveBatchPreviewBody.safeParse({ ids: ["strat_1"], brokerId: "brk_delta", accountId: "crd_1" }).success).toBe(true);
     expect(LiveBatchPreviewBody.safeParse({ ids: ["strat_1", "strat_1"], brokerId: "brk_delta" }).success).toBe(false); // each strategy once
     const item = { id: "strat_1", name: "A", paper: true, ok: false, reasons: ["Notional too large"], legs: [], notional: "0.00", debit: "0.00" };
-    const whole = { items: [item], ok: false, reasons: ["Available USD 20 is below the premium these 2 trades pay together (24.00)"], notional: "24.00", debit: "24.00", available: "20", availableAsset: "USD", marginUsed: null, limits: { maxLegs: 10, maxNotionalUsd: 100000, markBandPct: 5 } };
+    const whole = { items: [item], ok: false, reasons: ["Available USD 20 is below the premium these 2 trades pay together (24.00)"], notional: "24.00", debit: "24.00", available: "20", availableAsset: "USD", marginUsed: null, marginRequired: null, limits: { maxLegs: 10, maxNotionalUsd: 100000, markBandPct: 5 } };
     expect(LiveBatchPreview.parse(whole)).toEqual(whole);
     expect(LiveBatchPreview.safeParse({ ...whole, extra: 1 }).success).toBe(false);
   });

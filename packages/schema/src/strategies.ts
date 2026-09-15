@@ -458,6 +458,8 @@ export const LivePreviewLeg = z.strictObject({
   mark: DecimalString.nullable(),
   /** contracts × contract value × mark, USD. */
   notional: DecimalString,
+  /** HC-TR-192: the conservative initial-margin estimate for a SHORT option leg, USD (ADR-091); null for a buy, a future, or when the venue gave no margin parameters or spot. */
+  marginEstimate: DecimalString.nullable(),
 });
 export type LivePreviewLeg = z.infer<typeof LivePreviewLeg>;
 
@@ -488,6 +490,8 @@ export const LivePreview = z.strictObject({
   availableAsset: z.string().nullable(),
   /** Margin the exchange currently holds against open positions (sum of position margins); null when unknown. Delta has no pre-trade margin estimate endpoint (ADR-029). */
   marginUsed: DecimalString.nullable(),
+  /** HC-TR-192 (ADR-091): Σ short-leg margin estimates + the net premium paid, USD: what the wallet must have free before the first order goes out; null when no short leg could be estimated. */
+  marginRequired: DecimalString.nullable(),
   limits: z.strictObject({ maxLegs: z.number().int(), maxNotionalUsd: z.number(), markBandPct: z.number() }),
   /** ADR-084: the server's Mindful figure for this trader; null on paths that do not compute it. */
   mindful: MindfulPreview.nullable(),
@@ -576,6 +580,8 @@ export const LiveBatchPreview = z.strictObject({
   available: DecimalString.nullable(),
   availableAsset: z.string().nullable(),
   marginUsed: DecimalString.nullable(),
+  /** HC-TR-192: Σ over the batch of each strategy's short-leg margin estimate + premium paid against the one wallet; null with several wallets or when nothing was estimated. */
+  marginRequired: DecimalString.nullable(),
   limits: z.strictObject({ maxLegs: z.number().int(), maxNotionalUsd: z.number(), markBandPct: z.number() }),
 });
 export type LiveBatchPreview = z.infer<typeof LiveBatchPreview>;

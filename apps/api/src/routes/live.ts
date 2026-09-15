@@ -56,7 +56,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
   async function batchPreview(user: SessionUser, ids: readonly string[], brokerId: string, accountId: string | null, mindful?: MindfulPreview) {
     const items: LiveBatchPreviewItem[] = [];
     const plans = new Map<string, { row: StrategyRow; legs: Awaited<ReturnType<typeof openLegs>>; p: LivePreview; rowAccount: string | null }>();
-    const wallets = new Map<string, { available: number; asset: string; debit: number; count: number }>();
+    const wallets = new Map<string, { available: number; asset: string; debit: number; margin: number; estimated: boolean; count: number }>();
     const walletReads: WalletCache = new Map(); // the exchange asked once per account, not once per strategy
     // a strategy naming no account trades through the exchange's only key (ADR-068): name it, so it shares that key's wallet group
     const keys = await db.select({ id: brokerCredentials.id }).from(brokerCredentials).where(and(eq(brokerCredentials.userId, user.id), eq(brokerCredentials.brokerId, brokerId)));
@@ -86,19 +86,27 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
         availableAsset ??= p.availableAsset;
         marginUsed ??= p.marginUsed;
         const key = rowAccount ?? "";
-        const w = wallets.get(key) ?? { available: Number(p.available), asset: p.availableAsset ?? "USD", debit: 0, count: 0 };
+        const w = wallets.get(key) ?? { available: Number(p.available), asset: p.availableAsset ?? "USD", debit: 0, margin: 0, estimated: false, count: 0 };
         w.debit += Math.max(own, 0); // premiums received are not netted: the strategies go out one at a time, in the order given
+        // HC-TR-192: each strategy's short-leg margin plus its premium paid; a strategy without shorts counts its premium only
+        w.margin += p.marginRequired === null ? Math.max(own, 0) : Number(p.marginRequired);
+        w.estimated ||= p.marginRequired !== null;
         w.count += 1;
         wallets.set(key, w);
       }
     }
     // the batch rule: the premiums paid together leave one wallet at placement (GAPS #81's rule for the whole)
     const reasons: string[] = [];
-    for (const w of wallets.values()) if (w.count > 1 && w.debit > w.available) reasons.push(`Available ${w.asset} ${toDecimal(w.available, 2)} is below the premium these ${w.count} trades pay together (${toDecimal(w.debit, 2)})`);
+    for (const w of wallets.values()) {
+      if (w.count > 1 && w.debit > w.available) reasons.push(`Available ${w.asset} ${toDecimal(w.available, 2)} is below the premium these ${w.count} trades pay together (${toDecimal(w.debit, 2)})`);
+      else if (w.count > 1 && w.estimated && w.margin > w.available) reasons.push(`Available ${w.asset} ${toDecimal(w.available, 2)} is below the margin the exchange will hold for the short legs of these ${w.count} trades plus the premiums paid (estimate ${toDecimal(w.margin, 2)}); nothing was sent`);
+    }
+    const [onlyWallet] = wallets.size === 1 ? wallets.values() : [];
+    const marginRequired = onlyWallet && onlyWallet.estimated ? toDecimal(onlyWallet.margin, 2) : null;
     const ok = reasons.length === 0 && items.filter((i) => i.paper).every((i) => i.ok);
     // several wallets: no single available or margin figure is honest for the whole (the items' reasons name each wallet's rule)
     const one = wallets.size <= 1;
-    const whole: LiveBatchPreview = { items, ok, reasons, notional: toDecimal(notional, 2), debit: toDecimal(debit, 2), available: one ? available : null, availableAsset: one ? availableAsset : null, marginUsed: one ? marginUsed : null, limits };
+    const whole: LiveBatchPreview = { items, ok, reasons, notional: toDecimal(notional, 2), debit: toDecimal(debit, 2), available: one ? available : null, availableAsset: one ? availableAsset : null, marginUsed: one ? marginUsed : null, marginRequired, limits };
     return { whole, plans };
   }
   /** One sentence per refused strategy plus the batch's own reasons, for the 409 that keeps every order from going out. */

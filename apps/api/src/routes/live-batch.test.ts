@@ -31,6 +31,31 @@ const previewBatch = (ids: string[]) => t.request("/v1/strategies/live/batch/pre
 const batch = (ids: string[], key: string) => t.request("/v1/strategies/live/batch", { cookie: alice, json: { confirm: "LIVE", ids, brokerId: SEED.brokerId, idempotencyKey: key } });
 const status = async (id: string) => (await json<Strategy>(await t.request(`/v1/strategies/${id}`, { cookie: alice }))).status;
 
+describe("HC-TR-192 the batch sums the short legs' margin estimates against the one wallet (ADR-091)", () => {
+  it("each strategy's shorts fit the wallet alone, together they do not: the batch says so and places nothing", async () => {
+    t.now.value += 61_000;
+    // a sold put: 10 contracts x ((1.00005 % x 79,500) + 900) x 0.001 = 16.95 margin, 9 received: marginRequired 16.95 per strategy
+    t.trading.product(PUT.symbol, 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005" }).markAt(PUT.symbol, "900", "79500");
+    t.trading.setBalances([{ asset: "USD", balance: "25", availableBalance: "25" }]);
+    const a = await paper("short a", [PUT]);
+    const b = await paper("short b", [PUT]);
+    const refused = await json<LiveBatchPreview>(await previewBatch([a.id, b.id]));
+    expect(refused.items.map((i) => i.ok)).toEqual([true, true]);
+    expect(refused.marginRequired).toBe("33.9");
+    expect(refused.ok).toBe(false);
+    expect(refused.reasons).toEqual(["Available USD 25 is below the margin the exchange will hold for the short legs of these 2 trades plus the premiums paid (estimate 33.9); nothing was sent"]);
+    const before = t.trading.placed.length;
+    expect((await batch([a.id, b.id], "batch-margin-001")).status).toBe(409);
+    expect(t.trading.placed.length).toBe(before);
+    expect(await status(a.id)).toBe("paper");
+    t.trading.setBalances([{ asset: "USD", balance: "5000", availableBalance: "4000" }]);
+    const fine = await json<LiveBatchPreview>(await previewBatch([a.id, b.id]));
+    expect(fine.ok).toBe(true);
+    expect(fine.marginRequired).toBe("33.9");
+    t.trading.product(PUT.symbol, 102, "0.001").markAt(PUT.symbol, "900"); // back to the shared fixture (the spot stays; no parameters, no estimate)
+  });
+});
+
 describe("HC-TR-191 Trade All → Live is previewed as one batch before any order goes out", () => {
   it("each strategy passes on its own, the batch fails the wallet together: the preview says so and the batch places nothing; with the wallet raised both go live", async () => {
     t.now.value += 61_000;
