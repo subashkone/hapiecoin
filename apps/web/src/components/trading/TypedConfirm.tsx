@@ -2,8 +2,11 @@
 // The typed LIVE confirmation (roadmap item 28, ADR-078; HC-TR-186): one field under the red block of every live entry
 // dialog; the destructive button stays disabled, not hidden, until the word is in. The API refuses a live entry without
 // it too (`requireLiveConfirm`), so the field is the visible half of a server-side interlock, not a ritual.
+// GAPS #107: the placeholder is a blank, never the word itself (an empty field looked filled), a hint under the field
+// in red says what unlocks the button while the word is missing (the field border is red too), and the field turns
+// green with a tick once it matches.
 import { LIVE_CONFIRM_WORD, isLiveConfirm } from "@hapiecoin/schema";
-import { Input } from "@hapiecoin/ui";
+import { Input, cn } from "@hapiecoin/ui";
 import { useEffect, useRef } from "react";
 
 export { isLiveConfirm };
@@ -46,12 +49,22 @@ export function TypedConfirm({ value, onChange, onSubmit, disabled, focusKey, ve
         autoComplete="off"
         autoCapitalize="characters"
         spellCheck={false}
-        placeholder={LIVE_CONFIRM_WORD}
+        placeholder="____"
         aria-label={`Type ${LIVE_CONFIRM_WORD} to confirm a real order`}
-        className="h-7 w-24 font-mono text-xs uppercase tracking-[0.15em]"
+        className={cn("h-7 w-24 font-mono text-xs uppercase tracking-[0.15em] placeholder:text-muted-foreground/50", ok ? "border-profit focus:border-profit" : "border-loss/60 focus:border-loss")}
         data-testid="live-confirm"
       />
+      {ok ? (
+        <span className="font-mono text-xs text-profit" data-testid="live-confirm-ok" aria-hidden="true">
+          ✓
+        </span>
+      ) : null}
       <span className="micro">real orders on the exchange · HapieCoin will not send one without this word</span>
+      {ok ? null : (
+        <span className="micro basis-full text-loss" data-testid="live-confirm-hint">
+          the {verb} button below unlocks once {LIVE_CONFIRM_WORD} is typed here
+        </span>
+      )}
     </label>
   );
 }
