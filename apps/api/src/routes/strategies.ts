@@ -517,7 +517,9 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
           throw errors.conflict(blocked);
         }
         const creds = await openCredential(deps, me, row.brokerId ?? "", undefined, row.accountId);
-        const plan = await planLegs(deps, inserted, await lotSizeFor(me, row.asset, row.venue), row.venue);
+        // HC-TR-192: the same preview as a placement or an adjustment batch, so the wallet rules (premium, short-leg
+        // margin) refuse before any order, not only the sizing and product checks
+        const plan = await preview(deps, me, row, inserted, row.brokerId ?? "", null, [], row.accountId);
         if (plan.reasons.length) {
           await db.delete(strategyLegs).where(inArray(strategyLegs.id, inserted.map((l) => l.id)));
           throw errors.conflict(plan.reasons.join(" · "));

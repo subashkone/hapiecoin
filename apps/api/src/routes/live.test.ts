@@ -74,6 +74,77 @@ describe("HC-TR-186 the typed LIVE confirmation (ADR-078)", () => {
   });
 });
 
+describe("HC-TR-192 short-leg margin: the whole placement is refused before the first order (ADR-091, GAPS #108)", () => {
+  it("HC-TR-192 estimates a sold option's margin from the product's margin parameters and the ticker spot, adds the premium paid, and refuses when the wallet has less free", async () => {
+    // 10 contracts x 0.001 BTC at spot 79,500, mark 900, 1 % + 0.000005 % per contract: (1.00005 % x 79,500 + 900) x 0.001 = 1.69503975 per contract
+    t.trading.product("P-BTC-78000-250926", 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005" }).markAt("P-BTC-78000-250926", "900", "79500");
+    const s = await draft();
+    const p = await json<LivePreview>(await preview(s.id));
+    expect(p.legs.find((l) => l.symbol === "P-BTC-78000-250926")?.marginEstimate).toBe("16.95");
+    expect(p.legs.find((l) => l.symbol === "C-BTC-80000-250926")?.marginEstimate).toBeNull(); // a buy pays its premium only
+    expect(p.marginRequired).toBe("19.95"); // 16.95 + the 3 USD net debit (12 paid for the call, 9 received for the put)
+    expect(p.ok).toBe(true); // 4,000 free
+    t.trading.setBalances([{ asset: "USD", balance: "19", availableBalance: "19" }]);
+    const short = await json<LivePreview>(await preview(s.id));
+    expect(short.ok).toBe(false);
+    expect(short.reasons.join(" | ")).toMatch(/Available USD 19 is below the margin the exchange will hold for the short legs plus the premium paid [(]estimate 19.95[)]; nothing was sent/);
+    // the place route runs the same preview first: nothing reaches the exchange, no order row is written
+    const before = t.trading.placed.length;
+    const refused = await place(s.id, "key-margin-0001", { [s.legs[0]!.id]: "1200", [s.legs[1]!.id]: "900" });
+    expect(refused.status).toBe(409);
+    expect(t.trading.placed.length).toBe(before);
+    const after = await json<Strategy>(await t.request(`/v1/strategies/${s.id}`, { cookie: alice }));
+    expect(after.status).toBe("draft");
+    expect(after.orders).toHaveLength(0);
+    t.trading.setBalances([{ asset: "USD", balance: "5000", availableBalance: "4000" }]);
+  });
+
+  it("HC-TR-192 a short the venue priced next to one it did not is refused by name: a partial figure never reads as the whole", async () => {
+    t.trading.product("P-BTC-78000-250926", 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005" }).markAt("P-BTC-78000-250926", "900", "79500");
+    t.trading.product("C-BTC-82000-250926", 103, "0.001").markAt("C-BTC-82000-250926", "700"); // no margin parameters, no spot
+    const s = await draft([CALL, PUT, { ...CALL, strike: "82000", symbol: "C-BTC-82000-250926", side: "sell", lots: 5, price: "700" }]);
+    const p = await json<LivePreview>(await preview(s.id));
+    expect(p.legs.map((l) => l.marginEstimate)).toEqual([null, "16.95", null]);
+    expect(p.ok).toBe(false);
+    expect(p.reasons).toContain("Margin could not be estimated for C-BTC-82000-250926 (no margin parameters or spot from the exchange); nothing was sent");
+  });
+
+  it("HC-TR-192 adding a sold leg to a live strategy runs the same wallet rules before the order: refused, the leg is removed again, nothing is sent", async () => {
+    const s = await draft([CALL]);
+    const live = await json<Strategy>(await place(s.id, "key-addleg-0001", { [s.legs[0]!.id]: "1200" }));
+    expect(live.status).toBe("live");
+    t.trading.product("P-BTC-78000-250926", 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005" }).markAt("P-BTC-78000-250926", "900", "79500");
+    t.trading.setBalances([{ asset: "USD", balance: "10", availableBalance: "10" }]);
+    const before = t.trading.placed.length;
+    const refused = await t.request(`/v1/strategies/${s.id}/legs`, { cookie: alice, json: { confirm: "LIVE", legs: [PUT] } });
+    expect(refused.status).toBe(409);
+    expect((await json<{ message: string }>(refused)).message).toMatch(/below the margin the exchange will hold for the short legs/);
+    expect(t.trading.placed.length).toBe(before);
+    const after = await json<Strategy>(await t.request(`/v1/strategies/${s.id}`, { cookie: alice }));
+    expect(after.legs).toHaveLength(1);
+    t.trading.setBalances([{ asset: "USD", balance: "5000", availableBalance: "4000" }]);
+  });
+
+  it("HC-TR-192 without margin parameters or a spot from the venue the estimate stays null and the older wallet rules alone decide", async () => {
+    // the shared fixture registers products without margin fields and marks without a spot
+    const s = await draft();
+    const p = await json<LivePreview>(await preview(s.id));
+    expect(p.legs.map((l) => l.marginEstimate)).toEqual([null, null]);
+    expect(p.marginRequired).toBeNull();
+    expect(p.ok).toBe(true);
+  });
+
+  it("HC-TR-192 sends buy legs before sell legs whatever the leg order of the strategy", async () => {
+    const s = await draft([PUT, CALL], "Sell first");
+    const before = t.trading.placed.length;
+    const live = await json<Strategy>(await place(s.id, "key-order-0001", { [s.legs[0]!.id]: "900", [s.legs[1]!.id]: "1200" }));
+    expect(live.status).toBe("live");
+    const sent = t.trading.placed.slice(before);
+    expect(sent.map((o) => o.input.side)).toEqual(["buy", "sell"]);
+    expect(sent.map((o) => o.input.productId)).toEqual([101, 102]);
+  });
+});
+
 describe("HC-TR-056 / HC-TR-088 live preview and safeguards", () => {
   it("sizes contracts from lots × lot size ÷ contract value, prices notional at the venue mark and reads the wallet", async () => {
     const s = await draft();
@@ -385,23 +456,24 @@ describe("HC-TR-088 adjustment batch on a live strategy (ADR-044)", () => {
     expect(res.status).toBe(200);
     const a = await json<Strategy>(res);
     const batch = a.orders.filter((o) => o.batchId === "key-adj-limit-01");
+    // HC-TR-192: within the batch the buy (P-76000, rests) goes out before the sell (C-82000, fills)
     expect(batch.map((o) => [o.purpose, o.orderType, o.state])).toEqual([
       ["exit", "market", "closed"],
-      ["adjustment", "limit", "filled"],
       ["adjustment", "limit", "pending"],
+      ["adjustment", "limit", "filled"],
     ]);
     const sent = t.trading.placed.slice(-2).map((p) => [p.input.orderType, p.input.limitPrice]);
     expect(sent).toEqual([
-      ["limit", "700.0"], // on the product's 0.1 tick
-      ["limit", "500.0"],
+      ["limit", "500.0"], // the buy first (HC-TR-192), on the product's 0.1 tick
+      ["limit", "700.0"],
     ]);
     const resting = a.legs.find((l) => l.symbol === "P-BTC-76000-250926")!;
     expect(resting.entryPrice).toBeNull();
     expect(a.adjustments[0]).toMatchObject({ added: 2, trimmed: 1 });
     // the venue fills the resting limit later; sync books it
-    t.trading.complete(Number(batch[2]!.venueOrderId), "500");
+    t.trading.complete(Number(batch[1]!.venueOrderId), "500"); // the resting buy is the first adjustment order now
     const synced = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/live/sync`, { cookie: alice, method: "POST" }));
-    expect(synced.orders.find((o) => o.id === batch[2]!.id)).toMatchObject({ state: "filled", fillPrice: "500" });
+    expect(synced.orders.find((o) => o.id === batch[1]!.id)).toMatchObject({ state: "filled", fillPrice: "500" });
     expect(synced.legs.find((l) => l.id === resting.id)!.entryPrice).toBe("500");
     // a limit without an expected mark for its symbol goes at market
     const noBand = await json<Strategy>(await adjust(s.id, { confirm: "LIVE", adds: [SOLD_CALL], orderType: "limit", idempotencyKey: "key-adj-limit-02" }));

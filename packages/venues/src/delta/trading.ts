@@ -22,6 +22,7 @@
  * Order calls are never retried by this client: a timed-out placement is reported as `unknown` for the caller
  * to reconcile through `getOrder` / `listOpenOrders`.
  */
+import { toDecimal } from "@hapiecoin/schema";
 import { createHmac } from "node:crypto";
 import { z } from "zod";
 import { DeltaApiError } from "../errors.js";
@@ -160,6 +161,35 @@ export interface VenueProduct {
   state: string;
   /** Price increment of the product when the venue lists one (limit prices must sit on it). */
   tickSize?: string | undefined;
+  /** Initial margin percent of the underlying (Delta `initial_margin`, e.g. "1" = 1 %), when the venue lists it (HC-TR-192). */
+  initialMarginPct?: string | undefined;
+  /** Percent added per contract of size (Delta `initial_margin_scaling_factor`), when listed. */
+  initialMarginScalingFactor?: string | undefined;
+}
+
+/** A product's ticker: the mark and, for an option, the underlying spot the venue priced it against. */
+export interface VenueTicker {
+  mark: string | null;
+  spot: string | null;
+}
+
+/**
+ * Conservative initial-margin estimate for a SHORT option, USD (ADR-091, HC-TR-192). Delta publishes no pre-trade margin
+ * call; its contract specs give an initial margin percent of the underlying (`initial_margin`, e.g. "1") that grows with
+ * size by a scaling factor in the same percent unit per contract (`initial_margin_scaling_factor`, e.g. "0.000005": the
+ * unit follows Delta's margin explainer "Initial Margin% = Initial Margin%_MIN + Slope × size", not verified against a
+ * worked example), and a sold option also carries its own mark. Per contract: (pct + factor × contracts) / 100 × spot ×
+ * contractValue + mark × contractValue. The scaling is applied from the first contract and no spread relief is assumed,
+ * so the estimate errs on the side of refusing. Null when any input is missing (the caller says so rather than guessing).
+ */
+export function shortOptionMarginUsd(input: { contracts: number | null; contractValue: string; spot: string | null; mark: string | null; initialMarginPct: string | undefined; initialMarginScalingFactor: string | undefined }): string | null {
+  const { contracts, spot, mark, initialMarginPct, initialMarginScalingFactor } = input;
+  if (contracts === null || contracts < 1 || spot === null || mark === null || initialMarginPct === undefined) return null;
+  const cv = Number(input.contractValue);
+  const pct = (Number(initialMarginPct) + (initialMarginScalingFactor === undefined ? 0 : Number(initialMarginScalingFactor)) * contracts) / 100;
+  const perContract = pct * Number(spot) * cv + Number(mark) * cv;
+  if (!Number.isFinite(perContract) || perContract < 0) return null;
+  return toDecimal(perContract * contracts, 2);
 }
 
 /** Snap a limit price onto the product's tick toward the passive side: a buy rounds down, a sell rounds up. Without a tick the price is returned as given. */
@@ -198,6 +228,8 @@ export interface DeltaTradingClient {
   getProduct(symbol: string): Promise<VenueProduct>;
   /** Current mark price (decimal string) or null when the venue has none. */
   getMark(symbol: string): Promise<string | null>;
+  /** Mark and underlying spot from one ticker read; both null when the venue has none (HC-TR-192). */
+  getTicker(symbol: string): Promise<VenueTicker>;
   placeOrder(creds: DeltaCredentials, input: PlaceOrderInput): Promise<PlaceOrderResult>;
   getOrder(creds: DeltaCredentials, orderId: number): Promise<VenueOrder | null>;
   listOpenOrders(creds: DeltaCredentials, productIds: readonly number[]): Promise<VenueOrder[]>;
@@ -239,6 +271,8 @@ const RawProduct = z.object({
   contract_type: z.string(),
   state: z.string(),
   tick_size: z.union([z.string(), z.number()]).nullable().optional(),
+  initial_margin: z.union([z.string(), z.number()]).nullable().optional(),
+  initial_margin_scaling_factor: z.union([z.string(), z.number()]).nullable().optional(),
 });
 const RawPosition = z.object({
   product_id: z.number(),
@@ -362,16 +396,22 @@ export class DeltaTradingClientImpl implements DeltaTradingClient {
     if ("transport" in res) throw new Error(`Delta product lookup failed for ${symbol}: ${res.transport}`);
     const parsed = res.json?.success ? RawProduct.safeParse(res.json.result) : null;
     if (!parsed?.success) throw new Error(`Delta product lookup failed for ${symbol}: HTTP ${res.status} ${res.json?.error?.code ?? ""}`.trim());
-    const product: VenueProduct = { id: parsed.data.id, symbol: parsed.data.symbol, contractValue: String(parsed.data.contract_value), contractType: parsed.data.contract_type, state: parsed.data.state, ...(parsed.data.tick_size === null || parsed.data.tick_size === undefined ? {} : { tickSize: String(parsed.data.tick_size) }) };
+    const im = dec(parsed.data.initial_margin);
+    const imf = dec(parsed.data.initial_margin_scaling_factor);
+    const product: VenueProduct = { id: parsed.data.id, symbol: parsed.data.symbol, contractValue: String(parsed.data.contract_value), contractType: parsed.data.contract_type, state: parsed.data.state, ...(parsed.data.tick_size === null || parsed.data.tick_size === undefined ? {} : { tickSize: String(parsed.data.tick_size) }), ...(im === null ? {} : { initialMarginPct: im }), ...(imf === null ? {} : { initialMarginScalingFactor: imf }) };
     this.products.set(symbol, { product, at: this.now() * 1000 });
     return product;
   }
 
   async getMark(symbol: string): Promise<string | null> {
+    return (await this.getTicker(symbol)).mark;
+  }
+
+  async getTicker(symbol: string): Promise<VenueTicker> {
     const res = await this.call(null, "GET", `/v2/tickers/${encodeURIComponent(symbol)}`);
-    if ("transport" in res || !res.json?.success) return null;
-    const parsed = z.object({ mark_price: z.union([z.string(), z.number()]).nullable().optional() }).safeParse(res.json.result);
-    return parsed.success ? dec(parsed.data.mark_price) : null;
+    if ("transport" in res || !res.json?.success) return { mark: null, spot: null };
+    const parsed = z.object({ mark_price: z.union([z.string(), z.number()]).nullable().optional(), spot_price: z.union([z.string(), z.number()]).nullable().optional() }).safeParse(res.json.result);
+    return parsed.success ? { mark: dec(parsed.data.mark_price), spot: dec(parsed.data.spot_price) } : { mark: null, spot: null };
   }
 
   async placeOrder(creds: DeltaCredentials, input: PlaceOrderInput): Promise<PlaceOrderResult> {
@@ -482,6 +522,7 @@ export class FakeDeltaTradingClient implements DeltaTradingClient {
   readonly edited: EditOrderInput[] = [];
   private readonly productsBySymbol = new Map<string, VenueProduct>();
   private readonly marks = new Map<string, string>();
+  private readonly spots = new Map<string, string>();
   private readonly fillPrices = new Map<number, string>();
   private readonly failures = new Map<number, { code: string; retryable?: boolean; once?: boolean }>();
   private readonly orders = new Map<number, VenueOrder>();
@@ -490,16 +531,21 @@ export class FakeDeltaTradingClient implements DeltaTradingClient {
   private nextId = 1000;
   private partialNext = false;
 
-  product(symbol: string, id: number, contractValue = "0.001", state = "live", tickSize = "0.1"): this {
-    this.productsBySymbol.set(symbol, { id, symbol, contractValue, contractType: symbol.endsWith("USD") ? "perpetual_futures" : symbol.startsWith("C-") ? "call_options" : "put_options", state, tickSize });
+  product(symbol: string, id: number, contractValue = "0.001", state = "live", tickSize = "0.1", margin?: { pct: string; factor?: string }): this {
+    this.productsBySymbol.set(symbol, { id, symbol, contractValue, contractType: symbol.endsWith("USD") ? "perpetual_futures" : symbol.startsWith("C-") ? "call_options" : "put_options", state, tickSize, ...(margin ? { initialMarginPct: margin.pct, ...(margin.factor === undefined ? {} : { initialMarginScalingFactor: margin.factor }) } : {}) });
     return this;
   }
-  markAt(symbol: string, price: string): this {
+  /** The mark the fake quotes for `symbol`, and the underlying spot its ticker reports; a re-mark without a spot keeps the spot it had. */
+  markAt(symbol: string, price: string, spot?: string): this {
     this.marks.set(symbol, price);
+    if (spot !== undefined) this.spots.set(symbol, spot);
     return this;
   }
   getMark(symbol: string): Promise<string | null> {
     return Promise.resolve(this.marks.get(symbol) ?? null);
+  }
+  getTicker(symbol: string): Promise<VenueTicker> {
+    return Promise.resolve({ mark: this.marks.get(symbol) ?? null, spot: this.spots.get(symbol) ?? null });
   }
   fillAt(productId: number, price: string): this {
     this.fillPrices.set(productId, price);

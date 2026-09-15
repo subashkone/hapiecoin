@@ -6,7 +6,7 @@
  * Routes call these; nothing here is reachable without a signed-in user's own vault credential.
  */
 import { type LivePreview, type LivePreviewLeg, type MindfulPreview, type StrategyOrder, toDecimal, isLiveConfirm } from "@hapiecoin/schema";
-import { DEFAULT_VENUE, type DeltaCredentials, type PlaceOrderResult, VENUE_REGISTRY, contractsFor, defaultLotSizes, getVenue, getVenueCore, roundToTick, type VenueOrder } from "@hapiecoin/venues";
+import { DEFAULT_VENUE, type DeltaCredentials, type PlaceOrderResult, VENUE_REGISTRY, contractsFor, defaultLotSizes, getVenue, getVenueCore, roundToTick, shortOptionMarginUsd, type VenueOrder } from "@hapiecoin/venues";
 import type { Venue } from "@hapiecoin/schema";
 import { and, eq } from "drizzle-orm";
 import { brokerCredentials, brokers, type strategies, strategyLegs, strategyOrders, userSettings, users } from "../db/schema.js";
@@ -142,13 +142,14 @@ export async function ordersOf(deps: AppDeps, strategyId: string): Promise<Order
 export type PlanLeg = Pick<LegRow, "id" | "symbol" | "side" | "lots">;
 /** Legs listed without sizing: no venue was asked (a wrong or data-only venue, or a product lookup that failed). */
 export function unsizedLegs(legs: readonly PlanLeg[]): LivePreviewLeg[] {
-  return legs.map((l) => ({ legId: l.id, symbol: l.symbol, side: l.side, lots: l.lots, contracts: null, contractValue: "0", productState: "unknown", mark: null, notional: "0" }));
+  return legs.map((l) => ({ legId: l.id, symbol: l.symbol, side: l.side, lots: l.lots, contracts: null, contractValue: "0", productState: "unknown", mark: null, notional: "0", marginEstimate: null }));
 }
 
 /** Contracts, product state and current mark for each leg through the executor of `venue` (ADR-070: the caller names the strategy venue, never a default); reasons collect what would block a placement. */
-export async function planLegs(deps: AppDeps, legs: readonly PlanLeg[], lotSize: string, venue: string): Promise<{ legs: LivePreviewLeg[]; reasons: string[] }> {
+export async function planLegs(deps: AppDeps, legs: readonly PlanLeg[], lotSize: string, venue: string): Promise<{ legs: LivePreviewLeg[]; reasons: string[]; unestimatedShorts: string[] }> {
   const reasons: string[] = [];
   const out: LivePreviewLeg[] = [];
+  const unestimatedShorts: string[] = []; // sold options the venue gave no margin parameters or spot for (HC-TR-192)
   const client = deps.tradingFor(venue); // ADR-070
   for (const l of legs) {
     let product;
@@ -162,11 +163,16 @@ export async function planLegs(deps: AppDeps, legs: readonly PlanLeg[], lotSize:
     const contracts = contractsFor(l.lots, lotSize, product.contractValue);
     if (contracts === null) reasons.push(`${l.symbol}: ${l.lots} lots × ${lotSize} is not a whole number of ${product.contractValue}-unit contracts`);
     if (product.state !== "live") reasons.push(`${l.symbol}: product is ${product.state} on the exchange`);
-    const mark = await client.getMark(l.symbol);
+    const { mark, spot } = await client.getTicker(l.symbol);
     const notional = contracts !== null && mark !== null ? toDecimal(contracts * Number(product.contractValue) * Number(mark), 2) : "0";
-    out.push({ legId: l.id, symbol: l.symbol, side: l.side, lots: l.lots, contracts, contractValue: product.contractValue, productState: product.state, mark, notional });
+    // HC-TR-192 (ADR-091): a sold option is margined by the exchange as a naked short at placement; estimate it here so the
+    // wallet rule can refuse the whole batch before the first order. Buys and futures carry no estimate (premium only).
+    const isOption = product.contractType === "call_options" || product.contractType === "put_options";
+    const marginEstimate = l.side === "sell" && isOption ? shortOptionMarginUsd({ contracts, contractValue: product.contractValue, spot, mark, initialMarginPct: product.initialMarginPct, initialMarginScalingFactor: product.initialMarginScalingFactor }) : null;
+    if (l.side === "sell" && isOption && marginEstimate === null) unestimatedShorts.push(l.symbol);
+    out.push({ legId: l.id, symbol: l.symbol, side: l.side, lots: l.lots, contracts, contractValue: product.contractValue, productState: product.state, mark, notional, marginEstimate });
   }
-  return { legs: out, reasons };
+  return { legs: out, reasons, unestimatedShorts };
 }
 
 /**
@@ -195,16 +201,25 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
   if (legs.length > trading.maxLegs) reasons.push(`At most ${trading.maxLegs} legs per live placement`);
   const lotSize = await lotSizeFor(deps, user, strategy.asset, strategy.venue);
   // a wrong or data-only venue asks nobody: the legs are listed unsized and the reasons above already say why
-  const exitPlan = wrongVenue ? { legs: unsizedLegs(exits), reasons: [] } : await planLegs(deps, exits, lotSize, strategy.venue);
-  const plan = wrongVenue ? { legs: unsizedLegs(legs), reasons: [] } : await planLegs(deps, legs, lotSize, strategy.venue);
+  const exitPlan = wrongVenue ? { legs: unsizedLegs(exits), reasons: [], unestimatedShorts: [] } : await planLegs(deps, exits, lotSize, strategy.venue);
+  const plan = wrongVenue ? { legs: unsizedLegs(legs), reasons: [], unestimatedShorts: [] } : await planLegs(deps, legs, lotSize, strategy.venue);
   reasons.push(...exitPlan.reasons, ...plan.reasons);
   const notional = plan.legs.reduce((s, l) => s + Number(l.notional), 0);
   if (notional > trading.maxNotionalUsd) reasons.push(`Notional ${toDecimal(notional, 2)} USD exceeds the ${trading.maxNotionalUsd} USD limit per placement`);
+  // the premium a net debit pays leaves the wallet at placement whatever the worst loss is, and whether or not the
+  // client could estimate one (a calendar's is unknown): the exchange refuses it for margin, so refuse it here (GAPS #81)
+  const debit = plan.legs.reduce((sum, l) => sum + (l.side === "buy" ? 1 : -1) * Number(l.notional), 0);
+  // HC-TR-192 (ADR-091): what the exchange will hold for the short legs, plus the premium paid, must be free before the
+  // first order goes out (GAPS #108: a condor whose shorts were refused one by one left a long-only position behind)
+  const shortMargin = plan.legs.reduce((sum, l) => sum + (l.marginEstimate === null ? 0 : Number(l.marginEstimate)), 0);
+  const marginRequired = plan.legs.some((l) => l.marginEstimate !== null) ? toDecimal(shortMargin + Math.max(debit, 0), 2) : null;
+  // a figure that covers only some of the shorts would read as the whole: when the venue priced one short and not another, say so and refuse
+  if (marginRequired !== null && plan.unestimatedShorts.length) reasons.push(`Margin could not be estimated for ${plan.unestimatedShorts.join(", ")} (no margin parameters or spot from the exchange); nothing was sent`);
   let available: string | null = null;
   let availableAsset: string | null = null;
   let marginUsed: string | null = null;
   if (wrongVenue) {
-    return { ok: false, reasons, legs: [...exitPlan.legs, ...plan.legs], notional: toDecimal(notional, 2), available, availableAsset, marginUsed, limits: { maxLegs: trading.maxLegs, maxNotionalUsd: trading.maxNotionalUsd, markBandPct: trading.markBandPct }, mindful };
+    return { ok: false, reasons, legs: [...exitPlan.legs, ...plan.legs], notional: toDecimal(notional, 2), available, availableAsset, marginUsed, marginRequired: null, limits: { maxLegs: trading.maxLegs, maxNotionalUsd: trading.maxNotionalUsd, markBandPct: trading.markBandPct }, mindful };
   }
   try {
     const creds = await openCredential(deps, user, brokerId, strategy.venue, accountId);
@@ -232,10 +247,8 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
       available = row.availableBalance;
       availableAsset = row.asset;
       if (worstLoss !== null && Number.isFinite(worstLoss) && Math.abs(worstLoss) > Number(row.availableBalance)) reasons.push(`Available ${row.asset} ${row.availableBalance} is below the worst-loss estimate ${toDecimal(Math.abs(worstLoss), 2)}`);
-      // the premium a net debit pays leaves the wallet at placement whatever the worst loss is, and whether or not the
-      // client could estimate one (a calendar's is unknown): the exchange refuses it for margin, so refuse it here (GAPS #81)
-      const debit = plan.legs.reduce((sum, l) => sum + (l.side === "buy" ? 1 : -1) * Number(l.notional), 0);
       if (debit > Number(row.availableBalance)) reasons.push(`Available ${row.asset} ${row.availableBalance} is below the premium this trade pays (${toDecimal(debit, 2)})`);
+      else if (marginRequired !== null && Number(marginRequired) > Number(row.availableBalance)) reasons.push(`Available ${row.asset} ${row.availableBalance} is below the margin the exchange will hold for the short legs plus the premium paid (estimate ${marginRequired}); nothing was sent`);
     }
   } catch (e) {
     // the reason matters to the trader (vault, venue, network); log it and show it, never the key material
@@ -243,7 +256,7 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
     reasons.push(e instanceof HttpError ? e.message : `Could not read the exchange wallet (${e instanceof Error ? e.message : "unknown error"})`);
   }
   // ADR-084: the pause rides outside `reasons`, so `ok` keeps meaning "refuse" and the pause means "delay"
-  return { ok: reasons.length === 0, reasons, legs: [...exitPlan.legs, ...plan.legs], notional: toDecimal(notional, 2), available, availableAsset, marginUsed, limits: { maxLegs: trading.maxLegs, maxNotionalUsd: trading.maxNotionalUsd, markBandPct: trading.markBandPct }, mindful };
+  return { ok: reasons.length === 0, reasons, legs: [...exitPlan.legs, ...plan.legs], notional: toDecimal(notional, 2), available, availableAsset, marginUsed, marginRequired, limits: { maxLegs: trading.maxLegs, maxNotionalUsd: trading.maxNotionalUsd, markBandPct: trading.markBandPct }, mindful };
 }
 
 export interface PlacementOutcome {
@@ -267,7 +280,10 @@ export async function placeEntries(deps: AppDeps, creds: DeltaCredentials, strat
   const out: PlacementOutcome = { filled: 0, pending: 0, failed: 0, errors: [] };
   const band = deps.config.trading.markBandPct / 100;
   const client = deps.tradingFor(strategy.venue); // ADR-070
-  for (const l of legs) {
+  // HC-TR-192 (ADR-091): buys go out before sells, in their own order, so a short is never the first order of a batch
+  // with nothing on the exchange to offset it (GAPS #108); a stable sort keeps the leg order within each side
+  const ordered = [...legs].sort((a, b) => (a.side === b.side ? 0 : a.side === "buy" ? -1 : 1));
+  for (const l of ordered) {
     const p = plan.find((x) => x.legId === l.id);
     if (!p || p.contracts === null) {
       out.failed += 1;
@@ -335,7 +351,8 @@ async function applyEntryResult(deps: AppDeps, strategy: StrategyRow, leg: LegRo
 export async function retryFailed(deps: AppDeps, creds: DeltaCredentials, user: SessionUser, strategy: StrategyRow): Promise<PlacementOutcome> {
   const out: PlacementOutcome = { filled: 0, pending: 0, failed: 0, errors: [] };
   // a limit the venue cancelled (sync marks it cancelled) is retried like a refusal, with its type and resting price
-  const failed = (await ordersOf(deps, strategy.id)).filter((o) => (o.state === "failed" || o.state === "cancelled") && o.purpose !== "exit");
+  // HC-TR-192: buys before sells here too, so a retried short never goes out ahead of a retried long
+  const failed = (await ordersOf(deps, strategy.id)).filter((o) => (o.state === "failed" || o.state === "cancelled") && o.purpose !== "exit").sort((a, b) => (a.side === b.side ? 0 : a.side === "buy" ? -1 : 1));
   if (failed.length === 0) return out;
   const lotSize = await lotSizeFor(deps, user, strategy.asset, strategy.venue);
   const client = deps.tradingFor(strategy.venue); // ADR-070
@@ -378,7 +395,7 @@ export async function tryExit(deps: AppDeps, creds: DeltaCredentials, user: Sess
   const attempt = await nextAttempt(deps, leg.id);
   const clientOrderId = `hc-${leg.id}-x${attempt}`;
   const side = leg.side === "buy" ? "sell" : "buy";
-  const plan: LivePreviewLeg = { legId: leg.id, symbol: leg.symbol, side, lots, contracts, contractValue: product.contractValue, productState: product.state, mark: null, notional: "0" };
+  const plan: LivePreviewLeg = { legId: leg.id, symbol: leg.symbol, side, lots, contracts, contractValue: product.contractValue, productState: product.state, mark: null, notional: "0", marginEstimate: null };
   const result = await client.placeOrder(creds, { productId: product.id, size: contracts, side, clientOrderId, reduceOnly: true });
   // the order may exist at the venue from here on: a failure to record it is reported as unknown, never as refused
   const record = async (venue: { id: number; fill: string | null } | null, state: OrderRow["state"], error: string | null): Promise<string | null> => {

@@ -1130,14 +1130,20 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const open = s.legs.filter((l) => l.status === "open");
     if (!open.length) reasons.push("Add at least one leg to trade");
     const lotSize = lotSizeOf(c, s.asset);
-    const legs = open.map((l) => ({ legId: l.id, symbol: l.symbol, side: l.side, lots: l.lots, contracts: contractsOf(l, lotSize), contractValue: "0.001", productState: "live", mark: markOf(l), notional: toDecimal(contractsOf(l, lotSize) * 0.001 * Number(markOf(l)), 2) }));
+    // HC-TR-192: like the route, a sold option carries a conservative margin estimate (1 % of a 79,500 spot + its mark, per 0.001 contract)
+    const marginOf = (l: StrategyLeg) => (l.side === "sell" && l.kind !== "future" ? toDecimal(contractsOf(l, lotSize) * 0.001 * (0.01 * 79_500 + Number(markOf(l))), 2) : null);
+    const legs = open.map((l) => ({ legId: l.id, symbol: l.symbol, side: l.side, lots: l.lots, contracts: contractsOf(l, lotSize), contractValue: "0.001", productState: "live", mark: markOf(l), notional: toDecimal(contractsOf(l, lotSize) * 0.001 * Number(markOf(l)), 2), marginEstimate: marginOf(l) }));
     const notional = legs.reduce((a, l) => a + Number(l.notional), 0);
     if (notional > 100_000) reasons.push(`Notional ${toDecimal(notional, 2)} USD exceeds the 100000 USD limit per placement`);
     if (worstLoss !== null && Math.abs(worstLoss) > 4000) reasons.push(`Available USD 4000 is below the worst-loss estimate ${toDecimal(Math.abs(worstLoss), 2)}`);
     // GAPS #81: a net debit larger than the wallet is refused without any worst-loss figure from the client
     const debit = legs.reduce((a, l) => a + (l.side === "buy" ? 1 : -1) * Number(l.notional), 0);
     if (acc.credentials.length > 0 && debit > 4000) reasons.push(`Available USD 4000 is below the premium this trade pays (${toDecimal(debit, 2)})`);
-    return { ok: reasons.length === 0, reasons, legs, notional: toDecimal(notional, 2), available: acc.credentials.length ? "4000" : null, availableAsset: acc.credentials.length ? "USD" : null, marginUsed: acc.credentials.length ? "12" : null, limits: { maxLegs: 10, maxNotionalUsd: 100_000, markBandPct: 5 }, mindful: mockMindful(acc) };
+    // HC-TR-192 (ADR-091): the short legs' margin plus the premium paid must be free before the first order goes out
+    const shortMargin = legs.reduce((a, l) => a + (l.marginEstimate === null ? 0 : Number(l.marginEstimate)), 0);
+    const marginRequired = legs.some((l) => l.marginEstimate !== null) ? toDecimal(shortMargin + Math.max(debit, 0), 2) : null;
+    if (acc.credentials.length > 0 && debit <= 4000 && marginRequired !== null && Number(marginRequired) > 4000) reasons.push(`Available USD 4000 is below the margin the exchange will hold for the short legs plus the premium paid (estimate ${marginRequired}); nothing was sent`);
+    return { ok: reasons.length === 0, reasons, legs, notional: toDecimal(notional, 2), available: acc.credentials.length ? "4000" : null, availableAsset: acc.credentials.length ? "USD" : null, marginUsed: acc.credentials.length ? "12" : null, marginRequired, limits: { maxLegs: 10, maxNotionalUsd: 100_000, markBandPct: 5 }, mindful: mockMindful(acc) };
   };
   v1.get("/me/day-pnl", (c) => {
     const m = mockMindful(current(c)!);
@@ -1171,11 +1177,14 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   // ADR-087: the batch previewed as one: every paper strategy's own check, then the wallet against the premiums together
   const batchPreview = (c: Context, ids: string[]) => {
     const acc = current(c)!;
+    const margins = new Map<string, { margin: number; estimated: boolean }>();
     const items = ids.map((sid) => {
       const s = acc.strategies.find((x) => x.id === sid);
       if (!s || s.status !== "paper") return { id: sid, name: s?.name ?? sid, paper: false, ok: false, reasons: [s ? `Already ${s.status}: skipped` : "Not one of your strategies: skipped"], legs: [], notional: "0.00", debit: "0.00" };
       const p = livePreview(c, s, null);
       const debit = p.legs.reduce((a, l) => a + (l.side === "buy" ? 1 : -1) * Number(l.notional), 0);
+      // the margin figures ride beside the item, never inside it: the item is a strict schema object on the client
+      margins.set(sid, { margin: p.marginRequired === null ? Math.max(debit, 0) : Number(p.marginRequired), estimated: p.marginRequired !== null });
       return { id: sid, name: s.name, paper: true, ok: p.ok, reasons: p.reasons, legs: p.legs, notional: p.notional, debit: toDecimal(debit, 2) };
     });
     const paper = items.filter((i) => i.paper);
@@ -1184,7 +1193,12 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const reasons: string[] = [];
     const paid = paper.reduce((a, i) => a + Math.max(Number(i.debit), 0), 0); // like the route: premiums received are not netted
     if (acc.credentials.length > 0 && paper.length > 1 && paid > 4000) reasons.push(`Available USD 4000 is below the premium these ${paper.length} trades pay together (${toDecimal(paid, 2)})`);
-    return { items, ok: reasons.length === 0 && paper.every((i) => i.ok), reasons, notional: toDecimal(notional, 2), debit: toDecimal(debit, 2), available: acc.credentials.length ? "4000" : null, availableAsset: acc.credentials.length ? "USD" : null, marginUsed: acc.credentials.length ? "12" : null, limits: { maxLegs: 10, maxNotionalUsd: 100_000, markBandPct: 5 } };
+    // HC-TR-192: the shorts' margin of the batch plus the premiums paid, like the route
+    const margin = paper.reduce((a, i) => a + (margins.get(i.id)?.margin ?? 0), 0);
+    const estimated = paper.some((i) => margins.get(i.id)?.estimated === true);
+    if (acc.credentials.length > 0 && paper.length > 1 && paid <= 4000 && estimated && margin > 4000) reasons.push(`Available USD 4000 is below the margin the exchange will hold for the short legs of these ${paper.length} trades plus the premiums paid (estimate ${toDecimal(margin, 2)}); nothing was sent`);
+    const marginRequired = acc.credentials.length > 0 && estimated ? toDecimal(margin, 2) : null;
+    return { items, ok: reasons.length === 0 && paper.every((i) => i.ok), reasons, notional: toDecimal(notional, 2), debit: toDecimal(debit, 2), available: acc.credentials.length ? "4000" : null, availableAsset: acc.credentials.length ? "USD" : null, marginUsed: acc.credentials.length ? "12" : null, marginRequired, limits: { maxLegs: 10, maxNotionalUsd: 100_000, markBandPct: 5 } };
   };
   v1.post("/strategies/live/batch/preview", async (c) => {
     const body = await c.req.json<{ ids: string[]; brokerId: string; accountId?: string }>();

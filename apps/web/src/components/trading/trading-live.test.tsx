@@ -69,6 +69,49 @@ beforeEach(() => {
 });
 afterEach(() => mock.restore());
 
+describe("HC-TR-192 short-leg margin estimate on the live preview (ADR-091)", () => {
+  const SOLD_PUT = { ...CALL, id: "leg_sp", kind: "put" as const, side: "sell" as const, strike: "78000", symbol: "P-BTC-78000-250926", price: "900", entryPrice: "900" };
+  async function openPreview(u: ReturnType<typeof userEvent.setup>) {
+    await waitFor(() => expect(screen.getByTestId("paper-card")).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId("card-golive").hasAttribute("disabled")).toBe(false));
+    await u.click(screen.getByTestId("card-golive"));
+    const mode = screen.getByTestId("trade-mode");
+    await waitFor(() => expect(within(mode).getByTestId<HTMLSelectElement>("trade-broker").value).toBe("brk_delta"));
+    await u.click(within(mode).getByTestId("trade-continue"));
+    const preview = await screen.findByTestId("trade-preview");
+    const venue = await within(preview).findByTestId("venue-preview");
+    return { preview, venue };
+  }
+
+  it("HC-TR-192 shows what the wallet must have free for a sold leg, labelled as an estimate, and no figure for an all-buy strategy", async () => {
+    connect();
+    mine().push(strat(1, { legs: [SOLD_PUT] }));
+    renderWithProviders(<Workspace />);
+    act(() => FakeSocket.last().open());
+    const u = userEvent.setup();
+    const { venue } = await openPreview(u);
+    expect(venue.dataset["ok"]).toBe("true");
+    // 10 contracts x 0.001 x (1 % of 79,500 + the 900.9 mark) = 16.96 USD; the sell receives premium, so nothing is added
+    expect(within(venue).getByTestId("venue-margin-required").textContent).toBe("16.96 USD");
+    expect(within(venue).getByTestId("venue-margin-required").className).not.toContain("text-loss");
+  });
+
+  it("HC-TR-192 a short whose estimate exceeds the wallet is refused as a whole before any order, the figure in red and the button off", async () => {
+    connect();
+    mine().push(strat(1, { legs: [{ ...SOLD_PUT, lots: 3000 }] }));
+    renderWithProviders(<Workspace />);
+    act(() => FakeSocket.last().open());
+    const u = userEvent.setup();
+    const { preview, venue } = await openPreview(u);
+    expect(venue.dataset["ok"]).toBe("false");
+    expect(within(venue).getByTestId("venue-margin-required").textContent).toBe("5087.7 USD");
+    expect(within(venue).getByTestId("venue-margin-required").className).toContain("text-loss");
+    expect(within(venue).getByTestId("venue-reasons").textContent).toMatch(/below the margin the exchange will hold for the short legs plus the premium paid [(]estimate 5087.7[)]; nothing was sent/);
+    await typeLiveIf(u, preview);
+    expect(within(preview).getByTestId("trade-now").hasAttribute("disabled")).toBe(true);
+  });
+});
+
 describe("HC-TR-063 Go live from a paper card", () => {
   it("locks the mode to Live, shows the exchange preview, places the orders and lands on the Live tab", async () => {
     connect();
@@ -94,6 +137,7 @@ describe("HC-TR-063 Go live from a paper card", () => {
     expect(within(venue).getAllByTestId("venue-leg")[0]!.textContent).toContain("C-BTC-80000-250926");
     expect(within(preview).getByTestId("trade-now").textContent).toContain("Place live orders");
     expect(within(venue).getByTestId("venue-margin-used").textContent).toContain("12 USD"); // exchange margin in use (ADR-029)
+    expect(within(venue).queryByTestId("venue-margin-required")).toBeNull(); // HC-TR-192: a bought call carries no margin estimate
     await typeLiveIf(u, preview);
     await u.click(within(preview).getByTestId("trade-now"));
     await waitFor(() => expect(mine()[0]!.status).toBe("live"));
@@ -342,6 +386,22 @@ describe("HC-TR-089 Trade All → Live", () => {
     expect(mine()[0]!.orderBatchId).toMatch(/^web-.*:strat_1$/);
     expect(useUiStore.getState().workspaceTab).toBe("live");
     await waitFor(() => expect(screen.getByTestId("live-count").textContent).toContain("2"));
+  });
+
+  it("HC-TR-192 the batch shows the short legs' margin estimate together and refuses when the wallet cannot cover it", async () => {
+    connect();
+    // 1 300 sold puts each: 1 300 x 0.001 x (795 + 900.9) = 2 204.67 USD margin, fine alone, 4 409.34 together against the 4 000 wallet
+    const SOLD = { ...CALL, kind: "put" as const, side: "sell" as const, strike: "78000", symbol: "P-BTC-78000-250926", price: "900", entryPrice: "900", lots: 1300 };
+    mine().push(strat(1, { legs: [{ ...SOLD, id: "leg_1" }] }), strat(2, { legs: [{ ...SOLD, id: "leg_2" }] }));
+    renderWithProviders(<Workspace />);
+    act(() => FakeSocket.last().open());
+    const u = userEvent.setup();
+    await waitFor(() => expect(screen.getAllByTestId("paper-card")).toHaveLength(2));
+    await u.click(screen.getByTestId("trade-all-live"));
+    const dlg = screen.getByTestId("batch-live");
+    await waitFor(() => expect(within(dlg).getByTestId("batch-preview-reason").textContent).toContain("short legs of these 2 trades plus the premiums paid (estimate 4409.34)"));
+    expect(within(dlg).getByTestId("batch-margin-required").textContent).toContain("4,409.34"); // the dialog formats money
+    expect(within(dlg).getByTestId("batch-margin-required").className).toContain("text-loss");
   });
 
   it("HC-TR-191 previews the batch as one: a refused strategy shows its reason and holds the button, the wallet is checked against the premiums together, unticking clears it", async () => {

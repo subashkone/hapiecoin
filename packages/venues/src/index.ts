@@ -137,7 +137,7 @@ export {
   toSchemaQuote,
 } from "./schema-adapter.js";
 
-export { DeltaTradingClientImpl, FakeDeltaTradingClient, contractsFor, describeOrderError, fillInstant, roundToTick, signDeltaRequest } from "./delta/trading.js";
+export { DeltaTradingClientImpl, FakeDeltaTradingClient, contractsFor, describeOrderError, fillInstant, roundToTick, shortOptionMarginUsd, signDeltaRequest } from "./delta/trading.js";
 export type {
   DeltaCredentials,
   DeltaTradingClient,
@@ -154,6 +154,7 @@ export type {
   VenueOrder,
   VenuePosition,
   VenueProduct,
+  VenueTicker,
 } from "./delta/trading.js";
 
 

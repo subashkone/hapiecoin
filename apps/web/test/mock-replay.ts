@@ -19,13 +19,16 @@ export function mockReplayExpiries(asset: Underlying, days: number, venue?: stri
 }
 
 export function mockReplaySteps(asset: Underlying, expiry: string, days: number, now = Date.now(), venue?: string): ReplaySteps {
-  const noon = noonOf(now);
+  const start = Math.floor(now / FIVE) * FIVE - 24 * FIVE; // the last two hours, on five-minute marks
+  // the daily series ends at the last noon before the marks window: a noon inside it (12:00-14:00 UTC by the real
+  // clock) would be both a daily and a fine step and read as "eod" after a switch to 5-minute steps (GAPS #110)
+  let noon = noonOf(now);
+  while (noon > start) noon -= DAY;
   const daily: ReplaySteps["daily"] = [];
   for (let i = days - 1; i >= 0; i--) {
     const ts = noon - i * DAY;
     daily.push({ day: new Date(ts).toISOString().slice(0, 10), ts: new Date(ts).toISOString(), spot: drift(asset, ts) });
   }
-  const start = Math.floor(now / FIVE) * FIVE - 24 * FIVE; // the last two hours, on five-minute marks
   const fine: ReplaySteps["fine"] = [];
   for (let k = 0; k <= 24; k++) fine.push({ ts: new Date(start + k * FIVE).toISOString(), spot: drift(asset, start + k * FIVE) });
   return { asset, venue: venueOf(venue), expiry, daily, fine };

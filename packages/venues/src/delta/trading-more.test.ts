@@ -66,8 +66,9 @@ describe("[VENUES] trading client edges", () => {
       fetch: (url: string) => {
         calls += 1;
         if (url.includes("/v2/products/DOWN")) return Promise.reject(new Error("offline"));
+        if (url.includes("/v2/products/MARGINED")) return json({ success: true, result: { id: 8, symbol: "MARGINED", contract_value: "0.001", contract_type: "put_options", state: "live", initial_margin: "1", initial_margin_scaling_factor: 0.000005 } });
         if (url.includes("/v2/products/")) return json({ success: true, result: { id: 7, symbol: "X", contract_value: "0.001", contract_type: "call_options", state: "live" } });
-        if (url.endsWith("/v2/tickers/HAS")) return json({ success: true, result: { mark_price: 1234.5 } });
+        if (url.endsWith("/v2/tickers/HAS")) return json({ success: true, result: { mark_price: 1234.5, spot_price: "77000" } });
         if (url.endsWith("/v2/tickers/NONE")) return json({ success: true, result: { mark_price: null } });
         if (url.endsWith("/v2/tickers/BAD")) return json({ success: true, result: "?" });
         if (url.endsWith("/v2/tickers/ERR")) return json({ success: false, error: { code: "not_found" } }, 404);
@@ -82,6 +83,12 @@ describe("[VENUES] trading client edges", () => {
     await c.getProduct("X");
     expect(calls).toBe(3);
     expect(await c.getMark("HAS")).toBe("1234.5");
+    // HC-TR-192: the ticker read carries the underlying spot, the product read keeps the margin parameters
+    expect(await c.getTicker("HAS")).toEqual({ mark: "1234.5", spot: "77000" });
+    expect(await c.getTicker("NONE")).toEqual({ mark: null, spot: null });
+    expect(await c.getTicker("ERR")).toEqual({ mark: null, spot: null });
+    expect(await c.getProduct("MARGINED")).toMatchObject({ initialMarginPct: "1", initialMarginScalingFactor: "0.000005" });
+    expect(await c.getProduct("X")).not.toHaveProperty("initialMarginPct");
     expect(await c.getMark("NONE")).toBeNull();
     expect(await c.getMark("BAD")).toBeNull();
     expect(await c.getMark("ERR")).toBeNull();
