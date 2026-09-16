@@ -89,8 +89,11 @@ describe("HC-TR-192 short-leg margin estimate on the live preview (ADR-091)", ()
     renderWithProviders(<Workspace />);
     act(() => FakeSocket.last().open());
     const u = userEvent.setup();
-    const { venue } = await openPreview(u);
+    const { preview, venue } = await openPreview(u);
     expect(venue.dataset["ok"]).toBe("true");
+    // HC-SH-138: the preview names the testnet beside the exchange and in the red note
+    expect(within(preview).getAllByTestId("trading-env").length).toBeGreaterThan(0);
+    expect(within(preview).getByTestId("preview-note").textContent).toContain("TESTNET with play money");
     // 10 contracts x 0.001 x (1 % of 79,500 + the 900.9 mark) = 16.96 USD; the sell receives premium, so nothing is added
     expect(within(venue).getByTestId("venue-margin-required").textContent).toBe("16.96 USD");
     expect(within(venue).getByTestId("venue-margin-required").className).not.toContain("text-loss");

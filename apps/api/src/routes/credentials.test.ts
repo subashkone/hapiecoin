@@ -24,7 +24,7 @@ afterAll(() => t.close());
 
 describe("HC-SH-031..037 exchange API credentials", () => {
   it("HC-SH-031 starts disconnected; HC-SH-036 exposes the whitelist IP", async () => {
-    expect(await (await t.request("/v1/credentials", { cookie })).json()).toEqual({ items: [] });
+    expect(await (await t.request("/v1/credentials", { cookie })).json()).toEqual({ items: [], trading: { env: "testnet", host: "127.0.0.1:3101" } }); // HC-SH-138: the harness trades on a local mock host
     expect(await (await t.request("/v1/credentials/whitelist-ip", { cookie })).json()).toEqual({
       ip: "172.236.179.136",
     });
@@ -156,7 +156,7 @@ describe("HC-SH-031..037 exchange API credentials", () => {
     const { items } = (await (await t.request("/v1/credentials", { cookie })).json()) as { items: BrokerCredentialPublic[] };
     const del = await t.request(`/v1/credentials/${items[0]!.id}`, { method: "DELETE", cookie });
     expect(del.status).toBe(204);
-    expect(await (await t.request("/v1/credentials", { cookie })).json()).toEqual({ items: [] });
+    expect(await (await t.request("/v1/credentials", { cookie })).json()).toEqual({ items: [], trading: { env: "testnet", host: "127.0.0.1:3101" } }); // HC-SH-138: the harness trades on a local mock host
     expect((await t.request(`/v1/credentials/${items[0]!.id}`, { method: "DELETE", cookie })).status).toBe(
       404,
     );

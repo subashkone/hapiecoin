@@ -167,3 +167,15 @@ describe("ADR-054 CREDENTIALS_ENC_KEYS_PREVIOUS", () => {
   });
 
 });
+
+describe("HC-SH-138 the trading environment is named from the hosts (ADR-092)", () => {
+  it("production only on a real exchange host; a testnet, a demo, a local mock or a proxy all read testnet", async () => {
+    const { tradingEnvOf } = await import("./config.js");
+    expect(tradingEnvOf("https://cdn-ind.testnet.deltaex.org")).toEqual({ deltaTradingEnv: "testnet", deltaTradingHost: "cdn-ind.testnet.deltaex.org" });
+    expect(tradingEnvOf("https://api.india.delta.exchange")).toEqual({ deltaTradingEnv: "production", deltaTradingHost: "api.india.delta.exchange" });
+    expect(tradingEnvOf("https://api.india.delta.exchange/")).toEqual({ deltaTradingEnv: "production", deltaTradingHost: "api.india.delta.exchange" });
+    expect(tradingEnvOf("https://demo.delta.exchange")).toEqual({ deltaTradingEnv: "testnet", deltaTradingHost: "demo.delta.exchange" });
+    expect(tradingEnvOf("http://127.0.0.1:3101")).toEqual({ deltaTradingEnv: "testnet", deltaTradingHost: "127.0.0.1:3101" });
+    expect(tradingEnvOf("https://delta-proxy.internal")).toEqual({ deltaTradingEnv: "testnet", deltaTradingHost: "delta-proxy.internal" });
+  });
+});

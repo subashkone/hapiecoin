@@ -1181,5 +1181,16 @@
     "phase": 5,
     "evidence": "ADR-089 (13 Sep 2026): apps/web/src/lib/auth/passkey.ts, components/dialogs/SecurityDialog.tsx; apps/web/test/mock-api.ts passkey routes, test/helpers.tsx installFakeWebAuthn; unit dialogs.test.tsx HC-SH-137; e2e settings.spec.ts HC-SH-137 (CDP virtual authenticator); api auth.test.ts",
     "test": "unit (web + api), e2e"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Shared chrome · Exchange chip / live surfaces",
+    "feature": "TESTNET tag wherever live money is implied when the trading host is not the real exchange",
+    "how": "GET /v1/credentials answers trading { env: testnet | production, host } (tradingEnvOf: production only on a real exchange host, api.india.delta.exchange or api.delta.exchange, that does not say testnet / demo; a testnet, a local mock or a proxy is testnet); TradingEnvTag renders an amber TESTNET (host in the title) on the Exchange chip, the Live tab's exchange chip, each live card beside its Live pill, the net positions header, the trade mode dialog, the Trade Preview beside the exchange name (its red note reads 'on the Delta Exchange TESTNET with play money … no real funds move') and the Trade All dialog; nothing renders on the real exchange; the API startup log names the trading host",
+    "status": "working",
+    "new": true,
+    "phase": 5,
+    "evidence": "ADR-092, GAPS #111 (16 Sep 2026): apps/api/src/config.ts tradingEnvOf; apps/api/src/routes/credentials.ts; packages/schema accounts.ts TradingEnv; apps/web/src/components/trading/TradingEnvTag.tsx + widgets.tsx, PaperPanel.tsx, NetPositionsPanel.tsx, TradeModeDialog.tsx, TradePreviewDialog.tsx, BatchLiveDialog.tsx; tests: api config.test.ts + credentials.test.ts, web widgets.test.tsx + trading-live.test.tsx",
+    "test": "unit (api + web) · e2e (visual)"
   }
 ]

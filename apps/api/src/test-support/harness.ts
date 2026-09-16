@@ -35,6 +35,8 @@ export const TEST_ENV: Record<string, string> = {
   TRUSTED_PROXY_IPS: "*",
   CREDENTIALS_ENC_KEY: Buffer.alloc(32, 7).toString("base64"),
   EGRESS_IP: "172.236.179.136",
+  // HC-SH-138: tests trade on a local mock host, which the config names as the testnet (never a real exchange host)
+  DELTA_TRADING_REST_URL: "http://127.0.0.1:3101",
 };
 
 export interface RequestOptions {

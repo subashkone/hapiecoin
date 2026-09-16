@@ -3,6 +3,7 @@
 // exchange, one confirm; the API places one strategy at a time and stops at the first failure. Previewed as one batch
 // first (HC-TR-191, ADR-087): every strategy's own check and the wallet against the premiums together.
 import type { Broker, BrokerCredentialPublic, Strategy } from "@hapiecoin/schema";
+import { TradingEnvTag } from "./TradingEnvTag";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { useEffect, useMemo, useState } from "react";
 import { newIdempotencyKey, useBatchPreview, useLiveBatch, useLiveDay } from "@/lib/api/live";
@@ -111,7 +112,7 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
           ) : preview.data && ids.length > 0 ? (
             <div className={cn("mt-2 rounded border p-2 text-2xs", preview.data.ok ? "border-border" : "border-loss/60", preview.isFetching && "opacity-70")} role="status" data-testid="batch-preview" data-ok={String(preview.data.ok)} data-fetching={String(preview.isFetching)}>
               <div className="flex flex-wrap gap-x-3">
-                <span>Batch on the exchange: <b className="num">{fmtMoney(Number(preview.data.notional), money)}</b> notional</span>
+                <span><TradingEnvTag className="mr-1" />Batch on the exchange: <b className="num">{fmtMoney(Number(preview.data.notional), money)}</b> notional</span>
                 <span>Premium {Number(preview.data.debit) >= 0 ? "paid" : "received"} together: <b className="num">{fmtMoney(Math.abs(Number(preview.data.debit)), money)}</b></span>
                 <span>Available: <b className="num">{cash(preview.data.available, preview.data.availableAsset)}</b></span>
                 <span>Margin in use: <b className="num">{cash(preview.data.marginUsed, preview.data.availableAsset)}</b></span>

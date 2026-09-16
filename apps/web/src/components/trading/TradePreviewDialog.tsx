@@ -15,6 +15,8 @@ import { ModePill } from "./StrategyDetailsDialog";
 import type { MindfulPauseInfo } from "@/lib/strategy/mindful";
 import { MindfulCountdownButton, MindfulPause, useMindfulCountdown } from "./MindfulPause";
 import { TypedConfirm, isLiveConfirm } from "./TypedConfirm";
+import { TradingEnvTag } from "./TradingEnvTag";
+import { useTradingEnv } from "@/lib/api/queries";
 
 export interface TradePreviewProps {
   open: boolean;
@@ -66,6 +68,7 @@ export function TradePreviewDialog(p: TradePreviewProps) {
   const known = p.maxLossKnown ?? true;
   const mindful = p.mode === "live" ? (p.mindful ?? null) : null;
   const pauseLeft = useMindfulCountdown(mindful, p.mindfulKey ?? 0);
+  const env = useTradingEnv(); // HC-SH-138: the venue named in the note and beside the exchange
   // HC-TR-186: the typed word, once per opening; live only
   const [word, setWord] = useState("");
   useEffect(() => {
@@ -134,7 +137,7 @@ export function TradePreviewDialog(p: TradePreviewProps) {
             <dt className="text-muted-foreground">Expected required margin</dt>
             <dd className="num">{p.maxLoss === null ? "— (undefined risk)" : fmtMoney(Math.abs(p.maxLoss), p.money)}</dd>
             <dt className="text-muted-foreground">Exchange</dt>
-            <dd>{p.broker?.name ?? "—"}</dd>
+            <dd className="flex items-center gap-1">{p.broker?.name ?? "—"}{p.mode === "live" ? <TradingEnvTag /> : null}</dd>
           </dl>
           <div className={cn("mt-3 grid grid-cols-2 gap-2 rounded border p-2 text-2xs sm:grid-cols-4", pct !== null && pct > 100 ? "border-loss/60" : pct !== null && pct > 50 ? "border-warning/60" : "border-border")} data-testid="preview-capital" data-pct={pct ?? undefined}>
             <div><div className="micro">Capital at risk{multiExpiry ? " · est." : ""}</div><div className="num text-[13px] font-medium" data-testid="preview-capital-required">{required === null ? (known ? "not capped" : "not computed") : fmtMoney(required, p.money)}</div><div className="micro">{required === null ? (known ? "undefined risk · the exchange sets the margin at placement" : "see the card's max loss · the exchange sets the margin at placement") : `${debit > 0 && required === debit ? "the premium paid" : multiExpiry ? "worst loss at the nearest expiry" : "worst loss at expiry"}${multiExpiry ? " · understated: the exchange margins each expiry on its own, its figure shows at placement" : " · exchange margin at placement"}`}</div></div>
@@ -179,7 +182,9 @@ export function TradePreviewDialog(p: TradePreviewProps) {
           ) : null}
           <div className={cn("mt-3 rounded border p-2 text-2xs", p.mode === "live" ? "border-loss/40" : "border-info/30 bg-info-bg text-info")} data-testid="preview-note">
             {p.mode === "live"
-              ? "You are about to trade this strategy. Orders will be placed on Delta Exchange. Prices may differ from displayed estimates. Ensure you have sufficient margin."
+              ? env?.env === "testnet"
+                ? "You are about to trade this strategy on the Delta Exchange TESTNET with play money. Testnet prices can differ widely from the real market; no real funds move."
+                : "You are about to trade this strategy. Orders will be placed on Delta Exchange. Prices may differ from displayed estimates. Ensure you have sufficient margin."
               : `Paper trade · positions will be tracked at ${p.customPrices ? "your entered prices" : "live market prices"}. No real orders are placed.`}
           </div>
           {p.mode === "live" ? <TypedConfirm value={word} onChange={setWord} onSubmit={() => canTrade && pauseLeft === 0 && p.onTrade(word)} disabled={p.busy} focusKey={p.open && pauseLeft === 0} verb="place" /> : null}

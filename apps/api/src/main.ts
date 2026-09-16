@@ -172,6 +172,8 @@ const server = serve({ fetch: app.fetch, port: config.apiPort }, (info) => {
       port: info.port,
       db: handle.kind,
       redis: redis !== undefined,
+      tradingHost: config.deltaTradingHost,
+      tradingEnv: config.deltaTradingEnv,
       docs: config.isProd ? null : `${config.betterAuthUrl}/v1/docs`,
     },
     "HapieCoin API listening",

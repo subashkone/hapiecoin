@@ -7,7 +7,9 @@ import { z } from "zod";
 export { PlanState, type PlanState as PlanStateT } from "@hapiecoin/schema";
 
 /** GET /v1/credentials: stored credentials (masked), one per broker; empty when not connected. */
-export const CredentialResponse = z.object({ items: z.array(BrokerCredentialPublic) });
+/** HC-SH-138: where live orders go; non-strict here so a newer API may add fields (the schema package keeps the strict shape). */
+const TradingEnvLoose = z.object({ env: z.enum(["testnet", "production"]), host: z.string().min(1) });
+export const CredentialResponse = z.object({ items: z.array(BrokerCredentialPublic), trading: TradingEnvLoose.optional() });
 export type CredentialResponse = z.infer<typeof CredentialResponse>;
 
 /** POST /v1/credentials body. The secret is sent once and never returned. */
