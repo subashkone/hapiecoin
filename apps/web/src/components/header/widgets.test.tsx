@@ -109,8 +109,17 @@ describe("HC-SH-007 / HC-SH-008 exchange chip", () => {
     renderWithProviders(<ExchangeChip />);
     await waitFor(() => expect(screen.getByTestId("exchange-chip").dataset["state"]).toBe("connected"));
     expect(screen.getByText("Connected")).toBeTruthy();
+    expect(screen.getByTestId("trading-env").textContent).toBe("TESTNET"); // HC-SH-138: the mock trades on the testnet
+    expect(screen.getByTestId("trading-env").dataset["host"]).toBe("cdn-ind.testnet.deltaex.org");
     await waitFor(() => expect(screen.getByTestId("wallet-chip").dataset["state"]).toBe("ready"));
     expect(screen.getByTestId("wallet-chip").textContent).toContain("4,000 USD");
+  });
+  it("HC-SH-138 no TESTNET tag when the trading host is the real exchange", async () => {
+    mock.state.tradingEnv = "production";
+    mock.loginAs("asha@example.com", { connected: true });
+    renderWithProviders(<ExchangeChip />);
+    await waitFor(() => expect(screen.getByTestId("exchange-chip").dataset["state"]).toBe("connected"));
+    expect(screen.queryByTestId("trading-env")).toBeNull();
   });
   it("HC-SH-012 the currency toggle flips USD / INR in the settings", async () => {
     mock.loginAs("asha@example.com");

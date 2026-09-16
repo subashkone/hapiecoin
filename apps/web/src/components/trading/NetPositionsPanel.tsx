@@ -2,6 +2,7 @@
 // Net positions on the exchange for the Live tab (HC-TR-144, HC-TR-145, ADR-026): the venue's own view of what is
 // open, ticked rows feed the analysis pane, Exit / Exit all square off through the executor with a confirm step.
 import type { LivePosition } from "@hapiecoin/schema";
+import { TradingEnvTag } from "./TradingEnvTag";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { useEffect, useMemo, useState } from "react";
 import { newIdempotencyKey, useLiveExitPositions, useLivePositions } from "@/lib/api/live";
@@ -86,6 +87,7 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
       <div className="flex flex-wrap items-center gap-2 px-3 py-2">
         <span className="micro">Net positions</span>
         <span className="micro inline-flex items-center gap-1 text-profit"><i className="inline-block h-1.5 w-1.5 rounded-full bg-profit" />exchange</span>
+        <TradingEnvTag />
         {items.length > 1 ? (
           <select value={accountId ?? ""} onChange={(e) => setAccount(e.target.value || null)} className="h-6 rounded border border-input bg-background px-1 text-2xs" aria-label="Account" title="Which connected key to read (ADR-068)" data-testid="net-account">
             {items.map((it) => (

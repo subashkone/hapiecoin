@@ -1,6 +1,7 @@
 // Server data through TanStack Query (typescript rule 5). Keys are typed factories; mutations are
 // optimistic and roll back on error. Components never call fetch directly.
 import { secondFactorHeaders } from "./second-factor";
+import type { TradingEnv } from "@hapiecoin/schema";
 import { Broker, BrokerCredentialPublic, User, UserSettings, paginated } from "@hapiecoin/schema";
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { z } from "zod";
@@ -66,6 +67,11 @@ export function useBrokers() {
 }
 export function useCredential() {
   return useQuery({ queryKey: queryKeys.credential, queryFn: f.credential, staleTime: 30_000 });
+}
+/** HC-SH-138 (ADR-092): where live orders go; null until the credentials query answers. */
+export function useTradingEnv(): TradingEnv | null {
+  const { data } = useCredential();
+  return data?.trading ?? null;
 }
 export function useWhitelistIp() {
   return useQuery({ queryKey: queryKeys.whitelistIp, queryFn: f.whitelistIp, staleTime: Infinity });
@@ -173,6 +179,7 @@ export function useConnectExchange() {
     mutationFn: ({ secondFactor, ...body }: ConnectBody & { secondFactor?: string | undefined }) => f.connect(body, secondFactor),
     onSuccess: (created) =>
       qc.setQueryData<CredentialResponse>(queryKeys.credential, (prev) => ({
+        ...prev, // HC-SH-138: the trading environment rides along, so the TESTNET tag shows the moment the key connects
         items: [...(prev?.items ?? []).filter((c) => c.id !== created.id), created], // a replaced key keeps its id; a new label is one more account (ADR-068)
       })),
   });
@@ -189,6 +196,7 @@ export function useDisconnectExchange() {
     onSuccess: (_void, v) => {
       const id = disconnectId(v);
       qc.setQueryData<CredentialResponse>(queryKeys.credential, (prev) => ({
+        ...prev,
         items: (prev?.items ?? []).filter((c) => c.id !== id), // one key row (account) goes, the broker's others stay (ADR-068)
       }));
       void qc.invalidateQueries({ queryKey: ["strategies"] }); // the strategies that named the key come back without it

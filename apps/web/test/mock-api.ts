@@ -149,6 +149,8 @@ export interface MockState {
   telegramConfigured: boolean;
   telegramAutoLink: boolean;
   sessions: Map<string, string>; // token → email
+  /** HC-SH-138: where the mock says live orders go; testnet by default, as the dev API is configured. */
+  tradingEnv: "testnet" | "production";
   /** OTPs issued: `${email}:${type}` → code (always TEST_OTP, but recorded for assertions). */
   otps: Map<string, string>;
 }
@@ -258,7 +260,7 @@ export function createSession(state: MockState, email: string): string {
 
 export function createMockApi(state: MockState = { plans: seedPlans(),
     menuItems: seedMenuItems(),
-    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", clientErrors: [], backtestDays: 12, replayDays: 12, ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
+    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", clientErrors: [], backtestDays: 12, replayDays: 12, tradingEnv: "testnet", ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
   const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409 | 429 | 503, code: string, message: string, details?: Record<string, unknown>) =>
@@ -602,7 +604,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     acc.brokers.splice(i, 1);
     return c.body(null, 204);
   });
-  v1.get("/credentials", (c) => c.json({ items: current(c)!.credentials }));
+  v1.get("/credentials", (c) => c.json({ items: current(c)!.credentials, trading: { env: state.tradingEnv, host: state.tradingEnv === "testnet" ? "cdn-ind.testnet.deltaex.org" : "api.india.delta.exchange" } }));
   // ADR-073: verified P&L from the fills held per key, the same arithmetic as the API
   const verifiedOf = (acc: Account) => {
     const nowMs = Date.now();

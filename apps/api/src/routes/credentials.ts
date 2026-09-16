@@ -6,7 +6,7 @@
  * strategy names the key it trades through, and a key a live strategy still names cannot be removed.
  */
 import { requireSecondFactor } from "../security/second-factor.js";
-import { AccountLabel, BrokerCredentialPublic, Id, MAX_ACCOUNTS_PER_BROKER } from "@hapiecoin/schema";
+import { AccountLabel, BrokerCredentialPublic, Id, MAX_ACCOUNTS_PER_BROKER, TradingEnv } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { and, eq, isNull, or } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
@@ -29,7 +29,7 @@ export const CredentialCreate = z
   .strict();
 export type CredentialCreate = z.infer<typeof CredentialCreate>;
 
-const CredentialList = z.object({ items: z.array(BrokerCredentialPublic) });
+const CredentialList = z.object({ items: z.array(BrokerCredentialPublic), trading: TradingEnv });
 const WhitelistIp = z.object({ ip: z.ipv4() });
 const IdParam = z.object({ id: Id });
 
@@ -73,7 +73,7 @@ export function registerCredentialRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps
         .from(brokerCredentials)
         .where(eq(brokerCredentials.userId, me.id))
         .orderBy(brokerCredentials.connectedAt);
-      return c.json({ items: rows.map(toPublic) }, 200);
+      return c.json({ items: rows.map(toPublic), trading: { env: deps.config.deltaTradingEnv, host: deps.config.deltaTradingHost } }, 200);
     },
   );
 

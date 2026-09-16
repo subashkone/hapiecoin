@@ -128,6 +128,10 @@ export interface Config {
   credentialsPrevKeys: Buffer[];
   deltaRestUrl: string;
   deltaTradingRestUrl: string;
+  /** HC-SH-138 (ADR-092): "production" only when private calls go to a real exchange host; a testnet, a local mock or a proxy reads "testnet"; shown in the UI. */
+  deltaTradingEnv: "testnet" | "production";
+  /** The trading host, for the label and the startup log; never a key. */
+  deltaTradingHost: string;
   /** Public REST base per venue (ADR-070). */
   venueRestUrls: Record<Venue, string>;
   /** Venues whose public market data the jobs read, in the order given (ADR-070). */
@@ -179,6 +183,23 @@ function stripEmpty(env: Record<string, string | undefined>): Record<string, str
 export interface LoadConfigOptions {
   /** Receives one line per generated ephemeral secret (default: console.warn). */
   warn?: (message: string) => void;
+}
+
+/** The hosts that are the real exchange (ADR-092). Everything else, including a proxy or a local mock, is treated as a testnet. */
+const REAL_TRADING_HOSTS = new Set(["api.india.delta.exchange", "api.delta.exchange"]);
+
+/** HC-SH-138 (ADR-092): name the venue private calls go to. Production only when the trading host is a real exchange host and does not say testnet or demo; anything else (the Delta testnets, a local mock, a proxy) is the testnet, so the label errs toward warning. */
+export function tradingEnvOf(tradingUrl: string): { deltaTradingEnv: "testnet" | "production"; deltaTradingHost: string } {
+  const hostOf = (u: string): string => {
+    try {
+      return new URL(u).host;
+    } catch {
+      return u;
+    }
+  };
+  const trading = hostOf(tradingUrl);
+  const env = REAL_TRADING_HOSTS.has(trading) && !/testnet|demo/i.test(trading) ? "production" : "testnet";
+  return { deltaTradingEnv: env, deltaTradingHost: trading };
 }
 
 /**
@@ -284,6 +305,7 @@ export function loadConfig(
     credentialsPrevKeys,
     deltaRestUrl: e.DELTA_REST_URL,
     deltaTradingRestUrl: e.DELTA_TRADING_REST_URL ?? e.DELTA_REST_URL,
+    ...tradingEnvOf(e.DELTA_TRADING_REST_URL ?? e.DELTA_REST_URL),
     venueRestUrls: { delta_india: e.DELTA_REST_URL, deribit: e.DERIBIT_REST_URL },
     apiVenues,
     trading: { disabled: e.TRADING_DISABLED === "1" || e.TRADING_DISABLED === "true", maxNotionalUsd: e.TRADING_MAX_NOTIONAL_USD, maxLegs: e.TRADING_MAX_LEGS, markBandPct: e.TRADING_MARK_BAND_PCT, reconcileMs: e.TRADING_RECONCILE_MS },

@@ -1080,6 +1080,7 @@ test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
     await expect(page.getByTestId("live-margin-used")).toContainText("$"); // HC-TR-116
     await expect(live.getByTestId("order-chip")).toHaveAttribute("data-state", "filled");
     await expect(page.getByTestId("live-exchange-chip")).toHaveText(/exchange connected/);
+    await expect(page.getByTestId("live-exchange-chip")).toContainText("TESTNET"); // HC-SH-138: the mock trades on the testnet, the chip says so
     // HC-TR-143 the pane follows the new live strategy; HC-TR-144 the venue's net positions with tick-to-analyse
     await expect(page.getByTestId("pane-source")).toContainText("E2E long call");
     await expect(page.getByTestId("net-positions")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });

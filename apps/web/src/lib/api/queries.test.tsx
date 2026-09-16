@@ -121,7 +121,7 @@ describe("[API] queries and mutations against the mock API", () => {
     const keyId = result.current.connect.data!.id; // a key row (account) is removed by its id (ADR-068)
     act(() => result.current.disconnect.mutate(keyId));
     await waitFor(() => expect(result.current.disconnect.isSuccess).toBe(true));
-    expect(qc.getQueryData(queryKeys.credential)).toEqual({ items: [] });
+    expect(qc.getQueryData(queryKeys.credential)).toMatchObject({ items: [] }); // HC-SH-138: trading { env, host } stays in the cache
     expect(mock.calls.at(-1)?.method).toBe("DELETE");
     expect(mock.calls.at(-1)?.url).toContain(`/v1/credentials/${keyId}`);
     clearServerCache(qc);

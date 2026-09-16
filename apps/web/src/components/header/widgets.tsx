@@ -2,6 +2,7 @@
 // Analyse-header widgets: asset switch (HC-SH-003), futures price + 24h with flash (HC-SH-004, 005),
 // feed status text (HC-SH-006), exchange chip (HC-SH-007), wallet placeholder (HC-SH-008).
 import { Plug, Tooltip, Wallet, cn, toast } from "@hapiecoin/ui";
+import { TradingEnvTag } from "@/components/trading/TradingEnvTag";
 import { UNDERLYINGS, type Underlying } from "@hapiecoin/schema";
 import { type VenueId, getVenueCore, listVenueCores } from "@hapiecoin/venues/core";
 import { dataOnly, perpetualSymbolOf } from "@/lib/venue";
@@ -175,6 +176,7 @@ export function ExchangeChip() {
       >
         <Plug className="size-3.5" aria-hidden="true" />
         <span>{isLoading ? "…" : connected ? "Connected" : "Not connected"}</span>
+        {connected ? <TradingEnvTag /> : null}
       </button>
       {connected ? <WalletChip brokerId={account?.brokerId ?? null} accountId={account?.id ?? null} label={(data?.items.length ?? 0) > 1 ? (account?.label ?? null) : null} /> : null}
     </>

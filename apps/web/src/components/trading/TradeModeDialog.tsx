@@ -3,6 +3,7 @@
 // summary, and the warnings. Live continues only when the exchange is connected; in Phase 3 item 1 the live
 // path is disabled with a note (item 2 adds the venue calls).
 import type { Broker, BrokerCredentialPublic, Underlying } from "@hapiecoin/schema";
+import { TradingEnvTag } from "./TradingEnvTag";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn } from "@hapiecoin/ui";
 import { useEffect, useState } from "react";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
@@ -107,7 +108,7 @@ export function TradeModeDialog(p: TradeModeProps) {
                   {mode === m ? <span className="ml-auto text-profit" aria-hidden data-testid="mode-check">✓</span> : null}
                 </b>
                 <span className="mt-1 block text-2xs text-muted-foreground">{m === "live" ? "Real money. Orders are placed on the exchange at market with real funds." : "Simulated positions tracked at live market prices. No real orders are placed."}</span>
-                <span className="micro mt-1 block">{m === "live" ? (p.connected ? "exchange connected" : "exchange not connected") : "fees simulated"} · {fmtMoney(fees.total, p.money)} est.</span>
+                <span className="micro mt-1 block">{m === "live" ? (p.connected ? <>exchange connected <TradingEnvTag /></> : "exchange not connected") : "fees simulated"} · {fmtMoney(fees.total, p.money)} est.</span>
               </button>
             ))}
           </div>

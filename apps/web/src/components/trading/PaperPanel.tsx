@@ -26,6 +26,7 @@ import { type Lifecycle, dayPnl, daysLeft, daysOf, expiryOf, fmtLeg, lifecycleOf
 import type { PaperBook } from "@/lib/strategy/usePaper";
 import { usePortfolio } from "@/lib/strategy/usePortfolio";
 import { AdjustedBadge, ModePill } from "./StrategyDetailsDialog";
+import { TradingEnvTag } from "./TradingEnvTag";
 import { FIRED_LABELS, firedRule, rulesLine } from "./RuleDialog";
 import { CardFigures } from "./CardFigures";
 import { StopPaperDialog } from "./StopPaperDialog";
@@ -291,7 +292,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
           </Button>
         ) : (
           <span className={cn("micro ml-auto rounded border px-1.5 py-0.5", connected ? "border-profit text-profit" : "border-border text-muted-foreground")} data-testid="live-exchange-chip">
-            {connected ? "exchange connected" : "exchange not connected"}
+            {connected ? <>exchange connected <TradingEnvTag /></> : "exchange not connected"}
           </span>
         )}
       </div>
@@ -361,7 +362,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                 >
                   <div className="flex flex-wrap items-start gap-2">
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium"><span className="truncate">{s.name}</span><ModePill status={s.status} />{kind === "live" && accounts.length > 1 ? <span className={cn("micro rounded border px-1", accountRefOf(s, accounts)?.accountId ? "border-border" : "border-warning text-warning")} title={accountRefOf(s, accounts)?.accountId ? "The exchange key this strategy trades through (ADR-068)" : "Placed before accounts: name it by going live again, or its exits and the out-of-sync check cannot find its key"} data-testid="card-account" data-account-id={accountRefOf(s, accounts)?.accountId ?? ""}>{accountLabel(accounts, accountRefOf(s, accounts)?.accountId) ?? "no account named"}</span> : null}<AdjustedBadge s={s} />{drift.get(s.id) ? <span className="micro rounded border border-loss bg-loss/10 px-1 text-loss" title={driftTitle(drift.get(s.id)!)} data-testid="card-drift" data-state="out-of-sync">out of sync</span> : null}{kind === "live" && s.orderBatchId ? <span className="micro rounded border border-border px-1 font-mono" title={`Order batch ${s.orderBatchId}`} data-testid="card-batch">batch {s.orderBatchId.slice(-6)}</span> : null}</div>
+                      <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium"><span className="truncate">{s.name}</span><ModePill status={s.status} />{kind === "live" ? <TradingEnvTag /> : null}{kind === "live" && accounts.length > 1 ? <span className={cn("micro rounded border px-1", accountRefOf(s, accounts)?.accountId ? "border-border" : "border-warning text-warning")} title={accountRefOf(s, accounts)?.accountId ? "The exchange key this strategy trades through (ADR-068)" : "Placed before accounts: name it by going live again, or its exits and the out-of-sync check cannot find its key"} data-testid="card-account" data-account-id={accountRefOf(s, accounts)?.accountId ?? ""}>{accountLabel(accounts, accountRefOf(s, accounts)?.accountId) ?? "no account named"}</span> : null}<AdjustedBadge s={s} />{drift.get(s.id) ? <span className="micro rounded border border-loss bg-loss/10 px-1 text-loss" title={driftTitle(drift.get(s.id)!)} data-testid="card-drift" data-state="out-of-sync">out of sync</span> : null}{kind === "live" && s.orderBatchId ? <span className="micro rounded border border-border px-1 font-mono" title={`Order batch ${s.orderBatchId}`} data-testid="card-batch">batch {s.orderBatchId.slice(-6)}</span> : null}</div>
                       <div className="micro flex flex-wrap gap-2"><span className="rounded border border-border px-1">{s.asset}</span><span><b>{open.length}</b>/{s.legs.length} legs</span>{s.templateName ? <span>{s.templateName}</span> : null}</div>
                       <div className="micro mt-0.5 flex flex-wrap gap-x-2 normal-case tracking-normal" data-testid="card-expiry" data-days={left ?? undefined}>
                         <span>started <b className="num">{s.startedAt ? fmtDate(s.startedAt) : "—"}</b> · {daysOf(s)}d</span>

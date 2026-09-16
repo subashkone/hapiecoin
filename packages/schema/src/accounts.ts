@@ -124,3 +124,10 @@ export const BrokerCredentialPublic = z.strictObject({
   whitelistedIp: z.ipv4(),
 });
 export type BrokerCredentialPublic = z.infer<typeof BrokerCredentialPublic>;
+
+/** HC-SH-138 (ADR-092): where live orders go. "production" only when the trading host is a real exchange host; a testnet, a local mock or a proxy is "testnet". The host is shown, never a key. */
+export const TradingEnv = z.strictObject({
+  env: z.enum(["testnet", "production"]),
+  host: z.string().min(1),
+});
+export type TradingEnv = z.infer<typeof TradingEnv>;

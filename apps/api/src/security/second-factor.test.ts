@@ -56,7 +56,7 @@ describe("HC-SH-136 a sensitive change asks an account with the authenticator on
     const wrong = await connect({ [SECOND_FACTOR_HEADER]: "000000" });
     expect(wrong.status).toBe(403);
     expect((await body(wrong)).code).toBe("SECOND_FACTOR_INVALID");
-    expect(await (await t.request("/v1/credentials", { cookie })).json()).toEqual({ items: [] });
+    expect(await (await t.request("/v1/credentials", { cookie })).json()).toMatchObject({ items: [] }); // HC-SH-138 adds trading { env, host }
     t.now.value += 11_000;
     const sessionsBefore = (await t.db.select().from(sessions)).length;
     const ok = await connect(await withCode());
