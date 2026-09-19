@@ -226,16 +226,19 @@ export function Workspace() {
     );
   }
 
-  // HC-WS-065: a collapsed pane gives the other the full width; the ⋮ handle restores both
+  // HC-WS-065: a collapsed pane gives the other the full width; the ⋮ handle restores both. Each child names its own
+  // column: the hidden pane is display:none and leaves the grid, and without a named column the handle and the other
+  // pane slid one track left (GAPS #113: collapsing the left pane put the handle in the 0 px track and the analysis in
+  // the 16 px one, a blank page that a reload kept)
   if (collapse) {
     return (
       <div ref={grid} className="grid min-h-[calc(100vh-82px)]" style={{ gridTemplateColumns: collapse === "left" ? "0 16px minmax(0, 1fr)" : "minmax(0, 1fr) 16px 0" }} data-testid="workspace" data-layout="split" data-collapse={collapse}>
         {overlays}
-        <div className={cn("min-w-0 overflow-hidden", collapse === "left" && "hidden")}>{left}</div>
-        <button type="button" onClick={() => setCollapse(null)} className="flex items-center justify-center border-x border-border bg-muted/40 font-mono text-xs text-muted-foreground hover:bg-muted hover:text-foreground" title={collapse === "left" ? "Restore the chain and Builder pane" : "Restore the analysis pane"} aria-label="Restore both panes" data-testid="collapse-restore">
+        <div className={cn("min-w-0 overflow-hidden", collapse === "left" && "hidden")} style={{ gridColumn: 1, gridRow: 1 }}>{left}</div>
+        <button type="button" onClick={() => setCollapse(null)} style={{ gridColumn: 2, gridRow: 1 }} className="flex items-center justify-center border-x border-border bg-muted/40 font-mono text-xs text-muted-foreground hover:bg-muted hover:text-foreground" title={collapse === "left" ? "Restore the chain and Builder pane" : "Restore the analysis pane"} aria-label="Restore both panes" data-testid="collapse-restore">
           ⋮
         </button>
-        <aside className={cn("min-w-0 overflow-hidden", collapse === "right" && "hidden")} data-testid="right-pane">
+        <aside className={cn("min-w-0 overflow-hidden", collapse === "right" && "hidden")} style={{ gridColumn: 3, gridRow: 1 }} data-testid="right-pane">
           <AnalysisPane />
         </aside>
       </div>

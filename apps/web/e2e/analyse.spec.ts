@@ -457,6 +457,18 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     await expect(page.getByTestId("workspace")).toHaveAttribute("data-collapse", "right");
     await page.getByTestId("collapse-restore").click();
     await expect(page.getByTestId("workspace")).not.toHaveAttribute("data-collapse", /./);
+    // GAPS #113: collapsing the LEFT pane gives the analysis the width and leaves the handle clickable, and a reload keeps both
+    await page.getByTestId("collapse-left").click();
+    await expect(page.getByTestId("workspace")).toHaveAttribute("data-collapse", "left");
+    const measure = async () => ({ pane: (await page.getByTestId("right-pane").boundingBox())?.width ?? 0, handle: (await page.getByTestId("collapse-restore").boundingBox())?.width ?? 0 });
+    const collapsed = await measure();
+    expect(collapsed.pane).toBeGreaterThan(1000); // 1440 wide viewport minus the 16 px handle
+    expect(collapsed.handle).toBeGreaterThanOrEqual(14);
+    await page.reload();
+    await expect(page.getByTestId("workspace")).toHaveAttribute("data-collapse", "left", { timeout: 15_000 });
+    expect((await measure()).pane).toBeGreaterThan(1000);
+    await page.getByTestId("collapse-restore").click();
+    await expect(page.getByTestId("workspace")).not.toHaveAttribute("data-collapse", /./);
     // HC-WS-069 palette: switch expiry
     await page.keyboard.press("Control+k");
     await page.getByRole("combobox", { name: "Command" }).fill("switch expiry");
