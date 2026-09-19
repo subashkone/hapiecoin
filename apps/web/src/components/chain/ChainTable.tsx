@@ -309,15 +309,18 @@ export function ChainTable({
       });
     }
   }, [atm, rows.length, rowHeight, virtualizer]);
-  // Centre on first data, on a new topic, and when asked.
-  const lastTopic = useRef<string | null>(null);
+  // Centre on first data, on a new topic, on a new range, and when asked. The range matters: ±12 → ALL grows the list
+  // above the ATM row, and without a new centre the view stayed at the top, so on a long ladder the ATM row left the
+  // virtual window (GAPS #114: 52 strikes with ATM at index 33 showed no ATM band after "ALL").
+  const lastView = useRef<string | null>(null);
   useLayoutEffect(() => {
     if (!rows.length || atm < 0) return;
-    if (lastTopic.current !== chain.topic) {
-      lastTopic.current = chain.topic;
+    const view = `${chain.topic}|${range}`;
+    if (lastView.current !== view) {
+      lastView.current = view;
       recentre();
     }
-  }, [rows.length, atm, chain.topic, recentre]);
+  }, [rows.length, atm, chain.topic, range, recentre]);
   const lastSignal = useRef(recentreSignal);
   useEffect(() => {
     if (recentreSignal !== lastSignal.current) {

@@ -83,8 +83,12 @@ test.describe("HC-SH analyse header and live chain", () => {
     expect(rendered.length).toBeGreaterThan(10);
     // every rendered strike is one of the recorded instrument-list strikes for that expiry (ADR-006)
     for (const s of rendered) expect(listed).toContain(s);
+    // GAPS #114: "ALL" re-centres on the ATM row. The web drops expired expiries by the real clock, so the nearest recorded
+    // expiry changes with the calendar (27 strikes with ATM at index 13 until the 18 Sep 2026 expiry settled, then 52 strikes
+    // with ATM at index 34): the row must be scrolled to, never assumed near the top
     await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1);
     await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toContainText("ATM ·");
+    await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toBeInViewport();
     // deltas keep flowing: the seq counter advances
     await expect(page.getByText(/seq [1-9]/)).toBeVisible({ timeout: 15_000 });
     await chips.nth(1).click();
