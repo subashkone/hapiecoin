@@ -123,7 +123,7 @@
   "route": "/analyse",
   "screen": "Options chain",
   "feature": "41 strikes around ATM from CG.chain(asset, expiry) with a strike-range control (±6 / ±12 / all), auto-scrolled to ATM",
-  "how": "Range persisted in CG.state.chainRange (default ±12); the footer reports \"n of 41 strikes\"",
+  "how": "Range persisted in CG.state.chainRange (default: every listed strike, ADR-093; a saved ±12, the older default, is replaced once); the footer reports \"n of 41 strikes\"",
   "status": "working",
   "evidence": "screenshot shows 54,000 … 65,000 around the 60,000 ATM · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020"
  },

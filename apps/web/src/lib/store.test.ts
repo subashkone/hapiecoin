@@ -52,6 +52,7 @@ describe("HC-SH-003 UI store", () => {
       expiry: {},
       feedPaused: false,
       chainRange: 12,
+      rangeDefault: 0, // GAPS #115: the default the saved range was last aligned to
       chartLayers: { expiry: true, target: true, fill: true, oi: false, band: true, breakeven: true, ivUp: false, ivDown: false },
       ladderStep: 1,
       analyseCollapse: null,
@@ -164,12 +165,12 @@ describe("HC-SH-003 UI store", () => {
   });
   it("HC-WS-016 keeps the chain range (rejecting unknown values) and counts recentre requests", () => {
     const s = useUiStore.getState();
-    s.setChainRange(6);
-    expect(useUiStore.getState().chainRange).toBe(6);
     s.setChainRange(0);
     expect(useUiStore.getState().chainRange).toBe(0);
+    s.setChainRange(6);
+    expect(useUiStore.getState().chainRange).toBe(6);
     s.setChainRange(7 as unknown as 6);
-    expect(useUiStore.getState().chainRange).toBe(12);
+    expect(useUiStore.getState().chainRange).toBe(0); // an unknown value falls back to the default: every listed strike (GAPS #115)
     s.recentreChain();
     s.recentreChain();
     expect(useUiStore.getState().chainRecentre).toBe(2);
@@ -178,8 +179,18 @@ describe("HC-SH-003 UI store", () => {
     const merge = useUiStore.persist.getOptions().merge;
     if (!merge) throw new Error("persist merge missing");
     const current = useUiStore.getState();
-    expect(merge({ chainRange: 99 }, current).chainRange).toBe(current.chainRange);
-    expect(merge({ chainRange: 6 }, current).chainRange).toBe(6);
+    expect(merge({ chainRange: 99, rangeDefault: 0 }, current).chainRange).toBe(current.chainRange);
+    expect(merge({ chainRange: 6, rangeDefault: 0 }, current).chainRange).toBe(6);
+    // GAPS #115: ±12 was the old default, so a saved 12 without the marker gets the new default once. The running
+    // store is on All here, so the two outcomes differ (the suite's own state is 12, which would hide the rule).
+    const onAll = { ...current, chainRange: 0 as const };
+    expect(merge({ chainRange: 12 }, onAll).chainRange).toBe(0);
+    expect(merge({ chainRange: 12, rangeDefault: 12 }, onAll).chainRange).toBe(0);
+    expect(merge({ chainRange: 12 }, onAll).rangeDefault).toBe(0);
+    // a marked 12 is a choice and sticks; ±6 and All can only have been chosen, marker or not
+    expect(merge({ chainRange: 12, rangeDefault: 0 }, onAll).chainRange).toBe(12);
+    expect(merge({ chainRange: 6 }, onAll).chainRange).toBe(6);
+    expect(merge({ chainRange: 0 }, { ...current, chainRange: 12 as const }).chainRange).toBe(0);
     expect(merge(undefined, current).chainRange).toBe(current.chainRange);
   });
   it("has metadata for every underlying", () => {

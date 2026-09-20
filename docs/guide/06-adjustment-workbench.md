@@ -1,6 +1,6 @@
 # Adjustment workbench
 
-Part of the [HapieCoin feature guide](README.md). 9 traced features on 3 screens; 9 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 10 traced features on 4 screens; 10 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -50,4 +50,10 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-TR-190 | A live adjustment that adds a leg waits for the Mindful pause | An add is a new bet: the workbench's live preview carries the server's pause; the Review dialog shows the Mindful block with the day figure, this batch's worst case and the margin in use, and the countdown replaces the hold button until the pause ends; the adjust route answers 409 MINDFUL_PAUSE until the pause shown at preview time has elapsed. POST /strategies/{id}/legs on a live strategy waits the same way. Trims and closes never wait; a body mixing a trim with an add waits as a whole | built | unit (api + web) |
+
+### Trading · Adjustment workbench · chain
+
+| ID | Feature | How it behaves | Status | Tested by |
+|---|---|---|---|---|
+| HC-TR-193 | The workbench chain lists every strike of the expiry by default, with a ±12 / All control and a strike count; held strikes far from ATM are on the chain | usePickerChain takes a range (0 = every listed strike); AdjustWorkbench owns it, All by default; WorkbenchChain shows the ±12 / All control and 'n strikes' beside the cap line and re-centres on the ATM row when the expiry or the range changes; a held strike outside ±12 (a short put 30 rows below ATM) carries its pill and can be trimmed, closed or rolled from the chain; strikes come only from the venue list (ADR-006) | built | unit (web) · e2e (Playwright) |
 

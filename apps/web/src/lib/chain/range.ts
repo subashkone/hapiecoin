@@ -4,6 +4,8 @@
 /** Strike-range setting: strikes each side of the ATM row, or 0 for every listed strike. */
 export type ChainRange = 6 | 12 | 0;
 export const CHAIN_RANGES: readonly ChainRange[] = [6, 12, 0];
+/** Every listed strike by default (GAPS #115): a trader rolls to, and insures at, strikes far from ATM; ±6 / ±12 stay one click away. */
+export const DEFAULT_CHAIN_RANGE: ChainRange = 0;
 
 export function isChainRange(value: unknown): value is ChainRange {
   return value === 6 || value === 12 || value === 0;

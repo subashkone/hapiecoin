@@ -75,8 +75,10 @@ test.describe("HC-SH analyse header and live chain", () => {
     const selected = await page.locator("[data-testid=expiry-chip][aria-selected=true]").getAttribute("data-expiry");
     const listed = strikesOf("BTC", selected ?? "");
     expect(listed.length).toBeGreaterThan(10);
-    // the venue list is the total; the default ±12 range only slices it (HC-WS-016), "all" shows every row
+    // the venue list is the total and the chain shows every row by default (GAPS #115); ±12 only slices it (HC-WS-016)
     await expect(table).toHaveAttribute("data-total", String(listed.length), { timeout: 15_000 });
+    await page.getByTestId("chain-range-12").click();
+    await expect.poll(async () => Number(await table.getAttribute("data-rows"))).toBeLessThan(listed.length);
     await page.getByTestId("chain-range-0").click();
     await expect(table).toHaveAttribute("data-rows", String(listed.length));
     const rendered = await page.getByTestId("chain-row").evaluateAll((els) => els.map((e) => e.getAttribute("data-strike")));
@@ -130,30 +132,37 @@ test.describe("HC-SH analyse header and live chain", () => {
 
   test("HC-WS-016 chain opens centred on ATM and the range control filters rows", async ({ page }) => {
     const table = page.getByTestId("chain-table");
-    await expect(table).toHaveAttribute("data-range", "12");
+    // GAPS #115: the chain opens on every listed strike; ±6 and ±12 are one click away
+    await expect(table).toHaveAttribute("data-range", "0");
     await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 15_000 });
     const total = Number(await table.getAttribute("data-total"));
     expect(total).toBeGreaterThan(25);
-    // ±12 keeps at most 25 rows (fewer when the ATM sits near an edge of the list) and never invents any
-    const rows12 = Number(await table.getAttribute("data-rows"));
-    expect(rows12).toBeGreaterThan(12);
-    expect(rows12).toBeLessThanOrEqual(25);
-    expect(rows12).toBeLessThan(total);
-    await expect(page.getByTestId("chain-count")).toHaveText(`${rows12} of ${total} strikes`);
-    // the ATM row sits inside the viewport after the auto-centre
+    await expect(table).toHaveAttribute("data-rows", String(total));
+    await expect(page.getByTestId("chain-count")).toHaveText(`${total} of ${total} strikes`);
+    // the ATM row sits inside the viewport after the auto-centre, although the list is the whole ladder
     const viewport = await page.getByTestId("chain-scroll").boundingBox();
     const atm = await page.locator("[data-testid=chain-row][data-atm=true]").boundingBox();
     expect(atm && viewport && atm.y >= viewport.y - 1 && atm.y + atm.height <= viewport.y + viewport.height + 1).toBe(true);
     // and near the middle, not merely inside
     const mid = viewport!.y + viewport!.height / 2;
     expect(Math.abs(atm!.y + atm!.height / 2 - mid)).toBeLessThan(viewport!.height / 4);
+    // ±12 keeps at most 25 rows (fewer when the ATM sits near an edge of the list) and never invents any
+    await page.getByTestId("chain-range-12").click();
+    await expect.poll(async () => Number(await table.getAttribute("data-rows"))).toBeLessThanOrEqual(25);
+    const rows12 = Number(await table.getAttribute("data-rows"));
+    expect(rows12).toBeGreaterThan(12);
+    expect(rows12).toBeLessThan(total);
+    await expect(page.getByTestId("chain-count")).toHaveText(`${rows12} of ${total} strikes`);
+    await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toBeInViewport();
     await page.getByTestId("chain-range-6").click();
     await expect.poll(async () => Number(await table.getAttribute("data-rows"))).toBeLessThanOrEqual(13);
     expect(Number(await table.getAttribute("data-rows"))).toBeLessThan(rows12);
+    // a chosen range sticks across a reload; only a browser that never chose gets the default
+    await page.reload();
+    await expect(table).toHaveAttribute("data-range", "6", { timeout: 15_000 });
     await page.getByTestId("chain-range-0").click();
     await expect(table).toHaveAttribute("data-rows", String(total));
-    await page.getByTestId("chain-range-12").click();
-    await expect(table).toHaveAttribute("data-rows", String(rows12));
+    await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toBeInViewport();
     // HC-WS-029 / 080 footer stats; HC-WS-075 the spot hairline; HC-WS-074 the Δ chips
     await expect(page.getByTestId("chain-max-pain")).not.toHaveText("—");
     await expect(page.getByTestId("chain-fwd")).not.toHaveText("—");
@@ -881,6 +890,24 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     await expect(page.getByTestId("pane-adjusting")).toBeVisible();
     await expect(wb.getByTestId("wb-chain-table")).toHaveAttribute("data-rows", /^[1-9]/, { timeout: 15_000 });
     await expect(wb.getByTestId("wb-chain-held")).toHaveCount(2);
+    // HC-TR-193 (GAPS #115): every listed strike by default, ±12 narrows it, All restores it, and ATM is in view each time.
+    // "In view" is measured against the chain box: on a short screen the lower half of the box sits below the fold.
+    const atmInBox = () => wb.getByTestId("wb-chain-box").evaluate((box) => {
+      const row = box.querySelector<HTMLElement>("tr[data-atm]");
+      if (!row) return "no atm row";
+      const top = row.offsetTop - box.scrollTop;
+      return top >= 0 && top + row.offsetHeight <= box.clientHeight ? "in view" : `row at ${top} of ${box.clientHeight} (scrollTop ${box.scrollTop})`;
+    });
+    await expect(wb.getByTestId("wb-chain-range")).toHaveAttribute("data-range", "0");
+    const allRows = Number(await wb.getByTestId("wb-chain-table").getAttribute("data-rows"));
+    expect(allRows).toBeGreaterThan(25);
+    await expect(wb.getByTestId("wb-chain-count")).toHaveText(`${allRows} strikes`);
+    await wb.getByTestId("wb-chain-range-12").click();
+    await expect.poll(async () => Number(await wb.getByTestId("wb-chain-table").getAttribute("data-rows"))).toBeLessThanOrEqual(25);
+    await expect.poll(atmInBox).toBe("in view");
+    await wb.getByTestId("wb-chain-range-0").click();
+    await expect(wb.getByTestId("wb-chain-table")).toHaveAttribute("data-rows", String(allRows));
+    await expect.poll(atmInBox).toBe("in view");
     // ADR-058: the chain opens with the ATM row in view, not the top of the window
     await expect.poll(() => wb.getByTestId("wb-chain-box").evaluate((box) => {
       const row = box.querySelector<HTMLElement>("tr[data-atm]");

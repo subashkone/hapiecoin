@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Underlying } from "@hapiecoin/schema";
 import { nearestExpiry } from "@/lib/chain/expiries";
 import { useExpiriesQuery } from "@/lib/chain/useExpiries";
-import { maxOpenInterest, oiBarPercent, sliceAroundAtm } from "@/lib/chain/range";
+import { type ChainRange, maxOpenInterest, oiBarPercent, sliceAroundAtm } from "@/lib/chain/range";
 import { daysToExpiry, fmtExpiry, fmtIv, fmtOi, fmtPrice, fmtStrike, fmtDelta } from "@/lib/format";
 import { useChain, useSpot } from "@/lib/gateway/hooks";
 import type { ChainState } from "@/lib/gateway/reducer";
@@ -26,8 +26,8 @@ export interface ChainCellState {
   held?: { side: LegSide; lots: number; after: number } | undefined;
 }
 
-/** Expiries, the chosen expiry and the chain window around ATM for one asset; `open` gates the subscriptions. */
-export function usePickerChain(asset: Underlying, open: boolean, preferredExpiry: string | null | undefined) {
+/** Expiries, the chosen expiry and the chain window around ATM for one asset; `open` gates the subscriptions. `range` is the strikes kept each side of ATM (0 = every listed strike); the Builder picker keeps the compact ±12, the workbench shows all (GAPS #115). */
+export function usePickerChain(asset: Underlying, open: boolean, preferredExpiry: string | null | undefined, range: ChainRange = 12) {
   const expiries = useExpiriesQuery(asset, { enabled: open }); // keyed by venue (ADR-069)
   const list = useMemo(() => expiries.data?.expiries ?? [], [expiries.data]);
   const [expiry, setExpiry] = useState<string | null>(null);
@@ -38,8 +38,9 @@ export function usePickerChain(asset: Underlying, open: boolean, preferredExpiry
   const spot = useSpot(asset);
   const rows = chain?.rows ?? [];
   const atm = useMemo(() => atmIndex(rows, spot?.price), [rows, spot?.price]);
-  const shown = useMemo(() => sliceAroundAtm(rows, atm, 12), [rows, atm]);
-  return { expiries: list, expiry, setExpiry, rows: shown.rows, atm: shown.atm, spot };
+  const shown = useMemo(() => sliceAroundAtm(rows, atm, range), [rows, atm, range]);
+  // `rows` is the view (sliced by `range`); `allRows` is every listed strike, for logic that must not depend on the view
+  return { expiries: list, expiry, setExpiry, rows: shown.rows, atm: shown.atm, allRows: rows, spot };
 }
 
 export interface ChainPickerBodyProps {

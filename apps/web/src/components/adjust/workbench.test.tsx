@@ -82,6 +82,64 @@ beforeEach(() => {
 });
 afterEach(() => mock.restore());
 
+describe("HC-TR-193 the workbench chain lists every strike of the expiry (GAPS #115)", () => {
+  it("HC-TR-193 a held strike far from ATM is on the chain by default; the ±12 control narrows to the window and All restores every strike", async () => {
+    // a long call at the money and a short put at the lowest listed put: 30-odd strikes below ATM, far outside a ±12 window
+    const s0 = useUiStore.getState();
+    const atm = rows.findIndex((r) => Number(r.strike) >= 79521);
+    const far = rows.findIndex((r) => r.put !== undefined);
+    expect(atm - far).toBeGreaterThan(12);
+    const call = rows[atm]!;
+    const put = rows[far]!;
+    s0.addLeg({ asset: "BTC", kind: "call", side: "buy", strike: call.strike, expiry: EXPIRY, lots: 10, price: call.call!.mark, iv: call.call!.markIv });
+    s0.addLeg({ asset: "BTC", kind: "put", side: "sell", strike: put.strike, expiry: EXPIRY, lots: 10, price: put.put!.mark, iv: put.put!.markIv });
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    const u = userEvent.setup();
+    await paperTradeFromBuilder(u);
+    const card = await screen.findByTestId("paper-card");
+    await u.click(within(card).getByTestId("card-adjust"));
+    const wb = await screen.findByTestId("adjust-workbench");
+    serveMarket();
+    const table = () => within(wb).getByTestId("wb-chain-table");
+    const strikes = () => within(wb).getAllByTestId("wb-chain-row").map((r) => r.dataset["strike"]);
+    await waitFor(() => expect(table().dataset["rows"]).toBe(String(rows.length)));
+    expect(within(wb).getByTestId("wb-chain-range").dataset["range"]).toBe("0");
+    expect(within(wb).getByTestId("wb-chain-count").textContent).toBe(`${rows.length} strikes`);
+    // the short put the position holds is on the chain with its pill, where it can be trimmed, closed or rolled
+    const heldRow = within(wb).getAllByTestId("wb-chain-row").find((r) => r.dataset["strike"] === put.strike)!;
+    expect(within(heldRow).getByTestId("wb-chain-held").dataset["side"]).toBe("sell");
+    // the compact view: 12 strikes either side of ATM, and the far strike is gone
+    await u.click(within(wb).getByTestId("wb-chain-range-12"));
+    await waitFor(() => expect(Number(table().dataset["rows"])).toBeLessThanOrEqual(25));
+    expect(strikes()).not.toContain(put.strike);
+    expect(strikes()).toContain(call.strike);
+    // the quick fixes read the whole ladder, not the view: with the far put off the ±12 view, rolling it is still on offer
+    const rollUp = () => within(wb).getAllByTestId("quick-fix").find((b) => b.dataset["kind"] === "rollUp")!;
+    expect(rollUp().dataset["state"]).not.toBe("unavailable");
+    await u.click(within(wb).getByTestId("wb-chain-range-0"));
+    await waitFor(() => expect(table().dataset["rows"]).toBe(String(rows.length)));
+    expect(strikes()).toContain(put.strike);
+    expect(rollUp().dataset["state"]).not.toBe("unavailable");
+    // keyboard: Home reaches the first strike of the whole ladder; a range change starts the focus over, so B / S never
+    // act on a strike the index slid onto
+    const box = within(wb).getByTestId("wb-chain-box");
+    box.focus();
+    fireEvent.keyDown(box, { key: "Home" });
+    const focused = () => within(wb).getAllByTestId("wb-chain-row").filter((r) => r.dataset["focused"] === "true").map((r) => r.dataset["strike"]);
+    expect(focused()).toEqual([rows[0]!.strike]);
+    await u.click(within(wb).getByTestId("wb-chain-range-12"));
+    await waitFor(() => expect(Number(table().dataset["rows"])).toBeLessThanOrEqual(25));
+    expect(focused()).toEqual([]);
+    await u.click(within(wb).getByTestId("wb-chain-range-0"));
+    await waitFor(() => expect(table().dataset["rows"]).toBe(String(rows.length)));
+    // and the far short put can be bought back from the chain: its pill shows lots now → after
+    const farRow = () => within(wb).getAllByTestId("wb-chain-row").find((r) => r.dataset["strike"] === put.strike)!;
+    await u.click(within(farRow()).getByTestId("wb-chain-buy-put"));
+    await waitFor(() => expect(within(farRow()).getByTestId("wb-chain-held").dataset["after"]).not.toBe(within(farRow()).getByTestId("wb-chain-held").dataset["lots"]));
+  });
+});
+
 describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
   it("opens from the card, edits lots after in both places with netting, values at another expiry, reviews and applies", async () => {
     const { call, put } = seedLegs();
@@ -243,7 +301,8 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(within(wb).getByTestId("adjust-mark-age").textContent).toMatch(/marks \d+s ago/);
     // ten picks over the cap: Review is refused with the guard rail
     await waitFor(() => expect(within(wb).getAllByTestId("wb-chain-row").length).toBeGreaterThan(8), { timeout: 5000 });
-    const free = within(wb).getAllByTestId("wb-chain-row").filter((r) => within(r).queryByTestId("wb-chain-held") === null).slice(0, 9);
+    // every listed strike is on the chain now (HC-TR-193), and the far ones may carry no put quote: pick rows that can be bought
+    const free = within(wb).getAllByTestId("wb-chain-row").filter((r) => within(r).queryByTestId("wb-chain-held") === null && !within(r).getByTestId("wb-chain-buy-put").hasAttribute("disabled")).slice(0, 9);
     for (const r of free) await u.click(within(r).getByTestId("wb-chain-buy-put"));
     expect(within(wb).getAllByTestId("wb-pick")).toHaveLength(9);
     expect(screen.getByTestId("adjust-warnings").textContent).toContain("open-leg cap");
