@@ -265,6 +265,27 @@ export function afterLegs(d: AdjustDraft, open: readonly ServerLeg[], asset: Und
   return out;
 }
 
+/**
+ * The lots the change takes off, for PRICING ONLY (ADR-094): each closed or trimmed lot as an offsetting pair on its
+ * own contract, the held lots at entry plus the opposite side at the current mark. The pair is worth the same at
+ * every price and date, so it adds exactly the profit or loss the exit locks in and no delta, and "after" is then on
+ * the same basis as "before" (the whole trade from entry). Without it a roll that buys back a losing short looked
+ * better than keeping it. Never shown as legs: the ticket, the Legs and the Greeks tabs read `afterLegs`. A leg
+ * without a mark is left out (its exit is assumed at entry, as `cashflow` does, which locks in nothing), and so is
+ * a future: the engine prices a future at spot whatever its entry, so a pair of them would say nothing.
+ */
+export function realisedLegs(d: AdjustDraft, open: readonly ServerLeg[], asset: Underlying, markOf: MarkOf): StrategyLeg[] {
+  const out: StrategyLeg[] = [];
+  for (const leg of open) {
+    const closed = leg.lots - lotsAfterOf(d, leg);
+    const mark = markOf(leg.symbol);
+    if (closed <= 0 || mark === undefined || leg.kind === "future") continue;
+    const local = serverLegToLocal(leg, asset);
+    out.push({ ...local, id: `${leg.id}:held`, lots: closed }, { ...local, id: `${leg.id}:exit`, side: local.side === "buy" ? "sell" : "buy", lots: closed, price: mark });
+  }
+  return out;
+}
+
 /** Premium the change moves, USD: positive = received (credit), negative = paid (debit). Exits at the mark, adds at the mark. */
 export function cashflow(d: AdjustDraft, open: readonly ServerLeg[], markOf: MarkOf, lotSize: string): number {
   const size = Number(lotSize) || 0;

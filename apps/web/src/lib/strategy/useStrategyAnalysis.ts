@@ -9,7 +9,7 @@
 import type { AnalyzeOptions, AnalyzeResult, Leg as PricingLeg } from "@hapiecoin/pricing";
 import type { Quote, Strategy, StrategyLeg as ServerLeg, Underlying } from "@hapiecoin/schema";
 import { useEffect, useMemo, useState } from "react";
-import { type AdjustDraft, type MarkOf, afterLegs, beforeLegs, pickToLeg, valuationMsOf } from "@/lib/adjust/model";
+import { type AdjustDraft, type MarkOf, afterLegs, beforeLegs, pickToLeg, realisedLegs, valuationMsOf } from "@/lib/adjust/model";
 import { nearestExpiryValuationMs } from "@/lib/strategy/analysis";
 import { useLivePositions } from "@/lib/api/live";
 import { useSettings } from "@/lib/api/queries";
@@ -167,14 +167,17 @@ export function useStrategyAnalysis(scope: "pane" | "builder" = "pane"): Strateg
     },
     [priceMode, quoteFor, spotState?.price],
   );
+  // while adjusting, the engine also gets the lots the change takes off as offsetting pairs, so "after" carries the
+  // profit or loss those exits lock in and compares with "before" on the same basis (ADR-094); `legs` stays clean
+  const priced = useMemo(() => (adjusting ? [...legs, ...realisedLegs(adjusting, openLegs, asset, markOf)] : legs), [adjusting, legs, openLegs, asset, markOf]);
   const pricingLegs = useMemo(
     () =>
-      toPricingLegs(legs, lotSize, {
+      toPricingLegs(priced, lotSize, {
         mark: priceMode === "custom" ? undefined : (l) => quoteFor(l)?.mark,
         iv: (l) => quoteFor(l)?.markIv,
         spot: spotState?.price,
       }),
-    [legs, lotSize, priceMode, quoteFor, spotState?.price],
+    [priced, lotSize, priceMode, quoteFor, spotState?.price],
   );
   const targetPrice = targetPriceState ?? spot ?? 0;
   const options: AnalyzeOptions | null = useMemo(

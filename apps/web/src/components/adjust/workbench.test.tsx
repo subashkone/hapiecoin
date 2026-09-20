@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch , typeLiveIf } from "../../../test/helpers";
 import { buildChain } from "../../../test/fixtures/chain";
 import { fmtMoney } from "@/lib/money";
+import { fmtStrike } from "@/lib/format";
 import { useUiStore } from "@/lib/store";
 import { Workspace } from "@/components/workspace/Workspace";
 import { lotStep } from "./PositionTicket";
@@ -87,8 +88,9 @@ describe("HC-TR-193 the workbench chain lists every strike of the expiry (GAPS #
     // a long call at the money and a short put at the lowest listed put: 30-odd strikes below ATM, far outside a ±12 window
     const s0 = useUiStore.getState();
     const atm = rows.findIndex((r) => Number(r.strike) >= 79521);
-    const far = rows.findIndex((r) => r.put !== undefined);
+    const far = rows.findIndex((r) => r.put !== undefined) + 2; // the third-lowest listed put: two strikes are left below it
     expect(atm - far).toBeGreaterThan(12);
+    expect(rows[far - 1]!.put !== undefined && rows[far - 2]!.put !== undefined).toBe(true);
     const call = rows[atm]!;
     const put = rows[far]!;
     s0.addLeg({ asset: "BTC", kind: "call", side: "buy", strike: call.strike, expiry: EXPIRY, lots: 10, price: call.call!.mark, iv: call.call!.markIv });
@@ -114,13 +116,15 @@ describe("HC-TR-193 the workbench chain lists every strike of the expiry (GAPS #
     await waitFor(() => expect(Number(table().dataset["rows"])).toBeLessThanOrEqual(25));
     expect(strikes()).not.toContain(put.strike);
     expect(strikes()).toContain(call.strike);
-    // the quick fixes read the whole ladder, not the view: with the far put off the ±12 view, rolling it is still on offer
-    const rollUp = () => within(wb).getAllByTestId("quick-fix").find((b) => b.dataset["kind"] === "rollUp")!;
-    expect(rollUp().dataset["state"]).not.toBe("unavailable");
+    // the repair ideas read the whole ladder, not the view: with the far put and everything below it off the ±12 view,
+    // moving that put two strikes further out is still on offer, and it names the held strike
+    const away = () => within(wb).getAllByTestId("repair-idea").find((b) => b.dataset["kind"] === "rollTestedAway")!;
+    expect(away().dataset["state"]).not.toBe("unavailable");
+    expect(within(away()).getByTestId("repair-what").textContent).toContain(`close ${fmtStrike(put.strike)} P`);
     await u.click(within(wb).getByTestId("wb-chain-range-0"));
     await waitFor(() => expect(table().dataset["rows"]).toBe(String(rows.length)));
     expect(strikes()).toContain(put.strike);
-    expect(rollUp().dataset["state"]).not.toBe("unavailable");
+    expect(away().dataset["state"]).not.toBe("unavailable");
     // keyboard: Home reaches the first strike of the whole ladder; a range change starts the focus over, so B / S never
     // act on a strike the index slid onto
     const box = within(wb).getByTestId("wb-chain-box");
@@ -339,7 +343,7 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(screen.queryByTestId("adjust-workbench")).toBeNull();
   });
 
-  it("HC-TR-153 / HC-TR-154 plans compare, quick fixes with ranking, the scenario slider and the alert stub", async () => {
+  it("HC-TR-153 / HC-TR-154 / HC-TR-194 / HC-TR-195 plans compare, repair ideas with a diagnosis, an order by goal and tags, the scenario slider and the alert stub", async () => {
     const { call } = seedLegs();
     renderWithProviders(<Workspace />);
     serveMarket();
@@ -349,16 +353,43 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     const wb = await screen.findByTestId("adjust-workbench");
     serveMarket();
     await waitFor(() => expect(within(wb).getAllByTestId("wb-chain-row").length).toBeGreaterThan(0), { timeout: 5000 });
-    // quick fixes: roll up and hedge can be built from the shown chain; roll out waits for the next expiry's chain
-    const fixes = within(wb).getByTestId("quick-fixes");
-    await waitFor(() => expect(within(fixes).getAllByTestId("quick-fix").map((b) => b.dataset["state"])).toEqual(["ready", "unavailable", "ready"]));
-    expect(within(fixes).getAllByTestId("quick-fix-tag").length).toBeGreaterThan(0);
-    await u.click(within(fixes).getAllByTestId("quick-fix")[0]!); // roll strikes up
+    // repair ideas (HC-TR-194 / 195): the short put is the only short, so it is the tested side; there is no other side
+    // to move in, and rolling out waits for the next expiry's chain
+    const ideas = within(wb).getByTestId("repair-ideas");
+    const idea = (kind: string) => within(ideas).getAllByTestId("repair-idea").find((c) => c.dataset["kind"] === kind)!;
+    await waitFor(() => expect(idea("rollTestedAway").dataset["state"]).toBe("ready"), { timeout: 8000 });
+    expect(idea("rollOut").dataset["state"]).toBe("unavailable");
+    expect(within(idea("rollOut")).getByTestId("repair-note").textContent).toContain("not loaded yet");
+    expect(idea("rollUntestedCloser").dataset["state"]).toBe("unavailable");
+    expect(within(ideas).getByTestId("repair-diagnosis").textContent).toMatch(/short [\d,]+ P is .* the put side is/);
+    // every priced idea shows before → after and what it gives up; the tags are facts about the figures
+    await waitFor(() => expect(within(ideas).getAllByTestId("repair-tag").length).toBeGreaterThan(0), { timeout: 8000 });
+    expect(within(idea("rollTestedAway")).getByTestId("repair-figures").textContent).toMatch(/Max loss.*→.*Max profit.*Break-evens.*POP.*Cash now.*orders?/); // textContent joins the metrics without spaces
+    expect(within(idea("rollTestedAway")).getByTestId("repair-gives-up").textContent).toContain("You give up:");
+    // the goal re-orders the list and is shown on the panel; the trader's pick sticks. Ordered by credit, the priced
+    // cards run from the most cash received to the most paid, and the ones that cannot be built come last
+    await u.click(within(ideas).getByTestId("repair-goal-credit"));
+    expect(ideas.dataset["goal"]).toBe("credit");
+    const cards = () => within(ideas).getAllByTestId("repair-idea");
+    await waitFor(() => expect(cards().filter((c) => c.dataset["state"] === "ready").length).toBeGreaterThan(2), { timeout: 8000 });
+    await waitFor(() => {
+      const cash = cards().filter((c) => c.dataset["state"] === "ready").map((c) => Number(c.dataset["cash"]));
+      expect(cash).toEqual([...cash].sort((a, b) => b - a));
+      expect(new Set(cash).size).toBeGreaterThan(1); // not a list of equal figures that any order would satisfy
+    }, { timeout: 8000 });
+    const states = cards().map((c) => c.dataset["state"]);
+    expect(states.lastIndexOf("ready")).toBeLessThan(states.indexOf("unavailable"));
+    await u.click(within(ideas).getByTestId("repair-goal-neutral"));
+    expect(ideas.dataset["goal"]).toBe("neutral");
+    await u.click(within(ideas).getByTestId("repair-goal-credit"));
+    // every Load button has its own name for a screen reader
+    expect(within(idea("rollTestedAway")).getByTestId("repair-load").getAttribute("aria-label")).toBe("Load: Roll the tested short away");
+    await u.click(within(idea("rollTestedAway")).getByTestId("repair-load"));
     expect(wb.dataset["empty"]).toBe("false");
     const kinds = () => [...within(wb).getAllByTestId("wb-leg"), ...within(wb).queryAllByTestId("wb-pick")].map((r) => within(r).queryByTestId("effect")?.dataset["kind"]);
-    expect(kinds()).toEqual(["close", "close", "new", "new"]);
-    expect(within(wb).getAllByTestId("wb-order").map((r) => r.dataset["kind"])).toEqual(["close", "close"]); // the two closes are orders under Proposed too
-    expect(within(wb).getAllByTestId("wb-pick")).toHaveLength(2);
+    expect(kinds()).toEqual([undefined, "close", "new"]); // the call is untouched, the put is closed and sold again two strikes out
+    expect(within(wb).getAllByTestId("wb-order").map((r) => r.dataset["kind"])).toEqual(["close"]); // the close is an order under Proposed too
+    expect(within(wb).getAllByTestId("wb-pick")).toHaveLength(1);
     // plans: keep this as Plan A, build another (hedge), compare, load A back, remove it
     const plans = within(wb).getByTestId("plans-bar");
     await u.click(within(plans).getByTestId("plan-save"));
@@ -368,10 +399,10 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(within(wb).queryAllByTestId("wb-pick")).toHaveLength(0);
     expect(within(plans).getByTestId("plan-current-note").textContent).toBe("nothing yet");
     expect(plans.textContent).toContain("Plan A kept");
-    await u.click(within(fixes).getAllByTestId("quick-fix")[2]!); // hedge with a call: nothing is short, so it buys above spot, which is the held call's strike → nets as ADDS
+    await u.click(within(idea("closeTested")).getByTestId("repair-load")); // the second plan: take the short put off, nothing new
     expect(within(wb).queryAllByTestId("wb-pick")).toHaveLength(0);
-    expect(kinds()).toEqual(["add", undefined]);
-    expect(within(wb).getAllByTestId("wb-order").map((r) => r.dataset["kind"])).toEqual(["add"]);
+    expect(kinds()).toEqual([undefined, "close"]);
+    expect(within(wb).getAllByTestId("wb-order").map((r) => r.dataset["kind"])).toEqual(["close"]);
     await u.click(within(plans).getByTestId("plan-save"));
     const rows = within(plans).getAllByTestId("plan-row");
     expect(rows.map((r) => (r.dataset["plan"] === "current" || r.dataset["plan"] === "before" ? r.dataset["plan"] : "plan"))).toEqual(["before", "current", "plan", "plan"]);
@@ -379,7 +410,7 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(within(plans).getByText("Plan A")).toBeTruthy();
     expect(within(plans).getByText("Plan B")).toBeTruthy();
     await u.click(within(plans).getAllByTestId("plan-use")[0]!); // back to Plan A: the roll
-    expect(within(wb).getAllByTestId("wb-pick")).toHaveLength(2);
+    expect(within(wb).getAllByTestId("wb-pick")).toHaveLength(1);
     // the working change is a copy of Plan A now, and the row says so instead of showing the same figures unexplained
     expect(within(plans).getByTestId("plan-current-note").textContent).toBe("= Plan A");
     expect(within(plans).getAllByTestId("plan-row")[1]!.dataset["same"]).toBe(within(plans).getAllByTestId("plan-row")[2]!.dataset["plan"]);
@@ -388,9 +419,16 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(within(plans).getByTestId("plan-save").title).toContain("Already kept as Plan A");
     await u.click(within(within(wb).getAllByTestId("wb-pick")[0]!).getByTestId("pick-lots-up"));
     expect(within(plans).getByTestId("plan-current-note").textContent).toBe("unsaved");
+    // that edited change is no idea and no kept plan: Load asks once before it replaces it, and an edit disarms the question
+    const loadClose = () => within(idea("closeTested")).getByTestId("repair-load");
+    await u.click(loadClose());
+    expect(loadClose().dataset["armed"]).toBe("true");
+    expect(loadClose().textContent).toBe("Replace my change?");
+    expect(within(wb).getAllByTestId("wb-pick")).toHaveLength(1); // nothing replaced yet
     expect(within(plans).getByTestId<HTMLButtonElement>("plan-save").disabled).toBe(false);
     await u.click(within(within(wb).getAllByTestId("wb-pick")[0]!).getByTestId("pick-lots-down"));
     expect(within(plans).getByTestId<HTMLButtonElement>("plan-save").disabled).toBe(true);
+    await waitFor(() => expect(loadClose().dataset["armed"]).toBe("false"));
     await u.click(within(plans).getAllByTestId("plan-remove")[1]!);
     expect(plans.dataset["count"]).toBe("1");
     // removing the plan the change equals makes it a new change again (the table folds away with no plans), so it can be kept once more
@@ -402,8 +440,8 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(plans.dataset["count"]).toBe("1");
     expect(wb.dataset["empty"]).toBe("true");
     // Clear all on Proposed is Reset: the orders go, the plan stays
-    await u.click(within(fixes).getAllByTestId("quick-fix")[0]!);
-    expect(within(wb).getByTestId("proposed-count").dataset["count"]).toBe("4");
+    await u.click(within(idea("rollTestedAway")).getByTestId("repair-load"));
+    expect(within(wb).getByTestId("proposed-count").dataset["count"]).toBe("2"); // one close, one new leg
     await u.click(within(wb).getByTestId("proposed-clear"));
     expect(within(wb).queryByTestId("proposed-clear")).toBeNull();
     expect(wb.dataset["empty"]).toBe("true");

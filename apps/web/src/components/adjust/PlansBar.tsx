@@ -6,28 +6,38 @@ import { useMemo, useState } from "react";
 import { fmtMoney } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
 import { toPricingLegs } from "@/lib/pricing/legs";
-import { type AdjustDraft, MAX_PLANS, type SavedPlan, afterLegs, cashflow, matchingPlan, planDraft, valuationMsOf } from "@/lib/adjust/model";
+import { type AdjustDraft, MAX_PLANS, type SavedPlan, afterLegs, cashflow, matchingPlan, planDraft, realisedLegs, valuationMsOf } from "@/lib/adjust/model";
 import type { AdjustWorkbench } from "@/lib/adjust/useAdjustWorkbench";
 import { venueCalendar } from "@/lib/venue";
 
 export interface PlanFigures {
   maxLoss: number;
   maxProfit: number;
+  /** Underlying prices where the expiry P&L crosses zero, ascending (HC-TR-195: the repair ideas compare them). */
+  breakevens: readonly number[];
   pop: number;
   delta: number;
   cash: number;
 }
 
-/** Price a draft the way the pane prices the working one (same marks, spot, clock and valuation rule). */
-export function useDraftFigures(w: AdjustWorkbench, draft: AdjustDraft | null): PlanFigures | null {
-  const { a, open, strategy, lotSize } = w;
-  const legs = useMemo(() => (draft ? afterLegs(draft, open, strategy.asset, a.markOf) : []), [draft, open, strategy.asset, a.markOf]);
+/** The market a draft is priced on. The plans follow the pane's live one; the repair ideas pass a settled copy (HC-TR-195). */
+export type DraftMarket = Pick<AdjustWorkbench["a"], "spot" | "spotText" | "nowMs" | "markOf" | "quoteFor">;
+
+/**
+ * Price a draft the way the pane prices the working one (same marks, spot, clock and valuation rule, and the same
+ * locked-in result of the lots it takes off, ADR-094). `market` replaces the pane's live market when given.
+ */
+export function useDraftFigures(w: AdjustWorkbench, draft: AdjustDraft | null, market?: DraftMarket): PlanFigures | null {
+  const { open, strategy, lotSize } = w;
+  const live = w.a;
+  const a: DraftMarket = market ?? live;
+  const legs = useMemo(() => (draft ? [...afterLegs(draft, open, strategy.asset, a.markOf), ...realisedLegs(draft, open, strategy.asset, a.markOf)] : []), [draft, open, strategy.asset, a.markOf]);
   const pricing = useMemo(() => toPricingLegs(legs, lotSize, { iv: (l) => a.quoteFor(l)?.markIv, spot: a.spotText }), [legs, lotSize, a]);
   const valuationMs = useMemo(() => (draft ? valuationMsOf(draft, open, strategy.asset, a.nowMs) : undefined), [draft, open, strategy.asset, a.nowMs]);
   const options = useMemo(() => (draft && a.spot !== null && pricing.length ? { spot: a.spot, nowMs: a.nowMs, calendar: venueCalendar(strategy.asset, strategy.venue), defaultIv: 0.5, points: 81, ...(valuationMs === undefined ? {} : { valuationMs }) } : null), [draft, a.spot, a.nowMs, pricing.length, strategy.asset, strategy.venue, valuationMs]);
   const { result } = useAnalysis(pricing, options);
   const cash = draft ? cashflow(draft, open, a.markOf, lotSize) : 0;
-  return result ? { maxLoss: result.maxLoss, maxProfit: result.maxProfit, pop: result.pop, delta: result.greeks.delta, cash } : null;
+  return result ? { maxLoss: result.maxLoss, maxProfit: result.maxProfit, breakevens: result.breakevens, pop: result.pop, delta: result.greeks.delta, cash } : null;
 }
 
 type RowKind = "before" | "current" | "plan";

@@ -81,7 +81,8 @@ information.
   limit, venue clients `orderType` / `limitPrice`, `strategy_orders.order_type` migration 0009; exits stay market
   reduce-only; a resting limit is a pending order Sync books), `AdjustConfirmDialog` live extras (per-leg band, order
   type, `HoldButton` 1.2 s, results view with fill states and Done, notional-over-balance rail), `PlansBar` +
-  `useDraftFigures`, `lib/adjust/fixes.ts` + `QuickFixes`, scenario slider on the ticket, `riskAlerts` store stub.
+  `useDraftFigures`, `lib/adjust/fixes.ts` + `QuickFixes` (replaced on 20 Sep 2026 by `lib/adjust/repairs.ts` +
+  `RepairIdeas`, §6a), scenario slider on the ticket, `riskAlerts` store stub.
 
 ## 5. Presentation pass (ADR-058, 11 Sep 2026)
 The user compared the shipped workbench against the H2 mockup: chain cramped (Δ / OI columns from the Builder picker),
@@ -121,8 +122,25 @@ Each line names the test that proves it. `unit` = apps/web/src/components/adjust
 | Stale marks at Review | warning line; Review re-reads marks | model summarize (wording only); the UI line and the re-read are not tested |
 | Same legs valued at another date | a different plan: the valuation date is part of a plan's identity | model plans (matchingPlan) |
 
+## 6a. Repair ideas (ADR-094, 20 Sep 2026)
+The three quick fixes are replaced by a panel under the position ticket (a wide workbench has room there, so the strike
+chain is never pushed down). **Layout.** One diagnosis sentence (distance of each short strike from spot in percent and
+in expected moves, the tested side, and in red "the loss has no limit"); an "Order by" row of four goals; then one card
+per idea: name and fact tags, the orders in words, a line of before → after figures (max loss, max profit, break-evens,
+POP, delta), cash now and the order count, then "You give up: …" and, in the warning colour, any note (a wing budget the
+ladder could not meet, a strike that moved on a roll out). Load is the only action; it fills the working change, and
+turns into "Replace my change?" (second click) when the trader has built a change by hand. **States.** *Waiting for
+the spot price* before it arrives; *pricing…* while the engine
+runs; *Not available: reason* for an idea the ladder cannot build; the panel can be hidden. **Copy.** Facts only:
+"defines your risk", "smallest max loss", never "best"; the footnote says before → after compares the whole trade from
+entry (a close carries the result it locks in, at the mark), that fees and slippage are not included, and that an
+adjustment swaps one risk for another. **Confusion check.** "Which one should I take?" is answered
+by the goal the trader picks, not by the app; "Did it place anything?" no: the button says Load and the footnote says
+nothing is sent until Review.
+
 ## 7. Traceability
 Extends HC-TR-071 (+ Add adjustment), HC-TR-088 (Confirm Adjustment Order), HC-TR-118/119 (Details restyle, payoff
-mini chart), HC-TR-125/126 (per-leg value and fee). New rows HC-TR-148..154 (HC-TR-146/147 are Builder rows; workbench, before → after strip and ghost
-curve, lots-after editing with netting, paper confirm, live confirm with band and hold, plans compare, quick fixes)
+mini chart), HC-TR-125/126 (per-leg value and fee). New rows HC-TR-148..154 plus HC-TR-193 (every listed strike, ADR-093) and HC-TR-194 / 195 (repair ideas, ADR-094) (HC-TR-146/147 are Builder rows; workbench, before → after strip and ghost
+curve, lots-after editing with netting, paper confirm, live confirm with band and hold, plans compare, quick fixes,
+since replaced by the repair ideas)
 added through `mockup-v2/features` + `spec/buildspec.js` when A2 lands.
