@@ -123,6 +123,9 @@ describe("[WORKSPACE] HC-WS-001..006 two-pane shell", () => {
     expect(screen.getByTestId("workspace").dataset["collapse"]).toBe("left");
     expect(screen.getByTestId("left-pane").parentElement!.classList.contains("hidden")).toBe(true);
     expect(screen.getByTestId("right-pane").classList.contains("hidden")).toBe(false);
+    // GAPS #113: the hidden pane leaves the grid, so the handle and the analysis name their own tracks (16 px and 1fr)
+    expect(screen.getByTestId("collapse-restore").style.gridColumn).toBe("2");
+    expect(screen.getByTestId("right-pane").style.gridColumn).toBe("3");
     r.unmount();
     // an unknown deep link is ignored
     searchParamsMock.value = new URLSearchParams("tab=nope&panel=zzz");
