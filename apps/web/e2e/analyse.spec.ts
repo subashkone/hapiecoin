@@ -989,6 +989,88 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     await expect(page.getByTestId("paper-card").getByTestId("order-chip")).toHaveCount(4); // two kept, the trimmed split, the new leg
   });
 
+  test("HC-TR-194 / HC-TR-195 repair ideas in the browser: a wing lowers the max loss on screen and costs cash, the goal re-orders the cards, a loaded wing is one new leg, and the ideas stay on the held legs when the chain moves to another expiry", async ({ page }) => {
+    // long ATM call + short ATM put: the put is the only short, so it is the tested side and the one a wing can cap
+    const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
+    await page.locator(`[data-testid=chain-row-calls][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-buy-calls").click();
+    await page.locator(`[data-testid=chain-row-puts][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-sell-puts").click();
+    await page.getByTestId("tab-builder").click();
+    await page.getByTestId("strategy-name").fill("E2E repair ideas");
+    await page.getByTestId("builder-paper-trade").click();
+    await page.getByTestId("trade-mode").getByTestId("trade-continue").click();
+    await typeLiveIfShown(page);
+    await page.getByTestId("trade-preview").getByTestId("trade-now").click();
+    await page.getByTestId("save-draft-confirm").click();
+    await page.getByTestId("rule-skip").click();
+    await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+    await page.getByTestId("paper-card").getByTestId("card-adjust").click();
+    const wb = page.getByTestId("adjust-workbench");
+    await expect(wb.getByTestId("wb-chain-table")).toHaveAttribute("data-rows", /^[1-9]/, { timeout: 15_000 });
+    // the pane names the followed legs from the legs themselves (GAPS #118): never the Builder's stored "E2E repair ideas"
+    await expect(page.getByTestId("pane-strategy-info")).not.toContainText("E2E repair ideas");
+
+    const ideas = wb.getByTestId("repair-ideas");
+    const held = (await ideas.getAttribute("data-expiry"))!;
+    expect(held).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    await expect(ideas.getByTestId("repair-expiry")).toContainText("for your");
+    await expect(ideas.getByTestId("repair-expiry")).not.toContainText("the chain below shows");
+    await expect(ideas.getByTestId("repair-diagnosis")).toContainText("the put side is");
+
+    // a wing: the card names a put bought further out, the max loss after it is smaller than before, and it costs cash
+    const wing = ideas.locator("[data-testid=repair-idea][data-kind=capCheap]");
+    await expect(wing).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(wing.getByTestId("repair-what")).toHaveText(/^buy \d+ × [\d,]+ P /);
+    await expect(wing.getByTestId("repair-figures")).toContainText("Max loss");
+    await expect(wing.getByTestId("repair-figures")).toContainText("→");
+    await expect(ideas).toHaveAttribute("data-before-max-loss", /\d|Infinity/, { timeout: 15_000 });
+    const beforeLoss = Number(await ideas.getAttribute("data-before-max-loss"));
+    const wingLoss = Number(await wing.getAttribute("data-max-loss"));
+    const wingCash = Number(await wing.getAttribute("data-cash"));
+    expect(beforeLoss).toBeLessThan(0);
+    expect(wingLoss).toBeGreaterThan(beforeLoss); // a smaller loss is a larger (less negative) number
+    expect(wingCash).toBeLessThan(0); // insurance is paid for
+    await expect(wing.getByTestId("repair-cash")).toHaveClass(/text-loss/);
+
+    // ordered by credit, the priced cards run from the most cash received to the most paid, unavailable ones last
+    await ideas.getByTestId("repair-goal-credit").click();
+    await expect(ideas).toHaveAttribute("data-goal", "credit");
+    await expect.poll(async () => {
+      const cards = await ideas.getByTestId("repair-idea").evaluateAll((els) => els.map((e) => ({ state: e.getAttribute("data-state"), cash: Number(e.getAttribute("data-cash")) })));
+      const ready = cards.filter((c) => c.state === "ready").map((c) => c.cash);
+      const sorted = [...ready].sort((a, b) => b - a);
+      const lastReady = cards.map((c) => c.state).lastIndexOf("ready");
+      const firstOff = cards.findIndex((c) => c.state === "unavailable");
+      return ready.length > 2 && new Set(ready).size > 1 && JSON.stringify(ready) === JSON.stringify(sorted) && (firstOff === -1 || lastReady < firstOff);
+    }, { timeout: 15_000 }).toBe(true);
+    // ordered by max loss, the first card has the smallest loss of all priced cards
+    await ideas.getByTestId("repair-goal-maxLoss").click();
+    await expect.poll(async () => {
+      const losses = await ideas.locator("[data-testid=repair-idea][data-state=ready]").evaluateAll((els) => els.map((e) => Number(e.getAttribute("data-max-loss"))));
+      return losses.length > 2 && losses[0] === Math.max(...losses);
+    }, { timeout: 15_000 }).toBe(true);
+
+    // loading the wing on an empty change needs no question: one new leg, nothing closed, and the pane follows the change
+    await wing.getByTestId("repair-load").click();
+    await expect(wb).toHaveAttribute("data-empty", "false");
+    await expect(wb.getByTestId("wb-pick")).toHaveCount(1);
+    await expect(wb.getByTestId("wb-pick").getByTestId("effect")).toHaveAttribute("data-kind", "new");
+    await expect(wb.getByTestId("wb-order")).toHaveCount(0);
+    await expect(wb.getByTestId("proposed-count")).toHaveAttribute("data-count", "1");
+
+    // GAPS #118: the chain moved to another expiry (the trader looking around) must not lose the position
+    const other = wb.locator(`[data-testid=wb-chain-expiry]:not([data-expiry="${held}"])`).first();
+    await other.click();
+    await expect(ideas.getByTestId("repair-expiry")).toContainText("the chain below shows", { timeout: 15_000 });
+    await expect(ideas).toHaveAttribute("data-expiry", held);
+    await expect(ideas.getByTestId("repair-diagnosis")).toContainText("the put side is");
+    await expect(ideas.locator("[data-testid=repair-idea][data-kind=rollTestedAway]")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(wing).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await wb.locator(`[data-testid=wb-chain-expiry][data-expiry="${held}"]`).click();
+    await expect(ideas.getByTestId("repair-expiry")).not.toContainText("the chain below shows", { timeout: 15_000 });
+  });
+
   test("HC-TR-148 under 720 px the workbench stacks its columns (ADR-044 extra 6), and Exit asks before discarding a change", async ({ page }) => {
     const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
     await page.locator(`[data-testid=chain-row-calls][data-strike="${strike}"]`).hover();

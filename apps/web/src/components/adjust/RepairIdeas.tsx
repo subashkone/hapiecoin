@@ -81,7 +81,7 @@ function IdeaCard({ w, idea, market, before, tags, replaces, working, onFigures 
     w.applyDraft(idea.draft);
   };
   return (
-    <li className={cn("rounded border px-2 py-1.5", idea.draft ? "border-border" : "border-border/50 text-muted-foreground")} data-testid="repair-idea" data-kind={idea.kind} data-state={state} data-cash={f ? f.cash : undefined}>
+    <li className={cn("rounded border px-2 py-1.5", idea.draft ? "border-border" : "border-border/50 text-muted-foreground")} data-testid="repair-idea" data-kind={idea.kind} data-state={state} data-cash={f ? f.cash : undefined} data-max-loss={f ? f.maxLoss : undefined}>
       <div className="flex flex-wrap items-center gap-1.5">
         <b className="text-xs">{idea.label}</b>
         {tags.map((t) => (
@@ -176,7 +176,7 @@ export function RepairIdeas({ w, expiry, rows, expiries }: { w: AdjustWorkbench;
   const mine = draftSignature(w.draft);
   const replaces = !w.empty && !matchingPlan(w.draft, w.open) && !ideas.some((i) => i.draft && draftSignature(i.draft) === mine);
   return (
-    <section className="mb-2 rounded border border-border p-2" data-testid="repair-ideas" data-goal={goal} data-open={open} data-count={ready} data-expiry={ideasExpiry ?? ""}>
+    <section className="mb-2 rounded border border-border p-2" data-testid="repair-ideas" data-goal={goal} data-open={open} data-count={ready} data-expiry={ideasExpiry ?? ""} data-before-max-loss={before ? before.maxLoss : undefined}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="micro">Repair ideas</span>
         {ideasExpiry ? <span className="text-2xs text-muted-foreground" data-testid="repair-expiry">for your {fmtExpiry(ideasExpiry)} legs{shownExpiry && shownExpiry !== ideasExpiry ? ` (the chain below shows ${fmtExpiry(shownExpiry)})` : ""}</span> : null}
