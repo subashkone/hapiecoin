@@ -937,10 +937,22 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     await expect(leg.getByTestId("effect")).toHaveAttribute("data-kind", "close");
     await leg.getByTestId("wb-leg-undo").click();
     await leg.getByTestId("lots-after-down").click();
-    // HC-TR-154 / HC-TR-153: a quick fix loads a draft; it can be kept as a plan and compared; Reset returns to the trim
-    await expect(wb.getByTestId("quick-fix").first()).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
-    await wb.getByTestId("quick-fix").first().click(); // roll strikes up
-    await expect(wb.getByTestId("wb-pick")).toHaveCount(2);
+    // HC-TR-194 / HC-TR-195 / HC-TR-153: the diagnosis names the tested side; a repair idea, priced before → after, loads a
+    // draft; it can be kept as a plan and compared; Reset returns to the trim
+    const ideas = wb.getByTestId("repair-ideas");
+    await expect(ideas.getByTestId("repair-diagnosis")).toContainText("the put side is");
+    const away = ideas.locator("[data-testid=repair-idea][data-kind=rollTestedAway]");
+    await expect(away).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(away.getByTestId("repair-figures")).toContainText("Max loss");
+    await expect(away.getByTestId("repair-gives-up")).toContainText("You give up:");
+    await expect(ideas.getByTestId("repair-basis")).toContainText("the profit or loss that exit locks in");
+    await expect(ideas.getByTestId("repair-tag").first()).toBeVisible({ timeout: 15_000 });
+    // the trim above is a change built by hand: Load asks once before it replaces it, and the second click loads the idea
+    await away.getByTestId("repair-load").click();
+    await expect(away.getByTestId("repair-load")).toHaveText("Replace my change?");
+    await expect(wb.getByTestId("wb-pick")).toHaveCount(0);
+    await away.getByTestId("repair-load").click();
+    await expect(wb.getByTestId("wb-pick")).toHaveCount(1);
     await wb.getByTestId("plan-save").click();
     await expect(wb.getByTestId("plans-bar")).toHaveAttribute("data-count", "1");
     await expect(wb.getByTestId("plan-row").last()).toHaveAttribute("data-state", "ready", { timeout: 15_000 });

@@ -21,7 +21,7 @@ import { rulesLine } from "@/components/trading/RuleDialog";
 import { AdjustConfirmDialog } from "./AdjustConfirmDialog";
 import { PlansBar } from "./PlansBar";
 import { PositionTicket } from "./PositionTicket";
-import { QuickFixes } from "./QuickFixes";
+import { RepairIdeas } from "./RepairIdeas";
 import { WorkbenchChain } from "./WorkbenchChain";
 
 export /** The workbench opens on every listed strike (HC-TR-193, GAPS #115). Its own constant: a change of the main chain's default must not bring the window back here. */
@@ -139,10 +139,13 @@ export function AdjustWorkbench({ book }: { book: PaperBook }) {
       <div className={cn("grid min-h-0 flex-1 overflow-auto", wide ? "grid-cols-[minmax(320px,11fr)_minmax(380px,10fr)]" : "grid-cols-1")}>
         <div className={cn("flex min-w-0 flex-col", wide && "overflow-auto border-r border-border")}>
           <PositionTicket w={w} />
+          {/* HC-TR-195: under the ticket, where a wide workbench has room, so the ideas never push the strike chain down.
+              They read the whole ladder, never the view: a ±12 click must not change which ideas exist or how they rank */}
+          <div className="px-3 pb-3">
+            <RepairIdeas w={w} expiry={chain.expiry} rows={chain.allRows} expiries={chain.expiries} />
+          </div>
         </div>
         <div className={cn("min-w-0 p-3", wide && "overflow-auto")}>
-          {/* the whole ladder, never the view: a ±12 click must not change which fixes exist or how they rank */}
-          <QuickFixes w={w} expiry={chain.expiry} rows={chain.allRows} expiries={chain.expiries} />
           <PlansBar w={w} />
           <WorkbenchChain expiries={chain.expiries} expiry={chain.expiry} onExpiry={chain.setExpiry} rows={chain.rows} atm={chain.atm} range={range} onRange={setRange} spot={a.spot} capLine={capLine} lotsPerClick={chainLots} stateOf={stateOf} onToggle={onToggle} onEnter={openReview} onEscape={w.reset} />
         </div>

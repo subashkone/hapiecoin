@@ -7129,13 +7129,13 @@
   "owner": "Trading engineer",
   "route": "/analyse",
   "screen": "Analyse · Adjustment workbench",
-  "feature": "Quick fixes: roll wings up, roll out, hedge with a call, ranked",
+  "feature": "Repairs offered from the workbench (was: three quick fixes), each a draft loaded for review",
   "status": "working",
   "isNew": true,
   "phase": 5,
-  "test": "unit (pricing) · e2e (Playwright)",
-  "acceptance": "Roll strikes up, Roll out to the next expiry, Hedge with a call: each built from the open legs and the listed strikes, priced with the engine and tagged smallest max loss / largest credit / closest to delta-neutral; a click loads the draft for review; an unbuildable fix says why",
-  "evidence": "ADR-044 (09 Sep 2026, PR A3): lib/adjust/fixes.ts quickFixes / rankFixes, QuickFixes.tsx; unit model.test.ts HC-TR-154, workbench.test.tsx HC-TR-153/154 block"
+  "test": "unit (web)",
+  "acceptance": "Superseded on 20 Sep 2026 by the repair ideas (HC-TR-194 the diagnosis, HC-TR-195 the catalogue and goals, ADR-094): the three position-blind buttons (roll strikes up, roll out, hedge with a call) are gone; every idea is still built from the open legs and the listed strikes, priced with the engine, tagged with facts, loads a draft for review, and says why when it cannot be built",
+  "evidence": "ADR-044 (09 Sep 2026, PR A3) then ADR-094 (20 Sep 2026): lib/adjust/repairs.ts + RepairIdeas.tsx replace lib/adjust/fixes.ts + QuickFixes.tsx; tests: repairs.test.ts, workbench.test.tsx \"HC-TR-153 / HC-TR-154 / HC-TR-194 / HC-TR-195 …\""
  },
  {
   "id": "HC-TR-155",
@@ -7682,6 +7682,36 @@
   "test": "unit (web) · e2e (Playwright)",
   "acceptance": "usePickerChain takes a range (0 = every listed strike); AdjustWorkbench owns it, All by default; WorkbenchChain shows the ±12 / All control and 'n strikes' beside the cap line and re-centres on the ATM row when the expiry or the range changes; a held strike outside ±12 (a short put 30 rows below ATM) carries its pill and can be trimmed, closed or rolled from the chain; strikes come only from the venue list (ADR-006)",
   "evidence": "ADR-093, GAPS #115 (20 Sep 2026): apps/web/src/lib/chain/range.ts DEFAULT_CHAIN_RANGE; apps/web/src/lib/store.ts rangeDefault; components/builder/ChainPickerBody.tsx usePickerChain; components/adjust/AdjustWorkbench.tsx + WorkbenchChain.tsx; tests: workbench.test.tsx HC-TR-193, store.test.ts, e2e analyse.spec.ts (workbench flow, HC-WS-016, HC-WS-108)"
+ },
+ {
+  "id": "HC-TR-194",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/analyse",
+  "screen": "Analyse · Adjustment workbench",
+  "feature": "Diagnosis line: how far spot is from each short strike, which side is tested, whether the loss has a limit",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web) · e2e (Playwright)",
+  "acceptance": "diagnose() measures every short contract on the shown expiry from spot in percent and in expected moves (the engine's one-sigma figure), counts twin rows on one contract as one short, names the nearest short as the tested side and marks it under pressure when it is in the money or under one expected move away; the panel shows the sentence and, in red, 'the loss has no limit' when the position's max loss is unbounded; a long-only position reads 'no short option on this expiry'; before the spot price arrives it reads 'Waiting for the spot price' and no idea is offered",
+  "evidence": "ADR-094 (20 Sep 2026): apps/web/src/lib/adjust/repairs.ts diagnose / diagnosisLine; components/adjust/RepairIdeas.tsx repair-diagnosis; tests: repairs.test.ts HC-TR-194 (four cases), workbench.test.tsx \"HC-TR-153 / HC-TR-154 / HC-TR-194 / HC-TR-195 …\", e2e analyse.spec.ts workbench flow"
+ },
+ {
+  "id": "HC-TR-195",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/analyse",
+  "screen": "Analyse · Adjustment workbench",
+  "feature": "Repair ideas: wings by price, rolls, sizing, each priced before → after and ordered by the trader's goal",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web) · e2e (Playwright)",
+  "acceptance": "repairIdeas() builds drafts from the whole listed ladder only: cap the risk with cheap / balanced / tight wings (nearest strike whose mark is within 10 / 25 / 50 % of the short's mark; past the ladder's end the furthest listed strike with a note; sized by the short lots no long of that kind answers; duplicates dropped), roll the tested short two strikes away, roll the untested side in while it keeps half an expected move of room, roll out, roll out and away, halve or close the tested short (twin rows together); long-only: convert to a spread, roll to a cheaper strike; a zero or missing quote is never a price; an order that would meet the other side of its own contract or carry a short onto or past its long makes the idea unavailable with the reason; on a roll out a short never lands nearer spot and the card says when a strike moved. Each card shows the orders in words, before → after max loss, max profit, break-evens, POP, delta, cash now, the order count and what the idea gives up; before → after compares the whole trade from entry, so a close carries the result it locks in (realisedLegs, also in the pane's working change and the plans); goals under 'Order by': reduce max loss, collect credit, get neutral, widen break-evens (default from the diagnosis); tags are facts ('defines your risk', one leader per goal, 'largest credit' only for cash received); Load fills the working change through applyDraft and asks once before replacing a hand-built change, nothing is sent before Review; the panel sits under the position ticket, is built and priced on a market copy that settles every two seconds and re-orders only when the figures are quiet",
+  "evidence": "ADR-094, GAPS #117 (20 Sep 2026): apps/web/src/lib/adjust/repairs.ts repairIdeas / orderIdeas / tagIdeas / defaultGoal / draftSignature; lib/adjust/model.ts realisedLegs; components/adjust/RepairIdeas.tsx (useSettled); PlansBar.tsx useDraftFigures / PlanFigures.breakevens; lib/strategy/useStrategyAnalysis.ts; AdjustWorkbench.tsx; tests: repairs.test.ts HC-TR-195 (fifteen cases), model.test.ts \"HC-TR-195 (ADR-094) the lots a change takes off …\", RepairIdeas.test.tsx, workbench.test.tsx \"HC-TR-153 / HC-TR-154 / HC-TR-194 / HC-TR-195 …\" and HC-TR-193, e2e analyse.spec.ts workbench flow; five control runs"
  },
  {
   "id": "HC-AC-001",
