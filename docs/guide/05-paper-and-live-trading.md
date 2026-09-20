@@ -1,6 +1,6 @@
 # Paper trading, live trading, rules and accounts
 
-Part of the [HapieCoin feature guide](README.md). 92 traced features on 29 screens; 92 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 93 traced features on 30 screens; 93 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -60,6 +60,12 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-057 | Trade Now → starts the trade | Unnamed strategies get the 'Enter Strategy Name' dialog first; then the strategy is created/updated in CG.mock.strategies with status PAPER or LIVE (entry = current mark or custom prices, startedAt now, P&L 0, live orders filled), toast 'Paper Trade Started · <name>' or 'Live Orders Placed', builder cleared, left tab switched to Paper/Live Trades and cg-tour:paper-started emitted | built | unit (pricing) · e2e (Playwright) · api contract · security |
 | HC-TR-125 | Per-leg Value and Fee columns | Value = price × lots × lot size; Fee = per-leg fee + GST | built | unit (pricing) · e2e (Playwright) |
 | HC-TR-126 | Fee estimate line and You will pay / receive | Fees · est. with the fee formula and a bold "You will pay" (debit + fees) or "You will receive" (credit − fees) summary; Max loss shown when finite; mode pill | built | unit (pricing) · e2e (Playwright) |
+
+### Trading · Trade Preview / Adjustment review
+
+| ID | Feature | How it behaves | Status | Tested by |
+|---|---|---|---|---|
+| HC-TR-192 | Short-leg margin estimate: a sold option's initial margin is estimated before placement and the whole order set is refused when the wallet cannot cover the shorts plus the premium; buys go out before sells | packages/venues: VenueProduct keeps Delta's initial_margin and initial_margin_scaling_factor, getTicker returns mark + spot_price, shortOptionMarginUsd = (((pct + factor × contracts) / 100) × spot + mark) × contractValue × contracts (conservative: scaling from the first contract, no spread relief; the factor's unit is GAPS #109); apps/api planLegs fills LivePreviewLeg.marginEstimate for sells, the preview sums LivePreview.marginRequired = Σ estimates + premium paid and pushes 'Available … is below the margin the exchange will hold for the short legs plus the premium paid (estimate …); nothing was sent' when above the wallet, so place / Trade All batch (which also sums the estimates against the one wallet, LiveBatchPreview.marginRequired) / adjustment batch / add-legs refuse before any order, and a short the venue could not price next to one it did is refused by name; placeEntries and retryFailed sort buys before sells; the dialogs show 'Needed for shorts · est.' in red when above the wallet | built | unit (venues + api + web) |
 
 ### Analyse · Paper Trades panel · `/analyse`
 

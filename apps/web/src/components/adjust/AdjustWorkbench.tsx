@@ -4,6 +4,7 @@
 // analysis pane showing "This change" with the six before → after tiles. Under 720 px the two columns stack.
 import { Button, cn } from "@hapiecoin/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { ChainRange } from "@/lib/chain/range";
 import { newIdempotencyKey } from "@/lib/api/live";
 import { useBrokers } from "@/lib/api/queries";
 import { type AdjustBody } from "@hapiecoin/schema";
@@ -23,7 +24,9 @@ import { PositionTicket } from "./PositionTicket";
 import { QuickFixes } from "./QuickFixes";
 import { WorkbenchChain } from "./WorkbenchChain";
 
-export const STACK_BELOW_PX = 720;
+export /** The workbench opens on every listed strike (HC-TR-193, GAPS #115). Its own constant: a change of the main chain's default must not bring the window back here. */
+const WORKBENCH_RANGE: ChainRange = 0;
+const STACK_BELOW_PX = 720;
 
 /** Width of an element, so the workbench can stack its columns by its own box rather than the viewport. */
 function useWide(ref: React.RefObject<HTMLElement | null>, px: number): boolean {
@@ -62,7 +65,10 @@ export function AdjustWorkbench({ book }: { book: PaperBook }) {
   const wide = useWide(box, STACK_BELOW_PX);
   const strategy = w?.strategy;
   const firstExpiry = strategy?.legs.find((l) => l.kind !== "future" && l.status === "open")?.expiry ?? null;
-  const chain = usePickerChain(strategy?.asset ?? "BTC", strategy !== undefined, firstExpiry);
+  // HC-TR-193 (GAPS #115): every listed strike by default. Adjustments happen at the strikes held and at the far wings,
+  // and a ±12 window around ATM hid both (a short 66,000 put with spot at 80,486 was not on the chain at all)
+  const [range, setRange] = useState<ChainRange>(WORKBENCH_RANGE);
+  const chain = usePickerChain(strategy?.asset ?? "BTC", strategy !== undefined, firstExpiry, range);
   const [review, setReview] = useState<AdjustBody | null>(null);
   // the strategy went away (archived, deleted, or the list refreshed without it): leave the workbench
   useEffect(() => {
@@ -135,9 +141,10 @@ export function AdjustWorkbench({ book }: { book: PaperBook }) {
           <PositionTicket w={w} />
         </div>
         <div className={cn("min-w-0 p-3", wide && "overflow-auto")}>
-          <QuickFixes w={w} expiry={chain.expiry} rows={chain.rows} expiries={chain.expiries} />
+          {/* the whole ladder, never the view: a ±12 click must not change which fixes exist or how they rank */}
+          <QuickFixes w={w} expiry={chain.expiry} rows={chain.allRows} expiries={chain.expiries} />
           <PlansBar w={w} />
-          <WorkbenchChain expiries={chain.expiries} expiry={chain.expiry} onExpiry={chain.setExpiry} rows={chain.rows} atm={chain.atm} spot={a.spot} capLine={capLine} lotsPerClick={chainLots} stateOf={stateOf} onToggle={onToggle} onEnter={openReview} onEscape={w.reset} />
+          <WorkbenchChain expiries={chain.expiries} expiry={chain.expiry} onExpiry={chain.setExpiry} rows={chain.rows} atm={chain.atm} range={range} onRange={setRange} spot={a.spot} capLine={capLine} lotsPerClick={chainLots} stateOf={stateOf} onToggle={onToggle} onEnter={openReview} onEscape={w.reset} />
         </div>
       </div>
       {/* sticks above the portfolio bar (h-8) so Review is never hidden behind it when the page scrolls */}

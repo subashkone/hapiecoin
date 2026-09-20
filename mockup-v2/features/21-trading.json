@@ -1658,5 +1658,15 @@
     "how": "packages/venues: VenueProduct keeps Delta's initial_margin and initial_margin_scaling_factor, getTicker returns mark + spot_price, shortOptionMarginUsd = (((pct + factor × contracts) / 100) × spot + mark) × contractValue × contracts (conservative: scaling from the first contract, no spread relief; the factor's unit is GAPS #109); apps/api planLegs fills LivePreviewLeg.marginEstimate for sells, the preview sums LivePreview.marginRequired = Σ estimates + premium paid and pushes 'Available … is below the margin the exchange will hold for the short legs plus the premium paid (estimate …); nothing was sent' when above the wallet, so place / Trade All batch (which also sums the estimates against the one wallet, LiveBatchPreview.marginRequired) / adjustment batch / add-legs refuse before any order, and a short the venue could not price next to one it did is refused by name; placeEntries and retryFailed sort buys before sells; the dialogs show 'Needed for shorts · est.' in red when above the wallet",
     "evidence": "ADR-091, GAPS #108 (15 Sep 2026): packages/venues/src/delta/trading.ts shortOptionMarginUsd + getTicker; apps/api/src/routes/live-exec.ts planLegs / preview / placeEntries; packages/schema strategies.ts LivePreviewLeg.marginEstimate, LivePreview.marginRequired; apps/web TradePreviewDialog.tsx + AdjustConfirmDialog.tsx venue-margin-required; tests: venues trading.test.ts + trading-more.test.ts, api live.test.ts HC-TR-192, web trading-live.test.tsx HC-TR-192",
     "test": "unit (venues + api + web)"
+  },
+  {
+    "screen": "Trading · Adjustment workbench · chain",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The workbench chain lists every strike of the expiry by default, with a ±12 / All control and a strike count; held strikes far from ATM are on the chain",
+    "how": "usePickerChain takes a range (0 = every listed strike); AdjustWorkbench owns it, All by default; WorkbenchChain shows the ±12 / All control and 'n strikes' beside the cap line and re-centres on the ATM row when the expiry or the range changes; a held strike outside ±12 (a short put 30 rows below ATM) carries its pill and can be trimmed, closed or rolled from the chain; strikes come only from the venue list (ADR-006)",
+    "evidence": "ADR-093, GAPS #115 (20 Sep 2026): apps/web/src/lib/chain/range.ts DEFAULT_CHAIN_RANGE; apps/web/src/lib/store.ts rangeDefault; components/builder/ChainPickerBody.tsx usePickerChain; components/adjust/AdjustWorkbench.tsx + WorkbenchChain.tsx; tests: workbench.test.tsx HC-TR-193, store.test.ts, e2e analyse.spec.ts (workbench flow, HC-WS-016, HC-WS-108)",
+    "test": "unit (web) · e2e (Playwright)"
   }
 ]

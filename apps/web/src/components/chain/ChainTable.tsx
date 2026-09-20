@@ -283,6 +283,8 @@ export function ChainTable({
 
   // Roving keyboard focus over the visible rows (HC-WS-016 / design §6) and the hovered row for the controls.
   const [focus, setFocus] = useState<number>(-1);
+  // a range change re-slices the rows under the index: the highlight starts over rather than land on another strike (GAPS #115)
+  useEffect(() => setFocus(-1), [range]);
   const [rowsTick, setRowsTick] = useState(0); // re-runs the Δ effect when the hit already sits in the slice
   const [hover, setHover] = useState<number>(-1);
   const active = hover >= 0 ? hover : focus;

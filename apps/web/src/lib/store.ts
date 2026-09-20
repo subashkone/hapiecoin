@@ -6,7 +6,7 @@ import { DEFAULT_VENUE, type VenueId, getVenueCore } from "@hapiecoin/venues/cor
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { type ChainLayout, defaultLayout, normaliseLayout } from "./chain/layout";
-import { type ChainRange, isChainRange } from "./chain/range";
+import { type ChainRange, DEFAULT_CHAIN_RANGE, isChainRange } from "./chain/range";
 import {
   type AddLegResult,
   DEFAULT_LOTS,
@@ -142,6 +142,8 @@ export interface UiState {
   saveDraftRequest: boolean;
   /** Strikes shown each side of ATM in the chain (HC-WS-016); 0 = every listed strike. Persisted. */
   chainRange: ChainRange;
+  /** Default range the persisted `chainRange` was last aligned to; a change of DEFAULT_CHAIN_RANGE re-applies once, like `lotsDefault`. Persisted. */
+  rangeDefault: ChainRange;
   /** Bumped by "recentre on ATM" (keyboard A, palette); the chain scrolls the ATM row into the middle. */
   chainRecentre: number;
   /** Which chain columns show and in what order from the strike outward (HC-WS-014). Persisted. */
@@ -299,7 +301,8 @@ export const useUiStore = create<UiState>()(
       brokerId: null,
       accountId: null,
       saveDraftRequest: false,
-      chainRange: 12,
+      chainRange: DEFAULT_CHAIN_RANGE,
+      rangeDefault: DEFAULT_CHAIN_RANGE,
       chainRecentre: 0,
       chainColumns: defaultLayout(),
       legs: emptyLegs(),
@@ -407,7 +410,7 @@ export const useUiStore = create<UiState>()(
           targetPrice: patch.price === undefined ? st.targetPrice : patch.price,
           targetDays: patch.days === undefined ? st.targetDays : Math.max(0, Math.round(patch.days)),
         })),
-      setChainRange: (chainRange) => set({ chainRange: isChainRange(chainRange) ? chainRange : 12 }),
+      setChainRange: (chainRange) => set({ chainRange: isChainRange(chainRange) ? chainRange : DEFAULT_CHAIN_RANGE }),
       setChartLayer: (key, on) => set((s) => ({ chartLayers: { ...s.chartLayers, [key]: on } })),
       setLadderStep: (ladderStep) => set({ ladderStep: isLadderStep(ladderStep) ? ladderStep : 1 }),
       setAnalyseCollapse: (analyseCollapse) => set({ analyseCollapse }),
@@ -481,6 +484,7 @@ export const useUiStore = create<UiState>()(
         expiry: s.expiry,
         feedPaused: s.feedPaused,
         chainRange: s.chainRange,
+        rangeDefault: s.rangeDefault,
         chartLayers: s.chartLayers,
         ladderStep: s.ladderStep,
         analyseCollapse: s.analyseCollapse,
@@ -514,7 +518,10 @@ export const useUiStore = create<UiState>()(
           ...p,
           venue,
           asset: (getVenueCore(venue).underlyings as readonly string[]).includes(p.asset ?? current.asset) ? (p.asset ?? current.asset) : (getVenueCore(venue).underlyings[0] ?? current.asset),
-          chainRange: isChainRange(p.chainRange) ? p.chainRange : current.chainRange,
+          // ±12 was the old default, so a saved 12 without the marker is not a choice and gets the new default once;
+          // ±6 and All can only have been chosen, and a marked value always sticks
+          chainRange: isChainRange(p.chainRange) && (p.rangeDefault === DEFAULT_CHAIN_RANGE || p.chainRange !== 12) ? p.chainRange : current.chainRange,
+          rangeDefault: DEFAULT_CHAIN_RANGE,
           chartLayers: normaliseLayers(p.chartLayers),
           ladderStep: isLadderStep(p.ladderStep) ? p.ladderStep : 1,
           analyseCollapse: p.analyseCollapse === "left" || p.analyseCollapse === "right" ? p.analyseCollapse : null,

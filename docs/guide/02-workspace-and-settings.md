@@ -1,6 +1,6 @@
 # Workspace chrome, settings and dialogs
 
-Part of the [HapieCoin feature guide](README.md). 114 traced features on 25 screens; 113 built and tested, 1 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 115 traced features on 26 screens; 114 built and tested, 1 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -70,6 +70,12 @@ Settings cover the profile, exchange API keys (several labelled keys per exchang
 ## Every feature, in detail
 
 Each row is one traced feature from the build spec: the id, what it is, how it behaves (the acceptance rule the tests check), and how it is tested. Status "mock-only" means the screen exists but the data feed behind it is not connected yet.
+
+### Shared chrome · Exchange chip / live surfaces · `/analyse`
+
+| ID | Feature | How it behaves | Status | Tested by |
+|---|---|---|---|---|
+| HC-SH-138 | TESTNET tag wherever live money is implied when the trading host is not the real exchange | GET /v1/credentials answers trading { env: testnet \| production, host } (tradingEnvOf: production only on a real exchange host, api.india.delta.exchange or api.delta.exchange, that does not say testnet / demo; a testnet, a local mock or a proxy is testnet); TradingEnvTag renders an amber TESTNET (host in the title) on the Exchange chip, the Live tab's exchange chip, each live card beside its Live pill, the net positions header, the trade mode dialog, the Trade Preview beside the exchange name (its red note reads 'on the Delta Exchange TESTNET with play money … no real funds move') and the Trade All dialog; nothing renders on the real exchange; the API startup log names the trading host | built | unit (api + web) · e2e (visual) |
 
 ### Shared chrome · App header (analyse) · `/analyse`
 

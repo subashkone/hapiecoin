@@ -4,11 +4,12 @@
 // interest on hover only, the cap line above and the legend below. Same keyboard contract as the Builder picker:
 // ↓ ↑ / J K move, B / S buy or sell the call, Shift+B / Shift+S the put, Enter reviews, Esc resets.
 import { cn } from "@hapiecoin/ui";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { daysToExpiry, fmtDelta, fmtExpiry, fmtIv, fmtOi, fmtPrice, fmtStrike } from "@/lib/format";
 import { ExpiryStrip } from "@/components/chain/ExpiryStrip";
 import type { ChainCellState, PickerKind, PickerRow } from "@/components/builder/ChainPickerBody";
 import type { LegSide } from "@/lib/strategy/legs";
+import type { ChainRange } from "@/lib/chain/range";
 
 export interface WorkbenchChainProps {
   expiries: readonly string[];
@@ -16,6 +17,9 @@ export interface WorkbenchChainProps {
   onExpiry: (expiry: string) => void;
   rows: readonly PickerRow[];
   atm: number;
+  /** Strikes each side of ATM (12) or every listed strike (0); HC-TR-193. */
+  range: ChainRange;
+  onRange: (range: ChainRange) => void;
   spot: number | null;
   /** "5 more open legs allowed after netting" (or the cap line). */
   capLine: string;
@@ -27,20 +31,29 @@ export interface WorkbenchChainProps {
   testId?: string | undefined;
 }
 
-export function WorkbenchChain({ expiries, expiry, onExpiry, rows, atm, spot, capLine, lotsPerClick, stateOf, onToggle, onEnter, onEscape, testId = "wb-chain" }: WorkbenchChainProps) {
+export function WorkbenchChain({ expiries, expiry, onExpiry, rows, atm, range, onRange, spot, capLine, lotsPerClick, stateOf, onToggle, onEnter, onEscape, testId = "wb-chain" }: WorkbenchChainProps) {
   const [focus, setFocus] = useState(-1);
   const box = useRef<HTMLDivElement>(null);
   const centred = useRef<string | null>(null);
-  useEffect(() => setFocus(-1), [expiry]);
-  // the first rows of each expiry open with the ATM row in the middle of the box, so the strikes a trader adjusts
-  // at are in view without scrolling (the picker window is 12 rows either side of ATM)
+  // the focus is a row index: a new expiry or a new range re-slices the rows under it, so it starts over rather than
+  // land on another strike (B / S act on the focused row)
+  useEffect(() => setFocus(-1), [expiry, range]);
+  // the focused row stays in view: Home, End and a run of arrows reach strikes far outside the box on a whole ladder
   useEffect(() => {
+    if (focus < 0) return;
+    box.current?.querySelector<HTMLElement>("tr[data-focused]")?.scrollIntoView?.({ block: "nearest" });
+  }, [focus]);
+  // each expiry, and each range, opens with the ATM row in the middle of the box: the list is every listed strike
+  // by default (HC-TR-193), so the view starts where the market is and scrolls out to the held strikes and the wings
+  useLayoutEffect(() => {
     const el = box.current;
-    if (!el || rows.length === 0 || atm < 0 || centred.current === expiry) return;
-    centred.current = expiry;
+    const view = `${expiry}|${range}`;
+    // a box with no height yet keeps the key, so the centre is retried once it has one
+    if (!el || el.clientHeight <= 0 || rows.length === 0 || atm < 0 || centred.current === view) return;
+    centred.current = view;
     const row = el.querySelector<HTMLElement>("tr[data-atm]");
     if (row) el.scrollTop = Math.max(0, row.offsetTop - el.clientHeight / 2 + row.offsetHeight / 2);
-  }, [rows, atm, expiry]);
+  }, [rows, atm, expiry, range]);
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     const last = rows.length - 1;
@@ -134,6 +147,14 @@ export function WorkbenchChain({ expiries, expiry, onExpiry, rows, atm, spot, ca
       <div className="flex flex-wrap items-center gap-2 text-2xs">
         <span className="micro">Chain · pick adjustment legs</span>
         <span className="text-muted-foreground" data-testid={`${testId}-cap`}>{capLine}</span>
+        <span className="inline-flex overflow-hidden rounded border border-border" role="group" aria-label="Strike range" data-testid={`${testId}-range`} data-range={range}>
+          {([12, 0] as const).map((r) => (
+            <button key={r} type="button" aria-pressed={range === r} onClick={() => onRange(r)} className={cn("px-2 py-1 font-mono text-3xs uppercase focus-visible:outline focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-ring", range === r ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground")} title={r === 0 ? "Every listed strike of this expiry" : "12 strikes either side of ATM"} data-testid={`${testId}-range-${r}`}>
+              {r === 0 ? "All" : "±12"}
+            </button>
+          ))}
+        </span>
+        <span className="micro text-muted-foreground" data-testid={`${testId}-count`}>{rows.length} strikes</span>
         <span className="micro ml-auto">spot <b className="num text-foreground">{spot === null ? "—" : fmtPrice(spot)}</b></span>
       </div>
       <ExpiryStrip className="pb-1 pt-1" testId={`${testId}-strip`}>
