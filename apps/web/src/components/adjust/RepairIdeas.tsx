@@ -81,7 +81,7 @@ function IdeaCard({ w, idea, market, before, tags, replaces, working, onFigures 
     w.applyDraft(idea.draft);
   };
   return (
-    <li className={cn("rounded border px-2 py-1.5", idea.draft ? "border-border" : "border-border/50 text-muted-foreground")} data-testid="repair-idea" data-kind={idea.kind} data-state={state} data-cash={f ? f.cash : undefined} data-max-loss={f ? f.maxLoss : undefined}>
+    <li className={cn("rounded border px-2 py-1.5", idea.draft ? "border-border" : "border-border/50 text-muted-foreground")} data-testid="repair-idea" data-kind={idea.kind} data-state={state} data-cash={f ? f.cash : undefined} data-max-loss={f ? f.maxLoss : undefined} data-max-profit={f ? f.maxProfit : undefined}>
       <div className="flex flex-wrap items-center gap-1.5">
         <b className="text-xs">{idea.label}</b>
         {tags.map((t) => (

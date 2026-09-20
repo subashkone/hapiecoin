@@ -86,7 +86,7 @@ export function PositionTicket({ w }: { w: AdjustWorkbench }) {
         <span className="num min-w-0 truncate">
           <span className="font-medium">{instrumentOf(l)}</span>
           <span className="text-muted-foreground"> · {fmtPrice(l.entryPrice ?? l.price, 1)} → {fmtPrice(mark, 1)}</span>
-          <span className={cn("ml-1", pnl !== null && (pnl >= 0 ? "text-profit" : "text-loss"))} data-testid="wb-leg-pnl">{pnl === null ? "—" : fmtMoney(pnl, money, { signed: true })}</span>
+          <span className={cn("ml-1", pnl !== null && (pnl >= 0 ? "text-profit" : "text-loss"))} data-testid="wb-leg-pnl" data-pnl={pnl ?? undefined}>{pnl === null ? "—" : fmtMoney(pnl, money, { signed: true })}</span>
         </span>
         <span className="flex items-center gap-1 whitespace-nowrap">
           <span className="num text-muted-foreground">{l.lots} →</span>
