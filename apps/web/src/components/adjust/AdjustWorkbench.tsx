@@ -68,7 +68,7 @@ export function AdjustWorkbench({ book }: { book: PaperBook }) {
   // HC-TR-193 (GAPS #115): every listed strike by default. Adjustments happen at the strikes held and at the far wings,
   // and a ±12 window around ATM hid both (a short 66,000 put with spot at 80,486 was not on the chain at all)
   const [range, setRange] = useState<ChainRange>(WORKBENCH_RANGE);
-  const chain = usePickerChain(strategy?.asset ?? "BTC", strategy !== undefined, firstExpiry, range);
+  const chain = usePickerChain(strategy?.asset ?? "BTC", strategy !== undefined, firstExpiry, range, strategy?.venue);
   const [review, setReview] = useState<AdjustBody | null>(null);
   // the strategy went away (archived, deleted, or the list refreshed without it): leave the workbench
   useEffect(() => {

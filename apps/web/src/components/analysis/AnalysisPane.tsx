@@ -72,7 +72,8 @@ export function StrategyInfo() {
   const a = useStrategyAnalysis();
   const storedName = useUiStore((s) => s.strategy[s.asset].name);
   if (a.legs.length === 0) return <span className="micro" data-testid="pane-strategy-info">No strategy</span>;
-  const name = storedName.trim() || guessTemplateName(a.legs);
+  // the stored name is the Builder draft's: a followed strategy or the exchange positions are named from their own legs
+  const name = (a.source.kind === "builder" ? storedName.trim() : "") || guessTemplateName(a.legs);
   const expiry = a.legs.filter((l) => l.kind !== "future").map((l) => l.expiry).sort()[0];
   const lots = a.legs.reduce((s, l) => s + Math.abs(l.lots), 0);
   return (

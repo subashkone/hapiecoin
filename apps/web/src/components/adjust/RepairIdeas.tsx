@@ -6,7 +6,7 @@
 import { Button, cn } from "@hapiecoin/ui";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useChain } from "@/lib/gateway/hooks";
-import { fmtStrike } from "@/lib/format";
+import { fmtExpiry, fmtStrike } from "@/lib/format";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
 import { effects, matchingPlan } from "@/lib/adjust/model";
 import { REPAIR_GOALS, type RepairContext, type RepairFigures, type RepairGoal, type RepairIdea, type RepairRow, defaultGoal, diagnose, diagnosisLine, draftSignature, orderIdeas, repairIdeas, tagIdeas } from "@/lib/adjust/repairs";
@@ -132,13 +132,22 @@ export function RepairIdeas({ w, expiry, rows, expiries }: { w: AdjustWorkbench;
   const [picked, setPicked] = useState<RepairGoal | null>(null);
   const [figures, setFigures] = useState<FiguresByKind>({});
   const bodyId = useId();
-  const nextExpiry = useMemo(() => (expiry ? (expiries[expiries.indexOf(expiry) + 1] ?? null) : null), [expiry, expiries]);
-  const next = useChain(w.strategy.asset, open ? nextExpiry : null);
+  // the ideas are for the POSITION, not for whatever the chain below happens to show: the shown expiry when option legs
+  // are held on it, else the nearest expiry that holds some (the chain can be on another expiry while the trader looks
+  // around); that expiry's ladder is then read here, on the strategy's own venue
+  const venue = w.strategy.venue;
+  const heldExpiries = useMemo(() => [...new Set(w.open.filter((l) => l.kind !== "future").map((l) => l.expiry))].sort(), [w.open]);
+  const shownExpiry = expiry;
+  const ideasExpiry = shownExpiry !== null && heldExpiries.includes(shownExpiry) ? shownExpiry : (heldExpiries[0] ?? shownExpiry);
+  const own = useChain(w.strategy.asset, ideasExpiry !== null && ideasExpiry !== shownExpiry ? ideasExpiry : null, venue);
+  const ladder: readonly RepairRow[] = ideasExpiry === shownExpiry ? rows : (own?.rows ?? []);
+  const nextExpiry = useMemo(() => (ideasExpiry ? (expiries[expiries.indexOf(ideasExpiry) + 1] ?? null) : null), [ideasExpiry, expiries]);
+  const next = useChain(w.strategy.asset, open ? nextExpiry : null, venue);
   const em = w.a.before?.expectedMove ?? w.a.result?.expectedMove;
-  const liveCtx = useMemo<RepairContext>(() => ({ open: w.open, asset: w.strategy.asset, expiry, rows, nextExpiry, nextRows: next?.rows ?? [], spot: w.a.spot, expectedMove: em !== undefined && Number.isFinite(em) && em > 0 ? em : null }), [w.open, w.strategy.asset, expiry, rows, nextExpiry, next?.rows, w.a.spot, em]);
+  const liveCtx = useMemo<RepairContext>(() => ({ open: w.open, asset: w.strategy.asset, expiry: ideasExpiry, rows: ladder, nextExpiry, nextRows: next?.rows ?? [], spot: w.a.spot, expectedMove: em !== undefined && Number.isFinite(em) && em > 0 ? em : null }), [w.open, w.strategy.asset, ideasExpiry, ladder, nextExpiry, next?.rows, w.a.spot, em]);
   // what changes the menu itself (the expiry, the legs, a chain arriving) applies at once; the market settles on a timer,
   // and the ideas are both built and priced on that settled copy, so a spot tick re-runs nothing
-  const structure = `${expiry}|${nextExpiry}|${rows.length > 0}|${(next?.rows.length ?? 0) > 0}|${liveCtx.spot === null}|${liveCtx.expectedMove === null}|${w.open.map((l) => `${l.id}:${l.lots}`).join(",")}`;
+  const structure = `${ideasExpiry}|${nextExpiry}|${ladder.length > 0}|${(next?.rows.length ?? 0) > 0}|${liveCtx.spot === null}|${liveCtx.expectedMove === null}|${w.open.map((l) => `${l.id}:${l.lots}`).join(",")}`;
   const liveMarket: DraftMarket = { spot: w.a.spot, spotText: w.a.spotText, nowMs: w.a.nowMs, markOf: w.a.markOf, quoteFor: w.a.quoteFor };
   const { ctx, market } = useSettled({ ctx: liveCtx, market: liveMarket }, structure, IDEAS_REFRESH_MS);
   const dx = useMemo(() => diagnose(ctx), [ctx]);
@@ -167,10 +176,11 @@ export function RepairIdeas({ w, expiry, rows, expiries }: { w: AdjustWorkbench;
   const mine = draftSignature(w.draft);
   const replaces = !w.empty && !matchingPlan(w.draft, w.open) && !ideas.some((i) => i.draft && draftSignature(i.draft) === mine);
   return (
-    <section className="mb-2 rounded border border-border p-2" data-testid="repair-ideas" data-goal={goal} data-open={open} data-count={ready}>
+    <section className="mb-2 rounded border border-border p-2" data-testid="repair-ideas" data-goal={goal} data-open={open} data-count={ready} data-expiry={ideasExpiry ?? ""}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="micro">Repair ideas</span>
-        {open && ideas.length ? <span className="text-2xs text-muted-foreground">{ready} of {ideas.length} can be built from this chain</span> : null}
+        {ideasExpiry ? <span className="text-2xs text-muted-foreground" data-testid="repair-expiry">for your {fmtExpiry(ideasExpiry)} legs{shownExpiry && shownExpiry !== ideasExpiry ? ` (the chain below shows ${fmtExpiry(shownExpiry)})` : ""}</span> : null}
+        {open && ideas.length && ladder.length ? <span className="text-2xs text-muted-foreground">{ready} of {ideas.length} can be built from the listed strikes</span> : null}
         <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls={bodyId} className="ml-auto rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-1 focus-visible:outline-ring" data-testid="repair-toggle">
           {open ? "Hide" : "Show"}
         </button>
@@ -180,7 +190,8 @@ export function RepairIdeas({ w, expiry, rows, expiries }: { w: AdjustWorkbench;
         {before && !Number.isFinite(before.maxLoss) ? <b className="text-loss"> · the loss has no limit</b> : null}
       </p>
       <div id={bodyId} hidden={!open}>
-        {open && ideas.length ? (
+        {open && ideas.length && ladder.length === 0 ? <p className="mt-1.5 text-2xs text-muted-foreground" data-testid="repair-loading">Loading the {ideasExpiry ? fmtExpiry(ideasExpiry) : ""} strikes…</p> : null}
+        {open && ideas.length && ladder.length ? (
           <>
             <div className="mt-1.5 flex flex-wrap items-center gap-1" role="group" aria-label="Order the ideas by">
               <span className="micro mr-1">Order by</span>
