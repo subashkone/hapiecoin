@@ -6,6 +6,7 @@
 import { cn } from "@hapiecoin/ui";
 import { useEffect, useMemo, useState } from "react";
 import type { Underlying } from "@hapiecoin/schema";
+import type { VenueId } from "@hapiecoin/venues/core";
 import { nearestExpiry } from "@/lib/chain/expiries";
 import { useExpiriesQuery } from "@/lib/chain/useExpiries";
 import { type ChainRange, maxOpenInterest, oiBarPercent, sliceAroundAtm } from "@/lib/chain/range";
@@ -27,15 +28,17 @@ export interface ChainCellState {
 }
 
 /** Expiries, the chosen expiry and the chain window around ATM for one asset; `open` gates the subscriptions. `range` is the strikes kept each side of ATM (0 = every listed strike); the Builder picker keeps the compact ±12, the workbench shows all (GAPS #115). */
-export function usePickerChain(asset: Underlying, open: boolean, preferredExpiry: string | null | undefined, range: ChainRange = 12) {
-  const expiries = useExpiriesQuery(asset, { enabled: open }); // keyed by venue (ADR-069)
+export function usePickerChain(asset: Underlying, open: boolean, preferredExpiry: string | null | undefined, range: ChainRange = 12, venue?: VenueId) {
+  // keyed by venue (ADR-069): the workspace venue unless the caller names one (the workbench names the strategy's own,
+  // so a Delta position is never adjusted on another venue's expiries and strikes)
+  const expiries = useExpiriesQuery(asset, venue === undefined ? { enabled: open } : { enabled: open, venue });
   const list = useMemo(() => expiries.data?.expiries ?? [], [expiries.data]);
   const [expiry, setExpiry] = useState<string | null>(null);
   useEffect(() => {
     if (open) setExpiry(preferredExpiry && list.includes(preferredExpiry) ? preferredExpiry : nearestExpiry(list));
   }, [open, preferredExpiry, list]);
-  const chain = useChain(asset, open ? expiry : null);
-  const spot = useSpot(asset);
+  const chain = useChain(asset, open ? expiry : null, venue);
+  const spot = useSpot(asset, venue);
   const rows = chain?.rows ?? [];
   const atm = useMemo(() => atmIndex(rows, spot?.price), [rows, spot?.price]);
   const shown = useMemo(() => sliceAroundAtm(rows, atm, range), [rows, atm, range]);

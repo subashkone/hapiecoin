@@ -362,6 +362,26 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(within(idea("rollOut")).getByTestId("repair-note").textContent).toContain("not loaded yet");
     expect(idea("rollUntestedCloser").dataset["state"]).toBe("unavailable");
     expect(within(ideas).getByTestId("repair-diagnosis").textContent).toMatch(/short [\d,]+ P is .* the put side is/);
+    // the pane names the FOLLOWED legs from the legs themselves, never from the template name left in the Builder
+    const st = useUiStore.getState();
+    useUiStore.setState({ strategy: { ...st.strategy, [st.asset]: { ...st.strategy[st.asset], name: "Bull Call Spread" } } });
+    await waitFor(() => expect(screen.getByTestId("pane-strategy-info").textContent).not.toContain("Bull Call Spread"));
+    // the ideas belong to the POSITION: with the chain moved to another expiry (the trader looking around) the panel
+    // still reads the legs it holds, says which expiry it speaks of, and builds from that expiry's own ladder
+    const heldExpiry = ideas.dataset["expiry"]!;
+    expect(heldExpiry).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(within(ideas).getByTestId("repair-expiry").textContent).not.toContain("the chain below shows");
+    const otherTab = within(wb).getAllByTestId("wb-chain-expiry").find((b) => b.dataset["expiry"] !== heldExpiry)!;
+    await u.click(otherTab);
+    serveMarket();
+    await waitFor(() => expect(within(ideas).getByTestId("repair-expiry").textContent).toContain("the chain below shows"), { timeout: 5000 });
+    expect(ideas.dataset["expiry"]).toBe(heldExpiry);
+    expect(within(ideas).getByTestId("repair-diagnosis").textContent).toMatch(/short [\d,]+ P is .* the put side is/);
+    await waitFor(() => expect(idea("rollTestedAway").dataset["state"]).toBe("ready"), { timeout: 8000 });
+    await u.click(within(wb).getAllByTestId("wb-chain-expiry").find((b) => b.dataset["expiry"] === heldExpiry)!);
+    serveMarket();
+    await waitFor(() => expect(within(ideas).getByTestId("repair-expiry").textContent).not.toContain("the chain below shows"), { timeout: 5000 });
+    await waitFor(() => expect(idea("rollTestedAway").dataset["state"]).toBe("ready"), { timeout: 8000 });
     // every priced idea shows before → after and what it gives up; the tags are facts about the figures
     await waitFor(() => expect(within(ideas).getAllByTestId("repair-tag").length).toBeGreaterThan(0), { timeout: 8000 });
     expect(within(idea("rollTestedAway")).getByTestId("repair-figures").textContent).toMatch(/Max loss.*→.*Max profit.*Break-evens.*POP.*Cash now.*orders?/); // textContent joins the metrics without spaces
