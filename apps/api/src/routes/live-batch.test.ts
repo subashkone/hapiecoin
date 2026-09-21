@@ -31,6 +31,27 @@ const previewBatch = (ids: string[]) => t.request("/v1/strategies/live/batch/pre
 const batch = (ids: string[], key: string) => t.request("/v1/strategies/live/batch", { cookie: alice, json: { confirm: "LIVE", ids, brokerId: SEED.brokerId, idempotencyKey: key } });
 const status = async (id: string) => (await json<Strategy>(await t.request(`/v1/strategies/${id}`, { cookie: alice }))).status;
 
+describe("HC-TR-196 a future in a batch is margined, never counted as premium (ADR-095)", () => {
+  it("HC-TR-196 two strategies that each hold a long future: the batch asks for their margin, not for their notional", async () => {
+    t.now.value += 61_000;
+    const FUT = { kind: "future", side: "buy", strike: "", expiry: "PERP", symbol: "BTCUSD", lots: 10, price: "79500" };
+    t.trading.product("BTCUSD", 27, "0.001", "live", "0.5", { pct: "1" }).markAt("BTCUSD", "79500").fillAt(27, "79510");
+    t.trading.setBalances([{ asset: "USD", balance: "5000", availableBalance: "1000" }]);
+    const a = await paper("future a", [FUT]);
+    const b = await paper("future b", [FUT]);
+    const p = await json<LiveBatchPreview>(await previewBatch([a.id, b.id]));
+    // each future: 1 % of 10 x 0.001 x 79,500 = 7.95 margin and NO premium. Counting the 795 USD notional of each as
+    // premium paid (the old rule) made the debit 1,590 and refused this batch against the 1,000 free
+    expect(p.items.map((i) => [i.ok, i.debit])).toEqual([[true, "0"], [true, "0"]]);
+    expect(p.debit).toBe("0");
+    expect(p.marginRequired).toBe("15.9");
+    expect(p.reasons).toEqual([]);
+    expect(p.ok).toBe(true);
+    t.trading.setBalances([{ asset: "USD", balance: "5000", availableBalance: "4000" }]);
+    t.now.value += 61_000;
+  });
+});
+
 describe("HC-TR-192 the batch sums the short legs' margin estimates against the one wallet (ADR-091)", () => {
   it("each strategy's shorts fit the wallet alone, together they do not: the batch says so and places nothing", async () => {
     t.now.value += 61_000;

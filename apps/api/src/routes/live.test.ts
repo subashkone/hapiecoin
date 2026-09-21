@@ -75,6 +75,10 @@ describe("HC-TR-186 the typed LIVE confirmation (ADR-078)", () => {
 });
 
 describe("HC-TR-192 short-leg margin: the whole placement is refused before the first order (ADR-091, GAPS #108)", () => {
+  // refused placements count against the 20 / min order budget: a fresh window after every test, passed or failed
+  afterEach(() => {
+    t.now.value += 61_000;
+  });
   it("HC-TR-192 estimates a sold option's margin from the product's margin parameters and the ticker spot, adds the premium paid, and refuses when the wallet has less free", async () => {
     // 10 contracts x 0.001 BTC at spot 79,500, mark 900, 1 % + 0.000005 % per contract: (1.00005 % x 79,500 + 900) x 0.001 = 1.69503975 per contract
     t.trading.product("P-BTC-78000-250926", 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005" }).markAt("P-BTC-78000-250926", "900", "79500");
@@ -123,6 +127,58 @@ describe("HC-TR-192 short-leg margin: the whole placement is refused before the 
     const after = await json<Strategy>(await t.request(`/v1/strategies/${s.id}`, { cookie: alice }));
     expect(after.legs).toHaveLength(1);
     t.trading.setBalances([{ asset: "USD", balance: "5000", availableBalance: "4000" }]);
+  });
+
+  it("HC-TR-196 a futures leg is margined on its notional and moves no premium; without margin parameters an entry into it is refused (ADR-095)", async () => {
+    const FUT = { kind: "future", side: "buy", strike: "", expiry: "PERP", symbol: "BTCUSD", lots: 10, price: "79500" };
+    t.trading.product("P-BTC-78000-250926", 102, "0.001", "live", "0.1", { pct: "1", factor: "0.000005" }).markAt("P-BTC-78000-250926", "900", "79500");
+    t.trading.product("BTCUSD", 27, "0.001", "live", "0.5", { pct: "1" }).markAt("BTCUSD", "79500");
+    const s = await draft([PUT, FUT], "Put with a long future");
+    const p = await json<LivePreview>(await preview(s.id));
+    // the future: 1 % of 10 x 0.001 x 79,500 = 7.95; the sold put: 16.95 (as in the test above)
+    expect(p.legs.find((l) => l.symbol === "BTCUSD")?.marginEstimate).toBe("7.95");
+    expect(p.legs.find((l) => l.symbol === "P-BTC-78000-250926")?.marginEstimate).toBe("16.95");
+    // no premium for the future: the put's 9 USD credit is the only premium, so nothing is added for a debit.
+    // (Counting the long future's 795 USD notional as premium paid, as before, would have made this 802.95.)
+    expect(p.marginRequired).toBe("24.9");
+    expect(p.ok).toBe(true);
+    // a wallet between the two figures: enough for the true requirement, far short of the old one
+    t.trading.setBalances([{ asset: "USD", balance: "30", availableBalance: "30" }]);
+    expect((await json<LivePreview>(await preview(s.id))).ok).toBe(true);
+    t.trading.setBalances([{ asset: "USD", balance: "20", availableBalance: "20" }]);
+    const short = await json<LivePreview>(await preview(s.id));
+    expect(short.ok).toBe(false);
+    expect(short.reasons.join(" | ")).toMatch(/Available USD 20 is below the margin the exchange will hold for the short and futures legs plus the premium paid [(]estimate 24.9[)]/);
+    t.trading.setBalances([{ asset: "USD", balance: "5000", availableBalance: "4000" }]);
+    // the venue gave no margin parameters for the future: a linear leg has no worst loss to fall back on, so it is refused by name
+    t.trading.product("BTCUSD", 27, "0.001").markAt("BTCUSD", "79500");
+    const blind = await json<LivePreview>(await preview(s.id));
+    expect(blind.ok).toBe(false);
+    expect(blind.reasons.join(" | ")).toContain("The margin for BTCUSD could not be estimated");
+    const before = t.trading.placed.length;
+    expect((await place(s.id, "key-futmargin-01", {})).status).toBe(409);
+    expect(t.trading.placed.length).toBe(before); // nothing reached the exchange
+  });
+
+  it("HC-TR-196 a SHORT future no longer lowers the requirement: its notional is not premium received", async () => {
+    const SHORT_FUT = { kind: "future", side: "sell", strike: "", expiry: "PERP", symbol: "BTCUSD", lots: 10, price: "79500" };
+    t.trading.product("BTCUSD", 27, "0.001", "live", "0.5", { pct: "1" }).markAt("BTCUSD", "79500");
+    const s = await draft([CALL, SHORT_FUT], "Call with a short future");
+    const p = await json<LivePreview>(await preview(s.id));
+    // 7.95 for the future + the 12 USD the call costs. The old rule netted the future's 795 USD against the call's
+    // premium (a "credit" of 783), estimated nothing and asked for nothing
+    expect(p.legs.find((l) => l.symbol === "BTCUSD")?.marginEstimate).toBe("7.95");
+    expect(p.marginRequired).toBe("19.95");
+    t.trading.setBalances([{ asset: "USD", balance: "15", availableBalance: "15" }]);
+    const short = await json<LivePreview>(await preview(s.id));
+    expect(short.ok).toBe(false);
+    expect(short.reasons.join(" | ")).toMatch(/estimate 19.95/);
+    t.trading.setBalances([{ asset: "USD", balance: "5000", availableBalance: "4000" }]);
+    // a perpetual whose ticker carries the index and no mark is still sized and margined (the same price for both)
+    t.trading.product("BTCUSD", 27, "0.001", "live", "0.5", { pct: "1" }).markAt("BTCUSD", null as unknown as string, "79500");
+    const indexOnly = await json<LivePreview>(await preview(s.id));
+    const fut = indexOnly.legs.find((l) => l.symbol === "BTCUSD")!;
+    expect([fut.mark, fut.notional, fut.marginEstimate]).toEqual([null, "795", "7.95"]);
   });
 
   it("HC-TR-192 without margin parameters or a spot from the venue the estimate stays null and the older wallet rules alone decide", async () => {

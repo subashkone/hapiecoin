@@ -142,15 +142,19 @@ export function useStrategyAnalysis(scope: "pane" | "builder" = "pane"): Strateg
   // a followed strategy is priced on its own venue; exchange positions on the connected exchange; the Builder on the workspace venue (ADR-069)
   const venue = followed?.venue ?? (positions.asset ? DEFAULT_VENUE : workspaceVenue);
   const { quoteFor, version: quoteVersion } = useLegQuotes(asset, quoteLegs, venue);
+  const spotState = useSpot(asset, listedVenue(venue, asset)); // the analysis venue's index (ADR-071)
+  const spotPrice = spotState?.price;
   const markOf = useMemo<MarkOf>(() => {
     const bySymbol = new Map(quoteLegs.map((l) => [l.symbol, l] as const));
     return (symbol) => {
       const l = bySymbol.get(symbol);
-      return l ? quoteFor(l)?.mark : undefined;
+      if (!l) return undefined;
+      // a perpetual has no mark of its own here (GAPS #14): the index stands in, so lots added to a held future are priced
+      // and booked at today's price, a closed one exits there, and its locked-in result is carried (HC-TR-196)
+      return l.kind === "future" ? spotPrice : quoteFor(l)?.mark;
     };
-  }, [quoteLegs, quoteFor]);
+  }, [quoteLegs, quoteFor, spotPrice]);
   const legs = useMemo(() => (adjusting ? afterLegs(adjusting, openLegs, asset, markOf) : heldLegs), [adjusting, openLegs, asset, markOf, heldLegs]);
-  const spotState = useSpot(asset, listedVenue(venue, asset)); // the analysis venue's index (ADR-071)
   const lotSize = lotSizeFor(venue, asset, settings);
   const money: MoneyFormat = settings ? { currency: settings.currency === "INR" ? "INR" : "USD", rate: settings.conversionRate } : USD;
   const nowMs = useClock();

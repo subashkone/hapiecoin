@@ -17,7 +17,12 @@ export interface LegPriceSource {
   mark?: ((leg: StrategyLeg) => string | undefined) | undefined;
   /** Live IV for an option leg, or undefined to keep the stored IV. */
   iv?: ((leg: StrategyLeg) => number | undefined) | undefined;
-  /** Spot for future legs (price per unit). */
+  /**
+   * Spot for future legs (price per unit), used in LIVE price mode only, that is when `mark` is given: a future has no
+   * mark of its own here (GAPS #14), so the index stands in for it. Without `mark` a future keeps its stored price like
+   * an option does, because a HELD future must be priced from its entry: replacing the entry with today's spot made
+   * every held future worth exactly nothing at spot and shifted the whole payoff by what it had earned or lost (ADR-095).
+   */
   spot?: string | undefined;
 }
 
@@ -27,7 +32,7 @@ export function toPricingLegs(legs: readonly StrategyLeg[], lotSize: string | un
   const out: PricingLeg[] = [];
   for (const l of legs) {
     if (l.status !== "open" || l.enabled === false) continue;
-    const price = l.kind === "future" ? Number(source.spot ?? l.price) : Number(source.mark?.(l) ?? l.price);
+    const price = l.kind === "future" ? Number((source.mark ? source.spot : undefined) ?? l.price) : Number(source.mark?.(l) ?? l.price);
     const iv = l.kind === "future" ? undefined : (source.iv?.(l) ?? l.iv);
     if (!Number.isFinite(price)) continue;
     out.push({

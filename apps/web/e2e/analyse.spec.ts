@@ -1071,6 +1071,165 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     await expect(ideas.getByTestId("repair-expiry")).not.toContainText("the chain below shows", { timeout: 15_000 });
   });
 
+  test("HC-TR-195 repair ideas in the browser: close, halve and roll out load what their cards say, and a close carries the result it locks in", async ({ page }) => {
+    // the paper trade is booked at TWICE the mark, so buying the short put back now locks in a known, non-zero profit:
+    // (entry - mark) x lots x lot size, the same figure the ticket shows as the leg's P&L
+    // (the entry comes from the saved draft's leg price, or from the start request's entries when it carries any)
+    const twice = (price: string) => String(Number(price) * 2);
+    await page.route("**/v1/strategies", async (route) => {
+      const body = route.request().method() === "POST" ? (route.request().postDataJSON() as { legs?: { price: string }[] } | null) : null;
+      if (!body?.legs) return route.continue();
+      await route.continue({ postData: JSON.stringify({ ...body, legs: body.legs.map((l) => ({ ...l, price: twice(l.price) })) }) });
+    });
+    await page.route("**/v1/strategies/*/start", async (route) => {
+      const body = route.request().postDataJSON() as { entries: Record<string, string> };
+      const entries = Object.fromEntries(Object.entries(body.entries).map(([id, price]) => [id, twice(price)]));
+      await route.continue({ postData: JSON.stringify({ ...body, entries }) });
+    });
+    const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
+    await page.locator(`[data-testid=chain-row-puts][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-sell-puts").click();
+    await page.getByTestId("tab-builder").click();
+    await page.getByTestId("strategy-name").fill("E2E short put");
+    await page.getByTestId("builder-paper-trade").click();
+    await page.getByTestId("trade-mode").getByTestId("trade-continue").click();
+    await typeLiveIfShown(page);
+    await page.getByTestId("trade-preview").getByTestId("trade-now").click();
+    await page.getByTestId("save-draft-confirm").click();
+    await page.getByTestId("rule-skip").click();
+    await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+    await page.getByTestId("paper-card").getByTestId("card-adjust").click();
+    const wb = page.getByTestId("adjust-workbench");
+    await expect(wb.getByTestId("wb-chain-table")).toHaveAttribute("data-rows", /^[1-9]/, { timeout: 15_000 });
+    const leg = wb.getByTestId("wb-leg");
+    await expect(leg).toHaveCount(1);
+    const lots = Number(await leg.getAttribute("data-after"));
+    expect(lots).toBeGreaterThanOrEqual(2);
+    await expect(leg.getByTestId("wb-leg-pnl")).toHaveAttribute("data-pnl", /^[1-9]/, { timeout: 15_000 }); // a profit: sold at twice the mark
+    const ideas = wb.getByTestId("repair-ideas");
+    const held = (await ideas.getAttribute("data-expiry"))!;
+    const card = (kind: string) => ideas.locator(`[data-testid=repair-idea][data-kind=${kind}]`);
+
+    // CLOSE: nothing is left open, so the whole trade is worth exactly what the exit locks in, at every price:
+    // max profit = max loss = the leg's P&L on the ticket, and there is no break-even. (Before ADR-094's pricing of
+    // the lots a change takes off, this card had nothing to price and the locked-in result was not shown at all.)
+    const close = card("closeTested");
+    await expect(close).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(close.getByTestId("repair-what")).toHaveText(new RegExp(`^buy back ${lots} of ${lots} × [\\d,]+ P$`));
+    await expect.poll(async () => {
+      const pnl = Number(await leg.getByTestId("wb-leg-pnl").getAttribute("data-pnl"));
+      const maxProfit = Number(await close.getAttribute("data-max-profit"));
+      const maxLoss = Number(await close.getAttribute("data-max-loss"));
+      // the card is priced on a market copy up to two seconds old, the ticket on the live mark: a tick may sit between them
+      const near = (x: number, y: number) => Math.abs(x - y) <= Math.abs(y) * 0.02;
+      return pnl > 0 && near(maxProfit, pnl) && near(maxLoss, pnl);
+    }, { timeout: 20_000 }).toBe(true);
+    await expect(close.getByTestId("repair-figures")).toContainText("none"); // break-evens after: none
+    await close.getByTestId("repair-load").click();
+    await expect(leg).toHaveAttribute("data-after", "0");
+    await expect(wb.getByTestId("wb-order")).toHaveCount(1);
+    await expect(wb.getByTestId("wb-order")).toHaveAttribute("data-kind", "close");
+    await expect(wb.getByTestId("wb-pick")).toHaveCount(0);
+
+    // HALVE: the larger half stays. The change on the ticket is an idea, so loading another asks nothing.
+    const halve = card("halveTested");
+    await expect(halve).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    const back = lots - Math.ceil(lots / 2);
+    await expect(halve.getByTestId("repair-what")).toHaveText(new RegExp(`^buy back ${back} of ${lots} × [\\d,]+ P$`));
+    await halve.getByTestId("repair-load").click();
+    await expect(halve.getByTestId("repair-load")).toHaveText("Load");
+    await expect(leg).toHaveAttribute("data-after", String(Math.ceil(lots / 2)));
+    await expect(wb.getByTestId("wb-order")).toHaveAttribute("data-kind", "trim");
+
+    // ROLL OUT: the leg is closed and sold again on the next listed expiry. When the held expiry is the last one the
+    // fixture lists (after 30 Oct 2026, GAPS #114) there is nothing to roll to, and the card must say so.
+    const later = await wb.getByTestId("wb-chain-expiry").evaluateAll((tabs, h) => tabs.map((t) => t.getAttribute("data-expiry")!).filter((e) => e > h), held);
+    const roll = card("rollOut");
+    if (later.length > 0) {
+      await expect(roll).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+      const what = (await roll.getByTestId("repair-what").textContent())!;
+      const m = /^close the leg, sell (\d+) × ([\d,]+) P (.+)$/.exec(what);
+      expect(m, what).not.toBeNull();
+      expect(Number(m![1])).toBe(lots);
+      await roll.getByTestId("repair-load").click();
+      await expect(leg).toHaveAttribute("data-after", "0");
+      await expect(wb.getByTestId("wb-pick")).toHaveCount(1);
+      await expect(wb.getByTestId("wb-pick")).toContainText(m![3]!); // the pick is on the next expiry, as the card said
+      await expect(wb.getByTestId("wb-pick").getByTestId("effect")).toHaveAttribute("data-kind", "new");
+      await expect(wb.getByTestId("proposed-count")).toHaveAttribute("data-count", "2"); // one close, one new leg
+    } else {
+      await expect(roll).toHaveAttribute("data-state", "unavailable");
+      await expect(roll.getByTestId("repair-note")).toContainText("next expiry");
+    }
+  });
+
+  test("HC-TR-194 / HC-TR-195 repair ideas in the browser: a long-only position gets its own three ideas, and the panel keeps its place in the layout", async ({ page }) => {
+    const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
+    await page.locator(`[data-testid=chain-row-calls][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-buy-calls").click();
+    await page.getByTestId("tab-builder").click();
+    await page.getByTestId("strategy-name").fill("E2E long call");
+    await page.getByTestId("builder-paper-trade").click();
+    await page.getByTestId("trade-mode").getByTestId("trade-continue").click();
+    await typeLiveIfShown(page);
+    await page.getByTestId("trade-preview").getByTestId("trade-now").click();
+    await page.getByTestId("save-draft-confirm").click();
+    await page.getByTestId("rule-skip").click();
+    await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+    await page.getByTestId("paper-card").getByTestId("card-adjust").click();
+    const wb = page.getByTestId("adjust-workbench");
+    await expect(wb.getByTestId("wb-chain-table")).toHaveAttribute("data-rows", /^[1-9]/, { timeout: 15_000 });
+    const ideas = wb.getByTestId("repair-ideas");
+    const leg = wb.getByTestId("wb-leg");
+    const lots = Number(await leg.getAttribute("data-after"));
+    await expect(ideas.getByTestId("repair-diagnosis")).toContainText("No short option on this expiry");
+    await expect(ideas.getByTestId("repair-idea")).toHaveCount(3);
+    expect((await ideas.getByTestId("repair-idea").evaluateAll((els) => els.map((e) => e.getAttribute("data-kind")))).sort()).toEqual(["convertToSpread", "rollCheaper", "rollOut"]);
+
+    // convert to a spread: one call SOLD further out, nothing closed, and it brings cash in
+    const spread = ideas.locator("[data-testid=repair-idea][data-kind=convertToSpread]");
+    await expect(spread).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(spread.getByTestId("repair-what")).toHaveText(new RegExp(`^sell ${lots} × [\\d,]+ C `));
+    expect(Number(await spread.getAttribute("data-cash"))).toBeGreaterThan(0);
+    await spread.getByTestId("repair-load").click();
+    await expect(leg).toHaveAttribute("data-after", String(lots));
+    await expect(wb.getByTestId("wb-pick")).toHaveCount(1);
+    await expect(wb.getByTestId("wb-pick")).toContainText(/sell/i);
+    // roll to a cheaper strike: the call is closed and one bought further out, and it takes cash out of the trade
+    const cheaper = ideas.locator("[data-testid=repair-idea][data-kind=rollCheaper]");
+    await expect(cheaper).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    expect(Number(await cheaper.getAttribute("data-cash"))).toBeGreaterThan(0);
+    await cheaper.getByTestId("repair-load").click();
+    await expect(leg).toHaveAttribute("data-after", "0");
+    await expect(wb.getByTestId("wb-pick")).toHaveCount(1);
+    await expect(wb.getByTestId("wb-pick")).toContainText(/buy/i);
+    await expect(wb.getByTestId("proposed-count")).toHaveAttribute("data-count", "2");
+
+    // LAYOUT GUARD (in place of pixel baselines, GAPS #119): on a wide screen the panel sits in the left column under the
+    // ticket and the strike chain starts near the top of the right column (the first build pushed it below the fold);
+    // nothing overflows sideways, wide or stacked
+    const boxes = async () => {
+      const b = async (l: typeof wb) => (await l.boundingBox())!;
+      const [w0, i0, c0, t0] = [await b(wb), await b(ideas), await b(wb.getByTestId("wb-chain-box")), await b(leg)];
+      const cards = await ideas.getByTestId("repair-idea").evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { left: r.left, right: r.right }; }));
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      return { w0, i0, c0, t0, cards, overflow };
+    };
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await expect(wb).toHaveAttribute("data-layout", "columns");
+    const wide = await boxes();
+    expect(wide.i0.x + wide.i0.width).toBeLessThanOrEqual(wide.c0.x + 1); // the panel is left of the chain, not over it
+    expect(wide.i0.y).toBeGreaterThanOrEqual(wide.t0.y + wide.t0.height - 1); // under the position ticket
+    expect(wide.c0.y - wide.w0.y).toBeLessThan(360); // the chain is not pushed down
+    expect(wide.overflow).toBeLessThanOrEqual(0);
+    for (const c of wide.cards) expect(c.left >= wide.i0.x - 1 && c.right <= wide.i0.x + wide.i0.width + 1).toBe(true);
+    await page.setViewportSize({ width: 640, height: 900 });
+    await expect(wb).toHaveAttribute("data-layout", "stacked");
+    const narrow = await boxes();
+    expect(narrow.overflow).toBeLessThanOrEqual(0);
+    for (const c of narrow.cards) expect(c.left >= narrow.i0.x - 1 && c.right <= narrow.i0.x + narrow.i0.width + 1).toBe(true);
+  });
+
   test("HC-TR-148 under 720 px the workbench stacks its columns (ADR-044 extra 6), and Exit asks before discarding a change", async ({ page }) => {
     const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
     await page.locator(`[data-testid=chain-row-calls][data-strike="${strike}"]`).hover();

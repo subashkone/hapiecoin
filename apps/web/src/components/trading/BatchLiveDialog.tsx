@@ -116,7 +116,7 @@ export function BatchLiveDialog({ open, onOpenChange, strategies, brokers, accou
                 <span>Premium {Number(preview.data.debit) >= 0 ? "paid" : "received"} together: <b className="num">{fmtMoney(Math.abs(Number(preview.data.debit)), money)}</b></span>
                 <span>Available: <b className="num">{cash(preview.data.available, preview.data.availableAsset)}</b></span>
                 <span>Margin in use: <b className="num">{cash(preview.data.marginUsed, preview.data.availableAsset)}</b></span>
-                {preview.data.marginRequired !== null ? <span title="Estimated margin for the short legs of the batch plus the premiums paid (ADR-091)">Needed for shorts · est.: <b className={cn("num", preview.data.available !== null && Number(preview.data.marginRequired) > Number(preview.data.available) && "text-loss")} data-testid="batch-margin-required">{cash(preview.data.marginRequired, preview.data.availableAsset)}</b></span> : null}
+                {preview.data.marginRequired !== null ? <span title="Estimated margin for the short legs and any future of the batch, plus the premiums paid (ADR-091, ADR-095)">Margin needed · est.: <b className={cn("num", preview.data.available !== null && Number(preview.data.marginRequired) > Number(preview.data.available) && "text-loss")} data-testid="batch-margin-required">{cash(preview.data.marginRequired, preview.data.availableAsset)}</b></span> : null}
               </div>
               {preview.data.reasons.map((r, i) => (
                 <div key={`${i}-${r}`} className="mt-1 text-loss" data-testid="batch-preview-reason">

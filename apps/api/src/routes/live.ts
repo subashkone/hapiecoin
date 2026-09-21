@@ -75,7 +75,9 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       }
       const rowAccount = row.accountId ?? accountId ?? onlyKey;
       const { legs, p } = await checkedPreview(user, row, brokerId, null, rowAccount, mindful, walletReads); // the preview names a venue mismatch itself (ADR-065)
-      const own = p.legs.reduce((sum, l) => sum + (l.side === "buy" ? 1 : -1) * Number(l.notional), 0);
+      // premium only: a future moves none (HC-TR-196), so its notional is kept out of the strategy's debit and of the wallet sums
+      const futureIds = new Set(legs.filter((l) => l.kind === "future").map((l) => l.id));
+      const own = p.legs.reduce((sum, l) => (futureIds.has(l.legId) ? sum : sum + (l.side === "buy" ? 1 : -1) * Number(l.notional)), 0);
       items.push({ id, name: row.name, paper: true, ok: p.ok, reasons: p.reasons, legs: p.legs, notional: p.notional, debit: toDecimal(own, 2) });
       plans.set(id, { row, legs, p, rowAccount });
       notional += Number(p.notional);
