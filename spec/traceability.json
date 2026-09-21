@@ -7729,6 +7729,36 @@
   "evidence": "ADR-095, GAPS #120 (21 Sep 2026): apps/web/src/lib/pricing/legs.ts; packages/venues/src/delta/trading.ts futuresMarginUsd; apps/api/src/routes/live-exec.ts planLegs / preview; packages/schema/src/strategies.ts LivePreviewLeg.marginEstimate; apps/api/src/routes/live.ts (batch); apps/web/src/lib/strategy/useStrategyAnalysis.ts markOf; apps/web/src/lib/adjust/model.ts realisedLegs / cashflow; tests: legs.test.ts HC-TR-196 (three cases), model.test.ts \"HC-TR-196 a held future in the workbench …\", live-batch.test.ts HC-TR-196, trading.test.ts HC-TR-196 (two cases), live.test.ts \"HC-TR-196 a futures leg is margined on its notional …\" (real Postgres); two control runs"
  },
  {
+  "id": "HC-TR-197",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/analyse",
+  "screen": "Trading · Trade Preview / Adjustment review",
+  "feature": "The perpetual future as a pick in the adjustment workbench (the ticket's Future B / S)",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web) · e2e (Playwright)",
+  "acceptance": "AdjustPick.kind may be \"future\" (strike \"\", expiry \"PERP\"); the ticket's Future row buys or sells the chain's lots of the perpetual at the spot index under the chain's own B / S rules (a second click takes it off, the other side flips it, on a held future it nets); it is priced at the index and sent as a futures leg with the index as its expected mark; it moves no premium and takes no part in the expiry or zero-DTE rules; each button's title and accessible name say what one click will do given the future held or already picked, with a pressed state; a change that adds a future is sent at market only, and the review dialog's balance warning never reads a future's notional as premium",
+  "evidence": "ADR-095, GAPS #121 (21 Sep 2026): apps/web/src/lib/adjust/model.ts PickKind / PERP / cashflow / combinedExpiries / addsZeroDte; components/adjust/PositionTicket.tsx wb-future; components/adjust/AdjustConfirmDialog.tsx (market only, balance warning); tests: model.test.ts \"HC-TR-197 the perpetual as a pick …\", e2e analyse.spec.ts \"HC-TR-197 / HC-TR-198 the delta hedge in the browser …\""
+ },
+ {
+  "id": "HC-TR-198",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/analyse",
+  "screen": "Trading · Trade Preview / Adjustment review",
+  "feature": "Repair idea: hedge the delta with the perpetual future",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web) · e2e (Playwright)",
+  "acceptance": "hedgeDelta sizes the future at |net delta| ÷ lot size in whole lots from the engine's delta of the position (the panel's settled market), sold when the delta is positive and bought when it is negative; unavailable within one lot of neutral or while the delta is unknown; netted against a future the position already holds so two opposing rows are never booked; the card shows the delta going to about zero, says a future has no floor, that the hedge needs re-doing as the delta moves and that funding is not modelled, and never carries 'defines your risk' (tagsForIdea removes it even where the engine finds a floor); it is named and netted on the strategy's own venue and unavailable where that venue lists no perpetual; a loaded hedge still reads as the hedge while the card re-sizes it",
+  "evidence": "ADR-095, GAPS #121 (21 Sep 2026): apps/web/src/lib/adjust/repairs.ts hedgeIdea / RepairContext.netDelta / lotSize; components/adjust/RepairIdeas.tsx (ideasCtx, data-delta); tagsForIdea / draftSignature(loose); tests: repairs.test.ts HC-TR-198 (five cases), model.test.ts HC-TR-197 (a saved plan holding a future), workbench.test.tsx \"HC-TR-153 / HC-TR-154 / HC-TR-194 / HC-TR-195 …\" (the card's lots against the position's delta), e2e analyse.spec.ts \"HC-TR-197 / HC-TR-198 the delta hedge in the browser …\"; one control run"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

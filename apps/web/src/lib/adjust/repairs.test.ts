@@ -3,7 +3,7 @@
 import type { StrategyLeg as ServerLeg } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
 import { type AdjustDraft, newDraft } from "./model";
-import { MAX_SKIPPED_ON_ROLL_OUT, MIN_SIGMAS_AFTER_ROLL_IN, REPAIR_GOALS, ROLL_STEPS, WING_BUDGET, type RepairContext, type RepairFigures, type RepairRow, defaultGoal, diagnose, diagnosisLine, orderIdeas, repairIdeas, scoreFor, tagIdeas } from "./repairs";
+import { MAX_SKIPPED_ON_ROLL_OUT, MIN_SIGMAS_AFTER_ROLL_IN, REPAIR_GOALS, ROLL_STEPS, WING_BUDGET, type RepairContext, type RepairFigures, type RepairRow, defaultGoal, diagnose, diagnosisLine, draftSignature, orderIdeas, repairIdeas, scoreFor, tagIdeas, tagsForIdea } from "./repairs";
 
 const EXP = "2026-11-27";
 const LATER = "2026-12-25";
@@ -286,7 +286,7 @@ describe("HC-TR-195 the catalogue of repair ideas", () => {
 
   it("HC-TR-195 a long position gets its own two ideas and the roll out, never the short-side ones", () => {
     const ideas = repairIdeas(base, ctxOf([leg({ id: "leg_l", kind: "call", side: "buy", strike: "80000", lots: 100 })]));
-    expect(ideas.map((i) => i.kind)).toEqual(["convertToSpread", "rollCheaper", "rollOut"]);
+    expect(ideas.map((i) => i.kind)).toEqual(["convertToSpread", "rollCheaper", "rollOut", "hedgeDelta"]);
     expect(picksOf(ideas[0]!.draft)).toEqual([`sell 100 call 82000 ${EXP}`]);
     expect(ideas[0]!.draft!.lotsAfter).toEqual({});
     expect(picksOf(ideas[1]!.draft)).toEqual([`buy 100 call 82000 ${EXP}`]);
@@ -301,7 +301,7 @@ describe("HC-TR-195 the catalogue of repair ideas", () => {
     expect(picksOf(two[0]!.draft)).toEqual([`sell 100 call 83000 ${EXP}`, `sell 100 call 84000 ${EXP}`]);
     expect(two[0]!.draft!.lotsAfter).toEqual({});
     // the short-side catalogue, in its order, for a position with something sold
-    expect(repairIdeas(base, strangle).map((i) => i.kind)).toEqual(["capCheap", "capBalanced", "capTight", "rollTestedAway", "rollUntestedCloser", "rollOut", "rollOutAway", "halveTested", "closeTested"]);
+    expect(repairIdeas(base, strangle).map((i) => i.kind)).toEqual(["capCheap", "capBalanced", "capTight", "rollTestedAway", "rollUntestedCloser", "rollOut", "rollOutAway", "halveTested", "closeTested", "hedgeDelta"]);
   });
 
   it("HC-TR-195 an idea never touches the working change it starts from, and keeps the saved plans", () => {
@@ -312,6 +312,92 @@ describe("HC-TR-195 the catalogue of repair ideas", () => {
     expect(fromWorking.draft!.plans).toHaveLength(1);
     expect(working.lotsAfter).toEqual({ leg_p: 100 });
     expect(idea.draft!.strategyId).toBe("strat_1");
+  });
+});
+
+describe("HC-TR-198 hedge the delta with the perpetual (ADR-095)", () => {
+  const hedge = (ctx: RepairContext) => repairIdeas(base, ctx).find((i) => i.kind === "hedgeDelta")!;
+  const future = (over: Partial<ServerLeg> & Pick<ServerLeg, "id" | "side">): ServerLeg => ({ ...leg({ id: over.id, kind: "call", side: over.side, strike: "0" }), kind: "future", strike: "", expiry: "PERP", symbol: "BTCUSD", lots: 100, price: "78000", entryPrice: "78000", iv: null, ...over });
+
+  it("HC-TR-198 sizes the future at the net delta in whole lots, sold when the delta is positive and bought when it is negative, priced at the index", () => {
+    // +0.3504 BTC of delta at 0.001 BTC a lot: 350 lots short brings it to +0.0004
+    const short = hedge(ctxOf([SHORT_CALL, SHORT_PUT], { netDelta: 0.3504, lotSize: 0.001 }));
+    expect(short.draft!.lotsAfter).toEqual({}); // a hedge closes nothing
+    expect(short.draft!.picks.map((p) => [p.kind, p.side, p.lots, p.strike, p.expiry, p.symbol, p.price, p.iv])).toEqual([["future", "sell", 350, "", "PERP", "BTCUSD", String(SPOT), undefined]]);
+    expect(short.what).toBe("sell 350 × BTCUSD perp (0.350 BTC) at the index");
+    expect(short.givesUp).toContain("no floor");
+    expect(short.givesUp).toContain("funding payments on the perpetual are not modelled");
+    const long = hedge(ctxOf([SHORT_CALL, SHORT_PUT], { netDelta: -0.0016, lotSize: 0.001 }));
+    expect(long.draft!.picks.map((p) => [p.side, p.lots])).toEqual([["buy", 2]]);
+    // another lot size: 0.01 ETH a lot
+    expect(hedge(ctxOf([SHORT_CALL], { asset: "ETH", netDelta: 1.234, lotSize: 0.01 })).draft!.picks.map((p) => [p.side, p.lots, p.symbol])).toEqual([["sell", 123, "ETHUSD"]]);
+  });
+
+  it("HC-TR-198 within one lot of neutral there is nothing to hedge, and without a delta or a lot size nothing is guessed", () => {
+    const near = hedge(ctxOf([SHORT_CALL, SHORT_PUT], { netDelta: 0.0004, lotSize: 0.001 }));
+    expect(near.draft).toBeNull();
+    expect(near.note).toBe("the position is already within one lot of delta-neutral");
+    for (const ctx of [ctxOf([SHORT_CALL]), ctxOf([SHORT_CALL], { netDelta: null, lotSize: 0.001 }), ctxOf([SHORT_CALL], { netDelta: Number.NaN, lotSize: 0.001 }), ctxOf([SHORT_CALL], { netDelta: 0.2, lotSize: 0 })]) {
+      expect(hedge(ctx).draft).toBeNull();
+      expect(hedge(ctx).note).toBe("waiting for the position's delta");
+    }
+  });
+
+  it("HC-TR-198 a future the position already holds is netted: the same side adds to it, the other side is closed first and only the rest opens new", () => {
+    // already short 100 lots and still +0.2 of delta: 200 more go onto the held leg, no second row on the contract
+    const more = hedge(ctxOf([SHORT_CALL, future({ id: "leg_f", side: "sell" })], { netDelta: 0.2, lotSize: 0.001 }));
+    expect(more.draft!.lotsAfter).toEqual({ leg_f: 300 });
+    expect(more.draft!.picks).toEqual([]);
+    expect(more.what).toBe("sell 200 × BTCUSD perp (0.200 BTC), added to the future you hold");
+    // long 100 lots with +0.25 of delta: selling 250 closes the long and opens 150 short, never two opposing rows
+    const flip = hedge(ctxOf([SHORT_CALL, future({ id: "leg_f", side: "buy" })], { netDelta: 0.25, lotSize: 0.001 }));
+    expect(flip.draft!.lotsAfter).toEqual({ leg_f: 0 });
+    expect(flip.draft!.picks.map((p) => [p.side, p.lots])).toEqual([["sell", 150]]);
+    expect(flip.what).toBe("sell 250 × BTCUSD perp (0.250 BTC): 100 of them close the future you hold, 150 open the other side");
+    // long 100 lots with +0.06: 60 of the held lots go, nothing new opens
+    const trim = hedge(ctxOf([SHORT_CALL, future({ id: "leg_f", side: "buy" })], { netDelta: 0.06, lotSize: 0.001 }));
+    expect(trim.draft!.lotsAfter).toEqual({ leg_f: 40 });
+    expect(trim.draft!.picks).toEqual([]);
+    expect(trim.what).toBe("sell 60 × BTCUSD perp (0.060 BTC): 60 of them close the future you hold");
+  });
+
+  it("HC-TR-198 twin rows, both sides held and a dated future: the trim runs across the rows largest first, the same side wins, and only the perpetual is netted", () => {
+    // two long rows on BTCUSD (100 and 40, an earlier add booked the second): selling 120 takes the 100 first, then 20 of the 40
+    const twins = hedge(ctxOf([SHORT_CALL, future({ id: "leg_f1", side: "buy" }), future({ id: "leg_f2", side: "buy", lots: 40 })], { netDelta: 0.12, lotSize: 0.001 }));
+    expect(twins.draft!.lotsAfter).toEqual({ leg_f1: 0, leg_f2: 20 });
+    expect(twins.draft!.picks).toEqual([]);
+    // selling 200 closes both rows (140) and opens 60 short: never a short pick beside a long row that is still open
+    const through = hedge(ctxOf([SHORT_CALL, future({ id: "leg_f1", side: "buy" }), future({ id: "leg_f2", side: "buy", lots: 40 })], { netDelta: 0.2, lotSize: 0.001 }));
+    expect(through.draft!.lotsAfter).toEqual({ leg_f1: 0, leg_f2: 0 });
+    expect(through.draft!.picks.map((p) => [p.side, p.lots])).toEqual([["sell", 60]]);
+    // a long and a short row held at once: a sell adds to the short row, as the chain's B / S would
+    const both = hedge(ctxOf([SHORT_CALL, future({ id: "leg_l", side: "buy" }), future({ id: "leg_s", side: "sell", lots: 30 })], { netDelta: 0.05, lotSize: 0.001 }));
+    expect(both.draft!.lotsAfter).toEqual({ leg_s: 80 });
+    expect(both.draft!.picks).toEqual([]);
+    // a DATED future is another contract: it is left alone and the hedge opens the perpetual
+    const dated = hedge(ctxOf([SHORT_CALL, future({ id: "leg_d", side: "buy", symbol: "BTCUSD-271126", expiry: "2026-11-27" })], { netDelta: 0.05, lotSize: 0.001 }));
+    expect(dated.draft!.lotsAfter).toEqual({});
+    expect(dated.draft!.picks.map((p) => [p.symbol, p.side, p.lots])).toEqual([["BTCUSD", "sell", 50]]);
+  });
+
+  it("HC-TR-198 the hedge never carries 'defines your risk', even where the engine finds a floor, and a loaded hedge still reads as the hedge when the card re-sizes it", () => {
+    // a naked short call hedged with a long future is a covered call: the engine reports a finite max loss, so tagIdeas
+    // hands out "defines your risk" by the figures. The card must not show it: a future has no floor of its own
+    const unlimited: RepairFigures = { maxLoss: -Infinity, maxProfit: 500, breakevens: [90_000], pop: 0.6, delta: -0.1, cash: 0 };
+    const covered: RepairFigures = { maxLoss: -7_000, maxProfit: 500, breakevens: [70_000], pop: 0.6, delta: 0, cash: 0 };
+    const tags = tagIdeas([covered], unlimited)[0]!;
+    expect(tags).toContain("defines your risk");
+    expect(tagsForIdea("hedgeDelta", tags)).not.toContain("defines your risk");
+    expect(tagsForIdea("hedgeDelta", tags)).toContain("closest to delta-neutral"); // the facts about the figures stay
+    expect(tagsForIdea("capTight", tags)).toContain("defines your risk"); // a wing does define it
+    // 350 lots loaded, 351 on the card two seconds later: the same idea by the loose signature, not by the exact one
+    const a = hedge(ctxOf([SHORT_CALL], { netDelta: 0.35, lotSize: 0.001 })).draft!;
+    const b = hedge(ctxOf([SHORT_CALL], { netDelta: 0.351, lotSize: 0.001 })).draft!;
+    expect(draftSignature(a)).not.toBe(draftSignature(b));
+    expect(draftSignature(a, true)).toBe(draftSignature(b, true));
+    // the loose form never blurs an option pick or the side of the future
+    const flipped = hedge(ctxOf([SHORT_CALL], { netDelta: -0.35, lotSize: 0.001 })).draft!;
+    expect(draftSignature(a, true)).not.toBe(draftSignature(flipped, true));
   });
 });
 

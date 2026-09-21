@@ -14,11 +14,15 @@ import { type LegSide, type StrategyLeg, venueSymbol } from "@/lib/strategy/legs
 import { MAX_OPEN_LEGS_UI, serverLegToLocal } from "@/lib/strategy/paper";
 
 export type OptionKind = "call" | "put";
+/** What a pick may be: an option from the chain, or the perpetual future (ADR-095; strike "", expiry "PERP", as the schema has it). */
+export type PickKind = OptionKind | "future";
+/** The strike and expiry every futures leg carries. */
+export const PERP = { strike: "", expiry: "PERP" } as const;
 
 /** A new contract picked from the chain, priced at the mark when picked (re-read at Review). */
 export interface AdjustPick {
   id: string;
-  kind: OptionKind;
+  kind: PickKind;
   side: LegSide;
   strike: string;
   expiry: string;
@@ -106,7 +110,7 @@ export function planDraft(d: AdjustDraft, p: SavedPlan): AdjustDraft {
 }
 
 export interface PickInput {
-  kind: OptionKind;
+  kind: PickKind;
   side: LegSide;
   strike: string;
   expiry: string;
@@ -151,7 +155,7 @@ export function setValuation(d: AdjustDraft, expiry: string | null): AdjustDraft
   return { ...d, valuation: expiry };
 }
 
-const sameContract = (l: ServerLeg, kind: OptionKind, strike: string, expiry: string): boolean => l.kind === kind && Number(l.strike) === Number(strike) && l.expiry === expiry;
+const sameContract = (l: ServerLeg, kind: PickKind, strike: string, expiry: string): boolean => l.kind === kind && Number(l.strike) === Number(strike) && l.expiry === expiry;
 
 /**
  * Apply a chain pick (B / S on a strike) to the draft. On a contract the position does not hold it is a toggle:
@@ -297,7 +301,7 @@ export function cashflow(d: AdjustDraft, open: readonly ServerLeg[], markOf: Mar
     if (after < leg.lots) cash += (leg.side === "buy" ? 1 : -1) * mark * (leg.lots - after) * size; // closing a long receives, closing a short pays
     else if (after > leg.lots) cash += (leg.side === "buy" ? -1 : 1) * mark * (after - leg.lots) * size;
   }
-  for (const p of d.picks) cash += (p.side === "buy" ? -1 : 1) * Number(markOf(p.symbol) ?? p.price) * p.lots * size;
+  for (const p of d.picks) if (p.kind !== "future") cash += (p.side === "buy" ? -1 : 1) * Number(markOf(p.symbol) ?? p.price) * p.lots * size;
   return cash;
 }
 
@@ -305,7 +309,7 @@ export function cashflow(d: AdjustDraft, open: readonly ServerLeg[], markOf: Mar
 export function combinedExpiries(d: AdjustDraft, open: readonly ServerLeg[]): string[] {
   const set = new Set<string>();
   for (const leg of open) if (leg.kind !== "future" && lotsAfterOf(d, leg) > 0) set.add(leg.expiry);
-  for (const p of d.picks) set.add(p.expiry);
+  for (const p of d.picks) if (p.kind !== "future") set.add(p.expiry); // a perpetual has no expiry to value at
   return [...set].sort();
 }
 
@@ -335,7 +339,7 @@ export function isoDaysFrom(nowMs: number, days: number): string {
 /** True when the change adds a contract that settles today (a 0-DTE leg), which the guard rails call out. */
 export function addsZeroDte(d: AdjustDraft, open: readonly ServerLeg[], nowMs: number): boolean {
   const today = new Date(nowMs).toISOString().slice(0, 10);
-  if (d.picks.some((p) => p.expiry <= today)) return true;
+  if (d.picks.some((p) => p.kind !== "future" && p.expiry <= today)) return true;
   return open.some((l) => l.kind !== "future" && lotsAfterOf(d, l) > l.lots && l.expiry <= today);
 }
 

@@ -6,8 +6,10 @@ import { cn } from "@hapiecoin/ui";
 import type { StrategyLeg as ServerLeg } from "@hapiecoin/schema";
 import { daysToExpiry, fmtDate, fmtExpiry, fmtPrice } from "@/lib/format";
 import { fmtMoney } from "@/lib/money";
-import { type AdjustPick, type Effect, VALUE_TODAY, instrumentOf, isoDaysFrom, lotsAfterOf } from "@/lib/adjust/model";
+import { type AdjustPick, type Effect, PERP, VALUE_TODAY, instrumentOf, isoDaysFrom, lotsAfterOf } from "@/lib/adjust/model";
 import type { AdjustWorkbench } from "@/lib/adjust/useAdjustWorkbench";
+import { useUiStore } from "@/lib/store";
+import { perpetualSymbolOf } from "@/lib/venue";
 
 const EFFECT_CLS: Record<Effect["kind"], string> = {
   new: "border-buy/60 text-foreground",
@@ -68,6 +70,25 @@ function SidePill({ side }: { side: "buy" | "sell" }) {
 export function PositionTicket({ w }: { w: AdjustWorkbench }) {
   const { a, draft, strategy, open } = w;
   const money = a.money;
+  // HC-TR-197 (ADR-095): the perpetual as a pick, at the index (it has no mark of its own here, GAPS #14); the same
+  // B / S rules as the chain: on a future the position holds it nets, otherwise a second click takes it off
+  const chainLots = useUiStore((s) => s.chainLots);
+  const futureSymbol = perpetualSymbolOf(strategy.asset, strategy.venue);
+  const addFuture = (side: "buy" | "sell") => {
+    if (a.spotText) w.pick({ kind: "future", side, strike: PERP.strike, expiry: PERP.expiry, lots: chainLots, price: a.spotText, iv: undefined });
+  };
+  const heldFuture = open.filter((l) => l.kind === "future" && l.symbol === futureSymbol && lotsAfterOf(draft, l) > 0);
+  const futurePick = draft.picks.find((p) => p.kind === "future");
+  /** What one click does, in words: it depends on the future the position holds and on the one already picked (pickOnDraft's rules). */
+  const futureTitle = (side: "buy" | "sell"): string => {
+    const verb = side === "buy" ? "Buy" : "Sell";
+    const same = heldFuture.find((l) => l.side === side);
+    if (same) return `${verb} ${chainLots} more lots of ${futureSymbol}: adds to the ${side === "buy" ? "long" : "short"} future you hold`;
+    if (heldFuture.length) return `${verb} ${chainLots} lots of ${futureSymbol}: closes the ${side === "buy" ? "short" : "long"} future you hold first, and anything left over opens the other side`;
+    if (futurePick?.side === side) return `Take the ${futureSymbol} future off this change`;
+    if (futurePick) return `Replace the ${futurePick.side === "buy" ? "bought" : "sold"} ${futurePick.lots} lots of ${futureSymbol} with ${chainLots} lots ${side === "buy" ? "bought" : "sold"}`;
+    return `${verb} ${chainLots} lots of ${futureSymbol} at the index: ${side === "buy" ? "adds" : "removes"} delta`;
+  };
   const effectOf = (legId: string) => w.effects.find((e) => e.legId === legId && e.kind !== "flip");
   const pickEffect = (p: AdjustPick) => w.effects.find((e) => e.pickId === p.id);
   const pnlOf = (l: ServerLeg) => {
@@ -163,6 +184,18 @@ export function PositionTicket({ w }: { w: AdjustWorkbench }) {
       </div>
       <div className="flex flex-col gap-1">{open.map(legRow)}</div>
       <p className="text-2xs text-muted-foreground">Set the lots you want to hold after: fewer trims, 0 (or Close) closes, more adds at the mark. The chain's B / S on a strike you hold does the same.</p>
+      {futureSymbol ? (
+        <div className="flex flex-wrap items-center gap-1.5 text-2xs" role="group" aria-label={`Add the ${futureSymbol} perpetual future`} data-testid="wb-future">
+          <span className="micro">Future</span>
+          <span className="num text-muted-foreground">{futureSymbol} perp · at the index {a.spotText ? fmtPrice(a.spotText, 1) : "—"} · {chainLots} lots a click</span>
+          {(["buy", "sell"] as const).map((side) => (
+            <button key={side} type="button" disabled={!a.spotText} onClick={() => addFuture(side)} aria-pressed={futurePick?.side === side} aria-label={futureTitle(side)} title={futureTitle(side)} className={cn("rounded border px-1.5 font-bold focus-visible:outline focus-visible:outline-1 focus-visible:outline-ring disabled:opacity-40", side === "buy" ? "border-buy text-buy" : "border-sell text-sell", futurePick?.side === side && (side === "buy" ? "bg-buy-bg" : "bg-sell-bg"))} data-testid={`wb-future-${side}`}>
+              {side === "buy" ? "B" : "S"}
+            </button>
+          ))}
+          <span className="text-muted-foreground">a future has no floor; funding is paid or received and is not modelled</span>
+        </div>
+      ) : null}
       <div className="mt-1 flex items-center gap-2">
         <span className="micro" data-testid="proposed-count" data-count={proposedCount}>Proposed · {proposedCount}</span>
         {proposedCount === 0 ? (

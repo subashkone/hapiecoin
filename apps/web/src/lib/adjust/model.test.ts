@@ -4,7 +4,7 @@ import type { StrategyLeg as ServerLeg } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
 import { USD } from "@/lib/money";
 import { toPricingLegs } from "@/lib/pricing/legs";
-import { MAX_PLANS, VALUE_TODAY, addsZeroDte, afterLegs, beforeLegs, cashflow, combinedExpiries, effects, instrumentOf, isEmptyDraft, isoDaysFrom, loadPlan, lotsAfterOf, matchingPlan, newDraft, normaliseLotsAfter, openCountAfter, overCap, pickOnDraft, realisedLegs, planDraft, removePick, removePlan, savePlan, setLotsAfter, setPickLots, setValuation, summarize, toBody, valuationMsOf } from "./model";
+import { MAX_PLANS, PERP, VALUE_TODAY, addsZeroDte, afterLegs, beforeLegs, cashflow, combinedExpiries, effects, instrumentOf, isEmptyDraft, isoDaysFrom, loadPlan, lotsAfterOf, matchingPlan, newDraft, normaliseLotsAfter, openCountAfter, overCap, pickOnDraft, realisedLegs, planDraft, removePick, removePlan, savePlan, setLotsAfter, setPickLots, setValuation, summarize, toBody, valuationMsOf } from "./model";
 
 const EXP = "2026-09-25";
 const LATER = "2026-10-30";
@@ -159,6 +159,37 @@ describe("HC-TR-149 before / after legs, cashflow, cap and valuation date", () =
     expect(cashflow(more, held, at, "0.001")).toBe(0);
     // without an index nothing is locked in and nothing is guessed
     expect(realisedLegs(shut, held, "BTC", () => undefined)).toEqual([]);
+  });
+
+  it("HC-TR-197 the perpetual as a pick: the chain's B / S rules, priced at the index, sent as a futures leg, no premium and no expiry", () => {
+    const at = (s: string) => (s === "BTCUSD" ? "80000" : marks[s]);
+    const fut = { kind: "future" as const, side: "sell" as const, strike: PERP.strike, expiry: PERP.expiry, lots: 350, price: "79990", iv: undefined };
+    let d = pickOnDraft(newDraft("s", 1), OPEN, "BTC", fut);
+    expect(d.picks.map((p) => [p.kind, p.side, p.lots, p.symbol, p.strike, p.expiry])).toEqual([["future", "sell", 350, "BTCUSD", "", "PERP"]]);
+    // priced at the index now, not at the price it was picked at
+    expect(afterLegs(d, OPEN, "BTC", at).at(-1)).toMatchObject({ kind: "future", side: "sell", lots: 350, price: "80000" });
+    expect(toBody(d, OPEN, at, { idempotencyKey: "k" })).toMatchObject({ adds: [{ kind: "future", side: "sell", strike: "", expiry: "PERP", symbol: "BTCUSD", lots: 350, price: "80000" }], expected: { BTCUSD: "80000" } });
+    expect(cashflow(d, OPEN, at, "0.001")).toBe(0); // a future moves no premium
+    expect(combinedExpiries(d, OPEN)).toEqual([EXP]); // "PERP" is no date to value the position at
+    expect(addsZeroDte(d, OPEN, Date.parse("2026-09-25T10:00:00Z"))).toBe(false);
+    expect(effects(d, OPEN).at(-1)!.label).toBe("NEW LEG");
+    // the same side again takes it off, the other side flips it: exactly what B / S does on a strike the position does not hold
+    expect(pickOnDraft(d, OPEN, "BTC", fut).picks).toEqual([]);
+    expect(pickOnDraft(d, OPEN, "BTC", { ...fut, side: "buy", lots: 100 }).picks.map((p) => [p.side, p.lots])).toEqual([["buy", 100]]);
+    // on a future the position HOLDS it nets: selling 60 against a long 100 trims the leg, no second row
+    const held = [...OPEN, leg({ id: "leg_f", kind: "future", side: "buy", strike: "", expiry: "PERP", symbol: "BTCUSD", price: "78000", entryPrice: "78000", iv: null })];
+    d = pickOnDraft(newDraft("s", 1), held, "BTC", { ...fut, lots: 60 });
+    expect(d.picks).toEqual([]);
+    expect(d.lotsAfter).toEqual({ leg_f: 40 });
+    // a futures pick survives the plan shelf: kept as Plan A, loaded back, recognised as that plan, and its lots can be edited
+    const picked = pickOnDraft(newDraft("s", 1), OPEN, "BTC", fut);
+    const shelved = savePlan(picked, 2);
+    expect(shelved.picks).toEqual([]);
+    const back = loadPlan(shelved, shelved.plans[0]!.id);
+    expect(back.picks.map((p) => [p.kind, p.side, p.lots, p.expiry])).toEqual([["future", "sell", 350, "PERP"]]);
+    expect(matchingPlan(back, OPEN)?.name).toBe("Plan A");
+    expect(setPickLots(back, back.picks[0]!.id, 351).picks[0]!.lots).toBe(351);
+    expect(matchingPlan(setPickLots(back, back.picks[0]!.id, 351), OPEN)).toBeUndefined();
   });
 
   it("before keeps entries; after keeps kept lots at entry and prices added lots and picks at the mark", () => {

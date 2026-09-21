@@ -7,7 +7,8 @@
 import type { StrategyLeg as ServerLeg, Underlying } from "@hapiecoin/schema";
 import { fmtExpiry, fmtStrike } from "@/lib/format";
 import { venueSymbol } from "@/lib/strategy/legs";
-import { type AdjustDraft, type OptionKind, type PickInput, lotsAfterOf, newPickId, setLotsAfter } from "./model";
+import { perpetualSymbolOf } from "@/lib/venue";
+import { type AdjustDraft, type OptionKind, PERP, type PickInput, lotsAfterOf, newPickId, setLotsAfter } from "./model";
 
 /** One strike row of a chain: the strike and the marks the picker shows. Always the whole ladder, never a view slice. */
 export interface RepairRow {
@@ -28,6 +29,12 @@ export interface RepairContext {
   spot: number | null;
   /** One standard deviation move to the nearest expiry, in price units (the engine's figure); null when unknown. */
   expectedMove: number | null;
+  /** Net delta of the whole open position in units of the underlying (the engine's figure, futures included); for the hedge. */
+  netDelta?: number | null | undefined;
+  /** Units of the underlying in one lot (0.001 BTC), the same for an option and for the perpetual. */
+  lotSize?: number | null | undefined;
+  /** The strategy's own venue: the perpetual is named and netted on it, never on the workspace's (the ticket does the same). */
+  venue?: string | undefined;
 }
 
 type OptLeg = ServerLeg & { kind: OptionKind };
@@ -117,7 +124,7 @@ export function diagnosisLine(d: Diagnosis): string {
 // The catalogue
 // ---------------------------------------------------------------------------------------------------------------
 
-export type RepairKind = "capCheap" | "capBalanced" | "capTight" | "rollTestedAway" | "rollUntestedCloser" | "rollOut" | "rollOutAway" | "halveTested" | "closeTested" | "convertToSpread" | "rollCheaper";
+export type RepairKind = "capCheap" | "capBalanced" | "capTight" | "rollTestedAway" | "rollUntestedCloser" | "rollOut" | "rollOutAway" | "halveTested" | "closeTested" | "convertToSpread" | "rollCheaper" | "hedgeDelta";
 
 export interface RepairIdea {
   kind: RepairKind;
@@ -386,10 +393,52 @@ function longIdea(kind: "convertToSpread" | "rollCheaper", base: AdjustDraft, ct
   return { kind, label, what: parts.join(" and "), givesUp, draft: d, note: "" };
 }
 
-/** Two drafts that trade the same contracts the same way are one idea (and a working change with an idea's signature is that idea). */
-export function draftSignature(d: AdjustDraft): string {
+/**
+ * Hedge the delta with the perpetual (ADR-095, HC-TR-198): |net delta| ÷ lot size in whole lots, sold when the delta is
+ * positive and bought when it is negative, netted against a future the position already holds (more of the same side
+ * adds to it, the other side trims it first). Fully neutral, never a half hedge: the lots can be edited after loading.
+ * It is a snapshot: the delta moves with the market, a future has no floor, and funding is not modelled; the card says so.
+ */
+function hedgeIdea(base: AdjustDraft, ctx: RepairContext): RepairIdea {
+  const kind = "hedgeDelta" as const;
+  const label = "Hedge the delta with the future";
+  const givesUp = "A future has no floor, so this removes the direction risk now but does not cap the loss; the delta moves with the market, so the hedge needs re-doing; funding payments on the perpetual are not modelled";
+  const off = (note: string): RepairIdea => ({ kind, label, what: "", givesUp, draft: null, note });
+  const { netDelta, lotSize, spot } = ctx;
+  if (netDelta === null || netDelta === undefined || !Number.isFinite(netDelta) || !lotSize || !(lotSize > 0) || spot === null) return off("waiting for the position's delta");
+  const lots = Math.round(Math.abs(netDelta) / lotSize);
+  if (lots < 1) return off("the position is already within one lot of delta-neutral");
+  const side = netDelta > 0 ? "sell" : "buy";
+  if (perpetualSymbolOf(ctx.asset, ctx.venue) === null) return off("this exchange lists no perpetual future for the asset");
+  const symbol = venueSymbol("future", ctx.asset, PERP.strike, PERP.expiry, ctx.venue);
+  const held = ctx.open.filter((l) => l.kind === "future" && l.symbol === symbol);
+  let d = blank(base);
+  let rest = lots;
+  const same = held.find((l) => l.side === side);
+  if (same) {
+    d = setLotsAfter(d, same.id, same.lots + lots);
+    rest = 0;
+  } else {
+    for (const l of [...held].sort((a, b) => b.lots - a.lots)) {
+      const take = Math.min(l.lots, rest);
+      if (take > 0) d = setLotsAfter(d, l.id, l.lots - take);
+      rest -= take;
+    }
+  }
+  if (rest > 0) d = { ...d, picks: [...d.picks, { id: newPickId(), kind: "future", side, strike: PERP.strike, expiry: PERP.expiry, lots: rest, price: String(spot), iv: undefined, symbol }] };
+  const size = `${lots} × ${symbol} perp (${(lots * lotSize).toFixed(3)} ${ctx.asset})`;
+  const what = same ? `${side} ${size}, added to the future you hold` : rest < lots ? `${side} ${size}: ${lots - rest} of them close the future you hold${rest > 0 ? `, ${rest} open the other side` : ""}` : `${side} ${size} at the index`;
+  return { kind, label, what, givesUp, draft: d, note: "" };
+}
+
+/**
+ * Two drafts that trade the same contracts the same way are one idea (and a working change with an idea's signature is that
+ * idea). `looseFutures` leaves the lots of a futures pick out: the hedge is re-sized with every refresh of the delta, and a
+ * loaded hedge of 350 lots must still read as the hedge idea when the card says 351 two seconds later.
+ */
+export function draftSignature(d: AdjustDraft, looseFutures = false): string {
   const closes = Object.entries(d.lotsAfter).map(([id, lots]) => `${id}=${lots}`).sort();
-  const picks = d.picks.map((p) => `${p.symbol}:${p.side}:${p.lots}`).sort();
+  const picks = d.picks.map((p) => (looseFutures && p.kind === "future" ? `${p.symbol}:${p.side}` : `${p.symbol}:${p.side}:${p.lots}`)).sort();
   return [...closes, ...picks].join("|");
 }
 
@@ -402,8 +451,8 @@ export function repairIdeas(base: AdjustDraft, ctx: RepairContext): RepairIdea[]
   const legs = ctx.open.filter((l): l is OptLeg => isOption(l) && l.expiry === ctx.expiry);
   const dx = diagnose(ctx);
   const all: RepairIdea[] = dx.shorts.length
-    ? [capIdea("capCheap", base, ctx, legs), capIdea("capBalanced", base, ctx, legs), capIdea("capTight", base, ctx, legs), rollTestedAway(base, ctx, legs, dx.tested), rollUntestedCloser(base, ctx, legs, dx), rollOut("rollOut", base, ctx, legs, dx.tested), rollOut("rollOutAway", base, ctx, legs, dx.tested), sizeIdea("halveTested", base, legs, dx.tested), sizeIdea("closeTested", base, legs, dx.tested)]
-    : [longIdea("convertToSpread", base, ctx, legs), longIdea("rollCheaper", base, ctx, legs), rollOut("rollOut", base, ctx, legs, null)];
+    ? [capIdea("capCheap", base, ctx, legs), capIdea("capBalanced", base, ctx, legs), capIdea("capTight", base, ctx, legs), rollTestedAway(base, ctx, legs, dx.tested), rollUntestedCloser(base, ctx, legs, dx), rollOut("rollOut", base, ctx, legs, dx.tested), rollOut("rollOutAway", base, ctx, legs, dx.tested), sizeIdea("halveTested", base, legs, dx.tested), sizeIdea("closeTested", base, legs, dx.tested), hedgeIdea(base, ctx)]
+    : [longIdea("convertToSpread", base, ctx, legs), longIdea("rollCheaper", base, ctx, legs), rollOut("rollOut", base, ctx, legs, null), hedgeIdea(base, ctx)];
   // when two ideas come to the same trade (budgets landing on the same strikes of a short ladder, a roll out and away
   // with nothing listed further out), the later one adds nothing: keep the first
   const seen = new Set<string>();
@@ -467,6 +516,15 @@ export function orderIdeas(figures: readonly (RepairFigures | null)[], goal: Rep
 }
 
 export type RepairTag = "defines your risk" | "smallest max loss" | "largest credit" | "closest to delta-neutral" | "widest break-evens";
+
+/**
+ * The tags a card may show. The hedge never carries "defines your risk", even when the engine finds a floor (a naked
+ * short call hedged into a covered call stops losing above the strike): a future has no floor of its own, the hedge is
+ * sized for today's delta only, and the card says so. The figures on the card stay what the engine computed.
+ */
+export function tagsForIdea(kind: RepairKind, tags: readonly RepairTag[]): RepairTag[] {
+  return kind === "hedgeDelta" ? tags.filter((t) => t !== "defines your risk") : [...tags];
+}
 
 /** Factual tags per idea. "defines your risk" goes to every idea that turns an unlimited loss into a limited one. */
 export function tagIdeas(figures: readonly (RepairFigures | null)[], before: RepairFigures | null): RepairTag[][] {
