@@ -139,7 +139,13 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
     }
   }, [open]);
   const wordOk = !needsWord || isLiveConfirm(word);
-  const overBalance = venue !== null && venue.ok && venue.available !== null && Number(venue.notional) > Number(venue.available);
+  // HC-TR-198: a future's notional is no premium. With a margin estimate the wallet is compared with that (the server has
+  // already refused when it is short); only without one does the premium notional stand in, and never a future's
+  const addsFuture = body.adds.some((l) => l.kind === "future");
+  const overBalance = venue !== null && venue.ok && venue.available !== null && venue.marginRequired === null && !addsFuture && Number(venue.notional) > Number(venue.available);
+  // a perpetual has no mark of its own here (GAPS #14): a limit "at the reviewed mark" would rest at the INDEX, another
+  // instrument's price, and could sit unfilled while the pane already shows a neutral delta. A change with a future goes at market
+  const sentOrderType: OrderType = addsFuture ? "market" : orderType;
   const finish = (s: Strategy | null) => {
     onDone();
     closeAdjust(true); // applied: nothing to ask about
@@ -147,7 +153,7 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
   };
   const confirm = () =>
     adjust.mutate(
-      { id: strategy.id, body: { ...body, orderType: live ? orderType : "market", ...(reason.trim() ? { reason: reason.trim() } : {}), ...(needsWord ? { confirm: word } : {}) } },
+      { id: strategy.id, body: { ...body, orderType: live ? sentOrderType : "market", ...(reason.trim() ? { reason: reason.trim() } : {}), ...(needsWord ? { confirm: word } : {}) } },
       {
         onSuccess: (s) => {
           const batch = s ? s.orders.filter((o) => o.batchId === body.idempotencyKey) : [];
@@ -157,7 +163,7 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
             setPlaced(s); // the fill states stay on screen until Done
             if (failed) toast.error("Adjustment partly refused", { description: `${failed} ${failed === 1 ? "order" : "orders"} failed · use Retry on the Live tab` });
             else if (pending) toast(`${pending} ${pending === 1 ? "limit order rests" : "limit orders rest"} on the exchange`, { description: "Sync on the Live tab books them when they fill" });
-            else toast.success("Adjustment orders placed", { description: `${batch.length} ${batch.length === 1 ? "order" : "orders"} filled${orderType === "limit" ? " at their limits" : " at market"}` });
+            else toast.success("Adjustment orders placed", { description: `${batch.length} ${batch.length === 1 ? "order" : "orders"} filled${sentOrderType === "limit" ? " at their limits" : " at market"}` });
             return;
           }
           finish(s);
@@ -265,7 +271,7 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
                   ))}
                   {body.adds.map((l, i) => {
                     const b = band(l.symbol, l.price);
-                    const limit = live && orderType === "limit" && body.expected[l.symbol] !== undefined;
+                    const limit = live && sentOrderType === "limit" && body.expected[l.symbol] !== undefined;
                     return (
                       <tr key={`${l.symbol}-${i}`} className="border-t border-border" data-testid="adjust-confirm-row" data-kind="add" data-band={b.over ? "over" : "ok"}>
                         <td className="py-1 pr-2"><span className={cn("font-mono text-3xs font-bold uppercase", l.side === "buy" ? "text-buy" : "text-sell")}>{l.side}</span></td>
@@ -318,11 +324,11 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
                   <div className="mt-2 flex flex-wrap items-center gap-2" data-testid="adjust-order-type">
                     <span className="micro">order type</span>
                     {(["market", "limit"] as const).map((t) => (
-                      <button key={t} type="button" aria-pressed={orderType === t} onClick={() => setOrderType(t)} className={cn("rounded border px-1.5 py-0.5 text-2xs", orderType === t ? "border-foreground/40 text-foreground" : "border-border text-muted-foreground")} data-testid={`order-type-${t}`}>
+                      <button key={t} type="button" aria-pressed={sentOrderType === t} disabled={addsFuture && t === "limit"} title={addsFuture && t === "limit" ? "A change with a future goes at market: the perpetual has no mark of its own here, so a limit would rest at the index" : undefined} onClick={() => setOrderType(t)} className={cn("rounded border px-1.5 py-0.5 text-2xs disabled:opacity-40", sentOrderType === t ? "border-foreground/40 text-foreground" : "border-border text-muted-foreground")} data-testid={`order-type-${t}`}>
                         {t === "market" ? "Market" : "Limit at mark"}
                       </button>
                     ))}
-                    <span className="text-muted-foreground">{orderType === "limit" ? "entries rest at the reviewed mark until filled; exits stay market" : "entries and exits fill at market within the band"}</span>
+                    <span className="text-muted-foreground">{sentOrderType === "limit" ? "entries rest at the reviewed mark until filled; exits stay market" : addsFuture ? "entries and exits fill at market within the band (a change with a future is market only)" : "entries and exits fill at market within the band"}</span>
                   </div>
                   <div className="mt-1 text-loss">Orders go to {brokerName} with real funds; exits first, then entries. A leg whose mark moved outside the band is refused and stays open for Retry.</div>
                 </div>

@@ -9,7 +9,7 @@ import { useChain } from "@/lib/gateway/hooks";
 import { fmtExpiry, fmtStrike } from "@/lib/format";
 import { fmtMoney, type MoneyFormat } from "@/lib/money";
 import { effects, matchingPlan } from "@/lib/adjust/model";
-import { REPAIR_GOALS, type RepairContext, type RepairFigures, type RepairGoal, type RepairIdea, type RepairRow, defaultGoal, diagnose, diagnosisLine, draftSignature, orderIdeas, repairIdeas, tagIdeas } from "@/lib/adjust/repairs";
+import { REPAIR_GOALS, type RepairContext, type RepairFigures, type RepairGoal, type RepairIdea, type RepairRow, defaultGoal, diagnose, diagnosisLine, draftSignature, orderIdeas, repairIdeas, tagIdeas, tagsForIdea } from "@/lib/adjust/repairs";
 import type { AdjustWorkbench } from "@/lib/adjust/useAdjustWorkbench";
 import { type DraftMarket, type PlanFigures, useDraftFigures } from "./PlansBar";
 
@@ -81,7 +81,7 @@ function IdeaCard({ w, idea, market, before, tags, replaces, working, onFigures 
     w.applyDraft(idea.draft);
   };
   return (
-    <li className={cn("rounded border px-2 py-1.5", idea.draft ? "border-border" : "border-border/50 text-muted-foreground")} data-testid="repair-idea" data-kind={idea.kind} data-state={state} data-cash={f ? f.cash : undefined} data-max-loss={f ? f.maxLoss : undefined} data-max-profit={f ? f.maxProfit : undefined}>
+    <li className={cn("rounded border px-2 py-1.5", idea.draft ? "border-border" : "border-border/50 text-muted-foreground")} data-testid="repair-idea" data-kind={idea.kind} data-state={state} data-cash={f ? f.cash : undefined} data-max-loss={f ? f.maxLoss : undefined} data-max-profit={f ? f.maxProfit : undefined} data-delta={f ? f.delta : undefined}>
       <div className="flex flex-wrap items-center gap-1.5">
         <b className="text-xs">{idea.label}</b>
         {tags.map((t) => (
@@ -153,9 +153,13 @@ export function RepairIdeas({ w, expiry, rows, expiries }: { w: AdjustWorkbench;
   const dx = useMemo(() => diagnose(ctx), [ctx]);
   // the ideas start from the position as it stands, never from the change on the ticket
   // (keyed on what an idea keeps from the draft: the strategy, the valuation date and the saved plans; the working edits are dropped by design)
-  const ideas = useMemo(() => repairIdeas(w.draft, ctx), [w.draft.strategyId, w.draft.valuation, w.draft.plans, ctx]);
   const blankDraft = useMemo(() => ({ ...w.draft, lotsAfter: {}, picks: [] }), [w.draft.strategyId, w.draft.valuation, w.draft.plans]);
   const before = useDraftFigures(w, blankDraft, market);
+  // the hedge is sized from the position's own delta, the engine's figure on the same settled market as every card (HC-TR-198)
+  const netDelta = before ? before.delta : null;
+  const lotSize = Number(w.lotSize);
+  const ideasCtx = useMemo<RepairContext>(() => ({ ...ctx, netDelta, lotSize: Number.isFinite(lotSize) && lotSize > 0 ? lotSize : null, venue }), [ctx, netDelta, lotSize, venue]);
+  const ideas = useMemo(() => repairIdeas(w.draft, ideasCtx), [w.draft.strategyId, w.draft.valuation, w.draft.plans, ideasCtx]);
   const onFigures = (kind: RepairIdea["kind"], f: PlanFigures | null) => setFigures((prev) => (figureKey(prev[kind] ?? null) === figureKey(f) && (kind in prev) ? prev : { ...prev, [kind]: f }));
   // the order and the tags follow a copy of the figures taken once they have been quiet for a moment: results arrive
   // one by one, and a card must not move under the pointer each time; a goal click re-orders that copy at once
@@ -174,9 +178,10 @@ export function RepairIdeas({ w, expiry, rows, expiries }: { w: AdjustWorkbench;
   const ready = ideas.filter((i) => i.draft).length;
   // a working change that is one of the ideas, or a copy of a kept plan, can be replaced without a question: nothing is lost
   const mine = draftSignature(w.draft);
-  const replaces = !w.empty && !matchingPlan(w.draft, w.open) && !ideas.some((i) => i.draft && draftSignature(i.draft) === mine);
+  const mineLoose = draftSignature(w.draft, true); // a loaded hedge stays "the hedge" while the card re-sizes it with the delta
+  const replaces = !w.empty && !matchingPlan(w.draft, w.open) && !ideas.some((i) => i.draft && (draftSignature(i.draft) === mine || (i.kind === "hedgeDelta" && draftSignature(i.draft, true) === mineLoose)));
   return (
-    <section className="mb-2 rounded border border-border p-2" data-testid="repair-ideas" data-goal={goal} data-open={open} data-count={ready} data-expiry={ideasExpiry ?? ""} data-before-max-loss={before ? before.maxLoss : undefined}>
+    <section className="mb-2 rounded border border-border p-2" data-testid="repair-ideas" data-goal={goal} data-open={open} data-count={ready} data-expiry={ideasExpiry ?? ""} data-before-max-loss={before ? before.maxLoss : undefined} data-before-delta={before ? before.delta : undefined}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="micro">Repair ideas</span>
         {ideasExpiry ? <span className="text-2xs text-muted-foreground" data-testid="repair-expiry">for your {fmtExpiry(ideasExpiry)} legs{shownExpiry && shownExpiry !== ideasExpiry ? ` (the chain below shows ${fmtExpiry(shownExpiry)})` : ""}</span> : null}
@@ -204,7 +209,7 @@ export function RepairIdeas({ w, expiry, rows, expiries }: { w: AdjustWorkbench;
             <ol className="mt-1.5 flex flex-col gap-1.5" data-testid="repair-list">
               {order.map((i) => {
                 const idea = ideas[i];
-                return idea ? <IdeaCard key={idea.kind} w={w} idea={idea} market={market} before={before} tags={tags[i] ?? []} replaces={replaces} working={mine} onFigures={onFigures} /> : null;
+                return idea ? <IdeaCard key={idea.kind} w={w} idea={idea} market={market} before={before} tags={tagsForIdea(idea.kind, tags[i] ?? [])} replaces={replaces} working={mine} onFigures={onFigures} /> : null;
               })}
             </ol>
             <p className="mt-1 text-2xs text-muted-foreground" data-testid="repair-basis">Before → after compares the whole trade from entry: an idea that closes a leg carries the profit or loss that exit locks in, at the mark. Fees and slippage are not included. An adjustment swaps one risk for another: compare what each idea gives up. Loading an idea only fills the change below; nothing is sent until you review it.</p>

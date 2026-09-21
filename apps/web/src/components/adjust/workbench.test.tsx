@@ -362,6 +362,16 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     expect(within(idea("rollOut")).getByTestId("repair-note").textContent).toContain("not loaded yet");
     expect(idea("rollUntestedCloser").dataset["state"]).toBe("unavailable");
     expect(within(ideas).getByTestId("repair-diagnosis").textContent).toMatch(/short [\d,]+ P is .* the put side is/);
+    // HC-TR-198: the hedge card is sized from the position's own delta BEFORE the change (the panel's figure), in lots of
+    // the strategy's lot size: a long call with a short put is a synthetic long, so it SELLS the perpetual
+    await waitFor(() => expect(idea("hedgeDelta").dataset["state"]).toBe("ready"), { timeout: 8000 });
+    const beforeDelta = Number(ideas.dataset["beforeDelta"]);
+    expect(beforeDelta).toBeGreaterThan(0);
+    const hedgeWhat = within(idea("hedgeDelta")).getByTestId("repair-what").textContent!;
+    const sized = /^sell (\d+) × BTCUSD perp [(]([\d.]+) BTC[)] at the index$/.exec(hedgeWhat);
+    expect(sized, hedgeWhat).not.toBeNull();
+    expect(Math.abs(Number(sized![1]) - beforeDelta / 0.001)).toBeLessThanOrEqual(1); // the mock's BTC lot size is 0.001
+    expect(Number(sized![2])).toBeCloseTo(Number(sized![1]) * 0.001, 6);
     // the pane names the FOLLOWED legs from the legs themselves, never from the template name left in the Builder
     const st = useUiStore.getState();
     useUiStore.setState({ strategy: { ...st.strategy, [st.asset]: { ...st.strategy[st.asset], name: "Bull Call Spread" } } });

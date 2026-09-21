@@ -1183,8 +1183,8 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     const leg = wb.getByTestId("wb-leg");
     const lots = Number(await leg.getAttribute("data-after"));
     await expect(ideas.getByTestId("repair-diagnosis")).toContainText("No short option on this expiry");
-    await expect(ideas.getByTestId("repair-idea")).toHaveCount(3);
-    expect((await ideas.getByTestId("repair-idea").evaluateAll((els) => els.map((e) => e.getAttribute("data-kind")))).sort()).toEqual(["convertToSpread", "rollCheaper", "rollOut"]);
+    await expect(ideas.getByTestId("repair-idea")).toHaveCount(4);
+    expect((await ideas.getByTestId("repair-idea").evaluateAll((els) => els.map((e) => e.getAttribute("data-kind")))).sort()).toEqual(["convertToSpread", "hedgeDelta", "rollCheaper", "rollOut"]);
 
     // convert to a spread: one call SOLD further out, nothing closed, and it brings cash in
     const spread = ideas.locator("[data-testid=repair-idea][data-kind=convertToSpread]");
@@ -1228,6 +1228,93 @@ test.describe("HC-TR-148..152 adjustment workbench (ADR-044)", () => {
     const narrow = await boxes();
     expect(narrow.overflow).toBeLessThanOrEqual(0);
     for (const c of narrow.cards) expect(c.left >= narrow.i0.x - 1 && c.right <= narrow.i0.x + narrow.i0.width + 1).toBe(true);
+  });
+
+  test("HC-TR-197 / HC-TR-198 the delta hedge in the browser: the card sells the perpetual for the position's delta and brings it to about zero, and the ticket's B / S adds, flips and removes a future by hand", async ({ page }) => {
+    // long ATM call + short ATM put is a synthetic long: about +1 of delta per unit held, so there is a lot to hedge
+    const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
+    await page.locator(`[data-testid=chain-row-calls][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-buy-calls").click();
+    await page.locator(`[data-testid=chain-row-puts][data-strike="${strike}"]`).hover();
+    await page.getByTestId("row-sell-puts").click();
+    await page.getByTestId("tab-builder").click();
+    await page.getByTestId("strategy-name").fill("E2E delta hedge");
+    await page.getByTestId("builder-paper-trade").click();
+    await page.getByTestId("trade-mode").getByTestId("trade-continue").click();
+    await typeLiveIfShown(page);
+    await page.getByTestId("trade-preview").getByTestId("trade-now").click();
+    await page.getByTestId("save-draft-confirm").click();
+    await page.getByTestId("rule-skip").click();
+    await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
+    await page.getByTestId("paper-card").getByTestId("card-adjust").click();
+    const wb = page.getByTestId("adjust-workbench");
+    await expect(wb.getByTestId("wb-chain-table")).toHaveAttribute("data-rows", /^[1-9]/, { timeout: 15_000 });
+    const ideas = wb.getByTestId("repair-ideas");
+    const lots = Number(await wb.getByTestId("wb-leg").first().getAttribute("data-after"));
+
+    const hedge = ideas.locator("[data-testid=repair-idea][data-kind=hedgeDelta]");
+    await expect(hedge).toHaveAttribute("data-state", "ready", { timeout: 20_000 });
+    await expect(ideas).toHaveAttribute("data-before-delta", /\d/);
+    const before = Number(await ideas.getAttribute("data-before-delta"));
+    expect(before).toBeGreaterThan(0.5 * lots * 0.001); // a synthetic long of `lots` x 0.001 BTC
+    // the card: SELL, a whole number of lots equal to the delta in lots (to the lot), at the index
+    const what = (await hedge.getByTestId("repair-what").textContent())!;
+    const m = /^sell (\d+) × BTCUSD perp [(]([\d.]+) BTC[)] at the index$/.exec(what);
+    expect(m, what).not.toBeNull();
+    const hedgeLots = Number(m![1]);
+    expect(Math.abs(hedgeLots - before / 0.001)).toBeLessThanOrEqual(1);
+    // after it, the delta is about zero: within two lots of neutral (rounding to a whole lot plus one tick of the market)
+    await expect.poll(async () => Math.abs(Number(await hedge.getAttribute("data-delta"))), { timeout: 15_000 }).toBeLessThan(0.002);
+    await expect(hedge.getByTestId("repair-gives-up")).toContainText("no floor");
+    await expect(hedge.getByTestId("repair-cash")).toHaveText(/0\.00/); // a future moves no premium
+    // no "defines your risk" here. (This position's loss already had a floor, so no card gets that tag and this line cannot
+    // fail on its own: the rule that the HEDGE never carries it, even where the engine finds a floor, is pinned by
+    // repairs.test.ts "HC-TR-198 the hedge never carries 'defines your risk' …")
+    await expect(hedge.getByTestId("repair-tag").filter({ hasText: "defines your risk" })).toHaveCount(0);
+
+    await hedge.getByTestId("repair-load").click();
+    const pick = wb.getByTestId("wb-pick");
+    await expect(pick).toHaveCount(1);
+    await expect(pick).toContainText("BTCUSD perp");
+    await expect(pick).toContainText(/sell/i);
+    await expect(pick.getByTestId("effect")).toHaveAttribute("data-kind", "new");
+    await expect(wb.getByTestId("wb-leg")).toHaveCount(2); // the options are untouched
+    await expect(wb.getByTestId("wb-order")).toHaveCount(0);
+
+    // by hand: Reset, then S adds the chain's lots of the perpetual, S again takes it off, B flips a sold one
+    await wb.getByTestId("proposed-clear").click();
+    await expect(pick).toHaveCount(0);
+    const fut = wb.getByTestId("wb-future");
+    await expect(fut).toContainText("BTCUSD perp");
+    // each button says in words what one click will do, and shows which side is on the change
+    await expect(fut.getByTestId("wb-future-sell")).toHaveAttribute("aria-label", /^Sell \d+ lots of BTCUSD at the index: removes delta$/);
+    await expect(fut.getByTestId("wb-future-sell")).toHaveAttribute("aria-pressed", "false");
+    await fut.getByTestId("wb-future-sell").click();
+    await expect(pick).toHaveCount(1);
+    await expect(pick).toContainText(/sell/i);
+    await expect(fut.getByTestId("wb-future-sell")).toHaveAttribute("aria-pressed", "true");
+    await expect(fut.getByTestId("wb-future-sell")).toHaveAttribute("aria-label", "Take the BTCUSD future off this change");
+    await expect(fut.getByTestId("wb-future-buy")).toHaveAttribute("aria-label", /^Replace the sold \d+ lots of BTCUSD with \d+ lots bought$/);
+    await fut.getByTestId("wb-future-sell").click();
+    await expect(pick).toHaveCount(0);
+    await fut.getByTestId("wb-future-sell").click();
+    await fut.getByTestId("wb-future-buy").click();
+    await expect(pick).toHaveCount(1);
+    await expect(pick).toContainText(/buy/i);
+    // and it goes through Review like any other change, booked on paper as a futures leg
+    await wb.getByTestId("adjust-review").click();
+    const confirm = page.getByTestId("adjust-confirm");
+    await expect(confirm).toHaveAttribute("data-mode", "paper");
+    await expect(confirm.getByTestId("adjust-confirm-row")).toHaveCount(1);
+    await expect(confirm).toContainText("BTCUSD");
+    await confirm.getByTestId("adjust-reason").fill("e2e hedge by hand");
+    await typeLiveIfShown(page);
+    await confirm.getByTestId("adjust-apply").click();
+    const details = page.getByTestId("strategy-details");
+    await expect(details).toBeVisible({ timeout: 15_000 });
+    await expect(details.getByTestId("details-adjustment")).toContainText("e2e hedge by hand");
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("paper-card").getByTestId("order-chip")).toHaveCount(3); // the call, the put and the future
   });
 
   test("HC-TR-148 under 720 px the workbench stacks its columns (ADR-044 extra 6), and Exit asks before discarding a change", async ({ page }) => {
