@@ -271,15 +271,15 @@ export function afterLegs(d: AdjustDraft, open: readonly ServerLeg[], asset: Und
  * every price and date, so it adds exactly the profit or loss the exit locks in and no delta, and "after" is then on
  * the same basis as "before" (the whole trade from entry). Without it a roll that buys back a losing short looked
  * better than keeping it. Never shown as legs: the ticket, the Legs and the Greeks tabs read `afterLegs`. A leg
- * without a mark is left out (its exit is assumed at entry, as `cashflow` does, which locks in nothing), and so is
- * a future: the engine prices a future at spot whatever its entry, so a pair of them would say nothing.
+ * without a mark is left out (its exit is assumed at entry, which locks in nothing). A future is paired like an
+ * option: since ADR-095 a held future is priced from its entry, and its mark here is the spot index.
  */
 export function realisedLegs(d: AdjustDraft, open: readonly ServerLeg[], asset: Underlying, markOf: MarkOf): StrategyLeg[] {
   const out: StrategyLeg[] = [];
   for (const leg of open) {
     const closed = leg.lots - lotsAfterOf(d, leg);
     const mark = markOf(leg.symbol);
-    if (closed <= 0 || mark === undefined || leg.kind === "future") continue;
+    if (closed <= 0 || mark === undefined) continue;
     const local = serverLegToLocal(leg, asset);
     out.push({ ...local, id: `${leg.id}:held`, lots: closed }, { ...local, id: `${leg.id}:exit`, side: local.side === "buy" ? "sell" : "buy", lots: closed, price: mark });
   }
@@ -291,6 +291,7 @@ export function cashflow(d: AdjustDraft, open: readonly ServerLeg[], markOf: Mar
   const size = Number(lotSize) || 0;
   let cash = 0;
   for (const leg of open) {
+    if (leg.kind === "future") continue; // a future moves no premium: its result settles as P&L, not as cash paid or received now
     const after = lotsAfterOf(d, leg);
     const mark = Number(markOf(leg.symbol) ?? leg.entryPrice ?? leg.price);
     if (after < leg.lots) cash += (leg.side === "buy" ? 1 : -1) * mark * (leg.lots - after) * size; // closing a long receives, closing a short pays

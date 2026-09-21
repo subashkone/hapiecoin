@@ -161,8 +161,8 @@ export function TradePreviewDialog(p: TradePreviewProps) {
                 <span>Available <b className="num">{p.venue.available ? `${p.venue.available} ${p.venue.availableAsset ?? ""}` : "—"}</b></span>
                 <span title="Margin the exchange holds against your open positions right now; Delta has no pre-trade estimate (ADR-029)">Margin in use <b className="num" data-testid="venue-margin-used">{p.venue.marginUsed ? `${p.venue.marginUsed} ${p.venue.availableAsset ?? "USD"}` : "—"}</b></span>
                 {p.venue.marginRequired !== null ? (
-                  <span title="HapieCoin's conservative estimate of the margin the exchange will hold for the short legs, plus the premium paid; the whole order set is refused before the first order when the wallet has less free (ADR-091)">
-                    Needed for shorts · est. <b className={cn("num", p.venue.available !== null && Number(p.venue.marginRequired) > Number(p.venue.available) && "text-loss")} data-testid="venue-margin-required">{p.venue.marginRequired} {p.venue.availableAsset ?? "USD"}</b>
+                  <span title="HapieCoin's estimate of the margin the exchange will hold for the short legs and any future, plus the premium paid; the whole order set is refused before the first order when the wallet has less free (ADR-091)">
+                    Margin needed · est. <b className={cn("num", p.venue.available !== null && Number(p.venue.marginRequired) > Number(p.venue.available) && "text-loss")} data-testid="venue-margin-required">{p.venue.marginRequired} {p.venue.availableAsset ?? "USD"}</b>
                   </span>
                 ) : null}
                 <span className="text-muted-foreground">band ±{p.venue.limits.markBandPct} % · max {p.venue.limits.maxLegs} legs · max {p.venue.limits.maxNotionalUsd.toLocaleString("en-US")} USD</span>

@@ -1,6 +1,6 @@
 # Paper trading, live trading, rules and accounts
 
-Part of the [HapieCoin feature guide](README.md). 93 traced features on 30 screens; 93 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 94 traced features on 30 screens; 94 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -66,6 +66,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-TR-192 | Short-leg margin estimate: a sold option's initial margin is estimated before placement and the whole order set is refused when the wallet cannot cover the shorts plus the premium; buys go out before sells | packages/venues: VenueProduct keeps Delta's initial_margin and initial_margin_scaling_factor, getTicker returns mark + spot_price, shortOptionMarginUsd = (((pct + factor × contracts) / 100) × spot + mark) × contractValue × contracts (conservative: scaling from the first contract, no spread relief; the factor's unit is GAPS #109); apps/api planLegs fills LivePreviewLeg.marginEstimate for sells, the preview sums LivePreview.marginRequired = Σ estimates + premium paid and pushes 'Available … is below the margin the exchange will hold for the short legs plus the premium paid (estimate …); nothing was sent' when above the wallet, so place / Trade All batch (which also sums the estimates against the one wallet, LiveBatchPreview.marginRequired) / adjustment batch / add-legs refuse before any order, and a short the venue could not price next to one it did is refused by name; placeEntries and retryFailed sort buys before sells; the dialogs show 'Needed for shorts · est.' in red when above the wallet | built | unit (venues + api + web) |
+| HC-TR-196 | A futures leg is priced from its entry, and is margined (never counted as premium) in the live preview | toPricingLegs gives a future the spot only in live price mode (a mark source is given); a held future keeps its entry like an option, so the payoff agrees with the leg table. planLegs estimates a future's initial margin with futuresMarginUsd ((pct + factor × contracts) / 100 × price × contract value × contracts, the mark or else the spot as the price), leaves its notional out of the premium total, and refuses an ENTRY into a future the venue gave no margin parameters or price for; an exit is never refused for margin; the same premium rule holds in the Trade All batch; the refusal is decided in preview(), never in the planner an adjustment re-runs after its exits have filled. In the workbench a future's mark is the spot index: added lots and exits are priced and sent there, a closed future carries the result it locks in, and a future never counts in 'cash now' | built | unit (venues + api + web) |
 
 ### Analyse · Paper Trades panel · `/analyse`
 

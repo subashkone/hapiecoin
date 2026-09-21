@@ -137,6 +137,30 @@ describe("HC-TR-149 before / after legs, cashflow, cap and valuation date", () =
     expect(realisedLegs(d, OPEN, "BTC", () => undefined)).toEqual([]);
   });
 
+  it("HC-TR-196 a held future in the workbench: added lots and an exit are priced at the index, a close carries what it locks in, and no premium moves", () => {
+    // long 100 lots of the perpetual from 78,000; the index (its mark here, GAPS #14) is 80,000
+    const FUT = leg({ id: "leg_f", kind: "future", side: "buy", strike: "", expiry: "PERP", symbol: "BTCUSD", price: "78000", entryPrice: "78000", iv: null });
+    const held = [FUT];
+    const at = (s: string) => (s === "BTCUSD" ? "80000" : undefined);
+    // stepping to 150: the 50 new lots are bought at 80,000, not at the old 78,000 (which would show them 2,000 per unit in profit at once)
+    const more = setLotsAfter(newDraft("s", 1), FUT.id, 150);
+    expect(afterLegs(more, held, "BTC", at).map((l) => [l.id, l.lots, l.price])).toEqual([["leg_f", 100, "78000"], ["leg_f:add", 50, "80000"]]);
+    expect(toBody(more, held, at, { idempotencyKey: "k" }).adds.map((a) => [a.kind, a.symbol, a.lots, a.price])).toEqual([["future", "BTCUSD", 50, "80000"]]);
+    // closing it: the exit is sent at 80,000 (it was sent at the ENTRY before, booking a paper close at no result),
+    // and the pair priced for "after" is worth the 2,000 x 100 x 0.001 = 200 USD it locks in, at every price
+    const shut = setLotsAfter(newDraft("s", 1), FUT.id, 0);
+    expect(toBody(shut, held, at, { idempotencyKey: "k" }).changes).toEqual([{ legId: "leg_f", lotsAfter: 0, price: "80000" }]);
+    const pairs = realisedLegs(shut, held, "BTC", at);
+    expect(pairs.map((l) => [l.id, l.side, l.lots, l.price])).toEqual([["leg_f:held", "buy", 100, "78000"], ["leg_f:exit", "sell", 100, "80000"]]);
+    const priced = toPricingLegs(pairs, "0.001", {});
+    for (const price of [50_000, 78_000, 80_000, 120_000]) expect(payoffAtExpiry(priced, price)).toBeCloseTo(200, 9);
+    // a future moves no premium: neither the close nor the add shows up in "cash now" (it counted the notional before)
+    expect(cashflow(shut, held, at, "0.001")).toBe(0);
+    expect(cashflow(more, held, at, "0.001")).toBe(0);
+    // without an index nothing is locked in and nothing is guessed
+    expect(realisedLegs(shut, held, "BTC", () => undefined)).toEqual([]);
+  });
+
   it("before keeps entries; after keeps kept lots at entry and prices added lots and picks at the mark", () => {
     let d = setLotsAfter(newDraft("s", 1), CALL.id, 150);
     d = setLotsAfter(d, PUT.id, 0);

@@ -7714,6 +7714,21 @@
   "evidence": "ADR-094, GAPS #117 (20 Sep 2026): apps/web/src/lib/adjust/repairs.ts repairIdeas / orderIdeas / tagIdeas / defaultGoal / draftSignature; lib/adjust/model.ts realisedLegs; components/adjust/RepairIdeas.tsx (useSettled); PlansBar.tsx useDraftFigures / PlanFigures.breakevens; lib/strategy/useStrategyAnalysis.ts; AdjustWorkbench.tsx; tests: repairs.test.ts HC-TR-195 (fifteen cases), model.test.ts \"HC-TR-195 (ADR-094) the lots a change takes off …\", RepairIdeas.test.tsx, workbench.test.tsx \"HC-TR-153 / HC-TR-154 / HC-TR-194 / HC-TR-195 …\" and HC-TR-193, e2e analyse.spec.ts workbench flow and the three \"… repair ideas in the browser …\" tests (wings and order by goal; close, halve, roll out and the locked-in result on screen; the long-only ideas and the layout guard, GAPS #119); five control runs"
  },
  {
+  "id": "HC-TR-196",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/analyse",
+  "screen": "Trading · Trade Preview / Adjustment review",
+  "feature": "A futures leg is priced from its entry, and is margined (never counted as premium) in the live preview",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (venues + api + web)",
+  "acceptance": "toPricingLegs gives a future the spot only in live price mode (a mark source is given); a held future keeps its entry like an option, so the payoff agrees with the leg table. planLegs estimates a future's initial margin with futuresMarginUsd ((pct + factor × contracts) / 100 × price × contract value × contracts, the mark or else the spot as the price), leaves its notional out of the premium total, and refuses an ENTRY into a future the venue gave no margin parameters or price for; an exit is never refused for margin; the same premium rule holds in the Trade All batch; the refusal is decided in preview(), never in the planner an adjustment re-runs after its exits have filled. In the workbench a future's mark is the spot index: added lots and exits are priced and sent there, a closed future carries the result it locks in, and a future never counts in 'cash now'",
+  "evidence": "ADR-095, GAPS #120 (21 Sep 2026): apps/web/src/lib/pricing/legs.ts; packages/venues/src/delta/trading.ts futuresMarginUsd; apps/api/src/routes/live-exec.ts planLegs / preview; packages/schema/src/strategies.ts LivePreviewLeg.marginEstimate; apps/api/src/routes/live.ts (batch); apps/web/src/lib/strategy/useStrategyAnalysis.ts markOf; apps/web/src/lib/adjust/model.ts realisedLegs / cashflow; tests: legs.test.ts HC-TR-196 (three cases), model.test.ts \"HC-TR-196 a held future in the workbench …\", live-batch.test.ts HC-TR-196, trading.test.ts HC-TR-196 (two cases), live.test.ts \"HC-TR-196 a futures leg is margined on its notional …\" (real Postgres); two control runs"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",
