@@ -458,7 +458,7 @@ export const LivePreviewLeg = z.strictObject({
   mark: DecimalString.nullable(),
   /** contracts × contract value × mark, USD. */
   notional: DecimalString,
-  /** HC-TR-192: the conservative initial-margin estimate for a SHORT option leg, USD (ADR-091); null for a buy, a future, or when the venue gave no margin parameters or spot. */
+  /** HC-TR-192 / HC-TR-196: the conservative initial-margin estimate, USD, for a SHORT option leg (ADR-091) or a futures leg, long or short (ADR-095); null for a bought option, or when the venue gave no margin parameters or price. */
   marginEstimate: DecimalString.nullable(),
 });
 export type LivePreviewLeg = z.infer<typeof LivePreviewLeg>;

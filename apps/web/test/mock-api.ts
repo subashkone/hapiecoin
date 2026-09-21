@@ -1133,13 +1133,15 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (!open.length) reasons.push("Add at least one leg to trade");
     const lotSize = lotSizeOf(c, s.asset);
     // HC-TR-192: like the route, a sold option carries a conservative margin estimate (1 % of a 79,500 spot + its mark, per 0.001 contract)
-    const marginOf = (l: StrategyLeg) => (l.side === "sell" && l.kind !== "future" ? toDecimal(contractsOf(l, lotSize) * 0.001 * (0.01 * 79_500 + Number(markOf(l))), 2) : null);
+    // HC-TR-196: like the route, a future (long or short) is margined at 1 % of its notional and moves no premium
+    const marginOf = (l: StrategyLeg) => (l.kind === "future" ? toDecimal(contractsOf(l, lotSize) * 0.001 * 0.01 * Number(markOf(l)), 2) : l.side === "sell" ? toDecimal(contractsOf(l, lotSize) * 0.001 * (0.01 * 79_500 + Number(markOf(l))), 2) : null);
+    const futureIds = new Set(open.filter((l) => l.kind === "future").map((l) => l.id));
     const legs = open.map((l) => ({ legId: l.id, symbol: l.symbol, side: l.side, lots: l.lots, contracts: contractsOf(l, lotSize), contractValue: "0.001", productState: "live", mark: markOf(l), notional: toDecimal(contractsOf(l, lotSize) * 0.001 * Number(markOf(l)), 2), marginEstimate: marginOf(l) }));
     const notional = legs.reduce((a, l) => a + Number(l.notional), 0);
     if (notional > 100_000) reasons.push(`Notional ${toDecimal(notional, 2)} USD exceeds the 100000 USD limit per placement`);
     if (worstLoss !== null && Math.abs(worstLoss) > 4000) reasons.push(`Available USD 4000 is below the worst-loss estimate ${toDecimal(Math.abs(worstLoss), 2)}`);
     // GAPS #81: a net debit larger than the wallet is refused without any worst-loss figure from the client
-    const debit = legs.reduce((a, l) => a + (l.side === "buy" ? 1 : -1) * Number(l.notional), 0);
+    const debit = legs.reduce((a, l) => (futureIds.has(l.legId) ? a : a + (l.side === "buy" ? 1 : -1) * Number(l.notional)), 0);
     if (acc.credentials.length > 0 && debit > 4000) reasons.push(`Available USD 4000 is below the premium this trade pays (${toDecimal(debit, 2)})`);
     // HC-TR-192 (ADR-091): the short legs' margin plus the premium paid must be free before the first order goes out
     const shortMargin = legs.reduce((a, l) => a + (l.marginEstimate === null ? 0 : Number(l.marginEstimate)), 0);
@@ -1184,7 +1186,8 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       const s = acc.strategies.find((x) => x.id === sid);
       if (!s || s.status !== "paper") return { id: sid, name: s?.name ?? sid, paper: false, ok: false, reasons: [s ? `Already ${s.status}: skipped` : "Not one of your strategies: skipped"], legs: [], notional: "0.00", debit: "0.00" };
       const p = livePreview(c, s, null);
-      const debit = p.legs.reduce((a, l) => a + (l.side === "buy" ? 1 : -1) * Number(l.notional), 0);
+      const futures = new Set(s.legs.filter((l) => l.kind === "future").map((l) => l.id));
+      const debit = p.legs.reduce((a, l) => (futures.has(l.legId) ? a : a + (l.side === "buy" ? 1 : -1) * Number(l.notional)), 0); // HC-TR-196: a future is no premium
       // the margin figures ride beside the item, never inside it: the item is a strict schema object on the client
       margins.set(sid, { margin: p.marginRequired === null ? Math.max(debit, 0) : Number(p.marginRequired), estimated: p.marginRequired !== null });
       return { id: sid, name: s.name, paper: true, ok: p.ok, reasons: p.reasons, legs: p.legs, notional: p.notional, debit: toDecimal(debit, 2) };

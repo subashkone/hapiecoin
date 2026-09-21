@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { DeltaTradingClientImpl, FakeDeltaTradingClient, contractsFor, describeOrderError, roundToTick, shortOptionMarginUsd, signDeltaRequest, type TradingFetch } from "./trading.js";
+import { DeltaTradingClientImpl, FakeDeltaTradingClient, contractsFor, describeOrderError, futuresMarginUsd, roundToTick, shortOptionMarginUsd, signDeltaRequest, type TradingFetch } from "./trading.js";
 
 const BASE = "https://cdn-ind.testnet.example";
 const CREDS = { apiKey: "key-1", apiSecret: "secret-1" };
@@ -227,5 +227,28 @@ describe("HC-TR-188 editOrder re-prices a resting limit in place (ADR-083)", () 
     expect(await fake.editOrder(CREDS, { orderId: id, productId: 27, limitPrice: "530" })).toMatchObject({ ok: false, code: "order_not_open" });
     expect(await fake.cancelOrder(CREDS, id, 27)).toBe(false);
     expect(await fake.editOrder(CREDS, { orderId: 999, productId: 27, limitPrice: "1" })).toMatchObject({ ok: false, code: "order_not_found" });
+  });
+});
+
+describe("HC-TR-196 a futures leg carries an initial-margin estimate (ADR-095)", () => {
+  it("HC-TR-196 margin is the percent of the notional, growing with size by the scaling factor (the side is no input: a long and a short are held alike)", () => {
+    // 350 contracts x 0.001 BTC at 80,000 = 28,000 USD notional; 1 % of it is 280
+    expect(futuresMarginUsd({ contracts: 350, contractValue: "0.001", price: "80000", initialMarginPct: "1", initialMarginScalingFactor: undefined })).toBe("280");
+    // with the scaling factor: (1 + 0.000005 x 350) % = 1.00175 % of 28,000 = 280.49
+    expect(futuresMarginUsd({ contracts: 350, contractValue: "0.001", price: "80000", initialMarginPct: "1", initialMarginScalingFactor: "0.000005" })).toBe("280.49");
+    // no premium term: unlike a sold option, nothing is added for the future's own price
+    expect(futuresMarginUsd({ contracts: 1, contractValue: "0.001", price: "80000", initialMarginPct: "0.5", initialMarginScalingFactor: undefined })).toBe("0.4");
+  });
+
+  it("HC-TR-196 a missing input gives no figure, never a guess", () => {
+    const ok = { contracts: 10, contractValue: "0.001", price: "80000", initialMarginPct: "1", initialMarginScalingFactor: undefined };
+    expect(futuresMarginUsd({ ...ok, contracts: null })).toBeNull();
+    expect(futuresMarginUsd({ ...ok, contracts: 0 })).toBeNull();
+    expect(futuresMarginUsd({ ...ok, price: null })).toBeNull();
+    expect(futuresMarginUsd({ ...ok, initialMarginPct: undefined })).toBeNull();
+    expect(futuresMarginUsd({ ...ok, price: "not a number" })).toBeNull();
+    // zero is not an estimate: a linear leg is never free, so a zero rate, price or contract value reads as "unknown"
+    expect(futuresMarginUsd({ ...ok, initialMarginPct: "0" })).toBeNull();
+    expect(futuresMarginUsd({ ...ok, price: "0" })).toBeNull();
   });
 });

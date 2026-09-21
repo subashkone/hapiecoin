@@ -6,7 +6,7 @@
  * Routes call these; nothing here is reachable without a signed-in user's own vault credential.
  */
 import { type LivePreview, type LivePreviewLeg, type MindfulPreview, type StrategyOrder, toDecimal, isLiveConfirm } from "@hapiecoin/schema";
-import { DEFAULT_VENUE, type DeltaCredentials, type PlaceOrderResult, VENUE_REGISTRY, contractsFor, defaultLotSizes, getVenue, getVenueCore, roundToTick, shortOptionMarginUsd, type VenueOrder } from "@hapiecoin/venues";
+import { DEFAULT_VENUE, type DeltaCredentials, type PlaceOrderResult, VENUE_REGISTRY, contractsFor, defaultLotSizes, futuresMarginUsd, getVenue, getVenueCore, roundToTick, shortOptionMarginUsd, type VenueOrder } from "@hapiecoin/venues";
 import type { Venue } from "@hapiecoin/schema";
 import { and, eq } from "drizzle-orm";
 import { brokerCredentials, brokers, type strategies, strategyLegs, strategyOrders, userSettings, users } from "../db/schema.js";
@@ -146,10 +146,13 @@ export function unsizedLegs(legs: readonly PlanLeg[]): LivePreviewLeg[] {
 }
 
 /** Contracts, product state and current mark for each leg through the executor of `venue` (ADR-070: the caller names the strategy venue, never a default); reasons collect what would block a placement. */
-export async function planLegs(deps: AppDeps, legs: readonly PlanLeg[], lotSize: string, venue: string): Promise<{ legs: LivePreviewLeg[]; reasons: string[]; unestimatedShorts: string[] }> {
+export async function planLegs(deps: AppDeps, legs: readonly PlanLeg[], lotSize: string, venue: string): Promise<{ legs: LivePreviewLeg[]; reasons: string[]; unestimatedShorts: string[]; unestimatedFutures: string[]; futures: number; premiumDebit: number }> {
   const reasons: string[] = [];
   const out: LivePreviewLeg[] = [];
   const unestimatedShorts: string[] = []; // sold options the venue gave no margin parameters or spot for (HC-TR-192)
+  const unestimatedFutures: string[] = []; // futures the venue gave no margin parameters or price for (HC-TR-196)
+  let futures = 0;
+  let premiumDebit = 0; // premium the option legs pay (+) or receive (−), USD; a future moves none (HC-TR-196)
   const client = deps.tradingFor(venue); // ADR-070
   for (const l of legs) {
     let product;
@@ -164,15 +167,29 @@ export async function planLegs(deps: AppDeps, legs: readonly PlanLeg[], lotSize:
     if (contracts === null) reasons.push(`${l.symbol}: ${l.lots} lots × ${lotSize} is not a whole number of ${product.contractValue}-unit contracts`);
     if (product.state !== "live") reasons.push(`${l.symbol}: product is ${product.state} on the exchange`);
     const { mark, spot } = await client.getTicker(l.symbol);
-    const notional = contracts !== null && mark !== null ? toDecimal(contracts * Number(product.contractValue) * Number(mark), 2) : "0";
+    const isFuture = product.contractType.endsWith("futures"); // "perpetual_futures", "futures"
+    // a perpetual's ticker may carry the index and no mark: its notional (the per-placement cap) and its margin use the same price
+    const price = isFuture ? (mark ?? spot) : mark;
+    const notional = contracts !== null && price !== null ? toDecimal(contracts * Number(product.contractValue) * Number(price), 2) : "0";
     // HC-TR-192 (ADR-091): a sold option is margined by the exchange as a naked short at placement; estimate it here so the
-    // wallet rule can refuse the whole batch before the first order. Buys and futures carry no estimate (premium only).
+    // wallet rule can refuse the whole batch before the first order. A bought option carries no estimate (premium only).
+    // HC-TR-196 (ADR-095): a future, long or short, pays no premium but is margined on its notional, so it gets an
+    // estimate too and its notional is never counted as premium (a hedge of 0.35 BTC used to read as a $28,000 debit).
     const isOption = product.contractType === "call_options" || product.contractType === "put_options";
-    const marginEstimate = l.side === "sell" && isOption ? shortOptionMarginUsd({ contracts, contractValue: product.contractValue, spot, mark, initialMarginPct: product.initialMarginPct, initialMarginScalingFactor: product.initialMarginScalingFactor }) : null;
+    const marginEstimate = isFuture
+      ? futuresMarginUsd({ contracts, contractValue: product.contractValue, price, initialMarginPct: product.initialMarginPct, initialMarginScalingFactor: product.initialMarginScalingFactor })
+      : l.side === "sell" && isOption
+        ? shortOptionMarginUsd({ contracts, contractValue: product.contractValue, spot, mark, initialMarginPct: product.initialMarginPct, initialMarginScalingFactor: product.initialMarginScalingFactor })
+        : null;
     if (l.side === "sell" && isOption && marginEstimate === null) unestimatedShorts.push(l.symbol);
+    // reported, not refused here: `preview()` decides (as it does for the shorts), because an adjustment re-plans its adds
+    // AFTER its exits have filled and a ticker blip there must not strand the position behind a refusal
+    if (isFuture) futures += 1;
+    if (isFuture && marginEstimate === null) unestimatedFutures.push(l.symbol);
+    if (!isFuture) premiumDebit += (l.side === "buy" ? 1 : -1) * Number(notional);
     out.push({ legId: l.id, symbol: l.symbol, side: l.side, lots: l.lots, contracts, contractValue: product.contractValue, productState: product.state, mark, notional, marginEstimate });
   }
-  return { legs: out, reasons, unestimatedShorts };
+  return { legs: out, reasons, unestimatedShorts, unestimatedFutures, futures, premiumDebit };
 }
 
 /**
@@ -201,19 +218,24 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
   if (legs.length > trading.maxLegs) reasons.push(`At most ${trading.maxLegs} legs per live placement`);
   const lotSize = await lotSizeFor(deps, user, strategy.asset, strategy.venue);
   // a wrong or data-only venue asks nobody: the legs are listed unsized and the reasons above already say why
-  const exitPlan = wrongVenue ? { legs: unsizedLegs(exits), reasons: [], unestimatedShorts: [] } : await planLegs(deps, exits, lotSize, strategy.venue);
-  const plan = wrongVenue ? { legs: unsizedLegs(legs), reasons: [], unestimatedShorts: [] } : await planLegs(deps, legs, lotSize, strategy.venue);
+  const none = { reasons: [], unestimatedShorts: [], unestimatedFutures: [], futures: 0, premiumDebit: 0 };
+  const exitPlan = wrongVenue ? { legs: unsizedLegs(exits), ...none } : await planLegs(deps, exits, lotSize, strategy.venue);
+  const plan = wrongVenue ? { legs: unsizedLegs(legs), ...none } : await planLegs(deps, legs, lotSize, strategy.venue);
   reasons.push(...exitPlan.reasons, ...plan.reasons);
   const notional = plan.legs.reduce((s, l) => s + Number(l.notional), 0);
   if (notional > trading.maxNotionalUsd) reasons.push(`Notional ${toDecimal(notional, 2)} USD exceeds the ${trading.maxNotionalUsd} USD limit per placement`);
   // the premium a net debit pays leaves the wallet at placement whatever the worst loss is, and whether or not the
   // client could estimate one (a calendar's is unknown): the exchange refuses it for margin, so refuse it here (GAPS #81)
-  const debit = plan.legs.reduce((sum, l) => sum + (l.side === "buy" ? 1 : -1) * Number(l.notional), 0);
+  const debit = plan.premiumDebit; // option premium only: a future moves none (HC-TR-196)
   // HC-TR-192 (ADR-091): what the exchange will hold for the short legs, plus the premium paid, must be free before the
   // first order goes out (GAPS #108: a condor whose shorts were refused one by one left a long-only position behind)
   const shortMargin = plan.legs.reduce((sum, l) => sum + (l.marginEstimate === null ? 0 : Number(l.marginEstimate)), 0);
   const marginRequired = plan.legs.some((l) => l.marginEstimate !== null) ? toDecimal(shortMargin + Math.max(debit, 0), 2) : null;
-  // a figure that covers only some of the shorts would read as the whole: when the venue priced one short and not another, say so and refuse
+  // a figure that covers only some of the margined legs would read as the whole: when the venue priced one and not another, say so and refuse
+  // HC-TR-196: a linear leg has no worst-loss figure to fall back on, so an ENTRY into a future the venue gave no margin
+  // parameters or price for is refused outright, before anything is sent; an exit (reduce-only) is never refused for margin
+  if (plan.unestimatedFutures.length) reasons.push(`The margin for ${plan.unestimatedFutures.join(", ")} could not be estimated (no margin parameters or price from the exchange); nothing was sent`);
+  const marginedLegs = plan.futures > 0 ? "the short and futures legs" : "the short legs";
   if (marginRequired !== null && plan.unestimatedShorts.length) reasons.push(`Margin could not be estimated for ${plan.unestimatedShorts.join(", ")} (no margin parameters or spot from the exchange); nothing was sent`);
   let available: string | null = null;
   let availableAsset: string | null = null;
@@ -248,7 +270,7 @@ export async function preview(deps: AppDeps, user: SessionUser, strategy: Strate
       availableAsset = row.asset;
       if (worstLoss !== null && Number.isFinite(worstLoss) && Math.abs(worstLoss) > Number(row.availableBalance)) reasons.push(`Available ${row.asset} ${row.availableBalance} is below the worst-loss estimate ${toDecimal(Math.abs(worstLoss), 2)}`);
       if (debit > Number(row.availableBalance)) reasons.push(`Available ${row.asset} ${row.availableBalance} is below the premium this trade pays (${toDecimal(debit, 2)})`);
-      else if (marginRequired !== null && Number(marginRequired) > Number(row.availableBalance)) reasons.push(`Available ${row.asset} ${row.availableBalance} is below the margin the exchange will hold for the short legs plus the premium paid (estimate ${marginRequired}); nothing was sent`);
+      else if (marginRequired !== null && Number(marginRequired) > Number(row.availableBalance)) reasons.push(`Available ${row.asset} ${row.availableBalance} is below the margin the exchange will hold for ${marginedLegs} plus the premium paid (estimate ${marginRequired}); nothing was sent`);
     }
   } catch (e) {
     // the reason matters to the trader (vault, venue, network); log it and show it, never the key material

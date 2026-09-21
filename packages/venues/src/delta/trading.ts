@@ -192,6 +192,25 @@ export function shortOptionMarginUsd(input: { contracts: number | null; contract
   return toDecimal(perContract * contracts, 2);
 }
 
+/**
+ * Conservative initial-margin estimate for a FUTURES leg, long or short, USD (ADR-095, HC-TR-196). A future pays no
+ * premium but the exchange holds initial margin on its notional from the first contract: (pct + factor × contracts) / 100
+ * × price × contractValue × contracts, with the same percent and scaling unit as `shortOptionMarginUsd` (equally
+ * unverified against a worked example, GAPS #109) and no relief assumed for the options it hedges. It is a FLOOR, not
+ * a conservative figure: `initial_margin` is the product's minimum rate (its maximum leverage), and an account that
+ * trades the product at a lower leverage is held to more; the leverage setting is not read (GAPS #120). `price` is the
+ * future's mark, or the underlying spot when the ticker gave no mark. Null when any input is missing or the result is
+ * not above zero (a linear leg is never free; the caller says so rather than guessing).
+ */
+export function futuresMarginUsd(input: { contracts: number | null; contractValue: string; price: string | null; initialMarginPct: string | undefined; initialMarginScalingFactor: string | undefined }): string | null {
+  const { contracts, price, initialMarginPct, initialMarginScalingFactor } = input;
+  if (contracts === null || contracts < 1 || price === null || initialMarginPct === undefined) return null;
+  const pct = (Number(initialMarginPct) + (initialMarginScalingFactor === undefined ? 0 : Number(initialMarginScalingFactor)) * contracts) / 100;
+  const total = pct * Number(price) * Number(input.contractValue) * contracts;
+  if (!Number.isFinite(total) || total <= 0) return null;
+  return toDecimal(total, 2);
+}
+
 /** Snap a limit price onto the product's tick toward the passive side: a buy rounds down, a sell rounds up. Without a tick the price is returned as given. */
 export function roundToTick(price: string, tickSize: string | undefined, side: OrderSide): string {
   const tick = Number(tickSize);
