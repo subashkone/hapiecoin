@@ -58,6 +58,31 @@ describe("getPricingClient", () => {
     );
     expect(() => getPricingClient()).not.toThrow();
   });
+  it("HC-WS-049 falls back to the main thread when the Worker fails to load, so the next request still prices", async () => {
+    // a worker whose script never arrives: it fires onerror and answers nothing
+    class DeadWorker {
+      onmessage: ((ev: { data: unknown }) => void) | null = null;
+      onerror: ((ev: unknown) => void) | null = null;
+      terminated = false;
+      constructor() {
+        queueMicrotask(() => this.onerror?.({ message: "Failed to fetch worker script" }));
+      }
+      postMessage() {}
+      terminate() {
+        this.terminated = true;
+      }
+    }
+    vi.stubGlobal("Worker", DeadWorker);
+    vi.stubGlobal("URL", class extends URL {});
+    const first = getPricingClient();
+    await new Promise((r) => setTimeout(r, 0));
+    const second = getPricingClient();
+    expect(second).not.toBe(first); // replaced by an inline client
+    const r = await second.analyze(LEGS, OPTS);
+    expect(Number.isFinite(r.maxLoss)).toBe(true);
+    // a request that was in flight on the dead worker fails at once instead of hanging until the timeout
+    await expect(first.analyze(LEGS, OPTS)).rejects.toThrow();
+  });
 });
 
 describe("useAnalysis", () => {

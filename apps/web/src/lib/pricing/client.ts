@@ -15,7 +15,17 @@ export function getPricingClient(): PricingClient {
       // Adapt the DOM Worker to the engine's minimal transport shape.
       const transport: MessageTransport = { postMessage: (m) => worker.postMessage(m), onmessage: null };
       worker.onmessage = (ev: MessageEvent<unknown>) => transport.onmessage?.({ data: ev.data });
-      client = new PricingClient(transport, { timeoutMs: 8000 });
+      const viaWorker = new PricingClient(transport, { timeoutMs: 8000 });
+      // A worker that fails to load (its script gone after a redeploy or a dev-server restart, a blocked module worker)
+      // or crashes never answers: without this every request would time out and the pane would read "Pricing…" for
+      // ever. Fall back to the main thread: the pending requests fail once, the next tick prices inline (HC-WS-049).
+      worker.onerror = () => {
+        if (client !== viaWorker) return;
+        worker.terminate();
+        viaWorker.dispose();
+        client = new PricingClient(createInlineTransport(), { timeoutMs: 8000 });
+      };
+      client = viaWorker;
       return client;
     } catch {
       // fall through to the inline transport

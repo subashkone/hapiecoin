@@ -50,8 +50,13 @@ beforeEach(() => {
       }),
   ) as unknown as typeof HTMLCanvasElement.prototype.getContext;
   useUiStore.setState({ asset: "BTC", expiry: { BTC: EXPIRY }, legs: { BTC: [], ETH: [], XAUT: [] }, analysisTab: "payoff", targetPrice: null, targetDays: 0 });
+  // the fixture expires on 25 Sep 2026 and "to expiry" reads the clock: pin the date (only Date; timers and user
+  // events stay real) so the test means the same on every day (GAPS #114)
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(Date.UTC(2026, 8, 7, 10));
 });
 afterEach(() => {
+  vi.useRealTimers();
   mock.restore();
 });
 
