@@ -18,8 +18,9 @@ const EMAIL = "alerts@example.com";
 // default; an expiry drops out of it after its settlement hour, so a literal date would fail after 12:00 UTC that day)
 const DEFAULT_EXPIRIES = "2026-09-11,2026-09-18,2026-09-25,2026-10-30,2026-11-27".split(",");
 const firstLiveDefault = () => DEFAULT_EXPIRIES.find((d) => expiryMs(d, 12) > Date.now()) ?? DEFAULT_EXPIRIES[DEFAULT_EXPIRIES.length - 1]!;
-const EXPIRY = firstLiveDefault();
-const rows = buildChain("BTC", EXPIRY);
+// read inside each test, after the setup's clock pin (GAPS #114): at module load Date.now() is still the real clock
+const expiry = () => firstLiveDefault();
+const rowsFor = (e: string) => buildChain("BTC", e);
 let mock: MockFetch;
 const mine = () => mock.state.accounts.get(EMAIL)!.alerts;
 const seed = (a: Partial<Alert>): Alert => {
@@ -148,10 +149,10 @@ describe("HC-SH-096 the engine", () => {
     seed({ id: "alr_iv", kind: "iv", op: "<=", value: "100", channels: ["email"] });
     renderWithProviders(<Harness />);
     const ws = serveSpot("79521");
-    const topic = chainTopic("delta_india", "BTC", EXPIRY);
+    const topic = chainTopic("delta_india", "BTC", expiry());
     await waitFor(() => expect(ws.sentFrames().some((f) => JSON.stringify(f).includes(topic))).toBe(true));
     act(() => {
-      ws.receive({ t: "snap", topic, seq: 0, rows });
+      ws.receive({ t: "snap", topic, seq: 0, rows: rowsFor(expiry()) });
     });
     await waitFor(() => expect(mine()[0]!.state).toBe("triggered"));
     expect(Number(mine()[0]!.lastValue)).toBeGreaterThan(0);

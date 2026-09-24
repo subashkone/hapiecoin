@@ -1,5 +1,6 @@
 import { TEMPLATE_COUNT } from "../src/lib/strategy/templates";
 import { expect, seedUser, signIn, test, typeLiveIfShown } from "./fixtures";
+import { recordedExpiry } from "../test/expiry-shift";
 import { strikesOf } from "../test/fixtures/chain";
 
 /** HC-TR-186: a live confirm needs the word typed first; a paper dialog has no field. */
@@ -71,9 +72,10 @@ test.describe("HC-SH analyse header and live chain", () => {
     await expect(chips.first()).toBeVisible();
     await expect(page.getByText("expiries · gateway")).toBeVisible();
     const table = page.getByTestId("chain-table");
-    // The selected chip is the nearest expiry the fake gateway serves; its row count must equal the recorded ladder.
+    // The selected chip is the nearest expiry the fake gateway serves; its row count must equal the recorded ladder
+    // (the gateway serves the recording under today's calendar, GAPS #114: the served date maps back to its recording).
     const selected = await page.locator("[data-testid=expiry-chip][aria-selected=true]").getAttribute("data-expiry");
-    const listed = strikesOf("BTC", selected ?? "");
+    const listed = strikesOf("BTC", recordedExpiry(selected ?? ""));
     expect(listed.length).toBeGreaterThan(10);
     // the venue list is the total and the chain shows every row by default (GAPS #115); ±12 only slices it (HC-WS-016)
     await expect(table).toHaveAttribute("data-total", String(listed.length), { timeout: 15_000 });

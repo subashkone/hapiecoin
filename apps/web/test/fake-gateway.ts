@@ -6,6 +6,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { WebSocketServer, type WebSocket } from "ws";
 import { type ChainRow, ClientMessage, type ServerMessage, type Underlying, canonicalTopic, parseTopic, spotTopic } from "@hapiecoin/schema";
 
+import { shiftExpiries } from "./expiry-shift";
 import { SPOT0, buildChain, dec, expiriesOf, loadFixtureFile, mulberry32, type Fixture } from "./fixtures/chain";
 
 export interface FakeGatewayOptions {
@@ -15,6 +16,8 @@ export interface FakeGatewayOptions {
   fixture?: Fixture;
   /** Only serve expiries on/after this ISO date (defaults to all recorded). */
   today?: string;
+  /** Serve the recorded expiries moved so that RECORDED_TODAY lands on this ISO date (GAPS #114); undefined serves them as recorded. */
+  shiftTo?: string;
 }
 
 export interface FakeGateway {
@@ -32,6 +35,9 @@ export async function startFakeGateway(opts: FakeGatewayOptions): Promise<FakeGa
   if (opts.today) {
     for (const k of Object.keys(expiries) as Underlying[]) expiries[k] = expiries[k].filter((d) => d >= opts.today!);
   }
+  const shifted = shiftExpiries(expiries, opts.shiftTo);
+  const served = shifted.served;
+  const recordedExpiry = (e: string) => shifted.toRecorded.get(e) ?? e;
   const tickMs = opts.tickMs ?? 500;
   const spot: Record<Underlying, number> = { ...SPOT0 };
   const rnd = mulberry32(42);
@@ -43,7 +49,7 @@ export async function startFakeGateway(opts: FakeGatewayOptions): Promise<FakeGa
       res.setHeader("content-type", "application/json");
       res.setHeader("access-control-allow-origin", "*");
       // Same shape as apps/gateway/src/server.ts: expiries live under feed.
-      res.end(JSON.stringify({ ok: true, status: "ok", feed: { ready: true, expiries } }));
+      res.end(JSON.stringify({ ok: true, status: "ok", feed: { ready: true, expiries: served } }));
       return;
     }
     res.statusCode = 404;
@@ -59,7 +65,7 @@ export async function startFakeGateway(opts: FakeGatewayOptions): Promise<FakeGa
     if (!c) {
       const p = parseTopic(topic);
       if (!p || p.kind !== "chain") return null;
-      c = { seq: 0, rows: buildChain(p.underlying, p.expiry, Date.now(), fx) };
+      c = { seq: 0, rows: buildChain(p.underlying, recordedExpiry(p.expiry), Date.now(), fx) }; // the served date's recording
       chains.set(topic, c);
     }
     return c;

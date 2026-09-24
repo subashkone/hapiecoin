@@ -367,7 +367,7 @@ describe("HC-TR-148..152 adjustment workbench on a paper strategy", () => {
     await waitFor(() => expect(idea("hedgeDelta").dataset["state"]).toBe("ready"), { timeout: 8000 });
     const beforeDelta = Number(ideas.dataset["beforeDelta"]);
     expect(beforeDelta).toBeGreaterThan(0);
-    const hedgeWhat = within(idea("hedgeDelta")).getByTestId("repair-what").textContent!;
+    const hedgeWhat = within(idea("hedgeDelta")).getByTestId("repair-what").textContent ?? "";
     const sized = /^sell (\d+) × BTCUSD perp [(]([\d.]+) BTC[)] at the index$/.exec(hedgeWhat);
     expect(sized, hedgeWhat).not.toBeNull();
     expect(Math.abs(Number(sized![1]) - beforeDelta / 0.001)).toBeLessThanOrEqual(1); // the mock's BTC lot size is 0.001

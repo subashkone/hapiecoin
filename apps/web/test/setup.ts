@@ -6,6 +6,34 @@ import { navigationModule, resetNextMocks } from "./next-mocks";
 
 vi.mock("next/navigation", () => navigationModule);
 
+/**
+ * The test clock (GAPS #114): every fixture was recorded on 7 Sep 2026 (chain, expiries up to 27 Nov 2026, replay,
+ * backtest), and code that reads the real clock (expired expiries dropped, days to expiry, "today" chips) started
+ * failing tests by the calendar on 23 Sep 2026. `Date` is shifted by a fixed offset so that each test file starts at
+ * TEST_NOW and time then flows at exactly real speed (mark ages, flashes, debounces and the hold-to-place button
+ * measure elapsed time; sinon's fake Date with shouldAdvanceTime lagged to ~60 % of real time and broke them).
+ * Timers, RTL's waitFor and user-event are untouched. A test that installs its own fake timers puts sinon's Date over
+ * this one and gets it back on useRealTimers; a test that sets its own time keeps doing so.
+ */
+export const TEST_NOW = Date.UTC(2026, 8, 7, 10);
+const RealDate = Date;
+const OFFSET = TEST_NOW - RealDate.now();
+const shiftedNow = () => RealDate.now() + OFFSET;
+// a Proxy over the real constructor, not a subclass: `Date()` as a plain function still answers a string, `instanceof
+// Date` holds both ways for values made before and after the swap (one prototype), and Date.UTC / Date.parse pass through
+const ShiftedDate = new Proxy(RealDate, {
+  construct(target, args: unknown[], newTarget) {
+    return Reflect.construct(target, args.length === 0 ? [shiftedNow()] : args, newTarget) as object;
+  },
+  apply() {
+    return new RealDate(shiftedNow()).toString();
+  },
+  get(target, prop, receiver) {
+    return prop === "now" ? shiftedNow : (Reflect.get(target, prop, receiver) as unknown);
+  },
+});
+globalThis.Date = ShiftedDate;
+
 // sonner's deleteToast schedules a 200 ms removeToast after a toast closes and never clears it, so a toast that
 // closes late in a file's last test fires a state update after jsdom is torn down ("window is not defined", an
 // unhandled error that fails the whole run on the slower CI runner; GAPS #80). Real timers still pending when a
