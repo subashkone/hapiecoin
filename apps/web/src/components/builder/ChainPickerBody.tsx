@@ -4,12 +4,12 @@
 // says what each cell shows: a pick, a held position (lots now → after) or nothing. With `keyboard` on,
 // the table takes focus: ↑ ↓ (j k) move, b / s pick the call, B / S the put, Enter reviews, Esc clears.
 import { cn } from "@hapiecoin/ui";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Underlying } from "@hapiecoin/schema";
 import type { VenueId } from "@hapiecoin/venues/core";
 import { nearestExpiry } from "@/lib/chain/expiries";
 import { useExpiriesQuery } from "@/lib/chain/useExpiries";
-import { type ChainRange, maxOpenInterest, oiBarPercent, sliceAroundAtm } from "@/lib/chain/range";
+import { type ChainRange, DEFAULT_CHAIN_RANGE, maxOpenInterest, oiBarPercent, sliceAroundAtm } from "@/lib/chain/range";
 import { daysToExpiry, fmtExpiry, fmtIv, fmtOi, fmtPrice, fmtStrike, fmtDelta } from "@/lib/format";
 import { useChain, useSpot } from "@/lib/gateway/hooks";
 import type { ChainState } from "@/lib/gateway/reducer";
@@ -27,8 +27,8 @@ export interface ChainCellState {
   held?: { side: LegSide; lots: number; after: number } | undefined;
 }
 
-/** Expiries, the chosen expiry and the chain window around ATM for one asset; `open` gates the subscriptions. `range` is the strikes kept each side of ATM (0 = every listed strike); the Builder picker keeps the compact ±12, the workbench shows all (GAPS #115). */
-export function usePickerChain(asset: Underlying, open: boolean, preferredExpiry: string | null | undefined, range: ChainRange = 12, venue?: VenueId) {
+/** Expiries, the chosen expiry and the chain window around ATM for one asset; `open` gates the subscriptions. `range` is the strikes kept each side of ATM (0 = every listed strike, the default everywhere since GAPS #115 / #123; the Builder picker and the workbench both pass it). */
+export function usePickerChain(asset: Underlying, open: boolean, preferredExpiry: string | null | undefined, range: ChainRange = DEFAULT_CHAIN_RANGE, venue?: VenueId) {
   // keyed by venue (ADR-069): the workspace venue unless the caller names one (the workbench names the strategy's own,
   // so a Delta position is never adjusted on another venue's expiries and strikes)
   const expiries = useExpiriesQuery(asset, venue === undefined ? { enabled: open } : { enabled: open, venue });
@@ -60,12 +60,30 @@ export interface ChainPickerBodyProps {
   onEscape?: (() => void) | undefined;
   /** Height class of the scrolling table box. */
   boxClass?: string | undefined;
+  /** Strikes shown each side of ATM (0 = every listed strike); with `onRange` the ±12 / All control is shown. */
+  range?: ChainRange | undefined;
+  onRange?: ((range: ChainRange) => void) | undefined;
   testId?: string | undefined;
 }
 
-export function ChainPickerBody({ asset, expiries, expiry, onExpiry, rows, atm, stateOf, onToggle, keyboard = false, onEnter, onEscape, boxClass = "max-h-[46vh]", testId = "picker" }: ChainPickerBodyProps) {
+export function ChainPickerBody({ asset, expiries, expiry, onExpiry, rows, atm, stateOf, onToggle, keyboard = false, onEnter, onEscape, boxClass = "max-h-[46vh]", testId = "picker", range, onRange }: ChainPickerBodyProps) {
   const [focus, setFocus] = useState(-1);
-  useEffect(() => setFocus(-1), [expiry]);
+  useEffect(() => setFocus(-1), [expiry, range]);
+  // the ATM row is centred once per view (expiry + range) as soon as the ladder AND the spot are known (a full ladder
+  // starts far above the money; ATM is -1 until the spot tick, which may land after the chain snap, so `atm` is a dep
+  // and a later spot tick does not fight the trader's own scrolling); a hidden or not-yet-laid-out box is left alone
+  const box = useRef<HTMLDivElement>(null);
+  const centred = useRef("");
+  useLayoutEffect(() => {
+    const key = `${expiry}|${range}`;
+    if (centred.current === key || rows.length === 0 || atm < 0) return;
+    const el = box.current;
+    if (!el || el.clientHeight === 0) return;
+    const row = el.querySelector<HTMLElement>("tr.atm-band");
+    if (!row) return;
+    centred.current = key;
+    el.scrollTop = Math.max(0, row.offsetTop - el.clientHeight / 2 + row.offsetHeight / 2);
+  }, [expiry, range, rows.length, atm]);
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (!keyboard || e.altKey || e.ctrlKey || e.metaKey) return;
     const last = rows.length - 1;
@@ -153,7 +171,19 @@ export function ChainPickerBody({ asset, expiries, expiry, onExpiry, rows, atm, 
           </button>
         ))}
       </ExpiryStrip>
-      <div className={cn("mt-2 overflow-auto rounded border border-border outline-none focus-visible:ring-1 focus-visible:ring-ring", boxClass)} tabIndex={keyboard ? 0 : undefined} onKeyDown={onKeyDown} aria-label={keyboard ? `${asset} chain: arrows move, B / S pick the call, Shift+B / Shift+S the put, Enter reviews` : undefined} data-testid={`${testId}-box`}>
+      {onRange ? (
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-2xs">
+          <span className="inline-flex overflow-hidden rounded border border-border" role="group" aria-label="Strike range" data-testid={`${testId}-range`} data-range={range ?? 0}>
+            {([12, 0] as const).map((r) => (
+              <button key={r} type="button" aria-pressed={(range ?? 0) === r} onClick={() => onRange(r)} className={cn("px-2 py-1 font-mono text-3xs uppercase focus-visible:outline focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-ring", (range ?? 0) === r ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground")} data-testid={`${testId}-range-${r}`}>
+                {r === 0 ? "All" : "±12"}
+              </button>
+            ))}
+          </span>
+          <span className="micro text-muted-foreground" data-testid={`${testId}-count`}>{rows.length} strikes{(range ?? 0) === 0 ? "" : " around the money"}</span>
+        </div>
+      ) : null}
+      <div ref={box} className={cn("mt-2 overflow-auto rounded border border-border outline-none focus-visible:ring-1 focus-visible:ring-ring", boxClass)} tabIndex={keyboard ? 0 : undefined} onKeyDown={onKeyDown} aria-label={keyboard ? `${asset} chain: arrows move, B / S pick the call, Shift+B / Shift+S the put, Enter reviews` : undefined} data-testid={`${testId}-box`}>
         <table className="w-full text-xs" data-testid={`${testId}-table`} data-rows={rows.length} data-atm={atm}>
           <thead className="sticky top-0 bg-surface-1">
             <tr className="micro">
