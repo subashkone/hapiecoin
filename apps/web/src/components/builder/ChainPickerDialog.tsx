@@ -8,6 +8,7 @@ import { useUiStore } from "@/lib/store";
 import { type LegKind, type LegSide, MAX_ACTIVE_LEGS, type NewLegInput } from "@/lib/strategy/legs";
 import type { Underlying } from "@hapiecoin/schema";
 import { ChainPickerBody, type PickerRow, usePickerChain } from "./ChainPickerBody";
+import { type ChainRange, DEFAULT_CHAIN_RANGE } from "@/lib/chain/range";
 
 interface Pick {
   key: string;
@@ -39,7 +40,9 @@ export function ChainPickerDialog({ open, onOpenChange, remaining, asset: assetO
   const workspaceExpiry = expiryOverride ?? storeExpiry;
   const chainLots = useUiStore((s) => s.chainLots);
   const addLeg = useUiStore((s) => s.addLeg);
-  const chain = usePickerChain(asset, open, workspaceExpiry);
+  // every listed strike by default, like the chain and the workbench (ADR-093, GAPS #123); ±12 narrows the view only
+  const [range, setRange] = useState<ChainRange>(DEFAULT_CHAIN_RANGE);
+  const chain = usePickerChain(asset, open, workspaceExpiry, range);
   const { expiry } = chain;
   const [picks, setPicks] = useState<Pick[]>([]);
   useEffect(() => {
@@ -92,7 +95,7 @@ export function ChainPickerDialog({ open, onOpenChange, remaining, asset: assetO
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
-          <ChainPickerBody asset={asset} expiries={chain.expiries} expiry={expiry} onExpiry={chain.setExpiry} rows={chain.rows} atm={chain.atm} stateOf={(strike, kind) => ({ picked: pickOf(strike, kind)?.side })} onToggle={toggle} />
+          <ChainPickerBody asset={asset} expiries={chain.expiries} expiry={expiry} onExpiry={chain.setExpiry} rows={chain.rows} atm={chain.atm} range={range} onRange={setRange} stateOf={(strike, kind) => ({ picked: pickOf(strike, kind)?.side })} onToggle={toggle} />
           {picks.length ? (
             <div className="mt-2 flex flex-col gap-1" data-testid="picker-selected">
               {picks.map((p) => (

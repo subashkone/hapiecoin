@@ -115,9 +115,9 @@
     "route": "/analyse",
     "screen": "Analyse · Strategy panel (Builder)",
     "feature": "Select from Chain button",
-    "how": "Opens the 'Select Option from Chain' modal (title 'Select option from live options chain', data-tour=\"add-leg-button\"); disabled with title 'Maximum 8 fresh legs reached' / 'Maximum 10 active legs reached' when the limit is hit",
+    "how": "Opens the 'Select Option from Chain' modal (title 'Select option from live options chain', data-tour=\"add-leg-button\"); disabled with title 'Maximum 8 fresh legs reached' / 'Maximum 10 active legs reached' when the limit is hit; the dialog lists every listed strike of the expiry by default (±12 / All control and strike count above the table, ATM row centred; GAPS #123)",
     "status": "working",
-    "evidence": "bundle strings: Select from Chain, Select option from live options chain, Maximum 8 fresh legs reached, Maximum 10 active legs reached · Phase 2 item 4 (08 Sep 2026): Select from chain opens the chain picker; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-027"
+    "evidence": "bundle strings: Select from Chain, Select option from live options chain, Maximum 8 fresh legs reached, Maximum 10 active legs reached · Phase 2 item 4 (08 Sep 2026): Select from chain opens the chain picker; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-027 · 26 Sep 2026 (GAPS #123): every strike by default in the picker; unit builder.test.tsx HC-TR-027 (row count, ±12 / All), e2e analyse.spec.ts HC-TR-027 (full recorded ladder)"
   },
   {
     "route": "/analyse",

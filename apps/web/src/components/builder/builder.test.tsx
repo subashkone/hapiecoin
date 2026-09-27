@@ -435,6 +435,16 @@ describe("HC-TR-027..035 chain picker and future dialog", () => {
     expect(picker.getAllByTestId("picker-delta-call")[0]!.textContent).toMatch(/^-?\d\.\d\d$|^—$/);
     expect([...picker.getAllByTestId("picker-oi-call"), ...picker.getAllByTestId("picker-oi-put")].some((c) => Number(c.dataset["pct"]) > 0)).toBe(true);
     await waitFor(() => expect(picker.getAllByTestId("picker-row").some((r) => r.className.includes("atm-band"))).toBe(true), { timeout: 5000 });
+    // GAPS #123 (ADR-093): every listed strike of the expiry by default, ±12 narrows the view, All restores it
+    const total = Number(picker.getByTestId("picker-table").dataset["rows"]);
+    expect(total).toBeGreaterThan(25);
+    expect(picker.getByTestId("picker-range").dataset["range"]).toBe("0");
+    expect(picker.getByTestId("picker-count").textContent).toBe(`${total} strikes`);
+    await u.click(picker.getByTestId("picker-range-12"));
+    await waitFor(() => expect(Number(picker.getByTestId("picker-table").dataset["rows"])).toBeLessThanOrEqual(25));
+    expect(picker.getByTestId("picker-count").textContent).toMatch(/strikes around the money$/);
+    await u.click(picker.getByTestId("picker-range-0"));
+    await waitFor(() => expect(Number(picker.getByTestId("picker-table").dataset["rows"])).toBe(total));
     const rowsEl = picker.getAllByTestId("picker-row");
     const atmIdx = rowsEl.findIndex((r) => r.className.includes("atm-band"));
     expect(atmIdx).toBeGreaterThan(0);

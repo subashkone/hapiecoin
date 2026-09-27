@@ -568,9 +568,35 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     await page.getByTestId("builder-select-chain").click();
     const picker = page.getByTestId("chain-picker");
     await expect(picker.getByTestId("picker-row").first()).toBeVisible({ timeout: 15_000 });
+    // GAPS #123: the picker lists every strike of its expiry by default (the recorded ladder, served under today's dates)
+    const pickerExpiry = (await picker.locator("[data-testid=picker-expiry][aria-selected=true]").getAttribute("data-expiry"))!;
+    const pickerTotal = strikesOf("BTC", recordedExpiry(pickerExpiry)).length;
+    expect(pickerTotal).toBeGreaterThan(25);
+    await expect(picker.getByTestId("picker-table")).toHaveAttribute("data-rows", String(pickerTotal));
+    await expect(picker.getByTestId("picker-range")).toHaveAttribute("data-range", "0");
+    const atmBand = picker.locator("tr.atm-band");
+    await expect(atmBand).toBeInViewport(); // the full ladder opens centred on the money
+    // ±12 narrows the view, All restores the ladder centred again; another expiry opens centred as well, and back
+    await picker.getByTestId("picker-range-12").click();
+    await expect(picker.getByTestId("picker-count")).toHaveText(/^(1\d|2[0-5]) strikes around the money$/);
+    await picker.getByTestId("picker-range-0").click();
+    await expect(picker.getByTestId("picker-table")).toHaveAttribute("data-rows", String(pickerTotal));
+    await expect(atmBand).toBeInViewport();
+    const otherExpiry = picker.locator("[data-testid=picker-expiry][aria-selected=false]").first();
+    const otherDate = (await otherExpiry.getAttribute("data-expiry"))!;
+    await otherExpiry.click();
+    await expect(picker.locator(`[data-testid=picker-expiry][data-expiry="${otherDate}"]`)).toHaveAttribute("aria-selected", "true");
+    await expect(picker.getByTestId("picker-table")).toHaveAttribute("data-rows", String(strikesOf("BTC", recordedExpiry(otherDate)).length));
+    await expect(atmBand).toBeInViewport();
+    await picker.locator(`[data-testid=picker-expiry][data-expiry="${pickerExpiry}"]`).click();
+    await expect(picker.getByTestId("picker-table")).toHaveAttribute("data-rows", String(pickerTotal));
+    await expect(atmBand).toBeInViewport();
+    // picks two strikes either side of the money, as the old ±12 window's rows 10 and 14 were
     const rows = picker.getByTestId("picker-row");
-    await rows.nth(10).getByTestId("picker-buy-call").click();
-    await rows.nth(14).getByTestId("picker-sell-call").click();
+    const atmIdx = await rows.evaluateAll((els) => els.findIndex((el) => el.classList.contains("atm-band")));
+    expect(atmIdx).toBeGreaterThan(1);
+    await rows.nth(atmIdx - 2).getByTestId("picker-buy-call").click();
+    await rows.nth(atmIdx + 2).getByTestId("picker-sell-call").click();
     await expect(picker.getByTestId("picker-add")).toHaveText("Add 2 Legs");
     await picker.getByTestId("picker-add").click();
     await expect(page.getByTestId("builder-panel")).toHaveAttribute("data-legs", "2");
