@@ -1,8 +1,8 @@
 # CI for every pull request and every push to main (roadmap F24; GAPS #69; ADR-061).
 # checks: pnpm ci (typecheck, lint, unit + coverage gates, build) and the /analyse bundle budget.
 # e2e:    Playwright against the mock API and fake gateway (apps/web/test/servers.ts), Chromium only; then the visual
-#         suite on its pinned mock stack (playwright.visual.config.ts). The visual step captures only until the Linux
-#         baseline is committed under apps/web/e2e/__baselines__; from then on it compares every picture (ADR-096).
+#         suite on its pinned mock stack (playwright.visual.config.ts), every picture compared against the committed
+#         Linux baseline in apps/web/e2e/__baselines__ (ADR-096); the diff images are in the report on failure.
 # docker: the API and gateway images build (no push), on main only, so the Dockerfiles do not rot.
 # baseline: refresh of the visual baselines in apps/web/e2e/__baselines__ (ADR-096), started by hand
 #         (workflow_dispatch) or by pushing a branch named baseline/<anything>: the visual suite runs twice on the
@@ -77,12 +77,12 @@ jobs:
         run: pnpm --filter @hapiecoin/web test:e2e
         env:
           PW_CHANNEL: chromium
-      - name: visual (capture only until the Linux baseline is committed)
+      - name: visual (every picture against the committed Linux baseline)
         if: ${{ !cancelled() }}
         run: pnpm --filter @hapiecoin/web test:visual
         env:
           PW_CHANNEL: chromium
-          E2E_PIXELS: "0"
+          E2E_PIXELS: "1"
       - name: Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
