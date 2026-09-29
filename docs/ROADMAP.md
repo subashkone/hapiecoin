@@ -43,6 +43,10 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 28. ✅ (ADR-078) TOTP second factor and a typed LIVE confirmation before a live order (GAPS #73 closed; leftovers #94)
 29. ⏸ `zod/mini` for `@hapiecoin/schema`; bundle check inside `pnpm ci` (GAPS #19) · BACKLOG (feature freeze 13 Sep 2026, ADR-090)
 
+## G. After launch (research done, not scheduled; ADR-090)
+30. ⏸ AI: opportunity radar, expected-value scores, natural-language alerts, journal coach, advisor with tools · BACKLOG · docs/research/ai-leverage.md (five phases, AI-1 radar first; no language model needed for AI-1)
+31. ⏸ Strategy playbooks: entry, management and exit rules on catalogue templates, each with a backtested record · BACKLOG · docs/research/strategy-playbooks.md (eight playbooks; first three: premium harvest, expiry-week credit spread, trend with defined risk)
+
 ## Done this week
 - ✅ Trade lifecycle item 1 (PR #47, ADR-059)
 - ✅ Workbench H2 pass and four follow-ups (PRs #42–#46, ADR-058)
