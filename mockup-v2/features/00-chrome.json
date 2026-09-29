@@ -1192,5 +1192,16 @@
     "phase": 5,
     "evidence": "ADR-092, GAPS #111 (16 Sep 2026): apps/api/src/config.ts tradingEnvOf; apps/api/src/routes/credentials.ts; packages/schema accounts.ts TradingEnv; apps/web/src/components/trading/TradingEnvTag.tsx + widgets.tsx, PaperPanel.tsx, NetPositionsPanel.tsx, TradeModeDialog.tsx, TradePreviewDialog.tsx, BatchLiveDialog.tsx; tests: api config.test.ts + credentials.test.ts, web widgets.test.tsx + trading-live.test.tsx",
     "test": "unit (api + web) · e2e (visual)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Ops · Visual regression gate",
+    "feature": "Every picture of the visual suite (both themes) and of the guide captures is compared against a committed Linux baseline within a tolerance, so a layout break fails CI",
+    "how": "apps/web/playwright.visual.config.ts runs visual.spec.ts and guide.spec.ts on their own mock stack pinned to VISUAL_NOW (2026-09-08T10:00:00Z: the mock API's clock starts there, the fake gateway serves the recording as recorded and never ticks) and every page's clock is pinned to the same instant with the Next dev overlay hidden (e2e/shot.ts preparePage); shot() saves the capture under e2e/__screenshots__ as before and, with E2E_PIXELS=1, asserts toHaveScreenshot against e2e/__baselines__/<name>-chromium-linux.png (at most 150 pixels, animations disabled, caret hidden, no retries, the network and the toasts waited out, two minute stamps masked, the Next dev overlay hidden, the page taken from its left edge); the visual web server has its own build folder (NEXT_DIST_DIR=.next-visual), so it runs beside a developer's `pnpm dev`; the baselines come from the 'baseline' job in .github/workflows/ci.yml (by hand or on a baseline/ branch: write, then compare a second run, upload); the PR job's visual step captures only until the baseline is committed and compares from then on and are reviewed in the PR that commits them; a laptop run compares against its own gitignored win32 pictures",
+    "status": "working",
+    "new": true,
+    "phase": 5,
+    "evidence": "ADR-096 (28 Sep 2026, GAPS #119 / #20): apps/web/playwright.visual.config.ts, e2e/shot.ts, e2e/visual.spec.ts (describe HC-SH-139 visual · dark / light), e2e/guide.spec.ts, test/servers.ts (MOCK_CLOCK_AT, MOCK_CALENDAR, MOCK_TICK_MS), test/expiry-shift.ts VISUAL_NOW, next.config.ts distDir, e2e/visual-teardown.ts, .github/workflows/ci.yml (visual step, baseline job); on the laptop a write and two compare runs paint the same 161 pictures (34 of 34 tests each), a widened backtest panel turns its guide picture red (control run)",
+    "test": "e2e (visual)"
   }
 ]

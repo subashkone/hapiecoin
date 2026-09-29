@@ -1,5 +1,6 @@
 // Playwright e2e: starts the mock API + fake gateway (test/servers.ts) and `next dev` pointed at them.
-// Screenshots for the visual comparison land in e2e/__screenshots__/ (dark + light).
+// The visual suite (visual.spec.ts, guide.spec.ts) is not here: it runs under playwright.visual.config.ts on its own
+// pinned mock stack (`pnpm test:visual`, ADR-096).
 import { defineConfig, devices } from "@playwright/test";
 
 const WEB_PORT = Number(process.env["E2E_WEB_PORT"] ?? 3100);
@@ -8,6 +9,7 @@ const GATEWAY_PORT = Number(process.env["MOCK_GATEWAY_PORT"] ?? 3102);
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: [/visual\.spec\.ts/, /guide\.spec\.ts/],
   fullyParallel: false,
   workers: 1,
   retries: process.env["CI"] ? 1 : 0,

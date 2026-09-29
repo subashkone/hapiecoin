@@ -93,7 +93,7 @@ Hooks are enforced by the client; CLAUDE.md and rules are guidance. Put "must ne
 - **Parallel work in worktrees.** Give each feature its own git worktree (`git worktree add ../hapie-feat-x feat/x`) and run one session per worktree; the `.claude/` folder travels with the checkout, and subagents accept `isolation: worktree`.
 - **Batch jobs.** For mechanical changes across many files, loop `claude -p "<task for file>"` over the file list, then run `/review deep` once on the combined diff.
 - **Unattended runs.** Only after the Stop hook has a real test script to run. Auto mode plus a red test suite is the fastest way to ship broken code.
-- **Screenshots as a check.** `node qa.js dark|light` in `mockup-v2` writes shots; when `apps/web` exists, Playwright visual diffs against the spec tolerance become the pass/fail the agent reads.
+- **Screenshots as a check.** `node qa.js dark|light` in `mockup-v2` writes shots; in `apps/web`, `pnpm test:visual` compares every picture of the visual suite against the committed Linux baseline within the spec tolerance (ADR-096), so a layout break is a red CI job the agent reads, not a picture someone has to look at.
 
 ## Not set up (deliberately)
 

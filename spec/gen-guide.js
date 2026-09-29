@@ -175,7 +175,7 @@ Cards on the Paper and Live tabs show P&L, greeks, days to expiry, lifecycle chi
   {
     file: "14-platform-and-operations.md",
     title: "Platform and operations",
-    screens: ["API · hardening", "API · replicas", "Gateway · replicas", "Venues · port", "Venues · port (web)", "Venues · column", "Venues · Deribit (data-only)", "Venues · API per venue", "Shared chrome · Error screen · browser error report", "Ops · API /metrics and the error sink"],
+    screens: ["API · hardening", "API · replicas", "Gateway · replicas", "Venues · port", "Venues · port (web)", "Venues · column", "Venues · Deribit (data-only)", "Venues · API per venue", "Shared chrome · Error screen · browser error report", "Ops · API /metrics and the error sink", "Ops · Visual regression gate"],
     overview: `Not screens but guarantees: request body limits and per-route rate limits on the order routes, one API replica running the background jobs and one gateway feeding, the venue port that lets a second exchange be added without touching the apps (Deribit is wired data-only), error tracking through a Sentry-protocol sink with browser errors relayed through the API, and Prometheus-style metrics on the API and the gateway behind a token.`,
     tryIt: ["`GET /healthz` on the API and the gateway; `GET /metrics` with the bearer token; trigger a browser error (the error screen offers a report).", "Switch venue in the header to Deribit (data-only) and back."],
     shots: [],

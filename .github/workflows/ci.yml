@@ -1,20 +1,27 @@
 # CI for every pull request and every push to main (roadmap F24; GAPS #69; ADR-061).
 # checks: pnpm ci (typecheck, lint, unit + coverage gates, build) and the /analyse bundle budget.
-# e2e:    Playwright against the mock API and fake gateway (apps/web/test/servers.ts), Chromium only.
+# e2e:    Playwright against the mock API and fake gateway (apps/web/test/servers.ts), Chromium only; then the visual
+#         suite on its pinned mock stack (playwright.visual.config.ts). The visual step captures only until the Linux
+#         baseline is committed under apps/web/e2e/__baselines__; from then on it compares every picture (ADR-096).
 # docker: the API and gateway images build (no push), on main only, so the Dockerfiles do not rot.
+# baseline: refresh of the visual baselines in apps/web/e2e/__baselines__ (ADR-096), started by hand
+#         (workflow_dispatch) or by pushing a branch named baseline/<anything>: the visual suite runs twice on the
+#         runner's Chromium, first writing the pictures, then comparing, and the folder is uploaded as the
+#         "visual-baselines" artifact for the PR that commits it. A baseline/ branch runs nothing else.
 # Not here: prettier --check (the tree is not formatted yet) and the real-API smoke run (smoke.yml, manual).
 name: ci
 
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, "baseline/**"]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name }}-${{ github.ref }}
   # superseded pull-request runs are cancelled; runs on main all finish so every merge gets its image build
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
@@ -24,6 +31,7 @@ env:
 jobs:
   checks:
     name: typecheck · lint · tests · build · budget
+    if: github.event_name != 'workflow_dispatch' && !startsWith(github.ref, 'refs/heads/baseline/')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -51,8 +59,9 @@ jobs:
 
   e2e:
     name: playwright (mock API + fake gateway)
+    if: github.event_name != 'workflow_dispatch' && !startsWith(github.ref, 'refs/heads/baseline/')
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -68,6 +77,12 @@ jobs:
         run: pnpm --filter @hapiecoin/web test:e2e
         env:
           PW_CHANNEL: chromium
+      - name: visual (capture only until the Linux baseline is committed)
+        if: ${{ !cancelled() }}
+        run: pnpm --filter @hapiecoin/web test:visual
+        env:
+          PW_CHANNEL: chromium
+          E2E_PIXELS: "0"
       - name: Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
@@ -76,12 +91,60 @@ jobs:
           path: |
             apps/web/playwright-report
             apps/web/test-results
+            apps/web/playwright-report-visual
+            apps/web/test-results-visual
+          if-no-files-found: ignore
+          retention-days: 7
+
+  baseline:
+    name: visual baselines (write, then compare)
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/heads/baseline/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run build --filter="./packages/*"
+      - run: pnpm --filter @hapiecoin/web exec playwright install --with-deps chromium
+      # Playwright called directly: `pnpm test:visual -- --update-snapshots` hands Playwright a literal "--" and the
+      # flag is lost, after which every missing baseline fails its test.
+      - name: write the baselines
+        run: pnpm --filter @hapiecoin/web exec playwright test -c playwright.visual.config.ts --update-snapshots
+        env:
+          PW_CHANNEL: chromium
+          E2E_PIXELS: "1"
+      - name: compare a second run against them (determinism)
+        run: pnpm --filter @hapiecoin/web test:visual
+        env:
+          PW_CHANNEL: chromium
+          E2E_PIXELS: "1"
+      - name: baselines
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines
+          path: apps/web/e2e/__baselines__
+          if-no-files-found: error
+          retention-days: 7
+      - name: Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-baseline
+          path: |
+            apps/web/playwright-report-visual
+            apps/web/test-results-visual
           if-no-files-found: ignore
           retention-days: 7
 
   docker:
     name: images build (api, gateway)
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

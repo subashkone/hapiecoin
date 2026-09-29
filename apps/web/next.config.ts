@@ -21,6 +21,9 @@ const nextConfig: NextConfig = {
   // `next dev` serves dev-only assets (chunks, HMR socket) to its own origin only; Playwright and curl use 127.0.0.1.
   allowedDevOrigins: ["127.0.0.1"],
   poweredByHeader: false,
+  // `next dev` takes a lock on its build folder, so a second dev server in this app needs its own: the visual suite
+  // runs with NEXT_DIST_DIR=.next-visual and leaves a developer's `pnpm dev` on port 3000 alone (ADR-096)
+  distDir: process.env["NEXT_DIST_DIR"] || ".next",
   // No raster images are used; the optimizer would only add a server route.
   images: { unoptimized: true },
   reactCompiler: true,

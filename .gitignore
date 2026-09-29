@@ -11,11 +11,14 @@ CLAUDE.local.md
 node_modules/
 dist/
 .next/
+.next-visual/
 .turbo/
 coverage/
 playwright-report/
 test-results/
 test-results-smoke/
+test-results-visual/
+playwright-report-visual/
 
 # generated knowledge graph cache (graph.json and report are kept)
 graphify-out/cache/
@@ -23,6 +26,9 @@ graphify-out/cache/
 # screenshots and QA output
 mockup-clone/shots/
 mockup-v2/shots/
+# visual baselines are the CI runner's (Linux); a laptop run only compares against its own earlier run (ADR-096)
+apps/web/e2e/__baselines__/**/*-win32.png
+apps/web/e2e/__baselines__/**/*-darwin.png
 *.log
 
 # OS / editor
