@@ -9,7 +9,6 @@ const GATEWAY_PORT = Number(process.env["MOCK_GATEWAY_PORT"] ?? 3102);
 
 export default defineConfig({
   testDir: "./e2e",
-  testIgnore: [/visual\.spec\.ts/, /guide\.spec\.ts/],
   fullyParallel: false,
   workers: 1,
   retries: process.env["CI"] ? 1 : 0,
@@ -26,7 +25,8 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      testIgnore: /phone\.spec\.ts/,
+      // a project's testIgnore replaces the top-level one, so the visual suite is excluded here (ADR-096)
+      testIgnore: [/phone\.spec\.ts/, /visual\.spec\.ts/, /guide\.spec\.ts/],
       use: { ...devices["Desktop Chrome"], channel: process.env["PW_CHANNEL"] ?? "chrome" },
     },
     {
