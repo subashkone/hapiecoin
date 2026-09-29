@@ -7,6 +7,10 @@
 import type { Underlying } from "@hapiecoin/schema";
 
 export const RECORDED_TODAY = "2026-09-07";
+/** The visual suite's instant (ADR-096): the morning after the recording, so the recorded 7 Sep expiry has settled and
+ * the 11 Sep, 18 Sep, 25 Sep, 30 Oct and 27 Nov ladders are live at 3, 10, 17, 52 and 80 days; pinned in the mock API,
+ * the fake gateway (served as recorded, no ticks) and every page, so a picture is the same on any real day. */
+export const VISUAL_NOW = "2026-09-08T10:00:00Z";
 const DAY = 86_400_000;
 
 /** Whole days from `fromIso` to `toIso` (negative when `toIso` is earlier). */

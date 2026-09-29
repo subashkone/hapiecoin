@@ -1,6 +1,6 @@
 # Platform and operations
 
-Part of the [HapieCoin feature guide](README.md). 11 traced features on 10 screens; 11 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 12 traced features on 11 screens; 12 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -75,4 +75,10 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-SH-133 | Error tracking for the API and the gateway through one DSN, and Prometheus request metrics on the API | ERROR_SINK_DSN (Sentry envelope protocol; no SDK) turns on an in-process sink that posts scrubbed events (tags, extra, path query redacted; no body, cookie or authorization; user id only) with a 3 s timeout and a 60-a-minute cap; every error-level log line is the capture seam (pino hook in the API, the gateway logger's error level), so 500s, job failures, feed faults and process-level faults reach the tracker once. GET /metrics on the API: requests by method, route pattern and status, a latency histogram per route, errors by kind, sink counts, jobs active, uptime, process memory; METRICS_TOKEN guards it with a bearer like the gateway | built | unit (api + gateway) |
+
+### Ops · Visual regression gate · `/analyse`
+
+| ID | Feature | How it behaves | Status | Tested by |
+|---|---|---|---|---|
+| HC-SH-139 | Every picture of the visual suite (both themes) and of the guide captures is compared against a committed Linux baseline within a tolerance, so a layout break fails CI | apps/web/playwright.visual.config.ts runs visual.spec.ts and guide.spec.ts on their own mock stack pinned to VISUAL_NOW (2026-09-08T10:00:00Z: the mock API's clock starts there, the fake gateway serves the recording as recorded and never ticks) and every page's clock is pinned to the same instant with the Next dev overlay hidden (e2e/shot.ts preparePage); shot() saves the capture under e2e/__screenshots__ as before and, with E2E_PIXELS=1, asserts toHaveScreenshot against e2e/__baselines__/<name>-chromium-linux.png (at most 150 pixels, animations disabled, caret hidden, no retries, the network and the toasts waited out, two minute stamps masked, the Next dev overlay hidden, the page taken from its left edge); the visual web server has its own build folder (NEXT_DIST_DIR=.next-visual), so it runs beside a developer's `pnpm dev`; the baselines come from the 'baseline' job in .github/workflows/ci.yml (by hand or on a baseline/ branch: write, then compare a second run, upload); the PR job compares every picture against them and are reviewed in the PR that commits them; a laptop run compares against its own gitignored win32 pictures | built | e2e (visual) |
 

@@ -2,7 +2,7 @@
 import base from "@hapiecoin/config/eslint";
 
 export default [
-  { ignores: ["**/*.css", ".next/**", "next-env.d.ts", "playwright-report/**", "test-results/**"] },
+  { ignores: ["**/*.css", ".next/**", ".next-visual/**", "next-env.d.ts", "playwright-report/**", "playwright-report-visual/**", "test-results/**", "test-results-visual/**"] },
   ...base,
   {
     // ADR-064: only the browser-safe core of the venue port; the package root reaches node:crypto

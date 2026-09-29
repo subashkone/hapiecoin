@@ -1,9 +1,12 @@
 // Captures for the feature guide (docs/guide): the screens the visual suite does not already record. Dark theme
-// only; the visual suite holds both themes for the main screens. Run with `playwright test guide` after the mock
-// stack is free. Titles carry the screens' existing traceability ids; nothing here asserts behaviour beyond "ready".
+// only; the visual suite holds both themes for the main screens. Runs with the visual suite under
+// playwright.visual.config.ts (`pnpm test:visual`, pinned mock stack and page clock). Titles carry the screens' existing
+// traceability ids; nothing here asserts behaviour beyond "ready", except that with E2E_PIXELS=1 each picture must
+// match the Linux baseline (shot.ts, ADR-096, GAPS #119).
 import { expect, seedUser, signIn, test } from "./fixtures";
+import { preparePage, shot } from "./shot";
 
-const DIR = "e2e/__screenshots__/guide";
+test.beforeEach(({ page }) => preparePage(page));
 
 test.describe("guide captures", () => {
   test("HC-SH-026..049 the settings dialogs: profile, API keys and accounts, currency, lot size, P&L basis, mindful pause, exchanges, public page", async ({ page, request }) => {
@@ -26,7 +29,7 @@ test.describe("guide captures", () => {
       await page.getByTestId(item).click();
       await expect(dialog).toBeVisible();
       await page.waitForTimeout(400); // the dialog's data settles (rates, keys, handle)
-      await page.screenshot({ path: `${DIR}/${file}.png` });
+      await shot(page, "guide", file);
       await page.keyboard.press("Escape");
       await expect(dialog).toBeHidden();
     }
@@ -34,7 +37,7 @@ test.describe("guide captures", () => {
     await page.getByTestId("settings-gear").click();
     await page.getByTestId("menu-palette").click();
     await expect(page.getByRole("dialog")).toBeVisible();
-    await page.screenshot({ path: `${DIR}/command-palette.png` });
+    await shot(page, "guide", "command-palette");
     await page.keyboard.press("Escape");
   });
 
@@ -45,7 +48,7 @@ test.describe("guide captures", () => {
     await page.getByTestId("settings-gear").click();
     await page.getByTestId("menu-security").click();
     await expect(page.getByTestId("security-status")).toBeVisible();
-    await page.screenshot({ path: `${DIR}/settings-security.png` });
+    await shot(page, "guide", "settings-security");
     await page.keyboard.press("Escape");
     // the code step: a second account with the authenticator on (a signed-in browser is sent away from /auth, so sign out first)
     await seedUser(request, { email: "guide-totp@example.com", twoFactor: true });
@@ -55,7 +58,7 @@ test.describe("guide captures", () => {
     await page.getByRole("textbox", { name: "Password", exact: true }).fill("Passw0rd!");
     await page.getByRole("button", { name: "Sign In", exact: true }).click();
     await expect(page.getByTestId("otp-input")).toBeVisible({ timeout: 15_000 });
-    await page.screenshot({ path: `${DIR}/auth-two-factor-code.png` });
+    await shot(page, "guide", "auth-two-factor-code");
   });
 
   test("HC-WS-113 replay, HC-TR-185 backtest, HC-WS-037 ladder, HC-WS-040 select from chain, HC-SH-053 portfolio bar", async ({ page, request }) => {
@@ -66,12 +69,12 @@ test.describe("guide captures", () => {
     const backtest = page.getByTestId("backtest-panel");
     await expect(backtest).toBeVisible();
     await expect(backtest.getByTestId("backtest-total")).toBeVisible({ timeout: 30_000 });
-    await page.screenshot({ path: `${DIR}/analyse-backtest.png` });
+    await shot(page, "guide", "analyse-backtest");
     await page.getByTestId("analysis-tab-replay").click();
     const replay = page.getByTestId("replay-panel");
     await expect(replay).toBeVisible();
     await expect(replay.getByTestId("replay-ladder")).toBeVisible({ timeout: 30_000 });
-    await page.screenshot({ path: `${DIR}/analyse-replay.png` });
+    await shot(page, "guide", "analyse-replay");
     // two legs so the ladder and the chain picker have something to show
     const atmStrike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
     await page.locator(`[data-testid=chain-row-calls][data-strike="${atmStrike}"]`).hover();
@@ -79,13 +82,13 @@ test.describe("guide captures", () => {
     await page.getByTestId("analysis-tab-ladder").click();
     await expect(page.getByTestId("analysis-tab-ladder")).toHaveAttribute("data-state", "active");
     await page.waitForTimeout(1500);
-    await page.screenshot({ path: `${DIR}/analyse-ladder.png` });
+    await shot(page, "guide", "analyse-ladder");
     await page.getByTestId("analysis-tab-payoff").click();
     await page.getByTestId("tab-builder").click();
     await page.getByTestId("builder-select-chain").click();
     const picker = page.getByTestId("chain-picker");
     await expect(picker.getByTestId("picker-row").first()).toBeVisible({ timeout: 15_000 });
-    await page.screenshot({ path: `${DIR}/builder-select-from-chain.png` });
+    await shot(page, "guide", "builder-select-from-chain");
     await page.keyboard.press("Escape");
   });
 
@@ -96,10 +99,10 @@ test.describe("guide captures", () => {
     await page.getByTestId("tab-journal").click();
     await expect(page.getByTestId("verified-block")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("verified-total")).not.toHaveText("—", { timeout: 15_000 });
-    await page.screenshot({ path: `${DIR}/journal-verified-pnl.png` });
+    await shot(page, "guide", "journal-verified-pnl");
     await page.goto("/t/asha_guide");
     await expect(page.getByTestId("trader-page")).toHaveAttribute("data-state", "ready");
-    await page.screenshot({ path: `${DIR}/public-trader-page.png`, fullPage: true });
+    await shot(page, "guide", "public-trader-page", { fullPage: true, mask: [page.getByTestId("trader-basis")] }); // "Last read HH:MM" comes from the mock's flowing clock
   });
 
   test("HC-AD-001 admin: plans, pricing master, user subscriptions", async ({ page, request }) => {
@@ -108,18 +111,19 @@ test.describe("guide captures", () => {
     await page.goto("/admin/plans");
     await expect(page.getByTestId("admin-shell")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
     await expect(page.getByTestId("plan-row").first()).toBeVisible();
-    await page.screenshot({ path: `${DIR}/admin-plans.png`, fullPage: true });
+    await shot(page, "guide", "admin-plans", { fullPage: true });
     await page.goto("/admin/pricing");
     await expect(page.getByTestId("admin-shell")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${DIR}/admin-pricing.png`, fullPage: true });
+    await shot(page, "guide", "admin-pricing", { fullPage: true });
     await page.goto("/admin/subscriptions");
     await expect(page.getByTestId("admin-shell")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${DIR}/admin-subscriptions.png`, fullPage: true });
+    await shot(page, "guide", "admin-subscriptions", { fullPage: true });
     await page.goto("/admin");
     await expect(page.getByTestId("admin-shell")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
-    await page.screenshot({ path: `${DIR}/admin-index.png`, fullPage: true });
+    await expect(page.getByTestId("um-row").first()).toBeVisible({ timeout: 15_000 }); // the index is the users table
+    await shot(page, "guide", "admin-index", { fullPage: true });
   });
 
   test("HC-MT-001 terminal: sectors, open interest, coin detail, exchanges, ETF, exchange balance, unlocks", async ({ page, request }) => {
@@ -138,7 +142,7 @@ test.describe("guide captures", () => {
     for (const [route, file, ready] of shots) {
       await page.goto(route);
       await ready();
-      await page.screenshot({ path: `${DIR}/${file}.png`, fullPage: true });
+      await shot(page, "guide", file, { fullPage: true });
     }
   });
 
@@ -146,7 +150,7 @@ test.describe("guide captures", () => {
     for (const [route, file] of [["/privacy", "public-privacy"], ["/terms", "public-terms"], ["/disclaimer", "public-disclaimer"], ["/auth/delta", "auth-delta"], ["/offline", "offline-page"]] as const) {
       await page.goto(route);
       await page.waitForTimeout(600);
-      await page.screenshot({ path: `${DIR}/${file}.png`, fullPage: route !== "/offline" });
+      await shot(page, "guide", file, { fullPage: route !== "/offline" });
     }
   });
 });
@@ -160,6 +164,6 @@ test.describe("guide captures · iPhone", () => {
     await page.getByTestId("settings-gear").click();
     await page.getByTestId("menu-install").click();
     await expect(page.getByTestId("install-dialog")).toHaveAttribute("data-state-install", "ios");
-    await page.screenshot({ path: `${DIR}/install-dialog-iphone.png` });
+    await shot(page, "guide", "install-dialog-iphone");
   });
 });

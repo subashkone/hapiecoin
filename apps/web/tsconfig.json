@@ -19,10 +19,11 @@
     "e2e/**/*.ts",
     "e2e-smoke/**/*.ts",
     "playwright.smoke.config.ts",
+    "playwright.visual.config.ts",
     "next.config.ts",
     "vitest.config.ts",
     "playwright.config.ts",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", ".next", "coverage", "playwright-report", "test-results"]
+  "exclude": ["node_modules", ".next", ".next-visual", "coverage", "playwright-report", "playwright-report-visual", "test-results", "test-results-visual"]
 }

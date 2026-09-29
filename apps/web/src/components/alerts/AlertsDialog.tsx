@@ -190,7 +190,7 @@ function AlertRow({ a }: { a: Alert }) {
         <div className="truncate font-mono text-[13px] font-medium" data-testid="alert-condition">{conditionText(a)}</div>
         <div className="text-2xs text-muted-foreground" data-testid="alert-now">
           {nowText(a, current)}
-          {fired ? <span className="text-warning"> · fired {fired}</span> : null}
+          {fired ? <span className="text-warning" data-testid="alert-fired"> · fired {fired}</span> : null}
         </div>
       </div>
       <span className="flex gap-1">
