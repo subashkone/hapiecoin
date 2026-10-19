@@ -48,6 +48,7 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 31. ⏸ Strategy playbooks: entry, management and exit rules on catalogue templates, each with a backtested record · BACKLOG · docs/research/strategy-playbooks.md (eight playbooks; first three: premium harvest, expiry-week credit spread, trend with defined risk)
 
 ## Done this week
+- ✅ Platform assessment, ADR-060, GAPS #68-76 (PR #49); strategy catalogue D17-D19 (PRs #50-#52); calendar fix (PR #48)
 - ✅ Trade lifecycle item 1 (PR #47, ADR-059)
 - ✅ Workbench H2 pass and four follow-ups (PRs #42–#46, ADR-058)
 - ✅ Key rotation + smoke (PR #39), IV history (PR #40), server alerts + Telegram (PR #41)
