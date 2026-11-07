@@ -3321,7 +3321,7 @@
   "phase": 2,
   "test": "unit (pricing) · e2e (Playwright) · api contract · security",
   "acceptance": "Column order is defined once from the strike outward (price triplet inboard, OI and Δ outboard) and mirrored on the calls side",
-  "evidence": "screenshot: Calls / STRIKE / Puts header with arrows · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020"
+  "evidence": "screenshot: Calls / STRIKE / Puts header with arrows · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020 · 20 Oct 2026 (GAPS #128): the detached scrollbars never fight a held thumb (useDetachedScrollbar); unit chain.test.tsx, e2e analyse.spec.ts HC-WS-015 / GAPS #128"
  },
  {
   "id": "HC-WS-016",
