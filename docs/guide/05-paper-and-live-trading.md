@@ -1,6 +1,6 @@
 # Paper trading, live trading, rules and accounts
 
-Part of the [HapieCoin feature guide](README.md). 96 traced features on 30 screens; 96 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 97 traced features on 31 screens; 97 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -225,9 +225,15 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-TR-166 | Rules engine: exits every leg when a level is crossed | A leader-only job every RULES_TICK_MS reads the venue's public tickers per underlying, values each strategy with armed rules from its filled open legs, fires the stop at P&L ≤ level or the target at ≥ level (stop first), claims the rule once, exits short legs first then longs at market through the exit path with three attempts, books the close reason stopped / target, disarms the other rule, writes the history batch and the audit, mails / Telegrams the trader; paper fires without orders; the kill switch holds a live fire; a refused leg is named as still open | built | unit (pricing) · e2e (Playwright) · api contract · security |
-| HC-TR-170 | Rules engine judges every kind from the marks and the spot | The tick carries the marks and the spot; a leg stop fires when a short leg's mark rises (a long leg's falls) to the level and exits that leg only under leg scope, leaving the other rules armed; a spot rule waits while the tick has no spot; a time exit fires at the instant or when the nearest settlement is within the days, booking squared off; a leg stop whose leg closed and a days rule with only a perpetual open are disarmed as void; the note names the mark, spot or days; the audit carries the spot, leg and scope | built | e2e (Playwright) |
+| HC-TR-170 | Rules engine judges every kind from the marks and the spot | The tick carries the marks and the spot; a leg stop fires when a short leg's mark rises (a long leg's falls) to the level and exits that leg only under leg scope, leaving the other rules armed; a spot rule waits while the tick has no spot; a time exit fires at the instant, when the nearest settlement is within the days, or at the instant a settle rule fixed when armed (the nearest settlement less the minutes), booking squared off; a leg stop whose leg closed and a days rule with only a perpetual open are disarmed as void; the note names the mark, spot or days; the audit carries the spot, leg and scope | built | e2e (Playwright) |
 | HC-TR-174 | The key is resolved once and never guessed | openCredential takes the strategy's account: the named key, else the exchange's only key; several keys with none named is a 409 (never an order or an exit through the wrong sub-account); when a second key arrives for an exchange the running strategies with no account named are stamped with the first key they were placed through | built | unit (pricing) · e2e (Playwright) · api contract · security |
 | HC-TR-179 | Fills read from the exchange per key | The trading client reads the account's fills (read-only, newest first, cursor-paged); a leader-only job every FILLS_INGEST_MS and the Journal's Refresh keep venue_fills per key, deduped on the venue's fill id, the venue's row kept raw; a pass stops at the first fill already held or after its page cap; a failed read is recorded on the account's watermark and shown, never thrown | built | unit (api) |
+
+### Trading · Protect dialog / server · `/analyse`
+
+| ID | Feature | How it behaves | Status | Tested by |
+|---|---|---|---|---|
+| HC-TR-199 | Time exit before the nearest expiry settles: a calendar closes whole | The Time exit offers a third unit, before expiry settles, with whole minutes (1 to 720, default 15); the dialog shows the nearest dated expiry and the instant on the trader's clock, refuses an instant already passed or a strategy with no dated leg; the arm route fixes the instant (nearest settlement of the open dated legs less the minutes) as the rule's level and refuses the same two cases; the engine judges it like an exit at a time, so a tick after the server was down fires it at once; a fire exits every open filled leg at the mark (shorts first, paper books with no orders) with the reason squared off and disarms the rest; the card and Details read 'exit all legs N min before expiry settles' with the instant; re-opening Protect brings the minutes back; without the rule the settler books only the expired legs and a calendar's far leg stays open | built | unit (schema, api, web) |
 
 ### Trading · cards · Details · trade flow
 

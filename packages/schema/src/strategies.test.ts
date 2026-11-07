@@ -23,6 +23,7 @@ import {
   RulesBody,
   ruleThresholdUsd,
   ruleLevel,
+  settleInstantMs,
   nearestSettlement,
   RULE_KINDS,
   RULE_KIND_ORDER,
@@ -165,6 +166,14 @@ describe("HC-TR-165 stop and target rules (ADR-059 §2.3)", () => {
     expect(nearestSettlement([{ expiry: "2026-09-25" }, { expiry: "2026-09-18" }, { expiry: "PERP" }], "BTC")).toEqual({ ms: Date.UTC(2026, 8, 18, 12), expiry: "2026-09-18" });
     expect(RuleBody.safeParse({ kind: "time", trigger: "dte", value: "0" }).success).toBe(true);
     expect(RuleBody.safeParse({ kind: "time", trigger: "dte", value: "1.5" }).success).toBe(false);
+    // HC-TR-199 a settle rule takes whole minutes, one to twelve hours, and fires at the nearest settlement less those minutes
+    expect(RuleBody.safeParse({ kind: "time", trigger: "settle", value: "15" }).success).toBe(true);
+    expect(RuleBody.safeParse({ kind: "time", trigger: "settle", value: "0" }).success).toBe(false);
+    expect(RuleBody.safeParse({ kind: "time", trigger: "settle", value: "721" }).success).toBe(false);
+    expect(RuleBody.safeParse({ kind: "time", trigger: "settle", value: "2.5" }).success).toBe(false);
+    expect(RuleBody.safeParse({ kind: "stop", trigger: "settle", value: "15" }).success).toBe(false);
+    expect(settleInstantMs("15", Date.UTC(2026, 10, 7, 12))).toBe(Date.UTC(2026, 10, 7, 11, 45));
+    expect(settleInstantMs("15", null)).toBeNull();
     expect(RulesBody.safeParse({ rules: [{ kind: "leg_stop", trigger: "price", value: "50", legId: "a" }, { kind: "leg_stop", trigger: "price", value: "60", legId: "b" }, { kind: "spot", trigger: "above", value: "82000" }] }).success).toBe(true);
     expect(RulesBody.safeParse({ rules: [{ kind: "leg_stop", trigger: "price", value: "50", legId: "a" }, { kind: "leg_stop", trigger: "price", value: "60", legId: "a" }] }).success).toBe(false);
     expect(ruleLevel({ kind: "leg_stop", trigger: "multiple", value: "2.5", basisUsd: undefined }, "48.10")).toBe("120.25");

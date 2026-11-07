@@ -1448,8 +1448,8 @@
     "phase": 5,
     "new": true,
     "feature": "Rules engine judges every kind from the marks and the spot",
-    "how": "The tick carries the marks and the spot; a leg stop fires when a short leg's mark rises (a long leg's falls) to the level and exits that leg only under leg scope, leaving the other rules armed; a spot rule waits while the tick has no spot; a time exit fires at the instant or when the nearest settlement is within the days, booking squared off; a leg stop whose leg closed and a days rule with only a perpetual open are disarmed as void; the note names the mark, spot or days; the audit carries the spot, leg and scope",
-    "evidence": "ADR-059 §2.3 A4b (11 Sep 2026): apps/api/src/rules-engine.ts RulesTick / evaluateRules, main.ts tick source with spot; unit rules-engine.test.ts HC-TR-170"
+    "how": "The tick carries the marks and the spot; a leg stop fires when a short leg's mark rises (a long leg's falls) to the level and exits that leg only under leg scope, leaving the other rules armed; a spot rule waits while the tick has no spot; a time exit fires at the instant, when the nearest settlement is within the days, or at the instant a settle rule fixed when armed (the nearest settlement less the minutes), booking squared off; a leg stop whose leg closed and a days rule with only a perpetual open are disarmed as void; the note names the mark, spot or days; the audit carries the spot, leg and scope",
+    "evidence": "ADR-059 §2.3 A4b (11 Sep 2026): apps/api/src/rules-engine.ts RulesTick / evaluateRules, main.ts tick source with spot; unit rules-engine.test.ts HC-TR-170; ADR-097 (7 Nov 2026): the settle trigger judged like `at`, rules-engine.test.ts HC-TR-199"
   },
   {
     "screen": "Trading · cards · Details · workbench",
@@ -1724,5 +1724,16 @@
     "how": "hedgeDelta sizes the future at |net delta| ÷ lot size in whole lots from the engine's delta of the position (the panel's settled market), sold when the delta is positive and bought when it is negative; unavailable within one lot of neutral or while the delta is unknown; netted against a future the position already holds so two opposing rows are never booked; the card shows the delta going to about zero, says a future has no floor, that the hedge needs re-doing as the delta moves and that funding is not modelled, and never carries 'defines your risk' (tagsForIdea removes it even where the engine finds a floor); it is named and netted on the strategy's own venue and unavailable where that venue lists no perpetual; a loaded hedge still reads as the hedge while the card re-sizes it",
     "evidence": "ADR-095, GAPS #121 (21 Sep 2026): apps/web/src/lib/adjust/repairs.ts hedgeIdea / RepairContext.netDelta / lotSize; components/adjust/RepairIdeas.tsx (ideasCtx, data-delta); tagsForIdea / draftSignature(loose); tests: repairs.test.ts HC-TR-198 (five cases), model.test.ts HC-TR-197 (a saved plan holding a future), workbench.test.tsx \"HC-TR-153 / HC-TR-154 / HC-TR-194 / HC-TR-195 …\" (the card's lots against the position's delta), e2e analyse.spec.ts \"HC-TR-197 / HC-TR-198 the delta hedge in the browser …\"; one control run",
     "test": "unit (web) · e2e (Playwright)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Trading · Protect dialog / server",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Time exit before the nearest expiry settles: a calendar closes whole",
+    "how": "The Time exit offers a third unit, before expiry settles, with whole minutes (1 to 720, default 15); the dialog shows the nearest dated expiry and the instant on the trader's clock, refuses an instant already passed or a strategy with no dated leg; the arm route fixes the instant (nearest settlement of the open dated legs less the minutes) as the rule's level and refuses the same two cases; the engine judges it like an exit at a time, so a tick after the server was down fires it at once; a fire exits every open filled leg at the mark (shorts first, paper books with no orders) with the reason squared off and disarms the rest; the card and Details read 'exit all legs N min before expiry settles' with the instant; re-opening Protect brings the minutes back; without the rule the settler books only the expired legs and a calendar's far leg stays open",
+    "evidence": "ADR-097, GAPS #130 (7 Nov 2026): packages/schema/src/strategies.ts RULE_TRIGGERS settle / SETTLE_LEAD_MINUTES / settleInstantMs; apps/api/src/routes/strategies.ts (arm route), rules-engine.ts; apps/web/src/components/trading/RuleDialog.tsx (rule-time-settle, ruleText); test/mock-api.ts; tests: strategies.test.ts (schema), rules-engine.test.ts \"HC-TR-199 …\" (three cases), rules.test.tsx \"HC-TR-199 …\"",
+    "test": "unit (schema, api, web)"
   }
 ]
