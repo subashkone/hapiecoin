@@ -216,6 +216,67 @@ test.describe("HC-SH analyse header and live chain", () => {
     expect(Math.abs(Number(await table.getAttribute("data-x")) - max)).toBeLessThanOrEqual(1);
   });
 
+  test("HC-WS-015 / GAPS #128 a held drag on a detached scrollbar never fights the mirrored offset, even when the bar can travel further than the tracks", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("console", (m) => {
+      if (m.type() === "error") errors.push(m.text());
+    });
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.setViewportSize({ width: 1100, height: 800 });
+    await page.getByTestId("chain-columns").click();
+    await page.getByRole("button", { name: "Show all", exact: true }).click();
+    await page.getByTestId("columns-done").click();
+    const table = page.getByTestId("chain-table");
+    await expect.poll(async () => Number(await table.getAttribute("data-x"))).toBeGreaterThan(100);
+    const steps = 24;
+    for (const side of ["calls", "puts"] as const) {
+      const bar = page.getByTestId(`chain-scrollbar-${side}`);
+      // The browser owns a held thumb: it keeps the bar where the pointer holds it, whatever anyone writes to
+      // scrollLeft. The bar is also given 24 px more travel than the tracks, the mismatch a laptop at 125 % scaling
+      // produces, so a write-back from the state lands on a different value than the hold. The old footer wrote the
+      // bar back on every state change, the hold undid it, and the two scroll events fed each other (GAPS #128);
+      // here that would show as many more scroll events than the hold itself produces.
+      const events = await bar.evaluate(async (el, dir) => {
+        (el.firstElementChild as HTMLElement).style.width = `${el.scrollWidth + 24}px`;
+        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+        el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 }));
+        const max = el.scrollWidth - el.clientWidth;
+        let held: number | null = null;
+        let count = 0;
+        const hold = () => {
+          count += 1;
+          if (held !== null && Math.abs(el.scrollLeft - held) > 0.1) el.scrollLeft = held;
+        };
+        el.addEventListener("scroll", hold);
+        const frame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
+        for (let i = 0; i <= 24; i++) {
+          held = dir > 0 ? (i / 24) * max : max - (i / 24) * max;
+          el.scrollLeft = held;
+          await frame();
+          await frame();
+        }
+        await new Promise((r) => setTimeout(r, 150));
+        el.removeEventListener("scroll", hold);
+        window.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, button: 0 }));
+        return count;
+      }, side === "calls" ? -1 : 1);
+      expect(events).toBeLessThanOrEqual(steps + 3); // the hold's own moves, nothing fighting them
+      await page.waitForTimeout(300);
+      // once the mouse is released the bar catches up with the state (the extra travel is clamped away)
+      const after = await bar.evaluate((el) => el.scrollLeft);
+      const x = Number(await table.getAttribute(side === "calls" ? "data-x" : "data-puts-x"));
+      expect(Math.abs(after - x)).toBeLessThanOrEqual(2);
+    }
+    // nothing keeps moving on its own
+    const seen = new Set<string>();
+    for (let i = 0; i < 10; i++) {
+      seen.add(`${await table.getAttribute("data-x")}|${await table.getAttribute("data-puts-x")}`);
+      await page.waitForTimeout(30);
+    }
+    expect(seen.size).toBe(1);
+    expect(errors.filter((e) => e.includes("Maximum update depth"))).toEqual([]);
+  });
+
   test("HC-WS-016 keyboard moves the highlighted strike and A recentres", async ({ page }) => {
     await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 15_000 });
     const atmStrike = await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike");

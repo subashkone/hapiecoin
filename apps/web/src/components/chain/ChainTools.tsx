@@ -3,12 +3,13 @@
 // below it (n of N strikes, Σ call OI, Σ put OI, PCR) with the two detached horizontal scrollbars that
 // expose the mirrored offset to the mouse (GAPS #2).
 import { cn } from "@hapiecoin/ui";
-import { useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { CHAIN_RANGES, type ChainRange, type ChainTotals } from "@/lib/chain/range";
 import { type ChainStats, DELTA_CHIPS } from "@/lib/chain/structure";
 import { fmtOiFull, fmtPrice, fmtStrike } from "@/lib/format";
 import { STRIKE_COL_PX } from "./columns";
 import type { MirroredScroll } from "./useMirroredScroll";
+import { useDetachedScrollbar } from "./useDetachedScrollbar";
 
 export function rangeLabel(range: ChainRange): string {
   return range === 0 ? "all strikes" : `strikes ±${range}`;
@@ -135,22 +136,15 @@ export interface ChainFooterProps {
 function DetachedScrollbar({ side, scroll, trackWidth }: { side: "calls" | "puts"; scroll: MirroredScroll; trackWidth: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const target = side === "calls" ? scroll.x : scroll.putsX;
-  useEffect(() => {
-    const el = ref.current;
-    if (el && Math.abs(el.scrollLeft - target) > 0.5) el.scrollLeft = target;
-  }, [target]);
+  const setX = useCallback((left: number) => scroll.setX(side === "calls" ? left : scroll.max - left), [scroll, side]);
+  const bar = useDetachedScrollbar(ref, target, setX); // follows the state, never fights a held thumb (GAPS #128)
   return (
     <div
       ref={ref}
       className={cn("h-2 min-w-0 overflow-x-auto overflow-y-hidden", scroll.max <= 0 && "invisible")}
       data-testid={`chain-scrollbar-${side}`}
       aria-label={`${side} columns scroll`}
-      onScroll={(e) => {
-        const left = e.currentTarget.scrollLeft;
-        // Ignore the echo of our own programmatic set (the browser may clamp it to its integer maximum).
-        if (Math.abs(left - target) < 1.5) return;
-        scroll.setX(side === "calls" ? left : scroll.max - left);
-      }}
+      onScroll={(e) => bar.onScroll(e.currentTarget.scrollLeft)}
     >
       <div style={{ width: trackWidth, height: 1 }} />
     </div>
