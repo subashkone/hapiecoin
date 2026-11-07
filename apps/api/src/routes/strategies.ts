@@ -29,7 +29,9 @@ import {
   type CloseReason,
   type StrategyRule,
   RulesBody,
+  nearestSettlement,
   ruleLevel,
+  settleInstantMs,
   RULE_KIND_ORDER,
   CLOSE_REASON_OF_KIND,
 } from "@hapiecoin/schema";
@@ -738,8 +740,17 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const now = new Date();
       // a leg stop names one of the strategy's open legs; a multiple is priced off that leg's entry
       const openLegs = (await legsOf(row.id)).filter((l) => l.status === "open");
+      // a settle rule's instant is fixed now, from the nearest dated leg actually held (a resting live entry is not a
+      // position: the dialog and the engine count the same legs) (ADR-097); the engine judges it like `at`
+      const nearestMs = nearestSettlement(openLegs.filter((l) => l.entryPrice !== null), row.asset)?.ms ?? null;
       const levels = body.rules.map((r) => {
         if (r.kind === "time" && r.trigger === "at" && Date.parse(r.value) <= now.getTime()) throw errors.badRequest("The exit time has already passed");
+        if (r.kind === "time" && r.trigger === "settle") {
+          const at = settleInstantMs(r.value, nearestMs);
+          if (at === null) throw errors.badRequest("No dated leg to count to");
+          if (at <= now.getTime()) throw errors.badRequest("That moment has already passed");
+          return String(at);
+        }
         if (r.kind !== "leg_stop") return ruleLevel(r);
         const leg = openLegs.find((l) => l.id === r.legId);
         if (!leg) throw errors.badRequest(`Leg ${r.legId ?? ""} is not an open leg of this strategy`);
@@ -757,7 +768,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
             strategyId: row.id,
             kind: r.kind,
             trigger: r.trigger,
-            value: r.value,
+            value: r.trigger === "settle" ? String(Number(r.value)) : r.value, // "015" reads as 15
             basis: r.trigger === "pct" ? (r.basis ?? null) : null,
             basisUsd: r.trigger === "pct" ? (r.basisUsd ?? null) : null,
             thresholdUsd: levels[i]!,

@@ -6,7 +6,7 @@
 // is crossed the API exits at market, short legs first, and says so in Telegram / mail; the card shows the fired
 // state. The dialog is mounted once in the Workspace overlays and opens from the card, Details, the workbench and
 // after a trade from the Builder.
-import { type RuleBasis, type RuleChannel, type RuleKind, type RuleScope, type RuleTrigger, type StrategyLeg, type StrategyRule, RULE_BASIS_LABELS, RULE_KIND_LABELS, isPositiveDecimal, nearestSettlement, ruleLevel, ruleThresholdUsd, toDecimal } from "@hapiecoin/schema";
+import { type RuleBasis, type RuleChannel, type RuleKind, type RuleScope, type RuleTrigger, type StrategyLeg, type StrategyRule, RULE_BASIS_LABELS, RULE_KIND_LABELS, SETTLE_LEAD_MINUTES, isPositiveDecimal, nearestSettlement, ruleLevel, ruleThresholdUsd, settleInstantMs, toDecimal } from "@hapiecoin/schema";
 import { Button, Checkbox, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { useEffect, useMemo, useState } from "react";
 import { useClearRules, useSetRules, useStrategies } from "@/lib/api/strategies";
@@ -39,8 +39,8 @@ interface SpotDraft {
 }
 interface TimeDraft {
   on: boolean;
-  trigger: "at" | "dte";
-  /** For `at`: a datetime-local string (the trader's clock); for `dte`: whole days. */
+  trigger: "at" | "dte" | "settle";
+  /** For `at`: a datetime-local string (the trader's clock); for `dte`: whole days; for `settle`: whole minutes before the nearest settlement (ADR-097). */
   value: string;
 }
 
@@ -57,7 +57,7 @@ export function usdToTyped(usd: string, money: MoneyFormat): string {
 const draftOf = (rule: StrategyRule | undefined, basis: RuleBasis, money: MoneyFormat): Draft => ({ on: rule !== undefined, trigger: rule?.trigger ?? "money", value: rule ? (rule.trigger === "money" ? usdToTyped(rule.value, money) : rule.value) : "", basis: rule?.basis ?? basis });
 const legDraftOf = (rule: StrategyRule | undefined): LegDraft => ({ on: rule !== undefined, trigger: rule?.trigger === "price" ? "price" : "multiple", value: rule?.value ?? "", scope: rule?.scope ?? "leg" });
 const spotDraftOf = (rule: StrategyRule | undefined): SpotDraft => ({ on: rule !== undefined, trigger: rule?.trigger === "above" ? "above" : "below", value: rule?.value ?? "" });
-const timeDraftOf = (rule: StrategyRule | undefined): TimeDraft => ({ on: rule !== undefined, trigger: rule?.trigger === "dte" ? "dte" : "at", value: rule ? (rule.trigger === "at" ? toLocalInput(rule.value) : rule.value) : "" });
+const timeDraftOf = (rule: StrategyRule | undefined): TimeDraft => ({ on: rule !== undefined, trigger: rule?.trigger === "dte" ? "dte" : rule?.trigger === "settle" ? "settle" : "at", value: rule ? (rule.trigger === "at" ? toLocalInput(rule.value) : rule.value) : "" });
 
 /** "2026-09-12T17:00" in the trader's clock for a datetime-local box, from an ISO instant. */
 export function toLocalInput(iso: string): string {
@@ -93,6 +93,7 @@ export function ruleText(r: StrategyRule, money: MoneyFormat, legs: readonly Str
     return `${leg ? legTag(leg) : "leg"} stop at ${fmtPrice(r.thresholdUsd)}${r.trigger === "multiple" ? ` (${r.value}× entry)` : ""}${r.scope === "strategy" ? ", exits all" : ""}`;
   }
   if (r.kind === "spot") return `spot ${r.trigger === "above" ? "≥" : "≤"} ${fmtPrice(r.thresholdUsd, 0)}`;
+  if (r.trigger === "settle") return `exit all legs ${r.value} min before expiry settles (${fmtInstant(new Date(Number(r.thresholdUsd)).toISOString())})`;
   return r.trigger === "at" ? `exit at ${fmtInstant(r.value)}` : `exit at ${r.value} ${r.value === "1" ? "day" : "days"} to expiry`;
 }
 
@@ -181,6 +182,9 @@ export function RuleDialog({ book }: { book: PaperBook }) {
   });
   const spotBody = !spotD.on ? null : !isPositiveDecimal(spotD.value) ? "invalid" : spot !== null && (spotD.trigger === "above" ? spot >= Number(spotD.value) : spot <= Number(spotD.value)) ? "crossed" : { kind: "spot" as const, trigger: spotD.trigger, value: spotD.value, channels };
   const timeIso = timeD.trigger === "at" ? fromLocalInput(timeD.value) : null;
+  // a settle rule's instant: the nearest settlement less the minutes, fixed when armed (the server computes the same)
+  const settleMinutesOk = /^\d{1,3}$/.test(timeD.value) && Number(timeD.value) >= SETTLE_LEAD_MINUTES.min && Number(timeD.value) <= SETTLE_LEAD_MINUTES.max;
+  const settleMs = timeD.trigger === "settle" && settleMinutesOk ? settleInstantMs(timeD.value, nearest?.ms ?? null) : null;
   const timeBody = !timeD.on
     ? null
     : timeD.trigger === "at"
@@ -189,13 +193,21 @@ export function RuleDialog({ book }: { book: PaperBook }) {
           ? { kind: "time" as const, trigger: "at" as const, value: timeIso, channels }
           : "past"
         : "invalid"
-      : !/^\d{1,3}$/.test(timeD.value)
-        ? "invalid"
-        : dteNow !== null && dteNow <= Number(timeD.value)
-          ? "crossed"
-          : { kind: "time" as const, trigger: "dte" as const, value: timeD.value, channels };
+      : timeD.trigger === "settle"
+        ? nearest === null
+          ? "no-leg"
+          : !settleMinutesOk
+            ? "invalid"
+            : settleMs !== null && settleMs <= Date.now()
+            ? "past"
+            : { kind: "time" as const, trigger: "settle" as const, value: timeD.value, channels }
+        : !/^\d{1,3}$/.test(timeD.value)
+          ? "invalid"
+          : dteNow !== null && dteNow <= Number(timeD.value)
+            ? "crossed"
+            : { kind: "time" as const, trigger: "dte" as const, value: timeD.value, channels };
   const all = [stopBody, tgtBody, ...legBodies, spotBody, timeBody];
-  const problem = all.includes("invalid") ? "Enter a level greater than 0" : all.includes("no-basis") ? "That basis is not known for this strategy · use money" : all.includes("past") ? "The exit time has already passed" : all.includes("crossed") ? "That level is already crossed · it would fire on the next tick" : null;
+  const problem = all.includes("invalid") ? "Enter a level greater than 0" : all.includes("no-basis") ? "That basis is not known for this strategy · use money" : all.includes("no-leg") ? "No dated leg to count to" : all.includes("past") ? "The exit time has already passed" : all.includes("crossed") ? "That level is already crossed · it would fire on the next tick" : null;
   const bodies = all.filter((b): b is Exclude<typeof b, string | null> => b !== null && typeof b !== "string");
   const levelOf = (d: Draft, kind: RuleKind): number | null => {
     const b = toBody(kind, d);
@@ -308,14 +320,41 @@ export function RuleDialog({ book }: { book: PaperBook }) {
     RULE_KIND_LABELS.time,
     "exit all",
     <>
-      {unit("rule-time", timeD.trigger, [{ key: "at" as const, label: "at a time" }, { key: "dte" as const, label: "days before expiry", title: nearest ? `Nearest expiry ${fmtExpiry(nearest.expiry)}` : "No dated leg" }], (t) => setTimeD({ ...timeD, trigger: t, value: "" }), "When")}
+      {unit(
+        "rule-time",
+        timeD.trigger,
+        [
+          { key: "at" as const, label: "at a time" },
+          { key: "dte" as const, label: "days before expiry", title: nearest ? `Nearest expiry ${fmtExpiry(nearest.expiry)}` : "No dated leg" },
+          { key: "settle" as const, label: "before expiry settles", title: nearest ? `Every leg closes shortly before ${fmtExpiry(nearest.expiry)} settles, so a calendar never leaves its far leg open` : "No dated leg" },
+        ],
+        (t) => setTimeD({ ...timeD, trigger: t, value: t === "settle" ? String(SETTLE_LEAD_MINUTES.default) : "" }),
+        "When",
+      )}
       {timeD.trigger === "at" ? (
         <input type="datetime-local" value={timeD.value} onChange={(e) => setTimeD({ ...timeD, value: e.target.value })} className="h-7 rounded border border-input bg-background px-2 text-xs" aria-label="Exit time" data-testid="rule-time-value" />
+      ) : timeD.trigger === "settle" ? (
+        <>
+          <input type="number" min={SETTLE_LEAD_MINUTES.min} max={SETTLE_LEAD_MINUTES.max} step={1} value={timeD.value} onChange={(e) => setTimeD({ ...timeD, value: e.target.value })} className="h-7 w-20 rounded border border-input bg-background px-2 text-right text-xs" aria-label="Minutes before settlement" data-testid="rule-time-value" disabled={!nearest} />
+          <span className="text-muted-foreground">min before</span>
+        </>
       ) : (
         <input type="number" min={0} max={999} step={1} value={timeD.value} onChange={(e) => setTimeD({ ...timeD, value: e.target.value })} className="h-7 w-20 rounded border border-input bg-background px-2 text-right text-xs" aria-label="Days to expiry" data-testid="rule-time-value" disabled={!nearest} />
       )}
       <span className="num text-muted-foreground" data-testid="rule-time-level">
-        {timeD.trigger === "at" ? (timeIso ? `= ${fmtInstant(timeIso)} your clock` : "—") : nearest ? `nearest expiry ${fmtExpiry(nearest.expiry)} · ${dteNow} days now` : "no dated leg to count to"}
+        {timeD.trigger === "at"
+          ? timeIso
+            ? `= ${fmtInstant(timeIso)} your clock`
+            : "—"
+          : timeD.trigger === "settle"
+            ? nearest
+              ? settleMs !== null
+                ? `${fmtExpiry(nearest.expiry)} settles · exit all legs at ${fmtInstant(new Date(settleMs).toISOString())} your clock`
+                : `${fmtExpiry(nearest.expiry)} settles · ${SETTLE_LEAD_MINUTES.min} to ${SETTLE_LEAD_MINUTES.max} minutes`
+              : "no dated leg to count to"
+            : nearest
+              ? `nearest expiry ${fmtExpiry(nearest.expiry)} · ${dteNow} days now`
+              : "no dated leg to count to"}
       </span>
     </>,
   );

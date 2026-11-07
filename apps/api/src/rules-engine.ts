@@ -1,14 +1,14 @@
 // Exit rules run by HapieCoin (ADR-059 §2.3; HC-TR-166, HC-TR-170; roadmap A4). Every `intervalMs` the leader replica
 // reads the venue's public marks and spot for the underlyings of the armed rules, values each strategy's P&L from them
 // (the same arithmetic the Live tab and the server-side alerts use) and judges each rule: a stop or target on the
-// P&L, a leg stop on one leg's mark, a spot level on the underlying, a time exit at an instant or at d days to the
-// nearest expiry. A crossed rule exits every open filled leg of the strategy (a leg stop with leg scope: that leg
+// P&L, a leg stop on one leg's mark, a spot level on the underlying, a time exit at an instant, at d days to the
+// nearest expiry, or n minutes before the nearest expiry settles (ADR-097: a calendar closes whole). A crossed rule exits every open filled leg of the strategy (a leg stop with leg scope: that leg
 // alone): short legs first, market at the mark of that tick, through the exit path a click uses, its own lots only.
 // Paper strategies fire too, with no orders. A fired rule never re-arms; the row guard (armed → fired) makes a fire
 // happen once across ticks and replicas. An exit the venue accepted but has not filled, or one that may not have
 // reached it, is never re-sent: the leg is left for the order sync and named on the rule.
 // Never runs under NODE_ENV=test unless a test calls it.
-import { CLOSE_REASON_OF_KIND, RULE_KIND_LABELS, RULE_KIND_ORDER, type Underlying, nearestSettlement, toDecimal } from "@hapiecoin/schema";
+import { CLOSE_REASON_OF_KIND, RULE_KIND_LABELS, RULE_KIND_ORDER, type Underlying, nearestSettlement, settlementMsOf, toDecimal } from "@hapiecoin/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { writeAudit } from "./audit.js";
 import { strategies, strategyAdjustments, strategyLegs, strategyOrders, strategyRules, users } from "./db/schema.js";
@@ -151,6 +151,19 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
         } else if (rule.trigger === "at") {
           crossed = now() >= level;
           detail = `at ${at.toISOString()}`;
+        } else if (rule.trigger === "settle") {
+          // the instant was fixed when the rule was armed, from the nearest dated leg then held. Before that instant the
+          // rule is void once that expiry is no longer held (rolled or closed by hand): it would exit the new position
+          // at a moment that means nothing to it. From the instant on it fires, even late after an outage: the settler
+          // may have booked the near leg by then and the far leg is what is left to close, the wanted outcome.
+          const lead = Number(rule.value) * 60_000;
+          const held = legs.some((l) => l.expiry !== "PERP" && settlementMsOf(l.expiry, strategy.asset) === level + lead);
+          if (!held && now() < level) {
+            await moot("the expiry it counted to is no longer held; arm it again");
+            continue;
+          }
+          crossed = now() >= level;
+          detail = `${rule.value} min before the nearest settlement, at ${new Date(level).toISOString()}${now() > level + 60_000 ? ", late" : ""}`;
         } else {
           if (dte === null) {
             await moot("no dated leg is open");

@@ -9,7 +9,7 @@ import { mockBacktest } from "./mock-backtest";
 import { mockReplayChain, mockReplayExpiries, mockReplaySteps } from "./mock-replay";
 import { expiriesOf } from "./fixtures/chain";
 import { mockIvHistory, mockMarkHistory } from "./mock-market";
-import { DEFAULT_PUBLIC_PAGE, Handle, publicTraderFrom, AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal, type CloseReason, RulesBody, ruleLevel, MAX_ACCOUNTS_PER_BROKER, type FillLike, verifiedFromFills, sumSince, dayBack } from "@hapiecoin/schema";
+import { DEFAULT_PUBLIC_PAGE, Handle, publicTraderFrom, AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal, type CloseReason, RulesBody, ruleLevel, nearestSettlement, settleInstantMs, MAX_ACCOUNTS_PER_BROKER, type FillLike, verifiedFromFills, sumSince, dayBack } from "@hapiecoin/schema";
 
 export const SESSION_COOKIE = "better-auth.session_token";
 export const TEST_OTP = "123456";
@@ -975,15 +975,23 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (!body.success) return err(c, 400, "BAD_REQUEST", body.error.issues.map((i) => i.message).join(" · "));
     const at = nowIso();
     const rows = [];
+    // a settle rule's instant is fixed now from the nearest dated open leg, as the route does (ADR-097)
+    const nearestMs = nearestSettlement(s.legs.filter((l) => l.status === "open" && l.entryPrice !== null), s.asset)?.ms ?? null;
     for (const r of body.data.rules) {
       // the same refusals as the route: the leg must be open, a multiple needs its entry, a passed instant is no exit
       if (r.kind === "time" && r.trigger === "at" && Date.parse(r.value) <= Date.now()) return err(c, 400, "BAD_REQUEST", "The exit time has already passed");
+      let settleAt: number | null = null;
+      if (r.kind === "time" && r.trigger === "settle") {
+        settleAt = settleInstantMs(r.value, nearestMs);
+        if (settleAt === null) return err(c, 400, "BAD_REQUEST", "No dated leg to count to");
+        if (settleAt <= Date.now()) return err(c, 400, "BAD_REQUEST", "That moment has already passed");
+      }
       const leg = r.kind === "leg_stop" ? s.legs.find((l) => l.id === r.legId && l.status === "open") : undefined;
       if (r.kind === "leg_stop" && !leg) return err(c, 400, "BAD_REQUEST", `Leg ${r.legId ?? ""} is not an open leg of this strategy`);
       if (r.kind === "leg_stop" && r.trigger === "multiple" && leg!.entryPrice === null) return err(c, 400, "BAD_REQUEST", `${leg!.symbol}: no entry price yet for a multiple`);
-      const level = ruleLevel(r, leg?.entryPrice ?? leg?.price ?? null);
+      const level = settleAt !== null ? String(settleAt) : ruleLevel(r, leg?.entryPrice ?? leg?.price ?? null);
       if (r.kind === "leg_stop" && Number(level) <= 0) return err(c, 400, "BAD_REQUEST", `${leg!.symbol}: the level rounds to nothing`);
-      rows.push({ id: id("rule"), kind: r.kind, trigger: r.trigger, value: r.value, basis: r.trigger === "pct" ? (r.basis ?? null) : null, basisUsd: r.trigger === "pct" ? (r.basisUsd ?? null) : null, thresholdUsd: level, legId: r.kind === "leg_stop" ? (r.legId ?? null) : null, scope: r.kind === "leg_stop" ? (r.scope ?? ("leg" as const)) : ("strategy" as const), channels: r.channels, state: "armed" as const, firedAt: null, firedPnl: null, outcome: null, note: null, createdAt: at, updatedAt: at });
+      rows.push({ id: id("rule"), kind: r.kind, trigger: r.trigger, value: r.trigger === "settle" ? String(Number(r.value)) : r.value, basis: r.trigger === "pct" ? (r.basis ?? null) : null, basisUsd: r.trigger === "pct" ? (r.basisUsd ?? null) : null, thresholdUsd: level, legId: r.kind === "leg_stop" ? (r.legId ?? null) : null, scope: r.kind === "leg_stop" ? (r.scope ?? ("leg" as const)) : ("strategy" as const), channels: r.channels, state: "armed" as const, firedAt: null, firedPnl: null, outcome: null, note: null, createdAt: at, updatedAt: at });
     }
     s.rules = [...(s.rules ?? []).filter((r) => r.state === "fired"), ...rows];
     return c.json(touch(s));

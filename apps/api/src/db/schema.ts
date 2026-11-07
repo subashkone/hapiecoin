@@ -428,7 +428,7 @@ export const strategyRules = pgTable(
       .notNull()
       .references(() => strategies.id, { onDelete: "cascade" }),
     kind: text("kind", { enum: ["stop", "target", "leg_stop", "spot", "time"] }).notNull(),
-    trigger: text("trigger", { enum: ["money", "pct", "multiple", "price", "above", "below", "at", "dte"] }).notNull(),
+    trigger: text("trigger", { enum: ["money", "pct", "multiple", "price", "above", "below", "at", "dte", "settle"] }).notNull(),
     value: text("value").notNull(),
     basis: text("basis", { enum: ["credit", "debit", "max_loss"] }),
     basisUsd: text("basis_usd"),

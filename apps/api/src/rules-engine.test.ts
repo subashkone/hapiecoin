@@ -464,3 +464,83 @@ describe("HC-TR-170 leg stop, spot level and time exit", () => {
     expect((await get(s3.id)).rules![0]).toMatchObject({ state: "disarmed", note: "disarmed: no dated leg is open" });
   });
 });
+
+describe("HC-TR-199 time exit before the nearest settlement (ADR-097)", () => {
+  // the arm route refuses an instant already passed on the real clock, so the calendar expires a month out
+  const code = (d: Date) => `${String(d.getUTCDate()).padStart(2, "0")}${String(d.getUTCMonth() + 1).padStart(2, "0")}${String(d.getUTCFullYear() % 100).padStart(2, "0")}`;
+  const near = new Date(Date.now() + 30 * 86_400_000);
+  const far = new Date(near.getTime() + 7 * 86_400_000);
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const NEAR = { kind: "put", side: "sell", strike: "78000", expiry: iso(near), symbol: `P-BTC-78000-${code(near)}`, lots: 10, price: "900" };
+  const FAR = { kind: "put", side: "buy", strike: "78000", expiry: iso(far), symbol: `P-BTC-78000-${code(far)}`, lots: 10, price: "1100" };
+  const settle = Date.UTC(near.getUTCFullYear(), near.getUTCMonth(), near.getUTCDate(), 12);
+
+  it("a settle rule fires at the nearest settlement less the minutes and closes every leg of a calendar, the far leg at its mark", async () => {
+    const s = await paper([NEAR, FAR], "Rules calendar");
+    expect((await arm(s.id, [{ kind: "time", trigger: "settle", value: "15" }])).status).toBe(200);
+    const armed = (await get(s.id)).rules![0]!;
+    expect(armed).toMatchObject({ kind: "time", trigger: "settle", value: "15", state: "armed", thresholdUsd: String(settle - 15 * 60_000) });
+    const marks = { [NEAR.symbol]: 20, [FAR.symbol]: 400 };
+    expect((await evaluateRules(t.deps, ticks(marks), () => settle - 15 * 60_000 - 1000)).fired).toEqual([]);
+    expect((await evaluateRules(t.deps, ticks(marks), () => settle - 15 * 60_000)).fired).toHaveLength(1);
+    const done = await get(s.id);
+    // short leg 900 -> 20 (+880 x 10 x 0.001 = +8.8), long leg 1100 -> 400 (-7), both booked
+    expect(done).toMatchObject({ status: "archived", closeReason: "squared_off", realizedPnl: "1.8" });
+    expect(done.legs.map((l) => [l.status, l.exitPrice, l.closeReason])).toEqual([["squared_off", "20", "squared_off"], ["squared_off", "400", "squared_off"]]);
+    expect(done.rules![0]!.note).toContain("(15 min before the nearest settlement, at ");
+    expect(done.rules![0]!.note).toContain("2 legs exited");
+  });
+
+  it("a settle rule missed while the server was down fires on the first tick back: the near leg already settled, the far leg is closed alone, the note says late", async () => {
+    const s = await paper([NEAR, FAR], "Rules calendar late");
+    expect((await arm(s.id, [{ kind: "time", trigger: "settle", value: "015" }])).status).toBe(200);
+    expect((await get(s.id)).rules![0]).toMatchObject({ value: "15" }); // a leading zero is not kept
+    // the settler booked the near leg at its settlement value while the engine was down
+    const nearLeg = (await get(s.id)).legs.find((l) => l.symbol === NEAR.symbol)!;
+    expect((await t.request(`/v1/strategies/${s.id}/legs/${nearLeg.id}/close`, { cookie: alice, json: { exitPrice: "0" } })).status).toBe(200);
+    const report = await evaluateRules(t.deps, ticks({ [FAR.symbol]: 300 }), () => settle + 3_600_000);
+    expect(report.fired).toHaveLength(1);
+    const done = await get(s.id);
+    expect(done.status).toBe("archived");
+    expect(done.legs.find((l) => l.symbol === FAR.symbol)).toMatchObject({ status: "squared_off", exitPrice: "300", closeReason: "squared_off" });
+    expect(done.rules![0]!.note).toContain(", late)");
+  });
+
+  it("a settle rule is disarmed, not fired, when the expiry it counted to is no longer held before the instant (the near leg rolled or closed by hand)", async () => {
+    const s = await paper([NEAR, FAR], "Rules calendar rolled");
+    expect((await arm(s.id, [{ kind: "time", trigger: "settle", value: "15" }])).status).toBe(200);
+    const nearLeg = (await get(s.id)).legs.find((l) => l.symbol === NEAR.symbol)!;
+    expect((await t.request(`/v1/strategies/${s.id}/legs/${nearLeg.id}/close`, { cookie: alice, json: { exitPrice: "850" } })).status).toBe(200);
+    // a tick a day before the instant: the far leg stays, the rule is void with the reason
+    expect((await evaluateRules(t.deps, ticks({ [FAR.symbol]: 1000 }), () => settle - 86_400_000)).fired).toEqual([]);
+    const after = await get(s.id);
+    expect(after.status).toBe("paper");
+    expect(after.legs.find((l) => l.symbol === FAR.symbol)).toMatchObject({ status: "open" });
+    expect(after.rules![0]).toMatchObject({ state: "disarmed", note: "disarmed: the expiry it counted to is no longer held; arm it again" });
+  });
+
+  it("a live calendar's settle fire sends two market exits through the exchange, the short leg first", async () => {
+    t.trading.product(NEAR.symbol, 201, "0.001").markAt(NEAR.symbol, "900").fillAt(201, "900").succeed(201);
+    t.trading.product(FAR.symbol, 202, "0.001").markAt(FAR.symbol, "1100").fillAt(202, "1100").succeed(202);
+    const s = await live([NEAR, FAR], "Rules calendar live");
+    expect((await arm(s.id, [{ kind: "time", trigger: "settle", value: "15" }])).status).toBe(200);
+    const placedBefore = t.trading.placed.length;
+    t.trading.fillAt(201, "20").fillAt(202, "400");
+    expect((await evaluateRules(t.deps, ticks({ [NEAR.symbol]: 20, [FAR.symbol]: 400 }), () => settle - 15 * 60_000, { backoffMs: 0 })).fired).toHaveLength(1);
+    expect(t.trading.placed.slice(placedBefore).map((o) => [o.input.productId, o.input.side, o.input.reduceOnly])).toEqual([
+      [201, "buy", true], // the sold near put first
+      [202, "sell", true], // then the bought far put
+    ]);
+    const done = await get(s.id);
+    expect(done).toMatchObject({ status: "archived", closeReason: "squared_off" });
+    expect(done.rules![0]).toMatchObject({ state: "fired", outcome: "closed" });
+  });
+
+  it("the arm route refuses a settle rule with no dated leg to count to", async () => {
+    const s = await paper([{ kind: "future", side: "buy", strike: "", expiry: "PERP", symbol: "BTCUSD", lots: 1, price: "79000" }], "Rules perp settle");
+    const r = await arm(s.id, [{ kind: "time", trigger: "settle", value: "15" }]);
+    expect(r.status).toBe(400);
+    expect(await r.text()).toContain("No dated leg to count to");
+    expect((await arm(s.id, [{ kind: "time", trigger: "settle", value: "0" }])).status).toBe(400);
+  });
+});

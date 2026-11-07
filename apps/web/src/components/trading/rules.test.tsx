@@ -208,6 +208,52 @@ describe("HC-TR-171 leg stop, spot level and time exit from the dialog; the work
     expect(within(again).getByTestId<HTMLInputElement>("rule-time-value").value).toBe("1");
   });
 
+  it("HC-TR-199 a calendar arms an exit before the nearest expiry settles: the instant is shown, the card names it, the draft comes back", async () => {
+    // a put calendar: the sold 25 Sep leg settles first (12:00 UTC); the far leg would otherwise stay open after settlement
+    const FAR = { ...PUT, id: "leg_far", side: "buy" as const, expiry: "2026-10-02", symbol: "P-BTC-78000-021026", price: "1100", entryPrice: "1100", position: 1 };
+    mine().push(strat(5, { name: "Calendar", legs: [{ ...PUT, id: "leg_near", position: 0 }, FAR] }));
+    const u = userEvent.setup();
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    await u.click(await screen.findByTestId("card-protect"));
+    const dlg = await screen.findByTestId("rule-dialog");
+    await u.click(within(dlg).getByTestId("rule-time-on"));
+    await u.click(within(dlg).getByTestId("rule-time-settle"));
+    // the lead defaults to 15 minutes and the instant is 11:45 UTC on 25 Sep, shown on the trader's clock
+    expect(within(dlg).getByTestId<HTMLInputElement>("rule-time-value").value).toBe("15");
+    expect(within(dlg).getByTestId("rule-time-level").textContent).toContain("25 Sep settles");
+    expect(within(dlg).getByTestId("rule-time-level").textContent).toContain(new Date(Date.UTC(2026, 8, 25, 11, 45)).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }));
+    // out of range refused, back in range armed
+    fireEvent.change(within(dlg).getByTestId("rule-time-value"), { target: { value: "0" } });
+    await waitFor(() => expect(within(dlg).getByTestId<HTMLButtonElement>("rule-arm").disabled).toBe(true));
+    fireEvent.change(within(dlg).getByTestId("rule-time-value"), { target: { value: "20" } });
+    await waitFor(() => expect(within(dlg).getByTestId<HTMLButtonElement>("rule-arm").disabled).toBe(false));
+    await u.click(within(dlg).getByTestId("rule-arm"));
+    await waitFor(() => expect(screen.queryByTestId("rule-dialog")).toBeNull());
+    expect(mine()[0]!.rules!.map((r) => [r.kind, r.trigger, r.value, r.thresholdUsd])).toEqual([["time", "settle", "20", String(Date.UTC(2026, 8, 25, 11, 40))]]);
+    await waitFor(() => expect(screen.getByTestId("card-rules").textContent).toContain("exit all legs 20 min before expiry settles"));
+    await u.click(screen.getByTestId("card-protect"));
+    const again = await screen.findByTestId("rule-dialog");
+    expect(within(again).getByTestId("rule-time-settle").getAttribute("aria-pressed")).toBe("true");
+    expect(within(again).getByTestId<HTMLInputElement>("rule-time-value").value).toBe("20");
+  });
+
+  it("HC-TR-199 with no dated leg the settle unit says so and cannot be armed", async () => {
+    const FUT = { ...CALL, id: "leg_fut", kind: "future" as const, strike: "", expiry: "PERP", symbol: "BTCUSD", price: "79000", entryPrice: "79000", position: 0 };
+    mine().push(strat(6, { name: "Perp only", legs: [FUT] }));
+    const u = userEvent.setup();
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    await u.click(await screen.findByTestId("card-protect"));
+    const dlg = await screen.findByTestId("rule-dialog");
+    await u.click(within(dlg).getByTestId("rule-time-on"));
+    await u.click(within(dlg).getByTestId("rule-time-settle"));
+    expect(within(dlg).getByTestId<HTMLInputElement>("rule-time-value").disabled).toBe(true);
+    expect(within(dlg).getByTestId("rule-time-level").textContent).toBe("no dated leg to count to");
+    await waitFor(() => expect(within(dlg).getByTestId<HTMLButtonElement>("rule-arm").disabled).toBe(true));
+    expect(dlg.textContent).toContain("No dated leg to count to");
+  });
+
   it("an exit at a time is typed on the trader's clock, stored as an instant and refused when it has passed", () => {
     const iso = "2026-09-12T11:30:00.000Z";
     expect(fromLocalInput(toLocalInput(iso))).toBe(iso);
