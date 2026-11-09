@@ -99,7 +99,8 @@ export function BacktestPanel() {
       ) : (
         <>
           <p className="text-2xs text-muted-foreground" data-testid="backtest-coverage">
-            {r.coverage.days} recorded {r.coverage.days === 1 ? "day" : "days"}
+            {r.coverage.days} {r.coverage.days === 1 ? "day" : "days"} of history
+            {r.coverage.reconstructedDays ? ` (${r.coverage.reconstructedDays} reconstructed from the venue's candle history, ${r.coverage.days - r.coverage.reconstructedDays} recorded live)` : ""}
             {r.coverage.firstDay ? ` from ${fmtDate(r.coverage.firstDay)}` : ""}
             {r.coverage.lastDay ? ` to ${fmtDate(r.coverage.lastDay)}` : ""} · {r.coverage.entries} {r.coverage.entries === 1 ? "entry" : "entries"}
             {r.coverage.skipped.noExpiry ? ` · ${r.coverage.skipped.noExpiry} skipped (no expiry ${minDte}+ days out)` : ""}

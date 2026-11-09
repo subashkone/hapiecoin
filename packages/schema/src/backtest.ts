@@ -78,6 +78,8 @@ export const BacktestResult = z.strictObject({
     firstDay: IsoDate.nullable(),
     lastDay: IsoDate.nullable(),
     days: z.number().int().nonnegative(),
+    /** Days whose chain was reconstructed from the venue's candle history rather than recorded live (ADR-098). */
+    reconstructedDays: z.number().int().nonnegative(),
     entries: z.number().int().nonnegative(),
     skipped: z.strictObject({ noExpiry: z.number().int().nonnegative(), noFit: z.number().int().nonnegative() }),
     openTrades: z.number().int().nonnegative(),

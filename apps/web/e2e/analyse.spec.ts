@@ -1752,7 +1752,7 @@ test.describe("HC-TR-185 backtest tab (ADR-077)", () => {
     await page.getByTestId("analysis-tab-backtest").click();
     const panel = page.getByTestId("backtest-panel");
     await expect(panel).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
-    await expect(panel.getByTestId("backtest-coverage")).toContainText(/12 recorded days from .* · \d+ entries/);
+    await expect(panel.getByTestId("backtest-coverage")).toContainText(/12 days of history from .* · \d+ entries/);
     await expect(panel.getByTestId("backtest-coverage")).toContainText("no fees, no slippage");
     await expect(panel.getByTestId("backtest-total")).toHaveText(/[\d$]/);
     await expect(panel.getByTestId("chart-backtest")).toHaveAttribute("data-state", "ready");

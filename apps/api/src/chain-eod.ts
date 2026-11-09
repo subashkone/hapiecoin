@@ -4,7 +4,8 @@
  * kept 400 days. The first write for a venue and underlying also backfills up to the previous week from the 5-minute
  * mark stream (the last pass at or before the settlement hour each day; the marks are kept 7 days, so the oldest day
  * may already be gone), so a backtest has close to a week of history on day one. The read side folds the rows into the
- * pricing package's `EodDay` shape.
+ * pricing package's `EodDay` shape. Rows reconstructed from candles (ADR-098, chain-eod-history.ts) sit in the same
+ * table with `source = candles`; the live write ignores them when deciding whether a day is done and replaces them.
  */
 import type { Instrument, Quote, Underlying, Venue } from "@hapiecoin/schema";
 import type { EodDay, EodRow } from "@hapiecoin/pricing";
@@ -22,16 +23,26 @@ type EodInsert = typeof chainEod.$inferInsert;
 /** What a day's rows are written through: the transaction, so a failed batch leaves no half ladder for the gate to mistake for a done day. */
 type Writer = Pick<Db, "insert">;
 
-const dayOf = (d: Date) => d.toISOString().slice(0, 10);
+export const dayOf = (d: Date): string => d.toISOString().slice(0, 10);
 
-async function hasRows(db: Db, venue: Venue, asset: Underlying, day?: string): Promise<boolean> {
-  const where = day === undefined ? and(eq(chainEod.venue, venue), eq(chainEod.asset, asset)) : and(eq(chainEod.venue, venue), eq(chainEod.asset, asset), eq(chainEod.day, day));
-  const [row] = await db.select({ id: chainEod.id }).from(chainEod).where(where).limit(1);
+/** Whether the venue and underlying have rows recorded live (`source = snapshot`); rows reconstructed from candles (ADR-098) do not count, so a reconstructed day still gets its live marks and IV. */
+async function hasRecordedRows(db: Db, venue: Venue, asset: Underlying, day?: string): Promise<boolean> {
+  const conds = [eq(chainEod.venue, venue), eq(chainEod.asset, asset), eq(chainEod.source, "snapshot")];
+  if (day !== undefined) conds.push(eq(chainEod.day, day));
+  const [row] = await db.select({ id: chainEod.id }).from(chainEod).where(and(...conds)).limit(1);
   return row !== undefined;
 }
 
+/** Live rows win: a row the candle backfill reconstructed for the same instrument and day is replaced by the recorded mark, IV and instant. */
 async function insertRows(w: Writer, rows: EodInsert[]): Promise<void> {
-  for (let i = 0; i < rows.length; i += BATCH) await w.insert(chainEod).values(rows.slice(i, i + BATCH)).onConflictDoNothing();
+  for (let i = 0; i < rows.length; i += BATCH)
+    await w
+      .insert(chainEod)
+      .values(rows.slice(i, i + BATCH))
+      .onConflictDoUpdate({
+        target: [chainEod.venue, chainEod.asset, chainEod.day, chainEod.expiry, chainEod.strike, chainEod.kind],
+        set: { mark: sql`excluded.mark`, markIv: sql`excluded.mark_iv`, spot: sql`excluded.spot`, ts: sql`excluded.ts`, source: sql`excluded.source` },
+      });
 }
 
 /** A whole day's rows land or none do. */
@@ -53,14 +64,14 @@ export async function recordEodIfDue(
   const { venue, asset, at } = input;
   if (at.getUTCHours() < input.settlementHourUtc) return { written: 0, backfilledDays: 0 };
   const day = dayOf(at);
-  if (await hasRows(db, venue, asset, day)) return { written: 0, backfilledDays: 0 };
-  const first = !(await hasRows(db, venue, asset));
+  if (await hasRecordedRows(db, venue, asset, day)) return { written: 0, backfilledDays: 0 };
+  const first = !(await hasRecordedRows(db, venue, asset));
   const bySymbol = new Map(input.instruments.map((i) => [i.id, i]));
   const rows: EodInsert[] = [];
   for (const q of input.quotes) {
     const inst = bySymbol.get(q.instrumentId);
     if (!inst || (inst.kind !== "call" && inst.kind !== "put") || inst.strike === undefined || inst.expiry === undefined) continue;
-    rows.push({ venue, asset, day, expiry: inst.expiry, strike: inst.strike, kind: inst.kind, mark: q.mark, markIv: q.markIv === undefined ? null : String(q.markIv), spot: String(input.spot), ts: at });
+    rows.push({ venue, asset, day, expiry: inst.expiry, strike: inst.strike, kind: inst.kind, mark: q.mark, markIv: q.markIv === undefined ? null : String(q.markIv), spot: String(input.spot), ts: at, source: "snapshot" });
   }
   if (rows.length === 0) return { written: 0, backfilledDays: 0 };
   await insertDay(db, rows);
@@ -101,7 +112,7 @@ export async function backfillEodFromMarks(db: Db, venue: Venue, asset: Underlyi
     for (const m of marks) {
       if (!codec.isOption(m.symbol)) continue;
       const p = codec.parseOption(m.symbol);
-      rows.push({ venue, asset, day, expiry: p.expiryDate, strike: p.strike, kind: p.kind, mark: m.mark, markIv: m.markIv, spot: snap.spot, ts: lastPass.ts });
+      rows.push({ venue, asset, day, expiry: p.expiryDate, strike: p.strike, kind: p.kind, mark: m.mark, markIv: m.markIv, spot: snap.spot, ts: lastPass.ts, source: "snapshot" });
     }
     if (rows.length === 0) continue;
     await insertDay(db, rows);
@@ -120,7 +131,7 @@ export async function eodDays(db: Db, venue: Venue, asset: Underlying, range: { 
   if (range.from) conds.push(gte(chainEod.day, range.from));
   if (range.to) conds.push(lte(chainEod.day, range.to));
   const rows = await db
-    .select({ day: chainEod.day, expiry: chainEod.expiry, strike: chainEod.strike, kind: chainEod.kind, mark: chainEod.mark, markIv: chainEod.markIv, spot: chainEod.spot, ts: chainEod.ts })
+    .select({ day: chainEod.day, expiry: chainEod.expiry, strike: chainEod.strike, kind: chainEod.kind, mark: chainEod.mark, markIv: chainEod.markIv, spot: chainEod.spot, ts: chainEod.ts, source: chainEod.source })
     .from(chainEod)
     .where(and(...conds))
     .orderBy(asc(chainEod.day), asc(chainEod.expiry), asc(sql`(${chainEod.strike})::numeric`));
@@ -128,9 +139,9 @@ export async function eodDays(db: Db, venue: Venue, asset: Underlying, range: { 
   for (const r of rows) {
     let d = days.get(r.day);
     if (!d) {
-      d = { day: r.day, ts: r.ts.getTime(), spot: Number(r.spot), expiries: [] };
+      d = { day: r.day, ts: r.ts.getTime(), spot: Number(r.spot), expiries: [], source: r.source };
       days.set(r.day, d);
-    }
+    } else if (d.source !== r.source) d.source = "mixed"; // ADR-098: a recorded day the backfill also touched
     let e = d.expiries.find((x) => x.expiry === r.expiry);
     if (!e) {
       e = { expiry: r.expiry, rows: [] };

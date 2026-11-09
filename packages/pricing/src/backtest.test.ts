@@ -36,6 +36,21 @@ function days(n = 5, spots = [80_000, 80_400, 79_800, 81_000, 82_500]): EodDay[]
 const opts = { lots: 10, unitsPerLot: 0.001, minDte: 1, calendar: cal };
 
 describe("HC-TR-184 runBacktest", () => {
+  it("counts the days reconstructed from candles (ADR-098) apart from the recorded ones, and a day without IV still enters and settles", () => {
+    const ds = days();
+    ds[0]!.source = "candles";
+    ds[1]!.source = "candles";
+    ds[2]!.source = "mixed";
+    for (const e of ds[0]!.expiries) for (const row of e.rows) {
+      if (row.call) row.call = { mark: row.call.mark };
+      if (row.put) row.put = { mark: row.put.mark };
+    }
+    const r = runBacktest(templateByName("Buy Call")!, ds, opts);
+    expect(r.coverage.days).toBe(5);
+    expect(r.coverage.reconstructedDays).toBe(2);
+    expect(r.trades[0]!.entryDay).toBe(day(0));
+  });
+
   it("a bought call entered each day settles at intrinsic on the expiry day; the equity curve and stats follow the closed trades", () => {
     // a backfilled expiry day stamped before the settlement hour still settles that day: the date decides
     const early = days().map((x, i) => (i === 4 ? { ...x, ts: x.ts - 3_600_000 } : x));
@@ -67,7 +82,7 @@ describe("HC-TR-184 runBacktest", () => {
     expect(r.stats.best).toBe(Math.max(...r.trades.slice(0, 4).map((t) => t.pnl)));
     expect(r.stats.worst).toBe(Math.min(...r.trades.slice(0, 4).map((t) => t.pnl)));
     expect(r.stats.median).not.toBeNull();
-    expect(r.coverage).toEqual({ firstDay: day(0), lastDay: day(4), days: 5, entries: 5, skipped: { noExpiry: 0, noFit: 0 }, openTrades: 1, modelledTrades: 0 });
+    expect(r.coverage).toEqual({ firstDay: day(0), lastDay: day(4), days: 5, reconstructedDays: 0, entries: 5, skipped: { noExpiry: 0, noFit: 0 }, openTrades: 1, modelledTrades: 0 });
   });
 
   it("an open trade is marked from the recorded mark of the same instrument, and modelled with Black-76 at the ATM IV when the day's chain lacks it", () => {

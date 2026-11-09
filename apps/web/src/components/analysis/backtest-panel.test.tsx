@@ -18,7 +18,7 @@ describe("HC-TR-185 the Backtest tab", () => {
   it("runs the default template over the recorded days and shows coverage, stats, the curve and the trades; the template and range re-run it", async () => {
     renderWithProviders(<BacktestPanel />);
     await waitFor(() => expect(screen.getByTestId("backtest-panel").dataset["state"]).toBe("ready"), { timeout: 8000 });
-    expect(screen.getByTestId("backtest-coverage").textContent).toMatch(/12 recorded days from .* · \d+ entries/);
+    expect(screen.getByTestId("backtest-coverage").textContent).toMatch(/12 days of history from .* · \d+ entries/);
     expect(screen.getByTestId("backtest-coverage").textContent).toContain("no fees, no slippage");
     expect(screen.getByTestId("backtest-total").textContent).toMatch(/[\d$]/);
     expect(screen.getByTestId("backtest-winrate").textContent).toMatch(/^(\d+%|—)$/);
