@@ -1,9 +1,10 @@
 // Synthetic end-of-day chains for the mock API's backtest (ADR-077): the recorded instrument fixture's ladders on
 // each of the last `days` days at the settlement hour, the spot drifting a little, run through the real engine and
 // projected exactly as the API projects it (money to cents).
-import type { BacktestResult, Underlying } from "@hapiecoin/schema";
+import type { BacktestFees, BacktestResult, Underlying } from "@hapiecoin/schema";
 import { toDecimal } from "@hapiecoin/schema";
 import { type EodDay, type EodRow, calendarFor, runBacktest, templateByName } from "@hapiecoin/pricing";
+import { getVenueCore } from "@hapiecoin/venues/core";
 import { SPOT0, buildChain, expiriesOf } from "./fixtures/chain";
 
 const DAY = 86_400_000;
@@ -32,11 +33,45 @@ export function mockEodDays(asset: Underlying, days: number, now = Date.now()): 
   return out;
 }
 
-export function mockBacktest(p: { asset: Underlying; template: string; lots: number; minDte: number; from?: string | undefined; to?: string | undefined; days: number; venue?: "delta_india" | "deribit" }): BacktestResult | null {
+export interface MockBacktestParams {
+  asset: Underlying;
+  template: string;
+  lots: number;
+  minDte: number;
+  from?: string | undefined;
+  to?: string | undefined;
+  days: number;
+  venue?: "delta_india" | "deribit" | undefined;
+  /** ADR-099 rules, as the API reads them from the query (percent for the exits). */
+  fees?: BacktestFees | undefined;
+  smaDays?: number | undefined;
+  smaSide?: "above" | "below" | undefined;
+  ivRankMin?: number | undefined;
+  ivRankMax?: number | undefined;
+  weekdays?: number[] | undefined;
+  targetPct?: number | undefined;
+  stopPct?: number | undefined;
+  timeStopDte?: number | undefined;
+}
+
+export function mockBacktest(p: MockBacktestParams): BacktestResult | null {
   const tpl = templateByName(p.template);
   if (!tpl) return null;
   const days = mockEodDays(p.asset, p.days);
-  const r = runBacktest(tpl, days, { lots: p.lots, unitsPerLot: UNITS[p.asset], minDte: p.minDte, calendar: calendarFor(p.asset === "XAUT" ? 16 : 12), from: p.from, to: p.to });
+  const fees = (p.fees ?? "venue") === "venue" ? getVenueCore(p.venue ?? "delta_india").feeRule : null;
+  const conditions =
+    p.smaDays !== undefined || p.ivRankMin !== undefined || p.ivRankMax !== undefined || p.weekdays !== undefined
+      ? {
+          sma: p.smaDays !== undefined && p.smaSide ? { days: p.smaDays, side: p.smaSide } : undefined,
+          ivRank: p.ivRankMin !== undefined || p.ivRankMax !== undefined ? { min: p.ivRankMin, max: p.ivRankMax, lookbackDays: 365 } : undefined,
+          weekdays: p.weekdays,
+        }
+      : undefined;
+  const exits =
+    p.targetPct !== undefined || p.stopPct !== undefined || p.timeStopDte !== undefined
+      ? { targetPct: p.targetPct === undefined ? undefined : p.targetPct / 100, stopPct: p.stopPct === undefined ? undefined : p.stopPct / 100, timeStopDte: p.timeStopDte }
+      : undefined;
+  const r = runBacktest(tpl, days, { lots: p.lots, unitsPerLot: UNITS[p.asset], minDte: p.minDte, calendar: calendarFor(p.asset === "XAUT" ? 16 : 12), from: p.from, to: p.to, fees, conditions, exits });
   const money = (n: number) => toDecimal(n, 2);
   const opt = (n: number | null) => (n === null ? null : money(n));
   return {
@@ -51,13 +86,18 @@ export function mockBacktest(p: { asset: Underlying; template: string; lots: num
       expiry: t.expiry,
       legs: t.legs.map((l) => ({ kind: l.kind, side: l.side, strike: toDecimal(l.strike, 8), expiry: l.expiry, price: toDecimal(l.price, 8), quantity: toDecimal(l.quantity, 6), exitPrice: toDecimal(l.exitPrice, 8) })),
       entryCost: money(t.entryCost),
+      grossPnl: money(t.grossPnl),
+      fees: money(t.fees),
       pnl: money(t.pnl),
+      exitReason: t.exitReason,
+      ruleInert: t.ruleInert,
       status: t.status,
       modelled: t.modelled,
       daysHeld: t.daysHeld,
     })),
     equity: r.equity.map((e) => ({ day: e.day, pnl: money(e.pnl) })),
-    stats: { ...r.stats, total: money(r.stats.total), average: opt(r.stats.average), median: opt(r.stats.median), best: opt(r.stats.best), worst: opt(r.stats.worst), maxDrawdown: money(r.stats.maxDrawdown) },
+    stats: { ...r.stats, total: money(r.stats.total), grossTotal: money(r.stats.grossTotal), totalFees: money(r.stats.totalFees), average: opt(r.stats.average), median: opt(r.stats.median), best: opt(r.stats.best), worst: opt(r.stats.worst), maxDrawdown: money(r.stats.maxDrawdown) },
     coverage: r.coverage,
+    fees: p.fees ?? "venue",
   };
 }

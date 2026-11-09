@@ -639,7 +639,30 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (q["from"] && q["to"] && q["from"] > q["to"]) return err(c, 400, "BAD_REQUEST", "from must not be after to");
     if (state.backtestDays === 0) return err(c, 503, "UNAVAILABLE", `no end-of-day chains recorded for ${asset} yet`);
     const venue = q["venue"] === "deribit" ? "deribit" : "delta_india";
-    const out = mockBacktest({ asset, template: q["template"] ?? "", lots, minDte, from: q["from"], to: q["to"], days: state.backtestDays, venue });
+    const fees = q["fees"] === "none" ? "none" : "venue";
+    if (fees === "venue" && venue === "deribit") return err(c, 400, "BAD_REQUEST", "deribit publishes no fee rule here; run with fees=none");
+    const num = (k: string) => (q[k] === undefined ? undefined : Number(q[k]));
+    if ((q["smaDays"] === undefined) !== (q["smaSide"] === undefined)) return err(c, 400, "BAD_REQUEST", "smaDays and smaSide go together");
+    if (num("ivRankMin") !== undefined && num("ivRankMax") !== undefined && num("ivRankMin")! > num("ivRankMax")!) return err(c, 400, "BAD_REQUEST", "ivRankMin must not exceed ivRankMax");
+    const out = mockBacktest({
+      asset,
+      template: q["template"] ?? "",
+      lots,
+      minDte,
+      from: q["from"],
+      to: q["to"],
+      days: state.backtestDays,
+      venue,
+      fees,
+      smaDays: num("smaDays"),
+      smaSide: q["smaSide"] === "below" ? "below" : q["smaSide"] === "above" ? "above" : undefined,
+      ivRankMin: num("ivRankMin"),
+      ivRankMax: num("ivRankMax"),
+      weekdays: q["weekdays"]?.split(",").map(Number),
+      targetPct: num("targetPct"),
+      stopPct: num("stopPct"),
+      timeStopDte: num("timeStopDte"),
+    });
     if (!out) return err(c, 400, "BAD_REQUEST", `Unknown template "${q["template"] ?? ""}"`);
     c.header("Cache-Control", "private, max-age=300");
     return c.json(out);

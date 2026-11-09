@@ -203,3 +203,10 @@ describe("HC-SH-118 [VENUES] Delta India schema bridge and client factories", ()
     expect(() => tradingClientOf(dataOnly, { baseUrl: "https://api.example" })).toThrow("Venue delta_india has no trading client");
   });
 });
+
+describe("HC-TR-200 the venue fee rule", () => {
+  it("Delta India carries the published rule and Deribit none", () => {
+    expect(getVenueCore("delta_india").feeRule).toEqual({ optionPct: 0.0001, optionCapOfPremium: 0.035, futurePct: 0.0005, gstPct: 0.18, settlementFee: true });
+    expect(getVenueCore("deribit").feeRule).toBeNull();
+  });
+});

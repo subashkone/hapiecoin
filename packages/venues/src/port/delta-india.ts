@@ -85,6 +85,9 @@ export const DELTA_INDIA_CORE: VenueCore = {
     expirySettlementIso: (code, underlying) => expirySettlementIso(code, settlementHour(underlying)),
   },
   fees: { feePct: "0.05", gstPct: "18", feeCapPct: "10", basis: "spot-notional" },
+  // read from the exchange's product list and fee page on 6 Nov 2026 (GAPS #129): options 0.01 % of notional capped at
+  // 3.5 % of the premium, futures 0.05 % taker, 18 % GST, the taker fee again on an in-the-money settlement
+  feeRule: { optionPct: 0.0001, optionCapOfPremium: 0.035, futurePct: 0.0005, gstPct: 0.18, settlementFee: true },
   capabilities: {
     options: true,
     perpetuals: true,

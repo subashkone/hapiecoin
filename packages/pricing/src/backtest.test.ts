@@ -3,6 +3,8 @@
 // and the statistics the tab shows.
 import { describe, expect, it } from "vitest";
 import { type EodDay, type EodRow, atmIndexOf, atmIvOf, maxDrawdownOf, runBacktest } from "./backtest.js";
+import { fillFee, settlementFee } from "./fees.js";
+import { DELTA_RULE as DELTA_INDIA_FEE_RULE } from "./fees.test.js";
 import { black76Price } from "./black76.js";
 import { calendarFor, yearFractionOf } from "./calendar.js";
 import { type StrategyTemplate, templateByName } from "./templates.js";
@@ -82,7 +84,7 @@ describe("HC-TR-184 runBacktest", () => {
     expect(r.stats.best).toBe(Math.max(...r.trades.slice(0, 4).map((t) => t.pnl)));
     expect(r.stats.worst).toBe(Math.min(...r.trades.slice(0, 4).map((t) => t.pnl)));
     expect(r.stats.median).not.toBeNull();
-    expect(r.coverage).toEqual({ firstDay: day(0), lastDay: day(4), days: 5, reconstructedDays: 0, entries: 5, skipped: { noExpiry: 0, noFit: 0 }, openTrades: 1, modelledTrades: 0 });
+    expect(r.coverage).toEqual({ firstDay: day(0), lastDay: day(4), days: 5, reconstructedDays: 0, entries: 5, skipped: { noExpiry: 0, noFit: 0, noSignal: 0 }, openTrades: 1, modelledTrades: 0, exits: { settled: 4, target: 0, stop: 0, time: 0, inert: 0 } });
   });
 
   it("an open trade is marked from the recorded mark of the same instrument, and modelled with Black-76 at the ATM IV when the day's chain lacks it", () => {
@@ -137,7 +139,7 @@ describe("HC-TR-184 runBacktest", () => {
     const d = days(5);
     const far = runBacktest(tpl("Buy Call"), d, { ...opts, minDte: 60 });
     expect(far.trades).toHaveLength(0);
-    expect(far.coverage.skipped).toEqual({ noExpiry: 5, noFit: 0 });
+    expect(far.coverage.skipped).toEqual({ noExpiry: 5, noFit: 0, noSignal: 0 });
     const WIDE: StrategyTemplate = { name: "Wide", category: "Others", description: "four rows above ATM", legs: [{ kind: "call", side: "buy", k: 4 }], risk: "defined" };
     const wide = runBacktest(WIDE, d, { ...opts, from: day(1), to: day(2) }); // reaches past a five-strike ladder
     expect(wide.coverage.skipped.noFit).toBe(2);
@@ -146,7 +148,7 @@ describe("HC-TR-184 runBacktest", () => {
     expect(ranged.trades.map((t) => t.entryDay)).toEqual([day(1), day(2)]);
     const none = runBacktest(tpl("Buy Call"), [], opts);
     expect(none).toMatchObject({ trades: [], equity: [], coverage: { firstDay: null, lastDay: null, days: 0, entries: 0 } });
-    expect(none.stats).toEqual({ trades: 0, wins: 0, losses: 0, winRate: null, total: 0, average: null, median: null, best: null, worst: null, maxDrawdown: 0, profitFactor: null });
+    expect(none.stats).toEqual({ trades: 0, wins: 0, losses: 0, winRate: null, total: 0, grossTotal: 0, totalFees: 0, average: null, median: null, best: null, worst: null, maxDrawdown: 0, profitFactor: null });
   });
 
   it("helpers: ATM index and IV, drawdown, median of an even count", () => {
@@ -208,5 +210,145 @@ describe("HC-TR-184 runBacktest fallbacks", () => {
     expect(covered.trades[0]!.legs.find((l) => l.kind === "future")!.exitPrice).toBe(82_500);
     const noPuts = days(5).map((x) => ({ ...x, expiries: x.expiries.map((e) => ({ ...e, rows: ladder(x.spot, 0.4, undefined, "put") })) }));
     expect(runBacktest(tpl("Sell Put"), noPuts, opts).coverage.skipped.noFit).toBe(5);
+  });
+});
+
+describe("HC-TR-200 fees in the backtest", () => {
+  it("a trade's net P&L is the gross less the entry fills, the exit fills or the in-the-money settlement fee; fees off reproduces the gross engine exactly", () => {
+    const gross = runBacktest(tpl("Buy Call"), days(), opts);
+    const net = runBacktest(tpl("Buy Call"), days(), { ...opts, fees: DELTA_INDIA_FEE_RULE });
+    const g = gross.trades[0]!;
+    const n = net.trades[0]!;
+    // 10 lots x 0.001 BTC at 80 000: notional 800, premium 4 (the 400 ATM call); settles at 82 500 with 2 500 intrinsic
+    const entryFee = fillFee("call", 800, 4, DELTA_INDIA_FEE_RULE);
+    const settleFee = settlementFee("call", 825, 25, DELTA_INDIA_FEE_RULE);
+    expect(g.fees).toBe(0);
+    expect(g.pnl).toBe(g.grossPnl);
+    expect(g.exitReason).toBe("settled");
+    expect(n.grossPnl).toBeCloseTo(g.grossPnl, 10);
+    expect(n.fees).toBeCloseTo(entryFee + settleFee, 10);
+    expect(n.pnl).toBeCloseTo(g.pnl - entryFee - settleFee, 10);
+    expect(net.stats.totalFees).toBeCloseTo(net.trades.filter((t) => t.status === "closed").reduce((sum, t) => sum + t.fees, 0), 10);
+    expect(net.stats.grossTotal).toBeCloseTo(gross.stats.total, 10);
+    expect(net.stats.total).toBeCloseTo(net.stats.grossTotal - net.stats.totalFees, 10);
+    // an open trade has paid its entry fills only; fees: null is the same as no rule
+    expect(net.trades.at(-1)!).toMatchObject({ status: "open", exitReason: "open" });
+    expect(net.trades.at(-1)!.fees).toBeCloseTo(fillFee("call", 825, (82_500 - 82_000 + 500 * 0.49 * 2) * 0.01, DELTA_INDIA_FEE_RULE), 6);
+    expect(runBacktest(tpl("Buy Call"), days(), { ...opts, fees: null })).toEqual(gross);
+  });
+
+  it("a sold leg's fill is charged on the size of its credit and a worthless settlement pays nothing", () => {
+    // Sell Call entered on day 2 (spot 79 800, ATM 79 000): the 79 000 call settles in the money at 82 500 and pays
+    const r = runBacktest(tpl("Sell Call"), days(), { ...opts, fees: DELTA_INDIA_FEE_RULE, from: day(2), to: day(2) });
+    const t = r.trades[0]!;
+    expect(t.legs[0]!.strike).toBe(79_000);
+    expect(t.fees).toBeCloseTo(fillFee("call", 798, t.legs[0]!.price * 0.01, DELTA_INDIA_FEE_RULE) + settlementFee("call", 825, 35, DELTA_INDIA_FEE_RULE), 10);
+    // a bought put that expires worthless pays its entry fill only
+    const put = runBacktest(tpl("Buy Put"), days(), { ...opts, fees: DELTA_INDIA_FEE_RULE, from: day(0), to: day(0) });
+    expect(put.trades[0]!.legs[0]!.exitPrice).toBe(0);
+    expect(put.trades[0]!.fees).toBeCloseTo(fillFee("put", 800, put.trades[0]!.legs[0]!.price * 0.01, DELTA_INDIA_FEE_RULE), 10);
+  });
+});
+
+describe("HC-TR-201 entry conditions", () => {
+  it("the entry waits for the spot above a 2-day average and counts days without enough history or without the signal as no signal", () => {
+    const r = runBacktest(tpl("Buy Call"), days(), { ...opts, conditions: { sma: { days: 2, side: "above" } } });
+    // day 0 has one recorded spot (no history); day 2 is below its average; days 1, 3 and 4 enter
+    expect(r.trades.map((t) => t.entryDay)).toEqual([day(1), day(3), day(4)]);
+    expect(r.coverage.skipped.noSignal).toBe(2);
+    const below = runBacktest(tpl("Buy Put"), days(), { ...opts, conditions: { sma: { days: 2, side: "below" } } });
+    expect(below.trades.map((t) => t.entryDay)).toEqual([day(2)]);
+  });
+
+  it("a weekday filter enters only on the chosen UTC weekdays", () => {
+    // 1 Sep 2026 is a Tuesday (2); the fixture runs Tuesday to Saturday
+    const r = runBacktest(tpl("Buy Call"), days(), { ...opts, conditions: { weekdays: [2, 4] } });
+    expect(r.trades.map((t) => t.entryDay)).toEqual([day(0), day(2)]);
+    expect(r.coverage.skipped.noSignal).toBe(3);
+  });
+
+  it("an IV-rank band needs twenty recorded points before it judges a day and reads the front expiry's ATM IV", () => {
+    // five days can never have twenty prior points: every day is no signal
+    expect(runBacktest(tpl("Buy Call"), days(), { ...opts, conditions: { ivRank: { min: 0, lookbackDays: 365 } } }).coverage).toMatchObject({ entries: 0, skipped: { noSignal: 5 } });
+    // 25 days with IV rising every day: from day 20 on, today's IV is the highest seen, rank 100
+    const high = runBacktest(tpl("Buy Call"), days(25), { ...opts, conditions: { ivRank: { min: 90, lookbackDays: 365 } } });
+    expect(high.trades.map((t) => t.entryDay)).toEqual([day(20), day(21), day(22), day(23), day(24)]);
+    expect(high.coverage.skipped.noSignal).toBe(20);
+    const low = runBacktest(tpl("Buy Call"), days(25), { ...opts, conditions: { ivRank: { max: 50, lookbackDays: 365 } } });
+    expect(low.trades).toHaveLength(0);
+    // a day whose front expiry carries no IV (a reconstructed day) is no signal
+    const strip = (row: EodRow): EodRow => ({ strike: row.strike, call: row.call ? { mark: row.call.mark } : undefined, put: row.put ? { mark: row.put.mark } : undefined });
+    const blind = days(25).map((x, i) => (i === 24 ? { ...x, expiries: x.expiries.map((e) => ({ ...e, rows: e.rows.map(strip) })) } : x));
+    expect(runBacktest(tpl("Buy Call"), blind, { ...opts, conditions: { ivRank: { min: 90, lookbackDays: 365 } } }).trades.map((t) => t.entryDay)).toEqual([day(20), day(21), day(22), day(23)]);
+  });
+});
+
+describe("HC-TR-202 exit rules", () => {
+  it("a target at the full debit closes on the first recorded day the marks reach it, pays the exit fills, and says target", () => {
+    // Buy Call at 80 000 for 400: on day 1 (spot 80 400) the call marks 810, a profit of 4.1 on a 4 debit; the profit is unbounded, so the target is a share of the debit
+    const r = runBacktest(tpl("Buy Call"), days(), { ...opts, exits: { targetPct: 1 }, fees: DELTA_INDIA_FEE_RULE, from: day(0), to: day(0) });
+    const t = r.trades[0]!;
+    expect(t).toMatchObject({ exitDay: day(1), exitReason: "target", status: "closed", modelled: false });
+    expect(t.legs[0]!.exitPrice).toBeCloseTo(810, 10);
+    expect(t.grossPnl).toBeCloseTo(4.1, 10);
+    expect(t.fees).toBeCloseTo(fillFee("call", 800, 4, DELTA_INDIA_FEE_RULE) + fillFee("call", 804, 8.1, DELTA_INDIA_FEE_RULE), 10);
+    expect(r.coverage.exits).toEqual({ settled: 0, target: 1, stop: 0, time: 0, inert: 0 });
+    // a target the marks never reach leaves the trade to settle as before
+    expect(runBacktest(tpl("Buy Call"), days(), { ...opts, exits: { targetPct: 100 }, from: day(0), to: day(0) }).trades[0]).toMatchObject({ exitDay: day(4), exitReason: "settled" });
+  });
+
+  it("a stop at the full credit closes a sold call on the day the loss reaches it, a time stop closes at the given days to settlement, and a day with a missing mark is not judged", () => {
+    const stop = runBacktest(tpl("Sell Call"), days(), { ...opts, exits: { stopPct: 1 }, from: day(0), to: day(0) });
+    expect(stop.trades[0]).toMatchObject({ exitDay: day(1), exitReason: "stop" });
+    expect(stop.trades[0]!.grossPnl).toBeCloseTo(-4.1, 10);
+    // the expiry settles on day 4 at the settlement hour: day 2 is the first recorded day with at most 2 days left
+    const time = runBacktest(tpl("Buy Call"), days(), { ...opts, exits: { timeStopDte: 2 }, from: day(0), to: day(0) });
+    expect(time.trades[0]).toMatchObject({ exitDay: day(2), exitReason: "time" });
+    // without the 80 000 call's mark on day 1 the target is judged next on day 2 (0.2, below) and fires on day 3 (10.3)
+    const gap = days().map((x, i) => (i === 1 ? { ...x, expiries: x.expiries.map((e) => ({ ...e, rows: e.rows.map((row) => (row.strike === 80_000 ? { strike: row.strike, put: row.put } : row)) })) } : x));
+    expect(runBacktest(tpl("Buy Call"), gap, { ...opts, exits: { targetPct: 1 }, from: day(0), to: day(0) }).trades[0]).toMatchObject({ exitDay: day(3), exitReason: "target" });
+    // the nearest leg's settlement day itself is never a rule day
+    expect(runBacktest(tpl("Buy Call"), days(), { ...opts, exits: { timeStopDte: 0 }, from: day(0), to: day(0) }).trades[0]).toMatchObject({ exitDay: day(4), exitReason: "settled" });
+  });
+});
+
+describe("HC-TR-201 / HC-TR-202 the range, the futures leg and an inert rule", () => {
+  it("days before `from` are history for a condition but not part of the coverage or the equity", () => {
+    // a 3-day average needs two earlier days: with from = day 2 the entry on day 2 is judged on days 0..2
+    const r = runBacktest(tpl("Buy Call"), days(), { ...opts, from: day(2), conditions: { sma: { days: 3, side: "below" } } });
+    expect(r.coverage).toMatchObject({ firstDay: day(2), lastDay: day(4), days: 3, entries: 1, skipped: { noSignal: 2 } }); // day 2 (79 800 < 80 067) enters; days 3 and 4 are above their averages
+    expect(r.trades.map((t) => t.entryDay)).toEqual([day(2)]);
+    expect(r.equity.map((e) => e.day)).toEqual([day(2), day(3), day(4)]);
+  });
+
+  it("a covered call's perpetual leg pays the taker fee at exit and a stop on a debit spread is a share of the debit", () => {
+    const covered = runBacktest(tpl("Covered Call"), days(), { ...opts, minDte: 1, to: day(0), fees: DELTA_INDIA_FEE_RULE });
+    const t = covered.trades[0]!;
+    const future = t.legs.find((l) => l.kind === "future")!;
+    const call = t.legs.find((l) => l.kind !== "future")!;
+    // entry: the future's notional at 80 000 and the sold call's premium; exit on day 4 at 82 500: the future pays again, the in-the-money call pays its settlement value
+    const expected =
+      fillFee("future", 80_000 * future.quantity, 0, DELTA_INDIA_FEE_RULE) +
+      fillFee("call", 80_000 * call.quantity, call.price * call.quantity, DELTA_INDIA_FEE_RULE) +
+      fillFee("future", 82_500 * future.quantity, 0, DELTA_INDIA_FEE_RULE) +
+      settlementFee("call", 82_500 * call.quantity, call.exitPrice * call.quantity, DELTA_INDIA_FEE_RULE);
+    expect(t.fees).toBeCloseTo(expected, 10);
+    // a call bought on day 1 (spot 80 400, the 80 000 call at 810) loses 390 a unit when day 2 drops the spot to 79 800: a stop at a quarter of the debit fires that day
+    const debit = runBacktest(tpl("Buy Call"), days(), { ...opts, minDte: 1, from: day(1), to: day(1), exits: { stopPct: 0.25 } });
+    expect(debit.trades[0]).toMatchObject({ entryDay: day(1), exitDay: day(2), exitReason: "stop" });
+    expect(debit.trades[0]!.grossPnl).toBeCloseTo(-3.9, 10);
+  });
+
+  it("a target on a structure with no base (a near-zero premium and an unbounded payoff) is inert and counted", () => {
+    // a long call financed by a short put at the same strike has a net premium near zero and an unbounded payoff both ways
+    const synthetic: StrategyTemplate = { ...tpl("Buy Call"), name: "Synthetic", legs: [{ kind: "call", side: "buy", k: 0 }, { kind: "put", side: "sell", k: 0 }] };
+    const r = runBacktest(synthetic, days(), { ...opts, minDte: 1, to: day(0), exits: { targetPct: 0.5 } });
+    const t = r.trades[0]!;
+    expect(Math.abs(t.entryCost)).toBeLessThan(0.01 * 10);
+    expect(t.ruleInert).toBe(true);
+    expect(t.exitReason).toBe("settled");
+    expect(r.coverage.exits.inert).toBe(1);
+    // a plain bought call has a base (its debit): not inert
+    expect(runBacktest(tpl("Buy Call"), days(), { ...opts, minDte: 1, to: day(0), exits: { targetPct: 0.5 } }).trades[0]!.ruleInert).toBe(false);
   });
 });

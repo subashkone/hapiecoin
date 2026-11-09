@@ -991,5 +991,16 @@
   "how": "Quote.oi is optional: the venue adapter omits it when the venue sent none and keeps a real zero as 0; both venue sessions carry the last figure forward over a tick that omits it, so a snapshot shows the last known figure. The chain cell, the strike picker, option details and the workbench chain show — with no OI bar; Σ OI and the put/call ratio sum only the figures that exist; the screener shows — for an unknown figure, sorts it last, keeps it under a zero minimum and drops it under a positive one",
   "evidence": "ADR-085 (13 Sep 2026): packages/schema market.ts Quote.oi optional; packages/venues schema-adapter.ts toSchemaQuote, delta/market-data.ts accept carry-forward; apps/web lib/chain/range.ts maxOpenInterest / chainTotals, lib/chain/screener.ts StrikeRow.oi null + filterStrikes, components/screener/ScreenerPanel.tsx; unit market.test.ts (schema), schema-adapter.test.ts + delta/market-data.test.ts (venues), diff.test.ts (gateway), range.test.ts + screener.test.ts + chain.test.tsx HC-WS-116 (web)",
   "test": "unit (schema + venues + gateway + web)"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse · Backtest tab",
+  "status": "working",
+  "phase": 5,
+  "new": true,
+  "feature": "The Backtest tab's Rules row: fees, trend filter, IV-rank band, weekday chips, target, stop and time stop re-run the backtest; the coverage line says what the figures are net of and how trades exited; the table shows each trade's fees and exit reason",
+  "how": "BacktestPanel.tsx Rules row (backtest-fees venue rule / none, disabled and fixed to none on a venue without a published rule (Deribit); backtest-sma off / 20 / 50 / 100 / 200-day average with backtest-sma-side spot above / below; backtest-ivrank any / low 0-30 / middle 30-70 / high 70-100; backtest-weekday-N chips, UTC; backtest-target 25 / 50 / 75 % of max profit; backtest-stop 50 / 100 / 200 % of max loss; backtest-timestop 1 / 2 / 7 days before settlement, only values below the minimum days to expiry) feeding useBacktest, whose key and URL carry the rule fields in a fixed order; the coverage line adds the no-signal count, 'net of the venue's fees (total)' or 'no fees', the exit counts when a rule is set and the count of trades whose target or stop had no base; the empty state names the entry conditions when they skipped every day; the trades table gains a Fees column and an exit-reason badge on rules exits; the mock API applies the same rules through the real engine",
+  "evidence": "ADR-099 (9 Nov 2026): apps/web/src/components/analysis/BacktestPanel.tsx, lib/api/backtest.ts, test/mock-api.ts + mock-backtest.ts; unit backtest-panel.test.tsx HC-WS-117; e2e analyse.spec.ts HC-TR-185 (fees toggle)",
+  "test": "unit (web), e2e"
  }
 ]

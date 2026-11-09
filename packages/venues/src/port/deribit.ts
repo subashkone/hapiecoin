@@ -59,6 +59,7 @@ export const DERIBIT_CORE: VenueCore = {
   },
   /** Data-only: nothing is traded here, so the fee defaults are zero. */
   fees: { feePct: "0", gstPct: "0", feeCapPct: "0", basis: "spot-notional" },
+  feeRule: null, // data-only venue (ADR-067): its fee schedule has not been read, so the backtest charges nothing here
   capabilities: {
     options: true,
     perpetuals: true,
