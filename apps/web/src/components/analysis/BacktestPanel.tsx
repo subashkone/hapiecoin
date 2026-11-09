@@ -1,16 +1,18 @@
 "use client";
 // Backtest tab (ADR-077; HC-TR-185): a catalogue template entered at every recorded end of day on the venue's own
-// chain history and held to expiry or to its exit rule. Every figure comes from marks the venue published; an open trade valued from the
+// chain history and held to expiry or to its exit rule. ADR-100 (HC-WS-118): a Split control shows the record in two
+// or three consecutive periods, and a Sweep view runs one or two rule parameters over a capped grid with a plateau
+// reading and the trial count, so a lucky peak and a broad plateau read differently. Every figure comes from marks the venue published; an open trade valued from the
 // model says "modelled". The coverage line always says how much history there is, so a week of data never reads as
 // a year of evidence (ADR-060: "ready-made structures", never "proven"). ADR-099 (HC-WS-117): a Rules row charges the
 // venue's fee rule (on by default), sets entry conditions and exit rules, and every trade says why it ended.
-import { BACKTEST_MIN_DTE, BACKTEST_SMA_DAYS, type BacktestFees, type BacktestTrade } from "@hapiecoin/schema";
+import { BACKTEST_MIN_DTE, BACKTEST_SMA_DAYS, type BacktestFees, type BacktestTrade, type SweepAxis } from "@hapiecoin/schema";
 import { TEMPLATES, TEMPLATE_CATEGORIES, type TemplateCategory } from "@hapiecoin/pricing";
 import { getVenueCore } from "@hapiecoin/venues/core";
 import { Button, EmptyState, cn } from "@hapiecoin/ui";
 import { useMemo, useState } from "react";
 import { ApiError } from "@/lib/api/client";
-import { useBacktest } from "@/lib/api/backtest";
+import { useBacktest, useBacktestSweep } from "@/lib/api/backtest";
 import { useSettings } from "@/lib/api/queries";
 import { fmtDate, fmtExpiry } from "@/lib/format";
 import { type MoneyFormat, USD, fmtMoney } from "@/lib/money";
@@ -44,6 +46,11 @@ const TARGETS = [25, 50, 75] as const;
 const STOPS = [50, 100, 200] as const;
 const TIME_STOPS = [1, 2, 7] as const;
 const EXIT_LABEL: Record<BacktestTrade["exitReason"], string> = { settled: "settled", target: "target", stop: "stop", time: "time stop", open: "open" };
+/** The values a sweep tries per axis (ADR-100): the Rules row's own option lists, so every loadable cell is a visible option; the time stop is filtered below the minimum days to expiry at render time. */
+const SWEEP_PRESETS: Record<SweepAxis, readonly number[]> = { smaDays: BACKTEST_SMA_DAYS, minDte: BACKTEST_MIN_DTE, targetPct: TARGETS, stopPct: STOPS, timeStopDte: TIME_STOPS };
+const AXIS_LABEL: Record<SweepAxis, string> = { smaDays: "Average length (days)", minDte: "Min days to expiry", targetPct: "Target (% of max profit)", stopPct: "Stop (% of max loss)", timeStopDte: "Time stop (days before settlement)" };
+const AXES = Object.keys(SWEEP_PRESETS) as SweepAxis[];
+const isAxis = (v: string): v is SweepAxis => v in SWEEP_PRESETS;
 const tone = (v: number) => (v > 0 ? "text-profit" : v < 0 ? "text-loss" : "text-muted-foreground");
 
 /** "B C 80000 · S C 82000": the legs of a trade in one line. */
@@ -71,12 +78,38 @@ export function BacktestPanel() {
   const [targetPct, setTargetPct] = useState<number | undefined>(undefined);
   const [stopPct, setStopPct] = useState<number | undefined>(undefined);
   const [timeStopDte, setTimeStopDte] = useState<number | undefined>(undefined);
+  // ADR-100: walk-forward periods and the bounded sweep
+  const [folds, setFolds] = useState<number | undefined>(undefined);
+  const [sweepOn, setSweepOn] = useState(false);
+  const [axis1, setAxis1] = useState<SweepAxis>("minDte");
+  const [axis2, setAxis2] = useState<SweepAxis | undefined>(undefined);
   const from = useMemo(() => dayBack(RANGES.find((r) => r.id === range)!.days), [range]);
   const band = IV_BANDS[ivBand];
   const hasExitRules = targetPct !== undefined || stopPct !== undefined || timeStopDte !== undefined;
   // a time stop at or past the entry's minimum days to expiry would fire on the first day of every trade
   const timeStops = TIME_STOPS.filter((v) => v < minDte);
-  const q = useBacktest({ asset, template, lots, minDte, from, fees, smaDays, smaSide: smaDays === undefined ? undefined : smaSide, ivRankMin: band?.[0], ivRankMax: band?.[1], weekdays, targetPct, stopPct, timeStopDte });
+  const params = { asset, template, lots, minDte, from, fees, smaDays, smaSide: smaDays === undefined ? undefined : smaSide, ivRankMin: band?.[0], ivRankMax: band?.[1], weekdays, targetPct, stopPct, timeStopDte };
+  const q = useBacktest({ ...params, folds });
+  const sweepAxis2 = axis2 !== undefined && axis2 !== axis1 ? axis2 : undefined;
+  /** The sweep's values per axis: the time stop keeps only the values below the minimum days to expiry (a later one would fire on day one). */
+  const sweepValues = (a: SweepAxis): readonly number[] => (a === "timeStopDte" ? SWEEP_PRESETS[a].filter((v) => v < minDte) : SWEEP_PRESETS[a]);
+  // the swept fields are pinned in the sweep's own query (the axis overrides them anyway), so loading a cell into the
+  // Rules row does not re-run the sweep; the trend filter keeps its side through a pinned length
+  const pinned = (a: SweepAxis | undefined, base: typeof params) =>
+    a === undefined ? base : a === "smaDays" ? { ...base, smaDays: base.smaDays === undefined ? undefined : BACKTEST_SMA_DAYS[0] } : a === "minDte" ? { ...base, minDte: BACKTEST_MIN_DTE[0] } : { ...base, [a]: undefined };
+  const sweepBase = pinned(sweepAxis2, pinned(axis1, params));
+  const sweep = useBacktestSweep({ ...sweepBase, axis1, values1: sweepValues(axis1), axis2: sweepAxis2, values2: sweepAxis2 ? sweepValues(sweepAxis2) : undefined }, sweepOn && sweepValues(axis1).length > 0 && (sweepAxis2 === undefined || sweepValues(sweepAxis2).length > 0));
+  const s = sweep.data;
+  const sweepNotYet = sweep.isError && sweep.error instanceof ApiError && sweep.error.status === 503;
+  /** A sweep cell's parameters become the Rules row's. */
+  const loadCell = (values: { [K in SweepAxis]?: number | undefined }) => {
+    if (values.smaDays !== undefined) setSmaDays(values.smaDays);
+    if (values.minDte !== undefined) setMinDte(values.minDte);
+    if (values.targetPct !== undefined) setTargetPct(values.targetPct);
+    if (values.stopPct !== undefined) setStopPct(values.stopPct);
+    if (values.timeStopDte !== undefined) setTimeStopDte(values.timeStopDte);
+  };
+  const pct = (v: number | null) => (v === null ? "—" : `${Math.round(v * 100)}%`);
   const optNum = (v: string) => (v === "" ? undefined : Number(v));
   const selectCls = "h-7 rounded border border-input bg-background px-1 text-xs";
   const r = q.data;
@@ -207,7 +240,118 @@ export function BacktestPanel() {
             ))}
           </select>
         </label>
+        <label className="flex flex-col gap-0.5">
+          <span className="micro" title="Cut the range's entries into consecutive periods of equal count, each with its own record: the later period is the test the earlier one did not see">Split</span>
+          <select value={folds ?? ""} onChange={(e) => setFolds(optNum(e.target.value))} className={selectCls} data-testid="backtest-folds-select">
+            <option value="">Off</option>
+            <option value={2}>In-sample / out-of-sample</option>
+            <option value={3}>Three periods</option>
+          </select>
+        </label>
+        <Button size="sm" variant={sweepOn ? "secondary" : "ghost"} aria-pressed={sweepOn} onClick={() => setSweepOn((v) => !v)} data-testid="backtest-sweep-toggle" title="Run one rule parameter (or two) over a small grid and see every cell's result">
+          Sweep
+        </Button>
       </div>
+      {sweepOn ? (
+        <div className="flex flex-col gap-2 rounded border border-border p-2 text-xs" data-testid="backtest-sweep">
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="flex flex-col gap-0.5">
+              <span className="micro">Sweep</span>
+              <select
+                value={axis1}
+                onChange={(e) => {
+                  if (!isAxis(e.target.value)) return;
+                  setAxis1(e.target.value);
+                  if (e.target.value === axis2) setAxis2(undefined); // the second axis cannot repeat the first
+                }}
+                className={selectCls}
+                data-testid="backtest-sweep-axis1"
+              >
+                {AXES.map((a) => (
+                  <option key={a} value={a}>
+                    {AXIS_LABEL[a]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-0.5">
+              <span className="micro">against</span>
+              <select value={axis2 ?? ""} onChange={(e) => setAxis2(isAxis(e.target.value) ? e.target.value : undefined)} className={selectCls} data-testid="backtest-sweep-axis2">
+                <option value="">nothing</option>
+                {AXES.filter((a) => a !== axis1).map((a) => (
+                  <option key={a} value={a}>
+                    {AXIS_LABEL[a]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <span className="text-2xs text-muted-foreground">Values: {sweepValues(axis1).join(", ") || "none below the minimum days to expiry"}{sweepAxis2 ? ` × ${sweepValues(sweepAxis2).join(", ") || "none"}` : ""}. Click a cell to load its parameters.</span>
+          </div>
+          {sweepNotYet ? (
+            <p className="text-muted-foreground" data-testid="backtest-sweep-empty">No end-of-day chains recorded yet, so there is nothing to sweep.</p>
+          ) : sweep.isError ? (
+            <p className="text-loss" data-testid="backtest-sweep-error">
+              {sweep.error instanceof Error ? sweep.error.message : String(sweep.error)}
+            </p>
+          ) : sweepValues(axis1).length === 0 || (sweepAxis2 !== undefined && sweepValues(sweepAxis2).length === 0) ? (
+            <p className="text-muted-foreground" data-testid="backtest-sweep-empty">No time stop sits below the minimum days to expiry; raise it or sweep another parameter.</p>
+          ) : !s ? (
+            <p className="text-muted-foreground">Running {sweepValues(axis1).length * (sweepAxis2 ? sweepValues(sweepAxis2).length : 1)} trials…</p>
+          ) : (
+            <>
+              <div className={cn("overflow-x-auto", sweep.isPlaceholderData ? "opacity-60" : "")} title={sweep.isPlaceholderData ? "Running the new grid; this is the previous one" : undefined}>
+                <table className="text-2xs" data-testid="backtest-sweep-grid" data-stale={sweep.isPlaceholderData}>
+                  <thead className="text-muted-foreground">
+                    <tr>
+                      <th className="py-0.5 pr-2 text-left font-normal">{AXIS_LABEL[s.axes[0]!.axis]}</th>
+                      {s.axes[1] ? s.axes[1].values.map((v) => <th key={v} className="num px-1 py-0.5 text-right font-normal">{AXIS_LABEL[s.axes[1]!.axis].split(" (")[0]} {v}</th>) : <th className="num px-1 py-0.5 text-right font-normal">Net</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {s.axes[0]!.values.map((v1, i1) => {
+                      const n2 = s.axes[1]?.values.length ?? 1;
+                      return (
+                        <tr key={v1} className="border-t border-border">
+                          <th className="num py-0.5 pr-2 text-left font-normal">{v1}</th>
+                          {Array.from({ length: n2 }, (_, i2) => {
+                            const idx = i1 * n2 + i2;
+                            const t = s.trials[idx]!;
+                            return (
+                              <td key={idx} className="px-0.5 py-0.5">
+                                <button
+                                  type="button"
+                                  onClick={() => loadCell(t.values)}
+                                  className={cn("num w-full rounded px-1 py-0.5 text-right hover:bg-muted", tone(Number(t.total)), idx === s.best ? "ring-1 ring-foreground" : "")}
+                                  title={`${t.trades} ${t.trades === 1 ? "trade" : "trades"} · win rate ${pct(t.winRate)} · max drawdown ${m(t.maxDrawdown, false)} · neighbours keeping at least half: ${pct(t.plateau)}`}
+                                  data-testid="backtest-sweep-cell"
+                                  data-best={idx === s.best}
+                                >
+                                  {t.trades === 0 ? "—" : m(t.total)}
+                                </button>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-2xs text-muted-foreground" data-testid="backtest-sweep-summary">
+                {s.trials.length} {s.trials.length === 1 ? "trial" : "trials"} of a cap of {s.cap}.{" "}
+                {s.best === null
+                  ? "No trial closed a trade."
+                  : `Best: ${Object.entries(s.trials[s.best]!.values)
+                      .map(([k, v]) => `${AXIS_LABEL[k as SweepAxis].split(" (")[0]} ${v}`)
+                      .join(", ")} at ${m(s.trials[s.best]!.total)} over ${s.trials[s.best]!.trades} ${s.trials[s.best]!.trades === 1 ? "trade" : "trades"}; ${
+                      s.trials[s.best]!.plateau === null ? "no neighbour to compare" : `${pct(s.trials[s.best]!.plateau)} of its neighbours keep at least half of that`
+                    }.`}{" "}
+                Many trials on one year of data produce winners by luck: a lone peak is noise, a broad plateau is evidence.
+              </p>
+            </>
+          )}
+        </div>
+      ) : null}
       {q.isError && !notYet ? (
         <p className="text-xs text-loss" data-testid="backtest-error">
           {errorText}
@@ -263,6 +407,49 @@ export function BacktestPanel() {
                   </div>
                 ))}
               </div>
+              {r.folds ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[480px] text-2xs" data-testid="backtest-folds">
+                    <thead className="text-muted-foreground">
+                      <tr>
+                        <th className="py-1 text-left font-normal">Period</th>
+                        <th className="py-1 text-left font-normal">Entries</th>
+                        <th className="py-1 text-right font-normal">Closed</th>
+                        <th className="py-1 text-right font-normal">Net</th>
+                        <th className="py-1 text-right font-normal">Win rate</th>
+                        <th className="py-1 text-right font-normal">Max drawdown</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {r.folds.map((f, i) => (
+                        <tr key={f.index} className="border-t border-border" data-testid="backtest-fold">
+                          <td className="py-0.5 pr-2">
+                            {r.folds!.length === 2 ? (i === 0 ? "In-sample" : "Out-of-sample") : `Period ${i + 1}`}
+                            {f.firstDay && f.lastDay ? <span className="ml-1 text-muted-foreground">{fmtDate(f.firstDay)} to {fmtDate(f.lastDay)}</span> : null}
+                          </td>
+                          <td className="py-0.5 pr-2">{f.entries}</td>
+                          <td className="num py-0.5 pr-2 text-right">{f.stats.trades}</td>
+                          <td className={cn("num py-0.5 pr-2 text-right", tone(Number(f.stats.total)))}>{m(f.stats.total)}</td>
+                          <td className="num py-0.5 pr-2 text-right">{pct(f.stats.winRate)}</td>
+                          <td className="num py-0.5 text-right">{m(f.stats.maxDrawdown, false)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {r.folds.length === 2 && r.folds[0]!.stats.trades > 0 && r.folds[1]!.stats.trades > 0 ? (
+                    <p className="text-2xs text-muted-foreground" data-testid="backtest-folds-verdict">
+                      {Number(r.folds[0]!.stats.total) > 0 && Number(r.folds[1]!.stats.total) > 0
+                        ? "Both halves made money: the record held up in the period the first half did not see."
+                        : Number(r.folds[0]!.stats.total) > 0
+                          ? "The first half made money and the second did not: the record did not hold up out of sample."
+                          : Number(r.folds[1]!.stats.total) > 0
+                            ? "The first half lost and the second made money: the record is not consistent, so it proves nothing yet."
+                            : "Both halves lost money."}{" "}
+                      Both halves are small samples; the entry counts say how small.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               <Chart
                 h={150}
                 x={r.equity.map((e) => e.day.slice(5))}

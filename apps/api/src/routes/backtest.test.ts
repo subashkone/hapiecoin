@@ -1,7 +1,7 @@
 // Backtest route (ADR-077; HC-TR-184): behind the session, 503 until a day is recorded, 400 for an unknown template or
 // a reversed range, then the projection of the engine's result over the recorded end-of-day chains.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { BacktestResult, Instrument, Quote } from "@hapiecoin/schema";
+import type { BacktestResult, Instrument, Quote, SweepResult } from "@hapiecoin/schema";
 import { clearEodMemo } from "../chain-eod.js";
 import { snapshotOnce, type MarketSource } from "../iv-snapshot.js";
 import { createTestApp, type TestApp } from "../test-support/harness.js";
@@ -130,5 +130,46 @@ describe("HC-TR-201 the range keeps its history", () => {
     expect(r.coverage.entries).toBeGreaterThan(0); // the spot rises 600 a day, so every day is above its average
     expect(r.coverage.skipped.noSignal).toBe(0);
     expect(r.equity[0]!.day).toBe("2026-09-04");
+  });
+});
+
+describe("HC-TR-203 / HC-TR-204 folds and the sweep", () => {
+  it("folds=2 returns two walk-forward periods whose closed trades add up to the whole", async () => {
+    const r = await json<BacktestResult>(await t.request("/v1/backtest?asset=BTC&template=Buy%20Call&lots=10&minDte=1&fees=none&folds=2", { cookie }));
+    expect(r.folds).toHaveLength(2);
+    expect(r.folds![0]!.entries + r.folds![1]!.entries).toBe(r.coverage.entries);
+    expect(r.folds![0]!.stats.trades + r.folds![1]!.stats.trades).toBe(r.stats.trades);
+    expect(Math.abs(Number(r.folds![0]!.stats.total) + Number(r.folds![1]!.stats.total) - Number(r.stats.total))).toBeLessThan(0.011);
+    expect(r.folds![0]!.firstDay).toBe("2026-09-01");
+    const plain = await json<BacktestResult>(await t.request("/v1/backtest?asset=BTC&template=Buy%20Call&lots=10&minDte=1&fees=none", { cookie }));
+    expect(plain.folds).toBeUndefined();
+    expect((await t.request("/v1/backtest?asset=BTC&template=Buy%20Call&folds=4", { cookie })).status).toBe(400);
+  });
+
+  it("GET /v1/backtest/sweep runs the grid, names the best cell and the cap, and refuses too many values or a half-given second axis", async () => {
+    const r = await json<SweepResult>(await t.request("/v1/backtest/sweep?asset=BTC&template=Buy%20Call&lots=10&minDte=1&fees=none&axis1=minDte&values1=1,3&axis2=targetPct&values2=25,50,75", { cookie }));
+    expect(r.axes).toEqual([
+      { axis: "minDte", values: [1, 3] },
+      { axis: "targetPct", values: [25, 50, 75] },
+    ]);
+    expect(r.trials).toHaveLength(6);
+    expect(r.trials[0]!.values).toEqual({ minDte: 1, targetPct: 25 });
+    expect(r.trials[5]!.values).toEqual({ minDte: 3, targetPct: 75 });
+    expect(r.cap).toBe(48);
+    expect(r.best).not.toBeNull();
+    expect(r.trials.every((x) => x.plateau === null || (x.plateau >= 0 && x.plateau <= 1))).toBe(true);
+    expect((await t.request("/v1/backtest/sweep?asset=BTC&template=Buy%20Call&axis1=minDte&values1=1,2,3,4,5,6,7,8,9", { cookie })).status).toBe(400);
+    expect((await t.request("/v1/backtest/sweep?asset=BTC&template=Buy%20Call&axis1=minDte&values1=1,2,3,4,5,6,7,8&axis2=targetPct&values2=10,20,30,40,50,60,70", { cookie })).status).toBe(400);
+    expect((await t.request("/v1/backtest/sweep?asset=BTC&template=Buy%20Call&axis1=minDte&values1=1,3&axis2=targetPct", { cookie })).status).toBe(400);
+    // the values obey the single run's bounds and increase; two equal axes are refused
+    expect((await t.request("/v1/backtest/sweep?asset=BTC&template=Buy%20Call&axis1=smaDays&values1=2.5", { cookie })).status).toBe(400);
+    expect((await t.request("/v1/backtest/sweep?asset=BTC&template=Buy%20Call&axis1=smaDays&values1=0,20", { cookie })).status).toBe(400);
+    expect((await t.request("/v1/backtest/sweep?asset=BTC&template=Buy%20Call&axis1=minDte&values1=3,1", { cookie })).status).toBe(400);
+    expect((await t.request("/v1/backtest/sweep?asset=BTC&template=Buy%20Call&axis1=minDte&values1=1,3&axis2=minDte&values2=7,14", { cookie })).status).toBe(400);
+    // folds on a range with one entry: the later periods take it
+    const one = await json<BacktestResult>(await t.request("/v1/backtest?asset=BTC&template=Buy%20Call&lots=10&minDte=1&fees=none&from=2026-09-05&to=2026-09-05&folds=3", { cookie }));
+    expect(one.folds!.map((f) => f.entries)).toEqual([0, 0, 1]);
+    expect(one.folds![0]!.firstDay).toBeNull();
+    expect((await t.request("/v1/backtest/sweep?asset=BTC&template=Buy%20Call&axis1=minDte&values1=1,3", { cookie: undefined })).status).toBe(401);
   });
 });
