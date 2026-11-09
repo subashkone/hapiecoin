@@ -1735,5 +1735,38 @@
     "how": "The Time exit offers a third unit, before expiry settles, with whole minutes (1 to 720, default 15); the dialog shows the nearest dated expiry and the instant on the trader's clock, refuses an instant already passed or a strategy with no dated leg; the arm route fixes the instant (nearest settlement of the open dated legs less the minutes) as the rule's level and refuses the same two cases; the engine judges it like an exit at a time, so a tick after the server was down fires it at once; a fire exits every open filled leg at the mark (shorts first, paper books with no orders) with the reason squared off and disarms the rest; the card and Details read 'exit all legs N min before expiry settles' with the instant; re-opening Protect brings the minutes back; without the rule the settler books only the expired legs and a calendar's far leg stays open",
     "evidence": "ADR-097, GAPS #130 (7 Nov 2026): packages/schema/src/strategies.ts RULE_TRIGGERS settle / SETTLE_LEAD_MINUTES / settleInstantMs; apps/api/src/routes/strategies.ts (arm route), rules-engine.ts; apps/web/src/components/trading/RuleDialog.tsx (rule-time-settle, ruleText); test/mock-api.ts; tests: strategies.test.ts (schema), rules-engine.test.ts \"HC-TR-199 …\" (three cases), rules.test.tsx \"HC-TR-199 …\"",
     "test": "unit (schema, api, web)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Backtest (engine + API)",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The backtest charges the venue's published fee rule on every fill and in-the-money settlement, so its figures are net; fees=none compares",
+    "how": "packages/pricing/src/fees.ts (fillFee: the smaller of notional × option rate and premium × cap, plus GST; a future pays the taker rate; settlementFee on an in-the-money leg) applying VenueCore.feeRule, the one place the rule lives (Delta India 0.01 %, 3.5 %, 0.05 %, 18 %, settlement on; Deribit null); runBacktest takes fees and reports grossPnl, fees and net pnl per trade and grossTotal / totalFees in the stats; GET /v1/backtest reads fees=venue (default) or none and refuses fees=venue on a venue without a rule (400) before any data is read; the result echoes which rule it is net of",
+    "evidence": "ADR-099 (9 Nov 2026): packages/pricing fees.ts + backtest.ts, packages/venues port adapter.ts / delta-india.ts / deribit.ts, packages/schema backtest.ts, apps/api/src/routes/backtest.ts; unit fees.test.ts + backtest.test.ts HC-TR-200, routes/backtest.test.ts HC-TR-200",
+    "test": "unit (pricing + api)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Backtest (engine + API)",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Entry conditions for the backtest: spot above or below an N-day average, an IV-rank band, UTC weekdays; a day without a signal or without enough history is skipped and counted",
+    "how": "runBacktest conditions: sma (the simple average of the last N recorded spots, today included; fewer than N recorded days is no signal), ivRank (today's front-expiry ATM IV ranked 0..100 against the recorded ATM IVs of the previous 365 calendar days; fewer than IV_RANK_MIN_POINTS = 20 points or a day without IV is no signal), weekdays (UTC); coverage.skipped.noSignal counts the days; the route hands the engine the whole recorded history so the conditions see the days before the range; it reads smaDays + smaSide (both or neither, else 400), ivRankMin / ivRankMax (min ≤ max, else 400) and weekdays as a comma list",
+    "evidence": "ADR-099 (9 Nov 2026): packages/pricing/src/backtest.ts entrySignal / frontAtmIv, apps/api/src/routes/backtest.ts; unit backtest.test.ts HC-TR-201, routes/backtest.test.ts",
+    "test": "unit (pricing + api)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Backtest (engine + API)",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Exit rules for the backtest: a target, a stop and a time stop judged once per recorded day on recorded marks; every trade says why it ended",
+    "how": "runBacktest exits: targetPct of the structure's maximum profit (of the net credit when unbounded), stopPct of the maximum loss (of the net premium when unbounded), timeStopDte days to the nearest leg's settlement; judged from the day after entry until the nearest leg settles, on recorded marks for every leg (a day with a missing mark is not judged, model prices never trigger an exit); the exit fills are charged; trades carry exitReason settled / target / stop / time / open and ruleInert (a target or stop with no base on a near-zero-premium unbounded structure), coverage.exits counts them including inert; the route reads targetPct, stopPct (percent) and timeStopDte",
+    "evidence": "ADR-099 (9 Nov 2026): packages/pricing/src/backtest.ts ruleExit, apps/api/src/routes/backtest.ts; unit backtest.test.ts HC-TR-202, routes/backtest.test.ts",
+    "test": "unit (pricing + api)"
   }
 ]

@@ -4854,6 +4854,21 @@
   "evidence": "ADR-085 (13 Sep 2026): packages/schema market.ts Quote.oi optional; packages/venues schema-adapter.ts toSchemaQuote, delta/market-data.ts accept carry-forward; apps/web lib/chain/range.ts maxOpenInterest / chainTotals, lib/chain/screener.ts StrikeRow.oi null + filterStrikes, components/screener/ScreenerPanel.tsx; unit market.test.ts (schema), schema-adapter.test.ts + delta/market-data.test.ts (venues), diff.test.ts (gateway), range.test.ts + screener.test.ts + chain.test.tsx HC-WS-116 (web)"
  },
  {
+  "id": "HC-WS-117",
+  "area": "20-analyse",
+  "areaName": "Workspace: chain & analysis pane",
+  "owner": "Workspace engineer",
+  "route": "/analyse",
+  "screen": "Analyse · Backtest tab",
+  "feature": "The Backtest tab's Rules row: fees, trend filter, IV-rank band, weekday chips, target, stop and time stop re-run the backtest; the coverage line says what the figures are net of and how trades exited; the table shows each trade's fees and exit reason",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web), e2e",
+  "acceptance": "BacktestPanel.tsx Rules row (backtest-fees venue rule / none, disabled and fixed to none on a venue without a published rule (Deribit); backtest-sma off / 20 / 50 / 100 / 200-day average with backtest-sma-side spot above / below; backtest-ivrank any / low 0-30 / middle 30-70 / high 70-100; backtest-weekday-N chips, UTC; backtest-target 25 / 50 / 75 % of max profit; backtest-stop 50 / 100 / 200 % of max loss; backtest-timestop 1 / 2 / 7 days before settlement, only values below the minimum days to expiry) feeding useBacktest, whose key and URL carry the rule fields in a fixed order; the coverage line adds the no-signal count, 'net of the venue's fees (total)' or 'no fees', the exit counts when a rule is set and the count of trades whose target or stop had no base; the empty state names the entry conditions when they skipped every day; the trades table gains a Fees column and an exit-reason badge on rules exits; the mock API applies the same rules through the real engine",
+  "evidence": "ADR-099 (9 Nov 2026): apps/web/src/components/analysis/BacktestPanel.tsx, lib/api/backtest.ts, test/mock-api.ts + mock-backtest.ts; unit backtest-panel.test.tsx HC-WS-117; e2e analyse.spec.ts HC-TR-185 (fees toggle)"
+ },
+ {
   "id": "HC-TR-001",
   "area": "21-trading",
   "areaName": "Builder, paper & live trading, journal",
@@ -7802,6 +7817,51 @@
   "test": "unit (schema, api, web)",
   "acceptance": "The Time exit offers a third unit, before expiry settles, with whole minutes (1 to 720, default 15); the dialog shows the nearest dated expiry and the instant on the trader's clock, refuses an instant already passed or a strategy with no dated leg; the arm route fixes the instant (nearest settlement of the open dated legs less the minutes) as the rule's level and refuses the same two cases; the engine judges it like an exit at a time, so a tick after the server was down fires it at once; a fire exits every open filled leg at the mark (shorts first, paper books with no orders) with the reason squared off and disarms the rest; the card and Details read 'exit all legs N min before expiry settles' with the instant; re-opening Protect brings the minutes back; without the rule the settler books only the expired legs and a calendar's far leg stays open",
   "evidence": "ADR-097, GAPS #130 (7 Nov 2026): packages/schema/src/strategies.ts RULE_TRIGGERS settle / SETTLE_LEAD_MINUTES / settleInstantMs; apps/api/src/routes/strategies.ts (arm route), rules-engine.ts; apps/web/src/components/trading/RuleDialog.tsx (rule-time-settle, ruleText); test/mock-api.ts; tests: strategies.test.ts (schema), rules-engine.test.ts \"HC-TR-199 …\" (three cases), rules.test.tsx \"HC-TR-199 …\""
+ },
+ {
+  "id": "HC-TR-200",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/analyse",
+  "screen": "Analyse · Backtest (engine + API)",
+  "feature": "The backtest charges the venue's published fee rule on every fill and in-the-money settlement, so its figures are net; fees=none compares",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing + api)",
+  "acceptance": "packages/pricing/src/fees.ts (fillFee: the smaller of notional × option rate and premium × cap, plus GST; a future pays the taker rate; settlementFee on an in-the-money leg) applying VenueCore.feeRule, the one place the rule lives (Delta India 0.01 %, 3.5 %, 0.05 %, 18 %, settlement on; Deribit null); runBacktest takes fees and reports grossPnl, fees and net pnl per trade and grossTotal / totalFees in the stats; GET /v1/backtest reads fees=venue (default) or none and refuses fees=venue on a venue without a rule (400) before any data is read; the result echoes which rule it is net of",
+  "evidence": "ADR-099 (9 Nov 2026): packages/pricing fees.ts + backtest.ts, packages/venues port adapter.ts / delta-india.ts / deribit.ts, packages/schema backtest.ts, apps/api/src/routes/backtest.ts; unit fees.test.ts + backtest.test.ts HC-TR-200, routes/backtest.test.ts HC-TR-200"
+ },
+ {
+  "id": "HC-TR-201",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/analyse",
+  "screen": "Analyse · Backtest (engine + API)",
+  "feature": "Entry conditions for the backtest: spot above or below an N-day average, an IV-rank band, UTC weekdays; a day without a signal or without enough history is skipped and counted",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing + api)",
+  "acceptance": "runBacktest conditions: sma (the simple average of the last N recorded spots, today included; fewer than N recorded days is no signal), ivRank (today's front-expiry ATM IV ranked 0..100 against the recorded ATM IVs of the previous 365 calendar days; fewer than IV_RANK_MIN_POINTS = 20 points or a day without IV is no signal), weekdays (UTC); coverage.skipped.noSignal counts the days; the route hands the engine the whole recorded history so the conditions see the days before the range; it reads smaDays + smaSide (both or neither, else 400), ivRankMin / ivRankMax (min ≤ max, else 400) and weekdays as a comma list",
+  "evidence": "ADR-099 (9 Nov 2026): packages/pricing/src/backtest.ts entrySignal / frontAtmIv, apps/api/src/routes/backtest.ts; unit backtest.test.ts HC-TR-201, routes/backtest.test.ts"
+ },
+ {
+  "id": "HC-TR-202",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/analyse",
+  "screen": "Analyse · Backtest (engine + API)",
+  "feature": "Exit rules for the backtest: a target, a stop and a time stop judged once per recorded day on recorded marks; every trade says why it ended",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing + api)",
+  "acceptance": "runBacktest exits: targetPct of the structure's maximum profit (of the net credit when unbounded), stopPct of the maximum loss (of the net premium when unbounded), timeStopDte days to the nearest leg's settlement; judged from the day after entry until the nearest leg settles, on recorded marks for every leg (a day with a missing mark is not judged, model prices never trigger an exit); the exit fills are charged; trades carry exitReason settled / target / stop / time / open and ruleInert (a target or stop with no base on a near-zero-premium unbounded structure), coverage.exits counts them including inert; the route reads targetPct, stopPct (percent) and timeStopDte",
+  "evidence": "ADR-099 (9 Nov 2026): packages/pricing/src/backtest.ts ruleExit, apps/api/src/routes/backtest.ts; unit backtest.test.ts HC-TR-202, routes/backtest.test.ts"
  },
  {
   "id": "HC-AC-001",

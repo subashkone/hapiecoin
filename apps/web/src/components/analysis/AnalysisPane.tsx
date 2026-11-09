@@ -26,7 +26,7 @@ export const ANALYSIS_TABS: { id: AnalysisTab; label: string; title: string }[] 
   { id: "vol", label: "Vol", title: "IV smile and term structure across the listed strikes" },
   { id: "structure", label: "Structure", title: "Open interest, put / call ratio and gamma exposure by strike with max pain" },
   { id: "ladder", label: "Ladder", title: "P&L per price step" },
-  { id: "backtest", label: "Backtest", title: "A template entered every recorded day on our own chain history, held to expiry" },
+  { id: "backtest", label: "Backtest", title: "A template entered every recorded day on our own chain history, held to expiry or to its exit rule, net of fees" },
   { id: "replay", label: "Replay", title: "An expiry's chain as the venue published it, scrubbed through the recorded instants" },
 ];
 

@@ -82,6 +82,23 @@ export interface FeeDefaults {
   basis: "spot-notional";
 }
 
+/**
+ * The venue's published fee rule as fractions (ADR-099): what a fill and an in-the-money settlement cost. The single
+ * source the backtest charges from; the broker profile (`FeeDefaults`) still drives the paper and live previews.
+ */
+export interface VenueFeeRule {
+  /** Option fee per fill as a fraction of the spot notional. */
+  optionPct: number;
+  /** Cap on an option fill's fee as a fraction of the premium. */
+  optionCapOfPremium: number;
+  /** Futures and perpetual taker fee per fill as a fraction of the notional. */
+  futurePct: number;
+  /** Tax on every fee as a fraction of the fee. */
+  gstPct: number;
+  /** Whether an option that settles in the money pays the taker fee again at settlement. */
+  settlementFee: boolean;
+}
+
 export interface VenueCapabilities {
   options: boolean;
   perpetuals: boolean;
@@ -114,6 +131,8 @@ export interface VenueCore {
   readonly symbols: SymbolCodec;
   readonly calendar: VenueCalendar;
   readonly fees: FeeDefaults;
+  /** The published fee rule (ADR-099); null when the venue has not been read (Deribit, data-only). */
+  readonly feeRule: VenueFeeRule | null;
   readonly capabilities: VenueCapabilities;
   readonly schema: SchemaBridge;
 }
