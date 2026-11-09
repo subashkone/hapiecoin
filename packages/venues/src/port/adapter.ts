@@ -19,7 +19,8 @@ import type { ParsedOptionSymbol } from "../delta/normalize.js";
 import type { DeltaTradingClient, DeltaTradingClientOptions } from "../delta/trading.js";
 import type { FetchLike } from "../http.js";
 import type { VenueMarketData, VenueMarketDataOptions } from "../market-data.js";
-import type { ChainRow, ChainSnapshot, Instrument, Quote } from "../types.js";
+import type { CandleResolution } from "../delta/rest.js";
+import type { Candle, ChainRow, ChainSnapshot, Instrument, Quote } from "../types.js";
 
 export type { VenueId };
 
@@ -132,6 +133,8 @@ export interface VenueRestOptions {
 export interface VenueRest {
   products: () => Promise<Instrument[]>;
   tickers: (underlying: string, opts?: { perpetuals?: boolean }) => Promise<Quote[]>;
+  /** Public candle history by venue symbol (ADR-098: the chain history backfill); absent on a venue without one. Unix seconds. */
+  candles?: (params: { symbol: string; resolution: CandleResolution; start: number; end: number }) => Promise<Candle[]>;
 }
 
 /** A venue with its client factories (server-side: the trading client signs with node:crypto). */

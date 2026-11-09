@@ -2064,6 +2064,21 @@
   "evidence": "ADR-096 (28 Sep 2026, GAPS #119 / #20): apps/web/playwright.visual.config.ts, e2e/shot.ts, e2e/visual.spec.ts (describe HC-SH-139 visual · dark / light), e2e/guide.spec.ts, test/servers.ts (MOCK_CLOCK_AT, MOCK_CALENDAR, MOCK_TICK_MS), test/expiry-shift.ts VISUAL_NOW, next.config.ts distDir, e2e/visual-teardown.ts, .github/workflows/ci.yml (visual step, baseline job); on the laptop a write and two compare runs paint the same 161 pictures (34 of 34 tests each), a widened backtest panel turns its guide picture red (control run); the Linux baseline is CI run 36540692400 (29 Sep 2026: written, then a second run compared, 34 of 34 tests each)"
  },
  {
+  "id": "HC-SH-140",
+  "area": "00-chrome",
+  "areaName": "App shell, settings, tour, assistant, palette, alerts",
+  "owner": "Platform engineer",
+  "route": "/analyse",
+  "screen": "API · chain history",
+  "feature": "End-of-day option chains reconstructed from the venue's public candle history for a year back, so the backtest reaches before the first recorded day",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + pricing + web)",
+  "acceptance": "chain-eod-history.ts runs as a leader job (ADR-062) when CHAIN_HISTORY_DAYS is not 0 (default 365): for every expiry date from today plus 100 days back to the horizon it finds the strikes Delta listed by probing the calls nearest the money out to eight grid steps each side, then walking the strike grid (BTC 200, ETH 10) over the spot range of the expiry's life and outward until eight consecutive strikes have no candles (a strike whose call has none is unlisted, its put is not asked for), takes each option's mark at the settlement hour from the hourly MARK candles (the close of the bar ending at the hour, else the open of the bar starting at it, kept as the venue's decimal string), and writes chain_eod rows with source = candles and no mark IV, never on a day the snapshotter recorded, never on the expiry's own settlement day and never before the day's settlement bar has closed; the live recorder counts only recorded rows when deciding a day is done and replaces a reconstructed row with its own (the day reads as mixed); one row per expiry in chain_eod_backfill makes a restarted job resume, a scan on or after the expiry date stands for good, an open expiry is rescanned after a week, a past date without a strike or a symbol failing three attempts is retried next run and a failed run repeats after ten minutes; requests are spaced 270 ms apart; the Backtest coverage line says how many days are reconstructed; XAUT and Deribit are not reconstructed",
+  "evidence": "ADR-098 (9 Nov 2026): apps/api/src/chain-eod-history.ts, chain-eod.ts (recorded-only gate, upsert), db chain_eod.source + chain_eod_backfill (migration 0024), venues VenueRest.candles, config CHAIN_HISTORY_DAYS, pricing EodDay.source / coverage.reconstructedDays; unit chain-eod-history.test.ts HC-SH-140 (14), backtest.test.ts HC-TR-184, backtest-panel.test.tsx HC-TR-185; fidelity vs the live record 0.1 % (quarterly) to 1 % (1-DTE)"
+ },
+ {
   "id": "HC-PB-001",
   "area": "10-public",
   "areaName": "Public site & authentication",

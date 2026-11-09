@@ -2,6 +2,7 @@
 import { serve } from "@hono/node-server";
 import { startReconciler } from "./live-reconcile.js";
 import { type JobStarter, startJobs } from "./jobs.js";
+import { historyTargets, startEodHistoryBackfill } from "./chain-eod-history.js";
 import { MemoryLeaderLock, RedisLeaderLock } from "./leader.js";
 import type { AppDeps } from "./routes/shared.js";
 import { Redis } from "ioredis";
@@ -157,6 +158,12 @@ if (config.fillsIngestMs !== 0) starters.push({ name: "fills-ingest", start: () 
 if (deps.telegram !== null) starters.push({ name: "telegram-linker", start: () => startTelegramLinker(deps) });
 // ADR-084: today's P&L point for every live strategy from the recorded marks, so the Mindful pause has its baseline without a browser
 if (config.dayPnlMs !== 0) starters.push({ name: "day-pnl", start: () => startDayPnlWriter(deps, config.dayPnlMs) });
+// ADR-098: end-of-day chains reconstructed from the venue's public candle history for CHAIN_HISTORY_DAYS back, so the
+// backtest reaches before the first recorded day; resumable, throttled, public data only, 0 turns it off
+if (config.chainHistoryDays !== 0) {
+  const targets = historyTargets(config.apiVenues, (venue) => clients.restFor(venue), config.chainHistoryDays);
+  if (targets.length > 0) starters.push({ name: "chain-history", start: () => startEodHistoryBackfill({ db: deps.db, logger }, targets) });
+}
 const jobs = startJobs({
   role: config.nodeEnv === "test" ? "off" : config.jobsRole,
   lock: redis ? new RedisLeaderLock(redis) : new MemoryLeaderLock(),

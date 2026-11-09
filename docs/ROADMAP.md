@@ -44,8 +44,8 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 29. ⏸ `zod/mini` for `@hapiecoin/schema`; bundle check inside `pnpm ci` (GAPS #19) · BACKLOG (feature freeze 13 Sep 2026, ADR-090)
 
 ## G. After launch (research done, not scheduled; ADR-090)
-30. ⏸ AI: opportunity radar, expected-value scores, natural-language alerts, journal coach, advisor with tools · BACKLOG · docs/research/ai-leverage.md (five phases, AI-1 radar first; no language model needed for AI-1)
-31. ⏸ Strategy playbooks: entry, management and exit rules on catalogue templates, each with a backtested record · BACKLOG · docs/research/strategy-playbooks.md (eight playbooks; first three: premium harvest, expiry-week credit spread, trend with defined risk)
+30. 🔨 AI-1 only (the radar): detect-and-propose playbook cards, one tap into paper · UNFROZEN 9 Nov 2026 (ADR-098, owner: the user) as PR 4 of the playbooks programme; the other AI phases stay in the backlog · docs/research/ai-leverage.md
+31. 🔨 Strategy playbooks · UNFROZEN 9 Nov 2026 (ADR-098, owner: the user), four PRs in order: (1) chain history from Delta's candles, a year back (feat/chain-history, HC-SH-140, migration 0024, GAPS #132) · (2) backtest rules: real fee rule (GAPS #129), entry conditions, exits, walk-forward, bounded sweep · (3) playbook records: 6 to 8 research-named playbooks with hero-or-zero as the negative control · (4) proposals (item 30) · research: docs/research/proven-strategies-crypto.md (verdicts), strategy-playbooks.md (the original eight)
 
 ## Done this week
 - ✅ Trade lifecycle item 1 (PR #47, ADR-059)

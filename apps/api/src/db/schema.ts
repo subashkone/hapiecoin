@@ -790,6 +790,28 @@ export const chainEod = pgTable(
     markIv: text("mark_iv"),
     spot: text("spot").notNull(),
     ts: timestamp("ts", { withTimezone: true }).notNull(),
+    /** ADR-098: "snapshot" = recorded live by the snapshotter at the settlement hour; "candles" = reconstructed from the venue's public candle history (no mark IV). */
+    source: text("source", { enum: ["snapshot", "candles"] }).notNull().default("snapshot"),
   },
   (t) => [uniqueIndex("chain_eod_row_uq").on(t.venue, t.asset, t.day, t.expiry, t.strike, t.kind), index("chain_eod_asset_day_idx").on(t.venue, t.asset, t.day), index("chain_eod_ts_idx").on(t.ts)],
+);
+
+/** ADR-098: one row per expiry the candle backfill has scanned for a venue and underlying, so a restarted job resumes where it stopped and an unexpired expiry is rescanned after a week. */
+export const chainEodBackfill = pgTable(
+  "chain_eod_backfill",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    venue: text("venue", { enum: ["delta_india", "deribit"] }).notNull().default("delta_india"),
+    asset: text("asset", { enum: ["BTC", "ETH", "XAUT"] }).notNull(),
+    /** The expiry date scanned, YYYY-MM-DD. */
+    expiry: text("expiry").notNull(),
+    /** Strikes found with candles. */
+    strikes: integer("strikes").notNull(),
+    /** Rows written to chain_eod by that scan. */
+    rows: integer("rows").notNull(),
+    /** Candle requests the scan cost. */
+    requests: integer("requests").notNull(),
+    doneAt: timestamp("done_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [uniqueIndex("chain_eod_backfill_uq").on(t.venue, t.asset, t.expiry)],
 );

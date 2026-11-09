@@ -16,6 +16,7 @@ export function deltaIndiaRest(options: VenueRestOptions): VenueRest {
   return {
     products: () => client.getProducts({ contractTypes: OPTIONS, states: ["live"] }),
     tickers: (underlying, opts) => client.getTickers({ contractTypes: opts?.perpetuals ? [...OPTIONS, "perpetual_futures"] : OPTIONS, underlying }),
+    candles: (params) => client.getCandles(params),
   };
 }
 

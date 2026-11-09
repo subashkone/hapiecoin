@@ -34,6 +34,8 @@ export interface EodDay {
   ts: number;
   spot: number;
   expiries: EodExpiry[];
+  /** Where the day's rows came from: recorded live at the settlement hour, reconstructed from the venue's candle history (no IV), or both (ADR-098). Absent means recorded. */
+  source?: "snapshot" | "candles" | "mixed" | undefined;
 }
 
 export interface BacktestOptions {
@@ -99,6 +101,8 @@ export interface BacktestCoverage {
   lastDay: string | null;
   /** Recorded days in the whole set. */
   days: number;
+  /** Of those, days reconstructed entirely from the venue's candle history (ADR-098). */
+  reconstructedDays: number;
   /** Days on which a trade was entered. */
   entries: number;
   /** Entry days skipped: no listed expiry with `minDte` days left, or the template did not fit the ladder. */
@@ -305,6 +309,7 @@ export function runBacktest(tpl: StrategyTemplate, daysIn: readonly EodDay[], op
       firstDay: days[0]?.day ?? null,
       lastDay: last?.day ?? null,
       days: days.length,
+      reconstructedDays: days.filter((d) => d.source === "candles").length,
       entries: trades.length,
       skipped,
       openTrades: trades.length - closedTrades.length,

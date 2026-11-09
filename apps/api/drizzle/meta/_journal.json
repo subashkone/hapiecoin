@@ -169,6 +169,13 @@
       "when": 1789221355804,
       "tag": "0023_crazy_genesis",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794231396754,
+      "tag": "0024_abandoned_dorian_gray",
+      "breakpoints": true
     }
   ]
 }
