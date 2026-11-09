@@ -4869,6 +4869,21 @@
   "evidence": "ADR-099 (9 Nov 2026): apps/web/src/components/analysis/BacktestPanel.tsx, lib/api/backtest.ts, test/mock-api.ts + mock-backtest.ts; unit backtest-panel.test.tsx HC-WS-117; e2e analyse.spec.ts HC-TR-185 (fees toggle)"
  },
  {
+  "id": "HC-WS-118",
+  "area": "20-analyse",
+  "areaName": "Workspace: chain & analysis pane",
+  "owner": "Workspace engineer",
+  "route": "/analyse",
+  "screen": "Analyse · Backtest tab",
+  "feature": "The Backtest tab's Split control shows the record in in-sample and out-of-sample periods, and its Sweep view runs a rule parameter (or two) over a capped grid with a plateau reading; a click loads a cell's parameters",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web)",
+  "acceptance": "BacktestPanel.tsx: Split select (backtest-folds-select: off / in-sample and out-of-sample / three periods) adds folds to the query and renders a table (backtest-folds, one backtest-fold row per period with its dates, entries, closed, net, win rate, max drawdown) and, for two periods with trades, a one-sentence verdict (backtest-folds-verdict) on how the second period compares with the first (four cases by sign); the Sweep toggle (backtest-sweep-toggle) opens the Sweep view (backtest-sweep) with axis selects (backtest-sweep-axis1 / axis2, the Rules row's own option lists as values: 20/50/100/200 days, 1/3/7/14/30 DTE, 25/50/75 %, 50/100/200 %, time stops 1/2/7 days filtered below the minimum days to expiry), the grid (backtest-sweep-grid, backtest-sweep-cell buttons coloured by sign, the best cell ringed, a tooltip with trades, win rate, drawdown and plateau), and a summary (backtest-sweep-summary) with the trial count of the cap, the best cell's parameters, result and plateau and the warning that a lone peak is noise; clicking a cell loads its values into the Rules row without re-running the sweep (the swept fields are pinned in the sweep query, the previous grid is kept while a new one loads, a 503 shows a designed empty state); useBacktestSweep in lib/api/backtest.ts builds /v1/backtest/sweep; the mock API serves both through the real engine",
+  "evidence": "ADR-100 (9 Nov 2026): apps/web/src/components/analysis/BacktestPanel.tsx, lib/api/backtest.ts, test/mock-api.ts + mock-backtest.ts; unit backtest-panel.test.tsx HC-WS-118; the split is also exercised inside the HC-TR-185 e2e"
+ },
+ {
   "id": "HC-TR-001",
   "area": "21-trading",
   "areaName": "Builder, paper & live trading, journal",
@@ -7862,6 +7877,36 @@
   "test": "unit (pricing + api)",
   "acceptance": "runBacktest exits: targetPct of the structure's maximum profit (of the net credit when unbounded), stopPct of the maximum loss (of the net premium when unbounded), timeStopDte days to the nearest leg's settlement; judged from the day after entry until the nearest leg settles, on recorded marks for every leg (a day with a missing mark is not judged, model prices never trigger an exit); the exit fills are charged; trades carry exitReason settled / target / stop / time / open and ruleInert (a target or stop with no base on a near-zero-premium unbounded structure), coverage.exits counts them including inert; the route reads targetPct, stopPct (percent) and timeStopDte",
   "evidence": "ADR-099 (9 Nov 2026): packages/pricing/src/backtest.ts ruleExit, apps/api/src/routes/backtest.ts; unit backtest.test.ts HC-TR-202, routes/backtest.test.ts"
+ },
+ {
+  "id": "HC-TR-203",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/analyse",
+  "screen": "Analyse · Backtest (engine + API)",
+  "feature": "Walk-forward periods: the backtest's entries cut into two or three consecutive equal-count periods, each with its own stats, so a record that only worked in the period it was fitted on is visible",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing + api)",
+  "acceptance": "runBacktest folds (2 or 3): the shown range's trades in entry order cut into contiguous equal-count segments (the later take the extra trade), each a BacktestFold { index, firstDay, lastDay, entries, stats } with statsOf over its closed trades and a drawdown from its own cumulative P&L netted per exit day, as the headline is; a period without a trade has null days and empty stats; the headline figures are unchanged and the result carries folds only when asked; GET /v1/backtest reads folds=2|3 (400 outside) and projects the periods to cents",
+  "evidence": "ADR-100 (9 Nov 2026): packages/pricing/src/backtest.ts foldsOf / statsOf, packages/schema/src/backtest.ts BacktestFold, apps/api/src/routes/backtest.ts; unit backtest.test.ts HC-TR-203, routes/backtest.test.ts HC-TR-203"
+ },
+ {
+  "id": "HC-TR-204",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/analyse",
+  "screen": "Analyse · Backtest (engine + API)",
+  "feature": "A bounded parameter sweep: one or two rule parameters over a grid of at most 48 trials, every trial with its net result and a plateau reading, the trial count and the cap in the result",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing + api)",
+  "acceptance": "packages/pricing/src/sweep.ts: SWEEP_AXES smaDays / minDte / targetPct / stopPct / timeStopDte, applyAxis sets the one option, sweepShape refuses more than 8 × 6 values, a repeated or non-increasing value or two equal axes (RangeError), sweepBacktest runs the grid row-major through runBacktest with the same fees / conditions / exits and reports per trial trades, net total, gross, fees, win rate, max drawdown, profit factor and plateau (the share of grid neighbours one step away whose net total keeps the same sign and at least half the size; null for a zero cell or no neighbours), plus best (highest net total among trials with a closed trade) and the cap; GET /v1/backtest/sweep takes the single run's query plus axis1 / values1 and optional axis2 / values2 (comma lists, each value checked against the single run's own field bounds by parseSweepValues), turns a shape error into a 400 before any data is read, 503 with no recorded day, cached five minutes",
+  "evidence": "ADR-100 (9 Nov 2026): packages/pricing/src/sweep.ts, packages/schema/src/backtest.ts SweepQuery / SweepResult, apps/api/src/routes/backtest.ts toApiSweep / optionsFromQuery; unit sweep.test.ts HC-TR-204, routes/backtest.test.ts HC-TR-204"
  },
  {
   "id": "HC-AC-001",

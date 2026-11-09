@@ -5,7 +5,9 @@ import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { Underlying, PublicPageSettings, AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
-import { mockBacktest } from "./mock-backtest";
+import type { SweepAxisSpec } from "@hapiecoin/pricing";
+import { parseSweepValues } from "@hapiecoin/schema";
+import { type MockBacktestParams, mockBacktest, mockSweep } from "./mock-backtest";
 import { mockReplayChain, mockReplayExpiries, mockReplaySteps } from "./mock-replay";
 import { expiriesOf } from "./fixtures/chain";
 import { mockIvHistory, mockMarkHistory } from "./mock-market";
@@ -629,7 +631,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   v1.get("/verified/pnl", (c) => c.json(verifiedOf(current(c)!)));
   // ADR-075: the public page settings; a handle is unique across accounts, the page cannot be on without one
   // ADR-077: the backtest over synthetic end-of-day chains, the same engine as the API
-  v1.get("/backtest", (c) => {
+  const backtestHandler = (c: Context) => {
     const q = c.req.query();
     const asset = q["asset"];
     if (asset !== "BTC" && asset !== "ETH" && asset !== "XAUT") return err(c, 400, "BAD_REQUEST", "asset must be BTC, ETH or XAUT");
@@ -644,7 +646,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const num = (k: string) => (q[k] === undefined ? undefined : Number(q[k]));
     if ((q["smaDays"] === undefined) !== (q["smaSide"] === undefined)) return err(c, 400, "BAD_REQUEST", "smaDays and smaSide go together");
     if (num("ivRankMin") !== undefined && num("ivRankMax") !== undefined && num("ivRankMin")! > num("ivRankMax")!) return err(c, 400, "BAD_REQUEST", "ivRankMin must not exceed ivRankMax");
-    const out = mockBacktest({
+    const params: MockBacktestParams = {
       asset,
       template: q["template"] ?? "",
       lots,
@@ -662,11 +664,43 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       targetPct: num("targetPct"),
       stopPct: num("stopPct"),
       timeStopDte: num("timeStopDte"),
-    });
+      folds: num("folds"),
+    };
+    if (params.folds !== undefined && (!Number.isInteger(params.folds) || params.folds < 2 || params.folds > 3)) return err(c, 400, "VALIDATION", "folds must be 2 or 3");
+    // ADR-100: the sweep shares the query and adds the axes; the cap is the engine's
+    if (c.req.path.endsWith("/sweep")) {
+      const axisOf = (k: string): SweepAxisSpec["axis"] | undefined => {
+        const v = q[k];
+        return v === "smaDays" || v === "minDte" || v === "targetPct" || v === "stopPct" || v === "timeStopDte" ? v : undefined;
+      };
+      const axis1 = axisOf("axis1");
+      if (!axis1 || !q["values1"]) return err(c, 400, "BAD_REQUEST", "axis1 and values1 are required");
+      const values1 = parseSweepValues(axis1, q["values1"]);
+      if (values1 === null) return err(c, 400, "BAD_REQUEST", `values1 must be increasing values ${axis1} accepts`);
+      const axes: SweepAxisSpec[] = [{ axis: axis1, values: values1 }];
+      const axis2 = axisOf("axis2");
+      if ((axis2 === undefined) !== (q["values2"] === undefined)) return err(c, 400, "BAD_REQUEST", "axis2 and values2 go together");
+      if (axis2 && q["values2"]) {
+        const values2 = parseSweepValues(axis2, q["values2"]);
+        if (values2 === null) return err(c, 400, "BAD_REQUEST", `values2 must be increasing values ${axis2} accepts`);
+        axes.push({ axis: axis2, values: values2 });
+      }
+      try {
+        const out = mockSweep({ ...params, axes });
+        if (!out) return err(c, 400, "BAD_REQUEST", `Unknown template "${q["template"] ?? ""}"`);
+        c.header("Cache-Control", "private, max-age=300");
+        return c.json(out);
+      } catch (e) {
+        return err(c, 400, "BAD_REQUEST", e instanceof Error ? e.message : String(e));
+      }
+    }
+    const out = mockBacktest(params);
     if (!out) return err(c, 400, "BAD_REQUEST", `Unknown template "${q["template"] ?? ""}"`);
     c.header("Cache-Control", "private, max-age=300");
     return c.json(out);
-  });
+  };
+  v1.get("/backtest", backtestHandler);
+  v1.get("/backtest/sweep", backtestHandler);
   // ADR-079: replay of an expiry's chain over synthetic recorded instants
   const assetOf = (c: Context): Underlying | null => {
     const a = c.req.query("asset");

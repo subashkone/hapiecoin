@@ -62,6 +62,36 @@ describe("HC-TR-185 the Backtest tab", () => {
     await waitFor(() => expect(mock.calls.some((c) => c.url.includes("timeStopDte=2"))).toBe(true));
   });
 
+  it("HC-WS-118 the Split control shows in-sample and out-of-sample rows, and the Sweep view lists the trials with the count and plateau and loads a cell's parameters", async () => {
+    renderWithProviders(<BacktestPanel />);
+    await waitFor(() => expect(screen.getByTestId("backtest-panel").dataset["state"]).toBe("ready"), { timeout: 8000 });
+    fireEvent.change(screen.getByTestId("backtest-folds-select"), { target: { value: "2" } });
+    await waitFor(() => expect(mock.calls.some((c) => c.url.includes("folds=2"))).toBe(true));
+    await waitFor(() => expect(screen.getAllByTestId("backtest-fold")).toHaveLength(2));
+    expect(screen.getAllByTestId("backtest-fold")[0]!.textContent).toContain("In-sample");
+    expect(screen.getAllByTestId("backtest-fold")[1]!.textContent).toContain("Out-of-sample");
+    fireEvent.click(screen.getByTestId("backtest-sweep-toggle"));
+    await waitFor(() => expect(mock.calls.some((c) => c.url.includes("/v1/backtest/sweep?") && c.url.includes("axis1=minDte") && c.url.includes("values1=1%2C3%2C7%2C14%2C30"))).toBe(true));
+    await waitFor(() => expect(screen.getAllByTestId("backtest-sweep-cell")).toHaveLength(5));
+    expect(screen.getByTestId("backtest-sweep-summary").textContent).toMatch(/5 trials of a cap of 48/);
+    expect(screen.getByTestId("backtest-sweep-summary").textContent).toContain("a lone peak is noise");
+    fireEvent.change(screen.getByTestId("backtest-sweep-axis2"), { target: { value: "targetPct" } });
+    await waitFor(() => expect(mock.calls.some((c) => c.url.includes("axis2=targetPct") && c.url.includes("values2=25%2C50%2C75"))).toBe(true));
+    await waitFor(() => expect(screen.getAllByTestId("backtest-sweep-cell")).toHaveLength(15));
+    const sweepCallsBefore = mock.calls.filter((c) => c.url.includes("/v1/backtest/sweep?")).length;
+    fireEvent.click(screen.getAllByTestId("backtest-sweep-cell")[1]!); // minDte 1, target 50 %
+    await waitFor(() => expect(mock.calls.some((c) => c.url.includes("/v1/backtest?") && c.url.includes("minDte=1") && c.url.includes("targetPct=50"))).toBe(true));
+    expect(screen.getByTestId<HTMLSelectElement>("backtest-mindte").value).toBe("1");
+    expect(screen.getByTestId<HTMLSelectElement>("backtest-target").value).toBe("50");
+    // loading a cell does not re-run the sweep: its swept fields are pinned in the sweep's own query
+    expect(mock.calls.filter((c) => c.url.includes("/v1/backtest/sweep?")).length).toBe(sweepCallsBefore);
+    expect(screen.getAllByTestId("backtest-sweep-cell")).toHaveLength(15);
+    // choosing the second axis as the first resets the second
+    fireEvent.change(screen.getByTestId("backtest-sweep-axis1"), { target: { value: "targetPct" } });
+    await waitFor(() => expect(screen.getByTestId<HTMLSelectElement>("backtest-sweep-axis2").value).toBe(""));
+    await waitFor(() => expect(mock.calls.some((c) => c.url.includes("axis1=targetPct") && !c.url.includes("axis2="))).toBe(true));
+  });
+
   it("HC-WS-117 on a venue without a published fee rule the fees select is fixed to none and disabled, so the tab opens without an error", async () => {
     useUiStore.setState({ asset: "BTC", analysisTab: "backtest", venue: "deribit" });
     renderWithProviders(<BacktestPanel />);

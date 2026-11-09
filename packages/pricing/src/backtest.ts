@@ -11,6 +11,9 @@
  * weekdays) skip a day without a signal and count it; exit rules (target, stop, time stop) are judged once per
  * recorded day on recorded marks only, never on model prices, and a trade says why it ended. With none of these set
  * the output is exactly the ADR-077 engine's.
+ *
+ * ADR-100 (HC-TR-203): `folds` splits the shown range's entries into two or three contiguous equal-count periods,
+ * each with the full stats shape, so a plan that only worked in the period it was fitted on can be seen.
  */
 import { black76Price } from "./black76.js";
 import { type TradingCalendar, daysToExpiryOf, yearFractionOf } from "./calendar.js";
@@ -82,6 +85,8 @@ export interface BacktestOptions {
   fees?: FeeRule | null | undefined;
   conditions?: BacktestConditions | undefined;
   exits?: BacktestExits | undefined;
+  /** Walk-forward: split the entries of the shown range into this many contiguous equal-count periods (2 or 3), each with its own stats (ADR-100). */
+  folds?: number | undefined;
 }
 
 export interface BacktestLeg {
@@ -161,12 +166,24 @@ export interface BacktestCoverage {
   modelledTrades: number;
 }
 
+/** One walk-forward period: the trades entered in it and their stats (ADR-100). */
+export interface BacktestFold {
+  index: number;
+  /** Entry days of the period's first and last trade; null for a period without entries. */
+  firstDay: string | null;
+  lastDay: string | null;
+  entries: number;
+  stats: BacktestStats;
+}
+
 export interface BacktestResult {
   trades: BacktestTrade[];
   /** Realised P&L, cumulative over closed trades, one point per recorded day. */
   equity: { day: string; pnl: number }[];
   stats: BacktestStats;
   coverage: BacktestCoverage;
+  /** The walk-forward periods when `folds` was asked for. */
+  folds?: BacktestFold[] | undefined;
 }
 
 const sign = (side: Side) => (side === "buy" ? 1 : -1);
@@ -369,30 +386,13 @@ export function runBacktest(tpl: StrategyTemplate, daysIn: readonly EodDay[], op
     cum += byExit.get(d.day) ?? 0;
     return { day: d.day, pnl: cum };
   });
-  const pnls = closedTrades.map((t) => t.pnl);
-  const wins = pnls.filter((p) => p > 0);
-  const losses = pnls.filter((p) => p < 0);
-  const grossWin = wins.reduce((s, p) => s + p, 0);
-  const grossLoss = -losses.reduce((s, p) => s + p, 0);
-  const stats: BacktestStats = {
-    trades: closedTrades.length,
-    wins: wins.length,
-    losses: losses.length,
-    winRate: pnls.length ? wins.length / pnls.length : null,
-    total: pnls.reduce((s, p) => s + p, 0),
-    grossTotal: closedTrades.reduce((s, t) => s + t.grossPnl, 0),
-    totalFees: closedTrades.reduce((s, t) => s + t.fees, 0),
-    average: pnls.length ? pnls.reduce((s, p) => s + p, 0) / pnls.length : null,
-    median: median(pnls),
-    best: pnls.length ? Math.max(...pnls) : null,
-    worst: pnls.length ? Math.min(...pnls) : null,
-    maxDrawdown: maxDrawdownOf(equity.map((e) => e.pnl)),
-    profitFactor: grossLoss > 0 ? grossWin / grossLoss : null,
-  };
+  const stats = statsOf(closedTrades, equity.map((e) => e.pnl));
+  const folds = opts.folds !== undefined && opts.folds >= 2 ? foldsOf(trades, opts.folds) : undefined;
   return {
     trades,
     equity,
     stats,
+    ...(folds ? { folds } : {}),
     coverage: {
       firstDay: shown[0]?.day ?? null,
       lastDay: last?.day ?? null,
@@ -490,4 +490,52 @@ export function ruleExit(days: readonly EodDay[], i: number, legs: readonly Back
     if (exits.timeStopDte !== undefined && daysToExpiryOf(calendar, x.ts, nearest) <= exits.timeStopDte) return { index: j, reason: "time", marks };
   }
   return null;
+}
+
+/** The statistics of a set of closed trades; `equityPnls` is the cumulative realised series the drawdown is read from. */
+export function statsOf(closedTrades: readonly BacktestTrade[], equityPnls: readonly number[]): BacktestStats {
+  const pnls = closedTrades.map((t) => t.pnl);
+  const wins = pnls.filter((p) => p > 0);
+  const losses = pnls.filter((p) => p < 0);
+  const grossWin = wins.reduce((s, p) => s + p, 0);
+  const grossLoss = -losses.reduce((s, p) => s + p, 0);
+  return {
+    trades: closedTrades.length,
+    wins: wins.length,
+    losses: losses.length,
+    winRate: pnls.length ? wins.length / pnls.length : null,
+    total: pnls.reduce((s, p) => s + p, 0),
+    grossTotal: closedTrades.reduce((s, t) => s + t.grossPnl, 0),
+    totalFees: closedTrades.reduce((s, t) => s + t.fees, 0),
+    average: pnls.length ? pnls.reduce((s, p) => s + p, 0) / pnls.length : null,
+    median: median(pnls),
+    best: pnls.length ? Math.max(...pnls) : null,
+    worst: pnls.length ? Math.min(...pnls) : null,
+    maxDrawdown: maxDrawdownOf(equityPnls),
+    profitFactor: grossLoss > 0 ? grossWin / grossLoss : null,
+  };
+}
+
+/**
+ * Walk-forward periods (ADR-100): the trades, in entry order, cut into `count` contiguous segments of equal count
+ * (the later segments take the extra trade when the count does not divide), each with the stats of its closed
+ * trades and a drawdown read from its own cumulative P&L netted per exit day, as the headline figure is. A segment
+ * with no trade has null days.
+ */
+export function foldsOf(trades: readonly BacktestTrade[], count: number): BacktestFold[] {
+  const k = Math.max(2, Math.floor(count));
+  const n = trades.length;
+  const out: BacktestFold[] = [];
+  for (let f = 0; f < k; f++) {
+    const start = Math.floor((n * f) / k);
+    const end = Math.floor((n * (f + 1)) / k);
+    const slice = trades.slice(start, end);
+    const closed = slice.filter((t) => t.status === "closed");
+    const byDay = new Map<string, number>();
+    for (const t of closed) byDay.set(t.exitDay, (byDay.get(t.exitDay) ?? 0) + t.pnl);
+    let cum = 0;
+    const equity = [...byDay.keys()].sort().map((day) => (cum += byDay.get(day)!));
+    out.push({ index: f, firstDay: slice[0]?.entryDay ?? null, lastDay: slice.at(-1)?.entryDay ?? null, entries: slice.length, stats: statsOf(closed, equity) });
+  }
+  return out;
 }

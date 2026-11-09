@@ -52,4 +52,5 @@ export type { ChainRow, Leg, LegKind, OptionKind, Side } from "./types.js";
 export * from "./templates.js";
 export * from "./backtest.js";
 export * from "./fees.js";
+export * from "./sweep.js";
 export * from "./worker/index.js";

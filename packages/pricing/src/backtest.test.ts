@@ -2,7 +2,7 @@
 // at intrinsic on the first day at or after each leg's expiry, open trades marked from recorded marks or the model,
 // and the statistics the tab shows.
 import { describe, expect, it } from "vitest";
-import { type EodDay, type EodRow, atmIndexOf, atmIvOf, maxDrawdownOf, runBacktest } from "./backtest.js";
+import { type EodDay, type EodRow, atmIndexOf, atmIvOf, foldsOf, maxDrawdownOf, runBacktest, statsOf } from "./backtest.js";
 import { fillFee, settlementFee } from "./fees.js";
 import { DELTA_RULE as DELTA_INDIA_FEE_RULE } from "./fees.test.js";
 import { black76Price } from "./black76.js";
@@ -350,5 +350,31 @@ describe("HC-TR-201 / HC-TR-202 the range, the futures leg and an inert rule", (
     expect(r.coverage.exits.inert).toBe(1);
     // a plain bought call has a base (its debit): not inert
     expect(runBacktest(tpl("Buy Call"), days(), { ...opts, minDte: 1, to: day(0), exits: { targetPct: 0.5 } }).trades[0]!.ruleInert).toBe(false);
+  });
+});
+
+describe("HC-TR-203 walk-forward folds", () => {
+  it("two folds split the shown entries into halves whose closed trades add up to the whole, name their periods, and the result is unchanged without folds", () => {
+    const whole = runBacktest(tpl("Buy Call"), days(), opts);
+    const split = runBacktest(tpl("Buy Call"), days(), { ...opts, folds: 2 });
+    expect(whole.folds).toBeUndefined();
+    expect(split.folds).toHaveLength(2);
+    // five entries: the first fold takes two, the second three (the later fold takes the extra)
+    expect(split.folds!.map((f) => [f.firstDay, f.lastDay, f.entries])).toEqual([
+      [day(0), day(1), 2],
+      [day(2), day(4), 3],
+    ]);
+    expect(split.folds![0]!.stats.trades + split.folds![1]!.stats.trades).toBe(whole.stats.trades);
+    expect(split.folds![0]!.stats.total + split.folds![1]!.stats.total).toBeCloseTo(whole.stats.total, 10);
+    // the folds leave the headline figures as they were
+    expect({ ...split, folds: undefined }).toEqual({ ...whole, folds: undefined });
+    // three folds of five: 1, 2, 2
+    expect(foldsOf(whole.trades, 3).map((f) => f.entries)).toEqual([1, 2, 2]);
+    // a fold without a trade has null days and empty stats
+    expect(foldsOf([], 2)).toEqual([
+      { index: 0, firstDay: null, lastDay: null, entries: 0, stats: statsOf([], []) },
+      { index: 1, firstDay: null, lastDay: null, entries: 0, stats: statsOf([], []) },
+    ]);
+    expect(statsOf([], []).trades).toBe(0);
   });
 });

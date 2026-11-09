@@ -1759,6 +1759,10 @@ test.describe("HC-TR-185 backtest tab (ADR-077)", () => {
     await expect(panel.getByTestId("backtest-coverage")).toContainText("no fees, no slippage");
     await panel.getByTestId("backtest-fees").selectOption("venue");
     await expect(panel.getByTestId("backtest-coverage")).toContainText("net of the venue's fees");
+    // HC-WS-118: the split shows two periods
+    await panel.getByTestId("backtest-folds-select").selectOption("2");
+    await expect(panel.getByTestId("backtest-fold")).toHaveCount(2);
+    await panel.getByTestId("backtest-folds-select").selectOption("");
     await expect(panel.getByTestId("backtest-total")).toHaveText(/[\d$]/);
     await expect(panel.getByTestId("chart-backtest")).toHaveAttribute("data-state", "ready");
     await expect(panel.getByTestId("backtest-trade").first()).toContainText(/B C \d+ · S C \d+/);

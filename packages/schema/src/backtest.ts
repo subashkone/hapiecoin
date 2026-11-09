@@ -38,8 +38,35 @@ export const BacktestQuery = z.object({
   targetPct: z.coerce.number().min(1).max(100).optional(),
   stopPct: z.coerce.number().min(1).max(500).optional(),
   timeStopDte: z.coerce.number().int().min(0).max(365).optional(),
+  /** ADR-100: split the range's entries into this many contiguous equal-count periods, each with its own stats. */
+  folds: z.coerce.number().int().min(2).max(3).optional(),
 });
 export type BacktestQuery = z.infer<typeof BacktestQuery>;
+
+export const SWEEP_AXES = ["smaDays", "minDte", "targetPct", "stopPct", "timeStopDte"] as const;
+export const SweepAxis = z.enum(SWEEP_AXES);
+export type SweepAxis = z.infer<typeof SweepAxis>;
+/** Up to eight comma-separated non-negative numbers; each is then checked against the axis's own field bounds (parseSweepValues). */
+const SweepValues = z.string().regex(/^\d+(\.\d+)?(,\d+(\.\d+)?){0,7}$/);
+/** The sweep (ADR-100; HC-TR-204): the single run's query plus one or two axes with their values; the route caps the grid at 48 trials. */
+export const SweepQuery = BacktestQuery.omit({ folds: true }).extend({
+  axis1: SweepAxis,
+  values1: SweepValues,
+  axis2: SweepAxis.optional(),
+  values2: SweepValues.optional(),
+});
+export type SweepQuery = z.infer<typeof SweepQuery>;
+
+/** The values of a swept axis, each validated against the same field the single run uses (bounds and integrality); null when any value fails or the list is not strictly increasing. */
+export function parseSweepValues(axis: SweepAxis, raw: string): number[] | null {
+  const field = BacktestQuery.shape[axis];
+  const values = raw.split(",").map(Number);
+  for (const [i, v] of values.entries()) {
+    if (!field.safeParse(v).success) return null;
+    if (i > 0 && !(v > values[i - 1]!)) return null;
+  }
+  return values;
+}
 
 export const BacktestLeg = z.strictObject({
   kind: z.enum(["call", "put", "future"]),
@@ -95,6 +122,16 @@ export const BacktestStats = z.strictObject({
 });
 export type BacktestStats = z.infer<typeof BacktestStats>;
 
+/** One walk-forward period (ADR-100). */
+export const BacktestFold = z.strictObject({
+  index: z.number().int().nonnegative(),
+  firstDay: IsoDate.nullable(),
+  lastDay: IsoDate.nullable(),
+  entries: z.number().int().nonnegative(),
+  stats: BacktestStats,
+});
+export type BacktestFold = z.infer<typeof BacktestFold>;
+
 export const BacktestResult = z.strictObject({
   asset: Underlying,
   venue: Venue,
@@ -120,5 +157,37 @@ export const BacktestResult = z.strictObject({
   }),
   /** Which fee rule the figures are net of (ADR-099). */
   fees: BacktestFees,
+  /** The walk-forward periods when `folds` was asked for (ADR-100). */
+  folds: z.array(BacktestFold).optional(),
 });
 export type BacktestResult = z.infer<typeof BacktestResult>;
+
+export const SweepTrial = z.strictObject({
+  values: z.object({ smaDays: z.number().optional(), minDte: z.number().optional(), targetPct: z.number().optional(), stopPct: z.number().optional(), timeStopDte: z.number().optional() }),
+  trades: z.number().int().nonnegative(),
+  total: DecimalString,
+  grossTotal: DecimalString,
+  totalFees: DecimalString,
+  winRate: z.number().min(0).max(1).nullable(),
+  maxDrawdown: DecimalString,
+  profitFactor: z.number().nonnegative().nullable(),
+  /** Share of the grid neighbours that keep this trial's result (same sign, at least half the size); null without a result or neighbours. */
+  plateau: z.number().min(0).max(1).nullable(),
+});
+export type SweepTrial = z.infer<typeof SweepTrial>;
+
+export const SweepResult = z.strictObject({
+  asset: Underlying,
+  venue: Venue,
+  template: z.string(),
+  lots: z.number().int().positive(),
+  fees: BacktestFees,
+  axes: z.array(z.strictObject({ axis: SweepAxis, values: z.array(z.number()) })).min(1).max(2),
+  /** Row-major: the first axis outer, the second inner. */
+  trials: z.array(SweepTrial),
+  /** Index of the best net total among the trials with a closed trade; null when none closed. */
+  best: z.number().int().nonnegative().nullable(),
+  /** The hard cap on trials per sweep. */
+  cap: z.number().int().positive(),
+});
+export type SweepResult = z.infer<typeof SweepResult>;
