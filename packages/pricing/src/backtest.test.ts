@@ -2,7 +2,7 @@
 // at intrinsic on the first day at or after each leg's expiry, open trades marked from recorded marks or the model,
 // and the statistics the tab shows.
 import { describe, expect, it } from "vitest";
-import { type EodDay, type EodRow, atmIndexOf, atmIvOf, foldsOf, maxDrawdownOf, runBacktest, statsOf } from "./backtest.js";
+import { type BacktestLeg, type EodDay, type EodRow, atmIndexOf, atmIvOf, foldsOf, maxDrawdownOf, ruleExit, runBacktest, statsOf } from "./backtest.js";
 import { fillFee, settlementFee } from "./fees.js";
 import { DELTA_RULE as DELTA_INDIA_FEE_RULE } from "./fees.test.js";
 import { black76Price } from "./black76.js";
@@ -276,6 +276,12 @@ describe("HC-TR-201 entry conditions", () => {
     expect(high.coverage.skipped.noSignal).toBe(20);
     const low = runBacktest(tpl("Buy Call"), days(25), { ...opts, conditions: { ivRank: { max: 50, lookbackDays: 365 } } });
     expect(low.trades).toHaveLength(0);
+    // IV falling every day: from day 20 on today's IV is the lowest seen, rank 0, so a floor refuses every judged day and a ceiling admits them
+    const falling = days(25).map((x, i) => ({ ...x, expiries: x.expiries.map((e) => ({ ...e, rows: ladder(x.spot, 0.7 - i * 0.01) })) }));
+    const floored = runBacktest(tpl("Buy Call"), falling, { ...opts, conditions: { ivRank: { min: 10, lookbackDays: 365 } } });
+    expect(floored.trades).toHaveLength(0);
+    expect(floored.coverage.skipped.noSignal).toBe(25);
+    expect(runBacktest(tpl("Buy Call"), falling, { ...opts, conditions: { ivRank: { max: 10, lookbackDays: 365 } } }).trades.map((t) => t.entryDay)).toEqual([day(20), day(21), day(22), day(23), day(24)]);
     // a day whose front expiry carries no IV (a reconstructed day) is no signal
     const strip = (row: EodRow): EodRow => ({ strike: row.strike, call: row.call ? { mark: row.call.mark } : undefined, put: row.put ? { mark: row.put.mark } : undefined });
     const blind = days(25).map((x, i) => (i === 24 ? { ...x, expiries: x.expiries.map((e) => ({ ...e, rows: e.rows.map(strip) })) } : x));
@@ -350,6 +356,11 @@ describe("HC-TR-201 / HC-TR-202 the range, the futures leg and an inert rule", (
     expect(r.coverage.exits.inert).toBe(1);
     // a plain bought call has a base (its debit): not inert
     expect(runBacktest(tpl("Buy Call"), days(), { ...opts, minDte: 1, to: day(0), exits: { targetPct: 0.5 } }).trades[0]!.ruleInert).toBe(false);
+  });
+
+  it("a structure with no option leg has no settlement to count down to: no exit rule can fire on it", () => {
+    const perpetual: BacktestLeg = { kind: "future", side: "buy", strike: 0, expiry: "", price: 80_000, quantity: 0.01, exitPrice: 80_000 };
+    expect(ruleExit(days(), 0, [perpetual], { targetPct: 0.5, stopPct: 0.5, timeStopDte: 1 }, cal)).toBeNull();
   });
 });
 

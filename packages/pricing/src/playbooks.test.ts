@@ -67,7 +67,12 @@ describe("HC-TR-205 playbooks as data", () => {
 
   it("losing years are the calendar years whose closed trades sum below zero, by exit day", () => {
     const t = (exitDay: string, pnl: number, status: BacktestTrade["status"] = "closed"): BacktestTrade => ({ entryDay: exitDay, exitDay, expiry: exitDay, legs: [], entryCost: 0, grossPnl: pnl, fees: 0, pnl, status, modelled: false, exitReason: "settled", ruleInert: false, daysHeld: 1 });
-    const years = losingYearsOf([t("2025-03-01", 10), t("2025-06-01", -25), t("2026-01-10", 5), t("2026-02-10", -2), t("2026-03-10", 4), t("2024-12-31", -1, "open")]);
-    expect(years).toEqual([{ year: 2025, total: -15 }]);
+    const years = losingYearsOf([t("2025-03-01", 10), t("2025-06-01", -25), t("2026-01-10", 5), t("2026-02-10", -2), t("2026-03-10", 4), t("2024-12-31", -1, "open"), t("2024-11-30", -3)]);
+    // 2024 comes first although its trade was given last: the list is in year order; the open 2024 trade does not count
+    expect(years).toEqual([
+      { year: 2024, total: -3 },
+      { year: 2025, total: -15 },
+    ]);
+    expect(losingYearsOf([t("2026-01-10", 5)])).toEqual([]);
   });
 });

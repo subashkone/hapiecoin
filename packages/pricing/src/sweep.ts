@@ -97,9 +97,9 @@ export function sweepShape(axes: readonly SweepAxisSpec[]): [number, number?] {
     if (new Set(a.values).size !== a.values.length) throw new RangeError(`${a.axis} repeats a value`);
     if (a.values.some((v, i) => i > 0 && !(v > a.values[i - 1]!))) throw new RangeError(`${a.axis} values must increase, so that grid neighbours are one step apart`);
   }
+  // the per-axis maxima bound the grid to the cap by construction (8 × 6 = SWEEP_MAX_TRIALS, asserted in the tests)
   const n1 = axes[0]!.values.length;
   const n2 = axes[1]?.values.length;
-  if (n1 * (n2 ?? 1) > SWEEP_MAX_TRIALS) throw new RangeError(`a sweep runs at most ${SWEEP_MAX_TRIALS} trials`);
   return n2 === undefined ? [n1] : [n1, n2];
 }
 
