@@ -1024,5 +1024,16 @@
   "how": "PlaybooksPanel.tsx (tab 'playbooks' in AnalysisPane and the palette): the intro says decision support, never a recommendation; each playbook-card (data-playbook, data-status) shows the template and planLine, summary, Why, Evidence with its source, the record grid (entries and closed trades with coverage and reconstructed days; net of fees, or before fees when the venue publishes no rule, with win rate and worst fall; in-sample / out-of-sample totals and trade counts; losing years and the trial count), the no-signal count, the trials note with the size rule and the thresholds, a status chip (playbook-status: Passes its thresholds / Fails its thresholds / Not enough trades yet / Control: fails as it should / Control passed: suspect the engine, each with a hint) or 'No record yet'; the control card is dashed; Load into Builder uses the Templates panel's loader (disabled until the chain is loaded); Open in Backtest (catalogue templates only; the inline control shows a note instead) sets the store's backtestPreset (template, size, one-year range, two folds, min DTE, trend filter, IV band, target, stop, time stop) and switches to the Backtest tab, which applies it once and clears it (the Rules row gained a 21-day time stop and an upper-half IV band for this); a 503 shows a designed empty state and the cards still list the plans; the mock API serves the records through the real engine over the synthetic chains",
   "evidence": "ADR-101 (9 Nov 2026): apps/web/src/components/analysis/PlaybooksPanel.tsx, lib/api/playbooks.ts, store.ts backtestPreset, BacktestPanel.tsx preset intake, test/mock-playbooks.ts; unit playbooks-panel.test.tsx HC-WS-119",
   "test": "unit (web)"
+ },
+ {
+  "route": "/analyse",
+  "screen": "Analyse · Playbooks tab",
+  "status": "working",
+  "phase": 5,
+  "new": true,
+  "feature": "Proposals in the Playbooks tab (the latest recorded chain's day): one card per plan that enters on the latest recorded chain for the workspace asset, with its legs, net premium, max profit and loss, the record status and the warning; Open in Builder as paper loads the exact legs and opens the paper flow (nothing placed); Dismiss hides it",
+  "how": "PlaybooksPanel.tsx proposals-strip (data-state loading / ready / empty / error) above the record cards: useProposals (GET /v1/proposals for the venue) filtered to the asset, dismissed ones out of the strip with a count in the empty line (No plan enters BTC on the latest recorded chain · 1 dismissed); each proposal-card (data-proposal, data-playbook, data-status) shows the plan name, asset, expiry, size, spot, the legs line (B C 79500 · S C 80500 · PERP), net premium (pays / receives), max profit, max loss or unbounded, the record status chip and A backtest is not a forecast; Open in Builder as paper runs the legs through the Builder's addLeg, switches the workspace to the Builder, opens the trade flow with paper preselected, marks the proposal taken and toasts that nothing is placed until confirmed; Dismiss marks dismissed; the mock API serves proposals through the real proposalFor over the synthetic chains with per-account marks",
+  "evidence": "ADR-102 (10 Nov 2026): apps/web/src/components/analysis/PlaybooksPanel.tsx, lib/api/proposals.ts, test/mock-proposals.ts, mock-api.ts; unit playbooks-panel.test.tsx HC-WS-120",
+  "test": "unit (web)"
  }
 ]

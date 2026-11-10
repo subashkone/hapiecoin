@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type BacktestFold, type BacktestStats, type BacktestTrade, type EodDay, type EodRow, runBacktest } from "./backtest.js";
 import { calendarFor } from "./calendar.js";
-import { HERO_OR_ZERO_TEMPLATE, PLAYBOOKS, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate } from "./playbooks.js";
+import { HERO_OR_ZERO_TEMPLATE, PLAYBOOKS, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
 import { materialiseTemplate } from "./templates.js";
 
 const cal = calendarFor(12);
@@ -63,6 +63,36 @@ describe("HC-TR-205 playbooks as data", () => {
     expect(playbookStatus(hero, stats({ total: -80 }), [fold(0, -40), fold(1, -40)])).toBe("control-ok");
     expect(playbookStatus(hero, stats({}), [fold(0, 50), fold(1, 50)])).toBe("control-alarm");
     expect(playbookStatus(hero, stats({ trades: 3 }), [fold(0, 50), fold(1, 50)])).toBe("insufficient");
+  });
+
+  it("HC-TR-207 proposalFor: the structure a plan would place on the latest day, through the same entry step as the backtest; the control and an empty history are refused; a plan that would not enter says why", () => {
+    const base = { unitsPerLot: 0.001, calendar: cal };
+    const hero = playbookById("hero-or-zero")!;
+    expect(proposalFor(hero, days(), base)).toEqual({ ok: false, reason: "control" });
+    const fly = playbookById("pin-butterfly")!;
+    expect(proposalFor(fly, [], base)).toEqual({ ok: false, reason: "noDays" });
+    // the butterfly needs one day to expiry and no signal: it enters on the last day, on the near expiry
+    const r = proposalFor(fly, days(), base);
+    expect(r.ok).toBe(true);
+    if (!r.ok) throw new Error("unreachable");
+    expect(r.proposal.day).toBe(day(4));
+    expect(r.proposal.spot).toBe(80_800);
+    expect(r.proposal.expiry).toBe(day(40)); // the day-4 expiry has zero days left on day 4: the next one is taken
+    expect(r.proposal.legs.length).toBeGreaterThanOrEqual(3);
+    expect(r.proposal.legs.every((l) => l.expiry === day(40))).toBe(true);
+    expect(Number.isFinite(r.proposal.maxLoss)).toBe(true);
+    expect(r.proposal.maxLoss).toBeLessThan(0);
+    expect(r.proposal.maxProfit).toBeGreaterThan(0);
+    // the same entry the backtest takes on that day
+    const bt = runBacktest(playbookTemplate(fly)!, days(), playbookOptions(fly, { ...base, fees: null }));
+    const last = bt.trades.find((t) => t.entryDay === day(4))!;
+    expect(last.legs.map((l) => [l.kind, l.side, l.strike])).toEqual(r.proposal.legs.map((l) => [l.kind, l.side, Number(l.strike)]));
+    expect(last.entryCost).toBeCloseTo(r.proposal.entryCost, 6);
+    // a plan with a trend filter has no signal on five days
+    expect(proposalFor(playbookById("trend-calls")!, days(), base)).toEqual({ ok: false, reason: "noSignal" });
+    // a plan that wants thirty days to expiry finds none on this ladder: the days given are sorted first
+    const short = days().map((d) => ({ ...d, expiries: d.expiries.filter((e) => e.expiry === day(4)) }));
+    expect(proposalFor(playbookById("covered-call")!, [...short].reverse(), base)).toEqual({ ok: false, reason: "noExpiry" });
   });
 
   it("losing years are the calendar years whose closed trades sum below zero, by exit day", () => {

@@ -4,6 +4,7 @@ import { startReconciler } from "./live-reconcile.js";
 import { type JobStarter, startJobs } from "./jobs.js";
 import { historyTargets, startEodHistoryBackfill } from "./chain-eod-history.js";
 import { startPlaybookRecords } from "./playbooks.js";
+import { runProposals } from "./proposals.js";
 import { MemoryLeaderLock, RedisLeaderLock } from "./leader.js";
 import type { AppDeps } from "./routes/shared.js";
 import { Redis } from "ioredis";
@@ -129,6 +130,9 @@ if (config.ivSnapshotMs !== 0)
             ? async () => {
                 const report = await evaluateAlerts(deps);
                 if (report.fired.length) logger.info({ fired: report.fired, checked: report.checked }, "alerts fired server-side");
+                // ADR-102: once the end-of-day chain is written, every playbook says whether it would enter today;
+                // idempotent per day, so this cadence only decides how soon after the write a proposal appears
+                await runProposals({ db: deps.db, logger, telegram: deps.telegram, webUrl: config.webUrl, telegramCap: config.proposalsTelegramCap }, config.apiVenues);
               }
             : undefined,
         ),

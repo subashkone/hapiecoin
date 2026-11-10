@@ -183,6 +183,13 @@
       "when": 1794247009836,
       "tag": "0025_cold_silver_samurai",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794302013865,
+      "tag": "0026_faithful_jack_flag",
+      "breakpoints": true
     }
   ]
 }

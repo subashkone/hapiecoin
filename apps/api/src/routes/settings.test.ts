@@ -36,7 +36,7 @@ describe("HC-SH-038 currency & conversion rate, HC-SH-041 lot sizes, HC-SH-043 P
     const put = await t.request("/v1/settings", { method: "PUT", cookie, json: next });
     expect(put.status).toBe(200);
     // HC-TR-183: a PUT without the mindful block keeps the default pause (an older client)
-    const saved = { ...next, mindful: DEFAULT_MINDFUL };
+    const saved = { ...next, mindful: DEFAULT_MINDFUL, proposalsTelegram: false }; // ADR-102: the opt-in defaults off for an older client too
     expect(await put.json()).toEqual(saved);
     const get = await t.request("/v1/settings", { cookie });
     expect(await get.json()).toEqual(saved);
@@ -109,6 +109,7 @@ describe("HC-SH-038 currency & conversion rate, HC-SH-041 lot sizes, HC-SH-043 P
       currency: "USD",
       conversionRate: "80",
       pnlBasis: "mark",
+      proposalsTelegram: false,
       lotSizes: { BTC: "0.003" },
       theme: "dark",
       density: "comfortable",

@@ -19,7 +19,7 @@ import { black76Price } from "./black76.js";
 import { type TradingCalendar, daysToExpiryOf, yearFractionOf } from "./calendar.js";
 import { type FeeRule, fillFee, settlementFee } from "./fees.js";
 import { expiryExtremes } from "./strategy.js";
-import { type ChainStrike, type StrategyTemplate, materialiseTemplate } from "./templates.js";
+import { type ChainStrike, type MaterialisedLeg, type StrategyTemplate, materialiseTemplate } from "./templates.js";
 import type { LegKind, Side } from "./types.js";
 
 export interface EodQuote {
@@ -207,12 +207,60 @@ export function atmIvOf(rows: readonly EodRow[], spot: number): number | null {
   return ivs.length ? ivs.reduce((s, v) => s + v, 0) / ivs.length : null;
 }
 
-const toChainStrikes = (rows: readonly EodRow[]): ChainStrike[] =>
+/** A recorded ladder in the shape the template materialiser reads. */
+export const toChainStrikes = (rows: readonly EodRow[]): ChainStrike[] =>
   rows.map((r) => ({
     strike: String(r.strike),
     call: r.call ? { mark: String(r.call.mark), markIv: r.call.iv } : undefined,
     put: r.put ? { mark: String(r.put.mark), markIv: r.put.iv } : undefined,
   }));
+
+export type EntrySkip = "noSignal" | "noExpiry" | "noFit";
+export interface EntryOptions {
+  lots: number;
+  unitsPerLot: number;
+  minDte: number;
+  calendar: TradingCalendar;
+  conditions?: BacktestConditions | undefined;
+}
+export type Entry = { ok: true; expiry: string; legs: BacktestLeg[]; placed: MaterialisedLeg[] } | { ok: false; reason: EntrySkip };
+
+/**
+ * Whether the plan enters on day `i` of the sorted history and, when it does, the structure it places: the entry
+ * conditions, then the first listed expiry at or past `minDte`, then the template on that day's ladder. The backtest
+ * and the proposal detector (ADR-102) both call this, so a proposal is exactly what the record would have entered.
+ */
+export function entryFor(days: readonly EodDay[], i: number, tpl: StrategyTemplate, opts: EntryOptions): Entry {
+  const d = days[i]!;
+  if (opts.conditions && !entrySignal(days, i, opts.conditions)) return { ok: false, reason: "noSignal" };
+  const listed = [...d.expiries].sort((a, b) => a.expiry.localeCompare(b.expiry));
+  const target = listed.find((e) => daysToExpiryOf(opts.calendar, d.ts, e.expiry) >= opts.minDte);
+  if (!target) return { ok: false, reason: "noExpiry" };
+  if (!tpl.legs.some((l) => l.kind !== "future")) return { ok: false, reason: "noFit" }; // a perpetual alone has no expiry to hold to
+  const rowsByExpiry: Record<string, { rows: ChainStrike[]; atm: number }> = {};
+  for (const e of listed) rowsByExpiry[e.expiry] = { rows: toChainStrikes(e.rows), atm: atmIndexOf(e.rows, d.spot) };
+  const mat = materialiseTemplate(tpl, {
+    asset: "backtest",
+    expiry: target.expiry,
+    expiries: listed.map((e) => e.expiry),
+    rows: rowsByExpiry[target.expiry]!.rows,
+    atm: rowsByExpiry[target.expiry]!.atm,
+    rowsByExpiry,
+    lots: opts.lots,
+    spot: String(d.spot),
+  });
+  if (!mat.ok) return { ok: false, reason: "noFit" };
+  const legs: BacktestLeg[] = mat.legs.map((l) => ({
+    kind: l.kind,
+    side: l.side,
+    strike: l.kind === "future" ? 0 : Number(l.strike),
+    expiry: l.kind === "future" ? "" : l.expiry,
+    price: Number(l.price),
+    quantity: l.lots * opts.unitsPerLot,
+    exitPrice: Number(l.price), // the backtest overwrites it: settled, or marked on the last day
+  }));
+  return { ok: true, expiry: target.expiry, legs, placed: mat.legs };
+}
 
 function recordedMark(day: EodDay, leg: BacktestLeg): number | null {
   if (leg.kind === "future") return day.spot;
@@ -254,45 +302,12 @@ export function runBacktest(tpl: StrategyTemplate, daysIn: readonly EodDay[], op
   for (let i = 0; i < days.length; i++) {
     const d = days[i]!;
     if ((opts.from && d.day < opts.from) || (opts.to && d.day > opts.to)) continue;
-    if (opts.conditions && !entrySignal(days, i, opts.conditions)) {
-      skipped.noSignal += 1;
+    const entry = entryFor(days, i, tpl, opts);
+    if (!entry.ok) {
+      skipped[entry.reason] += 1;
       continue;
     }
-    const listed = [...d.expiries].sort((a, b) => a.expiry.localeCompare(b.expiry));
-    const target = listed.find((e) => daysToExpiryOf(opts.calendar, d.ts, e.expiry) >= opts.minDte);
-    if (!target) {
-      skipped.noExpiry += 1;
-      continue;
-    }
-    if (!tpl.legs.some((l) => l.kind !== "future")) {
-      skipped.noFit += 1; // a perpetual alone has no expiry to hold to: nothing to backtest
-      continue;
-    }
-    const rowsByExpiry: Record<string, { rows: ChainStrike[]; atm: number }> = {};
-    for (const e of listed) rowsByExpiry[e.expiry] = { rows: toChainStrikes(e.rows), atm: atmIndexOf(e.rows, d.spot) };
-    const mat = materialiseTemplate(tpl, {
-      asset: "backtest",
-      expiry: target.expiry,
-      expiries: listed.map((e) => e.expiry),
-      rows: rowsByExpiry[target.expiry]!.rows,
-      atm: rowsByExpiry[target.expiry]!.atm,
-      rowsByExpiry,
-      lots: opts.lots,
-      spot: String(d.spot),
-    });
-    if (!mat.ok) {
-      skipped.noFit += 1;
-      continue;
-    }
-    const legs: BacktestLeg[] = mat.legs.map((l) => ({
-      kind: l.kind,
-      side: l.side,
-      strike: l.kind === "future" ? 0 : Number(l.strike),
-      expiry: l.kind === "future" ? "" : l.expiry,
-      price: Number(l.price),
-      quantity: l.lots * opts.unitsPerLot,
-      exitPrice: Number(l.price), // overwritten below: settled, or marked on the last day
-    }));
+    const legs = entry.legs;
     let fees = rule ? legs.reduce((sum, l) => sum + fillFee(l.kind, d.spot * l.quantity, l.price * l.quantity, rule), 0) : 0;
     let exitIdx = i;
     let closed = true;
@@ -352,7 +367,7 @@ export function runBacktest(tpl: StrategyTemplate, daysIn: readonly EodDay[], op
         const exp = lastDay.expiries.find((e) => e.expiry === leg.expiry);
         if (!iv.has(leg.expiry)) iv.set(leg.expiry, exp ? atmIvOf(exp.rows, lastDay.spot) : null);
         // the day's ATM IV, else the IV the leg was entered at; without either the leg is worth its intrinsic value
-        const sigma = iv.get(leg.expiry) ?? mat.legs.find((l) => l.kind === leg.kind && Number(l.strike) === leg.strike && l.expiry === leg.expiry)?.iv ?? 0;
+        const sigma = iv.get(leg.expiry) ?? entry.placed.find((l) => l.kind === leg.kind && Number(l.strike) === leg.strike && l.expiry === leg.expiry)?.iv ?? 0;
         leg.exitPrice = sigma > 0 ? black76Price(lastDay.spot, leg.strike, yearFractionOf(opts.calendar, lastDay.ts, leg.expiry), sigma, leg.kind === "call") : intrinsic(leg, lastDay.spot);
       }
     }
@@ -363,7 +378,7 @@ export function runBacktest(tpl: StrategyTemplate, daysIn: readonly EodDay[], op
     trades.push({
       entryDay: d.day,
       exitDay: exit.day,
-      expiry: target.expiry,
+      expiry: entry.expiry,
       legs,
       entryCost,
       grossPnl,

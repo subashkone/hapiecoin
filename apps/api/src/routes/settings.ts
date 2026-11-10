@@ -19,6 +19,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   theme: "dark",
   density: "comfortable",
   mindful: DEFAULT_MINDFUL, // ADR-074: on, any loss, 30 s
+  proposalsTelegram: false, // ADR-102: opt in
 };
 
 type Row = typeof userSettings.$inferSelect;
@@ -36,6 +37,7 @@ export function toSettings(row: Row): UserSettings {
     density: row.density,
     // a row from before the column, or one hand-edited out of shape, reads as the default
     mindful: MindfulSettings.safeParse(row.mindful).success ? row.mindful : DEFAULT_MINDFUL,
+    proposalsTelegram: row.proposalsTelegram,
   };
 }
 

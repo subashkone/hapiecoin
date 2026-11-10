@@ -3,15 +3,18 @@
 // with its own record on our recorded chain history (net of fees, in-sample and out-of-sample halves, losing years,
 // the trial count behind its parameters) and a status against stated thresholds. Hero-or-zero is the control: it
 // ships to fail. Decision support, never a recommendation; a backtest is not a forecast, and every card says so.
-import { PLAYBOOKS, type Playbook, playbookTemplate } from "@hapiecoin/pricing";
-import type { PlaybookRecord, PlaybookStatus } from "@hapiecoin/schema";
-import { Button, EmptyState, cn } from "@hapiecoin/ui";
+import { PLAYBOOKS, type Playbook, playbookById, playbookTemplate } from "@hapiecoin/pricing";
+import type { PlaybookRecord, PlaybookStatus, Proposal } from "@hapiecoin/schema";
+import { Button, Checkbox, EmptyState, cn, toast } from "@hapiecoin/ui";
 import { ApiError } from "@/lib/api/client";
 import { recordFor, usePlaybookRecords } from "@/lib/api/playbooks";
-import { useSettings } from "@/lib/api/queries";
+import { useMarkProposal, useProposals } from "@/lib/api/proposals";
+import { useSettings, useUpdateSettings } from "@/lib/api/queries";
+import { useTelegramStatus } from "@/lib/api/telegram";
 import { fmtDate } from "@/lib/format";
 import { type MoneyFormat, USD, fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
+import { type StrategyLeg, addLeg } from "@/lib/strategy/legs";
 import { useTemplateLoader } from "@/components/builder/TemplatesPanel";
 
 const STATUS: Record<PlaybookStatus, { label: string; cls: string; hint: string }> = {
@@ -50,6 +53,38 @@ export function PlaybooksPanel() {
   const loader = useTemplateLoader();
   const notYet = q.isError && q.error instanceof ApiError && q.error.status === 503;
   const playbooks = PLAYBOOKS.filter((p) => p.assets.includes(asset));
+  // ADR-102: today's proposals for this asset, the caller's marks joined; dismissed ones leave the strip
+  const proposals = useProposals();
+  const markProposal = useMarkProposal();
+  const updateSettings = useUpdateSettings();
+  const { data: telegram } = useTelegramStatus();
+  const setLegs = useUiStore((s) => s.setLegs);
+  const setStrategyMeta = useUiStore((s) => s.setStrategyMeta);
+  const setBuilderTab = useUiStore((s) => s.setBuilderTab);
+  const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
+  const openTrade = useUiStore((s) => s.openTrade);
+  const todays = (proposals.data?.items ?? []).filter((p) => p.asset === asset);
+  const visible = todays.filter((p) => p.status !== "dismissed");
+  /** One tap into paper: the proposal's exact legs into the Builder and the trade flow opened on paper; nothing is placed until the trader confirms there. */
+  const openAsPaper = (pr: Proposal) => {
+    const p = playbookById(pr.playbookId);
+    let legs: StrategyLeg[] = [];
+    for (const l of pr.legs) {
+      const a = addLeg(legs, { asset: pr.asset, kind: l.kind, side: l.side, strike: l.strike, expiry: l.expiry, lots: l.lots, price: l.price, iv: l.iv ?? undefined });
+      if (!a.ok) {
+        toast.error("Could not load the proposal", { description: a.reason === "limit" ? "Too many legs for one strategy" : "A leg has no valid size" });
+        return;
+      }
+      legs = a.legs;
+    }
+    setLegs(pr.asset, legs); // the strip shows the workspace asset's proposals, so the Builder's asset is this one
+    setStrategyMeta(pr.asset, { name: `${p?.name ?? "Proposal"} · ${fmtDate(pr.day)}`, draftId: null });
+    setBuilderTab("builder");
+    setWorkspaceTab("builder", true);
+    openTrade({ strategyId: null, mode: "paper" });
+    markProposal.mutate({ id: pr.id, status: "taken" });
+    toast(`${p?.name ?? "Proposal"} loaded as paper`, { description: `${legs.length} ${legs.length === 1 ? "leg" : "legs"} in the Builder; nothing is placed until you confirm.` });
+  };
   const openInBacktest = (p: Playbook) => {
     if (typeof p.template !== "string") return; // an inline template is not in the Backtest tab's catalogue
     setBacktestPreset({
@@ -80,11 +115,93 @@ export function PlaybooksPanel() {
       ) : null}
       {notYet ? <EmptyState title="No records yet" description="A record needs a recorded day and the records job to have run once; the cards below show the plans without a record until then." data-testid="playbooks-empty" /> : null}
       {playbooks.length === 0 ? <EmptyState title={`No playbook covers ${asset} yet`} description="The first playbooks are written for BTC and ETH; their records and evidence do not transfer to another underlying." data-testid="playbooks-none" /> : null}
+      {playbooks.length > 0 ? (
+        <section className="flex flex-col gap-1.5 rounded border border-border p-2" data-testid="proposals-strip" data-state={proposals.isError ? "error" : proposals.data ? (visible.length ? "ready" : "empty") : "loading"}>
+          <div className="flex flex-wrap items-center justify-between gap-1">
+            <div className="text-[13px] font-medium">
+              Proposals{proposals.data ? ` · the ${fmtDate(proposals.data.day)} chain` : ""}
+            </div>
+            <label className={cn("flex items-center gap-1.5 text-2xs", telegram?.linked ? "text-foreground" : "text-muted-foreground")} data-testid="proposals-telegram" title={telegram?.linked ? "A Telegram message for each new proposal whose record passes its thresholds, at most a few a day" : "Link Telegram under Alerts first"}>
+              <Checkbox checked={settings?.proposalsTelegram === true} disabled={telegram?.linked !== true || !settings} onCheckedChange={(v) => updateSettings.mutate({ proposalsTelegram: v === true })} aria-label="Telegram me new proposals" data-testid="proposals-telegram-toggle" />
+              Telegram me a new proposal whose record passes{telegram?.linked ? "" : " · link Telegram under Alerts first"}
+            </label>
+          </div>
+          <p className="text-2xs text-muted-foreground">
+            A proposal is what a playbook&apos;s plan would place on the latest recorded chain, shown with the record it stands on. Decision support, never a recommendation: opening one loads its legs into the Builder in paper mode and places nothing.
+          </p>
+          {proposals.isError ? (
+            <p className="text-xs text-loss" data-testid="proposals-error">
+              {proposals.error instanceof Error ? proposals.error.message : String(proposals.error)}
+            </p>
+          ) : null}
+          {proposals.data && visible.length === 0 ? (
+            <p className="text-2xs text-muted-foreground" data-testid="proposals-none">
+              No plan enters {asset} on the latest recorded chain{todays.length - visible.length > 0 ? ` · ${todays.length - visible.length} dismissed` : ""}.
+            </p>
+          ) : null}
+          <div className="grid gap-2 lg:grid-cols-2">
+            {visible.map((pr) => (
+              <ProposalCard key={pr.id} proposal={pr} m={m} onOpen={() => openAsPaper(pr)} onDismiss={() => markProposal.mutate({ id: pr.id, status: "dismissed" })} />
+            ))}
+          </div>
+        </section>
+      ) : null}
       <div className="grid gap-2 lg:grid-cols-2">
         {playbooks.map((p) => {
           const record = recordFor(q.data, p.id, asset);
           return <PlaybookCard key={p.id} playbook={p} record={record} m={m} onLoad={() => loader.load(playbookTemplate(p)!)} onBacktest={typeof p.template === "string" ? () => openInBacktest(p) : null} chainReady={loader.chainReady} />;
         })}
+      </div>
+    </div>
+  );
+}
+
+/** The leg line a trader reads at a glance: B C 79500 · S C 80500 · PERP. */
+export function proposalLegsLine(pr: Pick<Proposal, "legs">): string {
+  return pr.legs.map((l) => `${l.side === "buy" ? "B" : "S"} ${l.kind === "future" ? "PERP" : `${l.kind === "call" ? "C" : "P"} ${l.strike}`}`).join(" · ");
+}
+
+function ProposalCard({ proposal: pr, m, onOpen, onDismiss }: { proposal: Proposal; m: (v: string | null | undefined, signed?: boolean) => string; onOpen: () => void; onDismiss: () => void }) {
+  const p = playbookById(pr.playbookId);
+  const status = STATUS[pr.recordStatus];
+  return (
+    <div className="flex flex-col gap-1 rounded border border-border bg-muted/20 p-2 text-xs" data-testid="proposal-card" data-proposal={pr.id} data-playbook={pr.playbookId} data-status={pr.status}>
+      <div className="flex flex-wrap items-start justify-between gap-1">
+        <div>
+          <div className="text-[13px] font-medium">{p?.name ?? pr.playbookId}</div>
+          <div className="text-2xs text-muted-foreground">
+            {pr.asset} · expiry {fmtDate(pr.expiry)} · {p?.lots ?? pr.legs[0]?.lots ?? 0} lots · spot {m(pr.spot, false)}
+          </div>
+        </div>
+        <span className={cn("rounded px-1.5 py-0.5 text-2xs", status.cls)} title={status.hint} data-testid="proposal-record-status">
+          {status.label}
+        </span>
+      </div>
+      <div className="num text-[13px]" data-testid="proposal-legs">
+        {proposalLegsLine(pr)}
+      </div>
+      <div className="grid grid-cols-3 gap-x-3 text-2xs">
+        <div>
+          <div className="micro">Net premium</div>
+          <div className={cn("num", Number(pr.entryCost) >= 0 ? "text-loss" : "text-profit")}>{Number(pr.entryCost) >= 0 ? `pays ${m(pr.entryCost, false)}` : `receives ${m(pr.entryCost.replace("-", ""), false)}`}</div>
+        </div>
+        <div>
+          <div className="micro">Max profit</div>
+          <div className="num">{pr.maxProfit === null ? "unbounded" : m(pr.maxProfit, false)}</div>
+        </div>
+        <div>
+          <div className="micro">Max loss</div>
+          <div className="num">{pr.maxLoss === null ? "unbounded" : m(pr.maxLoss, false)}</div>
+        </div>
+      </div>
+      <p className="text-2xs text-muted-foreground">A backtest is not a forecast. The plan&apos;s exits are yours to arm after the trade.{pr.telegramSentAt ? " · Sent to Telegram" : ""}</p>
+      <div className="flex flex-wrap gap-1">
+        <Button size="sm" variant="secondary" onClick={onOpen} title="Load these legs into the Builder and open the paper trade flow; nothing is placed until you confirm there" data-testid="proposal-open">
+          Open in Builder as paper
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onDismiss} title="Hide this proposal for today" data-testid="proposal-dismiss">
+          Dismiss
+        </Button>
       </div>
     </div>
   );
