@@ -99,7 +99,7 @@ test.describe("guide captures", () => {
     await page.getByTestId("tab-journal").click();
     await expect(page.getByTestId("verified-block")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("verified-total")).not.toHaveText("—", { timeout: 15_000 });
-    await shot(page, "guide", "journal-verified-pnl");
+    await shot(page, "guide", "journal-verified-pnl", { mask: [page.getByTestId("verified-read")] }); // "last read HH:MM" comes from the mock's flowing clock
     await page.goto("/t/asha_guide");
     await expect(page.getByTestId("trader-page")).toHaveAttribute("data-state", "ready");
     await shot(page, "guide", "public-trader-page", { fullPage: true, mask: [page.getByTestId("trader-basis")] }); // "Last read HH:MM" comes from the mock's flowing clock
