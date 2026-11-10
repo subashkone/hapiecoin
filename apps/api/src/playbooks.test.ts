@@ -1,13 +1,13 @@
 // Playbook records (ADR-101; HC-TR-205, HC-TR-206): the job computes one record per playbook and asset over the recorded
 // days, upserts it, leaves it alone until a newer day lands, and the route serves the venue's records behind the session.
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PLAYBOOKS } from "@hapiecoin/pricing";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { PLAYBOOKS, playbookById } from "@hapiecoin/pricing";
 import type { Instrument, PlaybookRecords, Quote } from "@hapiecoin/schema";
 import { count, eq } from "drizzle-orm";
 import { clearEodMemo } from "./chain-eod.js";
 import { chainEod, playbookRecords } from "./db/schema.js";
 import { snapshotOnce, type MarketSource } from "./iv-snapshot.js";
-import { PLAYBOOK_ASSETS, refreshPlaybookRecords } from "./playbooks.js";
+import { PLAYBOOK_ASSETS, computePlaybookRecord, refreshPlaybookRecords, startPlaybookRecords } from "./playbooks.js";
 import { createTestApp, type TestApp } from "./test-support/harness.js";
 
 let t: TestApp;
@@ -100,5 +100,28 @@ describe("HC-TR-205 the playbook records job", () => {
     // deribit has no record: 503
     expect((await t.request("/v1/playbooks?venue=deribit", { cookie })).status).toBe(503);
     expect(await t.db.select({ status: playbookRecords.status }).from(playbookRecords).where(eq(playbookRecords.playbookId, "hero-or-zero"))).toHaveLength(1);
+  });
+});
+
+describe("HC-TR-205 the record's edges and the job starter", () => {
+  it("HC-TR-205 a template missing from the catalogue yields no record, a venue without a fee rule records before fees, a refresh runs on the real clock, and the starter ticks once at start", async () => {
+    const p = playbookById("trend-calls")!;
+    expect(computePlaybookRecord({ ...p, template: "Not a template" }, [], "delta_india", "BTC", new Date(T0))).toBeNull();
+    // Deribit publishes no fee rule (ADR-099): the record says so, and an empty history gives an empty record
+    const before = computePlaybookRecord(p, [], "deribit", "BTC", new Date(T0))!;
+    expect(before.fees).toBe("none");
+    expect(before.entries).toBe(0);
+    expect(before.firstDay).toBeNull();
+    // no clock injected and nothing new recorded: every stamp matches, nothing recomputes
+    const again = await refreshPlaybookRecords({ db: t.db, logger: t.deps.logger }, ["delta_india"]);
+    expect(again.computed).toBe(0);
+    // the starter runs one tick at start and logs the totals when something was computed
+    clearEodMemo();
+    await snapshotOnce(t.deps, sourceOn(8), () => T0 + 8 * DAY + HOUR);
+    const logger = { info: vi.fn(), warn: vi.fn() };
+    const stop = startPlaybookRecords({ db: t.db, logger, now: () => T0 + 9 * DAY }, ["delta_india"], 3_600_000);
+    await vi.waitFor(() => expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({ computed: PLAYBOOKS.filter((x) => x.assets.includes("BTC")).length, failed: 0 }), "playbook records refreshed"), { timeout: 20_000 });
+    stop();
+    expect((await rows()).every((r) => r.lastDay === "2026-09-09")).toBe(true);
   });
 });

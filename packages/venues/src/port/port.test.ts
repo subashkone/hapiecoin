@@ -179,16 +179,23 @@ describe("HC-SH-118 [VENUES] Delta India schema bridge and client factories", ()
   });
 
   it("builds the REST, market-data and trading clients from the same options the apps passed before", async () => {
-    const fetch: FetchLike = () =>
-      Promise.resolve({
+    const calls: URL[] = [];
+    const fetch: FetchLike = (input) => {
+      calls.push(new URL(input));
+      return Promise.resolve({
         status: 200,
         headers: { get: () => null },
         text: () => Promise.resolve(JSON.stringify({ success: true, result: [] })),
       });
+    };
     const rest = DELTA_INDIA.rest({ baseUrl: "https://api.example", fetch });
     expect(await rest.products()).toEqual([]);
     expect(await rest.tickers("BTC")).toEqual([]);
     expect(await rest.tickers("BTC", { perpetuals: true })).toEqual([]);
+    // the candle history behind the chain reconstruction (ADR-098) goes through the same client
+    expect(await rest.candles?.({ symbol: "MARK:C-BTC-80000-250926", resolution: "1h", start: 1_700_000_000, end: 1_700_003_600 })).toEqual([]);
+    expect(calls.at(-1)?.pathname).toBe("/v2/history/candles");
+    expect(calls.at(-1)?.searchParams.get("resolution")).toBe("1h");
     const md = DELTA_INDIA.marketData({ restUrl: "https://api.example", wsUrl: "wss://ws.example", fetch, WebSocket: FakeWebSocket });
     expect(md.status().instruments).toBe(0);
     // the trading safety guard refuses a real fetch under NODE_ENV=test, exactly as in the apps
