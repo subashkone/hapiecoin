@@ -53,4 +53,5 @@ export * from "./templates.js";
 export * from "./backtest.js";
 export * from "./fees.js";
 export * from "./sweep.js";
+export * from "./playbooks.js";
 export * from "./worker/index.js";

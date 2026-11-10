@@ -10,7 +10,7 @@ import { BACKTEST_MIN_DTE, BACKTEST_SMA_DAYS, type BacktestFees, type BacktestTr
 import { TEMPLATES, TEMPLATE_CATEGORIES, type TemplateCategory } from "@hapiecoin/pricing";
 import { getVenueCore } from "@hapiecoin/venues/core";
 import { Button, EmptyState, cn } from "@hapiecoin/ui";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ApiError } from "@/lib/api/client";
 import { useBacktest, useBacktestSweep } from "@/lib/api/backtest";
 import { useSettings } from "@/lib/api/queries";
@@ -30,7 +30,7 @@ const RANGES = [
 type RangeId = (typeof RANGES)[number]["id"];
 
 const dayBack = (n: number, now = Date.now()) => new Date(now - n * 86_400_000).toISOString().slice(0, 10);
-const IV_BANDS = { "": undefined, low: [0, 30], mid: [30, 70], high: [70, 100] } as const;
+const IV_BANDS = { "": undefined, low: [0, 30], mid: [30, 70], high: [70, 100], upper: [50, 100] } as const;
 type IvBand = keyof typeof IV_BANDS;
 /** UTC weekdays in the order a trader reads them. */
 const WEEKDAYS: readonly { day: number; label: string }[] = [
@@ -44,7 +44,7 @@ const WEEKDAYS: readonly { day: number; label: string }[] = [
 ];
 const TARGETS = [25, 50, 75] as const;
 const STOPS = [50, 100, 200] as const;
-const TIME_STOPS = [1, 2, 7] as const;
+const TIME_STOPS = [1, 2, 7, 21] as const;
 const EXIT_LABEL: Record<BacktestTrade["exitReason"], string> = { settled: "settled", target: "target", stop: "stop", time: "time stop", open: "open" };
 /** The values a sweep tries per axis (ADR-100): the Rules row's own option lists, so every loadable cell is a visible option; the time stop is filtered below the minimum days to expiry at render time. */
 const SWEEP_PRESETS: Record<SweepAxis, readonly number[]> = { smaDays: BACKTEST_SMA_DAYS, minDte: BACKTEST_MIN_DTE, targetPct: TARGETS, stopPct: STOPS, timeStopDte: TIME_STOPS };
@@ -101,6 +101,25 @@ export function BacktestPanel() {
   const sweep = useBacktestSweep({ ...sweepBase, axis1, values1: sweepValues(axis1), axis2: sweepAxis2, values2: sweepAxis2 ? sweepValues(sweepAxis2) : undefined }, sweepOn && sweepValues(axis1).length > 0 && (sweepAxis2 === undefined || sweepValues(sweepAxis2).length > 0));
   const s = sweep.data;
   const sweepNotYet = sweep.isError && sweep.error instanceof ApiError && sweep.error.status === 503;
+  // ADR-101: a playbook opened from the Playbooks tab fills the template and the Rules row once
+  const preset = useUiStore((s) => s.backtestPreset);
+  const setBacktestPreset = useUiStore((s) => s.setBacktestPreset);
+  useEffect(() => {
+    if (!preset) return;
+    if (preset.template) setTemplate(preset.template);
+    if (preset.lots !== undefined) setLots(preset.lots);
+    if (preset.range !== undefined) setRange(preset.range);
+    setFolds(preset.folds);
+    if (preset.minDte !== undefined) setMinDte(preset.minDte);
+    setSmaDays(preset.smaDays);
+    setSmaSide(preset.smaSide ?? "above");
+    const band = (Object.entries(IV_BANDS) as [IvBand, readonly [number, number] | undefined][]).find(([, v]) => v !== undefined && v[0] === (preset.ivRankMin ?? 0) && v[1] === (preset.ivRankMax ?? 100));
+    setIvBand(preset.ivRankMin === undefined && preset.ivRankMax === undefined ? "" : (band?.[0] ?? ""));
+    setTargetPct(preset.targetPct);
+    setStopPct(preset.stopPct);
+    setTimeStopDte(preset.timeStopDte);
+    setBacktestPreset(null);
+  }, [preset, setBacktestPreset]);
   /** A sweep cell's parameters become the Rules row's. */
   const loadCell = (values: { [K in SweepAxis]?: number | undefined }) => {
     if (values.smaDays !== undefined) setSmaDays(values.smaDays);
@@ -192,6 +211,7 @@ export function BacktestPanel() {
             <option value="low">Low (0 to 30)</option>
             <option value="mid">Middle (30 to 70)</option>
             <option value="high">High (70 to 100)</option>
+            <option value="upper">Upper half (50 to 100)</option>
           </select>
         </label>
         <div className="flex flex-col gap-0.5">

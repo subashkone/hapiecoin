@@ -92,6 +92,8 @@ const RawEnv = z.object({
   FILLS_INGEST_MS: z.coerce.number().int().min(0).default(300_000),
   /** ADR-098: how far back the chain history backfill reconstructs end-of-day chains from the venue's candles; 0 turns the job off. */
   CHAIN_HISTORY_DAYS: z.coerce.number().int().min(0).max(400).default(365),
+  /** ADR-101: how often the playbook records are brought up to the latest recorded day (ms); 0 turns the job off. */
+  PLAYBOOK_RECORDS_MS: z.coerce.number().int().min(0).default(6 * 3_600_000),
   /** Cap on any request body, bytes (GAPS #70, ADR-061); the banner image upload keeps its own 5 MB. */
   API_BODY_LIMIT_BYTES: z.coerce.number().int().min(1024).default(1_048_576),
   /** Order-route budget per signed-in user per minute: live place, retry, batch, positions exit (GAPS #70). */
@@ -151,6 +153,8 @@ export interface Config {
   fillsIngestMs: number;
   /** ADR-098: days of chain history reconstructed from candles; 0 = job off. */
   chainHistoryDays: number;
+  /** ADR-101: playbook records refresh interval, ms; 0 = job off. */
+  playbookRecordsMs: number;
   /** Cap on any request body, bytes (GAPS #70). */
   bodyLimitBytes: number;
   /** Order-route budget per user per minute (GAPS #70). */
@@ -320,6 +324,7 @@ export function loadConfig(
     rulesTickMs: e.RULES_TICK_MS,
     fillsIngestMs: e.FILLS_INGEST_MS,
     chainHistoryDays: e.CHAIN_HISTORY_DAYS,
+    playbookRecordsMs: e.PLAYBOOK_RECORDS_MS,
     bodyLimitBytes: e.API_BODY_LIMIT_BYTES,
     orderRateMaxPerMin: e.ORDER_RATE_MAX_PER_MIN,
     jobsRole: e.API_JOBS_ROLE,

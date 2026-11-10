@@ -92,6 +92,25 @@ describe("HC-TR-185 the Backtest tab", () => {
     await waitFor(() => expect(mock.calls.some((c) => c.url.includes("axis1=targetPct") && !c.url.includes("axis2="))).toBe(true));
   });
 
+  it("HC-WS-119 a preset from the Playbooks tab fills the template, size, range, split and every rule once, then clears itself", async () => {
+    useUiStore.setState({ backtestPreset: { template: "Buy Call", lots: 10, range: "7D", folds: 2, minDte: 3, smaDays: 20, smaSide: "below", ivRankMin: 50, ivRankMax: 100, targetPct: 25, stopPct: 100, timeStopDte: 1 } });
+    renderWithProviders(<BacktestPanel />);
+    // these rules leave no entry on the synthetic days, so the loaded state is "empty", not "ready"
+    await waitFor(() => expect(["ready", "empty"]).toContain(screen.getByTestId("backtest-panel").dataset["state"]), { timeout: 8000 });
+    await waitFor(() => expect(useUiStore.getState().backtestPreset).toBeNull());
+    expect(screen.getByTestId<HTMLSelectElement>("backtest-template").value).toBe("Buy Call");
+    expect(screen.getByTestId<HTMLSelectElement>("backtest-mindte").value).toBe("3");
+    expect(screen.getByTestId<HTMLSelectElement>("backtest-sma").value).toBe("20");
+    expect(screen.getByTestId<HTMLSelectElement>("backtest-sma-side").value).toBe("below");
+    expect(screen.getByTestId<HTMLSelectElement>("backtest-ivrank").value).toBe("upper");
+    expect(screen.getByTestId<HTMLSelectElement>("backtest-target").value).toBe("25");
+    expect(screen.getByTestId<HTMLSelectElement>("backtest-stop").value).toBe("100");
+    expect(screen.getByTestId<HTMLSelectElement>("backtest-timestop").value).toBe("1");
+    expect(screen.getByTestId<HTMLSelectElement>("backtest-folds-select").value).toBe("2");
+    expect(screen.getByTestId("backtest-range-7D").getAttribute("aria-pressed")).toBe("true");
+    await waitFor(() => expect(mock.calls.some((c) => c.url.includes("template=Buy+Call") && c.url.includes("lots=10") && c.url.includes("folds=2") && c.url.includes("ivRankMin=50"))).toBe(true));
+  });
+
   it("HC-WS-117 on a venue without a published fee rule the fees select is fixed to none and disabled, so the tab opens without an error", async () => {
     useUiStore.setState({ asset: "BTC", analysisTab: "backtest", venue: "deribit" });
     renderWithProviders(<BacktestPanel />);

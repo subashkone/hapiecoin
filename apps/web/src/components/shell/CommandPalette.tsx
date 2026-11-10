@@ -313,6 +313,13 @@ export function buildCommands(opts: {
         run: () => useUiStore.getState().setAnalysisTab("backtest"),
       },
       {
+        id: "act:analysis-playbooks",
+        label: "Analysis: Playbooks",
+        group: "Actions",
+        keywords: ["playbook", "plan", "record", "strategy", "evidence"],
+        run: () => useUiStore.getState().setAnalysisTab("playbooks"),
+      },
+      {
         id: "act:analysis-replay",
         label: "Analysis: Replay",
         group: "Actions",

@@ -103,7 +103,24 @@ function normaliseLayers(raw: unknown): ChartLayers {
   if (raw && typeof raw === "object") for (const k of LAYER_KEYS) if (typeof (raw as Record<string, unknown>)[k] === "boolean") out[k] = (raw as Record<string, boolean>)[k]!;
   return out;
 }
-export type AnalysisTab = "payoff" | "scenarios" | "greeks" | "vol" | "structure" | "ladder" | "backtest" | "replay";
+export type AnalysisTab = "payoff" | "scenarios" | "greeks" | "vol" | "structure" | "ladder" | "backtest" | "replay" | "playbooks";
+
+/** ADR-101: a playbook opened in the Backtest tab hands over its template and rules once; the tab applies them and clears the preset. */
+export interface BacktestPreset {
+  template: string | null;
+  lots?: number | undefined;
+  range?: "7D" | "30D" | "90D" | "1Y" | undefined;
+  folds?: number | undefined;
+  minDte?: number | undefined;
+  smaDays?: number | undefined;
+  smaSide?: "above" | "below" | undefined;
+  ivRankMin?: number | undefined;
+  ivRankMax?: number | undefined;
+  /** Percent, as the Rules row shows them. */
+  targetPct?: number | undefined;
+  stopPct?: number | undefined;
+  timeStopDte?: number | undefined;
+}
 export type BuilderSubTab = "builder" | "templates" | "wizard";
 /** What the analysis pane shows (ADR-026): the Builder legs (null), a paper / live strategy, or ticked exchange positions. */
 export type PaneSource = { kind: "strategy"; id: string } | { kind: "positions"; productIds: number[] } | null;
@@ -182,6 +199,7 @@ export interface UiState {
   /** Left-pane tab, right-pane tab and the Builder sub-tab (HC-WS-005, HC-TR-001). */
   workspaceTab: WorkspaceTab;
   analysisTab: AnalysisTab;
+  backtestPreset: BacktestPreset | null;
   builderTab: BuilderSubTab;
   /** Payoff target price (USD per unit) and days ahead (HC-WS-047/048); null price = spot. */
   targetPrice: number | null;
@@ -223,6 +241,7 @@ export interface UiState {
   setTemplatesStrip: (open: boolean) => void;
   setWorkspaceTab: (tab: WorkspaceTab, force?: boolean) => void;
   setAnalysisTab: (tab: AnalysisTab) => void;
+  setBacktestPreset: (preset: BacktestPreset | null) => void;
   setBuilderTab: (tab: BuilderSubTab) => void;
   setTarget: (patch: { price?: number | null; days?: number }) => void;
   setChainRange: (range: ChainRange) => void;
@@ -324,6 +343,7 @@ export const useUiStore = create<UiState>()(
       templatesStrip: true,
       workspaceTab: "chain",
       analysisTab: "payoff",
+      backtestPreset: null,
       builderTab: "builder",
       targetPrice: null,
       targetDays: 0,
@@ -404,6 +424,7 @@ export const useUiStore = create<UiState>()(
         set(clears ? { workspaceTab, paneSource: null, adjust: null, adjustDiscard: null } : { workspaceTab });
       },
       setAnalysisTab: (analysisTab) => set({ analysisTab }),
+      setBacktestPreset: (backtestPreset) => set({ backtestPreset }),
       setBuilderTab: (builderTab) => set({ builderTab }),
       setTarget: (patch) =>
         set((st) => ({
@@ -512,7 +533,7 @@ export const useUiStore = create<UiState>()(
         const p = raw as Partial<UiState>;
         const venue = (VENUES as readonly string[]).includes(p.venue ?? "") ? (p.venue as VenueId) : DEFAULT_VENUE;
         const tabs: WorkspaceTab[] = ["chain", "builder", "paper", "live", "journal", "screener"];
-        const atabs: AnalysisTab[] = ["payoff", "scenarios", "greeks", "vol", "structure", "ladder", "backtest", "replay"];
+        const atabs: AnalysisTab[] = ["payoff", "scenarios", "greeks", "vol", "structure", "ladder", "backtest", "replay", "playbooks"];
         return {
           ...current,
           ...p,
