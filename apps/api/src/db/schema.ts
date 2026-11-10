@@ -6,7 +6,7 @@
  * Money-shaped values (fee percentages, conversion rate, lot sizes) are stored as decimal strings in
  * text/jsonb columns, never as floats (brief: decimal strings cross package boundaries).
  */
-import { DEFAULT_MINDFUL, type MindfulSettings, type PlanIntervals, type PlaybookRecord } from "@hapiecoin/schema";
+import { DEFAULT_MINDFUL, type MindfulSettings, type PlanIntervals, type PlaybookRecord, type ProposalLeg } from "@hapiecoin/schema";
 import { sql } from "drizzle-orm";
 import { bigserial, boolean, customType, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
@@ -173,6 +173,8 @@ export const userSettings = pgTable("user_settings", {
     .default("comfortable"),
   /** Mindful Trading pause (ADR-074): { enabled, thresholdUsd, pauseSeconds }. */
   mindful: jsonb("mindful").$type<MindfulSettings>().notNull().default(DEFAULT_MINDFUL),
+  /** ADR-102: a Telegram message for each new playbook proposal whose record passes; needs the linked chat. */
+  proposalsTelegram: boolean("proposals_telegram").notNull().default(false),
   updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
 });
 
@@ -834,4 +836,47 @@ export const playbookRecords = pgTable(
     record: jsonb("record").$type<PlaybookRecord>().notNull(),
   },
   (t) => [uniqueIndex("playbook_records_uq").on(t.playbookId, t.venue, t.asset)],
+);
+
+/**
+ * ADR-102 (HC-TR-207): what a playbook would place on the latest recorded day, one row per playbook, venue, asset and
+ * day, detected after the end-of-day write. Global rows; the per-user mark lives in `playbook_proposal_marks`.
+ */
+export const playbookProposals = pgTable(
+  "playbook_proposals",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    playbookId: text("playbook_id").notNull(),
+    venue: text("venue", { enum: ["delta_india", "deribit"] }).notNull().default("delta_india"),
+    asset: text("asset", { enum: ["BTC", "ETH", "XAUT"] }).notNull(),
+    /** The recorded day the plan enters on (YYYY-MM-DD). */
+    day: text("day").notNull(),
+    expiry: text("expiry").notNull(),
+    spot: text("spot").notNull(),
+    legs: jsonb("legs").$type<ProposalLeg[]>().notNull(),
+    /** Decimal strings in cents; the extremes are null when unbounded. */
+    entryCost: text("entry_cost").notNull(),
+    maxProfit: text("max_profit"),
+    maxLoss: text("max_loss"),
+    recordStatus: text("record_status", { enum: ["pass", "fail", "insufficient", "control-ok", "control-alarm"] }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("playbook_proposals_uq").on(t.playbookId, t.venue, t.asset, t.day), index("playbook_proposals_day_idx").on(t.venue, t.day)],
+);
+
+/** ADR-102 (HC-TR-208, HC-TR-209): a user's mark on a proposal (taken in the Builder, dismissed) and when their Telegram message for it went out. */
+export const playbookProposalMarks = pgTable(
+  "playbook_proposal_marks",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    proposalId: bigserial("proposal_id", { mode: "number" })
+      .notNull()
+      .references(() => playbookProposals.id, { onDelete: "cascade" }),
+    status: text("status", { enum: ["new", "taken", "dismissed"] }).notNull().default("new"),
+    telegramSentAt: timestamp("telegram_sent_at", { withTimezone: true, mode: "date" }),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("playbook_proposal_marks_uq").on(t.userId, t.proposalId), index("playbook_proposal_marks_sent_idx").on(t.userId, t.telegramSentAt)],
 );

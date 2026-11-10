@@ -1214,5 +1214,16 @@
     "how": "chain-eod-history.ts runs as a leader job (ADR-062) when CHAIN_HISTORY_DAYS is not 0 (default 365): for every expiry date from today plus 100 days back to the horizon it finds the strikes Delta listed by probing the calls nearest the money out to eight grid steps each side, then walking the strike grid (BTC 200, ETH 10) over the spot range of the expiry's life and outward until eight consecutive strikes have no candles (a strike whose call has none is unlisted, its put is not asked for), takes each option's mark at the settlement hour from the hourly MARK candles (the close of the bar ending at the hour, else the open of the bar starting at it, kept as the venue's decimal string), and writes chain_eod rows with source = candles and no mark IV, never on a day the snapshotter recorded, never on the expiry's own settlement day and never before the day's settlement bar has closed; the live recorder counts only recorded rows when deciding a day is done and replaces a reconstructed row with its own (the day reads as mixed); one row per expiry in chain_eod_backfill makes a restarted job resume, a scan on or after the expiry date stands for good, an open expiry is rescanned after a week, a past date without a strike or a symbol failing three attempts is retried next run and a failed run repeats after ten minutes; requests are spaced 270 ms apart; the Backtest coverage line says how many days are reconstructed; XAUT and Deribit are not reconstructed",
     "evidence": "ADR-098 (9 Nov 2026): apps/api/src/chain-eod-history.ts, chain-eod.ts (recorded-only gate, upsert), db chain_eod.source + chain_eod_backfill (migration 0024), venues VenueRest.candles, config CHAIN_HISTORY_DAYS, pricing EodDay.source / coverage.reconstructedDays; unit chain-eod-history.test.ts HC-SH-140 (14), backtest.test.ts HC-TR-184, backtest-panel.test.tsx HC-TR-185; fidelity vs the live record 0.1 % (quarterly) to 1 % (1-DTE)",
     "test": "unit (api + pricing + web)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Playbooks tab",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Telegram opt-in for proposals: a per-user setting, off by default, disabled until the chat is linked under Alerts, with the server-side daily cap",
+    "how": "UserSettings.proposalsTelegram (schema, default false so an older client's PUT keeps working, at the price of switching the opt-in off, GAPS #139; user_settings.proposals_telegram, migration 0026) saved through PUT /v1/settings like the other preferences (not a safety knob: no second factor); the checkbox in the Playbooks tab's proposals strip (proposals-telegram-toggle) reads useTelegramStatus and stays disabled with link Telegram under Alerts first until linked; PROPOSALS_TELEGRAM_CAP (default 3, 0 off) bounds the messages per user per UTC day",
+    "evidence": "ADR-102 (10 Nov 2026): packages/schema/src/accounts.ts, apps/api/src/routes/settings.ts, config.ts, PlaybooksPanel.tsx; unit settings.test.ts, proposals.test.ts HC-TR-209, playbooks-panel.test.tsx HC-SH-141",
+    "test": "unit (api + web)"
   }
 ]

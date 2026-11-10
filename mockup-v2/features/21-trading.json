@@ -1812,5 +1812,38 @@
     "how": "apps/api/src/routes/playbooks.ts: venue from the query (default delta_india), listPlaybookRecords rows {playbookId, asset, record}, 503 when none, Cache-Control private max-age 300; the record carries computedAt, first / last day, days and reconstructed days, entries, no-signal count, stats, the two folds, losing years, exit counts, the trial count and the status",
     "evidence": "ADR-101 (9 Nov 2026): apps/api/src/routes/playbooks.ts, app.ts; unit playbooks.test.ts HC-TR-206",
     "test": "unit (api)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Backtest (engine + API)",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Proposal detector: after the end-of-day chain write every non-control playbook with a record says whether its plan would enter on the latest recorded day, and the structure it would place is stored once per playbook, venue, asset and day",
+    "how": "packages/pricing/src/backtest.ts entryFor (the backtest's entry step, shared: conditions, the first listed expiry at or past minDte, the template on that day's ladder) and playbooks.ts proposalFor (the latest day; net premium and expiry extremes; the control is refused); apps/api/src/proposals.ts detectProposals (eodDaysCached per venue and asset, the record status gate, insert-if-absent on the unique index playbook/venue/asset/day) called from the first snapshotter's after-hook in main.ts (idempotent, so the cadence only decides how soon after the write a proposal appears); db playbook_proposals; migration 0026",
+    "evidence": "ADR-102 (10 Nov 2026): packages/pricing/src/backtest.ts, playbooks.ts, apps/api/src/proposals.ts, db/schema.ts; unit backtest.test.ts (runBacktest unchanged), playbooks.test.ts (proposalFor), api proposals.test.ts HC-TR-207",
+    "test": "unit (pricing + api)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Backtest (engine + API)",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "GET /v1/proposals and POST /v1/proposals/{id}/mark: a day's proposals on a venue with the caller's marks (new, taken, dismissed), the newest proposal day by default (the latest recorded chain, yesterday until the 12:00 UTC write); an empty day is an empty list",
+    "how": "apps/api/src/routes/proposals.ts behind the session: listProposals joins playbook_proposal_marks for the caller (status, telegramSentAt), ordered by asset and playbook, Cache-Control private no-store; markProposal upserts the caller's mark (taken once opened in the Builder, dismissed to hide), 404 for an unknown id, 400 for a status that is not taken or dismissed; marks are per user, so one trader's dismissal never hides another's card",
+    "evidence": "ADR-102 (10 Nov 2026): apps/api/src/routes/proposals.ts, proposals.ts listProposals / markProposal, app.ts; unit proposals.test.ts HC-TR-208",
+    "test": "unit (api)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Backtest (engine + API)",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Telegram delivery of new proposals through the ADR-057 bot: pass-status proposals only, to users who linked a chat and opted in, at most PROPOSALS_TELEGRAM_CAP a day each, once per proposal",
+    "how": "apps/api/src/proposals.ts deliverProposals after each detection: the proposals detected in the last 24 hours with recordStatus pass, recipients = users with telegram_chat_id joined to user_settings.proposals_telegram = true, the day's sent count from the marks, a message per proposal (plan, structure, expiry, size, net premium, max loss, the warning, the app link; never a key, never an instruction to place), the mark's telegramSentAt set only after a successful send so a blocked chat retries next run; nothing attempted without the bot or with the cap at 0",
+    "evidence": "ADR-102 (10 Nov 2026): apps/api/src/proposals.ts deliverProposals / proposalMessage, config.ts PROPOSALS_TELEGRAM_CAP; unit proposals.test.ts HC-TR-209 with FakeTelegram",
+    "test": "unit (api)"
   }
 ]

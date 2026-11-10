@@ -6,10 +6,11 @@ import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { Underlying, PublicPageSettings, AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
 import type { SweepAxisSpec } from "@hapiecoin/pricing";
-import { parseSweepValues } from "@hapiecoin/schema";
+import { ProposalMarkBody, parseSweepValues } from "@hapiecoin/schema";
 import { type MockBacktestParams, mockBacktest, mockSweep } from "./mock-backtest";
 import { mockReplayChain, mockReplayExpiries, mockReplaySteps } from "./mock-replay";
 import { mockPlaybookRecords } from "./mock-playbooks";
+import { type MockProposalMark, mockProposals } from "./mock-proposals";
 import { expiriesOf } from "./fixtures/chain";
 import { mockIvHistory, mockMarkHistory } from "./mock-market";
 import { DEFAULT_PUBLIC_PAGE, Handle, publicTraderFrom, AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal, type CloseReason, RulesBody, ruleLevel, nearestSettlement, settleInstantMs, MAX_ACCOUNTS_PER_BROKER, type FillLike, verifiedFromFills, sumSince, dayBack } from "@hapiecoin/schema";
@@ -30,6 +31,8 @@ interface Account {
   password: string;
   emailVerified: boolean;
   settings: UserSettings;
+  /** ADR-102: this account's marks on today's playbook proposals, by proposal id. */
+  proposalMarks: Map<string, MockProposalMark>;
   brokers: Broker[];
   /** Connected keys (accounts, ADR-068): several per broker, told apart by their label. */
   credentials: BrokerCredentialPublic[];
@@ -177,6 +180,7 @@ function defaultSettings(): UserSettings {
     theme: "dark",
     density: "comfortable",
     mindful: { enabled: true, thresholdUsd: "0", pauseSeconds: 30 },
+    proposalsTelegram: false,
   };
 }
 
@@ -229,6 +233,7 @@ export function createAccount(
     password: input.password ?? "Passw0rd!",
     emailVerified: input.verified ?? true,
     settings: defaultSettings(),
+    proposalMarks: new Map(),
     brokers: [GLOBAL_BROKER],
     credentials: [],
     fills: [],
@@ -708,6 +713,25 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const venue = c.req.query("venue") === "deribit" ? "deribit" : "delta_india";
     c.header("Cache-Control", "private, max-age=300");
     return c.json(mockPlaybookRecords(state.backtestDays, venue));
+  });
+  // ADR-102: today's proposals through the real detector over the synthetic chains, with this account's marks
+  v1.get("/proposals", (c) => {
+    const acc = current(c)!;
+    const venue = c.req.query("venue") === "deribit" ? "deribit" : "delta_india";
+    c.header("Cache-Control", "private, no-store");
+    return c.json(state.backtestDays === 0 ? { venue, day: new Date().toISOString().slice(0, 10), items: [] } : mockProposals(state.backtestDays, venue, acc.proposalMarks));
+  });
+  v1.post("/proposals/:id/mark", async (c) => {
+    const acc = current(c)!;
+    const id = c.req.param("id");
+    const parsed = ProposalMarkBody.safeParse(await c.req.json());
+    if (!parsed.success) return err(c, 400, "BAD_REQUEST", "status must be taken or dismissed");
+    const body = parsed.data;
+    const all = mockProposals(state.backtestDays, "delta_india", acc.proposalMarks).items.concat(mockProposals(state.backtestDays, "deribit", acc.proposalMarks).items);
+    const found = all.find((p) => p.id === id);
+    if (!found) return err(c, 404, "NOT_FOUND", "Proposal not found");
+    acc.proposalMarks.set(id, { status: body.status, telegramSentAt: acc.proposalMarks.get(id)?.telegramSentAt ?? null });
+    return c.json({ ...found, status: body.status });
   });
   // ADR-079: replay of an expiry's chain over synthetic recorded instants
   const assetOf = (c: Context): Underlying | null => {

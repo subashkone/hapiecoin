@@ -7,8 +7,9 @@
  * hero-or-zero, is the control: it ships to fail, and a record that passes says the engine or the data is suspect.
  * Nothing here is a recommendation; every card carries its record and the warning that a backtest is not a forecast.
  */
-import type { BacktestConditions, BacktestExits, BacktestFold, BacktestOptions, BacktestStats, BacktestTrade } from "./backtest.js";
-import { type StrategyTemplate, templateByName } from "./templates.js";
+import { type BacktestConditions, type BacktestExits, type BacktestFold, type BacktestOptions, type BacktestStats, type BacktestTrade, type EntrySkip, type EodDay, entryFor } from "./backtest.js";
+import { expiryExtremes } from "./strategy.js";
+import { type MaterialisedLeg, type StrategyTemplate, templateByName } from "./templates.js";
 
 export type PlaybookAsset = "BTC" | "ETH" | "XAUT";
 export type PlaybookStatus = "pass" | "fail" | "insufficient" | "control-ok" | "control-alarm";
@@ -183,6 +184,40 @@ export function playbookTemplate(p: Playbook): StrategyTemplate | undefined {
 /** The engine options for a playbook's record: its plan over `base` (lots, units, calendar, fees, range), with two folds for the in-sample / out-of-sample split. */
 export function playbookOptions(p: Playbook, base: Omit<BacktestOptions, "minDte" | "conditions" | "exits" | "folds" | "lots">): BacktestOptions {
   return { ...base, lots: p.lots, minDte: p.minDte, conditions: p.conditions, exits: p.exits, folds: 2 };
+}
+
+/** What a playbook would place today (ADR-102): the structure on the latest recorded day, its net premium and expiry extremes. */
+export interface PlaybookProposal {
+  /** The recorded day the plan would enter on (YYYY-MM-DD). */
+  day: string;
+  spot: number;
+  expiry: string;
+  legs: MaterialisedLeg[];
+  /** Net premium paid (positive) or received (negative), in underlying-quote money for the plan's size. */
+  entryCost: number;
+  /** Expiry extremes for the plan's size; Infinity when unbounded. */
+  maxProfit: number;
+  maxLoss: number;
+}
+export type ProposalSkip = EntrySkip | "control" | "noDays";
+export type ProposalResult = { ok: true; proposal: PlaybookProposal } | { ok: false; reason: ProposalSkip };
+
+/**
+ * Whether the playbook's plan enters on the latest recorded day and, when it does, the concrete structure: exactly the
+ * entry the record would have taken, through the same `entryFor` the backtest uses. The control never proposes.
+ */
+export function proposalFor(p: Playbook, daysIn: readonly EodDay[], base: { unitsPerLot: number; calendar: BacktestOptions["calendar"] }): ProposalResult {
+  if (p.control) return { ok: false, reason: "control" };
+  const tpl = playbookTemplate(p);
+  if (!tpl || daysIn.length === 0) return { ok: false, reason: "noDays" };
+  const days = [...daysIn].sort((a, b) => a.day.localeCompare(b.day));
+  const i = days.length - 1;
+  const entry = entryFor(days, i, tpl, { lots: p.lots, unitsPerLot: base.unitsPerLot, minDte: p.minDte, calendar: base.calendar, conditions: p.conditions });
+  if (!entry.ok) return { ok: false, reason: entry.reason };
+  const d = days[i]!;
+  const entryCost = entry.legs.reduce((sum, l) => sum + (l.kind === "future" ? 0 : (l.side === "buy" ? 1 : -1) * l.quantity * l.price), 0);
+  const { maxProfit, maxLoss } = expiryExtremes(entry.legs);
+  return { ok: true, proposal: { day: d.day, spot: d.spot, expiry: entry.expiry, legs: entry.placed, entryCost, maxProfit, maxLoss } };
 }
 
 /** Calendar years (by exit day) whose closed trades sum below zero, with the total. */

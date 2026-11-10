@@ -73,6 +73,8 @@ export const UserSettings = z.strictObject({
   density: Density,
   /** Absent from an older client's PUT: the default (on, any loss, 30 s). */
   mindful: MindfulSettings.default(() => ({ ...DEFAULT_MINDFUL })),
+  /** ADR-102: a Telegram message for each new playbook proposal whose record passes (needs a linked chat; off by default; absent from an older client's PUT). */
+  proposalsTelegram: z.boolean().default(false),
 });
 export type UserSettings = z.infer<typeof UserSettings>;
 

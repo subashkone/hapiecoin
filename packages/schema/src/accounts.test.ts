@@ -43,6 +43,7 @@ const settings: UserSettings = {
   theme: "dark",
   density: "comfortable",
   mindful: { enabled: true, thresholdUsd: "0", pauseSeconds: 30 },
+  proposalsTelegram: false,
 };
 
 const broker: Broker = {
