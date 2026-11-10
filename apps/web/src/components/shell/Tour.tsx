@@ -33,7 +33,8 @@ export function TourOverlay({ onClose }: { onClose: (completed: boolean) => void
     const ph = popRef.current?.offsetHeight ?? 160;
     if (!target) {
       setBox(null);
-      setPop({ left: Math.max(8, (window.innerWidth - pw) / 2), top: Math.max(8, (window.innerHeight - ph) / 2) });
+      // whole pixels: a half-pixel centre renders the card's text differently from run to run (GAPS #137)
+      setPop({ left: Math.max(8, Math.round((window.innerWidth - pw) / 2)), top: Math.max(8, Math.round((window.innerHeight - ph) / 2)) });
       return;
     }
     try { target.scrollIntoView({ block: "center", inline: "nearest" }); } catch { /* jsdom */ }
@@ -44,7 +45,7 @@ export function TourOverlay({ onClose }: { onClose: (completed: boolean) => void
     if (r.bottom + 14 + ph <= window.innerHeight - 8) top = r.bottom + 14;
     else if (r.top - 14 - ph >= 8) top = r.top - 14 - ph;
     else { top = Math.max(8, Math.min(r.top, window.innerHeight - ph - 8)); left = r.right + 14 + pw <= window.innerWidth ? r.right + 14 : Math.max(8, r.left - pw - 14); }
-    setPop({ left, top });
+    setPop({ left: Math.round(left), top: Math.round(top) });
   }, [step]);
 
   useEffect(() => {
@@ -52,7 +53,10 @@ export function TourOverlay({ onClose }: { onClose: (completed: boolean) => void
     place();
     const t1 = setTimeout(place, 180);
     const t2 = setTimeout(place, 600);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    // the card's height depends on the web font: place once more when the fonts have arrived (GAPS #137)
+    let live = true;
+    if ("fonts" in document) void document.fonts.ready.then(() => { if (live) place(); });
+    return () => { live = false; clearTimeout(t1); clearTimeout(t2); };
   }, [step, place, setWorkspaceTab]);
   useEffect(() => {
     const waits = step.waitFor;
