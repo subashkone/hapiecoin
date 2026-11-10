@@ -158,7 +158,7 @@ for (const theme of ["dark", "light"] as const) {
       await page.getByTestId("trade-now").click();
       await expect(page.getByTestId("live-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
       await expect(page.getByTestId("live-card").getByTestId("order-chip").first()).toHaveAttribute("data-state", "filled");
-      await shot(page, "visual", `analyse-live-${theme}`);
+      await shot(page, "visual", `analyse-live-${theme}`, { mask: [page.getByTestId("card-batch")] }); // the batch badge shows the client's random idempotency key
       // ADR-044 the live confirm (HC-TR-152): venue check, band, order type, hold-to-place
       await page.getByTestId("live-card").getByTestId("card-adjust").click();
       const lwb = page.getByTestId("adjust-workbench");

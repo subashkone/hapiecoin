@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type EodDay, type EodRow } from "./backtest.js";
 import { calendarFor } from "./calendar.js";
-import { SWEEP_MAX_TRIALS, applyAxis, plateauOf, sweepBacktest, sweepShape } from "./sweep.js";
+import { SWEEP_MAX_TRIALS, SWEEP_MAX_VALUES, applyAxis, plateauOf, sweepBacktest, sweepShape } from "./sweep.js";
 import { templateByName } from "./templates.js";
 
 const cal = calendarFor(12);
@@ -51,6 +51,9 @@ describe("HC-TR-204 the bounded sweep", () => {
     expect(() => sweepShape([{ axis: "minDte", values: [3, 1] }])).toThrow(/must increase/);
     expect(() => sweepShape([{ axis: "minDte", values: [1] }, { axis: "minDte", values: [2] }])).toThrow(/must differ/);
     expect(() => sweepShape([])).toThrow(/one or two axes/);
+    expect(() => sweepShape([{ axis: "minDte", values: [] }])).toThrow(/at least one value/);
+    // the per-axis maxima are what bound the grid to the cap: a full 8 × 6 grid is exactly the cap, never over it
+    expect(SWEEP_MAX_VALUES[0] * SWEEP_MAX_VALUES[1]).toBe(SWEEP_MAX_TRIALS);
   });
 
   it("the plateau of a lone spike is 0, of a flat surface 1, an edge cell counts only its neighbours, and a zero cell reads null", () => {
