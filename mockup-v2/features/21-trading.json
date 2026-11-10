@@ -1790,5 +1790,27 @@
     "how": "packages/pricing/src/sweep.ts: SWEEP_AXES smaDays / minDte / targetPct / stopPct / timeStopDte, applyAxis sets the one option, sweepShape refuses more than 8 × 6 values, a repeated or non-increasing value or two equal axes (RangeError), sweepBacktest runs the grid row-major through runBacktest with the same fees / conditions / exits and reports per trial trades, net total, gross, fees, win rate, max drawdown, profit factor and plateau (the share of grid neighbours one step away whose net total keeps the same sign and at least half the size; null for a zero cell or no neighbours), plus best (highest net total among trials with a closed trade) and the cap; GET /v1/backtest/sweep takes the single run's query plus axis1 / values1 and optional axis2 / values2 (comma lists, each value checked against the single run's own field bounds by parseSweepValues), turns a shape error into a 400 before any data is read, 503 with no recorded day, cached five minutes",
     "evidence": "ADR-100 (9 Nov 2026): packages/pricing/src/sweep.ts, packages/schema/src/backtest.ts SweepQuery / SweepResult, apps/api/src/routes/backtest.ts toApiSweep / optionsFromQuery; unit sweep.test.ts HC-TR-204, routes/backtest.test.ts HC-TR-204",
     "test": "unit (pricing + api)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Backtest (engine + API)",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Playbooks as data with a stored record: seven research-named plans (a template, conditions, exits, size, rationale, evidence, trial count, thresholds), hero-or-zero as the control, and a leader job that keeps each record up to the latest recorded day",
+    "how": "packages/pricing/src/playbooks.ts PLAYBOOKS (trend-calls, trend-puts, premium-harvest, expiry-week-credit, pin-butterfly, covered-call, hero-or-zero as the inline control), playbookTemplate / playbookOptions (the plan over base options with two folds) / playbookStatus (pass needs >= 20 closed trades, net > 0 and the out-of-sample half > 0; fail otherwise with the trades; insufficient below; the control inverts to control-ok / control-alarm) / losingYearsOf; apps/api/src/playbooks.ts computePlaybookRecord (the engine over the whole recorded history net of the venue's fee rule, projected to cents by projectPlaybookRecord) and refreshPlaybookRecords (one upserted playbook_records row per playbook, venue and asset, recomputed whenever the recorded history's last day or day count changes, so the candle backfill behind a record refreshes it too; one failing playbook never stalls the rest; a control-alarm is logged); the record states its fees basis (venue rule or none), startPlaybookRecords leader job every PLAYBOOK_RECORDS_MS (default six hours, once at start, 0 off); migration 0025",
+    "evidence": "ADR-101 (9 Nov 2026): packages/pricing/src/playbooks.ts, packages/schema/src/playbooks.ts, apps/api/src/playbooks.ts, db playbook_records; unit playbooks.test.ts HC-TR-205 (pricing + api)",
+    "test": "unit (pricing + api)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Analyse · Backtest (engine + API)",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "GET /v1/playbooks: every playbook's stored record on the venue's chain history with its status, behind the session, 503 before the first record",
+    "how": "apps/api/src/routes/playbooks.ts: venue from the query (default delta_india), listPlaybookRecords rows {playbookId, asset, record}, 503 when none, Cache-Control private max-age 300; the record carries computedAt, first / last day, days and reconstructed days, entries, no-signal count, stats, the two folds, losing years, exit counts, the trial count and the status",
+    "evidence": "ADR-101 (9 Nov 2026): apps/api/src/routes/playbooks.ts, app.ts; unit playbooks.test.ts HC-TR-206",
+    "test": "unit (api)"
   }
 ]

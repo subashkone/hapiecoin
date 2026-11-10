@@ -3,6 +3,7 @@ import { serve } from "@hono/node-server";
 import { startReconciler } from "./live-reconcile.js";
 import { type JobStarter, startJobs } from "./jobs.js";
 import { historyTargets, startEodHistoryBackfill } from "./chain-eod-history.js";
+import { startPlaybookRecords } from "./playbooks.js";
 import { MemoryLeaderLock, RedisLeaderLock } from "./leader.js";
 import type { AppDeps } from "./routes/shared.js";
 import { Redis } from "ioredis";
@@ -164,6 +165,8 @@ if (config.chainHistoryDays !== 0) {
   const targets = historyTargets(config.apiVenues, (venue) => clients.restFor(venue), config.chainHistoryDays);
   if (targets.length > 0) starters.push({ name: "chain-history", start: () => startEodHistoryBackfill({ db: deps.db, logger }, targets) });
 }
+// ADR-101: every playbook's record over the recorded chain history, brought up to the latest recorded day; 0 turns it off
+if (config.playbookRecordsMs !== 0) starters.push({ name: "playbook-records", start: () => startPlaybookRecords({ db: deps.db, logger }, config.apiVenues, config.playbookRecordsMs) });
 const jobs = startJobs({
   role: config.nodeEnv === "test" ? "off" : config.jobsRole,
   lock: redis ? new RedisLeaderLock(redis) : new MemoryLeaderLock(),

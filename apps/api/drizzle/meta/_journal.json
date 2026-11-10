@@ -176,6 +176,13 @@
       "when": 1794231396754,
       "tag": "0024_abandoned_dorian_gray",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794247009836,
+      "tag": "0025_cold_silver_samurai",
+      "breakpoints": true
     }
   ]
 }

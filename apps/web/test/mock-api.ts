@@ -9,6 +9,7 @@ import type { SweepAxisSpec } from "@hapiecoin/pricing";
 import { parseSweepValues } from "@hapiecoin/schema";
 import { type MockBacktestParams, mockBacktest, mockSweep } from "./mock-backtest";
 import { mockReplayChain, mockReplayExpiries, mockReplaySteps } from "./mock-replay";
+import { mockPlaybookRecords } from "./mock-playbooks";
 import { expiriesOf } from "./fixtures/chain";
 import { mockIvHistory, mockMarkHistory } from "./mock-market";
 import { DEFAULT_PUBLIC_PAGE, Handle, publicTraderFrom, AlertCreate, AlertPatch, AlertTrigger, INTERVAL_MONTHS, LIMIT_KEYS, LIMIT_LABELS, MAX_ALERTS, bannerSchedule, base64Bytes, breakdownFor, commissionFor, invoiceNumber, toPaise, maskApiKey, monthKey, renderTemplate, realizedPnl, toDecimal, type CloseReason, RulesBody, ruleLevel, nearestSettlement, settleInstantMs, MAX_ACCOUNTS_PER_BROKER, type FillLike, verifiedFromFills, sumSince, dayBack } from "@hapiecoin/schema";
@@ -701,6 +702,13 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   };
   v1.get("/backtest", backtestHandler);
   v1.get("/backtest/sweep", backtestHandler);
+  // ADR-101: every playbook's record over the synthetic chains through the real engine; 503 before any day is recorded
+  v1.get("/playbooks", (c) => {
+    if (state.backtestDays === 0) return err(c, 503, "UNAVAILABLE", "no playbook record exists for delta_india yet");
+    const venue = c.req.query("venue") === "deribit" ? "deribit" : "delta_india";
+    c.header("Cache-Control", "private, max-age=300");
+    return c.json(mockPlaybookRecords(state.backtestDays, venue));
+  });
   // ADR-079: replay of an expiry's chain over synthetic recorded instants
   const assetOf = (c: Context): Underlying | null => {
     const a = c.req.query("asset");

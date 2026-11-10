@@ -6,7 +6,7 @@
  * Money-shaped values (fee percentages, conversion rate, lot sizes) are stored as decimal strings in
  * text/jsonb columns, never as floats (brief: decimal strings cross package boundaries).
  */
-import { DEFAULT_MINDFUL, type MindfulSettings, type PlanIntervals } from "@hapiecoin/schema";
+import { DEFAULT_MINDFUL, type MindfulSettings, type PlanIntervals, type PlaybookRecord } from "@hapiecoin/schema";
 import { sql } from "drizzle-orm";
 import { bigserial, boolean, customType, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
@@ -814,4 +814,24 @@ export const chainEodBackfill = pgTable(
     doneAt: timestamp("done_at", { withTimezone: true }).notNull(),
   },
   (t) => [uniqueIndex("chain_eod_backfill_uq").on(t.venue, t.asset, t.expiry)],
+);
+
+/** ADR-101: one stored record per playbook, venue and asset, the engine's result over the recorded chain history, recomputed when a newer day lands. */
+export const playbookRecords = pgTable(
+  "playbook_records",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    playbookId: text("playbook_id").notNull(),
+    venue: text("venue", { enum: ["delta_india", "deribit"] }).notNull().default("delta_india"),
+    asset: text("asset", { enum: ["BTC", "ETH", "XAUT"] }).notNull(),
+    computedAt: timestamp("computed_at", { withTimezone: true }).notNull(),
+    /** The recorded range the record covers (YYYY-MM-DD); null when nothing was recorded. */
+    firstDay: text("first_day"),
+    lastDay: text("last_day"),
+    /** Recorded days the record was computed over: with lastDay, the stamp that decides whether a recompute is due. */
+    days: integer("days").notNull().default(0),
+    status: text("status", { enum: ["pass", "fail", "insufficient", "control-ok", "control-alarm"] }).notNull(),
+    record: jsonb("record").$type<PlaybookRecord>().notNull(),
+  },
+  (t) => [uniqueIndex("playbook_records_uq").on(t.playbookId, t.venue, t.asset)],
 );
