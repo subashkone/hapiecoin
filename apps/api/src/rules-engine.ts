@@ -4,12 +4,14 @@
 // P&L, a leg stop on one leg's mark, a spot level on the underlying, a time exit at an instant, at d days to the
 // nearest expiry, or n minutes before the nearest expiry settles (ADR-097: a calendar closes whole). A crossed rule exits every open filled leg of the strategy (a leg stop with leg scope: that leg
 // alone): short legs first, market at the mark of that tick, through the exit path a click uses, its own lots only.
+// A target with a trail (ADR-103; HC-TR-210) does not exit at its level: from that tick the rule keeps the best P&L
+// seen on its own row and exits when the P&L falls back to that best less the give-back.
 // Paper strategies fire too, with no orders. A fired rule never re-arms; the row guard (armed → fired) makes a fire
 // happen once across ticks and replicas. An exit the venue accepted but has not filled, or one that may not have
 // reached it, is never re-sent: the leg is left for the order sync and named on the rule.
 // Never runs under NODE_ENV=test unless a test calls it.
-import { CLOSE_REASON_OF_KIND, RULE_KIND_LABELS, RULE_KIND_ORDER, type Underlying, nearestSettlement, settlementMsOf, toDecimal } from "@hapiecoin/schema";
-import { and, eq, inArray } from "drizzle-orm";
+import { CLOSE_REASON_OF_KIND, RULE_KIND_LABELS, RULE_KIND_ORDER, type Underlying, nearestSettlement, settlementMsOf, toDecimal, trailFloorUsd } from "@hapiecoin/schema";
+import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { writeAudit } from "./audit.js";
 import { strategies, strategyAdjustments, strategyLegs, strategyOrders, strategyRules, users } from "./db/schema.js";
 import { type DeltaCredentials } from "@hapiecoin/venues";
@@ -91,7 +93,9 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
       }
       const marks = tick.marks;
       const lotSize = Number(await lotSizeFor(deps, user, strategy.asset, strategy.venue));
-      let pnl = Number(strategy.realizedPnl);
+      // the realised total is read again right after the legs: the row from the pass's first query can be seconds old
+      // (another strategy's exit ran in between), and a leg closed since then would be missing from both sides of the sum
+      let pnl = Number(await freshTotal(deps, strategy.id, strategy.realizedPnl));
       let missing = false;
       for (const l of legs) {
         const mark = marks.get(l.symbol);
@@ -123,7 +127,29 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
         let detail = "";
         let exitLegs = legs;
         if (rule.kind === "stop") crossed = pnl <= level;
-        else if (rule.kind === "target") crossed = pnl >= level;
+        else if (rule.kind === "target") {
+          if (rule.trailTrigger === null) crossed = pnl >= level;
+          else {
+            // trailing (ADR-103): nothing happens below the level; the tick that reaches it starts the trail and exits
+            // nothing; after that the best only rises (written when it does, so a restart or another replica resumes
+            // from it) and the rule fires on a fall to the best less the give-back
+            const best = rule.peakPnl === null ? null : Number(rule.peakPnl);
+            if (best !== null || pnl >= level) {
+              // kept in whole cents rounded down, so the stored best is never above the P&L that set it, and written
+              // only upwards (the row may have been raised by another pass since this one read it)
+              const seen = Math.floor(pnl * 100 + 1e-6) / 100;
+              const peak = best === null ? seen : Math.max(best, seen);
+              if (best === null || peak > best)
+                await deps.db
+                  .update(strategyRules)
+                  .set({ peakPnl: toDecimal(peak, 2), updatedAt: at })
+                  .where(and(eq(strategyRules.id, rule.id), eq(strategyRules.state, "armed"), or(isNull(strategyRules.peakPnl), sql`${strategyRules.peakPnl}::numeric < ${peak}`)));
+              const floor = trailFloorUsd(peak, { trigger: rule.trailTrigger, value: rule.trailValue! });
+              crossed = pnl <= floor;
+              detail = `trailed from the best ${toDecimal(peak, 2)} USD, exit level ${toDecimal(floor, 2)} USD`;
+            }
+          }
+        }
         else if (rule.kind === "leg_stop") {
           const leg = legs.find((l) => l.id === rule.legId);
           if (!leg) {
@@ -287,7 +313,7 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
             actorId: null,
             action: "strategy.rule_fire",
             target: `strategy:${strategy.id}`,
-            before: { rule: rule.id, kind: rule.kind, trigger: rule.trigger, level: rule.thresholdUsd, legId: rule.legId, scope: rule.scope, pnl: toDecimal(pnl, 2), spot: tick.spot, marks: legs.map((l) => ({ symbol: l.symbol, mark: marks.get(l.symbol), entry: l.entryPrice })) },
+            before: { rule: rule.id, kind: rule.kind, trigger: rule.trigger, level: rule.thresholdUsd, legId: rule.legId, scope: rule.scope, detail, pnl: toDecimal(pnl, 2), spot: tick.spot, marks: legs.map((l) => ({ symbol: l.symbol, mark: marks.get(l.symbol), entry: l.entryPrice })) },
             after: { outcome, fills, unconfirmed, failed, realizedPnl: realized, archived: archive },
           });
           await notify(deps, strategy.userId, rule.channels, `${label} fired · ${strategy.name}`, `${note}\n\n${deps.config.webUrl}/analyse`);

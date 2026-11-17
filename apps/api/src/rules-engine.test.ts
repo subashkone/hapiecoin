@@ -544,3 +544,136 @@ describe("HC-TR-199 time exit before the nearest settlement (ADR-097)", () => {
     expect((await arm(s.id, [{ kind: "time", trigger: "settle", value: "0" }])).status).toBe(400);
   });
 });
+
+describe("HC-TR-210 a target that trails (ADR-103)", () => {
+  // one put sold at 900, 10 lots of 0.001: P&L = (900 − mark) × 0.01
+  const at = (mark: number) => ticks({ "P-BTC-78000-250926": mark });
+  const target = async (id: string) => (await get(id)).rules!.find((r) => r.kind === "target")!;
+
+  it("does nothing below the target, starts the trail at it without exiting, raises the best with the P&L and exits on a fall to the best less the give-back", async () => {
+    const s = await paper([PUT], "Rules trail");
+    expect((await arm(s.id, [{ kind: "target", trigger: "money", value: "3", trail: { trigger: "money", value: "1" } }])).status).toBe(200);
+    expect(await target(s.id)).toMatchObject({ thresholdUsd: "3", trail: { trigger: "money", value: "1" }, peakPnl: null });
+    // +2, then back to +1: under the target the rule only watches
+    expect((await evaluateRules(t.deps, at(700), () => T0)).fired).toHaveLength(0);
+    expect((await evaluateRules(t.deps, at(800), () => T0)).fired).toHaveLength(0);
+    expect((await target(s.id)).peakPnl).toBeNull();
+    // +3: a fixed target would close here; the trail starts instead
+    expect(await evaluateRules(t.deps, at(600), () => T0 + 1000)).toEqual({ checked: 1, fired: [], skipped: 0 });
+    expect(await target(s.id)).toMatchObject({ state: "armed", peakPnl: "3" });
+    expect((await get(s.id)).status).toBe("paper");
+    // +5: the best rises; +4.5: above the exit level of +4, and the best never comes down
+    expect((await evaluateRules(t.deps, at(400), () => T0 + 2000)).fired).toHaveLength(0);
+    expect((await target(s.id)).peakPnl).toBe("5");
+    expect((await evaluateRules(t.deps, at(450), () => T0 + 3000)).fired).toHaveLength(0);
+    expect((await target(s.id)).peakPnl).toBe("5");
+    // +3.9: at or under +4 → out, with the reason a target books
+    expect((await evaluateRules(t.deps, at(510), () => T0 + 4000)).fired).toHaveLength(1);
+    const done = await get(s.id);
+    expect(done.status).toBe("archived");
+    expect(done.closeReason).toBe("target");
+    expect(done.realizedPnl).toBe("3.9");
+    const rule = done.rules!.find((r) => r.kind === "target")!;
+    expect(rule).toMatchObject({ state: "fired", firedPnl: "3.9", peakPnl: "5", outcome: "closed" });
+    expect(rule.note).toBe("Target fired at P&L 3.9 USD (trailed from the best 5 USD, exit level 4 USD): 1 leg exited");
+  });
+
+  it("a percentage give-back is taken from the best", async () => {
+    const s = await paper([PUT], "Rules trail pct");
+    expect((await arm(s.id, [{ kind: "target", trigger: "money", value: "3", trail: { trigger: "pct", value: "50" } }])).status).toBe(200);
+    expect((await evaluateRules(t.deps, at(300), () => T0)).fired).toHaveLength(0); // +6: the trail starts, exit level +3
+    expect((await evaluateRules(t.deps, at(580), () => T0)).fired).toHaveLength(0); // +3.2
+    expect((await evaluateRules(t.deps, at(620), () => T0)).fired).toHaveLength(1); // +2.8
+    expect((await target(s.id)).note).toBe("Target fired at P&L 2.8 USD (trailed from the best 6 USD, exit level 3 USD): 1 leg exited");
+  });
+
+  it("the stop loss still wins while the target trails", async () => {
+    const s = await paper([PUT], "Rules trail stop");
+    expect((await arm(s.id, [{ kind: "stop", trigger: "money", value: "5" }, { kind: "target", trigger: "money", value: "3", trail: { trigger: "money", value: "1" } }])).status).toBe(200);
+    expect((await evaluateRules(t.deps, at(500), () => T0)).fired).toHaveLength(0); // +4: trailing
+    expect((await evaluateRules(t.deps, at(1400), () => T0)).fired).toHaveLength(1); // −5 in one tick
+    const done = await get(s.id);
+    expect(done.closeReason).toBe("stopped");
+    expect(done.rules!.find((r) => r.kind === "target")).toMatchObject({ state: "disarmed", peakPnl: "4" });
+  });
+
+  it("saving the rules again keeps the best when the target and the give-back are unchanged, and starts over when they changed", async () => {
+    const s = await paper([PUT], "Rules trail edit");
+    const trailing = { kind: "target", trigger: "money", value: "3", trail: { trigger: "money", value: "1" } };
+    expect((await arm(s.id, [trailing])).status).toBe(200);
+    expect((await evaluateRules(t.deps, at(400), () => T0)).fired).toHaveLength(0);
+    expect((await target(s.id)).peakPnl).toBe("5");
+    // a stop is added beside it: the exit level of +4 survives the save
+    expect((await arm(s.id, [{ kind: "stop", trigger: "money", value: "9" }, trailing])).status).toBe(200);
+    expect((await target(s.id)).peakPnl).toBe("5");
+    // a wider give-back, typed with more decimals than cents: stored as money, and the best still stands (exit +3)
+    expect((await arm(s.id, [{ ...trailing, trail: { trigger: "money", value: "2.004" } }])).status).toBe(200);
+    expect(await target(s.id)).toMatchObject({ trail: { trigger: "money", value: "2" }, peakPnl: "5" });
+    // a lower target keeps it too; a target raised above the best starts over and waits for the new level
+    expect((await arm(s.id, [{ ...trailing, value: "4" }])).status).toBe(200);
+    expect((await target(s.id)).peakPnl).toBe("5");
+    expect((await arm(s.id, [{ ...trailing, value: "6" }])).status).toBe(200);
+    expect((await target(s.id)).peakPnl).toBeNull();
+    // and a fixed target carries no best at all
+    expect((await arm(s.id, [{ kind: "target", trigger: "money", value: "30" }])).status).toBe(200);
+    expect(await target(s.id)).toMatchObject({ trail: null, peakPnl: null });
+    expect((await arm(s.id, [])).status).toBe(200);
+  });
+
+  it("the best is kept in whole cents rounded down, and a P&L that stays put fires nothing however small the give-back", async () => {
+    const s = await paper([PUT], "Rules trail cents");
+    expect((await arm(s.id, [{ kind: "target", trigger: "money", value: "3", trail: { trigger: "pct", value: "0.0005" } }])).status).toBe(200);
+    // (900 − 599.4) × 0.01 = +3.006: stored as 3, never 3.01
+    expect((await evaluateRules(t.deps, at(599.4), () => T0)).fired).toHaveLength(0);
+    expect((await target(s.id)).peakPnl).toBe("3");
+    const before = (await target(s.id)).updatedAt;
+    expect((await evaluateRules(t.deps, at(599.4), () => T0 + 2000)).fired).toHaveLength(0);
+    expect(await target(s.id)).toMatchObject({ state: "armed", peakPnl: "3", updatedAt: before }); // no new best: nothing written
+    expect((await arm(s.id, [])).status).toBe(200);
+  });
+
+  it("live: nothing is sent when the trail starts; the fall sends one exit; the kill switch holds it armed with the best intact", async () => {
+    const s = await live([PUT], "Rules trail live");
+    expect((await arm(s.id, [{ kind: "target", trigger: "money", value: "3", trail: { trigger: "money", value: "1" } }])).status).toBe(200);
+    const placedBefore = t.trading.placed.length;
+    expect((await evaluateRules(t.deps, at(400), () => T0, { backoffMs: 0 })).fired).toHaveLength(0); // +5: the trail starts
+    expect(t.trading.placed.length).toBe(placedBefore);
+    t.deps.config.trading.disabled = true;
+    expect(await evaluateRules(t.deps, at(510), () => T0 + 1000, { backoffMs: 0 })).toEqual({ checked: 1, fired: [], skipped: 1 });
+    expect(await target(s.id)).toMatchObject({ state: "armed", peakPnl: "5", note: "not sent: Live trading is paused by the operator" });
+    expect(t.trading.placed.length).toBe(placedBefore);
+    t.deps.config.trading.disabled = false;
+    t.trading.fillAt(102, "510");
+    expect((await evaluateRules(t.deps, at(510), () => T0 + 2000, { backoffMs: 0 })).fired).toHaveLength(1);
+    expect(t.trading.placed.slice(placedBefore).map((o) => [o.input.productId, o.input.side, o.input.reduceOnly])).toEqual([[102, "buy", true]]);
+    const done = await get(s.id);
+    expect(done.status).toBe("archived");
+    expect(done.closeReason).toBe("target");
+    const audits = await t.db.select().from(auditLog).where(eq(auditLog.target, `strategy:${s.id}`));
+    expect(audits.find((a) => a.action === "strategy.rule_fire")?.before).toMatchObject({ detail: "trailed from the best 5 USD, exit level 4 USD" });
+  });
+
+  it("the realised total is read with the legs, not from the start of the pass", async () => {
+    const s = await paper([CALL, PUT], "Rules trail total");
+    expect((await arm(s.id, [{ kind: "target", trigger: "money", value: "3", trail: { trigger: "money", value: "1" } }])).status).toBe(200);
+    // the first tick read asks for the marks; by then the pass holds its joined rows. A realised +4 lands now, as a
+    // close from another request would: the valuation must see it (call 0, put 0, realised +4 → the trail starts)
+    const late: RulesTickSource = {
+      tick: async () => {
+        await t.db.update(strategies).set({ realizedPnl: "4" }).where(eq(strategies.id, s.id));
+        return { marks: new Map([["C-BTC-80000-250926", 1200], ["P-BTC-78000-250926", 900]]), spot: null };
+      },
+    };
+    expect((await evaluateRules(t.deps, late, () => T0)).fired).toHaveLength(0);
+    expect((await target(s.id)).peakPnl).toBe("4");
+    expect((await arm(s.id, [])).status).toBe(200);
+  });
+
+  it("the arm route refuses a trail on another kind, and a give-back that is not below the target", async () => {
+    const s = await paper([PUT], "Rules trail refusals");
+    expect((await arm(s.id, [{ kind: "stop", trigger: "money", value: "5", trail: { trigger: "money", value: "1" } }])).status).toBe(400);
+    expect((await arm(s.id, [{ kind: "target", trigger: "money", value: "3", trail: { trigger: "money", value: "3" } }])).status).toBe(400);
+    expect((await arm(s.id, [{ kind: "target", trigger: "money", value: "3", trail: { trigger: "pct", value: "100" } }])).status).toBe(400);
+    expect((await get(s.id)).rules).toEqual([]);
+  });
+});

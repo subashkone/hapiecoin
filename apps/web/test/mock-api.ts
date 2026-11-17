@@ -1064,6 +1064,8 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (!body.success) return err(c, 400, "BAD_REQUEST", body.error.issues.map((i) => i.message).join(" · "));
     const at = nowIso();
     const rows = [];
+    // the armed target before this save: a trailing one hands its best to the new row, as the route does (ADR-103)
+    const was = (s.rules ?? []).find((r) => r.kind === "target" && r.state === "armed");
     // a settle rule's instant is fixed now from the nearest dated open leg, as the route does (ADR-097)
     const nearestMs = nearestSettlement(s.legs.filter((l) => l.status === "open" && l.entryPrice !== null), s.asset)?.ms ?? null;
     for (const r of body.data.rules) {
@@ -1080,7 +1082,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       if (r.kind === "leg_stop" && r.trigger === "multiple" && leg!.entryPrice === null) return err(c, 400, "BAD_REQUEST", `${leg!.symbol}: no entry price yet for a multiple`);
       const level = settleAt !== null ? String(settleAt) : ruleLevel(r, leg?.entryPrice ?? leg?.price ?? null);
       if (r.kind === "leg_stop" && Number(level) <= 0) return err(c, 400, "BAD_REQUEST", `${leg!.symbol}: the level rounds to nothing`);
-      rows.push({ id: id("rule"), kind: r.kind, trigger: r.trigger, value: r.trigger === "settle" ? String(Number(r.value)) : r.value, basis: r.trigger === "pct" ? (r.basis ?? null) : null, basisUsd: r.trigger === "pct" ? (r.basisUsd ?? null) : null, thresholdUsd: level, legId: r.kind === "leg_stop" ? (r.legId ?? null) : null, scope: r.kind === "leg_stop" ? (r.scope ?? ("leg" as const)) : ("strategy" as const), channels: r.channels, state: "armed" as const, firedAt: null, firedPnl: null, outcome: null, note: null, createdAt: at, updatedAt: at });
+      rows.push({ id: id("rule"), kind: r.kind, trigger: r.trigger, value: r.trigger === "settle" ? String(Number(r.value)) : r.value, basis: r.trigger === "pct" ? (r.basis ?? null) : null, basisUsd: r.trigger === "pct" ? (r.basisUsd ?? null) : null, thresholdUsd: level, legId: r.kind === "leg_stop" ? (r.legId ?? null) : null, scope: r.kind === "leg_stop" ? (r.scope ?? ("leg" as const)) : ("strategy" as const), trail: r.trail ? { trigger: r.trail.trigger, value: r.trail.trigger === "money" ? toDecimal(Number(r.trail.value), 2) : r.trail.value } : null, peakPnl: r.trail && was?.peakPnl && Number(was.peakPnl) >= Number(level) ? was.peakPnl : null, channels: r.channels, state: "armed" as const, firedAt: null, firedPnl: null, outcome: null, note: null, createdAt: at, updatedAt: at });
     }
     s.rules = [...(s.rules ?? []).filter((r) => r.state === "fired"), ...rows];
     return c.json(touch(s));

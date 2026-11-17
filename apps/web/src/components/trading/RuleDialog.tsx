@@ -6,7 +6,10 @@
 // is crossed the API exits at market, short legs first, and says so in Telegram / mail; the card shows the fired
 // state. The dialog is mounted once in the Workspace overlays and opens from the card, Details, the workbench and
 // after a trade from the Builder.
-import { type RuleBasis, type RuleChannel, type RuleKind, type RuleScope, type RuleTrigger, type StrategyLeg, type StrategyRule, RULE_BASIS_LABELS, RULE_KIND_LABELS, SETTLE_LEAD_MINUTES, isPositiveDecimal, nearestSettlement, ruleLevel, ruleThresholdUsd, settleInstantMs, toDecimal } from "@hapiecoin/schema";
+// A target can trail instead of exiting (ADR-103; HC-TR-211): one more line in the Target box takes the give-back
+// (money or a percentage of the best profit) and shows two worked exit levels; the card then reads "trailing" with
+// the best and the exit level, and the fired chip says the target trailed.
+import { type RuleBasis, type RuleChannel, type RuleKind, type RuleScope, type RuleTrigger, type StrategyLeg, type StrategyRule, RULE_BASIS_LABELS, RULE_KIND_LABELS, SETTLE_LEAD_MINUTES, isPositiveDecimal, nearestSettlement, ruleLevel, ruleThresholdUsd, settleInstantMs, toDecimal, trailFloorUsd } from "@hapiecoin/schema";
 import { Button, Checkbox, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { useEffect, useMemo, useState } from "react";
 import { useClearRules, useSetRules, useStrategies } from "@/lib/api/strategies";
@@ -25,6 +28,12 @@ interface Draft {
   trigger: RuleTrigger;
   value: string;
   basis: RuleBasis;
+}
+/** The give-back of a trailing target (ADR-103): money in the trader's currency, or a percentage of the best profit. */
+interface TrailDraft {
+  on: boolean;
+  trigger: "money" | "pct";
+  value: string;
 }
 interface LegDraft {
   on: boolean;
@@ -55,6 +64,7 @@ export function usdToTyped(usd: string, money: MoneyFormat): string {
 }
 
 const draftOf = (rule: StrategyRule | undefined, basis: RuleBasis, money: MoneyFormat): Draft => ({ on: rule !== undefined, trigger: rule?.trigger ?? "money", value: rule ? (rule.trigger === "money" ? usdToTyped(rule.value, money) : rule.value) : "", basis: rule?.basis ?? basis });
+const trailDraftOf = (rule: StrategyRule | undefined, money: MoneyFormat): TrailDraft => ({ on: !!rule?.trail, trigger: rule?.trail?.trigger ?? "money", value: rule?.trail ? (rule.trail.trigger === "money" ? usdToTyped(rule.trail.value, money) : rule.trail.value) : "" });
 const legDraftOf = (rule: StrategyRule | undefined): LegDraft => ({ on: rule !== undefined, trigger: rule?.trigger === "price" ? "price" : "multiple", value: rule?.value ?? "", scope: rule?.scope ?? "leg" });
 const spotDraftOf = (rule: StrategyRule | undefined): SpotDraft => ({ on: rule !== undefined, trigger: rule?.trigger === "above" ? "above" : "below", value: rule?.value ?? "" });
 const timeDraftOf = (rule: StrategyRule | undefined): TimeDraft => ({ on: rule !== undefined, trigger: rule?.trigger === "dte" ? "dte" : rule?.trigger === "settle" ? "settle" : "at", value: rule ? (rule.trigger === "at" ? toLocalInput(rule.value) : rule.value) : "" });
@@ -85,8 +95,16 @@ export function legTag(l: Pick<StrategyLeg, "side" | "kind" | "strike" | "expiry
   return `${l.side === "sell" ? "S" : "B"} ${l.kind === "future" ? "FUT" : `${l.kind === "call" ? "C" : "P"} ${fmtStrike(l.strike)}`} ${fmtExpiry(l.expiry)}`;
 }
 
+/** "₹300" or "25 %": the give-back of a trailing target. */
+const giveBackText = (trail: NonNullable<StrategyRule["trail"]>, money: MoneyFormat) => (trail.trigger === "money" ? fmtMoney(Number(trail.value), money) : `${trail.value} %`);
+
 /** One rule's level as the card and Details show it, whatever its kind. */
 export function ruleText(r: StrategyRule, money: MoneyFormat, legs: readonly StrategyLeg[] = []): string {
+  if (r.kind === "target" && r.trail) {
+    // past the target and still armed: the level that matters now is the exit under the best, not the target
+    if (r.state === "armed" && typeof r.peakPnl === "string") return `trailing: best ${fmtMoney(Number(r.peakPnl), money, { signed: true })}, exits at ${fmtMoney(trailFloorUsd(Number(r.peakPnl), r.trail), money, { signed: true })}`;
+    return `target at ${levelText(Number(r.thresholdUsd), money)}${r.trigger === "pct" ? ` (${r.value} %)` : ""}, then trail ${giveBackText(r.trail, money)}${typeof r.peakPnl === "string" ? `, best ${fmtMoney(Number(r.peakPnl), money, { signed: true })}` : ""}`;
+  }
   if (r.kind === "stop" || r.kind === "target") return `${r.kind} at ${levelText(Number(r.thresholdUsd), money)}${r.trigger === "pct" ? ` (${r.value} %)` : ""}`;
   if (r.kind === "leg_stop") {
     const leg = legs.find((l) => l.id === r.legId);
@@ -111,6 +129,10 @@ export function firedRule(rules: readonly StrategyRule[] | undefined): StrategyR
 }
 /** The card chip's words for a fired rule. */
 export const FIRED_LABELS: Record<RuleKind, string> = { stop: "stop fired", target: "target hit", leg_stop: "leg stop fired", spot: "spot level fired", time: "time exit fired" };
+/** The chip for one fired rule: a target that trailed says how far the profit ran before the exit. */
+export function firedLabel(r: StrategyRule, money: MoneyFormat): string {
+  return r.kind === "target" && r.trail && typeof r.peakPnl === "string" ? `${FIRED_LABELS.target} · trailed from ${fmtMoney(Number(r.peakPnl), money, { signed: true })}` : FIRED_LABELS[r.kind];
+}
 
 export function RuleDialog({ book }: { book: PaperBook }) {
   const target = useUiStore((s) => s.rulesFor);
@@ -136,6 +158,7 @@ export function RuleDialog({ book }: { book: PaperBook }) {
   const basisUsd = (b: RuleBasis): number | null => (b === "credit" ? (netPremiumUsd > 0 ? netPremiumUsd : null) : b === "debit" ? (netPremiumUsd < 0 ? -netPremiumUsd : null) : maxLossUsd);
   const [stop, setStop] = useState<Draft>(draftOf(undefined, "credit", money));
   const [tgt, setTgt] = useState<Draft>(draftOf(undefined, "credit", money));
+  const [trail, setTrail] = useState<TrailDraft>(trailDraftOf(undefined, money));
   const [legStops, setLegStops] = useState<Record<string, LegDraft>>({});
   const [spotD, setSpotD] = useState<SpotDraft>(spotDraftOf(undefined));
   const [timeD, setTimeD] = useState<TimeDraft>(timeDraftOf(undefined));
@@ -150,6 +173,7 @@ export function RuleDialog({ book }: { book: PaperBook }) {
     const tg = armed.find((r) => r.kind === "target");
     setStop(draftOf(st, defaultBasis, money));
     setTgt(draftOf(tg, defaultBasis, money));
+    setTrail(trailDraftOf(tg, money));
     setLegStops(Object.fromEntries(openLegs(s).map((l) => [l.id, legDraftOf(armed.find((r) => r.kind === "leg_stop" && r.legId === l.id))])));
     setSpotD(spotDraftOf(armed.find((r) => r.kind === "spot")));
     setTimeD(timeDraftOf(armed.find((r) => r.kind === "time")));
@@ -165,7 +189,22 @@ export function RuleDialog({ book }: { book: PaperBook }) {
     return isPositiveDecimal(d.value) && Number(d.value) <= 1000 ? { kind, trigger: "pct" as const, value: d.value, basis: d.basis, basisUsd: toDecimal(b, 2), channels } : "invalid";
   };
   const stopBody = toBody("stop", stop);
-  const tgtBody = toBody("target", tgt);
+  const tgtFixed = toBody("target", tgt);
+  // the give-back of a trailing target, in USD for money; it must leave the exit level a profit from the first tick
+  const trailValue = trail.trigger === "money" ? toDecimal(typedToUsd(trail.value, money), 2) : trail.value;
+  const trailOn = trail.on && tgtFixed !== null && typeof tgtFixed !== "string";
+  const tgtUsd = trailOn ? Number(ruleThresholdUsd(tgtFixed)) : null;
+  const trailShape = !trailOn ? null : !isPositiveDecimal(trailValue) || (trail.trigger === "pct" && Number(trailValue) >= 100) ? ("invalid-trail" as const) : trail.trigger === "money" && Number(trailValue) >= Number(ruleThresholdUsd(tgtFixed)) ? ("trail-big" as const) : null;
+  // where the trail would stand the moment it is armed: a trail already running hands its best to the new rule unless
+  // the target is raised above it (the server does the same); otherwise today's P&L, when it is already past the target
+  const running = (s.rules ?? []).find((r) => r.kind === "target" && r.state === "armed" && r.trail && typeof r.peakPnl === "string");
+  const bestSoFar = running ? Number(running.peakPnl) : null;
+  const pnlNow = open.length && open.every((l) => book.priceOf(s, l) !== null) ? book.pnlOf(s).total : null;
+  const floorAt = (peak: number) => trailFloorUsd(peak, { trigger: trail.trigger, value: trailValue });
+  const keptBest = tgtUsd !== null && trailShape === null && bestSoFar !== null && bestSoFar >= tgtUsd ? bestSoFar : null;
+  // an exit level the P&L is already at or under would fire on the next tick, like any other level
+  const trailProblem = trailShape ?? (keptBest !== null && pnlNow !== null && pnlNow <= floorAt(keptBest) ? ("crossed" as const) : null);
+  const tgtBody = trailOn ? (trailProblem ?? { ...tgtFixed, trail: { trigger: trail.trigger, value: trailValue } }) : tgtFixed;
   // the dte the engine counts: the nearest settlement of the dated legs (options and dated futures), fractional days
   const nearest = s ? nearestSettlement(open, s.asset) : null;
   const dteNow = nearest ? Math.max(0, Math.round(((nearest.ms - Date.now()) / 86_400_000) * 10) / 10) : null;
@@ -207,7 +246,7 @@ export function RuleDialog({ book }: { book: PaperBook }) {
             ? "crossed"
             : { kind: "time" as const, trigger: "dte" as const, value: timeD.value, channels };
   const all = [stopBody, tgtBody, ...legBodies, spotBody, timeBody];
-  const problem = all.includes("invalid") ? "Enter a level greater than 0" : all.includes("no-basis") ? "That basis is not known for this strategy · use money" : all.includes("no-leg") ? "No dated leg to count to" : all.includes("past") ? "The exit time has already passed" : all.includes("crossed") ? "That level is already crossed · it would fire on the next tick" : null;
+  const problem = all.includes("invalid") ? "Enter a level greater than 0" : all.includes("invalid-trail") ? "Enter a give-back greater than 0 (a percentage below 100)" : all.includes("trail-big") ? "The give-back must be below the target, so the exit level is always a profit" : all.includes("no-basis") ? "That basis is not known for this strategy · use money" : all.includes("no-leg") ? "No dated leg to count to" : all.includes("past") ? "The exit time has already passed" : all.includes("crossed") ? "That level is already crossed · it would fire on the next tick" : null;
   const bodies = all.filter((b): b is Exclude<typeof b, string | null> => b !== null && typeof b !== "string");
   const levelOf = (d: Draft, kind: RuleKind): number | null => {
     const b = toBody(kind, d);
@@ -251,13 +290,13 @@ export function RuleDialog({ book }: { book: PaperBook }) {
       {on ? <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">{body}</div> : null}
     </div>
   );
-  const field = (kind: RuleKind, d: Draft, set: (d: Draft) => void, level: number | null) =>
+  const field = (kind: RuleKind, d: Draft, set: (d: Draft) => void, level: number | null, extra: React.ReactNode = null, hint = kind === "stop" ? "exit all when P&L falls to" : "exit all when P&L reaches") =>
     box(
       `rule-${kind}`,
       d.on,
       (on) => set({ ...d, on }),
       RULE_KIND_LABELS[kind],
-      kind === "stop" ? "exit all when P&L falls to" : "exit all when P&L reaches",
+      hint,
       <>
         {unit(`rule-${kind}`, d.trigger, [{ key: "money" as const, label: money.currency === "INR" ? "₹" : "$" }, { key: "pct" as const, label: "%" }], (t) => set({ ...d, trigger: t }))}
         <input type="number" min={0} step="any" value={d.value} onChange={(e) => set({ ...d, value: e.target.value })} className="h-7 w-28 rounded border border-input bg-background px-2 text-right text-xs" aria-label={`${RULE_KIND_LABELS[kind]} level`} data-testid={`rule-${kind}-value`} />
@@ -272,8 +311,42 @@ export function RuleDialog({ book }: { book: PaperBook }) {
           </select>
         ) : null}
         <span className="num text-muted-foreground" data-testid={`rule-${kind}-level`}>{level !== null ? `= ${levelText(level, money)}` : "—"}</span>
+        {extra}
       </>,
     );
+  // the trail line of the Target box: off by default, one number when on, and two worked exit levels so "below its
+  // best" is never read as "below the target"
+  const signed = (usd: number) => fmtMoney(usd, money, { signed: true });
+  const trailWords = (level: number) =>
+    keptBest !== null
+      ? `Already trailing: the best so far is ${signed(keptBest)}, so the exit is ${signed(floorAt(keptBest))} from the moment you arm. It never moves down.`
+      : `${bestSoFar !== null ? `The target is above the best so far (${signed(bestSoFar)}), so the trail starts over. ` : ""}${
+          pnlNow !== null && pnlNow >= level
+            ? `P&L is already ${signed(pnlNow)}: the trail starts as soon as you arm, with the exit at ${signed(floorAt(pnlNow))}. The exit never moves down.`
+            : `Nothing happens below ${signed(level)}. At ${signed(level)} the exit is set at ${signed(floorAt(level))}. If the profit reaches ${signed(level * 2)} the exit moves up to ${signed(floorAt(level * 2))}. The exit never moves down.`
+        }`;
+  const trailField = (
+    <div className="flex basis-full flex-col gap-1 border-t border-border/50 pt-2" data-testid="rule-target-trail" data-on={trail.on}>
+      <label className="flex items-center gap-2">
+        <Checkbox checked={trail.on} onCheckedChange={(v) => setTrail({ ...trail, on: v === true })} data-testid="rule-target-trail-on" />
+        Trail instead of exiting at the target
+        <span className="micro ml-auto">let the profit run · exit when it falls back</span>
+      </label>
+      {trail.on ? (
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-muted-foreground">exit all when the profit falls by</span>
+            {unit("rule-target-trail", trail.trigger, [{ key: "money" as const, label: money.currency === "INR" ? "₹" : "$" }, { key: "pct" as const, label: "%", title: "A percentage of the best profit" }], (t) => setTrail({ ...trail, trigger: t }), "Give-back unit")}
+            <input type="number" min={0} step="any" value={trail.value} onChange={(e) => setTrail({ ...trail, value: e.target.value })} className="h-7 w-24 rounded border border-input bg-background px-2 text-right text-xs" aria-label="Give-back from the best profit" data-testid="rule-target-trail-value" />
+            <span className="text-muted-foreground">from its best</span>
+          </div>
+          <p className="text-2xs text-muted-foreground" data-testid="rule-target-trail-preview">
+            {tgtUsd !== null && trailShape === null ? trailWords(tgtUsd) : "Enter the target and the give-back to see the exit level."}
+          </p>
+        </>
+      ) : null}
+    </div>
+  );
   const legField = (l: StrategyLeg) => {
     const d = legStops[l.id] ?? legDraftOf(undefined);
     const set = (n: LegDraft) => setLegStops((m) => ({ ...m, [l.id]: n }));
@@ -370,7 +443,7 @@ export function RuleDialog({ book }: { book: PaperBook }) {
         <DialogBody>
           <div className="flex flex-col gap-2">
             {field("stop", stop, setStop, stopLevel)}
-            {field("target", tgt, setTgt, tgtLevel)}
+            {field("target", tgt, setTgt, tgtLevel, trailField, trail.on ? "start trailing when P&L reaches" : undefined)}
             {open.length ? (
               <>
                 <div className="micro mt-1">Leg stops</div>

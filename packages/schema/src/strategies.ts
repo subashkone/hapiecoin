@@ -194,6 +194,15 @@ export const RULE_KIND_ORDER: Record<RuleKind, number> = { stop: 0, leg_stop: 1,
 /** The close reason a fire books on the legs and the strategy. */
 export const CLOSE_REASON_OF_KIND: Record<RuleKind, CloseReason> = { stop: "stopped", target: "target", leg_stop: "stopped", spot: "stopped", time: "squared_off" };
 
+/**
+ * A target that trails instead of closing (ADR-103; HC-TR-210). Once the strategy P&L reaches the target the rule
+ * stays armed and remembers the best P&L seen; it exits when the P&L falls back to that best less the give-back:
+ * `money` a USD amount, `pct` a percentage of the best. The exit level only rises, because the best only rises.
+ */
+export const TRAIL_TRIGGERS = ["money", "pct"] as const;
+export const RuleTrail = z.strictObject({ trigger: z.enum(TRAIL_TRIGGERS), value: z.string().trim().min(1).max(40) });
+export type RuleTrail = z.infer<typeof RuleTrail>;
+
 export const StrategyRule = z.strictObject({
   id: Id,
   kind: RuleKind,
@@ -211,6 +220,10 @@ export const StrategyRule = z.strictObject({
   /** The watched leg (leg_stop only). */
   legId: Id.nullable(),
   scope: RuleScope,
+  /** Target only: trail instead of closing at the level (ADR-103); null or absent for a fixed target. */
+  trail: RuleTrail.nullable().optional(),
+  /** The best strategy P&L in USD seen since a trailing target was reached; null until then. Kept after the fire. */
+  peakPnl: DecimalString.nullable().optional(),
   channels: z.array(RuleChannel),
   state: RuleState,
   firedAt: IsoDateTime.nullable(),
@@ -235,6 +248,8 @@ export const RuleBody = z
     basisUsd: PositiveDecimal.optional(),
     legId: Id.optional(),
     scope: RuleScope.optional(),
+    /** Target only: keep going past the level and exit on a fall of this much from the best P&L (ADR-103). */
+    trail: RuleTrail.optional(),
     channels: z.array(RuleChannel).min(1).default(["push"]),
   })
   .superRefine((r, ctx) => {
@@ -252,6 +267,14 @@ export const RuleBody = z
     if (r.kind === "leg_stop" && r.legId === undefined) ctx.addIssue({ code: "custom", message: "a leg stop names its leg", path: ["legId"] });
     if (r.kind !== "leg_stop" && r.scope === "leg") ctx.addIssue({ code: "custom", message: "only a leg stop can exit one leg", path: ["scope"] });
     if ((r.kind === "stop" || r.kind === "target") && ruleThresholdUsd(r) === "0") ctx.addIssue({ code: "custom", message: "the level rounds to nothing", path: ["value"] });
+    if (r.trail !== undefined) {
+      if (r.kind !== "target") ctx.addIssue({ code: "custom", message: "only a target can trail", path: ["trail"] });
+      else if (!isPositiveDecimal(r.trail.value)) ctx.addIssue({ code: "custom", message: "the give-back must be greater than zero", path: ["trail", "value"] });
+      else if (r.trail.trigger === "money" && toDecimal(Number(r.trail.value), 2) === "0") ctx.addIssue({ code: "custom", message: "the give-back rounds to nothing", path: ["trail", "value"] });
+      else if (r.trail.trigger === "pct" && Number(r.trail.value) >= 100) ctx.addIssue({ code: "custom", message: "the give-back must be below 100 %", path: ["trail", "value"] });
+      // a money give-back below the target: the exit level is a profit from the moment the trail starts
+      else if (r.trail.trigger === "money" && Number(r.trail.value) >= Number(ruleThresholdUsd(r))) ctx.addIssue({ code: "custom", message: "the give-back must be below the target", path: ["trail", "value"] });
+    }
   });
 export type RuleBody = z.infer<typeof RuleBody>;
 /** The full set for a strategy: one rule per kind (leg stops one per leg); rules not listed are removed (fired ones stay as history). */
@@ -267,6 +290,15 @@ export type RulesBody = z.infer<typeof RulesBody>;
 export function ruleThresholdUsd(r: Pick<RuleBody, "kind" | "trigger" | "value" | "basisUsd">): string {
   const amount = r.trigger === "money" ? Number(r.value) : (Number(r.value) / 100) * Number(r.basisUsd ?? "0");
   return toDecimal(r.kind === "stop" ? -amount : amount, 2);
+}
+
+/**
+ * The P&L in USD a trailing target exits at (ADR-103): the best seen less the give-back. Unrounded, so the tick that
+ * sets a new best can never sit at or under its own exit level; format it at the edge.
+ */
+export function trailFloorUsd(peakUsd: number, trail: RuleTrail): number {
+  const giveBack = Number(trail.value);
+  return trail.trigger === "money" ? peakUsd - giveBack : peakUsd * (1 - giveBack / 100);
 }
 
 /**

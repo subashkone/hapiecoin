@@ -439,6 +439,10 @@ export const strategyRules = pgTable(
     /** The watched leg (leg_stop only). */
     legId: text("leg_id").references(() => strategyLegs.id, { onDelete: "cascade" }),
     scope: text("scope", { enum: ["strategy", "leg"] }).notNull().default("strategy"),
+    /** A trailing target (ADR-103): the give-back's unit and value, and the best P&L seen since the target was reached. */
+    trailTrigger: text("trail_trigger", { enum: ["money", "pct"] }),
+    trailValue: text("trail_value"),
+    peakPnl: text("peak_pnl"),
     channels: jsonb("channels").$type<string[]>().notNull().default(sql`'["push"]'::jsonb`),
     state: text("state", { enum: ["armed", "fired", "disarmed"] }).notNull().default("armed"),
     firedAt: timestamp("fired_at", { withTimezone: true }),
