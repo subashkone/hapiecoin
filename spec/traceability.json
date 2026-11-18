@@ -8029,6 +8029,36 @@
   "evidence": "ADR-102 (10 Nov 2026): apps/api/src/proposals.ts deliverProposals / proposalMessage, config.ts PROPOSALS_TELEGRAM_CAP; unit proposals.test.ts HC-TR-209 with FakeTelegram"
  },
  {
+  "id": "HC-TR-210",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/analyse",
+  "screen": "Trading · server",
+  "feature": "A target that trails: at the target the rule starts keeping the best P&L and exits on a fall from it by the give-back (money or a percentage of the best)",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (schema, api)",
+  "acceptance": "RuleBody.trail (target only; a money give-back below the target, a percentage below 100) and StrategyRule.trail / peakPnl; the arm route stores trail_trigger / trail_value (money rounded to cents) and keeps peak_pnl across a save unless the new target is above it; the engine reads the realised total beside the open legs, and its target branch does nothing below the level, writes the best (whole cents, rounded down, never lowered) on the tick that reaches it without exiting, raises it only when the P&L makes a new high, and fires through the usual claim and exit path when the P&L is at or under trailFloorUsd(best, trail), with the close reason target and a note naming the best and the exit level; the stop loss is still judged first",
+  "evidence": "ADR-103, GAPS #140 (17 Nov 2026): packages/schema/src/strategies.ts RuleTrail / TRAIL_TRIGGERS / trailFloorUsd; apps/api/src/db/schema.ts + drizzle/0027_quick_pixie.sql; apps/api/src/routes/strategies.ts (toRule, arm route); apps/api/src/rules-engine.ts; tests: schema strategies.test.ts HC-TR-210, api rules-engine.test.ts HC-TR-210"
+ },
+ {
+  "id": "HC-TR-211",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/analyse",
+  "screen": "Trading · Protect dialog / cards · Details",
+  "feature": "Protect dialog: Trail instead of exiting at the target, with the give-back and two worked exit levels; the card shows the best and the exit level once trailing; the fired chip says the target trailed",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web)",
+  "acceptance": "The Target box carries one more line, off by default: a checkbox, the unit (the trader's currency or %), the give-back and a sentence with the exit level at the target and at twice the target; a give-back at or above the target, or a percentage of 100 or more, disables Arm with the reason; with a trail already running the sentence gives the best so far and the exit the save produces (refused when the P&L is already under it), says when a higher target starts the trail over, and says the trail starts on arming when the P&L is already past the target; the box hint reads start trailing when P&L reaches; ruleText gives target at +X, then trail Y before the target and trailing: best +X, exits at +Y after it; firedLabel gives target hit · trailed from +X; Details lists the same words",
+  "evidence": "ADR-103 (17 Nov 2026): apps/web/src/components/trading/RuleDialog.tsx (rule-target-trail, rule-target-trail-on / -money / -pct / -value / -preview, ruleText, firedLabel), PaperPanel.tsx card-rule-fired, test/mock-api.ts; tests: rules.test.tsx HC-TR-211"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

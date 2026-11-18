@@ -27,7 +27,7 @@ import type { PaperBook } from "@/lib/strategy/usePaper";
 import { usePortfolio } from "@/lib/strategy/usePortfolio";
 import { AdjustedBadge, ModePill } from "./StrategyDetailsDialog";
 import { TradingEnvTag } from "./TradingEnvTag";
-import { FIRED_LABELS, firedRule, rulesLine } from "./RuleDialog";
+import { firedLabel, firedRule, rulesLine } from "./RuleDialog";
 import { CardFigures } from "./CardFigures";
 import { StopPaperDialog } from "./StopPaperDialog";
 
@@ -374,7 +374,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                           <span>no open option legs</span>
                         )}
                         {lc !== "closed" && rulesLine(s.rules, money, s.legs) ? <span className="text-accent" title="Exit rules run by the server (ADR-059 §2.3)" data-testid="card-rules">{rulesLine(s.rules, money, s.legs)}</span> : lc !== "closed" && open.length ? <span className="text-muted-foreground" data-testid="card-rules" data-state="none">no stop</span> : null}
-                        {firedRule(s.rules) ? <span className={cn("rounded border px-1", firedRule(s.rules)!.outcome === "partial" ? "border-loss text-loss" : "border-border text-muted-foreground")} title={firedRule(s.rules)!.note ?? undefined} data-testid="card-rule-fired" data-kind={firedRule(s.rules)!.kind} data-outcome={firedRule(s.rules)!.outcome ?? undefined}>{FIRED_LABELS[firedRule(s.rules)!.kind]}{firedRule(s.rules)!.outcome === "partial" ? " · a leg still open" : ""}</span> : null}
+                        {firedRule(s.rules) ? <span className={cn("rounded border px-1", firedRule(s.rules)!.outcome === "partial" ? "border-loss text-loss" : "border-border text-muted-foreground")} title={firedRule(s.rules)!.note ?? undefined} data-testid="card-rule-fired" data-kind={firedRule(s.rules)!.kind} data-outcome={firedRule(s.rules)!.outcome ?? undefined}>{firedLabel(firedRule(s.rules)!, money)}{firedRule(s.rules)!.outcome === "partial" ? " · a leg still open" : ""}</span> : null}
                       </div>
                     </div>
                     <div className="ml-auto text-right">

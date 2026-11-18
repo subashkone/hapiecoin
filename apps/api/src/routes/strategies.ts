@@ -64,6 +64,8 @@ export function toRule(r: RuleRow): StrategyRule {
     thresholdUsd: r.thresholdUsd,
     legId: r.legId,
     scope: r.scope,
+    trail: r.trailTrigger ? { trigger: r.trailTrigger, value: r.trailValue! } : null,
+    peakPnl: r.peakPnl,
     channels: r.channels as StrategyRule["channels"],
     state: r.state,
     firedAt: r.firedAt ? r.firedAt.toISOString() : null,
@@ -761,6 +763,11 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       });
       // the set is replaced in one transaction: an armed or disarmed rule of any kind goes, fired ones stay as history
       await db.transaction(async (tx) => {
+        // a trailing target that is already past its level keeps its best P&L when the set is saved again, as long as the
+        // new target is not above that best: the trader edited another rule, tightened the give-back, or a percentage
+        // target was re-priced on today's credit, and the exit level must not vanish with the old row. A target raised
+        // above the best starts over (ADR-103). The row is locked so a best the engine writes meanwhile is not lost.
+        const [trailing] = await tx.select().from(strategyRules).where(and(eq(strategyRules.strategyId, row.id), eq(strategyRules.kind, "target"), eq(strategyRules.state, "armed"))).limit(1).for("update");
         await tx.delete(strategyRules).where(and(eq(strategyRules.strategyId, row.id), inArray(strategyRules.state, ["armed", "disarmed"])));
         for (const [i, r] of body.rules.entries()) {
           await tx.insert(strategyRules).values({
@@ -774,6 +781,9 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
             thresholdUsd: levels[i]!,
             legId: r.kind === "leg_stop" ? (r.legId ?? null) : null,
             scope: r.kind === "leg_stop" ? (r.scope ?? "leg") : "strategy",
+            trailTrigger: r.trail?.trigger ?? null,
+            trailValue: r.trail ? (r.trail.trigger === "money" ? toDecimal(Number(r.trail.value), 2) : r.trail.value) : null,
+            peakPnl: r.trail && trailing?.peakPnl && Number(trailing.peakPnl) >= Number(levels[i]) ? trailing.peakPnl : null,
             channels: r.channels,
             state: "armed",
             createdAt: now,

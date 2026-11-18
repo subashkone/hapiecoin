@@ -22,6 +22,7 @@ import {
   RuleBody,
   RulesBody,
   ruleThresholdUsd,
+  trailFloorUsd,
   ruleLevel,
   settleInstantMs,
   nearestSettlement,
@@ -185,6 +186,28 @@ describe("HC-TR-165 stop and target rules (ADR-059 §2.3)", () => {
     expect(RULE_KINDS.map((k) => RULE_KIND_ORDER[k])).toEqual([0, 4, 1, 2, 3]);
     expect(CLOSE_REASON_OF_KIND.time).toBe("squared_off");
     expect(CLOSE_REASON_OF_KIND.leg_stop).toBe("stopped");
+  });
+});
+
+describe("HC-TR-210 a target that trails (ADR-103)", () => {
+  it("only a target trails; the give-back is positive, below 100 % or below the target", () => {
+    const target = { kind: "target", trigger: "money", value: "600" };
+    expect(RuleBody.safeParse({ ...target, trail: { trigger: "money", value: "300" } }).success).toBe(true);
+    expect(RuleBody.safeParse({ ...target, trail: { trigger: "pct", value: "25" } }).success).toBe(true);
+    expect(RuleBody.safeParse({ ...target, trail: { trigger: "money", value: "600" } }).success).toBe(false); // the exit level would be zero
+    expect(RuleBody.safeParse({ ...target, trail: { trigger: "money", value: "0" } }).success).toBe(false);
+    expect(RuleBody.safeParse({ ...target, trail: { trigger: "money", value: "0.004" } }).success).toBe(false); // under a cent: no give-back at all
+    expect(RuleBody.safeParse({ ...target, trail: { trigger: "pct", value: "100" } }).success).toBe(false);
+    expect(RuleBody.safeParse({ ...target, trail: { trigger: "price", value: "5" } }).success).toBe(false);
+    expect(RuleBody.safeParse({ kind: "stop", trigger: "money", value: "600", trail: { trigger: "money", value: "300" } }).success).toBe(false);
+    // a percentage target is compared at its USD level: 50 % of 100 = 50
+    expect(RuleBody.safeParse({ kind: "target", trigger: "pct", value: "50", basis: "credit", basisUsd: "100", trail: { trigger: "money", value: "49" } }).success).toBe(true);
+    expect(RuleBody.safeParse({ kind: "target", trigger: "pct", value: "50", basis: "credit", basisUsd: "100", trail: { trigger: "money", value: "50" } }).success).toBe(false);
+  });
+  it("the exit level is the best less the give-back", () => {
+    expect(trailFloorUsd(600, { trigger: "money", value: "300" })).toBe(300);
+    expect(trailFloorUsd(1800, { trigger: "money", value: "300" })).toBe(1500);
+    expect(trailFloorUsd(1800, { trigger: "pct", value: "25" })).toBe(1350);
   });
 });
 
