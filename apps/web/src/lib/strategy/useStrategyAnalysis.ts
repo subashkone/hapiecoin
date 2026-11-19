@@ -3,11 +3,13 @@
 // legs and the analysis result, re-priced at most once per frame and once per 30 s clock tick.
 // The pane can follow a paper / live strategy or ticked exchange positions (HC-TR-143, HC-TR-144, ADR-026):
 // those legs are priced at their entry premiums, so the payoff is the position's, not a re-quote of it.
+// A closed (archived) trade can be followed too (HC-TR-214, ADR-105): every leg it traded, at its entry premium,
+// with no quote subscriptions (its contracts may be gone), and `closed` set so the panels drop the live figures.
 // While the adjustment workbench holds a draft for the followed strategy (ADR-044, HC-TR-149) the pane shows the
 // position *after* the change (kept lots at entry, adds at the mark) and keeps the *before* result for the ghost
 // curve and the before → after strip; both are valued at the draft's "value at" date.
 import type { AnalyzeOptions, AnalyzeResult, Leg as PricingLeg } from "@hapiecoin/pricing";
-import type { Quote, Strategy, StrategyLeg as ServerLeg, Underlying } from "@hapiecoin/schema";
+import type { CloseReason, Quote, Strategy, StrategyLeg as ServerLeg, Underlying } from "@hapiecoin/schema";
 import { useEffect, useMemo, useState } from "react";
 import { type AdjustDraft, type MarkOf, afterLegs, beforeLegs, pickToLeg, realisedLegs, valuationMsOf } from "@/lib/adjust/model";
 import { nearestExpiryValuationMs } from "@/lib/strategy/analysis";
@@ -62,6 +64,20 @@ export interface StrategyAnalysis {
   quoteVersion: number;
   /** The instant the "expiry" figures are valued at while adjusting (the "value at" chip), else undefined. */
   valuationMs: number | undefined;
+  /** Set when the pane shows a closed trade (HC-TR-214): when and why it closed and its final result in USD. */
+  closed: ClosedTrade | null;
+}
+
+export interface ClosedTrade {
+  startedAt: string | null;
+  closedAt: string | null;
+  reason: CloseReason | null;
+  resultUsd: string;
+}
+
+/** What a closed trade shows of itself; null for anything still open. */
+export function closedTradeOf(s: Strategy | undefined): ClosedTrade | null {
+  return s && s.status === "archived" ? { startedAt: s.startedAt, closedAt: s.closedAt, reason: s.closeReason ?? null, resultUsd: s.realizedPnl } : null;
 }
 
 /** A clock that ticks every 30 s so time-to-expiry moves without re-pricing on every render. */
@@ -77,11 +93,11 @@ function useClock(intervalMs = 30_000): number {
 const DEFAULT_LOTS: Record<Underlying, string> = { BTC: "0.001", ETH: "0.01", XAUT: "0.001" };
 const NO_LEGS: StrategyLeg[] = [];
 
-/** The followed strategy (paper or live) when the pane source names one that still exists. */
+/** The followed strategy (paper, live, or a closed trade) when the pane source names one that still exists. */
 function useFollowedStrategy(source: PaneSource): Strategy | undefined {
   const id = source?.kind === "strategy" ? source.id : null;
   const { data } = useStrategies();
-  return useMemo(() => (id === null ? undefined : data?.find((s) => s.id === id && (s.status === "paper" || s.status === "live"))), [data, id]);
+  return useMemo(() => (id === null ? undefined : data?.find((s) => s.id === id && s.status !== "draft")), [data, id]);
 }
 
 /** Ticked exchange positions as legs (all on one asset: the first parsable position's). */
@@ -124,18 +140,23 @@ export function useStrategyAnalysis(scope: "pane" | "builder" = "pane"): Strateg
   const { data: settings } = useSettings();
   const followed = useFollowedStrategy(paneSource);
   const positions = usePositionLegs(paneSource, settings?.lotSizes);
-  const adjusting = draft !== null && followed !== undefined && draft.strategyId === followed.id ? draft : null;
+  const closed = useMemo(() => closedTradeOf(followed), [followed]);
+  // a closed trade has nothing left to adjust: a draft that outlived its strategy is not applied to it
+  const adjusting = draft !== null && followed !== undefined && closed === null && draft.strategyId === followed.id ? draft : null;
 
   const source: AnalysisSource = followed ? { kind: "strategy", id: followed.id, name: followed.name, status: followed.status } : positions.asset ? { kind: "positions", count: positions.legs.length } : { kind: "builder" };
   const asset = followed?.asset ?? positions.asset ?? builderAsset;
   const openLegs = useMemo(() => (followed ? followed.legs.filter((l) => l.status === "open") : []), [followed]);
   const heldLegs = useMemo(() => {
+    // a closed trade: every leg that was actually entered, at its entry premium (the Details payoff does the same)
+    if (followed && closed) return beforeLegs(followed.legs.filter((l) => l.entryPrice !== null), followed.asset);
     if (followed) return beforeLegs(openLegs, followed.asset);
     if (positions.asset) return positions.legs;
     return allLegs.filter((l) => l.status === "open" && l.enabled !== false);
-  }, [followed, openLegs, positions, allLegs]);
+  }, [followed, closed, openLegs, positions, allLegs]);
   // while adjusting, subscribe to every contract the draft touches so the adds are priced at the live mark
-  const quoteLegs = useMemo(() => (adjusting ? [...heldLegs, ...adjusting.picks.map((p) => pickToLeg(p, asset))] : heldLegs), [adjusting, heldLegs, asset]);
+  // a closed trade subscribes to nothing: its contracts may have settled and left the venue
+  const quoteLegs = useMemo(() => (closed ? NO_LEGS : adjusting ? [...heldLegs, ...adjusting.picks.map((p) => pickToLeg(p, asset))] : heldLegs), [closed, adjusting, heldLegs, asset]);
   // a followed position keeps its entry premiums (like custom prices); the Builder follows its own price mode
   const priceMode = source.kind === "builder" ? meta.priceMode : "custom";
 
@@ -160,7 +181,8 @@ export function useStrategyAnalysis(scope: "pane" | "builder" = "pane"): Strateg
   const nowMs = useClock();
   // ADR-059: a calendar or diagonal values its expiry curve at the nearest expiry (later legs keep time value); the
   // workbench's own valuation rule takes over while adjusting
-  const valuationMs = useMemo(() => (adjusting ? valuationMsOf(adjusting, openLegs, asset, nowMs) : nearestExpiryValuationMs(legs, settlementHourUtc(asset, venue), nowMs)), [adjusting, openLegs, asset, venue, nowMs, legs]);
+  // a closed trade is drawn intrinsic for every leg: nothing of it has time value left to keep
+  const valuationMs = useMemo(() => (closed ? undefined : adjusting ? valuationMsOf(adjusting, openLegs, asset, nowMs) : nearestExpiryValuationMs(legs, settlementHourUtc(asset, venue), nowMs)), [closed, adjusting, openLegs, asset, venue, nowMs, legs]);
   const spot = spotState?.price !== undefined && Number.isFinite(Number(spotState.price)) ? Number(spotState.price) : null;
 
   const priceFor = useMemo(
@@ -196,5 +218,5 @@ export function useStrategyAnalysis(scope: "pane" | "builder" = "pane"): Strateg
   const beforePricing = useMemo(() => (adjusting ? toPricingLegs(heldLegs, lotSize, { iv: (l) => quoteFor(l)?.markIv, spot: spotState?.price }) : []), [adjusting, heldLegs, lotSize, quoteFor, spotState?.price]);
   const beforeOptions = useMemo(() => (adjusting && spot !== null && beforePricing.length ? { spot, nowMs, targetDays, targetSpot: targetPrice, calendar: venueCalendar(asset, venue), defaultIv: 0.5, ...(valuationMs === undefined ? {} : { valuationMs }) } : null), [adjusting, spot, beforePricing.length, nowMs, targetDays, targetPrice, asset, venue, valuationMs]);
   const { result: before } = useAnalysis(beforePricing, beforeOptions);
-  return { asset, venue, legs, pricingLegs, result, error, pending, spot, spotText: spotState?.price, lotSize, money, quoteFor, priceFor, targetPrice, targetDays, nowMs, source, adjusting, openLegs, before: adjusting ? before : null, markOf, quoteVersion, valuationMs };
+  return { asset, venue, legs, pricingLegs, result, error, pending, spot, spotText: spotState?.price, lotSize, money, quoteFor, priceFor, targetPrice, targetDays, nowMs, source, adjusting, openLegs, before: adjusting ? before : null, markOf, quoteVersion, valuationMs, closed };
 }

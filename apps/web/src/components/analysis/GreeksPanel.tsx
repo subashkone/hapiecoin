@@ -43,13 +43,14 @@ export function GreeksPanel() {
 
   // HC-WS-101: every leg re-priced at 49 prices ±20 % around spot on the target date; the worker returns one row per date
   const prices = useMemo(() => (spot === null ? [] : Array.from({ length: ACROSS_POINTS }, (_, i) => spot * (0.8 + (0.4 * i) / (ACROSS_POINTS - 1)))), [spot]);
-  const across = (mode: "delta" | "theta") => (result && spot !== null && prices.length ? { prices, dates: [result.targetMs], mode, defaultIv: 0.5, calendar: venueCalendar(asset, venue) } : null);
+  const across = (mode: "delta" | "theta") => (!a.closed && result && spot !== null && prices.length ? { prices, dates: [result.targetMs], mode, defaultIv: 0.5, calendar: venueCalendar(asset, venue) } : null);
   const deltaRow = useScenario(a.pricingLegs, across("delta"));
   const thetaRow = useScenario(a.pricingLegs, across("theta"));
   const spotIdx = Math.round((ACROSS_POINTS - 1) / 2);
   const xLabels = prices.map((p) => fmtStrike(String(Math.round(p))));
   const xTip = prices.map((p) => `${fmtStrike(String(Math.round(p)))} (${((p / (spot ?? 1) - 1) * 100).toFixed(0)}%)`);
 
+  if (a.closed) return <EmptyState title="This trade is closed" description="Greeks need live prices, and a closed trade has none. The Payoff tab shows the position as it was entered and how it ended." className="py-16" data-testid="greeks-closed" />;
   if (legs.length === 0) return <EmptyState title="No strategy yet" description="Greeks appear once the strategy has legs." className="py-16" data-testid="greeks-empty" />;
 
   const tone = (v: number | undefined) => (v === undefined || !Number.isFinite(v) ? "muted" : v >= 0 ? "profit" : "loss");

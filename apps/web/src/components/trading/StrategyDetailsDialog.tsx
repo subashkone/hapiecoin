@@ -6,7 +6,7 @@ import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFoo
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { strategyKeys, useArchiveStrategy, useCloseAll, useDeleteStrategy, useStrategies } from "@/lib/api/strategies";
-import { daysToExpiry, fmtDate, fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
+import { daysToExpiry, fmtDate, fmtDateTime, fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
 import { fmtMoney } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
 import { toPricingLegs } from "@/lib/pricing/legs";
@@ -285,7 +285,8 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
               <div><span className="micro block">Total legs</span><b className="num">{s.legs.length}</b></div>
               <div><span className="micro block">Days</span><b className="num">{daysOf(s)}</b></div>
               <div><span className="micro block">Realised</span><b className={cn("num", (pnl?.realized ?? 0) >= 0 ? "text-profit" : "text-loss")}>{pnl ? fmtMoney(pnl.realized, money, { signed: true }) : "—"}</b></div>
-              <div><span className="micro block">Started</span><b className="num">{s.startedAt ? new Date(s.startedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : "—"}</b></div>
+              <div className="col-span-2" data-testid="details-started"><span className="micro block">Started</span><b className="num">{fmtDateTime(s.startedAt)}</b></div>
+              {s.status === "archived" ? <div className="col-span-2" data-testid="details-closed"><span className="micro block">Closed</span><b className="num">{fmtDateTime(s.closedAt)}</b></div> : null}
             </div>
             {s.status === "archived" && s.startedAt ? (
               <div className="mt-3 rounded border border-border p-2 text-xs" data-testid="details-journal">

@@ -4,7 +4,8 @@
 import type { ScenarioOptions } from "@hapiecoin/pricing";
 import { Button, EmptyState, cn } from "@hapiecoin/ui";
 import { useMemo, useState } from "react";
-import { fmtDate, fmtDelta, fmtGamma, fmtPrice, fmtStrike } from "@/lib/format";
+import { CLOSE_REASON_LABELS } from "@hapiecoin/schema";
+import { fmtDate, fmtDateTime, fmtDelta, fmtGamma, fmtPrice, fmtStrike } from "@/lib/format";
 import { useChain } from "@/lib/gateway/hooks";
 import { fmtMoney, fmtMoneyCompact } from "@/lib/money";
 import { useScenario } from "@/lib/pricing/client";
@@ -25,6 +26,8 @@ const LAYER_LABELS: { key: keyof ChartLayers; label: string; title: string }[] =
   { key: "ivDown", label: "IV −5%", title: "Target-date curve with every leg's IV five vol points lower (dashed)" },
   { key: "ivUp", label: "IV +5%", title: "Target-date curve with every leg's IV five vol points higher (dashed)" },
 ];
+// a closed trade has no live price or IV: only the layers that read the entry premiums stay (HC-TR-214)
+const CLOSED_LAYERS: readonly (keyof ChartLayers)[] = ["expiry", "fill", "breakeven"];
 const IV_SHIFT = 0.05;
 const ZOOMS = [1, 2, 4] as const;
 
@@ -66,13 +69,15 @@ export function PayoffPanel() {
   const a = useStrategyAnalysis();
   const setTarget = useUiStore((s) => s.setTarget);
   const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
-  const layers = useUiStore((s) => s.chartLayers);
+  const storedLayers = useUiStore((s) => s.chartLayers);
+  const isClosed = a.closed !== null;
+  const layers = useMemo<ChartLayers>(() => (isClosed ? { ...storedLayers, target: false, band: false, oi: false, ivUp: false, ivDown: false } : storedLayers), [storedLayers, isClosed]);
   const setChartLayer = useUiStore((s) => s.setChartLayer);
   const [zoom, setZoom] = useState<(typeof ZOOMS)[number]>(1);
   const [hover, setHover] = useState<number | null>(null);
   const { result, spot, money, legs } = a;
   const nearestExpiry = useMemo(() => legs.filter((l) => l.kind !== "future").map((l) => l.expiry).sort()[0] ?? null, [legs]);
-  const chain = useChain(a.asset, nearestExpiry);
+  const chain = useChain(a.asset, isClosed ? null : nearestExpiry);
   const oi = useMemo(() => {
     const rows = chain?.rows ?? [];
     const raw = rows.map((r) => ({ strike: Number(r.strike), value: Number(r.call?.oi ?? 0) + Number(r.put?.oi ?? 0) }));
@@ -109,7 +114,7 @@ export function PayoffPanel() {
       spot,
       breakevens: result.breakevens,
       band: Number.isFinite(sigma) && sigma > 0 ? [spot - sigma, spot + sigma] : null,
-      target: { price: a.targetPrice, pnl: result.target.pnlTarget },
+      target: isClosed ? null : { price: a.targetPrice, pnl: result.target.pnlTarget },
       targetLabel: a.targetDays === 0 ? "today" : `+${a.targetDays}d`,
       layers,
       oi,
@@ -118,14 +123,14 @@ export function PayoffPanel() {
       fmtMoney: (v) => fmtMoneyCompact(v, money),
       ghost: a.before?.points ?? null,
     };
-  }, [result, spot, range, a.targetPrice, a.targetDays, layers, oi, money, a.before, ivUpRow, ivDownRow]);
+  }, [result, spot, range, a.targetPrice, a.targetDays, layers, oi, money, a.before, ivUpRow, ivDownRow, isClosed]);
 
   if (legs.length === 0) {
     return (
       <div className="flex h-full flex-col" data-testid="payoff-panel" data-tour="payoff-panel" data-state="empty">
         <EmptyState
-          title="No strategy yet"
-          description="Add legs from the chain (hover a row and press B or S), pick a template, or open the Builder."
+          title={isClosed ? "No leg of this trade was entered" : "No strategy yet"}
+          description={isClosed ? "This closed trade never held a position, so there is no payoff to draw." : "Add legs from the chain (hover a row and press B or S), pick a template, or open the Builder."}
           className="py-16"
           action={
             <Button size="sm" variant="outline" onClick={() => setWorkspaceTab("builder")} data-testid="payoff-open-builder">
@@ -159,17 +164,17 @@ export function PayoffPanel() {
   const priceTicks = spot === null ? [] : [0.8, 0.9, 1, 1.1, 1.2].map((k) => ({ k, price: spot * k }));
 
   return (
-    <div className="flex h-full min-h-0 flex-col" data-testid="payoff-panel" data-tour="payoff-panel" data-state={result ? "ready" : a.error ? "error" : "pending"} data-adjusting={a.adjusting ? "true" : undefined}>
+    <div className="flex h-full min-h-0 flex-col" data-testid="payoff-panel" data-tour="payoff-panel" data-state={result ? "ready" : a.error ? "error" : "pending"} data-adjusting={a.adjusting ? "true" : undefined} data-closed={isClosed ? "true" : undefined}>
       {a.adjusting ? <BeforeAfterStrip a={a} /> : null}
       <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3" data-testid="payoff-tiles">
         <Tile label={a.adjusting ? "Max profit · after" : "Max profit"} value={result ? fmtMoney(result.maxProfit, money, { unlimited: "Unlimited" }) : "—"} sub={where(maxPAt)} tone="profit" testId="tile-max-profit" title="Highest P&L at expiry over the price axis" />
         <Tile label={a.adjusting ? "Max loss · after" : "Max loss"} value={result ? fmtMoney(result.maxLoss, money, { unlimited: "Unlimited" }) : "—"} sub={where(maxLAt)} tone="loss" testId="tile-max-loss" title="Lowest P&L at expiry over the price axis" />
-        <Tile label={a.adjusting ? "Break-even · after" : "Break-even"} value={result ? (result.breakevens.length ? result.breakevens.map((b) => fmtStrike(String(Math.round(b)))).join(" · ") : "none") : "—"} sub={result && spot ? (result.breakevens.length ? result.breakevens.map((b) => `${((b - spot) / spot) * 100 >= 0 ? "+" : ""}${(((b - spot) / spot) * 100).toFixed(1)}%`).join(" · ") : "") : result ? (result.breakevens.length === 1 ? "one point" : result.breakevens.length ? `${result.breakevens.length} points` : "") : ""} testId="tile-breakeven" title="Underlying prices where the expiry P&L is zero" />
-        <Tile label={a.adjusting ? "POP · after" : "POP"} value={result && Number.isFinite(result.pop) ? `${(result.pop * 100).toFixed(0)}%` : "—"} sub={pop?.text} tone={pop?.tone} testId="tile-pop" title="Probability of any profit at expiry: lognormal on the ATM IV" />
+        <Tile label={a.adjusting ? "Break-even · after" : "Break-even"} value={result ? (result.breakevens.length ? result.breakevens.map((b) => fmtStrike(String(Math.round(b)))).join(" · ") : "none") : "—"} sub={isClosed ? "" : result && spot ? (result.breakevens.length ? result.breakevens.map((b) => `${((b - spot) / spot) * 100 >= 0 ? "+" : ""}${(((b - spot) / spot) * 100).toFixed(1)}%`).join(" · ") : "") : result ? (result.breakevens.length === 1 ? "one point" : result.breakevens.length ? `${result.breakevens.length} points` : "") : ""} testId="tile-breakeven" title="Underlying prices where the expiry P&L is zero" />
+        <Tile label={a.adjusting ? "POP · after" : "POP"} value={!isClosed && result && Number.isFinite(result.pop) ? `${(result.pop * 100).toFixed(0)}%` : "—"} sub={isClosed ? "closed trade" : pop?.text} tone={isClosed ? "muted" : pop?.tone} testId="tile-pop" title="Probability of any profit at expiry: lognormal on the ATM IV" />
         <Tile label="R : R" value={result ? rrText(result.rewardRisk, result.maxProfit, result.maxLoss) : "—"} sub={rr?.text} tone={rr?.tone} testId="tile-rr" title="Max profit : max loss" />
-        <Tile label="Net premium" value={result ? fmtMoney(result.netPremium, money, { signed: true }) : "—"} sub={result ? (result.netPremium >= 0 ? "credit received" : "debit paid") : ""} tone={result ? (result.netPremium >= 0 ? "profit" : "loss") : "muted"} testId="tile-net" title="Premium received minus premium paid, at the prices in the Builder" />
+        <Tile label="Net premium" value={result ? fmtMoney(result.netPremium, money, { signed: true }) : "—"} sub={result ? (result.netPremium >= 0 ? "credit received" : "debit paid") : ""} tone={result ? (result.netPremium >= 0 ? "profit" : "loss") : "muted"} testId="tile-net" title={isClosed ? "Premium received minus premium paid, at the prices this trade was entered at" : "Premium received minus premium paid, at the prices in the Builder"} />
       </div>
-      {result && spot !== null && Number.isFinite(result.expectedMove) && result.expectedMove > 0 ? (
+      {!isClosed && result && spot !== null && Number.isFinite(result.expectedMove) && result.expectedMove > 0 ? (
         <div className="grid grid-cols-5 px-3 pt-1 text-center font-mono text-3xs text-muted-foreground" data-testid="sigma-labels" title="Lognormal expected move to expiry from the legs' IV">
           {([-2, -1, 0, 1, 2] as const).map((k) => (
             <span key={k} className={k === 0 ? "text-spot" : undefined}>
@@ -179,6 +184,12 @@ export function PayoffPanel() {
           ))}
         </div>
       ) : null}
+      {a.closed ? (
+        <p className="px-3 text-2xs text-muted-foreground" data-testid="payoff-closed">
+          <span className="text-foreground">Closed trade.</span> Opened <span className="num text-foreground">{fmtDateTime(a.closed.startedAt)}</span>, closed <span className="num text-foreground">{fmtDateTime(a.closed.closedAt)}</span>
+          {a.closed.reason ? ` (${CLOSE_REASON_LABELS[a.closed.reason]})` : ""}, final result <b className={cn("num", Number(a.closed.resultUsd) >= 0 ? "text-profit" : "text-loss")}>{fmtMoney(a.closed.resultUsd, money, { signed: true })}</b>. The curve is the position as it was entered, held to expiry; target date, Greeks and probability need live prices and are not shown.
+        </p>
+      ) : (
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 text-2xs" data-testid="payoff-strip">
         <span>
           <span className="text-muted-foreground">Win if </span>
@@ -220,9 +231,10 @@ export function PayoffPanel() {
           <span className="ml-auto text-loss">{a.error}</span>
         ) : null}
       </div>
+      )}
       <div className="flex items-center gap-1 px-3 pt-2">
         <span className="micro mr-1">Layers</span>
-        {LAYER_LABELS.map((l) => (
+        {LAYER_LABELS.filter((l) => !isClosed || CLOSED_LAYERS.includes(l.key)).map((l) => (
           <button key={l.key} type="button" aria-pressed={layers[l.key]} title={l.title} onClick={() => setChartLayer(l.key, !layers[l.key])} className={cn("rounded border px-1.5 py-0.5 text-2xs", layers[l.key] ? "border-foreground/40 text-foreground" : "border-border text-muted-foreground")} data-testid={`layer-${l.key}`}>
             {l.label}
           </button>
@@ -236,13 +248,14 @@ export function PayoffPanel() {
       </div>
       <div className="relative min-h-[260px] flex-1">
         {frame ? (
-          <PayoffChart frame={frame} onHover={setHover} onSelect={(p) => setTarget({ price: Math.round(p) })} className="absolute inset-0 px-1" />
+          <PayoffChart frame={frame} onHover={setHover} onSelect={isClosed ? undefined : (p) => setTarget({ price: Math.round(p) })} className="absolute inset-0 px-1" />
         ) : (
           <div className="grid h-full place-items-center text-xs text-muted-foreground" data-testid="payoff-waiting">
             {spot === null ? "Waiting for the spot price…" : a.error ? "Pricing failed for these legs" : "Pricing…"}
           </div>
         )}
       </div>
+      {isClosed ? null : (
       <div className="grid grid-cols-1 gap-2 px-3 py-2 sm:grid-cols-2" data-testid="target-controls">
         <div className="flex flex-col gap-0.5">
         <label className="flex items-center gap-2 text-2xs">
@@ -275,7 +288,8 @@ export function PayoffPanel() {
         </div>
         </div>
       </div>
-      <GreeksStrip a={a} />
+      )}
+      {isClosed ? null : <GreeksStrip a={a} />}
     </div>
   );
 }

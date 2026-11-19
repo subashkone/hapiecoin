@@ -20,7 +20,7 @@ import { type DriftRow, driftFor, isSettling } from "@/lib/strategy/drift";
 import { fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
 import { dataOnly } from "@/lib/venue";
-import { fmtDate, fmtExpiry } from "@/lib/format";
+import { fmtDateTime, fmtExpiry } from "@/lib/format";
 import { settlementHourUtc } from "@/lib/pricing/legs";
 import { type Lifecycle, dayPnl, daysLeft, daysOf, expiryOf, fmtLeg, lifecycleOf, openLegs, pnlSeries } from "@/lib/strategy/paper";
 import type { PaperBook } from "@/lib/strategy/usePaper";
@@ -340,7 +340,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                   role="button"
                   tabIndex={0}
                   className={cn("rounded border p-2 outline-none focus-visible:ring-1 focus-visible:ring-ring", paneSource?.kind === "strategy" && paneSource.id === s.id ? "border-accent" : "border-border hover:border-foreground/30")}
-                  title="Click to analyse this strategy in the pane"
+                  title={lc === "closed" ? "Click to see this closed trade in the pane" : "Click to analyse this strategy in the pane"}
                   onClick={(e) => {
                     if ((e.target as HTMLElement).closest("button, a, input, select")) return;
                     followStrategy(s.id);
@@ -350,7 +350,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       followStrategy(s.id);
-                    } else if ((e.key === "a" || e.key === "A") && open.length > 0) {
+                    } else if ((e.key === "a" || e.key === "A") && open.length > 0 && lc !== "closed") {
                       e.preventDefault();
                       openAdjust(s.id, false, s.venue); // HC-TR-152: A opens the workbench on the focused card
                     }
@@ -365,9 +365,9 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                       <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium"><span className="truncate">{s.name}</span><ModePill status={s.status} />{kind === "live" ? <TradingEnvTag /> : null}{kind === "live" && accounts.length > 1 ? <span className={cn("micro rounded border px-1", accountRefOf(s, accounts)?.accountId ? "border-border" : "border-warning text-warning")} title={accountRefOf(s, accounts)?.accountId ? "The exchange key this strategy trades through (ADR-068)" : "Placed before accounts: name it by going live again, or its exits and the out-of-sync check cannot find its key"} data-testid="card-account" data-account-id={accountRefOf(s, accounts)?.accountId ?? ""}>{accountLabel(accounts, accountRefOf(s, accounts)?.accountId) ?? "no account named"}</span> : null}<AdjustedBadge s={s} />{drift.get(s.id) ? <span className="micro rounded border border-loss bg-loss/10 px-1 text-loss" title={driftTitle(drift.get(s.id)!)} data-testid="card-drift" data-state="out-of-sync">out of sync</span> : null}{kind === "live" && s.orderBatchId ? <span className="micro rounded border border-border px-1 font-mono" title={`Order batch ${s.orderBatchId}`} data-testid="card-batch">batch {s.orderBatchId.slice(-6)}</span> : null}</div>
                       <div className="micro flex flex-wrap gap-2"><span className="rounded border border-border px-1">{s.asset}</span><span><b>{open.length}</b>/{s.legs.length} legs</span>{s.templateName ? <span>{s.templateName}</span> : null}</div>
                       <div className="micro mt-0.5 flex flex-wrap gap-x-2 normal-case tracking-normal" data-testid="card-expiry" data-days={left ?? undefined}>
-                        <span>started <b className="num">{s.startedAt ? fmtDate(s.startedAt) : "—"}</b> · {daysOf(s)}d</span>
+                        <span data-testid="card-started">started <b className="num">{fmtDateTime(s.startedAt)}</b> · {daysOf(s)}d</span>
                         {lc === "closed" ? (
-                          <span>closed <b className="num">{s.closedAt ? fmtDate(s.closedAt) : "—"}</b>{s.closeReason ? <span className="ml-1 rounded border border-border px-1" title="Why it closed (ADR-059)" data-testid="card-close-reason" data-reason={s.closeReason}>{CLOSE_REASON_LABELS[s.closeReason]}</span> : null}</span>
+                          <span data-testid="card-closed">closed <b className="num">{fmtDateTime(s.closedAt)}</b>{s.closeReason ? <span className="ml-1 rounded border border-border px-1" title="Why it closed (ADR-059)" data-testid="card-close-reason" data-reason={s.closeReason}>{CLOSE_REASON_LABELS[s.closeReason]}</span> : null}</span>
                         ) : ex ? (
                           <span>expires <b className={cn("num", left !== null && left <= 1 && "text-warning")}>{ex.nearest === ex.latest ? fmtExpiry(ex.nearest) : `${fmtExpiry(ex.nearest)} → ${fmtExpiry(ex.latest)}`}</b>{expired ? <span className="text-warning" data-testid="card-settling" data-state={settling ? "settling" : "unsettled"}> · {settling ? "expired, settling" : "expired, not settled yet"}</span> : left !== null ? <span className={cn(left <= 1 && "text-warning")}> ({left}d)</span> : null}</span>
                         ) : (

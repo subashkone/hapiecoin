@@ -2,12 +2,15 @@
 // Right pane of the workspace (HC-WS-030..032): the analysis tabs. Payoff, Greeks, Ladder (Phase 2) and the
 // Phase 5 Scenarios, Vol and Structure tabs (HC-WS-088..100).
 import { Tabs, TabsContent, TabsList, TabsTrigger, cn } from "@hapiecoin/ui";
-import { type ReactElement, useEffect, useState } from "react";
+import { CLOSE_REASON_LABELS } from "@hapiecoin/schema";
+import { type ReactElement, useEffect, useRef, useState } from "react";
+import { useSettings } from "@/lib/api/queries";
 import { useStrategies } from "@/lib/api/strategies";
-import { fmtExpiry } from "@/lib/format";
+import { fmtDateTime, fmtExpiry } from "@/lib/format";
+import { type MoneyFormat, USD, fmtMoney } from "@/lib/money";
 import { type AnalysisTab, useUiStore } from "@/lib/store";
 import { guessTemplateName } from "@/lib/strategy/templates";
-import { useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
+import { closedTradeOf, useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
 import { ModePill } from "@/components/trading/StrategyDetailsDialog";
 import { ShareDialog } from "./ShareDialog";
 import { GreeksPanel } from "./GreeksPanel";
@@ -41,18 +44,43 @@ export function PaneSourceBar() {
   const followStrategy = useUiStore((s) => s.followStrategy);
   const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
   const { data: strategies } = useStrategies();
-  const followed = source?.kind === "strategy" ? strategies?.find((s) => s.id === source.id && (s.status === "paper" || s.status === "live")) : undefined;
-  // a followed strategy that was archived or deleted: back to the Builder legs without a stale pill
+  const { data: settings } = useSettings();
+  const followed = source?.kind === "strategy" ? strategies?.find((s) => s.id === source.id && s.status !== "draft") : undefined;
+  // a followed strategy that was deleted, or that closed while the pane was following it open: back to the Builder
+  // legs without a stale pill. A closed trade the trader clicked on purpose stays (HC-TR-214, ADR-105).
+  const seenOpen = useRef<string | null>(null);
   useEffect(() => {
-    if (source?.kind === "strategy" && strategies && !followed) followStrategy(null, true); // gone: nothing left to keep
+    if (source?.kind !== "strategy") {
+      seenOpen.current = null; // nothing followed: a later click on its closed card is deliberate, not a close under the pane
+      return;
+    }
+    if (!strategies) return;
+    if (!followed) {
+      followStrategy(null, true); // gone: nothing left to keep
+    } else if (followed.status !== "archived") {
+      seenOpen.current = followed.id;
+    } else if (seenOpen.current === followed.id) {
+      seenOpen.current = null;
+      followStrategy(null, true); // it closed under the pane
+    } else {
+      seenOpen.current = null;
+    }
   }, [source, strategies, followed, followStrategy]);
   if (!source) return null;
+  const closed = closedTradeOf(followed);
+  const money: MoneyFormat = settings ? { currency: settings.currency === "INR" ? "INR" : "USD", rate: settings.conversionRate } : USD;
   const label = source.kind === "positions" ? `${source.productIds.length} exchange ${source.productIds.length === 1 ? "position" : "positions"}` : (followed?.name ?? "…");
   return (
     <div className={cn("flex items-center gap-2 border-b border-border px-3 py-1 text-2xs", source.kind === "strategy" && followed?.status === "live" ? "bg-loss/5" : "bg-muted/40")} data-testid="pane-source" data-kind={source.kind}>
       <span className="micro">Following</span>
       <span className="truncate font-medium">{label}</span>
       {followed ? <ModePill status={followed.status} /> : null}
+      {closed ? (
+        <span className="num truncate" data-testid="pane-closed" title="A closed trade: the position as it was entered, and how it ended">
+          closed {fmtDateTime(closed.closedAt)}
+          {closed.reason ? ` · ${CLOSE_REASON_LABELS[closed.reason]}` : ""} · final <b className={Number(closed.resultUsd) >= 0 ? "text-profit" : "text-loss"}>{fmtMoney(closed.resultUsd, money, { signed: true })}</b>
+        </span>
+      ) : null}
       {followed && adjusting?.strategyId === followed.id ? <span className="micro rounded border border-warning px-1 text-warning" data-testid="pane-adjusting">adjusting · after the change</span> : null}
       <button
         type="button"

@@ -13,7 +13,8 @@ import { useStrategyAnalysis } from "@/lib/strategy/useStrategyAnalysis";
 export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const a = useStrategyAnalysis();
   const storedName = useUiStore((s) => s.strategy[s.asset].name);
-  const name = storedName.trim() || guessTemplateName(a.legs);
+  // the stored name is the Builder draft's: a followed strategy is shared under its own
+  const name = (a.source.kind === "strategy" ? a.source.name : a.source.kind === "builder" ? storedName.trim() : "") || guessTemplateName(a.legs);
   const link = useMemo(() => (a.legs.length ? shareUrl(typeof window === "undefined" ? "" : window.location.origin, encodeShare({ asset: a.asset, venue: a.venue, name, legs: a.legs })) : ""), [a.legs, a.asset, a.venue, name]);
   const copy = async () => {
     const ok = await copyText(link);
@@ -47,7 +48,7 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
             <div className="flex flex-wrap gap-x-4 text-2xs" data-testid="share-figures">
               <span>max profit <b className="num text-profit">{fmtMoney(r.maxProfit, a.money, { signed: true, unlimited: "Unlimited" })}</b></span>
               <span>max loss <b className="num text-loss">{fmtMoney(r.maxLoss, a.money, { signed: true, unlimited: "Unlimited" })}</b></span>
-              <span>POP <b className="num">{Number.isFinite(r.pop) ? `${(r.pop * 100).toFixed(0)}%` : "—"}</b></span>
+              {a.closed ? <span data-testid="share-closed">closed trade · as entered</span> : <span>POP <b className="num">{Number.isFinite(r.pop) ? `${(r.pop * 100).toFixed(0)}%` : "—"}</b></span>}
             </div>
           ) : null}
         </DialogBody>

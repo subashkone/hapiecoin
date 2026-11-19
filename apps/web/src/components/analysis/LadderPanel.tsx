@@ -25,6 +25,7 @@ export function LadderPanel() {
   const setStepMul = useUiStore((s) => s.setLadderStep);
   const step = spot ? cleanStep(spot * 0.0025 * stepMul) : 1;
   const rows = useMemo(() => (result && spot ? ladderRows(result, spot, ladderPrices(spot, step)) : []), [result, spot, step]);
+  if (a.closed) return <EmptyState title="This trade is closed" description="The ladder's target-date figures need live prices, and a closed trade has none. The Payoff tab shows the position as it was entered and how it ended." className="py-16" data-testid="ladder-closed" />;
   if (legs.length === 0) return <EmptyState title="No strategy yet" description="The ladder shows P&L at each price once the strategy has legs." className="py-16" data-testid="ladder-empty" />;
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="ladder-panel" data-rows={rows.length}>
