@@ -768,22 +768,29 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
         // target was re-priced on today's credit, and the exit level must not vanish with the old row. A target raised
         // above the best starts over (ADR-103). The row is locked so a best the engine writes meanwhile is not lost.
         const [trailing] = await tx.select().from(strategyRules).where(and(eq(strategyRules.strategyId, row.id), eq(strategyRules.kind, "target"), eq(strategyRules.state, "armed"))).limit(1).for("update");
+        // a trail on the rest is armed by the engine alone (ADR-104): the body may keep the running one or leave it
+        // out to remove it, never start one. Its level stays. Its best stays only with the give-back unchanged: a new
+        // give-back under an old best could put the exit level above where the rest stands now and fire on the next
+        // tick, so a changed give-back starts the trail again from where the rest stands (the engine sets the best)
+        const [trailRow] = await tx.select().from(strategyRules).where(and(eq(strategyRules.strategyId, row.id), eq(strategyRules.kind, "trail"), eq(strategyRules.state, "armed"))).limit(1).for("update");
+        if (!trailRow && body.rules.some((r) => r.kind === "trail")) throw errors.badRequest("A trail on the rest starts when a leg stop set to trail the rest fires");
         await tx.delete(strategyRules).where(and(eq(strategyRules.strategyId, row.id), inArray(strategyRules.state, ["armed", "disarmed"])));
         for (const [i, r] of body.rules.entries()) {
+          const stored = r.trigger === "settle" ? String(Number(r.value)) : r.kind === "trail" && r.trigger === "money" ? toDecimal(Number(r.value), 2) : r.value; // "015" reads as 15
           await tx.insert(strategyRules).values({
             id: newId("rule"),
             strategyId: row.id,
             kind: r.kind,
             trigger: r.trigger,
-            value: r.trigger === "settle" ? String(Number(r.value)) : r.value, // "015" reads as 15
-            basis: r.trigger === "pct" ? (r.basis ?? null) : null,
-            basisUsd: r.trigger === "pct" ? (r.basisUsd ?? null) : null,
-            thresholdUsd: levels[i]!,
+            value: stored,
+            basis: r.trigger === "pct" && r.kind !== "trail" ? (r.basis ?? null) : null,
+            basisUsd: r.trigger === "pct" && r.kind !== "trail" ? (r.basisUsd ?? null) : null,
+            thresholdUsd: r.kind === "trail" ? trailRow!.thresholdUsd : levels[i]!,
             legId: r.kind === "leg_stop" ? (r.legId ?? null) : null,
             scope: r.kind === "leg_stop" ? (r.scope ?? "leg") : "strategy",
             trailTrigger: r.trail?.trigger ?? null,
             trailValue: r.trail ? (r.trail.trigger === "money" ? toDecimal(Number(r.trail.value), 2) : r.trail.value) : null,
-            peakPnl: r.trail && trailing?.peakPnl && Number(trailing.peakPnl) >= Number(levels[i]) ? trailing.peakPnl : null,
+            peakPnl: r.kind === "trail" ? (trailRow!.trigger === r.trigger && trailRow!.value === stored ? trailRow!.peakPnl : null) : r.kind === "target" && r.trail && trailing?.peakPnl && Number(trailing.peakPnl) >= Number(levels[i]) ? trailing.peakPnl : null,
             channels: r.channels,
             state: "armed",
             createdAt: now,

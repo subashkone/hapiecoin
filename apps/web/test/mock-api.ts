@@ -1068,6 +1068,9 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const was = (s.rules ?? []).find((r) => r.kind === "target" && r.state === "armed");
     // a settle rule's instant is fixed now from the nearest dated open leg, as the route does (ADR-097)
     const nearestMs = nearestSettlement(s.legs.filter((l) => l.status === "open" && l.entryPrice !== null), s.asset)?.ms ?? null;
+    // the running trail on the rest: only the engine arms one; a save keeps its level (and its best while the give-back is unchanged) or leaves it out (ADR-104)
+    const restTrail = (s.rules ?? []).find((r) => r.kind === "trail" && r.state === "armed");
+    if (!restTrail && body.data.rules.some((r) => r.kind === "trail")) return err(c, 400, "BAD_REQUEST", "A trail on the rest starts when a leg stop set to trail the rest fires");
     for (const r of body.data.rules) {
       // the same refusals as the route: the leg must be open, a multiple needs its entry, a passed instant is no exit
       if (r.kind === "time" && r.trigger === "at" && Date.parse(r.value) <= Date.now()) return err(c, 400, "BAD_REQUEST", "The exit time has already passed");
@@ -1080,9 +1083,10 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       const leg = r.kind === "leg_stop" ? s.legs.find((l) => l.id === r.legId && l.status === "open") : undefined;
       if (r.kind === "leg_stop" && !leg) return err(c, 400, "BAD_REQUEST", `Leg ${r.legId ?? ""} is not an open leg of this strategy`);
       if (r.kind === "leg_stop" && r.trigger === "multiple" && leg!.entryPrice === null) return err(c, 400, "BAD_REQUEST", `${leg!.symbol}: no entry price yet for a multiple`);
-      const level = settleAt !== null ? String(settleAt) : ruleLevel(r, leg?.entryPrice ?? leg?.price ?? null);
+      const level = r.kind === "trail" ? restTrail!.thresholdUsd : settleAt !== null ? String(settleAt) : ruleLevel(r, leg?.entryPrice ?? leg?.price ?? null);
       if (r.kind === "leg_stop" && Number(level) <= 0) return err(c, 400, "BAD_REQUEST", `${leg!.symbol}: the level rounds to nothing`);
-      rows.push({ id: id("rule"), kind: r.kind, trigger: r.trigger, value: r.trigger === "settle" ? String(Number(r.value)) : r.value, basis: r.trigger === "pct" ? (r.basis ?? null) : null, basisUsd: r.trigger === "pct" ? (r.basisUsd ?? null) : null, thresholdUsd: level, legId: r.kind === "leg_stop" ? (r.legId ?? null) : null, scope: r.kind === "leg_stop" ? (r.scope ?? ("leg" as const)) : ("strategy" as const), trail: r.trail ? { trigger: r.trail.trigger, value: r.trail.trigger === "money" ? toDecimal(Number(r.trail.value), 2) : r.trail.value } : null, peakPnl: r.trail && was?.peakPnl && Number(was.peakPnl) >= Number(level) ? was.peakPnl : null, channels: r.channels, state: "armed" as const, firedAt: null, firedPnl: null, outcome: null, note: null, createdAt: at, updatedAt: at });
+      const stored = r.trigger === "settle" ? String(Number(r.value)) : r.kind === "trail" && r.trigger === "money" ? toDecimal(Number(r.value), 2) : r.value;
+      rows.push({ id: id("rule"), kind: r.kind, trigger: r.trigger, value: stored, basis: r.trigger === "pct" && r.kind !== "trail" ? (r.basis ?? null) : null, basisUsd: r.trigger === "pct" && r.kind !== "trail" ? (r.basisUsd ?? null) : null, thresholdUsd: level, legId: r.kind === "leg_stop" ? (r.legId ?? null) : null, scope: r.kind === "leg_stop" ? (r.scope ?? ("leg" as const)) : ("strategy" as const), trail: r.trail ? { trigger: r.trail.trigger, value: r.trail.trigger === "money" ? toDecimal(Number(r.trail.value), 2) : r.trail.value } : null, peakPnl: r.kind === "trail" ? (restTrail!.trigger === r.trigger && restTrail!.value === stored ? (restTrail!.peakPnl ?? null) : null) : r.kind === "target" && r.trail && was?.peakPnl && Number(was.peakPnl) >= Number(level) ? was.peakPnl : null, channels: r.channels, state: "armed" as const, firedAt: null, firedPnl: null, outcome: null, note: null, createdAt: at, updatedAt: at });
     }
     s.rules = [...(s.rules ?? []).filter((r) => r.state === "fired"), ...rows];
     return c.json(touch(s));

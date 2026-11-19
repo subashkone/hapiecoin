@@ -1867,5 +1867,27 @@
     "how": "The Target box carries one more line, off by default: a checkbox, the unit (the trader's currency or %), the give-back and a sentence with the exit level at the target and at twice the target; a give-back at or above the target, or a percentage of 100 or more, disables Arm with the reason; with a trail already running the sentence gives the best so far and the exit the save produces (refused when the P&L is already under it), says when a higher target starts the trail over, and says the trail starts on arming when the P&L is already past the target; the box hint reads start trailing when P&L reaches; ruleText gives target at +X, then trail Y before the target and trailing: best +X, exits at +Y after it; firedLabel gives target hit · trailed from +X; Details lists the same words",
     "evidence": "ADR-103 (17 Nov 2026): apps/web/src/components/trading/RuleDialog.tsx (rule-target-trail, rule-target-trail-on / -money / -pct / -value / -preview, ruleText, firedLabel), PaperPanel.tsx card-rule-fired, test/mock-api.ts; tests: rules.test.tsx HC-TR-211",
     "test": "unit (web)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Trading · server",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "A leg stop can hand the rest to a trail: its leg exits, then the legs still open exit together when their gain since the stop falls from its best by the give-back (a percentage of the best or money)",
+    "how": "RuleBody.trail is accepted on a leg stop with scope leg (refused with scope strategy, at 100 % or more, at nothing) and a plain leg stop parses as before; kind trail (money or pct, no basis) exists with its label, order (after the protective kinds, before the target) and close reason stopped; when a leg stop with a give-back fires, its leg is confirmed closed and legs remain, the engine arms one trail whose level is the realised total of that moment; the trail keeps the best standing of the rest in whole cents and exits every open leg at the best less the give-back; money starts at once, a percentage waits for a cent of profit and is never less than 0.10 USD; the other legs' own stops stay armed and win a shared tick; no trail starts while the stopped leg's exit is unconfirmed or was not booked by this fire, and it is armed after the realised total is stored; a second such stop keeps the running trail; the rule-set route keeps a running trail's level, keeps its best only while the give-back is unchanged (a changed one starts again from where the rest stands), removes it when left out and refuses a trail none started; paper sends no order, live sends one reduce-only exit per leg",
+    "evidence": "ADR-104, GAPS #141 (19 Nov 2026): packages/schema/src/strategies.ts RULE_KINDS trail / LEG_TRAIL_DEFAULT_PCT / REST_TRAIL_MIN_GIVE_USD / restTrailFloorUsd / RuleBody; apps/api/src/db/schema.ts (kind list; no migration); apps/api/src/rules-engine.ts (trailStep, the trail branch, arming after a leg-stop fire); apps/api/src/routes/strategies.ts (rule-set route); tests: schema strategies.test.ts HC-TR-212, api rules-engine.test.ts HC-TR-212",
+    "test": "unit (schema, api)"
+  },
+  {
+    "route": "/analyse",
+    "screen": "Trading · Protect dialog / cards · Details",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Protect dialog: a leg stop's What to exit offers \"exit this leg, then trail the rest\" with a give-back (10 % by default, or money) and a worked exit level; a running trail shows on the card and as its own box",
+    "how": "The leg stop's What to exit select has a third option, disabled when no other leg is held; choosing it shows the give-back (% prefilled with 15, or the trader's currency) and a sentence with where the other legs stand now and where they would exit, or that a percentage waits while they are under water; an empty give-back or 100 % disables Arm with the reason; the card line reads \"..., then trail the rest by 10 %\"; the two older options send the body they always sent (no trail key); a running trail reads \"trailing the rest: best ..., exits at ...\" on the card and Details and has a box in the dialog where the give-back can be changed (the box says the trail then starts again from where the rest stands) or the trail removed by unticking, and which arrives ticked when a trail starts while the dialog is open; the fired chip reads \"trail on the rest fired\"",
+    "evidence": "ADR-104 (19 Nov 2026): apps/web/src/components/trading/RuleDialog.tsx (rule-leg-<id>-scope option trail, rule-leg-<id>-trail / -trail-pct / -trail-money / -trail-value / -trail-preview, rule-trail / rule-trail-on / -value / -level, ruleText, FIRED_LABELS), test/mock-api.ts; tests: rules.test.tsx HC-TR-213",
+    "test": "unit (web)"
   }
 ]
