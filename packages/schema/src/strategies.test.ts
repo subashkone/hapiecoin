@@ -29,6 +29,10 @@ import {
   RULE_KINDS,
   RULE_KIND_ORDER,
   CLOSE_REASON_OF_KIND,
+  LEG_TRAIL_DEFAULT_PCT,
+  REST_TRAIL_MIN_GIVE_USD,
+  restTrailFloorUsd,
+  RULE_KIND_LABELS,
 } from "./strategies.js";
 
 const call = { kind: "call", side: "buy", strike: "80000", expiry: "2026-09-25", symbol: "C-BTC-80000-250926", lots: 10, price: "1200.5", iv: 0.52 } as const;
@@ -162,7 +166,7 @@ describe("HC-TR-165 stop and target rules (ADR-059 §2.3)", () => {
     expect(RuleBody.safeParse({ kind: "time", trigger: "at", value: "tomorrow" }).success).toBe(false);
     expect(RuleBody.safeParse({ kind: "time", trigger: "at", value: "2026-09-12T11:30" }).success).toBe(false); // no zone: whose clock?
     expect(RuleBody.safeParse({ kind: "time", trigger: "at", value: "2026-09-12T17:00:00+05:30" }).success).toBe(true);
-    expect(RulesBody.safeParse({ rules: Array.from({ length: 15 }, (_, i) => ({ kind: "leg_stop", trigger: "price", value: "1", legId: `l${i}` })) }).success).toBe(false); // 14 is the most: ten leg stops and the four others
+    expect(RulesBody.safeParse({ rules: Array.from({ length: 16 }, (_, i) => ({ kind: "leg_stop", trigger: "price", value: "1", legId: `l${i}` })) }).success).toBe(false); // 15 is the most: ten leg stops and the five others (a running trail on the rest among them, ADR-104)
     expect(nearestSettlement([{ expiry: "PERP" }], "BTC")).toBeNull();
     expect(nearestSettlement([{ expiry: "2026-09-25" }, { expiry: "2026-09-18" }, { expiry: "PERP" }], "BTC")).toEqual({ ms: Date.UTC(2026, 8, 18, 12), expiry: "2026-09-18" });
     expect(RuleBody.safeParse({ kind: "time", trigger: "dte", value: "0" }).success).toBe(true);
@@ -183,7 +187,7 @@ describe("HC-TR-165 stop and target rules (ADR-059 §2.3)", () => {
     expect(ruleLevel({ kind: "time", trigger: "at", value: "2026-09-12T11:30:00.000Z", basisUsd: undefined })).toBe(String(Date.UTC(2026, 8, 12, 11, 30)));
     expect(ruleLevel({ kind: "time", trigger: "dte", value: "1", basisUsd: undefined })).toBe("1");
     expect(ruleLevel({ kind: "stop", trigger: "money", value: "60", basisUsd: undefined })).toBe("-60");
-    expect(RULE_KINDS.map((k) => RULE_KIND_ORDER[k])).toEqual([0, 4, 1, 2, 3]);
+    expect(RULE_KINDS.map((k) => RULE_KIND_ORDER[k])).toEqual([0, 5, 1, 2, 3, 4]); // the trail on the rest (ADR-104) is judged after the protective kinds, before the target
     expect(CLOSE_REASON_OF_KIND.time).toBe("squared_off");
     expect(CLOSE_REASON_OF_KIND.leg_stop).toBe("stopped");
   });
@@ -208,6 +212,41 @@ describe("HC-TR-210 a target that trails (ADR-103)", () => {
     expect(trailFloorUsd(600, { trigger: "money", value: "300" })).toBe(300);
     expect(trailFloorUsd(1800, { trigger: "money", value: "300" })).toBe(1500);
     expect(trailFloorUsd(1800, { trigger: "pct", value: "25" })).toBe(1350);
+  });
+});
+
+describe("HC-TR-212 a leg stop that trails the rest (ADR-104)", () => {
+  const stop = { kind: "leg_stop", trigger: "multiple", value: "2", legId: "leg_1" };
+  it("a leg stop that exits its own leg takes a give-back; one that exits everything does not; a plain leg stop parses as before", () => {
+    expect(LEG_TRAIL_DEFAULT_PCT).toBe("10");
+    expect(RuleBody.parse(stop)).toEqual({ ...stop, channels: ["push"] }); // no trail key appears on its own
+    expect(RuleBody.safeParse({ ...stop, trail: { trigger: "pct", value: LEG_TRAIL_DEFAULT_PCT } }).success).toBe(true);
+    expect(RuleBody.safeParse({ ...stop, scope: "leg", trail: { trigger: "money", value: "600" } }).success).toBe(true); // no target to stay below
+    expect(RuleBody.safeParse({ ...stop, scope: "strategy", trail: { trigger: "pct", value: "15" } }).success).toBe(false);
+    expect(RuleBody.safeParse({ ...stop, trail: { trigger: "pct", value: "100" } }).success).toBe(false);
+    expect(RuleBody.safeParse({ ...stop, trail: { trigger: "money", value: "0" } }).success).toBe(false);
+    expect(RuleBody.safeParse({ ...stop, trail: { trigger: "money", value: "0.004" } }).success).toBe(false);
+    expect(RuleBody.safeParse({ kind: "spot", trigger: "below", value: "70000", trail: { trigger: "pct", value: "15" } }).success).toBe(false);
+  });
+  it("the running trail is its own kind: a give-back in money or a percentage with no basis, judged before the target and booked as stopped", () => {
+    expect(RuleBody.safeParse({ kind: "trail", trigger: "pct", value: "15" }).success).toBe(true);
+    expect(RuleBody.safeParse({ kind: "trail", trigger: "money", value: "2" }).success).toBe(true);
+    expect(RuleBody.safeParse({ kind: "trail", trigger: "pct", value: "100" }).success).toBe(false);
+    expect(RuleBody.safeParse({ kind: "trail", trigger: "money", value: "0.004" }).success).toBe(false);
+    expect(RuleBody.safeParse({ kind: "trail", trigger: "money", value: "0" }).success).toBe(false);
+    expect(RuleBody.safeParse({ kind: "trail", trigger: "multiple", value: "2" }).success).toBe(false);
+    expect(RuleBody.safeParse({ kind: "trail", trigger: "pct", value: "15", trail: { trigger: "pct", value: "15" } }).success).toBe(false);
+    expect(RulesBody.safeParse({ rules: [{ kind: "trail", trigger: "pct", value: "15" }, { kind: "trail", trigger: "money", value: "2" }] }).success).toBe(false); // one per strategy
+    expect(ruleLevel({ kind: "trail", trigger: "pct", value: "15", basisUsd: undefined })).toBe("0"); // the route keeps the running trail's own level
+    // the exit under the best: money as typed; a percentage of the best, never less than the minimum
+    expect(REST_TRAIL_MIN_GIVE_USD).toBe(0.1);
+    expect(restTrailFloorUsd(6, { trigger: "pct", value: "15" })).toBeCloseTo(5.1, 10);
+    expect(restTrailFloorUsd(0.01, { trigger: "pct", value: "15" })).toBeCloseTo(-0.09, 10);
+    expect(restTrailFloorUsd(-1, { trigger: "money", value: "2" })).toBe(-3);
+    expect(RULE_KIND_LABELS.trail).toBe("Trail on the rest");
+    expect(CLOSE_REASON_OF_KIND.trail).toBe("stopped");
+    expect(RULE_KIND_ORDER.trail).toBeGreaterThan(RULE_KIND_ORDER.leg_stop);
+    expect(RULE_KIND_ORDER.trail).toBeLessThan(RULE_KIND_ORDER.target);
   });
 });
 

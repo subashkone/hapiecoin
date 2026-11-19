@@ -452,3 +452,143 @@ describe("HC-TR-172 re-enter", () => {
     expect(within(mode).getByTestId("mode-paper").getAttribute("aria-pressed")).toBe("true");
   });
 });
+
+describe("HC-TR-213 a leg stop that trails the rest (ADR-104)", () => {
+  const trailOf = (id = "l2") => mine()[0]!.rules!.filter((r) => r.state === "armed" && r.legId === id).map((r) => [r.kind, r.scope, r.trail ?? null]);
+
+  it("the third What to exit takes a give-back (10 % by default, or money), says where the other legs would exit, and the card names it; the two old choices send what they always sent", async () => {
+    const u = userEvent.setup();
+    // the other leg, a call bought at 1: far in profit at any mark the chain serves
+    mine().push(strat(1, { legs: [{ ...CALL, id: "l1", price: "1", entryPrice: "1" }, { ...PUT, id: "l2" }] }));
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    await u.click(await screen.findByTestId("card-protect"));
+    let dlg = await screen.findByTestId("rule-dialog");
+    await u.click(within(dlg).getByTestId("rule-leg-l2-on"));
+    fireEvent.change(within(dlg).getByTestId("rule-leg-l2-value"), { target: { value: "5" } });
+    expect(within(dlg).queryByTestId("rule-leg-l2-trail")).toBeNull(); // nothing new until it is chosen
+    fireEvent.change(within(dlg).getByTestId("rule-leg-l2-scope"), { target: { value: "trail" } });
+    serveMarket(); // the legs are subscribed by now: their marks arrive
+    expect(within(dlg).getByTestId<HTMLInputElement>("rule-leg-l2-trail-value").value).toBe("10");
+    expect(within(dlg).getByTestId("rule-leg-l2-trail-pct").getAttribute("aria-pressed")).toBe("true");
+    await waitFor(() => expect(within(dlg).getByTestId("rule-leg-l2-trail-preview").textContent).toMatch(/^The other legs are \+\$[\d,.]+ now\. If they stand there when this stop fires, they exit together at \+\$[\d,.]+\. The exit follows their best profit up and never moves down; their own stops stay armed\.$/));
+    await u.click(within(dlg).getByTestId("rule-arm"));
+    await waitFor(() => expect(screen.queryByTestId("rule-dialog")).toBeNull());
+    expect(trailOf()).toEqual([["leg_stop", "leg", { trigger: "pct", value: "10" }]]);
+    await waitFor(() => expect(screen.getByTestId("card-rules").textContent).toBe("S P 78,000 25 Sep stop at 4,500.0 (5× entry), then trail the rest by 10 %"));
+    // reopen: the choice and the give-back come back; money needs its amount, 100 % is everything
+    await u.click(screen.getByTestId("card-protect"));
+    dlg = await screen.findByTestId("rule-dialog");
+    expect(within(dlg).getByTestId<HTMLSelectElement>("rule-leg-l2-scope").value).toBe("trail");
+    expect(within(dlg).getByTestId<HTMLInputElement>("rule-leg-l2-trail-value").value).toBe("10");
+    fireEvent.change(within(dlg).getByTestId("rule-leg-l2-trail-value"), { target: { value: "100" } });
+    await waitFor(() => expect(within(dlg).getByTestId<HTMLButtonElement>("rule-arm").disabled).toBe(true));
+    expect(within(dlg).getByTestId("rule-leg-l2-trail-preview").textContent).toBe("Enter a give-back greater than 0 (a percentage below 100).");
+    await u.click(within(dlg).getByTestId("rule-leg-l2-trail-money"));
+    expect(within(dlg).getByTestId<HTMLInputElement>("rule-leg-l2-trail-value").value).toBe("");
+    expect(within(dlg).getByTestId<HTMLButtonElement>("rule-arm").disabled).toBe(true);
+    fireEvent.change(within(dlg).getByTestId("rule-leg-l2-trail-value"), { target: { value: "2" } });
+    await waitFor(() => expect(within(dlg).getByTestId<HTMLButtonElement>("rule-arm").disabled).toBe(false));
+    await u.click(within(dlg).getByTestId("rule-arm"));
+    await waitFor(() => expect(screen.queryByTestId("rule-dialog")).toBeNull());
+    expect(trailOf()).toEqual([["leg_stop", "leg", { trigger: "money", value: "2" }]]);
+    await waitFor(() => expect(screen.getByTestId("card-rules").textContent).toContain("then trail the rest by $2.00"));
+    // money comes back as typed; back on % the default returns; the old choices carry no give-back at all
+    await u.click(screen.getByTestId("card-protect"));
+    dlg = await screen.findByTestId("rule-dialog");
+    expect(within(dlg).getByTestId<HTMLInputElement>("rule-leg-l2-trail-value").value).toBe("2");
+    await u.click(within(dlg).getByTestId("rule-leg-l2-trail-pct"));
+    expect(within(dlg).getByTestId<HTMLInputElement>("rule-leg-l2-trail-value").value).toBe("10");
+    fireEvent.change(within(dlg).getByTestId("rule-leg-l2-scope"), { target: { value: "strategy" } });
+    expect(within(dlg).queryByTestId("rule-leg-l2-trail")).toBeNull();
+    await u.click(within(dlg).getByTestId("rule-arm"));
+    await waitFor(() => expect(screen.queryByTestId("rule-dialog")).toBeNull());
+    expect(trailOf()).toEqual([["leg_stop", "strategy", null]]);
+    await u.click(screen.getByTestId("card-protect"));
+    dlg = await screen.findByTestId("rule-dialog");
+    expect(within(dlg).getByTestId<HTMLSelectElement>("rule-leg-l2-scope").value).toBe("strategy");
+    fireEvent.change(within(dlg).getByTestId("rule-leg-l2-scope"), { target: { value: "leg" } });
+    await u.click(within(dlg).getByTestId("rule-arm"));
+    await waitFor(() => expect(screen.queryByTestId("rule-dialog")).toBeNull());
+    expect(trailOf()).toEqual([["leg_stop", "leg", null]]);
+  });
+
+  it("a percentage says it waits while the other legs are under water; without their marks the line stays general", async () => {
+    const u = userEvent.setup();
+    // the other leg, a call bought at 99,999: under water at any mark
+    mine().push(strat(1, { legs: [{ ...CALL, id: "l1", price: "99999", entryPrice: "99999" }, { ...PUT, id: "l2" }] }));
+    renderWithProviders(<Workspace />);
+    await u.click(await screen.findByTestId("card-protect")); // before any mark arrives
+    const dlg = await screen.findByTestId("rule-dialog");
+    await u.click(within(dlg).getByTestId("rule-leg-l2-on"));
+    fireEvent.change(within(dlg).getByTestId("rule-leg-l2-value"), { target: { value: "2" } });
+    fireEvent.change(within(dlg).getByTestId("rule-leg-l2-scope"), { target: { value: "trail" } });
+    expect(within(dlg).getByTestId("rule-leg-l2-trail-preview").textContent).toBe("When this stop fires the other legs stay open, and exit together once their profit falls this far from its best.");
+    serveMarket();
+    await waitFor(() => expect(within(dlg).getByTestId("rule-leg-l2-trail-preview").textContent).toMatch(/^The other legs are −\$[\d,.]+ now\. A percentage waits until they are in profit; from then the exit follows their best profit up and never moves down\.$/));
+    // money has no such wait: it names the exit under where they stand
+    await u.click(within(dlg).getByTestId("rule-leg-l2-trail-money"));
+    fireEvent.change(within(dlg).getByTestId("rule-leg-l2-trail-value"), { target: { value: "2" } });
+    await waitFor(() => expect(within(dlg).getByTestId("rule-leg-l2-trail-preview").textContent).toContain("they exit together at −$"));
+  });
+
+  it("a running trail shows on the card and as its own box: the give-back can be changed with its level and best kept, unticking stops it; with one leg left there is no rest to offer", async () => {
+    const u = userEvent.setup();
+    const running = rule({ id: "rule_t", kind: "trail", trigger: "pct", value: "15", thresholdUsd: "-12", peakPnl: "4" });
+    mine().push(strat(1, { legs: [{ ...PUT, id: "l2" }], realizedPnl: "-12", rules: [running] }));
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    await waitFor(() => expect(screen.getByTestId("card-rules").textContent).toBe("trailing the rest: best +$4.00, exits at +$3.40"));
+    await u.click(screen.getByTestId("card-protect"));
+    let dlg = await screen.findByTestId("rule-dialog");
+    expect(within(dlg).getByTestId("rule-trail").dataset["on"]).toBe("true");
+    expect(within(dlg).getByTestId<HTMLInputElement>("rule-trail-value").value).toBe("15");
+    expect(within(dlg).getByTestId("rule-trail-level").textContent).toBe("trailing the rest: best +$4.00, exits at +$3.40");
+    await u.click(within(dlg).getByTestId("rule-leg-l2-on"));
+    expect(within(dlg).getByTestId<HTMLSelectElement>("rule-leg-l2-scope").querySelector<HTMLOptionElement>('option[value="trail"]')!.disabled).toBe(true);
+    await u.click(within(dlg).getByTestId("rule-leg-l2-on"));
+    fireEvent.change(within(dlg).getByTestId("rule-trail-value"), { target: { value: "" } });
+    await waitFor(() => expect(within(dlg).getByTestId<HTMLButtonElement>("rule-arm").disabled).toBe(true));
+    await u.click(within(dlg).getByTestId("rule-trail-money"));
+    fireEvent.change(within(dlg).getByTestId("rule-trail-value"), { target: { value: "1" } });
+    await waitFor(() => expect(within(dlg).getByTestId("rule-arm").textContent).toBe("Arm trail on the rest"));
+    // a new give-back under the old best could exit at once: the box says the trail starts again instead
+    expect(within(dlg).getByTestId("rule-trail-level").textContent).toBe("A changed give-back starts the trail again from where the rest stands when you arm; the exit then follows the best from there.");
+    await u.click(within(dlg).getByTestId("rule-arm"));
+    await waitFor(() => expect(screen.queryByTestId("rule-dialog")).toBeNull());
+    expect(mine()[0]!.rules!.map((r) => [r.kind, r.trigger, r.value, r.thresholdUsd, r.peakPnl, r.basis])).toEqual([["trail", "money", "1", "-12", null, null]]);
+    await waitFor(() => expect(screen.getByTestId("card-rules").textContent).toBe("trailing the rest: exits on a fall of $1.00 from its best"));
+    // reopen: money comes back; back to a percentage it is saved as one; unticked, the trail is removed
+    await u.click(screen.getByTestId("card-protect"));
+    dlg = await screen.findByTestId("rule-dialog");
+    expect(within(dlg).getByTestId<HTMLInputElement>("rule-trail-value").value).toBe("1");
+    await u.click(within(dlg).getByTestId("rule-trail-pct"));
+    fireEvent.change(within(dlg).getByTestId("rule-trail-value"), { target: { value: "20" } });
+    await u.click(within(dlg).getByTestId("rule-arm"));
+    await waitFor(() => expect(screen.queryByTestId("rule-dialog")).toBeNull());
+    expect(mine()[0]!.rules!.map((r) => [r.kind, r.trigger, r.value, r.thresholdUsd, r.peakPnl])).toEqual([["trail", "pct", "20", "-12", null]]);
+    await u.click(screen.getByTestId("card-protect"));
+    dlg = await screen.findByTestId("rule-dialog");
+    await u.click(within(dlg).getByTestId("rule-trail-on"));
+    expect(within(dlg).getByTestId("rule-arm").textContent).toBe("Remove rules");
+    await u.click(within(dlg).getByTestId("rule-arm"));
+    await waitFor(() => expect(screen.queryByTestId("rule-dialog")).toBeNull());
+    expect(mine()[0]!.rules).toEqual([]);
+    // and nothing can start one by hand: the API refuses a trail that no leg stop started
+    const res = await fetch("/v1/strategies/strat_1/rules", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ rules: [{ kind: "trail", trigger: "pct", value: "15" }] }) });
+    expect(res.status).toBe(400);
+  });
+
+  it("the words for a trail before its first best, a money give-back, and the fired chip", () => {
+    const waiting = rule({ kind: "trail", trigger: "pct", value: "15", thresholdUsd: "-12", peakPnl: null });
+    expect(ruleText(waiting, USD_FMT)).toBe("trailing the rest: exits on a fall of 15 % from its best");
+    expect(ruleText({ ...waiting, trigger: "money", value: "2" }, USD_FMT)).toBe("trailing the rest: exits on a fall of $2.00 from its best");
+    expect(ruleText({ ...waiting, trigger: "money", value: "2", peakPnl: "-1" }, USD_FMT)).toBe("trailing the rest: best −$1.00, exits at −$3.00");
+    // a percentage of a few cents is not a give-back: the 0.10 USD minimum stands in
+    expect(ruleText({ ...waiting, peakPnl: "0.01" }, USD_FMT)).toBe("trailing the rest: best +$0.01, exits at −$0.09");
+    const fired = { ...waiting, peakPnl: "6", state: "fired" as const };
+    expect(ruleText(fired, USD_FMT)).toBe("trailing the rest: exits on a fall of 15 % from its best");
+    expect(firedLabel(fired, USD_FMT)).toBe("trail on the rest fired");
+    expect(ruleText(rule({ kind: "leg_stop", trigger: "price", value: "150", thresholdUsd: "150", legId: "leg_b", scope: "leg", trail: { trigger: "money", value: "2" } }), USD_FMT, [CALL, PUT])).toBe("S P 78,000 25 Sep stop at 150.00, then trail the rest by $2.00");
+  });
+});

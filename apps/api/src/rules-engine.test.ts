@@ -677,3 +677,189 @@ describe("HC-TR-210 a target that trails (ADR-103)", () => {
     expect((await get(s.id)).rules).toEqual([]);
   });
 });
+
+describe("HC-TR-212 a leg stop that trails the rest (ADR-104)", () => {
+  const SCALL = { ...CALL, side: "sell" };
+  const C = CALL.symbol;
+  const P = PUT.symbol;
+  const kinds = async (id: string) => (await get(id)).rules!.map((r) => [r.kind, r.state]);
+  const trailOf = async (id: string) => (await get(id)).rules!.find((r) => r.kind === "trail");
+
+  it("the stopped leg exits alone, the trail starts from the realised total of that moment, the best gain of the rest only rises and the rest exits on a fall of the percentage from it", async () => {
+    const s = await paper([SCALL, PUT], "Rules rest pct");
+    const [call, put] = [s.legs.find((l) => l.symbol === C)!, s.legs.find((l) => l.symbol === P)!];
+    const stops = [call, put].map((l) => ({ kind: "leg_stop", trigger: "multiple", value: "2", legId: l.id, trail: { trigger: "pct", value: "15" } }));
+    expect((await arm(s.id, stops)).status).toBe(200);
+    expect((await get(s.id)).rules!.map((r) => [r.kind, r.scope, r.trail])).toEqual([["leg_stop", "leg", { trigger: "pct", value: "15" }], ["leg_stop", "leg", { trigger: "pct", value: "15" }]]);
+    // the call sold at 1,200 marks 2,400: its stop fires (−12); the put sold at 900 marks 500 (+4) and stays
+    expect((await evaluateRules(t.deps, ticks({ [C]: 2400, [P]: 500 }), () => T0)).fired).toHaveLength(1);
+    let now = await get(s.id);
+    expect(now.status).toBe("paper");
+    expect(now.legs.map((l) => [l.symbol, l.status])).toEqual([[C, "squared_off"], [P, "open"]]);
+    expect(now.rules!.find((r) => r.kind === "leg_stop" && r.legId === call.id)!.note).toBe(`Leg stop fired at P&L -8 USD (${C} at 2400, entry 1200): 1 leg exited, now trailing the rest (give-back 15 %)`);
+    expect(await trailOf(s.id)).toMatchObject({ state: "armed", trigger: "pct", value: "15", thresholdUsd: "-12", scope: "strategy", peakPnl: null, legId: null });
+    expect(now.rules!.find((r) => r.kind === "leg_stop" && r.legId === put.id)).toMatchObject({ state: "armed" });
+    // the rest stands +4 since the stop: the best is 4, the exit 3.4; at +6 the exit is 5.1; +5.2 is above it
+    expect((await evaluateRules(t.deps, ticks({ [P]: 500 }), () => T0 + 1000)).fired).toEqual([]);
+    expect((await trailOf(s.id))!.peakPnl).toBe("4");
+    expect((await evaluateRules(t.deps, ticks({ [P]: 300 }), () => T0 + 2000)).fired).toEqual([]);
+    expect((await evaluateRules(t.deps, ticks({ [P]: 380 }), () => T0 + 3000)).fired).toEqual([]);
+    expect((await trailOf(s.id))!.peakPnl).toBe("6");
+    // +5 is at or under 5.1: the put exits at its mark and the strategy closes
+    expect((await evaluateRules(t.deps, ticks({ [P]: 400 }), () => T0 + 4000)).fired).toHaveLength(1);
+    now = await get(s.id);
+    expect(now).toMatchObject({ status: "archived", closeReason: "stopped", realizedPnl: "-7" });
+    const trail = now.rules!.find((r) => r.kind === "trail")!;
+    expect(trail).toMatchObject({ state: "fired", outcome: "closed", peakPnl: "6", firedPnl: "-7" });
+    expect(trail.note).toBe("Trail on the rest fired at P&L -7 USD (the rest stands at 5 USD, best 6 USD, exit level 5.1 USD): 1 leg exited");
+    expect(now.rules!.find((r) => r.kind === "leg_stop" && r.legId === put.id)).toMatchObject({ state: "disarmed", note: "disarmed: the trail on the rest fired" });
+  });
+
+  it("a percentage waits until the rest is in profit, and the other leg's own stop still wins while the trail runs", async () => {
+    const s = await paper([SCALL, PUT], "Rules rest waits");
+    const stops = s.legs.map((l) => ({ kind: "leg_stop", trigger: "multiple", value: "2", legId: l.id, trail: { trigger: "pct", value: "15" } }));
+    expect((await arm(s.id, stops)).status).toBe(200);
+    expect((await evaluateRules(t.deps, ticks({ [C]: 2400, [P]: 1000 }), () => T0)).fired).toHaveLength(1);
+    // the put is 1 under water: there is no profit to take a share of, nothing is kept and nothing fires
+    expect((await evaluateRules(t.deps, ticks({ [P]: 1000 }), () => T0 + 1000)).fired).toEqual([]);
+    expect(await trailOf(s.id)).toMatchObject({ state: "armed", peakPnl: null });
+    expect((await evaluateRules(t.deps, ticks({ [P]: 800 }), () => T0 + 2000)).fired).toEqual([]);
+    expect((await trailOf(s.id))!.peakPnl).toBe("1");
+    // the put at twice its entry crosses its own stop and the trail at once: the leg stop is judged first
+    expect((await evaluateRules(t.deps, ticks({ [P]: 1800 }), () => T0 + 3000)).fired).toHaveLength(1);
+    const done = await get(s.id);
+    expect(done).toMatchObject({ status: "archived", closeReason: "stopped", realizedPnl: "-21" });
+    expect(done.rules!.find((r) => r.kind === "trail")).toMatchObject({ state: "disarmed", note: "disarmed: the leg stop fired" });
+  });
+
+  it("a money give-back starts at once even under water; a second stop set to trail keeps the one trail already running", async () => {
+    const P76 = { kind: "put", side: "sell", strike: "76000", expiry: "2026-09-25", symbol: "P-BTC-76000-250926", lots: 10, price: "500" };
+    const s = await paper([SCALL, PUT, P76], "Rules rest money");
+    const [call, put] = [s.legs.find((l) => l.symbol === C)!, s.legs.find((l) => l.symbol === P)!];
+    expect((await arm(s.id, [
+      { kind: "leg_stop", trigger: "multiple", value: "2", legId: call.id, trail: { trigger: "money", value: "2.004" } },
+      { kind: "leg_stop", trigger: "multiple", value: "2", legId: put.id, trail: { trigger: "money", value: "1" } },
+    ])).status).toBe(200);
+    expect((await evaluateRules(t.deps, ticks({ [C]: 2400, [P]: 1000, [P76.symbol]: 500 }), () => T0)).fired).toHaveLength(1);
+    expect((await get(s.id)).rules!.find((r) => r.legId === call.id)!.note).toContain("now trailing the rest (give-back 2 USD)");
+    expect((await evaluateRules(t.deps, ticks({ [P]: 1000, [P76.symbol]: 500 }), () => T0 + 1000)).fired).toEqual([]);
+    expect(await trailOf(s.id)).toMatchObject({ trigger: "money", value: "2", thresholdUsd: "-12", peakPnl: "-1" }); // exit at −3
+    // the 78,000 put reaches its own stop: it exits alone, and no second trail is armed beside the first
+    expect((await evaluateRules(t.deps, ticks({ [P]: 1800, [P76.symbol]: 500 }), () => T0 + 2000)).fired).toHaveLength(1);
+    let now = await get(s.id);
+    expect(now.status).toBe("paper");
+    expect(now.rules!.find((r) => r.legId === put.id)!.note).toContain("the trail on the rest is already running");
+    expect(now.rules!.filter((r) => r.kind === "trail").map((r) => [r.state, r.thresholdUsd])).toEqual([["armed", "-12"]]);
+    // that put's −9 is realised now and counts as a fall of the rest: −9 is under the −3 exit, the last leg goes
+    expect((await evaluateRules(t.deps, ticks({ [P76.symbol]: 500 }), () => T0 + 3000)).fired).toHaveLength(1);
+    now = await get(s.id);
+    expect(now).toMatchObject({ status: "archived", closeReason: "stopped", realizedPnl: "-21" });
+    expect(await kinds(s.id)).toEqual([["leg_stop", "fired"], ["leg_stop", "fired"], ["trail", "fired"]]);
+  });
+
+  it("a leg stop without a give-back arms no trail; the last open leg's stop arms none either", async () => {
+    const s = await paper([SCALL, PUT], "Rules rest none");
+    const [call, put] = [s.legs.find((l) => l.symbol === C)!, s.legs.find((l) => l.symbol === P)!];
+    expect((await arm(s.id, [{ kind: "leg_stop", trigger: "multiple", value: "2", legId: call.id }, { kind: "leg_stop", trigger: "multiple", value: "2", legId: put.id, trail: { trigger: "pct", value: "15" } }])).status).toBe(200);
+    expect((await evaluateRules(t.deps, ticks({ [C]: 2400, [P]: 500 }), () => T0)).fired).toHaveLength(1);
+    expect((await get(s.id)).rules!.map((r) => [r.kind, r.legId, r.state])).toEqual(expect.arrayContaining([["leg_stop", call.id, "fired"], ["leg_stop", put.id, "armed"]]));
+    expect((await get(s.id)).rules).toHaveLength(2);
+    expect((await get(s.id)).rules!.find((r) => r.legId === call.id)!.note).toBe(`Leg stop fired at P&L -8 USD (${C} at 2400, entry 1200): 1 leg exited`);
+    // the put is the last leg: its stop closes the strategy, there is no rest to trail
+    expect((await evaluateRules(t.deps, ticks({ [P]: 1800 }), () => T0 + 1000)).fired).toHaveLength(1);
+    expect(await get(s.id)).toMatchObject({ status: "archived", closeReason: "stopped" });
+    expect(await kinds(s.id)).toEqual([["leg_stop", "fired"], ["leg_stop", "fired"]]);
+  });
+
+  it("saving the rules again keeps the running trail's level and best, takes a new give-back, removes it when left out, and never starts one", async () => {
+    const s = await paper([SCALL, PUT], "Rules rest edit");
+    const [call, put] = [s.legs.find((l) => l.symbol === C)!, s.legs.find((l) => l.symbol === P)!];
+    const putStop = { kind: "leg_stop", trigger: "multiple", value: "2", legId: put.id };
+    // nothing is running yet: a trail cannot be armed by hand
+    expect((await arm(s.id, [{ kind: "trail", trigger: "pct", value: "15" }])).status).toBe(400);
+    expect((await arm(s.id, [{ kind: "leg_stop", trigger: "multiple", value: "2", legId: call.id, trail: { trigger: "pct", value: "15" } }, putStop])).status).toBe(200);
+    expect((await evaluateRules(t.deps, ticks({ [C]: 2400, [P]: 500 }), () => T0)).fired).toHaveLength(1);
+    expect((await evaluateRules(t.deps, ticks({ [P]: 500 }), () => T0 + 1000)).fired).toEqual([]);
+    expect(await trailOf(s.id)).toMatchObject({ value: "15", thresholdUsd: "-12", peakPnl: "4" });
+    // saved again with the same give-back (another rule was edited): the level and the best stay
+    expect((await arm(s.id, [putStop, { kind: "trail", trigger: "pct", value: "15" }])).status).toBe(200);
+    expect(await trailOf(s.id)).toMatchObject({ state: "armed", trigger: "pct", value: "15", basis: null, thresholdUsd: "-12", peakPnl: "4" });
+    // a changed give-back keeps the level and starts again from where the rest stands: under the old best of 4 a
+    // 20 % give-back would exit at 3.2, and the rest at 3 would be closed by the save itself
+    expect((await arm(s.id, [putStop, { kind: "trail", trigger: "pct", value: "20" }])).status).toBe(200);
+    expect(await trailOf(s.id)).toMatchObject({ value: "20", thresholdUsd: "-12", peakPnl: null });
+    expect((await evaluateRules(t.deps, ticks({ [P]: 600 }), () => T0 + 2000)).fired).toEqual([]);
+    expect((await trailOf(s.id))!.peakPnl).toBe("3");
+    expect((await arm(s.id, [putStop, { kind: "trail", trigger: "money", value: "1.004" }])).status).toBe(200);
+    expect(await trailOf(s.id)).toMatchObject({ trigger: "money", value: "1", thresholdUsd: "-12", peakPnl: null });
+    // a give-back that is nothing, or everything, is refused and the running trail stands
+    expect((await arm(s.id, [{ kind: "trail", trigger: "money", value: "0.004" }])).status).toBe(400);
+    expect((await arm(s.id, [{ kind: "trail", trigger: "pct", value: "100" }])).status).toBe(400);
+    expect(await trailOf(s.id)).toMatchObject({ state: "armed", value: "1" });
+    expect((await arm(s.id, [putStop])).status).toBe(200);
+    expect(await trailOf(s.id)).toBeUndefined();
+    expect((await arm(s.id, [putStop, { kind: "trail", trigger: "pct", value: "15" }])).status).toBe(400);
+    expect((await arm(s.id, [])).status).toBe(200);
+  });
+
+  it("a trail switched from money to a percentage under water waits instead of firing on the old best, and a percentage of a few cents is never the whole give-back", async () => {
+    const s = await paper([SCALL, PUT], "Rules rest restart");
+    const call = s.legs.find((l) => l.symbol === C)!;
+    expect((await arm(s.id, [{ kind: "leg_stop", trigger: "multiple", value: "2", legId: call.id, trail: { trigger: "money", value: "2" } }])).status).toBe(200);
+    expect((await evaluateRules(t.deps, ticks({ [C]: 2400, [P]: 1000 }), () => T0)).fired).toHaveLength(1);
+    expect((await evaluateRules(t.deps, ticks({ [P]: 1000 }), () => T0 + 1000)).fired).toEqual([]);
+    expect((await trailOf(s.id))!.peakPnl).toBe("-1");
+    // 15 % of a best of −1 would put the exit at −0.85, above where the rest stands: the save drops the best instead
+    expect((await arm(s.id, [{ kind: "trail", trigger: "pct", value: "15" }])).status).toBe(200);
+    expect((await evaluateRules(t.deps, ticks({ [P]: 1000 }), () => T0 + 2000)).fired).toEqual([]);
+    expect(await trailOf(s.id)).toMatchObject({ state: "armed", trigger: "pct", peakPnl: null });
+    // a cent of profit starts it; 15 % of a cent is nothing, so the give-back is the 0.10 USD minimum (exit −0.09)
+    expect((await evaluateRules(t.deps, ticks({ [P]: 899 }), () => T0 + 3000)).fired).toEqual([]);
+    expect((await trailOf(s.id))!.peakPnl).toBe("0.01");
+    expect((await evaluateRules(t.deps, ticks({ [P]: 899.5 }), () => T0 + 4000)).fired).toEqual([]);
+    expect((await evaluateRules(t.deps, ticks({ [P]: 905 }), () => T0 + 5000)).fired).toEqual([]);
+    expect((await evaluateRules(t.deps, ticks({ [P]: 911 }), () => T0 + 6000)).fired).toHaveLength(1);
+    const done = await get(s.id);
+    expect(done.status).toBe("archived");
+    expect(done.rules!.find((r) => r.kind === "trail")!.note).toContain("best 0.01 USD, exit level -0.09 USD");
+  });
+
+  it("the arm route refuses a give-back on a leg stop that exits everything, and one that is nothing or everything", async () => {
+    const s = await paper([SCALL, PUT], "Rules rest refusals");
+    const call = s.legs.find((l) => l.symbol === C)!;
+    const stop = { kind: "leg_stop", trigger: "multiple", value: "2", legId: call.id };
+    expect((await arm(s.id, [{ ...stop, scope: "strategy", trail: { trigger: "pct", value: "15" } }])).status).toBe(400);
+    expect((await arm(s.id, [{ ...stop, trail: { trigger: "pct", value: "100" } }])).status).toBe(400);
+    expect((await arm(s.id, [{ ...stop, trail: { trigger: "money", value: "0" } }])).status).toBe(400);
+    expect((await arm(s.id, [{ kind: "spot", trigger: "below", value: "70000", trail: { trigger: "pct", value: "15" } }])).status).toBe(400);
+    expect((await get(s.id)).rules).toEqual([]);
+  });
+
+  it("live: no trail starts while the stopped leg's exit is unconfirmed; on a strategy whose exit fills at once the trail starts, and its fire sends one reduce-only exit for the rest", async () => {
+    const resting = await live([CALL, PUT], "Rules rest live resting");
+    const stopOn = (s: Strategy) => [{ kind: "leg_stop", trigger: "price", value: "1500", legId: s.legs.find((l) => l.symbol === P)!.id, trail: { trigger: "money", value: "1" } }];
+    expect((await arm(resting.id, stopOn(resting))).status).toBe(200);
+    t.trading.partialNextOrder(); // the put's exit rests on the exchange
+    expect((await evaluateRules(t.deps, ticks({ [C]: 1200, [P]: 1500 }), () => T0, { backoffMs: 0 })).fired).toHaveLength(1);
+    let now = await get(resting.id);
+    expect(now.rules!.find((r) => r.kind === "leg_stop")).toMatchObject({ state: "fired", outcome: "partial" });
+    expect(now.rules!.find((r) => r.kind === "leg_stop")!.note).toContain("the trail on the rest did not start: this leg's exit is not confirmed");
+    expect(now.rules!.some((r) => r.kind === "trail")).toBe(false);
+
+    const s = await live([CALL, PUT], "Rules rest live");
+    expect((await arm(s.id, stopOn(s))).status).toBe(200);
+    t.trading.fillAt(102, "1500");
+    const before = t.trading.placed.length;
+    expect((await evaluateRules(t.deps, ticks({ [C]: 1200, [P]: 1500 }), () => T0 + 1000, { backoffMs: 0 })).fired).toHaveLength(1);
+    expect(t.trading.placed.slice(before).map((o) => [o.input.productId, o.input.side, o.input.reduceOnly])).toEqual([[102, "buy", true]]);
+    expect(await trailOf(s.id)).toMatchObject({ state: "armed", thresholdUsd: "-6", peakPnl: null });
+    // the call bought at 1,200 marks 1,300: the rest is +1, the exit 0; nothing is sent while it holds
+    expect((await evaluateRules(t.deps, ticks({ [C]: 1300 }), () => T0 + 2000, { backoffMs: 0 })).fired).toEqual([]);
+    expect(t.trading.placed.length).toBe(before + 1);
+    t.trading.fillAt(101, "1200");
+    expect((await evaluateRules(t.deps, ticks({ [C]: 1200 }), () => T0 + 3000, { backoffMs: 0 })).fired).toHaveLength(1);
+    expect(t.trading.placed.slice(before + 1).map((o) => [o.input.productId, o.input.side, o.input.reduceOnly])).toEqual([[101, "sell", true]]);
+    now = await get(s.id);
+    expect(now).toMatchObject({ status: "archived", closeReason: "stopped", realizedPnl: "-6" });
+  });
+});

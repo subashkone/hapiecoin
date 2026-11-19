@@ -429,7 +429,7 @@ export const strategyRules = pgTable(
     strategyId: text("strategy_id")
       .notNull()
       .references(() => strategies.id, { onDelete: "cascade" }),
-    kind: text("kind", { enum: ["stop", "target", "leg_stop", "spot", "time"] }).notNull(),
+    kind: text("kind", { enum: ["stop", "target", "leg_stop", "spot", "time", "trail"] }).notNull(),
     trigger: text("trigger", { enum: ["money", "pct", "multiple", "price", "above", "below", "at", "dte", "settle"] }).notNull(),
     value: text("value").notNull(),
     basis: text("basis", { enum: ["credit", "debit", "max_loss"] }),
@@ -439,7 +439,11 @@ export const strategyRules = pgTable(
     /** The watched leg (leg_stop only). */
     legId: text("leg_id").references(() => strategyLegs.id, { onDelete: "cascade" }),
     scope: text("scope", { enum: ["strategy", "leg"] }).notNull().default("strategy"),
-    /** A trailing target (ADR-103): the give-back's unit and value, and the best P&L seen since the target was reached. */
+    /**
+     * A trailing target (ADR-103): the give-back's unit and value, and the best P&L seen since the target was reached.
+     * On a leg stop the two give-back columns say "then trail the rest" (ADR-104); the trail rule the engine arms keeps
+     * its own give-back in trigger / value and its best gain in peak_pnl.
+     */
     trailTrigger: text("trail_trigger", { enum: ["money", "pct"] }),
     trailValue: text("trail_value"),
     peakPnl: text("peak_pnl"),

@@ -6,11 +6,14 @@
 // alone): short legs first, market at the mark of that tick, through the exit path a click uses, its own lots only.
 // A target with a trail (ADR-103; HC-TR-210) does not exit at its level: from that tick the rule keeps the best P&L
 // seen on its own row and exits when the P&L falls back to that best less the give-back.
+// A leg stop that exits its leg alone can carry a give-back (ADR-104; HC-TR-212): once that leg is out the engine arms
+// one rule of kind trail, whose level is the realised total of that moment. Where the legs still open stand is the
+// P&L less that level; the trail keeps the best standing and exits every open leg on a fall from it.
 // Paper strategies fire too, with no orders. A fired rule never re-arms; the row guard (armed → fired) makes a fire
 // happen once across ticks and replicas. An exit the venue accepted but has not filled, or one that may not have
 // reached it, is never re-sent: the leg is left for the order sync and named on the rule.
 // Never runs under NODE_ENV=test unless a test calls it.
-import { CLOSE_REASON_OF_KIND, RULE_KIND_LABELS, RULE_KIND_ORDER, type Underlying, nearestSettlement, settlementMsOf, toDecimal, trailFloorUsd } from "@hapiecoin/schema";
+import { CLOSE_REASON_OF_KIND, RULE_KIND_LABELS, RULE_KIND_ORDER, type Underlying, nearestSettlement, restTrailFloorUsd, settlementMsOf, toDecimal, trailFloorUsd } from "@hapiecoin/schema";
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { writeAudit } from "./audit.js";
 import { strategies, strategyAdjustments, strategyLegs, strategyOrders, strategyRules, users } from "./db/schema.js";
@@ -126,28 +129,46 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
         let crossed = false;
         let detail = "";
         let exitLegs = legs;
+        // one step of a trail on `current` (the strategy P&L for a target, the standing of the rest for a trail rule):
+        // the best only rises (written when it does, so a restart or another replica resumes from it); crossed on a
+        // fall to the exit level under the best
+        const trailStep = async (current: number, floorOf: (peak: number) => number) => {
+          const best = rule.peakPnl === null ? null : Number(rule.peakPnl);
+          // kept in whole cents rounded down, so the stored best is never above the figure that set it, and written
+          // only upwards (the row may have been raised by another pass since this one read it)
+          const seen = Math.floor(current * 100 + 1e-6) / 100;
+          const peak = best === null ? seen : Math.max(best, seen);
+          if (best === null || peak > best)
+            await deps.db
+              .update(strategyRules)
+              .set({ peakPnl: toDecimal(peak, 2), updatedAt: at })
+              .where(and(eq(strategyRules.id, rule.id), eq(strategyRules.state, "armed"), or(isNull(strategyRules.peakPnl), sql`${strategyRules.peakPnl}::numeric < ${peak}`)));
+          const floor = floorOf(peak);
+          return { crossed: current <= floor, peak, floor };
+        };
         if (rule.kind === "stop") crossed = pnl <= level;
         else if (rule.kind === "target") {
           if (rule.trailTrigger === null) crossed = pnl >= level;
-          else {
+          else if (rule.peakPnl !== null || pnl >= level) {
             // trailing (ADR-103): nothing happens below the level; the tick that reaches it starts the trail and exits
-            // nothing; after that the best only rises (written when it does, so a restart or another replica resumes
-            // from it) and the rule fires on a fall to the best less the give-back
-            const best = rule.peakPnl === null ? null : Number(rule.peakPnl);
-            if (best !== null || pnl >= level) {
-              // kept in whole cents rounded down, so the stored best is never above the P&L that set it, and written
-              // only upwards (the row may have been raised by another pass since this one read it)
-              const seen = Math.floor(pnl * 100 + 1e-6) / 100;
-              const peak = best === null ? seen : Math.max(best, seen);
-              if (best === null || peak > best)
-                await deps.db
-                  .update(strategyRules)
-                  .set({ peakPnl: toDecimal(peak, 2), updatedAt: at })
-                  .where(and(eq(strategyRules.id, rule.id), eq(strategyRules.state, "armed"), or(isNull(strategyRules.peakPnl), sql`${strategyRules.peakPnl}::numeric < ${peak}`)));
-              const floor = trailFloorUsd(peak, { trigger: rule.trailTrigger, value: rule.trailValue! });
-              crossed = pnl <= floor;
-              detail = `trailed from the best ${toDecimal(peak, 2)} USD, exit level ${toDecimal(floor, 2)} USD`;
-            }
+            // nothing; after that the rule fires on a fall to the best less the give-back
+            const give = { trigger: rule.trailTrigger, value: rule.trailValue! };
+            const step = await trailStep(pnl, (peak) => trailFloorUsd(peak, give));
+            crossed = step.crossed;
+            detail = `trailed from the best ${toDecimal(step.peak, 2)} USD, exit level ${toDecimal(step.floor, 2)} USD`;
+          }
+        }
+        else if (rule.kind === "trail") {
+          // where the rest stands (ADR-104): the level is the realised total when the leg stop fired, so the stopped
+          // leg's loss is not in it and a later trim (its result moves into the realised total) does not move it.
+          // Money starts at once; a percentage has nothing to take a share of until the rest is a cent in profit, and
+          // its give-back is never under REST_TRAIL_MIN_GIVE_USD (a share of a few cents is flicker).
+          const gain = pnl - level;
+          const giveBack = { trigger: rule.trigger === "pct" ? ("pct" as const) : ("money" as const), value: rule.value };
+          if (rule.peakPnl !== null || giveBack.trigger === "money" || Math.floor(gain * 100 + 1e-6) >= 1) {
+            const step = await trailStep(gain, (peak) => restTrailFloorUsd(peak, giveBack));
+            crossed = step.crossed;
+            detail = `the rest stands at ${toDecimal(gain, 2)} USD, best ${toDecimal(step.peak, 2)} USD, exit level ${toDecimal(step.floor, 2)} USD`;
           }
         }
         else if (rule.kind === "leg_stop") {
@@ -297,18 +318,37 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
           const parts = [`${fills.length} ${fills.length === 1 ? "leg" : "legs"} exited`];
           if (unconfirmed.length) parts.push(`${unconfirmed.length} still filling on the exchange: ${unconfirmed.map((u) => `${u.symbol} (${u.what})`).join("; ")}`);
           if (failed.length) parts.push(`${failed.length} still open: ${failed.map((f) => `${f.symbol} (${f.error})`).join("; ")}`);
-          const note = `${label} fired at P&L ${toDecimal(pnl, 2)} USD${detail ? ` (${detail})` : ""}: ${parts.join(", ")}`;
-          await deps.db.update(strategyRules).set({ outcome, note, updatedAt: at }).where(eq(strategyRules.id, rule.id));
-          await deps.db.insert(strategyAdjustments).values({ id: newId("adj"), strategyId: strategy.id, batchId, reason: note, added: 0, trimmed: 0, closed: fills.length, realizedPnl: batchPnl, createdAt: at });
           const realized = addDecimal(await freshTotal(deps, strategy.id, strategy.realizedPnl), batchPnl);
           const left = await deps.db.select({ id: strategyLegs.id }).from(strategyLegs).where(and(eq(strategyLegs.strategyId, strategy.id), eq(strategyLegs.status, "open"))).limit(1);
           const archive = left.length === 0;
+          // a leg stop set to trail the rest (ADR-104): its leg is out and booked here, legs stay open, so the trail is
+          // armed from the realised total of this moment. Not when the exit is unconfirmed or this fire booked nothing
+          // (the leg may still be held, or was closed by a click whose result is not in the total yet: the rest is not
+          // yet "the rest"), and never a second trail beside one already running.
+          let armTrail = false;
+          if (rule.kind === "leg_stop" && rule.scope === "leg" && rule.trailTrigger !== null && !archive) {
+            if (outcome !== "closed" || fills.length === 0) parts.push("the trail on the rest did not start: this leg's exit is not confirmed");
+            else {
+              const [running] = await deps.db.select({ id: strategyRules.id }).from(strategyRules).where(and(eq(strategyRules.strategyId, strategy.id), eq(strategyRules.kind, "trail"), eq(strategyRules.state, "armed"))).limit(1);
+              if (running) parts.push("the trail on the rest is already running");
+              else {
+                armTrail = true;
+                parts.push(`now trailing the rest (give-back ${rule.trailValue!}${rule.trailTrigger === "pct" ? " %" : " USD"})`);
+              }
+            }
+          }
+          const note = `${label} fired at P&L ${toDecimal(pnl, 2)} USD${detail ? ` (${detail})` : ""}: ${parts.join(", ")}`;
+          await deps.db.update(strategyRules).set({ outcome, note, updatedAt: at }).where(eq(strategyRules.id, rule.id));
+          await deps.db.insert(strategyAdjustments).values({ id: newId("adj"), strategyId: strategy.id, batchId, reason: note, added: 0, trimmed: 0, closed: fills.length, realizedPnl: batchPnl, createdAt: at });
           // the other rules of the strategy are moot once the whole strategy exits; after a one-leg exit they keep watching what is left
           if (rule.scope === "strategy" || archive) await disarmRules(deps, strategy.id, `disarmed: the ${label.toLowerCase()} fired`, at);
           await deps.db
             .update(strategies)
             .set({ realizedPnl: realized, updatedAt: at, ...(archive ? { status: "archived" as const, closedAt: at, closeReason: reason } : {}) })
             .where(eq(strategies.id, strategy.id));
+          // armed last, once the total it starts from is stored: a failure before this line leaves no trail, never one
+          // whose level is ahead of the total
+          if (armTrail) await deps.db.insert(strategyRules).values({ id: newId("rule"), strategyId: strategy.id, kind: "trail", trigger: rule.trailTrigger!, value: rule.trailValue!, thresholdUsd: realized, scope: "strategy", channels: rule.channels, state: "armed", createdAt: at, updatedAt: at });
           await writeAudit(deps.db, {
             actorId: null,
             action: "strategy.rule_fire",
