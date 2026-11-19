@@ -108,6 +108,20 @@ export function daysToExpiry(iso: string, now: Date = new Date()): number {
   return Math.max(0, Math.round((settle - now.getTime()) / 86_400_000));
 }
 
+/**
+ * ISO date-time → "19 Nov 2026, 12:42 IST" (HC-TR-215): the day and the minute in the viewer's own time zone, with
+ * the zone named so the figure is never read as UTC. `timeZone` pins the zone (tests; the browser's own otherwise).
+ */
+export function fmtDateTime(iso: string | null | undefined, timeZone?: string): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const parts = new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZoneName: "short", ...(timeZone ? { timeZone } : {}) }).formatToParts(d);
+  const p = (type: Intl.DateTimeFormatPartTypes) => parts.find((x) => x.type === type)?.value ?? "";
+  // the month from our own table, as fmtDate and fmtExpiry print it: engines disagree on the short name ("Sep" / "Sept")
+  return `${p("day")} ${MONTHS[Number(p("month")) - 1] ?? ""} ${p("year")}, ${p("hour")}:${p("minute")} ${p("timeZoneName")}`;
+}
+
 /** ISO date-time → "25 Sep 2026" (Indian-style day-first, as in the mock). */
 export function fmtDate(iso: string | undefined): string {
   if (!iso) return "—";

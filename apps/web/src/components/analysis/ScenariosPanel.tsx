@@ -77,7 +77,7 @@ export function ScenariosPanel() {
   const axes = useMemo(() => (spot === null ? null : scenarioAxes(spot, range, maxDte, a.nowMs, expiryAtMs)), [spot, range, maxDte, a.nowMs, expiryAtMs]);
   // the slider shifts every leg's IV by a share of the ATM IV (the engine takes an additive vol-point shift)
   const ivShift = (result?.atmIv && Number.isFinite(result.atmIv) ? result.atmIv : 0.5) * (ivPct / 100);
-  const options = useMemo<ScenarioOptions | null>(() => (axes ? { prices: axes.prices, dates: axes.dates, ivShift, mode, defaultIv: 0.5, calendar: venueCalendar(asset, venue) } : null), [axes, ivShift, mode, asset, venue]);
+  const options = useMemo<ScenarioOptions | null>(() => (axes && !a.closed ? { prices: axes.prices, dates: axes.dates, ivShift, mode, defaultIv: 0.5, calendar: venueCalendar(asset, venue) } : null), [axes, ivShift, mode, asset, venue, a.closed]);
   const { grid, error, pending } = useScenario(a.pricingLegs, options);
   // values[dateIndex][priceIndex] → cells[row = price][col = date]
   const cells = useMemo(() => (grid && axes ? axes.prices.map((_, i) => axes.dates.map((__, j) => grid.values[j]?.[i] ?? Number.NaN)) : []), [grid, axes]);
@@ -122,6 +122,7 @@ export function ScenariosPanel() {
     </div>
   );
 
+  if (a.closed) return <EmptyState title="This trade is closed" description="Scenarios need live prices, and a closed trade has none. The Payoff tab shows the position as it was entered and how it ended." className="py-16" data-testid="scenarios-closed" />;
   if (legs.length === 0) {
     return (
       <div className="flex h-full flex-col" data-testid="scenarios-panel" data-state="empty">
