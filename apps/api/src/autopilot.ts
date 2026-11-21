@@ -5,10 +5,12 @@
  * marks with its exits armed. Paper only: this module writes strategy rows and never reaches a venue's order surface,
  * and Go live refuses a row it opened (routes/live.ts).
  *
- * One open Autopilot trade per trader, playbook, venue and asset (a partial unique index holds this against two
- * passes). After a trade ends the same key waits the cool-down. While a trade is open, the same structure pricing
- * clearly better than that trade's entry is written down as a note. Every reason a switched-on playbook did not enter
- * is logged once per change of reason, so the log reads as a history of decisions and not as a heartbeat.
+ * A trader, playbook, venue and asset (the key) holds one trade per structure: the same strikes and expiry are never
+ * held twice (a partial unique index holds this against two passes). When the playbook's entry moves to other strikes
+ * or another expiry while a trade is open, that is a new trade, up to AUTOPILOT_MAX_OPEN at a time (ADR-110). Between
+ * two entries of a key, and after one of its trades ends, the key waits the cool-down. While a trade is open, its own
+ * structure pricing clearly better than its entry is written down as a note. Every reason a switched-on playbook did
+ * not enter is logged once per change of reason, so the log reads as a history of decisions and not as a heartbeat.
  *
  * Runs on the leader only (ADR-062), inside the first snapshotter's after-hook. A failure for one trader, playbook or
  * underlying is logged and the pass goes on.
@@ -17,21 +19,27 @@ import { type EodDay, type EodRow, PLAYBOOKS, type Playbook, type PlaybookPropos
 import {
   AUTOPILOT_BETTER_ENTRY_PCT,
   AUTOPILOT_COOLDOWN_MINUTES,
+  AUTOPILOT_DTE_BANDS,
+  AUTOPILOT_MAX_OPEN,
   AUTOPILOT_RUNS_RETENTION_DAYS,
   AUTOPILOT_TARGET_PCT,
   AUTOPILOT_TRAIL_GIVE_PCT,
+  type AutopilotClosedTrade,
+  type AutopilotDteBand,
   type AutopilotExitStyle,
+  type AutopilotResults,
   type AutopilotRun,
   type AutopilotRunDetail,
   type AutopilotSettings,
   type AutopilotView,
   DEFAULT_AUTOPILOT_SETTINGS,
+  autopilotDteBand,
   type Underlying,
   type Venue,
   toDecimal,
 } from "@hapiecoin/schema";
 import { DEFAULT_VENUE, defaultLotSizes, getVenue } from "@hapiecoin/venues";
-import { and, asc, desc, eq, lt, max } from "drizzle-orm";
+import { and, asc, desc, eq, lt, max, ne, sql } from "drizzle-orm";
 import { writeAudit } from "./audit.js";
 import { dayOf, eodDaysCached } from "./chain-eod.js";
 import type { Db } from "./db/client.js";
@@ -52,7 +60,7 @@ export interface AutopilotDeps {
 export const AUTOPILOT_MAX_MARK_AGE_MS = 12 * 60_000;
 const COOLDOWN_MS = AUTOPILOT_COOLDOWN_MINUTES * 60_000;
 const DAY_MS = 86_400_000;
-/** The index that holds "one open trade per key"; a write it refuses means another pass got there first. */
+/** The index that holds "one open trade per key and structure"; a write it refuses means another pass got there first. */
 const OPEN_UQ = "strategies_autopilot_open_uq";
 
 const SKIP_TEXT: Record<ProposalSkip, string> = {
@@ -132,8 +140,11 @@ export function betterEntry(fresh: number, open: number): boolean {
   return Math.round(fresh * 100) <= openCents - Math.max(1, Math.round((Math.abs(openCents) * AUTOPILOT_BETTER_ENTRY_PCT) / 100));
 }
 
-type DetailLegs = NonNullable<AutopilotRunDetail["legs"]>;
-const structureOf = (expiry: string | undefined, legs: DetailLegs | undefined): string => `${expiry ?? ""}|${(legs ?? []).map((l) => `${l.side}:${l.kind}:${l.strike}`).join(",")}`;
+/**
+ * What a trade holds, as one string: every leg's side, kind, strike and expiry, in order. Two trades with the same
+ * one are the same position; a strike reads the same whether it comes from a proposal or from the legs table.
+ */
+export const structureKey = (legs: readonly { side: string; kind: string; strike: string; expiry: string }[]): string => legs.map((l) => `${l.side}:${l.kind}:${Number(l.strike)}:${l.expiry}`).join(",");
 
 function detailOf(proposal: PlaybookProposal, plan: AutopilotPlan | null, nowMs: number, exit?: AutopilotExitStyle): AutopilotRunDetail {
   const dte = Math.round((Date.parse(`${proposal.expiry}T00:00:00Z`) - Date.parse(`${dayOf(new Date(nowMs))}T00:00:00Z`)) / DAY_MS);
@@ -156,28 +167,40 @@ type Key = { userId: string; playbookId: string; venue: Venue; asset: Underlying
 const runKey = (k: Key) => and(eq(autopilotRuns.userId, k.userId), eq(autopilotRuns.playbookId, k.playbookId), eq(autopilotRuns.venue, k.venue), eq(autopilotRuns.asset, k.asset));
 const tradeKey = (k: Key) => and(eq(strategies.userId, k.userId), eq(strategies.autopilotPlaybookId, k.playbookId), eq(strategies.venue, k.venue), eq(strategies.asset, k.asset));
 
-/** Write a skip unless the key's newest line already says the same. */
+/** Write a skip unless the key's newest line already says the same; a note in between is not a change of reason. */
 async function skip(db: Db, k: Key, reason: string, detail: AutopilotRunDetail, at: Date): Promise<boolean> {
-  const [last] = await db.select({ kind: autopilotRuns.kind, reason: autopilotRuns.reason }).from(autopilotRuns).where(runKey(k)).orderBy(desc(autopilotRuns.at), desc(autopilotRuns.id)).limit(1);
+  const [last] = await db.select({ kind: autopilotRuns.kind, reason: autopilotRuns.reason }).from(autopilotRuns).where(and(runKey(k), ne(autopilotRuns.kind, "noted"))).orderBy(desc(autopilotRuns.at), desc(autopilotRuns.id)).limit(1);
   if (last?.kind === "skipped" && last.reason === reason) return false;
   await db.insert(autopilotRuns).values({ ...k, kind: "skipped", reason, detail, at });
   return true;
 }
 
 /**
- * The key's trade that still holds a position, if any. A paper row whose legs were all closed by hand stays `paper`
- * in the strategies table (only a rule or the settler archives it); Autopilot closes such a row out here, dated by its
- * last leg, so it neither blocks the key for good nor skips the cool-down.
+ * The key's trades that still hold a position, oldest first, each with the structure it was entered on. A paper row
+ * whose legs were all closed by hand stays `paper` in the strategies table (only a rule or the settler archives it);
+ * Autopilot closes such a row out here, dated by its last leg, so it neither counts as held nor skips the cool-down.
  */
-async function openTrade(db: Db, k: Key, at: Date): Promise<string | null> {
-  const [row] = await db.select({ id: strategies.id }).from(strategies).where(and(tradeKey(k), eq(strategies.status, "paper"))).limit(1);
-  if (!row) return null;
-  const [held] = await db.select({ id: strategyLegs.id }).from(strategyLegs).where(and(eq(strategyLegs.strategyId, row.id), eq(strategyLegs.status, "open"))).limit(1);
-  if (held) return row.id;
-  const [last] = await db.select({ at: max(strategyLegs.closedAt) }).from(strategyLegs).where(eq(strategyLegs.strategyId, row.id));
-  await db.update(strategies).set({ status: "archived", closedAt: last?.at ?? at, closeReason: "squared_off", updatedAt: at }).where(and(eq(strategies.id, row.id), eq(strategies.status, "paper")));
-  await db.update(strategyRules).set({ state: "disarmed", updatedAt: at }).where(and(eq(strategyRules.strategyId, row.id), eq(strategyRules.state, "armed")));
-  return null;
+async function openTrades(db: Db, k: Key, at: Date): Promise<{ id: string; structure: string }[]> {
+  const rows = await db.select({ id: strategies.id, structure: strategies.autopilotStructure }).from(strategies).where(and(tradeKey(k), eq(strategies.status, "paper"))).orderBy(asc(strategies.createdAt), asc(strategies.id));
+  const held: { id: string; structure: string }[] = [];
+  for (const row of rows) {
+    const legs = await db.select({ side: strategyLegs.side, kind: strategyLegs.kind, strike: strategyLegs.strike, expiry: strategyLegs.expiry, status: strategyLegs.status }).from(strategyLegs).where(eq(strategyLegs.strategyId, row.id)).orderBy(asc(strategyLegs.position));
+    if (legs.some((l) => l.status === "open")) {
+      // the structure it was ENTERED on, which is what the index holds: a leg the trader rolled or added since does
+      // not make it another trade. A row from before the column gets it from its legs once, and keeps it.
+      let structure = row.structure;
+      if (structure === null) {
+        structure = structureKey(legs);
+        await db.update(strategies).set({ autopilotStructure: structure }).where(eq(strategies.id, row.id));
+      }
+      held.push({ id: row.id, structure });
+      continue;
+    }
+    const [last] = await db.select({ at: max(strategyLegs.closedAt) }).from(strategyLegs).where(eq(strategyLegs.strategyId, row.id));
+    await db.update(strategies).set({ status: "archived", closedAt: last?.at ?? at, closeReason: "squared_off", updatedAt: at }).where(and(eq(strategies.id, row.id), eq(strategies.status, "paper")));
+    await db.update(strategyRules).set({ state: "disarmed", updatedAt: at }).where(and(eq(strategyRules.strategyId, row.id), eq(strategyRules.state, "armed")));
+  }
+  return held;
 }
 
 export interface AutopilotReport {
@@ -246,11 +269,17 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
               const [own] = venue === DEFAULT_VENUE ? await deps.db.select({ lotSizes: userSettings.lotSizes }).from(userSettings).where(eq(userSettings.userId, t.userId)).limit(1) : [];
               const unitsPerLot = Number(own?.lotSizes[asset] ?? venueLots[asset]);
               const { result, plan } = live ? pricedFor(unitsPerLot) : { result: null, plan: null };
-              const open = await openTrade(deps.db, k, at);
-              if (open) {
-                // one open trade per key: a clearly better price for the same structure is written down, at most once per cool-down
-                if (result?.ok && (await noteBetterEntry(deps.db, k, open, result.proposal, plan, nowMs))) report.noted += 1;
-                continue;
+              const open = await openTrades(deps.db, k, at);
+              if (open.length > 0) {
+                if (!result?.ok) continue; // holding, and the playbook has no entry to weigh on this pass
+                // the very structure a trade holds is never entered twice: a clearly better price for it is written down
+                const fresh = structureKey(result.proposal.legs);
+                const same = open.find((o) => o.structure === fresh);
+                if (same) {
+                  if (await noteBetterEntry(deps.db, k, same.id, result.proposal, plan, nowMs)) report.noted += 1;
+                  continue;
+                }
+                // other strikes or another expiry: a new trade of the same playbook, through the same checks (ADR-110)
               }
               const no = async (reason: string, detail: AutopilotRunDetail = {}) => {
                 if (await skip(deps.db, k, reason, detail, at)) report.skipped += 1;
@@ -262,10 +291,12 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
               else if (result.proposal.legs.some((l) => l.kind === "future")) await no("A futures leg needs a margin figure Autopilot does not have yet", detailOf(result.proposal, null, nowMs));
               else if (result.proposal.legs.some((l) => !(Number(l.price) > 0))) await no("A leg of the structure has no price", detailOf(result.proposal, null, nowMs));
               else if (!plan) await no("The fees are larger than the profit target, or the structure has no defined maximum", detailOf(result.proposal, null, nowMs));
+              else if (open.length >= AUTOPILOT_MAX_OPEN) await no(`Holds ${AUTOPILOT_MAX_OPEN} trades already, the most for one strategy and coin`, detailOf(result.proposal, plan, nowMs));
               else {
-                const [prev] = await deps.db.select({ startedAt: strategies.startedAt, closedAt: strategies.closedAt }).from(strategies).where(tradeKey(k)).orderBy(desc(strategies.createdAt)).limit(1);
-                const lastMs = (prev?.closedAt ?? prev?.startedAt)?.getTime();
-                if (lastMs !== undefined && nowMs - lastMs < COOLDOWN_MS) await no(`Waiting ${AUTOPILOT_COOLDOWN_MINUTES} minutes after its last trade`);
+                // the newest entry or close of the key, whichever trade it was: one entry per cool-down, and none right after a close
+                const [prev] = await deps.db.select({ startedAt: max(strategies.startedAt), closedAt: max(strategies.closedAt) }).from(strategies).where(tradeKey(k));
+                const lastMs = Math.max(prev?.startedAt?.getTime() ?? 0, prev?.closedAt?.getTime() ?? 0);
+                if (lastMs > 0 && nowMs - lastMs < COOLDOWN_MS) await no(`Waiting ${AUTOPILOT_COOLDOWN_MINUTES} minutes after its last trade`);
                 else {
                   const id = await enter(deps.db, k, p, result.proposal, plan, wanted.exit, broker.id, at);
                   deps.logger.info({ userId: t.userId, playbookId: p.id, venue, asset, strategyId: id }, "autopilot entered a paper trade");
@@ -293,11 +324,11 @@ async function noteBetterEntry(db: Db, k: Key, openId: string, fresh: PlaybookPr
   const [entry] = await db.select({ detail: autopilotRuns.detail }).from(autopilotRuns).where(and(runKey(k), eq(autopilotRuns.kind, "entered"), eq(autopilotRuns.strategyId, openId))).limit(1);
   const openCost = Number(entry?.detail.entryCost);
   const now = detailOf(fresh, plan, nowMs);
-  // only the very structure the trade holds (same expiry, same strikes and sides) can be "a better entry" for it
-  if (!entry || !Number.isFinite(openCost) || structureOf(entry.detail.expiry, entry.detail.legs) !== structureOf(now.expiry, now.legs) || !betterEntry(fresh.entryCost, openCost)) return false;
-  const [lastNote] = await db.select({ at: autopilotRuns.at }).from(autopilotRuns).where(and(runKey(k), eq(autopilotRuns.kind, "noted"))).orderBy(desc(autopilotRuns.at)).limit(1);
+  // the caller found `openId` holding the very structure of `fresh`: only that can be "a better entry" for it
+  if (!entry || !Number.isFinite(openCost) || !betterEntry(fresh.entryCost, openCost)) return false;
+  const [lastNote] = await db.select({ at: autopilotRuns.at }).from(autopilotRuns).where(and(runKey(k), eq(autopilotRuns.kind, "noted"), eq(autopilotRuns.strategyId, openId))).orderBy(desc(autopilotRuns.at)).limit(1);
   if (lastNote && nowMs - lastNote.at.getTime() < COOLDOWN_MS) return false;
-  await db.insert(autopilotRuns).values({ ...k, kind: "noted", reason: "A better entry than the open trade's: not taken, one trade at a time", strategyId: openId, detail: { ...now, openEntryCost: toDecimal(openCost, 2) }, at: new Date(nowMs) });
+  await db.insert(autopilotRuns).values({ ...k, kind: "noted", reason: "A better entry than the open trade's: not taken, these strikes are held already", strategyId: openId, detail: { ...now, openEntryCost: toDecimal(openCost, 2) }, at: new Date(nowMs) });
   return true;
 }
 
@@ -320,6 +351,7 @@ async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, pl
       tags: ["autopilot"],
       startedAt: at,
       autopilotPlaybookId: p.id,
+      autopilotStructure: structureKey(proposal.legs),
     });
     await tx.insert(strategyLegs).values(
       proposal.legs.map((l, position) => ({
@@ -371,4 +403,93 @@ export async function autopilotView(db: Db, userId: string): Promise<AutopilotVi
   const rows = await db.select().from(autopilotRuns).where(eq(autopilotRuns.userId, userId)).orderBy(desc(autopilotRuns.at), desc(autopilotRuns.id)).limit(AUTOPILOT_RUNS_SHOWN);
   const runs: AutopilotRun[] = rows.map((r) => ({ id: String(r.id), at: r.at.toISOString(), playbookId: r.playbookId, venue: r.venue, asset: r.asset, kind: r.kind, reason: r.reason, strategyId: r.strategyId, detail: r.detail }));
   return { settings: await autopilotSettingsOf(db, userId), runs };
+}
+
+// ---- results (ADR-111; HC-TR-223): what the trades Autopilot opened came to -----------------------------------------
+
+export const AUTOPILOT_TRADES_SHOWN = 100;
+const cents = (v: string | null | undefined): number => Math.round(Number(v ?? 0) * 100) || 0;
+/** Whole cents as dollars with both decimals kept ("0.00", "-2.40"): a column of results reads better aligned. */
+const usd = (c: number): string => (c / 100).toFixed(2);
+
+interface Tally {
+  open: number;
+  closed: number;
+  wins: number;
+  gross: number;
+  fees: number;
+  net: number;
+}
+const emptyTally = (): Tally => ({ open: 0, closed: 0, wins: 0, gross: 0, fees: 0, net: 0 });
+const tallyOut = (t: Tally) => ({ open: t.open, closed: t.closed, wins: t.wins, grossUsd: usd(t.gross), feesUsd: usd(t.fees), netUsd: usd(t.net) });
+
+/**
+ * Every entry the log still holds, joined to its strategy: an open trade is counted, a closed one adds its P&L at the
+ * closing marks, less the fees estimated at entry (the paper book charges none, so the net is what a venue would have
+ * left). Grouped by playbook, asset and exit style, and by the days to expiry at entry. Money is summed in cents.
+ */
+export async function autopilotResults(db: Db, userId: string): Promise<AutopilotResults> {
+  const entries = await db
+    .select({
+      at: autopilotRuns.at,
+      playbookId: autopilotRuns.playbookId,
+      asset: autopilotRuns.asset,
+      detail: autopilotRuns.detail,
+      strategyId: strategies.id,
+      status: strategies.status,
+      realizedPnl: strategies.realizedPnl,
+      startedAt: strategies.startedAt,
+      closedAt: strategies.closedAt,
+      closeReason: strategies.closeReason,
+      openLegs: sql<number>`(select count(*)::int from ${strategyLegs} where ${strategyLegs.strategyId} = ${strategies.id} and ${strategyLegs.status} = 'open')`,
+      lastLegClose: sql<string | null>`(select max(${strategyLegs.closedAt}) from ${strategyLegs} where ${strategyLegs.strategyId} = ${strategies.id})`,
+    })
+    .from(autopilotRuns)
+    .innerJoin(strategies, and(eq(strategies.id, autopilotRuns.strategyId), eq(strategies.userId, userId)))
+    .where(and(eq(autopilotRuns.userId, userId), eq(autopilotRuns.kind, "entered")))
+    .orderBy(asc(autopilotRuns.at), asc(autopilotRuns.id));
+  const total = emptyTally();
+  const rows = new Map<string, { playbookId: string; asset: Underlying; exit: AutopilotExitStyle; t: Tally; best: number | null; worst: number | null; heldMs: number; reasons: Record<string, number> }>();
+  const bands = new Map<AutopilotDteBand, Tally>(AUTOPILOT_DTE_BANDS.map((b) => [b, emptyTally()]));
+  const trades: AutopilotClosedTrade[] = [];
+  for (const e of entries) {
+    const exit = e.detail.exit ?? "trail";
+    const key = `${e.playbookId}|${e.asset}|${exit}`;
+    let row = rows.get(key);
+    if (!row) rows.set(key, (row = { playbookId: e.playbookId, asset: e.asset, exit, t: emptyTally(), best: null, worst: null, heldMs: 0, reasons: {} }));
+    const band = e.detail.dte === undefined ? null : bands.get(autopilotDteBand(e.detail.dte))!;
+    const into = [total, row.t, ...(band ? [band] : [])];
+    // closed: archived, or every leg squared off by hand while the row still says paper (only a rule, the settler or
+    // the engine's next pass archives it, and that pass may never come once the playbook is switched off)
+    const closedAt = e.status === "archived" ? e.closedAt : e.status === "paper" && e.openLegs === 0 && e.lastLegClose ? new Date(e.lastLegClose) : null;
+    if (!closedAt) {
+      // still held (or parked by hand before ADR-109 refused it): counted, no money yet
+      for (const t of into) t.open += 1;
+      continue;
+    }
+    const gross = cents(e.realizedPnl);
+    const fees = cents(e.detail.fees);
+    const net = gross - fees;
+    for (const t of into) {
+      t.closed += 1;
+      t.wins += net > 0 ? 1 : 0;
+      t.gross += gross;
+      t.fees += fees;
+      t.net += net;
+    }
+    row.best = row.best === null ? net : Math.max(row.best, net);
+    row.worst = row.worst === null ? net : Math.min(row.worst, net);
+    const openedAt = e.startedAt ?? e.at;
+    row.heldMs += Math.max(0, closedAt.getTime() - openedAt.getTime());
+    const reason = e.closeReason ?? (e.status === "paper" ? "squared_off" : "unknown");
+    row.reasons[reason] = (row.reasons[reason] ?? 0) + 1;
+    trades.push({ strategyId: e.strategyId, playbookId: e.playbookId, asset: e.asset, exit, strikes: (e.detail.legs ?? []).map((l) => l.strike), expiry: e.detail.expiry ?? null, dte: e.detail.dte ?? null, openedAt: openedAt.toISOString(), closedAt: closedAt.toISOString(), closeReason: reason === "unknown" ? null : reason, grossUsd: usd(gross), feesUsd: usd(fees), netUsd: usd(net) });
+  }
+  return {
+    since: entries[0]?.at.toISOString() ?? null,
+    total: tallyOut(total),
+    rows: [...rows.values()].map((r) => ({ playbookId: r.playbookId, asset: r.asset, exit: r.exit, ...tallyOut(r.t), bestNetUsd: r.best === null ? null : usd(r.best), worstNetUsd: r.worst === null ? null : usd(r.worst), avgHoldMinutes: r.t.closed ? Math.round(r.heldMs / r.t.closed / 60_000) : null, reasons: r.reasons })),
+    byDte: AUTOPILOT_DTE_BANDS.map((band) => ({ band, ...tallyOut(bands.get(band)!) })),
+    trades: trades.sort((a, b) => b.closedAt.localeCompare(a.closedAt)).slice(0, AUTOPILOT_TRADES_SHOWN),
+  };
 }

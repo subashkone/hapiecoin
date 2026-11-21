@@ -204,6 +204,13 @@
       "when": 1795252042057,
       "tag": "0028_lonely_wild_child",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1795266125049,
+      "tag": "0029_stale_bloodaxe",
+      "breakpoints": true
     }
   ]
 }

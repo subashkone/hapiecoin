@@ -1,8 +1,9 @@
 /**
  * Autopilot (ADR-108; HC-TR-216..218): the server enters a PAPER strategy by itself when a playbook the trader
  * switched on has an entry on the latest marks, arms its exits, and keeps a log of what it did and what it left alone.
- * Paper only: nothing here can place an order on a venue. One open Autopilot trade per playbook, venue and asset; after
- * a trade ends the same playbook waits a cool-down before it may enter again.
+ * Paper only: nothing here can place an order on a venue. A playbook holds one trade per structure (the same strikes
+ * and expiry are never held twice) and up to AUTOPILOT_MAX_OPEN structures on a venue and asset (ADR-110); between two
+ * entries, and after a trade ends, the same playbook waits a cool-down.
  */
 import { z } from "zod";
 import { Id } from "./accounts.js";
@@ -22,13 +23,17 @@ export const AUTOPILOT_EXIT_LABELS: Record<AutopilotExitStyle, string> = { trail
 export const AUTOPILOT_TARGET_PCT = 10;
 /** The give-back of the trailing style, as a share of the best profit seen. */
 export const AUTOPILOT_TRAIL_GIVE_PCT = "10";
-/** After an Autopilot trade of a playbook ends, how long the same playbook, venue and asset waits before entering again. */
+/** After an Autopilot trade of a playbook is entered or ends, how long the same playbook, venue and asset waits before entering again. */
 export const AUTOPILOT_COOLDOWN_MINUTES = 15;
+/** The most trades (each on its own strikes or expiry) one playbook holds at a time on a venue and asset (ADR-110). */
+export const AUTOPILOT_MAX_OPEN = 5;
 /** A fresh structure is noted as a better entry than the open trade's when its net premium is better by at least this share. */
 export const AUTOPILOT_BETTER_ENTRY_PCT = 10;
 
 /** What Go live answers for a trade Autopilot opened: its exits were priced for the paper entry and must never send a real order. */
 export const AUTOPILOT_PAPER_ONLY_MESSAGE = "An Autopilot trade stays on paper. Build the same strategy yourself to trade it live.";
+/** What deleting a trade Autopilot opened answers: its results count every trade, the losing ones too (ADR-111). */
+export const AUTOPILOT_KEEP_MESSAGE = "An Autopilot trade is part of its results and cannot be deleted. Close it instead.";
 /** Autopilot's log lines are kept this long. */
 export const AUTOPILOT_RUNS_RETENTION_DAYS = 90;
 
@@ -92,3 +97,71 @@ export type AutopilotRun = z.infer<typeof AutopilotRun>;
 /** GET /v1/autopilot: the trader's settings and the newest log lines. */
 export const AutopilotView = z.strictObject({ settings: AutopilotSettings, runs: z.array(AutopilotRun) });
 export type AutopilotView = z.infer<typeof AutopilotView>;
+
+// ---- results (ADR-111): what the trades Autopilot opened came to ----------------------------------------------------
+
+/** Days from entry to expiry, in the bands the results are read by: the day of expiry and the day before, the week, the month, further out. */
+export const AUTOPILOT_DTE_BANDS = ["0-1", "2-7", "8-30", "31+"] as const;
+export const AutopilotDteBand = z.enum(AUTOPILOT_DTE_BANDS);
+export type AutopilotDteBand = z.infer<typeof AutopilotDteBand>;
+export const AUTOPILOT_DTE_BAND_LABELS: Record<AutopilotDteBand, string> = { "0-1": "Expiry day or the day before", "2-7": "2 to 7 days", "8-30": "8 to 30 days", "31+": "More than 30 days" };
+export function autopilotDteBand(dte: number): AutopilotDteBand {
+  return dte <= 1 ? "0-1" : dte <= 7 ? "2-7" : dte <= 30 ? "8-30" : "31+";
+}
+
+/**
+ * A count of trades and what they came to. `grossUsd` is the P&L at the marks the trades were closed on; `feesUsd` is
+ * the entry fee plus the exit fee expected at entry (an estimate: the paper book charges none); `netUsd` is the first
+ * less the second. A win is a closed trade whose net is above zero. Only closed trades carry money.
+ */
+const tally = { open: z.number().int().nonnegative(), closed: z.number().int().nonnegative(), wins: z.number().int().nonnegative(), grossUsd: DecimalString, feesUsd: DecimalString, netUsd: DecimalString };
+
+/** One playbook on one asset with one exit style. */
+export const AutopilotResultRow = z.strictObject({
+  playbookId: z.string(),
+  asset: Underlying,
+  exit: AutopilotExitStyle,
+  ...tally,
+  /** The best and the worst closed trade, net; null with none closed. */
+  bestNetUsd: DecimalString.nullable(),
+  worstNetUsd: DecimalString.nullable(),
+  /** The mean time a closed trade was held, in minutes; null with none closed. */
+  avgHoldMinutes: z.number().int().nonnegative().nullable(),
+  /** How the closed trades ended, by close reason. */
+  reasons: z.record(z.string(), z.number().int().positive()),
+});
+export type AutopilotResultRow = z.infer<typeof AutopilotResultRow>;
+
+export const AutopilotDteRow = z.strictObject({ band: AutopilotDteBand, ...tally });
+export type AutopilotDteRow = z.infer<typeof AutopilotDteRow>;
+
+/** One closed trade, newest first in the list. */
+export const AutopilotClosedTrade = z.strictObject({
+  strategyId: Id,
+  playbookId: z.string(),
+  asset: Underlying,
+  exit: AutopilotExitStyle,
+  /** The strikes it sat on, in leg order, and its expiry. */
+  strikes: z.array(z.string()),
+  expiry: z.string().nullable(),
+  dte: z.number().int().nullable(),
+  openedAt: IsoDateTime,
+  closedAt: IsoDateTime,
+  closeReason: z.string().nullable(),
+  grossUsd: DecimalString,
+  feesUsd: DecimalString,
+  netUsd: DecimalString,
+});
+export type AutopilotClosedTrade = z.infer<typeof AutopilotClosedTrade>;
+
+/** GET /v1/autopilot/results: every trade Autopilot entered that the log still holds (AUTOPILOT_RUNS_RETENTION_DAYS). */
+export const AutopilotResults = z.strictObject({
+  /** The oldest entry counted, or null with none. */
+  since: IsoDateTime.nullable(),
+  total: z.strictObject(tally),
+  rows: z.array(AutopilotResultRow),
+  byDte: z.array(AutopilotDteRow),
+  /** The newest closed trades. */
+  trades: z.array(AutopilotClosedTrade),
+});
+export type AutopilotResults = z.infer<typeof AutopilotResults>;

@@ -2,10 +2,10 @@
  * Autopilot (ADR-108; HC-TR-216, HC-TR-218): the trader's switch, the playbooks switched on with their exit style,
  * and the log of what Autopilot did. Behind the session. Paper only: nothing here places anything on a venue.
  */
-import { AutopilotSettings, AutopilotView } from "@hapiecoin/schema";
+import { AutopilotResults, AutopilotSettings, AutopilotView } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
 import { auditFrom } from "../audit.js";
-import { autopilotSettingsOf, autopilotView, saveAutopilotSettings } from "../autopilot.js";
+import { autopilotResults, autopilotSettingsOf, autopilotView, saveAutopilotSettings } from "../autopilot.js";
 import { type AppEnv, currentUser } from "../security/context.js";
 import { errors } from "../security/errors.js";
 import { requireUser } from "../security/guards.js";
@@ -27,6 +27,22 @@ export function registerAutopilotRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps,
     async (c) => {
       c.header("Cache-Control", "private, no-store");
       return c.json(await autopilotView(deps.db, currentUser(c).id), 200);
+    },
+  );
+
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/v1/autopilot/results",
+      tags: ["strategies"],
+      summary: "What the paper trades Autopilot opened came to, by playbook, asset, exit style and days to expiry (HC-TR-223)",
+      security: cookieAuth,
+      middleware: [guard],
+      responses: { 200: jsonContent(AutopilotResults, "Results"), 401: errorResponses[401] },
+    }),
+    async (c) => {
+      c.header("Cache-Control", "private, no-store");
+      return c.json(await autopilotResults(deps.db, currentUser(c).id), 200);
     },
   );
 

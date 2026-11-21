@@ -4,9 +4,9 @@
 // every reason not to enter is logged once. Nothing here places anything on a venue.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PLAYBOOKS, type PlaybookProposal, playbookById } from "@hapiecoin/pricing";
-import { AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_PAPER_ONLY_MESSAGE, AUTOPILOT_RUNS_RETENTION_DAYS, type AutopilotView, type Instrument, type Quote, type SubscriptionView } from "@hapiecoin/schema";
-import { and, eq } from "drizzle-orm";
-import { AUTOPILOT_MAX_MARK_AGE_MS, type AutopilotDeps, betterEntry, liveDay, planFor, runAutopilot, skipText } from "./autopilot.js";
+import { AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_MAX_OPEN, AUTOPILOT_PAPER_ONLY_MESSAGE, AUTOPILOT_RUNS_RETENTION_DAYS, type AutopilotResults, type AutopilotRunDetail, type AutopilotView, type Instrument, type Quote, type SubscriptionView } from "@hapiecoin/schema";
+import { and, asc, eq } from "drizzle-orm";
+import { AUTOPILOT_MAX_MARK_AGE_MS, type AutopilotDeps, betterEntry, liveDay, planFor, runAutopilot, skipText, structureKey } from "./autopilot.js";
 import { clearEodMemo } from "./chain-eod.js";
 import { autopilotRuns, instrumentMarks, ivSnapshots, plans, strategies, subscriptions, strategyLegs, strategyRules, userSettings, users } from "./db/schema.js";
 import { SEED } from "./db/seed.js";
@@ -205,7 +205,7 @@ describe("HC-TR-217 the entry engine", () => {
     expect((await runAutopilot(deps(LIVE + 7 * MIN), ["delta_india"])).noted).toBe(1);
     expect((await runAutopilot(deps(LIVE + 8 * MIN), ["delta_india"])).noted).toBe(0);
     const note = (await view()).runs.find((r) => r.kind === "noted")!;
-    expect(note).toMatchObject({ playbookId: BUTTERFLY, strategyId: entry!.strategyId, reason: "A better entry than the open trade's: not taken, one trade at a time" });
+    expect(note).toMatchObject({ playbookId: BUTTERFLY, strategyId: entry!.strategyId, reason: "A better entry than the open trade's: not taken, these strikes are held already" });
     expect(Number(note.detail.openEntryCost)).toBe(fresh * 1.25);
     expect(await mine()).toHaveLength(1);
   });
@@ -375,7 +375,7 @@ describe("HC-TR-217 an Autopilot trade from its exit to the next entry", () => {
     await put({ enabled: true, strategies: [{ playbookId: BUTTERFLY, exit: "target" }] });
   });
 
-  it("HC-TR-217 an Autopilot trade cannot go live, alone or in a batch, and the database holds one open trade per playbook", async () => {
+  it("HC-TR-217 an Autopilot trade cannot go live, alone or in a batch, and the database holds one open trade per playbook and structure", async () => {
     const at = X + 40 * MIN;
     await snapshotOnce(t.deps, sourceAt(at, spotOn(8)), () => at);
     await runAutopilot(deps(at + MIN), ["delta_india"]); // the second trader's butterfly re-enters on the same passes
@@ -393,24 +393,83 @@ describe("HC-TR-217 an Autopilot trade from its exit to the next entry", () => {
     expect(draft.status).toBe(409);
     expect(JSON.stringify(await draft.json())).toContain("can only be closed");
     expect((await paper())[0]).toMatchObject({ status: "paper" });
-    // a second open row for the same trader, playbook, venue and asset is refused by the index
-    const second = { id: "strat_autopilot_twin", userId, name: "twin", asset: "BTC" as const, venue: "delta_india" as const, status: "paper" as const, tradingMode: "paper" as const, autopilotPlaybookId: BUTTERFLY as string | null };
+    // a second open row for the same trader, playbook, venue, asset and structure is refused by the index
+    expect(s!.autopilotStructure).toBe(structureKey(await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, s!.id)).orderBy(asc(strategyLegs.position))));
+    const second = { id: "strat_autopilot_twin", userId, name: "twin", asset: "BTC" as const, venue: "delta_india" as const, status: "paper" as const, tradingMode: "paper" as const, autopilotPlaybookId: BUTTERFLY as string | null, autopilotStructure: s!.autopilotStructure };
     await expect(t.db.insert(strategies).values(second)).rejects.toThrow();
     // the trader's own paper trades are not held to it
     await t.db.insert(strategies).values([{ ...second, id: "strat_own_1", autopilotPlaybookId: null }, { ...second, id: "strat_own_2", autopilotPlaybookId: null }]);
     await t.db.delete(strategies).where(eq(strategies.name, "twin"));
   });
 
-  it("HC-TR-218 a cheaper price for a different structure is not a better entry for the open trade", async () => {
-    const at = X + 45 * MIN;
-    const [entry] = await t.db.select().from(autopilotRuns).where(and(eq(autopilotRuns.userId, userId), eq(autopilotRuns.kind, "entered"), eq(autopilotRuns.strategyId, (await paper())[0]!.id)));
+  it("HC-TR-221 the playbook's entry on other strikes is a new trade beside the open one, one per cool-down and five at most; the same strikes are never held twice", async () => {
+    const first = (await paper())[0]!;
+    // the key's newest entry is dated just before this test, whatever the tests above did
+    const entered = X + 44 * MIN;
+    await t.db.update(strategies).set({ startedAt: new Date(entered) }).where(eq(strategies.id, first.id));
+    const grid = (step: number) => Array.from({ length: 10 }, (_, i) => 83_000 + (i - 4) * step); // 83,000 is always listed, the wings move with the step
+    const [entry] = await t.db.select().from(autopilotRuns).where(and(eq(autopilotRuns.userId, userId), eq(autopilotRuns.kind, "entered"), eq(autopilotRuns.strategyId, first.id)));
     await t.db.update(autopilotRuns).set({ detail: { ...entry!.detail, entryCost: "500" } }).where(eq(autopilotRuns.id, entry!.id));
-    // strikes 100 apart: the butterfly now sits on other strikes and costs far less than 500
-    await snapshotOnce(t.deps, sourceAt(at, spotOn(8), 400, Array.from({ length: 10 }, (_, i) => 82_800 + i * 100)), () => at);
-    expect((await runAutopilot(deps(at + MIN), ["delta_india"])).noted).toBe(0);
-    // the same strikes again: now it is the same structure, and cheaper
+    // strikes 100 apart: wings that narrow make less than the fees, so that structure is a reason and not a trade
+    let at = entered + 2 * MIN;
+    await snapshotOnce(t.deps, sourceAt(at, spotOn(8), 400, grid(100)), () => at);
+    await runAutopilot(deps(at + MIN), ["delta_india"]);
+    expect(await lastButterfly()).toMatchObject({ kind: "skipped", reason: "The fees are larger than the profit target, or the structure has no defined maximum" });
+    // strikes 2,000 apart: the butterfly now sits on other strikes, but the key entered a few minutes ago
+    at = entered + 4 * MIN;
+    await snapshotOnce(t.deps, sourceAt(at, spotOn(8), 400, grid(2000)), () => at);
+    expect(await runAutopilot(deps(at + MIN), ["delta_india"])).toMatchObject({ noted: 0, failed: 0 });
+    expect(await paper()).toHaveLength(1);
+    expect(await lastButterfly()).toMatchObject({ kind: "skipped", reason: `Waiting ${AUTOPILOT_COOLDOWN_MINUTES} minutes after its last trade` });
+    // the cool-down over: the other strikes are entered as a second trade, the first stays
+    at = entered + AUTOPILOT_COOLDOWN_MINUTES * MIN;
+    await snapshotOnce(t.deps, sourceAt(at, spotOn(8), 400, grid(2000)), () => at);
+    await runAutopilot(deps(at + MIN), ["delta_india"]);
+    const two = await paper();
+    expect(two).toHaveLength(2);
+    const second = two.find((x) => x.id !== first.id)!;
+    expect(second.autopilotPlaybookId).toBe(BUTTERFLY);
+    expect(second.autopilotStructure).not.toBe(first.autopilotStructure);
+    expect((await t.db.select().from(strategyRules).where(and(eq(strategyRules.strategyId, second.id), eq(strategyRules.state, "armed")))).length).toBeGreaterThan(0);
+    // the same pass again: the second trade's strikes are held, nothing is entered twice
+    await runAutopilot(deps(at + 2 * MIN), ["delta_india"]);
+    expect(await paper()).toHaveLength(2);
+    // a row from before the structure was stored is known by its legs, and gets it written once
+    await t.db.update(strategies).set({ autopilotStructure: null }).where(eq(strategies.id, second.id));
+    expect((await runAutopilot(deps(at + 3 * MIN), ["delta_india"])).failed).toBe(0);
+    expect(await paper()).toHaveLength(2);
+    expect((await paper()).find((x) => x.id === second.id)!.autopilotStructure).toBe(second.autopilotStructure);
+    // a leg the trader added by hand does not make it another trade: the structure it was entered on still holds the place
+    await t.db.insert(strategyLegs).values({ id: "leg_added_by_hand", strategyId: second.id, kind: "put", side: "buy", strike: "70000", expiry: "2026-09-15", symbol: "P-BTC-70000-150926", lots: 1, price: "1", entryPrice: "1", status: "open", position: 9 });
+    expect((await runAutopilot(deps(at + 4 * MIN), ["delta_india"])).failed).toBe(0);
+    expect(await paper()).toHaveLength(2);
+    await t.db.delete(strategyLegs).where(eq(strategyLegs.id, "leg_added_by_hand"));
+    // an Autopilot trade is part of its results: it cannot be deleted
+    const gone = await t.request(`/v1/strategies/${second.id}`, { cookie, method: "DELETE" });
+    expect(gone.status).toBe(409);
+    expect(JSON.stringify(await gone.json())).toContain(AUTOPILOT_KEEP_MESSAGE);
+    expect(await paper()).toHaveLength(2);
+    // the first trade's strikes again, cheaper than its (rewritten) entry: a note on that trade, not a third trade
     await snapshotOnce(t.deps, sourceAt(at + 5 * MIN, spotOn(8)), () => at + 5 * MIN);
     expect((await runAutopilot(deps(at + 6 * MIN), ["delta_india"])).noted).toBe(1);
+    expect((await view()).runs.find((r) => r.kind === "noted")!.strategyId).toBe(first.id);
+    expect(await paper()).toHaveLength(2);
+    // five held: a sixth structure is a reason, not a trade, however long the key has waited
+    const fill = Array.from({ length: AUTOPILOT_MAX_OPEN - 2 }, (_, i) => `strat_autopilot_fill_${i}`);
+    await t.db.insert(strategies).values(fill.map((id) => ({ id, userId, name: "fill", asset: "BTC" as const, venue: "delta_india" as const, status: "paper" as const, tradingMode: "paper" as const, autopilotPlaybookId: BUTTERFLY, autopilotStructure: id, startedAt: new Date(at) })));
+    await t.db.insert(strategyLegs).values(fill.map((id, i) => ({ id: `leg_fill_${i}`, strategyId: id, kind: "call" as const, side: "buy" as const, strike: String(1000 + i), expiry: "2026-09-15", symbol: `C-BTC-${1000 + i}-150926`, lots: 1, price: "1", entryPrice: "1", status: "open" as const, position: 0 })));
+    at += 2 * HOUR;
+    await snapshotOnce(t.deps, sourceAt(at, spotOn(8), 400, grid(3000)), () => at);
+    await runAutopilot(deps(at + MIN), ["delta_india"]); // the second trader holds fewer and may enter on the same pass
+    expect(await paper()).toHaveLength(AUTOPILOT_MAX_OPEN);
+    expect(await lastButterfly()).toMatchObject({ kind: "skipped", reason: `Holds ${AUTOPILOT_MAX_OPEN} trades already, the most for one strategy and coin` });
+    // one fewer held: the sixth structure enters
+    await t.db.delete(strategies).where(eq(strategies.id, fill[0]!));
+    expect((await runAutopilot(deps(at + 2 * MIN), ["delta_india"])).entered).toBeGreaterThanOrEqual(1);
+    expect(await paper()).toHaveLength(AUTOPILOT_MAX_OPEN);
+    // leave the first trade alone for the tests that follow
+    for (const x of await paper()) if (x.id !== first.id) await t.db.delete(strategies).where(eq(strategies.id, x.id));
+    expect(await paper()).toHaveLength(1);
   });
 
   it("HC-TR-217 no plan, no trade: with no Free plan on offer a trader without a subscription is told so; an admin still trades", async () => {
@@ -464,5 +523,72 @@ describe("HC-TR-217 an Autopilot trade from its exit to the next entry", () => {
     await t.db.insert(autopilotRuns).values({ userId, playbookId: BUTTERFLY, venue: "delta_india", asset: "BTC", kind: "skipped", reason: "ancient", at: new Date(at - (AUTOPILOT_RUNS_RETENTION_DAYS + 1) * DAY) });
     await runAutopilot(deps(at + 3 * MIN), ["delta_india"]);
     expect((await t.db.select().from(autopilotRuns).where(eq(autopilotRuns.reason, "ancient"))).length).toBe(0);
+  });
+});
+
+describe("HC-TR-223 what the trades Autopilot opened came to", () => {
+  it("HC-TR-223 counts open trades, nets closed ones of the fees estimated at entry, and groups by playbook, asset, exit style and days to expiry; needs a session", async () => {
+    expect((await t.request("/v1/autopilot/results")).status).toBe(401);
+    const me = await t.signUp("autopilot-results@hapiecoin.test");
+    const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
+    const read = async () => json<AutopilotResults>(await t.request("/v1/autopilot/results", { cookie: me.cookie }));
+    // nothing entered yet
+    expect(await read()).toMatchObject({ since: null, total: { open: 0, closed: 0, wins: 0, grossUsd: "0.00", feesUsd: "0.00", netUsd: "0.00" }, rows: [], trades: [] });
+    expect((await read()).byDte.map((b) => b.band)).toEqual(["0-1", "2-7", "8-30", "31+"]);
+
+    const B = Date.UTC(2026, 8, 20, 6, 0, 0);
+    const row = (sid: string, over: Partial<typeof strategies.$inferInsert>) => ({ id: sid, userId: id, name: sid, asset: "BTC" as const, venue: "delta_india" as const, status: "archived" as const, tradingMode: "paper" as const, autopilotPlaybookId: BUTTERFLY, ...over });
+    await t.db.insert(strategies).values([
+      row("res_1", { realizedPnl: "5.00", startedAt: new Date(B), closedAt: new Date(B + 30 * MIN), closeReason: "target" }),
+      row("res_2", { realizedPnl: "-2.00", startedAt: new Date(B + HOUR), closedAt: new Date(B + 2 * HOUR), closeReason: "stopped" }),
+      row("res_3", { status: "paper", asset: "ETH", autopilotPlaybookId: "trend-puts", startedAt: new Date(B + 3 * HOUR) }),
+      // a small gross profit the fees eat: not a win; no start time and no close reason on the row
+      row("res_4", { realizedPnl: "0.30", asset: "ETH", autopilotPlaybookId: "trend-puts", closedAt: new Date(B + 4 * HOUR + 10 * MIN) }),
+      // an entry logged with no figures at all
+      row("res_5", { realizedPnl: "1", startedAt: new Date(B + 5 * HOUR), closedAt: new Date(B + 5 * HOUR + 30 * MIN), closeReason: "squared_off" }),
+    ]);
+    const legs = [{ side: "buy" as const, kind: "call" as const, strike: "82000", price: "1" }, { side: "sell" as const, kind: "call" as const, strike: "83000", price: "1" }];
+    const line = (sid: string, at: number, playbookId: string, asset: "BTC" | "ETH", detail: AutopilotRunDetail) => ({ userId: id, playbookId, venue: "delta_india" as const, asset, kind: "entered" as const, reason: "entered", strategyId: sid, detail, at: new Date(at) });
+    const [other] = await mine(); // the first trader's strategy: a line pointing at it is not this trader's result
+    await t.db.insert(autopilotRuns).values([
+      line("res_1", B, BUTTERFLY, "BTC", { exit: "trail", dte: 1, fees: "0.40", expiry: "2026-09-21", legs }),
+      line("res_2", B + HOUR, BUTTERFLY, "BTC", { exit: "trail", dte: 0, fees: "0.40" }),
+      line("res_3", B + 3 * HOUR, "trend-puts", "ETH", { exit: "target", dte: 20, fees: "0.50" }),
+      line("res_4", B + 4 * HOUR, "trend-puts", "ETH", { exit: "target", dte: 20, fees: "0.50" }),
+      line("res_5", B + 5 * HOUR, BUTTERFLY, "BTC", {}),
+      line(other!.id, B + 6 * HOUR, BUTTERFLY, "BTC", { exit: "trail", dte: 1, fees: "9" }),
+      { ...line("res_1", B + 7 * HOUR, BUTTERFLY, "BTC", {}), kind: "noted" as const }, // a note is not an entry
+    ]);
+
+    const r = await read();
+    expect(r.since).toBe(new Date(B).toISOString());
+    expect(r.total).toEqual({ open: 1, closed: 4, wins: 2, grossUsd: "4.30", feesUsd: "1.30", netUsd: "3.00" });
+    expect(r.rows).toHaveLength(2);
+    expect(r.rows.find((x) => x.playbookId === BUTTERFLY)).toEqual({ playbookId: BUTTERFLY, asset: "BTC", exit: "trail", open: 0, closed: 3, wins: 2, grossUsd: "4.00", feesUsd: "0.80", netUsd: "3.20", bestNetUsd: "4.60", worstNetUsd: "-2.40", avgHoldMinutes: 40, reasons: { target: 1, stopped: 1, squared_off: 1 } });
+    expect(r.rows.find((x) => x.playbookId === "trend-puts")).toEqual({ playbookId: "trend-puts", asset: "ETH", exit: "target", open: 1, closed: 1, wins: 0, grossUsd: "0.30", feesUsd: "0.50", netUsd: "-0.20", bestNetUsd: "-0.20", worstNetUsd: "-0.20", avgHoldMinutes: 10, reasons: { unknown: 1 } });
+    expect(r.byDte).toEqual([
+      { band: "0-1", open: 0, closed: 2, wins: 1, grossUsd: "3.00", feesUsd: "0.80", netUsd: "2.20" },
+      { band: "2-7", open: 0, closed: 0, wins: 0, grossUsd: "0.00", feesUsd: "0.00", netUsd: "0.00" },
+      { band: "8-30", open: 1, closed: 1, wins: 0, grossUsd: "0.30", feesUsd: "0.50", netUsd: "-0.20" },
+      { band: "31+", open: 0, closed: 0, wins: 0, grossUsd: "0.00", feesUsd: "0.00", netUsd: "0.00" },
+    ]);
+    expect(r.trades.map((x) => x.strategyId)).toEqual(["res_5", "res_4", "res_2", "res_1"]); // newest close first
+    expect(r.trades[3]).toEqual({ strategyId: "res_1", playbookId: BUTTERFLY, asset: "BTC", exit: "trail", strikes: ["82000", "83000"], expiry: "2026-09-21", dte: 1, openedAt: new Date(B).toISOString(), closedAt: new Date(B + 30 * MIN).toISOString(), closeReason: "target", grossUsd: "5.00", feesUsd: "0.40", netUsd: "4.60" });
+    expect(r.trades[0]).toMatchObject({ exit: "trail", strikes: [], expiry: null, dte: null, feesUsd: "0.00", netUsd: "1.00" });
+    expect(r.trades[1]).toMatchObject({ openedAt: new Date(B + 4 * HOUR).toISOString(), closeReason: null });
+    // every leg squared off by hand while the row still says paper: closed in the results, dated by its last leg
+    await t.db.insert(strategies).values(row("res_7", { status: "paper", realizedPnl: "2.00", startedAt: new Date(B + 9 * HOUR) }));
+    await t.db.insert(strategyLegs).values({ id: "leg_res_7", strategyId: "res_7", kind: "call", side: "buy", strike: "82000", expiry: "2026-09-21", symbol: "C-BTC-82000-210926", lots: 1, price: "1", entryPrice: "1", exitPrice: "3", status: "squared_off", position: 0, closedAt: new Date(B + 9 * HOUR + 20 * MIN) });
+    await t.db.insert(autopilotRuns).values(line("res_7", B + 9 * HOUR, BUTTERFLY, "BTC", { exit: "target", dte: 1, fees: "0.50" }));
+    const hand = await read();
+    expect(hand.total).toMatchObject({ open: 1, closed: 5, wins: 3, netUsd: "4.50" });
+    expect(hand.trades[0]).toMatchObject({ strategyId: "res_7", closeReason: "squared_off", closedAt: new Date(B + 9 * HOUR + 20 * MIN).toISOString(), netUsd: "1.50" });
+    expect(hand.rows.find((x) => x.exit === "target" && x.playbookId === BUTTERFLY)).toMatchObject({ closed: 1, avgHoldMinutes: 20, reasons: { squared_off: 1 } });
+    // a trade more than a month out lands in the last band
+    await t.db.insert(strategies).values(row("res_6", { status: "paper", startedAt: new Date(B + 8 * HOUR) }));
+    await t.db.insert(autopilotRuns).values([line("res_6", B + 8 * HOUR, "premium-harvest", "BTC", { exit: "trail", dte: 34 }), line("res_6", B + 8 * HOUR, "premium-harvest", "BTC", { exit: "trail", dte: 5 })]);
+    const again = await read();
+    expect(again.byDte.find((b) => b.band === "31+")!.open).toBe(1);
+    expect(again.byDte.find((b) => b.band === "2-7")!.open).toBe(1);
   });
 });
