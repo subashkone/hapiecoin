@@ -6,12 +6,13 @@ import { alertCounts } from "@hapiecoin/schema";
 import { cn } from "@hapiecoin/ui";
 import { useMemo } from "react";
 import { useAlerts } from "@/lib/api/alerts";
+import { AUTOPILOT_POLL_MS, useAutopilot } from "@/lib/api/autopilot";
 import { useLivePositions } from "@/lib/api/live";
 import { useSettings } from "@/lib/api/queries";
 import { useStrategies } from "@/lib/api/strategies";
 import { fmtMoney, fmtMoneyCompact } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
-import { dayPnl } from "@/lib/strategy/paper";
+import { dayPnl, openLegs } from "@/lib/strategy/paper";
 import { useCurrentAccount } from "@/lib/accounts";
 import { usePaperBook } from "@/lib/strategy/usePaper";
 import { usePortfolio } from "@/lib/strategy/usePortfolio";
@@ -20,7 +21,9 @@ const NONE: never[] = [];
 const item = "inline-flex h-8 items-center gap-1.5 whitespace-nowrap px-2.5 font-mono text-2xs hover:bg-muted";
 
 export function PortfolioBar() {
-  const { data: strategies } = useStrategies();
+  // ADR-109: while Autopilot is on the server opens and closes trades by itself, so the list is re-read with its log
+  const autopilot = useAutopilot("on");
+  const { data: strategies } = useStrategies({ refetchInterval: autopilot.data?.settings.enabled ? AUTOPILOT_POLL_MS : false });
   const { data: settings } = useSettings();
   const { data: alerts } = useAlerts();
   const setWorkspaceTab = useUiStore((s) => s.setWorkspaceTab);
@@ -42,6 +45,11 @@ export function PortfolioBar() {
   const basis = settings ? (settings.pnlBasis === "bid_ask" ? "bid/ask" : "mark") : "—";
   const ccy = settings?.currency ?? "USD";
   const signed = (v: number) => (v >= 0 ? "text-profit" : "text-loss");
+  // HC-SH-143: what Autopilot holds right now and how it stands, among the trader's own figures
+  const autoOpen = active.filter((s) => s.status === "paper" && s.autopilotPlaybookId);
+  // a figure only when every open leg has a live price: a missing quote reads as the entry price, which is no P&L at all
+  const autoPriced = autoOpen.every((s) => openLegs(s).every((l) => book.priceOf(s, l) !== null));
+  const autoPnl = autoOpen.reduce((acc, s) => acc + book.pnlOf(s).total, 0);
   return (
     <footer
       className="sticky bottom-0 z-20 flex h-8 items-stretch overflow-x-auto border-t border-border bg-header-bg text-header-fg"
@@ -83,6 +91,13 @@ export function PortfolioBar() {
         <span className="micro">Day P&amp;L</span>
         <b className={cn("num", signed(day))}>{active.length ? fmtMoney(day, money, { signed: true }) : "—"}</b>
       </button>
+      {autopilot.data ? (
+        <a href="/autopilot" className={item} title="Autopilot's paper trades: open its screen" data-testid="bar-autopilot" data-enabled={autopilot.data.settings.enabled}>
+          <span className="micro">Autopilot</span>
+          <b className="font-medium">{autopilot.data.settings.enabled ? "On" : "Off"} · {autoOpen.length} open</b>
+          {autoOpen.length && autoPriced ? <b className={cn("num", signed(autoPnl))} data-testid="bar-autopilot-pnl">{fmtMoney(autoPnl, money, { signed: true })}</b> : null}
+        </a>
+      ) : null}
       <button type="button" className={item} onClick={() => openAlerts()} title="Open the Alerts center" data-testid="bar-alerts" data-triggered={counts.triggered}>
         <span className="micro">Alerts</span>
         <b>{counts.armed} armed</b>

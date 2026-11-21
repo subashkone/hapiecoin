@@ -389,6 +389,8 @@ export const Strategy = z.strictObject({
   closedAt: IsoDateTime.nullable(),
   /** Why the strategy closed: the reason of the action that archived it; null while active or for an archived draft. */
   closeReason: CloseReason.nullable().optional(),
+  /** ADR-108: the playbook whose entry Autopilot took to open this paper trade; null or absent for a trade the trader opened. */
+  autopilotPlaybookId: z.string().nullable().optional(),
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
 });

@@ -64,6 +64,7 @@ export function Avatar({ avatar, className }: { avatar: User["avatar"]; classNam
 
 const TABS = [
   { href: "/desk", label: "Desk", active: (p: string) => p === "/desk" },
+  { href: "/autopilot", label: "Autopilot", active: (p: string) => p.startsWith("/autopilot") },
   { href: "/analytics", label: "Market Analytics", active: (p: string) => p.startsWith("/analytics") || p.startsWith("/terminal") },
   { href: "/plans", label: "Plans", active: (p: string) => p.startsWith("/plans") },
   { href: "/invite", label: "Invite", active: (p: string) => p.startsWith("/invite") },
@@ -323,7 +324,7 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
           {isAdmin ? <AdminChip /> : null}
         </div>
         <nav aria-label="Primary" className="flex items-center gap-1 self-stretch">
-          {(user ? TABS : [{ href: "/", label: "Home", active: (p: string) => p === "/" }, TABS[1]]).map((t) => {
+          {(user ? TABS : [{ href: "/", label: "Home", active: (p: string) => p === "/" }, TABS.find((t) => t.href === "/analytics")!]).map((t) => {
             const on = t.active(pathname);
             return (
               <a

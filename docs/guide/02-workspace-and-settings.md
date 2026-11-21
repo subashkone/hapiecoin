@@ -1,6 +1,6 @@
 # Workspace chrome, settings and dialogs
 
-Part of the [HapieCoin feature guide](README.md). 116 traced features on 27 screens; 115 built and tested, 1 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 117 traced features on 27 screens; 116 built and tested, 1 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -76,6 +76,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-SH-142 | The workspace lives at /desk and the account pages at /plans and /invite | The header, the palette, the tour, the assistant, the offline page, the installed app's start address and the links the server sends all use these addresses; the workspace is named Desk in the header, the shortcuts sheet and the copy; the menu says My plan and Invite friends; no redirect is kept from the earlier addresses (the product had no users when it was renamed) | built | unit (web), e2e |
+| HC-SH-143 | Autopilot is reachable and visible from the Desk: a header and palette entry, an item on the status bar with its open trades and P&L, and a tag on the Paper cards it opened | the header's Autopilot tab and the palette's Autopilot command open /autopilot; the status bar always shows On or Off and the open Autopilot trades, with their P&L once every leg has a live price; a Paper card of a trade Autopilot opened carries an Autopilot tag and its Go live is disabled with the reason | built | unit (web) |
 
 ### Shared chrome · Exchange chip / live surfaces · `/desk`
 

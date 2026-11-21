@@ -50,8 +50,9 @@ export function strategyFetchers(client: ApiClient = api) {
 const f = strategyFetchers();
 
 /** Every strategy of the signed-in user; components filter by status. */
-export function useStrategies() {
-  return useQuery({ queryKey: strategyKeys.list(), queryFn: () => f.list(), staleTime: 15_000 });
+/** `refetchInterval` is for a screen that shows trades the server opens and closes by itself (Autopilot, ADR-109). */
+export function useStrategies(opts: { refetchInterval?: number | false } = {}) {
+  return useQuery({ queryKey: strategyKeys.list(), queryFn: () => f.list(), staleTime: 15_000, ...opts });
 }
 
 function useStrategyMutation<TVars, TResult extends Strategy | void>(run: (vars: TVars) => Promise<TResult>) {

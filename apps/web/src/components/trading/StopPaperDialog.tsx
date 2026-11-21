@@ -16,6 +16,9 @@ export function StopPaperDialog({ open, onOpenChange, strategy, priceOf, total, 
     if (open) setArchive(true);
   }, [open]);
   const legs = openLegs(strategy);
+  // ADR-109: a trade Autopilot opened is closed, never parked as a draft (a draft has no close time, so the playbook's
+  // cool-down would not start, and it could be started again by hand carrying Autopilot's mark); the API refuses it too
+  const closeOnly = Boolean(strategy.autopilotPlaybookId);
   const go = () =>
     stop.mutate(
       { id: strategy.id, body: { archive, exits: archive ? priceMap(legs, priceOf) : {} } },
@@ -61,10 +64,12 @@ export function StopPaperDialog({ open, onOpenChange, strategy, priceOf, total, 
           <div className={cn("mt-2 rounded border p-2 text-2xs", live ? "border-profit/40" : "border-warning/40")} data-testid="stop-feed">
             {live ? <><b>Using live WebSocket prices</b><div className="text-muted-foreground">Current market prices will be used for all legs when stopping</div></> : <><b>Connecting to live prices</b><div className="text-muted-foreground">Please wait while we fetch current market prices...</div></>}
           </div>
-          <label className="mt-3 flex items-start gap-2 text-xs">
-            <input type="checkbox" checked={archive} onChange={(e) => setArchive(e.target.checked)} className="mt-0.5" data-testid="stop-archive" />
-            <span><b>Archive this strategy</b><span className="block text-muted-foreground">Move to archived strategies and the Journal. Uncheck to keep it as a draft for future use.</span></span>
-          </label>
+          {closeOnly ? null : (
+            <label className="mt-3 flex items-start gap-2 text-xs">
+              <input type="checkbox" checked={archive} onChange={(e) => setArchive(e.target.checked)} className="mt-0.5" data-testid="stop-archive" />
+              <span><b>Archive this strategy</b><span className="block text-muted-foreground">Move to archived strategies and the Journal. Uncheck to keep it as a draft for future use.</span></span>
+            </label>
+          )}
           <p className="micro mt-2" data-testid="stop-hint">{archive ? "Strategy will be moved to Archived Strategies and marked as closed. All active legs will be squared off at current prices." : "Strategy will remain in Draft Strategies but paper trading will be stopped. Legs stay saved so you can activate it again later."}</p>
         </DialogBody>
         <DialogFooter>

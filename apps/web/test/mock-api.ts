@@ -5,8 +5,8 @@ import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { Underlying, PublicPageSettings, AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
-import type { SweepAxisSpec } from "@hapiecoin/pricing";
-import { ProposalMarkBody, parseSweepValues } from "@hapiecoin/schema";
+import { PLAYBOOKS, type SweepAxisSpec } from "@hapiecoin/pricing";
+import { AUTOPILOT_PAPER_ONLY_MESSAGE, AutopilotSettings, type AutopilotView, ProposalMarkBody, parseSweepValues } from "@hapiecoin/schema";
 import { type MockBacktestParams, mockBacktest, mockSweep } from "./mock-backtest";
 import { mockReplayChain, mockReplayExpiries, mockReplaySteps } from "./mock-replay";
 import { mockPlaybookRecords } from "./mock-playbooks";
@@ -33,6 +33,8 @@ interface Account {
   settings: UserSettings;
   /** ADR-102: this account's marks on today's playbook proposals, by proposal id. */
   proposalMarks: Map<string, MockProposalMark>;
+  /** ADR-108: the account's Autopilot switch, playbooks and log. */
+  autopilot: AutopilotView;
   brokers: Broker[];
   /** Connected keys (accounts, ADR-068): several per broker, told apart by their label. */
   credentials: BrokerCredentialPublic[];
@@ -234,6 +236,7 @@ export function createAccount(
     emailVerified: input.verified ?? true,
     settings: defaultSettings(),
     proposalMarks: new Map(),
+    autopilot: { settings: { enabled: false, strategies: [] }, runs: [] },
     brokers: [GLOBAL_BROKER],
     credentials: [],
     fills: [],
@@ -721,6 +724,17 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     c.header("Cache-Control", "private, no-store");
     return c.json(state.backtestDays === 0 ? { venue, day: new Date().toISOString().slice(0, 10), items: [] } : mockProposals(state.backtestDays, venue, acc.proposalMarks));
   });
+  // ADR-108: the trader's Autopilot settings and log; the mock keeps what is saved and never trades by itself
+  v1.get("/autopilot", (c) => c.json(current(c)!.autopilot));
+  v1.put("/autopilot", async (c) => {
+    const acc = current(c)!;
+    const parsed = AutopilotSettings.safeParse(await c.req.json());
+    if (!parsed.success) return err(c, 400, "BAD_REQUEST", "Invalid Autopilot settings");
+    const bad = parsed.data.strategies.find((s) => !PLAYBOOKS.some((p) => p.id === s.playbookId && !p.control));
+    if (bad) return err(c, 400, "BAD_REQUEST", `${bad.playbookId} is not a playbook Autopilot can trade`);
+    acc.autopilot = { ...acc.autopilot, settings: parsed.data };
+    return c.json(acc.autopilot);
+  });
   v1.post("/proposals/:id/mark", async (c) => {
     const acc = current(c)!;
     const id = c.req.param("id");
@@ -1159,6 +1173,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (!s) return err(c, 404, "NOT_FOUND", "Strategy not found");
     if (s.status !== "paper") return err(c, 409, "CONFLICT", "Only a paper strategy can be stopped");
     const body = await c.req.json<{ archive: boolean; exits?: Record<string, string> }>();
+    if (!body.archive && s.autopilotPlaybookId) return err(c, 409, "CONFLICT", "An Autopilot trade can only be closed, not kept as a draft");
     const open = s.legs.filter((l) => l.status === "open");
     if (body.archive) {
       for (const l of open) if (body.exits?.[l.id] === undefined) return err(c, 400, "BAD_REQUEST", `Missing exit price for leg ${l.id}`);
@@ -1425,6 +1440,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (s.orderBatchId === body.idempotencyKey) return c.json(s);
     if (!isLiveWord(body.confirm)) return err(c, 400, "BAD_REQUEST", "Type LIVE to confirm a real order"); // ADR-078
     if (s.status !== "draft" && s.status !== "paper") return err(c, 409, "CONFLICT", `Only a draft or paper strategy can go live; this strategy is ${s.status}`);
+    if (s.autopilotPlaybookId) return err(c, 409, "CONFLICT", AUTOPILOT_PAPER_ONLY_MESSAGE); // ADR-108: as the API refuses it
     const blockedLive = assertEntitled(c, current(c)!, "live_trading");
     if (blockedLive) return blockedLive;
     const p = livePreview(c, s, null);
