@@ -65,6 +65,8 @@ export interface PlaybookClock {
   venues: readonly string[];
   /** Every sold option is closed on its own at this multiple of the price it was sold at; absent: held to settlement. */
   legStop?: number | undefined;
+  /** ADR-113: the whole trade is closed once its profit reaches this share of the premium collected; absent: no profit take. */
+  takeProfitOfCredit?: number | undefined;
 }
 
 const DEFINED_RISK_EXITS: BacktestExits = { targetPct: 0.5, stopPct: 0.5, timeStopDte: 2 };
@@ -218,10 +220,10 @@ function strangle(name: string, k: number, wing: number | null): StrategyTemplat
  */
 const EVENING = { fromHourUtc: 16, toHourUtc: 17, window: "9:30 to 10:30 PM IST", maxDte: 1.5, venues: ["delta_india"] } as const;
 const STUDY = "docs/research/scripts/autopilot-study (106 BTC daily expiries, 8 Aug to 21 Nov 2026, 5-minute marks, the exchange's real fees, 100 lots)";
-const STUDY_TRIALS = { count: 456, note: "19 structures at 24 entry hours on the same 106 days, with several exits each; these four were chosen after seeing the results, so their figures are in-sample and the paper record is the test" };
+const STUDY_TRIALS = { count: 456, note: "19 structures at 24 entry hours on the same 106 days, with several exits each; these were chosen after seeing the results, so their figures are in-sample and the paper record is the test" };
 /** Never judged by the daily record (it enters at the settlement hour, the worst hour of the study): Autopilot's own results are the record. */
 const NO_RECORD: PlaybookThresholds = { minTrades: Number.MAX_SAFE_INTEGER, netPositive: true, outOfSamplePositive: true };
-const clockPlaybook = (id: string, name: string, summary: string, rationale: string, claim: string, template: StrategyTemplate, legStop?: number): Playbook => ({
+const clockPlaybook = (id: string, name: string, summary: string, rationale: string, claim: string, template: StrategyTemplate, legStop?: number, takeProfitOfCredit?: number): Playbook => ({
   id,
   name,
   summary,
@@ -235,7 +237,7 @@ const clockPlaybook = (id: string, name: string, summary: string, rationale: str
   thresholds: NO_RECORD,
   trials: STUDY_TRIALS,
   control: false,
-  clock: { ...EVENING, legStop },
+  clock: { ...EVENING, legStop, takeProfitOfCredit },
 });
 
 /** The playbooks Autopilot enters by the clock (ADR-112). BTC only: the study behind them covers no other asset. */
@@ -273,6 +275,16 @@ export const CLOCK_PLAYBOOKS: readonly Playbook[] = [
     "Sold 600 away, entered 21:30 IST, each option stopped at three times its price: +12.00 a day on 106 days, 61 % of days positive, worst day -98.",
     strangle("Evening strangle (3)", 3, null),
     3,
+  ),
+  clockPlaybook(
+    "evening-strangle-take-half",
+    "Evening strangle, take half",
+    "Each evening sell a call and a put three strikes out on the next expiry; close the whole trade once it is up by half the premium, and buy either option back if its price doubles.",
+    "The owner's quick-profit version, beside the stop-at-double one it is otherwise identical to: the same entry and the same stops, so the two differ only in taking the profit early. In the study it earned a little less on average and was the only naked version positive in each of the four months.",
+    "Sold 600 away, entered 21:30 IST, each option stopped at twice its price, the whole trade closed at half the premium: +6.75 a day on 106 days, 59 % of days positive, worst day -60; August +175, September +242, October +5, November +293.",
+    strangle("Evening strangle (3)", 3, null),
+    2,
+    0.5,
   ),
 ];
 

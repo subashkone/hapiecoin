@@ -8310,8 +8310,23 @@
   "isNew": true,
   "phase": 5,
   "test": "unit (web)",
-  "acceptance": "a card of a strategy entered by the clock states its window, its exit (held to settlement behind its wings, or each sold option bought back at a multiple of its price) and the backtest figure with its sample, marked Backtest only; it has no exit style to choose and is saved with its own exits; a running evening strangle shows no profit level and the stop on each sold option; capital in use reads not bounded while a strangle with no wings is open; the results count the own style beside trail and target",
+  "acceptance": "a card of a strategy entered by the clock states its window, its exit (held to settlement behind its wings, or each sold option bought back at a multiple of its price) and the backtest figure with its sample, marked Backtest only; it has no exit style to choose and is saved with its own exits; a running evening strangle shows its profit level when it has one (the take-half version) or that it is held to settlement, and the stop on each sold option; capital in use reads not bounded while a strangle with no wings is open; the results count the own style beside trail and target",
   "evidence": "ADR-112 (21 Nov 2026): apps/web/src/components/autopilot/AutopilotPage.tsx (autopilot-card-how, autopilot-card-own), AutopilotResultsPanel.tsx, apps/web/src/lib/strategy/autopilot.ts (legStop), apps/web/test/mock-api.ts; tests: autopilot-page.test.tsx HC-TR-226, autopilot-results.test.tsx HC-TR-224, lib/strategy/autopilot.test.ts HC-TR-220"
+ },
+ {
+  "id": "HC-TR-227",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "A fifth evening strangle takes its profit at half the premium collected, beside the stop-at-double one it is otherwise identical to",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "integration (api)",
+  "acceptance": "evening-strangle-take-half: sold three strikes out in the evening window, each sold option bought back at twice its price, and a target on the whole trade at half the premium (an ordinary target rule, no trail); the card states both exits; the results compare it with the stop-at-double version under the own style",
+  "evidence": "ADR-113 (21 Nov 2026): packages/pricing/src/playbooks.ts (takeProfitOfCredit, evening-strangle-take-half), apps/api/src/autopilot.ts (clockPlanFor), apps/web/src/components/autopilot/AutopilotPage.tsx (autopilot-card-how), docs/research/scripts/autopilot-study/study.py (legtp); tests: apps/api/src/autopilot.test.ts HC-TR-227 (within HC-TR-225), packages/pricing/src/playbooks.test.ts HC-TR-227, autopilot-page.test.tsx HC-TR-227"
  },
  {
   "id": "HC-AC-001",

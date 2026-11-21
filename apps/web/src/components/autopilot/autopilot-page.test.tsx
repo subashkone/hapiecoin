@@ -257,6 +257,8 @@ describe("HC-TR-226 the Autopilot screen: the evening strategies", () => {
     expect(within(wings).getAllByTestId("autopilot-card-asset").map((a) => a.dataset["asset"])).toEqual(["BTC"]); // the backtest covers BTC only
     expect(within(wings).getByText("Backtest only")).toBeTruthy();
     expect(within(card("evening-strangle-stop-2x")).getByTestId("autopilot-card-how").textContent).toContain("Each sold option is bought back if its price reaches 2 times what it was sold for.");
+    // HC-TR-227: the quick-profit version says both of its exits
+    expect(within(card("evening-strangle-take-half")).getByTestId("autopilot-card-how").textContent).toContain("The whole trade is closed once it is up by 50 % of the premium collected. Each sold option is bought back if its price reaches 2 times what it was sold for.");
     // a recorded playbook keeps its two styles to choose from, and never offers "own"
     const butterfly = card("pin-butterfly");
     expect(within(butterfly).queryByTestId("autopilot-card-own")).toBeNull();

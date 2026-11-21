@@ -156,7 +156,7 @@ export function AutopilotPage() {
                       <h3 className="text-[13px] font-medium">{p.name}</h3>
                       <p className="text-2xs text-muted-foreground">{p.summary}</p>
                       {p.clock ? (
-                        <p className="mt-1 text-2xs text-muted-foreground" data-testid="autopilot-card-how">Entered once an evening, {p.clock.window}, on the next expiry. {p.clock.legStop ? `Each sold option is bought back if its price reaches ${p.clock.legStop} times what it was sold for.` : "Held to settlement: the bought wings cap the loss."} Backtest only so far: {p.evidence.claim}</p>
+                        <p className="mt-1 text-2xs text-muted-foreground" data-testid="autopilot-card-how">Entered once an evening, {p.clock.window}, on the next expiry. {p.clock.takeProfitOfCredit ? `The whole trade is closed once it is up by ${Math.round(p.clock.takeProfitOfCredit * 100)} % of the premium collected. ` : ""}{p.clock.legStop ? `Each sold option is bought back if its price reaches ${p.clock.legStop} times what it was sold for.` : "Held to settlement: the bought wings cap the loss."} Backtest only so far: {p.evidence.claim}</p>
                       ) : (
                         <p className="mt-1 text-2xs text-muted-foreground" data-testid="autopilot-card-how">Autopilot enters as above and keeps the stop and the time exit. It takes profit its own way, chosen below, so the record shown is the playbook's own exits, not Autopilot's.</p>
                       )}

@@ -18,7 +18,9 @@ Status: analysis for the owner's decisions of 21 November; the product change it
 | Strangle sold 600 away, wings 1,600 away | hold to settlement | +5.93 (84 days) | 73 % | −78 | +128 | +130 | +74 | +167 |
 | Strangle sold 1,000 away, wings 2,000 away | hold to settlement | +7.68 (55 days) | 89 % | −90 | +42 | +153 | +9 | +219 |
 | Naked strangle 600 | each sold option stopped at 2x its price | +7.51 | 45 % | −60 | −53 | +488 | +26 | +334 |
-| Naked strangle 600 | each sold option stopped at 3x | +12.00 | 61 % | −98 | | | | |
+| Naked strangle 600 | each sold option stopped at 3x | +12.00 | 61 % | −98 | −41 | +766 | +130 | +417 |
+| Naked strangle 600 | stopped at 2x, whole trade closed at half the premium | +6.75 | 59 % | −60 | +175 | +242 | +5 | +293 |
+| Naked strangle 600 | stopped at 3x, closed at half the premium | +9.27 | 77 % | −82 | +211 | +513 | −37 | +296 |
 | Naked strangle 600 | hold to settlement | +7.46 | 76 % | −349 | −25 | +485 | −323 | +654 |
 | Naked strangle 400 | stopped at 3x | +14.38 | 63 % | −102 | | | | |
 | Naked strangle 1,000 | stopped at 2x | +6.30 | 52 % | −28 | −47 | +391 | +95 | +222 |

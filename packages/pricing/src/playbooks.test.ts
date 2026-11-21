@@ -120,8 +120,10 @@ describe("HC-TR-225 playbooks entered by the clock", () => {
   const evening: EodDay[] = [{ day: "2026-09-25", ts: at, spot, expiries: ["2026-09-25", "2026-09-26", "2026-10-30"].map((expiry) => ({ expiry, rows })) }];
   const base = { unitsPerLot: 0.001, calendar: cal };
 
-  it("HC-TR-225 four evening strangles: a window in UTC hours, the nearest expiry at least half a day out, BTC only, outside the recorded list", () => {
-    expect(CLOCK_PLAYBOOKS).toHaveLength(4);
+  it("HC-TR-225 five evening strangles: a window in UTC hours, the nearest expiry at least half a day out, BTC only, outside the recorded list", () => {
+    expect(CLOCK_PLAYBOOKS).toHaveLength(5);
+    // HC-TR-227: one of them takes its profit at half the premium, with the stops of the stop-at-double one
+    expect(CLOCK_PLAYBOOKS.map((p) => [p.clock!.legStop, p.clock!.takeProfitOfCredit])).toEqual([[undefined, undefined], [undefined, undefined], [2, undefined], [3, undefined], [2, 0.5]]);
     for (const p of CLOCK_PLAYBOOKS) {
       expect(p.clock).toMatchObject({ fromHourUtc: 16, toHourUtc: 17, window: "9:30 to 10:30 PM IST", maxDte: 1.5, venues: ["delta_india"] });
       expect(p.evidence.claim).toContain("entered 21:30 IST"); // the bar the window's first pass is
@@ -151,7 +153,7 @@ describe("HC-TR-225 playbooks entered by the clock", () => {
     expect(w3.maxProfit).toBeCloseTo(-w3.entryCost, 6); // the credit, kept when it settles between the sold strikes
     expect(w3.maxLoss).toBeCloseTo(-(1000 * 0.1) - w3.entryCost, 6); // the 1,000 between a sold strike and its wing on 0.1 BTC, less the credit
     expect(placed("evening-strangle-wings-5").legs.map((l) => l.strike)).toEqual(["81200", "82200", "84200", "85200"]);
-    for (const id of ["evening-strangle-stop-2x", "evening-strangle-stop-3x"]) {
+    for (const id of ["evening-strangle-stop-2x", "evening-strangle-stop-3x", "evening-strangle-take-half"]) {
       const n = placed(id);
       expect(n.legs.map((l) => `${l.side} ${l.kind} ${l.strike}`)).toEqual(["sell put 82600", "sell call 83800"]);
       expect(n.maxLoss).toBe(-Infinity);
@@ -159,5 +161,17 @@ describe("HC-TR-225 playbooks entered by the clock", () => {
     // a chain too narrow for the wings is no trade
     const narrow: EodDay[] = [{ ...evening[0]!, expiries: evening[0]!.expiries.map((e) => ({ ...e, rows: rows.slice(8, 17) })) }];
     expect(proposalFor(autopilotPlaybookById("evening-strangle-wings-5")!, narrow, base)).toEqual({ ok: false, reason: "noFit" });
+  });
+});
+
+describe("HC-TR-227 the evening strangle that takes half", () => {
+  it("HC-TR-227 the stop-at-double strangle with one more exit: the same structure, window and stop, and a profit take at half the premium", () => {
+    const half = autopilotPlaybookById("evening-strangle-take-half")!;
+    const twice = autopilotPlaybookById("evening-strangle-stop-2x")!;
+    expect(half.clock).toEqual({ ...twice.clock, takeProfitOfCredit: 0.5 });
+    expect(twice.clock!.takeProfitOfCredit).toBeUndefined();
+    expect(playbookTemplate(half)!.legs).toEqual(playbookTemplate(twice)!.legs);
+    expect(half).toMatchObject({ lots: twice.lots, minDte: twice.minDte, assets: twice.assets });
+    expect(half.evidence.claim).toContain("closed at half the premium");
   });
 });

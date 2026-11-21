@@ -123,6 +123,31 @@ def run(st, spot, opts, last_b, settle_spot):
             if not done:
                 total += sg * (intrinsic(kind, k, settle_spot) - e) * q - fee(settle_spot, intrinsic(kind, k, settle_spot), q)
         st["legstop"][mult] = total
+    # the same stops with a profit take: close everything once the trade as a whole is up by half the premium collected
+    st["legtp"] = {}
+    for mult in (2, 3):
+        live = list(range(len(st["legs"])))
+        realised, out, t = -st["fee_in"], None, st["t0"] + dt.timedelta(minutes=5)
+        want = 0.5 * st["credit"]
+        while t <= last_b and live and st["credit"] > 0:
+            px = {i: opts[st["legs"][i][:2]].get(t) for i in live}
+            sp = spot.get(t, settle_spot)
+            for i in list(live):
+                kind, k, sg, _ = st["legs"][i]
+                if sg < 0 and px[i] is not None and px[i] >= mult * st["entry"][i]:
+                    realised += sg * (px[i] - st["entry"][i]) * st["qty"][i] - fee(sp, px[i], st["qty"][i])
+                    live.remove(i)
+            if any(px[i] is None for i in live):
+                t += dt.timedelta(minutes=5)
+                continue
+            open_pnl = sum(st["legs"][i][2] * (px[i] - st["entry"][i]) * st["qty"][i] for i in live)
+            if live and realised + st["fee_in"] + open_pnl >= want:
+                out = realised + open_pnl - sum(fee(sp, px[i], st["qty"][i]) for i in live)
+                break
+            t += dt.timedelta(minutes=5)
+        if out is None:
+            out = realised + sum(st["legs"][i][2] * (intrinsic(st["legs"][i][0], st["legs"][i][1], settle_spot) - st["entry"][i]) * st["qty"][i] - fee(settle_spot, intrinsic(st["legs"][i][0], st["legs"][i][1], settle_spot), st["qty"][i]) for i in live)
+        st["legtp"][mult] = out
     return st
 
 
@@ -131,6 +156,8 @@ def outcome(st, target_pct=None, stop_pct=None):
     loss (a multiple of the credit when naked, as a percentage). None, None is hold to settlement."""
     if target_pct == "leg":
         return st["legstop"][stop_pct]
+    if target_pct == "legtp":
+        return st["legtp"][stop_pct]
     if target_pct is None and stop_pct is None:
         return st["hold"]
     win_base = st["maxp"] if st["maxp"] is not None else abs(st["credit"])
@@ -241,7 +268,7 @@ for name, rs in hourly.items():
     byh = defaultdict(list)
     for r in rs:
         byh[r["ist"]].append(r)
-    exits = [("hold", None, None), ("each option stop 2x", "leg", 2), ("each option stop 3x", "leg", 3), ("tgt50%+stop200%", 50, 200)] if name in LEGSTOP else [("hold", None, None), ("tgt10%+stop50%", 10, 50), ("tgt50%+stop50%", 50, 50)]
+    exits = [("hold", None, None), ("each option stop 2x", "leg", 2), ("each option stop 3x", "leg", 3), ("stop 2x + take half", "legtp", 2), ("stop 3x + take half", "legtp", 3)] if name in LEGSTOP else [("hold", None, None), ("tgt10%+stop50%", 10, 50), ("tgt50%+stop50%", 50, 50)]
     print("   IST   n   | " + " | ".join(f"{lab:>22s}" for lab, _, _ in exits))
     order = [(18 + i) % 24 for i in range(24)]  # from just after one settlement to just before the next
     for hh in order:
@@ -275,7 +302,7 @@ for (name, dist), ds in ladders.items():
 
 # month by month, for the evening entry held to settlement (does any result survive a bad month?)
 print("\n" + "=" * 110)
-print("D. MONTH BY MONTH, 21:30 IST entry: total net per month, hold | alt = each option stopped at 2x (strangles), target 50% + stop 50% (the rest)")
+print("D. MONTH BY MONTH, 21:30 IST entry: total net per month, hold | alt = each option stopped at 2x (strangles), target 50% + stop 50% (the rest) | half = stop 2x + take half the premium | stop3x, half3x = the same at 3x")
 print("=" * 110)
 for name, rs in hourly.items():
     ev = [r for r in rs if r["h"] == EVENING_H]
@@ -283,4 +310,4 @@ for name, rs in hourly.items():
     for r in ev:
         bym[r["exp"][:7]].append(r)
     alt = ("leg", 2) if name in LEGSTOP else (50, 50)
-    print(f"{name:52s} " + " | ".join(f"{mth} n={len(v):2d} hold {sum(outcome(r) for r in v):+7.0f} alt {sum(outcome(r, *alt) for r in v):+7.0f}" for mth, v in sorted(bym.items())))
+    print(f"{name:52s} " + " | ".join(f"{mth} n={len(v):2d} hold {sum(outcome(r) for r in v):+7.0f} alt {sum(outcome(r, *alt) for r in v):+7.0f}" + (f" half {sum(outcome(r, 'legtp', 2) for r in v):+7.0f} stop3x {sum(outcome(r, 'leg', 3) for r in v):+7.0f} half3x {sum(outcome(r, 'legtp', 3) for r in v):+7.0f}" if name in LEGSTOP else "") for mth, v in sorted(bym.items())))

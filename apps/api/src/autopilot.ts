@@ -119,7 +119,7 @@ export async function liveDay(db: Db, venue: Venue, asset: Underlying, nowMs: nu
 /** The figures an entry is decided and logged on, in USD for the trade's size. */
 export interface AutopilotPlan {
   fees: number;
-  /** Autopilot's profit level; null for a playbook that runs on its own exits (ADR-112). */
+  /** The profit level: Autopilot's own, or a clock playbook's take of its premium (ADR-113); null when the trade has none. */
   targetUsd: number | null;
   stopUsd: number | null;
   timeStopDte: number | null;
@@ -135,14 +135,19 @@ function roundTripFees(proposal: PlaybookProposal, unitsPerLot: number, feeRule:
 }
 
 /**
- * The plan of a playbook entered by the clock (pure, ADR-112): no profit level and no strategy stop, only the stop on
- * each sold option when the playbook has one. Null when the premium collected does not exceed the fees: a sold
- * structure that cannot pay for its own fills is not entered.
+ * The plan of a playbook entered by the clock (pure, ADR-112): no strategy stop and none of Autopilot's profit level,
+ * only the stop on each sold option when the playbook has one, and its own profit take when it has one (a share of
+ * the premium collected, ADR-113). Null when the premium collected does not exceed the fees: a sold structure that
+ * cannot pay for its own fills is not entered.
  */
 export function clockPlanFor(p: Playbook, proposal: PlaybookProposal, unitsPerLot: number, feeRule: FeeRule): AutopilotPlan | null {
   const fees = roundTripFees(proposal, unitsPerLot, feeRule);
-  if (!(-proposal.entryCost > fees)) return null;
-  return { fees, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: p.clock?.legStop ?? null };
+  const credit = -proposal.entryCost;
+  if (!(credit > fees)) return null;
+  const take = p.clock?.takeProfitOfCredit;
+  // a profit level that rounds to nothing would close the trade on the first tick (as planFor refuses for its own)
+  if (take !== undefined && credit * take < 0.01) return null;
+  return { fees, targetUsd: take === undefined ? null : credit * take, stopUsd: null, timeStopDte: null, legStop: p.clock?.legStop ?? null };
 }
 
 /**
