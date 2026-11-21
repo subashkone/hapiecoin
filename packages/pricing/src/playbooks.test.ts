@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type BacktestFold, type BacktestStats, type BacktestTrade, type EodDay, type EodRow, runBacktest } from "./backtest.js";
 import { calendarFor } from "./calendar.js";
-import { AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, PLAYBOOKS, WEEKLY_PLAYBOOKS, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
+import { AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
 import { materialiseTemplate } from "./templates.js";
 
 const cal = calendarFor(12);
@@ -218,7 +218,7 @@ describe("HC-TR-229 the weekly strangles", () => {
     expect(WEEKLY_PLAYBOOKS.map((p) => [p.clock!.legStop, p.clock!.takeProfitOfCredit, p.clock!.trailRestPct]).slice(0, 5)).toEqual([[undefined, undefined, undefined], [2, undefined, undefined], [3, undefined, undefined], [2, 0.5, undefined], [2, undefined, 50]]);
     expect(CLOCK_PLAYBOOKS.every((p) => p.clock!.weekdayUtc === undefined && p.clock!.describe === "once an evening, 9:30 to 10:30 PM IST, on the next expiry")).toBe(true);
     expect(new Set(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).size).toBe(AUTOPILOT_PLAYBOOKS.length);
-    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length);
+    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length);
   });
 
   it("HC-TR-229 the strikes are the listed ones nearest 3 % (wings 7 %) of the spot away, on the Friday expiry a week out from a Friday and three days out from a Tuesday", () => {
@@ -273,5 +273,111 @@ describe("HC-TR-229 a template strike a percentage of the spot away", () => {
     expect(materialiseTemplate(two(0.2, -0.2, "put"), { ...input, spot: "80200" })).toEqual({ ok: false, reason: "out-of-range" }); // both 80,000
     expect(materialiseTemplate(two(2, 4), { ...input, spot: "80200" }).ok).toBe(true); // 82,000 and 83,000
     expect(strike(3, "0")).toBe("no-spot");
+  });
+});
+
+describe("HC-TR-231 a playbook's cadence and its backtest as figures", () => {
+  it("HC-TR-231 recorded playbooks trade on a condition, evening ones daily, the Friday and Tuesday ones weekly; a flag makes one monthly", () => {
+    expect([...PLAYBOOK_CADENCES]).toEqual(["trend", "daily", "weekly", "monthly"]);
+    expect(PLAYBOOKS.every((p) => playbookCadence(p) === "trend")).toBe(true);
+    expect(CLOCK_PLAYBOOKS.every((p) => playbookCadence(p) === "daily")).toBe(true);
+    expect(WEEKLY_PLAYBOOKS.every((p) => playbookCadence(p) === "weekly")).toBe(true);
+    const weekly = WEEKLY_PLAYBOOKS[0]!;
+    expect(playbookCadence({ ...weekly, clock: { ...weekly.clock!, cadence: "monthly" } })).toBe("monthly");
+  });
+
+  it("HC-TR-231 every playbook entered by the clock has its backtest as numbers, and they are the ones its evidence sentence quotes", () => {
+    for (const p of AUTOPILOT_PLAYBOOKS.filter((x) => x.clock)) {
+      const b = playbookBacktest(p.id)!;
+      expect(b, p.id).toBeDefined();
+      expect(b.per).toBe(({ daily: "day", weekly: "week", monthly: "trade", trend: "" } as const)[playbookCadence(p)]);
+      if (playbookCadence(p) === "monthly") expect(b.basis, p.id).toMatch(new RegExp(`^${b.samples} entry days over 11 expiries, (\\d+) positive$`));
+      if (playbookCadence(p) === "monthly") expect(p.evidence.claim, p.id).toContain(`${b.basis!.match(/, (\d+) positive/)![1]} of them positive`);
+      // the mean as the sentence prints it: two decimals, a sign
+      expect(p.evidence.claim, p.id).toContain(`${b.mean >= 0 ? "+" : "-"}${Math.abs(b.mean).toFixed(2)} a ${b.per}`);
+      expect(b.worst, p.id).toBeLessThan(0);
+      expect(p.evidence.claim, p.id).toMatch(new RegExp(`worst (day|week|entry) -${Math.abs(b.worst)}(?![0-9])`));
+      expect(p.evidence.claim, p.id).toMatch(new RegExp(`\\b${b.positivePct} %`));
+      expect(p.evidence.claim, p.id).toMatch(new RegExp(`on ${b.samples} (days|weeks|entries)`));
+    }
+    expect(playbookBacktest("trend-calls")).toBeUndefined();
+    // and nothing else has figures: a stale or misspelt key would be an id no playbook has
+    for (const p of AUTOPILOT_PLAYBOOKS) expect(playbookBacktest(p.id) !== undefined, p.id).toBe(Boolean(p.clock));
+  });
+});
+
+describe("HC-TR-233 strikes by premium, and the monthly strangles", () => {
+  // marks falling away from the money on both sides of a spot of 80,200
+  const rows = Array.from({ length: 21 }, (_, i) => 70_000 + i * 1000).map((strike) => {
+    const tv = 3000 * Math.exp(-Math.abs(strike - 80_200) / 4000);
+    return { strike: String(strike), call: { mark: String(Math.max(80_200 - strike, 0) + tv), markIv: 0.5 }, put: { mark: String(Math.max(strike - 80_200, 0) + tv), markIv: 0.5 } };
+  });
+  const input = { asset: "BTC" as const, expiry: "2027-01-29", expiries: ["2027-01-29"], rows, atm: 10, lots: 1, spot: "80200" };
+  const sell = (kind: "call" | "put", premium: number) => ({ name: "t", category: "Neutral" as const, description: "t", legs: [{ kind, side: "sell" as const, k: 0, premium }], risk: "undefined" as const });
+
+  it("HC-TR-233 a leg by premium takes the out-of-the-money strike priced nearest it; needs a spot; refuses a premium nothing is priced near", () => {
+    const strike = (kind: "call" | "put", premium: number, over: object = {}) => {
+      const r = materialiseTemplate(sell(kind, premium), { ...input, ...over });
+      return r.ok ? r.legs[0]!.strike : r.reason;
+    };
+    // 3000 * exp(-d / 4000) = 1000 at d = 4,394: calls from 80,200 up, puts from 80,200 down
+    expect(strike("call", 1000)).toBe("85000"); // 4,800 away: 903, nearer 1,000 than 84,000 (1,160)
+    expect(strike("put", 1000)).toBe("76000"); // 4,200 away: 1,049
+    expect(Number(strike("call", 2500))).toBeGreaterThan(80_200); // never the in-the-money side, however near its price
+    expect(Number(strike("put", 2500))).toBeLessThan(80_200);
+    expect(strike("call", 20)).toBe("out-of-range"); // the furthest call is still priced 250: not within half of 20
+    expect(strike("call", 1000, { spot: undefined })).toBe("no-spot");
+    expect(strike("call", 1000, { spot: "95000" })).toBe("out-of-range"); // no call above the spot on this ladder
+    // two legs by premium on one strike are refused like two by percentage
+    const twice = { ...sell("call", 1000), legs: [{ kind: "call" as const, side: "sell" as const, k: 0, premium: 1000 }, { kind: "call" as const, side: "buy" as const, k: 0, premium: 950 }] };
+    expect(materialiseTemplate(twice, input)).toEqual({ ok: false, reason: "out-of-range" });
+  });
+
+  it("HC-TR-233 two strangles by premium beside the daily and weekly sets, and three monthly ones entered once per expiry", () => {
+    expect(PREMIUM_PLAYBOOKS.map((p) => [p.id, playbookCadence(p)])).toEqual([["evening-strangle-premium-100", "daily"], ["weekly-fri-strangle-premium-200", "weekly"]]);
+    expect(MONTHLY_PLAYBOOKS.map((p) => p.id)).toEqual(["monthly-strangle-premium-1000", "monthly-strangle-8pct", "monthly-strangle-12pct-near", "monthly-strangle-12pct-near-stop-2x", "monthly-strangle-12pct-near-stop-3x", "monthly-strangle-12pct-near-trail-rest", "monthly-strangle-12pct-near-wings", "monthly-strangle-12pct-near-wings-stop-3x", "monthly-strangle-12pct-near-wings-take-half", "monthly-strangle-8pct-near-wings-take-half"]);
+    for (const p of MONTHLY_PLAYBOOKS) {
+      expect(playbookCadence(p)).toBe("monthly");
+      expect(p.clock).toMatchObject({ cadence: "monthly", oncePerExpiry: true, fromHourUtc: 16, toHourUtc: 17, venues: ["delta_india"] });
+      expect(p.clock!.weekdayUtc).toBeUndefined();
+      // held with no stop only where the wings bound the loss, and that one is on paper as a check: its backtest is negative
+      if (p.clock!.legStop === undefined) expect([p.id, playbookBacktest(p.id)!.mean < 0, playbookTemplate(p)!.risk]).toEqual(["monthly-strangle-12pct-near-wings", true, "defined"]);
+      expect(p).toMatchObject({ lots: 100, assets: ["BTC"], control: false });
+      expect(p.trials.note).toContain("in-sample");
+    }
+    expect(MONTHLY_PLAYBOOKS.map((p) => [p.minDte, p.clock!.maxDte])).toEqual([[60, 75], [60, 75], ...Array.from({ length: 8 }, () => [30, 44])]);
+    // the winged ones buy wings half as far again as the strikes they sell
+    expect(playbookTemplate(autopilotPlaybookById("monthly-strangle-12pct-near-wings-stop-3x")!)!.legs.map((l) => ("pct" in l ? l.pct : null))).toEqual([-18, -12, 12, 18]);
+    expect(autopilotPlaybookById("monthly-strangle-12pct-near-wings-stop-3x")!.clock).toMatchObject({ legStop: 3 });
+    expect(autopilotPlaybookById("monthly-strangle-12pct-near-wings-stop-3x")!.clock!.takeProfitOfCredit).toBeUndefined();
+    expect(autopilotPlaybookById("monthly-strangle-12pct-near-trail-rest")!.clock).toMatchObject({ legStop: 2, trailRestPct: 50 });
+    expect(isMonthEndExpiry("2026-12-25")).toBe(true);
+    expect([isMonthEndExpiry("2026-12-18"), isMonthEndExpiry("2026-12-31"), isMonthEndExpiry("2027-01-29"), isMonthEndExpiry("2027-01-22")]).toEqual([false, false, true, false]);
+    // the cadences come out in the order of the list: trend, daily, weekly, monthly
+    const order = AUTOPILOT_PLAYBOOKS.map(playbookCadence);
+    expect(order).toEqual([...order].sort((a, b) => PLAYBOOK_CADENCES.indexOf(a) - PLAYBOOK_CADENCES.indexOf(b)));
+  });
+
+  it("HC-TR-233 a monthly playbook places on the month-end expiry in its range: two months out, or one", () => {
+    const at = Date.parse("2026-11-22T16:05:00Z");
+    const eod: EodRow[] = rows.map((r) => ({ strike: Number(r.strike), call: { mark: Number(r.call.mark), iv: 0.5 }, put: { mark: Number(r.put.mark), iv: 0.5 } }));
+    // dailies, a weekly, the December month-end (33 days out) and the January one (68 days out)
+    // (and two Fridays that are not month-ends inside the ranges, 2026-12-23 is a Wednesday: none of them is taken)
+    const days: EodDay[] = [{ day: "2026-11-22", ts: at, spot: 80_200, expiries: ["2026-11-23", "2026-11-27", "2026-12-23", "2026-12-25", "2027-01-22", "2027-01-29"].map((expiry) => ({ expiry, rows: eod })) }];
+    const placed = (id: string) => {
+      const r = proposalFor(autopilotPlaybookById(id)!, days, { unitsPerLot: 0.001, calendar: cal });
+      if (!r.ok) throw new Error(r.reason);
+      return r.proposal;
+    };
+    const far = placed("monthly-strangle-premium-1000");
+    expect(far.expiry).toBe("2027-01-29");
+    expect(far.legs.map((l) => `${l.side} ${l.kind} ${l.strike} x${l.lots}`)).toEqual(["sell put 76000 x100", "sell call 85000 x100"]);
+    expect(far.entryCost).toBeLessThan(0);
+    expect(placed("monthly-strangle-8pct").legs.map((l) => l.strike)).toEqual(["74000", "87000"]); // 73,784 and 86,616
+    const near = placed("monthly-strangle-12pct-near");
+    expect(near.expiry).toBe("2026-12-25");
+    expect(near.legs.map((l) => l.strike)).toEqual(["71000", "90000"]); // 70,576 and 89,824
+    // on this ladder nothing is priced near 100: the daily premium strangle has no trade to place
+    expect(proposalFor(autopilotPlaybookById("evening-strangle-premium-100")!, days, { unitsPerLot: 0.001, calendar: cal })).toEqual({ ok: false, reason: "noFit" });
   });
 });

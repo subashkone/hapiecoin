@@ -2,13 +2,15 @@
 mark, for a study of strangles held days or weeks. Public endpoint, read-only, throttled, cached to disk as
 cache/<expiry>/<symbol>.json. Weekly strikes are listed 500 apart about two weeks before expiry; a monthly is listed
 earlier, so its window is 35 days and its strike range wider.
-Usage: python -I fetch_weekly.py <cache_dir> <first_expiry YYYY-MM-DD> <last_expiry YYYY-MM-DD>"""
+Usage: python -I fetch_weekly.py <cache_dir> <first_expiry YYYY-MM-DD> <last_expiry YYYY-MM-DD> [asset=BTC] [strike_step=500]
+(the strike range is the spot range of the window widened by 10 % for a weekly and 20 % for a monthly)"""
 import json, os, sys, time, urllib.request, urllib.parse, datetime as dt
 
 CACHE, FIRST, LAST = sys.argv[1], dt.date.fromisoformat(sys.argv[2]), dt.date.fromisoformat(sys.argv[3])
 B = "https://api.india.delta.exchange/v2/history/candles"
 U = dt.timezone.utc
-STEP = 500
+ASSET = sys.argv[4] if len(sys.argv) > 4 else "BTC"
+STEP = int(sys.argv[5]) if len(sys.argv) > 5 else 500
 MIN_GAP = 0.26  # seconds between requests (under 4 a second)
 last_call = [0.0]
 
@@ -46,21 +48,21 @@ while exp.weekday() != 4:  # Friday
     exp += dt.timedelta(days=1)
 while exp <= LAST:
     monthly = (exp + dt.timedelta(days=7)).month != exp.month
-    days, pad = (35, 15000) if monthly else (14, 8000)
+    days, widen = (35, 0.2) if monthly else (14, 0.1)
     end = dt.datetime(exp.year, exp.month, exp.day, 12, tzinfo=U)
     start = end - dt.timedelta(days=days)
-    spot = load(exp, "MARK:BTCUSD", start, end)
+    spot = load(exp, f"MARK:{ASSET}USD", start, end)
     if not spot:
         print(exp, "no spot candles", flush=True)
         exp += dt.timedelta(days=7)
         continue
-    lo = min(float(c["low"]) for c in spot) - pad
-    hi = max(float(c["high"]) for c in spot) + pad
+    lo = min(float(c["low"]) for c in spot) * (1 - widen)
+    hi = max(float(c["high"]) for c in spot) * (1 + widen)
     ks = list(range(int(lo // STEP) * STEP, int(hi // STEP + 1) * STEP + 1, STEP))
     got = 0
     for k in ks:
         for kind in "CP":
-            got += 1 if load(exp, f"MARK:{kind}-BTC-{k}-{exp:%d%m%y}", start, end) else 0
+            got += 1 if load(exp, f"MARK:{kind}-{ASSET}-{k}-{exp:%d%m%y}", start, end) else 0
     print(f"{exp} {'monthly' if monthly else 'weekly '} strikes {ks[0]}-{ks[-1]} ({len(ks)}) symbols with data {got}/{2 * len(ks)}", flush=True)
     exp += dt.timedelta(days=7)
 print("done")

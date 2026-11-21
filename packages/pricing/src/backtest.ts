@@ -222,6 +222,8 @@ export interface EntryOptions {
   minDte: number;
   calendar: TradingCalendar;
   conditions?: BacktestConditions | undefined;
+  /** ADR-117: only expiries that pass are taken (a monthly playbook: month-end expiries); absent: any listed expiry. */
+  expiryOk?: ((expiry: string) => boolean) | undefined;
 }
 export type Entry = { ok: true; expiry: string; legs: BacktestLeg[]; placed: MaterialisedLeg[] } | { ok: false; reason: EntrySkip };
 
@@ -234,7 +236,7 @@ export function entryFor(days: readonly EodDay[], i: number, tpl: StrategyTempla
   const d = days[i]!;
   if (opts.conditions && !entrySignal(days, i, opts.conditions)) return { ok: false, reason: "noSignal" };
   const listed = [...d.expiries].sort((a, b) => a.expiry.localeCompare(b.expiry));
-  const target = listed.find((e) => daysToExpiryOf(opts.calendar, d.ts, e.expiry) >= opts.minDte);
+  const target = listed.find((e) => daysToExpiryOf(opts.calendar, d.ts, e.expiry) >= opts.minDte && (opts.expiryOk === undefined || opts.expiryOk(e.expiry)));
   if (!target) return { ok: false, reason: "noExpiry" };
   if (!tpl.legs.some((l) => l.kind !== "future")) return { ok: false, reason: "noFit" }; // a perpetual alone has no expiry to hold to
   const rowsByExpiry: Record<string, { rows: ChainStrike[]; atm: number }> = {};

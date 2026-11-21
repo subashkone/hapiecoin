@@ -1,5 +1,5 @@
 "use client";
-// Autopilot results (ADR-111; HC-TR-224): what the paper trades Autopilot opened came to, by strategy, coin and exit
+// Autopilot results (ADR-111, ADR-116; HC-TR-224, HC-TR-232; narrowed by the screen's expiry and coin selection): what the paper trades Autopilot opened came to, by strategy, coin and exit
 // style, and by the days to expiry at entry, with the newest closed trades. Net figures are after the fees estimated
 // at entry (the paper book charges none). Figures in USD are shown in the trader's display currency.
 import { AUTOPILOT_PLAYBOOKS } from "@hapiecoin/pricing";
@@ -27,11 +27,20 @@ export function exitTotals(rows: AutopilotResults["rows"]): { exit: AutopilotExi
   });
 }
 
-export function AutopilotResultsPanel({ money }: { money: MoneyFormat }) {
-  const q = useAutopilotResults();
+/** The totals of a set of rows, in cents (the server's total covers every row; a selection is added up here). */
+export function totalOf(rows: AutopilotResults["rows"]): AutopilotResults["total"] {
+  const sum = (f: (r: AutopilotResults["rows"][number]) => number) => rows.reduce((n, r) => n + f(r), 0);
+  const usd = (f: (r: AutopilotResults["rows"][number]) => string) => (sum((r) => Math.round(Number(f(r)) * 100)) / 100).toFixed(2);
+  return { open: sum((r) => r.open), closed: sum((r) => r.closed), wins: sum((r) => r.wins), grossUsd: usd((r) => r.grossUsd), feesUsd: usd((r) => r.feesUsd), netUsd: usd((r) => r.netUsd) };
+}
+
+/** `show` (ADR-116): the screen's selection by expiry and coin; the rows, the totals and the closed trades follow it. */
+export function AutopilotResultsPanel({ money, show }: { money: MoneyFormat; show?: ((playbookId: string, asset: string) => boolean) | undefined }) {
+  const raw = useAutopilotResults();
+  const q = { ...raw, data: raw.data && show ? { ...raw.data, rows: raw.data.rows.filter((r) => show(r.playbookId, r.asset)), trades: raw.data.trades.filter((t) => show(t.playbookId, t.asset)), total: totalOf(raw.data.rows.filter((r) => show(r.playbookId, r.asset))) } : raw.data };
   const signed = (v: string | number) => fmtMoney(v, money, { signed: true });
   return (
-    <section className="flex flex-col gap-3 rounded border border-border p-3" aria-label="Results" data-testid="autopilot-results" data-state={q.isPending ? "loading" : q.isError ? "error" : "ready"}>
+    <section className="flex flex-col gap-3 rounded border border-border p-3" aria-label="Results" data-testid="autopilot-results" data-state={q.isPending ? "loading" : q.isError ? "error" : "ready"} data-filtered={Boolean(show)}>
       <div>
         <h2 className="text-sm">Results</h2>
         <p className="mt-0.5 max-w-[80ch] text-2xs text-muted-foreground">Every paper trade Autopilot opened (they cannot be deleted, so the losing ones stay counted). A closed trade counts its profit or loss at the prices it was closed on, less the entry and exit fees estimated when it was entered. A win is a closed trade that is above zero after those fees.</p>
@@ -39,7 +48,7 @@ export function AutopilotResultsPanel({ money }: { money: MoneyFormat }) {
       {q.isPending ? <p className="text-xs text-muted-foreground">Loading results…</p> : null}
       {q.isError && !q.data ? <EmptyState title="The results could not be loaded" description="Check your connection and try again." action={<Button size="sm" onClick={() => void q.refetch()}>Try again</Button>} className="py-4" /> : null}
       {q.isError && q.data ? <p className="text-2xs text-warning" role="status" data-testid="results-stale">The results could not be refreshed: these are the last figures read. <button type="button" className="underline" onClick={() => void q.refetch()}>Try again</button></p> : null}
-      {q.data && q.data.total.open + q.data.total.closed === 0 ? <EmptyState title="No trade yet" description="Results appear here once Autopilot has entered a trade." className="py-4" /> : null}
+      {q.data && q.data.total.open + q.data.total.closed === 0 ? <EmptyState title={show ? "No trade in this selection yet" : "No trade yet"} description="Results appear here once Autopilot has entered a trade." className="py-4" /> : null}
       {q.data && q.data.total.open + q.data.total.closed > 0 ? (
         <>
           <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 lg:grid-cols-6" data-testid="autopilot-results-total">
@@ -76,6 +85,7 @@ export function AutopilotResultsPanel({ money }: { money: MoneyFormat }) {
             </table>
           </div>
 
+          {show ? null : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] border-collapse text-2xs" data-testid="results-by-dte">
               <caption className="micro pb-1 text-left">By days to expiry when entered</caption>
@@ -94,6 +104,7 @@ export function AutopilotResultsPanel({ money }: { money: MoneyFormat }) {
               </tbody>
             </table>
           </div>
+          )}
 
           {q.data.trades.length ? (
             <div className="overflow-x-auto">

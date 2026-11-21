@@ -13,8 +13,9 @@
  * not enter is logged once per change of reason, so the log reads as a history of decisions and not as a heartbeat.
  *
  * ADR-112: one trade per key at a time again (`AUTOPILOT_MAX_OPEN`; the ladder of ADR-110 lost in the backtest), and
- * playbooks entered by the clock: once in their window (every evening on the nearest expiry, ADR-112; or one evening a
- * week on the Friday expiry, ADR-115), with their own exits and nothing of Autopilot's profit exit.
+ * playbooks entered by the clock: once in their window (every evening on the nearest expiry, ADR-112; one evening a
+ * week on the Friday expiry, ADR-115; or once per month-end expiry while it is a set number of days out, ADR-117),
+ * with their own exits and nothing of Autopilot's profit exit.
  *
  * Runs on the leader only (ADR-062), inside the first snapshotter's after-hook. A failure for one trader, playbook or
  * underlying is logged and the pass goes on.
@@ -43,7 +44,7 @@ import {
   toDecimal,
 } from "@hapiecoin/schema";
 import { DEFAULT_VENUE, defaultLotSizes, getVenue } from "@hapiecoin/venues";
-import { and, asc, desc, eq, lt, max, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, like, lt, max, ne, sql } from "drizzle-orm";
 import { writeAudit } from "./audit.js";
 import { dayOf, eodDaysCached } from "./chain-eod.js";
 import type { Db } from "./db/client.js";
@@ -333,7 +334,7 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
               else if (!live || !result) await no("No fresh prices: the newest market snapshot is missing or too old");
               else if (!result.ok) await no(skipText(result.reason));
               // by the clock: the next settlement or nothing; a later expiry is another trade than the one the card describes
-              else if (p.clock && daysToExpiryOf(calendar, nowMs, result.proposal.expiry) > p.clock.maxDte) await no(p.clock.weekdayUtc === undefined ? "The next expiry has no prices yet" : "Its Friday expiry has no prices yet", detailOf(result.proposal, null, nowMs));
+              else if (p.clock && daysToExpiryOf(calendar, nowMs, result.proposal.expiry) > p.clock.maxDte) await no(p.clock.cadence === "monthly" ? "No month-end expiry in its range yet" : p.clock.weekdayUtc === undefined ? "The next expiry has no prices yet" : "Its Friday expiry has no prices yet", detailOf(result.proposal, null, nowMs));
               else if (result.proposal.legs.some((l) => l.kind === "future")) await no("A futures leg needs a margin figure Autopilot does not have yet", detailOf(result.proposal, null, nowMs));
               else if (result.proposal.legs.some((l) => !(Number(l.price) > 0))) await no("A leg of the structure has no price", detailOf(result.proposal, null, nowMs));
               else if (!plan) await no(p.clock ? "The premium collected is smaller than the fees" : "The fees are larger than the profit target, or the structure has no defined maximum", detailOf(result.proposal, null, nowMs));
@@ -343,7 +344,10 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
                 // By the clock: once per window, counted from the last entry (yesterday's trade settled only hours ago).
                 const [prev] = await deps.db.select({ startedAt: max(strategies.startedAt), closedAt: max(strategies.closedAt) }).from(strategies).where(tradeKey(k));
                 const lastMs = p.clock ? (prev?.startedAt?.getTime() ?? 0) : Math.max(prev?.startedAt?.getTime() ?? 0, prev?.closedAt?.getTime() ?? 0);
-                if (lastMs > 0 && nowMs - lastMs < (p.clock ? CLOCK_ONCE_MS : COOLDOWN_MS)) await no(p.clock ? "Already entered in this window" : `Waiting ${AUTOPILOT_COOLDOWN_MINUTES} minutes after its last trade`);
+                // ADR-117: a monthly window is open on many evenings; a trade of this expiry that has ended is not taken again
+                const [had] = p.clock?.oncePerExpiry ? await deps.db.select({ id: strategies.id }).from(strategies).where(and(tradeKey(k), like(strategies.autopilotStructure, `%:${result.proposal.expiry}%`))).limit(1) : [];
+                if (had) await no("Already traded this expiry");
+                else if (lastMs > 0 && nowMs - lastMs < (p.clock ? CLOCK_ONCE_MS : COOLDOWN_MS)) await no(p.clock ? "Already entered in this window" : `Waiting ${AUTOPILOT_COOLDOWN_MINUTES} minutes after its last trade`);
                 else {
                   // a playbook entered by the clock runs on its own exits whatever the card says (ADR-112)
                   const style: AutopilotExitStyle = p.clock ? "own" : wanted.exit === "own" ? "trail" : wanted.exit;

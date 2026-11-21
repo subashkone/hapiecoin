@@ -1,0 +1,415 @@
+monthly expiries in the cache: 11 (2026-01-30 .. 2026-11-27); 100 lots x 0.001 per leg; net of fees; hourly marks; entry 21:30 IST on every day of the window
+
+======================================================================================================================================================
+each side priced near 500 (naked)
+  60 to 75 days before (the competitor's window): mean premium   162.7, sold on average 24.8 % away
+      hold         entries=176 mean=   -69.3 win= 59% worst=    -735 | expiries positive  6 of 11, worst expiry     -643, best     +222
+      stop2x       entries=176 mean=   +13.7 win= 50% worst=    -235 | expiries positive  5 of 11, worst expiry      -97, best     +142
+      stop3x       entries=176 mean=    -8.3 win= 43% worst=    -419 | expiries positive  5 of 11, worst expiry     -203, best     +222
+      stop2x+half  entries=176 mean=   +18.4 win= 67% worst=    -235 | expiries positive  7 of 11, worst expiry      -67, best      +83
+      stop3x+half  entries=176 mean=   +23.0 win= 77% worst=    -419 | expiries positive  8 of 11, worst expiry     -166, best     +109
+      stop2x+trail entries=176 mean=   +23.2 win= 48% worst=    -222 | expiries positive  5 of 11, worst expiry      -67, best     +142
+  45 to 59 days before: mean premium   121.7, sold on average 21.6 % away
+      hold         entries=165 mean=  -175.5 win= 55% worst=   -1057 | expiries positive  5 of 11, worst expiry     -890, best     +141
+      stop2x       entries=165 mean=   +19.0 win= 48% worst=    -153 | expiries positive  6 of 11, worst expiry      -41, best     +118
+      stop3x       entries=165 mean=    +1.7 win= 41% worst=    -362 | expiries positive  5 of 11, worst expiry      -82, best     +118
+      stop2x+half  entries=165 mean=   +22.0 win= 72% worst=    -153 | expiries positive  9 of 11, worst expiry      -26, best      +57
+      stop3x+half  entries=165 mean=   +23.7 win= 81% worst=    -362 | expiries positive  9 of 11, worst expiry     -118, best      +57
+      stop2x+trail entries=165 mean=   +16.2 win= 42% worst=    -193 | expiries positive  5 of 11, worst expiry      -39, best     +118
+  30 to 44 days before: mean premium   105.1, sold on average 17.0 % away
+      hold         entries=165 mean=  -227.0 win= 58% worst=   -1259 | expiries positive  6 of 11, worst expiry     -859, best     +127
+      stop2x       entries=165 mean=   +23.8 win= 41% worst=    -145 | expiries positive  6 of 11, worst expiry      -22, best     +100
+      stop3x       entries=165 mean=   +15.9 win= 52% worst=    -195 | expiries positive  6 of 11, worst expiry      -86, best     +100
+      stop2x+half  entries=165 mean=   +18.7 win= 62% worst=    -145 | expiries positive  8 of 11, worst expiry      -31, best      +49
+      stop3x+half  entries=165 mean=   +17.7 win= 75% worst=    -195 | expiries positive  9 of 11, worst expiry      -64, best      +49
+      stop2x+trail entries=165 mean=   +20.8 win= 39% worst=    -141 | expiries positive  6 of 11, worst expiry      -30, best     +100
+  14 to 29 days before: mean premium   101.9, sold on average 11.2 % away
+      hold         entries=176 mean=  -122.9 win= 69% worst=   -1365 | expiries positive  6 of 11, worst expiry    -1048, best     +102
+      stop2x       entries=176 mean=   +10.1 win= 34% worst=    -218 | expiries positive  6 of 11, worst expiry      -69, best      +59
+      stop3x       entries=176 mean=   +15.9 win= 52% worst=    -218 | expiries positive  8 of 11, worst expiry      -90, best      +97
+      stop2x+half  entries=176 mean=   +14.2 win= 53% worst=    -149 | expiries positive  9 of 11, worst expiry      -10, best      +40
+      stop3x+half  entries=176 mean=   +15.5 win= 72% worst=    -195 | expiries positive  7 of 11, worst expiry      -40, best      +47
+      stop2x+trail entries=176 mean=    +3.2 win= 32% worst=    -218 | expiries positive  5 of 11, worst expiry      -69, best      +59
+======================================================================================================================================================
+each side priced near 500, wings half as far again
+  45 to 59 days before: mean premium    40.6, sold on average 21.6 % away
+      hold         entries= 51 mean=  -193.6 win= 35% worst=    -476 | expiries positive  3 of  7, worst expiry     -446, best      +44
+      stop2x       entries= 51 mean=  +192.9 win= 57% worst=     -87 | expiries positive  4 of  7, worst expiry      -70, best     +555
+      stop3x       entries= 51 mean=  +184.5 win= 75% worst=    -151 | expiries positive  4 of  7, worst expiry      -60, best     +527
+      stop2x+half  entries= 51 mean=    +6.6 win= 82% worst=     -87 | expiries positive  5 of  7, worst expiry      -59, best      +25
+      stop3x+half  entries= 51 mean=    -1.8 win= 84% worst=    -118 | expiries positive  4 of  7, worst expiry      -60, best      +19
+      stop2x+trail entries= 51 mean=   +48.7 win= 49% worst=     -65 | expiries positive  3 of  7, worst expiry      -37, best     +181
+  30 to 44 days before: mean premium    51.6, sold on average 17.0 % away
+      hold         entries=117 mean=  -198.0 win= 45% worst=    -863 | expiries positive  5 of 10, worst expiry     -574, best      +52
+      stop2x       entries=117 mean=  +146.7 win= 69% worst=     -85 | expiries positive  7 of 10, worst expiry      -63, best     +655
+      stop3x       entries=117 mean=  +126.7 win= 80% worst=    -158 | expiries positive  7 of 10, worst expiry      -24, best     +638
+      stop2x+half  entries=117 mean=   +14.4 win= 87% worst=     -79 | expiries positive  7 of 10, worst expiry      -24, best      +34
+      stop3x+half  entries=117 mean=   +14.6 win= 93% worst=    -158 | expiries positive  8 of 10, worst expiry      -38, best      +36
+      stop2x+trail entries=117 mean=   +57.6 win= 68% worst=     -49 | expiries positive  8 of 10, worst expiry      -31, best     +186
+  14 to 29 days before: mean premium    52.3, sold on average 11.2 % away
+      hold         entries=156 mean=   -40.4 win= 65% worst=    -451 | expiries positive  5 of 11, worst expiry     -232, best      +50
+      stop2x       entries=156 mean=  +118.1 win= 53% worst=    -193 | expiries positive  6 of 11, worst expiry      -43, best     +817
+      stop3x       entries=156 mean=  +124.5 win= 77% worst=    -153 | expiries positive  8 of 11, worst expiry      -88, best     +797
+      stop2x+half  entries=156 mean=    -4.4 win= 67% worst=    -193 | expiries positive  4 of 11, worst expiry      -42, best      +44
+      stop3x+half  entries=156 mean=   +12.9 win= 90% worst=    -131 | expiries positive  8 of 11, worst expiry      -11, best      +37
+      stop2x+trail entries=156 mean=   +90.7 win= 51% worst=     -76 | expiries positive  7 of 11, worst expiry      -43, best     +800
+======================================================================================================================================================
+each side priced near 1000 (naked)
+  60 to 75 days before (the competitor's window): mean premium   215.4, sold on average 19.9 % away
+      hold         entries=176 mean=  -139.2 win= 49% worst=    -961 | expiries positive  5 of 11, worst expiry     -788, best     +262
+      stop2x       entries=176 mean=    +9.7 win= 35% worst=    -379 | expiries positive  4 of 11, worst expiry     -134, best     +161
+      stop3x       entries=176 mean=   -16.8 win= 35% worst=    -507 | expiries positive  4 of 11, worst expiry     -200, best     +262
+      stop2x+half  entries=176 mean=   +26.4 win= 65% worst=    -379 | expiries positive  7 of 11, worst expiry      -69, best      +91
+      stop3x+half  entries=176 mean=   +44.8 win= 77% worst=    -507 | expiries positive  8 of 11, worst expiry     -132, best     +129
+      stop2x+trail entries=176 mean=   +25.3 win= 33% worst=    -178 | expiries positive  4 of 11, worst expiry      -61, best     +161
+  45 to 59 days before: mean premium   203.9, sold on average 16.3 % away
+      hold         entries=165 mean=  -300.6 win= 52% worst=   -1260 | expiries positive  6 of 11, worst expiry    -1136, best     +207
+      stop2x       entries=165 mean=   +17.8 win= 29% worst=    -246 | expiries positive  5 of 11, worst expiry      -89, best     +198
+      stop3x       entries=165 mean=    -9.0 win= 37% worst=    -313 | expiries positive  5 of 11, worst expiry     -141, best     +198
+      stop2x+half  entries=165 mean=   +31.2 win= 58% worst=    -246 | expiries positive  8 of 11, worst expiry      -16, best      +99
+      stop3x+half  entries=165 mean=   +41.1 win= 76% worst=    -313 | expiries positive  8 of 11, worst expiry      -84, best      +99
+      stop2x+trail entries=165 mean=   +16.6 win= 27% worst=    -150 | expiries positive  4 of 11, worst expiry      -42, best     +198
+  30 to 44 days before: mean premium   199.8, sold on average 11.8 % away
+      hold         entries=165 mean=  -307.1 win= 58% worst=   -1592 | expiries positive  6 of 11, worst expiry    -1275, best     +202
+      stop2x       entries=165 mean=   +43.4 win= 41% worst=    -248 | expiries positive  6 of 11, worst expiry      -35, best     +185
+      stop3x       entries=165 mean=   +38.0 win= 52% worst=    -218 | expiries positive  6 of 11, worst expiry     -141, best     +198
+      stop2x+half  entries=165 mean=   +37.1 win= 58% worst=    -248 | expiries positive  8 of 11, worst expiry      -33, best      +92
+      stop3x+half  entries=165 mean=   +34.4 win= 72% worst=    -180 | expiries positive  8 of 11, worst expiry     -131, best      +98
+      stop2x+trail entries=165 mean=   +38.4 win= 39% worst=    -177 | expiries positive  5 of 11, worst expiry      -46, best     +181
+  14 to 29 days before: mean premium   198.8, sold on average  7.2 % away
+      hold         entries=176 mean=  -174.9 win= 53% worst=   -1382 | expiries positive  4 of 11, worst expiry    -1141, best     +201
+      stop2x       entries=176 mean=    -3.2 win= 24% worst=    -324 | expiries positive  3 of 11, worst expiry      -90, best     +141
+      stop3x       entries=176 mean=    -1.9 win= 44% worst=    -450 | expiries positive  5 of 11, worst expiry     -162, best     +201
+      stop2x+half  entries=176 mean=   +17.3 win= 47% worst=    -324 | expiries positive  8 of 11, worst expiry      -68, best      +76
+      stop3x+half  entries=176 mean=   +22.9 win= 69% worst=    -450 | expiries positive  7 of 11, worst expiry     -115, best     +101
+      stop2x+trail entries=176 mean=    -7.7 win= 23% worst=    -223 | expiries positive  3 of 11, worst expiry      -90, best     +136
+======================================================================================================================================================
+each side priced near 1000, wings half as far again
+  60 to 75 days before (the competitor's window): mean premium    74.3, sold on average 19.9 % away
+      hold         entries= 68 mean=  -160.3 win= 26% worst=    -539 | expiries positive  4 of 10, worst expiry     -434, best      +65
+      stop2x       entries= 68 mean=  +100.5 win= 54% worst=    -481 | expiries positive  5 of 10, worst expiry     -234, best     +622
+      stop3x       entries= 68 mean=   +63.7 win= 63% worst=    -428 | expiries positive  6 of 10, worst expiry     -265, best     +528
+      stop2x+half  entries= 68 mean=    +3.4 win= 90% worst=    -481 | expiries positive  9 of 10, worst expiry     -189, best     +118
+      stop3x+half  entries= 68 mean=   +32.7 win=100% worst=      +7 | expiries positive 10 of 10, worst expiry      +16, best      +41
+      stop2x+trail entries= 68 mean=   +35.3 win= 56% worst=    -252 | expiries positive  6 of 10, worst expiry      -97, best     +502
+  45 to 59 days before: mean premium    91.9, sold on average 16.3 % away
+      hold         entries=134 mean=  -166.2 win= 46% worst=    -725 | expiries positive  6 of 11, worst expiry     -496, best      +99
+      stop2x       entries=134 mean=  +225.8 win= 70% worst=    -333 | expiries positive  7 of 11, worst expiry     -104, best     +834
+      stop3x       entries=134 mean=  +196.1 win= 83% worst=    -256 | expiries positive  9 of 11, worst expiry      -75, best     +750
+      stop2x+half  entries=134 mean=    +1.5 win= 77% worst=    -333 | expiries positive  6 of 11, worst expiry      -94, best      +60
+      stop3x+half  entries=134 mean=   +13.3 win= 89% worst=    -256 | expiries positive  8 of 11, worst expiry     -100, best      +49
+      stop2x+trail entries=134 mean=   +52.9 win= 56% worst=    -121 | expiries positive  8 of 11, worst expiry      -66, best     +265
+  30 to 44 days before: mean premium    94.6, sold on average 11.8 % away
+      hold         entries=161 mean=   -75.8 win= 57% worst=    -614 | expiries positive  6 of 11, worst expiry     -449, best     +103
+      stop2x       entries=161 mean=  +284.8 win= 74% worst=    -353 | expiries positive  7 of 11, worst expiry     -138, best     +811
+      stop3x       entries=161 mean=  +279.9 win= 93% worst=    -307 | expiries positive 11 of 11, worst expiry       +2, best     +695
+      stop2x+half  entries=161 mean=   +12.0 win= 79% worst=    -353 | expiries positive  8 of 11, worst expiry     -145, best      +63
+      stop3x+half  entries=161 mean=   +36.8 win= 95% worst=    -307 | expiries positive  9 of 11, worst expiry      -16, best      +80
+      stop2x+trail entries=161 mean=  +109.9 win= 62% worst=    -116 | expiries positive  9 of 11, worst expiry      -50, best     +295
+  14 to 29 days before: mean premium    81.1, sold on average  7.2 % away
+      hold         entries=172 mean=   -45.4 win= 43% worst=    -308 | expiries positive  3 of 11, worst expiry     -170, best      +91
+      stop2x       entries=172 mean=  +123.9 win= 47% worst=    -440 | expiries positive  6 of 11, worst expiry     -127, best     +963
+      stop3x       entries=172 mean=  +125.8 win= 64% worst=    -553 | expiries positive  6 of 11, worst expiry     -102, best     +902
+      stop2x+half  entries=172 mean=    -5.4 win= 74% worst=    -440 | expiries positive  5 of 11, worst expiry     -114, best      +70
+      stop3x+half  entries=172 mean=   +14.3 win= 89% worst=    -553 | expiries positive  8 of 11, worst expiry      -61, best      +64
+      stop2x+trail entries=172 mean=  +113.6 win= 39% worst=    -162 | expiries positive  5 of 11, worst expiry      -76, best     +963
+======================================================================================================================================================
+each side priced near 1500 (naked)
+  60 to 75 days before (the competitor's window): mean premium   303.1, sold on average 16.1 % away
+      hold         entries=176 mean=  -232.3 win= 42% worst=   -1176 | expiries positive  5 of 11, worst expiry     -950, best     +328
+      stop2x       entries=176 mean=   +16.2 win= 29% worst=    -537 | expiries positive  4 of 11, worst expiry     -196, best     +222
+      stop3x       entries=176 mean=   -29.8 win= 34% worst=    -660 | expiries positive  4 of 11, worst expiry     -240, best     +328
+      stop2x+half  entries=176 mean=   +39.3 win= 61% worst=    -537 | expiries positive  7 of 11, worst expiry     -107, best     +148
+      stop3x+half  entries=176 mean=   +67.0 win= 76% worst=    -660 | expiries positive  9 of 11, worst expiry     -173, best     +163
+      stop2x+trail entries=176 mean=   +40.8 win= 29% worst=    -200 | expiries positive  4 of 11, worst expiry      -89, best     +222
+  45 to 59 days before: mean premium   299.0, sold on average 12.5 % away
+      hold         entries=165 mean=  -337.7 win= 51% worst=   -1446 | expiries positive  6 of 11, worst expiry    -1255, best     +299
+      stop2x       entries=165 mean=   +30.2 win= 28% worst=    -350 | expiries positive  6 of 11, worst expiry     -143, best     +298
+      stop3x       entries=165 mean=    -1.4 win= 38% worst=    -269 | expiries positive  6 of 11, worst expiry     -198, best     +298
+      stop2x+half  entries=165 mean=   +41.6 win= 50% worst=    -350 | expiries positive  8 of 11, worst expiry      -49, best     +147
+      stop3x+half  entries=165 mean=   +59.8 win= 73% worst=    -269 | expiries positive  8 of 11, worst expiry     -136, best     +149
+      stop2x+trail entries=165 mean=   +29.5 win= 27% worst=    -201 | expiries positive  5 of 11, worst expiry      -64, best     +298
+  30 to 44 days before: mean premium   299.5, sold on average  8.4 % away
+      hold         entries=165 mean=  -323.2 win= 58% worst=   -1792 | expiries positive  6 of 11, worst expiry    -1469, best     +300
+      stop2x       entries=165 mean=   +54.0 win= 36% worst=    -368 | expiries positive  7 of 11, worst expiry      -50, best     +256
+      stop3x       entries=165 mean=   +63.8 win= 55% worst=    -271 | expiries positive  6 of 11, worst expiry     -192, best     +298
+      stop2x+half  entries=165 mean=   +58.2 win= 56% worst=    -368 | expiries positive  8 of 11, worst expiry      -20, best     +147
+      stop3x+half  entries=165 mean=   +50.5 win= 70% worst=    -248 | expiries positive  7 of 11, worst expiry     -186, best     +150
+      stop2x+trail entries=165 mean=   +47.8 win= 35% worst=    -221 | expiries positive  7 of 11, worst expiry      -50, best     +256
+  14 to 29 days before: mean premium   297.0, sold on average  4.8 % away
+      hold         entries=176 mean=  -208.8 win= 43% worst=   -1452 | expiries positive  3 of 11, worst expiry    -1167, best     +285
+      stop2x       entries=176 mean=   -21.1 win= 23% worst=    -427 | expiries positive  3 of 11, worst expiry     -174, best     +173
+      stop3x       entries=176 mean=   -26.3 win= 37% worst=    -648 | expiries positive  3 of 11, worst expiry     -194, best     +284
+      stop2x+half  entries=176 mean=   +17.8 win= 48% worst=    -427 | expiries positive  8 of 11, worst expiry     -144, best      +98
+      stop3x+half  entries=176 mean=   +26.3 win= 65% worst=    -648 | expiries positive  6 of 11, worst expiry     -194, best     +152
+      stop2x+trail entries=176 mean=   -23.9 win= 20% worst=    -248 | expiries positive  2 of 11, worst expiry     -107, best     +160
+======================================================================================================================================================
+each side priced near 1500, wings half as far again
+  60 to 75 days before (the competitor's window): mean premium   118.8, sold on average 16.1 % away
+      hold         entries=160 mean=  -139.9 win= 32% worst=    -620 | expiries positive  4 of 11, worst expiry     -311, best     +124
+      stop2x       entries=160 mean=  +129.1 win= 62% worst=    -701 | expiries positive  7 of 11, worst expiry     -187, best     +681
+      stop3x       entries=160 mean=   +72.2 win= 61% worst=    -545 | expiries positive  7 of 11, worst expiry     -336, best     +524
+      stop2x+half  entries=160 mean=   +22.3 win= 88% worst=    -701 | expiries positive  8 of 11, worst expiry     -108, best      +95
+      stop3x+half  entries=160 mean=   +54.1 win= 98% worst=    -364 | expiries positive 10 of 11, worst expiry      -42, best      +93
+      stop2x+trail entries=160 mean=   +93.4 win= 64% worst=    -168 | expiries positive 10 of 11, worst expiry      -68, best     +329
+  45 to 59 days before: mean premium   127.3, sold on average 12.5 % away
+      hold         entries=158 mean=   -67.8 win= 49% worst=    -461 | expiries positive  6 of 11, worst expiry     -432, best     +148
+      stop2x       entries=158 mean=  +317.2 win= 68% worst=    -326 | expiries positive  7 of 11, worst expiry     -165, best    +1070
+      stop3x       entries=158 mean=  +290.0 win= 84% worst=    -425 | expiries positive  9 of 11, worst expiry     -141, best     +911
+      stop2x+half  entries=158 mean=   +12.6 win= 78% worst=    -326 | expiries positive  7 of 11, worst expiry     -111, best     +102
+      stop3x+half  entries=158 mean=   +19.1 win= 89% worst=    -399 | expiries positive  8 of 11, worst expiry     -168, best      +86
+      stop2x+trail entries=158 mean=  +127.2 win= 56% worst=    -153 | expiries positive  8 of 11, worst expiry      -80, best     +390
+  30 to 44 days before: mean premium   113.8, sold on average  8.4 % away
+      hold         entries=165 mean=   -17.5 win= 51% worst=    -362 | expiries positive  5 of 11, worst expiry     -257, best     +129
+      stop2x       entries=165 mean=  +359.7 win= 67% worst=    -570 | expiries positive  6 of 11, worst expiry     -146, best    +1192
+      stop3x       entries=165 mean=  +369.5 win= 89% worst=    -363 | expiries positive 10 of 11, worst expiry      -80, best    +1027
+      stop2x+half  entries=165 mean=   +14.7 win= 83% worst=    -570 | expiries positive  7 of 11, worst expiry     -128, best      +86
+      stop3x+half  entries=165 mean=   +55.0 win= 98% worst=    -363 | expiries positive 10 of 11, worst expiry       -9, best      +91
+      stop2x+trail entries=165 mean=  +202.1 win= 58% worst=    -169 | expiries positive  7 of 11, worst expiry      -75, best     +668
+  14 to 29 days before: mean premium    88.0, sold on average  4.8 % away
+      hold         entries=153 mean=   -33.8 win= 29% worst=    -198 | expiries positive  2 of 11, worst expiry     -110, best      +92
+      stop2x       entries=153 mean=  +103.7 win= 50% worst=    -553 | expiries positive  5 of 11, worst expiry     -182, best     +988
+      stop3x       entries=153 mean=   +98.4 win= 54% worst=    -674 | expiries positive  7 of 11, worst expiry     -137, best     +913
+      stop2x+half  entries=153 mean=    -4.3 win= 80% worst=    -553 | expiries positive  5 of 11, worst expiry     -110, best      +73
+      stop3x+half  entries=153 mean=   +16.2 win= 86% worst=    -674 | expiries positive  6 of 11, worst expiry      -55, best      +78
+      stop2x+trail entries=153 mean=   +46.1 win= 25% worst=    -189 | expiries positive  3 of 11, worst expiry     -107, best     +988
+======================================================================================================================================================
+sold 8 % away (naked)
+  60 to 75 days before (the competitor's window): mean premium   604.3, sold on average  8.0 % away
+      hold         entries=176 mean=  -285.1 win= 36% worst=   -1525 | expiries positive  4 of 11, worst expiry    -1143, best     +811
+      stop2x       entries=176 mean=   +45.5 win= 50% worst=    -698 | expiries positive  6 of 11, worst expiry     -248, best     +695
+      stop3x       entries=176 mean=   -15.3 win= 31% worst=   -1130 | expiries positive  4 of 11, worst expiry     -335, best     +811
+      stop2x+half  entries=176 mean=  +102.7 win= 69% worst=    -698 | expiries positive  9 of 11, worst expiry     -123, best     +368
+      stop3x+half  entries=176 mean=  +161.0 win= 76% worst=   -1130 | expiries positive  9 of 11, worst expiry     -264, best     +447
+      stop2x+trail entries=176 mean=   +79.1 win= 48% worst=    -360 | expiries positive  6 of 11, worst expiry      -99, best     +622
+  45 to 59 days before: mean premium   461.7, sold on average  8.0 % away
+      hold         entries=165 mean=  -318.2 win= 48% worst=   -1542 | expiries positive  6 of 11, worst expiry    -1258, best     +589
+      stop2x       entries=165 mean=   +81.5 win= 50% worst=    -636 | expiries positive  6 of 11, worst expiry     -131, best     +589
+      stop3x       entries=165 mean=   +43.7 win= 39% worst=    -374 | expiries positive  6 of 11, worst expiry     -243, best     +589
+      stop2x+half  entries=165 mean=   +81.7 win= 58% worst=    -636 | expiries positive  8 of 11, worst expiry      -43, best     +324
+      stop3x+half  entries=165 mean=  +115.6 win= 73% worst=    -374 | expiries positive  8 of 11, worst expiry     -208, best     +324
+      stop2x+trail entries=165 mean=   +76.7 win= 49% worst=    -362 | expiries positive  5 of 11, worst expiry      -48, best     +589
+  30 to 44 days before: mean premium   316.9, sold on average  8.0 % away
+      hold         entries=165 mean=  -278.4 win= 58% worst=   -1872 | expiries positive  6 of 11, worst expiry    -1475, best     +421
+      stop2x       entries=165 mean=   +71.9 win= 46% worst=    -377 | expiries positive  6 of 11, worst expiry      -50, best     +221
+      stop3x       entries=165 mean=   +98.3 win= 54% worst=    -247 | expiries positive  6 of 11, worst expiry     -176, best     +406
+      stop2x+half  entries=165 mean=   +70.5 win= 62% worst=    -377 | expiries positive  9 of 11, worst expiry      -10, best     +215
+      stop3x+half  entries=165 mean=   +70.8 win= 70% worst=    -247 | expiries positive  8 of 11, worst expiry     -176, best     +231
+      stop2x+trail entries=165 mean=   +62.1 win= 44% worst=    -219 | expiries positive  6 of 11, worst expiry      -50, best     +221
+  14 to 29 days before: mean premium   175.9, sold on average  8.0 % away
+      hold         entries=176 mean=  -127.3 win= 61% worst=   -1268 | expiries positive  6 of 11, worst expiry     -974, best     +292
+      stop2x       entries=176 mean=   +12.8 win= 40% worst=    -244 | expiries positive  6 of 11, worst expiry      -61, best     +113
+      stop3x       entries=176 mean=   +29.3 win= 49% worst=    -244 | expiries positive  7 of 11, worst expiry     -119, best     +221
+      stop2x+half  entries=176 mean=   +18.0 win= 59% worst=    -244 | expiries positive  9 of 11, worst expiry      -49, best      +46
+      stop3x+half  entries=176 mean=   +20.8 win= 69% worst=    -244 | expiries positive  8 of 11, worst expiry      -90, best      +98
+      stop2x+trail entries=176 mean=    -2.3 win= 33% worst=    -226 | expiries positive  4 of 11, worst expiry      -58, best      +76
+======================================================================================================================================================
+sold 8 % away, wings half as far again
+  60 to 75 days before (the competitor's window): mean premium   165.4, sold on average  8.0 % away
+      hold         entries=176 mean=   -77.0 win= 24% worst=    -250 | expiries positive  3 of 11, worst expiry     -186, best     +142
+      stop2x       entries=176 mean=  +253.6 win= 67% worst=    -899 | expiries positive  7 of 11, worst expiry     -302, best     +990
+      stop3x       entries=176 mean=  +192.8 win= 68% worst=    -923 | expiries positive  8 of 11, worst expiry     -253, best     +692
+      stop2x+half  entries=176 mean=   +25.2 win= 87% worst=    -752 | expiries positive  8 of 11, worst expiry     -174, best     +142
+      stop3x+half  entries=176 mean=   +61.3 win= 95% worst=    -923 | expiries positive  9 of 11, worst expiry     -149, best     +153
+      stop2x+trail entries=176 mean=  +119.4 win= 59% worst=    -290 | expiries positive  8 of 11, worst expiry     -179, best     +507
+  45 to 59 days before: mean premium   144.9, sold on average  8.0 % away
+      hold         entries=165 mean=   -48.4 win= 41% worst=    -274 | expiries positive  4 of 11, worst expiry     -214, best     +123
+      stop2x       entries=165 mean=  +351.3 win= 68% worst=    -524 | expiries positive  7 of 11, worst expiry     -346, best    +1076
+      stop3x       entries=165 mean=  +313.5 win= 81% worst=    -804 | expiries positive  9 of 11, worst expiry     -276, best     +903
+      stop2x+half  entries=165 mean=   +45.3 win= 88% worst=    -377 | expiries positive  8 of 11, worst expiry      -75, best     +125
+      stop3x+half  entries=165 mean=   +36.0 win= 91% worst=    -804 | expiries positive  9 of 11, worst expiry     -122, best     +119
+      stop2x+trail entries=165 mean=  +184.5 win= 59% worst=    -226 | expiries positive  8 of 11, worst expiry     -117, best     +640
+  30 to 44 days before: mean premium   117.2, sold on average  8.0 % away
+      hold         entries=165 mean=   -38.2 win= 48% worst=    -295 | expiries positive  5 of 11, worst expiry     -248, best     +141
+      stop2x       entries=165 mean=  +312.1 win= 64% worst=    -615 | expiries positive  5 of 11, worst expiry     -138, best    +1226
+      stop3x       entries=165 mean=  +338.5 win= 86% worst=    -428 | expiries positive 10 of 11, worst expiry      -40, best    +1052
+      stop2x+half  entries=165 mean=    +5.5 win= 81% worst=    -615 | expiries positive  7 of 11, worst expiry     -125, best      +88
+      stop3x+half  entries=165 mean=   +54.8 win= 98% worst=    -428 | expiries positive 11 of 11, worst expiry       +3, best      +85
+      stop2x+trail entries=165 mean=  +113.3 win= 52% worst=    -198 | expiries positive  7 of 11, worst expiry      -63, best     +448
+  14 to 29 days before: mean premium    77.9, sold on average  8.0 % away
+      hold         entries=175 mean=   -43.4 win= 55% worst=    -345 | expiries positive  5 of 11, worst expiry     -225, best     +109
+      stop2x       entries=175 mean=   +96.5 win= 52% worst=    -336 | expiries positive  7 of 11, worst expiry     -169, best     +694
+      stop3x       entries=175 mean=  +113.4 win= 74% worst=    -488 | expiries positive  7 of 11, worst expiry      -87, best     +688
+      stop2x+half  entries=175 mean=   -11.9 win= 68% worst=    -336 | expiries positive  5 of 11, worst expiry     -124, best      +46
+      stop3x+half  entries=175 mean=   +15.0 win= 89% worst=    -488 | expiries positive  8 of 11, worst expiry      -37, best      +78
+      stop2x+trail entries=175 mean=   +75.5 win= 42% worst=    -165 | expiries positive  6 of 11, worst expiry      -85, best     +694
+======================================================================================================================================================
+sold 12 % away (naked)
+  60 to 75 days before (the competitor's window): mean premium   439.6, sold on average 12.0 % away
+      hold         entries=176 mean=  -212.6 win= 41% worst=   -1311 | expiries positive  5 of 11, worst expiry     -968, best     +683
+      stop2x       entries=176 mean=   +63.8 win= 52% worst=    -537 | expiries positive  5 of 11, worst expiry     -198, best     +511
+      stop3x       entries=176 mean=   +18.5 win= 32% worst=    -801 | expiries positive  4 of 11, worst expiry     -239, best     +683
+      stop2x+half  entries=176 mean=   +82.8 win= 74% worst=    -537 | expiries positive  8 of 11, worst expiry     -131, best     +259
+      stop3x+half  entries=176 mean=  +118.9 win= 76% worst=    -801 | expiries positive  9 of 11, worst expiry     -176, best     +342
+      stop2x+trail entries=176 mean=   +86.0 win= 50% worst=    -287 | expiries positive  5 of 11, worst expiry      -86, best     +457
+  45 to 59 days before: mean premium   318.5, sold on average 12.0 % away
+      hold         entries=165 mean=  -279.3 win= 50% worst=   -1313 | expiries positive  6 of 11, worst expiry    -1099, best     +462
+      stop2x       entries=165 mean=   +59.5 win= 49% worst=    -449 | expiries positive  6 of 11, worst expiry     -140, best     +462
+      stop3x       entries=165 mean=   +34.0 win= 37% worst=    -259 | expiries positive  5 of 11, worst expiry     -165, best     +462
+      stop2x+half  entries=165 mean=   +54.2 win= 61% worst=    -449 | expiries positive  7 of 11, worst expiry      -41, best     +230
+      stop3x+half  entries=165 mean=   +81.7 win= 76% worst=    -257 | expiries positive  8 of 11, worst expiry      -76, best     +230
+      stop2x+trail entries=165 mean=   +56.8 win= 47% worst=    -237 | expiries positive  6 of 11, worst expiry      -52, best     +462
+  30 to 44 days before: mean premium   199.3, sold on average 12.0 % away
+      hold         entries=165 mean=  -243.0 win= 58% worst=   -1616 | expiries positive  6 of 11, worst expiry    -1246, best     +304
+      stop2x       entries=165 mean=   +66.2 win= 48% worst=    -300 | expiries positive  7 of 11, worst expiry      -21, best     +283
+      stop3x       entries=165 mean=   +71.3 win= 52% worst=    -199 | expiries positive  7 of 11, worst expiry     -115, best     +304
+      stop2x+half  entries=165 mean=   +45.9 win= 65% worst=    -300 | expiries positive  9 of 11, worst expiry       -8, best     +147
+      stop3x+half  entries=165 mean=   +49.7 win= 75% worst=    -199 | expiries positive  9 of 11, worst expiry     -115, best     +157
+      stop2x+trail entries=165 mean=   +60.9 win= 45% worst=    -173 | expiries positive  7 of 11, worst expiry      -32, best     +283
+  14 to 29 days before: mean premium    99.2, sold on average 12.0 % away
+      hold         entries=176 mean=   -90.2 win= 69% worst=   -1062 | expiries positive  6 of 11, worst expiry     -760, best     +186
+      stop2x       entries=176 mean=   +16.6 win= 47% worst=     -80 | expiries positive  8 of 11, worst expiry      -25, best      +58
+      stop3x       entries=176 mean=   +29.6 win= 55% worst=    -178 | expiries positive  8 of 11, worst expiry      -72, best     +123
+      stop2x+half  entries=176 mean=   +16.3 win= 66% worst=     -80 | expiries positive 10 of 11, worst expiry       -1, best      +46
+      stop3x+half  entries=176 mean=   +19.3 win= 76% worst=    -167 | expiries positive  8 of 11, worst expiry      -31, best      +50
+      stop2x+trail entries=176 mean=    +6.4 win= 40% worst=    -162 | expiries positive  6 of 11, worst expiry      -28, best      +53
+======================================================================================================================================================
+sold 12 % away, wings half as far again
+  60 to 75 days before (the competitor's window): mean premium   165.5, sold on average 12.0 % away
+      hold         entries=175 mean=  -131.0 win= 31% worst=    -415 | expiries positive  3 of 11, worst expiry     -335, best     +226
+      stop2x       entries=175 mean=  +148.6 win= 62% worst=    -801 | expiries positive  7 of 11, worst expiry     -189, best     +665
+      stop3x       entries=175 mean=  +103.7 win= 66% worst=    -634 | expiries positive  6 of 11, worst expiry     -344, best     +487
+      stop2x+half  entries=175 mean=   +26.7 win= 88% worst=    -801 | expiries positive  7 of 11, worst expiry      -90, best     +110
+      stop3x+half  entries=175 mean=   +58.2 win= 96% worst=    -634 | expiries positive  9 of 11, worst expiry      -81, best     +131
+      stop2x+trail entries=175 mean=   +96.7 win= 61% worst=    -248 | expiries positive  8 of 11, worst expiry     -192, best     +413
+  45 to 59 days before: mean premium   134.2, sold on average 12.0 % away
+      hold         entries=164 mean=  -112.5 win= 46% worst=    -462 | expiries positive  5 of 11, worst expiry     -384, best     +182
+      stop2x       entries=164 mean=  +230.1 win= 69% worst=    -350 | expiries positive  7 of 11, worst expiry     -215, best     +739
+      stop3x       entries=164 mean=  +202.7 win= 80% worst=    -559 | expiries positive  7 of 11, worst expiry     -207, best     +660
+      stop2x+half  entries=164 mean=   +10.8 win= 80% worst=    -350 | expiries positive  7 of 11, worst expiry     -122, best      +93
+      stop3x+half  entries=164 mean=   +22.4 win= 90% worst=    -559 | expiries positive  9 of 11, worst expiry     -131, best      +85
+      stop2x+trail entries=164 mean=  +123.2 win= 63% worst=    -170 | expiries positive  8 of 11, worst expiry      -87, best     +508
+  30 to 44 days before: mean premium    95.3, sold on average 12.0 % away
+      hold         entries=165 mean=  -105.1 win= 58% worst=    -526 | expiries positive  6 of 11, worst expiry     -450, best     +120
+      stop2x       entries=165 mean=  +204.1 win= 75% worst=    -440 | expiries positive  7 of 11, worst expiry     -102, best     +795
+      stop3x       entries=165 mean=  +209.1 win= 92% worst=    -266 | expiries positive 11 of 11, worst expiry       +6, best     +680
+      stop2x+half  entries=165 mean=   +11.1 win= 81% worst=    -440 | expiries positive  8 of 11, worst expiry      -99, best      +58
+      stop3x+half  entries=165 mean=   +33.6 win= 94% worst=    -266 | expiries positive  9 of 11, worst expiry      -24, best      +86
+      stop2x+trail entries=165 mean=   +98.4 win= 68% worst=    -147 | expiries positive  9 of 11, worst expiry      -14, best     +310
+  14 to 29 days before: mean premium    52.3, sold on average 12.0 % away
+      hold         entries=170 mean=   -52.6 win= 69% worst=    -453 | expiries positive  6 of 11, worst expiry     -380, best      +87
+      stop2x       entries=170 mean=   +50.6 win= 49% worst=    -267 | expiries positive  5 of 11, worst expiry      -84, best     +410
+      stop3x       entries=170 mean=   +65.0 win= 76% worst=    -276 | expiries positive 10 of 11, worst expiry     -114, best     +362
+      stop2x+half  entries=170 mean=    -4.0 win= 68% worst=    -267 | expiries positive  6 of 11, worst expiry      -51, best      +22
+      stop3x+half  entries=170 mean=    +6.1 win= 87% worst=    -276 | expiries positive  7 of 11, worst expiry      -33, best      +41
+      stop2x+trail entries=170 mean=   +20.2 win= 49% worst=    -132 | expiries positive  7 of 11, worst expiry      -55, best     +181
+======================================================================================================================================================
+sold 16 % away (naked)
+  60 to 75 days before (the competitor's window): mean premium   320.1, sold on average 15.9 % away
+      hold         entries=176 mean=  -129.1 win= 46% worst=   -1069 | expiries positive  5 of 11, worst expiry     -773, best     +515
+      stop2x       entries=176 mean=   +57.4 win= 51% worst=    -431 | expiries positive  5 of 11, worst expiry     -148, best     +385
+      stop3x       entries=176 mean=   +33.0 win= 34% worst=    -576 | expiries positive  4 of 11, worst expiry     -171, best     +515
+      stop2x+half  entries=176 mean=   +58.1 win= 71% worst=    -431 | expiries positive  8 of 11, worst expiry      -99, best     +193
+      stop3x+half  entries=176 mean=   +86.1 win= 76% worst=    -576 | expiries positive  9 of 11, worst expiry     -130, best     +257
+      stop2x+trail entries=176 mean=   +75.9 win= 51% worst=    -229 | expiries positive  5 of 11, worst expiry      -61, best     +371
+  45 to 59 days before: mean premium   221.2, sold on average 15.9 % away
+      hold         entries=165 mean=  -212.5 win= 50% worst=   -1037 | expiries positive  6 of 11, worst expiry     -909, best     +326
+      stop2x       entries=165 mean=   +39.5 win= 46% worst=    -324 | expiries positive  7 of 11, worst expiry     -103, best     +326
+      stop3x       entries=165 mean=   +33.6 win= 38% worst=    -241 | expiries positive  5 of 11, worst expiry     -113, best     +326
+      stop2x+half  entries=165 mean=   +37.2 win= 62% worst=    -324 | expiries positive  9 of 11, worst expiry      -32, best     +161
+      stop3x+half  entries=165 mean=   +56.1 win= 77% worst=    -241 | expiries positive  8 of 11, worst expiry      -51, best     +161
+      stop2x+trail entries=165 mean=   +37.3 win= 44% worst=    -201 | expiries positive  7 of 11, worst expiry      -43, best     +326
+  30 to 44 days before: mean premium   127.6, sold on average 15.9 % away
+      hold         entries=165 mean=  -188.7 win= 58% worst=   -1323 | expiries positive  6 of 11, worst expiry     -957, best     +217
+      stop2x       entries=165 mean=   +44.5 win= 48% worst=    -219 | expiries positive  7 of 11, worst expiry      -20, best     +208
+      stop3x       entries=165 mean=   +43.7 win= 51% worst=    -203 | expiries positive  6 of 11, worst expiry      -78, best     +217
+      stop2x+half  entries=165 mean=   +28.8 win= 68% worst=    -219 | expiries positive  9 of 11, worst expiry      -21, best     +104
+      stop3x+half  entries=165 mean=   +31.6 win= 76% worst=    -203 | expiries positive  9 of 11, worst expiry      -78, best     +108
+      stop2x+trail entries=165 mean=   +40.0 win= 44% worst=    -110 | expiries positive  7 of 11, worst expiry      -20, best     +205
+  14 to 29 days before: mean premium    59.2, sold on average 15.9 % away
+      hold         entries=176 mean=   -52.9 win= 75% worst=    -804 | expiries positive  8 of 11, worst expiry     -515, best     +116
+      stop2x       entries=176 mean=   +10.7 win= 53% worst=     -72 | expiries positive  9 of 11, worst expiry      -25, best      +28
+      stop3x       entries=176 mean=   +16.8 win= 58% worst=    -195 | expiries positive  8 of 11, worst expiry      -52, best      +53
+      stop2x+half  entries=176 mean=    +8.8 win= 69% worst=     -72 | expiries positive 10 of 11, worst expiry       -5, best      +32
+      stop3x+half  entries=176 mean=    +8.3 win= 77% worst=    -195 | expiries positive  8 of 11, worst expiry      -24, best      +29
+      stop2x+trail entries=176 mean=    +4.2 win= 46% worst=    -127 | expiries positive  8 of 11, worst expiry      -26, best      +27
+======================================================================================================================================================
+sold 16 % away, wings half as far again
+  60 to 75 days before (the competitor's window): mean premium   132.4, sold on average 15.9 % away
+      hold         entries=158 mean=  -111.1 win= 42% worst=    -618 | expiries positive  5 of 11, worst expiry     -430, best     +186
+      stop2x       entries=158 mean=   +98.7 win= 63% worst=    -553 | expiries positive  6 of 11, worst expiry     -179, best     +610
+      stop3x       entries=158 mean=   +73.7 win= 63% worst=    -551 | expiries positive  6 of 11, worst expiry     -285, best     +518
+      stop2x+half  entries=158 mean=   +19.9 win= 89% worst=    -553 | expiries positive  8 of 11, worst expiry     -128, best      +86
+      stop3x+half  entries=158 mean=   +50.0 win= 97% worst=    -445 | expiries positive 10 of 11, worst expiry      -35, best      +88
+      stop2x+trail entries=158 mean=   +73.9 win= 61% worst=    -167 | expiries positive  8 of 11, worst expiry      -53, best     +342
+  45 to 59 days before: mean premium   102.4, sold on average 15.9 % away
+      hold         entries=153 mean=  -160.6 win= 50% worst=    -700 | expiries positive  6 of 11, worst expiry     -541, best     +157
+      stop2x       entries=153 mean=   +97.2 win= 61% worst=    -365 | expiries positive  6 of 11, worst expiry     -131, best     +561
+      stop3x       entries=153 mean=   +93.9 win= 71% worst=    -441 | expiries positive  8 of 11, worst expiry     -128, best     +526
+      stop2x+half  entries=153 mean=    +0.5 win= 77% worst=    -365 | expiries positive  6 of 11, worst expiry     -104, best      +83
+      stop3x+half  entries=153 mean=    +9.2 win= 88% worst=    -441 | expiries positive  9 of 11, worst expiry     -152, best      +73
+      stop2x+trail entries=153 mean=   +52.6 win= 61% worst=    -153 | expiries positive  7 of 11, worst expiry      -71, best     +181
+  30 to 44 days before: mean premium    65.7, sold on average 15.9 % away
+      hold         entries=151 mean=  -155.4 win= 56% worst=    -726 | expiries positive  6 of 11, worst expiry     -609, best     +113
+      stop2x       entries=151 mean=   +97.1 win= 62% worst=    -318 | expiries positive  6 of 11, worst expiry      -88, best     +393
+      stop3x       entries=151 mean=   +98.3 win= 75% worst=    -228 | expiries positive  8 of 11, worst expiry      -93, best     +335
+      stop2x+half  entries=151 mean=    +4.1 win= 80% worst=    -318 | expiries positive  8 of 11, worst expiry     -102, best      +47
+      stop3x+half  entries=151 mean=   +20.3 win= 93% worst=    -228 | expiries positive  9 of 11, worst expiry      -60, best      +54
+      stop2x+trail entries=151 mean=   +61.5 win= 67% worst=    -108 | expiries positive  8 of 11, worst expiry      -25, best     +226
+  14 to 29 days before: mean premium    30.0, sold on average 15.9 % away
+      hold         entries=135 mean=   -47.1 win= 79% worst=    -499 | expiries positive  8 of 11, worst expiry     -464, best      +54
+      stop2x       entries=135 mean=    +4.5 win= 42% worst=    -108 | expiries positive  5 of 11, worst expiry      -48, best     +415
+      stop3x       entries=135 mean=   +14.0 win= 69% worst=    -159 | expiries positive  9 of 11, worst expiry      -40, best     +400
+      stop2x+half  entries=135 mean=    -4.1 win= 70% worst=    -108 | expiries positive  6 of 11, worst expiry      -45, best      +37
+      stop3x+half  entries=135 mean=    +2.8 win= 87% worst=    -159 | expiries positive 10 of 11, worst expiry      -19, best      +22
+      stop2x+trail entries=135 mean=    +5.6 win= 47% worst=     -73 | expiries positive  5 of 11, worst expiry      -36, best      +79
+======================================================================================================================================================
+sold 20 % away (naked)
+  60 to 75 days before (the competitor's window): mean premium   238.9, sold on average 19.7 % away
+      hold         entries=176 mean=   -59.1 win= 53% worst=    -805 | expiries positive  6 of 11, worst expiry     -652, best     +403
+      stop2x       entries=176 mean=   +41.2 win= 49% worst=    -341 | expiries positive  5 of 11, worst expiry     -118, best     +294
+      stop3x       entries=176 mean=   +22.3 win= 34% worst=    -568 | expiries positive  4 of 11, worst expiry     -146, best     +403
+      stop2x+half  entries=176 mean=   +37.2 win= 66% worst=    -341 | expiries positive  8 of 11, worst expiry      -84, best     +146
+      stop3x+half  entries=176 mean=   +56.8 win= 76% worst=    -568 | expiries positive  8 of 11, worst expiry     -145, best     +201
+      stop2x+trail entries=176 mean=   +54.2 win= 47% worst=    -218 | expiries positive  5 of 11, worst expiry      -47, best     +283
+  45 to 59 days before: mean premium   156.4, sold on average 19.9 % away
+      hold         entries=165 mean=  -131.8 win= 52% worst=    -871 | expiries positive  6 of 11, worst expiry     -690, best     +228
+      stop2x       entries=165 mean=   +29.9 win= 47% worst=    -218 | expiries positive  7 of 11, worst expiry      -51, best     +228
+      stop3x       entries=165 mean=   +29.0 win= 39% worst=    -289 | expiries positive  5 of 11, worst expiry      -72, best     +228
+      stop2x+half  entries=165 mean=   +26.4 win= 65% worst=    -218 | expiries positive  8 of 11, worst expiry      -12, best     +112
+      stop3x+half  entries=165 mean=   +38.7 win= 81% worst=    -289 | expiries positive  9 of 11, worst expiry      -74, best     +112
+      stop2x+trail entries=165 mean=   +27.9 win= 45% worst=    -155 | expiries positive  7 of 11, worst expiry      -23, best     +228
+  30 to 44 days before: mean premium    85.5, sold on average 19.8 % away
+      hold         entries=165 mean=  -105.5 win= 59% worst=    -986 | expiries positive  6 of 11, worst expiry     -637, best     +148
+      stop2x       entries=165 mean=   +27.5 win= 48% worst=    -148 | expiries positive  7 of 11, worst expiry      -17, best     +148
+      stop3x       entries=165 mean=   +28.8 win= 52% worst=    -220 | expiries positive  6 of 11, worst expiry      -54, best     +148
+      stop2x+half  entries=165 mean=   +17.6 win= 70% worst=    -148 | expiries positive  8 of 11, worst expiry      -12, best      +72
+      stop3x+half  entries=165 mean=   +22.0 win= 79% worst=    -220 | expiries positive  9 of 11, worst expiry      -33, best      +72
+      stop2x+trail entries=165 mean=   +24.7 win= 45% worst=    -106 | expiries positive  7 of 11, worst expiry      -17, best     +148
+  14 to 29 days before: mean premium    40.4, sold on average 19.4 % away
+      hold         entries=176 mean=   -34.6 win= 78% worst=    -440 | expiries positive  9 of 11, worst expiry     -407, best      +76
+      stop2x       entries=176 mean=    +7.2 win= 53% worst=     -92 | expiries positive  9 of 11, worst expiry      -31, best      +22
+      stop3x       entries=176 mean=   +10.5 win= 62% worst=    -214 | expiries positive  8 of 11, worst expiry      -58, best      +33
+      stop2x+half  entries=176 mean=    +4.0 win= 66% worst=     -92 | expiries positive  9 of 11, worst expiry      -13, best      +18
+      stop3x+half  entries=176 mean=    +2.3 win= 77% worst=    -214 | expiries positive  8 of 11, worst expiry      -28, best      +17
+      stop2x+trail entries=176 mean=    +3.5 win= 49% worst=    -136 | expiries positive  7 of 11, worst expiry      -32, best      +21
+======================================================================================================================================================
+sold 20 % away, wings half as far again
+  60 to 75 days before (the competitor's window): mean premium    91.3, sold on average 19.7 % away
+      hold         entries=101 mean=    +2.9 win= 59% worst=    -408 | expiries positive  4 of 10, worst expiry     -206, best     +140
+      stop2x       entries=101 mean=   +55.1 win= 64% worst=    -423 | expiries positive  8 of 10, worst expiry     -267, best     +584
+      stop3x       entries=101 mean=   +54.6 win= 71% worst=    -380 | expiries positive  7 of 10, worst expiry     -225, best     +537
+      stop2x+half  entries=101 mean=    +3.7 win= 84% worst=    -423 | expiries positive  6 of 10, worst expiry     -111, best      +54
+      stop3x+half  entries=101 mean=   +29.5 win= 96% worst=    -380 | expiries positive  9 of 10, worst expiry      -33, best      +66
+      stop2x+trail entries=101 mean=   +29.6 win= 51% worst=    -263 | expiries positive  8 of 10, worst expiry     -100, best     +157
+  45 to 59 days before: mean premium    62.9, sold on average 19.9 % away
+      hold         entries=120 mean=   -58.8 win= 57% worst=    -550 | expiries positive  6 of 11, worst expiry     -320, best     +108
+      stop2x       entries=120 mean=   +80.4 win= 56% worst=    -298 | expiries positive  5 of 11, worst expiry     -267, best     +565
+      stop3x       entries=120 mean=   +96.4 win= 77% worst=    -291 | expiries positive  6 of 11, worst expiry     -188, best     +556
+      stop2x+half  entries=120 mean=   -17.1 win= 72% worst=    -298 | expiries positive  7 of 11, worst expiry     -176, best      +49
+      stop3x+half  entries=120 mean=    +2.8 win= 88% worst=    -291 | expiries positive  8 of 11, worst expiry      -90, best      +49
+      stop2x+trail entries=120 mean=   +43.4 win= 52% worst=    -130 | expiries positive  5 of 11, worst expiry      -63, best     +196
+  30 to 44 days before: mean premium    39.1, sold on average 19.8 % away
+      hold         entries=106 mean=   -89.4 win= 52% worst=    -773 | expiries positive  6 of 11, worst expiry     -394, best      +74
+      stop2x       entries=106 mean=   +73.9 win= 50% worst=    -211 | expiries positive  5 of 11, worst expiry      -87, best     +586
+      stop3x       entries=106 mean=   +71.8 win= 67% worst=    -193 | expiries positive  7 of 11, worst expiry      -99, best     +561
+      stop2x+half  entries=106 mean=    +9.7 win= 88% worst=     -95 | expiries positive  8 of 11, worst expiry      -11, best      +33
+      stop3x+half  entries=106 mean=   +10.2 win= 92% worst=    -112 | expiries positive  9 of 11, worst expiry      -99, best      +33
+      stop2x+trail entries=106 mean=   +25.0 win= 52% worst=     -58 | expiries positive  6 of 11, worst expiry      -27, best     +211
+  14 to 29 days before: mean premium    16.5, sold on average 19.4 % away
+      hold         entries= 75 mean=   -45.5 win= 79% worst=    -453 | expiries positive  8 of  9, worst expiry     -279, best      +24
+      stop2x       entries= 75 mean=    -9.3 win= 25% worst=     -77 | expiries positive  2 of  9, worst expiry      -20, best      +24
+      stop3x       entries= 75 mean=    -0.0 win= 52% worst=     -75 | expiries positive  5 of  9, worst expiry      -38, best      +24
+      stop2x+half  entries= 75 mean=    -2.2 win= 72% worst=     -71 | expiries positive  6 of  9, worst expiry      -22, best       +9
+      stop3x+half  entries= 75 mean=    +3.6 win= 89% worst=     -30 | expiries positive  8 of  9, worst expiry      -23, best      +10
+      stop2x+trail entries= 75 mean=    -2.9 win= 35% worst=     -65 | expiries positive  4 of  9, worst expiry      -13, best      +26

@@ -317,13 +317,13 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
       <header
         data-testid="app-header"
         data-variant="default"
-        className="flex h-[50px] items-center gap-6 border-b border-border bg-header-bg px-4 text-header-fg"
+        className="flex h-[50px] items-center gap-2 border-b border-border bg-header-bg px-4 text-header-fg md:gap-6"
       >
         <div className="flex items-center gap-2">
           <Logo href={user ? "/desk" : "/"} />
           {isAdmin ? <AdminChip /> : null}
         </div>
-        <nav aria-label="Primary" className="flex items-center gap-1 self-stretch">
+        <nav aria-label="Primary" className="flex min-w-0 flex-1 items-center gap-1 self-stretch overflow-x-auto whitespace-nowrap [scrollbar-width:none] md:flex-none md:overflow-visible">
           {(user ? TABS : [{ href: "/", label: "Home", active: (p: string) => p === "/" }, TABS.find((t) => t.href === "/analytics")!]).map((t) => {
             const on = t.active(pathname);
             return (
@@ -353,7 +353,8 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
             </a>
           ) : null}
         </nav>
-        <span className="flex-1" />
+        {/* on a phone the tabs take the room and scroll (GAPS #151); from md the spacer pushes the buttons right */}
+        <span className="hidden flex-1 md:block" />
         {user ? <AlertsBell /> : null}
         <ThemeToggle />
         <PaletteButton className="hidden lg:inline-flex" />

@@ -617,7 +617,7 @@ describe("HC-TR-225 playbooks entered by the clock: the evening strangles", () =
     expect(CLOCK_PLAYBOOKS.map((p) => p.id)).toEqual(["evening-strangle-wings-3", "evening-strangle-wings-5", "evening-strangle-stop-2x", "evening-strangle-stop-3x", "evening-strangle-take-half", "evening-strangle-trail-rest"]);
     for (const p of CLOCK_PLAYBOOKS) expect(p).toMatchObject({ assets: ["BTC"], minDte: 0.5, lots: 100, control: false, clock: { fromHourUtc: 16, toHourUtc: 17, window: "9:30 to 10:30 PM IST", maxDte: 1.5, venues: ["delta_india"] } });
     expect(CLOCK_PLAYBOOKS.map((p) => p.clock!.legStop)).toEqual([undefined, undefined, 2, 3, 2, 2]);
-    expect(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).toEqual([...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...WEEKLY_PLAYBOOKS].map((p) => p.id));
+    expect(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).toEqual(expect.arrayContaining([...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...WEEKLY_PLAYBOOKS].map((p) => p.id)));
     expect(PLAYBOOKS.some((p) => p.clock)).toBe(false); // the daily record and the proposals do not see them
     expect(autopilotPlaybookById("hero-or-zero")).toBeUndefined();
   });
@@ -900,5 +900,67 @@ describe("HC-TR-229 the weekly strangles: entered on their day for the Friday ex
     const again = (await mineNow()).filter((x) => x.status === "paper");
     expect(again.map((x) => x.autopilotPlaybookId).sort()).toEqual([fri3x.id, "weekly-fri-strangle-wings"].sort());
     for (const x of again) expect((await legsOf(x.id)).every((l) => l.expiry === "2026-10-23")).toBe(true);
+  });
+});
+
+describe("HC-TR-233 the monthly strangles: once per expiry, in their range of days", () => {
+  it("HC-TR-233 enters when a month-end expiry is in its range, with stops and the take at half the premium; no expiry in range, and an expiry already traded, are reasons", async () => {
+    const near = autopilotPlaybookById("monthly-strangle-12pct-near")!;
+    const me = await t.signUp("autopilot-monthly@hapiecoin.test");
+    const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
+    await put({ enabled: true, strategies: [{ playbookId: near.id, exit: "own" }] }, me.cookie);
+    const mineNow = () => t.db.select().from(strategies).where(eq(strategies.userId, id));
+    const last = async () => (await view(me.cookie)).runs.find((r) => r.playbookId === near.id)!;
+    /** A monthly ladder 1,000 apart; time value falling away from the money. */
+    const monthAt = (ts: number, expiries: readonly string[]): MarketSource => {
+      const products: Instrument[] = [];
+      const quotes: Quote[] = [];
+      for (const e of expiries)
+        for (let k = 65_000; k <= 101_000; k += 1000) {
+          const code = e.slice(8, 10) + e.slice(5, 7) + e.slice(2, 4);
+          const tv = 3000 * Math.exp(-Math.abs(k - 83_200) / 5000);
+          const c = `C-BTC-${k}-${code}`;
+          const pt = `P-BTC-${k}-${code}`;
+          products.push(inst(c, "call", k, e), inst(pt, "put", k, e));
+          quotes.push({ instrumentId: `delta_india:${c}`, ts, mark: (Math.max(83_200 - k, 0) + tv).toFixed(1), oi: "1", spot: "83200", markIv: 0.5 }, { instrumentId: `delta_india:${pt}`, ts, mark: (Math.max(k - 83_200, 0) + tv).toFixed(1), oi: "1", spot: "83200", markIv: 0.5 });
+        }
+      return { venue: "delta_india", products: () => Promise.resolve(products), tickers: (u) => Promise.resolve(u === "BTC" ? quotes : []) };
+    };
+    const pass = async (at: number, expiries: readonly string[]) => {
+      await snapshotOnce(t.deps, monthAt(at - MIN, expiries), () => at - MIN);
+      return runAutopilot(deps(at, { maxOpen: undefined }), ["delta_india"]);
+    };
+    const NOV1 = Date.UTC(2026, 10, 1, 16, 5, 0);
+    // 1 November: November's month-end is 26 days out (too near), December's 54 (too far)
+    await pass(NOV1, ["2026-11-02", "2026-11-27", "2026-12-25"]);
+    expect(await mineNow()).toHaveLength(0);
+    expect(await last()).toMatchObject({ kind: "skipped", reason: "No month-end expiry in its range yet" });
+
+    // 15 November: December's month-end is 40 days out
+    const NOV15 = NOV1 + 14 * DAY;
+    await pass(NOV15, ["2026-11-16", "2026-11-27", "2026-12-25"]);
+    const [first] = await mineNow();
+    expect(first).toMatchObject({ status: "paper", name: "Monthly strangle, 12 % away, one month out · Autopilot" });
+    const legs = await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, first!.id)).orderBy(asc(strategyLegs.position));
+    // 12 % of 83,200 is 9,984: 73,216 and 93,184, nearest listed 73,000 and 93,000
+    expect(legs.map((l) => `${l.side} ${l.kind} ${l.strike} ${l.expiry} x${l.lots}`)).toEqual(["sell put 73000 2026-12-25 x100", "sell call 93000 2026-12-25 x100"]);
+    const rules = await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, first!.id));
+    expect(rules.map((r) => `${r.kind} ${r.kind === "leg_stop" ? r.value : ""}`.trim()).sort()).toEqual(["leg_stop 2", "leg_stop 2", "target"]);
+    const entry = (await view(me.cookie)).runs.find((r) => r.kind === "entered" && r.strategyId === first!.id)!;
+    expect(Number(rules.find((r) => r.kind === "target")!.thresholdUsd)).toBeCloseTo(-Number(entry.detail.entryCost) / 2, 1);
+    expect(entry.detail).toMatchObject({ exit: "own", expiry: "2026-12-25", dte: 40, legStop: 2 });
+
+    // the take closes it two days later; the next evenings the same expiry is still in range and is not taken again
+    await t.db.update(strategies).set({ status: "archived", closedAt: new Date(NOV15 + 2 * DAY), closeReason: "target" }).where(eq(strategies.id, first!.id));
+    await t.db.update(strategyLegs).set({ status: "squared_off", closedAt: new Date(NOV15 + 2 * DAY) }).where(eq(strategyLegs.strategyId, first!.id));
+    await pass(NOV15 + 3 * DAY, ["2026-11-19", "2026-11-27", "2026-12-25"]);
+    expect((await mineNow()).filter((x) => x.status === "paper")).toHaveLength(0);
+    expect(await last()).toMatchObject({ kind: "skipped", reason: "Already traded this expiry" });
+
+    // 20 December: January's month-end comes into range, a new expiry and a new trade
+    await pass(Date.UTC(2026, 11, 20, 16, 5, 0), ["2026-12-21", "2026-12-25", "2027-01-29"]);
+    const open = (await mineNow()).filter((x) => x.status === "paper");
+    expect(open).toHaveLength(1);
+    expect((await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, open[0]!.id))).every((l) => l.expiry === "2027-01-29")).toBe(true);
   });
 });

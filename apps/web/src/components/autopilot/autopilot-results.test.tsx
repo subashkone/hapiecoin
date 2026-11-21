@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
 import { USD } from "@/lib/money";
 import { AutopilotPage } from "./AutopilotPage";
-import { AutopilotResultsPanel, exitTotals } from "./AutopilotResultsPanel";
+import { AutopilotResultsPanel, exitTotals, totalOf } from "./AutopilotResultsPanel";
 
 const EMAIL = "autopilot-results@example.com";
 let mock: MockFetch;
@@ -105,6 +105,21 @@ describe("HC-TR-224 Autopilot results", () => {
     expect(cells(trades[1]!).slice(1)).toEqual(["Pin butterfly · BTC", "57,600 / 58,000 / 58,400 · 22 Nov · 1d out", "Trail", "target hit", "+$5.00", "$0.40", "+$4.60"]);
     expect(cells(trades[2]!).slice(1)).toEqual(["gone-playbook · BTC", "—", "Trail", "squared off", "+$1.00", "$0.00", "+$1.00"]);
     expect(screen.getByTestId("results-since").textContent).toContain("Counted since");
+  });
+
+  it("HC-TR-232 a selection shows its own rows, totals and closed trades, and leaves out the days-to-expiry table", async () => {
+    expect(totalOf(RESULTS.rows)).toEqual({ open: 3, closed: 4, wins: 2, grossUsd: "4.30", feesUsd: "1.30", netUsd: "3.00" });
+    expect(totalOf([])).toEqual({ open: 0, closed: 0, wins: 0, grossUsd: "0.00", feesUsd: "0.00", netUsd: "0.00" });
+    acc().autopilotResults = RESULTS;
+    const first = renderWithProviders(<AutopilotResultsPanel money={USD} show={(playbookId, asset) => playbookId === "trend-puts" && asset === "ETH"} />);
+    await waitFor(() => expect(screen.getByTestId("results-closed").textContent).toBe("1"));
+    expect(screen.getByTestId("results-net").textContent).toBe("−$0.20");
+    expect(screen.getAllByTestId("results-row").map((r) => r.dataset["playbook"])).toEqual(["trend-puts"]);
+    expect(screen.getAllByTestId("results-trade").map((x) => x.dataset["id"])).toEqual(["res_4"]);
+    expect(screen.queryByTestId("results-by-dte")).toBeNull();
+    first.unmount();
+    renderWithProviders(<AutopilotResultsPanel money={USD} show={() => false} />);
+    await waitFor(() => expect(screen.getByText("No trade in this selection yet")).toBeTruthy());
   });
 
   it("HC-TR-224 long holds read in days and a long list of closed trades is cut to the newest", async () => {
