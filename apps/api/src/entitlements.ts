@@ -3,7 +3,7 @@
 // Subscription page and the trading routes, so a limit is enforced exactly where the reference's
 // "Upgrade Required" dialog appears (HC-SH-054).
 import { type Entitlement, type LimitKey, LIMIT_KEYS, LIMIT_LABELS, type Plan, type PlanLimits } from "@hapiecoin/schema";
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, ne, or, sql } from "drizzle-orm";
 import { plans, strategies, subscriptions, users } from "./db/schema.js";
 import type { AppDeps } from "./routes/shared.js";
 import { HttpError } from "./security/errors.js";
@@ -24,7 +24,7 @@ export function monthStart(now: Date): Date {
 }
 
 /** The user's active subscription row (latest by start), if any and not past its expiry. */
-export async function activeSubscription(deps: AppDeps, userId: string, now: Date): Promise<SubRow | undefined> {
+export async function activeSubscription(deps: Pick<AppDeps, "db">, userId: string, now: Date): Promise<SubRow | undefined> {
   const [row] = await deps.db.select().from(subscriptions).where(and(eq(subscriptions.userId, userId), eq(subscriptions.status, "active"))).orderBy(desc(subscriptions.startsAt)).limit(1);
   if (!row) return undefined;
   if (row.expiresAt !== null && row.expiresAt.getTime() <= now.getTime()) return undefined;
@@ -32,7 +32,7 @@ export async function activeSubscription(deps: AppDeps, userId: string, now: Dat
 }
 
 /** The Free plan: the cheapest active plan at ₹0 monthly, or null when none is configured. */
-export async function freePlan(deps: AppDeps): Promise<PlanRow | undefined> {
+export async function freePlan(deps: Pick<AppDeps, "db">): Promise<PlanRow | undefined> {
   const rows = await deps.db.select().from(plans).where(eq(plans.active, true)).orderBy(plans.sortOrder, plans.name);
   return rows.find((p) => Number(p.intervals.monthly.priceInr) === 0);
 }
@@ -56,13 +56,13 @@ export async function effectivePlan(deps: AppDeps, userId: string, now: Date): P
   return { plan, subscription, limits, overrides: u?.overrides ?? {} };
 }
 
-/** Strategies started this month by mode, and the user's saved strategies (drafts). */
+/** Strategies the trader started this month by mode, and their saved strategies (drafts). Autopilot's paper trades are not the trader's own and do not use the allowance (ADR-108). */
 export async function monthUsage(deps: AppDeps, userId: string, now: Date): Promise<Record<LimitKey, number>> {
   const since = monthStart(now);
   const rows = await deps.db
     .select({ mode: strategies.tradingMode, n: sql<number>`count(*)` })
     .from(strategies)
-    .where(and(eq(strategies.userId, userId), gte(strategies.startedAt, since)))
+    .where(and(eq(strategies.userId, userId), gte(strategies.startedAt, since), or(isNull(strategies.autopilotPlaybookId), ne(strategies.tradingMode, "paper"))))
     .groupBy(strategies.tradingMode);
   const count = (mode: "paper" | "live") => Number(rows.find((r) => r.mode === mode)?.n ?? 0);
   const [drafts] = await deps.db.select({ n: sql<number>`count(*)` }).from(strategies).where(and(eq(strategies.userId, userId), eq(strategies.status, "draft")));

@@ -22,4 +22,5 @@ export * from "./backtest.js";
 export * from "./replay.js";
 export * from "./playbooks.js";
 export * from "./proposals.js";
+export * from "./autopilot.js";
 export * from "./ops.js";

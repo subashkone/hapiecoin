@@ -4,6 +4,7 @@ import { startReconciler } from "./live-reconcile.js";
 import { type JobStarter, startJobs } from "./jobs.js";
 import { historyTargets, startEodHistoryBackfill } from "./chain-eod-history.js";
 import { startPlaybookRecords } from "./playbooks.js";
+import { runAutopilot } from "./autopilot.js";
 import { runProposals } from "./proposals.js";
 import { MemoryLeaderLock, RedisLeaderLock } from "./leader.js";
 import type { AppDeps } from "./routes/shared.js";
@@ -133,6 +134,14 @@ if (config.ivSnapshotMs !== 0)
                 // ADR-102: once the end-of-day chain is written, every playbook says whether it would enter today;
                 // idempotent per day, so this cadence only decides how soon after the write a proposal appears
                 await runProposals({ db: deps.db, logger, telegram: deps.telegram, webUrl: config.webUrl, telegramCap: config.proposalsTelegramCap }, config.apiVenues);
+                // ADR-108: the same snapshot decides the paper entries of the traders who switched Autopilot on; a
+                // failure here must not take the snapshotter's hook (the alerts and proposals above) down with it
+                try {
+                  const pass = await runAutopilot({ db: deps.db, logger }, config.apiVenues);
+                  if (pass.entered || pass.noted || pass.failed) logger.info(pass, "autopilot pass");
+                } catch (e) {
+                  logger.warn({ reason: e instanceof Error ? e.message : String(e) }, "autopilot pass failed");
+                }
               }
             : undefined,
         ),

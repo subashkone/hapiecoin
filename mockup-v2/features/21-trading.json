@@ -1911,5 +1911,38 @@
     "how": "fmtDateTime prints \"19 Nov 2026, 12:42 IST\" (the viewer's day and minute, zone named; a dash when there is no date); the card's started and closed lines and the Details statistics use it, and Details shows a Closed figure for an archived trade",
     "evidence": "ADR-105 (19 Nov 2026): apps/web/src/lib/format.ts fmtDateTime, apps/web/src/components/trading/PaperPanel.tsx (card-started, card-closed), StrategyDetailsDialog.tsx (details-started, details-closed); tests: pane-follow.test.tsx HC-TR-215",
     "test": "unit (web)"
+  },
+  {
+    "route": "/desk",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "A trader switches Autopilot on and chooses the playbooks it may enter on paper, each with how a winner is taken off",
+    "how": "GET / PUT /v1/autopilot behind the session: enabled, and a list of playbooks each with exit trail or target; the control, an unknown playbook and a repeat are refused; settings in autopilot_settings (migration 0028); paper only",
+    "evidence": "ADR-108, GAPS #145 (21 Nov 2026): packages/schema/src/autopilot.ts, apps/api/src/routes/autopilot.ts, apps/api/src/autopilot.ts (saveAutopilotSettings), apps/api/src/db/schema.ts; tests: api autopilot.test.ts HC-TR-216, schema autopilot.test.ts HC-TR-216",
+    "test": "unit (api + schema)"
+  },
+  {
+    "route": "/desk",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "After every market snapshot the server opens a paper trade for each switched-on playbook whose plan enters on that snapshot's prices, with its exits armed",
+    "how": "runAutopilot in the snapshotter's after-hook (leader only): the recorded history with the newest snapshot as today, through the backtest's entryFor; the entry at that snapshot's marks; one open Autopilot trade per trader, playbook, venue and asset; a 15-minute wait after a trade ends; the target at 10 % of the maximum profit plus entry and exit fees (closing there, or trailing with a 10 % give-back), the playbook's stop and time exit, all as ordinary rules; no entry when the trader has no plan, the snapshot is older than twelve minutes, a leg has no price, the fees eat the target, or a futures leg is involved; a trade closed by hand is closed out and starts the wait; the levels use the trader's own lot size; an Autopilot trade cannot go live (place and batch refuse it); Autopilot trades do not use the monthly paper allowance",
+    "evidence": "ADR-108 (21 Nov 2026): apps/api/src/autopilot.ts (liveDay, planFor, runAutopilot, enter), apps/api/src/main.ts, apps/api/src/entitlements.ts (monthUsage), apps/api/src/routes/live.ts (paper only), migration 0028 (strategies_autopilot_open_uq); tests: api autopilot.test.ts HC-TR-217",
+    "test": "unit (api)"
+  },
+  {
+    "route": "/desk",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Autopilot keeps a log: every entry with its figures, every reason it did not enter, and a note when a better entry appears while a trade is open",
+    "how": "autopilot_runs per trader: entered (spot, days to expiry, premium, maximum profit and loss, fees, capital, target, stop, legs), skipped (the reason, written once per change of reason), noted (the structure prices at least 10 % better than the open trade's entry, at most once per 15 minutes); the newest 200 lines come with GET /v1/autopilot",
+    "evidence": "ADR-108 (21 Nov 2026): apps/api/src/autopilot.ts (skip, noteBetterEntry, betterEntry, autopilotView), packages/schema/src/autopilot.ts (AutopilotRun); tests: api autopilot.test.ts HC-TR-218, schema autopilot.test.ts HC-TR-218",
+    "test": "unit (api + schema)"
   }
 ]

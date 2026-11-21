@@ -6,7 +6,7 @@
  * Money-shaped values (fee percentages, conversion rate, lot sizes) are stored as decimal strings in
  * text/jsonb columns, never as floats (brief: decimal strings cross package boundaries).
  */
-import { DEFAULT_MINDFUL, type MindfulSettings, type PlanIntervals, type PlaybookRecord, type ProposalLeg } from "@hapiecoin/schema";
+import { type AutopilotRunDetail, type AutopilotStrategy, DEFAULT_MINDFUL, type MindfulSettings, type PlanIntervals, type PlaybookRecord, type ProposalLeg } from "@hapiecoin/schema";
 import { sql } from "drizzle-orm";
 import { bigserial, boolean, customType, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
@@ -339,9 +339,14 @@ export const strategies = pgTable(
     closeReason: text("close_reason", { enum: ["expired", "squared_off", "stopped", "target", "outside_app"] }),
     /** ADR-065: the venue this row belongs to; every row so far is Delta India. */
     venue: text("venue", { enum: ["delta_india", "deribit"] }).notNull().default("delta_india"),
+    /** ADR-108: the playbook whose entry Autopilot took to open this paper trade; null for a trade the trader opened. */
+    autopilotPlaybookId: text("autopilot_playbook_id"),
     ...timestamps,
   },
-  (t) => [index("strategies_user_id_idx").on(t.userId), index("strategies_user_status_idx").on(t.userId, t.status)],
+  (t) => [index("strategies_user_id_idx").on(t.userId), index("strategies_user_status_idx").on(t.userId, t.status), index("strategies_autopilot_idx").on(t.userId, t.autopilotPlaybookId, t.venue, t.asset),
+    // ADR-108: one open Autopilot trade per trader, playbook, venue and asset, whatever two passes or two leaders do
+    uniqueIndex("strategies_autopilot_open_uq").on(t.userId, t.autopilotPlaybookId, t.venue, t.asset).where(sql`${t.status} = 'paper' and ${t.autopilotPlaybookId} is not null`),
+  ],
 );
 
 export const strategyLegs = pgTable(
@@ -887,4 +892,34 @@ export const playbookProposalMarks = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("playbook_proposal_marks_uq").on(t.userId, t.proposalId), index("playbook_proposal_marks_sent_idx").on(t.userId, t.telegramSentAt)],
+);
+
+/** ADR-108 (HC-TR-216): a trader's Autopilot switch and the playbooks switched on, each with how its winners are taken off. Paper only. */
+export const autopilotSettings = pgTable("autopilot_settings", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  enabled: boolean("enabled").notNull().default(false),
+  strategies: jsonb("strategies").$type<AutopilotStrategy[]>().notNull().default(sql`'[]'::jsonb`),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+});
+
+/** ADR-108 (HC-TR-218): Autopilot's log per trader: every paper entry, every reason a switched-on playbook did not enter (written once per change of reason), and every better entry noted while a trade was open. */
+export const autopilotRuns = pgTable(
+  "autopilot_runs",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    playbookId: text("playbook_id").notNull(),
+    venue: text("venue", { enum: ["delta_india", "deribit"] }).notNull(),
+    asset: text("asset", { enum: ["BTC", "ETH", "XAUT"] }).notNull(),
+    kind: text("kind", { enum: ["entered", "skipped", "noted"] }).notNull(),
+    reason: text("reason").notNull(),
+    strategyId: text("strategy_id").references(() => strategies.id, { onDelete: "set null" }),
+    detail: jsonb("detail").$type<AutopilotRunDetail>().notNull().default(sql`'{}'::jsonb`),
+    at: timestamp("at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+  },
+  (t) => [index("autopilot_runs_user_at_idx").on(t.userId, t.at), index("autopilot_runs_key_idx").on(t.userId, t.playbookId, t.venue, t.asset, t.at)],
 );
