@@ -22,6 +22,11 @@ export interface TemplateOptionLeg {
    * a strike the venue lists (ADR-006); a ladder that does not reach that far refuses the template.
    */
   pct?: number;
+  /**
+   * ADR-117: instead of `k`, the listed out-of-the-money strike whose mark is nearest this premium (per unit of the
+   * underlying). Refused when nothing out of the money is priced within half of it.
+   */
+  premium?: number;
   lots?: number;
   /** Later listed expiry index (calendars). */
   expiryOffset?: number;
@@ -198,6 +203,27 @@ export function materialiseTemplate<A extends string>(tpl: StrategyTemplate, inp
       const at = `${expiry}|${strikes[idx]!}`;
       if (byPct.has(at)) return { ok: false, reason: "out-of-range" };
       byPct.add(at);
+    }
+    if (l.premium !== undefined) {
+      const spot = Number(input.spot);
+      if (input.spot === undefined || !(spot > 0)) return { ok: false, reason: "no-spot" };
+      let best = -1;
+      let off = Infinity;
+      source.rows.forEach((r, i) => {
+        const strike = Number(r.strike);
+        if (l.kind === "call" ? strike <= spot : strike >= spot) return;
+        const mark = Number((l.kind === "call" ? r.call : r.put)?.mark);
+        if (mark > 0 && Math.abs(mark - l.premium!) < off) {
+          off = Math.abs(mark - l.premium!);
+          best = i;
+        }
+      });
+      // nothing out of the money priced about there: the ladder is too short, or too coarse, for this premium
+      if (best < 0 || off > l.premium / 2) return { ok: false, reason: "out-of-range" };
+      const at = `${expiry}|${Number(source.rows[best]!.strike)}`;
+      if (byPct.has(at)) return { ok: false, reason: "out-of-range" };
+      byPct.add(at);
+      idx = best;
     }
     const row = source.rows[idx];
     if (!row) return { ok: false, reason: "out-of-range" };

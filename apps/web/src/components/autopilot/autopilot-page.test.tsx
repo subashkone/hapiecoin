@@ -287,14 +287,118 @@ describe("HC-TR-226 the Autopilot screen: the evening strategies", () => {
   });
 });
 
+describe("HC-TR-232 the Autopilot screen: by expiry and by coin", () => {
+  const press = async (u: ReturnType<typeof userEvent.setup>, kind: "cadence" | "coin", value: string) => u.click(screen.getAllByTestId(`autopilot-filter-${kind}`).find((b) => b.dataset["value"] === value)!);
+  const cards = () => screen.queryAllByTestId("autopilot-card").map((c) => c.dataset["playbook"]);
+
+  it("HC-TR-232 a strategy is one row: how it gets out, its backtest in figures, its paper result so far and what it is doing now", async () => {
+    acc().autopilotResults = {
+      since: AT,
+      total: { open: 1, closed: 3, wins: 2, grossUsd: "4.00", feesUsd: "0.80", netUsd: "3.20" },
+      rows: [{ playbookId: "evening-strangle-stop-2x", asset: "BTC", exit: "own", open: 1, closed: 3, wins: 2, grossUsd: "4.00", feesUsd: "0.80", netUsd: "3.20", bestNetUsd: "4.60", worstNetUsd: "-2.40", avgHoldMinutes: 40, reasons: { expired: 3 } }],
+      byDte: [],
+      trades: [],
+    };
+    renderWithProviders(<AutopilotPage />);
+    await waitFor(() => expect(screen.getByTestId("autopilot-page").dataset["state"]).toBe("ready"));
+    const row = (id: string) => screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === id)!;
+    const twice = row("evening-strangle-stop-2x");
+    expect(twice.textContent).toContain("Enters once an evening, 9:30 to 10:30 PM IST, on the next expiry");
+    expect(twice.textContent).toContain("Stop at 2x on each sold option");
+    expect(within(twice).getByTestId("autopilot-card-backtest").textContent).toBe("Backtest+$7.51 a day45% won · worst −$60.00106 days tested");
+    await waitFor(() => expect(within(twice).getByTestId("autopilot-card-paper").textContent).toBe("Paper so far+$3.20 net3 closed · 2 won · 1 open"));
+    expect(within(row("evening-strangle-wings-3")).getByTestId("autopilot-card-paper").textContent).toBe("Paper so farNo trade yet");
+    expect(within(twice).getByTestId("autopilot-card-backtest").querySelector("span")!.className).toContain("md:sr-only"); // the column's name stays for a screen reader
+    expect(row("evening-strangle-wings-3").textContent).toContain("Wings cap the loss, held to expiry");
+    expect(row("evening-strangle-take-half").textContent).toContain("Stop at 2x on each sold option, take 50 % of the premium");
+    expect(row("weekly-fri-strangle-trail-rest").textContent).toContain("Stop at 2x on each sold option, then trail the other side");
+    expect(within(row("weekly-tue-strangle-stop-3x")).getByTestId("autopilot-card-backtest").textContent).toContain("−$2.92 a week");
+    // a recorded playbook has no backtest figure of its own: its record per coin sits under Now
+    expect(within(row("trend-calls")).getByTestId("autopilot-card-backtest").textContent).toContain("Recorded per coin, under Now");
+    expect(row("trend-calls").textContent).toContain("Playbook stop and time exit");
+  });
+
+  it("HC-TR-232 the expiry and coin buttons narrow the strategies, the running trades, the log and the results together", async () => {
+    acc().strategies.push(auto("d1", "evening-strangle-stop-2x", { legs: [leg("d1", 0)], rules: [] }), auto("w1", "weekly-fri-strangle-stop-3x", { legs: [leg("w1", 0)], rules: [] }), auto("t1", "trend-puts", { asset: "ETH", rules: [rule({})] }));
+    acc().autopilot = { settings: { enabled: true, strategies: [{ playbookId: "evening-strangle-stop-2x", exit: "own" }] }, runs: [run({ id: "3", playbookId: "evening-strangle-stop-2x", strategyId: "d1" }), run({ id: "2", playbookId: "weekly-fri-strangle-stop-3x", strategyId: "w1" }), run({ id: "1", playbookId: "trend-puts", asset: "ETH", strategyId: "t1" })] };
+    renderWithProviders(<AutopilotPage />);
+    const u = userEvent.setup();
+    await waitFor(() => expect(screen.getAllByTestId("autopilot-trade")).toHaveLength(3));
+    expect(screen.getAllByTestId("autopilot-filter-cadence").map((b) => b.textContent)).toEqual([`All · ${TRADABLE.length}`, "Trend · 6", "Daily · 7", "Weekly · 11", "Monthly · 10"]);
+    expect(screen.getAllByTestId("autopilot-filter-coin").map((b) => b.textContent)).toEqual(["All", `BTC · ${TRADABLE.length}`, "ETH · 6"]);
+    expect(screen.getByTestId("autopilot-filters").dataset["filtered"]).toBe("false");
+    expect(screen.queryByTestId("autopilot-filter-note")).toBeNull();
+    expect(screen.getByRole("group", { name: "Expiry" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Coin" })).toBeTruthy();
+
+    await press(u, "cadence", "weekly");
+    expect(screen.getAllByTestId("autopilot-group").map((g) => g.dataset["group"])).toEqual(["Weekly strangles, Friday expiry"]);
+    expect(cards()).toHaveLength(11);
+    expect(screen.getAllByTestId("autopilot-trade").map((x) => x.dataset["id"])).toEqual(["w1"]);
+    expect(screen.getAllByTestId("autopilot-run")).toHaveLength(1);
+    expect(screen.getByTestId("autopilot-filter-note")).toBeTruthy();
+    expect(screen.getByTestId("autopilot-results").dataset["filtered"]).toBe("true");
+    expect(screen.getByTestId("autopilot-open-count").textContent).toBe("3"); // the summary stays everything
+
+    // ETH: no weekly strategy trades it, and nothing of it is open in this selection
+    await press(u, "coin", "ETH");
+    expect(cards()).toHaveLength(0);
+    expect(screen.getByTestId("autopilot-group-empty").textContent).toBe("No weekly strategy trades ETH yet.");
+    expect(screen.queryAllByTestId("autopilot-trade")).toHaveLength(0);
+    expect(screen.getByTestId("autopilot-running-none").textContent).toBe("No open trade in this selection (3 open in all).");
+    expect(screen.getByTestId("autopilot-log-none").textContent).toBe("No log line in this selection.");
+
+    await press(u, "cadence", "all");
+    expect(cards()).toEqual(TRADABLE.filter((p) => (p.assets as readonly string[]).includes("ETH")).map((p) => p.id));
+    expect(screen.getAllByTestId("autopilot-trade").map((x) => x.dataset["id"])).toEqual(["t1"]);
+    const puts = screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === "trend-puts")!;
+    expect(within(puts).getAllByTestId("autopilot-card-asset").map((a) => a.dataset["asset"])).toEqual(["ETH"]); // its BTC line is hidden too
+
+    await press(u, "coin", "all");
+    expect(cards()).toHaveLength(TRADABLE.length);
+    expect(screen.getAllByTestId("autopilot-trade")).toHaveLength(3);
+    expect(screen.getByTestId("autopilot-results").dataset["filtered"]).toBe("false");
+  });
+});
+
+describe("HC-TR-232 the Autopilot screen: the paper column without its read", () => {
+  it("HC-TR-232 a results read that failed is not shown as no trade", async () => {
+    renderWithProviders(<AutopilotPage />);
+    await waitFor(() => expect(screen.getByTestId("autopilot-page").dataset["state"]).toBe("ready"));
+    const cell = () => within(screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === "evening-strangle-stop-2x")!).getByTestId("autopilot-card-paper");
+    await waitFor(() => expect(cell().textContent).toBe("Paper so farNo trade yet"));
+  });
+
+  it("HC-TR-232 while the results have never loaded the cell says so", async () => {
+    // the results route refuses while everything else answers: the session is dropped for that path only
+    const real = globalThis.fetch;
+    globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => (String(input instanceof Request ? input.url : input).includes("/autopilot/results") ? Promise.resolve(new Response(JSON.stringify({ error: { code: "INTERNAL", message: "down" } }), { status: 500, headers: { "content-type": "application/json" } })) : real(input, init)));
+    try {
+      renderWithProviders(<AutopilotPage />);
+      await waitFor(() => expect(screen.getByTestId("autopilot-page").dataset["state"]).toBe("ready"));
+      const cell = () => within(screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === "evening-strangle-stop-2x")!).getByTestId("autopilot-card-paper");
+      expect(["Paper so far…", "Paper so farNot loaded"]).toContain(cell().textContent);
+      await waitFor(() => expect(cell().textContent).toBe("Paper so farNot loaded"), { timeout: 8000 });
+      expect(screen.getByTestId("autopilot-results").dataset["state"]).toBe("error");
+    } finally {
+      globalThis.fetch = real;
+    }
+  });
+});
+
 describe("HC-TR-230 the Autopilot screen: the weekly strangles", () => {
   it("HC-TR-230 the strategies are grouped by how far out they trade; a weekly card says its day, its expiry and its exit", async () => {
     renderWithProviders(<AutopilotPage />);
     await waitFor(() => expect(screen.getByTestId("autopilot-page").dataset["state"]).toBe("ready"));
     const groups = screen.getAllByTestId("autopilot-group");
-    expect(groups.map((g) => g.dataset["group"])).toEqual(["Longer-dated strategies", "Evening strangles, daily expiry", "Weekly strangles, Friday expiry"]);
-    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").map((c) => c.dataset["playbook"]))).toEqual([TRADABLE.filter((p) => !p.clock), TRADABLE.filter((p) => p.clock && p.clock.weekdayUtc === undefined), TRADABLE.filter((p) => p.clock?.weekdayUtc !== undefined)].map((g) => g.map((p) => p.id)));
-    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 6, 10]);
+    expect(groups.map((g) => g.dataset["group"])).toEqual(["Longer-dated strategies", "Evening strangles, daily expiry", "Weekly strangles, Friday expiry", "Monthly strangles, month-end expiry"]);
+    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").map((c) => c.dataset["playbook"]))).toEqual([TRADABLE.filter((p) => !p.clock), TRADABLE.filter((p) => p.clock && p.clock.weekdayUtc === undefined && p.clock.cadence !== "monthly"), TRADABLE.filter((p) => p.clock?.weekdayUtc !== undefined), TRADABLE.filter((p) => p.clock?.cadence === "monthly")].map((g) => g.map((p) => p.id)));
+    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 7, 11, 10]);
+    // HC-TR-233: a monthly row says when it enters, and its backtest reads per month
+    const monthly = screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === "monthly-strangle-premium-1000")!;
+    expect(monthly.textContent).toContain("Enters on the first evening a month-end expiry is 60 to 75 days out, once per expiry");
+    expect(monthly.textContent).toContain("Stop at 3x on each sold option, take 50 % of the premium");
+    expect(within(monthly).getByTestId("autopilot-card-backtest").textContent).toBe("Backtest+$44.80 a trade77% won · worst −$507.00176 entry days over 11 expiries, 8 positive");
     const card = (id: string) => screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === id)!;
     const fri = card("weekly-fri-strangle-stop-3x");
     expect(within(fri).getByText("Friday weekly strangle, stop at triple")).toBeTruthy();

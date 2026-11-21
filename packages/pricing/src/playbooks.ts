@@ -59,6 +59,10 @@ export interface PlaybookClock {
   toHourUtc: number;
   /** ADR-115: the one day of the week (UTC, 0 = Sunday) the window opens on; absent: every day. */
   weekdayUtc?: number | undefined;
+  /** ADR-116: set on a playbook for the monthly expiry; otherwise the cadence follows from `weekdayUtc`. */
+  cadence?: "monthly" | undefined;
+  /** ADR-117: one entry per expiry: the window is open on many evenings while the expiry is in range, and a trade that ended early is not taken again. */
+  oncePerExpiry?: boolean | undefined;
   /** The window as the trader reads it. */
   window: string;
   /** How the entry reads on the card, after "Entered ": when, and on which expiry. */
@@ -357,10 +361,194 @@ const weeklyPlaybook = (d: keyof typeof WEEKLY_DAYS, x: WeeklyExit): Playbook =>
 /** The weekly playbooks Autopilot enters by the clock (ADR-115): five exits, each on a Friday and on a Tuesday. */
 export const WEEKLY_PLAYBOOKS: readonly Playbook[] = (["fri", "tue"] as const).flatMap((d) => WEEKLY_EXITS.map((x) => weeklyPlaybook(d, x)));
 
+// ---- ADR-117: strikes by premium, and the monthly strangles -------------------------------------------------------
+
+const PREMIUM_STUDY = "docs/research/scripts/autopilot-study (study_premium.py and study_monthly.py; results-premium-daily, results-premium-weekly and results-monthly-BTC of 22 Nov 2026; BTC, 100 lots, the exchange's real fees)";
+const PREMIUM_TRIALS = { count: 432, note: "6 premium levels daily, 5 weekly on two entry days and 7 monthly shapes in four entry ranges naked and with wings, each under 6 exits, on the same data as the other studies; a monthly figure is the mean over every entry day of its range (they overlap) while Autopilot takes the first evening only; chosen after seeing the results, so the figures are in-sample and the paper record is the test" };
+/** Sell the call and the put each priced nearest `premium` (per unit of the underlying), or each `pct` per cent of the spot away. */
+function strangleBy(name: string, how: { premium: number } | { pct: number }): StrategyTemplate {
+  const by = "premium" in how ? { put: { premium: how.premium }, call: { premium: how.premium } } : { put: { pct: -how.pct }, call: { pct: how.pct } };
+  return {
+    name,
+    category: "Neutral",
+    description: "premium" in how ? `Sell the out-of-the-money call and put each priced nearest ${how.premium}.` : `Sell a call and a put ${how.pct} % out of the money.`,
+    legs: [{ ...P_SELL, k: 0, ...by.put }, { ...C_SELL, k: 0, ...by.call }],
+    risk: "undefined",
+  };
+}
+const HOURS = { fromHourUtc: 16, toHourUtc: 17, venues: ["delta_india"] } as const;
+const premiumPlaybook = (o: { id: string; name: string; summary: string; rationale: string; claim: string; template: StrategyTemplate; minDte: number; clock: Omit<PlaybookClock, "fromHourUtc" | "toHourUtc" | "venues"> }): Playbook => ({
+  id: o.id,
+  name: o.name,
+  summary: o.summary,
+  rationale: o.rationale,
+  evidence: { claim: o.claim, source: PREMIUM_STUDY },
+  template: o.template,
+  minDte: o.minDte,
+  lots: 100,
+  assets: ["BTC"],
+  thresholds: NO_RECORD,
+  trials: PREMIUM_TRIALS,
+  control: false,
+  clock: { ...HOURS, ...o.clock },
+});
+
+/** The daily and the weekly strangle sold by premium: the level a competitor is said to sell at, with the stop and the take that tested best there. */
+export const PREMIUM_PLAYBOOKS: readonly Playbook[] = [
+  premiumPlaybook({
+    id: "evening-strangle-premium-100",
+    name: "Evening strangle, 100 a side",
+    summary: "Each evening sell the call and the put each priced nearest 100 on the next expiry; close the whole trade at half the premium, and buy either option back if its price triples.",
+    rationale: "Strikes chosen by what they pay, not by distance: on a quiet day they sit closer, on a wild day further. At 100 a side (about 1.6 % away) it earns less than the closer strangles and had the highest share of winning days and the smallest worst day of the levels tried.",
+    claim: "Each side priced near 100, entered 21:30 IST, each option stopped at three times its price, the whole trade closed at half the premium: +4.25 a day on 106 days, 84 % positive, worst day -55; both halves of the period positive. At 300 a side with the stop alone: +10.79 a day, worst day -148.",
+    template: strangleBy("Evening strangle (100 a side)", { premium: 100 }),
+    minDte: 0.5,
+    clock: { window: "9:30 to 10:30 PM IST", describe: "once an evening, 9:30 to 10:30 PM IST, on the next expiry", maxDte: 1.5, legStop: 3, takeProfitOfCredit: 0.5 },
+  }),
+  premiumPlaybook({
+    id: "weekly-fri-strangle-premium-200",
+    name: "Friday weekly strangle, 200 a side",
+    summary: "Each Friday evening sell the call and the put each priced nearest 200 on the next Friday expiry; close the whole trade at half the premium, and buy either option back if its price triples.",
+    rationale: "The weekly trade far from the price: at 200 a side the strikes sit about 7.6 % away. It earns a fifth of the 3 %-away version with a worst week under half as large. Entered on a Tuesday the same trade under these exits was flat or negative at every premium, so there is no Tuesday version.",
+    claim: "Each side priced near 200, entered Friday 21:30 IST for the next Friday, each option stopped at three times its price, the whole trade closed at half the premium: +7.26 a week on 51 weeks, 78 % positive, worst week -68; both halves of the year positive. With no stop the same trade lost 1,140 in its worst week.",
+    template: strangleBy("Friday weekly strangle (200 a side)", { premium: 200 }),
+    minDte: 6.5,
+    clock: { weekdayUtc: 5, window: "Fridays, 9:30 to 10:30 PM IST", describe: "each Friday, 9:30 to 10:30 PM IST, on next Friday's expiry", maxDte: 7.5, legStop: 3, takeProfitOfCredit: 0.5 },
+  }),
+];
+
+type MonthlyExit = { sold: number; wing: number | null; key: string; name: string; exit: string; why: string; rule: string; figures: string; legStop?: number; take?: number; trail?: number };
+/** ADR-118: the other exits of the daily and weekly sets on the monthly expiry, and wings with a stop: all on the shape entered one month out. */
+const MONTHLY_EXITS: readonly MonthlyExit[] = [
+  { sold: 12, wing: null, key: "stop-2x", name: "stop at double", exit: "buy either one back if its price doubles, and hold the other to settlement", why: "The stop alone, with no take: it earned a little more on average than taking half and was positive in fewer expiries.", rule: "each option stopped at twice its price", figures: "+66.20 a trade on 165 entries over 11 expiries, 7 of them positive, 48 % positive, worst entry -300", legStop: 2 },
+  { sold: 12, wing: null, key: "stop-3x", name: "stop at triple", exit: "buy either one back if its price triples, and hold the other to settlement", why: "The looser stop alone.", rule: "each option stopped at three times its price", figures: "+71.30 a trade on 165 entries over 11 expiries, 7 of them positive, 52 % positive, worst entry -199", legStop: 3 },
+  { sold: 12, wing: null, key: "trail-rest", name: "trail the rest", exit: "buy either one back if its price doubles, then trail the profit on the other and close it when it gives back half of its best", why: "After a stop the other side is trailed instead of kept.", rule: "each option stopped at twice its price, the other side then trailed by half", figures: "+60.90 a trade on 165 entries over 11 expiries, 7 of them positive, 45 % positive, worst entry -173", legStop: 2, trail: 50 },
+  { sold: 12, wing: 18, key: "wings", name: "with wings", exit: "buy the options 18 % away as wings, and hold to settlement", why: "Wings and nothing else LOST in the study, as did every monthly shape held to settlement: it runs on paper as a check of that, not because it earned.", rule: "held to settlement", figures: "-105.10 a trade on 165 entries over 11 expiries, 6 of them positive, 58 % positive, worst entry -526" },
+  { sold: 12, wing: 18, key: "wings-stop-3x", name: "wings and a stop at triple", exit: "buy the options 18 % away as wings; buy a sold option back if its price triples and keep everything else to settlement", why: "The best monthly result of the study: when a sold option is stopped the wing behind it is kept, and in a month that keeps trending the wing pays. Positive in every one of the eleven expiries, on wing prices that are model marks: the paper record has to confirm it.", rule: "each sold option stopped at three times its price, the wings kept", figures: "+209.10 a trade on 165 entries over 11 expiries, 11 of them positive, 92 % positive, worst entry -266", legStop: 3 },
+  { sold: 12, wing: 18, key: "wings-take-half", name: "wings, stop at triple, take half", exit: "buy the options 18 % away as wings; close the whole trade at half the premium, and buy a sold option back if its price triples", why: "The same with the quick profit: it wins more often and earns far less, because the take closes the trade before a kept wing can pay.", rule: "each sold option stopped at three times its price, the whole trade closed at half the premium", figures: "+33.60 a trade on 165 entries over 11 expiries, 9 of them positive, 94 % positive, worst entry -266", legStop: 3, take: 0.5 },
+  { sold: 8, wing: 12, key: "wings-take-half", name: "wings, stop at triple, take half", exit: "buy the options 12 % away as wings; close the whole trade at half the premium, and buy a sold option back if its price triples", why: "Closer strikes with wings and the quick profit: the highest share of winning entries of the study, positive in every expiry.", rule: "each sold option stopped at three times its price, the whole trade closed at half the premium", figures: "+54.80 a trade on 165 entries over 11 expiries, 11 of them positive, 98 % positive, worst entry -428", legStop: 3, take: 0.5 },
+];
+const MONTHLY_FAR = { cadence: "monthly", oncePerExpiry: true, window: "any evening, 9:30 to 10:30 PM IST", describe: "on the first evening a month-end expiry is 60 to 75 days out, once per expiry", maxDte: 75 } as const;
+/**
+ * The monthly strangles (ADR-117). Held with no stop, or with wings, a monthly strangle LOST at every level tried; with
+ * a stop on each option and the whole trade closed at half the premium it was positive in 7 to 10 of 11 expiries.
+ */
+export const MONTHLY_PLAYBOOKS: readonly Playbook[] = [
+  premiumPlaybook({
+    id: "monthly-strangle-premium-1000",
+    name: "Monthly strangle, 1,000 a side",
+    summary: "Two months before a month-end expiry sell the call and the put each priced nearest 1,000; close the whole trade at half the premium, and buy either option back if its price triples.",
+    rationale: "The trade a competitor is said to run: far strikes (about 20 % away) on the expiry two months out. Held to settlement it lost in the study; it is the take at half the premium that made it pay, usually within the first weeks.",
+    claim: "Each side priced near 1,000, entered 60 to 75 days before expiry, each option stopped at three times its price, the whole trade closed at half the premium: +44.80 a trade on 176 entries over 11 expiries, 8 of them positive, 77 % positive, worst entry -507. Held with no stop the same entries averaged -139.",
+    template: strangleBy("Monthly strangle (1,000 a side)", { premium: 1000 }),
+    minDte: 60,
+    clock: { ...MONTHLY_FAR, legStop: 3, takeProfitOfCredit: 0.5 },
+  }),
+  premiumPlaybook({
+    id: "monthly-strangle-8pct",
+    name: "Monthly strangle, 8 % away",
+    summary: "Two months before a month-end expiry sell a call and a put 8 % away; close the whole trade at half the premium, and buy either option back if its price doubles.",
+    rationale: "The same timing with strikes much closer, so far more premium: under a stop at twice and the take at half it had the best average of the naked monthly shapes and the largest single losses. On paper beside the far version to see which the take at half suits.",
+    claim: "Sold 8 % away, entered 60 to 75 days before expiry, each option stopped at twice its price, the whole trade closed at half the premium: +102.70 a trade on 176 entries over 11 expiries, 9 of them positive, 69 % positive, worst entry -698. The same with the stop at three times averaged +161.00 with a worst entry of -1,130.",
+    template: strangleBy("Monthly strangle (8 % away)", { pct: 8 }),
+    minDte: 60,
+    clock: { ...MONTHLY_FAR, legStop: 2, takeProfitOfCredit: 0.5 },
+  }),
+  premiumPlaybook({
+    id: "monthly-strangle-12pct-near",
+    name: "Monthly strangle, 12 % away, one month out",
+    summary: "A month before a month-end expiry sell a call and a put 12 % away; close the whole trade at half the premium, and buy either option back if its price doubles.",
+    rationale: "The nearer month: less time to wait and the steadiest of the monthly shapes, with its worst expiry about flat.",
+    claim: "Sold 12 % away, entered 30 to 44 days before expiry, each option stopped at twice its price, the whole trade closed at half the premium: +45.90 a trade on 165 entries over 11 expiries, 9 of them positive, 65 % positive, worst entry -300.",
+    template: strangleBy("Monthly strangle (12 % away)", { pct: 12 }),
+    minDte: 30,
+    clock: { cadence: "monthly", oncePerExpiry: true, window: "any evening, 9:30 to 10:30 PM IST", describe: "on the first evening a month-end expiry is 30 to 44 days out, once per expiry", maxDte: 44, legStop: 2, takeProfitOfCredit: 0.5 },
+  }),
+  // ---- every exit on one shape (12 % away, one month out), as the daily and weekly sets have, and the winged ones -----
+  ...MONTHLY_EXITS.map((x) =>
+    premiumPlaybook({
+      id: `monthly-strangle-${x.sold}pct-near-${x.key}`,
+      name: `Monthly strangle, ${x.sold} % away, one month out, ${x.name}`,
+      summary: `A month before a month-end expiry sell a call and a put ${x.sold} % away; ${x.exit}.`,
+      rationale: x.why,
+      claim: `Sold ${x.sold} % away${x.wing === null ? "" : `, wings ${x.wing} % away`}, entered 30 to 44 days before expiry, ${x.rule}: ${x.figures}.`,
+      template: x.wing === null ? strangleBy(`Monthly strangle (${x.sold} % away)`, { pct: x.sold }) : strangleAway(`Monthly strangle with wings (${x.sold} % / ${x.wing} %)`, x.sold, x.wing),
+      minDte: 30,
+      clock: { cadence: "monthly", oncePerExpiry: true, window: "any evening, 9:30 to 10:30 PM IST", describe: "on the first evening a month-end expiry is 30 to 44 days out, once per expiry", maxDte: 44, legStop: x.legStop, takeProfitOfCredit: x.take, trailRestPct: x.trail },
+    }),
+  ),
+];
+
 /** Every playbook Autopilot may trade: the recorded ones (never the control) and the ones entered by the clock. */
-export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...WEEKLY_PLAYBOOKS];
+export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc === undefined), ...WEEKLY_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc !== undefined), ...MONTHLY_PLAYBOOKS];
 export function autopilotPlaybookById(id: string): Playbook | undefined {
   return AUTOPILOT_PLAYBOOKS.find((p) => p.id === id);
+}
+
+/** ADR-117: a month-end expiry is the last Friday of its month (YYYY-MM-DD): the one a monthly playbook trades. */
+export function isMonthEndExpiry(expiry: string): boolean {
+  const d = new Date(`${expiry}T00:00:00Z`);
+  return d.getUTCDay() === 5 && new Date(d.getTime() + 7 * 86_400_000).getUTCMonth() !== d.getUTCMonth();
+}
+
+/** ADR-116: how often a playbook trades, which is how the Autopilot screen sorts them. `trend`: when its market condition is met. */
+export const PLAYBOOK_CADENCES = ["trend", "daily", "weekly", "monthly"] as const;
+export type PlaybookCadence = (typeof PLAYBOOK_CADENCES)[number];
+export function playbookCadence(p: Playbook): PlaybookCadence {
+  if (!p.clock) return "trend";
+  return p.clock.cadence ?? (p.clock.weekdayUtc === undefined ? "daily" : "weekly");
+}
+
+/** A clock playbook's backtest as figures (the same ones its evidence sentence quotes), for a table: USD per trade at the playbook's size. */
+export interface PlaybookBacktest {
+  /** Mean net result per trade. */
+  mean: number;
+  /** What one trade is: a day's, a week's, or (monthly: entries of one expiry overlap, so it is not "a month") a trade. */
+  per: "day" | "week" | "trade";
+  /** Share of trades that ended positive, in per cent. */
+  positivePct: number;
+  /** The worst single trade. */
+  worst: number;
+  /** Trades in the sample. */
+  samples: number;
+  /** What the sample is when it is not simply that many days or weeks (monthly: entry days over how many expiries, and how many of those were positive). */
+  basis?: string | undefined;
+}
+const bt = (mean: number, per: PlaybookBacktest["per"], positivePct: number, worst: number, samples: number, basis?: string): PlaybookBacktest => ({ mean, per, positivePct, worst, samples, basis });
+const mo = (mean: number, positivePct: number, worst: number, samples: number, expiriesPositive: number, expiries = 11): PlaybookBacktest => bt(mean, "trade", positivePct, worst, samples, `${samples} entry days over ${expiries} expiries, ${expiriesPositive} positive`);
+const BACKTESTS: Record<string, PlaybookBacktest> = {
+  "evening-strangle-wings-3": bt(5.93, "day", 73, -78, 84),
+  "evening-strangle-wings-5": bt(7.68, "day", 89, -90, 55),
+  "evening-strangle-stop-2x": bt(7.51, "day", 45, -60, 106),
+  "evening-strangle-stop-3x": bt(12.0, "day", 61, -98, 106),
+  "evening-strangle-take-half": bt(6.75, "day", 59, -60, 106),
+  "evening-strangle-trail-rest": bt(6.45, "day", 45, -42, 106),
+  "weekly-fri-strangle-wings": bt(35.58, "week", 73, -246, 26),
+  "weekly-fri-strangle-stop-2x": bt(28.33, "week", 43, -268, 51),
+  "weekly-fri-strangle-stop-3x": bt(40.65, "week", 57, -168, 51),
+  "weekly-fri-strangle-take-half": bt(14.52, "week", 51, -268, 51),
+  "weekly-fri-strangle-trail-rest": bt(23.52, "week", 41, -230, 51),
+  "weekly-tue-strangle-wings": bt(9.03, "week", 62, -183, 21),
+  "weekly-tue-strangle-stop-2x": bt(0.5, "week", 38, -121, 47),
+  "weekly-tue-strangle-stop-3x": bt(-2.92, "week", 51, -171, 47),
+  "weekly-tue-strangle-take-half": bt(0.35, "week", 51, -121, 47),
+  "weekly-tue-strangle-trail-rest": bt(-3.6, "week", 38, -121, 47),
+  "evening-strangle-premium-100": bt(4.25, "day", 84, -55, 106),
+  "weekly-fri-strangle-premium-200": bt(7.26, "week", 78, -68, 51),
+  "monthly-strangle-premium-1000": mo(44.8, 77, -507, 176, 8),
+  "monthly-strangle-8pct": mo(102.7, 69, -698, 176, 9),
+  "monthly-strangle-12pct-near": mo(45.9, 65, -300, 165, 9),
+  "monthly-strangle-12pct-near-stop-2x": mo(66.2, 48, -300, 165, 7),
+  "monthly-strangle-12pct-near-stop-3x": mo(71.3, 52, -199, 165, 7),
+  "monthly-strangle-12pct-near-trail-rest": mo(60.9, 45, -173, 165, 7),
+  "monthly-strangle-12pct-near-wings": mo(-105.1, 58, -526, 165, 6),
+  "monthly-strangle-12pct-near-wings-stop-3x": mo(209.1, 92, -266, 165, 11),
+  "monthly-strangle-12pct-near-wings-take-half": mo(33.6, 94, -266, 165, 9),
+  "monthly-strangle-8pct-near-wings-take-half": mo(54.8, 98, -428, 165, 11),
+};
+/** The backtest figures of a playbook entered by the clock; undefined for a recorded playbook (its record is live data). */
+export function playbookBacktest(id: string): PlaybookBacktest | undefined {
+  return BACKTESTS[id];
 }
 
 /** The template a playbook places: from the catalogue by name, or its inline one. */
@@ -399,7 +587,7 @@ export function proposalFor(p: Playbook, daysIn: readonly EodDay[], base: { unit
   if (!tpl || daysIn.length === 0) return { ok: false, reason: "noDays" };
   const days = [...daysIn].sort((a, b) => a.day.localeCompare(b.day));
   const i = days.length - 1;
-  const entry = entryFor(days, i, tpl, { lots: p.lots, unitsPerLot: base.unitsPerLot, minDte: p.minDte, calendar: base.calendar, conditions: p.conditions });
+  const entry = entryFor(days, i, tpl, { lots: p.lots, unitsPerLot: base.unitsPerLot, minDte: p.minDte, calendar: base.calendar, conditions: p.conditions, expiryOk: p.clock?.cadence === "monthly" ? isMonthEndExpiry : undefined });
   if (!entry.ok) return { ok: false, reason: entry.reason };
   const d = days[i]!;
   const entryCost = entry.legs.reduce((sum, l) => sum + (l.kind === "future" ? 0 : (l.side === "buy" ? 1 : -1) * l.quantity * l.price), 0);

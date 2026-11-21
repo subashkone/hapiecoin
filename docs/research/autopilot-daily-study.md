@@ -85,6 +85,51 @@ A second run (`scripts/autopilot-study/fetch_weekly.py`, `study_weekly.py`, tabl
 
 The Friday entry with a stop was positive in both halves of the year under every exit (3x: +1,466 and +607). Sold 5 % away it was similar (3x: +42.01 a week on 36 weeks, worst −137). Entries two to four days before expiry were flat or negative. The monthly cycle has one to seven trades per entry day and swings from +300 to −1,290 a trade: no conclusion. ADR-115 put the five stopped or winged exits on paper for both entry days.
 
-## 8. Not tested yet
+## 8. Strikes by premium, and the monthly expiry
 
-Calendar spreads; ETH; strikes set by the day's expected move instead of a fixed distance; skipping US announcement days; a trend filter on the sold side; a timed exit before settlement; margin.
+`study_premium.py` (one entry per expiry, the call and the put each priced nearest a target) and `study_monthly.py` (eleven monthly expiries of 2026, every entry day from 75 to 14 days before, hourly marks); tables in `results-premium-daily-2026-11-22.txt`, `results-premium-weekly-2026-11-22.txt` and `results-monthly-BTC-2026-11-22.txt`. 100 lots, net of fees.
+
+| Daily, entered 21:30 IST | About how far | Stop at 3x: mean / worst day | Stop at 3x, take half: mean / days positive / worst |
+|---|---|---|---|
+| 50 a side | 2.2 % | +1.71 / −84 | +2.17 / 82 % / −25 |
+| 100 a side | 1.6 % | +4.53 / −78 | +4.25 / 84 % / −55 |
+| 150 a side | 1.2 % | +7.00 / −78 | +6.53 / 82 % / −64 |
+| 200 a side | 0.9 % | +8.61 / −90 | +6.14 / 77 % / −90 |
+| 300 a side | 0.6 % | +10.79 / −148 | +7.98 / 75 % / −148 |
+| 400 a side | 0.3 % | +12.58 / −148 | +10.29 / 73 % / −148 |
+
+Every level was positive in both halves of the period with a stop. The mean and the worst day grow together.
+
+| Weekly, Friday entry | About how far | Stop at 3x: mean / worst week | Stop at 3x, take half: mean / positive / worst | No stop: worst week |
+|---|---|---|---|---|
+| 100 a side | 9.8 % | +6.00 / −94 | +3.13 / 80 % / −78 | −1,106 |
+| 200 a side | 7.6 % | +8.91 / −86 | +7.26 / 78 % / −68 | −1,140 |
+| 300 a side | 6.3 % | +14.46 / −100 | +7.42 / 73 % / −100 | −1,173 |
+| 500 a side | 4.5 % | +20.74 / −131 | +14.99 / 73 % / −131 | −1,188 |
+| 800 a side | 2.8 % | +26.61 / −176 | +21.76 / 71 % / −176 | −1,228 |
+
+Entered on a Tuesday the same trades were flat or negative at every premium.
+
+| Monthly (11 expiries) | Entry | Hold, no stop | Stop at 2x, take half: mean / expiries positive / worst expiry | Stop at 3x, take half |
+|---|---|---|---|---|
+| 1,000 a side (about 20 % away) | 60 to 75 days before | −139 | +26.4 / 7 of 11 / −69 | +44.8 / 8 of 11 / −132 |
+| 1,000 a side | 30 to 44 days before | −307 | +37.1 / 8 of 11 / −33 | +34.4 / 8 of 11 / −131 |
+| 8 % away | 60 to 75 days before | | +102.7 / 9 of 11 / −123 | +161.0 / 9 of 11 / −264 |
+| 12 % away | 30 to 44 days before | | +45.9 / 9 of 11 / −8 | +49.7 / 9 of 11 / −115 |
+| 16 % away | 60 to 75 days before | | +58.1 / 8 of 11 / −99 | +86.1 / 9 of 11 / −130 |
+
+Held to settlement with no stop, or with wings bought half as far again and nothing else, every monthly shape lost. The take at half the premium is what pays on a naked one: the trade is usually closed in its first weeks. ADR-117 put three monthly shapes, a daily one at 100 a side and a Friday one at 200 a side on paper.
+
+With every exit on the winged shapes as well (rerun for ADR-118), entered 30 to 44 days before:
+
+| Monthly, one month out | Hold | Stop at 3x | Stop at 3x, take half |
+|---|---|---|---|
+| 12 % away, naked | −243 / 6 of 11 | +71.3 / 7 of 11 / worst entry −199 | +49.7 / 9 of 11 |
+| 12 % away, wings 18 % | −105 / 6 of 11 | +209.1 / 11 of 11 / worst entry −266 | +33.6 / 9 of 11 |
+| 8 % away, wings 12 % | −38 / 5 of 11 | +338.5 / 10 of 11 / worst entry −428 | +54.8 / 11 of 11 |
+
+Wings with a stop on the sold options is the best monthly result: the wing behind a stopped option is kept and pays when the month keeps trending. It rests on eleven expiries of a year with large one-way months and on far-wing marks that are model prices. Every figure is the mean over every entry day of the range; Autopilot enters on the first evening only.
+
+## 9. Not tested yet
+
+Calendar spreads; ETH and XAUT; strikes set by the day's expected move instead of a fixed distance; skipping US announcement days; a trend filter on the sold side; a timed exit before settlement; margin.

@@ -1,0 +1,52 @@
+expiries in the cache: 106 (2026-08-08 .. 2026-11-21); 100 lots x 0.001 per leg; net of fees; naked sold strangle
+
+==================================================================================================================================
+entered 20 hours before settlement
+
+  each side priced near 50: mean premium collected   11.5, sold on average  2.2 % away
+      hold         n=106 mean=   -0.10 win= 91% worst=  -275.5 total=    -11 | first half     -53, second half     +42
+      stop2x       n=106 mean=   +2.43 win= 52% worst=   -40.9 total=   +258 | first half    +110, second half    +148
+      stop3x       n=106 mean=   +1.71 win= 67% worst=   -83.5 total=   +181 | first half     +92, second half     +89
+      stop2x+half  n=106 mean=   +2.41 win= 71% worst=   -14.5 total=   +255 | first half    +112, second half    +143
+      stop3x+half  n=106 mean=   +2.17 win= 82% worst=   -25.0 total=   +230 | first half    +133, second half     +97
+      stop2x+trail n=106 mean=   +2.09 win= 51% worst=   -40.9 total=   +221 | first half    +102, second half    +120
+
+  each side priced near 100: mean premium collected   20.3, sold on average  1.6 % away
+      hold         n=106 mean=   +1.61 win= 82% worst=  -307.6 total=   +171 | first half     +44, second half    +127
+      stop2x       n=106 mean=   +2.83 win= 43% worst=   -35.1 total=   +300 | first half    +119, second half    +181
+      stop3x       n=106 mean=   +4.53 win= 65% worst=   -77.8 total=   +480 | first half    +273, second half    +207
+      stop2x+half  n=106 mean=   +2.86 win= 64% worst=   -31.5 total=   +303 | first half    +129, second half    +175
+      stop3x+half  n=106 mean=   +4.25 win= 84% worst=   -55.0 total=   +451 | first half    +296, second half    +155
+      stop2x+trail n=106 mean=   +2.65 win= 42% worst=   -35.1 total=   +281 | first half    +135, second half    +146
+
+  each side priced near 150: mean premium collected   29.8, sold on average  1.2 % away
+      hold         n=106 mean=   +1.90 win= 76% worst=  -338.2 total=   +201 | first half    +132, second half     +69
+      stop2x       n=106 mean=   +4.14 win= 41% worst=   -60.2 total=   +439 | first half    +227, second half    +212
+      stop3x       n=106 mean=   +7.00 win= 64% worst=   -78.1 total=   +742 | first half    +439, second half    +303
+      stop2x+half  n=106 mean=   +3.99 win= 59% worst=   -60.2 total=   +423 | first half    +222, second half    +201
+      stop3x+half  n=106 mean=   +6.53 win= 82% worst=   -64.0 total=   +692 | first half    +422, second half    +270
+      stop2x+trail n=106 mean=   +4.12 win= 41% worst=   -34.9 total=   +436 | first half    +253, second half    +183
+
+  each side priced near 200: mean premium collected   39.1, sold on average  0.9 % away
+      hold         n=106 mean=   +2.89 win= 73% worst=  -349.1 total=   +306 | first half    +237, second half     +69
+      stop2x       n=106 mean=   +5.61 win= 41% worst=   -82.1 total=   +595 | first half    +327, second half    +267
+      stop3x       n=106 mean=   +8.61 win= 62% worst=   -90.4 total=   +912 | first half    +536, second half    +376
+      stop2x+half  n=106 mean=   +4.58 win= 58% worst=   -82.1 total=   +485 | first half    +257, second half    +229
+      stop3x+half  n=106 mean=   +6.14 win= 77% worst=   -90.4 total=   +651 | first half    +505, second half    +146
+      stop2x+trail n=106 mean=   +5.43 win= 40% worst=   -38.2 total=   +576 | first half    +353, second half    +223
+
+  each side priced near 300: mean premium collected   55.4, sold on average  0.6 % away
+      hold         n=106 mean=   +5.49 win= 68% worst=  -362.2 total=   +582 | first half    +391, second half    +191
+      stop2x       n=106 mean=   +8.05 win= 40% worst=   -79.1 total=   +854 | first half    +489, second half    +365
+      stop3x       n=106 mean=  +10.79 win= 60% worst=  -148.2 total=  +1144 | first half    +711, second half    +433
+      stop2x+half  n=106 mean=   +7.49 win= 55% worst=   -79.1 total=   +794 | first half    +421, second half    +373
+      stop3x+half  n=106 mean=   +7.98 win= 75% worst=  -148.2 total=   +846 | first half    +687, second half    +159
+      stop2x+trail n=106 mean=   +6.73 win= 38% worst=   -46.1 total=   +713 | first half    +461, second half    +252
+
+  each side priced near 400: mean premium collected   67.5, sold on average  0.3 % away
+      hold         n=106 mean=   +6.69 win= 67% worst=  -352.9 total=   +709 | first half    +407, second half    +301
+      stop2x       n=106 mean=   +7.28 win= 40% worst=   -84.2 total=   +772 | first half    +347, second half    +424
+      stop3x       n=106 mean=  +12.58 win= 61% worst=  -148.2 total=  +1333 | first half    +881, second half    +452
+      stop2x+half  n=106 mean=   +7.53 win= 52% worst=   -84.2 total=   +799 | first half    +419, second half    +380
+      stop3x+half  n=106 mean=  +10.29 win= 73% worst=  -148.2 total=  +1091 | first half    +760, second half    +331
+      stop2x+trail n=106 mean=   +5.40 win= 39% worst=   -56.6 total=   +572 | first half    +293, second half    +279
