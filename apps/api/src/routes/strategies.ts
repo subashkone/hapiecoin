@@ -216,6 +216,7 @@ export function toStrategy(row: StrategyRow, legs: LegRow[], pnl: PnlRow[], orde
     startedAt: iso(row.startedAt),
     closedAt: iso(row.closedAt),
     closeReason: row.closeReason,
+    autopilotPlaybookId: row.autopilotPlaybookId,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -899,6 +900,8 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       const row = await loadOwned(me, c.req.valid("param").id);
       if (row.status !== "paper") throw errors.conflict("Only a paper strategy can be stopped");
       const body = c.req.valid("json");
+      // ADR-109: a draft has no close time, so Autopilot's cool-down would not start and the row could be started again by hand
+      if (!body.archive && row.autopilotPlaybookId) throw errors.conflict("An Autopilot trade can only be closed, not kept as a draft");
       const before = await full(row);
       const legs = await legsOf(row.id);
       const open = legs.filter((l) => l.status === "open");

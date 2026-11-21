@@ -1944,5 +1944,27 @@
     "how": "autopilot_runs per trader: entered (spot, days to expiry, premium, maximum profit and loss, fees, capital, target, stop, legs), skipped (the reason, written once per change of reason), noted (the structure prices at least 10 % better than the open trade's entry, at most once per 15 minutes); the newest 200 lines come with GET /v1/autopilot",
     "evidence": "ADR-108 (21 Nov 2026): apps/api/src/autopilot.ts (skip, noteBetterEntry, betterEntry, autopilotView), packages/schema/src/autopilot.ts (AutopilotRun); tests: api autopilot.test.ts HC-TR-218, schema autopilot.test.ts HC-TR-218",
     "test": "unit (api + schema)"
+  },
+  {
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The Autopilot screen: the master switch, a summary, and one card per strategy with its switch, how a winner is taken off, its record and what it is doing now",
+    "how": "/autopilot behind the sign-in and plan check; the switch and every card change save through PUT /v1/autopilot; the summary shows open trades, the capital they tie up, today's result and strategies on; a card shows the playbook's record per coin and, per coin, the open trade's P&L or the newest reason it did not enter; the log lists the newest lines; a failed load offers a retry",
+    "evidence": "ADR-109, GAPS #146 (21 Nov 2026): apps/web/src/app/autopilot, apps/web/src/components/autopilot/AutopilotPage.tsx, apps/web/src/lib/api/autopilot.ts, apps/web/src/lib/strategy/autopilot.ts (latestRun, capitalInUse), apps/web/test/mock-api.ts; tests: autopilot-page.test.tsx HC-TR-219, lib/strategy/autopilot.test.ts HC-TR-219",
+    "test": "unit (web)"
+  },
+  {
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The trades Autopilot holds, each with a health reading, its exit levels, Exit now and Open on the Desk; Stop everything switches it off and closes them all",
+    "how": "only strategies Autopilot opened and still holds; health in three steps from the P&L and the stop distance (on track, losing, close to its stop at three quarters used), shown only while every open leg has a live price; the target or trailing level and the stop from the rules armed at entry; Exit now through the Paper list's stop dialog, which offers no draft for an Autopilot trade (the API refuses one); Open on the Desk follows the trade in the pane; Stop everything, after a confirmation and with live prices, saves enabled off, reads again what Autopilot holds and squares each trade off, never the trader's own; a trade with no live price or one the server refuses is left open and named; the list is re-read every minute",
+    "evidence": "ADR-109 (21 Nov 2026): AutopilotPage.tsx (autopilot-running, autopilot-stop-dialog), apps/web/src/lib/strategy/autopilot.ts (autopilotLevels, tradeHealth), packages/schema/src/strategies.ts (autopilotPlaybookId), apps/api/src/routes/strategies.ts (toStrategy); tests: autopilot-page.test.tsx HC-TR-220, lib/strategy/autopilot.test.ts HC-TR-220",
+    "test": "unit (web)"
   }
 ]

@@ -388,6 +388,11 @@ describe("HC-TR-217 an Autopilot trade from its exit to the next entry", () => {
     expect(batch.status).toBe(409);
     expect(JSON.stringify(await batch.json())).toContain(AUTOPILOT_PAPER_ONLY_MESSAGE);
     expect((await paper())[0]).toMatchObject({ status: "paper", tradingMode: "paper" });
+    // nor be parked as a draft: it is closed or it stays (ADR-109)
+    const draft = await t.request(`/v1/strategies/${s!.id}/stop`, { cookie, json: { archive: false, exits: {} } });
+    expect(draft.status).toBe(409);
+    expect(JSON.stringify(await draft.json())).toContain("can only be closed");
+    expect((await paper())[0]).toMatchObject({ status: "paper" });
     // a second open row for the same trader, playbook, venue and asset is refused by the index
     const second = { id: "strat_autopilot_twin", userId, name: "twin", asset: "BTC" as const, venue: "delta_india" as const, status: "paper" as const, tradingMode: "paper" as const, autopilotPlaybookId: BUTTERFLY as string | null };
     await expect(t.db.insert(strategies).values(second)).rejects.toThrow();

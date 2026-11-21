@@ -18,6 +18,15 @@ beforeEach(() => {
 });
 afterEach(() => mock.restore());
 
+describe("HC-SH-143 Autopilot in the palette", () => {
+  it("HC-SH-143 a signed-in trader has an Autopilot command that opens its screen; a visitor has none", () => {
+    const navigate = vi.fn();
+    expect(buildCommands({ loggedIn: false, navigate, toggleTheme: vi.fn() }).find((c) => c.id === "nav:autopilot")).toBeUndefined();
+    buildCommands({ loggedIn: true, navigate, toggleTheme: vi.fn() }).find((c) => c.id === "nav:autopilot")!.run();
+    expect(navigate).toHaveBeenCalledWith("/autopilot");
+  });
+});
+
 describe("HC-PB-059 command palette", () => {
   it("buildCommands offers Sign in when logged out and the Desk when logged in", () => {
     const navigate = vi.fn();

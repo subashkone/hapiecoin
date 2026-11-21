@@ -1236,5 +1236,16 @@
     "how": "The header, the palette, the tour, the assistant, the offline page, the installed app's start address and the links the server sends all use these addresses; the workspace is named Desk in the header, the shortcuts sheet and the copy; the menu says My plan and Invite friends; no redirect is kept from the earlier addresses (the product had no users when it was renamed)",
     "evidence": "ADR-106, GAPS #143 (21 Nov 2026): apps/web/src/app/desk, apps/web/src/app/plans, apps/web/src/app/invite, apps/web/src/app/manifest.ts, apps/api/src/alerts-fire.ts, proposals.ts, rules-engine.ts; tests: apps/web/src/lib/redirects.test.ts HC-SH-142, AppHeader.test.tsx, e2e public.spec.ts HC-SH-142",
     "test": "unit (web), e2e"
+  },
+  {
+    "route": "/desk",
+    "screen": "Shared chrome · routes",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Autopilot is reachable and visible from the Desk: a header and palette entry, an item on the status bar with its open trades and P&L, and a tag on the Paper cards it opened",
+    "how": "the header's Autopilot tab and the palette's Autopilot command open /autopilot; the status bar always shows On or Off and the open Autopilot trades, with their P&L once every leg has a live price; a Paper card of a trade Autopilot opened carries an Autopilot tag and its Go live is disabled with the reason",
+    "evidence": "ADR-109 (21 Nov 2026): apps/web/src/components/header/AppHeader.tsx (TABS), shell/CommandPalette.tsx, chrome/PortfolioBar.tsx (bar-autopilot), trading/PaperPanel.tsx (card-autopilot); tests: autopilot-page.test.tsx HC-SH-143, AppHeader.test.tsx HC-SH-143, shell.test.tsx HC-SH-143",
+    "test": "unit (web)"
   }
 ]

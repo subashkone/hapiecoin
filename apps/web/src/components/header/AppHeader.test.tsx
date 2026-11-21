@@ -167,6 +167,19 @@ describe("HC-SH-015..021 default header", () => {
     renderWithProviders(<AppHeader variant="default" initialUser={user} />);
     expect(screen.getByText("Market Analytics").getAttribute("aria-current")).toBe("page");
   });
+  it("HC-SH-143 the header has an Autopilot tab for a signed-in trader, active on its screen; a visitor sees Home and Market Analytics only", () => {
+    pathnameMock.value = "/autopilot";
+    const inn = renderWithProviders(<AppHeader variant="default" initialUser={user} />);
+    const tab = within(screen.getByRole("navigation", { name: "Primary" })).getByText("Autopilot");
+    expect(tab.getAttribute("href")).toBe("/autopilot");
+    expect(tab.getAttribute("aria-current")).toBe("page");
+    inn.unmount();
+    renderWithProviders(<AppHeader variant="default" initialUser={null} />);
+    const nav = screen.getByRole("navigation", { name: "Primary" });
+    expect(within(nav).queryByText("Autopilot")).toBeNull();
+    expect(within(nav).getByText("Market Analytics").getAttribute("href")).toBe("/analytics");
+    expect(within(nav).getByText("Home")).toBeTruthy();
+  });
   it("HC-SH-021 shows Home / Market Analytics and Sign In when logged out", async () => {
     pathnameMock.value = "/";
     renderWithProviders(<AppHeader variant="default" initialUser={null} />);

@@ -56,6 +56,7 @@ export function buildCommands(opts: {
   if (opts.loggedIn) {
     list.push(
       nav("nav:desk", "/desk", "Desk", ["options chain", "builder", "payoff"]),
+      nav("nav:autopilot", "/autopilot", "Autopilot: paper trades it opens by itself", ["auto", "automatic", "algo", "playbook", "bot"]),
       nav("nav:screener", "/desk?tab=screener", "Options screener", ["screener", "premium per day", "iv", "skew", "delta", "scan"]), // HC-WS-112
       nav("nav:analytics-hub", "/analytics/hub", "Analytics: Markets Hub", ["analytics", "markets", "open interest", "hub"]),
       nav("nav:analytics-overview", "/analytics/overview", "Analytics: Futures overview", ["analytics", "futures", "long short", "fear greed"]),
