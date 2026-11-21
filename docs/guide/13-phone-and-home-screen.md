@@ -13,13 +13,13 @@ On a phone the header compacts, the two panes stack behind a Chain & Builder / A
 
 ## Screens
 
-![Pixel 7, dark](../../apps/web/e2e/__screenshots__/analyse-phone-dark.png)
+![Pixel 7, dark](../../apps/web/e2e/__screenshots__/desk-phone-dark.png)
 *Pixel 7, dark*
 
-![Pixel 7, light](../../apps/web/e2e/__screenshots__/analyse-phone-light.png)
+![Pixel 7, light](../../apps/web/e2e/__screenshots__/desk-phone-light.png)
 *Pixel 7, light*
 
-![iPhone 14](../../apps/web/e2e/__screenshots__/analyse-iphone-dark.png)
+![iPhone 14](../../apps/web/e2e/__screenshots__/desk-iphone-dark.png)
 *iPhone 14*
 
 ![Install dialog on an iPhone](../../apps/web/e2e/__screenshots__/guide/install-dialog-iphone.png)
@@ -36,15 +36,15 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
-| HC-SH-130 | The workspace on a phone: a compact header, stacked panes, tab strips that scroll to their last tab, no sideways page scroll | Below 768 px the analyse header tightens its gaps; the exchange chip, currency toggle, theme toggle and venue switch step back into their menus, the logo keeps its mark, the futures price keeps its figure (no 24 h change), the feed status keeps its dot; below 1000 px the panes stack behind the Chain & Builder / Analysis switch, the strip info and collapse buttons hide, and both tab strips scroll sideways with a hidden scrollbar; an explicit viewport (device width, no forced zoom, notch painted); one shared useMediaQuery hook | built | e2e (phone) |
+| HC-SH-130 | The workspace on a phone: a compact header, stacked panes, tab strips that scroll to their last tab, no sideways page scroll | Below 768 px the desk header tightens its gaps; the exchange chip, currency toggle, theme toggle and venue switch step back into their menus, the logo keeps its mark, the futures price keeps its figure (no 24 h change), the feed status keeps its dot; below 1000 px the panes stack behind the Chain & Builder / Analysis switch, the strip info and collapse buttons hide, and both tab strips scroll sideways with a hidden scrollbar; an explicit viewport (device width, no forced zoom, notch painted); one shared useMediaQuery hook | built | e2e (phone) |
 
-### Analyse · Chain · phone
+### Desk · Chain · phone
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-SH-131 | The chain on touch: one side at a time, a drag pans the columns, a tapped row shows finger-sized B / S / lots / details controls | A touch drag on either side track moves the mirrored offset through the wheel path once it is clearly horizontal (10 px slop), otherwise the page scrolls; on a coarse pointer a tapped row becomes the focused row that carries the controls, and the controls are 36 px targets; a tap alone never adds a leg | built | unit (web), e2e (phone) |
 
-### Analyse · cards, panels and dialogs · phone · `/analyse`
+### Desk · cards, panels and dialogs · phone · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -54,7 +54,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
-| HC-SH-134 | HapieCoin installs to the home screen: a manifest with 192 / 512 px icons, an Install entry in the settings menu (native prompt on Chrome, Share-sheet steps on an iPhone), one hint on a phone | app/manifest.ts serves /manifest.webmanifest (standalone, start /analyse, no orientation lock, body ground + header tone); the layout links it and sets Safari's standalone flags (opaque black status bar); lib/pwa/install.ts keeps Chrome's deferred beforeinstallprompt in an external store; the settings menu shows Install app (Ready / iPhone) only while there is something to do; the Install dialog prompts or shows the two share-menu steps; the shell shows one hint toast per browser below 768 px whose action opens a dialog the shell hosts itself | built | unit (web), e2e (phone, phone-ios) |
+| HC-SH-134 | HapieCoin installs to the home screen: a manifest with 192 / 512 px icons, an Install entry in the settings menu (native prompt on Chrome, Share-sheet steps on an iPhone), one hint on a phone | app/manifest.ts serves /manifest.webmanifest (standalone, start /desk, no orientation lock, body ground + header tone); the layout links it and sets Safari's standalone flags (opaque black status bar); lib/pwa/install.ts keeps Chrome's deferred beforeinstallprompt in an external store; the settings menu shows Install app (Ready / iPhone) only while there is something to do; the Install dialog prompts or shows the two share-menu steps; the shell shows one hint toast per browser below 768 px whose action opens a dialog the shell hosts itself | built | unit (web), e2e (phone, phone-ios) |
 
 ### Shared chrome · offline
 

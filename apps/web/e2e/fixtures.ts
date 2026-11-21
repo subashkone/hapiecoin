@@ -48,7 +48,7 @@ export async function signIn(page: Page, email: string, password = "Passw0rd!") 
   await page.getByRole("textbox", { name: "Email", exact: true }).fill(email);
   await page.getByRole("textbox", { name: "Password", exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign In", exact: true }).click();
-  await page.waitForURL(/\/analyse/);
+  await page.waitForURL(/\/desk/);
 }
 
 /** HC-TR-186: a live entry dialog asks for the word before its destructive button enables; a paper dialog has no field. */

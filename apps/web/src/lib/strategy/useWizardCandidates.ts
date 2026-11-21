@@ -1,6 +1,6 @@
 "use client";
 // The wizard's pricing pass (ADR-072; HC-TR-177): every eligible template is placed on the venue ladder at the chosen
-// expiry and analysed in the pricing worker, one pass per chain snapshot. A pass is never abandoned: while one runs a
+// expiry and priced in the pricing worker, one pass per chain snapshot. A pass is never abandoned: while one runs a
 // newer chain waits and one more pass follows, at most one pass every MIN_PASS_GAP_MS, so a fast feed cannot keep the
 // first result from landing or flicker the cards. The thesis figures (P&L if right, fit, rank) derive from each
 // result's expiry curve in `wizard.ts`, so a change of view or move never reprices.
@@ -49,7 +49,7 @@ interface Job {
   gen: number;
 }
 
-/** One pass: every template placed on the ladder and analysed in turn. */
+/** One pass: every template placed on the ladder and priced in turn. */
 async function pricePass(templates: readonly StrategyTemplate[], input: WizardPricingInput): Promise<WizardCandidate[]> {
   const client = getPricingClient();
   const spot = input.spot!;

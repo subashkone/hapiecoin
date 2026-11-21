@@ -4,7 +4,7 @@ const path = require('path');
 const dir = __dirname;
 const featDir = path.join(dir, 'features');
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const areaNames = { '00-chrome': 'App shell: header, settings, tour, assistant', '10-public': 'Public site & authentication', '20-analyse': 'Analyse: options chain & analysis pane', '21-trading': 'Analyse: strategy builder, paper & live trading', '30-account': 'Account: subscription & referrals', '40-admin': 'Admin console', '50-analytics': 'Market Analytics (cg2 app)', '60-terminal': 'Market Analytics terminal (/terminal)' };
+const areaNames = { '00-chrome': 'App shell: header, settings, tour, assistant', '10-public': 'Public site & authentication', '20-desk': 'Desk: options chain & analysis pane', '21-trading': 'Desk: strategy builder, paper & live trading', '30-account': 'Account: subscription & referrals', '40-admin': 'Admin console', '50-analytics': 'Market Analytics (cg2 app)', '60-terminal': 'Market Analytics terminal (/terminal)' };
 let features = [];
 for (const f of fs.readdirSync(featDir).filter((x) => x.endsWith('.json')).sort()) { try { const arr = JSON.parse(fs.readFileSync(path.join(featDir, f), 'utf8')); arr.forEach((x) => (x.area = f.replace('.json', ''))); features = features.concat(arr); } catch (e) { console.error('bad', f, e.message); } }
 const areas = {}; features.forEach((f) => { (areas[f.area] = areas[f.area] || {}); const k = (f.route || '?') + '||' + (f.screen || ''); (areas[f.area][k] = areas[f.area][k] || []).push(f); });

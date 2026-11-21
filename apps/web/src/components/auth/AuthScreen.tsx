@@ -82,7 +82,7 @@ export function AuthScreen({ tab: requestedTab, next, referral, googleEnabled }:
   }, [requestedTab, hydrated, email]);
 
   const go = useCallback((t: AuthTab) => router.push(authHref(t, next, referral)), [router, next, referral]);
-  const finish = useCallback(() => router.replace(next && next.startsWith("/") ? next : "/analyse"), [router, next]);
+  const finish = useCallback(() => router.replace(next && next.startsWith("/") ? next : "/desk"), [router, next]);
 
   return (
     <div className="grid min-h-screen lg:grid-cols-[minmax(320px,44%)_1fr]" data-tab={tab}>

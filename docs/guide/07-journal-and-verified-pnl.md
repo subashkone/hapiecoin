@@ -13,7 +13,7 @@ The Journal lists every closed trade with its stats (win rate, average win / los
 
 ## Screens
 
-![Journal with a closed trade](../../apps/web/e2e/__screenshots__/analyse-journal-dark.png)
+![Journal with a closed trade](../../apps/web/e2e/__screenshots__/desk-journal-dark.png)
 *Journal with a closed trade*
 
 ![Verified P&L from exchange fills](../../apps/web/e2e/__screenshots__/guide/journal-verified-pnl.png)
@@ -23,7 +23,7 @@ The Journal lists every closed trade with its stats (win rate, average win / los
 
 Each row is one traced feature from the build spec: the id, what it is, how it behaves (the acceptance rule the tests check), and how it is tested. Status "mock-only" means the screen exists but the data feed behind it is not connected yet.
 
-### Analyse · Journal panel · `/analyse`
+### Desk · Journal panel · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|

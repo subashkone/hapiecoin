@@ -56,7 +56,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   if (!me.data || me.data.role !== "admin") {
     return (
       <main className="mx-auto max-w-[720px] px-6 py-16" data-testid="admin-shell" data-state="denied">
-        <EmptyState title="Admin only" description="This area is for HapieCoin administrators." action={<Button asChild size="sm"><Link href="/analyse">Go to Analyse</Link></Button>} />
+        <EmptyState title="Admin only" description="This area is for HapieCoin administrators." action={<Button asChild size="sm"><Link href="/desk">Go to the Desk</Link></Button>} />
       </main>
     );
   }

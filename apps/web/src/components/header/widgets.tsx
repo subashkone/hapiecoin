@@ -1,5 +1,5 @@
 "use client";
-// Analyse-header widgets: asset switch (HC-SH-003), futures price + 24h with flash (HC-SH-004, 005),
+// Desk-header widgets: asset switch (HC-SH-003), futures price + 24h with flash (HC-SH-004, 005),
 // feed status text (HC-SH-006), exchange chip (HC-SH-007), wallet placeholder (HC-SH-008).
 import { Plug, Tooltip, Wallet, cn, toast } from "@hapiecoin/ui";
 import { TradingEnvTag } from "@/components/trading/TradingEnvTag";

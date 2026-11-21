@@ -1,4 +1,4 @@
-// /sso (HC-PB-038): "Signing you in…" spinner, then redirect to ?sso_return= (in-app path only) or /analyse.
+// /sso (HC-PB-038): "Signing you in…" spinner, then redirect to ?sso_return= (in-app path only) or /desk.
 import type { Metadata } from "next";
 import { SsoReturn } from "@/components/auth/SsoReturn";
 import { safeNext } from "@/lib/auth/client";

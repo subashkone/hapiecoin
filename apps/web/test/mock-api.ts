@@ -462,15 +462,15 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   app.post("/api/auth/sign-in/social", async (c) => {
     const body = await c.req.json<{ provider?: string; callbackURL?: string }>();
     if (body.provider !== "google") return err(c, 400, "PROVIDER_NOT_FOUND", "Provider not found");
-    const callbackURL = body.callbackURL && body.callbackURL.startsWith("/") ? body.callbackURL : "/analyse";
+    const callbackURL = body.callbackURL && body.callbackURL.startsWith("/") ? body.callbackURL : "/desk";
     return c.json({ url: `/v1/auth/callback/google?state=e2e&callbackURL=${encodeURIComponent(callbackURL)}`, redirect: true });
   });
   app.get("/api/auth/callback/google", (c) => {
-    const callbackURL = c.req.query("callbackURL") ?? "/analyse";
+    const callbackURL = c.req.query("callbackURL") ?? "/desk";
     const email = "google.user@hapiecoin.test";
     if (!state.accounts.has(email)) createAccount(state, { email, name: "Google User", verified: true });
     setSession(c, email);
-    return c.redirect(callbackURL.startsWith("/") ? callbackURL : "/analyse", 302);
+    return c.redirect(callbackURL.startsWith("/") ? callbackURL : "/desk", 302);
   });
 
   app.post("/api/auth/sign-out", (c) => {

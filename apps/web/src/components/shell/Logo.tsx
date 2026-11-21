@@ -13,7 +13,7 @@ export function LogoMark({ className }: { className?: string }) {
 
 export interface LogoProps {
   href?: string;
-  /** Small muted suffix such as "Analyse". */
+  /** Small muted suffix such as "Desk". */
   sub?: string;
   className?: string;
 }

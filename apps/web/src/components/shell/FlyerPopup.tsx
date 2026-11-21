@@ -1,6 +1,6 @@
 "use client";
 // Flyer popup carousel (HC-SH-055, HC-SH-056; ADR-033): the banners showing now, at each banner's frequency, on
-// /analyse. Previous / Next and dots cycle, "View" follows the link (hapiecoin.com in place, others in a new tab),
+// /desk. Previous / Next and dots cycle, "View" follows the link (hapiecoin.com in place, others in a new tab),
 // "Don't show again" hides that banner on this browser for good. Also used by the admin's "Preview as user".
 import { BANNER_FREQUENCY_LABELS, type Banner } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogTitle, cn, toast } from "@hapiecoin/ui";
@@ -48,19 +48,19 @@ export function FlyerDialog({ banners, preview = false, onClose }: { banners: re
 }
 
 /**
- * Mounted in the analyse header: fetches the live banners once, shows the ones due under their frequency rules
- * 400 ms after landing on /analyse, and reopens all of them when the palette asks (store.flyersRequested).
+ * Mounted in the desk header: fetches the live banners once, shows the ones due under their frequency rules
+ * 400 ms after landing on /desk, and reopens all of them when the palette asks (store.flyersRequested).
  */
 export function FlyerPopup() {
   const pathname = usePathname();
-  const onAnalyse = pathname === "/analyse";
-  const { data } = useLiveBanners(onAnalyse);
+  const onDesk = pathname === "/desk";
+  const { data } = useLiveBanners(onDesk);
   const requested = useUiStore((s) => s.flyersRequested);
   const [open, setOpen] = useState<Banner[] | null>(null);
   const shownOnce = useRef(false);
   const lastRequest = useRef(requested);
   useEffect(() => {
-    if (!onAnalyse || !data || shownOnce.current) return;
+    if (!onDesk || !data || shownOnce.current) return;
     shownOnce.current = true;
     const due = dueBanners(data, new Date());
     if (due.length === 0) return;
@@ -69,7 +69,7 @@ export function FlyerPopup() {
       setOpen(due);
     }, 400);
     return () => clearTimeout(t);
-  }, [onAnalyse, data]);
+  }, [onDesk, data]);
   useEffect(() => {
     if (requested === lastRequest.current) return;
     lastRequest.current = requested;
@@ -81,8 +81,8 @@ export function FlyerPopup() {
     setOpen(all);
   }, [requested, data]);
   useEffect(() => {
-    if (!onAnalyse) setOpen(null); // the flyer closes on route change
-  }, [onAnalyse]);
+    if (!onDesk) setOpen(null); // the flyer closes on route change
+  }, [onDesk]);
   if (!open || open.length === 0) return null;
   return <FlyerDialog banners={open} onClose={() => setOpen(null)} />;
 }

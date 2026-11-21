@@ -35,11 +35,11 @@ describe("HC-SH-132 browser error reporting (ADR-081)", () => {
   });
 
   it("posts one report with the page path, kind, name and stack; a repeat within a minute answers the same id without a second post; after a minute it is sent again", async () => {
-    window.history.replaceState(null, "", "/analyse?tab=chain&token=abc");
+    window.history.replaceState(null, "", "/desk?tab=chain&token=abc");
     const now = { value: 1_000_000 };
     const err = new RangeError("out of range");
     expect(await reportError(err, "unhandledrejection", { now: () => now.value })).toBe("mock-1");
-    expect(mock.state.clientErrors).toEqual([{ message: "out of range", name: "RangeError", kind: "unhandledrejection", stack: err.stack, path: "/analyse?tab=chain&token=abc" }]);
+    expect(mock.state.clientErrors).toEqual([{ message: "out of range", name: "RangeError", kind: "unhandledrejection", stack: err.stack, path: "/desk?tab=chain&token=abc" }]);
     expect(await reportError(new RangeError("out of range"), "unhandledrejection", { now: () => now.value + 1_000 })).toBe("mock-1");
     expect(mock.state.clientErrors).toHaveLength(1);
     expect(await reportError(new RangeError("out of range"), "error", { now: () => now.value + 1_000 })).toBe("mock-2"); // another kind is another key

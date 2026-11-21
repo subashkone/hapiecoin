@@ -55,7 +55,7 @@ information.
   `POST /live/preview` (exits listed first). The history row stores reason, added / trimmed / closed counts, realised P&L
   and the batch id; `StrategyOrder.batchId` links orders to it; before/after max loss, POP and cash are computed
   client-side from the legs and shown in Details (A2), not stored.
-  **As built (A2, 09 Sep):** the workbench is a mode of `/analyse` (the `adjust` draft in the store swaps the left
+  **As built (A2, 09 Sep):** the workbench is a mode of `/desk` (the `adjust` draft in the store swaps the left
   pane, the pane source follows the strategy), not a route. The Builder's own legs are never touched (ADR-026).
   Lots edited above the open lots become separate add rows (API data model); the ticket nets them per contract in
   the effect label. Card figures price each active card once per mount at entry premiums.
@@ -98,7 +98,7 @@ says which plan it equals.
 
 ## 6. Edge cases (11 Sep 2026, kept current with the tests)
 Each line names the test that proves it. `unit` = apps/web/src/components/adjust/workbench.test.tsx unless stated,
-`model` = apps/web/src/lib/adjust/model.test.ts, `e2e` = apps/web/e2e/analyse.spec.ts.
+`model` = apps/web/src/lib/adjust/model.test.ts, `e2e` = apps/web/e2e/desk.spec.ts.
 | Case | Expected | Test |
 |---|---|---|
 | Save a change that equals a kept plan (after Use, or rebuilt by hand) | Save disabled, "Already kept as Plan A" | unit HC-TR-153/154 |
@@ -106,7 +106,7 @@ Each line names the test that proves it. `unit` = apps/web/src/components/adjust
 | Remove the plan the change equals | note "unsaved", Save enabled again | unit HC-TR-153/154 |
 | Fourth plan | refused, shelf stays at three | model plans |
 | Exit with orders, with plans only, with nothing | asks / asks / leaves at once | unit cap test, unit plans test, unit Details test; e2e narrow test |
-| Another card, A or Adjust on another card, Back to Builder, Builder / Chain tab, palette command, Analyse positions, while orders or plans exist | the same question; Keep editing leaves everything as it was; Adjust on the strategy already being adjusted keeps the work | store.test.ts adjust block; unit plans test (Back to Builder, tab change) |
+| Another card, A or Adjust on another card, Back to Builder, Builder / Chain tab, palette command, Follow positions, while orders or plans exist | the same question; Keep editing leaves everything as it was; Adjust on the strategy already being adjusted keeps the work | store.test.ts adjust block; unit plans test (Back to Builder, tab change) |
 | Clear all on Proposed | orders go, saved plans stay | unit HC-TR-153/154 |
 | Pick on one expiry, switch the chain to another | pick stays, listed with its expiry; no B/S lit on the other chain | unit main test |
 | Close a leg, then add to it | order flips from SELL close to BUY add; ✕ restores | unit checklist |

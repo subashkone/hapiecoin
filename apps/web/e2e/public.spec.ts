@@ -100,7 +100,7 @@ test.describe("HC-PB landing and public pages", () => {
     await seedUser(request, { email: "home@example.com" });
     await signIn(page, "home@example.com");
     await page.goto("/");
-    await expect(page.getByTestId("go-to-app")).toHaveAttribute("href", "/analyse");
+    await expect(page.getByTestId("go-to-app")).toHaveAttribute("href", "/desk");
   });
 
   test("HC-SH-016 placeholder routes keep the default header and never dead-end", async ({ page, request }) => {
@@ -108,8 +108,8 @@ test.describe("HC-PB landing and public pages", () => {
     await signIn(page, "nav@example.com");
     for (const [path, title] of [
       ["/analytics", "Market Analytics"],
-      ["/subscription", "Choose a plan to unlock features"],
-      ["/referrals", "Share & Earn"],
+      ["/plans", "Choose a plan to unlock features"],
+      ["/invite", "Share & Earn"],
       ["/admin/users", "User Management"],
     ] as const) {
       await page.goto(path);
@@ -119,6 +119,17 @@ test.describe("HC-PB landing and public pages", () => {
     }
     await page.goto("/does-not-exist");
     await expect(page.getByText("Oops! Page not found")).toBeVisible();
+  });
+
+  test("HC-SH-142 the workspace and the account pages answer at /desk, /plans and /invite", async ({ page, request }) => {
+    await seedUser(request, { email: "routes@example.com" });
+    await signIn(page, "routes@example.com");
+    await page.goto("/desk");
+    await expect(page.getByTestId("app-header")).toHaveAttribute("data-variant", "desk");
+    await page.goto("/plans");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Choose a plan to unlock features");
+    await page.goto("/invite");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Share & Earn");
   });
 });
 

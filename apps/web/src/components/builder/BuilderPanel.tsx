@@ -298,7 +298,7 @@ export function BuilderPanel() {
                       return (
                         <tr key={l.id} className={cn("border-t border-border", !on && "opacity-50", compact && "[&>td]:py-0.5 [&_.micro]:hidden")} data-testid="leg-row" data-leg-id={l.id} data-side={l.side} data-enabled={on} data-density={compact ? "compact" : "comfortable"}>
                           <td className="py-1.5 pr-1">
-                            <input type="checkbox" checked={on} onChange={() => updateLegs(asset, (ls) => toggleLegEnabled(ls, l.id))} aria-label={on ? "Exclude this leg from the analysis" : "Include this leg in the analysis"} title={on ? "Untick to analyse without this leg" : "Tick to include this leg again"} data-testid="leg-enabled" />
+                            <input type="checkbox" checked={on} onChange={() => updateLegs(asset, (ls) => toggleLegEnabled(ls, l.id))} aria-label={on ? "Exclude this leg from the analysis" : "Include this leg in the analysis"} title={on ? "Untick to see the payoff without this leg" : "Tick to include this leg again"} data-testid="leg-enabled" />
                           </td>
                           <td className="py-1.5 pr-2">
                             <button

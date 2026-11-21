@@ -2,7 +2,7 @@
   "name": "@hapiecoin/web",
   "version": "0.1.0",
   "private": true,
-  "description": "HapieCoin web app: landing, auth, analyse workspace (Next.js App Router)",
+  "description": "HapieCoin web app: landing, auth, desk (Next.js App Router)",
   "type": "module",
   "sideEffects": false,
   "scripts": {

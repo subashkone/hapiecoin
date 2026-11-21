@@ -43,11 +43,11 @@ describe("HC-SH-101..104 shortcuts", () => {
     // modifiers never trigger
     fireEvent.keyDown(window, { key: "t", ctrlKey: true });
     expect(document.documentElement.classList.contains("light")).toBe(true);
-    // ? opens the help (HC-SH-102) with the Global and Analyse workspace groups (HC-SH-103, HC-WS-070)
+    // ? opens the help (HC-SH-102) with the Global and Desk groups (HC-SH-103, HC-WS-070)
     fireEvent.keyDown(window, { key: "?", shiftKey: true });
     expect(useUiStore.getState().dialog).toBe("shortcuts");
     const dialog = screen.getByTestId("shortcuts-dialog");
-    expect(within(dialog).getAllByTestId("shortcuts-group").map((g) => g.dataset["group"])).toEqual(["Global", "Analyse workspace"]);
+    expect(within(dialog).getAllByTestId("shortcuts-group").map((g) => g.dataset["group"])).toEqual(["Global", "Desk"]);
     expect(within(dialog).getByText("Toggle theme (dark / light)")).toBeTruthy();
     expect(within(dialog).getByText("Buy put at the highlighted strike")).toBeTruthy();
     // while the dialog is open, T is ignored
@@ -72,7 +72,7 @@ describe("HC-SH-101..104 shortcuts", () => {
     expect(y).toHaveBeenCalledTimes(1);
     fireEvent.keyDown(window, { key: "?", shiftKey: true });
     const dialog = screen.getByTestId("shortcuts-dialog");
-    expect(within(dialog).getAllByTestId("shortcuts-group").map((g) => g.dataset["group"])).toEqual(["Global", "Analyse workspace", "Journal"]);
+    expect(within(dialog).getAllByTestId("shortcuts-group").map((g) => g.dataset["group"])).toEqual(["Global", "Desk", "Journal"]);
     expect(within(dialog).getByText("Do the X thing")).toBeTruthy();
     act(() => off());
     expect(within(dialog).queryByText("Do the X thing")).toBeNull();

@@ -18,7 +18,7 @@ export default function OfflinePage() {
           Prices, positions and orders need a connection. Nothing is cached, so what you see when you are back is live.
         </p>
         <Button asChild variant="outline" className="mt-6">
-          <a href="/analyse" data-testid="offline-retry">Try again</a>
+          <a href="/desk" data-testid="offline-retry">Try again</a>
         </Button>
       </div>
     </main>

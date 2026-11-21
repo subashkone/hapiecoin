@@ -3,7 +3,7 @@
 import { BrokerCredentialPublic } from "@hapiecoin/schema";
 import { z } from "zod";
 
-/** GET /v1/plan (HC-SH-014): drives the banner under the analyse header. Shape from apps/api/src/routes/plan.ts. */
+/** GET /v1/plan (HC-SH-014): drives the banner under the desk header. Shape from apps/api/src/routes/plan.ts. */
 export { PlanState, type PlanState as PlanStateT } from "@hapiecoin/schema";
 
 /** GET /v1/credentials: stored credentials (masked), one per broker; empty when not connected. */

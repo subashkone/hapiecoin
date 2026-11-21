@@ -70,7 +70,7 @@ export async function fireAlert(deps: AppDeps, row: AlertRow, value: string, opt
   if (wantsMail || wantsTelegram) {
     const [user] = await deps.db.select({ email: users.email, telegramChatId: users.telegramChatId }).from(users).where(eq(users.id, row.userId)).limit(1);
     const line = alertSubject(out);
-    const text = `Your alert fired at ${at.toISOString()}.\n\n${line}\nNow: ${fmtNum(value)}\n\nOpen HapieCoin to re-arm or edit it: ${deps.config.webUrl}/analyse\n`;
+    const text = `Your alert fired at ${at.toISOString()}.\n\n${line}\nNow: ${fmtNum(value)}\n\nOpen HapieCoin to re-arm or edit it: ${deps.config.webUrl}/desk\n`;
     if (wantsMail && user) {
       try {
         await deps.mailer.sendAlert({ email: user.email, subject: `HapieCoin alert · ${line}`, text });
@@ -80,7 +80,7 @@ export async function fireAlert(deps: AppDeps, row: AlertRow, value: string, opt
     }
     if (wantsTelegram && user?.telegramChatId && deps.telegram) {
       try {
-        await deps.telegram.sendMessage(user.telegramChatId, `HapieCoin alert · ${line}\nNow: ${fmtNum(value)}\n${deps.config.webUrl}/analyse`);
+        await deps.telegram.sendMessage(user.telegramChatId, `HapieCoin alert · ${line}\nNow: ${fmtNum(value)}\n${deps.config.webUrl}/desk`);
       } catch (e) {
         deps.logger.warn({ alert: row.id, reason: e instanceof Error ? e.message : String(e) }, "alert telegram failed");
       }

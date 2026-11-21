@@ -1,5 +1,5 @@
 "use client";
-// Two-pane workspace under the analyse header (HC-WS-001..006, HC-WS-029..032): left tabs Chain | Builder
+// Two-pane workspace under the desk header (HC-WS-001..006, HC-WS-029..032): left tabs Chain | Builder
 // (with a leg-count pill) | Paper | Live | Journal | Screener (HC-WS-110), the analysis pane on the right, a draggable divider
 // (35–70 % for the left pane, remembered per browser) and a stacked Chain | Analysis toggle under 1000 px.
 import { EmptyState, Tabs, TabsContent, TabsList, TabsTrigger, cn } from "@hapiecoin/ui";
@@ -63,9 +63,9 @@ export function Workspace() {
   const setTab = useUiStore((s) => s.setWorkspaceTab);
   const asset = useUiStore((s) => s.asset);
   const venue = useUiStore((s) => s.venue);
-  const collapse = useUiStore((s) => s.analyseCollapse);
-  const setCollapse = useUiStore((s) => s.setAnalyseCollapse);
-  // HC-WS-006 deep links: /analyse?tab=paper&panel=ladder selects the tabs once on arrival
+  const collapse = useUiStore((s) => s.deskCollapse);
+  const setCollapse = useUiStore((s) => s.setDeskCollapse);
+  // HC-WS-006 deep links: /desk?tab=paper&panel=ladder selects the tabs once on arrival
   const params = useSearchParams();
   const linkTab = params.get("tab");
   const linkPanel = params.get("panel");
@@ -88,7 +88,7 @@ export function Workspace() {
   const narrow = useNarrow(STACK_BELOW_PX);
   const grid = useRef<HTMLDivElement>(null);
   useEffect(() => setSplit(readSplit()), []);
-  // HC-TR-178: W opens the Strategy Wizard (ADR-072); listed under "Analyse workspace" in the ? help
+  // HC-TR-178: W opens the Strategy Wizard (ADR-072); listed under "Desk" in the ? help
   useEffect(
     () =>
       registerShortcut(
@@ -99,7 +99,7 @@ export function Workspace() {
           st.setWorkspaceTab("builder");
           st.setBuilderTab("wizard");
         },
-        { group: "Analyse workspace" },
+        { group: "Desk" },
       ),
     [],
   );

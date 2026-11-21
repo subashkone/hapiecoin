@@ -181,7 +181,7 @@ describe("HC-TR-209 Telegram delivery", () => {
     expect(msg.chatId).toBe("chat-1");
     expect(msg.text).toContain("HapieCoin playbook");
     expect(msg.text).toContain("paper");
-    expect(msg.text).toContain("https://app.example/analyse");
+    expect(msg.text).toContain("https://app.example/desk");
     expect(msg.text).not.toMatch(/place now|buy now/i);
     // the same cap again: the sent one is skipped, the other still capped
     expect(await deliverProposals(deps({ now, telegramCap: 1 }))).toEqual({ sent: 0, capped: 1, failed: 0 });
@@ -224,6 +224,6 @@ describe("HC-TR-209 Telegram delivery", () => {
     const text = proposalMessage(PLAYBOOKS.find((p) => p.id === "pin-butterfly")!, { ...fly, id: Number(fly.id), createdAt: new Date(fly.createdAt) }, "https://x.example");
     expect(text).toContain("expiry 2026-09-15");
     expect(text).toContain("10 lots");
-    expect(text).toContain("https://x.example/analyse");
+    expect(text).toContain("https://x.example/desk");
   });
 });

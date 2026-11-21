@@ -12,7 +12,7 @@ const realFetch = globalThis.fetch;
 beforeEach(() => {
   FakeSocket.reset();
   globalThis.fetch = vi.fn(() => Promise.reject(new Error("no gateway http")));
-  useUiStore.setState({ asset: "BTC", legs: { BTC: [], ETH: [], XAUT: [] }, workspaceTab: "chain", analysisTab: "payoff", builderTab: "builder", analyseCollapse: null });
+  useUiStore.setState({ asset: "BTC", legs: { BTC: [], ETH: [], XAUT: [] }, workspaceTab: "chain", analysisTab: "payoff", builderTab: "builder", deskCollapse: null });
   searchParamsMock.value = new URLSearchParams();
 });
 afterEach(() => {
@@ -129,16 +129,16 @@ describe("[WORKSPACE] HC-WS-001..006 two-pane shell", () => {
     r.unmount();
     // an unknown deep link is ignored
     searchParamsMock.value = new URLSearchParams("tab=nope&panel=zzz");
-    useUiStore.setState({ workspaceTab: "chain", analysisTab: "payoff", analyseCollapse: null });
+    useUiStore.setState({ workspaceTab: "chain", analysisTab: "payoff", deskCollapse: null });
     renderWithProviders(<Workspace />);
     expect(useUiStore.getState().workspaceTab).toBe("chain");
     expect(useUiStore.getState().analysisTab).toBe("payoff");
   });
 
-  it("HC-TR-178 registers W → Strategy wizard while mounted, listed under Analyse workspace (ADR-072)", () => {
+  it("HC-TR-178 registers W → Strategy wizard while mounted, listed under Desk (ADR-072)", () => {
     const { unmount } = renderWithProviders(<Workspace />);
     const row = listShortcuts().find((r) => r.key === "W");
-    expect(row?.group).toBe("Analyse workspace");
+    expect(row?.group).toBe("Desk");
     expect(row?.description).toContain("Strategy wizard");
     const reg = findRegistered({ key: "w", shiftKey: false, ctrlKey: false, metaKey: false, altKey: false }, false);
     expect(reg).not.toBeNull();

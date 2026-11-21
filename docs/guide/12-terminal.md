@@ -70,7 +70,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-MT-006 | Search empty state | Dropdown shows "No coin matches “xyz”" when nothing matches | built | e2e (Playwright) |
 | HC-MT-007 | Header "Live" indicator | Live pill (green dot) in the shared header, hidden on small screens | mock-only | unit (pricing) · visual (screenshot diff) · security |
 | HC-MT-008 | Header "Markets Hub" button | Replaced by the Hub tab of the shared section switcher (and the sidebar "Markets Hub ↗" item) | built | e2e (Playwright) |
-| HC-MT-009 | Header "← Analyse" link | Shared header link back to the options app (#/analyse) | built | e2e (Playwright) |
+| HC-MT-009 | Header "← Desk" link | Shared header link back to the options app (#/analyse) | built | e2e (Playwright) |
 | HC-MT-010 | Theme toggle (sun/moon icon) | Calls CG.theme.toggle(); the terminal now follows the page theme (html.dark) — the private terminal theme and cg2-theme localStorage key were removed | built | unit (pricing) · e2e (Playwright) |
 | HC-MT-011 | Sidebar section labels: Markets, Derivatives, ETF, On-chain, Indicators | Grouped navigation with small inline-SVG icons | mock-only | unit (pricing) · visual (screenshot diff) |
 | HC-MT-012 | Sidebar nav item "Dashboard" | Navigates to /terminal | built | e2e (Playwright) |

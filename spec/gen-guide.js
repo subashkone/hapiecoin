@@ -37,24 +37,24 @@ Sign-up is email plus password with a one-time code by email. Sign-in also accep
   {
     file: "02-workspace-and-settings.md",
     title: "Workspace chrome, settings and dialogs",
-    screens: ["Shared chrome · Exchange chip / live surfaces", "Shared chrome · App header (analyse)", "Shared chrome · App header (default)", "Shared chrome · Settings menu", "Shared chrome · Profile dialog", "Shared chrome · API Settings dialog", "Shared chrome · Currency Settings dialog", "Shared chrome · Lot Size Settings dialog", "Shared chrome · P&L Settings dialog", "Shared chrome · Exchange Management dialog", "Shared chrome · Plan banner", "Shared chrome · Upgrade Required dialog", "Shared chrome · Banner flyers", "Shared chrome · HapieCoin Assistant", "Shared chrome · Product tour", "Shared chrome · Command palette", "Shared chrome · Keyboard shortcuts", "Shared chrome · Portfolio bar", "Shared chrome · Density", "Shared chrome · Settings menu · Public page dialog", "Shared chrome · Settings menu · Security", "Settings · API Settings / Mindful trading / Lot Size", "Settings · Security · Passkeys", "Settings · Mindful trading", "Venues · venue switch", "Venues · spot per venue"],
+    screens: ["Shared chrome · routes", "Shared chrome · Exchange chip / live surfaces", "Shared chrome · App header (desk)", "Shared chrome · App header (default)", "Shared chrome · Settings menu", "Shared chrome · Profile dialog", "Shared chrome · API Settings dialog", "Shared chrome · Currency Settings dialog", "Shared chrome · Lot Size Settings dialog", "Shared chrome · P&L Settings dialog", "Shared chrome · Exchange Management dialog", "Shared chrome · Plan banner", "Shared chrome · Upgrade Required dialog", "Shared chrome · Banner flyers", "Shared chrome · HapieCoin Assistant", "Shared chrome · Product tour", "Shared chrome · Command palette", "Shared chrome · Keyboard shortcuts", "Shared chrome · Portfolio bar", "Shared chrome · Density", "Shared chrome · Settings menu · Public page dialog", "Shared chrome · Settings menu · Security", "Settings · API Settings / Mindful trading / Lot Size", "Settings · Security · Passkeys", "Settings · Mindful trading", "Venues · venue switch", "Venues · spot per venue"],
     overview: `Everything around the workspace: the header (asset pills, futures price with 24 h change, feed status, exchange chip, currency toggle, alerts bell, theme, settings and account menus), the portfolio bar at the bottom, and the settings dialogs behind the gear.
 
 Settings cover the profile, exchange API keys (several labelled keys per exchange, one per Delta sub-account), the display currency and conversion rate, lot sizes, the P&L basis (mark or bid/ask), the Mindful trading pause, security (two-factor with an authenticator app, backup codes, passkeys), exchanges (admin), and the public page. The command palette (Ctrl K), the keyboard shortcuts sheet (?), the product tour and the HapieCoin Assistant are reachable from the same menu. Exchange keys are stored encrypted on the server and never shown again after saving.`,
     tryIt: [
-      "On `/analyse` press **Ctrl K**: search for any tab, dialog or page and jump to it. Press **?** for the shortcuts sheet.",
+      "On `/desk` press **Ctrl K**: search for any tab, dialog or page and jump to it. Press **?** for the shortcuts sheet.",
       "Gear → **Profile**: change the name and avatar. Gear → **Currency**: switch INR / USD and watch every figure in the workspace follow.",
       "Gear → **API Settings**: add a Delta API key with a label (read-only keys are refused for live trading; the whitelist IP is shown). Add a second labelled key to see accounts.",
       "Gear → **Security**: turn two-factor on with an authenticator app, save the backup codes, then add a passkey and sign in with it.",
       "Gear → **Mindful trading**: set a daily-loss threshold and pause length; the pause shows before a live order when you are down on the day.",
       "Gear → **Take a tour** for the guided overlay; click the chat bubble bottom-right for the assistant and try “Explain this strategy”.",
     ],
-    shots: [["analyse-dark.png", "The analyse header and workspace"], ["settings-profile.png", "Profile"], ["settings-api-keys.png", "API keys and accounts"], ["settings-currency.png", "Currency"], ["settings-lot-size.png", "Lot sizes"], ["settings-pnl-basis.png", "P&L basis"], ["settings-mindful.png", "Mindful trading"], ["settings-security.png", "Security: two-factor and passkeys"], ["settings-exchanges.png", "Exchange management (admin)"], ["settings-public-page.png", "Public page"], ["command-palette.png", "Command palette"], ["analyse-shortcuts-dark.png", "Keyboard shortcuts"], ["analyse-tour-welcome-dark.png", "Product tour, welcome"], ["analyse-tour-dark.png", "Product tour, anchored step"], ["analyse-assistant-dark.png", "HapieCoin Assistant"], ["analyse-flyer-dark.png", "Banner flyer"]],
+    shots: [["desk-dark.png", "The desk header and workspace"], ["settings-profile.png", "Profile"], ["settings-api-keys.png", "API keys and accounts"], ["settings-currency.png", "Currency"], ["settings-lot-size.png", "Lot sizes"], ["settings-pnl-basis.png", "P&L basis"], ["settings-mindful.png", "Mindful trading"], ["settings-security.png", "Security: two-factor and passkeys"], ["settings-exchanges.png", "Exchange management (admin)"], ["settings-public-page.png", "Public page"], ["command-palette.png", "Command palette"], ["desk-shortcuts-dark.png", "Keyboard shortcuts"], ["desk-tour-welcome-dark.png", "Product tour, welcome"], ["desk-tour-dark.png", "Product tour, anchored step"], ["desk-assistant-dark.png", "HapieCoin Assistant"], ["desk-flyer-dark.png", "Banner flyer"]],
   },
   {
     file: "03-chain-and-analysis.md",
     title: "Options chain and the analysis tabs",
-    screens: ["Analyse workspace", "Options chain", "Column Settings", "Analysis pane", "Payoff Diagram", "Payoff · Analytics strip", "Greeks", "Ladder", "Payoff", "Scenarios", "Vol", "Structure", "Share", "Analyse · Screener tab", "Analyse · Replay (API)", "Analyse · Replay tab", "Analyse · Chain", "Analyse · Backtest (engine + API)", "Analyse · Backtest tab", "API · market history", "Pricing · calendar and carry"],
+    screens: ["Desk · Playbooks tab", "Desk", "Options chain", "Column Settings", "Analysis pane", "Payoff Diagram", "Payoff · Analytics strip", "Greeks", "Ladder", "Payoff", "Scenarios", "Vol", "Structure", "Share", "Desk · Screener tab", "Desk · Replay (API)", "Desk · Replay tab", "Desk · Chain", "Desk · Backtest (engine + API)", "Desk · Backtest tab", "API · market history", "Pricing · calendar and carry"],
     overview: `The workspace is two panes: the chain on the left (with the Builder, Paper, Live, Journal and Screener tabs) and the analysis pane on the right (Payoff, Greeks, Ladder, Scenarios, Vol, Structure, Alerts, Backtest, Replay).
 
 The chain lists every strike the exchange lists for the chosen expiry, calls and puts around a fixed centre strike column, live from the gateway feed, with the ATM row and spot marked. Hovering a row (tapping on a phone) shows B / S / lots controls; keys B, S, Shift+B, Shift+S add legs. Columns are configurable. The analysis pane prices whatever is in the Builder with Black-76: the payoff at expiry and at a target date, greeks, a price ladder, a price × date scenario matrix, IV rank and realised vs implied vol, term structure and skew. The Screener ranks every listed option on the live chain; Backtest runs a template over our own recorded end-of-day chains; Replay scrubs a recorded expiry by day or 5-minute pass.`,
@@ -66,12 +66,12 @@ The chain lists every strike the exchange lists for the chosen expiry, calls and
       "Analysis pane: **Backtest** runs the chosen template over the recorded days; **Replay** scrubs a past expiry's chain by day, then by 5-minute pass.",
       "Click **Share** on the strip: copy the link, open it in a private window.",
     ],
-    shots: [["analyse-dark.png", "Chain with payoff, dark"], ["analyse-light.png", "Chain with payoff, light"], ["analyse-legs-dark.png", "Two legs on the chain with the row controls"], ["analyse-columns-dark.png", "Column settings"], ["analyse-greeks-dark.png", "Greeks"], ["analyse-ladder.png", "Ladder"], ["analyse-scenarios-dark.png", "Scenarios"], ["analyse-scenarios-smooth-dark.png", "Scenarios, smooth heat map"], ["analyse-vol-dark.png", "Vol: IV rank and realised vs implied"], ["analyse-structure-dark.png", "Structure: term structure and skew"], ["analyse-screener-dark.png", "Options screener"], ["analyse-backtest.png", "Backtest"], ["analyse-replay.png", "Replay"], ["analyse-share-dark.png", "Share a strategy"]],
+    shots: [["desk-dark.png", "Chain with payoff, dark"], ["desk-light.png", "Chain with payoff, light"], ["desk-legs-dark.png", "Two legs on the chain with the row controls"], ["desk-columns-dark.png", "Column settings"], ["desk-greeks-dark.png", "Greeks"], ["desk-ladder.png", "Ladder"], ["desk-scenarios-dark.png", "Scenarios"], ["desk-scenarios-smooth-dark.png", "Scenarios, smooth heat map"], ["desk-vol-dark.png", "Vol: IV rank and realised vs implied"], ["desk-structure-dark.png", "Structure: term structure and skew"], ["desk-screener-dark.png", "Options screener"], ["desk-backtest.png", "Backtest"], ["desk-replay.png", "Replay"], ["desk-share-dark.png", "Share a strategy"]],
   },
   {
     file: "04-builder-templates-wizard.md",
     title: "Strategy Builder, templates and the wizard",
-    screens: ["Analyse · Strategy panel (Builder)", "Analyse · Select Option from Chain (modal)", "Analyse · Add Futures Contract (dialog)", "Analyse · Save dialog", "Analyse · Strategy panel (Templates)", "Analyse · Strategy panel (Wizard)", "Analyse · Builder"],
+    screens: ["Desk · Strategy panel (Builder)", "Desk · Select Option from Chain (modal)", "Desk · Add Futures Contract (dialog)", "Desk · Save dialog", "Desk · Strategy panel (Templates)", "Desk · Strategy panel (Wizard)", "Desk · Builder"],
     overview: `The Builder holds up to ten legs per asset, added from the chain, from the Select-from-Chain picker, from a template, or from the wizard. Each leg shows side, kind, strike, expiry, lots and price; the ticket prices the whole position (net premium, max profit and loss, breakevens, margin estimate) and the analysis pane follows it live.
 
 Templates are a catalogue of 48 named strategies, including ones with a perpetual future leg, each with a textbook shape proven by tests. The wizard takes a view (up, down, sideways, volatile), a move and a date, and ranks defined-risk strategies for it. Drafts are saved on the server, so a strategy survives a reload and follows you across devices.`,
@@ -82,12 +82,12 @@ Templates are a catalogue of 48 named strategies, including ones with a perpetua
       "**Wizard**: choose a view, a move and a date; open one of the ranked cards into the Builder.",
       "**Save** with a name; reload the page; the draft is still there.",
     ],
-    shots: [["analyse-builder-dark.png", "Builder with two legs and the ticket"], ["builder-select-from-chain.png", "Select from chain"], ["analyse-templates-dark.png", "Templates"], ["analyse-wizard-dark.png", "Strategy wizard"]],
+    shots: [["desk-builder-dark.png", "Builder with two legs and the ticket"], ["builder-select-from-chain.png", "Select from chain"], ["desk-templates-dark.png", "Templates"], ["desk-wizard-dark.png", "Strategy wizard"]],
   },
   {
     file: "05-paper-and-live-trading.md",
     title: "Paper trading, live trading, rules and accounts",
-    screens: ["Analyse · Select Trading Mode (dialog)", "Analyse · Trade Preview (dialog)", "Trading · Trade Preview / Adjustment review", "Analyse · Paper Trades panel", "Analyse · Strategy Details (modal)", "Analyse · Square Off Position (dialog)", "Analyse · Partial Exit (dialog)", "Analyse · Stop Paper Trading (dialog)", "Analyse · Live Trades panel", "Analyse · Confirm Adjustment Order (dialog)", "Analyse · Trade All → Live", "Analyse · trading integration", "Analyse · Paper / Live tabs", "Analyse · Live tab", "Trading · Enter Strategy Name", "Trading · Paper / Live tabs", "Trading · Trade Preview", "Trading · Trade Preview / Adjustment Review", "Trading · Live tab", "Trading · Paper and Live tabs", "Trading · server", "Trading · Protect dialog / server", "Trading · cards · Details · trade flow", "Trading · Paper and Live tabs · Closed", "Trading · trade dialog · cards · Details", "Trading · Live tab · net positions", "Trading · live entry", "Trading · Trade Preview · Trade All · Adjust confirm · Retry", "Trading · Live tab · resting order", "Trading · Trade Preview · Trade All", "Trading · Trade All → Live"],
+    screens: ["Trading · Protect dialog / cards · Details", "Trading · Paper / Live cards · analysis pane", "Trading · Paper / Live cards · Details", "Desk · Select Trading Mode (dialog)", "Desk · Trade Preview (dialog)", "Trading · Trade Preview / Adjustment review", "Desk · Paper Trades panel", "Desk · Strategy Details (modal)", "Desk · Square Off Position (dialog)", "Desk · Partial Exit (dialog)", "Desk · Stop Paper Trading (dialog)", "Desk · Live Trades panel", "Desk · Confirm Adjustment Order (dialog)", "Desk · Trade All → Live", "Desk · trading integration", "Desk · Paper / Live tabs", "Desk · Live tab", "Trading · Enter Strategy Name", "Trading · Paper / Live tabs", "Trading · Trade Preview", "Trading · Trade Preview / Adjustment Review", "Trading · Live tab", "Trading · Paper and Live tabs", "Trading · server", "Trading · Protect dialog / server", "Trading · cards · Details · trade flow", "Trading · Paper and Live tabs · Closed", "Trading · trade dialog · cards · Details", "Trading · Live tab · net positions", "Trading · live entry", "Trading · Trade Preview · Trade All · Adjust confirm · Retry", "Trading · Live tab · resting order", "Trading · Trade Preview · Trade All", "Trading · Trade All → Live"],
     overview: `A strategy is traded from the Builder in one flow: choose Paper or Live, review the preview (legs, prices, capital block, overlap with other open strategies, the exchange's own check for live), optionally add a Protect rule, and place. Paper trades fill at mark and track P&L from the live feed. Live trades go to Delta Exchange through the stored API key: the preview shows the venue check and wallet, the typed word **LIVE** is required, and a Mindful pause applies when you are down on the day.
 
 Cards on the Paper and Live tabs show P&L, greeks, days to expiry, lifecycle chips, order chips (filled, resting, cancelled) and actions: Details, Adjust, Square off, Partial exit, Set alert, Rules, Go live, Re-enter. Rules (strategy stop / target in money or %, leg stop, spot level, time) run on the server against the feed and exit for you. Expiry settlement closes legs at settlement with a reason. Positions are reconciled against the exchange with a drift check. Several labelled keys per exchange map to accounts; each strategy belongs to one.`,
@@ -99,30 +99,30 @@ Cards on the Paper and Live tabs show P&L, greeks, days to expiry, lifecycle chi
       "Paper tab → **Trade All → Live** previews the batch as one: every strategy's check and the wallet against the total.",
       "A resting limit entry shows a **Resting** chip: cancel it or re-price it from the card.",
     ],
-    shots: [["analyse-trade-mode-dark.png", "Select trading mode"], ["analyse-paper-dark.png", "Paper trades"], ["analyse-details-dark.png", "Strategy details"], ["analyse-live-preview-dark.png", "Live preview with the exchange check"], ["analyse-live-dark.png", "Live trades with order chips"]],
+    shots: [["desk-trade-mode-dark.png", "Select trading mode"], ["desk-paper-dark.png", "Paper trades"], ["desk-details-dark.png", "Strategy details"], ["desk-live-preview-dark.png", "Live preview with the exchange check"], ["desk-live-dark.png", "Live trades with order chips"]],
   },
   {
     file: "06-adjustment-workbench.md",
     title: "Adjustment workbench",
-    screens: ["Analyse · Adjustment workbench", "Trading · cards · Details · workbench", "Trading · Adjustment workbench · Review", "Trading · Adjustment workbench · chain"],
+    screens: ["Desk · Adjustment workbench", "Trading · cards · Details · workbench", "Trading · Adjustment workbench · Review", "Trading · Adjustment workbench · chain"],
     overview: `Adjust an open strategy without leaving the card: the workbench shows the position and its ticket, a live chain to add or close legs, and the analysis pane after the change, with before → after tiles (net premium, max loss, margin, open legs) and a change box that describes the change in words. Plans can be saved and compared against the position before it. Review shows the orders the change needs; for live strategies the venue check, the mark band, the order type and a hold-to-place confirmation.`,
     tryIt: [
       "Paper card → **Adjust**. Reduce a leg's lots, sell a call above ATM on the workbench chain; read the change box and the before → after tiles.",
       "**Review** → **Confirm**: the paper orders apply. Try **Exit** with an unsaved change: it asks first.",
       "Live card → **Adjust** → Review: the venue check, band and order type appear; hold to place.",
     ],
-    shots: [["analyse-workbench-dark.png", "Workbench with a change"], ["analyse-adjust-confirm-dark.png", "Paper confirm"], ["analyse-adjust-live-dark.png", "Live confirm with venue check"]],
+    shots: [["desk-workbench-dark.png", "Workbench with a change"], ["desk-adjust-confirm-dark.png", "Paper confirm"], ["desk-adjust-live-dark.png", "Live confirm with venue check"]],
   },
   {
     file: "07-journal-and-verified-pnl.md",
     title: "Journal, verified P&L and the public page",
-    screens: ["Analyse · Journal panel", "Trading · Closed chip · Journal", "Trading · cards · Details · Journal", "Trading · Journal"],
+    screens: ["Desk · Journal panel", "Trading · Closed chip · Journal", "Trading · cards · Details · Journal", "Trading · Journal"],
     overview: `The Journal lists every closed trade with its stats (win rate, average win / loss, profit factor), an equity curve, tags and notes, the close reason (expired, squared off, stopped, outside the app) and a CSV export. The verified block reads your actual fills from the exchange per key, computes realised P&L net of fees, and states whether it agrees with the Journal. That verified figure is what the public page shows.`,
     tryIt: [
       "Square off a paper or live strategy → open the **Journal** from Details. Tag it, add a note, export CSV.",
       "With a Delta key: **Refresh** in the verified block reads your fills and shows the agreement line.",
     ],
-    shots: [["analyse-journal-dark.png", "Journal with a closed trade"], ["journal-verified-pnl.png", "Verified P&L from exchange fills"]],
+    shots: [["desk-journal-dark.png", "Journal with a closed trade"], ["journal-verified-pnl.png", "Verified P&L from exchange fills"]],
   },
   {
     file: "08-alerts.md",
@@ -130,14 +130,14 @@ Cards on the Paper and Live tabs show P&L, greeks, days to expiry, lifecycle chi
     screens: ["Shared chrome · Alerts center"],
     overview: `Alerts fire on price, ATM IV / IV rank, or a strategy's P&L, delivered by push (in the app), email and Telegram. Rules are evaluated on the server after every IV snapshot and in the browser while the workspace is open; a triggered alert turns the bell red. Telegram is linked from the alerts center with the bot.`,
     tryIt: ["Bell → **New alert**: BTC price above the current spot + 1 %; save; watch the bell. Card → **Set alert** pre-fills a P&L alert.", "Link Telegram from the alerts center and trigger an alert."],
-    shots: [["analyse-alerts-dark.png", "Alerts center"], ["analyse-alerts-form-dark.png", "New alert from a card"]],
+    shots: [["desk-alerts-dark.png", "Alerts center"], ["desk-alerts-form-dark.png", "New alert from a card"]],
   },
   {
     file: "09-subscription-and-referrals.md",
     title: "Subscription, billing and referrals",
-    screens: ["My Subscription", "My Referrals"],
+    screens: ["My plan", "Invite friends"],
     overview: `Plans (free, Starter, Pro and more from the admin's catalogue) with monthly and yearly intervals, coupons, Razorpay checkout, invoices with GST, payment history, and entitlements that gate features with an Upgrade dialog. Referrals: a personal link and code, commissions per referred subscription, earnings by month, share via WhatsApp / X / email.`,
-    tryIt: ["`/subscription`: pick a plan, apply coupon `basic20` (on the mock), pay with the test checkout, open the invoice.", "`/referrals`: copy your link, share, and watch the table as referred users subscribe."],
+    tryIt: ["`/plans`: pick a plan, apply coupon `basic20` (on the mock), pay with the test checkout, open the invoice.", "`/invite`: copy your link, share, and watch the table as referred users subscribe."],
     shots: [["account-subscribe-dark.png", "Subscribe with a coupon"], ["account-invoice-dark.png", "Invoice"], ["account-referrals-dark.png", "My referrals"], ["account-referrals-share-dark.png", "Share dialog"]],
   },
   {
@@ -167,15 +167,15 @@ Cards on the Paper and Live tabs show P&L, greeks, days to expiry, lifecycle chi
   {
     file: "13-phone-and-home-screen.md",
     title: "Phone and the home-screen app",
-    screens: ["Shared chrome · phone", "Analyse · Chain · phone", "Analyse · cards, panels and dialogs · phone", "Shared chrome · home-screen app", "Shared chrome · offline"],
+    screens: ["Shared chrome · phone", "Desk · Chain · phone", "Desk · cards, panels and dialogs · phone", "Shared chrome · home-screen app", "Shared chrome · offline"],
     overview: `On a phone the header compacts, the two panes stack behind a Chain & Builder / Analysis switch, the tab strips scroll, the chain pans by touch and a tapped row shows finger-sized controls, and cards and tables scroll inside their own frames. HapieCoin installs to the home screen: Chrome and Android get the native prompt from the settings menu, an iPhone gets the two Share-sheet steps. A service worker serves a branded offline page when the connection drops and never caches prices, positions, orders or sessions.`,
     tryIt: ["On the desktop, Chrome DevTools → device toolbar → Pixel 7: stack, scroll the strips, tap a chain row, tap B.", "Settings → **Install app** (or the one-time hint). DevTools → Application → Service Workers → Offline → reload: the offline page; untick and **Try again**."],
-    shots: [["analyse-phone-dark.png", "Pixel 7, dark"], ["analyse-phone-light.png", "Pixel 7, light"], ["analyse-iphone-dark.png", "iPhone 14"], ["install-dialog-iphone.png", "Install dialog on an iPhone"], ["offline-page.png", "Offline page"]],
+    shots: [["desk-phone-dark.png", "Pixel 7, dark"], ["desk-phone-light.png", "Pixel 7, light"], ["desk-iphone-dark.png", "iPhone 14"], ["install-dialog-iphone.png", "Install dialog on an iPhone"], ["offline-page.png", "Offline page"]],
   },
   {
     file: "14-platform-and-operations.md",
     title: "Platform and operations",
-    screens: ["API · hardening", "API · replicas", "Gateway · replicas", "Venues · port", "Venues · port (web)", "Venues · column", "Venues · Deribit (data-only)", "Venues · API per venue", "Shared chrome · Error screen · browser error report", "Ops · API /metrics and the error sink", "Ops · Visual regression gate"],
+    screens: ["API · chain history", "API · hardening", "API · replicas", "Gateway · replicas", "Venues · port", "Venues · port (web)", "Venues · column", "Venues · Deribit (data-only)", "Venues · API per venue", "Shared chrome · Error screen · browser error report", "Ops · API /metrics and the error sink", "Ops · Visual regression gate"],
     overview: `Not screens but guarantees: request body limits and per-route rate limits on the order routes, one API replica running the background jobs and one gateway feeding, the venue port that lets a second exchange be added without touching the apps (Deribit is wired data-only), error tracking through a Sentry-protocol sink with browser errors relayed through the API, and Prometheus-style metrics on the API and the gateway behind a token.`,
     tryIt: ["`GET /healthz` on the API and the gateway; `GET /metrics` with the bearer token; trigger a browser error (the error screen offers a report).", "Switch venue in the header to Deribit (data-only) and back."],
     shots: [],

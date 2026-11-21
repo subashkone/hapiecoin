@@ -64,7 +64,7 @@ export function registerBillingRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, n
   );
 
   app.openapi(
-    createRoute({ method: "get", path: "/v1/subscription", tags: ["billing"], summary: "My Subscription view (HC-AC-003..010)", security: cookieAuth, middleware: [guard], responses: { 200: jsonContent(SubscriptionView, "Subscription"), 401: errorResponses[401] } }),
+    createRoute({ method: "get", path: "/v1/subscription", tags: ["billing"], summary: "My plan view (HC-AC-003..010)", security: cookieAuth, middleware: [guard], responses: { 200: jsonContent(SubscriptionView, "Subscription"), 401: errorResponses[401] } }),
     async (c) => c.json(await subscriptionView(currentUser(c).id), 200),
   );
 

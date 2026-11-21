@@ -1,5 +1,5 @@
 "use client";
-// Static hero illustration (HC-PB-004): a miniature of the analyse workspace built only from design-system
+// Static hero illustration (HC-PB-004): a miniature of the desk built only from design-system
 // components (Tabs, Table, Badge, Kbd, Stat). Numbers are illustrative fixtures from the recorded Delta
 // snapshot of 03 Sep 2026, not live data; the live tiles further down are the real feed.
 import { Badge, Kbd, Stat, TBody, THead, Table, Tabs, TabsList, TabsTrigger, Td, Th, Tr } from "@hapiecoin/ui";
@@ -23,7 +23,7 @@ export function TerminalIllustration() {
       <div className="flex h-9 items-center gap-2 border-b border-border px-3">
         <LogoMark className="size-3.5" />
         <span className="font-display font-semibold">HapieCoin</span>
-        <span className="text-muted-foreground">Analyse</span>
+        <span className="text-muted-foreground">Desk</span>
         <span className="ml-2 inline-flex overflow-hidden rounded border border-border">
           {["BTC", "ETH", "XAUT"].map((a, i) => (
             <span key={a} className={i === 0 ? "bg-foreground px-1.5 py-px font-mono text-background" : "px-1.5 py-px font-mono text-muted-foreground"}>

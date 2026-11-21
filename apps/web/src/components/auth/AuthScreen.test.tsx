@@ -19,7 +19,7 @@ afterEach(() => {
 describe("HC-PB-024 tab state in the URL", () => {
   it("authHref preserves next= and ref=", () => {
     expect(authHref("signup", "", "")).toBe("/auth?tab=signup");
-    expect(authHref("login", "/analyse", "REF_X")).toBe("/auth?tab=login&next=%2Fanalyse&ref=REF_X");
+    expect(authHref("login", "/desk", "REF_X")).toBe("/auth?tab=login&next=%2Fdesk&ref=REF_X");
     expect(PARENT_TAB["otp-verify"]).toBe("otp-login");
   });
   it("HC-PB-023 renders the brand column, feature rows and live ticker; cold sub-step falls back to its parent", async () => {
@@ -42,10 +42,10 @@ describe("HC-PB-024 tab state in the URL", () => {
   });
   it("keeps the email across steps via sessionStorage and navigates with go()/finish()", async () => {
     window.sessionStorage.setItem("hapiecoin.auth.email", "kept@example.com");
-    renderWithProviders(<AuthScreen tab="otp-verify" next="/subscription" referral="REF_1" googleEnabled={false} />);
+    renderWithProviders(<AuthScreen tab="otp-verify" next="/plans" referral="REF_1" googleEnabled={false} />);
     await waitFor(() => expect(screen.getByText("Code sent to kept@example.com")).toBeTruthy());
     screen.getByText("← Change email").click();
-    expect(routerMock.push).toHaveBeenCalledWith("/auth?tab=otp-login&next=%2Fsubscription&ref=REF_1");
+    expect(routerMock.push).toHaveBeenCalledWith("/auth?tab=otp-login&next=%2Fplans&ref=REF_1");
   });
 });
 
@@ -66,11 +66,11 @@ describe("HC-PB-037 Delta sign-in page", () => {
 describe("HC-PB-038 SSO return", () => {
   it("redirects to the target after the delay", () => {
     vi.useFakeTimers();
-    renderWithProviders(<SsoReturn target="/analyse" delayMs={300} />);
+    renderWithProviders(<SsoReturn target="/desk" delayMs={300} />);
     expect(screen.getByText("Signing you in…")).toBeTruthy();
     act(() => {
       vi.advanceTimersByTime(300);
     });
-    expect(routerMock.replace).toHaveBeenCalledWith("/analyse");
+    expect(routerMock.replace).toHaveBeenCalledWith("/desk");
   });
 });

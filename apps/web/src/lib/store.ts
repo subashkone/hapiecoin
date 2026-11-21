@@ -148,7 +148,7 @@ export interface UiState {
   /** Ladder step multiplier (HC-WS-103). Persisted. */
   ladderStep: LadderStep;
   /** Which workspace pane is collapsed (HC-WS-065): the other takes the full width. Persisted. */
-  analyseCollapse: PaneCollapse;
+  deskCollapse: PaneCollapse;
   /** A template the palette asked the Builder to load once the chain is ready (HC-WS-069); cleared on load. */
   templateRequest: string | null;
   /** Exchange chosen in the trade dialogs; the Builder ticket's fee estimate follows it (HC-TR-142). Persisted. */
@@ -181,7 +181,7 @@ export interface UiState {
   flyersRequested: number;
   /** Analytics watchlist symbols (HC-MA-103, 105). Persisted. */
   watchlist: string[];
-  /** Bumped by "Take a tour" (settings menu, palette); the tour starts on /analyse. */
+  /** Bumped by "Take a tour" (settings menu, palette); the tour starts on /desk. */
   tourRequested: number;
   /** Bumped to open the assistant, optionally with a question to ask (palette, tour). */
   assistantRequested: number;
@@ -236,8 +236,8 @@ export interface UiState {
   /** Follow a paper / live strategy in the analysis pane (null = back to the Builder legs). */
   /** `force` skips the discard question (used by the workbench once the trader has answered it). */
   followStrategy: (id: string | null, force?: boolean) => void;
-  /** Analyse ticked exchange positions (HC-TR-144); an empty list returns to the Builder legs. */
-  analysePositions: (productIds: number[], force?: boolean) => void;
+  /** Follow ticked exchange positions (HC-TR-144); an empty list returns to the Builder legs. */
+  followPositions: (productIds: number[], force?: boolean) => void;
   setTemplatesStrip: (open: boolean) => void;
   setWorkspaceTab: (tab: WorkspaceTab, force?: boolean) => void;
   setAnalysisTab: (tab: AnalysisTab) => void;
@@ -247,7 +247,7 @@ export interface UiState {
   setChainRange: (range: ChainRange) => void;
   setChartLayer: (key: keyof ChartLayers, on: boolean) => void;
   setLadderStep: (step: LadderStep) => void;
-  setAnalyseCollapse: (pane: PaneCollapse) => void;
+  setDeskCollapse: (pane: PaneCollapse) => void;
   requestTemplate: (name: string | null) => void;
   setBroker: (id: string | null) => void;
   setAccount: (id: string | null) => void;
@@ -315,7 +315,7 @@ export const useUiStore = create<UiState>()(
       paletteOpen: false,
       chartLayers: { ...DEFAULT_LAYERS },
       ladderStep: 1,
-      analyseCollapse: null,
+      deskCollapse: null,
       templateRequest: null,
       brokerId: null,
       accountId: null,
@@ -407,9 +407,9 @@ export const useUiStore = create<UiState>()(
         }
         set({ paneSource: id === null ? null : { kind: "strategy", id }, adjust: s.adjust && s.adjust.strategyId === id ? s.adjust : null, adjustDiscard: null });
       },
-      analysePositions: (productIds, force = false) => {
+      followPositions: (productIds, force = false) => {
         if (!force && hasAdjustWork(get().adjust)) {
-          set({ adjustDiscard: () => get().analysePositions(productIds, true) });
+          set({ adjustDiscard: () => get().followPositions(productIds, true) });
           return;
         }
         set({ paneSource: productIds.length ? { kind: "positions", productIds: [...productIds] } : null, adjust: null, adjustDiscard: null });
@@ -434,7 +434,7 @@ export const useUiStore = create<UiState>()(
       setChainRange: (chainRange) => set({ chainRange: isChainRange(chainRange) ? chainRange : DEFAULT_CHAIN_RANGE }),
       setChartLayer: (key, on) => set((s) => ({ chartLayers: { ...s.chartLayers, [key]: on } })),
       setLadderStep: (ladderStep) => set({ ladderStep: isLadderStep(ladderStep) ? ladderStep : 1 }),
-      setAnalyseCollapse: (analyseCollapse) => set({ analyseCollapse }),
+      setDeskCollapse: (deskCollapse) => set({ deskCollapse }),
       requestTemplate: (templateRequest) => set({ templateRequest }),
       setBroker: (brokerId) => set({ brokerId }),
       setAccount: (accountId) => set({ accountId }),
@@ -508,7 +508,7 @@ export const useUiStore = create<UiState>()(
         rangeDefault: s.rangeDefault,
         chartLayers: s.chartLayers,
         ladderStep: s.ladderStep,
-        analyseCollapse: s.analyseCollapse,
+        deskCollapse: s.deskCollapse,
         brokerId: s.brokerId,
         accountId: s.accountId,
         chainColumns: s.chainColumns,
@@ -545,7 +545,7 @@ export const useUiStore = create<UiState>()(
           rangeDefault: DEFAULT_CHAIN_RANGE,
           chartLayers: normaliseLayers(p.chartLayers),
           ladderStep: isLadderStep(p.ladderStep) ? p.ladderStep : 1,
-          analyseCollapse: p.analyseCollapse === "left" || p.analyseCollapse === "right" ? p.analyseCollapse : null,
+          deskCollapse: p.deskCollapse === "left" || p.deskCollapse === "right" ? p.deskCollapse : null,
           templateRequest: null,
           alertPrefill: null,
           brokerId: typeof p.brokerId === "string" && p.brokerId ? p.brokerId : null,

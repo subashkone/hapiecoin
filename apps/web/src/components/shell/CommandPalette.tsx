@@ -55,8 +55,8 @@ export function buildCommands(opts: {
   const list: PaletteCommand[] = [nav("nav:home", "/", "Home", ["landing", "public", "website"]), nav("nav:payoff-preview", "/payoff-preview", "Payoff chart preview", ["chart", "preview", "demo", "payoff"])];
   if (opts.loggedIn) {
     list.push(
-      nav("nav:analyse", "/analyse", "Analyse workspace", ["options chain", "builder", "payoff"]),
-      nav("nav:screener", "/analyse?tab=screener", "Options screener", ["screener", "premium per day", "iv", "skew", "delta", "scan"]), // HC-WS-112
+      nav("nav:desk", "/desk", "Desk", ["options chain", "builder", "payoff"]),
+      nav("nav:screener", "/desk?tab=screener", "Options screener", ["screener", "premium per day", "iv", "skew", "delta", "scan"]), // HC-WS-112
       nav("nav:analytics-hub", "/analytics/hub", "Analytics: Markets Hub", ["analytics", "markets", "open interest", "hub"]),
       nav("nav:analytics-overview", "/analytics/overview", "Analytics: Futures overview", ["analytics", "futures", "long short", "fear greed"]),
       nav("nav:analytics-markets", "/analytics/markets", "Analytics: Markets screener", ["analytics", "screener", "compare", "watchlist"]),
@@ -74,8 +74,8 @@ export function buildCommands(opts: {
       nav("nav:terminal-liquidations", "/terminal/derivatives/liquidations", "Terminal: Liquidations", ["terminal", "liquidations"]),
       nav("nav:terminal-fear-greed", "/terminal/indicators/fear-greed", "Terminal: Fear & Greed", ["terminal", "fear greed", "sentiment"]),
       nav("nav:terminal-cycle", "/terminal/indicators/cycle", "Terminal: BTC Cycle", ["terminal", "cycle", "pi cycle", "rainbow"]),
-      nav("nav:subscription", "/subscription", "Subscription: change plan", ["plan", "upgrade", "billing", "renew"]),
-      nav("nav:referrals", "/referrals", "Referrals: share link and earnings", ["refer", "commission", "invite", "share"]),
+      nav("nav:subscription", "/plans", "Subscription: change plan", ["plan", "upgrade", "billing", "renew"]),
+      nav("nav:referrals", "/invite", "Referrals: share link and earnings", ["refer", "commission", "invite", "share"]),
       ...(opts.admin
         ? [
             nav("nav:admin-users", "/admin/users", "Admin: Users", ["admin", "user management", "invite"]),
@@ -121,7 +121,7 @@ export function buildCommands(opts: {
         group: "Actions",
         keywords: ["tour", "help", "walkthrough", "guide", "onboarding"],
         run: () => {
-          opts.navigate("/analyse");
+          opts.navigate("/desk");
           useUiStore.getState().requestTour();
         },
       },
@@ -138,7 +138,7 @@ export function buildCommands(opts: {
         group: "Actions",
         keywords: ["flyers", "banners", "popup", "offers", "announcements"],
         run: () => {
-          opts.navigate("/analyse");
+          opts.navigate("/desk");
           useUiStore.getState().requestFlyers();
         },
       },
@@ -195,7 +195,7 @@ export function buildCommands(opts: {
         keywords: ["wizard", "recommend", "which strategy", "bullish", "bearish", "neutral", "volatile", "defined risk", "target"],
         run: () => {
           const s = useUiStore.getState();
-          opts.navigate("/analyse");
+          opts.navigate("/desk");
           s.setWorkspaceTab("builder");
           s.setBuilderTab("wizard");
         },
@@ -208,7 +208,7 @@ export function buildCommands(opts: {
         run: () => {
           const s = useUiStore.getState();
           if (hasAdjustWork(s.adjust)) {
-            opts.navigate("/analyse"); // the question is asked in the workspace; run the command again after answering
+            opts.navigate("/desk"); // the question is asked in the workspace; run the command again after answering
             return s.setWorkspaceTab("builder");
           }
           s.setLegs(s.asset, []);
@@ -224,10 +224,10 @@ export function buildCommands(opts: {
         run: () => {
           const s = useUiStore.getState();
           if (hasAdjustWork(s.adjust)) {
-            opts.navigate("/analyse");
+            opts.navigate("/desk");
             return s.setWorkspaceTab("builder");
           }
-          opts.navigate("/analyse");
+          opts.navigate("/desk");
           s.setWorkspaceTab("builder");
           s.setBuilderTab("builder");
           s.requestSaveDraft(true);
@@ -246,10 +246,10 @@ export function buildCommands(opts: {
             return;
           }
           if (hasAdjustWork(s.adjust)) {
-            opts.navigate("/analyse");
+            opts.navigate("/desk");
             return s.setWorkspaceTab("builder");
           }
-          opts.navigate("/analyse");
+          opts.navigate("/desk");
           s.setWorkspaceTab("builder");
           s.openTrade({ strategyId: null });
         },
@@ -260,7 +260,7 @@ export function buildCommands(opts: {
         group: "Actions",
         keywords: ["paper", "trades", "positions", "tab"],
         run: () => {
-          opts.navigate("/analyse");
+          opts.navigate("/desk");
           useUiStore.getState().setWorkspaceTab("paper");
         },
       },
@@ -270,7 +270,7 @@ export function buildCommands(opts: {
         group: "Actions",
         keywords: ["live", "trades", "orders", "tab"],
         run: () => {
-          opts.navigate("/analyse");
+          opts.navigate("/desk");
           useUiStore.getState().setWorkspaceTab("live");
         },
       },
@@ -280,7 +280,7 @@ export function buildCommands(opts: {
         group: "Actions",
         keywords: ["journal", "closed", "trades", "notes", "tags"],
         run: () => {
-          opts.navigate("/analyse");
+          opts.navigate("/desk");
           useUiStore.getState().setWorkspaceTab("journal");
         },
       },
@@ -335,7 +335,7 @@ export function buildCommands(opts: {
           keywords: ["expiry", "chain", "switch", e],
           run: () => {
             const s = useUiStore.getState();
-            opts.navigate("/analyse");
+            opts.navigate("/desk");
             s.setExpiry(s.asset, e);
             s.setWorkspaceTab("chain");
           },
@@ -350,10 +350,10 @@ export function buildCommands(opts: {
           run: () => {
             const s = useUiStore.getState();
             if (hasAdjustWork(s.adjust)) {
-              opts.navigate("/analyse");
+              opts.navigate("/desk");
               return s.setWorkspaceTab("builder");
             }
-            opts.navigate("/analyse");
+            opts.navigate("/desk");
             s.setWorkspaceTab("builder");
             s.setBuilderTab("templates");
             s.requestTemplate(name);

@@ -38,7 +38,7 @@ export function PublicHeader() {
           <ThemeToggle />
           {showApp ? (
             <Button asChild size="md">
-              <Link href="/analyse" data-testid="go-to-app">
+              <Link href="/desk" data-testid="go-to-app">
                 Go to App <ArrowRight className="size-3.5" aria-hidden="true" />
               </Link>
             </Button>

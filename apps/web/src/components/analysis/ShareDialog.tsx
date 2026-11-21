@@ -32,7 +32,7 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           </DialogDescription>
         </DialogHeader>
         <DialogBody className="space-y-3 text-xs">
-          <p className="text-muted-foreground">Anyone with this link sees a preview of the strategy and can open it in Analyse. Legs, lots and entry prices are encoded in the link itself — nothing is uploaded.</p>
+          <p className="text-muted-foreground">Anyone with this link sees a preview of the strategy and can open it on the Desk. Legs, lots and entry prices are encoded in the link itself — nothing is uploaded.</p>
           <div className="flex gap-2">
             <input readOnly value={link} onFocus={(e) => e.currentTarget.select()} className="num h-8 min-w-0 flex-1 rounded border border-input bg-background px-2 text-2xs" aria-label="Share link" data-testid="share-link" />
             <Button size="sm" onClick={() => void copy()} data-testid="share-copy">Copy</Button>

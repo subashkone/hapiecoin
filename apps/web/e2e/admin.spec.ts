@@ -92,7 +92,7 @@ test.describe("HC-AD admin", () => {
     await expect(page.getByTestId("banner-error")).toContainText("Title is required");
     await page.getByTestId("banner-title").fill("Festive Sale");
     await page.getByTestId("banner-description").fill("30% off yearly plans");
-    await page.getByTestId("banner-link").fill("https://hapiecoin.com/subscription");
+    await page.getByTestId("banner-link").fill("https://hapiecoin.com/plans");
     await page.getByTestId("banner-save").click();
     await expect(page.getByTestId("banner-error")).toContainText("Image is required");
     await page.getByTestId("banner-image").setInputFiles({ name: "sale.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64") });

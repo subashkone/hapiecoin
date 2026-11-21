@@ -1,5 +1,5 @@
 // Referral commissions (Phase 4 item 3, ADR-031): recorded when a referred user's subscription is written (billing
-// activation now, Razorpay checkout in item 2 through the same function), read back for the trader's My Referrals
+// activation now, Razorpay checkout in item 2 through the same function), read back for the trader's Invite friends
 // page and the admin's Commissions tab, settled per referrer or in bulk with an audit trail.
 import { type AdminCommissionDetail, type AdminCommissionRow, type AdminCommissionsView, type CommissionStatus, type MonthBar, type ReferralRow, type ReferralsView, commissionFor, monthKey } from "@hapiecoin/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";

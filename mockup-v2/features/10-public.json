@@ -13,7 +13,7 @@
   "feature": "Header swaps to “Go to App →” when the visitor is logged in",
   "how": "Listens to CG 'auth' events and CG.state.loggedIn; hides Sign Up / Get Started and shows Go to App → #/analyse",
   "status": "working",
-  "evidence": "bundle string: Go to App — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: PublicHeader swaps to Go to App → /analyse (landing.test.tsx 'shows Go to App once a session exists', public.spec HC-PB-003)"
+  "evidence": "bundle string: Go to App — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: PublicHeader swaps to Go to App → /desk (landing.test.tsx 'shows Go to App once a session exists', public.spec HC-PB-003)"
  },
  {
   "route": "/",
@@ -195,15 +195,15 @@
   "route": "/auth",
   "screen": "Sign in / Sign up",
   "feature": "Logged-in visitors are redirected away from /auth",
-  "how": "show() checks CG.state.loggedIn and navigates to ?next= or /analyse",
+  "how": "show() checks CG.state.loggedIn and navigates to ?next= or /desk",
   "status": "working",
-  "evidence": "bundle: navigate('/analyse') when isLoggedIn · Phase 1 tests (tagged 08 Sep 2026): e2e auth.spec.ts"
+  "evidence": "bundle: navigate('/desk') when isLoggedIn · Phase 1 tests (tagged 08 Sep 2026): e2e auth.spec.ts"
  },
  {
   "route": "/auth",
   "screen": "Sign in / Sign up",
   "feature": "Login card: “Welcome back · Sign in to your trading dashboard”, Continue with Delta Exchange, OR divider, mono uppercase field labels, amber Sign In, Forgot password? / Sign in with OTP, Create account",
-  "how": "Email required / format validated inline (“Email is required”, “Invalid email”); password < 6 chars → toast “Login failed · Invalid credentials.”; success → CG.auth.login(email), toast “Welcome back! · Logged in successfully.”, navigate to ?next= or /analyse",
+  "how": "Email required / format validated inline (“Email is required”, “Invalid email”); password < 6 chars → toast “Login failed · Invalid credentials.”; success → CG.auth.login(email), toast “Welcome back! · Logged in successfully.”, navigate to ?next= or /desk",
   "status": "working",
   "evidence": "bundle strings: Welcome back, Sign in to your trading dashboard, Continue with Delta Exchange, Email, Password, Sign In, Forgot password?, Sign in with OTP, Create account, Invalid credentials., Logged in successfully. · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
  },
@@ -291,7 +291,7 @@
   "route": "/auth/delta",
   "screen": "Delta Exchange sign-in",
   "feature": "Full-screen spinner “Signing you in with Delta…”, then login",
-  "how": "After 1.5s: CG.auth.login(), toast “Welcome! · Signed in with Delta.”, navigate to /analyse (timer cancelled if the user leaves)",
+  "how": "After 1.5s: CG.auth.login(), toast “Welcome! · Signed in with Delta.”, navigate to /desk (timer cancelled if the user leaves)",
   "status": "working",
   "evidence": "bundle: Signing you in with Delta…, Welcome!, Signed in with Delta. — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: DeltaSignIn spinner then explanation (AuthScreen.test.tsx, auth.spec HC-PB-037)"
  },
@@ -299,7 +299,7 @@
   "route": "/sso",
   "screen": "SSO return",
   "feature": "“Signing you in…” spinner then redirect",
-  "how": "After 1s logs the user in and navigates to ?sso_return= (when it is an in-app path) or /analyse",
+  "how": "After 1s logs the user in and navigates to ?sso_return= (when it is an in-app path) or /desk",
   "status": "working",
   "evidence": "bundle: Signing you in…, sso_return — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: SsoReturn redirects after the delay (AuthScreen.test.tsx 'redirects to the target after the delay', auth.spec HC-PB-038)"
  },
@@ -484,7 +484,7 @@
   "feature": "Both themes: dark-first obsidian ground; light variant is the cool paper/graphite reading — no gradients, no card shadows, hairline separation",
   "how": "",
   "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: token-driven light and dark, captured in visual.spec home-*/auth-*/analyse-*",
+  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: token-driven light and dark, captured in visual.spec home-*/auth-*/desk-*",
   "new": true
  },
  {
@@ -526,7 +526,7 @@
  {
   "route": "/auth",
   "screen": "Sign in / Sign up",
-  "feature": "Continue with Google (Better Auth social sign-in): the button shows only when the API has Google configured; the OAuth callback is served on the web origin so the session cookie is first-party and /analyse opens signed in",
+  "feature": "Continue with Google (Better Auth social sign-in): the button shows only when the API has Google configured; the OAuth callback is served on the web origin so the session cookie is first-party and /desk opens signed in",
   "how": "authClient.signIn.social({ provider: \"google\", callbackURL: next }); BETTER_AUTH_URL = web origin (ADR-019)",
   "status": "working",
   "evidence": "Phase 1 build, 07 Sep 2026: e2e auth.spec.ts against the mock provider; GAPS #27",

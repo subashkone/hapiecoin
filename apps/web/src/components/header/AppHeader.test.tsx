@@ -34,13 +34,13 @@ beforeEach(() => {
 });
 afterEach(() => mock.restore());
 
-describe("HC-SH-001 analyse header", () => {
-  it("renders logo + Analyse, asset switch, price, feed, exchange chip, gear and avatar; admin chip only for admins", async () => {
+describe("HC-SH-001 desk header", () => {
+  it("renders logo + Desk, asset switch, price, feed, exchange chip, gear and avatar; admin chip only for admins", async () => {
     mock.loginAs("asha@example.com");
-    renderWithProviders(<AppHeader variant="analyse" initialUser={user} />);
+    renderWithProviders(<AppHeader variant="desk" initialUser={user} />);
     const header = screen.getByTestId("app-header");
-    expect(header.dataset["variant"]).toBe("analyse");
-    expect(within(header).getByText("Analyse")).toBeTruthy();
+    expect(header.dataset["variant"]).toBe("desk");
+    expect(within(header).getByText("Desk")).toBeTruthy();
     expect(within(header).getByRole("tablist", { name: "Asset" })).toBeTruthy();
     expect(screen.getByTestId("futures-price")).toBeTruthy();
     expect(screen.getByTestId("feed-status")).toBeTruthy();
@@ -51,7 +51,7 @@ describe("HC-SH-001 analyse header", () => {
     await waitFor(() => expect(screen.getByTestId("plan-banner")).toBeTruthy());
   });
   it("HC-SH-002 shows the admin chip for admins; HC-SH-024 the settings menu gains the Admin section", async () => {
-    renderWithProviders(<AppHeader variant="analyse" initialUser={{ ...user, role: "admin" }} />);
+    renderWithProviders(<AppHeader variant="desk" initialUser={{ ...user, role: "admin" }} />);
     await userEvent.setup().click(screen.getByTestId("settings-gear"));
     expect(screen.getByTestId("menu-admin-users").getAttribute("href")).toBe("/admin/users");
     expect(screen.getByText("Promotional Emails")).toBeTruthy();
@@ -60,12 +60,12 @@ describe("HC-SH-001 analyse header", () => {
   it("HC-SH-013 / HC-SH-022 / HC-SH-026 settings menu opens dialogs and the logout confirm", async () => {
     mock.loginAs("asha@example.com");
     const u = userEvent.setup();
-    renderWithProviders(<AppHeader variant="analyse" initialUser={user} />);
+    renderWithProviders(<AppHeader variant="desk" initialUser={user} />);
     await u.click(screen.getByTestId("settings-gear"));
     const menu = screen.getByTestId("settings-menu");
     expect(within(menu).getByText("Account")).toBeTruthy();
     expect(within(menu).getByText("Preferences")).toBeTruthy();
-    expect(within(menu).getByText("My Subscription").closest("a")?.getAttribute("href")).toBe("/subscription");
+    expect(within(menu).getByText("My plan").closest("a")?.getAttribute("href")).toBe("/plans");
     await waitFor(() => expect(within(menu).getByText("USD")).toBeTruthy()); // currency value from settings
     await u.click(screen.getByTestId("menu-profile"));
     expect(useUiStore.getState().dialog).toBe("profile");
@@ -113,7 +113,7 @@ describe("HC-SH-001 analyse header", () => {
     FakeSocket.reset();
     mock.loginAs("asha@example.com");
     useUiStore.setState({ asset: "BTC", expiry: {} });
-    renderWithProviders(<AppHeader variant="analyse" initialUser={user} />);
+    renderWithProviders(<AppHeader variant="desk" initialUser={user} />);
     expect(scr.getByTestId("header-atm-iv").dataset["state"]).toBe("pending");
     const ws = FakeSocket.last();
     const expiry = firstLiveDefault(); // the first default expiry still live at the clock
@@ -137,7 +137,7 @@ describe("HC-SH-001 analyse header", () => {
   });
   it("HC-SH-020 account menu shows name/email and Logout", async () => {
     const u = userEvent.setup();
-    renderWithProviders(<AppHeader variant="analyse" initialUser={user} />);
+    renderWithProviders(<AppHeader variant="desk" initialUser={user} />);
     await u.click(screen.getByTestId("account-avatar"));
     const menu = screen.getByTestId("account-menu");
     expect(within(menu).getByText("Asha Trader")).toBeTruthy();
@@ -153,14 +153,14 @@ describe("HC-SH-001 analyse header", () => {
 
 describe("HC-SH-015..021 default header", () => {
   it("HC-SH-018 shows text tabs with the active underline and admin link for admins", () => {
-    pathnameMock.value = "/subscription";
+    pathnameMock.value = "/plans";
     renderWithProviders(<AppHeader variant="default" initialUser={{ ...user, role: "admin" }} />);
     const nav = screen.getByRole("navigation", { name: "Primary" });
-    expect(within(nav).getByText("Subscription").getAttribute("aria-current")).toBe("page");
-    expect(within(nav).getByText("Analyse").getAttribute("aria-current")).toBeNull();
+    expect(within(nav).getByText("Plans").getAttribute("aria-current")).toBe("page");
+    expect(within(nav).getByText("Desk").getAttribute("aria-current")).toBeNull();
     expect(within(nav).getByText("Market Analytics").getAttribute("href")).toBe("/analytics");
     expect(within(nav).getByText("Admin").getAttribute("href")).toBe("/admin/users");
-    expect(screen.getByLabelText("HapieCoin home").getAttribute("href")).toBe("/analyse");
+    expect(screen.getByLabelText("HapieCoin home").getAttribute("href")).toBe("/desk");
   });
   it("HC-SH-017 Market Analytics is active on /terminal/* too", () => {
     pathnameMock.value = "/terminal/coin/BTC";
@@ -176,8 +176,8 @@ describe("HC-SH-015..021 default header", () => {
     await new Promise((r) => setTimeout(r, 20)); // useMe 401 settles without changing the view
     expect(screen.queryByTestId("account-avatar")).toBeNull();
   });
-  it("falls back to the default header when the analyse variant has no user", () => {
-    renderWithProviders(<AppHeader variant="analyse" initialUser={null} />);
+  it("falls back to the default header when the desk variant has no user", () => {
+    renderWithProviders(<AppHeader variant="desk" initialUser={null} />);
     expect(screen.getByTestId("app-header").dataset["variant"]).toBe("default");
   });
   it("Avatar renders each glyph", () => {

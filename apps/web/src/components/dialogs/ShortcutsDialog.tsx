@@ -1,5 +1,5 @@
 "use client";
-// Keyboard shortcuts help (HC-SH-102, 103; HC-WS-070): every row of the registry grouped Global / Analyse workspace /
+// Keyboard shortcuts help (HC-SH-102, 103; HC-WS-070): every row of the registry grouped Global / Desk /
 // other, opened with "?" anywhere outside a field, from the settings menu or the palette.
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Kbd } from "@hapiecoin/ui";
 import { useSyncExternalStore } from "react";
@@ -7,7 +7,7 @@ import { DEFAULT_SHORTCUTS, listShortcuts, subscribeShortcuts, type ShortcutRow 
 import type { DialogProps } from "./SettingsDialogs";
 
 function groupsOf(rows: readonly ShortcutRow[]): [string, ShortcutRow[]][] {
-  const order = ["Global", "Analyse workspace"];
+  const order = ["Global", "Desk"];
   const by = new Map<string, ShortcutRow[]>();
   for (const r of rows) by.set(r.group, [...(by.get(r.group) ?? []), r]);
   return [...by.entries()].sort((a, b) => {

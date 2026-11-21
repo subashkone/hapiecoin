@@ -1,5 +1,5 @@
 "use client";
-// Portfolio status bar (Phase 5 item 3, ADR-053; HC-SH-105..108, HC-WS-004): a 32 px strip under the analyse
+// Portfolio status bar (Phase 5 item 3, ADR-053; HC-SH-105..108, HC-WS-004): a 32 px strip under the desk
 // workspace with the open-strategy count, net greeks, margin used against the wallet, day P&L, the alerts count,
 // the P&L basis and the display currency. Every item is a button to the place that changes it.
 import { alertCounts } from "@hapiecoin/schema";

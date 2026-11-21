@@ -12,7 +12,7 @@ import { VerifiedDay, type VerifiedPnl } from "./verified.js";
 export const HANDLE_RE = /^[a-z0-9_]{3,20}$/;
 /** Route words and names a trader must not take (the page lives at /t/<handle>, but these read as HapieCoin's own). */
 export const RESERVED_HANDLES: ReadonlySet<string> = new Set([
-  "admin", "hapiecoin", "api", "auth", "analyse", "analytics", "terminal", "referrals", "subscription", "support", "help", "about",
+  "admin", "hapiecoin", "api", "auth", "desk", "plans", "invite", "analytics", "terminal", "referrals", "subscription", "support", "help", "about",
   "terms", "privacy", "disclaimer", "settings", "login", "signup", "signin", "me", "www", "mail", "root", "system", "official", "delta",
 ]);
 

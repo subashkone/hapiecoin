@@ -1,5 +1,5 @@
 "use client";
-// My Referrals (HC-AC-037..055, 067..074; ADR-031; docs/design/billing.md "Referrals"): link and code to share,
+// Invite friends (HC-AC-037..055, 067..074; ADR-031; docs/design/billing.md "Referrals"): link and code to share,
 // what was earned and what is still pending, the referred users with filters / sort / paging, and an earnings chart.
 import { type CommissionStatus, type ReferralRow, type ReferralsView } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, cn, toast } from "@hapiecoin/ui";
@@ -120,7 +120,7 @@ export function ReferralsPage() {
     <main className="mx-auto max-w-[1100px] px-6 py-8" data-testid="referrals-page" data-state="ready" data-count={view.rows.length}>
       <div className="flex flex-wrap items-center gap-3">
         <div>
-          <p className="micro">My Referrals</p>
+          <p className="micro">Invite friends</p>
           <h1 className="mt-1">Share &amp; Earn</h1>
         </div>
         <span className="micro ml-2" data-testid="ref-meta">

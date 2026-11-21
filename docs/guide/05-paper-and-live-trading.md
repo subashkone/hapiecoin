@@ -1,6 +1,6 @@
 # Paper trading, live trading, rules and accounts
 
-Part of the [HapieCoin feature guide](README.md). 97 traced features on 31 screens; 97 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 103 traced features on 34 screens; 103 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -19,26 +19,45 @@ Cards on the Paper and Live tabs show P&L, greeks, days to expiry, lifecycle chi
 
 ## Screens
 
-![Select trading mode](../../apps/web/e2e/__screenshots__/analyse-trade-mode-dark.png)
+![Select trading mode](../../apps/web/e2e/__screenshots__/desk-trade-mode-dark.png)
 *Select trading mode*
 
-![Paper trades](../../apps/web/e2e/__screenshots__/analyse-paper-dark.png)
+![Paper trades](../../apps/web/e2e/__screenshots__/desk-paper-dark.png)
 *Paper trades*
 
-![Strategy details](../../apps/web/e2e/__screenshots__/analyse-details-dark.png)
+![Strategy details](../../apps/web/e2e/__screenshots__/desk-details-dark.png)
 *Strategy details*
 
-![Live preview with the exchange check](../../apps/web/e2e/__screenshots__/analyse-live-preview-dark.png)
+![Live preview with the exchange check](../../apps/web/e2e/__screenshots__/desk-live-preview-dark.png)
 *Live preview with the exchange check*
 
-![Live trades with order chips](../../apps/web/e2e/__screenshots__/analyse-live-dark.png)
+![Live trades with order chips](../../apps/web/e2e/__screenshots__/desk-live-dark.png)
 *Live trades with order chips*
 
 ## Every feature, in detail
 
 Each row is one traced feature from the build spec: the id, what it is, how it behaves (the acceptance rule the tests check), and how it is tested. Status "mock-only" means the screen exists but the data feed behind it is not connected yet.
 
-### Analyse · Select Trading Mode (dialog) · `/analyse`
+### Trading · Protect dialog / cards · Details · `/desk`
+
+| ID | Feature | How it behaves | Status | Tested by |
+|---|---|---|---|---|
+| HC-TR-211 | Protect dialog: Trail instead of exiting at the target, with the give-back and two worked exit levels; the card shows the best and the exit level once trailing; the fired chip says the target trailed | The Target box carries one more line, off by default: a checkbox, the unit (the trader's currency or %), the give-back and a sentence with the exit level at the target and at twice the target; a give-back at or above the target, or a percentage of 100 or more, disables Arm with the reason; with a trail already running the sentence gives the best so far and the exit the save produces (refused when the P&L is already under it), says when a higher target starts the trail over, and says the trail starts on arming when the P&L is already past the target; the box hint reads start trailing when P&L reaches; ruleText gives target at +X, then trail Y before the target and trailing: best +X, exits at +Y after it; firedLabel gives target hit · trailed from +X; Details lists the same words | built | unit (web) |
+| HC-TR-213 | Protect dialog: a leg stop's What to exit offers "exit this leg, then trail the rest" with a give-back (10 % by default, or money) and a worked exit level; a running trail shows on the card and as its own box | The leg stop's What to exit select has a third option, disabled when no other leg is held; choosing it shows the give-back (% prefilled with 10, or the trader's currency) and a sentence with where the other legs stand now and where they would exit, or that a percentage waits while they are under water; an empty give-back or 100 % disables Arm with the reason; the card line reads "..., then trail the rest by 10 %"; the two older options send the body they always sent (no trail key); a running trail reads "trailing the rest: best ..., exits at ..." on the card and Details and has a box in the dialog where the give-back can be changed (the box says the trail then starts again from where the rest stands) or the trail removed by unticking, and which arrives ticked when a trail starts while the dialog is open; the fired chip reads "trail on the rest fired" | built | unit (web) |
+
+### Trading · Paper / Live cards · analysis pane · `/desk`
+
+| ID | Feature | How it behaves | Status | Tested by |
+|---|---|---|---|---|
+| HC-TR-214 | A click on a closed trade's card shows that trade in the analysis pane: the position as it was entered, when and why it closed and its final result | The pane follows any strategy that is not a draft; a closed (archived) one is drawn from every leg that was entered, at its entry premium, with no quote subscriptions and no workbench draft; the Following bar shows the name, the Archived tag, the close time, the reason and the final result; Payoff keeps the tiles and the expiry curve, shows one sentence (opened, closed, reason, final result) in place of the live strip and drops the target curve and controls, the IV / expected-move / open-interest layers, probability of profit and the Greeks strip; Greeks, Scenarios and Ladder say the trade is closed; a strategy that closes while it is followed open still hands the pane back to the Builder, and a closed trade is never auto-followed | built | unit (web) |
+
+### Trading · Paper / Live cards · Details · `/desk`
+
+| ID | Feature | How it behaves | Status | Tested by |
+|---|---|---|---|---|
+| HC-TR-215 | A trade says when it opened and when it closed, to the minute, in the viewer's own time zone with the zone named | fmtDateTime prints "19 Nov 2026, 12:42 IST" (the viewer's day and minute, zone named; a dash when there is no date); the card's started and closed lines and the Details statistics use it, and Details shows a Closed figure for an archived trade | built | unit (web) |
+
+### Desk · Select Trading Mode (dialog) · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -52,7 +71,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-123 | Exchange fee summary | "Delta India · fee 0.05% of notional · cap 10% of premium · GST 18% → est. $0.94 for 2 legs ($0.80 fee + $0.14 GST)" recomputed when the exchange select changes; the chosen exchange feeds the builder ticket | built | unit (pricing) · e2e (Playwright) |
 | HC-TR-124 | Net premium in the summary | Credit / Debit shown next to legs, asset and price mode | built | unit (pricing) · e2e (Playwright) |
 
-### Analyse · Trade Preview (dialog) · `/analyse`
+### Desk · Trade Preview (dialog) · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -70,7 +89,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-197 | The perpetual future as a pick in the adjustment workbench (the ticket's Future B / S) | AdjustPick.kind may be "future" (strike "", expiry "PERP"); the ticket's Future row buys or sells the chain's lots of the perpetual at the spot index under the chain's own B / S rules (a second click takes it off, the other side flips it, on a held future it nets); it is priced at the index and sent as a futures leg with the index as its expected mark; it moves no premium and takes no part in the expiry or zero-DTE rules; each button's title and accessible name say what one click will do given the future held or already picked, with a pressed state; a change that adds a future is sent at market only, and the review dialog's balance warning never reads a future's notional as premium | built | unit (web) · e2e (Playwright) |
 | HC-TR-198 | Repair idea: hedge the delta with the perpetual future | hedgeDelta sizes the future at \|net delta\| ÷ lot size in whole lots from the engine's delta of the position (the panel's settled market), sold when the delta is positive and bought when it is negative; unavailable within one lot of neutral or while the delta is unknown; netted against a future the position already holds so two opposing rows are never booked; the card shows the delta going to about zero, says a future has no floor, that the hedge needs re-doing as the delta moves and that funding is not modelled, and never carries 'defines your risk' (tagsForIdea removes it even where the engine finds a floor); it is named and netted on the strategy's own venue and unavailable where that venue lists no perpetual; a loaded hedge still reads as the hedge while the card re-sizes it | built | unit (web) · e2e (Playwright) |
 
-### Analyse · Paper Trades panel · `/analyse`
+### Desk · Paper Trades panel · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -89,7 +108,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-113 | Summary strip: Total P&L · Day P&L · Net Δ · Margin used | Computed from CG.portfolio.compute() for PAPER strategies; margin shown against marginTotal with %; values update on every tick | built | unit (pricing) · e2e (Playwright) |
 | HC-TR-114 | Set alert on every paper card | Opens CG.alerts.openNew({type:"pnl", kind:"pnl", strategyId, name, asset}) when the chrome alerts engine exists, else the local mini-dialog | built | e2e (Playwright) · api contract |
 
-### Analyse · Strategy Details (modal) · `/analyse`
+### Desk · Strategy Details (modal) · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -109,25 +128,25 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-120 | Set alert button | Opens the alerts hook for the strategy (active strategies) | built | unit (pricing) · e2e (Playwright) · api contract |
 | HC-TR-121 | Journal section for archived strategies | Shows tags and notes; "Open in Journal" jumps to the Journal tab | built | unit (pricing) · e2e (Playwright) |
 
-### Analyse · Square Off Position (dialog) · `/analyse`
+### Desk · Square Off Position (dialog) · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-TR-079 | Square Off Position · Close this option leg | Position Details (Type + side, Strike Price, Quantity with lot size, Entry Premium); 'Exit Premium' input (placeholder 'Enter exit premium', or 'Leave empty for market' for live; hint 'Current market price or your desired exit price'); 'Exit Qty (max N)' input for partial square-off; Realized P&L preview (Entry Value, Exit Value, Net P&L) recomputed on input; warning 'This action cannot be undone. The position will be closed and P&L will be realized.'; Cancel / 'Confirm Square Off' ('Closing...') → leg (or a split portion) becomes SQUARED_OFF with exitPremium, toast 'Leg squared off successfully · Leg squared off at $x' | built | unit (pricing) · e2e (Playwright) · security |
 
-### Analyse · Partial Exit (dialog) · `/analyse`
+### Desk · Partial Exit (dialog) · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-TR-080 | Partial Exit · Select legs and choose exit percentage | Checkbox list of active legs with qty → exit qty preview and per-leg 'Exit$' price input (defaults to current); Exit % chips 25/50/75/100 + Custom input; 'Select All' / 'Deselect All'; 'Exit N legs' ('Exiting...') squares off round(qty × %) lots per selected leg (splitting the leg) and toasts 'Partial exit complete' | built | unit (pricing) · e2e (Playwright) |
 
-### Analyse · Stop Paper Trading (dialog) · `/analyse`
+### Desk · Stop Paper Trading (dialog) · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-TR-081 | Stop Paper Trading · Choose what to do with this strategy | 'Stop paper trading for this strategy:' summary card (name, Paper (hollow pill), Live Prices, Asset / Legs / P&L), 'Active Legs' list with live prices and Qty, green '✓ Using Live WebSocket Prices · Current market prices will be used for all legs when stopping' (or 'Connecting to Live Prices · Please wait while we fetch current market prices...' with the confirm disabled as 'Connecting...'), checkbox 'Archive this strategy · Move to archived strategies. Uncheck to keep it active for future use.' with hint texts, Cancel / 'Stop Trading' ('Stopping...') → legs squared off at current prices and status ARCHIVED, or status DRAFT when unchecked; toast 'Paper trading stopped' | built | unit (pricing) · e2e (Playwright) · security |
 
-### Analyse · Live Trades panel · `/analyse`
+### Desk · Live Trades panel · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -141,42 +160,42 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-116 | Summary strip for live trades | Total P&L · Day P&L · Net Δ · Margin used from CG.portfolio (LIVE strategies), live on tick | built | unit (pricing) · e2e (Playwright) · security |
 | HC-TR-117 | Set alert on every live card | Same hook as the paper cards | built | unit (pricing) · e2e (Playwright) · api contract · security |
 
-### Analyse · Confirm Adjustment Order (dialog) · `/analyse`
+### Desk · Confirm Adjustment Order (dialog) · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-TR-088 | Confirm Adjustment Order · Live | Title with 'Live (filled pill, pulsing dot)' badge, legs table with Est. Price, 'Net Premium Credit/Debit', 'Est. premium received' / 'Est. cost', Expected Required Margin, warning 'These order(s) will be placed on the exchange with real funds at market. Fill prices may differ from the estimate above.', Cancel / 'Place Order' ('Placing...') → adjustment legs appended with filled orders | built | unit (pricing) · e2e (Playwright) · api contract · security |
 
-### Analyse · Trade All → Live · `/analyse`
+### Desk · Trade All → Live · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-TR-089 | Batch live conversion of all paper strategies | 'Trade All → Live' opens a batch selector listing every open paper strategy with a checkbox (all ticked by default), a per-strategy margin check and a single Trade Preview of all selected legs. Nothing converts without an explicit tick and a final confirmation; strategies failing the margin check are shown blocked, not skipped silently. Result toast lists converted and blocked counts. | built | unit (pricing) · e2e (Playwright) · api contract · security |
 
-### Analyse · trading integration · `/analyse`
+### Desk · trading integration · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-TR-090 | Shared state and events for the workspace / payoff parts | CG.analyse {legs, name, strategyId, asset, expiry, mode}; emits analyse:legs-changed (on structural and live price changes), analyse:set-tab, analyse:strategies-changed, cg-tour:leg-added / save-dialog-open / trade-modal-open / paper-started; listens to analyse:addLeg, analyse:tab, asset, expiry, tick, currency | built | unit (pricing) · e2e (Playwright) · security |
 | HC-TR-091 | Currency toggle (USD / INR) | All prices and P&L use CG.fmt.money; re-rendered on the 'currency' event | built | unit (pricing) · e2e (Playwright) |
-| HC-TR-092 | Fallback /analyse shell | When the workspace part is absent a minimal section with Options Chain / Strategy / Paper Trades / Live Trades tabs hosts the three panels so the trading area stays testable; it removes itself if a real /analyse section is present at DOMContentLoaded | built | unit (pricing) · e2e (Playwright) · security |
+| HC-TR-092 | Fallback /desk shell | When the workspace part is absent a minimal section with Options Chain / Strategy / Paper Trades / Live Trades tabs hosts the three panels so the trading area stays testable; it removes itself if a real /desk section is present at DOMContentLoaded | built | unit (pricing) · e2e (Playwright) · security |
 | HC-TR-138 | CG.portfolio aggregation | CG.portfolio = { compute(), strategyPnl(id), strategy(id), refresh(), cache }; compute() → { open, netDelta, netGamma, netTheta, netVega, marginUsed, marginTotal (wallet.available + marginUsed), dayPnl, unrealized, realized, openPnl, byStrategy:[{id,name,status,asset,pnl,unrealized,realized,dayPnl,delta,theta,gamma,vega,margin,openLegs,legs}], at } using CG.analyze(open legs at entry, asset) per PAPER/LIVE strategy (Greeks in asset units × lot); CG.emit("portfolio-changed", data) after every mutation (renderAll) and once per tick | built | unit (pricing) · e2e (Playwright) · security |
 | HC-TR-139 | Alerts hook | openAlert(id) → CG.alerts.openNew({type:"pnl", kind:"pnl", strategyId, name, asset}) when the chrome engine exists; otherwise a local mini-dialog (condition ≥ / ≤, value) stores {id,type:"pnl",kind:"pnl",strategyId,name,op,value,armed,state,channels,createdAt} into CG.mock.alerts and a tick evaluator toasts and disarms when crossed; CG.portfolio.strategyPnl(id) returns the strategy total P&L for the engine | built | unit (pricing) · e2e (Playwright) · api contract |
 | HC-TR-140 | Palette commands | If CG.palette.register exists: New strategy, Save draft, Paper trade current strategy, Open Paper trades, Open Live trades, Open Journal and Load template → … (28) are registered (group Trading / Templates); CG.trading.commands() exposes the same list | built | unit (pricing) · e2e (Playwright) · security |
 | HC-TR-141 | Design-system restyle | No hard-coded blues/purples/oranges, no card shadows, 4–6px radii, mono numbers, .micro labels, amber only on the primary action (Paper trade, Add legs, Continue, Trade now); SVG icons instead of emoji; hollow / filled mode pills | built | e2e (Playwright) |
 | HC-TR-142 | Broker selection shared with the ticket | CG.trading.setBroker(id) / the Select Trading Mode exchange select update the fee estimate in the builder ticket | built | unit (pricing) · e2e (Playwright) |
 
-### Analyse · Paper / Live tabs · `/analyse`
+### Desk · Paper / Live tabs · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
-| HC-TR-143 | Analysis pane follows the selected strategy card | Clicking a paper or live card (Enter on focus) makes Payoff / Greeks / Ladder analyse its open legs at entry premiums; the first card of the tab is followed by default and a new trade is followed after Paper trade / Go live; a source bar names the followed strategy with Back to Builder | built | unit (pricing) · e2e (Playwright) · security |
+| HC-TR-143 | Analysis pane follows the selected strategy card | Clicking a paper or live card (Enter on focus) makes Payoff / Greeks / Ladder show its open legs at entry premiums; the first card of the tab is followed by default and a new trade is followed after Paper trade / Go live; a source bar names the followed strategy with Back to Builder | built | unit (pricing) · e2e (Playwright) · security |
 
-### Analyse · Live tab · `/analyse`
+### Desk · Live tab · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
-| HC-TR-144 | Net positions table from the exchange with tick-to-analyse | Position (side, strike, CE/PE, expiry), size in contracts, entry, mark, P&L at mark, asset filter BTC / ETH / XAUT, refresh; ticked rows are parsed from their Delta symbols and analysed in the pane | built | unit (pricing) · e2e (Playwright) |
+| HC-TR-144 | Net positions table from the exchange with tick-to-show | Position (side, strike, CE/PE, expiry), size in contracts, entry, mark, P&L at mark, asset filter BTC / ETH / XAUT, refresh; ticked rows are parsed from their Delta symbols and analysed in the pane | built | unit (pricing) · e2e (Playwright) |
 | HC-TR-145 | Exit / Exit all on exchange positions | Per-row X and Exit all open a confirm listing the positions; reduce-only market orders through the executor; HapieCoin legs matching the symbol are squared off at the fill and an emptied strategy is archived; refused exits are reported per product | built | unit (pricing) · e2e (Playwright) · api contract · security |
 
 ### Trading · Enter Strategy Name
@@ -228,8 +247,10 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-170 | Rules engine judges every kind from the marks and the spot | The tick carries the marks and the spot; a leg stop fires when a short leg's mark rises (a long leg's falls) to the level and exits that leg only under leg scope, leaving the other rules armed; a spot rule waits while the tick has no spot; a time exit fires at the instant, when the nearest settlement is within the days, or at the instant a settle rule fixed when armed (the nearest settlement less the minutes), booking squared off; a leg stop whose leg closed and a days rule with only a perpetual open are disarmed as void; the note names the mark, spot or days; the audit carries the spot, leg and scope | built | e2e (Playwright) |
 | HC-TR-174 | The key is resolved once and never guessed | openCredential takes the strategy's account: the named key, else the exchange's only key; several keys with none named is a 409 (never an order or an exit through the wrong sub-account); when a second key arrives for an exchange the running strategies with no account named are stamped with the first key they were placed through | built | unit (pricing) · e2e (Playwright) · api contract · security |
 | HC-TR-179 | Fills read from the exchange per key | The trading client reads the account's fills (read-only, newest first, cursor-paged); a leader-only job every FILLS_INGEST_MS and the Journal's Refresh keep venue_fills per key, deduped on the venue's fill id, the venue's row kept raw; a pass stops at the first fill already held or after its page cap; a failed read is recorded on the account's watermark and shown, never thrown | built | unit (api) |
+| HC-TR-210 | A target that trails: at the target the rule starts keeping the best P&L and exits on a fall from it by the give-back (money or a percentage of the best) | RuleBody.trail (target only; a money give-back below the target, a percentage below 100) and StrategyRule.trail / peakPnl; the arm route stores trail_trigger / trail_value (money rounded to cents) and keeps peak_pnl across a save unless the new target is above it; the engine reads the realised total beside the open legs, and its target branch does nothing below the level, writes the best (whole cents, rounded down, never lowered) on the tick that reaches it without exiting, raises it only when the P&L makes a new high, and fires through the usual claim and exit path when the P&L is at or under trailFloorUsd(best, trail), with the close reason target and a note naming the best and the exit level; the stop loss is still judged first | built | unit (schema, api) |
+| HC-TR-212 | A leg stop can hand the rest to a trail: its leg exits, then the legs still open exit together when their gain since the stop falls from its best by the give-back (a percentage of the best or money) | RuleBody.trail is accepted on a leg stop with scope leg (refused with scope strategy, at 100 % or more, at nothing) and a plain leg stop parses as before; kind trail (money or pct, no basis) exists with its label, order (after the protective kinds, before the target) and close reason stopped; when a leg stop with a give-back fires, its leg is confirmed closed and legs remain, the engine arms one trail whose level is the realised total of that moment; the trail keeps the best standing of the rest in whole cents and exits every open leg at the best less the give-back; money starts at once, a percentage waits for a cent of profit and is never less than 0.10 USD; the other legs' own stops stay armed and win a shared tick; no trail starts while the stopped leg's exit is unconfirmed or was not booked by this fire, and it is armed after the realised total is stored; a second such stop keeps the running trail; the rule-set route keeps a running trail's level, keeps its best only while the give-back is unchanged (a changed one starts again from where the rest stands), removes it when left out and refuses a trail none started; paper sends no order, live sends one reduce-only exit per leg | built | unit (schema, api) |
 
-### Trading · Protect dialog / server · `/analyse`
+### Trading · Protect dialog / server · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|

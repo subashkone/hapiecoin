@@ -75,6 +75,6 @@ export interface EmailTemplate {
 /** The three starting points of the reference site (HC-AD-124), placeholders included. */
 export const EMAIL_TEMPLATES: readonly EmailTemplate[] = [
   { key: "weekly_report", label: "Weekly report", subject: "Your weekly options report is ready", message: "Hi {{name}},\n\nYour HapieCoin report for the week is ready. Sign in to review your strategies and positions on the {{plan}} plan.\n\nHappy trading,\nHapieCoin" },
-  { key: "plan_expiring", label: "Plan expiring", subject: "Your {{plan}} plan ends on {{expiry}}", message: "Hi {{name}},\n\nYour {{plan}} plan ends on {{expiry}}. Renew from My Subscription to keep live trading, analytics and your saved strategies without interruption.\n\nHapieCoin" },
+  { key: "plan_expiring", label: "Plan expiring", subject: "Your {{plan}} plan ends on {{expiry}}", message: "Hi {{name}},\n\nYour {{plan}} plan ends on {{expiry}}. Renew from My plan to keep live trading, analytics and your saved strategies without interruption.\n\nHapieCoin" },
   { key: "new_feature", label: "New feature", subject: "New on HapieCoin: live trading from the builder", message: "Hi {{name}},\n\nYou can now connect your Delta Exchange India API key in Settings → API Settings and place real orders straight from the strategy builder.\n\nHapieCoin" },
 ];

@@ -40,7 +40,7 @@ The Playwright suites are the executable version of this guide: 109 desktop test
 |---|---|
 | Watch tests run in a browser, pick any test, step through it | `pnpm test:e2e:ui` |
 | Run everything headed, one at a time | `pnpm test:e2e:headed` |
-| Run one area, for example trading | `npx playwright test analyse --headed --workers=1` |
+| Run one area, for example trading | `npx playwright test desk --headed --workers=1` |
 | The phone layout on a Pixel 7 and an iPhone 14 profile | `npx playwright test --project=phone --project=phone-ios --workers=1` |
 | Open the last run's report with a screenshot trace of every test | `pnpm test:e2e:report` |
 
@@ -52,7 +52,7 @@ Which suite covers which area:
 |---|---|
 | `auth.spec.ts` | sign-up, sign-in, OTP, Google, two-factor, passkey, referral code |
 | `public.spec.ts` | landing, legal pages, payoff preview, share landing, public trader page, assistant on the public site |
-| `analyse.spec.ts` | chain, builder, templates, wizard, analysis tabs, paper and live trading, rules, workbench, journal, alerts, screener, backtest, replay, tour, assistant |
+| `desk.spec.ts` | chain, builder, templates, wizard, analysis tabs, paper and live trading, rules, workbench, journal, alerts, screener, backtest, replay, tour, assistant |
 | `settings.spec.ts` | every settings dialog, security (two-factor, passkeys), public page, exchanges, API keys and accounts |
 | `account.spec.ts` | subscription, checkout, coupons, invoices, referrals, entitlements |
 | `admin.spec.ts` | plans, pricing, coupons, subscriptions and commissions, banners, emails, users |

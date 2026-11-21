@@ -125,7 +125,7 @@ function usePositionLegs(source: PaneSource, lotSizes: Record<Underlying, string
 }
 
 /**
- * @param scope "pane" (default) honours the pane source; "builder" always analyses the Builder's own legs
+ * @param scope "pane" (default) honours the pane source; "builder" always reads the Builder's own legs
  *   (the Builder ticket and the trade flow must never read a followed strategy's figures).
  */
 export function useStrategyAnalysis(scope: "pane" | "builder" = "pane"): StrategyAnalysis {

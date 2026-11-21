@@ -1,62 +1,62 @@
 [
  {
-  "route": "/analyse",
-  "screen": "Analyse workspace",
+  "route": "/desk",
+  "screen": "Desk",
   "feature": "Two-pane workspace (chain left ≈55%, analysis right ≈45%) below the app header, above the fixed portfolio bar; each pane scrolls internally",
   "how": "Flex shell sized to 100vh minus the measured header + plan banner height and a reserved 44px bottom strip for the chrome portfolio bar (measured: fixed bar → padding, in-flow bar → subtracted); ResizeObservers keep it in sync",
   "status": "working",
-  "evidence": "screenshot feature-payoff-diagram: two panes under the header · Phase 2 item 4 (08 Sep 2026): two panes with a draggable divider (Workspace.tsx); unit workspace.test.tsx, visual analyse-builder / analyse-templates / analyse-greeks"
+  "evidence": "screenshot feature-payoff-diagram: two panes under the header · Phase 2 item 4 (08 Sep 2026): two panes with a draggable divider (Workspace.tsx); unit workspace.test.tsx, visual desk-builder / desk-templates / desk-greeks"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse workspace",
+  "route": "/desk",
+  "screen": "Desk",
   "feature": "Resizable divider between the panes (drag 35–70%, double-click resets to 55%)",
   "how": "Width persisted in CG.state.analyseSplit; chart re-renders to the new width",
   "status": "working",
   "evidence": "drag handle ⋮ between the panes in the original screenshot · Phase 2 item 4 (08 Sep 2026): divider drags 35–70 %, ← → / Home keys, double-click resets 55 %, remembered under hapiecoin.split (ADR-023); unit workspace.test.tsx HC-WS-002"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse workspace",
+  "route": "/desk",
+  "screen": "Desk",
   "feature": "Responsive stacking below 1000px with a segmented 'Chain | Analysis' toggle",
   "how": "Media query stacks the panes; the toggle sets data-mobile on the shell to show one pane at a time",
   "status": "working",
   "evidence": "inferred from the responsive Tailwind classes in the bundle · Phase 2 item 4 (08 Sep 2026): stacked layout under 1000 px with a Chain & Builder | Analysis toggle; unit workspace.test.tsx HC-WS-003"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse workspace",
+  "route": "/desk",
+  "screen": "Desk",
   "feature": "Shared chrome placeholders: app header (variant 'analyse'), plan banner and portfolio bar",
   "how": "<div data-cg=\"app-header\" data-variant=\"analyse\">, <div data-cg=\"plan-banner\"> and <div data-cg=\"portfolio-bar\"> are rendered by the chrome part; the workspace measures them",
   "status": "working",
-  "evidence": "header with asset selector, futures price, Futures Live, Exchange, wallet in the screenshot · Phase 5 item 3 (11 Sep 2026, ADR-053): analyse layout: AppHeader (analyse), PlanBanner, WorkspaceLoader, PortfolioBarLoader (sticky footer)"
+  "evidence": "header with asset selector, futures price, Futures Live, Exchange, wallet in the screenshot · Phase 5 item 3 (11 Sep 2026, ADR-053): desk layout: AppHeader (desk), PlanBanner, WorkspaceLoader, PortfolioBarLoader (sticky footer)"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse workspace",
+  "route": "/desk",
+  "screen": "Desk",
   "feature": "Left tab bar: Chain · Builder · Paper · Live · Journal with small mono count pills",
-  "how": "data-lptab chain|strategy|paper|live|journal (same data-tour ids as v1); pills show active legs / paper / live / closed strategy counts and hide at 0; the trading module mounts its .lp-panel[data-tab] panels into #analyse-left-panels",
+  "how": "data-lptab chain|strategy|paper|live|journal (same data-tour ids as v1); pills show active legs / paper / live / closed strategy counts and hide at 0; the trading module mounts its .lp-panel[data-tab] panels into #desk-left-panels",
   "status": "working",
-  "evidence": "bundle strings: Options Chain, Strategy, Paper Trades, Live Trades, options-chain, builder-tab, paper-tab, cg-tour-set-tab · Phase 2 item 4 (08 Sep 2026): left tabs Chain · Builder (open-leg count pill) · Paper · Live · Journal (Phase 3 / 4 placeholders); unit workspace.test.tsx HC-WS-005, e2e analyse.spec.ts HC-TR-040"
+  "evidence": "bundle strings: Options Chain, Strategy, Paper Trades, Live Trades, options-chain, builder-tab, paper-tab, cg-tour-set-tab · Phase 2 item 4 (08 Sep 2026): left tabs Chain · Builder (open-leg count pill) · Paper · Live · Journal (Phase 3 / 4 placeholders); unit workspace.test.tsx HC-WS-005, e2e desk.spec.ts HC-TR-040"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse workspace",
+  "route": "/desk",
+  "screen": "Desk",
   "feature": "Deep links #/analyse?tab=strategy&panel=scenarios (panel = payoff | scenarios | greeks | vol | structure | ladder; the v1 values analytics → payoff and pnl → ladder still resolve)",
   "how": "query.tab / query.panel are read in show(); the last tab is persisted in CG.state.analyseTab / analyseRightTab",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): Workspace reads ?tab= / ?panel= once via useSearchParams (unknown values ignored); unit workspace.test.tsx; e2e analyse.spec.ts HC-TR-040 block"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): Workspace reads ?tab= / ?panel= once via useSearchParams (unknown values ignored); unit workspace.test.tsx; e2e desk.spec.ts HC-TR-040 block"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Expiry strip with two-line chips '25 Sep / 21d' (07 Sep … 26 Mar); an amber dot marks expiries that hold legs of the current strategy",
   "how": "Chips rendered from CG.EXPIRIES; click sets CG.analyse.expiry + CG.state.expiry, re-renders the chain, emits analyse:expiry and toasts",
   "status": "working",
-  "evidence": "expiry chips 01JUL26 … 31JUL26 in the screenshot · Phase 2 item 4 (08 Sep 2026): amber dot on expiry chips that hold strategy legs (ChainPanel.tsx); e2e analyse.spec.ts HC-TR-040"
+  "evidence": "expiry chips 01JUL26 … 31JUL26 in the screenshot · Phase 2 item 4 (08 Sep 2026): amber dot on expiry chips that hold strategy legs (ChainPanel.tsx); e2e desk.spec.ts HC-TR-040"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Expiry strip scroll arrows ‹ › (only shown when the strip overflows)",
   "how": "Overflow measured after render / resize; arrows scroll the strip by 220px",
@@ -64,7 +64,7 @@
   "evidence": "‹ › around the strip in the screenshot · Phase 2 close-out (08 Sep 2026): ExpiryStrip.tsx shows ‹ › only when the chips overflow (chain strip and chain picker); unit ExpiryStrip.test.tsx"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "LIVE pill in the chain toolbar (Live → Connecting → Static and back)",
   "how": "Toggles CG.analyse.mode; in static mode ticks stop updating the chain",
@@ -72,175 +72,175 @@
   "evidence": "bundle strings: Live, Connecting, Static, Connecting to WebSocket..., Click to enable live prices · Phase 2 close-out (08 Sep 2026): chain toolbar pill Live / Connecting / Stale / Paused from the gateway status, feed pause and the stale flag (ChainTools.tsx); unit chain.test.tsx HC-WS-009"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Gear button in the chain toolbar → Column Settings dialog",
   "how": "Opens the v1 Column Settings dialog (show / hide, reorder, quick buttons)",
   "status": "working",
-  "evidence": "bundle strings: Column settings, Column Settings, ' of ' · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
+  "evidence": "bundle strings: Column settings, Column Settings, ' of ' · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e desk.spec.ts, ADR-021"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Column Settings",
   "feature": "Show / Hide tab with grouped switches: Market Data (Ask (Price/IV), Mark (Price/IV), Bid (Price/IV), OI, Volume, Bid Qty, Ask Qty), Greeks (Delta, Gamma, Theta, Vega), Activity (24hr Chg, Last), OHLC (Open, High, Low)",
   "how": "Each row toggles the column; the chain re-renders instantly and the 'x of 16' counter updates",
   "status": "working",
-  "evidence": "bundle strings: Market Data, Greeks, Activity, OHLC and every column label · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
+  "evidence": "bundle strings: Market Data, Greeks, Activity, OHLC and every column label · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e desk.spec.ts, ADR-021"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Column Settings",
   "feature": "Quick buttons Essentials · Show All · Hide all · Reset",
   "how": "Essentials = Ask · Mark · Bid · OI · Δ (the v2 default); Show All / Hide all / Reset; each change re-renders the chain and toasts",
   "status": "working",
-  "evidence": "bundle strings: Essentials, Show All, Hide all, Reset · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
+  "evidence": "bundle strings: Essentials, Show All, Hide all, Reset · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e desk.spec.ts, ADR-021"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Column Settings",
   "feature": "Reorder tab – 'Drag columns to change their display order (left → right).'",
   "how": "HTML5 drag & drop list (dragstart/dragover/dragend) plus ▲/▼ buttons; hidden columns are badged; order applies from the strike outward and is mirrored on the Calls side",
   "status": "working",
-  "evidence": "bundle string: Drag columns to change their display order (left → right). · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
+  "evidence": "bundle string: Drag columns to change their display order (left → right). · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e desk.spec.ts, ADR-021"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Column Settings",
   "feature": "Persistence of column visibility and order",
   "how": "Saved as CG.state.chainCols {v:2, order, visible} (v1 layouts are migrated to the v2 default)",
   "status": "working",
-  "evidence": "bundle key oc_col_config · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
+  "evidence": "bundle key oc_col_config · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e desk.spec.ts, ADR-021"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Sticky two-row header: 'CALLS · ITM shaded · strikes ±12' | '25 Sep · 19d' | 'Δ per contract · PUTS', then the column labels Δ · OI · Bid/IV · Mark/IV · Ask/IV | Strike | Ask/IV · Mark/IV · Bid/IV · OI · Δ",
   "how": "Column order is defined once from the strike outward (price triplet inboard, OI and Δ outboard) and mirrored on the calls side",
   "status": "working",
-  "evidence": "screenshot: Calls / STRIKE / Puts header with arrows · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020 · 20 Oct 2026 (GAPS #128): the detached scrollbars never fight a held thumb (useDetachedScrollbar); unit chain.test.tsx, e2e analyse.spec.ts HC-WS-015 / GAPS #128"
+  "evidence": "screenshot: Calls / STRIKE / Puts header with arrows · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e desk.spec.ts, ADR-020 · 20 Oct 2026 (GAPS #128): the detached scrollbars never fight a held thumb (useDetachedScrollbar); unit chain.test.tsx, e2e desk.spec.ts HC-WS-015 / GAPS #128"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "41 strikes around ATM from CG.chain(asset, expiry) with a strike-range control (±6 / ±12 / all), auto-scrolled to ATM",
   "how": "Range persisted in CG.state.chainRange (default: every listed strike, ADR-093; a saved ±12, the older default, is replaced once); the footer reports \"n of 41 strikes\"",
   "status": "working",
-  "evidence": "screenshot shows 54,000 … 65,000 around the 60,000 ATM · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020"
+  "evidence": "screenshot shows 54,000 … 65,000 around the 60,000 ATM · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e desk.spec.ts, ADR-020"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Strike cell: mono price; the ATM row is a single amber band with an 'ATM' micro tag; leg pills ('C B 10', 'P S 10') sit under the strike",
   "how": "tr.atm background hsl(--primary/.09) with amber strike text; the sub-line is rebuilt on every legs change",
   "status": "working",
-  "evidence": "screenshot: 60,000 ATM · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020"
+  "evidence": "screenshot: 60,000 ATM · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e desk.spec.ts, ADR-020"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Price cells (Bid / Mark / Ask) show the price at 1dp with the IV at 1dp underneath; calls right-aligned, puts left-aligned; neutral ink (colour is reserved for buy/sell and P&L)",
   "how": "cellInner() renders <span class=\"px\"> + <span class=\"iv\">; INR mode converts premiums at CG.state.conversionRate (0dp)",
   "status": "working",
-  "evidence": "screenshot: $6893.0 / 55.4% · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020"
+  "evidence": "screenshot: $6893.0 / 55.4% · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e desk.spec.ts, ADR-020"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "OI column drawn as a thin inward bar anchored at the outer edge (calls grow towards the strike from the left, puts from the right)",
   "how": "2px bar width proportional to max OI of the chain; value shown as an integer",
   "status": "working",
-  "evidence": "bundle strings: OIBarCell, rgba(34, 197, 94, 0.25), rgba(239, 68, 68, 0.25) · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020"
+  "evidence": "bundle strings: OIBarCell, rgba(34, 197, 94, 0.25), rgba(239, 68, 68, 0.25) · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e desk.spec.ts, ADR-020"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "ITM tint: call cells below spot and put cells above spot get a 4% foreground tint",
   "how": "td.itm{background:hsl(var(--foreground)/.04)}; hover replaces it with the raised surface tone",
   "status": "working",
-  "evidence": "screenshot: green tint on ITM calls, red tint on ITM puts · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020"
+  "evidence": "screenshot: green tint on ITM calls, red tint on ITM puts · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e desk.spec.ts, ADR-020"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Optional columns: Γ (6dp), Θ (1dp), ν (1dp), Volume, Bid Qty, Ask Qty, 24hr Chg (signed, coloured), Last, Open, High, Low; Δ (2dp) is shown by default",
   "how": "Toggled in Column Settings; the Greeks chip in the toolbar adds/removes Γ Θ ν in one click",
   "status": "working",
-  "evidence": "bundle column labels; older screenshot shows Bid Qty BTC column · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021"
+  "evidence": "bundle column labels; older screenshot shows Bid Qty BTC column · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e desk.spec.ts, ADR-021"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Live price updates with flash animation",
   "how": "On every 'tick' (2.5s) the chain is re-quoted; changed Bid/Mark/Ask/Last cells get .flash-up / .flash-down; if the ATM strike shifts the table is rebuilt keeping the scroll position",
   "status": "working",
-  "evidence": "bundle strings: price-flash-up, price-flash-down · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e analyse.spec.ts, ADR-020"
+  "evidence": "bundle strings: price-flash-up, price-flash-down · Phase 2 item 1 (07 Sep 2026): unit chain.test.tsx / range.test.ts, e2e desk.spec.ts, ADR-020"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Row hover reveals a floating control on both sides: [B] [S] [− 10 +] lot stepper [ⓘ]",
   "how": ".an-ctl inside the inboard cell; − / + step through the lot presets, clicking the number opens a preset menu, ⓘ opens option details; also shown on the keyboard-highlighted row",
   "status": "working",
-  "evidence": "screenshot: B / S / chart / 100 ▾ × 0.001 next to the 60,000 strike · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
+  "evidence": "screenshot: B / S / chart / 100 ▾ × 0.001 next to the 60,000 strike · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e desk.spec.ts + visual desk-legs, ADR-022"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "B / S add a leg (CALL on the calls side, PUT on the puts side) at the mark price with the chosen lots",
   "how": "Emits CG.emit('analyse:addLeg', {type, side, strike, expiry, lots, price, iv, symbol, asset}); if no handler appends within the same tick it appends to CG.analyse.legs itself and emits analyse:legs-changed; toast 'Leg Added'; max 10 active legs → toast 'Limit Reached · Maximum 10 active legs allowed per strategy'",
   "status": "working",
-  "evidence": "bundle strings: Leg Added, Limit Reached, Maximum 10 active legs allowed per strategy · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
+  "evidence": "bundle strings: Leg Added, Limit Reached, Maximum 10 active legs allowed per strategy · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e desk.spec.ts + visual desk-legs, ADR-022"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Lot stepper presets (1 · 2 · 5 · 10 · 25 · 50 · 100 · 250 · 500 · 1000), default 10, \"× lot size\" shown as the stepper tooltip and in the option details dialog",
   "how": "CG.state.chainLots persisted; all steppers update together",
   "status": "working",
-  "evidence": "screenshot: 100 ▾ × 0.001 · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
+  "evidence": "screenshot: 100 ▾ × 0.001 · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e desk.spec.ts + visual desk-legs, ADR-022"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "ⓘ icon (or Enter on the highlighted row) → option details dialog titled with the Delta-style symbol (e.g. C-BTC-79500-250926)",
   "how": "Dialog shows mark price, IV badge, 24h change, Δ, a 24h sparkline of mark price + IV (mock series), stats grid (Bid / Ask, OI, Volume, Bid / Ask Qty, Delta, Gamma, Theta, Vega, 24h Chg, Last, Open / High, Low) and Buy / Sell buttons with a lots selector",
   "status": "working",
-  "evidence": "screenshot: chart icon in the hover controls; bundle symbol format C-BTC-60000-250926 · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022 · ADR-056 (11 Sep 2026): OptionDetailsDialog option-sparkline: 24 h mark + IV lines (chart-option-spark) from GET /v1/market/marks/{symbol}; unit dialogs.test.tsx"
+  "evidence": "screenshot: chart icon in the hover controls; bundle symbol format C-BTC-60000-250926 · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e desk.spec.ts + visual desk-legs, ADR-022 · ADR-056 (11 Sep 2026): OptionDetailsDialog option-sparkline: 24 h mark + IV lines (chart-option-spark) from GET /v1/market/marks/{symbol}; unit dialogs.test.tsx"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Existing strategy legs are marked in the chain: 'C B 10' / 'P S 10' pills under the strike, the mark cell outlined green/red, a green/red stripe on the row's left edge, filled B / S buttons and an amber dot on the expiry chip",
   "how": "renderPills() runs on analyse:legs-changed and after every chain render",
   "status": "working",
-  "evidence": "screenshot: B 10 / S 10 pills in the chain · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
+  "evidence": "screenshot: B 10 / S 10 pills in the chain · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e desk.spec.ts + visual desk-legs, ADR-022"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Keyboard: j / k or ↑ / ↓ move the highlighted strike (amber outline), B / S add a call leg, Shift+B / Shift+S a put, E / Shift+E cycle the expiry, Enter opens details, Esc clears",
   "how": "Registered through CG.shortcuts.register(key, description, handler) when the chrome registry exists (so they appear in the ? help) with a document-level fallback; ignored while typing or when a dialog is open; hovering a row moves the highlight",
   "status": "working",
-  "evidence": "inferred (nice-to-have requested in the brief) · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e analyse.spec.ts + visual analyse-legs, ADR-022"
+  "evidence": "inferred (nice-to-have requested in the brief) · Phase 2 item 3 (07 Sep 2026): unit legs.test.ts / store.test.ts / chain.test.tsx / dialogs.test.tsx, e2e desk.spec.ts + visual desk-legs, ADR-022"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Chain footer: Σ Call OI · Σ Put OI · PCR · Max pain · Skew 25Δ · Fwd · 'n of 41 strikes · hover a row for B / S'",
   "how": "Skew 25Δ = IV(25Δ put) − IV(25Δ call) in vol points; Fwd from ATM put-call parity (K + C − P); max pain = strike minimising total option value",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/chain/{ChainTools,ChainTable}.tsx + lib/chain/structure.ts chainStats / nearestDelta; unit structure.test.ts + chain.test.tsx; e2e analyse.spec.ts HC-WS-016 block · max pain / skew 25Δ / Fwd over the whole chain, OI as full integers"
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/chain/{ChainTools,ChainTable}.tsx + lib/chain/structure.ts chainStats / nearestDelta; unit structure.test.ts + chain.test.tsx; e2e desk.spec.ts HC-WS-016 block · max pain / skew 25Δ / Fwd over the whole chain, OI as full integers"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Asset switch (BTC / ETH / XAUT) from the header",
   "how": "Listens to CG.on('asset'): sets CG.analyse.asset, resets the target price, reloads the chain and every analysis panel",
   "status": "working",
-  "evidence": "header asset dropdown 'Bitcoin (BTC)' in the screenshot · Phase 2 close-out (08 Sep 2026): header asset switch drives the chain, legs, Builder and pane through the UI store (ADR-010); unit widgets.test.tsx HC-SH-003, e2e analyse.spec.ts HC-SH-003"
+  "evidence": "header asset dropdown 'Bitcoin (BTC)' in the screenshot · Phase 2 close-out (08 Sep 2026): header asset switch drives the chain, legs, Builder and pane through the UI store (ADR-010); unit widgets.test.tsx HC-SH-003, e2e desk.spec.ts HC-SH-003"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Currency toggle (USD / INR) re-formats premiums, P&L, tiles, greeks and axes; strikes stay in USD (contract terms)",
   "how": "Listens to CG.on('currency-settings-changed') and re-renders using CG.fmt.money / conversion rate",
@@ -248,7 +248,7 @@
   "evidence": "header '$ USD' control in the screenshot · Phase 2 item 4 (08 Sep 2026): lib/money.ts formats USD / INR (settings rate, en-IN grouping) for tiles, ticket, Greeks, ladder and axes; strikes stay USD; unit money.test.ts"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Analysis pane",
   "feature": "Right tab bar: Payoff · Scenarios · Greeks · Vol · Structure · Ladder with the strategy summary (\"Bull Call Spread · 25 Sep · 20 lots\"), Share and collapse buttons (data-tour=\"payoff-panel\")",
   "how": "The v1 Analytics tab was merged into the Payoff tab as the Analytics strip; the v1 P&L Table became the Ladder tab",
@@ -256,15 +256,15 @@
   "evidence": "bundle strings: Payoff Diagram, Analytics, Greeks, P&L Table, payoff-panel · Phase 2 item 4 (08 Sep 2026): right tabs Payoff · Scenarios · Greeks · Vol · Structure · Ladder (Scenarios / Vol / Structure = Phase 5 placeholders); unit workspace.test.tsx"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "Six summary tiles: Max profit ('at ≥ 80,512' / 'unlimited upside') · Max loss ('at ≤ 79,319') · Net debit / credit with the per-BTC line ('465.8 / BTC · 10 lots') · Breakeven(s) with % from spot · POP ('lognormal · IV 42.4%') · R:R ('1 : 1.15')",
   "how": "Hairline-separated tiles, no cards; extremes located from the expiry payoff, per-unit premium = net premium / (lot size × gcd of lots)",
   "status": "working",
-  "evidence": "screenshot tiles; bundle strings: Max Profit, Max Loss, Unlimited, Breakevens, None · Phase 2 item 4 (08 Sep 2026): six tiles Max profit / Max loss (with where) / Break-even / POP / R:R / Net premium (PayoffPanel.tsx); unit analysis.test.tsx, e2e analyse.spec.ts HC-TR-040, visual analyse-builder / analyse-templates / analyse-greeks"
+  "evidence": "screenshot tiles; bundle strings: Max Profit, Max Loss, Unlimited, Breakevens, None · Phase 2 item 4 (08 Sep 2026): six tiles Max profit / Max loss (with where) / Break-even / POP / R:R / Net premium (PayoffPanel.tsx); unit analysis.test.tsx, e2e desk.spec.ts HC-TR-040, visual desk-builder / desk-templates / desk-greeks"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "Empty state 'No strategy yet · Hover a chain row and press B / S, or load a template from the Builder' with a ghost chart and the spot marker",
   "how": "Shown when CG.analyse.legs has no active legs; tiles show —",
@@ -272,7 +272,7 @@
   "evidence": "bundle strings: No Strategy Selected, Add option legs to visualize payoff · Phase 2 item 4 (08 Sep 2026): empty state \"No strategy yet\" with Open Builder and a ghost chart; unit analysis.test.tsx"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "Legend toggles: At expiry (ink line) · On <target date> (blue curve); layer chips OI · ±SD · BE · IV −5% · IV +5%",
   "how": "Clicking a legend item or chip flips the layer (persisted in CG.state.chartLayers)",
@@ -280,7 +280,7 @@
   "evidence": "bundle strings: On Expiry, On Target Date, Profit, Loss, Call OI, Put OI · Phase 2 item 4 (08 Sep 2026): layer chips Expiry / Target / Fill / BE / ±1σ / OI; unit analysis.test.tsx"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "Zoom controls − 100% + (50% … 300%), click the percentage to reset",
   "how": "Rescales the x-axis range (spot ± 20% / zoom) and the target-price slider range; persisted in CG.state.chartZoom",
@@ -288,7 +288,7 @@
   "evidence": "bundle strings: Zoom In, Zoom Out, Reset Zoom · Phase 2 item 4 (08 Sep 2026): zoom 1× / 2× / 4× around spot (steps, not continuous: GAPS #33); unit analysis.test.tsx"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "Layers popover: At-expiry P&L line · Target-date P&L curve · Profit / loss fill · Open interest bars · ±1σ expected-move band · Breakeven markers · IV −5% curve · IV +5% curve",
   "how": "Checkbox list in a CG.menu popover; each toggle re-renders the SVG; persisted in CG.state.chartLayers",
@@ -296,7 +296,7 @@
   "evidence": "bundle strings: Layers, Toggle Layers, Chart Layers, Expiry P&L, Target Date P&L, Profit / Loss Fill, Open Interest, SD Bands, Breakevens · Phase 2 item 4 (08 Sep 2026): layer toggles as chips (no popover); unit analysis.test.tsx"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "Expected-move band: ±1σ shaded band on the chart with dashed edges labelled \"+1σ 85.1k\" / \"−1σ 73.9k\" (replaces the v1 -2SD…+2SD header row)",
   "how": "σ = spot × ATM IV × √(days/365) for the target date or expiry",
@@ -304,15 +304,15 @@
   "evidence": "bundle strings: -2SD, -1SD, Current, +1SD, +2SD, 'Expected move by ', expiry · Phase 2 item 4 (08 Sep 2026): ±1σ band from the engine's expected move (payoffDraw.ts); unit analysis.test.tsx payoffDraw"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "SVG payoff chart in the direction-a style: ink at-expiry line, blue target-date curve, green/red fills, faint grid, $ axis, max profit / max loss tags at the plateaus, amber spot marker",
   "how": "Rendered from CG.analyze(points 201) over the zoomed price range; re-renders on ticks, legs, sliders, layers, theme and resize",
   "status": "working",
-  "evidence": "bundle strings: Underlying Price, Profit / Loss; screenshots pub_payoff-preview · Phase 2 item 4 (08 Sep 2026): canvas payoff chart: ink expiry line, target-date curve, profit / loss fills, DPR-aware (PayoffChart.tsx + payoffDraw.ts); unit analysis.test.tsx, e2e analyse.spec.ts HC-WS-039, visual analyse-builder / analyse-templates / analyse-greeks"
+  "evidence": "bundle strings: Underlying Price, Profit / Loss; screenshots pub_payoff-preview · Phase 2 item 4 (08 Sep 2026): canvas payoff chart: ink expiry line, target-date curve, profit / loss fills, DPR-aware (PayoffChart.tsx + payoffDraw.ts); unit analysis.test.tsx, e2e desk.spec.ts HC-WS-039, visual desk-builder / desk-templates / desk-greeks"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "Breakeven dashed verticals labelled 'BE 81,454'",
   "how": "One dashed line + label per breakeven inside the visible range (layer 'Breakevens')",
@@ -320,7 +320,7 @@
   "evidence": "BE markers in the payoff screenshots · Phase 2 item 4 (08 Sep 2026): BE dashed verticals labelled \"BE 81,454\"; unit payoffDraw"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "Spot marker: amber dashed hairline with the 'SPOT 79,521' tag at the top of the chart (the only accent colour on the chart)",
   "how": "Drawn at the live futures price; the pill sits above the plot area",
@@ -328,7 +328,7 @@
   "evidence": "screenshot: orange Spot $60,127.0 pill · Phase 2 item 4 (08 Sep 2026): amber dashed spot hairline with the SPOT tag; unit payoffDraw"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "Faint open-interest bars per strike (call + put combined) along the bottom of the chart with a tooltip per bar",
   "how": "Bars from CG.chain(asset, expiry) rows inside the visible range, scaled to 40% of the plot height; hover title shows strike and OI",
@@ -336,7 +336,7 @@
   "evidence": "bundle: 'hsl(var(--loss) / 0.35)' → Call OI, 'hsl(var(--profit) / 0.35)' → Put OI; Open Interest axis in the screenshot · Phase 2 item 4 (08 Sep 2026): combined call + put OI bars per strike from the nearest leg expiry's chain (layer OI); unit payoffDraw"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "±1σ band with dashed edges (see the expected-move band entry)",
   "how": "Layer \"sd\"; the ±2σ guides of v1 were dropped in favour of the labelled ±1σ band",
@@ -344,7 +344,7 @@
   "evidence": "shaded band between the SD lines in pub_payoff-preview · Phase 2 item 4 (08 Sep 2026): see HC-WS-038; unit payoffDraw"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "Target-price marker: dashed blue line, dot on the target-date curve and a '+$1.7 @ 81,921' label; clicking the chart sets the target price",
   "how": "AN.targetPrice; emits analyse:target",
@@ -352,7 +352,7 @@
   "evidence": "inferred from the BTC TARGET slider · Phase 2 item 4 (08 Sep 2026): target marker: dashed line, dot on the target curve and \"+$x @ price · +Nd\" label; unit payoffDraw"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "Hover crosshair with tooltip '16 Sep @ 82,879 +4.2% · +$2.28 · exp +$5.33'",
   "how": "mousemove over the plot snaps to the nearest sample, moves the crosshair + dots on both curves and positions an HTML tooltip; survives live re-renders",
@@ -360,7 +360,7 @@
   "evidence": "clone design (Recharts tooltip in the original) · Phase 2 item 4 (08 Sep 2026): hover crosshair on the canvas with the readout in the strip (price · exp · target) (no floating tooltip: GAPS #33); unit payoffDraw"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "Spot-zone readout ('Spot now ✓ profit zone / ✗ loss zone') in the Analytics strip (replaces the v1 chart footer)",
   "how": "P&L at spot at expiry from CG.analyze",
@@ -368,23 +368,23 @@
   "evidence": "screenshot footer line · Phase 2 close-out (08 Sep 2026): \"Spot now ✓ profit zone / ✗ loss zone / at break-even\" in the payoff strip (spotZoneAt in analysis.ts); unit analysis.test.tsx"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "Target price slider: '− 81,900 +3.0% +' value, amber SPOT tick on the track, fill, knob and five price ticks",
   "how": "Hidden native range over a custom track; steps move by 1/5 of the strike step; range follows the zoom",
   "status": "working",
-  "evidence": "screenshot: BTC TARGET +0.0% · $60.1k · − + · $51.5k … $68.8k · Phase 2 item 4 (08 Sep 2026): target price slider spot ±20 % with \"spot\" reset, stored in the UI store (targetPrice); unit analysis.test.tsx, e2e analyse.spec.ts HC-WS-047"
+  "evidence": "screenshot: BTC TARGET +0.0% · $60.1k · − + · $51.5k … $68.8k · Phase 2 item 4 (08 Sep 2026): target price slider spot ±20 % with \"spot\" reset, stored in the UI store (targetPrice); unit analysis.test.tsx, e2e desk.spec.ts HC-WS-047"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "Target date slider: 'Today · 06 Sep · 19d left' / 'Wed 16 Sep · 9d left', ‹ › day steps, ticks Today · mid dates · Expiry",
   "how": "AN.targetDays 0…max DTE of the legs; legend and tooltips show the chosen date",
   "status": "working",
-  "evidence": "screenshot: TODAY (i) · Mon, 29 Jun 12:22 PM · Today … Expiry (17 Jul) · Phase 2 item 4 (08 Sep 2026): target date slider 0..days-to-expiry with \"expiry\" jump (targetDays, persisted); unit analysis.test.tsx, e2e analyse.spec.ts HC-WS-048"
+  "evidence": "screenshot: TODAY (i) · Mon, 29 Jun 12:22 PM · Today … Expiry (17 Jul) · Phase 2 item 4 (08 Sep 2026): target date slider 0..days-to-expiry with \"expiry\" jump (targetDays, persisted); unit analysis.test.tsx, e2e desk.spec.ts HC-WS-048"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "Automatic re-rendering on price ticks, leg changes, asset / expiry / currency / lot-size changes, density, theme and pane resize",
   "how": "CG.on('tick' | 'analyse:legs-changed' | 'asset' | 'currency-settings-changed'), window resize and a ResizeObserver on the chart host",
@@ -392,7 +392,7 @@
   "evidence": "inferred · Phase 2 item 4 (08 Sep 2026): useStrategyAnalysis re-prices per animation frame on ticks, leg / target / currency / lot-size changes and a 30 s clock; unit analysis.test.tsx"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff · Analytics strip",
   "feature": "Max profit with ROI → 'Max ROI 6% on margin' in the Analytics strip under the tiles (merged from the v1 Analytics tab)",
   "how": "ROI = max profit / margin; ∞ when unlimited",
@@ -400,7 +400,7 @@
   "evidence": "bundle strings: Max Profit (At Expiry), % ROI, ROI based on max theoretical profit, Theoretical maximum"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff · Analytics strip",
   "feature": "Max loss as % of capital → 'Margin $94 · risk 5%' in the Analytics strip",
   "how": "Loss % = |max loss| / required margin; 'Unlimited' when infinite",
@@ -408,7 +408,7 @@
   "evidence": "bundle strings: Max Loss (At Expiry), Risk as % of capital"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff · Analytics strip",
   "feature": "Expected required margin → 'Margin $94.38' in the Analytics strip and 'Margin est.' in the greeks strip",
   "how": "CG.analyze(...).margin",
@@ -416,15 +416,15 @@
   "evidence": "bundle strings: Expected Required Margin, Capital required · Phase 2 item 4 (08 Sep 2026): \"Margin est.\" = worst defined loss at expiry (ADR-023, GAPS #34) in the Builder ticket; unit analysis.test.ts marginEstimate"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff · Analytics strip",
   "feature": "Breakeven points → Breakeven tile ('79,966 · +0.6% from spot', or two values) plus 'Spot now ✓/✗ zone' in the strip",
   "how": "Title switches Point/Points by count; zone from the expiry P&L at the live spot",
   "status": "working",
-  "evidence": "bundle strings: Breakeven, Points, Point, No breakeven points, Current Price, ✓ In profit zone, ✗ In loss zone · Phase 2 item 4 (08 Sep 2026): Break-even tile with one / two points and the win-if strip; unit analysis.test.ts winZone, e2e analyse.spec.ts HC-TR-040"
+  "evidence": "bundle strings: Breakeven, Points, Point, No breakeven points, Current Price, ✓ In profit zone, ✗ In loss zone · Phase 2 item 4 (08 Sep 2026): Break-even tile with one / two points and the win-if strip; unit analysis.test.ts winZone, e2e desk.spec.ts HC-TR-040"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff · Analytics strip",
   "feature": "R/R with grade → 'R:R 1.15 balanced' (✓ favorable ≥2 / balanced ≥1 / high risk / unlimited exposure) in the strip and the R : R tile",
   "how": "rewardRisk from CG.analyze; unlimited profit shows 'Unlimited', unlimited loss shows 'Unlimited exposure'",
@@ -432,7 +432,7 @@
   "evidence": "bundle strings: R/R, Risk/Reward, ✓ Favorable risk/reward, Balanced risk/reward, High risk scenario, Unlimited exposure, N/A · Phase 2 item 4 (08 Sep 2026): R:R text and grade (✓ favorable ≥ 2 / balanced ≥ 1 / high risk / unlimited); unit analysis.test.ts rrGrade"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff · Analytics strip",
   "feature": "Probability of profit with grade → 'POP 47.7% moderate' (✓ high ≥60 / moderate ≥40 / low) in the strip and the POP tile",
   "how": "Lognormal POP from CG.analyze (green ≥50%, red below)",
@@ -440,7 +440,7 @@
   "evidence": "bundle strings: Probability of Profit, ✓ High probability, Moderate probability, Low probability, Calculating... · Phase 2 item 4 (08 Sep 2026): POP with grade (✓ high ≥ 60 / moderate ≥ 40 / low); unit analysis.test.ts popGrade"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff · Analytics strip",
   "feature": "Win if price → 'Win if > 79,966' / '77,660 – 81,341' / '< a or > b' / 'any price' in the strip",
   "how": "Derived from the breakevens and the sign of the expiry P&L on each side",
@@ -448,15 +448,15 @@
   "evidence": "bundle strings: Win if price, Varies · Phase 2 item 4 (08 Sep 2026): \"Win if\" strip: > a, a – b, < a or > b, any price, varies; unit analysis.test.ts winZone"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff · Analytics strip",
   "feature": "Net premium → 'Net debit $4.66 · 465.8 / BTC' tile (credit / debit label switches)",
   "how": "Signed net premium from CG.analyze",
   "status": "working",
-  "evidence": "bundle string: Net Premium · Phase 2 item 4 (08 Sep 2026): Net premium tile with credit / debit label and per-unit figure in the ticket; unit analysis.test.ts premiumPerUnit, e2e analyse.spec.ts HC-TR-040"
+  "evidence": "bundle string: Net Premium · Phase 2 item 4 (08 Sep 2026): Net premium tile with credit / debit label and per-unit figure in the ticket; unit analysis.test.ts premiumPerUnit, e2e desk.spec.ts HC-TR-040"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff · Analytics strip",
   "feature": "Max ROI → 'Max ROI 6% on margin' in the strip",
   "how": "Max profit / required margin (Unlimited when infinite)",
@@ -464,23 +464,23 @@
   "evidence": "bundle string: Max ROI"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Greeks",
   "feature": "Greeks tab tiles: Total Delta (directional exposure) · Total Gamma (Δ change per $1) · Total Theta ($/day) · Total Vega ($ per 1% IV), hairline-separated",
   "how": "Values from CG.analyze(...).greeks: delta 4dp (coloured by sign), gamma 6dp, theta 4dp (coloured), vega 4dp",
   "status": "working",
-  "evidence": "bundle strings: Portfolio Greeks, IV sensitivity; anchors 'Directional exposure', 'Delta sensitivity', 'Time decay per day' · Phase 2 item 4 (08 Sep 2026): Greeks tiles Delta / Gamma / Theta per day / Vega per vol point at spot (GreeksPanel.tsx); unit analysis.test.tsx, e2e analyse.spec.ts HC-WS-059, visual analyse-builder / analyse-templates / analyse-greeks"
+  "evidence": "bundle strings: Portfolio Greeks, IV sensitivity; anchors 'Directional exposure', 'Delta sensitivity', 'Time decay per day' · Phase 2 item 4 (08 Sep 2026): Greeks tiles Delta / Gamma / Theta per day / Vega per vol point at spot (GreeksPanel.tsx); unit analysis.test.tsx, e2e desk.spec.ts HC-WS-059, visual desk-builder / desk-templates / desk-greeks"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Greeks",
   "feature": "Leg-wise Greeks table: BUY/SELL · strike C/P · expiry, Lots, IV, Δ, Γ, Θ/day, ν and a 'Portfolio total' row",
   "how": "Per-leg Black-76 greeks × lots × lot size × side sign; totals match the tiles",
   "status": "working",
-  "evidence": "bundle leg-greeks table (action badge, lots, iv.toFixed(1), Portfolio Total colSpan 3) · Phase 2 item 4 (08 Sep 2026): leg-wise Greeks table (side, instrument, lots, IV, Δ, Γ, Θ/d, ν); unit analysis.test.tsx, e2e analyse.spec.ts HC-WS-059"
+  "evidence": "bundle leg-greeks table (action badge, lots, iv.toFixed(1), Portfolio Total colSpan 3) · Phase 2 item 4 (08 Sep 2026): leg-wise Greeks table (side, instrument, lots, IV, Δ, Γ, Θ/d, ν); unit analysis.test.tsx, e2e desk.spec.ts HC-WS-059"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Greeks",
   "feature": "'Understanding Greeks' explanations for Delta, Gamma, Theta and Vega",
   "how": "Static explanatory cards (Delta and Gamma/Vega texts as in the original)",
@@ -488,24 +488,24 @@
   "evidence": "anchors: 'Understanding Greeks', 'Measures the rate of change in option price per $1 move in underlying…', 'Measures sensitivity to 1% change in implied volatility…' · Phase 2 item 4 (08 Sep 2026): Delta / Gamma / Theta / Vega one-line meanings under the table; unit analysis.test.tsx"
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Ladder",
   "feature": "Ladder tab: P&L by underlying price with columns Price · Change from spot · At expiry · On <target date> · Status (profit / loss / breakeven / spot pills)",
   "how": "Rows every step from −20% to +20% around spot; the spot row is highlighted amber and breakeven rows are inserted (dashed); sticky header; auto-scrolls to spot",
   "status": "working",
-  "evidence": "bundle strings: P&L Analysis Table, Showing every 10th price point, Underlying Price, Change from Spot, P&L at Expiry, Status, SPOT, PROFIT, LOSS, BREAKEVEN, No data — add option legs to see P&L table · Phase 2 item 4 (08 Sep 2026): Ladder tab: price · change · P&L at expiry · on target · status, spot and break-even rows inserted, step 1× / 2× / 4× (LadderPanel.tsx); unit analysis.test.ts ladderRows + analysis.test.tsx, e2e analyse.spec.ts HC-WS-062"
+  "evidence": "bundle strings: P&L Analysis Table, Showing every 10th price point, Underlying Price, Change from Spot, P&L at Expiry, Status, SPOT, PROFIT, LOSS, BREAKEVEN, No data — add option legs to see P&L table · Phase 2 item 4 (08 Sep 2026): Ladder tab: price · change · P&L at expiry · on target · status, spot and break-even rows inserted, step 1× / 2× / 4× (LadderPanel.tsx); unit analysis.test.ts ladderRows + analysis.test.tsx, e2e desk.spec.ts HC-WS-062"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse workspace",
+  "route": "/desk",
+  "screen": "Desk",
   "feature": "Shared workspace state CG.analyse {legs, name, strategyId, asset, expiry, targetDays, targetPrice, mode, stats, setExpiry(), setRightTab(), findDelta()} and events analyse:addLeg / analyse:legs-changed / analyse:tab / analyse:set-tab / analyse:right-tab / analyse:expiry / analyse:target / analyse:stats",
   "how": "State object created here; leg mutations belong to the trading part (chain only emits analyse:addLeg, with a local fallback); the right pane re-renders on analyse:legs-changed and on every tick",
   "status": "working",
-  "evidence": "integration contract between the /analyse parts · Phase 2 item 4 (08 Sep 2026): shared workspace state in the UI store: legs, strategy meta, tabs, target (store.ts; drafts are server rows since ADR-024, the browser slice retired by ADR-088); unit store.test.ts"
+  "evidence": "integration contract between the /desk parts · Phase 2 item 4 (08 Sep 2026): shared workspace state in the UI store: legs, strategy meta, tabs, target (store.ts; drafts are server rows since ADR-024, the browser slice retired by ADR-088); unit store.test.ts"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse workspace",
+  "route": "/desk",
+  "screen": "Desk",
   "feature": "Tab count pills: Builder = active legs, Paper / Live = strategy counts, Journal = closed strategies",
   "how": "renderCounts() on analyse:legs-changed / analyse:strategies-changed; pills hide at 0",
   "status": "working",
@@ -513,17 +513,17 @@
   "new": true
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse workspace",
+  "route": "/desk",
+  "screen": "Desk",
   "feature": "Pane collapse buttons ‹ › give either pane the full width; a ⋮ handle restores both",
   "how": "CG.state.analyseCollapse = left | right | \"\"; the chart re-renders to the new width",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): collapse-left / collapse-right buttons, store.analyseCollapse (persisted), 16 px ⋮ collapse-restore handle, data-collapse on the workspace; unit workspace.test.tsx; e2e analyse.spec.ts",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): collapse-left / collapse-right buttons, store.deskCollapse (persisted), 16 px ⋮ collapse-restore handle, data-collapse on the workspace; unit workspace.test.tsx; e2e desk.spec.ts",
   "new": true
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse workspace",
+  "route": "/desk",
+  "screen": "Desk",
   "feature": "Density: comfortable rows (36px) / compact rows (28px) for the chain and the ladder",
   "how": "root[data-density] follows CG.state.density and CG.on('density')",
   "status": "working",
@@ -531,17 +531,17 @@
   "new": true
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse workspace",
+  "route": "/desk",
+  "screen": "Desk",
   "feature": "Tab-bar micro info: 'Lot 0.001 BTC · Basis mark' (left) and 'Bull Call Spread · 25 Sep · 20 lots' (right)",
   "how": "Rebuilt on legs / lot-size / basis changes",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): left-tab-info \"Lot 0.001 BTC · basis mark\" (lot size from settings) and pane-strategy-info \"name · expiry · N lots\" (AnalysisPane StrategyInfo); unit workspace.test.tsx + analysis.test.tsx; e2e analyse.spec.ts",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): left-tab-info \"Lot 0.001 BTC · basis mark\" (lot size from settings) and pane-strategy-info \"name · expiry · N lots\" (AnalysisPane StrategyInfo); unit workspace.test.tsx + analysis.test.tsx; e2e desk.spec.ts",
   "new": true
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse workspace",
+  "route": "/desk",
+  "screen": "Desk",
   "feature": "Header stats feed: CG.emit('analyse:stats', {atmIv, ivRank, ivPercentile, expectedMove, expiry, spot, pcr, maxPain, skew25}) on show, expiry, asset and every tick; also stored in CG.analyse.stats",
   "how": "Consumed by the chrome header (ATM IV · IV rank · expected move)",
   "status": "working",
@@ -549,25 +549,25 @@
   "new": true
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse workspace",
+  "route": "/desk",
+  "screen": "Desk",
   "feature": "Command palette commands: Switch expiry → <date> (one per expiry), Load template → <name> (skipped when the trading module registers its own), Toggle chain Greeks, Find strike by delta…, Share strategy link, Analyse → <tab>",
-  "how": "CG.palette.register({id,label,group:\"Analyse\",keywords,run}) guarded; commands navigate to /analyse first when needed",
+  "how": "CG.palette.register({id,label,group:\"Desk\",keywords,run}) guarded; commands navigate to /desk first when needed",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): CommandPalette buildCommands expiries / templates → \"Switch expiry → date\" (act:expiry-*) and \"Load template → name\" (act:template-* via store.templateRequest, honoured by useTemplateLoader); unit shell.test.tsx; e2e analyse.spec.ts",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): CommandPalette buildCommands expiries / templates → \"Switch expiry → date\" (act:expiry-*) and \"Load template → name\" (act:template-* via store.templateRequest, honoured by useTemplateLoader); unit shell.test.tsx; e2e desk.spec.ts",
   "new": true
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse workspace",
+  "route": "/desk",
+  "screen": "Desk",
   "feature": "Keyboard shortcuts listed in the ? help: J / K, ↑ / ↓, B / S, Shift+B / Shift+S, E / Shift+E, Enter",
-  "how": "CG.shortcuts.register(key, description, handler, {group:\"Analyse workspace\"}) with a document fallback when the registry is absent",
+  "how": "CG.shortcuts.register(key, description, handler, {group:\"Desk\"}) with a document fallback when the registry is absent",
   "status": "working",
-  "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): DEFAULT_SHORTCUTS \"Analyse workspace\" rows in the ? help (ShortcutsDialog); unit shortcuts.test.ts",
+  "evidence": "Phase 5 item 3 (11 Sep 2026, ADR-053): DEFAULT_SHORTCUTS \"Desk\" rows in the ? help (ShortcutsDialog); unit shortcuts.test.ts",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Mirrored column order: Δ · OI · Bid/IV · Mark/IV · Ask/IV | Strike | Ask/IV · Mark/IV · Bid/IV · OI · Δ (price triplet inboard, Δ and OI outboard) with Δ visible by default at 2dp",
   "how": "DEFAULT_ORDER / ESSENTIALS in the column model; column settings still reorder from the strike outward",
@@ -576,7 +576,7 @@
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Strike range control ±6 / ±12 / all in the chain toolbar",
   "how": "CG.state.chainRange; the header hint and footer count follow",
@@ -585,34 +585,34 @@
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Greeks expand toggle adds Γ Θ ν columns next to Δ on both sides",
   "how": "setGreeksCols() edits the column state (persisted) and re-renders; chip state mirrors the columns",
   "status": "working",
-  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e analyse.spec.ts, ADR-021",
+  "evidence": "v2 · direction-a \"Obsidian Desk\" mockup + research UX rules · Phase 2 item 2 (07 Sep 2026): unit layout.test.ts / dialogs.test.tsx / chain.test.tsx, e2e desk.spec.ts, ADR-021",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Find strike by Δ chips (10Δ · 16Δ · 25Δ · 50Δ): scrolls to the call and put strikes nearest that delta, pulses both rows, highlights the call strike and toasts the pair",
   "how": "nearestDelta() over the full chain; widens the strike range when the hits fall outside it; the palette command opens a dialog with a custom Δ input",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/chain/{ChainTools,ChainTable}.tsx + lib/chain/structure.ts chainStats / nearestDelta; unit structure.test.ts + chain.test.tsx; e2e analyse.spec.ts HC-WS-016 block · chips chain-delta-10/16/25/50, widen → scroll → focus call → pulse both (data-pulse) + toast",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/chain/{ChainTools,ChainTable}.tsx + lib/chain/structure.ts chainStats / nearestDelta; unit structure.test.ts + chain.test.tsx; e2e desk.spec.ts HC-WS-016 block · chips chain-delta-10/16/25/50, widen → scroll → focus call → pulse both (data-pulse) + toast",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Spot hairline between the two strikes bracketing spot with a 'SPOT 79,521' tag; ATM row as a single amber band",
   "how": "A zero-height spot row is inserted after the last strike ≤ spot and moves on ticks; the neighbouring strike cells get extra padding so the tag never covers a label",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/chain/{ChainTools,ChainTable}.tsx + lib/chain/structure.ts chainStats / nearestDelta; unit structure.test.ts + chain.test.tsx; e2e analyse.spec.ts HC-WS-016 block · spot-hairline overlay (data-y) between the bracketing strikes, skipped on a listed strike",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/chain/{ChainTools,ChainTable}.tsx + lib/chain/structure.ts chainStats / nearestDelta; unit structure.test.ts + chain.test.tsx; e2e desk.spec.ts HC-WS-016 block · spot-hairline overlay (data-y) between the bracketing strikes, skipped on a listed strike",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Row height 36px (28px compact), IV 1dp under 1dp prices, Δ 2dp, OI integers with thousands separators",
   "how": "Fixed precision per column",
@@ -621,7 +621,7 @@
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Two-line expiry chips '25 Sep / 21d' with an amber dot on expiries that hold legs; scroll arrows appear only on overflow",
   "how": "",
@@ -630,7 +630,7 @@
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Keyboard highlight row (amber outline) also shows the B / S controls; hovering another row moves the highlight",
   "how": "tr.hl styling; hover sync keeps mouse and keyboard in step",
@@ -639,7 +639,7 @@
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Header group row hints: \"ITM shaded · strikes ±12\" and \"Δ per contract\"",
   "how": "",
@@ -648,25 +648,25 @@
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Options chain",
   "feature": "Footer additions: Skew 25Δ (IV put − IV call at 25Δ) and Fwd (from ATM put-call parity)",
   "how": "",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/chain/{ChainTools,ChainTable}.tsx + lib/chain/structure.ts chainStats / nearestDelta; unit structure.test.ts + chain.test.tsx; e2e analyse.spec.ts HC-WS-016 block · chain-skew / chain-fwd in the footer",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/chain/{ChainTools,ChainTable}.tsx + lib/chain/structure.ts chainStats / nearestDelta; unit structure.test.ts + chain.test.tsx; e2e desk.spec.ts HC-WS-016 block · chain-skew / chain-fwd in the footer",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff",
   "feature": "Analytics strip under the tiles (merged Analytics tab): POP with grade · R:R with grade · Max ROI · Margin with risk % · Win if · Spot now zone",
   "how": "Wraps to a second line on narrow panes",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · max-roi (max profit ÷ margin) and strip-margin with risk % of notional",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e desk.spec.ts HC-TR-040 block; visual desk-builder-*.png · max-roi (max profit ÷ margin) and strip-margin with risk % of notional",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff",
   "feature": "Chart restyled to the reference: ink expiry line, blue target curve, green/red fills, amber SPOT tag + dashed hairline, ±1σ dashed edges with labels, faint OI bars, BE labels, max profit / max loss tags",
   "how": "",
@@ -675,70 +675,70 @@
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff",
   "feature": "IV −5% and IV +5% layers: dashed blue target-date curves computed with CG.analyze(legs, asset, {ivShift:±0.05})",
   "how": "Chips + layers popover; persisted in CG.state.chartLayers",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · layer-ivDown / layer-ivUp: two useScenario calls with ivShift ±0.05 drawn dashed; persisted in store.chartLayers (store.test.ts)",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e desk.spec.ts HC-TR-040 block; visual desk-builder-*.png · layer-ivDown / layer-ivUp: two useScenario calls with ivShift ±0.05 drawn dashed; persisted in store.chartLayers (store.test.ts)",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff",
   "feature": "Target marker '+$1.7 @ 81,921' on the curve; clicking the chart sets the target price",
   "how": "setTargetPrice(price, true)",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · PayoffChart onSelect → setTarget on click (e2e asserts the slider value changes)",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e desk.spec.ts HC-TR-040 block; visual desk-builder-*.png · PayoffChart onSelect → setTarget on click (e2e asserts the slider value changes)",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff",
   "feature": "Sliders restyled: custom track with fill, knob, amber SPOT tick with label, five price ticks; date ticks Today · mid dates · Expiry",
   "how": "",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · five price ticks with SPOT in amber and Today / mid / Expiry date ticks under the native range inputs (native track kept for keyboard access, ADR-048)",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e desk.spec.ts HC-TR-040 block; visual desk-builder-*.png · five price ticks with SPOT in amber and Today / mid / Expiry date ticks under the native range inputs (native track kept for keyboard access, ADR-048)",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff",
   "feature": "Net greeks strip under the sliders: Net Δ · Net Γ · Net Θ / day · Net ν / 1% IV · Margin est. · 'USD per strategy · 20 lots · mark basis'",
   "how": "",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · greeks-strip adds Margin est. and the greeks-basis line \"USD per strategy · N lots\"",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e desk.spec.ts HC-TR-040 block; visual desk-builder-*.png · greeks-strip adds Margin est. and the greeks-basis line \"USD per strategy · N lots\"",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff",
   "feature": "Tooltip format '16 Sep @ 82,879 +4.2% · +$2.28 · exp +$5.33'",
   "how": "",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e analyse.spec.ts HC-TR-040 block; visual analyse-builder-*.png · hover-readout \"date @ price ±x% · target · exp\"",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-048): components/analysis/{PayoffPanel,PayoffChart,payoffDraw}.tsx; unit analysis.test.tsx; e2e desk.spec.ts HC-TR-040 block; visual desk-builder-*.png · hover-readout \"date @ price ±x% · target · exp\"",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Scenarios",
   "feature": "Price × date P&L matrix: rows −10% … +10% in 2% steps (or ±20% in 4% steps), columns today · +25% · +50% · +75% · expiry−1d · expiry, cells shaded by magnitude with mono values",
   "how": "Each cell = CG.analyze(…, {targetDays, spot, min:S, max:S}).pnlTarget; rows carry a SPOT label",
   "status": "working",
-  "evidence": "Phase 5 item 1 (09 Sep 2026): ScenariosPanel.tsx over the pricing worker (useScenario, scenarioGrid), lib/chain/structure.ts scenarioAxes (11 rows, six dated columns to settlement); unit structure.test.ts, analysis-tabs.test.tsx HC-WS-088..093; e2e analyse.spec.ts scenarios block; visual analyse-scenarios-{dark,light}",
+  "evidence": "Phase 5 item 1 (09 Sep 2026): ScenariosPanel.tsx over the pricing worker (useScenario, scenarioGrid), lib/chain/structure.ts scenarioAxes (11 rows, six dated columns to settlement); unit structure.test.ts, analysis-tabs.test.tsx HC-WS-088..093; e2e desk.spec.ts scenarios block; visual desk-scenarios-{dark,light}",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Scenarios",
   "feature": "Mode toggle P&L | Δ | Θ re-computes the grid as position delta or theta per day at each price × date",
   "how": "positionGreeksAt(legs, S, daysElapsed, ivShift) re-prices every leg with Black-76",
   "status": "working",
-  "evidence": "Phase 5 item 1 (09 Sep 2026): ScenariosPanel mode segment → scenarioGrid mode pnl | delta | theta, unit line per mode; unit analysis-tabs.test.tsx; e2e analyse.spec.ts (delta unit)",
+  "evidence": "Phase 5 item 1 (09 Sep 2026): ScenariosPanel mode segment → scenarioGrid mode pnl | delta | theta, unit line per mode; unit analysis-tabs.test.tsx; e2e desk.spec.ts (delta unit)",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Scenarios",
   "feature": "IV shift slider −20% … +20% re-computes the grid through CG.analyze(…, {ivShift})",
   "how": "Debounced; persisted in CG.state.scnIv",
@@ -747,25 +747,25 @@
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Scenarios",
   "feature": "Target cell (nearest to the slider target price and date) is outlined; its row / column headers are emphasised; clicking a cell sets the target price and date",
   "how": "Round-trips through setTargetPrice / setTargetDays",
   "status": "working",
-  "evidence": "Phase 5 item 1 (09 Sep 2026): nearestIndex on the axes outlines the target cell, a click calls setTarget({ price, days }); unit structure.test.ts, analysis-tabs.test.tsx; e2e analyse.spec.ts",
+  "evidence": "Phase 5 item 1 (09 Sep 2026): nearestIndex on the axes outlines the target cell, a click calls setTarget({ price, days }); unit structure.test.ts, analysis-tabs.test.tsx; e2e desk.spec.ts",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Scenarios",
   "feature": "Smooth toggle renders the same grid as a bilinearly interpolated canvas heat field with column separators, dashed zero (breakeven) contour, amber spot line and the target outline",
   "how": "ImageData interpolation between cell centres; colours read from the theme tokens so both themes work",
   "status": "working",
-  "evidence": "Phase 5 item 1 (09 Sep 2026): heatDraw.ts (bilinear sampleGrid, background blend, zero ridge, spot hairline, target outline) behind the Smooth toggle; unit heatDraw.test.ts with a recording canvas; e2e + visual analyse-scenarios-smooth-{dark,light}",
+  "evidence": "Phase 5 item 1 (09 Sep 2026): heatDraw.ts (bilinear sampleGrid, background blend, zero ridge, spot hairline, target outline) behind the Smooth toggle; unit heatDraw.test.ts with a recording canvas; e2e + visual desk-scenarios-smooth-{dark,light}",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Scenarios",
   "feature": "Hover tooltip on cells and on the canvas ('81,129 · 16 Sep · +1.1'; canvas values are interpolated)",
   "how": "",
@@ -774,16 +774,16 @@
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Vol",
   "feature": "Smile · <expiry>: mark IV across the 41 strikes with the strategy's strikes as amber dots, spot hairline, ATM IV and 25Δ skew readout",
   "how": "From CG.chain(asset, expiry); re-renders on expiry changes",
   "status": "working",
-  "evidence": "Phase 5 item 1 (09 Sep 2026): VolPanel.tsx smile via pricing smile() on the live chain (OTM side per spot), strategy strikes as amber labels, ATM IV, 25Δ skew from the quotes' deltas (structure.ts skew25), expected move; unit structure.test.ts, analysis-tabs.test.tsx; e2e; visual analyse-vol-{dark,light}",
+  "evidence": "Phase 5 item 1 (09 Sep 2026): VolPanel.tsx smile via pricing smile() on the live chain (OTM side per spot), strategy strikes as amber labels, ATM IV, 25Δ skew from the quotes' deltas (structure.ts skew25), expected move; unit structure.test.ts, analysis-tabs.test.tsx; e2e; visual desk-vol-{dark,light}",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Vol",
   "feature": "Term structure: ATM IV per expiry across CG.EXPIRIES as bars (active expiry amber, click a bar to switch expiry) with contango / backwardation note",
   "how": "",
@@ -792,34 +792,34 @@
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Vol",
   "feature": "IV rank (1y): rank, percentile, current, 1y low / high on a gauge with an interpretation line",
   "how": "Generated 365-day ATM IV history (mean-reverting log process seeded per asset, pinned to the current ATM IV)",
   "status": "working",
-  "evidence": "ADR-056 (11 Sep 2026): components/analysis/VolHistory.tsx IvRankPanel: rank + percentile, 1-year low / high gauge, days recorded, ivRankLabel interpretation; API iv-snapshot.ts + market-history.ts + GET /v1/market/iv; unit analysis-tabs.test.tsx, API iv-snapshot.test.ts; e2e analyse.spec.ts",
+  "evidence": "ADR-056 (11 Sep 2026): components/analysis/VolHistory.tsx IvRankPanel: rank + percentile, 1-year low / high gauge, days recorded, ivRankLabel interpretation; API iv-snapshot.ts + market-history.ts + GET /v1/market/iv; unit analysis-tabs.test.tsx, API iv-snapshot.test.ts; e2e desk.spec.ts",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Vol",
   "feature": "Realised vs implied: 30-day realised vol (from a generated price series) vs the ATM IV history over 365 days, with the IV − RV spread",
   "how": "",
   "status": "working",
-  "evidence": "ADR-056 (11 Sep 2026): VolHistory.tsx RvIvPanel: ATM IV vs rolling 30-day realised vol chart (chart-rv-iv) with the IV − RV spread (rv-iv-spread), closes counted while short; realisedVolOf in packages/schema; unit analysis-tabs.test.tsx; e2e analyse.spec.ts",
+  "evidence": "ADR-056 (11 Sep 2026): VolHistory.tsx RvIvPanel: ATM IV vs rolling 30-day realised vol chart (chart-rv-iv) with the IV − RV spread (rv-iv-spread), closes counted while short; realisedVolOf in packages/schema; unit analysis-tabs.test.tsx; e2e desk.spec.ts",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Structure",
   "feature": "Max pain: amber marker + label over call / put OI bars per strike (±12 around ATM) with spot hairline and strategy-strike ticks",
   "how": "Max pain = strike minimising Σ call OI × max(K − Ki, 0) + put OI × max(Ki − K, 0)",
   "status": "working",
-  "evidence": "Phase 5 item 1 (09 Sep 2026): StructurePanel.tsx call / put OI bars ±12 strikes around ATM with the max-pain label (pricing maxPain over every listed strike) and the spot marker; unit analysis-tabs.test.tsx; e2e; visual analyse-structure-{dark,light}",
+  "evidence": "Phase 5 item 1 (09 Sep 2026): StructurePanel.tsx call / put OI bars ±12 strikes around ATM with the max-pain label (pricing maxPain over every listed strike) and the spot marker; unit analysis-tabs.test.tsx; e2e; visual desk-structure-{dark,light}",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Structure",
   "feature": "Put / call ratio for open interest and 24h volume with call/put share bars and a positioning note",
   "how": "",
@@ -828,7 +828,7 @@
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Structure",
   "feature": "Gamma exposure (GEX) profile: Σ γ × OI × lot × spot² × 1% per strike (calls +, puts −) as signed bars with a zero line, net GEX and the gamma-flip strike",
   "how": "",
@@ -837,16 +837,16 @@
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Greeks",
   "feature": "Position Δ and Θ across the price axis: two small charts (re-pricing every leg at 49 prices ±20% around spot on the target date) with strike dots and the spot hairline",
   "how": "",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): GreeksPanel chart-delta-price / chart-theta-price: useScenario delta / theta at 49 prices ±20 % on the target date; unit analysis.test.tsx; e2e analyse.spec.ts",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): GreeksPanel chart-delta-price / chart-theta-price: useScenario delta / theta at 49 prices ±20 % on the target date; unit analysis.test.tsx; e2e desk.spec.ts",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Greeks",
   "feature": "Greeks tab restyled: hairline tiles, mono table (Θ and ν in currency), compact explanations",
   "how": "",
@@ -855,7 +855,7 @@
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Ladder",
   "feature": "Step selector (250 / 500 / 1000 for BTC; ½× / 1× / 2× the strike step for other assets)",
   "how": "CG.state.ladderStep",
@@ -864,7 +864,7 @@
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Ladder",
   "feature": "'At expiry' and 'On <target date>' P&L columns, 'Change from spot', status pills; spot row highlighted amber; breakeven rows inserted; sticky header; auto-scroll to spot",
   "how": "",
@@ -873,35 +873,35 @@
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Share",
   "feature": "Share button in the pane header copies a link (origin + path + #/s/<base64url {a, l:[[type,side,strike,expiry,lots,price]…], n}>) and opens a dialog with the link, Copy button, legs and max profit / loss / POP",
   "how": "navigator.clipboard with an execCommand fallback; toasts \"Link copied\"",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): ShareDialog (share-open → share-link / share-copy) with lib/strategy/share.ts encodeShare → /s/<base64url>; toast \"Link copied to clipboard\"; unit share.test.ts + analysis.test.tsx; e2e analyse.spec.ts; visual analyse-share-*.png",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): ShareDialog (share-open → share-link / share-copy) with lib/strategy/share.ts encodeShare → /s/<base64url>; toast \"Link copied to clipboard\"; unit share.test.ts + analysis.test.tsx; e2e desk.spec.ts; visual desk-share-*.png",
   "new": true
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Share",
-  "feature": "/s/:code route (no auth): decodes the link, loads the legs into CG.analyse, toasts \"Strategy loaded from link\" and navigates to /analyse; logged-out visitors get a preview card (legs, max profit / loss, POP) with \"Open in Analyse\" and \"Sign in\"; invalid codes show an error card",
+  "feature": "/s/:code route (no auth): decodes the link, loads the legs into CG.analyse, toasts \"Strategy loaded from link\" and navigates to /desk; logged-out visitors get a preview card (legs, max profit / loss, POP) with \"Open on the Desk\" and \"Sign in\"; invalid codes show an error card",
   "how": "Registered as <section data-route=\"/s/:code\" data-title=\"Shared strategy\">",
   "status": "working",
-  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): app/s/[code]/page.tsx (public) → ShareLanding decodes, loads the legs at the shared prices, toasts \"Strategy loaded from link\" and replaces the route with /analyse; invalid codes explain themselves; unit ShareLanding.test.tsx; e2e analyse.spec.ts",
+  "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-049): app/s/[code]/page.tsx (public) → ShareLanding decodes, loads the legs at the shared prices, toasts \"Strategy loaded from link\" and replaces the route with /desk; invalid codes explain themselves; unit ShareLanding.test.tsx; e2e desk.spec.ts",
   "new": true
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse workspace",
+  "route": "/desk",
+  "screen": "Desk",
   "feature": "Phase 1 live chain shell: expiries discovered from the gateway (fallback list only when it exposes none); the chain lists exactly the strikes the venue instrument list holds for the selected expiry, marks the ATM row and shows FEED LIVE / stale from the gateway sequence numbers",
   "how": "apps/web ChainPanel + ChainTable over the gateway reducer; strikes never come from a fixed step (ADR-006)",
   "status": "working",
-  "evidence": "Phase 1 build, 07 Sep 2026: unit (chain.test.tsx, expiries.test.ts, reducer.test.ts) + e2e analyse.spec.ts",
+  "evidence": "Phase 1 build, 07 Sep 2026: unit (chain.test.tsx, expiries.test.ts, reducer.test.ts) + e2e desk.spec.ts",
   "phase": 1
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse workspace",
+  "route": "/desk",
+  "screen": "Desk",
   "feature": "Phase 1 chain rows: strike, call and put marks from the coalesced gateway deltas, one row per venue strike (no synthetic strikes, no gaps filled)",
   "how": "ChainTable renders the reducer state; q frames patch only changed fields",
   "status": "working",
@@ -909,7 +909,7 @@
   "phase": 1
  },
  {
-  "route": "/analyse",
+  "route": "/desk",
   "screen": "Payoff Diagram",
   "feature": "Multi-expiry positions (calendars, diagonals) value their expiry figures at the nearest expiry",
   "how": "When the option legs span more than one expiry the payoff pane values max profit, max loss, break-evens and POP at the nearest expiry with the later legs keeping their time value (the calendar convention); the strip says “Expiry figures on <date> · later legs keep time value”; a settled expiry is skipped; single-expiry positions keep the exact intrinsic curve; two legs across expiries are named Call / Put Calendar (same strike) or Diagonal; the built-in calendar templates take their far leg from the next listed expiry’s chain (its strike and mark used to come from the near chain)",
@@ -919,18 +919,18 @@
   "new": true
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse · Screener tab",
+  "route": "/desk",
+  "screen": "Desk · Screener tab",
   "feature": "Options screener: every listed option ranked on the live chain",
   "how": "A sixth left tab folds every listed expiry's chain (already subscribed for the Vol tab) into one row per quoted option with premium per day (mark ÷ days to settlement, per unit), yield per day (% of spot), IV−ATM (vol points against the expiry's ATM), |Δ|, break-even % vs spot at expiry and OI; sortable columns (default premium per day), a column menu and CSV; filters for side, |Δ| band (≤0.10, 0.10–0.30, 0.30–0.50, >0.50), expiries and minimum OI; the top 100 rows with the total; the basis line names the options counted, marks, the front IV rank, spot, the term shape and whether the feed is live; every header carries its unit and basis",
   "status": "working",
   "phase": 5,
   "new": true,
-  "evidence": "ADR-076 (12 Sep 2026): apps/web lib/chain/screener.ts (screen, filterStrikes), components/screener/ScreenerPanel.tsx, components/workspace/Workspace.tsx tab; unit screener.test.ts, screener.test.tsx HC-WS-110; e2e analyse.spec.ts HC-WS-110..112 (visual analyse-screener-{dark,light} on the next local visual run)"
+  "evidence": "ADR-076 (12 Sep 2026): apps/web lib/chain/screener.ts (screen, filterStrikes), components/screener/ScreenerPanel.tsx, components/workspace/Workspace.tsx tab; unit screener.test.ts, screener.test.tsx HC-WS-110; e2e desk.spec.ts HC-WS-110..112 (visual desk-screener-{dark,light} on the next local visual run)"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse · Screener tab",
+  "route": "/desk",
+  "screen": "Desk · Screener tab",
   "feature": "Expiries view: ATM IV, 25Δ skew, expected move, OI and PCR per expiry",
   "how": "The Expiries chip swaps the table for one row per priced expiry: days, ATM IV, 25Δ skew (put IV − call IV in vol points), the expected move (± USD and % over the days left), call and put OI, the put/call ratio and the strike count, sorted by days; the strike filters rest while this view is shown",
   "status": "working",
@@ -939,18 +939,18 @@
   "evidence": "ADR-076: lib/chain/screener.ts expiry rows (skew25, expectedMove, chainTotals, termShape); unit screener.test.ts, screener.test.tsx HC-WS-111"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse · Screener tab",
+  "route": "/desk",
+  "screen": "Desk · Screener tab",
   "feature": "Buy / Sell a screened option into the Builder; Chain opens its expiry; the palette reaches the tab",
-  "how": "Each strike row carries B / S buttons that add one Builder leg at the chain lots with the row's mark and IV (the chain row's rule and toasts, the leg limit included) and a ⌕ Chain button that sets the workspace expiry and opens the Chain tab; the palette command 'Options screener' and the deep link /analyse?tab=screener open the tab",
+  "how": "Each strike row carries B / S buttons that add one Builder leg at the chain lots with the row's mark and IV (the chain row's rule and toasts, the leg limit included) and a ⌕ Chain button that sets the workspace expiry and opens the Chain tab; the palette command 'Options screener' and the deep link /desk?tab=screener open the tab",
   "status": "working",
   "phase": 5,
   "new": true,
-  "evidence": "ADR-076: ScreenerPanel.tsx add / showInChain, components/shell/CommandPalette.tsx nav:screener, lib/store.ts WorkspaceTab; unit screener.test.tsx HC-WS-112, shell.test.tsx, workspace.test.tsx; e2e analyse.spec.ts HC-WS-110..112"
+  "evidence": "ADR-076: ScreenerPanel.tsx add / showInChain, components/shell/CommandPalette.tsx nav:screener, lib/store.ts WorkspaceTab; unit screener.test.tsx HC-WS-112, shell.test.tsx, workspace.test.tsx; e2e desk.spec.ts HC-WS-110..112"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse · Replay (API)",
+  "route": "/desk",
+  "screen": "Desk · Replay (API)",
   "status": "working",
   "phase": 5,
   "new": true,
@@ -960,19 +960,19 @@
   "test": "unit (api)"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse · Replay tab",
+  "route": "/desk",
+  "screen": "Desk · Replay tab",
   "status": "working",
   "phase": 5,
   "new": true,
   "feature": "Scrub an expiry's recorded chain by day or by 5-minute pass, with the Builder's legs marked at that instant",
   "how": "Analysis pane tab (and the palette command Analysis: Replay): expiry select with the recorded days, Daily / 5-min with the step counts, a slider with previous / next / play (400 ms per step, restarts from the first instant when at the end), the readout (instant, spot, recorded end of day or recorded 5-minute pass, n of N), the ladder with call mark / IV, strike, put IV / mark and the ATM row marked; the Builder's legs on that expiry show B / S on their strike and the position's mark-to-market versus entry from recorded marks only (a leg without a recorded mark says so); an honest empty state before anything is recorded; the mock API serves synthetic instants",
-  "evidence": "ADR-079 (12 Sep 2026): apps/web/src/components/analysis/ReplayPanel.tsx (replay-panel[data-state,data-at,data-source,data-steps], replay-expiry, replay-res-daily / fine, replay-prev / play / next, replay-slider, replay-readout, replay-ladder, replay-row[data-atm], replay-leg, replay-mtm, replay-empty), lib/api/replay.ts, AnalysisPane.tsx, CommandPalette.tsx, test/mock-replay.ts; unit replay-panel.test.tsx HC-WS-114; e2e analyse.spec.ts HC-WS-114",
+  "evidence": "ADR-079 (12 Sep 2026): apps/web/src/components/analysis/ReplayPanel.tsx (replay-panel[data-state,data-at,data-source,data-steps], replay-expiry, replay-res-daily / fine, replay-prev / play / next, replay-slider, replay-readout, replay-ladder, replay-row[data-atm], replay-leg, replay-mtm, replay-empty), lib/api/replay.ts, AnalysisPane.tsx, CommandPalette.tsx, test/mock-replay.ts; unit replay-panel.test.tsx HC-WS-114; e2e desk.spec.ts HC-WS-114",
   "test": "unit (web), e2e"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse · cards, panels and dialogs · phone",
+  "route": "/desk",
+  "screen": "Desk · cards, panels and dialogs · phone",
   "status": "working",
   "phase": 5,
   "new": true,
@@ -982,8 +982,8 @@
   "test": "e2e (phone)"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse · Chain",
+  "route": "/desk",
+  "screen": "Desk · Chain",
   "status": "working",
   "phase": 5,
   "new": true,
@@ -993,19 +993,19 @@
   "test": "unit (schema + venues + gateway + web)"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse · Backtest tab",
+  "route": "/desk",
+  "screen": "Desk · Backtest tab",
   "status": "working",
   "phase": 5,
   "new": true,
   "feature": "The Backtest tab's Rules row: fees, trend filter, IV-rank band, weekday chips, target, stop and time stop re-run the backtest; the coverage line says what the figures are net of and how trades exited; the table shows each trade's fees and exit reason",
   "how": "BacktestPanel.tsx Rules row (backtest-fees venue rule / none, disabled and fixed to none on a venue without a published rule (Deribit); backtest-sma off / 20 / 50 / 100 / 200-day average with backtest-sma-side spot above / below; backtest-ivrank any / low 0-30 / middle 30-70 / high 70-100; backtest-weekday-N chips, UTC; backtest-target 25 / 50 / 75 % of max profit; backtest-stop 50 / 100 / 200 % of max loss; backtest-timestop 1 / 2 / 7 days before settlement, only values below the minimum days to expiry) feeding useBacktest, whose key and URL carry the rule fields in a fixed order; the coverage line adds the no-signal count, 'net of the venue's fees (total)' or 'no fees', the exit counts when a rule is set and the count of trades whose target or stop had no base; the empty state names the entry conditions when they skipped every day; the trades table gains a Fees column and an exit-reason badge on rules exits; the mock API applies the same rules through the real engine",
-  "evidence": "ADR-099 (9 Nov 2026): apps/web/src/components/analysis/BacktestPanel.tsx, lib/api/backtest.ts, test/mock-api.ts + mock-backtest.ts; unit backtest-panel.test.tsx HC-WS-117; e2e analyse.spec.ts HC-TR-185 (fees toggle)",
+  "evidence": "ADR-099 (9 Nov 2026): apps/web/src/components/analysis/BacktestPanel.tsx, lib/api/backtest.ts, test/mock-api.ts + mock-backtest.ts; unit backtest-panel.test.tsx HC-WS-117; e2e desk.spec.ts HC-TR-185 (fees toggle)",
   "test": "unit (web), e2e"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse · Backtest tab",
+  "route": "/desk",
+  "screen": "Desk · Backtest tab",
   "status": "working",
   "phase": 5,
   "new": true,
@@ -1015,8 +1015,8 @@
   "test": "unit (web)"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse · Playbooks tab",
+  "route": "/desk",
+  "screen": "Desk · Playbooks tab",
   "status": "working",
   "phase": 5,
   "new": true,
@@ -1026,8 +1026,8 @@
   "test": "unit (web)"
  },
  {
-  "route": "/analyse",
-  "screen": "Analyse · Playbooks tab",
+  "route": "/desk",
+  "screen": "Desk · Playbooks tab",
   "status": "working",
   "phase": 5,
   "new": true,

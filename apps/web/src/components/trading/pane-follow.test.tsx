@@ -1,5 +1,5 @@
 // The analysis pane follows what the trader looks at (HC-TR-143, ADR-026) and the Live tab's net positions
-// (HC-TR-144, HC-TR-145): tick to analyse, Exit with confirm, Exit all, asset filter, disconnected state.
+// (HC-TR-144, HC-TR-145): tick to show in the pane, Exit with confirm, Exit all, asset filter, disconnected state.
 import type { Strategy } from "@hapiecoin/schema";
 import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -46,7 +46,7 @@ describe("HC-TR-143 the pane follows the selected strategy", () => {
     expect(bar.dataset["kind"]).toBe("strategy");
     expect(bar.textContent).toContain("Strategy 1");
     expect(screen.getAllByTestId("paper-card")[0]!.dataset["followed"]).toBe("true");
-    // the pane analyses the followed legs: no "No strategy yet" empty state
+    // the pane shows the followed legs: no "No strategy yet" empty state
     expect(screen.queryByText("No strategy yet")).toBeNull();
     await u.click(within(screen.getAllByTestId("paper-card")[1]!).getByText("Second one"));
     expect(useUiStore.getState().paneSource).toEqual({ kind: "strategy", id: "strat_2" });
@@ -99,7 +99,7 @@ describe("HC-TR-144 / HC-TR-145 net positions on the Live tab", () => {
     await u.click(within(panel).getByTestId("positions-asset-eth"));
     expect(within(panel).getByTestId("positions-empty")).toBeTruthy();
     await u.click(within(panel).getByTestId("positions-asset-all"));
-    // tick one → the pane analyses that position
+    // tick one → the pane shows that position
     await u.click(within(panel).getAllByTestId("position-tick")[1]!);
     expect(useUiStore.getState().paneSource).toEqual({ kind: "positions", productIds: [101] });
     expect(screen.getByTestId("pane-source").textContent).toContain("1 exchange position");

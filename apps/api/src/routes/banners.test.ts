@@ -47,8 +47,8 @@ describe("HC-AD-059..069 admin banners", () => {
     expect(reimaged.imageUrl).not.toBe(b.imageUrl); // the version query moves so browsers refetch
     expect((await t.request(`/v1/admin/banners/${b.id}`, { cookie: admin, method: "PATCH", json: { startsAt: "2026-02-01T00:00:00.000Z", endsAt: "2026-01-01T00:00:00.000Z" } })).status).toBe(400);
     // every other field, set then cleared
-    const full = await json<Banner>(await t.request(`/v1/admin/banners/${b.id}`, { cookie: admin, method: "PATCH", json: { description: "Now with text", linkUrl: "https://hapiecoin.com/analyse", frequency: "every_time", startsAt: "2026-01-01T00:00:00.000Z", endsAt: "2099-01-01T00:00:00.000Z" } }));
-    expect(full).toMatchObject({ description: "Now with text", linkUrl: "https://hapiecoin.com/analyse", frequency: "every_time", startsAt: "2026-01-01T00:00:00.000Z", schedule: "showing" });
+    const full = await json<Banner>(await t.request(`/v1/admin/banners/${b.id}`, { cookie: admin, method: "PATCH", json: { description: "Now with text", linkUrl: "https://hapiecoin.com/desk", frequency: "every_time", startsAt: "2026-01-01T00:00:00.000Z", endsAt: "2099-01-01T00:00:00.000Z" } }));
+    expect(full).toMatchObject({ description: "Now with text", linkUrl: "https://hapiecoin.com/desk", frequency: "every_time", startsAt: "2026-01-01T00:00:00.000Z", schedule: "showing" });
     const cleared = await json<Banner>(await t.request(`/v1/admin/banners/${b.id}`, { cookie: admin, method: "PATCH", json: { linkUrl: null, startsAt: null, endsAt: null } }));
     expect(cleared).toMatchObject({ linkUrl: null, startsAt: null, endsAt: null });
     // a body over the route's 7 MB limit is refused before parsing

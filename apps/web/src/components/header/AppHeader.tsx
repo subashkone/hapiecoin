@@ -1,5 +1,5 @@
 "use client";
-// App header. `analyse` variant (HC-SH-001..008, 011, 013, 014) and `default` variant with text tabs
+// App header. `desk` variant (HC-SH-001..008, 011, 013, 014) and `default` variant with text tabs
 // (HC-SH-015..021). Settings menu HC-SH-022 / 026; account menu HC-SH-020.
 import {
   Bell,
@@ -63,10 +63,10 @@ export function Avatar({ avatar, className }: { avatar: User["avatar"]; classNam
 }
 
 const TABS = [
-  { href: "/analyse", label: "Analyse", active: (p: string) => p === "/analyse" },
+  { href: "/desk", label: "Desk", active: (p: string) => p === "/desk" },
   { href: "/analytics", label: "Market Analytics", active: (p: string) => p.startsWith("/analytics") || p.startsWith("/terminal") },
-  { href: "/subscription", label: "Subscription", active: (p: string) => p.startsWith("/subscription") },
-  { href: "/referrals", label: "Referrals", active: (p: string) => p.startsWith("/referrals") },
+  { href: "/plans", label: "Plans", active: (p: string) => p.startsWith("/plans") },
+  { href: "/invite", label: "Invite", active: (p: string) => p.startsWith("/invite") },
 ] as const;
 
 function AdminChip() {
@@ -124,11 +124,11 @@ function SettingsMenu({ user }: { user: User }) {
         <MenuItem onSelect={() => pick("profile")} testId="menu-profile">
           <UserIcon /> My Profile
         </MenuItem>
-        <MenuItem href="/subscription" onSelect={() => setOpen(false)}>
-          <CreditCard /> My Subscription
+        <MenuItem href="/plans" onSelect={() => setOpen(false)}>
+          <CreditCard /> My plan
         </MenuItem>
-        <MenuItem href="/referrals" onSelect={() => setOpen(false)}>
-          <Users /> My Referrals
+        <MenuItem href="/invite" onSelect={() => setOpen(false)}>
+          <Users /> Invite friends
         </MenuItem>
         <MenuItem onSelect={() => pick("public")} testId="menu-public">
           <Globe /> Public page
@@ -239,11 +239,11 @@ function AccountMenu({ user }: { user: User }) {
         <MenuItem onSelect={() => { setOpen(false); openDialog("profile"); }}>
           <UserIcon /> My Profile
         </MenuItem>
-        <MenuItem href="/subscription" onSelect={() => setOpen(false)}>
-          <CreditCard /> My Subscription
+        <MenuItem href="/plans" onSelect={() => setOpen(false)}>
+          <CreditCard /> My plan
         </MenuItem>
-        <MenuItem href="/referrals" onSelect={() => setOpen(false)}>
-          <Users /> My Referrals
+        <MenuItem href="/invite" onSelect={() => setOpen(false)}>
+          <Users /> Invite friends
         </MenuItem>
         <MenuItem onSelect={() => { setOpen(false); openDialog("public"); }}>
           <Globe /> Public page
@@ -258,7 +258,7 @@ function AccountMenu({ user }: { user: User }) {
 }
 
 export interface AppHeaderProps {
-  variant: "analyse" | "default";
+  variant: "desk" | "default";
   /** Session user from the server (protected routes); public routes pass null and rely on useMe. */
   initialUser?: User | null;
 }
@@ -270,16 +270,16 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
   const isAdmin = user?.role === "admin";
   const asset = useUiStore((s) => s.asset);
 
-  if (variant === "analyse" && user) {
+  if (variant === "desk" && user) {
     return (
       <>
         <header
           data-testid="app-header"
-          data-variant="analyse"
+          data-variant="desk"
           className="flex h-[50px] items-center gap-2 border-b border-border bg-header-bg px-2 text-header-fg md:gap-4 md:px-4"
         >
           <div className="flex items-center gap-2">
-            <Logo href="/analyse" sub="Analyse" />
+            <Logo href="/desk" sub="Desk" />
             {isAdmin ? <AdminChip /> : null}
           </div>
           <AssetSwitch />
@@ -319,7 +319,7 @@ export function AppHeader({ variant, initialUser = null }: AppHeaderProps) {
         className="flex h-[50px] items-center gap-6 border-b border-border bg-header-bg px-4 text-header-fg"
       >
         <div className="flex items-center gap-2">
-          <Logo href={user ? "/analyse" : "/"} />
+          <Logo href={user ? "/desk" : "/"} />
           {isAdmin ? <AdminChip /> : null}
         </div>
         <nav aria-label="Primary" className="flex items-center gap-1 self-stretch">

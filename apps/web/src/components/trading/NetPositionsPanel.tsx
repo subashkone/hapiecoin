@@ -36,7 +36,7 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
   const venue = positions.data?.venue ?? brokers?.find((b) => b.id === brokerId)?.venue ?? DEFAULT_VENUE; // the account's exchange names the codec (ADR-069 / ADR-070)
   const exit = useLiveExitPositions();
   const paneSource = useUiStore((s) => s.paneSource);
-  const analysePositions = useUiStore((s) => s.analysePositions);
+  const followPositions = useUiStore((s) => s.followPositions);
   const [asset, setAsset] = useState<(typeof ASSET_FILTERS)[number]>("All");
   const [confirm, setConfirm] = useState<number[] | null>(null);
   const [key, setKey] = useState("");
@@ -56,10 +56,10 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
   useEffect(() => {
     if (!positions.data || paneSource?.kind !== "positions") return;
     const alive = paneSource.productIds.filter((id) => positions.data.positions.some((p) => p.productId === id && p.size !== 0));
-    if (alive.length !== paneSource.productIds.length) analysePositions(alive);
-  }, [positions.data, paneSource, analysePositions]);
+    if (alive.length !== paneSource.productIds.length) followPositions(alive);
+  }, [positions.data, paneSource, followPositions]);
 
-  const toggle = (id: number) => analysePositions(ticked.includes(id) ? ticked.filter((x) => x !== id) : [...ticked, id]);
+  const toggle = (id: number) => followPositions(ticked.includes(id) ? ticked.filter((x) => x !== id) : [...ticked, id]);
   const go = () => {
     if (!confirm || !brokerId) return;
     exit.mutate(
@@ -122,7 +122,7 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
           <thead>
             <tr className="micro text-left">
               <th className="w-6 px-3 py-1">
-                <input type="checkbox" aria-label="Tick every position" checked={rows.every((p) => ticked.includes(p.productId))} onChange={(e) => analysePositions(e.target.checked ? rows.map((p) => p.productId) : [])} data-testid="positions-tick-all" />
+                <input type="checkbox" aria-label="Tick every position" checked={rows.every((p) => ticked.includes(p.productId))} onChange={(e) => followPositions(e.target.checked ? rows.map((p) => p.productId) : [])} data-testid="positions-tick-all" />
               </th>
               <th className="py-1 pr-2">Position</th>
               <th className="py-1 pr-2 text-right">Size</th>
@@ -140,7 +140,7 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
               return (
                 <tr key={p.productId} className={cn("border-t border-border", on && "bg-muted/40")} data-testid="position-row" data-product={p.productId} data-ticked={on ? "true" : undefined}>
                   <td className="px-3 py-1">
-                    <input type="checkbox" aria-label={`Analyse ${l.title}`} checked={on} onChange={() => toggle(p.productId)} data-testid="position-tick" />
+                    <input type="checkbox" aria-label={`Show ${l.title} in the pane`} checked={on} onChange={() => toggle(p.productId)} data-testid="position-tick" />
                   </td>
                   <td className="py-1 pr-2">
                     <div className={cn("font-medium", p.size > 0 ? "text-buy" : "text-sell")}>{l.title}</div>
@@ -160,7 +160,7 @@ export function NetPositionsPanel({ money }: { money: MoneyFormat }) {
           <tfoot>
             <tr className="border-t border-border text-2xs">
               <td colSpan={5} className="px-3 py-1">Total P&L <b className={cn("num", total >= 0 ? "text-profit" : "text-loss")} data-testid="positions-total">{fmtMoney(total, money, { signed: true })}</b></td>
-              <td colSpan={2} className="micro py-1 pr-3 text-right">{ticked.length ? `${ticked.length} ticked · analysed in the pane →` : "Tick positions to analyse →"}</td>
+              <td colSpan={2} className="micro py-1 pr-3 text-right">{ticked.length ? `${ticked.length} ticked · shown in the pane →` : "Tick positions to see them in the pane →"}</td>
             </tr>
           </tfoot>
         </table>

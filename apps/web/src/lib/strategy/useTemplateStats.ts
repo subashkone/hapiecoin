@@ -1,6 +1,6 @@
 "use client";
 // Template cards priced at the live chain (HC-TR-106, 107): every template is materialised on the venue ladder and
-// analysed in the pricing worker once per chain snapshot, giving POP, reward:risk and the outlook it actually
+// priced in the pricing worker once per chain snapshot, giving POP, reward:risk and the outlook it actually
 // expresses at ±6 % (the "Recommended for outlook" filter reads the payoff, not the template's label).
 import type { AnalyzeResult } from "@hapiecoin/pricing";
 import type { Underlying } from "@hapiecoin/schema";

@@ -4,7 +4,7 @@ import { recordedExpiry } from "../test/expiry-shift";
 import { strikesOf } from "../test/fixtures/chain";
 
 /** HC-TR-186: a live confirm needs the word typed first; a paper dialog has no field. */
-test.describe("HC-SH analyse header and live chain", () => {
+test.describe("HC-SH desk header and live chain", () => {
   test.beforeEach(async ({ page, request }) => {
     await seedUser(request, { email: "trader@example.com", plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" } });
     await signIn(page, "trader@example.com");
@@ -408,7 +408,7 @@ test.describe("HC-SH analyse header and live chain", () => {
     await expect(page.getByText("Confirm Logout")).toBeVisible();
     await page.getByTestId("logout-confirm").click();
     await expect(page).toHaveURL(/\/$/);
-    await page.goto("/analyse");
+    await page.goto("/desk");
     await expect(page).toHaveURL(/\/auth\?next=/);
   });
 });
@@ -521,12 +521,12 @@ test.describe("HC-TR / HC-WS Builder, templates and the analysis pane", () => {
     await expect(page.getByTestId("chart-delta-price")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
     await expect(page.getByTestId("greek-vega")).toContainText("$");
     await page.goto(link);
-    await expect(page).toHaveURL(/\/analyse$/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/desk$/, { timeout: 15_000 });
     await expect(page.getByText("Strategy loaded from link")).toBeVisible();
     await expect(page.getByTestId("builder-panel")).toHaveAttribute("data-legs", "4", { timeout: 15_000 });
     await expect(page.getByTestId("strategy-name")).toHaveValue("Iron Condor");
     // HC-WS-006 deep link; HC-WS-065 collapse
-    await page.goto("/analyse?tab=paper&panel=ladder");
+    await page.goto("/desk?tab=paper&panel=ladder");
     await expect(page.getByTestId("tab-paper")).toHaveAttribute("data-state", "active", { timeout: 15_000 });
     await expect(page.getByTestId("analysis-tab-ladder")).toHaveAttribute("data-state", "active");
     await page.getByTestId("collapse-right").click();
@@ -1553,7 +1553,7 @@ test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
     await expect(live.getByTestId("order-chip")).toHaveAttribute("data-state", "filled");
     await expect(page.getByTestId("live-exchange-chip")).toHaveText(/exchange connected/);
     await expect(page.getByTestId("live-exchange-chip")).toContainText("TESTNET"); // HC-SH-138: the mock trades on the testnet, the chip says so
-    // HC-TR-143 the pane follows the new live strategy; HC-TR-144 the venue's net positions with tick-to-analyse
+    // HC-TR-143 the pane follows the new live strategy; HC-TR-144 the venue's net positions with tick-to-desk
     await expect(page.getByTestId("pane-source")).toContainText("E2E long call");
     await expect(page.getByTestId("net-positions")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
     await expect(page.getByTestId("position-row")).toHaveCount(1);
@@ -1575,10 +1575,10 @@ test.describe("HC-TR live trading on the fake venue (Phase 3 item 2)", () => {
 });
 
 test.describe("HC-SH-055 / HC-SH-056 flyer popup", () => {
-  test("shows the live banners once on /analyse, cycles, and does not return within the session", async ({ page, request }) => {
+  test("shows the live banners once on /desk, cycles, and does not return within the session", async ({ page, request }) => {
     await seedUser(request, { email: "flyer@example.com", banners: 4 }); // live once-a-day, live once-per-session, scheduled, hidden
     await signIn(page, "flyer@example.com");
-    await page.goto("/analyse");
+    await page.goto("/desk");
     await expect(page.getByTestId("flyer")).toHaveAttribute("data-count", "2", { timeout: 15_000 });
     await expect(page.getByTestId("flyer-title")).toHaveText("Welcome Offer");
     await page.getByTestId("flyer-next").click();

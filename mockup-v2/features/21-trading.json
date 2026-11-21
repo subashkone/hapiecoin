@@ -1,343 +1,343 @@
 [
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Strategy panel sub-tabs: Builder | Templates",
     "how": "Two line-tabs at the top of the Strategy left-pane panel; switch the visible sub-view (data-tour builder-tab / templates-tab)",
     "status": "working",
-    "evidence": "bundle strings: builder, templates, builder-tab · Phase 2 item 4 (08 Sep 2026): Builder | Templates sub-tabs (builderTab in the store); unit builder.test.tsx, e2e analyse.spec.ts HC-TR-040"
+    "evidence": "bundle strings: builder, templates, builder-tab · Phase 2 item 4 (08 Sep 2026): Builder | Templates sub-tabs (builderTab in the store); unit builder.test.tsx, e2e desk.spec.ts HC-TR-040"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Strategy Legs card header with asset chip and leg count",
     "how": "Card title 'Strategy Legs' + current asset badge + 'N legs' counter, wrapped in data-tour=\"strategy-legs\"",
     "status": "working",
     "evidence": "bundle string: Strategy Legs · Phase 2 item 4 (08 Sep 2026): header with the strategy name, asset chip, draft chip and \"N legs · expiries\" sub-info; unit builder.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Price-mode toggle 'Live price' ↔ 'Custom price'",
     "how": "Pill button toggles CG.analyse.mode; live mode re-quotes every leg from CG.quote on each tick (cells flash, title 'Price updated by live feed'); custom mode turns the Price column into editable inputs (title 'Click to edit custom price'). Tooltips: 'Live prices from Delta Exchange (auto-updated). Paper trade will use these prices.' / 'Static/custom prices (editable). Paper trade will use your entered prices.'; shows 'Connecting...' when the live feed is off",
     "status": "working",
-    "evidence": "bundle strings: ● Live Price, ✎ Custom Price, ○ Connecting..., Price updated by live feed, Click to edit custom price · Phase 2 item 4 (08 Sep 2026): \"● Live prices\" ↔ \"Custom prices\" toggle per asset (priceMode); unit builder.test.tsx HC-TR-024, e2e analyse.spec.ts HC-TR-009 · Phase 3 item 1 (08 Sep 2026): Live / custom price mode carries into the trade: custom prices are the entry premiums (TradeFlow.tsx); unit trading.test.tsx"
+    "evidence": "bundle strings: ● Live Price, ✎ Custom Price, ○ Connecting..., Price updated by live feed, Click to edit custom price · Phase 2 item 4 (08 Sep 2026): \"● Live prices\" ↔ \"Custom prices\" toggle per asset (priceMode); unit builder.test.tsx HC-TR-024, e2e desk.spec.ts HC-TR-009 · Phase 3 item 1 (08 Sep 2026): Live / custom price mode carries into the trade: custom prices are the entry premiums (TradeFlow.tsx); unit trading.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Basket switch",
     "how": "Switch with tooltip 'Basket on: quantity and custom-price changes apply to every leg' / 'Basket off: each leg keeps its own quantity and price'; when on, a qty or custom-price edit on one leg is applied to all legs",
     "status": "working",
     "evidence": "bundle strings: Basket, Basket on:…, Basket off:… · Phase 2 item 4 (08 Sep 2026): Basket switch applies lots / custom price to every leg; unit builder.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "New button",
     "how": "Resets the builder (legs, name, edited strategy, price mode) and toasts 'New strategy'",
     "status": "working",
-    "evidence": "bundle string: New · Phase 2 item 4 (08 Sep 2026): New resets legs, name and draft link; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-020"
+    "evidence": "bundle string: New · Phase 2 item 4 (08 Sep 2026): New resets legs, name and draft link; unit builder.test.tsx, e2e desk.spec.ts HC-TR-020"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Clear button",
     "how": "Removes all legs (toast 'Cleared'); toasts 'No legs · Nothing to clear' when empty",
     "status": "working",
     "evidence": "bundle string: Clear · Phase 2 item 4 (08 Sep 2026): Clear removes every leg (toast); unit builder.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Strategy name input 'Strategy name...'",
     "how": "Bound to CG.analyse.name; typing marks the strategy dirty; shows the status badge + id of the strategy being edited",
     "status": "working",
-    "evidence": "bundle string: Strategy name... · Phase 2 item 4 (08 Sep 2026): \"Untitled strategy\" name input (Enter saves); unit builder.test.tsx, e2e analyse.spec.ts HC-TR-020"
+    "evidence": "bundle string: Strategy name... · Phase 2 item 4 (08 Sep 2026): \"Untitled strategy\" name input (Enter saves); unit builder.test.tsx, e2e desk.spec.ts HC-TR-020"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Legs table columns Side / Type / Strike / Expiry / Qty / Unit / Price / Action",
     "how": "Rendered from CG.analyse.legs; Strike carries an (ATM)/(ITM)/(OTM) tag computed against the live spot; Expiry shows the contract code or 'Perpetual' for futures; Unit is LOTS",
     "status": "working",
-    "evidence": "bundle strings: Side, Type, Strike, Expiry, Unit, Price, Action, (ATM), (ITM), (OTM) · Phase 2 item 4 (08 Sep 2026): legs table Side · Instrument (strike C/P or perpetual, expiry, days, moneyness) · Lots · IV · Price · Δ · Θ/d · ✕ (columns collapsed per ADR-023); unit builder.test.tsx, visual analyse-builder / analyse-templates / analyse-greeks"
+    "evidence": "bundle strings: Side, Type, Strike, Expiry, Unit, Price, Action, (ATM), (ITM), (OTM) · Phase 2 item 4 (08 Sep 2026): legs table Side · Instrument (strike C/P or perpetual, expiry, days, moneyness) · Lots · IV · Price · Δ · Θ/d · ✕ (columns collapsed per ADR-023); unit builder.test.tsx, visual desk-builder / desk-templates / desk-greeks"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Side badge click toggles BUY ↔ SELL",
     "how": "Clicking the BUY/SELL badge flips the leg side and emits analyse:legs-changed; disabled (with tooltip) on legs of an already-active strategy",
     "status": "working",
-    "evidence": "bundle strings: badge-buy, badge-sell, SELL · Phase 2 item 4 (08 Sep 2026): side badge click toggles BUY ↔ SELL; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-009"
+    "evidence": "bundle strings: badge-buy, badge-sell, SELL · Phase 2 item 4 (08 Sep 2026): side badge click toggles BUY ↔ SELL; unit builder.test.tsx, e2e desk.spec.ts HC-TR-009"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Type badge CALL / PUT / FUTURE + ADJUSTMENT badge + Closed badge",
     "how": "Coloured type badge; adjustment legs show a purple ADJUSTMENT badge; squared-off legs show 'Closed' and a dimmed row",
     "status": "working",
     "evidence": "bundle strings: CALL, FUTURE, Closed · Phase 2 item 4 (08 Sep 2026): type shown in the instrument cell (C / P / perpetual symbol); ADJUSTMENT / Closed badges arrive with Phase 3; unit builder.test.tsx · Phase 3 item 1 (08 Sep 2026): type shown per leg, adjustment badge and closed state in Details (StrategyDetailsDialog.tsx); unit trading.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Qty input (lots)",
     "how": "Number input per leg; change updates leg.lots (or every leg when Basket is on), recomputes Net Premium / Margin and emits analyse:legs-changed",
     "status": "working",
-    "evidence": "bundle strings: Qty, Quantity · Phase 2 item 4 (08 Sep 2026): lots stepper on the chain presets plus a typed integer input; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-011 · ADR-028 (08 Sep 2026): default 100 lots like the reference site; presets 1..1000 unchanged; unit legs.test.ts, store.test.ts"
+    "evidence": "bundle strings: Qty, Quantity · Phase 2 item 4 (08 Sep 2026): lots stepper on the chain presets plus a typed integer input; unit builder.test.tsx, e2e desk.spec.ts HC-TR-011 · ADR-028 (08 Sep 2026): default 100 lots like the reference site; presets 1..1000 unchanged; unit legs.test.ts, store.test.ts"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Live price cell (mono) with tick flash",
     "how": "On every CG 'tick' the mark price from CG.quote is written into the cell with a green/red flash animation",
     "status": "working",
     "evidence": "bundle strings: Live price from Delta Exchange, Price updated by live feed · Phase 2 item 4 (08 Sep 2026): live price cell follows the feed mark (no tick flash: GAPS #33); unit builder.test.tsx · Phase 2 close-out (08 Sep 2026): live price cell flashes green / red for 800 ms on a tick (PriceCell in BuilderPanel.tsx); unit builder.test.tsx HC-TR-012"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Delete this leg action",
     "how": "Trash icon (title 'Delete this leg') removes the leg from the builder",
     "status": "working",
-    "evidence": "bundle string: Delete this leg · Phase 2 item 4 (08 Sep 2026): delete this leg; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-013"
+    "evidence": "bundle string: Delete this leg · Phase 2 item 4 (08 Sep 2026): delete this leg; unit builder.test.tsx, e2e desk.spec.ts HC-TR-013"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Square off this leg action (active strategies)",
     "how": "When the builder holds an active PAPER/LIVE strategy the action column shows a square-off icon (title 'Square off this leg') that opens the Square Off Position dialog",
     "status": "working",
-    "evidence": "bundle string: Square off this leg · Phase 3 item 1 (08 Sep 2026): Square off per open leg from Details (SquareOffDialog.tsx); api strategies.test.ts HC-TR-079, unit trading.test.tsx, e2e analyse.spec.ts HC-TR-022"
+    "evidence": "bundle string: Square off this leg · Phase 3 item 1 (08 Sep 2026): Square off per open leg from Details (SquareOffDialog.tsx); api strategies.test.ts HC-TR-079, unit trading.test.tsx, e2e desk.spec.ts HC-TR-022"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Select from Chain button",
     "how": "Opens the 'Select Option from Chain' modal (title 'Select option from live options chain', data-tour=\"add-leg-button\"); disabled with title 'Maximum 8 fresh legs reached' / 'Maximum 10 active legs reached' when the limit is hit; the dialog lists every listed strike of the expiry by default (±12 / All control and strike count above the table, ATM row centred; GAPS #123)",
     "status": "working",
-    "evidence": "bundle strings: Select from Chain, Select option from live options chain, Maximum 8 fresh legs reached, Maximum 10 active legs reached · Phase 2 item 4 (08 Sep 2026): Select from chain opens the chain picker; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-027 · 26 Sep 2026 (GAPS #123): every strike by default in the picker; unit builder.test.tsx HC-TR-027 (row count, ±12 / All), e2e analyse.spec.ts HC-TR-027 (full recorded ladder)"
+    "evidence": "bundle strings: Select from Chain, Select option from live options chain, Maximum 8 fresh legs reached, Maximum 10 active legs reached · Phase 2 item 4 (08 Sep 2026): Select from chain opens the chain picker; unit builder.test.tsx, e2e desk.spec.ts HC-TR-027 · 26 Sep 2026 (GAPS #123): every strike by default in the picker; unit builder.test.tsx HC-TR-027 (row count, ±12 / All), e2e desk.spec.ts HC-TR-027 (full recorded ladder)"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "+ Future button (Add Futures Contract)",
     "how": "Opens the Add Futures Contract dialog; same leg-limit disabling as Select from Chain; 'Leg limit reached' hint appears when full",
     "status": "working",
-    "evidence": "bundle strings: Future, Add Futures Contract, Leg limit reached · Phase 2 item 4 (08 Sep 2026): + Future opens the Add Futures Contract dialog; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-035"
+    "evidence": "bundle strings: Future, Add Futures Contract, Leg limit reached · Phase 2 item 4 (08 Sep 2026): + Future opens the Add Futures Contract dialog; unit builder.test.tsx, e2e desk.spec.ts HC-TR-035"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Leg limits: 8 legs for a new strategy, 10 active legs when editing an active one",
     "how": "T.addLeg / analyse:addLeg enforce the limits and toast 'Limit Reached · Maximum 8 legs allowed for new strategy' or 'Limit Reached · Maximum 10 active legs allowed per strategy'",
     "status": "working",
     "evidence": "bundle strings: Limit Reached, Maximum 8 legs allowed for new strategy, Maximum 10 active legs allowed per strategy · Phase 2 item 3 (07 Sep 2026): chain-side limit + add path (legs.test.ts, store.test.ts); the Builder half arrives with item 4 · Phase 2 item 4 (08 Sep 2026): 8 legs for a new strategy (\"N of 8 slots left\"), 10 active (MAX_ACTIVE_LEGS); unit builder.test.tsx + legs.test.ts"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Legs added from the options chain (CG event analyse:addLeg)",
     "how": "Chain B/S clicks emit analyse:addLeg; the builder normalises the leg (price from CG.quote, symbol, lots), appends it, toasts 'Leg Added' and emits analyse:legs-changed + cg-tour:leg-added",
     "status": "working",
     "evidence": "bundle strings: Leg Added, cg-tour-set-tab · Phase 2 item 3 (07 Sep 2026): chain-side limit + add path (legs.test.ts, store.test.ts); the Builder half arrives with item 4"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Footer stats 'Net Premium: +$x Credit / −$x Debit' and 'Margin: $x'",
     "how": "Computed with CG.analyze on the open legs; refreshed on every tick and every legs change; formatted with CG.fmt.money (INR toggle aware)",
     "status": "working",
-    "evidence": "bundle strings: Net Premium:, Margin: · Phase 2 item 4 (08 Sep 2026): ticket: premium at mark (credit / debit, per unit), margin est., P&L at target, POP · R:R; unit builder.test.tsx, visual analyse-builder / analyse-templates / analyse-greeks"
+    "evidence": "bundle strings: Net Premium:, Margin: · Phase 2 item 4 (08 Sep 2026): ticket: premium at mark (credit / debit, per unit), margin est., P&L at target, POP · R:R; unit builder.test.tsx, visual desk-builder / desk-templates / desk-greeks"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Save Draft / Update button",
     "how": "Save Draft opens the Save-as-Draft dialog; when a saved strategy is loaded the button reads 'Update' and saves directly (toast 'Saved'), guarded by 'No changes · No new or modified legs to save' and 'No legs · Add at least one leg'",
     "status": "working",
-    "evidence": "bundle strings: Save Draft, Update, No changes, No new or modified legs to save, No legs, Add at least one leg, Saved · Phase 2 item 4 (08 Sep 2026): Save draft / Update (drafts in the UI store, ADR-023); unit builder.test.tsx, e2e analyse.spec.ts HC-TR-020 · Phase 3 item 1 (08 Sep 2026): Save draft / Update through POST / PATCH /v1/strategies (ADR-024); api strategies.test.ts, unit builder.test.tsx"
+    "evidence": "bundle strings: Save Draft, Update, No changes, No new or modified legs to save, No legs, Add at least one leg, Saved · Phase 2 item 4 (08 Sep 2026): Save draft / Update (drafts in the UI store, ADR-023); unit builder.test.tsx, e2e desk.spec.ts HC-TR-020 · Phase 3 item 1 (08 Sep 2026): Save draft / Update through POST / PATCH /v1/strategies (ADR-024); api strategies.test.ts, unit builder.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Save & trade button",
     "how": "Opens the name dialog ('Enter Strategy Name' / Save & Continue), saves the draft, then opens Select Trading Mode for it",
     "status": "working",
     "evidence": "bundle string: 💹 Save & Trade · Phase 2 item 4 (08 Sep 2026): Save & trade saves the draft and points to Phase 3 trading; unit builder.test.tsx · Phase 3 item 1 (08 Sep 2026): replaced by Paper trade / Live trade buttons (HC-TR-022, 023)"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Paper Trade button (primary, data-tour=\"paper-trade-button\")",
     "how": "Guard 'No legs · Add at least one leg to trade'; if the strategy is unnamed opens 'Enter Strategy Name' first (emits cg-tour:save-dialog-open), then Select Trading Mode (paper preselected) → Trade Preview → start",
     "status": "working",
-    "evidence": "bundle strings: Paper Trade, Add at least one leg to trade, save-dialog, trade-modal · Phase 3 item 1 (08 Sep 2026): Paper trade button opens Select Trading Mode → Trade Preview → start (TradeFlow.tsx); unit trading.test.tsx, e2e analyse.spec.ts HC-TR-022, visual analyse-trade-mode / analyse-paper / analyse-details"
+    "evidence": "bundle strings: Paper Trade, Add at least one leg to trade, save-dialog, trade-modal · Phase 3 item 1 (08 Sep 2026): Paper trade button opens Select Trading Mode → Trade Preview → start (TradeFlow.tsx); unit trading.test.tsx, e2e desk.spec.ts HC-TR-022, visual desk-trade-mode / desk-paper / desk-details"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Live Trade button",
     "how": "Same flow as Paper Trade with the Live card preselected; live confirm is blocked until the exchange is connected",
     "status": "working",
     "evidence": "bundle string: Live Trade · Phase 3 item 1 (08 Sep 2026): Live trade button opens the same flow; Continue · Live is disabled until item 2 places venue orders (note in the dialog); unit trading.test.tsx · Phase 3 item 2 (08 Sep 2026): Continue · Live enabled once the exchange is connected; the live path previews against the venue before placing; unit trading-live.test.tsx HC-TR-055"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Empty state 'No legs added'",
     "how": "Icon + 'No legs added' + 'Start building your strategy by adding option or futures legs' + buttons 'Select from Options Chain' and 'USD Future' + 'Or use strategy templates below' (link to the Templates sub-tab)",
     "status": "working",
-    "evidence": "bundle strings: No legs added, Start building your strategy by adding option or futures legs, Select from Options Chain, USD Future, Or use strategy templates below · Phase 2 item 4 (08 Sep 2026): empty state \"No legs added\" with Select from chain / Browse templates; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-020"
+    "evidence": "bundle strings: No legs added, Start building your strategy by adding option or futures legs, Select from Options Chain, USD Future, Or use strategy templates below · Phase 2 item 4 (08 Sep 2026): empty state \"No legs added\" with Select from chain / Browse templates; unit builder.test.tsx, e2e desk.spec.ts HC-TR-020"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Asset switch clears legs after confirmation",
     "how": "On CG 'asset' event with legs present a confirm 'Switch asset to X? · Changing the asset will clear the current strategy legs.' is shown; confirming clears the builder and re-targets templates to the new asset",
     "status": "inferred",
     "evidence": "reconstructed from the builder being asset-scoped · Phase 2 item 4 (08 Sep 2026): legs and Builder meta are kept per asset (ADR-010 / ADR-022, GAPS #3 closed); unit store.test.ts"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Expiry follows the workspace expiry strip",
     "how": "CG 'expiry' event updates CG.analyse.expiry and the template expiry select",
     "status": "working",
     "evidence": "workspace contract · Phase 2 item 4 (08 Sep 2026): templates and the chain picker default to the workspace expiry; unit builder.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Option from Chain (modal)",
+    "route": "/desk",
+    "screen": "Desk · Select Option from Chain (modal)",
     "feature": "Modal header 'Select Option from Chain' · 'BTC • Spot: $79,521.000' + 'Maximum N legs' badge",
     "how": "XL modal; spot from CG.ASSETS, refreshed on tick; the max badge shows the remaining leg slots (8 − legs, or 10 − active legs for adjustments)",
     "status": "working",
-    "evidence": "bundle strings: Select Option from Chain, • Spot:, Maximum, leg · Phase 2 item 4 (08 Sep 2026): \"Select Option from Chain\" header with asset • Spot and the \"Maximum N more legs\" badge (ChainPickerDialog.tsx); unit builder.test.tsx, e2e analyse.spec.ts HC-TR-027"
+    "evidence": "bundle strings: Select Option from Chain, • Spot:, Maximum, leg · Phase 2 item 4 (08 Sep 2026): \"Select Option from Chain\" header with asset • Spot and the \"Maximum N more legs\" badge (ChainPickerDialog.tsx); unit builder.test.tsx, e2e desk.spec.ts HC-TR-027"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Option from Chain (modal)",
+    "route": "/desk",
+    "screen": "Desk · Select Option from Chain (modal)",
     "feature": "Expiry chips row with ‹ › scroll buttons",
     "how": "All CG.EXPIRIES as chips; the active chip is blue; clicking re-renders the chain for that expiry; arrows scroll the strip",
     "status": "working",
     "evidence": "screenshot feature-strategy-builder · Phase 2 item 4 (08 Sep 2026): expiry chips row (native overflow scroll, no ‹ › buttons: GAPS #33); unit builder.test.tsx · Phase 2 close-out (08 Sep 2026): chain-picker expiry row uses ExpiryStrip with ‹ › on overflow; unit ExpiryStrip.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Option from Chain (modal)",
+    "route": "/desk",
+    "screen": "Desk · Select Option from Chain (modal)",
     "feature": "Live / Static toggle",
     "how": "Toggles live refresh of the modal chain on tick; title 'Click to enable live prices' when off",
     "status": "working",
     "evidence": "bundle strings: Live, Static, Click to enable live prices, Connecting"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Option from Chain (modal)",
+    "route": "/desk",
+    "screen": "Desk · Select Option from Chain (modal)",
     "feature": "Column settings gear",
     "how": "Opens a dropdown (menu-label 'Column settings') with checkboxes for Mark (Price/IV), Bid (Price/IV) and OI columns on both sides",
     "status": "working",
     "evidence": "bundle string: Column settings"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Option from Chain (modal)",
+    "route": "/desk",
+    "screen": "Desk · Select Option from Chain (modal)",
     "feature": "Calls | STRIKE | Puts table (Mark, Bid, OI per side)",
     "how": "41 strikes from CG.chain: Mark and Bid show price + IV, OI shows compact numbers with proportional background bars (green calls / red puts); ITM cells are tinted; the ATM row is highlighted with an 'ATM' tag; sticky headers; auto-scrolls to ATM",
     "status": "working",
     "evidence": "bundle strings: Mark (Price/IV), Bid (Price/IV), OI, STRIKE, Price · Phase 2 item 4 (08 Sep 2026): Calls | Strike | Puts table with Mark / IV and OI per side, ATM band; unit builder.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Option from Chain (modal)",
+    "route": "/desk",
+    "screen": "Desk · Select Option from Chain (modal)",
     "feature": "B / S buttons per row and side (multi-select)",
     "how": "B selects a BUY leg, S a SELL leg; clicking the same button again deselects, clicking the other side switches side; selection is capped at 'Maximum N leg(s)' with toast 'Maximum legs reached'",
     "status": "working",
-    "evidence": "bundle strings: Click B to Buy or S to Sell • Select multiple legs, Maximum legs reached · Phase 2 item 4 (08 Sep 2026): B / S per row and side, multi-select, second click deselects; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-027"
+    "evidence": "bundle strings: Click B to Buy or S to Sell • Select multiple legs, Maximum legs reached · Phase 2 item 4 (08 Sep 2026): B / S per row and side, multi-select, second click deselects; unit builder.test.tsx, e2e desk.spec.ts HC-TR-027"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Option from Chain (modal)",
+    "route": "/desk",
+    "screen": "Desk · Select Option from Chain (modal)",
     "feature": "Selected legs list with Qty input and Unit select (LOTS), remove ✕, Clear",
     "how": "Each selected leg shows side/type badges, strike, expiry, mark price, 'Qty:' number input and 'Unit' select; Clear empties the selection",
     "status": "working",
     "evidence": "bundle strings: Qty:, Unit, Clear · Phase 2 item 4 (08 Sep 2026): selected list with Qty (lots), remove ✕ and Clear; unit builder.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Option from Chain (modal)",
+    "route": "/desk",
+    "screen": "Desk · Select Option from Chain (modal)",
     "feature": "'Add N Leg(s)' and 'Close' buttons; footer hint",
     "how": "Add pushes the selected legs into the builder (or into the adjustment flow) with limit checks and closes the modal; hint 'Click B to Buy or S to Sell • Select multiple legs'",
     "status": "working",
-    "evidence": "bundle strings: Add, Leg, Close · Phase 2 item 4 (08 Sep 2026): \"Add N Legs\" / Close and the footer hint; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-027"
+    "evidence": "bundle strings: Add, Leg, Close · Phase 2 item 4 (08 Sep 2026): \"Add N Legs\" / Close and the footer hint; unit builder.test.tsx, e2e desk.spec.ts HC-TR-027"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Add Futures Contract (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Add Futures Contract (dialog)",
     "feature": "Add Futures Contract dialog",
     "how": "Shows 'USD Future' with the asset future symbol and live spot (updates on tick), Side buttons 'Buy Future' / 'Sell Future', Expiry select (Perpetual + all expiries), Quantity (lots) with lot-size hint, Price and Notional rows, Cancel / Add",
     "status": "working",
-    "evidence": "bundle strings: Add Futures Contract, USD Future, Buy Future, Sell Future, Expiry, Side · Phase 2 item 4 (08 Sep 2026): Add Futures Contract dialog: side, lots, live spot (FutureDialog.tsx); unit builder.test.tsx, e2e analyse.spec.ts HC-TR-035 · ADR-060 (10 Sep 2026): a template may hold a future leg placed the same way (materialiseTemplate: spot → PERP, no strike; `no-spot` refusal); unit templates.test.ts"
+    "evidence": "bundle strings: Add Futures Contract, USD Future, Buy Future, Sell Future, Expiry, Side · Phase 2 item 4 (08 Sep 2026): Add Futures Contract dialog: side, lots, live spot (FutureDialog.tsx); unit builder.test.tsx, e2e desk.spec.ts HC-TR-035 · ADR-060 (10 Sep 2026): a template may hold a future leg placed the same way (materialiseTemplate: spot → PERP, no strike; `no-spot` refusal); unit templates.test.ts"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Save dialog",
+    "route": "/desk",
+    "screen": "Desk · Save dialog",
     "feature": "Save as Draft / Enter Strategy Name dialog (data-tour=\"save-dialog\")",
     "how": "Input 'Strategy name...' (Enter saves, Escape cancels); validation 'Strategy name is required'; buttons Cancel / 'Save Draft' (data-tour=\"save-button\") or 'Save & Continue' in the trade flow; creates or updates the entry in CG.mock.strategies with status DRAFT and toasts 'Saved'",
     "status": "working",
-    "evidence": "bundle strings: Save as Draft, Enter Strategy Name, Strategy name..., Enter, Escape, Cancel, Save Draft, Save & Continue, Saving..., Saved · Phase 2 item 4 (08 Sep 2026): Save draft dialog with name validation (SaveDraftDialog.tsx); unit builder.test.tsx, e2e analyse.spec.ts HC-TR-020 · Phase 3 item 1 (08 Sep 2026): Enter Strategy Name step when trading an unnamed Builder strategy (SaveDraftDialog intent trade); unit trading.test.tsx"
+    "evidence": "bundle strings: Save as Draft, Enter Strategy Name, Strategy name..., Enter, Escape, Cancel, Save Draft, Save & Continue, Saving..., Saved · Phase 2 item 4 (08 Sep 2026): Save draft dialog with name validation (SaveDraftDialog.tsx); unit builder.test.tsx, e2e desk.spec.ts HC-TR-020 · Phase 3 item 1 (08 Sep 2026): Enter Strategy Name step when trading an unnamed Builder strategy (SaveDraftDialog intent trade); unit trading.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "Category chips All / Bullish / Bearish / Neutral / Others",
     "how": "Filters the template cards (48 since ADR-060) by category",
     "status": "working",
-    "evidence": "bundle strings: Bullish, Bearish, Neutral, Others · Phase 2 item 4 (08 Sep 2026): category chips All / Bullish / Bearish / Neutral / Others; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-040 · ADR-060 (10 Sep 2026): the chips filter the catalogue of 48 (count from TEMPLATE_COUNT, never a literal); unit builder.test.tsx"
+    "evidence": "bundle strings: Bullish, Bearish, Neutral, Others · Phase 2 item 4 (08 Sep 2026): category chips All / Bullish / Bearish / Neutral / Others; unit builder.test.tsx, e2e desk.spec.ts HC-TR-040 · ADR-060 (10 Sep 2026): the chips filter the catalogue of 48 (count from TEMPLATE_COUNT, never a literal); unit builder.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "Template expiry select",
     "how": "Chooses which expiry the template legs are materialised on (defaults to the workspace expiry)",
     "status": "working",
     "evidence": "bundle: expiry select next to the category chips · Phase 2 item 4 (08 Sep 2026): template expiry select (defaults to the workspace expiry); unit builder.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "Template cards (48 since ADR-060) with payoff sketch",
     "how": "Each card draws a small SVG payoff (CG.analyze at expiry, or the target-date curve for calendars) coloured by category, plus name and category label; title tooltip shows the description",
     "status": "working",
-    "evidence": "bundle strings: Buy Call … Reverse Jade Lizard (28 names) · Phase 2 item 4 (08 Sep 2026): 28 template cards with an SVG payoff sketch (templates.ts + TemplatesPanel.tsx); unit templates.test.ts + builder.test.tsx, e2e analyse.spec.ts HC-TR-040, visual analyse-builder / analyse-templates / analyse-greeks · ADR-060 (10 Sep 2026): catalogue of 48 with Long / Short Perp, Covered Call, Protective Put, Collar, Covered Put, Synthetic Straddle, back and ratio spreads 1x2, diagonals, double diagonal, calendar strangle, broken-wing butterflies, risk reversal, ladders; tags badge (futures · calendar · ratio) after the leg count; the sketch draws a future as a line through spot; unit templates.test.ts (tags match the legs, every futures template materialises at the spot, name codes) + templates.invariants.test.ts (every template's textbook shape: bounds, break-evens, outlook on a Black-76 ladder); e2e analyse.spec.ts and visual.spec.ts count from TEMPLATE_COUNT"
+    "evidence": "bundle strings: Buy Call … Reverse Jade Lizard (28 names) · Phase 2 item 4 (08 Sep 2026): 28 template cards with an SVG payoff sketch (templates.ts + TemplatesPanel.tsx); unit templates.test.ts + builder.test.tsx, e2e desk.spec.ts HC-TR-040, visual desk-builder / desk-templates / desk-greeks · ADR-060 (10 Sep 2026): catalogue of 48 with Long / Short Perp, Covered Call, Protective Put, Collar, Covered Put, Synthetic Straddle, back and ratio spreads 1x2, diagonals, double diagonal, calendar strangle, broken-wing butterflies, risk reversal, ladders; tags badge (futures · calendar · ratio) after the leg count; the sketch draws a future as a line through spot; unit templates.test.ts (tags match the legs, every futures template materialises at the spot, name codes) + templates.invariants.test.ts (every template's textbook shape: bounds, break-evens, outlook on a Black-76 ladder); e2e desk.spec.ts and visual.spec.ts count from TEMPLATE_COUNT"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "Template click loads legs into the Builder",
     "how": "CG.analyse.legs = CG.templateLegs(tpl, asset, expiry), name = template name, switches to Builder and toasts 'Strategy · Loaded strategy: <name>'",
     "status": "working",
-    "evidence": "bundle string: Loaded strategy: · Phase 2 item 4 (08 Sep 2026): template click places legs on the venue ladder around ATM (ADR-023) and names the strategy; unit templates.test.ts + builder.test.tsx, e2e analyse.spec.ts HC-TR-040 · ADR-027 (08 Sep 2026): templates strip under the Builder legs, one click loads (Bullish / Bearish / Neutral / Others, expiry select, persisted collapse); unit builder.test.tsx, e2e analyse.spec.ts HC-TR-040 strip · ADR-060 (10 Sep 2026): futures templates load at the live spot; a missing spot shows \"Spot not loaded yet\"; e2e analyse.spec.ts HC-TR-040"
+    "evidence": "bundle string: Loaded strategy: · Phase 2 item 4 (08 Sep 2026): template click places legs on the venue ladder around ATM (ADR-023) and names the strategy; unit templates.test.ts + builder.test.tsx, e2e desk.spec.ts HC-TR-040 · ADR-027 (08 Sep 2026): templates strip under the Builder legs, one click loads (Bullish / Bearish / Neutral / Others, expiry select, persisted collapse); unit builder.test.tsx, e2e desk.spec.ts HC-TR-040 strip · ADR-060 (10 Sep 2026): futures templates load at the live spot; a missing spot shows \"Spot not loaded yet\"; e2e desk.spec.ts HC-TR-040"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "My Templates: Draft Strategies | Archived Strategies toggle",
     "how": "Line-tabs switch the list between CG.mock.strategies with status DRAFT and ARCHIVED",
     "status": "working",
     "evidence": "bundle strings: My Templates, Draft Strategies, Archived Strategies · Phase 2 item 4 (08 Sep 2026): My templates: Draft strategies | Archived strategies; unit builder.test.tsx · Phase 3 item 1 (08 Sep 2026): My templates reads GET /v1/strategies (drafts | archived); unit builder.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "Search 'Search draft strategies...' / 'Search archived strategies...' with clear ✕",
     "how": "Filters by name, asset or template name; ✕ clears",
     "status": "working",
     "evidence": "bundle string: Search ${tab} strategies... · Phase 2 item 4 (08 Sep 2026): search with clear ✕; unit builder.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "Strategies list refreshes itself (no Refresh strategies button)",
     "how": "The strategies list is a TanStack query: it is refetched after every mutation on this device (save, activate, archive, delete, trade) and when the My templates list mounts after its 15 s stale time; the app does not refetch on window focus, so a draft saved on another device appears on the next mutation or mount here. The Paper and Live panels keep their own Refresh for the exchange-side read. The original's 'Refresh strategies' button and its toast are not reproduced",
     "status": "working",
@@ -345,400 +345,400 @@
     "test": "unit (web)"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "Saved strategy card (name, 'Draft' / 'Archived' badge, asset, N legs, template, created/closed date, realized P&L for archived)",
     "how": "Rendered from CG.mock.strategies; archived cards also show whether they were Paper or Live",
     "status": "working",
-    "evidence": "bundle strings: 💾 Saved, 📦 Archive, legs · Phase 2 item 4 (08 Sep 2026): saved strategy card: name, Draft / Archived badge, asset, legs, template, created / closed; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-044 · Phase 3 item 1 (08 Sep 2026): saved strategy card from the API: name, Draft / Archived, asset, legs, template, created / closed, was paper; unit builder.test.tsx"
+    "evidence": "bundle strings: 💾 Saved, 📦 Archive, legs · Phase 2 item 4 (08 Sep 2026): saved strategy card: name, Draft / Archived badge, asset, legs, template, created / closed; unit builder.test.tsx, e2e desk.spec.ts HC-TR-044 · Phase 3 item 1 (08 Sep 2026): saved strategy card from the API: name, Draft / Archived, asset, legs, template, created / closed, was paper; unit builder.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "Load action",
     "how": "Loads the strategy legs into the Builder (edit mode → button reads Update) and toasts 'Loaded strategy: <name>'; 'No legs' toast if the strategy has none",
     "status": "working",
-    "evidence": "bundle string: Loaded strategy: · Phase 2 item 4 (08 Sep 2026): Load; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-044 · Phase 3 item 1 (08 Sep 2026): Load pulls the server legs into the Builder (serverLegToLocal); unit builder.test.tsx"
+    "evidence": "bundle string: Loaded strategy: · Phase 2 item 4 (08 Sep 2026): Load; unit builder.test.tsx, e2e desk.spec.ts HC-TR-044 · Phase 3 item 1 (08 Sep 2026): Load pulls the server legs into the Builder (serverLegToLocal); unit builder.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "Activate action (drafts)",
     "how": "Opens Select Trading Mode for the draft; on confirm the strategy becomes PAPER or LIVE with toast 'Paper/Live Trading Started · Trading <name> on Delta Exchange India'",
     "status": "working",
     "evidence": "bundle strings: Trading Started, Trading ${name} on ${broker} · Phase 3 item 1 (08 Sep 2026): Activate on a draft starts the trade flow (HC-TR-046); unit trading.test.tsx HC-TR-046"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "Archive action (drafts)",
     "how": "Sets status ARCHIVED, toast 'Archived · <name> moved to Archived Strategies'",
     "status": "inferred",
     "evidence": "Archived Strategies list exists in the bundle · Phase 2 item 4 (08 Sep 2026): Archive / Restore; unit builder.test.tsx · Phase 3 item 1 (08 Sep 2026): Archive / Restore through POST /v1/strategies/:id/archive|restore; api strategies.test.ts, unit builder.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "Delete action with confirm",
     "how": "Confirm 'Delete Strategy · Are you sure you want to delete <name>? This action cannot be undone.' → removes from CG.mock.strategies, toast 'Deleted'",
     "status": "working",
-    "evidence": "bundle strings: Delete Strategy, Are you sure you want to delete, ? This action cannot be undone., Deleting..., Delete · Phase 2 item 4 (08 Sep 2026): Delete with inline confirm; unit builder.test.tsx, e2e analyse.spec.ts HC-TR-044 · Phase 3 item 1 (08 Sep 2026): Delete with inline confirm through DELETE /v1/strategies/:id; api strategies.test.ts, unit trading.test.tsx HC-TR-065"
+    "evidence": "bundle strings: Delete Strategy, Are you sure you want to delete, ? This action cannot be undone., Deleting..., Delete · Phase 2 item 4 (08 Sep 2026): Delete with inline confirm; unit builder.test.tsx, e2e desk.spec.ts HC-TR-044 · Phase 3 item 1 (08 Sep 2026): Delete with inline confirm through DELETE /v1/strategies/:id; api strategies.test.ts, unit trading.test.tsx HC-TR-065"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "Empty states",
     "how": "'No draft strategies · Create a strategy to see it here' and 'No archived strategies · Archived strategies will appear here'; 'No matching strategies' when a search has no hits",
     "status": "working",
     "evidence": "bundle: empty-state branch per tab · Phase 2 item 4 (08 Sep 2026): empty states for drafts and archived lists; unit builder.test.tsx · Phase 3 item 1 (08 Sep 2026): empty states for drafts, archived and the Paper tab; unit builder.test.tsx, unit trading.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Trading Mode (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Select Trading Mode (dialog)",
     "feature": "Mode cards 'Paper · Simulated' and 'Live · Real Money' (data-tour=\"trade-modal\")",
     "how": "Click selects the mode; Paper is disabled for 'Trade All → Live' and 'Go Live' flows",
     "status": "working",
-    "evidence": "bundle strings: Paper, Live, Select Trading Mode · Phase 3 item 1 (08 Sep 2026): Paper · Simulated and Live · Real money cards with fee estimates (TradeModeDialog.tsx); unit trading.test.tsx, e2e analyse.spec.ts HC-TR-022, visual analyse-trade-mode / analyse-paper / analyse-details"
+    "evidence": "bundle strings: Paper, Live, Select Trading Mode · Phase 3 item 1 (08 Sep 2026): Paper · Simulated and Live · Real money cards with fee estimates (TradeModeDialog.tsx); unit trading.test.tsx, e2e desk.spec.ts HC-TR-022, visual desk-trade-mode / desk-paper / desk-details"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Trading Mode (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Select Trading Mode (dialog)",
     "feature": "Exchange select 'Select exchange...'",
     "how": "Lists CG.mock.brokers as 'Delta Exchange India · Fee 0.05% · GST 18% · Cap 10%'; default broker preselected; validation 'Please select an exchange'",
     "status": "working",
     "evidence": "CG.mock.brokers fee / GST / cap fields · Phase 3 item 1 (08 Sep 2026): exchange select from the user's brokers with fee / GST / cap; unit trading.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Trading Mode (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Select Trading Mode (dialog)",
     "feature": "Not Connected warning + Open API Settings",
     "how": "When Live is selected and CG.state.exchangeConnected is false: 'Not Connected · Connect your exchange in Settings → API Settings to enable live trading' with a button calling CG.chrome.openSettings('api') (toast fallback); the confirm button is disabled",
     "status": "working",
     "evidence": "bundle strings: not available, Trade Failed, Settings → API Settings · Phase 3 item 1 (08 Sep 2026): Not Connected warning with Open API Settings when Live is chosen without a credential; unit trading.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Trading Mode (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Select Trading Mode (dialog)",
     "feature": "Real Money Trading warning",
     "how": "Red alert 'Real Money Trading · Orders will be placed on Delta Exchange with real funds. Prices may differ from estimates. You may lose money.' shown when Live is selected",
     "status": "working",
     "evidence": "bundle: live warning copy · Phase 3 item 1 (08 Sep 2026): Real Money Trading warning on the Live card; unit trading.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Trading Mode (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Select Trading Mode (dialog)",
     "feature": "Confirm button 'Continue · Paper' / 'Continue · Live' (data-tour=\"trade-confirm-button\")",
     "how": "Runs the plan quota check then opens Trade Preview; emits cg-tour:trade-modal-open when the dialog opens",
     "status": "working",
-    "evidence": "bundle strings: trade-confirm-button, trade-modal · Phase 3 item 1 (08 Sep 2026): Continue · Paper / Continue · Live with the exchange validation; unit trading.test.tsx, e2e analyse.spec.ts HC-TR-022"
+    "evidence": "bundle strings: trade-confirm-button, trade-modal · Phase 3 item 1 (08 Sep 2026): Continue · Paper / Continue · Live with the exchange validation; unit trading.test.tsx, e2e desk.spec.ts HC-TR-022"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Trading Mode (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Select Trading Mode (dialog)",
     "feature": "Plan quota check (Upgrade Required)",
     "how": "Compares CG.mock.subscription.usage.paper_trading / live_trading with featureLimits (0 = unlimited); when exceeded calls CG.chrome.upgradeRequired('Paper Trading Limit reached for your plan') or toasts 'Upgrade Required … Subscribe Here → /subscription'; usage counters are incremented on every started trade",
     "status": "working",
     "evidence": "bundle strings: Upgrade Required, Limit Exceeded, Subscribe Here →, quota"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Trade Preview (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Trade Preview (dialog)",
     "feature": "Trade Preview · Review your strategy before trading",
     "how": "Legs table (Side, Type, Strike, Expiry, Qty, Price), 'Net Premium: Credit/Debit $x', 'Current BTC Price', 'Expected Required Margin', exchange name, red warning for live ('You are about to trade this strategy. Orders will be placed on Delta Exchange. Prices may differ from displayed estimates. Ensure you have sufficient margin.'), Cancel / 'Trade Now →'",
     "status": "working",
-    "evidence": "bundle strings: Expected Required Margin, Current Price, Net Premium · Phase 3 item 1 (08 Sep 2026): Trade Preview: legs, value, fee per leg, net premium, you will pay / receive, spot, margin est. (TradePreviewDialog.tsx); unit trading.test.tsx, e2e analyse.spec.ts HC-TR-022, visual analyse-trade-mode / analyse-paper / analyse-details · ADR-029 (08 Sep 2026): exchange margin in use shown in the preview (no pre-trade estimate at Delta); unit trading-live.test.tsx"
+    "evidence": "bundle strings: Expected Required Margin, Current Price, Net Premium · Phase 3 item 1 (08 Sep 2026): Trade Preview: legs, value, fee per leg, net premium, you will pay / receive, spot, margin est. (TradePreviewDialog.tsx); unit trading.test.tsx, e2e desk.spec.ts HC-TR-022, visual desk-trade-mode / desk-paper / desk-details · ADR-029 (08 Sep 2026): exchange margin in use shown in the preview (no pre-trade estimate at Delta); unit trading-live.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Trade Preview (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Trade Preview (dialog)",
     "feature": "Trade Now → starts the trade",
     "how": "Unnamed strategies get the 'Enter Strategy Name' dialog first; then the strategy is created/updated in CG.mock.strategies with status PAPER or LIVE (entry = current mark or custom prices, startedAt now, P&L 0, live orders filled), toast 'Paper Trade Started · <name>' or 'Live Orders Placed', builder cleared, left tab switched to Paper/Live Trades and cg-tour:paper-started emitted",
     "status": "working",
-    "evidence": "bundle strings: Paper Trade Started, Live Orders Placed, market_order, call_options, put_options, perpetual_futures · Phase 3 item 1 (08 Sep 2026): Trade now creates / updates the draft and POSTs /start with the live marks as entries; api strategies.test.ts HC-TR-050..057, unit trading.test.tsx, e2e analyse.spec.ts HC-TR-022"
+    "evidence": "bundle strings: Paper Trade Started, Live Orders Placed, market_order, call_options, put_options, perpetual_futures · Phase 3 item 1 (08 Sep 2026): Trade now creates / updates the draft and POSTs /start with the live marks as entries; api strategies.test.ts HC-TR-050..057, unit trading.test.tsx, e2e desk.spec.ts HC-TR-022"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Paper Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
     "feature": "Toolbar: search 'Search paper trades...', Refresh, 'Trade All → Live'",
     "how": "Search filters by name/asset/template; Refresh toasts 'Refreshed · Strategy data has been updated'; Trade All opens Select Trading Mode locked to Live with all paper strategies as a batch (guard 'No legs · Add at least one leg to trade')",
     "status": "working",
-    "evidence": "bundle strings: Paper Trades, Refreshed, Error in Trade All: · Phase 3 item 1 (08 Sep 2026): Paper tab toolbar: search, sort, Refresh, Trade All → Live (disabled until item 2) (PaperPanel.tsx); unit trading.test.tsx, visual analyse-trade-mode / analyse-paper / analyse-details"
+    "evidence": "bundle strings: Paper Trades, Refreshed, Error in Trade All: · Phase 3 item 1 (08 Sep 2026): Paper tab toolbar: search, sort, Refresh, Trade All → Live (disabled until item 2) (PaperPanel.tsx); unit trading.test.tsx, visual desk-trade-mode / desk-paper / desk-details"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Paper Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
     "feature": "Total P&L summary",
     "how": "Sum of live totalPnl over paper strategies, green/red, with counts of trades and active legs; updated on every tick",
     "status": "working",
     "evidence": "panel summary · Phase 3 item 1 (08 Sep 2026): Total P&L, Day P&L and price-feed strip; unit trading.test.tsx, unit paper.test.ts"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Paper Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
     "feature": "Paper strategy card",
     "how": "Name, 'Paper (hollow pill)' badge, asset chip, N legs, N active, N days (from startedAt), Total P&L (data-tour=\"paper-pnl\" on the first card) with Unrealized / Realized small values; live-updated on tick",
     "status": "working",
-    "evidence": "bundle strings: 📄 Paper, legs, days · Phase 3 item 1 (08 Sep 2026): paper strategy card: name, pill, asset, open / total legs, days, template, P&L, sparkline, leg chips; unit trading.test.tsx, visual analyse-trade-mode / analyse-paper / analyse-details"
+    "evidence": "bundle strings: 📄 Paper, legs, days · Phase 3 item 1 (08 Sep 2026): paper strategy card: name, pill, asset, open / total legs, days, template, P&L, sparkline, leg chips; unit trading.test.tsx, visual desk-trade-mode / desk-paper / desk-details"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Paper Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
     "feature": "Live P&L computation",
     "how": "On each tick every open leg is re-priced with CG.quote (mark, or bid/ask when CG.state.pnlBasis ≠ 'mark'); P&L = (current − entry) × lots × lotSize × (BUY ? 1 : −1); squared-off legs contribute realized P&L",
     "status": "working",
     "evidence": "bundle: livePnL hook, pnlBasis setting · Phase 3 item 1 (08 Sep 2026): live P&L from the gateway marks per leg (usePaper.ts, paper.ts); unit paper.test.ts, unit trading.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Paper Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
     "feature": "View Details button",
     "how": "Opens the Strategy Details modal",
     "status": "working",
-    "evidence": "bundle: Strategy Details · Phase 3 item 1 (08 Sep 2026): Details opens the Strategy Details dialog; unit trading.test.tsx, e2e analyse.spec.ts HC-TR-022"
+    "evidence": "bundle: Strategy Details · Phase 3 item 1 (08 Sep 2026): Details opens the Strategy Details dialog; unit trading.test.tsx, e2e desk.spec.ts HC-TR-022"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Paper Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
     "feature": "Go live button",
     "how": "Opens Select Trading Mode locked to Live for that strategy; on confirm the paper strategy is converted to LIVE with filled orders",
     "status": "working",
-    "evidence": "bundle: tradingMode LIVE conversion · Phase 3 item 1 (08 Sep 2026): Go live button present, disabled until item 2; unit trading.test.tsx · Phase 3 item 2 (08 Sep 2026): Go live opens the trade flow locked to Live → exchange preview (contracts, marks, notional, wallet, safeguards) → live/place with an idempotency key; unit trading-live.test.tsx, e2e analyse.spec.ts HC-TR-063, visual analyse-live-preview-*.png"
+    "evidence": "bundle: tradingMode LIVE conversion · Phase 3 item 1 (08 Sep 2026): Go live button present, disabled until item 2; unit trading.test.tsx · Phase 3 item 2 (08 Sep 2026): Go live opens the trade flow locked to Live → exchange preview (contracts, marks, notional, wallet, safeguards) → live/place with an idempotency key; unit trading-live.test.tsx, e2e desk.spec.ts HC-TR-063, visual desk-live-preview-*.png"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Paper Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
     "feature": "Stop button (data-tour=\"paper-stop\")",
     "how": "Opens the Stop Paper Trading dialog",
     "status": "working",
-    "evidence": "bundle string: Stop Paper Trading · Phase 3 item 1 (08 Sep 2026): Stop opens Stop Paper Trading from the card; unit trading.test.tsx HC-TR-064, e2e analyse.spec.ts HC-TR-022"
+    "evidence": "bundle string: Stop Paper Trading · Phase 3 item 1 (08 Sep 2026): Stop opens Stop Paper Trading from the card; unit trading.test.tsx HC-TR-064, e2e desk.spec.ts HC-TR-022"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Paper Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
     "feature": "Delete button with confirm",
     "how": "'Delete Strategy · Are you sure you want to delete <name>? This action cannot be undone.' → removed from CG.mock.strategies",
     "status": "working",
     "evidence": "bundle strings: Delete Strategy, Deleting... · Phase 3 item 1 (08 Sep 2026): Delete with inline confirm; unit trading.test.tsx HC-TR-065"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Paper Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
     "feature": "Pagination 'Page 1 of 1' with Previous / Next",
     "how": "5 strategies per page",
     "status": "working",
     "evidence": "bundle strings: Page, Previous, Next · Phase 3 item 1 (08 Sep 2026): pagination 10 per page with Previous / Next (PaperPanel.tsx)"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Paper Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
     "feature": "Empty state",
     "how": "'No paper trades yet · Click Paper Trade to begin' (or 'No matching paper trades' while searching)",
     "status": "working",
-    "evidence": "bundle empty-state · Phase 3 item 1 (08 Sep 2026): empty state \"No paper trades yet · Click Paper trade in the Builder to begin\"; unit trading.test.tsx, e2e analyse.spec.ts HC-TR-022"
+    "evidence": "bundle empty-state · Phase 3 item 1 (08 Sep 2026): empty state \"No paper trades yet · Click Paper trade in the Builder to begin\"; unit trading.test.tsx, e2e desk.spec.ts HC-TR-022"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy Details (modal)",
+    "route": "/desk",
+    "screen": "Desk · Strategy Details (modal)",
     "feature": "Header 'Strategy Details' + 'Paper (hollow pill)' / 'Live (filled pill, pulsing dot)' badge + asset + template",
     "how": "Hairline header with close ✕; LG modal",
     "status": "working",
-    "evidence": "screenshot feature-paper-trading · Phase 3 item 1 (08 Sep 2026): Details header: name, mode pill, asset, template, id, exchange (StrategyDetailsDialog.tsx); unit trading.test.tsx, e2e analyse.spec.ts HC-TR-022, visual analyse-trade-mode / analyse-paper / analyse-details"
+    "evidence": "screenshot feature-paper-trading · Phase 3 item 1 (08 Sep 2026): Details header: name, mode pill, asset, template, id, exchange (StrategyDetailsDialog.tsx); unit trading.test.tsx, e2e desk.spec.ts HC-TR-022, visual desk-trade-mode / desk-paper / desk-details"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy Details (modal)",
+    "route": "/desk",
+    "screen": "Desk · Strategy Details (modal)",
     "feature": "Name card with ASSET / LEGS / DAYS tiles",
     "how": "Days computed from startedAt (closedAt for archived)",
     "status": "working",
     "evidence": "screenshot feature-paper-trading · Phase 3 item 1 (08 Sep 2026): tiles Total P&L / Unrealised / Realised / Days; unit trading.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy Details (modal)",
+    "route": "/desk",
+    "screen": "Desk · Strategy Details (modal)",
     "feature": "'Paper / Live' row with Refresh and Stop (warning outline) / 'Live Trading' row with Square Off All",
     "how": "Refresh recalculates + toasts 'Refreshed'; Stop opens the Stop Paper Trading dialog; live strategies get a destructive Square Off All instead",
     "status": "working",
     "evidence": "bundle strings: Refresh, Stop, Live · Phase 3 item 1 (08 Sep 2026): Refresh and Stop (paper) / Square off all row of actions; unit trading.test.tsx · Phase 3 item 2 (08 Sep 2026): Live cards carry Sync (while orders are pending) and Square off all (reduce-only exits through Details); unit trading-live.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy Details (modal)",
+    "route": "/desk",
+    "screen": "Desk · Strategy Details (modal)",
     "feature": "+ Add Adjustment wide button",
     "how": "Opens Select Option from Chain with max = 10 − active legs (toast 'Limit Reached' at 10); selected legs are appended flagged isAdjustment (for LIVE strategies the Confirm Adjustment Order dialog is shown first); toast '<n> adjustment leg(s) added successfully'; the builder is synced to the strategy",
     "status": "working",
     "evidence": "bundle strings: adjustment leg added successfully, Maximum 10 active legs allowed per strategy · Phase 3 item 1 (08 Sep 2026): Add adjustment through the chain picker → POST /v1/strategies/:id/legs (max 10 open); api strategies.test.ts HC-TR-071, unit trading.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy Details (modal)",
+    "route": "/desk",
+    "screen": "Desk · Strategy Details (modal)",
     "feature": "Partial Exit and Square Off All buttons",
     "how": "Partial Exit opens the Partial Exit dialog; Square Off All confirms and squares off every open leg at current prices (live strategies are archived afterwards, button shows 'Exiting...')",
     "status": "working",
     "evidence": "bundle: Partial Exit, Square Off All · Phase 3 item 1 (08 Sep 2026): Partial exit and Square off all with inline confirm; api strategies.test.ts, unit trading.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy Details (modal)",
+    "route": "/desk",
+    "screen": "Desk · Strategy Details (modal)",
     "feature": "Performance · Live with TOTAL / UNREALIZED / REALIZED",
     "how": "Tiles recomputed on every tick",
     "status": "working",
     "evidence": "screenshot feature-paper-trading · Phase 3 item 1 (08 Sep 2026): Total / Unrealised / Realised at live marks; unit paper.test.ts, unit trading.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy Details (modal)",
+    "route": "/desk",
+    "screen": "Desk · Strategy Details (modal)",
     "feature": "Tabs 'Active (n)' / 'Squared Off (n)'",
     "how": "Switch the leg list between open and squared-off legs with counts",
     "status": "working",
-    "evidence": "screenshot feature-paper-trading · Phase 3 item 1 (08 Sep 2026): Active (n) / Squared off (n) tabs; unit trading.test.tsx, e2e analyse.spec.ts HC-TR-022"
+    "evidence": "screenshot feature-paper-trading · Phase 3 item 1 (08 Sep 2026): Active (n) / Squared off (n) tabs; unit trading.test.tsx, e2e desk.spec.ts HC-TR-022"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy Details (modal)",
+    "route": "/desk",
+    "screen": "Desk · Strategy Details (modal)",
     "feature": "ADJUSTMENTS and ORIGINAL LEGS groups with leg cards",
     "how": "Cards show Adj badge, CALL/PUT, BUY/SELL, order status badge (live), Strike (4 decimals), Qty, Expiry ('25 Sep 26'), 'Entry $x Now y (live dot)' (live), P&L pill (↑/↓), 'Square Off' button; squared-off cards show Exit price and realized P&L",
     "status": "working",
     "evidence": "screenshot feature-paper-trading, bundle: SQUARED_OFF · Phase 3 item 1 (08 Sep 2026): Adjustments and Original legs groups with leg rows (entry → now, P&L, Square off); unit trading.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy Details (modal)",
+    "route": "/desk",
+    "screen": "Desk · Strategy Details (modal)",
     "feature": "P&L History mini chart",
     "how": "Inline SVG line/area from strategy.pnlHistory plus the current total, theme-aware colours",
     "status": "working",
     "evidence": "bundle: pnlHistory · Phase 3 item 1 (08 Sep 2026): P&L history chart from strategy_pnl points plus the live total (PnlChart); api strategies.test.ts pnl upsert · ADR-029 (08 Sep 2026): browser writer records today's point (usePnlWriter); unit usePnlWriter.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy Details (modal)",
+    "route": "/desk",
+    "screen": "Desk · Strategy Details (modal)",
     "feature": "Trading Statistics",
     "how": "Open Positions, Closed Positions, Total Legs, Days, Realized, Unrealized, Asset, Started",
     "status": "working",
     "evidence": "bundle string: Trading Statistics · Phase 3 item 1 (08 Sep 2026): Trading statistics row; unit trading.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy Details (modal)",
+    "route": "/desk",
+    "screen": "Desk · Strategy Details (modal)",
     "feature": "Draft / Archived variant",
     "how": "Non-active strategies show 'Load in Builder' and (drafts) 'Activate' instead of trading controls; Performance is labelled 'Final'",
     "status": "inferred",
     "evidence": "details reachable from the archived list · Phase 3 item 1 (08 Sep 2026): Draft / Archived variant: Load in builder, Activate (draft), Restore (archived), was paper tag (ADR-010); unit trading.test.tsx HC-TR-046"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Square Off Position (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Square Off Position (dialog)",
     "feature": "Square Off Position · Close this option leg",
     "how": "Position Details (Type + side, Strike Price, Quantity with lot size, Entry Premium); 'Exit Premium' input (placeholder 'Enter exit premium', or 'Leave empty for market' for live; hint 'Current market price or your desired exit price'); 'Exit Qty (max N)' input for partial square-off; Realized P&L preview (Entry Value, Exit Value, Net P&L) recomputed on input; warning 'This action cannot be undone. The position will be closed and P&L will be realized.'; Cancel / 'Confirm Square Off' ('Closing...') → leg (or a split portion) becomes SQUARED_OFF with exitPremium, toast 'Leg squared off successfully · Leg squared off at $x'",
     "status": "working",
-    "evidence": "bundle strings: Square Off Position, Close this option leg, Position Details, Strike Price, Quantity, Entry Premium, Exit Premium, Enter exit premium, Current market price or your desired exit price, Realized P&L, Entry Value, Exit Value, Net P&L, Closing..., Confirm Square Off, Leg squared off successfully, Leg squared off at $ · Phase 3 item 1 (08 Sep 2026): Square Off Position dialog: exit premium, exit qty (partial), realised preview → POST legs/:id/close; api strategies.test.ts, unit trading.test.tsx, e2e analyse.spec.ts HC-TR-022"
+    "evidence": "bundle strings: Square Off Position, Close this option leg, Position Details, Strike Price, Quantity, Entry Premium, Exit Premium, Enter exit premium, Current market price or your desired exit price, Realized P&L, Entry Value, Exit Value, Net P&L, Closing..., Confirm Square Off, Leg squared off successfully, Leg squared off at $ · Phase 3 item 1 (08 Sep 2026): Square Off Position dialog: exit premium, exit qty (partial), realised preview → POST legs/:id/close; api strategies.test.ts, unit trading.test.tsx, e2e desk.spec.ts HC-TR-022"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Partial Exit (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Partial Exit (dialog)",
     "feature": "Partial Exit · Select legs and choose exit percentage",
     "how": "Checkbox list of active legs with qty → exit qty preview and per-leg 'Exit$' price input (defaults to current); Exit % chips 25/50/75/100 + Custom input; 'Select All' / 'Deselect All'; 'Exit N legs' ('Exiting...') squares off round(qty × %) lots per selected leg (splitting the leg) and toasts 'Partial exit complete'",
     "status": "working",
     "evidence": "bundle strings: Select All, Deselect All, Exit %, Custom · Phase 3 item 1 (08 Sep 2026): Partial Exit dialog: leg checkboxes, 25 / 50 / 75 / 100 / custom %, per-leg exit price; api strategies.test.ts, unit trading.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Stop Paper Trading (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Stop Paper Trading (dialog)",
     "feature": "Stop Paper Trading · Choose what to do with this strategy",
     "how": "'Stop paper trading for this strategy:' summary card (name, Paper (hollow pill), Live Prices, Asset / Legs / P&L), 'Active Legs' list with live prices and Qty, green '✓ Using Live WebSocket Prices · Current market prices will be used for all legs when stopping' (or 'Connecting to Live Prices · Please wait while we fetch current market prices...' with the confirm disabled as 'Connecting...'), checkbox 'Archive this strategy · Move to archived strategies. Uncheck to keep it active for future use.' with hint texts, Cancel / 'Stop Trading' ('Stopping...') → legs squared off at current prices and status ARCHIVED, or status DRAFT when unchecked; toast 'Paper trading stopped'",
     "status": "working",
-    "evidence": "bundle strings: Stop Paper Trading, Choose what to do with this strategy, Stop paper trading for this strategy:, Active Legs, Using Live WebSocket Prices, Current market prices will be used for all legs when stopping, Connecting to Live Prices, Please wait while we fetch current market prices..., Archive this strategy, Move to archived strategies. Uncheck to keep it active for future use., Stop Trading, Stopping..., Waiting for live prices..., Connecting... · Phase 3 item 1 (08 Sep 2026): Stop Paper Trading: archive with legs closed at live prices or keep as draft → POST /stop; api strategies.test.ts HC-TR-081, unit trading.test.tsx, e2e analyse.spec.ts HC-TR-022"
+    "evidence": "bundle strings: Stop Paper Trading, Choose what to do with this strategy, Stop paper trading for this strategy:, Active Legs, Using Live WebSocket Prices, Current market prices will be used for all legs when stopping, Connecting to Live Prices, Please wait while we fetch current market prices..., Archive this strategy, Move to archived strategies. Uncheck to keep it active for future use., Stop Trading, Stopping..., Waiting for live prices..., Connecting... · Phase 3 item 1 (08 Sep 2026): Stop Paper Trading: archive with legs closed at live prices or keep as draft → POST /stop; api strategies.test.ts HC-TR-081, unit trading.test.tsx, e2e desk.spec.ts HC-TR-022"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Live Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Live Trades panel",
     "feature": "Toolbar: search 'Search live trades...', Refresh, exchange connection chip",
     "how": "Search filters live strategies; Refresh toasts 'Refreshed'; chip shows 'exchange connected' / 'exchange not connected' from CG.state.exchangeConnected",
     "status": "working",
-    "evidence": "bundle string: Live Trades · Phase 3 item 2 (08 Sep 2026): Live tab is the shared list (PaperPanel kind=live) with search, Refresh and the exchange connection chip; unit trading-live.test.tsx, visual analyse-live-*.png · ADR-026 (08 Sep 2026): net-positions table above the live cards (venue positions, asset filter, tick to analyse, Exit / Exit all); unit pane-follow.test.tsx"
+    "evidence": "bundle string: Live Trades · Phase 3 item 2 (08 Sep 2026): Live tab is the shared list (PaperPanel kind=live) with search, Refresh and the exchange connection chip; unit trading-live.test.tsx, visual desk-live-*.png · ADR-026 (08 Sep 2026): net-positions table above the live cards (venue positions, asset filter, tick to show in the pane, Exit / Exit all); unit pane-follow.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Live Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Live Trades panel",
     "feature": "Total P&L summary (live)",
     "how": "Sum of LIVE strategies' total P&L with counts of trades and open positions, updated on tick",
     "status": "working",
     "evidence": "panel summary · Phase 3 item 2 (08 Sep 2026): Live tab P&L strip marks open live legs at the feed like paper; unit trading-live.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Live Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Live Trades panel",
     "feature": "Live strategy card with 'Live (filled pill, pulsing dot)' badge, batch id and per-leg order status chips",
     "how": "Chips 'S C 90,000 · filled' / pending / failed / closed per leg from strategy.orders",
     "status": "working",
     "evidence": "bundle strings: 🟢 Live, filled, pending, failed, Order Partially Failed · Phase 3 item 2 (08 Sep 2026): Live pill on the card, pulsing red count pill on the tab, per-leg order chips pending | filled | failed | closed with the venue error as tooltip; unit trading-live.test.tsx · ADR-026 (08 Sep 2026): clicking a live card follows it in the analysis pane; unit pane-follow.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Live Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Live Trades panel",
     "feature": "Failed order banner + 'Retry Failed Orders'",
     "how": "'Order placement failed · Retried n time(s)'; Retry shows 'Retrying...' and after 1s flips the failed orders to filled with new order ids and toasts 'Orders placed · Failed legs were submitted successfully.' (seeded on strategy s_310 added to CG.mock.strategies at init)",
     "status": "working",
     "evidence": "bundle strings: failed, Use retry or cancel., Order Partially Failed · Phase 3 item 2 (08 Sep 2026): Failed banner with leg count and retries, Retry Failed Orders → live/retry keeps the client order id; unit trading-live.test.tsx HC-TR-083 · ADR-029 (08 Sep 2026): pending orders are reconciled by the API in the background and the Live tab polls while pending; api live-cover.test.ts reconciler tests"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Live Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Live Trades panel",
     "feature": "View Details / Square Off All / Delete",
     "how": "Details opens the modal; Square Off All confirms 'Market orders will be placed on Delta Exchange to close all positions with full quantity.' → 'Exiting...' → all legs squared off at market and the strategy archived (toast 'Positions closed'); Delete confirms 'Delete <name>? This cannot be undone.'",
     "status": "working",
-    "evidence": "bundle: live square-off copy · Phase 3 item 2 (08 Sep 2026): Details, Square off all (archives the live strategy after the exits) and Delete on live cards; unit + e2e analyse.spec.ts HC-TR-063"
+    "evidence": "bundle: live square-off copy · Phase 3 item 2 (08 Sep 2026): Details, Square off all (archives the live strategy after the exits) and Delete on live cards; unit + e2e desk.spec.ts HC-TR-063"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Live Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Live Trades panel",
     "feature": "Pagination and empty state",
     "how": "'Page 1 of 1' with Previous / Next (5 per page); empty 'No live trades · Use Trade All → Live to place real orders on Delta Exchange.'",
     "status": "working",
     "evidence": "bundle strings: Page, Previous, Next · Phase 3 item 2 (08 Sep 2026): Pagination shared with the Paper tab; Live empty state explains how to go live; unit workspace.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Confirm Adjustment Order (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Confirm Adjustment Order (dialog)",
     "feature": "Confirm Adjustment Order · Live",
     "how": "Title with 'Live (filled pill, pulsing dot)' badge, legs table with Est. Price, 'Net Premium Credit/Debit', 'Est. premium received' / 'Est. cost', Expected Required Margin, warning 'These order(s) will be placed on the exchange with real funds at market. Fill prices may differ from the estimate above.', Cancel / 'Place Order' ('Placing...') → adjustment legs appended with filled orders",
     "status": "working",
     "evidence": "bundle: adjustment order confirmation copy · Phase 3 item 2 (08 Sep 2026): Adjustments on a live strategy stop at Confirm Adjustment Order before POST legs places the orders; unit trading-live.test.tsx HC-TR-088"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Trade All → Live",
+    "route": "/desk",
+    "screen": "Desk · Trade All → Live",
     "feature": "Batch live conversion of all paper strategies",
     "how": "Select Trading Mode (Live locked) → Trade Preview listing every open leg → all PAPER strategies become LIVE with filled orders, live usage bumped, toast 'Live Orders Placed · N strategies moved to live on Delta Exchange India', left tab switched to Live Trades",
     "status": "working",
     "evidence": "bundle strings: Error in Trade All:, Live Orders Placed · Phase 3 item 2 (08 Sep 2026): Trade All → Live opens a batch selector (open paper strategies ticked, one exchange, red warning) → live/batch, stops at the first refusal and names the strategy; unit trading-live.test.tsx HC-TR-089, API live-cover.test.ts"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · trading integration",
+    "route": "/desk",
+    "screen": "Desk · trading integration",
     "feature": "Shared state and events for the workspace / payoff parts",
     "how": "CG.analyse {legs, name, strategyId, asset, expiry, mode}; emits analyse:legs-changed (on structural and live price changes), analyse:set-tab, analyse:strategies-changed, cg-tour:leg-added / save-dialog-open / trade-modal-open / paper-started; listens to analyse:addLeg, analyse:tab, asset, expiry, tick, currency",
     "status": "working",
     "evidence": "workspace contract · Phase 2 item 4 (08 Sep 2026): useStrategyAnalysis shares legs, quotes, prices and the engine result between the Builder and the pane; unit analysis.test.tsx · Phase 3 item 1 (08 Sep 2026): strategies are one TanStack query shared by Builder, Templates, Paper tab, Details and the trade flow (lib/api/strategies.ts)"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · trading integration",
+    "route": "/desk",
+    "screen": "Desk · trading integration",
     "feature": "Currency toggle (USD / INR)",
     "how": "All prices and P&L use CG.fmt.money; re-rendered on the 'currency' event",
     "status": "working",
     "evidence": "CG.state.currency · Phase 2 item 4 (08 Sep 2026): see HC-WS-031; unit money.test.ts"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · trading integration",
-    "feature": "Fallback /analyse shell",
-    "how": "When the workspace part is absent a minimal section with Options Chain / Strategy / Paper Trades / Live Trades tabs hosts the three panels so the trading area stays testable; it removes itself if a real /analyse section is present at DOMContentLoaded",
+    "route": "/desk",
+    "screen": "Desk · trading integration",
+    "feature": "Fallback /desk shell",
+    "how": "When the workspace part is absent a minimal section with Options Chain / Strategy / Paper Trades / Live Trades tabs hosts the three panels so the trading area stays testable; it removes itself if a real /desk section is present at DOMContentLoaded",
     "status": "working",
-    "evidence": "build contract · Phase 2 close-out (08 Sep 2026): the /analyse shell code-splits the workspace behind a spinner (WorkspaceLoader.tsx); unit workspace.test.tsx"
+    "evidence": "build contract · Phase 2 close-out (08 Sep 2026): the /desk shell code-splits the workspace behind a spinner (WorkspaceLoader.tsx); unit workspace.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Legs table v2: Side pill, instrument in mono with sub-line, lots stepper, IV, price, per-leg Δ / Θ, ✕",
     "how": "Side = green BUY / red SELL pill (click toggles); instrument = mono symbol with a second line \"call · 19d · ATM · adj/closed\"; lots = − / input / + stepper (basket-aware); IV 1dp; price 1dp (flashes green/red on live ticks, editable in custom mode); Δ per contract and Θ per asset-unit per day signed by side (BUY theta red, SELL theta green); ✕ removes (square-off icon on active legs)",
     "status": "working",
@@ -746,17 +746,17 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Density-aware rows",
     "how": "Rows are 36px comfortable and 28px compact (sub-line hidden); reacts to CG.on(\"density\") and CG.state.density; the class trd-compact is applied to the panels, open dialogs and body",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · rows 28 px in compact via useDensity (data-density), instrument sub-line hidden",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e desk.spec.ts HC-TR-009 block · rows 28 px in compact via useDensity (data-density), instrument sub-line hidden",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Ticket block · Premium at mark",
     "how": "Net premium in currency for the lot size plus the per-asset-unit figure: \"465.5 / BTC × 0.010 BTC\" (credit shown green with +)",
     "status": "working",
@@ -764,26 +764,26 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Ticket block · Fees · est.",
     "how": "Per leg: notional × broker fee %, capped at cap % of premium (options), + GST; summed and shown with \"taker · N legs · Delta India 0.05% + GST\"; uses the broker selected in Select Trading Mode (default broker otherwise)",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · ticket-fees from feeFor (notional × fee %, option cap, GST) with the taker · N legs · exchange sub-line",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e desk.spec.ts HC-TR-009 block · ticket-fees from feeFor (notional × fee %, option cap, GST) with the taker · N legs · exchange sub-line",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Ticket block · Total debit / credit",
     "how": "|net premium| + fees for debits (\"= max loss · fees incl.\" when the debit equals the max loss) or net premium − fees for credits",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · ticket-total (data-kind debit / credit) = premium ± fees, \"= max loss · fees incl.\" when the debit equals the worst expiry loss (lib/strategy/analysis.ts ticketTotal)",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e desk.spec.ts HC-TR-009 block · ticket-total (data-kind debit / credit) = premium ± fees, \"= max loss · fees incl.\" when the debit equals the worst expiry loss (lib/strategy/analysis.ts ticketTotal)",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Ticket block · P&L at target",
     "how": "CG.analyze(legs, asset, {targetDays, min: target, max: target}) at CG.analyse.targetPrice / targetDays; sub-line shows the target price and date; recomputed on tick, legs-changed and analyse:target",
     "status": "working",
@@ -791,44 +791,44 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Ticket block · Margin est. with POP and R:R",
     "how": "CG.analyze margin, plus POP % and reward:risk (∞ when unlimited) as the sub-line",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · Margin est. tile with \"POP x% · R:R 1 : y\" as its sub-line (ticket-pop)",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e desk.spec.ts HC-TR-009 block · Margin est. tile with \"POP x% · R:R 1 : y\" as its sub-line (ticket-pop)",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Ticket block · Width",
     "how": "Max − min strike across option legs with \"N strikes · x% of spot\" (— for single-strike / futures-only)",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · ticket-width: max − min strike, N strikes · % of spot (lib/strategy/analysis.ts strategyWidth)",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e desk.spec.ts HC-TR-009 block · ticket-width: max − min strike, N strikes · % of spot (lib/strategy/analysis.ts strategyWidth)",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Net line under the legs",
     "how": "\"Lot = 0.001 BTC · Net debit 465.5 / BTC → $4.65 · Net Δ · Net Θ/day · Net ν/1%\" in mono, updated every tick",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · builder-netline: Lot · Net debit / credit per unit → currency · Net Δ · Net Θ/day · Net ν/1%",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e desk.spec.ts HC-TR-009 block · builder-netline: Lot · Net debit / credit per unit → currency · Net Δ · Net Θ/day · Net ν/1%",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Inline strategy name in the builder header",
     "how": "Name is an inline editable field next to the BUILDER label (Enter saves via saveCurrent); template / detected structure shown as a tag; asset · expiry · DTE on the right",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · strategy-structure tag (guessTemplateName) next to the inline name; strategy-expiry-line \"asset · expiry · DTE\" on the right",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e desk.spec.ts HC-TR-009 block · strategy-structure tag (guessTemplateName) next to the inline name; strategy-expiry-line \"asset · expiry · DTE\" on the right",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Builder toolbar restyle",
     "how": "Live price / Custom price pill (dot / square marker, no glyph emoji), Basket switch, New and Clear as ghost buttons; Save draft / Save & trade on the left, amber Paper trade (primary, kbd P) and outline Live trade on the right, margin est. footnote",
     "status": "working",
@@ -836,35 +836,35 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Keyboard: P = Paper trade",
-    "how": "Pressing P on /analyse with the builder visible and legs present (focus outside inputs, no dialog open) starts the paper-trade flow",
+    "how": "Pressing P on /desk with the builder visible and legs present (focus outside inputs, no dialog open) starts the paper-trade flow",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · window keydown P → openTrade when the Builder is visible with legs and no dialog / palette is open",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e desk.spec.ts HC-TR-009 block · window keydown P → openTrade when the Builder is visible with legs and no dialog / palette is open",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Builder)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Builder)",
     "feature": "Sub-tab info line",
     "how": "Builder | Templates tabs show \"N legs · 25 Sep 26 · 19d · status\" on the right (no duplicate lot/basis info)",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e analyse.spec.ts HC-TR-009 block · builder-subinfo \"N legs · expiry · DTE · draft | unsaved\"",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/BuilderPanel.tsx; unit builder.test.tsx; e2e desk.spec.ts HC-TR-009 block · builder-subinfo \"N legs · expiry · DTE · draft | unsaved\"",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "Recommended for outlook filter (Bullish / Bearish / Neutral / Volatile)",
     "how": "Each template is materialised at the current chain (CG.templateLegs + CG.analyze); Bullish = profits at +6% and not at −6%, Bearish mirrored, Neutral = profits at spot and less on both sides, Volatile = profits at ±14%; matches are ranked by POP × 0.6 + reward:risk × 0.4 and numbered #1…; note line \"6 of 28 templates profit in a bullish market…\"; Clear resets",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/TemplatesPanel.tsx + lib/strategy/useTemplateStats.ts (materialise + worker analyze per template, outlook from the payoff at ±6 %); template-outlook-* chips; unit builder.test.tsx; e2e analyse.spec.ts · ADR-060 (10 Sep 2026): the outlook of every template asserted at ±6 % in templates.invariants.test.ts",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): components/builder/TemplatesPanel.tsx + lib/strategy/useTemplateStats.ts (materialise + worker analyze per template, outlook from the payoff at ±6 %); template-outlook-* chips; unit builder.test.tsx; e2e desk.spec.ts · ADR-060 (10 Sep 2026): the outlook of every template asserted at ±6 % in templates.invariants.test.ts",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "POP and R:R on every template card",
     "how": "Computed with CG.analyze at the current asset / expiry (R:R ∞ when profit is unlimited, — when undefined); the card tooltip repeats them",
     "status": "working",
@@ -872,8 +872,8 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "Template sketch with green / red fills",
     "how": "Expiry payoff line in the foreground colour with the area above zero filled green and below zero red (clip paths), dashed zero line",
     "status": "working",
@@ -881,8 +881,8 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "Expiry selector with DTE",
     "how": "Template expiry select lists \"25 Sep 26 · 19d\" for each expiry",
     "status": "working",
@@ -890,8 +890,8 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy panel (Templates)",
+    "route": "/desk",
+    "screen": "Desk · Strategy panel (Templates)",
     "feature": "My Templates cards restyled",
     "how": "Hairline cards with mode pill, asset tag, mono meta line, Load / Activate / Archive / View Details / Delete",
     "status": "working",
@@ -899,8 +899,8 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Paper Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
     "feature": "Paper card redesign",
     "how": "Name + hollow PAPER pill + asset tag; meta: open/total legs, days, template, since date; P&L big mono with unrealised / realised small; sparkline of pnlHistory; leg chips (closed legs marked); actions Details · Set alert · Go live · Stop · Delete",
     "status": "working",
@@ -908,8 +908,8 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Paper Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
     "feature": "Sort control (P&L / Date / Name)",
     "how": "Select in the toolbar re-sorts the list (P&L desc, startedAt desc, name asc) and resets the page",
     "status": "working",
@@ -917,44 +917,44 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Paper Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
     "feature": "Summary strip: Total P&L · Day P&L · Net Δ · Margin used",
     "how": "Computed from CG.portfolio.compute() for PAPER strategies; margin shown against marginTotal with %; values update on every tick",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-051): PaperPanel strip: Total P&L · Day P&L · Net Δ (paper-net-delta) · Margin used (paper-margin-used) · Prices from usePortfolio; unit trading.test.tsx; e2e analyse.spec.ts HC-TR-022 block",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-051): PaperPanel strip: Total P&L · Day P&L · Net Δ (paper-net-delta) · Margin used (paper-margin-used) · Prices from usePortfolio; unit trading.test.tsx; e2e desk.spec.ts HC-TR-022 block",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Paper Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
     "feature": "Set alert on every paper card",
     "how": "Opens CG.alerts.openNew({type:\"pnl\", kind:\"pnl\", strategyId, name, asset}) when the chrome alerts engine exists, else the local mini-dialog",
     "status": "working",
-    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): PaperPanel card-alert \"Set alert\" → openAlerts({ kind: \"pnl\", strategyId, asset }); unit trading.test.tsx; e2e analyse.spec.ts alerts block",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): PaperPanel card-alert \"Set alert\" → openAlerts({ kind: \"pnl\", strategyId, asset }); unit trading.test.tsx; e2e desk.spec.ts alerts block",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Live Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Live Trades panel",
     "feature": "Live card redesign",
     "how": "Filled LIVE pill with pulsing dot, batch id tag, order-status chips (filled / pending / failed / closed), failed-order alert with Retry, sparkline, Square off all, Delete; toolbar with sort and exchange-connection tag",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-051): PaperPanel live card: filled LIVE pill, card-batch \"batch <last 6>\", order chips, failed banner + Retry, sparkline, Square off all; unit trading-live.test.tsx; e2e analyse.spec.ts HC-TR-063 block",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-051): PaperPanel live card: filled LIVE pill, card-batch \"batch <last 6>\", order chips, failed banner + Retry, sparkline, Square off all; unit trading-live.test.tsx; e2e desk.spec.ts HC-TR-063 block",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Live Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Live Trades panel",
     "feature": "Summary strip for live trades",
     "how": "Total P&L · Day P&L · Net Δ · Margin used from CG.portfolio (LIVE strategies), live on tick",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-051): PaperPanel live strip: Net Δ + Margin used against the exchange wallet balance (useLivePositions) with a share bar; e2e analyse.spec.ts HC-TR-063 block",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-051): PaperPanel live strip: Net Δ + Margin used against the exchange wallet balance (useLivePositions) with a share bar; e2e desk.spec.ts HC-TR-063 block",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Live Trades panel",
+    "route": "/desk",
+    "screen": "Desk · Live Trades panel",
     "feature": "Set alert on every live card",
     "how": "Same hook as the paper cards",
     "status": "working",
@@ -962,26 +962,26 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy Details (modal)",
+    "route": "/desk",
+    "screen": "Desk · Strategy Details (modal)",
     "feature": "Strategy Details restyle",
     "how": "Hairline header (micro label, name, pills, id, exchange), 6 tiles (Total P&L big, Unrealised, Realised, Days, Legs open/total, Margin est. + POP), actions row, leg rows (side pill, instrument + sub-line, lots, entry → now / exit, P&L pill, Square off), P&L history with axis labels, statistics grid, Close",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-051): StrategyDetailsDialog: six tiles (Total, Unrealised, Realised, Days · since, Legs open/total, Margin est. · POP); unit trading.test.tsx; e2e analyse.spec.ts",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-051): StrategyDetailsDialog: six tiles (Total, Unrealised, Realised, Days · since, Legs open/total, Margin est. · POP); unit trading.test.tsx; e2e desk.spec.ts",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy Details (modal)",
+    "route": "/desk",
+    "screen": "Desk · Strategy Details (modal)",
     "feature": "Payoff mini chart",
     "how": "CG.analyze on the open legs at their entry premiums: expiry curve, green / red fills, faint grid, amber spot marker, breakeven lines, max profit / loss end labels, x-axis prices; header line with max profit / max loss / BE / net Δ / Θ per day",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-051): StrategyDetailsDialog details-chart: PayoffChart on the open legs at their entry premiums (expiry line, fills, break-evens, spot); unit trading.test.tsx; e2e analyse.spec.ts",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-051): StrategyDetailsDialog details-chart: PayoffChart on the open legs at their entry premiums (expiry line, fills, break-evens, spot); unit trading.test.tsx; e2e desk.spec.ts",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy Details (modal)",
+    "route": "/desk",
+    "screen": "Desk · Strategy Details (modal)",
     "feature": "Set alert button",
     "how": "Opens the alerts hook for the strategy (active strategies)",
     "status": "working",
@@ -989,26 +989,26 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Strategy Details (modal)",
+    "route": "/desk",
+    "screen": "Desk · Strategy Details (modal)",
     "feature": "Journal section for archived strategies",
     "how": "Shows tags and notes; \"Open in Journal\" jumps to the Journal tab",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026): StrategyDetailsDialog details-journal block (tags, notes, \"Open in Journal\"); unit journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022",
+    "evidence": "Phase 5 item 1 (10 Sep 2026): StrategyDetailsDialog details-journal block (tags, notes, \"Open in Journal\"); unit journal-panel.test.tsx; e2e desk.spec.ts HC-TR-022",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Trading Mode (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Select Trading Mode (dialog)",
     "feature": "Two selectable mode cards",
     "how": "Paper (hollow pill, \"Simulated positions tracked at live market prices\") and Live (filled pill, \"Real money…\") cards with a check marker; each shows the fee estimate; Paper is disabled for Go live / Trade All",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): TradeModeDialog: filled Live pill, ✓ mode-check on the chosen card; e2e analyse.spec.ts HC-TR-022",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): TradeModeDialog: filled Live pill, ✓ mode-check on the chosen card; e2e desk.spec.ts HC-TR-022",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Trading Mode (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Select Trading Mode (dialog)",
     "feature": "Exchange fee summary",
     "how": "\"Delta India · fee 0.05% of notional · cap 10% of premium · GST 18% → est. $0.94 for 2 legs ($0.80 fee + $0.14 GST)\" recomputed when the exchange select changes; the chosen exchange feeds the builder ticket",
     "status": "working",
@@ -1016,8 +1016,8 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Trading Mode (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Select Trading Mode (dialog)",
     "feature": "Net premium in the summary",
     "how": "Credit / Debit shown next to legs, asset and price mode",
     "status": "working",
@@ -1025,8 +1025,8 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Trade Preview (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Trade Preview (dialog)",
     "feature": "Per-leg Value and Fee columns",
     "how": "Value = price × lots × lot size; Fee = per-leg fee + GST",
     "status": "working",
@@ -1034,8 +1034,8 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Trade Preview (dialog)",
+    "route": "/desk",
+    "screen": "Desk · Trade Preview (dialog)",
     "feature": "Fee estimate line and You will pay / receive",
     "how": "Fees · est. with the fee formula and a bold \"You will pay\" (debit + fees) or \"You will receive\" (credit − fees) summary; Max loss shown when finite; mode pill",
     "status": "working",
@@ -1043,8 +1043,8 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Select Option from Chain (modal)",
+    "route": "/desk",
+    "screen": "Desk · Select Option from Chain (modal)",
     "feature": "Mirrored chain layout",
     "how": "Calls | Strike | Puts with Δ and OI outboard and Bid / Mark inboard (IV under each price), ITM 4.5% tint, OI bars growing toward the strike, amber ATM band, expiry strip with DTE, B/S buttons filled when selected, lot stepper in the selection list, column settings incl. Δ",
     "status": "working",
@@ -1052,98 +1052,98 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Journal panel",
+    "route": "/desk",
+    "screen": "Desk · Journal panel",
     "feature": "Journal tab panel",
     "how": "New .lp-panel[data-tab=\"journal\"] listing ARCHIVED strategies (newest close first) plus squared-off legs of active strategies; rendered on analyse:tab and after every strategies-changed",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png",
+    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e desk.spec.ts HC-TR-022 journal block; visual desk-journal-*.png",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Journal panel",
+    "route": "/desk",
+    "screen": "Desk · Journal panel",
     "feature": "Stats strip",
     "how": "Trades (wins · losses), Win rate, Avg P&L, Best, Worst, Profit factor (gross profit ÷ gross loss, ∞ when no losses) for the filtered trades",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png",
+    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e desk.spec.ts HC-TR-022 journal block; visual desk-journal-*.png",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Journal panel",
+    "route": "/desk",
+    "screen": "Desk · Journal panel",
     "feature": "Equity curve",
     "how": "SVG of cumulative realised P&L over closedAt starting at the first trade open; faint grid with $ labels, dashed zero, filled area, one dot per trade (hover title: name · P&L · date), emphasised endpoint with the net value; first / last date on the axis",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png",
+    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e desk.spec.ts HC-TR-022 journal block; visual desk-journal-*.png",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Journal panel",
+    "route": "/desk",
+    "screen": "Desk · Journal panel",
     "feature": "Filter chips and search",
     "how": "All / Paper / Live / Wins / Losses / BTC / ETH / XAUT chips plus a search over name, template, asset, tags and notes",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png",
+    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e desk.spec.ts HC-TR-022 journal block; visual desk-journal-*.png",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Journal panel",
+    "route": "/desk",
+    "screen": "Desk · Journal panel",
     "feature": "Tag editor per trade",
     "how": "Chips earnings / range / hedge toggle on click; custom tags via the \"+ custom\" input (Enter); custom chips remove with ×; stored on the strategy as tags[]; toasts Tag added / removed",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png",
+    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e desk.spec.ts HC-TR-022 journal block; visual desk-journal-*.png",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Journal panel",
+    "route": "/desk",
+    "screen": "Desk · Journal panel",
     "feature": "Notes per trade",
     "how": "Textarea stored as strategy.notes while typing; \"Notes saved\" toast on change",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png",
+    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e desk.spec.ts HC-TR-022 journal block; visual desk-journal-*.png",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Journal panel",
+    "route": "/desk",
+    "screen": "Desk · Journal panel",
     "feature": "Export CSV",
     "how": "Builds id,name,mode,asset,template,legs,opened,closed,days,realized_pnl,tags,notes for the filtered trades, copies to the clipboard (execCommand fallback) and toasts \"CSV copied · N rows\"; CG.trading.journalCsv() / CG.trading.lastCsv",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png · CSV goes to the clipboard (ADR-047)",
+    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e desk.spec.ts HC-TR-022 journal block; visual desk-journal-*.png · CSV goes to the clipboard (ADR-047)",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Journal panel",
+    "route": "/desk",
+    "screen": "Desk · Journal panel",
     "feature": "Row opens Strategy Details",
     "how": "Clicking a trade row or a closed-leg row opens Strategy Details for that strategy",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png",
+    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e desk.spec.ts HC-TR-022 journal block; visual desk-journal-*.png",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Journal panel",
+    "route": "/desk",
+    "screen": "Desk · Journal panel",
     "feature": "Empty state",
     "how": "\"No closed trades yet\" with an Open Paper trades button; per-filter empty states",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png",
+    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e desk.spec.ts HC-TR-022 journal block; visual desk-journal-*.png",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Journal panel",
+    "route": "/desk",
+    "screen": "Desk · Journal panel",
     "feature": "Journal fed by stop / square off",
     "how": "Stop (archive) and live Square off all archive the strategy with closedAt so it appears in the Journal immediately",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e analyse.spec.ts HC-TR-022 journal block; visual analyse-journal-*.png",
+    "evidence": "Phase 5 item 1 (10 Sep 2026): components/trading/JournalPanel.tsx + lib/strategy/journal.ts; unit journal.test.ts / journal-panel.test.tsx; e2e desk.spec.ts HC-TR-022 journal block; visual desk-journal-*.png",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · trading integration",
+    "route": "/desk",
+    "screen": "Desk · trading integration",
     "feature": "CG.portfolio aggregation",
     "how": "CG.portfolio = { compute(), strategyPnl(id), strategy(id), refresh(), cache }; compute() → { open, netDelta, netGamma, netTheta, netVega, marginUsed, marginTotal (wallet.available + marginUsed), dayPnl, unrealized, realized, openPnl, byStrategy:[{id,name,status,asset,pnl,unrealized,realized,dayPnl,delta,theta,gamma,vega,margin,openLegs,legs}], at } using CG.analyze(open legs at entry, asset) per PAPER/LIVE strategy (Greeks in asset units × lot); CG.emit(\"portfolio-changed\", data) after every mutation (renderAll) and once per tick",
     "status": "working",
@@ -1151,26 +1151,26 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · trading integration",
+    "route": "/desk",
+    "screen": "Desk · trading integration",
     "feature": "Alerts hook",
     "how": "openAlert(id) → CG.alerts.openNew({type:\"pnl\", kind:\"pnl\", strategyId, name, asset}) when the chrome engine exists; otherwise a local mini-dialog (condition ≥ / ≤, value) stores {id,type:\"pnl\",kind:\"pnl\",strategyId,name,op,value,armed,state,channels,createdAt} into CG.mock.alerts and a tick evaluator toasts and disarms when crossed; CG.portfolio.strategyPnl(id) returns the strategy total P&L for the engine",
     "status": "working",
-    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): The alerts engine exists (ADR-052): openAlerts prefill lands on the P&L form with the strategy chosen and its name snapshotted on save; unit alerts.test.tsx; e2e analyse.spec.ts",
+    "evidence": "Phase 5 item 2 (10 Sep 2026, ADR-052): The alerts engine exists (ADR-052): openAlerts prefill lands on the P&L form with the strategy chosen and its name snapshotted on save; unit alerts.test.tsx; e2e desk.spec.ts",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · trading integration",
+    "route": "/desk",
+    "screen": "Desk · trading integration",
     "feature": "Palette commands",
     "how": "If CG.palette.register exists: New strategy, Save draft, Paper trade current strategy, Open Paper trades, Open Live trades, Open Journal and Load template → … (28) are registered (group Trading / Templates); CG.trading.commands() exposes the same list",
     "status": "working",
-    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): CommandPalette act:builder-save (store.saveDraftRequest), act:builder-paper, act:open-paper / -live / -journal, plus act:template-* from ADR-049; unit shell.test.tsx; e2e analyse.spec.ts",
+    "evidence": "Phase 5 item 1 (10 Sep 2026, ADR-050): CommandPalette act:builder-save (store.saveDraftRequest), act:builder-paper, act:open-paper / -live / -journal, plus act:template-* from ADR-049; unit shell.test.tsx; e2e desk.spec.ts",
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · trading integration",
+    "route": "/desk",
+    "screen": "Desk · trading integration",
     "feature": "Design-system restyle",
     "how": "No hard-coded blues/purples/oranges, no card shadows, 4–6px radii, mono numbers, .micro labels, amber only on the primary action (Paper trade, Add legs, Continue, Trade now); SVG icons instead of emoji; hollow / filled mode pills",
     "status": "working",
@@ -1178,8 +1178,8 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · trading integration",
+    "route": "/desk",
+    "screen": "Desk · trading integration",
     "feature": "Broker selection shared with the ticket",
     "how": "CG.trading.setBroker(id) / the Select Trading Mode exchange select update the fee estimate in the builder ticket",
     "status": "working",
@@ -1187,19 +1187,19 @@
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Paper / Live tabs",
+    "route": "/desk",
+    "screen": "Desk · Paper / Live tabs",
     "feature": "Analysis pane follows the selected strategy card",
-    "how": "Clicking a paper or live card (Enter on focus) makes Payoff / Greeks / Ladder analyse its open legs at entry premiums; the first card of the tab is followed by default and a new trade is followed after Paper trade / Go live; a source bar names the followed strategy with Back to Builder",
+    "how": "Clicking a paper or live card (Enter on focus) makes Payoff / Greeks / Ladder show its open legs at entry premiums; the first card of the tab is followed by default and a new trade is followed after Paper trade / Go live; a source bar names the followed strategy with Back to Builder",
     "status": "working",
-    "evidence": "HapieCoin improvement over the reference site (ADR-026, 08 Sep 2026): store paneSource, useStrategyAnalysis(scope), PaneSourceBar; unit pane-follow.test.tsx, e2e analyse.spec.ts HC-TR-143",
+    "evidence": "HapieCoin improvement over the reference site (ADR-026, 08 Sep 2026): store paneSource, useStrategyAnalysis(scope), PaneSourceBar; unit pane-follow.test.tsx, e2e desk.spec.ts HC-TR-143",
     "new": true,
     "phase": 3
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Live tab",
-    "feature": "Net positions table from the exchange with tick-to-analyse",
+    "route": "/desk",
+    "screen": "Desk · Live tab",
+    "feature": "Net positions table from the exchange with tick-to-show",
     "how": "Position (side, strike, CE/PE, expiry), size in contracts, entry, mark, P&L at mark, asset filter BTC / ETH / XAUT, refresh; ticked rows are parsed from their Delta symbols and analysed in the pane",
     "status": "working",
     "evidence": "ADR-026 (08 Sep 2026): NetPositionsPanel, lib/strategy/positions.ts, positions payload with contractValue and mark; unit positions.test.ts, pane-follow.test.tsx, API live-cover.test.ts",
@@ -1207,8 +1207,8 @@
     "phase": 3
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Live tab",
+    "route": "/desk",
+    "screen": "Desk · Live tab",
     "feature": "Exit / Exit all on exchange positions",
     "how": "Per-row X and Exit all open a confirm listing the positions; reduce-only market orders through the executor; HapieCoin legs matching the symbol are squared off at the fill and an emptied strategy is archived; refused exits are reported per product",
     "status": "working",
@@ -1217,88 +1217,88 @@
     "phase": 3
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Builder",
+    "route": "/desk",
+    "screen": "Desk · Builder",
     "feature": "Leg checkbox: include / exclude a leg from the analysis",
     "how": "Per-leg checkbox and a master checkbox in the legs table; an unticked leg stays in the table (dimmed) but leaves the payoff, Greeks, ticket, drafts and trades; the sub-header shows '(N on)'",
     "status": "working",
-    "evidence": "Parity with the reference site's current legs table (ADR-028, 08 Sep 2026): StrategyLeg.enabled, activeLegs; unit legs.test.ts, builder.test.tsx HC-TR-146, e2e analyse.spec.ts HC-TR-009 block",
+    "evidence": "Parity with the reference site's current legs table (ADR-028, 08 Sep 2026): StrategyLeg.enabled, activeLegs; unit legs.test.ts, builder.test.tsx HC-TR-146, e2e desk.spec.ts HC-TR-009 block",
     "phase": 3,
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Builder",
+    "route": "/desk",
+    "screen": "Desk · Builder",
     "feature": "Per-leg type, strike and expiry editable in place",
     "how": "CE / PE toggle, strike select from that expiry's venue ladder, expiry select from the listed expiries; the symbol follows and the ladder's mark / IV replace the stored quote when available",
     "status": "working",
-    "evidence": "ADR-028 (08 Sep 2026): LegInstrument.tsx, setLegInstrument, useExpiries; unit legs.test.ts, builder.test.tsx HC-TR-147, e2e analyse.spec.ts HC-TR-009 block",
+    "evidence": "ADR-028 (08 Sep 2026): LegInstrument.tsx, setLegInstrument, useExpiries; unit legs.test.ts, builder.test.tsx HC-TR-147, e2e desk.spec.ts HC-TR-009 block",
     "phase": 3,
     "new": true
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Adjustment workbench",
+    "route": "/desk",
+    "screen": "Desk · Adjustment workbench",
     "status": "working",
     "phase": 5,
     "new": true,
     "feature": "Adjustment workbench (H2): position + ticket, live chain and the analysis pane after the change",
     "how": "Adjust on a paper / live card, Details → Adjust… or A on a focused card opens the workbench in the left pane; the pane follows the strategy and shows the position after the change; Exit discards the draft; under 720 px the columns stack with the footer in view",
-    "evidence": "ADR-044 (09 Sep 2026): AdjustWorkbench.tsx, PositionTicket.tsx, useAdjustWorkbench.ts, store openAdjust / closeAdjust / updateAdjust, Workspace left-pane swap; unit workbench.test.tsx, store.test.ts; e2e analyse.spec.ts HC-TR-148 block; visual analyse-workbench-{dark,light}; ADR-058 (11 Sep 2026): WorkbenchChain.tsx (H2 chain form, cap line, held pills), one-line legs with Close / undo in PositionTicket.tsx, footer tiles in AdjustWorkbench.tsx; unit workbench.test.tsx figures checklist; e2e analyse.spec.ts HC-TR-148 block (tiles, Close / undo); ADR-058 addenda (11 Sep 2026): lots-after orders under Proposed with Clear all, Exit and every other route out ask before discarding (store adjustDiscard / keepAdjust, hasAdjustWork), stacked layout under 720 px; unit workbench.test.tsx (cap, Details, plans blocks), store.test.ts; e2e analyse.spec.ts HC-TR-148 narrow test"
+    "evidence": "ADR-044 (09 Sep 2026): AdjustWorkbench.tsx, PositionTicket.tsx, useAdjustWorkbench.ts, store openAdjust / closeAdjust / updateAdjust, Workspace left-pane swap; unit workbench.test.tsx, store.test.ts; e2e desk.spec.ts HC-TR-148 block; visual desk-workbench-{dark,light}; ADR-058 (11 Sep 2026): WorkbenchChain.tsx (H2 chain form, cap line, held pills), one-line legs with Close / undo in PositionTicket.tsx, footer tiles in AdjustWorkbench.tsx; unit workbench.test.tsx figures checklist; e2e desk.spec.ts HC-TR-148 block (tiles, Close / undo); ADR-058 addenda (11 Sep 2026): lots-after orders under Proposed with Clear all, Exit and every other route out ask before discarding (store adjustDiscard / keepAdjust, hasAdjustWork), stacked layout under 720 px; unit workbench.test.tsx (cap, Details, plans blocks), store.test.ts; e2e desk.spec.ts HC-TR-148 narrow test"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Adjustment workbench",
+    "route": "/desk",
+    "screen": "Desk · Adjustment workbench",
     "status": "working",
     "phase": 5,
     "new": true,
     "feature": "Before → after strip, ghost curve and value at a chosen expiry",
     "how": "Max loss, max profit, POP and break-evens shown before → after over the payoff tiles; the previous payoff drawn dashed behind the new one; \"Value at\" chips per expiry of the combined position (default the nearest expiry, later legs keep time value; ADR-059): settled legs at intrinsic, later legs keep time value; a scenario slider values the position on any day up to the latest expiry",
-    "evidence": "ADR-044 (09 Sep 2026): packages/pricing analyze valuationMs + curveExtremes, useStrategyAnalysis adjusting mode, BeforeAfterStrip.tsx, payoffDraw ghost; unit strategy.test.ts (pricing), workbench.test.tsx, model.test.ts; e2e analyse.spec.ts HC-TR-148 block; scenario slider: PositionTicket.tsx, model isoDaysFrom / valuationMsOf (any ISO date), workbench.test.tsx HC-TR-153/154 block (PR A3); ADR-058 (11 Sep 2026): AdjustChangeBox.tsx + six before → after tiles in BeforeAfterStrip.tsx (ba-max-loss … ba-margin); unit workbench.test.tsx; e2e analyse.spec.ts"
+    "evidence": "ADR-044 (09 Sep 2026): packages/pricing analyze valuationMs + curveExtremes, useStrategyAnalysis adjusting mode, BeforeAfterStrip.tsx, payoffDraw ghost; unit strategy.test.ts (pricing), workbench.test.tsx, model.test.ts; e2e desk.spec.ts HC-TR-148 block; scenario slider: PositionTicket.tsx, model isoDaysFrom / valuationMsOf (any ISO date), workbench.test.tsx HC-TR-153/154 block (PR A3); ADR-058 (11 Sep 2026): AdjustChangeBox.tsx + six before → after tiles in BeforeAfterStrip.tsx (ba-max-loss … ba-margin); unit workbench.test.tsx; e2e desk.spec.ts"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Adjustment workbench",
+    "route": "/desk",
+    "screen": "Desk · Adjustment workbench",
     "status": "working",
     "phase": 5,
     "new": true,
     "feature": "Lots after editing in both places with netting: ADDS / TRIMS / CLOSES / FLIPS / NEW LEG",
     "how": "A lots now → after stepper on every open leg (fewer trims, 0 closes, more adds at the mark) and on every proposed row; B / S on a held strike adds to or trims it, on any other strike proposes a new leg; each row says its effect; ↑ ↓ b s B S Enter Esc on the chain",
-    "evidence": "ADR-044 (09 Sep 2026): lib/adjust/model.ts pickOnDraft / effects / afterLegs, ChainPickerBody.tsx (keyboard, held pills); unit model.test.ts, workbench.test.tsx; e2e analyse.spec.ts HC-TR-148 block; ADR-058 (11 Sep 2026): WorkbenchChain.tsx replaces the Builder picker in the workbench (same keyboard contract, held pill 10→0 on close); unit workbench.test.tsx"
+    "evidence": "ADR-044 (09 Sep 2026): lib/adjust/model.ts pickOnDraft / effects / afterLegs, ChainPickerBody.tsx (keyboard, held pills); unit model.test.ts, workbench.test.tsx; e2e desk.spec.ts HC-TR-148 block; ADR-058 (11 Sep 2026): WorkbenchChain.tsx replaces the Builder picker in the workbench (same keyboard contract, held pill 10→0 on close); unit workbench.test.tsx"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Adjustment workbench",
+    "route": "/desk",
+    "screen": "Desk · Adjustment workbench",
     "status": "working",
     "phase": 5,
     "new": true,
     "feature": "Change summary, cash and guard rails; Review → paper confirm with a reason; history, ADJUSTED badge and card figures",
     "how": "One line: max loss worsens / improves by X · you pay / receive Y · POP a% → b%; warnings for unlimited loss introduced, the 10-leg cap, 0-DTE legs and stale marks; the paper confirm lists the changes with before → after figures and an optional reason; Details shows the adjustment history, cards wear ADJUSTED and show combined max loss / profit / POP; \"Alert me if max loss exceeds X\" saved per strategy (stub, arms with Alerts)",
-    "evidence": "ADR-044 (09 Sep 2026): model.ts summarize / toBody, AdjustConfirmDialog.tsx (paper), StrategyDetailsDialog history + AdjustedBadge, CardFigures.tsx, API /adjust (PR A1); unit model.test.ts, workbench.test.tsx, trading.test.tsx; e2e analyse.spec.ts HC-TR-148 block; visual analyse-adjust-confirm-{dark,light}; alert stub: store riskAlerts (persisted), AdjustWorkbench footer, store.test.ts, workbench.test.tsx (PR A3); ADR-058 (11 Sep 2026): the alert stub is replaced by a P&L alert line that opens the Alerts center pre-filled (openAlerts kind pnl); unit workbench.test.tsx HC-TR-153/154 block"
+    "evidence": "ADR-044 (09 Sep 2026): model.ts summarize / toBody, AdjustConfirmDialog.tsx (paper), StrategyDetailsDialog history + AdjustedBadge, CardFigures.tsx, API /adjust (PR A1); unit model.test.ts, workbench.test.tsx, trading.test.tsx; e2e desk.spec.ts HC-TR-148 block; visual desk-adjust-confirm-{dark,light}; alert stub: store riskAlerts (persisted), AdjustWorkbench footer, store.test.ts, workbench.test.tsx (PR A3); ADR-058 (11 Sep 2026): the alert stub is replaced by a P&L alert line that opens the Alerts center pre-filled (openAlerts kind pnl); unit workbench.test.tsx HC-TR-153/154 block"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Adjustment workbench",
+    "route": "/desk",
+    "screen": "Desk · Adjustment workbench",
     "status": "working",
     "phase": 5,
     "new": true,
     "feature": "Live confirm: venue check, per-leg band, order type, hold-to-place, fill states",
     "how": "A red frame; the exchange check of adds as entries and trims / closes as reduce-only exits (contracts, notional, wallet, band); each add shows how far the mark moved from the reviewed one against the band; Market or Limit at mark (entries rest until filled, exits stay market); the button must be held 1.2 s; after placing, every order shows filled @ price / resting / failed until Done → Details; a notional above the available balance warns",
-    "evidence": "ADR-044 (09 Sep 2026, PR A3): AdjustConfirmDialog.tsx HoldButton + results view, API AdjustBody.orderType + limit entries (live-exec placeEntries, venues PlaceOrderInput orderType/limitPrice, migration 0009), mock placeLive limit rests; unit trading-live.test.tsx HC-TR-088 block, api live.test.ts limit entries, venues trading.test.ts; e2e analyse.spec.ts HC-TR-152 test; visual analyse-adjust-live-{dark,light}"
+    "evidence": "ADR-044 (09 Sep 2026, PR A3): AdjustConfirmDialog.tsx HoldButton + results view, API AdjustBody.orderType + limit entries (live-exec placeEntries, venues PlaceOrderInput orderType/limitPrice, migration 0009), mock placeLive limit rests; unit trading-live.test.tsx HC-TR-088 block, api live.test.ts limit entries, venues trading.test.ts; e2e desk.spec.ts HC-TR-152 test; visual desk-adjust-live-{dark,light}"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Adjustment workbench",
+    "route": "/desk",
+    "screen": "Desk · Adjustment workbench",
     "status": "working",
     "phase": 5,
     "new": true,
     "feature": "Compare plans (Plan A / Plan B) side by side",
     "how": "Save the current change as Plan A / B / C, build another, compare max loss / max profit / POP / cash per plan next to the current change, Use one to load it back, remove one",
-    "evidence": "ADR-044 (09 Sep 2026, PR A3): PlansBar.tsx + useDraftFigures, model savePlan / loadPlan / removePlan / planDraft; unit model.test.ts HC-TR-153, workbench.test.tsx HC-TR-153/154 block; ADR-058 (11 Sep 2026): plans table folded under plans-toggle, opens once a plan exists; unit workbench.test.tsx; ADR-058 addenda: Before row, Working change row with '= Plan A' (matchingPlan), Save starts the next change and is refused for a copy of a kept plan; unit workbench.test.tsx HC-TR-153/154 block, model.test.ts plans; e2e analyse.spec.ts HC-TR-148 block"
+    "evidence": "ADR-044 (09 Sep 2026, PR A3): PlansBar.tsx + useDraftFigures, model savePlan / loadPlan / removePlan / planDraft; unit model.test.ts HC-TR-153, workbench.test.tsx HC-TR-153/154 block; ADR-058 (11 Sep 2026): plans table folded under plans-toggle, opens once a plan exists; unit workbench.test.tsx; ADR-058 addenda: Before row, Working change row with '= Plan A' (matchingPlan), Save starts the next change and is refused for a copy of a kept plan; unit workbench.test.tsx HC-TR-153/154 block, model.test.ts plans; e2e desk.spec.ts HC-TR-148 block"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Adjustment workbench",
+    "route": "/desk",
+    "screen": "Desk · Adjustment workbench",
     "status": "working",
     "phase": 5,
     "new": true,
@@ -1323,7 +1323,7 @@
     "new": true,
     "feature": "Start and expiry on every card, sort by expiry",
     "how": "Each card reads started <date> · <n>d and expires <nearest> (or nearest → latest) with days left to the settlement instant, amber within a day; closed cards read closed <date> · reason; Sort · Expiry orders by the nearest open expiry",
-    "evidence": "ADR-059 (11 Sep 2026): lib/strategy/paper.ts expiryOf / daysLeft, PaperPanel.tsx card-expiry; unit trading-more.test.tsx HC-TR-156/157; e2e analyse.spec.ts"
+    "evidence": "ADR-059 (11 Sep 2026): lib/strategy/paper.ts expiryOf / daysLeft, PaperPanel.tsx card-expiry; unit trading-more.test.tsx HC-TR-156/157; e2e desk.spec.ts"
   },
   {
     "screen": "Trading · Paper / Live tabs",
@@ -1332,7 +1332,7 @@
     "new": true,
     "feature": "Lifecycle chips: Open · Expiring ≤ 1d · Closed",
     "how": "Chips with counts filter the same tab; Closed lists the archived strategies traded in that mode with Details and Journal only (no Adjust, alert, Go live, Stop or Square off); the empty state names the chip",
-    "evidence": "ADR-059 (11 Sep 2026): lib/strategy/paper.ts lifecycleOf, PaperPanel.tsx <kind>-life-<chip>; unit trading-more.test.tsx HC-TR-156/157; e2e analyse.spec.ts"
+    "evidence": "ADR-059 (11 Sep 2026): lib/strategy/paper.ts lifecycleOf, PaperPanel.tsx <kind>-life-<chip>; unit trading-more.test.tsx HC-TR-156/157; e2e desk.spec.ts"
   },
   {
     "screen": "Trading · Trade Preview",
@@ -1350,7 +1350,7 @@
     "new": true,
     "feature": "Overlap line: a contract another open strategy already holds",
     "how": "The paper and live previews and the workbench Review list every contract in the order that another open strategy of the same mode holds, with who holds how much and what the exchange holds after the order as one position; live adds the warning that an exchange-level stop or close acts on all of it; never blocks",
-    "evidence": "ADR-059 (11 Sep 2026): lib/strategy/overlap.ts overlapsFor, OverlapNotice.tsx, TradeFlow.tsx / TradePreviewDialog.tsx, AdjustConfirmDialog.tsx; unit overlap.test.ts HC-TR-159; e2e analyse.spec.ts (E2E straddle test)"
+    "evidence": "ADR-059 (11 Sep 2026): lib/strategy/overlap.ts overlapsFor, OverlapNotice.tsx, TradeFlow.tsx / TradePreviewDialog.tsx, AdjustConfirmDialog.tsx; unit overlap.test.ts HC-TR-159; e2e desk.spec.ts (E2E straddle test)"
   },
   {
     "screen": "Trading · Live tab",
@@ -1395,7 +1395,7 @@
     "new": true,
     "feature": "Close reasons on cards and in the Journal",
     "how": "Every close path records why (expired · squared off · closed outside the app; stopped reserved for the strategy stop): closeReason on each squared-off leg and on the archived strategy; the Closed chip card shows it next to the close date, the Journal row shows it and the CSV carries a close_reason column",
-    "evidence": "ADR-059 §2.4 (11 Sep 2026): packages/schema CloseReason / CLOSE_REASON_LABELS / settlementMsOf, apps/api routes/strategies.ts closeLegRow reason, live.ts, mock-api; PaperPanel.tsx card-close-reason, JournalPanel.tsx trade-reason, lib/strategy/journal.ts reasonLabel; unit strategies.test.ts (api + schema), live.test.ts, journal.test.ts, trading.test.tsx HC-TR-164; e2e analyse.spec.ts"
+    "evidence": "ADR-059 §2.4 (11 Sep 2026): packages/schema CloseReason / CLOSE_REASON_LABELS / settlementMsOf, apps/api routes/strategies.ts closeLegRow reason, live.ts, mock-api; PaperPanel.tsx card-close-reason, JournalPanel.tsx trade-reason, lib/strategy/journal.ts reasonLabel; unit strategies.test.ts (api + schema), live.test.ts, journal.test.ts, trading.test.tsx HC-TR-164; e2e desk.spec.ts"
   },
   {
     "screen": "Trading · Paper and Live tabs",
@@ -1422,7 +1422,7 @@
     "new": true,
     "feature": "Protect: arming from the card, Details and after a trade",
     "how": "Protect on an active card or in Details opens the Protect dialog: stop and target each on / off, money or %, the basis picked from the strategy (credit / debit / max loss with the amount), the level shown in both units, email / Telegram delivery, a plain sentence of what will be sent; the card line reads 'stop at −₹5,000 · target at +₹4,200' or 'no stop'; a trade from the Builder is followed by the Protect step (Skip, or 'do not ask after trades')",
-    "evidence": "ADR-059 §2.3 (11 Sep 2026): RuleDialog.tsx rule-dialog / rule-stop-* / rule-target-* / rule-arm / rule-disarm / rule-skip / rule-no-prompt, PaperPanel.tsx card-protect / card-rules, StrategyDetailsDialog.tsx details-protect / details-rules, TradeFlow.tsx Protect step, store rulesFor / protectPrompt; unit rules.test.tsx HC-TR-167; e2e analyse.spec.ts paper flow"
+    "evidence": "ADR-059 §2.3 (11 Sep 2026): RuleDialog.tsx rule-dialog / rule-stop-* / rule-target-* / rule-arm / rule-disarm / rule-skip / rule-no-prompt, PaperPanel.tsx card-protect / card-rules, StrategyDetailsDialog.tsx details-protect / details-rules, TradeFlow.tsx Protect step, store rulesFor / protectPrompt; unit rules.test.tsx HC-TR-167; e2e desk.spec.ts paper flow"
   },
   {
     "screen": "Trading · cards · Details · Journal",
@@ -1458,7 +1458,7 @@
     "new": true,
     "feature": "Protect dialog: leg stops, spot level, time exit; the workbench entry",
     "how": "The Protect dialog lists one Leg stop row per held leg (× entry or price, the level and the current mark, exit this leg only / the whole strategy), a Spot level row (at or below / at or above, the spot now) and a Time exit row (at a time on the trader's clock, or days before the nearest expiry with the days now); the card line and Details name every kind ('S P 78,000 25 Sep stop at 1,800.0 (2× entry) · spot ≥ 82,000 · exit at 1 day to expiry'); the adjustment workbench footer shows the armed rules with a Protect button beside the P&L alert line",
-    "evidence": "ADR-059 §2.3 A4b (11 Sep 2026): RuleDialog.tsx rule-leg-{legId}-* / rule-spot-* / rule-time-* / ruleText / rulesLine, AdjustWorkbench.tsx risk-protect / adjust-protect, StrategyDetailsDialog.tsx details-rule, PaperPanel.tsx card-rules; unit rules.test.tsx HC-TR-171; e2e analyse.spec.ts paper flow (spot level)"
+    "evidence": "ADR-059 §2.3 A4b (11 Sep 2026): RuleDialog.tsx rule-leg-{legId}-* / rule-spot-* / rule-time-* / ruleText / rulesLine, AdjustWorkbench.tsx risk-protect / adjust-protect, StrategyDetailsDialog.tsx details-rule, PaperPanel.tsx card-rules; unit rules.test.tsx HC-TR-171; e2e desk.spec.ts paper flow (spot level)"
   },
   {
     "screen": "Trading · Paper and Live tabs · Closed",
@@ -1497,16 +1497,16 @@
     "evidence": "ADR-068 (11 Sep 2026): apps/api routes/live.ts positions accountId; lib/api/live.ts useAccountPositions, lib/accounts.ts accountRefOf / useCurrentAccount, PaperPanel.tsx drift per account, NetPositionsPanel.tsx net-account, PortfolioBar.tsx; unit trading-live.test.tsx HC-TR-174, HC-TR-175"
   },
   {
-    "screen": "Analyse · Strategy panel (Wizard)",
+    "screen": "Desk · Strategy panel (Wizard)",
     "status": "working",
     "phase": 5,
     "new": true,
     "feature": "Strategy Wizard sub-tab: view, move and date",
     "how": "Third Builder sub-tab Builder | Templates | Wizard (also the Builder empty state's 'Ask the wizard'): view chips Bullish / Bearish / Neutral / Volatile, an unsigned move in percent with the derived target price beside it (typing the price sets the move; neutral and volatile show the ±band), the target expiry from the venue's listed expiries; a basis line names lots × lot size, marks and the expiry; inputs are disabled until the spot exists",
-    "evidence": "ADR-072 (12 Sep 2026): apps/web components/builder/WizardPanel.tsx, BuilderPanel.tsx third tab, lib/store.ts BuilderSubTab; unit builder.test.tsx HC-TR-176; e2e analyse.spec.ts HC-TR-176..178, visual analyse-wizard-{dark,light}"
+    "evidence": "ADR-072 (12 Sep 2026): apps/web components/builder/WizardPanel.tsx, BuilderPanel.tsx third tab, lib/store.ts BuilderSubTab; unit builder.test.tsx HC-TR-176; e2e desk.spec.ts HC-TR-176..178, visual desk-wizard-{dark,light}"
   },
   {
-    "screen": "Analyse · Strategy panel (Wizard)",
+    "screen": "Desk · Strategy panel (Wizard)",
     "status": "working",
     "phase": 5,
     "new": true,
@@ -1515,13 +1515,13 @@
     "evidence": "ADR-072: lib/strategy/wizard.ts (eligibleTemplates, thesisPnl, pnlAtExpiry, fitsView, rankCandidates, tagBest), lib/strategy/useWizardCandidates.ts (one pass per chain, never abandoned, at most one every 2 s), lib/strategy/placeTemplate.ts (shared with the Templates tab), lib/strategy/templates.ts risk; unit wizard.test.ts, useWizardCandidates.test.tsx (StrictMode double mount), templates.invariants.test.ts, builder.test.tsx HC-TR-177"
   },
   {
-    "screen": "Analyse · Strategy panel (Wizard)",
+    "screen": "Desk · Strategy panel (Wizard)",
     "status": "working",
     "phase": 5,
     "new": true,
     "feature": "Use this loads the Builder on the thesis; palette and W open the wizard",
-    "how": "Use this (amber on card 1, outline on 2 and 3) loads the template exactly as the Templates tab does (legs on listed strikes, the name, the Builder sub-tab) and sets the payoff target to the thesis price and the days to the expiry, so the chart opens on it; the palette command 'Strategy wizard' (hint W) and the W shortcut (Analyse workspace, listed in the ? help) open the tab; the assistant points 'which strategy' questions at it",
-    "evidence": "ADR-072: WizardPanel.tsx use(), components/shell/CommandPalette.tsx act:builder-wizard, components/workspace/Workspace.tsx registerShortcut W, lib/assistant.ts; unit builder.test.tsx HC-TR-178, shell.test.tsx, workspace.test.tsx, assistant.test.ts; e2e analyse.spec.ts HC-TR-176..178"
+    "how": "Use this (amber on card 1, outline on 2 and 3) loads the template exactly as the Templates tab does (legs on listed strikes, the name, the Builder sub-tab) and sets the payoff target to the thesis price and the days to the expiry, so the chart opens on it; the palette command 'Strategy wizard' (hint W) and the W shortcut (Desk, listed in the ? help) open the tab; the assistant points 'which strategy' questions at it",
+    "evidence": "ADR-072: WizardPanel.tsx use(), components/shell/CommandPalette.tsx act:builder-wizard, components/workspace/Workspace.tsx registerShortcut W, lib/assistant.ts; unit builder.test.tsx HC-TR-178, shell.test.tsx, workspace.test.tsx, assistant.test.ts; e2e desk.spec.ts HC-TR-176..178"
   },
   {
     "screen": "Trading · server",
@@ -1550,7 +1550,7 @@
     "new": true,
     "feature": "The Verified P&L block on the Journal",
     "how": "Above the Journal stats once a key is connected: All time / Last 7 days / Last 30 days / Commissions tiles, fills and since, an agreement line against the Journal's own figure (matches, or differs by X with why), per-account rows when there is more than one key with their errors, and Refresh, which re-reads the accounts now and reports read / new; no fills yet says so",
-    "evidence": "ADR-073 (12 Sep 2026): VerifiedPnlBlock.tsx verified-block / verified-total / verified-d7 / verified-d30 / verified-commission / verified-since / verified-agree / verified-account / verified-refresh / verified-empty, JournalPanel.tsx, lib/api/verified.ts, mock-api verified routes + seed fills; unit journal-panel.test.tsx HC-TR-181; e2e analyse.spec.ts live flow HC-TR-181",
+    "evidence": "ADR-073 (12 Sep 2026): VerifiedPnlBlock.tsx verified-block / verified-total / verified-d7 / verified-d30 / verified-commission / verified-since / verified-agree / verified-account / verified-refresh / verified-empty, JournalPanel.tsx, lib/api/verified.ts, mock-api verified routes + seed fills; unit journal-panel.test.tsx HC-TR-181; e2e desk.spec.ts live flow HC-TR-181",
     "test": "unit (web), e2e"
   },
   {
@@ -1572,7 +1572,7 @@
     "evidence": "ADR-074: packages/schema accounts.ts MindfulSettings, apps/api db/schema.ts + drizzle migration, routes/settings.ts; apps/web components/dialogs/MindfulDialog.tsx, SettingsDialogs.tsx, header/AppHeader.tsx menu-mindful, shell/CommandPalette.tsx set:mindful, chrome/PortfolioBar.tsx bar-day-pnl; unit accounts.test.ts, settings.test.ts (api), dialogs.test.tsx, shell.test.tsx; e2e settings.spec.ts HC-TR-183"
   },
   {
-    "screen": "Analyse · Backtest (engine + API)",
+    "screen": "Desk · Backtest (engine + API)",
     "status": "working",
     "phase": 5,
     "new": true,
@@ -1582,13 +1582,13 @@
     "test": "unit (pricing + api)"
   },
   {
-    "screen": "Analyse · Backtest tab",
+    "screen": "Desk · Backtest tab",
     "status": "working",
     "phase": 5,
     "new": true,
     "feature": "The Backtest tab: template, lots, minimum days to expiry and range; the coverage line first, stat tiles, the equity curve and the trades",
     "how": "Analysis pane tab (and the palette command Analysis: Backtest): template select by category, lots, min DTE (1 / 3 / 7 / 14 / 30), 7D / 30D / 90D / 1Y; the coverage line names recorded days, entries, skipped days, open and modelled trades and says no fees, no slippage; tiles Realised, Win rate, Average, Max drawdown, Profit factor; the realised equity curve on the SVG chart; trades newest first with entry, expiry, legs, cost, exit (open · marked <day>, modelled) and P&L; before the first recorded day an honest empty state instead of zeros; the mock API runs the same engine over synthetic end-of-day chains",
-    "evidence": "ADR-077 (12 Sep 2026): apps/web/src/components/analysis/BacktestPanel.tsx (backtest-panel[data-state], backtest-coverage, backtest-total / winrate / average / drawdown / pf, chart-backtest, backtest-trade), lib/api/backtest.ts, AnalysisPane.tsx, CommandPalette.tsx, test/mock-backtest.ts; unit backtest-panel.test.tsx HC-TR-185; e2e analyse.spec.ts HC-TR-185",
+    "evidence": "ADR-077 (12 Sep 2026): apps/web/src/components/analysis/BacktestPanel.tsx (backtest-panel[data-state], backtest-coverage, backtest-total / winrate / average / drawdown / pf, chart-backtest, backtest-trade), lib/api/backtest.ts, AnalysisPane.tsx, CommandPalette.tsx, test/mock-backtest.ts; unit backtest-panel.test.tsx HC-TR-185; e2e desk.spec.ts HC-TR-185",
     "test": "unit (web), e2e"
   },
   {
@@ -1598,7 +1598,7 @@
     "new": true,
     "feature": "Typed LIVE confirmation on every live entry; the API refuses a live entry without it",
     "how": "A field 'Type LIVE to place / retry / adjust' under the red block of the live Trade Preview, the Trade All → Live dialog, the Adjust confirm (only when the change adds entry orders) and a Retry dialog that names the refused legs; the destructive button is disabled, not hidden, until the word is in (case-insensitive, trimmed, Enter submits); during the Mindful pause the countdown still replaces the button. The word travels in the order body and routes/live-exec.ts requireLiveConfirm answers 400 'Type LIVE to confirm a real order' on place, batch, retry, a live adjustment with adds and add-legs on a live strategy; exits, square-offs and paper never ask",
-    "evidence": "ADR-078 (12 Sep 2026): packages/schema strategies.ts LIVE_CONFIRM_WORD / LiveConfirm / isLiveConfirm / LiveRetryBody; apps/api routes/live-exec.ts requireLiveConfirm, routes/live.ts, routes/strategies.ts; apps/web components/trading/TypedConfirm.tsx, RetryDialog.tsx, TradePreviewDialog.tsx, BatchLiveDialog.tsx, adjust/AdjustConfirmDialog.tsx, PaperPanel.tsx, lib/api/live.ts; unit strategies.test.ts (schema) HC-TR-186, live.test.ts (api) HC-TR-186, trading-live.test.tsx HC-TR-186; e2e analyse.spec.ts (typeLiveIfShown before every live click)"
+    "evidence": "ADR-078 (12 Sep 2026): packages/schema strategies.ts LIVE_CONFIRM_WORD / LiveConfirm / isLiveConfirm / LiveRetryBody; apps/api routes/live-exec.ts requireLiveConfirm, routes/live.ts, routes/strategies.ts; apps/web components/trading/TypedConfirm.tsx, RetryDialog.tsx, TradePreviewDialog.tsx, BatchLiveDialog.tsx, adjust/AdjustConfirmDialog.tsx, PaperPanel.tsx, lib/api/live.ts; unit strategies.test.ts (schema) HC-TR-186, live.test.ts (api) HC-TR-186, trading-live.test.tsx HC-TR-186; e2e desk.spec.ts (typeLiveIfShown before every live click)"
   },
   {
     "screen": "Trading · Live tab · resting order",
@@ -1667,33 +1667,33 @@
     "new": true,
     "feature": "The workbench chain lists every strike of the expiry by default, with a ±12 / All control and a strike count; held strikes far from ATM are on the chain",
     "how": "usePickerChain takes a range (0 = every listed strike); AdjustWorkbench owns it, All by default; WorkbenchChain shows the ±12 / All control and 'n strikes' beside the cap line and re-centres on the ATM row when the expiry or the range changes; a held strike outside ±12 (a short put 30 rows below ATM) carries its pill and can be trimmed, closed or rolled from the chain; strikes come only from the venue list (ADR-006)",
-    "evidence": "ADR-093, GAPS #115 (20 Sep 2026): apps/web/src/lib/chain/range.ts DEFAULT_CHAIN_RANGE; apps/web/src/lib/store.ts rangeDefault; components/builder/ChainPickerBody.tsx usePickerChain; components/adjust/AdjustWorkbench.tsx + WorkbenchChain.tsx; tests: workbench.test.tsx HC-TR-193, store.test.ts, e2e analyse.spec.ts (workbench flow, HC-WS-016, HC-WS-108)",
+    "evidence": "ADR-093, GAPS #115 (20 Sep 2026): apps/web/src/lib/chain/range.ts DEFAULT_CHAIN_RANGE; apps/web/src/lib/store.ts rangeDefault; components/builder/ChainPickerBody.tsx usePickerChain; components/adjust/AdjustWorkbench.tsx + WorkbenchChain.tsx; tests: workbench.test.tsx HC-TR-193, store.test.ts, e2e desk.spec.ts (workbench flow, HC-WS-016, HC-WS-108)",
     "test": "unit (web) · e2e (Playwright)"
   },
   {
-    "screen": "Analyse · Adjustment workbench",
+    "screen": "Desk · Adjustment workbench",
     "status": "working",
     "phase": 5,
     "new": true,
     "feature": "Diagnosis line: how far spot is from each short strike, which side is tested, whether the loss has a limit",
     "how": "diagnose() measures every short contract on the shown expiry from spot in percent and in expected moves (the engine's one-sigma figure), counts twin rows on one contract as one short, names the nearest short as the tested side and marks it under pressure when it is in the money or under one expected move away; the panel shows the sentence and, in red, 'the loss has no limit' when the position's max loss is unbounded; a long-only position reads 'no short option on this expiry'; before the spot price arrives it reads 'Waiting for the spot price' and no idea is offered",
-    "evidence": "ADR-094 (20 Sep 2026): apps/web/src/lib/adjust/repairs.ts diagnose / diagnosisLine; components/adjust/RepairIdeas.tsx repair-diagnosis; tests: repairs.test.ts HC-TR-194 (four cases), workbench.test.tsx \"HC-TR-153 / HC-TR-154 / HC-TR-194 / HC-TR-195 …\", e2e analyse.spec.ts workbench flow and \"HC-TR-194 / HC-TR-195 repair ideas in the browser …\"",
+    "evidence": "ADR-094 (20 Sep 2026): apps/web/src/lib/adjust/repairs.ts diagnose / diagnosisLine; components/adjust/RepairIdeas.tsx repair-diagnosis; tests: repairs.test.ts HC-TR-194 (four cases), workbench.test.tsx \"HC-TR-153 / HC-TR-154 / HC-TR-194 / HC-TR-195 …\", e2e desk.spec.ts workbench flow and \"HC-TR-194 / HC-TR-195 repair ideas in the browser …\"",
     "test": "unit (web) · e2e (Playwright)",
-    "route": "/analyse"
+    "route": "/desk"
   },
   {
-    "screen": "Analyse · Adjustment workbench",
+    "screen": "Desk · Adjustment workbench",
     "status": "working",
     "phase": 5,
     "new": true,
     "feature": "Repair ideas: wings by price, rolls, sizing, each priced before → after and ordered by the trader's goal",
     "how": "repairIdeas() builds drafts from the whole listed ladder only: cap the risk with cheap / balanced / tight wings (nearest strike whose mark is within 10 / 25 / 50 % of the short's mark; past the ladder's end the furthest listed strike with a note; sized by the short lots no long of that kind answers; duplicates dropped), roll the tested short two strikes away, roll the untested side in while it keeps half an expected move of room, roll out, roll out and away, halve or close the tested short (twin rows together); long-only: convert to a spread, roll to a cheaper strike; a zero or missing quote is never a price; an order that would meet the other side of its own contract or carry a short onto or past its long makes the idea unavailable with the reason; on a roll out a short never lands nearer spot and the card says when a strike moved. Each card shows the orders in words, before → after max loss, max profit, break-evens, POP, delta, cash now, the order count and what the idea gives up; before → after compares the whole trade from entry, so a close carries the result it locks in (realisedLegs, also in the pane's working change and the plans); goals under 'Order by': reduce max loss, collect credit, get neutral, widen break-evens (default from the diagnosis); tags are facts ('defines your risk', one leader per goal, 'largest credit' only for cash received); Load fills the working change through applyDraft and asks once before replacing a hand-built change, nothing is sent before Review; the panel sits under the position ticket, is built and priced on a market copy that settles every two seconds and re-orders only when the figures are quiet",
-    "evidence": "ADR-094, GAPS #117 (20 Sep 2026): apps/web/src/lib/adjust/repairs.ts repairIdeas / orderIdeas / tagIdeas / defaultGoal / draftSignature; lib/adjust/model.ts realisedLegs; components/adjust/RepairIdeas.tsx (useSettled); PlansBar.tsx useDraftFigures / PlanFigures.breakevens; lib/strategy/useStrategyAnalysis.ts; AdjustWorkbench.tsx; tests: repairs.test.ts HC-TR-195 (fifteen cases), model.test.ts \"HC-TR-195 (ADR-094) the lots a change takes off …\", RepairIdeas.test.tsx, workbench.test.tsx \"HC-TR-153 / HC-TR-154 / HC-TR-194 / HC-TR-195 …\" and HC-TR-193, e2e analyse.spec.ts workbench flow and the three \"… repair ideas in the browser …\" tests (wings and order by goal; close, halve, roll out and the locked-in result on screen; the long-only ideas and the layout guard, GAPS #119); five control runs",
+    "evidence": "ADR-094, GAPS #117 (20 Sep 2026): apps/web/src/lib/adjust/repairs.ts repairIdeas / orderIdeas / tagIdeas / defaultGoal / draftSignature; lib/adjust/model.ts realisedLegs; components/adjust/RepairIdeas.tsx (useSettled); PlansBar.tsx useDraftFigures / PlanFigures.breakevens; lib/strategy/useStrategyAnalysis.ts; AdjustWorkbench.tsx; tests: repairs.test.ts HC-TR-195 (fifteen cases), model.test.ts \"HC-TR-195 (ADR-094) the lots a change takes off …\", RepairIdeas.test.tsx, workbench.test.tsx \"HC-TR-153 / HC-TR-154 / HC-TR-194 / HC-TR-195 …\" and HC-TR-193, e2e desk.spec.ts workbench flow and the three \"… repair ideas in the browser …\" tests (wings and order by goal; close, halve, roll out and the locked-in result on screen; the long-only ideas and the layout guard, GAPS #119); five control runs",
     "test": "unit (web) · e2e (Playwright)",
-    "route": "/analyse"
+    "route": "/desk"
   },
   {
-    "route": "/analyse",
+    "route": "/desk",
     "screen": "Trading · Trade Preview / Adjustment review",
     "status": "working",
     "phase": 5,
@@ -1704,29 +1704,29 @@
     "test": "unit (venues + api + web)"
   },
   {
-    "route": "/analyse",
+    "route": "/desk",
     "screen": "Trading · Trade Preview / Adjustment review",
     "status": "working",
     "phase": 5,
     "new": true,
     "feature": "The perpetual future as a pick in the adjustment workbench (the ticket's Future B / S)",
     "how": "AdjustPick.kind may be \"future\" (strike \"\", expiry \"PERP\"); the ticket's Future row buys or sells the chain's lots of the perpetual at the spot index under the chain's own B / S rules (a second click takes it off, the other side flips it, on a held future it nets); it is priced at the index and sent as a futures leg with the index as its expected mark; it moves no premium and takes no part in the expiry or zero-DTE rules; each button's title and accessible name say what one click will do given the future held or already picked, with a pressed state; a change that adds a future is sent at market only, and the review dialog's balance warning never reads a future's notional as premium",
-    "evidence": "ADR-095, GAPS #121 (21 Sep 2026): apps/web/src/lib/adjust/model.ts PickKind / PERP / cashflow / combinedExpiries / addsZeroDte; components/adjust/PositionTicket.tsx wb-future; components/adjust/AdjustConfirmDialog.tsx (market only, balance warning); tests: model.test.ts \"HC-TR-197 the perpetual as a pick …\", e2e analyse.spec.ts \"HC-TR-197 / HC-TR-198 the delta hedge in the browser …\"",
+    "evidence": "ADR-095, GAPS #121 (21 Sep 2026): apps/web/src/lib/adjust/model.ts PickKind / PERP / cashflow / combinedExpiries / addsZeroDte; components/adjust/PositionTicket.tsx wb-future; components/adjust/AdjustConfirmDialog.tsx (market only, balance warning); tests: model.test.ts \"HC-TR-197 the perpetual as a pick …\", e2e desk.spec.ts \"HC-TR-197 / HC-TR-198 the delta hedge in the browser …\"",
     "test": "unit (web) · e2e (Playwright)"
   },
   {
-    "route": "/analyse",
+    "route": "/desk",
     "screen": "Trading · Trade Preview / Adjustment review",
     "status": "working",
     "phase": 5,
     "new": true,
     "feature": "Repair idea: hedge the delta with the perpetual future",
     "how": "hedgeDelta sizes the future at |net delta| ÷ lot size in whole lots from the engine's delta of the position (the panel's settled market), sold when the delta is positive and bought when it is negative; unavailable within one lot of neutral or while the delta is unknown; netted against a future the position already holds so two opposing rows are never booked; the card shows the delta going to about zero, says a future has no floor, that the hedge needs re-doing as the delta moves and that funding is not modelled, and never carries 'defines your risk' (tagsForIdea removes it even where the engine finds a floor); it is named and netted on the strategy's own venue and unavailable where that venue lists no perpetual; a loaded hedge still reads as the hedge while the card re-sizes it",
-    "evidence": "ADR-095, GAPS #121 (21 Sep 2026): apps/web/src/lib/adjust/repairs.ts hedgeIdea / RepairContext.netDelta / lotSize; components/adjust/RepairIdeas.tsx (ideasCtx, data-delta); tagsForIdea / draftSignature(loose); tests: repairs.test.ts HC-TR-198 (five cases), model.test.ts HC-TR-197 (a saved plan holding a future), workbench.test.tsx \"HC-TR-153 / HC-TR-154 / HC-TR-194 / HC-TR-195 …\" (the card's lots against the position's delta), e2e analyse.spec.ts \"HC-TR-197 / HC-TR-198 the delta hedge in the browser …\"; one control run",
+    "evidence": "ADR-095, GAPS #121 (21 Sep 2026): apps/web/src/lib/adjust/repairs.ts hedgeIdea / RepairContext.netDelta / lotSize; components/adjust/RepairIdeas.tsx (ideasCtx, data-delta); tagsForIdea / draftSignature(loose); tests: repairs.test.ts HC-TR-198 (five cases), model.test.ts HC-TR-197 (a saved plan holding a future), workbench.test.tsx \"HC-TR-153 / HC-TR-154 / HC-TR-194 / HC-TR-195 …\" (the card's lots against the position's delta), e2e desk.spec.ts \"HC-TR-197 / HC-TR-198 the delta hedge in the browser …\"; one control run",
     "test": "unit (web) · e2e (Playwright)"
   },
   {
-    "route": "/analyse",
+    "route": "/desk",
     "screen": "Trading · Protect dialog / server",
     "status": "working",
     "phase": 5,
@@ -1737,8 +1737,8 @@
     "test": "unit (schema, api, web)"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Backtest (engine + API)",
+    "route": "/desk",
+    "screen": "Desk · Backtest (engine + API)",
     "status": "working",
     "phase": 5,
     "new": true,
@@ -1748,8 +1748,8 @@
     "test": "unit (pricing + api)"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Backtest (engine + API)",
+    "route": "/desk",
+    "screen": "Desk · Backtest (engine + API)",
     "status": "working",
     "phase": 5,
     "new": true,
@@ -1759,8 +1759,8 @@
     "test": "unit (pricing + api)"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Backtest (engine + API)",
+    "route": "/desk",
+    "screen": "Desk · Backtest (engine + API)",
     "status": "working",
     "phase": 5,
     "new": true,
@@ -1770,8 +1770,8 @@
     "test": "unit (pricing + api)"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Backtest (engine + API)",
+    "route": "/desk",
+    "screen": "Desk · Backtest (engine + API)",
     "status": "working",
     "phase": 5,
     "new": true,
@@ -1781,8 +1781,8 @@
     "test": "unit (pricing + api)"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Backtest (engine + API)",
+    "route": "/desk",
+    "screen": "Desk · Backtest (engine + API)",
     "status": "working",
     "phase": 5,
     "new": true,
@@ -1792,8 +1792,8 @@
     "test": "unit (pricing + api)"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Backtest (engine + API)",
+    "route": "/desk",
+    "screen": "Desk · Backtest (engine + API)",
     "status": "working",
     "phase": 5,
     "new": true,
@@ -1803,8 +1803,8 @@
     "test": "unit (pricing + api)"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Backtest (engine + API)",
+    "route": "/desk",
+    "screen": "Desk · Backtest (engine + API)",
     "status": "working",
     "phase": 5,
     "new": true,
@@ -1814,8 +1814,8 @@
     "test": "unit (api)"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Backtest (engine + API)",
+    "route": "/desk",
+    "screen": "Desk · Backtest (engine + API)",
     "status": "working",
     "phase": 5,
     "new": true,
@@ -1825,8 +1825,8 @@
     "test": "unit (pricing + api)"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Backtest (engine + API)",
+    "route": "/desk",
+    "screen": "Desk · Backtest (engine + API)",
     "status": "working",
     "phase": 5,
     "new": true,
@@ -1836,8 +1836,8 @@
     "test": "unit (api)"
   },
   {
-    "route": "/analyse",
-    "screen": "Analyse · Backtest (engine + API)",
+    "route": "/desk",
+    "screen": "Desk · Backtest (engine + API)",
     "status": "working",
     "phase": 5,
     "new": true,
@@ -1847,7 +1847,7 @@
     "test": "unit (api)"
   },
   {
-    "route": "/analyse",
+    "route": "/desk",
     "screen": "Trading · server",
     "status": "working",
     "phase": 5,
@@ -1858,7 +1858,7 @@
     "test": "unit (schema, api)"
   },
   {
-    "route": "/analyse",
+    "route": "/desk",
     "screen": "Trading · Protect dialog / cards · Details",
     "status": "working",
     "phase": 5,
@@ -1869,7 +1869,7 @@
     "test": "unit (web)"
   },
   {
-    "route": "/analyse",
+    "route": "/desk",
     "screen": "Trading · server",
     "status": "working",
     "phase": 5,
@@ -1880,7 +1880,7 @@
     "test": "unit (schema, api)"
   },
   {
-    "route": "/analyse",
+    "route": "/desk",
     "screen": "Trading · Protect dialog / cards · Details",
     "status": "working",
     "phase": 5,
@@ -1891,18 +1891,18 @@
     "test": "unit (web)"
   },
   {
-    "route": "/analyse",
+    "route": "/desk",
     "screen": "Trading · Paper / Live cards · analysis pane",
     "status": "working",
     "phase": 5,
     "new": true,
     "feature": "A click on a closed trade's card shows that trade in the analysis pane: the position as it was entered, when and why it closed and its final result",
-    "how": "The pane follows any strategy that is not a draft; a closed (archived) one is analysed from every leg that was entered, at its entry premium, with no quote subscriptions and no workbench draft; the Following bar shows the name, the Archived tag, the close time, the reason and the final result; Payoff keeps the tiles and the expiry curve, shows one sentence (opened, closed, reason, final result) in place of the live strip and drops the target curve and controls, the IV / expected-move / open-interest layers, probability of profit and the Greeks strip; Greeks, Scenarios and Ladder say the trade is closed; a strategy that closes while it is followed open still hands the pane back to the Builder, and a closed trade is never auto-followed",
+    "how": "The pane follows any strategy that is not a draft; a closed (archived) one is drawn from every leg that was entered, at its entry premium, with no quote subscriptions and no workbench draft; the Following bar shows the name, the Archived tag, the close time, the reason and the final result; Payoff keeps the tiles and the expiry curve, shows one sentence (opened, closed, reason, final result) in place of the live strip and drops the target curve and controls, the IV / expected-move / open-interest layers, probability of profit and the Greeks strip; Greeks, Scenarios and Ladder say the trade is closed; a strategy that closes while it is followed open still hands the pane back to the Builder, and a closed trade is never auto-followed",
     "evidence": "ADR-105, GAPS #142 (19 Nov 2026): apps/web/src/lib/strategy/useStrategyAnalysis.ts (useFollowedStrategy, closedTradeOf, closed), apps/web/src/components/analysis/AnalysisPane.tsx (PaneSourceBar, pane-closed), PayoffPanel.tsx (payoff-closed, CLOSED_LAYERS), GreeksPanel.tsx / ScenariosPanel.tsx / LadderPanel.tsx (…-closed), apps/web/src/components/trading/PaperPanel.tsx (card title); tests: pane-follow.test.tsx HC-TR-214",
     "test": "unit (web)"
   },
   {
-    "route": "/analyse",
+    "route": "/desk",
     "screen": "Trading · Paper / Live cards · Details",
     "status": "working",
     "phase": 5,

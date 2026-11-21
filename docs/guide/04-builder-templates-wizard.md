@@ -18,23 +18,23 @@ Templates are a catalogue of 48 named strategies, including ones with a perpetua
 
 ## Screens
 
-![Builder with two legs and the ticket](../../apps/web/e2e/__screenshots__/analyse-builder-dark.png)
+![Builder with two legs and the ticket](../../apps/web/e2e/__screenshots__/desk-builder-dark.png)
 *Builder with two legs and the ticket*
 
 ![Select from chain](../../apps/web/e2e/__screenshots__/guide/builder-select-from-chain.png)
 *Select from chain*
 
-![Templates](../../apps/web/e2e/__screenshots__/analyse-templates-dark.png)
+![Templates](../../apps/web/e2e/__screenshots__/desk-templates-dark.png)
 *Templates*
 
-![Strategy wizard](../../apps/web/e2e/__screenshots__/analyse-wizard-dark.png)
+![Strategy wizard](../../apps/web/e2e/__screenshots__/desk-wizard-dark.png)
 *Strategy wizard*
 
 ## Every feature, in detail
 
 Each row is one traced feature from the build spec: the id, what it is, how it behaves (the acceptance rule the tests check), and how it is tested. Status "mock-only" means the screen exists but the data feed behind it is not connected yet.
 
-### Analyse · Strategy panel (Builder) · `/analyse`
+### Desk · Strategy panel (Builder) · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -75,10 +75,10 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-101 | Net line under the legs | "Lot = 0.001 BTC · Net debit 465.5 / BTC → $4.65 · Net Δ · Net Θ/day · Net ν/1%" in mono, updated every tick | built | e2e (Playwright) |
 | HC-TR-102 | Inline strategy name in the builder header | Name is an inline editable field next to the BUILDER label (Enter saves via saveCurrent); template / detected structure shown as a tag; asset · expiry · DTE on the right | built | e2e (Playwright) |
 | HC-TR-103 | Builder toolbar restyle | Live price / Custom price pill (dot / square marker, no glyph emoji), Basket switch, New and Clear as ghost buttons; Save draft / Save & trade on the left, amber Paper trade (primary, kbd P) and outline Live trade on the right, margin est. footnote | built | unit (pricing) · e2e (Playwright) · security |
-| HC-TR-104 | Keyboard: P = Paper trade | Pressing P on /analyse with the builder visible and legs present (focus outside inputs, no dialog open) starts the paper-trade flow | built | e2e (Playwright) |
+| HC-TR-104 | Keyboard: P = Paper trade | Pressing P on /desk with the builder visible and legs present (focus outside inputs, no dialog open) starts the paper-trade flow | built | e2e (Playwright) |
 | HC-TR-105 | Sub-tab info line | Builder \| Templates tabs show "N legs · 25 Sep 26 · 19d · status" on the right (no duplicate lot/basis info) | built | e2e (Playwright) |
 
-### Analyse · Select Option from Chain (modal) · `/analyse`
+### Desk · Select Option from Chain (modal) · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -92,19 +92,19 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-034 | 'Add N Leg(s)' and 'Close' buttons; footer hint | Add pushes the selected legs into the builder (or into the adjustment flow) with limit checks and closes the modal; hint 'Click B to Buy or S to Sell • Select multiple legs' | built | e2e (Playwright) |
 | HC-TR-127 | Mirrored chain layout | Calls \| Strike \| Puts with Δ and OI outboard and Bid / Mark inboard (IV under each price), ITM 4.5% tint, OI bars growing toward the strike, amber ATM band, expiry strip with DTE, B/S buttons filled when selected, lot stepper in the selection list, column settings incl. Δ | built | unit (pricing) · e2e (Playwright) |
 
-### Analyse · Add Futures Contract (dialog) · `/analyse`
+### Desk · Add Futures Contract (dialog) · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-TR-035 | Add Futures Contract dialog | Shows 'USD Future' with the asset future symbol and live spot (updates on tick), Side buttons 'Buy Future' / 'Sell Future', Expiry select (Perpetual + all expiries), Quantity (lots) with lot-size hint, Price and Notional rows, Cancel / Add | built | unit (pricing) · e2e (Playwright) · security |
 
-### Analyse · Save dialog · `/analyse`
+### Desk · Save dialog · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-TR-036 | Save as Draft / Enter Strategy Name dialog (data-tour="save-dialog") | Input 'Strategy name...' (Enter saves, Escape cancels); validation 'Strategy name is required'; buttons Cancel / 'Save Draft' (data-tour="save-button") or 'Save & Continue' in the trade flow; creates or updates the entry in CG.mock.strategies with status DRAFT and toasts 'Saved' | built | e2e (Playwright) |
 
-### Analyse · Strategy panel (Templates) · `/analyse`
+### Desk · Strategy panel (Templates) · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -127,15 +127,15 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-109 | Expiry selector with DTE | Template expiry select lists "25 Sep 26 · 19d" for each expiry | built | e2e (Playwright) |
 | HC-TR-110 | My Templates cards restyled | Hairline cards with mode pill, asset tag, mono meta line, Load / Activate / Archive / View Details / Delete | built | unit (pricing) · e2e (Playwright) |
 
-### Analyse · Strategy panel (Wizard)
+### Desk · Strategy panel (Wizard)
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-TR-176 | Strategy Wizard sub-tab: view, move and date | Third Builder sub-tab Builder \| Templates \| Wizard (also the Builder empty state's 'Ask the wizard'): view chips Bullish / Bearish / Neutral / Volatile, an unsigned move in percent with the derived target price beside it (typing the price sets the move; neutral and volatile show the ±band), the target expiry from the venue's listed expiries; a basis line names lots × lot size, marks and the expiry; inputs are disabled until the spot exists | built | unit (pricing) · e2e (Playwright) |
 | HC-TR-177 | Three defined-risk strategies ranked at the thesis, priced at the live chain | Templates with a finite worst case on one expiry (StrategyTemplate.risk, proven by the invariants test) are placed on the venue ladder and priced once per chain snapshot; each card shows the sketch, the legs, P&L if right (expiry payoff at the target price; the least inside the band for Neutral; the smaller band edge for Volatile), POP, max loss (the most you can lose), max profit and R:R, ranked by return on risk then POP then name, at most three, one earned tag each (best return on risk, highest POP, smallest max loss); fewer fits say '2 of 3 fit this ladder'; no fit shows the reason and a link to Templates | built | unit (pricing) · e2e (Playwright) · security |
-| HC-TR-178 | Use this loads the Builder on the thesis; palette and W open the wizard | Use this (amber on card 1, outline on 2 and 3) loads the template exactly as the Templates tab does (legs on listed strikes, the name, the Builder sub-tab) and sets the payoff target to the thesis price and the days to the expiry, so the chart opens on it; the palette command 'Strategy wizard' (hint W) and the W shortcut (Analyse workspace, listed in the ? help) open the tab; the assistant points 'which strategy' questions at it | built | unit (pricing) · e2e (Playwright) |
+| HC-TR-178 | Use this loads the Builder on the thesis; palette and W open the wizard | Use this (amber on card 1, outline on 2 and 3) loads the template exactly as the Templates tab does (legs on listed strikes, the name, the Builder sub-tab) and sets the payoff target to the thesis price and the days to the expiry, so the chart opens on it; the palette command 'Strategy wizard' (hint W) and the W shortcut (Desk, listed in the ? help) open the tab; the assistant points 'which strategy' questions at it | built | unit (pricing) · e2e (Playwright) |
 
-### Analyse · Builder · `/analyse`
+### Desk · Builder · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|

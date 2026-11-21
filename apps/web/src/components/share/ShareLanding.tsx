@@ -1,6 +1,6 @@
 "use client";
-// /s/:code (HC-WS-106): decode the link, load its legs into the workspace store, say so, and go to Analyse. No
-// account is needed to decode; Analyse itself asks for a sign-in and the legs wait in the persisted store.
+// /s/:code (HC-WS-106): decode the link, load its legs into the workspace store, say so, and go to the Desk. No
+// account is needed to decode; the Desk itself asks for a sign-in and the legs wait in the persisted store.
 import { Button, toast } from "@hapiecoin/ui";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,10 +22,10 @@ export function ShareLanding({ code }: { code: string }) {
       // an adjustment with orders or plans is open in this session: ask about it first, leave the Builder untouched
       toast("Finish the adjustment first", { description: "Leave the workbench, then open the link again" });
       s.setWorkspaceTab("builder");
-      router.replace("/analyse");
+      router.replace("/desk");
       return;
     }
-    // the link names its venue (ADR-069); a Builder holding another venue's legs is asked first, on /analyse
+    // the link names its venue (ADR-069); a Builder holding another venue's legs is asked first, on /desk
     s.requestVenue(shared.venue, () => {
       s.setAsset(shared.asset);
       s.setLegs(shared.asset, []);
@@ -36,14 +36,14 @@ export function ShareLanding({ code }: { code: string }) {
       s.setAnalysisTab("payoff");
       toast("Strategy loaded from link", { description: `${shared.name || "Shared strategy"} · ${added} ${added === 1 ? "leg" : "legs"} at the shared entry prices` });
     });
-    router.replace("/analyse");
+    router.replace("/desk");
   }, [shared, router]);
   if (!shared) {
     return (
       <div className="mx-auto max-w-[520px] rounded-md border border-border bg-card p-5 text-sm" data-testid="share-landing" data-state="invalid">
         <h1 className="text-base font-semibold">This link is not a HapieCoin strategy</h1>
-        <p className="mt-1 text-muted-foreground">The code could not be decoded. Ask for a fresh link from the Share button in Analyse, or build your own.</p>
-        <Button asChild size="sm" className="mt-3"><Link href="/analyse">Open Analyse</Link></Button>
+        <p className="mt-1 text-muted-foreground">The code could not be decoded. Ask for a fresh link from the Share button on the Desk, or build your own.</p>
+        <Button asChild size="sm" className="mt-3"><Link href="/desk">Open the Desk</Link></Button>
       </div>
     );
   }
@@ -58,8 +58,8 @@ export function ShareLanding({ code }: { code: string }) {
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-muted-foreground">Opening it in Analyse at the shared entry prices…</p>
-      <Button asChild size="sm" className="mt-2"><Link href="/analyse" data-testid="share-open-analyse">Open in Analyse</Link></Button>
+      <p className="mt-3 text-muted-foreground">Opening it on the Desk at the shared entry prices…</p>
+      <Button asChild size="sm" className="mt-2"><Link href="/desk" data-testid="share-open-desk">Open on the Desk</Link></Button>
     </div>
   );
 }

@@ -118,10 +118,10 @@ describe("HC-SH-064..075 TourOverlay", () => {
 });
 
 describe("HC-SH-076 / HC-SH-112 Tour mount", () => {
-  it("starts once on /analyse after the flyer closes, remembers it, and replays on request", async () => {
+  it("starts once on /desk after the flyer closes, remembers it, and replays on request", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     mock.loginAs("trader@example.com");
-    pathnameMock.value = "/analyse";
+    pathnameMock.value = "/desk";
     const flyer = document.createElement("div");
     flyer.dataset["testid"] = "flyer";
     document.body.appendChild(flyer);
@@ -144,9 +144,9 @@ describe("HC-SH-076 / HC-SH-112 Tour mount", () => {
     vi.useRealTimers();
   });
 
-  it("does not start when signed out, already done, or off /analyse; a request off /analyse is ignored", async () => {
+  it("does not start when signed out, already done, or off /desk; a request off /desk is ignored", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    pathnameMock.value = "/analyse";
+    pathnameMock.value = "/desk";
     const r = renderWithProviders(<Tour />);
     await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
     expect(screen.queryByTestId("tour")).toBeNull(); // visitor
@@ -158,7 +158,7 @@ describe("HC-SH-076 / HC-SH-112 Tour mount", () => {
     expect(screen.queryByTestId("tour")).toBeNull(); // done before
     r2.unmount();
     localStorage.clear();
-    pathnameMock.value = "/subscription";
+    pathnameMock.value = "/plans";
     renderWithProviders(<Tour />);
     await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
     expect(screen.queryByTestId("tour")).toBeNull();

@@ -27,7 +27,7 @@ test.describe.serial("real API + gateway smoke", () => {
     expect(btc.length).toBeGreaterThan(0);
   });
 
-  test("sign up through Better Auth, verify the emailed OTP, land on /analyse with a live chain", async ({ page, request }) => {
+  test("sign up through Better Auth, verify the emailed OTP, land on /desk with a live chain", async ({ page, request }) => {
     await page.goto("/auth?tab=signup");
     await page.getByLabel("Full Name").fill("Smoke Trader");
     await page.getByRole("textbox", { name: "Email", exact: true }).fill(email);
@@ -38,8 +38,8 @@ test.describe.serial("real API + gateway smoke", () => {
     await expect(page).toHaveURL(/tab=verify-email/);
     await fillOtp(page, await otpFor(request, email));
     await page.getByRole("button", { name: "Verify Email" }).click();
-    await page.waitForURL(/\/analyse/);
-    await expect(page.getByTestId("app-header")).toHaveAttribute("data-variant", "analyse");
+    await page.waitForURL(/\/desk/);
+    await expect(page.getByTestId("app-header")).toHaveAttribute("data-variant", "desk");
     // the real gateway: futures price and a chain with venue strikes
     await expect(page.getByTestId("futures-price-value")).not.toHaveText("—", { timeout: 30_000 });
     await expect(page.getByTestId("feed-status")).toHaveAttribute("data-state", "live");
@@ -54,7 +54,7 @@ test.describe.serial("real API + gateway smoke", () => {
     await page.getByRole("textbox", { name: "Email", exact: true }).fill(email);
     await page.getByRole("textbox", { name: "Password", exact: true }).fill(PASSWORD);
     await page.getByRole("button", { name: "Sign In", exact: true }).click();
-    await page.waitForURL(/\/analyse/);
+    await page.waitForURL(/\/desk/);
     await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 30_000 });
     const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
     await page.locator(`[data-testid=chain-row-calls][data-strike="${strike}"]`).hover();

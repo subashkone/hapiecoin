@@ -82,9 +82,9 @@ describe("HC-SH-135 service worker (ADR-082)", () => {
     }
     expect(route(req("/v1/live/place", "POST"), ORIGIN)).toBe("pass");
     expect(route(req("https://gw.hapiecoin.com/healthz"), ORIGIN)).toBe("pass");
-    expect(route(req("/analyse", "GET", "cors"), ORIGIN)).toBe("pass"); // a fetch() of a page, not a navigation
+    expect(route(req("/desk", "GET", "cors"), ORIGIN)).toBe("pass"); // a fetch() of a page, not a navigation
     expect(route(req("/_next/static/chunks/main-abc123.js"), ORIGIN)).toBe("static");
-    expect(route(req("/analyse", "GET", "navigate"), ORIGIN)).toBe("navigate");
+    expect(route(req("/desk", "GET", "navigate"), ORIGIN)).toBe("navigate");
     expect(route(req("/t/asha", "GET", "navigate"), ORIGIN)).toBe("navigate");
     expect(route(req("/auth", "GET", "navigate"), ORIGIN)).toBe("navigate"); // the sign-in page is a page; the auth API lives under /api/auth
     expect(route(req("/v1ews", "GET", "navigate"), ORIGIN)).toBe("navigate"); // a prefix does not swallow a look-alike route
@@ -116,7 +116,7 @@ describe("HC-SH-135 service worker (ADR-082)", () => {
     const respondWith = (p: Promise<Response>) => {
       answered = p;
     };
-    sw.handlers.get("fetch")!({ request: req("/analyse", "GET", "navigate"), respondWith, waitUntil: vi.fn() });
+    sw.handlers.get("fetch")!({ request: req("/desk", "GET", "navigate"), respondWith, waitUntil: vi.fn() });
     expect(await answered).toBe(page);
     expect([...(sw.stores.get(sw.seam.VERSION)?.keys() ?? [])]).toEqual([]); // the page was not stored
     // network gone, before install ever ran: a plain 503 text
@@ -141,7 +141,7 @@ describe("HC-SH-135 service worker (ADR-082)", () => {
     for (let i = 0; i < sw.seam.STATIC_KEEP + 3; i++) await cache.put(req(`/_next/static/chunks/c${i}.js`), new Response("js"));
     const waits: Promise<unknown>[] = [];
     sw.fetch.mockResolvedValueOnce(new Response("<html>live</html>"));
-    sw.handlers.get("fetch")!({ request: req("/analyse", "GET", "navigate"), respondWith: vi.fn(), waitUntil: (p) => waits.push(p) });
+    sw.handlers.get("fetch")!({ request: req("/desk", "GET", "navigate"), respondWith: vi.fn(), waitUntil: (p) => waits.push(p) });
     await Promise.all(waits);
     const store = sw.stores.get(sw.seam.VERSION)!;
     expect(store.has("/offline")).toBe(true);

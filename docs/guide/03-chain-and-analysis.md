@@ -1,6 +1,6 @@
 # Options chain and the analysis tabs
 
-Part of the [HapieCoin feature guide](README.md). 119 traced features on 21 screens; 118 built and tested, 1 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 134 traced features on 22 screens; 133 built and tested, 1 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -19,53 +19,61 @@ The chain lists every strike the exchange lists for the chosen expiry, calls and
 
 ## Screens
 
-![Chain with payoff, dark](../../apps/web/e2e/__screenshots__/analyse-dark.png)
+![Chain with payoff, dark](../../apps/web/e2e/__screenshots__/desk-dark.png)
 *Chain with payoff, dark*
 
-![Chain with payoff, light](../../apps/web/e2e/__screenshots__/analyse-light.png)
+![Chain with payoff, light](../../apps/web/e2e/__screenshots__/desk-light.png)
 *Chain with payoff, light*
 
-![Two legs on the chain with the row controls](../../apps/web/e2e/__screenshots__/analyse-legs-dark.png)
+![Two legs on the chain with the row controls](../../apps/web/e2e/__screenshots__/desk-legs-dark.png)
 *Two legs on the chain with the row controls*
 
-![Column settings](../../apps/web/e2e/__screenshots__/analyse-columns-dark.png)
+![Column settings](../../apps/web/e2e/__screenshots__/desk-columns-dark.png)
 *Column settings*
 
-![Greeks](../../apps/web/e2e/__screenshots__/analyse-greeks-dark.png)
+![Greeks](../../apps/web/e2e/__screenshots__/desk-greeks-dark.png)
 *Greeks*
 
-![Ladder](../../apps/web/e2e/__screenshots__/guide/analyse-ladder.png)
+![Ladder](../../apps/web/e2e/__screenshots__/guide/desk-ladder.png)
 *Ladder*
 
-![Scenarios](../../apps/web/e2e/__screenshots__/analyse-scenarios-dark.png)
+![Scenarios](../../apps/web/e2e/__screenshots__/desk-scenarios-dark.png)
 *Scenarios*
 
-![Scenarios, smooth heat map](../../apps/web/e2e/__screenshots__/analyse-scenarios-smooth-dark.png)
+![Scenarios, smooth heat map](../../apps/web/e2e/__screenshots__/desk-scenarios-smooth-dark.png)
 *Scenarios, smooth heat map*
 
-![Vol: IV rank and realised vs implied](../../apps/web/e2e/__screenshots__/analyse-vol-dark.png)
+![Vol: IV rank and realised vs implied](../../apps/web/e2e/__screenshots__/desk-vol-dark.png)
 *Vol: IV rank and realised vs implied*
 
-![Structure: term structure and skew](../../apps/web/e2e/__screenshots__/analyse-structure-dark.png)
+![Structure: term structure and skew](../../apps/web/e2e/__screenshots__/desk-structure-dark.png)
 *Structure: term structure and skew*
 
-![Options screener](../../apps/web/e2e/__screenshots__/analyse-screener-dark.png)
+![Options screener](../../apps/web/e2e/__screenshots__/desk-screener-dark.png)
 *Options screener*
 
-![Backtest](../../apps/web/e2e/__screenshots__/guide/analyse-backtest.png)
+![Backtest](../../apps/web/e2e/__screenshots__/guide/desk-backtest.png)
 *Backtest*
 
-![Replay](../../apps/web/e2e/__screenshots__/guide/analyse-replay.png)
+![Replay](../../apps/web/e2e/__screenshots__/guide/desk-replay.png)
 *Replay*
 
-![Share a strategy](../../apps/web/e2e/__screenshots__/analyse-share-dark.png)
+![Share a strategy](../../apps/web/e2e/__screenshots__/desk-share-dark.png)
 *Share a strategy*
 
 ## Every feature, in detail
 
 Each row is one traced feature from the build spec: the id, what it is, how it behaves (the acceptance rule the tests check), and how it is tested. Status "mock-only" means the screen exists but the data feed behind it is not connected yet.
 
-### Analyse workspace · `/analyse`
+### Desk · Playbooks tab · `/desk`
+
+| ID | Feature | How it behaves | Status | Tested by |
+|---|---|---|---|---|
+| HC-SH-141 | Telegram opt-in for proposals: a per-user setting, off by default, disabled until the chat is linked under Alerts, with the server-side daily cap | UserSettings.proposalsTelegram (schema, default false so an older client's PUT keeps working, at the price of switching the opt-in off, GAPS #139; user_settings.proposals_telegram, migration 0026) saved through PUT /v1/settings like the other preferences (not a safety knob: no second factor); the checkbox in the Playbooks tab's proposals strip (proposals-telegram-toggle) reads useTelegramStatus and stays disabled with link Telegram under Alerts first until linked; PROPOSALS_TELEGRAM_CAP (default 3, 0 off) bounds the messages per user per UTC day | built | unit (api + web) |
+| HC-WS-119 | The Playbooks tab: one card per playbook for the workspace asset with the plan in words, the rationale and evidence, its record and status, the control marked, and Load into Builder / Open in Backtest | PlaybooksPanel.tsx (tab 'playbooks' in AnalysisPane and the palette): the intro says decision support, never a recommendation; each playbook-card (data-playbook, data-status) shows the template and planLine, summary, Why, Evidence with its source, the record grid (entries and closed trades with coverage and reconstructed days; net of fees, or before fees when the venue publishes no rule, with win rate and worst fall; in-sample / out-of-sample totals and trade counts; losing years and the trial count), the no-signal count, the trials note with the size rule and the thresholds, a status chip (playbook-status: Passes its thresholds / Fails its thresholds / Not enough trades yet / Control: fails as it should / Control passed: suspect the engine, each with a hint) or 'No record yet'; the control card is dashed; Load into Builder uses the Templates panel's loader (disabled until the chain is loaded); Open in Backtest (catalogue templates only; the inline control shows a note instead) sets the store's backtestPreset (template, size, one-year range, two folds, min DTE, trend filter, IV band, target, stop, time stop) and switches to the Backtest tab, which applies it once and clears it (the Rules row gained a 21-day time stop and an upper-half IV band for this); a 503 shows a designed empty state and the cards still list the plans; the mock API serves the records through the real engine over the synthetic chains | built | unit (web) |
+| HC-WS-120 | Proposals in the Playbooks tab (the latest recorded chain's day): one card per plan that enters on the latest recorded chain for the workspace asset, with its legs, net premium, max profit and loss, the record status and the warning; Open in Builder as paper loads the exact legs and opens the paper flow (nothing placed); Dismiss hides it | PlaybooksPanel.tsx proposals-strip (data-state loading / ready / empty / error) above the record cards: useProposals (GET /v1/proposals for the venue) filtered to the asset, dismissed ones out of the strip with a count in the empty line (No plan enters BTC on the latest recorded chain · 1 dismissed); each proposal-card (data-proposal, data-playbook, data-status) shows the plan name, asset, expiry, size, spot, the legs line (B C 79500 · S C 80500 · PERP), net premium (pays / receives), max profit, max loss or unbounded, the record status chip and A backtest is not a forecast; Open in Builder as paper runs the legs through the Builder's addLeg, switches the workspace to the Builder, opens the trade flow with paper preselected, marks the proposal taken and toasts that nothing is placed until confirmed; Dismiss marks dismissed; the mock API serves proposals through the real proposalFor over the synthetic chains with per-account marks | built | unit (web) |
+
+### Desk · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -73,7 +81,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-WS-002 | Resizable divider between the panes (drag 35–70%, double-click resets to 55%) | Width persisted in CG.state.analyseSplit; chart re-renders to the new width | built | unit (pricing) · e2e (Playwright) |
 | HC-WS-003 | Responsive stacking below 1000px with a segmented 'Chain \| Analysis' toggle | Media query stacks the panes; the toggle sets data-mobile on the shell to show one pane at a time | built | unit (pricing) · e2e (Playwright) |
 | HC-WS-004 | Shared chrome placeholders: app header (variant 'analyse'), plan banner and portfolio bar | <div data-cg="app-header" data-variant="analyse">, <div data-cg="plan-banner"> and <div data-cg="portfolio-bar"> are rendered by the chrome part; the workspace measures them | built | unit (pricing) · e2e (Playwright) |
-| HC-WS-005 | Left tab bar: Chain · Builder · Paper · Live · Journal with small mono count pills | data-lptab chain\|strategy\|paper\|live\|journal (same data-tour ids as v1); pills show active legs / paper / live / closed strategy counts and hide at 0; the trading module mounts its .lp-panel[data-tab] panels into #analyse-left-panels | built | unit (pricing) · e2e (Playwright) · security |
+| HC-WS-005 | Left tab bar: Chain · Builder · Paper · Live · Journal with small mono count pills | data-lptab chain\|strategy\|paper\|live\|journal (same data-tour ids as v1); pills show active legs / paper / live / closed strategy counts and hide at 0; the trading module mounts its .lp-panel[data-tab] panels into #desk-left-panels | built | unit (pricing) · e2e (Playwright) · security |
 | HC-WS-006 | Deep links #/analyse?tab=strategy&panel=scenarios (panel = payoff \| scenarios \| greeks \| vol \| structure \| ladder; the v1 values analytics → payoff and pnl → ladder still resolve) | query.tab / query.panel are read in show(); the last tab is persisted in CG.state.analyseTab / analyseRightTab | built | unit (pricing) · e2e (Playwright) |
 | HC-WS-063 | Shared workspace state CG.analyse {legs, name, strategyId, asset, expiry, targetDays, targetPrice, mode, stats, setExpiry(), setRightTab(), findDelta()} and events analyse:addLeg / analyse:legs-changed / analyse:tab / analyse:set-tab / analyse:right-tab / analyse:expiry / analyse:target / analyse:stats | State object created here; leg mutations belong to the trading part (chain only emits analyse:addLeg, with a local fallback); the right pane re-renders on analyse:legs-changed and on every tick | built | unit (pricing) · e2e (Playwright) |
 | HC-WS-064 | Tab count pills: Builder = active legs, Paper / Live = strategy counts, Journal = closed strategies | renderCounts() on analyse:legs-changed / analyse:strategies-changed; pills hide at 0 | built | unit (pricing) · e2e (Playwright) · security |
@@ -81,12 +89,12 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-WS-066 | Density: comfortable rows (36px) / compact rows (28px) for the chain and the ladder | root[data-density] follows CG.state.density and CG.on('density') | built | e2e (Playwright) |
 | HC-WS-067 | Tab-bar micro info: 'Lot 0.001 BTC · Basis mark' (left) and 'Bull Call Spread · 25 Sep · 20 lots' (right) | Rebuilt on legs / lot-size / basis changes | built | e2e (Playwright) |
 | HC-WS-068 | Header stats feed: CG.emit('analyse:stats', {atmIv, ivRank, ivPercentile, expectedMove, expiry, spot, pcr, maxPain, skew25}) on show, expiry, asset and every tick; also stored in CG.analyse.stats | Consumed by the chrome header (ATM IV · IV rank · expected move) | built | unit (pricing) · e2e (Playwright) |
-| HC-WS-069 | Command palette commands: Switch expiry → <date> (one per expiry), Load template → <name> (skipped when the trading module registers its own), Toggle chain Greeks, Find strike by delta…, Share strategy link, Analyse → <tab> | CG.palette.register({id,label,group:"Analyse",keywords,run}) guarded; commands navigate to /analyse first when needed | built | unit (pricing) · e2e (Playwright) |
-| HC-WS-070 | Keyboard shortcuts listed in the ? help: J / K, ↑ / ↓, B / S, Shift+B / Shift+S, E / Shift+E, Enter | CG.shortcuts.register(key, description, handler, {group:"Analyse workspace"}) with a document fallback when the registry is absent | built | e2e (Playwright) |
+| HC-WS-069 | Command palette commands: Switch expiry → <date> (one per expiry), Load template → <name> (skipped when the trading module registers its own), Toggle chain Greeks, Find strike by delta…, Share strategy link, Analyse → <tab> | CG.palette.register({id,label,group:"Desk",keywords,run}) guarded; commands navigate to /desk first when needed | built | unit (pricing) · e2e (Playwright) |
+| HC-WS-070 | Keyboard shortcuts listed in the ? help: J / K, ↑ / ↓, B / S, Shift+B / Shift+S, E / Shift+E, Enter | CG.shortcuts.register(key, description, handler, {group:"Desk"}) with a document fallback when the registry is absent | built | e2e (Playwright) |
 | HC-WS-107 | Phase 1 live chain shell: expiries discovered from the gateway (fallback list only when it exposes none); the chain lists exactly the strikes the venue instrument list holds for the selected expiry, marks the ATM row and shows FEED LIVE / stale from the gateway sequence numbers | apps/web ChainPanel + ChainTable over the gateway reducer; strikes never come from a fixed step (ADR-006) | built | unit (pricing) · e2e (Playwright) · security |
 | HC-WS-108 | Phase 1 chain rows: strike, call and put marks from the coalesced gateway deltas, one row per venue strike (no synthetic strikes, no gaps filled) | ChainTable renders the reducer state; q frames patch only changed fields | built | unit (pricing) · e2e (Playwright) |
 
-### Options chain · `/analyse`
+### Options chain · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -122,7 +130,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-WS-079 | Header group row hints: "ITM shaded · strikes ±12" and "Δ per contract" | Behaves as in the v2 mock. | built | e2e (Playwright) |
 | HC-WS-080 | Footer additions: Skew 25Δ (IV put − IV call at 25Δ) and Fwd (from ATM put-call parity) | Behaves as in the v2 mock. | built | unit (pricing) · e2e (Playwright) |
 
-### Column Settings · `/analyse`
+### Column Settings · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -131,13 +139,13 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-WS-013 | Reorder tab – 'Drag columns to change their display order (left → right).' | HTML5 drag & drop list (dragstart/dragover/dragend) plus ▲/▼ buttons; hidden columns are badged; order applies from the strike outward and is mirrored on the Calls side | built | e2e (Playwright) · api contract · security |
 | HC-WS-014 | Persistence of column visibility and order | Saved as CG.state.chainCols {v:2, order, visible} (v1 layouts are migrated to the v2 default) | built | e2e (Playwright) · api contract · security |
 
-### Analysis pane · `/analyse`
+### Analysis pane · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-WS-032 | Right tab bar: Payoff · Scenarios · Greeks · Vol · Structure · Ladder with the strategy summary ("Bull Call Spread · 25 Sep · 20 lots"), Share and collapse buttons (data-tour="payoff-panel") | The v1 Analytics tab was merged into the Payoff tab as the Analytics strip; the v1 P&L Table became the Ladder tab | built | unit (pricing) · e2e (Playwright) |
 
-### Payoff Diagram · `/analyse`
+### Payoff Diagram · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -160,7 +168,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-WS-049 | Automatic re-rendering on price ticks, leg changes, asset / expiry / currency / lot-size changes, density, theme and pane resize | CG.on('tick' \| 'analyse:legs-changed' \| 'asset' \| 'currency-settings-changed'), window resize and a ResizeObserver on the chart host | built | e2e (Playwright) |
 | HC-WS-109 | Multi-expiry positions (calendars, diagonals) value their expiry figures at the nearest expiry | When the option legs span more than one expiry the payoff pane values max profit, max loss, break-evens and POP at the nearest expiry with the later legs keeping their time value (the calendar convention); the strip says “Expiry figures on <date> · later legs keep time value”; a settled expiry is skipped; single-expiry positions keep the exact intrinsic curve; two legs across expiries are named Call / Put Calendar (same strike) or Diagonal; the built-in calendar templates take their far leg from the next listed expiry’s chain (its strike and mark used to come from the near chain) | built | unit (pricing) · e2e (Playwright) |
 
-### Payoff · Analytics strip · `/analyse`
+### Payoff · Analytics strip · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -174,7 +182,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-WS-057 | Net premium → 'Net debit $4.66 · 465.8 / BTC' tile (credit / debit label switches) | Signed net premium from CG.analyze | built | unit (pricing) · e2e (Playwright) |
 | HC-WS-058 | Max ROI → 'Max ROI 6% on margin' in the strip | Max profit / required margin (Unlimited when infinite) | built | unit (pricing) · e2e (Playwright) |
 
-### Greeks · `/analyse`
+### Greeks · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -184,7 +192,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-WS-101 | Position Δ and Θ across the price axis: two small charts (re-pricing every leg at 49 prices ±20% around spot on the target date) with strike dots and the spot hairline | Behaves as in the v2 mock. | built | e2e (Playwright) |
 | HC-WS-102 | Greeks tab restyled: hairline tiles, mono table (Θ and ν in currency), compact explanations | Behaves as in the v2 mock. | built | unit (pricing) · e2e (Playwright) |
 
-### Ladder · `/analyse`
+### Ladder · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -192,7 +200,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-WS-103 | Step selector (250 / 500 / 1000 for BTC; ½× / 1× / 2× the strike step for other assets) | CG.state.ladderStep | built | e2e (Playwright) |
 | HC-WS-104 | 'At expiry' and 'On <target date>' P&L columns, 'Change from spot', status pills; spot row highlighted amber; breakeven rows inserted; sticky header; auto-scroll to spot | Behaves as in the v2 mock. | built | unit (pricing) · e2e (Playwright) |
 
-### Payoff · `/analyse`
+### Payoff · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -204,7 +212,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-WS-086 | Net greeks strip under the sliders: Net Δ · Net Γ · Net Θ / day · Net ν / 1% IV · Margin est. · 'USD per strategy · 20 lots · mark basis' | Behaves as in the v2 mock. | built | unit (pricing) · e2e (Playwright) |
 | HC-WS-087 | Tooltip format '16 Sep @ 82,879 +4.2% · +$2.28 · exp +$5.33' | Behaves as in the v2 mock. | built | e2e (Playwright) |
 
-### Scenarios · `/analyse`
+### Scenarios · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -215,7 +223,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-WS-092 | Smooth toggle renders the same grid as a bilinearly interpolated canvas heat field with column separators, dashed zero (breakeven) contour, amber spot line and the target outline | ImageData interpolation between cell centres; colours read from the theme tokens so both themes work | built | unit (pricing) · e2e (Playwright) |
 | HC-WS-093 | Hover tooltip on cells and on the canvas ('81,129 · 16 Sep · +1.1'; canvas values are interpolated) | Behaves as in the v2 mock. | built | e2e (Playwright) |
 
-### Vol · `/analyse`
+### Vol · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -224,7 +232,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-WS-096 | IV rank (1y): rank, percentile, current, 1y low / high on a gauge with an interpretation line | Generated 365-day ATM IV history (mean-reverting log process seeded per asset, pinned to the current ATM IV) | built | unit (pricing) · e2e (Playwright) |
 | HC-WS-097 | Realised vs implied: 30-day realised vol (from a generated price series) vs the ATM IV history over 365 days, with the IV − RV spread | Behaves as in the v2 mock. | built | unit (pricing) · e2e (Playwright) |
 
-### Structure · `/analyse`
+### Structure · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
@@ -232,49 +240,61 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-WS-099 | Put / call ratio for open interest and 24h volume with call/put share bars and a positioning note | Behaves as in the v2 mock. | built | e2e (Playwright) |
 | HC-WS-100 | Gamma exposure (GEX) profile: Σ γ × OI × lot × spot² × 1% per strike (calls +, puts −) as signed bars with a zero line, net GEX and the gamma-flip strike | Behaves as in the v2 mock. | built | unit (pricing) · e2e (Playwright) |
 
-### Share · `/analyse`
+### Share · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-WS-105 | Share button in the pane header copies a link (origin + path + #/s/<base64url {a, l:[[type,side,strike,expiry,lots,price]…], n}>) and opens a dialog with the link, Copy button, legs and max profit / loss / POP | navigator.clipboard with an execCommand fallback; toasts "Link copied" | built | unit (pricing) · e2e (Playwright) |
-| HC-WS-106 | /s/:code route (no auth): decodes the link, loads the legs into CG.analyse, toasts "Strategy loaded from link" and navigates to /analyse; logged-out visitors get a preview card (legs, max profit / loss, POP) with "Open in Analyse" and "Sign in"; invalid codes show an error card | Registered as <section data-route="/s/:code" data-title="Shared strategy"> | built | unit (pricing) · e2e (Playwright) |
+| HC-WS-106 | /s/:code route (no auth): decodes the link, loads the legs into CG.analyse, toasts "Strategy loaded from link" and navigates to /desk; logged-out visitors get a preview card (legs, max profit / loss, POP) with "Open on the Desk" and "Sign in"; invalid codes show an error card | Registered as <section data-route="/s/:code" data-title="Shared strategy"> | built | unit (pricing) · e2e (Playwright) |
 
-### Analyse · Screener tab · `/analyse`
+### Desk · Screener tab · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-WS-110 | Options screener: every listed option ranked on the live chain | A sixth left tab folds every listed expiry's chain (already subscribed for the Vol tab) into one row per quoted option with premium per day (mark ÷ days to settlement, per unit), yield per day (% of spot), IV−ATM (vol points against the expiry's ATM), \|Δ\|, break-even % vs spot at expiry and OI; sortable columns (default premium per day), a column menu and CSV; filters for side, \|Δ\| band (≤0.10, 0.10–0.30, 0.30–0.50, >0.50), expiries and minimum OI; the top 100 rows with the total; the basis line names the options counted, marks, the front IV rank, spot, the term shape and whether the feed is live; every header carries its unit and basis | built | unit (pricing) · e2e (Playwright) · security |
 | HC-WS-111 | Expiries view: ATM IV, 25Δ skew, expected move, OI and PCR per expiry | The Expiries chip swaps the table for one row per priced expiry: days, ATM IV, 25Δ skew (put IV − call IV in vol points), the expected move (± USD and % over the days left), call and put OI, the put/call ratio and the strike count, sorted by days; the strike filters rest while this view is shown | built | unit (pricing) · e2e (Playwright) |
-| HC-WS-112 | Buy / Sell a screened option into the Builder; Chain opens its expiry; the palette reaches the tab | Each strike row carries B / S buttons that add one Builder leg at the chain lots with the row's mark and IV (the chain row's rule and toasts, the leg limit included) and a ⌕ Chain button that sets the workspace expiry and opens the Chain tab; the palette command 'Options screener' and the deep link /analyse?tab=screener open the tab | built | unit (pricing) · e2e (Playwright) |
+| HC-WS-112 | Buy / Sell a screened option into the Builder; Chain opens its expiry; the palette reaches the tab | Each strike row carries B / S buttons that add one Builder leg at the chain lots with the row's mark and IV (the chain row's rule and toasts, the leg limit included) and a ⌕ Chain button that sets the workspace expiry and opens the Chain tab; the palette command 'Options screener' and the deep link /desk?tab=screener open the tab | built | unit (pricing) · e2e (Playwright) |
 
-### Analyse · Replay (API) · `/analyse`
+### Desk · Replay (API) · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-WS-113 | The instants an expiry's chain was recorded at and the ladder at one of them: daily over the end-of-day history, every five minutes over the last week | GET /v1/replay/expiries (expiries with a recorded chain, days held, listed now), GET /v1/replay/steps (daily instants from chain_eod, 5-minute passes of the last week from instrument_marks through one symbol of the expiry, the spot from the same pass's IV snapshot), GET /v1/replay/chain?at= (end-of-day rows stamped then, else the marks of that pass parsed through the venue codec; 404 when nothing was recorded then); behind the session, cached a minute; 503 before anything is recorded | built | unit (api) |
 
-### Analyse · Replay tab · `/analyse`
+### Desk · Replay tab · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-WS-114 | Scrub an expiry's recorded chain by day or by 5-minute pass, with the Builder's legs marked at that instant | Analysis pane tab (and the palette command Analysis: Replay): expiry select with the recorded days, Daily / 5-min with the step counts, a slider with previous / next / play (400 ms per step, restarts from the first instant when at the end), the readout (instant, spot, recorded end of day or recorded 5-minute pass, n of N), the ladder with call mark / IV, strike, put IV / mark and the ATM row marked; the Builder's legs on that expiry show B / S on their strike and the position's mark-to-market versus entry from recorded marks only (a leg without a recorded mark says so); an honest empty state before anything is recorded; the mock API serves synthetic instants | built | unit (web), e2e |
 
-### Analyse · Chain · `/analyse`
+### Desk · Chain · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-WS-116 | Open interest the venue did not send shows as a dash, never as 0 | Quote.oi is optional: the venue adapter omits it when the venue sent none and keeps a real zero as 0; both venue sessions carry the last figure forward over a tick that omits it, so a snapshot shows the last known figure. The chain cell, the strike picker, option details and the workbench chain show — with no OI bar; Σ OI and the put/call ratio sum only the figures that exist; the screener shows — for an unknown figure, sorts it last, keeps it under a zero minimum and drops it under a positive one | built | unit (schema + venues + gateway + web) |
 
-### Analyse · Backtest (engine + API)
+### Desk · Backtest (engine + API)
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
 | HC-TR-184 | A catalogue template entered at every recorded end of day on the venue's own chain history and held to expiry: trades, equity, stats and coverage | packages/pricing runBacktest (pure): the template placed on each day's ladder around the strike nearest the spot via materialiseTemplate (moved to the pricing package), on the nearest listed expiry with at least minDte days left; each option leg settles at intrinsic on the first recorded day at or after its own settlement, a perpetual rides to the exit day; a trade not fully settled by the last recorded day is open and marked from the recorded mark of the same instrument, else Black-76 at the day's ATM IV (modelled); realised equity per day; win rate, average, median, best, worst, max drawdown, profit factor; coverage with skipped days, open and modelled trades. GET /v1/backtest?asset&template&lots&minDte&from&to&venue behind the session, money to cents, 503 until a day is recorded, 400 for an unknown template | built | unit (pricing + api) |
+| HC-TR-200 | The backtest charges the venue's published fee rule on every fill and in-the-money settlement, so its figures are net; fees=none compares | packages/pricing/src/fees.ts (fillFee: the smaller of notional × option rate and premium × cap, plus GST; a future pays the taker rate; settlementFee on an in-the-money leg) applying VenueCore.feeRule, the one place the rule lives (Delta India 0.01 %, 3.5 %, 0.05 %, 18 %, settlement on; Deribit null); runBacktest takes fees and reports grossPnl, fees and net pnl per trade and grossTotal / totalFees in the stats; GET /v1/backtest reads fees=venue (default) or none and refuses fees=venue on a venue without a rule (400) before any data is read; the result echoes which rule it is net of | built | unit (pricing + api) |
+| HC-TR-201 | Entry conditions for the backtest: spot above or below an N-day average, an IV-rank band, UTC weekdays; a day without a signal or without enough history is skipped and counted | runBacktest conditions: sma (the simple average of the last N recorded spots, today included; fewer than N recorded days is no signal), ivRank (today's front-expiry ATM IV ranked 0..100 against the recorded ATM IVs of the previous 365 calendar days; fewer than IV_RANK_MIN_POINTS = 20 points or a day without IV is no signal), weekdays (UTC); coverage.skipped.noSignal counts the days; the route hands the engine the whole recorded history so the conditions see the days before the range; it reads smaDays + smaSide (both or neither, else 400), ivRankMin / ivRankMax (min ≤ max, else 400) and weekdays as a comma list | built | unit (pricing + api) |
+| HC-TR-202 | Exit rules for the backtest: a target, a stop and a time stop judged once per recorded day on recorded marks; every trade says why it ended | runBacktest exits: targetPct of the structure's maximum profit (of the net credit when unbounded), stopPct of the maximum loss (of the net premium when unbounded), timeStopDte days to the nearest leg's settlement; judged from the day after entry until the nearest leg settles, on recorded marks for every leg (a day with a missing mark is not judged, model prices never trigger an exit); the exit fills are charged; trades carry exitReason settled / target / stop / time / open and ruleInert (a target or stop with no base on a near-zero-premium unbounded structure), coverage.exits counts them including inert; the route reads targetPct, stopPct (percent) and timeStopDte | built | unit (pricing + api) |
+| HC-TR-203 | Walk-forward periods: the backtest's entries cut into two or three consecutive equal-count periods, each with its own stats, so a record that only worked in the period it was fitted on is visible | runBacktest folds (2 or 3): the shown range's trades in entry order cut into contiguous equal-count segments (the later take the extra trade), each a BacktestFold { index, firstDay, lastDay, entries, stats } with statsOf over its closed trades and a drawdown from its own cumulative P&L netted per exit day, as the headline is; a period without a trade has null days and empty stats; the headline figures are unchanged and the result carries folds only when asked; GET /v1/backtest reads folds=2\|3 (400 outside) and projects the periods to cents | built | unit (pricing + api) |
+| HC-TR-204 | A bounded parameter sweep: one or two rule parameters over a grid of at most 48 trials, every trial with its net result and a plateau reading, the trial count and the cap in the result | packages/pricing/src/sweep.ts: SWEEP_AXES smaDays / minDte / targetPct / stopPct / timeStopDte, applyAxis sets the one option, sweepShape refuses more than 8 × 6 values, a repeated or non-increasing value or two equal axes (RangeError), sweepBacktest runs the grid row-major through runBacktest with the same fees / conditions / exits and reports per trial trades, net total, gross, fees, win rate, max drawdown, profit factor and plateau (the share of grid neighbours one step away whose net total keeps the same sign and at least half the size; null for a zero cell or no neighbours), plus best (highest net total among trials with a closed trade) and the cap; GET /v1/backtest/sweep takes the single run's query plus axis1 / values1 and optional axis2 / values2 (comma lists, each value checked against the single run's own field bounds by parseSweepValues), turns a shape error into a 400 before any data is read, 503 with no recorded day, cached five minutes | built | unit (pricing + api) |
+| HC-TR-205 | Playbooks as data with a stored record: seven research-named plans (a template, conditions, exits, size, rationale, evidence, trial count, thresholds), hero-or-zero as the control, and a leader job that keeps each record up to the latest recorded day | packages/pricing/src/playbooks.ts PLAYBOOKS (trend-calls, trend-puts, premium-harvest, expiry-week-credit, pin-butterfly, covered-call, hero-or-zero as the inline control), playbookTemplate / playbookOptions (the plan over base options with two folds) / playbookStatus (pass needs >= 20 closed trades, net > 0 and the out-of-sample half > 0; fail otherwise with the trades; insufficient below; the control inverts to control-ok / control-alarm) / losingYearsOf; apps/api/src/playbooks.ts computePlaybookRecord (the engine over the whole recorded history net of the venue's fee rule, projected to cents by projectPlaybookRecord) and refreshPlaybookRecords (one upserted playbook_records row per playbook, venue and asset, recomputed whenever the recorded history's last day or day count changes, so the candle backfill behind a record refreshes it too; one failing playbook never stalls the rest; a control-alarm is logged); the record states its fees basis (venue rule or none), startPlaybookRecords leader job every PLAYBOOK_RECORDS_MS (default six hours, once at start, 0 off); migration 0025 | built | unit (pricing + api) |
+| HC-TR-206 | GET /v1/playbooks: every playbook's stored record on the venue's chain history with its status, behind the session, 503 before the first record | apps/api/src/routes/playbooks.ts: venue from the query (default delta_india), listPlaybookRecords rows {playbookId, asset, record}, 503 when none, Cache-Control private max-age 300; the record carries computedAt, first / last day, days and reconstructed days, entries, no-signal count, stats, the two folds, losing years, exit counts, the trial count and the status | built | unit (api) |
+| HC-TR-207 | Proposal detector: after the end-of-day chain write every non-control playbook with a record says whether its plan would enter on the latest recorded day, and the structure it would place is stored once per playbook, venue, asset and day | packages/pricing/src/backtest.ts entryFor (the backtest's entry step, shared: conditions, the first listed expiry at or past minDte, the template on that day's ladder) and playbooks.ts proposalFor (the latest day; net premium and expiry extremes; the control is refused); apps/api/src/proposals.ts detectProposals (eodDaysCached per venue and asset, the record status gate, insert-if-absent on the unique index playbook/venue/asset/day) called from the first snapshotter's after-hook in main.ts (idempotent, so the cadence only decides how soon after the write a proposal appears); db playbook_proposals; migration 0026 | built | unit (pricing + api) |
+| HC-TR-208 | GET /v1/proposals and POST /v1/proposals/{id}/mark: a day's proposals on a venue with the caller's marks (new, taken, dismissed), the newest proposal day by default (the latest recorded chain, yesterday until the 12:00 UTC write); an empty day is an empty list | apps/api/src/routes/proposals.ts behind the session: listProposals joins playbook_proposal_marks for the caller (status, telegramSentAt), ordered by asset and playbook, Cache-Control private no-store; markProposal upserts the caller's mark (taken once opened in the Builder, dismissed to hide), 404 for an unknown id, 400 for a status that is not taken or dismissed; marks are per user, so one trader's dismissal never hides another's card | built | unit (api) |
+| HC-TR-209 | Telegram delivery of new proposals through the ADR-057 bot: pass-status proposals only, to users who linked a chat and opted in, at most PROPOSALS_TELEGRAM_CAP a day each, once per proposal | apps/api/src/proposals.ts deliverProposals after each detection: the proposals detected in the last 24 hours with recordStatus pass, recipients = users with telegram_chat_id joined to user_settings.proposals_telegram = true, the day's sent count from the marks, a message per proposal (plan, structure, expiry, size, net premium, max loss, the warning, the app link; never a key, never an instruction to place), the mark's telegramSentAt set only after a successful send so a blocked chat retries next run; nothing attempted without the bot or with the cap at 0 | built | unit (api) |
 
-### Analyse · Backtest tab
+### Desk · Backtest tab · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
+| HC-WS-117 | The Backtest tab's Rules row: fees, trend filter, IV-rank band, weekday chips, target, stop and time stop re-run the backtest; the coverage line says what the figures are net of and how trades exited; the table shows each trade's fees and exit reason | BacktestPanel.tsx Rules row (backtest-fees venue rule / none, disabled and fixed to none on a venue without a published rule (Deribit); backtest-sma off / 20 / 50 / 100 / 200-day average with backtest-sma-side spot above / below; backtest-ivrank any / low 0-30 / middle 30-70 / high 70-100; backtest-weekday-N chips, UTC; backtest-target 25 / 50 / 75 % of max profit; backtest-stop 50 / 100 / 200 % of max loss; backtest-timestop 1 / 2 / 7 days before settlement, only values below the minimum days to expiry) feeding useBacktest, whose key and URL carry the rule fields in a fixed order; the coverage line adds the no-signal count, 'net of the venue's fees (total)' or 'no fees', the exit counts when a rule is set and the count of trades whose target or stop had no base; the empty state names the entry conditions when they skipped every day; the trades table gains a Fees column and an exit-reason badge on rules exits; the mock API applies the same rules through the real engine | built | unit (web), e2e |
+| HC-WS-118 | The Backtest tab's Split control shows the record in in-sample and out-of-sample periods, and its Sweep view runs a rule parameter (or two) over a capped grid with a plateau reading; a click loads a cell's parameters | BacktestPanel.tsx: Split select (backtest-folds-select: off / in-sample and out-of-sample / three periods) adds folds to the query and renders a table (backtest-folds, one backtest-fold row per period with its dates, entries, closed, net, win rate, max drawdown) and, for two periods with trades, a one-sentence verdict (backtest-folds-verdict) on how the second period compares with the first (four cases by sign); the Sweep toggle (backtest-sweep-toggle) opens the Sweep view (backtest-sweep) with axis selects (backtest-sweep-axis1 / axis2, the Rules row's own option lists as values: 20/50/100/200 days, 1/3/7/14/30 DTE, 25/50/75 %, 50/100/200 %, time stops 1/2/7 days filtered below the minimum days to expiry), the grid (backtest-sweep-grid, backtest-sweep-cell buttons coloured by sign, the best cell ringed, a tooltip with trades, win rate, drawdown and plateau), and a summary (backtest-sweep-summary) with the trial count of the cap, the best cell's parameters, result and plateau and the warning that a lone peak is noise; clicking a cell loads its values into the Rules row without re-running the sweep (the swept fields are pinned in the sweep query, the previous grid is kept while a new one loads, a 503 shows a designed empty state); useBacktestSweep in lib/api/backtest.ts builds /v1/backtest/sweep; the mock API serves both through the real engine | built | unit (web) |
 | HC-TR-185 | The Backtest tab: template, lots, minimum days to expiry and range; the coverage line first, stat tiles, the equity curve and the trades | Analysis pane tab (and the palette command Analysis: Backtest): template select by category, lots, min DTE (1 / 3 / 7 / 14 / 30), 7D / 30D / 90D / 1Y; the coverage line names recorded days, entries, skipped days, open and modelled trades and says no fees, no slippage; tiles Realised, Win rate, Average, Max drawdown, Profit factor; the realised equity curve on the SVG chart; trades newest first with entry, expiry, legs, cost, exit (open · marked <day>, modelled) and P&L; before the first recorded day an honest empty state instead of zeros; the mock API runs the same engine over synthetic end-of-day chains | built | unit (web), e2e |
 
 ### API · market history

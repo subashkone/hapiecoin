@@ -1,4 +1,4 @@
-// Visual captures for comparison with mockup-v2/shots (v2-public-auth-login*.png, qa-dark/analyse.jpg …).
+// Visual captures for comparison with mockup-v2/shots (v2-public-auth-login*.png, qa-dark/desk.jpg …).
 // Saved under e2e/__screenshots__/ in both themes and, with E2E_PIXELS=1, asserted against the Linux baseline within
 // the spec's tolerance (shot.ts, ADR-096, GAPS #119). Runs under playwright.visual.config.ts (`pnpm test:visual`): the
 // mock stack and every page are pinned to VISUAL_NOW, so two runs paint the same pixels on any day.
@@ -27,7 +27,7 @@ for (const theme of ["dark", "light"] as const) {
       await shot(page, "visual", `auth-signup-${theme}`, { fullPage: true });
     });
 
-    test(`HC-SH-001 /analyse ${theme}`, async ({ page, request }) => {
+    test(`HC-SH-001 /desk ${theme}`, async ({ page, request }) => {
       await seedUser(request, { email: `shot-${theme}@example.com`, plan: { state: "active", planName: "Pro plan", expiresAt: "2026-12-31T00:00:00Z" }, connected: true, alerts: true });
       await signIn(page, `shot-${theme}@example.com`);
       await page.evaluate((t) => {
@@ -36,11 +36,11 @@ for (const theme of ["dark", "light"] as const) {
       await page.reload();
       await expect(page.getByTestId("chain-table")).toHaveAttribute("data-rows", /^[1-9][0-9]$/, { timeout: 15_000 });
       await expect(page.getByTestId("futures-price-value")).not.toHaveText("—", { timeout: 15_000 });
-      await shot(page, "visual", `analyse-${theme}`);
+      await shot(page, "visual", `desk-${theme}`);
       // HC-WS-010 Column Settings dialog over the chain
       await page.getByTestId("chain-columns").click();
       await expect(page.getByTestId("column-settings")).toBeVisible();
-      await shot(page, "visual", `analyse-columns-${theme}`);
+      await shot(page, "visual", `desk-columns-${theme}`);
       await page.getByTestId("columns-done").click();
       // HC-WS-027 a chain holding two legs, with the hover control on the ATM row
       const atmStrike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
@@ -50,52 +50,52 @@ for (const theme of ["dark", "light"] as const) {
       await page.getByTestId("row-sell-puts").click();
       await page.locator(`[data-testid=chain-row-calls][data-strike="${atmStrike}"]`).hover();
       await expect(page.getByTestId("row-controls-calls")).toBeVisible();
-      await shot(page, "visual", `analyse-legs-${theme}`);
+      await shot(page, "visual", `desk-legs-${theme}`);
       // HC-TR-001 / HC-WS-033 the Builder with the two legs and the payoff pane priced
       await page.getByTestId("tab-builder").click();
       await expect(page.getByTestId("builder-panel")).toHaveAttribute("data-legs", "2");
       await expect(page.getByTestId("payoff-panel")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
       await expect(page.getByTestId("ticket-net")).not.toHaveText("—");
-      await shot(page, "visual", `analyse-builder-${theme}`);
+      await shot(page, "visual", `desk-builder-${theme}`);
       await page.getByTestId("builder-tab-templates").click();
       await expect(page.getByTestId("template-card")).toHaveCount(TEMPLATE_COUNT);
-      await shot(page, "visual", `analyse-templates-${theme}`);
+      await shot(page, "visual", `desk-templates-${theme}`);
       // HC-TR-176..178 the wizard with its three ranked cards
       await page.getByTestId("builder-tab-wizard").click();
       await expect(page.getByTestId("wizard-panel")).toHaveAttribute("data-state", "ready", { timeout: 30_000 });
-      await shot(page, "visual", `analyse-wizard-${theme}`);
+      await shot(page, "visual", `desk-wizard-${theme}`);
       await page.getByTestId("analysis-tab-greeks").click();
       await expect(page.getByTestId("greek-delta")).not.toContainText("—");
-      await shot(page, "visual", `analyse-greeks-${theme}`);
+      await shot(page, "visual", `desk-greeks-${theme}`);
       await page.getByTestId("share-open").click();
       await expect(page.getByTestId("share-link")).not.toHaveValue("");
-      await shot(page, "visual", `analyse-share-${theme}`);
+      await shot(page, "visual", `desk-share-${theme}`);
       await page.keyboard.press("Escape");
       // HC-WS-088..100 the Phase 5 tabs
       await page.getByTestId("analysis-tab-scenarios").click();
       await expect(page.getByTestId("scenarios-panel")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
-      await shot(page, "visual", `analyse-scenarios-${theme}`);
+      await shot(page, "visual", `desk-scenarios-${theme}`);
       await page.getByTestId("scenario-smooth").click();
       await expect(page.getByTestId("scenario-heat")).toBeVisible();
-      await shot(page, "visual", `analyse-scenarios-smooth-${theme}`);
+      await shot(page, "visual", `desk-scenarios-smooth-${theme}`);
       await page.getByTestId("analysis-tab-vol").click();
       await expect(page.getByTestId("vol-panel")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
-      await shot(page, "visual", `analyse-vol-${theme}`);
+      await shot(page, "visual", `desk-vol-${theme}`);
       await page.getByTestId("analysis-tab-structure").click();
       await expect(page.getByTestId("structure-panel")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
-      await shot(page, "visual", `analyse-structure-${theme}`);
+      await shot(page, "visual", `desk-structure-${theme}`);
       await page.getByTestId("analysis-tab-payoff").click();
       // HC-WS-110 the options screener
       await page.getByTestId("tab-screener").click();
       await expect(page.getByTestId("screener-panel")).toHaveAttribute("data-state", "ready", { timeout: 30_000 });
-      await shot(page, "visual", `analyse-screener-${theme}`);
+      await shot(page, "visual", `desk-screener-${theme}`);
       await page.getByTestId("tab-builder").click(); // back to the Builder for the paper trade below
       // HC-TR-058 / HC-TR-068 a paper trade on the Paper tab and its details
       await page.getByTestId("builder-tab-builder").click();
       await page.getByTestId("strategy-name").fill("Visual straddle");
       await page.getByTestId("builder-paper-trade").click();
       await expect(page.getByTestId("trade-mode")).toBeVisible();
-      await shot(page, "visual", `analyse-trade-mode-${theme}`);
+      await shot(page, "visual", `desk-trade-mode-${theme}`);
       await page.getByTestId("trade-continue").click();
       await expect(page.getByTestId("trade-preview")).toBeVisible();
       await page.getByTestId("trade-now").click();
@@ -104,11 +104,11 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("paper-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
       await expect(page.getByTestId("paper-card").getByTestId("card-pnl")).not.toHaveText("—");
       await expect(page.getByTestId("paper-strip")).toHaveAttribute("data-portfolio", "ready", { timeout: 15_000 });
-      await shot(page, "visual", `analyse-paper-${theme}`);
+      await shot(page, "visual", `desk-paper-${theme}`);
       // ADR-053 the keyboard shortcuts help
       await page.keyboard.press("Shift+?");
       await expect(page.getByTestId("shortcuts-dialog")).toBeVisible();
-      await shot(page, "visual", `analyse-shortcuts-${theme}`);
+      await shot(page, "visual", `desk-shortcuts-${theme}`);
       await page.keyboard.press("Escape");
       await expect(page.getByTestId("shortcuts-dialog")).toBeHidden();
       // ADR-052 the Alerts center from the bell, then the New alert form from a card's Set alert
@@ -116,13 +116,13 @@ for (const theme of ["dark", "light"] as const) {
       const alerts = page.getByTestId("alerts-dialog");
       await expect(alerts.getByTestId("alert-row")).toHaveCount(3);
       await expect(alerts.locator("[data-testid=alert-row][data-kind=price]").getByTestId("alert-now")).toContainText(/now [0-9]/, { timeout: 15_000 });
-      await shot(page, "visual", `analyse-alerts-${theme}`, { mask: [page.getByTestId("alert-fired")] }); // "fired h:mm" comes from the mock's flowing clock
+      await shot(page, "visual", `desk-alerts-${theme}`, { mask: [page.getByTestId("alert-fired")] }); // "fired h:mm" comes from the mock's flowing clock
       await page.keyboard.press("Escape");
       await expect(alerts).toBeHidden();
       await page.getByTestId("paper-card").getByTestId("card-alert").click();
       await expect(alerts.getByTestId("alert-form")).toBeVisible();
       await expect(alerts.getByTestId("alert-form-now")).toContainText("$", { timeout: 15_000 });
-      await shot(page, "visual", `analyse-alerts-form-${theme}`);
+      await shot(page, "visual", `desk-alerts-form-${theme}`);
       await page.keyboard.press("Escape");
       await expect(alerts).toBeHidden();
       // ADR-044 the adjustment workbench (HC-TR-148..151) and its paper confirm
@@ -136,29 +136,29 @@ for (const theme of ["dark", "light"] as const) {
       await expect(page.getByTestId("before-after")).toBeVisible();
       await expect(page.getByTestId("adjust-change-box").getByTestId("adjust-summary")).toContainText("This change", { timeout: 15_000 });
       await page.getByTestId("position-ticket").scrollIntoViewIfNeeded(); // capture the legs, the change box and the tiles, not the scrolled chain
-      await shot(page, "visual", `analyse-workbench-${theme}`);
+      await shot(page, "visual", `desk-workbench-${theme}`);
       await wb.getByTestId("adjust-review").click();
       await expect(page.getByTestId("adjust-confirm")).toBeVisible();
-      await shot(page, "visual", `analyse-adjust-confirm-${theme}`);
+      await shot(page, "visual", `desk-adjust-confirm-${theme}`);
       await page.getByTestId("adjust-cancel").click();
       await wb.getByTestId("adjust-exit").click();
       await page.getByTestId("adjust-exit-discard").click(); // the change would be discarded, so Exit asks first
       await expect(wb).toBeHidden();
       await page.getByTestId("card-details").click();
       await expect(page.getByTestId("strategy-details")).toBeVisible();
-      await shot(page, "visual", `analyse-details-${theme}`);
+      await shot(page, "visual", `desk-details-${theme}`);
       await page.keyboard.press("Escape");
       // HC-TR-063 / HC-TR-082 go live: the exchange preview and the Live tab
       await page.getByTestId("card-golive").click();
       await expect(page.getByTestId("trade-mode").getByTestId("mode-live")).toHaveAttribute("aria-pressed", "true");
       await page.getByTestId("trade-continue").click();
       await expect(page.getByTestId("venue-preview")).toHaveAttribute("data-ok", "true");
-      await shot(page, "visual", `analyse-live-preview-${theme}`);
+      await shot(page, "visual", `desk-live-preview-${theme}`);
       await typeLiveIfShown(page); // HC-TR-186: the word before a real order
       await page.getByTestId("trade-now").click();
       await expect(page.getByTestId("live-panel")).toHaveAttribute("data-count", "1", { timeout: 15_000 });
       await expect(page.getByTestId("live-card").getByTestId("order-chip").first()).toHaveAttribute("data-state", "filled");
-      await shot(page, "visual", `analyse-live-${theme}`, { mask: [page.getByTestId("card-batch")] }); // the batch badge shows the client's random idempotency key
+      await shot(page, "visual", `desk-live-${theme}`, { mask: [page.getByTestId("card-batch")] }); // the batch badge shows the client's random idempotency key
       // ADR-044 the live confirm (HC-TR-152): venue check, band, order type, hold-to-place
       await page.getByTestId("live-card").getByTestId("card-adjust").click();
       const lwb = page.getByTestId("adjust-workbench");
@@ -168,7 +168,7 @@ for (const theme of ["dark", "light"] as const) {
       await lwb.getByTestId("wb-chain-row").nth(2).getByTestId("wb-chain-sell-call").click();
       await lwb.getByTestId("adjust-review").click();
       await expect(page.getByTestId("adjust-confirm").getByTestId("adjust-venue")).toHaveAttribute("data-ok", /true|false/, { timeout: 15_000 });
-      await shot(page, "visual", `analyse-adjust-live-${theme}`);
+      await shot(page, "visual", `desk-adjust-live-${theme}`);
       await page.getByTestId("adjust-cancel").click();
       await lwb.getByTestId("adjust-exit").click();
       await page.getByTestId("adjust-exit-discard").click();
@@ -186,7 +186,7 @@ for (const theme of ["dark", "light"] as const) {
       await page.getByTestId("trade-notes").fill("Squared off after the adjustment review; kept the call wing.");
       await page.getByTestId("trade-notes").blur();
       await expect(page.getByTestId("chart-equity")).toHaveAttribute("data-state", "ready");
-      await shot(page, "visual", `analyse-journal-${theme}`);
+      await shot(page, "visual", `desk-journal-${theme}`);
       await page.evaluate(() => localStorage.removeItem("hapiecoin.ui"));
       await page.goto("/");
       await expect(page.getByTestId("tile-BTC")).toHaveAttribute("data-state", "live", { timeout: 15_000 });
@@ -315,26 +315,26 @@ for (const theme of ["dark", "light"] as const) {
       await page.getByTestId("menu-tour").click();
       await expect(page.getByTestId("tour")).toHaveAttribute("data-step", "1");
       await page.waitForTimeout(700); // the card places itself again 180 ms and 600 ms after a step opens (Tour.tsx)
-      await shot(page, "visual", `analyse-tour-welcome-${theme}`);
+      await shot(page, "visual", `desk-tour-welcome-${theme}`);
       await page.getByTestId("tour-next").click();
       await expect(page.getByTestId("tour")).toHaveAttribute("data-anchored", "true");
       await page.waitForTimeout(700);
-      await shot(page, "visual", `analyse-tour-${theme}`);
+      await shot(page, "visual", `desk-tour-${theme}`);
       await page.keyboard.press("Escape");
       await page.getByTestId("assistant-launcher").click();
       await page.getByTestId("assistant-chip").nth(1).click();
       await expect(page.getByTestId("assistant-msg-bot").last()).toContainText("press B", { timeout: 10_000 });
       await expect(page.getByTestId("assistant-panel")).toHaveAttribute("data-typing", "false", { timeout: 10_000 });
-      await shot(page, "visual", `analyse-assistant-${theme}`);
+      await shot(page, "visual", `desk-assistant-${theme}`);
     });
 
-    test(`HC-AC-037 /referrals and HC-AD-052 admin commissions ${theme}`, async ({ page, request }) => {
+    test(`HC-AC-037 /invite and HC-AD-052 admin commissions ${theme}`, async ({ page, request }) => {
       await seedUser(request, { email: `ref-${theme}@example.com`, role: "admin", referrals: 6 });
       await signIn(page, `ref-${theme}@example.com`);
       await page.evaluate((t) => {
         localStorage.setItem("hapiecoin.theme", t);
       }, theme);
-      await page.goto("/referrals");
+      await page.goto("/invite");
       await expect(page.getByTestId("referrals-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
       await expect(page.getByTestId("ref-row")).toHaveCount(6);
       await shot(page, "visual", `account-referrals-${theme}`, { fullPage: true });
@@ -376,9 +376,9 @@ for (const theme of ["dark", "light"] as const) {
       await page.evaluate((t) => {
         localStorage.setItem("hapiecoin.theme", t);
       }, theme);
-      await page.goto("/analyse");
+      await page.goto("/desk");
       await expect(page.getByTestId("flyer")).toHaveAttribute("data-count", "2", { timeout: 15_000 });
-      await shot(page, "visual", `analyse-flyer-${theme}`);
+      await shot(page, "visual", `desk-flyer-${theme}`);
       await page.getByTestId("flyer-dismiss").click();
       await page.goto("/admin/banners");
       await expect(page.getByTestId("admin-banners")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
@@ -395,7 +395,7 @@ for (const theme of ["dark", "light"] as const) {
       await page.evaluate((t) => {
         localStorage.setItem("hapiecoin.theme", t);
       }, theme);
-      await page.goto("/subscription");
+      await page.goto("/plans");
       await expect(page.getByTestId("subscription-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
       await page.getByTestId("plan-card").nth(2).getByTestId("plan-action").click();
       await expect(page.getByTestId("coupon-option").first()).toBeVisible();

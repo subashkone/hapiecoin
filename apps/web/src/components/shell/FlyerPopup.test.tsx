@@ -30,8 +30,8 @@ describe("HC-SH-056 frequency rules", () => {
 
   it("routes hapiecoin.com links in place and others to a new tab", () => {
     expect(bannerRoute(null)).toBeNull();
-    expect(bannerRoute("https://hapiecoin.com/subscription")).toEqual({ href: "/subscription", external: false });
-    expect(bannerRoute("https://www.hapiecoin.com/analyse?tab=builder")).toEqual({ href: "/analyse?tab=builder", external: false });
+    expect(bannerRoute("https://hapiecoin.com/plans")).toEqual({ href: "/plans", external: false });
+    expect(bannerRoute("https://www.hapiecoin.com/desk?tab=builder")).toEqual({ href: "/desk?tab=builder", external: false });
     expect(bannerRoute("https://hapiecoin.com")).toEqual({ href: "/", external: false });
     expect(bannerRoute("https://www.deltaexchange.com/")).toEqual({ href: "https://www.deltaexchange.com/", external: true });
   });
@@ -42,7 +42,7 @@ describe("HC-SH-055 FlyerDialog", () => {
     const onClose = vi.fn();
     const u = userEvent.setup();
     const open = vi.spyOn(window, "open").mockImplementation(() => null);
-    renderWithProviders(<FlyerDialog banners={[banner("a", "once_per_day", "https://hapiecoin.com/subscription"), banner("b", "every_time", "https://x.example/"), banner("c", "every_time")]} onClose={onClose} />);
+    renderWithProviders(<FlyerDialog banners={[banner("a", "once_per_day", "https://hapiecoin.com/plans"), banner("b", "every_time", "https://x.example/"), banner("c", "every_time")]} onClose={onClose} />);
     expect(screen.getByTestId("flyer").dataset["count"]).toBe("3");
     expect(screen.getByTestId("flyer-title").textContent).toBe("Banner a");
     expect(screen.getByTestId("flyer-frequency").textContent).toBe("Once a day");
@@ -54,7 +54,7 @@ describe("HC-SH-055 FlyerDialog", () => {
     await u.click(screen.getByTestId("flyer-prev"));
     expect(screen.getByTestId("flyer-title").textContent).toBe("Banner a");
     await u.click(screen.getByTestId("flyer-view"));
-    expect(routerMock.push).toHaveBeenCalledWith("/subscription");
+    expect(routerMock.push).toHaveBeenCalledWith("/plans");
     await u.click(screen.getByTestId("flyer-next"));
     await u.click(screen.getByTestId("flyer-next"));
     expect(screen.queryByTestId("flyer-view")).toBeNull(); // banner c has no link
@@ -66,7 +66,7 @@ describe("HC-SH-055 FlyerDialog", () => {
   });
 });
 
-describe("HC-SH-055 FlyerPopup on /analyse", () => {
+describe("HC-SH-055 FlyerPopup on /desk", () => {
   let mock: MockFetch;
   beforeEach(() => {
     mock = installMockFetch();
@@ -80,7 +80,7 @@ describe("HC-SH-055 FlyerPopup on /analyse", () => {
     const res = await mock.app.request("http://localhost/__test/seed", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: "t@example.com", banners: 4 }) });
     expect(res.status).toBe(200);
     mock.loginAs("t@example.com");
-    pathnameMock.value = "/analyse";
+    pathnameMock.value = "/desk";
     const view = renderWithProviders(<FlyerPopup />);
     await waitFor(() => expect(screen.getByTestId("flyer").dataset["count"]).toBe("2"));
     expect(Object.keys(readSeen().day)).toHaveLength(1); // the once-a-day banner is recorded for today
@@ -93,15 +93,15 @@ describe("HC-SH-055 FlyerPopup on /analyse", () => {
     // the palette asks: everything live reopens regardless of the rules
     useUiStore.getState().requestFlyers();
     await waitFor(() => expect(screen.getByTestId("flyer").dataset["count"]).toBe("2"));
-    // leaving /analyse closes the flyer
-    pathnameMock.value = "/subscription";
+    // leaving /desk closes the flyer
+    pathnameMock.value = "/plans";
     view2.rerender(<FlyerPopup />);
     await waitFor(() => expect(screen.queryByTestId("flyer")).toBeNull());
   });
 
   it("toasts 'No active flyers' when the palette asks and nothing is live", async () => {
     mock.loginAs("quiet@example.com");
-    pathnameMock.value = "/analyse";
+    pathnameMock.value = "/desk";
     renderWithProviders(<FlyerPopup />);
     await vi.advanceTimersByTimeAsync(800);
     expect(screen.queryByTestId("flyer")).toBeNull();

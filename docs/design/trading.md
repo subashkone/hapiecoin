@@ -89,7 +89,7 @@ Item 1 rows: HC-TR-003, 010, 012, 014, 022, 050, 051, 052 (warning only), 053, 0
 HC-TR-046, HC-TR-078. Unit: schema tests for strategies.ts, API route tests (create / start / close / partial /
 stop / archive / limits / audit), web tests for each dialog and panel against the mock API. Playwright: `HC-TR-057
 paper trade from the Builder appears on the Paper tab with live P&L`, `HC-TR-079/080/081 square off, partial
-exit, stop`, visual `analyse-paper-<theme>.png`, `analyse-details-<theme>.png`.
+exit, stop`, visual `desk-paper-<theme>.png`, `desk-details-<theme>.png`.
 Item 2 rows: HC-TR-023, 029, 055, 070, 082..089.
 
 ## 9. Decisions to record
@@ -102,7 +102,7 @@ Shipped as planned in §3–§5 with these differences: Details carries "Square 
 ## Item 2 design (08 Sep 2026, ADR-025)
 Flow: Builder Live trade / paper card Go live / Trade All → Live → Select Trading Mode (Live card, exchange must be connected) → `POST live/preview` (venue marks per leg, contracts, notional, fees, worst-loss margin estimate, wallet available, safeguard verdicts) → Trade Preview shows the venue figures and the red warning → Trade now → `POST live/place` with `Idempotency-Key` → market orders through the executor → Live tab card with per-leg order chips (pending | filled | failed | closed), failed banner with Retry (`live/retry`), Square off all (reduce-only exits), Details with Confirm Adjustment Order (`live/preview` + `live/place` for the new legs), positions row from `live/positions`. Kill switch and limits answer 409 with the reason and the UI shows it in the preview.
 Numbers: entry premium = venue `average_fill_price`; contracts = lots × lot size ÷ contract value; notional = contracts × contract value × mark; fees estimated as before; margin = worst defined loss (exchange margin endpoint later).
-Tests: venues trading client against a fake fetch (signing, sizing, batch, errors, rate limit, test-env guard); API live routes against `FakeDeltaTradingClient` (preview verdicts, place / fill / partial / fail, retry idempotency, sync, exits, kill switch, limits, audit); web dialogs and Live tab against the mock API; Playwright `HC-TR-063 go live from a paper card` on the mock; visual `analyse-live-<theme>.png`.
+Tests: venues trading client against a fake fetch (signing, sizing, batch, errors, rate limit, test-env guard); API live routes against `FakeDeltaTradingClient` (preview verdicts, place / fill / partial / fail, retry idempotency, sync, exits, kill switch, limits, audit); web dialogs and Live tab against the mock API; Playwright `HC-TR-063 go live from a paper card` on the mock; visual `desk-live-<theme>.png`.
 
 ## As built · item 2 (08 Sep 2026)
 Shipped as designed with these differences and details:
@@ -114,7 +114,7 @@ Shipped as designed with these differences and details:
 ## As built · pane follow and net positions (08 Sep 2026, ADR-026)
 - `paneSource` in the UI store; `useStrategyAnalysis(scope)` reads Builder legs, a followed strategy's open legs at entry premiums, or ticked positions parsed from Delta symbols (`lib/strategy/positions.ts`). `PaneSourceBar` above the analysis tabs names the source with "Back to Builder".
 - `PaperPanel` cards follow on click / Enter (buttons excluded); the first card of the tab is followed when nothing is; `TradeFlow.finish` follows the new strategy.
-- `NetPositionsPanel` on the Live tab: `GET /v1/strategies/live/positions` (now with `contractValue` and `mark`), asset filter, tick to analyse, Exit / Exit all with a confirm dialog → `POST /v1/strategies/live/positions/exit` (reduce-only market orders through the executor; matching open live legs are squared off at the fill through `closeLegRow`, an emptied strategy is archived, audit `positions.exit`).
+- `NetPositionsPanel` on the Live tab: `GET /v1/strategies/live/positions` (now with `contractValue` and `mark`), asset filter, tick to show in the pane, Exit / Exit all with a confirm dialog → `POST /v1/strategies/live/positions/exit` (reduce-only market orders through the executor; matching open live legs are squared off at the fill through `closeLegRow`, an emptied strategy is archived, audit `positions.exit`).
 - Found on the testnet trial the same day and fixed: `GET /v1/brokers` envelope (GAPS #41), vault key per process in development (GAPS #42).
 
 ## As built · Phase 3 close-out (08 Sep 2026, ADR-029)
@@ -134,7 +134,7 @@ Shipped as designed with these differences and details:
 
 **Interaction.** Trade row and closed-leg rows open Strategy Details (which now shows a Journal block with "Open in Journal"). Tags: click to toggle, Enter adds a custom tag, × removes. Notes: save on idle / blur.
 
-**Tests.** Unit `lib/strategy/journal.test.ts`, `components/trading/journal-panel.test.tsx`; workspace test asserts the tab is live; e2e `analyse.spec.ts` HC-TR-022 block (stop → journal → tag → notes → CSV → details); visual `analyse-journal-{theme}.png`.
+**Tests.** Unit `lib/strategy/journal.test.ts`, `components/trading/journal-panel.test.tsx`; workspace test asserts the tab is live; e2e `desk.spec.ts` HC-TR-022 block (stop → journal → tag → notes → CSV → details); visual `desk-journal-{theme}.png`.
 
 ## Amendment · Builder ticket, template pricing, picker parity, palette (10 Sep 2026, ADR-050)
 Builder: header gains the detected-structure tag (`strategy-structure`) and `asset · expiry · DTE` (`strategy-expiry-line`); sub-tab info adds DTE and draft / unsaved; a net line under the legs (`builder-netline`); the ticket has six tiles (`ticket-net`, `ticket-fees`, `ticket-total` with `data-kind`, `ticket-target`, `ticket-margin` with POP · R:R in `ticket-pop`, `ticket-width`); **P** starts a paper trade; rows follow density. Templates: "Recommended for outlook" chips (`template-outlook-*`) filter on the payoff classified at ±6 % from `useTemplateStats`; cards show POP · R:R (`template-pop`) and `data-outlook`; sketches fill green / red. Chain picker: Δ outboard (`picker-delta-*`), OI bars (`picker-oi-*` with `data-pct`), ITM tint. Trade mode: ✓ on the chosen card (`mode-check`), the exchange select writes `store.brokerId`; preview title carries the mode pill. Palette: Builder: save draft, Paper trade the current strategy, Open Paper / Live trades, Open Journal.
