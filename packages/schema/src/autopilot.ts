@@ -47,9 +47,14 @@ export const AUTOPILOT_RUNS_RETENTION_DAYS = 90;
 export const AutopilotStrategy = z.strictObject({ playbookId: z.string().trim().min(1).max(64), exit: AutopilotExitStyle });
 export type AutopilotStrategy = z.infer<typeof AutopilotStrategy>;
 
+/**
+ * The most playbooks a trader's settings hold. Far above the catalogue (33 with the monthly set, GAPS #153): it was 32,
+ * and the 33rd playbook switched on made the saved settings unreadable by the screen that saved them.
+ */
+export const AUTOPILOT_MAX_STRATEGIES = 500;
 /** PUT /v1/autopilot: the master switch and the playbooks switched on (each at most once). */
 export const AutopilotSettings = z
-  .strictObject({ enabled: z.boolean(), strategies: z.array(AutopilotStrategy).max(32) })
+  .strictObject({ enabled: z.boolean(), strategies: z.array(AutopilotStrategy).max(AUTOPILOT_MAX_STRATEGIES) })
   .refine((s) => new Set(s.strategies.map((x) => x.playbookId)).size === s.strategies.length, { message: "A playbook can be switched on once", path: ["strategies"] });
 export type AutopilotSettings = z.infer<typeof AutopilotSettings>;
 export const DEFAULT_AUTOPILOT_SETTINGS: AutopilotSettings = { enabled: false, strategies: [] };

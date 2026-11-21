@@ -468,7 +468,8 @@ export const MONTHLY_PLAYBOOKS: readonly Playbook[] = [
   ...MONTHLY_EXITS.map((x) =>
     premiumPlaybook({
       id: `monthly-strangle-${x.sold}pct-near-${x.key}`,
-      name: `Monthly strangle, ${x.sold} % away, one month out, ${x.name}`,
+      // short: a strategy opened from it is named "<name> · Autopilot", and a strategy name holds 80 characters (GAPS #153)
+      name: `Monthly ${x.sold} %, 1 month out, ${x.name}`,
       summary: `A month before a month-end expiry sell a call and a put ${x.sold} % away; ${x.exit}.`,
       rationale: x.why,
       claim: `Sold ${x.sold} % away${x.wing === null ? "" : `, wings ${x.wing} % away`}, entered 30 to 44 days before expiry, ${x.rule}: ${x.figures}.`,
