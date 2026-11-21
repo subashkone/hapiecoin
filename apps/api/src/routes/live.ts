@@ -4,12 +4,13 @@
  */
 import { type AdjustChange, Id, LiveBatchBody, LiveBatchPreview, LiveBatchPreviewBody, type LiveBatchPreviewItem, LiveBatchResult, LivePlaceBody, toDecimal, LivePositions, LivePositionsExitBody, LivePositionsExitResult, LivePreview, LivePreviewBody, MAX_OPEN_LEGS, Strategy, type StrategyLegInput, ApiError, LiveRetryBody, MindfulPreview, LiveRepriceBody } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
 import { enforceMindful, mindfulFor } from "../day-pnl.js";
 import { assertEntitled } from "../entitlements.js";
 import { brokerCredentials, strategies, strategyLegs, strategyPnl, users } from "../db/schema.js";
 import { type AppEnv, type SessionUser, currentUser } from "../security/context.js";
+import { AUTOPILOT_PAPER_ONLY_MESSAGE } from "@hapiecoin/schema";
 import { HttpError, errors } from "../security/errors.js";
 import { requireAdmin, requireUser } from "../security/guards.js";
 import { orderRateLimit } from "../security/rate-limit.js";
@@ -173,6 +174,8 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       if (existing) return c.json(await loadStrategy(deps, row.id), 200); // repeat of the same placement (idempotency key)
       requireLiveConfirm(body.confirm); // ADR-078: the typed word, before any other check
       if (row.status !== "draft" && row.status !== "paper") throw errors.conflict(`Only a draft or paper strategy can go live; this strategy is ${row.status}`);
+      // ADR-108: a trade Autopilot opened stays on paper; its exits were priced for that paper entry and must never send a real order
+      if (row.autopilotPlaybookId !== null) throw errors.conflict(AUTOPILOT_PAPER_ONLY_MESSAGE);
       await assertEntitled(deps, me.id, "live_trading"); // HC-SH-054 (ADR-030)
       const accountId = accountOf(row, body);
       const { legs, p } = await checkedPreview(me, row, body.brokerId, null, accountId);
@@ -337,6 +340,9 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const me = currentUser(c);
       const body = c.req.valid("json");
       requireLiveConfirm(body.confirm); // ADR-078
+      // ADR-108: a trade Autopilot opened stays on paper; one in the batch refuses the whole batch before anything is placed
+      const [auto] = await db.select({ id: strategies.id }).from(strategies).where(and(eq(strategies.userId, me.id), inArray(strategies.id, body.ids), isNotNull(strategies.autopilotPlaybookId))).limit(1);
+      if (auto) throw errors.conflict(AUTOPILOT_PAPER_ONLY_MESSAGE);
       const blocked = await tradingBlockedReason(deps, me);
       if (blocked) throw errors.conflict(blocked);
       await assertEntitled(deps, me.id, "live_trading"); // one check per batch: the batch counts as one placement per strategy below

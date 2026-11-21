@@ -1,6 +1,6 @@
 # Paper trading, live trading, rules and accounts
 
-Part of the [HapieCoin feature guide](README.md). 103 traced features on 34 screens; 103 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 106 traced features on 35 screens; 106 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -37,6 +37,14 @@ Cards on the Paper and Live tabs show P&L, greeks, days to expiry, lifecycle chi
 ## Every feature, in detail
 
 Each row is one traced feature from the build spec: the id, what it is, how it behaves (the acceptance rule the tests check), and how it is tested. Status "mock-only" means the screen exists but the data feed behind it is not connected yet.
+
+### Trading · Autopilot · `/desk`
+
+| ID | Feature | How it behaves | Status | Tested by |
+|---|---|---|---|---|
+| HC-TR-216 | A trader switches Autopilot on and chooses the playbooks it may enter on paper, each with how a winner is taken off | GET / PUT /v1/autopilot behind the session: enabled, and a list of playbooks each with exit trail or target; the control, an unknown playbook and a repeat are refused; settings in autopilot_settings (migration 0028); paper only | built | unit (api + schema) |
+| HC-TR-217 | After every market snapshot the server opens a paper trade for each switched-on playbook whose plan enters on that snapshot's prices, with its exits armed | runAutopilot in the snapshotter's after-hook (leader only): the recorded history with the newest snapshot as today, through the backtest's entryFor; the entry at that snapshot's marks; one open Autopilot trade per trader, playbook, venue and asset; a 15-minute wait after a trade ends; the target at 10 % of the maximum profit plus entry and exit fees (closing there, or trailing with a 10 % give-back), the playbook's stop and time exit, all as ordinary rules; no entry when the trader has no plan, the snapshot is older than twelve minutes, a leg has no price, the fees eat the target, or a futures leg is involved; a trade closed by hand is closed out and starts the wait; the levels use the trader's own lot size; an Autopilot trade cannot go live (place and batch refuse it); Autopilot trades do not use the monthly paper allowance | built | unit (api) |
+| HC-TR-218 | Autopilot keeps a log: every entry with its figures, every reason it did not enter, and a note when a better entry appears while a trade is open | autopilot_runs per trader: entered (spot, days to expiry, premium, maximum profit and loss, fees, capital, target, stop, legs), skipped (the reason, written once per change of reason), noted (the structure prices at least 10 % better than the open trade's entry, at most once per 15 minutes); the newest 200 lines come with GET /v1/autopilot | built | unit (api + schema) |
 
 ### Trading · Protect dialog / cards · Details · `/desk`
 
