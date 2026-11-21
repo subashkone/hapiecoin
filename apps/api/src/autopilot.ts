@@ -13,8 +13,8 @@
  * not enter is logged once per change of reason, so the log reads as a history of decisions and not as a heartbeat.
  *
  * ADR-112: one trade per key at a time again (`AUTOPILOT_MAX_OPEN`; the ladder of ADR-110 lost in the backtest), and
- * playbooks entered by the clock: once in their evening window, on the nearest expiry, with their own exits (held to
- * settlement, or a stop on each sold option) and nothing of Autopilot's profit exit.
+ * playbooks entered by the clock: once in their window (every evening on the nearest expiry, ADR-112; or one evening a
+ * week on the Friday expiry, ADR-115), with their own exits and nothing of Autopilot's profit exit.
  *
  * Runs on the leader only (ADR-062), inside the first snapshotter's after-hook. A failure for one trader, playbook or
  * underlying is logged and the pass goes on.
@@ -68,10 +68,11 @@ const COOLDOWN_MS = AUTOPILOT_COOLDOWN_MINUTES * 60_000;
 const DAY_MS = 86_400_000;
 /** A playbook entered by the clock enters once per window: not again within this long of its last entry. */
 const CLOCK_ONCE_MS = 6 * 3_600_000;
-/** Inside the playbook's entry window: from its first hour, before its second (UTC). */
+/** Inside the playbook's entry window: from its first hour, before its second (UTC), on its day of the week when it has one. */
 export const inWindow = (c: PlaybookClock, nowMs: number): boolean => {
-  const h = new Date(nowMs).getUTCHours();
-  return h >= c.fromHourUtc && h < c.toHourUtc;
+  const d = new Date(nowMs);
+  const h = d.getUTCHours();
+  return h >= c.fromHourUtc && h < c.toHourUtc && (c.weekdayUtc === undefined || d.getUTCDay() === c.weekdayUtc);
 };
 /** The index that holds "one open trade per key and structure"; a write it refuses means another pass got there first. */
 const OPEN_UQ = "strategies_autopilot_open_uq";
@@ -332,7 +333,7 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
               else if (!live || !result) await no("No fresh prices: the newest market snapshot is missing or too old");
               else if (!result.ok) await no(skipText(result.reason));
               // by the clock: the next settlement or nothing; a later expiry is another trade than the one the card describes
-              else if (p.clock && daysToExpiryOf(calendar, nowMs, result.proposal.expiry) > p.clock.maxDte) await no("The next expiry has no prices yet", detailOf(result.proposal, null, nowMs));
+              else if (p.clock && daysToExpiryOf(calendar, nowMs, result.proposal.expiry) > p.clock.maxDte) await no(p.clock.weekdayUtc === undefined ? "The next expiry has no prices yet" : "Its Friday expiry has no prices yet", detailOf(result.proposal, null, nowMs));
               else if (result.proposal.legs.some((l) => l.kind === "future")) await no("A futures leg needs a margin figure Autopilot does not have yet", detailOf(result.proposal, null, nowMs));
               else if (result.proposal.legs.some((l) => !(Number(l.price) > 0))) await no("A leg of the structure has no price", detailOf(result.proposal, null, nowMs));
               else if (!plan) await no(p.clock ? "The premium collected is smaller than the fees" : "The fees are larger than the profit target, or the structure has no defined maximum", detailOf(result.proposal, null, nowMs));
@@ -342,7 +343,7 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
                 // By the clock: once per window, counted from the last entry (yesterday's trade settled only hours ago).
                 const [prev] = await deps.db.select({ startedAt: max(strategies.startedAt), closedAt: max(strategies.closedAt) }).from(strategies).where(tradeKey(k));
                 const lastMs = p.clock ? (prev?.startedAt?.getTime() ?? 0) : Math.max(prev?.startedAt?.getTime() ?? 0, prev?.closedAt?.getTime() ?? 0);
-                if (lastMs > 0 && nowMs - lastMs < (p.clock ? CLOCK_ONCE_MS : COOLDOWN_MS)) await no(p.clock ? "Already entered in this evening's window" : `Waiting ${AUTOPILOT_COOLDOWN_MINUTES} minutes after its last trade`);
+                if (lastMs > 0 && nowMs - lastMs < (p.clock ? CLOCK_ONCE_MS : COOLDOWN_MS)) await no(p.clock ? "Already entered in this window" : `Waiting ${AUTOPILOT_COOLDOWN_MINUTES} minutes after its last trade`);
                 else {
                   // a playbook entered by the clock runs on its own exits whatever the card says (ADR-112)
                   const style: AutopilotExitStyle = p.clock ? "own" : wanted.exit === "own" ? "trail" : wanted.exit;

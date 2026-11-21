@@ -81,6 +81,26 @@ def trade(spot, opts, t0, last_b, settle_spot, sold_pct, wing_pct):
             if done is None:
                 done = realised + sum(settle_leg(i) for i in live)
             out[f"stop{mult}x" + ("+half" if take else "")] = done
+    # stop at 2x, then trail what is left: closed when its profit gives back half of its best (ADR-114)
+    live, realised, done, t, stopped, peak = list(range(len(legs))), -fee_in, None, t0 + H, False, 0.0
+    while t <= last_b and live:
+        px = {i: opts[legs[i][:2]].get(t) for i in live}
+        sp = spot.get(t, settle_spot)
+        for i in list(live):
+            if legs[i][2] < 0 and px[i] is not None and px[i] >= 2 * entry[i]:
+                realised += legs[i][2] * (px[i] - entry[i]) * q - fee(sp, px[i], q)
+                live.remove(i)
+                stopped = True
+        if stopped and live and all(px[i] is not None for i in live):
+            rest = sum(legs[i][2] * (px[i] - entry[i]) * q for i in live)
+            peak = max(peak, rest)
+            if peak >= 0.01 and rest <= peak * 0.5:
+                done = realised + rest - sum(fee(sp, px[i], q) for i in live)
+                break
+        t += H
+    if done is None:
+        done = realised + sum(settle_leg(i) for i in live)
+    out["stop2x+trail"] = done
     return out
 
 
@@ -103,7 +123,7 @@ SHAPES = {
     "weekly": {"days": [7, 6, 5, 4, 3, 2, 1], "sold": [0.03, 0.05, 0.07], "wing": 0.04},
     "monthly": {"days": [28, 21, 14, 7], "sold": [0.05, 0.08, 0.12], "wing": 0.06},
 }
-RULES = ["hold", "stop2x", "stop3x", "stop2x+half", "stop3x+half"]
+RULES = ["hold", "stop2x", "stop3x", "stop2x+half", "stop3x+half", "stop2x+trail"]
 res = defaultdict(list)  # (cycle, days, sold, winged, rule) -> [(expiry, pnl)]
 credits = defaultdict(list)
 used = defaultdict(int)

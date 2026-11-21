@@ -287,6 +287,24 @@ describe("HC-TR-226 the Autopilot screen: the evening strategies", () => {
   });
 });
 
+describe("HC-TR-230 the Autopilot screen: the weekly strangles", () => {
+  it("HC-TR-230 the strategies are grouped by how far out they trade; a weekly card says its day, its expiry and its exit", async () => {
+    renderWithProviders(<AutopilotPage />);
+    await waitFor(() => expect(screen.getByTestId("autopilot-page").dataset["state"]).toBe("ready"));
+    const groups = screen.getAllByTestId("autopilot-group");
+    expect(groups.map((g) => g.dataset["group"])).toEqual(["Longer-dated strategies", "Evening strangles, daily expiry", "Weekly strangles, Friday expiry"]);
+    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").map((c) => c.dataset["playbook"]))).toEqual([TRADABLE.filter((p) => !p.clock), TRADABLE.filter((p) => p.clock && p.clock.weekdayUtc === undefined), TRADABLE.filter((p) => p.clock?.weekdayUtc !== undefined)].map((g) => g.map((p) => p.id)));
+    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 6, 10]);
+    const card = (id: string) => screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === id)!;
+    const fri = card("weekly-fri-strangle-stop-3x");
+    expect(within(fri).getByText("Friday weekly strangle, stop at triple")).toBeTruthy();
+    expect(within(fri).getByTestId("autopilot-card-how").textContent).toContain("Entered each Friday, 9:30 to 10:30 PM IST, on next Friday's expiry. Each sold option is bought back if its price reaches 3 times what it was sold for. Backtest only so far:");
+    expect(within(card("weekly-tue-strangle-wings")).getByTestId("autopilot-card-how").textContent).toContain("Entered each Tuesday, 9:30 to 10:30 PM IST, on that week's Friday expiry. Held to settlement: the bought wings cap the loss.");
+    expect(within(card("weekly-tue-strangle-trail-rest")).getByTestId("autopilot-card-how").textContent).toContain("gives back 50 % of its best");
+    expect(within(fri).getByTestId("autopilot-card-own").textContent).toBe("Its own exits");
+  });
+});
+
 describe("HC-TR-228 the Autopilot screen: the strangle that trails the rest", () => {
   it("HC-TR-228 a running trail-the-rest strangle says its stops trail the other side, and once one has fired shows where the rest exits", async () => {
     const stop = rule({ id: "r_tr", kind: "leg_stop", trigger: "multiple", value: "2", thresholdUsd: "500", legId: "leg_tr", scope: "leg", trail: { trigger: "pct", value: "50" } });

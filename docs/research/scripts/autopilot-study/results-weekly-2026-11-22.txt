@@ -11,42 +11,49 @@ sold 3 % away (naked)
       stop3x       n=51 mean=  +40.65 total=  +2073 win= 57% worst=  -168.3 maxDD=   -505   Dec-May   +1466 | Jun-Nov    +607
       stop2x+half  n=51 mean=  +14.52 total=   +741 win= 51% worst=  -267.5 maxDD=   -304   Dec-May    +229 | Jun-Nov    +511
       stop3x+half  n=51 mean=  +28.59 total=  +1458 win= 73% worst=  -168.3 maxDD=   -179   Dec-May    +754 | Jun-Nov    +704
+      stop2x+trail n=51 mean=  +23.52 total=  +1199 win= 41% worst=  -229.6 maxDD=   -301   Dec-May    +499 | Jun-Nov    +700
    6 days before, mean premium  124.8
       hold         n=50 mean=   -5.02 total=   -251 win= 76% worst= -1147.9 maxDD=  -1746   Dec-May    +772 | Jun-Nov   -1023
       stop2x       n=50 mean=   -1.90 total=    -95 win= 28% worst=  -152.2 maxDD=   -327   Dec-May    -193 | Jun-Nov     +98
       stop3x       n=50 mean=  +20.56 total=  +1028 win= 54% worst=  -138.7 maxDD=   -480   Dec-May    +544 | Jun-Nov    +484
       stop2x+half  n=50 mean=   -7.14 total=   -357 win= 36% worst=  -152.2 maxDD=   -602   Dec-May    -561 | Jun-Nov    +204
       stop3x+half  n=50 mean=  +14.80 total=   +740 win= 68% worst=  -138.7 maxDD=   -312   Dec-May     +37 | Jun-Nov    +703
+      stop2x+trail n=50 mean=  -14.81 total=   -740 win= 22% worst=  -193.9 maxDD=   -815   Dec-May    -587 | Jun-Nov    -154
    5 days before, mean premium  124.8
       hold         n=50 mean=   -3.01 total=   -151 win= 74% worst= -1151.6 maxDD=  -1586   Dec-May   +1093 | Jun-Nov   -1244
       stop2x       n=50 mean=   -1.89 total=    -95 win= 28% worst=  -141.9 maxDD=   -408   Dec-May    -152 | Jun-Nov     +57
       stop3x       n=50 mean=  +17.04 total=   +852 win= 52% worst=  -158.1 maxDD=   -659   Dec-May    +486 | Jun-Nov    +366
       stop2x+half  n=50 mean=   -2.34 total=   -117 win= 40% worst=  -141.9 maxDD=   -315   Dec-May    -121 | Jun-Nov      +4
       stop3x+half  n=50 mean=  +20.36 total=  +1018 win= 68% worst=  -158.1 maxDD=   -245   Dec-May    +465 | Jun-Nov    +553
+      stop2x+trail n=50 mean=  -10.71 total=   -536 win= 24% worst=  -182.2 maxDD=   -620   Dec-May    -442 | Jun-Nov     -94
    4 days before, mean premium   98.4
       hold         n=50 mean=  -13.99 total=   -699 win= 74% worst= -1057.1 maxDD=  -1890   Dec-May    +564 | Jun-Nov   -1264
       stop2x       n=50 mean=   -1.95 total=    -98 win= 36% worst=  -196.0 maxDD=   -501   Dec-May    -370 | Jun-Nov    +273
       stop3x       n=50 mean=  +15.90 total=   +795 win= 58% worst=  -231.7 maxDD=   -547   Dec-May    +285 | Jun-Nov    +510
       stop2x+half  n=50 mean=   -4.00 total=   -200 win= 48% worst=  -196.0 maxDD=   -635   Dec-May    -535 | Jun-Nov    +335
       stop3x+half  n=50 mean=   +9.60 total=   +480 win= 70% worst=  -231.7 maxDD=   -345   Dec-May     +75 | Jun-Nov    +405
+      stop2x+trail n=50 mean=   +3.33 total=   +166 win= 34% worst=  -105.3 maxDD=   -209   Dec-May      -1 | Jun-Nov    +168
    3 days before, mean premium   70.0
       hold         n=47 mean=   -7.58 total=   -356 win= 77% worst=  -962.7 maxDD=  -1204   Dec-May    +244 | Jun-Nov    -601
       stop2x       n=47 mean=   +0.50 total=    +23 win= 38% worst=  -120.8 maxDD=   -364   Dec-May    -115 | Jun-Nov    +138
       stop3x       n=47 mean=   -2.92 total=   -137 win= 51% worst=  -171.2 maxDD=   -598   Dec-May    +182 | Jun-Nov    -319
       stop2x+half  n=47 mean=   +0.35 total=    +17 win= 51% worst=  -120.8 maxDD=   -409   Dec-May    -227 | Jun-Nov    +244
       stop3x+half  n=47 mean=   -1.69 total=    -80 win= 64% worst=  -132.0 maxDD=   -450   Dec-May    -142 | Jun-Nov     +62
+      stop2x+trail n=47 mean=   -3.60 total=   -169 win= 38% worst=  -120.8 maxDD=   -448   Dec-May    -235 | Jun-Nov     +66
    2 days before, mean premium   44.5
       hold         n=43 mean=   -8.83 total=   -380 win= 74% worst=  -415.9 maxDD=   -807   Dec-May     +53 | Jun-Nov    -433
       stop2x       n=43 mean=   +8.20 total=   +352 win= 49% worst=   -87.3 maxDD=   -138   Dec-May    +395 | Jun-Nov     -43
       stop3x       n=43 mean=   -2.44 total=   -105 win= 58% worst=  -176.1 maxDD=   -532   Dec-May    +198 | Jun-Nov    -303
       stop2x+half  n=43 mean=   +4.91 total=   +211 win= 65% worst=   -87.3 maxDD=   -183   Dec-May    +120 | Jun-Nov     +91
       stop3x+half  n=43 mean=   +1.05 total=    +45 win= 77% worst=  -174.4 maxDD=   -354   Dec-May     -12 | Jun-Nov     +57
+      stop2x+trail n=43 mean=   +7.50 total=   +323 win= 49% worst=   -87.3 maxDD=   -138   Dec-May    +365 | Jun-Nov     -43
    1 days before, mean premium   13.2
       hold         n=42 mean=   +6.55 total=   +275 win= 95% worst=  -210.8 maxDD=   -211   Dec-May    +273 | Jun-Nov      +2
       stop2x       n=42 mean=   +4.09 total=   +172 win= 67% worst=   -30.7 maxDD=    -64   Dec-May     +68 | Jun-Nov    +104
       stop3x       n=42 mean=   +2.31 total=    +97 win= 79% worst=   -92.7 maxDD=   -129   Dec-May     +49 | Jun-Nov     +49
       stop2x+half  n=42 mean=   +3.21 total=   +135 win= 79% worst=   -28.8 maxDD=    -49   Dec-May     +56 | Jun-Nov     +79
       stop3x+half  n=42 mean=   -0.37 total=    -16 win= 88% worst=   -92.7 maxDD=   -129   Dec-May      +4 | Jun-Nov     -20
+      stop2x+trail n=42 mean=   +4.09 total=   +172 win= 67% worst=   -30.7 maxDD=    -64   Dec-May     +68 | Jun-Nov    +104
 
 sold 3 % away, wings 7 % away
    7 days before, mean premium  108.4
@@ -71,42 +78,49 @@ sold 5 % away (naked)
       stop3x       n=36 mean=  +42.01 total=  +1512 win= 67% worst=  -136.7 maxDD=   -248   Dec-May   +1310 | Jun-Nov    +202
       stop2x+half  n=36 mean=  +15.95 total=   +574 win= 64% worst=  -163.6 maxDD=   -202   Dec-May    +206 | Jun-Nov    +368
       stop3x+half  n=36 mean=  +26.94 total=   +970 win= 83% worst=  -136.7 maxDD=   -137   Dec-May    +679 | Jun-Nov    +291
+      stop2x+trail n=36 mean=  +25.09 total=   +903 win= 47% worst=  -167.2 maxDD=   -184   Dec-May    +431 | Jun-Nov    +472
    6 days before, mean premium   77.6
       hold         n=37 mean=  -35.48 total=  -1313 win= 78% worst= -1063.5 maxDD=  -1951   Dec-May    +134 | Jun-Nov   -1447
       stop2x       n=37 mean=   -3.17 total=   -117 win= 41% worst=  -114.0 maxDD=   -241   Dec-May    -201 | Jun-Nov     +84
       stop3x       n=37 mean=  +11.28 total=   +417 win= 54% worst=  -114.0 maxDD=   -251   Dec-May    +188 | Jun-Nov    +229
       stop2x+half  n=37 mean=   -7.79 total=   -288 win= 49% worst=  -114.0 maxDD=   -354   Dec-May    -342 | Jun-Nov     +54
       stop3x+half  n=37 mean=   +7.00 total=   +259 win= 70% worst=  -114.0 maxDD=   -188   Dec-May     +35 | Jun-Nov    +224
+      stop2x+trail n=37 mean=  -11.01 total=   -407 win= 30% worst=  -141.0 maxDD=   -519   Dec-May    -392 | Jun-Nov     -15
    5 days before, mean premium   73.1
       hold         n=40 mean=   -3.12 total=   -125 win= 80% worst= -1016.0 maxDD=  -1524   Dec-May   +1185 | Jun-Nov   -1310
       stop2x       n=40 mean=   +9.49 total=   +380 win= 55% worst=  -124.1 maxDD=   -183   Dec-May     +55 | Jun-Nov    +325
       stop3x       n=40 mean=  +16.31 total=   +652 win= 60% worst=  -124.1 maxDD=   -258   Dec-May    +259 | Jun-Nov    +394
       stop2x+half  n=40 mean=   +1.78 total=    +71 win= 62% worst=  -124.1 maxDD=   -183   Dec-May      -7 | Jun-Nov     +79
       stop3x+half  n=40 mean=  +13.69 total=   +548 win= 75% worst=  -124.1 maxDD=   -124   Dec-May    +286 | Jun-Nov    +262
+      stop2x+trail n=40 mean=   +4.79 total=   +192 win= 45% worst=  -153.1 maxDD=   -225   Dec-May     -53 | Jun-Nov    +245
    4 days before, mean premium   51.4
       hold         n=36 mean=  +10.37 total=   +373 win= 89% worst=  -735.3 maxDD=   -735   Dec-May    +267 | Jun-Nov    +106
       stop2x       n=36 mean=   +8.96 total=   +323 win= 50% worst=  -106.4 maxDD=   -196   Dec-May     +64 | Jun-Nov    +259
       stop3x       n=36 mean=   +9.56 total=   +344 win= 61% worst=  -188.8 maxDD=   -396   Dec-May     -21 | Jun-Nov    +365
       stop2x+half  n=36 mean=   +3.88 total=   +140 win= 61% worst=   -99.3 maxDD=   -107   Dec-May     +23 | Jun-Nov    +116
       stop3x+half  n=36 mean=   -0.02 total=     -1 win= 69% worst=  -188.8 maxDD=   -338   Dec-May    -156 | Jun-Nov    +155
+      stop2x+trail n=36 mean=  +10.90 total=   +392 win= 47% worst=   -63.1 maxDD=   -109   Dec-May    +153 | Jun-Nov    +240
    3 days before, mean premium   34.8
       hold         n=35 mean=  -14.65 total=   -513 win= 91% worst=  -871.1 maxDD=   -925   Dec-May     +40 | Jun-Nov    -552
       stop2x       n=35 mean=   +2.95 total=   +103 win= 46% worst=   -65.8 maxDD=   -151   Dec-May     +52 | Jun-Nov     +52
       stop3x       n=35 mean=   -0.88 total=    -31 win= 54% worst=  -106.9 maxDD=   -342   Dec-May     +19 | Jun-Nov     -50
       stop2x+half  n=35 mean=   +1.12 total=    +39 win= 60% worst=   -65.8 maxDD=   -151   Dec-May     -27 | Jun-Nov     +66
       stop3x+half  n=35 mean=   +0.49 total=    +17 win= 71% worst=   -79.8 maxDD=   -191   Dec-May    -107 | Jun-Nov    +124
+      stop2x+trail n=35 mean=   +0.91 total=    +32 win= 43% worst=   -85.8 maxDD=   -180   Dec-May     +11 | Jun-Nov     +21
    2 days before, mean premium   20.8
       hold         n=30 mean=  +11.66 total=   +350 win= 90% worst=  -172.3 maxDD=   -172   Dec-May    +193 | Jun-Nov    +157
       stop2x       n=30 mean=   +2.53 total=    +76 win= 60% worst=   -94.0 maxDD=   -125   Dec-May    +151 | Jun-Nov     -75
       stop3x       n=30 mean=   +3.77 total=   +113 win= 70% worst=   -94.0 maxDD=   -106   Dec-May    +169 | Jun-Nov     -56
       stop2x+half  n=30 mean=   +6.59 total=   +198 win= 83% worst=   -19.1 maxDD=    -20   Dec-May    +107 | Jun-Nov     +91
       stop3x+half  n=30 mean=   +7.41 total=   +222 win= 93% worst=   -25.8 maxDD=    -26   Dec-May    +116 | Jun-Nov    +107
+      stop2x+trail n=30 mean=   +1.95 total=    +58 win= 60% worst=   -94.0 maxDD=   -125   Dec-May    +134 | Jun-Nov     -75
    1 days before, mean premium    6.9
       hold         n=31 mean=   +6.13 total=   +190 win= 97% worst=   -15.7 maxDD=    -16   Dec-May    +166 | Jun-Nov     +24
       stop2x       n=31 mean=   -1.82 total=    -56 win= 68% worst=   -75.5 maxDD=   -102   Dec-May     -46 | Jun-Nov     -11
       stop3x       n=31 mean=   -3.86 total=   -120 win= 71% worst=   -75.5 maxDD=   -151   Dec-May     -91 | Jun-Nov     -29
       stop2x+half  n=31 mean=   -2.95 total=    -91 win= 71% worst=   -75.5 maxDD=   -100   Dec-May     -68 | Jun-Nov     -24
       stop3x+half  n=31 mean=   -4.82 total=   -150 win= 81% worst=   -75.5 maxDD=   -156   Dec-May    -114 | Jun-Nov     -36
+      stop2x+trail n=31 mean=   -1.84 total=    -57 win= 68% worst=   -75.5 maxDD=   -103   Dec-May     -46 | Jun-Nov     -11
 
 sold 5 % away, wings 9 % away
    7 days before, mean premium   64.6
@@ -131,42 +145,49 @@ sold 7 % away (naked)
       stop3x       n=26 mean=  +30.74 total=   +799 win= 62% worst=  -114.2 maxDD=   -117   Dec-May    +603 | Jun-Nov    +196
       stop2x+half  n=26 mean=  +11.49 total=   +299 win= 73% worst=  -114.2 maxDD=   -114   Dec-May    +160 | Jun-Nov    +139
       stop3x+half  n=26 mean=  +12.71 total=   +331 win= 73% worst=  -114.2 maxDD=   -114   Dec-May    +207 | Jun-Nov    +124
+      stop2x+trail n=26 mean=  +22.05 total=   +573 win= 50% worst=  -114.2 maxDD=   -114   Dec-May    +427 | Jun-Nov    +146
    6 days before, mean premium   44.2
       hold         n=22 mean=  +42.41 total=   +933 win=100% worst=   +14.4 maxDD=      0   Dec-May    +693 | Jun-Nov    +240
       stop2x       n=22 mean=   +8.60 total=   +189 win= 41% worst=   -74.0 maxDD=    -93   Dec-May    +175 | Jun-Nov     +15
       stop3x       n=22 mean=   +6.05 total=   +133 win= 59% worst=   -88.3 maxDD=   -185   Dec-May    +138 | Jun-Nov      -5
       stop2x+half  n=22 mean=   +0.94 total=    +21 win= 45% worst=   -74.0 maxDD=    -86   Dec-May      +2 | Jun-Nov     +19
       stop3x+half  n=22 mean=   +3.35 total=    +74 win= 73% worst=   -88.3 maxDD=    -88   Dec-May    +104 | Jun-Nov     -30
+      stop2x+trail n=22 mean=   +3.34 total=    +73 win= 32% worst=   -89.8 maxDD=   -133   Dec-May    +115 | Jun-Nov     -41
    5 days before, mean premium   52.0
       hold         n=25 mean=  +27.75 total=   +694 win= 96% worst=  -444.2 maxDD=   -444   Dec-May    +431 | Jun-Nov    +262
       stop2x       n=25 mean=   +9.54 total=   +238 win= 60% worst=   -93.5 maxDD=   -122   Dec-May     +99 | Jun-Nov    +139
       stop3x       n=25 mean=  +18.67 total=   +467 win= 64% worst=   -96.8 maxDD=   -100   Dec-May    +296 | Jun-Nov    +171
       stop2x+half  n=25 mean=  +11.44 total=   +286 win= 80% worst=   -93.5 maxDD=    -94   Dec-May    +187 | Jun-Nov     +99
       stop3x+half  n=25 mean=  +12.46 total=   +311 win= 76% worst=   -93.5 maxDD=    -94   Dec-May    +204 | Jun-Nov    +107
+      stop2x+trail n=25 mean=   +4.83 total=   +121 win= 48% worst=  -106.5 maxDD=   -135   Dec-May      +8 | Jun-Nov    +112
    4 days before, mean premium   29.9
       hold         n=36 mean=   +7.71 total=   +278 win= 94% worst=  -626.8 maxDD=   -627   Dec-May     +53 | Jun-Nov    +225
       stop2x       n=36 mean=   +9.31 total=   +335 win= 61% worst=   -47.2 maxDD=    -49   Dec-May    +233 | Jun-Nov    +102
       stop3x       n=36 mean=   +3.23 total=   +116 win= 64% worst=  -146.3 maxDD=   -190   Dec-May     +89 | Jun-Nov     +27
       stop2x+half  n=36 mean=   +8.80 total=   +317 win= 81% worst=   -31.1 maxDD=    -31   Dec-May    +248 | Jun-Nov     +68
       stop3x+half  n=36 mean=   +8.24 total=   +297 win= 83% worst=   -53.9 maxDD=    -59   Dec-May    +184 | Jun-Nov    +113
+      stop2x+trail n=36 mean=   +9.35 total=   +337 win= 61% worst=   -47.2 maxDD=    -49   Dec-May    +246 | Jun-Nov     +91
    3 days before, mean premium   18.9
       hold         n=22 mean=  +18.13 total=   +399 win=100% worst=    +2.7 maxDD=      0   Dec-May    +271 | Jun-Nov    +128
       stop2x       n=22 mean=   +0.05 total=     +1 win= 50% worst=   -28.6 maxDD=    -82   Dec-May     -36 | Jun-Nov     +37
       stop3x       n=22 mean=   +5.82 total=   +128 win= 59% worst=   -34.6 maxDD=    -52   Dec-May     +90 | Jun-Nov     +38
       stop2x+half  n=22 mean=   +1.50 total=    +33 win= 73% worst=   -28.6 maxDD=    -73   Dec-May     -27 | Jun-Nov     +60
       stop3x+half  n=22 mean=   +6.74 total=   +148 win= 86% worst=   -16.6 maxDD=    -17   Dec-May     +83 | Jun-Nov     +66
+      stop2x+trail n=22 mean=   -0.53 total=    -12 win= 45% worst=   -28.6 maxDD=    -66   Dec-May     -40 | Jun-Nov     +28
    2 days before, mean premium    9.9
       hold         n=33 mean=   +2.20 total=    +73 win= 97% worst=  -199.2 maxDD=   -199   Dec-May      -5 | Jun-Nov     +78
       stop2x       n=33 mean=   +0.30 total=    +10 win= 61% worst=   -30.5 maxDD=    -57   Dec-May     +57 | Jun-Nov     -47
       stop3x       n=33 mean=   -0.45 total=    -15 win= 70% worst=   -77.5 maxDD=   -111   Dec-May      +9 | Jun-Nov     -24
       stop2x+half  n=33 mean=   +1.15 total=    +38 win= 79% worst=   -23.2 maxDD=    -35   Dec-May     +10 | Jun-Nov     +28
       stop3x+half  n=33 mean=   -0.05 total=     -2 win= 85% worst=   -77.5 maxDD=    -89   Dec-May     -44 | Jun-Nov     +42
+      stop2x+trail n=33 mean=   -0.14 total=     -5 win= 58% worst=   -30.5 maxDD=    -61   Dec-May     +43 | Jun-Nov     -47
    1 days before, mean premium    1.4
       hold         n=27 mean=   +1.32 total=    +36 win=100% worst=    +0.1 maxDD=      0   Dec-May     +23 | Jun-Nov     +12
       stop2x       n=27 mean=   +0.79 total=    +21 win= 78% worst=    -3.2 maxDD=     -4   Dec-May      +9 | Jun-Nov     +12
       stop3x       n=27 mean=   +1.28 total=    +35 win= 89% worst=    -0.1 maxDD=     -0   Dec-May     +22 | Jun-Nov     +12
       stop2x+half  n=27 mean=   +0.46 total=    +12 win= 81% worst=    -3.2 maxDD=     -3   Dec-May      +6 | Jun-Nov      +7
       stop3x+half  n=27 mean=   +0.74 total=    +20 win= 89% worst=    -0.1 maxDD=     -0   Dec-May     +13 | Jun-Nov      +7
+      stop2x+trail n=27 mean=   +0.79 total=    +21 win= 78% worst=    -3.2 maxDD=     -4   Dec-May      +9 | Jun-Nov     +12
 
 sold 7 % away, wings 11 % away
    7 days before, mean premium   49.3
@@ -194,24 +215,28 @@ sold 5 % away (naked)
       stop3x       n= 2 mean= +249.32 total=   +499 win=100% worst=  +239.8 maxDD=      0   Dec-May    +240 | Jun-Nov    +259
       stop2x+half  n= 2 mean=  -42.54 total=    -85 win= 50% worst=  -218.8 maxDD=   -219   Dec-May    -219 | Jun-Nov    +134
       stop3x+half  n= 2 mean= +174.00 total=   +348 win=100% worst=  +133.7 maxDD=      0   Dec-May    +214 | Jun-Nov    +134
+      stop2x+trail n= 2 mean=  -69.97 total=   -140 win= 50% worst=  -148.5 maxDD=   -148   Dec-May    -148 | Jun-Nov      +9
   21 days before, mean premium  352.7
       hold         n= 5 mean= +299.92 total=  +1500 win= 80% worst=   -39.5 maxDD=    -39   Dec-May   +1322 | Jun-Nov    +178
       stop2x       n= 5 mean= +208.75 total=  +1044 win= 60% worst=   -62.0 maxDD=    -80   Dec-May    +866 | Jun-Nov    +178
       stop3x       n= 5 mean= +299.92 total=  +1500 win= 80% worst=   -39.5 maxDD=    -39   Dec-May   +1322 | Jun-Nov    +178
       stop2x+half  n= 5 mean= +131.37 total=   +657 win= 80% worst=   -18.0 maxDD=    -18   Dec-May    +570 | Jun-Nov     +87
       stop3x+half  n= 5 mean= +176.83 total=   +884 win=100% worst=   +86.8 maxDD=      0   Dec-May    +797 | Jun-Nov     +87
+      stop2x+trail n= 5 mean= +208.75 total=  +1044 win= 60% worst=   -62.0 maxDD=    -80   Dec-May    +866 | Jun-Nov    +178
   14 days before, mean premium  158.7
       hold         n= 6 mean= -182.67 total=  -1096 win= 33% worst= -1288.3 maxDD=  -1426   Dec-May    +221 | Jun-Nov   -1317
       stop2x       n= 6 mean=  -35.35 total=   -212 win=  0% worst=  -127.7 maxDD=   -212   Dec-May     -42 | Jun-Nov    -170
       stop3x       n= 6 mean=  -11.35 total=    -68 win= 17% worst=  -127.7 maxDD=   -329   Dec-May    +147 | Jun-Nov    -215
       stop2x+half  n= 6 mean=  +39.88 total=   +239 win= 50% worst=   -35.5 maxDD=    -42   Dec-May    +198 | Jun-Nov     +41
       stop3x+half  n= 6 mean=  +15.42 total=    +93 win= 50% worst=  -108.6 maxDD=   -120   Dec-May     +97 | Jun-Nov      -4
+      stop2x+trail n= 6 mean=  -35.35 total=   -212 win=  0% worst=  -127.7 maxDD=   -212   Dec-May     -42 | Jun-Nov    -170
    7 days before, mean premium   88.2
       hold         n= 7 mean=  +50.67 total=   +355 win= 86% worst=  -118.6 maxDD=   -119   Dec-May    +178 | Jun-Nov    +177
       stop2x       n= 7 mean=  +22.99 total=   +161 win= 43% worst=   -87.2 maxDD=   -149   Dec-May     +72 | Jun-Nov     +89
       stop3x       n= 7 mean=  +34.19 total=   +239 win= 71% worst=  -131.0 maxDD=   -131   Dec-May    +194 | Jun-Nov     +45
       stop2x+half  n= 7 mean=  +16.65 total=   +117 win= 57% worst=   -38.6 maxDD=    -61   Dec-May      +3 | Jun-Nov    +114
       stop3x+half  n= 7 mean=  +43.95 total=   +308 win=100% worst=   +18.6 maxDD=      0   Dec-May    +194 | Jun-Nov    +114
+      stop2x+trail n= 7 mean=  +21.48 total=   +150 win= 43% worst=   -83.7 maxDD=   -159   Dec-May      +0 | Jun-Nov    +150
 
 sold 5 % away, wings 11 % away
   21 days before, mean premium  181.2
@@ -228,24 +253,28 @@ sold 8 % away (naked)
       stop3x       n= 1 mean= +160.25 total=   +160 win=100% worst=  +160.2 maxDD=      0   Dec-May      +0 | Jun-Nov    +160
       stop2x+half  n= 1 mean=  +78.54 total=    +79 win=100% worst=   +78.5 maxDD=      0   Dec-May      +0 | Jun-Nov     +79
       stop3x+half  n= 1 mean=  +78.54 total=    +79 win=100% worst=   +78.5 maxDD=      0   Dec-May      +0 | Jun-Nov     +79
+      stop2x+trail n= 1 mean=  +11.35 total=    +11 win=100% worst=   +11.4 maxDD=      0   Dec-May      +0 | Jun-Nov     +11
   21 days before, mean premium  260.1
       hold         n= 3 mean= +258.49 total=   +775 win=100% worst=   +97.3 maxDD=      0   Dec-May    +678 | Jun-Nov     +97
       stop2x       n= 3 mean= +156.42 total=   +469 win= 67% worst=    -7.1 maxDD=     -7   Dec-May    +372 | Jun-Nov     +97
       stop3x       n= 3 mean= +258.49 total=   +775 win=100% worst=   +97.3 maxDD=      0   Dec-May    +678 | Jun-Nov     +97
       stop2x+half  n= 3 mean=  +78.39 total=   +235 win= 67% worst=    -7.1 maxDD=     -7   Dec-May    +189 | Jun-Nov     +47
       stop3x+half  n= 3 mean= +130.44 total=   +391 win=100% worst=   +46.6 maxDD=      0   Dec-May    +345 | Jun-Nov     +47
+      stop2x+trail n= 3 mean= +156.42 total=   +469 win= 67% worst=    -7.1 maxDD=     -7   Dec-May    +372 | Jun-Nov     +97
   14 days before, mean premium   91.2
       hold         n= 5 mean= -224.12 total=  -1121 win= 60% worst= -1130.0 maxDD=  -1183   Dec-May     -53 | Jun-Nov   -1068
       stop2x       n= 5 mean=  +27.50 total=   +137 win= 40% worst=   -14.6 maxDD=    -21   Dec-May    +140 | Jun-Nov      -3
       stop3x       n= 5 mean=  +13.66 total=    +68 win= 40% worst=   -79.0 maxDD=    -87   Dec-May     +15 | Jun-Nov     +53
       stop2x+half  n= 5 mean=  +15.01 total=    +75 win= 60% worst=   -14.6 maxDD=    -15   Dec-May     +56 | Jun-Nov     +19
       stop3x+half  n= 5 mean=   -5.33 total=    -27 win= 60% worst=   -79.0 maxDD=    -79   Dec-May     -69 | Jun-Nov     +42
+      stop2x+trail n= 5 mean=  +21.67 total=   +108 win= 20% worst=   -23.5 maxDD=    -44   Dec-May    +140 | Jun-Nov     -32
    7 days before, mean premium   38.6
       hold         n= 7 mean=  +37.35 total=   +261 win=100% worst=   +17.7 maxDD=      0   Dec-May    +175 | Jun-Nov     +87
       stop2x       n= 7 mean=   -0.78 total=     -5 win= 29% worst=   -32.1 maxDD=    -72   Dec-May     +31 | Jun-Nov     -37
       stop3x       n= 7 mean=  +18.68 total=   +131 win= 71% worst=   -49.7 maxDD=    -62   Dec-May    +175 | Jun-Nov     -44
       stop2x+half  n= 7 mean=   -2.52 total=    -18 win= 43% worst=   -32.1 maxDD=    -49   Dec-May      -5 | Jun-Nov     -13
       stop3x+half  n= 7 mean=  +13.76 total=    +96 win= 86% worst=   -30.2 maxDD=    -30   Dec-May     +96 | Jun-Nov      +1
+      stop2x+trail n= 7 mean=   -3.17 total=    -22 win= 29% worst=   -48.8 maxDD=    -89   Dec-May     +14 | Jun-Nov     -37
 
 sold 8 % away, wings 14 % away
   21 days before, mean premium  127.1
@@ -262,24 +291,28 @@ sold 12 % away (naked)
       stop3x       n= 5 mean=  -73.47 total=   -367 win= 20% worst=  -177.5 maxDD=   -436   Dec-May    -335 | Jun-Nov     -32
       stop2x+half  n= 5 mean=  +25.83 total=   +129 win= 80% worst=   -24.1 maxDD=    -24   Dec-May     +97 | Jun-Nov     +32
       stop3x+half  n= 5 mean=  -13.62 total=    -68 win= 60% worst=  -162.6 maxDD=   -258   Dec-May    -100 | Jun-Nov     +32
+      stop2x+trail n= 5 mean=  -32.71 total=   -164 win= 20% worst=   -76.8 maxDD=   -164   Dec-May    -132 | Jun-Nov     -32
   21 days before, mean premium   85.3
       hold         n= 4 mean=   +3.35 total=    +13 win= 75% worst=  -212.4 maxDD=   -212   Dec-May    -118 | Jun-Nov    +132
       stop2x       n= 4 mean=  +33.19 total=   +133 win= 75% worst=   -16.7 maxDD=    -17   Dec-May      +1 | Jun-Nov    +132
       stop3x       n= 4 mean=  +12.92 total=    +52 win= 50% worst=   -53.9 maxDD=    -80   Dec-May     -80 | Jun-Nov    +132
       stop2x+half  n= 4 mean=  +16.21 total=    +65 win= 75% worst=   -16.7 maxDD=    -17   Dec-May      +1 | Jun-Nov     +64
       stop3x+half  n= 4 mean=   -4.05 total=    -16 win= 50% worst=   -53.9 maxDD=    -80   Dec-May     -80 | Jun-Nov     +64
+      stop2x+trail n= 4 mean=  +13.09 total=    +52 win= 50% worst=   -45.8 maxDD=    -79   Dec-May     -79 | Jun-Nov    +132
   14 days before, mean premium   33.3
       hold         n= 3 mean=  +32.00 total=    +96 win=100% worst=   +21.7 maxDD=      0   Dec-May     +35 | Jun-Nov     +61
       stop2x       n= 3 mean=   -4.29 total=    -13 win= 33% worst=    -9.9 maxDD=    -16   Dec-May     -10 | Jun-Nov      -3
       stop3x       n= 3 mean=   -1.00 total=     -3 win= 33% worst=   -35.3 maxDD=    -35   Dec-May     -35 | Jun-Nov     +32
       stop2x+half  n= 3 mean=   -4.29 total=    -13 win= 33% worst=    -9.9 maxDD=    -16   Dec-May     -10 | Jun-Nov      -3
       stop3x+half  n= 3 mean=   -7.84 total=    -24 win= 33% worst=   -35.3 maxDD=    -35   Dec-May     -35 | Jun-Nov     +12
+      stop2x+trail n= 3 mean=  -14.48 total=    -43 win= 33% worst=   -36.4 maxDD=    -46   Dec-May     -10 | Jun-Nov     -34
    7 days before, mean premium   15.9
       hold         n= 1 mean=  +15.22 total=    +15 win=100% worst=   +15.2 maxDD=      0   Dec-May     +15 | Jun-Nov      +0
       stop2x       n= 1 mean=   -2.22 total=     -2 win=  0% worst=    -2.2 maxDD=     -2   Dec-May      -2 | Jun-Nov      +0
       stop3x       n= 1 mean=  +15.22 total=    +15 win=100% worst=   +15.2 maxDD=      0   Dec-May     +15 | Jun-Nov      +0
       stop2x+half  n= 1 mean=   -2.22 total=     -2 win=  0% worst=    -2.2 maxDD=     -2   Dec-May      -2 | Jun-Nov      +0
       stop3x+half  n= 1 mean=   +6.99 total=     +7 win=100% worst=    +7.0 maxDD=      0   Dec-May      +7 | Jun-Nov      +0
+      stop2x+trail n= 1 mean=   -2.22 total=     -2 win=  0% worst=    -2.2 maxDD=     -2   Dec-May      -2 | Jun-Nov      +0
 
 sold 12 % away, wings 18 % away
   28 days before, mean premium  101.5

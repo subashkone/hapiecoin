@@ -69,6 +69,22 @@ For the naked strangle 600 entered at 21:30 IST (`study.py`, section E). With th
 
 Keeping earns the most: after a stop the other side is usually far from the price and decays to nothing. Trailing or closing had a smaller worst day (the script counts the days both sides were stopped for the keep version only: 5 at 2x). The three give-backs are not ordered (10 % beat 30 %) and 50 % beat closing at once by 0.13 a day, which is noise on 64 days. ADR-114 put the 50 % trail on paper beside the keep version.
 
-## 7. Not tested yet
+## 7. Weekly and monthly expiries
 
-Calendar spreads; weekly and monthly strangles; ETH; strikes set by the day's expected move instead of a fixed distance; skipping US announcement days; a trend filter on the sold side; a timed exit before settlement; margin.
+A second run (`scripts/autopilot-study/fetch_weekly.py`, `study_weekly.py`, tables in `results-weekly-2026-11-22.txt`): 51 BTC Friday expiries from 5 December 2025 to 20 November 2026, of which 11 are monthly, 1-hour marks, the same fees, 100 lots. Strikes are a percentage of the spot away on the 500 ladder; the entry is N days before expiry at 21:30 IST.
+
+| Weekly strangle sold 3 % away | Friday entry (7 days): mean a week / weeks positive / worst | Tuesday entry (3 days): mean / positive / worst |
+|---|---|---|
+| Each option stopped at 3x | +40.65 / 57 % / −168 (51 weeks) | −2.92 / 51 % / −171 (47 weeks) |
+| Stopped at 3x, closed at half the premium | +28.59 / 73 % / −168 | −1.69 / 64 % / −132 |
+| Stopped at 2x | +28.33 / 43 % / −268 | +0.50 / 38 % / −121 |
+| Stopped at 2x, then the rest trailed by half | +23.52 / 41 % / −230 | −3.60 / 38 % / −121 |
+| Stopped at 2x, closed at half the premium | +14.52 / 51 % / −268 | +0.35 / 51 % / −121 |
+| Wings 7 % away, hold | +35.58 / 73 % / −246 (26 weeks) | +9.03 / 62 % / −183 (21 weeks) |
+| No stop, hold | +7.61 / 75 % / −1,220 | −7.58 / 77 % / −963 |
+
+The Friday entry with a stop was positive in both halves of the year under every exit (3x: +1,466 and +607). Sold 5 % away it was similar (3x: +42.01 a week on 36 weeks, worst −137). Entries two to four days before expiry were flat or negative. The monthly cycle has one to seven trades per entry day and swings from +300 to −1,290 a trade: no conclusion. ADR-115 put the five stopped or winged exits on paper for both entry days.
+
+## 8. Not tested yet
+
+Calendar spreads; ETH; strikes set by the day's expected move instead of a fixed distance; skipping US announcement days; a trend filter on the sold side; a timed exit before settlement; margin.

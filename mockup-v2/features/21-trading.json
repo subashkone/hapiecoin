@@ -2054,5 +2054,27 @@
     "how": "evening-strangle-trail-rest: sold three strikes out in the evening window, each sold option bought back at twice its price, the stop set to this leg then trail the rest with a give-back of 50 %, so after one stop the other option is closed when its profit falls back by half of its best; the card says so; the results compare it with the stop-at-double version",
     "evidence": "ADR-114 (22 Nov 2026): packages/pricing/src/playbooks.ts (trailRestPct, evening-strangle-trail-rest), apps/api/src/autopilot.ts (clockPlanFor, enter), apps/web/src/components/autopilot/AutopilotPage.tsx (autopilot-card-how), docs/research/scripts/autopilot-study/study.py (section E); tests: packages/pricing/src/playbooks.test.ts HC-TR-228, apps/api/src/autopilot.test.ts HC-TR-228 (within HC-TR-225), autopilot-page.test.tsx HC-TR-228 (within HC-TR-226)",
     "test": "integration (api)"
+  },
+  {
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Autopilot enters ten weekly strangles: five exits, each on a Friday for next Friday's expiry and on a Tuesday for that week's Friday expiry",
+    "how": "WEEKLY_PLAYBOOKS, BTC on Delta India, 100 lots, sold at the listed strikes nearest 3 % of the spot away (a template leg's pct), with wings 7 % away held to settlement, a stop at double, a stop at triple, the stop at double with a take at half the premium, or the stop at double then a trail on the rest; the clock has a day of the week and the expiry is bounded on both sides, so a daily or a later weekly is never taken; another day and a missing Friday expiry are logged reasons",
+    "evidence": "ADR-115, GAPS #150 (22 Nov 2026): packages/pricing/src/playbooks.ts (WEEKLY_PLAYBOOKS, weekdayUtc), packages/pricing/src/templates.ts (pct), apps/api/src/autopilot.ts (inWindow), docs/research/scripts/autopilot-study/study_weekly.py and results-weekly-2026-11-22.txt; tests: packages/pricing/src/playbooks.test.ts HC-TR-229, apps/api/src/autopilot.test.ts HC-TR-229",
+    "test": "integration (api)"
+  },
+  {
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The Autopilot screen groups its strategies in three families and a weekly card says its day, its expiry and its exit",
+    "how": "the cards sit under Longer-dated strategies, Evening strangles (daily expiry) and Weekly strangles (Friday expiry), each with a line on when it enters; a weekly card reads Entered each Friday or each Tuesday with its expiry, then its exits and the backtest figure",
+    "evidence": "ADR-115 (22 Nov 2026): apps/web/src/components/autopilot/AutopilotPage.tsx (GROUPS, autopilot-group, autopilot-card-how); tests: autopilot-page.test.tsx HC-TR-230",
+    "test": "unit (web)"
   }
 ]

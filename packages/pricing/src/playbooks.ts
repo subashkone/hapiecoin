@@ -57,8 +57,12 @@ export interface PlaybookClock {
   /** The entry window in UTC hours: from the first, before the second. */
   fromHourUtc: number;
   toHourUtc: number;
+  /** ADR-115: the one day of the week (UTC, 0 = Sunday) the window opens on; absent: every day. */
+  weekdayUtc?: number | undefined;
   /** The window as the trader reads it. */
   window: string;
+  /** How the entry reads on the card, after "Entered ": when, and on which expiry. */
+  describe: string;
   /** The entry's expiry is at most this many days out: the next settlement, never a later one when that one has no prices. */
   maxDte: number;
   /** The venues the plan is for: the study behind it covers no other. */
@@ -223,7 +227,7 @@ function strangle(name: string, k: number, wing: number | null): StrategyTemplat
  * 16:00 to 17:00 UTC. Autopilot enters on its first pass inside the window, so the entry is the study's 16:00 UTC bar
  * ("21:30 IST"), the one every figure quoted on these cards is for, about two hours after the US cash open.
  */
-const EVENING = { fromHourUtc: 16, toHourUtc: 17, window: "9:30 to 10:30 PM IST", maxDte: 1.5, venues: ["delta_india"] } as const;
+const EVENING = { fromHourUtc: 16, toHourUtc: 17, window: "9:30 to 10:30 PM IST", describe: "once an evening, 9:30 to 10:30 PM IST, on the next expiry", maxDte: 1.5, venues: ["delta_india"] } as const;
 const STUDY = "docs/research/scripts/autopilot-study (106 BTC daily expiries, 8 Aug to 21 Nov 2026, 5-minute marks, the exchange's real fees, 100 lots)";
 const STUDY_TRIALS = { count: 456, note: "19 structures at 24 entry hours on the same 106 days, with several exits each, and for the stopped strangle five more exits tried afterwards (take half at two stops; trail the rest at three give-backs, of which 50 % was the best; close the rest at once); these were chosen after seeing the results, so their figures are in-sample and the paper record is the test" };
 /** Never judged by the daily record (it enters at the settlement hour, the worst hour of the study): Autopilot's own results are the record. */
@@ -304,8 +308,57 @@ export const CLOCK_PLAYBOOKS: readonly Playbook[] = [
   ),
 ];
 
+// ---- ADR-115: the weekly strangles, entered on a Friday or a Tuesday evening for the Friday expiry -----------------
+
+const WEEKLY_STUDY = "docs/research/scripts/autopilot-study/results-weekly-2026-11-22.txt (51 BTC Friday expiries, 5 Dec 2025 to 20 Nov 2026, hourly marks, the exchange's real fees, 100 lots)";
+const WEEKLY_TRIALS = { count: 147, note: "3 naked strangles (3, 5 and 7 % away) at 7 entry days and 6 exits and 3 winged ones at 7 entry days, on the same 51 weeks, and the monthly cycle looked at and left out; the Friday entries were chosen for their results and the Tuesday ones are run although they were about flat, as a check of the backtest; in-sample, the paper record is the test" };
+/** Sell the call and the put `sold` per cent of the spot away; with `wing`, buy the options that far away to cap the loss. */
+function strangleAway(name: string, sold: number, wing: number | null): StrategyTemplate {
+  const legs = [{ ...P_SELL, k: 0, pct: -sold }, { ...C_SELL, k: 0, pct: sold }];
+  return {
+    name,
+    category: "Neutral",
+    description: wing === null ? `Sell a call and a put ${sold} % out of the money on the weekly expiry.` : `Sell a call and a put ${sold} % out of the money on the weekly expiry and buy the options ${wing} % out to cap the loss.`,
+    legs: wing === null ? legs : [{ ...P_BUY, k: 0, pct: -wing }, ...legs, { ...C_BUY, k: 0, pct: wing }],
+    risk: wing === null ? "undefined" : "defined",
+  };
+}
+/** 16:00 to 17:00 UTC on the entry day; the Friday expiry settles at 12:00 UTC: a week less four hours later from a Friday, three days less four hours from a Tuesday. */
+const WEEKLY_DAYS = {
+  fri: { weekdayUtc: 5, day: "Friday", minDte: 6.5, maxDte: 7.5, describe: "each Friday, 9:30 to 10:30 PM IST, on next Friday's expiry" },
+  tue: { weekdayUtc: 2, day: "Tuesday", minDte: 2.5, maxDte: 3.5, describe: "each Tuesday, 9:30 to 10:30 PM IST, on that week's Friday expiry" },
+} as const;
+type WeeklyExit = { key: string; name: string; exit: string; wing: number | null; legStop?: number; takeProfitOfCredit?: number; trailRestPct?: number; fri: string; tue: string };
+const WEEKLY_EXITS: readonly WeeklyExit[] = [
+  { key: "wings", name: "with wings", exit: "buy the options 7 % away as wings, and hold to settlement", wing: 7, fri: "+35.58 a week on 26 weeks (the wings had a price on about half), 73 % of weeks positive, worst week -246", tue: "+9.03 a week on 21 weeks, 62 % positive, worst week -183, and a loss over the second half of the year" },
+  { key: "stop-2x", name: "stop at double", exit: "buy either one back if its price doubles, and hold the other to settlement", wing: null, legStop: 2, fri: "+28.33 a week on 51 weeks, 43 % of weeks positive, worst week -268", tue: "+0.50 a week on 47 weeks, 38 % positive, worst week -121" },
+  { key: "stop-3x", name: "stop at triple", exit: "buy either one back if its price triples, and hold the other to settlement", wing: null, legStop: 3, fri: "+40.65 a week on 51 weeks, 57 % of weeks positive, worst week -168, positive in both halves of the year", tue: "-2.92 a week on 47 weeks, 51 % positive, worst week -171" },
+  { key: "take-half", name: "take half", exit: "close the whole trade once it is up by half the premium, and buy either option back if its price doubles", wing: null, legStop: 2, takeProfitOfCredit: 0.5, fri: "+14.52 a week on 51 weeks, 51 % of weeks positive, worst week -268", tue: "+0.35 a week on 47 weeks, 51 % positive, worst week -121" },
+  { key: "trail-rest", name: "trail the rest", exit: "buy either one back if its price doubles, then trail the profit on the other and close it when it gives back half of its best", wing: null, legStop: 2, trailRestPct: 50, fri: "+23.52 a week on 51 weeks, 41 % of weeks positive, worst week -230", tue: "-3.60 a week on 47 weeks, 38 % positive, worst week -121" },
+];
+const weeklyPlaybook = (d: keyof typeof WEEKLY_DAYS, x: WeeklyExit): Playbook => {
+  const when = WEEKLY_DAYS[d];
+  return {
+    id: `weekly-${d}-strangle-${x.key}`,
+    name: `${when.day} weekly strangle, ${x.name}`,
+    summary: `Each ${when.day} evening sell a call and a put 3 % away on the ${d === "fri" ? "next" : "coming"} Friday expiry; ${x.exit}.`,
+    rationale: d === "fri" ? "A week of time value sold with its loss bounded by a stop or by wings: in the study every such version entered a Friday for the next was positive in both halves of the year, and the version with neither lost 1,220 in its worst week." : "The same trade entered three days before expiry. In the study it was about flat with a stop and a little positive with wings; it runs on paper as a check of that result, not because it earned.",
+    evidence: { claim: `Sold 3 % away, entered ${when.day} 21:30 IST for the Friday expiry: ${x[d]}.`, source: WEEKLY_STUDY },
+    template: strangleAway(`${when.day} weekly strangle${x.wing === null ? "" : " with wings"} (3 %)`, 3, x.wing),
+    minDte: when.minDte,
+    lots: 100,
+    assets: ["BTC"],
+    thresholds: NO_RECORD,
+    trials: WEEKLY_TRIALS,
+    control: false,
+    clock: { fromHourUtc: 16, toHourUtc: 17, weekdayUtc: when.weekdayUtc, window: `${when.day}s, 9:30 to 10:30 PM IST`, describe: when.describe, maxDte: when.maxDte, venues: ["delta_india"], legStop: x.legStop, takeProfitOfCredit: x.takeProfitOfCredit, trailRestPct: x.trailRestPct },
+  };
+};
+/** The weekly playbooks Autopilot enters by the clock (ADR-115): five exits, each on a Friday and on a Tuesday. */
+export const WEEKLY_PLAYBOOKS: readonly Playbook[] = (["fri", "tue"] as const).flatMap((d) => WEEKLY_EXITS.map((x) => weeklyPlaybook(d, x)));
+
 /** Every playbook Autopilot may trade: the recorded ones (never the control) and the ones entered by the clock. */
-export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS];
+export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...WEEKLY_PLAYBOOKS];
 export function autopilotPlaybookById(id: string): Playbook | undefined {
   return AUTOPILOT_PLAYBOOKS.find((p) => p.id === id);
 }
