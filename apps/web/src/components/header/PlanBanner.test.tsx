@@ -34,6 +34,14 @@ describe("HC-SH-014 plan banner", () => {
     rerender(<PlanBannerView plan={{ state: "free" }} />);
     expect(screen.getByText("FREE PLAN")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Upgrade" })).toBeTruthy();
+    // HC-AC-075: with no Free plan on offer there is no "free plan" to call active
+    rerender(<PlanBannerView plan={{ state: "free", access: false }} />);
+    expect(screen.getByTestId("plan-banner").textContent).toContain("You have no active plan.");
+    expect(screen.queryByText("FREE PLAN")).toBeNull();
+    expect(screen.getByRole("link", { name: "Choose a plan" }).getAttribute("href")).toBe("/plans");
+    expect(screen.queryByRole("button", { name: "Dismiss" })).toBeNull();
+    rerender(<PlanBannerView plan={{ state: "free", access: true }} />);
+    expect(screen.getByText("FREE PLAN")).toBeTruthy();
   });
   it("loads from /v1/plan and can be dismissed", async () => {
     mock.loginAs("asha@example.com");

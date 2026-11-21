@@ -834,7 +834,9 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     return c.body(null, 204);
   });
   v1.get("/credentials/whitelist-ip", (c) => c.json({ ip: WHITELIST_IP }));
-  v1.get("/plan", (c) => c.json(current(c)!.plan));
+  // ADR-107: the workspace needs a running subscription or a Free plan on offer; an admin always gets in
+  const accessOf = (acc: Account) => acc.user.role === "admin" || activeSub(acc) !== null || acc.plan.state === "active" || acc.plan.state === "expiring_soon" || state.plans.some((p) => p.active && Number(p.intervals.monthly.priceInr) === 0);
+  v1.get("/plan", (c) => c.json({ ...current(c)!.plan, access: accessOf(current(c)!) }));
 
   /* ---------------- alerts (Phase 5 item 2, mirrors apps/api/src/routes/alerts.ts) ---------------- */
   v1.get("/alerts", (c) => c.json({ items: [...current(c)!.alerts] }));
@@ -1526,7 +1528,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   const subscriptionView = (acc: Account) => {
     const { plan, sub, entitlements } = entitlementsOf(acc);
     return {
-      plan: planStateOf(acc),
+      plan: { ...planStateOf(acc), access: accessOf(acc) },
       current: sub ? { id: sub.id, planId: sub.planId, planName: planOf(sub.planId)?.name ?? "Plan", interval: sub.interval, status: "active", startsAt: sub.startsAt, expiresAt: sub.expiresAt, priceInr: sub.priceInr, paidInr: sub.paidInr, currency: "INR" } : null,
       effectivePlan: plan ?? null,
       entitlements,
@@ -2105,11 +2107,11 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (denied) return denied;
     const acc = accByUserId(c.req.param("id"));
     if (!acc) return err(c, 404, "NOT_FOUND", "User not found");
-    const body = await c.req.json<{ planId: string; interval: BillingInterval }>();
+    const body = await c.req.json<{ planId: string; interval: BillingInterval; note?: string }>();
     const plan = planOf(body.planId);
     if (!plan || !plan.active) return err(c, 404, "NOT_FOUND", "Plan not found");
     setPlanFor(acc, plan, body.interval);
-    acc.history.unshift({ id: acc.history.length + 1, action: "admin.user.set_plan", target: `user:${acc.user.id}`, actorId: current(c)!.user.id, actorEmail: current(c)!.user.email, at: nowIso(), after: { planName: plan.name, interval: body.interval, paidInr: "0" } });
+    acc.history.unshift({ id: acc.history.length + 1, action: "admin.user.set_plan", target: `user:${acc.user.id}`, actorId: current(c)!.user.id, actorEmail: current(c)!.user.email, at: nowIso(), after: { planName: plan.name, interval: body.interval, paidInr: "0", note: body.note ?? null } });
     return c.json(adminRow(acc));
   });
   v1.post("/admin/users/bulk-plan", async (c) => {

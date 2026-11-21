@@ -9245,6 +9245,21 @@
   "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): row density: 1-line rows with initials avatar at text-xs"
  },
  {
+  "id": "HC-AC-075",
+  "area": "30-account",
+  "areaName": "Subscription & referrals",
+  "owner": "Platform engineer",
+  "route": "/plans",
+  "screen": "My plan",
+  "feature": "With no Free plan on offer, a signed-in user without a running plan cannot open the Desk and is sent to the plans page",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + web)",
+  "acceptance": "GET /v1/plan and the plan inside GET /v1/subscription carry access: true for a running subscription, for a Free plan on offer (the cheapest active plan at ₹0), and for an admin; the Desk's server layout redirects a visitor without access to /plans?need=plan; the plans page says a plan is needed and that a direct payment appears once it is added; the banner says there is no active plan; the Free tier is switched by the ₹0 plan's Active toggle in Admin → Plans",
+  "evidence": "ADR-107, GAPS #144 (21 Nov 2026): packages/schema/src/billing.ts (PlanState.access), apps/api/src/routes/plan.ts, billing.ts (subscriptionView), apps/web/src/lib/auth/server.ts (hasWorkspaceAccess), apps/web/src/app/desk/layout.tsx, SubscriptionPage.tsx (sub-need-plan), PlanBanner.tsx; tests: api plan.test.ts HC-AC-075, web subscription.test.tsx HC-AC-075, PlanBanner.test.tsx"
+ },
+ {
   "id": "HC-AD-001",
   "area": "40-admin",
   "areaName": "Admin console",
@@ -11183,6 +11198,21 @@
   "test": "unit (api + web)",
   "acceptance": "AdminUserRow.twoFactorEnabled from users.two_factor_enabled; a 2FA column (on / off) in the users table and its CSV",
   "evidence": "ADR-086 (13 Sep 2026): apps/api/src/admin-users.ts adminRow, packages/schema billing.ts AdminUserRow, apps/web components/admin/UsersAdmin.tsx; unit second-factor.test.ts (api), users.test.tsx HC-AD-129 (web)"
+ },
+ {
+  "id": "HC-AD-130",
+  "area": "40-admin",
+  "areaName": "Admin console",
+  "owner": "Platform engineer",
+  "route": "/admin/users",
+  "screen": "User Management",
+  "feature": "An admin who puts a user on a plan by hand can note how the user paid; the note stays in that user's History",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (api + web)",
+  "acceptance": "The Set plan dialog (one user or many) has an optional Payment note of up to 200 characters; POST /v1/admin/users/{id}/plan and /bulk-plan accept note, refuse a blank or over-long one, and store it in the audit entry; the drawer's History tab shows it beside the change",
+  "evidence": "ADR-107 (21 Nov 2026): packages/schema/src/admin.ts (GrantNote, SetPlanBody, BulkPlanBody), apps/api/src/routes/admin-users.ts, apps/web/src/components/admin/UserDialogs.tsx (set-plan-note), UserDrawer.tsx (history-note); tests: api plan.test.ts HC-AD-130, web users.test.tsx HC-AD-130"
  },
  {
   "id": "HC-MA-001",

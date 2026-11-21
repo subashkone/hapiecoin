@@ -38,6 +38,8 @@ export function bannerFor(plan: PlanState): BannerView {
       };
     case "free":
     default:
+      // no subscription and no Free plan on offer (ADR-107): there is no "free plan" to call active
+      if (plan.access === false) return { kind: "expired", text: "You have no active plan.", button: "Choose a plan", dismissible: false };
       return { kind: "free", text: "Your free plan is active.", button: "Upgrade", dismissible: true };
   }
 }

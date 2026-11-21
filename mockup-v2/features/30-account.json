@@ -609,5 +609,16 @@
     "status": "working",
     "new": true,
     "evidence": "v2 improvement · Phase 4 item 3 (08 Sep 2026, ADR-031): row density: 1-line rows with initials avatar at text-xs"
+  },
+  {
+    "route": "/plans",
+    "screen": "My plan",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "With no Free plan on offer, a signed-in user without a running plan cannot open the Desk and is sent to the plans page",
+    "how": "GET /v1/plan and the plan inside GET /v1/subscription carry access: true for a running subscription, for a Free plan on offer (the cheapest active plan at ₹0), and for an admin; the Desk's server layout redirects a visitor without access to /plans?need=plan; the plans page says a plan is needed and that a direct payment appears once it is added; the banner says there is no active plan; the Free tier is switched by the ₹0 plan's Active toggle in Admin → Plans",
+    "evidence": "ADR-107, GAPS #144 (21 Nov 2026): packages/schema/src/billing.ts (PlanState.access), apps/api/src/routes/plan.ts, billing.ts (subscriptionView), apps/web/src/lib/auth/server.ts (hasWorkspaceAccess), apps/web/src/app/desk/layout.tsx, SubscriptionPage.tsx (sub-need-plan), PlanBanner.tsx; tests: api plan.test.ts HC-AC-075, web subscription.test.tsx HC-AC-075, PlanBanner.test.tsx",
+    "test": "unit (api + web)"
   }
 ]

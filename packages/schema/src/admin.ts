@@ -63,10 +63,12 @@ export const AdminUserDetail = z.strictObject({
 export type AdminUserDetail = z.infer<typeof AdminUserDetail>;
 
 /** POST /v1/admin/users/{id}/plan — a plan comped by an admin at ₹0 (HC-AD-104). */
-export const SetPlanBody = z.strictObject({ planId: Id, interval: BillingInterval });
+/** How the user paid outside the app ("UPI, ref 1234"); kept in the audit log with the grant (ADR-107). */
+export const GrantNote = z.string().trim().min(1).max(200);
+export const SetPlanBody = z.strictObject({ planId: Id, interval: BillingInterval, note: GrantNote.optional() });
 export type SetPlanBody = z.infer<typeof SetPlanBody>;
 /** POST /v1/admin/users/bulk-plan (HC-AD-100). */
-export const BulkPlanBody = z.strictObject({ ids: z.array(Id).min(1).max(500), planId: Id, interval: BillingInterval });
+export const BulkPlanBody = z.strictObject({ ids: z.array(Id).min(1).max(500), planId: Id, interval: BillingInterval, note: GrantNote.optional() });
 export type BulkPlanBody = z.infer<typeof BulkPlanBody>;
 export const BulkPlanResult = z.strictObject({ updated: z.number().int(), planName: z.string() });
 export type BulkPlanResult = z.infer<typeof BulkPlanResult>;

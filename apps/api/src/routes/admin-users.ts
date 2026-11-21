@@ -64,7 +64,7 @@ export function registerAdminUserRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps,
       const before = await adminRow(deps, u, at);
       const r = await setPlan(deps, id, body.planId, body.interval, at);
       const after = await adminRow(deps, u, at);
-      await auditFrom(c, db)({ action: "admin.user.set_plan", target: `user:${id}`, before: { planName: before.planName, interval: before.interval }, after: { planName: r.planName, interval: body.interval, paidInr: "0", subscriptionId: r.subscriptionId } });
+      await auditFrom(c, db)({ action: "admin.user.set_plan", target: `user:${id}`, before: { planName: before.planName, interval: before.interval }, after: { planName: r.planName, interval: body.interval, paidInr: "0", subscriptionId: r.subscriptionId, note: body.note ?? null } });
       return c.json(after, 200);
     },
   );
@@ -88,7 +88,7 @@ export function registerAdminUserRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps,
       const rows = await db.select({ id: users.id }).from(users).where(inArray(users.id, body.ids));
       for (const r of rows) await setPlan(deps, r.id, body.planId, body.interval, at);
       const planName = rows.length ? plan.name : "";
-      await auditFrom(c, db)({ action: "admin.user.bulk_plan", target: "users", after: { ids: rows.map((r) => r.id), planId: body.planId, interval: body.interval, paidInr: "0" } });
+      await auditFrom(c, db)({ action: "admin.user.bulk_plan", target: "users", after: { ids: rows.map((r) => r.id), planId: body.planId, interval: body.interval, paidInr: "0", note: body.note ?? null } });
       return c.json({ updated: rows.length, planName }, 200);
     },
   );

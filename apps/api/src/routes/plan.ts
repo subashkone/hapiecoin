@@ -3,6 +3,7 @@ import { PlanState } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
 import { desc, eq, sql } from "drizzle-orm";
 import { subscriptions } from "../db/schema.js";
+import { freePlan } from "../entitlements.js";
 import { type AppEnv, currentUser } from "../security/context.js";
 import { requireUser } from "../security/guards.js";
 import { type AppDeps, cookieAuth, errorResponses, jsonContent } from "./shared.js";
@@ -54,7 +55,11 @@ export function registerPlanRoutes(
         // GAPS #30: Postgres sorts NULL first in DESC, so a cancelled lifetime row used to shadow an active one.
         .orderBy(sql`case when ${subscriptions.status} = 'active' then 0 else 1 end`, sql`${subscriptions.expiresAt} desc nulls last`, desc(subscriptions.createdAt))
         .limit(1);
-      return c.json(planState(row, now()), 200);
+      const state = planState(row, now());
+      // ADR-107: the workspace needs a plan. A running subscription gives it, so does a Free plan on offer (the
+      // cheapest active plan at ₹0); an admin is never locked out of the product they run.
+      const access = me.role === "admin" || state.state === "active" || state.state === "expiring_soon" || (await freePlan(deps)) !== undefined;
+      return c.json({ ...state, access }, 200);
     },
   );
 }

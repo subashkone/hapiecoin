@@ -1071,5 +1071,16 @@
     "phase": 5,
     "evidence": "ADR-086 (13 Sep 2026): apps/api/src/admin-users.ts adminRow, packages/schema billing.ts AdminUserRow, apps/web components/admin/UsersAdmin.tsx; unit second-factor.test.ts (api), users.test.tsx HC-AD-129 (web)",
     "test": "unit (api + web)"
+  },
+  {
+    "route": "/admin/users",
+    "screen": "User Management",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "An admin who puts a user on a plan by hand can note how the user paid; the note stays in that user's History",
+    "how": "The Set plan dialog (one user or many) has an optional Payment note of up to 200 characters; POST /v1/admin/users/{id}/plan and /bulk-plan accept note, refuse a blank or over-long one, and store it in the audit entry; the drawer's History tab shows it beside the change",
+    "evidence": "ADR-107 (21 Nov 2026): packages/schema/src/admin.ts (GrantNote, SetPlanBody, BulkPlanBody), apps/api/src/routes/admin-users.ts, apps/web/src/components/admin/UserDialogs.tsx (set-plan-note), UserDrawer.tsx (history-note); tests: api plan.test.ts HC-AD-130, web users.test.tsx HC-AD-130",
+    "test": "unit (api + web)"
   }
 ]

@@ -228,6 +228,7 @@ export function SubscriptionPage() {
     <main className="mx-auto max-w-[1100px] px-6 py-8" data-testid="subscription-page" data-state="ready">
       <p className="micro">My plan</p>
       <h1 className="mt-1">Choose a plan to unlock features</h1>
+      {view.plan.access === false ? <div className="mt-3 rounded border border-primary/40 p-2 text-xs" data-testid="sub-need-plan">HapieCoin needs an active plan. Choose one below to open the Desk; if you have already paid us directly, your plan appears here as soon as we add it.</div> : null}
       {!view.accountActive ? <div className="mt-3 rounded border border-loss/40 p-2 text-xs text-loss" data-testid="sub-deactivated">Your account has been deactivated. Trading and plan changes are paused; contact support.</div> : null}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.4fr_1fr]">

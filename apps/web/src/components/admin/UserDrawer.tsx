@@ -155,6 +155,12 @@ function Lots({ d }: { d: AdminUserDetail }) {
   );
 }
 
+/** The payment note an admin left with a manual grant (ADR-107), when the audit entry carries one. */
+function noteOf(after: unknown): string | null {
+  const note = after && typeof after === "object" ? (after as { note?: unknown }).note : null;
+  return typeof note === "string" && note ? note : null;
+}
+
 function History({ d }: { d: AdminUserDetail }) {
   if (d.history.length === 0) return <EmptyState title="No admin actions yet" description="Plan changes, role and account changes appear here" className="py-6" />;
   return (
@@ -163,6 +169,7 @@ function History({ d }: { d: AdminUserDetail }) {
         <li key={h.id} className="flex gap-2 border-t border-border py-1 first:border-t-0">
           <span className="num w-[150px] shrink-0 text-muted-foreground">{fmtDateTime(h.at)}</span>
           <span className="font-mono text-2xs">{h.action.replace("admin.user.", "")}</span>
+          {noteOf(h.after) ? <span className="truncate" title={noteOf(h.after)!} data-testid="history-note">{noteOf(h.after)}</span> : null}
           <span className="micro ml-auto truncate">{h.actorEmail ?? "system"}</span>
         </li>
       ))}

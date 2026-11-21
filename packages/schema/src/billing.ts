@@ -13,6 +13,9 @@ export const PlanState = z.object({
   /** null = never expires. */
   expiresAt: IsoDateTime.nullable().optional(),
   daysLeft: z.number().int().optional(),
+  /** May this user open the workspace (ADR-107)? False when they hold no running subscription and no Free plan is on
+   * offer; admins always may. Absent on the pure banner state, set by GET /v1/plan. */
+  access: z.boolean().optional(),
 });
 export type PlanState = z.infer<typeof PlanState>;
 
