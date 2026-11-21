@@ -2,7 +2,7 @@
 // Autopilot results (ADR-111; HC-TR-224): what the paper trades Autopilot opened came to, by strategy, coin and exit
 // style, and by the days to expiry at entry, with the newest closed trades. Net figures are after the fees estimated
 // at entry (the paper book charges none). Figures in USD are shown in the trader's display currency.
-import { PLAYBOOKS } from "@hapiecoin/pricing";
+import { AUTOPILOT_PLAYBOOKS } from "@hapiecoin/pricing";
 import { AUTOPILOT_DTE_BAND_LABELS, AUTOPILOT_EXIT_STYLES, type AutopilotExitStyle, type AutopilotResults, CLOSE_REASON_LABELS, type CloseReason } from "@hapiecoin/schema";
 import { Button, EmptyState, cn } from "@hapiecoin/ui";
 import { useAutopilotResults } from "@/lib/api/autopilot";
@@ -10,8 +10,8 @@ import { fmtDateTime, fmtExpiry, fmtStrike } from "@/lib/format";
 import { type MoneyFormat, fmtMoney } from "@/lib/money";
 
 const TRADES_SHOWN = 25;
-const EXIT_SHORT: Record<AutopilotExitStyle, string> = { trail: "Trail", target: "Target" };
-const nameOf = (playbookId: string) => PLAYBOOKS.find((p) => p.id === playbookId)?.name ?? playbookId;
+const EXIT_SHORT: Record<AutopilotExitStyle, string> = { trail: "Trail", target: "Target", own: "Own" };
+const nameOf = (playbookId: string) => AUTOPILOT_PLAYBOOKS.find((p) => p.id === playbookId)?.name ?? playbookId;
 const reasonOf = (reason: string | null) => (reason === null ? "closed" : (CLOSE_REASON_LABELS[reason as CloseReason] ?? reason));
 const tone = (v: string) => (Number(v) > 0 ? "text-profit" : Number(v) < 0 ? "text-loss" : "");
 const winRate = (wins: number, closed: number) => (closed ? `${Math.round((wins / closed) * 100)}%` : "—");
@@ -42,7 +42,7 @@ export function AutopilotResultsPanel({ money }: { money: MoneyFormat }) {
       {q.data && q.data.total.open + q.data.total.closed === 0 ? <EmptyState title="No trade yet" description="Results appear here once Autopilot has entered a trade." className="py-4" /> : null}
       {q.data && q.data.total.open + q.data.total.closed > 0 ? (
         <>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-5" data-testid="autopilot-results-total">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 lg:grid-cols-6" data-testid="autopilot-results-total">
             <div><div className="micro">Closed</div><div className="num text-lg font-medium" data-testid="results-closed">{q.data.total.closed}</div><div className="text-2xs text-muted-foreground">{q.data.total.open} still open</div></div>
             <div><div className="micro">Won</div><div className="num text-lg font-medium" data-testid="results-won">{q.data.total.wins} · {winRate(q.data.total.wins, q.data.total.closed)}</div></div>
             <div><div className="micro">Net after fees</div><div className={cn("num text-lg font-medium", tone(q.data.total.netUsd))} data-testid="results-net">{signed(q.data.total.netUsd)}</div><div className="text-2xs text-muted-foreground">{signed(q.data.total.grossUsd)} before {fmtMoney(q.data.total.feesUsd, money)} of fees</div></div>

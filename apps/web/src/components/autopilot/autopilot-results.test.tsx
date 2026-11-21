@@ -41,8 +41,8 @@ afterEach(() => mock.restore());
 
 describe("HC-TR-224 Autopilot results", () => {
   it("HC-TR-224 trail against target is added up over every strategy and coin, in cents", () => {
-    expect(exitTotals(RESULTS.rows)).toEqual([{ exit: "trail", closed: 3, wins: 2, netUsd: 3.2 }, { exit: "target", closed: 1, wins: 0, netUsd: -0.2 }]);
-    expect(exitTotals([])).toEqual([{ exit: "trail", closed: 0, wins: 0, netUsd: 0 }, { exit: "target", closed: 0, wins: 0, netUsd: 0 }]);
+    expect(exitTotals(RESULTS.rows)).toEqual([{ exit: "trail", closed: 3, wins: 2, netUsd: 3.2 }, { exit: "target", closed: 1, wins: 0, netUsd: -0.2 }, { exit: "own", closed: 0, wins: 0, netUsd: 0 }]);
+    expect(exitTotals([]).map((x) => x.closed)).toEqual([0, 0, 0]);
   });
 
   it("HC-TR-224 before any trade the screen says so; a failed read offers a retry", async () => {
@@ -80,7 +80,8 @@ describe("HC-TR-224 Autopilot results", () => {
     expect(screen.getByTestId("results-net").className).toContain("text-profit");
     expect(panel.textContent).toContain("+$4.30 before $1.30 of fees");
     const exits = screen.getAllByTestId("results-exit");
-    expect(exits.map((e) => e.dataset["exit"])).toEqual(["trail", "target"]);
+    expect(exits.map((e) => e.dataset["exit"])).toEqual(["trail", "target", "own"]);
+    expect(exits[2]!.textContent).toBe("Own exit—0 closed · — won"); // the evening strategies: nothing closed yet
     expect(exits[0]!.textContent).toBe("Trail exit+$3.203 closed · 67% won");
     expect(exits[1]!.textContent).toBe("Target exit−$0.201 closed · 0% won");
 

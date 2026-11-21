@@ -1,6 +1,6 @@
 // Autopilot settings and log shapes (ADR-108; HC-TR-216, HC-TR-218).
 import { describe, expect, it } from "vitest";
-import { AUTOPILOT_DTE_BANDS, AUTOPILOT_DTE_BAND_LABELS, AUTOPILOT_EXIT_LABELS, AUTOPILOT_EXIT_STYLES, AUTOPILOT_MAX_OPEN, AutopilotResults, AutopilotRun, autopilotDteBand, AutopilotSettings, AutopilotView, DEFAULT_AUTOPILOT_SETTINGS } from "./autopilot.js";
+import { AUTOPILOT_CHOSEN_EXIT_STYLES, AUTOPILOT_DTE_BANDS, AUTOPILOT_DTE_BAND_LABELS, AUTOPILOT_EXIT_LABELS, AUTOPILOT_EXIT_STYLES, AUTOPILOT_MAX_OPEN, AutopilotResults, AutopilotRun, autopilotDteBand, AutopilotSettings, AutopilotView, DEFAULT_AUTOPILOT_SETTINGS } from "./autopilot.js";
 
 describe("HC-TR-216 Autopilot settings", () => {
   it("HC-TR-216 off and empty by default; a playbook is switched on once, with one of the two exit styles", () => {
@@ -42,6 +42,13 @@ describe("HC-TR-223 Autopilot results", () => {
     expect(AutopilotResults.parse(results)).toEqual(results);
     expect(AutopilotResults.safeParse({ ...results, total: { ...tally, wins: -1 } }).success).toBe(false);
     expect(AutopilotResults.safeParse({ ...results, byDte: [{ band: "soon", ...tally }] }).success).toBe(false);
-    expect(AUTOPILOT_MAX_OPEN).toBe(5);
+    expect(AUTOPILOT_MAX_OPEN).toBe(1); // ADR-112: the ladder of ADR-110 lost in the backtest
+    // HC-TR-225: a playbook entered by the clock runs on its own exits; a trader chooses between the other two
+    expect([...AUTOPILOT_EXIT_STYLES]).toEqual(["trail", "target", "own"]);
+    expect([...AUTOPILOT_CHOSEN_EXIT_STYLES]).toEqual(["trail", "target"]);
+    expect(AutopilotSettings.safeParse({ enabled: true, strategies: [{ playbookId: "evening-strangle-stop-2x", exit: "own" }] }).success).toBe(true);
+    const line = { id: "9", at: "2026-11-21T15:05:00+00:00", playbookId: "evening-strangle-stop-2x", venue: "delta_india", asset: "BTC", kind: "entered", reason: "entered", strategyId: "strat_9", detail: { exit: "own", legStop: 2, capital: null, maxLoss: null } };
+    expect(AutopilotRun.parse(line)).toEqual(line);
+    expect(AutopilotRun.safeParse({ ...line, detail: { legStop: 0 } }).success).toBe(false);
   });
 });

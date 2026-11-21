@@ -3,14 +3,15 @@
 // per trader, playbook, venue and asset; a cool-down after a trade ends; a better entry while one is open is noted;
 // every reason not to enter is logged once. Nothing here places anything on a venue.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PLAYBOOKS, type PlaybookProposal, playbookById } from "@hapiecoin/pricing";
-import { AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_MAX_OPEN, AUTOPILOT_PAPER_ONLY_MESSAGE, AUTOPILOT_RUNS_RETENTION_DAYS, type AutopilotResults, type AutopilotRunDetail, type AutopilotView, type Instrument, type Quote, type SubscriptionView } from "@hapiecoin/schema";
+import { AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, PLAYBOOKS, type PlaybookProposal, autopilotPlaybookById, playbookById } from "@hapiecoin/pricing";
+import { AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_PAPER_ONLY_MESSAGE, AUTOPILOT_RUNS_RETENTION_DAYS, type AutopilotResults, type AutopilotRunDetail, type AutopilotView, type Instrument, type Quote, type SubscriptionView } from "@hapiecoin/schema";
 import { and, asc, eq } from "drizzle-orm";
-import { AUTOPILOT_MAX_MARK_AGE_MS, type AutopilotDeps, betterEntry, liveDay, planFor, runAutopilot, skipText, structureKey } from "./autopilot.js";
+import { AUTOPILOT_MAX_MARK_AGE_MS, type AutopilotDeps, betterEntry, clockPlanFor, inWindow, liveDay, planFor, runAutopilot, skipText, structureKey } from "./autopilot.js";
 import { clearEodMemo } from "./chain-eod.js";
 import { autopilotRuns, instrumentMarks, ivSnapshots, plans, strategies, subscriptions, strategyLegs, strategyRules, userSettings, users } from "./db/schema.js";
 import { SEED } from "./db/seed.js";
 import { type RulesTickSource, evaluateRules } from "./rules-engine.js";
+import { settleExpired } from "./settlement.js";
 import { snapshotOnce, type MarketSource } from "./iv-snapshot.js";
 import { createTestApp, type TestApp } from "./test-support/harness.js";
 
@@ -52,7 +53,9 @@ function sourceAt(ts: number, spot: number, timeValue = 400, strikes: readonly n
   return { venue: "delta_india", products: () => Promise.resolve(products), tickers: (u) => Promise.resolve(u === "BTC" ? quotes : []) };
 }
 const spotOn = (dayIndex: number) => 80_000 + dayIndex * 400;
-const deps = (nowMs: number, over: Partial<AutopilotDeps> = {}): AutopilotDeps => ({ db: t.db, logger: t.deps.logger, now: () => nowMs, ...over });
+// the ladder of ADR-110 is still built and tested: these tests ask for it (the product default is one trade, ADR-112)
+const deps = (nowMs: number, over: Partial<AutopilotDeps> = {}): AutopilotDeps => ({ db: t.db, logger: t.deps.logger, now: () => nowMs, maxOpen: LADDER, ...over });
+const LADDER = 5;
 const put = (body: unknown, c = cookie) => t.request("/v1/autopilot", { cookie: c, method: "PUT", json: body });
 const view = async (c = cookie) => json<AutopilotView>(await t.request("/v1/autopilot", { cookie: c }));
 const mine = () => t.db.select().from(strategies).where(eq(strategies.userId, userId));
@@ -101,7 +104,7 @@ describe("HC-TR-217 the pieces an entry is decided on", () => {
     expect(p.stopUsd).toBe(5);
     expect(p.timeStopDte).toBe(2);
     // no fee rule on the venue: no fees; a playbook with no stop and no time exit arms neither
-    expect(planFor({ ...butterfly, exits: undefined }, proposal({ maxProfit: 40 }), 0.001, null)).toEqual({ fees: 0, targetUsd: 4, stopUsd: null, timeStopDte: null });
+    expect(planFor({ ...butterfly, exits: undefined }, proposal({ maxProfit: 40 }), 0.001, null)).toEqual({ fees: 0, targetUsd: 4, stopUsd: null, timeStopDte: null, legStop: null });
   });
 
   it("HC-TR-217 no plan when the fees eat the trade (small premiums close to expiry) or the structure has no defined maximum", () => {
@@ -455,18 +458,18 @@ describe("HC-TR-217 an Autopilot trade from its exit to the next entry", () => {
     expect((await view()).runs.find((r) => r.kind === "noted")!.strategyId).toBe(first.id);
     expect(await paper()).toHaveLength(2);
     // five held: a sixth structure is a reason, not a trade, however long the key has waited
-    const fill = Array.from({ length: AUTOPILOT_MAX_OPEN - 2 }, (_, i) => `strat_autopilot_fill_${i}`);
+    const fill = Array.from({ length: LADDER - 2 }, (_, i) => `strat_autopilot_fill_${i}`);
     await t.db.insert(strategies).values(fill.map((id) => ({ id, userId, name: "fill", asset: "BTC" as const, venue: "delta_india" as const, status: "paper" as const, tradingMode: "paper" as const, autopilotPlaybookId: BUTTERFLY, autopilotStructure: id, startedAt: new Date(at) })));
     await t.db.insert(strategyLegs).values(fill.map((id, i) => ({ id: `leg_fill_${i}`, strategyId: id, kind: "call" as const, side: "buy" as const, strike: String(1000 + i), expiry: "2026-09-15", symbol: `C-BTC-${1000 + i}-150926`, lots: 1, price: "1", entryPrice: "1", status: "open" as const, position: 0 })));
     at += 2 * HOUR;
     await snapshotOnce(t.deps, sourceAt(at, spotOn(8), 400, grid(3000)), () => at);
     await runAutopilot(deps(at + MIN), ["delta_india"]); // the second trader holds fewer and may enter on the same pass
-    expect(await paper()).toHaveLength(AUTOPILOT_MAX_OPEN);
-    expect(await lastButterfly()).toMatchObject({ kind: "skipped", reason: `Holds ${AUTOPILOT_MAX_OPEN} trades already, the most for one strategy and coin` });
+    expect(await paper()).toHaveLength(LADDER);
+    expect(await lastButterfly()).toMatchObject({ kind: "skipped", reason: `Holds ${LADDER} trades already, the most for one strategy and coin` });
     // one fewer held: the sixth structure enters
     await t.db.delete(strategies).where(eq(strategies.id, fill[0]!));
     expect((await runAutopilot(deps(at + 2 * MIN), ["delta_india"])).entered).toBeGreaterThanOrEqual(1);
-    expect(await paper()).toHaveLength(AUTOPILOT_MAX_OPEN);
+    expect(await paper()).toHaveLength(LADDER);
     // leave the first trade alone for the tests that follow
     for (const x of await paper()) if (x.id !== first.id) await t.db.delete(strategies).where(eq(strategies.id, x.id));
     expect(await paper()).toHaveLength(1);
@@ -590,5 +593,166 @@ describe("HC-TR-223 what the trades Autopilot opened came to", () => {
     const again = await read();
     expect(again.byDte.find((b) => b.band === "31+")!.open).toBe(1);
     expect(again.byDte.find((b) => b.band === "2-7")!.open).toBe(1);
+  });
+});
+
+describe("HC-TR-225 playbooks entered by the clock: the evening strangles", () => {
+  const wings = autopilotPlaybookById("evening-strangle-wings-3")!;
+  const twice = autopilotPlaybookById("evening-strangle-stop-2x")!;
+  const fees = { optionPct: 0.0001, optionCapOfPremium: 0.035, futurePct: 0.0005, gstPct: 0.18, settlementFee: true };
+  const sold = (entryCost: number): PlaybookProposal => ({
+    day: "2026-09-25",
+    spot: 83_200,
+    expiry: "2026-09-26",
+    legs: [
+      { asset: "BTC", kind: "put", side: "sell", strike: "82600", expiry: "2026-09-26", lots: 100, price: "268" },
+      { asset: "BTC", kind: "call", side: "sell", strike: "83800", expiry: "2026-09-26", lots: 100, price: "268" },
+    ],
+    entryCost,
+    maxProfit: -entryCost,
+    maxLoss: -Infinity,
+  });
+
+  it("HC-TR-225 four playbooks are entered by the clock, on BTC, in the evening window; Autopilot trades them beside the recorded ones and never the control", () => {
+    expect(CLOCK_PLAYBOOKS.map((p) => p.id)).toEqual(["evening-strangle-wings-3", "evening-strangle-wings-5", "evening-strangle-stop-2x", "evening-strangle-stop-3x"]);
+    for (const p of CLOCK_PLAYBOOKS) expect(p).toMatchObject({ assets: ["BTC"], minDte: 0.5, lots: 100, control: false, clock: { fromHourUtc: 16, toHourUtc: 17, window: "9:30 to 10:30 PM IST", maxDte: 1.5, venues: ["delta_india"] } });
+    expect(CLOCK_PLAYBOOKS.map((p) => p.clock!.legStop)).toEqual([undefined, undefined, 2, 3]);
+    expect(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).toEqual([...PLAYBOOKS.filter((p) => !p.control).map((p) => p.id), ...CLOCK_PLAYBOOKS.map((p) => p.id)]);
+    expect(PLAYBOOKS.some((p) => p.clock)).toBe(false); // the daily record and the proposals do not see them
+    expect(autopilotPlaybookById("hero-or-zero")).toBeUndefined();
+  });
+
+  it("HC-TR-225 the plan has no profit level and no strategy stop, only the stop on each sold option; a premium smaller than the fees is no plan", () => {
+    // two fills of 0.1 BTC at 83,200: 0.832 each, 18 % GST, both ways
+    const p = clockPlanFor(twice, sold(-53.6), 0.001, fees)!;
+    expect(p).toMatchObject({ targetUsd: null, stopUsd: null, timeStopDte: null, legStop: 2 });
+    expect(p.fees).toBeCloseTo(2 * 2 * 0.832 * 1.18, 6);
+    expect(clockPlanFor(wings, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: null });
+    expect(clockPlanFor(twice, sold(-3.9), 0.001, fees)).toBeNull(); // collects less than the fills cost
+    expect(clockPlanFor(twice, sold(2), 0.001, null)).toBeNull(); // a debit is not this trade
+    // the window is from its first hour and before its second, in UTC
+    const c = twice.clock!;
+    const utc = (h: number, m: number, sec = 0) => Date.UTC(2026, 8, 25, h, m, sec);
+    expect([utc(15, 59, 59), utc(16, 0), utc(16, 59, 59), utc(17, 0)].map((ms) => inWindow(c, ms))).toEqual([false, true, true, false]);
+  });
+
+  it("HC-TR-225 enters once in its evening window on the nearest expiry with its own exits; outside the window, holding a trade, or already entered are reasons", async () => {
+    const me = await t.signUp("autopilot-clock@hapiecoin.test");
+    const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
+    // the card's style is not this playbook's to choose: it is saved as its own exits; no other playbook may ask for them
+    const saved = await json<AutopilotView>(await put({ enabled: true, strategies: CLOCK_PLAYBOOKS.map((p) => ({ playbookId: p.id, exit: "trail" })) }, me.cookie));
+    expect(saved.settings.strategies.map((x) => x.exit)).toEqual(["own", "own", "own", "own"]);
+    const refused = await put({ enabled: true, strategies: [{ playbookId: BUTTERFLY, exit: "own" }] }, me.cookie);
+    expect(refused.status).toBe(400);
+    expect(JSON.stringify(await refused.json())).toContain("takes Autopilot's profit exit: choose trail or target");
+    const strangles = () => t.db.select().from(strategies).where(eq(strategies.userId, id));
+    const lines = async () => (await view(me.cookie)).runs;
+    /** A chain whose time value falls away from the money, so a bought wing costs less than the option sold inside it. */
+    const curveAt = (ts: number, spot: number, expiries: readonly string[]): MarketSource => {
+      const products: Instrument[] = [];
+      const quotes: Quote[] = [];
+      for (const e of expiries)
+        for (let i = -12; i <= 12; i++) {
+          const k = 83_200 + i * 200;
+          const code = e.slice(8, 10) + e.slice(5, 7) + e.slice(2, 4);
+          const tv = 400 * Math.exp(-Math.abs(k - spot) / 1500);
+          const c = `C-BTC-${k}-${code}`;
+          const pt = `P-BTC-${k}-${code}`;
+          products.push(inst(c, "call", k, e), inst(pt, "put", k, e));
+          quotes.push({ instrumentId: `delta_india:${c}`, ts, mark: (Math.max(spot - k, 0) + tv).toFixed(1), oi: "1", spot: String(spot), markIv: 0.4 }, { instrumentId: `delta_india:${pt}`, ts, mark: (Math.max(k - spot, 0) + tv).toFixed(1), oi: "1", spot: String(spot), markIv: 0.4 });
+        }
+      return { venue: "delta_india", products: () => Promise.resolve(products), tickers: (u) => Promise.resolve(u === "BTC" ? quotes : []) };
+    };
+    const W = Date.UTC(2026, 8, 25, 16, 5, 0); // 21:35 IST: inside the window; today's expiry settled four hours ago
+    const LISTED = ["2026-09-25", "2026-09-26", "2026-10-20"];
+    const pass = async (at: number, spot = 83_200, expiries: readonly string[] = LISTED) => {
+      await snapshotOnce(t.deps, curveAt(at - MIN, spot, expiries), () => at - MIN);
+      return runAutopilot(deps(at, { maxOpen: undefined }), ["delta_india"]); // the product's own limit: one trade at a time
+    };
+
+    // an hour early: the reason is logged, nothing is entered
+    await pass(W - HOUR);
+    expect(await strangles()).toHaveLength(0);
+    expect((await lines()).filter((r) => r.asset === "BTC").map((r) => r.reason)).toEqual(Array(4).fill("Outside its entry hours (9:30 to 10:30 PM IST)"));
+
+    await pass(W);
+    const all = await strangles();
+    expect(all.map((x) => x.autopilotPlaybookId).sort()).toEqual(CLOCK_PLAYBOOKS.map((p) => p.id).sort());
+    const legsOf = (sid: string) => t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, sid)).orderBy(asc(strategyLegs.position));
+    const rulesOf = (sid: string) => t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, sid));
+    const of = (playbookId: string) => all.find((x) => x.autopilotPlaybookId === playbookId)!;
+    const entry = async (sid: string) => (await lines()).find((r) => r.kind === "entered" && r.strategyId === sid)!;
+
+    // with wings: sold three strikes out, bought eight out, on tomorrow's expiry (not today's, which has settled); held to settlement, so no rule
+    const w = of("evening-strangle-wings-3");
+    expect(w).toMatchObject({ status: "paper", tradingMode: "paper", asset: "BTC", name: "Evening strangle with wings · Autopilot" });
+    expect((await legsOf(w.id)).map((l) => `${l.side} ${l.kind} ${l.strike} ${l.expiry} x${l.lots}`)).toEqual(["buy put 81600 2026-09-26 x100", "sell put 82600 2026-09-26 x100", "sell call 83800 2026-09-26 x100", "buy call 84800 2026-09-26 x100"]);
+    expect(await rulesOf(w.id)).toHaveLength(0);
+    const wd = (await entry(w.id)).detail;
+    expect(wd).toMatchObject({ exit: "own", expiry: "2026-09-26", dte: 1, stopUsd: null });
+    expect(wd.targetUsd).toBeUndefined();
+    expect(wd.legStop).toBeUndefined();
+    expect(Number(wd.entryCost)).toBeLessThan(0); // a credit
+    expect(Number(wd.capital)).toBeGreaterThan(0); // the wings give it a maximum loss
+
+    // stop at double: nothing bought, each sold option has its own stop at twice the price it was sold at
+    const x2 = of("evening-strangle-stop-2x");
+    const x2legs = await legsOf(x2.id);
+    expect(x2legs.map((l) => `${l.side} ${l.kind} ${l.strike}`)).toEqual(["sell put 82600", "sell call 83800"]);
+    const x2rules = await rulesOf(x2.id);
+    expect(x2rules).toHaveLength(2);
+    for (const l of x2legs) expect(x2rules.find((r) => r.legId === l.id)).toMatchObject({ kind: "leg_stop", trigger: "multiple", value: "2", scope: "leg", state: "armed", thresholdUsd: (2 * Number(l.price)).toFixed(1).replace(/\.0$/, "") });
+    const x2d = (await entry(x2.id)).detail;
+    expect(x2d).toMatchObject({ exit: "own", legStop: 2, capital: null, maxLoss: null }); // no maximum loss: no capital figure
+    expect((await rulesOf(of("evening-strangle-stop-3x").id)).map((r) => r.value)).toEqual(["3", "3"]);
+
+    // five minutes on, the same strikes: held, nothing twice and nothing noted
+    expect(await pass(W + 5 * MIN)).toMatchObject({ noted: 0, failed: 0 });
+    expect(await strangles()).toHaveLength(4);
+    // the price moves two strikes inside the window: other strikes, but one trade at a time
+    await pass(W + 10 * MIN, 83_600);
+    expect(await strangles()).toHaveLength(4);
+    expect((await lines()).find((r) => r.playbookId === "evening-strangle-stop-2x")).toMatchObject({ kind: "skipped", reason: "Holds a trade already: one at a time for a strategy and coin" });
+    // stopped out on both sides within the window: not entered again this evening
+    await t.db.update(strategies).set({ status: "archived", closedAt: new Date(W + 12 * MIN), closeReason: "stopped" }).where(eq(strategies.id, x2.id));
+    await pass(W + 20 * MIN, 83_600);
+    expect(await strangles()).toHaveLength(4);
+    expect((await lines()).find((r) => r.playbookId === "evening-strangle-stop-2x")).toMatchObject({ kind: "skipped", reason: "Already entered in this evening's window" });
+    // just short of six hours after the entry it still counts as this evening
+    expect(inWindow(twice.clock!, W + 6 * HOUR - MIN)).toBe(false); // (and the window is long over by then)
+
+    // the rules engine on the row the job made: the put of the 3x trade reaches three times its price and is bought back alone
+    const x3 = of("evening-strangle-stop-3x");
+    const [put3, call3] = await legsOf(x3.id);
+    const ticks = (m: Record<string, number>): RulesTickSource => ({ tick: () => Promise.resolve({ marks: new Map(Object.entries(m)), spot: null }) });
+    await evaluateRules(t.deps, ticks({ [put3!.symbol]: 3 * Number(put3!.price), [call3!.symbol]: Number(call3!.price) }), () => W + 2 * HOUR);
+    const after = await legsOf(x3.id);
+    expect(after.map((l) => l.status)).toEqual(["squared_off", "open"]);
+    expect(Number(after[0]!.exitPrice)).toBeCloseTo(3 * Number(put3!.price), 6);
+    expect((await strangles()).find((x) => x.id === x3.id)!.status).toBe("paper"); // the call is still held
+    expect((await rulesOf(x3.id)).map((r) => r.state).sort()).toEqual(["armed", "fired"]);
+
+    // settlement the next day at 12:00 UTC, spot between the sold strikes: the settler closes what is left, with no rule to tell it
+    const settle = Date.UTC(2026, 8, 26, 12, 0, 0);
+    const report = await settleExpired(t.deps, { spotAt: () => Promise.resolve(83_300) }, () => settle + 3 * MIN);
+    expect(report.archived).toBeGreaterThanOrEqual(3);
+    const done = await strangles();
+    const winged = done.find((x) => x.id === w.id)!;
+    expect(winged).toMatchObject({ status: "archived", closeReason: "expired" });
+    expect(Number(winged.realizedPnl)).toBeCloseTo(-Number(wd.entryCost), 1); // every option expired worthless: the credit is kept
+    expect(done.find((x) => x.id === x3.id)).toMatchObject({ status: "archived" });
+    expect((await rulesOf(x3.id)).some((r) => r.state === "armed")).toBe(false);
+
+    // the next evening every key is free again and enters on the new nearest expiry
+    await pass(W + 24 * HOUR, 83_200, ["2026-09-26", "2026-09-27", "2026-10-20"]);
+    const next = (await strangles()).filter((x) => x.status === "paper");
+    expect(next.map((x) => x.autopilotPlaybookId).sort()).toEqual(CLOCK_PLAYBOOKS.map((p) => p.id).sort());
+    for (const x of next) expect((await legsOf(x.id)).every((l) => l.expiry === "2026-09-27")).toBe(true);
+
+    // tomorrow's expiry missing from the snapshot: the monthly is not "the next expiry", so nothing is entered
+    for (const x of next) await t.db.update(strategies).set({ status: "archived", closedAt: new Date(W + 30 * HOUR) }).where(eq(strategies.id, x.id));
+    await pass(W + 48 * HOUR, 83_200, ["2026-09-27", "2026-10-20"]);
+    expect((await strangles()).filter((x) => x.status === "paper")).toHaveLength(0);
+    expect((await lines()).find((r) => r.playbookId === "evening-strangle-wings-3")).toMatchObject({ kind: "skipped", reason: "The next expiry has no prices yet" });
   });
 });

@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type BacktestFold, type BacktestStats, type BacktestTrade, type EodDay, type EodRow, runBacktest } from "./backtest.js";
 import { calendarFor } from "./calendar.js";
-import { HERO_OR_ZERO_TEMPLATE, PLAYBOOKS, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
+import { AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, PLAYBOOKS, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
 import { materialiseTemplate } from "./templates.js";
 
 const cal = calendarFor(12);
@@ -104,5 +104,60 @@ describe("HC-TR-205 playbooks as data", () => {
       { year: 2025, total: -15 },
     ]);
     expect(losingYearsOf([t("2026-01-10", 5)])).toEqual([]);
+  });
+});
+
+describe("HC-TR-225 playbooks entered by the clock", () => {
+  // 25 strikes, 200 apart, round the spot; time value falling away from the money, so a bought wing costs less than the option sold inside it
+  const spot = 83_200;
+  const rows: EodRow[] = Array.from({ length: 25 }, (_, i) => {
+    const strike = spot + (i - 12) * 200;
+    const tv = 400 * Math.exp(-Math.abs(strike - spot) / 1500);
+    return { strike, call: { mark: Math.max(spot - strike, 0) + tv, iv: 0.4 }, put: { mark: Math.max(strike - spot, 0) + tv, iv: 0.4 } };
+  });
+  // 15:05 UTC (20:35 IST) on 25 September: that day's expiry settled at 12:00 UTC, the next one settles in about 21 hours
+  const at = Date.UTC(2026, 8, 25, 15, 5, 0);
+  const evening: EodDay[] = [{ day: "2026-09-25", ts: at, spot, expiries: ["2026-09-25", "2026-09-26", "2026-10-30"].map((expiry) => ({ expiry, rows })) }];
+  const base = { unitsPerLot: 0.001, calendar: cal };
+
+  it("HC-TR-225 four evening strangles: a window in UTC hours, the nearest expiry at least half a day out, BTC only, outside the recorded list", () => {
+    expect(CLOCK_PLAYBOOKS).toHaveLength(4);
+    for (const p of CLOCK_PLAYBOOKS) {
+      expect(p.clock).toMatchObject({ fromHourUtc: 16, toHourUtc: 17, window: "9:30 to 10:30 PM IST", maxDte: 1.5, venues: ["delta_india"] });
+      expect(p.evidence.claim).toContain("entered 21:30 IST"); // the bar the window's first pass is
+      expect(p).toMatchObject({ minDte: 0.5, lots: 100, assets: ["BTC"], control: false });
+      expect(p.conditions).toBeUndefined();
+      expect(p.exits).toBeUndefined();
+      expect(p.evidence.source).toContain("docs/research/scripts/autopilot-study");
+      expect(p.trials.note).toContain("in-sample"); // chosen after seeing the results: said on the card's source
+      expect(PLAYBOOKS.includes(p)).toBe(false);
+      expect(autopilotPlaybookById(p.id)).toBe(p);
+    }
+    expect(new Set(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).size).toBe(AUTOPILOT_PLAYBOOKS.length);
+    expect(AUTOPILOT_PLAYBOOKS.some((p) => p.control)).toBe(false);
+    expect(autopilotPlaybookById("nope")).toBeUndefined();
+  });
+
+  it("HC-TR-225 the structures on tomorrow's expiry: sold three (or five) strikes out, wings eight (or ten) out, a credit; the naked ones have no maximum loss", () => {
+    const placed = (id: string) => {
+      const r = proposalFor(autopilotPlaybookById(id)!, evening, base);
+      if (!r.ok) throw new Error(r.reason);
+      return r.proposal;
+    };
+    const w3 = placed("evening-strangle-wings-3");
+    expect(w3.expiry).toBe("2026-09-26"); // not the 25th, which has settled, and not the monthly
+    expect(w3.legs.map((l) => `${l.side} ${l.kind} ${l.strike} x${l.lots}`)).toEqual(["buy put 81600 x100", "sell put 82600 x100", "sell call 83800 x100", "buy call 84800 x100"]);
+    expect(w3.entryCost).toBeLessThan(0);
+    expect(w3.maxProfit).toBeCloseTo(-w3.entryCost, 6); // the credit, kept when it settles between the sold strikes
+    expect(w3.maxLoss).toBeCloseTo(-(1000 * 0.1) - w3.entryCost, 6); // the 1,000 between a sold strike and its wing on 0.1 BTC, less the credit
+    expect(placed("evening-strangle-wings-5").legs.map((l) => l.strike)).toEqual(["81200", "82200", "84200", "85200"]);
+    for (const id of ["evening-strangle-stop-2x", "evening-strangle-stop-3x"]) {
+      const n = placed(id);
+      expect(n.legs.map((l) => `${l.side} ${l.kind} ${l.strike}`)).toEqual(["sell put 82600", "sell call 83800"]);
+      expect(n.maxLoss).toBe(-Infinity);
+    }
+    // a chain too narrow for the wings is no trade
+    const narrow: EodDay[] = [{ ...evening[0]!, expiries: evening[0]!.expiries.map((e) => ({ ...e, rows: rows.slice(8, 17) })) }];
+    expect(proposalFor(autopilotPlaybookById("evening-strangle-wings-5")!, narrow, base)).toEqual({ ok: false, reason: "noFit" });
   });
 });

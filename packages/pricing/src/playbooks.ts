@@ -46,6 +46,25 @@ export interface Playbook {
   trials: { count: number; note: string };
   /** The control ships to fail: a passing record is the alarm. */
   control: boolean;
+  /**
+   * ADR-112: a plan entered by the clock, once a day, on the nearest expiry, with its own exits. Autopilot alone
+   * trades these (they are not in PLAYBOOKS, so the daily record and the proposals do not see them).
+   */
+  clock?: PlaybookClock | undefined;
+}
+
+export interface PlaybookClock {
+  /** The entry window in UTC hours: from the first, before the second. */
+  fromHourUtc: number;
+  toHourUtc: number;
+  /** The window as the trader reads it. */
+  window: string;
+  /** The entry's expiry is at most this many days out: the next settlement, never a later one when that one has no prices. */
+  maxDte: number;
+  /** The venues the plan is for: the study behind it covers no other. */
+  venues: readonly string[];
+  /** Every sold option is closed on its own at this multiple of the price it was sold at; absent: held to settlement. */
+  legStop?: number | undefined;
 }
 
 const DEFINED_RISK_EXITS: BacktestExits = { targetPct: 0.5, stopPct: 0.5, timeStopDte: 2 };
@@ -174,6 +193,93 @@ export const PLAYBOOKS: readonly Playbook[] = [
 
 export function playbookById(id: string): Playbook | undefined {
   return PLAYBOOKS.find((p) => p.id === id);
+}
+
+// ---- ADR-112: the evening strangles, entered by the clock -----------------------------------------------------------
+
+const P_BUY = { kind: "put", side: "buy" } as const;
+const P_SELL = { kind: "put", side: "sell" } as const;
+const C_BUY = { kind: "call", side: "buy" } as const;
+const C_SELL = { kind: "call", side: "sell" } as const;
+/** Sell the call and the put `k` listed strikes out; with `wing`, buy the options that many strikes out to cap the loss. */
+function strangle(name: string, k: number, wing: number | null): StrategyTemplate {
+  const sold = [{ ...P_SELL, k: -k }, { ...C_SELL, k }];
+  return {
+    name,
+    category: "Neutral",
+    description: wing === null ? `Sell a call and a put ${k} strikes out of the money on the next expiry.` : `Sell a call and a put ${k} strikes out of the money on the next expiry and buy the options ${wing} strikes out to cap the loss.`,
+    legs: wing === null ? sold : [{ ...P_BUY, k: -wing }, ...sold, { ...C_BUY, k: wing }],
+    risk: wing === null ? "undefined" : "defined",
+  };
+}
+/**
+ * 16:00 to 17:00 UTC. Autopilot enters on its first pass inside the window, so the entry is the study's 16:00 UTC bar
+ * ("21:30 IST"), the one every figure quoted on these cards is for, about two hours after the US cash open.
+ */
+const EVENING = { fromHourUtc: 16, toHourUtc: 17, window: "9:30 to 10:30 PM IST", maxDte: 1.5, venues: ["delta_india"] } as const;
+const STUDY = "docs/research/scripts/autopilot-study (106 BTC daily expiries, 8 Aug to 21 Nov 2026, 5-minute marks, the exchange's real fees, 100 lots)";
+const STUDY_TRIALS = { count: 456, note: "19 structures at 24 entry hours on the same 106 days, with several exits each; these four were chosen after seeing the results, so their figures are in-sample and the paper record is the test" };
+/** Never judged by the daily record (it enters at the settlement hour, the worst hour of the study): Autopilot's own results are the record. */
+const NO_RECORD: PlaybookThresholds = { minTrades: Number.MAX_SAFE_INTEGER, netPositive: true, outOfSamplePositive: true };
+const clockPlaybook = (id: string, name: string, summary: string, rationale: string, claim: string, template: StrategyTemplate, legStop?: number): Playbook => ({
+  id,
+  name,
+  summary,
+  rationale,
+  evidence: { claim, source: STUDY },
+  template,
+  // the first settlement at least half a day away: in the evening that is tomorrow's 17:30 IST, about twenty hours out
+  minDte: 0.5,
+  lots: 100,
+  assets: ["BTC"],
+  thresholds: NO_RECORD,
+  trials: STUDY_TRIALS,
+  control: false,
+  clock: { ...EVENING, legStop },
+});
+
+/** The playbooks Autopilot enters by the clock (ADR-112). BTC only: the study behind them covers no other asset. */
+export const CLOCK_PLAYBOOKS: readonly Playbook[] = [
+  clockPlaybook(
+    "evening-strangle-wings-3",
+    "Evening strangle with wings",
+    "Each evening sell a call and a put three strikes out on the next expiry and buy the options eight strikes out; hold to settlement.",
+    "Selling the evening's time value was the only daily structure that earned after fees in the study, and the bought wings cap the loss, so it needs no stop and little margin. It was the one version positive in each of the four months.",
+    "Sold 600 away with wings 1,600 away, entered 21:30 IST, held to settlement: +5.93 a day on 84 days, 73 % of days positive, worst day -78; August +128, September +130, October +74, November +167.",
+    strangle("Evening strangle with wings (3 / 8)", 3, 8),
+  ),
+  clockPlaybook(
+    "evening-strangle-wings-5",
+    "Wide evening strangle with wings",
+    "Each evening sell a call and a put five strikes out on the next expiry and buy the options ten strikes out; hold to settlement.",
+    "The same trade further from the price: it wins more often and earns less each time. The far wings had a price on about half the days only, so this is the thinnest record of the four.",
+    "Sold 1,000 away with wings 2,000 away, entered 21:30 IST, held to settlement: +7.68 a day on 55 days, 89 % of days positive, worst day -90; every month positive, October by 9 only.",
+    strangle("Evening strangle with wings (5 / 10)", 5, 10),
+  ),
+  clockPlaybook(
+    "evening-strangle-stop-2x",
+    "Evening strangle, stop at double",
+    "Each evening sell a call and a put three strikes out on the next expiry; buy either one back if its price doubles, and hold the other to settlement.",
+    "The usual way a sold strangle is run. The stop on each option turns the rare very large loss into a moderate one for about the same average; it has no bought wing, so on a venue it needs full margin.",
+    "Sold 600 away, entered 21:30 IST, each option stopped at twice its price: +7.51 a day on 106 days, 45 % of days positive, worst day -60; without the stop the worst day was -349 and October lost 323. August lost 53 with the stop.",
+    strangle("Evening strangle (3)", 3, null),
+    2,
+  ),
+  clockPlaybook(
+    "evening-strangle-stop-3x",
+    "Evening strangle, stop at triple",
+    "Each evening sell a call and a put three strikes out on the next expiry; buy either one back if its price triples, and hold the other to settlement.",
+    "The same trade with more room: the stop at double was hit by ordinary swings on more than half the days, the stop at triple less often.",
+    "Sold 600 away, entered 21:30 IST, each option stopped at three times its price: +12.00 a day on 106 days, 61 % of days positive, worst day -98.",
+    strangle("Evening strangle (3)", 3, null),
+    3,
+  ),
+];
+
+/** Every playbook Autopilot may trade: the recorded ones (never the control) and the ones entered by the clock. */
+export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS];
+export function autopilotPlaybookById(id: string): Playbook | undefined {
+  return AUTOPILOT_PLAYBOOKS.find((p) => p.id === id);
 }
 
 /** The template a playbook places: from the catalogue by name, or its inline one. */

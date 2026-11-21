@@ -1,6 +1,6 @@
 // The Autopilot screen (ADR-109; HC-TR-219, HC-TR-220), its item on the Desk's status bar and its tag on a Paper card
 // (HC-SH-143), against the in-memory mock API. Paper only: nothing here can place an order.
-import { PLAYBOOKS } from "@hapiecoin/pricing";
+import { AUTOPILOT_PLAYBOOKS as PLAYBOOKS } from "@hapiecoin/pricing";
 import { AUTOPILOT_PAPER_ONLY_MESSAGE, type AutopilotRun, type Strategy, type StrategyRule, chainTopic } from "@hapiecoin/schema";
 import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -42,7 +42,7 @@ function strat(id: string, over: Partial<Strategy> = {}): Strategy {
 const auto = (id: string, playbookId: string, over: Partial<Strategy> = {}) => strat(id, { name: `${PLAYBOOKS.find((p) => p.id === playbookId)!.name} · Autopilot`, tags: ["autopilot"], autopilotPlaybookId: playbookId, rules: [rule({ trail: { trigger: "pct", value: "10" } }), rule({ id: "rule_s", kind: "stop", value: "9", thresholdUsd: "-9" })], ...over });
 const run = (over: Partial<AutopilotRun>): AutopilotRun => ({ id: "1", at: AT, playbookId: "pin-butterfly", venue: "delta_india", asset: "BTC", kind: "entered", reason: "Its entry conditions were met on the latest prices", strategyId: "a1", detail: { capital: "18", dte: 1 }, ...over });
 const puts = () => mock.calls.filter((c) => c.url.includes("/v1/autopilot") && c.method === "PUT");
-const TRADABLE = PLAYBOOKS.filter((p) => !p.control);
+const TRADABLE = PLAYBOOKS; // every playbook Autopilot trades: the recorded ones (never the control) and the evening ones
 
 beforeEach(() => {
   mock = installMockFetch();
@@ -146,7 +146,7 @@ describe("HC-TR-220 the Autopilot screen: the trades it holds", () => {
     expect(trade("a1").textContent).toContain("Stop closes it at−$9.00");
     expect(trade("a2").dataset["health"]).toBe("unknown"); // BTC prices are no prices for an ETH trade
     expect(trade("a2").textContent).toContain("Closes in profit at+$2.00");
-    expect(trade("a2").textContent).toContain("no stop: its risk is the premium paid");
+    expect(trade("a2").textContent).toContain("no stop: held to its exit or settlement");
     expect(screen.getByTestId("autopilot-today").textContent).toBe("−$4.00"); // 3 closed today, 7 down on the open one
     expect(screen.getByTestId("autopilot-today-note").textContent).toBe("1 open trade has no live price and is not counted");
     expect(within(card("pin-butterfly")).getAllByTestId("autopilot-card-state")[0]!.textContent).toBe("In a trade −$7.00");
@@ -212,7 +212,7 @@ describe("HC-TR-220 the Autopilot screen: the trades it holds", () => {
     serveMarket();
     await waitFor(() => expect(state().textContent).toBe("In 2 trades −$6.00"));
     expect(state().querySelector("span")!.className).toContain("bg-loss"); // the worse of the two: close to its stop
-    expect(screen.getByTestId("autopilot-page").textContent).toContain("up to 5 trades per coin, each on its own strikes");
+    expect(screen.getByTestId("autopilot-page").textContent).toContain("A strategy holds one trade per coin at a time");
   });
 
   it("HC-TR-220 a trade with no live price, or one the server refuses to close, is left open and named; the others are still closed", async () => {
@@ -241,6 +241,44 @@ describe("HC-TR-220 the Autopilot screen: the trades it holds", () => {
     await waitFor(() => expect(screen.queryByTestId("autopilot-stop-dialog")).toBeNull());
     await u.click(screen.getByTestId("autopilot-stop-all"));
     expect(within(await screen.findByTestId("autopilot-stop-dialog")).queryByTestId("autopilot-stop-left")).toBeNull();
+  });
+});
+
+describe("HC-TR-226 the Autopilot screen: the evening strategies", () => {
+  it("HC-TR-226 a strategy entered by the clock says when it enters and how it exits, has no exit style to choose, and is saved with its own exits", async () => {
+    renderWithProviders(<AutopilotPage />);
+    const u = userEvent.setup();
+    await waitFor(() => expect(screen.getByTestId("autopilot-page").dataset["state"]).toBe("ready"));
+    const card = (id: string) => screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === id)!;
+    const wings = card("evening-strangle-wings-3");
+    expect(within(wings).getByTestId("autopilot-card-how").textContent).toContain("Entered once an evening, 9:30 to 10:30 PM IST, on the next expiry. Held to settlement: the bought wings cap the loss. Backtest only so far:");
+    expect(within(wings).getByTestId("autopilot-card-own").textContent).toBe("Its own exits");
+    expect(within(wings).getByTestId("autopilot-card-exit")).toHaveProperty("hidden", true);
+    expect(within(wings).getAllByTestId("autopilot-card-asset").map((a) => a.dataset["asset"])).toEqual(["BTC"]); // the backtest covers BTC only
+    expect(within(wings).getByText("Backtest only")).toBeTruthy();
+    expect(within(card("evening-strangle-stop-2x")).getByTestId("autopilot-card-how").textContent).toContain("Each sold option is bought back if its price reaches 2 times what it was sold for.");
+    // a recorded playbook keeps its two styles to choose from, and never offers "own"
+    const butterfly = card("pin-butterfly");
+    expect(within(butterfly).queryByTestId("autopilot-card-own")).toBeNull();
+    expect([...within(butterfly).getByTestId<HTMLSelectElement>("autopilot-card-exit").options].map((o) => o.value)).toEqual(["trail", "target"]);
+    await u.click(within(wings).getByTestId("autopilot-card-switch"));
+    await waitFor(() => expect(acc().autopilot.settings.strategies).toEqual([{ playbookId: "evening-strangle-wings-3", exit: "own" }]));
+  });
+
+  it("HC-TR-226 a running evening strangle shows the stop on each sold option, or that it is held to settlement", async () => {
+    const legStop = (legId: string) => rule({ id: `r_${legId}`, kind: "leg_stop", trigger: "multiple", value: "2", thresholdUsd: "500", legId, scope: "leg" });
+    acc().strategies.push(auto("s2", "evening-strangle-stop-2x", { legs: [leg("s2", 0)], rules: [legStop("leg_s2")] }), auto("sw", "evening-strangle-wings-3", { legs: [leg("sw", 0)], rules: [] }));
+    acc().autopilot = { settings: { enabled: true, strategies: [{ playbookId: "evening-strangle-stop-2x", exit: "own" }, { playbookId: "evening-strangle-wings-3", exit: "own" }] }, runs: [run({ id: "8", playbookId: "evening-strangle-stop-2x", strategyId: "s2", detail: { exit: "own", legStop: 2, capital: null, maxLoss: null } }), run({ id: "7", playbookId: "evening-strangle-wings-3", strategyId: "sw", detail: { exit: "own", capital: "31" } })] };
+    renderWithProviders(<AutopilotPage />);
+    await waitFor(() => expect(screen.getAllByTestId("autopilot-trade")).toHaveLength(2));
+    const trade = (id: string) => screen.getAllByTestId("autopilot-trade").find((x) => x.dataset["id"] === id)!;
+    expect(trade("s2").textContent).toContain("Evening strangle, stop at double · BTC");
+    expect(trade("s2").textContent).toContain("Closes in profit atno level: held to settlement");
+    expect(trade("s2").textContent).toContain("Stop closes it ateach sold option at 2 times its price");
+    expect(trade("sw").textContent).toContain("Stop closes it atno stop: held to its exit or settlement");
+    // the naked one was entered with no maximum loss: the capital tile says so, and adds only the bounded trade
+    expect(screen.getByTestId("autopilot-capital").textContent).toBe("not bounded");
+    expect(screen.getByTestId("autopilot-summary").textContent).toContain("a sold strangle with no wings has no maximum loss; the others $31.00");
   });
 });
 

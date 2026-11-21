@@ -1,0 +1,608 @@
+expiries used: 106 of 106 (2026-08-08 .. 2026-11-21); slippage 1.0% of premium per fill; 100 lots (0.1 BTC) per leg; net of fees
+
+==============================================================================================================
+A. REWARD TO RISK AT ENTRY (maximum profit / maximum loss at settlement, before fees), all entry hours
+==============================================================================================================
+
+iron butterfly 600 (sell ATM straddle, buy wings): reward/risk median 1.74 (10th pct 0.57, 90th pct 3.76); entries with at least 3 to 1: 21%; mean max profit 36.2, mean max loss 23.8, fees in 2.48
+   all entries          | hold to settlement: n=2541 mean=  -3.31 total=   -8405 win= 44% worst=   -45.7 maxDD=   -9771 | target 10% + stop 50%: n=2541 mean=  -5.22 total=  -13263 win= 34% worst=   -41.0 maxDD=  -13306 | target 50% + stop 50%: n=2541 mean=  -5.06 total=  -12848 win= 37% worst=   -41.0 maxDD=  -13638
+   only >= 3 to 1       | hold to settlement: n= 530 mean=  -3.81 total=   -2021 win= 33% worst=   -20.8 maxDD=   -2165 | target 10% + stop 50%: n= 530 mean=  -6.86 total=   -3638 win=  3% worst=   -19.3 maxDD=   -3638 | target 50% + stop 50%: n= 530 mean=  -6.27 total=   -3325 win= 22% worst=   -19.3 maxDD=   -3344
+   only < 3 to 1        | hold to settlement: n=2011 mean=  -3.17 total=   -6384 win= 47% worst=   -45.7 maxDD=   -7990 | target 10% + stop 50%: n=2011 mean=  -4.79 total=   -9624 win= 42% worst=   -41.0 maxDD=   -9669 | target 50% + stop 50%: n=2011 mean=  -4.74 total=   -9523 win= 41% worst=   -41.0 maxDD=  -10395
+
+iron butterfly 1000: reward/risk median 0.91 (10th pct 0.29, 90th pct 2.20); entries with at least 3 to 1: 1%; mean max profit 46.6, mean max loss 53.4, fees in 2.19
+   all entries          | hold to settlement: n=2525 mean=  -1.96 total=   -4959 win= 52% worst=   -71.8 maxDD=   -9272 | target 10% + stop 50%: n=2525 mean=  -5.06 total=  -12787 win= 78% worst=   -64.5 maxDD=  -12897 | target 50% + stop 50%: n=2525 mean=  -4.39 total=  -11096 win= 49% worst=   -64.5 maxDD=  -12593
+   only >= 3 to 1       | hold to settlement: n=  33 mean=  +6.28 total=    +207 win= 42% worst=   -30.2 maxDD=    -163 | target 10% + stop 50%: n=  33 mean=  -1.83 total=     -60 win= 85% worst=   -23.8 maxDD=     -81 | target 50% + stop 50%: n=  33 mean=  -5.34 total=    -176 win= 27% worst=   -26.1 maxDD=    -191
+   only < 3 to 1        | hold to settlement: n=2492 mean=  -2.07 total=   -5166 win= 52% worst=   -71.8 maxDD=   -9573 | target 10% + stop 50%: n=2492 mean=  -5.11 total=  -12727 win= 78% worst=   -64.5 maxDD=  -12837 | target 50% + stop 50%: n=2492 mean=  -4.38 total=  -10920 win= 50% worst=   -64.5 maxDD=  -12560
+
+iron condor 400/800: reward/risk median 0.55 (10th pct 0.08, 90th pct 1.55); entries with at least 3 to 1: 0%; mean max profit 13.8, mean max loss 26.2, fees in 1.80
+   all entries          | hold to settlement: n=2526 mean=  -2.26 total=   -5697 win= 61% worst=   -40.0 maxDD=   -6654 | target 10% + stop 50%: n=2526 mean=  -3.85 total=   -9722 win= 21% worst=   -36.7 maxDD=   -9723 | target 50% + stop 50%: n=2526 mean=  -3.51 total=   -8861 win= 63% worst=   -37.1 maxDD=   -9257
+   only >= 3 to 1       | n=0 (too few to read)
+   only < 3 to 1        | hold to settlement: n=2526 mean=  -2.26 total=   -5697 win= 61% worst=   -40.0 maxDD=   -6654 | target 10% + stop 50%: n=2526 mean=  -3.85 total=   -9722 win= 21% worst=   -36.7 maxDD=   -9723 | target 50% + stop 50%: n=2526 mean=  -3.51 total=   -8861 win= 63% worst=   -37.1 maxDD=   -9257
+
+short strangle 600 (naked): no maximum loss (naked). Mean credit +26.03, fees in 0.88
+   all entries          | hold: n=2542 mean=  -0.29 total=    -739 win= 80% worst=  -672.4 maxDD=  -10164 | each option stopped at 2x its price: n=2542 mean=  +0.95 total=   +2411 win= 43% worst=  -133.4 maxDD=   -1920 | each option stopped at 3x: n=2542 mean=  +0.84 total=   +2145 win= 54% worst=  -163.0 maxDD=   -3138 | target 50% of credit: n=2542 mean=  -2.19 total=   -5575 win= 88% worst=  -672.4 maxDD=   -7931 | stop 200% of credit, no target: n=2542 mean=  +0.28 total=    +702 win= 72% worst=  -235.1 maxDD=   -4847 | target 50% + stop 200%: n=2542 mean=  -0.80 total=   -2036 win= 81% worst=  -235.1 maxDD=   -4553
+
+short strangle 1000 (naked): no maximum loss (naked). Mean credit +15.65, fees in 0.58
+   all entries          | hold: n=2525 mean=  -0.61 total=   -1553 win= 88% worst=  -642.6 maxDD=   -9170 | each option stopped at 2x its price: n=2525 mean=  +1.27 total=   +3206 win= 52% worst=  -100.7 maxDD=    -948 | each option stopped at 3x: n=2525 mean=  +1.53 total=   +3853 win= 61% worst=  -132.8 maxDD=   -1727 | target 50% of credit: n=2525 mean=  -2.19 total=   -5524 win= 93% worst=  -642.6 maxDD=   -6881 | stop 200% of credit, no target: n=2525 mean=  +0.83 total=   +2092 win= 77% worst=  -200.7 maxDD=   -3326 | target 50% + stop 200%: n=2525 mean=  -0.07 total=    -187 win= 85% worst=  -151.7 maxDD=   -2907
+
+long call butterfly 200: reward/risk median 4.10 (10th pct 2.20, 90th pct 5.00); entries with at least 3 to 1: 79%; mean max profit 15.5, mean max loss 4.5, fees in 3.24
+   all entries          | hold to settlement: n=2543 mean=  -5.86 total=  -14903 win= 19% worst=   -20.2 maxDD=  -14961 | target 10% + stop 50%: n=2543 mean=  -7.46 total=  -18964 win=  1% worst=   -17.0 maxDD=  -18964 | target 50% + stop 50%: n=2543 mean=  -7.10 total=  -18053 win= 14% worst=   -17.0 maxDD=  -18053
+   only >= 3 to 1       | hold to settlement: n=2007 mean=  -6.68 total=  -13412 win= 14% worst=   -12.9 maxDD=  -13463 | target 10% + stop 50%: n=2007 mean=  -8.29 total=  -16631 win=  0% worst=   -13.1 maxDD=  -16631 | target 50% + stop 50%: n=2007 mean=  -8.03 total=  -16115 win=  7% worst=   -13.1 maxDD=  -16115
+   only < 3 to 1        | hold to settlement: n= 536 mean=  -2.78 total=   -1491 win= 40% worst=   -20.2 maxDD=   -1521 | target 10% + stop 50%: n= 536 mean=  -4.35 total=   -2333 win=  3% worst=   -17.0 maxDD=   -2333 | target 50% + stop 50%: n= 536 mean=  -3.61 total=   -1937 win= 40% worst=   -17.0 maxDD=   -1937
+
+long call butterfly 400: reward/risk median 2.57 (10th pct 0.94, 90th pct 4.56); entries with at least 3 to 1: 39%; mean max profit 27.3, mean max loss 12.7, fees in 3.12
+   all entries          | hold to settlement: n=2543 mean=  -5.41 total=  -13760 win= 34% worst=   -31.0 maxDD=  -14437 | target 10% + stop 50%: n=2543 mean=  -7.19 total=  -18279 win=  3% worst=   -27.8 maxDD=  -18279 | target 50% + stop 50%: n=2543 mean=  -6.80 total=  -17305 win= 25% worst=   -27.8 maxDD=  -17837
+   only >= 3 to 1       | hold to settlement: n=1004 mean=  -6.53 total=   -6558 win= 23% worst=   -18.0 maxDD=   -6664 | target 10% + stop 50%: n=1004 mean=  -8.43 total=   -8461 win=  0% worst=   -15.6 maxDD=   -8461 | target 50% + stop 50%: n=1004 mean=  -8.51 total=   -8543 win= 11% worst=   -16.6 maxDD=   -8567
+   only < 3 to 1        | hold to settlement: n=1539 mean=  -4.68 total=   -7202 win= 41% worst=   -31.0 maxDD=   -7835 | target 10% + stop 50%: n=1539 mean=  -6.38 total=   -9818 win=  4% worst=   -27.8 maxDD=   -9819 | target 50% + stop 50%: n=1539 mean=  -5.69 total=   -8762 win= 35% worst=   -27.8 maxDD=   -9319
+
+long call butterfly 800: reward/risk median 1.17 (10th pct 0.37, 90th pct 2.70); entries with at least 3 to 1: 6%; mean max profit 41.3, mean max loss 38.7, fees in 2.92
+   all entries          | hold to settlement: n=2531 mean=  -4.85 total=  -12285 win= 46% worst=   -66.6 maxDD=  -13959 | target 10% + stop 50%: n=2531 mean=  -7.26 total=  -18364 win= 15% worst=   -62.0 maxDD=  -18371 | target 50% + stop 50%: n=2531 mean=  -7.07 total=  -17901 win= 41% worst=   -62.0 maxDD=  -18738
+   only >= 3 to 1       | hold to settlement: n= 154 mean=  -1.93 total=    -297 win= 36% worst=   -27.6 maxDD=    -607 | target 10% + stop 50%: n= 154 mean=  -6.65 total=   -1025 win= 25% worst=   -21.6 maxDD=   -1025 | target 50% + stop 50%: n= 154 mean=  -4.84 total=    -746 win= 28% worst=   -23.9 maxDD=    -832
+   only < 3 to 1        | hold to settlement: n=2377 mean=  -5.04 total=  -11988 win= 47% worst=   -66.6 maxDD=  -13435 | target 10% + stop 50%: n=2377 mean=  -7.29 total=  -17339 win= 15% worst=   -62.0 maxDD=  -17347 | target 50% + stop 50%: n=2377 mean=  -7.22 total=  -17156 win= 42% worst=   -62.0 maxDD=  -18030
+
+bull call spread ATM/+400: reward/risk median 1.44 (10th pct 1.01, 90th pct 2.63); entries with at least 3 to 1: 8%; mean max profit 24.2, mean max loss 15.8, fees in 1.39
+   all entries          | hold to settlement: n=2543 mean=  -2.82 total=   -7162 win= 39% worst=   -25.7 maxDD=   -7876 | target 10% + stop 50%: n=2543 mean=  -2.95 total=   -7495 win= 39% worst=   -19.0 maxDD=   -7509 | target 50% + stop 50%: n=2543 mean=  -3.22 total=   -8191 win= 36% worst=   -21.3 maxDD=   -8242
+   only >= 3 to 1       | hold to settlement: n= 191 mean=  -1.04 total=    -198 win= 29% worst=   -10.6 maxDD=    -284 | target 10% + stop 50%: n= 191 mean=  -0.93 total=    -178 win= 42% worst=   -11.6 maxDD=    -193 | target 50% + stop 50%: n= 191 mean=  -1.38 total=    -264 win= 21% worst=   -11.6 maxDD=    -303
+   only < 3 to 1        | hold to settlement: n=2352 mean=  -2.96 total=   -6964 win= 39% worst=   -25.7 maxDD=   -7605 | target 10% + stop 50%: n=2352 mean=  -3.11 total=   -7316 win= 38% worst=   -19.0 maxDD=   -7331 | target 50% + stop 50%: n=2352 mean=  -3.37 total=   -7927 win= 38% worst=   -21.3 maxDD=   -7978
+
+bear put spread ATM/-400: reward/risk median 1.74 (10th pct 1.17, 90th pct 3.74); entries with at least 3 to 1: 16%; mean max profit 26.1, mean max loss 13.9, fees in 1.30
+   all entries          | hold to settlement: n=2543 mean=  -2.76 total=   -7007 win= 35% worst=   -25.3 maxDD=   -8327 | target 10% + stop 50%: n=2543 mean=  -2.82 total=   -7159 win= 39% worst=   -17.9 maxDD=   -7167 | target 50% + stop 50%: n=2543 mean=  -3.17 total=   -8051 win= 31% worst=   -21.2 maxDD=   -8203
+   only >= 3 to 1       | hold to settlement: n= 415 mean=  -2.53 total=   -1049 win= 20% worst=   -10.9 maxDD=   -1114 | target 10% + stop 50%: n= 415 mean=  -1.42 total=    -588 win= 39% worst=    -8.9 maxDD=    -591 | target 50% + stop 50%: n= 415 mean=  -1.83 total=    -760 win= 15% worst=    -8.9 maxDD=    -769
+   only < 3 to 1        | hold to settlement: n=2128 mean=  -2.80 total=   -5958 win= 37% worst=   -25.3 maxDD=   -7230 | target 10% + stop 50%: n=2128 mean=  -3.09 total=   -6571 win= 39% worst=   -17.9 maxDD=   -6579 | target 50% + stop 50%: n=2128 mean=  -3.43 total=   -7291 win= 34% worst=   -21.2 maxDD=   -7434
+
+bull put credit spread -400/-800: reward/risk median 0.18 (10th pct 0.03, 90th pct 0.39); entries with at least 3 to 1: 0%; mean max profit 6.3, mean max loss 33.7, fees in 0.87
+   all entries          | hold to settlement: n=2519 mean=  -1.66 total=   -4171 win= 79% worst=   -38.4 maxDD=   -5184 | target 10% + stop 50%: n=2519 mean=  -1.97 total=   -4960 win= 35% worst=   -32.8 maxDD=   -4966 | target 50% + stop 50%: n=2519 mean=  -2.04 total=   -5133 win= 81% worst=   -32.8 maxDD=   -5392
+   only >= 3 to 1       | n=0 (too few to read)
+   only < 3 to 1        | hold to settlement: n=2519 mean=  -1.66 total=   -4171 win= 79% worst=   -38.4 maxDD=   -5184 | target 10% + stop 50%: n=2519 mean=  -1.97 total=   -4960 win= 35% worst=   -32.8 maxDD=   -4966 | target 50% + stop 50%: n=2519 mean=  -2.04 total=   -5133 win= 81% worst=   -32.8 maxDD=   -5392
+
+bear call credit spread +400/+800: reward/risk median 0.25 (10th pct 0.04, 90th pct 0.48); entries with at least 3 to 1: 0%; mean max profit 7.6, mean max loss 32.4, fees in 0.93
+   all entries          | hold to settlement: n=2526 mean=  -0.58 total=   -1476 win= 77% worst=   -40.1 maxDD=   -4443 | target 10% + stop 50%: n=2526 mean=  -1.88 total=   -4747 win= 39% worst=   -37.6 maxDD=   -4769 | target 50% + stop 50%: n=2526 mean=  -1.60 total=   -4045 win= 80% worst=   -37.6 maxDD=   -4994
+   only >= 3 to 1       | n=0 (too few to read)
+   only < 3 to 1        | hold to settlement: n=2526 mean=  -0.58 total=   -1476 win= 77% worst=   -40.1 maxDD=   -4443 | target 10% + stop 50%: n=2526 mean=  -1.88 total=   -4747 win= 39% worst=   -37.6 maxDD=   -4769 | target 50% + stop 50%: n=2526 mean=  -1.60 total=   -4045 win= 80% worst=   -37.6 maxDD=   -4994
+
+long straddle ATM: reward/risk median 33.35 (10th pct 16.56, 90th pct 83.81); entries with at least 3 to 1: 100%; mean max profit 1936.0, mean max loss 64.0, fees in 1.61
+   all entries          | hold to settlement: n=2543 mean=  -5.15 total=  -13097 win= 32% worst=  -180.9 maxDD=  -20290 | target 10% + stop 50%: n=2543 mean=  -4.72 total=  -12007 win= 29% worst=  -110.9 maxDD=  -18963 | target 50% + stop 50%: n=2543 mean=  -4.50 total=  -11447 win= 29% worst=  -110.9 maxDD=  -18564
+   only >= 3 to 1       | hold to settlement: n=2543 mean=  -5.15 total=  -13097 win= 32% worst=  -180.9 maxDD=  -20290 | target 10% + stop 50%: n=2543 mean=  -4.72 total=  -12007 win= 29% worst=  -110.9 maxDD=  -18963 | target 50% + stop 50%: n=2543 mean=  -4.50 total=  -11447 win= 29% worst=  -110.9 maxDD=  -18564
+   only < 3 to 1        | n=0 (too few to read)
+
+==============================================================================================================
+B. ENTRY HOUR (IST hour of the bar; :30 past, because settlement is 17:30 IST). Mean net per entry / win%
+==============================================================================================================
+
+iron butterfly 600 (sell ATM straddle, buy wings)
+   IST   n   |                   hold |         tgt10%+stop50% |         tgt50%+stop50%
+   18:30 106 |    -5.51 /  31% wst     -29 |    -7.08 /   8% wst     -18 |    -8.29 /  18% wst     -22
+   19:30 105 |    -3.94 /  33% wst     -28 |    -6.57 /   9% wst     -19 |    -6.94 /  22% wst     -21
+   20:30 106 |    -5.42 /  35% wst     -29 |    -5.57 /  10% wst     -18 |    -6.02 /  26% wst     -21
+   21:30 106 |    -2.21 /  41% wst     -31 |    -3.93 /  18% wst     -18 |    -4.70 /  30% wst     -22
+   22:30 106 |    -4.69 /  35% wst     -35 |    -5.31 /  14% wst     -21 |    -6.89 /  26% wst     -29
+   23:30 105 |    -5.25 /  33% wst     -34 |    -5.08 /  15% wst     -23 |    -7.08 /  25% wst     -23
+   00:30 106 |    -2.54 /  42% wst     -35 |    -4.93 /  16% wst     -19 |    -6.12 /  29% wst     -26
+   01:30 106 |    -2.65 /  44% wst     -38 |    -5.48 /  19% wst     -24 |    -5.76 /  32% wst     -25
+   02:30 106 |    -3.21 /  42% wst     -35 |    -6.99 /  16% wst     -23 |    -5.31 /  34% wst     -23
+   03:30 106 |    -3.85 /  42% wst     -35 |    -7.29 /  19% wst     -22 |    -5.88 /  33% wst     -25
+   04:30 106 |    -5.86 /  38% wst     -34 |    -6.58 /  19% wst     -24 |    -6.59 /  31% wst     -26
+   05:30 106 |    -7.32 /  38% wst     -34 |    -7.30 /  19% wst     -24 |    -8.01 /  30% wst     -24
+   06:30 106 |    -5.39 /  43% wst     -36 |    -6.43 /  25% wst     -25 |    -5.80 /  39% wst     -25
+   07:30 105 |    -4.84 /  44% wst     -36 |    -6.75 /  28% wst     -24 |    -5.89 /  36% wst     -24
+   08:30 106 |    -3.46 /  47% wst     -32 |    -4.84 /  36% wst     -22 |    -4.60 /  39% wst     -25
+   09:30 106 |    -1.84 /  50% wst     -32 |    -4.01 /  43% wst     -24 |    -4.04 /  42% wst     -25
+   10:30 106 |    -2.93 /  50% wst     -35 |    -4.55 /  55% wst     -24 |    -4.38 /  43% wst     -27
+   11:30 106 |    -2.53 /  48% wst     -39 |    -4.56 /  51% wst     -28 |    -4.74 /  42% wst     -32
+   12:30 106 |    -2.60 /  49% wst     -41 |    -4.43 /  63% wst     -24 |    -3.74 /  45% wst     -33
+   13:30 106 |    -1.53 /  52% wst     -37 |    -4.40 /  68% wst     -31 |    -3.48 /  48% wst     -31
+   14:30 106 |    +0.71 /  58% wst     -46 |    -3.01 /  79% wst     -41 |    -1.94 /  54% wst     -41
+   15:30 106 |    +3.49 /  71% wst     -45 |    -1.24 /  90% wst     -40 |    +4.04 /  75% wst     -40
+   16:30 106 |    -0.69 /  63% wst     -44 |    -1.77 /  84% wst     -38 |    -0.33 /  68% wst     -38
+   17:30 106 |    -5.38 /  31% wst     -32 |    -7.18 /   6% wst     -19 |    -8.90 /  16% wst     -20
+
+iron butterfly 1000
+   IST   n   |                   hold |         tgt10%+stop50% |         tgt50%+stop50%
+   18:30 106 |    -4.73 /  42% wst     -52 |    -7.19 /  66% wst     -35 |    -6.43 /  36% wst     -35
+   19:30 104 |    -3.01 /  44% wst     -53 |    -5.25 /  72% wst     -38 |    -6.16 /  37% wst     -38
+   20:30 103 |    -1.57 /  48% wst     -54 |    -4.07 /  80% wst     -31 |    -1.96 /  46% wst     -42
+   21:30 105 |    +0.79 /  51% wst     -51 |    -2.09 /  87% wst     -40 |    -1.74 /  48% wst     -40
+   22:30 105 |    -2.63 /  50% wst     -59 |    -3.50 /  83% wst     -43 |    -5.45 /  44% wst     -49
+   23:30 106 |    -3.50 /  49% wst     -62 |    -3.50 /  83% wst     -39 |    -7.68 /  42% wst     -44
+   00:30 105 |    -1.15 /  50% wst     -57 |    -3.97 /  83% wst     -45 |    -5.23 /  45% wst     -45
+   01:30 105 |    -0.64 /  53% wst     -64 |    -4.80 /  78% wst     -46 |    -6.70 /  44% wst     -46
+   02:30 104 |    -1.10 /  51% wst     -65 |    -7.07 /  71% wst     -54 |    -6.41 /  44% wst     -54
+   03:30 105 |    -2.97 /  50% wst     -63 |    -8.29 /  68% wst     -42 |    -5.99 /  45% wst     -45
+   04:30 104 |    -4.26 /  46% wst     -63 |    -7.89 /  72% wst     -45 |    -6.95 /  42% wst     -45
+   05:30 105 |    -6.94 /  47% wst     -64 |    -8.58 /  70% wst     -49 |    -8.12 /  44% wst     -49
+   06:30 105 |    -6.47 /  48% wst     -64 |    -7.89 /  68% wst     -43 |    -7.38 /  44% wst     -45
+   07:30 104 |    -3.46 /  49% wst     -63 |    -7.80 /  70% wst     -53 |    -5.72 /  48% wst     -53
+   08:30 105 |    -1.19 /  53% wst     -61 |    -4.64 /  77% wst     -49 |    -4.48 /  50% wst     -54
+   09:30 106 |    +0.82 /  58% wst     -62 |    -3.72 /  85% wst     -55 |    -1.44 /  58% wst     -55
+   10:30 106 |    -1.77 /  58% wst     -64 |    -5.43 /  79% wst     -45 |    -4.32 /  54% wst     -53
+   11:30 106 |    -1.62 /  54% wst     -70 |    -4.63 /  82% wst     -50 |    -2.73 /  56% wst     -55
+   12:30 106 |    -1.46 /  57% wst     -72 |    -4.57 /  83% wst     -52 |    -3.14 /  57% wst     -52
+   13:30 106 |    +0.15 /  58% wst     -71 |    -4.17 /  83% wst     -60 |    -2.86 /  58% wst     -60
+   14:30 106 |    +1.88 /  60% wst     -61 |    -0.57 /  91% wst     -46 |    +0.94 /  64% wst     -46
+   15:30 106 |    +4.16 /  73% wst     -60 |    -1.58 /  92% wst     -65 |    +4.48 /  79% wst     -65
+   16:30 106 |    -1.30 /  64% wst     -64 |    -2.58 /  86% wst     -60 |    -0.75 /  71% wst     -60
+   17:30 106 |    -5.28 /  40% wst     -51 |    -7.91 /  63% wst     -39 |    -9.42 /  29% wst     -40
+
+iron condor 400/800
+   IST   n   |                   hold |         tgt10%+stop50% |         tgt50%+stop50%
+   18:30 106 |    -4.72 /  42% wst     -31 |    -6.35 /   1% wst     -20 |    -4.78 /  46% wst     -20
+   19:30 106 |    -4.81 /  43% wst     -31 |    -5.93 /   3% wst     -19 |    -4.79 /  47% wst     -21
+   20:30 103 |    -3.03 /  48% wst     -32 |    -5.26 /   2% wst     -17 |    -4.04 /  52% wst     -24
+   21:30 105 |    -1.72 /  53% wst     -29 |    -4.21 /   1% wst     -18 |    -2.16 /  62% wst     -23
+   22:30 105 |    -3.31 /  52% wst     -35 |    -4.36 /   3% wst     -23 |    -3.67 /  57% wst     -24
+   23:30 105 |    -3.46 /  52% wst     -32 |    -4.43 /   3% wst     -20 |    -5.84 /  49% wst     -24
+   00:30 106 |    -2.23 /  57% wst     -36 |    -4.33 /   3% wst     -25 |    -3.97 /  58% wst     -25
+   01:30 106 |    -1.66 /  58% wst     -36 |    -4.65 /   1% wst     -25 |    -4.49 /  57% wst     -25
+   02:30 104 |    -2.64 /  55% wst     -36 |    -4.99 /   4% wst     -28 |    -4.76 /  57% wst     -28
+   03:30 105 |    -3.74 /  55% wst     -34 |    -5.39 /   2% wst     -22 |    -5.57 /  54% wst     -25
+   04:30 106 |    -3.16 /  54% wst     -33 |    -4.86 /   4% wst     -23 |    -4.30 /  59% wst     -26
+   05:30 105 |    -3.95 /  52% wst     -33 |    -5.27 /   9% wst     -23 |    -5.28 /  56% wst     -27
+   06:30 106 |    -4.78 /  57% wst     -33 |    -4.58 /   8% wst     -21 |    -5.15 /  57% wst     -25
+   07:30 104 |    -2.61 /  60% wst     -32 |    -4.91 /  10% wst     -28 |    -4.36 /  61% wst     -28
+   08:30 106 |    -0.83 /  66% wst     -32 |    -3.92 /  16% wst     -25 |    -3.35 /  64% wst     -28
+   09:30 105 |    +0.17 /  68% wst     -32 |    -2.61 /  17% wst     -27 |    -1.54 /  72% wst     -29
+   10:30 106 |    -1.41 /  64% wst     -33 |    -2.57 /  26% wst     -20 |    -2.66 /  68% wst     -28
+   11:30 106 |    -1.06 /  69% wst     -39 |    -2.10 /  24% wst     -21 |    -2.19 /  72% wst     -29
+   12:30 106 |    -0.42 /  72% wst     -40 |    -1.94 /  46% wst     -28 |    -2.98 /  72% wst     -28
+   13:30 106 |    +0.08 /  72% wst     -36 |    -2.24 /  60% wst     -28 |    -1.95 /  78% wst     -28
+   14:30 106 |    +1.19 /  84% wst     -31 |    -0.20 /  78% wst     -28 |    +0.92 /  91% wst     -28
+   15:30 106 |    +0.78 /  90% wst     -39 |    -0.85 /  89% wst     -37 |    +0.33 /  94% wst     -37
+   16:30 106 |    -0.94 /  88% wst     -40 |    +0.26 /  95% wst      -0 |    -0.82 /  91% wst     -37
+   17:30 106 |    -5.83 /  41% wst     -32 |    -6.63 /   0% wst     -20 |    -6.70 /  38% wst     -24
+
+short strangle 600 (naked)
+   IST   n   |                   hold |    each option stop 2x |    each option stop 3x |        tgt50%+stop200%
+   18:30 106 |    -5.21 /  68% wst    -631 |    +2.03 /  36% wst    -129 |    +1.11 /  45% wst    -129 |    +0.67 /  79% wst    -186
+   19:30 105 |    -5.94 /  70% wst    -590 |    +2.93 /  37% wst    -133 |    +2.50 /  47% wst    -133 |    -3.48 /  79% wst    -235
+   20:30 106 |    +4.75 /  75% wst    -505 |    +8.53 /  42% wst     -66 |   +12.62 /  58% wst    -101 |    +5.38 /  85% wst    -172
+   21:30 106 |    +7.02 /  76% wst    -350 |    +7.07 /  44% wst     -61 |   +11.65 /  61% wst     -99 |    +4.22 /  85% wst    -172
+   22:30 106 |    +3.14 /  76% wst    -298 |    +1.87 /  42% wst     -86 |    +6.07 /  58% wst    -111 |    -0.85 /  81% wst    -168
+   23:30 105 |    -0.66 /  77% wst    -299 |    -0.46 /  37% wst     -86 |    -0.55 /  55% wst     -86 |    -1.17 /  83% wst    -192
+   00:30 106 |    -1.08 /  75% wst    -328 |    +1.59 /  44% wst    -112 |    +0.39 /  54% wst     -94 |    -2.16 /  79% wst    -130
+   01:30 106 |    -2.42 /  77% wst    -312 |    +2.17 /  45% wst     -35 |    +0.11 /  54% wst     -79 |    -2.56 /  79% wst    -125
+   02:30 106 |    -0.24 /  76% wst    -314 |    -0.72 /  41% wst    -100 |    -2.16 /  50% wst     -90 |    -2.50 /  78% wst    -139
+   03:30 106 |    -0.45 /  78% wst    -339 |    +0.00 /  40% wst     -90 |    -3.67 /  52% wst    -162 |    -0.61 /  81% wst    -117
+   04:30 106 |    -0.03 /  80% wst    -310 |    +0.65 /  42% wst    -106 |    +0.04 /  52% wst    -117 |    +1.90 /  85% wst    -123
+   05:30 106 |    -0.61 /  78% wst    -273 |    -0.39 /  41% wst    -104 |    -2.69 /  45% wst    -163 |    -1.72 /  79% wst    -109
+   06:30 106 |    -2.02 /  74% wst    -233 |    -1.84 /  39% wst     -94 |    +0.40 /  51% wst    -114 |    -2.71 /  79% wst    -115
+   07:30 106 |    +2.95 /  81% wst    -277 |    +0.97 /  45% wst     -66 |    -0.80 /  52% wst     -76 |    -0.37 /  80% wst    -142
+   08:30 106 |    +0.76 /  83% wst    -264 |    +1.29 /  48% wst     -66 |    +0.14 /  58% wst     -66 |    -3.71 /  82% wst    -114
+   09:30 106 |    +1.33 /  85% wst    -267 |    +0.99 /  42% wst     -65 |    +1.74 /  53% wst     -50 |    -0.49 /  87% wst    -134
+   10:30 106 |    -0.46 /  83% wst    -271 |    +0.19 /  47% wst     -56 |    -1.43 /  55% wst     -74 |    -2.11 /  80% wst     -96
+   11:30 106 |    -1.65 /  82% wst    -253 |    -0.82 /  42% wst     -44 |    -0.63 /  54% wst     -53 |    -3.76 /  79% wst    -120
+   12:30 106 |    -0.28 /  86% wst    -254 |    -1.92 /  44% wst     -47 |    -0.32 /  55% wst     -36 |    -1.85 /  83% wst     -93
+   13:30 106 |    -0.64 /  92% wst    -238 |    -0.62 /  45% wst     -34 |    -0.87 /  54% wst     -34 |    -1.43 /  83% wst    -116
+   14:30 106 |    +1.63 /  94% wst     -57 |    -0.64 /  38% wst     -17 |    -0.59 /  46% wst     -30 |    -0.07 /  75% wst     -46
+   15:30 106 |    +0.91 /  95% wst     -20 |    -0.30 /  52% wst     -48 |    -0.11 /  58% wst     -23 |    +0.59 /  83% wst      -9
+   16:30 106 |    -0.63 /  96% wst     -40 |    -0.08 /  64% wst     -14 |    -0.14 /  72% wst     -14 |    -0.58 /  85% wst     -55
+   17:30 106 |    -7.20 /  70% wst    -672 |    +0.28 /  30% wst    -127 |    -2.55 /  47% wst    -139 |    +0.12 /  77% wst    -187
+
+short strangle 1000 (naked)
+   IST   n   |                   hold |    each option stop 2x |    each option stop 3x |        tgt50%+stop200%
+   18:30 106 |    -4.77 /  75% wst    -602 |    +2.30 /  42% wst     -66 |    +2.90 /  49% wst     -98 |    +0.87 /  82% wst    -133
+   19:30 104 |    -4.60 /  78% wst    -561 |    +2.39 /  41% wst    -101 |    +3.61 /  51% wst    -101 |    -3.21 /  80% wst    -138
+   20:30 103 |    +2.95 /  83% wst    -477 |    +6.82 /  47% wst     -44 |   +11.27 /  63% wst     -80 |    +2.51 /  87% wst    -112
+   21:30 105 |    +4.46 /  85% wst    -325 |    +6.19 /  51% wst     -28 |    +7.72 /  65% wst     -87 |    +4.74 /  90% wst     -92
+   22:30 105 |    +2.15 /  83% wst    -271 |    +0.99 /  50% wst     -88 |    +3.88 /  59% wst     -88 |    -0.60 /  83% wst    -152
+   23:30 106 |    -0.75 /  86% wst    -278 |    -0.27 /  44% wst     -73 |    +2.61 /  59% wst     -85 |    -1.09 /  82% wst     -97
+   00:30 105 |    -1.50 /  86% wst    -306 |    +1.12 /  51% wst     -84 |    +0.63 /  55% wst     -80 |    -1.22 /  81% wst    -113
+   01:30 105 |    -3.58 /  84% wst    -289 |    +0.21 /  45% wst     -69 |    +0.15 /  57% wst    -109 |    -2.87 /  81% wst    -108
+   02:30 104 |    -1.19 /  85% wst    -290 |    +0.38 /  46% wst     -74 |    -0.32 /  57% wst     -76 |    -2.71 /  80% wst     -99
+   03:30 105 |    -0.51 /  87% wst    -314 |    +0.14 /  50% wst     -76 |    -1.89 /  54% wst    -121 |    -0.20 /  84% wst     -98
+   04:30 104 |    -0.27 /  87% wst    -288 |    +1.84 /  54% wst     -76 |    -0.28 /  59% wst    -133 |    +1.84 /  89% wst    -104
+   05:30 105 |    -0.04 /  88% wst    -250 |    +1.02 /  52% wst     -79 |    -0.14 /  64% wst    -124 |    +0.36 /  86% wst     -90
+   06:30 105 |    -0.02 /  88% wst    -205 |    -0.61 /  54% wst     -98 |    +2.68 /  64% wst     -76 |    -0.39 /  86% wst     -95
+   07:30 104 |    +2.13 /  88% wst    -248 |    +1.22 /  51% wst     -32 |    -0.24 /  58% wst     -58 |    +0.73 /  86% wst    -116
+   08:30 105 |    +1.07 /  92% wst    -234 |    +1.85 /  63% wst     -53 |    +0.31 /  64% wst     -53 |    -1.49 /  85% wst     -92
+   09:30 106 |    -0.43 /  91% wst    -237 |    +1.36 /  58% wst     -56 |    +1.94 /  67% wst     -50 |    +0.28 /  92% wst     -96
+   10:30 106 |    -0.72 /  91% wst    -239 |    +1.16 /  57% wst     -35 |    +0.39 /  63% wst     -40 |    -0.23 /  88% wst     -59
+   11:30 106 |    -1.75 /  92% wst    -221 |    +0.37 /  60% wst     -27 |    +0.33 /  64% wst     -41 |    -1.30 /  88% wst     -92
+   12:30 106 |    -0.66 /  95% wst    -222 |    -0.15 /  53% wst     -23 |    +0.55 /  62% wst     -17 |    -0.56 /  87% wst     -68
+   13:30 106 |    -1.84 /  94% wst    -204 |    -0.06 /  50% wst     -14 |    +0.00 /  58% wst     -20 |    -1.12 /  80% wst     -99
+   14:30 106 |    +0.79 /  99% wst     -23 |    -0.17 /  50% wst      -7 |    +0.00 /  57% wst     -17 |    -0.03 /  75% wst     -26
+   15:30 106 |    +0.45 / 100% wst      +0 |    -0.12 /  67% wst     -16 |    -0.09 /  75% wst     -20 |    +0.16 /  90% wst      -2
+   16:30 106 |    +0.07 /  99% wst      -4 |    +0.05 /  77% wst      -1 |    +0.06 /  82% wst      -1 |    +0.05 /  92% wst      -1
+   17:30 106 |    -6.06 /  75% wst    -643 |    +2.62 /  34% wst     -73 |    +0.77 /  52% wst    -109 |    +3.69 /  83% wst    -143
+
+long call butterfly 200
+   IST   n   |                   hold |         tgt10%+stop50% |         tgt50%+stop50%
+   18:30 106 |    -7.30 /   9% wst     -12 |    -9.39 /   0% wst     -13 |    -9.33 /   2% wst     -13
+   19:30 106 |    -6.63 /  15% wst     -12 |    -9.26 /   0% wst     -13 |    -9.01 /   4% wst     -13
+   20:30 106 |    -7.63 /   8% wst     -18 |    -9.12 /   0% wst     -17 |    -8.87 /   5% wst     -17
+   21:30 106 |    -6.23 /  14% wst     -13 |    -8.66 /   0% wst     -12 |    -8.20 /   8% wst     -12
+   22:30 106 |    -6.99 /   9% wst     -13 |    -8.87 /   0% wst     -12 |    -8.64 /   4% wst     -12
+   23:30 106 |    -6.83 /  12% wst     -12 |    -8.59 /   0% wst     -12 |    -8.34 /   6% wst     -12
+   00:30 106 |    -6.35 /  17% wst     -13 |    -8.45 /   0% wst     -11 |    -8.01 /   8% wst     -11
+   01:30 106 |    -5.95 /  21% wst     -20 |    -8.26 /   0% wst     -15 |    -7.67 /  10% wst     -15
+   02:30 106 |    -6.14 /  18% wst     -13 |    -8.09 /   0% wst     -11 |    -7.74 /   9% wst     -11
+   03:30 106 |    -6.24 /  16% wst     -13 |    -8.17 /   1% wst     -11 |    -7.99 /   8% wst     -11
+   04:30 106 |    -6.66 /  15% wst     -13 |    -8.06 /   1% wst     -12 |    -7.85 /   8% wst     -12
+   05:30 106 |    -6.97 /  12% wst     -12 |    -7.89 /   0% wst     -11 |    -7.81 /   8% wst     -11
+   06:30 106 |    -5.82 /  21% wst     -13 |    -7.86 /   0% wst     -12 |    -7.12 /  13% wst     -12
+   07:30 105 |    -6.30 /  17% wst     -13 |    -7.43 /   0% wst     -12 |    -7.00 /  13% wst     -12
+   08:30 106 |    -6.46 /  15% wst     -13 |    -7.08 /   1% wst     -12 |    -6.48 /  16% wst     -12
+   09:30 106 |    -5.62 /  20% wst     -13 |    -7.05 /   1% wst     -11 |    -6.48 /  16% wst     -12
+   10:30 106 |    -5.97 /  17% wst     -13 |    -6.83 /   2% wst     -11 |    -6.53 /  15% wst     -11
+   11:30 106 |    -5.17 /  22% wst     -13 |    -6.10 /   2% wst     -12 |    -5.29 /  25% wst     -14
+   12:30 106 |    -5.69 /  20% wst     -13 |    -5.93 /   2% wst     -13 |    -6.12 /  17% wst     -13
+   13:30 106 |    -4.08 /  31% wst     -13 |    -5.66 /   2% wst     -11 |    -5.57 /  21% wst     -12
+   14:30 106 |    -3.58 /  35% wst     -20 |    -5.52 /   1% wst     -17 |    -5.20 /  26% wst     -17
+   15:30 106 |    -2.34 /  42% wst     -19 |    -3.85 /   1% wst     -14 |    -3.28 /  39% wst     -14
+   16:30 106 |    -2.77 /  38% wst     -17 |    -3.24 /   7% wst     -14 |    -2.17 /  48% wst     -15
+   17:30 106 |    -6.93 /  13% wst     -13 |    -9.62 /   0% wst     -13 |    -9.68 /   0% wst     -13
+
+long call butterfly 400
+   IST   n   |                   hold |         tgt10%+stop50% |         tgt50%+stop50%
+   18:30 106 |    -7.03 /  21% wst     -20 |    -8.82 /   1% wst     -14 |    -9.25 /   8% wst     -17
+   19:30 106 |    -5.74 /  25% wst     -20 |    -8.42 /   1% wst     -13 |    -8.58 /  11% wst     -14
+   20:30 106 |    -7.38 /  22% wst     -20 |    -8.26 /   1% wst     -18 |    -8.02 /  14% wst     -18
+   21:30 106 |    -5.01 /  29% wst     -21 |    -7.18 /   1% wst     -18 |    -6.85 /  20% wst     -18
+   22:30 106 |    -6.54 /  26% wst     -24 |    -7.93 /   0% wst     -15 |    -8.18 /  15% wst     -16
+   23:30 106 |    -7.05 /  25% wst     -22 |    -7.25 /   2% wst     -15 |    -7.46 /  18% wst     -15
+   00:30 106 |    -5.18 /  34% wst     -23 |    -7.58 /   3% wst     -15 |    -7.20 /  20% wst     -15
+   01:30 106 |    -5.23 /  32% wst     -29 |    -7.49 /   2% wst     -18 |    -6.93 /  22% wst     -18
+   02:30 106 |    -5.19 /  35% wst     -24 |    -7.84 /   1% wst     -23 |    -6.93 /  24% wst     -23
+   03:30 106 |    -5.58 /  34% wst     -24 |    -7.94 /   0% wst     -17 |    -7.84 /  19% wst     -17
+   04:30 106 |    -7.00 /  27% wst     -22 |    -8.11 /   1% wst     -16 |    -8.22 /  17% wst     -18
+   05:30 106 |    -8.07 /  25% wst     -24 |    -8.51 /   1% wst     -16 |    -8.18 /  19% wst     -18
+   06:30 106 |    -6.52 /  30% wst     -25 |    -8.12 /   0% wst     -19 |    -7.13 /  23% wst     -19
+   07:30 105 |    -6.57 /  32% wst     -24 |    -7.55 /   0% wst     -24 |    -7.19 /  26% wst     -24
+   08:30 106 |    -6.04 /  37% wst     -25 |    -6.74 /   2% wst     -17 |    -6.32 /  29% wst     -18
+   09:30 106 |    -4.75 /  39% wst     -25 |    -7.49 /   0% wst     -17 |    -7.18 /  27% wst     -19
+   10:30 106 |    -5.16 /  39% wst     -26 |    -6.94 /   2% wst     -18 |    -6.98 /  27% wst     -19
+   11:30 106 |    -5.03 /  41% wst     -26 |    -7.07 /   3% wst     -20 |    -6.12 /  33% wst     -20
+   12:30 106 |    -5.39 /  38% wst     -25 |    -6.36 /   3% wst     -20 |    -6.75 /  30% wst     -20
+   13:30 106 |    -3.88 /  46% wst     -26 |    -6.24 /   4% wst     -19 |    -6.47 /  34% wst     -19
+   14:30 106 |    -2.62 /  46% wst     -30 |    -5.05 /   5% wst     -25 |    -4.40 /  42% wst     -25
+   15:30 106 |    +0.24 /  58% wst     -31 |    -3.13 /   9% wst     -21 |    +0.35 /  64% wst     -21
+   16:30 106 |    -2.77 /  50% wst     -31 |    -3.47 /  20% wst     -28 |    -2.27 /  59% wst     -28
+   17:30 106 |    -6.37 /  24% wst     -22 |    -9.01 /   1% wst     -16 |    -9.24 /   8% wst     -17
+
+long call butterfly 800
+   IST   n   |                   hold |         tgt10%+stop50% |         tgt50%+stop50%
+   18:30 106 |    -6.60 /  36% wst     -47 |    -8.02 /  14% wst     -28 |   -10.00 /  25% wst     -29
+   19:30 106 |    -5.46 /  37% wst     -46 |    -7.70 /  17% wst     -28 |    -9.38 /  25% wst     -36
+   20:30 103 |    -5.66 /  38% wst     -48 |    -6.07 /  17% wst     -26 |    -6.32 /  33% wst     -32
+   21:30 105 |    -2.23 /  46% wst     -41 |    -4.14 /  16% wst     -26 |    -5.99 /  37% wst     -39
+   22:30 105 |    -5.66 /  41% wst     -56 |    -6.00 /  18% wst     -31 |    -8.60 /  31% wst     -31
+   23:30 105 |    -6.49 /  40% wst     -45 |    -6.16 /  13% wst     -32 |    -9.45 /  31% wst     -32
+   00:30 106 |    -3.75 /  45% wst     -56 |    -5.92 /  11% wst     -32 |    -7.14 /  36% wst     -33
+   01:30 106 |    -3.51 /  50% wst     -59 |    -7.91 /  12% wst     -34 |    -7.73 /  40% wst     -34
+   02:30 104 |    -4.37 /  48% wst     -56 |    -8.75 /  10% wst     -33 |    -7.31 /  41% wst     -36
+   03:30 105 |    -6.19 /  47% wst     -50 |    -9.94 /   8% wst     -36 |    -8.17 /  39% wst     -36
+   04:30 106 |    -7.08 /  42% wst     -48 |    -9.02 /  10% wst     -37 |    -9.25 /  35% wst     -37
+   05:30 105 |    -9.06 /  41% wst     -50 |   -10.23 /  14% wst     -37 |   -10.77 /  35% wst     -37
+   06:30 106 |    -8.47 /  46% wst     -50 |    -9.31 /  18% wst     -35 |    -7.90 /  42% wst     -37
+   07:30 104 |    -6.57 /  47% wst     -50 |   -10.02 /  12% wst     -38 |    -7.98 /  42% wst     -38
+   08:30 106 |    -4.67 /  49% wst     -48 |    -8.63 /  13% wst     -42 |    -7.47 /  42% wst     -42
+   09:30 105 |    -2.55 /  51% wst     -49 |    -6.70 /  17% wst     -44 |    -5.69 /  48% wst     -44
+   10:30 106 |    -4.76 /  51% wst     -51 |    -7.10 /  14% wst     -38 |    -6.49 /  46% wst     -43
+   11:30 106 |    -4.53 /  49% wst     -56 |    -7.81 /  12% wst     -45 |    -6.47 /  45% wst     -45
+   12:30 106 |    -4.64 /  49% wst     -57 |    -7.38 /  24% wst     -42 |    -5.96 /  47% wst     -42
+   13:30 106 |    -3.00 /  52% wst     -54 |    -6.93 /  17% wst     -40 |    -6.16 /  52% wst     -45
+   14:30 106 |    -1.25 /  55% wst     -52 |    -3.94 /  25% wst     -34 |    -3.57 /  55% wst     -48
+   15:30 106 |    +0.96 /  65% wst     -64 |    -3.33 /  19% wst     -62 |    +1.30 /  75% wst     -62
+   16:30 106 |    -4.06 /  52% wst     -67 |    -4.21 /  20% wst     -51 |    -3.15 /  62% wst     -51
+   17:30 106 |    -6.96 /  37% wst     -49 |    -8.96 /  18% wst     -28 |   -10.13 /  25% wst     -30
+
+bull call spread ATM/+400
+   IST   n   |                   hold |         tgt10%+stop50% |         tgt50%+stop50%
+   18:30 106 |    -4.97 /  38% wst     -23 |    -3.57 /  23% wst     -16 |    -4.23 /  41% wst     -17
+   19:30 106 |    -4.25 /  42% wst     -25 |    -3.61 /  28% wst     -16 |    -3.76 /  43% wst     -17
+   20:30 106 |    -4.19 /  40% wst     -25 |    -4.49 /  23% wst     -16 |    -5.11 /  36% wst     -18
+   21:30 106 |    -4.75 /  36% wst     -25 |    -3.30 /  26% wst     -14 |    -5.35 /  33% wst     -17
+   22:30 106 |    -3.70 /  40% wst     -25 |    -3.70 /  22% wst     -15 |    -4.53 /  37% wst     -17
+   23:30 106 |    -3.06 /  42% wst     -24 |    -4.61 /  24% wst     -16 |    -4.52 /  35% wst     -16
+   00:30 106 |    -2.64 /  41% wst     -24 |    -3.17 /  35% wst     -16 |    -3.16 /  42% wst     -16
+   01:30 106 |    -3.75 /  40% wst     -25 |    -3.65 /  28% wst     -18 |    -4.50 /  35% wst     -21
+   02:30 106 |    -2.74 /  40% wst     -25 |    -3.39 /  32% wst     -19 |    -4.21 /  35% wst     -19
+   03:30 106 |    -3.38 /  37% wst     -26 |    -3.64 /  34% wst     -16 |    -3.67 /  37% wst     -17
+   04:30 106 |    -2.13 /  41% wst     -25 |    -3.07 /  34% wst     -19 |    -2.63 /  41% wst     -19
+   05:30 106 |    -1.44 /  41% wst     -25 |    -3.03 /  44% wst     -18 |    -3.28 /  36% wst     -18
+   06:30 106 |    -2.70 /  41% wst     -21 |    -2.60 /  42% wst     -18 |    -3.70 /  34% wst     -18
+   07:30 105 |    -1.58 /  37% wst     -22 |    -2.38 /  50% wst     -14 |    -1.78 /  42% wst     -16
+   08:30 106 |    -2.31 /  40% wst     -25 |    -2.88 /  49% wst     -17 |    -3.28 /  36% wst     -17
+   09:30 106 |    -1.08 /  42% wst     -23 |    -1.98 /  53% wst     -17 |    -1.13 /  44% wst     -17
+   10:30 106 |    -1.65 /  41% wst     -23 |    -1.87 /  56% wst     -13 |    -2.59 /  38% wst     -15
+   11:30 106 |    -1.07 /  42% wst     -22 |    -2.54 /  49% wst     -14 |    -2.80 /  35% wst     -17
+   12:30 106 |    -1.47 /  40% wst     -22 |    -3.07 /  48% wst     -16 |    -2.29 /  35% wst     -16
+   13:30 106 |    -1.75 /  35% wst     -22 |    -1.11 /  62% wst     -13 |    -1.26 /  36% wst     -16
+   14:30 106 |    -2.36 /  36% wst     -21 |    -2.45 /  51% wst     -13 |    -1.72 /  31% wst     -15
+   15:30 106 |    -3.02 /  32% wst     -20 |    -1.81 /  52% wst     -12 |    -3.05 /  22% wst     -15
+   16:30 106 |    -1.56 /  31% wst     -18 |    -0.66 /  44% wst     -12 |    -0.58 /  28% wst     -12
+   17:30 106 |    -6.03 /  36% wst     -26 |    -4.14 /  21% wst     -16 |    -4.13 /  42% wst     -17
+
+bear put spread ATM/-400
+   IST   n   |                   hold |         tgt10%+stop50% |         tgt50%+stop50%
+   18:30 106 |    -2.01 /  44% wst     -25 |    -3.73 /  22% wst     -16 |    -3.40 /  42% wst     -17
+   19:30 106 |    -3.96 /  37% wst     -24 |    -5.06 /  23% wst     -16 |    -4.75 /  34% wst     -17
+   20:30 106 |    -2.08 /  42% wst     -25 |    -4.54 /  25% wst     -15 |    -4.38 /  35% wst     -21
+   21:30 106 |    -3.44 /  38% wst     -24 |    -3.28 /  33% wst     -17 |    -5.40 /  29% wst     -17
+   22:30 106 |    -2.62 /  41% wst     -24 |    -3.25 /  33% wst     -15 |    -4.53 /  31% wst     -15
+   23:30 106 |    -2.52 /  38% wst     -24 |    -3.32 /  34% wst     -18 |    -3.75 /  34% wst     -18
+   00:30 106 |    -4.51 /  32% wst     -24 |    -3.40 /  30% wst     -15 |    -4.21 /  31% wst     -15
+   01:30 106 |    -3.05 /  35% wst     -23 |    -3.00 /  40% wst     -16 |    -3.19 /  35% wst     -16
+   02:30 106 |    -3.93 /  32% wst     -22 |    -2.80 /  32% wst     -15 |    -3.12 /  34% wst     -15
+   03:30 106 |    -2.79 /  35% wst     -21 |    -2.82 /  36% wst     -14 |    -2.69 /  36% wst     -14
+   04:30 106 |    -2.42 /  38% wst     -23 |    -3.14 /  38% wst     -14 |    -3.47 /  31% wst     -14
+   05:30 106 |    -1.80 /  38% wst     -23 |    -1.97 /  42% wst     -14 |    -1.16 /  40% wst     -15
+   06:30 106 |    -1.81 /  33% wst     -24 |    -1.90 /  45% wst     -13 |    -2.72 /  33% wst     -17
+   07:30 105 |    -2.84 /  31% wst     -21 |    -2.39 /  49% wst     -18 |    -3.38 /  29% wst     -18
+   08:30 106 |    -2.16 /  36% wst     -22 |    -2.26 /  47% wst     -13 |    -2.31 /  32% wst     -14
+   09:30 106 |    -4.45 /  28% wst     -20 |    -2.33 /  51% wst     -12 |    -3.59 /  27% wst     -16
+   10:30 106 |    -3.16 /  32% wst     -21 |    -2.41 /  52% wst     -14 |    -2.56 /  29% wst     -14
+   11:30 106 |    -3.47 /  28% wst     -22 |    -2.62 /  47% wst     -13 |    -3.97 /  23% wst     -16
+   12:30 106 |    -2.22 /  32% wst     -20 |    -1.93 /  56% wst     -17 |    -1.79 /  31% wst     -17
+   13:30 106 |    -2.64 /  28% wst     -18 |    -2.11 /  51% wst     -12 |    -1.84 /  28% wst     -13
+   14:30 106 |    -2.15 /  26% wst     -17 |    -1.56 /  50% wst     -13 |    -2.24 /  22% wst     -13
+   15:30 106 |    -3.56 /  25% wst     -17 |    -2.09 /  42% wst     -14 |    -2.77 /  18% wst     -14
+   16:30 106 |    -0.86 /  32% wst     -15 |    -1.57 /  30% wst     -14 |    -1.65 /  17% wst     -14
+   17:30 106 |    -1.67 /  46% wst     -25 |    -4.09 /  23% wst     -17 |    -3.12 /  43% wst     -17
+
+bull put credit spread -400/-800
+   IST   n   |                   hold |         tgt10%+stop50% |         tgt50%+stop50%
+   18:30 106 |    -4.01 /  66% wst     -35 |    -3.60 /   9% wst     -23 |    -3.87 /  68% wst     -26
+   19:30 106 |    -3.22 /  69% wst     -35 |    -3.62 /  16% wst     -25 |    -3.29 /  72% wst     -26
+   20:30 105 |    -3.24 /  69% wst     -36 |    -3.50 /  10% wst     -27 |    -2.70 /  74% wst     -27
+   21:30 105 |    -1.44 /  75% wst     -37 |    -2.07 /  11% wst     -27 |    -1.98 /  79% wst     -27
+   22:30 105 |    -2.23 /  73% wst     -37 |    -2.95 /  17% wst     -24 |    -2.37 /  78% wst     -28
+   23:30 105 |    -2.84 /  73% wst     -37 |    -2.21 /  13% wst     -28 |    -2.91 /  77% wst     -28
+   00:30 106 |    -1.65 /  76% wst     -37 |    -1.67 /  16% wst     -27 |    -1.54 /  83% wst     -28
+   01:30 106 |    -1.32 /  77% wst     -38 |    -2.00 /  13% wst     -27 |    -2.52 /  79% wst     -27
+   02:30 104 |    -2.69 /  75% wst     -38 |    -1.92 /  22% wst     -24 |    -2.57 /  79% wst     -26
+   03:30 105 |    -2.64 /  75% wst     -38 |    -2.94 /  16% wst     -27 |    -2.99 /  78% wst     -30
+   04:30 106 |    -2.62 /  75% wst     -38 |    -2.85 /  14% wst     -26 |    -2.72 /  78% wst     -26
+   05:30 105 |    -3.41 /  71% wst     -38 |    -2.44 /  20% wst     -26 |    -2.47 /  80% wst     -28
+   06:30 106 |    -3.69 /  76% wst     -38 |    -1.77 /  34% wst     -25 |    -3.62 /  75% wst     -29
+   07:30 104 |    -1.18 /  80% wst     -38 |    -2.17 /  34% wst     -30 |    -2.37 /  81% wst     -30
+   08:30 106 |    -0.46 /  82% wst     -38 |    -2.07 /  31% wst     -23 |    -2.63 /  80% wst     -32
+   09:30 105 |    +0.04 /  83% wst     -38 |    -0.62 /  46% wst     -21 |    -0.81 /  87% wst     -25
+   10:30 106 |    -0.19 /  85% wst     -38 |    -1.91 /  46% wst     -25 |    -1.83 /  83% wst     -25
+   11:30 106 |    +0.21 /  84% wst     -38 |    -1.34 /  54% wst     -26 |    -1.15 /  86% wst     -26
+   12:30 106 |    +0.32 /  88% wst     -38 |    -1.00 /  60% wst     -27 |    -0.99 /  88% wst     -27
+   13:30 106 |    +0.43 /  87% wst     -38 |    -0.26 /  81% wst     -26 |    +0.25 /  93% wst     -26
+   14:30 106 |    +0.69 /  91% wst     -32 |    +0.07 /  93% wst     -20 |    +0.73 /  96% wst     -20
+   15:30 106 |    +0.46 /  92% wst     -34 |    -0.14 /  89% wst     -27 |    +0.29 /  94% wst     -27
+   16:30 106 |    -0.06 /  90% wst     -38 |    -0.13 /  86% wst     -33 |    -0.05 /  90% wst     -33
+   17:30 106 |    -4.85 /  63% wst     -35 |    -3.89 /  11% wst     -22 |    -4.57 /  65% wst     -26
+
+bear call credit spread +400/+800
+   IST   n   |                   hold |         tgt10%+stop50% |         tgt50%+stop50%
+   18:30 106 |    -0.71 /  72% wst     -35 |    -3.74 /  12% wst     -22 |    -3.30 /  69% wst     -26
+   19:30 106 |    -1.59 /  69% wst     -37 |    -4.01 /  10% wst     -24 |    -2.93 /  70% wst     -24
+   20:30 104 |    +0.25 /  71% wst     -36 |    -2.51 /  16% wst     -22 |    -1.32 /  77% wst     -22
+   21:30 106 |    -0.14 /  73% wst     -35 |    -2.86 /  20% wst     -21 |    -0.76 /  80% wst     -21
+   22:30 106 |    -1.07 /  73% wst     -36 |    -2.03 /  11% wst     -23 |    -1.12 /  80% wst     -28
+   23:30 106 |    -0.80 /  72% wst     -35 |    -2.00 /  16% wst     -20 |    -0.88 /  81% wst     -27
+   00:30 106 |    -0.58 /  75% wst     -38 |    -1.88 /  13% wst     -21 |    -1.77 /  78% wst     -28
+   01:30 106 |    -0.35 /  75% wst     -38 |    -2.03 /  21% wst     -22 |    -1.47 /  79% wst     -25
+   02:30 106 |    -0.14 /  75% wst     -37 |    -2.39 /  25% wst     -25 |    -2.07 /  77% wst     -28
+   03:30 106 |    -0.97 /  75% wst     -37 |    -1.57 /  23% wst     -20 |    -1.82 /  77% wst     -27
+   04:30 106 |    -0.54 /  75% wst     -37 |    -1.56 /  28% wst     -23 |    -2.06 /  77% wst     -29
+   05:30 106 |    -0.56 /  74% wst     -37 |    -2.52 /  28% wst     -30 |    -2.35 /  77% wst     -30
+   06:30 106 |    -1.08 /  75% wst     -37 |    -1.34 /  31% wst     -26 |    -1.20 /  82% wst     -26
+   07:30 106 |    -1.35 /  72% wst     -36 |    -2.01 /  37% wst     -22 |    -2.13 /  78% wst     -26
+   08:30 106 |    -0.37 /  76% wst     -37 |    -1.60 /  39% wst     -21 |    -1.89 /  79% wst     -24
+   09:30 106 |    -0.16 /  78% wst     -36 |    -0.92 /  44% wst     -20 |    -1.38 /  81% wst     -28
+   10:30 106 |    -1.22 /  75% wst     -37 |    -1.18 /  54% wst     -20 |    -1.17 /  83% wst     -32
+   11:30 106 |    -1.27 /  75% wst     -43 |    -1.29 /  56% wst     -34 |    -1.92 /  78% wst     -34
+   12:30 106 |    -0.74 /  82% wst     -44 |    -0.89 /  73% wst     -27 |    -1.66 /  83% wst     -27
+   13:30 106 |    -0.35 /  81% wst     -38 |    -1.32 /  84% wst     -31 |    -1.54 /  85% wst     -31
+   14:30 106 |    +0.50 /  89% wst     -37 |    -0.61 /  88% wst     -23 |    +0.06 /  89% wst     -23
+   15:30 106 |    +0.32 /  92% wst     -40 |    -0.54 /  91% wst     -37 |    -0.14 /  92% wst     -37
+   16:30 106 |    -0.89 /  86% wst     -40 |    -0.42 /  90% wst     -38 |    -0.85 /  87% wst     -38
+   17:30 106 |    -0.98 /  72% wst     -35 |    -4.08 /  11% wst     -23 |    -3.01 /  70% wst     -23
+
+long straddle ATM
+   IST   n   |                   hold |         tgt10%+stop50% |         tgt50%+stop50%
+   18:30 106 |    -1.89 /  39% wst    -181 |    -4.89 /  34% wst    -100 |    -0.61 /  34% wst    -100
+   19:30 106 |    -2.79 /  38% wst    -151 |    -4.23 /  34% wst    -100 |    -1.20 /  34% wst    -100
+   20:30 106 |   -11.27 /  29% wst    -155 |   -13.35 /  25% wst     -86 |   -10.85 /  25% wst     -86
+   21:30 106 |   -16.20 /  30% wst    -137 |   -16.12 /  24% wst     -90 |   -15.29 /  23% wst     -90
+   22:30 106 |    -9.34 /  31% wst    -135 |    -8.00 /  29% wst     -85 |    -8.27 /  28% wst     -85
+   23:30 106 |    -4.80 /  28% wst    -129 |    -5.83 /  27% wst     -79 |    -5.26 /  26% wst     -79
+   00:30 106 |    -6.51 /  32% wst    -137 |    -3.30 /  31% wst     -75 |    -2.92 /  30% wst     -75
+   01:30 106 |    -4.66 /  32% wst    -111 |    +0.51 /  32% wst     -72 |    -0.47 /  31% wst     -72
+   02:30 106 |    -6.13 /  33% wst    -135 |    -6.97 /  29% wst     -74 |    -5.13 /  29% wst     -74
+   03:30 106 |    -5.22 /  32% wst    -140 |    -4.30 /  29% wst     -78 |    -4.77 /  28% wst     -78
+   04:30 106 |    -3.36 /  34% wst    -108 |    -5.63 /  29% wst     -72 |    -6.24 /  29% wst     -72
+   05:30 106 |    -1.05 /  35% wst     -98 |    +0.45 /  32% wst     -81 |    -1.81 /  31% wst     -81
+   06:30 106 |    -1.44 /  40% wst    -126 |    +1.44 /  36% wst     -82 |    -0.13 /  36% wst     -82
+   07:30 105 |    -6.14 /  33% wst    -100 |    -2.04 /  31% wst     -77 |    -5.36 /  31% wst     -77
+   08:30 106 |    -5.37 /  33% wst    -107 |    -2.23 /  32% wst     -62 |    -4.45 /  31% wst     -62
+   09:30 106 |    -7.08 /  32% wst     -84 |    -5.76 /  29% wst     -58 |    -5.65 /  29% wst     -58
+   10:30 106 |    -3.95 /  37% wst     -78 |    -2.01 /  34% wst     -46 |    -2.26 /  34% wst     -46
+   11:30 106 |    -2.72 /  34% wst     -73 |    -0.56 /  30% wst     -44 |    -1.97 /  30% wst     -44
+   12:30 106 |    -3.58 /  30% wst     -73 |    -1.80 /  26% wst     -45 |    -3.71 /  26% wst     -45
+   13:30 106 |    -3.37 /  37% wst     -75 |    -2.51 /  35% wst     -71 |    -2.36 /  35% wst     -71
+   14:30 106 |    -6.98 /  27% wst     -48 |    -7.53 /  22% wst     -51 |    -7.53 /  22% wst     -51
+   15:30 106 |    -8.18 /  18% wst     -40 |    -9.57 /  12% wst     -37 |    -9.57 /  12% wst     -37
+   16:30 106 |    -1.42 /  26% wst     -23 |    -1.94 /  23% wst     -18 |    -1.94 /  23% wst     -18
+   17:30 106 |    -0.17 /  37% wst    -145 |    -7.12 /  33% wst    -111 |    -0.26 /  33% wst    -111
+
+==============================================================================================================
+C. LADDER from the 21:30 IST entry: add the same structure on the new ATM strike when the price is `dist` away from
+   every centre held (up to 4 in all, none in the last two hours). Per expiry day, net of fees.
+==============================================================================================================
+
+iron butterfly 600 (sell ATM straddle, buy wings), dist 400: days 106, days the ladder added 97 (92%), mean trades per day 3.08
+   hold               single: n= 106 mean=  -2.21 total=    -234 win= 41% worst=   -31.3 maxDD=    -442
+                      ladder: n= 106 mean= -13.08 total=   -1387 win= 41% worst=  -101.7 maxDD=   -1572
+                      on days it added -> first trade: mean -4.53; the added trades together: mean -11.88, positive on 37% of those days; two or more trades of the day positive on 29%
+   tgt10%+stop50%     single: n= 106 mean=  -3.93 total=    -416 win= 18% worst=   -18.4 maxDD=    -423
+                      ladder: n= 106 mean= -21.28 total=   -2255 win= 12% worst=   -63.4 maxDD=   -2263
+                      on days it added -> first trade: mean -4.29; the added trades together: mean -18.96, positive on 13% of those days; two or more trades of the day positive on 7%
+   tgt50%+stop50%     single: n= 106 mean=  -4.70 total=    -498 win= 30% worst=   -22.4 maxDD=    -631
+                      ladder: n= 106 mean= -22.15 total=   -2348 win= 29% worst=   -81.3 maxDD=   -2461
+                      on days it added -> first trade: mean -6.57; the added trades together: mean -19.07, positive on 23% of those days; two or more trades of the day positive on 13%
+
+iron butterfly 600 (sell ATM straddle, buy wings), dist 600: days 106, days the ladder added 80 (75%), mean trades per day 2.31
+   hold               single: n= 106 mean=  -2.21 total=    -234 win= 41% worst=   -31.3 maxDD=    -442
+                      ladder: n= 106 mean= -10.26 total=   -1088 win= 39% worst=  -109.3 maxDD=   -1280
+                      on days it added -> first trade: mean -8.74; the added trades together: mean -10.67, positive on 38% of those days; two or more trades of the day positive on 9%
+   tgt10%+stop50%     single: n= 106 mean=  -3.93 total=    -416 win= 18% worst=   -18.4 maxDD=    -423
+                      ladder: n= 106 mean= -15.17 total=   -1608 win= 19% worst=   -68.1 maxDD=   -1617
+                      on days it added -> first trade: mean -5.06; the added trades together: mean -14.89, positive on 18% of those days; two or more trades of the day positive on 4%
+   tgt50%+stop50%     single: n= 106 mean=  -4.70 total=    -498 win= 30% worst=   -22.4 maxDD=    -631
+                      ladder: n= 106 mean= -15.43 total=   -1636 win= 39% worst=   -82.9 maxDD=   -1757
+                      on days it added -> first trade: mean -10.35; the added trades together: mean -14.22, positive on 26% of those days; two or more trades of the day positive on 1%
+
+iron butterfly 600 (sell ATM straddle, buy wings), dist 1000: days 106, days the ladder added 46 (43%), mean trades per day 1.61
+   hold               single: n= 106 mean=  -2.21 total=    -234 win= 41% worst=   -31.3 maxDD=    -442
+                      ladder: n= 106 mean=  -6.70 total=    -710 win= 42% worst=   -92.0 maxDD=    -865
+                      on days it added -> first trade: mean -10.00; the added trades together: mean -10.35, positive on 37% of those days; two or more trades of the day positive on 0%
+   tgt10%+stop50%     single: n= 106 mean=  -3.93 total=    -416 win= 18% worst=   -18.4 maxDD=    -423
+                      ladder: n= 106 mean= -10.61 total=   -1124 win= 16% worst=   -58.8 maxDD=   -1130
+                      on days it added -> first trade: mean -7.76; the added trades together: mean -15.39, positive on 11% of those days; two or more trades of the day positive on 0%
+   tgt50%+stop50%     single: n= 106 mean=  -4.70 total=    -498 win= 30% worst=   -22.4 maxDD=    -631
+                      ladder: n= 106 mean= -11.56 total=   -1226 win= 32% worst=   -72.6 maxDD=   -1338
+                      on days it added -> first trade: mean -12.10; the added trades together: mean -15.82, positive on 17% of those days; two or more trades of the day positive on 0%
+
+iron condor 400/800, dist 400: days 105, days the ladder added 95 (90%), mean trades per day 3.05
+   hold               single: n= 105 mean=  -1.72 total=    -181 win= 53% worst=   -29.3 maxDD=    -314
+                      ladder: n= 105 mean= -10.94 total=   -1148 win= 48% worst=  -113.3 maxDD=   -1345
+                      on days it added -> first trade: mean -3.03; the added trades together: mean -10.19, positive on 48% of those days; two or more trades of the day positive on 61%
+   tgt10%+stop50%     single: n= 105 mean=  -4.21 total=    -442 win=  1% worst=   -18.0 maxDD=    -442
+                      ladder: n= 105 mean= -17.37 total=   -1824 win=  1% worst=   -71.6 maxDD=   -1824
+                      on days it added -> first trade: mean -4.53; the added trades together: mean -14.55, positive on 6% of those days; two or more trades of the day positive on 1%
+   tgt50%+stop50%     single: n= 105 mean=  -2.16 total=    -227 win= 62% worst=   -23.3 maxDD=    -282
+                      ladder: n= 105 mean= -14.91 total=   -1566 win= 40% worst=   -81.8 maxDD=   -1623
+                      on days it added -> first trade: mean -2.84; the added trades together: mean -14.09, positive on 38% of those days; two or more trades of the day positive on 64%
+
+iron condor 400/800, dist 600: days 105, days the ladder added 79 (75%), mean trades per day 2.31
+   hold               single: n= 105 mean=  -1.72 total=    -181 win= 53% worst=   -29.3 maxDD=    -314
+                      ladder: n= 105 mean=  -8.86 total=    -930 win= 50% worst=  -118.2 maxDD=   -1028
+                      on days it added -> first trade: mean -6.12; the added trades together: mean -9.48, positive on 49% of those days; two or more trades of the day positive on 33%
+   tgt10%+stop50%     single: n= 105 mean=  -4.21 total=    -442 win=  1% worst=   -18.0 maxDD=    -442
+                      ladder: n= 105 mean= -12.60 total=   -1323 win=  2% worst=   -72.8 maxDD=   -1323
+                      on days it added -> first trade: mean -5.01; the added trades together: mean -11.15, positive on 13% of those days; two or more trades of the day positive on 0%
+   tgt50%+stop50%     single: n= 105 mean=  -2.16 total=    -227 win= 62% worst=   -23.3 maxDD=    -282
+                      ladder: n= 105 mean=  -9.84 total=   -1034 win= 52% worst=   -93.7 maxDD=   -1096
+                      on days it added -> first trade: mean -4.51; the added trades together: mean -10.21, positive on 46% of those days; two or more trades of the day positive on 46%
+
+iron condor 400/800, dist 1000: days 105, days the ladder added 45 (43%), mean trades per day 1.60
+   hold               single: n= 105 mean=  -1.72 total=    -181 win= 53% worst=   -29.3 maxDD=    -314
+                      ladder: n= 105 mean=  -6.23 total=    -654 win= 48% worst=   -89.1 maxDD=    -782
+                      on days it added -> first trade: mean -9.59; the added trades together: mean -10.51, positive on 42% of those days; two or more trades of the day positive on 9%
+   tgt10%+stop50%     single: n= 105 mean=  -4.21 total=    -442 win=  1% worst=   -18.0 maxDD=    -442
+                      ladder: n= 105 mean=  -8.85 total=    -929 win=  2% worst=   -64.3 maxDD=    -929
+                      on days it added -> first trade: mean -6.50; the added trades together: mean -10.82, positive on 16% of those days; two or more trades of the day positive on 0%
+   tgt50%+stop50%     single: n= 105 mean=  -2.16 total=    -227 win= 62% worst=   -23.3 maxDD=    -282
+                      ladder: n= 105 mean=  -7.18 total=    -753 win= 54% worst=   -64.3 maxDD=    -804
+                      on days it added -> first trade: mean -10.81; the added trades together: mean -11.70, positive on 33% of those days; two or more trades of the day positive on 4%
+
+short strangle 600 (naked), dist 400: days 106, days the ladder added 97 (92%), mean trades per day 3.08
+   hold               single: n= 106 mean=  +7.02 total=    +744 win= 76% worst=  -349.5 maxDD=    -513
+                      ladder: n= 106 mean=  -0.09 total=     -10 win= 78% worst= -1117.9 maxDD=   -2130
+                      on days it added -> first trade: mean +6.46; the added trades together: mean -7.78, positive on 75% of those days; two or more trades of the day positive on 86%
+   each option stop 2x single: n= 106 mean=  +7.07 total=    +750 win= 44% worst=   -60.5 maxDD=    -127
+                      ladder: n= 106 mean=  +7.18 total=    +761 win= 58% worst=  -168.7 maxDD=    -369
+                      on days it added -> first trade: mean +6.81; the added trades together: mean +0.12, positive on 42% of those days; two or more trades of the day positive on 41%
+   tgt50%+stop200%    single: n= 106 mean=  +4.22 total=    +447 win= 85% worst=  -172.2 maxDD=    -430
+                      ladder: n= 106 mean=  -6.37 total=    -675 win= 68% worst=  -536.8 maxDD=   -1919
+                      on days it added -> first trade: mean +4.05; the added trades together: mean -11.57, positive on 62% of those days; two or more trades of the day positive on 89%
+
+short strangle 600 (naked), dist 600: days 106, days the ladder added 80 (75%), mean trades per day 2.31
+   hold               single: n= 106 mean=  +7.02 total=    +744 win= 76% worst=  -349.5 maxDD=    -513
+                      ladder: n= 106 mean=  -3.62 total=    -383 win= 82% worst= -1047.7 maxDD=   -1619
+                      on days it added -> first trade: mean +2.04; the added trades together: mean -14.09, positive on 74% of those days; two or more trades of the day positive on 76%
+   each option stop 2x single: n= 106 mean=  +7.07 total=    +750 win= 44% worst=   -60.5 maxDD=    -127
+                      ladder: n= 106 mean=  +2.12 total=    +225 win= 49% worst=  -267.8 maxDD=    -362
+                      on days it added -> first trade: mean +4.01; the added trades together: mean -6.56, positive on 38% of those days; two or more trades of the day positive on 26%
+   tgt50%+stop200%    single: n= 106 mean=  +4.22 total=    +447 win= 85% worst=  -172.2 maxDD=    -430
+                      ladder: n= 106 mean=  -3.26 total=    -345 win= 78% worst=  -414.7 maxDD=   -1440
+                      on days it added -> first trade: mean +2.18; the added trades together: mean -9.90, positive on 70% of those days; two or more trades of the day positive on 82%
+
+short strangle 600 (naked), dist 1000: days 106, days the ladder added 46 (43%), mean trades per day 1.61
+   hold               single: n= 106 mean=  +7.02 total=    +744 win= 76% worst=  -349.5 maxDD=    -513
+                      ladder: n= 106 mean=  -0.82 total=     -87 win= 78% worst=  -650.9 maxDD=   -1029
+                      on days it added -> first trade: mean -20.95; the added trades together: mean -18.06, positive on 63% of those days; two or more trades of the day positive on 41%
+   each option stop 2x single: n= 106 mean=  +7.07 total=    +750 win= 44% worst=   -60.5 maxDD=    -127
+                      ladder: n= 106 mean=  +0.32 total=     +34 win= 48% worst=  -213.1 maxDD=    -367
+                      on days it added -> first trade: mean -8.35; the added trades together: mean -15.56, positive on 39% of those days; two or more trades of the day positive on 9%
+   tgt50%+stop200%    single: n= 106 mean=  +4.22 total=    +447 win= 85% worst=  -172.2 maxDD=    -430
+                      ladder: n= 106 mean=  -0.35 total=     -37 win= 80% worst=  -313.2 maxDD=    -578
+                      on days it added -> first trade: mean -12.13; the added trades together: mean -10.53, positive on 67% of those days; two or more trades of the day positive on 59%
+
+long call butterfly 400, dist 400: days 106, days the ladder added 97 (92%), mean trades per day 3.08
+   hold               single: n= 106 mean=  -5.01 total=    -531 win= 29% worst=   -21.2 maxDD=    -631
+                      ladder: n= 106 mean= -19.08 total=   -2022 win= 24% worst=   -74.4 maxDD=   -2079
+                      on days it added -> first trade: mean -6.73; the added trades together: mean -15.37, positive on 27% of those days; two or more trades of the day positive on 6%
+   tgt10%+stop50%     single: n= 106 mean=  -7.18 total=    -761 win=  1% worst=   -18.0 maxDD=    -761
+                      ladder: n= 106 mean= -25.90 total=   -2745 win=  0% worst=   -56.8 maxDD=   -2745
+                      on days it added -> first trade: mean -7.61; the added trades together: mean -20.46, positive on 1% of those days; two or more trades of the day positive on 0%
+   tgt50%+stop50%     single: n= 106 mean=  -6.85 total=    -726 win= 20% worst=   -18.0 maxDD=    -765
+                      ladder: n= 106 mean= -25.37 total=   -2689 win= 12% worst=   -56.8 maxDD=   -2716
+                      on days it added -> first trade: mean -8.49; the added trades together: mean -20.24, positive on 12% of those days; two or more trades of the day positive on 2%
+
+long call butterfly 400, dist 600: days 106, days the ladder added 81 (76%), mean trades per day 2.34
+   hold               single: n= 106 mean=  -5.01 total=    -531 win= 29% worst=   -21.2 maxDD=    -631
+                      ladder: n= 106 mean= -14.99 total=   -1589 win= 25% worst=   -75.0 maxDD=   -1702
+                      on days it added -> first trade: mean -8.84; the added trades together: mean -13.06, positive on 21% of those days; two or more trades of the day positive on 0%
+   tgt10%+stop50%     single: n= 106 mean=  -7.18 total=    -761 win=  1% worst=   -18.0 maxDD=    -761
+                      ladder: n= 106 mean= -19.20 total=   -2035 win=  1% worst=   -58.0 maxDD=   -2035
+                      on days it added -> first trade: mean -8.09; the added trades together: mean -15.74, positive on 1% of those days; two or more trades of the day positive on 0%
+   tgt50%+stop50%     single: n= 106 mean=  -6.85 total=    -726 win= 20% worst=   -18.0 maxDD=    -765
+                      ladder: n= 106 mean= -19.26 total=   -2042 win= 20% worst=   -58.0 maxDD=   -2081
+                      on days it added -> first trade: mean -10.04; the added trades together: mean -16.25, positive on 11% of those days; two or more trades of the day positive on 0%
+
+long call butterfly 400, dist 1000: days 106, days the ladder added 46 (43%), mean trades per day 1.63
+   hold               single: n= 106 mean=  -5.01 total=    -531 win= 29% worst=   -21.2 maxDD=    -631
+                      ladder: n= 106 mean= -10.83 total=   -1148 win= 29% worst=   -61.0 maxDD=   -1247
+                      on days it added -> first trade: mean -9.27; the added trades together: mean -13.40, positive on 20% of those days; two or more trades of the day positive on 0%
+   tgt10%+stop50%     single: n= 106 mean=  -7.18 total=    -761 win=  1% worst=   -18.0 maxDD=    -761
+                      ladder: n= 106 mean= -13.83 total=   -1466 win=  1% worst=   -52.7 maxDD=   -1466
+                      on days it added -> first trade: mean -9.78; the added trades together: mean -15.34, positive on 0% of those days; two or more trades of the day positive on 0%
+   tgt50%+stop50%     single: n= 106 mean=  -6.85 total=    -726 win= 20% worst=   -18.0 maxDD=    -765
+                      ladder: n= 106 mean= -13.73 total=   -1455 win= 19% worst=   -52.7 maxDD=   -1495
+                      on days it added -> first trade: mean -10.67; the added trades together: mean -15.86, positive on 7% of those days; two or more trades of the day positive on 0%
+
+long call butterfly 800, dist 400: days 105, days the ladder added 95 (90%), mean trades per day 3.05
+   hold               single: n= 105 mean=  -2.23 total=    -234 win= 46% worst=   -41.0 maxDD=    -513
+                      ladder: n= 105 mean= -17.85 total=   -1875 win= 46% worst=  -165.1 maxDD=   -2185
+                      on days it added -> first trade: mean -5.23; the added trades together: mean -17.26, positive on 38% of those days; two or more trades of the day positive on 42%
+   tgt10%+stop50%     single: n= 105 mean=  -4.14 total=    -435 win= 16% worst=   -26.1 maxDD=    -437
+                      ladder: n= 105 mean= -25.29 total=   -2656 win=  8% worst=   -91.2 maxDD=   -2657
+                      on days it added -> first trade: mean -4.47; the added trades together: mean -23.37, positive on 5% of those days; two or more trades of the day positive on 5%
+   tgt50%+stop50%     single: n= 105 mean=  -5.99 total=    -629 win= 37% worst=   -38.5 maxDD=    -767
+                      ladder: n= 105 mean= -26.40 total=   -2772 win= 33% worst=  -119.8 maxDD=   -2892
+                      on days it added -> first trade: mean -8.26; the added trades together: mean -22.56, positive on 28% of those days; two or more trades of the day positive on 26%
+
+long call butterfly 800, dist 600: days 105, days the ladder added 79 (75%), mean trades per day 2.31
+   hold               single: n= 105 mean=  -2.23 total=    -234 win= 46% worst=   -41.0 maxDD=    -513
+                      ladder: n= 105 mean= -14.15 total=   -1486 win= 44% worst=  -174.5 maxDD=   -1723
+                      on days it added -> first trade: mean -10.19; the added trades together: mean -15.85, positive on 39% of those days; two or more trades of the day positive on 20%
+   tgt10%+stop50%     single: n= 105 mean=  -4.14 total=    -435 win= 16% worst=   -26.1 maxDD=    -437
+                      ladder: n= 105 mean= -17.90 total=   -1880 win= 11% worst=   -96.3 maxDD=   -1882
+                      on days it added -> first trade: mean -4.91; the added trades together: mean -18.29, positive on 14% of those days; two or more trades of the day positive on 4%
+   tgt50%+stop50%     single: n= 105 mean=  -5.99 total=    -629 win= 37% worst=   -38.5 maxDD=    -767
+                      ladder: n= 105 mean= -20.10 total=   -2110 win= 40% worst=  -120.9 maxDD=   -2210
+                      on days it added -> first trade: mean -12.20; the added trades together: mean -18.75, positive on 29% of those days; two or more trades of the day positive on 10%
+
+long call butterfly 800, dist 1000: days 105, days the ladder added 45 (43%), mean trades per day 1.60
+   hold               single: n= 105 mean=  -2.23 total=    -234 win= 46% worst=   -41.0 maxDD=    -513
+                      ladder: n= 105 mean=  -9.65 total=   -1014 win= 44% worst=  -125.9 maxDD=   -1238
+                      on days it added -> first trade: mean -13.36; the added trades together: mean -17.32, positive on 33% of those days; two or more trades of the day positive on 0%
+   tgt10%+stop50%     single: n= 105 mean=  -4.14 total=    -435 win= 16% worst=   -26.1 maxDD=    -437
+                      ladder: n= 105 mean= -11.80 total=   -1239 win= 15% worst=   -80.5 maxDD=   -1241
+                      on days it added -> first trade: mean -8.26; the added trades together: mean -17.86, positive on 7% of those days; two or more trades of the day positive on 0%
+   tgt50%+stop50%     single: n= 105 mean=  -5.99 total=    -629 win= 37% worst=   -38.5 maxDD=    -767
+                      ladder: n= 105 mean= -14.75 total=   -1548 win= 39% worst=   -82.7 maxDD=   -1694
+                      on days it added -> first trade: mean -15.49; the added trades together: mean -20.43, positive on 22% of those days; two or more trades of the day positive on 0%
+
+==============================================================================================================
+D. MONTH BY MONTH, 21:30 IST entry: total net per month, hold | alt = each option stopped at 2x (strangles), target 50% + stop 50% (the rest)
+==============================================================================================================
+iron butterfly 600 (sell ATM straddle, buy wings)    2026-08 n=24 hold    +109 alt     -45 | 2026-09 n=30 hold    -162 alt    -239 | 2026-10 n=31 hold    -180 alt    -186 | 2026-11 n=21 hold      -1 alt     -28
+iron butterfly 1000                                  2026-08 n=24 hold    +211 alt      +1 | 2026-09 n=30 hold     -22 alt     +59 | 2026-10 n=31 hold    -186 alt    -193 | 2026-11 n=20 hold     +79 alt     -50
+iron condor 400/800                                  2026-08 n=24 hold     +34 alt     -60 | 2026-09 n=30 hold     -61 alt     -31 | 2026-10 n=31 hold    -154 alt    -117 | 2026-11 n=20 hold      -0 alt     -18
+short strangle 600 (naked)                           2026-08 n=24 hold     -34 alt     -60 | 2026-09 n=30 hold    +472 alt    +466 | 2026-10 n=31 hold    -334 alt     +22 | 2026-11 n=21 hold    +641 alt    +321
+short strangle 1000 (naked)                          2026-08 n=24 hold    -112 alt     -43 | 2026-09 n=30 hold    +383 alt    +383 | 2026-10 n=31 hold    -271 alt     +96 | 2026-11 n=20 hold    +469 alt    +214
+long call butterfly 200                              2026-08 n=24 hold     -65 alt    -159 | 2026-09 n=30 hold    -233 alt    -269 | 2026-10 n=31 hold    -229 alt    -260 | 2026-11 n=21 hold    -134 alt    -181
+long call butterfly 400                              2026-08 n=24 hold      +5 alt    -136 | 2026-09 n=30 hold    -230 alt    -266 | 2026-10 n=31 hold    -234 alt    -218 | 2026-11 n=21 hold     -72 alt    -106
+long call butterfly 800                              2026-08 n=24 hold    +118 alt    -132 | 2026-09 n=30 hold    -146 alt    -231 | 2026-10 n=31 hold    -245 alt    -232 | 2026-11 n=20 hold     +38 alt     -33
+bull call spread ATM/+400                            2026-08 n=24 hold    -118 alt    -120 | 2026-09 n=30 hold     -63 alt     -81 | 2026-10 n=31 hold    -111 alt    -210 | 2026-11 n=21 hold    -211 alt    -157
+bear put spread ATM/-400                             2026-08 n=24 hold    -159 alt    -138 | 2026-09 n=30 hold    -125 alt    -245 | 2026-10 n=31 hold     -84 alt    -120 | 2026-11 n=21 hold      +3 alt     -70
+bull put credit spread -400/-800                     2026-08 n=24 hold     +46 alt     +29 | 2026-09 n=30 hold     -40 alt      +5 | 2026-10 n=31 hold     -64 alt    -132 | 2026-11 n=20 hold     -92 alt    -111
+bear call credit spread +400/+800                    2026-08 n=24 hold     -12 alt      -1 | 2026-09 n=30 hold     -20 alt     -54 | 2026-10 n=31 hold     -89 alt     -84 | 2026-11 n=21 hold    +107 alt     +58
+long straddle ATM                                    2026-08 n=24 hold    -301 alt    -268 | 2026-09 n=30 hold    -671 alt    -703 | 2026-10 n=31 hold    +151 alt    +176 | 2026-11 n=21 hold    -896 alt    -827
