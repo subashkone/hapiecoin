@@ -45,10 +45,11 @@ export function registerBillingRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, n
     const at = now();
     const { effective, entitlements } = await entitlementsFor(deps, userId, at);
     const sub = effective.subscription;
-    const [u] = await db.select({ active: users.active }).from(users).where(eq(users.id, userId)).limit(1);
+    const [u] = await db.select({ active: users.active, role: users.role }).from(users).where(eq(users.id, userId)).limit(1);
     const menu = effective.plan && effective.plan.menuItemIds.length ? await db.select({ name: menuItems.displayName }).from(menuItems).where(and(inArray(menuItems.id, effective.plan.menuItemIds), eq(menuItems.active, true))).orderBy(asc(menuItems.displayName)) : [];
     return {
-      plan: planState(sub, at),
+      // ADR-107: the same answer GET /v1/plan gives (a running subscription, a Free plan on offer, or an admin)
+      plan: { ...planState(sub, at), access: u?.role === "admin" || sub !== undefined || effective.plan !== undefined },
       current: sub ? { id: sub.id, planId: sub.planId, planName: sub.planName, interval: sub.interval, status: sub.status, startsAt: sub.startsAt.toISOString(), expiresAt: sub.expiresAt?.toISOString() ?? null, priceInr: sub.priceInr, paidInr: sub.paidInr, currency: sub.currency } : null,
       effectivePlan: effective.plan ? toPlan(effective.plan) : null,
       entitlements,

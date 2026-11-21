@@ -25,6 +25,7 @@ describe("HC-AC-003..015 My plan", () => {
     const u = userEvent.setup();
     await waitFor(() => expect(screen.getByTestId("subscription-page").dataset["state"]).toBe("ready"));
     expect(screen.getByTestId("sub-none").textContent).toContain("No Active Subscription");
+    expect(screen.queryByTestId("sub-need-plan")).toBeNull(); // a Free plan is on offer: nothing is closed
     const limits = screen.getByTestId("sub-limits");
     const paper = within(limits).getAllByTestId("limit-row").find((r) => r.dataset["key"] === "paper_trading")!;
     expect(paper.textContent).toContain("3 / month");
@@ -113,5 +114,20 @@ describe("HC-AC-008 / HC-AC-009 / HC-AC-064 current-plan actions and error state
     renderWithProviders(<SubscriptionPage />);
     await waitFor(() => expect(screen.getByTestId("subscription-page").dataset["state"]).toBe("error"));
     expect(screen.getByText("Retry")).toBeTruthy();
+  });
+});
+
+describe("HC-AC-075 no Free plan on offer (ADR-107)", () => {
+  it("a user without a plan is told one is needed and sees only the paid plans; a subscriber is not told", async () => {
+    mock.state.plans.find((p) => p.name === "Free")!.active = false;
+    const first = renderWithProviders(<SubscriptionPage />);
+    await waitFor(() => expect(screen.getByTestId("subscription-page").dataset["state"]).toBe("ready"));
+    expect(screen.getByTestId("sub-need-plan").textContent).toContain("HapieCoin needs an active plan");
+    expect(screen.getAllByTestId("plan-card").map((c) => c.dataset["plan"])).toEqual(["Basic", "Pro", "Elite"]);
+    first.unmount();
+    mock.state.accounts.get(EMAIL)!.subscription = { id: "sub_gate", planId: "pln_pro", interval: "monthly", startsAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 20 * 86_400_000).toISOString(), priceInr: "999", paidInr: "999" };
+    renderWithProviders(<SubscriptionPage />);
+    await waitFor(() => expect(screen.getByTestId("subscription-page").dataset["state"]).toBe("ready"));
+    expect(screen.queryByTestId("sub-need-plan")).toBeNull();
   });
 });

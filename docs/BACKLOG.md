@@ -19,7 +19,7 @@ Three sources, kept in sync with their originals: the roadmap items still open (
 | 30 | AI: opportunity radar, language features, journal coach, advisor | Five phases in docs/research/ai-leverage.md: AI-1 radar with backtested setups and expected-value scores on template cards (no language model); AI-2 natural-language alerts and rules plus the assistant on the guide corpus; AI-3 weekly journal coach; AI-4 conversational advisor using the wizard, pricer, backtest and positions as tools; AI-5 volatility regime model and risk guardian. | Feature freeze; the radar needs 30+ recorded days of chains (accumulating), the language features need an API key in the secret store and a legal read of the copy. |
 | 31 | Strategy playbooks | Eight rule-based playbooks on templates already in the catalogue (docs/research/strategy-playbooks.md): expiry-week credit spread, pin butterfly, front-week calendar, trend with defined risk, volatility squeeze breakout, trend financed by skew, premium harvest, covered call. Needs a playbook object, trend and volatility signals from recorded marks, entry conditions in the backtest, a track record per card. First three: premium harvest, expiry-week credit spread, trend with defined risk. | Feature freeze; each playbook ships only with its backtest on our own chains. |
 
-## 2. Open review gaps (76 of 143)
+## 2. Open review gaps (77 of 144)
 
 Every row is copied in full from GAPS.md so this page stands alone. Priority is a recommendation for after launch: **High** touches money, safety or a promise the product makes; **Medium (data)** needs a data feed or a spend decision; **Low (tests)** is test hygiene.
 
@@ -203,6 +203,12 @@ Every row is copied in full from GAPS.md so this page stands alone. Priority is 
 | # | Gap | Source | Status | Priority |
 |---|---|---|---|---|
 | 100 | The pause stamp (`MindfulGate`) is in memory per API replica, so a second replica asks the trader to preview again (a Redis stamp keyed like the rate store would share it); the day figure re-reads the marks per live strategy on every preview (a per-user cached row would make it one read); `POST /strategies/{id}/pnl` accepts any day from the client, so the trader's own browser (a skewed clock) or script can move the baseline the server subtracts (a self-inflicted skip, like turning the setting off; bounding the day to the server's today breaks the browser's write at the UTC boundary); an adjustment that mixes a trim with an add waits as a whole; a partially filled leg is valued at its entry price like every open leg; the mock's day figure is a per-account knob with no closed-today share; no e2e (the server pause is exercised through the mock in unit tests only). | ADR-084, 13 Sep 2026 | open | High |
+
+### No free tier: the Desk needs a plan
+
+| # | Gap | Source | Status | Priority |
+|---|---|---|---|---|
+| 144 | Left out of the first version: the gate is on the Desk page, not on the data behind it, so the price feed (gateway) and the read-only market routes still answer a signed-in user without a plan; Market Analytics and the Terminal are open to everyone as before; the redirect itself lives in a server layout that the unit suites cannot reach and no browser test switches the Free plan off yet (the API answer, the page, the banner and the note are unit-tested); a user is not e-mailed when an admin adds their plan; the payment note is free text in the audit log, not a payment record, so it does not appear in the user's payment history or on an invoice; the Free plan is switched off by hand in Admin → Plans on each environment. | ADR-107, 21 Nov 2026 | open | High |
 
 ### Observability
 

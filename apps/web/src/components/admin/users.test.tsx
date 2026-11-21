@@ -151,9 +151,12 @@ describe("HC-AD-090, 101..107 drawer and HC-AD-108 invite", () => {
     await u.click(screen.getByTestId("set-plan-save"));
     expect(screen.getByTestId("set-plan-error").textContent).toContain("Pick a plan");
     await u.selectOptions(screen.getByTestId("set-plan-plan"), "pln_pro");
+    // HC-AD-130: how the user paid outside the app travels with the grant
+    await u.type(screen.getByTestId("set-plan-note"), "  UPI ref 4411 ");
     await u.click(screen.getByTestId("set-plan-save"));
     await waitFor(() => expect(screen.queryByTestId("set-plan-dialog")).toBeNull());
     await waitFor(() => expect(screen.getByTestId("drawer-pill-plan").textContent).toBe("Pro"));
+    expect(mock.state.accounts.get("ria@example.com")!.history[0]).toMatchObject({ action: "admin.user.set_plan", after: { note: "UPI ref 4411" } });
     await waitFor(() => expect(screen.getByTestId("drawer-sub-history")).toBeTruthy());
     // referrals, limits, lots, history
     await u.click(screen.getByTestId("drawer-tab-referrals"));
@@ -171,6 +174,7 @@ describe("HC-AD-090, 101..107 drawer and HC-AD-108 invite", () => {
     await waitFor(() => expect(mock.state.accounts.get("ria@example.com")!.settings.lotSizes.ETH).toBe("0.02"));
     await u.click(screen.getByTestId("drawer-tab-history"));
     await waitFor(() => expect(screen.getByTestId("drawer-history").textContent).toContain("set_plan"));
+    expect(screen.getByTestId("history-note").textContent).toBe("UPI ref 4411");
     await u.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByTestId("user-drawer")).toBeNull());
     // the acting admin sees no self-destructive buttons

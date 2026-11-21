@@ -16,6 +16,7 @@ export function SetPlanDialog({ ids, who, onOpenChange }: { ids: string[]; who: 
   const active = (plans.data ?? []).filter((p) => p.active);
   const [planId, setPlanId] = useState("");
   const [interval, setInterval] = useState<BillingInterval>("yearly");
+  const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const one = useSetPlan();
   const many = useBulkPlan();
@@ -29,8 +30,9 @@ export function SetPlanDialog({ ids, who, onOpenChange }: { ids: string[]; who: 
       onOpenChange(false);
     };
     const fail = (e: Error) => setError(e.message);
-    if (ids.length === 1) one.mutate({ id: ids[0]!, body: { planId: plan.id, interval } }, { onSuccess: (r) => done(`${r.name} · ${plan.name} ${INTERVAL_LABELS[interval].toLowerCase()} · ₹0`), onError: fail });
-    else many.mutate({ ids, planId: plan.id, interval }, { onSuccess: (r) => done(`${r.updated} ${r.updated === 1 ? "user" : "users"} · ${r.planName} ${INTERVAL_LABELS[interval].toLowerCase()} · ₹0`), onError: fail });
+    const paid = note.trim() ? { note: note.trim() } : {};
+    if (ids.length === 1) one.mutate({ id: ids[0]!, body: { planId: plan.id, interval, ...paid } }, { onSuccess: (r) => done(`${r.name} · ${plan.name} ${INTERVAL_LABELS[interval].toLowerCase()} · ₹0`), onError: fail });
+    else many.mutate({ ids, planId: plan.id, interval, ...paid }, { onSuccess: (r) => done(`${r.updated} ${r.updated === 1 ? "user" : "users"} · ${r.planName} ${INTERVAL_LABELS[interval].toLowerCase()} · ₹0`), onError: fail });
   };
   return (
     <Dialog open onOpenChange={onOpenChange}>
@@ -54,6 +56,11 @@ export function SetPlanDialog({ ids, who, onOpenChange }: { ids: string[]; who: 
             </select>
           </label>
           {plan ? <p className="micro" data-testid="set-plan-summary">List price {fmtInr(plan.intervals[interval].priceInr)} · charged ₹0 · {Number(plan.intervals[interval].priceInr) === 0 ? "never expires" : `expires after ${INTERVAL_LABELS[interval].toLowerCase() === "monthly" ? "30" : interval === "quarterly" ? "90" : "360"} days`}</p> : null}
+          <label className="block">
+            <span className="micro">Payment note (optional)</span>
+            <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder="How they paid, e.g. UPI ref 1234" className={selectClass} aria-label="Payment note" data-testid="set-plan-note" />
+            <span className="micro mt-1 block">Kept with this change in the user's History.</span>
+          </label>
           {error ? <p className="text-loss" role="alert" data-testid="set-plan-error">{error}</p> : null}
         </DialogBody>
         <DialogFooter>

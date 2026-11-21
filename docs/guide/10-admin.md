@@ -1,6 +1,6 @@
 # Admin console
 
-Part of the [HapieCoin feature guide](README.md). 129 traced features on 8 screens; 127 built and tested, 2 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 130 traced features on 8 screens; 128 built and tested, 2 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -224,4 +224,5 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-AD-108 | Invite user dialog (mock) | Header primary action: name, email (validated, must be unique) and plan; creates the user in CG.mock.users and toasts Invitation sent | built | e2e (Playwright) |
 | HC-AD-109 | Hideable extra columns | Mobile and Last login are available in the Columns menu but hidden by default | built | e2e (Playwright) · api contract |
 | HC-AD-129 | 2FA column: whether the account has the authenticator on | AdminUserRow.twoFactorEnabled from users.two_factor_enabled; a 2FA column (on / off) in the users table and its CSV | built | unit (api + web) |
+| HC-AD-130 | An admin who puts a user on a plan by hand can note how the user paid; the note stays in that user's History | The Set plan dialog (one user or many) has an optional Payment note of up to 200 characters; POST /v1/admin/users/{id}/plan and /bulk-plan accept note, refuse a blank or over-long one, and store it in the audit entry; the drawer's History tab shows it beside the change | built | unit (api + web) |
 

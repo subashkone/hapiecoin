@@ -1,6 +1,6 @@
 # Subscription, billing and referrals
 
-Part of the [HapieCoin feature guide](README.md). 74 traced features on 2 screens; 71 built and tested, 3 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 75 traced features on 2 screens; 72 built and tested, 3 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -80,6 +80,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-AC-064 | Empty states with actions | No payments → Browse plans button; filtered-empty → Show all; no subscription → Choose a Plan | built | e2e (Playwright) · api contract · security |
 | HC-AC-065 | Row density | Tables switch between 36px comfortable and 28px compact rows when the chrome emits CG.emit('density', …) | built | e2e (Playwright) |
 | HC-AC-066 | Palette command 'Subscription → Change plan' | Registered with CG.palette when present: navigates to /subscription and triggers the header primary action | built | e2e (Playwright) |
+| HC-AC-075 | With no Free plan on offer, a signed-in user without a running plan cannot open the Desk and is sent to the plans page | GET /v1/plan and the plan inside GET /v1/subscription carry access: true for a running subscription, for a Free plan on offer (the cheapest active plan at ₹0), and for an admin; the Desk's server layout redirects a visitor without access to /plans?need=plan; the plans page says a plan is needed and that a direct payment appears once it is added; the banner says there is no active plan; the Free tier is switched by the ₹0 plan's Active toggle in Admin → Plans | built | unit (api + web) |
 
 ### Invite friends · `/invite`
 
