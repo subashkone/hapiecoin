@@ -14,10 +14,13 @@ import { DecimalString, IsoDateTime, Underlying, Venue } from "./primitives.js";
  * most the structure can make, after the entry fee and the expected exit fee. `target` closes there; `trail` keeps
  * the trade from there and closes when it gives back AUTOPILOT_TRAIL_GIVE_PCT of its best (ADR-103).
  */
-export const AUTOPILOT_EXIT_STYLES = ["trail", "target"] as const;
+/** `own` (ADR-112): the playbook's own exits and nothing from Autopilot; the only style of a playbook entered by the clock. */
+export const AUTOPILOT_EXIT_STYLES = ["trail", "target", "own"] as const;
 export const AutopilotExitStyle = z.enum(AUTOPILOT_EXIT_STYLES);
 export type AutopilotExitStyle = z.infer<typeof AutopilotExitStyle>;
-export const AUTOPILOT_EXIT_LABELS: Record<AutopilotExitStyle, string> = { trail: "Trail, give back 10 %", target: "Close at 10 % of the most it can make" };
+/** The styles a trader chooses between on a playbook that takes Autopilot's profit exit. */
+export const AUTOPILOT_CHOSEN_EXIT_STYLES = ["trail", "target"] as const satisfies readonly AutopilotExitStyle[];
+export const AUTOPILOT_EXIT_LABELS: Record<AutopilotExitStyle, string> = { trail: "Trail, give back 10 %", target: "Close at 10 % of the most it can make", own: "Its own exits" };
 
 /** The profit level both exit styles start from, as a share of the structure's maximum profit, net of both fees. */
 export const AUTOPILOT_TARGET_PCT = 10;
@@ -25,8 +28,11 @@ export const AUTOPILOT_TARGET_PCT = 10;
 export const AUTOPILOT_TRAIL_GIVE_PCT = "10";
 /** After an Autopilot trade of a playbook is entered or ends, how long the same playbook, venue and asset waits before entering again. */
 export const AUTOPILOT_COOLDOWN_MINUTES = 15;
-/** The most trades (each on its own strikes or expiry) one playbook holds at a time on a venue and asset (ADR-110). */
-export const AUTOPILOT_MAX_OPEN = 5;
+/**
+ * The most trades one playbook holds at a time on a venue and asset. ADR-110 allowed five, each on its own strikes;
+ * ADR-112 set it back to one after the backtest of that ladder: the added trades lost on average on every structure.
+ */
+export const AUTOPILOT_MAX_OPEN = 1;
 /** A fresh structure is noted as a better entry than the open trade's when its net premium is better by at least this share. */
 export const AUTOPILOT_BETTER_ENTRY_PCT = 10;
 
@@ -75,6 +81,8 @@ export const AutopilotRunDetail = z.strictObject({
   /** The profit level the exit style starts from, fees included. */
   targetUsd: DecimalString.optional(),
   stopUsd: DecimalString.nullable().optional(),
+  /** ADR-112: every sold option is closed on its own when its price reaches this multiple of the price it was sold at. */
+  legStop: z.number().positive().optional(),
   legs: z.array(z.strictObject({ side: z.enum(["buy", "sell"]), kind: z.enum(["call", "put", "future"]), strike: z.string(), price: z.string() })).optional(),
   /** noted: the open trade's net premium the fresh one is compared with. */
   openEntryCost: DecimalString.optional(),

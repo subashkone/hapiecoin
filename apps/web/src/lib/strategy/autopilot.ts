@@ -11,14 +11,17 @@ export interface AutopilotLevels {
   bestUsd: number | null;
   /** The level a trailing target now exits at (the best less its give-back), once it trails. */
   trailExitUsd: number | null;
-  /** The loss (USD, positive) the stop closes at; null when the playbook has none (its risk is the premium paid). */
+  /** The loss (USD, positive) the stop closes at; null when the playbook has none. */
   stopUsd: number | null;
+  /** ADR-112: the multiple of its entry price at which each sold option is closed on its own; null with no such stop. */
+  legStop: number | null;
 }
 
 export function autopilotLevels(s: Strategy): AutopilotLevels {
   const armed = (s.rules ?? []).filter((r) => r.state === "armed");
   const target = armed.find((r) => r.kind === "target");
   const stop = armed.find((r) => r.kind === "stop");
+  const legStop = armed.find((r) => r.kind === "leg_stop" && r.trigger === "multiple");
   const best = target?.peakPnl ? Number(target.peakPnl) : null;
   return {
     targetUsd: target ? Number(target.thresholdUsd) : null,
@@ -27,6 +30,7 @@ export function autopilotLevels(s: Strategy): AutopilotLevels {
     // the engine's own floor (a percentage of the best, or a money give-back if the trader edited the rule)
     trailExitUsd: best !== null && target?.trail ? trailFloorUsd(best, target.trail) : null,
     stopUsd: stop ? Math.abs(Number(stop.thresholdUsd)) : null,
+    legStop: legStop ? Number(legStop.value) : null,
   };
 }
 
@@ -46,6 +50,11 @@ export function tradeHealth(pnlUsd: number, stopUsd: number | null): { health: T
 /** The newest log line of one playbook on one asset, or undefined. `runs` is newest first, as the API returns it. */
 export function latestRun(runs: readonly AutopilotRun[], playbookId: string, asset: string): AutopilotRun | undefined {
   return runs.find((r) => r.playbookId === playbookId && r.asset === asset);
+}
+
+/** ADR-112: an open trade was entered with no maximum loss (a naked strangle): the capital in use is not a number. */
+export function capitalUnbounded(runs: readonly AutopilotRun[], openIds: ReadonlySet<string>): boolean {
+  return runs.some((r) => r.kind === "entered" && r.strategyId !== null && openIds.has(r.strategyId) && r.detail.capital === null);
 }
 
 /** The capital (USD) the log says the open Autopilot trades tie up: each trade's maximum loss at entry. */

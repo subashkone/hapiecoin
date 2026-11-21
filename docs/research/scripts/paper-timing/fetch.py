@@ -17,7 +17,7 @@ def candles(sym, start, end):
     q = urllib.parse.urlencode({"symbol": sym, "resolution": "5m", "start": int(start.timestamp()), "end": int(end.timestamp())})
     for attempt in range(4):
         try:
-            with urllib.request.urlopen(urllib.request.Request(B + "?" + q, headers={"User-Agent": "hapiecoin-research"}), timeout=30) as r:
+            with urllib.request.urlopen(urllib.request.Request(B + "?" + q, headers={"User-Agent": "research-script"}), timeout=30) as r:
                 last_call[0] = time.monotonic()
                 return json.loads(r.read()).get("result") or []
         except Exception as e:  # noqa: BLE001

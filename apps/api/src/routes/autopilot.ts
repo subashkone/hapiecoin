@@ -62,7 +62,7 @@ export function registerAutopilotRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps,
       const body = c.req.valid("json");
       const before = await autopilotSettingsOf(deps.db, me.id);
       const saved = await saveAutopilotSettings(deps.db, me.id, body, now());
-      if (!saved.ok) throw errors.badRequest(`${saved.unknown} is not a playbook Autopilot can trade`);
+      if (!saved.ok) throw errors.badRequest(saved.why);
       await auditFrom(c, deps.db)({ action: "autopilot.settings", target: `user:${me.id}`, before, after: body });
       return c.json(await autopilotView(deps.db, me.id), 200);
     },

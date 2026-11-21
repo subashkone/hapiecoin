@@ -8250,7 +8250,7 @@
   "isNew": true,
   "phase": 5,
   "test": "unit (web)",
-  "acceptance": "a card's line for a coin says In a trade or In N trades with their P&L together and the worst health among them, or waiting for prices while any leg has none; each row under Running now carries the strikes and the expiry the trade sits on; the introduction states the five-trade and 15-minute bounds",
+  "acceptance": "a card's line for a coin says In a trade or In N trades with their P&L together and the worst health among them, or waiting for prices while any leg has none; each row under Running now carries the strikes and the expiry the trade sits on; the introduction states the one-trade-at-a-time rule (ADR-112) and the 15-minute wait",
   "evidence": "ADR-110 (21 Nov 2026): apps/web/src/components/autopilot/AutopilotPage.tsx (strikesOf, autopilot-trade-strikes, autopilot-card-state); tests: autopilot-page.test.tsx HC-TR-222"
  },
  {
@@ -8282,6 +8282,36 @@
   "test": "unit (web)",
   "acceptance": "under the strategies: closed and still open, won with the win rate, net after fees with the gross and the fees, the trail and the target exit side by side; one row per strategy, coin and exit style; one row per days-to-expiry band; the newest 25 closed trades with strikes, expiry and how they ended; an empty state before any trade, a note while none has closed, a retry when the read fails; re-read each minute",
   "evidence": "ADR-111 (21 Nov 2026): apps/web/src/components/autopilot/AutopilotResultsPanel.tsx (exitTotals), apps/web/src/lib/api/autopilot.ts (useAutopilotResults), apps/web/test/mock-api.ts; tests: autopilot-results.test.tsx HC-TR-224"
+ },
+ {
+  "id": "HC-TR-225",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "Autopilot enters four evening strangles by the clock, on the nearest expiry, with their own exits, and holds one trade per strategy and coin at a time",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "integration (api)",
+  "acceptance": "four playbooks outside the recorded list, BTC, 100 lots: sold three (or five) strikes out with wings eight (or ten) out and held to settlement, or sold three out with each sold option bought back at two (or three) times its price; entered once in the hour from 16:00 UTC (21:30 IST) on Delta India, on the first expiry at least half a day and at most a day and a half out, when the premium exceeds both fees; a leg stop rule per sold option, no Autopilot profit level; saved with the exit style own; outside the window, holding a trade and already entered are logged reasons; AUTOPILOT_MAX_OPEN is 1",
+  "evidence": "ADR-112, GAPS #149 (21 Nov 2026): packages/pricing/src/playbooks.ts (CLOCK_PLAYBOOKS, AUTOPILOT_PLAYBOOKS), apps/api/src/autopilot.ts (clockPlanFor, inWindow, enter), packages/schema/src/autopilot.ts (own, legStop, AUTOPILOT_MAX_OPEN), docs/research/autopilot-daily-study.md; tests: apps/api/src/autopilot.test.ts HC-TR-225, packages/pricing/src/playbooks.test.ts HC-TR-225, packages/schema/src/autopilot.test.ts HC-TR-223"
+ },
+ {
+  "id": "HC-TR-226",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "The Autopilot screen shows the evening strategies: when each enters, how it exits, the backtest behind it, and the stop on each sold option of a running trade",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web)",
+  "acceptance": "a card of a strategy entered by the clock states its window, its exit (held to settlement behind its wings, or each sold option bought back at a multiple of its price) and the backtest figure with its sample, marked Backtest only; it has no exit style to choose and is saved with its own exits; a running evening strangle shows no profit level and the stop on each sold option; capital in use reads not bounded while a strangle with no wings is open; the results count the own style beside trail and target",
+  "evidence": "ADR-112 (21 Nov 2026): apps/web/src/components/autopilot/AutopilotPage.tsx (autopilot-card-how, autopilot-card-own), AutopilotResultsPanel.tsx, apps/web/src/lib/strategy/autopilot.ts (legStop), apps/web/test/mock-api.ts; tests: autopilot-page.test.tsx HC-TR-226, autopilot-results.test.tsx HC-TR-224, lib/strategy/autopilot.test.ts HC-TR-220"
  },
  {
   "id": "HC-AC-001",

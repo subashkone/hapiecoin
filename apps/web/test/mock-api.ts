@@ -5,7 +5,7 @@ import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { Underlying, PublicPageSettings, AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
-import { PLAYBOOKS, type SweepAxisSpec } from "@hapiecoin/pricing";
+import { AUTOPILOT_PLAYBOOKS, type SweepAxisSpec } from "@hapiecoin/pricing";
 import { AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_PAPER_ONLY_MESSAGE, type AutopilotResults, AutopilotSettings, type AutopilotView, ProposalMarkBody, parseSweepValues } from "@hapiecoin/schema";
 import { type MockBacktestParams, mockBacktest, mockSweep } from "./mock-backtest";
 import { mockReplayChain, mockReplayExpiries, mockReplaySteps } from "./mock-replay";
@@ -734,9 +734,11 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const acc = current(c)!;
     const parsed = AutopilotSettings.safeParse(await c.req.json());
     if (!parsed.success) return err(c, 400, "BAD_REQUEST", "Invalid Autopilot settings");
-    const bad = parsed.data.strategies.find((s) => !PLAYBOOKS.some((p) => p.id === s.playbookId && !p.control));
+    const clock = (id: string) => AUTOPILOT_PLAYBOOKS.find((p) => p.id === id)?.clock;
+    const bad = parsed.data.strategies.find((s) => !AUTOPILOT_PLAYBOOKS.some((p) => p.id === s.playbookId) || (s.exit === "own" && !clock(s.playbookId)));
     if (bad) return err(c, 400, "BAD_REQUEST", `${bad.playbookId} is not a playbook Autopilot can trade`);
-    acc.autopilot = { ...acc.autopilot, settings: parsed.data };
+    // ADR-112: a playbook entered by the clock runs on its own exits, whatever was sent
+    acc.autopilot = { ...acc.autopilot, settings: { ...parsed.data, strategies: parsed.data.strategies.map((s) => (clock(s.playbookId) ? { ...s, exit: "own" as const } : s)) } };
     return c.json(acc.autopilot);
   });
   v1.post("/proposals/:id/mark", async (c) => {
