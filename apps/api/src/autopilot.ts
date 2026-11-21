@@ -38,6 +38,7 @@ import {
   type AutopilotSettings,
   type AutopilotView,
   DEFAULT_AUTOPILOT_SETTINGS,
+  MAX_STRATEGY_NAME,
   autopilotDteBand,
   type Underlying,
   type Venue,
@@ -67,6 +68,8 @@ export interface AutopilotDeps {
 export const AUTOPILOT_MAX_MARK_AGE_MS = 12 * 60_000;
 const COOLDOWN_MS = AUTOPILOT_COOLDOWN_MINUTES * 60_000;
 const DAY_MS = 86_400_000;
+/** What a strategy Autopilot opens is named after: its playbook, then this. */
+export const AUTOPILOT_NAME_SUFFIX = " · Autopilot";
 /** A playbook entered by the clock enters once per window: not again within this long of its last entry. */
 const CLOCK_ONCE_MS = 6 * 3_600_000;
 /** Inside the playbook's entry window: from its first hour, before its second (UTC), on its day of the week when it has one. */
@@ -394,7 +397,8 @@ async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, pl
     await tx.insert(strategies).values({
       id,
       userId: k.userId,
-      name: `${p.name} · Autopilot`,
+      // never longer than a strategy name may be: a longer one is refused by the schema every screen reads the list with (GAPS #153)
+      name: `${p.name.slice(0, MAX_STRATEGY_NAME - AUTOPILOT_NAME_SUFFIX.length)}${AUTOPILOT_NAME_SUFFIX}`,
       asset: k.asset,
       venue: k.venue,
       status: "paper",

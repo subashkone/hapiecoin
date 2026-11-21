@@ -8419,6 +8419,21 @@
   "evidence": "ADR-117, ADR-118, GAPS #152 (22 Nov 2026): packages/pricing/src/templates.ts (premium), packages/pricing/src/playbooks.ts (PREMIUM_PLAYBOOKS, MONTHLY_PLAYBOOKS, oncePerExpiry), apps/api/src/autopilot.ts (once per expiry), docs/research/scripts/autopilot-study/study_premium.py and study_monthly.py; tests: packages/pricing/src/playbooks.test.ts HC-TR-233, apps/api/src/autopilot.test.ts HC-TR-233, autopilot-page.test.tsx HC-TR-230 (the monthly row)"
  },
  {
+  "id": "HC-TR-234",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "The Autopilot settings hold every playbook the catalogue offers",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (schema)",
+  "acceptance": "the settings accept up to AUTOPILOT_MAX_STRATEGIES (500) playbooks, each at most once; the limit was 32 and the 33rd playbook switched on made the saved settings unreadable by the screen",
+  "evidence": "GAPS #153 (22 Nov 2026): packages/schema/src/autopilot.ts (AUTOPILOT_MAX_STRATEGIES); tests: packages/schema/src/autopilot.test.ts HC-TR-234"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

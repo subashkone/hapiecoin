@@ -2109,5 +2109,16 @@
     "how": "a template leg may name a premium: the listed out-of-the-money strike priced nearest it; an evening strangle at 100 a side and a Friday weekly one at 200 a side, each stopped at three times and closed at half the premium; ten monthly strangles on month-end expiries only (1,000 a side and 8 % away 60 to 75 days out; one month out, 12 % away under every exit of the other sets, with wings held, and with wings and a stop, and 8 % away with wings, a stop and the take), entered on the first evening the expiry is in range and never again for that expiry; no expiry in range and an expiry already traded are logged reasons; the screen lists them under Monthly",
     "evidence": "ADR-117, ADR-118, GAPS #152 (22 Nov 2026): packages/pricing/src/templates.ts (premium), packages/pricing/src/playbooks.ts (PREMIUM_PLAYBOOKS, MONTHLY_PLAYBOOKS, oncePerExpiry), apps/api/src/autopilot.ts (once per expiry), docs/research/scripts/autopilot-study/study_premium.py and study_monthly.py; tests: packages/pricing/src/playbooks.test.ts HC-TR-233, apps/api/src/autopilot.test.ts HC-TR-233, autopilot-page.test.tsx HC-TR-230 (the monthly row)",
     "test": "integration (api)"
+  },
+  {
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The Autopilot settings hold every playbook the catalogue offers",
+    "how": "the settings accept up to AUTOPILOT_MAX_STRATEGIES (500) playbooks, each at most once; the limit was 32 and the 33rd playbook switched on made the saved settings unreadable by the screen",
+    "evidence": "GAPS #153 (22 Nov 2026): packages/schema/src/autopilot.ts (AUTOPILOT_MAX_STRATEGIES); tests: packages/schema/src/autopilot.test.ts HC-TR-234",
+    "test": "unit (schema)"
   }
 ]

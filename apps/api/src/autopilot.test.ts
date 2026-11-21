@@ -4,9 +4,9 @@
 // every reason not to enter is logged once. Nothing here places anything on a venue.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, PLAYBOOKS, WEEKLY_PLAYBOOKS, type PlaybookProposal, autopilotPlaybookById, playbookById } from "@hapiecoin/pricing";
-import { AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_PAPER_ONLY_MESSAGE, AUTOPILOT_RUNS_RETENTION_DAYS, type AutopilotResults, type AutopilotRunDetail, type AutopilotView, type Instrument, type Quote, type SubscriptionView } from "@hapiecoin/schema";
+import { AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_MAX_STRATEGIES, MAX_STRATEGY_NAME, StrategyList, AUTOPILOT_PAPER_ONLY_MESSAGE, AUTOPILOT_RUNS_RETENTION_DAYS, type AutopilotResults, type AutopilotRunDetail, type AutopilotView, type Instrument, type Quote, type SubscriptionView } from "@hapiecoin/schema";
 import { and, asc, eq } from "drizzle-orm";
-import { AUTOPILOT_MAX_MARK_AGE_MS, type AutopilotDeps, betterEntry, clockPlanFor, inWindow, liveDay, planFor, runAutopilot, skipText, structureKey } from "./autopilot.js";
+import { AUTOPILOT_MAX_MARK_AGE_MS, AUTOPILOT_NAME_SUFFIX, type AutopilotDeps, betterEntry, clockPlanFor, inWindow, liveDay, planFor, runAutopilot, skipText, structureKey } from "./autopilot.js";
 import { clearEodMemo } from "./chain-eod.js";
 import { autopilotRuns, instrumentMarks, ivSnapshots, plans, strategies, subscriptions, strategyLegs, strategyRules, userSettings, users } from "./db/schema.js";
 import { SEED } from "./db/seed.js";
@@ -962,5 +962,23 @@ describe("HC-TR-233 the monthly strangles: once per expiry, in their range of da
     const open = (await mineNow()).filter((x) => x.status === "paper");
     expect(open).toHaveLength(1);
     expect((await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, open[0]!.id))).every((l) => l.expiry === "2027-01-29")).toBe(true);
+  });
+});
+
+describe("HC-TR-234 what Autopilot writes can be read back", () => {
+  it("HC-TR-234 every playbook's strategy name fits a strategy name, whole; a longer playbook name would be cut, never refused", () => {
+    for (const p of AUTOPILOT_PLAYBOOKS) expect(`${p.name}${AUTOPILOT_NAME_SUFFIX}`.length, p.id).toBeLessThanOrEqual(MAX_STRATEGY_NAME);
+    expect(new Set(AUTOPILOT_PLAYBOOKS.map((p) => p.name)).size).toBe(AUTOPILOT_PLAYBOOKS.length); // and they stay distinct
+    expect(AUTOPILOT_PLAYBOOKS.length).toBeLessThanOrEqual(AUTOPILOT_MAX_STRATEGIES); // the settings can hold them all switched on
+  });
+
+  it("HC-TR-234 the strategies Autopilot opened pass the schema the screens read the list with", async () => {
+    const rows = await t.db.select().from(strategies);
+    const auto = rows.filter((r) => r.autopilotPlaybookId !== null);
+    expect(auto.length).toBeGreaterThan(5);
+    for (const r of auto) expect(r.name.length, r.name).toBeLessThanOrEqual(MAX_STRATEGY_NAME);
+    // through the API, as the first trader: the whole list parses
+    const list = StrategyList.safeParse(await (await t.request("/v1/strategies", { cookie })).json());
+    expect(list.success).toBe(true);
   });
 });
