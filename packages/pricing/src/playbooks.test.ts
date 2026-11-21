@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type BacktestFold, type BacktestStats, type BacktestTrade, type EodDay, type EodRow, runBacktest } from "./backtest.js";
 import { calendarFor } from "./calendar.js";
-import { AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, PLAYBOOKS, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
+import { AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, PLAYBOOKS, WEEKLY_PLAYBOOKS, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
 import { materialiseTemplate } from "./templates.js";
 
 const cal = calendarFor(12);
@@ -120,8 +120,12 @@ describe("HC-TR-225 playbooks entered by the clock", () => {
   const evening: EodDay[] = [{ day: "2026-09-25", ts: at, spot, expiries: ["2026-09-25", "2026-09-26", "2026-10-30"].map((expiry) => ({ expiry, rows })) }];
   const base = { unitsPerLot: 0.001, calendar: cal };
 
-  it("HC-TR-225 four evening strangles: a window in UTC hours, the nearest expiry at least half a day out, BTC only, outside the recorded list", () => {
-    expect(CLOCK_PLAYBOOKS).toHaveLength(4);
+  it("HC-TR-225 six evening strangles: a window in UTC hours, the nearest expiry at least half a day out, BTC only, outside the recorded list", () => {
+    expect(CLOCK_PLAYBOOKS).toHaveLength(6);
+    // HC-TR-227: one of them takes its profit at half the premium, with the stops of the stop-at-double one
+    expect(CLOCK_PLAYBOOKS.map((p) => [p.clock!.legStop, p.clock!.takeProfitOfCredit])).toEqual([[undefined, undefined], [undefined, undefined], [2, undefined], [3, undefined], [2, 0.5], [2, undefined]]);
+    // HC-TR-228: the last one trails what is left after a stop; no other does
+    expect(CLOCK_PLAYBOOKS.map((p) => p.clock!.trailRestPct)).toEqual([undefined, undefined, undefined, undefined, undefined, 50]);
     for (const p of CLOCK_PLAYBOOKS) {
       expect(p.clock).toMatchObject({ fromHourUtc: 16, toHourUtc: 17, window: "9:30 to 10:30 PM IST", maxDte: 1.5, venues: ["delta_india"] });
       expect(p.evidence.claim).toContain("entered 21:30 IST"); // the bar the window's first pass is
@@ -151,7 +155,7 @@ describe("HC-TR-225 playbooks entered by the clock", () => {
     expect(w3.maxProfit).toBeCloseTo(-w3.entryCost, 6); // the credit, kept when it settles between the sold strikes
     expect(w3.maxLoss).toBeCloseTo(-(1000 * 0.1) - w3.entryCost, 6); // the 1,000 between a sold strike and its wing on 0.1 BTC, less the credit
     expect(placed("evening-strangle-wings-5").legs.map((l) => l.strike)).toEqual(["81200", "82200", "84200", "85200"]);
-    for (const id of ["evening-strangle-stop-2x", "evening-strangle-stop-3x"]) {
+    for (const id of ["evening-strangle-stop-2x", "evening-strangle-stop-3x", "evening-strangle-take-half", "evening-strangle-trail-rest"]) {
       const n = placed(id);
       expect(n.legs.map((l) => `${l.side} ${l.kind} ${l.strike}`)).toEqual(["sell put 82600", "sell call 83800"]);
       expect(n.maxLoss).toBe(-Infinity);
@@ -159,5 +163,115 @@ describe("HC-TR-225 playbooks entered by the clock", () => {
     // a chain too narrow for the wings is no trade
     const narrow: EodDay[] = [{ ...evening[0]!, expiries: evening[0]!.expiries.map((e) => ({ ...e, rows: rows.slice(8, 17) })) }];
     expect(proposalFor(autopilotPlaybookById("evening-strangle-wings-5")!, narrow, base)).toEqual({ ok: false, reason: "noFit" });
+  });
+});
+
+describe("HC-TR-227 the evening strangle that takes half", () => {
+  it("HC-TR-227 the stop-at-double strangle with one more exit: the same structure, window and stop, and a profit take at half the premium", () => {
+    const half = autopilotPlaybookById("evening-strangle-take-half")!;
+    const twice = autopilotPlaybookById("evening-strangle-stop-2x")!;
+    expect(half.clock).toEqual({ ...twice.clock, takeProfitOfCredit: 0.5 });
+    expect(twice.clock!.takeProfitOfCredit).toBeUndefined();
+    expect(playbookTemplate(half)!.legs).toEqual(playbookTemplate(twice)!.legs);
+    expect(half).toMatchObject({ lots: twice.lots, minDte: twice.minDte, assets: twice.assets });
+    expect(half.evidence.claim).toContain("closed at half the premium");
+  });
+
+  it("HC-TR-228 the trail-the-rest strangle is the stop-at-double one with a trail on what is left after a stop", () => {
+    const trail = autopilotPlaybookById("evening-strangle-trail-rest")!;
+    const twice = autopilotPlaybookById("evening-strangle-stop-2x")!;
+    expect(trail.clock).toEqual({ ...twice.clock, trailRestPct: 50 });
+    expect(playbookTemplate(trail)!.legs).toEqual(playbookTemplate(twice)!.legs);
+    expect(trail.evidence.claim).toContain("worst day -42");
+  });
+});
+
+describe("HC-TR-229 the weekly strangles", () => {
+  // a weekly ladder 500 apart round 60,000; time value falling away from the money
+  const spot = 60_200;
+  const ladder = (centre: number): EodRow[] =>
+    Array.from({ length: 41 }, (_, i) => {
+      const strike = centre + (i - 20) * 500;
+      const tv = 1500 * Math.exp(-Math.abs(strike - spot) / 2500);
+      return { strike, call: { mark: Math.max(spot - strike, 0) + tv, iv: 0.5 }, put: { mark: Math.max(strike - spot, 0) + tv, iv: 0.5 } };
+    });
+  const base = { unitsPerLot: 0.001, calendar: cal };
+  // Friday 20 November 2026 and Tuesday 24 November 2026, 16:05 UTC; dailies listed for the next days, weeklies on the Fridays
+  const day = (iso: string, expiries: string[]): EodDay[] => [{ day: iso, ts: Date.parse(`${iso}T16:05:00Z`), spot, expiries: expiries.map((expiry) => ({ expiry, rows: ladder(60_000) })) }];
+  // (a daily on the Thursday before and on the Saturday after the wanted Friday: 5.8 and 7.8 days out, both outside the bounds)
+  const friday = day("2026-11-20", ["2026-11-21", "2026-11-22", "2026-11-23", "2026-11-26", "2026-11-27", "2026-11-28", "2026-12-04", "2026-12-25"]);
+  const tuesday = day("2026-11-24", ["2026-11-25", "2026-11-26", "2026-11-27", "2026-12-04", "2026-12-25"]);
+
+  it("HC-TR-229 ten weekly playbooks: five exits, each on a Friday and on a Tuesday, BTC on one venue, outside the recorded list", () => {
+    expect(WEEKLY_PLAYBOOKS.map((p) => p.id)).toEqual(["fri", "tue"].flatMap((d) => ["wings", "stop-2x", "stop-3x", "take-half", "trail-rest"].map((x) => `weekly-${d}-strangle-${x}`)));
+    for (const p of WEEKLY_PLAYBOOKS) {
+      const fri = p.id.startsWith("weekly-fri");
+      expect(p.clock).toMatchObject({ fromHourUtc: 16, toHourUtc: 17, weekdayUtc: fri ? 5 : 2, maxDte: fri ? 7.5 : 3.5, venues: ["delta_india"] });
+      expect(p).toMatchObject({ minDte: fri ? 6.5 : 2.5, lots: 100, assets: ["BTC"], control: false });
+      expect(p.clock!.window).toBe(`${fri ? "Friday" : "Tuesday"}s, 9:30 to 10:30 PM IST`);
+      expect(p.clock!.describe).toContain(fri ? "each Friday" : "each Tuesday");
+      expect(p.trials.note).toContain("in-sample");
+      expect(p.evidence.source).toContain("results-weekly-2026-11-22.txt");
+      expect(PLAYBOOKS.includes(p)).toBe(false);
+      expect(autopilotPlaybookById(p.id)).toBe(p);
+    }
+    expect(WEEKLY_PLAYBOOKS.map((p) => [p.clock!.legStop, p.clock!.takeProfitOfCredit, p.clock!.trailRestPct]).slice(0, 5)).toEqual([[undefined, undefined, undefined], [2, undefined, undefined], [3, undefined, undefined], [2, 0.5, undefined], [2, undefined, 50]]);
+    expect(CLOCK_PLAYBOOKS.every((p) => p.clock!.weekdayUtc === undefined && p.clock!.describe === "once an evening, 9:30 to 10:30 PM IST, on the next expiry")).toBe(true);
+    expect(new Set(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).size).toBe(AUTOPILOT_PLAYBOOKS.length);
+    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length);
+  });
+
+  it("HC-TR-229 the strikes are the listed ones nearest 3 % (wings 7 %) of the spot away, on the Friday expiry a week out from a Friday and three days out from a Tuesday", () => {
+    const placed = (id: string, days: EodDay[]) => {
+      const r = proposalFor(autopilotPlaybookById(id)!, days, base);
+      if (!r.ok) throw new Error(r.reason);
+      return r.proposal;
+    };
+    // 3 % of 60,200 is 1,806: 58,394 and 62,006, nearest listed 58,500 and 62,000; 7 % is 4,214: 55,986 and 64,414, nearest 56,000 and 64,500
+    const fri = placed("weekly-fri-strangle-stop-3x", friday);
+    expect(fri.expiry).toBe("2026-11-27"); // not a daily, not the week after
+    expect(fri.legs.map((l) => `${l.side} ${l.kind} ${l.strike} x${l.lots}`)).toEqual(["sell put 58500 x100", "sell call 62000 x100"]);
+    expect(fri.maxLoss).toBe(-Infinity);
+    const wings = placed("weekly-fri-strangle-wings", friday);
+    expect(wings.legs.map((l) => `${l.side} ${l.kind} ${l.strike}`)).toEqual(["buy put 56000", "sell put 58500", "sell call 62000", "buy call 64500"]);
+    expect(wings.entryCost).toBeLessThan(0);
+    expect(Number.isFinite(wings.maxLoss)).toBe(true);
+    const tue = placed("weekly-tue-strangle-stop-2x", tuesday);
+    expect(tue.expiry).toBe("2026-11-27"); // that week's Friday, three days out
+    expect(tue.legs.map((l) => l.strike)).toEqual(["58500", "62000"]);
+    // a Friday playbook asked on a day with no expiry a week out takes the next listed one: the engine's upper bound refuses it
+    expect(placed("weekly-fri-strangle-stop-2x", day("2026-11-20", ["2026-11-21", "2026-12-25"])).expiry).toBe("2026-12-25");
+    // a ladder that does not reach 7 % away has no wing to buy
+    const short: EodDay[] = [{ ...friday[0]!, expiries: friday[0]!.expiries.map((e) => ({ ...e, rows: ladder(60_000).slice(15, 26) })) }];
+    expect(proposalFor(autopilotPlaybookById("weekly-fri-strangle-wings")!, short, base)).toEqual({ ok: false, reason: "noFit" });
+    expect(proposalFor(autopilotPlaybookById("weekly-fri-strangle-stop-2x")!, short, base).ok).toBe(true); // 3 % is on it
+  });
+});
+
+describe("HC-TR-229 a template strike a percentage of the spot away", () => {
+  const rows = [76_000, 77_000, 78_000, 79_000, 80_000, 81_000, 82_000, 83_000, 84_000].map((strike) => ({ strike: String(strike), call: { mark: "100", markIv: 0.4 }, put: { mark: "100", markIv: 0.4 } }));
+  const input = { asset: "BTC" as const, expiry: "2026-11-27", expiries: ["2026-11-27"], rows, atm: 4, lots: 1 };
+  const tpl = (pct: number) => ({ name: "t", category: "Neutral" as const, description: "t", legs: [{ kind: "call" as const, side: "sell" as const, k: 0, pct }], risk: "undefined" as const });
+
+  it("HC-TR-229 takes the listed strike nearest the spot moved by the percentage; needs a spot; refuses a ladder that does not reach", () => {
+    const strike = (pct: number, spot = "80200") => {
+      const r = materialiseTemplate(tpl(pct), { ...input, spot });
+      return r.ok ? r.legs[0]!.strike : r.reason;
+    };
+    expect(strike(3)).toBe("83000"); // 82,606: nearer 83,000 than 82,000
+    expect(strike(-3)).toBe("78000"); // 77,794
+    expect(strike(0)).toBe("80000");
+    expect(strike(4.5)).toBe("84000"); // 83,809: the last strike, within its step
+    expect(strike(-5)).toBe("76000"); // 76,190: the first strike, within its step
+    expect(strike(7)).toBe("out-of-range"); // 85,814 is past the ladder by more than a step
+    expect(strike(-8)).toBe("out-of-range"); // 73,784 likewise
+    expect(materialiseTemplate(tpl(3), input)).toEqual({ ok: false, reason: "no-spot" });
+    // one row is no ladder; two legs on one strike is not the structure (a wing on the strike it protects, a put on the call)
+    expect(materialiseTemplate(tpl(3), { ...input, spot: "80200", rows: rows.slice(4, 5) })).toEqual({ ok: false, reason: "out-of-range" });
+    const two = (a: number, b: number, kb: "call" | "put" = "call") => ({ ...tpl(a), legs: [{ kind: "call" as const, side: "sell" as const, k: 0, pct: a }, { kind: kb, side: "buy" as const, k: 0, pct: b }] });
+    expect(materialiseTemplate(two(3, 3.4), { ...input, spot: "80200" })).toEqual({ ok: false, reason: "out-of-range" }); // 82,606 and 82,927: both 83,000
+    expect(materialiseTemplate(two(0.2, -0.2, "put"), { ...input, spot: "80200" })).toEqual({ ok: false, reason: "out-of-range" }); // both 80,000
+    expect(materialiseTemplate(two(2, 4), { ...input, spot: "80200" }).ok).toBe(true); // 82,000 and 83,000
+    expect(strike(3, "0")).toBe("no-spot");
   });
 });

@@ -25,6 +25,12 @@ const NONE: never[] = [];
 const ASSETS = ["BTC", "ETH"] as const;
 // the recorded playbooks (never the control) and the ones entered by the clock (ADR-112)
 const TRADABLE = AUTOPILOT_PLAYBOOKS;
+// ADR-115: three families, in the order of the list: how far out they trade is what a trader reads first
+const GROUPS = [
+  { title: "Longer-dated strategies", note: "Entered whenever their market condition is met.", items: TRADABLE.filter((p) => !p.clock) },
+  { title: "Evening strangles, daily expiry", note: "Entered every evening for the next day's expiry.", items: TRADABLE.filter((p) => p.clock && p.clock.weekdayUtc === undefined) },
+  { title: "Weekly strangles, Friday expiry", note: "Entered once a week, on a Friday or a Tuesday evening, for the Friday expiry.", items: TRADABLE.filter((p) => p.clock?.weekdayUtc !== undefined) },
+];
 const RECORD: Record<PlaybookStatus, { label: string; variant: "profit" | "loss" | "outline" | "warning" }> = {
   // the record is of the playbook run with its own exits, not Autopilot's profit exit (ADR-108): the card says so
   pass: { label: "Proven on history", variant: "profit" },
@@ -124,7 +130,7 @@ export function AutopilotPage() {
             <h1>Autopilot</h1>
             <Badge variant="info">Paper</Badge>
           </div>
-          <p className="mt-1 max-w-[70ch] text-xs text-muted-foreground">Opens a paper trade when a strategy you switched on meets its conditions on the latest prices, with its exits attached. A strategy holds one trade per coin at a time and waits {AUTOPILOT_COOLDOWN_MINUTES} minutes after a trade ends. The evening strategies enter once a day, in their window. No real orders are placed.</p>
+          <p className="mt-1 max-w-[70ch] text-xs text-muted-foreground">Opens a paper trade when a strategy you switched on meets its conditions on the latest prices, with its exits attached. A strategy holds one trade per coin at a time and waits {AUTOPILOT_COOLDOWN_MINUTES} minutes after a trade ends. The evening strategies enter once a day and the weekly ones once a week, in their window. No real orders are placed.</p>
         </div>
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2 text-xs">
@@ -145,18 +151,21 @@ export function AutopilotPage() {
       <div className="flex flex-wrap items-start gap-4">
         <section className="flex min-w-0 flex-[999_1_560px] flex-col gap-2" aria-label="Strategies">
           <h2 className="text-sm">Strategies</h2>
+          {GROUPS.map((g) => (
+          <div key={g.title} className="flex flex-col gap-2" data-testid="autopilot-group" data-group={g.title}>
+            <div><h3 className="text-[13px] font-medium">{g.title}</h3><p className="text-2xs text-muted-foreground">{g.note}</p></div>
           <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-3">
-            {TRADABLE.map((p) => {
+            {g.items.map((p) => {
               const on = switchedOn(p.id);
               return (
                 <article key={p.id} className="flex flex-col gap-2 rounded border border-border p-3" data-testid="autopilot-card" data-playbook={p.id} data-on={Boolean(on)}>
                   <div className="flex items-start gap-2">
                     <Switch checked={Boolean(on)} disabled={save.isPending} onCheckedChange={(v) => toggle(p.id, v)} aria-label={`${p.name} on Autopilot`} data-testid="autopilot-card-switch" />
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-[13px] font-medium">{p.name}</h3>
+                      <h4 className="text-[13px] font-medium">{p.name}</h4>
                       <p className="text-2xs text-muted-foreground">{p.summary}</p>
                       {p.clock ? (
-                        <p className="mt-1 text-2xs text-muted-foreground" data-testid="autopilot-card-how">Entered once an evening, {p.clock.window}, on the next expiry. {p.clock.legStop ? `Each sold option is bought back if its price reaches ${p.clock.legStop} times what it was sold for.` : "Held to settlement: the bought wings cap the loss."} Backtest only so far: {p.evidence.claim}</p>
+                        <p className="mt-1 text-2xs text-muted-foreground" data-testid="autopilot-card-how">Entered {p.clock.describe}. {p.clock.takeProfitOfCredit ? `The whole trade is closed once it is up by ${Math.round(p.clock.takeProfitOfCredit * 100)} % of the premium collected. ` : ""}{p.clock.legStop ? `Each sold option is bought back if its price reaches ${p.clock.legStop} times what it was sold for.` : "Held to settlement: the bought wings cap the loss."}{p.clock.trailRestPct ? ` After that, the profit on the other one is trailed and it is closed when it gives back ${p.clock.trailRestPct} % of its best.` : ""} Backtest only so far: {p.evidence.claim}</p>
                       ) : (
                         <p className="mt-1 text-2xs text-muted-foreground" data-testid="autopilot-card-how">Autopilot enters as above and keeps the stop and the time exit. It takes profit its own way, chosen below, so the record shown is the playbook's own exits, not Autopilot's.</p>
                       )}
@@ -199,6 +208,8 @@ export function AutopilotPage() {
               );
             })}
           </div>
+          </div>
+          ))}
         </section>
 
         <aside className="flex min-w-0 flex-[1_1_360px] flex-col gap-4">
@@ -223,7 +234,10 @@ export function AutopilotPage() {
                   <div className="flex justify-between gap-2"><span className="text-muted-foreground">Strikes</span><span className="num" data-testid="autopilot-trade-strikes">{strikesOf(s)}</span></div>
                   <div className="flex justify-between gap-2"><span className="text-muted-foreground">Now</span><span className={cn("num", !h ? "text-muted-foreground" : pnl >= 0 ? "text-profit" : "text-loss")} data-testid="autopilot-trade-pnl">{h ? fmtMoney(pnl, money, { signed: true }) : "waiting for prices"}</span></div>
                   <div className="flex justify-between gap-2"><span className="text-muted-foreground">{lv.trails ? (lv.trailExitUsd !== null ? "Trailing: exits at" : "Starts trailing at") : "Closes in profit at"}</span><span className="num">{lv.trailExitUsd !== null ? fmtMoney(lv.trailExitUsd, money, { signed: true }) : lv.targetUsd !== null ? fmtMoney(lv.targetUsd, money, { signed: true }) : "no level: held to settlement"}</span></div>
-                  <div className="flex justify-between gap-2"><span className="text-muted-foreground">Stop closes it at</span><span className="num">{lv.stopUsd !== null ? fmtMoney(-lv.stopUsd, money, { signed: true }) : lv.legStop !== null ? `each sold option at ${lv.legStop} times its price` : "no stop: held to its exit or settlement"}</span></div>
+                  <div className="flex justify-between gap-2"><span className="text-muted-foreground">Stop closes it at</span><span className="num">{lv.stopUsd !== null ? fmtMoney(-lv.stopUsd, money, { signed: true }) : lv.legStop !== null ? `each sold option at ${lv.legStop} times its price${lv.legStopTrailPct !== null ? ", then the other side is trailed" : ""}` : "no stop: held to its exit or settlement"}</span></div>
+                  {lv.restTrailExitUsd !== undefined ? (
+                    <div className="flex justify-between gap-2" data-testid="autopilot-trade-rest-trail"><span className="text-muted-foreground">Trailing what is left</span><span className="num">{lv.restTrailExitUsd === null ? "starts once it is in profit" : `closes if its profit falls to ${fmtMoney(lv.restTrailExitUsd, money, { signed: true })}`}</span></div>
+                  ) : null}
                   <div className="flex justify-between gap-2"><span className="text-muted-foreground">Opened</span><span>{fmtDateTime(s.startedAt)}</span></div>
                   <div className="mt-1 flex flex-wrap gap-2">
                     <Button size="xs" variant="destructive" onClick={() => setExitId(s.id)} data-testid="autopilot-trade-exit">Exit now</Button>

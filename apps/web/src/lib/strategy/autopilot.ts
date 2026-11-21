@@ -1,6 +1,6 @@
 // What the Autopilot screen reads off a strategy Autopilot opened (ADR-109; HC-TR-220): its exit levels from the rules
 // armed at entry, and a three-step health reading of where its P&L stands against the stop. Pure.
-import { type AutopilotRun, type Strategy, trailFloorUsd } from "@hapiecoin/schema";
+import { type AutopilotRun, type Strategy, restTrailFloorUsd, trailFloorUsd } from "@hapiecoin/schema";
 
 export interface AutopilotLevels {
   /** The profit (USD) the exit starts from: closing there, or trailing from there. */
@@ -15,6 +15,13 @@ export interface AutopilotLevels {
   stopUsd: number | null;
   /** ADR-112: the multiple of its entry price at which each sold option is closed on its own; null with no such stop. */
   legStop: number | null;
+  /** ADR-114: a stopped option starts a trail on what is left, with this percentage give-back; null when the stops trail nothing. */
+  legStopTrailPct: number | null;
+  /**
+   * ADR-114: the trail running on what is left after a stop: the profit of the rest it exits at, or null while the rest
+   * has not been in profit yet. Absent (undefined) when no such trail is running.
+   */
+  restTrailExitUsd?: number | null;
 }
 
 export function autopilotLevels(s: Strategy): AutopilotLevels {
@@ -23,6 +30,7 @@ export function autopilotLevels(s: Strategy): AutopilotLevels {
   const stop = armed.find((r) => r.kind === "stop");
   const legStop = armed.find((r) => r.kind === "leg_stop" && r.trigger === "multiple");
   const best = target?.peakPnl ? Number(target.peakPnl) : null;
+  const restTrail = armed.find((r) => r.kind === "trail");
   return {
     targetUsd: target ? Number(target.thresholdUsd) : null,
     trails: Boolean(target?.trail),
@@ -31,6 +39,8 @@ export function autopilotLevels(s: Strategy): AutopilotLevels {
     trailExitUsd: best !== null && target?.trail ? trailFloorUsd(best, target.trail) : null,
     stopUsd: stop ? Math.abs(Number(stop.thresholdUsd)) : null,
     legStop: legStop ? Number(legStop.value) : null,
+    legStopTrailPct: legStop?.trail?.trigger === "pct" ? Number(legStop.trail.value) : null,
+    ...(restTrail ? { restTrailExitUsd: restTrail.peakPnl === null ? null : restTrailFloorUsd(Number(restTrail.peakPnl), { trigger: restTrail.trigger === "pct" ? "pct" : "money", value: restTrail.value }) } : {}),
   };
 }
 

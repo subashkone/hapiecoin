@@ -13,8 +13,8 @@
  * not enter is logged once per change of reason, so the log reads as a history of decisions and not as a heartbeat.
  *
  * ADR-112: one trade per key at a time again (`AUTOPILOT_MAX_OPEN`; the ladder of ADR-110 lost in the backtest), and
- * playbooks entered by the clock: once in their evening window, on the nearest expiry, with their own exits (held to
- * settlement, or a stop on each sold option) and nothing of Autopilot's profit exit.
+ * playbooks entered by the clock: once in their window (every evening on the nearest expiry, ADR-112; or one evening a
+ * week on the Friday expiry, ADR-115), with their own exits and nothing of Autopilot's profit exit.
  *
  * Runs on the leader only (ADR-062), inside the first snapshotter's after-hook. A failure for one trader, playbook or
  * underlying is logged and the pass goes on.
@@ -68,10 +68,11 @@ const COOLDOWN_MS = AUTOPILOT_COOLDOWN_MINUTES * 60_000;
 const DAY_MS = 86_400_000;
 /** A playbook entered by the clock enters once per window: not again within this long of its last entry. */
 const CLOCK_ONCE_MS = 6 * 3_600_000;
-/** Inside the playbook's entry window: from its first hour, before its second (UTC). */
+/** Inside the playbook's entry window: from its first hour, before its second (UTC), on its day of the week when it has one. */
 export const inWindow = (c: PlaybookClock, nowMs: number): boolean => {
-  const h = new Date(nowMs).getUTCHours();
-  return h >= c.fromHourUtc && h < c.toHourUtc;
+  const d = new Date(nowMs);
+  const h = d.getUTCHours();
+  return h >= c.fromHourUtc && h < c.toHourUtc && (c.weekdayUtc === undefined || d.getUTCDay() === c.weekdayUtc);
 };
 /** The index that holds "one open trade per key and structure"; a write it refuses means another pass got there first. */
 const OPEN_UQ = "strategies_autopilot_open_uq";
@@ -119,12 +120,14 @@ export async function liveDay(db: Db, venue: Venue, asset: Underlying, nowMs: nu
 /** The figures an entry is decided and logged on, in USD for the trade's size. */
 export interface AutopilotPlan {
   fees: number;
-  /** Autopilot's profit level; null for a playbook that runs on its own exits (ADR-112). */
+  /** The profit level: Autopilot's own, or a clock playbook's take of its premium (ADR-113); null when the trade has none. */
   targetUsd: number | null;
   stopUsd: number | null;
   timeStopDte: number | null;
   /** Every sold option is closed on its own at this multiple of its entry price; null when there is no such stop. */
   legStop: number | null;
+  /** ADR-114: a stopped option starts a trail on the rest with this percentage give-back; null: the rest is kept. */
+  trailRestPct: number | null;
 }
 
 type FeeRule = Parameters<typeof fillFee>[3] | null;
@@ -135,14 +138,19 @@ function roundTripFees(proposal: PlaybookProposal, unitsPerLot: number, feeRule:
 }
 
 /**
- * The plan of a playbook entered by the clock (pure, ADR-112): no profit level and no strategy stop, only the stop on
- * each sold option when the playbook has one. Null when the premium collected does not exceed the fees: a sold
- * structure that cannot pay for its own fills is not entered.
+ * The plan of a playbook entered by the clock (pure, ADR-112): no strategy stop and none of Autopilot's profit level,
+ * only the stop on each sold option when the playbook has one, and its own profit take when it has one (a share of
+ * the premium collected, ADR-113). Null when the premium collected does not exceed the fees: a sold structure that
+ * cannot pay for its own fills is not entered.
  */
 export function clockPlanFor(p: Playbook, proposal: PlaybookProposal, unitsPerLot: number, feeRule: FeeRule): AutopilotPlan | null {
   const fees = roundTripFees(proposal, unitsPerLot, feeRule);
-  if (!(-proposal.entryCost > fees)) return null;
-  return { fees, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: p.clock?.legStop ?? null };
+  const credit = -proposal.entryCost;
+  if (!(credit > fees)) return null;
+  const take = p.clock?.takeProfitOfCredit;
+  // a profit level that rounds to nothing would close the trade on the first tick (as planFor refuses for its own)
+  if (take !== undefined && credit * take < 0.01) return null;
+  return { fees, targetUsd: take === undefined ? null : credit * take, stopUsd: null, timeStopDte: null, legStop: p.clock?.legStop ?? null, trailRestPct: p.clock?.trailRestPct ?? null };
 }
 
 /**
@@ -162,7 +170,7 @@ export function planFor(p: Playbook, proposal: PlaybookProposal, unitsPerLot: nu
   const stopPct = p.exits?.stopPct;
   const stopUsd = stopPct === undefined ? null : maxLoss * stopPct;
   if (stopUsd !== null && stopUsd < 0.01) return null;
-  return { fees, targetUsd, stopUsd, timeStopDte: p.exits?.timeStopDte ?? null, legStop: null };
+  return { fees, targetUsd, stopUsd, timeStopDte: p.exits?.timeStopDte ?? null, legStop: null, trailRestPct: null };
 }
 
 /** Whether `fresh` (a net premium: paid positive, received negative) is better than `open` by the noted margin; judged in cents. */
@@ -191,7 +199,7 @@ function detailOf(proposal: PlaybookProposal, plan: AutopilotPlan | null, nowMs:
     maxLoss: money(proposal.maxLoss),
     capital: money(Math.abs(proposal.maxLoss)),
     legs: proposal.legs.map((l) => ({ side: l.side, kind: l.kind, strike: l.strike, price: l.price })),
-    ...(plan ? { fees: toDecimal(plan.fees, 2), ...(plan.targetUsd === null ? {} : { targetUsd: toDecimal(plan.targetUsd, 2) }), stopUsd: plan.stopUsd === null ? null : toDecimal(plan.stopUsd, 2), ...(plan.legStop === null ? {} : { legStop: plan.legStop }) } : {}),
+    ...(plan ? { fees: toDecimal(plan.fees, 2), ...(plan.targetUsd === null ? {} : { targetUsd: toDecimal(plan.targetUsd, 2) }), stopUsd: plan.stopUsd === null ? null : toDecimal(plan.stopUsd, 2), ...(plan.legStop === null ? {} : { legStop: plan.legStop }), ...(plan.trailRestPct === null ? {} : { trailRestPct: plan.trailRestPct }) } : {}),
     ...(exit ? { exit } : {}),
   };
 }
@@ -325,7 +333,7 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
               else if (!live || !result) await no("No fresh prices: the newest market snapshot is missing or too old");
               else if (!result.ok) await no(skipText(result.reason));
               // by the clock: the next settlement or nothing; a later expiry is another trade than the one the card describes
-              else if (p.clock && daysToExpiryOf(calendar, nowMs, result.proposal.expiry) > p.clock.maxDte) await no("The next expiry has no prices yet", detailOf(result.proposal, null, nowMs));
+              else if (p.clock && daysToExpiryOf(calendar, nowMs, result.proposal.expiry) > p.clock.maxDte) await no(p.clock.weekdayUtc === undefined ? "The next expiry has no prices yet" : "Its Friday expiry has no prices yet", detailOf(result.proposal, null, nowMs));
               else if (result.proposal.legs.some((l) => l.kind === "future")) await no("A futures leg needs a margin figure Autopilot does not have yet", detailOf(result.proposal, null, nowMs));
               else if (result.proposal.legs.some((l) => !(Number(l.price) > 0))) await no("A leg of the structure has no price", detailOf(result.proposal, null, nowMs));
               else if (!plan) await no(p.clock ? "The premium collected is smaller than the fees" : "The fees are larger than the profit target, or the structure has no defined maximum", detailOf(result.proposal, null, nowMs));
@@ -335,7 +343,7 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
                 // By the clock: once per window, counted from the last entry (yesterday's trade settled only hours ago).
                 const [prev] = await deps.db.select({ startedAt: max(strategies.startedAt), closedAt: max(strategies.closedAt) }).from(strategies).where(tradeKey(k));
                 const lastMs = p.clock ? (prev?.startedAt?.getTime() ?? 0) : Math.max(prev?.startedAt?.getTime() ?? 0, prev?.closedAt?.getTime() ?? 0);
-                if (lastMs > 0 && nowMs - lastMs < (p.clock ? CLOCK_ONCE_MS : COOLDOWN_MS)) await no(p.clock ? "Already entered in this evening's window" : `Waiting ${AUTOPILOT_COOLDOWN_MINUTES} minutes after its last trade`);
+                if (lastMs > 0 && nowMs - lastMs < (p.clock ? CLOCK_ONCE_MS : COOLDOWN_MS)) await no(p.clock ? "Already entered in this window" : `Waiting ${AUTOPILOT_COOLDOWN_MINUTES} minutes after its last trade`);
                 else {
                   // a playbook entered by the clock runs on its own exits whatever the card says (ADR-112)
                   const style: AutopilotExitStyle = p.clock ? "own" : wanted.exit === "own" ? "trail" : wanted.exit;
@@ -422,7 +430,7 @@ async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, pl
     // ADR-112: each sold option has its own stop at a multiple of the price it was sold at; the other legs stay
     if (plan.legStop !== null)
       proposal.legs.forEach((l, i) => {
-        if (l.side === "sell" && l.kind !== "future") rules.push(rule({ kind: "leg_stop", trigger: "multiple", value: String(plan.legStop), thresholdUsd: toDecimal(plan.legStop! * Number(l.price), 2), legId: legIds[i]!, scope: "leg" as const }));
+        if (l.side === "sell" && l.kind !== "future") rules.push(rule({ kind: "leg_stop", trigger: "multiple", value: String(plan.legStop), thresholdUsd: toDecimal(plan.legStop! * Number(l.price), 2), legId: legIds[i]!, scope: "leg" as const, ...(plan.trailRestPct === null ? {} : { trailTrigger: "pct" as const, trailValue: String(plan.trailRestPct) }) }));
       });
     if (plan.stopUsd !== null) rules.push(rule({ kind: "stop", trigger: "money", value: toDecimal(plan.stopUsd, 2), thresholdUsd: toDecimal(-plan.stopUsd, 2) }));
     if (plan.timeStopDte !== null) rules.push(rule({ kind: "time", trigger: "dte", value: String(plan.timeStopDte), thresholdUsd: String(plan.timeStopDte) }));

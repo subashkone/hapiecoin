@@ -257,6 +257,10 @@ describe("HC-TR-226 the Autopilot screen: the evening strategies", () => {
     expect(within(wings).getAllByTestId("autopilot-card-asset").map((a) => a.dataset["asset"])).toEqual(["BTC"]); // the backtest covers BTC only
     expect(within(wings).getByText("Backtest only")).toBeTruthy();
     expect(within(card("evening-strangle-stop-2x")).getByTestId("autopilot-card-how").textContent).toContain("Each sold option is bought back if its price reaches 2 times what it was sold for.");
+    // HC-TR-228: the trail-the-rest version says what happens to the other side after a stop
+    expect(within(card("evening-strangle-trail-rest")).getByTestId("autopilot-card-how").textContent).toContain("Each sold option is bought back if its price reaches 2 times what it was sold for. After that, the profit on the other one is trailed and it is closed when it gives back 50 % of its best.");
+    // HC-TR-227: the quick-profit version says both of its exits
+    expect(within(card("evening-strangle-take-half")).getByTestId("autopilot-card-how").textContent).toContain("The whole trade is closed once it is up by 50 % of the premium collected. Each sold option is bought back if its price reaches 2 times what it was sold for.");
     // a recorded playbook keeps its two styles to choose from, and never offers "own"
     const butterfly = card("pin-butterfly");
     expect(within(butterfly).queryByTestId("autopilot-card-own")).toBeNull();
@@ -276,9 +280,43 @@ describe("HC-TR-226 the Autopilot screen: the evening strategies", () => {
     expect(trade("s2").textContent).toContain("Closes in profit atno level: held to settlement");
     expect(trade("s2").textContent).toContain("Stop closes it ateach sold option at 2 times its price");
     expect(trade("sw").textContent).toContain("Stop closes it atno stop: held to its exit or settlement");
+    expect(within(trade("s2")).queryByTestId("autopilot-trade-rest-trail")).toBeNull(); // this one keeps the other side
     // the naked one was entered with no maximum loss: the capital tile says so, and adds only the bounded trade
     expect(screen.getByTestId("autopilot-capital").textContent).toBe("not bounded");
     expect(screen.getByTestId("autopilot-summary").textContent).toContain("a sold strangle with no wings has no maximum loss; the others $31.00");
+  });
+});
+
+describe("HC-TR-230 the Autopilot screen: the weekly strangles", () => {
+  it("HC-TR-230 the strategies are grouped by how far out they trade; a weekly card says its day, its expiry and its exit", async () => {
+    renderWithProviders(<AutopilotPage />);
+    await waitFor(() => expect(screen.getByTestId("autopilot-page").dataset["state"]).toBe("ready"));
+    const groups = screen.getAllByTestId("autopilot-group");
+    expect(groups.map((g) => g.dataset["group"])).toEqual(["Longer-dated strategies", "Evening strangles, daily expiry", "Weekly strangles, Friday expiry"]);
+    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").map((c) => c.dataset["playbook"]))).toEqual([TRADABLE.filter((p) => !p.clock), TRADABLE.filter((p) => p.clock && p.clock.weekdayUtc === undefined), TRADABLE.filter((p) => p.clock?.weekdayUtc !== undefined)].map((g) => g.map((p) => p.id)));
+    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 6, 10]);
+    const card = (id: string) => screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === id)!;
+    const fri = card("weekly-fri-strangle-stop-3x");
+    expect(within(fri).getByText("Friday weekly strangle, stop at triple")).toBeTruthy();
+    expect(within(fri).getByTestId("autopilot-card-how").textContent).toContain("Entered each Friday, 9:30 to 10:30 PM IST, on next Friday's expiry. Each sold option is bought back if its price reaches 3 times what it was sold for. Backtest only so far:");
+    expect(within(card("weekly-tue-strangle-wings")).getByTestId("autopilot-card-how").textContent).toContain("Entered each Tuesday, 9:30 to 10:30 PM IST, on that week's Friday expiry. Held to settlement: the bought wings cap the loss.");
+    expect(within(card("weekly-tue-strangle-trail-rest")).getByTestId("autopilot-card-how").textContent).toContain("gives back 50 % of its best");
+    expect(within(fri).getByTestId("autopilot-card-own").textContent).toBe("Its own exits");
+  });
+});
+
+describe("HC-TR-228 the Autopilot screen: the strangle that trails the rest", () => {
+  it("HC-TR-228 a running trail-the-rest strangle says its stops trail the other side, and once one has fired shows where the rest exits", async () => {
+    const stop = rule({ id: "r_tr", kind: "leg_stop", trigger: "multiple", value: "2", thresholdUsd: "500", legId: "leg_tr", scope: "leg", trail: { trigger: "pct", value: "50" } });
+    acc().strategies.push(auto("tr", "evening-strangle-trail-rest", { legs: [leg("tr", 0)], rules: [stop] }), auto("tr2", "evening-strangle-trail-rest", { asset: "ETH", legs: [leg("tr2", 0)], rules: [stop, rule({ id: "r_t2", kind: "trail", trigger: "pct", value: "50", thresholdUsd: "-26.8", peakPnl: "20" })] }), auto("tr3", "evening-strangle-trail-rest", { asset: "XAUT", legs: [leg("tr3", 0)], rules: [rule({ id: "r_t3", kind: "trail", trigger: "pct", value: "50", thresholdUsd: "-26.8" })] }));
+    acc().autopilot = { settings: { enabled: true, strategies: [{ playbookId: "evening-strangle-trail-rest", exit: "own" }] }, runs: [] };
+    renderWithProviders(<AutopilotPage />);
+    await waitFor(() => expect(screen.getAllByTestId("autopilot-trade")).toHaveLength(3));
+    const trade = (id: string) => screen.getAllByTestId("autopilot-trade").find((x) => x.dataset["id"] === id)!;
+    expect(trade("tr").textContent).toContain("Stop closes it ateach sold option at 2 times its price, then the other side is trailed");
+    expect(within(trade("tr")).queryByTestId("autopilot-trade-rest-trail")).toBeNull(); // no stop has fired
+    expect(within(trade("tr2")).getByTestId("autopilot-trade-rest-trail").textContent).toBe("Trailing what is leftcloses if its profit falls to +$10.00");
+    expect(within(trade("tr3")).getByTestId("autopilot-trade-rest-trail").textContent).toBe("Trailing what is leftstarts once it is in profit");
   });
 });
 

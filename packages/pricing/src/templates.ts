@@ -1,6 +1,7 @@
 /**
  * The strategy templates (HC-TR-037..040; count in TEMPLATE_COUNT) and how they become legs on a real chain: `k`
- * is a number of listed strikes away from the ATM row (never a price step, ADR-006), `expiryOffset` picks a later
+ * is a number of listed strikes away from the ATM row (never a price step, ADR-006; or `pct`, the listed strike
+ * nearest a percentage of the spot away, ADR-115, in which case `k` is not read), `expiryOffset` picks a later
  * listed expiry, `lots` multiplies the chosen lot count. A `future` leg is the asset's perpetual at the live spot,
  * exactly as the Builder's Add Futures dialog places it (HC-TR-035; GAPS #74). Lives in the pricing package (ADR-077)
  * so the API's backtest and the web app place the same templates the same way; the asset type is generic because
@@ -16,6 +17,11 @@ export interface TemplateOptionLeg {
   side: Side;
   /** Rows away from the ATM strike in the venue list (+ above, − below). */
   k: number;
+  /**
+   * ADR-115: instead of `k`, the listed strike nearest to the spot moved by this percentage (+ above, − below). Still
+   * a strike the venue lists (ADR-006); a ladder that does not reach that far refuses the template.
+   */
+  pct?: number;
   lots?: number;
   /** Later listed expiry index (calendars). */
   expiryOffset?: number;
@@ -161,6 +167,8 @@ export type MaterialiseResult<A extends string = string> = { ok: true; legs: Mat
  */
 export function materialiseTemplate<A extends string>(tpl: StrategyTemplate, input: MaterialiseInput<A>): MaterialiseResult<A> {
   const legs: MaterialisedLeg<A>[] = [];
+  // ADR-115: the strikes legs placed by percentage landed on, per expiry: two of them on one strike is not the structure
+  const byPct = new Set<string>();
   for (const l of tpl.legs) {
     if (l.kind === "future") {
       if (input.spot === undefined || !(Number(input.spot) > 0)) return { ok: false, reason: "no-spot" };
@@ -173,7 +181,24 @@ export function materialiseTemplate<A extends string>(tpl: StrategyTemplate, inp
     // GAPS #76: a far leg is never priced off the near expiry's rows; without that chain the template refuses
     const source = expiry === input.expiry ? { rows: input.rows, atm: input.atm } : input.rowsByExpiry?.[expiry];
     if (!source) return { ok: false, reason: "no-chain" };
-    const idx = source.atm + l.k;
+    let idx = source.atm + l.k;
+    if (l.pct !== undefined) {
+      const spot = Number(input.spot);
+      if (input.spot === undefined || !(spot > 0)) return { ok: false, reason: "no-spot" };
+      const want = spot * (1 + l.pct / 100);
+      const strikes = source.rows.map((r) => Number(r.strike));
+      // one row is no ladder: there is no step to judge "about there" by
+      if (strikes.length < 2) return { ok: false, reason: "out-of-range" };
+      idx = strikes.reduce((best, s, i) => (Math.abs(s - want) < Math.abs(strikes[best]! - want) ? i : best), 0);
+      // the nearest strike must be about there: past the end of the ladder by more than its last step is not "listed"
+      const edge = idx === 0 ? strikes[1]! - strikes[0]! : idx === strikes.length - 1 ? strikes[idx]! - strikes[idx - 1]! : Infinity;
+      if (Math.abs(strikes[idx]! - want) > edge) return { ok: false, reason: "out-of-range" };
+      // a ladder too coarse for the percentages puts two legs on one strike (the sold put on the sold call, or a wing
+      // on the strike it should protect): that is another trade than the template, so it is refused
+      const at = `${expiry}|${strikes[idx]!}`;
+      if (byPct.has(at)) return { ok: false, reason: "out-of-range" };
+      byPct.add(at);
+    }
     const row = source.rows[idx];
     if (!row) return { ok: false, reason: "out-of-range" };
     const q = l.kind === "call" ? row.call : row.put;
