@@ -120,10 +120,12 @@ describe("HC-TR-225 playbooks entered by the clock", () => {
   const evening: EodDay[] = [{ day: "2026-09-25", ts: at, spot, expiries: ["2026-09-25", "2026-09-26", "2026-10-30"].map((expiry) => ({ expiry, rows })) }];
   const base = { unitsPerLot: 0.001, calendar: cal };
 
-  it("HC-TR-225 five evening strangles: a window in UTC hours, the nearest expiry at least half a day out, BTC only, outside the recorded list", () => {
-    expect(CLOCK_PLAYBOOKS).toHaveLength(5);
+  it("HC-TR-225 six evening strangles: a window in UTC hours, the nearest expiry at least half a day out, BTC only, outside the recorded list", () => {
+    expect(CLOCK_PLAYBOOKS).toHaveLength(6);
     // HC-TR-227: one of them takes its profit at half the premium, with the stops of the stop-at-double one
-    expect(CLOCK_PLAYBOOKS.map((p) => [p.clock!.legStop, p.clock!.takeProfitOfCredit])).toEqual([[undefined, undefined], [undefined, undefined], [2, undefined], [3, undefined], [2, 0.5]]);
+    expect(CLOCK_PLAYBOOKS.map((p) => [p.clock!.legStop, p.clock!.takeProfitOfCredit])).toEqual([[undefined, undefined], [undefined, undefined], [2, undefined], [3, undefined], [2, 0.5], [2, undefined]]);
+    // HC-TR-228: the last one trails what is left after a stop; no other does
+    expect(CLOCK_PLAYBOOKS.map((p) => p.clock!.trailRestPct)).toEqual([undefined, undefined, undefined, undefined, undefined, 50]);
     for (const p of CLOCK_PLAYBOOKS) {
       expect(p.clock).toMatchObject({ fromHourUtc: 16, toHourUtc: 17, window: "9:30 to 10:30 PM IST", maxDte: 1.5, venues: ["delta_india"] });
       expect(p.evidence.claim).toContain("entered 21:30 IST"); // the bar the window's first pass is
@@ -153,7 +155,7 @@ describe("HC-TR-225 playbooks entered by the clock", () => {
     expect(w3.maxProfit).toBeCloseTo(-w3.entryCost, 6); // the credit, kept when it settles between the sold strikes
     expect(w3.maxLoss).toBeCloseTo(-(1000 * 0.1) - w3.entryCost, 6); // the 1,000 between a sold strike and its wing on 0.1 BTC, less the credit
     expect(placed("evening-strangle-wings-5").legs.map((l) => l.strike)).toEqual(["81200", "82200", "84200", "85200"]);
-    for (const id of ["evening-strangle-stop-2x", "evening-strangle-stop-3x", "evening-strangle-take-half"]) {
+    for (const id of ["evening-strangle-stop-2x", "evening-strangle-stop-3x", "evening-strangle-take-half", "evening-strangle-trail-rest"]) {
       const n = placed(id);
       expect(n.legs.map((l) => `${l.side} ${l.kind} ${l.strike}`)).toEqual(["sell put 82600", "sell call 83800"]);
       expect(n.maxLoss).toBe(-Infinity);
@@ -173,5 +175,13 @@ describe("HC-TR-227 the evening strangle that takes half", () => {
     expect(playbookTemplate(half)!.legs).toEqual(playbookTemplate(twice)!.legs);
     expect(half).toMatchObject({ lots: twice.lots, minDte: twice.minDte, assets: twice.assets });
     expect(half.evidence.claim).toContain("closed at half the premium");
+  });
+
+  it("HC-TR-228 the trail-the-rest strangle is the stop-at-double one with a trail on what is left after a stop", () => {
+    const trail = autopilotPlaybookById("evening-strangle-trail-rest")!;
+    const twice = autopilotPlaybookById("evening-strangle-stop-2x")!;
+    expect(trail.clock).toEqual({ ...twice.clock, trailRestPct: 50 });
+    expect(playbookTemplate(trail)!.legs).toEqual(playbookTemplate(twice)!.legs);
+    expect(trail.evidence.claim).toContain("worst day -42");
   });
 });

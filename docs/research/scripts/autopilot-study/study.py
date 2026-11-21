@@ -148,6 +148,33 @@ def run(st, spot, opts, last_b, settle_spot):
         if out is None:
             out = realised + sum(st["legs"][i][2] * (intrinsic(st["legs"][i][0], st["legs"][i][1], settle_spot) - st["entry"][i]) * st["qty"][i] - fee(settle_spot, intrinsic(st["legs"][i][0], st["legs"][i][1], settle_spot), st["qty"][i]) for i in live)
         st["legtp"][mult] = out
+    # "this leg, then trail the rest" (ADR-104): once a sold option has been stopped, the profit of what is left is
+    # trailed and the rest is closed when it falls back by `give` of its best; the rest keeps its own stop meanwhile.
+    # `exit_rest` 1.0 is the plain alternative: close everything the moment the first stop is hit.
+    st["legtrail"] = {}
+    for mult in (2, 3):
+        for give in (0.1, 0.3, 0.5, 1.0):
+            live = list(range(len(st["legs"])))
+            realised, out, t, stopped, peak = -st["fee_in"], None, st["t0"] + dt.timedelta(minutes=5), False, 0.0
+            while t <= last_b and live:
+                px = {i: opts[st["legs"][i][:2]].get(t) for i in live}
+                sp = spot.get(t, settle_spot)
+                for i in list(live):
+                    kind, k, sg, _ = st["legs"][i]
+                    if sg < 0 and px[i] is not None and px[i] >= mult * st["entry"][i]:
+                        realised += sg * (px[i] - st["entry"][i]) * st["qty"][i] - fee(sp, px[i], st["qty"][i])
+                        live.remove(i)
+                        stopped = True
+                if stopped and live and all(px[i] is not None for i in live):
+                    rest = sum(st["legs"][i][2] * (px[i] - st["entry"][i]) * st["qty"][i] for i in live)
+                    peak = max(peak, rest)
+                    if give >= 1.0 or (peak >= 0.01 and rest <= peak * (1 - give)):
+                        out = realised + rest - sum(fee(sp, px[i], st["qty"][i]) for i in live)
+                        break
+                t += dt.timedelta(minutes=5)
+            if out is None:
+                out = realised + sum(st["legs"][i][2] * (intrinsic(st["legs"][i][0], st["legs"][i][1], settle_spot) - st["entry"][i]) * st["qty"][i] - fee(settle_spot, intrinsic(st["legs"][i][0], st["legs"][i][1], settle_spot), st["qty"][i]) for i in live)
+            st["legtrail"][(mult, give)] = out
     return st
 
 
@@ -311,3 +338,21 @@ for name, rs in hourly.items():
         bym[r["exp"][:7]].append(r)
     alt = ("leg", 2) if name in LEGSTOP else (50, 50)
     print(f"{name:52s} " + " | ".join(f"{mth} n={len(v):2d} hold {sum(outcome(r) for r in v):+7.0f} alt {sum(outcome(r, *alt) for r in v):+7.0f}" + (f" half {sum(outcome(r, 'legtp', 2) for r in v):+7.0f} stop3x {sum(outcome(r, 'leg', 3) for r in v):+7.0f} half3x {sum(outcome(r, 'legtp', 3) for r in v):+7.0f}" if name in LEGSTOP else "") for mth, v in sorted(bym.items())))
+
+# what to do with the other side once one sold option has been stopped (21:30 IST entry)
+print("\n" + "=" * 110)
+print("E. AFTER THE FIRST STOP, 21:30 IST entry: keep the other side to settlement (with its own stop), trail its profit, or close it at once")
+print("=" * 110)
+for name in sorted(NAKED):
+    ev = [r for r in hourly[name] if r["h"] == EVENING_H]
+    if not ev:
+        continue
+    print(f"\n{name}")
+    for mult in (2, 3):
+        hit = [r for r in ev if abs(r["legstop"][mult] - r["hold"]) > 1e-9]
+        print(f"   stop at {mult}x: a stop was hit on {len(hit)} of {len(ev)} days")
+        print(f"      keep the other side         all days: {stats([r['legstop'][mult] for r in ev])} | stop days only: {stats([r['legstop'][mult] for r in hit])}")
+        for give, lab in ((0.1, "trail, give back 10 %"), (0.3, "trail, give back 30 %"), (0.5, "trail, give back 50 %"), (1.0, "close it at once")):
+            print(f"      {lab:27s} all days: {stats([r['legtrail'][(mult, give)] for r in ev])} | stop days only: {stats([r['legtrail'][(mult, give)] for r in hit])}")
+        both = sum(1 for r in ev if r["legstop"][mult] < -0.9 * r["credit"])
+        print(f"      days that lost about the whole premium or more with 'keep' (both sides stopped, or one stopped far beyond): {both}")

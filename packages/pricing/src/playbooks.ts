@@ -67,6 +67,11 @@ export interface PlaybookClock {
   legStop?: number | undefined;
   /** ADR-113: the whole trade is closed once its profit reaches this share of the premium collected; absent: no profit take. */
   takeProfitOfCredit?: number | undefined;
+  /**
+   * ADR-114: once a sold option has been stopped, the profit of what is left is trailed and closed when it gives back
+   * this percentage of its best (the leg stop's "this leg, then trail the rest", ADR-104); absent: the rest is kept.
+   */
+  trailRestPct?: number | undefined;
 }
 
 const DEFINED_RISK_EXITS: BacktestExits = { targetPct: 0.5, stopPct: 0.5, timeStopDte: 2 };
@@ -220,10 +225,10 @@ function strangle(name: string, k: number, wing: number | null): StrategyTemplat
  */
 const EVENING = { fromHourUtc: 16, toHourUtc: 17, window: "9:30 to 10:30 PM IST", maxDte: 1.5, venues: ["delta_india"] } as const;
 const STUDY = "docs/research/scripts/autopilot-study (106 BTC daily expiries, 8 Aug to 21 Nov 2026, 5-minute marks, the exchange's real fees, 100 lots)";
-const STUDY_TRIALS = { count: 456, note: "19 structures at 24 entry hours on the same 106 days, with several exits each; these were chosen after seeing the results, so their figures are in-sample and the paper record is the test" };
+const STUDY_TRIALS = { count: 456, note: "19 structures at 24 entry hours on the same 106 days, with several exits each, and for the stopped strangle five more exits tried afterwards (take half at two stops; trail the rest at three give-backs, of which 50 % was the best; close the rest at once); these were chosen after seeing the results, so their figures are in-sample and the paper record is the test" };
 /** Never judged by the daily record (it enters at the settlement hour, the worst hour of the study): Autopilot's own results are the record. */
 const NO_RECORD: PlaybookThresholds = { minTrades: Number.MAX_SAFE_INTEGER, netPositive: true, outOfSamplePositive: true };
-const clockPlaybook = (id: string, name: string, summary: string, rationale: string, claim: string, template: StrategyTemplate, legStop?: number, takeProfitOfCredit?: number): Playbook => ({
+const clockPlaybook = (id: string, name: string, summary: string, rationale: string, claim: string, template: StrategyTemplate, legStop?: number, takeProfitOfCredit?: number, trailRestPct?: number): Playbook => ({
   id,
   name,
   summary,
@@ -237,7 +242,7 @@ const clockPlaybook = (id: string, name: string, summary: string, rationale: str
   thresholds: NO_RECORD,
   trials: STUDY_TRIALS,
   control: false,
-  clock: { ...EVENING, legStop, takeProfitOfCredit },
+  clock: { ...EVENING, legStop, takeProfitOfCredit, trailRestPct },
 });
 
 /** The playbooks Autopilot enters by the clock (ADR-112). BTC only: the study behind them covers no other asset. */
@@ -254,7 +259,7 @@ export const CLOCK_PLAYBOOKS: readonly Playbook[] = [
     "evening-strangle-wings-5",
     "Wide evening strangle with wings",
     "Each evening sell a call and a put five strikes out on the next expiry and buy the options ten strikes out; hold to settlement.",
-    "The same trade further from the price: it wins more often and earns less each time. The far wings had a price on about half the days only, so this is the thinnest record of the four.",
+    "The same trade further from the price: it wins more often and earns less each time. The far wings had a price on about half the days only, so this is the thinnest record of them all.",
     "Sold 1,000 away with wings 2,000 away, entered 21:30 IST, held to settlement: +7.68 a day on 55 days, 89 % of days positive, worst day -90; every month positive, October by 9 only.",
     strangle("Evening strangle with wings (5 / 10)", 5, 10),
   ),
@@ -285,6 +290,17 @@ export const CLOCK_PLAYBOOKS: readonly Playbook[] = [
     strangle("Evening strangle (3)", 3, null),
     2,
     0.5,
+  ),
+  clockPlaybook(
+    "evening-strangle-trail-rest",
+    "Evening strangle, trail the rest",
+    "Each evening sell a call and a put three strikes out on the next expiry; buy either one back if its price doubles, then trail the profit on the other and close it when it gives back half of its best.",
+    "The owner's question: after one side is stopped, a reversal can stop the other too. Trailing the side that is left gives up part of its premium for a smaller worst day. Beside the stop-at-double one it differs from in this rule only.",
+    "Sold 600 away, entered 21:30 IST, each option stopped at twice its price, the other side then trailed with a give-back of half its best: +6.45 a day on 106 days, 45 % of days positive, worst day -42; keeping the other side to settlement instead averaged +7.51 with a worst day of -60. A stop was hit on 64 of the 106 days.",
+    strangle("Evening strangle (3)", 3, null),
+    2,
+    undefined,
+    50,
   ),
 ];
 

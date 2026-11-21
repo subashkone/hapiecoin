@@ -125,6 +125,8 @@ export interface AutopilotPlan {
   timeStopDte: number | null;
   /** Every sold option is closed on its own at this multiple of its entry price; null when there is no such stop. */
   legStop: number | null;
+  /** ADR-114: a stopped option starts a trail on the rest with this percentage give-back; null: the rest is kept. */
+  trailRestPct: number | null;
 }
 
 type FeeRule = Parameters<typeof fillFee>[3] | null;
@@ -147,7 +149,7 @@ export function clockPlanFor(p: Playbook, proposal: PlaybookProposal, unitsPerLo
   const take = p.clock?.takeProfitOfCredit;
   // a profit level that rounds to nothing would close the trade on the first tick (as planFor refuses for its own)
   if (take !== undefined && credit * take < 0.01) return null;
-  return { fees, targetUsd: take === undefined ? null : credit * take, stopUsd: null, timeStopDte: null, legStop: p.clock?.legStop ?? null };
+  return { fees, targetUsd: take === undefined ? null : credit * take, stopUsd: null, timeStopDte: null, legStop: p.clock?.legStop ?? null, trailRestPct: p.clock?.trailRestPct ?? null };
 }
 
 /**
@@ -167,7 +169,7 @@ export function planFor(p: Playbook, proposal: PlaybookProposal, unitsPerLot: nu
   const stopPct = p.exits?.stopPct;
   const stopUsd = stopPct === undefined ? null : maxLoss * stopPct;
   if (stopUsd !== null && stopUsd < 0.01) return null;
-  return { fees, targetUsd, stopUsd, timeStopDte: p.exits?.timeStopDte ?? null, legStop: null };
+  return { fees, targetUsd, stopUsd, timeStopDte: p.exits?.timeStopDte ?? null, legStop: null, trailRestPct: null };
 }
 
 /** Whether `fresh` (a net premium: paid positive, received negative) is better than `open` by the noted margin; judged in cents. */
@@ -196,7 +198,7 @@ function detailOf(proposal: PlaybookProposal, plan: AutopilotPlan | null, nowMs:
     maxLoss: money(proposal.maxLoss),
     capital: money(Math.abs(proposal.maxLoss)),
     legs: proposal.legs.map((l) => ({ side: l.side, kind: l.kind, strike: l.strike, price: l.price })),
-    ...(plan ? { fees: toDecimal(plan.fees, 2), ...(plan.targetUsd === null ? {} : { targetUsd: toDecimal(plan.targetUsd, 2) }), stopUsd: plan.stopUsd === null ? null : toDecimal(plan.stopUsd, 2), ...(plan.legStop === null ? {} : { legStop: plan.legStop }) } : {}),
+    ...(plan ? { fees: toDecimal(plan.fees, 2), ...(plan.targetUsd === null ? {} : { targetUsd: toDecimal(plan.targetUsd, 2) }), stopUsd: plan.stopUsd === null ? null : toDecimal(plan.stopUsd, 2), ...(plan.legStop === null ? {} : { legStop: plan.legStop }), ...(plan.trailRestPct === null ? {} : { trailRestPct: plan.trailRestPct }) } : {}),
     ...(exit ? { exit } : {}),
   };
 }
@@ -427,7 +429,7 @@ async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, pl
     // ADR-112: each sold option has its own stop at a multiple of the price it was sold at; the other legs stay
     if (plan.legStop !== null)
       proposal.legs.forEach((l, i) => {
-        if (l.side === "sell" && l.kind !== "future") rules.push(rule({ kind: "leg_stop", trigger: "multiple", value: String(plan.legStop), thresholdUsd: toDecimal(plan.legStop! * Number(l.price), 2), legId: legIds[i]!, scope: "leg" as const }));
+        if (l.side === "sell" && l.kind !== "future") rules.push(rule({ kind: "leg_stop", trigger: "multiple", value: String(plan.legStop), thresholdUsd: toDecimal(plan.legStop! * Number(l.price), 2), legId: legIds[i]!, scope: "leg" as const, ...(plan.trailRestPct === null ? {} : { trailTrigger: "pct" as const, trailValue: String(plan.trailRestPct) }) }));
       });
     if (plan.stopUsd !== null) rules.push(rule({ kind: "stop", trigger: "money", value: toDecimal(plan.stopUsd, 2), thresholdUsd: toDecimal(-plan.stopUsd, 2) }));
     if (plan.timeStopDte !== null) rules.push(rule({ kind: "time", trigger: "dte", value: String(plan.timeStopDte), thresholdUsd: String(plan.timeStopDte) }));

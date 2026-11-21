@@ -55,6 +55,20 @@ After the 21:30 IST entry, the same structure was opened again on the new at-the
 
 On the days the ladder added, the first trade averaged a small profit for the strangle and the added trades together a loss (−5.78 with the stop, −13.51 without). Two or more of the day's trades ended positive on 0 to 10 % of those days for the butterflies and 24 % for the stopped strangle. The price reaches the next strike by trending, and it usually goes on. ADR-110's several-trades rule was set back to one trade at a time on this evidence.
 
-## 6. Not tested yet
+## 6. After the first stop: keep, trail or close the other side
+
+For the naked strangle 600 entered at 21:30 IST (`study.py`, section E). With the stop at 2x a stop was hit on 64 of the 106 days; with the stop at 3x on 38.
+
+| After the first stop | Stop at 2x: mean / worst day | Stop at 3x: mean / worst day |
+|---|---|---|
+| Keep the other side to settlement, with its own stop | +7.51 / −60 | +12.00 / −98 |
+| Trail its profit, give back 50 % of the best | +6.45 / −42 | +12.19 / −98 |
+| Trail, give back 30 % | +5.50 / −42 | +12.01 / −98 |
+| Trail, give back 10 % | +5.81 / −42 | +11.65 / −98 |
+| Close it at once | +6.32 / −42 | +11.78 / −101 |
+
+Keeping earns the most: after a stop the other side is usually far from the price and decays to nothing. Trailing or closing had a smaller worst day (the script counts the days both sides were stopped for the keep version only: 5 at 2x). The three give-backs are not ordered (10 % beat 30 %) and 50 % beat closing at once by 0.13 a day, which is noise on 64 days. ADR-114 put the 50 % trail on paper beside the keep version.
+
+## 7. Not tested yet
 
 Calendar spreads; weekly and monthly strangles; ETH; strikes set by the day's expected move instead of a fixed distance; skipping US announcement days; a trend filter on the sold side; a timed exit before settlement; margin.

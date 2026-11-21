@@ -10,11 +10,17 @@ const run = (over: Partial<AutopilotRun>): AutopilotRun => ({ id: "1", at: AT, p
 
 describe("HC-TR-220 the exit levels of an Autopilot trade", () => {
   it("HC-TR-220 reads the target, the trail and the stop from the armed rules", () => {
-    expect(autopilotLevels(strategy(undefined))).toEqual({ targetUsd: null, trails: false, bestUsd: null, trailExitUsd: null, stopUsd: null, legStop: null });
+    expect(autopilotLevels(strategy(undefined))).toEqual({ targetUsd: null, trails: false, bestUsd: null, trailExitUsd: null, stopUsd: null, legStop: null, legStopTrailPct: null });
     // a plain target and a stop; a fired rule is history, not a level
-    expect(autopilotLevels(strategy([rule({ thresholdUsd: "0.91" }), rule({ id: "r2", kind: "stop", thresholdUsd: "-9" }), rule({ id: "r3", kind: "stop", thresholdUsd: "-99", state: "fired" })]))).toEqual({ targetUsd: 0.91, trails: false, bestUsd: null, trailExitUsd: null, stopUsd: 9, legStop: null });
+    expect(autopilotLevels(strategy([rule({ thresholdUsd: "0.91" }), rule({ id: "r2", kind: "stop", thresholdUsd: "-9" }), rule({ id: "r3", kind: "stop", thresholdUsd: "-99", state: "fired" })]))).toEqual({ targetUsd: 0.91, trails: false, bestUsd: null, trailExitUsd: null, stopUsd: 9, legStop: null, legStopTrailPct: null });
     // ADR-112: an evening strangle has no profit level and no strategy stop, only a stop on each sold option
-    expect(autopilotLevels(strategy([rule({ id: "l1", kind: "leg_stop", trigger: "multiple", value: "3", thresholdUsd: "804", legId: "leg_1", scope: "leg" })]))).toEqual({ targetUsd: null, trails: false, bestUsd: null, trailExitUsd: null, stopUsd: null, legStop: 3 });
+    expect(autopilotLevels(strategy([rule({ id: "l1", kind: "leg_stop", trigger: "multiple", value: "3", thresholdUsd: "804", legId: "leg_1", scope: "leg" })]))).toEqual({ targetUsd: null, trails: false, bestUsd: null, trailExitUsd: null, stopUsd: null, legStop: 3, legStopTrailPct: null });
+    // HC-TR-228: a stop set to trail the rest says so; once it has fired, the running trail gives the profit the rest exits at
+    const trailing = rule({ id: "l2", kind: "leg_stop", trigger: "multiple", value: "2", thresholdUsd: "536", legId: "leg_2", scope: "leg", trail: { trigger: "pct", value: "50" } });
+    expect(autopilotLevels(strategy([trailing]))).toMatchObject({ legStop: 2, legStopTrailPct: 50 });
+    expect(autopilotLevels(strategy([trailing])).restTrailExitUsd).toBeUndefined();
+    expect(autopilotLevels(strategy([trailing, rule({ id: "t1", kind: "trail", trigger: "pct", value: "50", thresholdUsd: "-26.8" })])).restTrailExitUsd).toBeNull(); // not in profit yet
+    expect(autopilotLevels(strategy([trailing, rule({ id: "t1", kind: "trail", trigger: "pct", value: "50", thresholdUsd: "-26.8", peakPnl: "20" })])).restTrailExitUsd).toBe(10);
     // a trailing target before and after it is reached: the exit is the best less a tenth
     expect(autopilotLevels(strategy([rule({ thresholdUsd: "2", trail: { trigger: "pct", value: "10" } })]))).toMatchObject({ targetUsd: 2, trails: true, bestUsd: null, trailExitUsd: null });
     expect(autopilotLevels(strategy([rule({ thresholdUsd: "2", trail: { trigger: "pct", value: "10" }, peakPnl: "5" })]))).toMatchObject({ trails: true, bestUsd: 5, trailExitUsd: 4.5 });

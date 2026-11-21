@@ -8329,6 +8329,21 @@
   "evidence": "ADR-113 (21 Nov 2026): packages/pricing/src/playbooks.ts (takeProfitOfCredit, evening-strangle-take-half), apps/api/src/autopilot.ts (clockPlanFor), apps/web/src/components/autopilot/AutopilotPage.tsx (autopilot-card-how), docs/research/scripts/autopilot-study/study.py (legtp); tests: apps/api/src/autopilot.test.ts HC-TR-227 (within HC-TR-225), packages/pricing/src/playbooks.test.ts HC-TR-227, autopilot-page.test.tsx HC-TR-227"
  },
  {
+  "id": "HC-TR-228",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "A sixth evening strangle trails the other side after a stop, beside the stop-at-double one that keeps it",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "integration (api)",
+  "acceptance": "evening-strangle-trail-rest: sold three strikes out in the evening window, each sold option bought back at twice its price, the stop set to this leg then trail the rest with a give-back of 50 %, so after one stop the other option is closed when its profit falls back by half of its best; the card says so; the results compare it with the stop-at-double version",
+  "evidence": "ADR-114 (22 Nov 2026): packages/pricing/src/playbooks.ts (trailRestPct, evening-strangle-trail-rest), apps/api/src/autopilot.ts (clockPlanFor, enter), apps/web/src/components/autopilot/AutopilotPage.tsx (autopilot-card-how), docs/research/scripts/autopilot-study/study.py (section E); tests: packages/pricing/src/playbooks.test.ts HC-TR-228, apps/api/src/autopilot.test.ts HC-TR-228 (within HC-TR-225), autopilot-page.test.tsx HC-TR-228 (within HC-TR-226)"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

@@ -1,6 +1,6 @@
 # Paper trading, live trading, rules and accounts
 
-Part of the [HapieCoin feature guide](README.md). 115 traced features on 35 screens; 115 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 116 traced features on 35 screens; 116 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -54,6 +54,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-225 | Autopilot enters four evening strangles by the clock, on the nearest expiry, with their own exits, and holds one trade per strategy and coin at a time | four playbooks outside the recorded list, BTC, 100 lots: sold three (or five) strikes out with wings eight (or ten) out and held to settlement, or sold three out with each sold option bought back at two (or three) times its price; entered once in the hour from 16:00 UTC (21:30 IST) on Delta India, on the first expiry at least half a day and at most a day and a half out, when the premium exceeds both fees; a leg stop rule per sold option, no Autopilot profit level; saved with the exit style own; outside the window, holding a trade and already entered are logged reasons; AUTOPILOT_MAX_OPEN is 1 | built | integration (api) |
 | HC-TR-226 | The Autopilot screen shows the evening strategies: when each enters, how it exits, the backtest behind it, and the stop on each sold option of a running trade | a card of a strategy entered by the clock states its window, its exit (held to settlement behind its wings, or each sold option bought back at a multiple of its price) and the backtest figure with its sample, marked Backtest only; it has no exit style to choose and is saved with its own exits; a running evening strangle shows its profit level when it has one (the take-half version) or that it is held to settlement, and the stop on each sold option; capital in use reads not bounded while a strangle with no wings is open; the results count the own style beside trail and target | built | unit (web) |
 | HC-TR-227 | A fifth evening strangle takes its profit at half the premium collected, beside the stop-at-double one it is otherwise identical to | evening-strangle-take-half: sold three strikes out in the evening window, each sold option bought back at twice its price, and a target on the whole trade at half the premium (an ordinary target rule, no trail); the card states both exits; the results compare it with the stop-at-double version under the own style | built | integration (api) |
+| HC-TR-228 | A sixth evening strangle trails the other side after a stop, beside the stop-at-double one that keeps it | evening-strangle-trail-rest: sold three strikes out in the evening window, each sold option bought back at twice its price, the stop set to this leg then trail the rest with a give-back of 50 %, so after one stop the other option is closed when its profit falls back by half of its best; the card says so; the results compare it with the stop-at-double version | built | integration (api) |
 
 ### Trading · Protect dialog / cards · Details · `/desk`
 

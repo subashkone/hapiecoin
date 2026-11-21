@@ -796,3 +796,103 @@ short strangle 800 (naked)                           2026-08 n=24 hold     -70 a
 short strangle 1400 (naked)                          2026-08 n=23 hold    -162 alt      +3 half    +141 stop3x     +24 half3x    +129 | 2026-09 n=29 hold    +244 alt    +285 half    +120 stop3x    +359 half3x    +190 | 2026-10 n=28 hold    -273 alt     +91 half     +63 stop3x    +123 half3x     +87 | 2026-11 n=18 hold    +344 alt    +107 half    +103 stop3x     +88 half3x     +60
 strangle 600 with wings at 1600                      2026-08 n=18 hold    +128 alt     -73 half     -61 stop3x     +13 half3x     -37 | 2026-09 n=24 hold    +130 alt    +129 half     -40 stop3x    +422 half3x    +304 | 2026-10 n=26 hold     +74 alt      +1 half      +8 stop3x    +184 half3x    +160 | 2026-11 n=16 hold    +167 alt     -25 half    +102 stop3x    +100 half3x    +188
 strangle 1000 with wings at 2000                     2026-08 n= 9 hold     +42 alt     +15 half     +14 stop3x     +54 half3x      -2 | 2026-09 n=16 hold    +153 alt    +229 half     +13 stop3x    +410 half3x    +150 | 2026-10 n=17 hold      +9 alt     -80 half     -32 stop3x     -42 half3x     +54 | 2026-11 n=13 hold    +219 alt      +3 half     +21 stop3x    +147 half3x    +137
+
+==============================================================================================================
+E. AFTER THE FIRST STOP, 21:30 IST entry: keep the other side to settlement (with its own stop), trail its profit, or close it at once
+==============================================================================================================
+
+short straddle ATM (naked)
+   stop at 2x: a stop was hit on 67 of 106 days
+      keep the other side         all days: n= 106 mean=  +9.11 total=    +966 win= 48% worst=  -101.5 maxDD=    -233 | stop days only: n=  67 mean= -17.84 total=   -1195 win= 18% worst=  -101.5 maxDD=   -1200
+      trail, give back 10 %       all days: n= 106 mean=  +7.46 total=    +791 win= 40% worst=   -57.2 maxDD=    -299 | stop days only: n=  67 mean= -20.46 total=   -1371 win=  4% worst=   -57.2 maxDD=   -1371
+      trail, give back 30 %       all days: n= 106 mean=  +6.73 total=    +713 win= 42% worst=   -60.3 maxDD=    -354 | stop days only: n=  67 mean= -21.61 total=   -1448 win=  9% worst=   -60.3 maxDD=   -1448
+      trail, give back 50 %       all days: n= 106 mean=  +7.44 total=    +789 win= 45% worst=   -60.2 maxDD=    -312 | stop days only: n=  67 mean= -20.49 total=   -1373 win= 13% worst=   -60.2 maxDD=   -1378
+      close it at once            all days: n= 106 mean=  +8.83 total=    +936 win= 39% worst=   -50.1 maxDD=    -260 | stop days only: n=  67 mean= -18.29 total=   -1225 win=  3% worst=   -50.1 maxDD=   -1226
+      days that lost about the whole premium or more with 'keep' (both sides stopped, or one stopped far beyond): 5
+   stop at 3x: a stop was hit on 33 of 106 days
+      keep the other side         all days: n= 106 mean= +14.54 total=   +1541 win= 60% worst=  -171.5 maxDD=    -382 | stop days only: n=  33 mean= -57.44 total=   -1895 win=  0% worst=  -171.5 maxDD=   -1895
+      trail, give back 10 %       all days: n= 106 mean= +14.37 total=   +1523 win= 60% worst=  -104.7 maxDD=    -364 | stop days only: n=  33 mean= -57.97 total=   -1913 win=  0% worst=  -104.7 maxDD=   -1913
+      trail, give back 30 %       all days: n= 106 mean= +14.87 total=   +1577 win= 60% worst=  -104.7 maxDD=    -342 | stop days only: n=  33 mean= -56.35 total=   -1859 win=  0% worst=  -104.7 maxDD=   -1859
+      trail, give back 50 %       all days: n= 106 mean= +14.88 total=   +1578 win= 60% worst=  -108.8 maxDD=    -327 | stop days only: n=  33 mean= -56.32 total=   -1858 win=  0% worst=  -108.8 maxDD=   -1858
+      close it at once            all days: n= 106 mean= +14.56 total=   +1543 win= 60% worst=  -109.3 maxDD=    -366 | stop days only: n=  33 mean= -57.36 total=   -1893 win=  0% worst=  -109.3 maxDD=   -1893
+      days that lost about the whole premium or more with 'keep' (both sides stopped, or one stopped far beyond): 5
+
+short strangle 1000 (naked)
+   stop at 2x: a stop was hit on 60 of 105 days
+      keep the other side         all days: n= 105 mean=  +6.30 total=    +661 win= 52% worst=   -27.6 maxDD=     -82 | stop days only: n=  60 mean=  -7.60 total=    -456 win= 17% worst=   -27.6 maxDD=    -457
+      trail, give back 10 %       all days: n= 105 mean=  +4.88 total=    +513 win= 46% worst=   -34.4 maxDD=    -119 | stop days only: n=  60 mean= -10.08 total=    -605 win=  5% worst=   -34.4 maxDD=    -605
+      trail, give back 30 %       all days: n= 105 mean=  +5.15 total=    +541 win= 50% worst=   -34.4 maxDD=    -105 | stop days only: n=  60 mean=  -9.61 total=    -576 win= 12% worst=   -34.4 maxDD=    -576
+      trail, give back 50 %       all days: n= 105 mean=  +5.64 total=    +592 win= 52% worst=   -34.4 maxDD=     -94 | stop days only: n=  60 mean=  -8.75 total=    -525 win= 17% worst=   -34.4 maxDD=    -526
+      close it at once            all days: n= 105 mean=  +5.25 total=    +552 win= 46% worst=   -28.8 maxDD=    -107 | stop days only: n=  60 mean=  -9.43 total=    -566 win=  5% worst=   -28.8 maxDD=    -566
+      days that lost about the whole premium or more with 'keep' (both sides stopped, or one stopped far beyond): 6
+   stop at 3x: a stop was hit on 37 of 105 days
+      keep the other side         all days: n= 105 mean=  +9.27 total=    +974 win= 67% worst=   -86.2 maxDD=    -158 | stop days only: n=  37 mean= -23.90 total=    -884 win=  5% worst=   -86.2 maxDD=    -884
+      trail, give back 10 %       all days: n= 105 mean=  +8.86 total=    +931 win= 66% worst=   -89.9 maxDD=    -162 | stop days only: n=  37 mean= -25.07 total=    -928 win=  3% worst=   -89.9 maxDD=    -928
+      trail, give back 30 %       all days: n= 105 mean=  +9.27 total=    +973 win= 66% worst=   -86.2 maxDD=    -158 | stop days only: n=  37 mean= -23.91 total=    -885 win=  3% worst=   -86.2 maxDD=    -885
+      trail, give back 50 %       all days: n= 105 mean=  +9.19 total=    +965 win= 67% worst=   -86.2 maxDD=    -158 | stop days only: n=  37 mean= -24.13 total=    -893 win=  5% worst=   -86.2 maxDD=    -893
+      close it at once            all days: n= 105 mean=  +9.02 total=    +947 win= 65% worst=   -88.3 maxDD=    -160 | stop days only: n=  37 mean= -24.64 total=    -912 win=  0% worst=   -88.3 maxDD=    -912
+      days that lost about the whole premium or more with 'keep' (both sides stopped, or one stopped far beyond): 15
+
+short strangle 1400 (naked)
+   stop at 2x: a stop was hit on 51 of 98 days
+      keep the other side         all days: n=  98 mean=  +4.96 total=    +486 win= 57% worst=   -23.8 maxDD=     -43 | stop days only: n=  51 mean=  -5.79 total=    -296 win= 18% worst=   -23.8 maxDD=    -296
+      trail, give back 10 %       all days: n=  98 mean=  +3.98 total=    +390 win= 51% worst=   -23.8 maxDD=     -56 | stop days only: n=  51 mean=  -7.67 total=    -391 win=  6% worst=   -23.8 maxDD=    -391
+      trail, give back 30 %       all days: n=  98 mean=  +4.31 total=    +422 win= 54% worst=   -23.8 maxDD=     -48 | stop days only: n=  51 mean=  -7.04 total=    -359 win= 12% worst=   -23.8 maxDD=    -359
+      trail, give back 50 %       all days: n=  98 mean=  +4.57 total=    +448 win= 56% worst=   -23.8 maxDD=     -43 | stop days only: n=  51 mean=  -6.53 total=    -333 win= 16% worst=   -23.8 maxDD=    -333
+      close it at once            all days: n=  98 mean=  +4.28 total=    +419 win= 51% worst=   -23.8 maxDD=     -52 | stop days only: n=  51 mean=  -7.10 total=    -362 win=  6% worst=   -23.8 maxDD=    -362
+      days that lost about the whole premium or more with 'keep' (both sides stopped, or one stopped far beyond): 10
+   stop at 3x: a stop was hit on 34 of 98 days
+      keep the other side         all days: n=  98 mean=  +6.05 total=    +593 win= 65% worst=   -68.6 maxDD=    -115 | stop days only: n=  34 mean= -16.74 total=    -569 win=  0% worst=   -68.6 maxDD=    -569
+      trail, give back 10 %       all days: n=  98 mean=  +5.91 total=    +579 win= 65% worst=   -71.1 maxDD=    -117 | stop days only: n=  34 mean= -17.15 total=    -583 win=  0% worst=   -71.1 maxDD=    -583
+      trail, give back 30 %       all days: n=  98 mean=  +6.13 total=    +601 win= 65% worst=   -68.6 maxDD=    -115 | stop days only: n=  34 mean= -16.51 total=    -561 win=  0% worst=   -68.6 maxDD=    -561
+      trail, give back 50 %       all days: n=  98 mean=  +6.13 total=    +600 win= 65% worst=   -68.6 maxDD=    -115 | stop days only: n=  34 mean= -16.51 total=    -561 win=  0% worst=   -68.6 maxDD=    -561
+      close it at once            all days: n=  98 mean=  +6.01 total=    +589 win= 65% worst=   -69.9 maxDD=    -116 | stop days only: n=  34 mean= -16.84 total=    -573 win=  0% worst=   -69.9 maxDD=    -573
+      days that lost about the whole premium or more with 'keep' (both sides stopped, or one stopped far beyond): 19
+
+short strangle 400 (naked)
+   stop at 2x: a stop was hit on 65 of 106 days
+      keep the other side         all days: n= 106 mean=  +9.23 total=    +979 win= 45% worst=   -82.1 maxDD=    -156 | stop days only: n=  65 mean= -12.58 total=    -818 win= 11% worst=   -82.1 maxDD=    -818
+      trail, give back 10 %       all days: n= 106 mean=  +7.31 total=    +775 win= 42% worst=   -46.1 maxDD=    -210 | stop days only: n=  65 mean= -15.72 total=   -1022 win=  5% worst=   -46.1 maxDD=   -1022
+      trail, give back 30 %       all days: n= 106 mean=  +7.23 total=    +767 win= 44% worst=   -46.1 maxDD=    -201 | stop days only: n=  65 mean= -15.85 total=   -1030 win=  9% worst=   -46.1 maxDD=   -1030
+      trail, give back 50 %       all days: n= 106 mean=  +7.88 total=    +835 win= 45% worst=   -46.1 maxDD=    -182 | stop days only: n=  65 mean= -14.79 total=    -961 win= 11% worst=   -46.1 maxDD=    -961
+      close it at once            all days: n= 106 mean=  +8.12 total=    +861 win= 41% worst=   -46.4 maxDD=    -184 | stop days only: n=  65 mean= -14.39 total=    -936 win=  3% worst=   -46.4 maxDD=    -936
+      days that lost about the whole premium or more with 'keep' (both sides stopped, or one stopped far beyond): 5
+   stop at 3x: a stop was hit on 35 of 106 days
+      keep the other side         all days: n= 106 mean= +14.38 total=   +1524 win= 63% worst=  -102.1 maxDD=    -225 | stop days only: n=  35 mean= -42.06 total=   -1472 win=  0% worst=  -102.1 maxDD=   -1472
+      trail, give back 10 %       all days: n= 106 mean= +14.64 total=   +1552 win= 63% worst=  -101.0 maxDD=    -228 | stop days only: n=  35 mean= -41.25 total=   -1444 win=  0% worst=  -101.0 maxDD=   -1444
+      trail, give back 30 %       all days: n= 106 mean= +14.99 total=   +1589 win= 63% worst=  -101.0 maxDD=    -211 | stop days only: n=  35 mean= -40.20 total=   -1407 win=  0% worst=  -101.0 maxDD=   -1407
+      trail, give back 50 %       all days: n= 106 mean= +15.15 total=   +1606 win= 63% worst=  -101.0 maxDD=    -211 | stop days only: n=  35 mean= -39.73 total=   -1390 win=  0% worst=  -101.0 maxDD=   -1390
+      close it at once            all days: n= 106 mean= +14.63 total=   +1551 win= 63% worst=  -104.3 maxDD=    -231 | stop days only: n=  35 mean= -41.28 total=   -1445 win=  0% worst=  -104.3 maxDD=   -1445
+      days that lost about the whole premium or more with 'keep' (both sides stopped, or one stopped far beyond): 8
+
+short strangle 600 (naked)
+   stop at 2x: a stop was hit on 64 of 106 days
+      keep the other side         all days: n= 106 mean=  +7.51 total=    +796 win= 45% worst=   -60.2 maxDD=    -134 | stop days only: n=  64 mean= -10.99 total=    -703 win= 11% worst=   -60.2 maxDD=    -703
+      trail, give back 10 %       all days: n= 106 mean=  +5.81 total=    +616 win= 42% worst=   -42.4 maxDD=    -186 | stop days only: n=  64 mean= -13.79 total=    -883 win=  6% worst=   -42.4 maxDD=    -883
+      trail, give back 30 %       all days: n= 106 mean=  +5.50 total=    +583 win= 45% worst=   -42.4 maxDD=    -178 | stop days only: n=  64 mean= -14.31 total=    -916 win= 11% worst=   -42.4 maxDD=    -916
+      trail, give back 50 %       all days: n= 106 mean=  +6.45 total=    +683 win= 45% worst=   -42.4 maxDD=    -148 | stop days only: n=  64 mean= -12.74 total=    -815 win= 11% worst=   -42.4 maxDD=    -815
+      close it at once            all days: n= 106 mean=  +6.32 total=    +670 win= 41% worst=   -41.6 maxDD=    -170 | stop days only: n=  64 mean= -12.95 total=    -829 win=  3% worst=   -41.6 maxDD=    -829
+      days that lost about the whole premium or more with 'keep' (both sides stopped, or one stopped far beyond): 5
+   stop at 3x: a stop was hit on 38 of 106 days
+      keep the other side         all days: n= 106 mean= +12.00 total=   +1272 win= 61% worst=   -98.3 maxDD=    -192 | stop days only: n=  38 mean= -33.65 total=   -1279 win=  0% worst=   -98.3 maxDD=   -1279
+      trail, give back 10 %       all days: n= 106 mean= +11.65 total=   +1235 win= 61% worst=   -98.3 maxDD=    -192 | stop days only: n=  38 mean= -34.61 total=   -1315 win=  0% worst=   -98.3 maxDD=   -1315
+      trail, give back 30 %       all days: n= 106 mean= +12.01 total=   +1273 win= 61% worst=   -98.3 maxDD=    -192 | stop days only: n=  38 mean= -33.62 total=   -1278 win=  0% worst=   -98.3 maxDD=   -1278
+      trail, give back 50 %       all days: n= 106 mean= +12.19 total=   +1293 win= 61% worst=   -98.3 maxDD=    -192 | stop days only: n=  38 mean= -33.10 total=   -1258 win=  0% worst=   -98.3 maxDD=   -1258
+      close it at once            all days: n= 106 mean= +11.78 total=   +1248 win= 61% worst=  -101.0 maxDD=    -194 | stop days only: n=  38 mean= -34.27 total=   -1302 win=  0% worst=  -101.0 maxDD=   -1302
+      days that lost about the whole premium or more with 'keep' (both sides stopped, or one stopped far beyond): 10
+
+short strangle 800 (naked)
+   stop at 2x: a stop was hit on 60 of 105 days
+      keep the other side         all days: n= 105 mean=  +7.93 total=    +833 win= 50% worst=   -39.8 maxDD=     -91 | stop days only: n=  60 mean=  -8.97 total=    -538 win= 12% worst=   -39.8 maxDD=    -538
+      trail, give back 10 %       all days: n= 105 mean=  +6.45 total=    +678 win= 46% worst=   -38.2 maxDD=    -141 | stop days only: n=  60 mean= -11.55 total=    -693 win=  5% worst=   -38.2 maxDD=    -693
+      trail, give back 30 %       all days: n= 105 mean=  +6.27 total=    +659 win= 48% worst=   -38.2 maxDD=    -134 | stop days only: n=  60 mean= -11.87 total=    -712 win=  8% worst=   -38.2 maxDD=    -712
+      trail, give back 50 %       all days: n= 105 mean=  +7.31 total=    +768 win= 50% worst=   -38.2 maxDD=    -109 | stop days only: n=  60 mean= -10.05 total=    -603 win= 12% worst=   -38.2 maxDD=    -603
+      close it at once            all days: n= 105 mean=  +6.88 total=    +722 win= 44% worst=   -35.6 maxDD=    -128 | stop days only: n=  60 mean= -10.82 total=    -649 win=  2% worst=   -35.6 maxDD=    -649
+      days that lost about the whole premium or more with 'keep' (both sides stopped, or one stopped far beyond): 5
+   stop at 3x: a stop was hit on 35 of 105 days
+      keep the other side         all days: n= 105 mean= +12.36 total=   +1298 win= 66% worst=   -93.4 maxDD=    -177 | stop days only: n=  35 mean= -27.84 total=    -974 win=  0% worst=   -93.4 maxDD=    -974
+      trail, give back 10 %       all days: n= 105 mean= +12.01 total=   +1261 win= 66% worst=   -98.1 maxDD=    -182 | stop days only: n=  35 mean= -28.91 total=   -1012 win=  0% worst=   -98.1 maxDD=   -1012
+      trail, give back 30 %       all days: n= 105 mean= +12.42 total=   +1304 win= 66% worst=   -93.4 maxDD=    -177 | stop days only: n=  35 mean= -27.68 total=    -969 win=  0% worst=   -93.4 maxDD=    -969
+      trail, give back 50 %       all days: n= 105 mean= +12.51 total=   +1314 win= 66% worst=   -93.4 maxDD=    -177 | stop days only: n=  35 mean= -27.39 total=    -959 win=  0% worst=   -93.4 maxDD=    -959
+      close it at once            all days: n= 105 mean= +12.19 total=   +1280 win= 66% worst=   -95.8 maxDD=    -180 | stop days only: n=  35 mean= -28.36 total=    -993 win=  0% worst=   -95.8 maxDD=    -993
+      days that lost about the whole premium or more with 'keep' (both sides stopped, or one stopped far beyond): 12

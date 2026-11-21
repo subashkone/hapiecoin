@@ -83,6 +83,8 @@ export const AutopilotRunDetail = z.strictObject({
   stopUsd: DecimalString.nullable().optional(),
   /** ADR-112: every sold option is closed on its own when its price reaches this multiple of the price it was sold at. */
   legStop: z.number().positive().optional(),
+  /** ADR-114: a stopped option starts a trail on the rest with this percentage give-back. */
+  trailRestPct: z.number().positive().optional(),
   legs: z.array(z.strictObject({ side: z.enum(["buy", "sell"]), kind: z.enum(["call", "put", "future"]), strike: z.string(), price: z.string() })).optional(),
   /** noted: the open trade's net premium the fresh one is compared with. */
   openEntryCost: DecimalString.optional(),

@@ -104,7 +104,7 @@ describe("HC-TR-217 the pieces an entry is decided on", () => {
     expect(p.stopUsd).toBe(5);
     expect(p.timeStopDte).toBe(2);
     // no fee rule on the venue: no fees; a playbook with no stop and no time exit arms neither
-    expect(planFor({ ...butterfly, exits: undefined }, proposal({ maxProfit: 40 }), 0.001, null)).toEqual({ fees: 0, targetUsd: 4, stopUsd: null, timeStopDte: null, legStop: null });
+    expect(planFor({ ...butterfly, exits: undefined }, proposal({ maxProfit: 40 }), 0.001, null)).toEqual({ fees: 0, targetUsd: 4, stopUsd: null, timeStopDte: null, legStop: null, trailRestPct: null });
   });
 
   it("HC-TR-217 no plan when the fees eat the trade (small premiums close to expiry) or the structure has no defined maximum", () => {
@@ -613,10 +613,10 @@ describe("HC-TR-225 playbooks entered by the clock: the evening strangles", () =
     maxLoss: -Infinity,
   });
 
-  it("HC-TR-225 five playbooks are entered by the clock, on BTC, in the evening window; Autopilot trades them beside the recorded ones and never the control", () => {
-    expect(CLOCK_PLAYBOOKS.map((p) => p.id)).toEqual(["evening-strangle-wings-3", "evening-strangle-wings-5", "evening-strangle-stop-2x", "evening-strangle-stop-3x", "evening-strangle-take-half"]);
+  it("HC-TR-225 six playbooks are entered by the clock, on BTC, in the evening window; Autopilot trades them beside the recorded ones and never the control", () => {
+    expect(CLOCK_PLAYBOOKS.map((p) => p.id)).toEqual(["evening-strangle-wings-3", "evening-strangle-wings-5", "evening-strangle-stop-2x", "evening-strangle-stop-3x", "evening-strangle-take-half", "evening-strangle-trail-rest"]);
     for (const p of CLOCK_PLAYBOOKS) expect(p).toMatchObject({ assets: ["BTC"], minDte: 0.5, lots: 100, control: false, clock: { fromHourUtc: 16, toHourUtc: 17, window: "9:30 to 10:30 PM IST", maxDte: 1.5, venues: ["delta_india"] } });
-    expect(CLOCK_PLAYBOOKS.map((p) => p.clock!.legStop)).toEqual([undefined, undefined, 2, 3, 2]);
+    expect(CLOCK_PLAYBOOKS.map((p) => p.clock!.legStop)).toEqual([undefined, undefined, 2, 3, 2, 2]);
     expect(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).toEqual([...PLAYBOOKS.filter((p) => !p.control).map((p) => p.id), ...CLOCK_PLAYBOOKS.map((p) => p.id)]);
     expect(PLAYBOOKS.some((p) => p.clock)).toBe(false); // the daily record and the proposals do not see them
     expect(autopilotPlaybookById("hero-or-zero")).toBeUndefined();
@@ -625,13 +625,15 @@ describe("HC-TR-225 playbooks entered by the clock: the evening strangles", () =
   it("HC-TR-225 the plan has no profit level and no strategy stop, only the stop on each sold option; a premium smaller than the fees is no plan", () => {
     // two fills of 0.1 BTC at 83,200: 0.832 each, 18 % GST, both ways
     const p = clockPlanFor(twice, sold(-53.6), 0.001, fees)!;
-    expect(p).toMatchObject({ targetUsd: null, stopUsd: null, timeStopDte: null, legStop: 2 });
+    expect(p).toMatchObject({ targetUsd: null, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: null });
     expect(p.fees).toBeCloseTo(2 * 2 * 0.832 * 1.18, 6);
-    expect(clockPlanFor(wings, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: null });
+    expect(clockPlanFor(wings, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: null, trailRestPct: null });
     expect(clockPlanFor(twice, sold(-3.9), 0.001, fees)).toBeNull(); // collects less than the fills cost
     expect(clockPlanFor(twice, sold(2), 0.001, null)).toBeNull(); // a debit is not this trade
     // HC-TR-227: the take-half version has the same stops and a profit level at half the premium collected
-    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-take-half")!, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: 26.8, stopUsd: null, timeStopDte: null, legStop: 2 });
+    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-take-half")!, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: 26.8, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: null });
+    // HC-TR-228: the trail-the-rest version has the same stops, which start a trail with a give-back of half
+    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-trail-rest")!, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: 50 });
     expect(clockPlanFor(autopilotPlaybookById("evening-strangle-take-half")!, sold(-0.015), 0.001, null)).toBeNull(); // half of it rounds to nothing
     // the window is from its first hour and before its second, in UTC
     const c = twice.clock!;
@@ -644,7 +646,7 @@ describe("HC-TR-225 playbooks entered by the clock: the evening strangles", () =
     const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
     // the card's style is not this playbook's to choose: it is saved as its own exits; no other playbook may ask for them
     const saved = await json<AutopilotView>(await put({ enabled: true, strategies: CLOCK_PLAYBOOKS.map((p) => ({ playbookId: p.id, exit: "trail" })) }, me.cookie));
-    expect(saved.settings.strategies.map((x) => x.exit)).toEqual(["own", "own", "own", "own", "own"]);
+    expect(saved.settings.strategies.map((x) => x.exit)).toEqual(CLOCK_PLAYBOOKS.map(() => "own"));
     const refused = await put({ enabled: true, strategies: [{ playbookId: BUTTERFLY, exit: "own" }] }, me.cookie);
     expect(refused.status).toBe(400);
     expect(JSON.stringify(await refused.json())).toContain("takes Autopilot's profit exit: choose trail or target");
@@ -676,7 +678,7 @@ describe("HC-TR-225 playbooks entered by the clock: the evening strangles", () =
     // an hour early: the reason is logged, nothing is entered
     await pass(W - HOUR);
     expect(await strangles()).toHaveLength(0);
-    expect((await lines()).filter((r) => r.asset === "BTC").map((r) => r.reason)).toEqual(Array(5).fill("Outside its entry hours (9:30 to 10:30 PM IST)"));
+    expect((await lines()).filter((r) => r.asset === "BTC").map((r) => r.reason)).toEqual(Array(CLOCK_PLAYBOOKS.length).fill("Outside its entry hours (9:30 to 10:30 PM IST)"));
 
     await pass(W);
     const all = await strangles();
@@ -716,6 +718,11 @@ describe("HC-TR-225 playbooks entered by the clock: the evening strangles", () =
     expect(halfRules.find((r) => r.kind === "target")).toMatchObject({ trigger: "money", scope: "strategy", trailTrigger: null, state: "armed", thresholdUsd: halfDetail.targetUsd });
     expect(Number(halfDetail.targetUsd)).toBeCloseTo(-Number(halfDetail.entryCost) / 2, 1);
     expect(halfDetail).toMatchObject({ exit: "own", legStop: 2 });
+    // HC-TR-228 trail the rest: the same two stops, each set to trail what is left with a give-back of half; the others trail nothing
+    expect((await rulesOf(of("evening-strangle-trail-rest").id)).map((r) => [r.kind, r.value, r.trailTrigger, r.trailValue])).toEqual([["leg_stop", "2", "pct", "50"], ["leg_stop", "2", "pct", "50"]]);
+    expect(x2rules.every((r) => r.trailTrigger === null)).toBe(true);
+    expect((await entry(of("evening-strangle-trail-rest").id)).detail).toMatchObject({ legStop: 2, trailRestPct: 50 });
+    expect(x2d.trailRestPct).toBeUndefined();
 
     // five minutes on, the same strikes: held, nothing twice and nothing noted
     expect(await pass(W + 5 * MIN)).toMatchObject({ noted: 0, failed: 0 });
@@ -776,6 +783,23 @@ describe("HC-TR-225 playbooks entered by the clock: the evening strangles", () =
     await evaluateRules(t.deps, ticks({ [hc!.symbol]: Number(hc!.price) / 5 }), () => at2 + MIN);
     expect((await strangles()).find((x) => x.id === half2.id)!.status).toBe("paper");
     expect((await rulesOf(half2.id)).find((r) => r.kind === "target")!.state).toBe("armed");
+
+    // HC-TR-228: the two ticks above moved the same strikes for the trail-the-rest trade: its put was stopped at twice its
+    // price, which started a trail on the call, whose best so far is four fifths of its premium. The call rising back to
+    // seven tenths of its price leaves three tenths: more than half of the best is given back, so the call is closed too.
+    const trail = next.find((x) => x.autopilotPlaybookId === "evening-strangle-trail-rest")!;
+    expect((await legsOf(trail.id)).map((l) => l.status)).toEqual(["squared_off", "open"]);
+    expect((await rulesOf(trail.id)).filter((r) => r.kind === "trail" && r.state === "armed")).toHaveLength(1);
+    // (first back to half its price: three eighths of the best given back, under half, so it is still held)
+    await evaluateRules(t.deps, ticks({ [hc!.symbol]: 0.5 * Number(hc!.price) }), () => at2 + 2 * MIN);
+    expect((await strangles()).find((x) => x.id === trail.id)!.status).toBe("paper");
+    await evaluateRules(t.deps, ticks({ [hc!.symbol]: 0.7 * Number(hc!.price) }), () => at2 + 3 * MIN);
+    expect((await strangles()).find((x) => x.id === trail.id)).toMatchObject({ status: "archived", closeReason: "stopped" });
+    expect((await legsOf(trail.id)).every((l) => l.status === "squared_off")).toBe(true);
+    // the stop-at-double trade on the same strikes kept its call: no trail, still held
+    const kept = next.find((x) => x.autopilotPlaybookId === "evening-strangle-stop-2x")!;
+    expect((await legsOf(kept.id)).map((l) => l.status)).toEqual(["squared_off", "open"]);
+    expect((await strangles()).find((x) => x.id === kept.id)!.status).toBe("paper");
 
     // tomorrow's expiry missing from the snapshot: the monthly is not "the next expiry", so nothing is entered
     for (const x of next) await t.db.update(strategies).set({ status: "archived", closedAt: new Date(W + 30 * HOUR) }).where(eq(strategies.id, x.id));
