@@ -19,7 +19,7 @@ Three sources, kept in sync with their originals: the roadmap items still open (
 | 30 | AI: opportunity radar, language features, journal coach, advisor | Five phases in docs/research/ai-leverage.md: AI-1 radar with backtested setups and expected-value scores on template cards (no language model); AI-2 natural-language alerts and rules plus the assistant on the guide corpus; AI-3 weekly journal coach; AI-4 conversational advisor using the wizard, pricer, backtest and positions as tools; AI-5 volatility regime model and risk guardian. | Feature freeze; the radar needs 30+ recorded days of chains (accumulating), the language features need an API key in the secret store and a legal read of the copy. |
 | 31 | Strategy playbooks | Eight rule-based playbooks on templates already in the catalogue (docs/research/strategy-playbooks.md): expiry-week credit spread, pin butterfly, front-week calendar, trend with defined risk, volatility squeeze breakout, trend financed by skew, premium harvest, covered call. Needs a playbook object, trend and volatility signals from recorded marks, entry conditions in the backtest, a track record per card. First three: premium harvest, expiry-week credit spread, trend with defined risk. | Feature freeze; each playbook ships only with its backtest on our own chains. |
 
-## 2. Open review gaps (79 of 146)
+## 2. Open review gaps (81 of 148)
 
 Every row is copied in full from GAPS.md so this page stands alone. Priority is a recommendation for after launch: **High** touches money, safety or a promise the product makes; **Medium (data)** needs a data feed or a spend decision; **Low (tests)** is test hygiene.
 
@@ -126,6 +126,12 @@ Every row is copied in full from GAPS.md so this page stands alone. Priority is 
 |---|---|---|---|---|
 | 85 | Several labelled keys per exchange ship as accounts, and Delta Exchange India does scope an API key to the sub-account it was created under: verified 12 Sep 2026 on the demo account (Main and subashsub1 keys; HapieCoin showed 121.6 and 8.98 USD available against Delta's $121.59 and $8.82, and each key saw only its own positions). The Live tab's Margin used tile read the first account's wallet as its "of" figure; it now sums every account the tab trades through and says how many. Also open: a strategy from before accounts on an exchange with several keys names none, is left out of the out-of-sync check and cannot be exited by the engine until it goes live again or its exchange is back to one key (its card says so). | build, 11 Sep · Medium · Open | Open · scoping confirmed, tile fixed 12 Sep; a one-time "name the account" action on old live cards if any exist in production | High |
 
+### Autopilot results
+
+| # | Gap | Source | Status | Priority |
+|---|---|---|---|---|
+| 148 | Left open: the fee is the estimate logged at entry, not a per-fill charge (a settled trade pays the settlement fee, a trade closed leg by leg pays per leg); a trade Autopilot entered before a card's exit style was changed keeps its logged style; results older than 90 days drop out with the log; an entry logged with no days to expiry is in no band; no chart of the result over time, no export, no filter by date; the read is unbounded over the 90 days and polled each minute (fine at proving scale; a partial index on entered lines is the fix); a failed re-read keeps the last figures with a notice, which has no test of its own; an account that is deleted takes its results with it; per-trade figures are in the newest 100 only; the screen's tables were not opened in a real browser by me and have no phone layout pass; nothing yet turns the results into a suggestion (which exit style to keep, which strategy to switch off). | ADR-111, 21 Nov 2026 | open | High |
+
 ### Autopilot screen
 
 | # | Gap | Source | Status | Priority |
@@ -137,6 +143,12 @@ Every row is copied in full from GAPS.md so this page stands alone. Priority is 
 | # | Gap | Source | Status | Priority |
 |---|---|---|---|---|
 | 145 | Not built yet: the Autopilot screen (the switch and the log are reachable through `GET` / `PUT /v1/autopilot` only), the budget, the open-trade cap, the daily loss limit and the stop-everything switch, sizing to a budget (every entry is the playbook's fixed 10 lots), Telegram messages for an entry or a better-entry note (the note is written to the log only; a fired exit still notifies through the rule's channels), and a health light per running trade. Known limits: an entry needs a playbook to fire, and five of the six tradable playbooks judge a daily condition (the 50-day average, the IV rank), so "every opportunity" means every snapshot on which that condition and the structure hold, not an intraday signal such as the 14:00 to 16:00 IST window, which needs a new detector; the fill is the snapshot's mark, not a bid or an offer, so paper results flatter illiquid wings (GAPS #127 stale-feed guard still open; the twelve-minute age limit is the only guard); the exit fee is taken as equal to the entry fee; the snapshot writes its spot row before its mark batches without a transaction, so a failed batch could leave a partial ladder that the engine would price on (the twelve-minute limit does not catch it); the covered call is left out (futures margin unverified, GAPS #109 / #120); Deribit has no paper exchange row, so nothing enters there; settings changes do not ask for the second factor (paper only); the "never auto-place" wording in the Playbooks tab and the proposal Telegram text is still true for what those do, and is to be reworded when the screen arrives; nothing e-mails the trader when Autopilot enters. Not run: the web and e2e suites (no web change in this PR). | ADR-108, 21 Nov 2026 | open | High |
+
+### Autopilot, several trades per strategy
+
+| # | Gap | Source | Status | Priority |
+|---|---|---|---|---|
+| 147 | Left open: the cap (5) and the wait (15 minutes) are constants, not settings; no budget bounds the capital five trades tie up; two structures that share a strike are treated as unrelated (on paper they are, on a venue they would net: the live step's own-account condition in GAPS #146 covers it); structures are told apart by strikes and expiry only, so the same strikes at a different size would count as held; the engine test for the cap fills the places with rows written directly, not with five real entries; a row from before the structure column whose legs the trader also edited is known only by its edited legs; the log is busier while a strategy holds trades (a skip is written per change of reason, about one line per 15 minutes per held trade at worst); capital in use on the screen still reads the newest 200 log lines; results by structure width are not compared (ADR-111 groups by strategy, exit style and days to expiry). | ADR-110, 21 Nov 2026 | open | High |
 
 ### Backtest
 

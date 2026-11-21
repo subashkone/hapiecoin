@@ -341,11 +341,13 @@ export const strategies = pgTable(
     venue: text("venue", { enum: ["delta_india", "deribit"] }).notNull().default("delta_india"),
     /** ADR-108: the playbook whose entry Autopilot took to open this paper trade; null for a trade the trader opened. */
     autopilotPlaybookId: text("autopilot_playbook_id"),
+    /** ADR-110: the structure Autopilot entered (every leg's side, kind, strike and expiry); null on a trader's own trade and on rows from before it. */
+    autopilotStructure: text("autopilot_structure"),
     ...timestamps,
   },
   (t) => [index("strategies_user_id_idx").on(t.userId), index("strategies_user_status_idx").on(t.userId, t.status), index("strategies_autopilot_idx").on(t.userId, t.autopilotPlaybookId, t.venue, t.asset),
-    // ADR-108: one open Autopilot trade per trader, playbook, venue and asset, whatever two passes or two leaders do
-    uniqueIndex("strategies_autopilot_open_uq").on(t.userId, t.autopilotPlaybookId, t.venue, t.asset).where(sql`${t.status} = 'paper' and ${t.autopilotPlaybookId} is not null`),
+    // ADR-110: one open Autopilot trade per trader, playbook, venue, asset and structure, whatever two passes or two leaders do
+    uniqueIndex("strategies_autopilot_open_uq").on(t.userId, t.autopilotPlaybookId, t.venue, t.asset, t.autopilotStructure).where(sql`${t.status} = 'paper' and ${t.autopilotPlaybookId} is not null`),
   ],
 );
 

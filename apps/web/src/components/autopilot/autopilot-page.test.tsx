@@ -10,6 +10,7 @@ import { buildChain } from "../../../test/fixtures/chain";
 import { routerMock } from "../../../test/next-mocks";
 import { PortfolioBar } from "@/components/chrome/PortfolioBar";
 import { Workspace } from "@/components/workspace/Workspace";
+import { fmtExpiry, fmtStrike } from "@/lib/format";
 import { useUiStore } from "@/lib/store";
 import { AutopilotPage } from "./AutopilotPage";
 
@@ -186,6 +187,7 @@ describe("HC-TR-220 the Autopilot screen: the trades it holds", () => {
     expect(trade("g").textContent).toContain("Trailing: exits at+$4.50");
     expect(trade("w").dataset["health"]).toBe("watch");
     expect(trade("w").textContent).toContain("Losing");
+    expect(within(trade("w")).getByTestId("autopilot-trade-strikes").textContent).toBe(`${fmtStrike(ROW.strike)} · ${fmtExpiry(EXPIRY)}`);
     // behind the screen a pass enters one more trade: the page has not read it, Stop everything still closes it
     acc().strategies.push(auto("late", "expiry-week-credit", { legs: [] }));
     await u.click(within(dialog).getByTestId("autopilot-stop-confirm"));
@@ -197,6 +199,20 @@ describe("HC-TR-220 the Autopilot screen: the trades it holds", () => {
     expect(acc().strategies.find((x) => x.id === "own")!.status).toBe("paper");
     await waitFor(() => expect(screen.queryByTestId("autopilot-stop-dialog")).toBeNull());
     expect(acc().autopilot.settings.strategies).toHaveLength(2); // the choices are kept for the next time it is switched on
+  });
+
+  it("HC-TR-222 a strategy holding several trades on one coin shows them added up on its card, with the worst health, and one row each", async () => {
+    // two butterflies on BTC (in the product each sits on its own strikes): one a dollar up, one seven down against a nine dollar stop
+    acc().strategies.push(auto("b1", "pin-butterfly", { legs: [leg("b1", -100)] }), auto("b2", "pin-butterfly", { legs: [leg("b2", 700)] }));
+    acc().autopilot = { settings: on, runs: [] };
+    renderWithProviders(<AutopilotPage />);
+    await waitFor(() => expect(screen.getAllByTestId("autopilot-trade")).toHaveLength(2));
+    const state = () => within(screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === "pin-butterfly")!).getAllByTestId("autopilot-card-state")[0]!;
+    expect(state().textContent).toBe("In 2 trades waiting for prices");
+    serveMarket();
+    await waitFor(() => expect(state().textContent).toBe("In 2 trades −$6.00"));
+    expect(state().querySelector("span")!.className).toContain("bg-loss"); // the worse of the two: close to its stop
+    expect(screen.getByTestId("autopilot-page").textContent).toContain("up to 5 trades per coin, each on its own strikes");
   });
 
   it("HC-TR-220 a trade with no live price, or one the server refuses to close, is left open and named; the others are still closed", async () => {

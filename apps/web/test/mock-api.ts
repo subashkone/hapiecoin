@@ -6,7 +6,7 @@ import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { Underlying, PublicPageSettings, AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
 import { PLAYBOOKS, type SweepAxisSpec } from "@hapiecoin/pricing";
-import { AUTOPILOT_PAPER_ONLY_MESSAGE, AutopilotSettings, type AutopilotView, ProposalMarkBody, parseSweepValues } from "@hapiecoin/schema";
+import { AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_PAPER_ONLY_MESSAGE, type AutopilotResults, AutopilotSettings, type AutopilotView, ProposalMarkBody, parseSweepValues } from "@hapiecoin/schema";
 import { type MockBacktestParams, mockBacktest, mockSweep } from "./mock-backtest";
 import { mockReplayChain, mockReplayExpiries, mockReplaySteps } from "./mock-replay";
 import { mockPlaybookRecords } from "./mock-playbooks";
@@ -35,6 +35,8 @@ interface Account {
   proposalMarks: Map<string, MockProposalMark>;
   /** ADR-108: the account's Autopilot switch, playbooks and log. */
   autopilot: AutopilotView;
+  /** ADR-111: what the mock answers for the results; a test sets it. */
+  autopilotResults: AutopilotResults;
   brokers: Broker[];
   /** Connected keys (accounts, ADR-068): several per broker, told apart by their label. */
   credentials: BrokerCredentialPublic[];
@@ -237,6 +239,7 @@ export function createAccount(
     settings: defaultSettings(),
     proposalMarks: new Map(),
     autopilot: { settings: { enabled: false, strategies: [] }, runs: [] },
+    autopilotResults: { since: null, total: { open: 0, closed: 0, wins: 0, grossUsd: "0.00", feesUsd: "0.00", netUsd: "0.00" }, rows: [], byDte: [], trades: [] },
     brokers: [GLOBAL_BROKER],
     credentials: [],
     fills: [],
@@ -726,6 +729,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   });
   // ADR-108: the trader's Autopilot settings and log; the mock keeps what is saved and never trades by itself
   v1.get("/autopilot", (c) => c.json(current(c)!.autopilot));
+  v1.get("/autopilot/results", (c) => c.json(current(c)!.autopilotResults));
   v1.put("/autopilot", async (c) => {
     const acc = current(c)!;
     const parsed = AutopilotSettings.safeParse(await c.req.json());
@@ -995,6 +999,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     const acc = current(c)!;
     const i = acc.strategies.findIndex((s) => s.id === c.req.param("id"));
     if (i < 0) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (acc.strategies[i]!.autopilotPlaybookId) return err(c, 409, "CONFLICT", AUTOPILOT_KEEP_MESSAGE); // ADR-111: as the API refuses it
     acc.strategies.splice(i, 1);
     return c.body(null, 204);
   });

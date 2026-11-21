@@ -3,16 +3,17 @@
 // style, record and what it is doing now, the trades Autopilot holds with a health reading and an exit, and its log.
 // Paper only. Figures in USD are shown in the trader's display currency.
 import { PLAYBOOKS } from "@hapiecoin/pricing";
-import { AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_EXIT_LABELS, AUTOPILOT_EXIT_STYLES, type AutopilotExitStyle, type AutopilotRun, type AutopilotSettings, type PlaybookStatus, type Strategy } from "@hapiecoin/schema";
+import { AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_EXIT_LABELS, AUTOPILOT_MAX_OPEN, AUTOPILOT_EXIT_STYLES, type AutopilotExitStyle, type AutopilotRun, type AutopilotSettings, type PlaybookStatus, type Strategy } from "@hapiecoin/schema";
 import { Badge, Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, Switch, cn, toast } from "@hapiecoin/ui";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { StopPaperDialog } from "@/components/trading/StopPaperDialog";
+import { AutopilotResultsPanel } from "./AutopilotResultsPanel";
 import { AUTOPILOT_POLL_MS, useAutopilot, useSaveAutopilot } from "@/lib/api/autopilot";
 import { recordFor, usePlaybookRecords } from "@/lib/api/playbooks";
 import { strategyFetchers, strategyKeys, useStopStrategy, useStrategies } from "@/lib/api/strategies";
-import { fmtDateTime } from "@/lib/format";
+import { fmtDateTime, fmtExpiry, fmtStrike } from "@/lib/format";
 import { useConnectionStatus } from "@/lib/gateway/hooks";
 import { fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
@@ -32,6 +33,9 @@ const RECORD: Record<PlaybookStatus, { label: string; variant: "profit" | "loss"
   "control-alarm": { label: "Control", variant: "warning" },
 };
 const DOT: Record<TradeHealth, string> = { good: "bg-profit", watch: "bg-warning", danger: "bg-loss" };
+const WORSE: Record<TradeHealth, number> = { good: 0, watch: 1, danger: 2 };
+/** The strikes and the expiry a trade sits on: what tells two trades of one strategy apart (ADR-110). */
+const strikesOf = (s: Strategy) => `${[...new Set(s.legs.map((l) => fmtStrike(l.strike)))].join(" / ")}${s.legs.length ? ` · ${[...new Set(s.legs.map((l) => fmtExpiry(l.expiry)))].join(" / ")}` : ""}`;
 const KIND: Record<AutopilotRun["kind"], { label: string; variant: "profit" | "outline" | "info" }> = { entered: { label: "Entered", variant: "profit" }, skipped: { label: "Skipped", variant: "outline" }, noted: { label: "Noted", variant: "info" } };
 const nameOf = (playbookId: string) => PLAYBOOKS.find((p) => p.id === playbookId)?.name ?? playbookId;
 const isToday = (iso: string | null) => iso !== null && new Date(iso).toDateString() === new Date().toDateString();
@@ -116,7 +120,7 @@ export function AutopilotPage() {
             <h1>Autopilot</h1>
             <Badge variant="info">Paper</Badge>
           </div>
-          <p className="mt-1 max-w-[70ch] text-xs text-muted-foreground">Opens a paper trade when a strategy you switched on meets its conditions on the latest prices, with its exits attached. One trade per strategy and coin; after a trade ends the strategy waits {AUTOPILOT_COOLDOWN_MINUTES} minutes. No real orders are placed.</p>
+          <p className="mt-1 max-w-[70ch] text-xs text-muted-foreground">Opens a paper trade when a strategy you switched on meets its conditions on the latest prices, with its exits attached. A strategy holds up to {AUTOPILOT_MAX_OPEN} trades per coin, each on its own strikes, and waits {AUTOPILOT_COOLDOWN_MINUTES} minutes between entries and after a trade ends. No real orders are placed.</p>
         </div>
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2 text-xs">
@@ -158,9 +162,12 @@ export function AutopilotPage() {
                   </label>
                   {ASSETS.filter((a) => (p.assets as readonly string[]).includes(a)).map((asset) => {
                     const rec = recordFor(records.data, p.id, asset);
-                    const trade = open.find((s) => s.autopilotPlaybookId === p.id && s.asset === asset);
+                    // a strategy may hold several trades on one coin, each on its own strikes (ADR-110): the card adds them up
+                    const trades = open.filter((s) => s.autopilotPlaybookId === p.id && s.asset === asset);
                     const last = latestRun(runs, p.id, asset);
-                    const pnl = trade ? book.pnlOf(trade).total : 0;
+                    const pnl = trades.reduce((sum, s) => sum + book.pnlOf(s).total, 0);
+                    const worst = trades.map((s) => tradeHealth(book.pnlOf(s).total, autopilotLevels(s).stopUsd).health).sort((a, b) => WORSE[b] - WORSE[a])[0] ?? "good";
+                    const held = trades.length === 1 ? "In a trade" : `In ${trades.length} trades`;
                     return (
                       <div key={asset} className="flex flex-col gap-1 border-t border-border pt-2 text-2xs" data-testid="autopilot-card-asset" data-asset={asset}>
                         <div className="flex items-center gap-2">
@@ -168,10 +175,10 @@ export function AutopilotPage() {
                           {rec ? <Badge variant={RECORD[rec.status].variant}>{RECORD[rec.status].label}</Badge> : <Badge variant="outline">No record yet</Badge>}
                           {rec ? <span className="ml-auto text-muted-foreground">{rec.stats.trades} past trades{rec.stats.winRate === null ? "" : ` · ${Math.round(rec.stats.winRate * 100)}% won`}</span> : null}
                         </div>
-                        {trade && priced(trade) ? (
-                          <div className="flex items-center gap-1.5" data-testid="autopilot-card-state"><span className={cn("size-2 rounded-full", DOT[tradeHealth(pnl, autopilotLevels(trade).stopUsd).health])} aria-hidden="true" />In a trade <span className={cn("num ml-auto", pnl >= 0 ? "text-profit" : "text-loss")}>{fmtMoney(pnl, money, { signed: true })}</span></div>
-                        ) : trade ? (
-                          <div className="flex items-center gap-1.5" data-testid="autopilot-card-state"><span className="size-2 rounded-full bg-muted-foreground" aria-hidden="true" />In a trade <span className="ml-auto text-muted-foreground">waiting for prices</span></div>
+                        {trades.length > 0 && trades.every(priced) ? (
+                          <div className="flex items-center gap-1.5" data-testid="autopilot-card-state"><span className={cn("size-2 rounded-full", DOT[worst])} aria-hidden="true" />{held} <span className={cn("num ml-auto", pnl >= 0 ? "text-profit" : "text-loss")}>{fmtMoney(pnl, money, { signed: true })}</span></div>
+                        ) : trades.length > 0 ? (
+                          <div className="flex items-center gap-1.5" data-testid="autopilot-card-state"><span className="size-2 rounded-full bg-muted-foreground" aria-hidden="true" />{held} <span className="ml-auto text-muted-foreground">waiting for prices</span></div>
                         ) : (
                           // only a skip is a reason for not being in a trade; an older "entered" or "noted" line is about a trade that has ended
                           <div className="text-muted-foreground" data-testid="autopilot-card-state">{!on ? "Switched off" : !settings.enabled ? "Autopilot is off" : !last ? "Watching: no decision logged yet" : last.kind !== "skipped" ? "Waiting for the next check" : `${last.reason}${last.detail.capital ? ` · needs ${fmtMoney(last.detail.capital, money)}` : ""}`}</div>
@@ -204,6 +211,7 @@ export function AutopilotPage() {
                   {h && h.usedPct !== null ? (
                     <div className="h-1.5 overflow-hidden rounded bg-muted" role="img" aria-label={`${Math.round(h.usedPct)} percent of the allowed loss is used`}><div className={cn("h-full", DOT[h.health])} style={{ width: `${h.usedPct}%` }} /></div>
                   ) : null}
+                  <div className="flex justify-between gap-2"><span className="text-muted-foreground">Strikes</span><span className="num" data-testid="autopilot-trade-strikes">{strikesOf(s)}</span></div>
                   <div className="flex justify-between gap-2"><span className="text-muted-foreground">Now</span><span className={cn("num", !h ? "text-muted-foreground" : pnl >= 0 ? "text-profit" : "text-loss")} data-testid="autopilot-trade-pnl">{h ? fmtMoney(pnl, money, { signed: true }) : "waiting for prices"}</span></div>
                   <div className="flex justify-between gap-2"><span className="text-muted-foreground">{lv.trails ? (lv.trailExitUsd !== null ? "Trailing: exits at" : "Starts trailing at") : "Closes in profit at"}</span><span className="num">{lv.trailExitUsd !== null ? fmtMoney(lv.trailExitUsd, money, { signed: true }) : lv.targetUsd !== null ? fmtMoney(lv.targetUsd, money, { signed: true }) : "—"}</span></div>
                   <div className="flex justify-between gap-2"><span className="text-muted-foreground">Stop closes it at</span><span className="num">{lv.stopUsd !== null ? fmtMoney(-lv.stopUsd, money, { signed: true }) : "no stop: its risk is the premium paid"}</span></div>
@@ -233,6 +241,8 @@ export function AutopilotPage() {
           </section>
         </aside>
       </div>
+
+      <AutopilotResultsPanel money={money} />
 
       {exiting ? <StopPaperDialog open onOpenChange={(o) => !o && setExitId(null)} strategy={exiting} priceOf={(l) => book.priceOf(exiting, l)} total={book.pnlOf(exiting).total} money={money} live={feedLive} onDone={() => setExitId(null)} /> : null}
 

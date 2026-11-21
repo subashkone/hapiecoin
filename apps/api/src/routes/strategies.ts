@@ -33,6 +33,7 @@ import {
   ruleLevel,
   settleInstantMs,
   RULE_KIND_ORDER,
+  AUTOPILOT_KEEP_MESSAGE,
   CLOSE_REASON_OF_KIND,
 } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
@@ -433,11 +434,13 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       security: cookieAuth,
       middleware: [guard],
       request: { params: IdParam },
-      responses: { 204: { description: "Deleted" }, 401: errorResponses[401], 404: errorResponses[404] },
+      responses: { 204: { description: "Deleted" }, 401: errorResponses[401], 404: errorResponses[404], 409: errorResponses[409] },
     }),
     async (c) => {
       const me = currentUser(c);
       const row = await loadOwned(me, c.req.valid("param").id);
+      // ADR-111: the results count every trade Autopilot opened; deleting the losers would flatter them
+      if (row.autopilotPlaybookId) throw errors.conflict(AUTOPILOT_KEEP_MESSAGE);
       const before = await full(row);
       await db.delete(strategies).where(eq(strategies.id, row.id));
       await auditFrom(c, db)({ action: "strategy.delete", target: `strategy:${row.id}`, before, after: null });
