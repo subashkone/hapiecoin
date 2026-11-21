@@ -1,7 +1,7 @@
 "use client";
 // Product tour (HC-SH-064..076, 112; ADR-036): an SVG-masked overlay with a cut-out around the current anchor, a ring,
 // and a popover with Previous / Next / progress. Steps can switch the workspace tab and wait for an app event so
-// the trader performs the step. Runs only on /analyse; starts once automatically after the flyer popup closes.
+// the trader performs the step. Runs only on /desk; starts once automatically after the flyer popup closes.
 import { Button } from "@hapiecoin/ui";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -103,10 +103,10 @@ export function TourOverlay({ onClose }: { onClose: (completed: boolean) => void
   );
 }
 
-/** Mounted in the app shell: starts the tour once on /analyse (after any flyer closes) and on request from the menu or palette. */
+/** Mounted in the app shell: starts the tour once on /desk (after any flyer closes) and on request from the menu or palette. */
 export function Tour() {
   const pathname = usePathname();
-  const onAnalyse = pathname === "/analyse";
+  const onDesk = pathname === "/desk";
   const { data: me } = useMe();
   const requested = useUiStore((s) => s.tourRequested);
   const [active, setActive] = useState(false);
@@ -120,10 +120,10 @@ export function Tour() {
     setActive(true);
   };
   useEffect(() => {
-    if (!onAnalyse) setActive(false); // leaving the workspace ends the tour
-  }, [onAnalyse]);
+    if (!onDesk) setActive(false); // leaving the workspace ends the tour
+  }, [onDesk]);
   useEffect(() => {
-    if (!onAnalyse || !me || tourDone()) return;
+    if (!onDesk || !me || tourDone()) return;
     let cancelled = false;
     const tryStart = () => {
       if (cancelled) return;
@@ -133,16 +133,16 @@ export function Tour() {
     };
     const t = setTimeout(tryStart, 1200);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [onAnalyse, me]);
+  }, [onDesk, me]);
   useEffect(() => {
     if (requested === lastRequest.current) return;
     lastRequest.current = requested;
-    if (onAnalyse) { markTourDone(); start(); }
-  }, [requested, onAnalyse]);
+    if (onDesk) { markTourDone(); start(); }
+  }, [requested, onDesk]);
   const close = useCallback((completed: boolean) => {
     setActive(false);
     if (completed) toast.success("Tour complete", { description: "Replay it anytime from Settings → Take a tour, or Ctrl K and type tour." });
   }, []);
-  if (!active || !onAnalyse) return null;
+  if (!active || !onDesk) return null;
   return <TourOverlay onClose={close} />;
 }

@@ -49,7 +49,7 @@ The hub answers "what is the market doing right now" in one screen: open interes
 ### Layout
 ```
 [app header · default]
-[Δ Market Analytics  ← Analyse                       Search coin…  Ctrl K]
+[Δ Market Analytics  ← Desk                       Search coin…  Ctrl K]
 [Hub · Futures · Markets · Derivatives · Options · ETF · Liquidations · Whales · Sentiment · Terminal ▾]
 hub:  tiles ×10 (5 per row) · source line · watchlist strip
       ┌ main table (tabs · search · columns · CSV) ────────────┐ ┌ gainers/losers ┐

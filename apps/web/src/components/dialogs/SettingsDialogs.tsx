@@ -1,6 +1,6 @@
 "use client";
 // Renders whichever settings dialog the UI store says is open (HC-SH-026..049). Mounted once in the app
-// shell so any header (analyse or default) can open them.
+// shell so any header (desk or default) can open them.
 import { useUiStore } from "@/lib/store";
 import { ApiSettingsDialog } from "./ApiSettingsDialog";
 import { ColumnSettingsDialog } from "./ColumnSettingsDialog";

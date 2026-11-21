@@ -236,10 +236,10 @@ describe("HC-PB-068 the second factor after a password sign-in (ADR-078)", () =>
 
 describe("HC-PB-068 a refused social sign-in comes back with its reason (ADR-078)", () => {
   it("shows the server's sentence from the error params and clears them from the URL", async () => {
-    window.history.replaceState(null, "", "/auth?tab=login&next=%2Fanalyse&error=TWO_FACTOR_REQUIRED&error_description=This+account+uses+an+authenticator+app%3A+sign+in+with+your+password+and+the+code");
+    window.history.replaceState(null, "", "/auth?tab=login&next=%2Fdesk&error=TWO_FACTOR_REQUIRED&error_description=This+account+uses+an+authenticator+app%3A+sign+in+with+your+password+and+the+code");
     setup({ tab: "login", googleEnabled: true });
     expect((await screen.findByTestId("login-notice")).textContent).toContain("authenticator app");
-    expect(window.location.search).toBe("?tab=login&next=%2Fanalyse");
+    expect(window.location.search).toBe("?tab=login&next=%2Fdesk");
     window.history.replaceState(null, "", "/");
   });
 });

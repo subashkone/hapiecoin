@@ -7,7 +7,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
 const areaMeta = {
   '00-chrome': { name: 'App shell, settings, tour, assistant, palette, alerts', owner: 'Platform engineer', prefix: 'SH' },
   '10-public': { name: 'Public site & authentication', owner: 'Platform engineer', prefix: 'PB' },
-  '20-analyse': { name: 'Workspace: chain & analysis pane', owner: 'Workspace engineer', prefix: 'WS' },
+  '20-desk': { name: 'Workspace: chain & analysis pane', owner: 'Workspace engineer', prefix: 'WS' },
   '21-trading': { name: 'Builder, paper & live trading, journal', owner: 'Trading engineer', prefix: 'TR' },
   '30-account': { name: 'Subscription & referrals', owner: 'Platform engineer', prefix: 'AC' },
   '40-admin': { name: 'Admin console', owner: 'Platform engineer', prefix: 'AD' },
@@ -27,7 +27,7 @@ function phaseFor(f) {
   const a = f.area; const isNew = !!f.new; const txt = ((f.feature || '') + ' ' + (f.screen || '')).toLowerCase();
   if (a === '10-public') return /auth|sign|otp|password|login|sso|delta/.test(txt) ? 1 : 4;
   if (a === '00-chrome') { if (/palette|alert|shortcut|portfolio|density|explain/.test(txt) || isNew) return 5; if (/api settings|credential|exchange|wallet|lot size|p&l settings|currency|profile|logout|header|theme/.test(txt)) return 1; return 4; }
-  if (a === '20-analyse') return isNew || /scenario|vol |smile|term structure|iv rank|structure|max pain|gex|share|find|palette|keyboard/.test(txt) ? 5 : 2;
+  if (a === '20-desk') return isNew || /scenario|vol |smile|term structure|iv rank|structure|max pain|gex|share|find|palette|keyboard/.test(txt) ? 5 : 2;
   if (a === '21-trading') { if (isNew || /journal|alert|ticket|rank|portfolio|palette/.test(txt)) return 5; if (/paper|live|square|exit|stop|adjust|retry|order|trade mode|preview|details/.test(txt)) return 3; return 2; }
   if (a === '30-account' || a === '40-admin') return 4;
   return 5;

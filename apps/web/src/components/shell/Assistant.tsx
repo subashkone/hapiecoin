@@ -1,6 +1,6 @@
 "use client";
 // HapieCoin Assistant (HC-SH-057..063, 110, 111; ADR-036): a draggable chat bubble on every screen and a small panel
-// with keyword answers about the product, suggestion chips, a strategy explainer on /analyse and a human fallback.
+// with keyword answers about the product, suggestion chips, a strategy explainer on /desk and a human fallback.
 // Answers are typed out so the panel reads as a conversation; the conversation is kept for the session.
 import { Button, cn } from "@hapiecoin/ui";
 import { usePathname } from "next/navigation";
@@ -29,7 +29,7 @@ function readPos(): { x: number; y: number } | null {
   }
 }
 
-/** The explainer needs the analysis hook, which only makes sense on /analyse; keep it in its own component. */
+/** The explainer needs the analysis hook, which only makes sense on /desk; keep it in its own component. */
 function Explainer({ register }: { register: (fn: () => string) => void }) {
   const a = useStrategyAnalysis("builder");
   const name = useUiStore((s) => s.strategy[s.asset].name);
@@ -41,7 +41,7 @@ function Explainer({ register }: { register: (fn: () => string) => void }) {
 
 export function Assistant() {
   const pathname = usePathname();
-  const onAnalyse = pathname === "/analyse";
+  const onDesk = pathname === "/desk";
   const { data: me } = useMe();
   const loggedIn = !!me;
   const [open, setOpen] = useState(false);
@@ -69,7 +69,7 @@ export function Assistant() {
 
   const ask = useCallback((q: string) => {
     if (typing || !q.trim()) return;
-    const full = answerFor(q, { loggedIn, explain: onAnalyse ? () => explainRef.current() : undefined });
+    const full = answerFor(q, { loggedIn, explain: onDesk ? () => explainRef.current() : undefined });
     setMsgs((m) => [...m, { who: "me", text: q }, { who: "bot", text: "" }]);
     setTyping(true);
     let n = 0;
@@ -80,7 +80,7 @@ export function Assistant() {
       setMsgs((m) => { const next = [...m]; next[next.length - 1] = { who: "bot", text: slice }; return next; });
       if (n >= full.length) { clearInterval(timer); setTyping(false); }
     }, 33);
-  }, [typing, loggedIn, onAnalyse]);
+  }, [typing, loggedIn, onDesk]);
 
   useEffect(() => {
     if (requested === lastRequest.current) return;
@@ -129,11 +129,11 @@ export function Assistant() {
     setInput("");
     ask(q);
   };
-  const style = pos ? { left: pos.x, top: pos.y, right: "auto", bottom: "auto" } : { right: 16, bottom: onAnalyse ? 56 : 16 };
-  const panelStyle = pos ? { left: Math.max(8, Math.min(pos.x + 40 - 340, window.innerWidth - 348)), top: Math.max(8, pos.y - 430), right: "auto", bottom: "auto" } : { right: 16, bottom: onAnalyse ? 104 : 64 };
+  const style = pos ? { left: pos.x, top: pos.y, right: "auto", bottom: "auto" } : { right: 16, bottom: onDesk ? 56 : 16 };
+  const panelStyle = pos ? { left: Math.max(8, Math.min(pos.x + 40 - 340, window.innerWidth - 348)), top: Math.max(8, pos.y - 430), right: "auto", bottom: "auto" } : { right: 16, bottom: onDesk ? 104 : 64 };
   return (
     <>
-      {onAnalyse && loggedIn ? <Explainer register={register} /> : null}
+      {onDesk && loggedIn ? <Explainer register={register} /> : null}
       <button
         ref={btnRef}
         type="button"
@@ -159,7 +159,7 @@ export function Assistant() {
               <div className="text-xs font-medium">HapieCoin Assistant</div>
               <div className="micro leading-tight" data-testid="assistant-mode">{loggedIn ? "Platform help · not financial advice" : "Limited visitor mode · sign in for full support"}</div>
             </div>
-            {onAnalyse && loggedIn ? <Button size="sm" variant="ghost" onClick={() => ask(EXPLAIN_QUESTION)} title="Explain this strategy" data-testid="assistant-explain">✦</Button> : null}
+            {onDesk && loggedIn ? <Button size="sm" variant="ghost" onClick={() => ask(EXPLAIN_QUESTION)} title="Explain this strategy" data-testid="assistant-explain">✦</Button> : null}
             <Button size="sm" variant="ghost" onClick={() => setOpen(false)} aria-label="Close" data-testid="assistant-close">✕</Button>
           </div>
           <div ref={bodyRef} className="max-h-[320px] min-h-[160px] space-y-2 overflow-y-auto p-3 text-xs" data-testid="assistant-body">
@@ -168,7 +168,7 @@ export function Assistant() {
                 {m.text || (typing && i === msgs.length - 1 ? "…" : "")}
                 {m.chips ? (
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {suggestionsFor(onAnalyse && loggedIn).map((s) => (
+                    {suggestionsFor(onDesk && loggedIn).map((s) => (
                       <button key={s} type="button" className={cn("rounded border px-1.5 py-0.5 text-2xs hover:border-foreground/40", s === EXPLAIN_QUESTION ? "border-accent/60 text-accent" : "border-border")} onClick={() => ask(s)} data-testid="assistant-chip">{s}</button>
                     ))}
                   </div>

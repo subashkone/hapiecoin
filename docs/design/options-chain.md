@@ -1,6 +1,6 @@
 # Options chain panel · design pass (Phase 2, item 1) · 2026-09-07
 
-Covers GAPS #1, #2; spec HC-WS-015..023, HC-WS-027, HC-WS-107/108. Tokens and patterns from `mockup-v2/parts-src/analyse` (`.an-chain*`), ADR-003, ADR-006.
+Covers GAPS #1, #2; spec HC-WS-015..023, HC-WS-027, HC-WS-107/108. Tokens and patterns from `mockup-v2/parts-src/desk` (`.an-chain*`), ADR-003, ADR-006.
 
 ## 1. Job
 Show, for one expiry, every listed strike with live call and put prices side by side so a trader can pick legs. First question answered in 2 s: **where is the market (spot / ATM) and what do the options around it cost?** → amber ATM band centred on load, spot value on it.
@@ -49,7 +49,7 @@ No card grid, no tiles; one accent (ATM); one primary control per row (B/S appea
 
 # Item 2 · column set and Column Settings dialog · design pass · 2026-09-07
 
-Covers HC-WS-010..014, HC-WS-021, HC-WS-073 (palette toggle). Mock reference: `mockup-v2/parts-src/analyse/30-core.js.html` (COLS, colState, renderCs), styles `.an-cs-*`.
+Covers HC-WS-010..014, HC-WS-021, HC-WS-073 (palette toggle). Mock reference: `mockup-v2/parts-src/desk/30-core.js.html` (COLS, colState, renderCs), styles `.an-cs-*`.
 
 ## 1. Job
 Let a trader choose which figures sit next to each strike and in what order, without ever losing the strike column. First question in 2 s: **which of these numbers do I want next to the strike?** → the dialog lists them by group with a switch each and a live "n of 13 columns visible" counter.
@@ -100,7 +100,7 @@ No cards; one list per group; quick buttons are text buttons in one row, none pr
 
 # Item 3 · row controls, leg marks and the first leg state · design pass · 2026-09-07
 
-Covers HC-WS-023..027 (row controls, add leg, lot presets, details dialog, leg marks), the chain half of HC-WS-028 (B / S keys, Enter, Esc), HC-TR-017 (limits), HC-TR-018 (legs added from the chain), ADR-010 (legs kept per asset). Mock reference: `mockup-v2/parts-src/analyse/30-core.js.html` (`ctlHtml`, `addLeg`, `renderPills`, `openOptInfo`), styles `.an-ctl`, `.bs`, `.stp`, `tr.leg`, `td.legcell`.
+Covers HC-WS-023..027 (row controls, add leg, lot presets, details dialog, leg marks), the chain half of HC-WS-028 (B / S keys, Enter, Esc), HC-TR-017 (limits), HC-TR-018 (legs added from the chain), ADR-010 (legs kept per asset). Mock reference: `mockup-v2/parts-src/desk/30-core.js.html` (`ctlHtml`, `addLeg`, `renderPills`, `openOptInfo`), styles `.an-ctl`, `.bs`, `.stp`, `tr.leg`, `td.legcell`.
 
 ## 1. Job
 Turn a strike into a leg in one click without leaving the chain, and always show which strikes already hold legs. First question in 2 s: **which side buys / sells this strike, and how many lots?** → the control sits on the row under the cursor, calls side for calls and puts side for puts, with the lot count visible in the stepper.
@@ -128,7 +128,7 @@ Lots: integer presets 1 · 2 · 5 · 10 · 25 · 50 · 100 · 250 · 500 · 1000
 Pointer: hover shows the control; B / S add at once (no confirm); − / + step through the presets; ⓘ opens details. Keyboard on the highlighted row: **B** buy call, **S** sell call, **Shift+B** buy put, **Shift+S** sell put, **Enter** details, **Esc** clears the highlight, **+ / −** change lots. These match the v2 shortcut list (B, S registered there for the same purpose; Enter / Esc are not global). Palette: "Chain: clear legs for this asset" (with confirm) and "Chain: lot size presets" are deferred to the builder item; no new palette entry here. Focus order inside the control: B → S → − → + → ⓘ, all real buttons with aria-labels that include the side and kind ("Buy call 79,400").
 
 ## 7. Traceability
-HC-WS-023 hover control · HC-WS-024 add at mark · HC-WS-025 presets + tooltip · HC-WS-026 details dialog · HC-WS-027 pills, outline, stripe, filled B/S · HC-WS-028 (chain keys B / S / Enter / Esc; the rest landed in item 1) · HC-TR-017 limit · HC-TR-018 chain → legs. Playwright: `HC-WS-023 / HC-WS-024 hover control adds a call and a put leg at mark`, `HC-WS-027 leg pills and stripes mark the rows and survive a reload`, `HC-WS-026 details dialog opens from ⓘ and Enter`, visual `analyse-legs-<theme>.png`.
+HC-WS-023 hover control · HC-WS-024 add at mark · HC-WS-025 presets + tooltip · HC-WS-026 details dialog · HC-WS-027 pills, outline, stripe, filled B/S · HC-WS-028 (chain keys B / S / Enter / Esc; the rest landed in item 1) · HC-TR-017 limit · HC-TR-018 chain → legs. Playwright: `HC-WS-023 / HC-WS-024 hover control adds a call and a put leg at mark`, `HC-WS-027 leg pills and stripes mark the rows and survive a reload`, `HC-WS-026 details dialog opens from ⓘ and Enter`, visual `desk-legs-<theme>.png`.
 
 ## 8. Real-data check
 5 rows: fine. 500 rows: the control renders only on the hovered / highlighted row, pills only on rows with legs; no per-row cost otherwise. 6-digit BTC strike + two pills in a 92 px column: pills are 9.5 px mono ("C B 10" ≈ 40 px) stacked under the strike, row height stays 36 px because the strike cell uses two lines max (ATM tag or pills; when both, the pill row wins and ATM is shown as the amber colour alone). 3-digit XAUT: same. Long strategy names: not here. No positions: no pills, no stripes, controls still appear on hover. Failure point: a side narrower than the control (≈ 150 px) in single-side mode on a 390 px phone → the control overlays the price cells fully; acceptable, and the details dialog covers the rest.

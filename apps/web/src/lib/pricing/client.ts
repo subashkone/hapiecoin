@@ -50,7 +50,7 @@ export interface AnalysisState {
 const EMPTY: AnalysisState = { result: null, error: null, pending: false };
 
 /**
- * Analyse `legs` at `spot` with the given options; re-runs at most once per animation frame when the
+ * Price `legs` at `spot` with the given options; re-runs at most once per animation frame when the
  * inputs change and keeps the last good result while a new one is computed. No legs → null result.
  */
 export function useAnalysis(legs: readonly Leg[], options: AnalyzeOptions | null): AnalysisState {

@@ -1,5 +1,5 @@
 "use client";
-// Plan banner under the analyse header (HC-SH-014). States from GET /v1/plan: free / active / expiring /
+// Plan banner under the desk header (HC-SH-014). States from GET /v1/plan: free / active / expiring /
 // expired. Copy from the v2 mock banner chrome. Active banners can be dismissed for the session.
 import { Button, CircleAlert, CircleCheck, Crown, X, cn } from "@hapiecoin/ui";
 import Link from "next/link";
@@ -61,7 +61,7 @@ export function PlanBannerView({ plan, onDismiss }: { plan: PlanState; onDismiss
       <span>{v.text}</span>
       {v.button ? (
         <Button asChild size="xs" variant={v.kind === "free" ? "outline" : "primary"} className="ml-2">
-          <Link href="/subscription">{v.button}</Link>
+          <Link href="/plans">{v.button}</Link>
         </Button>
       ) : null}
       {v.dismissible && onDismiss ? (

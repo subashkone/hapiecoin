@@ -54,7 +54,7 @@ describe("[UI-BUTTON] Button", () => {
   it("[UI-BUTTON] iconOnly removes horizontal padding and asChild renders the child element", () => {
     render(
       <Button asChild iconOnly size="sm" variant="ghost">
-        <a href="/analyse">Go</a>
+        <a href="/desk">Go</a>
       </Button>,
     );
     const link = screen.getByRole("link", { name: "Go" });

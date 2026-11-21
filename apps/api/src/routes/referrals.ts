@@ -23,7 +23,7 @@ export function registerReferralRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps, 
   const admin = requireAdmin(deps.sessions);
 
   app.openapi(
-    createRoute({ method: "get", path: "/v1/referrals", tags: ["referrals"], summary: "My Referrals (HC-AC-037..055)", security: cookieAuth, middleware: [guard], responses: { 200: jsonContent(ReferralsView, "Referrals"), 401: errorResponses[401] } }),
+    createRoute({ method: "get", path: "/v1/referrals", tags: ["referrals"], summary: "Invite friends (HC-AC-037..055)", security: cookieAuth, middleware: [guard], responses: { 200: jsonContent(ReferralsView, "Referrals"), 401: errorResponses[401] } }),
     async (c) => c.json(await referralsView(deps, currentUser(c).id), 200),
   );
 

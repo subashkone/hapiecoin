@@ -1,5 +1,5 @@
 // HapieCoin Assistant (HC-SH-057..063, 110, 111): launcher, panel, chips, typed answers, visitor mode, drag position,
-// palette hand-off and the strategy explainer on /analyse.
+// palette hand-off and the strategy explainer on /desk.
 import { chainTopic } from "@hapiecoin/schema";
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -30,7 +30,7 @@ const settled = async (text: string) =>
 describe("HC-SH-057..063 assistant panel", () => {
   it("opens from the launcher with a greeting and chips, types an answer, and closes on Escape", async () => {
     mock.loginAs("trader@example.com");
-    pathnameMock.value = "/subscription";
+    pathnameMock.value = "/plans";
     renderWithProviders(<Assistant />);
     const u = userEvent.setup();
     await waitFor(() => expect(screen.getByTestId("assistant-launcher")).toBeTruthy());
@@ -40,7 +40,7 @@ describe("HC-SH-057..063 assistant panel", () => {
     const chips = screen.getAllByTestId("assistant-chip");
     expect(chips).toHaveLength(4);
     expect(chips[0]?.textContent).toBe("How do I add a leg from the chain?");
-    expect(screen.queryByTestId("assistant-explain")).toBeNull(); // not on Analyse
+    expect(screen.queryByTestId("assistant-explain")).toBeNull(); // not on the Desk
     await u.click(chips[1]!);
     expect(screen.getByTestId("assistant-msg-me").textContent).toBe("What is probability of profit?");
     await settled("statistical estimate, not a promise");
@@ -108,9 +108,9 @@ describe("HC-SH-057..063 assistant panel", () => {
 });
 
 describe("HC-SH-110 explain this strategy", () => {
-  it("summarises the Builder legs with live pricing on /analyse", async () => {
+  it("summarises the Builder legs with live pricing on /desk", async () => {
     mock.loginAs("trader@example.com");
-    pathnameMock.value = "/analyse";
+    pathnameMock.value = "/desk";
     const s = useUiStore.getState();
     const row = rows.find((r) => Number(r.strike) >= 79521)!;
     s.addLeg({ asset: "BTC", kind: "call", side: "buy", strike: row.strike, expiry: EXPIRY, lots: 10, price: row.call!.mark, iv: row.call!.markIv });

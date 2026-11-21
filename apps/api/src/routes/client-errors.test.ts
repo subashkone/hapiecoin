@@ -11,7 +11,7 @@ afterAll(() => t.close());
 describe("HC-SH-132 POST /v1/client-errors relays a browser error to the sink (ADR-081)", () => {
   it("accepts a report without a session, keeps only the user agent of the headers, tags it as a browser event and answers the event id", async () => {
     const res = await t.request("/v1/client-errors", {
-      json: { message: "Cannot read properties of undefined", name: "TypeError", stack: "onClick@https://app/x.js:1:2", path: "/analyse?token=abc&tab=chain", release: "r1", kind: "unhandledrejection" },
+      json: { message: "Cannot read properties of undefined", name: "TypeError", stack: "onClick@https://app/x.js:1:2", path: "/desk?token=abc&tab=chain", release: "r1", kind: "unhandledrejection" },
       headers: { "user-agent": "Mozilla/5.0 test", cookie: "session=nope" },
     });
     expect(res.status).toBe(202);
@@ -25,7 +25,7 @@ describe("HC-SH-132 POST /v1/client-errors relays a browser error to the sink (A
       handled: false,
       release: "r1",
       tags: { app: "web", kind: "unhandledrejection" },
-      request: { method: "GET", url: "/analyse?token=abc&tab=chain", userAgent: "Mozilla/5.0 test" },
+      request: { method: "GET", url: "/desk?token=abc&tab=chain", userAgent: "Mozilla/5.0 test" },
     });
     expect(JSON.stringify(hit)).not.toContain("nope");
     expect(await (await t.request("/metrics")).text()).toContain('hapiecoin_api_errors_total{kind="browser"} 1');

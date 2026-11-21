@@ -1,5 +1,5 @@
 // Banners (Phase 4 item 4b, ADR-033; docs/design/admin.md §4b): promotional popups an admin schedules and traders
-// see as a flyer carousel on /analyse. The image travels as a data URL on write (≤ 5 MB decoded) and is served by
+// see as a flyer carousel on /desk. The image travels as a data URL on write (≤ 5 MB decoded) and is served by
 // its own URL on read; the JSON never carries bytes back.
 import { z } from "zod";
 import { Id } from "./accounts.js";

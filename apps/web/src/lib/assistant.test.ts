@@ -46,11 +46,11 @@ describe("HC-SH-060 / HC-SH-061 answers", () => {
   it("appends the visitor note when signed out and routes explain questions", () => {
     expect(answerFor("what is pop", { loggedIn: false })).toContain(VISITOR_NOTE);
     expect(answerFor(EXPLAIN_QUESTION, { loggedIn: true, explain: () => "EXPLAINED" })).toBe("EXPLAINED");
-    expect(answerFor("summarise my strategy", { loggedIn: true })).toContain("Open the Analyse workspace");
+    expect(answerFor("summarise my strategy", { loggedIn: true })).toContain("Open the Desk");
     expect(answerFor("   ", { loggedIn: true })).toBe(FALLBACK);
   });
 
-  it("suggests the explainer first on Analyse and the base chips elsewhere", () => {
+  it("suggests the explainer first on the Desk and the base chips elsewhere", () => {
     expect(suggestionsFor(true)[0]).toBe(EXPLAIN_QUESTION);
     expect(suggestionsFor(false)).toEqual([...BASE_SUGGESTIONS]);
   });

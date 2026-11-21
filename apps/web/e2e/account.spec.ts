@@ -1,14 +1,14 @@
-// My Subscription and the Upgrade Required dialog on the mock API (Phase 4 item 1, ADR-030).
+// My plan and the Upgrade Required dialog on the mock API (Phase 4 item 1, ADR-030).
 import { expect, seedUser, signIn, test } from "./fixtures";
 
-test.describe("HC-AC My Subscription", () => {
+test.describe("HC-AC My plan", () => {
   test.beforeEach(async ({ page, request }) => {
     await seedUser(request, { email: "plans@example.com", plan: { state: "free" } });
     await signIn(page, "plans@example.com");
   });
 
   test("HC-AC-003 / HC-AC-006 / HC-AC-013 a free user sees limits, the plan grid with the interval toggle and the diff; HC-AC-023 activates the ₹0 plan", async ({ page }) => {
-    await page.goto("/subscription");
+    await page.goto("/plans");
     await expect(page.getByTestId("subscription-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
     await expect(page.getByTestId("sub-none")).toContainText("No Active Subscription");
     await expect(page.locator("[data-testid=limit-row][data-key=paper_trading]")).toContainText("3 / month");
@@ -25,7 +25,7 @@ test.describe("HC-AC My Subscription", () => {
   });
 
   test("HC-SH-054 the fourth paper trade on the Free plan opens Upgrade Required with the API's reason and links to the plans", async ({ page }) => {
-    await page.goto("/analyse");
+    await page.goto("/desk");
     await expect(page.locator("[data-testid=chain-row][data-atm=true]")).toHaveCount(1, { timeout: 15_000 });
     const strike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
     for (let i = 1; i <= 4; i += 1) {
@@ -50,12 +50,12 @@ test.describe("HC-AC My Subscription", () => {
   });
 });
 
-test.describe("HC-AC My Referrals", () => {
+test.describe("HC-AC Invite friends", () => {
   test("HC-AC-038 / HC-AC-043 / HC-AC-050 / HC-AC-069 link card, tiles, filters and the Share dialog", async ({ page, request, context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await seedUser(request, { email: "ref@example.com", referrals: 6 });
     await signIn(page, "ref@example.com");
-    await page.goto("/referrals");
+    await page.goto("/invite");
     await expect(page.getByTestId("referrals-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
     await expect(page.getByTestId("ref-meta")).toHaveText("20% commission · 6 referrals");
     await expect(page.getByTestId("ref-link")).toHaveValue(/[/]auth[?]tab=signup&ref=ASHA2026$/);
@@ -76,7 +76,7 @@ test.describe("HC-AC My Referrals", () => {
   test("HC-AC-051 a trader with no referrals sees the share prompt", async ({ page, request }) => {
     await seedUser(request, { email: "lonely@example.com" });
     await signIn(page, "lonely@example.com");
-    await page.goto("/referrals");
+    await page.goto("/invite");
     await expect(page.getByTestId("ref-empty")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("earnings-chart")).toHaveCount(0);
   });
@@ -87,7 +87,7 @@ test.describe("HC-AC checkout, payment history and invoice", () => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await seedUser(request, { email: "pay@example.com", plan: { state: "free" }, coupons: true });
     await signIn(page, "pay@example.com");
-    await page.goto("/subscription");
+    await page.goto("/plans");
     await expect(page.getByTestId("subscription-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
     await page.getByTestId("plan-card").nth(2).getByTestId("plan-action").click(); // Pro monthly
     await expect(page.getByTestId("subscribe-dialog")).toBeVisible();

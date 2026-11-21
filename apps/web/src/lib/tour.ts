@@ -1,6 +1,6 @@
 // Product tour data and events (HC-SH-064..076; ADR-036; docs/design/chrome.md). Steps point at `[data-tour=…]`
 // anchors; some advance on an app event (a leg added, the save dialog opening, the paper trade starting) so the
-// trader does the real thing rather than reading about it. The tour runs only on /analyse.
+// trader does the real thing rather than reading about it. The tour runs only on /desk.
 import type { WorkspaceTab } from "@/lib/store";
 
 export type TourEvent = "leg-added" | "trade-mode-open" | "save-dialog-open" | "trade-preview-open" | "paper-started";

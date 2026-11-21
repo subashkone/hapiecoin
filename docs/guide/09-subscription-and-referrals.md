@@ -8,8 +8,8 @@ Plans (free, Starter, Pro and more from the admin's catalogue) with monthly and 
 
 ## Try it
 
-1. `/subscription`: pick a plan, apply coupon `basic20` (on the mock), pay with the test checkout, open the invoice.
-2. `/referrals`: copy your link, share, and watch the table as referred users subscribe.
+1. `/plans`: pick a plan, apply coupon `basic20` (on the mock), pay with the test checkout, open the invoice.
+2. `/invite`: copy your link, share, and watch the table as referred users subscribe.
 
 ## Screens
 
@@ -29,11 +29,11 @@ Plans (free, Starter, Pro and more from the admin's catalogue) with monthly and 
 
 Each row is one traced feature from the build spec: the id, what it is, how it behaves (the acceptance rule the tests check), and how it is tested. Status "mock-only" means the screen exists but the data feed behind it is not connected yet.
 
-### My Subscription · `/subscription`
+### My plan · `/plans`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
-| HC-AC-001 | Page header 'My Subscription · Choose a plan to unlock features' | Slim v2 title row: title + muted subtitle left, mono status meta (PRO · YEARLY · 116 DAYS LEFT) and the single amber primary action right; hairline underneath | built | e2e (Playwright) |
+| HC-AC-001 | Page header 'My plan · Choose a plan to unlock features' | Slim v2 title row: title + muted subtitle left, mono status meta (PRO · YEARLY · 116 DAYS LEFT) and the single amber primary action right; hairline underneath | built | e2e (Playwright) |
 | HC-AC-002 | Auth guard | Section carries data-auth="user"; logged-out visitors are redirected to /auth?next=/subscription by the router | built | e2e (Playwright) |
 | HC-AC-003 | Current plan card: plan name + status badge | Rendered from CG.mock.subscription; badge is Active (green), Expired (red, when expiresAt < mock clock or status expired) or Cancelled (grey) | built | unit (pricing) · e2e (Playwright) |
 | HC-AC-004 | Current plan summary strip: Billing / Price / You Pay / Currency / Valid until | Five-cell mono stat strip under the plan header (micro labels, tabular numbers, struck list price with % off pill, days-left pill); Feature Limits and Plan Features sit side by side below it | mock-only | unit (pricing) · visual (screenshot diff) |
@@ -81,11 +81,11 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-AC-065 | Row density | Tables switch between 36px comfortable and 28px compact rows when the chrome emits CG.emit('density', …) | built | e2e (Playwright) |
 | HC-AC-066 | Palette command 'Subscription → Change plan' | Registered with CG.palette when present: navigates to /subscription and triggers the header primary action | built | e2e (Playwright) |
 
-### My Referrals · `/referrals`
+### Invite friends · `/invite`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
-| HC-AC-037 | Page header 'My Referrals · Share & Earn' | Slim v2 title row with mono meta (20% COMMISSION · 6 REFERRALS) and the amber Share primary action on the right | built | e2e (Playwright) · api contract |
+| HC-AC-037 | Page header 'Invite friends · Share & Earn' | Slim v2 title row with mono meta (20% COMMISSION · 6 REFERRALS) and the amber Share primary action on the right | built | e2e (Playwright) · api contract |
 | HC-AC-038 | Referral link card 'Get 20% commission on every paid referral' | Flat hairline card (no gradient): gift icon, headline using referrals.commissionPct, explanatory copy, mono link input, Copy button and the dashed code chip | built | e2e (Playwright) · api contract |
 | HC-AC-039 | Referral link (read-only input) | Shows CG.mock.referrals.link in a mono read-only input; clicking selects the whole link | built | e2e (Playwright) · api contract |
 | HC-AC-040 | Copy button | Copies the link via navigator.clipboard (execCommand fallback) and toasts 'Copied!' | built | e2e (Playwright) |

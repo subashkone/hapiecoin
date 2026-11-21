@@ -26,7 +26,7 @@ beforeAll(async () => {
 });
 afterAll(() => t.close());
 
-describe("HC-AC-037..055 My Referrals", () => {
+describe("HC-AC-037..055 Invite friends", () => {
   it("shows the link and code with no referrals yet, then the referred sign-ups with No Purchase rows", async () => {
     const empty = await json<ReferralsView>(await t.request("/v1/referrals", { cookie: ria }));
     expect(empty.code).toBe(riaCode);

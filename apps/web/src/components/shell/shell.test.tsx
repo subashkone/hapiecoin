@@ -19,12 +19,12 @@ beforeEach(() => {
 afterEach(() => mock.restore());
 
 describe("HC-PB-059 command palette", () => {
-  it("buildCommands offers Sign in when logged out and Analyse when logged in", () => {
+  it("buildCommands offers Sign in when logged out and the Desk when logged in", () => {
     const navigate = vi.fn();
     const out = buildCommands({ loggedIn: false, navigate, toggleTheme: vi.fn() });
     expect(out.map((c) => c.label)).toEqual(["Home", "Payoff chart preview", "Sign in", "Privacy Policy", "Terms of Service", "Disclaimer", "Toggle theme", "Keyboard shortcuts"]);
     const inn = buildCommands({ loggedIn: true, navigate, toggleTheme: vi.fn() });
-    expect(inn[2]?.label).toBe("Analyse workspace"); // after Home and the public payoff preview
+    expect(inn[2]?.label).toBe("Desk"); // after Home and the public payoff preview
     expect(inn.find((c) => c.id === "act:referral-copy")).toBeUndefined();
     // HC-AD-091 the seven Admin commands exist only for admins
     expect(inn.find((c) => c.id === "nav:admin-users")).toBeUndefined();
@@ -38,7 +38,7 @@ describe("HC-PB-059 command palette", () => {
     buildCommands({ loggedIn: true, navigate, toggleTheme: vi.fn(), referralCode: "ASHA2026" }).find((c) => c.id === "act:referral-copy")?.run();
     expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/auth?tab=signup&ref=ASHA2026`);
     inn[2]?.run();
-    expect(navigate).toHaveBeenCalledWith("/analyse");
+    expect(navigate).toHaveBeenCalledWith("/desk");
     // chain commands (HC-WS-016) act on the UI store
     const atm = inn.find((c) => c.id === "act:chain-atm");
     const all = inn.find((c) => c.id === "act:chain-all");
@@ -60,7 +60,7 @@ describe("HC-PB-059 command palette", () => {
     const exp = withLists.filter((c) => c.id.startsWith("act:expiry-"));
     expect(exp.map((c) => c.label)).toEqual(["Switch expiry → 25 Sep", "Switch expiry → 30 Oct"]);
     exp[1]?.run();
-    expect(navigate).toHaveBeenCalledWith("/analyse");
+    expect(navigate).toHaveBeenCalledWith("/desk");
     expect(useUiStore.getState().expiry[useUiStore.getState().asset]).toBe("2026-10-30");
     expect(useUiStore.getState().workspaceTab).toBe("chain");
     const tpl = withLists.filter((c) => c.id.startsWith("act:template-"));
@@ -72,7 +72,7 @@ describe("HC-PB-059 command palette", () => {
     const wizard = inn.find((c) => c.id === "act:builder-wizard");
     expect(wizard?.hint).toBe("W");
     wizard?.run();
-    expect(navigate).toHaveBeenLastCalledWith("/analyse");
+    expect(navigate).toHaveBeenLastCalledWith("/desk");
     expect(useUiStore.getState()).toMatchObject({ workspaceTab: "builder", builderTab: "wizard" });
     // HC-TR-140 trading commands
     useUiStore.setState({ legs: { BTC: [], ETH: [], XAUT: [] }, asset: "BTC", tradeFlow: null });
@@ -231,9 +231,9 @@ describe("[SHELL] Menu", () => {
 
 describe("[SHELL] Logo, ThemeToggle, PhasePlaceholder, Providers", () => {
   it("Logo links home with the Δ mark and optional suffix", () => {
-    render(<Logo href="/analyse" sub="Analyse" />);
-    expect(screen.getByLabelText("HapieCoin home").getAttribute("href")).toBe("/analyse");
-    expect(screen.getByText("Analyse")).toBeTruthy();
+    render(<Logo href="/desk" sub="Desk" />);
+    expect(screen.getByLabelText("HapieCoin home").getAttribute("href")).toBe("/desk");
+    expect(screen.getByText("Desk")).toBeTruthy();
     const { container } = render(<LogoMark className="size-5" />);
     expect(container.querySelector("svg")?.getAttribute("class")).toContain("size-5");
   });
@@ -248,7 +248,7 @@ describe("[SHELL] Logo, ThemeToggle, PhasePlaceholder, Providers", () => {
   it("PhasePlaceholder names the phase and links onward", () => {
     render(<PhasePlaceholder title="Referrals" phase={4} blurb="Soon." />);
     expect(screen.getByText("Coming in Phase 4")).toBeTruthy();
-    expect(screen.getByText("Go to Analyse").closest("a")?.getAttribute("href")).toBe("/analyse");
+    expect(screen.getByText("Go to the Desk").closest("a")?.getAttribute("href")).toBe("/desk");
   });
   it("Providers mounts theme, density, query and gateway contexts", () => {
     render(

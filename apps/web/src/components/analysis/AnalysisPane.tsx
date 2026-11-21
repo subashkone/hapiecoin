@@ -97,7 +97,7 @@ export function PaneSourceBar() {
   );
 }
 
-/** Tab-bar info (HC-WS-067): "Bull Call Spread · 25 Sep · 20 lots" for the legs the pane analyses. */
+/** Tab-bar info (HC-WS-067): "Bull Call Spread · 25 Sep · 20 lots" for the legs the pane shows. */
 export function StrategyInfo() {
   const a = useStrategyAnalysis();
   const storedName = useUiStore((s) => s.strategy[s.asset].name);
@@ -118,7 +118,7 @@ export function AnalysisPane() {
   const tab = useUiStore((s) => s.analysisTab);
   const setTab = useUiStore((s) => s.setAnalysisTab);
   const hasLegs = useUiStore((s) => s.legs[s.asset].some((l) => l.status === "open") || s.paneSource !== null);
-  const setCollapse = useUiStore((s) => s.setAnalyseCollapse);
+  const setCollapse = useUiStore((s) => s.setDeskCollapse);
   const [share, setShare] = useState(false);
   return (
     <Tabs value={tab} onValueChange={(v) => setTab(v as AnalysisTab)} className="flex h-full min-h-0 flex-col gap-0" data-testid="analysis-pane">

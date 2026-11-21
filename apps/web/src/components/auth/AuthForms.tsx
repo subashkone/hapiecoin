@@ -78,7 +78,7 @@ function Providers({ googleEnabled, next, onSignedIn }: { googleEnabled: boolean
           onClick={() => {
             setBusy(true);
             void authClient.signIn
-              .social({ provider: "google", callbackURL: next && next.startsWith("/") ? next : "/analyse", errorCallbackURL: "/auth?tab=login" })
+              .social({ provider: "google", callbackURL: next && next.startsWith("/") ? next : "/desk", errorCallbackURL: "/auth?tab=login" })
               .finally(() => setBusy(false));
           }}
         >

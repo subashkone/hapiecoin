@@ -96,8 +96,8 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 |---|---|---|---|---|
 | HC-PB-023 | Split layout: panel-tone brand column (mono eyebrow, “Master Options Trading” with amber word, paragraph, 4 hairline feature rows, live futures ticker, mono copyright) + form column | Glows and grid backgrounds removed | mock-only | unit (pricing) · visual (screenshot diff) · security |
 | HC-PB-024 | Tab state driven by the URL (?tab=login \| otp-login \| otp-verify \| signup \| verify-email \| forgot \| reset-password) | Every tab change navigates to #/auth?tab=… (preserving next= and ref=) so browser back/forward moves between steps; sub-steps that need an email fall back to their parent step on a cold visit | built | unit (pricing) · e2e (Playwright) · api contract · security |
-| HC-PB-025 | Logged-in visitors are redirected away from /auth | show() checks CG.state.loggedIn and navigates to ?next= or /analyse | built | e2e (Playwright) |
-| HC-PB-026 | Login card: “Welcome back · Sign in to your trading dashboard”, Continue with Delta Exchange, OR divider, mono uppercase field labels, amber Sign In, Forgot password? / Sign in with OTP, Create account | Email required / format validated inline (“Email is required”, “Invalid email”); password < 6 chars → toast “Login failed · Invalid credentials.”; success → CG.auth.login(email), toast “Welcome back! · Logged in successfully.”, navigate to ?next= or /analyse | built | unit (pricing) · e2e (Playwright) · api contract · security |
+| HC-PB-025 | Logged-in visitors are redirected away from /auth | show() checks CG.state.loggedIn and navigates to ?next= or /desk | built | e2e (Playwright) |
+| HC-PB-026 | Login card: “Welcome back · Sign in to your trading dashboard”, Continue with Delta Exchange, OR divider, mono uppercase field labels, amber Sign In, Forgot password? / Sign in with OTP, Create account | Email required / format validated inline (“Email is required”, “Invalid email”); password < 6 chars → toast “Login failed · Invalid credentials.”; success → CG.auth.login(email), toast “Welcome back! · Logged in successfully.”, navigate to ?next= or /desk | built | unit (pricing) · e2e (Playwright) · api contract · security |
 | HC-PB-027 | Password visibility toggle (eye / eye-off) | Button switches the input type between password and text and swaps the icon; present on every password field | built | e2e (Playwright) · security |
 | HC-PB-028 | Continue with Delta Exchange | Navigates to #/auth/delta which simulates the OAuth hand-off | built | unit (pricing) · e2e (Playwright) |
 | HC-PB-029 | Sign in with OTP: “We'll send a one-time code to your registered email”, Email, Send OTP, New here? Create an account first, ← Back to login | Validates the email, toast “OTP Sent · Check your email for the OTP.” and moves to ?tab=otp-verify | built | e2e (Playwright) · api contract · security |
@@ -110,19 +110,19 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-PB-036 | ?next= deep-link support | Protected screens redirect to /auth?next=/path; after any successful login the user lands on that path | built | e2e (Playwright) · api contract |
 | HC-PB-061 | Live futures ticker (BTC / ETH / XAUT price and 24h %) under the feature rows, updated every tick | Behaves as in the v2 mock. | built | unit (pricing) · e2e (Playwright) · security |
 | HC-PB-062 | Mono inputs for mobile number, referral code and OTP; password strength bar + mono rule list | Behaves as in the v2 mock. | built | e2e (Playwright) · api contract · security |
-| HC-PB-065 | Continue with Google (Better Auth social sign-in): the button shows only when the API has Google configured; the OAuth callback is served on the web origin so the session cookie is first-party and /analyse opens signed in | authClient.signIn.social({ provider: "google", callbackURL: next }); BETTER_AUTH_URL = web origin (ADR-019) | built | e2e (Playwright) · api contract |
+| HC-PB-065 | Continue with Google (Better Auth social sign-in): the button shows only when the API has Google configured; the OAuth callback is served on the web origin so the session cookie is first-party and /desk opens signed in | authClient.signIn.social({ provider: "google", callbackURL: next }); BETTER_AUTH_URL = web origin (ADR-019) | built | e2e (Playwright) · api contract |
 
 ### Delta Exchange sign-in · `/auth/delta`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
-| HC-PB-037 | Full-screen spinner “Signing you in with Delta…”, then login | After 1.5s: CG.auth.login(), toast “Welcome! · Signed in with Delta.”, navigate to /analyse (timer cancelled if the user leaves) | built | unit (pricing) · e2e (Playwright) · api contract |
+| HC-PB-037 | Full-screen spinner “Signing you in with Delta…”, then login | After 1.5s: CG.auth.login(), toast “Welcome! · Signed in with Delta.”, navigate to /desk (timer cancelled if the user leaves) | built | unit (pricing) · e2e (Playwright) · api contract |
 
 ### SSO return · `/sso`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
-| HC-PB-038 | “Signing you in…” spinner then redirect | After 1s logs the user in and navigates to ?sso_return= (when it is an in-app path) or /analyse | built | e2e (Playwright) |
+| HC-PB-038 | “Signing you in…” spinner then redirect | After 1s logs the user in and navigates to ?sso_return= (when it is an in-app path) or /desk | built | e2e (Playwright) |
 
 ### Privacy Policy · `/privacy`
 

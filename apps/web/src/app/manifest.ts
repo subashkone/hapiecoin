@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "HapieCoin",
     short_name: "HapieCoin",
     description: "Crypto options strategy builder for Delta Exchange India: chain, payoff, greeks, paper and live trading.",
-    id: "/analyse",
-    start_url: "/analyse",
+    id: "/desk",
+    start_url: "/desk",
     scope: "/",
     display: "standalone",
     // splash ground = --background (220 23% 5%), chrome tone = --card / --header-bg (220 23% 8%); no orientation lock:

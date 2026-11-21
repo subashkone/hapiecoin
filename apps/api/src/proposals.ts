@@ -103,7 +103,7 @@ export async function detectProposals(deps: ProposalDeps, venues: readonly Venue
 export function proposalMessage(p: Playbook, row: ProposalRow, webUrl: string): string {
   const legs = row.legs.map((l) => `${l.side === "buy" ? "B" : "S"} ${l.kind === "future" ? "PERP" : `${l.kind === "call" ? "C" : "P"} ${l.strike}`}`).join(" · ");
   const premium = Number(row.entryCost) >= 0 ? `pays ${row.entryCost}` : `receives ${row.entryCost.slice(1)}`;
-  return `HapieCoin playbook · ${p.name} (${row.asset}, ${row.venue === "deribit" ? "Deribit" : "Delta India"})\nWould enter on the ${row.day} chain: ${legs} · expiry ${row.expiry} · ${p.lots} lots\nNet premium ${premium} · max loss ${row.maxLoss ?? "unbounded"}\nIts record passes its thresholds on our history. A backtest is not a forecast: open it in the Builder as paper, or dismiss it.\n${webUrl}/analyse`;
+  return `HapieCoin playbook · ${p.name} (${row.asset}, ${row.venue === "deribit" ? "Deribit" : "Delta India"})\nWould enter on the ${row.day} chain: ${legs} · expiry ${row.expiry} · ${p.lots} lots\nNet premium ${premium} · max loss ${row.maxLoss ?? "unbounded"}\nIts record passes its thresholds on our history. A backtest is not a forecast: open it in the Builder as paper, or dismiss it.\n${webUrl}/desk`;
 }
 
 /**

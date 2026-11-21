@@ -1,4 +1,4 @@
-// Phone pass (ADR-080; HC-SH-130, HC-SH-131, HC-WS-115): the Analyse workspace, the chain, the cards and the dialogs on
+// Phone pass (ADR-080; HC-SH-130, HC-SH-131, HC-WS-115): the Desk, the chain, the cards and the dialogs on
 // a Pixel 7 profile (412 × 839, touch). Runs under the `phone` (Pixel 7) and `phone-ios` (iPhone 14 on Chromium)
 // Playwright projects only. The home-screen app (ADR-082; HC-SH-134, HC-SH-135) is proven here too.
 import type { Page } from "@playwright/test";
@@ -48,9 +48,9 @@ test.describe("HC-SH-130 the workspace on a phone", () => {
       await page.evaluate((t) => localStorage.setItem("hapiecoin.theme", t), theme);
       await page.reload();
       await expect(page.getByTestId("chain-table")).toHaveAttribute("data-rows", /^[1-9][0-9]?$/, { timeout: 15_000 });
-      // one capture per profile: analyse-phone-* is the Pixel 7, analyse-iphone-* the iPhone 14 (ADR-082)
+      // one capture per profile: desk-phone-* is the Pixel 7, desk-iphone-* the iPhone 14 (ADR-082)
       const device = testInfo.project.name === "phone-ios" ? "iphone" : "phone";
-      await page.screenshot({ path: `${DIR}/analyse-${device}-${theme}.png` });
+      await page.screenshot({ path: `${DIR}/desk-${device}-${theme}.png` });
     }
   });
 
@@ -109,7 +109,7 @@ test.describe("HC-SH-130 the workspace on a phone", () => {
     const body = (await manifest.json()) as { name: string; display: string; start_url: string; icons: { src: string; sizes: string; purpose?: string }[] };
     expect(body.name).toBe("HapieCoin");
     expect(body.display).toBe("standalone");
-    expect(body.start_url).toBe("/analyse");
+    expect(body.start_url).toBe("/desk");
     expect(body.icons.map((i) => i.sizes)).toEqual(expect.arrayContaining(["192x192", "512x512"]));
     expect(body.icons.some((i) => i.purpose === "maskable"), "a maskable icon").toBe(true);
     for (const icon of body.icons) expect((await request.get(icon.src)).headers()["content-type"]).toContain("image/png");
@@ -148,7 +148,7 @@ test.describe("HC-SH-130 the workspace on a phone", () => {
     });
     expect(cached).toContain("/offline");
     expect(cached.filter((k) => k.startsWith("/icons/"))).toEqual([]); // the manifest fetches icons itself
-    expect(cached.filter((k) => k.startsWith("/v1/") || k.startsWith("/api/") || k === "/analyse")).toEqual([]);
+    expect(cached.filter((k) => k.startsWith("/v1/") || k.startsWith("/api/") || k === "/desk")).toEqual([]);
     await context.setOffline(true);
     await page.goto("/analytics", { waitUntil: "commit" }).catch(() => undefined);
     await expect(page.getByTestId("offline-page")).toBeVisible({ timeout: 15_000 });

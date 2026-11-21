@@ -1,5 +1,5 @@
 # CI for every pull request and every push to main (roadmap F24; GAPS #69; ADR-061).
-# checks: pnpm ci (typecheck, lint, unit + coverage gates, build) and the /analyse bundle budget.
+# checks: pnpm ci (typecheck, lint, unit + coverage gates, build) and the /desk bundle budget.
 # e2e:    Playwright against the mock API and fake gateway (apps/web/test/servers.ts), Chromium only; then the visual
 #         suite on its pinned mock stack (playwright.visual.config.ts), every picture compared against the committed
 #         Linux baseline in apps/web/e2e/__baselines__ (ADR-096); the diff images are in the report on failure.
@@ -43,7 +43,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run ci
-      - name: Bundle budget (/analyse first-load JS; a warning until GAPS #19 / roadmap F29 trims it under 350 KB)
+      - name: Bundle budget (/desk first-load JS; a warning until GAPS #19 / roadmap F29 trims it under 350 KB)
         run: pnpm --filter @hapiecoin/web check:budget
         continue-on-error: true
       - name: Coverage reports

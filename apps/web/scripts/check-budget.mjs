@@ -1,11 +1,11 @@
-// Bundle budget: the /analyse route's first-load JS must stay ≤ 350 KB gzipped.
+// Bundle budget: the /desk route's first-load JS must stay ≤ 350 KB gzipped.
 //
 // Next 16 (Turbopack) writes no root app-build-manifest.json; the per-route client chunk list lives in
 // .next/server/app/<route>/page_client-reference-manifest.js as `globalThis.__RSC_MANIFEST["<route>"]`.
 // First-load JS = root main files + polyfill (from .next/build-manifest.json) + the route's `entryJSFiles`
 // (root layout + page segments). Chunks loaded later through next/dynamic (the workspace) are reported
 // separately as "on demand" so the split stays visible.
-// Usage: node scripts/check-budget.mjs [--limit 350] [--route /analyse/page]
+// Usage: node scripts/check-budget.mjs [--limit 350] [--route /desk/page]
 /* eslint-disable no-console -- CLI report script; stdout is its output */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -14,7 +14,7 @@ import { gzipSync } from "node:zlib";
 
 const args = process.argv.slice(2);
 const limitKb = Number(args[args.indexOf("--limit") + 1] || 350);
-const route = args.includes("--route") ? args[args.indexOf("--route") + 1] : "/analyse/page";
+const route = args.includes("--route") ? args[args.indexOf("--route") + 1] : "/desk/page";
 const root = process.cwd();
 const nextDir = join(root, ".next");
 

@@ -55,7 +55,7 @@ describe("HC-SH-003 UI store", () => {
       rangeDefault: 0, // GAPS #115: the default the saved range was last aligned to
       chartLayers: { expiry: true, target: true, fill: true, oi: false, band: true, breakeven: true, ivUp: false, ivDown: false },
       ladderStep: 1,
-      analyseCollapse: null,
+      deskCollapse: null,
       brokerId: null,
       accountId: null,
       chainColumns: defaultLayout(),
@@ -220,7 +220,7 @@ describe("HC-TR-148 adjustment workbench draft (ADR-044)", () => {
     expect(useUiStore.getState().paneSource).toEqual({ kind: "strategy", id: "strat_1" });
     st.setWorkspaceTab("builder");
     expect(useUiStore.getState().workspaceTab).not.toBe("builder"); // parked, not switched
-    st.analysePositions([7]);
+    st.followPositions([7]);
     st.openAdjust("strat_2");
     expect(useUiStore.getState().adjust?.strategyId).toBe("strat_1");
     st.openAdjust("strat_1"); // the same strategy keeps the work
@@ -251,7 +251,7 @@ describe("HC-TR-148 adjustment workbench draft (ADR-044)", () => {
     st.followStrategy("strat_2");
     expect(useUiStore.getState().adjust).toBeNull();
     st.openAdjust("strat_1");
-    st.analysePositions([7]);
+    st.followPositions([7]);
     expect(useUiStore.getState().adjust).toBeNull();
     st.openAdjust("strat_1");
     st.setWorkspaceTab("live");
@@ -303,17 +303,17 @@ describe("HC-WS-083 chart layers persist", () => {
 describe("HC-WS-065 / HC-WS-103 pane collapse and ladder step persist", () => {
   it("stores the collapsed pane and the ladder step, and drops bad persisted values", async () => {
     const { useUiStore } = await import("./store");
-    useUiStore.getState().setAnalyseCollapse("right");
+    useUiStore.getState().setDeskCollapse("right");
     useUiStore.getState().setLadderStep(4);
-    expect(useUiStore.getState()).toMatchObject({ analyseCollapse: "right", ladderStep: 4 });
+    expect(useUiStore.getState()).toMatchObject({ deskCollapse: "right", ladderStep: 4 });
     useUiStore.getState().setLadderStep(3 as unknown as 1);
     expect(useUiStore.getState().ladderStep).toBe(1);
     const merge = useUiStore.persist.getOptions().merge as (p: unknown, c: ReturnType<typeof useUiStore.getState>) => ReturnType<typeof useUiStore.getState>;
-    const merged = merge({ ladderStep: 9, analyseCollapse: "up", templateRequest: "Iron Condor" }, useUiStore.getState());
-    expect(merged).toMatchObject({ ladderStep: 1, analyseCollapse: null, templateRequest: null });
+    const merged = merge({ ladderStep: 9, deskCollapse: "up", templateRequest: "Iron Condor" }, useUiStore.getState());
+    expect(merged).toMatchObject({ ladderStep: 1, deskCollapse: null, templateRequest: null });
     useUiStore.getState().requestTemplate("Iron Condor");
     expect(useUiStore.getState().templateRequest).toBe("Iron Condor");
-    useUiStore.getState().setAnalyseCollapse(null);
+    useUiStore.getState().setDeskCollapse(null);
   });
 });
 

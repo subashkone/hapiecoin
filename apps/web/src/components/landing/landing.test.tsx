@@ -33,7 +33,7 @@ describe("HC-PB-001 public header", () => {
     act(() => {
       authClient.$store.notify("$sessionSignal"); // the session atom is a module singleton; force a refetch
     });
-    await waitFor(() => expect(screen.getByTestId("go-to-app").getAttribute("href")).toBe("/analyse"));
+    await waitFor(() => expect(screen.getByTestId("go-to-app").getAttribute("href")).toBe("/desk"));
   });
 });
 

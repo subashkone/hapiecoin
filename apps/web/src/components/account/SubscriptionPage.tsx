@@ -1,5 +1,5 @@
 "use client";
-// My Subscription (HC-AC-001..015, 056..059, 064..066; ADR-030; docs/design/billing.md): what plan you are on, when
+// My plan (HC-AC-001..015, 056..059, 064..066; ADR-030; docs/design/billing.md): what plan you are on, when
 // it ends, what you can still do this month, and the plan comparison with a pinned "what changes if I upgrade"
 // panel. The Subscribe dialog (CheckoutDialog, ADR-034) quotes coupons and pays through Razorpay; Payment History below.
 import { CheckoutDialog } from "./CheckoutDialog";
@@ -226,7 +226,7 @@ export function SubscriptionPage() {
   const price = pricing ? effectivePrice(pricing) : null;
   return (
     <main className="mx-auto max-w-[1100px] px-6 py-8" data-testid="subscription-page" data-state="ready">
-      <p className="micro">My Subscription</p>
+      <p className="micro">My plan</p>
       <h1 className="mt-1">Choose a plan to unlock features</h1>
       {!view.accountActive ? <div className="mt-3 rounded border border-loss/40 p-2 text-xs text-loss" data-testid="sub-deactivated">Your account has been deactivated. Trading and plan changes are paused; contact support.</div> : null}
 

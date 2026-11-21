@@ -356,7 +356,7 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
             before: { rule: rule.id, kind: rule.kind, trigger: rule.trigger, level: rule.thresholdUsd, legId: rule.legId, scope: rule.scope, detail, pnl: toDecimal(pnl, 2), spot: tick.spot, marks: legs.map((l) => ({ symbol: l.symbol, mark: marks.get(l.symbol), entry: l.entryPrice })) },
             after: { outcome, fills, unconfirmed, failed, realizedPnl: realized, archived: archive },
           });
-          await notify(deps, strategy.userId, rule.channels, `${label} fired · ${strategy.name}`, `${note}\n\n${deps.config.webUrl}/analyse`);
+          await notify(deps, strategy.userId, rule.channels, `${label} fired · ${strategy.name}`, `${note}\n\n${deps.config.webUrl}/desk`);
           out.fired.push(rule.id);
           deps.logger.info({ strategyId: strategy.id, rule: rule.id, kind: rule.kind, pnl: toDecimal(pnl, 2), outcome, failed: failed.length, unconfirmed: unconfirmed.length }, "rule fired");
         } catch (e) {

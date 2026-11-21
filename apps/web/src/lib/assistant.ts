@@ -9,8 +9,8 @@ import { type MoneyFormat, fmtMoney } from "@/lib/money";
 
 export const EXPLAIN_QUESTION = "Explain this strategy";
 export const BASE_SUGGESTIONS = ["How do I add a leg from the chain?", "What is probability of profit?", "How do I connect Delta Exchange?", "Difference between mark and bid/ask P&L?"] as const;
-export function suggestionsFor(onAnalyse: boolean): string[] {
-  return onAnalyse ? [EXPLAIN_QUESTION, ...BASE_SUGGESTIONS.slice(0, 3)] : [...BASE_SUGGESTIONS];
+export function suggestionsFor(onDesk: boolean): string[] {
+  return onDesk ? [EXPLAIN_QUESTION, ...BASE_SUGGESTIONS.slice(0, 3)] : [...BASE_SUGGESTIONS];
 }
 
 interface Answer {
@@ -42,7 +42,7 @@ export const VISITOR_NOTE = "You are in visitor mode. I can explain how HapieCoi
 export function answerFor(question: string, opts: { loggedIn: boolean; explain?: (() => string) | undefined }): string {
   const q = question.trim();
   let text: string;
-  if (/explain|summar|this strategy|my strategy|what am i holding/i.test(q)) text = opts.explain ? opts.explain() : "Open the Analyse workspace and ask again; the explainer reads the legs in your Builder.";
+  if (/explain|summar|this strategy|my strategy|what am i holding/i.test(q)) text = opts.explain ? opts.explain() : "Open the Desk and ask again; the explainer reads the legs in your Builder.";
   else text = ANSWERS.find((a) => a.match.test(q))?.text ?? FALLBACK;
   return opts.loggedIn ? text : `${text}\n\n${VISITOR_NOTE}`;
 }

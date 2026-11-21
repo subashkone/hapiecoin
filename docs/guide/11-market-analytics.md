@@ -62,8 +62,8 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|
-| HC-MA-003 | Shared header: HapieCoin mark + 'Market Analytics' title | CG.chrome['analytics-tabs'] renders the v2 shared header (same header as /terminal): logo, 'Market Analytics' title, '← Analyse' link, Live pill, coin search, Ctrl K palette button, theme toggle | built | unit (pricing) · e2e (Playwright) · api contract · security |
-| HC-MA-004 | '← Analyse' back link | Navigates to #/analyse (the trading workspace) | built | e2e (Playwright) |
+| HC-MA-003 | Shared header: HapieCoin mark + 'Market Analytics' title | CG.chrome['analytics-tabs'] renders the v2 shared header (same header as /terminal): logo, 'Market Analytics' title, '← Desk' link, Live pill, coin search, Ctrl K palette button, theme toggle | built | unit (pricing) · e2e (Playwright) · api contract · security |
+| HC-MA-004 | '← Desk' back link | Navigates to #/analyse (the trading workspace) | built | e2e (Playwright) |
 | HC-MA-005 | Coin search box 'Search coin...' with dropdown | Typing filters CG.mock.coins by symbol/name (top 8; empty query shows top coins by market cap); click, Enter or ↑/↓ + Enter opens #/analytics/coin/SYM; Esc closes; 'No coins match' state | built | e2e (Playwright) |
 | HC-MA-006 | Theme toggle (sun/moon) in the shared header | Button calls CG.theme.toggle(); the analytics app now follows the page theme (html.dark). The private cg2-theme toggle and localStorage key were removed; both light and dark are token-based | built | unit (pricing) · e2e (Playwright) |
 | HC-MA-007 | Section switcher spanning both apps: Hub · Futures · Markets · Derivatives · Options · ETF · Liquidations · Whales · Sentiment · Terminal ▾ | One tab bar under the header; the active tab gets an animated amber underline (section-tab-indicator); /analytics/coin/* highlights Markets; Terminal ▾ opens a grouped dropdown of every terminal page and is active on /terminal/* | built | unit (pricing) · e2e (Playwright) |

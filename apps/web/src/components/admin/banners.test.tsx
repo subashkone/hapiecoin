@@ -116,7 +116,7 @@ describe("HC-AD-065..069 banner dialog", () => {
     await u.click(screen.getByTestId("banner-save"));
     expect(screen.getByTestId("banner-error").textContent).toContain("http://");
     await u.clear(screen.getByTestId("banner-link"));
-    await u.type(screen.getByTestId("banner-link"), "https://hapiecoin.com/subscription");
+    await u.type(screen.getByTestId("banner-link"), "https://hapiecoin.com/plans");
     fireEvent.change(screen.getByTestId("banner-starts"), { target: { value: "2026-09-10T00:00" } });
     fireEvent.change(screen.getByTestId("banner-ends"), { target: { value: "2026-09-01T00:00" } });
     await u.click(screen.getByTestId("banner-save"));
@@ -132,7 +132,7 @@ describe("HC-AD-065..069 banner dialog", () => {
     await waitFor(() => expect(screen.queryByTestId("banner-dialog")).toBeNull());
     await waitFor(() => expect(screen.getAllByTestId("banner-row")).toHaveLength(1));
     const created = mock.state.banners[0]!;
-    expect(created).toMatchObject({ title: "Festive Sale", linkUrl: "https://hapiecoin.com/subscription", frequency: "every_time", imageType: "image/png", imageBytes: 70 });
+    expect(created).toMatchObject({ title: "Festive Sale", linkUrl: "https://hapiecoin.com/plans", frequency: "every_time", imageType: "image/png", imageBytes: 70 });
     expect(created.startsAt).toBe("2026-09-10T00:00:00.000Z");
     // edit without a new image keeps the stored one
     await u.click(screen.getByTestId("banner-edit"));

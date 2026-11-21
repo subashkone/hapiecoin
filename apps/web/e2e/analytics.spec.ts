@@ -34,7 +34,7 @@ test.describe("HC-MA Market Analytics", () => {
     await expect(page).toHaveURL(/\/terminal\/derivatives\/funding$/);
     await expect(page.getByTestId("funding-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
     await page.getByTestId("analytics-back").click();
-    await expect(page).toHaveURL(/\/analyse$/);
+    await expect(page).toHaveURL(/\/desk$/);
   });
 
   test("HC-MA-012..029 Markets Hub tiles, table tools, tabs and side panels", async ({ page }) => {

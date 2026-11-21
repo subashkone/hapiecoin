@@ -36,7 +36,7 @@ export function authErrorMessage(
 }
 
 /** Only in-app absolute paths may be used as a post-login destination (open-redirect guard). */
-export function safeNext(next: string | null | undefined, fallback = "/analyse"): string {
+export function safeNext(next: string | null | undefined, fallback = "/desk"): string {
   if (!next) return fallback;
   if (!next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return fallback;
   return next;

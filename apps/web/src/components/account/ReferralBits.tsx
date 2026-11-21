@@ -1,5 +1,5 @@
 "use client";
-// Shared referral pieces (ADR-031): the commission status badge and the earnings-by-month bars used by My Referrals
+// Shared referral pieces (ADR-031): the commission status badge and the earnings-by-month bars used by Invite friends
 // (HC-AC-049, HC-AC-067) and the admin Commissions tab (HC-AD-119).
 import { COMMISSION_LABELS, type CommissionStatus, type MonthBar } from "@hapiecoin/schema";
 import { cn } from "@hapiecoin/ui";

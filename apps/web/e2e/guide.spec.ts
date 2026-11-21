@@ -69,12 +69,12 @@ test.describe("guide captures", () => {
     const backtest = page.getByTestId("backtest-panel");
     await expect(backtest).toBeVisible();
     await expect(backtest.getByTestId("backtest-total")).toBeVisible({ timeout: 30_000 });
-    await shot(page, "guide", "analyse-backtest");
+    await shot(page, "guide", "desk-backtest");
     await page.getByTestId("analysis-tab-replay").click();
     const replay = page.getByTestId("replay-panel");
     await expect(replay).toBeVisible();
     await expect(replay.getByTestId("replay-ladder")).toBeVisible({ timeout: 30_000 });
-    await shot(page, "guide", "analyse-replay");
+    await shot(page, "guide", "desk-replay");
     // two legs so the ladder and the chain picker have something to show
     const atmStrike = (await page.locator("[data-testid=chain-row][data-atm=true]").getAttribute("data-strike"))!;
     await page.locator(`[data-testid=chain-row-calls][data-strike="${atmStrike}"]`).hover();
@@ -82,7 +82,7 @@ test.describe("guide captures", () => {
     await page.getByTestId("analysis-tab-ladder").click();
     await expect(page.getByTestId("analysis-tab-ladder")).toHaveAttribute("data-state", "active");
     await page.waitForTimeout(1500);
-    await shot(page, "guide", "analyse-ladder");
+    await shot(page, "guide", "desk-ladder");
     await page.getByTestId("analysis-tab-payoff").click();
     await page.getByTestId("tab-builder").click();
     await page.getByTestId("builder-select-chain").click();

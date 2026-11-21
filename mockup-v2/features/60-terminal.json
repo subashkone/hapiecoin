@@ -66,10 +66,10 @@
  {
   "route": "/terminal",
   "screen": "Market Analytics terminal",
-  "feature": "Header \"← Analyse\" link",
+  "feature": "Header \"← Desk\" link",
   "how": "Shared header link back to the options app (#/analyse)",
   "status": "working",
-  "evidence": "shared analytics shell: \"← Analyse\" link, theme from the app header; e2e analytics.spec.ts"
+  "evidence": "shared analytics shell: \"← Desk\" link, theme from the app header; e2e analytics.spec.ts"
  },
  {
   "route": "/terminal",
@@ -77,7 +77,7 @@
   "feature": "Theme toggle (sun/moon icon)",
   "how": "Calls CG.theme.toggle(); the terminal now follows the page theme (html.dark) — the private terminal theme and cg2-theme localStorage key were removed",
   "status": "working",
-  "evidence": "shared analytics shell: \"← Analyse\" link, theme from the app header; e2e analytics.spec.ts"
+  "evidence": "shared analytics shell: \"← Desk\" link, theme from the app header; e2e analytics.spec.ts"
  },
  {
   "route": "/terminal",

@@ -1,5 +1,5 @@
-// /s/:code landing (HC-WS-106): a valid link loads its legs into the store at the shared prices and goes to Analyse;
-// a bad code explains itself and offers Analyse.
+// /s/:code landing (HC-WS-106): a valid link loads its legs into the store at the shared prices and goes to the Desk;
+// a bad code explains itself and offers the Desk.
 import { screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
@@ -17,7 +17,7 @@ beforeEach(() => {
 afterEach(() => mock.restore());
 
 describe("HC-WS-106 shared strategy route", () => {
-  it("loads the legs, names the strategy, keeps the shared prices and replaces the route with /analyse", async () => {
+  it("loads the legs, names the strategy, keeps the shared prices and replaces the route with /desk", async () => {
     const code = encodeShare({ asset: "ETH", name: "Bull Call Spread", legs: [
       { kind: "call", side: "buy", strike: "4200", expiry: "2026-09-25", lots: 3, price: "150.5", iv: 0.6 },
       { kind: "call", side: "sell", strike: "4400", expiry: "2026-09-25", lots: 3, price: "80", iv: undefined },
@@ -26,7 +26,7 @@ describe("HC-WS-106 shared strategy route", () => {
     expect(screen.getByTestId("share-landing").dataset["state"]).toBe("ready");
     expect(screen.getByTestId("share-landing").dataset["legs"]).toBe("2");
     expect(screen.getByText(/Bull Call Spread · ETH/)).toBeTruthy();
-    await waitFor(() => expect(routerMock.replace).toHaveBeenCalledWith("/analyse"));
+    await waitFor(() => expect(routerMock.replace).toHaveBeenCalledWith("/desk"));
     const st = useUiStore.getState();
     expect(st.asset).toBe("ETH");
     expect(st.legs.ETH.map((l) => [l.side, l.strike, l.lots, l.price])).toEqual([["buy", "4200", 3, "150.5"], ["sell", "4400", 3, "80"]]);

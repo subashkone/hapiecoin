@@ -25,7 +25,7 @@ export function UpgradeRequiredDialog({ open, onOpenChange }: DialogProps) {
             Dismiss
           </Button>
           <Button asChild data-testid="upgrade-subscribe">
-            <Link href="/subscription" onClick={() => onOpenChange(false)}>
+            <Link href="/plans" onClick={() => onOpenChange(false)}>
               Subscribe Here →
             </Link>
           </Button>

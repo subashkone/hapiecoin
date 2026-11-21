@@ -84,12 +84,12 @@ function BannerDialog({ banner, onOpenChange }: { banner: Banner | null; onOpenC
       <DialogContent className="sm:max-w-[560px]" data-testid="banner-dialog">
         <DialogHeader>
           <DialogTitle>{banner ? "Edit Banner" : "New Banner"}</DialogTitle>
-          <DialogDescription>{banner ? "Change any field; leave the image empty to keep the current one." : "A popup traders see on Analyse at the frequency you choose."}</DialogDescription>
+          <DialogDescription>{banner ? "Change any field; leave the image empty to keep the current one." : "A popup traders see on the Desk at the frequency you choose."}</DialogDescription>
         </DialogHeader>
         <DialogBody className="space-y-3 text-xs">
           <label className="block"><span className="micro">Title *</span><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass} placeholder="Welcome Offer" data-testid="banner-title" /></label>
           <label className="block"><span className="micro">Description</span><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} className="w-full rounded border border-input bg-background px-2 py-1 text-xs" placeholder="Get 20% off your first plan" data-testid="banner-description" /></label>
-          <label className="block"><span className="micro">Link URL (optional)</span><input value={form.linkUrl} onChange={(e) => setForm({ ...form, linkUrl: e.target.value })} className={`num ${inputClass}`} placeholder="https://hapiecoin.com/subscription" data-testid="banner-link" /></label>
+          <label className="block"><span className="micro">Link URL (optional)</span><input value={form.linkUrl} onChange={(e) => setForm({ ...form, linkUrl: e.target.value })} className={`num ${inputClass}`} placeholder="https://hapiecoin.com/plans" data-testid="banner-link" /></label>
           <div className="grid grid-cols-3 gap-2">
             <label className="block"><span className="micro">Frequency</span>
               <select value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value as BannerFrequency })} className={inputClass} aria-label="Frequency" data-testid="banner-frequency">
@@ -136,7 +136,7 @@ export function BannersAdmin() {
   const toggle = (b: Banner, on: boolean) => update.mutate({ id: b.id, body: { active: on } }, { onSuccess: () => toast.success("Updated", { description: `${b.title} · ${on ? "active" : "inactive"}` }), onError: (e) => toast.error("Failed", { description: e.message }) });
   return (
     <div data-testid="admin-banners" data-count={all.length} data-state={banners.isLoading ? "loading" : banners.isError ? "error" : "ready"}>
-      <AdminHeader title="Banner Master" subtitle="Promotional popups traders see on Analyse, at the frequency you choose" action={<Button size="sm" onClick={() => setEditing("new")} data-testid="banner-new">+ New Banner</Button>} />
+      <AdminHeader title="Banner Master" subtitle="Promotional popups traders see on the Desk, at the frequency you choose" action={<Button size="sm" onClick={() => setEditing("new")} data-testid="banner-new">+ New Banner</Button>} />
       <div className="sticky top-0 z-10 -mx-1 mb-2 flex flex-wrap items-center gap-2 bg-background px-1 py-2" data-testid="banner-filters">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search banners" className="h-7 w-[200px] rounded border border-input bg-background px-2 text-xs" aria-label="Search banners" data-testid="banner-search" />
         <select value={schedule} onChange={(e) => setSchedule(e.target.value as typeof schedule)} className="h-7 rounded border border-input bg-background px-2 text-xs" aria-label="Schedule" data-testid="banner-schedule-filter">

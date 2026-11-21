@@ -1,4 +1,4 @@
-// My Referrals against the mock API (HC-AC-037..055, 067..074; ADR-031): link card, code chip, tiles, chart,
+// Invite friends against the mock API (HC-AC-037..055, 067..074; ADR-031): link card, code chip, tiles, chart,
 // filters / sort / paging, CSV, share dialog, and the empty and error states.
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -22,7 +22,7 @@ async function seed(email: string, referrals: number, role?: "user" | "admin") {
   expect(res.status).toBe(200);
 }
 
-describe("HC-AC-037..055 My Referrals", () => {
+describe("HC-AC-037..055 Invite friends", () => {
   it("HC-AC-037 / 038 / 041 / 043 / 067 header meta, link card, code chip, tiles and the chart from six referrals", async () => {
     await seed(RIA, 6);
     mock.loginAs(RIA);

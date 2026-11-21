@@ -1,7 +1,7 @@
 import { TEST_OTP, expect, fillOtp, seedUser, signIn, test } from "./fixtures";
 
-test.describe("HC-PB-031 / HC-PB-033 sign up → OTP → verify → /analyse", () => {
-  test("HC-PB-031 creates the account, verifies the email OTP and lands on /analyse", async ({ page }) => {
+test.describe("HC-PB-031 / HC-PB-033 sign up → OTP → verify → /desk", () => {
+  test("HC-PB-031 creates the account, verifies the email OTP and lands on /desk", async ({ page }) => {
     await page.goto("/auth?tab=signup&ref=REFABC1234");
     await expect(page.getByTestId("auth-signup")).toBeVisible();
     await expect(page.getByPlaceholder("REFK7P2Q9X")).toHaveValue("REFABC1234");
@@ -17,19 +17,19 @@ test.describe("HC-PB-031 / HC-PB-033 sign up → OTP → verify → /analyse", (
     await expect(page.getByTestId("resend-countdown")).toContainText("Resend in");
     await fillOtp(page, TEST_OTP);
     await page.getByRole("button", { name: "Verify Email" }).click();
-    await page.waitForURL(/\/analyse/);
-    await expect(page.getByTestId("app-header")).toHaveAttribute("data-variant", "analyse");
+    await page.waitForURL(/\/desk/);
+    await expect(page.getByTestId("app-header")).toHaveAttribute("data-variant", "desk");
   });
 });
 
 test.describe("HC-PB-065 Continue with Google", () => {
-  test("HC-PB-065 the provider callback lands on the web origin and /analyse opens signed in", async ({ page }) => {
+  test("HC-PB-065 the provider callback lands on the web origin and /desk opens signed in", async ({ page }) => {
     await page.goto("/auth");
     await page.getByTestId("continue-google").click();
     // The mock provider redirects through /v1/auth/callback/google on the web origin (ADR-019), so the
     // session cookie is first-party and the protected route does not bounce back to /auth.
-    await page.waitForURL(/\/analyse/);
-    await expect(page.getByTestId("app-header")).toHaveAttribute("data-variant", "analyse");
+    await page.waitForURL(/\/desk/);
+    await expect(page.getByTestId("app-header")).toHaveAttribute("data-variant", "desk");
     const cookies = await page.context().cookies();
     expect(cookies.some((c) => c.name === "better-auth.session_token" && c.domain === "localhost")).toBe(true);
   });
@@ -48,7 +48,7 @@ test.describe("HC-PB-029 / HC-PB-030 OTP login", () => {
     await expect(page.getByTestId("auth-otp-verify").getByRole("alert")).toHaveText("Enter valid OTP");
     await fillOtp(page, TEST_OTP);
     await page.getByRole("button", { name: "Verify & Login" }).click();
-    await page.waitForURL(/\/analyse/);
+    await page.waitForURL(/\/desk/);
   });
 });
 
@@ -68,24 +68,24 @@ test.describe("HC-PB-034 / HC-PB-035 reset password", () => {
     await page.getByRole("textbox", { name: "Email", exact: true }).fill("reset@example.com");
     await page.getByRole("textbox", { name: "Password", exact: true }).fill("New1!pass");
     await page.getByRole("button", { name: "Sign In", exact: true }).click();
-    await page.waitForURL(/\/analyse/);
+    await page.waitForURL(/\/desk/);
   });
 });
 
 test.describe("HC-PB-025 / HC-PB-036 redirects", () => {
   test("HC-PB-036 protected route sends guests to /auth?next= and returns them after login", async ({ page, request }) => {
     await seedUser(request, { email: "next@example.com" });
-    await page.goto("/analyse");
-    await expect(page).toHaveURL(/\/auth\?next=%2Fanalyse/);
+    await page.goto("/desk");
+    await expect(page).toHaveURL(/\/auth\?next=%2Fdesk/);
     await page.getByRole("textbox", { name: "Email", exact: true }).fill("next@example.com");
     await page.getByRole("textbox", { name: "Password", exact: true }).fill("Passw0rd!");
     await page.getByRole("button", { name: "Sign In", exact: true }).click();
-    await page.waitForURL(/\/analyse/);
+    await page.waitForURL(/\/desk/);
   });
   test("HC-PB-025 logged-in visitors are redirected away from /auth", async ({ page, request }) => {
     await seedUser(request, { email: "in@example.com" });
     await signIn(page, "in@example.com");
-    await page.goto("/auth?next=%2Fsubscription");
+    await page.goto("/auth?next=%2Fplans");
     await expect(page).toHaveURL(/\/subscription/);
     await expect(page.getByTestId("subscription-page")).toBeVisible();
   });
@@ -133,8 +133,8 @@ test("HC-PB-068 an account with an authenticator app stops at the code step; the
   await page.keyboard.press("Backspace");
   await fillOtp(page, "654321");
   await page.getByTestId("totp-verify").click();
-  await page.waitForURL(/\/analyse/);
-  await expect(page.getByTestId("app-header")).toHaveAttribute("data-variant", "analyse");
+  await page.waitForURL(/\/desk/);
+  await expect(page.getByTestId("app-header")).toHaveAttribute("data-variant", "desk");
 });
 
 test("HC-PB-069 a passkey added in Security signs the account in without the password (ADR-089)", async ({ page, request }) => {
@@ -151,6 +151,6 @@ test("HC-PB-069 a passkey added in Security signs the account in without the pas
   await page.context().clearCookies();
   await page.goto("/auth");
   await page.getByTestId("continue-passkey").click();
-  await page.waitForURL(/\/analyse/);
-  await expect(page.getByTestId("app-header")).toHaveAttribute("data-variant", "analyse");
+  await page.waitForURL(/\/desk/);
+  await expect(page.getByTestId("app-header")).toHaveAttribute("data-variant", "desk");
 });

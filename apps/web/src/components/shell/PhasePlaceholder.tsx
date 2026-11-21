@@ -10,7 +10,7 @@ export function PhasePlaceholder({ title, phase, blurb }: { title: string; phase
       <p className="mt-3 text-muted-foreground">{blurb}</p>
       <div className="mt-6 flex gap-2">
         <Button asChild>
-          <Link href="/analyse">Go to Analyse</Link>
+          <Link href="/desk">Go to the Desk</Link>
         </Button>
         <Button asChild variant="outline">
           <Link href="/">Home</Link>

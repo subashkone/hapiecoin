@@ -14,20 +14,20 @@ Adjust an open strategy without leaving the card: the workbench shows the positi
 
 ## Screens
 
-![Workbench with a change](../../apps/web/e2e/__screenshots__/analyse-workbench-dark.png)
+![Workbench with a change](../../apps/web/e2e/__screenshots__/desk-workbench-dark.png)
 *Workbench with a change*
 
-![Paper confirm](../../apps/web/e2e/__screenshots__/analyse-adjust-confirm-dark.png)
+![Paper confirm](../../apps/web/e2e/__screenshots__/desk-adjust-confirm-dark.png)
 *Paper confirm*
 
-![Live confirm with venue check](../../apps/web/e2e/__screenshots__/analyse-adjust-live-dark.png)
+![Live confirm with venue check](../../apps/web/e2e/__screenshots__/desk-adjust-live-dark.png)
 *Live confirm with venue check*
 
 ## Every feature, in detail
 
 Each row is one traced feature from the build spec: the id, what it is, how it behaves (the acceptance rule the tests check), and how it is tested. Status "mock-only" means the screen exists but the data feed behind it is not connected yet.
 
-### Analyse · Adjustment workbench · `/analyse`
+### Desk · Adjustment workbench · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|

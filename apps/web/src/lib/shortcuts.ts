@@ -2,7 +2,7 @@
 // keys the shell and the workspace already handle; other parts register their own with `registerShortcut`, which
 // also lists them in the "?" help. The dispatcher (components/shell/ShortcutsDispatcher.tsx) runs the handlers.
 
-export type ShortcutGroup = "Global" | "Analyse workspace" | (string & {});
+export type ShortcutGroup = "Global" | "Desk" | (string & {});
 
 export interface ShortcutRow {
   /** The key as shown, e.g. "T", "Shift+E", "Ctrl K", "?". */
@@ -25,19 +25,19 @@ export const DEFAULT_SHORTCUTS: readonly ShortcutRow[] = [
   { key: "T", description: "Toggle theme (dark / light)", group: "Global" },
   { key: "D", description: "Toggle density (comfortable / compact)", group: "Global" },
   { key: "Esc", description: "Close dialogs, menus and panels", group: "Global" },
-  { key: "J", description: "Next strike", group: "Analyse workspace" },
-  { key: "K", description: "Previous strike", group: "Analyse workspace" },
-  { key: "↓", description: "Next strike", group: "Analyse workspace" },
-  { key: "↑", description: "Previous strike", group: "Analyse workspace" },
-  { key: "B", description: "Buy call at the highlighted strike", group: "Analyse workspace" },
-  { key: "S", description: "Sell call at the highlighted strike", group: "Analyse workspace" },
-  { key: "Shift+B", description: "Buy put at the highlighted strike", group: "Analyse workspace" },
-  { key: "Shift+S", description: "Sell put at the highlighted strike", group: "Analyse workspace" },
-  { key: "E", description: "Next expiry", group: "Analyse workspace" },
-  { key: "Shift+E", description: "Previous expiry", group: "Analyse workspace" },
-  { key: "Enter", description: "Option details for the highlighted strike", group: "Analyse workspace" },
-  { key: "A", description: "Recentre the chain on ATM", group: "Analyse workspace" },
-  { key: "P", description: "Paper trade the Builder legs", group: "Analyse workspace" },
+  { key: "J", description: "Next strike", group: "Desk" },
+  { key: "K", description: "Previous strike", group: "Desk" },
+  { key: "↓", description: "Next strike", group: "Desk" },
+  { key: "↑", description: "Previous strike", group: "Desk" },
+  { key: "B", description: "Buy call at the highlighted strike", group: "Desk" },
+  { key: "S", description: "Sell call at the highlighted strike", group: "Desk" },
+  { key: "Shift+B", description: "Buy put at the highlighted strike", group: "Desk" },
+  { key: "Shift+S", description: "Sell put at the highlighted strike", group: "Desk" },
+  { key: "E", description: "Next expiry", group: "Desk" },
+  { key: "Shift+E", description: "Previous expiry", group: "Desk" },
+  { key: "Enter", description: "Option details for the highlighted strike", group: "Desk" },
+  { key: "A", description: "Recentre the chain on ATM", group: "Desk" },
+  { key: "P", description: "Paper trade the Builder legs", group: "Desk" },
 ];
 
 const registered = new Map<string, RegisteredShortcut>();

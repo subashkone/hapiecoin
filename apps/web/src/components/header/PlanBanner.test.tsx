@@ -28,7 +28,7 @@ describe("HC-SH-014 plan banner", () => {
     expect(screen.getByTestId("plan-banner").dataset["kind"]).toBe("active");
     expect(screen.getByText("PRO PLAN")).toBeTruthy();
     rerender(<PlanBannerView plan={{ state: "expired" }} />);
-    expect(screen.getByRole("link", { name: "Renew Plan" }).getAttribute("href")).toBe("/subscription");
+    expect(screen.getByRole("link", { name: "Renew Plan" }).getAttribute("href")).toBe("/plans");
     rerender(<PlanBannerView plan={{ state: "expiring_soon", daysLeft: 2 }} />);
     expect(screen.getByTestId("plan-banner").dataset["kind"]).toBe("expiring");
     rerender(<PlanBannerView plan={{ state: "free" }} />);

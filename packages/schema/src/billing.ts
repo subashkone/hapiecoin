@@ -126,7 +126,7 @@ export const CurrentSubscription = z.strictObject({
 });
 export type CurrentSubscription = z.infer<typeof CurrentSubscription>;
 
-/** Everything the My Subscription page needs in one call (HC-AC-003..015). */
+/** Everything the My plan page needs in one call (HC-AC-003..015). */
 export const SubscriptionView = z.strictObject({
   plan: PlanState,
   current: CurrentSubscription.nullable(),

@@ -3,13 +3,13 @@ import { authClient, authErrorMessage, safeNext } from "./client";
 
 describe("HC-PB-036 safeNext", () => {
   it("only allows in-app absolute paths", () => {
-    expect(safeNext("/analyse")).toBe("/analyse");
-    expect(safeNext("/subscription?x=1", "/")).toBe("/subscription?x=1");
-    expect(safeNext(undefined)).toBe("/analyse");
+    expect(safeNext("/desk")).toBe("/desk");
+    expect(safeNext("/plans?x=1", "/")).toBe("/plans?x=1");
+    expect(safeNext(undefined)).toBe("/desk");
     expect(safeNext(null, "/")).toBe("/");
-    expect(safeNext("https://evil.example")).toBe("/analyse");
-    expect(safeNext("//evil.example")).toBe("/analyse");
-    expect(safeNext("/\\evil")).toBe("/analyse");
+    expect(safeNext("https://evil.example")).toBe("/desk");
+    expect(safeNext("//evil.example")).toBe("/desk");
+    expect(safeNext("/\\evil")).toBe("/desk");
   });
 });
 

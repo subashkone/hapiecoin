@@ -1,6 +1,6 @@
 # Platform and operations
 
-Part of the [HapieCoin feature guide](README.md). 12 traced features on 11 screens; 12 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 13 traced features on 12 screens; 13 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -14,6 +14,12 @@ Not screens but guarantees: request body limits and per-route rate limits on the
 ## Every feature, in detail
 
 Each row is one traced feature from the build spec: the id, what it is, how it behaves (the acceptance rule the tests check), and how it is tested. Status "mock-only" means the screen exists but the data feed behind it is not connected yet.
+
+### API · chain history · `/desk`
+
+| ID | Feature | How it behaves | Status | Tested by |
+|---|---|---|---|---|
+| HC-SH-140 | End-of-day option chains reconstructed from the venue's public candle history for a year back, so the backtest reaches before the first recorded day | chain-eod-history.ts runs as a leader job (ADR-062) when CHAIN_HISTORY_DAYS is not 0 (default 365): for every expiry date from today plus 100 days back to the horizon it finds the strikes Delta listed by probing the calls nearest the money out to eight grid steps each side, then walking the strike grid (BTC 200, ETH 10) over the spot range of the expiry's life and outward until eight consecutive strikes have no candles (a strike whose call has none is unlisted, its put is not asked for), takes each option's mark at the settlement hour from the hourly MARK candles (the close of the bar ending at the hour, else the open of the bar starting at it, kept as the venue's decimal string), and writes chain_eod rows with source = candles and no mark IV, never on a day the snapshotter recorded, never on the expiry's own settlement day and never before the day's settlement bar has closed; the live recorder counts only recorded rows when deciding a day is done and replaces a reconstructed row with its own (the day reads as mixed); one row per expiry in chain_eod_backfill makes a restarted job resume, a scan on or after the expiry date stands for good, an open expiry is rescanned after a week, a past date without a strike or a symbol failing three attempts is retried next run and a failed run repeats after ten minutes; requests are spaced 270 ms apart; the Backtest coverage line says how many days are reconstructed; XAUT and Deribit are not reconstructed | built | unit (api + pricing + web) |
 
 ### API · hardening
 
@@ -76,7 +82,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 |---|---|---|---|---|
 | HC-SH-133 | Error tracking for the API and the gateway through one DSN, and Prometheus request metrics on the API | ERROR_SINK_DSN (Sentry envelope protocol; no SDK) turns on an in-process sink that posts scrubbed events (tags, extra, path query redacted; no body, cookie or authorization; user id only) with a 3 s timeout and a 60-a-minute cap; every error-level log line is the capture seam (pino hook in the API, the gateway logger's error level), so 500s, job failures, feed faults and process-level faults reach the tracker once. GET /metrics on the API: requests by method, route pattern and status, a latency histogram per route, errors by kind, sink counts, jobs active, uptime, process memory; METRICS_TOKEN guards it with a bearer like the gateway | built | unit (api + gateway) |
 
-### Ops · Visual regression gate · `/analyse`
+### Ops · Visual regression gate · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|

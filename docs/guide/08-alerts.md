@@ -13,17 +13,17 @@ Alerts fire on price, ATM IV / IV rank, or a strategy's P&L, delivered by push (
 
 ## Screens
 
-![Alerts center](../../apps/web/e2e/__screenshots__/analyse-alerts-dark.png)
+![Alerts center](../../apps/web/e2e/__screenshots__/desk-alerts-dark.png)
 *Alerts center*
 
-![New alert from a card](../../apps/web/e2e/__screenshots__/analyse-alerts-form-dark.png)
+![New alert from a card](../../apps/web/e2e/__screenshots__/desk-alerts-form-dark.png)
 *New alert from a card*
 
 ## Every feature, in detail
 
 Each row is one traced feature from the build spec: the id, what it is, how it behaves (the acceptance rule the tests check), and how it is tested. Status "mock-only" means the screen exists but the data feed behind it is not connected yet.
 
-### Shared chrome · Alerts center · `/analyse`
+### Shared chrome · Alerts center · `/desk`
 
 | ID | Feature | How it behaves | Status | Tested by |
 |---|---|---|---|---|

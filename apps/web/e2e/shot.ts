@@ -44,7 +44,7 @@ export async function shot(page: Page, suite: keyof typeof SUITES, name: string,
   await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => undefined);
   await expect(page.locator("[data-sonner-toast]")).toHaveCount(0); // a toast fades on its own clock; wait it out
   await hideDevOverlay(page);
-  // /analyse is wider than a 1280 px viewport, so a click on the settings gear scrolls the page sideways by an amount
+  // /desk is wider than a 1280 px viewport, so a click on the settings gear scrolls the page sideways by an amount
   // that differs from run to run (GAPS #125); a picture is always taken from the left edge
   await page.evaluate(() => {
     window.scrollTo(0, window.scrollY);

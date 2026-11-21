@@ -1,6 +1,6 @@
-# Analyse tabs · Scenarios, Vol, Structure (Phase 5 item 1, ADR-045)
+# Desk tabs · Scenarios, Vol, Structure (Phase 5 item 1, ADR-045)
 
-Built 09 Sep 2026 on `feat/analyse-tabs`. The three placeholder tabs of the analysis pane became live views of the
+Built 09 Sep 2026 on `feat/desk-tabs`. The three placeholder tabs of the analysis pane became live views of the
 followed position (ADR-026) and the live gateway chain.
 
 ## Scenarios (HC-WS-088..093)
@@ -27,5 +27,5 @@ the gamma-flip strike. A basis line says the figures come from one expiry of the
 
 ## Tests
 `lib/chain/structure.test.ts`, `components/analysis/heatDraw.test.ts` (recording canvas), `analysis-tabs.test.tsx`
-(inline engine + fake gateway), e2e `analyse.spec.ts` (tabs block), visuals `analyse-scenarios`, `-scenarios-smooth`,
+(inline engine + fake gateway), e2e `desk.spec.ts` (tabs block), visuals `desk-scenarios`, `-scenarios-smooth`,
 `-vol`, `-structure` per theme.

@@ -340,7 +340,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                   role="button"
                   tabIndex={0}
                   className={cn("rounded border p-2 outline-none focus-visible:ring-1 focus-visible:ring-ring", paneSource?.kind === "strategy" && paneSource.id === s.id ? "border-accent" : "border-border hover:border-foreground/30")}
-                  title={lc === "closed" ? "Click to see this closed trade in the pane" : "Click to analyse this strategy in the pane"}
+                  title={lc === "closed" ? "Click to see this closed trade in the pane" : "Click to see this strategy in the pane"}
                   onClick={(e) => {
                     if ((e.target as HTMLElement).closest("button, a, input, select")) return;
                     followStrategy(s.id);

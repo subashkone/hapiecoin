@@ -147,7 +147,7 @@ describe("HC-MA-082 coin page and HC-MA-003..008 shell", () => {
     const u = userEvent.setup();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Market Analytics");
     expect(screen.getByTestId("section-hub").getAttribute("aria-current")).toBe("page");
-    expect(screen.getByTestId("analytics-back").getAttribute("href")).toBe("/analyse");
+    expect(screen.getByTestId("analytics-back").getAttribute("href")).toBe("/desk");
     await u.click(screen.getByTestId("section-terminal"));
     expect(screen.getByTestId("terminal-menu")).toBeTruthy();
     await u.click(screen.getByTestId("analytics-palette"));

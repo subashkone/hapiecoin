@@ -58,11 +58,11 @@ Every column answers a question (who, on what, until when, who referred them); M
 
 ## 1. Job
 **Banner Master**: schedule a promotional popup and know whether it is showing right now. First question: "Which banners are live today?" answered by the Schedule column (Showing now / Scheduled / Ended / Hidden) and the "Showing now" filter.
-**Flyer popup**: a trader landing on /analyse sees the live announcements once, at the frequency the admin chose, and can get on with trading in one click.
+**Flyer popup**: a trader landing on /desk sees the live announcements once, at the frequency the admin chose, and can get on with trading in one click.
 
 ## 2. Layout
 Admin (`/admin/banners`): header with count and "+ New Banner" (amber) → sticky filters (search, schedule, frequency, Clear, count, Copy CSV) → table Image (thumbnail 64×34) / Title + description + link / Frequency / Window (start → end) / Schedule / Active switch / Actions (Preview, Edit, Delete). Dialog: Title, Description, Link URL, Frequency, Starts, Ends, Image file input with live preview and "leave empty to keep current" on edit, Active switch, footer Cancel / Create Banner | Save Changes, plus "Preview as user" using the current values.
-Flyer (`/analyse`): a 520 px dialog: image (16:9, object-cover), "Announcement · 1 of N" eyebrow, title, description, window line, footer row Previous · dots · Next, frequency label, "Don't show again" (per banner), "View" when the banner has a link (hapiecoin.com links navigate in place, others open a new tab), Dismiss.
+Flyer (`/desk`): a 520 px dialog: image (16:9, object-cover), "Announcement · 1 of N" eyebrow, title, description, window line, footer row Previous · dots · Next, frequency label, "Don't show again" (per banner), "View" when the banner has a link (hapiecoin.com links navigate in place, others open a new tab), Dismiss.
 Narrow 390: the admin table scrolls in its box (Title sticky); the flyer is full width with the image on top.
 
 ## 3. Hierarchy
@@ -75,10 +75,10 @@ Admin: skeleton, "No Banners · Create your first banner" with + Create Banner, 
 Window dates dd Mon yyyy; image size shown as KB / MB with one decimal in the table; frequency in words (Every visit, Once per session, Once a day).
 
 ## 6. Interaction
-Frequency (HC-SH-056): every_time shows on each visit to /analyse; once_per_session once per browser session (sessionStorage); once_per_day once per calendar day (localStorage). "Don't show again" hides that banner for good on this browser (localStorage). The carousel shows every live banner whose rule says show; arrows and dots cycle; Esc, scrim, Dismiss close. Palette "Show announcements" reopens every live banner regardless of rules. The flyer closes on route change.
+Frequency (HC-SH-056): every_time shows on each visit to /desk; once_per_session once per browser session (sessionStorage); once_per_day once per calendar day (localStorage). "Don't show again" hides that banner for good on this browser (localStorage). The carousel shows every live banner whose rule says show; arrows and dots cycle; Esc, scrim, Dismiss close. Palette "Show announcements" reopens every live banner regardless of rules. The flyer closes on route change.
 
 ## 7. Traceability
-HC-AD-059..070 (067 stays "confirmed": no gradient fallback in the product), HC-AD-121, HC-AD-122, HC-SH-055, HC-SH-056. Playwright `admin.spec.ts` "HC-AD-059..069 banners: create, preview, switch, delete" and `analyse.spec.ts` "HC-SH-055 flyer carousel"; visuals `admin-banners-<theme>.png`, `analyse-flyer-<theme>.png`. Unit: web `banners.test.tsx`, `FlyerPopup.test.tsx`; api `routes/banners.test.ts`; schema `banners.test.ts`.
+HC-AD-059..070 (067 stays "confirmed": no gradient fallback in the product), HC-AD-121, HC-AD-122, HC-SH-055, HC-SH-056. Playwright `admin.spec.ts` "HC-AD-059..069 banners: create, preview, switch, delete" and `desk.spec.ts` "HC-SH-055 flyer carousel"; visuals `admin-banners-<theme>.png`, `desk-flyer-<theme>.png`. Unit: web `banners.test.tsx`, `FlyerPopup.test.tsx`; api `routes/banners.test.ts`; schema `banners.test.ts`.
 
 ## 8. Real-data check
 0 banners: empty state, no flyer. 40 banners: the table lists them all (no paging yet; noted for later), the flyer only shows the live ones. A 5 MB PNG uploads as a 6.7 MB JSON body under the route's 7 MB body limit; a 6 MB file is refused on the client before any request. Long titles clamp to two lines in the flyer.

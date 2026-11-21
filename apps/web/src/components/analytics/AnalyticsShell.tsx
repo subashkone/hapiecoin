@@ -1,5 +1,5 @@
 "use client";
-// Market Analytics shell (HC-MA-003..008, 089..091): title row with the mark, "← Analyse", coin search with a
+// Market Analytics shell (HC-MA-003..008, 089..091): title row with the mark, "← Desk", coin search with a
 // dropdown, the section switcher shared by /analytics and /terminal, and the footer note. Sections not yet built
 // still route (to a "next release" page) so navigation never dead-ends (HC-SH-016).
 import { Kbd, cn, toast } from "@hapiecoin/ui";
@@ -111,7 +111,7 @@ export function AnalyticsShell({ children }: { children: ReactNode }) {
             <LogoMark className="size-4" />
             <h1 className="text-[15px] font-semibold">Market Analytics</h1>
           </span>
-          <Link href="/analyse" className="text-2xs text-muted-foreground hover:text-foreground" data-testid="analytics-back">← Analyse</Link>
+          <Link href="/desk" className="text-2xs text-muted-foreground hover:text-foreground" data-testid="analytics-back">← Desk</Link>
           <CoinSearch className="ml-auto" base={inTerminal ? "/terminal/coin" : "/analytics/coin"} />
           <button type="button" onClick={() => setPaletteOpen(true)} className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground" title="Command palette (Ctrl K)" aria-label="Command palette" data-testid="analytics-palette">
             <Kbd>Ctrl</Kbd>

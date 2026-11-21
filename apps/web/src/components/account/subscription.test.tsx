@@ -1,4 +1,4 @@
-// My Subscription (HC-AC-003..015, 056..058) and Upgrade Required (HC-SH-054) against the mock API (ADR-030).
+// My plan (HC-AC-003..015, 056..058) and Upgrade Required (HC-SH-054) against the mock API (ADR-030).
 import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -19,7 +19,7 @@ beforeEach(() => {
 });
 afterEach(() => mock.restore());
 
-describe("HC-AC-003..015 My Subscription", () => {
+describe("HC-AC-003..015 My plan", () => {
   it("a free user sees the Free plan's limits, the four plans, the interval toggle, a pinned diff and the matrix", async () => {
     renderWithProviders(<SubscriptionPage />);
     const u = userEvent.setup();
@@ -80,7 +80,7 @@ describe("HC-AC-003..015 My Subscription", () => {
     act(() => useUiStore.getState().openUpgrade("Live trading is not included in your Free plan. Upgrade to unlock it."));
     renderWithProviders(<UpgradeRequiredDialog open onOpenChange={() => useUiStore.getState().openDialog(null)} />);
     expect(screen.getByTestId("upgrade-message").textContent).toContain("Live trading is not included");
-    expect(screen.getByTestId("upgrade-subscribe").getAttribute("href")).toBe("/subscription");
+    expect(screen.getByTestId("upgrade-subscribe").getAttribute("href")).toBe("/plans");
     await userEvent.setup().click(screen.getByTestId("upgrade-dismiss"));
     expect(useUiStore.getState().dialog).toBeNull();
   });

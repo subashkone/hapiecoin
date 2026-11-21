@@ -19,17 +19,17 @@
   "route": "/analytics/*",
   "screen": "Market Analytics shell",
   "feature": "Shared header: HapieCoin mark + 'Market Analytics' title",
-  "how": "CG.chrome['analytics-tabs'] renders the v2 shared header (same header as /terminal): logo, 'Market Analytics' title, '← Analyse' link, Live pill, coin search, Ctrl K palette button, theme toggle",
+  "how": "CG.chrome['analytics-tabs'] renders the v2 shared header (same header as /terminal): logo, 'Market Analytics' title, '← Desk' link, Live pill, coin search, Ctrl K palette button, theme toggle",
   "status": "working",
   "evidence": "bundle strings: Market Analytics — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): AnalyticsShell title row with LogoMark + 'Market Analytics' h1"
  },
  {
   "route": "/analytics/*",
   "screen": "Market Analytics shell",
-  "feature": "'← Analyse' back link",
+  "feature": "'← Desk' back link",
   "how": "Navigates to #/analyse (the trading workspace)",
   "status": "working",
-  "evidence": "bundle strings: /analyse — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): analytics-back link (analytics.spec)"
+  "evidence": "bundle strings: /desk — Phase 5 item 5 PR 5.2 (09 Sep 2026, ADR-039): analytics-back link (analytics.spec)"
  },
  {
   "route": "/analytics/*",
