@@ -142,10 +142,18 @@ export function ruleText(r: StrategyRule, money: MoneyFormat, legs: readonly Str
     const leg = legs.find((l) => l.id === r.legId);
     return `${leg ? legTag(leg) : "leg"} stop at ${fmtPrice(r.thresholdUsd)}${r.trigger === "multiple" ? ` (${r.value}× entry)` : ""}${r.scope === "strategy" ? ", exits all" : r.trail ? `, then trail the rest by ${giveBackText(r.trail, money)}` : ""}`;
   }
+  if (r.kind === "leg_take") {
+    const leg = legs.find((l) => l.id === r.legId);
+    return `${leg ? legTag(leg) : "leg"} bought back at ${fmtPrice(r.thresholdUsd)}`;
+  }
   if (r.kind === "spot") return `spot ${r.trigger === "above" ? "≥" : "≤"} ${fmtPrice(r.thresholdUsd, 0)}`;
   if (r.trigger === "settle") return `exit all legs ${r.value} min before expiry settles (${fmtInstant(new Date(Number(r.thresholdUsd)).toISOString())})`;
   return r.trigger === "at" ? `exit at ${fmtInstant(r.value)}` : `exit at ${r.value} ${r.value === "1" ? "day" : "days"} to expiry`;
 }
+
+/** The draft of a leg buy-back (ADR-123): on with its price when one is armed, off with the usual 5 otherwise. */
+export const LEG_TAKE_DEFAULT = "5";
+const takeDraftOf = (r: StrategyRule | undefined): { on: boolean; value: string } => ({ on: r !== undefined, value: r?.value ?? LEG_TAKE_DEFAULT });
 
 /** The armed rules of a strategy, one line for the card and the Details dialog: "stop at −₹5,000 · target at +₹4,200". */
 export function rulesLine(rules: readonly StrategyRule[] | undefined, money: MoneyFormat, legs: readonly StrategyLeg[] = []): string | null {
@@ -163,7 +171,7 @@ export function firedRule(rules: readonly StrategyRule[] | undefined): StrategyR
   return fired[0] ?? null;
 }
 /** The card chip's words for a fired rule. */
-export const FIRED_LABELS: Record<RuleKind, string> = { stop: "stop fired", target: "target hit", leg_stop: "leg stop fired", spot: "spot level fired", time: "time exit fired", trail: "trail on the rest fired", step: "profit step taken", lock: "profit lock closed it" };
+export const FIRED_LABELS: Record<RuleKind, string> = { stop: "stop fired", target: "target hit", leg_stop: "leg stop fired", spot: "spot level fired", time: "time exit fired", trail: "trail on the rest fired", step: "profit step taken", lock: "profit lock closed it", leg_take: "cheap leg bought back" };
 /** The chip for one fired rule: a target that trailed says how far the profit ran before the exit. */
 export function firedLabel(r: StrategyRule, money: MoneyFormat): string {
   return r.kind === "target" && r.trail && typeof r.peakPnl === "string" ? `${FIRED_LABELS.target} · trailed from ${fmtMoney(Number(r.peakPnl), money, { signed: true })}` : FIRED_LABELS[r.kind];
@@ -195,6 +203,8 @@ export function RuleDialog({ book }: { book: PaperBook }) {
   const [tgt, setTgt] = useState<Draft>(draftOf(undefined, "credit", money));
   const [trail, setTrail] = useState<TrailDraft>(trailDraftOf(undefined, money));
   const [legStops, setLegStops] = useState<Record<string, LegDraft>>({});
+  // ADR-123: a sold option bought back alone once its price has fallen to a level
+  const [legTakes, setLegTakes] = useState<Record<string, { on: boolean; value: string }>>({});
   const [rest, setRest] = useState<TrailDraft>(restDraftOf(undefined, money));
   const [spotD, setSpotD] = useState<SpotDraft>(spotDraftOf(undefined));
   const [timeD, setTimeD] = useState<TimeDraft>(timeDraftOf(undefined));
@@ -214,6 +224,7 @@ export function RuleDialog({ book }: { book: PaperBook }) {
     setTgt(draftOf(tg, defaultBasis, money));
     setTrail(trailDraftOf(tg, money));
     setLegStops(Object.fromEntries(openLegs(s).map((l) => [l.id, legDraftOf(armed.find((r) => r.kind === "leg_stop" && r.legId === l.id), money)])));
+    setLegTakes(Object.fromEntries(openLegs(s).map((l) => [l.id, takeDraftOf(armed.find((r) => r.kind === "leg_take" && r.legId === l.id))])));
     setRest(restDraftOf(armed.find((r) => r.kind === "trail"), money));
     setSpotD(spotDraftOf(armed.find((r) => r.kind === "spot")));
     setTimeD(timeDraftOf(armed.find((r) => r.kind === "time")));
@@ -281,6 +292,18 @@ export function RuleDialog({ book }: { book: PaperBook }) {
     const give = giveBackOf(d.give.trigger, d.give.value, money);
     return give ? { kind: "leg_stop" as const, trigger: d.trigger, value: d.value, legId: l.id, scope: "leg" as const, trail: give, channels } : "invalid-trail";
   });
+  // a buy-back of a cheap leg (ADR-123): for a sold option of a paper trade, at a price below the one it was sold at
+  // and below where it stands now
+  const takeLegs = s.status === "paper" ? open.filter((l) => l.side === "sell" && l.kind !== "future") : [];
+  const takeBodies = takeLegs.map((l) => {
+    const d = legTakes[l.id];
+    if (!d?.on) return null;
+    if (!isPositiveDecimal(d.value)) return "invalid";
+    if (Number(d.value) >= Number(l.entryPrice ?? l.price)) return "take-high";
+    const mark = book.priceOf(s, l);
+    if (mark !== null && mark <= Number(d.value)) return "crossed";
+    return { kind: "leg_take" as const, trigger: "price" as const, value: d.value, legId: l.id, scope: "leg" as const, channels };
+  });
   // the trail a fired leg stop started: kept with its give-back as typed, or left out of the set (which stops it)
   const restRule = (s.rules ?? []).find((r) => r.kind === "trail" && r.state === "armed");
   const restGive = giveBackOf(rest.trigger, rest.value, money);
@@ -312,8 +335,8 @@ export function RuleDialog({ book }: { book: PaperBook }) {
           : dteNow !== null && dteNow <= Number(timeD.value)
             ? "crossed"
             : { kind: "time" as const, trigger: "dte" as const, value: timeD.value, channels };
-  const all = [stopBody, tgtBody, ...legBodies, restBody, spotBody, timeBody, ...stepBodies];
-  const problem = ladderWhy !== null ? ladderWhy : ladderCrossed ? `The open lots are already up ${toDecimal(upNow!, 1)} %: a step at or under that would fire on the next tick` : all.includes("invalid") ? "Enter a level greater than 0" : all.includes("invalid-trail") ? "Enter a give-back greater than 0 (a percentage below 100)" : all.includes("trail-big") ? "The give-back must be below the target, so the exit level is always a profit" : all.includes("no-basis") ? "That basis is not known for this strategy · use money" : all.includes("no-leg") ? "No dated leg to count to" : all.includes("past") ? "The exit time has already passed" : all.includes("crossed") ? "That level is already crossed · it would fire on the next tick" : null;
+  const all = [stopBody, tgtBody, ...legBodies, ...takeBodies, restBody, spotBody, timeBody, ...stepBodies];
+  const problem = ladderWhy !== null ? ladderWhy : all.includes("take-high") ? "A buy-back level must be below the price the option was sold at" : ladderCrossed ? `The open lots are already up ${toDecimal(upNow, 1)} %: a step at or under that would fire on the next tick` : all.includes("invalid") ? "Enter a level greater than 0" : all.includes("invalid-trail") ? "Enter a give-back greater than 0 (a percentage below 100)" : all.includes("trail-big") ? "The give-back must be below the target, so the exit level is always a profit" : all.includes("no-basis") ? "That basis is not known for this strategy · use money" : all.includes("no-leg") ? "No dated leg to count to" : all.includes("past") ? "The exit time has already passed" : all.includes("crossed") ? "That level is already crossed · it would fire on the next tick" : null;
   const bodies = all.filter((b): b is Exclude<typeof b, string | null> => b !== null && typeof b !== "string");
   const levelOf = (d: Draft, kind: RuleKind): number | null => {
     const b = toBody(kind, d);
@@ -463,6 +486,30 @@ export function RuleDialog({ book }: { book: PaperBook }) {
                 <p className="text-2xs text-muted-foreground" data-testid={`${id}-trail-preview`}>{restWords}</p>
               </div>
             ) : null}
+          </>,
+        )}
+      </div>
+    );
+  };
+  const takeField = (l: StrategyLeg) => {
+    const d = legTakes[l.id] ?? takeDraftOf(undefined);
+    const set = (n: { on: boolean; value: string }) => setLegTakes((m) => ({ ...m, [l.id]: n }));
+    const id = `rule-take-${l.id}`;
+    const mark = book.priceOf(s, l);
+    // what buying back at the level keeps of this option's premium, in USD at the trade's size
+    const kept = isPositiveDecimal(d.value) ? (Number(l.entryPrice ?? l.price) - Number(d.value)) * l.lots * Number(lotSize) : null;
+    return (
+      <div key={l.id}>
+        {box(
+          id,
+          d.on,
+          (on) => set({ ...d, on }),
+          `${legTag(l)} · ${l.lots} lots`,
+          `sold at ${fmtPrice(l.entryPrice ?? l.price)} · buy it back when its price falls to`,
+          <>
+            <input type="number" min={0} step="any" value={d.value} onChange={(e) => set({ ...d, value: e.target.value })} className="h-7 w-24 rounded border border-input bg-background px-2 text-right text-xs" aria-label={`${legTag(l)} buy-back price`} data-testid={`${id}-value`} />
+            <span className="num text-muted-foreground" data-testid={`${id}-level`}>{mark !== null ? `now ${fmtPrice(mark)}` : "—"}{kept !== null && kept > 0 ? ` · keeps ${signed(kept)} of this option` : ""}</span>
+            <p className="basis-full text-2xs text-muted-foreground">Only this option is bought back; the other legs and their stops stay. On paper it fills at the mark; on an exchange a price this low often cannot be bought at the mark.</p>
           </>,
         )}
       </div>
@@ -619,7 +666,7 @@ export function RuleDialog({ book }: { book: PaperBook }) {
         <DialogHeader>
           <DialogTitle>Protect {s.name}</DialogTitle>
           <DialogDescription>
-            {s.status === "live" ? "HapieCoin sends exit orders" : "HapieCoin closes the paper legs"} when a level is crossed: all {legsWord} (a leg stop can take its leg alone), short legs first, market at the mark of that moment, this strategy's lots only. The server checks every few seconds; a fired rule never re-arms.
+            {s.status === "live" ? "HapieCoin sends exit orders" : "HapieCoin closes the paper legs"} when a level is crossed: all {legsWord} (a leg stop can take its leg alone; a buy-back always does), short legs first, market at the mark of that moment, this strategy's lots only. The server checks every few seconds; a fired rule never re-arms.
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
@@ -631,6 +678,12 @@ export function RuleDialog({ book }: { book: PaperBook }) {
               <>
                 <div className="micro mt-1">Leg stops</div>
                 {open.map(legField)}
+              </>
+            ) : null}
+            {takeLegs.length ? (
+              <>
+                <div className="micro mt-1" data-testid="rule-take-head">Buy back when cheap</div>
+                {takeLegs.map(takeField)}
               </>
             ) : null}
             {restField}

@@ -749,3 +749,81 @@ describe("HC-TR-237 take profit in steps from the dialog (ADR-120)", () => {
     expect(mine()[0]!.rules!.map((r) => r.kind).sort()).toEqual(["lock", "stop"]);
   }, 20000);
 });
+
+describe("HC-TR-245 buy back when cheap in the Protect dialog (ADR-123)", () => {
+  it("HC-TR-245 a sold option of a paper trade can be bought back at a price: offered for that option only, refused at or above the price it was sold at, armed beside the other rules and shown on the card", async () => {
+    const u = userEvent.setup();
+    mine().push(strat(1, { legs: [{ ...CALL, id: "l1" }, { ...PUT, id: "l2" }] }));
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    await u.click(await screen.findByTestId("card-protect"));
+    const dlg = await screen.findByTestId("rule-dialog");
+    serveMarket(); // the marks of the held legs
+    // the bought call has no buy-back; the sold put has one, off, with 5 ready
+    expect(within(dlg).getByTestId("rule-take-head").textContent).toBe("Buy back when cheap");
+    expect(within(dlg).queryByTestId("rule-take-l1")).toBeNull();
+    expect(within(dlg).getByTestId("rule-take-l2").textContent).toContain("sold at 900.00 · buy it back when its price falls to");
+    await u.click(within(dlg).getByTestId("rule-take-l2-on"));
+    const value = within(dlg).getByTestId<HTMLInputElement>("rule-take-l2-value");
+    expect(value.value).toBe("5");
+    // 100... the put is 10 lots: (900 - 5) x 10 x 0.001 = 8.95 kept
+    await waitFor(() => expect(within(dlg).getByTestId("rule-take-l2-level").textContent).toContain("keeps +$8.95 of this option"));
+    const arm = () => within(dlg).getByTestId<HTMLButtonElement>("rule-arm");
+    expect(arm().disabled).toBe(false);
+    expect(arm().textContent).toBe("Arm leg buy-back");
+    // nothing typed, and the price it was sold at: refused with the reason
+    fireEvent.change(value, { target: { value: "" } });
+    await waitFor(() => expect(arm().disabled).toBe(true));
+    fireEvent.change(value, { target: { value: "900" } });
+    await waitFor(() => expect(dlg.textContent).toContain("A buy-back level must be below the price the option was sold at"));
+    expect(arm().disabled).toBe(true);
+    fireEvent.change(value, { target: { value: "5" } });
+    await waitFor(() => expect(arm().disabled).toBe(false));
+    await u.click(arm());
+    await waitFor(() => expect(screen.queryByTestId("rule-dialog")).toBeNull());
+    expect(mine()[0]!.rules!.map((r) => [r.kind, r.trigger, r.value, r.thresholdUsd, r.legId, r.scope])).toEqual([["leg_take", "price", "5", "5", "l2", "leg"]]);
+    await waitFor(() => expect(screen.getByTestId("card-rules").textContent).toBe("S P 78,000 25 Sep bought back at 5.00"));
+    // reopen: the draft comes back from the armed rule
+    await u.click(screen.getByTestId("card-protect"));
+    const again = await screen.findByTestId("rule-dialog");
+    expect(within(again).getByTestId<HTMLInputElement>("rule-take-l2-value").value).toBe("5");
+    // the words for a fired one
+    expect(firedLabel(rule({ kind: "leg_take", trigger: "price", value: "5", thresholdUsd: "5", legId: "l2", scope: "leg", state: "fired" }), USD_FMT)).toBe("cheap leg bought back");
+    expect(ruleText(rule({ kind: "leg_take", trigger: "price", value: "5", thresholdUsd: "5", legId: "gone", scope: "leg" }), USD_FMT, [])).toBe("leg bought back at 5.00");
+  }, 20000);
+
+  it("HC-TR-245 a level the option's price is already at or under is refused; switched off, nothing of it is sent", async () => {
+    const u = userEvent.setup();
+    // the put stands near 3,568 in this chain: sold at 5,000, a buy-back at 4,000 would fire on the next tick
+    mine().push(strat(1, { legs: [{ ...PUT, id: "l2", price: "5000", entryPrice: "5000" }] }));
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    await u.click(await screen.findByTestId("card-protect"));
+    const dlg = await screen.findByTestId("rule-dialog");
+    serveMarket(); // the marks of the held legs
+    await u.click(within(dlg).getByTestId("rule-take-l2-on"));
+    await waitFor(() => expect(within(dlg).getByTestId("rule-take-l2-level").textContent).toContain("now 3,568"));
+    const arm = () => within(dlg).getByTestId<HTMLButtonElement>("rule-arm");
+    expect(arm().disabled).toBe(false);
+    fireEvent.change(within(dlg).getByTestId("rule-take-l2-value"), { target: { value: "4000" } });
+    await waitFor(() => expect(arm().disabled).toBe(true));
+    fireEvent.change(within(dlg).getByTestId("rule-take-l2-value"), { target: { value: "100" } });
+    await waitFor(() => expect(arm().disabled).toBe(false));
+    // switched off again: nothing of it is sent, and with no other rule there is nothing to arm
+    await u.click(within(dlg).getByTestId("rule-take-l2-on"));
+    await waitFor(() => expect(arm().disabled).toBe(true));
+  }, 20000);
+
+  it("HC-TR-245 a live trade is not offered a buy-back", async () => {
+    const u = userEvent.setup();
+    mine().push(strat(1, { status: "live", tradingMode: "live", legs: [{ ...PUT, id: "l2" }] }));
+    useUiStore.setState({ workspaceTab: "live" });
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    await u.click(await screen.findByTestId("card-protect"));
+    const dlg = await screen.findByTestId("rule-dialog");
+    expect(within(dlg).getByTestId("rule-leg-l2")).toBeTruthy();
+    expect(within(dlg).queryByTestId("rule-take-head")).toBeNull();
+    expect(within(dlg).queryByTestId("rule-take-l2")).toBeNull();
+  }, 20000);
+});

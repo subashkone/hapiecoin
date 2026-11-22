@@ -104,7 +104,7 @@ describe("HC-TR-217 the pieces an entry is decided on", () => {
     expect(p.stopUsd).toBe(5);
     expect(p.timeStopDte).toBe(2);
     // no fee rule on the venue: no fees; a playbook with no stop and no time exit arms neither
-    expect(planFor({ ...butterfly, exits: undefined }, proposal({ maxProfit: 40 }), 0.001, null)).toEqual({ fees: 0, targetUsd: 4, stopUsd: null, timeStopDte: null, legStop: null, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null });
+    expect(planFor({ ...butterfly, exits: undefined }, proposal({ maxProfit: 40 }), 0.001, null)).toEqual({ fees: 0, targetUsd: 4, stopUsd: null, timeStopDte: null, legStop: null, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null, legBuyBackAt: null });
   });
 
   it("HC-TR-217 no plan when the fees eat the trade (small premiums close to expiry) or the structure has no defined maximum", () => {
@@ -625,15 +625,15 @@ describe("HC-TR-225 playbooks entered by the clock: the evening strangles", () =
   it("HC-TR-225 the plan has no profit level and no strategy stop, only the stop on each sold option; a premium smaller than the fees is no plan", () => {
     // two fills of 0.1 BTC at 83,200: 0.832 each, 18 % GST, both ways
     const p = clockPlanFor(twice, sold(-53.6), 0.001, fees)!;
-    expect(p).toMatchObject({ targetUsd: null, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null });
+    expect(p).toMatchObject({ targetUsd: null, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null, legBuyBackAt: null });
     expect(p.fees).toBeCloseTo(2 * 2 * 0.832 * 1.18, 6);
-    expect(clockPlanFor(wings, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: null, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null });
+    expect(clockPlanFor(wings, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: null, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null, legBuyBackAt: null });
     expect(clockPlanFor(twice, sold(-3.9), 0.001, fees)).toBeNull(); // collects less than the fills cost
     expect(clockPlanFor(twice, sold(2), 0.001, null)).toBeNull(); // a debit is not this trade
     // HC-TR-227: the take-half version has the same stops and a profit level at half the premium collected
-    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-take-half")!, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: 26.8, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null });
+    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-take-half")!, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: 26.8, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null, legBuyBackAt: null });
     // HC-TR-228: the trail-the-rest version has the same stops, which start a trail with a give-back of half
-    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-trail-rest")!, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: 50, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null });
+    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-trail-rest")!, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: 50, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null, legBuyBackAt: null });
     expect(clockPlanFor(autopilotPlaybookById("evening-strangle-take-half")!, sold(-0.015), 0.001, null)).toBeNull(); // half of it rounds to nothing
     // the window is from its first hour and before its second, in UTC
     const c = twice.clock!;
@@ -1119,7 +1119,7 @@ describe("HC-TR-241 the lab's strategies in the engine: a profit lock, a timed e
     const lock = clockPlanFor(autopilotPlaybookById("evening-strangle-lock")!, sold(-80), 0.001, null)!;
     expect(lock).toMatchObject({ targetUsd: null, legStop: 3, lock: { atUsd: 40, floorUsd: 20 }, exitHourUtc: null, ladder: null });
     expect(clockPlanFor(autopilotPlaybookById("evening-strangle-lock")!, sold(-0.03), 0.001, null)).toBeNull();
-    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-out-early")!, sold(-80), 0.001, fees)).toMatchObject({ lock: null, exitHourUtc: 20, legStop: 3, takeTrailPct: null });
+    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-out-early")!, sold(-80), 0.001, fees)).toMatchObject({ lock: null, exitHourUtc: 20, legStop: 3, takeTrailPct: null, legBuyBackAt: null });
     expect(clockPlanFor(autopilotPlaybookById("evening-strangle-half-trail")!, sold(-80), 0.001, null)).toMatchObject({ targetUsd: 40, takeTrailPct: 20, legStop: 3 });
     expect(new Date(nextHourUtc(Date.UTC(2027, 2, 12, 16, 5), 20)).toISOString()).toBe("2027-03-12T20:00:00.000Z");
     expect(new Date(nextHourUtc(Date.UTC(2027, 2, 12, 20, 0), 20)).toISOString()).toBe("2027-03-13T20:00:00.000Z");
@@ -1349,5 +1349,59 @@ describe("HC-TR-242 one side after a move (ADR-122)", () => {
 
     // what was written is what the screen can read
     expect((await t.request("/v1/autopilot", { cookie: me.cookie })).status).toBe(200);
+  });
+});
+
+describe("HC-TR-246 the evening strangle that buys a cheap option back (ADR-123)", () => {
+  it("HC-TR-246 at entry each sold option gets a stop at triple and a buy-back at 5 dollars; run by the engine, the option that falls to 5 is bought back alone and the other is kept", async () => {
+    const me = await t.signUp("autopilot-buyback@hapiecoin.test");
+    const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
+    const PB = "evening-strangle-buy-back";
+    expect(clockPlanFor(autopilotPlaybookById(PB)!, { day: "2027-05-10", spot: 83_200, expiry: "2027-05-11", legs: [], entryCost: -80, maxProfit: 80, maxLoss: -Infinity }, 0.001, null)).toMatchObject({ legStop: 3, legBuyBackAt: 5, targetUsd: null });
+    await put({ enabled: true, strategies: [{ playbookId: PB, exit: "own" }] }, me.cookie);
+    const products: Instrument[] = [];
+    const quotes: Quote[] = [];
+    const AT = Date.UTC(2027, 4, 10, 16, 5, 0);
+    for (const e of ["2027-05-11", "2027-05-12"])
+      for (let i = -30; i <= 30; i++) {
+        const k = 83_200 + i * 200;
+        const code = e.slice(8, 10) + e.slice(5, 7) + e.slice(2, 4);
+        const tv = 600 * Math.exp(-Math.abs(k - 83_200) / 900);
+        for (const [kind, letter, intrinsic] of [["call", "C", Math.max(83_200 - k, 0)], ["put", "P", Math.max(k - 83_200, 0)]] as const) {
+          const symbol = `${letter}-BTC-${k}-${code}`;
+          products.push(inst(symbol, kind, k, e));
+          quotes.push({ instrumentId: `delta_india:${symbol}`, ts: AT - MIN, mark: (intrinsic + tv).toFixed(2), oi: "1", spot: "83200", markIv: 0.5 });
+        }
+      }
+    await snapshotOnce(t.deps, { venue: "delta_india", products: () => Promise.resolve(products), tickers: (u) => Promise.resolve(u === "BTC" ? quotes : []) }, () => AT - MIN);
+    await runAutopilot(deps(AT, { maxOpen: undefined }), ["delta_india"]);
+    const [trade] = await t.db.select().from(strategies).where(eq(strategies.userId, id));
+    expect(trade).toMatchObject({ autopilotPlaybookId: PB, status: "paper", tradingMode: "paper" });
+    const legsNow = () => t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade!.id)).orderBy(asc(strategyLegs.position));
+    const rulesNow = async () => (await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, trade!.id))).map((r) => `${r.kind} ${r.trigger} ${r.value} ${r.scope} ${r.state}`).sort();
+    const legs = await legsNow();
+    // 1 % of 83,200 is 832: 82,368 and 84,032, nearest listed 82,400 and 84,000
+    expect(legs.map((l) => `${l.side} ${l.kind} ${l.strike} x${l.lots}`)).toEqual(["sell put 82400 x100", "sell call 84000 x100"]);
+    expect(await rulesNow()).toEqual(["leg_stop multiple 3 leg armed", "leg_stop multiple 3 leg armed", "leg_take price 5 leg armed", "leg_take price 5 leg armed"]);
+    const buyBacks = (await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, trade!.id))).filter((r) => r.kind === "leg_take");
+    expect(buyBacks.map((r) => r.thresholdUsd)).toEqual(["5", "5"]);
+    expect(buyBacks.map((r) => r.legId).sort()).toEqual(legs.map((l) => l.id).sort());
+    expect((await view(me.cookie)).runs.find((r) => r.playbookId === PB && r.kind === "entered")!.detail).toMatchObject({ legStop: 3, legBuyBackAt: "5" });
+    // the engine: the call falls to 5 while the put is unchanged; the call alone is bought back
+    const [putLeg, callLeg] = legs;
+    const tick = (putMark: number, callMark: number, ms: number) => evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map([[putLeg!.symbol, putMark], [callLeg!.symbol, callMark]]), spot: null }) }, () => ms);
+    expect((await tick(Number(putLeg!.price), 5.5, AT + 10 * MIN)).fired).toHaveLength(0);
+    expect((await tick(Number(putLeg!.price), 5, AT + 11 * MIN)).fired).toHaveLength(1);
+    expect((await legsNow()).map((l) => `${l.kind} ${l.status} ${l.closeReason ?? ""}`)).toEqual(["put open ", "call squared_off target"]);
+    const [after] = await t.db.select().from(strategies).where(eq(strategies.id, trade!.id));
+    expect(after!.status).toBe("paper");
+    expect(Number(after!.realizedPnl)).toBeCloseTo((Number(callLeg!.price) - 5) * 0.1, 2);
+    // the next tick ends the stop that watched the call; the put keeps its stop and its own buy-back
+    await tick(Number(putLeg!.price), 5, AT + 12 * MIN);
+    expect(await rulesNow()).toEqual(["leg_stop multiple 3 leg armed", "leg_stop multiple 3 leg disarmed", "leg_take price 5 leg armed", "leg_take price 5 leg fired"]);
+    // what was written is what the screens can read
+    expect((await t.request("/v1/strategies", { cookie: me.cookie })).status).toBe(200);
+    expect((await t.request("/v1/autopilot", { cookie: me.cookie })).status).toBe(200);
+    await t.db.update(strategies).set({ status: "archived" }).where(eq(strategies.id, trade!.id));
   });
 });

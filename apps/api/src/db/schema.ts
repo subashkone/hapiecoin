@@ -436,14 +436,14 @@ export const strategyRules = pgTable(
     strategyId: text("strategy_id")
       .notNull()
       .references(() => strategies.id, { onDelete: "cascade" }),
-    kind: text("kind", { enum: ["stop", "target", "leg_stop", "spot", "time", "trail", "step", "lock"] }).notNull(),
+    kind: text("kind", { enum: ["stop", "target", "leg_stop", "spot", "time", "trail", "step", "lock", "leg_take"] }).notNull(),
     trigger: text("trigger", { enum: ["money", "pct", "multiple", "price", "above", "below", "at", "dte", "settle"] }).notNull(),
     value: text("value").notNull(),
     basis: text("basis", { enum: ["credit", "debit", "max_loss"] }),
     basisUsd: text("basis_usd"),
     /** The level in the kind's own unit (see StrategyRule.thresholdUsd). */
     thresholdUsd: text("threshold_usd").notNull(),
-    /** The watched leg (leg_stop only). */
+    /** The watched leg (leg_stop and leg_take only). */
     legId: text("leg_id").references(() => strategyLegs.id, { onDelete: "cascade" }),
     scope: text("scope", { enum: ["strategy", "leg"] }).notNull().default("strategy"),
     /**

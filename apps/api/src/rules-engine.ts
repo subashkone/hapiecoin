@@ -199,7 +199,7 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
             continue;
           }
         }
-        else if (rule.kind === "leg_stop") {
+        else if (rule.kind === "leg_stop" || rule.kind === "leg_take") {
           const leg = legs.find((l) => l.id === rule.legId);
           if (!leg) {
             // still open but not yet filled: wait; closed by a click, the settler or another rule: void
@@ -212,9 +212,18 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
           }
           const mark = marks.get(leg.symbol)!;
           // a short leg is stopped when its mark rises to the level, a long one when it falls to it
-          crossed = leg.side === "sell" ? mark >= level : mark <= level;
+          // a buy-back fires downwards, so a mark of nothing (a venue's placeholder for "no price") must never read
+          // as "it has fallen to the level": no usable mark, no judgement on this tick
+          if (rule.kind === "leg_take" && !(mark > 0)) {
+            out.checked -= 1;
+            out.skipped += 1;
+            continue;
+          }
+          // a buy-back (ADR-123) is the other way round: its sold option has fallen to a price where little is left to earn
+          crossed = rule.kind === "leg_take" ? mark <= level : leg.side === "sell" ? mark >= level : mark <= level;
           detail = `${leg.symbol} at ${toDecimal(mark, 2)}, entry ${leg.entryPrice ?? "?"}`;
-          if (rule.scope === "leg") exitLegs = [leg];
+          // a buy-back exits its own leg whatever the row's scope says
+          if (rule.scope === "leg" || rule.kind === "leg_take") exitLegs = [leg];
         } else if (rule.kind === "spot") {
           if (tick.spot === null) {
             out.checked -= 1;
@@ -263,6 +272,11 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
         // with steps armed waits here and says so)
         if (rule.kind === "step" && strategy.status === "live") {
           await hold("profit steps are on paper trades only for now");
+          continue;
+        }
+        // a buy-back at a mark of a few dollars is not a price the exchange will fill at: on paper only for now (ADR-123)
+        if (rule.kind === "leg_take" && strategy.status === "live") {
+          await hold("a buy-back of a cheap leg is on paper trades only for now");
           continue;
         }
         if (strategy.status === "live") {
@@ -360,6 +374,10 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
           const realized = addDecimal(await freshTotal(deps, strategy.id, strategy.realizedPnl), batchPnl);
           const left = await deps.db.select({ id: strategyLegs.id }).from(strategyLegs).where(and(eq(strategyLegs.strategyId, strategy.id), eq(strategyLegs.status, "open"))).limit(1);
           const archive = left.length === 0;
+          // a buy-back that closes the last leg of a trade whose other option was stopped: the trade ended as stopped,
+          // not as a target hit (the tallies by reason read the trade's reason)
+          const [wasStopped] = archive && rule.kind === "leg_take" ? await deps.db.select({ id: strategyLegs.id }).from(strategyLegs).where(and(eq(strategyLegs.strategyId, strategy.id), eq(strategyLegs.closeReason, "stopped"))).limit(1) : [];
+          const archiveReason = wasStopped ? ("stopped" as const) : reason;
           // a leg stop set to trail the rest (ADR-104): its leg is out and booked here, legs stay open, so the trail is
           // armed from the realised total of this moment. Not when the exit is unconfirmed or this fire booked nothing
           // (the leg may still be held, or was closed by a click whose result is not in the total yet: the rest is not
@@ -383,7 +401,7 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
           if ((rule.scope === "strategy" && rule.kind !== "step") || archive) await disarmRules(deps, strategy.id, `disarmed: the ${label.toLowerCase()} fired`, at);
           await deps.db
             .update(strategies)
-            .set({ realizedPnl: realized, updatedAt: at, ...(archive ? { status: "archived" as const, closedAt: at, closeReason: reason } : {}) })
+            .set({ realizedPnl: realized, updatedAt: at, ...(archive ? { status: "archived" as const, closedAt: at, closeReason: archiveReason } : {}) })
             .where(eq(strategies.id, strategy.id));
           // armed last, once the total it starts from is stored: a failure before this line leaves no trail, never one
           // whose level is ahead of the total

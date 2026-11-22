@@ -159,9 +159,11 @@ export type StrategyAdjustment = z.infer<typeof StrategyAdjustment>;
  * price); spot watches the underlying; time fires at an instant, when the nearest expiry is d days away, or n minutes
  * before the nearest expiry settles (ADR-097: a calendar closes whole instead of the settler leaving the far leg open).
  * trail is never armed by hand: the engine arms it when a leg stop set to trail the rest fires (ADR-104), and it
- * watches what the legs still open have gained since that moment.
+ * watches what the legs still open have gained since that moment. leg_take (ADR-123) watches one sold option's mark
+ * and buys that option back alone once it has fallen to a price: almost nothing is left to earn on it and it can
+ * still come back.
  */
-export const RULE_KINDS = ["stop", "target", "leg_stop", "spot", "time", "trail", "step", "lock"] as const;
+export const RULE_KINDS = ["stop", "target", "leg_stop", "spot", "time", "trail", "step", "lock", "leg_take"] as const;
 export const RuleKind = z.enum(RULE_KINDS);
 export type RuleKind = z.infer<typeof RuleKind>;
 /**
@@ -173,10 +175,10 @@ export type RuleKind = z.infer<typeof RuleKind>;
 export const RULE_TRIGGERS = ["money", "pct", "multiple", "price", "above", "below", "at", "dte", "settle"] as const;
 export const RuleTrigger = z.enum(RULE_TRIGGERS);
 export type RuleTrigger = z.infer<typeof RuleTrigger>;
-export const RULE_TRIGGERS_OF: Record<RuleKind, readonly RuleTrigger[]> = { stop: ["money", "pct"], target: ["money", "pct"], leg_stop: ["multiple", "price"], spot: ["above", "below"], time: ["at", "dte", "settle"], trail: ["money", "pct"], step: ["pct"], lock: ["money"] };
+export const RULE_TRIGGERS_OF: Record<RuleKind, readonly RuleTrigger[]> = { stop: ["money", "pct"], target: ["money", "pct"], leg_stop: ["multiple", "price"], spot: ["above", "below"], time: ["at", "dte", "settle"], trail: ["money", "pct"], step: ["pct"], lock: ["money"], leg_take: ["price"] };
 /** A settle rule's lead: at least a minute, at most twelve hours before the settlement instant. */
 export const SETTLE_LEAD_MINUTES = { min: 1, max: 720, default: 15 } as const;
-/** What a fire exits: the whole strategy, or (leg_stop only) the watched leg alone. */
+/** What a fire exits: the whole strategy, or (leg_stop by choice, leg_take always) the watched leg alone. */
 export const RuleScope = z.enum(["strategy", "leg"]);
 export type RuleScope = z.infer<typeof RuleScope>;
 /** The percentage basis: the credit received, the debit paid, or the max loss (defined risk). */
@@ -190,11 +192,11 @@ export type RuleState = z.infer<typeof RuleState>;
 export const RULE_CHANNELS = ["push", "email", "telegram"] as const;
 export const RuleChannel = z.enum(RULE_CHANNELS);
 export type RuleChannel = z.infer<typeof RuleChannel>;
-export const RULE_KIND_LABELS: Record<RuleKind, string> = { stop: "Stop loss", target: "Target", leg_stop: "Leg stop", spot: "Spot level", time: "Time exit", trail: "Trail on the rest", step: "Profit step", lock: "Profit lock" };
+export const RULE_KIND_LABELS: Record<RuleKind, string> = { stop: "Stop loss", target: "Target", leg_stop: "Leg stop", spot: "Spot level", time: "Time exit", trail: "Trail on the rest", step: "Profit step", lock: "Profit lock", leg_take: "Leg buy-back" };
 /** Judging and display order: the protective kinds first, the target last (were two crossed at once, the protective one wins). */
-export const RULE_KIND_ORDER: Record<RuleKind, number> = { stop: 0, leg_stop: 1, spot: 2, time: 3, trail: 4, lock: 5, step: 6, target: 7 };
+export const RULE_KIND_ORDER: Record<RuleKind, number> = { stop: 0, leg_stop: 1, spot: 2, time: 3, trail: 4, lock: 5, leg_take: 6, step: 7, target: 8 };
 /** The close reason a fire books on the legs and the strategy. */
-export const CLOSE_REASON_OF_KIND: Record<RuleKind, CloseReason> = { stop: "stopped", target: "target", leg_stop: "stopped", spot: "stopped", time: "squared_off", trail: "stopped", step: "target", lock: "target" };
+export const CLOSE_REASON_OF_KIND: Record<RuleKind, CloseReason> = { stop: "stopped", target: "target", leg_stop: "stopped", spot: "stopped", time: "squared_off", trail: "stopped", step: "target", lock: "target", leg_take: "target" };
 
 /**
  * Take profit in steps (ADR-120; HC-TR-236). A step is one rule: when the lots still open are up by `value` per cent
@@ -288,7 +290,7 @@ export const StrategyRule = z.strictObject({
    * trail the strategy's realised total in USD when its leg stop fired (the rest is valued from there).
    */
   thresholdUsd: DecimalString,
-  /** The watched leg (leg_stop only). */
+  /** The watched leg (leg_stop and leg_take only). */
   legId: Id.nullable(),
   scope: RuleScope,
   /** Target: trail instead of closing at the level (ADR-103). Leg stop that exits its leg: then trail the rest by this give-back (ADR-104). Null or absent otherwise. */
@@ -347,7 +349,10 @@ export const RuleBody = z
     if (r.kind !== "trail" && r.kind !== "step" && r.trigger === "pct" && (r.basis === undefined || r.basisUsd === undefined)) ctx.addIssue({ code: "custom", message: "a percentage rule needs its basis and the basis amount", path: ["basis"] });
     if (r.trigger === "pct" && Number(r.value) > 1000) ctx.addIssue({ code: "custom", message: "at most 1000 %", path: ["value"] });
     if (r.kind === "leg_stop" && r.legId === undefined) ctx.addIssue({ code: "custom", message: "a leg stop names its leg", path: ["legId"] });
-    if (r.kind !== "leg_stop" && r.scope === "leg") ctx.addIssue({ code: "custom", message: "only a leg stop can exit one leg", path: ["scope"] });
+    // a buy-back of a cheap leg (ADR-123) names its leg and exits that leg alone
+    if (r.kind === "leg_take" && r.legId === undefined) ctx.addIssue({ code: "custom", message: "a leg buy-back names its leg", path: ["legId"] });
+    if (r.kind === "leg_take" && r.scope === "strategy") ctx.addIssue({ code: "custom", message: "a leg buy-back exits its own leg alone", path: ["scope"] });
+    if (r.kind !== "leg_stop" && r.kind !== "leg_take" && r.scope === "leg") ctx.addIssue({ code: "custom", message: "only a leg stop or a leg buy-back can exit one leg", path: ["scope"] });
     if ((r.kind === "stop" || r.kind === "target") && ruleThresholdUsd(r) === "0") ctx.addIssue({ code: "custom", message: "the level rounds to nothing", path: ["value"] });
     // a running trail's own give-back (the rule itself is armed by the engine; the route refuses one that is not running)
     if (r.kind === "trail" && isPositiveDecimal(r.value)) {
@@ -365,12 +370,12 @@ export const RuleBody = z
     }
   });
 export type RuleBody = z.infer<typeof RuleBody>;
-/** The full set for a strategy: one rule per kind (leg stops one per leg); rules not listed are removed (fired ones stay as history). */
+/** The full set for a strategy: one rule per kind (leg stops and leg buy-backs one per leg); rules not listed are removed (fired ones stay as history). */
 export const RulesBody = z
-  .strictObject({ rules: z.array(RuleBody).max(5 + LADDER_STEPS.max + MAX_OPEN_LEGS) })
+  .strictObject({ rules: z.array(RuleBody).max(5 + LADDER_STEPS.max + 2 * MAX_OPEN_LEGS) })
   .superRefine((b, ctx) => {
-    const keys = b.rules.filter((r) => r.kind !== "step").map((r) => `${r.kind}:${r.kind === "leg_stop" ? (r.legId ?? "") : ""}`);
-    if (new Set(keys).size !== keys.length) ctx.addIssue({ code: "custom", message: "one rule per kind (one leg stop per leg)", path: ["rules"] });
+    const keys = b.rules.filter((r) => r.kind !== "step").map((r) => `${r.kind}:${r.kind === "leg_stop" || r.kind === "leg_take" ? (r.legId ?? "") : ""}`);
+    if (new Set(keys).size !== keys.length) ctx.addIssue({ code: "custom", message: "one rule per kind (one leg stop and one leg buy-back per leg)", path: ["rules"] });
     // the steps of a ladder (ADR-120): at most four before the part that is held, each at its own level, and never beside a target
     const steps = b.rules.filter((r) => r.kind === "step");
     if (steps.length > LADDER_STEPS.max) ctx.addIssue({ code: "custom", message: `at most ${LADDER_STEPS.max} profit steps`, path: ["rules"] });
@@ -415,7 +420,7 @@ export function nearestSettlement(legs: readonly Pick<StrategyLeg, "expiry">[], 
 export function ruleLevel(r: Pick<RuleBody, "kind" | "trigger" | "value" | "basisUsd">, entryPrice?: string | null): string {
   if (r.kind === "stop" || r.kind === "target") return ruleThresholdUsd(r);
   if (r.kind === "leg_stop") return r.trigger === "multiple" ? toDecimal(Number(r.value) * Number(entryPrice ?? "0"), 2) : r.value;
-  if (r.kind === "spot") return r.value;
+  if (r.kind === "spot" || r.kind === "leg_take") return r.value; // a buy-back: the mark of its leg, as typed
   if (r.kind === "trail") return "0"; // the route keeps the running trail's own level; nothing typed sets it
   if (r.kind === "step" || r.kind === "lock") return r.value; // a step: per cent of the open part's premium; a lock is never armed through a body
   return r.trigger === "at" ? String(Date.parse(r.value)) : r.value;
