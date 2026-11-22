@@ -85,6 +85,18 @@ export interface PlaybookClock {
    * part of every leg is closed and the last part is held to a stop or to settlement. One to four levels, rising.
    */
   ladder?: readonly number[] | undefined;
+  /**
+   * ADR-121: a profit lock. Once the trade's profit reaches `at` of the premium collected, a floor is set at `floor` of
+   * it and the whole trade is closed if the profit falls back there; the floor does not move. Shares between 0 and 1.
+   */
+  lock?: { at: number; floor: number } | undefined;
+  /**
+   * ADR-121: with `takeProfitOfCredit`, do not close at that level: from there the trade is trailed and closed when its
+   * profit gives back this percentage of its best (a trailing target, ADR-103).
+   */
+  takeTrailPct?: number | undefined;
+  /** ADR-121: the whole trade is closed at the first time the clock reads this hour (UTC) after the entry, whatever the profit. */
+  exitHourUtc?: number | undefined;
 }
 
 const DEFINED_RISK_EXITS: BacktestExits = { targetPct: 0.5, stopPct: 0.5, timeStopDte: 2 };
@@ -621,8 +633,51 @@ export const LADDER_WEEKLY_PLAYBOOKS: readonly Playbook[] = [
   ladderPlaybook({ id: "weekly-fri-strangle-steps", name: "Friday weekly strangle, profit steps", asset: "BTC", coin: "a", sold: 3, weekly: true, figures: "+33.25 a week on 51 weeks, 65 % of weeks positive, worst week -168.3", why: "The ladder on the weekly trade, where it did better against closing everything at half (+28.59) and gave up less against the stop alone (+40.65) than on the daily ones; the worst week is the same for all three." }),
 ];
 
+// ---- ADR-121: the ideas the strategy lab tested and the owner approved, each as a strategy of its own -----------------------
+
+const LAB_STUDY = "the strategy lab's tables (branch research/exits, docs/research/scripts/autopilot-study: study_exits.py, results-exits-BTC-daily, -ETH-daily, -BTC-weekly, results-exits-early-out, results-entry-closer-BTC / -ETH and results-wings-daily of 22 Nov 2026) and results-half-then-trail-2026-11-22.txt; 106 daily expiries, 8 Aug to 21 Nov 2026, 5-minute marks, and 51 Friday expiries, hourly marks; the exchange's real fees, 100 lots)";
+const LAB_TRIALS = { count: 2150, note: "the lab's exit tables (a profit lock at three levels, timed exits at several hours, an exit near the strike, ladders: 167 rows on each of four sets), its entry tables (strikes from 0.25 to 2 % away at several hours: 624 rows on each of two coins), its wings and early-out tables (172 rows) and the half-then-trail table (56): about 2,150 rows, of which these ten were picked after seeing them; in-sample on one period, judged on bar closes, and the paper record is the test" };
+type LabSpec = { id: string; name: string; asset: PlaybookAsset; sold: number; wing?: number; weekly?: true; summary: string; why: string; rule: string; entered?: string; figures: string; clock: Partial<PlaybookClock>; minDte?: number };
+const labPlaybook = (o: LabSpec): Playbook => ({
+  id: o.id,
+  name: o.name,
+  summary: o.summary,
+  rationale: o.why,
+  evidence: { claim: `${o.asset}, sold ${o.sold} % away, entered ${o.entered ?? (o.weekly ? "Friday 21:30 IST for the next Friday" : "21:30 IST")}, ${o.rule}: ${o.figures}.`, source: LAB_STUDY },
+  template: strangleAway(`${o.name.split(",")[0]!} (${o.sold} %)`, o.sold, o.wing ?? null, o.weekly ? "weekly" : "next"),
+  minDte: o.minDte ?? (o.weekly ? WEEKLY_DAYS.fri.minDte : 0.5),
+  lots: 100,
+  assets: [o.asset],
+  thresholds: NO_RECORD,
+  trials: LAB_TRIALS,
+  control: false,
+  clock: o.weekly
+    ? { fromHourUtc: 16, toHourUtc: 17, weekdayUtc: WEEKLY_DAYS.fri.weekdayUtc, window: "Fridays, 9:30 to 10:30 PM IST", describe: WEEKLY_DAYS.fri.describe, maxDte: WEEKLY_DAYS.fri.maxDte, venues: ["delta_india"], ...o.clock }
+    : { ...EVENING, ...o.clock },
+});
+const LOCK = { at: 0.5, floor: 0.25 } as const;
+const LOCK_WORDS = "once the trade is up by half the premium a floor is set at a quarter of it, and the whole trade is closed if the profit falls back there; otherwise it is held to settlement. Either option is bought back if its price triples";
+/** 20:00 UTC is 01:30 IST: four hours after the evening entry, sixteen before the settlement. */
+const OUT_EARLY_HOUR_UTC = 20;
+/** The daily ones: a profit lock, out by 1:30 AM, strikes half as far, half then trail, ETH with wings at 3 %, and an afternoon entry. */
+export const LAB_DAILY_PLAYBOOKS: readonly Playbook[] = [
+  labPlaybook({ id: "evening-strangle-lock", name: "Evening strangle, profit lock", asset: "BTC", sold: 1, summary: `Each evening sell a call and a put 1 % away on the next expiry; ${LOCK_WORDS}.`, why: "The owner's worry answered with a floor instead of an early exit: a trade that has been well up is closed when it falls back to the floor (a jump through the floor between two checks closes below it). In the study it earned what the stop alone does (+11.75) with more winning days and a smaller worst day (-106 for the stop alone). On ETH it earned less than the stop alone, so there is none there.", rule: "each option stopped at three times its price, a floor at 25 % of the premium once the profit has reached 50 %", figures: "+11.68 a day on 106 days, 71 % of days positive, worst day -69.2", clock: { legStop: 3, lock: LOCK } }),
+  labPlaybook({ id: "evening-strangle-out-early", name: "Evening strangle, out by 1:30 AM", asset: "BTC", sold: 1, summary: "Each evening sell a call and a put 1 % away on the next expiry and close everything at 1:30 AM IST, whatever the profit; either option is bought back before that if its price triples.", why: "Four hours of the trade and none of the next day: about half the average of holding to settlement (+11.75) for a quarter of its worst day (-106). For a trader who would rather sleep than hold.", rule: "each option stopped at three times its price, everything closed at 01:30 IST", figures: "+6.18 a day on 106 days, 78 % of days positive, worst day -25", clock: { legStop: 3, exitHourUtc: OUT_EARLY_HOUR_UTC } }),
+  labPlaybook({ id: "eth-evening-strangle-out-early", name: "ETH evening strangle, out by 1:30 AM", asset: "ETH", sold: 1, summary: "Each evening sell an ETH call and put 1 % away on the next expiry and close everything at 1:30 AM IST, whatever the profit; either option is bought back before that if its price triples.", why: "The same on ETH. The hour matters here: closing an hour later the worst day was back to about -50.", rule: "each option stopped at three times its price, everything closed at 01:30 IST", figures: "+2.58 a day on 106 days, 82 % of days positive, worst day -19.9", clock: { legStop: 3, exitHourUtc: OUT_EARLY_HOUR_UTC } }),
+  labPlaybook({ id: "evening-strangle-close", name: "Evening strangle, half a per cent away", asset: "BTC", sold: 0.5, summary: "Each evening sell a call and a put 0.5 % away on the next expiry; buy either one back if its price triples, and hold the other to settlement.", why: "The bolder version: strikes half as far, so more premium and more of it lost on a bad day. In the study it earned more than 1 % away (+11.75) with a slightly larger worst day (-106) and a few fewer winning days.", rule: "each option stopped at three times its price, held to settlement", figures: "+14.60 a day on 106 days, 62 % of days positive, worst day -114.4", clock: { legStop: 3 } }),
+  labPlaybook({ id: "eth-evening-strangle-close", name: "ETH evening strangle, half a per cent away", asset: "ETH", sold: 0.5, summary: "Each evening sell an ETH call and put 0.5 % away on the next expiry; buy either one back if its price triples, and hold the other to settlement.", why: "The bolder version on ETH: more than 1 % away earned (+4.46) for about the same worst day (-50).", rule: "each option stopped at three times its price, held to settlement", figures: "+6.84 a day on 106 days, 64 % of days positive, worst day -50.6", clock: { legStop: 3 } }),
+  labPlaybook({ id: "evening-strangle-half-trail", name: "Evening strangle, half then trail", asset: "BTC", sold: 1, summary: "Each evening sell a call and a put 1 % away on the next expiry; once the trade is up by half the premium do not close it: trail it, and close when the profit gives back a fifth of its best. Either option is bought back if its price triples.", why: "The owner's idea, and the middle of the three daily bundles: most of what the stop alone earns (+11.75) with the smaller worst day of taking half (-69) and nearly as many winning days. A sold strangle cannot make more than its premium, so from half there is at most the other half to gain.", rule: "each option stopped at three times its price; from half the premium the profit is trailed with a give-back of 20 % of its best", figures: "+11.30 a day on 106 days, 79 % of days positive, worst day -69.2", clock: { legStop: 3, takeProfitOfCredit: 0.5, takeTrailPct: 20 } }),
+  labPlaybook({ id: "eth-evening-strangle-half-trail", name: "ETH evening strangle, half then trail", asset: "ETH", sold: 1, summary: "Each evening sell an ETH call and put 1 % away on the next expiry; once the trade is up by half the premium trail it, and close when the profit gives back a fifth of its best. Either option is bought back if its price triples.", why: "The same on ETH: more than closing at half (+3.10) and less than the stop alone (+4.46), for the smaller worst day.", rule: "each option stopped at three times its price; from half the premium the profit is trailed with a give-back of 20 % of its best", figures: "+3.65 a day on 106 days, 75 % of days positive, worst day -44.6", clock: { legStop: 3, takeProfitOfCredit: 0.5, takeTrailPct: 20 } }),
+  labPlaybook({ id: "eth-evening-strangle-wings-near", name: "ETH evening strangle, wings at 3 %", asset: "ETH", sold: 1, wing: 3, summary: "Each evening sell an ETH call and put 1 % away on the next expiry and buy the options 3 % away as wings; hold to settlement with no stop.", why: "The bounded ETH trade with the strikes at 1 %: the wings cap the loss, so it carries no stop. With a stop at triple on the sold options it earned about half (+2.33): the stop takes the sold option and leaves its wing behind. The wing prices are model marks of far strikes; a real wing may cost more. On BTC the same wings earned about half of what the stop alone does (+5.62 against +11.75), so there is none there.", rule: "wings 3 % away, held to settlement", figures: "+4.56 a day on 105 days, 73 % of days positive, worst day -47", clock: {} }),
+  labPlaybook({ id: "afternoon-strangle-take-half", name: "Afternoon strangle, take half", asset: "BTC", sold: 0.25, minDte: 0.04, summary: "Each afternoon, two hours before the day's settlement, sell a call and a put 0.25 % away on that expiry; close the whole trade at half the premium, and buy either option back if its price triples.", why: "One to watch, not a recommendation: the lab found a small edge in the last two hours on BTC with strikes very close, weak in the first half of the period and absent on ETH. On paper to see whether it is there at all.", entered: "15:30 IST, two hours before settlement", rule: "each option stopped at three times its price, the whole trade closed at half the premium", figures: "+2.29 a day on 106 days, 75 % of days positive, worst day -21.7", clock: { fromHourUtc: 10, toHourUtc: 11, window: "3:30 to 4:30 PM IST", describe: "once an afternoon, 3:30 to 4:30 PM IST, on that day's expiry", maxDte: 0.3, legStop: 3, takeProfitOfCredit: 0.5 } }),
+];
+/** The profit lock on the BTC Friday weekly. */
+export const LAB_WEEKLY_PLAYBOOKS: readonly Playbook[] = [
+  labPlaybook({ id: "weekly-fri-strangle-lock", name: "Friday weekly strangle, profit lock", asset: "BTC", sold: 3, weekly: true, summary: `Each Friday evening sell a call and a put 3 % away on the next Friday expiry; ${LOCK_WORDS}.`, why: "The lock on the weekly trade: the average of the stop alone (+40.65) with far more winning weeks (57 % for the stop alone) and the same worst week.", rule: "each option stopped at three times its price, a floor at 25 % of the premium once the profit has reached 50 %", figures: "+40.95 a week on 51 weeks, 71 % of weeks positive, worst week -168.3", clock: { legStop: 3, lock: LOCK } }),
+];
+
 /** Every playbook Autopilot may trade: the recorded ones (never the control) and the ones entered by the clock. */
-export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc === undefined), ...ALT_DAILY_PLAYBOOKS, ...LADDER_DAILY_PLAYBOOKS, ...WEEKLY_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc !== undefined), ...ALT_WEEKLY_PLAYBOOKS, ...LADDER_WEEKLY_PLAYBOOKS, ...MONTHLY_PLAYBOOKS, ...ALT_MONTHLY_PLAYBOOKS];
+export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc === undefined), ...ALT_DAILY_PLAYBOOKS, ...LADDER_DAILY_PLAYBOOKS, ...LAB_DAILY_PLAYBOOKS, ...WEEKLY_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc !== undefined), ...ALT_WEEKLY_PLAYBOOKS, ...LADDER_WEEKLY_PLAYBOOKS, ...LAB_WEEKLY_PLAYBOOKS, ...MONTHLY_PLAYBOOKS, ...ALT_MONTHLY_PLAYBOOKS];
 export function autopilotPlaybookById(id: string): Playbook | undefined {
   return AUTOPILOT_PLAYBOOKS.find((p) => p.id === id);
 }
@@ -705,6 +760,16 @@ const BACKTESTS: Record<string, PlaybookBacktest> = {
   "evening-strangle-steps": bt(8.88, "day", 72, -50.5, 106),
   "eth-evening-strangle-steps": bt(3.15, "day", 65, -44.6, 106),
   "weekly-fri-strangle-steps": bt(33.25, "week", 65, -168.3, 51),
+  "evening-strangle-lock": bt(11.68, "day", 71, -69.2, 106),
+  "evening-strangle-out-early": bt(6.18, "day", 78, -25, 106),
+  "eth-evening-strangle-out-early": bt(2.58, "day", 82, -19.9, 106),
+  "evening-strangle-close": bt(14.6, "day", 62, -114.4, 106),
+  "eth-evening-strangle-close": bt(6.84, "day", 64, -50.6, 106),
+  "afternoon-strangle-take-half": bt(2.29, "day", 75, -21.7, 106),
+  "evening-strangle-half-trail": bt(11.3, "day", 79, -69.2, 106),
+  "eth-evening-strangle-half-trail": bt(3.65, "day", 75, -44.6, 106),
+  "eth-evening-strangle-wings-near": bt(4.56, "day", 73, -47, 105),
+  "weekly-fri-strangle-lock": bt(40.95, "week", 71, -168.3, 51),
   "eth-monthly-strangle-16pct-far-wings-stop-3x": mo(88.3, 83, -250, 157, 10),
   "eth-monthly-strangle-16pct-far-wings-take-half": mo(33.6, 98, -250, 157, 11),
   "eth-monthly-strangle-12pct-near-stop-2x": mo(34.3, 59, -84, 165, 9),

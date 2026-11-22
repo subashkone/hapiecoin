@@ -172,6 +172,16 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
             detail = `the rest stands at ${toDecimal(gain, 2)} USD, best ${toDecimal(step.peak, 2)} USD, exit level ${toDecimal(step.floor, 2)} USD`;
           }
         }
+        else if (rule.kind === "lock") {
+          // a profit lock (ADR-121): below its level nothing happens; the tick that reaches it arms the floor and exits
+          // nothing; from then on the strategy closes when the profit is back at the floor. The floor does not move.
+          if (rule.peakPnl === null) {
+            if (pnl >= Number(rule.value)) await deps.db.update(strategyRules).set({ peakPnl: toDecimal(Math.floor(pnl * 100 + 1e-6) / 100, 2), updatedAt: at }).where(and(eq(strategyRules.id, rule.id), eq(strategyRules.state, "armed"), isNull(strategyRules.peakPnl)));
+          } else {
+            crossed = pnl <= level;
+            detail = `locked when the profit reached ${rule.value} USD, floor ${rule.thresholdUsd} USD`;
+          }
+        }
         else if (rule.kind === "step") {
           // a profit step (ADR-120): how far the lots still open are up, as a share of the premium they were opened
           // for. Lots closed by an earlier step, a stop or a click are not in it.

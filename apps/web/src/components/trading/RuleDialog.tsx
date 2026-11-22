@@ -15,7 +15,7 @@
 // A leg stop has a third "What to exit" (ADR-104; HC-TR-213): this leg, then trail the rest. It takes a give-back
 // (10 % of the best profit by default, or money) and says where the other legs would exit from where they stand now.
 // Once such a stop has fired, the running trail shows as its own box: its give-back can be changed, unticking stops it.
-import { type RuleBasis, type RuleChannel, type RuleKind, type RuleTrigger, type StrategyLeg, type StrategyRule, LADDER_STEPS, LEG_TRAIL_DEFAULT_PCT, RULE_BASIS_LABELS, RULE_KIND_LABELS, SETTLE_LEAD_MINUTES, isPositiveDecimal, nearestSettlement, openProfitPct, restTrailFloorUsd, ruleLevel, ruleThresholdUsd, settleInstantMs, stepPremiumOk, toDecimal, trailFloorUsd } from "@hapiecoin/schema";
+import { type RuleBasis, type RuleChannel, type RuleKind, type RuleTrigger, type StrategyLeg, type StrategyRule, LADDER_STEPS, LEG_TRAIL_DEFAULT_PCT, RULE_BASIS_LABELS, RULE_KIND_LABELS, SETTLE_LEAD_MINUTES, isPositiveDecimal, nearestSettlement, openProfitPct, restTrailFloorUsd, ruleLevel, ruleThresholdUsd, isLockArmed, settleInstantMs, stepPremiumOk, toDecimal, trailFloorUsd } from "@hapiecoin/schema";
 import { Button, Checkbox, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { useEffect, useMemo, useState } from "react";
 import { useClearRules, useSetRules, useStrategies } from "@/lib/api/strategies";
@@ -135,6 +135,7 @@ export function ruleText(r: StrategyRule, money: MoneyFormat, legs: readonly Str
     if (r.state === "armed" && typeof r.peakPnl === "string") return `trailing the rest: best ${fmtMoney(Number(r.peakPnl), money, { signed: true })}, exits at ${fmtMoney(restTrailFloorUsd(Number(r.peakPnl), give), money, { signed: true })}`;
     return `trailing the rest: exits on a fall of ${giveBackText(give, money)} from its best`;
   }
+  if (r.kind === "lock") return isLockArmed(r) ? `profit locked: exits at ${fmtMoney(Number(r.thresholdUsd), money, { signed: true })}` : `profit lock: a floor at ${fmtMoney(Number(r.thresholdUsd), money, { signed: true })} once the profit reaches ${fmtMoney(Number(r.value), money, { signed: true })}`;
   if (r.kind === "step") return `profit step at ${r.value} % of the open lots' premium, closing ${toDecimal(Number(r.closeShare ?? "0") * 100, 0)} % of them`;
   if (r.kind === "stop" || r.kind === "target") return `${r.kind} at ${levelText(Number(r.thresholdUsd), money)}${r.trigger === "pct" ? ` (${r.value} %)` : ""}`;
   if (r.kind === "leg_stop") {
@@ -162,7 +163,7 @@ export function firedRule(rules: readonly StrategyRule[] | undefined): StrategyR
   return fired[0] ?? null;
 }
 /** The card chip's words for a fired rule. */
-export const FIRED_LABELS: Record<RuleKind, string> = { stop: "stop fired", target: "target hit", leg_stop: "leg stop fired", spot: "spot level fired", time: "time exit fired", trail: "trail on the rest fired", step: "profit step taken" };
+export const FIRED_LABELS: Record<RuleKind, string> = { stop: "stop fired", target: "target hit", leg_stop: "leg stop fired", spot: "spot level fired", time: "time exit fired", trail: "trail on the rest fired", step: "profit step taken", lock: "profit lock closed it" };
 /** The chip for one fired rule: a target that trailed says how far the profit ran before the exit. */
 export function firedLabel(r: StrategyRule, money: MoneyFormat): string {
   return r.kind === "target" && r.trail && typeof r.peakPnl === "string" ? `${FIRED_LABELS.target} · trailed from ${fmtMoney(Number(r.peakPnl), money, { signed: true })}` : FIRED_LABELS[r.kind];
@@ -320,7 +321,9 @@ export function RuleDialog({ book }: { book: PaperBook }) {
   };
   const stopLevel = levelOf(stop, "stop");
   const tgtLevel = levelOf(tgt, "target");
-  const armedNow = (s.rules ?? []).some((r) => r.state === "armed");
+  // Autopilot's profit lock (ADR-121) is not the dialog's to arm or remove by saving: it does not make "Remove rules" available
+  const lockNow = (s.rules ?? []).some((r) => r.kind === "lock" && r.state === "armed");
+  const armedNow = (s.rules ?? []).some((r) => r.state === "armed" && r.kind !== "lock");
   const legsWord = `${open.length} open ${open.length === 1 ? "leg" : "legs"}`;
   const busy = setRules.isPending || clear.isPending;
   const kinds = [...new Set(bodies.map((b) => b.kind))];
@@ -648,6 +651,7 @@ export function RuleDialog({ book }: { book: PaperBook }) {
           <p className="mt-2 text-2xs text-muted-foreground" data-testid="rule-foot">
             {s.status === "live" ? "A refused exit is retried three times; a leg still open after that is named on the card and in the message. While the server is unreachable nothing fires: an exchange stop is the only guard then." : "Paper: the same engine, no orders, good for practice."}
             {stopLevel !== null && tgtLevel !== null && stopLevel >= tgtLevel ? " The stop is not below the target." : ""}
+            {lockNow ? " Autopilot's profit lock on this trade stays as it is when you arm; Disarm removes it with the rest." : ""}
             {problem ? ` ${problem}.` : ""}
           </p>
         </DialogBody>

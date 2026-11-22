@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, PLAYBOOKS, WEEKLY_PLAYBOOKS, type PlaybookProposal, autopilotPlaybookById, playbookById } from "@hapiecoin/pricing";
 import { AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_MAX_STRATEGIES, MAX_STRATEGY_NAME, StrategyList, AUTOPILOT_PAPER_ONLY_MESSAGE, AUTOPILOT_RUNS_RETENTION_DAYS, type AutopilotResults, type AutopilotRunDetail, type AutopilotView, type Instrument, type Quote, type SubscriptionView } from "@hapiecoin/schema";
 import { and, asc, eq } from "drizzle-orm";
-import { AUTOPILOT_MAX_MARK_AGE_MS, AUTOPILOT_NAME_SUFFIX, type AutopilotDeps, betterEntry, clockPlanFor, inWindow, liveDay, planFor, runAutopilot, skipText, structureKey } from "./autopilot.js";
+import { AUTOPILOT_MAX_MARK_AGE_MS, AUTOPILOT_NAME_SUFFIX, type AutopilotDeps, betterEntry, clockPlanFor, inWindow, liveDay, nextHourUtc, planFor, runAutopilot, skipText, structureKey } from "./autopilot.js";
 import { clearEodMemo } from "./chain-eod.js";
 import { autopilotRuns, instrumentMarks, ivSnapshots, plans, strategies, subscriptions, strategyLegs, strategyRules, userSettings, users } from "./db/schema.js";
 import { SEED } from "./db/seed.js";
@@ -104,7 +104,7 @@ describe("HC-TR-217 the pieces an entry is decided on", () => {
     expect(p.stopUsd).toBe(5);
     expect(p.timeStopDte).toBe(2);
     // no fee rule on the venue: no fees; a playbook with no stop and no time exit arms neither
-    expect(planFor({ ...butterfly, exits: undefined }, proposal({ maxProfit: 40 }), 0.001, null)).toEqual({ fees: 0, targetUsd: 4, stopUsd: null, timeStopDte: null, legStop: null, trailRestPct: null, ladder: null });
+    expect(planFor({ ...butterfly, exits: undefined }, proposal({ maxProfit: 40 }), 0.001, null)).toEqual({ fees: 0, targetUsd: 4, stopUsd: null, timeStopDte: null, legStop: null, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null });
   });
 
   it("HC-TR-217 no plan when the fees eat the trade (small premiums close to expiry) or the structure has no defined maximum", () => {
@@ -625,15 +625,15 @@ describe("HC-TR-225 playbooks entered by the clock: the evening strangles", () =
   it("HC-TR-225 the plan has no profit level and no strategy stop, only the stop on each sold option; a premium smaller than the fees is no plan", () => {
     // two fills of 0.1 BTC at 83,200: 0.832 each, 18 % GST, both ways
     const p = clockPlanFor(twice, sold(-53.6), 0.001, fees)!;
-    expect(p).toMatchObject({ targetUsd: null, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: null, ladder: null });
+    expect(p).toMatchObject({ targetUsd: null, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null });
     expect(p.fees).toBeCloseTo(2 * 2 * 0.832 * 1.18, 6);
-    expect(clockPlanFor(wings, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: null, trailRestPct: null, ladder: null });
+    expect(clockPlanFor(wings, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: null, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null });
     expect(clockPlanFor(twice, sold(-3.9), 0.001, fees)).toBeNull(); // collects less than the fills cost
     expect(clockPlanFor(twice, sold(2), 0.001, null)).toBeNull(); // a debit is not this trade
     // HC-TR-227: the take-half version has the same stops and a profit level at half the premium collected
-    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-take-half")!, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: 26.8, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: null, ladder: null });
+    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-take-half")!, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: 26.8, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null });
     // HC-TR-228: the trail-the-rest version has the same stops, which start a trail with a give-back of half
-    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-trail-rest")!, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: 50, ladder: null });
+    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-trail-rest")!, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: 50, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null });
     expect(clockPlanFor(autopilotPlaybookById("evening-strangle-take-half")!, sold(-0.015), 0.001, null)).toBeNull(); // half of it rounds to nothing
     // the window is from its first hour and before its second, in UTC
     const c = twice.clock!;
@@ -1105,6 +1105,135 @@ describe("HC-TR-239 an Autopilot strategy with a profit ladder (ADR-120)", () =>
     expect((await legsNow()).filter((l) => l.status === "open").map((l) => l.lots)).toEqual([75, 75]);
     expect((await legsNow()).filter((l) => l.status === "squared_off").map((l) => [l.lots, l.closeReason])).toEqual([[25, "target"], [25, "target"]]);
     expect((await t.db.select().from(strategies).where(eq(strategies.id, trade!.id)))[0]!.status).toBe("paper");
+    // what was written is what the screens can read
+    expect((await t.request("/v1/strategies", { cookie: me.cookie })).status).toBe(200);
+    expect((await t.request("/v1/autopilot", { cookie: me.cookie })).status).toBe(200);
+  });
+});
+
+describe("HC-TR-241 the lab's strategies in the engine: a profit lock, a timed exit, an afternoon entry (ADR-121)", () => {
+  const fees = { optionPct: 0.0001, optionCapOfPremium: 0.035, futurePct: 0.0005, gstPct: 0.18, settlementFee: true };
+  const sold = (entryCost: number): PlaybookProposal => ({ day: "2027-03-12", spot: 83_200, expiry: "2027-03-13", legs: [{ asset: "BTC", kind: "put", side: "sell", strike: "82400", expiry: "2027-03-13", lots: 100, price: "400" }, { asset: "BTC", kind: "call", side: "sell", strike: "84000", expiry: "2027-03-13", lots: 100, price: "400" }], entryCost, maxProfit: -entryCost, maxLoss: -Infinity });
+
+  it("HC-TR-241 the plan carries the lock as money (half and a quarter of the premium) and the exit hour; a floor that rounds to nothing is no plan; the next 20:00 UTC is today's or tomorrow's", () => {
+    const lock = clockPlanFor(autopilotPlaybookById("evening-strangle-lock")!, sold(-80), 0.001, null)!;
+    expect(lock).toMatchObject({ targetUsd: null, legStop: 3, lock: { atUsd: 40, floorUsd: 20 }, exitHourUtc: null, ladder: null });
+    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-lock")!, sold(-0.03), 0.001, null)).toBeNull();
+    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-out-early")!, sold(-80), 0.001, fees)).toMatchObject({ lock: null, exitHourUtc: 20, legStop: 3, takeTrailPct: null });
+    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-half-trail")!, sold(-80), 0.001, null)).toMatchObject({ targetUsd: 40, takeTrailPct: 20, legStop: 3 });
+    expect(new Date(nextHourUtc(Date.UTC(2027, 2, 12, 16, 5), 20)).toISOString()).toBe("2027-03-12T20:00:00.000Z");
+    expect(new Date(nextHourUtc(Date.UTC(2027, 2, 12, 20, 0), 20)).toISOString()).toBe("2027-03-13T20:00:00.000Z");
+    expect(new Date(nextHourUtc(Date.UTC(2027, 2, 12, 23, 30), 20)).toISOString()).toBe("2027-03-13T20:00:00.000Z");
+  });
+
+  it("HC-TR-241 in the evening the lock and the timed exit are armed at entry beside the stops; in the afternoon the late entry takes that day's expiry; each only in its own window", async () => {
+    const me = await t.signUp("autopilot-lab@hapiecoin.test");
+    const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
+    const LOCK = "evening-strangle-lock";
+    const OUT = "evening-strangle-out-early";
+    const NEAR = "evening-strangle-close";
+    const PM = "afternoon-strangle-take-half";
+    const TRAIL = "evening-strangle-half-trail";
+    await put({ enabled: true, strategies: [LOCK, OUT, NEAR, PM, TRAIL].map((playbookId) => ({ playbookId, exit: "own" })) }, me.cookie);
+    const market = (ts: number, expiries: readonly string[]): MarketSource => {
+      const products: Instrument[] = [];
+      const quotes: Quote[] = [];
+      for (const e of expiries)
+        for (let i = -30; i <= 30; i++) {
+          const k = 83_200 + i * 200;
+          const code = e.slice(8, 10) + e.slice(5, 7) + e.slice(2, 4);
+          const tv = 600 * Math.exp(-Math.abs(k - 83_200) / 900);
+          for (const [kind, letter, intrinsic] of [["call", "C", Math.max(83_200 - k, 0)], ["put", "P", Math.max(k - 83_200, 0)]] as const) {
+            const symbol = `${letter}-BTC-${k}-${code}`;
+            products.push(inst(symbol, kind, k, e));
+            quotes.push({ instrumentId: `delta_india:${symbol}`, ts, mark: (intrinsic + tv).toFixed(2), oi: "1", spot: "83200", markIv: 0.5 });
+          }
+        }
+      return { venue: "delta_india", products: () => Promise.resolve(products), tickers: (u) => Promise.resolve(u === "BTC" ? quotes : []) };
+    };
+    const pass = async (at: number, expiries: readonly string[]) => {
+      await snapshotOnce(t.deps, market(at - MIN, expiries), () => at - MIN);
+      return runAutopilot(deps(at, { maxOpen: undefined }), ["delta_india"]);
+    };
+    const mineNow = () => t.db.select().from(strategies).where(eq(strategies.userId, id));
+    const reasons = async () => new Map((await view(me.cookie)).runs.filter((r) => r.asset === "BTC").reverse().map((r) => [r.playbookId, r.reason]));
+    const legsOf = (sid: string) => t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, sid)).orderBy(asc(strategyLegs.position));
+    const rulesOf = (sid: string) => t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, sid));
+
+    // Friday 12 March 2027, 15:35 IST: the afternoon one enters on today's expiry, two hours out; the evening ones wait
+    const AFTERNOON = Date.UTC(2027, 2, 12, 10, 5, 0);
+    await pass(AFTERNOON, ["2027-03-12", "2027-03-13"]);
+    let all = await mineNow();
+    expect(all.map((x) => x.autopilotPlaybookId)).toEqual([PM]);
+    // 0.25 % of 83,200 is 208: 82,992 and 83,408, nearest listed 83,000 and 83,400
+    expect((await legsOf(all[0]!.id)).map((l) => `${l.side} ${l.kind} ${l.strike} ${l.expiry} x${l.lots}`)).toEqual(["sell put 83000 2027-03-12 x100", "sell call 83400 2027-03-12 x100"]);
+    expect((await rulesOf(all[0]!.id)).map((r) => r.kind).sort()).toEqual(["leg_stop", "leg_stop", "target"]);
+    expect((await reasons()).get(LOCK)).toBe("Outside its entry hours (9:30 to 10:30 PM IST)");
+
+    // the same evening, 21:35 IST: the three evening ones enter on tomorrow's expiry; the afternoon one is outside its hours
+    const EVENING = Date.UTC(2027, 2, 12, 16, 5, 0);
+    await pass(EVENING, ["2027-03-13", "2027-03-14"]);
+    all = await mineNow();
+    expect(all.map((x) => x.autopilotPlaybookId).sort()).toEqual([LOCK, NEAR, OUT, PM, TRAIL].sort());
+    expect((await reasons()).get(PM)).toBe("Outside its entry hours (3:30 to 4:30 PM IST)");
+    const of = (pb: string) => all.find((x) => x.autopilotPlaybookId === pb)!;
+    // the lock: half and a quarter of the premium collected, beside a stop on each option, and no target
+    const lockLegs = await legsOf(of(LOCK).id);
+    const credit = lockLegs.reduce((sum, l) => sum + Number(l.price) * l.lots * 0.001, 0);
+    const lockRules = await rulesOf(of(LOCK).id);
+    expect(lockRules.map((r) => r.kind).sort()).toEqual(["leg_stop", "leg_stop", "lock"]);
+    const lock = lockRules.find((r) => r.kind === "lock")!;
+    expect(Number(lock.value)).toBeCloseTo(credit / 2, 2);
+    expect(Number(lock.thresholdUsd)).toBeCloseTo(credit / 4, 2);
+    expect(lock).toMatchObject({ trigger: "money", scope: "strategy", state: "armed", peakPnl: null });
+    const lockLine = (await view(me.cookie)).runs.find((r) => r.kind === "entered" && r.strategyId === of(LOCK).id)!;
+    expect(lockLine.detail).toMatchObject({ legStop: 3, lock: { at: lock.value, floor: lock.thresholdUsd } });
+    // out early: a time exit at 20:00 UTC the same evening (01:30 IST)
+    const outRules = await rulesOf(of(OUT).id);
+    expect(outRules.map((r) => r.kind).sort()).toEqual(["leg_stop", "leg_stop", "time"]);
+    expect(outRules.find((r) => r.kind === "time")).toMatchObject({ trigger: "at", value: "2027-03-12T20:00:00.000Z", thresholdUsd: String(Date.UTC(2027, 2, 12, 20)) });
+    expect((await view(me.cookie)).runs.find((r) => r.kind === "entered" && r.strategyId === of(OUT).id)!.detail).toMatchObject({ exitAt: "2027-03-12T20:00:00.000Z" });
+    // half then trail: a target at half the premium that trails with a give-back of 20 % instead of closing
+    const trailTarget = (await rulesOf(of(TRAIL).id)).find((r) => r.kind === "target")!;
+    expect(trailTarget).toMatchObject({ trigger: "money", trailTrigger: "pct", trailValue: "20", peakPnl: null });
+    expect(Number(trailTarget.thresholdUsd)).toBeCloseTo(credit / 2, 2);
+    expect((await view(me.cookie)).runs.find((r) => r.kind === "entered" && r.strategyId === of(TRAIL).id)!.detail).toMatchObject({ takeTrailPct: 20, legStop: 3 });
+    // half a per cent away: 0.5 % of 83,200 is 416, nearest listed 82,800 and 83,600
+    expect((await legsOf(of(NEAR).id)).map((l) => `${l.side} ${l.kind} ${l.strike}`)).toEqual(["sell put 82800", "sell call 83600"]);
+
+    // the engine on the rows the job made: at 01:30 IST the timed exit closes its trade at the marks
+    const marks = new Map((await legsOf(of(OUT).id)).map((l) => [l.symbol, 0.9 * Number(l.price)]));
+    for (const x of all) for (const l of await legsOf(x.id)) if (!marks.has(l.symbol)) marks.set(l.symbol, Number(l.price));
+    await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks, spot: null }) }, () => Date.UTC(2027, 2, 12, 19, 59));
+    expect((await mineNow()).find((x) => x.id === of(OUT).id)!.status).toBe("paper");
+    await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks, spot: null }) }, () => Date.UTC(2027, 2, 12, 20, 0, 5));
+    expect((await mineNow()).find((x) => x.id === of(OUT).id)).toMatchObject({ status: "archived", closeReason: "squared_off" });
+    // the lock and the trail the job armed, run by the engine. Every option at 40 % of its entry: each trade is up 60 %
+    // of its premium, past half. The lock is set and closes nothing; the trailing target starts and closes nothing.
+    const LATER = Date.UTC(2027, 2, 12, 20, 30);
+    const tickAt = async (share: number, ms: number) => {
+      const m = new Map<string, number>();
+      for (const x of await mineNow()) for (const l of await legsOf(x.id)) if (l.status === "open") m.set(l.symbol, share * Number(l.price));
+      return evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: m, spot: null }) }, () => ms);
+    };
+    const stateOf = async (pb: string) => (await mineNow()).find((x) => x.autopilotPlaybookId === pb)!.status;
+    await tickAt(0.4, LATER);
+    expect(await stateOf(LOCK)).toBe("paper");
+    expect(await stateOf(TRAIL)).toBe("paper");
+    expect(Number((await rulesOf(of(LOCK).id)).find((r) => r.kind === "lock")!.peakPnl)).toBeCloseTo(0.6 * credit, 1);
+    expect(Number((await rulesOf(of(TRAIL).id)).find((r) => r.kind === "target")!.peakPnl)).toBeCloseTo(0.6 * credit, 1);
+    // back to 45 % of the premium: the trail has given back a quarter of its best (more than its fifth) and closes;
+    // the lock's floor is at 25 %, so its trade stays
+    await tickAt(0.55, LATER + MIN);
+    expect((await mineNow()).find((x) => x.id === of(TRAIL).id)).toMatchObject({ status: "archived", closeReason: "target" });
+    expect(await stateOf(LOCK)).toBe("paper");
+    // down to 20 % of the premium: under the floor, the lock closes its trade; one fire a strategy a tick
+    await tickAt(0.8, LATER + 2 * MIN);
+    const locked = (await mineNow()).find((x) => x.id === of(LOCK).id)!;
+    expect(locked).toMatchObject({ status: "archived", closeReason: "target" });
+    expect(Number(locked.realizedPnl)).toBeCloseTo(0.2 * credit, 1);
+    // the bolder one, with the stop alone, is still held
+    expect(await stateOf(NEAR)).toBe("paper");
     // what was written is what the screens can read
     expect((await t.request("/v1/strategies", { cookie: me.cookie })).status).toBe(200);
     expect((await t.request("/v1/autopilot", { cookie: me.cookie })).status).toBe(200);

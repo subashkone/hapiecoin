@@ -38,7 +38,7 @@ import {
   CLOSE_REASON_OF_KIND,
 } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
-import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne, or } from "drizzle-orm";
 import { auditFrom } from "../audit.js";
 import { assertEntitled } from "../entitlements.js";
 import { brokerCredentials, brokers, strategies, strategyAdjustments, strategyLegs, strategyOrders, strategyPnl, strategyRules } from "../db/schema.js";
@@ -791,7 +791,8 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
         // tick, so a changed give-back starts the trail again from where the rest stands (the engine sets the best)
         const [trailRow] = await tx.select().from(strategyRules).where(and(eq(strategyRules.strategyId, row.id), eq(strategyRules.kind, "trail"), eq(strategyRules.state, "armed"))).limit(1).for("update");
         if (!trailRow && body.rules.some((r) => r.kind === "trail")) throw errors.badRequest("A trail on the rest starts when a leg stop set to trail the rest fires");
-        await tx.delete(strategyRules).where(and(eq(strategyRules.strategyId, row.id), inArray(strategyRules.state, ["armed", "disarmed"])));
+        // a profit lock (ADR-121) is Autopilot's: the dialog cannot type one, so saving the other rules leaves it as it is
+        await tx.delete(strategyRules).where(and(eq(strategyRules.strategyId, row.id), inArray(strategyRules.state, ["armed", "disarmed"]), ne(strategyRules.kind, "lock")));
         for (const [i, r] of body.rules.entries()) {
           const stored = r.trigger === "settle" ? String(Number(r.value)) : r.kind === "trail" && r.trigger === "money" ? toDecimal(Number(r.value), 2) : r.value; // "015" reads as 15
           await tx.insert(strategyRules).values({

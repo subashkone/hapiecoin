@@ -1,6 +1,6 @@
 # Paper trading, live trading, rules and accounts
 
-Part of the [HapieCoin feature guide](README.md). 127 traced features on 35 screens; 127 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 129 traced features on 35 screens; 129 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -63,6 +63,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-234 | The Autopilot settings hold every playbook the catalogue offers | the settings accept up to AUTOPILOT_MAX_STRATEGIES (500) playbooks, each at most once; the limit was 32 and the 33rd playbook switched on made the saved settings unreadable by the screen | built | unit (schema) |
 | HC-TR-235 | Autopilot strangles on ETH and XAUT, each from that coin's own backtest | twenty playbooks that trade one coin each: six ETH and four XAUT evening strangles, five ETH weekly (four entered on a Friday, one on a Tuesday) and five ETH monthly ones on month-end expiries; strikes are the listed ones a percentage of that coin's spot away and the size is that coin's lot; Autopilot looks at XAUT as well as BTC and ETH; XAUT settles at 16:00 UTC, so its evening entry is the hour after one expiry for the next, with no entry on a Saturday evening; XAUT has no weekly or monthly playbook; the screen lists the rows under the coin filter | built | integration (api) |
 | HC-TR-239 | Autopilot strategies with a profit ladder | a clock playbook may carry a ladder; Autopilot arms a step at each level, each an equal part of what is left, beside the stop on each sold option; three paper playbooks use 25 / 50 / 75 with a stop at triple: BTC daily, ETH daily and the BTC Friday weekly, beside the existing ones | built | integration (api) |
+| HC-TR-241 | Ten Autopilot paper strategies from the strategy lab | a clock playbook may carry a profit lock, an exit hour or a trail from its take level; ten playbooks beside the existing ones: the lock on BTC daily and the BTC Friday weekly, out by 1:30 AM IST on BTC and ETH, half then trail on BTC and ETH, strikes 0.5 % away on BTC and ETH, ETH with wings at 3 % and no stop, and a BTC entry two hours before settlement whose card says the evidence is weak | built | integration (api) |
 
 ### Trading · Protect dialog / cards · Details · `/desk`
 
@@ -73,6 +74,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-236 | A profit step closes part of a paper trade and keeps the rest | a rule of kind step fires when the lots still open are up by its level (their gain over the premium they were opened for) and closes its share of every open leg in whole lots, never none and never the last lot; a ladder is up to four steps and a last part with no rule; steps exclude a target, do not disarm the other rules, are judged lowest level first, and are refused on a live trade | built | integration (api) |
 | HC-TR-237 | Take profit in steps in the Protect dialog | a box under the Target with presets (Early 10 / 25 / 40 / 55, Standard 25 / 50 / 75, Late 50 / 75, each with the last part held) and custom rows of a level and whole lots; it shows what each step banks, turns the target off when ticked and the other way round, and refuses lots that do not add up, levels that do not rise, a level already reached, and a live trade | built | component (web) |
 | HC-TR-238 | The card counts the profit steps taken | the rules line of a trade reads "profit steps 1 of 4 taken, next at 50 %" beside its other armed rules, and "the rest held" once the last step has fired | built | unit (web) |
+| HC-TR-240 | A profit lock holds a fixed floor under a trade once it has been well up | a rule of kind lock does nothing until the strategy's profit reaches its level; from that tick the whole strategy is closed if the profit falls back to a fixed floor; armed by Autopilot only, kept when the dialog saves the other rules, shown on the card as the floor to come and then as the exit it holds | built | integration (api) |
 
 ### Trading · Paper / Live cards · analysis pane · `/desk`
 

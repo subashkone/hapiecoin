@@ -161,7 +161,7 @@ export type StrategyAdjustment = z.infer<typeof StrategyAdjustment>;
  * trail is never armed by hand: the engine arms it when a leg stop set to trail the rest fires (ADR-104), and it
  * watches what the legs still open have gained since that moment.
  */
-export const RULE_KINDS = ["stop", "target", "leg_stop", "spot", "time", "trail", "step"] as const;
+export const RULE_KINDS = ["stop", "target", "leg_stop", "spot", "time", "trail", "step", "lock"] as const;
 export const RuleKind = z.enum(RULE_KINDS);
 export type RuleKind = z.infer<typeof RuleKind>;
 /**
@@ -173,7 +173,7 @@ export type RuleKind = z.infer<typeof RuleKind>;
 export const RULE_TRIGGERS = ["money", "pct", "multiple", "price", "above", "below", "at", "dte", "settle"] as const;
 export const RuleTrigger = z.enum(RULE_TRIGGERS);
 export type RuleTrigger = z.infer<typeof RuleTrigger>;
-export const RULE_TRIGGERS_OF: Record<RuleKind, readonly RuleTrigger[]> = { stop: ["money", "pct"], target: ["money", "pct"], leg_stop: ["multiple", "price"], spot: ["above", "below"], time: ["at", "dte", "settle"], trail: ["money", "pct"], step: ["pct"] };
+export const RULE_TRIGGERS_OF: Record<RuleKind, readonly RuleTrigger[]> = { stop: ["money", "pct"], target: ["money", "pct"], leg_stop: ["multiple", "price"], spot: ["above", "below"], time: ["at", "dte", "settle"], trail: ["money", "pct"], step: ["pct"], lock: ["money"] };
 /** A settle rule's lead: at least a minute, at most twelve hours before the settlement instant. */
 export const SETTLE_LEAD_MINUTES = { min: 1, max: 720, default: 15 } as const;
 /** What a fire exits: the whole strategy, or (leg_stop only) the watched leg alone. */
@@ -190,11 +190,11 @@ export type RuleState = z.infer<typeof RuleState>;
 export const RULE_CHANNELS = ["push", "email", "telegram"] as const;
 export const RuleChannel = z.enum(RULE_CHANNELS);
 export type RuleChannel = z.infer<typeof RuleChannel>;
-export const RULE_KIND_LABELS: Record<RuleKind, string> = { stop: "Stop loss", target: "Target", leg_stop: "Leg stop", spot: "Spot level", time: "Time exit", trail: "Trail on the rest", step: "Profit step" };
+export const RULE_KIND_LABELS: Record<RuleKind, string> = { stop: "Stop loss", target: "Target", leg_stop: "Leg stop", spot: "Spot level", time: "Time exit", trail: "Trail on the rest", step: "Profit step", lock: "Profit lock" };
 /** Judging and display order: the protective kinds first, the target last (were two crossed at once, the protective one wins). */
-export const RULE_KIND_ORDER: Record<RuleKind, number> = { stop: 0, leg_stop: 1, spot: 2, time: 3, trail: 4, step: 5, target: 6 };
+export const RULE_KIND_ORDER: Record<RuleKind, number> = { stop: 0, leg_stop: 1, spot: 2, time: 3, trail: 4, lock: 5, step: 6, target: 7 };
 /** The close reason a fire books on the legs and the strategy. */
-export const CLOSE_REASON_OF_KIND: Record<RuleKind, CloseReason> = { stop: "stopped", target: "target", leg_stop: "stopped", spot: "stopped", time: "squared_off", trail: "stopped", step: "target" };
+export const CLOSE_REASON_OF_KIND: Record<RuleKind, CloseReason> = { stop: "stopped", target: "target", leg_stop: "stopped", spot: "stopped", time: "squared_off", trail: "stopped", step: "target", lock: "target" };
 
 /**
  * Take profit in steps (ADR-120; HC-TR-236). A step is one rule: when the lots still open are up by `value` per cent
@@ -203,6 +203,13 @@ export const CLOSE_REASON_OF_KIND: Record<RuleKind, CloseReason> = { stop: "stop
  * a ladder; the last part has no rule and is held to a stop or to settlement.
  */
 export const LADDER_STEPS = { min: 1, max: 4 } as const;
+/**
+ * A profit lock (ADR-121; HC-TR-240): nothing happens until the strategy's profit (realised plus open) reaches
+ * `value` USD; from then on the whole strategy is closed if the profit falls back to `thresholdUsd`, a fixed floor
+ * (it does not rise with the profit: that is a trailing target). `peakPnl` is null until the level is reached and
+ * then holds the profit seen at that tick. Armed by Autopilot only.
+ */
+export const isLockArmed = (r: { kind: string; peakPnl?: string | null | undefined }): boolean => r.kind === "lock" && typeof r.peakPnl === "string";
 /** The lots a step closes on a leg holding `lots`: its share in whole lots, never none and never all. Zero when the leg cannot be split. */
 export function stepLots(lots: number, closeShare: string | number): number {
   if (lots < 2) return 0;
@@ -330,6 +337,8 @@ export const RuleBody = z
     } else if (r.trigger === "settle") {
       if (!/^\d{1,3}$/.test(r.value) || Number(r.value) < SETTLE_LEAD_MINUTES.min || Number(r.value) > SETTLE_LEAD_MINUTES.max) ctx.addIssue({ code: "custom", message: `expected whole minutes, ${SETTLE_LEAD_MINUTES.min} to ${SETTLE_LEAD_MINUTES.max}`, path: ["value"] });
     } else if (!isPositiveDecimal(r.value)) ctx.addIssue({ code: "custom", message: "must be greater than zero", path: ["value"] });
+    // a profit lock (ADR-121) is armed by Autopilot at entry, like a trail on the rest it is never typed
+    if (r.kind === "lock") ctx.addIssue({ code: "custom", message: "a profit lock is armed by Autopilot", path: ["kind"] });
     // a profit step is a share of the open part's own premium, which the engine reads each tick: no basis is sent
     if (r.kind === "step") {
       if (r.closeShare === undefined || !(Number(r.closeShare) > 0 && Number(r.closeShare) < 1)) ctx.addIssue({ code: "custom", message: "a profit step closes a share of the lots, above 0 and below 1", path: ["closeShare"] });
@@ -408,7 +417,7 @@ export function ruleLevel(r: Pick<RuleBody, "kind" | "trigger" | "value" | "basi
   if (r.kind === "leg_stop") return r.trigger === "multiple" ? toDecimal(Number(r.value) * Number(entryPrice ?? "0"), 2) : r.value;
   if (r.kind === "spot") return r.value;
   if (r.kind === "trail") return "0"; // the route keeps the running trail's own level; nothing typed sets it
-  if (r.kind === "step") return r.value; // per cent of the open part's premium
+  if (r.kind === "step" || r.kind === "lock") return r.value; // a step: per cent of the open part's premium; a lock is never armed through a body
   return r.trigger === "at" ? String(Date.parse(r.value)) : r.value;
 }
 

@@ -92,6 +92,12 @@ export const AutopilotRunDetail = z.strictObject({
   trailRestPct: z.number().positive().optional(),
   /** ADR-120: the levels of a profit ladder, in per cent of the premium of the lots still open; an equal part is closed at each and the last part held. */
   ladder: z.array(z.number().positive()).min(1).max(4).optional(),
+  /** ADR-121: a profit lock, in USD: the profit that arms it and the floor it then closes the trade at. */
+  lock: z.strictObject({ at: DecimalString, floor: DecimalString }).optional(),
+  /** ADR-121: the profit level is not an exit: from it the trade is trailed with this percentage give-back. */
+  takeTrailPct: z.number().positive().optional(),
+  /** ADR-121: the instant the whole trade is closed at, whatever the profit. */
+  exitAt: IsoDateTime.optional(),
   legs: z.array(z.strictObject({ side: z.enum(["buy", "sell"]), kind: z.enum(["call", "put", "future"]), strike: z.string(), price: z.string() })).optional(),
   /** noted: the open trade's net premium the fresh one is compared with. */
   openEntryCost: DecimalString.optional(),

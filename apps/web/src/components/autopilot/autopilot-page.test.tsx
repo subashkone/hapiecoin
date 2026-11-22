@@ -12,7 +12,7 @@ import { PortfolioBar } from "@/components/chrome/PortfolioBar";
 import { Workspace } from "@/components/workspace/Workspace";
 import { fmtExpiry, fmtStrike } from "@/lib/format";
 import { useUiStore } from "@/lib/store";
-import { AutopilotPage } from "./AutopilotPage";
+import { AutopilotPage, istClock } from "./AutopilotPage";
 
 const EMAIL = "autopilot@example.com";
 let mock: MockFetch;
@@ -261,6 +261,18 @@ describe("HC-TR-226 the Autopilot screen: the evening strategies", () => {
     expect(within(card("evening-strangle-trail-rest")).getByTestId("autopilot-card-how").textContent).toContain("Each sold option is bought back if its price reaches 2 times what it was sold for. After that, the profit on the other one is trailed and it is closed when it gives back 50 % of its best.");
     // HC-TR-227: the quick-profit version says both of its exits
     expect(within(card("evening-strangle-take-half")).getByTestId("autopilot-card-how").textContent).toContain("The whole trade is closed once it is up by 50 % of the premium collected. Each sold option is bought back if its price reaches 2 times what it was sold for.");
+    // HC-TR-239 / HC-TR-241: a ladder, a profit lock, a timed exit and a trail from the take level, each in the trader's words
+    expect(within(card("evening-strangle-steps")).getByTestId("autopilot-card-how").textContent).toContain("An equal part of the lots is closed each time the lots still open are up by 25, 50, 75 % of their premium, and the last part is held.");
+    expect(within(card("evening-strangle-lock")).getByTestId("autopilot-card-how").textContent).toContain("Once the trade is up by 50 % of the premium a floor is set at 25 %: the whole trade is closed if the profit falls back there.");
+    expect(within(card("evening-strangle-out-early")).getByTestId("autopilot-card-how").textContent).toContain("Everything is closed at 1:30 AM IST, whatever the profit.");
+    expect(within(card("evening-strangle-half-trail")).getByTestId("autopilot-card-how").textContent).toContain("it is not closed: it is trailed, and closed when the profit gives back 20 % of its best.");
+    expect(card("evening-strangle-lock").textContent).toContain("a floor at 25 % of the premium once it is up 50 %");
+    expect(card("evening-strangle-out-early").textContent).toContain("out at 1:30 AM IST");
+    expect(card("evening-strangle-half-trail").textContent).toContain("trail from 50 % of the premium");
+    expect(card("evening-strangle-steps").textContent).toContain("profit in steps at 25 / 50 / 75 %");
+    expect([istClock(20), istClock(10), istClock(0), istClock(6), istClock(18)]).toEqual(["1:30 AM", "3:30 PM", "5:30 AM", "11:30 AM", "11:30 PM"]);
+    expect(istClock(7)).toBe("12:30 PM");
+    expect(istClock(19)).toBe("12:30 AM");
     // a recorded playbook keeps its two styles to choose from, and never offers "own"
     const butterfly = card("pin-butterfly");
     expect(within(butterfly).queryByTestId("autopilot-card-own")).toBeNull();
@@ -324,8 +336,8 @@ describe("HC-TR-232 the Autopilot screen: by expiry and by coin", () => {
     renderWithProviders(<AutopilotPage />);
     const u = userEvent.setup();
     await waitFor(() => expect(screen.getAllByTestId("autopilot-trade")).toHaveLength(3));
-    expect(screen.getAllByTestId("autopilot-filter-cadence").map((b) => b.textContent)).toEqual([`All · ${TRADABLE.length}`, "Trend · 6", "Daily · 19", "Weekly · 17", "Monthly · 15"]);
-    expect(screen.getAllByTestId("autopilot-filter-coin").map((b) => b.textContent)).toEqual(["All", `BTC · ${TRADABLE.length - 21}`, "ETH · 23", "XAUT · 4"]); // HC-TR-235: six ETH and four XAUT evening strangles, five ETH weekly and five ETH monthly ones of their own
+    expect(screen.getAllByTestId("autopilot-filter-cadence").map((b) => b.textContent)).toEqual([`All · ${TRADABLE.length}`, "Trend · 6", "Daily · 28", "Weekly · 18", "Monthly · 15"]);
+    expect(screen.getAllByTestId("autopilot-filter-coin").map((b) => b.textContent)).toEqual(["All", `BTC · ${TRADABLE.length - 25}`, "ETH · 27", "XAUT · 4"]); // HC-TR-235: six ETH and four XAUT evening strangles, five ETH weekly and five ETH monthly ones of their own
     expect(screen.getByTestId("autopilot-filters").dataset["filtered"]).toBe("false");
     expect(screen.queryByTestId("autopilot-filter-note")).toBeNull();
     expect(screen.getByRole("group", { name: "Expiry" })).toBeTruthy();
@@ -333,7 +345,7 @@ describe("HC-TR-232 the Autopilot screen: by expiry and by coin", () => {
 
     await press(u, "cadence", "weekly");
     expect(screen.getAllByTestId("autopilot-group").map((g) => g.dataset["group"])).toEqual(["Weekly strangles, Friday expiry"]);
-    expect(cards()).toHaveLength(17);
+    expect(cards()).toHaveLength(18);
     expect(screen.getAllByTestId("autopilot-trade").map((x) => x.dataset["id"])).toEqual(["w1"]);
     expect(screen.getAllByTestId("autopilot-run")).toHaveLength(1);
     expect(screen.getByTestId("autopilot-filter-note")).toBeTruthy();
@@ -395,7 +407,7 @@ describe("HC-TR-230 the Autopilot screen: the weekly strangles", () => {
     const groups = screen.getAllByTestId("autopilot-group");
     expect(groups.map((g) => g.dataset["group"])).toEqual(["Longer-dated strategies", "Evening strangles, daily expiry", "Weekly strangles, Friday expiry", "Monthly strangles, month-end expiry"]);
     expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").map((c) => c.dataset["playbook"]))).toEqual([TRADABLE.filter((p) => !p.clock), TRADABLE.filter((p) => p.clock && p.clock.weekdayUtc === undefined && p.clock.cadence !== "monthly"), TRADABLE.filter((p) => p.clock?.weekdayUtc !== undefined), TRADABLE.filter((p) => p.clock?.cadence === "monthly")].map((g) => g.map((p) => p.id)));
-    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 19, 17, 15]);
+    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 28, 18, 15]);
     // HC-TR-233: a monthly row says when it enters, and its backtest reads per month
     const monthly = screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === "monthly-strangle-premium-1000")!;
     expect(monthly.textContent).toContain("Enters on the first evening a month-end expiry is 60 to 75 days out, once per expiry");

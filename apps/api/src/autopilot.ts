@@ -78,6 +78,12 @@ export const inWindow = (c: PlaybookClock, nowMs: number): boolean => {
   const h = d.getUTCHours();
   return h >= c.fromHourUtc && h < c.toHourUtc && (c.weekdayUtc === undefined || d.getUTCDay() === c.weekdayUtc);
 };
+/** The first instant after `fromMs` at which the UTC clock reads `hour`:00. */
+export const nextHourUtc = (fromMs: number, hour: number): number => {
+  const d = new Date(fromMs);
+  const sameDay = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hour);
+  return sameDay > fromMs ? sameDay : sameDay + 86_400_000;
+};
 /** The index that holds "one open trade per key and structure"; a write it refuses means another pass got there first. */
 const OPEN_UQ = "strategies_autopilot_open_uq";
 
@@ -134,6 +140,12 @@ export interface AutopilotPlan {
   trailRestPct: number | null;
   /** ADR-120: the levels of a profit ladder (an equal part of every leg closed at each, the last part held); null without one. */
   ladder: readonly number[] | null;
+  /** ADR-121: a profit lock in USD (the profit that arms it, the floor it closes at); null without one. */
+  lock: { atUsd: number; floorUsd: number } | null;
+  /** ADR-121: the hour (UTC) the whole trade is closed at after the entry; null: no timed exit of its own. */
+  exitHourUtc: number | null;
+  /** ADR-121: the profit level starts a trail with this percentage give-back instead of closing; null: it closes (or follows the trader's exit style). */
+  takeTrailPct: number | null;
 }
 
 type FeeRule = Parameters<typeof fillFee>[3] | null;
@@ -156,7 +168,10 @@ export function clockPlanFor(p: Playbook, proposal: PlaybookProposal, unitsPerLo
   const take = p.clock?.takeProfitOfCredit;
   // a profit level that rounds to nothing would close the trade on the first tick (as planFor refuses for its own)
   if (take !== undefined && credit * take < 0.01) return null;
-  return { fees, targetUsd: take === undefined ? null : credit * take, stopUsd: null, timeStopDte: null, legStop: p.clock?.legStop ?? null, trailRestPct: p.clock?.trailRestPct ?? null, ladder: p.clock?.ladder ?? null };
+  const lock = p.clock?.lock;
+  // a floor that rounds to nothing is no floor: the trade would close at once when armed
+  if (lock !== undefined && credit * lock.floor < 0.01) return null;
+  return { fees, targetUsd: take === undefined ? null : credit * take, stopUsd: null, timeStopDte: null, legStop: p.clock?.legStop ?? null, trailRestPct: p.clock?.trailRestPct ?? null, ladder: p.clock?.ladder ?? null, lock: lock === undefined ? null : { atUsd: credit * lock.at, floorUsd: credit * lock.floor }, exitHourUtc: p.clock?.exitHourUtc ?? null, takeTrailPct: p.clock?.takeTrailPct ?? null };
 }
 
 /**
@@ -176,7 +191,7 @@ export function planFor(p: Playbook, proposal: PlaybookProposal, unitsPerLot: nu
   const stopPct = p.exits?.stopPct;
   const stopUsd = stopPct === undefined ? null : maxLoss * stopPct;
   if (stopUsd !== null && stopUsd < 0.01) return null;
-  return { fees, targetUsd, stopUsd, timeStopDte: p.exits?.timeStopDte ?? null, legStop: null, trailRestPct: null, ladder: null };
+  return { fees, targetUsd, stopUsd, timeStopDte: p.exits?.timeStopDte ?? null, legStop: null, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null };
 }
 
 /** Whether `fresh` (a net premium: paid positive, received negative) is better than `open` by the noted margin; judged in cents. */
@@ -205,7 +220,7 @@ function detailOf(proposal: PlaybookProposal, plan: AutopilotPlan | null, nowMs:
     maxLoss: money(proposal.maxLoss),
     capital: money(Math.abs(proposal.maxLoss)),
     legs: proposal.legs.map((l) => ({ side: l.side, kind: l.kind, strike: l.strike, price: l.price })),
-    ...(plan ? { fees: toDecimal(plan.fees, 2), ...(plan.targetUsd === null ? {} : { targetUsd: toDecimal(plan.targetUsd, 2) }), stopUsd: plan.stopUsd === null ? null : toDecimal(plan.stopUsd, 2), ...(plan.legStop === null ? {} : { legStop: plan.legStop }), ...(plan.trailRestPct === null ? {} : { trailRestPct: plan.trailRestPct }), ...(plan.ladder === null ? {} : { ladder: [...plan.ladder] }) } : {}),
+    ...(plan ? { fees: toDecimal(plan.fees, 2), ...(plan.targetUsd === null ? {} : { targetUsd: toDecimal(plan.targetUsd, 2) }), stopUsd: plan.stopUsd === null ? null : toDecimal(plan.stopUsd, 2), ...(plan.legStop === null ? {} : { legStop: plan.legStop }), ...(plan.trailRestPct === null ? {} : { trailRestPct: plan.trailRestPct }), ...(plan.ladder === null ? {} : { ladder: [...plan.ladder] }), ...(plan.lock === null ? {} : { lock: { at: toDecimal(plan.lock.atUsd, 2), floor: toDecimal(plan.lock.floorUsd, 2) } }), ...(plan.takeTrailPct === null ? {} : { takeTrailPct: plan.takeTrailPct }), ...(plan.exitHourUtc === null ? {} : { exitAt: new Date(nextHourUtc(nowMs, plan.exitHourUtc)).toISOString() }) } : {}),
     ...(exit ? { exit } : {}),
   };
 }
@@ -438,7 +453,7 @@ async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, pl
     const rules: ReturnType<typeof rule>[] = [];
     if (plan.targetUsd !== null) {
       const target = toDecimal(plan.targetUsd, 2);
-      rules.push(rule({ kind: "target", trigger: "money", value: target, thresholdUsd: target, ...(exit === "trail" ? { trailTrigger: "pct" as const, trailValue: AUTOPILOT_TRAIL_GIVE_PCT } : {}) }));
+      rules.push(rule({ kind: "target", trigger: "money", value: target, thresholdUsd: target, ...(plan.takeTrailPct !== null ? { trailTrigger: "pct" as const, trailValue: String(plan.takeTrailPct) } : exit === "trail" ? { trailTrigger: "pct" as const, trailValue: AUTOPILOT_TRAIL_GIVE_PCT } : {}) }));
     }
     // ADR-112: each sold option has its own stop at a multiple of the price it was sold at; the other legs stay
     if (plan.legStop !== null)
@@ -450,6 +465,12 @@ async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, pl
     if (plan.ladder !== null) {
       const levels = plan.ladder;
       levels.forEach((pct, i) => rules.push(rule({ kind: "step", trigger: "pct", value: String(pct), thresholdUsd: String(pct), closeShare: toDecimal(1 / (levels.length + 1 - i), 6) })));
+    }
+    // ADR-121: a profit lock waits for its level, then holds a fixed floor; a timed exit closes everything at its hour
+    if (plan.lock !== null) rules.push(rule({ kind: "lock", trigger: "money", value: toDecimal(plan.lock.atUsd, 2), thresholdUsd: toDecimal(plan.lock.floorUsd, 2) }));
+    if (plan.exitHourUtc !== null) {
+      const exitMs = nextHourUtc(at.getTime(), plan.exitHourUtc);
+      rules.push(rule({ kind: "time", trigger: "at", value: new Date(exitMs).toISOString(), thresholdUsd: String(exitMs) }));
     }
     if (plan.stopUsd !== null) rules.push(rule({ kind: "stop", trigger: "money", value: toDecimal(plan.stopUsd, 2), thresholdUsd: toDecimal(-plan.stopUsd, 2) }));
     if (plan.timeStopDte !== null) rules.push(rule({ kind: "time", trigger: "dte", value: String(plan.timeStopDte), thresholdUsd: String(plan.timeStopDte) }));

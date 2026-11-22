@@ -8509,6 +8509,36 @@
   "evidence": "ADR-120 (22 Nov 2026): packages/pricing/src/playbooks.ts (PlaybookClock.ladder, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS), apps/api/src/autopilot.ts (plan.ladder), packages/schema/src/autopilot.ts (run detail), AutopilotPage.tsx; tests: packages/pricing/src/playbooks.test.ts HC-TR-239, apps/api/src/autopilot.test.ts HC-TR-239"
  },
  {
+  "id": "HC-TR-240",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/desk",
+  "screen": "Trading · Protect dialog / cards · Details",
+  "feature": "A profit lock holds a fixed floor under a trade once it has been well up",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "integration (api)",
+  "acceptance": "a rule of kind lock does nothing until the strategy's profit reaches its level; from that tick the whole strategy is closed if the profit falls back to a fixed floor; armed by Autopilot only, kept when the dialog saves the other rules, shown on the card as the floor to come and then as the exit it holds",
+  "evidence": "ADR-121, GAPS #156 (22 Nov 2026): packages/schema/src/strategies.ts (lock, isLockArmed), apps/api/src/rules-engine.ts, apps/api/src/routes/strategies.ts (PUT rules keeps a lock), RuleDialog.tsx (ruleText); tests: packages/schema/src/strategies.test.ts HC-TR-240, apps/api/src/rules-engine.test.ts HC-TR-240, rules.test.tsx HC-TR-237 (the lock's words)"
+ },
+ {
+  "id": "HC-TR-241",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "Ten Autopilot paper strategies from the strategy lab",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "integration (api)",
+  "acceptance": "a clock playbook may carry a profit lock, an exit hour or a trail from its take level; ten playbooks beside the existing ones: the lock on BTC daily and the BTC Friday weekly, out by 1:30 AM IST on BTC and ETH, half then trail on BTC and ETH, strikes 0.5 % away on BTC and ETH, ETH with wings at 3 % and no stop, and a BTC entry two hours before settlement whose card says the evidence is weak",
+  "evidence": "ADR-121, GAPS #156 (22 Nov 2026): packages/pricing/src/playbooks.ts (PlaybookClock.lock / exitHourUtc / takeTrailPct, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS), apps/api/src/autopilot.ts (plan, nextHourUtc), packages/schema/src/autopilot.ts (run detail), AutopilotPage.tsx (istClock); tests: packages/pricing/src/playbooks.test.ts HC-TR-241, apps/api/src/autopilot.test.ts HC-TR-241, autopilot-page.test.tsx (the exit words)"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",
