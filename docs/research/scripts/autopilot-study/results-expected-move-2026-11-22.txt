@@ -1,0 +1,180 @@
+## BTC daily: 106 expiries, entered 20 h before settlement; straddle (expected move) as a share of the spot: lowest 0.47 %, median 1.09 %, highest 2.90 %
+
+   fixed 0.25 % away: premium  71.4, sold on average 0.25 % away
+      hold                 n=106 mean=  +9.77 pos= 67% worst= -362.2 total= +1036  halves +604 / +432
+      stop 2x              n=106 mean=  +9.78 pos= 42% worst=  -82.2 total= +1037  halves +392 / +645
+      stop 3x              n=106 mean= +14.92 pos= 60% worst= -123.0 total= +1582  halves +1008 / +574
+      stop 3x, take half   n=106 mean= +13.86 pos= 75% worst= -123.0 total= +1469  halves +940 / +529
+
+   fixed 0.5 % away: premium  57.0, sold on average 0.50 % away
+      hold                 n=106 mean=  +8.92 pos= 69% worst= -357.3 total=  +946  halves +537 / +409
+      stop 2x              n=106 mean=  +8.94 pos= 45% worst=  -82.1 total=  +948  halves +428 / +520
+      stop 3x              n=106 mean= +14.60 pos= 62% worst= -114.4 total= +1548  halves +936 / +611
+      stop 3x, take half   n=106 mean= +11.18 pos= 78% worst= -114.4 total= +1185  halves +816 / +369
+
+   fixed 0.75 % away: premium  45.5, sold on average 0.75 % away
+      hold                 n=106 mean=  +7.72 pos= 76% worst= -349.1 total=  +818  halves +432 / +387
+      stop 2x              n=106 mean=  +7.34 pos= 46% worst=  -60.2 total=  +778  halves +382 / +396
+      stop 3x              n=106 mean= +11.71 pos= 61% worst= -109.7 total= +1242  halves +664 / +578
+      stop 3x, take half   n=106 mean=  +9.05 pos= 78% worst= -109.7 total=  +959  halves +583 / +376
+
+   fixed 1 % away: premium  36.5, sold on average 1.00 % away
+      hold                 n=106 mean=  +7.33 pos= 80% worst= -338.2 total=  +777  halves +356 / +421
+      stop 2x              n=106 mean=  +7.58 pos= 49% worst=  -39.8 total=  +803  halves +340 / +463
+      stop 3x              n=106 mean= +11.75 pos= 65% worst= -105.8 total= +1246  halves +675 / +571
+      stop 3x, take half   n=106 mean=  +9.02 pos= 80% worst=  -69.2 total=  +956  halves +568 / +388
+
+   fixed 1.5 % away: premium  24.0, sold on average 1.50 % away
+      hold                 n=106 mean=  +4.61 pos= 86% worst= -311.6 total=  +489  halves +194 / +295
+      stop 2x              n=106 mean=  +5.74 pos= 58% worst=  -25.9 total=  +609  halves +319 / +289
+      stop 3x              n=106 mean=  +8.03 pos= 67% worst=  -91.2 total=  +851  halves +418 / +433
+      stop 3x, take half   n=106 mean=  +6.10 pos= 81% worst=  -49.1 total=  +646  halves +347 / +299
+
+   0.5 x the straddle away: premium  52.7, sold on average 0.57 % away
+      hold                 n=106 mean=  +7.23 pos= 68% worst= -357.3 total=  +766  halves +463 / +303
+      stop 2x              n=106 mean=  +8.13 pos= 39% worst=  -82.1 total=  +861  halves +449 / +412
+      stop 3x              n=106 mean= +13.29 pos= 60% worst= -105.8 total= +1408  halves +855 / +553
+      stop 3x, take half   n=106 mean= +11.04 pos= 77% worst= -102.1 total= +1171  halves +856 / +315
+
+   0.75 x the straddle away: premium  39.6, sold on average 0.87 % away
+      hold                 n=106 mean=  +5.53 pos= 75% worst= -349.1 total=  +586  halves +348 / +238
+      stop 2x              n=106 mean=  +6.80 pos= 44% worst=  -74.8 total=  +721  halves +387 / +334
+      stop 3x              n=106 mean= +11.01 pos= 64% worst=  -99.5 total= +1167  halves +638 / +529
+      stop 3x, take half   n=106 mean=  +7.69 pos= 79% worst=  -82.4 total=  +815  halves +579 / +237
+
+   1 x the straddle away: premium  29.7, sold on average 1.16 % away
+      hold                 n=106 mean=  +3.48 pos= 78% worst= -338.2 total=  +369  halves +223 / +146
+      stop 2x              n=106 mean=  +5.73 pos= 51% worst=  -53.4 total=  +607  halves +338 / +270
+      stop 3x              n=106 mean=  +7.85 pos= 64% worst=  -81.2 total=  +832  halves +473 / +358
+      stop 3x, take half   n=106 mean=  +6.59 pos= 82% worst=  -52.0 total=  +699  halves +464 / +235
+
+   1.25 x the straddle away: premium  22.1, sold on average 1.47 % away
+      hold                 n=106 mean=  +2.51 pos= 85% worst= -307.6 total=  +266  halves +118 / +148
+      stop 2x              n=106 mean=  +4.08 pos= 54% worst=  -34.2 total=  +432  halves +216 / +215
+      stop 3x              n=106 mean=  +6.21 pos= 65% worst=  -73.0 total=  +659  halves +390 / +269
+      stop 3x, take half   n=106 mean=  +5.61 pos= 83% worst=  -35.7 total=  +594  halves +357 / +237
+
+   1.5 x the straddle away: premium  17.0, sold on average 1.74 % away
+      hold                 n=106 mean=  +1.97 pos= 88% worst= -293.6 total=  +209  halves +83 / +126
+      stop 2x              n=106 mean=  +2.88 pos= 55% worst=  -42.6 total=  +306  halves +153 / +153
+      stop 3x              n=106 mean=  +4.47 pos= 67% worst=  -77.8 total=  +474  halves +285 / +188
+      stop 3x, take half   n=106 mean=  +3.73 pos= 83% worst=  -36.2 total=  +395  halves +224 / +171
+
+   2 x the straddle away: premium  10.6, sold on average 2.30 % away
+      hold                 n=106 mean=  -0.18 pos= 92% worst= -256.5 total=   -20  halves -63 / +43
+      stop 2x              n=106 mean=  +1.67 pos= 58% worst=  -40.9 total=  +177  halves +79 / +97
+      stop 3x              n=106 mean=  +2.07 pos= 71% worst=  -85.2 total=  +219  halves +127 / +92
+      stop 3x, take half   n=106 mean=  +2.08 pos= 82% worst=  -28.3 total=  +220  halves +159 / +61
+
+   the fixed 1 % strangle, split by the day's expected move (thirds: below 0.98 %, above 1.23 %)
+      expected move low    stop 2x    n= 35 mean=  +2.50 pos= 60% worst=  -33.5 total=   +87  halves +55 / +33
+      expected move low    stop 3x    n= 35 mean=  +1.41 pos= 63% worst=  -62.8 total=   +49  halves +103 / -53
+      expected move middle stop 2x    n= 35 mean=  +7.00 pos= 49% worst=  -39.8 total=  +245  halves +76 / +169
+      expected move middle stop 3x    n= 35 mean= +12.86 pos= 66% worst=  -35.9 total=  +450  halves +171 / +279
+      expected move high   stop 2x    n= 36 mean= +13.07 pos= 39% worst=  -28.0 total=  +470  halves +209 / +261
+      expected move high   stop 3x    n= 36 mean= +20.73 pos= 67% worst= -105.8 total=  +746  halves +401 / +345
+
+   the fixed 1 % strangle, stop 3x, traded only when today's expected move is at or above a mark set from earlier days
+      last 10 days, above their lowest third taken   n= 66 mean= +15.85 pos= 67% worst= -105.8 total= +1046  halves +497 / +549
+                                          left out n= 30 mean=  +4.89 pos= 60% worst=  -22.9 total=  +147  halves +125 / +22
+      last 10 days, above their median       taken   n= 50 mean= +22.01 pos= 72% worst= -105.8 total= +1101  halves +504 / +596
+                                          left out n= 46 mean=  +2.00 pos= 57% worst=  -57.1 total=   +92  halves +117 / -25
+      last 20 days, above their lowest third taken   n= 61 mean= +20.34 pos= 70% worst=  -69.2 total= +1241  halves +602 / +639
+                                          left out n= 25 mean=  +2.10 pos= 56% worst=  -40.2 total=   +53  halves +121 / -68
+      last 20 days, above their median       taken   n= 46 mean= +25.54 pos= 74% worst=  -69.2 total= +1175  halves +594 / +581
+                                          left out n= 40 mean=  +2.96 pos= 58% worst=  -62.8 total=  +119  halves +129 / -10
+      last 30 days, above their lowest third taken   n= 49 mean= +23.11 pos= 73% worst=  -69.2 total= +1132  halves +525 / +608
+                                          left out n= 27 mean=  -1.04 pos= 52% worst=  -62.8 total=   -28  halves +9 / -37
+      last 30 days, above their median       taken   n= 44 mean= +24.03 pos= 73% worst=  -69.2 total= +1057  halves +476 / +581
+                                          left out n= 32 mean=  +1.47 pos= 56% worst=  -62.8 total=   +47  halves +57 / -10
+
+## ETH daily: 106 expiries, entered 20 h before settlement; straddle (expected move) as a share of the spot: lowest 0.75 %, median 1.60 %, highest 3.76 %
+
+   fixed 0.25 % away: premium  33.6, sold on average 0.26 % away
+      hold                 n=106 mean=  +8.01 pos= 75% worst= -135.0 total=  +849  halves +458 / +391
+      stop 2x              n=106 mean=  +3.00 pos= 45% worst=  -50.3 total=  +318  halves +205 / +113
+      stop 3x              n=106 mean=  +6.32 pos= 64% worst=  -51.0 total=  +670  halves +340 / +330
+      stop 3x, take half   n=106 mean=  +4.67 pos= 73% worst=  -51.0 total=  +495  halves +225 / +270
+
+   fixed 0.5 % away: premium  29.0, sold on average 0.50 % away
+      hold                 n=106 mean=  +8.43 pos= 76% worst= -139.6 total=  +893  halves +453 / +440
+      stop 2x              n=106 mean=  +3.88 pos= 46% worst=  -50.6 total=  +411  halves +201 / +210
+      stop 3x              n=106 mean=  +6.84 pos= 64% worst=  -50.6 total=  +725  halves +371 / +354
+      stop 3x, take half   n=106 mean=  +4.28 pos= 75% worst=  -50.6 total=  +453  halves +213 / +240
+
+   fixed 0.75 % away: premium  24.6, sold on average 0.75 % away
+      hold                 n=106 mean=  +7.94 pos= 79% worst= -133.8 total=  +842  halves +427 / +415
+      stop 2x              n=106 mean=  +3.74 pos= 47% worst=  -45.5 total=  +396  halves +174 / +223
+      stop 3x              n=106 mean=  +5.60 pos= 61% worst=  -45.5 total=  +594  halves +316 / +278
+      stop 3x, take half   n=106 mean=  +4.22 pos= 74% worst=  -42.0 total=  +447  halves +219 / +228
+
+   fixed 1 % away: premium  21.0, sold on average 1.00 % away
+      hold                 n=106 mean=  +6.67 pos= 81% worst= -137.9 total=  +707  halves +362 / +345
+      stop 2x              n=106 mean=  +2.83 pos= 49% worst=  -49.6 total=  +300  halves +125 / +175
+      stop 3x              n=106 mean=  +4.46 pos= 61% worst=  -49.6 total=  +473  halves +239 / +234
+      stop 3x, take half   n=106 mean=  +3.10 pos= 75% worst=  -44.6 total=  +329  halves +160 / +169
+
+   fixed 1.5 % away: premium  15.2, sold on average 1.49 % away
+      hold                 n=106 mean=  +5.41 pos= 84% worst= -135.1 total=  +573  halves +281 / +292
+      stop 2x              n=106 mean=  +1.95 pos= 45% worst=  -48.0 total=  +207  halves +83 / +123
+      stop 3x              n=106 mean=  +3.43 pos= 63% worst=  -48.0 total=  +364  halves +140 / +224
+      stop 3x, take half   n=106 mean=  +2.34 pos= 77% worst=  -37.5 total=  +248  halves +93 / +154
+
+   0.5 x the straddle away: premium  23.0, sold on average 0.84 % away
+      hold                 n=106 mean=  +7.13 pos= 76% worst= -131.6 total=  +756  halves +414 / +342
+      stop 2x              n=106 mean=  +3.72 pos= 46% worst=  -44.5 total=  +394  halves +182 / +212
+      stop 3x              n=106 mean=  +5.08 pos= 61% worst=  -44.5 total=  +538  halves +286 / +252
+      stop 3x, take half   n=106 mean=  +2.91 pos= 74% worst=  -39.3 total=  +309  halves +166 / +143
+
+   0.75 x the straddle away: premium  17.2, sold on average 1.27 % away
+      hold                 n=106 mean=  +6.06 pos= 82% worst= -116.0 total=  +643  halves +337 / +306
+      stop 2x              n=106 mean=  +2.87 pos= 45% worst=  -34.4 total=  +304  halves +130 / +175
+      stop 3x              n=106 mean=  +3.72 pos= 62% worst=  -44.6 total=  +394  halves +180 / +215
+      stop 3x, take half   n=106 mean=  +1.92 pos= 75% worst=  -44.6 total=  +204  halves +64 / +140
+
+   1 x the straddle away: premium  12.8, sold on average 1.67 % away
+      hold                 n=106 mean=  +4.23 pos= 86% worst= -118.4 total=  +449  halves +231 / +217
+      stop 2x              n=106 mean=  +2.16 pos= 50% worst=  -36.8 total=  +229  halves +90 / +139
+      stop 3x              n=106 mean=  +2.68 pos= 64% worst=  -36.9 total=  +284  halves +108 / +176
+      stop 3x, take half   n=106 mean=  +1.74 pos= 78% worst=  -36.9 total=  +185  halves +36 / +149
+
+   1.25 x the straddle away: premium   9.3, sold on average 2.11 % away
+      hold                 n=106 mean=  +2.61 pos= 87% worst= -121.9 total=  +276  halves +147 / +129
+      stop 2x              n=106 mean=  +1.46 pos= 50% worst=  -40.3 total=  +154  halves +55 / +99
+      stop 3x              n=106 mean=  +2.11 pos= 65% worst=  -40.3 total=  +223  halves +101 / +122
+      stop 3x, take half   n=106 mean=  +1.54 pos= 79% worst=  -31.4 total=  +164  halves +59 / +104
+
+   1.5 x the straddle away: premium   6.9, sold on average 2.50 % away
+      hold                 n=106 mean=  +1.70 pos= 91% worst= -123.1 total=  +180  halves +101 / +79
+      stop 2x              n=106 mean=  +0.84 pos= 51% worst=  -41.5 total=   +89  halves +29 / +59
+      stop 3x              n=106 mean=  +0.86 pos= 63% worst=  -41.5 total=   +91  halves +15 / +76
+      stop 3x, take half   n=106 mean=  +1.06 pos= 81% worst=  -28.0 total=  +113  halves +15 / +97
+
+   2 x the straddle away: premium   3.8, sold on average 3.30 % away
+      hold                 n=106 mean=  +0.08 pos= 92% worst= -125.3 total=    +9  halves +2 / +7
+      stop 2x              n=106 mean=  -0.42 pos= 46% worst=  -43.7 total=   -45  halves -35 / -10
+      stop 3x              n=106 mean=  -0.47 pos= 58% worst=  -43.7 total=   -49  halves -36 / -14
+      stop 3x, take half   n=106 mean=  +0.21 pos= 76% worst=  -21.0 total=   +22  halves +6 / +17
+
+   the fixed 1 % strangle, split by the day's expected move (thirds: below 1.39 %, above 1.84 %)
+      expected move low    stop 2x    n= 35 mean=  +2.71 pos= 57% worst=  -24.6 total=   +95  halves +49 / +46
+      expected move low    stop 3x    n= 35 mean=  +0.78 pos= 57% worst=  -19.9 total=   +27  halves +46 / -18
+      expected move middle stop 2x    n= 35 mean=  +0.57 pos= 40% worst=  -39.3 total=   +20  halves +3 / +17
+      expected move middle stop 3x    n= 35 mean=  +1.16 pos= 60% worst=  -44.6 total=   +41  halves -10 / +51
+      expected move high   stop 2x    n= 36 mean=  +5.14 pos= 50% worst=  -49.6 total=  +185  halves +73 / +112
+      expected move high   stop 3x    n= 36 mean= +11.25 pos= 67% worst=  -49.6 total=  +405  halves +203 / +201
+
+   the fixed 1 % strangle, stop 3x, traded only when today's expected move is at or above a mark set from earlier days
+      last 10 days, above their lowest third taken   n= 68 mean=  +6.88 pos= 65% worst=  -49.6 total=  +468  halves +194 / +273
+                                          left out n= 28 mean=  -1.49 pos= 46% worst=  -44.6 total=   -42  halves -2 / -39
+      last 10 days, above their median       taken   n= 48 mean=  +7.41 pos= 65% worst=  -49.6 total=  +356  halves +138 / +217
+                                          left out n= 48 mean=  +1.47 pos= 54% worst=  -44.6 total=   +70  halves +54 / +16
+      last 20 days, above their lowest third taken   n= 61 mean=  +7.50 pos= 66% worst=  -44.6 total=  +457  halves +192 / +265
+                                          left out n= 25 mean=  -1.07 pos= 44% worst=  -19.9 total=   -27  halves +4 / -31
+      last 20 days, above their median       taken   n= 47 mean=  +9.01 pos= 66% worst=  -39.3 total=  +423  halves +218 / +205
+                                          left out n= 39 mean=  +0.18 pos= 51% worst=  -44.6 total=    +7  halves -22 / +29
+      last 30 days, above their lowest third taken   n= 55 mean=  +7.12 pos= 64% worst=  -39.3 total=  +392  halves +144 / +248
+                                          left out n= 21 mean=  -1.52 pos= 43% worst=  -19.9 total=   -32  halves -18 / -14
+      last 30 days, above their median       taken   n= 45 mean=  +8.44 pos= 64% worst=  -39.3 total=  +380  halves +147 / +232
+                                          left out n= 31 mean=  -0.64 pos= 48% worst=  -29.1 total=   -20  halves -21 / +2
+

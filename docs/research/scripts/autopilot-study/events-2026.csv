@@ -1,0 +1,11 @@
+date,time_utc,event,source,note
+2026-08-07,12:30,jobs,https://www.bls.gov/schedule/2026/home.htm,08:30 Eastern (daylight time)
+2026-08-12,12:30,cpi,https://www.bls.gov/schedule/2026/home.htm,08:30 Eastern (daylight time)
+2026-09-04,12:30,jobs,https://www.bls.gov/schedule/2026/home.htm,08:30 Eastern (daylight time)
+2026-09-11,12:30,cpi,https://www.bls.gov/schedule/2026/home.htm,08:30 Eastern (daylight time)
+2026-09-16,18:00,fomc,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,date from the page; the 14:00 Eastern time is the usual one and NOT stated on the page
+2026-10-02,12:30,jobs,https://www.bls.gov/schedule/2026/home.htm,08:30 Eastern (daylight time)
+2026-10-14,12:30,cpi,https://www.bls.gov/schedule/2026/home.htm,08:30 Eastern (daylight time)
+2026-10-28,18:00,fomc,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,date from the page; the 14:00 Eastern time is the usual one and NOT stated on the page
+2026-11-06,13:30,jobs,https://www.bls.gov/schedule/2026/home.htm,08:30 Eastern (standard time from 1 Nov)
+2026-11-10,13:30,cpi,https://www.bls.gov/schedule/2026/home.htm,08:30 Eastern (standard time from 1 Nov)
