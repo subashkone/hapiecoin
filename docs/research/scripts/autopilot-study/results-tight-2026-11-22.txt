@@ -1,0 +1,74 @@
+## BTC daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option; mean premium 36.5
+   the stop only, held to settlement                                  n=106 mean=  +11.75 pos= 65% worst=  -105.8 worst three=  -254.2 total=  +1246  halves +675 / +571
+   buy a leg back at a mark of 10                                     n=106 mean=  +11.51 pos= 66% worst=  -106.8 worst three=  -257.1 total=  +1221  halves +608 / +613
+   buy back at 10, then the other leg's stop at 2x                    n=106 mean=   +9.09 pos= 58% worst=  -106.8 worst three=  -227.9 total=   +963  halves +465 / +498
+   buy back at 10, then the other leg's stop at 1.5x                  n=106 mean=   +9.90 pos= 64% worst=  -106.8 worst three=  -227.9 total=  +1050  halves +563 / +487
+   buy back at 10 only while the spot is within 2 % of the strike     n=106 mean=  +11.12 pos= 66% worst=  -105.8 worst three=  -256.1 total=  +1179  halves +611 / +567
+   buy back at 10 only while the spot is within 1 % of the strike     n=106 mean=  +11.76 pos= 66% worst=  -105.8 worst three=  -254.4 total=  +1247  halves +649 / +598
+   buy a leg back at a mark of 5                                      n=106 mean=  +11.30 pos= 66% worst=  -106.3 worst three=  -255.6 total=  +1198  halves +650 / +548
+   buy back at 5, then the other leg's stop at 2x                     n=106 mean=  +10.38 pos= 60% worst=  -106.3 worst three=  -245.3 total=  +1100  halves +588 / +513
+   buy back at 5, then the other leg's stop at 1.5x                   n=106 mean=  +10.23 pos= 65% worst=  -106.3 worst three=  -245.3 total=  +1085  halves +579 / +506
+   buy back at 5 only while the spot is within 2 % of the strike      n=106 mean=  +11.38 pos= 66% worst=  -105.8 worst three=  -255.1 total=  +1206  halves +653 / +553
+   buy back at 5 only while the spot is within 1 % of the strike      n=106 mean=  +11.67 pos= 66% worst=  -105.8 worst three=  -254.4 total=  +1237  halves +670 / +567
+   close everything at 95 % of the premium                            n=106 mean=  +11.89 pos= 65% worst=  -105.8 worst three=  -254.2 total=  +1261  halves +688 / +572
+   close everything at 95 %, and buy a leg back at 5                  n=106 mean=  +11.71 pos= 66% worst=  -106.3 worst three=  -255.6 total=  +1241  halves +670 / +571
+   close everything at 98 % of the premium                            n=106 mean=  +11.74 pos= 65% worst=  -105.8 worst three=  -254.2 total=  +1244  halves +663 / +581
+   close everything at 98 %, and buy a leg back at 5                  n=106 mean=  +11.24 pos= 66% worst=  -106.3 worst three=  -255.6 total=  +1191  halves +647 / +544
+   close everything at 99 % of the premium                            n=106 mean=  +11.63 pos= 65% worst=  -105.8 worst three=  -254.2 total=  +1233  halves +669 / +564
+   close everything at 99 %, and buy a leg back at 5                  n=106 mean=  +11.30 pos= 66% worst=  -106.3 worst three=  -255.6 total=  +1198  halves +650 / +548
+
+## BTC daily, stop at double: 106 trades, each side 1 % away, entered 20 h before settlement, stop 2x on each sold option; mean premium 36.5
+   the stop only, held to settlement                                  n=106 mean=   +7.58 pos= 49% worst=   -39.8 worst three=  -110.6 total=   +803  halves +340 / +463
+   buy a leg back at a mark of 10                                     n=106 mean=   +7.30 pos= 48% worst=   -39.8 worst three=  -106.4 total=   +774  halves +292 / +482
+   buy back at 10, then the other leg's stop at 1.5x                  n=106 mean=   +7.17 pos= 50% worst=   -39.8 worst three=  -106.4 total=   +760  halves +319 / +441
+   buy back at 10 only while the spot is within 2 % of the strike     n=106 mean=   +7.11 pos= 50% worst=   -39.8 worst three=  -110.6 total=   +754  halves +295 / +459
+   buy back at 10 only while the spot is within 1 % of the strike     n=106 mean=   +7.60 pos= 50% worst=   -39.8 worst three=  -110.6 total=   +806  halves +320 / +486
+   buy a leg back at a mark of 5                                      n=106 mean=   +7.09 pos= 50% worst=   -39.8 worst three=  -110.6 total=   +751  halves +317 / +434
+   buy back at 5, then the other leg's stop at 1.5x                   n=106 mean=   +6.82 pos= 51% worst=   -39.8 worst three=  -110.6 total=   +723  halves +315 / +408
+   buy back at 5 only while the spot is within 2 % of the strike      n=106 mean=   +7.17 pos= 50% worst=   -39.8 worst three=  -110.6 total=   +760  halves +320 / +440
+   buy back at 5 only while the spot is within 1 % of the strike      n=106 mean=   +7.42 pos= 50% worst=   -39.8 worst three=  -110.6 total=   +787  halves +335 / +451
+   close everything at 95 % of the premium                            n=106 mean=   +8.08 pos= 49% worst=   -39.8 worst three=  -110.6 total=   +856  halves +373 / +483
+   close everything at 95 %, and buy a leg back at 5                  n=106 mean=   +7.69 pos= 50% worst=   -39.8 worst three=  -110.6 total=   +816  halves +347 / +468
+   close everything at 98 % of the premium                            n=106 mean=   +7.67 pos= 49% worst=   -39.8 worst three=  -110.6 total=   +813  halves +333 / +480
+   close everything at 98 %, and buy a leg back at 5                  n=106 mean=   +7.06 pos= 50% worst=   -39.8 worst three=  -110.6 total=   +749  halves +316 / +432
+   close everything at 99 % of the premium                            n=106 mean=   +7.50 pos= 49% worst=   -39.8 worst three=  -110.6 total=   +795  halves +336 / +459
+   close everything at 99 %, and buy a leg back at 5                  n=106 mean=   +7.09 pos= 50% worst=   -39.8 worst three=  -110.6 total=   +751  halves +317 / +434
+
+## ETH daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option; mean premium 21.0
+   the stop only, held to settlement                                  n=106 mean=   +4.46 pos= 61% worst=   -49.6 worst three=  -136.2 total=   +473  halves +239 / +234
+   buy a leg back at a mark of 0.5                                    n=106 mean=   +4.34 pos= 61% worst=   -50.0 worst three=  -137.1 total=   +460  halves +222 / +238
+   buy back at 0.5, then the other leg's stop at 2x                   n=106 mean=   +4.62 pos= 61% worst=   -50.0 worst three=  -137.1 total=   +490  halves +228 / +262
+   buy back at 0.5, then the other leg's stop at 1.5x                 n=106 mean=   +3.49 pos= 66% worst=   -50.0 worst three=  -137.1 total=   +370  halves +149 / +220
+   buy back at 0.5 only while the spot is within 2 % of the strike    n=106 mean=   +4.23 pos= 61% worst=   -49.6 worst three=  -136.4 total=   +449  halves +210 / +239
+   buy back at 0.5 only while the spot is within 1 % of the strike    n=106 mean=   +4.50 pos= 61% worst=   -49.6 worst three=  -136.2 total=   +477  halves +224 / +253
+   buy a leg back at a mark of 0.25                                   n=106 mean=   +4.15 pos= 61% worst=   -49.8 worst three=  -136.6 total=   +440  halves +222 / +218
+   buy back at 0.25, then the other leg's stop at 2x                  n=106 mean=   +4.17 pos= 58% worst=   -49.8 worst three=  -136.6 total=   +442  halves +211 / +231
+   buy back at 0.25, then the other leg's stop at 1.5x                n=106 mean=   +3.49 pos= 63% worst=   -49.8 worst three=  -136.6 total=   +370  halves +181 / +189
+   buy back at 0.25 only while the spot is within 2 % of the strike   n=106 mean=   +4.21 pos= 61% worst=   -49.6 worst three=  -136.4 total=   +446  halves +225 / +221
+   buy back at 0.25 only while the spot is within 1 % of the strike   n=106 mean=   +4.34 pos= 61% worst=   -49.6 worst three=  -136.2 total=   +460  halves +232 / +228
+   close everything at 95 % of the premium                            n=106 mean=   +4.42 pos= 61% worst=   -49.6 worst three=  -136.2 total=   +468  halves +218 / +250
+   close everything at 95 %, and buy a leg back at 0.25               n=106 mean=   +4.30 pos= 61% worst=   -49.8 worst three=  -136.6 total=   +456  halves +213 / +244
+   close everything at 98 % of the premium                            n=106 mean=   +4.47 pos= 61% worst=   -49.6 worst three=  -136.2 total=   +474  halves +231 / +243
+   close everything at 98 %, and buy a leg back at 0.25               n=106 mean=   +4.13 pos= 61% worst=   -49.8 worst three=  -136.6 total=   +438  halves +221 / +217
+   close everything at 99 % of the premium                            n=106 mean=   +4.39 pos= 61% worst=   -49.6 worst three=  -136.2 total=   +465  halves +235 / +230
+   close everything at 99 %, and buy a leg back at 0.25               n=106 mean=   +4.15 pos= 61% worst=   -49.8 worst three=  -136.6 total=   +440  halves +222 / +218
+
+## BTC weekly (Friday): 51 trades, each side 3 % away, entered 164 h before settlement, stop 3x on each sold option; mean premium 149.0
+   the stop only, held to settlement                                  n= 51 mean=  +40.65 pos= 57% worst=  -168.3 worst three=  -470.5 total=  +2073  halves +1525 / +548
+   buy a leg back at a mark of 10                                     n= 51 mean=  +39.65 pos= 57% worst=  -168.9 worst three=  -472.7 total=  +2022  halves +1498 / +524
+   buy back at 10, then the other leg's stop at 2x                    n= 51 mean=  +35.48 pos= 55% worst=  -168.9 worst three=  -472.7 total=  +1809  halves +1238 / +571
+   buy back at 10, then the other leg's stop at 1.5x                  n= 51 mean=  +37.49 pos= 61% worst=  -168.9 worst three=  -472.7 total=  +1912  halves +1188 / +724
+   buy back at 10 only while the spot is within 2 % of the strike     n= 51 mean=  +40.49 pos= 57% worst=  -168.3 worst three=  -470.5 total=  +2065  halves +1520 / +545
+   buy back at 10 only while the spot is within 1 % of the strike     n= 51 mean=  +40.62 pos= 57% worst=  -168.3 worst three=  -470.5 total=  +2072  halves +1523 / +548
+   buy a leg back at a mark of 5                                      n= 51 mean=  +40.14 pos= 57% worst=  -168.6 worst three=  -471.6 total=  +2047  halves +1512 / +536
+   buy back at 5, then the other leg's stop at 2x                     n= 51 mean=  +35.86 pos= 55% worst=  -168.6 worst three=  -471.6 total=  +1829  halves +1251 / +578
+   buy back at 5, then the other leg's stop at 1.5x                   n= 51 mean=  +37.63 pos= 59% worst=  -168.6 worst three=  -471.6 total=  +1919  halves +1201 / +718
+   buy back at 5 only while the spot is within 2 % of the strike      n= 51 mean=  +40.57 pos= 57% worst=  -168.3 worst three=  -470.5 total=  +2069  halves +1522 / +547
+   buy back at 5 only while the spot is within 1 % of the strike      n= 51 mean=  +40.63 pos= 57% worst=  -168.3 worst three=  -470.5 total=  +2072  halves +1524 / +548
+   close everything at 95 % of the premium                            n= 51 mean=  +43.16 pos= 59% worst=  -168.3 worst three=  -470.5 total=  +2201  halves +1502 / +699
+   close everything at 95 %, and buy a leg back at 5                  n= 51 mean=  +43.08 pos= 59% worst=  -168.6 worst three=  -471.6 total=  +2197  halves +1497 / +700
+   close everything at 98 % of the premium                            n= 51 mean=  +41.28 pos= 57% worst=  -168.3 worst three=  -470.5 total=  +2106  halves +1571 / +535
+   close everything at 98 %, and buy a leg back at 5                  n= 51 mean=  +41.02 pos= 57% worst=  -168.6 worst three=  -471.6 total=  +2092  halves +1567 / +525
+   close everything at 99 % of the premium                            n= 51 mean=  +40.26 pos= 57% worst=  -168.3 worst three=  -470.5 total=  +2053  halves +1509 / +544
+   close everything at 99 %, and buy a leg back at 5                  n= 51 mean=  +39.98 pos= 57% worst=  -168.6 worst three=  -471.6 total=  +2039  halves +1504 / +535
+

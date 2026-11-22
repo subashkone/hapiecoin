@@ -1,47 +1,48 @@
-export of 2026-11-22T08:35:09Z; 42 paper trades tracked at 1-minute marks; results in USD before fees; times IST
+export of 2026-11-22T12:05:52Z; 43 paper trades tracked at 1-minute marks; results in USD before fees; times IST
  # coin strategy                                       state  entered       premium     last     best best at         worst worst at     given back
- 1 BTC  Trend with puts                                open   21 Nov 15:06    -4.17    -1.15    +0.15 21 Nov 16:05    -1.34 21 Nov 19:33       1.29
- 2 BTC  Pin butterfly                                  open   21 Nov 15:06    -0.39    -0.39    +0.09 21 Nov 15:59    -0.46 21 Nov 19:07       0.48
- 3 ETH  Trend with puts                                open   21 Nov 15:06    -3.31    -0.78    +0.06 21 Nov 15:48    -0.87 21 Nov 19:33       0.84
- 4 BTC  Premium harvest                                open   21 Nov 15:06   +14.63    -0.66    +0.20 21 Nov 17:01    -0.88 22 Nov 02:15       0.86
- 5 ETH  Pin butterfly                                  open   21 Nov 15:06    -0.91    -0.87    +0.37 22 Nov 11:13    -0.87 22 Nov 14:05       1.24
- 6 ETH  Pin butterfly                                  open   21 Nov 18:37    -0.77    +0.04    +0.24 22 Nov 12:51    -0.25 21 Nov 19:08       0.20
- 7 BTC  Trend with puts                                open   21 Nov 18:37    -3.99    -0.48    +0.28 22 Nov 11:12    -0.69 21 Nov 19:09       0.76
- 8 BTC  Premium harvest                                open   21 Nov 18:37   +14.66    -0.23    +0.12 22 Nov 11:15    -0.57 21 Nov 19:33       0.35
- 9 BTC  Pin butterfly                                  open   21 Nov 18:37    -0.27    +0.01    +0.28 22 Nov 10:34    -0.19 22 Nov 02:23       0.27
-10 ETH  Trend with puts                                open   21 Nov 18:37    -3.48    -0.30    +0.40 22 Nov 11:12    -0.45 21 Nov 19:33       0.70
-11 BTC  Trend with puts                                open   21 Nov 18:54    -4.22    -0.44    +0.33 22 Nov 11:12    -0.69 21 Nov 19:09       0.77
-12 BTC  Pin butterfly                                  open   21 Nov 19:06    -0.29    -0.03    +0.14 22 Nov 10:25    -0.23 21 Nov 21:31       0.17
-13 ETH  Pin butterfly                                  open   21 Nov 19:06    -0.79    +0.17    +0.25 22 Nov 13:50    -0.14 21 Nov 19:08       0.08
-14 BTC  Trend with puts                                closed 21 Nov 19:11    -3.95    +0.89    +0.89 22 Nov 11:16    -0.22 21 Nov 19:33       0.00
-15 BTC  Premium harvest                                open   21 Nov 19:11   +14.83    +0.21    +0.50 22 Nov 11:15    -0.08 21 Nov 19:33       0.29
-16 ETH  Premium harvest                                open   21 Nov 19:16    +7.16    +0.09    +0.25 22 Nov 13:01    -0.16 21 Nov 22:05       0.15
+ 1 BTC  Pin butterfly                                  closed 21 Nov 15:06    -0.39    -0.39    +0.09 21 Nov 15:59    -0.46 21 Nov 19:07       0.48
+ 2 ETH  Trend with puts                                open   21 Nov 15:06    -3.31    -0.95    +0.06 21 Nov 15:48    -1.02 22 Nov 15:28       1.01
+ 3 BTC  Premium harvest                                open   21 Nov 15:06   +14.63    -0.74    +0.20 21 Nov 17:01    -0.88 22 Nov 02:15       0.94
+ 4 ETH  Pin butterfly                                  closed 21 Nov 15:06    -0.91    -0.91    +0.37 22 Nov 11:13    -0.91 22 Nov 16:21       1.28
+ 5 BTC  Trend with puts                                open   21 Nov 15:06    -4.17    -1.39    +0.15 21 Nov 16:05    -1.52 22 Nov 15:28       1.53
+ 6 BTC  Premium harvest                                open   21 Nov 18:37   +14.66    -0.45    +0.12 22 Nov 11:15    -0.57 21 Nov 19:33       0.57
+ 7 BTC  Pin butterfly                                  open   21 Nov 18:37    -0.27    -0.04    +0.28 22 Nov 10:34    -0.20 22 Nov 15:26       0.32
+ 8 ETH  Trend with puts                                open   21 Nov 18:37    -3.48    -0.49    +0.40 22 Nov 11:12    -0.60 22 Nov 15:27       0.90
+ 9 BTC  Trend with puts                                open   21 Nov 18:37    -3.99    -0.86    +0.28 22 Nov 11:12    -0.89 22 Nov 17:38       1.14
+10 ETH  Pin butterfly                                  open   21 Nov 18:37    -0.77    -0.10    +0.24 22 Nov 12:51    -0.25 21 Nov 19:08       0.34
+11 BTC  Trend with puts                                open   21 Nov 18:54    -4.22    -0.86    +0.33 22 Nov 11:12    -0.91 22 Nov 15:27       1.19
+12 ETH  Pin butterfly                                  open   21 Nov 19:06    -0.79    +0.07    +0.25 22 Nov 13:50    -0.14 21 Nov 19:08       0.18
+13 BTC  Pin butterfly                                  open   21 Nov 19:06    -0.29    -0.09    +0.14 22 Nov 10:25    -0.23 21 Nov 21:31       0.23
+14 BTC  Premium harvest                                open   21 Nov 19:11   +14.83    +0.02    +0.50 22 Nov 11:15    -0.08 22 Nov 15:28       0.48
+15 BTC  Trend with puts                                closed 21 Nov 19:11    -3.95    +0.89    +0.89 22 Nov 11:16    -0.22 21 Nov 19:33       0.00
+16 ETH  Premium harvest                                open   21 Nov 19:16    +7.16    +0.11    +0.25 22 Nov 13:01    -0.16 21 Nov 22:05       0.13
 17 ETH  Trend with puts                                closed 21 Nov 19:16    -3.87    +0.70    +0.71 22 Nov 09:19    -0.14 21 Nov 19:33       0.01
-18 BTC  Pin butterfly                                  open   21 Nov 19:26    -0.27    +0.04    +0.19 22 Nov 04:15    -0.16 22 Nov 00:00       0.14
+18 BTC  Pin butterfly                                  open   21 Nov 19:26    -0.27    -0.03    +0.19 22 Nov 04:15    -0.16 22 Nov 00:00       0.22
 19 BTC  Trend with puts                                closed 21 Nov 19:31    -4.08    +0.89    +0.89 22 Nov 10:45    -0.16 21 Nov 19:33       0.00
-20 ETH  Pin butterfly                                  open   21 Nov 19:31    -0.81    +0.18    +0.19 22 Nov 07:24    -0.13 22 Nov 11:15       0.01
-21 BTC  Pin butterfly                                  open   21 Nov 19:41    -0.24    +0.11    +0.17 22 Nov 02:23    -0.14 21 Nov 21:32       0.06
-22 BTC  Wide evening strangle with wings               open   21 Nov 23:11   +35.39   +30.30   +31.29 22 Nov 14:04    -1.13 22 Nov 11:13       0.98
-23 BTC  Evening strangle with wings                    open   21 Nov 23:11   +49.44   +33.74   +36.96 22 Nov 14:04    -3.49 22 Nov 11:15       3.23
-24 BTC  Evening strangle, stop at double               open   21 Nov 23:11   +82.23   +65.75   +68.89 22 Nov 14:04    -0.71 21 Nov 23:13       3.14
-25 BTC  Evening strangle, stop at triple               open   21 Nov 23:11   +82.23   +65.75   +68.89 22 Nov 14:04    -0.71 21 Nov 23:13       3.14
+20 ETH  Pin butterfly                                  open   21 Nov 19:31    -0.81    +0.19    +0.23 22 Nov 15:13    -0.13 22 Nov 11:15       0.03
+21 BTC  Pin butterfly                                  open   21 Nov 19:41    -0.24    +0.04    +0.18 22 Nov 16:16    -0.14 21 Nov 21:32       0.14
+22 BTC  Evening strangle, stop at triple               closed 21 Nov 23:11   +82.23   +39.90   +74.98 22 Nov 15:17    -0.71 21 Nov 23:13      35.07
+23 BTC  Wide evening strangle with wings               closed 21 Nov 23:11   +35.39   +33.08   +34.14 22 Nov 15:17    -2.70 22 Nov 15:28       1.05
+24 BTC  Evening strangle with wings                    closed 21 Nov 23:11   +49.44    +7.14   +42.30 22 Nov 15:17   -15.66 22 Nov 15:28      35.16
+25 BTC  Evening strangle, stop at double               closed 21 Nov 23:11   +82.23   +39.90   +74.98 22 Nov 15:17    -0.71 21 Nov 23:13      35.07
 26 BTC  Evening strangle, take half                    closed 21 Nov 23:53   +74.89   +37.52   +37.86 22 Nov 07:37    +0.20 21 Nov 23:54       0.34
-27 BTC  Evening strangle, trail the rest               open   22 Nov 00:27   +71.35    -6.24   +34.35 22 Nov 07:41    -6.24 22 Nov 14:05      40.59
-28 BTC  Friday weekly strangle, take half              open   22 Nov 01:13  +212.95   +16.90   +22.07 22 Nov 07:38    -1.88 22 Nov 01:56       5.16
-29 BTC  Friday weekly strangle, trail the rest         open   22 Nov 01:13  +212.95   +16.90   +22.07 22 Nov 07:38    -1.88 22 Nov 01:56       5.16
-30 BTC  Friday weekly strangle, with wings             open   22 Nov 01:13  +119.54    +6.62   +10.92 22 Nov 09:25    -4.79 22 Nov 01:56       4.30
-31 BTC  Friday weekly strangle, stop at triple         open   22 Nov 01:13  +212.95   +16.90   +22.07 22 Nov 07:38    -1.88 22 Nov 01:56       5.16
-32 BTC  Friday weekly strangle, stop at double         open   22 Nov 01:13  +212.95   +16.90   +22.07 22 Nov 07:38    -1.88 22 Nov 01:56       5.16
-33 BTC  Monthly strangle, 8 % away                     open   22 Nov 02:36  +673.36   +10.30   +21.61 22 Nov 13:43    -2.30 22 Nov 02:52      11.31
-34 BTC  Monthly strangle, 1,000 a side                 open   22 Nov 02:36  +230.93    +9.43   +13.04 22 Nov 13:44    +0.50 22 Nov 02:45       3.61
-35 BTC  Monthly 12 %, 1 month out, stop at double      open   22 Nov 02:36  +273.69   +14.05   +16.24 22 Nov 13:51    +0.39 22 Nov 03:11       2.19
-36 BTC  Monthly 12 %, 1 month out, stop at triple      open   22 Nov 02:36  +273.69   +14.05   +16.24 22 Nov 13:51    +0.39 22 Nov 03:11       2.19
-37 BTC  Monthly 12 %, 1 month out, trail the rest      open   22 Nov 02:36  +273.69   +14.05   +16.24 22 Nov 13:51    +0.39 22 Nov 03:11       2.19
-38 BTC  Monthly 12 %, 1 month out, with wings          open   22 Nov 02:36   +95.88    +2.12    +4.20 22 Nov 09:31    -0.75 22 Nov 02:53       2.07
-39 BTC  Monthly 12 %, 1 month out, wings and a stop at open   22 Nov 02:36   +95.88    +2.12    +4.20 22 Nov 09:31    -0.75 22 Nov 02:53       2.07
-40 BTC  Monthly 12 %, 1 month out, wings, stop at trip open   22 Nov 02:36   +95.88    +2.12    +4.20 22 Nov 09:31    -0.75 22 Nov 02:53       2.07
-41 BTC  Monthly 8 %, 1 month out, wings, stop at tripl open   22 Nov 02:36  +150.90    +0.68    +7.82 22 Nov 11:25    -1.38 22 Nov 03:21       7.14
-42 BTC  Monthly strangle, 12 % away, one month out     open   22 Nov 02:36  +273.69   +14.05   +16.24 22 Nov 13:51    +0.39 22 Nov 03:11       2.19
+27 BTC  Evening strangle, trail the rest               closed 22 Nov 00:27   +71.35   -14.88   +34.35 22 Nov 07:41   -14.88 22 Nov 15:21      49.23
+28 BTC  Friday weekly strangle, stop at double         open   22 Nov 01:13  +212.95   +13.81   +22.07 22 Nov 07:38    -1.88 22 Nov 01:56       8.26
+29 BTC  Friday weekly strangle, with wings             open   22 Nov 01:13  +119.54    +3.14   +10.92 22 Nov 09:25    -4.79 22 Nov 01:56       7.78
+30 BTC  Friday weekly strangle, stop at triple         open   22 Nov 01:13  +212.95   +13.81   +22.07 22 Nov 07:38    -1.88 22 Nov 01:56       8.26
+31 BTC  Friday weekly strangle, take half              open   22 Nov 01:13  +212.95   +13.81   +22.07 22 Nov 07:38    -1.88 22 Nov 01:56       8.26
+32 BTC  Friday weekly strangle, trail the rest         open   22 Nov 01:13  +212.95   +13.81   +22.07 22 Nov 07:38    -1.88 22 Nov 01:56       8.26
+33 BTC  Monthly strangle, 12 % away, one month out     open   22 Nov 02:36  +273.69   +13.75   +16.24 22 Nov 13:51    +0.39 22 Nov 03:11       2.49
+34 BTC  Monthly strangle, 8 % away                     open   22 Nov 02:36  +673.36    +5.61   +21.61 22 Nov 13:43    -6.68 22 Nov 15:27      16.00
+35 BTC  Monthly 12 %, 1 month out, stop at double      open   22 Nov 02:36  +273.69   +13.75   +16.24 22 Nov 13:51    +0.39 22 Nov 03:11       2.49
+36 BTC  Monthly 12 %, 1 month out, stop at triple      open   22 Nov 02:36  +273.69   +13.75   +16.24 22 Nov 13:51    +0.39 22 Nov 03:11       2.49
+37 BTC  Monthly 12 %, 1 month out, trail the rest      open   22 Nov 02:36  +273.69   +13.75   +16.24 22 Nov 13:51    +0.39 22 Nov 03:11       2.49
+38 BTC  Monthly 12 %, 1 month out, with wings          open   22 Nov 02:36   +95.88    -0.24    +4.20 22 Nov 09:31    -1.60 22 Nov 15:28       4.44
+39 BTC  Monthly 12 %, 1 month out, wings and a stop at open   22 Nov 02:36   +95.88    -0.24    +4.20 22 Nov 09:31    -1.60 22 Nov 15:28       4.44
+40 BTC  Monthly 12 %, 1 month out, wings, stop at trip open   22 Nov 02:36   +95.88    -0.24    +4.20 22 Nov 09:31    -1.60 22 Nov 15:28       4.44
+41 BTC  Monthly 8 %, 1 month out, wings, stop at tripl open   22 Nov 02:36  +150.90    -0.65    +7.82 22 Nov 11:25    -3.03 22 Nov 15:28       8.48
+42 BTC  Monthly strangle, 1,000 a side                 open   22 Nov 02:36  +230.93    +9.49   +13.04 22 Nov 13:44    +0.50 22 Nov 02:45       3.55
+43 BTC  Afternoon strangle, take half                  closed 22 Nov 15:33   +29.20   +14.63   +14.63 22 Nov 16:39    -7.63 22 Nov 15:38       0.00
 
-all 42 trades: last +382.05; sum of each trade's own best moment +504.16; sum of each trade's worst moment -37.09
+all 43 trades: last +280.03; sum of each trade's own best moment +539.19; sum of each trade's worst moment -76.62
 (premium: + is collected, - is paid. 'last' is the last tracked minute, or the close for a closed trade. The bests are at different times, so their sum is a ceiling no rule could reach.)

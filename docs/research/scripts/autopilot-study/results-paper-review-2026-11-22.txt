@@ -1,0 +1,77 @@
+export of 2026-11-22T12:05:52Z; 26 paper trades that collected a premium; USD before fees; times IST
+kept = the share of the premium the trade has (or ended with); every other column is the result with that overlay
+
+coin strategy                                     state  entered       premium   result  kept     best best at      leg<=10/0.5 leg<=5/0.25     leg<=5%    take 90%    take 95%
+BTC  Afternoon strangle, take half                closed 22 Nov 15:33    29.20   +14.63   50%   +14.63 22 Nov 16:39      +14.63      +14.63      +14.63      +14.63      +14.63
+BTC  Evening strangle with wings                  closed 21 Nov 23:11    49.44    +7.14   14%   +42.30 22 Nov 15:17      +48.30      +48.70      +45.47       +7.14       +7.14
+BTC  Evening strangle, stop at double             closed 21 Nov 23:11    82.23   +39.90   49%   +74.98 22 Nov 15:17      +81.06      +81.46      +78.23      +74.02      +39.90
+BTC  Evening strangle, stop at triple             closed 21 Nov 23:11    82.23   +39.90   49%   +74.98 22 Nov 15:17      +81.06      +81.46      +78.23      +74.02      +39.90
+BTC  Evening strangle, take half                  closed 21 Nov 23:53    74.89   +37.52   50%   +37.86 22 Nov 07:37      +37.52      +37.52      +37.52      +37.52      +37.52
+BTC  Evening strangle, trail the rest             closed 22 Nov 00:27    71.35   -14.88  -21%   +34.35 22 Nov 07:41       +6.48       +6.87       +5.53      -14.88      -14.88
+BTC  Friday weekly strangle, stop at double       open   22 Nov 01:13   212.95   +13.81    6%   +22.07 22 Nov 07:38      +13.81      +13.81      +13.81      +13.81      +13.81
+BTC  Friday weekly strangle, stop at triple       open   22 Nov 01:13   212.95   +13.81    6%   +22.07 22 Nov 07:38      +13.81      +13.81      +13.81      +13.81      +13.81
+BTC  Friday weekly strangle, take half            open   22 Nov 01:13   212.95   +13.81    6%   +22.07 22 Nov 07:38      +13.81      +13.81      +13.81      +13.81      +13.81
+BTC  Friday weekly strangle, trail the rest       open   22 Nov 01:13   212.95   +13.81    6%   +22.07 22 Nov 07:38      +13.81      +13.81      +13.81      +13.81      +13.81
+BTC  Friday weekly strangle, with wings           open   22 Nov 01:13   119.54    +3.14    3%   +10.92 22 Nov 09:25       +3.14       +3.14       +3.14       +3.14       +3.14
+BTC  Monthly 12 %, 1 month out, stop at double    open   22 Nov 02:36   273.69   +13.75    5%   +16.24 22 Nov 13:51      +13.75      +13.75      +13.75      +13.75      +13.75
+BTC  Monthly 12 %, 1 month out, stop at triple    open   22 Nov 02:36   273.69   +13.75    5%   +16.24 22 Nov 13:51      +13.75      +13.75      +13.75      +13.75      +13.75
+BTC  Monthly 12 %, 1 month out, trail the rest    open   22 Nov 02:36   273.69   +13.75    5%   +16.24 22 Nov 13:51      +13.75      +13.75      +13.75      +13.75      +13.75
+BTC  Monthly 12 %, 1 month out, wings and a stop  open   22 Nov 02:36    95.88    -0.24   -0%    +4.20 22 Nov 09:31       -0.24       -0.24       -0.24       -0.24       -0.24
+BTC  Monthly 12 %, 1 month out, wings, stop at tr open   22 Nov 02:36    95.88    -0.24   -0%    +4.20 22 Nov 09:31       -0.24       -0.24       -0.24       -0.24       -0.24
+BTC  Monthly 12 %, 1 month out, with wings        open   22 Nov 02:36    95.88    -0.24   -0%    +4.20 22 Nov 09:31       -0.24       -0.24       -0.24       -0.24       -0.24
+BTC  Monthly 8 %, 1 month out, wings, stop at tri open   22 Nov 02:36   150.90    -0.65   -0%    +7.82 22 Nov 11:25       -0.65       -0.65       -0.65       -0.65       -0.65
+BTC  Monthly strangle, 1,000 a side               open   22 Nov 02:36   230.93    +9.49    4%   +13.04 22 Nov 13:44       +9.49       +9.49       +9.49       +9.49       +9.49
+BTC  Monthly strangle, 12 % away, one month out   open   22 Nov 02:36   273.69   +13.75    5%   +16.24 22 Nov 13:51      +13.75      +13.75      +13.75      +13.75      +13.75
+BTC  Monthly strangle, 8 % away                   open   22 Nov 02:36   673.36    +5.61    1%   +21.61 22 Nov 13:43       +5.61       +5.61       +5.61       +5.61       +5.61
+BTC  Premium harvest                              open   21 Nov 15:06    14.63    -0.74   -5%    +0.20 21 Nov 17:01       -0.74       -0.74       -0.74       -0.74       -0.74
+BTC  Premium harvest                              open   21 Nov 18:37    14.66    -0.45   -3%    +0.12 22 Nov 11:15       -0.45       -0.45       -0.45       -0.45       -0.45
+BTC  Premium harvest                              open   21 Nov 19:11    14.83    +0.02    0%    +0.50 22 Nov 11:15       +0.02       +0.02       +0.02       +0.02       +0.02
+BTC  Wide evening strangle with wings             closed 21 Nov 23:11    35.39   +33.08   93%   +34.14 22 Nov 15:17      +33.46      +34.50      +33.08      +31.96      +33.64
+ETH  Premium harvest                              open   21 Nov 19:16     7.16    +0.11    2%    +0.25 22 Nov 13:01       +0.11       +0.11       +0.11       +0.11       +0.11
+
+all 26: result +283.34 of 3884.94 premium; sum of own best moments +533.51 (a ceiling no rule reaches)
+change against the real result, all trades together: leg<=10/0.5 +145.23, leg<=5/0.25 +147.84, leg<=5% +135.40, take 90% +67.12, take 95% +0.55
+
+where an overlay changed a trade by more than 1 USD (what it did):
+  BTC Evening strangle, stop at triple (21 Nov 23:11): leg<=10 +81.06 against +39.90: C-BTC-60600-221126 at 8.89 22 Nov 12:53; P-BTC-59400-221126 at 2.72 22 Nov 15:20
+  BTC Evening strangle, stop at triple (21 Nov 23:11): leg<=5 +81.46 against +39.90: C-BTC-60600-221126 at 4.96 22 Nov 13:32; P-BTC-59400-221126 at 2.72 22 Nov 15:20
+  BTC Evening strangle, stop at triple (21 Nov 23:11): leg<=5% +78.23 against +39.90: C-BTC-60600-221126 at 20.01 22 Nov 10:44; P-BTC-59400-221126 at 19.91 22 Nov 15:08
+  BTC Evening strangle, stop at triple (21 Nov 23:11): take 90% +74.02 against +39.90: all at 22 Nov 14:57
+  BTC Wide evening strangle with wings (21 Nov 23:11): leg<=5 +34.50 against +33.08: C-BTC-61000-221126 at 4.34 22 Nov 12:30; P-BTC-59000-221126 at 4.73 22 Nov 15:08
+  BTC Wide evening strangle with wings (21 Nov 23:11): take 90% +31.96 against +33.08: all at 22 Nov 14:11
+  BTC Evening strangle with wings (21 Nov 23:11): leg<=10 +48.30 against +7.14: C-BTC-60600-221126 at 8.89 22 Nov 12:53; P-BTC-59400-221126 at 2.72 22 Nov 15:20
+  BTC Evening strangle with wings (21 Nov 23:11): leg<=5 +48.70 against +7.14: C-BTC-60600-221126 at 4.96 22 Nov 13:32; P-BTC-59400-221126 at 2.72 22 Nov 15:20
+  BTC Evening strangle with wings (21 Nov 23:11): leg<=5% +45.47 against +7.14: C-BTC-60600-221126 at 20.01 22 Nov 10:44; P-BTC-59400-221126 at 19.91 22 Nov 15:08
+  BTC Evening strangle, stop at double (21 Nov 23:11): leg<=10 +81.06 against +39.90: C-BTC-60600-221126 at 8.89 22 Nov 12:53; P-BTC-59400-221126 at 2.72 22 Nov 15:20
+  BTC Evening strangle, stop at double (21 Nov 23:11): leg<=5 +81.46 against +39.90: C-BTC-60600-221126 at 4.96 22 Nov 13:32; P-BTC-59400-221126 at 2.72 22 Nov 15:20
+  BTC Evening strangle, stop at double (21 Nov 23:11): leg<=5% +78.23 against +39.90: C-BTC-60600-221126 at 20.01 22 Nov 10:44; P-BTC-59400-221126 at 19.91 22 Nov 15:08
+  BTC Evening strangle, stop at double (21 Nov 23:11): take 90% +74.02 against +39.90: all at 22 Nov 14:57
+  BTC Evening strangle, trail the rest (22 Nov 00:27): leg<=10 +6.48 against -14.88: C-BTC-60600-221126 at 8.89 22 Nov 12:53
+  BTC Evening strangle, trail the rest (22 Nov 00:27): leg<=5 +6.87 against -14.88: C-BTC-60600-221126 at 4.96 22 Nov 13:32
+  BTC Evening strangle, trail the rest (22 Nov 00:27): leg<=5% +5.53 against -14.88: C-BTC-60600-221126 at 18.33 22 Nov 10:46
+
+by strategy over every tracked day (n = trades):
+  BTC  Afternoon strangle, take half                n= 1 premium    29.20 result   +14.63 kept   50% best moments   +14.63
+  BTC  Evening strangle with wings                  n= 1 premium    49.44 result    +7.14 kept   14% best moments   +42.30
+  BTC  Evening strangle, stop at double             n= 1 premium    82.23 result   +39.90 kept   49% best moments   +74.98
+  BTC  Evening strangle, stop at triple             n= 1 premium    82.23 result   +39.90 kept   49% best moments   +74.98
+  BTC  Evening strangle, take half                  n= 1 premium    74.89 result   +37.52 kept   50% best moments   +37.86
+  BTC  Evening strangle, trail the rest             n= 1 premium    71.35 result   -14.88 kept  -21% best moments   +34.35
+  BTC  Friday weekly strangle, stop at double       n= 1 premium   212.95 result   +13.81 kept    6% best moments   +22.07
+  BTC  Friday weekly strangle, stop at triple       n= 1 premium   212.95 result   +13.81 kept    6% best moments   +22.07
+  BTC  Friday weekly strangle, take half            n= 1 premium   212.95 result   +13.81 kept    6% best moments   +22.07
+  BTC  Friday weekly strangle, trail the rest       n= 1 premium   212.95 result   +13.81 kept    6% best moments   +22.07
+  BTC  Friday weekly strangle, with wings           n= 1 premium   119.54 result    +3.14 kept    3% best moments   +10.92
+  BTC  Monthly 12 %, 1 month out, stop at double    n= 1 premium   273.69 result   +13.75 kept    5% best moments   +16.24
+  BTC  Monthly 12 %, 1 month out, stop at triple    n= 1 premium   273.69 result   +13.75 kept    5% best moments   +16.24
+  BTC  Monthly 12 %, 1 month out, trail the rest    n= 1 premium   273.69 result   +13.75 kept    5% best moments   +16.24
+  BTC  Monthly 12 %, 1 month out, wings and a stop  n= 1 premium    95.88 result    -0.24 kept   -0% best moments    +4.20
+  BTC  Monthly 12 %, 1 month out, wings, stop at tr n= 1 premium    95.88 result    -0.24 kept   -0% best moments    +4.20
+  BTC  Monthly 12 %, 1 month out, with wings        n= 1 premium    95.88 result    -0.24 kept   -0% best moments    +4.20
+  BTC  Monthly 8 %, 1 month out, wings, stop at tri n= 1 premium   150.90 result    -0.65 kept   -0% best moments    +7.82
+  BTC  Monthly strangle, 1,000 a side               n= 1 premium   230.93 result    +9.49 kept    4% best moments   +13.04
+  BTC  Monthly strangle, 12 % away, one month out   n= 1 premium   273.69 result   +13.75 kept    5% best moments   +16.24
+  BTC  Monthly strangle, 8 % away                   n= 1 premium   673.36 result    +5.61 kept    1% best moments   +21.61
+  BTC  Premium harvest                              n= 3 premium    44.11 result    -1.18 kept   -3% best moments    +0.81
+  BTC  Wide evening strangle with wings             n= 1 premium    35.39 result   +33.08 kept   93% best moments   +34.14
+  ETH  Premium harvest                              n= 1 premium     7.16 result    +0.11 kept    2% best moments    +0.25
