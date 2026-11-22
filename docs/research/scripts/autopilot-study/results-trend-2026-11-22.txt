@@ -1,0 +1,226 @@
+## BTC daily: 106 expiries, each side 1 % away, entered 20 h before settlement, stop 3x on each side, held to settlement
+   both sides, every day:        n=106 mean= +11.75 pos= 65% worst= -105.8  halves +675 / +571
+   put side alone, every day:    n=106 mean=  +3.41 pos= 75% worst= -129.1
+   call side alone, every day:   n=106 mean=  +8.34 pos= 85% worst= -135.5
+
+   spot move over the 4 h before the entry, beyond 0.5 %  (no history: 0)
+      after up    put  n= 29 mean=  +9.60 pos= 83% worst=  -60.7   call n= 29 mean= +10.22 pos= 90% worst= -135.5
+      after flat  put  n= 41 mean=  +2.70 pos= 73% worst=  -52.8   call n= 41 mean=  +5.19 pos= 83% worst=  -48.9
+      after down  put  n= 36 mean=  -0.78 pos= 72% worst= -129.1   call n= 36 mean= +10.43 pos= 83% worst=  -73.4
+      both sides always                                    n=106 mean= +11.75 pos= 65% worst= -105.8 total= +1246  halves +675 / +571
+      only the side behind the move (up: put, down: call)  n=106 mean=  +9.22 pos= 75% worst=  -73.4 total=  +977  halves +383 / +595
+      only the side ahead of the move (up: call, down: put) n=106 mean=  +5.58 pos= 74% worst= -135.5 total=  +592  halves +324 / +268
+      trade only after a flat spell                        n=106 mean=  +3.05 pos= 25% worst=  -35.9 total=  +323  halves +32 / +292
+
+   spot move over the 4 h before the entry, beyond 1 %  (no history: 0)
+      after up    put  n= 12 mean= +13.23 pos= 83% worst=  -35.7   call n= 12 mean= +13.02 pos= 92% worst= -103.1
+      after flat  put  n= 72 mean=  +5.68 pos= 78% worst=  -60.7   call n= 72 mean=  +7.27 pos= 85% worst= -135.5
+      after down  put  n= 22 mean=  -9.37 pos= 64% worst= -129.1   call n= 22 mean=  +9.31 pos= 82% worst=  -70.0
+      both sides always                                    n=106 mean= +11.75 pos= 65% worst= -105.8 total= +1246  halves +675 / +571
+      only the side behind the move (up: put, down: call)  n=106 mean= +12.22 pos= 73% worst= -105.8 total= +1295  halves +618 / +678
+      only the side ahead of the move (up: call, down: put) n=106 mean=  +8.32 pos= 70% worst= -129.1 total=  +882  halves +456 / +427
+      trade only after a flat spell                        n=106 mean=  +8.79 pos= 46% worst= -105.8 total=  +932  halves +399 / +533
+
+   spot move over the 4 h before the entry, beyond 2 %  (no history: 0)
+      after up    put  n=  5 mean= +12.49 pos= 80% worst=  -35.7   call n=  5 mean=  +0.44 pos= 80% worst= -103.1
+      after flat  put  n= 96 mean=  +4.63 pos= 76% worst=  -77.5   call n= 96 mean=  +7.40 pos= 84% worst= -135.5
+      after down  put  n=  5 mean= -29.20 pos= 60% worst= -129.1   call n=  5 mean= +34.45 pos=100% worst=  +15.4
+      both sides always                                    n=106 mean= +11.75 pos= 65% worst= -105.8 total= +1246  halves +675 / +571
+      only the side behind the move (up: put, down: call)  n=106 mean= +13.11 pos= 68% worst= -105.8 total= +1389  halves +695 / +694
+      only the side ahead of the move (up: call, down: put) n=106 mean=  +9.54 pos= 66% worst= -129.1 total= +1011  halves +585 / +426
+      trade only after a flat spell                        n=106 mean= +10.89 pos= 59% worst= -105.8 total= +1155  halves +605 / +549
+
+   spot move over the 12 h before the entry, beyond 0.5 %  (no history: 1)
+      after up    put  n= 27 mean= +11.10 pos= 85% worst=  -36.9   call n= 27 mean=  +6.72 pos= 85% worst= -135.5
+      after flat  put  n= 41 mean=  +4.30 pos= 73% worst=  -53.5   call n= 41 mean=  +7.37 pos= 85% worst=  -48.9
+      after down  put  n= 37 mean=  -3.26 pos= 70% worst= -129.1   call n= 37 mean= +10.69 pos= 84% worst=  -73.4
+      both sides always                                    n=105 mean= +11.76 pos= 65% worst= -105.8 total= +1235  halves +664 / +571
+      only the side behind the move (up: put, down: call)  n=105 mean= +11.18 pos= 77% worst=  -73.4 total= +1174  halves +637 / +537
+      only the side ahead of the move (up: call, down: put) n=105 mean=  +5.14 pos= 72% worst= -135.5 total=  +539  halves +289 / +250
+      trade only after a flat spell                        n=105 mean=  +4.56 pos= 26% worst=  -40.2 total=  +479  halves +262 / +216
+
+   spot move over the 12 h before the entry, beyond 1 %  (no history: 1)
+      after up    put  n= 20 mean= +13.24 pos= 85% worst=  -35.7   call n= 20 mean=  +7.95 pos= 90% worst= -135.5
+      after flat  put  n= 65 mean=  +3.60 pos= 75% worst=  -77.5   call n= 65 mean=  +7.15 pos= 83% worst=  -56.7
+      after down  put  n= 20 mean=  -7.16 pos= 65% worst= -129.1   call n= 20 mean= +12.77 pos= 85% worst=  -73.4
+      both sides always                                    n=105 mean= +11.76 pos= 65% worst= -105.8 total= +1235  halves +664 / +571
+      only the side behind the move (up: put, down: call)  n=105 mean= +11.61 pos= 73% worst=  -73.4 total= +1219  halves +684 / +535
+      only the side ahead of the move (up: call, down: put) n=105 mean=  +6.80 pos= 70% worst= -135.5 total=  +714  halves +326 / +388
+      trade only after a flat spell                        n=105 mean=  +6.65 pos= 41% worst=  -62.8 total=  +699  halves +347 / +352
+
+   spot move over the 12 h before the entry, beyond 2 %  (no history: 1)
+      after up    put  n= 10 mean= +15.61 pos= 80% worst=  -35.7   call n= 10 mean=  -0.41 pos= 80% worst= -135.5
+      after flat  put  n= 88 mean=  +3.50 pos= 76% worst= -100.1   call n= 88 mean=  +7.80 pos= 84% worst=  -73.4
+      after down  put  n=  7 mean= -15.54 pos= 57% worst= -129.1   call n=  7 mean= +28.11 pos=100% worst=   +2.9
+      both sides always                                    n=105 mean= +11.76 pos= 65% worst= -105.8 total= +1235  halves +664 / +571
+      only the side behind the move (up: put, down: call)  n=105 mean= +12.83 pos= 70% worst=  -69.2 total= +1348  halves +737 / +611
+      only the side ahead of the move (up: call, down: put) n=105 mean=  +8.40 pos= 67% worst= -135.5 total=  +882  halves +430 / +452
+      trade only after a flat spell                        n=105 mean=  +9.47 pos= 55% worst=  -69.2 total=  +995  halves +503 / +492
+
+   spot move over the 24 h before the entry, beyond 0.5 %  (no history: 1)
+      after up    put  n= 32 mean=  +6.17 pos= 75% worst=  -53.5   call n= 32 mean=  +8.14 pos= 91% worst= -135.5
+      after flat  put  n= 39 mean=  +2.81 pos= 77% worst=  -77.5   call n= 39 mean=  +7.90 pos= 82% worst=  -56.7
+      after down  put  n= 34 mean=  +1.42 pos= 74% worst= -129.1   call n= 34 mean=  +9.14 pos= 82% worst=  -73.4
+      both sides always                                    n=105 mean= +11.76 pos= 65% worst= -105.8 total= +1235  halves +664 / +571
+      only the side behind the move (up: put, down: call)  n=105 mean=  +8.82 pos= 74% worst=  -73.4 total=  +926  halves +505 / +421
+      only the side ahead of the move (up: call, down: put) n=105 mean=  +6.92 pos= 76% worst= -135.5 total=  +727  halves +381 / +346
+      trade only after a flat spell                        n=105 mean=  +3.98 pos= 25% worst=  -50.5 total=  +418  halves +222 / +195
+
+   spot move over the 24 h before the entry, beyond 1 %  (no history: 1)
+      after up    put  n= 21 mean=  +7.12 pos= 71% worst=  -36.9   call n= 21 mean=  +4.96 pos= 86% worst= -135.5
+      after flat  put  n= 58 mean=  +3.48 pos= 78% worst=  -77.5   call n= 58 mean=  +8.86 pos= 86% worst=  -56.7
+      after down  put  n= 26 mean=  +0.15 pos= 73% worst= -129.1   call n= 26 mean= +10.06 pos= 81% worst=  -73.4
+      both sides always                                    n=105 mean= +11.76 pos= 65% worst= -105.8 total= +1235  halves +664 / +571
+      only the side behind the move (up: put, down: call)  n=105 mean= +10.73 pos= 72% worst=  -73.4 total= +1127  halves +611 / +515
+      only the side ahead of the move (up: call, down: put) n=105 mean=  +7.84 pos= 73% worst= -135.5 total=  +824  halves +447 / +377
+      trade only after a flat spell                        n=105 mean=  +6.82 pos= 38% worst=  -50.5 total=  +716  halves +395 / +321
+
+   spot move over the 24 h before the entry, beyond 2 %  (no history: 1)
+      after up    put  n= 11 mean= +20.29 pos= 91% worst=  -25.7   call n= 11 mean=  +1.82 pos= 82% worst= -135.5
+      after flat  put  n= 77 mean=  +2.97 pos= 74% worst=  -77.5   call n= 77 mean=  +7.48 pos= 84% worst=  -73.4
+      after down  put  n= 17 mean=  -5.68 pos= 71% worst= -129.1   call n= 17 mean= +16.68 pos= 88% worst=  -70.0
+      both sides always                                    n=105 mean= +11.76 pos= 65% worst= -105.8 total= +1235  halves +664 / +571
+      only the side behind the move (up: put, down: call)  n=105 mean= +12.49 pos= 71% worst=  -70.0 total= +1311  halves +659 / +653
+      only the side ahead of the move (up: call, down: put) n=105 mean=  +6.93 pos= 68% worst= -135.5 total=  +728  halves +346 / +382
+      trade only after a flat spell                        n=105 mean=  +7.66 pos= 48% worst=  -62.8 total=  +805  halves +341 / +464
+
+   spot move over the 72 h before the entry, beyond 0.5 %  (no history: 3)
+      after up    put  n= 35 mean=  +5.13 pos= 77% worst=  -60.7   call n= 35 mean=  +1.92 pos= 77% worst= -135.5
+      after flat  put  n= 14 mean=  -0.23 pos= 64% worst=  -52.8   call n= 14 mean=  +8.39 pos= 79% worst=  -38.5
+      after down  put  n= 54 mean=  +3.17 pos= 76% worst= -129.1   call n= 54 mean= +12.65 pos= 91% worst=  -70.0
+      both sides always                                    n=103 mean= +11.80 pos= 64% worst= -105.8 total= +1215  halves +644 / +571
+      only the side behind the move (up: put, down: call)  n=103 mean=  +9.48 pos= 83% worst=  -70.0 total=  +977  halves +496 / +481
+      only the side ahead of the move (up: call, down: put) n=103 mean=  +3.42 pos= 75% worst= -135.5 total=  +353  halves +166 / +186
+      trade only after a flat spell                        n=103 mean=  +1.11 pos=  9% worst=  -62.8 total=  +114  halves +18 / +96
+
+   spot move over the 72 h before the entry, beyond 1 %  (no history: 3)
+      after up    put  n= 30 mean=  +5.32 pos= 77% worst=  -60.7   call n= 30 mean=  +0.12 pos= 73% worst= -135.5
+      after flat  put  n= 28 mean=  +2.69 pos= 71% worst=  -52.8   call n= 28 mean=  +8.53 pos= 86% worst=  -38.5
+      after down  put  n= 45 mean=  +2.50 pos= 76% worst= -129.1   call n= 45 mean= +13.90 pos= 91% worst=  -70.0
+      both sides always                                    n=103 mean= +11.80 pos= 64% worst= -105.8 total= +1215  halves +644 / +571
+      only the side behind the move (up: put, down: call)  n=103 mean= +10.67 pos= 81% worst=  -70.0 total= +1099  halves +542 / +557
+      only the side ahead of the move (up: call, down: put) n=103 mean=  +4.18 pos= 73% worst= -135.5 total=  +430  halves +170 / +260
+      trade only after a flat spell                        n=103 mean=  +3.05 pos= 18% worst=  -62.8 total=  +314  halves +68 / +246
+
+   spot move over the 72 h before the entry, beyond 2 %  (no history: 3)
+      after up    put  n= 20 mean=  +7.71 pos= 75% worst=  -60.7   call n= 20 mean=  +3.99 pos= 80% worst= -135.5
+      after flat  put  n= 56 mean=  +3.62 pos= 73% worst=  -53.5   call n= 56 mean=  +7.69 pos= 84% worst=  -73.4
+      after down  put  n= 27 mean=  -0.36 pos= 78% worst= -129.1   call n= 27 mean= +13.23 pos= 89% worst=  -70.0
+      both sides always                                    n=103 mean= +11.80 pos= 64% worst= -105.8 total= +1215  halves +644 / +571
+      only the side behind the move (up: put, down: call)  n=103 mean= +11.12 pos= 72% worst=  -70.0 total= +1145  halves +558 / +587
+      only the side ahead of the move (up: call, down: put) n=103 mean=  +6.83 pos= 70% worst= -135.5 total=  +704  halves +451 / +253
+      trade only after a flat spell                        n=103 mean=  +6.15 pos= 34% worst=  -62.8 total=  +634  halves +365 / +269
+
+## ETH daily: 106 expiries, each side 1 % away, entered 20 h before settlement, stop 3x on each side, held to settlement
+   both sides, every day:        n=106 mean=  +4.46 pos= 61% worst=  -49.6  halves +239 / +234
+   put side alone, every day:    n=106 mean=  +2.64 pos= 78% worst=  -55.2
+   call side alone, every day:   n=106 mean=  +1.83 pos= 76% worst=  -66.6
+
+   spot move over the 4 h before the entry, beyond 0.5 %  (no history: 0)
+      after up    put  n= 31 mean=  +6.14 pos= 84% worst=  -25.9   call n= 31 mean=  -3.12 pos= 65% worst=  -66.6
+      after flat  put  n= 38 mean=  -0.41 pos= 74% worst=  -51.4   call n= 38 mean=  +3.73 pos= 84% worst=  -32.9
+      after down  put  n= 37 mean=  +2.83 pos= 78% worst=  -55.2   call n= 37 mean=  +4.01 pos= 78% worst=  -33.4
+      both sides always                                    n=106 mean=  +4.46 pos= 61% worst=  -49.6 total=  +473  halves +239 / +234
+      only the side behind the move (up: put, down: call)  n=106 mean=  +4.39 pos= 74% worst=  -39.3 total=  +465  halves +324 / +141
+      only the side ahead of the move (up: call, down: put) n=106 mean=  +1.27 pos= 68% worst=  -66.6 total=  +134  halves -9 / +144
+      trade only after a flat spell                        n=106 mean=  +1.19 pos= 22% worst=  -39.3 total=  +126  halves +76 / +51
+
+   spot move over the 4 h before the entry, beyond 1 %  (no history: 0)
+      after up    put  n= 17 mean=  +6.04 pos= 82% worst=  -25.9   call n= 17 mean=  -6.38 pos= 59% worst=  -66.6
+      after flat  put  n= 64 mean=  +2.27 pos= 78% worst=  -51.4   call n= 64 mean=  +3.12 pos= 81% worst=  -57.7
+      after down  put  n= 25 mean=  +1.25 pos= 76% worst=  -55.2   call n= 25 mean=  +4.10 pos= 76% worst=  -33.4
+      both sides always                                    n=106 mean=  +4.46 pos= 61% worst=  -49.6 total=  +473  halves +239 / +234
+      only the side behind the move (up: put, down: call)  n=106 mean=  +5.19 pos= 70% worst=  -44.6 total=  +550  halves +319 / +231
+      only the side ahead of the move (up: call, down: put) n=106 mean=  +2.53 pos= 66% worst=  -66.6 total=  +268  halves +75 / +193
+      trade only after a flat spell                        n=106 mean=  +3.25 pos= 39% worst=  -44.6 total=  +345  halves +155 / +190
+
+   spot move over the 4 h before the entry, beyond 2 %  (no history: 0)
+      after up    put  n=  7 mean= +11.29 pos=100% worst=   +7.6   call n=  7 mean=  -6.84 pos= 57% worst=  -66.6
+      after flat  put  n= 87 mean=  +2.49 pos= 77% worst=  -51.4   call n= 87 mean=  +1.96 pos= 77% worst=  -57.7
+      after down  put  n= 12 mean=  -1.38 pos= 75% worst=  -55.2   call n= 12 mean=  +5.90 pos= 83% worst=  -33.4
+      both sides always                                    n=106 mean=  +4.46 pos= 61% worst=  -49.6 total=  +473  halves +239 / +234
+      only the side behind the move (up: put, down: call)  n=106 mean=  +5.07 pos= 66% worst=  -44.6 total=  +537  halves +251 / +286
+      only the side ahead of the move (up: call, down: put) n=106 mean=  +3.05 pos= 62% worst=  -66.6 total=  +323  halves +144 / +179
+      trade only after a flat spell                        n=106 mean=  +3.66 pos= 50% worst=  -44.6 total=  +388  halves +156 / +231
+
+   spot move over the 12 h before the entry, beyond 0.5 %  (no history: 1)
+      after up    put  n= 32 mean=  +6.06 pos= 84% worst=  -25.9   call n= 32 mean=  -3.09 pos= 66% worst=  -66.6
+      after flat  put  n= 36 mean=  +0.19 pos= 75% worst=  -51.4   call n= 36 mean=  +2.83 pos= 81% worst=  -32.9
+      after down  put  n= 37 mean=  +2.02 pos= 76% worst=  -55.2   call n= 37 mean=  +5.03 pos= 81% worst=  -33.4
+      both sides always                                    n=105 mean=  +4.42 pos= 61% worst=  -49.6 total=  +464  halves +230 / +234
+      only the side behind the move (up: put, down: call)  n=105 mean=  +4.65 pos= 74% worst=  -39.3 total=  +488  halves +268 / +220
+      only the side ahead of the move (up: call, down: put) n=105 mean=  +0.80 pos= 67% worst=  -66.6 total=   +84  halves -7 / +91
+      trade only after a flat spell                        n=105 mean=  +1.03 pos= 20% worst=  -39.3 total=  +109  halves +31 / +77
+
+   spot move over the 12 h before the entry, beyond 1 %  (no history: 1)
+      after up    put  n= 23 mean=  +7.70 pos= 87% worst=  -25.9   call n= 23 mean=  -4.96 pos= 57% worst=  -66.6
+      after flat  put  n= 55 mean=  +1.35 pos= 76% worst=  -51.4   call n= 55 mean=  +2.85 pos= 82% worst=  -40.1
+      after down  put  n= 27 mean=  +0.88 pos= 74% worst=  -55.2   call n= 27 mean=  +5.43 pos= 81% worst=  -33.4
+      both sides always                                    n=105 mean=  +4.42 pos= 61% worst=  -49.6 total=  +464  halves +230 / +234
+      only the side behind the move (up: put, down: call)  n=105 mean=  +5.28 pos= 71% worst=  -39.3 total=  +555  halves +315 / +240
+      only the side ahead of the move (up: call, down: put) n=105 mean=  +1.34 pos= 63% worst=  -66.6 total=  +141  halves -9 / +149
+      trade only after a flat spell                        n=105 mean=  +2.20 pos= 31% worst=  -39.3 total=  +231  halves +76 / +155
+
+   spot move over the 12 h before the entry, beyond 2 %  (no history: 1)
+      after up    put  n= 13 mean=  +8.16 pos= 85% worst=  -25.9   call n= 13 mean=  -1.23 pos= 69% worst=  -66.6
+      after flat  put  n= 76 mean=  +2.14 pos= 78% worst=  -51.4   call n= 76 mean=  +1.87 pos= 78% worst=  -57.7
+      after down  put  n= 16 mean=  +0.41 pos= 75% worst=  -55.2   call n= 16 mean=  +3.93 pos= 75% worst=  -33.4
+      both sides always                                    n=105 mean=  +4.42 pos= 61% worst=  -49.6 total=  +464  halves +230 / +234
+      only the side behind the move (up: put, down: call)  n=105 mean=  +4.51 pos= 67% worst=  -44.6 total=  +474  halves +227 / +247
+      only the side ahead of the move (up: call, down: put) n=105 mean=  +2.81 pos= 65% worst=  -66.6 total=  +295  halves +60 / +235
+      trade only after a flat spell                        n=105 mean=  +2.90 pos= 45% worst=  -44.6 total=  +305  halves +56 / +248
+
+   spot move over the 24 h before the entry, beyond 0.5 %  (no history: 1)
+      after up    put  n= 39 mean=  +4.94 pos= 82% worst=  -30.2   call n= 39 mean=  -0.36 pos= 72% worst=  -66.6
+      after flat  put  n= 27 mean=  -0.88 pos= 74% worst=  -51.4   call n= 27 mean=  +2.86 pos= 81% worst=  -32.9
+      after down  put  n= 39 mean=  +2.74 pos= 77% worst=  -55.2   call n= 39 mean=  +3.22 pos= 77% worst=  -40.1
+      both sides always                                    n=105 mean=  +4.42 pos= 61% worst=  -49.6 total=  +464  halves +230 / +234
+      only the side behind the move (up: put, down: call)  n=105 mean=  +3.54 pos= 74% worst=  -40.1 total=  +371  halves +269 / +102
+      only the side ahead of the move (up: call, down: put) n=105 mean=  +1.39 pos= 70% worst=  -66.6 total=  +146  halves +34 / +112
+      trade only after a flat spell                        n=105 mean=  +0.51 pos= 15% worst=  -39.3 total=   +53  halves +73 / -20
+
+   spot move over the 24 h before the entry, beyond 1 %  (no history: 1)
+      after up    put  n= 24 mean=  +5.26 pos= 79% worst=  -25.9   call n= 24 mean=  -1.48 pos= 71% worst=  -66.6
+      after flat  put  n= 52 mean=  +1.15 pos= 79% worst=  -51.4   call n= 52 mean=  +2.41 pos= 79% worst=  -32.9
+      after down  put  n= 29 mean=  +3.08 pos= 76% worst=  -55.2   call n= 29 mean=  +3.41 pos= 76% worst=  -40.1
+      both sides always                                    n=105 mean=  +4.42 pos= 61% worst=  -49.6 total=  +464  halves +230 / +234
+      only the side behind the move (up: put, down: call)  n=105 mean=  +3.91 pos= 69% worst=  -40.1 total=  +410  halves +238 / +172
+      only the side ahead of the move (up: call, down: put) n=105 mean=  +2.28 pos= 67% worst=  -66.6 total=  +239  halves +60 / +179
+      trade only after a flat spell                        n=105 mean=  +1.76 pos= 30% worst=  -39.3 total=  +185  halves +68 / +117
+
+   spot move over the 24 h before the entry, beyond 2 %  (no history: 1)
+      after up    put  n= 13 mean=  +8.34 pos= 85% worst=  -18.4   call n= 13 mean=  -6.71 pos= 62% worst=  -66.6
+      after flat  put  n= 73 mean=  +2.53 pos= 79% worst=  -51.4   call n= 73 mean=  +1.78 pos= 75% worst=  -40.1
+      after down  put  n= 19 mean=  -0.95 pos= 68% worst=  -55.2   call n= 19 mean=  +7.70 pos= 89% worst=  -33.4
+      both sides always                                    n=105 mean=  +4.42 pos= 61% worst=  -49.6 total=  +464  halves +230 / +234
+      only the side behind the move (up: put, down: call)  n=105 mean=  +5.42 pos= 70% worst=  -44.6 total=  +570  halves +303 / +267
+      only the side ahead of the move (up: call, down: put) n=105 mean=  +1.99 pos= 63% worst=  -66.6 total=  +209  halves +38 / +171
+      trade only after a flat spell                        n=105 mean=  +3.00 pos= 43% worst=  -44.6 total=  +315  halves +111 / +204
+
+   spot move over the 72 h before the entry, beyond 0.5 %  (no history: 3)
+      after up    put  n= 39 mean=  +4.06 pos= 77% worst=  -25.9   call n= 39 mean=  +0.98 pos= 79% worst=  -66.6
+      after flat  put  n= 16 mean=  +1.09 pos= 88% worst=  -51.4   call n= 16 mean=  +1.21 pos= 75% worst=  -27.8
+      after down  put  n= 48 mean=  +1.93 pos= 75% worst=  -55.2   call n= 48 mean=  +2.55 pos= 73% worst=  -33.4
+      both sides always                                    n=103 mean=  +4.36 pos= 60% worst=  -49.6 total=  +449  halves +215 / +234
+      only the side behind the move (up: put, down: call)  n=103 mean=  +3.09 pos= 73% worst=  -39.3 total=  +318  halves +132 / +186
+      only the side ahead of the move (up: call, down: put) n=103 mean=  +1.63 pos= 75% worst=  -66.6 total=  +168  halves +87 / +81
+      trade only after a flat spell                        n=103 mean=  +0.36 pos= 10% worst=  -39.3 total=   +37  halves +4 / +33
+
+   spot move over the 72 h before the entry, beyond 1 %  (no history: 3)
+      after up    put  n= 33 mean=  +5.38 pos= 79% worst=  -25.9   call n= 33 mean=  -0.30 pos= 76% worst=  -66.6
+      after flat  put  n= 26 mean=  +0.43 pos= 81% worst=  -51.4   call n= 26 mean=  +1.45 pos= 77% worst=  -27.8
+      after down  put  n= 44 mean=  +1.81 pos= 75% worst=  -55.2   call n= 44 mean=  +3.46 pos= 75% worst=  -33.4
+      both sides always                                    n=103 mean=  +4.36 pos= 60% worst=  -49.6 total=  +449  halves +215 / +234
+      only the side behind the move (up: put, down: call)  n=103 mean=  +3.68 pos= 72% worst=  -39.3 total=  +379  halves +192 / +187
+      only the side ahead of the move (up: call, down: put) n=103 mean=  +1.15 pos= 71% worst=  -66.6 total=  +119  halves +48 / +71
+      trade only after a flat spell                        n=103 mean=  +0.47 pos= 15% worst=  -39.3 total=   +49  halves +26 / +23
+
+   spot move over the 72 h before the entry, beyond 2 %  (no history: 3)
+      after up    put  n= 19 mean=  +9.51 pos= 89% worst=  -18.4   call n= 19 mean=  -6.09 pos= 58% worst=  -66.6
+      after flat  put  n= 49 mean=  +0.77 pos= 76% worst=  -51.4   call n= 49 mean=  +3.84 pos= 84% worst=  -27.8
+      after down  put  n= 35 mean=  +1.44 pos= 74% worst=  -55.2   call n= 35 mean=  +3.07 pos= 74% worst=  -33.4
+      both sides always                                    n=103 mean=  +4.36 pos= 60% worst=  -49.6 total=  +449  halves +215 / +234
+      only the side behind the move (up: put, down: call)  n=103 mean=  +4.99 pos= 72% worst=  -44.6 total=  +514  halves +276 / +238
+      only the side ahead of the move (up: call, down: put) n=103 mean=  +1.56 pos= 66% worst=  -66.6 total=  +160  halves +83 / +77
+      trade only after a flat spell                        n=103 mean=  +2.19 pos= 30% worst=  -44.6 total=  +226  halves +144 / +82
+
