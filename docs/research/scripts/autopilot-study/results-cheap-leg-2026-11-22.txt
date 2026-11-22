@@ -1,0 +1,145 @@
+## BTC daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option; mean premium 36.5
+   hold both legs to settlement (the stop only)         n=106 mean=  +11.75 pos= 65% worst=  -105.8 total=  +1246  halves +675 / +571
+   buy a leg back alone at 20 % of its entry price      n=106 mean=  +13.34 pos= 73% worst=  -111.4 total=  +1414  halves +753 / +661
+   buy a leg back alone at 10 % of its entry price      n=106 mean=  +11.12 pos= 66% worst=  -108.2 total=  +1178  halves +637 / +542
+   buy a leg back alone at 5 % of its entry price       n=106 mean=  +11.33 pos= 65% worst=  -107.3 total=  +1201  halves +657 / +544
+   buy a leg back alone at 2 % of its entry price       n=106 mean=  +11.38 pos= 65% worst=  -106.3 total=  +1206  halves +655 / +552
+   close the whole trade at 75 % of the premium         n=106 mean=  +10.40 pos= 71% worst=  -105.8 total=  +1103  halves +534 / +569
+   close the whole trade at 90 % of the premium         n=106 mean=  +10.99 pos= 66% worst=  -105.8 total=  +1165  halves +635 / +530
+
+   What happened to a sold leg after it had been that cheap (legs, not trades; the stop is ignored after the cheap moment only to see the path):
+             legs that got there  hours in (median)  later hit the stop  settled above entry  settled with any value  mean cost of holding on
+      20 %     182 of  212 ( 86 %)             9.9 h                   9                    8                      17                    +0.28
+      10 %     171 of  212 ( 81 %)            13.5 h                   2                    3                       9                    -0.71
+       5 %     165 of  212 ( 78 %)            15.3 h                   0                    2                       6                    -0.25
+       2 %     161 of  212 ( 76 %)            16.2 h                   0                    0                       2                    -0.24
+
+   BTC daily: buy a sold leg back alone when its mark falls to a fixed price (mean entry price of a leg 182.6)
+   hold both legs to settlement (the stop only)         n=106 mean=  +11.75 pos= 65% worst=  -105.8 total=  +1246  halves +675 / +571
+   buy a leg back alone at a mark of 20                 n=106 mean=  +11.55 pos= 70% worst=  -107.3 total=  +1224  halves +678 / +546
+   buy a leg back alone at a mark of 10                 n=106 mean=  +11.51 pos= 66% worst=  -106.8 total=  +1221  halves +608 / +613
+   buy a leg back alone at a mark of 5                  n=106 mean=  +11.30 pos= 66% worst=  -106.3 total=  +1198  halves +650 / +548
+   buy a leg back alone at a mark of 2                  n=106 mean=  +11.53 pos= 65% worst=  -106.0 total=  +1223  halves +665 / +558
+
+       mark  legs that got there  hours in (median)  later back above 5x  above 10x  hit the stop  settled above entry  settled with any value  highest later mark (median, max)
+         20    176 of  212 ( 83 %)            11.3 h                   24         10             7                    5                      11                 26.7,     833.5
+         10    168 of  212 ( 79 %)            14.0 h                   21         13             3                    1                       6                 13.3,     590.5
+          5    163 of  212 ( 77 %)            15.4 h                   17          9             2                    0                       2                  6.3,     184.4
+          2    161 of  212 ( 76 %)            16.2 h                   28         14             0                    0                       2                  2.2,     126.5
+
+## BTC daily, stop at double: 106 trades, each side 1 % away, entered 20 h before settlement, stop 2x on each sold option; mean premium 36.5
+   hold both legs to settlement (the stop only)         n=106 mean=   +7.58 pos= 49% worst=   -39.8 total=   +803  halves +340 / +463
+   buy a leg back alone at 20 % of its entry price      n=106 mean=   +9.91 pos= 53% worst=   -29.3 total=  +1050  halves +529 / +521
+   buy a leg back alone at 10 % of its entry price      n=106 mean=   +6.74 pos= 46% worst=   -39.8 total=   +715  halves +293 / +422
+   buy a leg back alone at 5 % of its entry price       n=106 mean=   +7.35 pos= 47% worst=   -39.8 total=   +779  halves +332 / +447
+   buy a leg back alone at 2 % of its entry price       n=106 mean=   +7.26 pos= 49% worst=   -39.8 total=   +769  halves +322 / +447
+   close the whole trade at 75 % of the premium         n=106 mean=   +7.62 pos= 54% worst=   -39.8 total=   +808  halves +278 / +531
+   close the whole trade at 90 % of the premium         n=106 mean=   +7.56 pos= 50% worst=   -39.8 total=   +801  halves +339 / +462
+
+   What happened to a sold leg after it had been that cheap (legs, not trades; the stop is ignored after the cheap moment only to see the path):
+             legs that got there  hours in (median)  later hit the stop  settled above entry  settled with any value  mean cost of holding on
+      20 %     156 of  212 ( 74 %)             9.5 h                  11                    7                      16                    +0.66
+      10 %     142 of  212 ( 67 %)            12.7 h                   1                    2                       7                    -0.78
+       5 %     138 of  212 ( 65 %)            14.9 h                   0                    2                       5                    -0.16
+       2 %     134 of  212 ( 63 %)            15.7 h                   0                    0                       1                    -0.24
+
+   BTC daily, stop at double: buy a sold leg back alone when its mark falls to a fixed price (mean entry price of a leg 182.6)
+   hold both legs to settlement (the stop only)         n=106 mean=   +7.58 pos= 49% worst=   -39.8 total=   +803  halves +340 / +463
+   buy a leg back alone at a mark of 20                 n=106 mean=   +7.36 pos= 49% worst=   -39.8 total=   +780  halves +353 / +427
+   buy a leg back alone at a mark of 10                 n=106 mean=   +7.30 pos= 48% worst=   -39.8 total=   +774  halves +292 / +482
+   buy a leg back alone at a mark of 5                  n=106 mean=   +7.09 pos= 50% worst=   -39.8 total=   +751  halves +317 / +434
+   buy a leg back alone at a mark of 2                  n=106 mean=   +7.37 pos= 49% worst=   -39.8 total=   +782  halves +330 / +451
+
+       mark  legs that got there  hours in (median)  later back above 5x  above 10x  hit the stop  settled above entry  settled with any value  highest later mark (median, max)
+         20    151 of  212 ( 71 %)            10.5 h                   21          9            10                    4                       9                 27.1,     833.5
+         10    141 of  212 ( 67 %)            13.4 h                   18         12             3                    1                       5                 13.3,     590.5
+          5    135 of  212 ( 64 %)            15.2 h                   15          8             1                    0                       1                  6.5,     184.4
+          2    134 of  212 ( 63 %)            16.1 h                   23         11             0                    0                       1                  2.2,     126.5
+
+## ETH daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option; mean premium 21.0
+   hold both legs to settlement (the stop only)         n=106 mean=   +4.46 pos= 61% worst=   -49.6 total=   +473  halves +239 / +234
+   buy a leg back alone at 20 % of its entry price      n=106 mean=   +2.84 pos= 62% worst=   -52.7 total=   +301  halves +183 / +118
+   buy a leg back alone at 10 % of its entry price      n=106 mean=   +4.13 pos= 62% worst=   -50.2 total=   +438  halves +235 / +203
+   buy a leg back alone at 5 % of its entry price       n=106 mean=   +4.21 pos= 61% worst=   -50.2 total=   +447  halves +225 / +221
+   buy a leg back alone at 2 % of its entry price       n=106 mean=   +4.21 pos= 61% worst=   -49.8 total=   +446  halves +227 / +220
+   close the whole trade at 75 % of the premium         n=106 mean=   +3.59 pos= 66% worst=   -49.6 total=   +381  halves +185 / +196
+   close the whole trade at 90 % of the premium         n=106 mean=   +4.57 pos= 62% worst=   -49.6 total=   +484  halves +261 / +224
+
+   What happened to a sold leg after it had been that cheap (legs, not trades; the stop is ignored after the cheap moment only to see the path):
+             legs that got there  hours in (median)  later hit the stop  settled above entry  settled with any value  mean cost of holding on
+      20 %     165 of  212 ( 78 %)             8.9 h                   1                    5                      11                    -1.13
+      10 %     162 of  212 ( 76 %)            11.8 h                   1                    4                       8                    -0.35
+       5 %     157 of  212 ( 74 %)            13.2 h                   0                    2                       3                    -0.16
+       2 %     154 of  212 ( 73 %)            15.9 h                   0                    0                       0                    -0.17
+
+   ETH daily: buy a sold leg back alone when its mark falls to a fixed price (mean entry price of a leg 10.5)
+   hold both legs to settlement (the stop only)         n=106 mean=   +4.46 pos= 61% worst=   -49.6 total=   +473  halves +239 / +234
+   buy a leg back alone at a mark of 1                  n=106 mean=   +4.18 pos= 62% worst=   -50.2 total=   +444  halves +233 / +210
+   buy a leg back alone at a mark of 0.5                n=106 mean=   +4.34 pos= 61% worst=   -50.0 total=   +460  halves +222 / +238
+   buy a leg back alone at a mark of 0.25               n=106 mean=   +4.15 pos= 61% worst=   -49.8 total=   +440  halves +222 / +218
+   buy a leg back alone at a mark of 0.1                n=106 mean=   +4.34 pos= 61% worst=   -49.7 total=   +460  halves +233 / +228
+
+       mark  legs that got there  hours in (median)  later back above 5x  above 10x  hit the stop  settled above entry  settled with any value  highest later mark (median, max)
+          1    161 of  212 ( 76 %)            11.5 h                   20          7             1                    4                       7                  1.5,      40.8
+        0.5    158 of  212 ( 75 %)            13.0 h                   29         11             0                    3                       4                  0.8,      30.7
+       0.25    154 of  212 ( 73 %)            15.0 h                   39         18             0                    0                       0                  0.4,       8.2
+        0.1    154 of  212 ( 73 %)            16.5 h                   47         27             0                    0                       0                  0.1,       5.2
+
+## BTC weekly (Friday): 51 trades, each side 3 % away, entered 164 h before settlement, stop 3x on each sold option; mean premium 149.0
+   hold both legs to settlement (the stop only)         n= 51 mean=  +40.65 pos= 57% worst=  -168.3 total=  +2073  halves +1525 / +548
+   buy a leg back alone at 20 % of its entry price      n= 51 mean=  +34.59 pos= 61% worst=  -187.9 total=  +1764  halves +1082 / +682
+   buy a leg back alone at 10 % of its entry price      n= 51 mean=  +37.44 pos= 59% worst=  -178.5 total=  +1910  halves +1278 / +632
+   buy a leg back alone at 5 % of its entry price       n= 51 mean=  +43.04 pos= 59% worst=  -172.7 total=  +2195  halves +1462 / +733
+   buy a leg back alone at 2 % of its entry price       n= 51 mean=  +39.05 pos= 57% worst=  -169.7 total=  +1991  halves +1472 / +520
+   close the whole trade at 75 % of the premium         n= 51 mean=  +43.58 pos= 65% worst=  -168.3 total=  +2223  halves +1349 / +874
+   close the whole trade at 90 % of the premium         n= 51 mean=  +44.39 pos= 59% worst=  -168.3 total=  +2264  halves +1524 / +740
+
+   What happened to a sold leg after it had been that cheap (legs, not trades; the stop is ignored after the cheap moment only to see the path):
+             legs that got there  hours in (median)  later hit the stop  settled above entry  settled with any value  mean cost of holding on
+      20 %      80 of  102 ( 78 %)            98.0 h                   2                    4                       8                    -3.88
+      10 %      77 of  102 ( 75 %)           119.0 h                   1                    1                       5                    -2.18
+       5 %      75 of  102 ( 74 %)           133.0 h                   1                    1                       4                    +1.41
+       2 %      71 of  102 ( 70 %)           143.0 h                   0                    0                       0                    -1.10
+
+   BTC weekly (Friday): buy a sold leg back alone when its mark falls to a fixed price (mean entry price of a leg 745.0)
+   hold both legs to settlement (the stop only)         n= 51 mean=  +40.65 pos= 57% worst=  -168.3 total=  +2073  halves +1525 / +548
+   buy a leg back alone at a mark of 20                 n= 51 mean=  +38.72 pos= 57% worst=  -169.7 total=  +1975  halves +1470 / +504
+   buy a leg back alone at a mark of 10                 n= 51 mean=  +39.65 pos= 57% worst=  -168.9 total=  +2022  halves +1498 / +524
+   buy a leg back alone at a mark of 5                  n= 51 mean=  +40.14 pos= 57% worst=  -168.6 total=  +2047  halves +1512 / +536
+   buy a leg back alone at a mark of 2                  n= 51 mean=  +40.45 pos= 57% worst=  -168.5 total=  +2063  halves +1519 / +543
+
+       mark  legs that got there  hours in (median)  later back above 5x  above 10x  hit the stop  settled above entry  settled with any value  highest later mark (median, max)
+         20     72 of  102 ( 71 %)           142.0 h                    6          4             0                    0                       1                 18.0,     450.8
+         10     71 of  102 ( 70 %)           145.0 h                    4          3             0                    0                       0                  7.5,     450.8
+          5     71 of  102 ( 70 %)           147.0 h                    2          2             0                    0                       0                  3.0,     450.8
+          2     71 of  102 ( 70 %)           149.0 h                    3          2             0                    0                       0                  1.3,     450.8
+
+## ETH weekly (Friday): 51 trades, each side 4 % away, entered 164 h before settlement, stop 3x on each sold option; mean premium 66.0
+   hold both legs to settlement (the stop only)         n= 51 mean=  +14.43 pos= 57% worst=   -82.7 total=   +736  halves +704 / +32
+   buy a leg back alone at 20 % of its entry price      n= 51 mean=   +9.88 pos= 57% worst=   -84.4 total=   +504  halves +536 / -32
+   buy a leg back alone at 10 % of its entry price      n= 51 mean=  +12.80 pos= 57% worst=   -83.3 total=   +653  halves +619 / +34
+   buy a leg back alone at 5 % of its entry price       n= 51 mean=  +12.64 pos= 57% worst=   -82.9 total=   +645  halves +649 / -4
+   buy a leg back alone at 2 % of its entry price       n= 51 mean=  +13.89 pos= 57% worst=   -82.8 total=   +708  halves +689 / +19
+   close the whole trade at 75 % of the premium         n= 51 mean=  +13.47 pos= 63% worst=   -72.4 total=   +687  halves +561 / +126
+   close the whole trade at 90 % of the premium         n= 51 mean=  +15.10 pos= 59% worst=   -82.7 total=   +770  halves +686 / +85
+
+   What happened to a sold leg after it had been that cheap (legs, not trades; the stop is ignored after the cheap moment only to see the path):
+             legs that got there  hours in (median)  later hit the stop  settled above entry  settled with any value  mean cost of holding on
+      20 %      77 of  102 ( 75 %)           104.0 h                   1                    2                       8                    -3.04
+      10 %      74 of  102 ( 73 %)           119.0 h                   1                    2                       5                    -1.25
+       5 %      71 of  102 ( 70 %)           124.0 h                   0                    0                       2                    -1.24
+       2 %      71 of  102 ( 70 %)           137.0 h                   0                    0                       2                    -0.37
+
+   ETH weekly (Friday): buy a sold leg back alone when its mark falls to a fixed price (mean entry price of a leg 33.0)
+   hold both legs to settlement (the stop only)         n= 51 mean=  +14.43 pos= 57% worst=   -82.7 total=   +736  halves +704 / +32
+   buy a leg back alone at a mark of 1                  n= 51 mean=  +13.44 pos= 57% worst=   -83.7 total=   +686  halves +683 / +3
+   buy a leg back alone at a mark of 0.5                n= 51 mean=  +14.10 pos= 57% worst=   -83.2 total=   +719  halves +700 / +19
+   buy a leg back alone at a mark of 0.25               n= 51 mean=  +14.37 pos= 57% worst=   -82.9 total=   +733  halves +707 / +26
+   buy a leg back alone at a mark of 0.1                n= 51 mean=  +14.54 pos= 57% worst=   -82.8 total=   +742  halves +711 / +31
+
+       mark  legs that got there  hours in (median)  later back above 5x  above 10x  hit the stop  settled above entry  settled with any value  highest later mark (median, max)
+          1     71 of  102 ( 70 %)           131.0 h                    5          2             0                    0                       2                  1.1,      12.7
+        0.5     71 of  102 ( 70 %)           138.0 h                    7          4             0                    0                       2                  0.5,      12.7
+       0.25     71 of  102 ( 70 %)           148.0 h                   13          5             0                    0                       2                  0.3,      10.5
+        0.1     71 of  102 ( 70 %)           154.0 h                    7          6             0                    0                       2                  0.1,      10.5
+
