@@ -2131,5 +2131,49 @@
     "how": "twenty playbooks that trade one coin each: six ETH and four XAUT evening strangles, five ETH weekly (four entered on a Friday, one on a Tuesday) and five ETH monthly ones on month-end expiries; strikes are the listed ones a percentage of that coin's spot away and the size is that coin's lot; Autopilot looks at XAUT as well as BTC and ETH; XAUT settles at 16:00 UTC, so its evening entry is the hour after one expiry for the next, with no entry on a Saturday evening; XAUT has no weekly or monthly playbook; the screen lists the rows under the coin filter",
     "evidence": "ADR-119, GAPS #154 (22 Nov 2026): packages/pricing/src/playbooks.ts (ALT_DAILY_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS), apps/api/src/autopilot.ts (AUTOPILOT_ASSETS), docs/research/scripts/autopilot-study (study_premium.py, study_monthly.py and the fetch scripts take the settlement hour from the coin; results-daily-ETH, results-daily-XAUT, results-entry-hours, results-weekly-ETH, results-weekly-XAUT, results-monthly-ETH of 22 Nov 2026); tests: packages/pricing/src/playbooks.test.ts HC-TR-235, apps/api/src/autopilot.test.ts HC-TR-235, autopilot-page.test.tsx HC-TR-232 (the coin buttons)",
     "test": "integration (api)"
+  },
+  {
+    "route": "/desk",
+    "screen": "Trading · Protect dialog / cards · Details",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "A profit step closes part of a paper trade and keeps the rest",
+    "how": "a rule of kind step fires when the lots still open are up by its level (their gain over the premium they were opened for) and closes its share of every open leg in whole lots, never none and never the last lot; a ladder is up to four steps and a last part with no rule; steps exclude a target, do not disarm the other rules, are judged lowest level first, and are refused on a live trade",
+    "evidence": "ADR-120, GAPS #155 (22 Nov 2026): packages/schema/src/strategies.ts (step, closeShare, stepLots, openProfitPct, LADDER_STEPS), apps/api/src/rules-engine.ts, apps/api/src/routes/strategies.ts (PUT rules), apps/api/drizzle/0030_modern_siren.sql; tests: packages/schema/src/strategies.test.ts HC-TR-236, apps/api/src/rules-engine.test.ts HC-TR-236",
+    "test": "integration (api)"
+  },
+  {
+    "route": "/desk",
+    "screen": "Trading · Protect dialog / cards · Details",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Take profit in steps in the Protect dialog",
+    "how": "a box under the Target with presets (Early 10 / 25 / 40 / 55, Standard 25 / 50 / 75, Late 50 / 75, each with the last part held) and custom rows of a level and whole lots; it shows what each step banks, turns the target off when ticked and the other way round, and refuses lots that do not add up, levels that do not rise, a level already reached, and a live trade",
+    "evidence": "ADR-120 (22 Nov 2026): apps/web/src/components/trading/RuleDialog.tsx (rule-ladder), apps/web/src/lib/strategy/ladder.ts; tests: apps/web/src/lib/strategy/ladder.test.ts HC-TR-237, apps/web/src/components/trading/rules.test.tsx HC-TR-237",
+    "test": "component (web)"
+  },
+  {
+    "route": "/desk",
+    "screen": "Trading · Protect dialog / cards · Details",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The card counts the profit steps taken",
+    "how": "the rules line of a trade reads \"profit steps 1 of 4 taken, next at 50 %\" beside its other armed rules, and \"the rest held\" once the last step has fired",
+    "evidence": "ADR-120 (22 Nov 2026): apps/web/src/lib/strategy/ladder.ts (ladderProgress, ladderText), RuleDialog.tsx (rulesLine, ruleText); tests: ladder.test.ts HC-TR-238, rules.test.tsx HC-TR-237",
+    "test": "unit (web)"
+  },
+  {
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Autopilot strategies with a profit ladder",
+    "how": "a clock playbook may carry a ladder; Autopilot arms a step at each level, each an equal part of what is left, beside the stop on each sold option; three paper playbooks use 25 / 50 / 75 with a stop at triple: BTC daily, ETH daily and the BTC Friday weekly, beside the existing ones",
+    "evidence": "ADR-120 (22 Nov 2026): packages/pricing/src/playbooks.ts (PlaybookClock.ladder, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS), apps/api/src/autopilot.ts (plan.ladder), packages/schema/src/autopilot.ts (run detail), AutopilotPage.tsx; tests: packages/pricing/src/playbooks.test.ts HC-TR-239, apps/api/src/autopilot.test.ts HC-TR-239",
+    "test": "integration (api)"
   }
 ]

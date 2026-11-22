@@ -161,7 +161,7 @@ export type StrategyAdjustment = z.infer<typeof StrategyAdjustment>;
  * trail is never armed by hand: the engine arms it when a leg stop set to trail the rest fires (ADR-104), and it
  * watches what the legs still open have gained since that moment.
  */
-export const RULE_KINDS = ["stop", "target", "leg_stop", "spot", "time", "trail"] as const;
+export const RULE_KINDS = ["stop", "target", "leg_stop", "spot", "time", "trail", "step"] as const;
 export const RuleKind = z.enum(RULE_KINDS);
 export type RuleKind = z.infer<typeof RuleKind>;
 /**
@@ -173,7 +173,7 @@ export type RuleKind = z.infer<typeof RuleKind>;
 export const RULE_TRIGGERS = ["money", "pct", "multiple", "price", "above", "below", "at", "dte", "settle"] as const;
 export const RuleTrigger = z.enum(RULE_TRIGGERS);
 export type RuleTrigger = z.infer<typeof RuleTrigger>;
-export const RULE_TRIGGERS_OF: Record<RuleKind, readonly RuleTrigger[]> = { stop: ["money", "pct"], target: ["money", "pct"], leg_stop: ["multiple", "price"], spot: ["above", "below"], time: ["at", "dte", "settle"], trail: ["money", "pct"] };
+export const RULE_TRIGGERS_OF: Record<RuleKind, readonly RuleTrigger[]> = { stop: ["money", "pct"], target: ["money", "pct"], leg_stop: ["multiple", "price"], spot: ["above", "below"], time: ["at", "dte", "settle"], trail: ["money", "pct"], step: ["pct"] };
 /** A settle rule's lead: at least a minute, at most twelve hours before the settlement instant. */
 export const SETTLE_LEAD_MINUTES = { min: 1, max: 720, default: 15 } as const;
 /** What a fire exits: the whole strategy, or (leg_stop only) the watched leg alone. */
@@ -190,11 +190,53 @@ export type RuleState = z.infer<typeof RuleState>;
 export const RULE_CHANNELS = ["push", "email", "telegram"] as const;
 export const RuleChannel = z.enum(RULE_CHANNELS);
 export type RuleChannel = z.infer<typeof RuleChannel>;
-export const RULE_KIND_LABELS: Record<RuleKind, string> = { stop: "Stop loss", target: "Target", leg_stop: "Leg stop", spot: "Spot level", time: "Time exit", trail: "Trail on the rest" };
+export const RULE_KIND_LABELS: Record<RuleKind, string> = { stop: "Stop loss", target: "Target", leg_stop: "Leg stop", spot: "Spot level", time: "Time exit", trail: "Trail on the rest", step: "Profit step" };
 /** Judging and display order: the protective kinds first, the target last (were two crossed at once, the protective one wins). */
-export const RULE_KIND_ORDER: Record<RuleKind, number> = { stop: 0, leg_stop: 1, spot: 2, time: 3, trail: 4, target: 5 };
+export const RULE_KIND_ORDER: Record<RuleKind, number> = { stop: 0, leg_stop: 1, spot: 2, time: 3, trail: 4, step: 5, target: 6 };
 /** The close reason a fire books on the legs and the strategy. */
-export const CLOSE_REASON_OF_KIND: Record<RuleKind, CloseReason> = { stop: "stopped", target: "target", leg_stop: "stopped", spot: "stopped", time: "squared_off", trail: "stopped" };
+export const CLOSE_REASON_OF_KIND: Record<RuleKind, CloseReason> = { stop: "stopped", target: "target", leg_stop: "stopped", spot: "stopped", time: "squared_off", trail: "stopped", step: "target" };
+
+/**
+ * Take profit in steps (ADR-120; HC-TR-236). A step is one rule: when the lots still open are up by `value` per cent
+ * of the premium they were opened for, `closeShare` of every open leg's lots is closed (whole lots, at least one, and
+ * at least one left) and the rest stays. Lots already closed do not count toward a later step. Two to five steps make
+ * a ladder; the last part has no rule and is held to a stop or to settlement.
+ */
+export const LADDER_STEPS = { min: 1, max: 4 } as const;
+/** The lots a step closes on a leg holding `lots`: its share in whole lots, never none and never all. Zero when the leg cannot be split. */
+export function stepLots(lots: number, closeShare: string | number): number {
+  if (lots < 2) return 0;
+  return Math.min(lots - 1, Math.max(1, Math.round(lots * Number(closeShare))));
+}
+/**
+ * A step needs a premium worth taking a share of: the net of the open legs must be at least this share of what they
+ * cost in all. A risk reversal sold at 500 and bought at 498 nets two against 998: a one-dollar move would read as
+ * half the "premium" and fire a whole ladder on noise.
+ */
+export const STEP_MIN_NET_SHARE = 0.05;
+/** The net premium of the open legs in USD (positive: received) and the sum of what each leg cost, whichever side. */
+export function openPremium(legs: readonly { side: "buy" | "sell"; lots: number; entry: number }[], lotSize: number): { net: number; gross: number } {
+  let net = 0;
+  let gross = 0;
+  for (const l of legs) {
+    const v = l.entry * l.lots * lotSize;
+    net += l.side === "sell" ? v : -v;
+    gross += v;
+  }
+  return { net, gross };
+}
+/** Whether the open legs have a premium a step can be a share of: at least a cent, and not legs that nearly cancel out. */
+export function stepPremiumOk(legs: readonly { side: "buy" | "sell"; lots: number; entry: number }[], lotSize: number): boolean {
+  const { net, gross } = openPremium(legs, lotSize);
+  return Math.abs(net) >= 0.01 && Math.abs(net) >= STEP_MIN_NET_SHARE * gross;
+}
+/** How far the open part of a position is up, in per cent of the premium it was opened for; null when there is no such premium to speak of (stepPremiumOk). */
+export function openProfitPct(legs: readonly { side: "buy" | "sell"; lots: number; entry: number; mark: number }[], lotSize: number): number | null {
+  if (!stepPremiumOk(legs, lotSize)) return null;
+  let gain = 0;
+  for (const l of legs) gain += (l.mark - l.entry) * l.lots * lotSize * (l.side === "buy" ? 1 : -1);
+  return (gain / Math.abs(openPremium(legs, lotSize).net)) * 100;
+}
 
 /**
  * A target that trails instead of closing (ADR-103; HC-TR-210). Once the strategy P&L reaches the target the rule
@@ -246,6 +288,8 @@ export const StrategyRule = z.strictObject({
   trail: RuleTrail.nullable().optional(),
   /** The best strategy P&L in USD seen since a trailing target was reached, or (kind trail) the best standing of the rest; null until then. Kept after the fire. */
   peakPnl: DecimalString.nullable().optional(),
+  /** A profit step (ADR-120): the share of every open leg's lots it closes, above 0 and below 1. Null or absent otherwise. */
+  closeShare: DecimalString.nullable().optional(),
   channels: z.array(RuleChannel),
   state: RuleState,
   firedAt: IsoDateTime.nullable(),
@@ -272,6 +316,8 @@ export const RuleBody = z
     scope: RuleScope.optional(),
     /** Target: keep going past the level and exit on a fall of this much from the best P&L (ADR-103). Leg stop with scope leg: after the fire, trail the rest by this give-back (ADR-104). */
     trail: RuleTrail.optional(),
+    /** A profit step (ADR-120): the share of every open leg's lots to close, above 0 and below 1. */
+    closeShare: PositiveDecimal.optional(),
     channels: z.array(RuleChannel).min(1).default(["push"]),
   })
   .superRefine((r, ctx) => {
@@ -284,7 +330,12 @@ export const RuleBody = z
     } else if (r.trigger === "settle") {
       if (!/^\d{1,3}$/.test(r.value) || Number(r.value) < SETTLE_LEAD_MINUTES.min || Number(r.value) > SETTLE_LEAD_MINUTES.max) ctx.addIssue({ code: "custom", message: `expected whole minutes, ${SETTLE_LEAD_MINUTES.min} to ${SETTLE_LEAD_MINUTES.max}`, path: ["value"] });
     } else if (!isPositiveDecimal(r.value)) ctx.addIssue({ code: "custom", message: "must be greater than zero", path: ["value"] });
-    if (r.kind !== "trail" && r.trigger === "pct" && (r.basis === undefined || r.basisUsd === undefined)) ctx.addIssue({ code: "custom", message: "a percentage rule needs its basis and the basis amount", path: ["basis"] });
+    // a profit step is a share of the open part's own premium, which the engine reads each tick: no basis is sent
+    if (r.kind === "step") {
+      if (r.closeShare === undefined || !(Number(r.closeShare) > 0 && Number(r.closeShare) < 1)) ctx.addIssue({ code: "custom", message: "a profit step closes a share of the lots, above 0 and below 1", path: ["closeShare"] });
+      if (isPositiveDecimal(r.value) && Number(r.value) < 1) ctx.addIssue({ code: "custom", message: "at least 1 %", path: ["value"] });
+    } else if (r.closeShare !== undefined) ctx.addIssue({ code: "custom", message: "only a profit step closes a share of the lots", path: ["closeShare"] });
+    if (r.kind !== "trail" && r.kind !== "step" && r.trigger === "pct" && (r.basis === undefined || r.basisUsd === undefined)) ctx.addIssue({ code: "custom", message: "a percentage rule needs its basis and the basis amount", path: ["basis"] });
     if (r.trigger === "pct" && Number(r.value) > 1000) ctx.addIssue({ code: "custom", message: "at most 1000 %", path: ["value"] });
     if (r.kind === "leg_stop" && r.legId === undefined) ctx.addIssue({ code: "custom", message: "a leg stop names its leg", path: ["legId"] });
     if (r.kind !== "leg_stop" && r.scope === "leg") ctx.addIssue({ code: "custom", message: "only a leg stop can exit one leg", path: ["scope"] });
@@ -307,10 +358,15 @@ export const RuleBody = z
 export type RuleBody = z.infer<typeof RuleBody>;
 /** The full set for a strategy: one rule per kind (leg stops one per leg); rules not listed are removed (fired ones stay as history). */
 export const RulesBody = z
-  .strictObject({ rules: z.array(RuleBody).max(5 + MAX_OPEN_LEGS) })
+  .strictObject({ rules: z.array(RuleBody).max(5 + LADDER_STEPS.max + MAX_OPEN_LEGS) })
   .superRefine((b, ctx) => {
-    const keys = b.rules.map((r) => `${r.kind}:${r.kind === "leg_stop" ? (r.legId ?? "") : ""}`);
+    const keys = b.rules.filter((r) => r.kind !== "step").map((r) => `${r.kind}:${r.kind === "leg_stop" ? (r.legId ?? "") : ""}`);
     if (new Set(keys).size !== keys.length) ctx.addIssue({ code: "custom", message: "one rule per kind (one leg stop per leg)", path: ["rules"] });
+    // the steps of a ladder (ADR-120): at most four before the part that is held, each at its own level, and never beside a target
+    const steps = b.rules.filter((r) => r.kind === "step");
+    if (steps.length > LADDER_STEPS.max) ctx.addIssue({ code: "custom", message: `at most ${LADDER_STEPS.max} profit steps`, path: ["rules"] });
+    if (new Set(steps.map((r) => Number(r.value))).size !== steps.length) ctx.addIssue({ code: "custom", message: "each profit step needs its own level", path: ["rules"] });
+    if (steps.length > 0 && b.rules.some((r) => r.kind === "target")) ctx.addIssue({ code: "custom", message: "profit steps or a target, not both", path: ["rules"] });
   });
 export type RulesBody = z.infer<typeof RulesBody>;
 
@@ -352,6 +408,7 @@ export function ruleLevel(r: Pick<RuleBody, "kind" | "trigger" | "value" | "basi
   if (r.kind === "leg_stop") return r.trigger === "multiple" ? toDecimal(Number(r.value) * Number(entryPrice ?? "0"), 2) : r.value;
   if (r.kind === "spot") return r.value;
   if (r.kind === "trail") return "0"; // the route keeps the running trail's own level; nothing typed sets it
+  if (r.kind === "step") return r.value; // per cent of the open part's premium
   return r.trigger === "at" ? String(Date.parse(r.value)) : r.value;
 }
 

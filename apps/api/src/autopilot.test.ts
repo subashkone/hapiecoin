@@ -104,7 +104,7 @@ describe("HC-TR-217 the pieces an entry is decided on", () => {
     expect(p.stopUsd).toBe(5);
     expect(p.timeStopDte).toBe(2);
     // no fee rule on the venue: no fees; a playbook with no stop and no time exit arms neither
-    expect(planFor({ ...butterfly, exits: undefined }, proposal({ maxProfit: 40 }), 0.001, null)).toEqual({ fees: 0, targetUsd: 4, stopUsd: null, timeStopDte: null, legStop: null, trailRestPct: null });
+    expect(planFor({ ...butterfly, exits: undefined }, proposal({ maxProfit: 40 }), 0.001, null)).toEqual({ fees: 0, targetUsd: 4, stopUsd: null, timeStopDte: null, legStop: null, trailRestPct: null, ladder: null });
   });
 
   it("HC-TR-217 no plan when the fees eat the trade (small premiums close to expiry) or the structure has no defined maximum", () => {
@@ -625,15 +625,15 @@ describe("HC-TR-225 playbooks entered by the clock: the evening strangles", () =
   it("HC-TR-225 the plan has no profit level and no strategy stop, only the stop on each sold option; a premium smaller than the fees is no plan", () => {
     // two fills of 0.1 BTC at 83,200: 0.832 each, 18 % GST, both ways
     const p = clockPlanFor(twice, sold(-53.6), 0.001, fees)!;
-    expect(p).toMatchObject({ targetUsd: null, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: null });
+    expect(p).toMatchObject({ targetUsd: null, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: null, ladder: null });
     expect(p.fees).toBeCloseTo(2 * 2 * 0.832 * 1.18, 6);
-    expect(clockPlanFor(wings, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: null, trailRestPct: null });
+    expect(clockPlanFor(wings, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: null, trailRestPct: null, ladder: null });
     expect(clockPlanFor(twice, sold(-3.9), 0.001, fees)).toBeNull(); // collects less than the fills cost
     expect(clockPlanFor(twice, sold(2), 0.001, null)).toBeNull(); // a debit is not this trade
     // HC-TR-227: the take-half version has the same stops and a profit level at half the premium collected
-    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-take-half")!, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: 26.8, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: null });
+    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-take-half")!, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: 26.8, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: null, ladder: null });
     // HC-TR-228: the trail-the-rest version has the same stops, which start a trail with a give-back of half
-    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-trail-rest")!, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: 50 });
+    expect(clockPlanFor(autopilotPlaybookById("evening-strangle-trail-rest")!, sold(-53.6), 0.001, null)).toEqual({ fees: 0, targetUsd: null, stopUsd: null, timeStopDte: null, legStop: 2, trailRestPct: 50, ladder: null });
     expect(clockPlanFor(autopilotPlaybookById("evening-strangle-take-half")!, sold(-0.015), 0.001, null)).toBeNull(); // half of it rounds to nothing
     // the window is from its first hour and before its second, in UTC
     const c = twice.clock!;
@@ -1058,6 +1058,56 @@ describe("HC-TR-235 the evening strangles on ETH and XAUT", () => {
     // Monday evening with Monday's expiry still listed and the trade still open: held, never a second one, never today's
     await pass(SATURDAY + 2 * DAY, ["2026-10-19", "2026-10-20", "2026-10-21"]);
     expect(await mineNow()).toHaveLength(1);
+  });
+});
+
+describe("HC-TR-239 an Autopilot strategy with a profit ladder (ADR-120)", () => {
+  it("HC-TR-239 enters with a step at each level, each an equal part of what is left, beside the stop on each sold option; the engine then takes the first step on paper and keeps the rest", async () => {
+    const me = await t.signUp("autopilot-ladder@hapiecoin.test");
+    const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
+    const STEPS = "evening-strangle-steps";
+    await put({ enabled: true, strategies: [{ playbookId: STEPS, exit: "own" }] }, me.cookie);
+    const EVENING = Date.UTC(2027, 2, 5, 16, 5, 0); // 5 March 2027, 21:35 IST: after every snapshot the cases above have left
+    const products: Instrument[] = [];
+    const quotes: Quote[] = [];
+    for (const e of ["2027-03-06", "2027-03-07"])
+      for (let i = -30; i <= 30; i++) {
+        const k = 83_200 + i * 200;
+        const code = e.slice(8, 10) + e.slice(5, 7) + e.slice(2, 4);
+        const tv = 600 * Math.exp(-Math.abs(k - 83_200) / 900);
+        for (const [kind, letter, intrinsic] of [["call", "C", Math.max(83_200 - k, 0)], ["put", "P", Math.max(k - 83_200, 0)]] as const) {
+          const symbol = `${letter}-BTC-${k}-${code}`;
+          products.push(inst(symbol, kind, k, e));
+          quotes.push({ instrumentId: `delta_india:${symbol}`, ts: EVENING - MIN, mark: (intrinsic + tv).toFixed(2), oi: "1", spot: "83200", markIv: 0.5 });
+        }
+      }
+    await snapshotOnce(t.deps, { venue: "delta_india", products: () => Promise.resolve(products), tickers: (u) => Promise.resolve(u === "BTC" ? quotes : []) }, () => EVENING - MIN);
+    await runAutopilot(deps(EVENING, { maxOpen: undefined }), ["delta_india"]);
+
+    const [trade] = await t.db.select().from(strategies).where(eq(strategies.userId, id));
+    expect(trade).toMatchObject({ autopilotPlaybookId: STEPS, asset: "BTC", status: "paper", name: "Evening strangle, profit steps · Autopilot" });
+    const legsNow = () => t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade!.id)).orderBy(asc(strategyLegs.position));
+    // 1 % of 83,200 is 832: 82,368 and 84,032, nearest listed 82,400 and 84,000
+    const legs = await legsNow();
+    expect(legs.map((l) => `${l.side} ${l.kind} ${l.strike} ${l.expiry} x${l.lots}`)).toEqual(["sell put 82400 2027-03-06 x100", "sell call 84000 2027-03-06 x100"]);
+    const rules = await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, trade!.id));
+    expect(rules.filter((r) => r.kind === "leg_stop").map((r) => [r.value, r.scope])).toEqual([["3", "leg"], ["3", "leg"]]);
+    expect(rules.filter((r) => r.kind === "step").sort((a, b) => Number(a.value) - Number(b.value)).map((r) => [r.trigger, r.value, r.thresholdUsd, r.closeShare, r.state])).toEqual([["pct", "25", "25", "0.25", "armed"], ["pct", "50", "50", "0.333333", "armed"], ["pct", "75", "75", "0.5", "armed"]]);
+    expect(rules.some((r) => r.kind === "target")).toBe(false);
+    const line = (await view(me.cookie)).runs.find((r) => r.kind === "entered" && r.strategyId === trade!.id)!;
+    expect(line.detail).toMatchObject({ exit: "own", legStop: 3, ladder: [25, 50, 75] });
+    expect(line.detail!.targetUsd).toBeUndefined();
+
+    // both options at seven tenths of their entry: the open lots are up 30 %, so the first step goes and the others wait
+    const marks = new Map(legs.map((l) => [l.symbol, 0.7 * Number(l.price)]));
+    const fired = await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks, spot: null }) }, () => EVENING + HOUR);
+    expect(fired.fired).toHaveLength(1);
+    expect((await legsNow()).filter((l) => l.status === "open").map((l) => l.lots)).toEqual([75, 75]);
+    expect((await legsNow()).filter((l) => l.status === "squared_off").map((l) => [l.lots, l.closeReason])).toEqual([[25, "target"], [25, "target"]]);
+    expect((await t.db.select().from(strategies).where(eq(strategies.id, trade!.id)))[0]!.status).toBe("paper");
+    // what was written is what the screens can read
+    expect((await t.request("/v1/strategies", { cookie: me.cookie })).status).toBe(200);
+    expect((await t.request("/v1/autopilot", { cookie: me.cookie })).status).toBe(200);
   });
 });
 

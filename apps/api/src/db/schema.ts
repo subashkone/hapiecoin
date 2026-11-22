@@ -436,7 +436,7 @@ export const strategyRules = pgTable(
     strategyId: text("strategy_id")
       .notNull()
       .references(() => strategies.id, { onDelete: "cascade" }),
-    kind: text("kind", { enum: ["stop", "target", "leg_stop", "spot", "time", "trail"] }).notNull(),
+    kind: text("kind", { enum: ["stop", "target", "leg_stop", "spot", "time", "trail", "step"] }).notNull(),
     trigger: text("trigger", { enum: ["money", "pct", "multiple", "price", "above", "below", "at", "dte", "settle"] }).notNull(),
     value: text("value").notNull(),
     basis: text("basis", { enum: ["credit", "debit", "max_loss"] }),
@@ -454,6 +454,8 @@ export const strategyRules = pgTable(
     trailTrigger: text("trail_trigger", { enum: ["money", "pct"] }),
     trailValue: text("trail_value"),
     peakPnl: text("peak_pnl"),
+    /** A profit step (ADR-120): the share of every open leg's lots it closes. */
+    closeShare: text("close_share"),
     channels: jsonb("channels").$type<string[]>().notNull().default(sql`'["push"]'::jsonb`),
     state: text("state", { enum: ["armed", "fired", "disarmed"] }).notNull().default("armed"),
     firedAt: timestamp("fired_at", { withTimezone: true }),

@@ -33,6 +33,13 @@ import {
   REST_TRAIL_MIN_GIVE_USD,
   restTrailFloorUsd,
   RULE_KIND_LABELS,
+  RULE_TRIGGERS_OF,
+  LADDER_STEPS,
+  stepLots,
+  openProfitPct,
+  openPremium,
+  stepPremiumOk,
+  STEP_MIN_NET_SHARE,
 } from "./strategies.js";
 
 const call = { kind: "call", side: "buy", strike: "80000", expiry: "2026-09-25", symbol: "C-BTC-80000-250926", lots: 10, price: "1200.5", iv: 0.52 } as const;
@@ -166,7 +173,7 @@ describe("HC-TR-165 stop and target rules (ADR-059 §2.3)", () => {
     expect(RuleBody.safeParse({ kind: "time", trigger: "at", value: "tomorrow" }).success).toBe(false);
     expect(RuleBody.safeParse({ kind: "time", trigger: "at", value: "2026-09-12T11:30" }).success).toBe(false); // no zone: whose clock?
     expect(RuleBody.safeParse({ kind: "time", trigger: "at", value: "2026-09-12T17:00:00+05:30" }).success).toBe(true);
-    expect(RulesBody.safeParse({ rules: Array.from({ length: 16 }, (_, i) => ({ kind: "leg_stop", trigger: "price", value: "1", legId: `l${i}` })) }).success).toBe(false); // 15 is the most: ten leg stops and the five others (a running trail on the rest among them, ADR-104)
+    expect(RulesBody.safeParse({ rules: Array.from({ length: 20 }, (_, i) => ({ kind: "leg_stop", trigger: "price", value: "1", legId: `l${i}` })) }).success).toBe(false); // 19 is the most: ten leg stops, the five others (a running trail on the rest among them, ADR-104) and four profit steps (ADR-120)
     expect(nearestSettlement([{ expiry: "PERP" }], "BTC")).toBeNull();
     expect(nearestSettlement([{ expiry: "2026-09-25" }, { expiry: "2026-09-18" }, { expiry: "PERP" }], "BTC")).toEqual({ ms: Date.UTC(2026, 8, 18, 12), expiry: "2026-09-18" });
     expect(RuleBody.safeParse({ kind: "time", trigger: "dte", value: "0" }).success).toBe(true);
@@ -187,7 +194,7 @@ describe("HC-TR-165 stop and target rules (ADR-059 §2.3)", () => {
     expect(ruleLevel({ kind: "time", trigger: "at", value: "2026-09-12T11:30:00.000Z", basisUsd: undefined })).toBe(String(Date.UTC(2026, 8, 12, 11, 30)));
     expect(ruleLevel({ kind: "time", trigger: "dte", value: "1", basisUsd: undefined })).toBe("1");
     expect(ruleLevel({ kind: "stop", trigger: "money", value: "60", basisUsd: undefined })).toBe("-60");
-    expect(RULE_KINDS.map((k) => RULE_KIND_ORDER[k])).toEqual([0, 5, 1, 2, 3, 4]); // the trail on the rest (ADR-104) is judged after the protective kinds, before the target
+    expect(RULE_KINDS.map((k) => RULE_KIND_ORDER[k])).toEqual([0, 6, 1, 2, 3, 4, 5]); // the trail on the rest (ADR-104) is judged after the protective kinds, before the target
     expect(CLOSE_REASON_OF_KIND.time).toBe("squared_off");
     expect(CLOSE_REASON_OF_KIND.leg_stop).toBe("stopped");
   });
@@ -292,5 +299,56 @@ describe("HC-TR-191 [SCHEMA] the batch preview (ADR-087)", () => {
     const whole = { items: [item], ok: false, reasons: ["Available USD 20 is below the premium these 2 trades pay together (24.00)"], notional: "24.00", debit: "24.00", available: "20", availableAsset: "USD", marginUsed: null, marginRequired: null, limits: { maxLegs: 10, maxNotionalUsd: 100000, markBandPct: 5 } };
     expect(LiveBatchPreview.parse(whole)).toEqual(whole);
     expect(LiveBatchPreview.safeParse({ ...whole, extra: 1 }).success).toBe(false);
+  });
+});
+
+describe("HC-TR-236 profit steps (ADR-120)", () => {
+  it("HC-TR-236 a step closes its share of a leg in whole lots: never none, never all, and nothing of a leg down to one lot", () => {
+    expect(stepLots(100, "0.25")).toBe(25);
+    expect(stepLots(75, "0.3333")).toBe(25);
+    expect(stepLots(50, 0.5)).toBe(25);
+    expect(stepLots(3, "0.25")).toBe(1); // 0.75 rounds to a lot
+    expect(stepLots(10, "0.01")).toBe(1); // at least one
+    expect(stepLots(2, "0.99")).toBe(1); // at least one left
+    expect(stepLots(1, "0.5")).toBe(0);
+    expect(stepLots(0, "0.5")).toBe(0);
+  });
+
+  it("HC-TR-236 how far the open lots are up is their gain over the premium they were opened for, for a credit and for a debit; null with no premium to speak of", () => {
+    // sold 100 lots at 900 and at 1,100, now 675 and 825: 50 gained on 200 received
+    expect(openProfitPct([{ side: "sell", lots: 100, entry: 900, mark: 675 }, { side: "sell", lots: 100, entry: 1100, mark: 825 }], 0.001)).toBeCloseTo(25, 9);
+    // the same position against the trade: negative
+    expect(openProfitPct([{ side: "sell", lots: 100, entry: 900, mark: 1350 }], 0.001)).toBeCloseTo(-50, 9);
+    // bought 10 lots at 1,200, now 1,500: 3 gained on 12 paid
+    expect(openProfitPct([{ side: "buy", lots: 10, entry: 1200, mark: 1500 }], 0.001)).toBeCloseTo(25, 9);
+    // with wings the premium is the net: (900 - 300) x 100 x 0.001 = 60; gain (225 - 100) x 0.1 = 12.5
+    expect(openProfitPct([{ side: "sell", lots: 100, entry: 900, mark: 675 }, { side: "buy", lots: 100, entry: 300, mark: 200 }], 0.001)).toBeCloseTo((12.5 / 60) * 100, 9);
+    expect(openProfitPct([{ side: "sell", lots: 1, entry: 900, mark: 1 }, { side: "buy", lots: 1, entry: 900, mark: 1 }], 0.001)).toBeNull();
+    expect(openProfitPct([], 0.001)).toBeNull();
+    // legs that nearly cancel out: sold at 500 and bought at 498 nets two against 998, far under a twentieth of it,
+    // so a one-dollar move is not "half the premium"
+    const reversal = [{ side: "sell" as const, lots: 10, entry: 500, mark: 499 }, { side: "buy" as const, lots: 10, entry: 498, mark: 498 }];
+    expect(openPremium(reversal, 0.001).net).toBeCloseTo(0.02, 9);
+    expect(openPremium(reversal, 0.001).gross).toBeCloseTo(9.98, 9);
+    expect(stepPremiumOk(reversal, 0.001)).toBe(false);
+    expect(openProfitPct(reversal, 0.001)).toBeNull();
+    // a winged strangle nets half of what its legs cost: fine; a premium under a cent is not
+    expect(stepPremiumOk([{ side: "sell", lots: 100, entry: 900 }, { side: "buy", lots: 100, entry: 300 }], 0.001)).toBe(true);
+    expect(stepPremiumOk([{ side: "sell", lots: 1, entry: 5 }], 0.001)).toBe(false);
+    expect(STEP_MIN_NET_SHARE).toBe(0.05);
+  });
+
+  it("HC-TR-236 a step is a percentage with a share above 0 and below 1 and needs no basis; a set holds at most four, each at its own level, and never beside a target", () => {
+    const step = (value: string, closeShare?: string) => ({ kind: "step", trigger: "pct", value, ...(closeShare === undefined ? {} : { closeShare }) });
+    expect(RuleBody.safeParse(step("25", "0.25")).success).toBe(true);
+    expect(ruleLevel(RuleBody.parse(step("25", "0.25")))).toBe("25");
+    for (const bad of [step("25"), step("25", "1"), step("25", "1.5"), step("0.5", "0.5"), { ...step("25", "0.5"), trigger: "money" }, { kind: "stop", trigger: "money", value: "50", closeShare: "0.5" }]) expect(RuleBody.safeParse(bad).success, JSON.stringify(bad)).toBe(false);
+    const four = [step("20", "0.2"), step("40", "0.25"), step("60", "0.3333"), step("80", "0.5")];
+    expect(RulesBody.safeParse({ rules: four }).success).toBe(true);
+    expect(RulesBody.safeParse({ rules: [...four, step("90", "0.5")] }).success).toBe(false);
+    expect(RulesBody.safeParse({ rules: [step("25", "0.25"), step("25.0", "0.5")] }).success).toBe(false);
+    expect(RulesBody.safeParse({ rules: [step("25", "0.25"), { kind: "target", trigger: "money", value: "50" }] }).success).toBe(false);
+    expect(RulesBody.safeParse({ rules: [step("25", "0.25"), { kind: "stop", trigger: "money", value: "50" }] }).success).toBe(true);
+    expect([RULE_KIND_LABELS.step, RULE_TRIGGERS_OF.step, CLOSE_REASON_OF_KIND.step, RULE_KIND_ORDER.step < RULE_KIND_ORDER.target, LADDER_STEPS.max]).toEqual(["Profit step", ["pct"], "target", true, 4]);
   });
 });

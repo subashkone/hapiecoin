@@ -1,0 +1,1 @@
+ALTER TABLE "strategy_rules" ADD COLUMN "close_share" text;

@@ -58,6 +58,8 @@ The server enters paper trades by itself from playbooks, with their exits armed.
 38. ✅ Fix: the screens could not read what Autopilot wrote (PR #134, GAPS #153, HC-TR-234)
 39. ✅ ETH and XAUT, each from that coin's own backtest and on its own clock (ADR-119, HC-TR-235, GAPS #154): ETH daily, weekly and monthly, XAUT daily; XAUT weekly and monthly did not hold up or have too little history, so none
 39a. 🔨 Strategy lab: a second thread that only researches and proposes (docs/research/STRATEGY-LAB.md); approved ideas are built here as new paper strategies
+39b. 🔨 Take profit in steps: a profit ladder on any paper trade (Protect dialog, the card) and three Autopilot paper strategies with it (branch feat/profit-ladder, ADR-120, HC-TR-236 to HC-TR-239, GAPS #155, migration 0030); live partial exits are a later step
+39c. ⏸ Risk-profile bundles tied to plans (the owner's idea, 22 Nov 2026): with the strategy lab for research; depends on sizing (item 40), a longer paper record and a legal check
 40. ⏸ Budget and position sizing for Autopilot · deferred by the owner (21 Nov 2026)
 41. ⏸ Telegram messages for Autopilot entries and exits · deferred by the owner (21 Nov 2026)
 42. ⏸ Not yet tested: calendar spreads, strikes by expected move, skipping announcement days, a trend filter on the sold side, timed exits

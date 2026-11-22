@@ -9,7 +9,7 @@ import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch , typ
 import { buildChain } from "../../../test/fixtures/chain";
 import { useUiStore } from "@/lib/store";
 import { Workspace } from "@/components/workspace/Workspace";
-import { firedLabel, fromLocalInput, levelText, ruleText, toLocalInput, typedToUsd, usdToTyped } from "./RuleDialog";
+import { firedLabel, fromLocalInput, levelText, ruleText, rulesLine, toLocalInput, typedToUsd, usdToTyped } from "./RuleDialog";
 
 const EXPIRY = "2026-09-25";
 const TOPIC = chainTopic("delta_india", "BTC", EXPIRY);
@@ -591,4 +591,138 @@ describe("HC-TR-213 a leg stop that trails the rest (ADR-104)", () => {
     expect(firedLabel(fired, USD_FMT)).toBe("trail on the rest fired");
     expect(ruleText(rule({ kind: "leg_stop", trigger: "price", value: "150", thresholdUsd: "150", legId: "leg_b", scope: "leg", trail: { trigger: "money", value: "2" } }), USD_FMT, [CALL, PUT])).toBe("S P 78,000 25 Sep stop at 150.00, then trail the rest by $2.00");
   });
+});
+
+describe("HC-TR-237 take profit in steps from the dialog (ADR-120)", () => {
+  // a sold strangle of 100 lots a leg at the chain's own marks, so the open lots are up by nothing when the dialog opens
+  const SC = { ...CALL, id: "lc", side: "sell" as const, lots: 100 };
+  const SP = { ...PUT, id: "lp", lots: 100 };
+  const rowsOf = (dlg: HTMLElement) => within(dlg).getAllByTestId("rule-ladder-step").map((r) => `${within(r).getByTestId<HTMLInputElement>("rule-ladder-pct").value}:${within(r).getByTestId<HTMLInputElement>("rule-ladder-lots").value}`);
+
+  it("HC-TR-237 the box offers presets and rows, excludes the target, refuses steps that do not add up, arms each step as a share of what is left, and comes back as typed; HC-TR-238 the card counts the steps", async () => {
+    const u = userEvent.setup();
+    mine().push(strat(1, { legs: [SC, SP] }));
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    await waitFor(() => expect(screen.getByTestId("card-rules").dataset["state"]).toBe("none"));
+    await u.click(screen.getByTestId("card-protect"));
+    const dlg = await screen.findByTestId("rule-dialog");
+    expect(within(dlg).getByTestId("rule-ladder").dataset["on"]).toBe("false");
+    await u.click(within(dlg).getByTestId("rule-ladder-on"));
+    // Standard to begin with: three steps of 25 lots, 25 held
+    expect(within(dlg).getByTestId("rule-ladder-preset-standard").getAttribute("aria-pressed")).toBe("true");
+    expect(rowsOf(dlg)).toEqual(["25:25", "50:25", "75:25"]);
+    expect(within(dlg).getByTestId("rule-ladder-hold").textContent).toContain("Step 4 · hold the rest");
+    expect(within(dlg).getByTestId("rule-ladder-sum").textContent).toBe("75 + 25 held = 100 lots a leg");
+    // 25 % of the 210 USD premium on a quarter of the lots
+    expect(within(dlg).getAllByTestId("rule-ladder-banks")[0]!.textContent).toBe("+$13.13");
+    expect(within(dlg).getByTestId("rule-ladder-note").textContent).toContain("Lots already closed do not count toward later steps");
+    // steps or a target: ticking one unticks the other, both ways
+    await u.click(within(dlg).getByTestId("rule-target-on"));
+    expect(within(dlg).getByTestId("rule-ladder").dataset["on"]).toBe("false");
+    await u.click(within(dlg).getByTestId("rule-ladder-on"));
+    expect(within(dlg).getByTestId("rule-target").dataset["on"]).toBe("false");
+    // Early has four steps and no room for a fifth; Late has two
+    await u.click(within(dlg).getByTestId("rule-ladder-preset-early"));
+    expect(rowsOf(dlg)).toEqual(["10:20", "25:20", "40:20", "55:20"]);
+    expect(within(dlg).getByTestId<HTMLButtonElement>("rule-ladder-add").disabled).toBe(true);
+    await u.click(within(dlg).getByTestId("rule-ladder-preset-late"));
+    expect(rowsOf(dlg)).toEqual(["50:34", "75:33"]);
+    // a step added, then removed: the preset reads Custom
+    await u.click(within(dlg).getByTestId("rule-ladder-add"));
+    expect(rowsOf(dlg)).toEqual(["50:25", "75:25", "88:25"]);
+    expect(within(dlg).getByTestId("rule-ladder-preset-custom").getAttribute("aria-pressed")).toBe("true");
+    await u.click(within(dlg).getAllByTestId("rule-ladder-remove")[2]!);
+    await u.click(within(dlg).getByTestId("rule-ladder-preset-custom")); // Custom keeps the rows as they are
+    expect(rowsOf(dlg)).toEqual(["50:25", "75:25"]);
+    // lots that leave nothing to hold cannot be armed
+    fireEvent.change(within(dlg).getAllByTestId("rule-ladder-lots")[0]!, { target: { value: "75" } });
+    expect(within(dlg).getByTestId<HTMLButtonElement>("rule-arm").disabled).toBe(true);
+    expect(within(dlg).getByTestId("rule-foot").textContent).toContain("The steps close 100 of 100 lots: leave at least 1 lot to hold");
+    // lots left empty: nothing to bank yet, and the count leaves the row out
+    fireEvent.change(within(dlg).getAllByTestId("rule-ladder-lots")[0]!, { target: { value: "" } });
+    expect(within(dlg).getAllByTestId("rule-ladder-banks")[0]!.textContent).toBe("–");
+    expect(within(dlg).getByTestId("rule-ladder-sum").textContent).toBe("25 + 75 held = 100 lots a leg");
+    expect(within(dlg).getByTestId("rule-foot").textContent).toContain("Step 1: close at least 1 whole lot");
+    fireEvent.change(within(dlg).getAllByTestId("rule-ladder-lots")[0]!, { target: { value: "34" } });
+    fireEvent.change(within(dlg).getAllByTestId("rule-ladder-pct")[1]!, { target: { value: "80" } });
+    expect(within(dlg).getByTestId("rule-arm").textContent).toBe("Arm profit steps");
+    await u.click(within(dlg).getByTestId("rule-arm"));
+    await waitFor(() => expect(screen.queryByTestId("rule-dialog")).toBeNull());
+    // 34 of 100, then 25 of the 66 left
+    expect(mine()[0]!.rules!.map((r) => [r.kind, r.trigger, r.value, r.closeShare, r.thresholdUsd])).toEqual([["step", "pct", "50", "0.34", "50"], ["step", "pct", "80", "0.378788", "80"]]);
+    await waitFor(() => expect(screen.getByTestId("card-rules").textContent).toBe("profit steps 0 of 3 taken, next at 50 %"));
+    // reopen: the armed steps come back as lots, ticked
+    await u.click(screen.getByTestId("card-protect"));
+    const again = await screen.findByTestId("rule-dialog");
+    expect(within(again).getByTestId("rule-ladder").dataset["on"]).toBe("true");
+    expect(rowsOf(again)).toEqual(["50:34", "80:25"]);
+    await u.click(within(again).getByText("Cancel"));
+    // the first step taken by the server: the line counts it beside the other armed rules, and Details names a step
+    const taken = mine()[0]!.rules!.map((r, i) => (i === 0 ? { ...r, state: "fired" as const } : r));
+    expect(rulesLine([rule(), ...taken], USD_FMT)).toBe("stop at −$60.00 · profit steps 1 of 3 taken, next at 80 %");
+    // every step taken: no step is armed, so the line has nothing to say about them
+    expect(rulesLine(taken.map((r) => ({ ...r, state: "fired" as const })), USD_FMT)).toBeNull();
+    expect(rulesLine([rule(), ...taken.map((r) => ({ ...r, state: "fired" as const }))], USD_FMT)).toBe("stop at −$60.00");
+    expect(ruleText(taken[1]!, USD_FMT)).toBe("profit step at 80 % of the open lots' premium, closing 38 % of them");
+    expect(ruleText({ ...taken[1]!, closeShare: null }, USD_FMT)).toContain("closing 0 % of them");
+  }, 20000);
+
+  it("HC-TR-237 a step the open lots have already reached is refused: it would fire on the next tick", async () => {
+    const u = userEvent.setup();
+    // the put was sold far above any mark of the chain: the open lots are up well past 25 %
+    mine().push(strat(1, { legs: [SC, { ...SP, price: "50000", entryPrice: "50000" }] }));
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    const protect = await screen.findByTestId("card-protect");
+    serveMarket(); // the held legs subscribe once the strategy has loaded: their marks arrive with this snapshot
+    await u.click(protect);
+    const dlg = await screen.findByTestId("rule-dialog");
+    await u.click(within(dlg).getByTestId("rule-ladder-on"));
+    await waitFor(() => expect(within(dlg).getByTestId("rule-ladder-note").textContent).toMatch(/\(now \d+(\.\d)? %\)/), { timeout: 8000 });
+    expect(within(dlg).getByTestId("rule-foot").textContent).toContain("a step at or under that would fire on the next tick");
+    expect(within(dlg).getByTestId<HTMLButtonElement>("rule-arm").disabled).toBe(true);
+  }, 20000);
+
+  it("HC-TR-237 on a live trade the box says steps are on paper only and nothing can be armed with it ticked", async () => {
+    const u = userEvent.setup();
+    mine().push(strat(2, { name: "Live strangle", status: "live", tradingMode: "live", legs: [SC, { ...SP, lots: 50 }] }));
+    useUiStore.setState({ workspaceTab: "live" });
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    await u.click(await screen.findByTestId("card-protect"));
+    const dlg = await screen.findByTestId("rule-dialog");
+    expect(within(dlg).getByTestId("rule-ladder").textContent).toContain("paper trades only for now");
+    await u.click(within(dlg).getByTestId("rule-ladder-on"));
+    expect(within(dlg).getByTestId("rule-foot").textContent).toContain("Profit steps are on paper trades only for now");
+    // legs of different sizes: the rows are the smaller leg's lots, and the note says the other gives up the same share
+    expect(within(dlg).getByTestId("rule-ladder-sum").textContent).toBe("38 + 12 held = 50 lots of the smallest leg; the others give up the same share");
+    expect(within(dlg).getByTestId<HTMLButtonElement>("rule-arm").disabled).toBe(true);
+  }, 20000);
+
+  it("HC-TR-237 legs that nearly cancel out have no premium to take a share of: the box says so and nothing can be armed", async () => {
+    const u = userEvent.setup();
+    // sold and bought at the same price: the net premium is nothing
+    mine().push(strat(1, { legs: [SC, { ...SC, id: "lb", side: "buy" }] }));
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    await u.click(await screen.findByTestId("card-protect"));
+    const dlg = await screen.findByTestId("rule-dialog");
+    await u.click(within(dlg).getByTestId("rule-ladder-on"));
+    expect(within(dlg).getByTestId("rule-foot").textContent).toContain("Profit steps need a premium to measure against: the open legs nearly cancel out");
+    expect(within(dlg).getByTestId<HTMLButtonElement>("rule-arm").disabled).toBe(true);
+    expect(within(dlg).getByTestId("rule-ladder-note").textContent).not.toContain("removes the trailing target");
+  }, 20000);
+
+  it("HC-TR-237 ticking the steps on a trade whose target is already trailing says the running trail is removed", async () => {
+    const u = userEvent.setup();
+    mine().push(strat(2, { legs: [SC, SP], rules: [rule({ kind: "target", value: "6", thresholdUsd: "6", trail: { trigger: "money", value: "3" }, peakPnl: "18" })] }));
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    await u.click(await screen.findByTestId("card-protect"));
+    const dlg = await screen.findByTestId("rule-dialog");
+    await u.click(within(dlg).getByTestId("rule-ladder-on"));
+    expect(within(dlg).getByTestId("rule-target").dataset["on"]).toBe("false");
+    expect(within(dlg).getByTestId("rule-ladder-note").textContent).toContain("Arming steps removes the trailing target that is running now, with its best and its exit level.");
+  }, 20000);
 });
