@@ -98,6 +98,8 @@ export const AutopilotRunDetail = z.strictObject({
   takeTrailPct: z.number().positive().optional(),
   /** ADR-121: the instant the whole trade is closed at, whatever the profit. */
   exitAt: IsoDateTime.optional(),
+  /** ADR-123: every sold option is bought back alone once its price has fallen to this. */
+  legBuyBackAt: DecimalString.optional(),
   /** ADR-122: the spot's move over the playbook's look-back, in per cent (signed), and the side it left to sell. */
   move: z.strictObject({ pct: DecimalString, side: z.enum(["put", "call", "both"]) }).optional(),
   legs: z.array(z.strictObject({ side: z.enum(["buy", "sell"]), kind: z.enum(["call", "put", "future"]), strike: z.string(), price: z.string() })).optional(),

@@ -1,6 +1,6 @@
 # Paper trading, live trading, rules and accounts
 
-Part of the [HapieCoin feature guide](README.md). 131 traced features on 35 screens; 131 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 134 traced features on 35 screens; 134 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -66,6 +66,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-241 | Ten Autopilot paper strategies from the strategy lab | a clock playbook may carry a profit lock, an exit hour or a trail from its take level; ten playbooks beside the existing ones: the lock on BTC daily and the BTC Friday weekly, out by 1:30 AM IST on BTC and ETH, half then trail on BTC and ETH, strikes 0.5 % away on BTC and ETH, ETH with wings at 3 % and no stop, and a BTC entry two hours before settlement whose card says the evidence is weak | built | integration (api) |
 | HC-TR-242 | Autopilot strategies that sell only the side behind a 24-hour move | a clock playbook may carry a look-back and a threshold; at entry the spot is compared with the stored spot of 24 hours earlier (the nearest snapshot within 30 minutes): up more than 1 % only the put is sold, down more than 1 % only the call, otherwise both; with no earlier spot the evening is skipped and the log says why; two paper playbooks, BTC and ETH daily, strikes 1 % away with a stop at triple on each sold option | built | integration (api) |
 | HC-TR-243 | The Autopilot log says the move an entry was judged on and the side it sold | an entry of a one-side strategy records the spot's move over 24 hours and the side kept; its log line reads "BTC up 1.56 % over 24 hours: the put only", or "both sides" after a flat day | built | component (web) |
+| HC-TR-246 | An Autopilot strategy that buys a cheap option back | a clock playbook may carry a buy-back price; Autopilot arms one buy-back beside the stop on each sold option; one paper playbook, the BTC evening strangle 1 % away with a stop at triple and a buy-back at 5 dollars, whose card says it is protection and not income | built | integration (api) |
 
 ### Trading · Protect dialog / cards · Details · `/desk`
 
@@ -77,6 +78,8 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-237 | Take profit in steps in the Protect dialog | a box under the Target with presets (Early 10 / 25 / 40 / 55, Standard 25 / 50 / 75, Late 50 / 75, each with the last part held) and custom rows of a level and whole lots; it shows what each step banks, turns the target off when ticked and the other way round, and refuses lots that do not add up, levels that do not rise, a level already reached, and a live trade | built | component (web) |
 | HC-TR-238 | The card counts the profit steps taken | the rules line of a trade reads "profit steps 1 of 4 taken, next at 50 %" beside its other armed rules, and "the rest held" once the last step has fired | built | unit (web) |
 | HC-TR-240 | A profit lock holds a fixed floor under a trade once it has been well up | a rule of kind lock does nothing until the strategy's profit reaches its level; from that tick the whole strategy is closed if the profit falls back to a fixed floor; armed by Autopilot only, kept when the dialog saves the other rules, shown on the card as the floor to come and then as the exit it holds | built | integration (api) |
+| HC-TR-244 | A sold option is bought back on its own once its price has fallen to a level | a rule of kind leg_take watches one sold option and fires when its mark is at or below the level: that option alone is bought back and booked as target, the other legs and their rules stay, and the stop that watched it ends; the last open leg bought back closes the trade; on paper trades only, refused on a live one and held by the engine if the trade has gone live; the level must be below the price the option was sold at | built | integration (api) |
+| HC-TR-245 | Buy back when cheap in the Protect dialog | on a paper trade the dialog lists each sold option under "Buy back when cheap" with a price (5 to start) and what buying back there keeps of that option; a level at or above the price it was sold at, or one its price is already under, is refused; the card line reads "S P 78,000 25 Sep bought back at 5.00" and a fired one "cheap leg bought back"; a live trade is not offered it | built | component (web) |
 
 ### Trading · Paper / Live cards · analysis pane · `/desk`
 

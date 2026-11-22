@@ -98,6 +98,11 @@ export interface PlaybookClock {
   /** ADR-121: the whole trade is closed at the first time the clock reads this hour (UTC) after the entry, whatever the profit. */
   exitHourUtc?: number | undefined;
   /**
+   * ADR-123: every sold option is bought back on its own once its mark has fallen to this price (in the coin's quote
+   * money, per unit as the venue quotes it); the other legs stay. Absent: a cheap option is held to settlement.
+   */
+  legBuyBackAt?: number | undefined;
+  /**
    * ADR-122: one side after a move. The spot is compared with the spot `hours` earlier: up by more than `pct` per cent
    * only the put is sold, down by more than that only the call, otherwise the whole structure. No earlier spot: no entry.
    */
@@ -704,8 +709,19 @@ export const MOVE_DAILY_PLAYBOOKS: readonly Playbook[] = [
   movePlaybook({ id: "eth-evening-strangle-one-side", name: "ETH evening strangle, one side after a move", asset: "ETH", coin: "the ETH", figures: "+3.91 a day on 105 days, 69 % of days positive, worst day -40.1", why: "The same on ETH: a little less than both sides always (+4.42 on the same days) with more winning days (61 % for both sides) and a smaller worst day (-49.6). It earned less in the second half of the period than in the first." }),
 ].map(moveEvidence);
 
+// ---- ADR-123: a sold option bought back once it is nearly worthless, the lab's cheap-leg table ------------------------------
+
+const BUYBACK_STUDY = "the strategy lab's cheap-leg table (branch research/exits, docs/research/scripts/autopilot-study: study_cheap.py, results-cheap-leg-2026-11-22.txt, \"BTC daily: buy a sold leg back alone when its mark falls to a fixed price\", the row at a mark of 5; 106 daily expiries, 8 Aug to 21 Nov 2026, 5-minute marks; the exchange's real fees with the buy-back's counted, 100 lots)";
+const BUYBACK_TRIALS = { count: 40, note: "the lab's cheap-leg table (a buy-back at four fixed prices and at four shares of the entry price, on five sets: 40 rows). No fixed price beat holding on BTC daily; a buy-back at 20 % of the entry price did (+13.34 against +11.75) and is not what the owner asked for. This one is the owner's level, taken as protection and not for income; in-sample on one period, judged on bar closes at mark prices, and the paper record is the test" };
+/** The mark, in USD, a sold BTC option is bought back at. */
+const BUYBACK_AT = 5;
+/** A sold option bought back at 5 dollars (ADR-123), on BTC daily. */
+export const BUYBACK_DAILY_PLAYBOOKS: readonly Playbook[] = [
+  labPlaybook({ id: "evening-strangle-buy-back", name: "Evening strangle, buy back at 5 dollars", asset: "BTC", sold: 1, summary: "Each evening sell a call and a put 1 % away on the next expiry. Once either option's price has fallen to 5 dollars it is bought back on its own: almost nothing is left to earn on it and it can still come back. Either option is closed at a loss if its price triples (its stop); what is left is held to settlement.", why: "The owner's idea, from a day when a call sold at 421 fell to 5 and came back above 600 as the price ran through its strike. Protection, not income: in the study it earned a little less than holding (+11.75) with the worst day within a dollar of holding's (-105.8), because nearly every option that cheap expires worthless anyway. Of 163 options that fell to 5, 9 later rose above 50, 2 went on to their stop and none settled above the price it was sold at; the highest any reached was 184, so a day like the owner's is outside the sample. On an exchange an option marked at 5 often cannot be bought at 5: the real cost is higher than the paper one.", rule: "each option stopped at three times its price, and bought back alone once its price has fallen to 5 dollars", figures: "+11.30 a day on 106 days, 66 % of days positive, worst day -106.3", clock: { legStop: 3, legBuyBackAt: BUYBACK_AT } }),
+].map((p) => ({ ...p, trials: BUYBACK_TRIALS, evidence: { ...p.evidence, source: BUYBACK_STUDY } }));
+
 /** Every playbook Autopilot may trade: the recorded ones (never the control) and the ones entered by the clock. */
-export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc === undefined), ...ALT_DAILY_PLAYBOOKS, ...LADDER_DAILY_PLAYBOOKS, ...LAB_DAILY_PLAYBOOKS, ...MOVE_DAILY_PLAYBOOKS, ...WEEKLY_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc !== undefined), ...ALT_WEEKLY_PLAYBOOKS, ...LADDER_WEEKLY_PLAYBOOKS, ...LAB_WEEKLY_PLAYBOOKS, ...MONTHLY_PLAYBOOKS, ...ALT_MONTHLY_PLAYBOOKS];
+export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc === undefined), ...ALT_DAILY_PLAYBOOKS, ...LADDER_DAILY_PLAYBOOKS, ...LAB_DAILY_PLAYBOOKS, ...MOVE_DAILY_PLAYBOOKS, ...BUYBACK_DAILY_PLAYBOOKS, ...WEEKLY_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc !== undefined), ...ALT_WEEKLY_PLAYBOOKS, ...LADDER_WEEKLY_PLAYBOOKS, ...LAB_WEEKLY_PLAYBOOKS, ...MONTHLY_PLAYBOOKS, ...ALT_MONTHLY_PLAYBOOKS];
 export function autopilotPlaybookById(id: string): Playbook | undefined {
   return AUTOPILOT_PLAYBOOKS.find((p) => p.id === id);
 }
@@ -796,6 +812,7 @@ const BACKTESTS: Record<string, PlaybookBacktest> = {
   "afternoon-strangle-take-half": bt(2.29, "day", 75, -21.7, 106),
   "evening-strangle-half-trail": bt(11.3, "day", 79, -69.2, 106),
   "evening-strangle-one-side": bt(10.73, "day", 72, -73.4, 105),
+  "evening-strangle-buy-back": bt(11.3, "day", 66, -106.3, 106),
   "eth-evening-strangle-one-side": bt(3.91, "day", 69, -40.1, 105),
   "eth-evening-strangle-half-trail": bt(3.65, "day", 75, -44.6, 106),
   "eth-evening-strangle-wings-near": bt(4.56, "day", 73, -47, 105),

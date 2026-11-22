@@ -1080,3 +1080,111 @@ describe("HC-TR-240 the profit lock (ADR-121)", () => {
     await t.db.update(strategies).set({ status: "archived" }).where(eq(strategies.id, s.id));
   });
 });
+
+describe("HC-TR-244 a leg buy-back (ADR-123)", () => {
+  // a sold strangle of 100 lots a leg: the put sold at 900, the call at 1,100
+  const SP = { kind: "put", side: "sell", strike: "78000", expiry: "2026-09-25", symbol: "P-BTC-78000-250926", lots: 100, price: "900" };
+  const SC = { kind: "call", side: "sell", strike: "82000", expiry: "2026-09-25", symbol: "C-BTC-82000-250926", lots: 100, price: "1100" };
+  const at = (put: number, call: number) => ticks({ "P-BTC-78000-250926": put, "C-BTC-82000-250926": call });
+  const rulesOf = async (id: string) => ((await get(id)).rules ?? []).map((r) => `${r.kind} ${r.legId === null ? "" : r.legId} ${r.state}`).sort();
+
+  it("HC-TR-244 a sold option is bought back alone once its mark has fallen to the level; the other option and its stop stay, and the stop of the one bought back ends", async () => {
+    t.now.value += 5 * 60_000;
+    await t.db.update(strategies).set({ status: "archived" }).where(like(strategies.name, "Rules %"));
+    const s = await paper([SP, SC], "Rules buy-back");
+    const put = s.legs.find((l) => l.kind === "put")!;
+    const call = s.legs.find((l) => l.kind === "call")!;
+    const stop = (legId: string) => ({ kind: "leg_stop", trigger: "multiple", value: "3", legId, scope: "leg" });
+    expect((await arm(s.id, [{ kind: "leg_take", trigger: "price", value: "5", legId: call.id }, stop(call.id), stop(put.id)])).status).toBe(200);
+    expect((await get(s.id)).rules!.find((r) => r.kind === "leg_take")).toMatchObject({ trigger: "price", value: "5", thresholdUsd: "5", legId: call.id, scope: "leg", state: "armed" });
+    // a little above the level: nothing
+    expect((await evaluateRules(t.deps, at(900, 5.01), () => T0)).fired).toHaveLength(0);
+    // at the level: the call alone is bought back at 5: (1,100 - 5) x 100 lots x 0.001 = 109.5
+    expect((await evaluateRules(t.deps, at(900, 5), () => T0)).fired).toHaveLength(1);
+    let after = await get(s.id);
+    expect(after).toMatchObject({ status: "paper", realizedPnl: "109.5" });
+    expect(after.legs.map((l) => `${l.kind} ${l.status} ${l.closeReason ?? ""} ${l.exitPrice ?? ""}`).sort()).toEqual(["call squared_off target 5", "put open  "]);
+    const fired = after.rules!.find((r) => r.kind === "leg_take")!;
+    expect(fired).toMatchObject({ state: "fired", outcome: "closed" });
+    expect(fired.note).toContain("Leg buy-back fired");
+    expect(fired.note).toContain("C-BTC-82000-250926 at 5");
+    expect(fired.note).toContain("1 leg exited");
+    // the next tick: the stop that watched the call is void; the put's own stop keeps watching
+    expect((await evaluateRules(t.deps, at(900, 600), () => T0)).fired).toHaveLength(0);
+    expect(await rulesOf(s.id)).toEqual([`leg_stop ${call.id} disarmed`, `leg_stop ${put.id} armed`, `leg_take ${call.id} fired`].sort());
+    // and it still stops the put at triple: (900 - 2,700) x 0.1 = -180, the trade closed as stopped with 109.5 - 180
+    expect((await evaluateRules(t.deps, at(2700, 600), () => T0)).fired).toHaveLength(1);
+    after = await get(s.id);
+    expect(after).toMatchObject({ status: "archived", closeReason: "stopped", realizedPnl: "-70.5" });
+  });
+
+  it("HC-TR-244 the last open option bought back closes the trade with the reason target; a trade that has gone live holds the rule and sends nothing", async () => {
+    t.now.value += 5 * 60_000;
+    const one = await paper([SC], "Rules buy-back last");
+    expect((await arm(one.id, [{ kind: "leg_take", trigger: "price", value: "20", legId: one.legs[0]!.id }])).status).toBe(200);
+    expect((await evaluateRules(t.deps, at(900, 12), () => T0)).fired).toHaveLength(1);
+    expect(await get(one.id)).toMatchObject({ status: "archived", closeReason: "target", realizedPnl: "108.8" });
+
+    const s = await paper([SP, SC], "Rules buy-back gone live");
+    expect((await arm(s.id, [{ kind: "leg_take", trigger: "price", value: "5", legId: s.legs.find((l) => l.kind === "call")!.id }])).status).toBe(200);
+    await t.db.update(strategies).set({ status: "live" }).where(eq(strategies.id, s.id));
+    const placed = t.trading.placed.length;
+    expect((await evaluateRules(t.deps, at(900, 4), () => T0)).fired).toHaveLength(0);
+    expect(t.trading.placed).toHaveLength(placed);
+    expect((await get(s.id)).rules!.find((r) => r.kind === "leg_take")).toMatchObject({ state: "armed", note: "not sent: a buy-back of a cheap leg is on paper trades only for now" });
+    await t.db.update(strategies).set({ status: "archived" }).where(eq(strategies.id, s.id));
+  });
+
+  it("HC-TR-244 a mark of nothing is no mark and never fires a buy-back; two options at the level are bought back on successive ticks; after a stopped option the trade ends as stopped", async () => {
+    t.now.value += 5 * 60_000;
+    await t.db.update(strategies).set({ status: "archived" }).where(like(strategies.name, "Rules %"));
+    const s = await paper([SP, SC], "Rules buy-back both");
+    const take = (legId: string) => ({ kind: "leg_take", trigger: "price", value: "5", legId });
+    expect((await arm(s.id, s.legs.map((l) => take(l.id)))).status).toBe(200);
+    // a venue's placeholder for a missing price: zero is under the level, and must not read as a fall to it
+    const zero = await evaluateRules(t.deps, at(900, 0), () => T0);
+    expect(zero.fired).toHaveLength(0);
+    expect(zero.skipped).toBeGreaterThan(0);
+    expect((await get(s.id)).legs.every((l) => l.status === "open")).toBe(true);
+    // both at the level on one tick: one fire a strategy a tick, the other on the next; the second closes the trade
+    expect((await evaluateRules(t.deps, at(4, 5), () => T0)).fired).toHaveLength(1);
+    expect((await get(s.id)).status).toBe("paper");
+    expect((await evaluateRules(t.deps, at(4, 5), () => T0)).fired).toHaveLength(1);
+    // (900 - 4) x 0.1 + (1,100 - 5) x 0.1 = 89.6 + 109.5
+    expect(await get(s.id)).toMatchObject({ status: "archived", closeReason: "target", realizedPnl: "199.1" });
+
+    // the put is stopped at triple (-180); the call, bought back cheap later, is the last leg: a losing trade, ended as stopped
+    t.now.value += 5 * 60_000;
+    const l = await paper([SP, SC], "Rules buy-back after a stop");
+    const put = l.legs.find((x) => x.kind === "put")!;
+    const call = l.legs.find((x) => x.kind === "call")!;
+    expect((await arm(l.id, [{ kind: "leg_stop", trigger: "multiple", value: "3", legId: put.id, scope: "leg" }, take(call.id)])).status).toBe(200);
+    expect((await evaluateRules(t.deps, at(2700, 600), () => T0)).fired).toHaveLength(1);
+    expect((await evaluateRules(t.deps, at(2700, 5), () => T0)).fired).toHaveLength(1);
+    expect(await get(l.id)).toMatchObject({ status: "archived", closeReason: "stopped", realizedPnl: "-70.5" });
+  });
+
+  it("HC-TR-244 the arm route: an open sold option of a paper trade, at a level below the price it was sold at", async () => {
+    t.now.value += 5 * 60_000;
+    const s = await paper([SP, SC, { ...CALL, strike: "84000", symbol: "C-BTC-84000-250926" }], "Rules buy-back refused");
+    const call = s.legs.find((l) => l.kind === "call" && l.side === "sell")!;
+    const long = s.legs.find((l) => l.side === "buy")!;
+    const why = async (rules: unknown[]) => {
+      const res = await arm(s.id, rules);
+      return `${res.status} ${JSON.stringify(await res.json())}`;
+    };
+    const take = (legId: string, value = "5") => ({ kind: "leg_take", trigger: "price", value, legId });
+    expect(await why([take("leg_nope")])).toContain("400");
+    expect(await why([take(long.id)])).toContain("a buy-back is for a sold option");
+    expect(await why([take(call.id, "1100")])).toContain("the buy-back level must be below the price it was sold at");
+    expect(await why([take(call.id, "1500")])).toContain("the buy-back level must be below the price it was sold at");
+    expect(await why([take(call.id), take(call.id, "2")])).toContain("400");
+    expect((await arm(s.id, [take(call.id, "1099")])).status).toBe(200);
+    // paper only for now: the same trade once it is live is refused
+    await t.db.update(strategies).set({ status: "live" }).where(eq(strategies.id, s.id));
+    const refused = await arm(s.id, [take(call.id)]);
+    expect(refused.status).toBe(409);
+    expect(JSON.stringify(await refused.json())).toContain("A buy-back of a cheap leg is on paper trades only for now");
+    await t.db.update(strategies).set({ status: "archived" }).where(eq(strategies.id, s.id));
+  });
+});

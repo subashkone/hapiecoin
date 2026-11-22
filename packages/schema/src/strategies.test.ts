@@ -174,7 +174,7 @@ describe("HC-TR-165 stop and target rules (ADR-059 §2.3)", () => {
     expect(RuleBody.safeParse({ kind: "time", trigger: "at", value: "tomorrow" }).success).toBe(false);
     expect(RuleBody.safeParse({ kind: "time", trigger: "at", value: "2026-09-12T11:30" }).success).toBe(false); // no zone: whose clock?
     expect(RuleBody.safeParse({ kind: "time", trigger: "at", value: "2026-09-12T17:00:00+05:30" }).success).toBe(true);
-    expect(RulesBody.safeParse({ rules: Array.from({ length: 20 }, (_, i) => ({ kind: "leg_stop", trigger: "price", value: "1", legId: `l${i}` })) }).success).toBe(false); // 19 is the most: ten leg stops, the five others (a running trail on the rest among them, ADR-104) and four profit steps (ADR-120)
+    expect(RulesBody.safeParse({ rules: Array.from({ length: 30 }, (_, i) => ({ kind: "leg_stop", trigger: "price", value: "1", legId: `l${i}` })) }).success).toBe(false); // 29 is the most: ten leg stops, ten leg buy-backs (ADR-123), the five others (a running trail on the rest among them, ADR-104) and four profit steps (ADR-120)
     expect(nearestSettlement([{ expiry: "PERP" }], "BTC")).toBeNull();
     expect(nearestSettlement([{ expiry: "2026-09-25" }, { expiry: "2026-09-18" }, { expiry: "PERP" }], "BTC")).toEqual({ ms: Date.UTC(2026, 8, 18, 12), expiry: "2026-09-18" });
     expect(RuleBody.safeParse({ kind: "time", trigger: "dte", value: "0" }).success).toBe(true);
@@ -195,7 +195,7 @@ describe("HC-TR-165 stop and target rules (ADR-059 §2.3)", () => {
     expect(ruleLevel({ kind: "time", trigger: "at", value: "2026-09-12T11:30:00.000Z", basisUsd: undefined })).toBe(String(Date.UTC(2026, 8, 12, 11, 30)));
     expect(ruleLevel({ kind: "time", trigger: "dte", value: "1", basisUsd: undefined })).toBe("1");
     expect(ruleLevel({ kind: "stop", trigger: "money", value: "60", basisUsd: undefined })).toBe("-60");
-    expect(RULE_KINDS.map((k) => RULE_KIND_ORDER[k])).toEqual([0, 7, 1, 2, 3, 4, 6, 5]); // the trail on the rest (ADR-104) is judged after the protective kinds, before the target
+    expect(RULE_KINDS.map((k) => RULE_KIND_ORDER[k])).toEqual([0, 8, 1, 2, 3, 4, 7, 5, 6]); // the trail on the rest (ADR-104) is judged after the protective kinds, before the target
     expect(CLOSE_REASON_OF_KIND.time).toBe("squared_off");
     expect(CLOSE_REASON_OF_KIND.leg_stop).toBe("stopped");
   });
@@ -367,5 +367,27 @@ describe("HC-TR-240 the profit lock (ADR-121)", () => {
     expect(isLockArmed({ kind: "lock" })).toBe(false);
     expect(isLockArmed({ kind: "lock", peakPnl: "38.1" })).toBe(true);
     expect(isLockArmed({ kind: "target", peakPnl: "38.1" })).toBe(false);
+  });
+});
+
+describe("HC-TR-244 a leg buy-back (ADR-123)", () => {
+  it("HC-TR-244 a buy-back is a price on one named leg, exits that leg alone, books the reason target and is judged after the protective kinds", () => {
+    expect([RULE_KIND_LABELS.leg_take, RULE_TRIGGERS_OF.leg_take, CLOSE_REASON_OF_KIND.leg_take]).toEqual(["Leg buy-back", ["price"], "target"]);
+    expect(RULE_KIND_ORDER.leg_stop < RULE_KIND_ORDER.leg_take && RULE_KIND_ORDER.lock < RULE_KIND_ORDER.leg_take && RULE_KIND_ORDER.leg_take < RULE_KIND_ORDER.step).toBe(true);
+    const ok = { kind: "leg_take", trigger: "price", value: "5", legId: "l1" };
+    expect(RuleBody.safeParse(ok).success).toBe(true);
+    expect(RuleBody.safeParse({ ...ok, scope: "leg" }).success).toBe(true);
+    const why = (body: unknown) => JSON.stringify(RuleBody.safeParse(body).error?.issues ?? []);
+    expect(why({ kind: "leg_take", trigger: "price", value: "5" })).toContain("a leg buy-back names its leg");
+    expect(why({ ...ok, scope: "strategy" })).toContain("a leg buy-back exits its own leg alone");
+    expect(why({ ...ok, trigger: "multiple" })).toContain("leg_take takes price");
+    expect(why({ ...ok, value: "0" })).toContain("must be greater than zero");
+    expect(why({ ...ok, trail: { trigger: "pct", value: "20" } })).toContain("only a target or a leg stop can trail");
+    expect(why({ kind: "spot", trigger: "above", value: "5", scope: "leg" })).toContain("only a leg stop or a leg buy-back can exit one leg");
+    expect(ruleLevel({ kind: "leg_take", trigger: "price", value: "5", basisUsd: undefined }, "421.67")).toBe("5");
+    // one per leg, beside that leg's stop
+    const stop = { kind: "leg_stop", trigger: "multiple", value: "3", legId: "l1" };
+    expect(RulesBody.safeParse({ rules: [ok, stop, { ...ok, legId: "l2" }] }).success).toBe(true);
+    expect(JSON.stringify(RulesBody.safeParse({ rules: [ok, { ...ok, value: "2" }] }).error?.issues)).toContain("one leg stop and one leg buy-back per leg");
   });
 });

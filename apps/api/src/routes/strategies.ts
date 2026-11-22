@@ -770,9 +770,17 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
           if (at <= now.getTime()) throw errors.badRequest("That moment has already passed");
           return String(at);
         }
-        if (r.kind !== "leg_stop") return ruleLevel(r);
+        if (r.kind !== "leg_stop" && r.kind !== "leg_take") return ruleLevel(r);
         const leg = openLegs.find((l) => l.id === r.legId);
         if (!leg) throw errors.badRequest(`Leg ${r.legId ?? ""} is not an open leg of this strategy`);
+        if (r.kind === "leg_take") {
+          // ADR-123: a sold option bought back once it is nearly worthless. On paper only: a mark of a few dollars is not
+          // a price the exchange fills at. Below the price it was sold at, or it would fire at once.
+          if (row.status !== "paper") throw errors.conflict("A buy-back of a cheap leg is on paper trades only for now");
+          if (leg.side !== "sell" || leg.kind === "future") throw errors.badRequest(`${leg.symbol}: a buy-back is for a sold option`);
+          if (Number(r.value) >= Number(leg.entryPrice ?? leg.price)) throw errors.badRequest(`${leg.symbol}: the buy-back level must be below the price it was sold at`);
+          return ruleLevel(r);
+        }
         if (r.trigger === "multiple" && leg.entryPrice === null) throw errors.badRequest(`${leg.symbol}: no entry price yet for a multiple`);
         const level = ruleLevel(r, leg.entryPrice ?? leg.price);
         if (Number(level) <= 0) throw errors.badRequest(`${leg.symbol}: the level rounds to nothing`); // it would fire at once
@@ -804,8 +812,8 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
             basis: r.trigger === "pct" && r.kind !== "trail" ? (r.basis ?? null) : null,
             basisUsd: r.trigger === "pct" && r.kind !== "trail" ? (r.basisUsd ?? null) : null,
             thresholdUsd: r.kind === "trail" ? trailRow!.thresholdUsd : levels[i]!,
-            legId: r.kind === "leg_stop" ? (r.legId ?? null) : null,
-            scope: r.kind === "leg_stop" ? (r.scope ?? "leg") : "strategy",
+            legId: r.kind === "leg_stop" || r.kind === "leg_take" ? (r.legId ?? null) : null,
+            scope: r.kind === "leg_take" ? "leg" : r.kind === "leg_stop" ? (r.scope ?? "leg") : "strategy",
             trailTrigger: r.trail?.trigger ?? null,
             trailValue: r.trail ? (r.trail.trigger === "money" ? toDecimal(Number(r.trail.value), 2) : r.trail.value) : null,
             closeShare: r.kind === "step" ? (r.closeShare ?? null) : null,

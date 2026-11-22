@@ -19,7 +19,7 @@ Three sources, kept in sync with their originals: the roadmap items still open (
 | 30 | AI: opportunity radar, language features, journal coach, advisor | Five phases in docs/research/ai-leverage.md: AI-1 radar with backtested setups and expected-value scores on template cards (no language model); AI-2 natural-language alerts and rules plus the assistant on the guide corpus; AI-3 weekly journal coach; AI-4 conversational advisor using the wizard, pricer, backtest and positions as tools; AI-5 volatility regime model and risk guardian. | Feature freeze; the radar needs 30+ recorded days of chains (accumulating), the language features need an API key in the secret store and a legal read of the copy. |
 | 31 | Strategy playbooks | Eight rule-based playbooks on templates already in the catalogue (docs/research/strategy-playbooks.md): expiry-week credit spread, pin butterfly, front-week calendar, trend with defined risk, volatility squeeze breakout, trend financed by skew, premium harvest, covered call. Needs a playbook object, trend and volatility signals from recorded marks, entry conditions in the backtest, a track record per card. First three: premium harvest, expiry-week credit spread, trend with defined risk. | Feature freeze; each playbook ships only with its backtest on our own chains. |
 
-## 2. Open review gaps (89 of 157)
+## 2. Open review gaps (90 of 158)
 
 Every row is copied in full from GAPS.md so this page stands alone. Priority is a recommendation for after launch: **High** touches money, safety or a promise the product makes; **Medium (data)** needs a data feed or a spend decision; **Low (tests)** is test hygiene.
 
@@ -197,6 +197,12 @@ Every row is copied in full from GAPS.md so this page stands alone. Priority is 
 | # | Gap | Source | Status | Priority |
 |---|---|---|---|---|
 | 49 | Razorpay webhooks need `RAZORPAY_WEBHOOK_SECRET` and a public API URL registered in the Razorpay dashboard (ADR-034); until then a payment whose tab closed before the confirm call stays Pending and support settles it by hand. Refunds and proration are not built (08 Sep). |  | open | High |
+
+### Buy back when cheap
+
+| # | Gap | Source | Status | Priority |
+|---|---|---|---|---|
+| 158 | A paper-only rule: a live trade cannot carry it, and a live version needs a limit order at a price the exchange will fill, with its own checks. On paper it fills at the mark; an option marked at a few dollars usually costs more to buy, or does not fill, so the paper record flatters it. The backtest found no gain at any fixed price on BTC daily (it is protection against a rare comeback) and its figures are in-sample on one period; the one row that did beat holding there, a buy-back at 20 % of the entry price (+13.34 against +11.75), is a different rule and is not built. Its table (`results-cheap-leg-2026-11-22.txt`) is on `research/exits` (240ced5), not on main. A paper trade that goes live keeps the rule armed: the engine holds it and sends nothing, but the card lists it as protection until its level is reached, and the dialog (which does not offer it on a live trade) removes it on the next save without saying so; the same holds for profit steps. Re-enter copies only the legs closed at the trade's closing moment, so a strangle whose options were bought back at different times re-enters as one option (as GAPS #155). The level is a fixed price, 5 dollars on BTC: it is a different share of the premium each day, and nothing scales it for ETH or XAUT (no playbook there). The day that prompted it (a call from 5 to about 686) is outside the backtest's sample, whose highest later mark was 184. One fire per strategy per tick: two options at the level together are bought back two seconds apart. The Autopilot screen's running-trade panel does not show the buy-back level. |  | Open | High |
 
 ### Chain history
 
