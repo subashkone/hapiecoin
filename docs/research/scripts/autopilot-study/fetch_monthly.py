@@ -5,6 +5,8 @@ Usage: python -I fetch_monthly.py <cache_dir> <BTC|ETH|XAUT> <strike_step> <firs
 import json, os, sys, time, urllib.request, urllib.parse, datetime as dt
 
 CACHE, ASSET, STEP = sys.argv[1], sys.argv[2], int(sys.argv[3])
+# XAUT options settle at 16:00 UTC (21:30 IST); BTC and ETH at 12:00 UTC (17:30 IST)
+SETTLE_H = 16 if ASSET == "XAUT" else 12
 FIRST, LAST = dt.date.fromisoformat(sys.argv[4]), dt.date.fromisoformat(sys.argv[5])
 B = "https://api.india.delta.exchange/v2/history/candles"
 U = dt.timezone.utc
@@ -62,7 +64,7 @@ while True:
     if exp > LAST:
         break
     if exp >= FIRST:
-        end = dt.datetime(exp.year, exp.month, exp.day, 12, tzinfo=U)
+        end = dt.datetime(exp.year, exp.month, exp.day, SETTLE_H, tzinfo=U)
         start = end - dt.timedelta(days=92)
         spot = load(exp, f"MARK:{ASSET}USD", start, end)
         if not spot:

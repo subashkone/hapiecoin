@@ -1,0 +1,222 @@
+expiries in the cache: 106 (2026-08-08 .. 2026-11-21); 100 lots x 0.001 per leg; net of fees; naked sold strangle
+
+==================================================================================================================================
+entered 23 hours before settlement
+
+  sold 1 % away: mean premium collected   49.0, sold on average  1.0 % away
+      hold                 n=106 mean=   -4.20 win= 73% worst=  -630.9 total=   -445 | first half    -173, second half    -272
+      stop2x               n=106 mean=   +1.94 win= 37% worst=  -112.7 total=   +205 | first half    +146, second half     +59
+      stop3x               n=106 mean=   +3.43 win= 46% worst=  -112.7 total=   +364 | first half    +434, second half     -70
+      stop2x+half          n=106 mean=   +2.10 win= 50% worst=  -112.7 total=   +222 | first half    +200, second half     +22
+      stop3x+half          n=106 mean=   +1.46 win= 62% worst=  -112.7 total=   +155 | first half    +349, second half    -194
+      stop2x+trail         n=106 mean=   +2.09 win= 36% worst=   -60.5 total=   +222 | first half    +108, second half    +114
+==================================================================================================================================
+entered 22 hours before settlement
+
+  sold 1 % away: mean premium collected   45.4, sold on average  1.0 % away
+      hold                 n=106 mean=   -5.26 win= 74% worst=  -593.9 total=   -557 | first half    -247, second half    -311
+      stop2x               n=106 mean=   +2.47 win= 36% worst=  -116.3 total=   +262 | first half    +162, second half    +100
+      stop3x               n=106 mean=   +2.74 win= 47% worst=  -116.3 total=   +291 | first half    +442, second half    -152
+      stop2x+half          n=106 mean=   +0.07 win= 46% worst=  -116.3 total=     +7 | first half    +208, second half    -200
+      stop3x+half          n=106 mean=   -0.99 win= 60% worst=  -116.3 total=   -105 | first half    +370, second half    -475
+      stop2x+trail         n=106 mean=   +2.84 win= 35% worst=   -62.4 total=   +301 | first half    +194, second half    +108
+==================================================================================================================================
+entered 21 hours before settlement
+
+  sold 1 % away: mean premium collected   41.1, sold on average  1.0 % away
+      hold                 n=106 mean=   +4.29 win= 79% worst=  -505.0 total=   +455 | first half     +56, second half    +399
+      stop2x               n=106 mean=   +7.77 win= 43% worst=   -56.2 total=   +824 | first half    +720, second half    +104
+      stop3x               n=106 mean=  +12.82 win= 60% worst=   -97.7 total=  +1359 | first half    +918, second half    +441
+      stop2x+half          n=106 mean=   +6.25 win= 60% worst=   -51.0 total=   +663 | first half    +506, second half    +157
+      stop3x+half          n=106 mean=   +8.01 win= 75% worst=   -56.5 total=   +849 | first half    +546, second half    +303
+      stop2x+trail         n=106 mean=   +7.09 win= 42% worst=   -57.9 total=   +751 | first half    +712, second half     +39
+==================================================================================================================================
+entered 20 hours before settlement
+
+  sold 1 % away: mean premium collected   36.5, sold on average  1.0 % away
+      hold                 n=106 mean=   +7.33 win= 80% worst=  -338.2 total=   +777 | first half    +356, second half    +421
+      stop2x               n=106 mean=   +7.58 win= 49% worst=   -39.8 total=   +803 | first half    +340, second half    +463
+      stop3x               n=106 mean=  +11.75 win= 65% worst=  -105.8 total=  +1246 | first half    +675, second half    +571
+      stop2x+half          n=106 mean=   +6.72 win= 63% worst=   -39.8 total=   +712 | first half    +291, second half    +421
+      stop3x+half          n=106 mean=   +9.02 win= 80% worst=   -69.2 total=   +956 | first half    +568, second half    +388
+      stop2x+trail         n=106 mean=   +7.06 win= 49% worst=   -38.2 total=   +748 | first half    +366, second half    +382
+==================================================================================================================================
+entered 19 hours before settlement
+
+  sold 1 % away: mean premium collected   31.5, sold on average  1.0 % away
+      hold                 n=106 mean=   +3.80 win= 83% worst=  -285.7 total=   +403 | first half    +179, second half    +224
+      stop2x               n=106 mean=   +1.85 win= 42% worst=   -81.0 total=   +196 | first half     +99, second half     +97
+      stop3x               n=106 mean=   +4.89 win= 59% worst=   -99.3 total=   +518 | first half    +309, second half    +209
+      stop2x+half          n=106 mean=   +0.18 win= 55% worst=   -81.0 total=    +19 | first half     +77, second half     -58
+      stop3x+half          n=106 mean=   +2.86 win= 70% worst=   -83.7 total=   +303 | first half    +233, second half     +70
+      stop2x+trail         n=106 mean=   +2.19 win= 40% worst=   -74.1 total=   +232 | first half    +147, second half     +85
+==================================================================================================================================
+entered 18 hours before settlement
+
+  sold 1 % away: mean premium collected   28.2, sold on average  1.0 % away
+      hold                 n=106 mean=   +1.12 win= 85% worst=  -289.2 total=   +118 | first half     -35, second half    +153
+      stop2x               n=106 mean=   -0.09 win= 40% worst=   -79.9 total=     -9 | first half    -104, second half     +94
+      stop3x               n=106 mean=   +2.04 win= 60% worst=   -93.7 total=   +216 | first half     -30, second half    +247
+      stop2x+half          n=106 mean=   +1.17 win= 58% worst=   -64.7 total=   +124 | first half     +98, second half     +26
+      stop3x+half          n=106 mean=   +0.63 win= 72% worst=   -93.7 total=    +67 | first half     +63, second half      +4
+      stop2x+trail         n=106 mean=   -1.46 win= 36% worst=   -79.9 total=   -154 | first half    -136, second half     -18
+==================================================================================================================================
+entered 17 hours before settlement
+
+  sold 1 % away: mean premium collected   25.5, sold on average  1.0 % away
+      hold                 n=106 mean=   -0.86 win= 83% worst=  -332.9 total=    -91 | first half    -239, second half    +148
+      stop2x               n=106 mean=   +1.37 win= 43% worst=  -111.2 total=   +146 | first half     +10, second half    +136
+      stop3x               n=106 mean=   +0.83 win= 57% worst=   -87.3 total=    +88 | first half      +9, second half     +79
+      stop2x+half          n=106 mean=   -0.17 win= 52% worst=  -111.2 total=    -18 | first half     +62, second half     -80
+      stop3x+half          n=106 mean=   +1.12 win= 71% worst=   -59.3 total=   +119 | first half    +110, second half      +9
+      stop2x+trail         n=106 mean=   +0.17 win= 42% worst=   -87.8 total=    +18 | first half     -32, second half     +50
+==================================================================================================================================
+entered 16 hours before settlement
+
+  sold 1 % away: mean premium collected   23.4, sold on average  1.0 % away
+      hold                 n=106 mean=   -2.55 win= 81% worst=  -296.7 total=   -271 | first half    -264, second half      -6
+      stop2x               n=106 mean=   +1.37 win= 46% worst=   -32.8 total=   +145 | first half     -46, second half    +191
+      stop3x               n=106 mean=   +1.12 win= 57% worst=   -72.6 total=   +119 | first half    +109, second half      +9
+      stop2x+half          n=106 mean=   +1.05 win= 58% worst=   -32.8 total=   +111 | first half     +36, second half     +76
+      stop3x+half          n=106 mean=   -0.83 win= 68% worst=   -72.6 total=    -88 | first half     +81, second half    -169
+      stop2x+trail         n=106 mean=   +0.29 win= 44% worst=   -32.8 total=    +31 | first half     -62, second half     +92
+==================================================================================================================================
+entered 15 hours before settlement
+
+  sold 1 % away: mean premium collected   22.6, sold on average  1.0 % away
+      hold                 n=106 mean=   +0.12 win= 83% worst=  -303.0 total=    +13 | first half    -210, second half    +223
+      stop2x               n=106 mean=   +0.73 win= 45% worst=   -99.9 total=    +77 | first half     +71, second half      +7
+      stop3x               n=106 mean=   -1.04 win= 52% worst=   -83.1 total=   -110 | first half     -91, second half     -19
+      stop2x+half          n=106 mean=   -2.36 win= 54% worst=   -99.9 total=   -250 | first half     -36, second half    -214
+      stop3x+half          n=106 mean=   -3.05 win= 63% worst=   -83.1 total=   -323 | first half     -90, second half    -233
+      stop2x+trail         n=106 mean=   +1.01 win= 42% worst=   -39.6 total=   +107 | first half     +57, second half     +50
+==================================================================================================================================
+entered 14 hours before settlement
+
+  sold 1 % away: mean premium collected   22.6, sold on average  1.0 % away
+      hold                 n=106 mean=   +0.74 win= 83% worst=  -323.5 total=    +79 | first half    -266, second half    +345
+      stop2x               n=106 mean=   +1.13 win= 44% worst=   -89.5 total=   +120 | first half      +9, second half    +111
+      stop3x               n=106 mean=   -1.90 win= 54% worst=  -161.1 total=   -202 | first half     -91, second half    -111
+      stop2x+half          n=106 mean=   +0.72 win= 59% worst=   -84.7 total=    +76 | first half     +86, second half     -10
+      stop3x+half          n=106 mean=   -1.87 win= 67% worst=  -161.1 total=   -198 | first half      -2, second half    -196
+      stop2x+trail         n=106 mean=   +0.38 win= 40% worst=   -89.5 total=    +41 | first half     -10, second half     +51
+==================================================================================================================================
+entered 13 hours before settlement
+
+  sold 1 % away: mean premium collected   20.9, sold on average  1.0 % away
+      hold                 n=106 mean=   -0.53 win= 82% worst=  -295.4 total=    -56 | first half    -302, second half    +246
+      stop2x               n=106 mean=   +0.06 win= 43% worst=  -105.1 total=     +6 | first half     -27, second half     +33
+      stop3x               n=106 mean=   -0.13 win= 54% worst=  -116.1 total=    -14 | first half    -198, second half    +184
+      stop2x+half          n=106 mean=   +0.10 win= 57% worst=  -105.1 total=    +10 | first half     +18, second half      -7
+      stop3x+half          n=106 mean=   +0.69 win= 69% worst=   -54.9 total=    +73 | first half     -35, second half    +108
+      stop2x+trail         n=106 mean=   -0.95 win= 40% worst=   -65.7 total=   -101 | first half     -63, second half     -38
+==================================================================================================================================
+entered 12 hours before settlement
+
+  sold 1 % away: mean premium collected   18.6, sold on average  1.0 % away
+      hold                 n=106 mean=   +0.10 win= 86% worst=  -257.7 total=    +10 | first half    -253, second half    +263
+      stop2x               n=106 mean=   +0.55 win= 43% worst=   -96.1 total=    +58 | first half     +11, second half     +48
+      stop3x               n=106 mean=   -0.38 win= 54% worst=  -163.5 total=    -40 | first half     -74, second half     +33
+      stop2x+half          n=106 mean=   -0.38 win= 58% worst=   -96.1 total=    -40 | first half     -69, second half     +29
+      stop3x+half          n=106 mean=   -1.16 win= 69% worst=  -163.5 total=   -123 | first half     -57, second half     -66
+      stop2x+trail         n=106 mean=   +0.88 win= 40% worst=   -53.7 total=    +94 | first half     +61, second half     +32
+==================================================================================================================================
+entered 11 hours before settlement
+
+  sold 1 % away: mean premium collected   17.6, sold on average  1.0 % away
+      hold                 n=106 mean=   -0.24 win= 83% worst=  -219.4 total=    -26 | first half    -196, second half    +171
+      stop2x               n=106 mean=   -0.98 win= 45% worst=  -117.5 total=   -104 | first half    -152, second half     +48
+      stop3x               n=106 mean=   +2.63 win= 60% worst=  -114.0 total=   +278 | first half     +64, second half    +214
+      stop2x+half          n=106 mean=   -2.34 win= 56% worst=  -117.5 total=   -248 | first half    -135, second half    -114
+      stop3x+half          n=106 mean=   +0.91 win= 75% worst=  -114.0 total=    +97 | first half    +156, second half     -59
+      stop2x+trail         n=106 mean=   -0.42 win= 43% worst=   -49.5 total=    -44 | first half     -79, second half     +35
+==================================================================================================================================
+entered 10 hours before settlement
+
+  sold 1 % away: mean premium collected   16.2, sold on average  1.0 % away
+      hold                 n=106 mean=   +2.11 win= 83% worst=  -263.2 total=   +224 | first half    -159, second half    +383
+      stop2x               n=106 mean=   +1.41 win= 45% worst=   -58.5 total=   +149 | first half    -143, second half    +292
+      stop3x               n=106 mean=   -0.01 win= 56% worst=   -68.7 total=     -1 | first half    -224, second half    +223
+      stop2x+half          n=106 mean=   +0.03 win= 58% worst=   -58.5 total=     +3 | first half     -82, second half     +85
+      stop3x+half          n=106 mean=   -1.63 win= 67% worst=   -68.7 total=   -173 | first half    -138, second half     -36
+      stop2x+trail         n=106 mean=   +1.22 win= 45% worst=   -49.0 total=   +129 | first half    -160, second half    +289
+==================================================================================================================================
+entered 9 hours before settlement
+
+  sold 1 % away: mean premium collected   13.4, sold on average  1.0 % away
+      hold                 n=106 mean=   +0.56 win= 88% worst=  -249.6 total=    +59 | first half    -369, second half    +428
+      stop2x               n=106 mean=   +2.34 win= 58% worst=   -66.1 total=   +248 | first half    +124, second half    +124
+      stop3x               n=106 mean=   +0.59 win= 60% worst=   -66.1 total=    +62 | first half     -28, second half     +91
+      stop2x+half          n=106 mean=   +0.94 win= 68% worst=   -66.1 total=    +99 | first half    +107, second half      -7
+      stop3x+half          n=106 mean=   -0.25 win= 73% worst=   -66.1 total=    -27 | first half     +52, second half     -78
+      stop2x+trail         n=106 mean=   +1.30 win= 52% worst=   -74.1 total=   +138 | first half     +88, second half     +50
+==================================================================================================================================
+entered 8 hours before settlement
+
+  sold 1 % away: mean premium collected   11.7, sold on average  1.0 % away
+      hold                 n=106 mean=   +0.79 win= 89% worst=  -252.6 total=    +84 | first half    -345, second half    +429
+      stop2x               n=106 mean=   +1.37 win= 45% worst=   -57.7 total=   +145 | first half     -45, second half    +191
+      stop3x               n=106 mean=   +2.58 win= 62% worst=   -41.4 total=   +273 | first half     -76, second half    +349
+      stop2x+half          n=106 mean=   +0.77 win= 59% worst=   -57.7 total=    +81 | first half     +29, second half     +52
+      stop3x+half          n=106 mean=   +1.40 win= 75% worst=   -41.4 total=   +148 | first half      +2, second half    +146
+      stop2x+trail         n=106 mean=   +1.40 win= 43% worst=   -23.8 total=   +149 | first half     -40, second half    +189
+==================================================================================================================================
+entered 7 hours before settlement
+
+  sold 1 % away: mean premium collected   10.2, sold on average  1.0 % away
+      hold                 n=106 mean=   +0.07 win= 89% worst=  -255.9 total=     +7 | first half    -407, second half    +414
+      stop2x               n=106 mean=   +1.05 win= 49% worst=   -55.2 total=   +112 | first half     -55, second half    +166
+      stop3x               n=106 mean=   -0.46 win= 58% worst=   -73.3 total=    -49 | first half    -197, second half    +148
+      stop2x+half          n=106 mean=   +0.28 win= 63% worst=   -55.2 total=    +30 | first half     -30, second half     +60
+      stop3x+half          n=106 mean=   -0.92 win= 75% worst=   -73.3 total=    -98 | first half     -99, second half      +1
+      stop2x+trail         n=106 mean=   +1.29 win= 46% worst=   -19.3 total=   +137 | first half     -52, second half    +188
+==================================================================================================================================
+entered 6 hours before settlement
+
+  sold 1 % away: mean premium collected    8.7, sold on average  1.0 % away
+      hold                 n=106 mean=   -1.75 win= 88% worst=  -237.6 total=   -186 | first half    -383, second half    +198
+      stop2x               n=106 mean=   +0.85 win= 53% worst=   -42.0 total=    +90 | first half     -46, second half    +136
+      stop3x               n=106 mean=   +0.09 win= 61% worst=   -61.2 total=     +9 | first half    -103, second half    +112
+      stop2x+half          n=106 mean=   +0.08 win= 66% worst=   -42.0 total=     +8 | first half     -56, second half     +64
+      stop3x+half          n=106 mean=   -0.05 win= 75% worst=   -61.2 total=     -5 | first half     -12, second half      +7
+      stop2x+trail         n=106 mean=   +1.02 win= 50% worst=   -29.5 total=   +108 | first half     -11, second half    +119
+==================================================================================================================================
+entered 5 hours before settlement
+
+  sold 1 % away: mean premium collected    6.3, sold on average  1.0 % away
+      hold                 n=106 mean=   -0.09 win= 92% worst=  -238.6 total=     -9 | first half    -288, second half    +278
+      stop2x               n=106 mean=   -0.73 win= 47% worst=   -42.8 total=    -77 | first half    -128, second half     +51
+      stop3x               n=106 mean=   +0.46 win= 59% worst=   -28.3 total=    +49 | first half    -114, second half    +162
+      stop2x+half          n=106 mean=   -1.05 win= 59% worst=   -42.8 total=   -112 | first half    -104, second half      -8
+      stop3x+half          n=106 mean=   -0.06 win= 72% worst=   -28.3 total=     -6 | first half     -62, second half     +57
+      stop2x+trail         n=106 mean=   -0.27 win= 45% worst=   -27.2 total=    -29 | first half     -82, second half     +53
+==================================================================================================================================
+entered 4 hours before settlement
+
+  sold 1 % away: mean premium collected    4.2, sold on average  1.0 % away
+      hold                 n=106 mean=   -1.24 win= 93% worst=  -221.4 total=   -131 | first half    -290, second half    +159
+      stop2x               n=106 mean=   +0.17 win= 51% worst=   -22.8 total=    +18 | first half     -46, second half     +64
+      stop3x               n=106 mean=   +0.13 win= 58% worst=   -22.8 total=    +14 | first half     -84, second half     +98
+      stop2x+half          n=106 mean=   +0.33 win= 64% worst=   -22.8 total=    +35 | first half      +3, second half     +32
+      stop3x+half          n=106 mean=   +0.18 win= 74% worst=   -22.8 total=    +19 | first half     -31, second half     +50
+      stop2x+trail         n=106 mean=   +0.17 win= 44% worst=   -22.8 total=    +18 | first half     -54, second half     +71
+==================================================================================================================================
+entered 3 hours before settlement
+
+  sold 1 % away: mean premium collected    2.3, sold on average  1.0 % away
+      hold                 n=106 mean=   +1.10 win= 97% worst=   -40.7 total=   +117 | first half     +15, second half    +101
+      stop2x               n=106 mean=   -0.18 win= 41% worst=   -10.1 total=    -19 | first half     -38, second half     +19
+      stop3x               n=106 mean=   +0.12 win= 50% worst=   -22.9 total=    +13 | first half     -45, second half     +58
+      stop2x+half          n=106 mean=   -0.12 win= 46% worst=   -10.1 total=    -13 | first half     -17, second half      +4
+      stop3x+half          n=106 mean=   -0.23 win= 55% worst=   -22.9 total=    -25 | first half     -42, second half     +17
+      stop2x+trail         n=106 mean=   -0.17 win= 38% worst=   -10.1 total=    -18 | first half     -35, second half     +17
+==================================================================================================================================
+entered 2 hours before settlement
+
+  sold 1 % away: mean premium collected    1.1, sold on average  1.0 % away
+      hold                 n=106 mean=   +0.92 win= 99% worst=    -1.7 total=    +98 | first half     +42, second half     +56
+      stop2x               n=106 mean=   -0.22 win= 57% worst=   -30.4 total=    -23 | first half     -38, second half     +15
+      stop3x               n=106 mean=   -0.35 win= 60% worst=   -36.8 total=    -37 | first half     -47, second half     +11
+      stop2x+half          n=106 mean=   -0.23 win= 65% worst=   -30.4 total=    -25 | first half     -35, second half     +11
+      stop3x+half          n=106 mean=   -0.36 win= 69% worst=   -36.8 total=    -38 | first half     -43, second half      +5
+      stop2x+trail         n=106 mean=   -0.14 win= 50% worst=   -30.4 total=    -15 | first half     -40, second half     +25

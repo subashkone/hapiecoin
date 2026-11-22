@@ -2120,5 +2120,16 @@
     "how": "the settings accept up to AUTOPILOT_MAX_STRATEGIES (500) playbooks, each at most once; the limit was 32 and the 33rd playbook switched on made the saved settings unreadable by the screen",
     "evidence": "GAPS #153 (22 Nov 2026): packages/schema/src/autopilot.ts (AUTOPILOT_MAX_STRATEGIES); tests: packages/schema/src/autopilot.test.ts HC-TR-234",
     "test": "unit (schema)"
+  },
+  {
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Autopilot strangles on ETH and XAUT, each from that coin's own backtest",
+    "how": "twenty playbooks that trade one coin each: six ETH and four XAUT evening strangles, five ETH weekly (four entered on a Friday, one on a Tuesday) and five ETH monthly ones on month-end expiries; strikes are the listed ones a percentage of that coin's spot away and the size is that coin's lot; Autopilot looks at XAUT as well as BTC and ETH; XAUT settles at 16:00 UTC, so its evening entry is the hour after one expiry for the next, with no entry on a Saturday evening; XAUT has no weekly or monthly playbook; the screen lists the rows under the coin filter",
+    "evidence": "ADR-119, GAPS #154 (22 Nov 2026): packages/pricing/src/playbooks.ts (ALT_DAILY_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS), apps/api/src/autopilot.ts (AUTOPILOT_ASSETS), docs/research/scripts/autopilot-study (study_premium.py, study_monthly.py and the fetch scripts take the settlement hour from the coin; results-daily-ETH, results-daily-XAUT, results-entry-hours, results-weekly-ETH, results-weekly-XAUT, results-monthly-ETH of 22 Nov 2026); tests: packages/pricing/src/playbooks.test.ts HC-TR-235, apps/api/src/autopilot.test.ts HC-TR-235, autopilot-page.test.tsx HC-TR-232 (the coin buttons)",
+    "test": "integration (api)"
   }
 ]

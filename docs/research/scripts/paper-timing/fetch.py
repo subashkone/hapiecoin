@@ -8,6 +8,8 @@ B = "https://api.india.delta.exchange/v2/history/candles"
 U = dt.timezone.utc
 ASSET = sys.argv[4] if len(sys.argv) > 4 else "BTC"
 STEP = int(sys.argv[5]) if len(sys.argv) > 5 else 200
+# XAUT options settle at 16:00 UTC (21:30 IST); BTC and ETH at 12:00 UTC (17:30 IST)
+SETTLE_H = 16 if ASSET == "XAUT" else 12
 PAD = int(sys.argv[6]) if len(sys.argv) > 6 else 2400  # strikes this far either side of the window's spot range
 MIN_GAP = 0.26  # seconds between requests (under 4 a second)
 last_call = [0.0]
@@ -38,8 +40,8 @@ def load(exp, sym, start, end):
 exp = FIRST
 n_req = 0
 while exp <= LAST:
-    start = dt.datetime(exp.year, exp.month, exp.day, 12, tzinfo=U) - dt.timedelta(hours=24)
-    end = dt.datetime(exp.year, exp.month, exp.day, 12, tzinfo=U)
+    end = dt.datetime(exp.year, exp.month, exp.day, SETTLE_H, tzinfo=U)
+    start = end - dt.timedelta(hours=24)
     spot = load(exp, f"MARK:{ASSET}USD", start, end)
     if not spot:
         print(exp, "no spot candles"); exp += dt.timedelta(days=1); continue

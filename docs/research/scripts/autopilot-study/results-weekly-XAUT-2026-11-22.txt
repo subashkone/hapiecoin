@@ -1,0 +1,226 @@
+expiries in the cache: 51 (2025-12-05 .. 2026-11-20); 100 lots x 0.001 per leg; net of fees; naked sold strangle
+
+==================================================================================================================================
+entered 168 hours before settlement
+==================================================================================================================================
+entered 144 hours before settlement
+
+  sold 1 % away: mean premium collected    4.6, sold on average  1.0 % away
+      hold                 n= 16 mean=   -3.56 win= 50% worst=   -21.0 total=    -57 | first half     -12, second half     -45
+      stop2x               n= 16 mean=   -1.45 win=  6% worst=    -7.1 total=    -23 | first half      -9, second half     -14
+      stop3x               n= 16 mean=   -0.59 win= 31% worst=    -4.5 total=    -10 | first half      +5, second half     -15
+      stop2x+half          n= 16 mean=   -1.36 win= 12% worst=    -7.1 total=    -22 | first half      -6, second half     -16
+      stop3x+half          n= 16 mean=   -1.00 win= 38% worst=    -4.5 total=    -16 | first half      -3, second half     -13
+      stop2x+trail         n= 16 mean=   -1.89 win=  6% worst=    -4.8 total=    -30 | first half     -18, second half     -12
+
+  sold 1 % away, wings 2.33 times as far: mean premium collected    2.5, sold on average  1.0 % away
+      hold                 n= 16 mean=   -0.55 win= 44% worst=    -5.8 total=     -9 | first half      +3, second half     -12
+      stop2x               n= 16 mean=   +1.56 win= 38% worst=    -6.7 total=    +25 | first half      +6, second half     +19
+      stop3x               n= 16 mean=   +2.42 win= 69% worst=    -6.6 total=    +39 | first half     +20, second half     +19
+      stop2x+half          n= 16 mean=   -1.05 win= 50% worst=    -6.7 total=    -17 | first half     -14, second half      -3
+      stop3x+half          n= 16 mean=   +0.92 win= 88% worst=    -5.8 total=    +15 | first half      +3, second half     +12
+      stop2x+trail         n= 16 mean=   -0.18 win= 25% worst=    -3.2 total=     -3 | first half      +2, second half      -4
+
+  sold 1.5 % away: mean premium collected    3.4, sold on average  1.5 % away
+      hold                 n= 16 mean=   -3.48 win= 50% worst=   -20.0 total=    -56 | first half     -13, second half     -42
+      stop2x               n= 16 mean=   -1.09 win=  6% worst=    -5.4 total=    -17 | first half      -8, second half     -10
+      stop3x               n= 16 mean=   -0.33 win= 31% worst=    -3.2 total=     -5 | first half      +7, second half     -12
+      stop2x+half          n= 16 mean=   -1.01 win= 12% worst=    -5.4 total=    -16 | first half      -5, second half     -11
+      stop3x+half          n= 16 mean=   -0.60 win= 44% worst=    -3.2 total=    -10 | first half      -1, second half      -9
+      stop2x+trail         n= 16 mean=   -1.50 win=  6% worst=    -3.9 total=    -24 | first half     -15, second half      -9
+
+  sold 1.5 % away, wings 2.33 times as far: mean premium collected    2.2, sold on average  1.5 % away
+      hold                 n= 16 mean=   -1.11 win= 50% worst=    -5.2 total=    -18 | first half      +3, second half     -21
+      stop2x               n= 16 mean=   +1.27 win= 44% worst=    -5.0 total=    +20 | first half      +9, second half     +12
+      stop3x               n= 16 mean=   +2.03 win= 62% worst=    -4.2 total=    +33 | first half     +24, second half      +9
+      stop2x+half          n= 16 mean=   -0.28 win= 62% worst=    -5.0 total=     -4 | first half      -4, second half      +0
+      stop3x+half          n= 16 mean=   +0.10 win= 81% worst=    -4.2 total=     +2 | first half      -1, second half      +3
+      stop2x+trail         n= 16 mean=   -0.35 win= 19% worst=    -2.5 total=     -6 | first half      +1, second half      -6
+
+  sold 2 % away: mean premium collected    2.6, sold on average  2.0 % away
+      hold                 n= 16 mean=   -3.21 win= 56% worst=   -18.7 total=    -51 | first half     -15, second half     -36
+      stop2x               n= 16 mean=   -0.65 win= 12% worst=    -4.2 total=    -10 | first half      -5, second half      -6
+      stop3x               n= 16 mean=   -0.82 win= 25% worst=    -2.6 total=    -13 | first half      -4, second half     -10
+      stop2x+half          n= 16 mean=   -0.59 win= 19% worst=    -4.2 total=     -9 | first half      -3, second half      -7
+      stop3x+half          n= 16 mean=   -0.41 win= 44% worst=    -2.3 total=     -7 | first half      -7, second half      +0
+      stop2x+trail         n= 16 mean=   -1.07 win=  6% worst=    -2.7 total=    -17 | first half     -10, second half      -7
+
+  sold 2 % away, wings 2.33 times as far: mean premium collected    1.4, sold on average  2.0 % away
+      hold                 n= 15 mean=   -0.86 win= 47% worst=    -4.3 total=    -13 | first half      +1, second half     -14
+      stop2x               n= 15 mean=   +2.02 win= 47% worst=    -3.1 total=    +30 | first half     +14, second half     +16
+      stop3x               n= 15 mean=   +1.89 win= 60% worst=    -3.4 total=    +28 | first half     +16, second half     +12
+      stop2x+half          n= 15 mean=   -0.28 win= 67% worst=    -3.1 total=     -4 | first half      -4, second half      -0
+      stop3x+half          n= 15 mean=   +0.12 win= 80% worst=    -3.3 total=     +2 | first half      -2, second half      +4
+      stop2x+trail         n= 15 mean=   -0.58 win= 20% worst=    -2.1 total=     -9 | first half      -4, second half      -4
+
+  sold 3 % away: mean premium collected    1.3, sold on average  3.0 % away
+      hold                 n= 16 mean=   -2.43 win= 56% worst=   -15.5 total=    -39 | first half     -17, second half     -22
+      stop2x               n= 16 mean=   -0.48 win= 19% worst=    -2.8 total=     -8 | first half      -2, second half      -5
+      stop3x               n= 16 mean=   -0.49 win= 25% worst=    -2.9 total=     -8 | first half      -1, second half      -7
+      stop2x+half          n= 16 mean=   -0.40 win= 25% worst=    -2.8 total=     -6 | first half      -1, second half      -5
+      stop3x+half          n= 16 mean=   -0.16 win= 50% worst=    -1.6 total=     -3 | first half      -2, second half      -1
+      stop2x+trail         n= 16 mean=   -0.64 win= 19% worst=    -1.5 total=    -10 | first half      -6, second half      -4
+
+  sold 3 % away, wings 2.33 times as far: mean premium collected    0.7, sold on average  2.8 % away
+      hold                 n=  1 mean=   +0.60 win=100% worst=    +0.6 total=     +1 | first half      +0, second half      +1
+      stop2x               n=  1 mean=   -1.29 win=  0% worst=    -1.3 total=     -1 | first half      +0, second half      -1
+      stop3x               n=  1 mean=   -2.26 win=  0% worst=    -2.3 total=     -2 | first half      +0, second half      -2
+      stop2x+half          n=  1 mean=   +0.19 win=100% worst=    +0.2 total=     +0 | first half      +0, second half      +0
+      stop3x+half          n=  1 mean=   -2.26 win=  0% worst=    -2.3 total=     -2 | first half      +0, second half      -2
+      stop2x+trail         n=  1 mean=   -0.42 win=  0% worst=    -0.4 total=     -0 | first half      +0, second half      -0
+
+  sold 4 % away: mean premium collected    1.2, sold on average  3.2 % away
+      hold                 n= 16 mean=   -2.56 win= 56% worst=   -15.5 total=    -41 | first half     -18, second half     -23
+      stop2x               n= 16 mean=   -0.56 win= 12% worst=    -2.8 total=     -9 | first half      -3, second half      -6
+      stop3x               n= 16 mean=   -0.56 win= 25% worst=    -2.9 total=     -9 | first half      -1, second half      -8
+      stop2x+half          n= 16 mean=   -0.47 win= 25% worst=    -2.8 total=     -7 | first half      -1, second half      -6
+      stop3x+half          n= 16 mean=   -0.20 win= 50% worst=    -1.6 total=     -3 | first half      -2, second half      -1
+      stop2x+trail         n= 16 mean=   -0.66 win= 12% worst=    -1.6 total=    -11 | first half      -6, second half      -5
+==================================================================================================================================
+entered 96 hours before settlement
+
+  sold 1 % away: mean premium collected    4.8, sold on average  1.0 % away
+      hold                 n= 16 mean=   -2.60 win= 56% worst=   -20.6 total=    -42 | first half     -12, second half     -29
+      stop2x               n= 16 mean=   -0.26 win= 31% worst=    -4.6 total=     -4 | first half      -4, second half      +0
+      stop3x               n= 16 mean=   -0.25 win= 38% worst=    -4.3 total=     -4 | first half      -3, second half      -1
+      stop2x+half          n= 16 mean=   +0.18 win= 44% worst=    -4.6 total=     +3 | first half      +0, second half      +3
+      stop3x+half          n= 16 mean=   -0.12 win= 50% worst=    -4.3 total=     -2 | first half      -1, second half      -1
+      stop2x+trail         n= 16 mean=   -0.46 win= 25% worst=    -3.1 total=     -7 | first half      -7, second half      +0
+
+  sold 1 % away, wings 2.33 times as far: mean premium collected    2.6, sold on average  1.0 % away
+      hold                 n= 16 mean=   -0.90 win= 44% worst=    -4.3 total=    -14 | first half      -4, second half     -11
+      stop2x               n= 16 mean=   +1.44 win= 44% worst=    -3.1 total=    +23 | first half      +4, second half     +19
+      stop3x               n= 16 mean=   +1.45 win= 56% worst=    -7.3 total=    +23 | first half      +6, second half     +17
+      stop2x+half          n= 16 mean=   +0.38 win= 69% worst=    -3.1 total=     +6 | first half      -0, second half      +6
+      stop3x+half          n= 16 mean=   +0.04 win= 75% worst=    -7.3 total=     +1 | first half     -11, second half     +11
+      stop2x+trail         n= 16 mean=   +0.87 win= 31% worst=    -2.8 total=    +14 | first half      +6, second half      +8
+
+  sold 1.5 % away: mean premium collected    3.5, sold on average  1.5 % away
+      hold                 n= 16 mean=   -2.37 win= 62% worst=   -19.7 total=    -38 | first half     -11, second half     -27
+      stop2x               n= 16 mean=   -0.10 win= 31% worst=    -3.4 total=     -2 | first half      -1, second half      -0
+      stop3x               n= 16 mean=   +0.19 win= 44% worst=    -4.4 total=     +3 | first half      +2, second half      +1
+      stop2x+half          n= 16 mean=   +0.05 win= 44% worst=    -3.4 total=     +1 | first half      -2, second half      +2
+      stop3x+half          n= 16 mean=   +0.03 win= 56% worst=    -4.4 total=     +0 | first half      -1, second half      +2
+      stop2x+trail         n= 16 mean=   -0.23 win= 31% worst=    -2.7 total=     -4 | first half      -3, second half      -0
+
+  sold 1.5 % away, wings 2.33 times as far: mean premium collected    2.4, sold on average  1.5 % away
+      hold                 n= 16 mean=   -0.45 win= 50% worst=    -5.6 total=     -7 | first half      +3, second half     -10
+      stop2x               n= 16 mean=   +1.82 win= 44% worst=    -2.1 total=    +29 | first half     +13, second half     +16
+      stop3x               n= 16 mean=   +2.11 win= 69% worst=    -5.6 total=    +34 | first half     +16, second half     +18
+      stop2x+half          n= 16 mean=   +0.47 win= 69% worst=    -2.1 total=     +8 | first half      +2, second half      +5
+      stop3x+half          n= 16 mean=   +0.70 win= 88% worst=    -5.6 total=    +11 | first half      -0, second half     +12
+      stop2x+trail         n= 16 mean=   +1.08 win= 31% worst=    -2.4 total=    +17 | first half      +8, second half      +9
+
+  sold 2 % away: mean premium collected    2.7, sold on average  2.0 % away
+      hold                 n= 16 mean=   -2.39 win= 62% worst=   -18.5 total=    -38 | first half     -12, second half     -26
+      stop2x               n= 16 mean=   -0.15 win= 31% worst=    -3.0 total=     -2 | first half      -0, second half      -2
+      stop3x               n= 16 mean=   +0.26 win= 44% worst=    -2.5 total=     +4 | first half      +4, second half      -0
+      stop2x+half          n= 16 mean=   +0.06 win= 44% worst=    -3.0 total=     +1 | first half      -2, second half      +3
+      stop3x+half          n= 16 mean=   +0.23 win= 62% worst=    -2.5 total=     +4 | first half      -0, second half      +4
+      stop2x+trail         n= 16 mean=   -0.30 win= 31% worst=    -2.5 total=     -5 | first half      -3, second half      -2
+
+  sold 2 % away, wings 2.33 times as far: mean premium collected    1.7, sold on average  2.0 % away
+      hold                 n= 16 mean=   -0.94 win= 62% worst=    -9.7 total=    -15 | first half      +2, second half     -18
+      stop2x               n= 16 mean=   +1.29 win= 50% worst=    -2.7 total=    +21 | first half     +14, second half      +6
+      stop3x               n= 16 mean=   +1.70 win= 75% worst=    -3.0 total=    +27 | first half     +19, second half      +9
+      stop2x+half          n= 16 mean=   +0.42 win= 75% worst=    -2.1 total=     +7 | first half      +2, second half      +5
+      stop3x+half          n= 16 mean=   +0.54 win= 88% worst=    -3.0 total=     +9 | first half      +0, second half      +8
+      stop2x+trail         n= 16 mean=   +0.93 win= 44% worst=    -2.7 total=    +15 | first half     +11, second half      +4
+
+  sold 3 % away: mean premium collected    1.5, sold on average  3.0 % away
+      hold                 n= 16 mean=   -2.23 win= 69% worst=   -17.0 total=    -36 | first half     -13, second half     -23
+      stop2x               n= 16 mean=   +0.20 win= 44% worst=    -1.7 total=     +3 | first half      +2, second half      +1
+      stop3x               n= 16 mean=   +0.18 win= 50% worst=    -1.6 total=     +3 | first half      +3, second half      -0
+      stop2x+half          n= 16 mean=   +0.19 win= 62% worst=    -1.7 total=     +3 | first half      +0, second half      +3
+      stop3x+half          n= 16 mean=   +0.17 win= 69% worst=    -1.6 total=     +3 | first half      +1, second half      +2
+      stop2x+trail         n= 16 mean=   +0.15 win= 38% worst=    -1.1 total=     +2 | first half      +1, second half      +1
+
+  sold 3 % away, wings 2.33 times as far: mean premium collected    1.1, sold on average  2.9 % away
+      hold                 n=  3 mean=   -4.42 win= 33% worst=    -8.9 total=    -13 | first half      +1, second half     -14
+      stop2x               n=  3 mean=   +4.10 win=100% worst=    +0.9 total=    +12 | first half      +1, second half     +11
+      stop3x               n=  3 mean=   +3.29 win=100% worst=    +0.9 total=    +10 | first half      +1, second half      +9
+      stop2x+half          n=  3 mean=   +0.99 win=100% worst=    +0.4 total=     +3 | first half      +0, second half      +3
+      stop3x+half          n=  3 mean=   +0.95 win=100% worst=    +0.4 total=     +3 | first half      +0, second half      +2
+      stop2x+trail         n=  3 mean=   -0.42 win= 33% worst=    -1.1 total=     -1 | first half      +1, second half      -2
+
+  sold 4 % away: mean premium collected    1.1, sold on average  3.4 % away
+      hold                 n= 16 mean=   -2.12 win= 69% worst=   -15.4 total=    -34 | first half     -15, second half     -19
+      stop2x               n= 16 mean=   +0.05 win= 31% worst=    -1.5 total=     +1 | first half      -0, second half      +1
+      stop3x               n= 16 mean=   +0.07 win= 50% worst=    -1.3 total=     +1 | first half      +1, second half      +0
+      stop2x+half          n= 16 mean=   +0.05 win= 50% worst=    -1.5 total=     +1 | first half      -0, second half      +1
+      stop3x+half          n= 16 mean=   +0.27 win= 81% worst=    -1.1 total=     +4 | first half      +2, second half      +3
+      stop2x+trail         n= 16 mean=   +0.04 win= 31% worst=    -0.9 total=     +1 | first half      -0, second half      +1
+==================================================================================================================================
+entered 72 hours before settlement
+
+  sold 1 % away: mean premium collected    4.2, sold on average  1.0 % away
+      hold                 n= 17 mean=   -2.92 win= 53% worst=   -23.1 total=    -50 | first half     -17, second half     -33
+      stop2x               n= 17 mean=   -0.39 win= 29% worst=    -9.6 total=     -7 | first half      -5, second half      -1
+      stop3x               n= 17 mean=   +0.17 win= 41% worst=    -3.6 total=     +3 | first half      +5, second half      -2
+      stop2x+half          n= 17 mean=   -0.45 win= 35% worst=    -9.6 total=     -8 | first half      -6, second half      -2
+      stop3x+half          n= 17 mean=   +0.10 win= 53% worst=    -3.6 total=     +2 | first half      +5, second half      -4
+      stop2x+trail         n= 17 mean=   -0.33 win= 24% worst=    -4.2 total=     -6 | first half      -3, second half      -2
+
+  sold 1 % away, wings 2.33 times as far: mean premium collected    2.3, sold on average  1.0 % away
+      hold                 n= 17 mean=   -0.67 win= 47% worst=    -4.2 total=    -11 | first half      -3, second half      -8
+      stop2x               n= 17 mean=   +1.86 win= 53% worst=   -12.2 total=    +32 | first half      +8, second half     +23
+      stop3x               n= 17 mean=   +2.43 win= 71% worst=    -5.6 total=    +41 | first half     +19, second half     +22
+      stop2x+half          n= 17 mean=   -0.80 win= 59% worst=   -12.2 total=    -14 | first half     -15, second half      +1
+      stop3x+half          n= 17 mean=   +0.32 win= 76% worst=    -5.6 total=     +5 | first half      -3, second half      +9
+      stop2x+trail         n= 17 mean=   +1.85 win= 53% worst=    -3.6 total=    +31 | first half      +8, second half     +24
+
+  sold 1.5 % away: mean premium collected    3.0, sold on average  1.4 % away
+      hold                 n= 17 mean=   -2.87 win= 53% worst=   -22.2 total=    -49 | first half     -17, second half     -32
+      stop2x               n= 17 mean=   -0.47 win= 18% worst=    -7.9 total=     -8 | first half      -6, second half      -2
+      stop3x               n= 17 mean=   -0.17 win= 35% worst=    -3.1 total=     -3 | first half      -1, second half      -2
+      stop2x+half          n= 17 mean=   -0.29 win= 35% worst=    -7.9 total=     -5 | first half      -5, second half      +0
+      stop3x+half          n= 17 mean=   -0.13 win= 53% worst=    -3.1 total=     -2 | first half      -1, second half      -1
+      stop2x+trail         n= 17 mean=   -0.44 win= 18% worst=    -3.5 total=     -7 | first half      -5, second half      -2
+
+  sold 1.5 % away, wings 2.33 times as far: mean premium collected    2.1, sold on average  1.4 % away
+      hold                 n= 17 mean=   -0.72 win= 53% worst=    -6.3 total=    -12 | first half      +2, second half     -14
+      stop2x               n= 17 mean=   +1.67 win= 47% worst=    -9.2 total=    +28 | first half     +12, second half     +16
+      stop3x               n= 17 mean=   +1.97 win= 65% worst=    -3.8 total=    +34 | first half     +18, second half     +16
+      stop2x+half          n= 17 mean=   -0.16 win= 65% worst=    -9.2 total=     -3 | first half      -7, second half      +4
+      stop3x+half          n= 17 mean=   +0.60 win= 82% worst=    -3.8 total=    +10 | first half      -1, second half     +11
+      stop2x+trail         n= 17 mean=   +0.73 win= 41% worst=    -2.9 total=    +12 | first half      -3, second half     +15
+
+  sold 2 % away: mean premium collected    2.1, sold on average  2.0 % away
+      hold                 n= 17 mean=   -2.68 win= 59% worst=   -21.1 total=    -46 | first half     -16, second half     -30
+      stop2x               n= 17 mean=   -0.44 win= 18% worst=    -5.8 total=     -7 | first half      -3, second half      -5
+      stop3x               n= 17 mean=   -0.20 win= 41% worst=    -4.0 total=     -3 | first half      +2, second half      -5
+      stop2x+half          n= 17 mean=   -0.38 win= 29% worst=    -5.8 total=     -6 | first half      -5, second half      -2
+      stop3x+half          n= 17 mean=   -0.01 win= 59% worst=    -2.4 total=     -0 | first half      +2, second half      -2
+      stop2x+trail         n= 17 mean=   -0.45 win= 18% worst=    -2.2 total=     -8 | first half      -2, second half      -6
+
+  sold 2 % away, wings 2.33 times as far: mean premium collected    1.4, sold on average  2.0 % away
+      hold                 n= 15 mean=   -0.61 win= 60% worst=    -8.6 total=     -9 | first half      -1, second half      -9
+      stop2x               n= 15 mean=   +0.72 win= 40% worst=    -6.7 total=    +11 | first half      -1, second half     +12
+      stop3x               n= 15 mean=   +1.20 win= 67% worst=    -3.5 total=    +18 | first half      +4, second half     +14
+      stop2x+half          n= 15 mean=   -0.43 win= 60% worst=    -6.7 total=     -6 | first half      -5, second half      -2
+      stop3x+half          n= 15 mean=   +0.18 win= 80% worst=    -3.5 total=     +3 | first half      -2, second half      +5
+      stop2x+trail         n= 15 mean=   +0.45 win= 33% worst=    -2.2 total=     +7 | first half      -3, second half     +10
+
+  sold 3 % away: mean premium collected    1.2, sold on average  2.9 % away
+      hold                 n= 17 mean=   -2.32 win= 65% worst=   -18.3 total=    -40 | first half     -17, second half     -22
+      stop2x               n= 17 mean=   -0.33 win= 24% worst=    -3.3 total=     -6 | first half      -1, second half      -4
+      stop3x               n= 17 mean=   -0.23 win= 35% worst=    -1.6 total=     -4 | first half      -1, second half      -3
+      stop2x+half          n= 17 mean=   -0.26 win= 41% worst=    -3.3 total=     -4 | first half      -4, second half      -0
+      stop3x+half          n= 17 mean=   -0.11 win= 59% worst=    -1.6 total=     -2 | first half      -1, second half      -1
+      stop2x+trail         n= 17 mean=   -0.30 win= 24% worst=    -1.6 total=     -5 | first half      -0, second half      -5
+
+  sold 3 % away, wings 2.33 times as far: mean premium collected    0.8, sold on average  2.8 % away
+      hold                 n=  4 mean=   +0.56 win=100% worst=    +0.2 total=     +2 | first half      +1, second half      +1
+      stop2x               n=  4 mean=   -0.13 win= 50% worst=    -1.3 total=     -1 | first half      +1, second half      -2
+      stop3x               n=  4 mean=   -0.07 win= 75% worst=    -2.3 total=     -0 | first half      +1, second half      -2
+      stop2x+half          n=  4 mean=   +0.12 win= 75% worst=    -0.5 total=     +0 | first half      +1, second half      -0
+      stop3x+half          n=  4 mean=   +0.38 win=100% worst=    +0.2 total=     +2 | first half      +1, second half      +1
+      stop2x+trail         n=  4 mean=   +0.45 win= 75% worst=    -0.7 total=     +2 | first half      +1, second half      +1
+
+  sold 4 % away: mean premium collected    0.8, sold on average  3.5 % away
+      hold                 n= 17 mean=   -2.15 win= 65% worst=   -16.4 total=    -37 | first half     -16, second half     -20
+      stop2x               n= 17 mean=   -0.24 win= 35% worst=    -2.1 total=     -4 | first half      -1, second half      -3
+      stop3x               n= 17 mean=   -0.03 win= 47% worst=    -1.8 total=     -1 | first half      +2, second half      -3
+      stop2x+half          n= 17 mean=   -0.07 win= 65% worst=    -2.1 total=     -1 | first half      -2, second half      +1
+      stop3x+half          n= 17 mean=   +0.13 win= 82% worst=    -1.8 total=     +2 | first half      +1, second half      +1
+      stop2x+trail         n= 17 mean=   -0.26 win= 24% worst=    -1.8 total=     -4 | first half      -1, second half      -3

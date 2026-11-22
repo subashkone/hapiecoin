@@ -2,8 +2,8 @@
 // thresholds (the control inverted), losing years come from the closed trades, and the options carry the plan.
 import { describe, expect, it } from "vitest";
 import { type BacktestFold, type BacktestStats, type BacktestTrade, type EodDay, type EodRow, runBacktest } from "./backtest.js";
-import { calendarFor } from "./calendar.js";
-import { AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
+import { calendarFor, daysToExpiryOf } from "./calendar.js";
+import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
 import { materialiseTemplate } from "./templates.js";
 
 const cal = calendarFor(12);
@@ -218,7 +218,7 @@ describe("HC-TR-229 the weekly strangles", () => {
     expect(WEEKLY_PLAYBOOKS.map((p) => [p.clock!.legStop, p.clock!.takeProfitOfCredit, p.clock!.trailRestPct]).slice(0, 5)).toEqual([[undefined, undefined, undefined], [2, undefined, undefined], [3, undefined, undefined], [2, 0.5, undefined], [2, undefined, 50]]);
     expect(CLOCK_PLAYBOOKS.every((p) => p.clock!.weekdayUtc === undefined && p.clock!.describe === "once an evening, 9:30 to 10:30 PM IST, on the next expiry")).toBe(true);
     expect(new Set(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).size).toBe(AUTOPILOT_PLAYBOOKS.length);
-    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length);
+    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length);
   });
 
   it("HC-TR-229 the strikes are the listed ones nearest 3 % (wings 7 %) of the spot away, on the Friday expiry a week out from a Friday and three days out from a Tuesday", () => {
@@ -379,5 +379,137 @@ describe("HC-TR-233 strikes by premium, and the monthly strangles", () => {
     expect(near.legs.map((l) => l.strike)).toEqual(["71000", "90000"]); // 70,576 and 89,824
     // on this ladder nothing is priced near 100: the daily premium strangle has no trade to place
     expect(proposalFor(autopilotPlaybookById("evening-strangle-premium-100")!, days, { unitsPerLot: 0.001, calendar: cal })).toEqual({ ok: false, reason: "noFit" });
+  });
+});
+
+describe("HC-TR-235 the evening strangles on ETH and XAUT", () => {
+  // strikes every 10, time value falling away from the money
+  const chain = (spot: number, centre: number, tv0: number, width: number): EodRow[] =>
+    Array.from({ length: 61 }, (_, i) => {
+      const strike = centre + (i - 30) * 10;
+      const tv = tv0 * Math.exp(-Math.abs(strike - spot) / width);
+      return { strike, call: { mark: Math.max(spot - strike, 0) + tv, iv: 0.6 }, put: { mark: Math.max(strike - spot, 0) + tv, iv: 0.6 } };
+    });
+  const evening = (spot: number, rows: EodRow[]): EodDay[] => [{ day: "2026-11-22", ts: Date.parse("2026-11-22T16:05:00Z"), spot, expiries: ["2026-11-22", "2026-11-23", "2026-11-27"].map((expiry) => ({ expiry, rows })) }];
+  const placed = (id: string, days: EodDay[], unitsPerLot: number, calendar = cal) => {
+    const r = proposalFor(autopilotPlaybookById(id)!, days, { unitsPerLot, calendar });
+    if (!r.ok) throw new Error(r.reason);
+    return r.proposal;
+  };
+
+  it("HC-TR-235 ten playbooks, one coin each, the evening window of the BTC ones, every naked one with a stop", () => {
+    expect(ALT_DAILY_PLAYBOOKS.map((p) => p.id)).toEqual([
+      "eth-evening-strangle-wings", "eth-evening-strangle-stop-2x", "eth-evening-strangle-stop-3x", "eth-evening-strangle-take-half", "eth-evening-strangle-trail-rest", "eth-evening-strangle-wings-take-half",
+      "xaut-evening-strangle-stop-2x", "xaut-evening-strangle-stop-3x", "xaut-evening-strangle-take-half", "xaut-evening-strangle-trail-rest",
+    ]);
+    expect(ALT_PLAYBOOKS).toEqual([...ALT_DAILY_PLAYBOOKS, ...ALT_WEEKLY_PLAYBOOKS, ...ALT_MONTHLY_PLAYBOOKS]);
+    const btc = autopilotPlaybookById("evening-strangle-stop-2x")!.clock!;
+    for (const p of ALT_DAILY_PLAYBOOKS) {
+      expect(p.assets, p.id).toEqual([p.id.startsWith("eth-") ? "ETH" : "XAUT"]);
+      expect(p).toMatchObject({ minDte: 0.5, lots: 100, control: false });
+      expect(p.clock).toMatchObject({ fromHourUtc: btc.fromHourUtc, toHourUtc: btc.toHourUtc, maxDte: btc.maxDte, venues: ["delta_india"] });
+      expect(playbookCadence(p)).toBe("daily");
+      expect(p.evidence.claim.startsWith(`${p.assets[0]}, sold `), p.id).toBe(true);
+      expect(p.trials.note).toContain("in-sample");
+      expect(PLAYBOOKS.includes(p)).toBe(false);
+      expect(autopilotPlaybookById(p.id)).toBe(p);
+      // no stop only where bought wings bound the loss
+      if (p.clock!.legStop === undefined) expect(playbookTemplate(p)!.risk, p.id).toBe("defined");
+      // a strategy opened from it is named "<name> · Autopilot" and a strategy name holds 80 characters (GAPS #153)
+      expect(p.name.length, p.id).toBeLessThanOrEqual(68);
+    }
+  });
+
+  it("HC-TR-235 the strikes are the listed ones a percentage of that coin's spot away, on tomorrow's expiry, sized by that coin's lot", () => {
+    // ETH at 2,304: 1 % is 23.04, so 2,280.96 and 2,327.04, nearest listed 2,280 and 2,330
+    const eth = evening(2304, chain(2304, 2300, 30, 40));
+    const naked = placed("eth-evening-strangle-stop-3x", eth, 0.01);
+    expect(naked.expiry).toBe("2026-11-23");
+    expect(naked.legs.map((l) => `${l.side} ${l.kind} ${l.strike} x${l.lots}`)).toEqual(["sell put 2280 x100", "sell call 2330 x100"]);
+    expect(naked.entryCost).toBeLessThan(0);
+    expect(naked.maxLoss).toBe(-Infinity);
+    // 1.5 % is 34.56: 2,269.44 and 2,338.56, nearest 2,270 and 2,340; wings 3.75 % is 86.4: 2,217.6 and 2,390.4, nearest 2,220 and 2,390
+    const wings = placed("eth-evening-strangle-wings", eth, 0.01);
+    expect(wings.legs.map((l) => `${l.side} ${l.kind} ${l.strike}`)).toEqual(["buy put 2220", "sell put 2270", "sell call 2340", "buy call 2390"]);
+    expect(wings.entryCost).toBeLessThan(0);
+    // the 50 between a sold strike and its wing on 1 ETH, less the credit
+    expect(wings.maxLoss).toBeCloseTo(-50 - wings.entryCost, 6);
+    // XAUT at 4,203: 1 % is 42.03, so 4,160.97 and 4,245.03, nearest listed 4,160 and 4,250
+    const gold = placed("xaut-evening-strangle-stop-2x", evening(4203, chain(4203, 4200, 12, 30)), 0.001);
+    expect(gold.expiry).toBe("2026-11-23");
+    expect(gold.legs.map((l) => `${l.side} ${l.kind} ${l.strike} x${l.lots}`)).toEqual(["sell put 4160 x100", "sell call 4250 x100"]);
+    expect(gold.entryCost).toBeLessThan(0);
+  });
+
+  it("HC-TR-235 Gold on its own clock: settling at 16:00 UTC, today's expiry is never taken in the minutes round its settlement, and with no Sunday expiry the Saturday pick is Monday's", () => {
+    const xaut = calendarFor(16);
+    const rows = chain(4203, 4200, 12, 30);
+    const at = (iso: string, expiries: string[]): EodDay[] => [{ day: iso.slice(0, 10), ts: Date.parse(iso), spot: 4203, expiries: expiries.map((expiry) => ({ expiry, rows })) }];
+    // Monday 23 November 2026: two minutes before today's expiry settles, and five minutes after, with it still listed
+    for (const t of ["2026-11-23T15:58:00Z", "2026-11-23T16:05:00Z"]) {
+      const p = placed("xaut-evening-strangle-take-half", at(t, ["2026-11-23", "2026-11-24", "2026-11-27"]), 0.001, xaut);
+      expect(p.expiry, t).toBe("2026-11-24");
+      expect(daysToExpiryOf(xaut, Date.parse(t), p.expiry), t).toBeGreaterThan(0.99);
+      expect(daysToExpiryOf(xaut, Date.parse(t), p.expiry), t).toBeLessThan(1.01);
+    }
+    // Saturday evening: nothing settles on Sunday, so the nearest expiry far enough out is Monday's, two days away:
+    // beyond the playbook's 1.5 days, which is what makes the engine wait (apps/api autopilot.test.ts HC-TR-235)
+    const sat = placed("xaut-evening-strangle-take-half", at("2026-11-21T16:05:00Z", ["2026-11-21", "2026-11-23", "2026-11-24"]), 0.001, xaut);
+    expect(sat.expiry).toBe("2026-11-23");
+    expect(daysToExpiryOf(xaut, Date.parse("2026-11-21T16:05:00Z"), sat.expiry)).toBeGreaterThan(autopilotPlaybookById("xaut-evening-strangle-take-half")!.clock!.maxDte);
+    // Sunday evening: Monday's is a day out
+    expect(placed("xaut-evening-strangle-take-half", at("2026-11-22T16:05:00Z", ["2026-11-23", "2026-11-24"]), 0.001, xaut).expiry).toBe("2026-11-23");
+  });
+
+  it("HC-TR-235 five ETH weekly playbooks on the Friday expiry, four entered on a Friday and one on a Tuesday; none on XAUT", () => {
+    expect(ALT_WEEKLY_PLAYBOOKS.map((p) => p.id)).toEqual(["eth-weekly-fri-strangle-wings", "eth-weekly-fri-strangle-stop-2x", "eth-weekly-fri-strangle-stop-3x", "eth-weekly-fri-strangle-take-half", "eth-weekly-tue-strangle-stop-3x"]);
+    const btc = { fri: autopilotPlaybookById("weekly-fri-strangle-stop-3x")!, tue: autopilotPlaybookById("weekly-tue-strangle-stop-3x")! };
+    for (const p of ALT_WEEKLY_PLAYBOOKS) {
+      const like = btc[p.id.includes("-fri-") ? "fri" : "tue"];
+      expect(p.assets, p.id).toEqual(["ETH"]);
+      expect(p).toMatchObject({ minDte: like.minDte, lots: 100, control: false });
+      expect(p.clock).toMatchObject({ fromHourUtc: 16, toHourUtc: 17, weekdayUtc: like.clock!.weekdayUtc, maxDte: like.clock!.maxDte, venues: ["delta_india"] });
+      expect(playbookCadence(p)).toBe("weekly");
+      expect(p.trials.note).toContain("in-sample");
+      expect(autopilotPlaybookById(p.id)).toBe(p);
+      if (p.clock!.legStop === undefined) expect(playbookTemplate(p)!.risk, p.id).toBe("defined");
+      expect(p.name.length, p.id).toBeLessThanOrEqual(68);
+    }
+    // ETH at 2,304 on a Friday: 4 % is 92.16, so 2,211.84 and 2,396.16, nearest listed 2,210 and 2,400, on next Friday's expiry
+    const rows = chain(2304, 2300, 120, 150);
+    const friday: EodDay[] = [{ day: "2026-11-20", ts: Date.parse("2026-11-20T16:05:00Z"), spot: 2304, expiries: ["2026-11-21", "2026-11-22", "2026-11-27", "2026-12-04"].map((expiry) => ({ expiry, rows })) }];
+    const fri = placed("eth-weekly-fri-strangle-take-half", friday, 0.01);
+    expect(fri.expiry).toBe("2026-11-27");
+    expect(fri.legs.map((l) => `${l.side} ${l.kind} ${l.strike} x${l.lots}`)).toEqual(["sell put 2210 x100", "sell call 2400 x100"]);
+    // the wings 9.3 % away: 214.27, so 2,089.73 and 2,518.27, nearest listed 2,090 and 2,520
+    expect(placed("eth-weekly-fri-strangle-wings", friday, 0.01).legs.map((l) => `${l.side} ${l.kind} ${l.strike}`)).toEqual(["buy put 2090", "sell put 2210", "sell call 2400", "buy call 2520"]);
+  });
+
+  it("HC-TR-235 five ETH monthly playbooks: month-end expiries only, once per expiry, every one with a stop; none on XAUT", () => {
+    expect(ALT_MONTHLY_PLAYBOOKS.map((p) => p.id)).toEqual(["eth-monthly-strangle-16pct-far-wings-stop-3x", "eth-monthly-strangle-16pct-far-wings-take-half", "eth-monthly-strangle-12pct-near-stop-2x", "eth-monthly-strangle-12pct-near-take-half", "eth-monthly-strangle-12pct-near-wings-stop-3x"]);
+    for (const p of ALT_MONTHLY_PLAYBOOKS) {
+      expect(p.assets, p.id).toEqual(["ETH"]);
+      expect(playbookCadence(p)).toBe("monthly");
+      expect(p.clock).toMatchObject({ cadence: "monthly", oncePerExpiry: true, fromHourUtc: 16, toHourUtc: 17, venues: ["delta_india"] });
+      expect(p.clock!.legStop, p.id).toBeGreaterThanOrEqual(2);
+      expect([p.minDte, p.clock!.maxDte], p.id).toEqual(p.id.includes("-far-") ? [60, 75] : [30, 44]);
+      expect(p.trials.note).toContain("in-sample");
+      expect(autopilotPlaybookById(p.id)).toBe(p);
+      expect(p.name.length, p.id).toBeLessThanOrEqual(68);
+    }
+    // the winged ones buy wings half as far again as the strikes they sell
+    expect(playbookTemplate(autopilotPlaybookById("eth-monthly-strangle-16pct-far-wings-stop-3x")!)!.legs.map((l) => ("pct" in l ? l.pct : null))).toEqual([-24, -16, 16, 24]);
+    // ETH at 2,304, 22 November 2026: the month-end expiry 33 days out is 25 December; 12 % is 276.48, so 2,027.52 and 2,580.48, nearest listed 2,030 and 2,580
+    const rows = Array.from({ length: 141 }, (_, i) => {
+      const strike = 1600 + i * 10;
+      const tv = 200 * Math.exp(-Math.abs(strike - 2304) / 300);
+      return { strike, call: { mark: Math.max(2304 - strike, 0) + tv, iv: 0.7 }, put: { mark: Math.max(strike - 2304, 0) + tv, iv: 0.7 } };
+    });
+    const today: EodDay[] = [{ day: "2026-11-22", ts: Date.parse("2026-11-22T16:05:00Z"), spot: 2304, expiries: ["2026-11-23", "2026-11-27", "2026-12-04", "2026-12-25", "2027-01-29"].map((expiry) => ({ expiry, rows })) }];
+    const near = placed("eth-monthly-strangle-12pct-near-take-half", today, 0.01);
+    expect(near.expiry).toBe("2026-12-25");
+    expect(near.legs.map((l) => `${l.side} ${l.kind} ${l.strike} x${l.lots}`)).toEqual(["sell put 2030 x100", "sell call 2580 x100"]);
+    // the far ones take the month-end 68 days out: 29 January 2027
+    expect(placed("eth-monthly-strangle-16pct-far-wings-stop-3x", today, 0.01).expiry).toBe("2027-01-29");
   });
 });

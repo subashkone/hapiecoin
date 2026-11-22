@@ -130,6 +130,30 @@ With every exit on the winged shapes as well (rerun for ADR-118), entered 30 to 
 
 Wings with a stop on the sold options is the best monthly result: the wing behind a stopped option is kept and pays when the month keeps trending. It rests on eleven expiries of a year with large one-way months and on far-wing marks that are model prices. Every figure is the mean over every entry day of the range; Autopilot enters on the first evening only.
 
-## 9. Not tested yet
+## 9. ETH and XAUT (ADR-119)
 
-Calendar spreads; ETH and XAUT; strikes set by the day's expected move instead of a fixed distance; skipping US announcement days; a trend filter on the sold side; a timed exit before settlement; margin.
+Each coin on its own settlement time, lot and strike spacing. XAUT options settle at 16:00 UTC (21:30 IST) and list no Sunday expiry; a first study that reused BTC's 12:00 UTC was discarded.
+
+| Set | Shape and exit | Mean | Positive | Worst |
+|---|---|---|---|---|
+| ETH daily, entered 21:30 IST, 106 days | 1 % away, stop at 3x | +4.46 a day | 61 % | −50 |
+| | 1 % away, stop at 3x, take half | +3.10 | 75 % | −45 |
+| | 1 % away, no stop | +6.67 | 81 % | −138 |
+| | 1.5 % away, wings 3.75 %, held | +4.22 on 105 days | 83 % | −59 |
+| XAUT daily, entered 21:30 IST (the hour after the previous expiry), 91 days | 1 % away, stop at 2x | +0.19 a day | 48 % | −2.1 |
+| | 1 % away, stop at 2x, take half | +0.19 | 67 % | −1.4 |
+| ETH weekly, Friday entry, 51 weeks | 4 % away, stop at 3x | +14.43 a week | 57 % | −83 |
+| | 4 % away, stop at 3x, take half | +14.08 | 75 % | −72 |
+| | 4 % away, no stop | +11.74 | 76 % | −582 |
+| ETH weekly, Tuesday entry | 3 % away, stop at 3x | +9.03 | 57 % | −82 |
+| ETH monthly, 60 to 75 days out, 11 expiries | 16 % away, wings 24 %, stop at 3x | +88.3 a trade | 10 of 11 expiries | −250 |
+| ETH monthly, 30 to 44 days out | 12 % away, stop at 2x, take half | +32.1 | 10 of 11 | −69 |
+| | 12 % away, no stop | −96.0 | 5 of 11 | −767 |
+
+Entry hour (`results-entry-hours-*`, strikes 1 % away at every hour): on BTC only 20:30 and 21:30 IST earn (stop at 3x: +12.82 and +11.75 a day; every other hour between −1.90 and +4.89); on ETH 19:30 to 22:30 IST, best at 21:30; on XAUT the hour after the previous expiry is the best and thin (+0.19 a day; +0.12 an hour later, +0.09 two hours later, then flat or negative until the next evening). XAUT weekly had a price in 16 or 17 of 51 weeks and came out flat to negative; XAUT monthly has no prices before the middle of 2026. Neither is traded.
+
+Two exit ideas of the owner were tested the same day and are not built: reaching half the premium and then trailing with a 20 % give-back beat closing at half on BTC daily (+11.30 against +9.02), ETH daily and BTC weekly with the same worst result (`results-half-then-trail`); closing in four equal parts at 25 %, 50 % and 75 % of the premium and at expiry earned about what closing all at half does on daily and more on weekly, with the smallest worst day on BTC daily (`results-scale-out`). That figure is the mean of four separate trades, each judged on its own profit; a rule that counts the whole trade's realised and open profit together would come out differently. Further exit studies are the strategy lab's (`docs/research/STRATEGY-LAB.md`).
+
+## 10. Not tested yet
+
+Calendar spreads; XAUT weekly and monthly once a year of prices exists; strikes set by the day's expected move instead of a fixed distance; skipping US announcement days; a trend filter on the sold side; a timed exit before settlement; margin.

@@ -20,7 +20,7 @@
  * Runs on the leader only (ADR-062), inside the first snapshotter's after-hook. A failure for one trader, playbook or
  * underlying is logged and the pass goes on.
  */
-import { AUTOPILOT_PLAYBOOKS, type EodDay, type EodRow, type Playbook, type PlaybookClock, type PlaybookProposal, type ProposalResult, type ProposalSkip, calendarFor, daysToExpiryOf, fillFee, proposalFor } from "@hapiecoin/pricing";
+import { AUTOPILOT_PLAYBOOKS, type EodDay, type EodRow, type Playbook, type PlaybookAsset, type PlaybookClock, type PlaybookProposal, type ProposalResult, type ProposalSkip, calendarFor, daysToExpiryOf, fillFee, proposalFor } from "@hapiecoin/pricing";
 import {
   AUTOPILOT_BETTER_ENTRY_PCT,
   AUTOPILOT_COOLDOWN_MINUTES,
@@ -261,6 +261,9 @@ interface Trader {
   strategies: AutopilotSettings["strategies"];
 }
 
+/** ADR-119: the coins Autopilot looks at: the recorded playbooks' and XAUT, which only clock playbooks trade. */
+export const AUTOPILOT_ASSETS: readonly PlaybookAsset[] = [...PLAYBOOK_ASSETS, "XAUT"];
+
 /** One pass over every venue, underlying, playbook and trader with Autopilot on. */
 export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]): Promise<AutopilotReport> {
   const report: AutopilotReport = { entered: 0, skipped: 0, noted: 0, failed: 0 };
@@ -287,7 +290,7 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
   for (const venue of venues) {
     const adapter = getVenue(venue);
     const venueLots = defaultLotSizes(adapter) as Record<string, string>;
-    for (const asset of PLAYBOOK_ASSETS) {
+    for (const asset of AUTOPILOT_ASSETS) {
       try {
         // paper needs no key, but a strategy names the exchange it would trade on (ADR-065)
         const [broker] = await deps.db.select({ id: brokers.id }).from(brokers).where(and(eq(brokers.scope, "GLOBAL"), eq(brokers.venue, venue))).orderBy(asc(brokers.id)).limit(1);
