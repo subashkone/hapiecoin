@@ -8644,6 +8644,21 @@
   "evidence": "ADR-124, GAPS #159 (22 Nov 2026): packages/pricing/src/playbooks.ts (PlaybookClock.legBuyBackShare, BUYBACK_SHARE_PLAYBOOKS), apps/api/src/autopilot.ts (plan, enter), packages/schema/src/autopilot.ts (run detail), AutopilotPage.tsx (exitWords); tests: packages/pricing/src/playbooks.test.ts HC-TR-248, apps/api/src/autopilot.test.ts HC-TR-248, autopilot-page.test.tsx HC-TR-248"
  },
  {
+  "id": "HC-TR-249",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "An Autopilot weekly strategy that closes the whole trade at 90 % of the premium",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "integration (api)",
+  "acceptance": "one paper playbook, the BTC Friday weekly strangle 3 % away with a stop at triple on each option, closes everything once the trade is up by 90 % of the premium collected; it uses the existing take-profit of a clock playbook (a share of the premium, armed as a target), with no new rule",
+  "evidence": "ADR-125, GAPS #160 (22 Nov 2026): packages/pricing/src/playbooks.ts (TAKE90_WEEKLY_PLAYBOOKS); tests: packages/pricing/src/playbooks.test.ts HC-TR-249, apps/api/src/autopilot.test.ts HC-TR-249, autopilot-page.test.tsx HC-TR-249"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

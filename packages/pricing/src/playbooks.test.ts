@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type BacktestFold, type BacktestStats, type BacktestTrade, type EodDay, type EodRow, runBacktest } from "./backtest.js";
 import { calendarFor, daysToExpiryOf } from "./calendar.js";
-import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS, MOVE_DAILY_PLAYBOOKS, BUYBACK_DAILY_PLAYBOOKS, BUYBACK_SHARE_PLAYBOOKS, sideAfterMove, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
+import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS, MOVE_DAILY_PLAYBOOKS, BUYBACK_DAILY_PLAYBOOKS, BUYBACK_SHARE_PLAYBOOKS, TAKE90_WEEKLY_PLAYBOOKS, sideAfterMove, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
 import { materialiseTemplate } from "./templates.js";
 
 const cal = calendarFor(12);
@@ -218,7 +218,7 @@ describe("HC-TR-229 the weekly strangles", () => {
     expect(WEEKLY_PLAYBOOKS.map((p) => [p.clock!.legStop, p.clock!.takeProfitOfCredit, p.clock!.trailRestPct]).slice(0, 5)).toEqual([[undefined, undefined, undefined], [2, undefined, undefined], [3, undefined, undefined], [2, 0.5, undefined], [2, undefined, 50]]);
     expect(CLOCK_PLAYBOOKS.every((p) => p.clock!.weekdayUtc === undefined && p.clock!.describe === "once an evening, 9:30 to 10:30 PM IST, on the next expiry")).toBe(true);
     expect(new Set(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).size).toBe(AUTOPILOT_PLAYBOOKS.length);
-    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length + LAB_DAILY_PLAYBOOKS.length + LAB_WEEKLY_PLAYBOOKS.length + MOVE_DAILY_PLAYBOOKS.length + BUYBACK_DAILY_PLAYBOOKS.length + BUYBACK_SHARE_PLAYBOOKS.length);
+    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length + LAB_DAILY_PLAYBOOKS.length + LAB_WEEKLY_PLAYBOOKS.length + MOVE_DAILY_PLAYBOOKS.length + BUYBACK_DAILY_PLAYBOOKS.length + BUYBACK_SHARE_PLAYBOOKS.length + TAKE90_WEEKLY_PLAYBOOKS.length);
   });
 
   it("HC-TR-229 the strikes are the listed ones nearest 3 % (wings 7 %) of the spot away, on the Friday expiry a week out from a Friday and three days out from a Tuesday", () => {
@@ -704,5 +704,29 @@ describe("HC-TR-248 the evening strangle that buys an option back at 20 % of its
     expect(p.rationale).toContain("buying back at 10 % instead earned less than holding (+11.12)");
     expect(p.rationale).toContain("ETH daily (+2.84 against +4.46)");
     expect(AUTOPILOT_PLAYBOOKS.filter((x) => x.clock?.legBuyBackShare !== undefined).map((x) => x.id)).toEqual(["evening-strangle-buy-back-20pct"]);
+  });
+});
+
+describe("HC-TR-249 the BTC Friday weekly closed at 90 % of the premium (ADR-125)", () => {
+  it("HC-TR-249 one weekly playbook: 3 % away on the next Friday, a stop at triple on each option and the whole trade closed at 90 % of the premium, through the existing take-profit", () => {
+    expect(TAKE90_WEEKLY_PLAYBOOKS.map((p) => `${p.id} ${p.assets.join()}`)).toEqual(["weekly-fri-strangle-take-90 BTC"]);
+    const p = autopilotPlaybookById("weekly-fri-strangle-take-90")!;
+    const plain = autopilotPlaybookById("weekly-fri-strangle-stop-3x")!;
+    expect(p).toMatchObject({ lots: 100, control: false, minDte: plain.minDte });
+    // the same Friday window, expiry and strikes as the plain weekly it is compared with
+    expect(p.clock).toMatchObject({ fromHourUtc: 16, toHourUtc: 17, weekdayUtc: 5, maxDte: plain.clock!.maxDte, legStop: 3, takeProfitOfCredit: 0.9, venues: ["delta_india"] });
+    expect(playbookTemplate(p)!.legs.map((l) => ("pct" in l ? l.pct : null))).toEqual(playbookTemplate(plain)!.legs.map((l) => ("pct" in l ? l.pct : null)));
+    expect(playbookTemplate(p)!.legs.map((l) => ("pct" in l ? l.pct : null))).toEqual([-3, 3]);
+    expect([p.clock!.takeTrailPct, p.clock!.ladder, p.clock!.lock, p.clock!.exitHourUtc, p.clock!.legBuyBackAt, p.clock!.legBuyBackShare]).toEqual([undefined, undefined, undefined, undefined, undefined, undefined]);
+    expect(playbookCadence(p)).toBe("weekly");
+    expect(p.name.length).toBeLessThanOrEqual(68);
+    expect(p.trials.count).toBe(112);
+    // the note gives every level that was tried on this set, the ones that did worse included
+    expect(p.trials.note).toContain("+43.58, +44.39, +43.16, +41.28 and +40.26 a week against +40.65 for holding");
+    expect(p.evidence.source).toContain("results-cheap-leg-2026-11-22.txt");
+    expect(p.evidence.source).toContain("results-tight-2026-11-22.txt");
+    expect(p.evidence.claim).toContain("+44.39 a week on 51 weeks, 59 % of weeks positive, worst week -168.3");
+    expect(p.rationale).toContain("+40.65 a week, 57 % of weeks");
+    expect(p.rationale).toContain("waiting for 99 % earned less than holding (+40.26)");
   });
 });

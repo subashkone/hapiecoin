@@ -19,7 +19,7 @@ Three sources, kept in sync with their originals: the roadmap items still open (
 | 30 | AI: opportunity radar, language features, journal coach, advisor | Five phases in docs/research/ai-leverage.md: AI-1 radar with backtested setups and expected-value scores on template cards (no language model); AI-2 natural-language alerts and rules plus the assistant on the guide corpus; AI-3 weekly journal coach; AI-4 conversational advisor using the wizard, pricer, backtest and positions as tools; AI-5 volatility regime model and risk guardian. | Feature freeze; the radar needs 30+ recorded days of chains (accumulating), the language features need an API key in the secret store and a legal read of the copy. |
 | 31 | Strategy playbooks | Eight rule-based playbooks on templates already in the catalogue (docs/research/strategy-playbooks.md): expiry-week credit spread, pin butterfly, front-week calendar, trend with defined risk, volatility squeeze breakout, trend financed by skew, premium harvest, covered call. Needs a playbook object, trend and volatility signals from recorded marks, entry conditions in the backtest, a track record per card. First three: premium harvest, expiry-week credit spread, trend with defined risk. | Feature freeze; each playbook ships only with its backtest on our own chains. |
 
-## 2. Open review gaps (91 of 159)
+## 2. Open review gaps (92 of 160)
 
 Every row is copied in full from GAPS.md so this page stands alone. Priority is a recommendation for after launch: **High** touches money, safety or a promise the product makes; **Medium (data)** needs a data feed or a spend decision; **Low (tests)** is test hygiene.
 
@@ -389,6 +389,12 @@ Every row is copied in full from GAPS.md so this page stands alone. Priority is 
 | # | Gap | Source | Status | Priority |
 |---|---|---|---|---|
 | 156 | Ten paper playbooks whose figures are in-sample on one period and whose source tables sit on the branch `research/exits`, not on main. A profit lock can only be armed by Autopilot: the Protect dialog shows it on the card line but cannot create or edit one, and saving the dialog keeps it silently. The lock's floor is judged every two seconds on the live profit and on bar closes in the backtest; a gap through the floor closes below it. The timed exit is an `at` rule fixed at entry: a server that is down at 01:30 IST fires it late, on its first tick back. The afternoon entry rests on weak evidence (its card says so) and enters two hours before settlement, when the snapshot it prices from, up to twelve minutes old, matters more. The ETH winged one has no stop by design and its wing prices are model marks. The Autopilot screen's running-trade panel shows no lock level, exit time or trail for these. A trader can switch on strategies that overlap heavily (several BTC evening strangles on the same strikes): nothing sizes or caps the total, which is the deferred budget work. Bundles (cautious, balanced, bold) are approved as an idea only: nothing groups the strategies or ties them to a plan, and the margin these positions need is unverified (GAPS #109). Approved by the owner and not built: sell only the side behind a 24-hour move of more than 1 % (needs the spot of a day earlier at entry). |  | Open | High |
+
+### The weekly closed at 90 % of the premium
+
+| # | Gap | Source | Status | Priority |
+|---|---|---|---|---|
+| 160 | One paper playbook on a small in-sample edge (+44.39 against +40.65 a week on 51 weeks, the same worst week), the best of five levels tried on this set in two tables of 112 rows (the same weekly set also went through the lab's other exit tables that day, which the count leaves out); the gain came in the second half of the year, the BTC daily sets do not support the rule, and the ETH rows that were slightly ahead (daily +4.57 against +4.46, weekly +15.10 against +14.43) are not built. The study judged the level on hourly closes and the engine on live marks, so the paper trade will close at a different moment. Closing both options at 90 % means buying back two cheap options at their marks, which a real exchange may not fill at. Its source tables are on `research/exits`, not on main. |  | Open | High |
 
 ### Trade All → Live batch preview
 

@@ -1,6 +1,6 @@
 # Paper trading, live trading, rules and accounts
 
-Part of the [HapieCoin feature guide](README.md). 136 traced features on 35 screens; 136 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 137 traced features on 35 screens; 137 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -68,6 +68,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-243 | The Autopilot log says the move an entry was judged on and the side it sold | an entry of a one-side strategy records the spot's move over 24 hours and the side kept; its log line reads "BTC up 1.56 % over 24 hours: the put only", or "both sides" after a flat day | built | component (web) |
 | HC-TR-246 | An Autopilot strategy that buys a cheap option back | a clock playbook may carry a buy-back price; Autopilot arms one buy-back beside the stop on each sold option; one paper playbook, the BTC evening strangle 1 % away with a stop at triple and a buy-back at 5 dollars, whose card says it is protection and not income | built | integration (api) |
 | HC-TR-248 | An Autopilot strategy that buys each option back at 20 % of its price | a clock playbook may carry a buy-back share; Autopilot arms each sold option's buy-back at that share of its own price; one paper playbook, the BTC evening strangle 1 % away with a stop at triple and a buy-back at a fifth of the price sold at, whose card says it is one good row among poor ones | built | integration (api) |
+| HC-TR-249 | An Autopilot weekly strategy that closes the whole trade at 90 % of the premium | one paper playbook, the BTC Friday weekly strangle 3 % away with a stop at triple on each option, closes everything once the trade is up by 90 % of the premium collected; it uses the existing take-profit of a clock playbook (a share of the premium, armed as a target), with no new rule | built | integration (api) |
 
 ### Trading · Protect dialog / cards · Details · `/desk`
 
