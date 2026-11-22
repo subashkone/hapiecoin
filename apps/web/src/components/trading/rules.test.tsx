@@ -827,3 +827,51 @@ describe("HC-TR-245 buy back when cheap in the Protect dialog (ADR-123)", () => 
     expect(within(dlg).queryByTestId("rule-take-l2")).toBeNull();
   }, 20000);
 });
+
+describe("HC-TR-247 buy back at a percentage of the price sold at (ADR-124)", () => {
+  it("HC-TR-247 the level can be typed as a percentage of the price the option was sold at: 20 % of 900 is 180; it is armed as that share, shown on the card and comes back as a percentage", async () => {
+    const u = userEvent.setup();
+    mine().push(strat(1, { legs: [{ ...CALL, id: "l1" }, { ...PUT, id: "l2" }] }));
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    await u.click(await screen.findByTestId("card-protect"));
+    const dlg = await screen.findByTestId("rule-dialog");
+    serveMarket(); // the marks of the held legs
+    await u.click(within(dlg).getByTestId("rule-take-l2-on"));
+    const value = () => within(dlg).getByTestId<HTMLInputElement>("rule-take-l2-value");
+    expect(value().value).toBe("5");
+    // switch the unit: 20 % is ready, and the level it stands for is shown
+    await u.click(within(dlg).getByRole("button", { name: "% of sold" }));
+    expect(value().value).toBe("20");
+    await waitFor(() => expect(within(dlg).getByTestId("rule-take-l2-level").textContent).toContain("= 180.00"));
+    // (900 - 180) x 10 lots x 0.001 = 7.20 kept
+    expect(within(dlg).getByTestId("rule-take-l2-level").textContent).toContain("keeps +$7.20 of this option");
+    const arm = () => within(dlg).getByTestId<HTMLButtonElement>("rule-arm");
+    // a click on the unit already chosen leaves what was typed
+    fireEvent.change(value(), { target: { value: "33.333" } });
+    await u.click(within(dlg).getByRole("button", { name: "% of sold" }));
+    expect(value().value).toBe("33.333");
+    // the level shown is the one that will be stored: 33.333 % goes as 0.3333, and 0.3333 x 900 is 299.97, not 300
+    await waitFor(() => expect(within(dlg).getByTestId("rule-take-l2-level").textContent).toContain("= 299.97"));
+    // a percentage too small to send is nothing typed
+    fireEvent.change(value(), { target: { value: "0.004" } });
+    await waitFor(() => expect(within(dlg).getByTestId<HTMLButtonElement>("rule-arm").disabled).toBe(true));
+    // the whole price, and nothing typed: refused
+    fireEvent.change(value(), { target: { value: "100" } });
+    await waitFor(() => expect(dlg.textContent).toContain("A buy-back level must be below the price the option was sold at"));
+    fireEvent.change(value(), { target: { value: "" } });
+    await waitFor(() => expect(arm().disabled).toBe(true));
+    fireEvent.change(value(), { target: { value: "20" } });
+    await waitFor(() => expect(arm().disabled).toBe(false));
+    await u.click(arm());
+    await waitFor(() => expect(screen.queryByTestId("rule-dialog")).toBeNull());
+    expect(mine()[0]!.rules!.map((r) => [r.kind, r.trigger, r.value, r.thresholdUsd, r.legId, r.scope])).toEqual([["leg_take", "multiple", "0.2", "180", "l2", "leg"]]);
+    await waitFor(() => expect(screen.getByTestId("card-rules").textContent).toBe("S P 78,000 25 Sep bought back at 180.00 (20 % of the price sold at)"));
+    // reopen: a percentage again; back to a price puts 5 there
+    await u.click(screen.getByTestId("card-protect"));
+    const again = await screen.findByTestId("rule-dialog");
+    expect(within(again).getByTestId<HTMLInputElement>("rule-take-l2-value").value).toBe("20");
+    await u.click(within(again).getByRole("button", { name: "price" }));
+    expect(within(again).getByTestId<HTMLInputElement>("rule-take-l2-value").value).toBe("5");
+  }, 20000);
+});

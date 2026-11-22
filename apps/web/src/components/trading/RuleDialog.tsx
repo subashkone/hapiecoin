@@ -144,16 +144,33 @@ export function ruleText(r: StrategyRule, money: MoneyFormat, legs: readonly Str
   }
   if (r.kind === "leg_take") {
     const leg = legs.find((l) => l.id === r.legId);
-    return `${leg ? legTag(leg) : "leg"} bought back at ${fmtPrice(r.thresholdUsd)}`;
+    return `${leg ? legTag(leg) : "leg"} bought back at ${fmtPrice(r.thresholdUsd)}${r.trigger === "multiple" ? ` (${toDecimal(Number(r.value) * 100, 2)} % of the price sold at)` : ""}`;
   }
   if (r.kind === "spot") return `spot ${r.trigger === "above" ? "≥" : "≤"} ${fmtPrice(r.thresholdUsd, 0)}`;
   if (r.trigger === "settle") return `exit all legs ${r.value} min before expiry settles (${fmtInstant(new Date(Number(r.thresholdUsd)).toISOString())})`;
   return r.trigger === "at" ? `exit at ${fmtInstant(r.value)}` : `exit at ${r.value} ${r.value === "1" ? "day" : "days"} to expiry`;
 }
 
-/** The draft of a leg buy-back (ADR-123): on with its price when one is armed, off with the usual 5 otherwise. */
+/**
+ * The draft of a leg buy-back (ADR-123, ADR-124): on with its level when one is armed, off with the usual 5 otherwise.
+ * The level is a price, or a percentage of the price the option was sold at (stored as a multiple: 20 % is 0.2).
+ */
 export const LEG_TAKE_DEFAULT = "5";
-const takeDraftOf = (r: StrategyRule | undefined): { on: boolean; value: string } => ({ on: r !== undefined, value: r?.value ?? LEG_TAKE_DEFAULT });
+export const LEG_TAKE_DEFAULT_PCT = "20";
+type TakeDraft = { on: boolean; unit: "price" | "pct"; value: string };
+const takeDraftOf = (r: StrategyRule | undefined): TakeDraft => (r?.trigger === "multiple" ? { on: true, unit: "pct", value: toDecimal(Number(r.value) * 100, 2) } : { on: r !== undefined, unit: "price", value: r?.value ?? LEG_TAKE_DEFAULT });
+/** A typed percentage as the multiple that is sent: four decimals, so 33.333 % goes as 0.3333. */
+const takeMultipleOf = (pct: string): string => toDecimal(Number(pct) / 100, 4);
+/**
+ * The mark a buy-back draft stands for, or null when nothing usable is typed. A percentage is priced from the very
+ * multiple that is sent, by the function the server prices it with: what is shown is what is stored.
+ */
+const takeLevelOf = (d: TakeDraft, sold: number): number | null => {
+  if (!isPositiveDecimal(d.value)) return null;
+  if (d.unit === "price") return Number(d.value);
+  const multiple = takeMultipleOf(d.value);
+  return isPositiveDecimal(multiple) ? Number(ruleLevel({ kind: "leg_take", trigger: "multiple", value: multiple, basisUsd: undefined }, String(sold))) : null;
+};
 
 /** The armed rules of a strategy, one line for the card and the Details dialog: "stop at −₹5,000 · target at +₹4,200". */
 export function rulesLine(rules: readonly StrategyRule[] | undefined, money: MoneyFormat, legs: readonly StrategyLeg[] = []): string | null {
@@ -204,7 +221,7 @@ export function RuleDialog({ book }: { book: PaperBook }) {
   const [trail, setTrail] = useState<TrailDraft>(trailDraftOf(undefined, money));
   const [legStops, setLegStops] = useState<Record<string, LegDraft>>({});
   // ADR-123: a sold option bought back alone once its price has fallen to a level
-  const [legTakes, setLegTakes] = useState<Record<string, { on: boolean; value: string }>>({});
+  const [legTakes, setLegTakes] = useState<Record<string, TakeDraft>>({});
   const [rest, setRest] = useState<TrailDraft>(restDraftOf(undefined, money));
   const [spotD, setSpotD] = useState<SpotDraft>(spotDraftOf(undefined));
   const [timeD, setTimeD] = useState<TimeDraft>(timeDraftOf(undefined));
@@ -298,11 +315,13 @@ export function RuleDialog({ book }: { book: PaperBook }) {
   const takeBodies = takeLegs.map((l) => {
     const d = legTakes[l.id];
     if (!d?.on) return null;
-    if (!isPositiveDecimal(d.value)) return "invalid";
-    if (Number(d.value) >= Number(l.entryPrice ?? l.price)) return "take-high";
+    const sold = Number(l.entryPrice ?? l.price);
+    const level = takeLevelOf(d, sold);
+    if (level === null || level <= 0) return "invalid";
+    if (level >= sold) return "take-high";
     const mark = book.priceOf(s, l);
-    if (mark !== null && mark <= Number(d.value)) return "crossed";
-    return { kind: "leg_take" as const, trigger: "price" as const, value: d.value, legId: l.id, scope: "leg" as const, channels };
+    if (mark !== null && mark <= level) return "crossed";
+    return d.unit === "pct" ? { kind: "leg_take" as const, trigger: "multiple" as const, value: takeMultipleOf(d.value), legId: l.id, scope: "leg" as const, channels } : { kind: "leg_take" as const, trigger: "price" as const, value: d.value, legId: l.id, scope: "leg" as const, channels };
   });
   // the trail a fired leg stop started: kept with its give-back as typed, or left out of the set (which stops it)
   const restRule = (s.rules ?? []).find((r) => r.kind === "trail" && r.state === "armed");
@@ -493,11 +512,12 @@ export function RuleDialog({ book }: { book: PaperBook }) {
   };
   const takeField = (l: StrategyLeg) => {
     const d = legTakes[l.id] ?? takeDraftOf(undefined);
-    const set = (n: { on: boolean; value: string }) => setLegTakes((m) => ({ ...m, [l.id]: n }));
+    const set = (n: TakeDraft) => setLegTakes((m) => ({ ...m, [l.id]: n }));
     const id = `rule-take-${l.id}`;
     const mark = book.priceOf(s, l);
     // what buying back at the level keeps of this option's premium, in USD at the trade's size
-    const kept = isPositiveDecimal(d.value) ? (Number(l.entryPrice ?? l.price) - Number(d.value)) * l.lots * Number(lotSize) : null;
+    const level = takeLevelOf(d, Number(l.entryPrice ?? l.price));
+    const kept = level !== null ? (Number(l.entryPrice ?? l.price) - level) * l.lots * Number(lotSize) : null;
     return (
       <div key={l.id}>
         {box(
@@ -507,8 +527,9 @@ export function RuleDialog({ book }: { book: PaperBook }) {
           `${legTag(l)} · ${l.lots} lots`,
           `sold at ${fmtPrice(l.entryPrice ?? l.price)} · buy it back when its price falls to`,
           <>
-            <input type="number" min={0} step="any" value={d.value} onChange={(e) => set({ ...d, value: e.target.value })} className="h-7 w-24 rounded border border-input bg-background px-2 text-right text-xs" aria-label={`${legTag(l)} buy-back price`} data-testid={`${id}-value`} />
-            <span className="num text-muted-foreground" data-testid={`${id}-level`}>{mark !== null ? `now ${fmtPrice(mark)}` : "—"}{kept !== null && kept > 0 ? ` · keeps ${signed(kept)} of this option` : ""}</span>
+            {unit(id, d.unit, [{ key: "price" as const, label: "price", title: "A mark price" }, { key: "pct" as const, label: "% of sold", title: "A percentage of the price it was sold at" }], (u) => (u === d.unit ? undefined : set({ ...d, unit: u, value: u === "pct" ? LEG_TAKE_DEFAULT_PCT : LEG_TAKE_DEFAULT })))}
+            <input type="number" min={0} step="any" value={d.value} onChange={(e) => set({ ...d, value: e.target.value })} className="h-7 w-24 rounded border border-input bg-background px-2 text-right text-xs" aria-label={`${legTag(l)} buy-back level`} data-testid={`${id}-value`} />
+            <span className="num text-muted-foreground" data-testid={`${id}-level`}>{d.unit === "pct" && level !== null ? `= ${fmtPrice(level)} · ` : ""}{mark !== null ? `now ${fmtPrice(mark)}` : "—"}{kept !== null && kept > 0 ? ` · keeps ${signed(kept)} of this option` : ""}</span>
             <p className="basis-full text-2xs text-muted-foreground">Only this option is bought back; the other legs and their stops stay. On paper it fills at the mark; on an exchange a price this low often cannot be bought at the mark.</p>
           </>,
         )}

@@ -160,6 +160,8 @@ export interface AutopilotPlan {
   exitHourUtc: number | null;
   /** ADR-123: every sold option is bought back alone once its mark has fallen to this price; null: held. */
   legBuyBackAt: number | null;
+  /** ADR-124: the same, with the level a share of the price each option was sold at; null: none. */
+  legBuyBackShare: number | null;
   /** ADR-121: the profit level starts a trail with this percentage give-back instead of closing; null: it closes (or follows the trader's exit style). */
   takeTrailPct: number | null;
 }
@@ -187,7 +189,7 @@ export function clockPlanFor(p: Playbook, proposal: PlaybookProposal, unitsPerLo
   const lock = p.clock?.lock;
   // a floor that rounds to nothing is no floor: the trade would close at once when armed
   if (lock !== undefined && credit * lock.floor < 0.01) return null;
-  return { fees, targetUsd: take === undefined ? null : credit * take, stopUsd: null, timeStopDte: null, legStop: p.clock?.legStop ?? null, trailRestPct: p.clock?.trailRestPct ?? null, ladder: p.clock?.ladder ?? null, lock: lock === undefined ? null : { atUsd: credit * lock.at, floorUsd: credit * lock.floor }, exitHourUtc: p.clock?.exitHourUtc ?? null, takeTrailPct: p.clock?.takeTrailPct ?? null, legBuyBackAt: p.clock?.legBuyBackAt ?? null };
+  return { fees, targetUsd: take === undefined ? null : credit * take, stopUsd: null, timeStopDte: null, legStop: p.clock?.legStop ?? null, trailRestPct: p.clock?.trailRestPct ?? null, ladder: p.clock?.ladder ?? null, lock: lock === undefined ? null : { atUsd: credit * lock.at, floorUsd: credit * lock.floor }, exitHourUtc: p.clock?.exitHourUtc ?? null, takeTrailPct: p.clock?.takeTrailPct ?? null, legBuyBackAt: p.clock?.legBuyBackAt ?? null, legBuyBackShare: p.clock?.legBuyBackShare ?? null };
 }
 
 /**
@@ -207,7 +209,7 @@ export function planFor(p: Playbook, proposal: PlaybookProposal, unitsPerLot: nu
   const stopPct = p.exits?.stopPct;
   const stopUsd = stopPct === undefined ? null : maxLoss * stopPct;
   if (stopUsd !== null && stopUsd < 0.01) return null;
-  return { fees, targetUsd, stopUsd, timeStopDte: p.exits?.timeStopDte ?? null, legStop: null, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null, legBuyBackAt: null };
+  return { fees, targetUsd, stopUsd, timeStopDte: p.exits?.timeStopDte ?? null, legStop: null, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null, legBuyBackAt: null, legBuyBackShare: null };
 }
 
 /** Whether `fresh` (a net premium: paid positive, received negative) is better than `open` by the noted margin; judged in cents. */
@@ -237,7 +239,7 @@ function detailOf(proposal: PlaybookProposal, plan: AutopilotPlan | null, nowMs:
     capital: money(Math.abs(proposal.maxLoss)),
     legs: proposal.legs.map((l) => ({ side: l.side, kind: l.kind, strike: l.strike, price: l.price })),
     ...(proposal.move ? { move: { pct: toDecimal(proposal.move.movePct, 2), side: proposal.move.side } } : {}),
-    ...(plan ? { fees: toDecimal(plan.fees, 2), ...(plan.targetUsd === null ? {} : { targetUsd: toDecimal(plan.targetUsd, 2) }), stopUsd: plan.stopUsd === null ? null : toDecimal(plan.stopUsd, 2), ...(plan.legStop === null ? {} : { legStop: plan.legStop }), ...(plan.trailRestPct === null ? {} : { trailRestPct: plan.trailRestPct }), ...(plan.ladder === null ? {} : { ladder: [...plan.ladder] }), ...(plan.lock === null ? {} : { lock: { at: toDecimal(plan.lock.atUsd, 2), floor: toDecimal(plan.lock.floorUsd, 2) } }), ...(plan.takeTrailPct === null ? {} : { takeTrailPct: plan.takeTrailPct }), ...(plan.legBuyBackAt === null ? {} : { legBuyBackAt: toDecimal(plan.legBuyBackAt, 2) }), ...(plan.exitHourUtc === null ? {} : { exitAt: new Date(nextHourUtc(nowMs, plan.exitHourUtc)).toISOString() }) } : {}),
+    ...(plan ? { fees: toDecimal(plan.fees, 2), ...(plan.targetUsd === null ? {} : { targetUsd: toDecimal(plan.targetUsd, 2) }), stopUsd: plan.stopUsd === null ? null : toDecimal(plan.stopUsd, 2), ...(plan.legStop === null ? {} : { legStop: plan.legStop }), ...(plan.trailRestPct === null ? {} : { trailRestPct: plan.trailRestPct }), ...(plan.ladder === null ? {} : { ladder: [...plan.ladder] }), ...(plan.lock === null ? {} : { lock: { at: toDecimal(plan.lock.atUsd, 2), floor: toDecimal(plan.lock.floorUsd, 2) } }), ...(plan.takeTrailPct === null ? {} : { takeTrailPct: plan.takeTrailPct }), ...(plan.legBuyBackAt === null ? {} : { legBuyBackAt: toDecimal(plan.legBuyBackAt, 2) }), ...(plan.legBuyBackShare === null ? {} : { legBuyBackShare: plan.legBuyBackShare }), ...(plan.exitHourUtc === null ? {} : { exitAt: new Date(nextHourUtc(nowMs, plan.exitHourUtc)).toISOString() }) } : {}),
     ...(exit ? { exit } : {}),
   };
 }
@@ -485,6 +487,15 @@ async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, pl
       const at = plan.legBuyBackAt;
       proposal.legs.forEach((l, i) => {
         if (l.side === "sell" && l.kind !== "future" && Number(l.price) > at) rules.push(rule({ kind: "leg_take", trigger: "price", value: String(at), thresholdUsd: toDecimal(at, 2), legId: legIds[i]!, scope: "leg" as const }));
+      });
+    }
+    // ADR-124: the same buy-back at a share of the price each option was sold at; a level that rounds to nothing is no
+    // level. One buy-back a leg: a plan with a price has it at the price
+    else if (plan.legBuyBackShare !== null) {
+      const share = plan.legBuyBackShare;
+      proposal.legs.forEach((l, i) => {
+        const level = toDecimal(share * Number(l.price), 2);
+        if (l.side === "sell" && l.kind !== "future" && Number(level) > 0) rules.push(rule({ kind: "leg_take", trigger: "multiple", value: String(share), thresholdUsd: level, legId: legIds[i]!, scope: "leg" as const }));
       });
     }
     // ADR-120: one step a level; each closes an equal part of what the legs hold when it fires (a quarter, then a

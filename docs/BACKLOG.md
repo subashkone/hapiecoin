@@ -19,7 +19,7 @@ Three sources, kept in sync with their originals: the roadmap items still open (
 | 30 | AI: opportunity radar, language features, journal coach, advisor | Five phases in docs/research/ai-leverage.md: AI-1 radar with backtested setups and expected-value scores on template cards (no language model); AI-2 natural-language alerts and rules plus the assistant on the guide corpus; AI-3 weekly journal coach; AI-4 conversational advisor using the wizard, pricer, backtest and positions as tools; AI-5 volatility regime model and risk guardian. | Feature freeze; the radar needs 30+ recorded days of chains (accumulating), the language features need an API key in the secret store and a legal read of the copy. |
 | 31 | Strategy playbooks | Eight rule-based playbooks on templates already in the catalogue (docs/research/strategy-playbooks.md): expiry-week credit spread, pin butterfly, front-week calendar, trend with defined risk, volatility squeeze breakout, trend financed by skew, premium harvest, covered call. Needs a playbook object, trend and volatility signals from recorded marks, entry conditions in the backtest, a track record per card. First three: premium harvest, expiry-week credit spread, trend with defined risk. | Feature freeze; each playbook ships only with its backtest on our own chains. |
 
-## 2. Open review gaps (90 of 158)
+## 2. Open review gaps (91 of 159)
 
 Every row is copied in full from GAPS.md so this page stands alone. Priority is a recommendation for after launch: **High** touches money, safety or a promise the product makes; **Medium (data)** needs a data feed or a spend decision; **Low (tests)** is test hygiene.
 
@@ -377,6 +377,12 @@ Every row is copied in full from GAPS.md so this page stands alone. Priority is 
 | # | Gap | Source | Status | Priority |
 |---|---|---|---|---|
 | 78 | `apps/web/src/components/analytics/analytics-pages2.test.tsx` line 120 asserts the premium chart's empty note synchronously right after the page state settles; under the full parallel run (88 workers) it failed once on 11 Sep 2026 and passed on every rerun, alone and in the full suite. Fix: wrap that assertion in `waitFor` like the line above it. Second symptom (11 Sep 2026, twice in the stop hook's `pnpm test` while the dev stack was running): a vitest fork running `src/components/header/AppHeader.test.tsx` died with Windows exit code 3221226505 (STATUS_STACK_BUFFER_OVERRUN fast-fail) after every test in it passed; the file passes alone every time and the full suite passed 579/579 in the same hour. Environmental (88 forked jsdom workers plus the dev stack, 16 cores / 16 GB); `apps/web/vitest.config.ts` and `packages/ui/vitest.config.ts` now cap `maxWorkers` at 50 % (the ui Preview file died with "Zone Allocation failed" at one fork per core), after which both suites passed twice in a row with the dev stack running (11 Sep); the root `pnpm test` script now runs one package at a time (`--concurrency=1`): all twelve at once hit "JavaScript heap out of memory" with about 4 GB free, and at three at a time the api's PGlite forks still died beside the web forks; every package passes alone (CI runs `pnpm run ci`, unaffected). The line-120 `waitFor` fix is still to do. | Low | Open | High |
+
+### The buy-back as a share of the price sold at
+
+| # | Gap | Source | Status | Priority |
+|---|---|---|---|---|
+| 159 | The 20 % paper strategy rests on one row of a table of 40 picked after seeing it: the neighbouring level (10 %) and three of the four other sets at 20 % earned less than holding, so its figure is likely flattered by selection; in-sample on one period. Paper only, with the limits of GAPS #158 (a paper fill at the mark, a rule that stays listed when a trade goes live, Re-enter). The percentage is of each option's own entry price, fixed when the rule is armed: a leg added or re-priced later keeps its old level until the rule is armed again. The dialog sends a percentage as a multiple of four decimals (0.01 % steps: 33.333 % is armed and read back as 33.33 %) and shows the level that multiple gives. The trials counts of both buy-back cards (50) are the rows of one table; the lab's other tables of the same day are not counted. The Autopilot screen's running-trade panel does not show the buy-back level. |  | Open | High |
 
 ### The lab's strategies and the profit lock
 

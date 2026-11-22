@@ -175,7 +175,7 @@ export type RuleKind = z.infer<typeof RuleKind>;
 export const RULE_TRIGGERS = ["money", "pct", "multiple", "price", "above", "below", "at", "dte", "settle"] as const;
 export const RuleTrigger = z.enum(RULE_TRIGGERS);
 export type RuleTrigger = z.infer<typeof RuleTrigger>;
-export const RULE_TRIGGERS_OF: Record<RuleKind, readonly RuleTrigger[]> = { stop: ["money", "pct"], target: ["money", "pct"], leg_stop: ["multiple", "price"], spot: ["above", "below"], time: ["at", "dte", "settle"], trail: ["money", "pct"], step: ["pct"], lock: ["money"], leg_take: ["price"] };
+export const RULE_TRIGGERS_OF: Record<RuleKind, readonly RuleTrigger[]> = { stop: ["money", "pct"], target: ["money", "pct"], leg_stop: ["multiple", "price"], spot: ["above", "below"], time: ["at", "dte", "settle"], trail: ["money", "pct"], step: ["pct"], lock: ["money"], leg_take: ["price", "multiple"] };
 /** A settle rule's lead: at least a minute, at most twelve hours before the settlement instant. */
 export const SETTLE_LEAD_MINUTES = { min: 1, max: 720, default: 15 } as const;
 /** What a fire exits: the whole strategy, or (leg_stop by choice, leg_take always) the watched leg alone. */
@@ -351,6 +351,8 @@ export const RuleBody = z
     if (r.kind === "leg_stop" && r.legId === undefined) ctx.addIssue({ code: "custom", message: "a leg stop names its leg", path: ["legId"] });
     // a buy-back of a cheap leg (ADR-123) names its leg and exits that leg alone
     if (r.kind === "leg_take" && r.legId === undefined) ctx.addIssue({ code: "custom", message: "a leg buy-back names its leg", path: ["legId"] });
+    // ADR-124: as a share of the price the option was sold at (a multiple below 1: 0.2 is 20 %)
+    if (r.kind === "leg_take" && r.trigger === "multiple" && isPositiveDecimal(r.value) && Number(r.value) >= 1) ctx.addIssue({ code: "custom", message: "a buy-back share is below the whole price", path: ["value"] });
     if (r.kind === "leg_take" && r.scope === "strategy") ctx.addIssue({ code: "custom", message: "a leg buy-back exits its own leg alone", path: ["scope"] });
     if (r.kind !== "leg_stop" && r.kind !== "leg_take" && r.scope === "leg") ctx.addIssue({ code: "custom", message: "only a leg stop or a leg buy-back can exit one leg", path: ["scope"] });
     if ((r.kind === "stop" || r.kind === "target") && ruleThresholdUsd(r) === "0") ctx.addIssue({ code: "custom", message: "the level rounds to nothing", path: ["value"] });
@@ -419,8 +421,9 @@ export function nearestSettlement(legs: readonly Pick<StrategyLeg, "expiry">[], 
 
 export function ruleLevel(r: Pick<RuleBody, "kind" | "trigger" | "value" | "basisUsd">, entryPrice?: string | null): string {
   if (r.kind === "stop" || r.kind === "target") return ruleThresholdUsd(r);
-  if (r.kind === "leg_stop") return r.trigger === "multiple" ? toDecimal(Number(r.value) * Number(entryPrice ?? "0"), 2) : r.value;
-  if (r.kind === "spot" || r.kind === "leg_take") return r.value; // a buy-back: the mark of its leg, as typed
+  // a leg stop and a leg buy-back: the mark of the leg, typed as a price or as a multiple of its entry price
+  if (r.kind === "leg_stop" || r.kind === "leg_take") return r.trigger === "multiple" ? toDecimal(Number(r.value) * Number(entryPrice ?? "0"), 2) : r.value;
+  if (r.kind === "spot") return r.value;
   if (r.kind === "trail") return "0"; // the route keeps the running trail's own level; nothing typed sets it
   if (r.kind === "step" || r.kind === "lock") return r.value; // a step: per cent of the open part's premium; a lock is never armed through a body
   return r.trigger === "at" ? String(Date.parse(r.value)) : r.value;
