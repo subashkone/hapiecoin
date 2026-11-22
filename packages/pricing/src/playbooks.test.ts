@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type BacktestFold, type BacktestStats, type BacktestTrade, type EodDay, type EodRow, runBacktest } from "./backtest.js";
 import { calendarFor, daysToExpiryOf } from "./calendar.js";
-import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
+import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
 import { materialiseTemplate } from "./templates.js";
 
 const cal = calendarFor(12);
@@ -218,7 +218,7 @@ describe("HC-TR-229 the weekly strangles", () => {
     expect(WEEKLY_PLAYBOOKS.map((p) => [p.clock!.legStop, p.clock!.takeProfitOfCredit, p.clock!.trailRestPct]).slice(0, 5)).toEqual([[undefined, undefined, undefined], [2, undefined, undefined], [3, undefined, undefined], [2, 0.5, undefined], [2, undefined, 50]]);
     expect(CLOCK_PLAYBOOKS.every((p) => p.clock!.weekdayUtc === undefined && p.clock!.describe === "once an evening, 9:30 to 10:30 PM IST, on the next expiry")).toBe(true);
     expect(new Set(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).size).toBe(AUTOPILOT_PLAYBOOKS.length);
-    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length);
+    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length);
   });
 
   it("HC-TR-229 the strikes are the listed ones nearest 3 % (wings 7 %) of the spot away, on the Friday expiry a week out from a Friday and three days out from a Tuesday", () => {
@@ -511,5 +511,26 @@ describe("HC-TR-235 the evening strangles on ETH and XAUT", () => {
     expect(near.legs.map((l) => `${l.side} ${l.kind} ${l.strike} x${l.lots}`)).toEqual(["sell put 2030 x100", "sell call 2580 x100"]);
     // the far ones take the month-end 68 days out: 29 January 2027
     expect(placed("eth-monthly-strangle-16pct-far-wings-stop-3x", today, 0.01).expiry).toBe("2027-01-29");
+  });
+});
+
+describe("HC-TR-239 Autopilot strategies with a profit ladder (ADR-120)", () => {
+  it("HC-TR-239 three playbooks carry the ladder 25 / 50 / 75 with a stop at triple and no single take: BTC and ETH daily, BTC Friday weekly, beside the ones without it", () => {
+    const all = [...LADDER_DAILY_PLAYBOOKS, ...LADDER_WEEKLY_PLAYBOOKS];
+    expect(all.map((p) => [p.id, p.assets.join(), playbookCadence(p)])).toEqual([["evening-strangle-steps", "BTC", "daily"], ["eth-evening-strangle-steps", "ETH", "daily"], ["weekly-fri-strangle-steps", "BTC", "weekly"]]);
+    for (const p of all) {
+      expect(p.clock).toMatchObject({ ladder: [25, 50, 75], legStop: 3, fromHourUtc: 16, toHourUtc: 17, venues: ["delta_india"] });
+      expect(p.clock!.takeProfitOfCredit, p.id).toBeUndefined();
+      expect(p).toMatchObject({ lots: 100, control: false });
+      expect(p.trials.note).toContain("in-sample");
+      expect(p.trials.note).toContain("after a stop the steps come sooner");
+      expect(autopilotPlaybookById(p.id)).toBe(p);
+      expect(p.name.length, p.id).toBeLessThanOrEqual(68);
+      expect(playbookTemplate(p)!.legs.map((l) => ("pct" in l ? l.pct : null))).toEqual(p.id.startsWith("weekly") ? [-3, 3] : [-1, 1]);
+    }
+    expect(all[2]!.clock).toMatchObject({ weekdayUtc: 5, maxDte: 7.5 });
+    expect(all[2]!.minDte).toBe(6.5);
+    // no other playbook has a ladder
+    expect(AUTOPILOT_PLAYBOOKS.filter((p) => p.clock?.ladder).map((p) => p.id).sort()).toEqual(all.map((p) => p.id).sort());
   });
 });

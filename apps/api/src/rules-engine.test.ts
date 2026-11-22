@@ -4,8 +4,8 @@
 // rule armed, everything audited, the trader told by mail and Telegram, the history carrying the batch.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Strategy } from "@hapiecoin/schema";
-import { eq } from "drizzle-orm";
-import { auditLog, brokerCredentials, strategies, users } from "./db/schema.js";
+import { and, eq, like } from "drizzle-orm";
+import { auditLog, brokerCredentials, strategies, strategyLegs, users } from "./db/schema.js";
 import { SEED } from "./db/seed.js";
 import { type RulesTickSource, evaluateRules, startRulesEngine } from "./rules-engine.js";
 import { createTestApp, type TestApp } from "./test-support/harness.js";
@@ -861,5 +861,144 @@ describe("HC-TR-212 a leg stop that trails the rest (ADR-104)", () => {
     expect(t.trading.placed.slice(before + 1).map((o) => [o.input.productId, o.input.side, o.input.reduceOnly])).toEqual([[101, "sell", true]]);
     now = await get(s.id);
     expect(now).toMatchObject({ status: "archived", closeReason: "stopped", realizedPnl: "-6" });
+  });
+});
+
+describe("HC-TR-236 take profit in steps (ADR-120)", () => {
+  // a sold strangle of 100 lots a leg: premium (900 + 1,100) x 100 x 0.001 = 200 USD
+  const SP = { kind: "put", side: "sell", strike: "78000", expiry: "2026-09-25", symbol: "P-BTC-78000-250926", lots: 100, price: "900" };
+  const SC = { kind: "call", side: "sell", strike: "82000", expiry: "2026-09-25", symbol: "C-BTC-82000-250926", lots: 100, price: "1100" };
+  const at = (put: number, call: number) => ticks({ "P-BTC-78000-250926": put, "C-BTC-82000-250926": call });
+  // four equal parts: a quarter of 100, a third of the 75 left, half of the 50 left; the last 25 are held
+  const STEPS = [
+    { kind: "step", trigger: "pct", value: "25", closeShare: "0.25" },
+    { kind: "step", trigger: "pct", value: "50", closeShare: "0.3333" },
+    { kind: "step", trigger: "pct", value: "75", closeShare: "0.5" },
+  ];
+  const open = (s: Strategy) => s.legs.filter((l) => l.status === "open").map((l) => `${l.kind} ${l.lots}`).sort();
+
+  it("HC-TR-236 a step fires when the open lots are up by its share of their premium, closes its lots on every leg and keeps the rest; it never fires twice and the next one waits for its own level", async () => {
+    const s = await paper([SP, SC], "Rules steps");
+    expect((await arm(s.id, STEPS)).status).toBe(200);
+    expect((await get(s.id)).rules!.filter((r) => r.kind === "step").sort((a, b) => Number(a.value) - Number(b.value)).map((r) => [r.value, r.closeShare, r.thresholdUsd, r.state])).toEqual([["25", "0.25", "25", "armed"], ["50", "0.3333", "50", "armed"], ["75", "0.5", "75", "armed"]]);
+    // up 45 of 200: 22.5 %
+    expect((await evaluateRules(t.deps, at(700, 850), () => T0)).fired).toHaveLength(0);
+    // up 50 of 200: 25 %. A quarter of each leg goes at the mark: 225 x 25 x 0.001 = 5.625 and 275 x 25 x 0.001 = 6.875,
+    // each booked to the cent as every close is (5.63 + 6.88)
+    expect((await evaluateRules(t.deps, at(675, 825), () => T0)).fired).toHaveLength(1);
+    let now = await get(s.id);
+    expect(now).toMatchObject({ status: "paper", realizedPnl: "12.51" });
+    expect(open(now)).toEqual(["call 75", "put 75"]);
+    expect(now.legs.filter((l) => l.status === "squared_off").map((l) => [l.lots, l.closeReason, l.exitPrice])).toEqual(expect.arrayContaining([[25, "target", "675"], [25, "target", "825"]]));
+    const first = now.rules!.find((r) => r.kind === "step" && r.value === "25")!;
+    expect(first).toMatchObject({ state: "fired", outcome: "closed" });
+    expect(first.note).toContain("Profit step fired");
+    expect(first.note).toContain("50 lots closed on 2 legs, the rest kept");
+    // the other steps are still armed, and the same prices fire nothing more: the open lots are up 25 %, not 50
+    expect(now.rules!.filter((r) => r.kind === "step" && r.state === "armed").map((r) => r.value).sort()).toEqual(["50", "75"]);
+    expect((await evaluateRules(t.deps, at(675, 825), () => T0)).fired).toHaveLength(0);
+    // 50 %: a third of the 75 left, 25 lots a leg: 11.25 + 13.75 = 25 more
+    expect((await evaluateRules(t.deps, at(450, 550), () => T0)).fired).toHaveLength(1);
+    now = await get(s.id);
+    expect(now).toMatchObject({ status: "paper", realizedPnl: "37.51" });
+    expect(open(now)).toEqual(["call 50", "put 50"]);
+  });
+
+  it("HC-TR-236 a leg stop in the middle of the steps closes its leg whole and the steps go on with the leg that is left, judged on that leg alone; the held part goes at settlement or by a click", async () => {
+    const s = await paper([SP, SC], "Rules steps and a stop");
+    const call = s.legs.find((l) => l.kind === "call")!;
+    expect((await arm(s.id, [...STEPS, { kind: "leg_stop", trigger: "multiple", value: "3", legId: call.id, scope: "leg" }])).status).toBe(200);
+    expect((await evaluateRules(t.deps, at(675, 825), () => T0)).fired).toHaveLength(1);
+    // the call triples: the stop is judged before a step and takes all 75 lots of it; one fire a tick
+    expect((await evaluateRules(t.deps, at(200, 3300), () => T0)).fired).toHaveLength(1);
+    let now = await get(s.id);
+    expect(open(now)).toEqual(["put 75"]);
+    expect(now.rules!.filter((r) => r.kind === "step" && r.state === "armed").map((r) => r.value).sort()).toEqual(["50", "75"]);
+    // the put alone is up 700 of 900, 77.8 %: the 50 % step goes first (a third of 75), then the 75 % one (half of 50)
+    expect((await evaluateRules(t.deps, at(200, 3300), () => T0)).fired).toHaveLength(1);
+    expect(open(await get(s.id))).toEqual(["put 50"]);
+    expect((await evaluateRules(t.deps, at(200, 3300), () => T0)).fired).toHaveLength(1);
+    now = await get(s.id);
+    expect(open(now)).toEqual(["put 25"]);
+    expect(now.status).toBe("paper");
+    expect(now.rules!.filter((r) => r.state === "armed")).toHaveLength(0);
+    expect((await evaluateRules(t.deps, at(100, 3300), () => T0)).fired).toHaveLength(0);
+  });
+
+  it("HC-TR-236 a step waits when the open lots have no premium to measure against, keeps the last lot of a leg, and on a trade that went live says it is on paper only", async () => {
+    t.now.value += 5 * 60_000;
+    // the trades the cases above left open would answer the ticks below: they are put away first
+    await t.db.update(strategies).set({ status: "archived" }).where(like(strategies.name, "Rules steps%"));
+    // bought and sold at the same price: the open legs cancel out, so there is no premium to take a share of. The route
+    // refuses it; a position that became so after arming (its call turned into a bought one here) waits and fires nothing
+    const flat = await paper([{ ...SP, side: "buy" }, { ...SP, strike: "77000", symbol: "P-BTC-77000-250926" }], "Rules steps flat");
+    const refused = await arm(flat.id, [STEPS[0]]);
+    expect(refused.status).toBe(400);
+    expect(JSON.stringify(await refused.json())).toContain("Profit steps need a premium to measure against: the open legs nearly cancel out");
+    await t.db.update(strategies).set({ status: "archived" }).where(eq(strategies.id, flat.id));
+    const turned = await paper([SP, { ...SC, price: "900" }], "Rules steps turned flat");
+    expect((await arm(turned.id, [STEPS[0]])).status).toBe(200);
+    await t.db.update(strategyLegs).set({ side: "buy" }).where(and(eq(strategyLegs.strategyId, turned.id), eq(strategyLegs.kind, "call")));
+    const pass = await evaluateRules(t.deps, at(100, 100), () => T0);
+    expect(pass.fired).toHaveLength(0);
+    expect(pass.skipped).toBeGreaterThanOrEqual(1);
+    expect((await get(turned.id)).rules!.find((r) => r.kind === "step")!.state).toBe("armed");
+    await t.db.update(strategies).set({ status: "archived" }).where(eq(strategies.id, turned.id));
+
+    // every leg down to its last lot when the level is reached: the step is void and says so, it is not "taken"
+    const last = await paper([{ ...SP, lots: 2 }, { ...SC, lots: 2 }], "Rules steps nothing to spare");
+    expect((await arm(last.id, [{ kind: "step", trigger: "pct", value: "25", closeShare: "0.5" }])).status).toBe(200);
+    await t.db.update(strategyLegs).set({ lots: 1 }).where(eq(strategyLegs.strategyId, last.id));
+    expect((await evaluateRules(t.deps, at(450, 550), () => T0)).fired).toHaveLength(0);
+    const voided = await get(last.id);
+    expect(voided.rules!.find((r) => r.kind === "step")).toMatchObject({ state: "disarmed", note: "disarmed: no leg has a lot to spare" });
+    expect(open(voided)).toEqual(["call 1", "put 1"]);
+    await t.db.update(strategies).set({ status: "archived" }).where(eq(strategies.id, last.id));
+
+    // two lots a leg and one step; then a click takes a lot of the put: the step takes one of the call and leaves the put's last lot
+    const two = await paper([{ ...SP, lots: 2 }, { ...SC, lots: 2 }], "Rules steps last lot");
+    expect((await arm(two.id, [{ kind: "step", trigger: "pct", value: "25", closeShare: "0.5" }])).status).toBe(200);
+    await t.db.update(strategyLegs).set({ lots: 1 }).where(and(eq(strategyLegs.strategyId, two.id), eq(strategyLegs.kind, "put")));
+    expect((await evaluateRules(t.deps, at(450, 550), () => T0)).fired).toHaveLength(1);
+    const after = await get(two.id);
+    expect(open(after)).toEqual(["call 1", "put 1"]);
+    expect(after.rules!.find((r) => r.kind === "step")!.note).toContain("1 lot closed on 1 leg, the rest kept");
+
+    // a paper trade with a step armed that is live by the time it would fire: held with the reason, nothing sent
+    const s = await paper([SP, SC], "Rules steps gone live");
+    expect((await arm(s.id, [STEPS[0]])).status).toBe(200);
+    await t.db.update(strategies).set({ status: "live" }).where(eq(strategies.id, s.id));
+    const placed = t.trading.placed.length;
+    expect((await evaluateRules(t.deps, at(450, 550), () => T0)).fired).toHaveLength(0);
+    expect(t.trading.placed).toHaveLength(placed);
+    expect((await get(s.id)).rules!.find((r) => r.kind === "step")).toMatchObject({ state: "armed", note: "not sent: profit steps are on paper trades only for now" });
+    await t.db.update(strategies).set({ status: "archived" }).where(eq(strategies.id, s.id));
+  });
+
+  it("HC-TR-236 the arm route: steps or a target, never both; each step its own level and a share above 0 and below 1; a leg too small for the parts and a live trade are refused", async () => {
+    t.now.value += 5 * 60_000; // past the write limit the cases above have used
+    const s = await paper([SP, SC], "Rules steps refused");
+    const bad = async (rules: unknown[]) => (await arm(s.id, rules)).status;
+    expect(await bad([...STEPS, { kind: "target", trigger: "money", value: "50" }])).toBe(400);
+    expect(await bad([STEPS[0], { ...STEPS[1]!, value: "25" }])).toBe(400);
+    expect(await bad([{ kind: "step", trigger: "pct", value: "25" }])).toBe(400);
+    expect(await bad([{ kind: "step", trigger: "pct", value: "25", closeShare: "1" }])).toBe(400);
+    expect(await bad([{ kind: "step", trigger: "pct", value: "0.5", closeShare: "0.5" }])).toBe(400);
+    expect(await bad([{ kind: "step", trigger: "money", value: "25", closeShare: "0.5" }])).toBe(400);
+    expect(await bad([{ kind: "stop", trigger: "money", value: "50", closeShare: "0.5" }])).toBe(400);
+    expect(await bad([...STEPS, { kind: "step", trigger: "pct", value: "85", closeShare: "0.5" }, { kind: "step", trigger: "pct", value: "95", closeShare: "0.5" }])).toBe(400);
+    // three lots a leg cannot be closed in four parts
+    t.now.value += 5 * 60_000;
+    const small = await paper([{ ...SP, lots: 3 }, { ...SC, lots: 3 }], "Rules steps small");
+    const res = await arm(small.id, STEPS);
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(await res.json())).toContain("3 lots cannot be closed in 4 parts");
+    expect((await arm(small.id, STEPS.slice(0, 2))).status).toBe(200);
+    // paper only for now
+    await credential();
+    const l = await live([CALL, PUT], "Rules steps live");
+    const refused = await arm(l.id, [STEPS[0]]);
+    expect(refused.status).toBe(409);
+    expect(JSON.stringify(await refused.json())).toContain("Profit steps are on paper trades only for now");
   });
 });

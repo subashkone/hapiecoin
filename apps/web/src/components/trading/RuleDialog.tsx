@@ -6,13 +6,16 @@
 // is crossed the API exits at market, short legs first, and says so in Telegram / mail; the card shows the fired
 // state. The dialog is mounted once in the Workspace overlays and opens from the card, Details, the workbench and
 // after a trade from the Builder.
+// Take profit in steps (ADR-120; HC-TR-237): a box under the Target takes two to five parts, each step a level
+// (per cent of the open lots' premium) and the lots to close; the last part is held. Steps and a target exclude each
+// other: ticking one unticks the other. Paper trades only for now.
 // A target can trail instead of exiting (ADR-103; HC-TR-211): one more line in the Target box takes the give-back
 // (money or a percentage of the best profit) and shows two worked exit levels; the card then reads "trailing" with
 // the best and the exit level, and the fired chip says the target trailed.
 // A leg stop has a third "What to exit" (ADR-104; HC-TR-213): this leg, then trail the rest. It takes a give-back
 // (10 % of the best profit by default, or money) and says where the other legs would exit from where they stand now.
 // Once such a stop has fired, the running trail shows as its own box: its give-back can be changed, unticking stops it.
-import { type RuleBasis, type RuleChannel, type RuleKind, type RuleTrigger, type StrategyLeg, type StrategyRule, LEG_TRAIL_DEFAULT_PCT, RULE_BASIS_LABELS, RULE_KIND_LABELS, SETTLE_LEAD_MINUTES, isPositiveDecimal, nearestSettlement, restTrailFloorUsd, ruleLevel, ruleThresholdUsd, settleInstantMs, toDecimal, trailFloorUsd } from "@hapiecoin/schema";
+import { type RuleBasis, type RuleChannel, type RuleKind, type RuleTrigger, type StrategyLeg, type StrategyRule, LADDER_STEPS, LEG_TRAIL_DEFAULT_PCT, RULE_BASIS_LABELS, RULE_KIND_LABELS, SETTLE_LEAD_MINUTES, isPositiveDecimal, nearestSettlement, openProfitPct, restTrailFloorUsd, ruleLevel, ruleThresholdUsd, settleInstantMs, stepPremiumOk, toDecimal, trailFloorUsd } from "@hapiecoin/schema";
 import { Button, Checkbox, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { useEffect, useMemo, useState } from "react";
 import { useClearRules, useSetRules, useStrategies } from "@/lib/api/strategies";
@@ -22,6 +25,7 @@ import { type MoneyFormat, USD, fmtMoney } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
 import { toPricingLegs } from "@/lib/pricing/legs";
 import { useUiStore } from "@/lib/store";
+import { LADDER_PRESETS, LADDER_PRESET_LABELS, type LadderDraft, type LadderPreset, ladderBodies, ladderDraftOf, ladderProblem, ladderText, presetSteps, withStep } from "@/lib/strategy/ladder";
 import { openLegs, serverLegToLocal } from "@/lib/strategy/paper";
 import type { PaperBook } from "@/lib/strategy/usePaper";
 import { venueCalendar } from "@/lib/venue";
@@ -131,6 +135,7 @@ export function ruleText(r: StrategyRule, money: MoneyFormat, legs: readonly Str
     if (r.state === "armed" && typeof r.peakPnl === "string") return `trailing the rest: best ${fmtMoney(Number(r.peakPnl), money, { signed: true })}, exits at ${fmtMoney(restTrailFloorUsd(Number(r.peakPnl), give), money, { signed: true })}`;
     return `trailing the rest: exits on a fall of ${giveBackText(give, money)} from its best`;
   }
+  if (r.kind === "step") return `profit step at ${r.value} % of the open lots' premium, closing ${toDecimal(Number(r.closeShare ?? "0") * 100, 0)} % of them`;
   if (r.kind === "stop" || r.kind === "target") return `${r.kind} at ${levelText(Number(r.thresholdUsd), money)}${r.trigger === "pct" ? ` (${r.value} %)` : ""}`;
   if (r.kind === "leg_stop") {
     const leg = legs.find((l) => l.id === r.legId);
@@ -144,8 +149,11 @@ export function ruleText(r: StrategyRule, money: MoneyFormat, legs: readonly Str
 /** The armed rules of a strategy, one line for the card and the Details dialog: "stop at −₹5,000 · target at +₹4,200". */
 export function rulesLine(rules: readonly StrategyRule[] | undefined, money: MoneyFormat, legs: readonly StrategyLeg[] = []): string | null {
   const armed = (rules ?? []).filter((r) => r.state === "armed");
-  if (!armed.length) return null;
-  return armed.map((r) => ruleText(r, money, legs)).join(" · ");
+  // a ladder reads as one phrase with its progress, and stays on the line after its last step while the rest is held
+  const steps = ladderText(rules);
+  const others = armed.filter((r) => r.kind !== "step").map((r) => ruleText(r, money, legs));
+  const parts = steps ? [...others, steps] : others;
+  return parts.length ? parts.join(" · ") : null;
 }
 
 /** The most recent fired rule, for the card's chip. */
@@ -154,7 +162,7 @@ export function firedRule(rules: readonly StrategyRule[] | undefined): StrategyR
   return fired[0] ?? null;
 }
 /** The card chip's words for a fired rule. */
-export const FIRED_LABELS: Record<RuleKind, string> = { stop: "stop fired", target: "target hit", leg_stop: "leg stop fired", spot: "spot level fired", time: "time exit fired", trail: "trail on the rest fired" };
+export const FIRED_LABELS: Record<RuleKind, string> = { stop: "stop fired", target: "target hit", leg_stop: "leg stop fired", spot: "spot level fired", time: "time exit fired", trail: "trail on the rest fired", step: "profit step taken" };
 /** The chip for one fired rule: a target that trailed says how far the profit ran before the exit. */
 export function firedLabel(r: StrategyRule, money: MoneyFormat): string {
   return r.kind === "target" && r.trail && typeof r.peakPnl === "string" ? `${FIRED_LABELS.target} · trailed from ${fmtMoney(Number(r.peakPnl), money, { signed: true })}` : FIRED_LABELS[r.kind];
@@ -189,7 +197,10 @@ export function RuleDialog({ book }: { book: PaperBook }) {
   const [rest, setRest] = useState<TrailDraft>(restDraftOf(undefined, money));
   const [spotD, setSpotD] = useState<SpotDraft>(spotDraftOf(undefined));
   const [timeD, setTimeD] = useState<TimeDraft>(timeDraftOf(undefined));
+  const [ladder, setLadder] = useState<LadderDraft>({ on: false, preset: "standard", steps: [] });
   const [channels, setChannels] = useState<RuleChannel[]>(["push"]);
+  // the leg the steps are typed for: the smallest open one (legs of other sizes give up the same share)
+  const ladderLots = open.length ? Math.min(...open.map((l) => l.lots)) : 0;
   // seed once per strategy opened: the list refreshes on every poll and must not wipe what is being typed
   const openedFor = target?.strategyId ?? null;
   const seedFor = s?.id ?? null; // the list may not hold the strategy yet right after a trade: seed once it does
@@ -205,6 +216,7 @@ export function RuleDialog({ book }: { book: PaperBook }) {
     setRest(restDraftOf(armed.find((r) => r.kind === "trail"), money));
     setSpotD(spotDraftOf(armed.find((r) => r.kind === "spot")));
     setTimeD(timeDraftOf(armed.find((r) => r.kind === "time")));
+    setLadder(ladderDraftOf(s.rules, Math.min(...openLegs(s).filter((l) => l.entryPrice !== null).map((l) => l.lots), Number.MAX_SAFE_INTEGER)));
     setChannels(armed[0]?.channels ?? ["push"]);
     // the drafts are seeded from the strategy as it was when the dialog opened (openedFor and the strategy's arrival only, on purpose)
   }, [openedFor, seedFor]);
@@ -239,7 +251,19 @@ export function RuleDialog({ book }: { book: PaperBook }) {
   const keptBest = tgtUsd !== null && trailShape === null && bestSoFar !== null && bestSoFar >= tgtUsd ? bestSoFar : null;
   // an exit level the P&L is already at or under would fire on the next tick, like any other level
   const trailProblem = trailShape ?? (keptBest !== null && pnlNow !== null && pnlNow <= floorAt(keptBest) ? ("crossed" as const) : null);
-  const tgtBody = trailOn ? (trailProblem ?? { ...tgtFixed, trail: { trigger: trail.trigger, value: trailValue } }) : tgtFixed;
+  // steps take the target's place (the server refuses both): a ticked ladder leaves the target out of the set
+  const tgtBody = ladder.on ? null : trailOn ? (trailProblem ?? { ...tgtFixed, trail: { trigger: trail.trigger, value: trailValue } }) : tgtFixed;
+  const ladderWhy = !ladder.on
+    ? null
+    : s.status !== "paper"
+      ? "Profit steps are on paper trades only for now"
+      : !stepPremiumOk(open.map((l) => ({ side: l.side, lots: l.lots, entry: Number(l.entryPrice) })), Number(lotSize))
+        ? "Profit steps need a premium to measure against: the open legs nearly cancel out"
+        : ladderProblem(ladder.steps, ladderLots);
+  // how far the open lots are up now, as the engine measures it: a step at or under it would fire on the next tick
+  const upNow = open.length && open.every((l) => book.priceOf(s, l) !== null) ? openProfitPct(open.map((l) => ({ side: l.side, lots: l.lots, entry: Number(l.entryPrice), mark: book.priceOf(s, l)! })), Number(lotSize)) : null;
+  const ladderCrossed = ladder.on && ladderWhy === null && upNow !== null && ladder.steps.some((x) => Number(x.pct) <= upNow);
+  const stepBodies = ladder.on && ladderWhy === null && !ladderCrossed ? ladderBodies(ladder.steps, ladderLots, channels) : [];
   // the dte the engine counts: the nearest settlement of the dated legs (options and dated futures), fractional days
   const nearest = s ? nearestSettlement(open, s.asset) : null;
   const dteNow = nearest ? Math.max(0, Math.round(((nearest.ms - Date.now()) / 86_400_000) * 10) / 10) : null;
@@ -287,8 +311,8 @@ export function RuleDialog({ book }: { book: PaperBook }) {
           : dteNow !== null && dteNow <= Number(timeD.value)
             ? "crossed"
             : { kind: "time" as const, trigger: "dte" as const, value: timeD.value, channels };
-  const all = [stopBody, tgtBody, ...legBodies, restBody, spotBody, timeBody];
-  const problem = all.includes("invalid") ? "Enter a level greater than 0" : all.includes("invalid-trail") ? "Enter a give-back greater than 0 (a percentage below 100)" : all.includes("trail-big") ? "The give-back must be below the target, so the exit level is always a profit" : all.includes("no-basis") ? "That basis is not known for this strategy · use money" : all.includes("no-leg") ? "No dated leg to count to" : all.includes("past") ? "The exit time has already passed" : all.includes("crossed") ? "That level is already crossed · it would fire on the next tick" : null;
+  const all = [stopBody, tgtBody, ...legBodies, restBody, spotBody, timeBody, ...stepBodies];
+  const problem = ladderWhy !== null ? ladderWhy : ladderCrossed ? `The open lots are already up ${toDecimal(upNow!, 1)} %: a step at or under that would fire on the next tick` : all.includes("invalid") ? "Enter a level greater than 0" : all.includes("invalid-trail") ? "Enter a give-back greater than 0 (a percentage below 100)" : all.includes("trail-big") ? "The give-back must be below the target, so the exit level is always a profit" : all.includes("no-basis") ? "That basis is not known for this strategy · use money" : all.includes("no-leg") ? "No dated leg to count to" : all.includes("past") ? "The exit time has already passed" : all.includes("crossed") ? "That level is already crossed · it would fire on the next tick" : null;
   const bodies = all.filter((b): b is Exclude<typeof b, string | null> => b !== null && typeof b !== "string");
   const levelOf = (d: Draft, kind: RuleKind): number | null => {
     const b = toBody(kind, d);
@@ -300,13 +324,15 @@ export function RuleDialog({ book }: { book: PaperBook }) {
   const legsWord = `${open.length} open ${open.length === 1 ? "leg" : "legs"}`;
   const busy = setRules.isPending || clear.isPending;
   const kinds = [...new Set(bodies.map((b) => b.kind))];
+  // "profit steps" for a ladder, the kind's own label otherwise
+  const kindWord = (k: RuleKind) => (k === "step" ? "profit steps" : RULE_KIND_LABELS[k].toLowerCase());
   const arm = () => {
     if (problem) return toast.error("Check the levels", { description: problem });
     setRules.mutate(
       { id: s.id, body: { rules: bodies } },
       {
         onSuccess: () => {
-          toast(bodies.length ? "Protected" : "Rules removed", { description: bodies.length ? `${s.name} · ${kinds.map((k) => RULE_KIND_LABELS[k].toLowerCase()).join(" and ")} armed · checked every few seconds by the server` : s.name });
+          toast(bodies.length ? "Protected" : "Rules removed", { description: bodies.length ? `${s.name} · ${kinds.map(kindWord).join(" and ")} armed · checked every few seconds by the server` : s.name });
           closeRules();
         },
         onError: (e) => toast.error("Could not arm", { description: e.message }),
@@ -512,6 +538,78 @@ export function RuleDialog({ book }: { book: PaperBook }) {
       </span>
     </>,
   );
+  // Take profit in steps (ADR-120): presets, one row a step, and the part that is held. The lots are those of the
+  // smallest open leg; "banks about" is the step's level on the lots it closes, from the premium of the open legs.
+  const ladderUsed = ladder.steps.reduce((sum, x) => sum + (/^\d+$/.test(x.lots) ? Number(x.lots) : 0), 0);
+  const premiumOpenUsd = Math.abs(netPremiumUsd);
+  const setStep = (i: number, patch: Partial<LadderDraft["steps"][number]>) => setLadder({ ...ladder, preset: "custom", steps: ladder.steps.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
+  const pickPreset = (k: LadderPreset) => setLadder({ ...ladder, preset: k, steps: k === "custom" || ladderLots < LADDER_PRESETS[k].length + 1 ? ladder.steps : presetSteps(k, ladderLots) });
+  const ladderField = box(
+    "rule-ladder",
+    ladder.on,
+    (on) => {
+      setLadder({ ...ladder, on });
+      if (on && tgt.on) setTgt({ ...tgt, on: false });
+    },
+    "Take profit in steps",
+    s.status === "paper" ? "close part at each level, keep the rest" : "paper trades only for now",
+    <div className="flex basis-full flex-col gap-2">
+      <div className="flex flex-wrap gap-1" role="group" aria-label="Presets">
+        {(Object.keys(LADDER_PRESET_LABELS) as LadderPreset[]).map((k) => (
+          <button key={k} type="button" onClick={() => pickPreset(k)} disabled={k !== "custom" && ladderLots < LADDER_PRESETS[k].length + 1} className={cn("rounded-full border border-border px-2 py-1 text-2xs disabled:opacity-40", ladder.preset === k ? "bg-muted text-foreground" : "text-muted-foreground")} aria-pressed={ladder.preset === k} data-testid={`rule-ladder-preset-${k}`}>
+            {LADDER_PRESET_LABELS[k]}
+            {k !== "custom" ? <span className="num ml-1 text-muted-foreground">{LADDER_PRESETS[k].join(" / ")} / hold</span> : null}
+          </button>
+        ))}
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs" data-testid="rule-ladder-steps">
+          <thead>
+            <tr className="micro text-left">
+              <th className="py-1 pr-2 font-normal">Step</th>
+              <th className="py-1 pr-2 text-right font-normal">When each open lot is up</th>
+              <th className="py-1 pr-2 text-right font-normal">Close lots</th>
+              <th className="py-1 pr-2 text-right font-normal">Banks about</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {ladder.steps.map((x, i) => {
+              const banks = /^\d+$/.test(x.lots) && Number(x.pct) > 0 && ladderLots > 0 ? premiumOpenUsd * (Number(x.pct) / 100) * (Number(x.lots) / ladderLots) : null;
+              return (
+                <tr key={i} className="border-t border-border/50" data-testid="rule-ladder-step">
+                  <td className="num py-1 pr-2">{i + 1}</td>
+                  <td className="py-1 pr-2 text-right">
+                    <input type="number" min={1} step="any" value={x.pct} onChange={(e) => setStep(i, { pct: e.target.value })} className="h-7 w-16 rounded border border-input bg-background px-2 text-right text-xs" aria-label={`Step ${i + 1} level in per cent`} data-testid="rule-ladder-pct" /> %
+                  </td>
+                  <td className="py-1 pr-2 text-right">
+                    <input type="number" min={1} step={1} value={x.lots} onChange={(e) => setStep(i, { lots: e.target.value })} className="h-7 w-16 rounded border border-input bg-background px-2 text-right text-xs" aria-label={`Step ${i + 1} lots to close`} data-testid="rule-ladder-lots" />
+                  </td>
+                  <td className="num py-1 pr-2 text-right text-profit" data-testid="rule-ladder-banks">{banks !== null ? fmtMoney(banks, money, { signed: true }) : "–"}</td>
+                  <td className="py-1 text-right">
+                    <button type="button" onClick={() => setLadder({ ...ladder, preset: "custom", steps: ladder.steps.filter((_, j) => j !== i) })} className="px-1 text-muted-foreground hover:text-foreground" aria-label={`Remove step ${i + 1}`} data-testid="rule-ladder-remove">×</button>
+                  </td>
+                </tr>
+              );
+            })}
+            <tr className="border-t border-border/50" data-testid="rule-ladder-hold">
+              <td className="py-1 pr-2" colSpan={2}>Step {ladder.steps.length + 1} · hold the rest</td>
+              <td className="num py-1 pr-2 text-right">{Math.max(ladderLots - ladderUsed, 0)}</td>
+              <td className="micro py-1 pr-2 text-right" colSpan={2}>to a stop or settlement</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={() => setLadder({ ...ladder, preset: "custom", steps: withStep(ladder.steps, ladderLots) })} disabled={ladder.steps.length >= LADDER_STEPS.max || ladderLots < ladder.steps.length + 2} className="rounded border border-border px-2 py-1 text-2xs text-foreground disabled:text-muted-foreground" data-testid="rule-ladder-add">+ Add a step</button>
+        <span className="num ml-auto text-2xs text-muted-foreground" data-testid="rule-ladder-sum">{ladderUsed} + {Math.max(ladderLots - ladderUsed, 0)} held = {ladderLots} lots{open.some((l) => l.lots !== ladderLots) ? " of the smallest leg; the others give up the same share" : " a leg"}</span>
+      </div>
+      <p className="text-2xs text-muted-foreground" data-testid="rule-ladder-note">
+        Each step looks at the lots still open: it fires when they are up by that share of the premium they were opened for{upNow !== null ? ` (now ${toDecimal(upNow, 1)} %)` : ""}. Lots already closed do not count toward later steps. Leg stops stay armed on what is left; a stop loss on the whole trade counts the profit the steps have banked, so it needs a larger fall on the remaining lots.
+        {bestSoFar !== null ? " Arming steps removes the trailing target that is running now, with its best and its exit level." : ""}
+      </p>
+    </div>,
+  );
   return (
     <Dialog open onOpenChange={(o) => !o && !busy && closeRules()}>
       <DialogContent className="sm:max-w-[640px]" data-testid="rule-dialog" data-after-trade={target.afterTrade}>
@@ -524,7 +622,8 @@ export function RuleDialog({ book }: { book: PaperBook }) {
         <DialogBody>
           <div className="flex flex-col gap-2">
             {field("stop", stop, setStop, stopLevel)}
-            {field("target", tgt, setTgt, tgtLevel, trailField, trail.on ? "start trailing when P&L reaches" : undefined)}
+            {field("target", tgt, (d) => { setTgt(d); if (d.on && ladder.on) setLadder({ ...ladder, on: false }); }, tgtLevel, trailField, trail.on ? "start trailing when P&L reaches" : undefined)}
+            {ladderField}
             {open.length ? (
               <>
                 <div className="micro mt-1">Leg stops</div>
@@ -546,7 +645,7 @@ export function RuleDialog({ book }: { book: PaperBook }) {
               </label>
             ))}
           </div>
-          <p className="mt-2 text-2xs text-muted-foreground">
+          <p className="mt-2 text-2xs text-muted-foreground" data-testid="rule-foot">
             {s.status === "live" ? "A refused exit is retried three times; a leg still open after that is named on the card and in the message. While the server is unreachable nothing fires: an exchange stop is the only guard then." : "Paper: the same engine, no orders, good for practice."}
             {stopLevel !== null && tgtLevel !== null && stopLevel >= tgtLevel ? " The stop is not below the target." : ""}
             {problem ? ` ${problem}.` : ""}
@@ -562,7 +661,7 @@ export function RuleDialog({ book }: { book: PaperBook }) {
           {target.afterTrade ? <Button variant="ghost" onClick={closeRules} disabled={busy} data-testid="rule-skip">Skip</Button> : <Button variant="ghost" onClick={closeRules} disabled={busy}>Cancel</Button>}
           {armedNow ? <Button variant="outline" loading={clear.isPending} onClick={() => clear.mutate(s.id, { onSuccess: () => { toast("Disarmed", { description: s.name }); closeRules(); }, onError: (e) => toast.error("Could not disarm", { description: e.message }) })} data-testid="rule-disarm">Disarm all</Button> : null}
           <Button variant="primary" onClick={arm} loading={setRules.isPending} disabled={!!problem || (bodies.length === 0 && !armedNow)} data-testid="rule-arm">
-            {bodies.length === 0 ? "Remove rules" : `Arm ${kinds.map((k) => RULE_KIND_LABELS[k].toLowerCase()).join(" + ")}`}
+            {bodies.length === 0 ? "Remove rules" : `Arm ${kinds.map(kindWord).join(" + ")}`}
           </Button>
         </DialogFooter>
       </DialogContent>

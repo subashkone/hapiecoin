@@ -80,6 +80,11 @@ export interface PlaybookClock {
    * this percentage of its best (the leg stop's "this leg, then trail the rest", ADR-104); absent: the rest is kept.
    */
   trailRestPct?: number | undefined;
+  /**
+   * ADR-120: take profit in steps. The levels, in per cent of the premium of the lots still open; at each one an equal
+   * part of every leg is closed and the last part is held to a stop or to settlement. One to four levels, rising.
+   */
+  ladder?: readonly number[] | undefined;
 }
 
 const DEFINED_RISK_EXITS: BacktestExits = { targetPct: 0.5, stopPct: 0.5, timeStopDte: 2 };
@@ -584,8 +589,40 @@ export const ALT_MONTHLY_PLAYBOOKS: readonly Playbook[] = ALT_MONTHLY.map(altMon
 /** Every clock playbook of the other coins, in the order the screen lists them: daily, weekly, monthly. */
 export const ALT_PLAYBOOKS: readonly Playbook[] = [...ALT_DAILY_PLAYBOOKS, ...ALT_WEEKLY_PLAYBOOKS, ...ALT_MONTHLY_PLAYBOOKS];
 
+// ---- ADR-120: the profit ladder on the three sets it was backtested on -----------------------------------------------
+
+const LADDER_STUDY = "docs/research/scripts/autopilot-study/results-scale-out-2026-11-22.txt (study_premium.py with the scale argument; BTC and ETH daily on 106 expiries, 8 Aug to 21 Nov 2026, 5-minute marks; BTC weekly on 51 Friday expiries, hourly marks; the exchange's real fees, 100 lots)";
+const LADDER_TRIALS = { count: 36, note: "takes at 25, 50 and 75 % of the premium and the four-part ladder, under a stop at double and at triple, on the three sets (24), and the strategy lab's early and late ladders of three and five parts on the same data (12); in the backtest each quarter is its own small trade and carries its share of a stopped option's loss, while the engine measures the lots still open only, so after a stop the steps come sooner here than in these figures; chosen after seeing the results, in-sample, and the paper record is the test" };
+const LADDER_LEVELS = [25, 50, 75] as const;
+const ladderPlaybook = (o: { id: string; name: string; asset: PlaybookAsset; coin: string; sold: number; weekly: boolean; figures: string; why: string }): Playbook => ({
+  id: o.id,
+  name: o.name,
+  summary: `${o.weekly ? "Each Friday evening" : "Each evening"} sell ${o.coin} call and put ${o.sold} % away on the ${o.weekly ? "next Friday" : "next"} expiry; close a quarter of the lots when the open ones are up by 25 %, by 50 % and by 75 % of their premium, hold the last quarter, and buy either option back if its price triples.`,
+  rationale: o.why,
+  evidence: { claim: `${o.asset}, sold ${o.sold} % away, entered ${o.weekly ? "Friday " : ""}21:30 IST${o.weekly ? " for the next Friday" : ""}, each option stopped at three times its price, a quarter closed at 25, 50 and 75 % of the premium and a quarter held: ${o.figures}.`, source: LADDER_STUDY },
+  template: strangleAway(`${o.name.split(",")[0]!} (${o.sold} %)`, o.sold, null, o.weekly ? "weekly" : "next"),
+  minDte: o.weekly ? WEEKLY_DAYS.fri.minDte : 0.5,
+  lots: 100,
+  assets: [o.asset],
+  thresholds: NO_RECORD,
+  trials: LADDER_TRIALS,
+  control: false,
+  clock: o.weekly
+    ? { fromHourUtc: 16, toHourUtc: 17, weekdayUtc: WEEKLY_DAYS.fri.weekdayUtc, window: "Fridays, 9:30 to 10:30 PM IST", describe: WEEKLY_DAYS.fri.describe, maxDte: WEEKLY_DAYS.fri.maxDte, venues: ["delta_india"], legStop: 3, ladder: LADDER_LEVELS }
+    : { ...EVENING, legStop: 3, ladder: LADDER_LEVELS },
+});
+/** The owner's profit ladder (ADR-120) on the daily sets: profit banked in four parts instead of all at once. */
+export const LADDER_DAILY_PLAYBOOKS: readonly Playbook[] = [
+  ladderPlaybook({ id: "evening-strangle-steps", name: "Evening strangle, profit steps", asset: "BTC", coin: "a", sold: 1, weekly: false, figures: "+8.88 a day on 106 days, 72 % of days positive, worst day -50.5", why: "The owner's idea: a sudden move can turn an open profit into a loss, so bank it in parts. In the study it earned about what closing everything at half does (+9.02) with a smaller worst day (-69), and less than holding with the stop alone (+11.75, worst -106)." }),
+  ladderPlaybook({ id: "eth-evening-strangle-steps", name: "ETH evening strangle, profit steps", asset: "ETH", coin: "an ETH", sold: 1, weekly: false, figures: "+3.15 a day on 106 days, 65 % of days positive, worst day -44.6", why: "The same ladder on ETH: about what closing everything at half does (+3.10) for the same worst day, and less than the stop alone (+4.46)." }),
+];
+/** The profit ladder on the BTC Friday weekly. */
+export const LADDER_WEEKLY_PLAYBOOKS: readonly Playbook[] = [
+  ladderPlaybook({ id: "weekly-fri-strangle-steps", name: "Friday weekly strangle, profit steps", asset: "BTC", coin: "a", sold: 3, weekly: true, figures: "+33.25 a week on 51 weeks, 65 % of weeks positive, worst week -168.3", why: "The ladder on the weekly trade, where it did better against closing everything at half (+28.59) and gave up less against the stop alone (+40.65) than on the daily ones; the worst week is the same for all three." }),
+];
+
 /** Every playbook Autopilot may trade: the recorded ones (never the control) and the ones entered by the clock. */
-export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc === undefined), ...ALT_DAILY_PLAYBOOKS, ...WEEKLY_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc !== undefined), ...ALT_WEEKLY_PLAYBOOKS, ...MONTHLY_PLAYBOOKS, ...ALT_MONTHLY_PLAYBOOKS];
+export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc === undefined), ...ALT_DAILY_PLAYBOOKS, ...LADDER_DAILY_PLAYBOOKS, ...WEEKLY_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc !== undefined), ...ALT_WEEKLY_PLAYBOOKS, ...LADDER_WEEKLY_PLAYBOOKS, ...MONTHLY_PLAYBOOKS, ...ALT_MONTHLY_PLAYBOOKS];
 export function autopilotPlaybookById(id: string): Playbook | undefined {
   return AUTOPILOT_PLAYBOOKS.find((p) => p.id === id);
 }
@@ -665,6 +702,9 @@ const BACKTESTS: Record<string, PlaybookBacktest> = {
   "eth-weekly-fri-strangle-stop-3x": bt(14.43, "week", 57, -83, 51),
   "eth-weekly-fri-strangle-take-half": bt(14.08, "week", 75, -72, 51),
   "eth-weekly-tue-strangle-stop-3x": bt(9.03, "week", 57, -82, 51),
+  "evening-strangle-steps": bt(8.88, "day", 72, -50.5, 106),
+  "eth-evening-strangle-steps": bt(3.15, "day", 65, -44.6, 106),
+  "weekly-fri-strangle-steps": bt(33.25, "week", 65, -168.3, 51),
   "eth-monthly-strangle-16pct-far-wings-stop-3x": mo(88.3, 83, -250, 157, 10),
   "eth-monthly-strangle-16pct-far-wings-take-half": mo(33.6, 98, -250, 157, 11),
   "eth-monthly-strangle-12pct-near-stop-2x": mo(34.3, 59, -84, 165, 9),

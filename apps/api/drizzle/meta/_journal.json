@@ -211,6 +211,13 @@
       "when": 1795266125049,
       "tag": "0029_stale_bloodaxe",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1795323961185,
+      "tag": "0030_modern_siren",
+      "breakpoints": true
     }
   ]
 }

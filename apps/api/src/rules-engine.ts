@@ -13,7 +13,7 @@
 // happen once across ticks and replicas. An exit the venue accepted but has not filled, or one that may not have
 // reached it, is never re-sent: the leg is left for the order sync and named on the rule.
 // Never runs under NODE_ENV=test unless a test calls it.
-import { CLOSE_REASON_OF_KIND, RULE_KIND_LABELS, RULE_KIND_ORDER, type Underlying, nearestSettlement, restTrailFloorUsd, settlementMsOf, toDecimal, trailFloorUsd } from "@hapiecoin/schema";
+import { CLOSE_REASON_OF_KIND, RULE_KIND_LABELS, RULE_KIND_ORDER, type Underlying, nearestSettlement, openProfitPct, restTrailFloorUsd, settlementMsOf, stepLots, toDecimal, trailFloorUsd } from "@hapiecoin/schema";
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { writeAudit } from "./audit.js";
 import { strategies, strategyAdjustments, strategyLegs, strategyOrders, strategyRules, users } from "./db/schema.js";
@@ -117,7 +117,8 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
       const nearest = nearestSettlement(legs, strategy.asset);
       const dte = nearest ? Math.max(0, (nearest.ms - now()) / 86_400_000) : null;
       // the protective kinds are judged before the target: were two ever crossed at once, the protective one wins
-      const ordered = [...rules].sort((a, b) => RULE_KIND_ORDER[a.kind] - RULE_KIND_ORDER[b.kind]);
+      // profit steps among themselves: the lowest level first, so two crossed on one tick go in the order of the ladder
+      const ordered = [...rules].sort((a, b) => RULE_KIND_ORDER[a.kind] - RULE_KIND_ORDER[b.kind] || (a.kind === "step" && b.kind === "step" ? Number(a.thresholdUsd) - Number(b.thresholdUsd) : 0));
       for (const rule of ordered) {
         const at = new Date(now());
         const level = Number(rule.thresholdUsd);
@@ -169,6 +170,23 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
             const step = await trailStep(gain, (peak) => restTrailFloorUsd(peak, giveBack));
             crossed = step.crossed;
             detail = `the rest stands at ${toDecimal(gain, 2)} USD, best ${toDecimal(step.peak, 2)} USD, exit level ${toDecimal(step.floor, 2)} USD`;
+          }
+        }
+        else if (rule.kind === "step") {
+          // a profit step (ADR-120): how far the lots still open are up, as a share of the premium they were opened
+          // for. Lots closed by an earlier step, a stop or a click are not in it.
+          const up = openProfitPct(legs.map((l) => ({ side: l.side, lots: l.lots, entry: Number(l.entryPrice), mark: marks.get(l.symbol)! })), lotSize);
+          if (up === null) {
+            out.checked -= 1;
+            out.skipped += 1;
+            continue;
+          }
+          crossed = up >= level;
+          detail = `the open lots are up ${toDecimal(up, 1)} % of their premium, step at ${rule.value} %`;
+          // nothing to close (every leg is down to its last lot): the step is void, never "taken"
+          if (crossed && legs.every((l) => stepLots(l.lots, rule.closeShare ?? "0") < 1)) {
+            await moot("no leg has a lot to spare");
+            continue;
           }
         }
         else if (rule.kind === "leg_stop") {
@@ -231,6 +249,12 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
           out.skipped += 1;
         };
         let creds: DeltaCredentials | null = null;
+        // a step closes part of a leg: on paper only for now (the route refuses it on a live trade; one that went live
+        // with steps armed waits here and says so)
+        if (rule.kind === "step" && strategy.status === "live") {
+          await hold("profit steps are on paper trades only for now");
+          continue;
+        }
         if (strategy.status === "live") {
           const blocked = await tradingBlockedReason(deps, user);
           if (blocked) {
@@ -261,12 +285,16 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
           const order = [...exitLegs].sort((a, b) => (a.side === b.side ? 0 : a.side === "sell" ? -1 : 1));
           let batchPnl = "0";
           const fills: { symbol: string; fill: string }[] = [];
+          let closedLots = 0;
           const failed: { symbol: string; error: string }[] = [];
           const unconfirmed: { symbol: string; what: string }[] = [];
           for (const seen of order) {
             // the leg is re-read right before the order: a click or the settler may have closed it since the pass began
             const [leg] = await deps.db.select().from(strategyLegs).where(and(eq(strategyLegs.id, seen.id), eq(strategyLegs.status, "open"))).limit(1);
             if (!leg) continue;
+            // a step takes its share of what the leg holds now, in whole lots; a leg down to one lot keeps it
+            const qty = rule.kind === "step" ? stepLots(leg.lots, rule.closeShare ?? "0") : leg.lots;
+            if (qty < 1) continue;
             const mark = marks.get(leg.symbol)!;
             let fill: string | null = null;
             if (creds) {
@@ -280,7 +308,7 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
               for (let i = 1; i <= attempts && fill === null; i += 1) {
                 let outcome;
                 try {
-                  outcome = await tryExit(deps, creds, user, strategy, leg, leg.lots, batchId);
+                  outcome = await tryExit(deps, creds, user, strategy, leg, qty, batchId);
                 } catch (e) {
                   // a product lookup or sizing failure before any order: this leg is reported, the rest of the batch goes on
                   lastError = errorMessage(e);
@@ -307,15 +335,16 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
               fill = toDecimal(mark, 2);
             }
             try {
-              batchPnl = addDecimal(batchPnl, await closeLegRow(deps, strategy, leg, fill, undefined, String(lotSize), at, reason));
+              batchPnl = addDecimal(batchPnl, await closeLegRow(deps, strategy, leg, fill, qty < leg.lots ? qty : undefined, String(lotSize), at, reason));
               fills.push({ symbol: leg.symbol, fill });
+              closedLots += qty;
             } catch (e) {
               // closed meanwhile by the trader or the settler: the exit went out but its book-keeping is theirs
               failed.push({ symbol: leg.symbol, error: errorMessage(e) });
             }
           }
           const outcome = failed.length === 0 && unconfirmed.length === 0 ? ("closed" as const) : ("partial" as const);
-          const parts = [`${fills.length} ${fills.length === 1 ? "leg" : "legs"} exited`];
+          const parts = [rule.kind === "step" ? `${closedLots} ${closedLots === 1 ? "lot" : "lots"} closed on ${fills.length} ${fills.length === 1 ? "leg" : "legs"}, the rest kept` : `${fills.length} ${fills.length === 1 ? "leg" : "legs"} exited`];
           if (unconfirmed.length) parts.push(`${unconfirmed.length} still filling on the exchange: ${unconfirmed.map((u) => `${u.symbol} (${u.what})`).join("; ")}`);
           if (failed.length) parts.push(`${failed.length} still open: ${failed.map((f) => `${f.symbol} (${f.error})`).join("; ")}`);
           const realized = addDecimal(await freshTotal(deps, strategy.id, strategy.realizedPnl), batchPnl);
@@ -339,9 +368,9 @@ export async function evaluateRules(deps: AppDeps, source: RulesTickSource, now:
           }
           const note = `${label} fired at P&L ${toDecimal(pnl, 2)} USD${detail ? ` (${detail})` : ""}: ${parts.join(", ")}`;
           await deps.db.update(strategyRules).set({ outcome, note, updatedAt: at }).where(eq(strategyRules.id, rule.id));
-          await deps.db.insert(strategyAdjustments).values({ id: newId("adj"), strategyId: strategy.id, batchId, reason: note, added: 0, trimmed: 0, closed: fills.length, realizedPnl: batchPnl, createdAt: at });
+          await deps.db.insert(strategyAdjustments).values({ id: newId("adj"), strategyId: strategy.id, batchId, reason: note, added: 0, trimmed: rule.kind === "step" ? fills.length : 0, closed: rule.kind === "step" ? 0 : fills.length, realizedPnl: batchPnl, createdAt: at });
           // the other rules of the strategy are moot once the whole strategy exits; after a one-leg exit they keep watching what is left
-          if (rule.scope === "strategy" || archive) await disarmRules(deps, strategy.id, `disarmed: the ${label.toLowerCase()} fired`, at);
+          if ((rule.scope === "strategy" && rule.kind !== "step") || archive) await disarmRules(deps, strategy.id, `disarmed: the ${label.toLowerCase()} fired`, at);
           await deps.db
             .update(strategies)
             .set({ realizedPnl: realized, updatedAt: at, ...(archive ? { status: "archived" as const, closedAt: at, closeReason: reason } : {}) })

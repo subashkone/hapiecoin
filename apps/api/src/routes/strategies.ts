@@ -31,6 +31,7 @@ import {
   RulesBody,
   nearestSettlement,
   ruleLevel,
+  stepPremiumOk,
   settleInstantMs,
   RULE_KIND_ORDER,
   AUTOPILOT_KEEP_MESSAGE,
@@ -67,6 +68,7 @@ export function toRule(r: RuleRow): StrategyRule {
     scope: r.scope,
     trail: r.trailTrigger ? { trigger: r.trailTrigger, value: r.trailValue! } : null,
     peakPnl: r.peakPnl,
+    closeShare: r.closeShare,
     channels: r.channels as StrategyRule["channels"],
     state: r.state,
     firedAt: r.firedAt ? r.firedAt.toISOString() : null,
@@ -749,6 +751,17 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       // a settle rule's instant is fixed now, from the nearest dated leg actually held (a resting live entry is not a
       // position: the dialog and the engine count the same legs) (ADR-097); the engine judges it like `at`
       const nearestMs = nearestSettlement(openLegs.filter((l) => l.entryPrice !== null), row.asset)?.ms ?? null;
+      // profit steps (ADR-120) close part of a leg: on paper only until live partial closes have their own checks,
+      // and only where every open leg can give up a lot at each step and still keep one
+      const steps = body.rules.filter((r) => r.kind === "step");
+      if (steps.length > 0) {
+        if (row.status !== "paper") throw errors.conflict("Profit steps are on paper trades only for now");
+        const held = openLegs.filter((l) => l.entryPrice !== null);
+        const short = held.find((l) => l.lots < steps.length + 1);
+        if (short) throw errors.badRequest(`${short.symbol}: ${short.lots} ${short.lots === 1 ? "lot" : "lots"} cannot be closed in ${steps.length + 1} parts`);
+        // a step is a share of the open legs' premium: legs that nearly cancel out leave nothing to take a share of
+        if (!stepPremiumOk(held.map((l) => ({ side: l.side, lots: l.lots, entry: Number(l.entryPrice) })), Number(await lotSizeFor(me, row.asset, row.venue)))) throw errors.badRequest("Profit steps need a premium to measure against: the open legs nearly cancel out");
+      }
       const levels = body.rules.map((r) => {
         if (r.kind === "time" && r.trigger === "at" && Date.parse(r.value) <= now.getTime()) throw errors.badRequest("The exit time has already passed");
         if (r.kind === "time" && r.trigger === "settle") {
@@ -794,6 +807,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
             scope: r.kind === "leg_stop" ? (r.scope ?? "leg") : "strategy",
             trailTrigger: r.trail?.trigger ?? null,
             trailValue: r.trail ? (r.trail.trigger === "money" ? toDecimal(Number(r.trail.value), 2) : r.trail.value) : null,
+            closeShare: r.kind === "step" ? (r.closeShare ?? null) : null,
             peakPnl: r.kind === "trail" ? (trailRow!.trigger === r.trigger && trailRow!.value === stored ? trailRow!.peakPnl : null) : r.kind === "target" && r.trail && trailing?.peakPnl && Number(trailing.peakPnl) >= Number(levels[i]) ? trailing.peakPnl : null,
             channels: r.channels,
             state: "armed",

@@ -324,8 +324,8 @@ describe("HC-TR-232 the Autopilot screen: by expiry and by coin", () => {
     renderWithProviders(<AutopilotPage />);
     const u = userEvent.setup();
     await waitFor(() => expect(screen.getAllByTestId("autopilot-trade")).toHaveLength(3));
-    expect(screen.getAllByTestId("autopilot-filter-cadence").map((b) => b.textContent)).toEqual([`All · ${TRADABLE.length}`, "Trend · 6", "Daily · 17", "Weekly · 16", "Monthly · 15"]);
-    expect(screen.getAllByTestId("autopilot-filter-coin").map((b) => b.textContent)).toEqual(["All", `BTC · ${TRADABLE.length - 20}`, "ETH · 22", "XAUT · 4"]); // HC-TR-235: six ETH and four XAUT evening strangles, five ETH weekly and five ETH monthly ones of their own
+    expect(screen.getAllByTestId("autopilot-filter-cadence").map((b) => b.textContent)).toEqual([`All · ${TRADABLE.length}`, "Trend · 6", "Daily · 19", "Weekly · 17", "Monthly · 15"]);
+    expect(screen.getAllByTestId("autopilot-filter-coin").map((b) => b.textContent)).toEqual(["All", `BTC · ${TRADABLE.length - 21}`, "ETH · 23", "XAUT · 4"]); // HC-TR-235: six ETH and four XAUT evening strangles, five ETH weekly and five ETH monthly ones of their own
     expect(screen.getByTestId("autopilot-filters").dataset["filtered"]).toBe("false");
     expect(screen.queryByTestId("autopilot-filter-note")).toBeNull();
     expect(screen.getByRole("group", { name: "Expiry" })).toBeTruthy();
@@ -333,7 +333,7 @@ describe("HC-TR-232 the Autopilot screen: by expiry and by coin", () => {
 
     await press(u, "cadence", "weekly");
     expect(screen.getAllByTestId("autopilot-group").map((g) => g.dataset["group"])).toEqual(["Weekly strangles, Friday expiry"]);
-    expect(cards()).toHaveLength(16);
+    expect(cards()).toHaveLength(17);
     expect(screen.getAllByTestId("autopilot-trade").map((x) => x.dataset["id"])).toEqual(["w1"]);
     expect(screen.getAllByTestId("autopilot-run")).toHaveLength(1);
     expect(screen.getByTestId("autopilot-filter-note")).toBeTruthy();
@@ -395,7 +395,7 @@ describe("HC-TR-230 the Autopilot screen: the weekly strangles", () => {
     const groups = screen.getAllByTestId("autopilot-group");
     expect(groups.map((g) => g.dataset["group"])).toEqual(["Longer-dated strategies", "Evening strangles, daily expiry", "Weekly strangles, Friday expiry", "Monthly strangles, month-end expiry"]);
     expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").map((c) => c.dataset["playbook"]))).toEqual([TRADABLE.filter((p) => !p.clock), TRADABLE.filter((p) => p.clock && p.clock.weekdayUtc === undefined && p.clock.cadence !== "monthly"), TRADABLE.filter((p) => p.clock?.weekdayUtc !== undefined), TRADABLE.filter((p) => p.clock?.cadence === "monthly")].map((g) => g.map((p) => p.id)));
-    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 17, 16, 15]);
+    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 19, 17, 15]);
     // HC-TR-233: a monthly row says when it enters, and its backtest reads per month
     const monthly = screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === "monthly-strangle-premium-1000")!;
     expect(monthly.textContent).toContain("Enters on the first evening a month-end expiry is 60 to 75 days out, once per expiry");
