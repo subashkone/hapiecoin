@@ -4,7 +4,7 @@
 // every reason not to enter is logged once. Nothing here places anything on a venue.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, PLAYBOOKS, WEEKLY_PLAYBOOKS, type PlaybookProposal, autopilotPlaybookById, playbookById } from "@hapiecoin/pricing";
-import { AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_MAX_STRATEGIES, MAX_STRATEGY_NAME, StrategyList, AUTOPILOT_PAPER_ONLY_MESSAGE, AUTOPILOT_RUNS_RETENTION_DAYS, type AutopilotResults, type AutopilotRunDetail, type AutopilotView, type Instrument, type Quote, type SubscriptionView } from "@hapiecoin/schema";
+import { type Strategy, toDecimal, AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_MAX_STRATEGIES, MAX_STRATEGY_NAME, StrategyList, AUTOPILOT_PAPER_ONLY_MESSAGE, AUTOPILOT_RUNS_RETENTION_DAYS, type AutopilotResults, type AutopilotRunDetail, type AutopilotView, type Instrument, type Quote, type SubscriptionView } from "@hapiecoin/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { AUTOPILOT_MAX_MARK_AGE_MS, AUTOPILOT_NAME_SUFFIX, type AutopilotDeps, betterEntry, clockPlanFor, inWindow, liveDay, nextHourUtc, planFor, runAutopilot, SPOT_NEAR_MS, spotNear, skipText, structureKey } from "./autopilot.js";
 import { clearEodMemo } from "./chain-eod.js";
@@ -1420,5 +1420,26 @@ describe("HC-TR-246 the evening strangle that buys a cheap option back (ADR-123)
     expect((await t.request("/v1/strategies", { cookie: me.cookie })).status).toBe(200);
     expect((await t.request("/v1/autopilot", { cookie: me.cookie })).status).toBe(200);
     await t.db.update(strategies).set({ status: "archived" }).where(eq(strategies.id, second.id));
+  });
+});
+
+describe("HC-TR-249 the BTC Friday weekly closed at 90 % of the premium (ADR-125)", () => {
+  it("HC-TR-249 its plan is a target at 90 % of the premium collected beside the stop at triple, and nothing else; a target at that level, armed by hand here, closes the whole trade (the job's own arming of a take-profit share is HC-TR-227's)", async () => {
+    const pb = autopilotPlaybookById("weekly-fri-strangle-take-90")!;
+    const plan = clockPlanFor(pb, { day: "2027-05-14", spot: 83_200, expiry: "2027-05-21", legs: [], entryCost: -150, maxProfit: 150, maxLoss: -Infinity }, 0.001, null)!;
+    expect(plan).toMatchObject({ legStop: 3, takeTrailPct: null, ladder: null, lock: null, exitHourUtc: null, legBuyBackAt: null, legBuyBackShare: null, trailRestPct: null });
+    expect(plan.targetUsd).toBeCloseTo(135, 6);
+    // run by the engine as any target: a strangle of 100 lots a leg sold for 60 + 90 = 150 USD, a target at 135
+    const me = await t.signUp("autopilot-take90@hapiecoin.test");
+    const made = (await (await t.request("/v1/strategies", { cookie: me.cookie, json: { name: "Take 90", asset: "BTC", legs: [{ kind: "put", side: "sell", strike: "78000", expiry: "2027-05-21", symbol: "P-BTC-78000-210527", lots: 100, price: "600" }, { kind: "call", side: "sell", strike: "88000", expiry: "2027-05-21", symbol: "C-BTC-88000-210527", lots: 100, price: "900" }] } })).json()) as Strategy;
+    const started = (await (await t.request(`/v1/strategies/${made.id}/start`, { cookie: me.cookie, json: { mode: "paper", brokerId: SEED.brokerId, entries: Object.fromEntries(made.legs.map((l) => [l.id, l.price])) } })).json()) as Strategy;
+    expect(started.status).toBe("paper");
+    expect((await t.request(`/v1/strategies/${made.id}/rules`, { method: "PUT", cookie: me.cookie, json: { rules: [{ kind: "target", trigger: "money", value: toDecimal(plan.targetUsd!, 2) }] } })).status).toBe(200);
+    const tick = (putMark: number, callMark: number) => evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map([["P-BTC-78000-210527", putMark], ["C-BTC-88000-210527", callMark]]), spot: null }) }, () => Date.UTC(2027, 4, 18, 10));
+    // up 134 of 150 (89.3 %): held. Up 136 (90.7 %): everything closed, booked as a target
+    expect((await tick(70, 90)).fired).toHaveLength(0);
+    expect((await tick(60, 80)).fired).toHaveLength(1);
+    const [after] = await t.db.select().from(strategies).where(eq(strategies.id, made.id));
+    expect(after).toMatchObject({ status: "archived", closeReason: "target", realizedPnl: "136" });
   });
 });
