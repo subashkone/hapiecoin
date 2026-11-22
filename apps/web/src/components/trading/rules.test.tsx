@@ -666,6 +666,11 @@ describe("HC-TR-237 take profit in steps from the dialog (ADR-120)", () => {
     expect(rulesLine([rule(), ...taken.map((r) => ({ ...r, state: "fired" as const }))], USD_FMT)).toBe("stop at −$60.00");
     expect(ruleText(taken[1]!, USD_FMT)).toBe("profit step at 80 % of the open lots' premium, closing 38 % of them");
     expect(ruleText({ ...taken[1]!, closeShare: null }, USD_FMT)).toContain("closing 0 % of them");
+    // HC-TR-240: a profit lock reads as a floor to come, then as the exit it holds; its chip says it closed the trade
+    const lockRule = rule({ kind: "lock", trigger: "money", value: "37.44", thresholdUsd: "18.72" });
+    expect(ruleText(lockRule, USD_FMT)).toBe("profit lock: a floor at +$18.72 once the profit reaches +$37.44");
+    expect(ruleText({ ...lockRule, peakPnl: "38.1" }, USD_FMT)).toBe("profit locked: exits at +$18.72");
+    expect(firedLabel({ ...lockRule, state: "fired" }, USD_FMT)).toBe("profit lock closed it");
   }, 20000);
 
   it("HC-TR-237 a step the open lots have already reached is refused: it would fire on the next tick", async () => {
@@ -724,5 +729,23 @@ describe("HC-TR-237 take profit in steps from the dialog (ADR-120)", () => {
     await u.click(within(dlg).getByTestId("rule-ladder-on"));
     expect(within(dlg).getByTestId("rule-target").dataset["on"]).toBe("false");
     expect(within(dlg).getByTestId("rule-ladder-note").textContent).toContain("Arming steps removes the trailing target that is running now, with its best and its exit level.");
+  }, 20000);
+
+  it("HC-TR-240 a trade with Autopilot's profit lock: the dialog says the lock stays, an empty save is not offered, and arming another rule keeps the lock", async () => {
+    const u = userEvent.setup();
+    mine().push(strat(3, { legs: [SC, SP], rules: [rule({ id: "rule_lock", kind: "lock", trigger: "money", value: "105", thresholdUsd: "52.5" })] }));
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    await waitFor(() => expect(screen.getByTestId("card-rules").textContent).toBe("profit lock: a floor at +$52.50 once the profit reaches +$105.00"));
+    await u.click(screen.getByTestId("card-protect"));
+    const dlg = await screen.findByTestId("rule-dialog");
+    expect(within(dlg).getByTestId("rule-foot").textContent).toContain("Autopilot's profit lock on this trade stays as it is when you arm; Disarm removes it with the rest.");
+    // nothing ticked: there is nothing of the dialog's own to remove, so no "Remove rules"
+    expect(within(dlg).getByTestId<HTMLButtonElement>("rule-arm").disabled).toBe(true);
+    await u.click(within(dlg).getByTestId("rule-stop-on"));
+    fireEvent.change(within(dlg).getByTestId("rule-stop-value"), { target: { value: "5" } });
+    await u.click(within(dlg).getByTestId("rule-arm"));
+    await waitFor(() => expect(screen.queryByTestId("rule-dialog")).toBeNull());
+    expect(mine()[0]!.rules!.map((r) => r.kind).sort()).toEqual(["lock", "stop"]);
   }, 20000);
 });

@@ -40,6 +40,7 @@ import {
   openPremium,
   stepPremiumOk,
   STEP_MIN_NET_SHARE,
+  isLockArmed,
 } from "./strategies.js";
 
 const call = { kind: "call", side: "buy", strike: "80000", expiry: "2026-09-25", symbol: "C-BTC-80000-250926", lots: 10, price: "1200.5", iv: 0.52 } as const;
@@ -194,7 +195,7 @@ describe("HC-TR-165 stop and target rules (ADR-059 §2.3)", () => {
     expect(ruleLevel({ kind: "time", trigger: "at", value: "2026-09-12T11:30:00.000Z", basisUsd: undefined })).toBe(String(Date.UTC(2026, 8, 12, 11, 30)));
     expect(ruleLevel({ kind: "time", trigger: "dte", value: "1", basisUsd: undefined })).toBe("1");
     expect(ruleLevel({ kind: "stop", trigger: "money", value: "60", basisUsd: undefined })).toBe("-60");
-    expect(RULE_KINDS.map((k) => RULE_KIND_ORDER[k])).toEqual([0, 6, 1, 2, 3, 4, 5]); // the trail on the rest (ADR-104) is judged after the protective kinds, before the target
+    expect(RULE_KINDS.map((k) => RULE_KIND_ORDER[k])).toEqual([0, 7, 1, 2, 3, 4, 6, 5]); // the trail on the rest (ADR-104) is judged after the protective kinds, before the target
     expect(CLOSE_REASON_OF_KIND.time).toBe("squared_off");
     expect(CLOSE_REASON_OF_KIND.leg_stop).toBe("stopped");
   });
@@ -350,5 +351,21 @@ describe("HC-TR-236 profit steps (ADR-120)", () => {
     expect(RulesBody.safeParse({ rules: [step("25", "0.25"), { kind: "target", trigger: "money", value: "50" }] }).success).toBe(false);
     expect(RulesBody.safeParse({ rules: [step("25", "0.25"), { kind: "stop", trigger: "money", value: "50" }] }).success).toBe(true);
     expect([RULE_KIND_LABELS.step, RULE_TRIGGERS_OF.step, CLOSE_REASON_OF_KIND.step, RULE_KIND_ORDER.step < RULE_KIND_ORDER.target, LADDER_STEPS.max]).toEqual(["Profit step", ["pct"], "target", true, 4]);
+  });
+});
+
+describe("HC-TR-240 the profit lock (ADR-121)", () => {
+  it("HC-TR-240 a lock is judged after the protective kinds and before a step or a target, books the reason target, and is never armed through a body", () => {
+    expect(RULE_KIND_ORDER.trail < RULE_KIND_ORDER.lock && RULE_KIND_ORDER.lock < RULE_KIND_ORDER.step && RULE_KIND_ORDER.step < RULE_KIND_ORDER.target).toBe(true);
+    expect([RULE_KIND_LABELS.lock, RULE_TRIGGERS_OF.lock, CLOSE_REASON_OF_KIND.lock]).toEqual(["Profit lock", ["money"], "target"]);
+    const typed = RuleBody.safeParse({ kind: "lock", trigger: "money", value: "37.44" });
+    expect(typed.success).toBe(false);
+    expect(JSON.stringify(typed.error?.issues)).toContain("a profit lock is armed by Autopilot");
+    expect(ruleLevel({ kind: "lock", trigger: "money", value: "37.44", basisUsd: undefined })).toBe("37.44");
+    // armed once the level has been reached: the engine then writes the profit it saw
+    expect(isLockArmed({ kind: "lock", peakPnl: null })).toBe(false);
+    expect(isLockArmed({ kind: "lock" })).toBe(false);
+    expect(isLockArmed({ kind: "lock", peakPnl: "38.1" })).toBe(true);
+    expect(isLockArmed({ kind: "target", peakPnl: "38.1" })).toBe(false);
   });
 });

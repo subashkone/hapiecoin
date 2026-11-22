@@ -1116,7 +1116,8 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       const stored = r.trigger === "settle" ? String(Number(r.value)) : r.kind === "trail" && r.trigger === "money" ? toDecimal(Number(r.value), 2) : r.value;
       rows.push({ id: id("rule"), kind: r.kind, closeShare: r.kind === "step" ? (r.closeShare ?? null) : null, trigger: r.trigger, value: stored, basis: r.trigger === "pct" && r.kind !== "trail" ? (r.basis ?? null) : null, basisUsd: r.trigger === "pct" && r.kind !== "trail" ? (r.basisUsd ?? null) : null, thresholdUsd: level, legId: r.kind === "leg_stop" ? (r.legId ?? null) : null, scope: r.kind === "leg_stop" ? (r.scope ?? ("leg" as const)) : ("strategy" as const), trail: r.trail ? { trigger: r.trail.trigger, value: r.trail.trigger === "money" ? toDecimal(Number(r.trail.value), 2) : r.trail.value } : null, peakPnl: r.kind === "trail" ? (restTrail!.trigger === r.trigger && restTrail!.value === stored ? (restTrail!.peakPnl ?? null) : null) : r.kind === "target" && r.trail && was?.peakPnl && Number(was.peakPnl) >= Number(level) ? was.peakPnl : null, channels: r.channels, state: "armed" as const, firedAt: null, firedPnl: null, outcome: null, note: null, createdAt: at, updatedAt: at });
     }
-    s.rules = [...(s.rules ?? []).filter((r) => r.state === "fired"), ...rows];
+    // fired rules stay as history, and Autopilot's profit lock is not the dialog's to replace (ADR-121)
+    s.rules = [...(s.rules ?? []).filter((r) => r.state === "fired" || r.kind === "lock"), ...rows];
     return c.json(touch(s));
   });
   v1.delete("/strategies/:id/rules", (c) => {

@@ -5,7 +5,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Strategy } from "@hapiecoin/schema";
 import { and, eq, like } from "drizzle-orm";
-import { auditLog, brokerCredentials, strategies, strategyLegs, users } from "./db/schema.js";
+import { auditLog, brokerCredentials, strategies, strategyLegs, strategyRules, users } from "./db/schema.js";
 import { SEED } from "./db/seed.js";
 import { type RulesTickSource, evaluateRules, startRulesEngine } from "./rules-engine.js";
 import { createTestApp, type TestApp } from "./test-support/harness.js";
@@ -1000,5 +1000,83 @@ describe("HC-TR-236 take profit in steps (ADR-120)", () => {
     const refused = await arm(l.id, [STEPS[0]]);
     expect(refused.status).toBe(409);
     expect(JSON.stringify(await refused.json())).toContain("Profit steps are on paper trades only for now");
+  });
+});
+
+describe("HC-TR-240 the profit lock (ADR-121)", () => {
+  const SP = { kind: "put", side: "sell", strike: "78000", expiry: "2026-09-25", symbol: "P-BTC-78000-250926", lots: 100, price: "900" };
+  const SC = { kind: "call", side: "sell", strike: "82000", expiry: "2026-09-25", symbol: "C-BTC-82000-250926", lots: 100, price: "1100" };
+  const at = (put: number, call: number) => ticks({ "P-BTC-78000-250926": put, "C-BTC-82000-250926": call });
+  const lockOf = async (id: string) => (await get(id)).rules!.find((r) => r.kind === "lock")!;
+
+  it("HC-TR-240 nothing happens below the level; reaching it sets the floor and exits nothing; the trade closes when the profit is back at the floor, which never moves; the dialog's save leaves the lock alone and cannot type one", async () => {
+    t.now.value += 5 * 60_000;
+    await t.db.update(strategies).set({ status: "archived" }).where(like(strategies.name, "Rules %"));
+    // premium 200: locked at half of it, floor at a quarter (what Autopilot arms)
+    const s = await paper([SP, SC], "Rules lock");
+    await t.db.insert(strategyRules).values({ id: "rule_lock_1", strategyId: s.id, kind: "lock", trigger: "money", value: "100", thresholdUsd: "50", scope: "strategy", channels: ["push"], state: "armed" });
+    // the profit at 80, then down to 40: under the level the floor is not there yet
+    expect((await evaluateRules(t.deps, at(500, 700), () => T0)).fired).toHaveLength(0);
+    expect((await evaluateRules(t.deps, at(700, 900), () => T0)).fired).toHaveLength(0);
+    expect((await lockOf(s.id)).peakPnl ?? null).toBeNull();
+    // saving another rule from the dialog keeps the lock; a lock in the body is refused
+    expect((await arm(s.id, [{ kind: "stop", trigger: "money", value: "150" }])).status).toBe(200);
+    expect((await get(s.id)).rules!.map((r) => r.kind).sort()).toEqual(["lock", "stop"]);
+    expect((await arm(s.id, [{ kind: "lock", trigger: "money", value: "100" }])).status).toBe(400);
+    // 100 reached: locked, nothing exits; higher still, the floor stays where it is
+    expect((await evaluateRules(t.deps, at(400, 600), () => T0)).fired).toHaveLength(0);
+    expect(await lockOf(s.id)).toMatchObject({ state: "armed", peakPnl: "100", thresholdUsd: "50" });
+    expect((await evaluateRules(t.deps, at(200, 300), () => T0)).fired).toHaveLength(0);
+    expect(await lockOf(s.id)).toMatchObject({ peakPnl: "100", thresholdUsd: "50" });
+    // back to 60: above the floor; at 50 it closes everything with the reason target and disarms the stop
+    expect((await evaluateRules(t.deps, at(600, 800), () => T0)).fired).toHaveLength(0);
+    expect((await evaluateRules(t.deps, at(650, 850), () => T0)).fired).toEqual(["rule_lock_1"]);
+    const done = await get(s.id);
+    expect(done).toMatchObject({ status: "archived", closeReason: "target", realizedPnl: "50" });
+    expect(done.legs.every((l) => l.status === "squared_off" && l.closeReason === "target")).toBe(true);
+    const fired = done.rules!.find((r) => r.kind === "lock")!;
+    expect(fired.note).toContain("Profit lock fired at P&L 50 USD (locked when the profit reached 100 USD, floor 50 USD)");
+    expect(done.rules!.find((r) => r.kind === "stop")!.state).toBe("disarmed");
+  });
+
+  it("HC-TR-240 a stopped option's loss is in the profit the lock judges; a fall through the floor between two ticks closes below it; Disarm removes a lock with the rest", async () => {
+    t.now.value += 5 * 60_000;
+    await t.db.update(strategies).set({ status: "archived" }).where(like(strategies.name, "Rules %"));
+    const s = await paper([SP, SC], "Rules lock and a stop");
+    const call = s.legs.find((l) => l.kind === "call")!;
+    expect((await arm(s.id, [{ kind: "leg_stop", trigger: "multiple", value: "3", legId: call.id, scope: "leg" }])).status).toBe(200);
+    await t.db.insert(strategyRules).values({ id: "rule_lock_3", strategyId: s.id, kind: "lock", trigger: "money", value: "100", thresholdUsd: "50", scope: "strategy", channels: ["push"], state: "armed" });
+    // the call triples and is bought back at 3,300: 220 lost on it; the put is worth nothing more to lose
+    expect((await evaluateRules(t.deps, at(900, 3300), () => T0)).fired).toHaveLength(1);
+    expect((await get(s.id)).realizedPnl).toBe("-220");
+    // the put down to 10: 89 gained on it, the trade at -131 in all. The put alone is far past "half its premium", but the
+    // lock looks at the whole trade, the stopped call's loss included: not reached
+    expect((await evaluateRules(t.deps, at(10, 3300), () => T0)).fired).toHaveLength(0);
+    expect((await lockOf(s.id)).peakPnl ?? null).toBeNull();
+    await t.db.update(strategies).set({ status: "archived" }).where(eq(strategies.id, s.id));
+
+    // reached at 150, then a fall straight to 10 between two ticks: closed at 10, under the floor of 50
+    const g = await paper([SP, SC], "Rules lock gap");
+    await t.db.insert(strategyRules).values({ id: "rule_lock_4", strategyId: g.id, kind: "lock", trigger: "money", value: "100", thresholdUsd: "50", scope: "strategy", channels: ["push"], state: "armed" });
+    expect((await evaluateRules(t.deps, at(200, 300), () => T0)).fired).toHaveLength(0);
+    expect((await evaluateRules(t.deps, at(850, 1050), () => T0)).fired).toEqual(["rule_lock_4"]);
+    expect(await get(g.id)).toMatchObject({ status: "archived", closeReason: "target", realizedPnl: "10" });
+
+    // Disarm (DELETE rules) takes the lock with every other armed rule
+    const d = await paper([SP, SC], "Rules lock disarm");
+    await t.db.insert(strategyRules).values({ id: "rule_lock_5", strategyId: d.id, kind: "lock", trigger: "money", value: "100", thresholdUsd: "50", scope: "strategy", channels: ["push"], state: "armed" });
+    expect((await t.request(`/v1/strategies/${d.id}/rules`, { method: "DELETE", cookie: alice })).status).toBe(200);
+    expect(((await get(d.id)).rules ?? []).filter((r) => r.state === "armed")).toHaveLength(0);
+    await t.db.update(strategies).set({ status: "archived" }).where(eq(strategies.id, d.id));
+  });
+
+  it("HC-TR-240 a trade that never reaches the level is never closed by the lock, however far it falls", async () => {
+    t.now.value += 5 * 60_000;
+    const s = await paper([SP, SC], "Rules lock never");
+    await t.db.insert(strategyRules).values({ id: "rule_lock_2", strategyId: s.id, kind: "lock", trigger: "money", value: "100", thresholdUsd: "50", scope: "strategy", channels: ["push"], state: "armed" });
+    expect((await evaluateRules(t.deps, at(2000, 2500), () => T0)).fired).toHaveLength(0);
+    expect(await lockOf(s.id)).toMatchObject({ state: "armed" });
+    expect((await get(s.id)).status).toBe("paper");
+    await t.db.update(strategies).set({ status: "archived" }).where(eq(strategies.id, s.id));
   });
 });

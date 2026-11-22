@@ -41,14 +41,22 @@ const cadenceOfId = (playbookId: string | null | undefined): PlaybookCadence | n
   const p = AUTOPILOT_PLAYBOOKS.find((x) => x.id === playbookId);
   return p ? playbookCadence(p) : null;
 };
+/** A whole hour on the UTC clock as IST reads it: 20 is "1:30 AM". */
+export const istClock = (hourUtc: number): string => {
+  const m = (hourUtc * 60 + 330) % 1440;
+  const h = Math.floor(m / 60);
+  return `${h % 12 === 0 ? 12 : h % 12}:${String(m % 60).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+};
 /** How a strategy gets out, in a few words: the column a trader compares rows by. */
 const exitWords = (p: Playbook): string => {
   const c = p.clock;
   if (!c) return "Playbook stop and time exit";
   const parts = [c.legStop ? `Stop at ${c.legStop}x on each sold option` : "Wings cap the loss, held to expiry"];
-  if (c.takeProfitOfCredit) parts.push(`take ${Math.round(c.takeProfitOfCredit * 100)} % of the premium`);
+  if (c.takeProfitOfCredit) parts.push(c.takeTrailPct ? `trail from ${Math.round(c.takeProfitOfCredit * 100)} % of the premium` : `take ${Math.round(c.takeProfitOfCredit * 100)} % of the premium`);
   if (c.trailRestPct) parts.push("then trail the other side");
   if (c.ladder) parts.push(`profit in steps at ${c.ladder.join(" / ")} %`);
+  if (c.lock) parts.push(`a floor at ${Math.round(c.lock.floor * 100)} % of the premium once it is up ${Math.round(c.lock.at * 100)} %`);
+  if (c.exitHourUtc !== undefined) parts.push(`out at ${istClock(c.exitHourUtc)} IST`);
   return parts.join(", ");
 };
 // (the pressed look of the chain's own toggles: amber stays for the spot, the money row and the primary action)
@@ -235,7 +243,7 @@ export function AutopilotPage() {
                             <summary className="cursor-pointer text-muted-foreground hover:text-foreground">What it does</summary>
                             <p className="mt-1 text-muted-foreground">{p.summary}</p>
                             {p.clock ? (
-                              <p className="mt-1 text-muted-foreground" data-testid="autopilot-card-how">Entered {p.clock.describe}. {p.clock.takeProfitOfCredit ? `The whole trade is closed once it is up by ${Math.round(p.clock.takeProfitOfCredit * 100)} % of the premium collected. ` : ""}{p.clock.ladder ? `An equal part of the lots is closed each time the lots still open are up by ${p.clock.ladder.join(", ")} % of their premium, and the last part is held. ` : ""}{p.clock.legStop ? `Each sold option is bought back if its price reaches ${p.clock.legStop} times what it was sold for.` : "Held to settlement: the bought wings cap the loss."}{p.clock.trailRestPct ? ` After that, the profit on the other one is trailed and it is closed when it gives back ${p.clock.trailRestPct} % of its best.` : ""} Backtest only so far: {p.evidence.claim}</p>
+                              <p className="mt-1 text-muted-foreground" data-testid="autopilot-card-how">Entered {p.clock.describe}. {p.clock.takeProfitOfCredit ? (p.clock.takeTrailPct ? `Once the trade is up by ${Math.round(p.clock.takeProfitOfCredit * 100)} % of the premium collected it is not closed: it is trailed, and closed when the profit gives back ${p.clock.takeTrailPct} % of its best. ` : `The whole trade is closed once it is up by ${Math.round(p.clock.takeProfitOfCredit * 100)} % of the premium collected. `) : ""}{p.clock.lock ? `Once the trade is up by ${Math.round(p.clock.lock.at * 100)} % of the premium a floor is set at ${Math.round(p.clock.lock.floor * 100)} %: the whole trade is closed if the profit falls back there. ` : ""}{p.clock.exitHourUtc !== undefined ? `Everything is closed at ${istClock(p.clock.exitHourUtc)} IST, whatever the profit. ` : ""}{p.clock.ladder ? `An equal part of the lots is closed each time the lots still open are up by ${p.clock.ladder.join(", ")} % of their premium, and the last part is held. ` : ""}{p.clock.legStop ? `Each sold option is bought back if its price reaches ${p.clock.legStop} times what it was sold for.` : "Held to settlement: the bought wings cap the loss."}{p.clock.trailRestPct ? ` After that, the profit on the other one is trailed and it is closed when it gives back ${p.clock.trailRestPct} % of its best.` : ""} Backtest only so far: {p.evidence.claim}</p>
                             ) : (
                               <p className="mt-1 text-muted-foreground" data-testid="autopilot-card-how">Autopilot enters as above and keeps the stop and the time exit. It takes profit its own way, chosen below, so the record shown is the playbook's own exits, not Autopilot's.</p>
                             )}
