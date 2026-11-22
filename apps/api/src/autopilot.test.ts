@@ -965,6 +965,102 @@ describe("HC-TR-233 the monthly strangles: once per expiry, in their range of da
   });
 });
 
+describe("HC-TR-235 the evening strangles on ETH and XAUT", () => {
+  it("HC-TR-235 an ETH and a Gold playbook enter on their own coin only, at the listed strikes a percentage of its spot away, sized by its lot, with their exits", async () => {
+    const me = await t.signUp("autopilot-alts@hapiecoin.test");
+    const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
+    const ETH3 = "eth-evening-strangle-stop-3x";
+    const ETHW = "eth-evening-strangle-wings";
+    const GOLD = "xaut-evening-strangle-take-half";
+    await put({ enabled: true, strategies: [ETH3, ETHW, GOLD].map((playbookId) => ({ playbookId, exit: "own" })) }, me.cookie);
+    const mineNow = () => t.db.select().from(strategies).where(eq(strategies.userId, id));
+    const EVENING = Date.UTC(2026, 9, 9, 16, 5, 0); // 21:35 IST
+    /** Strikes every 10 on each coin; time value falling away from the money. BTC is listed too and must be left alone. */
+    const coins = { BTC: { spot: 83_200, centre: 83_200, step: 200, tv: 600, width: 900, size: "0.001" }, ETH: { spot: 2304, centre: 2300, step: 10, tv: 30, width: 40, size: "0.01" }, XAUT: { spot: 4203, centre: 4200, step: 10, tv: 12, width: 30, size: "0.001" } } as const;
+    const market = (ts: number): MarketSource => {
+      const products: Instrument[] = [];
+      const quotes: Record<string, Quote[]> = { BTC: [], ETH: [], XAUT: [] };
+      for (const [u, c] of Object.entries(coins))
+        for (const e of ["2026-10-10", "2026-10-11"])
+          for (let i = -30; i <= 30; i++) {
+            const k = c.centre + i * c.step;
+            const code = e.slice(8, 10) + e.slice(5, 7) + e.slice(2, 4);
+            const tv = c.tv * Math.exp(-Math.abs(k - c.spot) / c.width);
+            for (const [kind, letter, intrinsic] of [["call", "C", Math.max(c.spot - k, 0)], ["put", "P", Math.max(k - c.spot, 0)]] as const) {
+              const symbol = `${letter}-${u}-${k}-${code}`;
+              products.push({ ...inst(symbol, kind, k, e), underlying: u as "BTC" | "ETH" | "XAUT", contractSize: c.size });
+              quotes[u]!.push({ instrumentId: `delta_india:${symbol}`, ts, mark: (intrinsic + tv).toFixed(2), oi: "1", spot: String(c.spot), markIv: 0.5 });
+            }
+          }
+      return { venue: "delta_india", products: () => Promise.resolve(products), tickers: (u) => Promise.resolve(quotes[u] ?? []) };
+    };
+    await snapshotOnce(t.deps, market(EVENING - MIN), () => EVENING - MIN);
+    await runAutopilot(deps(EVENING, { maxOpen: undefined }), ["delta_india"]);
+
+    const all = await mineNow();
+    expect(all.map((x) => `${x.autopilotPlaybookId} ${x.asset}`).sort()).toEqual([`${ETH3} ETH`, `${ETHW} ETH`, `${GOLD} XAUT`].sort());
+    const legsOf = (sid: string) => t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, sid)).orderBy(asc(strategyLegs.position));
+    const of = (pb: string) => all.find((x) => x.autopilotPlaybookId === pb)!;
+    // ETH at 2,304: 1 % is 23.04, so 2,280.96 and 2,327.04, nearest listed 2,280 and 2,330
+    expect(of(ETH3).name).toBe("ETH evening strangle, stop at triple · Autopilot");
+    expect((await legsOf(of(ETH3).id)).map((l) => `${l.side} ${l.kind} ${l.strike} ${l.expiry} x${l.lots}`)).toEqual(["sell put 2280 2026-10-10 x100", "sell call 2330 2026-10-10 x100"]);
+    expect((await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, of(ETH3).id))).map((r) => [r.kind, r.value, r.scope])).toEqual([["leg_stop", "3", "leg"], ["leg_stop", "3", "leg"]]);
+    // 1.5 % and 3.75 %: 2,270 and 2,340 sold, 2,220 and 2,390 bought; bounded, so no rule
+    expect((await legsOf(of(ETHW).id)).map((l) => `${l.side} ${l.kind} ${l.strike}`)).toEqual(["buy put 2220", "sell put 2270", "sell call 2340", "buy call 2390"]);
+    expect(await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, of(ETHW).id))).toHaveLength(0);
+    // Gold at 4,203: 1 % is 42.03, so 4,160.97 and 4,245.03, nearest listed 4,160 and 4,250; a stop on each and the take
+    expect(of(GOLD).name).toBe("Gold evening strangle, take half · Autopilot");
+    expect((await legsOf(of(GOLD).id)).map((l) => `${l.side} ${l.kind} ${l.strike} x${l.lots}`)).toEqual(["sell put 4160 x100", "sell call 4250 x100"]);
+    expect((await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, of(GOLD).id))).map((r) => r.kind).sort()).toEqual(["leg_stop", "leg_stop", "target"]);
+    // what was written is what the screens can read
+    const list = await t.request("/v1/strategies", { cookie: me.cookie });
+    expect(list.status).toBe(200);
+  });
+
+  it("HC-TR-235 Gold has no Sunday expiry: on a Saturday evening the playbook waits and says so, on the Sunday evening it enters for Monday; today's expiry, settled minutes before, is never taken", async () => {
+    const me = await t.signUp("autopilot-gold-weekend@hapiecoin.test");
+    const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
+    const GOLD = "xaut-evening-strangle-stop-2x";
+    await put({ enabled: true, strategies: [{ playbookId: GOLD, exit: "own" }] }, me.cookie);
+    const mineNow = () => t.db.select().from(strategies).where(eq(strategies.userId, id));
+    const gold = (ts: number, expiries: readonly string[]): MarketSource => {
+      const products: Instrument[] = [];
+      const quotes: Quote[] = [];
+      for (const e of expiries)
+        for (let i = -30; i <= 30; i++) {
+          const k = 4200 + i * 10;
+          const code = e.slice(8, 10) + e.slice(5, 7) + e.slice(2, 4);
+          const tv = 12 * Math.exp(-Math.abs(k - 4203) / 30);
+          for (const [kind, letter, intrinsic] of [["call", "C", Math.max(4203 - k, 0)], ["put", "P", Math.max(k - 4203, 0)]] as const) {
+            const symbol = `${letter}-XAUT-${k}-${code}`;
+            products.push({ ...inst(symbol, kind, k, e), underlying: "XAUT" });
+            quotes.push({ instrumentId: `delta_india:${symbol}`, ts, mark: (intrinsic + tv).toFixed(2), oi: "1", spot: "4203", markIv: 0.5 });
+          }
+        }
+      return { venue: "delta_india", products: () => Promise.resolve(products), tickers: (u) => Promise.resolve(u === "XAUT" ? quotes : []) };
+    };
+    const pass = async (at: number, expiries: readonly string[]) => {
+      await snapshotOnce(t.deps, gold(at - MIN, expiries), () => at - MIN);
+      return runAutopilot(deps(at, { maxOpen: undefined }), ["delta_india"]);
+    };
+    const SATURDAY = Date.UTC(2026, 9, 17, 16, 5, 0); // Saturday 17 October 2026, 21:35 IST: today's expiry settled five minutes ago
+
+    await pass(SATURDAY, ["2026-10-17", "2026-10-19", "2026-10-20"]);
+    expect(await mineNow()).toHaveLength(0);
+    const said = (await view(me.cookie)).runs.find((r) => r.playbookId === GOLD && r.asset === "XAUT")!;
+    expect(said).toMatchObject({ kind: "skipped", reason: "The next expiry has no prices yet" });
+
+    await pass(SATURDAY + DAY, ["2026-10-19", "2026-10-20"]);
+    const [trade] = await mineNow();
+    expect(trade).toMatchObject({ autopilotPlaybookId: GOLD, asset: "XAUT", status: "paper" });
+    expect((await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade!.id))).map((l) => l.expiry)).toEqual(["2026-10-19", "2026-10-19"]);
+
+    // Monday evening with Monday's expiry still listed and the trade still open: held, never a second one, never today's
+    await pass(SATURDAY + 2 * DAY, ["2026-10-19", "2026-10-20", "2026-10-21"]);
+    expect(await mineNow()).toHaveLength(1);
+  });
+});
+
 describe("HC-TR-234 what Autopilot writes can be read back", () => {
   it("HC-TR-234 every playbook's strategy name fits a strategy name, whole; a longer playbook name would be cut, never refused", () => {
     for (const p of AUTOPILOT_PLAYBOOKS) expect(`${p.name}${AUTOPILOT_NAME_SUFFIX}`.length, p.id).toBeLessThanOrEqual(MAX_STRATEGY_NAME);

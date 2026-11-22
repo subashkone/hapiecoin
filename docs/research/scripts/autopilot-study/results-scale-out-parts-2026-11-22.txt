@@ -1,0 +1,59 @@
+## BTC daily, 25 lots a part
+expiries in the cache: 106 (2026-08-08 .. 2026-11-21); 100 lots x 0.00025 per leg; net of fees; naked sold strangle
+
+==================================================================================================================================
+entered 20 hours before settlement
+
+  sold 1 % away: mean premium collected    9.1, sold on average  1.0 % away
+      hold                 n=106 mean=   +1.83 win= 80% worst=   -84.5 total=   +194 | first half     +89, second half    +105
+      stop2x               n=106 mean=   +1.89 win= 49% worst=   -10.0 total=   +201 | first half     +85, second half    +116
+      stop3x               n=106 mean=   +2.94 win= 65% worst=   -26.5 total=   +311 | first half    +169, second half    +143
+      stop2x+half          n=106 mean=   +1.68 win= 63% worst=   -10.0 total=   +178 | first half     +73, second half    +105
+      stop3x+half          n=106 mean=   +2.26 win= 80% worst=   -17.3 total=   +239 | first half    +142, second half     +97
+      stop2x+trail         n=106 mean=   +1.76 win= 49% worst=    -9.6 total=   +187 | first half     +91, second half     +96
+      stop2x+take25        n=106 mean=   +1.07 win= 80% worst=    -9.3 total=   +114 | first half     +42, second half     +72
+      stop2x+take75        n=106 mean=   +1.91 win= 54% worst=   -10.0 total=   +202 | first half     +69, second half    +133
+      stop2x+scale-out     n=106 mean=   +1.64 win= 60% worst=    -9.3 total=   +174 | first half     +67, second half    +106
+      stop3x+take25        n=106 mean=   +1.08 win= 88% worst=   -12.6 total=   +115 | first half     +65, second half     +49
+      stop3x+take75        n=106 mean=   +2.60 win= 71% worst=   -26.5 total=   +276 | first half    +133, second half    +142
+      stop3x+scale-out     n=106 mean=   +2.22 win= 72% worst=   -12.6 total=   +235 | first half    +127, second half    +108
+
+## ETH daily, 25 lots a part
+expiries in the cache: 106 (2026-08-08 .. 2026-11-21); 100 lots x 0.0025 per leg; net of fees; naked sold strangle
+
+==================================================================================================================================
+entered 20 hours before settlement
+
+  sold 1 % away: mean premium collected    5.3, sold on average  1.0 % away
+      hold                 n=106 mean=   +1.67 win= 81% worst=   -34.5 total=   +177 | first half     +91, second half     +86
+      stop2x               n=106 mean=   +0.71 win= 49% worst=   -12.4 total=    +75 | first half     +31, second half     +44
+      stop3x               n=106 mean=   +1.12 win= 61% worst=   -12.4 total=   +118 | first half     +60, second half     +58
+      stop2x+half          n=106 mean=   +0.55 win= 61% worst=    -9.8 total=    +58 | first half     +29, second half     +29
+      stop3x+half          n=106 mean=   +0.78 win= 75% worst=   -11.1 total=    +82 | first half     +40, second half     +42
+      stop2x+trail         n=106 mean=   +0.70 win= 49% worst=   -12.4 total=    +74 | first half     +38, second half     +36
+      stop2x+take25        n=106 mean=   +0.30 win= 74% worst=    -8.3 total=    +32 | first half     +10, second half     +22
+      stop2x+take75        n=106 mean=   +0.63 win= 53% worst=   -12.4 total=    +67 | first half     +27, second half     +40
+      stop2x+scale-out     n=106 mean=   +0.55 win= 59% worst=    -8.3 total=    +58 | first half     +24, second half     +34
+      stop3x+take25        n=106 mean=   +0.36 win= 87% worst=   -11.1 total=    +38 | first half      +4, second half     +34
+      stop3x+take75        n=106 mean=   +0.90 win= 66% worst=   -12.4 total=    +95 | first half     +46, second half     +49
+      stop3x+scale-out     n=106 mean=   +0.79 win= 65% worst=   -11.1 total=    +83 | first half     +37, second half     +46
+
+## BTC weekly, Friday entry, 25 lots a part
+expiries in the cache: 51 (2025-12-05 .. 2026-11-20); 100 lots x 0.00025 per leg; net of fees; naked sold strangle
+
+==================================================================================================================================
+entered 164 hours before settlement
+
+  sold 3 % away: mean premium collected   37.3, sold on average  3.0 % away
+      hold                 n= 51 mean=   +1.90 win= 75% worst=  -305.0 total=    +97 | first half    +381, second half    -284
+      stop2x               n= 51 mean=   +7.08 win= 43% worst=   -66.9 total=   +361 | first half    +193, second half    +168
+      stop3x               n= 51 mean=  +10.16 win= 57% worst=   -42.1 total=   +518 | first half    +381, second half    +137
+      stop2x+half          n= 51 mean=   +3.63 win= 51% worst=   -66.9 total=   +185 | first half     +67, second half    +118
+      stop3x+half          n= 51 mean=   +7.15 win= 73% worst=   -42.1 total=   +365 | first half    +178, second half    +186
+      stop2x+trail         n= 51 mean=   +5.88 win= 41% worst=   -57.4 total=   +300 | first half    +150, second half    +150
+      stop2x+take25        n= 51 mean=   +2.92 win= 73% worst=   -66.9 total=   +149 | first half     +37, second half    +112
+      stop2x+take75        n= 51 mean=   +6.12 win= 45% worst=   -66.9 total=   +312 | first half    +147, second half    +165
+      stop2x+scale-out     n= 51 mean=   +4.94 win= 49% worst=   -66.9 total=   +252 | first half    +111, second half    +141
+      stop3x+take25        n= 51 mean=   +5.04 win= 90% worst=   -42.1 total=   +257 | first half    +108, second half    +149
+      stop3x+take75        n= 51 mean=  +10.90 win= 65% worst=   -42.1 total=   +556 | first half    +337, second half    +218
+      stop3x+scale-out     n= 51 mean=   +8.31 win= 65% worst=   -42.1 total=   +424 | first half    +251, second half    +173

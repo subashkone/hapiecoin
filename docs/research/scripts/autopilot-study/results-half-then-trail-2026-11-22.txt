@@ -1,0 +1,81 @@
+## BTC daily
+expiries in the cache: 106 (2026-08-08 .. 2026-11-21); 100 lots x 0.001 per leg; net of fees; naked sold strangle
+
+==================================================================================================================================
+entered 20 hours before settlement
+
+  each side priced near 100: mean premium collected   20.3, sold on average  1.6 % away
+      hold                 n=106 mean=   +1.61 win= 82% worst=  -307.6 total=   +171 | first half     +44, second half    +127
+      stop2x               n=106 mean=   +2.83 win= 43% worst=   -35.1 total=   +300 | first half    +119, second half    +181
+      stop3x               n=106 mean=   +4.53 win= 65% worst=   -77.8 total=   +480 | first half    +273, second half    +207
+      stop2x+half          n=106 mean=   +2.86 win= 64% worst=   -31.5 total=   +303 | first half    +129, second half    +175
+      stop3x+half          n=106 mean=   +4.25 win= 84% worst=   -55.0 total=   +451 | first half    +296, second half    +155
+      stop2x+trail         n=106 mean=   +2.65 win= 42% worst=   -35.1 total=   +281 | first half    +135, second half    +146
+      stop2x+half>trail10  n=106 mean=   +2.97 win= 64% worst=   -31.5 total=   +315 | first half    +156, second half    +158
+      stop2x+half>trail20  n=106 mean=   +2.95 win= 64% worst=   -31.5 total=   +313 | first half    +118, second half    +194
+      stop2x+half>trail30  n=106 mean=   +2.94 win= 64% worst=   -31.5 total=   +312 | first half    +113, second half    +198
+      stop2x+half>trail50  n=106 mean=   +3.07 win= 62% worst=   -31.5 total=   +325 | first half    +143, second half    +182
+      stop3x+half>trail10  n=106 mean=   +4.45 win= 84% worst=   -55.0 total=   +472 | first half    +320, second half    +153
+      stop3x+half>trail20  n=106 mean=   +4.62 win= 84% worst=   -55.0 total=   +490 | first half    +290, second half    +200
+      stop3x+half>trail30  n=106 mean=   +4.54 win= 84% worst=   -55.0 total=   +481 | first half    +278, second half    +203
+      stop3x+half>trail50  n=106 mean=   +4.73 win= 81% worst=   -55.0 total=   +501 | first half    +300, second half    +201
+
+  sold 1 % away: mean premium collected   36.5, sold on average  1.0 % away
+      hold                 n=106 mean=   +7.33 win= 80% worst=  -338.2 total=   +777 | first half    +356, second half    +421
+      stop2x               n=106 mean=   +7.58 win= 49% worst=   -39.8 total=   +803 | first half    +340, second half    +463
+      stop3x               n=106 mean=  +11.75 win= 65% worst=  -105.8 total=  +1246 | first half    +675, second half    +571
+      stop2x+half          n=106 mean=   +6.72 win= 63% worst=   -39.8 total=   +712 | first half    +291, second half    +421
+      stop3x+half          n=106 mean=   +9.02 win= 80% worst=   -69.2 total=   +956 | first half    +568, second half    +388
+      stop2x+trail         n=106 mean=   +7.06 win= 49% worst=   -38.2 total=   +748 | first half    +366, second half    +382
+      stop2x+half>trail10  n=106 mean=   +7.19 win= 63% worst=   -39.8 total=   +763 | first half    +342, second half    +420
+      stop2x+half>trail20  n=106 mean=   +8.12 win= 63% worst=   -39.8 total=   +861 | first half    +371, second half    +490
+      stop2x+half>trail30  n=106 mean=   +7.71 win= 62% worst=   -39.8 total=   +818 | first half    +344, second half    +474
+      stop2x+half>trail50  n=106 mean=   +7.69 win= 58% worst=   -39.8 total=   +815 | first half    +319, second half    +496
+      stop3x+half>trail10  n=106 mean=  +10.01 win= 80% worst=   -69.2 total=  +1061 | first half    +647, second half    +414
+      stop3x+half>trail20  n=106 mean=  +11.30 win= 79% worst=   -69.2 total=  +1198 | first half    +685, second half    +513
+      stop3x+half>trail30  n=106 mean=  +11.22 win= 77% worst=   -69.2 total=  +1189 | first half    +653, second half    +536
+      stop3x+half>trail50  n=106 mean=  +11.85 win= 74% worst=   -69.2 total=  +1256 | first half    +672, second half    +584
+
+## ETH daily
+expiries in the cache: 106 (2026-08-08 .. 2026-11-21); 100 lots x 0.01 per leg; net of fees; naked sold strangle
+
+==================================================================================================================================
+entered 20 hours before settlement
+
+  sold 1 % away: mean premium collected   21.0, sold on average  1.0 % away
+      hold                 n=106 mean=   +6.67 win= 81% worst=  -137.9 total=   +707 | first half    +362, second half    +345
+      stop2x               n=106 mean=   +2.83 win= 49% worst=   -49.6 total=   +300 | first half    +125, second half    +175
+      stop3x               n=106 mean=   +4.46 win= 61% worst=   -49.6 total=   +473 | first half    +239, second half    +234
+      stop2x+half          n=106 mean=   +2.20 win= 61% worst=   -39.3 total=   +234 | first half    +117, second half    +116
+      stop3x+half          n=106 mean=   +3.10 win= 75% worst=   -44.6 total=   +329 | first half    +160, second half    +169
+      stop2x+trail         n=106 mean=   +2.79 win= 49% worst=   -49.6 total=   +295 | first half    +151, second half    +144
+      stop2x+half>trail10  n=106 mean=   +2.60 win= 61% worst=   -39.3 total=   +275 | first half    +155, second half    +121
+      stop2x+half>trail20  n=106 mean=   +2.63 win= 61% worst=   -39.3 total=   +279 | first half    +141, second half    +138
+      stop2x+half>trail30  n=106 mean=   +2.39 win= 60% worst=   -39.3 total=   +253 | first half    +136, second half    +117
+      stop2x+half>trail50  n=106 mean=   +1.85 win= 58% worst=   -50.2 total=   +196 | first half     +58, second half    +138
+      stop3x+half>trail10  n=106 mean=   +3.59 win= 75% worst=   -44.6 total=   +380 | first half    +210, second half    +170
+      stop3x+half>trail20  n=106 mean=   +3.65 win= 75% worst=   -44.6 total=   +387 | first half    +194, second half    +192
+      stop3x+half>trail30  n=106 mean=   +3.29 win= 73% worst=   -44.6 total=   +348 | first half    +189, second half    +160
+      stop3x+half>trail50  n=106 mean=   +3.32 win= 69% worst=   -50.2 total=   +352 | first half    +145, second half    +206
+
+## BTC weekly, Friday entry
+expiries in the cache: 51 (2025-12-05 .. 2026-11-20); 100 lots x 0.001 per leg; net of fees; naked sold strangle
+
+==================================================================================================================================
+entered 164 hours before settlement
+
+  sold 3 % away: mean premium collected  149.0, sold on average  3.0 % away
+      hold                 n= 51 mean=   +7.61 win= 75% worst= -1219.9 total=   +388 | first half   +1524, second half   -1136
+      stop2x               n= 51 mean=  +28.33 win= 43% worst=  -267.5 total=  +1445 | first half    +773, second half    +672
+      stop3x               n= 51 mean=  +40.65 win= 57% worst=  -168.3 total=  +2073 | first half   +1525, second half    +548
+      stop2x+half          n= 51 mean=  +14.52 win= 51% worst=  -267.5 total=   +741 | first half    +269, second half    +472
+      stop3x+half          n= 51 mean=  +28.59 win= 73% worst=  -168.3 total=  +1458 | first half    +712, second half    +746
+      stop2x+trail         n= 51 mean=  +23.52 win= 41% worst=  -229.6 total=  +1199 | first half    +598, second half    +601
+      stop2x+half>trail10  n= 51 mean=  +12.18 win= 51% worst=  -267.5 total=   +621 | first half    +247, second half    +375
+      stop2x+half>trail20  n= 51 mean=  +16.94 win= 51% worst=  -267.5 total=   +864 | first half    +467, second half    +397
+      stop2x+half>trail30  n= 51 mean=  +15.95 win= 51% worst=  -267.5 total=   +813 | first half    +442, second half    +372
+      stop2x+half>trail50  n= 51 mean=  +21.12 win= 51% worst=  -267.5 total=  +1077 | first half    +624, second half    +453
+      stop3x+half>trail10  n= 51 mean=  +25.33 win= 73% worst=  -168.3 total=  +1292 | first half    +681, second half    +611
+      stop3x+half>trail20  n= 51 mean=  +29.89 win= 73% worst=  -168.3 total=  +1524 | first half    +886, second half    +638
+      stop3x+half>trail30  n= 51 mean=  +27.62 win= 73% worst=  -168.3 total=  +1408 | first half    +839, second half    +569
+      stop3x+half>trail50  n= 51 mean=  +36.13 win= 71% worst=  -168.3 total=  +1843 | first half   +1202, second half    +641

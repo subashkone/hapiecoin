@@ -317,12 +317,12 @@ export const CLOCK_PLAYBOOKS: readonly Playbook[] = [
 const WEEKLY_STUDY = "docs/research/scripts/autopilot-study/results-weekly-2026-11-22.txt (51 BTC Friday expiries, 5 Dec 2025 to 20 Nov 2026, hourly marks, the exchange's real fees, 100 lots)";
 const WEEKLY_TRIALS = { count: 147, note: "3 naked strangles (3, 5 and 7 % away) at 7 entry days and 6 exits and 3 winged ones at 7 entry days, on the same 51 weeks, and the monthly cycle looked at and left out; the Friday entries were chosen for their results and the Tuesday ones are run although they were about flat, as a check of the backtest; in-sample, the paper record is the test" };
 /** Sell the call and the put `sold` per cent of the spot away; with `wing`, buy the options that far away to cap the loss. */
-function strangleAway(name: string, sold: number, wing: number | null): StrategyTemplate {
+function strangleAway(name: string, sold: number, wing: number | null, expiry = "weekly"): StrategyTemplate {
   const legs = [{ ...P_SELL, k: 0, pct: -sold }, { ...C_SELL, k: 0, pct: sold }];
   return {
     name,
     category: "Neutral",
-    description: wing === null ? `Sell a call and a put ${sold} % out of the money on the weekly expiry.` : `Sell a call and a put ${sold} % out of the money on the weekly expiry and buy the options ${wing} % out to cap the loss.`,
+    description: wing === null ? `Sell a call and a put ${sold} % out of the money on the ${expiry} expiry.` : `Sell a call and a put ${sold} % out of the money on the ${expiry} expiry and buy the options ${wing} % out to cap the loss.`,
     legs: wing === null ? legs : [{ ...P_BUY, k: 0, pct: -wing }, ...legs, { ...C_BUY, k: 0, pct: wing }],
     risk: wing === null ? "undefined" : "defined",
   };
@@ -480,8 +480,112 @@ export const MONTHLY_PLAYBOOKS: readonly Playbook[] = [
   ),
 ];
 
+// ---- ADR-119: the same strangles on ETH and XAUT, each from that coin's own backtest ------------------------------
+
+const ALT_DAILY_STUDY = "docs/research/scripts/autopilot-study/results-daily-ETH-2026-11-22.txt and results-daily-XAUT-2026-11-22.txt (study_premium.py; ETH: 106 daily expiries, entered 21:30 IST for the 17:30 IST settlement; XAUT: the 91 expiries of the same days (none on a Sunday), which settle at 21:30 IST, entered the hour after the previous one; 8 Aug to 21 Nov 2026, 5-minute marks, the exchange's real fees, 100 lots)";
+const ALT_DAILY_TRIALS = { count: 2532, note: "ETH: 9 strangles (4 by premium, 5 by distance) at 3 entry hours, and XAUT: 8 (3 by premium, 5 by distance) at 23 entry hours, each naked and with wings under 6 exits, on the same 106 days; the distances and exits were chosen after seeing the results, so the figures are in-sample and the paper record is the test" };
+type AltExit = { asset: "ETH" | "XAUT"; key: string; name: string; sold: number; wing: number | null; exit: string; why: string; rule: string; figures: string; legStop?: number; take?: number; trail?: number };
+const ALT_COIN = { ETH: "ETH", XAUT: "Gold" } as const;
+const ALT_DAILY: readonly AltExit[] = [
+  { asset: "ETH", key: "wings", name: "with wings", sold: 1.5, wing: 3.75, exit: "buy the options 3.75 % away as wings, and hold to settlement", why: "The bounded version: the wings cap the loss, so it needs no stop. Its worst day was under half that of the same strikes held with no wings (-135).", rule: "wings 3.75 % away, held to settlement", figures: "+4.22 a day on 105 days, 83 % of days positive, worst day -59" },
+  { asset: "ETH", key: "stop-2x", name: "stop at double", sold: 1, wing: null, exit: "buy either one back if its price doubles, and hold the other to settlement", why: "The usual way a sold strangle is run. On ETH the stop at double was hit by ordinary swings on about half the days.", rule: "each option stopped at twice its price", figures: "+2.83 a day on 106 days, 49 % of days positive, worst day -50", legStop: 2 },
+  { asset: "ETH", key: "stop-3x", name: "stop at triple", sold: 1, wing: null, exit: "buy either one back if its price triples, and hold the other to settlement", why: "The best ETH daily result with a stop: more room than the stop at double for the same worst day. Held with no stop the same trade averaged +6.67 with a worst day of -138.", rule: "each option stopped at three times its price", figures: "+4.46 a day on 106 days, 61 % of days positive, worst day -50", legStop: 3 },
+  { asset: "ETH", key: "take-half", name: "take half", sold: 1, wing: null, exit: "close the whole trade once it is up by half the premium, and buy either option back if its price triples", why: "The quick-profit version. On ETH the take did better behind the stop at triple than behind the stop at double (+2.20), so that is the one run.", rule: "each option stopped at three times its price, the whole trade closed at half the premium", figures: "+3.10 a day on 106 days, 75 % of days positive, worst day -45", legStop: 3, take: 0.5 },
+  { asset: "ETH", key: "trail-rest", name: "trail the rest", sold: 1, wing: null, exit: "buy either one back if its price doubles, then trail the profit on the other and close it when it gives back half of its best", why: "After a stop the other side is trailed instead of kept. On ETH it made almost no difference to the stop at double it is otherwise identical to.", rule: "each option stopped at twice its price, the other side then trailed by half", figures: "+2.79 a day on 106 days, 49 % of days positive, worst day -50", legStop: 2, trail: 50 },
+  { asset: "ETH", key: "wings-take-half", name: "wide, wings, take half", sold: 2, wing: 5, exit: "buy the options 5 % away as wings; close the whole trade at half the premium, and buy a sold option back if its price triples", why: "The steadiest ETH daily result: far strikes, wings, a stop and the quick profit. It earns less each day and had the smallest worst day of the six ETH daily versions here, by a wide margin.", rule: "wings 5 % away, each sold option stopped at three times its price, the whole trade closed at half the premium", figures: "+2.88 a day on 103 days, 90 % of days positive, worst day -16", legStop: 3, take: 0.5 },
+  // Gold settles at 16:00 UTC (21:30 IST), so the evening window is the hour after one expiry settles: a full day before the next
+  { asset: "XAUT", key: "stop-2x", name: "stop at double", sold: 1, wing: null, exit: "buy either one back if its price doubles, and hold the other to settlement", why: "Gold's edge is thin: of the 23 entry hours tried, the hour after the previous expiry earned the most, the two hours after it less, and the rest of the day lost. The amounts are small because 100 lots is a tenth of an ounce. With wings it earned about half as much, on the 77 days the wings had a price, so there is no winged version.", rule: "each option stopped at twice its price", figures: "+0.19 a day on 91 days, 48 % of days positive, worst day -2.1", legStop: 2 },
+  { asset: "XAUT", key: "stop-3x", name: "stop at triple", sold: 1, wing: null, exit: "buy either one back if its price triples, and hold the other to settlement", why: "The looser stop earned less on Gold than the stop at double, unlike on BTC and ETH: on paper beside it to see whether that holds.", rule: "each option stopped at three times its price", figures: "+0.11 a day on 91 days, 49 % of days positive, worst day -3.1", legStop: 3 },
+  { asset: "XAUT", key: "take-half", name: "take half", sold: 1, wing: null, exit: "close the whole trade once it is up by half the premium, and buy either option back if its price doubles", why: "The steadiest Gold version: the same average as the stop alone with more winning days and the smallest worst day, positive in both halves of the period.", rule: "each option stopped at twice its price, the whole trade closed at half the premium", figures: "+0.19 a day on 91 days, 67 % of days positive, worst day -1.4", legStop: 2, take: 0.5 },
+  { asset: "XAUT", key: "trail-rest", name: "trail the rest", sold: 1, wing: null, exit: "buy either one back if its price doubles, then trail the profit on the other and close it when it gives back half of its best", why: "After a stop the other side is trailed instead of kept: a little less than keeping it, for the same worst day.", rule: "each option stopped at twice its price, the other side then trailed by half", figures: "+0.16 a day on 91 days, 45 % of days positive, worst day -2.1", legStop: 2, trail: 50 },
+];
+const altDailyPlaybook = (x: AltExit): Playbook => ({
+  id: `${x.asset.toLowerCase()}-evening-strangle-${x.key}`,
+  name: `${ALT_COIN[x.asset]} evening strangle, ${x.name}`,
+  summary: `Each evening sell a ${ALT_COIN[x.asset]} call and put ${x.sold} % away on the next expiry; ${x.exit}.`,
+  rationale: x.why,
+  evidence: { claim: `${x.asset}, sold ${x.sold} % away, entered 21:30 IST${x.asset === "XAUT" ? ", a day before its settlement" : ""}, ${x.rule}: ${x.figures}.`, source: ALT_DAILY_STUDY },
+  template: strangleAway(`${ALT_COIN[x.asset]} evening strangle${x.wing === null ? "" : " with wings"} (${x.sold} %)`, x.sold, x.wing, "next"),
+  minDte: 0.5,
+  lots: 100,
+  assets: [x.asset],
+  thresholds: NO_RECORD,
+  trials: ALT_DAILY_TRIALS,
+  control: false,
+  clock: { ...EVENING, legStop: x.legStop, takeProfitOfCredit: x.take, trailRestPct: x.trail },
+});
+/** The evening strangles on ETH and XAUT (ADR-119): strikes a percentage of the spot away, since a count of listed strikes means a different distance on each coin. */
+export const ALT_DAILY_PLAYBOOKS: readonly Playbook[] = ALT_DAILY.map(altDailyPlaybook);
+const ALT_WEEKLY_STUDY = "docs/research/scripts/autopilot-study/results-weekly-ETH-2026-11-22.txt (study_premium.py; 51 ETH Friday expiries, 5 Dec 2025 to 20 Nov 2026, hourly marks, the exchange's real fees, 100 lots); XAUT weekly was studied too (results-weekly-XAUT-2026-11-22.txt) and has no playbook: its options had a price in 16 or 17 of the 51 weeks and none a full week ahead, and what there was came out flat or negative";
+const ALT_WEEKLY_TRIALS = { count: 360, note: "ETH: 5 distances (3 to 8 % away) on two entry days, naked and with wings, under 6 exits, on the same 51 weeks (120); XAUT: 5 distances on four entry days the same way (240, of which 162 had prices); the distance and the exits were chosen after seeing the results, so the figures are in-sample and the paper record is the test" };
+type AltWeekly = { d: keyof typeof WEEKLY_DAYS; key: string; name: string; sold: number; wing: number | null; exit: string; why: string; rule: string; figures: string; legStop?: number; take?: number };
+const ALT_WEEKLY: readonly AltWeekly[] = [
+  { d: "fri", key: "wings", name: "with wings", sold: 4, wing: 9.3, exit: "buy the options 9.3 % away as wings, and hold to settlement", why: "The bounded version. On ETH the wings had a price in 44 of the 51 weeks, and it earned less than half of the stopped one with a larger worst week: on paper as the comparison.", rule: "wings 9.3 % away, held to settlement", figures: "+6.32 a week on 44 weeks, 73 % of weeks positive, worst week -191" },
+  { d: "fri", key: "stop-2x", name: "stop at double", sold: 4, wing: null, exit: "buy either one back if its price doubles, and hold the other to settlement", why: "On ETH a week is long enough for the stop at double to be hit by ordinary swings: it earned a seventh of the stop at triple. On paper as a check of that.", rule: "each option stopped at twice its price", figures: "+2.00 a week on 51 weeks, 49 % of weeks positive, worst week -106", legStop: 2 },
+  { d: "fri", key: "stop-3x", name: "stop at triple", sold: 4, wing: null, exit: "buy either one back if its price triples, and hold the other to settlement", why: "The best ETH weekly result: positive in both halves of the year. Held with no stop the same trade averaged +11.74 with a worst week of -582.", rule: "each option stopped at three times its price", figures: "+14.43 a week on 51 weeks, 57 % of weeks positive, worst week -83", legStop: 3 },
+  { d: "fri", key: "take-half", name: "take half", sold: 4, wing: null, exit: "close the whole trade once it is up by half the premium, and buy either option back if its price triples", why: "About the same average as the stop alone with far more winning weeks and a smaller worst one, positive in both halves of the year: the steadiest ETH weekly version.", rule: "each option stopped at three times its price, the whole trade closed at half the premium", figures: "+14.08 a week on 51 weeks, 75 % of weeks positive, worst week -72", legStop: 3, take: 0.5 },
+  { d: "tue", key: "stop-3x", name: "stop at triple", sold: 3, wing: null, exit: "buy either one back if its price triples, and hold the other to settlement", why: "The same trade entered three days before expiry, closer to the price. Unlike on BTC the Tuesday entry earned on ETH, in both halves of the year; the other Tuesday versions were weak.", rule: "each option stopped at three times its price", figures: "+9.03 a week on 51 weeks, 57 % of weeks positive, worst week -82", legStop: 3 },
+];
+const altWeeklyPlaybook = (x: AltWeekly): Playbook => {
+  const when = WEEKLY_DAYS[x.d];
+  return {
+    id: `eth-weekly-${x.d}-strangle-${x.key}`,
+    name: `ETH ${when.day} weekly strangle, ${x.name}`,
+    summary: `Each ${when.day} evening sell an ETH call and put ${x.sold} % away on the ${x.d === "fri" ? "next" : "coming"} Friday expiry; ${x.exit}.`,
+    rationale: x.why,
+    evidence: { claim: `ETH, sold ${x.sold} % away, entered ${when.day} 21:30 IST for the Friday expiry, ${x.rule}: ${x.figures}.`, source: ALT_WEEKLY_STUDY },
+    template: strangleAway(`ETH ${when.day} weekly strangle${x.wing === null ? "" : " with wings"} (${x.sold} %)`, x.sold, x.wing),
+    minDte: when.minDte,
+    lots: 100,
+    assets: ["ETH"],
+    thresholds: NO_RECORD,
+    trials: ALT_WEEKLY_TRIALS,
+    control: false,
+    clock: { fromHourUtc: 16, toHourUtc: 17, weekdayUtc: when.weekdayUtc, window: `${when.day}s, 9:30 to 10:30 PM IST`, describe: when.describe, maxDte: when.maxDte, venues: ["delta_india"], legStop: x.legStop, takeProfitOfCredit: x.take },
+  };
+};
+/** The weekly strangles on ETH (ADR-119). There is none on XAUT: see the study's note. */
+export const ALT_WEEKLY_PLAYBOOKS: readonly Playbook[] = ALT_WEEKLY.map(altWeeklyPlaybook);
+const ALT_MONTHLY_STUDY = "docs/research/scripts/autopilot-study/results-monthly-ETH-2026-11-22.txt (study_monthly.py; the 11 ETH month-end expiries of 2026, hourly marks, the exchange's real fees, 100 lots)";
+const ALT_MONTHLY_TRIALS = { count: 384, note: "8 ETH shapes (3 by premium, 5 by distance from 8 to 20 % away), naked and with wings, in four entry ranges under 6 exits, on the same 11 expiries (336 of the 384 had prices); a figure is the mean over every entry day of its range (they overlap) while Autopilot takes the first evening only; the winged figures rest on far-wing marks that are model prices; chosen after seeing the results, so in-sample, and the paper record is the test" };
+const ALT_MONTHLY_RANGES = {
+  near: { minDte: 30, maxDte: 44, words: "A month before", days: "30 to 44", label: "1 month out" },
+  far: { minDte: 60, maxDte: 75, words: "Two months before", days: "60 to 75", label: "2 months out" },
+} as const;
+type AltMonthly = { range: keyof typeof ALT_MONTHLY_RANGES; sold: number; wing: number | null; key: string; name: string; exit: string; why: string; rule: string; figures: string; legStop: number; take?: number };
+const ALT_MONTHLY: readonly AltMonthly[] = [
+  { range: "far", sold: 16, wing: 24, key: "wings-stop-3x", name: "wings, stop at triple", exit: "buy the options 24 % away as wings; buy a sold option back if its price triples and keep everything else to settlement", why: "ETH moves further in a month than BTC, so the strikes sit further out. As on BTC, wings with a stop was the strongest monthly shape: a kept wing pays when the month keeps trending. Held with no stop the same trade lost.", rule: "wings 24 % away, each sold option stopped at three times its price, the wings kept", figures: "+88.30 a trade on 157 entries over 11 expiries, 10 of them positive, 83 % positive, worst entry -250", legStop: 3 },
+  { range: "far", sold: 16, wing: 24, key: "wings-take-half", name: "wings, stop at triple, take half", exit: "buy the options 24 % away as wings; close the whole trade at half the premium, and buy a sold option back if its price triples", why: "The same with the quick profit: far less on average and almost every entry a winner, positive in all eleven expiries.", rule: "wings 24 % away, each sold option stopped at three times its price, the whole trade closed at half the premium", figures: "+33.60 a trade on 157 entries over 11 expiries, 11 of them positive, 98 % positive, worst entry -250", legStop: 3, take: 0.5 },
+  { range: "near", sold: 12, wing: null, key: "stop-2x", name: "stop at double", exit: "buy either one back if its price doubles, and hold the other to settlement", why: "The nearer month with the stop alone. Held with no stop the same trade averaged -96 with a worst entry of -767.", rule: "each option stopped at twice its price", figures: "+34.30 a trade on 165 entries over 11 expiries, 9 of them positive, 59 % positive, worst entry -84", legStop: 2 },
+  { range: "near", sold: 12, wing: null, key: "take-half", name: "take half", exit: "close the whole trade once it is up by half the premium, and buy either option back if its price doubles", why: "The steadiest naked ETH monthly shape: about the same average as the stop alone, more winning entries, the smallest worst entry, positive in ten of eleven expiries.", rule: "each option stopped at twice its price, the whole trade closed at half the premium", figures: "+32.10 a trade on 165 entries over 11 expiries, 10 of them positive, 72 % positive, worst entry -69", legStop: 2, take: 0.5 },
+  { range: "near", sold: 12, wing: 18, key: "wings-stop-3x", name: "wings, stop at triple", exit: "buy the options 18 % away as wings; buy a sold option back if its price triples and keep everything else to settlement", why: "The winged shape on the nearer month: the highest average of the ETH monthly set, positive in eight of eleven expiries, on wing prices that are model marks.", rule: "wings 18 % away, each sold option stopped at three times its price, the wings kept", figures: "+102.30 a trade on 165 entries over 11 expiries, 8 of them positive, 79 % positive, worst entry -184", legStop: 3 },
+];
+const altMonthlyPlaybook = (x: AltMonthly): Playbook => {
+  const r = ALT_MONTHLY_RANGES[x.range];
+  return {
+    id: `eth-monthly-strangle-${x.sold}pct-${x.range}-${x.key}`,
+    // short: a strategy opened from it is named "<name> · Autopilot", and a strategy name holds 80 characters (GAPS #153)
+    name: `ETH monthly ${x.sold} %, ${r.label}, ${x.name}`,
+    summary: `${r.words} a month-end expiry sell an ETH call and put ${x.sold} % away; ${x.exit}.`,
+    rationale: x.why,
+    evidence: { claim: `ETH, sold ${x.sold} % away, entered ${r.days} days before expiry, ${x.rule}: ${x.figures}.`, source: ALT_MONTHLY_STUDY },
+    template: x.wing === null ? strangleBy(`ETH monthly strangle (${x.sold} % away)`, { pct: x.sold }) : strangleAway(`ETH monthly strangle with wings (${x.sold} % / ${x.wing} %)`, x.sold, x.wing, "month-end"),
+    minDte: r.minDte,
+    lots: 100,
+    assets: ["ETH"],
+    thresholds: NO_RECORD,
+    trials: ALT_MONTHLY_TRIALS,
+    control: false,
+    clock: { ...HOURS, cadence: "monthly", oncePerExpiry: true, window: "any evening, 9:30 to 10:30 PM IST", describe: `on the first evening a month-end expiry is ${r.days} days out, once per expiry`, maxDte: r.maxDte, legStop: x.legStop, takeProfitOfCredit: x.take },
+  };
+};
+/** The monthly strangles on ETH (ADR-119). */
+export const ALT_MONTHLY_PLAYBOOKS: readonly Playbook[] = ALT_MONTHLY.map(altMonthlyPlaybook);
+/** Every clock playbook of the other coins, in the order the screen lists them: daily, weekly, monthly. */
+export const ALT_PLAYBOOKS: readonly Playbook[] = [...ALT_DAILY_PLAYBOOKS, ...ALT_WEEKLY_PLAYBOOKS, ...ALT_MONTHLY_PLAYBOOKS];
+
 /** Every playbook Autopilot may trade: the recorded ones (never the control) and the ones entered by the clock. */
-export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc === undefined), ...WEEKLY_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc !== undefined), ...MONTHLY_PLAYBOOKS];
+export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc === undefined), ...ALT_DAILY_PLAYBOOKS, ...WEEKLY_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc !== undefined), ...ALT_WEEKLY_PLAYBOOKS, ...MONTHLY_PLAYBOOKS, ...ALT_MONTHLY_PLAYBOOKS];
 export function autopilotPlaybookById(id: string): Playbook | undefined {
   return AUTOPILOT_PLAYBOOKS.find((p) => p.id === id);
 }
@@ -546,6 +650,26 @@ const BACKTESTS: Record<string, PlaybookBacktest> = {
   "monthly-strangle-12pct-near-wings-stop-3x": mo(209.1, 92, -266, 165, 11),
   "monthly-strangle-12pct-near-wings-take-half": mo(33.6, 94, -266, 165, 9),
   "monthly-strangle-8pct-near-wings-take-half": mo(54.8, 98, -428, 165, 11),
+  "eth-evening-strangle-wings": bt(4.22, "day", 83, -59, 105),
+  "eth-evening-strangle-stop-2x": bt(2.83, "day", 49, -50, 106),
+  "eth-evening-strangle-stop-3x": bt(4.46, "day", 61, -50, 106),
+  "eth-evening-strangle-take-half": bt(3.1, "day", 75, -45, 106),
+  "eth-evening-strangle-trail-rest": bt(2.79, "day", 49, -50, 106),
+  "eth-evening-strangle-wings-take-half": bt(2.88, "day", 90, -16, 103),
+  "xaut-evening-strangle-stop-2x": bt(0.19, "day", 48, -2.1, 91),
+  "xaut-evening-strangle-stop-3x": bt(0.11, "day", 49, -3.1, 91),
+  "xaut-evening-strangle-take-half": bt(0.19, "day", 67, -1.4, 91),
+  "xaut-evening-strangle-trail-rest": bt(0.16, "day", 45, -2.1, 91),
+  "eth-weekly-fri-strangle-wings": bt(6.32, "week", 73, -191, 44),
+  "eth-weekly-fri-strangle-stop-2x": bt(2.0, "week", 49, -106, 51),
+  "eth-weekly-fri-strangle-stop-3x": bt(14.43, "week", 57, -83, 51),
+  "eth-weekly-fri-strangle-take-half": bt(14.08, "week", 75, -72, 51),
+  "eth-weekly-tue-strangle-stop-3x": bt(9.03, "week", 57, -82, 51),
+  "eth-monthly-strangle-16pct-far-wings-stop-3x": mo(88.3, 83, -250, 157, 10),
+  "eth-monthly-strangle-16pct-far-wings-take-half": mo(33.6, 98, -250, 157, 11),
+  "eth-monthly-strangle-12pct-near-stop-2x": mo(34.3, 59, -84, 165, 9),
+  "eth-monthly-strangle-12pct-near-take-half": mo(32.1, 72, -69, 165, 10),
+  "eth-monthly-strangle-12pct-near-wings-stop-3x": mo(102.3, 79, -184, 165, 8),
 };
 /** The backtest figures of a playbook entered by the clock; undefined for a recorded playbook (its record is live data). */
 export function playbookBacktest(id: string): PlaybookBacktest | undefined {

@@ -19,6 +19,17 @@ FEE_RATE, FEE_CAP, GST = 0.0001, 0.035, 0.18
 H = dt.timedelta(hours=1)
 Q = LOTS * LOT
 
+def settle_hour():
+    """16 for a cache of XAUT (its options settle at 16:00 UTC, 21:30 IST), 12 for BTC and ETH."""
+    for e in os.listdir(CACHE):
+        d = os.path.join(CACHE, e)
+        if os.path.isdir(d) and any(f.startswith("MARK_XAUTUSD") for f in os.listdir(d)):
+            return 16
+    return 12
+
+
+SETTLE_H = settle_hour()
+
 
 def fee(spot, price):
     return min(FEE_RATE * spot * Q, FEE_CAP * price * Q) * (1 + GST)
@@ -105,12 +116,12 @@ exps = sorted(e for e in os.listdir(CACHE) if os.path.isdir(os.path.join(CACHE, 
 for exp in exps:
     spot, opts = load(exp)
     y, m, d = map(int, exp.split("-"))
-    settle = dt.datetime(y, m, d, 12, tzinfo=U)
+    settle = dt.datetime(y, m, d, SETTLE_H, tzinfo=U)
     last_b = settle - H
     if last_b not in spot:
         continue
     for days in range(75, 13, -1):
-        t0 = settle - dt.timedelta(days=days) + dt.timedelta(hours=3)  # the bar that closes at 16:00 UTC
+        t0 = settle.replace(hour=15) - dt.timedelta(days=days)  # the bar that closes at 16:00 UTC
         if t0 not in spot:
             continue
         bucket = next(b[2] for b in BUCKETS if b[0] <= days <= b[1])

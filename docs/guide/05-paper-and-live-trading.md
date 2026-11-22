@@ -1,6 +1,6 @@
 # Paper trading, live trading, rules and accounts
 
-Part of the [HapieCoin feature guide](README.md). 122 traced features on 35 screens; 122 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 123 traced features on 35 screens; 123 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -61,6 +61,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-232 | The Autopilot screen lists its strategies as rows and is narrowed by expiry and by coin | a bar with the expiry families and the coins narrows the strategies, the running trades, the log and the results together while the summary stays everything; a strategy is one row with its switch, when it enters, how it gets out, its backtest in figures, its paper result so far and what it is doing now per coin, with the full description under What it does; the results follow the selection without the days-to-expiry table; the header tabs scroll inside the header on a phone | built | unit (web) |
 | HC-TR-233 | Autopilot sells strangles by premium, and enters three monthly strangles once per expiry with a stop and a take at half the premium | a template leg may name a premium: the listed out-of-the-money strike priced nearest it; an evening strangle at 100 a side and a Friday weekly one at 200 a side, each stopped at three times and closed at half the premium; ten monthly strangles on month-end expiries only (1,000 a side and 8 % away 60 to 75 days out; one month out, 12 % away under every exit of the other sets, with wings held, and with wings and a stop, and 8 % away with wings, a stop and the take), entered on the first evening the expiry is in range and never again for that expiry; no expiry in range and an expiry already traded are logged reasons; the screen lists them under Monthly | built | integration (api) |
 | HC-TR-234 | The Autopilot settings hold every playbook the catalogue offers | the settings accept up to AUTOPILOT_MAX_STRATEGIES (500) playbooks, each at most once; the limit was 32 and the 33rd playbook switched on made the saved settings unreadable by the screen | built | unit (schema) |
+| HC-TR-235 | Autopilot strangles on ETH and XAUT, each from that coin's own backtest | twenty playbooks that trade one coin each: six ETH and four XAUT evening strangles, five ETH weekly (four entered on a Friday, one on a Tuesday) and five ETH monthly ones on month-end expiries; strikes are the listed ones a percentage of that coin's spot away and the size is that coin's lot; Autopilot looks at XAUT as well as BTC and ETH; XAUT settles at 16:00 UTC, so its evening entry is the hour after one expiry for the next, with no entry on a Saturday evening; XAUT has no weekly or monthly playbook; the screen lists the rows under the coin filter | built | integration (api) |
 
 ### Trading · Protect dialog / cards · Details · `/desk`
 

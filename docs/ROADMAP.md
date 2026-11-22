@@ -1,4 +1,4 @@
-# HapieCoin roadmap (kept current; last edit 13 Sep 2026 · feature freeze at main 933dcdc, ADR-090: open items live in docs/BACKLOG.md; go-live status in docs/GO-LIVE-READINESS.md)
+# HapieCoin roadmap (kept current; last edit 22 Nov 2026 (section H added) · feature freeze at main 933dcdc, ADR-090: open items live in docs/BACKLOG.md; go-live status in docs/GO-LIVE-READINESS.md)
 
 Order agreed with the user. One PR per line unless grouped. Status: ⬜ not started · 🔨 in progress · ✅ merged · ⏸ backlog (not scheduled).
 
@@ -46,6 +46,22 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 ## G. After launch (research done, not scheduled; ADR-090)
 30. 🔨 AI-1 only (the radar): detect-and-propose playbook cards, one tap into paper · UNFROZEN 9 Nov 2026 (ADR-098, owner: the user) as PR 4 of the playbooks programme; the other AI phases stay in the backlog · docs/research/ai-leverage.md
 31. 🔨 Strategy playbooks · UNFROZEN 9 Nov 2026 (ADR-098, owner: the user), four PRs in order: (1) chain history from Delta's candles, a year back (feat/chain-history, HC-SH-140, migration 0024, GAPS #132) · (2a) backtest rules: real fee rule (GAPS #129 narrowed), entry conditions, exit rules, the Rules row (feat/backtest-rules, ADR-099, HC-TR-200..202, HC-WS-117, GAPS #133) · (2b) walk-forward periods + bounded sweep with plateau reading and trial count (feat/backtest-evidence, ADR-100, HC-TR-203/204, HC-WS-118, GAPS #134) · (3) playbook records: seven research-named playbooks as data with a stored record, status and the Playbooks tab, hero-or-zero as the control (feat/playbooks, ADR-101, HC-TR-205/206, HC-WS-119, GAPS #135, migration 0025) · (4) proposals: every playbook says whether it would enter on the latest recorded chain, one tap into the Builder as paper, Telegram opt-in with a daily cap, never auto-place (feat/proposals, ADR-102, HC-TR-207..209, HC-WS-120, HC-SH-141, GAPS #139, migration 0026) · research: docs/research/proven-strategies-crypto.md (verdicts), strategy-playbooks.md (the original eight)
+
+## H. Autopilot (paper only; ADR-108 onward; evidence in docs/research/autopilot-daily-study.md and docs/research/scripts/autopilot-study/)
+The server enters paper trades by itself from playbooks, with their exits armed. An Autopilot trade can never go live, be deleted or be parked as a draft. A strategy is added only after a backtest with the exchange's real fees, and every figure on its card is in-sample: the paper record is the test.
+32. ✅ Engine: entry after each five-minute snapshot, one trade per strategy and coin, cool-down, run log (PR #128, ADR-108, migration 0028)
+33. ✅ Screen: master switch, Stop everything, strategies, running trades, log (PR #129, ADR-109)
+34. ✅ Results by strategy, coin, exit style and days to expiry; several strikes tried, then switched off by the backtest (PR #130, ADR-110, ADR-111, migration 0029)
+35. ✅ Evening strangles by the clock on the daily BTC expiry, 9:30 PM IST: wings, stop at double, stop at triple (PR #131, ADR-112); take half and trail the rest (PR #132, ADR-113, ADR-114)
+36. ✅ Weekly strangles, Friday and Tuesday entries for the Friday expiry (PR #132, ADR-115)
+37. ✅ Screen by expiry and coin; strikes by premium; ten monthly strangles on month-end expiries (PR #133, ADR-116 to ADR-118)
+38. ✅ Fix: the screens could not read what Autopilot wrote (PR #134, GAPS #153, HC-TR-234)
+39. ✅ ETH and XAUT, each from that coin's own backtest and on its own clock (ADR-119, HC-TR-235, GAPS #154): ETH daily, weekly and monthly, XAUT daily; XAUT weekly and monthly did not hold up or have too little history, so none
+39a. 🔨 Strategy lab: a second thread that only researches and proposes (docs/research/STRATEGY-LAB.md); approved ideas are built here as new paper strategies
+40. ⏸ Budget and position sizing for Autopilot · deferred by the owner (21 Nov 2026)
+41. ⏸ Telegram messages for Autopilot entries and exits · deferred by the owner (21 Nov 2026)
+42. ⏸ Not yet tested: calendar spreads, strikes by expected move, skipping announcement days, a trend filter on the sold side, timed exits
+43. ⏸ Any live step: Autopilot would trade through its own sub-account, after the paper record confirms a strategy; not started
 
 ## Done this week
 - ✅ Trade lifecycle item 1 (PR #47, ADR-059)

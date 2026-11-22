@@ -10,6 +10,8 @@ CACHE, FIRST, LAST = sys.argv[1], dt.date.fromisoformat(sys.argv[2]), dt.date.fr
 B = "https://api.india.delta.exchange/v2/history/candles"
 U = dt.timezone.utc
 ASSET = sys.argv[4] if len(sys.argv) > 4 else "BTC"
+# XAUT options settle at 16:00 UTC (21:30 IST); BTC and ETH at 12:00 UTC (17:30 IST)
+SETTLE_H = 16 if ASSET == "XAUT" else 12
 STEP = int(sys.argv[5]) if len(sys.argv) > 5 else 500
 MIN_GAP = 0.26  # seconds between requests (under 4 a second)
 last_call = [0.0]
@@ -49,7 +51,7 @@ while exp.weekday() != 4:  # Friday
 while exp <= LAST:
     monthly = (exp + dt.timedelta(days=7)).month != exp.month
     days, widen = (35, 0.2) if monthly else (14, 0.1)
-    end = dt.datetime(exp.year, exp.month, exp.day, 12, tzinfo=U)
+    end = dt.datetime(exp.year, exp.month, exp.day, SETTLE_H, tzinfo=U)
     start = end - dt.timedelta(days=days)
     spot = load(exp, f"MARK:{ASSET}USD", start, end)
     if not spot:
