@@ -45,7 +45,7 @@ import {
   toDecimal,
 } from "@hapiecoin/schema";
 import { DEFAULT_VENUE, defaultLotSizes, getVenue } from "@hapiecoin/venues";
-import { and, asc, desc, eq, like, lt, max, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, like, lt, lte, max, ne, sql } from "drizzle-orm";
 import { writeAudit } from "./audit.js";
 import { dayOf, eodDaysCached } from "./chain-eod.js";
 import type { Db } from "./db/client.js";
@@ -93,9 +93,23 @@ const SKIP_TEXT: Record<ProposalSkip, string> = {
   noSignal: "Its entry conditions are not met",
   noExpiry: "No listed expiry is far enough out for this playbook",
   noFit: "The structure does not fit the listed strikes, or a leg has no price",
+  noMove: "No spot price from 24 hours ago to judge the move on",
 };
 export const skipText = (reason: ProposalSkip): string => SKIP_TEXT[reason];
 const errorText = (e: unknown): string => (e instanceof Error ? `${e.message}${e.cause instanceof Error ? `: ${e.cause.message}` : ""}` : String(e));
+
+/** ADR-122: a stored spot counts as "the spot then" within this long of the instant asked for. */
+export const SPOT_NEAR_MS = 30 * 60_000;
+/** The stored spot nearest an instant (ADR-122: the spot 24 hours before an entry); null when no snapshot is within `SPOT_NEAR_MS` of it. */
+export async function spotNear(db: Db, venue: Venue, asset: Underlying, atMs: number): Promise<number | null> {
+  const rows = await db.select({ ts: ivSnapshots.ts, spot: ivSnapshots.spot }).from(ivSnapshots).where(and(eq(ivSnapshots.venue, venue), eq(ivSnapshots.asset, asset), gte(ivSnapshots.ts, new Date(atMs - SPOT_NEAR_MS)), lte(ivSnapshots.ts, new Date(atMs + SPOT_NEAR_MS)))).orderBy(asc(ivSnapshots.ts), asc(ivSnapshots.id));
+  let best: { gap: number; spot: number } | null = null;
+  for (const r of rows) {
+    const gap = Math.abs(r.ts.getTime() - atMs);
+    if (Number(r.spot) > 0 && (!best || gap < best.gap)) best = { gap, spot: Number(r.spot) };
+  }
+  return best ? best.spot : null;
+}
 
 /**
  * The newest snapshot of a venue and underlying as a recorded "day": every option mark of that pass folded into
@@ -220,6 +234,7 @@ function detailOf(proposal: PlaybookProposal, plan: AutopilotPlan | null, nowMs:
     maxLoss: money(proposal.maxLoss),
     capital: money(Math.abs(proposal.maxLoss)),
     legs: proposal.legs.map((l) => ({ side: l.side, kind: l.kind, strike: l.strike, price: l.price })),
+    ...(proposal.move ? { move: { pct: toDecimal(proposal.move.movePct, 2), side: proposal.move.side } } : {}),
     ...(plan ? { fees: toDecimal(plan.fees, 2), ...(plan.targetUsd === null ? {} : { targetUsd: toDecimal(plan.targetUsd, 2) }), stopUsd: plan.stopUsd === null ? null : toDecimal(plan.stopUsd, 2), ...(plan.legStop === null ? {} : { legStop: plan.legStop }), ...(plan.trailRestPct === null ? {} : { trailRestPct: plan.trailRestPct }), ...(plan.ladder === null ? {} : { ladder: [...plan.ladder] }), ...(plan.lock === null ? {} : { lock: { at: toDecimal(plan.lock.atUsd, 2), floor: toDecimal(plan.lock.floorUsd, 2) } }), ...(plan.takeTrailPct === null ? {} : { takeTrailPct: plan.takeTrailPct }), ...(plan.exitHourUtc === null ? {} : { exitAt: new Date(nextHourUtc(nowMs, plan.exitHourUtc)).toISOString() }) } : {}),
     ...(exit ? { exit } : {}),
   };
@@ -316,12 +331,14 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
         const calendar = calendarFor(adapter.calendar.settlementHourUtc(asset));
         for (const p of AUTOPILOT_PLAYBOOKS) {
           if (!p.assets.includes(asset) || (p.clock && !p.clock.venues.includes(venue))) continue;
+          // ADR-122: the spot of the look-back before this snapshot, read only while the entry window is open
+          const spotBefore = live && p.clock?.moveSide && inWindow(p.clock, nowMs) ? await spotNear(deps.db, venue, asset, live.ts - p.clock.moveSide.hours * 3_600_000) : null;
           // the structure for one lot size is the same for every trader on it
           const priced = new Map<number, { result: ProposalResult; plan: AutopilotPlan | null }>();
           const pricedFor = (unitsPerLot: number) => {
             let hit = priced.get(unitsPerLot);
             if (!hit) {
-              const result = proposalFor(p, days, { unitsPerLot, calendar });
+              const result = proposalFor(p, days, { unitsPerLot, calendar, spotBefore });
               priced.set(unitsPerLot, (hit = { result, plan: result.ok ? (p.clock ? clockPlanFor : planFor)(p, result.proposal, unitsPerLot, adapter.feeRule) : null }));
             }
             return hit;

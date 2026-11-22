@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type BacktestFold, type BacktestStats, type BacktestTrade, type EodDay, type EodRow, runBacktest } from "./backtest.js";
 import { calendarFor, daysToExpiryOf } from "./calendar.js";
-import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
+import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS, MOVE_DAILY_PLAYBOOKS, sideAfterMove, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
 import { materialiseTemplate } from "./templates.js";
 
 const cal = calendarFor(12);
@@ -218,7 +218,7 @@ describe("HC-TR-229 the weekly strangles", () => {
     expect(WEEKLY_PLAYBOOKS.map((p) => [p.clock!.legStop, p.clock!.takeProfitOfCredit, p.clock!.trailRestPct]).slice(0, 5)).toEqual([[undefined, undefined, undefined], [2, undefined, undefined], [3, undefined, undefined], [2, 0.5, undefined], [2, undefined, 50]]);
     expect(CLOCK_PLAYBOOKS.every((p) => p.clock!.weekdayUtc === undefined && p.clock!.describe === "once an evening, 9:30 to 10:30 PM IST, on the next expiry")).toBe(true);
     expect(new Set(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).size).toBe(AUTOPILOT_PLAYBOOKS.length);
-    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length + LAB_DAILY_PLAYBOOKS.length + LAB_WEEKLY_PLAYBOOKS.length);
+    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length + LAB_DAILY_PLAYBOOKS.length + LAB_WEEKLY_PLAYBOOKS.length + MOVE_DAILY_PLAYBOOKS.length);
   });
 
   it("HC-TR-229 the strikes are the listed ones nearest 3 % (wings 7 %) of the spot away, on the Friday expiry a week out from a Friday and three days out from a Tuesday", () => {
@@ -593,5 +593,72 @@ describe("HC-TR-241 the lab's ideas as strategies of their own (ADR-121)", () =>
     if (!r.ok) throw new Error(r.reason);
     expect(r.proposal.expiry).toBe("2026-10-09");
     expect(r.proposal.legs.map((l) => `${l.side} ${l.kind} ${l.strike} x${l.lots}`)).toEqual(["sell put 83000 x100", "sell call 83400 x100"]);
+  });
+});
+
+describe("HC-TR-242 one side after a move (ADR-122)", () => {
+  const byId = (id: string) => autopilotPlaybookById(id)!;
+
+  it("HC-TR-242 the side behind the move: up by more than the threshold the put, down by more than it the call, otherwise both", () => {
+    expect(sideAfterMove(101.5, 100, 1).side).toBe("put");
+    expect(sideAfterMove(98.5, 100, 1).side).toBe("call");
+    expect(sideAfterMove(100.4, 100, 1).side).toBe("both");
+    // just inside the threshold is not "more than" it
+    expect(sideAfterMove(100.99, 100, 1).side).toBe("both");
+    expect(sideAfterMove(99.01, 100, 1).side).toBe("both");
+    expect(sideAfterMove(84_500, 83_200, 1).movePct).toBeCloseTo(1.5625, 4);
+  });
+
+  it("HC-TR-242 two daily playbooks, BTC and ETH: 24 hours, 1 %, strikes 1 % away, a stop at triple on each sold option and nothing else", () => {
+    expect(MOVE_DAILY_PLAYBOOKS.map((p) => `${p.id} ${p.assets.join()}`)).toEqual(["evening-strangle-one-side BTC", "eth-evening-strangle-one-side ETH"]);
+    for (const p of MOVE_DAILY_PLAYBOOKS) {
+      expect(p).toMatchObject({ lots: 100, control: false, minDte: 0.5 });
+      expect(p.clock).toMatchObject({ fromHourUtc: 16, toHourUtc: 17, legStop: 3, moveSide: { hours: 24, pct: 1 }, venues: ["delta_india"] });
+      expect([p.clock!.takeProfitOfCredit, p.clock!.ladder, p.clock!.lock, p.clock!.exitHourUtc]).toEqual([undefined, undefined, undefined, undefined]);
+      expect(playbookCadence(p)).toBe("daily");
+      expect(p.name.length, p.id).toBeLessThanOrEqual(68);
+      expect(p.trials.count).toBe(72);
+      expect(p.trials.note).toContain("in-sample");
+      expect(p.evidence.source).toContain("results-trend-2026-11-22.txt");
+      expect(p.rationale).toContain("both sides always");
+      expect(playbookTemplate(p)!.legs.map((l) => ("pct" in l ? l.pct : null))).toEqual([-1, 1]);
+    }
+    expect(AUTOPILOT_PLAYBOOKS.filter((p) => p.clock?.moveSide).map((p) => p.id)).toEqual(["evening-strangle-one-side", "eth-evening-strangle-one-side"]);
+    expect(byId("evening-strangle-one-side").evidence.claim).toContain("+10.73 a day on 105 days, 72 % of days positive, worst day -73.4");
+  });
+
+  it("HC-TR-242 the proposal holds the put alone after a rise, the call alone after a fall, both after a flat day, and nothing without the earlier spot", () => {
+    // BTC at 83,200 at 16:05 UTC on 9 October 2026: 1 % away is 82,368 and 84,032, nearest listed 82,400 and 84,000
+    const rows = Array.from({ length: 61 }, (_, i) => {
+      const strike = 83_200 + (i - 30) * 200;
+      const tv = 300 * Math.exp(-Math.abs(strike - 83_200) / 400);
+      return { strike, call: { mark: Math.max(83_200 - strike, 0) + tv, iv: 0.5 }, put: { mark: Math.max(strike - 83_200, 0) + tv, iv: 0.5 } };
+    });
+    const days: EodDay[] = [{ day: "2026-10-09", ts: Date.parse("2026-10-09T16:05:00Z"), spot: 83_200, expiries: ["2026-10-10", "2026-10-11"].map((expiry) => ({ expiry, rows })) }];
+    const p = byId("evening-strangle-one-side");
+    const at = (spotBefore?: number | null) => proposalFor(p, days, { unitsPerLot: 0.001, calendar: cal, spotBefore });
+    const legs = (spotBefore: number) => {
+      const r = at(spotBefore);
+      if (!r.ok) throw new Error(r.reason);
+      return { legs: r.proposal.legs.map((l) => `${l.side} ${l.kind} ${l.strike} x${l.lots}`), side: r.proposal.move!.side, cost: r.proposal.entryCost, maxLoss: r.proposal.maxLoss };
+    };
+    const up = legs(82_000); // +1.46 %
+    const down = legs(84_500); // -1.54 %
+    const flat = legs(83_000); // +0.24 %
+    expect([up.side, up.legs]).toEqual(["put", ["sell put 82400 x100"]]);
+    expect([down.side, down.legs]).toEqual(["call", ["sell call 84000 x100"]]);
+    expect([flat.side, flat.legs]).toEqual(["both", ["sell put 82400 x100", "sell call 84000 x100"]]);
+    // the premium is that of what is sold: the two single sides add up to the strangle
+    expect(up.cost).toBeLessThan(0);
+    expect(up.cost + down.cost).toBeCloseTo(flat.cost, 6);
+    // a sold put can lose at most its strike less the premium; a sold call has no such bound
+    expect(Number.isFinite(up.maxLoss)).toBe(true);
+    expect(Number.isFinite(down.maxLoss)).toBe(false);
+    // no spot of 24 hours earlier: no entry, and the reason says so
+    for (const none of [undefined, null, 0]) expect(at(none)).toEqual({ ok: false, reason: "noMove" });
+    // a playbook without the rule ignores an earlier spot
+    const plain = proposalFor(byId("evening-strangle-close"), days, { unitsPerLot: 0.001, calendar: cal, spotBefore: 80_000 });
+    expect(plain.ok && plain.proposal.legs.length).toBe(2);
+    expect(plain.ok && plain.proposal.move).toBeUndefined();
   });
 });

@@ -12,7 +12,7 @@ import { PortfolioBar } from "@/components/chrome/PortfolioBar";
 import { Workspace } from "@/components/workspace/Workspace";
 import { fmtExpiry, fmtStrike } from "@/lib/format";
 import { useUiStore } from "@/lib/store";
-import { AutopilotPage, istClock } from "./AutopilotPage";
+import { AutopilotPage, istClock, moveWords } from "./AutopilotPage";
 
 const EMAIL = "autopilot@example.com";
 let mock: MockFetch;
@@ -336,8 +336,8 @@ describe("HC-TR-232 the Autopilot screen: by expiry and by coin", () => {
     renderWithProviders(<AutopilotPage />);
     const u = userEvent.setup();
     await waitFor(() => expect(screen.getAllByTestId("autopilot-trade")).toHaveLength(3));
-    expect(screen.getAllByTestId("autopilot-filter-cadence").map((b) => b.textContent)).toEqual([`All · ${TRADABLE.length}`, "Trend · 6", "Daily · 28", "Weekly · 18", "Monthly · 15"]);
-    expect(screen.getAllByTestId("autopilot-filter-coin").map((b) => b.textContent)).toEqual(["All", `BTC · ${TRADABLE.length - 25}`, "ETH · 27", "XAUT · 4"]); // HC-TR-235: six ETH and four XAUT evening strangles, five ETH weekly and five ETH monthly ones of their own
+    expect(screen.getAllByTestId("autopilot-filter-cadence").map((b) => b.textContent)).toEqual([`All · ${TRADABLE.length}`, "Trend · 6", "Daily · 30", "Weekly · 18", "Monthly · 15"]);
+    expect(screen.getAllByTestId("autopilot-filter-coin").map((b) => b.textContent)).toEqual(["All", `BTC · ${TRADABLE.length - 26}`, "ETH · 28", "XAUT · 4"]); // HC-TR-235: six ETH and four XAUT evening strangles, five ETH weekly and five ETH monthly ones of their own
     expect(screen.getByTestId("autopilot-filters").dataset["filtered"]).toBe("false");
     expect(screen.queryByTestId("autopilot-filter-note")).toBeNull();
     expect(screen.getByRole("group", { name: "Expiry" })).toBeTruthy();
@@ -407,7 +407,7 @@ describe("HC-TR-230 the Autopilot screen: the weekly strangles", () => {
     const groups = screen.getAllByTestId("autopilot-group");
     expect(groups.map((g) => g.dataset["group"])).toEqual(["Longer-dated strategies", "Evening strangles, daily expiry", "Weekly strangles, Friday expiry", "Monthly strangles, month-end expiry"]);
     expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").map((c) => c.dataset["playbook"]))).toEqual([TRADABLE.filter((p) => !p.clock), TRADABLE.filter((p) => p.clock && p.clock.weekdayUtc === undefined && p.clock.cadence !== "monthly"), TRADABLE.filter((p) => p.clock?.weekdayUtc !== undefined), TRADABLE.filter((p) => p.clock?.cadence === "monthly")].map((g) => g.map((p) => p.id)));
-    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 28, 18, 15]);
+    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 30, 18, 15]);
     // HC-TR-233: a monthly row says when it enters, and its backtest reads per month
     const monthly = screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === "monthly-strangle-premium-1000")!;
     expect(monthly.textContent).toContain("Enters on the first evening a month-end expiry is 60 to 75 days out, once per expiry");
@@ -517,5 +517,23 @@ describe("HC-SH-143 Autopilot on the Desk", () => {
     expect(goLive).toHaveProperty("disabled", true);
     expect(goLive.getAttribute("title")).toBe(AUTOPILOT_PAPER_ONLY_MESSAGE);
     expect(within(mineCard).getByTestId("card-golive").getAttribute("title")).not.toBe(AUTOPILOT_PAPER_ONLY_MESSAGE);
+  });
+});
+
+describe("HC-TR-243 the Autopilot screen: one side after a move", () => {
+  it("HC-TR-243 the log says the move an entry was judged on and the side it sold", async () => {
+    expect(moveWords("BTC", { pct: "1.56", side: "put" })).toBe("BTC up 1.56 % over 24 hours: the put only");
+    expect(moveWords("ETH", { pct: "-1.78", side: "call" })).toBe("ETH down 1.78 % over 24 hours: the call only");
+    expect(moveWords("BTC", { pct: "0.4", side: "both" })).toBe("BTC up 0.40 % over 24 hours: both sides");
+    acc().autopilot = { settings: { enabled: true, strategies: [{ playbookId: "evening-strangle-one-side", exit: "own" }] }, runs: [run({ id: "3", kind: "skipped", reason: "Holds a trade already: one at a time for a strategy and coin", playbookId: "evening-strangle-one-side", strategyId: null, detail: { dte: 1, move: { pct: "-1.20", side: "call" } } }), run({ id: "2", playbookId: "evening-strangle-one-side", strategyId: "m1", detail: { capital: "40", dte: 1, legStop: 3, move: { pct: "1.56", side: "put" } } }), run({ id: "1" })] };
+    renderWithProviders(<AutopilotPage />);
+    const log = await screen.findByTestId("autopilot-log");
+    await waitFor(() => expect(log.textContent).toContain("BTC up 1.56 % over 24 hours: the put only"));
+    // an entry of a strategy without the rule says nothing about a move, and neither does a pass that placed nothing
+    expect(log.textContent).toContain("Holds a trade already");
+    expect(log.textContent.match(/over 24 hours/g)).toHaveLength(1);
+    // the card says how the side is chosen
+    const card = screen.getAllByTestId("autopilot-card").find((c) => c.textContent.includes("Evening strangle, one side after a move"))!;
+    expect(card.textContent).toContain("Stop at 3x on each sold option");
   });
 });

@@ -97,6 +97,18 @@ export interface PlaybookClock {
   takeTrailPct?: number | undefined;
   /** ADR-121: the whole trade is closed at the first time the clock reads this hour (UTC) after the entry, whatever the profit. */
   exitHourUtc?: number | undefined;
+  /**
+   * ADR-122: one side after a move. The spot is compared with the spot `hours` earlier: up by more than `pct` per cent
+   * only the put is sold, down by more than that only the call, otherwise the whole structure. No earlier spot: no entry.
+   */
+  moveSide?: { hours: number; pct: number } | undefined;
+}
+
+/** ADR-122: which side of a strangle a move leaves to sell: the one behind it. */
+export type MoveSide = "put" | "call" | "both";
+export function sideAfterMove(spot: number, spotBefore: number, pct: number): { movePct: number; side: MoveSide } {
+  const movePct = (spot / spotBefore - 1) * 100;
+  return { movePct, side: movePct > pct ? "put" : movePct < -pct ? "call" : "both" };
 }
 
 const DEFINED_RISK_EXITS: BacktestExits = { targetPct: 0.5, stopPct: 0.5, timeStopDte: 2 };
@@ -676,8 +688,24 @@ export const LAB_WEEKLY_PLAYBOOKS: readonly Playbook[] = [
   labPlaybook({ id: "weekly-fri-strangle-lock", name: "Friday weekly strangle, profit lock", asset: "BTC", sold: 3, weekly: true, summary: `Each Friday evening sell a call and a put 3 % away on the next Friday expiry; ${LOCK_WORDS}.`, why: "The lock on the weekly trade: the average of the stop alone (+40.65) with far more winning weeks (57 % for the stop alone) and the same worst week.", rule: "each option stopped at three times its price, a floor at 25 % of the premium once the profit has reached 50 %", figures: "+40.95 a week on 51 weeks, 71 % of weeks positive, worst week -168.3", clock: { legStop: 3, lock: LOCK } }),
 ];
 
+// ---- ADR-122: one side after a move, the lab's trend table -------------------------------------------------------------------
+
+const MOVE_STUDY = "the strategy lab's trend table (branch research/exits, docs/research/scripts/autopilot-study: study_trend.py, results-trend-2026-11-22.txt, \"spot move over the 24 h before the entry, beyond 1 %\", \"only the side behind the move\"; 105 daily expiries with a spot 24 hours earlier, 8 Aug to 21 Nov 2026, 5-minute marks; the exchange's real fees, 100 lots)";
+const MOVE_TRIALS = { count: 72, note: "the lab's trend table (four look-backs and three thresholds, each with three alternatives to selling both sides always, on each of two coins: 72 rows, beside the per-side figures they were built from), of which this rule was picked after seeing them; in-sample on one period in which moves continued more often than they reversed, judged on bar closes, and the paper record is the test" };
+const MOVE = { hours: 24, pct: 1 } as const;
+const movePlaybook = (o: { id: string; name: string; asset: PlaybookAsset; coin: string; why: string; figures: string }): Playbook => ({
+  ...labPlaybook({ id: o.id, name: o.name, asset: o.asset, sold: 1, summary: `Each evening look at the move of the last 24 hours: after a rise of more than 1 % sell only ${o.coin} put 1 % away on the next expiry, after a fall of more than 1 % only the call, otherwise both. Each sold option is bought back if its price triples; the rest is held to settlement.`, why: o.why, rule: "after a move of more than 1 % over 24 hours only the side behind it (up: the put, down: the call), otherwise both; each option stopped at three times its price", figures: o.figures, clock: { legStop: 3, moveSide: MOVE } }),
+  trials: MOVE_TRIALS,
+});
+const moveEvidence = (p: Playbook): Playbook => ({ ...p, evidence: { ...p.evidence, source: MOVE_STUDY } });
+/** One side after a move (ADR-122), on BTC and ETH daily. */
+export const MOVE_DAILY_PLAYBOOKS: readonly Playbook[] = [
+  movePlaybook({ id: "evening-strangle-one-side", name: "Evening strangle, one side after a move", asset: "BTC", coin: "the", figures: "+10.73 a day on 105 days, 72 % of days positive, worst day -73.4", why: "In the study the option ahead of a move earned less than the one behind it, and carried the worst days: moves went on more often than they reversed. Selling only the side behind the move earned a little less than both sides always (+11.76 on the same days) with more winning days (65 % for both sides) and a smaller worst day (-105.8). It earned less in the second half of the period than in the first, as both sides always did. One trending period: in a ranging market the opposite could hold. A single sold option has nothing on the other side to offset it." }),
+  movePlaybook({ id: "eth-evening-strangle-one-side", name: "ETH evening strangle, one side after a move", asset: "ETH", coin: "the ETH", figures: "+3.91 a day on 105 days, 69 % of days positive, worst day -40.1", why: "The same on ETH: a little less than both sides always (+4.42 on the same days) with more winning days (61 % for both sides) and a smaller worst day (-49.6). It earned less in the second half of the period than in the first." }),
+].map(moveEvidence);
+
 /** Every playbook Autopilot may trade: the recorded ones (never the control) and the ones entered by the clock. */
-export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc === undefined), ...ALT_DAILY_PLAYBOOKS, ...LADDER_DAILY_PLAYBOOKS, ...LAB_DAILY_PLAYBOOKS, ...WEEKLY_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc !== undefined), ...ALT_WEEKLY_PLAYBOOKS, ...LADDER_WEEKLY_PLAYBOOKS, ...LAB_WEEKLY_PLAYBOOKS, ...MONTHLY_PLAYBOOKS, ...ALT_MONTHLY_PLAYBOOKS];
+export const AUTOPILOT_PLAYBOOKS: readonly Playbook[] = [...PLAYBOOKS.filter((p) => !p.control), ...CLOCK_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc === undefined), ...ALT_DAILY_PLAYBOOKS, ...LADDER_DAILY_PLAYBOOKS, ...LAB_DAILY_PLAYBOOKS, ...MOVE_DAILY_PLAYBOOKS, ...WEEKLY_PLAYBOOKS, ...PREMIUM_PLAYBOOKS.filter((p) => p.clock!.weekdayUtc !== undefined), ...ALT_WEEKLY_PLAYBOOKS, ...LADDER_WEEKLY_PLAYBOOKS, ...LAB_WEEKLY_PLAYBOOKS, ...MONTHLY_PLAYBOOKS, ...ALT_MONTHLY_PLAYBOOKS];
 export function autopilotPlaybookById(id: string): Playbook | undefined {
   return AUTOPILOT_PLAYBOOKS.find((p) => p.id === id);
 }
@@ -767,6 +795,8 @@ const BACKTESTS: Record<string, PlaybookBacktest> = {
   "eth-evening-strangle-close": bt(6.84, "day", 64, -50.6, 106),
   "afternoon-strangle-take-half": bt(2.29, "day", 75, -21.7, 106),
   "evening-strangle-half-trail": bt(11.3, "day", 79, -69.2, 106),
+  "evening-strangle-one-side": bt(10.73, "day", 72, -73.4, 105),
+  "eth-evening-strangle-one-side": bt(3.91, "day", 69, -40.1, 105),
   "eth-evening-strangle-half-trail": bt(3.65, "day", 75, -44.6, 106),
   "eth-evening-strangle-wings-near": bt(4.56, "day", 73, -47, 105),
   "weekly-fri-strangle-lock": bt(40.95, "week", 71, -168.3, 51),
@@ -803,15 +833,17 @@ export interface PlaybookProposal {
   /** Expiry extremes for the plan's size; Infinity when unbounded. */
   maxProfit: number;
   maxLoss: number;
+  /** ADR-122: the move the entry was judged on (per cent over the playbook's look-back) and the side it left to sell. */
+  move?: { movePct: number; side: MoveSide } | undefined;
 }
-export type ProposalSkip = EntrySkip | "control" | "noDays";
+export type ProposalSkip = EntrySkip | "control" | "noDays" | "noMove";
 export type ProposalResult = { ok: true; proposal: PlaybookProposal } | { ok: false; reason: ProposalSkip };
 
 /**
  * Whether the playbook's plan enters on the latest recorded day and, when it does, the concrete structure: exactly the
  * entry the record would have taken, through the same `entryFor` the backtest uses. The control never proposes.
  */
-export function proposalFor(p: Playbook, daysIn: readonly EodDay[], base: { unitsPerLot: number; calendar: BacktestOptions["calendar"] }): ProposalResult {
+export function proposalFor(p: Playbook, daysIn: readonly EodDay[], base: { unitsPerLot: number; calendar: BacktestOptions["calendar"]; spotBefore?: number | null | undefined }): ProposalResult {
   if (p.control) return { ok: false, reason: "control" };
   const tpl = playbookTemplate(p);
   if (!tpl || daysIn.length === 0) return { ok: false, reason: "noDays" };
@@ -820,9 +852,15 @@ export function proposalFor(p: Playbook, daysIn: readonly EodDay[], base: { unit
   const entry = entryFor(days, i, tpl, { lots: p.lots, unitsPerLot: base.unitsPerLot, minDte: p.minDte, calendar: base.calendar, conditions: p.conditions, expiryOk: p.clock?.cadence === "monthly" ? isMonthEndExpiry : undefined });
   if (!entry.ok) return { ok: false, reason: entry.reason };
   const d = days[i]!;
-  const entryCost = entry.legs.reduce((sum, l) => sum + (l.kind === "future" ? 0 : (l.side === "buy" ? 1 : -1) * l.quantity * l.price), 0);
-  const { maxProfit, maxLoss } = expiryExtremes(entry.legs);
-  return { ok: true, proposal: { day: d.day, spot: d.spot, expiry: entry.expiry, legs: entry.placed, entryCost, maxProfit, maxLoss } };
+  // ADR-122: a playbook that sells one side after a move needs the earlier spot; without it there is nothing to judge
+  const before = base.spotBefore;
+  if (p.clock?.moveSide && !(typeof before === "number" && before > 0)) return { ok: false, reason: "noMove" };
+  const move = p.clock?.moveSide ? sideAfterMove(d.spot, before!, p.clock.moveSide.pct) : undefined;
+  const kept = entry.legs.map((_, j) => j).filter((j) => !move || move.side === "both" || entry.legs[j]!.kind === move.side);
+  const legs = kept.map((j) => entry.legs[j]!);
+  const entryCost = legs.reduce((sum, l) => sum + (l.kind === "future" ? 0 : (l.side === "buy" ? 1 : -1) * l.quantity * l.price), 0);
+  const { maxProfit, maxLoss } = expiryExtremes(legs);
+  return { ok: true, proposal: { day: d.day, spot: d.spot, expiry: entry.expiry, legs: kept.map((j) => entry.placed[j]!), entryCost, maxProfit, maxLoss, ...(move ? { move } : {}) } };
 }
 
 /** Calendar years (by exit day) whose closed trades sum below zero, with the total. */
