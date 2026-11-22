@@ -63,6 +63,7 @@ const exitWords = (p: Playbook): string => {
   if (c.lock) parts.push(`a floor at ${Math.round(c.lock.floor * 100)} % of the premium once it is up ${Math.round(c.lock.at * 100)} %`);
   if (c.exitHourUtc !== undefined) parts.push(`out at ${istClock(c.exitHourUtc)} IST`);
   if (c.legBuyBackAt !== undefined) parts.push(`each sold option bought back once its price is down to ${c.legBuyBackAt} dollars`);
+  if (c.legBuyBackShare !== undefined) parts.push(`each sold option bought back once its price is down to ${Math.round(c.legBuyBackShare * 100)} % of what it was sold for`);
   return parts.join(", ");
 };
 // (the pressed look of the chain's own toggles: amber stays for the spot, the money row and the primary action)

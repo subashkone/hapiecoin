@@ -778,8 +778,12 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
           // a price the exchange fills at. Below the price it was sold at, or it would fire at once.
           if (row.status !== "paper") throw errors.conflict("A buy-back of a cheap leg is on paper trades only for now");
           if (leg.side !== "sell" || leg.kind === "future") throw errors.badRequest(`${leg.symbol}: a buy-back is for a sold option`);
-          if (Number(r.value) >= Number(leg.entryPrice ?? leg.price)) throw errors.badRequest(`${leg.symbol}: the buy-back level must be below the price it was sold at`);
-          return ruleLevel(r);
+          // as a price, or (ADR-124) as a share of the price it was sold at
+          if (r.trigger === "multiple" && leg.entryPrice === null) throw errors.badRequest(`${leg.symbol}: no entry price yet for a share of it`);
+          const at = ruleLevel(r, leg.entryPrice ?? leg.price);
+          if (Number(at) <= 0) throw errors.badRequest(`${leg.symbol}: the level rounds to nothing`); // it could never be reached
+          if (Number(at) >= Number(leg.entryPrice ?? leg.price)) throw errors.badRequest(`${leg.symbol}: the buy-back level must be below the price it was sold at`);
+          return at;
         }
         if (r.trigger === "multiple" && leg.entryPrice === null) throw errors.badRequest(`${leg.symbol}: no entry price yet for a multiple`);
         const level = ruleLevel(r, leg.entryPrice ?? leg.price);

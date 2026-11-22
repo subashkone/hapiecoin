@@ -372,7 +372,7 @@ describe("HC-TR-240 the profit lock (ADR-121)", () => {
 
 describe("HC-TR-244 a leg buy-back (ADR-123)", () => {
   it("HC-TR-244 a buy-back is a price on one named leg, exits that leg alone, books the reason target and is judged after the protective kinds", () => {
-    expect([RULE_KIND_LABELS.leg_take, RULE_TRIGGERS_OF.leg_take, CLOSE_REASON_OF_KIND.leg_take]).toEqual(["Leg buy-back", ["price"], "target"]);
+    expect([RULE_KIND_LABELS.leg_take, RULE_TRIGGERS_OF.leg_take, CLOSE_REASON_OF_KIND.leg_take]).toEqual(["Leg buy-back", ["price", "multiple"], "target"]);
     expect(RULE_KIND_ORDER.leg_stop < RULE_KIND_ORDER.leg_take && RULE_KIND_ORDER.lock < RULE_KIND_ORDER.leg_take && RULE_KIND_ORDER.leg_take < RULE_KIND_ORDER.step).toBe(true);
     const ok = { kind: "leg_take", trigger: "price", value: "5", legId: "l1" };
     expect(RuleBody.safeParse(ok).success).toBe(true);
@@ -380,7 +380,7 @@ describe("HC-TR-244 a leg buy-back (ADR-123)", () => {
     const why = (body: unknown) => JSON.stringify(RuleBody.safeParse(body).error?.issues ?? []);
     expect(why({ kind: "leg_take", trigger: "price", value: "5" })).toContain("a leg buy-back names its leg");
     expect(why({ ...ok, scope: "strategy" })).toContain("a leg buy-back exits its own leg alone");
-    expect(why({ ...ok, trigger: "multiple" })).toContain("leg_take takes price");
+    expect(why({ ...ok, trigger: "pct" })).toContain("leg_take takes price or multiple");
     expect(why({ ...ok, value: "0" })).toContain("must be greater than zero");
     expect(why({ ...ok, trail: { trigger: "pct", value: "20" } })).toContain("only a target or a leg stop can trail");
     expect(why({ kind: "spot", trigger: "above", value: "5", scope: "leg" })).toContain("only a leg stop or a leg buy-back can exit one leg");
@@ -389,5 +389,20 @@ describe("HC-TR-244 a leg buy-back (ADR-123)", () => {
     const stop = { kind: "leg_stop", trigger: "multiple", value: "3", legId: "l1" };
     expect(RulesBody.safeParse({ rules: [ok, stop, { ...ok, legId: "l2" }] }).success).toBe(true);
     expect(JSON.stringify(RulesBody.safeParse({ rules: [ok, { ...ok, value: "2" }] }).error?.issues)).toContain("one leg stop and one leg buy-back per leg");
+  });
+});
+
+describe("HC-TR-247 a leg buy-back as a share of the price sold at (ADR-124)", () => {
+  it("HC-TR-247 a multiple below 1 of the leg's entry price: 0.2 of 421.67 is a level of 84.33; the whole price or more is refused", () => {
+    const share = { kind: "leg_take", trigger: "multiple", value: "0.2", legId: "l1" };
+    expect(RuleBody.safeParse(share).success).toBe(true);
+    expect(ruleLevel({ kind: "leg_take", trigger: "multiple", value: "0.2", basisUsd: undefined }, "421.67")).toBe("84.33");
+    expect(ruleLevel({ kind: "leg_take", trigger: "multiple", value: "0.2", basisUsd: undefined })).toBe("0");
+    const why = (body: unknown) => JSON.stringify(RuleBody.safeParse(body).error?.issues ?? []);
+    expect(why({ ...share, value: "1" })).toContain("a buy-back share is below the whole price");
+    expect(why({ ...share, value: "2.5" })).toContain("a buy-back share is below the whole price");
+    expect(why({ ...share, value: "0" })).toContain("must be greater than zero");
+    // a leg stop's multiple is untouched: it may be above 1
+    expect(RuleBody.safeParse({ kind: "leg_stop", trigger: "multiple", value: "3", legId: "l1" }).success).toBe(true);
   });
 });

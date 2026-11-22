@@ -1188,3 +1188,33 @@ describe("HC-TR-244 a leg buy-back (ADR-123)", () => {
     await t.db.update(strategies).set({ status: "archived" }).where(eq(strategies.id, s.id));
   });
 });
+
+describe("HC-TR-247 a leg buy-back as a share of the price sold at (ADR-124)", () => {
+  const SP = { kind: "put", side: "sell", strike: "78000", expiry: "2026-09-25", symbol: "P-BTC-78000-250926", lots: 100, price: "900" };
+  const SC = { kind: "call", side: "sell", strike: "82000", expiry: "2026-09-25", symbol: "C-BTC-82000-250926", lots: 100, price: "1100" };
+  const at = (put: number, call: number) => ticks({ "P-BTC-78000-250926": put, "C-BTC-82000-250926": call });
+
+  it("HC-TR-247 armed as a multiple of the leg's entry price, the level is that share of it; the option is bought back alone there; the whole price or a level that rounds to nothing is refused", async () => {
+    t.now.value += 5 * 60_000;
+    await t.db.update(strategies).set({ status: "archived" }).where(like(strategies.name, "Rules %"));
+    const s = await paper([SP, SC], "Rules buy-back share");
+    const call = s.legs.find((l) => l.kind === "call")!;
+    const share = (value: string) => ({ kind: "leg_take", trigger: "multiple", value, legId: call.id });
+    const why = async (rules: unknown[]) => {
+      const res = await arm(s.id, rules);
+      return `${res.status} ${JSON.stringify(await res.json())}`;
+    };
+    expect(await why([share("1")])).toContain("400");
+    expect(await why([share("0.000001")])).toContain("the level rounds to nothing");
+    // 20 % of 1,100 is 220
+    expect((await arm(s.id, [share("0.2")])).status).toBe(200);
+    expect((await get(s.id)).rules!.find((r) => r.kind === "leg_take")).toMatchObject({ trigger: "multiple", value: "0.2", thresholdUsd: "220", legId: call.id, scope: "leg", state: "armed" });
+    expect((await evaluateRules(t.deps, at(900, 221), () => T0)).fired).toHaveLength(0);
+    // at 220: (1,100 - 220) x 100 lots x 0.001 = 88 banked, the put kept
+    expect((await evaluateRules(t.deps, at(900, 220), () => T0)).fired).toHaveLength(1);
+    const after = await get(s.id);
+    expect(after).toMatchObject({ status: "paper", realizedPnl: "88" });
+    expect(after.legs.map((l) => `${l.kind} ${l.status}`).sort()).toEqual(["call squared_off", "put open"]);
+    await t.db.update(strategies).set({ status: "archived" }).where(eq(strategies.id, s.id));
+  });
+});

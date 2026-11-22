@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type BacktestFold, type BacktestStats, type BacktestTrade, type EodDay, type EodRow, runBacktest } from "./backtest.js";
 import { calendarFor, daysToExpiryOf } from "./calendar.js";
-import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS, MOVE_DAILY_PLAYBOOKS, BUYBACK_DAILY_PLAYBOOKS, sideAfterMove, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
+import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS, MOVE_DAILY_PLAYBOOKS, BUYBACK_DAILY_PLAYBOOKS, BUYBACK_SHARE_PLAYBOOKS, sideAfterMove, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
 import { materialiseTemplate } from "./templates.js";
 
 const cal = calendarFor(12);
@@ -218,7 +218,7 @@ describe("HC-TR-229 the weekly strangles", () => {
     expect(WEEKLY_PLAYBOOKS.map((p) => [p.clock!.legStop, p.clock!.takeProfitOfCredit, p.clock!.trailRestPct]).slice(0, 5)).toEqual([[undefined, undefined, undefined], [2, undefined, undefined], [3, undefined, undefined], [2, 0.5, undefined], [2, undefined, 50]]);
     expect(CLOCK_PLAYBOOKS.every((p) => p.clock!.weekdayUtc === undefined && p.clock!.describe === "once an evening, 9:30 to 10:30 PM IST, on the next expiry")).toBe(true);
     expect(new Set(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).size).toBe(AUTOPILOT_PLAYBOOKS.length);
-    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length + LAB_DAILY_PLAYBOOKS.length + LAB_WEEKLY_PLAYBOOKS.length + MOVE_DAILY_PLAYBOOKS.length + BUYBACK_DAILY_PLAYBOOKS.length);
+    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length + LAB_DAILY_PLAYBOOKS.length + LAB_WEEKLY_PLAYBOOKS.length + MOVE_DAILY_PLAYBOOKS.length + BUYBACK_DAILY_PLAYBOOKS.length + BUYBACK_SHARE_PLAYBOOKS.length);
   });
 
   it("HC-TR-229 the strikes are the listed ones nearest 3 % (wings 7 %) of the spot away, on the Friday expiry a week out from a Friday and three days out from a Tuesday", () => {
@@ -673,7 +673,7 @@ describe("HC-TR-246 the evening strangle that buys a cheap option back (ADR-123)
     expect(playbookCadence(p)).toBe("daily");
     expect(p.name.length).toBeLessThanOrEqual(68);
     expect(playbookTemplate(p)!.legs.map((l) => ("pct" in l ? l.pct : null))).toEqual([-1, 1]);
-    expect(p.trials).toMatchObject({ count: 40 });
+    expect(p.trials).toMatchObject({ count: 50 });
     // the note owns up to the one row that did beat holding: 20 % of the entry price, which is not this rule
     expect(p.trials.note).toContain("No fixed price beat holding on BTC daily; a buy-back at 20 % of the entry price did (+13.34 against +11.75)");
     expect(p.evidence.source).toContain("results-cheap-leg-2026-11-22.txt");
@@ -681,5 +681,28 @@ describe("HC-TR-246 the evening strangle that buys a cheap option back (ADR-123)
     expect(p.rationale).toContain("Protection, not income");
     expect(p.rationale).toContain("often cannot be bought at 5");
     expect(AUTOPILOT_PLAYBOOKS.filter((x) => x.clock?.legBuyBackAt !== undefined).map((x) => x.id)).toEqual(["evening-strangle-buy-back"]);
+    expect(p.clock!.legBuyBackShare).toBeUndefined();
+  });
+});
+
+describe("HC-TR-248 the evening strangle that buys an option back at 20 % of its price (ADR-124)", () => {
+  it("HC-TR-248 one BTC daily playbook: a stop at triple and a buy-back at a fifth of the price sold at; its card says it is one good row among poor ones", () => {
+    expect(BUYBACK_SHARE_PLAYBOOKS.map((p) => `${p.id} ${p.assets.join()}`)).toEqual(["evening-strangle-buy-back-20pct BTC"]);
+    const p = autopilotPlaybookById("evening-strangle-buy-back-20pct")!;
+    expect(p).toMatchObject({ lots: 100, control: false, minDte: 0.5 });
+    expect(p.clock).toMatchObject({ fromHourUtc: 16, toHourUtc: 17, legStop: 3, legBuyBackShare: 0.2, venues: ["delta_india"] });
+    expect([p.clock!.legBuyBackAt, p.clock!.takeProfitOfCredit, p.clock!.ladder, p.clock!.lock, p.clock!.exitHourUtc, p.clock!.moveSide]).toEqual([undefined, undefined, undefined, undefined, undefined, undefined]);
+    expect(playbookCadence(p)).toBe("daily");
+    expect(p.name.length).toBeLessThanOrEqual(68);
+    expect(playbookTemplate(p)!.legs.map((l) => ("pct" in l ? l.pct : null))).toEqual([-1, 1]);
+    expect(p.trials.count).toBe(50);
+    expect(p.trials.note).toContain("one good cell among poor ones");
+    expect(p.evidence.source).toContain("results-cheap-leg-2026-11-22.txt");
+    expect(p.evidence.source).toContain("the row at 20 % of its entry price");
+    expect(p.evidence.claim).toContain("+13.34 a day on 106 days, 73 % of days positive, worst day -111.4");
+    // the card names what argues against the figure: the neighbouring level and the other sets
+    expect(p.rationale).toContain("buying back at 10 % instead earned less than holding (+11.12)");
+    expect(p.rationale).toContain("ETH daily (+2.84 against +4.46)");
+    expect(AUTOPILOT_PLAYBOOKS.filter((x) => x.clock?.legBuyBackShare !== undefined).map((x) => x.id)).toEqual(["evening-strangle-buy-back-20pct"]);
   });
 });
