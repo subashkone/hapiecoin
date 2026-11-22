@@ -1,0 +1,96 @@
+## BTC daily: 106 trades (2026-08-08 .. 2026-11-21), each side 1 % away, entered 20 h before settlement, mean premium 36.5
+   exit                                     mean  pos    worst  run  run loss  drawdown    total  halves
+   hold to settlement                      +7.33  80%   -338.2    2    -505.1    -505.1     +777  +356 / +421
+   stop 2x                                 +7.58  49%    -39.8    7     -90.9    -126.4     +803  +340 / +463
+   stop 2x, take half                      +6.72  63%    -39.8    4     -89.9     -89.9     +712  +291 / +421
+   stop 2x, half then trail 20             +8.12  63%    -39.8    4     -89.9     -89.9     +861  +371 / +490
+   stop 2x, lock 50 > 25                   +7.70  56%    -39.8    5     -89.9     -89.9     +816  +327 / +490
+   stop 2x, out 16 h before                +4.82  71%    -28.3    6     -43.8     -43.8     +511  +235 / +276
+   stop 2x, ladder early 10/25/40/55/exp    +4.90  69%    -29.5    3     -61.7     -61.7     +519  +209 / +310
+   stop 2x, ladder standard 25/50/75/exp    +6.55  60%    -37.3    4     -78.8     -78.8     +694  +269 / +425
+   stop 2x, ladder late 50/75/exp          +7.31  57%    -39.8    4     -89.9     -89.9     +775  +303 / +472
+   stop 3x                                +11.75  65%   -105.8    3    -185.0    -185.0    +1246  +675 / +571
+   stop 3x, take half                      +9.02  80%    -69.2    2     -69.2     -88.9     +956  +568 / +388
+   stop 3x, half then trail 20            +11.30  79%    -69.2    2     -69.2     -84.9    +1198  +685 / +513
+   stop 3x, lock 50 > 25                  +11.68  71%    -69.2    4     -76.7    -102.5    +1238  +675 / +563
+   stop 3x, out 16 h before                +6.18  78%    -25.0    3     -34.7     -45.8     +655  +355 / +299
+   stop 3x, ladder early 10/25/40/55/exp    +6.63  75%    -39.5    2     -43.2     -43.2     +703  +398 / +305
+   stop 3x, ladder standard 25/50/75/exp    +8.88  72%    -50.5    2     -71.4     -71.4     +941  +510 / +432
+   stop 3x, ladder late 50/75/exp         +10.39  72%    -69.2    2    -104.0    -104.0    +1102  +592 / +509
+
+## ETH daily: 106 trades (2026-08-08 .. 2026-11-21), each side 1 % away, entered 20 h before settlement, mean premium 21.0
+   exit                                     mean  pos    worst  run  run loss  drawdown    total  halves
+   hold to settlement                      +6.67  81%   -137.9    3    -137.9    -137.9     +707  +362 / +345
+   stop 2x                                 +2.83  49%    -49.6    5     -98.3    -101.1     +300  +125 / +175
+   stop 2x, take half                      +2.20  61%    -39.3    4     -50.0     -84.9     +234  +117 / +116
+   stop 2x, half then trail 20             +2.63  61%    -39.3    4     -50.0     -79.6     +279  +141 / +138
+   stop 2x, lock 50 > 25                   +2.13  58%    -50.2    5     -98.3    -112.0     +226  +80 / +146
+   stop 2x, out 16 h before                +1.85  72%    -19.9    3     -22.4     -25.3     +196  +98 / +99
+   stop 2x, ladder early 10/25/40/55/exp    +1.62  61%    -33.0    4     -41.6     -55.7     +172  +69 / +104
+   stop 2x, ladder standard 25/50/75/exp    +2.19  59%    -33.0    4     -47.2     -73.0     +233  +98 / +135
+   stop 2x, ladder late 50/75/exp          +2.52  58%    -39.3    4     -50.0     -86.5     +267  +117 / +150
+   stop 3x                                 +4.46  61%    -49.6    3    -119.9    -119.9     +473  +239 / +234
+   stop 3x, take half                      +3.10  75%    -44.6    3     -44.6     -64.0     +329  +160 / +169
+   stop 3x, half then trail 20             +3.65  75%    -44.6    3     -44.6     -62.0     +387  +194 / +192
+   stop 3x, lock 50 > 25                   +3.47  68%    -50.2    5     -78.4     -84.0     +367  +162 / +206
+   stop 3x, out 16 h before                +2.58  82%    -19.9    2     -24.5     -35.4     +273  +129 / +144
+   stop 3x, ladder early 10/25/40/55/exp    +2.48  71%    -44.6    3     -44.6     -49.5     +263  +104 / +159
+   stop 3x, ladder standard 25/50/75/exp    +3.15  65%    -44.6    3     -53.9     -53.9     +334  +150 / +184
+   stop 3x, ladder late 50/75/exp          +3.72  65%    -44.6    3     -81.2     -81.2     +394  +194 / +200
+
+## Gold daily: 91 trades (2026-08-08 .. 2026-11-21), each side 1 % away, entered 24 h before settlement, mean premium 1.3
+   exit                                     mean  pos    worst  run  run loss  drawdown    total  halves
+   hold to settlement                      +0.07  76%     -9.9    3     -14.3     -25.0       +6  +20 / -14
+   stop 2x                                 +0.19  48%     -2.1    7      -4.4      -5.4      +17  +4 / +13
+   stop 2x, take half                      +0.19  67%     -1.4    3      -1.6      -1.6      +17  +10 / +7
+   stop 2x, half then trail 20             +0.22  65%     -1.4    3      -1.6      -1.9      +20  +9 / +11
+   stop 2x, lock 50 > 25                   +0.19  59%     -2.1    5      -2.1      -5.2      +17  +3 / +15
+   stop 2x, out 16 h before                +0.21  70%     -1.1    2      -1.2      -1.6      +20  +9 / +11
+   stop 2x, ladder early 10/25/40/55/exp    +0.13  68%     -1.4    3      -1.5      -1.5      +12  +5 / +7
+   stop 2x, ladder standard 25/50/75/exp    +0.16  63%     -1.4    3      -1.6      -1.6      +14  +5 / +9
+   stop 2x, ladder late 50/75/exp          +0.18  57%     -1.4    5      -1.6      -2.2      +16  +6 / +10
+   stop 3x                                 +0.11  49%     -3.1    7      -8.8      -8.8      +10  +5 / +5
+   stop 3x, take half                      +0.14  70%     -3.1    3      -3.1      -4.0      +12  +12 / +1
+   stop 3x, half then trail 20             +0.18  68%     -3.1    3      -3.1      -4.2      +16  +12 / +4
+   stop 3x, lock 50 > 25                   +0.13  59%     -3.1    3      -3.1      -5.7      +12  +5 / +7
+   stop 3x, out 16 h before                +0.18  73%     -3.3    2      -3.3      -3.3      +16  +9 / +8
+   stop 3x, ladder early 10/25/40/55/exp    +0.08  65%     -2.0    3      -2.0      -3.5       +8  +5 / +3
+   stop 3x, ladder standard 25/50/75/exp    +0.10  55%     -2.5    4      -3.6      -4.0       +9  +6 / +3
+   stop 3x, ladder late 50/75/exp          +0.10  55%     -3.1    4      -5.2      -5.2       +9  +8 / +2
+
+## BTC weekly (Friday): 51 trades (2025-12-05 .. 2026-11-20), each side 3 % away, entered 164 h before settlement, mean premium 149.0
+   exit                                     mean  pos    worst  run  run loss  drawdown    total  halves
+   hold to settlement                      +7.61  75%  -1219.9    3   -1580.5   -1580.5     +388  +1524 / -1136
+   stop 2x                                +28.33  43%   -267.5    8    -304.1    -304.1    +1445  +773 / +672
+   stop 2x, take half                     +14.52  51%   -267.5    8    -304.1    -304.1     +741  +269 / +472
+   stop 2x, half then trail 20            +16.94  51%   -267.5    8    -304.1    -304.1     +864  +467 / +397
+   stop 2x, lock 50 > 25                  +26.88  51%   -267.5    8    -304.1    -318.6    +1371  +664 / +706
+   stop 2x, ladder early 10/25/40/55/exp   +16.51  61%   -210.7    4    -218.4    -218.4     +842  +401 / +441
+   stop 2x, ladder standard 25/50/75/exp   +19.76  49%   -267.5    8    -282.2    -282.2    +1008  +444 / +563
+   stop 2x, ladder late 50/75/exp         +22.44  45%   -267.5    8    -304.1    -304.1    +1145  +543 / +602
+   stop 3x                                +40.65  57%   -168.3    5    -504.9    -504.9    +2073  +1525 / +548
+   stop 3x, take half                     +28.59  73%   -168.3    1    -168.3    -178.6    +1458  +712 / +746
+   stop 3x, half then trail 20            +29.89  73%   -168.3    1    -168.3    -200.1    +1524  +886 / +638
+   stop 3x, lock 50 > 25                  +40.95  71%   -168.3    3    -295.1    -398.0    +2088  +1210 / +879
+   stop 3x, ladder early 10/25/40/55/exp   +26.26  71%   -131.3    1    -131.3    -174.0    +1339  +762 / +577
+   stop 3x, ladder standard 25/50/75/exp   +33.25  65%   -168.3    3    -181.3    -290.0    +1696  +1005 / +691
+   stop 3x, ladder late 50/75/exp         +37.61  65%   -168.3    3    -223.7    -333.2    +1918  +1195 / +723
+
+## ETH weekly (Friday): 51 trades (2025-12-05 .. 2026-11-20), each side 4 % away, entered 164 h before settlement, mean premium 66.0
+   exit                                     mean  pos    worst  run  run loss  drawdown    total  halves
+   hold to settlement                     +11.74  76%   -582.0    2    -582.0    -689.2     +599  +665 / -66
+   stop 2x                                 +2.00  49%   -106.3    4    -112.0    -167.1     +102  +117 / -15
+   stop 2x, take half                      +6.04  61%   -106.3    2    -112.0    -112.0     +308  +187 / +122
+   stop 2x, half then trail 20             +6.67  61%   -106.3    2    -112.0    -112.0     +340  +210 / +130
+   stop 2x, lock 50 > 25                   +2.30  51%   -106.3    6    -112.0    -202.4     +117  +76 / +41
+   stop 2x, ladder early 10/25/40/55/exp    +4.83  65%    -83.3    2     -85.8     -85.8     +246  +179 / +67
+   stop 2x, ladder standard 25/50/75/exp    +3.38  59%   -106.3    2    -112.0    -112.0     +172  +137 / +35
+   stop 2x, ladder late 50/75/exp          +3.04  53%   -106.3    2    -112.0    -120.2     +155  +127 / +28
+   stop 3x                                +14.43  57%    -82.7    4    -208.2    -208.2     +736  +704 / +32
+   stop 3x, take half                     +14.08  75%    -72.4    2    -105.2    -114.2     +718  +432 / +286
+   stop 3x, half then trail 20            +16.84  75%    -72.4    2    -105.2    -105.2     +859  +584 / +275
+   stop 3x, lock 50 > 25                  +12.99  61%    -72.4    3    -105.2    -116.1     +662  +429 / +233
+   stop 3x, ladder early 10/25/40/55/exp   +11.87  71%    -54.1    2     -70.7     -70.7     +605  +443 / +162
+   stop 3x, ladder standard 25/50/75/exp   +13.41  61%    -69.2    3    -110.5    -110.5     +684  +538 / +146
+   stop 3x, ladder late 50/75/exp         +13.99  61%    -72.4    3    -134.7    -134.7     +714  +566 / +148
+

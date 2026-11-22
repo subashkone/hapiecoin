@@ -1,0 +1,24 @@
+== Cautious: at least 70 % of trades positive, no losing run longer than 3, both halves positive, a stop on every sold option;
+   capital per unit so that the worst trade is at most 1 % and the deepest drawdown at most 3 % of it
+   BTC daily            stop 3x, out 16 h before           capital/unit    2500  return over the period  26.2 % in 106 trades  (mean +6.18, 78 %, worst -25.0, run 3, drawdown -45.8; 6 qualify; next: stop 3x, ladder standard 25/50/75/exp (18.6 %), stop 3x, ladder early 10/25/40/55/exp (17.8 %))
+   ETH daily            stop 3x, out 16 h before           capital/unit    1990  return over the period  13.7 % in 106 trades  (mean +2.58, 82 %, worst -19.9, run 2, drawdown -35.4; 5 qualify; next: stop 2x, out 16 h before (9.8 %), stop 3x, half then trail 20 (8.7 %))
+   Gold daily           stop 2x, out 16 h before           capital/unit     110  return over the period  18.2 % in 91 trades  (mean +0.21, 70 %, worst -1.1, run 2, drawdown -1.6; 3 qualify; next: stop 3x, out 16 h before (4.8 %), stop 3x, take half (3.9 %))
+   BTC weekly (Friday)  stop 3x, lock 50 > 25              capital/unit   16830  return over the period  12.4 % in 51 trades  (mean +40.95, 71 %, worst -168.3, run 3, drawdown -398.0; 4 qualify; next: stop 3x, ladder early 10/25/40/55/exp (10.2 %), stop 3x, half then trail 20 (9.1 %))
+   ETH weekly (Friday)  stop 3x, half then trail 20        capital/unit    7240  return over the period  11.9 % in 51 trades  (mean +16.84, 75 %, worst -72.4, run 2, drawdown -105.2; 3 qualify; next: stop 3x, ladder early 10/25/40/55/exp (11.2 %), stop 3x, take half (9.9 %))
+
+== Balanced: at least 60 % of trades positive, no losing run longer than 5, both halves positive, a stop on every sold option;
+   capital per unit so that the worst trade is at most 2 % and the deepest drawdown at most 6 % of it
+   BTC daily            stop 3x, out 16 h before           capital/unit    1250  return over the period  52.4 % in 106 trades  (mean +6.18, 78 %, worst -25.0, run 3, drawdown -45.8; 12 qualify; next: stop 2x, half then trail 20 (43.3 %), stop 3x, ladder standard 25/50/75/exp (37.3 %))
+   ETH daily            stop 3x, out 16 h before           capital/unit     995  return over the period  27.4 % in 106 trades  (mean +2.58, 82 %, worst -19.9, run 2, drawdown -35.4; 12 qualify; next: stop 2x, out 16 h before (19.7 %), stop 3x (19.1 %))
+   Gold daily           stop 2x, out 16 h before           capital/unit      55  return over the period  36.4 % in 91 trades  (mean +0.21, 70 %, worst -1.1, run 2, drawdown -1.6; 9 qualify; next: stop 2x, half then trail 20 (28.6 %), stop 2x, take half (24.3 %))
+   BTC weekly (Friday)  stop 3x, lock 50 > 25              capital/unit    8415  return over the period  24.8 % in 51 trades  (mean +40.95, 71 %, worst -168.3, run 3, drawdown -398.0; 7 qualify; next: stop 3x, ladder late 50/75/exp (22.8 %), stop 3x, ladder early 10/25/40/55/exp (20.4 %))
+   ETH weekly (Friday)  stop 3x, half then trail 20        capital/unit    3620  return over the period  23.7 % in 51 trades  (mean +16.84, 75 %, worst -72.4, run 2, drawdown -105.2; 9 qualify; next: stop 3x, ladder early 10/25/40/55/exp (22.4 %), stop 3x, take half (19.8 %))
+
+== Bold: at least 0 % of trades positive, no losing run longer than 99, both halves positive, a stop on every sold option;
+   capital per unit so that the worst trade is at most 4 % and the deepest drawdown at most 12 % of it
+   BTC daily            stop 3x, out 16 h before           capital/unit     625  return over the period 104.8 % in 106 trades  (mean +6.18, 78 %, worst -25.0, run 3, drawdown -45.8; 16 qualify; next: stop 2x, half then trail 20 (86.5 %), stop 2x, lock 50 > 25 (82.0 %))
+   ETH daily            stop 3x, out 16 h before           capital/unit     497  return over the period  54.9 % in 106 trades  (mean +2.58, 82 %, worst -19.9, run 2, drawdown -35.4; 16 qualify; next: stop 2x, out 16 h before (39.4 %), stop 3x (38.1 %))
+   Gold daily           stop 2x, out 16 h before           capital/unit      28  return over the period  72.7 % in 91 trades  (mean +0.21, 70 %, worst -1.1, run 2, drawdown -1.6; 16 qualify; next: stop 2x, half then trail 20 (57.1 %), stop 2x, take half (48.6 %))
+   BTC weekly (Friday)  stop 3x, lock 50 > 25              capital/unit    4208  return over the period  49.6 % in 51 trades  (mean +40.95, 71 %, worst -168.3, run 3, drawdown -398.0; 14 qualify; next: stop 3x (49.3 %), stop 3x, ladder late 50/75/exp (45.6 %))
+   ETH weekly (Friday)  stop 3x, half then trail 20        capital/unit    1810  return over the period  47.5 % in 51 trades  (mean +16.84, 75 %, worst -72.4, run 2, drawdown -105.2; 13 qualify; next: stop 3x, ladder early 10/25/40/55/exp (44.7 %), stop 3x, take half (39.7 %))
+

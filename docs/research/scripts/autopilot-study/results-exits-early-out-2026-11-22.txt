@@ -1,0 +1,30 @@
+## BTC daily, early timed exits (neighbours of 16 h)
+      no stop, out 19 h before (22:30 IST)         n=106 mean=   +1.67 win= 67% worst=   -21.4 total=   +177 | first half     +85, second half     +92
+      no stop, out 18 h before (23:30 IST)         n=106 mean=   +4.01 win= 78% worst=   -22.4 total=   +425 | first half    +230, second half    +196
+      no stop, out 17 h before (00:30 IST)         n=106 mean=   +5.58 win= 81% worst=   -40.0 total=   +592 | first half    +375, second half    +217
+      no stop, out 16 h before (01:30 IST)         n=106 mean=   +6.78 win= 81% worst=   -44.3 total=   +718 | first half    +441, second half    +277
+      no stop, out 15 h before (02:30 IST)         n=106 mean=   +6.30 win= 82% worst=  -189.7 total=   +668 | first half    +504, second half    +164
+      no stop, out 14 h before (03:30 IST)         n=106 mean=   +5.07 win= 80% worst=  -195.0 total=   +538 | first half    +484, second half     +53
+      no stop, out 13 h before (04:30 IST)         n=106 mean=   +5.73 win= 79% worst=  -195.6 total=   +607 | first half    +599, second half      +8
+      stop 3x, out 19 h before (22:30 IST)         n=106 mean=   +1.31 win= 67% worst=   -35.9 total=   +139 | first half     +47, second half     +92
+      stop 3x, out 18 h before (23:30 IST)         n=106 mean=   +3.16 win= 76% worst=   -31.1 total=   +335 | first half    +167, second half    +168
+      stop 3x, out 17 h before (00:30 IST)         n=106 mean=   +5.01 win= 79% worst=   -26.0 total=   +531 | first half    +302, second half    +229
+      stop 3x, out 16 h before (01:30 IST)         n=106 mean=   +6.18 win= 78% worst=   -25.0 total=   +655 | first half    +355, second half    +299
+      stop 3x, out 15 h before (02:30 IST)         n=106 mean=   +6.75 win= 78% worst=   -37.6 total=   +716 | first half    +414, second half    +302
+      stop 3x, out 14 h before (03:30 IST)         n=106 mean=   +5.26 win= 75% worst=   -57.7 total=   +558 | first half    +348, second half    +209
+      stop 3x, out 13 h before (04:30 IST)         n=106 mean=   +5.65 win= 75% worst=   -73.5 total=   +599 | first half    +442, second half    +157
+## ETH daily, early timed exits (neighbours of 16 h)
+      no stop, out 19 h before (22:30 IST)         n=106 mean=   +0.03 win= 58% worst=   -16.6 total=     +3 | first half     -14, second half     +17
+      no stop, out 18 h before (23:30 IST)         n=106 mean=   +1.62 win= 76% worst=    -8.2 total=   +172 | first half     +70, second half    +102
+      no stop, out 17 h before (00:30 IST)         n=106 mean=   +2.80 win= 82% worst=    -8.0 total=   +297 | first half    +151, second half    +145
+      no stop, out 16 h before (01:30 IST)         n=106 mean=   +3.30 win= 84% worst=   -17.4 total=   +350 | first half    +184, second half    +166
+      no stop, out 15 h before (02:30 IST)         n=106 mean=   +2.34 win= 81% worst=  -104.0 total=   +248 | first half    +103, second half    +145
+      no stop, out 14 h before (03:30 IST)         n=106 mean=   +1.00 win= 80% worst=  -113.4 total=   +106 | first half     +36, second half     +71
+      no stop, out 13 h before (04:30 IST)         n=106 mean=   +2.21 win= 79% worst=   -92.9 total=   +235 | first half    +140, second half     +95
+      stop 3x, out 19 h before (22:30 IST)         n=106 mean=   -0.01 win= 58% worst=   -18.0 total=     -1 | first half     -18, second half     +17
+      stop 3x, out 18 h before (23:30 IST)         n=106 mean=   +1.27 win= 76% worst=   -20.2 total=   +135 | first half     +43, second half     +92
+      stop 3x, out 17 h before (00:30 IST)         n=106 mean=   +2.20 win= 81% worst=   -20.4 total=   +234 | first half    +104, second half    +129
+      stop 3x, out 16 h before (01:30 IST)         n=106 mean=   +2.58 win= 82% worst=   -19.9 total=   +273 | first half    +129, second half    +144
+      stop 3x, out 15 h before (02:30 IST)         n=106 mean=   +2.47 win= 78% worst=   -49.8 total=   +262 | first half     +82, second half    +180
+      stop 3x, out 14 h before (03:30 IST)         n=106 mean=   +1.70 win= 76% worst=   -50.0 total=   +180 | first half     +44, second half    +136
+      stop 3x, out 13 h before (04:30 IST)         n=106 mean=   +2.42 win= 75% worst=   -49.9 total=   +256 | first half     +88, second half    +168

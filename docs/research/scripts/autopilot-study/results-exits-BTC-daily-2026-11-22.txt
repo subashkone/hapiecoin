@@ -1,0 +1,184 @@
+expiries in the cache: 106 (2026-08-08 .. 2026-11-21), traded 106; 100 lots x 0.001 per leg; net of fees
+sold strangle, each side 1 % away, entered 20 hours before settlement (21:30 IST); mean premium collected 36.5
+
+== 0. What is known already (the yardsticks)
+      hold to settlement                           n=106 mean=   +7.33 win= 80% worst=  -338.2 total=   +777 | first half    +356, second half    +421
+      stop 2x                                      n=106 mean=   +7.58 win= 49% worst=   -39.8 total=   +803 | first half    +340, second half    +463
+      stop 2x, take half                           n=106 mean=   +6.72 win= 63% worst=   -39.8 total=   +712 | first half    +291, second half    +421
+      stop 2x, half then trail 20                  n=106 mean=   +8.12 win= 63% worst=   -39.8 total=   +861 | first half    +371, second half    +490
+      stop 3x                                      n=106 mean=  +11.75 win= 65% worst=  -105.8 total=  +1246 | first half    +675, second half    +571
+      stop 3x, take half                           n=106 mean=   +9.02 win= 80% worst=   -69.2 total=   +956 | first half    +568, second half    +388
+      stop 3x, half then trail 20                  n=106 mean=  +11.30 win= 79% worst=   -69.2 total=  +1198 | first half    +685, second half    +513
+
+== 1. Profit lock: once the profit has reached X % of the premium, close if it falls back to Y % (else to settlement)
+      stop 2x, lock at 25 > floor 0                n=106 mean=   +6.70 win= 39% worst=   -37.3 total=   +711 | first half    +340, second half    +371
+      stop 2x, lock at 25 > floor 10               n=106 mean=   +4.45 win= 42% worst=   -37.3 total=   +472 | first half    +177, second half    +295
+      stop 2x, lock at 40 > floor 0                n=106 mean=   +6.66 win= 42% worst=   -39.8 total=   +706 | first half    +297, second half    +408
+      stop 2x, lock at 40 > floor 10               n=106 mean=   +5.94 win= 44% worst=   -39.8 total=   +630 | first half    +193, second half    +437
+      stop 2x, lock at 40 > floor 25               n=106 mean=   +6.50 win= 61% worst=   -39.8 total=   +689 | first half    +207, second half    +482
+      stop 2x, lock at 50 > floor 0                n=106 mean=   +6.94 win= 43% worst=   -39.8 total=   +736 | first half    +307, second half    +429
+      stop 2x, lock at 50 > floor 10               n=106 mean=   +7.04 win= 44% worst=   -39.8 total=   +746 | first half    +325, second half    +421
+      stop 2x, lock at 50 > floor 25               n=106 mean=   +7.70 win= 56% worst=   -39.8 total=   +816 | first half    +327, second half    +490
+      stop 2x, lock at 50 > floor 40               n=106 mean=   +7.11 win= 60% worst=   -39.8 total=   +753 | first half    +353, second half    +400
+      stop 2x, lock at 60 > floor 0                n=106 mean=   +6.91 win= 45% worst=   -39.8 total=   +732 | first half    +301, second half    +431
+      stop 2x, lock at 60 > floor 10               n=106 mean=   +6.89 win= 45% worst=   -39.8 total=   +730 | first half    +310, second half    +420
+      stop 2x, lock at 60 > floor 25               n=106 mean=   +7.04 win= 53% worst=   -39.8 total=   +746 | first half    +280, second half    +466
+      stop 2x, lock at 60 > floor 40               n=106 mean=   +7.61 win= 56% worst=   -39.8 total=   +807 | first half    +326, second half    +480
+      stop 2x, lock at 60 > floor 50               n=106 mean=   +7.45 win= 58% worst=   -39.8 total=   +789 | first half    +353, second half    +436
+      stop 2x, lock at 75 > floor 0                n=106 mean=   +7.02 win= 46% worst=   -39.8 total=   +744 | first half    +305, second half    +439
+      stop 2x, lock at 75 > floor 10               n=106 mean=   +6.92 win= 46% worst=   -39.8 total=   +733 | first half    +305, second half    +428
+      stop 2x, lock at 75 > floor 25               n=106 mean=   +7.37 win= 51% worst=   -39.8 total=   +781 | first half    +313, second half    +468
+      stop 2x, lock at 75 > floor 40               n=106 mean=   +6.90 win= 51% worst=   -39.8 total=   +732 | first half    +262, second half    +470
+      stop 2x, lock at 75 > floor 50               n=106 mean=   +6.71 win= 53% worst=   -39.8 total=   +712 | first half    +273, second half    +439
+      stop 2x, rising floor 25>0, 50>25, 75>50     n=106 mean=   +6.86 win= 52% worst=   -37.3 total=   +727 | first half    +324, second half    +403
+      stop 2x, rising floor 20>0, 40>20, 60>40, 80>60 n=106 mean=   +7.30 win= 59% worst=   -37.3 total=   +774 | first half    +286, second half    +488
+      stop 2x, rising floor 50>25, 75>50           n=106 mean=   +7.15 win= 58% worst=   -39.8 total=   +757 | first half    +291, second half    +466
+      stop 3x, lock at 25 > floor 0                n=106 mean=   +8.38 win= 42% worst=   -50.5 total=   +889 | first half    +491, second half    +397
+      stop 3x, lock at 25 > floor 10               n=106 mean=   +5.23 win= 45% worst=   -50.5 total=   +554 | first half    +225, second half    +330
+      stop 3x, lock at 40 > floor 0                n=106 mean=  +10.33 win= 49% worst=   -69.2 total=  +1095 | first half    +580, second half    +515
+      stop 3x, lock at 40 > floor 10               n=106 mean=   +8.56 win= 53% worst=   -69.2 total=   +907 | first half    +367, second half    +540
+      stop 3x, lock at 40 > floor 25               n=106 mean=   +8.60 win= 75% worst=   -69.2 total=   +912 | first half    +427, second half    +485
+      stop 3x, lock at 50 > floor 0                n=106 mean=  +11.08 win= 54% worst=   -69.2 total=  +1174 | first half    +633, second half    +542
+      stop 3x, lock at 50 > floor 10               n=106 mean=  +10.87 win= 56% worst=   -69.2 total=  +1152 | first half    +623, second half    +529
+      stop 3x, lock at 50 > floor 25               n=106 mean=  +11.68 win= 71% worst=   -69.2 total=  +1238 | first half    +675, second half    +563
+      stop 3x, lock at 50 > floor 40               n=106 mean=  +11.25 win= 75% worst=   -69.2 total=  +1192 | first half    +716, second half    +476
+      stop 3x, lock at 60 > floor 0                n=106 mean=  +10.27 win= 57% worst=  -105.8 total=  +1088 | first half    +505, second half    +583
+      stop 3x, lock at 60 > floor 10               n=106 mean=  +10.13 win= 58% worst=  -105.8 total=  +1074 | first half    +514, second half    +560
+      stop 3x, lock at 60 > floor 25               n=106 mean=  +10.13 win= 67% worst=  -105.8 total=  +1073 | first half    +503, second half    +571
+      stop 3x, lock at 60 > floor 40               n=106 mean=  +11.12 win= 71% worst=  -105.8 total=  +1179 | first half    +581, second half    +598
+      stop 3x, lock at 60 > floor 50               n=106 mean=  +10.23 win= 73% worst=  -105.8 total=  +1084 | first half    +589, second half    +495
+      stop 3x, lock at 75 > floor 0                n=106 mean=  +11.20 win= 60% worst=  -105.8 total=  +1187 | first half    +597, second half    +591
+      stop 3x, lock at 75 > floor 10               n=106 mean=  +10.83 win= 60% worst=  -105.8 total=  +1148 | first half    +597, second half    +551
+      stop 3x, lock at 75 > floor 25               n=106 mean=  +11.37 win= 66% worst=  -105.8 total=  +1205 | first half    +610, second half    +595
+      stop 3x, lock at 75 > floor 40               n=106 mean=  +10.98 win= 66% worst=  -105.8 total=  +1164 | first half    +564, second half    +600
+      stop 3x, lock at 75 > floor 50               n=106 mean=  +10.60 win= 69% worst=  -105.8 total=  +1123 | first half    +579, second half    +544
+      stop 3x, rising floor 25>0, 50>25, 75>50     n=106 mean=   +8.63 win= 58% worst=   -50.5 total=   +915 | first half    +478, second half    +437
+      stop 3x, rising floor 20>0, 40>20, 60>40, 80>60 n=106 mean=   +6.66 win= 63% worst=   -50.5 total=   +706 | first half    +306, second half    +400
+      stop 3x, rising floor 50>25, 75>50           n=106 mean=  +10.81 win= 73% worst=   -69.2 total=  +1146 | first half    +627, second half    +519
+   without a stop on the options, the lock alone:
+      no stop, lock at 25 > floor 0                n=106 mean=   +7.66 win= 45% worst=  -338.2 total=   +812 | first half    +625, second half    +186
+      no stop, lock at 50 > floor 25               n=106 mean=   +8.88 win= 82% worst=  -338.2 total=   +941 | first half    +616, second half    +325
+      no stop, lock at 75 > floor 50               n=106 mean=   +3.84 win= 81% worst=  -338.2 total=   +407 | first half    +196, second half    +211
+
+== 2. Timed exit: close everything at a fixed time, whatever the profit
+      no stop, out 16 h before (01:30 IST)         n=106 mean=   +6.78 win= 81% worst=   -44.3 total=   +718 | first half    +441, second half    +277
+      no stop, out 12 h before (05:30 IST)         n=106 mean=   +6.84 win= 83% worst=  -274.2 total=   +725 | first half    +667, second half     +58
+      no stop, out 10 h before (07:30 IST)         n=106 mean=   +4.56 win= 82% worst=  -413.5 total=   +484 | first half    +589, second half    -105
+      no stop, out 8 h before (09:30 IST)          n=106 mean=   +5.64 win= 79% worst=  -274.6 total=   +598 | first half    +734, second half    -136
+      no stop, out 6 h before (11:30 IST)          n=106 mean=   +7.27 win= 76% worst=  -219.9 total=   +770 | first half    +792, second half     -22
+      no stop, out 4 h before (13:30 IST)          n=106 mean=   +7.25 win= 77% worst=  -293.9 total=   +769 | first half    +669, second half    +100
+      no stop, out 2 h before (15:30 IST)          n=106 mean=   +4.23 win= 79% worst=  -397.5 total=   +449 | first half     +83, second half    +366
+      no stop, out 1 h before (16:30 IST)          n=106 mean=   +7.00 win= 81% worst=  -413.3 total=   +742 | first half    +218, second half    +524
+      stop 2x, out 16 h before (01:30 IST)         n=106 mean=   +4.82 win= 71% worst=   -28.3 total=   +511 | first half    +235, second half    +276
+      stop 2x, out 12 h before (05:30 IST)         n=106 mean=   +5.46 win= 63% worst=   -36.6 total=   +578 | first half    +318, second half    +260
+      stop 2x, out 10 h before (07:30 IST)         n=106 mean=   +6.03 win= 59% worst=   -37.3 total=   +639 | first half    +254, second half    +385
+      stop 2x, out 8 h before (09:30 IST)          n=106 mean=   +4.34 win= 51% worst=   -37.3 total=   +460 | first half    +262, second half    +198
+      stop 2x, out 6 h before (11:30 IST)          n=106 mean=   +5.53 win= 52% worst=   -37.3 total=   +586 | first half    +274, second half    +313
+      stop 2x, out 4 h before (13:30 IST)          n=106 mean=   +7.07 win= 52% worst=   -37.3 total=   +750 | first half    +353, second half    +397
+      stop 2x, out 2 h before (15:30 IST)          n=106 mean=   +7.66 win= 51% worst=   -39.8 total=   +812 | first half    +360, second half    +452
+      stop 2x, out 1 h before (16:30 IST)          n=106 mean=   +7.69 win= 49% worst=   -39.8 total=   +815 | first half    +360, second half    +455
+      stop 3x, out 16 h before (01:30 IST)         n=106 mean=   +6.18 win= 78% worst=   -25.0 total=   +655 | first half    +355, second half    +299
+      stop 3x, out 12 h before (05:30 IST)         n=106 mean=   +7.48 win= 76% worst=   -73.9 total=   +793 | first half    +523, second half    +270
+      stop 3x, out 10 h before (07:30 IST)         n=106 mean=   +8.10 win= 75% worst=  -109.9 total=   +859 | first half    +484, second half    +375
+      stop 3x, out 8 h before (09:30 IST)          n=106 mean=   +7.13 win= 71% worst=  -106.9 total=   +755 | first half    +584, second half    +172
+      stop 3x, out 6 h before (11:30 IST)          n=106 mean=   +9.46 win= 67% worst=  -106.3 total=  +1003 | first half    +625, second half    +379
+      stop 3x, out 4 h before (13:30 IST)          n=106 mean=  +10.85 win= 69% worst=  -105.8 total=  +1150 | first half    +678, second half    +472
+      stop 3x, out 2 h before (15:30 IST)          n=106 mean=  +10.98 win= 67% worst=  -105.8 total=  +1164 | first half    +613, second half    +551
+      stop 3x, out 1 h before (16:30 IST)          n=106 mean=  +12.18 win= 66% worst=  -105.8 total=  +1291 | first half    +707, second half    +583
+      stop 2x, take half, out 16 h before          n=106 mean=   +4.69 win= 71% worst=   -28.3 total=   +497 | first half    +229, second half    +267
+      stop 2x, take half, out 12 h before          n=106 mean=   +5.12 win= 66% worst=   -36.6 total=   +543 | first half    +276, second half    +267
+      stop 2x, take half, out 10 h before          n=106 mean=   +5.88 win= 65% worst=   -37.3 total=   +624 | first half    +259, second half    +365
+      stop 2x, take half, out 8 h before           n=106 mean=   +5.96 win= 62% worst=   -37.3 total=   +631 | first half    +282, second half    +350
+      stop 2x, take half, out 6 h before           n=106 mean=   +6.29 win= 63% worst=   -37.3 total=   +667 | first half    +286, second half    +381
+      stop 2x, take half, out 4 h before           n=106 mean=   +6.59 win= 63% worst=   -37.3 total=   +698 | first half    +306, second half    +392
+      stop 2x, take half, out 2 h before           n=106 mean=   +6.64 win= 63% worst=   -39.8 total=   +704 | first half    +289, second half    +416
+      stop 2x, take half, out 1 h before           n=106 mean=   +6.70 win= 63% worst=   -39.8 total=   +710 | first half    +290, second half    +420
+      stop 3x, take half, out 16 h before          n=106 mean=   +5.97 win= 78% worst=   -25.0 total=   +633 | first half    +342, second half    +291
+      stop 3x, take half, out 12 h before          n=106 mean=   +6.86 win= 78% worst=   -73.9 total=   +727 | first half    +451, second half    +275
+      stop 3x, take half, out 10 h before          n=106 mean=   +8.96 win= 81% worst=   -73.0 total=   +950 | first half    +546, second half    +404
+      stop 3x, take half, out 8 h before           n=106 mean=   +8.78 win= 80% worst=   -72.4 total=   +931 | first half    +564, second half    +367
+      stop 3x, take half, out 6 h before           n=106 mean=   +9.35 win= 80% worst=   -69.7 total=   +991 | first half    +595, second half    +396
+      stop 3x, take half, out 4 h before           n=106 mean=   +9.51 win= 80% worst=   -69.2 total=  +1008 | first half    +595, second half    +413
+      stop 3x, take half, out 2 h before           n=106 mean=   +9.12 win= 80% worst=   -70.3 total=   +966 | first half    +568, second half    +399
+      stop 3x, take half, out 1 h before           n=106 mean=   +9.28 win= 80% worst=   -69.3 total=   +984 | first half    +567, second half    +417
+
+== 3. Exit a side when the spot comes within Z % of its sold strike (0 = when the spot reaches the strike)
+      no price stop, side out within 0 %           n=106 mean=   +2.05 win= 56% worst=   -55.3 total=   +217 | first half    +177, second half     +40
+      no price stop, side out within 0.1 %         n=106 mean=   +3.16 win= 58% worst=   -42.3 total=   +335 | first half    +219, second half    +116
+      no price stop, side out within 0.25 %        n=106 mean=   +4.00 win= 61% worst=   -45.4 total=   +424 | first half    +270, second half    +155
+      no price stop, side out within 0.5 %         n=106 mean=   +0.32 win= 57% worst=   -45.4 total=    +34 | first half     +39, second half      -5
+      no price stop, side out within 0.75 %        n=106 mean=   -0.67 win= 49% worst=   -32.1 total=    -71 | first half      +3, second half     -73
+      stop 2x, side out within 0 %                 n=106 mean=   +2.71 win= 52% worst=   -48.0 total=   +287 | first half    +121, second half    +166
+      stop 2x, side out within 0.1 %               n=106 mean=   +3.32 win= 56% worst=   -42.3 total=   +352 | first half    +169, second half    +183
+      stop 2x, side out within 0.25 %              n=106 mean=   +3.77 win= 59% worst=   -45.4 total=   +399 | first half    +203, second half    +196
+      stop 2x, side out within 0.5 %               n=106 mean=   +0.08 win= 56% worst=   -45.4 total=     +9 | first half     +29, second half     -21
+      stop 2x, side out within 0.75 %              n=106 mean=   -0.64 win= 49% worst=   -32.1 total=    -68 | first half      +5, second half     -73
+      stop 3x, side out within 0 %                 n=106 mean=   +1.89 win= 53% worst=   -48.0 total=   +200 | first half    +144, second half     +56
+      stop 3x, side out within 0.1 %               n=106 mean=   +2.79 win= 56% worst=   -42.3 total=   +295 | first half    +184, second half    +111
+      stop 3x, side out within 0.25 %              n=106 mean=   +3.49 win= 59% worst=   -45.4 total=   +370 | first half    +228, second half    +143
+      stop 3x, side out within 0.5 %               n=106 mean=   +0.26 win= 57% worst=   -45.4 total=    +27 | first half     +32, second half      -5
+      stop 3x, side out within 0.75 %              n=106 mean=   -0.67 win= 49% worst=   -32.1 total=    -71 | first half      +3, second half     -73
+      no price stop, take half, side out within 0 % n=106 mean=   +3.75 win= 71% worst=   -48.0 total=   +398 | first half    +288, second half    +110
+      no price stop, take half, side out within 0.1 % n=106 mean=   +3.84 win= 69% worst=   -42.3 total=   +407 | first half    +316, second half     +91
+      no price stop, take half, side out within 0.25 % n=106 mean=   +3.68 win= 69% worst=   -45.4 total=   +390 | first half    +251, second half    +139
+      no price stop, take half, side out within 0.5 % n=106 mean=   +0.03 win= 57% worst=   -45.4 total=     +4 | first half     +46, second half     -42
+      no price stop, take half, side out within 0.75 % n=106 mean=   -0.90 win= 49% worst=   -32.1 total=    -95 | first half      -4, second half     -91
+      stop 3x, take half, side out within 0 %      n=106 mean=   +3.46 win= 67% worst=   -48.0 total=   +367 | first half    +257, second half    +110
+      stop 3x, take half, side out within 0.1 %    n=106 mean=   +3.47 win= 65% worst=   -42.3 total=   +368 | first half    +286, second half     +82
+      stop 3x, take half, side out within 0.25 %   n=106 mean=   +3.23 win= 66% worst=   -45.4 total=   +342 | first half    +219, second half    +123
+      stop 3x, take half, side out within 0.5 %    n=106 mean=   -0.03 win= 57% worst=   -45.4 total=     -3 | first half     +39, second half     -42
+      stop 3x, take half, side out within 0.75 %   n=106 mean=   -0.90 win= 49% worst=   -32.1 total=    -95 | first half      -4, second half     -91
+
+== 4. Step ladders: equal parts, each closed at its share of the premium; exp = that part kept to settlement
+      stop 2x, 3 steps  25 / 50 / exp              n=106 mean=   +6.19 win= 64% worst=   -37.3 total=   +656 | first half    +266, second half    +390
+      stop 2x, 3 steps  33 / 66 / exp              n=106 mean=   +6.63 win= 59% worst=   -37.3 total=   +703 | first half    +288, second half    +415
+      stop 2x, 3 steps  50 / 75 / exp (late)       n=106 mean=   +7.31 win= 57% worst=   -39.8 total=   +775 | first half    +303, second half    +472
+      stop 2x, 3 steps  25 / 50 / 75 (all taken)   n=106 mean=   +6.21 win= 65% worst=   -37.3 total=   +658 | first half    +245, second half    +413
+      stop 2x, 4 steps  25 / 50 / 75 / exp (tested before) n=106 mean=   +6.55 win= 60% worst=   -37.3 total=   +694 | first half    +269, second half    +425
+      stop 2x, 4 steps  20 / 40 / 60 / exp (early) n=106 mean=   +5.86 win= 66% worst=   -37.3 total=   +621 | first half    +257, second half    +364
+      stop 2x, 4 steps  40 / 60 / 80 / exp (late)  n=106 mean=   +7.11 win= 60% worst=   -39.8 total=   +754 | first half    +306, second half    +448
+      stop 2x, 4 steps  20 / 40 / 60 / 80 (all taken) n=106 mean=   +6.06 win= 66% worst=   -37.3 total=   +643 | first half    +253, second half    +390
+      stop 2x, 5 steps  20 / 40 / 60 / 80 / exp    n=106 mean=   +6.37 win= 63% worst=   -37.3 total=   +675 | first half    +270, second half    +405
+      stop 2x, 5 steps  10 / 25 / 40 / 55 / exp (early) n=106 mean=   +4.90 win= 69% worst=   -29.5 total=   +519 | first half    +209, second half    +310
+      stop 2x, 5 steps  30 / 45 / 60 / 75 / exp    n=106 mean=   +6.66 win= 63% worst=   -37.3 total=   +706 | first half    +283, second half    +422
+      stop 2x, 5 steps  50 / 60 / 70 / 80 / exp (late) n=106 mean=   +7.29 win= 56% worst=   -39.8 total=   +773 | first half    +307, second half    +466
+      stop 3x, 3 steps  25 / 50 / exp              n=106 mean=   +8.37 win= 72% worst=   -50.5 total=   +887 | first half    +501, second half    +386
+      stop 3x, 3 steps  33 / 66 / exp              n=106 mean=   +9.15 win= 72% worst=   -69.2 total=   +970 | first half    +547, second half    +423
+      stop 3x, 3 steps  50 / 75 / exp (late)       n=106 mean=  +10.39 win= 72% worst=   -69.2 total=  +1102 | first half    +592, second half    +509
+      stop 3x, 3 steps  25 / 50 / 75 (all taken)   n=106 mean=   +7.92 win= 73% worst=   -50.5 total=   +840 | first half    +455, second half    +385
+      stop 3x, 4 steps  25 / 50 / 75 / exp (tested before) n=106 mean=   +8.88 win= 72% worst=   -50.5 total=   +941 | first half    +510, second half    +432
+      stop 3x, 4 steps  20 / 40 / 60 / exp (early) n=106 mean=   +7.83 win= 73% worst=   -50.5 total=   +830 | first half    +465, second half    +365
+      stop 3x, 4 steps  40 / 60 / 80 / exp (late)  n=106 mean=   +9.91 win= 71% worst=   -72.8 total=  +1050 | first half    +566, second half    +485
+      stop 3x, 4 steps  20 / 40 / 60 / 80 (all taken) n=106 mean=   +7.78 win= 73% worst=   -50.5 total=   +824 | first half    +443, second half    +382
+      stop 3x, 5 steps  20 / 40 / 60 / 80 / exp    n=106 mean=   +8.57 win= 71% worst=   -56.0 total=   +909 | first half    +489, second half    +420
+      stop 3x, 5 steps  10 / 25 / 40 / 55 / exp (early) n=106 mean=   +6.63 win= 75% worst=   -39.5 total=   +703 | first half    +398, second half    +305
+      stop 3x, 5 steps  30 / 45 / 60 / 75 / exp    n=106 mean=   +8.96 win= 71% worst=   -69.2 total=   +950 | first half    +516, second half    +434
+      stop 3x, 5 steps  50 / 60 / 70 / 80 / exp (late) n=106 mean=  +10.15 win= 71% worst=   -77.9 total=  +1076 | first half    +579, second half    +497
+
+== 5. The same ladders judged on the whole trade: a part closes when realised plus open profit reaches the step
+      stop 2x, whole, 3 steps  25 / 50 / exp       n=106 mean=   +6.36 win= 61% worst=   -37.3 total=   +674 | first half    +279, second half    +394
+      stop 2x, whole, 3 steps  33 / 66 / exp       n=106 mean=   +6.47 win= 55% worst=   -37.3 total=   +686 | first half    +292, second half    +394
+      stop 2x, whole, 3 steps  50 / 75 / exp (late) n=106 mean=   +7.18 win= 54% worst=   -39.8 total=   +761 | first half    +319, second half    +443
+      stop 2x, whole, 3 steps  25 / 50 / 75 (all taken) n=106 mean=   +6.36 win= 61% worst=   -37.3 total=   +674 | first half    +279, second half    +394
+      stop 2x, whole, 4 steps  25 / 50 / 75 / exp (tested before) n=106 mean=   +6.45 win= 56% worst=   -37.3 total=   +683 | first half    +284, second half    +399
+      stop 2x, whole, 4 steps  20 / 40 / 60 / exp (early) n=106 mean=   +6.27 win= 60% worst=   -37.3 total=   +665 | first half    +275, second half    +389
+      stop 2x, whole, 4 steps  40 / 60 / 80 / exp (late) n=106 mean=   +7.00 win= 56% worst=   -39.8 total=   +742 | first half    +300, second half    +442
+      stop 2x, whole, 4 steps  20 / 40 / 60 / 80 (all taken) n=106 mean=   +6.27 win= 60% worst=   -37.3 total=   +665 | first half    +275, second half    +389
+      stop 2x, whole, 5 steps  20 / 40 / 60 / 80 / exp n=106 mean=   +6.65 win= 58% worst=   -37.3 total=   +705 | first half    +282, second half    +423
+      stop 2x, whole, 5 steps  10 / 25 / 40 / 55 / exp (early) n=106 mean=   +5.29 win= 60% worst=   -29.5 total=   +560 | first half    +232, second half    +328
+      stop 2x, whole, 5 steps  30 / 45 / 60 / 75 / exp n=106 mean=   +6.82 win= 58% worst=   -37.3 total=   +723 | first half    +287, second half    +436
+      stop 2x, whole, 5 steps  50 / 60 / 70 / 80 / exp (late) n=106 mean=   +7.45 win= 56% worst=   -39.8 total=   +790 | first half    +323, second half    +467
+      stop 3x, whole, 3 steps  25 / 50 / exp       n=106 mean=   +8.37 win= 71% worst=   -65.4 total=   +888 | first half    +485, second half    +402
+      stop 3x, whole, 3 steps  33 / 66 / exp       n=106 mean=   +9.10 win= 67% worst=   -69.2 total=   +965 | first half    +549, second half    +416
+      stop 3x, whole, 3 steps  50 / 75 / exp (late) n=106 mean=  +10.42 win= 68% worst=   -69.2 total=  +1105 | first half    +617, second half    +488
+      stop 3x, whole, 3 steps  25 / 50 / 75 (all taken) n=106 mean=   +8.37 win= 71% worst=   -65.4 total=   +888 | first half    +485, second half    +402
+      stop 3x, whole, 4 steps  25 / 50 / 75 / exp (tested before) n=106 mean=   +9.11 win= 66% worst=   -75.5 total=   +966 | first half    +540, second half    +425
+      stop 3x, whole, 4 steps  20 / 40 / 60 / exp (early) n=106 mean=   +8.62 win= 68% worst=   -50.5 total=   +913 | first half    +506, second half    +408
+      stop 3x, whole, 4 steps  40 / 60 / 80 / exp (late) n=106 mean=  +10.29 win= 68% worst=   -72.8 total=  +1091 | first half    +602, second half    +489
+      stop 3x, whole, 4 steps  20 / 40 / 60 / 80 (all taken) n=106 mean=   +8.62 win= 68% worst=   -50.5 total=   +913 | first half    +506, second half    +408
+      stop 3x, whole, 5 steps  20 / 40 / 60 / 80 / exp n=106 mean=   +9.29 win= 69% worst=   -54.5 total=   +984 | first half    +528, second half    +456
+      stop 3x, whole, 5 steps  10 / 25 / 40 / 55 / exp (early) n=106 mean=   +7.37 win= 68% worst=   -58.6 total=   +782 | first half    +439, second half    +343
+      stop 3x, whole, 5 steps  30 / 45 / 60 / 75 / exp n=106 mean=   +9.63 win= 70% worst=   -69.2 total=  +1021 | first half    +553, second half    +468
+      stop 3x, whole, 5 steps  50 / 60 / 70 / 80 / exp (late) n=106 mean=  +10.55 win= 70% worst=   -77.9 total=  +1118 | first half    +602, second half    +516
+
+variants in this table: 167
