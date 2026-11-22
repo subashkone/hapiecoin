@@ -8539,6 +8539,36 @@
   "evidence": "ADR-121, GAPS #156 (22 Nov 2026): packages/pricing/src/playbooks.ts (PlaybookClock.lock / exitHourUtc / takeTrailPct, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS), apps/api/src/autopilot.ts (plan, nextHourUtc), packages/schema/src/autopilot.ts (run detail), AutopilotPage.tsx (istClock); tests: packages/pricing/src/playbooks.test.ts HC-TR-241, apps/api/src/autopilot.test.ts HC-TR-241, autopilot-page.test.tsx (the exit words)"
  },
  {
+  "id": "HC-TR-242",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "Autopilot strategies that sell only the side behind a 24-hour move",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "integration (api)",
+  "acceptance": "a clock playbook may carry a look-back and a threshold; at entry the spot is compared with the stored spot of 24 hours earlier (the nearest snapshot within 30 minutes): up more than 1 % only the put is sold, down more than 1 % only the call, otherwise both; with no earlier spot the evening is skipped and the log says why; two paper playbooks, BTC and ETH daily, strikes 1 % away with a stop at triple on each sold option",
+  "evidence": "ADR-122, GAPS #157 (22 Nov 2026): packages/pricing/src/playbooks.ts (PlaybookClock.moveSide, sideAfterMove, proposalFor, MOVE_DAILY_PLAYBOOKS), apps/api/src/autopilot.ts (spotNear, SPOT_NEAR_MS, noMove); tests: packages/pricing/src/playbooks.test.ts HC-TR-242, apps/api/src/autopilot.test.ts HC-TR-242"
+ },
+ {
+  "id": "HC-TR-243",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "The Autopilot log says the move an entry was judged on and the side it sold",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "component (web)",
+  "acceptance": "an entry of a one-side strategy records the spot's move over 24 hours and the side kept; its log line reads \"BTC up 1.56 % over 24 hours: the put only\", or \"both sides\" after a flat day",
+  "evidence": "ADR-122 (22 Nov 2026): packages/schema/src/autopilot.ts (run detail move), apps/api/src/autopilot.ts (detailOf), AutopilotPage.tsx (moveWords); tests: autopilot-page.test.tsx HC-TR-243, apps/api/src/autopilot.test.ts HC-TR-242 (the detail)"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

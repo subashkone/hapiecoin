@@ -1,6 +1,6 @@
 # Paper trading, live trading, rules and accounts
 
-Part of the [HapieCoin feature guide](README.md). 129 traced features on 35 screens; 129 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 131 traced features on 35 screens; 131 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -64,6 +64,8 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-235 | Autopilot strangles on ETH and XAUT, each from that coin's own backtest | twenty playbooks that trade one coin each: six ETH and four XAUT evening strangles, five ETH weekly (four entered on a Friday, one on a Tuesday) and five ETH monthly ones on month-end expiries; strikes are the listed ones a percentage of that coin's spot away and the size is that coin's lot; Autopilot looks at XAUT as well as BTC and ETH; XAUT settles at 16:00 UTC, so its evening entry is the hour after one expiry for the next, with no entry on a Saturday evening; XAUT has no weekly or monthly playbook; the screen lists the rows under the coin filter | built | integration (api) |
 | HC-TR-239 | Autopilot strategies with a profit ladder | a clock playbook may carry a ladder; Autopilot arms a step at each level, each an equal part of what is left, beside the stop on each sold option; three paper playbooks use 25 / 50 / 75 with a stop at triple: BTC daily, ETH daily and the BTC Friday weekly, beside the existing ones | built | integration (api) |
 | HC-TR-241 | Ten Autopilot paper strategies from the strategy lab | a clock playbook may carry a profit lock, an exit hour or a trail from its take level; ten playbooks beside the existing ones: the lock on BTC daily and the BTC Friday weekly, out by 1:30 AM IST on BTC and ETH, half then trail on BTC and ETH, strikes 0.5 % away on BTC and ETH, ETH with wings at 3 % and no stop, and a BTC entry two hours before settlement whose card says the evidence is weak | built | integration (api) |
+| HC-TR-242 | Autopilot strategies that sell only the side behind a 24-hour move | a clock playbook may carry a look-back and a threshold; at entry the spot is compared with the stored spot of 24 hours earlier (the nearest snapshot within 30 minutes): up more than 1 % only the put is sold, down more than 1 % only the call, otherwise both; with no earlier spot the evening is skipped and the log says why; two paper playbooks, BTC and ETH daily, strikes 1 % away with a stop at triple on each sold option | built | integration (api) |
+| HC-TR-243 | The Autopilot log says the move an entry was judged on and the side it sold | an entry of a one-side strategy records the spot's move over 24 hours and the side kept; its log line reads "BTC up 1.56 % over 24 hours: the put only", or "both sides" after a flat day | built | component (web) |
 
 ### Trading · Protect dialog / cards · Details · `/desk`
 

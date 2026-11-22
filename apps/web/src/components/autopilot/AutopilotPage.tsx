@@ -47,6 +47,11 @@ export const istClock = (hourUtc: number): string => {
   const h = Math.floor(m / 60);
   return `${h % 12 === 0 ? 12 : h % 12}:${String(m % 60).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
 };
+/** ADR-122: the move an entry was judged on and the side it left to sell: "BTC up 1.62 % over 24 hours: the put only". */
+export const moveWords = (asset: string, move: { pct: string; side: "put" | "call" | "both" }): string => {
+  const pct = Number(move.pct);
+  return `${asset} ${pct < 0 ? "down" : "up"} ${Math.abs(pct).toFixed(2)} % over 24 hours: ${move.side === "both" ? "both sides" : `the ${move.side} only`}`;
+};
 /** How a strategy gets out, in a few words: the column a trader compares rows by. */
 const exitWords = (p: Playbook): string => {
   const c = p.clock;
@@ -363,7 +368,7 @@ export function AutopilotPage() {
                   <Badge variant={KIND[r.kind].variant}>{KIND[r.kind].label}</Badge>
                   <span className="min-w-0 truncate font-medium">{nameOf(r.playbookId)} · {r.asset}</span>
                   <span className="num text-muted-foreground">{fmtDateTime(r.at)}</span>
-                  <span className="text-muted-foreground">{r.reason}{r.detail.dte !== undefined ? ` · ${r.detail.dte}d to expiry` : ""}{r.kind === "entered" && r.detail.capital ? ` · capital ${fmtMoney(r.detail.capital, money)}` : ""}</span>
+                  <span className="text-muted-foreground">{r.reason}{r.detail.dte !== undefined ? ` · ${r.detail.dte}d to expiry` : ""}{r.kind === "entered" && r.detail.capital ? ` · capital ${fmtMoney(r.detail.capital, money)}` : ""}{r.kind === "entered" && r.detail.move ? ` · ${moveWords(r.asset, r.detail.move)}` : ""}</span>
                 </li>
               ))}
             </ul>

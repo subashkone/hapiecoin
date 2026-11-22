@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, PLAYBOOKS, WEEKLY_PLAYBOOKS, type PlaybookProposal, autopilotPlaybookById, playbookById } from "@hapiecoin/pricing";
 import { AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_MAX_STRATEGIES, MAX_STRATEGY_NAME, StrategyList, AUTOPILOT_PAPER_ONLY_MESSAGE, AUTOPILOT_RUNS_RETENTION_DAYS, type AutopilotResults, type AutopilotRunDetail, type AutopilotView, type Instrument, type Quote, type SubscriptionView } from "@hapiecoin/schema";
 import { and, asc, eq } from "drizzle-orm";
-import { AUTOPILOT_MAX_MARK_AGE_MS, AUTOPILOT_NAME_SUFFIX, type AutopilotDeps, betterEntry, clockPlanFor, inWindow, liveDay, nextHourUtc, planFor, runAutopilot, skipText, structureKey } from "./autopilot.js";
+import { AUTOPILOT_MAX_MARK_AGE_MS, AUTOPILOT_NAME_SUFFIX, type AutopilotDeps, betterEntry, clockPlanFor, inWindow, liveDay, nextHourUtc, planFor, runAutopilot, SPOT_NEAR_MS, spotNear, skipText, structureKey } from "./autopilot.js";
 import { clearEodMemo } from "./chain-eod.js";
 import { autopilotRuns, instrumentMarks, ivSnapshots, plans, strategies, subscriptions, strategyLegs, strategyRules, userSettings, users } from "./db/schema.js";
 import { SEED } from "./db/seed.js";
@@ -1096,7 +1096,7 @@ describe("HC-TR-239 an Autopilot strategy with a profit ladder (ADR-120)", () =>
     expect(rules.some((r) => r.kind === "target")).toBe(false);
     const line = (await view(me.cookie)).runs.find((r) => r.kind === "entered" && r.strategyId === trade!.id)!;
     expect(line.detail).toMatchObject({ exit: "own", legStop: 3, ladder: [25, 50, 75] });
-    expect(line.detail!.targetUsd).toBeUndefined();
+    expect(line.detail.targetUsd).toBeUndefined();
 
     // both options at seven tenths of their entry: the open lots are up 30 %, so the first step goes and the others wait
     const marks = new Map(legs.map((l) => [l.symbol, 0.7 * Number(l.price)]));
@@ -1255,5 +1255,99 @@ describe("HC-TR-234 what Autopilot writes can be read back", () => {
     // through the API, as the first trader: the whole list parses
     const list = StrategyList.safeParse(await (await t.request("/v1/strategies", { cookie })).json());
     expect(list.success).toBe(true);
+  });
+});
+
+describe("HC-TR-242 one side after a move (ADR-122)", () => {
+  it("HC-TR-242 the stored spot nearest an instant, within half an hour of it; a spot of zero is not one", async () => {
+    const AT = Date.UTC(2027, 3, 1, 16, 0, 0);
+    const row = (offsetMin: number, spot: string) => ({ venue: "delta_india" as const, asset: "BTC" as const, expiry: "2027-04-02", ts: new Date(AT + offsetMin * MIN), atmIv: "0.5", spot, atmStrike: "80000", front: true });
+    expect(await spotNear(t.db, "delta_india", "BTC", AT)).toBeNull();
+    await t.db.insert(ivSnapshots).values([row(-40, "70000"), row(-20, "80100"), row(-5, "80200"), row(-1, "0"), row(10, "80300"), row(45, "90000")]);
+    expect(await spotNear(t.db, "delta_india", "BTC", AT)).toBe(80_200);
+    expect(await spotNear(t.db, "delta_india", "BTC", AT + 12 * MIN)).toBe(80_300);
+    expect(await spotNear(t.db, "delta_india", "ETH", AT)).toBeNull();
+    expect(SPOT_NEAR_MS).toBe(30 * MIN);
+  });
+
+  it("HC-TR-242 no entry without the spot of 24 hours earlier; after a rise the put alone, after a fall the call alone, after a flat day both, each with its own stop; the entry records the move", async () => {
+    const me = await t.signUp("autopilot-move@hapiecoin.test");
+    const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
+    const PB = "evening-strangle-one-side";
+    const HELD = "Holds a trade already: one at a time for a strategy and coin";
+    const STOPPED = { status: "archived", closeReason: "stopped" };
+    await put({ enabled: true, strategies: [{ playbookId: PB, exit: "own" }] }, me.cookie);
+    const market = (ts: number, spot: number, expiries: readonly string[]): MarketSource => {
+      const products: Instrument[] = [];
+      const quotes: Quote[] = [];
+      for (const e of expiries)
+        for (let i = -40; i <= 40; i++) {
+          const k = 83_200 + i * 200;
+          const code = e.slice(8, 10) + e.slice(5, 7) + e.slice(2, 4);
+          const tv = 600 * Math.exp(-Math.abs(k - spot) / 900);
+          for (const [kind, letter, intrinsic] of [["call", "C", Math.max(spot - k, 0)], ["put", "P", Math.max(k - spot, 0)]] as const) {
+            const symbol = `${letter}-BTC-${k}-${code}`;
+            products.push(inst(symbol, kind, k, e));
+            quotes.push({ instrumentId: `delta_india:${symbol}`, ts, mark: (intrinsic + tv).toFixed(2), oi: "1", spot: String(spot), markIv: 0.5 });
+          }
+        }
+      return { venue: "delta_india", products: () => Promise.resolve(products), tickers: (u) => Promise.resolve(u === "BTC" ? quotes : []) };
+    };
+    // one pass a day at 21:35 IST in April 2027, on the next day's expiry
+    const evening = (day: number) => Date.UTC(2027, 3, day, 16, 5, 0);
+    const iso = (day: number) => `2027-04-${String(day).padStart(2, "0")}`;
+    const pass = async (day: number, spot: number, lateMin = 0) => {
+      const at = evening(day) + lateMin * MIN;
+      await snapshotOnce(t.deps, market(at - MIN, spot, [iso(day + 1), iso(day + 2)]), () => at - MIN);
+      return runAutopilot(deps(at, { maxOpen: undefined }), ["delta_india"]);
+    };
+    const mine = () => t.db.select().from(strategies).where(eq(strategies.userId, id)).orderBy(asc(strategies.startedAt));
+    const legsOf = (sid: string) => t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, sid)).orderBy(asc(strategyLegs.position));
+    const rulesOf = (sid: string) => t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, sid));
+    const runs = async () => (await view(me.cookie)).runs.filter((r) => r.playbookId === PB);
+    const last = async () => {
+      const all = await mine();
+      const s = all[all.length - 1]!;
+      const out = { n: all.length, legs: (await legsOf(s.id)).map((l) => `${l.side} ${l.kind} ${l.strike} ${l.expiry} x${l.lots}`), rules: (await rulesOf(s.id)).map((r) => `${r.kind} ${r.trigger} ${r.value}`), mode: s.tradingMode, status: s.status };
+      // yesterday's trade has settled by the next evening: out of the way of the next entry
+      await t.db.update(strategies).set({ status: "archived", closedAt: new Date(s.startedAt!.getTime() + 20 * 60 * MIN) }).where(eq(strategies.id, s.id));
+      return out;
+    };
+
+    // 10 April: no snapshot from the evening of the 9th, so nothing to judge the move on
+    await pass(10, 83_200);
+    expect(await mine()).toHaveLength(0);
+    expect((await runs())[0]).toMatchObject({ kind: "skipped", reason: "No spot price from 24 hours ago to judge the move on" });
+
+    // 11 April: 84,500 against 83,200 is +1.56 %: the put alone, 1 % under the spot (83,655, nearest listed 83,600)
+    await pass(11, 84_500);
+    expect((await runs())[0]).toMatchObject({ kind: "entered", detail: { move: { pct: "1.56", side: "put" }, legStop: 3 } });
+    // ten minutes on, still in the window, the spot is back near yesterday's: the rule would now say both sides, but the
+    // evening's trade is taken; nothing more is entered
+    await pass(11, 83_300, 10);
+    expect(await mine()).toHaveLength(1);
+    expect((await runs())[0]).toMatchObject({ kind: "skipped", reason: HELD });
+    expect(await last()).toEqual({ n: 1, legs: ["sell put 83600 2027-04-12 x100"], rules: ["leg_stop multiple 3"], mode: "paper", status: "paper" });
+
+    // 12 April: 83,000 against 84,500 is -1.78 %: the call alone, 1 % over the spot (83,830, nearest listed 83,800)
+    await pass(12, 83_000);
+    expect((await runs())[0]!.detail.move).toEqual({ pct: "-1.78", side: "call" });
+    // the one stop is the trade's only exit before settlement: run by the engine, the call at three times its price is
+    // bought back and, nothing being left open, the trade is closed as stopped
+    const callTrade = (await mine())[1]!;
+    const [call] = await legsOf(callTrade.id);
+    expect((await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map([[call!.symbol, 2.9 * Number(call!.price)]]), spot: null }) }, () => evening(12) + 30 * MIN)).fired).toHaveLength(0);
+    expect((await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map([[call!.symbol, 3 * Number(call!.price)]]), spot: null }) }, () => evening(12) + 31 * MIN)).fired).toHaveLength(1);
+    expect((await legsOf(callTrade.id)).map((l) => `${l.status} ${l.closeReason}`)).toEqual(["squared_off stopped"]);
+    expect((await mine())[1]).toMatchObject(STOPPED);
+    expect(await last()).toMatchObject({ n: 2, legs: ["sell call 83800 2027-04-13 x100"], rules: ["leg_stop multiple 3"] });
+
+    // 13 April: 83,400 against 83,000 is +0.48 %: both sides, as the plain evening strangle
+    await pass(13, 83_400);
+    expect(await last()).toMatchObject({ n: 3, legs: ["sell put 82600 2027-04-14 x100", "sell call 84200 2027-04-14 x100"], rules: ["leg_stop multiple 3", "leg_stop multiple 3"] });
+    expect((await runs())[0]!.detail.move).toEqual({ pct: "0.48", side: "both" });
+
+    // what was written is what the screen can read
+    expect((await t.request("/v1/autopilot", { cookie: me.cookie })).status).toBe(200);
   });
 });
