@@ -1,0 +1,84 @@
+## BTC daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 2x on each sold option; bars of 5 minutes; mean premium 36.5
+   A. every trade                                                n     mean   win    total    worst   worst 3  drawdown         halves
+   hold: the other keeps only its own stop                     106    +7.58   49%     +803    -39.8    -110.6    -126.4    +340 / +463
+   close both at the first stop                                106    +6.43   44%     +682    -32.5     -94.2    -159.6    +320 / +362
+   other closed back at its sale price                         106    +5.89   44%     +624    -38.2    -107.0    -175.5    +282 / +342
+   other closed at half its profit given back                  106    +7.05   49%     +748    -38.2    -107.6    -140.0    +371 / +377
+   trail the rest, give back 50 %                              106    +7.06   49%     +748    -38.2    -104.7    -140.0    +366 / +382
+   trail the rest, give back 25 %                              106    +5.84   48%     +619    -38.2    -105.2    -179.6    +282 / +337
+   trail the rest, give back 10 %                              106    +6.00   46%     +636    -38.2    -105.2    -172.5    +290 / +346
+
+   B. only the trades where a stop fired                         n     mean    worst   other option: lost on / mean of those losses / worst   closed early / of those would have settled worthless   over
+   hold: the other keeps only its own stop                      60    -9.71    -39.8     6 /   -12.35 /    -22.5     0 /   0
+   close both at the first stop                                 60   -11.72    -32.5     0 /    +0.00 /     +0.0    60 /  57
+   other closed back at its sale price                          60   -12.69    -38.2     2 /    -0.16 /     -0.3    55 /  52     1.22
+   other closed at half its profit given back                   60   -10.63    -38.2     2 /    -0.16 /     -0.3    15 /  12     1.75
+   trail the rest, give back 50 %                               60   -10.62    -38.2     2 /    -0.16 /     -0.3    16 /  13     1.70
+   trail the rest, give back 25 %                               60   -12.78    -38.2     2 /    -0.16 /     -0.3    35 /  32     0.97
+   trail the rest, give back 10 %                               60   -12.48    -38.2     2 /    -0.16 /     -0.3    43 /  40     1.17
+
+   The reversal, when simply held: a stop fired on 60 trades; on 6 of them the other option then also ended at a loss (mean -12.35, worst -22.5); on 54 it ended at a profit (mean +19.71).
+
+## BTC daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option; bars of 5 minutes; mean premium 36.5
+   A. every trade                                                n     mean   win    total    worst   worst 3  drawdown         halves
+   hold: the other keeps only its own stop                     106   +11.75   65%    +1246   -105.8    -254.2    -185.0    +675 / +571
+   close both at the first stop                                106   +11.51   65%    +1220   -108.2    -259.6    -187.4    +640 / +581
+   other closed back at its sale price                         106   +11.30   65%    +1198   -108.6    -263.4    -187.8    +622 / +576
+   other closed at half its profit given back                  106   +11.92   65%    +1263   -105.8    -254.2    -185.0    +657 / +607
+   trail the rest, give back 50 %                              106   +11.87   65%    +1258   -105.8    -254.2    -185.0    +651 / +607
+   trail the rest, give back 25 %                              106   +11.57   65%    +1227   -105.8    -264.4    -185.0    +633 / +593
+   trail the rest, give back 10 %                              106   +11.36   65%    +1204   -110.5    -265.3    -189.7    +623 / +581
+
+   B. only the trades where a stop fired                         n     mean    worst   other option: lost on / mean of those losses / worst   closed early / of those would have settled worthless   over
+   hold: the other keeps only its own stop                      36   -29.60   -105.8     2 /   -22.98 /    -38.0     0 /   0
+   close both at the first stop                                 36   -30.31   -108.2     1 /    -0.27 /     -0.3    36 /  36
+   other closed back at its sale price                          36   -30.92   -108.6     1 /    -1.07 /     -1.1    30 /  30     0.93
+   other closed at half its profit given back                   36   -29.11   -105.8     1 /    -1.07 /     -1.1     5 /   5     1.05
+   trail the rest, give back 50 %                               36   -29.25   -105.8     1 /    -1.07 /     -1.1     6 /   6     1.05
+   trail the rest, give back 25 %                               36   -30.13   -105.8     1 /    -1.07 /     -1.1    11 /  11     0.87
+   trail the rest, give back 10 %                               36   -30.75   -110.5     1 /    -1.07 /     -1.1    20 /  20     0.83
+
+   The reversal, when simply held: a stop fired on 36 trades; on 2 of them the other option then also ended at a loss (mean -22.98, worst -38.0); on 34 it ended at a profit (mean +18.28).
+
+## BTC weekly (Friday): 51 trades, each side 3 % away, entered 164 h before settlement, stop 2x on each sold option; bars of 60 minutes; mean premium 149.0
+   A. every trade                                                n     mean   win    total    worst   worst 3  drawdown         halves
+   hold: the other keeps only its own stop                      51   +28.33   43%    +1445   -267.5    -603.0    -304.1    +773 / +672
+   close both at the first stop                                 51   +24.53   39%    +1251   -187.9    -381.7    -351.0    +654 / +597
+   other closed back at its sale price                          51   +25.99   39%    +1325   -204.9    -385.6    -287.1    +672 / +654
+   other closed at half its profit given back                   51   +22.73   41%    +1159   -229.6    -485.0    -292.7    +525 / +634
+   trail the rest, give back 50 %                               51   +23.52   41%    +1199   -229.6    -447.0    -301.2    +598 / +601
+   trail the rest, give back 25 %                               51   +24.89   39%    +1269   -204.9    -388.5    -289.5    +599 / +670
+   trail the rest, give back 10 %                               51   +23.89   39%    +1218   -183.8    -359.1    -330.2    +624 / +594
+
+   B. only the trades where a stop fired                         n     mean    worst   other option: lost on / mean of those losses / worst   closed early / of those would have settled worthless   over
+   hold: the other keeps only its own stop                      32   -41.80   -267.5     2 /  -111.55 /   -136.5     0 /   0
+   close both at the first stop                                 32   -47.85   -187.9     0 /    +0.00 /     +0.0    32 /  30
+   other closed back at its sale price                          32   -45.53   -204.9     0 /    +0.00 /     +0.0    26 /  24     2.84
+   other closed at half its profit given back                   32   -50.72   -229.6     1 /   -20.14 /    -20.1    11 /   9    13.30
+   trail the rest, give back 50 %                               32   -49.47   -229.6     1 /   -20.14 /    -20.1    12 /  10     9.51
+   trail the rest, give back 25 %                               32   -47.28   -204.9     0 /    +0.00 /     +0.0    17 /  15     4.09
+   trail the rest, give back 10 %                               32   -48.88   -183.8     0 /    +0.00 /     +0.0    24 /  22     2.90
+
+   The reversal, when simply held: a stop fired on 32 trades; on 2 of them the other option then also ended at a loss (mean -111.55, worst -136.5); on 30 it ended at a profit (mean +67.85).
+
+## BTC weekly (Friday): 51 trades, each side 3 % away, entered 164 h before settlement, stop 3x on each sold option; bars of 60 minutes; mean premium 149.0
+   A. every trade                                                n     mean   win    total    worst   worst 3  drawdown         halves
+   hold: the other keeps only its own stop                      51   +40.65   57%    +2073   -168.3    -470.5    -504.9   +1525 / +548
+   close both at the first stop                                 51   +37.36   57%    +1905   -187.9    -520.5    -559.6   +1418 / +487
+   other closed back at its sale price                          51   +38.59   57%    +1968   -204.9    -518.2    -525.6   +1440 / +528
+   other closed at half its profit given back                   51   +38.32   57%    +1955   -229.6    -531.8    -504.9   +1406 / +548
+   trail the rest, give back 50 %                               51   +37.82   57%    +1929   -229.6    -531.8    -504.9   +1413 / +516
+   trail the rest, give back 25 %                               51   +38.20   57%    +1948   -204.9    -507.0    -504.9   +1457 / +491
+   trail the rest, give back 10 %                               51   +38.27   57%    +1952   -183.8    -499.0    -546.0   +1446 / +505
+
+   B. only the trades where a stop fired                         n     mean    worst   other option: lost on / mean of those losses / worst   closed early / of those would have settled worthless   over
+   hold: the other keeps only its own stop                      22   -91.43   -168.3     0 /    +0.00 /     +0.0     0 /   0
+   close both at the first stop                                 22   -99.06   -187.9     0 /    +0.00 /     +0.0    22 /  22
+   other closed back at its sale price                          22   -96.19   -204.9     0 /    +0.00 /     +0.0    13 /  13     1.95
+   other closed at half its profit given back                   22   -96.81   -229.6     0 /    +0.00 /     +0.0     2 /   2     3.89
+   trail the rest, give back 50 %                               22   -97.98   -229.6     0 /    +0.00 /     +0.0     3 /   3     4.34
+   trail the rest, give back 25 %                               22   -97.11   -204.9     0 /    +0.00 /     +0.0     4 /   4     8.42
+   trail the rest, give back 10 %                               22   -96.95   -183.8     0 /    +0.00 /     +0.0     7 /   7     1.98
+
+   The reversal, when simply held: a stop fired on 22 trades; on 0 of them the other option then also ended at a loss (mean +0.00, worst +0.0); on 22 it ended at a profit (mean +63.25).
+

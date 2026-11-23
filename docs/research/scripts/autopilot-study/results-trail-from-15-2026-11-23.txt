@@ -1,0 +1,26 @@
+## BTC daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option in every row; bars of 5 minutes; mean premium 36.5
+                                               n     mean   win    total    worst  drawdown         halves   exits: trail or floor / a leg stopped, rest settled / settled untouched   slip   at level
+   the stop only, held to settlement         106   +11.75   65%    +1246   -105.8    -185.0    +675 / +571     0 /  36 /  70
+   fixed lock: 50 > 25                       106   +11.68   71%    +1238    -69.2    -102.5    +675 / +563    36 /  21 /  49    13.5     +13.74
+   trail from 15 %, give back 10 % of the best  106    +3.64   89%     +386    -37.5     -54.8    +209 / +177    97 /   9 /   0     2.0      +4.30
+   trail from 15 %, give back 20 % of the best  106    +3.89   86%     +412    -37.5     -58.6    +228 / +184    96 /   9 /   1     3.9      +5.28
+   trail from 15 %, give back 30 % of the best  106    +4.21   78%     +447    -37.5     -58.6    +243 / +204    93 /   9 /   4     5.9      +6.07
+   trail from 15 %, give back 50 % of the best  106    +4.66   66%     +494    -37.5     -62.1    +179 / +314    85 /   9 /  12     8.7      +7.00
+   trail from 25 %, give back 10 % of the best  106    +5.10   87%     +541    -50.5     -54.8    +328 / +213    92 /  13 /   1     2.7      +5.97
+   trail from 25 %, give back 20 % of the best  106    +5.91   86%     +626    -50.5     -58.6    +361 / +265    90 /  13 /   3     4.1      +7.31
+   trail from 25 %, give back 30 % of the best  106    +6.34   83%     +672    -50.5     -58.6    +370 / +302    85 /  13 /   8     6.1      +7.98
+   trail from 25 %, give back 50 % of the best  106    +6.22   75%     +660    -50.5     -62.1    +315 / +344    74 /  13 /  19     9.7      +8.31
+
+## ETH daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option in every row; bars of 5 minutes; mean premium 21.0
+                                               n     mean   win    total    worst  drawdown         halves   exits: trail or floor / a leg stopped, rest settled / settled untouched   slip   at level
+   the stop only, held to settlement         106    +4.46   61%     +473    -49.6    -119.9    +239 / +234     0 /  38 /  68
+   fixed lock: 50 > 25                       106    +3.47   68%     +367    -50.2     -84.0    +162 / +206    36 /  26 /  44    16.3      +4.92
+   trail from 15 %, give back 10 % of the best  106    +1.84   90%     +195    -44.6     -60.2     +73 / +123    95 /   9 /   2     2.8      +2.37
+   trail from 15 %, give back 20 % of the best  106    +2.38   88%     +252    -44.6     -59.6    +106 / +146    93 /   9 /   4     4.1      +3.05
+   trail from 15 %, give back 30 % of the best  106    +2.97   86%     +315    -44.6     -61.8    +134 / +180    85 /   9 /  12     4.7      +3.73
+   trail from 15 %, give back 50 % of the best  106    +2.93   75%     +310    -50.2     -73.1     +84 / +226    75 /   9 /  22     9.2      +4.60
+   trail from 25 %, give back 10 % of the best  106    +2.50   87%     +265    -44.6     -55.6     +93 / +172    90 /  14 /   2     3.5      +3.09
+   trail from 25 %, give back 20 % of the best  106    +2.62   86%     +278    -44.6     -56.4    +106 / +172    87 /  14 /   5     5.0      +3.39
+   trail from 25 %, give back 30 % of the best  106    +3.07   85%     +325    -44.6     -44.6    +145 / +180    79 /  14 /  13     5.3      +3.86
+   trail from 25 %, give back 50 % of the best  106    +2.66   78%     +282    -50.2     -54.7     +67 / +215    68 /  14 /  24    11.0      +4.36
+

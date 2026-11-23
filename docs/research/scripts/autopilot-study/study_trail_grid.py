@@ -13,6 +13,9 @@ import study_exits as X
 
 LABEL, MULT = sys.argv[8], int(sys.argv[9])
 ARMS, GIVES = (0.40, 0.50, 0.60, 0.75), (0.10, 0.20, 0.30, 0.40)
+# optional 10th and 11th arguments: other arm levels and give-backs, per cent, comma separated (for example 15 and 10,20,30,50)
+if len(sys.argv) > 11:
+    ARMS, GIVES = tuple(float(x) / 100 for x in sys.argv[10].split(",")), tuple(float(x) / 100 for x in sys.argv[11].split(","))
 
 
 def run(tr, arm=None, give=None, lock=None):
