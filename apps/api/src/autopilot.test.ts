@@ -1572,3 +1572,39 @@ describe("HC-TR-259 the evening strangle with the profit lock and the buy-back a
     expect((await t.request("/v1/autopilot", { cookie: me.cookie })).status).toBe(200);
   });
 });
+
+describe("HC-TR-261 the daily strangle trailed from 15 % of the premium (ADR-132)", () => {
+  const proposal: PlaybookProposal = { day: "2027-03-13", spot: 83_200, expiry: "2027-03-14", legs: [], entryCost: -150, maxProfit: 150, maxLoss: -Infinity };
+
+  it("HC-TR-261 the plans: a target at 15 % of the premium that trails by 30 %, beside the stop at triple, and nothing else", () => {
+    for (const id of ["evening-strangle-trail-15", "eth-evening-strangle-trail-15"]) {
+      const plan = clockPlanFor(autopilotPlaybookById(id)!, proposal, 0.001, null)!;
+      expect(plan).toMatchObject({ legStop: 3, takeTrailPct: 30, ladder: null, lock: null, exitHourUtc: null, legBuyBackAt: null, legBuyBackShare: null, trailRestPct: null, stopUsd: null });
+      expect(plan.targetUsd).toBeCloseTo(22.5, 6);
+    }
+  });
+
+  it("HC-TR-261 a target at 15 % that trails by 30 %, armed by hand here as the job arms it (HC-TR-241), starts early, follows the best profit and closes the whole trade on a fall to seven tenths of it", async () => {
+    const plan = clockPlanFor(autopilotPlaybookById("evening-strangle-trail-15")!, proposal, 0.001, null)!;
+    const me = await t.signUp("autopilot-trail15@hapiecoin.test");
+    const PUT = "P-BTC-82400-140327";
+    const CALL = "C-BTC-84000-140327";
+    // a strangle of 100 lots a leg sold for 60 + 90 = 150 USD: the trail starts at 22.50
+    const made = (await (await t.request("/v1/strategies", { cookie: me.cookie, json: { name: "Trail 15", asset: "BTC", legs: [{ kind: "put", side: "sell", strike: "82400", expiry: "2027-03-14", symbol: PUT, lots: 100, price: "600" }, { kind: "call", side: "sell", strike: "84000", expiry: "2027-03-14", symbol: CALL, lots: 100, price: "900" }] } })).json()) as Strategy;
+    const started = (await (await t.request(`/v1/strategies/${made.id}/start`, { cookie: me.cookie, json: { mode: "paper", brokerId: SEED.brokerId, entries: Object.fromEntries(made.legs.map((l) => [l.id, l.price])) } })).json()) as Strategy;
+    expect(started.status).toBe("paper");
+    expect((await t.request(`/v1/strategies/${made.id}/rules`, { method: "PUT", cookie: me.cookie, json: { rules: [{ kind: "target", trigger: "money", value: toDecimal(plan.targetUsd!, 2), trail: { trigger: "pct", value: String(plan.takeTrailPct) } }] } })).status).toBe(200);
+    const tick = (putMark: number, callMark: number) => evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map([[PUT, putMark], [CALL, callMark]]), spot: null }) }, () => Date.UTC(2027, 2, 13, 20));
+    const status = async () => (await t.db.select().from(strategies).where(eq(strategies.id, made.id)))[0]!.status;
+    // up 20 of 150 (13.3 %): nothing. Up 30 (20 %): the trail starts, exit level 21
+    expect((await tick(560, 740)).fired).toHaveLength(0);
+    expect((await tick(500, 700)).fired).toHaveLength(0);
+    expect(await status()).toBe("paper");
+    // up 40: the best, exit level 28. Back to 29: still over it. Down to 27: closed, booked as a target
+    expect((await tick(450, 650)).fired).toHaveLength(0);
+    expect((await tick(460, 750)).fired).toHaveLength(0);
+    expect((await tick(480, 750)).fired).toHaveLength(1);
+    const [after] = await t.db.select().from(strategies).where(eq(strategies.id, made.id));
+    expect(after).toMatchObject({ status: "archived", closeReason: "target", realizedPnl: "27" });
+  });
+});

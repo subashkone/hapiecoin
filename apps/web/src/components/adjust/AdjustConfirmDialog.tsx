@@ -4,6 +4,7 @@
 // the venue's preview of the proposed batch (adds as entries, trims / closes as reduce-only exits), the mark
 // band per leg, the order type (market, or a limit at the reviewed mark), hold-to-place, and the fill state of
 // every order once placed; the marks reviewed here travel with the batch as the expected prices.
+import { heldWorstLoss } from "@/lib/strategy/analysis";
 import type { AdjustBody, OrderType, Strategy } from "@hapiecoin/schema";
 import { TypedConfirm, isLiveConfirm } from "@/components/trading/TypedConfirm";
 import { MindfulCountdownButton, MindfulPause, useMindfulCountdown } from "@/components/trading/MindfulPause";
@@ -105,7 +106,9 @@ export function AdjustConfirmDialog({ open, onOpenChange, w, body, brokerName, o
   const [orderType, setOrderType] = useState<OrderType>("market");
   const [placed, setPlaced] = useState<Strategy | null>(null);
   const orders = body.changes.length + body.adds.length;
-  const worst = a.result && Number.isFinite(a.result.maxLoss) ? a.result.maxLoss : null;
+  // the legs still held only: what the trade has already realised is in the pane's figures (HC-TR-260) but is no
+  // risk left to cover, so it is neither sent to the venue's balance check nor shown as "at risk"
+  const worst = heldWorstLoss(a.result);
   // live: price the proposed batch on the venue every time the dialog opens (fresh marks, fresh key)
   useEffect(() => {
     // one preview per opening: the body and the mutation are fixed for this review, so only the opening is a dependency

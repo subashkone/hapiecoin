@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type BacktestFold, type BacktestStats, type BacktestTrade, type EodDay, type EodRow, runBacktest } from "./backtest.js";
 import { calendarFor, daysToExpiryOf } from "./calendar.js";
-import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS, MOVE_DAILY_PLAYBOOKS, BUYBACK_DAILY_PLAYBOOKS, BUYBACK_SHARE_PLAYBOOKS, TAKE90_WEEKLY_PLAYBOOKS, TAKE90_DAILY_PLAYBOOKS, COMBO_DAILY_PLAYBOOKS, sideAfterMove, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
+import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS, MOVE_DAILY_PLAYBOOKS, BUYBACK_DAILY_PLAYBOOKS, BUYBACK_SHARE_PLAYBOOKS, TAKE90_WEEKLY_PLAYBOOKS, TAKE90_DAILY_PLAYBOOKS, COMBO_DAILY_PLAYBOOKS, TRAIL15_DAILY_PLAYBOOKS, sideAfterMove, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
 import { materialiseTemplate } from "./templates.js";
 
 const cal = calendarFor(12);
@@ -218,7 +218,7 @@ describe("HC-TR-229 the weekly strangles", () => {
     expect(WEEKLY_PLAYBOOKS.map((p) => [p.clock!.legStop, p.clock!.takeProfitOfCredit, p.clock!.trailRestPct]).slice(0, 5)).toEqual([[undefined, undefined, undefined], [2, undefined, undefined], [3, undefined, undefined], [2, 0.5, undefined], [2, undefined, 50]]);
     expect(CLOCK_PLAYBOOKS.every((p) => p.clock!.weekdayUtc === undefined && p.clock!.describe === "once an evening, 9:30 to 10:30 PM IST, on the next expiry")).toBe(true);
     expect(new Set(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).size).toBe(AUTOPILOT_PLAYBOOKS.length);
-    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length + LAB_DAILY_PLAYBOOKS.length + LAB_WEEKLY_PLAYBOOKS.length + MOVE_DAILY_PLAYBOOKS.length + BUYBACK_DAILY_PLAYBOOKS.length + BUYBACK_SHARE_PLAYBOOKS.length + TAKE90_WEEKLY_PLAYBOOKS.length + TAKE90_DAILY_PLAYBOOKS.length + COMBO_DAILY_PLAYBOOKS.length);
+    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length + LAB_DAILY_PLAYBOOKS.length + LAB_WEEKLY_PLAYBOOKS.length + MOVE_DAILY_PLAYBOOKS.length + BUYBACK_DAILY_PLAYBOOKS.length + BUYBACK_SHARE_PLAYBOOKS.length + TAKE90_WEEKLY_PLAYBOOKS.length + TAKE90_DAILY_PLAYBOOKS.length + COMBO_DAILY_PLAYBOOKS.length + TRAIL15_DAILY_PLAYBOOKS.length);
   });
 
   it("HC-TR-229 the strikes are the listed ones nearest 3 % (wings 7 %) of the spot away, on the Friday expiry a week out from a Friday and three days out from a Tuesday", () => {
@@ -791,5 +791,37 @@ describe("HC-TR-259 the BTC evening strangle with the profit lock and the buy-ba
     expect(p.rationale).toContain("less than the lock alone (+11.68 a day, worst day -69.2)");
     expect(p.rationale).toContain("a buy-back at 20 % of the price sold at earned more (+12.66) and is not built");
     expect(playbookBacktest(p.id)).toMatchObject({ mean: 11.34, per: "day", positivePct: 71, worst: -69.6, samples: 106 });
+  });
+});
+
+describe("HC-TR-261 the daily strangle trailed from 15 % of the premium (ADR-132)", () => {
+  it("HC-TR-261 two daily playbooks beside the others: BTC and ETH, 1 % away with a stop at triple, trailed from 15 % of the premium with a give-back of 30 % of the best", () => {
+    expect(TRAIL15_DAILY_PLAYBOOKS.map((p) => `${p.id} ${p.assets.join()}`)).toEqual(["evening-strangle-trail-15 BTC", "eth-evening-strangle-trail-15 ETH"]);
+    const plain = autopilotPlaybookById("evening-strangle-half-trail")!;
+    for (const p of TRAIL15_DAILY_PLAYBOOKS) {
+      expect(autopilotPlaybookById(p.id)).toBe(p);
+      expect(p).toMatchObject({ lots: 100, control: false, minDte: plain.minDte });
+      expect(p.clock).toMatchObject({ fromHourUtc: plain.clock!.fromHourUtc, toHourUtc: plain.clock!.toHourUtc, maxDte: plain.clock!.maxDte, describe: plain.clock!.describe, legStop: 3, takeProfitOfCredit: 0.15, takeTrailPct: 30 });
+      expect(p.clock!.weekdayUtc).toBeUndefined();
+      expect(playbookTemplate(p)!.legs.map((l) => ("pct" in l ? l.pct : null))).toEqual([-1, 1]);
+      expect([p.clock!.ladder, p.clock!.lock, p.clock!.exitHourUtc, p.clock!.legBuyBackAt, p.clock!.legBuyBackShare, p.clock!.trailRestPct]).toEqual([undefined, undefined, undefined, undefined, undefined, undefined]);
+      expect(playbookCadence(p)).toBe("daily");
+      expect(p.name.length).toBeLessThanOrEqual(68);
+      expect(p.trials.count).toBe(16);
+      expect(p.trials.note).toContain("Every row earned less than holding on both coins");
+      expect(p.trials.note).toContain("up to about 8 % of the premium");
+      expect(p.evidence.source).toContain("results-trail-from-15-2026-11-23.txt");
+    }
+    // the only playbooks that start a trail this early or give this much back
+    expect(AUTOPILOT_PLAYBOOKS.filter((p) => p.clock?.takeTrailPct === 30).map((p) => p.id)).toEqual(["evening-strangle-trail-15", "eth-evening-strangle-trail-15"]);
+    expect(AUTOPILOT_PLAYBOOKS.filter((p) => p.clock?.takeProfitOfCredit === 0.15).map((p) => p.id)).toEqual(["evening-strangle-trail-15", "eth-evening-strangle-trail-15"]);
+    const byId = (id: string) => autopilotPlaybookById(id)!;
+    // the cards say what it costs: a third of holding on BTC, two thirds on ETH, and that the ETH worst day is no better
+    expect(byId("evening-strangle-trail-15").evidence.claim).toContain("+4.21 a day on 106 days, 78 % of days positive, worst day -37.5");
+    expect(byId("evening-strangle-trail-15").rationale).toContain("about a third of holding to settlement (+11.75 a day, 65 % of days)");
+    expect(byId("evening-strangle-trail-15").rationale).toContain("starting the trail at 25 % with the same give-back earned more (+6.34, worst day -50.5) and is not built");
+    expect(byId("eth-evening-strangle-trail-15").evidence.claim).toContain("+2.97 a day on 106 days, 86 % of days positive, worst day -44.6");
+    expect(byId("eth-evening-strangle-trail-15").rationale).toContain("The worst day is about the same as holding's (-49.6)");
+    expect(TRAIL15_DAILY_PLAYBOOKS.map((p) => playbookBacktest(p.id))).toMatchObject([{ mean: 4.21, per: "day", positivePct: 78, worst: -37.5, samples: 106 }, { mean: 2.97, per: "day", positivePct: 86, worst: -44.6, samples: 106 }]);
   });
 });

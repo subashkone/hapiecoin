@@ -11,8 +11,8 @@ import { fmtMoney } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
 import { toPricingLegs } from "@/lib/pricing/legs";
 import { useUiStore } from "@/lib/store";
-import { marginEstimate } from "@/lib/strategy/analysis";
-import { MAX_OPEN_LEGS_UI, daysOf, openLegs, pnlSeries, priceMap, serverLegToLocal } from "@/lib/strategy/paper";
+import { marginEstimate, withBooked } from "@/lib/strategy/analysis";
+import { bookedOf, MAX_OPEN_LEGS_UI, daysOf, openLegs, pnlSeries, priceMap, serverLegToLocal } from "@/lib/strategy/paper";
 import { PayoffChart, type PayoffChartFrame } from "@/components/analysis/PayoffChart";
 import { type PaperBook } from "@/lib/strategy/usePaper";
 import { venueCalendar } from "@/lib/venue";
@@ -96,7 +96,10 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
   const active = s ? s.status === "paper" || s.status === "live" : false;
   const open = s ? openLegs(s) : [];
   const payLegs = s ? (open.length ? open : s.legs) : [];
-  const pricingLegs = useMemo(() => (s ? toPricingLegs(payLegs.map((l) => serverLegToLocal(l, s.asset)), book.lotSizeOf(s.asset, s.venue), { spot: undefined }) : []), [s, payLegs, book]);
+  // HC-TR-260: what the trade has already booked (a stopped or bought-back leg) is priced with the open legs, so the
+  // payoff line, the chart and the probability of profit are the whole trade's, not only what is still open
+  const booked = useMemo(() => (s && open.length ? bookedOf(s, book.lotSizeOf(s.asset, s.venue)) : { amount: 0, legs: [] }), [s, open.length, book]);
+  const pricingLegs = useMemo(() => (s ? toPricingLegs([...payLegs.map((l) => serverLegToLocal(l, s.asset)), ...booked.legs], book.lotSizeOf(s.asset, s.venue), { spot: undefined }) : []), [s, payLegs, book, booked]);
   const spot = s ? book.spotOf(s.asset, s.venue) : null;
   const analysis = useAnalysis(pricingLegs, s && spot !== null && pricingLegs.length ? { spot, nowMs: Date.now(), calendar: venueCalendar(s.asset, s.venue), defaultIv: 0.5 } : null);
   if (!s) return null;
@@ -106,7 +109,7 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
   const orig = shown.filter((l) => !l.isAdjustment);
   const money = book.money;
   const close = () => openDetails(null);
-  const r = analysis.result;
+  const r = analysis.result ? withBooked(analysis.result, booked.amount) : analysis.result;
   const margin = r ? marginEstimate(r) : null;
   // HC-TR-119: the expiry payoff of the open legs at their entry premiums, the same renderer as the analysis pane
   const miniFrame: PayoffChartFrame | null = r && spot !== null ? { points: r.points, spot, breakevens: r.breakevens, band: null, target: null, targetLabel: "", layers: { expiry: true, target: false, fill: true, oi: false, band: false, breakeven: true }, oi: [], range: [r.points[0]?.price ?? spot * 0.8, r.points[r.points.length - 1]?.price ?? spot * 1.2], fmtPrice: (p) => fmtStrike(String(Math.round(p))), fmtMoney: (v) => fmtMoney(v, money, { signed: true }), ghost: null } : null;
@@ -224,14 +227,15 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
                 )}
               </span>
             </div>
-            {analysis.result ? (
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-2xs" data-testid="details-payoff">
+            {r ? (
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-2xs" data-testid="details-payoff" data-booked={booked.amount === 0 ? undefined : "true"}>
                 <span className="micro">Payoff · at expiry</span>
-                <span>Max profit <b className="num text-profit">{fmtMoney(analysis.result.maxProfit, money, { signed: true, unlimited: "∞" })}</b></span>
-                <span>Max loss <b className="num text-loss">{fmtMoney(analysis.result.maxLoss, money, { signed: true, unlimited: "−∞" })}</b></span>
-                <span>BE <b className="num">{analysis.result.breakevens.length ? analysis.result.breakevens.map((b) => fmtStrike(String(Math.round(b)))).join(" / ") : "—"}</b></span>
-                <span>Net Δ <b className="num">{analysis.result.greeks.delta.toFixed(4)}</b></span>
-                <span>Θ/day <b className={cn("num", analysis.result.greeks.theta >= 0 ? "text-profit" : "text-loss")}>{fmtMoney(analysis.result.greeks.theta, money, { signed: true })}</b></span>
+                {booked.amount === 0 ? null : <span className="text-muted-foreground" data-testid="details-payoff-booked" title="This trade has already realised this result on the lots it closed. It is counted in the figures and the chart here, so they are for the whole trade and not only for the legs still open.">whole trade · incl. <b className={cn("num", booked.amount >= 0 ? "text-profit" : "text-loss")}>{fmtMoney(booked.amount, money, { signed: true })}</b> realised</span>}
+                <span>{booked.amount !== 0 && r.maxProfit < 0 ? "Best case" : "Max profit"} <b className={cn("num", r.maxProfit < 0 ? "text-loss" : "text-profit")} data-testid="details-max-profit">{fmtMoney(r.maxProfit, money, { signed: true, unlimited: "∞" })}</b></span>
+                <span>Max loss <b className="num text-loss">{fmtMoney(r.maxLoss, money, { signed: true, unlimited: "−∞" })}</b></span>
+                <span>BE <b className="num">{r.breakevens.length ? r.breakevens.map((b) => fmtStrike(String(Math.round(b)))).join(" / ") : "—"}</b></span>
+                <span>Net Δ <b className="num">{r.greeks.delta.toFixed(4)}</b></span>
+                <span>Θ/day <b className={cn("num", r.greeks.theta >= 0 ? "text-profit" : "text-loss")}>{fmtMoney(r.greeks.theta, money, { signed: true })}</b></span>
               </div>
             ) : null}
             <div className="mt-3 flex items-center gap-2 border-b border-border text-xs">

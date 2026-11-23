@@ -8,11 +8,11 @@
 // While the adjustment workbench holds a draft for the followed strategy (ADR-044, HC-TR-149) the pane shows the
 // position *after* the change (kept lots at entry, adds at the mark) and keeps the *before* result for the ghost
 // curve and the before → after strip; both are valued at the draft's "value at" date.
-import type { AnalyzeOptions, AnalyzeResult, Leg as PricingLeg } from "@hapiecoin/pricing";
+import type { AnalyzeOptions, Leg as PricingLeg } from "@hapiecoin/pricing";
 import type { CloseReason, Quote, Strategy, StrategyLeg as ServerLeg, Underlying } from "@hapiecoin/schema";
 import { useEffect, useMemo, useState } from "react";
 import { type AdjustDraft, type MarkOf, afterLegs, beforeLegs, pickToLeg, realisedLegs, valuationMsOf } from "@/lib/adjust/model";
-import { nearestExpiryValuationMs } from "@/lib/strategy/analysis";
+import { type BookedResult, nearestExpiryValuationMs, withBooked } from "@/lib/strategy/analysis";
 import { useLivePositions } from "@/lib/api/live";
 import { useSettings } from "@/lib/api/queries";
 import { useCurrentAccount } from "@/lib/accounts";
@@ -27,6 +27,7 @@ import { listedVenue, lotSizeFor, venueCalendar } from "@/lib/venue";
 import { DEFAULT_VENUE, type VenueId } from "@hapiecoin/venues/core";
 import type { StrategyLeg } from "./legs";
 
+import { bookedOf } from "./paper";
 import { positionToLeg } from "./positions";
 
 export type AnalysisSource = { kind: "builder" } | { kind: "strategy"; id: string; name: string; status: Strategy["status"] } | { kind: "positions"; count: number };
@@ -37,7 +38,7 @@ export interface StrategyAnalysis {
   venue: VenueId;
   legs: StrategyLeg[];
   pricingLegs: PricingLeg[];
-  result: AnalyzeResult | null;
+  result: BookedResult | null;
   error: string | null;
   pending: boolean;
   spot: number | null;
@@ -57,7 +58,9 @@ export interface StrategyAnalysis {
   /** The followed strategy's open legs (server shape) while adjusting; empty otherwise. */
   openLegs: ServerLeg[];
   /** The position before the change (same options and valuation date) while adjusting; null otherwise. */
-  before: AnalyzeResult | null;
+  before: BookedResult | null;
+  /** What a followed running trade has already booked on closed legs, USD; it is in `result` and `before` (HC-TR-260). 0 otherwise. */
+  booked: number;
   /** Live mark per venue symbol for any leg or pick the pane prices. */
   markOf: MarkOf;
   /** Bumps when a subscribed quote changes (mark freshness). */
@@ -123,6 +126,8 @@ function usePositionLegs(source: PaneSource, lotSizes: Record<Underlying, string
     return { legs, asset };
   }, [ids, data, lotSizes]);
 }
+
+const NO_BOOKED: ReturnType<typeof bookedOf> = { amount: 0, legs: [] };
 
 /**
  * @param scope "pane" (default) honours the pane source; "builder" always reads the Builder's own legs
@@ -195,7 +200,10 @@ export function useStrategyAnalysis(scope: "pane" | "builder" = "pane"): Strateg
   );
   // while adjusting, the engine also gets the lots the change takes off as offsetting pairs, so "after" carries the
   // profit or loss those exits lock in and compares with "before" on the same basis (ADR-094); `legs` stays clean
-  const priced = useMemo(() => (adjusting ? [...legs, ...realisedLegs(adjusting, openLegs, asset, markOf)] : legs), [adjusting, legs, openLegs, asset, markOf]);
+  // HC-TR-260 (ADR-131): a followed running trade also carries what it has already booked (a stopped or bought-back
+  // leg), as an offsetting pair, so the pane's extremes, break-evens, curve and POP are the whole trade's
+  const booked = useMemo(() => (followed && !closed ? bookedOf(followed, lotSize) : NO_BOOKED), [followed, closed, lotSize]);
+  const priced = useMemo(() => [...(adjusting ? [...legs, ...realisedLegs(adjusting, openLegs, asset, markOf)] : legs), ...booked.legs], [adjusting, legs, openLegs, asset, markOf, booked]);
   const pricingLegs = useMemo(
     () =>
       toPricingLegs(priced, lotSize, {
@@ -213,10 +221,12 @@ export function useStrategyAnalysis(scope: "pane" | "builder" = "pane"): Strateg
         : { spot, nowMs, targetDays, targetSpot: targetPrice, calendar: venueCalendar(asset, venue), defaultIv: 0.5, ...(valuationMs === undefined ? {} : { valuationMs }) },
     [spot, pricingLegs.length, nowMs, targetDays, targetPrice, asset, venue, valuationMs],
   );
-  const { result, error, pending } = useAnalysis(pricingLegs, options);
+  const { result: raw, error, pending } = useAnalysis(pricingLegs, options);
+  const result = useMemo(() => (raw ? withBooked(raw, booked.amount) : raw), [raw, booked.amount]);
   // the position before the change, on the same axis and date, for the ghost curve and the before → after strip
-  const beforePricing = useMemo(() => (adjusting ? toPricingLegs(heldLegs, lotSize, { iv: (l) => quoteFor(l)?.markIv, spot: spotState?.price }) : []), [adjusting, heldLegs, lotSize, quoteFor, spotState?.price]);
+  const beforePricing = useMemo(() => (adjusting ? toPricingLegs([...heldLegs, ...booked.legs], lotSize, { iv: (l) => quoteFor(l)?.markIv, spot: spotState?.price }) : []), [adjusting, heldLegs, booked, lotSize, quoteFor, spotState?.price]);
   const beforeOptions = useMemo(() => (adjusting && spot !== null && beforePricing.length ? { spot, nowMs, targetDays, targetSpot: targetPrice, calendar: venueCalendar(asset, venue), defaultIv: 0.5, ...(valuationMs === undefined ? {} : { valuationMs }) } : null), [adjusting, spot, beforePricing.length, nowMs, targetDays, targetPrice, asset, venue, valuationMs]);
-  const { result: before } = useAnalysis(beforePricing, beforeOptions);
-  return { asset, venue, legs, pricingLegs, result, error, pending, spot, spotText: spotState?.price, lotSize, money, quoteFor, priceFor, targetPrice, targetDays, nowMs, source, adjusting, openLegs, before: adjusting ? before : null, markOf, quoteVersion, valuationMs, closed };
+  const { result: rawBefore } = useAnalysis(beforePricing, beforeOptions);
+  const before = useMemo(() => (rawBefore ? withBooked(rawBefore, booked.amount) : rawBefore), [rawBefore, booked.amount]);
+  return { asset, venue, legs, pricingLegs, result, error, pending, spot, spotText: spotState?.price, lotSize, money, quoteFor, priceFor, targetPrice, targetDays, nowMs, source, adjusting, openLegs, before: adjusting ? (before ?? null) : null, booked: booked.amount, markOf, quoteVersion, valuationMs, closed };
 }

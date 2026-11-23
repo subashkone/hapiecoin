@@ -1,6 +1,7 @@
 "use client";
 // Compare plans (ADR-044 extra 1; HC-TR-153): keep the working changes as Plan A / B / C, see every plan's
 // max loss, max profit, POP and cash next to the current draft, load one back or drop it.
+import { bookedOf } from "@/lib/strategy/paper";
 import { Button, cn } from "@hapiecoin/ui";
 import { useMemo, useState } from "react";
 import { fmtMoney } from "@/lib/money";
@@ -31,7 +32,10 @@ export function useDraftFigures(w: AdjustWorkbench, draft: AdjustDraft | null, m
   const { open, strategy, lotSize } = w;
   const live = w.a;
   const a: DraftMarket = market ?? live;
-  const legs = useMemo(() => (draft ? [...afterLegs(draft, open, strategy.asset, a.markOf), ...realisedLegs(draft, open, strategy.asset, a.markOf)] : []), [draft, open, strategy.asset, a.markOf]);
+  // what the trade has already realised is priced in, as in the pane (HC-TR-260): a plan row, an idea and the footer
+  // then describe the same whole trade
+  const booked = useMemo(() => bookedOf(strategy, lotSize).legs, [strategy, lotSize]);
+  const legs = useMemo(() => (draft ? [...afterLegs(draft, open, strategy.asset, a.markOf), ...realisedLegs(draft, open, strategy.asset, a.markOf), ...booked] : []), [draft, open, strategy.asset, a.markOf, booked]);
   const pricing = useMemo(() => toPricingLegs(legs, lotSize, { iv: (l) => a.quoteFor(l)?.markIv, spot: a.spotText }), [legs, lotSize, a]);
   const valuationMs = useMemo(() => (draft ? valuationMsOf(draft, open, strategy.asset, a.nowMs) : undefined), [draft, open, strategy.asset, a.nowMs]);
   const options = useMemo(() => (draft && a.spot !== null && pricing.length ? { spot: a.spot, nowMs: a.nowMs, calendar: venueCalendar(strategy.asset, strategy.venue), defaultIv: 0.5, points: 81, ...(valuationMs === undefined ? {} : { valuationMs }) } : null), [draft, a.spot, a.nowMs, pricing.length, strategy.asset, strategy.venue, valuationMs]);

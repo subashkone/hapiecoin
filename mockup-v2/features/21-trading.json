@@ -2395,5 +2395,27 @@
     "how": "one paper playbook, the BTC evening strangle 1 % away: a stop at triple and a buy-back at 5 dollars on each sold option, and on the whole trade a floor at a quarter of the premium once the profit has reached half; what a buy-back has banked counts toward the lock, which is judged on the realised and the open profit together; both exits are the existing ones, armed from the playbook's own fields, with no new rule; its card says it earned less than the lock alone in the study",
     "evidence": "ADR-130, GAPS #165 (23 Nov 2026): packages/pricing/src/playbooks.ts (COMBO_DAILY_PLAYBOOKS); tests: packages/pricing/src/playbooks.test.ts HC-TR-259, apps/api/src/autopilot.test.ts HC-TR-259, autopilot-page.test.tsx HC-TR-259",
     "test": "unit (pricing), integration (api), unit (web)"
+  },
+  {
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "A running trade that has closed a leg shows the whole trade's best case, worst case and break-even",
+    "how": "when a paper or live trade has a realised result (a stopped or bought-back leg, a partial exit), that result is priced with its open legs as an offsetting pair worth the same at every price; the card's max loss, max profit and POP, the Details payoff line and chart, the pane following the trade and the workbench's plans and repair ideas then describe the whole trade and say how much is included (\"incl. X realised\"; \"best case\" when even that is a loss); the net premium, the greeks, the margin and the worst loss sent with a live adjust preview stay those of the legs still open; a trade with nothing realised is unchanged",
+    "evidence": "ADR-131, GAPS #166 (23 Nov 2026): apps/web/src/lib/strategy/paper.ts (bookedPnl, bookedOf), lib/strategy/analysis.ts (withBooked, marginEstimate, heldWorstLoss), CardFigures.tsx, StrategyDetailsDialog.tsx, lib/strategy/useStrategyAnalysis.ts, PayoffPanel.tsx, adjust/PlansBar.tsx (useDraftFigures), adjust/AdjustConfirmDialog.tsx, analysis/ShareDialog.tsx; tests: lib/strategy/paper.test.ts HC-TR-260, trading-more.test.tsx HC-TR-260, pane-follow.test.tsx HC-TR-260",
+    "test": "unit (web)"
+  },
+  {
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Autopilot daily strategies that trail the profit from 15 % of the premium",
+    "how": "two paper playbooks, on BTC and ETH: the evening strangle 1 % away with a stop at triple on each option; once the trade is up by 15 % of the premium collected it is trailed and closed when the profit gives back 30 % of its best; the existing trailing take-profit of a clock playbook, with no new rule; each card says what the early exit costs against holding",
+    "evidence": "ADR-132, GAPS #167 (23 Nov 2026): packages/pricing/src/playbooks.ts (TRAIL15_DAILY_PLAYBOOKS); tests: packages/pricing/src/playbooks.test.ts HC-TR-261, apps/api/src/autopilot.test.ts HC-TR-261, autopilot-page.test.tsx HC-TR-261",
+    "test": "unit (pricing), integration (api), unit (web)"
   }
 ]

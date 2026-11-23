@@ -336,8 +336,8 @@ describe("HC-TR-232 the Autopilot screen: by expiry and by coin", () => {
     renderWithProviders(<AutopilotPage />);
     const u = userEvent.setup();
     await waitFor(() => expect(screen.getAllByTestId("autopilot-trade")).toHaveLength(3));
-    expect(screen.getAllByTestId("autopilot-filter-cadence").map((b) => b.textContent)).toEqual([`All · ${TRADABLE.length}`, "Trend · 6", "Daily · 37", "Weekly · 19", "Monthly · 15"]);
-    expect(screen.getAllByTestId("autopilot-filter-coin").map((b) => b.textContent)).toEqual(["All", `BTC · ${TRADABLE.length - 28}`, "ETH · 30", "XAUT · 4"]); // HC-TR-235: six ETH and four XAUT evening strangles, five ETH weekly and five ETH monthly ones of their own
+    expect(screen.getAllByTestId("autopilot-filter-cadence").map((b) => b.textContent)).toEqual([`All · ${TRADABLE.length}`, "Trend · 6", "Daily · 39", "Weekly · 19", "Monthly · 15"]);
+    expect(screen.getAllByTestId("autopilot-filter-coin").map((b) => b.textContent)).toEqual(["All", `BTC · ${TRADABLE.length - 29}`, "ETH · 31", "XAUT · 4"]); // HC-TR-235 and the ones added since: the ETH and XAUT evening strangles, five ETH weekly and five ETH monthly ones of their own
     expect(screen.getByTestId("autopilot-filters").dataset["filtered"]).toBe("false");
     expect(screen.queryByTestId("autopilot-filter-note")).toBeNull();
     expect(screen.getByRole("group", { name: "Expiry" })).toBeTruthy();
@@ -407,7 +407,7 @@ describe("HC-TR-230 the Autopilot screen: the weekly strangles", () => {
     const groups = screen.getAllByTestId("autopilot-group");
     expect(groups.map((g) => g.dataset["group"])).toEqual(["Longer-dated strategies", "Evening strangles, daily expiry", "Weekly strangles, Friday expiry", "Monthly strangles, month-end expiry"]);
     expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").map((c) => c.dataset["playbook"]))).toEqual([TRADABLE.filter((p) => !p.clock), TRADABLE.filter((p) => p.clock && p.clock.weekdayUtc === undefined && p.clock.cadence !== "monthly"), TRADABLE.filter((p) => p.clock?.weekdayUtc !== undefined), TRADABLE.filter((p) => p.clock?.cadence === "monthly")].map((g) => g.map((p) => p.id)));
-    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 37, 19, 15]);
+    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 39, 19, 15]);
     // HC-TR-233: a monthly row says when it enters, and its backtest reads per month
     const monthly = screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === "monthly-strangle-premium-1000")!;
     expect(monthly.textContent).toContain("Enters on the first evening a month-end expiry is 60 to 75 days out, once per expiry");
@@ -589,5 +589,20 @@ describe("HC-TR-259 the Autopilot screen: the strangle with the profit lock and 
     expect(card.textContent).toContain("Evening strangle, profit lock and buy back at 5");
     expect(card.textContent).toContain("Stop at 3x on each sold option, a floor at 25 % of the premium once it is up 50 %, each sold option bought back once its price is down to 5 dollars");
     expect(within(card).getByTestId("autopilot-card-how").textContent).toContain("Once the trade is up by 50 % of the premium a floor is set at 25 %: the whole trade is closed if the profit falls back there.");
+  });
+});
+
+describe("HC-TR-261 the Autopilot screen: the daily strangle trailed from 15 % of the premium", () => {
+  it("HC-TR-261 the two cards read as a stop at triple and a trail from 15 %, and say it gives back 30 % of its best", async () => {
+    acc().autopilot = { settings: { enabled: true, strategies: ["evening-strangle-trail-15", "eth-evening-strangle-trail-15"].map((playbookId) => ({ playbookId, exit: "own" as const })) }, runs: [] };
+    renderWithProviders(<AutopilotPage />);
+    await waitFor(() => expect(screen.getAllByTestId("autopilot-card").length).toBeGreaterThan(0));
+    const card = (id: string) => screen.getAllByTestId("autopilot-card").find((c) => c.dataset["playbook"] === id)!;
+    for (const id of ["evening-strangle-trail-15", "eth-evening-strangle-trail-15"]) {
+      expect(card(id).textContent).toContain("Stop at 3x on each sold option, trail from 15 % of the premium");
+      expect(within(card(id)).getByTestId("autopilot-card-how").textContent).toContain("Once the trade is up by 15 % of the premium collected it is not closed: it is trailed, and closed when the profit gives back 30 % of its best.");
+    }
+    expect(card("evening-strangle-trail-15").textContent).toContain("Evening strangle, trail from 15 %");
+    expect(card("eth-evening-strangle-trail-15").textContent).toContain("ETH evening strangle, trail from 15 %");
   });
 });

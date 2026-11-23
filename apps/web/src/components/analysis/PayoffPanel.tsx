@@ -158,7 +158,8 @@ export function PayoffPanel() {
   // analytics strip extras (HC-WS-081): return on the margin and the margin against the strategy's notional
   const margin = result ? marginEstimate(result) : null;
   const notional = spot !== null && a.lotSize ? spot * Number(a.lotSize) * a.legs.reduce((s, l) => s + Math.abs(l.lots), 0) : null;
-  const maxRoi = result && margin !== null && margin > 0 && Number.isFinite(result.maxProfit) ? result.maxProfit / margin : null;
+  // with a realised result in the figures the best case is the whole trade's and the margin the open legs': no ratio of the two
+  const maxRoi = a.booked === 0 && result && margin !== null && margin > 0 && Number.isFinite(result.maxProfit) ? result.maxProfit / margin : null;
   const riskPct = margin !== null && notional ? (margin / notional) * 100 : null;
   const targetDate = fmtDate(new Date(a.nowMs + a.targetDays * 86_400_000).toISOString().slice(0, 10));
   const priceTicks = spot === null ? [] : [0.8, 0.9, 1, 1.1, 1.2].map((k) => ({ k, price: spot * k }));
@@ -166,8 +167,14 @@ export function PayoffPanel() {
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="payoff-panel" data-tour="payoff-panel" data-state={result ? "ready" : a.error ? "error" : "pending"} data-adjusting={a.adjusting ? "true" : undefined} data-closed={isClosed ? "true" : undefined}>
       {a.adjusting ? <BeforeAfterStrip a={a} /> : null}
+      {/* HC-TR-260: a followed trade that has already booked a result is drawn whole, and says so */}
+      {a.booked === 0 ? null : (
+        <p className="px-3 pt-2 text-2xs text-muted-foreground" data-testid="payoff-booked">
+          Whole trade: the figures and the curve include <b className={cn("num", a.booked >= 0 ? "text-profit" : "text-loss")}>{fmtMoney(a.booked, money, { signed: true })}</b> already realised on this trade.
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3" data-testid="payoff-tiles">
-        <Tile label={a.adjusting ? "Max profit · after" : "Max profit"} value={result ? fmtMoney(result.maxProfit, money, { unlimited: "Unlimited" }) : "—"} sub={where(maxPAt)} tone="profit" testId="tile-max-profit" title="Highest P&L at expiry over the price axis" />
+        <Tile label={a.booked !== 0 && result && result.maxProfit < 0 ? (a.adjusting ? "Best case · after" : "Best case") : a.adjusting ? "Max profit · after" : "Max profit"} value={result ? fmtMoney(result.maxProfit, money, { unlimited: "Unlimited" }) : "—"} sub={where(maxPAt)} tone={result && result.maxProfit < 0 ? "loss" : "profit"} testId="tile-max-profit" title="Highest P&L at expiry over the price axis" />
         <Tile label={a.adjusting ? "Max loss · after" : "Max loss"} value={result ? fmtMoney(result.maxLoss, money, { unlimited: "Unlimited" }) : "—"} sub={where(maxLAt)} tone="loss" testId="tile-max-loss" title="Lowest P&L at expiry over the price axis" />
         <Tile label={a.adjusting ? "Break-even · after" : "Break-even"} value={result ? (result.breakevens.length ? result.breakevens.map((b) => fmtStrike(String(Math.round(b)))).join(" · ") : "none") : "—"} sub={isClosed ? "" : result && spot ? (result.breakevens.length ? result.breakevens.map((b) => `${((b - spot) / spot) * 100 >= 0 ? "+" : ""}${(((b - spot) / spot) * 100).toFixed(1)}%`).join(" · ") : "") : result ? (result.breakevens.length === 1 ? "one point" : result.breakevens.length ? `${result.breakevens.length} points` : "") : ""} testId="tile-breakeven" title="Underlying prices where the expiry P&L is zero" />
         <Tile label={a.adjusting ? "POP · after" : "POP"} value={!isClosed && result && Number.isFinite(result.pop) ? `${(result.pop * 100).toFixed(0)}%` : "—"} sub={isClosed ? "closed trade" : pop?.text} tone={isClosed ? "muted" : pop?.tone} testId="tile-pop" title="Probability of any profit at expiry: lognormal on the ATM IV" />
