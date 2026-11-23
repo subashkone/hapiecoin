@@ -1,0 +1,34 @@
+## XAUT daily: 91 trades, each side 1 % away, entered 23 h before settlement, stop 2x on each sold option in every row; bars of 5 minutes; mean premium 1.1
+                                               n     mean   win    total    worst  drawdown         halves   exits: trail or floor / a leg stopped, rest settled / settled untouched   slip   at level
+   the stop only, held to settlement          91    +0.09   38%       +8     -2.6      -6.2        +1 / +7     0 /  66 /  25
+   fixed lock: 50 > 25                        91    +0.09   49%       +8     -2.6      -4.1        +1 / +8    27 /  45 /  19    77.4      +0.16
+   trail from 15 %, give back 10 % of the best   91    +0.07   78%       +6     -1.0      -1.3        +2 / +5    70 /  20 /   1     5.1      +0.09
+   trail from 15 %, give back 20 % of the best   91    +0.11   78%      +10     -1.0      -1.3        +3 / +7    68 /  21 /   2     5.4      +0.13
+   trail from 15 %, give back 30 % of the best   91    +0.10   71%       +9     -1.0      -1.3        +3 / +6    66 /  21 /   4    12.4      +0.15
+   trail from 15 %, give back 50 % of the best   91    +0.03   54%       +3     -2.6      -3.8        -1 / +4    61 /  22 /   8    22.2      +0.13
+   trail from 25 %, give back 10 % of the best   91    +0.11   75%      +10     -1.0      -1.2        +5 / +6    63 /  27 /   1     5.7      +0.13
+   trail from 25 %, give back 20 % of the best   91    +0.11   74%      +10     -1.0      -1.2        +5 / +5    62 /  27 /   2     7.0      +0.15
+   trail from 25 %, give back 30 % of the best   91    +0.10   71%       +9     -1.0      -1.2        +5 / +4    59 /  27 /   5    14.1      +0.16
+   trail from 25 %, give back 50 % of the best   91    +0.06   63%       +5     -2.6      -3.5        +2 / +3    53 /  27 /  11    24.9      +0.16
+   trail from 50 %, give back 10 % of the best   91    +0.10   54%       +9     -2.6      -3.6        +3 / +6    43 /  45 /   3    45.1      +0.18
+   trail from 50 %, give back 20 % of the best   91    +0.07   52%       +6     -2.6      -3.6        +2 / +4    42 /  45 /   4    49.5      +0.16
+   trail from 50 %, give back 30 % of the best   91    +0.08   51%       +8     -2.6      -3.9        +2 / +6    35 /  45 /  11    67.2      +0.18
+   trail from 50 %, give back 50 % of the best   91    +0.08   49%       +7     -2.6      -3.9        +0 / +7    29 /  45 /  17    78.6      +0.17
+
+## XAUT daily: 91 trades, each side 1 % away, entered 23 h before settlement, stop 3x on each sold option in every row; bars of 5 minutes; mean premium 1.1
+                                               n     mean   win    total    worst  drawdown         halves   exits: trail or floor / a leg stopped, rest settled / settled untouched   slip   at level
+   the stop only, held to settlement          91    +0.01   46%       +1     -2.6     -10.1        +0 / +1     0 /  47 /  44
+   fixed lock: 50 > 25                        91    +0.04   57%       +4     -2.6      -6.8        +2 / +2    35 /  29 /  27    60.2      +0.12
+   trail from 15 %, give back 10 % of the best   91    +0.08   85%       +7     -1.8      -1.8        +2 / +5    79 /  11 /   1     5.1      +0.10
+   trail from 15 %, give back 20 % of the best   91    +0.11   85%      +10     -1.8      -1.8        +3 / +7    77 /  11 /   3     5.4      +0.14
+   trail from 15 %, give back 30 % of the best   91    +0.10   78%       +9     -1.8      -1.9        +3 / +6    75 /  11 /   5    11.5      +0.16
+   trail from 15 %, give back 50 % of the best   91    +0.03   58%       +3     -2.6      -4.5        -1 / +4    71 /  11 /   9    19.9      +0.14
+   trail from 25 %, give back 10 % of the best   91    +0.08   81%       +7     -2.2      -2.7        +4 / +4    75 /  15 /   1     5.5      +0.11
+   trail from 25 %, give back 20 % of the best   91    +0.08   80%       +7     -2.2      -3.1        +4 / +3    73 /  15 /   3     6.7      +0.13
+   trail from 25 %, give back 30 % of the best   91    +0.07   78%       +6     -2.2      -3.8        +4 / +2    70 /  15 /   6    12.6      +0.13
+   trail from 25 %, give back 50 % of the best   91    +0.01   69%       +1     -2.6      -5.5        +0 / +1    64 /  15 /  12    21.5      +0.12
+   trail from 50 %, give back 10 % of the best   91    +0.05   62%       +4     -2.6      -6.2        +3 / +1    57 /  29 /   5    34.9      +0.13
+   trail from 50 %, give back 20 % of the best   91    +0.04   59%       +3     -2.6      -5.9        +4 / -1    52 /  29 /  10    40.8      +0.13
+   trail from 50 %, give back 30 % of the best   91    +0.05   58%       +4     -2.6      -6.5        +4 / +0    45 /  29 /  17    53.3      +0.15
+   trail from 50 %, give back 50 % of the best   91    +0.04   57%       +3     -2.6      -6.5        +2 / +1    37 /  29 /  25    63.2      +0.13
+
