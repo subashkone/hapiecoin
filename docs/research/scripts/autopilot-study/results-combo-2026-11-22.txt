@@ -1,0 +1,49 @@
+## BTC daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option in every row
+   the stop only, held to settlement                              n=106 mean=  +11.75 pos= 65% worst=  -105.8 worst three=  -254.2 total=  +1246  halves +675 / +571
+   (one side sold on 47 of 106 days; 1 days without the 24 h history sell both)
+   the parts alone
+   one side after a move                                          n=106 mean=  +10.73 pos= 73% worst=   -73.4 worst three=  -193.8 total=  +1137  halves +622 / +515
+   buy-back at 5                                                  n=106 mean=  +11.30 pos= 66% worst=  -106.3 worst three=  -255.6 total=  +1198  halves +650 / +548
+   buy-back at 20 % of entry                                      n=106 mean=  +13.34 pos= 73% worst=  -111.4 worst three=  -246.6 total=  +1414  halves +753 / +661
+   profit lock 50 > 25                                            n=106 mean=  +11.68 pos= 71% worst=   -69.2 worst three=  -159.1 total=  +1238  halves +675 / +563
+   out 16 h before settlement                                     n=106 mean=   +6.18 pos= 78% worst=   -25.0 worst three=   -72.4 total=   +655  halves +355 / +299
+   1. one side after a move + the buy-back
+   one side + buy-back at 5                                       n=106 mean=  +10.43 pos= 74% worst=   -73.4 worst three=  -194.2 total=  +1105  halves +605 / +500
+   one side + buy-back at 20 % of entry                           n=106 mean=   +9.83 pos= 78% worst=   -73.4 worst three=  -198.8 total=  +1042  halves +604 / +438
+   2. profit lock + the buy-back
+   lock 50 > 25 + buy-back at 5                                   n=106 mean=  +11.34 pos= 71% worst=   -69.6 worst three=  -160.4 total=  +1202  halves +655 / +547
+   lock 50 > 25 + buy-back at 20 % of entry                       n=106 mean=  +12.66 pos= 75% worst=   -75.1 worst three=  -175.7 total=  +1342  halves +731 / +611
+   3. out early + one side after a move
+   out 16 h before + one side                                     n=106 mean=   +3.81 pos= 75% worst=   -35.7 worst three=   -88.9 total=   +403  halves +303 / +100
+   rows in this set: 11
+
+## ETH daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option in every row
+   the stop only, held to settlement                              n=106 mean=   +4.46 pos= 61% worst=   -49.6 worst three=  -136.2 total=   +473  halves +239 / +234
+   (one side sold on 53 of 106 days; 1 days without the 24 h history sell both)
+   the parts alone
+   one side after a move                                          n=106 mean=   +3.95 pos= 69% worst=   -40.1 worst three=  -112.8 total=   +419  halves +247 / +172
+   buy-back at 0.25                                               n=106 mean=   +4.15 pos= 61% worst=   -49.8 worst three=  -136.6 total=   +440  halves +222 / +218
+   buy-back at 20 % of entry                                      n=106 mean=   +2.84 pos= 62% worst=   -52.7 worst three=  -141.9 total=   +301  halves +183 / +118
+   profit lock 50 > 25                                            n=106 mean=   +3.47 pos= 68% worst=   -50.2 worst three=  -136.8 total=   +367  halves +162 / +206
+   out 16 h before settlement                                     n=106 mean=   +2.58 pos= 82% worst=   -19.9 worst three=   -58.6 total=   +273  halves +129 / +144
+   1. one side after a move + the buy-back
+   one side + buy-back at 0.25                                    n=106 mean=   +3.72 pos= 69% worst=   -40.1 worst three=  -113.0 total=   +394  halves +234 / +160
+   one side + buy-back at 20 % of entry                           n=106 mean=   +2.67 pos= 70% worst=   -41.7 worst three=  -115.2 total=   +283  halves +199 / +84
+   2. profit lock + the buy-back
+   lock 50 > 25 + buy-back at 0.25                                n=106 mean=   +3.26 pos= 68% worst=   -50.2 worst three=  -137.1 total=   +345  halves +150 / +195
+   lock 50 > 25 + buy-back at 20 % of entry                       n=106 mean=   +2.76 pos= 70% worst=   -52.7 worst three=  -141.9 total=   +292  halves +129 / +163
+   3. out early + one side after a move
+   out 16 h before + one side                                     n=106 mean=   +1.15 pos= 72% worst=   -25.9 worst three=   -65.1 total=   +121  halves +68 / +54
+   rows in this set: 11
+
+## BTC weekly (Friday): 51 trades, each side 3 % away, entered 164 h before settlement, stop 3x on each sold option in every row
+   the stop only, held to settlement                              n= 51 mean=  +40.65 pos= 57% worst=  -168.3 worst three=  -470.5 total=  +2073  halves +1525 / +548
+   the parts alone
+   close everything at 90 % of the premium                        n= 51 mean=  +44.39 pos= 59% worst=  -168.3 worst three=  -470.5 total=  +2264  halves +1524 / +740
+   buy-back at 5                                                  n= 51 mean=  +40.14 pos= 57% worst=  -168.6 worst three=  -471.6 total=  +2047  halves +1512 / +536
+   buy-back at 20 % of entry                                      n= 51 mean=  +34.59 pos= 61% worst=  -187.9 worst three=  -522.9 total=  +1764  halves +1082 / +682
+   4. close at 90 % + the buy-back
+   close at 90 % + buy-back at 5                                  n= 51 mean=  +44.28 pos= 59% worst=  -168.6 worst three=  -471.6 total=  +2258  halves +1518 / +740
+   close at 90 % + buy-back at 20 % of entry                      n= 51 mean=  +34.59 pos= 61% worst=  -187.9 worst three=  -522.9 total=  +1764  halves +1082 / +682
+   rows in this set: 6
+

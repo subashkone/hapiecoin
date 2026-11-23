@@ -1,0 +1,63 @@
+## BTC daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option in every row; bars of 5 minutes; mean premium 36.5
+                                               n     mean   win    total    worst  drawdown         halves   exits: trail or floor / a leg stopped, rest settled / settled untouched   slip   at level
+   the stop only, held to settlement         106   +11.75   65%    +1246   -105.8    -185.0    +675 / +571     0 /  36 /  70
+   fixed lock: 50 > 25                       106   +11.68   71%    +1238    -69.2    -102.5    +675 / +563    36 /  21 /  49    13.5     +13.74
+   trail from 40 %, give back 10 % of the best  106    +8.71   85%     +923    -69.2     -69.2    +548 / +375    88 /  16 /   2     3.2      +9.76
+   trail from 40 %, give back 20 % of the best  106    +8.96   84%     +950    -69.2     -69.2    +542 / +407    84 /  16 /   6     5.3     +10.53
+   trail from 40 %, give back 30 % of the best  106    +8.86   83%     +939    -69.2     -69.2    +495 / +445    78 /  16 /  12     6.6     +10.49
+   trail from 40 %, give back 40 % of the best  106    +8.32   80%     +881    -69.2     -76.7    +470 / +412    71 /  16 /  19     9.1     +10.83
+   trail from 50 %, give back 10 % of the best  106   +10.01   80%    +1061    -69.2     -91.4    +647 / +414    82 /  21 /   3     3.4     +11.04
+   trail from 50 %, give back 20 % of the best  106   +11.30   79%    +1198    -69.2     -84.9    +685 / +513    68 /  21 /  17     5.7     +12.59
+   trail from 50 %, give back 30 % of the best  106   +11.22   77%    +1189    -69.2     -89.3    +653 / +536    62 /  21 /  23     7.9     +12.54
+   trail from 50 %, give back 40 % of the best  106   +11.53   75%    +1222    -69.2     -91.9    +689 / +533    53 /  21 /  32     9.3     +13.40
+   trail from 60 %, give back 10 % of the best  106    +9.81   75%    +1040   -105.8    -128.5    +535 / +506    72 /  27 /   7     3.9     +10.84
+   trail from 60 %, give back 20 % of the best  106   +10.66   75%    +1130   -105.8    -121.0    +572 / +558    54 /  27 /  25     6.1     +11.74
+   trail from 60 %, give back 30 % of the best  106   +10.93   74%    +1158   -105.8    -125.0    +522 / +637    47 /  27 /  32     8.8     +12.03
+   trail from 60 %, give back 40 % of the best  106   +10.46   72%    +1109   -105.8    -129.9    +558 / +550    40 /  27 /  39     9.7     +12.01
+   trail from 75 %, give back 10 % of the best  106   +11.10   71%    +1176   -105.8    -185.0    +567 / +609    59 /  31 /  16     4.9     +11.90
+   trail from 75 %, give back 20 % of the best  106   +11.28   70%    +1196   -105.8    -185.0    +587 / +608    43 /  31 /  32     8.7     +12.35
+   trail from 75 %, give back 30 % of the best  106   +11.16   70%    +1183   -105.8    -185.0    +538 / +645    37 /  31 /  38    10.1     +12.07
+   trail from 75 %, give back 40 % of the best  106   +10.65   69%    +1129   -105.8    -185.0    +568 / +561    30 /  31 /  45    11.6     +12.10
+
+## ETH daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option in every row; bars of 5 minutes; mean premium 21.0
+                                               n     mean   win    total    worst  drawdown         halves   exits: trail or floor / a leg stopped, rest settled / settled untouched   slip   at level
+   the stop only, held to settlement         106    +4.46   61%     +473    -49.6    -119.9    +239 / +234     0 /  38 /  68
+   fixed lock: 50 > 25                       106    +3.47   68%     +367    -50.2     -84.0    +162 / +206    36 /  26 /  44    16.3      +4.92
+   trail from 40 %, give back 10 % of the best  106    +3.38   80%     +358    -44.6     -49.6    +163 / +195    81 /  20 /   5     3.2      +3.87
+   trail from 40 %, give back 20 % of the best  106    +3.87   79%     +410    -44.6     -44.6    +176 / +234    74 /  20 /  12     5.7      +4.66
+   trail from 40 %, give back 30 % of the best  106    +3.55   76%     +376    -44.6     -44.6    +176 / +200    64 /  20 /  22     8.6      +4.78
+   trail from 40 %, give back 40 % of the best  106    +3.60   75%     +382    -44.6     -44.6    +149 / +233    56 /  20 /  30    12.9      +5.05
+   trail from 50 %, give back 10 % of the best  106    +3.59   75%     +380    -44.6     -61.2    +210 / +170    74 /  26 /   6     3.2      +4.07
+   trail from 50 %, give back 20 % of the best  106    +3.65   75%     +387    -44.6     -62.0    +194 / +192    65 /  26 /  15     6.4      +4.50
+   trail from 50 %, give back 30 % of the best  106    +3.29   73%     +348    -44.6     -61.8    +189 / +160    56 /  26 /  24     8.9      +4.50
+   trail from 50 %, give back 40 % of the best  106    +3.09   71%     +328    -44.6     -83.8    +151 / +177    49 /  26 /  31    12.8      +4.46
+   trail from 60 %, give back 10 % of the best  106    +3.40   71%     +360    -49.6     -98.1    +172 / +188    67 /  30 /   9     3.7      +3.92
+   trail from 60 %, give back 20 % of the best  106    +3.62   71%     +384    -49.6     -97.9    +167 / +217    57 /  30 /  19     6.3      +4.32
+   trail from 60 %, give back 30 % of the best  106    +3.25   69%     +344    -49.6    -100.6    +161 / +183    46 /  30 /  30    10.8      +4.44
+   trail from 60 %, give back 40 % of the best  106    +2.96   67%     +314    -49.6    -116.0    +124 / +190    40 /  30 /  36    15.6      +4.31
+   trail from 75 %, give back 10 % of the best  106    +3.26   66%     +346    -49.6    -119.9    +178 / +168    54 /  35 /  17     5.7      +3.91
+   trail from 75 %, give back 20 % of the best  106    +3.42   66%     +363    -49.6    -119.9    +185 / +178    41 /  35 /  30     7.0      +4.00
+   trail from 75 %, give back 30 % of the best  106    +3.70   66%     +392    -49.6    -119.9    +201 / +191    31 /  35 /  40     8.1      +4.21
+   trail from 75 %, give back 40 % of the best  106    +3.58   64%     +379    -49.6    -119.9    +180 / +199    24 /  35 /  47    16.5      +4.29
+
+## BTC weekly (Friday): 51 trades, each side 3 % away, entered 164 h before settlement, stop 3x on each sold option in every row; bars of 60 minutes; mean premium 149.0
+                                               n     mean   win    total    worst  drawdown         halves   exits: trail or floor / a leg stopped, rest settled / settled untouched   slip   at level
+   the stop only, held to settlement          51   +40.65   57%    +2073   -168.3    -504.9   +1525 / +548     0 /  22 /  29
+   fixed lock: 50 > 25                        51   +40.95   71%    +2088   -168.3    -398.0   +1210 / +879    16 /  14 /  21    12.0     +46.20
+   trail from 40 %, give back 10 % of the best   51   +18.21   76%     +929   -168.3    -205.8    +335 / +593    39 /  12 /   0     5.1     +24.08
+   trail from 40 %, give back 20 % of the best   51   +19.13   76%     +975   -168.3    -208.9    +457 / +519    38 /  12 /   1     5.4     +25.33
+   trail from 40 %, give back 30 % of the best   51   +19.65   76%    +1002   -168.3    -231.4    +587 / +415    36 /  12 /   3     8.9     +28.04
+   trail from 40 %, give back 40 % of the best   51   +29.28   76%    +1493   -168.3    -208.6   +1046 / +447    29 /  12 /  10     9.1     +36.17
+   trail from 50 %, give back 10 % of the best   51   +25.33   73%    +1292   -168.3    -185.7    +681 / +611    37 /  14 /   0     5.5     +30.72
+   trail from 50 %, give back 20 % of the best   51   +29.89   73%    +1524   -168.3    -200.1    +886 / +638    33 /  14 /   4     7.7     +37.19
+   trail from 50 %, give back 30 % of the best   51   +27.62   73%    +1408   -168.3    -229.3    +839 / +569    31 /  14 /   6     9.4     +35.41
+   trail from 50 %, give back 40 % of the best   51   +33.82   71%    +1725   -168.3    -368.6   +1159 / +565    25 /  14 /  12    13.0     +42.14
+   trail from 60 %, give back 10 % of the best   51   +33.48   69%    +1708   -168.3    -332.9    +904 / +804    32 /  16 /   3     6.1     +39.60
+   trail from 60 %, give back 20 % of the best   51   +37.53   69%    +1914   -168.3    -332.9   +1081 / +833    27 /  16 /   8     8.0     +44.28
+   trail from 60 %, give back 30 % of the best   51   +34.79   69%    +1774   -168.3    -348.9   +1083 / +691    25 /  16 /  10    11.8     +42.29
+   trail from 60 %, give back 40 % of the best   51   +40.86   67%    +2084   -168.3    -505.8   +1349 / +736    19 /  16 /  16    14.9     +48.16
+   trail from 75 %, give back 10 % of the best   51   +41.84   65%    +2134   -168.3    -332.9   +1294 / +840    24 /  18 /   9     9.3     +49.17
+   trail from 75 %, give back 20 % of the best   51   +39.23   65%    +2001   -168.3    -332.9   +1308 / +693    20 /  18 /  13    11.8     +46.58
+   trail from 75 %, give back 30 % of the best   51   +35.02   65%    +1786   -168.3    -348.9   +1180 / +606    19 /  18 /  14    14.1     +42.50
+   trail from 75 %, give back 40 % of the best   51   +38.37   63%    +1957   -168.3    -505.8   +1329 / +627    15 /  18 /  18    19.4     +45.96
+

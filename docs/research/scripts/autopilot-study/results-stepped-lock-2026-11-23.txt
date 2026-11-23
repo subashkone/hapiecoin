@@ -1,0 +1,24 @@
+## BTC daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option in every row; bars of 5 minutes; mean premium 36.5
+                                                                 n     mean   win    total    worst  drawdown         halves   exits: floor or trail / a leg stopped, rest settled / settled untouched   floor exits closed at (mean share of the premium)
+   the stop only, held to settlement                           106   +11.75   65%    +1246   -105.8    -185.0    +675 / +571     0 /  36 /  70
+   fixed lock: 50 > 25                                         106   +11.68   71%    +1238    -69.2    -102.5    +675 / +563    36 /  21 /  49    11.5 %
+   stepped lock A: 50 > 25, 75 > 50                            106   +10.81   73%    +1146    -69.2     -91.9    +627 / +519    47 /  21 /  38    25.3 %
+   stepped lock B: 50 > 25, 75 > 50, 90 > 75                   106   +10.57   73%    +1120    -69.2     -91.9    +598 / +522    56 /  21 /  29    35.1 %
+   target with trail: from 50 %, give back 20 % of the best    106   +11.30   79%    +1198    -69.2     -84.9    +685 / +513    68 /  21 /  17    48.2 %
+
+## ETH daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option in every row; bars of 5 minutes; mean premium 21.0
+                                                                 n     mean   win    total    worst  drawdown         halves   exits: floor or trail / a leg stopped, rest settled / settled untouched   floor exits closed at (mean share of the premium)
+   the stop only, held to settlement                           106    +4.46   61%     +473    -49.6    -119.9    +239 / +234     0 /  38 /  68
+   fixed lock: 50 > 25                                         106    +3.47   68%     +367    -50.2     -84.0    +162 / +206    36 /  26 /  44     8.7 %
+   stepped lock A: 50 > 25, 75 > 50                            106    +3.31   70%     +351    -50.2     -84.0    +123 / +228    43 /  26 /  37    20.2 %
+   stepped lock B: 50 > 25, 75 > 50, 90 > 75                   106    +3.55   71%     +377    -50.2     -84.0    +138 / +239    47 /  26 /  33    29.9 %
+   target with trail: from 50 %, give back 20 % of the best    106    +3.65   75%     +387    -44.6     -62.0    +194 / +192    65 /  26 /  15    47.3 %
+
+## BTC weekly (Friday): 51 trades, each side 3 % away, entered 164 h before settlement, stop 3x on each sold option in every row; bars of 60 minutes; mean premium 149.0
+                                                                 n     mean   win    total    worst  drawdown         halves   exits: floor or trail / a leg stopped, rest settled / settled untouched   floor exits closed at (mean share of the premium)
+   the stop only, held to settlement                            51   +40.65   57%    +2073   -168.3    -504.9   +1525 / +548     0 /  22 /  29
+   fixed lock: 50 > 25                                          51   +40.95   71%    +2088   -168.3    -398.0   +1210 / +879    16 /  14 /  21    13.0 %
+   stepped lock A: 50 > 25, 75 > 50                             51   +36.58   71%    +1866   -168.3    -398.0   +1204 / +661    21 /  14 /  16    22.9 %
+   stepped lock B: 50 > 25, 75 > 50, 90 > 75                    51   +35.27   71%    +1799   -168.3    -398.0   +1213 / +585    24 /  14 /  13    29.0 %
+   target with trail: from 50 %, give back 20 % of the best     51   +29.89   73%    +1524   -168.3    -200.1    +886 / +638    33 /  14 /   4    43.8 %
+

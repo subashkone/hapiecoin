@@ -13,10 +13,11 @@ LABEL, MULT = sys.argv[8], int(sys.argv[9])
 LEVELS = [float(x) for x in sys.argv[10].split(",")]
 
 
-def run(tr, level=None, after=None, near=None, take=None):
+def run(tr, level=None, after=None, near=None, take=None, rearm=None):
     """level: buy a leg back alone at or under this mark. after: the stop multiple of the other leg once one leg has
     been bought back cheap. near: buy back only while the spot is within this share of the leg's strike. take: close
-    everything once the profit before the closing fees is this share of the premium."""
+    everything once the profit before the closing fees is this share of the premium. rearm (a, b): once a leg's mark
+    has been at or under a times its entry price, its stop moves down to b times its entry price."""
     live, realised, t, mult = list(range(len(tr.legs))), -tr.fee_in, tr.t0 + X.BAR, {i: MULT for i in range(len(tr.legs))}
     while t <= tr.last_b and live:
         sp = tr.spot.get(t, tr.settle_spot)
@@ -24,6 +25,8 @@ def run(tr, level=None, after=None, near=None, take=None):
         for i in list(live):
             if px[i] is None:
                 continue
+            if rearm is not None and px[i] <= rearm[0] * tr.entry[i]:
+                mult[i] = min(mult[i], rearm[1])
             cheap = level is not None and px[i] <= level and (near is None or abs(tr.legs[i][1] - sp) <= near * sp)
             if px[i] >= mult[i] * tr.entry[i] or cheap:
                 realised += -(px[i] - tr.entry[i]) * X.Q - X.fee(sp, px[i])
@@ -60,6 +63,10 @@ for lv in LEVELS:
             line(f"buy back at {lv:g}, then the other leg's stop at {a:g}x", level=lv, after=a)
     for nr in (0.02, 0.01):
         line(f"buy back at {lv:g} only while the spot is within {100 * nr:g} % of the strike", level=lv, near=nr)
+for a in (0.25, 0.1, 0.05):
+    for b in (1.0, 0.5, 0.25):
+        if b > a:
+            line(f"once a leg is under {100 * a:g} % of its entry, its stop at {100 * b:g} % of entry", rearm=(a, b))
 for tk in (0.95, 0.98, 0.99):
     line(f"close everything at {100 * tk:g} % of the premium", take=tk)
     line(f"close everything at {100 * tk:g} %, and buy a leg back at {LEVELS[-1]:g}", take=tk, level=LEVELS[-1])

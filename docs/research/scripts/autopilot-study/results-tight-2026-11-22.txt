@@ -10,6 +10,14 @@
    buy back at 5, then the other leg's stop at 1.5x                   n=106 mean=  +10.23 pos= 65% worst=  -106.3 worst three=  -245.3 total=  +1085  halves +579 / +506
    buy back at 5 only while the spot is within 2 % of the strike      n=106 mean=  +11.38 pos= 66% worst=  -105.8 worst three=  -255.1 total=  +1206  halves +653 / +553
    buy back at 5 only while the spot is within 1 % of the strike      n=106 mean=  +11.67 pos= 66% worst=  -105.8 worst three=  -254.4 total=  +1237  halves +670 / +567
+   once a leg is under 25 % of its entry, its stop at 100 % of entry  n=106 mean=  +10.40 pos= 68% worst=  -105.8 worst three=  -232.1 total=  +1103  halves +541 / +562
+   once a leg is under 25 % of its entry, its stop at 50 % of entry   n=106 mean=  +11.54 pos= 73% worst=  -105.8 worst three=  -232.1 total=  +1223  halves +629 / +594
+   once a leg is under 10 % of its entry, its stop at 100 % of entry  n=106 mean=  +10.96 pos= 66% worst=  -105.8 worst three=  -254.2 total=  +1162  halves +603 / +559
+   once a leg is under 10 % of its entry, its stop at 50 % of entry   n=106 mean=  +11.36 pos= 66% worst=  -105.8 worst three=  -254.2 total=  +1204  halves +618 / +586
+   once a leg is under 10 % of its entry, its stop at 25 % of entry   n=106 mean=  +11.50 pos= 66% worst=  -105.8 worst three=  -262.7 total=  +1219  halves +626 / +593
+   once a leg is under 5 % of its entry, its stop at 100 % of entry   n=106 mean=  +11.13 pos= 65% worst=  -105.8 worst three=  -254.2 total=  +1180  halves +615 / +565
+   once a leg is under 5 % of its entry, its stop at 50 % of entry    n=106 mean=  +11.18 pos= 65% worst=  -105.8 worst three=  -254.2 total=  +1185  halves +619 / +565
+   once a leg is under 5 % of its entry, its stop at 25 % of entry    n=106 mean=  +11.42 pos= 65% worst=  -105.8 worst three=  -264.1 total=  +1211  halves +645 / +566
    close everything at 95 % of the premium                            n=106 mean=  +11.89 pos= 65% worst=  -105.8 worst three=  -254.2 total=  +1261  halves +688 / +572
    close everything at 95 %, and buy a leg back at 5                  n=106 mean=  +11.71 pos= 66% worst=  -106.3 worst three=  -255.6 total=  +1241  halves +670 / +571
    close everything at 98 % of the premium                            n=106 mean=  +11.74 pos= 65% worst=  -105.8 worst three=  -254.2 total=  +1244  halves +663 / +581
@@ -27,6 +35,14 @@
    buy back at 5, then the other leg's stop at 1.5x                   n=106 mean=   +6.82 pos= 51% worst=   -39.8 worst three=  -110.6 total=   +723  halves +315 / +408
    buy back at 5 only while the spot is within 2 % of the strike      n=106 mean=   +7.17 pos= 50% worst=   -39.8 worst three=  -110.6 total=   +760  halves +320 / +440
    buy back at 5 only while the spot is within 1 % of the strike      n=106 mean=   +7.42 pos= 50% worst=   -39.8 worst three=  -110.6 total=   +787  halves +335 / +451
+   once a leg is under 25 % of its entry, its stop at 100 % of entry  n=106 mean=   +6.57 pos= 53% worst=   -41.4 worst three=  -104.7 total=   +696  halves +295 / +402
+   once a leg is under 25 % of its entry, its stop at 50 % of entry   n=106 mean=   +7.96 pos= 57% worst=   -30.4 worst three=   -87.7 total=   +844  halves +426 / +419
+   once a leg is under 10 % of its entry, its stop at 100 % of entry  n=106 mean=   +6.38 pos= 49% worst=   -39.8 worst three=  -111.1 total=   +676  halves +256 / +421
+   once a leg is under 10 % of its entry, its stop at 50 % of entry   n=106 mean=   +6.72 pos= 49% worst=   -39.8 worst three=  -107.5 total=   +713  halves +265 / +448
+   once a leg is under 10 % of its entry, its stop at 25 % of entry   n=106 mean=   +6.90 pos= 49% worst=   -39.8 worst three=  -106.4 total=   +732  halves +277 / +455
+   once a leg is under 5 % of its entry, its stop at 100 % of entry   n=106 mean=   +6.95 pos= 49% worst=   -39.8 worst three=  -110.6 total=   +737  halves +281 / +457
+   once a leg is under 5 % of its entry, its stop at 50 % of entry    n=106 mean=   +7.02 pos= 49% worst=   -39.8 worst three=  -110.6 total=   +744  halves +287 / +457
+   once a leg is under 5 % of its entry, its stop at 25 % of entry    n=106 mean=   +7.35 pos= 49% worst=   -39.8 worst three=  -110.6 total=   +779  halves +322 / +457
    close everything at 95 % of the premium                            n=106 mean=   +8.08 pos= 49% worst=   -39.8 worst three=  -110.6 total=   +856  halves +373 / +483
    close everything at 95 %, and buy a leg back at 5                  n=106 mean=   +7.69 pos= 50% worst=   -39.8 worst three=  -110.6 total=   +816  halves +347 / +468
    close everything at 98 % of the premium                            n=106 mean=   +7.67 pos= 49% worst=   -39.8 worst three=  -110.6 total=   +813  halves +333 / +480
@@ -46,6 +62,14 @@
    buy back at 0.25, then the other leg's stop at 1.5x                n=106 mean=   +3.49 pos= 63% worst=   -49.8 worst three=  -136.6 total=   +370  halves +181 / +189
    buy back at 0.25 only while the spot is within 2 % of the strike   n=106 mean=   +4.21 pos= 61% worst=   -49.6 worst three=  -136.4 total=   +446  halves +225 / +221
    buy back at 0.25 only while the spot is within 1 % of the strike   n=106 mean=   +4.34 pos= 61% worst=   -49.6 worst three=  -136.2 total=   +460  halves +232 / +228
+   once a leg is under 25 % of its entry, its stop at 100 % of entry  n=106 mean=   +2.90 pos= 60% worst=   -49.6 worst three=  -136.2 total=   +308  halves +152 / +156
+   once a leg is under 25 % of its entry, its stop at 50 % of entry   n=106 mean=   +2.99 pos= 61% worst=   -49.6 worst three=  -139.9 total=   +317  halves +190 / +127
+   once a leg is under 10 % of its entry, its stop at 100 % of entry  n=106 mean=   +4.11 pos= 60% worst=   -49.6 worst three=  -136.2 total=   +435  halves +261 / +174
+   once a leg is under 10 % of its entry, its stop at 50 % of entry   n=106 mean=   +4.29 pos= 62% worst=   -49.6 worst three=  -136.2 total=   +455  halves +270 / +185
+   once a leg is under 10 % of its entry, its stop at 25 % of entry   n=106 mean=   +3.93 pos= 62% worst=   -49.6 worst three=  -136.2 total=   +416  halves +226 / +190
+   once a leg is under 5 % of its entry, its stop at 100 % of entry   n=106 mean=   +4.26 pos= 60% worst=   -49.6 worst three=  -136.2 total=   +451  halves +239 / +212
+   once a leg is under 5 % of its entry, its stop at 50 % of entry    n=106 mean=   +4.16 pos= 61% worst=   -49.6 worst three=  -136.2 total=   +441  halves +244 / +196
+   once a leg is under 5 % of its entry, its stop at 25 % of entry    n=106 mean=   +3.78 pos= 61% worst=   -49.6 worst three=  -136.2 total=   +401  halves +210 / +191
    close everything at 95 % of the premium                            n=106 mean=   +4.42 pos= 61% worst=   -49.6 worst three=  -136.2 total=   +468  halves +218 / +250
    close everything at 95 %, and buy a leg back at 0.25               n=106 mean=   +4.30 pos= 61% worst=   -49.8 worst three=  -136.6 total=   +456  halves +213 / +244
    close everything at 98 % of the premium                            n=106 mean=   +4.47 pos= 61% worst=   -49.6 worst three=  -136.2 total=   +474  halves +231 / +243
@@ -65,6 +89,14 @@
    buy back at 5, then the other leg's stop at 1.5x                   n= 51 mean=  +37.63 pos= 59% worst=  -168.6 worst three=  -471.6 total=  +1919  halves +1201 / +718
    buy back at 5 only while the spot is within 2 % of the strike      n= 51 mean=  +40.57 pos= 57% worst=  -168.3 worst three=  -470.5 total=  +2069  halves +1522 / +547
    buy back at 5 only while the spot is within 1 % of the strike      n= 51 mean=  +40.63 pos= 57% worst=  -168.3 worst three=  -470.5 total=  +2072  halves +1524 / +548
+   once a leg is under 25 % of its entry, its stop at 100 % of entry  n= 51 mean=  +43.49 pos= 63% worst=  -168.3 worst three=  -470.5 total=  +2218  halves +1591 / +628
+   once a leg is under 25 % of its entry, its stop at 50 % of entry   n= 51 mean=  +39.83 pos= 65% worst=  -220.3 worst three=  -522.5 total=  +2031  halves +1412 / +620
+   once a leg is under 10 % of its entry, its stop at 100 % of entry  n= 51 mean=  +39.77 pos= 59% worst=  -168.3 worst three=  -470.5 total=  +2028  halves +1525 / +504
+   once a leg is under 10 % of its entry, its stop at 50 % of entry   n= 51 mean=  +33.05 pos= 59% worst=  -220.3 worst three=  -522.5 total=  +1685  halves +1283 / +402
+   once a leg is under 10 % of its entry, its stop at 25 % of entry   n= 51 mean=  +33.54 pos= 59% worst=  -204.9 worst three=  -507.0 total=  +1711  halves +1236 / +475
+   once a leg is under 5 % of its entry, its stop at 100 % of entry   n= 51 mean=  +41.81 pos= 59% worst=  -168.3 worst three=  -470.5 total=  +2133  halves +1525 / +608
+   once a leg is under 5 % of its entry, its stop at 50 % of entry    n= 51 mean=  +36.82 pos= 59% worst=  -220.3 worst three=  -522.5 total=  +1878  halves +1393 / +485
+   once a leg is under 5 % of its entry, its stop at 25 % of entry    n= 51 mean=  +37.41 pos= 59% worst=  -204.9 worst three=  -507.0 total=  +1908  halves +1393 / +515
    close everything at 95 % of the premium                            n= 51 mean=  +43.16 pos= 59% worst=  -168.3 worst three=  -470.5 total=  +2201  halves +1502 / +699
    close everything at 95 %, and buy a leg back at 5                  n= 51 mean=  +43.08 pos= 59% worst=  -168.6 worst three=  -471.6 total=  +2197  halves +1497 / +700
    close everything at 98 % of the premium                            n= 51 mean=  +41.28 pos= 57% worst=  -168.3 worst three=  -470.5 total=  +2106  halves +1571 / +535
