@@ -11,7 +11,7 @@ import { fmtMoney } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
 import { toPricingLegs } from "@/lib/pricing/legs";
 import { expiryExtremes } from "@hapiecoin/pricing";
-import { coverOf, openLegs, serverLegToLocal } from "@/lib/strategy/paper";
+import { bookedOf, coverOf, openLegs, serverLegToLocal } from "@/lib/strategy/paper";
 import type { PaperBook } from "@/lib/strategy/usePaper";
 import { venueCalendar } from "@/lib/venue";
 
@@ -34,7 +34,10 @@ export function CardFigures({ s, book, pnl, fees }: { s: Strategy; book: PaperBo
     if (spot === null && live !== null) setSpot(live);
   }, [spot, live]);
   const nowMs = useMemo(() => Date.now(), []);
-  const legs = useMemo(() => toPricingLegs(held.map((l) => serverLegToLocal(l, s.asset)), book.lotSizeOf(s.asset, s.venue), { spot: spot === null ? undefined : String(spot) }), [held, s.asset, s.venue, book, spot]);
+  // HC-TR-260: a result the trade has already booked (a stopped or bought-back leg) is priced with the open legs, so
+  // the card's max loss, max profit and POP are the whole trade's. The capital below stays what is still held.
+  const booked = useMemo(() => (closed ? { amount: 0, legs: [] } : bookedOf(s, book.lotSizeOf(s.asset, s.venue))), [closed, s, book]);
+  const legs = useMemo(() => toPricingLegs([...held.map((l) => serverLegToLocal(l, s.asset)), ...booked.legs], book.lotSizeOf(s.asset, s.venue), { spot: spot === null ? undefined : String(spot) }), [held, s.asset, s.venue, book, spot, booked]);
   // a closed trade has no figures row, so it asks the worker for nothing (and needs no live spot)
   const options = useMemo(() => (closed || spot === null || legs.length === 0 ? null : { spot, nowMs, calendar: venueCalendar(s.asset, s.venue), defaultIv: 0.5, points: 41 }), [closed, spot, legs.length, nowMs, s.asset, s.venue]);
   const { result } = useAnalysis(legs, options);
@@ -64,16 +67,21 @@ export function CardFigures({ s, book, pnl, fees }: { s: Strategy; book: PaperBo
   return (
     <>
       {closed ? null : (
-        <div className="micro mt-1 flex flex-wrap gap-x-3 gap-y-0.5" data-testid="card-figures" data-state={result ? "ready" : "pending"} title="Combined open position at its entry premiums · at expiry">
+        <div className="micro mt-1 flex flex-wrap gap-x-3 gap-y-0.5" data-testid="card-figures" data-state={result ? "ready" : "pending"} data-booked={booked.amount === 0 ? undefined : "true"} title={booked.amount === 0 ? "Combined open position at its entry premiums · at expiry" : `The whole trade at expiry: the open legs at their entry premiums and the ${fmtMoney(booked.amount, money, { signed: true })} already realised on this trade`}>
           <span>
             max loss <b className={cn("num", result && "text-loss")}>{result ? fmtMoney(result.maxLoss, money, { unlimited: "Unlimited" }) : "—"}</b>
           </span>
           <span>
-            max profit <b className={cn("num", result && "text-profit")}>{result ? fmtMoney(result.maxProfit, money, { unlimited: "Unlimited" }) : "—"}</b>
+            {booked.amount !== 0 && result && result.maxProfit < 0 ? "best case" : "max profit"} <b className={cn("num", result && (result.maxProfit < 0 ? "text-loss" : "text-profit"))} data-testid="card-max-profit">{result ? fmtMoney(result.maxProfit, money, { unlimited: "Unlimited" }) : "—"}</b>
           </span>
           <span>
             POP <b className="num">{pop}</b>
           </span>
+          {booked.amount === 0 ? null : (
+            <span className="text-muted-foreground" data-testid="card-booked">
+              incl. <b className={cn("num", booked.amount >= 0 ? "text-profit" : "text-loss")}>{fmtMoney(booked.amount, money, { signed: true })}</b> realised
+            </span>
+          )}
         </div>
       )}
       <div className="micro mt-1 flex flex-wrap gap-x-3 gap-y-0.5 normal-case tracking-normal" data-testid="card-money" data-capital={margin !== null ? "margin" : cover === "covered" ? (capital !== null ? "worst-loss" : undefined) : cover}>

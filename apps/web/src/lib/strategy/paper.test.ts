@@ -1,6 +1,10 @@
 import type { Broker, Strategy, StrategyLeg } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
-import { coverOf, dayPnl, daysOf, feeFor, feesOf, heldOf, legPnl, localLegToInput, pickToInput, pnlSeries, priceMap, serverLegToLocal, sourceOf, strategyPnl, summaryOf } from "./paper";
+import { analyze } from "@hapiecoin/pricing";
+import { toPricingLegs } from "@/lib/pricing/legs";
+import { heldWorstLoss, marginEstimate, withBooked } from "./analysis";
+import type { StrategyLeg as LocalLeg } from "./legs";
+import { bookedOf, bookedPnl, coverOf, dayPnl, daysOf, feeFor, feesOf, heldOf, legPnl, localLegToInput, pickToInput, pnlSeries, priceMap, serverLegToLocal, sourceOf, strategyPnl, summaryOf } from "./paper";
 
 const BROKER: Broker = { id: "brk", name: "Delta Exchange India", feePct: "0.05", gstPct: "18", feeCapPct: "10", scope: "GLOBAL", venue: "delta_india" };
 const leg = (over: Partial<StrategyLeg> = {}): StrategyLeg => ({
@@ -181,5 +185,68 @@ describe("HC-TR-255 whether a position's capital can be read as its worst loss",
     expect(coverOf([l("call", "sell"), l("put", "buy")])).toBe("uncovered"); // a put does not cover a call
     expect(coverOf([l("future", "buy"), l("call", "sell")])).toBe("futures");
     expect(coverOf([])).toBe("covered");
+  });
+});
+
+describe("HC-TR-260 the result a running trade has already booked, priced with its open legs (ADR-131)", () => {
+  const S = { id: "strat_w", asset: "BTC" as const, status: "paper" as const, realizedPnl: "-205.34" };
+  // the owner's trade of 23 Nov 2026: a weekly strangle whose call was stopped for a loss of 205.34 USD, the put (sold at 1,111.3, 100 lots) still open
+  const PUT: LocalLeg = { id: "leg_p", asset: "BTC", kind: "put", side: "sell", strike: "58500", expiry: "2026-11-27", lots: 100, price: "1111.3", symbol: "P-BTC-58500-271126", status: "open", createdAt: 0 };
+  const opts = { spot: 61_000, nowMs: Date.UTC(2026, 10, 23, 15), defaultIv: 0.5 };
+
+  it("HC-TR-260 nothing booked, a trade that is not running, a figure that is not a number or no lot size: no pair and no amount", () => {
+    expect(bookedPnl(S)).toBe(-205.34);
+    expect(bookedPnl({ status: "live", realizedPnl: "12.5" })).toBe(12.5);
+    expect(bookedPnl({ status: "paper", realizedPnl: "0" })).toBe(0);
+    expect(bookedPnl({ status: "paper", realizedPnl: "0.004" })).toBe(0); // under half a cent is nothing
+    expect(bookedPnl({ status: "archived", realizedPnl: "-205.34" })).toBe(0); // a closed trade is read on its own legs
+    expect(bookedPnl({ status: "draft", realizedPnl: "5" })).toBe(0);
+    expect(bookedPnl({ status: "paper", realizedPnl: "n/a" })).toBe(0);
+    for (const none of [bookedOf({ ...S, realizedPnl: "0" }, "0.001"), bookedOf({ ...S, status: "archived" }, "0.001"), bookedOf(S, undefined), bookedOf(S, "0"), bookedOf(S, "x")]) expect(none).toEqual({ amount: 0, legs: [] });
+  });
+
+  it("HC-TR-260 the pair is worth the booked result at every price and on every date, a loss or a profit, and adds no delta", () => {
+    for (const booked of ["-205.34", "50"]) {
+      const { amount, legs } = bookedOf({ ...S, realizedPnl: booked }, "0.001");
+      expect(amount).toBe(Number(booked));
+      expect(legs.map((l) => `${l.kind} ${l.side} x${l.lots}`)).toEqual(["future buy x1", "future sell x1"]);
+      expect(legs.every((l) => Number(l.price) > 0)).toBe(true);
+      const r = analyze(toPricingLegs(legs, "0.001"), opts);
+      for (const pt of r.points) {
+        expect(pt.pnlExpiry).toBeCloseTo(amount, 6);
+        expect(pt.pnlTarget).toBeCloseTo(amount, 6);
+      }
+      expect(r.greeks.delta).toBeCloseTo(0, 9);
+      expect(r.greeks.theta).toBeCloseTo(0, 9);
+    }
+  });
+
+  it("HC-TR-260 priced with the pair, the open put's figures become the whole trade's: no profit left to make, no break-even; its premium, its margin and its greeks stay the open put's", () => {
+    const { amount, legs } = bookedOf(S, "0.001");
+    const open = analyze(toPricingLegs([PUT], "0.001"), opts);
+    const whole = withBooked(analyze(toPricingLegs([PUT, ...legs], "0.001"), opts), amount);
+    // the put alone: its premium is the most it makes. The whole trade: that premium less the call's loss
+    expect(open.maxProfit).toBeCloseTo(111.13, 6);
+    expect(whole.maxProfit).toBeCloseTo(111.13 - 205.34, 6);
+    expect(whole.maxLoss).toBeCloseTo(open.maxLoss - 205.34, 6);
+    expect(open.breakevens.map((b) => Math.round(b))).toEqual([57_389]);
+    expect(whole.breakevens).toEqual([]);
+    expect(open.pop).toBeGreaterThan(0.5);
+    expect(whole.pop).toBe(0);
+    expect(whole.booked).toBe(-205.34);
+    // what is not the payoff stays what is held
+    expect(whole.netPremium).toBeCloseTo(open.netPremium, 6);
+    expect(marginEstimate(whole)).toBeCloseTo(marginEstimate(open)!, 6);
+    expect(whole.greeks.delta).toBeCloseTo(open.greeks.delta, 9);
+    expect(whole.greeks.theta).toBeCloseTo(open.greeks.theta, 9);
+    // what is sent to a venue's balance check is the held legs' worst loss, never the realised part on top (or taken off)
+    expect(heldWorstLoss(whole)).toBeCloseTo(open.maxLoss, 6);
+    expect(heldWorstLoss(open)).toBe(open.maxLoss);
+    const profit = bookedOf({ ...S, realizedPnl: "50" }, "0.001");
+    expect(heldWorstLoss(withBooked(analyze(toPricingLegs([PUT, ...profit.legs], "0.001"), opts), profit.amount))).toBeCloseTo(open.maxLoss, 6);
+    expect(heldWorstLoss(null)).toBeNull();
+    expect(heldWorstLoss({ ...open, maxLoss: -Infinity })).toBeNull();
+    // nothing booked: the same object back, untouched
+    expect(withBooked(open, 0)).toBe(open);
   });
 });

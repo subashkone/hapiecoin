@@ -355,3 +355,29 @@ describe("HC-TR-215 a trade says when it opened and closed, to the minute", () =
     expect(screen.getByTestId("details-started").textContent).toBe(`Started${fmtDateTime(AT)}`);
   });
 });
+
+describe("HC-TR-260 the pane follows a trade that has booked a result (ADR-131)", () => {
+  it("HC-TR-260 the tiles and the curve are the whole trade's and the pane says so; the net premium stays what the open leg collected; a trade with nothing booked has no note", async () => {
+    const PUT = { ...CALL, id: "leg_p", kind: "put" as const, side: "sell" as const, strike: "58500", symbol: "P-BTC-58500-250926", lots: 100, price: "1111.3", entryPrice: "1111.3" };
+    const STOPPED = { ...CALL, id: "leg_c", side: "sell" as const, strike: "62000", symbol: "C-BTC-62000-250926", lots: 100, price: "1018.2", entryPrice: "1018.2", exitPrice: "3071.6", status: "squared_off" as const, closedAt: AT, closeReason: "stopped" as const, position: 1 };
+    mine().push(strat(1, { name: "Stopped strangle", realizedPnl: "-205.34", legs: [PUT, STOPPED] }), strat(2, { name: "Plain put", legs: [{ ...PUT, id: "leg_q" }] }));
+    renderWithProviders(<Workspace />);
+    act(() => {
+      FakeSocket.last().open();
+      FakeSocket.last().receive({ t: "spot", s: "BTC", p: "61000", c24: 0.4 });
+    });
+    const u = userEvent.setup();
+    await waitFor(() => expect(useUiStore.getState().paneSource).toEqual({ kind: "strategy", id: "strat_1" }));
+    await waitFor(() => expect(screen.getByTestId("payoff-panel").dataset["state"]).toBe("ready"));
+    await waitFor(() => expect(screen.getByTestId("tile-max-profit").textContent).toContain("−$94.21")); // 111.13 − 205.34
+    expect(screen.getByTestId("tile-max-profit").textContent).toContain("Best case"); // not "Max profit" over a loss
+    expect(screen.getByTestId("max-roi").textContent).toBe("—"); // the whole trade's best case over the open legs' margin is no ratio
+    expect(screen.getByTestId("payoff-booked").textContent).toBe("Whole trade: the figures and the curve include −$205.34 already realised on this trade.");
+    expect(screen.getByTestId("tile-net").textContent).toContain("+$111.13");
+    expect(screen.getByTestId("tile-net").textContent).toContain("credit received");
+    await u.click(within(screen.getAllByTestId("paper-card").find((c) => c.dataset["id"] === "strat_2")!).getByText("Plain put")); // the list is sorted by P&L, so by id
+    await waitFor(() => expect(screen.getByTestId("tile-max-profit").textContent).toContain("$111.13"));
+    expect(screen.getByTestId("tile-max-profit").textContent).not.toContain("−");
+    expect(screen.queryByTestId("payoff-booked")).toBeNull();
+  });
+});

@@ -46,8 +46,9 @@ export function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           </ul>
           {r ? (
             <div className="flex flex-wrap gap-x-4 text-2xs" data-testid="share-figures">
-              <span>max profit <b className="num text-profit">{fmtMoney(r.maxProfit, a.money, { signed: true, unlimited: "Unlimited" })}</b></span>
+              <span>max profit <b className={r.maxProfit < 0 ? "num text-loss" : "num text-profit"}>{fmtMoney(r.maxProfit, a.money, { signed: true, unlimited: "Unlimited" })}</b></span>
               <span>max loss <b className="num text-loss">{fmtMoney(r.maxLoss, a.money, { signed: true, unlimited: "Unlimited" })}</b></span>
+              {a.booked === 0 ? null : <span className="text-muted-foreground" data-testid="share-booked">whole trade · incl. {fmtMoney(a.booked, a.money, { signed: true })} realised; the link carries the open legs only</span>}
               {a.closed ? <span data-testid="share-closed">closed trade · as entered</span> : <span>POP <b className="num">{Number.isFinite(r.pop) ? `${(r.pop * 100).toFixed(0)}%` : "—"}</b></span>}
             </div>
           ) : null}

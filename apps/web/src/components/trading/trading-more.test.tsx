@@ -462,3 +462,60 @@ describe("HC-TR-158 capital on the trade preview", () => {
     expect(within(block).getByTestId("preview-capital-required").textContent).toBe("not computed");
   });
 });
+
+describe("HC-TR-260 a running trade that has booked a result shows the whole trade's payoff (ADR-131)", () => {
+  const closedAt = "2026-09-08T14:00:00Z";
+  // sold put 58,500 at 1,111.3 still open; sold call 62,000 at 1,018.2 stopped at 3,071.6: (1018.2 − 3071.6) × 0.1 = −205.34
+  const PUT = { ...CALL, id: "leg_p", kind: "put" as const, side: "sell" as const, strike: "58500", symbol: "P-BTC-58500-250926", lots: 100, price: "1111.3", entryPrice: "1111.3" };
+  const STOPPED = { ...CALL, id: "leg_c", side: "sell" as const, strike: "62000", symbol: "C-BTC-62000-250926", lots: 100, price: "1018.2", entryPrice: "1018.2", exitPrice: "3071.6", status: "squared_off" as const, closedAt, closeReason: "stopped" as const, position: 1 };
+
+  it("HC-TR-260 the card and Details count the stopped call's loss: the best case is the put's premium less that loss, there is no break-even, and both say what is included; a trade with nothing booked is unchanged", async () => {
+    const acc = mock.state.accounts.get(EMAIL)!;
+    acc.strategies.push(strat(2, { name: "Stopped strangle", realizedPnl: "-205.34", legs: [PUT, STOPPED] }));
+    acc.strategies.push(strat(4, { name: "Plain put", realizedPnl: "0", legs: [{ ...PUT, id: "leg_q" }] }));
+    renderWithProviders(<Workspace />);
+    act(() => {
+      FakeSocket.last().open();
+      FakeSocket.last().receive({ t: "spot", s: "BTC", p: "61000", c24: 0.4 });
+    });
+    await waitFor(() => expect(screen.getByTestId("paper-panel").dataset["count"]).toBe("2"));
+    const card = (id: string) => screen.getAllByTestId("paper-card").find((c) => c.dataset["id"] === id)!;
+    const figures = (id: string) => within(card(id)).getByTestId("card-figures");
+    await waitFor(() => expect(figures("strat_2").dataset["state"]).toBe("ready"));
+    await waitFor(() => expect(figures("strat_4").dataset["state"]).toBe("ready"));
+    // nothing booked: the open put alone, as before
+    expect(figures("strat_4").dataset["booked"]).toBeUndefined();
+    expect(figures("strat_4").textContent).toContain("max profit $111.13");
+    expect(figures("strat_4").textContent).toContain("max loss −$5,738.87");
+    expect(within(card("strat_4")).queryByTestId("card-booked")).toBeNull();
+    // the stopped strangle: 111.13 − 205.34 = −94.21 at best, 205.34 more at worst, and it says why
+    expect(figures("strat_2").dataset["booked"]).toBe("true");
+    expect(figures("strat_2").textContent).toContain("best case −$94.21");
+    expect(figures("strat_2").textContent).not.toContain("max profit");
+    expect(figures("strat_2").textContent).toContain("max loss −$5,944.21");
+    expect(within(card("strat_2")).getByTestId("card-booked").textContent).toBe("incl. −$205.34 realised");
+    expect(within(card("strat_2")).getByTestId("card-max-profit").className).toContain("text-loss");
+    expect(figures("strat_2").getAttribute("title")).toContain("The whole trade at expiry");
+
+    act(() => useUiStore.getState().openDetails("strat_2"));
+    const details = screen.getByTestId("strategy-details");
+    await waitFor(() => expect(within(details).getByTestId("details-payoff")).toBeTruthy());
+    const payoff = within(details).getByTestId("details-payoff");
+    expect(payoff.dataset["booked"]).toBe("true");
+    expect(within(details).getByTestId("details-payoff-booked").textContent).toBe("whole trade · incl. −$205.34 realised");
+    expect(payoff.textContent).toContain("Best case −$94.21");
+    expect(payoff.textContent).not.toContain("Max profit");
+    expect(payoff.textContent).toContain("Max loss −$5,944.21");
+    expect(payoff.textContent).toContain("BE —"); // a loss at every price: the put's own 57,389 is no break-even of the trade
+    expect(within(details).getByTestId("details-max-profit").className).toContain("text-loss");
+    // the margin stays what the open put ties up, not the booked loss on top
+    expect(within(details).getByTestId("details-margin-tile").textContent).toContain("$5,738.87");
+
+    act(() => useUiStore.getState().openDetails("strat_4"));
+    const plain = within(screen.getByTestId("strategy-details")).getByTestId("details-payoff");
+    await waitFor(() => expect(plain.textContent).toContain("Max profit +$111.13"));
+    expect(plain.dataset["booked"]).toBeUndefined();
+    expect(within(screen.getByTestId("strategy-details")).queryByTestId("details-payoff-booked")).toBeNull();
+    expect(plain.textContent).toContain("BE 57,389");
+  });
+});

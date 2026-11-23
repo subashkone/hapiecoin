@@ -88,9 +88,25 @@ export function whereExtreme(points: readonly PayoffPoint[], value: number): { p
  * Margin estimate for the strip and the Builder ticket (HC-WS-052, HC-TR-019) until the Phase 3 exchange
  * estimate: the worst expiry loss for defined-risk strategies; null (shown as "—") when the loss is unbounded.
  */
-export function marginEstimate(result: AnalyzeResult): number | null {
+export function marginEstimate(result: BookedResult): number | null {
   if (!Number.isFinite(result.maxLoss)) return null;
-  return Math.max(0, -result.maxLoss);
+  // what is still held: a result the trade has already booked is in the payoff (HC-TR-260), not in what it ties up
+  return Math.max(0, -(result.maxLoss - (result.booked ?? 0)));
+}
+
+/**
+ * An analysis whose payoff carries a result the trade has already booked (HC-TR-260, ADR-131): its extremes,
+ * break-evens, curve and probability of profit are for the whole trade. `booked` is that amount in USD.
+ */
+export type BookedResult = AnalyzeResult & { booked?: number | undefined };
+
+/**
+ * Marks an analysis priced with the booked pair (`bookedOf` in paper.ts), so the margin estimate can leave the
+ * booked amount out. The pair is a future bought and sold: the engine counts no premium and no greeks for it, so
+ * the net premium and the greeks are already the open legs' own.
+ */
+export function withBooked(result: AnalyzeResult, booked: number): BookedResult {
+  return booked === 0 ? result : { ...result, booked };
 }
 
 /** Net premium per one underlying unit for the tile sub-line ("465.8 / BTC"). */
@@ -191,4 +207,13 @@ export function nearestExpiryValuationMs(legs: readonly { kind: string; expiry: 
   // a leg past its settlement is intrinsic either way (nothing settles it yet, GAPS #66): value at the next one to come
   const settle = expiries.map((e) => Date.parse(`${e}T${String(hourUtc).padStart(2, "0")}:00:00Z`)).filter((ms) => Number.isFinite(ms) && ms > nowMs);
   return settle[0];
+}
+
+/**
+ * The worst loss of the legs still held, USD (negative), without what the trade has already realised; null when it
+ * is unbounded. What the venue's balance check is asked about (HC-TR-260): the realised part is already paid for.
+ */
+export function heldWorstLoss(result: BookedResult | null): number | null {
+  if (!result || !Number.isFinite(result.maxLoss)) return null;
+  return result.maxLoss - (result.booked ?? 0);
 }

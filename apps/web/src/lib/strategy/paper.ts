@@ -279,3 +279,27 @@ export function pickToInput(l: { asset: Underlying; kind: StrategyLeg["kind"]; s
     ...(l.iv === undefined ? {} : { iv: l.iv }),
   };
 }
+
+/** A running trade's realised result so far, USD (a stopped or bought-back leg, a partial exit); 0 when nothing is booked or the trade is not running. */
+export function bookedPnl(s: Pick<Strategy, "status" | "realizedPnl">): number {
+  if (s.status !== "paper" && s.status !== "live") return 0;
+  const v = Number(s.realizedPnl);
+  return Number.isFinite(v) && Math.abs(v) >= 0.005 ? v : 0;
+}
+
+/**
+ * The result a running trade has already booked, for PRICING ONLY (HC-TR-260, ADR-131): one lot bought and one lot
+ * sold of the same future, their prices apart by exactly that result. The pair is worth the same at every price and
+ * date and adds no delta, so the payoff of the open legs priced with it is the whole trade's: its best case, its
+ * worst case, its break-evens and its probability of profit count what a stopped leg has already lost (the
+ * workbench carries a draft's exits the same way, ADR-094). Never shown as legs. `amount` is 0 with no pair.
+ */
+export function bookedOf(s: Pick<Strategy, "id" | "asset" | "status" | "realizedPnl">, lotSize: string | undefined): { amount: number; legs: StrategyLeg[] } {
+  const amount = bookedPnl(s);
+  const size = Number(lotSize);
+  if (amount === 0 || !Number.isFinite(size) || size <= 0) return { amount: 0, legs: [] };
+  const per = amount / size;
+  const leg = (key: string, side: "buy" | "sell", price: number): StrategyLeg => ({ id: `${s.id}:booked:${key}`, asset: s.asset, kind: "future", side, strike: "0", expiry: "", lots: 1, price: String(price), symbol: `${s.id}:booked`, status: "open", createdAt: 0 });
+  // bought at the lower price and sold at the higher for a profit, the other way round for a loss; both stay positive
+  return { amount, legs: [leg("in", "buy", 1 + Math.max(0, -per)), leg("out", "sell", 1 + Math.max(0, per))] };
+}
