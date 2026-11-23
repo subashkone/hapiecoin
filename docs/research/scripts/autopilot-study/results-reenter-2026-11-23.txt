@@ -1,0 +1,36 @@
+## BTC daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option in every row; buy-back at a mark of 5
+                                                                       n     mean   win    total    worst   worst 3         halves
+   the stop only, held to settlement                                 106   +11.75   65%    +1246   -105.8    -254.2    +675 / +571
+   buy a sold option back at 5                                       106   +11.30   66%    +1198   -106.3    -255.6    +650 / +548
+   (a) after the buy-back, buy the same option, 100 lots
+   buy it, hold to settlement                                        106   +10.66   66%    +1130   -106.9    -257.0    +616 / +514   bought 163 options, their own result   -67.64
+   buy it, sell at 5 times the price paid                            106   +11.25   66%    +1193   -106.9    -256.8    +645 / +547   bought 163 options, their own result    -5.01
+   buy it, sell at 10 times the price paid                           106   +11.24   66%    +1191   -106.9    -256.8    +659 / +533   bought 163 options, their own result    -6.34
+   buy it, sell at 20 times the price paid                           106   +11.30   67%    +1198   -106.9    -256.8    +665 / +533   bought 163 options, their own result    +0.21
+   buy it only while the spot is within 1 % of the strike, hold      106   +11.12   66%    +1179   -106.3    -255.6    +641 / +538   bought  54 options, their own result   -18.53
+   buy it only within 1 % of the strike, sell at 10 times            106   +11.40   66%    +1208   -106.3    -255.6    +661 / +547   bought  54 options, their own result   +10.64
+   buy it only within 0.5 % of the strike, hold                      106   +11.29   66%    +1197   -106.3    -255.6    +650 / +547   bought  11 options, their own result    -1.07
+   (b) after the buy-back, sell a new option on the same side nearer the spot (once, the same stop)
+   new option 1 % from the spot, 2 h or more left                    106   +11.43   67%    +1212   -110.1    -278.1    +566 / +646   rolled 140 options, their own result   +14.29
+   new option 1 % from the spot, 6 h or more left                    106   +11.75   66%    +1246    -91.6    -237.5    +591 / +655   rolled  54 options, their own result   +48.08
+   new option 0.5 % from the spot, 2 h or more left                  106   +12.52   71%    +1327   -130.7    -292.7    +572 / +755   rolled 140 options, their own result  +128.89
+   new option 0.5 % from the spot, 6 h or more left                  106   +12.30   70%    +1304    -81.4    -231.6    +580 / +724   rolled  54 options, their own result  +105.80
+
+## ETH daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option in every row; buy-back at a mark of 0.25
+                                                                       n     mean   win    total    worst   worst 3         halves
+   the stop only, held to settlement                                 106    +4.46   61%     +473    -49.6    -136.2    +239 / +234
+   buy a sold option back at 0.25                                    106    +4.15   61%     +440    -49.8    -136.6    +222 / +218
+   (a) after the buy-back, buy the same option, 100 lots
+   buy it, hold to settlement                                        106    +3.84   61%     +407    -50.0    -137.1    +206 / +201   bought 154 options, their own result   -32.86
+   buy it, sell at 5 times the price paid                            106    +4.46   61%     +473    -50.0    -135.7    +249 / +224   bought 154 options, their own result   +33.17
+   buy it, sell at 10 times the price paid                           106    +4.41   61%     +468    -50.0    -137.1    +236 / +232   bought 154 options, their own result   +27.83
+   buy it, sell at 20 times the price paid                           106    +4.05   61%     +430    -50.0    -137.1    +218 / +212   bought 154 options, their own result   -10.28
+   buy it only while the spot is within 1 % of the strike, hold      106    +4.07   61%     +432    -49.8    -136.6    +218 / +214   bought  44 options, their own result    -8.23
+   buy it only within 1 % of the strike, sell at 10 times            106    +4.15   61%     +440    -49.8    -136.6    +224 / +216   bought  44 options, their own result    -0.42
+   buy it only within 0.5 % of the strike, hold                      106    +4.12   61%     +437    -49.8    -136.6    +221 / +216   bought  18 options, their own result    -2.85
+   (b) after the buy-back, sell a new option on the same side nearer the spot (once, the same stop)
+   new option 1 % from the spot, 2 h or more left                    106    +3.92   62%     +415    -77.5    -157.9    +218 / +198   rolled 122 options, their own result   -24.65
+   new option 1 % from the spot, 6 h or more left                    106    +4.12   61%     +436    -77.5    -157.4    +208 / +228   rolled  66 options, their own result    -3.78
+   new option 0.5 % from the spot, 2 h or more left                  106    +3.93   60%     +417    -82.5    -168.5    +178 / +238   rolled 122 options, their own result   -23.56
+   new option 0.5 % from the spot, 6 h or more left                  106    +4.18   61%     +443    -82.5    -166.8    +183 / +259   rolled  66 options, their own result    +2.52
+

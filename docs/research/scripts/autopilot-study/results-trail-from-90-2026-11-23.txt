@@ -1,0 +1,26 @@
+## BTC daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option in every row; bars of 5 minutes; mean premium 36.5
+                                                   n     mean   win    total    worst  drawdown         halves   exits: take or trail / a leg stopped, rest settled / settled untouched   slip   at level
+   the stop only, held to settlement             106   +11.75   65%    +1246   -105.8    -185.0    +675 / +571     0 /  36 /  70
+   close everything at 90 % of the premium       106   +10.99   66%    +1165   -105.8    -185.0    +635 / +530    67 /  35 /   4
+   trail from 90 %, give back 5 % of the best    106   +11.23   66%    +1190   -105.8    -185.0    +639 / +551    41 /  35 /  30     3.4     +11.56
+   trail from 90 %, give back 10 % of the best   106   +11.05   66%    +1171   -105.8    -185.0    +627 / +544    32 /  35 /  39     5.4     +11.49
+   trail from 90 %, give back 20 % of the best   106   +10.67   66%    +1131   -105.8    -185.0    +589 / +542    22 /  35 /  49     9.4     +11.26
+   trail from 75 %, give back 10 % of the best   106   +11.10   71%    +1176   -105.8    -185.0    +567 / +609    59 /  31 /  16     4.9     +11.90
+
+   67 of 106 trades reached 90 % of the premium (first bar close at or over it: 91.0 % on average).
+   Held on instead of closing there: 60 ended higher (mean +3.30, best +9.66), 7 ended lower (mean -16.79, worst -37.40), 0 the same; all 67 together +80.62 (after the fees of each path).
+   Of the 67: 1 later had a sold option stopped; lowest final result -50 % of the premium.
+
+## ETH daily: 106 trades, each side 1 % away, entered 20 h before settlement, stop 3x on each sold option in every row; bars of 5 minutes; mean premium 21.0
+                                                   n     mean   win    total    worst  drawdown         halves   exits: take or trail / a leg stopped, rest settled / settled untouched   slip   at level
+   the stop only, held to settlement             106    +4.46   61%     +473    -49.6    -119.9    +239 / +234     0 /  38 /  68
+   close everything at 90 % of the premium       106    +4.57   62%     +484    -49.6    -119.9    +261 / +224    57 /  37 /  12
+   trail from 90 %, give back 5 % of the best    106    +4.22   62%     +448    -49.6    -119.9    +226 / +221    37 /  37 /  32     6.0      +4.66
+   trail from 90 %, give back 10 % of the best   106    +4.25   62%     +450    -49.6    -119.9    +238 / +212    28 /  37 /  41     6.3      +4.62
+   trail from 90 %, give back 20 % of the best   106    +4.26   62%     +452    -49.6    -119.9    +249 / +203    19 /  37 /  50     7.0      +4.51
+   trail from 75 %, give back 10 % of the best   106    +3.26   66%     +346    -49.6    -119.9    +178 / +168    54 /  35 /  17     5.7      +3.91
+
+   57 of 106 trades reached 90 % of the premium (first bar close at or over it: 91.3 % on average).
+   Held on instead of closing there: 51 ended higher (mean +1.76, best +3.90), 6 ended lower (mean -16.89, worst -38.96), 0 the same; all 57 together -11.34 (after the fees of each path).
+   Of the 57: 1 later had a sold option stopped; lowest final result -74 % of the premium.
+
