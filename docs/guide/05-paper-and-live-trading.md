@@ -1,6 +1,6 @@
 # Paper trading, live trading, rules and accounts
 
-Part of the [HapieCoin feature guide](README.md). 145 traced features on 35 screens; 145 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 147 traced features on 35 screens; 147 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -69,6 +69,8 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-246 | An Autopilot strategy that buys a cheap option back | a clock playbook may carry a buy-back price; Autopilot arms one buy-back beside the stop on each sold option; one paper playbook, the BTC evening strangle 1 % away with a stop at triple and a buy-back at 5 dollars, whose card says it is protection and not income | built | integration (api) |
 | HC-TR-248 | An Autopilot strategy that buys each option back at 20 % of its price | a clock playbook may carry a buy-back share; Autopilot arms each sold option's buy-back at that share of its own price; one paper playbook, the BTC evening strangle 1 % away with a stop at triple and a buy-back at a fifth of the price sold at, whose card says it is one good row among poor ones | built | integration (api) |
 | HC-TR-249 | An Autopilot weekly strategy that closes the whole trade at 90 % of the premium | one paper playbook, the BTC Friday weekly strangle 3 % away with a stop at triple on each option, closes everything once the trade is up by 90 % of the premium collected; it uses the existing take-profit of a clock playbook (a share of the premium, armed as a target), with no new rule | built | integration (api) |
+| HC-TR-258 | Autopilot daily strategies that close the whole trade at 90 % of the premium, or trail it from there | four paper playbooks, on BTC and on ETH: the evening strangle 1 % away with a stop at triple on each option, either closed once the trade is up by 90 % of the premium collected, or from that level trailed and closed when the profit gives back 5 % of its best; both use the existing take-profit of a clock playbook (a share of the premium armed as a target, which trails when it carries a give-back), with no new rule; each card says the study could not tell closing, trailing and holding apart | built | unit (pricing), integration (api), unit (web) |
+| HC-TR-259 | An Autopilot strategy with the profit lock and the buy-back at 5 dollars on the same trade | one paper playbook, the BTC evening strangle 1 % away: a stop at triple and a buy-back at 5 dollars on each sold option, and on the whole trade a floor at a quarter of the premium once the profit has reached half; what a buy-back has banked counts toward the lock, which is judged on the realised and the open profit together; both exits are the existing ones, armed from the playbook's own fields, with no new rule; its card says it earned less than the lock alone in the study | built | unit (pricing), integration (api), unit (web) |
 
 ### Trading · Protect dialog / cards · Details · `/desk`
 

@@ -2373,5 +2373,27 @@
     "how": "when a paper trade is started, a live trade is placed or Autopilot enters one, the API estimates the least the exchange lists it would block: every sold option under the margin percent its contract lists that day (read from the venue's public product list), the spot and the entry price, plus any net premium paid (a live placement stores its preview's figure, futures included); the figure is stored with the strategy (migration 0031) and the card of a trade sold without cover shows it as capital, marked min. margin est., with the return on est. margin; a trade entered before this, a paper trade with a futures leg, or one the venue was slow or silent for says sold without cover (or futures margin) and shows none",
     "evidence": "ADR-128, GAPS #163 (23 Nov 2026): apps/api/src/margin.ts, apps/api/src/venues.ts (marginInputs), routes/strategies.ts (start), routes/live.ts (place, batch), autopilot.ts (enter), packages/venues/src/delta/normalize.ts, CardFigures.tsx; tests: apps/api/src/margin.test.ts HC-TR-257, routes/strategies.test.ts HC-TR-257, autopilot.test.ts HC-TR-225 HC-TR-257, routes/live.test.ts and live-batch.test.ts (the stored figure), packages/venues normalize.test.ts, trading-more.test.tsx HC-TR-257",
     "test": "unit + integration (api), unit (web)"
+  },
+  {
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Autopilot daily strategies that close the whole trade at 90 % of the premium, or trail it from there",
+    "how": "four paper playbooks, on BTC and on ETH: the evening strangle 1 % away with a stop at triple on each option, either closed once the trade is up by 90 % of the premium collected, or from that level trailed and closed when the profit gives back 5 % of its best; both use the existing take-profit of a clock playbook (a share of the premium armed as a target, which trails when it carries a give-back), with no new rule; each card says the study could not tell closing, trailing and holding apart",
+    "evidence": "ADR-129, GAPS #164 (23 Nov 2026): packages/pricing/src/playbooks.ts (TAKE90_DAILY_PLAYBOOKS); tests: packages/pricing/src/playbooks.test.ts HC-TR-258, apps/api/src/autopilot.test.ts HC-TR-258, autopilot-page.test.tsx HC-TR-258",
+    "test": "unit (pricing), integration (api), unit (web)"
+  },
+  {
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "An Autopilot strategy with the profit lock and the buy-back at 5 dollars on the same trade",
+    "how": "one paper playbook, the BTC evening strangle 1 % away: a stop at triple and a buy-back at 5 dollars on each sold option, and on the whole trade a floor at a quarter of the premium once the profit has reached half; what a buy-back has banked counts toward the lock, which is judged on the realised and the open profit together; both exits are the existing ones, armed from the playbook's own fields, with no new rule; its card says it earned less than the lock alone in the study",
+    "evidence": "ADR-130, GAPS #165 (23 Nov 2026): packages/pricing/src/playbooks.ts (COMBO_DAILY_PLAYBOOKS); tests: packages/pricing/src/playbooks.test.ts HC-TR-259, apps/api/src/autopilot.test.ts HC-TR-259, autopilot-page.test.tsx HC-TR-259",
+    "test": "unit (pricing), integration (api), unit (web)"
   }
 ]
