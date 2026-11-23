@@ -1461,3 +1461,114 @@ describe("HC-TR-249 the BTC Friday weekly closed at 90 % of the premium (ADR-125
     expect(after).toMatchObject({ status: "archived", closeReason: "target", realizedPnl: "136" });
   });
 });
+
+describe("HC-TR-258 the daily strangle closed at 90 % of the premium or trailed from it (ADR-129)", () => {
+  const proposal = (asset: "BTC" | "ETH"): PlaybookProposal => ({ day: "2027-03-12", spot: asset === "BTC" ? 83_200 : 3_000, expiry: "2027-03-13", legs: [], entryCost: -150, maxProfit: 150, maxLoss: -Infinity });
+
+  it("HC-TR-258 the plans of the four: a target at 90 % of the premium beside the stop at triple; closing has no trail, the trail gives back 5 % of the best; nothing else is armed", () => {
+    // the credit is already in USD for the trade, so the coin and its lot change nothing in the plan (no legs, no fee rule here)
+    for (const [id, asset, lot, trail] of [["evening-strangle-take-90", "BTC", 0.001, null], ["evening-strangle-trail-90", "BTC", 0.001, 5], ["eth-evening-strangle-take-90", "ETH", 0.01, null], ["eth-evening-strangle-trail-90", "ETH", 0.01, 5]] as const) {
+      const plan = clockPlanFor(autopilotPlaybookById(id)!, proposal(asset), lot, null)!;
+      expect(plan).toMatchObject({ legStop: 3, takeTrailPct: trail, ladder: null, lock: null, exitHourUtc: null, legBuyBackAt: null, legBuyBackShare: null, trailRestPct: null, stopUsd: null });
+      expect(plan.targetUsd).toBeCloseTo(135, 6);
+    }
+  });
+
+  it("HC-TR-258 a target at 90 % that trails by 5 %, armed by hand here as the job arms it (HC-TR-241), is not closed at 90 %: it follows the best profit and closes the whole trade on a fall to the best less a twentieth", async () => {
+    const plan = clockPlanFor(autopilotPlaybookById("evening-strangle-trail-90")!, proposal("BTC"), 0.001, null)!;
+    const me = await t.signUp("autopilot-trail90@hapiecoin.test");
+    const PUT = "P-BTC-82400-130327";
+    const CALL = "C-BTC-84000-130327";
+    // a strangle of 100 lots a leg sold for 60 + 90 = 150 USD: the trail starts at 135
+    const made = (await (await t.request("/v1/strategies", { cookie: me.cookie, json: { name: "Trail 90", asset: "BTC", legs: [{ kind: "put", side: "sell", strike: "82400", expiry: "2027-03-13", symbol: PUT, lots: 100, price: "600" }, { kind: "call", side: "sell", strike: "84000", expiry: "2027-03-13", symbol: CALL, lots: 100, price: "900" }] } })).json()) as Strategy;
+    const started = (await (await t.request(`/v1/strategies/${made.id}/start`, { cookie: me.cookie, json: { mode: "paper", brokerId: SEED.brokerId, entries: Object.fromEntries(made.legs.map((l) => [l.id, l.price])) } })).json()) as Strategy;
+    expect(started.status).toBe("paper");
+    expect((await t.request(`/v1/strategies/${made.id}/rules`, { method: "PUT", cookie: me.cookie, json: { rules: [{ kind: "target", trigger: "money", value: toDecimal(plan.targetUsd!, 2), trail: { trigger: "pct", value: String(plan.takeTrailPct) } }] } })).status).toBe(200);
+    const tick = (putMark: number, callMark: number) => evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map([[PUT, putMark], [CALL, callMark]]), spot: null }) }, () => Date.UTC(2027, 2, 12, 20));
+    const status = async () => (await t.db.select().from(strategies).where(eq(strategies.id, made.id)))[0]!.status;
+    // up 134 of 150 (89.3 %): nothing. Up 140 (93.3 %): a fixed target would close here; the trail starts, exit level 133
+    expect((await tick(70, 90)).fired).toHaveLength(0);
+    expect((await tick(50, 50)).fired).toHaveLength(0);
+    expect(await status()).toBe("paper");
+    // up 142: the best, exit level 134.9. Back to 135.5: still over it. Down to 134.5: closed, booked as a target
+    expect((await tick(40, 40)).fired).toHaveLength(0);
+    expect((await tick(65, 80)).fired).toHaveLength(0);
+    expect((await tick(70, 85)).fired).toHaveLength(1);
+    const [after] = await t.db.select().from(strategies).where(eq(strategies.id, made.id));
+    expect(after).toMatchObject({ status: "archived", closeReason: "target", realizedPnl: "134.5" });
+  });
+});
+
+describe("HC-TR-259 the evening strangle with the profit lock and the buy-back at 5 dollars together (ADR-130)", () => {
+  it("HC-TR-259 at entry each sold option gets its stop and its buy-back and the trade its lock; run by the engine, what the buy-back banked counts toward the lock, and the trade is closed when the whole profit falls back to the floor", async () => {
+    const me = await t.signUp("autopilot-lock-buyback@hapiecoin.test");
+    const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
+    const PB = "evening-strangle-lock-buy-back";
+    expect(clockPlanFor(autopilotPlaybookById(PB)!, { day: "2027-06-14", spot: 83_200, expiry: "2027-06-15", legs: [], entryCost: -80, maxProfit: 80, maxLoss: -Infinity }, 0.001, null)).toMatchObject({ legStop: 3, legBuyBackAt: 5, legBuyBackShare: null, lock: { atUsd: 40, floorUsd: 20 }, targetUsd: null, takeTrailPct: null, ladder: null, exitHourUtc: null, trailRestPct: null });
+    await put({ enabled: true, strategies: [{ playbookId: PB, exit: "own" }] }, me.cookie);
+    const products: Instrument[] = [];
+    const quotes: Quote[] = [];
+    const AT = Date.UTC(2027, 5, 14, 16, 5, 0);
+    for (const e of ["2027-06-15", "2027-06-16"])
+      for (let i = -30; i <= 30; i++) {
+        const k = 83_200 + i * 200;
+        const code = e.slice(8, 10) + e.slice(5, 7) + e.slice(2, 4);
+        const tv = 600 * Math.exp(-Math.abs(k - 83_200) / 900);
+        for (const [kind, letter, intrinsic] of [["call", "C", Math.max(83_200 - k, 0)], ["put", "P", Math.max(k - 83_200, 0)]] as const) {
+          const symbol = `${letter}-BTC-${k}-${code}`;
+          products.push(inst(symbol, kind, k, e));
+          quotes.push({ instrumentId: `delta_india:${symbol}`, ts: AT - MIN, mark: (intrinsic + tv).toFixed(2), oi: "1", spot: "83200", markIv: 0.5 });
+        }
+      }
+    await snapshotOnce(t.deps, { venue: "delta_india", products: () => Promise.resolve(products), tickers: (u) => Promise.resolve(u === "BTC" ? quotes : []) }, () => AT - MIN);
+    await runAutopilot(deps(AT, { maxOpen: undefined }), ["delta_india"]);
+    const [trade] = await t.db.select().from(strategies).where(eq(strategies.userId, id));
+    expect(trade).toMatchObject({ autopilotPlaybookId: PB, status: "paper", tradingMode: "paper" });
+    const legs = await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade!.id)).orderBy(asc(strategyLegs.position));
+    expect(legs.map((l) => `${l.side} ${l.kind} ${l.strike} x${l.lots}`)).toEqual(["sell put 82400 x100", "sell call 84000 x100"]);
+    const [putLeg, callLeg] = legs;
+    const sold = Number(putLeg!.price);
+    expect(Number(callLeg!.price)).toBe(sold); // the fixture prices both the same distance from the spot alike
+    const credit = 2 * sold * 0.1;
+    const rulesNow = () => t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, trade!.id));
+    const lockNow = async () => (await rulesNow()).find((r) => r.kind === "lock")!;
+    // two stops, two buy-backs and one lock: at half the premium, a floor at a quarter of it
+    expect((await rulesNow()).map((r) => `${r.kind} ${r.state}`).sort()).toEqual(["leg_stop armed", "leg_stop armed", "leg_take armed", "leg_take armed", "lock armed"]);
+    const lock = await lockNow();
+    expect(Number(lock.value)).toBeCloseTo(credit / 2, 1);
+    expect(Number(lock.thresholdUsd)).toBeCloseTo(credit / 4, 1);
+    expect(lock.peakPnl).toBeNull();
+    expect((await view(me.cookie)).runs.find((r) => r.playbookId === PB && r.kind === "entered")!.detail).toMatchObject({ legStop: 3, legBuyBackAt: "5", lock: { at: lock.value, floor: lock.thresholdUsd } });
+
+    // earlier tests left users with Autopilot on, whose own trades entered on this snapshot hold the same options: only this trade's rules are counted
+    const mine = new Set((await rulesNow()).map((r) => r.id));
+    const tick = async (putMark: number, ms: number) => ({ fired: (await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map([[putLeg!.symbol, putMark], [callLeg!.symbol, 5]]), spot: null }) }, () => ms)).fired.filter((r) => mine.has(r)) });
+    const tradeNow = async () => (await t.db.select().from(strategies).where(eq(strategies.id, trade!.id)))[0]!;
+    // the call falls to 5 and is bought back alone: just under half the premium is banked, the lock is not reached
+    const banked = (sold - 5) * 0.1;
+    expect(banked).toBeLessThan(credit / 2);
+    expect((await tick(sold, AT + 10 * MIN)).fired).toHaveLength(1);
+    expect(Number((await tradeNow()).realizedPnl)).toBeCloseTo(banked, 2);
+    expect((await tradeNow()).status).toBe("paper");
+    expect((await lockNow()).peakPnl).toBeNull();
+    // the put gains 4.67 USD: with what the call banked the whole trade is past half the premium, and the lock is set.
+    // The put alone is nowhere near it, so the bought-back option is counted
+    expect((sold - 200) * 0.1).toBeLessThan(credit / 2);
+    expect((await tick(200, AT + 11 * MIN)).fired).toHaveLength(0);
+    expect((await lockNow()).peakPnl).not.toBeNull();
+    expect((await lockNow()).state).toBe("armed");
+    expect((await tradeNow()).status).toBe("paper");
+    // the put turns: 15.8 USD in all is still over the floor (12.3); 11.8 is under it, and the rest is closed
+    expect((await tick(330, AT + 12 * MIN)).fired).toHaveLength(0);
+    expect((await tradeNow()).status).toBe("paper");
+    expect((await tick(370, AT + 13 * MIN)).fired).toHaveLength(1);
+    const done = await tradeNow();
+    expect(done).toMatchObject({ status: "archived", closeReason: "target" });
+    expect(Number(done.realizedPnl)).toBeCloseTo(banked + (sold - 370) * 0.1, 1); // stored to the cent, each leg rounded
+    expect(Number(done.realizedPnl)).toBeLessThan(credit / 4);
+    expect((await lockNow()).state).toBe("fired");
+    // what was written is what the screens can read
+    expect((await t.request("/v1/strategies", { cookie: me.cookie })).status).toBe(200);
+    expect((await t.request("/v1/autopilot", { cookie: me.cookie })).status).toBe(200);
+  });
+});
