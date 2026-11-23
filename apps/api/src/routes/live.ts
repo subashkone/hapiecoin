@@ -184,7 +184,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
       const { creds, accountId: keyId } = await resolveAccount(deps, me, body.brokerId, row.venue, accountId); // ADR-065, ADR-068
       const before = await loadStrategy(deps, row.id);
       const now = new Date();
-      await touch(row.id, { status: "live", tradingMode: "live", brokerId: body.brokerId, accountId: keyId, orderBatchId: body.idempotencyKey, startedAt: row.startedAt ?? now, closedAt: null, realizedPnl: "0" });
+      await touch(row.id, { status: "live", tradingMode: "live", brokerId: body.brokerId, accountId: keyId, orderBatchId: body.idempotencyKey, startedAt: row.startedAt ?? now, closedAt: null, realizedPnl: "0", marginEstimate: p.marginRequired });
       await db.delete(strategyPnl).where(eq(strategyPnl.strategyId, row.id)); // ADR-084: the paper run's realised P&L and its points are not this live run's day figure
       const outcome = await placeEntries(deps, creds, row, legs, p.legs, body.idempotencyKey, "entry", body.expected);
       const after = await loadStrategy(deps, row.id);
@@ -382,7 +382,7 @@ export function registerLiveRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps): voi
         }
         const before = await loadStrategy(deps, row.id);
         // the flip to live is guarded on the row still being paper: a second batch from another tab cannot place it twice
-        const [moved] = await db.update(strategies).set({ status: "live", tradingMode: "live", brokerId: body.brokerId, accountId: resolved.accountId, orderBatchId: key, realizedPnl: "0", updatedAt: new Date() }).where(and(eq(strategies.id, row.id), eq(strategies.status, "paper"))).returning({ id: strategies.id });
+        const [moved] = await db.update(strategies).set({ status: "live", tradingMode: "live", brokerId: body.brokerId, accountId: resolved.accountId, orderBatchId: key, realizedPnl: "0", marginEstimate: p.marginRequired, updatedAt: new Date() }).where(and(eq(strategies.id, row.id), eq(strategies.status, "paper"))).returning({ id: strategies.id });
         if (!moved) {
           skipped.push(id);
           continue;

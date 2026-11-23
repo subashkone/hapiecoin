@@ -5,6 +5,7 @@
  * exit premiums at the live mark, the server validates, records and audits them. No route here reaches a
  * venue; live trading (item 2) adds its own guarded routes.
  */
+import { entryMargin } from "../margin.js";
 import { getVenueCore } from "@hapiecoin/venues";
 import { enforceMindful, mindfulFor } from "../day-pnl.js";
 import {
@@ -220,6 +221,7 @@ export function toStrategy(row: StrategyRow, legs: LegRow[], pnl: PnlRow[], orde
     closedAt: iso(row.closedAt),
     closeReason: row.closeReason,
     autopilotPlaybookId: row.autopilotPlaybookId,
+    marginEstimate: row.marginEstimate,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -478,12 +480,16 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
       if (body.accountId !== undefined && !keys.some((k) => k.id === body.accountId)) throw errors.badRequest("That account is not connected on this exchange");
       const accountId = body.accountId ?? (keys.length === 1 ? (keys[0]?.id ?? null) : null);
       const before = toStrategy(row, legs, []);
+      // HC-TR-257: what the exchange would block for the sold legs, estimated while the contracts list their margin
+      // percent. Read BEFORE anything is written (the legs must not sit open under a draft while a venue is slow),
+      // and never for longer than the entry deadline
+      const marginEstimate = await entryMargin(deps.marginInputs, row.asset, row.venue, legs.map((l) => ({ kind: l.kind, side: l.side, symbol: l.symbol, lots: l.lots, price: body.entries[l.id] ?? l.price })), await lotSizeFor(me, row.asset, row.venue));
       const now = new Date();
       for (const l of legs) {
         const entry = body.entries[l.id] ?? l.price;
         await db.update(strategyLegs).set({ entryPrice: entry, exitPrice: null, status: "open", closeReason: null, openedAt: now, closedAt: null, price: entry, updatedAt: now }).where(eq(strategyLegs.id, l.id));
       }
-      await touch(row.id, { status: "paper", tradingMode: "paper", brokerId: body.brokerId, accountId, startedAt: now, closedAt: null, closeReason: null, realizedPnl: "0" });
+      await touch(row.id, { status: "paper", tradingMode: "paper", brokerId: body.brokerId, accountId, startedAt: now, closedAt: null, closeReason: null, realizedPnl: "0", marginEstimate });
       await db.delete(strategyPnl).where(eq(strategyPnl.strategyId, row.id));
       const after = await reload(row.id);
       await auditFrom(c, db)({ action: "strategy.start", target: `strategy:${row.id}`, before, after });
@@ -945,7 +951,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
         await disarmRules(deps, row.id, "disarmed: the paper trade was stopped", now);
       } else {
         for (const l of open) await db.update(strategyLegs).set({ price: l.entryPrice ?? l.price, entryPrice: null, openedAt: null, updatedAt: now }).where(eq(strategyLegs.id, l.id));
-        await touch(row.id, { status: "draft", tradingMode: null, startedAt: null, closedAt: null, closeReason: null });
+        await touch(row.id, { status: "draft", tradingMode: null, startedAt: null, closedAt: null, closeReason: null, marginEstimate: null });
       }
       const after = await reload(row.id);
       await auditFrom(c, db)({ action: body.archive ? "strategy.stop_archive" : "strategy.stop_draft", target: `strategy:${row.id}`, before, after });
@@ -972,7 +978,7 @@ export function registerStrategyRoutes(app: OpenAPIHono<AppEnv>, deps: AppDeps):
         if (row.status !== from) throw errors.conflict(`Only a ${from} strategy can be ${kind}d`);
         const before = await full(row);
         const now = new Date();
-        await touch(row.id, kind === "archive" ? { status: "archived", closedAt: now } : { status: "draft", tradingMode: null, closedAt: null, closeReason: null });
+        await touch(row.id, kind === "archive" ? { status: "archived", closedAt: now } : { status: "draft", tradingMode: null, closedAt: null, closeReason: null, marginEstimate: null });
         const after = await reload(row.id);
         await auditFrom(c, db)({ action: `strategy.${kind}`, target: `strategy:${row.id}`, before, after });
         return c.json(after, 200);

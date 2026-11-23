@@ -9,6 +9,8 @@ import type { Config } from "./config.js";
 import type { MarketSource } from "./iv-snapshot.js";
 import type { RulesTick } from "./rules-engine.js";
 
+import type { MarginInputsSource, MarginParams } from "./margin.js";
+
 export interface VenueClients {
   /** The venues whose public market data this API reads (API_VENUES). */
   venues: readonly Venue[];
@@ -22,7 +24,12 @@ export interface VenueClients {
   liveSpot(asset: Underlying, venue: string): Promise<number | null>;
   /** The rules tick for `asset` on `venue`: marks keyed by venue symbol plus the spot; null for a venue this API does not read. */
   tick(asset: Underlying, venue: string): Promise<RulesTick | null>;
+  /** HC-TR-257: the margin parameters the venue lists for `asset`'s live contracts, with its spot; null for a venue this API does not read. */
+  marginInputs: MarginInputsSource;
 }
+
+/** The product list is read at most this often for margin parameters: an Autopilot pass enters dozens of trades at once. */
+const MARGIN_PRODUCTS_TTL_MS = 60_000;
 
 export interface VenueClientOptions {
   /** Injected transport for tests. */
@@ -42,6 +49,13 @@ export function createVenueClients(config: Pick<Config, "apiVenues" | "venueRest
     const adapter = getVenue(id);
     rest.set(id, { adapter, rest: adapter.rest({ baseUrl: config.venueRestUrls[id], ...(opts.fetch ? { fetch: opts.fetch } : {}) }) });
   }
+  const productsAt = new Map<string, { at: number; list: ReturnType<VenueRest["products"]> }>();
+  const liveSpot = async (asset: Underlying, venue: string): Promise<number | null> => {
+    const e = rest.get(venue);
+    if (!e) return null;
+    const q = (await e.rest.tickers(asset)).map((x) => e.adapter.schema.quote(x, "0")).find((x) => Number(x.spot) > 0);
+    return q ? Number(q.spot) : null;
+  };
   const sources: MarketSource[] = [...rest.entries()].map(([id, e]) => ({
     venue: id as Venue,
     // the venue shapes cross the schema adapter (GAPS #8); a ticker without a spot carries "0" and is skipped as a spot source
@@ -57,11 +71,21 @@ export function createVenueClients(config: Pick<Config, "apiVenues" | "venueRest
     },
     restFor: (venue) => rest.get(venue)?.rest ?? null,
     sources,
-    liveSpot: async (asset, venue) => {
+    liveSpot,
+    marginInputs: async (asset, venue, spot) => {
       const e = rest.get(venue);
-      if (!e) return null;
-      const q = (await e.rest.tickers(asset)).map((x) => e.adapter.schema.quote(x, "0")).find((x) => Number(x.spot) > 0);
-      return q ? Number(q.spot) : null;
+      // a data-only venue (ADR-067) is never traded here and its list carries no margin percent: nothing is requested
+      if (!e || e.adapter.trading === undefined) return null;
+      let hit = productsAt.get(venue);
+      if (!hit || Date.now() - hit.at > MARGIN_PRODUCTS_TTL_MS) {
+        hit = { at: Date.now(), list: e.rest.products() };
+        productsAt.set(venue, hit);
+        hit.list.catch(() => productsAt.delete(venue)); // a failed read is not kept for the minute
+      }
+      const params = new Map<string, MarginParams>();
+      for (const i of await hit.list) if (i.underlying === asset && i.initialMarginPct !== undefined) params.set(i.symbol, { contractValue: i.contractValue, initialMarginPct: i.initialMarginPct, initialMarginScalingFactor: i.initialMarginScalingFactor });
+      // a caller that holds the spot (Autopilot's snapshot) costs no ticker read
+      return { spot: spot ?? (await liveSpot(asset, venue)), params };
     },
     tick: async (asset, venue) => {
       const e = rest.get(venue);

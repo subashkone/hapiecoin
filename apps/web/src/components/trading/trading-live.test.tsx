@@ -726,6 +726,39 @@ describe("HC-TR-173..175 accounts: several keys per exchange (ADR-068)", () => {
     expect(screen.getByTestId<HTMLSelectElement>("net-account").value).toBe("crd_sub1");
   });
 
+  it("HC-TR-251 the Live tab has the coin chips and no Opened by; coin, account and status chips count under one another", async () => {
+    connect(true);
+    mine().push(strat(1, { status: "live", tradingMode: "live", asset: "BTC", accountId: "crd_main" }));
+    mine().push(strat(2, { status: "live", tradingMode: "live", asset: "ETH", accountId: "crd_main" }));
+    mine().push(strat(3, { status: "live", tradingMode: "live", asset: "ETH", accountId: "crd_sub1" }));
+    useUiStore.setState({ workspaceTab: "live" });
+    renderWithProviders(<Workspace />);
+    serveMarket();
+    await waitFor(() => expect(panel().dataset["count"]).toBe("3"));
+    const u = userEvent.setup();
+    const count = (id: string) => screen.getByTestId(id).dataset["count"];
+    expect(screen.queryByTestId("live-sources")).toBeNull(); // Autopilot never trades live
+    expect([count("live-coin-all"), count("live-coin-BTC"), count("live-coin-ETH")]).toEqual(["3", "1", "2"]);
+    await u.click(screen.getByTestId("live-account-crd_sub1"));
+    expect([count("live-coin-all"), count("live-coin-BTC"), count("live-coin-ETH")]).toEqual(["1", "0", "1"]);
+    expect(count("live-life-open")).toBe("1");
+    await u.click(screen.getByTestId("live-coin-ETH"));
+    expect([count("live-account-all"), count("live-account-crd_main"), count("live-account-crd_sub1")]).toEqual(["2", "1", "1"]);
+    expect(screen.getAllByTestId("live-card").map((c) => c.dataset["id"])).toEqual(["strat_3"]);
+    const sum = screen.getByTestId("live-summary");
+    expect(screen.getByTestId("live-summary-scope").textContent).toBe("ETH · Sub 1"); // the account is named: the sum is that key's alone
+    expect(sum.dataset["trades"]).toBe("1");
+    expect(sum.dataset["won"]).toBeUndefined(); // open trades have not won or lost yet
+    expect(sum.textContent).toContain("before fees"); // realised P&L is price difference only, on live as on paper
+    // HC-TR-253, HC-TR-256: the money line and the one figure are on the Live tab too, as estimates
+    const card = screen.getByTestId("live-card");
+    expect(within(card).getByTestId("card-fees").textContent).toMatch(/^fees \$\d+\.\d\d est\.$/);
+    expect(within(card).getByTestId("card-net").textContent).toMatch(/^after fees [+−]\$\d+\.\d\d$/);
+    expect(within(card).getByTestId("card-capital").textContent).toMatch(/^capital /);
+    expect(screen.getByTestId("live-overall").textContent).toMatch(/^[+−]\$\d/);
+    expect(screen.getByTestId("live-overall-tile").textContent).toContain("0 closed + 1 open · after est. fees · filtered");
+  });
+
   it("the out-of-sync check reads each strategy's own account: a contract gone from one sub-account flags only that strategy", async () => {
     connect(true);
     mine().push(strat(1, { status: "live", tradingMode: "live", name: "Main book", accountId: "crd_main", legs: [{ ...CALL, id: "leg_main" }] }));

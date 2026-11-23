@@ -4,6 +4,7 @@
 import type { Broker, Strategy, StrategyLeg as ServerLeg, StrategyLegInput, Underlying } from "@hapiecoin/schema";
 import { settlementHourUtc } from "@/lib/pricing/legs";
 import { toDecimal } from "@hapiecoin/schema";
+import { type FeeRule, type TradeFees, tradeFees } from "@hapiecoin/pricing";
 import { type StrategyLeg, venueSymbol } from "./legs";
 
 /** UI mirror of the API limit (HC-TR-017). */
@@ -116,6 +117,95 @@ export function daysOf(s: Strategy, now = Date.now()): number {
   if (!s.startedAt) return 0;
   const end = s.closedAt ? new Date(s.closedAt).getTime() : now;
   return Math.max(0, Math.floor((end - new Date(s.startedAt).getTime()) / 86_400_000));
+}
+
+/**
+ * How long a trade has been (or was) held, in words a trader reads at a glance (HC-TR-252): "42 m" under an hour,
+ * "11 h 16 m" under two days, "3 d 4 h" beyond. Null for a trade that never started. A daily trade read "0d" before.
+ */
+export function heldOf(s: Strategy, now = Date.now()): string | null {
+  if (!s.startedAt) return null;
+  const start = new Date(s.startedAt).getTime();
+  const end = s.closedAt ? new Date(s.closedAt).getTime() : now;
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  const mins = Math.max(0, Math.floor((end - start) / 60_000));
+  const h = Math.floor(mins / 60);
+  if (h < 1) return `${mins} m`;
+  if (h < 48) return `${h} h ${mins % 60} m`;
+  return `${Math.floor(h / 24)} d ${h % 24} h`;
+}
+
+/** Who opened a trade (HC-TR-250): Autopilot took a playbook's entry, or the trader placed it. */
+export type TradeSource = "autopilot" | "manual";
+export function sourceOf(s: Strategy): TradeSource {
+  return s.autopilotPlaybookId ? "autopilot" : "manual";
+}
+
+/**
+ * The exchange fees of a trade so far, estimated from its stored legs under the venue's published rule (HC-TR-253):
+ * every entry fill, every exit made, and the settlement fee of a leg that expired in the money. Null when the venue
+ * publishes no rule here (a data-only venue): the card says so rather than showing nothing owed.
+ */
+export function feesOf(s: Strategy, lotSize: string, rule: FeeRule | null): TradeFees | null {
+  if (rule === null) return null;
+  const lot = Number(lotSize) || 0;
+  return tradeFees(
+    s.legs.map((l) => ({
+      kind: l.kind,
+      strike: Number(l.strike) || 0,
+      quantity: l.lots * lot,
+      entryPrice: l.entryPrice === null ? null : Number(l.entryPrice),
+      exitPrice: l.status === "squared_off" && l.exitPrice !== null ? Number(l.exitPrice) : null,
+      settled: l.closeReason === "expired",
+    })),
+    rule,
+  );
+}
+
+/**
+ * Whether a position's capital can be read as its worst loss (HC-TR-255). "uncovered": more options sold than bought
+ * on the call side or on the put side, so the loss is unlimited (calls) or runs to the price reaching zero (puts) and
+ * what it ties up is the exchange's margin, which is not recorded with the trade. "futures": any futures leg, margined
+ * the same way. "covered": every sold option has a bought one on its side.
+ */
+export type Cover = "covered" | "uncovered" | "futures";
+export function coverOf(legs: readonly { kind: ServerLeg["kind"]; side: ServerLeg["side"]; lots: number }[]): Cover {
+  let calls = 0;
+  let puts = 0;
+  for (const l of legs) {
+    if (l.kind === "future") return "futures";
+    const signed = l.side === "buy" ? l.lots : -l.lots;
+    if (l.kind === "call") calls += signed;
+    else puts += signed;
+  }
+  return calls < 0 || puts < 0 ? "uncovered" : "covered";
+}
+
+export interface SetSummary {
+  trades: number;
+  /** Trades above zero after their fees. */
+  won: number;
+  /** P&L before fees. */
+  total: number;
+  /** Estimated fees; 0 for a trade whose venue publishes no rule. */
+  fees: number;
+  /** total − fees. */
+  net: number;
+}
+
+/** The trades on screen in one line (HC-TR-252, HC-TR-254): how many, how many ended above zero after fees, and their P&L before fees, the fees, and what is left. */
+export function summaryOf(rows: readonly Strategy[], totalOf: (s: Strategy) => number, feeOf: (s: Strategy) => number | null = () => 0): SetSummary {
+  let won = 0;
+  let total = 0;
+  let fees = 0;
+  for (const s of rows) {
+    const t = totalOf(s);
+    const f = feeOf(s) ?? 0;
+    total += t;
+    fees += f;
+    if (t - f > 0) won += 1;
+  }
+  return { trades: rows.length, won, total, fees, net: total - fees };
 }
 
 /** Sparkline series: stored history plus the live total. */

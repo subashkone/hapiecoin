@@ -99,6 +99,7 @@ const deps: AppDeps = {
   delta: new DeltaPrivateClientImpl({ baseUrl: config.deltaTradingRestUrl, nodeEnv: config.nodeEnv }),
   trading: clients.tradingFor(DEFAULT_VENUE),
   tradingFor: (venue) => clients.tradingFor(venue),
+  marginInputs: (asset, venue, spot) => clients.marginInputs(asset, venue, spot),
   authOptions: authOptionsPublic(config),
   errors: errorSink,
   metrics: createApiMetrics(),
@@ -137,7 +138,7 @@ if (config.ivSnapshotMs !== 0)
                 // ADR-108: the same snapshot decides the paper entries of the traders who switched Autopilot on; a
                 // failure here must not take the snapshotter's hook (the alerts and proposals above) down with it
                 try {
-                  const pass = await runAutopilot({ db: deps.db, logger }, config.apiVenues);
+                  const pass = await runAutopilot({ db: deps.db, logger, marginInputs: deps.marginInputs }, config.apiVenues);
                   if (pass.entered || pass.noted || pass.failed) logger.info(pass, "autopilot pass");
                 } catch (e) {
                   logger.warn({ reason: e instanceof Error ? e.message : String(e) }, "autopilot pass failed");

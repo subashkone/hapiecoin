@@ -465,6 +465,13 @@ export const Strategy = z.strictObject({
   closeReason: CloseReason.nullable().optional(),
   /** ADR-108: the playbook whose entry Autopilot took to open this paper trade; null or absent for a trade the trader opened. */
   autopilotPlaybookId: z.string().nullable().optional(),
+  /**
+   * HC-TR-257 (ADR-128): the margin the exchange was estimated to block for this trade when it was entered, USD: every
+   * sold option and every futures leg under the contract's margin percent of that day, plus the net premium paid. An
+   * estimate, never compared with the exchange's own figure (GAPS #109). Null or absent for a trade with nothing sold
+   * and no future, for one whose contracts carried no margin parameters, and for every trade entered before it.
+   */
+  marginEstimate: DecimalString.nullable().optional(),
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
 });

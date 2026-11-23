@@ -164,6 +164,9 @@ export function toInstrument(product: RawProduct): Instrument {
     tickSize: canonDecimal(product.tick_size),
     state: product.state,
     tradingStatus: product.trading_status ?? null,
+    // HC-TR-257: only when the venue lists them, so a record without them is the same object as before
+    ...(optDecimal(product.initial_margin) !== null ? { initialMarginPct: optDecimal(product.initial_margin)! } : {}),
+    ...(optDecimal(product.initial_margin_scaling_factor) !== null ? { initialMarginScalingFactor: optDecimal(product.initial_margin_scaling_factor)! } : {}),
   };
 }
 
