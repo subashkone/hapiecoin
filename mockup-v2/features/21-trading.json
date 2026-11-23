@@ -2285,5 +2285,93 @@
     "how": "one paper playbook, the BTC Friday weekly strangle 3 % away with a stop at triple on each option, closes everything once the trade is up by 90 % of the premium collected; it uses the existing take-profit of a clock playbook (a share of the premium, armed as a target), with no new rule",
     "evidence": "ADR-125, GAPS #160 (22 Nov 2026): packages/pricing/src/playbooks.ts (TAKE90_WEEKLY_PLAYBOOKS); tests: packages/pricing/src/playbooks.test.ts HC-TR-249, apps/api/src/autopilot.test.ts HC-TR-249, autopilot-page.test.tsx HC-TR-249",
     "test": "integration (api)"
+  },
+  {
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The Paper list filtered by who opened the trade: Autopilot or the trader",
+    "how": "a chip group Opened by (All, Autopilot, By me) on the Paper tab, each chip with the count it would show under the other filters; offered only when the tab holds an Autopilot trade; a trade counts as Autopilot's when it carries a playbook id",
+    "evidence": "ADR-126, GAPS #161 (23 Nov 2026): apps/web/src/components/trading/PaperPanel.tsx, apps/web/src/lib/strategy/paper.ts; tests: trading-more.test.tsx HC-TR-250, paper.test.ts HC-TR-250",
+    "test": "unit (web)"
+  },
+  {
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The Paper and Live lists filtered by coin",
+    "how": "a chip group Coin (All and each coin the tab has traded) with counts; offered only when two or more coins were traded; it combines with the status, Opened by and account chips, each counting under the others; an empty combination names itself and offers Clear filters, and a coin whose last trade is gone stops filtering",
+    "evidence": "ADR-126, GAPS #161 (23 Nov 2026): apps/web/src/components/trading/PaperPanel.tsx, apps/web/src/lib/strategy/paper.ts; tests: trading-more.test.tsx HC-TR-251, trading-live.test.tsx HC-TR-251",
+    "test": "unit (web)"
+  },
+  {
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The time a trade was held on its card, closed trades by exit time, and the listed trades added up",
+    "how": "each card says open for or held with minutes, hours or days in place of whole days; the closed list has a sort of its own that starts on the exit time, newest first; a line above the list (on Closed, under any filter or with a search) names what the list is narrowed to and adds up the trades shown: how many, how many won (closed only) and their total, marked before fees",
+    "evidence": "ADR-126, GAPS #161 (23 Nov 2026): apps/web/src/components/trading/PaperPanel.tsx, apps/web/src/lib/strategy/paper.ts; tests: trading-more.test.tsx HC-TR-252, paper.test.ts HC-TR-252, pane-follow.test.tsx (card-held)",
+    "test": "unit (web)"
+  },
+  {
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Estimated exchange fees and the result after fees on every paper and live card",
+    "how": "each card carries a money line: the fees so far under the venue's published rule (every entry fill, every exit made, the settlement fee of an option that expired in the money, nothing for one that expired worthless) and the card's P&L less those fees; the strike stands in for the spot at the fill, so the figure is marked est.; the big figure stays before fees and says so",
+    "evidence": "ADR-127, GAPS #162 (23 Nov 2026): packages/pricing/src/fees.ts (tradeFees), apps/web/src/lib/strategy/paper.ts (feesOf), CardFigures.tsx; tests: packages/pricing/src/fees.test.ts HC-TR-253, paper.test.ts HC-TR-253, trading-more.test.tsx HC-TR-253",
+    "test": "unit (pricing, web)"
+  },
+  {
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The listed trades added up before fees, their fees, and after fees",
+    "how": "the line above the list gives the P&L before fees, the estimated fees and what is left; a closed trade counts as won only when it is above zero after its fees",
+    "evidence": "ADR-127, GAPS #162 (23 Nov 2026): PaperPanel.tsx (summary), paper.ts (summaryOf); tests: paper.test.ts HC-TR-254, trading-more.test.tsx HC-TR-254",
+    "test": "unit (web)"
+  },
+  {
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The capital a trade ties up and the return on it, on the card",
+    "how": "the money line gives the capital as the worst loss at expiry of the position at its entry premiums (a closed trade is read on every leg it entered) and the profit after fees as a share of it; a position with more options sold than bought on its call or its put side says sold without cover, one with a futures leg says futures margin, and neither shows a figure or a return; an open card that has closed some legs shows no return",
+    "evidence": "ADR-127, GAPS #162 (23 Nov 2026): CardFigures.tsx (expiryExtremes of the legs, returnOnCapital), paper.ts (coverOf); tests: trading-more.test.tsx HC-TR-255, paper.test.ts HC-TR-255",
+    "test": "unit (web)"
+  },
+  {
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "One overall result for the tab: closed and open trades together, after fees",
+    "how": "a tile Overall result beside Total P&L adds the closed trades and the running P&L of the open ones, less their estimated fees, and says how many of each; it follows the coin, opener and account chips",
+    "evidence": "ADR-127, GAPS #162 (23 Nov 2026): PaperPanel.tsx (overall); tests: trading-more.test.tsx HC-TR-256",
+    "test": "unit (web)"
+  },
+  {
+    "route": "/desk",
+    "screen": "Desk · Paper Trades panel",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "The margin of sold options estimated when a trade is entered, shown as its capital",
+    "how": "when a paper trade is started, a live trade is placed or Autopilot enters one, the API estimates the least the exchange lists it would block: every sold option under the margin percent its contract lists that day (read from the venue's public product list), the spot and the entry price, plus any net premium paid (a live placement stores its preview's figure, futures included); the figure is stored with the strategy (migration 0031) and the card of a trade sold without cover shows it as capital, marked min. margin est., with the return on est. margin; a trade entered before this, a paper trade with a futures leg, or one the venue was slow or silent for says sold without cover (or futures margin) and shows none",
+    "evidence": "ADR-128, GAPS #163 (23 Nov 2026): apps/api/src/margin.ts, apps/api/src/venues.ts (marginInputs), routes/strategies.ts (start), routes/live.ts (place, batch), autopilot.ts (enter), packages/venues/src/delta/normalize.ts, CardFigures.tsx; tests: apps/api/src/margin.test.ts HC-TR-257, routes/strategies.test.ts HC-TR-257, autopilot.test.ts HC-TR-225 HC-TR-257, routes/live.test.ts and live-batch.test.ts (the stored figure), packages/venues normalize.test.ts, trading-more.test.tsx HC-TR-257",
+    "test": "unit + integration (api), unit (web)"
   }
 ]

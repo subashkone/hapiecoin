@@ -336,16 +336,19 @@ describe("HC-TR-215 a trade says when it opened and closed, to the minute", () =
     const u = userEvent.setup();
     await waitFor(() => expect(screen.getAllByTestId("paper-card")).toHaveLength(2));
     const [first, unstarted] = screen.getAllByTestId("paper-card");
-    expect(within(first!).getByTestId("card-started").textContent).toMatch(new RegExp(`^started ${fmtDateTime(AT)} · \\d+d$`));
+    expect(within(first!).getByTestId("card-started").textContent).toBe(`started ${fmtDateTime(AT)}`);
+    expect(within(first!).getByTestId("card-held").textContent).toMatch(/^open for \d+ (m|h \d+ m|d \d+ h)$/); // HC-TR-252
     expect(within(first!).queryByTestId("card-closed")).toBeNull();
-    expect(within(unstarted!).getByTestId("card-started").textContent).toMatch(/^started — · \d+d$/);
+    expect(within(unstarted!).getByTestId("card-started").textContent).toBe("started —");
+    expect(within(unstarted!).queryByTestId("card-held")).toBeNull();
     await u.click(within(first!).getByTestId("card-details"));
     expect((await screen.findByTestId("details-started")).textContent).toBe(`Started${fmtDateTime(AT)}`);
     expect(screen.queryByTestId("details-closed")).toBeNull();
     act(() => useUiStore.getState().openDetails(null));
     await u.click(screen.getByTestId("paper-life-closed"));
     const closed = await screen.findByTestId("paper-card");
-    expect(within(closed).getByTestId("card-started").textContent).toMatch(new RegExp(`^started ${fmtDateTime(AT)} · \\d+d$`));
+    expect(within(closed).getByTestId("card-started").textContent).toBe(`started ${fmtDateTime(AT)}`);
+    expect(within(closed).getByTestId("card-held").textContent).toMatch(/^held \d+ (m|h \d+ m|d \d+ h)$/); // HC-TR-252
     expect(within(closed).getByTestId("card-closed").textContent).toBe(`closed ${fmtDateTime(CLOSED_AT)}stopped`);
     await u.click(within(closed).getByTestId("card-details"));
     expect((await screen.findByTestId("details-closed")).textContent).toBe(`Closed${fmtDateTime(CLOSED_AT)}`);

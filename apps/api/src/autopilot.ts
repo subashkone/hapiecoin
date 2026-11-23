@@ -20,6 +20,7 @@
  * Runs on the leader only (ADR-062), inside the first snapshotter's after-hook. A failure for one trader, playbook or
  * underlying is logged and the pass goes on.
  */
+import { type MarginInputsSource, entryMargin } from "./margin.js";
 import { AUTOPILOT_PLAYBOOKS, type EodDay, type EodRow, type Playbook, type PlaybookAsset, type PlaybookClock, type PlaybookProposal, type ProposalResult, type ProposalSkip, calendarFor, daysToExpiryOf, fillFee, proposalFor } from "@hapiecoin/pricing";
 import {
   AUTOPILOT_BETTER_ENTRY_PCT,
@@ -62,6 +63,8 @@ export interface AutopilotDeps {
   maxMarkAgeMs?: number | undefined;
   /** The most trades a key holds at a time; AUTOPILOT_MAX_OPEN unless a test of the ladder says otherwise. */
   maxOpen?: number | undefined;
+  /** HC-TR-257: the venue's public margin parameters; absent, a trade is entered without a margin figure. */
+  marginInputs?: MarginInputsSource | undefined;
 }
 
 /** A snapshot older than this is not a price to enter at (two missed five-minute passes). */
@@ -395,7 +398,16 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
                 else {
                   // a playbook entered by the clock runs on its own exits whatever the card says (ADR-112)
                   const style: AutopilotExitStyle = p.clock ? "own" : wanted.exit === "own" ? "trail" : wanted.exit;
-                  const id = await enter(deps.db, k, p, result.proposal, plan, style, broker.id, at);
+                  // HC-TR-257: the margin of the sold options at the snapshot's spot and marks, under today's percent of each contract
+                  const marginEstimate = await entryMargin(
+                    deps.marginInputs,
+                    asset,
+                    venue,
+                    result.proposal.legs.map((l) => ({ kind: l.kind, side: l.side, symbol: adapter.symbols.formatOption(l.kind as "call" | "put", asset, l.strike, l.expiry), lots: l.lots, price: l.price })), // a futures leg never reaches here, as in enter()
+                    String(own?.lotSizes[asset] ?? venueLots[asset]),
+                    result.proposal.spot,
+                  );
+                  const id = await enter(deps.db, k, p, result.proposal, plan, style, broker.id, at, marginEstimate);
                   deps.logger.info({ userId: t.userId, playbookId: p.id, venue, asset, strategyId: id }, "autopilot entered a paper trade");
                   report.entered += 1;
                 }
@@ -430,7 +442,7 @@ async function noteBetterEntry(db: Db, k: Key, openId: string, fresh: PlaybookPr
 }
 
 /** Open the paper strategy, its legs at the snapshot's marks, its exits, and the log line: all or nothing. */
-async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, plan: AutopilotPlan, exit: AutopilotExitStyle, brokerId: string, at: Date): Promise<string> {
+async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, plan: AutopilotPlan, exit: AutopilotExitStyle, brokerId: string, at: Date, marginEstimate: string | null = null): Promise<string> {
   const codec = getVenue(k.venue).symbols;
   const id = newId("strat");
   const detail = detailOf(proposal, plan, at.getTime(), exit);
@@ -450,6 +462,7 @@ async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, pl
       startedAt: at,
       autopilotPlaybookId: p.id,
       autopilotStructure: structureKey(proposal.legs),
+      marginEstimate,
     });
     const legIds = proposal.legs.map(() => newId("leg"));
     await tx.insert(strategyLegs).values(

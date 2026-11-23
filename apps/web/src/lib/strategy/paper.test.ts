@@ -1,6 +1,6 @@
 import type { Broker, Strategy, StrategyLeg } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
-import { dayPnl, daysOf, feeFor, legPnl, localLegToInput, pickToInput, pnlSeries, priceMap, serverLegToLocal, strategyPnl } from "./paper";
+import { coverOf, dayPnl, daysOf, feeFor, feesOf, heldOf, legPnl, localLegToInput, pickToInput, pnlSeries, priceMap, serverLegToLocal, sourceOf, strategyPnl, summaryOf } from "./paper";
 
 const BROKER: Broker = { id: "brk", name: "Delta Exchange India", feePct: "0.05", gstPct: "18", feeCapPct: "10", scope: "GLOBAL", venue: "delta_india" };
 const leg = (over: Partial<StrategyLeg> = {}): StrategyLeg => ({
@@ -117,5 +117,69 @@ describe("HC-TR-156 / HC-TR-157 expiry and lifecycle helpers", () => {
     expect(lifecycleOf(strat([leg({ expiry: "2026-09-10" })], { asset: "XAUT" }), Date.parse("2026-09-09T14:00:00Z"))).toBe("open");
     expect(lifecycleOf(strat([leg({ expiry: "2026-09-10" })]), Date.parse("2026-09-09T14:00:00Z"))).toBe("expiring");
     expect(lifecycleOf(strat([leg({})], { status: "archived" }), now)).toBe("closed");
+  });
+});
+
+describe("HC-TR-250 / HC-TR-252 who opened a trade, how long it was held, and a set added up", () => {
+  it("HC-TR-250 a trade with a playbook was opened by Autopilot, any other by the trader", () => {
+    expect(sourceOf(strat({ autopilotPlaybookId: "evening-strangle-stop-3x" }))).toBe("autopilot");
+    expect(sourceOf(strat({ autopilotPlaybookId: null }))).toBe("manual");
+    expect(sourceOf(strat())).toBe("manual");
+  });
+  it("HC-TR-252 the time held reads in minutes, then hours and minutes, then days and hours", () => {
+    const start = Date.UTC(2026, 8, 1, 10); // strat() starts 1 Sep 10:00 UTC
+    expect(heldOf(strat(), start + 42 * 60_000)).toBe("42 m");
+    expect(heldOf(strat(), start + 59 * 60_000 + 59_000)).toBe("59 m");
+    expect(heldOf(strat(), start + 60 * 60_000)).toBe("1 h 0 m");
+    expect(heldOf(strat({ closedAt: "2026-09-01T21:16:30Z" }))).toBe("11 h 16 m"); // a closed trade stops at its exit, whatever the clock says
+    expect(heldOf(strat(), start + (47 * 60 + 59) * 60_000)).toBe("47 h 59 m");
+    expect(heldOf(strat(), start + 48 * 3_600_000)).toBe("2 d 0 h");
+    expect(heldOf(strat({ closedAt: "2026-09-04T14:30:00Z" }))).toBe("3 d 4 h");
+    expect(heldOf(strat({ startedAt: null }))).toBeNull();
+    expect(heldOf(strat({ startedAt: "not a date" }))).toBeNull();
+    expect(heldOf(strat(), start - 5 * 60_000)).toBe("0 m"); // a clock behind the entry never reads negative
+  });
+  it("HC-TR-252 a set of trades adds up: how many, how many above zero, and the total", () => {
+    const rows = [strat({ id: "a", realizedPnl: "10" }), strat({ id: "b", realizedPnl: "-4" }), strat({ id: "c", realizedPnl: "0" })];
+    expect(summaryOf(rows, (x) => Number(x.realizedPnl))).toEqual({ trades: 3, won: 1, total: 6, fees: 0, net: 6 });
+    expect(summaryOf([], () => 1)).toEqual({ trades: 0, won: 0, total: 0, fees: 0, net: 0 });
+  });
+  it("HC-TR-254 with fees a set gives what is left, and a trade that made less than its fees has not won", () => {
+    const rows = [strat({ id: "a", realizedPnl: "10" }), strat({ id: "b", realizedPnl: "1" }), strat({ id: "c", realizedPnl: "-4" }), strat({ id: "d", realizedPnl: "3" })];
+    const fee = (x: Strategy) => (x.id === "d" ? null : 2); // d: a venue with no fee rule counts as nothing owed
+    expect(summaryOf(rows, (x) => Number(x.realizedPnl), fee)).toEqual({ trades: 4, won: 2, total: 10, fees: 6, net: 4 });
+  });
+  it("HC-TR-253 a trade's fees so far come from its legs under the venue's rule: entries, exits made, in-the-money settlements; none without a rule", () => {
+    const RULE = { optionPct: 0.0001, optionCapOfPremium: 0.035, futurePct: 0.0005, gstPct: 0.18, settlementFee: true };
+    const fill = 80_000 * 0.01 * 0.0001 * 1.18; // 10 lots of 0.001 BTC at an 80 000 strike
+    const open = strat({ legs: [leg({ lots: 10, entryPrice: "1200" })] });
+    expect(feesOf(open, "0.001", RULE)!.total).toBeCloseTo(fill, 10);
+    const bought = strat({ legs: [leg({ lots: 10, entryPrice: "1200", exitPrice: "1300", status: "squared_off", closeReason: "target" })] });
+    expect(feesOf(bought, "0.001", RULE)!.entry).toBeCloseTo(fill, 10);
+    expect(feesOf(bought, "0.001", RULE)!.exit).toBeCloseTo(fill, 10);
+    const worthless = strat({ legs: [leg({ lots: 10, entryPrice: "1200", exitPrice: "0", status: "squared_off", closeReason: "expired" })] });
+    expect(feesOf(worthless, "0.001", RULE)!.exit).toBe(0);
+    const settled = strat({ legs: [leg({ lots: 10, entryPrice: "1200", exitPrice: "500", status: "squared_off", closeReason: "expired" })] });
+    expect(feesOf(settled, "0.001", RULE)!.exit).toBeCloseTo(80_500 * 0.01 * 0.0001 * 1.18, 10); // settled 500 in the money, so the spot was 80 500; its cap (0.175) is above that
+    const stale = strat({ legs: [leg({ lots: 10, entryPrice: "1200", exitPrice: "1300", status: "open" })] }); // an exit price on a leg still open is not an exit
+    expect(feesOf(stale, "0.001", RULE)!.exit).toBe(0);
+    const draft = strat({ legs: [leg({ lots: 10, entryPrice: null })] });
+    expect(feesOf(draft, "0.001", RULE)).toEqual({ entry: 0, exit: 0, total: 0 });
+    expect(feesOf(open, "0.001", null)).toBeNull();
+  });
+});
+
+describe("HC-TR-255 whether a position's capital can be read as its worst loss", () => {
+  const l = (kind: StrategyLeg["kind"], side: StrategyLeg["side"], lots = 10) => ({ kind, side, lots });
+  it("HC-TR-255 covered only when every sold option has a bought one on its side; a sold put alone is not covered; any future is margined", () => {
+    expect(coverOf([l("call", "buy")])).toBe("covered");
+    expect(coverOf([l("put", "buy"), l("put", "sell"), l("call", "sell"), l("call", "buy")])).toBe("covered"); // a condor
+    expect(coverOf([l("call", "sell")])).toBe("uncovered");
+    expect(coverOf([l("put", "sell")])).toBe("uncovered"); // its loss to a price of zero is finite, and is not what it ties up
+    expect(coverOf([l("put", "sell"), l("call", "sell")])).toBe("uncovered"); // a strangle
+    expect(coverOf([l("call", "sell", 20), l("call", "buy", 10)])).toBe("uncovered"); // half covered
+    expect(coverOf([l("call", "sell"), l("put", "buy")])).toBe("uncovered"); // a put does not cover a call
+    expect(coverOf([l("future", "buy"), l("call", "sell")])).toBe("futures");
+    expect(coverOf([])).toBe("covered");
   });
 });

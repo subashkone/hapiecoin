@@ -2,7 +2,9 @@
 // Paper Trades tab (HC-TR-058..067; HC-TR-156, 157 lifecycle): search, sort (incl. expiry), lifecycle chips Open ·
 // Expiring ≤ 1d · Closed, refresh, the P&L strip, strategy cards with start / expiry, live P&L and a sparkline,
 // Details / Go live / Stop / Delete, pagination and the empty state.
-import { AUTOPILOT_PAPER_ONLY_MESSAGE, type Strategy, type StrategyLeg, type StrategyOrder, CLOSE_REASON_LABELS, MAX_STRATEGY_NAME, nearestSettlement, settlementMsOf, toDecimal } from "@hapiecoin/schema";
+// HC-TR-250..252: the list read by coin and by who opened the trade (Autopilot or the trader), every chip with its
+// count; the time a trade was held on its card; one line that adds up the trades on screen.
+import { AUTOPILOT_PAPER_ONLY_MESSAGE, type Strategy, type Underlying, UNDERLYINGS, type StrategyLeg, type StrategyOrder, CLOSE_REASON_LABELS, MAX_STRATEGY_NAME, nearestSettlement, settlementMsOf, toDecimal } from "@hapiecoin/schema";
 import { Button, EmptyState, cn, toast } from "@hapiecoin/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState, useEffect } from "react";
@@ -22,7 +24,8 @@ import { useUiStore } from "@/lib/store";
 import { dataOnly } from "@/lib/venue";
 import { fmtDateTime, fmtExpiry } from "@/lib/format";
 import { settlementHourUtc } from "@/lib/pricing/legs";
-import { type Lifecycle, dayPnl, daysLeft, daysOf, expiryOf, fmtLeg, lifecycleOf, openLegs, pnlSeries } from "@/lib/strategy/paper";
+import { type Lifecycle, type TradeSource, dayPnl, daysLeft, expiryOf, fmtLeg, feesOf, heldOf, lifecycleOf, openLegs, pnlSeries, sourceOf, summaryOf } from "@/lib/strategy/paper";
+import { getVenueCore } from "@hapiecoin/venues/core";
 import type { PaperBook } from "@/lib/strategy/usePaper";
 import { usePortfolio } from "@/lib/strategy/usePortfolio";
 import { AdjustedBadge, ModePill } from "./StrategyDetailsDialog";
@@ -38,6 +41,14 @@ const LIFE: readonly { key: Lifecycle; label: string }[] = [
   { key: "expiring", label: "Expiring ≤ 1d" },
   { key: "closed", label: "Closed" },
 ];
+/** HC-TR-250: who opened the trade. Paper only: an Autopilot trade never goes live (ADR-108). */
+const SOURCES: readonly { key: TradeSource | null; label: string; title: string }[] = [
+  { key: null, label: "All", title: "Trades opened by Autopilot and by you" },
+  { key: "autopilot", label: "Autopilot", title: "Paper trades Autopilot opened from a strategy" },
+  { key: "manual", label: "By me", title: "Paper trades you placed yourself" },
+];
+const CHIP = "rounded-full border px-2.5 py-0.5 text-xs";
+const chipCls = (on: boolean) => cn(CHIP, on ? "border-foreground text-foreground" : "border-border text-muted-foreground hover:text-foreground");
 
 /** A resting limit entry (ADR-083): pending, a limit, not an exit; it can be cancelled or re-priced from the card. */
 function isResting(o: StrategyOrder): boolean {
@@ -66,9 +77,11 @@ export function Sparkline({ series, className }: { series: number[]; className?:
   );
 }
 
-export function sortStrategies(rows: Strategy[], key: SortKey, totalOf: (s: Strategy) => number): Strategy[] {
+/** `byClose`: the date sort reads the exit time (closed trades, newest exit first; HC-TR-252). */
+export function sortStrategies(rows: Strategy[], key: SortKey, totalOf: (s: Strategy) => number, byClose = false): Strategy[] {
   const r = rows.slice();
-  if (key === "date") r.sort((a, b) => new Date(b.startedAt ?? b.createdAt).getTime() - new Date(a.startedAt ?? a.createdAt).getTime());
+  const at = (s: Strategy) => new Date((byClose ? s.closedAt : null) ?? s.startedAt ?? s.createdAt).getTime();
+  if (key === "date") r.sort((a, b) => at(b) - at(a));
   else if (key === "name") r.sort((a, b) => a.name.localeCompare(b.name));
   else if (key === "expiry") r.sort((a, b) => (expiryOf(a)?.nearest ?? "9999").localeCompare(expiryOf(b)?.nearest ?? "9999") || a.name.localeCompare(b.name));
   else r.sort((a, b) => totalOf(b) - totalOf(a));
@@ -134,7 +147,9 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   // the Reconcile click re-reads the exchange first; only that click shows a spinner, never the background poll
   const [reconcilePending, setReconcilePending] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<SortKey>("pnl");
+  const [openSort, setOpenSort] = useState<SortKey>("pnl");
+  // HC-TR-252: the closed list has a sort of its own, the exit time first; the open lists keep the trader's
+  const [closedSort, setClosedSort] = useState<SortKey>("date");
   const [page, setPage] = useState(1);
   const [stopId, setStopId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -165,16 +180,37 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   };
   const q = search.trim().toLowerCase();
   const [life, setLife] = useState<Lifecycle>("open");
+  const sort = life === "closed" ? closedSort : openSort;
+  const setSort = life === "closed" ? setClosedSort : setOpenSort;
   const all = useMemo(() => (data ?? []).filter((s) => s.status === kind), [data, kind]);
   // closed = archived strategies that were traded in this mode; they stay on this tab under the Closed chip (ADR-059)
   const closed = useMemo(() => (data ?? []).filter((s) => s.status === "archived" && s.tradingMode === kind), [data, kind]);
   // ADR-068: with several keys on an exchange the tab can be read per account (every strategy stays tagged with its key)
   const accounts = useMemo(() => credential?.items ?? [], [credential]);
   const [accountFilter, setAccountFilter] = useState<string | null>(null);
-  const accountOf = (s: Strategy) => accountRefOf(s, accounts)?.accountId ?? null;
+  const accountOf = useCallback((s: Strategy) => accountRefOf(s, accounts)?.accountId ?? null, [accounts]);
   const expiring = all.filter((s) => lifecycleOf(s) === "expiring"); // per render: the clock moves, the list does not
   const lifeRows = life === "closed" ? closed : life === "expiring" ? expiring : all;
-  const accountRows = accountFilter === null ? lifeRows : lifeRows.filter((s) => accountOf(s) === accountFilter);
+  // HC-TR-250, HC-TR-251: the coin and who opened the trade. A group is offered only when it would split the tab
+  // (two coins traded, at least one Autopilot trade), and each chip counts what it would show under the other filters.
+  const [coin, setCoin] = useState<Underlying | null>(null);
+  const [source, setSource] = useState<TradeSource | null>(null);
+  const coins = useMemo(() => UNDERLYINGS.filter((a) => all.some((s) => s.asset === a) || closed.some((s) => s.asset === a)), [all, closed]);
+  const hasAuto = useMemo(() => kind === "paper" && (all.some((s) => s.autopilotPlaybookId) || closed.some((s) => s.autopilotPlaybookId)), [all, closed, kind]);
+  const coinOn = coin !== null && coins.length > 1 && coins.includes(coin) ? coin : null;
+  const accountOn = accountFilter !== null && accounts.some((a) => a.id === accountFilter) ? accountFilter : null;
+  const sourceOn = hasAuto ? source : null;
+  const passes = useCallback(
+    (s: Strategy, skip?: "coin" | "source" | "account") =>
+      (skip === "coin" || coinOn === null || s.asset === coinOn) && (skip === "source" || sourceOn === null || sourceOf(s) === sourceOn) && (skip === "account" || accountOn === null || accountOf(s) === accountOn),
+    [coinOn, sourceOn, accountOn, accountOf],
+  );
+  const filtered = coinOn !== null || sourceOn !== null || accountOn !== null;
+  // what the list is narrowed to, in words: the summary line and the empty state both say it
+  const sourceLabel = sourceOn === "autopilot" ? "Autopilot" : sourceOn === "manual" ? "By me" : null;
+  const accountOnLabel = accountOn !== null ? accountLabel(accounts, accountOn) : null;
+  const clearFilters = () => { setCoin(null); setSource(null); setAccountFilter(null); setPage(1); };
+  const accountRows = useMemo(() => lifeRows.filter((s) => passes(s)), [lifeRows, passes]);
   // ADR-029: the API reconciles pending orders in the background; while any are pending, poll the list so chips update
   const anyPending = kind === "live" && all.some((s) => s.orders.some((o) => o.state === "pending"));
   useEffect(() => {
@@ -188,7 +224,18 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
     const first = all[0];
     if (first) followStrategy(first.id);
   }, [workspaceTab, kind, paneSource, all, followStrategy]);
-  const rows = useMemo(() => sortStrategies(accountRows.filter((s) => !q || `${s.name} ${s.asset} ${s.templateName}`.toLowerCase().includes(q)), sort, (s) => book.pnlOf(s).total), [accountRows, q, sort, book]);
+  const rows = useMemo(() => sortStrategies(accountRows.filter((s) => !q || `${s.name} ${s.asset} ${s.templateName}`.toLowerCase().includes(q)), sort, (s) => book.pnlOf(s).total, life === "closed"), [accountRows, q, sort, book, life]);
+  // HC-TR-253: the estimated exchange fees of a trade so far, under its venue's published rule
+  const feeOf = useCallback((s: Strategy) => feesOf(s, book.lotSizeOf(s.asset, s.venue), getVenueCore(s.venue).feeRule)?.total ?? null, [book]);
+  const showSummary = life === "closed" || filtered || q !== "";
+  const summary = useMemo(() => (showSummary ? summaryOf(rows, (s) => book.pnlOf(s).total, feeOf) : null), [showSummary, rows, book, feeOf]);
+  // HC-TR-256: one figure for the tab, open and closed together, after fees, under the coin / opener / account chips
+  const overall = useMemo(() => {
+    const totalOf = (s: Strategy) => book.pnlOf(s).total;
+    const o = summaryOf(all.filter((s) => passes(s)), totalOf, feeOf);
+    const c = summaryOf(closed.filter((s) => passes(s)), totalOf, feeOf);
+    return { open: o.trades, closed: c.trades, net: o.net + c.net, fees: o.fees + c.fees };
+  }, [all, closed, passes, book, feeOf]);
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const current = Math.min(page, pages);
   const slice = rows.slice((current - 1) * PAGE, current * PAGE);
@@ -263,7 +310,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
         </select>
         <div className="flex items-center gap-1" role="group" aria-label="Lifecycle" data-testid={`${kind}-life`}>
           {LIFE.map((l) => {
-            const n = l.key === "closed" ? closed.length : l.key === "expiring" ? expiring.length : all.length;
+            const n = (l.key === "closed" ? closed : l.key === "expiring" ? expiring : all).filter((s) => passes(s)).length;
             return (
               <button key={l.key} type="button" aria-pressed={life === l.key} onClick={() => { setLife(l.key); setPage(1); }} className={cn("rounded-full border px-2.5 py-0.5 text-xs", life === l.key ? "border-foreground text-foreground" : "border-border text-muted-foreground hover:text-foreground", l.key === "expiring" && n > 0 && life !== l.key && "text-warning")} data-testid={`${kind}-life-${l.key}`} data-count={n}>
                 {l.label} <span className="text-muted-foreground">{n}</span>
@@ -271,12 +318,38 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
             );
           })}
         </div>
+        {coins.length > 1 ? (
+          <div className="flex items-center gap-1" role="group" aria-label="Coin" data-testid={`${kind}-coins`}>
+            <span className="micro">Coin</span>
+            {[null, ...coins].map((a) => {
+              const n = lifeRows.filter((s) => passes(s, "coin") && (a === null || s.asset === a)).length;
+              return (
+                <button key={a ?? "all"} type="button" aria-pressed={coinOn === a} onClick={() => { setCoin(a); setPage(1); }} className={chipCls(coinOn === a)} title={a === null ? "Every coin" : `Only ${a} trades`} data-testid={`${kind}-coin-${a ?? "all"}`} data-count={n}>
+                  {a ?? "All"} <span className="text-muted-foreground">{n}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+        {hasAuto ? (
+          <div className="flex items-center gap-1" role="group" aria-label="Opened by" data-testid={`${kind}-sources`}>
+            <span className="micro">Opened by</span>
+            {SOURCES.map((o) => {
+              const n = lifeRows.filter((s) => passes(s, "source") && (o.key === null || sourceOf(s) === o.key)).length;
+              return (
+                <button key={o.key ?? "all"} type="button" aria-pressed={sourceOn === o.key} onClick={() => { setSource(o.key); setPage(1); }} className={chipCls(sourceOn === o.key)} title={o.title} data-testid={`${kind}-source-${o.key ?? "all"}`} data-count={n}>
+                  {o.label} <span className="text-muted-foreground">{n}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
         {accounts.length > 1 ? (
           <div className="flex items-center gap-1" role="group" aria-label="Account" data-testid={`${kind}-accounts`}>
             {[null, ...accounts.map((a) => a.id)].map((id) => {
-              const n = id === null ? lifeRows.length : lifeRows.filter((s) => accountOf(s) === id).length;
+              const n = lifeRows.filter((s) => passes(s, "account") && (id === null || accountOf(s) === id)).length;
               return (
-                <button key={id ?? "all"} type="button" aria-pressed={accountFilter === id} onClick={() => { setAccountFilter(id); setPage(1); }} className={cn("rounded-full border px-2.5 py-0.5 text-xs", accountFilter === id ? "border-foreground text-foreground" : "border-border text-muted-foreground hover:text-foreground")} title={id === null ? "Every account" : "Strategies trading through this key (ADR-068)"} data-testid={`${kind}-account-${id ?? "all"}`} data-count={n}>
+                <button key={id ?? "all"} type="button" aria-pressed={accountOn === id} onClick={() => { setAccountFilter(id); setPage(1); }} className={cn("rounded-full border px-2.5 py-0.5 text-xs", accountOn === id ? "border-foreground text-foreground" : "border-border text-muted-foreground hover:text-foreground")} title={id === null ? "Every account" : "Strategies trading through this key (ADR-068)"} data-testid={`${kind}-account-${id ?? "all"}`} data-count={n}>
                   {id === null ? "All accounts" : accountLabel(accounts, id)} <span className="text-muted-foreground">{n}</span>
                 </button>
               );
@@ -297,9 +370,10 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
         )}
       </div>
       {kind === "live" ? <NetPositionsPanel money={money} /> : null}
-      <div className="grid grid-cols-2 gap-2 px-3 py-2 sm:grid-cols-5" data-testid={`${kind}-strip`} data-portfolio={portfolio.pending ? "pending" : portfolio.open ? "ready" : "empty"}>
+      <div className="grid grid-cols-2 gap-2 px-3 py-2 sm:grid-cols-3 2xl:grid-cols-6" data-testid={`${kind}-strip`} data-portfolio={portfolio.pending ? "pending" : portfolio.open ? "ready" : "empty"}>
         <div className="rounded border border-border px-2 py-1.5"><div className="micro">Total P&amp;L</div><div className={cn("num text-[15px] font-medium", totals.total >= 0 ? "text-profit" : "text-loss")} data-testid={`${kind}-total`}>{fmtMoney(totals.total, money, { signed: true })}</div><div className="micro">{all.length} {all.length === 1 ? "trade" : "trades"} · {totals.open} open {totals.open === 1 ? "leg" : "legs"}</div></div>
         <div className="rounded border border-border px-2 py-1.5"><div className="micro">Day P&amp;L</div><div className={cn("num text-[15px] font-medium", totals.day >= 0 ? "text-profit" : "text-loss")}>{fmtMoney(totals.day, money, { signed: true })}</div><div className="micro">vs previous close</div></div>
+        <div className="rounded border border-border px-2 py-1.5" title={`Closed trades and the running profit of open ones, less estimated exchange fees of ${fmtMoney(overall.fees, money)}${filtered ? "; follows the coin, opener and account chips" : ""}`} data-testid={`${kind}-overall-tile`}><div className="micro">Overall result</div><div className={cn("num text-[15px] font-medium", overall.net >= 0 ? "text-profit" : "text-loss")} data-testid={`${kind}-overall`}>{fmtMoney(overall.net, money, { signed: true })}</div><div className="micro">{overall.closed} closed + {overall.open} open · after est. fees{filtered ? " · filtered" : ""}{!feedLive && overall.open > 0 ? " · open trades waiting for prices" : ""}</div></div>
         <div className="rounded border border-border px-2 py-1.5" title="Net position delta across the open strategies, in units of the underlying (Black-76 at the live marks)"><div className="micro">Net Δ</div><div className={cn("num text-[15px] font-medium", portfolio.open ? (portfolio.netDelta >= 0 ? "text-profit" : "text-loss") : "text-muted-foreground")} data-testid={`${kind}-net-delta`}>{portfolio.open ? `${portfolio.netDelta >= 0 ? "+" : ""}${portfolio.netDelta.toFixed(4)}` : "—"}</div><div className="micro">{portfolio.open ? `Θ/day ${fmtMoney(portfolio.netTheta, money, { signed: true })} · ν ${fmtMoney(portfolio.netVega, money, { signed: true })}` : portfolio.pending ? "pricing the book…" : "no open strategy"}</div></div>
         <div className="rounded border border-border px-2 py-1.5" title="Σ worst expiry loss of the defined-risk strategies (the exchange margin replaces it for live positions)"><div className="micro">Margin used</div><div className="num text-[15px] font-medium" data-testid={`${kind}-margin-used`}>{portfolio.open ? fmtMoney(portfolio.marginUsed, money) : "—"}</div>{marginTotal !== null && marginTotal > 0 ? <div className="micro"><span className="mr-1">of {fmtMoney(marginTotal, money)}{walletAccounts > 1 ? ` · ${walletAccounts} accounts` : ""} · {Math.min(999, (portfolio.marginUsed / marginTotal) * 100).toFixed(0)}%</span><span className="inline-block h-1 w-12 overflow-hidden rounded bg-muted align-middle"><i className="block h-full bg-[hsl(var(--curve))]" style={{ width: `${Math.min(100, (portfolio.marginUsed / marginTotal) * 100).toFixed(0)}%` }} /></span></div> : <div className="micro">{portfolio.undefinedRisk ? `${portfolio.undefinedRisk} undefined-risk ${portfolio.undefinedRisk === 1 ? "strategy" : "strategies"} excluded` : portfolio.pending && !portfolio.open ? "pricing the book…" : kind === "live" ? "wallet balance once connected" : "worst expiry loss · defined risk"}</div>}</div>
         <div className="rounded border border-border px-2 py-1.5"><div className="micro">Prices</div><div className="num text-[15px] font-medium">{feedLive ? "Live" : "Waiting"}</div><div className="micro">{feedLive ? "mark basis · gateway" : "connecting to the feed"}</div></div>
@@ -309,10 +383,20 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
           <p className="py-6 text-center text-xs text-muted-foreground">Loading strategies…</p>
         ) : isError ? (
           <EmptyState title="Could not load strategies" description="Check your connection and try again." action={<Button size="sm" variant="outline" onClick={() => void refetch()}>Retry</Button>} />
+        ) : rows.length === 0 && filtered && !q && lifeRows.length > 0 ? (
+          <EmptyState title="No trades match these filters" description={`${[coinOn, sourceLabel, accountOnLabel].filter(Boolean).join(" · ")}: nothing under ${LIFE.find((l) => l.key === life)!.label}`} action={<Button size="sm" variant="outline" onClick={clearFilters} data-testid={`${kind}-filters-clear`}>Clear filters</Button>} className="py-12" data-testid={`${kind}-empty`} />
         ) : rows.length === 0 ? (
           <EmptyState title={q ? `No matching ${kind} trades` : life === "closed" ? `No closed ${kind} trades yet` : life === "expiring" ? "Nothing expires within a day" : kind === "paper" ? "No paper trades yet" : "No live trades"} description={q ? "Try a different search" : life !== "open" ? "The Open chip shows what is running" : kind === "paper" ? "Click Paper trade in the Builder to begin" : "Go live from a paper card, or pick Live in the Builder's trade dialog."} className="py-12" data-testid={`${kind}-empty`} />
         ) : (
           <div className="flex flex-col gap-2">
+            {summary !== null ? (
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded border border-border px-2 py-1.5 text-2xs" title={life === "closed" ? "The closed trades listed below, added up at their closing prices; fees are estimated under the exchange's published rule" : feedLive ? "The trades listed below, added up at the live marks; fees are the estimated ones paid so far" : "The trades listed below, added up at the last prices seen; waiting for live prices"} data-testid={`${kind}-summary`} data-trades={summary.trades} data-won={life === "closed" ? summary.won : undefined}>
+                <span className="micro">Showing</span>
+                <b data-testid={`${kind}-summary-scope`}>{[coinOn ?? "All coins", ...(hasAuto ? [sourceLabel ?? "Autopilot and by me"] : []), ...(accountOnLabel ? [accountOnLabel] : []), ...(q ? [`matching "${search.trim()}"`] : [])].join(" · ")}</b>
+                <span className="text-muted-foreground"><b className="num text-foreground">{summary.trades}</b> {life} {summary.trades === 1 ? "trade" : "trades"}{life === "closed" ? <> · <b className="num text-foreground">{summary.won}</b> won</> : null}</span>
+                <span className="ml-auto text-muted-foreground">before fees <b className="num text-foreground" data-testid={`${kind}-summary-total`}>{fmtMoney(summary.total, money, { signed: true })}</b> · fees est. <b className="num text-foreground" data-testid={`${kind}-summary-fees`}>{fmtMoney(summary.fees, money)}</b> · after fees <b className={cn("num", summary.net >= 0 ? "text-profit" : "text-loss")} data-testid={`${kind}-summary-net`}>{fmtMoney(summary.net, money, { signed: true })}</b></span>
+              </div>
+            ) : null}
             {kind === "live" && connected && wallet.error !== null ? (
               <div className="flex flex-wrap items-center gap-2 rounded border border-warning/50 bg-warning/5 px-2 py-1.5 text-2xs" data-testid="live-drift-paused">
                 <b className="text-warning">Exchange positions could not be read</b>
@@ -365,10 +449,12 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                       <div className="flex flex-wrap items-center gap-2 text-[13px] font-medium"><span className="truncate">{s.name}</span><ModePill status={s.status} />{s.autopilotPlaybookId ? <span className="rounded bg-info-bg px-1.5 py-0.5 text-2xs font-normal text-info" title="Autopilot opened this paper trade (it stays on paper)" data-testid="card-autopilot">Autopilot</span> : null}{kind === "live" ? <TradingEnvTag /> : null}{kind === "live" && accounts.length > 1 ? <span className={cn("micro rounded border px-1", accountRefOf(s, accounts)?.accountId ? "border-border" : "border-warning text-warning")} title={accountRefOf(s, accounts)?.accountId ? "The exchange key this strategy trades through (ADR-068)" : "Placed before accounts: name it by going live again, or its exits and the out-of-sync check cannot find its key"} data-testid="card-account" data-account-id={accountRefOf(s, accounts)?.accountId ?? ""}>{accountLabel(accounts, accountRefOf(s, accounts)?.accountId) ?? "no account named"}</span> : null}<AdjustedBadge s={s} />{drift.get(s.id) ? <span className="micro rounded border border-loss bg-loss/10 px-1 text-loss" title={driftTitle(drift.get(s.id)!)} data-testid="card-drift" data-state="out-of-sync">out of sync</span> : null}{kind === "live" && s.orderBatchId ? <span className="micro rounded border border-border px-1 font-mono" title={`Order batch ${s.orderBatchId}`} data-testid="card-batch">batch {s.orderBatchId.slice(-6)}</span> : null}</div>
                       <div className="micro flex flex-wrap gap-2"><span className="rounded border border-border px-1">{s.asset}</span><span><b>{open.length}</b>/{s.legs.length} legs</span>{s.templateName ? <span>{s.templateName}</span> : null}</div>
                       <div className="micro mt-0.5 flex flex-wrap gap-x-2 normal-case tracking-normal" data-testid="card-expiry" data-days={left ?? undefined}>
-                        <span data-testid="card-started">started <b className="num">{fmtDateTime(s.startedAt)}</b> · {daysOf(s)}d</span>
+                        <span data-testid="card-started">started <b className="num">{fmtDateTime(s.startedAt)}</b></span>
                         {lc === "closed" ? (
                           <span data-testid="card-closed">closed <b className="num">{fmtDateTime(s.closedAt)}</b>{s.closeReason ? <span className="ml-1 rounded border border-border px-1" title="Why it closed (ADR-059)" data-testid="card-close-reason" data-reason={s.closeReason}>{CLOSE_REASON_LABELS[s.closeReason]}</span> : null}</span>
-                        ) : ex ? (
+                        ) : null}
+                        {heldOf(s) !== null ? <span title={lc === "closed" ? "From the start shown here to the close" : "Since the start shown here (a paper trade that went live keeps its paper start)"} data-testid="card-held">{lc === "closed" ? "held" : "open for"} <b className="num">{heldOf(s)}</b></span> : null}
+                        {lc === "closed" ? null : ex ? (
                           <span>expires <b className={cn("num", left !== null && left <= 1 && "text-warning")}>{ex.nearest === ex.latest ? fmtExpiry(ex.nearest) : `${fmtExpiry(ex.nearest)} → ${fmtExpiry(ex.latest)}`}</b>{expired ? <span className="text-warning" data-testid="card-settling" data-state={settling ? "settling" : "unsettled"}> · {settling ? "expired, settling" : "expired, not settled yet"}</span> : left !== null ? <span className={cn(left <= 1 && "text-warning")}> ({left}d)</span> : null}</span>
                         ) : (
                           <span>no open option legs</span>
@@ -379,10 +465,10 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
                     </div>
                     <div className="ml-auto text-right">
                       <div className={cn("num text-[15px] font-medium", p.total >= 0 ? "text-profit" : "text-loss")} data-testid="card-pnl" data-tour="paper-pnl">{fmtMoney(p.total, money, { signed: true })}</div>
-                      <div className="micro">unreal {fmtMoney(p.unrealized, money, { signed: true })} · real {fmtMoney(p.realized, money, { signed: true })}</div>
+                      <div className="micro">before fees · unreal {fmtMoney(p.unrealized, money, { signed: true })} · real {fmtMoney(p.realized, money, { signed: true })}</div>
                     </div>
                   </div>
-                  <CardFigures s={s} book={book} />
+                  <CardFigures s={s} book={book} pnl={p.total} fees={feeOf(s)} />
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <Sparkline series={pnlSeries(s, p.total)} />
                     <div className="flex flex-wrap gap-1">

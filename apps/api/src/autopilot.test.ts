@@ -2,6 +2,7 @@
 // strategy for every trader who switched an entering playbook on, with its exits armed and a log line; one open trade
 // per trader, playbook, venue and asset; a cool-down after a trade ends; a better entry while one is open is noted;
 // every reason not to enter is logged once. Nothing here places anything on a venue.
+import type { MarginParams } from "./margin.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, PLAYBOOKS, WEEKLY_PLAYBOOKS, type PlaybookProposal, autopilotPlaybookById, playbookById } from "@hapiecoin/pricing";
 import { type Strategy, toDecimal, AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_MAX_STRATEGIES, MAX_STRATEGY_NAME, StrategyList, AUTOPILOT_PAPER_ONLY_MESSAGE, AUTOPILOT_RUNS_RETENTION_DAYS, type AutopilotResults, type AutopilotRunDetail, type AutopilotView, type Instrument, type Quote, type SubscriptionView } from "@hapiecoin/schema";
@@ -641,7 +642,7 @@ describe("HC-TR-225 playbooks entered by the clock: the evening strangles", () =
     expect([utc(15, 59, 59), utc(16, 0), utc(16, 59, 59), utc(17, 0)].map((ms) => inWindow(c, ms))).toEqual([false, true, true, false]);
   });
 
-  it("HC-TR-225 enters once in its evening window on the nearest expiry with its own exits; outside the window, holding a trade, or already entered are reasons", async () => {
+  it("HC-TR-225 HC-TR-257 enters once in its evening window on the nearest expiry with its own exits and the margin estimated at entry; outside the window, holding a trade, or already entered are reasons", async () => {
     const me = await t.signUp("autopilot-clock@hapiecoin.test");
     const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
     // the card's style is not this playbook's to choose: it is saved as its own exits; no other playbook may ask for them
@@ -668,11 +669,20 @@ describe("HC-TR-225 playbooks entered by the clock: the evening strangles", () =
         }
       return { venue: "delta_india", products: () => Promise.resolve(products), tickers: (u) => Promise.resolve(u === "BTC" ? quotes : []) };
     };
+    const marginSpots: (number | undefined)[] = [];
     const W = Date.UTC(2026, 8, 25, 16, 5, 0); // 21:35 IST: inside the window; today's expiry settled four hours ago
     const LISTED = ["2026-09-25", "2026-09-26", "2026-10-20"];
     const pass = async (at: number, spot = 83_200, expiries: readonly string[] = LISTED) => {
-      await snapshotOnce(t.deps, curveAt(at - MIN, spot, expiries), () => at - MIN);
-      return runAutopilot(deps(at, { maxOpen: undefined }), ["delta_india"]); // the product's own limit: one trade at a time
+      const curve = curveAt(at - MIN, spot, expiries);
+      await snapshotOnce(t.deps, curve, () => at - MIN);
+      // HC-TR-257: the venue's list as it is keyed, by venue symbol, every contract at a margin percent of 0.5; the
+      // source's own spot (1) must not be the one used, and the snapshot's must be handed to it
+      const params: ReadonlyMap<string, MarginParams> = new Map((await curve.products()).map((i) => [i.symbol, { contractValue: "0.001", initialMarginPct: "0.5", initialMarginScalingFactor: "0.000002" }]));
+      const marginInputs = (_a: string, _v: string, given?: number) => {
+        marginSpots.push(given);
+        return Promise.resolve({ spot: 1, params });
+      };
+      return runAutopilot(deps(at, { maxOpen: undefined, marginInputs }), ["delta_india"]); // the product's own limit: one trade at a time
     };
 
     // an hour early: the reason is logged, nothing is entered
@@ -709,6 +719,14 @@ describe("HC-TR-225 playbooks entered by the clock: the evening strangles", () =
     for (const l of x2legs) expect(x2rules.find((r) => r.legId === l.id)).toMatchObject({ kind: "leg_stop", trigger: "multiple", value: "2", scope: "leg", state: "armed", thresholdUsd: (2 * Number(l.price)).toFixed(1).replace(/\.0$/, "") });
     const x2d = (await entry(x2.id)).detail;
     expect(x2d).toMatchObject({ exit: "own", legStop: 2, capital: null, maxLoss: null }); // no maximum loss: no capital figure
+    // HC-TR-257: the trade carries the margin estimated at entry: each sold option at the snapshot's spot (83 200) and its own entry price, 100 contracts
+    const shortMargin = (price: string) => ((0.5 + 0.000002 * 100) / 100) * 83_200 * 0.001 * 100 + Number(price) * 0.001 * 100;
+    expect(Number(x2.marginEstimate)).toBeCloseTo(x2legs.reduce((sum, l) => sum + shortMargin(l.price), 0), 1);
+    expect(Number(x2.marginEstimate)).toBeGreaterThan(83); // two sold options: 41.6 each before their premium
+    expect(marginSpots.length).toBeGreaterThan(0);
+    expect(new Set(marginSpots)).toEqual(new Set([83_200])); // every read was handed the snapshot's spot: no ticker is read for it
+    // with wings: the two sold options alone (no relief for the wings; a credit adds nothing)
+    expect(Number(w.marginEstimate)).toBeCloseTo((await legsOf(w.id)).filter((l) => l.side === "sell").reduce((sum, l) => sum + shortMargin(l.price), 0), 1);
     expect((await rulesOf(of("evening-strangle-stop-3x").id)).map((r) => r.value)).toEqual(["3", "3"]);
     // HC-TR-227 take half: the two stops of the stop-at-double one, and a target at half the premium collected that closes the whole trade
     const half = of("evening-strangle-take-half");

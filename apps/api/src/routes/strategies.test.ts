@@ -362,3 +362,35 @@ describe("HC-TR-071 / HC-TR-088 adjustment batch on a paper strategy (ADR-044)",
     expect(after.adjustments).toHaveLength(1);
   });
 });
+
+describe("HC-TR-257 the margin estimated when a paper trade is started (ADR-128)", () => {
+  it("HC-TR-257 a started trade with a sold option stores the estimate at the entry prices and returns it; nothing sold, or a venue that does not answer, stores none", async () => {
+    const params = new Map([[PUT.symbol, { contractValue: "0.001", initialMarginPct: "1", initialMarginScalingFactor: "0.000002" }]]);
+    t.deps.marginInputs = (asset, venue) => Promise.resolve(asset === "BTC" && venue === "delta_india" ? { spot: 80_000, params } : null);
+    try {
+      // a risk reversal: bought call at 1200, sold put entered at 950 (not its draft price of 900); 10 lots of 0.001 BTC
+      const s = await create(alice);
+      expect(s.marginEstimate ?? null).toBeNull(); // a draft has none
+      const put = s.legs.find((l) => l.kind === "put")!;
+      const started = await startPaper(alice, s.id, { [put.id]: "950" });
+      // the sold put: (1 + 0.000002 × 10) / 100 × 80 000 × 0.001 × 10 + 950 × 0.001 × 10 = 8.0002 + 9.5; and the premium paid, (1200 − 950) × 0.01
+      expect(started.marginEstimate).toBe("20");
+      expect(Strategy.safeParse(started).success).toBe(true);
+      const listed = await json<{ items: Strategy[] }>(await t.request("/v1/strategies?status=paper", { cookie: alice }));
+      expect(listed.items.find((x) => x.id === s.id)?.marginEstimate).toBe("20");
+      // nothing sold: no figure, and the venue is not needed
+      const long = await create(alice, { legs: [CALL] });
+      expect((await startPaper(alice, long.id, {})).marginEstimate).toBeNull();
+      // a venue that does not answer never fails the start
+      t.deps.marginInputs = () => Promise.reject(new Error("venue down"));
+      const dark = await create(alice);
+      expect((await startPaper(alice, dark.id, {})).marginEstimate).toBeNull();
+      // stopped back to a draft, the figure goes with the trade it described
+      const back = await json<Strategy>(await t.request(`/v1/strategies/${s.id}/stop`, { cookie: alice, json: { archive: false, exits: {} } }));
+      expect(back.status).toBe("draft");
+      expect(back.marginEstimate).toBeNull();
+    } finally {
+      t.deps.marginInputs = undefined;
+    }
+  });
+});

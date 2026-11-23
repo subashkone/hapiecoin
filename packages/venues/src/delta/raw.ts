@@ -32,6 +32,10 @@ export const RawProduct = z.object({
   underlying_asset: RawAsset,
   quoting_asset: RawAsset,
   settling_asset: RawAsset.nullish(),
+  /** Initial margin as a percent of the underlying ("0.5", "1", "5"); it differs per contract by time to expiry (HC-TR-257). */
+  initial_margin: numberish.nullish(),
+  /** Percent added per contract of size ("0.000002"). */
+  initial_margin_scaling_factor: numberish.nullish(),
 });
 export type RawProduct = z.infer<typeof RawProduct>;
 

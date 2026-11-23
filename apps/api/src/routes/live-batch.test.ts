@@ -73,6 +73,9 @@ describe("HC-TR-192 the batch sums the short legs' margin estimates against the 
     const fine = await json<LiveBatchPreview>(await previewBatch([a.id, b.id]));
     expect(fine.ok).toBe(true);
     expect(fine.marginRequired).toBe("33.9");
+    // HC-TR-257: the batch stores each strategy's own figure, the one its preview gave
+    expect((await json<LiveBatchResult>(await batch([a.id, b.id], "batch-key-margin-1"))).placed).toEqual([a.id, b.id]);
+    for (const id of [a.id, b.id]) expect((await json<Strategy>(await t.request(`/v1/strategies/${id}`, { cookie: alice }))).marginEstimate).toBe("16.95");
     t.trading.product(PUT.symbol, 102, "0.001").markAt(PUT.symbol, "900"); // back to the shared fixture (the spot stays; no parameters, no estimate)
   });
 });

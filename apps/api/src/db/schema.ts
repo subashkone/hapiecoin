@@ -343,6 +343,8 @@ export const strategies = pgTable(
     autopilotPlaybookId: text("autopilot_playbook_id"),
     /** ADR-110: the structure Autopilot entered (every leg's side, kind, strike and expiry); null on a trader's own trade and on rows from before it. */
     autopilotStructure: text("autopilot_structure"),
+    /** HC-TR-257 (ADR-128): the margin estimated at entry, USD decimal; null when nothing was sold, when the venue gave no parameters, and on rows from before it. */
+    marginEstimate: text("margin_estimate"),
     ...timestamps,
   },
   (t) => [index("strategies_user_id_idx").on(t.userId), index("strategies_user_status_idx").on(t.userId, t.status), index("strategies_autopilot_idx").on(t.userId, t.autopilotPlaybookId, t.venue, t.asset),

@@ -101,6 +101,10 @@ describe("HC-TR-192 short-leg margin: the whole placement is refused before the 
     expect(after.status).toBe("draft");
     expect(after.orders).toHaveLength(0);
     t.trading.setBalances([{ asset: "USD", balance: "5000", availableBalance: "4000" }]);
+    // HC-TR-257: once it fits, the placement stores the figure it was checked against
+    const placedOk = await place(s.id, "key-margin-0002", { [s.legs[0]!.id]: "1200", [s.legs[1]!.id]: "900" });
+    expect(placedOk.status).toBe(200);
+    expect((await json<Strategy>(placedOk)).marginEstimate).toBe("19.95");
   });
 
   it("HC-TR-192 a short the venue priced next to one it did not is refused by name: a partial figure never reads as the whole", async () => {

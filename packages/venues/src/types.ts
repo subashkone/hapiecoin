@@ -42,6 +42,10 @@ export interface Instrument {
   state: string;
   /** Venue trading status ("operational", "disrupted_cancel_only", ...); null when absent. */
   tradingStatus: string | null;
+  /** Initial margin percent of the underlying as the venue lists it for this contract today ("1" = 1 %); absent when it lists none (HC-TR-257). */
+  initialMarginPct?: string | undefined;
+  /** Percent added per contract of size; absent when the venue lists none. */
+  initialMarginScalingFactor?: string | undefined;
 }
 
 export interface Greeks {
