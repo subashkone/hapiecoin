@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type BacktestFold, type BacktestStats, type BacktestTrade, type EodDay, type EodRow, runBacktest } from "./backtest.js";
 import { calendarFor, daysToExpiryOf } from "./calendar.js";
-import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS, MOVE_DAILY_PLAYBOOKS, BUYBACK_DAILY_PLAYBOOKS, BUYBACK_SHARE_PLAYBOOKS, TAKE90_WEEKLY_PLAYBOOKS, TAKE90_DAILY_PLAYBOOKS, COMBO_DAILY_PLAYBOOKS, TRAIL15_DAILY_PLAYBOOKS, sideAfterMove, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
+import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS, MOVE_DAILY_PLAYBOOKS, BUYBACK_DAILY_PLAYBOOKS, BUYBACK_SHARE_PLAYBOOKS, TAKE90_WEEKLY_PLAYBOOKS, TAKE90_DAILY_PLAYBOOKS, COMBO_DAILY_PLAYBOOKS, TRAIL15_DAILY_PLAYBOOKS, TRAIL15_XAUT_PLAYBOOKS, sideAfterMove, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
 import { materialiseTemplate } from "./templates.js";
 
 const cal = calendarFor(12);
@@ -218,7 +218,7 @@ describe("HC-TR-229 the weekly strangles", () => {
     expect(WEEKLY_PLAYBOOKS.map((p) => [p.clock!.legStop, p.clock!.takeProfitOfCredit, p.clock!.trailRestPct]).slice(0, 5)).toEqual([[undefined, undefined, undefined], [2, undefined, undefined], [3, undefined, undefined], [2, 0.5, undefined], [2, undefined, 50]]);
     expect(CLOCK_PLAYBOOKS.every((p) => p.clock!.weekdayUtc === undefined && p.clock!.describe === "once an evening, 9:30 to 10:30 PM IST, on the next expiry")).toBe(true);
     expect(new Set(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).size).toBe(AUTOPILOT_PLAYBOOKS.length);
-    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length + LAB_DAILY_PLAYBOOKS.length + LAB_WEEKLY_PLAYBOOKS.length + MOVE_DAILY_PLAYBOOKS.length + BUYBACK_DAILY_PLAYBOOKS.length + BUYBACK_SHARE_PLAYBOOKS.length + TAKE90_WEEKLY_PLAYBOOKS.length + TAKE90_DAILY_PLAYBOOKS.length + COMBO_DAILY_PLAYBOOKS.length + TRAIL15_DAILY_PLAYBOOKS.length);
+    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length + LAB_DAILY_PLAYBOOKS.length + LAB_WEEKLY_PLAYBOOKS.length + MOVE_DAILY_PLAYBOOKS.length + BUYBACK_DAILY_PLAYBOOKS.length + BUYBACK_SHARE_PLAYBOOKS.length + TAKE90_WEEKLY_PLAYBOOKS.length + TAKE90_DAILY_PLAYBOOKS.length + COMBO_DAILY_PLAYBOOKS.length + TRAIL15_DAILY_PLAYBOOKS.length + TRAIL15_XAUT_PLAYBOOKS.length);
   });
 
   it("HC-TR-229 the strikes are the listed ones nearest 3 % (wings 7 %) of the spot away, on the Friday expiry a week out from a Friday and three days out from a Tuesday", () => {
@@ -568,7 +568,7 @@ describe("HC-TR-241 the lab's ideas as strategies of their own (ADR-121)", () =>
     expect(playbookTemplate(byId("eth-evening-strangle-close"))!.legs.map((l) => ("pct" in l ? l.pct : null))).toEqual([-0.5, 0.5]);
     // half then trail: the level is half the premium and from there a give-back of a fifth of the best
     for (const id of ["evening-strangle-half-trail", "eth-evening-strangle-half-trail"]) expect(byId(id).clock).toMatchObject({ takeProfitOfCredit: 0.5, takeTrailPct: 20, legStop: 3 });
-    expect(AUTOPILOT_PLAYBOOKS.filter((p) => p.clock?.takeTrailPct === 20).map((p) => p.id)).toEqual(["evening-strangle-half-trail", "eth-evening-strangle-half-trail"]);
+    expect(AUTOPILOT_PLAYBOOKS.filter((p) => p.clock?.takeTrailPct === 20).map((p) => p.id)).toEqual(["evening-strangle-half-trail", "eth-evening-strangle-half-trail", "xaut-evening-strangle-trail-15"]); // the last is HC-TR-262's Gold trail
     // the winged ETH one: sold 1 % away, wings three times as far
     expect(playbookTemplate(byId("eth-evening-strangle-wings-near"))!.legs.map((l) => ("pct" in l ? l.pct : null))).toEqual([-3, -1, 1, 3]);
     // the afternoon entry: 10:00 to 11:00 UTC on that day's expiry, a quarter per cent away, and the card says the evidence is weak
@@ -814,7 +814,7 @@ describe("HC-TR-261 the daily strangle trailed from 15 % of the premium (ADR-132
     }
     // the only playbooks that start a trail this early or give this much back
     expect(AUTOPILOT_PLAYBOOKS.filter((p) => p.clock?.takeTrailPct === 30).map((p) => p.id)).toEqual(["evening-strangle-trail-15", "eth-evening-strangle-trail-15"]);
-    expect(AUTOPILOT_PLAYBOOKS.filter((p) => p.clock?.takeProfitOfCredit === 0.15).map((p) => p.id)).toEqual(["evening-strangle-trail-15", "eth-evening-strangle-trail-15"]);
+    expect(AUTOPILOT_PLAYBOOKS.filter((p) => p.clock?.takeProfitOfCredit === 0.15).map((p) => p.id)).toEqual(["evening-strangle-trail-15", "eth-evening-strangle-trail-15", "xaut-evening-strangle-trail-15"]); // Gold's is HC-TR-262's
     const byId = (id: string) => autopilotPlaybookById(id)!;
     // the cards say what it costs: a third of holding on BTC, two thirds on ETH, and that the ETH worst day is no better
     expect(byId("evening-strangle-trail-15").evidence.claim).toContain("+4.21 a day on 106 days, 78 % of days positive, worst day -37.5");
@@ -823,5 +823,35 @@ describe("HC-TR-261 the daily strangle trailed from 15 % of the premium (ADR-132
     expect(byId("eth-evening-strangle-trail-15").evidence.claim).toContain("+2.97 a day on 106 days, 86 % of days positive, worst day -44.6");
     expect(byId("eth-evening-strangle-trail-15").rationale).toContain("The worst day is about the same as holding's (-49.6)");
     expect(TRAIL15_DAILY_PLAYBOOKS.map((p) => playbookBacktest(p.id))).toMatchObject([{ mean: 4.21, per: "day", positivePct: 78, worst: -37.5, samples: 106 }, { mean: 2.97, per: "day", positivePct: 86, worst: -44.6, samples: 106 }]);
+  });
+});
+
+describe("HC-TR-262 the Gold daily strangle trailed from 15 % of the premium (ADR-133)", () => {
+  it("HC-TR-262 one playbook at Gold's own entry, strikes and stop at double, trailed from 15 % with a give-back of 20 %, from the table at the hour it is traded", () => {
+    expect(TRAIL15_XAUT_PLAYBOOKS.map((p) => `${p.id} ${p.assets.join()}`)).toEqual(["xaut-evening-strangle-trail-15 XAUT"]);
+    const p = autopilotPlaybookById("xaut-evening-strangle-trail-15")!;
+    const gold = autopilotPlaybookById("xaut-evening-strangle-stop-2x")!;
+    expect(p.name).toBe("Gold evening strangle, trail from 15 %");
+    expect(p).toMatchObject({ lots: gold.lots, control: false, minDte: gold.minDte, template: gold.template });
+    // Gold's own window, expiry and stop; only the take and its trail are new, and the give-back is not BTC's 30
+    expect(p.clock).toEqual({ ...gold.clock, takeProfitOfCredit: 0.15, takeTrailPct: 20 });
+    expect(p.clock!.legStop).toBe(2);
+    expect(playbookCadence(p)).toBe("daily");
+    expect(p.summary).toContain("Each evening sell a Gold call and put 1 % away on the next expiry");
+    expect(p.summary).toContain("gives back 20 % of its best");
+    expect(p.trials.count).toBe(48);
+    expect(p.trials.note).toContain("At this hour it earned less than holding (+0.15 against +0.19 a day)");
+    // the table at the hour Autopilot enters Gold, not the first one, which was an hour late
+    expect(p.evidence.source).toContain("results-trail-from-15-XAUT-24h-2026-11-23.txt");
+    expect(p.evidence.source).toContain("entered 24 hours before the settlement as this strategy is");
+    expect(p.evidence.claim).toContain("a day before its settlement");
+    expect(p.evidence.claim).toContain("+0.15 a day on 91 days, 82 % of days positive, worst day -1.4");
+    // the card says it costs income, that the money is cents, and names the better row that was not chosen
+    expect(p.rationale).toContain("It costs a little income");
+    expect(p.rationale).toContain("about 14 dollars over 91 days at 100 lots");
+    expect(p.rationale).toContain("a trail started at 50 % of the premium earned more than holding (+0.23) and is not built");
+    expect(playbookBacktest(p.id)).toMatchObject({ mean: 0.15, per: "day", positivePct: 82, worst: -1.4, samples: 91 });
+    // BTC and ETH keep their own give-back
+    expect(AUTOPILOT_PLAYBOOKS.filter((x) => x.clock?.takeTrailPct === 30).map((x) => x.id)).toEqual(["evening-strangle-trail-15", "eth-evening-strangle-trail-15"]);
   });
 });

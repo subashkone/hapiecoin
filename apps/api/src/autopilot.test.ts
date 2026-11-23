@@ -1608,3 +1608,33 @@ describe("HC-TR-261 the daily strangle trailed from 15 % of the premium (ADR-132
     expect(after).toMatchObject({ status: "archived", closeReason: "target", realizedPnl: "27" });
   });
 });
+
+describe("HC-TR-262 the Gold daily strangle trailed from 15 % of the premium (ADR-133)", () => {
+  it("HC-TR-262 the plan: a target at 15 % of the premium that trails by 20 %, beside Gold's stop at double, and nothing else", () => {
+    const plan = clockPlanFor(autopilotPlaybookById("xaut-evening-strangle-trail-15")!, { day: "2027-03-13", spot: 4_000, expiry: "2027-03-14", legs: [], entryCost: -1.3, maxProfit: 1.3, maxLoss: -Infinity }, 0.001, null)!;
+    expect(plan).toMatchObject({ legStop: 2, takeTrailPct: 20, ladder: null, lock: null, exitHourUtc: null, legBuyBackAt: null, legBuyBackShare: null, trailRestPct: null, stopUsd: null });
+    expect(plan.targetUsd).toBeCloseTo(0.195, 6); // 15 % of a premium of 1.30 USD
+  });
+
+  it("HC-TR-262 at Gold's size, cents of premium: the trail starts at its level, follows the best and closes the trade on a fall of a fifth, without firing on the tick that starts it", async () => {
+    const me = await t.signUp("autopilot-gold-trail@hapiecoin.test");
+    const PUT = "P-XAUT-3960-140327";
+    const CALL = "C-XAUT-4040-140327";
+    // 100 lots of 0.001 oz a leg, sold at 6 and 7 dollars: 1.30 USD of premium; the trail starts at 0.20
+    const made = (await (await t.request("/v1/strategies", { cookie: me.cookie, json: { name: "Gold trail 15", asset: "XAUT", legs: [{ kind: "put", side: "sell", strike: "3960", expiry: "2027-03-14", symbol: PUT, lots: 100, price: "6" }, { kind: "call", side: "sell", strike: "4040", expiry: "2027-03-14", symbol: CALL, lots: 100, price: "7" }] } })).json()) as Strategy;
+    const started = (await (await t.request(`/v1/strategies/${made.id}/start`, { cookie: me.cookie, json: { mode: "paper", brokerId: SEED.brokerId, entries: Object.fromEntries(made.legs.map((l) => [l.id, l.price])) } })).json()) as Strategy;
+    expect(started.status).toBe("paper");
+    expect((await t.request(`/v1/strategies/${made.id}/rules`, { method: "PUT", cookie: me.cookie, json: { rules: [{ kind: "target", trigger: "money", value: "0.20", trail: { trigger: "pct", value: "20" } }] } })).status).toBe(200);
+    const tick = (putMark: number, callMark: number) => evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map([[PUT, putMark], [CALL, callMark]]), spot: null }) }, () => Date.UTC(2027, 2, 13, 20));
+    const now = async () => (await t.db.select().from(strategies).where(eq(strategies.id, made.id)))[0]!;
+    // up 10 cents: nothing. Up 30 cents: the trail starts, exit level 24 cents, and that tick closes nothing
+    expect((await tick(5.5, 6.5)).fired).toHaveLength(0);
+    expect((await tick(4.5, 5.5)).fired).toHaveLength(0);
+    expect((await now()).status).toBe("paper");
+    // up 40: the best, exit level 32. Back to 35: still over it. Down to 30: closed, booked as a target
+    expect((await tick(4, 5)).fired).toHaveLength(0);
+    expect((await tick(4.5, 5)).fired).toHaveLength(0);
+    expect((await tick(4.5, 5.5)).fired).toHaveLength(1);
+    expect(await now()).toMatchObject({ status: "archived", closeReason: "target", realizedPnl: "0.3" });
+  });
+});

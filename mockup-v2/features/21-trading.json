@@ -2417,5 +2417,16 @@
     "how": "two paper playbooks, on BTC and ETH: the evening strangle 1 % away with a stop at triple on each option; once the trade is up by 15 % of the premium collected it is trailed and closed when the profit gives back 30 % of its best; the existing trailing take-profit of a clock playbook, with no new rule; each card says what the early exit costs against holding",
     "evidence": "ADR-132, GAPS #167 (23 Nov 2026): packages/pricing/src/playbooks.ts (TRAIL15_DAILY_PLAYBOOKS); tests: packages/pricing/src/playbooks.test.ts HC-TR-261, apps/api/src/autopilot.test.ts HC-TR-261, autopilot-page.test.tsx HC-TR-261",
     "test": "unit (pricing), integration (api), unit (web)"
+  },
+  {
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "An Autopilot Gold strategy that trails the profit from 15 % of the premium",
+    "how": "one paper playbook: the Gold evening strangle 1 % away at Gold's own entry, with its stop at double on each option; once the trade is up by 15 % of the premium collected it is trailed and closed when the profit gives back 20 % of its best; the existing trailing take-profit, with no new rule; its card says it costs a little income against holding and that the amounts are cents",
+    "evidence": "ADR-133, GAPS #168 (23 Nov 2026): packages/pricing/src/playbooks.ts (TRAIL15_XAUT_PLAYBOOKS); tests: packages/pricing/src/playbooks.test.ts HC-TR-262, apps/api/src/autopilot.test.ts HC-TR-262 (the engine at Gold's size), autopilot-page.test.tsx HC-TR-262",
+    "test": "unit (pricing), integration (api), unit (web)"
   }
 ]

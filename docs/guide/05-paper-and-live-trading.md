@@ -1,6 +1,6 @@
 # Paper trading, live trading, rules and accounts
 
-Part of the [HapieCoin feature guide](README.md). 149 traced features on 35 screens; 149 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 150 traced features on 35 screens; 150 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -72,6 +72,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-258 | Autopilot daily strategies that close the whole trade at 90 % of the premium, or trail it from there | four paper playbooks, on BTC and on ETH: the evening strangle 1 % away with a stop at triple on each option, either closed once the trade is up by 90 % of the premium collected, or from that level trailed and closed when the profit gives back 5 % of its best; both use the existing take-profit of a clock playbook (a share of the premium armed as a target, which trails when it carries a give-back), with no new rule; each card says the study could not tell closing, trailing and holding apart | built | unit (pricing), integration (api), unit (web) |
 | HC-TR-259 | An Autopilot strategy with the profit lock and the buy-back at 5 dollars on the same trade | one paper playbook, the BTC evening strangle 1 % away: a stop at triple and a buy-back at 5 dollars on each sold option, and on the whole trade a floor at a quarter of the premium once the profit has reached half; what a buy-back has banked counts toward the lock, which is judged on the realised and the open profit together; both exits are the existing ones, armed from the playbook's own fields, with no new rule; its card says it earned less than the lock alone in the study | built | unit (pricing), integration (api), unit (web) |
 | HC-TR-261 | Autopilot daily strategies that trail the profit from 15 % of the premium | two paper playbooks, on BTC and ETH: the evening strangle 1 % away with a stop at triple on each option; once the trade is up by 15 % of the premium collected it is trailed and closed when the profit gives back 30 % of its best; the existing trailing take-profit of a clock playbook, with no new rule; each card says what the early exit costs against holding | built | unit (pricing), integration (api), unit (web) |
+| HC-TR-262 | An Autopilot Gold strategy that trails the profit from 15 % of the premium | one paper playbook: the Gold evening strangle 1 % away at Gold's own entry, with its stop at double on each option; once the trade is up by 15 % of the premium collected it is trailed and closed when the profit gives back 20 % of its best; the existing trailing take-profit, with no new rule; its card says it costs a little income against holding and that the amounts are cents | built | unit (pricing), integration (api), unit (web) |
 
 ### Trading · Protect dialog / cards · Details · `/desk`
 
