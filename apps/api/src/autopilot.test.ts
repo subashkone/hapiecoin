@@ -1781,3 +1781,72 @@ describe("HC-TR-265 the cautious daily strangles (ADR-136)", () => {
     expect((await rulesNow()).filter((r) => r.kind === "leg_stop").map((r) => r.state)).not.toContain("fired");
   });
 });
+
+describe("HC-TR-266 the ETH daily strangle with wings and the trail alone (ADR-138)", () => {
+  it("HC-TR-266 the plan: a trailing target at half the NET premium, and no stop, buy-back, lock or timed exit; wings that cost more than the sold options bring are no trade", () => {
+    const pb = autopilotPlaybookById("eth-evening-strangle-wings-trail")!;
+    const proposal: PlaybookProposal = { day: "2027-09-06", spot: 2304, expiry: "2027-09-07", legs: [], entryCost: -13.9, maxProfit: 13.9, maxLoss: -36.1 };
+    const plan = clockPlanFor(pb, proposal, 0.01, null)!;
+    expect(plan).toMatchObject({ legStop: null, legBuyBackAt: null, legBuyBackShare: null, takeTrailPct: 20, ladder: null, lock: null, exitHourUtc: null, trailRestPct: null, stopUsd: null });
+    expect(plan.targetUsd).toBeCloseTo(6.95, 6);
+    expect(clockPlanFor(pb, { ...proposal, entryCost: 0.4 }, 0.01, null)).toBeNull(); // the wings cost more than the sold options bring
+  });
+
+  it("HC-TR-266 entered by the job: sold 2 % away, wings 4 % away, one trailing target at half the net premium and no other rule; the trail starts once the whole structure is up by that much and closes all four options when the profit gives back a fifth", async () => {
+    const me = await t.signUp("autopilot-wings-trail@hapiecoin.test");
+    const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
+    const PB = "eth-evening-strangle-wings-trail";
+    await put({ enabled: true, strategies: [{ playbookId: PB, exit: "own" }] }, me.cookie);
+    const products: Instrument[] = [];
+    const quotes: Quote[] = [];
+    const AT = Date.UTC(2027, 8, 6, 16, 5, 0); // later than every snapshot the tests above stored
+    for (const e of ["2027-09-07", "2027-09-08"])
+      for (let i = -30; i <= 30; i++) {
+        const k = 2300 + i * 10;
+        const code = e.slice(8, 10) + e.slice(5, 7) + e.slice(2, 4);
+        const tv = 30 * Math.exp(-Math.abs(k - 2304) / 40);
+        for (const [kind, letter, intrinsic] of [["call", "C", Math.max(2304 - k, 0)], ["put", "P", Math.max(k - 2304, 0)]] as const) {
+          const symbol = `${letter}-ETH-${k}-${code}`;
+          products.push({ ...inst(symbol, kind, k, e), underlying: "ETH", contractSize: "0.01" });
+          quotes.push({ instrumentId: `delta_india:${symbol}`, ts: AT - MIN, mark: (intrinsic + tv).toFixed(2), oi: "1", spot: "2304", markIv: 0.5 });
+        }
+      }
+    await snapshotOnce(t.deps, { venue: "delta_india", products: () => Promise.resolve(products), tickers: (u) => Promise.resolve(u === "ETH" ? quotes : []) }, () => AT - MIN);
+    await runAutopilot(deps(AT, { maxOpen: undefined }), ["delta_india"]);
+    const [trade] = await t.db.select().from(strategies).where(eq(strategies.userId, id));
+    expect(trade).toMatchObject({ autopilotPlaybookId: PB, status: "paper", tradingMode: "paper", asset: "ETH", name: "ETH evening strangle, wings and a trail · Autopilot" });
+    const legsNow = () => t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade!.id)).orderBy(asc(strategyLegs.position));
+    const legs = await legsNow();
+    // 2 % of 2,304 is 46.08: 2,257.92 and 2,350.08, nearest listed 2,260 and 2,350; 4 % is 92.16: 2,211.84 and 2,396.16, nearest 2,210 and 2,400
+    expect(legs.map((l) => `${l.side} ${l.kind} ${l.strike} x${l.lots}`)).toEqual(["buy put 2210 x100", "sell put 2260 x100", "sell call 2350 x100", "buy call 2400 x100"]);
+    const rulesNow = () => t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, trade!.id));
+    const rules = await rulesNow();
+    // the net premium: collected on the two sold, less paid for the two wings, on 1 ETH (100 lots of 0.01)
+    const net = legs.reduce((sum, l) => sum + (l.side === "sell" ? 1 : -1) * Number(l.price), 0);
+    expect(net).toBeGreaterThan(0);
+    expect(net).toBeLessThan(Number(legs[1]!.price) + Number(legs[2]!.price));
+    expect(rules).toHaveLength(1);
+    const target = rules[0]!;
+    expect(target).toMatchObject({ kind: "target", state: "armed", trailTrigger: "pct", trailValue: "20", peakPnl: null });
+    expect(Number(target.value)).toBeCloseTo(net / 2, 1);
+    expect((await view(me.cookie)).runs.find((r) => r.playbookId === PB && r.kind === "entered")!.detail).toMatchObject({ takeTrailPct: 20 });
+
+    // every option at `share` of its entry price: the structure is up by (1 - share) of the net premium
+    const tick = async (share: number, ms: number) => (await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map(legs.map((l) => [l.symbol, share * Number(l.price)])), spot: null }) }, () => ms)).fired.filter((r) => r === target.id);
+    const targetNow = async () => (await rulesNow())[0]!;
+    // up by 40 %: under half, nothing starts
+    expect(await tick(0.6, AT + 10 * MIN)).toHaveLength(0);
+    expect((await targetNow()).peakPnl).toBeNull();
+    // up by 70 %: the trail starts and closes nothing
+    expect(await tick(0.3, AT + 20 * MIN)).toHaveLength(0);
+    expect(Number((await targetNow()).peakPnl)).toBeCloseTo(0.7 * net, 1);
+    // back to 60 %: more than four fifths of its best, still held
+    expect(await tick(0.4, AT + 30 * MIN)).toHaveLength(0);
+    // back to 50 %: under four fifths of its best (56 %), and all four options are closed, the wings sold with the rest
+    expect(await tick(0.5, AT + 40 * MIN)).toEqual([target.id]);
+    expect((await legsNow()).map((l) => `${l.side} ${l.kind} ${l.status}`)).toEqual(["buy put squared_off", "sell put squared_off", "sell call squared_off", "buy call squared_off"]);
+    const [done] = await t.db.select().from(strategies).where(eq(strategies.id, trade!.id));
+    expect(done).toMatchObject({ status: "archived", closeReason: "target" });
+    expect(Number(done!.realizedPnl)).toBeCloseTo(0.5 * net, 1);
+  });
+});

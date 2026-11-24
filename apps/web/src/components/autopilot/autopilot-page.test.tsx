@@ -337,8 +337,8 @@ describe("HC-TR-232 the Autopilot screen: by expiry and by coin", () => {
     renderWithProviders(<AutopilotPage />);
     const u = userEvent.setup();
     await waitFor(() => expect(screen.getAllByTestId("autopilot-trade")).toHaveLength(3));
-    expect(screen.getAllByTestId("autopilot-filter-cadence").map((b) => b.textContent)).toEqual([`All · ${TRADABLE.length}`, "Trend · 6", "Daily · 42", "Weekly · 21", "Monthly · 15"]);
-    expect(screen.getAllByTestId("autopilot-filter-coin").map((b) => b.textContent)).toEqual(["All", `BTC · ${TRADABLE.length - 32}`, "ETH · 33", "XAUT · 5"]); // HC-TR-235 and the ones added since: the ETH and XAUT evening strangles, five ETH weekly and five ETH monthly ones of their own
+    expect(screen.getAllByTestId("autopilot-filter-cadence").map((b) => b.textContent)).toEqual([`All · ${TRADABLE.length}`, "Trend · 6", "Daily · 43", "Weekly · 21", "Monthly · 15"]);
+    expect(screen.getAllByTestId("autopilot-filter-coin").map((b) => b.textContent)).toEqual(["All", `BTC · ${TRADABLE.length - 33}`, "ETH · 34", "XAUT · 5"]); // HC-TR-235 and the ones added since: the ETH and XAUT evening strangles, five ETH weekly and five ETH monthly ones of their own
     expect(screen.getByTestId("autopilot-filters").dataset["filtered"]).toBe("false");
     expect(screen.queryByTestId("autopilot-filter-note")).toBeNull();
     expect(screen.getByRole("group", { name: "Expiry" })).toBeTruthy();
@@ -408,7 +408,7 @@ describe("HC-TR-230 the Autopilot screen: the weekly strangles", () => {
     const groups = screen.getAllByTestId("autopilot-group");
     expect(groups.map((g) => g.dataset["group"])).toEqual(["Longer-dated strategies", "Evening strangles, daily expiry", "Weekly strangles, Friday expiry", "Monthly strangles, month-end expiry"]);
     expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").map((c) => c.dataset["playbook"]))).toEqual([TRADABLE.filter((p) => !p.clock), TRADABLE.filter((p) => p.clock && p.clock.weekdayUtc === undefined && p.clock.cadence !== "monthly"), TRADABLE.filter((p) => p.clock?.weekdayUtc !== undefined), TRADABLE.filter((p) => p.clock?.cadence === "monthly")].map((g) => g.map((p) => p.id)));
-    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 42, 21, 15]);
+    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 43, 21, 15]);
     // HC-TR-233: a monthly row says when it enters, and its backtest reads per month
     const monthly = screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === "monthly-strangle-premium-1000")!;
     expect(monthly.textContent).toContain("Enters on the first evening a month-end expiry is 60 to 75 days out, once per expiry");
@@ -668,5 +668,25 @@ describe("HC-TR-265 the Autopilot screen: the cautious daily strangles", () => {
     expect(card("eth-evening-strangle-cautious").textContent).toContain("ETH evening strangle, cautious");
     expect(card("eth-evening-strangle-cautious").textContent).toContain("Stop at 2x on each sold option, trail from 50 % of the premium, each sold option bought back once its price is down to 0.25 dollars");
     expect(within(card("eth-evening-strangle-cautious")).getByTestId("autopilot-card-how").textContent).toContain("it is trailed, and closed when the profit gives back 20 % of its best.");
+  });
+});
+
+describe("HC-TR-266 the Autopilot screen: the ETH strangle with wings and a trail", () => {
+  it("HC-TR-266 the card says the wings cap the loss with no stop, and that the trade is trailed from half the net premium or held to settlement", async () => {
+    acc().autopilot = { settings: { enabled: true, strategies: [{ playbookId: "eth-evening-strangle-wings-trail", exit: "own" as const }] }, runs: [] };
+    renderWithProviders(<AutopilotPage />);
+    await waitFor(() => expect(screen.getAllByTestId("autopilot-card").length).toBeGreaterThan(0));
+    const card = (id: string) => screen.getAllByTestId("autopilot-card").find((c) => c.dataset["playbook"] === id)!;
+    const mine = card("eth-evening-strangle-wings-trail");
+    expect(mine.textContent).toContain("ETH evening strangle, wings and a trail");
+    expect(mine.textContent).toContain("Wings cap the loss, no stop, trail from 50 % of the net premium");
+    const how = within(mine).getByTestId("autopilot-card-how").textContent;
+    expect(how).toContain("Once the trade is up by 50 % of the net premium (collected less paid for the wings) it is not closed: it is trailed, and closed when the profit gives back 20 % of its best.");
+    // a strangle with no wings keeps "the premium collected"
+    expect(within(card("eth-evening-strangle-half-trail")).getByTestId("autopilot-card-how").textContent).toContain("Once the trade is up by 50 % of the premium collected it is not closed");
+    expect(how).toContain("No stop: the bought wings cap the loss, and it is held to settlement if the trail never closes it.");
+    expect(how).toContain("+2.30 a day on 105 days, 90 % of days positive, worst day -34.0, with fill costs");
+    // a winged trade with no take keeps its own words
+    expect(card("eth-evening-strangle-wings-near").textContent).toContain("Wings cap the loss, held to expiry");
   });
 });
