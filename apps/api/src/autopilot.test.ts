@@ -1706,3 +1706,78 @@ describe("HC-TR-263 the Friday weekly strangle held for its first day only (ADR-
     expect((await t.db.select().from(strategies).where(eq(strategies.userId, id))).filter((x) => x.status === "paper")).toHaveLength(0);
   });
 });
+
+describe("HC-TR-265 the cautious daily strangles (ADR-136)", () => {
+  it("HC-TR-265 the plans carry the stop at double, the buy-back level and a target that trails, as each playbook sets them, and nothing else (the ETH one is not entered through the job here)", () => {
+    const proposal: PlaybookProposal = { day: "2027-08-09", spot: 83_200, expiry: "2027-08-10", legs: [], entryCost: -100, maxProfit: 100, maxLoss: -Infinity };
+    const btc = clockPlanFor(autopilotPlaybookById("evening-strangle-cautious")!, proposal, 0.001, null)!;
+    expect(btc).toMatchObject({ legStop: 2, legBuyBackAt: 5, legBuyBackShare: null, takeTrailPct: 30, ladder: null, lock: null, exitHourUtc: null, trailRestPct: null, stopUsd: null });
+    expect(btc.targetUsd).toBeCloseTo(25, 6);
+    const eth = clockPlanFor(autopilotPlaybookById("eth-evening-strangle-cautious")!, proposal, 0.01, null)!;
+    expect(eth).toMatchObject({ legStop: 2, legBuyBackAt: 0.25, legBuyBackShare: null, takeTrailPct: 20, ladder: null, lock: null, exitHourUtc: null, trailRestPct: null, stopUsd: null });
+    expect(eth.targetUsd).toBeCloseTo(50, 6);
+  });
+
+  it("HC-TR-265 entered by the job: the strikes nearest 1.5 % away, two stops at double, two buy-backs at 5 dollars and one trailing target at a quarter of the premium; the option that falls to 5 is bought back alone, what it banked starts the trail, and the trail then closes the other option well before its stop", async () => {
+    const me = await t.signUp("autopilot-cautious@hapiecoin.test");
+    const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
+    const PB = "evening-strangle-cautious";
+    await put({ enabled: true, strategies: [{ playbookId: PB, exit: "own" }] }, me.cookie);
+    const products: Instrument[] = [];
+    const quotes: Quote[] = [];
+    const AT = Date.UTC(2027, 7, 9, 16, 5, 0); // later than every snapshot the tests above stored
+    for (const e of ["2027-08-10", "2027-08-11"])
+      for (let i = -30; i <= 30; i++) {
+        const k = 83_200 + i * 200;
+        const code = e.slice(8, 10) + e.slice(5, 7) + e.slice(2, 4);
+        const tv = 600 * Math.exp(-Math.abs(k - 83_200) / 900);
+        for (const [kind, letter, intrinsic] of [["call", "C", Math.max(83_200 - k, 0)], ["put", "P", Math.max(k - 83_200, 0)]] as const) {
+          const symbol = `${letter}-BTC-${k}-${code}`;
+          products.push(inst(symbol, kind, k, e));
+          quotes.push({ instrumentId: `delta_india:${symbol}`, ts: AT - MIN, mark: (intrinsic + tv).toFixed(2), oi: "1", spot: "83200", markIv: 0.5 });
+        }
+      }
+    await snapshotOnce(t.deps, { venue: "delta_india", products: () => Promise.resolve(products), tickers: (u) => Promise.resolve(u === "BTC" ? quotes : []) }, () => AT - MIN);
+    await runAutopilot(deps(AT, { maxOpen: undefined }), ["delta_india"]);
+    const [trade] = await t.db.select().from(strategies).where(eq(strategies.userId, id));
+    expect(trade).toMatchObject({ autopilotPlaybookId: PB, status: "paper", tradingMode: "paper" });
+    const legsNow = () => t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade!.id)).orderBy(asc(strategyLegs.position));
+    const legs = await legsNow();
+    // 1.5 % of 83,200 is 1,248: 81,952 and 84,448, nearest listed 82,000 and 84,400
+    expect(legs.map((l) => `${l.side} ${l.kind} ${l.strike} x${l.lots}`)).toEqual(["sell put 82000 x100", "sell call 84400 x100"]);
+    const rulesNow = () => t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, trade!.id));
+    const rules = await rulesNow();
+    expect(rules.map((r) => `${r.kind} ${r.trigger} ${r.value} ${r.state}`).filter((x) => !x.startsWith("target")).sort()).toEqual(["leg_stop multiple 2 armed", "leg_stop multiple 2 armed", "leg_take price 5 armed", "leg_take price 5 armed"]);
+    const credit = (Number(legs[0]!.price) + Number(legs[1]!.price)) * 0.1;
+    const target = rules.find((r) => r.kind === "target")!;
+    expect(Number(target.value)).toBeCloseTo(credit / 4, 1);
+    expect(target).toMatchObject({ state: "armed", trailTrigger: "pct", trailValue: "30", peakPnl: null });
+    expect(rules).toHaveLength(5);
+    expect((await view(me.cookie)).runs.find((r) => r.playbookId === PB && r.kind === "entered")!.detail).toMatchObject({ legStop: 2, legBuyBackAt: "5", takeTrailPct: 30 });
+
+    // the call falls to 5 with the put unchanged: the call alone is bought back; the trade stays open on the put
+    const mine = new Set(rules.map((r) => r.id));
+    const [putLeg, callLeg] = legs;
+    const fired = (await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map([[putLeg!.symbol, Number(putLeg!.price)], [callLeg!.symbol, 5]]), spot: null }) }, () => AT + 10 * MIN)).fired.filter((r) => mine.has(r));
+    expect(fired).toHaveLength(1);
+    expect(rules.find((r) => r.id === fired[0])!.kind).toBe("leg_take");
+    expect((await legsNow()).map((l) => `${l.kind} ${l.status}`)).toEqual(["put open", "call squared_off"]);
+    expect((await t.db.select().from(strategies).where(eq(strategies.id, trade!.id)))[0]!.status).toBe("paper");
+    const targetNow = async () => (await rulesNow()).find((r) => r.kind === "target")!;
+    expect((await targetNow()).peakPnl).toBeNull(); // one fire a tick: the buy-back took it
+    // the next tick: what the buy-back banked is already over a quarter of the premium, so the trail starts and closes nothing
+    const tick = async (putMark: number, ms: number) => (await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map([[putLeg!.symbol, putMark], [callLeg!.symbol, 5]]), spot: null }) }, () => ms)).fired.filter((r) => mine.has(r));
+    const banked = (Number(callLeg!.price) - 5) * 0.1;
+    expect(banked).toBeGreaterThan(credit / 4);
+    expect(await tick(Number(putLeg!.price), AT + 11 * MIN)).toHaveLength(0);
+    expect(Number((await targetNow()).peakPnl)).toBeCloseTo(banked, 1);
+    // the put rises by half: far from its stop at double, but the whole profit is under seven tenths of its best, and the rest is closed
+    const up = 1.5 * Number(putLeg!.price);
+    expect(banked - (up - Number(putLeg!.price)) * 0.1).toBeLessThan(0.7 * banked);
+    expect(await tick(up, AT + 12 * MIN)).toEqual([target.id]);
+    expect((await legsNow()).map((l) => `${l.kind} ${l.status}`)).toEqual(["put squared_off", "call squared_off"]);
+    const [done] = await t.db.select().from(strategies).where(eq(strategies.id, trade!.id));
+    expect(done!.status).toBe("archived");
+    expect((await rulesNow()).filter((r) => r.kind === "leg_stop").map((r) => r.state)).not.toContain("fired");
+  });
+});
