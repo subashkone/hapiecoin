@@ -916,24 +916,29 @@ describe("HC-TR-265 the cautious daily strangles (ADR-136)", () => {
       expect(p.trials.count).toBe(162);
       expect(p.trials.note).toContain("rows with smaller losses existed and earned less");
       expect(p.trials.note).toContain("no cap as bought wings would give");
-      expect(p.evidence.source).toContain("results-stack-2026-11-24.txt");
+      expect(p.evidence.source).toContain("results-stack-slippage-2026-11-24.txt");
+      expect(p.evidence.source).toContain("results-stack-2026-11-24.txt"); // and the same rows filled at the mark
+      expect(p.trials.note).toContain("filled at the mark, as the lab's earlier tables and the other cards are, the same two rows read +5.30 and +2.59 a day");
     }
     // the cards say what it costs and that it still loses
     const btc = byId("evening-strangle-cautious");
     expect(btc.evidence.claim).toContain("sold 1.5 % away");
-    expect(btc.evidence.claim).toContain("+5.30 a day on 108 days, 81 % of days positive, worst day -21.6");
-    expect(btc.rationale).toContain("less than half of the 1 % strangle with the stop at triple (+12.60 a day, worst day -105.8, drawdown -185.0)");
+    expect(btc.evidence.claim).toContain("+4.12 a day on 108 days, 78 % of days positive, worst day -22.9, with fill costs");
+    expect(btc.rationale).toContain("about a third of the 1 % strangle with the stop at triple (+11.63 a day, worst day -108.3, drawdown -189.7)");
+    expect(btc.rationale).toContain("its drawdown was -42.2");
+    expect(btc.rationale).toContain("Filled at the mark, as the other cards' figures are, the same row reads better: +5.30 a day, 81 % of days, a drawdown of -21.6");
     expect(btc.rationale).toContain("It is not a strategy without losses: about one day in five was not positive");
     // and how its exits meet: the buy-back did nothing on BTC, and a stop ends the trail's chance
-    expect(btc.rationale).toContain("The buy-back made no measurable difference on BTC in the study (the same trade without it earned +5.35)");
+    expect(btc.rationale).toContain("The buy-back made no measurable difference on BTC in the study (the same trade without it earned +4.19)");
     expect(btc.rationale).toContain("once an option has been stopped the trail can no longer start");
     const eth = byId("eth-evening-strangle-cautious");
     expect(eth.evidence.claim).toContain("sold 2 % away");
-    expect(eth.evidence.claim).toContain("+2.59 a day on 108 days, 65 % of days positive, worst day -21.9");
-    expect(eth.rationale).toContain("about one day in three was not positive");
-    expect(eth.rationale).toContain("here the buy-back helped a little (+2.29 without it)");
+    expect(eth.evidence.claim).toContain("+2.28 a day on 108 days, 61 % of days positive, worst day -22.7, with fill costs");
+    expect(eth.rationale).toContain("about two days in five were not positive");
+    expect(eth.rationale).toContain("The fill cost is measured mostly on BTC orders and assumed for ETH");
+    expect(eth.rationale).toContain("here the buy-back helped a little (+1.97 without it)");
     expect(eth.summary).toContain("its quoted price has fallen to 0.25 dollars");
-    expect(CAUTIOUS_DAILY_PLAYBOOKS.map((p) => playbookBacktest(p.id))).toMatchObject([{ mean: 5.3, per: "day", positivePct: 81, worst: -21.6, samples: 108 }, { mean: 2.59, per: "day", positivePct: 65, worst: -21.9, samples: 108 }]);
+    expect(CAUTIOUS_DAILY_PLAYBOOKS.map((p) => playbookBacktest(p.id))).toMatchObject([{ mean: 4.12, per: "day", positivePct: 78, worst: -22.9, samples: 108 }, { mean: 2.28, per: "day", positivePct: 61, worst: -22.7, samples: 108 }]);
     // the only playbooks that carry a stop, a buy-back and a trail on the whole trade together
     expect(AUTOPILOT_PLAYBOOKS.filter((p) => p.clock?.legBuyBackAt !== undefined && p.clock.takeTrailPct !== undefined).map((p) => p.id)).toEqual(["evening-strangle-cautious", "eth-evening-strangle-cautious"]);
   });
