@@ -1,0 +1,72 @@
+## BTC daily: 108 days (2026-08-08 .. 2026-11-23), sold 1.5 % away, entered 20 h before settlement; stop 2x, buy-back mark 5, trail from 25 % giving back 30 %
+
+-- no wings: 108 days; mean premium collected 24.8; the largest loss has no cap
+                                                               mean  win   total   worst  worst 3 drawdown bad days        halves
+   hold to settlement, no stop                                +5.58  86%    +603  -311.6   -864.2   -462.4       13     +212/+391
+   stack: stop 2x, buy-back, trail                            +5.30  81%    +572   -21.6    -56.5    -21.6       13     +290/+283
+   trail only                                                 +4.00  94%    +432  -311.6   -369.7   -311.6        5      +397/+35
+
+-- wings 1 % of the spot beyond the sold strikes (on average 2.5 % from the spot): 107 days (1 without a marked wing, 0 without a net credit); mean premium collected 24.9, paid 12.3, net 12.6; largest possible loss: mean 68.0, largest 96.5
+                                                               mean  win   total   worst  worst 3 drawdown bad days        halves
+   hold to settlement, no stop                                +2.53  85%    +271   -75.9   -222.8   -156.3       16      +246/+25  carried 0.0 % of wing bars
+   stack: stop 2x, buy-back, trail; wing sold with it         +0.01  63%      +2   -15.9    -40.8    -51.0       14         -8/+9  carried 0.0 % of wing bars
+   stack: stop 2x, buy-back, trail; wing kept                 +0.05  67%      +6   -52.1   -121.1   -108.0       13     +105/-100  carried 0.0 % of wing bars
+   trail only                                                 +0.37  75%     +40   -73.1    -84.9    -74.5        3       +61/-21  carried 0.0 % of wing bars
+
+-- wings 1.5 % of the spot beyond the sold strikes (on average 2.9 % from the spot): 107 days (1 without a marked wing, 0 without a net credit); mean premium collected 24.9, paid 9.2, net 15.7; largest possible loss: mean 104.2, largest 149.7
+                                                               mean  win   total   worst  worst 3 drawdown bad days        halves
+   hold to settlement, no stop                                +3.36  85%    +360  -131.7   -355.5   -228.4       16      +313/+47  carried 0.0 % of wing bars
+   stack: stop 2x, buy-back, trail; wing sold with it         +0.71  74%     +76   -19.5    -49.1    -36.4       14       +53/+23  carried 0.0 % of wing bars
+   stack: stop 2x, buy-back, trail; wing kept                 +1.58  80%    +169   -41.6    -99.0    -51.4       14      +138/+31  carried 0.0 % of wing bars
+   trail only                                                 +0.69  92%     +74  -131.7   -186.4   -154.4        2      +152/-78  carried 0.0 % of wing bars
+
+-- wings 2 % of the spot beyond the sold strikes (on average 3.3 % from the spot): 107 days (1 without a marked wing, 0 without a net credit); mean premium collected 24.9, paid 7.1, net 17.8; largest possible loss: mean 140.0, largest 186.5
+                                                               mean  win   total   worst  worst 3 drawdown bad days        halves
+   hold to settlement, no stop                                +4.09  85%    +438  -171.1   -460.0   -283.0       16     +326/+112  carried 0.0 % of wing bars
+   stack: stop 2x, buy-back, trail; wing sold with it         +1.51  76%    +162   -16.2    -46.8    -31.8       14       +86/+76  carried 0.0 % of wing bars
+   stack: stop 2x, buy-back, trail; wing kept                 +2.14  79%    +229   -37.7    -86.4    -41.7       14      +152/+76  carried 0.0 % of wing bars
+   trail only                                                 +1.34  92%    +143  -171.1   -222.6   -188.1        2      +194/-51  carried 0.0 % of wing bars
+
+-- wings 3 % of the spot beyond the sold strikes (on average 3.7 % from the spot): 107 days (1 without a marked wing, 0 without a net credit); mean premium collected 24.9, paid 5.7, net 19.2; largest possible loss: mean 187.1, largest 251.7
+                                                               mean  win   total   worst  worst 3 drawdown bad days        halves
+   hold to settlement, no stop                                +4.47  85%    +478  -250.2   -576.0   -374.8       14     +351/+127  carried 0.0 % of wing bars
+   stack: stop 2x, buy-back, trail; wing sold with it         +1.97  73%    +211   -15.3    -41.2    -27.0       16      +118/+93  carried 0.0 % of wing bars
+   stack: stop 2x, buy-back, trail; wing kept                 +2.33  77%    +250   -33.8    -76.9    -33.8       15      +163/+87  carried 0.0 % of wing bars
+   trail only                                                 +1.74  92%    +186  -250.2   -303.5   -250.2        2      +228/-42  carried 0.0 % of wing bars
+
+## ETH daily: 108 days (2026-08-08 .. 2026-11-23), sold 2 % away, entered 20 h before settlement; stop 2x, buy-back mark 0.25, trail from 50 % giving back 20 %
+
+-- no wings: 108 days; mean premium collected 11.1; the largest loss has no cap
+                                                               mean  win   total   worst  worst 3 drawdown bad days        halves
+   hold to settlement, no stop                                +4.88  92%    +527  -116.0   -269.5   -116.0        9     +270/+257
+   stack: stop 2x, buy-back, trail                            +2.59  65%    +280   -21.9    -42.7    -28.0       22     +132/+148
+   trail only                                                 +3.29  94%    +355   -77.3   -207.3    -83.9        4     +230/+125
+
+-- wings 1 % of the spot beyond the sold strikes (on average 3.0 % from the spot): 105 days (2 without a marked wing, 1 without a net credit); mean premium collected 10.9, paid 5.8, net 5.1; largest possible loss: mean 21.5, largest 40.1
+                                                               mean  win   total   worst  worst 3 drawdown bad days        halves
+   hold to settlement, no stop                                +2.43  85%    +255   -24.6    -60.9    -24.6       14     +153/+102  carried 0.0 % of wing bars
+   stack: stop 2x, buy-back, trail; wing sold with it         +0.46  59%     +48   -11.2    -26.5    -22.9       25       +32/+16  carried 0.0 % of wing bars
+   stack: stop 2x, buy-back, trail; wing kept                 +0.13  70%     +14   -34.3    -94.5   -111.2       27       +45/-32  carried 0.0 % of wing bars
+   trail only                                                 +1.30  91%    +137   -17.1    -48.3    -17.1        6       +85/+52  carried 0.0 % of wing bars
+
+-- wings 1.5 % of the spot beyond the sold strikes (on average 3.5 % from the spot): 105 days (2 without a marked wing, 1 without a net credit); mean premium collected 10.9, paid 4.0, net 6.9; largest possible loss: mean 31.4, largest 48.7
+                                                               mean  win   total   worst  worst 3 drawdown bad days        halves
+   hold to settlement, no stop                                +3.37  88%    +354   -38.7   -106.9    -38.7       12     +225/+129  carried 0.0 % of wing bars
+   stack: stop 2x, buy-back, trail; wing sold with it         +1.32  65%    +139   -15.2    -30.0    -18.9       24       +61/+78  carried 0.0 % of wing bars
+   stack: stop 2x, buy-back, trail; wing kept                 +1.35  73%    +142   -29.3    -66.7    -50.0       25       +73/+69  carried 0.0 % of wing bars
+   trail only                                                 +2.05  91%    +216   -34.1   -101.2    -34.1        7      +121/+94  carried 0.0 % of wing bars
+
+-- wings 2 % of the spot beyond the sold strikes (on average 3.9 % from the spot): 105 days (2 without a marked wing, 1 without a net credit); mean premium collected 10.9, paid 3.2, net 7.7; largest possible loss: mean 41.5, largest 58.2
+                                                               mean  win   total   worst  worst 3 drawdown bad days        halves
+   hold to settlement, no stop                                +3.86  90%    +406   -53.3   -144.9    -53.3        9     +245/+161  carried 0.0 % of wing bars
+   stack: stop 2x, buy-back, trail; wing sold with it         +1.51  68%    +159   -16.3    -32.0    -19.5       25       +72/+87  carried 0.0 % of wing bars
+   stack: stop 2x, buy-back, trail; wing kept                 +1.60  72%    +168   -28.3    -63.3    -40.5       27       +79/+89  carried 0.0 % of wing bars
+   trail only                                                 +2.80  95%    +294   -33.7    -69.9    -33.7        4     +175/+119  carried 0.0 % of wing bars
+
+-- wings 3 % of the spot beyond the sold strikes (on average 4.5 % from the spot): 105 days (2 without a marked wing, 1 without a net credit); mean premium collected 10.9, paid 2.3, net 8.6; largest possible loss: mean 58.0, largest 87.8
+                                                               mean  win   total   worst  worst 3 drawdown bad days        halves
+   hold to settlement, no stop                                +3.85  90%    +404   -72.7   -197.1    -72.7        8     +275/+130  carried 0.0 % of wing bars
+   stack: stop 2x, buy-back, trail; wing sold with it         +2.08  71%    +219   -17.4    -31.1    -21.1       24     +115/+104  carried 0.0 % of wing bars
+   stack: stop 2x, buy-back, trail; wing kept                 +2.10  73%    +220   -26.4    -56.6    -35.0       25     +106/+114  carried 0.0 % of wing bars
+   trail only                                                 +2.29  91%    +240   -72.7   -140.8    -92.3        6      +182/+58  carried 0.0 % of wing bars
+
