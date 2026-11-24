@@ -13,7 +13,9 @@ import { PortfolioBar } from "@/components/chrome/PortfolioBar";
 import { Workspace } from "@/components/workspace/Workspace";
 import { fmtExpiry, fmtStrike } from "@/lib/format";
 import { useUiStore } from "@/lib/store";
-import { AutopilotPage, istClock, moveWords } from "./AutopilotPage";
+import { AUTOPILOT_PLAYBOOKS as ALL, playbookBacktest, playbookCadence } from "@hapiecoin/pricing";
+import { AutopilotPage, exitTags, istClock, moveWords } from "./AutopilotPage";
+import { dayOf } from "./AutopilotResultsPanel";
 
 const EMAIL = "autopilot@example.com";
 let mock: MockFetch;
@@ -688,5 +690,241 @@ describe("HC-TR-266 the Autopilot screen: the ETH strangle with wings and a trai
     expect(how).toContain("+2.30 a day on 105 days, 90 % of days positive, worst day -34.0, with fill costs");
     // a winged trade with no take keeps its own words
     expect(card("eth-evening-strangle-wings-near").textContent).toContain("Wings cap the loss, held to expiry");
+  });
+});
+
+describe("HC-TR-267 the Autopilot screen: four views, each the full width", () => {
+  const tabs = () => screen.getAllByTestId("autopilot-tab");
+  const tab = (v: string) => tabs().find((b) => b.dataset["value"] === v)!;
+  const panelOf = (v: string) => screen.getAllByTestId("autopilot-panel").find((x) => x.dataset["value"] === v)!;
+  const cards = () => screen.queryAllByTestId("autopilot-card").map((x) => x.dataset["playbook"]);
+  const card = (id: string) => screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === id)!;
+
+  it("HC-TR-267 the screen opens on the open trades, worst first, and counts what needs attention; the other views are one press away, each with its count", async () => {
+    // against a 9 dollar stop: a1 is 7 dollars down (close to its stop), a2 is 1 down (losing), a3 is 2 up; e1 is on ETH, whose prices never arrive here
+    acc().strategies.push(auto("a3", "pin-butterfly", { legs: [leg("a3", -200)] }), auto("a2", "pin-butterfly", { legs: [leg("a2", 100)] }), auto("a1", "pin-butterfly", { legs: [leg("a1", 700)] }), auto("e1", "trend-puts", { asset: "ETH", rules: [rule({})] }));
+    acc().autopilot = { settings: { enabled: true, strategies: [{ playbookId: "pin-butterfly", exit: "trail" }] }, runs: [run({ id: "1" })] };
+    renderWithProviders(<AutopilotPage />);
+    const u = userEvent.setup();
+    await waitFor(() => expect(screen.getAllByTestId("autopilot-trade")).toHaveLength(4));
+    expect(tabs().map((b) => b.dataset["value"])).toEqual(["open", "closed", "strategies", "activity"]);
+    expect(tabs().map((b) => b.getAttribute("aria-selected"))).toEqual(["true", "false", "false", "false"]);
+    expect(screen.getByRole("tablist", { name: "Autopilot views" })).toBeTruthy();
+    expect(["open", "closed", "strategies", "activity"].map((v) => panelOf(v).hidden)).toEqual([false, true, true, true]);
+    expect(panelOf("open").getAttribute("aria-labelledby")).toBe(tab("open").id);
+    await waitFor(() => expect(tabs().map((b) => within(b).getByTestId("autopilot-tab-count").textContent)).toEqual(["4", "0", String(TRADABLE.length), "1"]));
+
+    serveMarket();
+    await waitFor(() => expect(screen.getAllByTestId("autopilot-trade").map((x) => x.dataset["health"])).toEqual(["unknown", "danger", "watch", "good"]));
+    expect(screen.getAllByTestId("autopilot-trade").map((x) => x.dataset["id"])).toEqual(["e1", "a1", "a2", "a3"]);
+    expect(screen.getByTestId("autopilot-attention").textContent).toBe("■ 2 need attention"); // the one with no price and the one close to its stop
+    expect(screen.getByTestId("autopilot-open-pnl").textContent).toBe("−$6.00");
+    expect(screen.getByTestId("autopilot-summary").textContent).toContain("3 of 4 trades have a live price");
+    // the levels in words are one press away, and the row itself carries the short ones
+    const a1 = screen.getAllByTestId("autopilot-trade")[1]!;
+    expect(a1.textContent).toContain("78%");
+    expect(within(a1).getByTestId("autopilot-trade-used").textContent).toBe("Loss used78% of the loss the stop allows"); // also where the narrow screen hides the column
+    expect(a1.dataset["near"]).toBe("false");
+    expect(within(a1).getByRole("rowheader").textContent).toContain("Pin butterfly · BTC");
+    expect(within(a1).getByTestId("autopilot-trade-detail").hidden).toBe(true);
+    await u.click(within(a1).getByTestId("autopilot-trade-more"));
+    expect(within(a1).getByTestId("autopilot-trade-detail").hidden).toBe(false);
+    expect(within(a1).getByTestId("autopilot-trade-more").getAttribute("aria-expanded")).toBe("true");
+    await u.click(within(a1).getByTestId("autopilot-trade-more"));
+    expect(within(a1).getByTestId("autopilot-trade-detail").hidden).toBe(true);
+
+    await u.click(tab("strategies"));
+    expect(["open", "closed", "strategies", "activity"].map((v) => panelOf(v).hidden)).toEqual([true, true, false, true]);
+    expect(tab("strategies").getAttribute("aria-selected")).toBe("true");
+    await u.click(tab("activity"));
+    expect(panelOf("activity").hidden).toBe(false);
+    await u.click(tab("closed"));
+    expect(panelOf("closed").hidden).toBe(false);
+    expect(within(panelOf("closed")).getByTestId("autopilot-results")).toBeTruthy();
+
+    // the arrow keys move along the views and wrap; only the view shown is in the tab order
+    expect(tabs().map((b) => b.tabIndex)).toEqual([-1, 0, -1, -1]);
+    tab("closed").focus();
+    await u.keyboard("{ArrowRight}");
+    expect(tab("strategies").getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tab("strategies"));
+    await u.keyboard("{ArrowLeft}{ArrowLeft}{ArrowLeft}");
+    expect(tab("activity").getAttribute("aria-selected")).toBe("true");
+    expect(panelOf("activity").hidden).toBe(false);
+    await u.keyboard("{Enter}a");
+    expect(tab("activity").getAttribute("aria-selected")).toBe("true"); // any other key leaves it
+  });
+
+  it("HC-TR-267 a sold option close to its own stop counts as needing attention; within one reading the largest loss comes first; the order holds while the pointer is on the table", async () => {
+    // sold calls, 10 lots, each with a stop at twice its price: n1 was sold at the mark over 1.8 (now 1.8 times its price,
+    // past three quarters of the way to the stop), n3 at the mark over 1.5, n2 at the mark over 1.2; none has a whole-trade stop
+    const sold = (id: string, over: number) => ({ ...CALL, id: `leg_${id}`, side: "sell" as const, price: String(MARK / over), entryPrice: String(MARK / over) });
+    const legStop = (id: string) => rule({ id: `r_${id}`, kind: "leg_stop", trigger: "multiple", value: "2", thresholdUsd: "500", legId: `leg_${id}`, scope: "leg" });
+    acc().strategies.push(...[["n2", 1.2], ["n3", 1.5], ["n1", 1.8]].map(([id, over]) => auto(id as string, "evening-strangle-stop-2x", { legs: [sold(id as string, over as number)], rules: [legStop(id as string)] })), auto("g1", "pin-butterfly", { legs: [leg("g1", -100)] }));
+    acc().autopilot = { settings: { enabled: true, strategies: [] }, runs: [] };
+    renderWithProviders(<AutopilotPage />);
+    const u = userEvent.setup();
+    await waitFor(() => expect(screen.getAllByTestId("autopilot-trade")).toHaveLength(4));
+    serveMarket();
+    const ids = () => screen.getAllByTestId("autopilot-trade").map((x) => x.dataset["id"]);
+    await waitFor(() => expect(ids()).toEqual(["n1", "n3", "n2", "g1"]));
+    const row = (id: string) => screen.getAllByTestId("autopilot-trade").find((x) => x.dataset["id"] === id)!;
+    expect(["n1", "n3", "n2", "g1"].map((id) => row(id).dataset["health"])).toEqual(["watch", "watch", "watch", "good"]);
+    expect(["n1", "n3", "n2", "g1"].map((id) => row(id).dataset["near"])).toEqual(["true", "false", "false", "false"]);
+    expect(within(row("n1")).getByTestId("autopilot-trade-near").textContent).toBe("An option is close to its stop");
+    expect(within(row("n3")).queryByTestId("autopilot-trade-near")).toBeNull();
+    // a narrower screen has no Health column: the reading is under the name, in words
+    expect(within(row("n1")).getByTestId("autopilot-trade-narrow").textContent).toBe("▲ Losing · an option is close to its stop");
+    expect(within(row("g1")).getByTestId("autopilot-trade-narrow").textContent).toBe("● On track");
+    expect(screen.getByTestId("autopilot-attention").textContent).toBe("■ 1 needs attention");
+    expect(screen.getByTestId("autopilot-running-order").textContent).toContain("within each, the largest loss first");
+    expect(row("n3").textContent).toContain("no stop level"); // no whole-trade stop: no share of it used
+    expect(within(row("n3")).queryByTestId("autopilot-trade-used")).toBeNull();
+
+    const table = screen.getByTestId("autopilot-running-table");
+    expect(table.dataset["held"]).toBe("false");
+    await u.hover(table);
+    expect(table.dataset["held"]).toBe("true");
+    expect(ids()).toEqual(["n1", "n3", "n2", "g1"]);
+    await u.unhover(table);
+    expect(table.dataset["held"]).toBe("false");
+    // a trade that leaves while the order is held is gone, and the rest keep their places
+    await u.hover(table);
+    await u.click(within(row("n3")).getByTestId("autopilot-trade-exit"));
+    await u.click(within(await screen.findByTestId("stop-paper")).getByTestId("stop-go"));
+    await waitFor(() => expect(ids()).toEqual(["n1", "n2", "g1"]));
+  });
+
+  it("HC-TR-267 sorted by the paper result, the strategy that earned most comes first and one with nothing closed goes last; a selection counts its own closed trades on the tab", async () => {
+    const tally = { open: 0, closed: 2, wins: 1, grossUsd: "0.00", feesUsd: "0.00", bestNetUsd: null, worstNetUsd: null, avgHoldMinutes: null, reasons: {} };
+    const rows = [
+      { ...tally, playbookId: "evening-strangle-stop-3x", asset: "BTC" as const, exit: "own" as const, netUsd: "-4.00" },
+      { ...tally, playbookId: "evening-strangle-take-half", asset: "BTC" as const, exit: "own" as const, netUsd: "9.00", closed: 3 },
+      { ...tally, playbookId: "evening-strangle-stop-2x", asset: "BTC" as const, exit: "own" as const, netUsd: "0.00", closed: 0, wins: 0, open: 1 },
+    ];
+    acc().autopilotResults = { since: AT, total: { open: 1, closed: 5, wins: 2, grossUsd: "5.00", feesUsd: "0.00", netUsd: "5.00" }, rows, byDte: [], trades: [] };
+    renderWithProviders(<AutopilotPage />);
+    const u = userEvent.setup();
+    await waitFor(() => expect(screen.getByTestId("autopilot-closed-net").textContent).toBe("+$5.00"));
+    await u.selectOptions(screen.getByTestId("autopilot-sort"), "paper");
+    const group = screen.getAllByTestId("autopilot-group").find((g) => g.dataset["group"] === "Evening strangles, daily expiry")!;
+    const drawn = within(group).getAllByTestId("autopilot-card").map((x) => x.dataset["playbook"]);
+    expect(drawn.slice(0, 2)).toEqual(["evening-strangle-take-half", "evening-strangle-stop-3x"]);
+    expect(drawn.indexOf("evening-strangle-stop-2x")).toBeGreaterThan(1); // open, nothing closed: no result to sort by
+    const closedCount = () => within(screen.getAllByTestId("autopilot-tab")[1]!).getByTestId("autopilot-tab-count").textContent;
+    expect(closedCount()).toBe("5");
+    await u.type(screen.getByTestId("autopilot-search"), "take half");
+    expect(closedCount()).toBe("3"); // every closed trade of the selection, listed or not
+  });
+
+  it("HC-TR-267 one trade that needs attention reads in the singular, and none says so", async () => {
+    acc().strategies.push(auto("a3", "pin-butterfly", { legs: [leg("a3", -200)] }));
+    acc().autopilot = { settings: { enabled: true, strategies: [] }, runs: [] };
+    renderWithProviders(<AutopilotPage />);
+    await waitFor(() => expect(screen.getByTestId("autopilot-attention").textContent).toBe("■ 1 needs attention")); // no price yet
+    expect(screen.getByTestId("autopilot-open-pnl").textContent).toBe("—");
+    serveMarket();
+    await waitFor(() => expect(screen.getByTestId("autopilot-attention").textContent).toBe("● none needs attention"));
+    expect(screen.getByTestId("autopilot-open-pnl").textContent).toBe("+$2.00");
+    expect(screen.getByTestId("autopilot-open-pnl").className).toContain("text-profit");
+  });
+
+  it("HC-TR-267 a strategy's exits read as short tags with the sentence kept in its details; the strategies can be searched, narrowed to those on, off or in a trade, and sorted", async () => {
+    acc().strategies.push(auto("a1", "pin-butterfly", { legs: [leg("a1", 0)] }));
+    acc().autopilot = { settings: { enabled: true, strategies: [{ playbookId: "pin-butterfly", exit: "trail" }, { playbookId: "eth-evening-strangle-wings-trail", exit: "own" }] }, runs: [] };
+    renderWithProviders(<AutopilotPage />);
+    const u = userEvent.setup();
+    await waitFor(() => expect(cards()).toHaveLength(TRADABLE.length));
+    const tagsOf = (id: string) => [...within(card(id)).getByTestId("autopilot-card-tags").querySelectorAll("li")].map((x) => x.textContent);
+    expect(tagsOf("eth-evening-strangle-wings-trail")).toEqual(["No stop", "Wings", "Trail from 50 %"]);
+    expect(tagsOf("pin-butterfly")).toEqual(["Playbook stop", "Time exit"]);
+    for (const p of TRADABLE) expect(tagsOf(p.id)).toEqual(exitTags(p));
+    // every strategy says something about its stop first, and no two tags of one strategy are the same
+    for (const p of TRADABLE) expect(new Set(exitTags(p)).size).toBe(exitTags(p).length);
+    expect(TRADABLE.filter((p) => p.clock).every((p) => /^(Stop \d|No stop)/.test(exitTags(p)[0]!))).toBe(true);
+    expect(within(card("eth-evening-strangle-wings-trail")).getByTestId("autopilot-card-exit-words").textContent).toBe("How it gets out: Wings cap the loss, no stop, trail from 50 % of the net premium");
+
+    await u.type(screen.getByTestId("autopilot-search"), "  Wings and a TRAIL ");
+    expect(cards()).toEqual(["eth-evening-strangle-wings-trail"]);
+    expect(screen.getByTestId("autopilot-filters").dataset["filtered"]).toBe("true");
+    expect(within(screen.getAllByTestId("autopilot-tab").find((b) => b.dataset["value"] === "strategies")!).getByTestId("autopilot-tab-count").textContent).toBe("1");
+    expect(screen.queryAllByTestId("autopilot-trade")).toHaveLength(0); // the search narrows the open trades too
+    expect(screen.getAllByTestId("autopilot-group-none")[0]!.textContent).toBe("No trend strategy in this selection.");
+    await u.clear(screen.getByTestId("autopilot-search"));
+    expect(cards()).toHaveLength(TRADABLE.length);
+
+    const state = (v: string) => u.click(screen.getAllByTestId("autopilot-filter-state").find((b) => b.dataset["value"] === v)!);
+    expect(screen.getAllByTestId("autopilot-filter-state").map((b) => b.textContent)).toEqual(["All", "Switched on", "In a trade", "Switched off"]);
+    await state("on");
+    expect(cards()).toEqual(["pin-butterfly", "eth-evening-strangle-wings-trail"]);
+    await state("in");
+    expect(cards()).toEqual(["pin-butterfly"]);
+    await state("off");
+    expect(cards()).toHaveLength(TRADABLE.length - 2);
+    expect(cards()).not.toContain("pin-butterfly");
+    await state("all");
+
+    // by the backtest: the best average first within each family; one with no figure of its own goes last
+    await u.selectOptions(screen.getByTestId("autopilot-sort"), "backtest");
+    const daily = ALL.filter((p) => playbookCadence(p) === "daily");
+    const best = Math.max(...daily.map((p) => playbookBacktest(p.id)?.mean ?? -Infinity));
+    const group = screen.getAllByTestId("autopilot-group").find((g) => g.dataset["group"] === "Evening strangles, daily expiry")!;
+    const drawn = within(group).getAllByTestId("autopilot-card").map((x) => playbookBacktest(x.dataset["playbook"]!)?.mean ?? -Infinity);
+    expect(drawn[0]).toBe(best);
+    expect(drawn).toEqual([...drawn].sort((a, b) => b - a));
+    expect(within(group).getByTestId("autopilot-group-count").textContent).toBe(`${daily.length} shown · 1 on`);
+    await u.selectOptions(screen.getByTestId("autopilot-sort"), "paper");
+    expect(cards()).toHaveLength(TRADABLE.length); // nothing has closed: the order of the catalogue stays
+    expect(cards().slice(0, 2)).toEqual(TRADABLE.slice(0, 2).map((p) => p.id));
+    await u.selectOptions(screen.getByTestId("autopilot-sort"), "list");
+    expect(cards()).toEqual(TRADABLE.map((p) => p.id));
+  });
+
+  it("HC-TR-267 the log can be narrowed to one kind of line and to one day, is drawn a page at a time, and says how many lines it reads", async () => {
+    const EARLY = "2026-09-05T10:00:00Z";
+    const lines = [run({ id: "3", kind: "skipped", reason: "Outside its entry hours", strategyId: null }), run({ id: "2" }), run({ id: "1", kind: "noted", reason: "A fresh one would collect more", at: EARLY })];
+    acc().autopilot = { settings: { enabled: true, strategies: [] }, runs: lines };
+    const first = renderWithProviders(<AutopilotPage />);
+    const u = userEvent.setup();
+    await waitFor(() => expect(screen.getAllByTestId("autopilot-run")).toHaveLength(3));
+    const kinds = () => screen.getAllByTestId("autopilot-log-kind");
+    const kind = (v: string) => u.click(kinds().find((b) => b.dataset["value"] === v)!);
+    expect(kinds().map((b) => b.textContent)).toEqual(["All · 3", "Entered · 1", "Skipped · 1", "Noted · 1"]);
+    expect(screen.getAllByTestId("autopilot-run").map((r) => r.dataset["kind"])).toEqual(["skipped", "entered", "noted"]);
+    expect(screen.getAllByTestId("autopilot-run")[0]!.textContent).toContain(fmtDateTime(AT)); // every line with its time
+    expect(screen.getByTestId("autopilot-log-note").textContent).toBe("This screen reads Autopilot's newest 3 log lines; older ones are not shown here.");
+    await kind("skipped");
+    expect(screen.getAllByTestId("autopilot-run").map((r) => r.dataset["kind"])).toEqual(["skipped"]);
+    const day = screen.getByTestId<HTMLSelectElement>("autopilot-log-day");
+    expect([...day.options].map((o) => o.textContent)).toEqual(["All days · 3 lines", `${dayOf(AT)} · 2 lines`, `${dayOf(EARLY)} · 1 line`]);
+    await u.selectOptions(day, dayOf(EARLY));
+    expect(screen.queryAllByTestId("autopilot-run")).toHaveLength(0);
+    expect(screen.getByTestId("autopilot-log-none").textContent).toBe("No log line in this selection.");
+    expect(kinds().map((b) => b.textContent)).toEqual(["All · 1", "Entered · 0", "Skipped · 0", "Noted · 1"]); // the counts are of the day picked
+    await kind("all");
+    expect(screen.getAllByTestId("autopilot-run").map((r) => r.dataset["kind"])).toEqual(["noted"]);
+    first.unmount();
+
+    acc().autopilot = { settings: { enabled: true, strategies: [] }, runs: Array.from({ length: 130 }, (_, i) => run({ id: String(i + 1) })) };
+    renderWithProviders(<AutopilotPage />);
+    await waitFor(() => expect(screen.getAllByTestId("autopilot-run")).toHaveLength(100));
+    expect(screen.getByTestId("autopilot-log-more").textContent).toBe("Show 30 more of 130");
+    await u.click(screen.getByTestId("autopilot-log-more"));
+    expect(screen.getAllByTestId("autopilot-run")).toHaveLength(130);
+    expect(screen.queryByTestId("autopilot-log-more")).toBeNull();
+  });
+
+  it("HC-TR-267 the summary says what every closed trade came to after fees, and says so while that is not read", async () => {
+    const results = { since: AT, total: { open: 0, closed: 2, wins: 1, grossUsd: "-3.00", feesUsd: "1.00", netUsd: "-4.00" }, rows: [], byDte: [], trades: [] };
+    acc().autopilotResults = results;
+    const first = renderWithProviders(<AutopilotPage />);
+    await waitFor(() => expect(screen.getByTestId("autopilot-closed-net").textContent).toBe("−$4.00"));
+    expect(screen.getByTestId("autopilot-closed-net").className).toContain("text-loss");
+    expect(screen.getByTestId("autopilot-summary").textContent).toContain("2 closed · 1 won, after estimated fees");
+    expect(within(screen.getAllByTestId("autopilot-tab")[1]!).getByTestId("autopilot-tab-count").textContent).toBe("2");
+    first.unmount();
+    acc().autopilotResults = { ...results, total: { ...results.total, closed: 0, wins: 0, netUsd: "0.00" } };
+    renderWithProviders(<AutopilotPage />);
+    await waitFor(() => expect(screen.getByTestId("autopilot-closed-net").textContent).toBe("—"));
   });
 });

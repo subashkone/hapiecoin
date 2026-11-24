@@ -1,12 +1,13 @@
-// Autopilot results on its screen (ADR-111; HC-TR-224), against the in-memory mock API.
+// Autopilot results on its screen (ADR-111, ADR-139; HC-TR-224, HC-TR-267), against the in-memory mock API.
 import type { AutopilotResults } from "@hapiecoin/schema";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
+import { fmtDateTime } from "@/lib/format";
 import { USD } from "@/lib/money";
 import { AutopilotPage } from "./AutopilotPage";
-import { AutopilotResultsPanel, exitTotals, totalOf } from "./AutopilotResultsPanel";
+import { AutopilotResultsPanel, TRADES_PAGE, byDay, dayOf, exitTotals, totalOf, won } from "./AutopilotResultsPanel";
 
 const EMAIL = "autopilot-results@example.com";
 let mock: MockFetch;
@@ -101,9 +102,10 @@ describe("HC-TR-224 Autopilot results", () => {
 
     const trades = screen.getAllByTestId("results-trade");
     expect(trades.map((x) => x.dataset["id"])).toEqual(["res_4", "res_1", "res_5"]);
-    expect(cells(trades[0]!).slice(1)).toEqual(["Trend with puts · ETH", "1,600 / 1,500 · 11 Dec · 20d out", "Target", "closed", "+$0.30", "$0.50", "−$0.20"]);
-    expect(cells(trades[1]!).slice(1)).toEqual(["Pin butterfly · BTC", "57,600 / 58,000 / 58,400 · 22 Nov · 1d out", "Trail", "target hit", "+$5.00", "$0.40", "+$4.60"]);
-    expect(cells(trades[2]!).slice(1)).toEqual(["gone-playbook · BTC", "—", "Trail", "squared off", "+$1.00", "$0.00", "+$1.00"]);
+    // HC-TR-267: the time it closed (its day is the group's heading), then the trade, with when it was opened
+    expect(cells(trades[0]!)).toEqual([fmtDateTime(RESULTS.trades[0]!.closedAt).split(", ")[1], "Trend with puts · ETH", "1,600 / 1,500 · 11 Dec · 20d out", fmtDateTime(RESULTS.trades[0]!.openedAt), "Target", "closed", "+$0.30", "$0.50", "−$0.20"]);
+    expect(cells(trades[1]!).slice(1)).toEqual(["Pin butterfly · BTC", "57,600 / 58,000 / 58,400 · 22 Nov · 1d out", fmtDateTime(RESULTS.trades[1]!.openedAt), "Trail", "target hit", "+$5.00", "$0.40", "+$4.60"]);
+    expect(cells(trades[2]!).slice(1)).toEqual(["gone-playbook · BTC", "—", fmtDateTime(RESULTS.trades[2]!.openedAt), "Trail", "squared off", "+$1.00", "$0.00", "+$1.00"]);
     expect(screen.getByTestId("results-since").textContent).toContain("Counted since");
   });
 
@@ -122,12 +124,89 @@ describe("HC-TR-224 Autopilot results", () => {
     await waitFor(() => expect(screen.getByText("No trade in this selection yet")).toBeTruthy());
   });
 
-  it("HC-TR-224 long holds read in days and a long list of closed trades is cut to the newest", async () => {
-    const many = Array.from({ length: 30 }, (_, i) => ({ ...RESULTS.trades[1]!, strategyId: `m_${i}` }));
-    acc().autopilotResults = { ...RESULTS, rows: [{ ...RESULTS.rows[0]!, avgHoldMinutes: 4320 }], trades: many };
+  it("HC-TR-224 HC-TR-267 long holds read in days; a long list of closed trades is drawn a page at a time and every one can be reached; what the server did not send is said", async () => {
+    const many = Array.from({ length: 130 }, (_, i) => ({ ...RESULTS.trades[1]!, strategyId: `m_${i}` }));
+    acc().autopilotResults = { ...RESULTS, total: { ...RESULTS.total, closed: 140 }, rows: [{ ...RESULTS.rows[0]!, avgHoldMinutes: 4320 }], trades: many };
     renderWithProviders(<AutopilotResultsPanel money={USD} />);
-    await waitFor(() => expect(screen.getAllByTestId("results-trade")).toHaveLength(25));
-    expect(screen.getByTestId("results-trades").textContent).toContain("(the newest 25)");
+    await waitFor(() => expect(screen.getAllByTestId("results-trade")).toHaveLength(TRADES_PAGE));
+    expect(screen.getByTestId("results-trades").textContent).toContain("(the newest 130 of 140)");
+    expect(screen.getByTestId("results-day-note").textContent).toContain("10 older closed trades are counted in the totals and not listed.");
+    expect(screen.getByTestId("results-more").textContent).toBe("Show 30 more of 130");
+    await userEvent.setup().click(screen.getByTestId("results-more"));
+    expect(screen.getAllByTestId("results-trade")).toHaveLength(130);
+    expect(screen.queryByTestId("results-more")).toBeNull();
     expect(screen.getByTestId("results-row").textContent).toContain("3.0 d");
+    // older trades were left out, so the oldest day listed may be a part of that day: its heading says so
+    expect(screen.getAllByTestId("results-day").at(-1)!.textContent).toContain("only the part of this day that is listed");
+  });
+
+  it("HC-TR-267 a page of closed trades runs across the days in order, and a selection says what it does not list", async () => {
+    const on = (day: string) => (_: unknown, i: number) => ({ ...RESULTS.trades[1]!, strategyId: `${day}_${i}`, closedAt: `2026-11-${day}T10:00:00.000Z` });
+    const trades = [...Array.from({ length: 60 }, on("23")), ...Array.from({ length: 70 }, on("21"))];
+    acc().autopilotResults = { ...RESULTS, total: { ...RESULTS.total, closed: 130 }, trades };
+    const first = renderWithProviders(<AutopilotResultsPanel money={USD} />);
+    await waitFor(() => expect(screen.getAllByTestId("results-trade")).toHaveLength(TRADES_PAGE));
+    // the whole of the newer day, then the first 40 of the older one, whose heading still counts all 70
+    expect(screen.getAllByTestId("results-trade").filter((x) => x.dataset["id"]?.startsWith("23_"))).toHaveLength(60);
+    expect(screen.getAllByTestId("results-day").map((d) => d.textContent.split(" · ")[1])).toEqual(["60 closed", "70 closed"]);
+    expect(screen.getAllByTestId("results-day").at(-1)!.textContent).not.toContain("only the part"); // everything closed is listed
+    expect(screen.getByTestId("results-trades").textContent).not.toContain("the newest");
+    await userEvent.setup().click(screen.getByTestId("results-more"));
+    expect(screen.getAllByTestId("results-trade")).toHaveLength(130);
+    first.unmount();
+
+    // a selection: its strategy closed 3 trades and the list holds 1 of them
+    acc().autopilotResults = RESULTS;
+    renderWithProviders(<AutopilotResultsPanel money={USD} show={(playbookId) => playbookId === "pin-butterfly"} />);
+    await waitFor(() => expect(screen.getByTestId("results-closed").textContent).toBe("3"));
+    expect(screen.getAllByTestId("results-trade").map((x) => x.dataset["id"])).toEqual(["res_1"]);
+    expect(screen.getByTestId("results-trades").textContent).toContain("(the newest 1 of 3)");
+    expect(screen.getByTestId("results-day-note").textContent).toContain("2 older closed trades are counted in the totals and not listed.");
+    expect(screen.getByTestId("results-day").textContent).toContain("only the part of this day that is listed");
+  });
+
+  it("HC-TR-267 the closed trades are grouped by the day they closed, each day with its count, its won and lost and its net; one day and the won or the lost ones can be picked", async () => {
+    // two days far enough apart to be two days on any clock; the second day has one win and one loss
+    const t = (id: string, closedAt: string, netUsd: string) => ({ ...RESULTS.trades[1]!, strategyId: id, closedAt, grossUsd: netUsd, feesUsd: "0.00", netUsd });
+    const trades = [t("d2_win", "2026-11-23T10:30:00.000Z", "4.00"), t("d2_loss", "2026-11-23T10:00:00.000Z", "-6.50"), t("d1_flat", "2026-11-21T10:00:00.000Z", "0.00")];
+    const D2 = dayOf(trades[0]!.closedAt);
+    const D1 = dayOf(trades[2]!.closedAt);
+    expect(D1).not.toBe(D2);
+    expect(won(trades[0]!)).toBe(true);
+    expect(won(trades[2]!)).toBe(false); // nothing made after fees is not a win
+    expect(byDay(trades)).toEqual([{ day: D2, trades: [trades[0], trades[1]], wins: 1, netUsd: -2.5 }, { day: D1, trades: [trades[2]], wins: 0, netUsd: 0 }]);
+    expect(byDay([])).toEqual([]);
+
+    acc().autopilotResults = { ...RESULTS, total: { ...RESULTS.total, closed: 3 }, trades };
+    renderWithProviders(<AutopilotResultsPanel money={USD} />);
+    const u = userEvent.setup();
+    await waitFor(() => expect(screen.getAllByTestId("results-trade")).toHaveLength(3));
+    const days = () => screen.getAllByTestId("results-day");
+    expect(days().map((d) => d.dataset["day"])).toEqual([D2, D1]);
+    expect(days()[0]!.textContent).toBe(`${D2} · 2 closed · 1 won · 1 lost−$2.50`);
+    expect(days()[1]!.textContent).toBe(`${D1} · 1 closed · 0 won · 1 lost$0.00`);
+    expect(within(days()[0]!).getByTestId("results-day-net").className).toContain("text-loss");
+    const pick = screen.getByTestId<HTMLSelectElement>("results-day-pick");
+    expect([...pick.options].map((o) => o.textContent)).toEqual(["All days · 3 trades", `${D2} · 2 trades`, `${D1} · 1 trade`]);
+    const ids = () => screen.queryAllByTestId("results-trade").map((x) => x.dataset["id"]);
+
+    await u.selectOptions(pick, D2);
+    expect(ids()).toEqual(["d2_win", "d2_loss"]);
+    expect(days().map((d) => d.dataset["day"])).toEqual([D2]);
+    const press = (v: string) => u.click(screen.getAllByTestId("results-outcome").find((b) => b.dataset["value"] === v)!);
+    await press("lost");
+    expect(ids()).toEqual(["d2_loss"]);
+    // the day's heading still counts the whole day
+    expect(days()[0]!.textContent).toBe(`${D2} · 2 closed · 1 won · 1 lost−$2.50`);
+    await press("won");
+    expect(ids()).toEqual(["d2_win"]);
+    expect(screen.getByTestId("results-trades").querySelector("[data-won=true]")).toBeTruthy();
+    await u.selectOptions(pick, D1);
+    expect(ids()).toEqual([]);
+    expect(screen.getByTestId("results-none").textContent).toBe(`No won trade on ${D1}.`);
+    await press("all");
+    expect(ids()).toEqual(["d1_flat"]);
+    await u.selectOptions(pick, "all");
+    expect(ids()).toEqual(["d2_win", "d2_loss", "d1_flat"]);
   });
 });
