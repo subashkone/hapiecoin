@@ -1,6 +1,6 @@
 # Paper trading, live trading, rules and accounts
 
-Part of the [HapieCoin feature guide](README.md). 150 traced features on 35 screens; 150 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 151 traced features on 35 screens; 151 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -73,6 +73,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-259 | An Autopilot strategy with the profit lock and the buy-back at 5 dollars on the same trade | one paper playbook, the BTC evening strangle 1 % away: a stop at triple and a buy-back at 5 dollars on each sold option, and on the whole trade a floor at a quarter of the premium once the profit has reached half; what a buy-back has banked counts toward the lock, which is judged on the realised and the open profit together; both exits are the existing ones, armed from the playbook's own fields, with no new rule; its card says it earned less than the lock alone in the study | built | unit (pricing), integration (api), unit (web) |
 | HC-TR-261 | Autopilot daily strategies that trail the profit from 15 % of the premium | two paper playbooks, on BTC and ETH: the evening strangle 1 % away with a stop at triple on each option; once the trade is up by 15 % of the premium collected it is trailed and closed when the profit gives back 30 % of its best; the existing trailing take-profit of a clock playbook, with no new rule; each card says what the early exit costs against holding | built | unit (pricing), integration (api), unit (web) |
 | HC-TR-262 | An Autopilot Gold strategy that trails the profit from 15 % of the premium | one paper playbook: the Gold evening strangle 1 % away at Gold's own entry, with its stop at double on each option; once the trade is up by 15 % of the premium collected it is trailed and closed when the profit gives back 20 % of its best; the existing trailing take-profit, with no new rule; its card says it costs a little income against holding and that the amounts are cents | built | unit (pricing), integration (api), unit (web) |
+| HC-TR-263 | Autopilot weekly strategies that hold the Friday strangle for its first day only | two paper playbooks, on BTC (3 % away) and ETH (4 % away): the Friday weekly strangle of that coin with a stop at triple on each option, closed whole on Saturday at 5:30 PM IST, about 20 hours after the entry, whatever the profit; the existing timed exit of a clock playbook, with no new rule; the card says the exit is the next day's and gives the study's cautions (one of the best rows of 108, its neighbours fall away fast, fills at the mark); a running trade's row says when it will be closed in place of held to settlement | built | unit (pricing), integration (api), unit (web) |
 
 ### Trading · Protect dialog / cards · Details · `/desk`
 

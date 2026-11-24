@@ -1,5 +1,6 @@
 // The Autopilot screen (ADR-109; HC-TR-219, HC-TR-220), its item on the Desk's status bar and its tag on a Paper card
 // (HC-SH-143), against the in-memory mock API. Paper only: nothing here can place an order.
+import { fmtDateTime } from "@/lib/format";
 import { AUTOPILOT_PLAYBOOKS as PLAYBOOKS } from "@hapiecoin/pricing";
 import { AUTOPILOT_PAPER_ONLY_MESSAGE, type AutopilotRun, type Strategy, type StrategyRule, chainTopic } from "@hapiecoin/schema";
 import { act, screen, waitFor, within } from "@testing-library/react";
@@ -336,8 +337,8 @@ describe("HC-TR-232 the Autopilot screen: by expiry and by coin", () => {
     renderWithProviders(<AutopilotPage />);
     const u = userEvent.setup();
     await waitFor(() => expect(screen.getAllByTestId("autopilot-trade")).toHaveLength(3));
-    expect(screen.getAllByTestId("autopilot-filter-cadence").map((b) => b.textContent)).toEqual([`All · ${TRADABLE.length}`, "Trend · 6", "Daily · 40", "Weekly · 19", "Monthly · 15"]);
-    expect(screen.getAllByTestId("autopilot-filter-coin").map((b) => b.textContent)).toEqual(["All", `BTC · ${TRADABLE.length - 30}`, "ETH · 31", "XAUT · 5"]); // HC-TR-235 and the ones added since: the ETH and XAUT evening strangles, five ETH weekly and five ETH monthly ones of their own
+    expect(screen.getAllByTestId("autopilot-filter-cadence").map((b) => b.textContent)).toEqual([`All · ${TRADABLE.length}`, "Trend · 6", "Daily · 40", "Weekly · 21", "Monthly · 15"]);
+    expect(screen.getAllByTestId("autopilot-filter-coin").map((b) => b.textContent)).toEqual(["All", `BTC · ${TRADABLE.length - 31}`, "ETH · 32", "XAUT · 5"]); // HC-TR-235 and the ones added since: the ETH and XAUT evening strangles, five ETH weekly and five ETH monthly ones of their own
     expect(screen.getByTestId("autopilot-filters").dataset["filtered"]).toBe("false");
     expect(screen.queryByTestId("autopilot-filter-note")).toBeNull();
     expect(screen.getByRole("group", { name: "Expiry" })).toBeTruthy();
@@ -345,7 +346,7 @@ describe("HC-TR-232 the Autopilot screen: by expiry and by coin", () => {
 
     await press(u, "cadence", "weekly");
     expect(screen.getAllByTestId("autopilot-group").map((g) => g.dataset["group"])).toEqual(["Weekly strangles, Friday expiry"]);
-    expect(cards()).toHaveLength(19);
+    expect(cards()).toHaveLength(21);
     expect(screen.getAllByTestId("autopilot-trade").map((x) => x.dataset["id"])).toEqual(["w1"]);
     expect(screen.getAllByTestId("autopilot-run")).toHaveLength(1);
     expect(screen.getByTestId("autopilot-filter-note")).toBeTruthy();
@@ -361,7 +362,7 @@ describe("HC-TR-232 the Autopilot screen: by expiry and by coin", () => {
     expect(screen.getByTestId("autopilot-log-none").textContent).toBe("No log line in this selection.");
 
     await press(u, "coin", "ETH");
-    expect(cards()).toHaveLength(5); // the ETH weekly strangles
+    expect(cards()).toHaveLength(6); // the ETH weekly strangles, the one-day one (HC-TR-263) among them
     await press(u, "cadence", "all");
     expect(cards()).toEqual(TRADABLE.filter((p) => (p.assets as readonly string[]).includes("ETH")).map((p) => p.id));
     expect(screen.getAllByTestId("autopilot-trade").map((x) => x.dataset["id"])).toEqual(["t1"]);
@@ -407,7 +408,7 @@ describe("HC-TR-230 the Autopilot screen: the weekly strangles", () => {
     const groups = screen.getAllByTestId("autopilot-group");
     expect(groups.map((g) => g.dataset["group"])).toEqual(["Longer-dated strategies", "Evening strangles, daily expiry", "Weekly strangles, Friday expiry", "Monthly strangles, month-end expiry"]);
     expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").map((c) => c.dataset["playbook"]))).toEqual([TRADABLE.filter((p) => !p.clock), TRADABLE.filter((p) => p.clock && p.clock.weekdayUtc === undefined && p.clock.cadence !== "monthly"), TRADABLE.filter((p) => p.clock?.weekdayUtc !== undefined), TRADABLE.filter((p) => p.clock?.cadence === "monthly")].map((g) => g.map((p) => p.id)));
-    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 40, 19, 15]);
+    expect(groups.map((g) => within(g).getAllByTestId("autopilot-card").length)).toEqual([6, 40, 21, 15]);
     // HC-TR-233: a monthly row says when it enters, and its backtest reads per month
     const monthly = screen.getAllByTestId("autopilot-card").find((x) => x.dataset["playbook"] === "monthly-strangle-premium-1000")!;
     expect(monthly.textContent).toContain("Enters on the first evening a month-end expiry is 60 to 75 days out, once per expiry");
@@ -616,5 +617,41 @@ describe("HC-TR-262 the Autopilot screen: the Gold strangle trailed from 15 % of
     expect(card.textContent).toContain("Gold evening strangle, trail from 15 %");
     expect(card.textContent).toContain("Stop at 2x on each sold option, trail from 15 % of the premium");
     expect(within(card).getByTestId("autopilot-card-how").textContent).toContain("Once the trade is up by 15 % of the premium collected it is not closed: it is trailed, and closed when the profit gives back 20 % of its best.");
+  });
+});
+
+describe("HC-TR-263 the Autopilot screen: the Friday weekly strangle held for one day", () => {
+  it("HC-TR-263 the two cards say the trade is out at 5:30 PM IST the next day; a daily timed exit after the entry hour keeps its plain wording", async () => {
+    acc().autopilot = { settings: { enabled: true, strategies: ["weekly-fri-strangle-one-day", "eth-weekly-fri-strangle-one-day", "evening-strangle-out-early"].map((playbookId) => ({ playbookId, exit: "own" as const })) }, runs: [] };
+    renderWithProviders(<AutopilotPage />);
+    await waitFor(() => expect(screen.getAllByTestId("autopilot-card").length).toBeGreaterThan(0));
+    const card = (id: string) => screen.getAllByTestId("autopilot-card").find((c) => c.dataset["playbook"] === id)!;
+    for (const id of ["weekly-fri-strangle-one-day", "eth-weekly-fri-strangle-one-day"]) {
+      expect(card(id).textContent).toContain("Stop at 3x on each sold option, out at 5:30 PM IST the next day");
+      expect(within(card(id)).getByTestId("autopilot-card-how").textContent).toContain("Everything is closed at 5:30 PM IST the next day, whatever the profit.");
+    }
+    expect(card("weekly-fri-strangle-one-day").textContent).toContain("Friday weekly strangle, one day");
+    expect(card("eth-weekly-fri-strangle-one-day").textContent).toContain("ETH Friday weekly strangle, one day");
+    // 20:00 UTC is after the 16:00 UTC entry: 1:30 AM IST, said as it always was
+    expect(card("evening-strangle-out-early").textContent).toContain("out at 1:30 AM IST");
+    expect(card("evening-strangle-out-early").textContent).not.toContain("the next day");
+  });
+
+  it("HC-TR-263 a running one-day weekly says when it is closed, not that it is held to settlement; a trade with no timed exit reads as before", async () => {
+    const at = "2027-05-15T12:00:00.000Z";
+    const legStop = (legId: string) => rule({ id: `r_${legId}`, kind: "leg_stop", trigger: "multiple", value: "3", thresholdUsd: "500", legId, scope: "leg" });
+    acc().strategies.push(
+      auto("od", "weekly-fri-strangle-one-day", { legs: [leg("od", 0)], rules: [legStop("leg_od"), rule({ id: "r_time", kind: "time", trigger: "at", value: at, thresholdUsd: String(Date.parse(at)) })] }),
+      auto("s2", "evening-strangle-stop-2x", { legs: [leg("s2", 0)], rules: [legStop("leg_s2")] }),
+    );
+    acc().autopilot = { settings: { enabled: true, strategies: [{ playbookId: "weekly-fri-strangle-one-day", exit: "own" }, { playbookId: "evening-strangle-stop-2x", exit: "own" }] }, runs: [] };
+    renderWithProviders(<AutopilotPage />);
+    await waitFor(() => expect(screen.getAllByTestId("autopilot-trade")).toHaveLength(2));
+    const trade = (id: string) => screen.getAllByTestId("autopilot-trade").find((x) => x.dataset["id"] === id)!;
+    expect(within(trade("od")).getByTestId("autopilot-trade-closes-at").textContent).toBe(`Closes at${fmtDateTime(at)}, whatever the profit`);
+    expect(trade("od").textContent).toContain("Closes in profit atno level: closed by the clock");
+    expect(trade("od").textContent).not.toContain("held to settlement");
+    expect(within(trade("s2")).queryByTestId("autopilot-trade-closes-at")).toBeNull();
+    expect(trade("s2").textContent).toContain("Closes in profit atno level: held to settlement");
   });
 });

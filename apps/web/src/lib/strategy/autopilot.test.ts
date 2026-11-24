@@ -56,3 +56,16 @@ describe("HC-TR-219 the log, read for the screen", () => {
     expect(capitalInUse(runs, new Set())).toBe(0);
   });
 });
+
+describe("HC-TR-263 the levels of a running trade with a timed exit", () => {
+  it("HC-TR-263 an armed timed exit is read as the moment the trade is closed; one that fired, or none, leaves the field out", () => {
+    const at = "2027-05-15T12:00:00.000Z";
+    const timed = rule({ id: "t1", kind: "time", trigger: "at", value: at, thresholdUsd: String(Date.parse(at)) });
+    expect(autopilotLevels(strategy([timed])).closesAtMs).toBe(Date.parse(at));
+    expect(autopilotLevels(strategy([timed])).targetUsd).toBeNull();
+    expect("closesAtMs" in autopilotLevels(strategy([{ ...timed, state: "fired" }]))).toBe(false);
+    expect("closesAtMs" in autopilotLevels(strategy([rule({ id: "d1", kind: "time", trigger: "dte", value: "1", thresholdUsd: "1" })]))).toBe(false); // a days-to-expiry exit is not a moment
+    expect("closesAtMs" in autopilotLevels(strategy([rule({})]))).toBe(false);
+    expect("closesAtMs" in autopilotLevels(strategy(undefined))).toBe(false);
+  });
+});

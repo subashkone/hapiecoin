@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type BacktestFold, type BacktestStats, type BacktestTrade, type EodDay, type EodRow, runBacktest } from "./backtest.js";
 import { calendarFor, daysToExpiryOf } from "./calendar.js";
-import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS, MOVE_DAILY_PLAYBOOKS, BUYBACK_DAILY_PLAYBOOKS, BUYBACK_SHARE_PLAYBOOKS, TAKE90_WEEKLY_PLAYBOOKS, TAKE90_DAILY_PLAYBOOKS, COMBO_DAILY_PLAYBOOKS, TRAIL15_DAILY_PLAYBOOKS, TRAIL15_XAUT_PLAYBOOKS, sideAfterMove, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
+import { ALT_DAILY_PLAYBOOKS, ALT_MONTHLY_PLAYBOOKS, ALT_PLAYBOOKS, ALT_WEEKLY_PLAYBOOKS, LAB_DAILY_PLAYBOOKS, LAB_WEEKLY_PLAYBOOKS, MOVE_DAILY_PLAYBOOKS, BUYBACK_DAILY_PLAYBOOKS, BUYBACK_SHARE_PLAYBOOKS, TAKE90_WEEKLY_PLAYBOOKS, TAKE90_DAILY_PLAYBOOKS, COMBO_DAILY_PLAYBOOKS, TRAIL15_DAILY_PLAYBOOKS, TRAIL15_XAUT_PLAYBOOKS, ONE_DAY_WEEKLY_PLAYBOOKS, sideAfterMove, LADDER_DAILY_PLAYBOOKS, LADDER_WEEKLY_PLAYBOOKS, AUTOPILOT_PLAYBOOKS, CLOCK_PLAYBOOKS, HERO_OR_ZERO_TEMPLATE, MONTHLY_PLAYBOOKS, isMonthEndExpiry, PLAYBOOKS, PLAYBOOK_CADENCES, PREMIUM_PLAYBOOKS, WEEKLY_PLAYBOOKS, playbookBacktest, playbookCadence, autopilotPlaybookById, losingYearsOf, playbookById, playbookOptions, playbookStatus, playbookTemplate, proposalFor } from "./playbooks.js";
 import { materialiseTemplate } from "./templates.js";
 
 const cal = calendarFor(12);
@@ -218,7 +218,7 @@ describe("HC-TR-229 the weekly strangles", () => {
     expect(WEEKLY_PLAYBOOKS.map((p) => [p.clock!.legStop, p.clock!.takeProfitOfCredit, p.clock!.trailRestPct]).slice(0, 5)).toEqual([[undefined, undefined, undefined], [2, undefined, undefined], [3, undefined, undefined], [2, 0.5, undefined], [2, undefined, 50]]);
     expect(CLOCK_PLAYBOOKS.every((p) => p.clock!.weekdayUtc === undefined && p.clock!.describe === "once an evening, 9:30 to 10:30 PM IST, on the next expiry")).toBe(true);
     expect(new Set(AUTOPILOT_PLAYBOOKS.map((p) => p.id)).size).toBe(AUTOPILOT_PLAYBOOKS.length);
-    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length + LAB_DAILY_PLAYBOOKS.length + LAB_WEEKLY_PLAYBOOKS.length + MOVE_DAILY_PLAYBOOKS.length + BUYBACK_DAILY_PLAYBOOKS.length + BUYBACK_SHARE_PLAYBOOKS.length + TAKE90_WEEKLY_PLAYBOOKS.length + TAKE90_DAILY_PLAYBOOKS.length + COMBO_DAILY_PLAYBOOKS.length + TRAIL15_DAILY_PLAYBOOKS.length + TRAIL15_XAUT_PLAYBOOKS.length);
+    expect(AUTOPILOT_PLAYBOOKS).toHaveLength(PLAYBOOKS.filter((p) => !p.control).length + CLOCK_PLAYBOOKS.length + WEEKLY_PLAYBOOKS.length + PREMIUM_PLAYBOOKS.length + MONTHLY_PLAYBOOKS.length + ALT_PLAYBOOKS.length + LADDER_DAILY_PLAYBOOKS.length + LADDER_WEEKLY_PLAYBOOKS.length + LAB_DAILY_PLAYBOOKS.length + LAB_WEEKLY_PLAYBOOKS.length + MOVE_DAILY_PLAYBOOKS.length + BUYBACK_DAILY_PLAYBOOKS.length + BUYBACK_SHARE_PLAYBOOKS.length + TAKE90_WEEKLY_PLAYBOOKS.length + TAKE90_DAILY_PLAYBOOKS.length + COMBO_DAILY_PLAYBOOKS.length + TRAIL15_DAILY_PLAYBOOKS.length + TRAIL15_XAUT_PLAYBOOKS.length + ONE_DAY_WEEKLY_PLAYBOOKS.length);
   });
 
   it("HC-TR-229 the strikes are the listed ones nearest 3 % (wings 7 %) of the spot away, on the Friday expiry a week out from a Friday and three days out from a Tuesday", () => {
@@ -853,5 +853,44 @@ describe("HC-TR-262 the Gold daily strangle trailed from 15 % of the premium (AD
     expect(playbookBacktest(p.id)).toMatchObject({ mean: 0.15, per: "day", positivePct: 82, worst: -1.4, samples: 91 });
     // BTC and ETH keep their own give-back
     expect(AUTOPILOT_PLAYBOOKS.filter((x) => x.clock?.takeTrailPct === 30).map((x) => x.id)).toEqual(["evening-strangle-trail-15", "eth-evening-strangle-trail-15"]);
+  });
+});
+
+describe("HC-TR-263 the Friday weekly strangle held for its first day only (ADR-134)", () => {
+  it("HC-TR-263 two weekly playbooks beside the others: the BTC and the ETH Friday strangle at their own distances, a stop at triple, and everything closed at 12:00 UTC, which after a Friday evening entry is Saturday 5:30 PM IST", () => {
+    expect(ONE_DAY_WEEKLY_PLAYBOOKS.map((p) => `${p.id} ${p.assets.join()}`)).toEqual(["weekly-fri-strangle-one-day BTC", "eth-weekly-fri-strangle-one-day ETH"]);
+    const byId = (id: string) => autopilotPlaybookById(id)!;
+    for (const [id, plainId, pct] of [["weekly-fri-strangle-one-day", "weekly-fri-strangle-stop-3x", 3], ["eth-weekly-fri-strangle-one-day", "eth-weekly-fri-strangle-stop-3x", 4]] as const) {
+      const p = byId(id);
+      const plain = byId(plainId);
+      expect(autopilotPlaybookById(id)).toBe(ONE_DAY_WEEKLY_PLAYBOOKS.find((x) => x.id === id));
+      // the same Friday window, expiry and strikes as the weekly strangle it is the first day of; only the timed exit is new
+      expect(p.clock).toEqual({ ...plain.clock, exitHourUtc: 12 });
+      expect(p.clock).toMatchObject({ fromHourUtc: 16, toHourUtc: 17, weekdayUtc: 5, legStop: 3 });
+      expect(p.clock!.exitHourUtc! < p.clock!.fromHourUtc).toBe(true); // an hour of the next day, not of the entry day
+      expect(p).toMatchObject({ lots: 100, control: false, minDte: plain.minDte });
+      expect(playbookTemplate(p)!.legs.map((l) => ("pct" in l ? l.pct : null))).toEqual([-pct, pct]);
+      expect(playbookTemplate(p)!.legs.map((l) => ("pct" in l ? l.pct : null))).toEqual(playbookTemplate(plain)!.legs.map((l) => ("pct" in l ? l.pct : null)));
+      expect(playbookCadence(p)).toBe("weekly");
+      expect(p.name.length).toBeLessThanOrEqual(68);
+      expect(p.trials.count).toBe(108);
+      expect(p.trials.note).toContain("not whether the price can be had");
+      expect(p.evidence.source).toContain("results-weekly-one-day-2026-11-24.txt");
+      expect(p.summary).toContain("Saturday at 5:30 PM IST");
+    }
+    expect(byId("weekly-fri-strangle-one-day").name).toBe("Friday weekly strangle, one day");
+    expect(byId("eth-weekly-fri-strangle-one-day").name).toBe("ETH Friday weekly strangle, one day");
+    // the cards give the result and the three reasons to distrust it
+    expect(byId("weekly-fri-strangle-one-day").evidence.claim).toContain("+15.63 a week on 51 weeks, 88 % of weeks positive, worst week -63.0");
+    expect(byId("weekly-fri-strangle-one-day").rationale).toContain("the same one-day hold started on Saturday lost (-5.65 a week), on Sunday lost (-2.99) and on Monday earned about half (+8.05)");
+    expect(byId("weekly-fri-strangle-one-day").rationale).toContain("sold two hours after the entry window it earned +8.92, four hours after +3.30, and eight hours after it lost (-1.30)");
+    expect(byId("weekly-fri-strangle-one-day").rationale).toContain("It is one of the best of 108 rows");
+    expect(byId("eth-weekly-fri-strangle-one-day").rationale).toContain("a hold of 8 hours earned +6.05 and of 12 hours +7.17");
+    expect(byId("weekly-fri-strangle-one-day").rationale).toContain("Half of the gain came in the first four hours (+7.89)");
+    expect(byId("eth-weekly-fri-strangle-one-day").evidence.claim).toContain("+6.77 a week on 51 weeks, 80 % of weeks positive, worst week -18.3");
+    expect(byId("eth-weekly-fri-strangle-one-day").rationale).toContain("Started on Saturday the same hold lost (-1.82 a week)");
+    expect(ONE_DAY_WEEKLY_PLAYBOOKS.map((p) => playbookBacktest(p.id))).toMatchObject([{ mean: 15.63, per: "week", positivePct: 88, worst: -63, samples: 51 }, { mean: 6.77, per: "week", positivePct: 80, worst: -18.3, samples: 51 }]);
+    // the only weekly playbooks with a timed exit; the daily ones keep 20:00 UTC
+    expect(AUTOPILOT_PLAYBOOKS.filter((p) => p.clock?.exitHourUtc !== undefined).map((p) => `${p.id} ${p.clock!.exitHourUtc}`)).toEqual(["evening-strangle-out-early 20", "eth-evening-strangle-out-early 20", "weekly-fri-strangle-one-day 12", "eth-weekly-fri-strangle-one-day 12"]);
   });
 });

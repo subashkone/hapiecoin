@@ -22,6 +22,8 @@ export interface AutopilotLevels {
    * has not been in profit yet. Absent (undefined) when no such trail is running.
    */
   restTrailExitUsd?: number | null;
+  /** ADR-121 / ADR-134: when a timed exit closes the whole trade, epoch ms. Absent when the trade has none armed. */
+  closesAtMs?: number;
 }
 
 export function autopilotLevels(s: Strategy): AutopilotLevels {
@@ -31,6 +33,8 @@ export function autopilotLevels(s: Strategy): AutopilotLevels {
   const legStop = armed.find((r) => r.kind === "leg_stop" && r.trigger === "multiple");
   const best = target?.peakPnl ? Number(target.peakPnl) : null;
   const restTrail = armed.find((r) => r.kind === "trail");
+  const timed = armed.find((r) => r.kind === "time" && r.trigger === "at");
+  const closesAtMs = timed ? Date.parse(timed.value) : NaN;
   return {
     targetUsd: target ? Number(target.thresholdUsd) : null,
     trails: Boolean(target?.trail),
@@ -41,6 +45,7 @@ export function autopilotLevels(s: Strategy): AutopilotLevels {
     legStop: legStop ? Number(legStop.value) : null,
     legStopTrailPct: legStop?.trail?.trigger === "pct" ? Number(legStop.trail.value) : null,
     ...(restTrail ? { restTrailExitUsd: restTrail.peakPnl === null ? null : restTrailFloorUsd(Number(restTrail.peakPnl), { trigger: restTrail.trigger === "pct" ? "pct" : "money", value: restTrail.value }) } : {}),
+    ...(Number.isFinite(closesAtMs) ? { closesAtMs } : {}),
   };
 }
 
