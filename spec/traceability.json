@@ -8884,6 +8884,21 @@
   "evidence": "ADR-135, GAPS #170 (24 Nov 2026): apps/web/src/components/trading/StrategyDetailsDialog.tsx, PaperPanel.tsx, JournalPanel.tsx, RuleDialog.tsx, components/alerts/AlertsDialog.tsx, components/builder/TemplatesPanel.tsx, lib/strategy/journal.ts (journalCsv), lib/format.ts (fmtDateTime); tests: rules.test.tsx HC-TR-264 (two tests), journal-panel.test.tsx and lib/strategy/journal.test.ts (the CSV instants and the trade's times, inside the HC-TR-128..137 tests)"
  },
  {
+  "id": "HC-TR-265",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "Autopilot cautious daily strategies: further strikes, a stop at double, a buy-back and a trail together",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing), integration (api), unit (web)",
+  "acceptance": "two paper playbooks built to lose little: the BTC evening strangle 1.5 % away and the ETH one 2 % away, each with a stop at twice its price on each sold option, each option bought back alone when nearly worthless (5 dollars on BTC, 25 cents on ETH), and the whole trade trailed once it is up by a quarter (BTC) or half (ETH) of the premium; all three exits are the existing ones, armed together from the playbook's own fields; each card says it earns less than half of the usual strangle and still loses on some days",
+  "evidence": "ADR-136, GAPS #171 (24 Nov 2026): packages/pricing/src/playbooks.ts (CAUTIOUS_DAILY_PLAYBOOKS); tests: packages/pricing/src/playbooks.test.ts HC-TR-265, apps/api/src/autopilot.test.ts HC-TR-265 (the job's entry of the BTC one and its buy-back), autopilot-page.test.tsx HC-TR-265"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",
