@@ -560,7 +560,8 @@ export async function autopilotView(db: Db, userId: string): Promise<AutopilotVi
 
 // ---- results (ADR-111; HC-TR-223): what the trades Autopilot opened came to -----------------------------------------
 
-export const AUTOPILOT_TRADES_SHOWN = 100;
+// ADR-139: the screen lists the closed trades by day (it was 100). The oldest day sent may still be a part of that day; the screen says so.
+export const AUTOPILOT_TRADES_SHOWN = 500;
 const cents = (v: string | null | undefined): number => Math.round(Number(v ?? 0) * 100) || 0;
 /** Whole cents as dollars with both decimals kept ("0.00", "-2.40"): a column of results reads better aligned. */
 const usd = (c: number): string => (c / 100).toFixed(2);

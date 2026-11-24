@@ -8914,6 +8914,21 @@
   "evidence": "ADR-138, GAPS #174 (24 Nov 2026): packages/pricing/src/playbooks.ts (WINGS_TRAIL_DAILY_PLAYBOOKS), apps/web/src/components/autopilot/AutopilotPage.tsx (the exit words of a winged trade with a take); tests: packages/pricing/src/playbooks.test.ts HC-TR-266, apps/api/src/autopilot.test.ts HC-TR-266 (the job's entry and the trail closing all four options), autopilot-page.test.tsx HC-TR-266"
  },
  {
+  "id": "HC-TR-267",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "Autopilot screen in four full-width views: open trades worst first, closed trades by day with won and lost, strategies with exit tags, the log by kind and day",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web)",
+  "acceptance": "a summary stays on top (open trades and how many need attention, open profit or loss, today, capital in use, closed trades net of fees, strategies on); tabs Open trades, Closed trades, Strategies and Log each take the full width with a count, narrowed by expiry, coin and a search by name; open trades are a table sorted no live price, close to a stop (the whole trade's or a sold option's own), losing, on track, the largest loss first within each, the order held while the pointer is on it; closed trades are grouped by the day they closed with the day's count, won, lost and net after fees, one day and won or lost can be picked, and every one the server sends can be reached; exit rules read as short tags with the sentence kept in the row; the log can be narrowed to a kind and a day",
+  "evidence": "ADR-139, GAPS #175 (24 Nov 2026): apps/web/src/components/autopilot/AutopilotPage.tsx (TABS, exitTags, rated, panel), apps/web/src/components/autopilot/AutopilotResultsPanel.tsx (byDay, dayOf, won, TRADES_PAGE), apps/api/src/autopilot.ts (AUTOPILOT_TRADES_SHOWN 500); tests: autopilot-page.test.tsx HC-TR-267 (seven tests), autopilot-results.test.tsx HC-TR-267 (three tests)"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",
