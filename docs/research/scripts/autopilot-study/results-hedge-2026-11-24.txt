@@ -1,0 +1,60 @@
+## BTC daily: 106 trades, each side 1 % away, entered 20 h before settlement; bars of 5 minutes; mean premium 36.5
+                                                                     n     mean   win    total    worst   worst 3  drawdown         halves
+   held to settlement, no stop, no hedge                           106    +7.33   80%     +777   -338.2    -938.7    -505.1    +356 / +421
+   stop at double on each sold option                              106    +7.58   49%     +803    -39.8    -110.6    -126.4    +340 / +463
+   stop at triple on each sold option                              106   +11.75   65%    +1246   -105.8    -254.2    -185.0    +675 / +571
+   hedge with a future, fee 0.02 % of the notional a fill
+   hedge at the strike, closed 0 % back inside; no stop            106   -13.46   54%    -1426   -163.9    -432.5   -1546.4    -437 / -989    75 trades hedged,  652 futures fills, futures alone    -2203
+   hedge at the strike, closed 0.25 % back inside; no stop         106    -9.26   57%     -981   -135.8    -355.1   -1085.8    -503 / -478    75 trades hedged,  314 futures fills, futures alone    -1758
+   hedge at the strike, closed 0.5 % back inside; no stop          106   -10.29   50%    -1091   -133.9    -387.3   -1181.7    -572 / -519    75 trades hedged,  238 futures fills, futures alone    -1868
+   hedge at the strike, closed 1 % back inside; no stop            106    -7.74   56%     -820   -118.9    -339.5    -910.8    -349 / -471    75 trades hedged,  188 futures fills, futures alone    -1597
+   hedge 0.25 % before the strike, closed 0.5 % back; no stop      106    -5.33   56%     -565   -152.1    -420.3    -678.2    -282 / -283    83 trades hedged,  278 futures fills, futures alone    -1342
+   hedge at the strike, closed 0.5 % back; stop at triple too      106    -9.92   44%    -1052   -133.9    -384.6   -1107.9    -528 / -524    60 trades hedged,  196 futures fills, futures alone    -2298
+   hedge with a future, fee 0.05 % of the notional a fill
+   hedge at the strike, closed 0 % back inside; no stop            106   -30.20   43%    -3201   -250.9    -680.4   -3265.3  -1169 / -2033    75 trades hedged,  652 futures fills, futures alone    -3978
+   hedge at the strike, closed 0.25 % back inside; no stop         106   -17.29   45%    -1833   -162.6    -432.5   -1914.4    -891 / -942    75 trades hedged,  314 futures fills, futures alone    -2610
+   hedge at the strike, closed 0.5 % back inside; no stop          106   -16.37   45%    -1735   -150.0    -440.7   -1816.8    -864 / -872    75 trades hedged,  238 futures fills, futures alone    -2512
+   hedge at the strike, closed 1 % back inside; no stop            106   -12.55   53%    -1331   -130.6    -368.8   -1412.4    -582 / -749    75 trades hedged,  188 futures fills, futures alone    -2108
+   hedge 0.25 % before the strike, closed 0.5 % back; no stop      106   -12.40   52%    -1315   -174.5    -482.2   -1418.7    -635 / -679    83 trades hedged,  278 futures fills, futures alone    -2091
+   hedge at the strike, closed 0.5 % back; stop at triple too      106   -14.86   42%    -1576   -150.0    -437.5   -1627.1    -781 / -795    60 trades hedged,  196 futures fills, futures alone    -2821
+
+## ETH daily: 106 trades, each side 1 % away, entered 20 h before settlement; bars of 5 minutes; mean premium 21.0
+                                                                     n     mean   win    total    worst   worst 3  drawdown         halves
+   held to settlement, no stop, no hedge                           106    +6.67   81%     +707   -137.9    -318.9    -137.9    +362 / +345
+   stop at double on each sold option                              106    +2.83   49%     +300    -49.6    -121.9    -101.1    +125 / +175
+   stop at triple on each sold option                              106    +4.46   61%     +473    -49.6    -136.2    -119.9    +239 / +234
+   hedge with a future, fee 0.02 % of the notional a fill
+   hedge at the strike, closed 0 % back inside; no stop            106    -5.87   46%     -623    -66.2    -178.1    -692.7    -292 / -331    85 trades hedged,  976 futures fills, futures alone    -1330
+   hedge at the strike, closed 0.25 % back inside; no stop         106    -3.19   48%     -338    -58.1    -160.5    -429.1    -119 / -220    85 trades hedged,  448 futures fills, futures alone    -1045
+   hedge at the strike, closed 0.5 % back inside; no stop          106    -0.16   62%      -17    -65.5    -142.0    -154.1      +78 / -95    85 trades hedged,  314 futures fills, futures alone     -724
+   hedge at the strike, closed 1 % back inside; no stop            106    -0.16   59%      -17    -53.0    -153.5    -146.4       -18 / +1    85 trades hedged,  244 futures fills, futures alone     -724
+   hedge 0.25 % before the strike, closed 0.5 % back; no stop      106    -0.77   55%      -82    -67.9    -168.0    -217.6      -45 / -37    95 trades hedged,  388 futures fills, futures alone     -789
+   hedge at the strike, closed 0.5 % back; stop at triple too      106    +0.58   61%      +62    -65.5    -134.6    -147.1      +75 / -14    81 trades hedged,  290 futures fills, futures alone     -411
+   hedge with a future, fee 0.05 % of the notional a fill
+   hedge at the strike, closed 0 % back inside; no stop            106   -13.43   40%    -1424    -78.5    -231.0   -1468.2    -688 / -736    85 trades hedged,  976 futures fills, futures alone    -2131
+   hedge at the strike, closed 0.25 % back inside; no stop         106    -6.64   47%     -703    -66.8    -190.4    -779.9    -292 / -412    85 trades hedged,  448 futures fills, futures alone    -1410
+   hedge at the strike, closed 0.5 % back inside; no stop          106    -2.58   56%     -273    -74.2    -163.0    -336.6     -38 / -235    85 trades hedged,  314 futures fills, futures alone     -980
+   hedge at the strike, closed 1 % back inside; no stop            106    -2.05   55%     -217    -58.0    -165.5    -288.7    -116 / -102    85 trades hedged,  244 futures fills, futures alone     -924
+   hedge 0.25 % before the strike, closed 0.5 % back; no stop      106    -3.81   47%     -404    -76.6    -192.8    -475.3    -200 / -204    95 trades hedged,  388 futures fills, futures alone    -1111
+   hedge at the strike, closed 0.5 % back; stop at triple too      106    -1.64   55%     -174    -74.2    -155.5    -257.2     -32 / -141    81 trades hedged,  290 futures fills, futures alone     -647
+
+## BTC weekly (Friday): 51 trades, each side 3 % away, entered 164 h before settlement; bars of 60 minutes; mean premium 149.0
+                                                                     n     mean   win    total    worst   worst 3  drawdown         halves
+   held to settlement, no stop, no hedge                            51    +7.61   75%     +388  -1219.9   -3218.2   -1580.5  +1524 / -1136
+   stop at double on each sold option                               51   +28.33   43%    +1445   -267.5    -603.0    -304.1    +773 / +672
+   stop at triple on each sold option                               51   +40.65   57%    +2073   -168.3    -470.5    -504.9   +1525 / +548
+   hedge with a future, fee 0.02 % of the notional a fill
+   hedge at the strike, closed 0 % back inside; no stop             51    -6.72   61%     -343   -526.0   -1182.6   -1323.2    -858 / +515    48 trades hedged,  296 futures fills, futures alone     -731
+   hedge at the strike, closed 0.25 % back inside; no stop          51    -8.56   59%     -437   -475.2   -1000.3   -1346.8    -940 / +504    48 trades hedged,  244 futures fills, futures alone     -825
+   hedge at the strike, closed 0.5 % back inside; no stop           51   -13.92   57%     -710   -466.9   -1056.4   -1428.4   -1159 / +449    48 trades hedged,  204 futures fills, futures alone    -1098
+   hedge at the strike, closed 1 % back inside; no stop             51   -12.76   59%     -651   -576.9   -1193.0   -1283.9    -980 / +329    48 trades hedged,  164 futures fills, futures alone    -1039
+   hedge 0.25 % before the strike, closed 0.5 % back; no stop       51   -30.83   45%    -1572   -671.2   -1491.9   -1964.8   -1817 / +245    48 trades hedged,  238 futures fills, futures alone    -1960
+   hedge at the strike, closed 0.5 % back; stop at triple too       51   -17.95   57%     -916   -466.9   -1071.7   -1541.7   -1361 / +445    44 trades hedged,  186 futures fills, futures alone    -2989
+   hedge with a future, fee 0.05 % of the notional a fill
+   hedge at the strike, closed 0 % back inside; no stop             51   -21.71   55%    -1107   -590.0   -1317.6   -1638.2   -1325 / +218    48 trades hedged,  296 futures fills, futures alone    -1495
+   hedge at the strike, closed 0.25 % back inside; no stop          51   -20.91   55%    -1067   -524.5   -1105.6   -1613.2   -1323 / +257    48 trades hedged,  244 futures fills, futures alone    -1455
+   hedge at the strike, closed 0.5 % back inside; no stop           51   -24.23   53%    -1236   -511.3   -1156.2   -1723.0   -1482 / +247    48 trades hedged,  204 futures fills, futures alone    -1624
+   hedge at the strike, closed 1 % back inside; no stop             51   -21.11   55%    -1077   -601.7   -1261.3   -1546.4   -1232 / +155    48 trades hedged,  164 futures fills, futures alone    -1465
+   hedge 0.25 % before the strike, closed 0.5 % back; no stop       51   -42.97   41%    -2191   -720.1   -1611.3   -2449.1    -2201 / +10    48 trades hedged,  238 futures fills, futures alone    -2579
+   hedge at the strike, closed 0.5 % back; stop at triple too       51   -27.40   53%    -1397   -511.3   -1156.2   -1815.9   -1673 / +276    44 trades hedged,  186 futures fills, futures alone    -3470
+

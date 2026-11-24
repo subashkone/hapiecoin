@@ -1,0 +1,27 @@
+## BTC daily against the Friday weekly: 104 trades with both strikes listed in the daily and in the Friday weekly a day or more later; aimed 1 % away, on average 1.02 % away; entered 20 h before the daily settlement
+   mean premium of the sold daily strangle 37.4; mean price paid for the weekly strangle 173.8
+                                                                         n     mean   win    total    worst   worst 3  drawdown         halves
+   daily strangle alone, held, no stop                                 104    +3.61   76%     +376   -345.4    -896.5    -628.2     +93 / +282
+   daily strangle alone, stop at triple                                104   +12.34   67%    +1283   -106.6    -256.8    -196.2    +583 / +699
+   calendar: weekly bought, all held to the daily settlement           104    -7.21   45%     -750   -159.5    -352.8    -911.0    -420 / -330   the weekly options alone   -10.82 a trade
+   calendar: stop at triple on the daily, weekly kept to the end       104    +1.51   46%     +157    -99.4    -232.1    -215.1      +70 / +87   the weekly options alone   -10.82 a trade
+   calendar: stop at triple, that side's weekly sold with it           104   -14.81   40%    -1540   -139.7    -357.4   -1667.2    -744 / -797   the weekly options alone   -27.15 a trade
+
+## BTC daily against the Friday weekly, nearer: 104 trades with both strikes listed in the daily and in the Friday weekly a day or more later; aimed 0.5 % away, on average 0.65 % away; entered 20 h before the daily settlement
+   mean premium of the sold daily strangle 51.8; mean price paid for the weekly strangle 196.7
+                                                                         n     mean   win    total    worst   worst 3  drawdown         halves
+   daily strangle alone, held, no stop                                 104   +11.27   77%    +1173   -336.3    -946.7    -516.3    +570 / +603
+   daily strangle alone, stop at triple                                104   +21.10   73%    +2195   -106.6    -293.9    -196.2  +1186 / +1008
+   calendar: weekly bought, all held to the daily settlement           104    -2.27   57%     -236   -166.7    -359.9    -557.2     -51 / -185   the weekly options alone   -13.54 a trade
+   calendar: stop at triple on the daily, weekly kept to the end       104    +7.56   56%     +786   -102.1    -259.6    -194.6    +566 / +221   the weekly options alone   -13.54 a trade
+   calendar: stop at triple, that side's weekly sold with it           104    -9.43   50%     -981   -139.7    -362.7   -1134.9    -306 / -675   the weekly options alone   -30.53 a trade
+
+## ETH daily against the Friday weekly: 103 trades with both strikes listed in the daily and in the Friday weekly a day or more later; aimed 1 % away, on average 1.82 % away; entered 20 h before the daily settlement
+   mean premium of the sold daily strangle 15.9; mean price paid for the weekly strangle 66.5
+                                                                         n     mean   win    total    worst   worst 3  drawdown         halves
+   daily strangle alone, held, no stop                                 103    +3.77   79%     +388   -137.9    -307.1    -137.9    +263 / +125
+   daily strangle alone, stop at triple                                103    +3.24   70%     +334    -60.5    -147.8    -114.7    +205 / +129
+   calendar: weekly bought, all held to the daily settlement           103    -0.15   57%      -16    -34.3     -97.1     -98.7      +32 / -48   the weekly options alone    -3.92 a trade
+   calendar: stop at triple on the daily, weekly kept to the end       103    -0.68   51%      -70    -52.9    -131.3    -196.3      -26 / -44   the weekly options alone    -3.92 a trade
+   calendar: stop at triple, that side's weekly sold with it           103    -6.62   46%     -682    -88.2    -194.7    -718.5    -318 / -364   the weekly options alone    -9.86 a trade
+
