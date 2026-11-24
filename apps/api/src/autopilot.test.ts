@@ -1638,3 +1638,71 @@ describe("HC-TR-262 the Gold daily strangle trailed from 15 % of the premium (AD
     expect(await now()).toMatchObject({ status: "archived", closeReason: "target", realizedPnl: "0.3" });
   });
 });
+
+describe("HC-TR-263 the Friday weekly strangle held for its first day only (ADR-134)", () => {
+  it("HC-TR-263 the plans carry the stop at triple and the exit hour and nothing else; from a Friday evening entry that hour is Saturday 12:00 UTC, twenty hours on, also for an entry at the end of the window", () => {
+    for (const id of ["weekly-fri-strangle-one-day", "eth-weekly-fri-strangle-one-day"]) {
+      const plan = clockPlanFor(autopilotPlaybookById(id)!, { day: "2027-05-14", spot: 83_200, expiry: "2027-05-21", legs: [], entryCost: -150, maxProfit: 150, maxLoss: -Infinity }, 0.001, null)!;
+      expect(plan).toMatchObject({ legStop: 3, exitHourUtc: 12, targetUsd: null, takeTrailPct: null, ladder: null, lock: null, legBuyBackAt: null, legBuyBackShare: null, trailRestPct: null, stopUsd: null });
+    }
+    // 14 May 2027 is a Friday
+    expect(new Date(Date.UTC(2027, 4, 14)).getUTCDay()).toBe(5);
+    expect(new Date(nextHourUtc(Date.UTC(2027, 4, 14, 16, 2), 12)).toISOString()).toBe("2027-05-15T12:00:00.000Z");
+    expect(new Date(nextHourUtc(Date.UTC(2027, 4, 14, 16, 59), 12)).toISOString()).toBe("2027-05-15T12:00:00.000Z");
+    expect(nextHourUtc(Date.UTC(2027, 4, 14, 16, 2), 12) - Date.UTC(2027, 4, 14, 16, 0)).toBe(20 * HOUR);
+  });
+
+  it("HC-TR-263 entered by the job on a Friday evening: the two stops and a timed exit for Saturday 12:00 UTC are armed; on Saturday morning the trade is left alone, and at 12:00 it is closed whole, at a loss as readily as a profit", async () => {
+    const me = await t.signUp("autopilot-one-day@hapiecoin.test");
+    const id = ((await (await t.request("/v1/me", { cookie: me.cookie })).json()) as { id: string }).id;
+    const PB = "weekly-fri-strangle-one-day";
+    await put({ enabled: true, strategies: [{ playbookId: PB, exit: "own" }] }, me.cookie);
+    const products: Instrument[] = [];
+    const quotes: Quote[] = [];
+    const FRI = Date.UTC(2027, 6, 9, 16, 5, 0); // a Friday, five minutes into the window, and later than every snapshot the tests above stored
+    for (const e of ["2027-07-10", "2027-07-16"])
+      for (let i = -30; i <= 30; i++) {
+        const k = 83_200 + i * 200;
+        const code = e.slice(8, 10) + e.slice(5, 7) + e.slice(2, 4);
+        const tv = 600 * Math.exp(-Math.abs(k - 83_200) / 900);
+        for (const [kind, letter, intrinsic] of [["call", "C", Math.max(83_200 - k, 0)], ["put", "P", Math.max(k - 83_200, 0)]] as const) {
+          const symbol = `${letter}-BTC-${k}-${code}`;
+          products.push(inst(symbol, kind, k, e));
+          quotes.push({ instrumentId: `delta_india:${symbol}`, ts: FRI - MIN, mark: (intrinsic + tv).toFixed(2), oi: "1", spot: "83200", markIv: 0.5 });
+        }
+      }
+    await snapshotOnce(t.deps, { venue: "delta_india", products: () => Promise.resolve(products), tickers: (u) => Promise.resolve(u === "BTC" ? quotes : []) }, () => FRI - MIN);
+    await runAutopilot(deps(FRI, { maxOpen: undefined }), ["delta_india"]);
+    const [trade] = await t.db.select().from(strategies).where(eq(strategies.userId, id));
+    expect(trade).toMatchObject({ autopilotPlaybookId: PB, status: "paper", tradingMode: "paper" });
+    const legs = await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade!.id)).orderBy(asc(strategyLegs.position));
+    // 3 % of 83,200 is 2,496: 80,704 and 85,696, nearest listed 80,800 and 85,600, on the Friday a week out
+    expect(legs.map((l) => `${l.side} ${l.kind} ${l.strike} ${l.expiry} x${l.lots}`)).toEqual(["sell put 80800 2027-07-16 x100", "sell call 85600 2027-07-16 x100"]);
+    const rulesNow = () => t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, trade!.id));
+    expect((await rulesNow()).map((r) => `${r.kind} ${r.trigger} ${r.state}`).sort()).toEqual(["leg_stop multiple armed", "leg_stop multiple armed", "time at armed"]);
+    const timed = (await rulesNow()).find((r) => r.kind === "time")!;
+    // the next 12:00 UTC after a Friday 16:05 entry: Saturday, not the Friday already past and not a week on
+    expect(timed.value).toBe("2027-07-10T12:00:00.000Z");
+    expect(timed.thresholdUsd).toBe(String(Date.UTC(2027, 6, 10, 12)));
+    expect((await view(me.cookie)).runs.find((r) => r.playbookId === PB && r.kind === "entered")!.detail).toMatchObject({ legStop: 3, exitAt: "2027-07-10T12:00:00.000Z" }); // the log line says the same Saturday
+
+    // earlier tests left users with Autopilot on, whose own trades entered on this snapshot: only this trade's rules are counted
+    const mine = new Set((await rulesNow()).map((r) => r.id));
+    const [putLeg, callLeg] = legs;
+    const sold = [Number(putLeg!.price), Number(callLeg!.price)];
+    const tick = async (putMark: number, callMark: number, ms: number) => (await evaluateRules(t.deps, { tick: () => Promise.resolve({ marks: new Map([[putLeg!.symbol, putMark], [callLeg!.symbol, callMark]]), spot: null }) }, () => ms)).fired.filter((r) => mine.has(r));
+    // Saturday 11:59 UTC, both options 10 dollars dearer (the trade 2 USD down, far from a stop): left alone
+    expect(await tick(sold[0]! + 10, sold[1]! + 10, Date.UTC(2027, 6, 10, 11, 59))).toHaveLength(0);
+    expect((await t.db.select().from(strategies).where(eq(strategies.id, trade!.id)))[0]!.status).toBe("paper");
+    // 12:00: closed whole by the timed exit, at that loss
+    expect(await tick(sold[0]! + 10, sold[1]! + 10, Date.UTC(2027, 6, 10, 12, 0, 5))).toEqual([timed.id]);
+    const [after] = await t.db.select().from(strategies).where(eq(strategies.id, trade!.id));
+    expect(after!.status).toBe("archived");
+    expect(Number(after!.realizedPnl)).toBeCloseTo(-2, 1);
+    expect((await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade!.id))).map((l) => l.status)).toEqual(["squared_off", "squared_off"]);
+    expect((await rulesNow()).filter((r) => r.kind === "leg_stop").map((r) => r.state)).not.toContain("fired");
+    // the next evening is not a Friday: nothing is entered again
+    await runAutopilot(deps(Date.UTC(2027, 6, 10, 16, 5, 0), { maxOpen: undefined }), ["delta_india"]);
+    expect((await t.db.select().from(strategies).where(eq(strategies.userId, id))).filter((x) => x.status === "paper")).toHaveLength(0);
+  });
+});
