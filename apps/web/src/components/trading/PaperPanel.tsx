@@ -7,6 +7,7 @@
 import { AUTOPILOT_PAPER_ONLY_MESSAGE, type Strategy, type Underlying, UNDERLYINGS, type StrategyLeg, type StrategyOrder, CLOSE_REASON_LABELS, MAX_STRATEGY_NAME, nearestSettlement, settlementMsOf, toDecimal } from "@hapiecoin/schema";
 import { Button, EmptyState, cn, toast } from "@hapiecoin/ui";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState, useEffect } from "react";
 import { strategyKeys, useCreateStrategy, useDeleteStrategy, useStrategies } from "@/lib/api/strategies";
 import { useAccountPositions, useLiveCancelOrder, useLiveRepriceOrder, useLiveRetry, useLiveSync } from "@/lib/api/live";
@@ -239,6 +240,43 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
   const current = Math.min(page, pages);
   const slice = rows.slice((current - 1) * PAGE, current * PAGE);
+  // HC-TR-268: a link that names a trade (/desk?tab=paper&strategy=id, from the Autopilot screen) turns the list to
+  // its card: the chips and the search that would hide it are cleared, the page that holds it is shown and the card is
+  // scrolled into view. The list is sorted by live P&L, and on arrival the prices are not in yet: the trade moves to
+  // another page a moment later. So the list stays ON the trade (pinned) for as long as it is the one the pane follows,
+  // until the trader turns the page, sorts, searches or picks a chip; and it keeps the card in view until the first
+  // press, wheel or key in the list.
+  const linked = useSearchParams().get("strategy");
+  const [pin, setPin] = useState<string | null>(null);
+  const [keepInView, setKeepInView] = useState(false);
+  const [pinnedFor, setPinnedFor] = useState<string | null>(null);
+  if (linked && linked !== pinnedFor && workspaceTab === kind && (all.some((s) => s.id === linked) || closed.some((s) => s.id === linked))) {
+    // (state set while rendering, as React asks for state derived from a prop or a read: no effect, no extra paint)
+    setPinnedFor(linked);
+    setLife(all.some((s) => s.id === linked) ? "open" : "closed");
+    setSearch("");
+    clearFilters();
+    setPin(linked);
+    setKeepInView(true);
+  }
+  // the pin holds only while the pane still follows that trade: a press on another card lets go of it
+  const pinOn = pin !== null && paneSource?.kind === "strategy" && paneSource.id === pin ? pin : null;
+  const pinAt = pinOn ? rows.findIndex((s) => s.id === pinOn) : -1;
+  if (pinAt >= 0 && Math.floor(pinAt / PAGE) + 1 !== current) setPage(Math.floor(pinAt / PAGE) + 1);
+  const pinShown = pinOn !== null && slice.some((s) => s.id === pinOn);
+  useEffect(() => {
+    if (!pinOn || !pinShown || !keepInView) return;
+    const card = document.querySelector<HTMLElement>(`[data-testid="${kind}-card"][data-id="${CSS.escape(pinOn)}"]`);
+    // (jsdom has no scrollIntoView)
+    card?.scrollIntoView?.({ block: "center" });
+    card?.focus({ preventScroll: true });
+    // again whenever its place in the list changes (pinAt), until the trader touches the list
+  }, [pinOn, pinShown, pinAt, keepInView, kind]);
+  /** The trader turns the page, sorts, searches or picks a chip: the list is theirs again. */
+  const turn = (n: number) => {
+    setPin(null);
+    setPage(n);
+  };
   const money = book.money;
   const totals = all.reduce(
     (acc, s) => {
@@ -299,10 +337,10 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
   const venueMarkOf = useCallback((l: StrategyLeg) => wallet.positions.find((p) => p.symbol === l.symbol)?.mark ?? (reconciling ? (book.priceOf(reconciling, l)?.toString() ?? null) : null), [wallet.positions, reconciling, book]);
   const marginTotal = walletRows.length ? walletRows.reduce((sum, r) => sum + Number(r.balance), 0) : null;
   return (
-    <section className="flex h-full min-h-0 flex-col" data-testid={`${kind}-panel`} data-count={all.length}>
+    <section className="flex h-full min-h-0 flex-col" onPointerDownCapture={() => setKeepInView(false)} onWheelCapture={() => setKeepInView(false)} onKeyDownCapture={() => setKeepInView(false)} data-testid={`${kind}-panel`} data-count={all.length}>
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder={`Search ${kind} trades...`} className="h-7 w-full rounded sm:w-[200px] border border-input bg-background px-2 text-xs" aria-label={`Search ${kind} trades`} data-testid={`${kind}-search`} />
-        <select value={sort} onChange={(e) => { setSort(e.target.value as SortKey); setPage(1); }} className="h-7 rounded border border-input bg-background px-2 text-xs" aria-label="Sort" data-testid={`${kind}-sort`}>
+        <input value={search} onChange={(e) => { setSearch(e.target.value); turn(1); }} placeholder={`Search ${kind} trades...`} className="h-7 w-full rounded sm:w-[200px] border border-input bg-background px-2 text-xs" aria-label={`Search ${kind} trades`} data-testid={`${kind}-search`} />
+        <select value={sort} onChange={(e) => { setSort(e.target.value as SortKey); turn(1); }} className="h-7 rounded border border-input bg-background px-2 text-xs" aria-label="Sort" data-testid={`${kind}-sort`}>
           <option value="pnl">Sort · P&L</option>
           <option value="date">Sort · Date</option>
           <option value="name">Sort · Name</option>
@@ -312,7 +350,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
           {LIFE.map((l) => {
             const n = (l.key === "closed" ? closed : l.key === "expiring" ? expiring : all).filter((s) => passes(s)).length;
             return (
-              <button key={l.key} type="button" aria-pressed={life === l.key} onClick={() => { setLife(l.key); setPage(1); }} className={cn("rounded-full border px-2.5 py-0.5 text-xs", life === l.key ? "border-foreground text-foreground" : "border-border text-muted-foreground hover:text-foreground", l.key === "expiring" && n > 0 && life !== l.key && "text-warning")} data-testid={`${kind}-life-${l.key}`} data-count={n}>
+              <button key={l.key} type="button" aria-pressed={life === l.key} onClick={() => { setLife(l.key); turn(1); }} className={cn("rounded-full border px-2.5 py-0.5 text-xs", life === l.key ? "border-foreground text-foreground" : "border-border text-muted-foreground hover:text-foreground", l.key === "expiring" && n > 0 && life !== l.key && "text-warning")} data-testid={`${kind}-life-${l.key}`} data-count={n}>
                 {l.label} <span className="text-muted-foreground">{n}</span>
               </button>
             );
@@ -324,7 +362,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
             {[null, ...coins].map((a) => {
               const n = lifeRows.filter((s) => passes(s, "coin") && (a === null || s.asset === a)).length;
               return (
-                <button key={a ?? "all"} type="button" aria-pressed={coinOn === a} onClick={() => { setCoin(a); setPage(1); }} className={chipCls(coinOn === a)} title={a === null ? "Every coin" : `Only ${a} trades`} data-testid={`${kind}-coin-${a ?? "all"}`} data-count={n}>
+                <button key={a ?? "all"} type="button" aria-pressed={coinOn === a} onClick={() => { setCoin(a); turn(1); }} className={chipCls(coinOn === a)} title={a === null ? "Every coin" : `Only ${a} trades`} data-testid={`${kind}-coin-${a ?? "all"}`} data-count={n}>
                   {a ?? "All"} <span className="text-muted-foreground">{n}</span>
                 </button>
               );
@@ -337,7 +375,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
             {SOURCES.map((o) => {
               const n = lifeRows.filter((s) => passes(s, "source") && (o.key === null || sourceOf(s) === o.key)).length;
               return (
-                <button key={o.key ?? "all"} type="button" aria-pressed={sourceOn === o.key} onClick={() => { setSource(o.key); setPage(1); }} className={chipCls(sourceOn === o.key)} title={o.title} data-testid={`${kind}-source-${o.key ?? "all"}`} data-count={n}>
+                <button key={o.key ?? "all"} type="button" aria-pressed={sourceOn === o.key} onClick={() => { setSource(o.key); turn(1); }} className={chipCls(sourceOn === o.key)} title={o.title} data-testid={`${kind}-source-${o.key ?? "all"}`} data-count={n}>
                   {o.label} <span className="text-muted-foreground">{n}</span>
                 </button>
               );
@@ -349,7 +387,7 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
             {[null, ...accounts.map((a) => a.id)].map((id) => {
               const n = lifeRows.filter((s) => passes(s, "account") && (id === null || accountOf(s) === id)).length;
               return (
-                <button key={id ?? "all"} type="button" aria-pressed={accountOn === id} onClick={() => { setAccountFilter(id); setPage(1); }} className={cn("rounded-full border px-2.5 py-0.5 text-xs", accountOn === id ? "border-foreground text-foreground" : "border-border text-muted-foreground hover:text-foreground")} title={id === null ? "Every account" : "Strategies trading through this key (ADR-068)"} data-testid={`${kind}-account-${id ?? "all"}`} data-count={n}>
+                <button key={id ?? "all"} type="button" aria-pressed={accountOn === id} onClick={() => { setAccountFilter(id); turn(1); }} className={cn("rounded-full border px-2.5 py-0.5 text-xs", accountOn === id ? "border-foreground text-foreground" : "border-border text-muted-foreground hover:text-foreground")} title={id === null ? "Every account" : "Strategies trading through this key (ADR-068)"} data-testid={`${kind}-account-${id ?? "all"}`} data-count={n}>
                   {id === null ? "All accounts" : accountLabel(accounts, id)} <span className="text-muted-foreground">{n}</span>
                 </button>
               );
@@ -544,9 +582,9 @@ export function PaperPanel({ book, feedLive, kind = "paper" }: { book: PaperBook
             })}
             {pages > 1 ? (
               <div className="flex items-center justify-center gap-3 py-2 text-xs" data-testid={`${kind}-pager`}>
-                <Button size="sm" variant="outline" disabled={current <= 1} onClick={() => setPage(current - 1)}>‹ Previous</Button>
+                <Button size="sm" variant="outline" disabled={current <= 1} onClick={() => turn(current - 1)}>‹ Previous</Button>
                 <span className="micro">Page {current} of {pages}</span>
-                <Button size="sm" variant="outline" disabled={current >= pages} onClick={() => setPage(current + 1)}>Next ›</Button>
+                <Button size="sm" variant="outline" disabled={current >= pages} onClick={() => turn(current + 1)}>Next ›</Button>
               </div>
             ) : null}
           </div>

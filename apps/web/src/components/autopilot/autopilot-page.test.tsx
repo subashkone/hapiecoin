@@ -8,7 +8,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
 import { buildChain } from "../../../test/fixtures/chain";
-import { routerMock } from "../../../test/next-mocks";
+import { routerMock, searchParamsMock } from "../../../test/next-mocks";
 import { PortfolioBar } from "@/components/chrome/PortfolioBar";
 import { Workspace } from "@/components/workspace/Workspace";
 import { fmtExpiry, fmtStrike } from "@/lib/format";
@@ -158,7 +158,15 @@ describe("HC-TR-220 the Autopilot screen: the trades it holds", () => {
 
     await u.click(within(trade("a1")).getByTestId("autopilot-trade-desk"));
     expect(useUiStore.getState().paneSource).toEqual({ kind: "strategy", id: "a1" });
-    expect(routerMock.push).toHaveBeenCalledWith("/desk?tab=paper");
+    expect(routerMock.push).toHaveBeenCalledWith("/desk?tab=paper&strategy=a1"); // HC-TR-268: the link names the trade
+    // HC-TR-268: a press anywhere on the row does the same; a press on one of its buttons does only what the button does
+    expect(routerMock.push).toHaveBeenCalledTimes(1);
+    await u.click(within(trade("a1")).getByTestId("autopilot-trade-pnl"));
+    expect(routerMock.push).toHaveBeenCalledTimes(2);
+    expect(routerMock.push).toHaveBeenLastCalledWith("/desk?tab=paper&strategy=a1");
+    await u.click(within(trade("a1")).getByTestId("autopilot-trade-more"));
+    expect(routerMock.push).toHaveBeenCalledTimes(2);
+    expect(within(trade("a1")).getByTestId("autopilot-trade-row").getAttribute("title")).toBe("Open this trade on the Desk");
 
     await u.click(within(trade("a1")).getByTestId("autopilot-trade-exit"));
     const dialog = await screen.findByTestId("stop-paper");
@@ -504,6 +512,65 @@ describe("HC-SH-143 Autopilot on the Desk", () => {
     expect(within(item).queryByTestId("bar-autopilot-pnl")).toBeNull(); // no quote yet: no figure, not a zero
     serveMarket();
     await waitFor(() => expect(within(item).getByTestId("bar-autopilot-pnl").textContent).toBe("−$7.00"));
+  });
+
+  it("HC-TR-268 a link that names a trade turns the Desk list to its card and stays on it when the prices arrive and the list is sorted again, until the trader turns the page; a trade that is not there changes nothing", async () => {
+    // 25 open paper trades, ten to a page. With no prices every P&L reads the same and p_23 is on the third page; once
+    // the prices arrive p_23 has the largest profit and is first on the first page
+    acc().strategies.push(...Array.from({ length: 25 }, (_, i) => auto(`p_${i}`, "pin-butterfly", { legs: [leg(`p_${i}`, i === 23 ? -500 : i * 10)] })));
+    const ids = () => screen.getAllByTestId("paper-card").map((c) => c.dataset["id"]);
+    const pageNow = () => screen.getByTestId("paper-pager").textContent;
+    searchParamsMock.value = new URLSearchParams("tab=paper&strategy=nobody");
+    const first = renderWithProviders(<Workspace />);
+    act(() => FakeSocket.last().open());
+    await waitFor(() => expect(screen.getAllByTestId("paper-card")).toHaveLength(10));
+    expect(pageNow()).toContain("Page 1 of 3");
+    expect(ids()).not.toContain("p_23");
+    first.unmount();
+
+    searchParamsMock.value = new URLSearchParams("tab=paper&strategy=p_23");
+    useUiStore.getState().followStrategy("p_23", true); // as the Autopilot screen does before it links
+    renderWithProviders(<Workspace />);
+    const u = userEvent.setup();
+    await waitFor(() => expect(ids()).toContain("p_23"));
+    expect(pageNow()).toContain("Page 3 of 3");
+    const card = () => screen.getAllByTestId("paper-card").find((c) => c.dataset["id"] === "p_23");
+    await waitFor(() => expect(document.activeElement).toBe(card()));
+
+    // the prices arrive and the list is sorted again: the list goes with the trade
+    serveMarket();
+    await waitFor(() => expect(pageNow()).toContain("Page 1 of 3"));
+    expect(ids()[0]).toBe("p_23");
+    expect(card()!.dataset["followed"]).toBe("true");
+
+    // the trader turns the page: the list is theirs again and is not pulled back
+    await u.click(within(screen.getByTestId("paper-pager")).getByRole("button", { name: "Next ›" }));
+    expect(pageNow()).toContain("Page 2 of 3");
+    expect(ids()).not.toContain("p_23");
+    await u.click(within(screen.getByTestId("paper-pager")).getByRole("button", { name: "Next ›" }));
+    expect(pageNow()).toContain("Page 3 of 3");
+    searchParamsMock.value = new URLSearchParams();
+  });
+
+  it("HC-TR-268 a press on another card lets go of the linked trade: the list no longer follows it", async () => {
+    acc().strategies.push(...Array.from({ length: 25 }, (_, i) => auto(`p_${i}`, "pin-butterfly", { legs: [leg(`p_${i}`, i === 23 ? -500 : i * 10)] })));
+    searchParamsMock.value = new URLSearchParams("tab=paper&strategy=p_23");
+    useUiStore.getState().followStrategy("p_23", true);
+    renderWithProviders(<Workspace />);
+    const u = userEvent.setup();
+    const ids = () => screen.getAllByTestId("paper-card").map((c) => c.dataset["id"]);
+    await waitFor(() => expect(ids()).toContain("p_23"));
+    expect(screen.getByTestId("paper-pager").textContent).toContain("Page 3 of 3");
+    // another card on this page is pressed: the pane follows that one
+    const other = screen.getAllByTestId("paper-card").find((c) => c.dataset["id"] !== "p_23")!;
+    other.focus();
+    await u.keyboard("{Enter}");
+    await waitFor(() => expect(useUiStore.getState().paneSource).toEqual({ kind: "strategy", id: other.dataset["id"] }));
+    serveMarket();
+    // p_23 goes to the first page with its profit; the list stays where the trader is
+    await waitFor(() => expect(ids()).not.toContain("p_23"));
+    expect(screen.getByTestId("paper-pager").textContent).toContain("Page 3 of 3");
+    searchParamsMock.value = new URLSearchParams();
   });
 
   it("HC-SH-143 a Paper card says which trades Autopilot opened and offers no Go live on them", async () => {

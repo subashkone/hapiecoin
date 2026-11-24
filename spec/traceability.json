@@ -8929,6 +8929,21 @@
   "evidence": "ADR-139, GAPS #175 (24 Nov 2026): apps/web/src/components/autopilot/AutopilotPage.tsx (TABS, exitTags, rated, panel), apps/web/src/components/autopilot/AutopilotResultsPanel.tsx (byDay, dayOf, won, TRADES_PAGE), apps/api/src/autopilot.ts (AUTOPILOT_TRADES_SHOWN 500); tests: autopilot-page.test.tsx HC-TR-267 (seven tests), autopilot-results.test.tsx HC-TR-267 (three tests)"
  },
  {
+  "id": "HC-TR-268",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "Autopilot Open on the Desk goes to the trade's own card",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web)",
+  "acceptance": "the link names the trade (/desk?tab=paper&strategy=id); the Desk's Paper list clears the chips and the search that would hide it, turns to the page that holds its card, scrolls the card into view and focuses it, and stays on the trade when the prices arrive and the list is sorted again, until the trader turns the page, sorts, searches, picks a chip or presses another card; a press anywhere on an open trade's row on the Autopilot screen links the same way; a trade that is not in the list changes nothing",
+  "evidence": "GAPS #176 (24 Nov 2026): apps/web/src/components/trading/PaperPanel.tsx (linked, reveal), apps/web/src/components/autopilot/AutopilotPage.tsx (toDesk); tests: autopilot-page.test.tsx HC-TR-268 (two tests: the list turns to the trade, goes with it when the prices re-sort the list, and lets go on a page turn or another card), HC-TR-220 (the link pushed by the button and by the row)"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

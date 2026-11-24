@@ -252,7 +252,8 @@ export function AutopilotPage() {
   };
   const toDesk = (s: Strategy) => {
     useUiStore.getState().followStrategy(s.id, true);
-    router.push("/desk?tab=paper");
+    // HC-TR-268: the list on the Desk is paged and sorted; the link names the trade so that the list turns to its card
+    router.push(`/desk?tab=paper&strategy=${encodeURIComponent(s.id)}`);
   };
   /**
    * Switch Autopilot off, then square off what it holds at the current prices, one trade after the other. The list is
@@ -335,7 +336,7 @@ export function AutopilotPage() {
         {filtered ? <span className="text-xs text-muted-foreground" data-testid="autopilot-filter-note">The strategies, the running trades, the log and the results below show this selection. The summary above is everything.</span> : null}
       </div>
 
-      <div className="flex gap-1 overflow-x-auto border-b border-border" role="tablist" aria-label="Autopilot views" data-testid="autopilot-tabs">
+      <div className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-border" role="tablist" aria-label="Autopilot views" data-testid="autopilot-tabs">
         {TABS.map((t) => (
           <button key={t} type="button" role="tab" id={`autopilot-tab-${t}`} aria-selected={tab === t} aria-controls={`autopilot-panel-${t}`} tabIndex={tab === t ? 0 : -1} onKeyDown={onTabKey} onClick={() => setTab(t)} className={cn("-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm", tab === t ? "border-primary font-medium text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")} data-testid="autopilot-tab" data-value={t}>
             {TAB_LABEL[t]} <span className="num ml-1 text-xs text-muted-foreground" data-testid="autopilot-tab-count">{counts[t] ?? (results.isError ? "not loaded" : "…")}</span>
@@ -369,7 +370,8 @@ export function AutopilotPage() {
                 </thead>
                 {rated.map(({ s, pnl, lv, h, near }) => (
                   <tbody key={s.id} className="border-b border-border last:border-b-0" data-testid="autopilot-trade" data-id={s.id} data-health={h?.health ?? "unknown"} data-near={near}>
-                    <tr>
+                    {/* HC-TR-268: a press anywhere on the row (not on a button) opens the trade on the Desk; the button is the keyboard's way */}
+                    <tr className="cursor-pointer hover:bg-muted/40" title="Open this trade on the Desk" onClick={(e) => { if (!(e.target as HTMLElement).closest("button")) toDesk(s); }} data-testid="autopilot-trade-row">
                       <td className={cn(TD, "hidden w-[1%] lg:table-cell")}>
                         <span className="flex flex-wrap items-center gap-1.5 whitespace-nowrap">
                           <span className={cn("text-[10px]", h ? SHAPE_TONE[h.health] : "text-muted-foreground")} aria-hidden="true">{h ? SHAPE[h.health] : "◆"}</span>

@@ -2483,5 +2483,16 @@
     "how": "a summary stays on top (open trades and how many need attention, open profit or loss, today, capital in use, closed trades net of fees, strategies on); tabs Open trades, Closed trades, Strategies and Log each take the full width with a count, narrowed by expiry, coin and a search by name; open trades are a table sorted no live price, close to a stop (the whole trade's or a sold option's own), losing, on track, the largest loss first within each, the order held while the pointer is on it; closed trades are grouped by the day they closed with the day's count, won, lost and net after fees, one day and won or lost can be picked, and every one the server sends can be reached; exit rules read as short tags with the sentence kept in the row; the log can be narrowed to a kind and a day",
     "evidence": "ADR-139, GAPS #175 (24 Nov 2026): apps/web/src/components/autopilot/AutopilotPage.tsx (TABS, exitTags, rated, panel), apps/web/src/components/autopilot/AutopilotResultsPanel.tsx (byDay, dayOf, won, TRADES_PAGE), apps/api/src/autopilot.ts (AUTOPILOT_TRADES_SHOWN 500); tests: autopilot-page.test.tsx HC-TR-267 (seven tests), autopilot-results.test.tsx HC-TR-267 (three tests)",
     "test": "unit (web)"
+  },
+  {
+    "route": "/autopilot",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Autopilot Open on the Desk goes to the trade's own card",
+    "how": "the link names the trade (/desk?tab=paper&strategy=id); the Desk's Paper list clears the chips and the search that would hide it, turns to the page that holds its card, scrolls the card into view and focuses it, and stays on the trade when the prices arrive and the list is sorted again, until the trader turns the page, sorts, searches, picks a chip or presses another card; a press anywhere on an open trade's row on the Autopilot screen links the same way; a trade that is not in the list changes nothing",
+    "evidence": "GAPS #176 (24 Nov 2026): apps/web/src/components/trading/PaperPanel.tsx (linked, reveal), apps/web/src/components/autopilot/AutopilotPage.tsx (toDesk); tests: autopilot-page.test.tsx HC-TR-268 (two tests: the list turns to the trade, goes with it when the prices re-sort the list, and lets go on a page turn or another card), HC-TR-220 (the link pushed by the button and by the row)",
+    "test": "unit (web)"
   }
 ]
