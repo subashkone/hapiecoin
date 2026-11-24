@@ -2,6 +2,7 @@
 // Alerts center (Phase 5 item 2, ADR-052; HC-SH-079, 094, 097..100; docs/design/alerts.md): the counts line, the
 // New alert form (Type · Asset or Strategy · Condition · Value · Channels), the rows with the condition, the
 // current reading, channel chips, the state badge, the arm switch and delete, and the empty state.
+import { fmtDateTime } from "@/lib/format";
 import { ALERT_KIND_LABELS, ALERT_KIND_UNITS, ALERT_OP_LABELS, type Alert, type AlertChannel, type AlertKind, type AlertOp, type Underlying, alertCounts, DECIMAL_STRING_RE } from "@hapiecoin/schema";
 import { Activity, Badge, Bell, Button, Checkbox, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, Percent, Switch, TrendingUp, cn, toast } from "@hapiecoin/ui";
 import { useEffect, useMemo, useState } from "react";
@@ -182,7 +183,7 @@ function AlertRow({ a }: { a: Alert }) {
   const del = useDeleteAlert();
   const [confirm, setConfirm] = useState(false);
   const current = currentValue(a, readings);
-  const fired = a.triggeredAt ? new Date(a.triggeredAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : null;
+  const fired = a.triggeredAt ? fmtDateTime(a.triggeredAt) : null;
   return (
     <div className={cn("flex flex-wrap items-center gap-3 rounded border px-3 py-2", a.state === "triggered" ? "border-warning" : "border-border")} data-testid="alert-row" data-state={a.state} data-kind={a.kind}>
       <KindIcon kind={a.kind} />

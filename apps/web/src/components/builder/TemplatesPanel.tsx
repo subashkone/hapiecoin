@@ -6,7 +6,7 @@ import { payoffAtExpiry } from "@hapiecoin/pricing";
 import { useMemo, useState, useEffect } from "react";
 import { nearestExpiry } from "@/lib/chain/expiries";
 import { useExpiriesQuery } from "@/lib/chain/useExpiries";
-import { daysToExpiry, fmtDate, fmtExpiry } from "@/lib/format";
+import { daysToExpiry, fmtDate, fmtDateTime, fmtExpiry } from "@/lib/format";
 import { useChain, useSpot } from "@/lib/gateway/hooks";
 import { atmIndex } from "@/lib/gateway/reducer";
 import { useUiStore } from "@/lib/store";
@@ -261,7 +261,7 @@ export function TemplatesPanel() {
               <span className="micro">{d.asset}</span>
               <span className="micro">{d.legs.length} {d.legs.length === 1 ? "leg" : "legs"}</span>
               <span className="micro">{d.templateName}</span>
-              <span className="micro">{d.status === "archived" && d.closedAt ? `closed ${fmtDate(d.closedAt)}` : `created ${fmtDate(d.createdAt)}`}{d.tradingMode ? ` · was ${d.tradingMode}` : ""}</span>
+              <span className="micro">{d.status === "archived" && d.closedAt ? `closed ${fmtDateTime(d.closedAt)}` : `created ${fmtDate(d.createdAt)}`}{d.tradingMode ? ` · was ${d.tradingMode}` : ""}</span>
               <span className="ml-auto flex gap-1">
                 <Button size="sm" variant="outline" onClick={() => { loadDraft(d); toast("Loaded", { description: `${d.name} loaded into the Builder` }); }} data-testid="mine-load">
                   Load

@@ -1,6 +1,6 @@
 # Paper trading, live trading, rules and accounts
 
-Part of the [HapieCoin feature guide](README.md). 151 traced features on 35 screens; 151 built and tested, 0 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 152 traced features on 35 screens; 152 built and tested, 0 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -160,6 +160,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-TR-256 | One overall result for the tab: closed and open trades together, after fees | a tile Overall result beside Total P&L adds the closed trades and the running P&L of the open ones, less their estimated fees, and says how many of each; it follows the coin, opener and account chips | built | unit (web) |
 | HC-TR-257 | The margin of sold options estimated when a trade is entered, shown as its capital | when a paper trade is started, a live trade is placed or Autopilot enters one, the API estimates the least the exchange lists it would block: every sold option under the margin percent its contract lists that day (read from the venue's public product list), the spot and the entry price, plus any net premium paid (a live placement stores its preview's figure, futures included); the figure is stored with the strategy (migration 0031) and the card of a trade sold without cover shows it as capital, marked min. margin est., with the return on est. margin; a trade entered before this, a paper trade with a futures leg, or one the venue was slow or silent for says sold without cover (or futures margin) and shows none | built | unit + integration (api), unit (web) |
 | HC-TR-260 | A running trade that has closed a leg shows the whole trade's best case, worst case and break-even | when a paper or live trade has a realised result (a stopped or bought-back leg, a partial exit), that result is priced with its open legs as an offsetting pair worth the same at every price; the card's max loss, max profit and POP, the Details payoff line and chart, the pane following the trade and the workbench's plans and repair ideas then describe the whole trade and say how much is included ("incl. X realised"; "best case" when even that is a loss); the net premium, the greeks, the margin and the worst loss sent with a live adjust preview stay those of the legs still open; a trade with nothing realised is unchanged | built | unit (web) |
+| HC-TR-264 | Every event of a trade shows its date and time in one format | wherever a moment in a trade's life is named it is printed as day, month, year, hour and minute on the reader's clock with the zone: in Details each filled leg says when it was opened (on a live trade, when its order was sent) and when and why it was closed, a fired rule when it fired, a switched-off rule when it was switched off; the card's fired tag carries its time; the Journal gives opened and closed to the minute and exports both instants in its CSV; the Builder's saved list, the Protect dialog's timed exit and a triggered alert use the same format | built | unit (web) |
 
 ### Desk · Strategy Details (modal) · `/desk`
 
