@@ -19,7 +19,9 @@ Columns: mean per day, share of days positive, total, worst day, worst three, la
 a quarter of the net premium, the two halves, premium collected / paid, and the structure's true largest loss (the
 wider side's width less the net premium, plus the entry fees): its mean and its largest over the days.
 
-Usage: python study_wings_stack.py <cache_dir> <lot_size> <bar_minutes> <entry_hours_before> <percent_away> "" "" <label> <buy-back mark> <stop multiple> <trail arm %> <trail give-back %> <wing distances in % of spot, comma>"""
+Usage: python study_wings_stack.py <cache_dir> <lot_size> <bar_minutes> <entry_hours_before> <percent_away> "" "" <label> <buy-back mark> <stop multiple> <trail arm %> <trail give-back %> <wing distances in % of spot, comma> [slip]
+       (with "slip" every market fill, the entry and the wings included, is worse than the mark by the share measured
+       on real fills; a leg left to settlement pays none)"""
 import sys
 import study_exits as X
 
@@ -27,6 +29,15 @@ LABEL, MARK, MULT = sys.argv[8], float(sys.argv[9]), float(sys.argv[10])
 TRAIL = (float(sys.argv[11]) / 100, float(sys.argv[12]) / 100)
 WINGS = [float(x) for x in sys.argv[13].split(",") if x]
 Q = X.Q
+SLIP = len(sys.argv) > 14 and sys.argv[14] == "slip"
+
+
+def slip(p, sp):
+    """As in study_stack.py: what a market order loses against the mark, from the owner's own fills."""
+    if not SLIP:
+        return 0.0
+    r = p / sp
+    return p * Q * (0.01 if r >= 0.004 else 0.025 if r >= 0.0007 else 0.065)
 
 
 def wing(opts, t0, s0, kind, sold_k, w):
@@ -57,7 +68,7 @@ carried = [0, 0]  # wing bars valued at the last mark, wing bars in all
 
 
 def run(tr, legs, mult=None, mark=None, trail=None, wing_out=False):
-    fee_in = sum(X.fee(tr.spot[tr.t0], e) for *_, e in legs)
+    fee_in = sum(X.fee(tr.spot[tr.t0], e) + slip(e, tr.spot[tr.t0]) for *_, e in legs)
     credit = sum(-s * e * Q for s, *_, e in legs)
     live, realised, t, best = list(range(len(legs))), -fee_in, tr.t0 + X.BAR, None
     last = {i: legs[i][4] for i in live}
@@ -65,7 +76,7 @@ def run(tr, legs, mult=None, mark=None, trail=None, wing_out=False):
     def out(i, p, sp):
         s, _, _, _, e = legs[i]
         live.remove(i)
-        return s * (p - e) * Q - X.fee(sp, p)
+        return s * (p - e) * Q - X.fee(sp, p) - slip(p, sp)
 
     while t <= tr.last_b and live:
         sp = tr.spot.get(t, tr.settle_spot)
@@ -95,7 +106,7 @@ def run(tr, legs, mult=None, mark=None, trail=None, wing_out=False):
             if trail is not None and (best is not None or total >= trail[0]):
                 best = total if best is None else max(best, total)
                 if total <= best * (1 - trail[1]):
-                    return realised + rest - sum(X.fee(sp, px[i]) for i in live)
+                    return realised + rest - sum(X.fee(sp, px[i]) + slip(px[i], sp) for i in live)
         t += X.BAR
     for i in live:
         s, kind, k, _, e = legs[i]
@@ -120,7 +131,7 @@ ROWS = [
 
 trades = sorted(X.trades, key=lambda x: x[0])
 opts_of = {e: X.load(e)[1] for e, _ in trades}
-print(f"## {LABEL}: {len(trades)} days ({trades[0][0]} .. {trades[-1][0]}), sold {X.PCT * 100:g} % away, entered {X.ENTRY:g} h before settlement; stop {MULT:g}x, buy-back mark {MARK:g}, trail from {TRAIL[0] * 100:g} % giving back {TRAIL[1] * 100:g} %")
+print(f"## {LABEL}{' WITH SLIPPAGE' if SLIP else ''}: {len(trades)} days ({trades[0][0]} .. {trades[-1][0]}), sold {X.PCT * 100:g} % away, entered {X.ENTRY:g} h before settlement; stop {MULT:g}x, buy-back mark {MARK:g}, trail from {TRAIL[0] * 100:g} % giving back {TRAIL[1] * 100:g} %")
 head = f"   {'':56s} {'mean':>7s} {'win':>4s} {'total':>7s} {'worst':>7s} {'worst 3':>8s} {'drawdown':>8s} {'bad days':>8s} {'halves':>13s}"
 for w in [None] + WINGS:
     built = [(e, tr, build(tr, opts_of[e], None if w is None else w / 100)) for e, tr in trades]

@@ -1,0 +1,180 @@
+## BTC daily WITH SLIPPAGE: 108 trades (2026-08-08 .. 2026-11-23), each side 1 % away, entered 20 h before settlement; mean premium 37.5; buy-back mark 5; 14 days followed a move of more than 3 % in 24 h
+                                                         mean  win   total   worst  worst 3 drawdown bad days        halves  
+   stop 3x                                             +11.63  66%   +1256  -108.3   -261.6   -189.7       36     +647/+608  
+   stop 2x                                              +7.44  48%    +803   -41.5   -115.8   -143.8       30     +308/+496  
+   stop 3x, buy-back                                   +11.14  67%   +1203  -108.8   -263.2   -190.7       35     +620/+583  
+   stop 2x, buy-back                                    +6.92  48%    +748   -41.5   -115.8   -149.9       32     +282/+465  
+   stop 3x, buy-back, lock 50>25                        +9.85  70%   +1064   -71.6   -188.8   -145.9       27     +593/+471  
+   stop 2x, buy-back, lock 50>25                        +6.62  55%    +715   -41.5   -115.8    -95.4       24     +256/+459  
+   stop 3x, buy-back, trail from 90 give 5             +11.10  67%   +1199  -108.8   -263.2   -190.7       35     +622/+577  
+   stop 2x, buy-back, trail from 90 give 5              +7.16  48%    +773   -41.5   -115.8   -112.8       32     +303/+470  
+   stop 3x, buy-back, lock, take 90                     +9.37  70%   +1012   -71.6   -188.8   -146.5       27     +597/+415  
+   stop 2x, buy-back, lock, take 90                     +6.49  55%    +701   -41.5   -115.8    -95.4       24     +278/+423  
+   stop 3x, trail from 50 give 20                       +9.64  78%   +1041   -71.2   -188.0   -134.2       24     +658/+383  
+   stop 2x, trail from 50 give 20                       +6.88  60%    +743   -41.5   -115.8    -96.4       20     +326/+417  
+   stop 3x, trail from 25 give 30                       +6.44  83%    +696   -52.1   -128.8    -64.7       15     +361/+334  
+   stop 2x, trail from 25 give 30                       +5.60  74%    +605   -39.0    -93.9    -53.4       13     +269/+336  
+   stop 3x, trail from 15 give 30                       +3.04  76%    +328   -52.1   -115.4    -64.7       14     +181/+147  
+   stop 2x, trail from 15 give 30                       +3.73  73%    +403   -39.0    -93.9    -60.7        9     +173/+230  
+   stop 2x, buy-back, trail from 50 give 20             +6.70  59%    +724   -41.5   -115.8    -97.7       23     +319/+405  
+   stop 2x, buy-back, trail from 25 give 30             +5.47  73%    +591   -39.0    -94.4    -53.9       14     +261/+330  
+   stop 2x; after a stop the other bought back at 20 %   +6.74  44%    +728   -34.2    -97.1   -176.1       39     +291/+437  
+   stop 2x; after a stop the other bought back at 10 %   +6.90  46%    +745   -41.5   -113.8   -164.2       35     +266/+478  
+   stop 3x; after a stop the other bought back at 20 %  +11.55  66%   +1248  -110.6   -266.5   -192.1       36     +622/+625  
+   stop 3x; after a stop the other bought back at 10 %  +11.79  66%   +1273  -110.6   -266.5   -192.1       36     +631/+642  
+   stop 2x, trail 25 give 30; after a stop other at 20 %   +5.08  73%    +549   -30.9    -80.7    -43.9       18     +262/+287  
+   stop 3x, buy-back, lock; skip after a 3 % day        +7.57  61%    +817   -64.7   -159.1   -145.9       25     +365/+452  
+   stop 2x, buy-back, lock; skip after a 3 % day        +5.65  49%    +611   -41.5   -115.8    -95.4       21     +190/+420  
+   stop 3x, buy-back, lock; skip after a 2 % day        +5.91  53%    +638   -64.7   -159.1   -126.9       20     +268/+371  
+   stop 2x, trail from 15 give 30; skip after a 3 % day   +2.64  62%    +285   -39.0    -93.9    -60.7        9     +124/+161  
+
+## BTC daily WITH SLIPPAGE: 108 trades (2026-08-08 .. 2026-11-23), each side 1.5 % away, entered 20 h before settlement; mean premium 24.8; buy-back mark 5; 14 days followed a move of more than 3 % in 24 h
+                                                         mean  win   total   worst  worst 3 drawdown bad days        halves  
+   stop 3x                                              +8.15  67%    +880   -93.4   -216.7   -151.6       34     +396/+484  
+   stop 2x                                              +5.85  56%    +632   -27.2    -75.2    -62.6       35     +295/+337  
+   stop 3x, buy-back                                    +7.92  69%    +855   -94.0   -218.0   -152.7       33     +359/+496  
+   stop 2x, buy-back                                    +5.70  56%    +616   -27.7    -76.8    -64.7       35     +268/+348  
+   stop 3x, buy-back, lock 50>25                        +7.68  73%    +829   -51.2   -129.5    -84.2       24     +340/+489  
+   stop 2x, buy-back, lock 50>25                        +5.19  63%    +561   -27.0    -71.6    -58.8       26     +247/+314  
+   stop 3x, buy-back, trail from 90 give 5              +7.48  69%    +808   -94.0   -218.0   -152.7       33     +340/+468  
+   stop 2x, buy-back, trail from 90 give 5              +5.40  56%    +583   -27.7    -76.8    -64.7       35     +257/+326  
+   stop 3x, buy-back, lock, take 90                     +7.06  73%    +763   -51.2   -129.5    -84.2       24     +313/+450  
+   stop 2x, buy-back, lock, take 90                     +4.78  63%    +517   -27.0    -71.6    -58.8       26     +226/+291  
+   stop 3x, trail from 50 give 20                       +7.70  81%    +831   -50.9   -128.7    -56.3       21     +406/+426  
+   stop 2x, trail from 50 give 20                       +6.10  70%    +658   -22.9    -62.7    -41.6       23     +329/+329  
+   stop 3x, trail from 25 give 30                       +4.09  84%    +442   -50.9   -125.6    -50.9       16     +232/+210  
+   stop 2x, trail from 25 give 30                       +4.19  79%    +452   -22.9    -62.7    -41.6       15     +213/+239  
+   stop 3x, trail from 15 give 30                       +2.75  79%    +297   -50.9   -109.8    -50.9        9     +157/+140  
+   stop 2x, trail from 15 give 30                       +3.02  76%    +326   -22.9    -55.8    -22.9        9     +174/+153  
+   stop 2x, buy-back, trail from 50 give 20             +6.15  69%    +664   -22.9    -63.8    -42.2       23     +344/+320  
+   stop 2x, buy-back, trail from 25 give 30             +4.12  78%    +445   -22.9    -63.8    -42.2       16     +210/+235  
+   stop 2x; after a stop the other bought back at 20 %   +5.08  49%    +548   -29.4    -84.1    -73.1       41     +261/+287  
+   stop 2x; after a stop the other bought back at 10 %   +5.42  52%    +586   -28.2    -80.4    -68.4       38     +268/+318  
+   stop 3x; after a stop the other bought back at 20 %   +8.13  66%    +878   -95.3   -222.0   -153.5       34     +399/+480  
+   stop 3x; after a stop the other bought back at 10 %   +8.11  67%    +876   -95.3   -221.3   -153.5       34     +385/+492  
+   stop 2x, trail 25 give 30; after a stop other at 20 %   +3.83  76%    +413   -24.1    -63.8    -34.4       20     +206/+207  
+   stop 3x, buy-back, lock; skip after a 3 % day        +6.48  65%    +700   -51.2   -126.5    -84.2       22     +234/+466  
+   stop 2x, buy-back, lock; skip after a 3 % day        +5.19  57%    +561   -27.0    -71.6    -58.8       21     +197/+364  
+   stop 3x, buy-back, lock; skip after a 2 % day        +5.15  55%    +556   -51.2   -126.5    -51.2       19     +186/+370  
+   stop 2x, trail from 15 give 30; skip after a 3 % day   +2.14  64%    +231   -22.9    -55.8    -22.9        8      +137/+94  
+
+## BTC daily WITH SLIPPAGE: 108 trades (2026-08-08 .. 2026-11-23), each side 2 % away, entered 20 h before settlement; mean premium 17.0; buy-back mark 5; 14 days followed a move of more than 3 % in 24 h
+                                                         mean  win   total   worst  worst 3 drawdown bad days        halves  
+   stop 3x                                              +5.60  67%    +605   -73.8   -187.4   -118.7       34     +286/+319  
+   stop 2x                                              +3.98  54%    +430   -27.0    -67.7    -49.8       40     +202/+228  
+   stop 3x, buy-back                                    +5.63  70%    +609   -74.3   -188.8   -120.3       29     +268/+341  
+   stop 2x, buy-back                                    +3.90  56%    +421   -27.3    -69.1    -50.9       36     +195/+227  
+   stop 3x, buy-back, lock 50>25                        +5.42  75%    +585   -35.9    -99.7    -60.8       19     +276/+310  
+   stop 2x, buy-back, lock 50>25                        +4.13  64%    +446   -27.9    -67.2    -39.8       25     +223/+223  
+   stop 3x, buy-back, trail from 90 give 5              +5.35  70%    +578   -74.3   -188.8   -120.3       29     +258/+320  
+   stop 2x, buy-back, trail from 90 give 5              +3.69  56%    +399   -27.3    -69.1    -50.9       36     +193/+206  
+   stop 3x, buy-back, lock, take 90                     +5.10  75%    +551   -35.9    -99.7    -60.8       19     +262/+288  
+   stop 2x, buy-back, lock, take 90                     +3.88  64%    +419   -27.9    -67.2    -39.8       25     +211/+209  
+   stop 3x, trail from 50 give 20                       +5.84  78%    +631   -35.4    -98.2    -55.2       21     +324/+307  
+   stop 2x, trail from 50 give 20                       +4.73  67%    +511   -17.0    -45.2    -27.9       28     +260/+251  
+   stop 3x, trail from 25 give 30                       +3.69  81%    +399   -32.4    -84.1    -42.1       14     +196/+203  
+   stop 2x, trail from 25 give 30                       +3.83  78%    +414   -18.2    -48.7    -31.7       14     +206/+208  
+   stop 3x, trail from 15 give 30                       +2.28  73%    +246   -32.4    -78.5    -32.4       11     +122/+124  
+   stop 2x, trail from 15 give 30                       +2.37  72%    +256   -18.2    -46.6    -18.7       11     +125/+132  
+   stop 2x, buy-back, trail from 50 give 20             +4.83  70%    +522   -17.5    -46.8    -20.8       23     +275/+247  
+   stop 2x, buy-back, trail from 25 give 30             +3.84  78%    +415   -18.2    -47.7    -24.0       14     +208/+207  
+   stop 2x; after a stop the other bought back at 20 %   +3.46  51%    +374   -27.9    -72.1    -58.7       45     +188/+185  
+   stop 2x; after a stop the other bought back at 10 %   +3.62  52%    +391   -27.9    -71.2    -54.2       42     +186/+205  
+   stop 3x; after a stop the other bought back at 20 %   +5.47  67%    +591   -74.9   -189.9   -119.9       35     +289/+301  
+   stop 3x; after a stop the other bought back at 10 %   +5.44  67%    +588   -74.9   -189.9   -119.9       35     +279/+308  
+   stop 2x, trail 25 give 30; after a stop other at 20 %   +3.70  77%    +400   -18.5    -50.8    -24.4       16     +211/+189  
+   stop 3x, buy-back, lock; skip after a 3 % day        +4.77  66%    +515   -32.9    -83.1    -32.9       16     +195/+320  
+   stop 2x, buy-back, lock; skip after a 3 % day        +4.24  58%    +458   -21.8    -54.2    -24.2       19     +183/+275  
+   stop 3x, buy-back, lock; skip after a 2 % day        +3.92  55%    +423   -32.9    -73.2    -32.9       14     +185/+238  
+   stop 2x, trail from 15 give 30; skip after a 3 % day   +1.78  61%    +192   -18.2    -46.6    -18.7       10      +88/+104  
+
+## ETH daily WITH SLIPPAGE: 108 trades (2026-08-08 .. 2026-11-23), each side 1 % away, entered 20 h before settlement; mean premium 21.2; buy-back mark 0.25; 23 days followed a move of more than 3 % in 24 h
+                                                         mean  win   total   worst  worst 3 drawdown bad days        halves  
+   stop 3x                                              +4.47  62%    +483   -50.8   -139.4   -123.4       39     +233/+250  
+   stop 2x                                              +2.83  45%    +306   -50.8   -125.0   -105.9       31     +117/+189  
+   stop 3x, buy-back                                    +4.14  62%    +447   -51.0   -139.9   -124.0       39     +215/+233  
+   stop 2x, buy-back                                    +2.54  45%    +274   -51.0   -125.4   -110.7       32     +101/+173  
+   stop 3x, buy-back, lock 50>25                        +3.18  68%    +343   -51.5   -140.4   -107.6       33     +151/+192  
+   stop 2x, buy-back, lock 50>25                        +2.01  55%    +217   -51.5   -125.9   -132.3       30      +67/+150  
+   stop 3x, buy-back, trail from 90 give 5              +4.29  63%    +464   -51.0   -139.9   -124.0       38     +229/+235  
+   stop 2x, buy-back, trail from 90 give 5              +2.83  47%    +306   -51.0   -125.4    -80.8       30     +125/+181  
+   stop 3x, buy-back, lock, take 90                     +3.63  69%    +392   -51.5   -140.4    -87.5       32     +171/+221  
+   stop 2x, buy-back, lock, take 90                     +2.42  56%    +261   -51.5   -125.9    -89.2       29      +94/+167  
+   stop 3x, trail from 50 give 20                       +3.85  74%    +416   -45.5   -128.8    -80.4       28     +192/+224  
+   stop 2x, trail from 50 give 20                       +3.02  58%    +326   -40.2   -107.9    -94.4       25     +137/+190  
+   stop 3x, trail from 25 give 30                       +3.10  86%    +335   -45.5   -117.1    -47.0       15     +141/+194  
+   stop 2x, trail from 25 give 30                       +2.67  70%    +289   -34.0    -95.2    -45.0       18     +136/+153  
+   stop 3x, trail from 15 give 30                       +2.36  85%    +255   -45.5   -106.9    -64.0       11      +79/+176  
+   stop 2x, trail from 15 give 30                       +1.68  72%    +182   -34.0    -95.2    -46.3       17      +78/+103  
+   stop 2x, buy-back, trail from 50 give 20             +2.86  58%    +309   -40.4   -108.1    -98.3       26     +130/+179  
+   stop 2x, buy-back, trail from 25 give 30             +2.53  70%    +273   -34.0    -95.2    -45.9       19     +126/+147  
+   stop 2x; after a stop the other bought back at 20 %   +2.35  44%    +254   -51.3   -126.2   -117.6       36      +97/+157  
+   stop 2x; after a stop the other bought back at 10 %   +2.55  44%    +275   -51.3   -126.2   -114.6       35     +103/+172  
+   stop 3x; after a stop the other bought back at 20 %   +4.28  62%    +462   -51.3   -140.5   -124.5       39     +228/+235  
+   stop 3x; after a stop the other bought back at 10 %   +4.34  62%    +469   -51.3   -140.5   -124.5       39     +230/+239  
+   stop 2x, trail 25 give 30; after a stop other at 20 %   +2.27  69%    +245   -34.0    -95.2    -51.1       21     +116/+128  
+   stop 3x, buy-back, lock; skip after a 3 % day        +2.86  56%    +309   -45.5   -117.7    -71.3       24     +133/+176  
+   stop 2x, buy-back, lock; skip after a 3 % day        +2.29  46%    +247   -34.0    -95.2    -67.2       19     +114/+134  
+   stop 3x, buy-back, lock; skip after a 2 % day        +1.68  46%    +181   -45.5   -117.7   -108.4       23      +78/+103  
+   stop 2x, trail from 15 give 30; skip after a 3 % day   +1.02  55%    +110   -34.0    -95.2    -55.0       14       +46/+64  
+
+## ETH daily WITH SLIPPAGE: 108 trades (2026-08-08 .. 2026-11-23), each side 1.5 % away, entered 20 h before settlement; mean premium 15.4; buy-back mark 0.25; 23 days followed a move of more than 3 % in 24 h
+                                                         mean  win   total   worst  worst 3 drawdown bad days        halves  
+   stop 3x                                              +3.50  64%    +378   -49.1   -125.1   -112.7       37     +133/+245  
+   stop 2x                                              +2.02  44%    +218   -49.1   -114.5   -101.0       32      +75/+143  
+   stop 3x, buy-back                                    +3.39  65%    +366   -49.2   -125.5   -113.4       36     +124/+243  
+   stop 2x, buy-back                                    +1.94  44%    +210   -49.2   -114.9    -80.8       31      +58/+152  
+   stop 3x, buy-back, lock 50>25                        +2.06  67%    +222   -49.5   -125.8    -83.2       29      +43/+179  
+   stop 2x, buy-back, lock 50>25                        +1.23  51%    +133   -49.5   -115.2   -110.0       27      +25/+108  
+   stop 3x, buy-back, trail from 90 give 5              +3.42  67%    +369   -49.2   -125.5   -113.4       35     +126/+243  
+   stop 2x, buy-back, trail from 90 give 5              +1.97  45%    +213   -49.2   -114.9    -75.8       30      +71/+142  
+   stop 3x, buy-back, lock, take 90                     +2.28  68%    +247   -49.5   -125.8    -79.6       28      +75/+172  
+   stop 2x, buy-back, lock, take 90                     +1.41  52%    +153   -49.5   -115.2    -88.4       26       +61/+92  
+   stop 3x, trail from 50 give 20                       +2.09  74%    +225   -38.4   -113.4    -85.9       26     +114/+111  
+   stop 2x, trail from 50 give 20                       +1.54  57%    +166   -37.4    -92.9   -108.5       25      +107/+59  
+   stop 3x, trail from 25 give 30                       +2.31  84%    +249   -38.4    -99.8    -60.5       13      +76/+173  
+   stop 2x, trail from 25 give 30                       +1.79  70%    +193   -28.0    -74.8    -43.2       17      +71/+122  
+   stop 3x, trail from 15 give 30                       +2.49  83%    +269   -37.7    -67.7    -60.9        9      +73/+196  
+   stop 2x, trail from 15 give 30                       +1.70  72%    +183   -28.0    -74.8    -37.9       14      +72/+112  
+   stop 2x, buy-back, trail from 50 give 20             +1.71  57%    +185   -37.7    -93.2    -82.2       24      +100/+84  
+   stop 2x, buy-back, trail from 25 give 30             +1.67  70%    +181   -28.0    -74.8    -44.4       17      +64/+117  
+   stop 2x; after a stop the other bought back at 20 %   +1.62  43%    +175   -49.4   -115.4   -106.7       40      +52/+124  
+   stop 2x; after a stop the other bought back at 10 %   +1.80  43%    +194   -49.4   -115.4   -100.4       34      +62/+133  
+   stop 3x; after a stop the other bought back at 20 %   +3.39  64%    +366   -49.4   -127.5   -113.4       37     +125/+241  
+   stop 3x; after a stop the other bought back at 10 %   +3.43  64%    +370   -49.4   -126.5   -113.4       37     +127/+243  
+   stop 2x, trail 25 give 30; after a stop other at 20 %   +1.51  69%    +163   -28.0    -74.8    -51.8       23      +57/+106  
+   stop 3x, buy-back, lock; skip after a 3 % day        +2.07  55%    +224   -38.6   -100.2    -50.1       22      +53/+171  
+   stop 2x, buy-back, lock; skip after a 3 % day        +1.71  42%    +185   -28.0    -74.8    -46.8       18      +66/+119  
+   stop 3x, buy-back, lock; skip after a 2 % day        +1.11  46%    +120   -38.6   -100.2    -78.3       21       +2/+118  
+   stop 2x, trail from 15 give 30; skip after a 3 % day   +0.95  54%    +103   -28.0    -74.8    -49.1       12       +42/+61  
+
+## ETH daily WITH SLIPPAGE: 108 trades (2026-08-08 .. 2026-11-23), each side 2 % away, entered 20 h before settlement; mean premium 11.1; buy-back mark 0.25; 23 days followed a move of more than 3 % in 24 h
+                                                         mean  win   total   worst  worst 3 drawdown bad days        halves  
+   stop 3x                                              +2.82  64%    +304   -37.0   -105.7    -91.4       38     +133/+171  
+   stop 2x                                              +2.07  49%    +223   -35.2    -86.0    -59.8       34     +103/+120  
+   stop 3x, buy-back                                    +2.74  67%    +296   -37.3   -106.5    -92.2       35     +124/+173  
+   stop 2x, buy-back                                    +2.05  46%    +221   -35.4    -86.5    -55.0       37     +106/+115  
+   stop 3x, buy-back, lock 50>25                        +2.20  68%    +238   -37.3   -106.6    -70.6       27      +90/+148  
+   stop 2x, buy-back, lock 50>25                        +2.13  54%    +230   -35.5    -86.9    -51.7       31      +86/+144  
+   stop 3x, buy-back, trail from 90 give 5              +2.36  67%    +255   -37.3   -106.5    -92.2       35     +104/+151  
+   stop 2x, buy-back, trail from 90 give 5              +1.75  46%    +190   -35.4    -86.5    -55.4       37       +94/+96  
+   stop 3x, buy-back, lock, take 90                     +1.96  68%    +211   -37.3   -106.6    -70.6       27      +77/+135  
+   stop 2x, buy-back, lock, take 90                     +1.92  54%    +207   -35.5    -86.9    -52.0       31      +76/+130  
+   stop 3x, trail from 50 give 20                       +1.98  76%    +214   -37.0    -93.3    -38.8       24      +88/+126  
+   stop 2x, trail from 50 give 20                       +1.97  63%    +213   -22.7    -45.0    -31.2       25      +96/+117  
+   stop 3x, trail from 25 give 30                       +2.19  84%    +236   -22.7    -41.4    -41.3       13      +74/+162  
+   stop 2x, trail from 25 give 30                       +1.45  69%    +157   -22.7    -44.4    -26.4       19      +55/+102  
+   stop 3x, trail from 15 give 30                       +1.61  79%    +174   -22.7    -39.5    -27.8        9      +42/+132  
+   stop 2x, trail from 15 give 30                       +1.18  69%    +128   -22.7    -44.4    -32.3       16       +47/+81  
+   stop 2x, buy-back, trail from 50 give 20             +2.28  61%    +247   -22.7    -45.0    -29.3       29     +113/+134  
+   stop 2x, buy-back, trail from 25 give 30             +1.47  69%    +158   -22.7    -44.4    -26.6       23      +59/+100  
+   stop 2x; after a stop the other bought back at 20 %   +1.86  46%    +201   -35.4    -86.8    -59.6       39      +91/+110  
+   stop 2x; after a stop the other bought back at 10 %   +1.98  46%    +214   -35.4    -86.8    -57.2       38      +98/+116  
+   stop 3x; after a stop the other bought back at 20 %   +2.66  64%    +288   -37.9   -107.1    -91.9       39     +126/+162  
+   stop 3x; after a stop the other bought back at 10 %   +2.71  64%    +293   -37.5   -106.6    -91.9       39     +128/+165  
+   stop 2x, trail 25 give 30; after a stop other at 20 %   +1.31  69%    +141   -22.7    -44.5    -31.4       23       +48/+93  
+   stop 3x, buy-back, lock; skip after a 3 % day        +2.14  56%    +231   -37.3    -70.4    -37.3       19     +100/+131  
+   stop 2x, buy-back, lock; skip after a 3 % day        +2.30  45%    +248   -22.7    -44.4    -29.3       22     +122/+126  
+   stop 3x, buy-back, lock; skip after a 2 % day        +1.42  48%    +153   -37.3    -70.4    -46.8       18       +72/+81  
+   stop 2x, trail from 15 give 30; skip after a 3 % day   +0.76  51%     +82   -22.7    -44.4    -31.7       13       +24/+58  
+

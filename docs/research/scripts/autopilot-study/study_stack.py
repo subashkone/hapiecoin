@@ -13,12 +13,24 @@ Columns: mean per day (a skipped day counts as zero), share of days positive, to
 the largest drawdown, how many days lost more than a quarter of the premium, and the result on named expiries.
 Same trades, fees and fills as study_exits.py (imported; run without -I from this folder).
 
-Usage: python study_stack.py <cache_dir> <lot_size> <bar_minutes> <entry_hours_before> <percent_away> "" "" <label> <buy-back mark> [expiries to show, comma]"""
+Usage: python study_stack.py <cache_dir> <lot_size> <bar_minutes> <entry_hours_before> <percent_away> "" "" <label> <buy-back mark> [expiries to show, comma] [slip]
+       (with "slip" every market fill, the entry included, is worse than the mark by the share measured on real fills;
+       a leg left to settlement pays none)"""
 import os, sys, datetime as dt
 import study_exits as X
 
 LABEL, MARK = sys.argv[8], float(sys.argv[9])
 SHOW = [x for x in sys.argv[10].split(",") if x] if len(sys.argv) > 10 else []
+SLIP = len(sys.argv) > 11 and sys.argv[11] == "slip"
+
+
+def slip(p, sp):
+    """What a market order loses against the mark, in money, from the owner's own fills (check_fills.py, daily BTC
+    options): 1 % of the price for an option worth 0.4 % of the spot or more, 2.5 % down to 0.07 %, 6.5 % under that."""
+    if not SLIP:
+        return 0.0
+    r = p / sp
+    return p * X.Q * (0.01 if r >= 0.004 else 0.025 if r >= 0.0007 else 0.065)
 
 spot_all = {}
 for e in sorted(os.listdir(X.CACHE)):
@@ -36,7 +48,7 @@ def run(tr, mult=3, mark=None, lock=None, trail=None, take=None, skip=None, afte
         mv = move24(tr)
         if mv is not None and abs(mv) > skip:
             return 0.0
-    live, realised, t, floor, best, stopped = list(range(len(tr.legs))), -tr.fee_in, tr.t0 + X.BAR, None, None, False
+    live, realised, t, floor, best, stopped = list(range(len(tr.legs))), -tr.fee_in - sum(slip(e, tr.spot[tr.t0]) for e in tr.entry), tr.t0 + X.BAR, None, None, False
     while t <= tr.last_b and live:
         sp = tr.spot.get(t, tr.settle_spot)
         px = {i: tr.series[i].get(t) for i in live}
@@ -45,7 +57,7 @@ def run(tr, mult=3, mark=None, lock=None, trail=None, take=None, skip=None, afte
                 continue
             hit = px[i] >= mult * tr.entry[i]
             if hit or (mark is not None and px[i] <= mark) or (after is not None and stopped and px[i] <= after * tr.entry[i]):
-                realised += -(px[i] - tr.entry[i]) * X.Q - X.fee(sp, px[i])
+                realised += -(px[i] - tr.entry[i]) * X.Q - X.fee(sp, px[i]) - slip(px[i], sp)
                 live.remove(i)
                 stopped = stopped or hit
         if live and all(px[i] is not None for i in live):
@@ -60,7 +72,7 @@ def run(tr, mult=3, mark=None, lock=None, trail=None, take=None, skip=None, afte
                 best = total if best is None else max(best, total)
                 close = close or total <= best * (1 - trail[1])
             if close:
-                return realised + rest - sum(X.fee(sp, px[i]) for i in live)
+                return realised + rest - sum(X.fee(sp, px[i]) + slip(px[i], sp) for i in live)
         t += X.BAR
     return realised + sum(tr.settle_leg(i) for i in live)
 
@@ -98,7 +110,7 @@ STACKS = [
 trades = sorted(X.trades, key=lambda x: x[0])
 prem = sum(tr.credit for _, tr in trades) / len(trades)
 big = sum(1 for _, tr in trades if (move24(tr) is not None and abs(move24(tr)) > 0.03))
-print(f"## {LABEL}: {len(trades)} trades ({trades[0][0]} .. {trades[-1][0]}), each side {X.PCT * 100:g} % away, entered {X.ENTRY:g} h before settlement; mean premium {prem:.1f}; buy-back mark {MARK:g}; {big} days followed a move of more than 3 % in 24 h")
+print(f"## {LABEL}{' WITH SLIPPAGE' if SLIP else ''}: {len(trades)} trades ({trades[0][0]} .. {trades[-1][0]}), each side {X.PCT * 100:g} % away, entered {X.ENTRY:g} h before settlement; mean premium {prem:.1f}; buy-back mark {MARK:g}; {big} days followed a move of more than 3 % in 24 h")
 print(f"   {'':50s} {'mean':>7s} {'win':>4s} {'total':>7s} {'worst':>7s} {'worst 3':>8s} {'drawdown':>8s} {'bad days':>8s} {'halves':>13s}  " + "  ".join(f"{e[5:]:>7s}" for e in SHOW))
 for name, kw in STACKS:
     rows = [(e, run(tr, **kw), tr.credit) for e, tr in trades]
