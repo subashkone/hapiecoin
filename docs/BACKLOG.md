@@ -19,7 +19,7 @@ Three sources, kept in sync with their originals: the roadmap items still open (
 | 30 | AI: opportunity radar, language features, journal coach, advisor | Five phases in docs/research/ai-leverage.md: AI-1 radar with backtested setups and expected-value scores on template cards (no language model); AI-2 natural-language alerts and rules plus the assistant on the guide corpus; AI-3 weekly journal coach; AI-4 conversational advisor using the wizard, pricer, backtest and positions as tools; AI-5 volatility regime model and risk guardian. | Feature freeze; the radar needs 30+ recorded days of chains (accumulating), the language features need an API key in the secret store and a legal read of the copy. |
 | 31 | Strategy playbooks | Eight rule-based playbooks on templates already in the catalogue (docs/research/strategy-playbooks.md): expiry-week credit spread, pin butterfly, front-week calendar, trend with defined risk, volatility squeeze breakout, trend financed by skew, premium harvest, covered call. Needs a playbook object, trend and volatility signals from recorded marks, entry conditions in the backtest, a track record per card. First three: premium harvest, expiry-week credit spread, trend with defined risk. | Feature freeze; each playbook ships only with its backtest on our own chains. |
 
-## 2. Open review gaps (105 of 173)
+## 2. Open review gaps (106 of 174)
 
 Every row is copied in full from GAPS.md so this page stands alone. Priority is a recommendation for after launch: **High** touches money, safety or a promise the product makes; **Medium (data)** needs a data feed or a spend decision; **Low (tests)** is test hygiene.
 
@@ -239,6 +239,12 @@ Every row is copied in full from GAPS.md so this page stands alone. Priority is 
 | # | Gap | Source | Status | Priority |
 |---|---|---|---|---|
 | 104 | The unsaved Builder working set (legs, name, basket, price mode) and the per-device `draftId` pointer stay in the browser by design: a draft never saved does not travel, and another device opens an empty Builder with the draft listed under My templates rather than continuing where the first device left off; the list is not refetched on focus or on a timer, so a draft saved on another device appears here on the next mutation or when My templates mounts after 15 s; no e2e proves the second-device case (the mock resets per test). | ADR-088, 13 Sep 2026 | open | Low (tests) |
+
+### ETH strangle with wings and a trail
+
+| # | Gap | Source | Status | Priority |
+|---|---|---|---|---|
+| 174 | One paper playbook chosen from 38 rows after seeing them, on one period of 108 days, its distance and trail taken from the 162-row cautious table on the same days: with real fill costs +2.30 a day, 90 % of days, worst day -34.0, largest possible loss 58.2. Unproven: the wings are far strikes priced by the exchange's model, and nothing shows one can be bought at that price; the fill cost on ETH is assumed from mostly BTC fills, and this trade makes up to eight fills on options worth a few dollars, where the cost is the largest share; the second half earned less than the first (+91 against +150). Differs from the study: Autopilot takes the listed strike nearest 4 % and skips the evening when it has no price (the study takes the nearest strike that has one), and skips when the net premium does not exceed the fees (the study when it is not positive). The paper book fills at the mark and its P&L is before fees, while the card is after fees and with fill costs, so the paper record will read well above the card and must be read after fees (GAPS #173). Further differences from the study are listed in ADR-138 (a short ladder, the settlement bar, the lot size). A zero mark on a bought wing understates the P&L by the wing's value and a mark that is not a number stops the rule for that tick, where the study carries the last mark (the reviewer's reading of apps/api/src/venues.ts, not tested). How a missing or zero mark on one of the four legs reads to the trailing target during the trade was not checked here (GAPS #164 records it for a sold option). Not covered by a test: a net premium that is positive but under the fees; a tick with one leg's mark missing; settlement of the four legs after a trail that never started. | Strategy lab, 24 Nov 2026; built at the owner's word | Open | High |
 
 ### Fees
 

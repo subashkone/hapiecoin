@@ -3,7 +3,7 @@
 // narrowed by expiry family and by coin (each with its switch, exits, backtest, paper result and what it is doing
 // now), the trades Autopilot holds with a health reading and an exit, its log, and its results.
 // Paper only. Figures in USD are shown in the trader's display currency.
-import { AUTOPILOT_PLAYBOOKS, type Playbook, type PlaybookCadence, playbookBacktest, playbookCadence } from "@hapiecoin/pricing";
+import { AUTOPILOT_PLAYBOOKS, type Playbook, type PlaybookCadence, playbookBacktest, playbookCadence, playbookTemplate } from "@hapiecoin/pricing";
 import { AUTOPILOT_CHOSEN_EXIT_STYLES, AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_EXIT_LABELS, type AutopilotExitStyle, type AutopilotRun, type AutopilotSettings, type PlaybookStatus, type Strategy } from "@hapiecoin/schema";
 import { Badge, Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, Switch, cn, toast } from "@hapiecoin/ui";
 import { useRouter } from "next/navigation";
@@ -54,12 +54,14 @@ export const moveWords = (asset: string, move: { pct: string; side: "put" | "cal
 };
 /** A timed exit whose hour is not after the entry window's first hour is the next day's (HC-TR-263; the engine takes the next occurrence of the hour): a Friday entry at 9:30 PM closed at 5:30 PM is closed on Saturday. */
 const nextDay = (c: { fromHourUtc: number; exitHourUtc?: number | undefined }): boolean => c.exitHourUtc !== undefined && c.exitHourUtc <= c.fromHourUtc;
+/** A structure with bought options collects less than its sold options bring: its profit levels are on the net premium (ADR-138). */
+const premiumWords = (p: Playbook): string => (playbookTemplate(p)?.legs.some((l) => l.side === "buy") ? "net premium" : "premium");
 /** How a strategy gets out, in a few words: the column a trader compares rows by. */
 const exitWords = (p: Playbook): string => {
   const c = p.clock;
   if (!c) return "Playbook stop and time exit";
-  const parts = [c.legStop ? `Stop at ${c.legStop}x on each sold option` : "Wings cap the loss, held to expiry"];
-  if (c.takeProfitOfCredit) parts.push(c.takeTrailPct ? `trail from ${Math.round(c.takeProfitOfCredit * 100)} % of the premium` : `take ${Math.round(c.takeProfitOfCredit * 100)} % of the premium`);
+  const parts = [c.legStop ? `Stop at ${c.legStop}x on each sold option` : c.takeProfitOfCredit ? "Wings cap the loss, no stop" : "Wings cap the loss, held to expiry"];
+  if (c.takeProfitOfCredit) parts.push(c.takeTrailPct ? `trail from ${Math.round(c.takeProfitOfCredit * 100)} % of the ${premiumWords(p)}` : `take ${Math.round(c.takeProfitOfCredit * 100)} % of the ${premiumWords(p)}`);
   if (c.trailRestPct) parts.push("then trail the other side");
   if (c.ladder) parts.push(`profit in steps at ${c.ladder.join(" / ")} %`);
   if (c.lock) parts.push(`a floor at ${Math.round(c.lock.floor * 100)} % of the premium once it is up ${Math.round(c.lock.at * 100)} %`);
@@ -252,7 +254,7 @@ export function AutopilotPage() {
                             <summary className="cursor-pointer text-muted-foreground hover:text-foreground">What it does</summary>
                             <p className="mt-1 text-muted-foreground">{p.summary}</p>
                             {p.clock ? (
-                              <p className="mt-1 text-muted-foreground" data-testid="autopilot-card-how">Entered {p.clock.describe}. {p.clock.takeProfitOfCredit ? (p.clock.takeTrailPct ? `Once the trade is up by ${Math.round(p.clock.takeProfitOfCredit * 100)} % of the premium collected it is not closed: it is trailed, and closed when the profit gives back ${p.clock.takeTrailPct} % of its best. ` : `The whole trade is closed once it is up by ${Math.round(p.clock.takeProfitOfCredit * 100)} % of the premium collected. `) : ""}{p.clock.lock ? `Once the trade is up by ${Math.round(p.clock.lock.at * 100)} % of the premium a floor is set at ${Math.round(p.clock.lock.floor * 100)} %: the whole trade is closed if the profit falls back there. ` : ""}{p.clock.exitHourUtc !== undefined ? `Everything is closed at ${istClock(p.clock.exitHourUtc)} IST${nextDay(p.clock) ? " the next day" : ""}, whatever the profit. ` : ""}{p.clock.ladder ? `An equal part of the lots is closed each time the lots still open are up by ${p.clock.ladder.join(", ")} % of their premium, and the last part is held. ` : ""}{p.clock.legStop ? `Each sold option is bought back if its price reaches ${p.clock.legStop} times what it was sold for.` : "Held to settlement: the bought wings cap the loss."}{p.clock.trailRestPct ? ` After that, the profit on the other one is trailed and it is closed when it gives back ${p.clock.trailRestPct} % of its best.` : ""} Backtest only so far: {p.evidence.claim}</p>
+                              <p className="mt-1 text-muted-foreground" data-testid="autopilot-card-how">Entered {p.clock.describe}. {p.clock.takeProfitOfCredit ? (p.clock.takeTrailPct ? `Once the trade is up by ${Math.round(p.clock.takeProfitOfCredit * 100)} % of the ${premiumWords(p) === "premium" ? "premium collected" : "net premium (collected less paid for the wings)"} it is not closed: it is trailed, and closed when the profit gives back ${p.clock.takeTrailPct} % of its best. ` : `The whole trade is closed once it is up by ${Math.round(p.clock.takeProfitOfCredit * 100)} % of the ${premiumWords(p) === "premium" ? "premium collected" : "net premium (collected less paid for the wings)"}. `) : ""}{p.clock.lock ? `Once the trade is up by ${Math.round(p.clock.lock.at * 100)} % of the premium a floor is set at ${Math.round(p.clock.lock.floor * 100)} %: the whole trade is closed if the profit falls back there. ` : ""}{p.clock.exitHourUtc !== undefined ? `Everything is closed at ${istClock(p.clock.exitHourUtc)} IST${nextDay(p.clock) ? " the next day" : ""}, whatever the profit. ` : ""}{p.clock.ladder ? `An equal part of the lots is closed each time the lots still open are up by ${p.clock.ladder.join(", ")} % of their premium, and the last part is held. ` : ""}{p.clock.legStop ? `Each sold option is bought back if its price reaches ${p.clock.legStop} times what it was sold for.` : p.clock.takeProfitOfCredit ? "No stop: the bought wings cap the loss, and it is held to settlement if the trail never closes it." : "Held to settlement: the bought wings cap the loss."}{p.clock.trailRestPct ? ` After that, the profit on the other one is trailed and it is closed when it gives back ${p.clock.trailRestPct} % of its best.` : ""} Backtest only so far: {p.evidence.claim}</p>
                             ) : (
                               <p className="mt-1 text-muted-foreground" data-testid="autopilot-card-how">Autopilot enters as above and keeps the stop and the time exit. It takes profit its own way, chosen below, so the record shown is the playbook's own exits, not Autopilot's.</p>
                             )}

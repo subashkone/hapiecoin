@@ -8899,6 +8899,21 @@
   "evidence": "ADR-136, GAPS #171 (24 Nov 2026): packages/pricing/src/playbooks.ts (CAUTIOUS_DAILY_PLAYBOOKS); tests: packages/pricing/src/playbooks.test.ts HC-TR-265, apps/api/src/autopilot.test.ts HC-TR-265 (the job's entry of the BTC one and its buy-back), autopilot-page.test.tsx HC-TR-265"
  },
  {
+  "id": "HC-TR-266",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "Autopilot ETH daily strangle with wings and a trail: a capped loss and no stop",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (pricing), integration (api), unit (web)",
+  "acceptance": "one paper playbook: each evening the ETH call and put nearest 2 % from the spot are sold and the options nearest 4 % away bought as wings; no stop and no buy-back; once the whole trade is up by half the net premium (collected less paid for the wings) it is trailed and closed when the profit gives back a fifth of its best, otherwise held to settlement; the existing trailing target, armed on the net premium; the card quotes the backtest with real fill costs, the largest possible loss, and says it still loses",
+  "evidence": "ADR-138, GAPS #174 (24 Nov 2026): packages/pricing/src/playbooks.ts (WINGS_TRAIL_DAILY_PLAYBOOKS), apps/web/src/components/autopilot/AutopilotPage.tsx (the exit words of a winged trade with a take); tests: packages/pricing/src/playbooks.test.ts HC-TR-266, apps/api/src/autopilot.test.ts HC-TR-266 (the job's entry and the trail closing all four options), autopilot-page.test.tsx HC-TR-266"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",
