@@ -1,0 +1,132 @@
+## ETH daily, the template's distances WITH SLIPPAGE: 109 days (2026-08-08 .. 2026-11-24), sold 1.2 % away, wing 1.2 % of the spot further, entered 20 h before settlement; stop 2x, buy-back mark 0.25, trail from 50 % giving back 20 %
+
+-- no wing (the strangle): 109 days (0 without a marked wing, 0 without a net credit); mean premium collected 18.5, paid 0.0, net 18.5; no cap on the put side; no cap on the call side
+                                                                 mean  win   total   worst  worst 3 drawdown bad days        halves    11-24
+   hold to settlement, no stop                                  +6.30  80%    +687  -131.9   -305.4   -131.9       19     +353/+334    -14.0
+   stop 2x only                                                 +2.50  44%    +272   -45.6   -112.2    -96.5       33     +103/+169     -1.0
+   cautious: stop 2x, buy-back, trail                           +2.15  58%    +234   -34.7    -98.6    -81.5       26     +130/+104     -1.2
+   trail only                                                   +4.71  91%    +513   -88.3   -235.5    -97.1        7     +365/+148    -14.0
+
+-- Jade Lizard: wing on the PUT side: 108 days (1 without a marked wing, 0 without a net credit); mean premium collected 18.4, paid 4.2, net 14.2; largest loss on the put side: mean 12.4, largest 34.8; no cap on the call side
+                                                                 mean  win   total   worst  worst 3 drawdown bad days        halves    11-24
+   hold to settlement, no stop                                  +4.89  79%    +528  -140.8   -234.2   -140.8       20     +162/+366     -3.5
+   stop 2x only                                                 +0.98  48%    +106   -54.5   -130.4   -166.3       55      -88/+194     +9.5
+   stop 2x only, wing sold with it                              +2.04  64%    +220   -54.5    -99.2    -84.2       31       +6/+214     +7.3
+   cautious: stop 2x, buy-back, trail; wing sold with it        +2.07  72%    +224   -22.7    -64.0    -68.3       24      +48/+176     +7.1
+   cautious: stop 2x, buy-back, trail; wing kept                +1.28  68%    +138   -41.2   -103.3   -144.9       35       +4/+134     +6.8
+   trail only                                                   +4.74  92%    +512   -70.1   -104.8    -70.1        7     +238/+274     -3.5
+   trail, and a stop 2x on the side without a wing              +2.55  76%    +276   -24.9    -64.2    -65.3       25      +82/+194     -3.5
+   trail, and a stop 3x on the side without a wing              +2.64  84%    +285   -45.8   -106.8    -46.1       16      +74/+212     -3.5
+   trail, stop 2x on the side without a wing, buy-back          +2.65  76%    +286   -24.9    -64.4    -66.8       25      +84/+202     -3.8
+   trail, stop 3x on the side without a wing, buy-back          +2.64  83%    +286   -46.1   -107.3    -46.9       17      +66/+219     -3.8
+
+-- Reverse Jade Lizard: wing on the CALL side: 108 days (0 without a marked wing, 1 without a net credit); mean premium collected 18.6, paid 4.5, net 14.1; no cap on the put side; largest loss on the call side: mean 14.4, largest 35.6
+                                                                 mean  win   total   worst  worst 3 drawdown bad days        halves    11-24
+   hold to settlement, no stop                                  +3.55  80%    +384   -92.0   -264.9   -107.4       20      +324/+60    -21.8
+   stop 2x only                                                 -0.27  46%     -29   -39.0   -114.1   -192.2       55      +76/-105     -8.8
+   stop 2x only, wing sold with it                              +0.36  52%     +39   -39.0    -98.3   -106.8       41       +91/-53     -8.8
+   cautious: stop 2x, buy-back, trail; wing sold with it        +0.20  60%     +21   -39.2    -93.5   -119.9       30       +71/-50     -9.1
+   cautious: stop 2x, buy-back, trail; wing kept                +0.41  62%     +45   -39.2   -104.9   -156.1       35      +123/-78     -9.1
+   trail only                                                   +2.40  88%    +259   -92.0   -248.5   -150.5        9      +246/+13    -21.8
+   trail, and a stop 2x on the side without a wing              +0.74  64%     +80   -39.0    -94.0   -111.9       31      +113/-34     -8.8
+   trail, and a stop 3x on the side without a wing              +1.80  79%    +194   -43.6   -108.1    -81.0       19      +166/+28    -21.1
+   trail, stop 2x on the side without a wing, buy-back          +0.85  65%     +92   -39.2    -94.2    -94.6       30      +117/-25     -9.1
+   trail, stop 3x on the side without a wing, buy-back          +2.01  80%    +217   -43.8   -108.8    -63.4       18      +173/+44    -21.3
+
+-- wings on both sides: 107 days (1 without a marked wing, 1 without a net credit); mean premium collected 18.5, paid 8.7, net 9.7; largest loss on the put side: mean 17.0, largest 35.2; largest loss on the call side: mean 18.9, largest 35.9
+                                                                 mean  win   total   worst  worst 3 drawdown bad days        halves    11-24
+   hold to settlement, no stop                                  +2.06  75%    +221   -29.7    -77.0    -61.3       26      +124/+97    -11.3
+   stop 2x only                                                 -1.86  50%    -199   -48.1   -135.0   -324.8       54      -124/-75     +1.6
+   stop 2x only, wing sold with it                              -0.17  45%     -18   -17.6    -52.1    -97.6       48        -16/-3     -0.5
+   cautious: stop 2x, buy-back, trail; wing sold with it        -0.65  54%     -69   -17.6    -52.1   -107.0       38       -39/-30     -0.8
+   cautious: stop 2x, buy-back, trail; wing kept                -0.80  71%     -85   -48.1   -117.3   -236.7       29        +5/-90     +3.4
+   trail only                                                   +1.23  84%    +132   -29.7    -73.2    -29.7       16       +60/+71    -11.3
+
+## ETH daily, the cautious distance WITH SLIPPAGE: 109 days (2026-08-08 .. 2026-11-24), sold 2 % away, wing 2 % of the spot further, entered 20 h before settlement; stop 2x, buy-back mark 0.25, trail from 50 % giving back 20 %
+
+-- no wing (the strangle): 109 days (0 without a marked wing, 0 without a net credit); mean premium collected 11.2, paid 0.0, net 11.2; no cap on the put side; no cap on the call side
+                                                                 mean  win   total   worst  worst 3 drawdown bad days        halves    11-24
+   hold to settlement, no stop                                  +4.53  91%    +494  -116.2   -270.2   -116.2       10     +259/+235     -9.6
+   stop 2x only                                                 +2.03  49%    +221   -35.2    -86.0    -59.8       34     +103/+119     -1.9
+   cautious: stop 2x, buy-back, trail                           +2.19  61%    +238   -22.7    -45.0    -29.3       29     +113/+125     -2.1
+   trail only                                                   +2.84  94%    +309   -77.6   -208.1    -87.4        5      +213/+96     -9.6
+
+-- Jade Lizard: wing on the PUT side: 108 days (1 without a marked wing, 0 without a net credit); mean premium collected 11.0, paid 1.5, net 9.5; largest loss on the put side: mean 35.1, largest 58.1; no cap on the call side
+                                                                 mean  win   total   worst  worst 3 drawdown bad days        halves    11-24
+   hold to settlement, no stop                                  +3.95  89%    +427  -120.1   -228.4   -120.1       10     +195/+232    -13.1
+   stop 2x only                                                 +1.43  48%    +155   -39.1    -95.7    -67.0       43      +39/+116     -5.3
+   stop 2x only, wing sold with it                              +1.79  54%    +193   -39.1    -73.1    -64.5       30      +69/+124     +2.5
+   cautious: stop 2x, buy-back, trail; wing sold with it        +1.79  69%    +193   -18.1    -39.2    -21.6       22      +90/+104     +2.2
+   cautious: stop 2x, buy-back, trail; wing kept                +1.91  71%    +206   -26.4    -53.9    -37.9       26      +72/+134    +15.6
+   trail only                                                   +3.04  93%    +329   -33.2    -78.3    -33.2        4     +209/+120    -13.1
+   trail, and a stop 2x on the side without a wing              +1.93  80%    +208   -33.2    -78.3    -35.7       17      +119/+89    -13.1
+   trail, and a stop 3x on the side without a wing              +1.65  83%    +178   -35.9   -101.2    -35.9       15       +95/+83    -13.1
+   trail, stop 2x on the side without a wing, buy-back          +2.06  80%    +222   -33.4    -79.0    -36.1       19      +132/+90    -13.3
+   trail, stop 3x on the side without a wing, buy-back          +1.78  83%    +192   -36.2   -101.9    -36.2       16      +107/+85    -13.3
+
+-- Reverse Jade Lizard: wing on the CALL side: 107 days (1 without a marked wing, 1 without a net credit); mean premium collected 11.2, paid 1.7, net 9.4; no cap on the put side; largest loss on the call side: mean 36.4, largest 58.2
+                                                                 mean  win   total   worst  worst 3 drawdown bad days        halves    11-24
+   hold to settlement, no stop                                  +3.85  90%    +412   -79.5   -218.3    -79.5       10     +293/+118    -13.0
+   stop 2x only                                                 +0.55  45%     +59   -29.3    -75.2    -86.2       47       +43/+17     -5.2
+   stop 2x only, wing sold with it                              +1.18  49%    +127   -29.3    -71.2    -73.3       42       +95/+31     -5.2
+   cautious: stop 2x, buy-back, trail; wing sold with it        +1.42  65%    +151   -22.2    -49.5    -30.6       32       +80/+71     -5.5
+   cautious: stop 2x, buy-back, trail; wing kept                +1.48  65%    +159   -25.6    -52.9    -36.0       33       +97/+62     -5.5
+   trail only                                                   +2.45  92%    +262   -79.5   -169.8   -108.4        5      +200/+62    -13.0
+   trail, and a stop 2x on the side without a wing              +2.24  74%    +240   -13.7    -39.5    -18.0       21     +137/+103     -5.2
+   trail, and a stop 3x on the side without a wing              +2.28  83%    +244   -39.0    -70.3    -39.0       14     +142/+103    -14.4
+   trail, stop 2x on the side without a wing, buy-back          +2.30  75%    +246   -14.0    -40.0    -18.2       24      +150/+96     -5.5
+   trail, stop 3x on the side without a wing, buy-back          +2.37  84%    +253   -39.2    -71.0    -39.2       15      +156/+97    -14.6
+
+-- wings on both sides: 106 days (2 without a marked wing, 1 without a net credit); mean premium collected 11.0, paid 3.2, net 7.8; largest loss on the put side: mean 37.0, largest 58.2; largest loss on the call side: mean 38.2, largest 58.2
+                                                                 mean  win   total   worst  worst 3 drawdown bad days        halves    11-24
+   hold to settlement, no stop                                  +3.34  89%    +354   -53.6   -145.9    -53.8       10     +233/+121    -16.4
+   stop 2x only                                                 +0.02  48%      +2   -31.2    -87.3   -111.8       51       -17/+20     -8.6
+   stop 2x only, wing sold with it                              +1.00  46%    +105   -17.5    -46.1    -54.9       39       +66/+40     -0.9
+   cautious: stop 2x, buy-back, trail; wing sold with it        +0.95  61%    +101   -17.5    -34.4    -22.1       27       +49/+52     -1.2
+   cautious: stop 2x, buy-back, trail; wing kept                +1.17  70%    +124   -29.3    -65.7    -52.1       29       +55/+69    +12.3
+   trail only                                                   +2.13  90%    +225   -34.0    -84.4    -34.0        6      +154/+72    -16.4
+
+## ETH daily, between WITH SLIPPAGE: 109 days (2026-08-08 .. 2026-11-24), sold 1.5 % away, wing 1.5 % of the spot further, entered 20 h before settlement; stop 2x, buy-back mark 0.25, trail from 50 % giving back 20 %
+
+-- no wing (the strangle): 109 days (0 without a marked wing, 0 without a net credit); mean premium collected 15.5, paid 0.0, net 15.5; no cap on the put side; no cap on the call side
+                                                                 mean  win   total   worst  worst 3 drawdown bad days        halves    11-24
+   hold to settlement, no stop                                  +5.36  83%    +585  -135.4   -299.8   -135.4       15     +280/+305    -14.0
+   stop 2x only                                                 +1.99  44%    +217   -49.1   -114.5   -101.0       32      +75/+142     -1.0
+   cautious: stop 2x, buy-back, trail                           +1.82  59%    +198   -37.7    -93.2    -74.9       23      +97/+101     -1.2
+   trail only                                                   +4.06  92%    +443   -83.1   -225.0    -88.7        6     +299/+144    -14.0
+
+-- Jade Lizard: wing on the PUT side: 108 days (1 without a marked wing, 0 without a net credit); mean premium collected 15.3, paid 2.9, net 12.4; largest loss on the put side: mean 22.4, largest 48.6; no cap on the call side
+                                                                 mean  win   total   worst  worst 3 drawdown bad days        halves    11-24
+   hold to settlement, no stop                                  +4.39  83%    +474  -142.3   -240.6   -142.3       17     +148/+326    -11.8
+   stop 2x only                                                 +0.91  47%     +98   -56.0   -131.0   -147.3       54      -56/+155     +1.1
+   stop 2x only, wing sold with it                              +1.83  57%    +198   -56.0   -100.2    -84.5       32      +15/+183     +5.7
+   cautious: stop 2x, buy-back, trail; wing sold with it        +1.76  69%    +190   -23.1    -61.0    -49.0       23      +49/+141     +5.4
+   cautious: stop 2x, buy-back, trail; wing kept                +1.18  68%    +128   -41.2   -104.0   -107.0       32      +12/+115     +7.5
+   trail only                                                   +3.96  93%    +428   -62.8   -108.0    -62.8        7     +233/+195    -11.8
+   trail, and a stop 2x on the side without a wing              +2.41  76%    +261   -25.3    -70.5    -49.0       24     +108/+152    -11.8
+   trail, and a stop 3x on the side without a wing              +2.29  82%    +248   -41.6    -91.8    -44.3       18     +103/+145    -11.8
+   trail, stop 2x on the side without a wing, buy-back          +2.62  77%    +283   -25.3    -71.0    -49.6       23     +106/+177    -12.1
+   trail, stop 3x on the side without a wing, buy-back          +2.51  83%    +271   -41.8    -92.5    -41.8       17     +102/+169    -12.1
+
+-- Reverse Jade Lizard: wing on the CALL side: 109 days (0 without a marked wing, 0 without a net credit); mean premium collected 15.5, paid 3.1, net 12.4; no cap on the put side; largest loss on the call side: mean 23.3, largest 47.4
+                                                                 mean  win   total   worst  worst 3 drawdown bad days        halves    11-24
+   hold to settlement, no stop                                  +3.73  82%    +407   -85.1   -248.6    -97.7       18     +288/+119    -20.0
+   stop 2x only                                                 +0.36  44%     +39   -40.6   -103.6   -142.2       55       +83/-44     -7.0
+   stop 2x only, wing sold with it                              +0.48  50%     +52   -40.6    -95.4   -106.5       48       +63/-10     -7.0
+   cautious: stop 2x, buy-back, trail; wing sold with it        +0.39  61%     +43   -40.9    -91.5    -87.3       35       +53/-10     -7.3
+   cautious: stop 2x, buy-back, trail; wing kept                +0.39  62%     +43   -40.9   -103.8   -105.7       37       +70/-27     -7.3
+   trail only                                                   +2.44  88%    +266   -85.1   -194.1   -110.7        9      +226/+40    -20.0
+   trail, and a stop 2x on the side without a wing              +0.80  65%     +87   -40.6    -86.0   -110.7       31      +118/-30     -7.0
+   trail, and a stop 3x on the side without a wing              +1.79  80%    +196   -42.2   -103.1    -79.8       18      +154/+41    -19.3
+   trail, stop 2x on the side without a wing, buy-back          +0.89  66%     +97   -40.9    -86.5    -93.4       32      +114/-17     -7.3
+   trail, stop 3x on the side without a wing, buy-back          +2.01  81%    +219   -42.4   -103.8    -61.7       17      +153/+66    -19.5
+
+-- wings on both sides: 108 days (1 without a marked wing, 0 without a net credit); mean premium collected 15.3, paid 6.0, net 9.3; largest loss on the put side: mean 25.6, largest 48.8; largest loss on the call side: mean 26.4, largest 48.8
+                                                                 mean  win   total   worst  worst 3 drawdown bad days        halves    11-24
+   hold to settlement, no stop                                  +2.77  81%    +299   -36.2    -95.6    -48.0       21     +156/+143    -17.9
+   stop 2x only                                                 -0.71  48%     -76   -45.1   -128.6   -228.4       56       -48/-28     -4.9
+   stop 2x only, wing sold with it                              +0.31  44%     +34   -19.9    -57.7    -81.6       39        +2/+32     -0.4
+   cautious: stop 2x, buy-back, trail; wing sold with it        -0.07  58%      -8   -19.9    -57.9    -68.9       26        -14/+6     -0.6
+   cautious: stop 2x, buy-back, trail; wing kept                -0.19  71%     -21   -44.4   -116.8   -178.9       30        +2/-23     +3.0
+   trail only                                                   +1.92  88%    +207   -27.6    -72.7    -27.6       10      +120/+87    -17.9
+

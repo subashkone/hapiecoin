@@ -1,0 +1,192 @@
+## BTC daily cautious: 109 days (2026-08-08 .. 2026-11-24), each side 1.5 % away, entered 20 h before settlement; base rules: stop 2x, buy-back at 5, trail from 25 % giving back 30 %
+                                                                 mean  win   total   worst  worst 3 drawdown        halves    11-24
+   base: both sides every day                                   +5.09  81%    +555   -21.6    -59.4    -21.6     +290/+265    -17.2
+
+-- 1. one side by the move over the 4 hours before the entry
+   beyond 0.5 %: 36 days after a fall, 31 after a rise, 0 without history
+     with the move: fall > call only, rise > put only           +1.40  82%    +152   -46.3    -99.6    -49.0      +135/+17    -46.3
+     after a fall the call only; after a rise both              +2.70  83%    +295   -35.2    -74.9    -41.6     +185/+109    -17.2
+     after a rise the put only; after a fall both               +3.78  79%    +412   -46.3    -81.2    -46.3     +240/+173    -46.3
+     against the move: fall > put only, rise > call only        +1.98  79%    +216   -31.8    -90.5    -52.1      +83/+133    +29.1
+     no trade after a fall; after a rise both                   +2.45  53%    +268   -21.6    -50.6    -35.7     +157/+111    -17.2
+     no trade after a fall or a rise                            +0.93  28%    +101   -11.7    -32.4    -29.5       +34/+67     +0.0
+   beyond 1 %: 22 days after a fall, 14 after a rise, 0 without history
+     with the move: fall > call only, rise > put only           +3.22  83%    +351   -46.3   -103.2    -46.3     +239/+112    -46.3
+     after a fall the call only; after a rise both              +4.09  83%    +446   -35.2    -74.0    -41.6     +261/+185    -17.2
+     after a rise the put only; after a fall both               +4.22  81%    +460   -46.3    -88.5    -46.3     +268/+192    -46.3
+     against the move: fall > put only, rise > call only        +4.03  82%    +440   -31.8    -82.6    -32.0     +206/+234    +29.1
+     no trade after a fall; after a rise both                   +3.99  65%    +435   -21.6    -50.6    -21.6     +248/+187    -17.2
+     no trade after a fall or a rise                            +3.21  54%    +350   -21.6    -44.1    -21.6     +191/+159     +0.0
+   beyond 1.5 %: 12 days after a fall, 8 after a rise, 0 without history
+     with the move: fall > call only, rise > put only           +3.59  82%    +391   -46.3   -103.2    -46.3     +267/+124    -46.3
+     after a fall the call only; after a rise both              +4.17  82%    +455   -35.2    -74.0    -41.6     +265/+190    -17.2
+     after a rise the put only; after a fall both               +4.51  81%    +491   -46.3    -88.5    -46.3     +292/+199    -46.3
+     against the move: fall > put only, rise > call only        +4.61  82%    +503   -31.8    -65.1    -31.8     +229/+274    +29.1
+     no trade after a fall; after a rise both                   +4.21  72%    +459   -21.6    -50.6    -21.6     +257/+202    -17.2
+     no trade after a fall or a rise                            +3.80  66%    +414   -21.6    -44.1    -21.6     +230/+184     +0.0
+
+-- 2. follow the move: on a stop, buy the same kind further out, 100 lots, to settlement
+   26 stops on 24 days
+     buy 0 % beyond the spot at the stop                        +6.61  82%    +720   -71.3   -199.1   -127.8     +307/+413     +0.1   add-on alone +165; bought 26, paid 8, no mark 0
+     buy 0.5 % beyond the spot at the stop                      +5.94  81%    +647   -63.2   -176.8   -123.2     +292/+355    -12.6   add-on alone +92; bought 26, paid 5, no mark 0
+     buy 1 % beyond the spot at the stop                        +6.09  79%    +664   -53.5   -154.7    -85.2     +362/+302    -26.1   add-on alone +109; bought 26, paid 3, no mark 0
+     buy 2 % beyond the spot at the stop                        +6.09  79%    +664   -49.9   -132.5    -68.1     +385/+280    -49.9   add-on alone +109; bought 26, paid 2, no mark 0
+
+-- 3. a standing crash purchase at the entry, a share of the premium, to settlement
+     10 % of the premium, 3 % away, both sides                  +4.42  77%    +482   -23.3    -66.1    -28.4     +300/+182    -19.7   add-on alone -73; bought 109, paid 6, no mark 0, mean 39 lots a side
+     10 % of the premium, 3 % away, puts only                   +4.20  76%    +458   -23.3    -65.2    -28.4     +166/+292    -17.2   add-on alone -97; bought 109, paid 4, no mark 0, mean 90 lots a side
+     10 % of the premium, 4 % away, both sides                  +4.60  77%    +501   -23.9    -70.3    -28.4     +335/+166    -23.9   add-on alone -54; bought 109, paid 5, no mark 0, mean 64 lots a side
+     10 % of the premium, 4 % away, puts only                   +4.17  76%    +455   -23.9    -70.3    -28.4     +166/+288    -23.9   add-on alone -100; bought 109, paid 2, no mark 0, mean 168 lots a side
+     10 % of the premium, 5 % away, both sides                  +4.47  77%    +487   -23.9    -70.3    -28.4     +343/+144    -23.9   add-on alone -68; bought 109, paid 5, no mark 0, mean 71 lots a side
+     10 % of the premium, 5 % away, puts only                   +5.08  77%    +554   -23.9    -70.2    -27.4     +169/+385    -23.9   add-on alone -1; bought 109, paid 2, no mark 0, mean 193 lots a side
+     20 % of the premium, 3 % away, both sides                  +3.75  42%    +408   -25.5    -73.8    -67.1      +310/+99    -22.2   add-on alone -147; bought 109, paid 6, no mark 0, mean 77 lots a side
+     20 % of the premium, 3 % away, puts only                   +3.32  42%    +362   -25.5    -73.8    -66.9      +42/+320    -17.2   add-on alone -193; bought 109, paid 4, no mark 0, mean 169 lots a side
+     20 % of the premium, 4 % away, both sides                  +4.11  43%    +447   -30.7    -81.2    -67.1      +381/+67    -30.7   add-on alone -108; bought 109, paid 5, no mark 0, mean 124 lots a side
+     20 % of the premium, 4 % away, puts only                   +3.35  49%    +365   -30.7    -81.2    -64.6      +48/+317    -30.7   add-on alone -190; bought 109, paid 2, no mark 0, mean 261 lots a side
+     20 % of the premium, 5 % away, both sides                  +3.84  43%    +419   -30.7    -81.2    -67.1      +396/+23    -30.7   add-on alone -136; bought 109, paid 5, no mark 0, mean 137 lots a side
+     20 % of the premium, 5 % away, puts only                   +3.37  50%    +367   -30.7    -79.4    -61.7      +65/+302    -30.7   add-on alone -188; bought 109, paid 2, no mark 0, mean 283 lots a side
+
+## BTC daily: 109 days (2026-08-08 .. 2026-11-24), each side 1 % away, entered 20 h before settlement; base rules: stop 3x
+                                                                 mean  win   total   worst  worst 3 drawdown        halves    11-24
+   base: both sides every day                                  +12.03  65%   +1311  -105.8   -254.2   -185.0     +696/+615    -49.2
+
+-- 1. one side by the move over the 4 hours before the entry
+   beyond 0.5 %: 36 days after a fall, 31 after a rise, 0 without history
+     with the move: fall > call only, rise > put only           +9.39  75%   +1024   -85.4   -228.7   -134.1     +391/+633    -85.4
+     after a fall the call only; after a rise both             +12.29  72%   +1339  -105.8   -258.4   -185.0     +562/+777    -49.2
+     after a rise the put only; after a fall both               +9.14  68%    +996   -85.4   -223.4   -143.8     +525/+471    -85.4
+     against the move: fall > put only, rise > call only        +6.42  73%    +699  -135.5   -367.8   -239.6     +337/+363    +36.2
+     no trade after a fall; after a rise both                   +8.84  45%    +964  -105.8   -234.2   -185.0     +404/+560    -49.2
+     no trade after a fall or a rise                            +3.78  25%    +412   -35.9    -96.6    -94.5      +32/+381     +0.0
+   beyond 1 %: 22 days after a fall, 14 after a rise, 0 without history
+     with the move: fall > call only, rise > put only          +12.31  72%   +1342  -105.8   -261.2   -140.4     +626/+716    -85.4
+     after a fall the call only; after a rise both             +13.92  72%   +1517  -105.8   -255.0   -185.0     +687/+831    -49.2
+     after a rise the put only; after a fall both              +10.42  66%   +1136  -105.8   -260.3   -134.8     +636/+500    -85.4
+     against the move: fall > put only, rise > call only        +9.08  70%    +990  -129.1   -338.1   -223.7     +469/+521    +36.2
+     no trade after a fall; after a rise both                  +12.04  55%   +1313  -105.8   -247.8   -185.0     +603/+710    -49.2
+     no trade after a fall or a rise                            +9.36  46%   +1021  -105.8   -225.7   -126.6     +399/+622     +0.0
+   beyond 1.5 %: 12 days after a fall, 8 after a rise, 0 without history
+     with the move: fall > call only, rise > put only          +12.80  70%   +1395  -105.8   -261.2   -134.7     +723/+672    -85.4
+     after a fall the call only; after a rise both             +13.15  69%   +1434  -105.8   -255.0   -185.0     +687/+746    -49.2
+     after a rise the put only; after a fall both              +11.67  66%   +1272  -105.8   -260.3   -134.8     +731/+541    -85.4
+     against the move: fall > put only, rise > call only        +9.77  67%   +1065  -129.1   -338.1   -209.0     +558/+507    +36.2
+     no trade after a fall; after a rise both                  +11.26  59%   +1227  -105.8   -247.8   -185.0     +624/+603    -49.2
+     no trade after a fall or a rise                           +10.54  54%   +1149  -105.8   -225.7   -105.8     +584/+564     +0.0
+
+-- 2. follow the move: on a stop, buy the same kind further out, 100 lots, to settlement
+   39 stops on 37 days
+     buy 0 % beyond the spot at the stop                       +15.48  72%   +1687  -122.4   -360.5   -232.8     +948/+740    -74.2   add-on alone +376; bought 39, paid 12, no mark 0
+     buy 0.5 % beyond the spot at the stop                     +15.40  70%   +1679  -115.7   -327.1   -211.4     +935/+743    -85.5   add-on alone +367; bought 39, paid 10, no mark 0
+     buy 1 % beyond the spot at the stop                       +14.95  70%   +1629  -109.5   -308.8   -200.9     +923/+706    -73.6   add-on alone +318; bought 39, paid 6, no mark 0
+     buy 2 % beyond the spot at the stop                       +13.94  68%   +1519   -91.6   -260.5   -188.2     +897/+622    -63.9   add-on alone +208; bought 39, paid 5, no mark 0
+
+-- 3. a standing crash purchase at the entry, a share of the premium, to settlement
+     10 % of the premium, 3 % away, both sides                 +11.18  67%   +1219   -81.1   -222.3   -139.7     +702/+516    -52.1   add-on alone -93; bought 109, paid 6, no mark 0, mean 68 lots a side
+     10 % of the premium, 3 % away, puts only                  +11.24  67%   +1225  -113.3   -279.2   -198.1     +506/+719    -49.2   add-on alone -86; bought 109, paid 4, no mark 0, mean 150 lots a side
+     10 % of the premium, 4 % away, both sides                 +11.42  67%   +1245   -81.1   -222.3   -138.4     +755/+490    -57.1   add-on alone -67; bought 109, paid 5, no mark 0, mean 111 lots a side
+     10 % of the premium, 4 % away, puts only                  +11.34  66%   +1236  -113.3   -279.2   -198.1     +512/+724    -57.1   add-on alone -75; bought 109, paid 2, no mark 0, mean 230 lots a side
+     10 % of the premium, 5 % away, both sides                 +11.14  67%   +1214   -81.1   -222.3   -137.8     +766/+448    -57.1   add-on alone -97; bought 109, paid 5, no mark 0, mean 120 lots a side
+     10 % of the premium, 5 % away, puts only                  +11.44  66%   +1247  -112.8   -278.7   -197.7     +520/+727    -57.1   add-on alone -64; bought 109, paid 2, no mark 0, mean 253 lots a side
+     20 % of the premium, 3 % away, both sides                 +10.34  69%   +1127   -93.3   -243.7   -165.5     +709/+418    -55.1   add-on alone -184; bought 109, paid 6, no mark 0, mean 131 lots a side
+     20 % of the premium, 3 % away, puts only                  +10.55  67%   +1150  -120.7   -304.4   -229.5     +323/+827    -49.2   add-on alone -161; bought 109, paid 4, no mark 0, mean 247 lots a side
+     20 % of the premium, 4 % away, both sides                 +10.88  69%   +1186   -93.4   -243.8   -162.9     +816/+369    -65.0   add-on alone -126; bought 109, paid 5, no mark 0, mean 192 lots a side
+     20 % of the premium, 4 % away, puts only                  +11.01  66%   +1201  -117.7   -301.4   -215.2     +351/+849    -65.0   add-on alone -111; bought 109, paid 2, no mark 0, mean 340 lots a side
+     20 % of the premium, 5 % away, both sides                 +10.32  69%   +1125   -93.3   -243.7   -162.9     +839/+286    -65.0   add-on alone -187; bought 109, paid 5, no mark 0, mean 210 lots a side
+     20 % of the premium, 5 % away, puts only                   +8.46  66%    +922  -112.8   -296.5   -203.3     +383/+539    -65.0   add-on alone -389; bought 109, paid 2, no mark 0, mean 358 lots a side
+
+## ETH daily cautious: 109 days (2026-08-08 .. 2026-11-24), each side 2 % away, entered 20 h before settlement; base rules: stop 2x, buy-back at 0.25, trail from 50 % giving back 20 %
+                                                                 mean  win   total   worst  worst 3 drawdown        halves    11-24
+   base: both sides every day                                   +2.55  64%    +278   -21.9    -42.7    -28.0     +132/+146     -1.7
+
+-- 1. one side by the move over the 4 hours before the entry
+   beyond 0.5 %: 37 days after a fall, 33 after a rise, 0 without history
+     with the move: fall > call only, rise > put only           +1.37  78%    +150   -14.4    -34.4    -21.4       +79/+70    -11.2
+     after a fall the call only; after a rise both              +2.47  73%    +269   -10.8    -27.9    -12.9     +113/+156     -1.7
+     after a rise the put only; after a fall both               +1.46  69%    +159   -21.9    -47.5    -29.5       +98/+61    -11.2
+     against the move: fall > put only, rise > call only        +1.36  74%    +148   -21.0    -48.0    -45.0      +13/+135     +3.7
+     no trade after a fall; after a rise both                   +1.78  43%    +194   -10.8    -26.7    -13.5       +99/+95     -1.7
+     no trade after a fall or a rise                            +0.30  21%     +33    -8.4    -20.3    -18.1       +10/+22     +0.0
+   beyond 1 %: 25 days after a fall, 19 after a rise, 0 without history
+     with the move: fall > call only, rise > put only           +2.03  74%    +221   -14.4    -36.4    -14.4     +104/+117    -11.2
+     after a fall the call only; after a rise both              +2.88  73%    +314   -10.8    -26.7    -12.9     +123/+190     -1.7
+     after a rise the put only; after a fall both               +1.70  65%    +186   -21.9    -47.5    -29.5      +113/+73    -11.2
+     against the move: fall > put only, rise > call only        +1.94  71%    +212   -21.0    -45.2    -36.2      +48/+164     +3.7
+     no trade after a fall; after a rise both                   +2.17  51%    +237   -10.8    -26.7    -13.5      +98/+139     -1.7
+     no trade after a fall or a rise                            +1.13  38%    +124   -10.8    -26.7    -12.0       +43/+81     +0.0
+   beyond 1.5 %: 19 days after a fall, 11 after a rise, 0 without history
+     with the move: fall > call only, rise > put only           +2.73  73%    +298   -11.2    -30.3    -12.5     +143/+155    -11.2
+     after a fall the call only; after a rise both              +3.16  72%    +344   -10.8    -26.7    -12.9     +144/+201     -1.7
+     after a rise the put only; after a fall both               +2.12  65%    +232   -21.9    -43.9    -29.5     +130/+101    -11.2
+     against the move: fall > put only, rise > call only        +2.53  71%    +276   -21.0    -45.2    -25.3      +93/+183     +3.7
+     no trade after a fall; after a rise both                   +2.58  56%    +282   -10.8    -26.7    -12.9     +123/+158     -1.7
+     no trade after a fall or a rise                            +2.01  49%    +220   -10.8    -26.7    -11.3     +103/+117     +0.0
+
+-- 2. follow the move: on a stop, buy the same kind further out, 100 lots, to settlement
+   42 stops on 40 days
+     buy 0 % beyond the spot at the stop                        +1.60  70%    +174   -59.2   -123.7   -141.3      +37/+137     +5.9   add-on alone -104; bought 42, paid 9, no mark 0
+     buy 0.5 % beyond the spot at the stop                      +1.71  69%    +187   -55.0   -121.4   -122.4      +34/+152     +5.9   add-on alone -92; bought 42, paid 9, no mark 0
+     buy 1 % beyond the spot at the stop                        +1.93  67%    +211   -47.9   -108.1    -92.1      +22/+189     -0.1   add-on alone -68; bought 42, paid 7, no mark 0
+     buy 2 % beyond the spot at the stop                        +2.17  65%    +236   -37.9    -83.6    -58.7      +66/+170    -12.2   add-on alone -42; bought 42, paid 4, no mark 0
+
+-- 3. a standing crash purchase at the entry, a share of the premium, to settlement
+     10 % of the premium, 3 % away, both sides                  +2.10  65%    +229   -23.7    -49.1    -30.7     +102/+127     -2.3   add-on alone -49; bought 109, paid 6, no mark 0, mean 24 lots a side
+     10 % of the premium, 3 % away, puts only                   +2.43  64%    +264   -23.7    -49.1    -30.7      +75/+189     -0.9   add-on alone -14; bought 109, paid 5, no mark 0, mean 53 lots a side
+     10 % of the premium, 4 % away, both sides                  +2.09  64%    +228   -23.7    -49.1    -32.7      +98/+130     -3.7   add-on alone -50; bought 109, paid 5, no mark 0, mean 51 lots a side
+     10 % of the premium, 4 % away, puts only                   +2.50  64%    +273   -23.7    -49.1    -31.9      +75/+197     -3.7   add-on alone -6; bought 109, paid 4, no mark 0, mean 124 lots a side
+     10 % of the premium, 5 % away, both sides                  +1.75  62%    +191   -23.7    -49.1    -33.1       +99/+92     -3.7   add-on alone -87; bought 109, paid 3, no mark 0, mean 71 lots a side
+     10 % of the premium, 5 % away, puts only                   +1.93  63%    +210   -23.7    -49.1    -33.1      +75/+135     -3.7   add-on alone -68; bought 109, paid 2, no mark 0, mean 176 lots a side
+     20 % of the premium, 3 % away, both sides                  +1.65  64%    +179   -25.5    -56.3    -35.4      +72/+108     -2.9   add-on alone -99; bought 109, paid 6, no mark 0, mean 47 lots a side
+     20 % of the premium, 3 % away, puts only                   +2.30  63%    +251   -25.5    -56.3    -35.4      +19/+232     -0.1   add-on alone -27; bought 109, paid 5, no mark 0, mean 107 lots a side
+     20 % of the premium, 4 % away, both sides                  +1.63  63%    +178   -25.5    -56.4    -40.6      +63/+114     -5.8   add-on alone -100; bought 109, paid 5, no mark 0, mean 102 lots a side
+     20 % of the premium, 4 % away, puts only                   +2.47  64%    +269   -25.5    -56.5    -38.9      +20/+249     -5.8   add-on alone -9; bought 109, paid 4, no mark 0, mean 232 lots a side
+     20 % of the premium, 5 % away, both sides                  +0.95  61%    +104   -25.5    -56.5    -58.4       +67/+37     -5.8   add-on alone -174; bought 109, paid 3, no mark 0, mean 141 lots a side
+     20 % of the premium, 5 % away, puts only                   +1.11  63%    +121   -25.5    -56.5    -53.0       +25/+96     -5.8   add-on alone -157; bought 109, paid 2, no mark 0, mean 305 lots a side
+
+## ETH daily: 109 days (2026-08-08 .. 2026-11-24), each side 1 % away, entered 20 h before settlement; base rules: stop 3x
+                                                                 mean  win   total   worst  worst 3 drawdown        halves    11-24
+   base: both sides every day                                   +4.64  61%    +506   -49.6   -136.2   -119.9     +256/+250    -23.9
+
+-- 1. one side by the move over the 4 hours before the entry
+   beyond 0.5 %: 37 days after a fall, 33 after a rise, 0 without history
+     with the move: fall > call only, rise > put only           +4.34  73%    +474   -40.2   -112.9    -74.8     +333/+140    -40.2
+     after a fall the call only; after a rise both              +3.68  67%    +401   -49.6   -136.2   -119.9     +151/+251    -23.9
+     after a rise the put only; after a fall both               +5.30  68%    +578   -40.2   -118.8    -93.3     +439/+139    -40.2
+     against the move: fall > put only, rise > call only        +1.76  69%    +192   -66.6   -179.6   -171.1       -1/+193    +16.3
+     no trade after a fall; after a rise both                   +2.32  40%    +253   -49.6   -136.2   -119.9      +77/+176    -23.9
+     no trade after a fall or a rise                            +1.47  22%    +160   -39.3    -86.1    -73.9       +76/+84     +0.0
+   beyond 1 %: 25 days after a fall, 19 after a rise, 0 without history
+     with the move: fall > call only, rise > put only           +5.13  70%    +559   -44.6   -126.8    -65.5     +328/+231    -40.2
+     after a fall the call only; after a rise both              +4.36  65%    +475   -49.6   -136.2   -119.9     +159/+316    -23.9
+     after a rise the put only; after a fall both               +5.41  66%    +590   -44.6   -126.8    -95.0     +425/+164    -40.2
+     against the move: fall > put only, rise > call only        +2.99  67%    +326   -66.6   -171.7   -155.4      +83/+243    +16.3
+     no trade after a fall; after a rise both                   +3.42  48%    +372   -49.6   -136.2   -119.9      +93/+279    -23.9
+     no trade after a fall or a rise                            +3.47  39%    +379   -44.6   -125.9    -56.2     +155/+224     +0.0
+   beyond 1.5 %: 19 days after a fall, 11 after a rise, 0 without history
+     with the move: fall > call only, rise > put only           +4.64  67%    +506   -44.6   -126.8    -70.3     +249/+257    -40.2
+     after a fall the call only; after a rise both              +4.62  65%    +503   -49.6   -136.2   -119.9     +192/+311    -23.9
+     after a rise the put only; after a fall both               +4.67  63%    +509   -44.6   -126.8    -95.0     +314/+195    -40.2
+     against the move: fall > put only, rise > call only        +4.08  67%    +445   -66.6   -171.7   -137.0     +154/+290    +16.3
+     no trade after a fall; after a rise both                   +4.14  52%    +451   -49.6   -136.2   -119.9     +139/+313    -23.9
+     no trade after a fall or a rise                            +4.08  47%    +445   -44.6   -125.9    -70.3     +148/+297     +0.0
+
+-- 2. follow the move: on a stop, buy the same kind further out, 100 lots, to settlement
+   40 stops on 39 days
+     buy 0 % beyond the spot at the stop                        +3.43  65%    +374   -79.0   -197.6   -162.4     +150/+225    -36.9   add-on alone -132; bought 40, paid 7, no mark 0
+     buy 0.5 % beyond the spot at the stop                      +3.57  64%    +389   -74.7   -189.2   -148.3     +164/+225    -36.9   add-on alone -117; bought 40, paid 7, no mark 0
+     buy 1 % beyond the spot at the stop                        +4.20  64%    +458   -64.6   -171.8   -116.8     +198/+260    -33.2   add-on alone -48; bought 40, paid 6, no mark 0
+     buy 2 % beyond the spot at the stop                        +4.34  63%    +473   -53.0   -154.3   -105.9     +245/+228    -28.2   add-on alone -33; bought 40, paid 3, no mark 0
+
+-- 3. a standing crash purchase at the entry, a share of the premium, to settlement
+     10 % of the premium, 3 % away, both sides                  +4.10  64%    +447   -46.4   -133.8    -99.1     +195/+252    -24.9   add-on alone -59; bought 109, paid 6, no mark 0, mean 60 lots a side
+     10 % of the premium, 3 % away, puts only                   +5.41  65%    +590   -53.6   -145.6   -131.7     +144/+446    -22.6   add-on alone +84; bought 109, paid 5, no mark 0, mean 137 lots a side
+     10 % of the premium, 4 % away, both sides                  +4.14  63%    +452   -46.4   -133.8    -92.2     +186/+266    -27.2   add-on alone -54; bought 109, paid 5, no mark 0, mean 129 lots a side
+     10 % of the premium, 4 % away, puts only                   +4.94  64%    +539   -53.6   -145.6   -131.8     +148/+391    -27.2   add-on alone +33; bought 109, paid 4, no mark 0, mean 258 lots a side
+     10 % of the premium, 5 % away, both sides                  +3.13  62%    +341   -46.4   -133.8   -135.7     +189/+151    -27.2   add-on alone -165; bought 109, paid 3, no mark 0, mean 173 lots a side
+     10 % of the premium, 5 % away, puts only                   +3.39  62%    +370   -53.6   -144.6   -132.6     +155/+214    -27.2   add-on alone -136; bought 109, paid 2, no mark 0, mean 316 lots a side
+     20 % of the premium, 3 % away, both sides                  +3.56  63%    +388   -49.2   -141.7   -103.6     +133/+255    -25.9   add-on alone -118; bought 109, paid 6, no mark 0, mean 118 lots a side
+     20 % of the premium, 3 % away, puts only                   +4.98  61%    +543   -57.5   -155.0   -143.5      +35/+508    -21.3   add-on alone +37; bought 109, paid 5, no mark 0, mean 237 lots a side
+     20 % of the premium, 4 % away, both sides                  +3.53  61%    +385   -49.2   -141.7   -112.2     +120/+266    -30.6   add-on alone -121; bought 109, paid 5, no mark 0, mean 233 lots a side
+     20 % of the premium, 4 % away, puts only                   +4.48  61%    +488   -57.6   -153.2   -143.6      +62/+426    -30.6   add-on alone -18; bought 109, paid 4, no mark 0, mean 374 lots a side
+     20 % of the premium, 5 % away, both sides                  +1.75  60%    +191   -49.2   -141.7   -182.9      +133/+58    -30.6   add-on alone -315; bought 109, paid 3, no mark 0, mean 281 lots a side
+     20 % of the premium, 5 % away, puts only                   +2.07  61%    +226   -57.6   -150.8   -160.2      +93/+134    -30.6   add-on alone -280; bought 109, paid 2, no mark 0, mean 410 lots a side
+

@@ -1,0 +1,48 @@
+## BTC daily WITH SLIPPAGE: 109 expiries (2026-08-08 .. 2026-11-24), entered 20 h before settlement, held to settlement; 100 lots a leg
+                                days  premium    mean  win   total    best   worst  worst 3 drawdown        halves    11-24
+   Long Straddle                 109    -90.5  -16.29  30%   -1776  +357.3  -137.5   -405.0  -2024.5     -980/-796    +85.4
+   Short Straddle                109    +90.5   +9.06  66%    +988  +130.0  -364.7   -997.5   -620.5     +599/+389    -92.4
+   Long Strangle                 109    -57.4  -13.77  28%   -1501  +350.4  -126.5   -363.7  -1894.4     -794/-706    +80.6
+   Short Strangle                109    +57.4   +7.74  71%    +844  +120.5  -358.6   -979.7   -556.5     +484/+360    -86.9
+   Iron Condor                   108    +20.9   -2.54  53%    -275   +24.3   -30.1    -85.6   -370.8      -68/-207    -19.4
+   Reverse Iron Condor           108    -20.9   -7.89  44%    -852   +20.9   -34.7   -102.9   -859.3     -464/-388     +7.4
+   Iron Butterfly                109    +44.8   -2.92  39%    -318   +43.1   -32.2    -91.5   -495.3      -82/-237    -17.3
+   Reverse Iron Butterfly        109    -44.8   -9.58  52%   -1044   +22.1   -56.0   -158.0  -1048.5     -564/-481     +4.3
+   Long Call Butterfly           109     -7.0   -5.48  28%    -597   +28.3   -22.0    -63.2   -691.7     -242/-355    -10.6
+   Long Put Butterfly            109     -6.9   -5.26  28%    -574   +28.0   -19.4    -58.0   -669.2     -225/-349    -13.7
+   Long Call Condor              109    -13.4   -4.97  39%    -542   +26.1   -31.6    -87.3   -595.4     -235/-307    -15.2
+   Long Calendar with Calls        0   no day could be priced
+   Long Calendar with Puts         0   no day could be priced
+   Long Gut                      109   -137.4  -15.10  27%   -1646  +350.3  -128.7   -369.7  -2008.4     -871/-775    +79.8
+   Strip                         109   -133.7  -22.96  24%   -2503  +758.2  -210.2   -602.6  -2738.0    -1899/-604   +235.2
+   Strap                         109   -137.8  -25.92  28%   -2825  +672.6  -215.2   -635.7  -3457.3   -1040/-1785    +20.9
+   Synthetic Straddle            109    -86.4  -21.44  29%   -2337  +351.4  -143.8   -424.8  -2516.4   -1274/-1063    +81.2
+   Broken-Wing Put Butterfly     108     -2.8   -5.48  22%    -592   +29.6   -34.5   -100.3   -591.7     -245/-347    -26.9
+   Broken-Wing Call Butterfly    109     -2.1   -4.08  27%    -445   +36.9   -32.2    -95.5   -477.7     -204/-241     -3.9
+   Double Diagonal                 0   no day could be priced
+   Calendar Strangle               0   no day could be priced
+
+## ETH daily WITH SLIPPAGE: 109 expiries (2026-08-08 .. 2026-11-24), entered 20 h before settlement, held to settlement; 100 lots a leg
+                                days  premium    mean  win   total    best   worst  worst 3 drawdown        halves    11-24
+   Long Straddle                 109    -39.5  -11.24  23%   -1225  +138.2   -62.6   -177.4  -1247.0     -606/-620    +21.7
+   Short Straddle                109    +39.5   +8.86  77%    +965   +60.1  -140.9   -335.2   -140.9     +477/+489    -23.8
+   Long Strangle                 109    -23.2   -9.09  20%    -991  +136.0   -50.4   -140.9  -1087.5     -494/-497    +18.8
+   Short Strangle                109    +23.2   +7.23  79%    +788   +48.3  -138.3   -324.3   -138.3     +394/+393    -20.6
+   Iron Condor                   102     +9.8   +1.14  63%    +116   +12.2   -15.2    -45.4    -54.4       +56/+59    -10.2
+   Reverse Iron Condor           102     -9.8   -4.42  31%    -451   +12.7   -15.5    -46.4   -457.7     -221/-230     +6.8
+   Iron Butterfly                107    +21.9   +1.32  50%    +141   +21.7   -13.8    -40.2    -72.5       +69/+73     -8.6
+   Reverse Iron Butterfly        107    -21.9   -5.40  43%    -578   +10.1   -26.1    -74.3   -582.8     -285/-293     +4.7
+   Long Call Butterfly           109     -3.7   -0.60  36%     -66   +14.3    -8.8    -25.1   -155.0       -39/-26     -4.7
+   Long Put Butterfly            109     -3.7   -0.46  37%     -50   +14.2    -8.4    -24.2   -141.5       -28/-22     -5.6
+   Long Call Condor              107     -7.1   +0.00  50%      +0   +13.2   -13.4    -37.9   -104.5       -12/+12     -7.7
+   Long Calendar with Calls        0   no day could be priced
+   Long Calendar with Puts         0   no day could be priced
+   Long Gut                      109    -63.2   -9.68  20%   -1055  +135.7   -51.3   -143.5  -1142.1     -527/-529    +18.5
+   Strip                         109    -58.5  -16.94  19%   -1847  +210.1   -93.2   -265.1  -1911.4    -1148/-698    +64.7
+   Strap                         109    -60.1  -16.78  26%   -1829  +302.9   -94.7   -272.1  -1948.3    -669/-1161     +0.3
+   Synthetic Straddle            109    -37.9  -12.59  22%   -1373  +136.7   -63.9   -182.1  -1392.8     -683/-689    +20.2
+   Broken-Wing Put Butterfly     103     -1.5   -1.49  26%    -153   +16.8   -15.8    -45.2   -163.1      -40/-113    -12.9
+   Broken-Wing Call Butterfly    102     -1.5   +0.03  30%      +4   +15.8   -16.0    -45.1    -71.5       -52/+55     -2.3
+   Double Diagonal                 0   no day could be priced
+   Calendar Strangle               0   no day could be priced
+
