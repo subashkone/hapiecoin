@@ -1,5 +1,6 @@
 // Journal tab (HC-TR-121, 128..137) against the in-memory API: seeded archived trades and an active strategy with a
 // squared-off leg; stats, equity curve, chips, search, tags, notes, CSV, rows → Details, empty states.
+import { fmtDateTime } from "@/lib/format";
 import type { Strategy, StrategyLeg } from "@hapiecoin/schema";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -40,6 +41,8 @@ describe("HC-TR-128..131, 134..137 journal", () => {
     await waitFor(() => expect(screen.getByTestId("journal-panel").dataset["count"]).toBe("2"), { timeout: 4000 });
     const rows = screen.getAllByTestId("journal-trade");
     expect(rows.map((r) => r.dataset["id"])).toEqual(["s1", "s2"]); // newest close first; the archived draft is not a trade
+    // HC-TR-264: a trade says when it was opened and closed, to the minute
+    expect(within(rows[1]!).getByTestId("journal-trade-times").textContent).toBe(`${fmtDateTime("2026-07-10T00:00:00Z")}→ ${fmtDateTime("2026-07-24T00:00:00Z")}`);
     expect(rows[0]!.dataset["win"]).toBe("true");
     expect(within(rows[1]!).getByTestId("trade-mode").dataset["mode"]).toBe("live");
     expect(screen.getByTestId("stat-trades").textContent).toBe("2");
@@ -96,7 +99,7 @@ describe("HC-TR-128..131, 134..137 journal", () => {
     await waitFor(async () => expect(await navigator.clipboard.readText()).toContain("id,name,mode"));
     const csv = await navigator.clipboard.readText();
     expect(csv.split("\n")).toHaveLength(2);
-    expect(csv).toContain("s2,ETH Short Straddle · Jul,live,ETH,Short Straddle,1,2026-07-10,2026-07-24,14,-1.32,,earnings hedge,Straddle sold into the ETF headline.");
+    expect(csv).toContain("s2,ETH Short Straddle · Jul,live,ETH,Short Straddle,1,2026-07-10T00:00:00Z,2026-07-24T00:00:00Z,14,-1.32,,earnings hedge,Straddle sold into the ETF headline.");
   });
 
   it("empty state points at the Paper tab", async () => {

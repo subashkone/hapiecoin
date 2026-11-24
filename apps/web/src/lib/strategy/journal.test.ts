@@ -70,7 +70,7 @@ describe("HC-TR-131, 134 filters, search and CSV", () => {
     const csv = journalCsv(filterTrades(trades, "live", ""));
     const lines = csv.split("\n");
     expect(lines[0]).toBe("id,name,mode,asset,template,legs,opened,closed,days,realized_pnl,close_reason,tags,notes,account");
-    expect(lines[1]).toBe('s2,ETH Short Straddle,live,ETH,Short Straddle,1,2026-07-10,2026-07-24,14,-1.32,,earnings hedge,"got run over, ""call"" side",');
+    expect(lines[1]).toBe('s2,ETH Short Straddle,live,ETH,Short Straddle,1,2026-07-10T00:00:00Z,2026-07-24T00:00:00Z,14,-1.32,,earnings hedge,"got run over, ""call"" side",');
     // HC-TR-173: the account column names the key through a label lookup; the filter keeps one account's trades
     const labelled = journalCsv(closedTrades([{ ...loss, accountId: "crd_sub1" }]), (id) => (id === "crd_sub1" ? "Sub 1" : ""));
     expect(labelled.split(String.fromCharCode(10))[1]?.endsWith(",Sub 1")).toBe(true);

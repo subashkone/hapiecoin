@@ -1,5 +1,6 @@
 // Protect: stop and target rules on a strategy (ADR-059 §2.3; HC-TR-167 arming from the card and after a trade,
 // HC-TR-168 the fired state on the card and in Details) against the mock API.
+import { fmtDateTime } from "@/lib/format";
 import type { Strategy, StrategyRule } from "@hapiecoin/schema";
 import { chainTopic } from "@hapiecoin/schema";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
@@ -150,7 +151,7 @@ describe("HC-TR-168 fired rules", () => {
     renderWithProviders(<Workspace />);
     serveMarket();
     const chip = await screen.findByTestId("card-rule-fired");
-    expect(chip.textContent).toBe("stop fired · a leg still open");
+    expect(chip.textContent).toBe(`stop fired · a leg still open · ${fmtDateTime("2026-09-11T10:00:00Z")}`); // HC-TR-264: the chip says when
     expect(chip.dataset["outcome"]).toBe("partial");
     expect(screen.getByTestId("card-rules").dataset["state"]).toBe("none"); // nothing armed any more
     await u.click(screen.getByTestId("card-details"));
@@ -222,7 +223,7 @@ describe("HC-TR-171 leg stop, spot level and time exit from the dialog; the work
     // the lead defaults to 15 minutes and the instant is 11:45 UTC on 25 Sep, shown on the trader's clock
     expect(within(dlg).getByTestId<HTMLInputElement>("rule-time-value").value).toBe("15");
     expect(within(dlg).getByTestId("rule-time-level").textContent).toContain("25 Sep settles");
-    expect(within(dlg).getByTestId("rule-time-level").textContent).toContain(new Date(Date.UTC(2026, 8, 25, 11, 45)).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false }));
+    expect(within(dlg).getByTestId("rule-time-level").textContent).toContain(fmtDateTime(new Date(Date.UTC(2026, 8, 25, 11, 45)).toISOString())); // HC-TR-264: with the year and the time zone
     // out of range refused, back in range armed
     fireEvent.change(within(dlg).getByTestId("rule-time-value"), { target: { value: "0" } });
     await waitFor(() => expect(within(dlg).getByTestId<HTMLButtonElement>("rule-arm").disabled).toBe(true));
@@ -342,7 +343,7 @@ describe("HC-TR-211 a target that trails (ADR-103)", () => {
     renderWithProviders(<Workspace />);
     serveMarket();
     await waitFor(() => expect(screen.getByTestId("card-rules").textContent).toBe("trailing: best +$18.00, exits at +$15.00"));
-    expect(screen.getByTestId("card-rule-fired").textContent).toBe("target hit · trailed from +$18.00");
+    expect(screen.getByTestId("card-rule-fired").textContent).toBe(`target hit · trailed from +$18.00 · ${fmtDateTime("2026-09-11T10:00:00Z")}`);
     await u.click(screen.getByTestId("card-details"));
     const list = within(await screen.findByTestId("strategy-details")).getByTestId("details-rules");
     expect(list.textContent).toContain("target at +$6.00, then trail $3.00, best +$18.00"); // the fired one keeps how far it ran
@@ -874,4 +875,83 @@ describe("HC-TR-247 buy back at a percentage of the price sold at (ADR-124)", ()
     await u.click(within(again).getByRole("button", { name: "price" }));
     expect(within(again).getByTestId<HTMLInputElement>("rule-take-l2-value").value).toBe("5");
   }, 20000);
+});
+
+describe("HC-TR-264 every event of a trade carries its date and time (ADR-135)", () => {
+  const OPENED = "2026-09-08T10:00:00Z";
+  const STOPPED = "2026-09-11T10:07:00Z";
+  const BOUGHT = "2026-09-12T03:41:00Z";
+  const OFF = "2026-09-12T03:41:02Z";
+
+  it("HC-TR-264 Details: each leg says when it was opened, and when and why it was closed; a fired rule says when it fired and a switched-off one when it was switched off; the card's chip carries the latest", async () => {
+    mine().push(
+      strat(1, {
+        name: "Timed one",
+        startedAt: OPENED,
+        legs: [
+          { ...CALL, id: "l1", side: "sell", status: "squared_off", exitPrice: "3600", closeReason: "stopped", openedAt: OPENED, closedAt: STOPPED },
+          { ...PUT, id: "l2", side: "sell", status: "squared_off", exitPrice: "5", closeReason: "target", openedAt: OPENED, closedAt: BOUGHT },
+          { ...PUT, id: "l3", strike: "77000", symbol: "P-BTC-77000-250926", openedAt: OPENED },
+        ],
+        rules: [
+          rule({ id: "r1", kind: "leg_stop", trigger: "multiple", value: "3", thresholdUsd: "3600", legId: "l1", scope: "leg", state: "fired", firedAt: STOPPED, firedPnl: "-24", outcome: "closed", note: "Leg stop fired" }),
+          rule({ id: "r2", kind: "leg_take", trigger: "price", value: "5", thresholdUsd: "5", legId: "l2", scope: "leg", state: "fired", firedAt: BOUGHT, firedPnl: "-12", outcome: "closed", note: "Leg buy-back fired" }),
+          rule({ id: "r3", kind: "target", thresholdUsd: "50", state: "disarmed", note: "disarmed: the leg buy-back fired", updatedAt: OFF }),
+          rule({ id: "r4", kind: "stop", thresholdUsd: "-60", state: "armed", createdAt: OPENED }),
+        ],
+      }),
+    );
+    renderWithProviders(<Workspace />);
+    act(() => FakeSocket.last().open());
+    serveMarket();
+    const u = userEvent.setup();
+    // the card: the most recent fired rule, with its time
+    const chip = await screen.findByTestId("card-rule-fired");
+    expect(within(chip).getByTestId("card-rule-fired-at").textContent).toBe(` · ${fmtDateTime(BOUGHT)}`);
+    await u.click(screen.getByTestId("card-details"));
+    const details = await screen.findByTestId("strategy-details");
+    // the open leg: opened only
+    const times = () => within(details).getAllByTestId("details-leg-times").map((x) => x.textContent);
+    expect(times()).toEqual([`opened ${fmtDateTime(OPENED)}`]);
+    // the closed legs: opened, closed, and why
+    await u.click(within(details).getByText(/^Squared off/));
+    expect(times()).toEqual([`opened ${fmtDateTime(OPENED)} · closed ${fmtDateTime(STOPPED)} · stopped`, `opened ${fmtDateTime(OPENED)} · closed ${fmtDateTime(BOUGHT)} · target hit`]);
+    // the rules: fired at, switched off at; an armed one shows no time in its tag and when it was set in its hint
+    const rulesList = within(details).getByTestId("details-rules");
+    const byId = (kind: string, state: string) => within(rulesList).getAllByTestId("details-rule").find((r) => r.dataset["kind"] === kind && r.dataset["state"] === state)!;
+    expect(within(byId("leg_stop", "fired")).getByTestId("details-rule-at").textContent).toBe(fmtDateTime(STOPPED));
+    expect(within(byId("leg_take", "fired")).getByTestId("details-rule-at").textContent).toBe(fmtDateTime(BOUGHT));
+    expect(within(byId("target", "disarmed")).getByTestId("details-rule-at").textContent).toBe(fmtDateTime(OFF));
+    expect(within(byId("stop", "armed")).queryByTestId("details-rule-at")).toBeNull();
+    expect(byId("stop", "armed").getAttribute("title")).toBe(`Last saved ${fmtDateTime(OPENED)}`);
+    // one shape everywhere: day, month, year, hour and minute, and the zone
+    expect(fmtDateTime(STOPPED)).toMatch(/^\d{2} [A-Z][a-z]{2} \d{4}, \d{2}:\d{2} \S+/);
+  });
+
+  it("HC-TR-264 a live leg says when its order was sent, a leg not yet filled says nothing, and a close booked by Reconcile says booked", async () => {
+    mine().push(
+      strat(1, {
+        name: "Live timed",
+        status: "live",
+        tradingMode: "live",
+        startedAt: OPENED,
+        legs: [
+          { ...CALL, id: "l1", openedAt: OPENED },
+          { ...PUT, id: "l2", entryPrice: null, openedAt: OPENED }, // a resting entry order: sent, not filled
+          { ...PUT, id: "l3", strike: "77000", symbol: "P-BTC-77000-250926", status: "squared_off", exitPrice: "900", closeReason: "outside_app", openedAt: OPENED, closedAt: STOPPED },
+        ],
+      }),
+    );
+    useUiStore.setState({ workspaceTab: "live" });
+    renderWithProviders(<Workspace />);
+    act(() => FakeSocket.last().open());
+    serveMarket();
+    act(() => useUiStore.getState().openDetails("strat_1"));
+    const details = await screen.findByTestId("strategy-details");
+    const times = () => within(details).getAllByTestId("details-leg-times").map((x) => x.textContent);
+    expect(times()).toEqual([`order sent ${fmtDateTime(OPENED)}`]); // the filled leg only: the resting one has no line
+    const u = userEvent.setup();
+    await u.click(within(details).getByText(/^Squared off/));
+    expect(times()).toEqual([`order sent ${fmtDateTime(OPENED)} · booked ${fmtDateTime(STOPPED)} · closed outside the app`]);
+  });
 });

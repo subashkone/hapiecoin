@@ -131,10 +131,10 @@ const csvCell = (v: string | number): string => {
   const s = String(v);
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
-/** id,name,mode,asset,template,legs,opened,closed,days,realized_pnl,close_reason,tags,notes,account for the given trades; `accountLabel` names the key (blank when unknown). */
+/** id,name,mode,asset,template,legs,opened,closed,days,realized_pnl,close_reason,tags,notes,account for the given trades (opened and closed are the full instants, in UTC: HC-TR-264); `accountLabel` names the key (blank when unknown). */
 export function journalCsv(trades: readonly Trade[], accountLabel: (id: string | null) => string = () => ""): string {
   const head = "id,name,mode,asset,template,legs,opened,closed,days,realized_pnl,close_reason,tags,notes,account";
-  const lines = trades.map((t) => [t.s.id, t.s.name, t.mode, t.s.asset, t.s.templateName, t.s.legs.length, t.openedAt.slice(0, 10), t.closedAt.slice(0, 10), t.days, t.pnl.toFixed(2), reasonLabel(t.reason), t.s.tags.join(" "), t.s.notes, accountLabel(t.accountId)].map(csvCell).join(","));
+  const lines = trades.map((t) => [t.s.id, t.s.name, t.mode, t.s.asset, t.s.templateName, t.s.legs.length, t.openedAt, t.closedAt, t.days, t.pnl.toFixed(2), reasonLabel(t.reason), t.s.tags.join(" "), t.s.notes, accountLabel(t.accountId)].map(csvCell).join(","));
   return [head, ...lines].join("\n");
 }
 

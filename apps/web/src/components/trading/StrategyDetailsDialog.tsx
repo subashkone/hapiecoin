@@ -1,12 +1,12 @@
 "use client";
 // Strategy Details (HC-TR-068..078): header with the mode pill, P&L tiles, actions, payoff figures, the
 // Active / Squared off leg groups with per-leg square off, the P&L history chart and statistics.
-import { type Strategy, type StrategyLeg as ServerLeg, RULE_BASIS_LABELS, RULE_KIND_LABELS } from "@hapiecoin/schema";
+import { type Strategy, type StrategyLeg as ServerLeg, RULE_BASIS_LABELS, RULE_KIND_LABELS, CLOSE_REASON_LABELS } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { strategyKeys, useArchiveStrategy, useCloseAll, useDeleteStrategy, useStrategies } from "@/lib/api/strategies";
-import { daysToExpiry, fmtDate, fmtDateTime, fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
+import { daysToExpiry, fmtDateTime, fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
 import { fmtMoney } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
 import { toPricingLegs } from "@/lib/pricing/legs";
@@ -63,7 +63,6 @@ export function AdjustedBadge({ s }: { s: Strategy }) {
   );
 }
 
-const fmtWhen = (iso: string) => new Date(iso).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
 export function legInstrument(l: ServerLeg): string {
   return l.kind === "future" ? `${l.symbol} · perp` : `${fmtStrike(l.strike)} ${l.kind === "call" ? "C" : "P"} · ${fmtExpiry(l.expiry)} · ${daysToExpiry(l.expiry)}d`;
@@ -149,6 +148,15 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
         {l.isAdjustment ? <span className="micro rounded border border-border px-1">adj</span> : null}
         <span className="num text-muted-foreground">{l.lots} lots</span>
         <span className="num">entry <b>{fmtPrice(p?.entry, 1)}</b> → {l.status === "squared_off" ? "exit" : "now"} <b>{fmtPrice(p?.current, 1)}</b></span>
+        {/* HC-TR-264: every event of a leg carries its date and time */}
+        {/* a leg that has not filled has no moment to show. On a live trade the stored moment is when the order was
+            sent (a resting order fills later), so it is called that; a close booked by Reconcile is when it was booked */}
+        {l.openedAt && l.entryPrice !== null ? (
+          <span className="order-last basis-full text-2xs normal-case tracking-normal text-muted-foreground" data-testid="details-leg-times" data-live={s.tradingMode === "live" ? "true" : undefined}>
+            {s.tradingMode === "live" ? "order sent" : "opened"} <b className="num">{fmtDateTime(l.openedAt)}</b>
+            {l.status === "squared_off" && l.closedAt ? <> · {l.closeReason === "outside_app" ? "booked" : "closed"} <b className="num">{fmtDateTime(l.closedAt)}</b>{l.closeReason ? ` · ${CLOSE_REASON_LABELS[l.closeReason].toLowerCase()}` : ""}</> : null}
+          </span>
+        ) : null}
         <span className={cn("num ml-auto rounded px-1", (p?.pnl ?? 0) >= 0 ? "text-profit" : "text-loss")} data-testid="details-leg-pnl">{p ? fmtMoney(p.pnl, money, { signed: true }) : "—"}</span>
         {active && l.status === "open" ? (
           <Button size="sm" variant="outline" onClick={() => setSqLeg(l)} data-testid="details-sqoff">
@@ -254,11 +262,12 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
                 <div className="micro mt-3">Exit rules · {s.rules.length}</div>
                 <div className="flex flex-col gap-1" data-testid="details-rules">
                   {s.rules.map((r) => (
-                    <div key={r.id} className="flex flex-wrap items-center gap-2 rounded border border-border px-2 py-1 text-xs" data-testid="details-rule" data-kind={r.kind} data-state={r.state}>
+                    <div key={r.id} className="flex flex-wrap items-center gap-2 rounded border border-border px-2 py-1 text-xs" data-testid="details-rule" data-kind={r.kind} data-state={r.state} title={`Last saved ${fmtDateTime(r.createdAt)}`}>
                       <span className="font-medium">{RULE_KIND_LABELS[r.kind]}</span>
                       <span className="num">{ruleText(r, money, s.legs)}</span>
                       {r.trigger === "pct" && r.basis ? <span className="text-muted-foreground">of the {RULE_BASIS_LABELS[r.basis].toLowerCase()}</span> : null}
-                      <span className={cn("micro rounded border px-1", r.state === "armed" ? "border-accent text-accent" : r.state === "fired" ? (r.outcome === "partial" ? "border-loss text-loss" : "border-border") : "border-border text-muted-foreground")}>{r.state}{r.firedAt ? ` ${fmtDate(r.firedAt)}` : ""}</span>
+                      <span className={cn("micro rounded border px-1", r.state === "armed" ? "border-accent text-accent" : r.state === "fired" ? (r.outcome === "partial" ? "border-loss text-loss" : "border-border") : "border-border text-muted-foreground")}>{r.state}</span>
+                      {r.state === "fired" && r.firedAt ? <span className="num text-2xs text-muted-foreground" data-testid="details-rule-at">{fmtDateTime(r.firedAt)}</span> : r.state === "disarmed" ? <span className="num text-2xs text-muted-foreground" data-testid="details-rule-at" title="When it was switched off">{fmtDateTime(r.updatedAt)}</span> : null}
                       {r.note ? <span className="text-muted-foreground">{r.note}</span> : null}
                     </div>
                   ))}
@@ -271,7 +280,7 @@ export function StrategyDetailsDialog({ book, feedLive }: { book: PaperBook; fee
                 <div className="flex flex-col gap-1" data-testid="details-adjustments">
                   {[...s.adjustments].reverse().map((adj) => (
                     <div key={adj.id} className="flex flex-wrap items-center gap-2 rounded border border-border px-2 py-1 text-xs" data-testid="details-adjustment" data-id={adj.id}>
-                      <span className="num text-muted-foreground">{fmtWhen(adj.at)}</span>
+                      <span className="num text-muted-foreground">{fmtDateTime(adj.at)}</span>
                       <span className="micro rounded border border-border px-1">{[adj.added ? `+${adj.added} ${adj.added === 1 ? "leg" : "legs"}` : "", adj.trimmed ? `trimmed ${adj.trimmed}` : "", adj.closed ? `closed ${adj.closed}` : ""].filter(Boolean).join(" · ") || "no change"}</span>
                       <span className={cn("num", Number(adj.realizedPnl) >= 0 ? "text-profit" : "text-loss")} title="Realised on the lots closed in this batch">{fmtMoney(Number(adj.realizedPnl), money, { signed: true })}</span>
                       <span className="min-w-0 flex-1 truncate text-muted-foreground" title={adj.reason ?? undefined}>{adj.reason ?? "—"}</span>

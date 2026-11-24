@@ -20,7 +20,7 @@ import { Button, Checkbox, Dialog, DialogBody, DialogContent, DialogDescription,
 import { useEffect, useMemo, useState } from "react";
 import { useClearRules, useSetRules, useStrategies } from "@/lib/api/strategies";
 import { useTelegramStatus } from "@/lib/api/telegram";
-import { fmtExpiry, fmtPrice, fmtStrike } from "@/lib/format";
+import { fmtExpiry, fmtPrice, fmtStrike, fmtDateTime } from "@/lib/format";
 import { type MoneyFormat, USD, fmtMoney } from "@/lib/money";
 import { useAnalysis } from "@/lib/pricing/client";
 import { toPricingLegs } from "@/lib/pricing/legs";
@@ -105,7 +105,6 @@ export function fromLocalInput(local: string): string | null {
   const d = new Date(local);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
-const fmtInstant = (iso: string) => new Date(iso).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
 
 /** "−₹5,000 (−$60)" style: the level in the trader's currency, USD beside it when the currency is not USD. */
 export function levelText(usd: number, money: MoneyFormat): string {
@@ -147,8 +146,8 @@ export function ruleText(r: StrategyRule, money: MoneyFormat, legs: readonly Str
     return `${leg ? legTag(leg) : "leg"} bought back at ${fmtPrice(r.thresholdUsd)}${r.trigger === "multiple" ? ` (${toDecimal(Number(r.value) * 100, 2)} % of the price sold at)` : ""}`;
   }
   if (r.kind === "spot") return `spot ${r.trigger === "above" ? "≥" : "≤"} ${fmtPrice(r.thresholdUsd, 0)}`;
-  if (r.trigger === "settle") return `exit all legs ${r.value} min before expiry settles (${fmtInstant(new Date(Number(r.thresholdUsd)).toISOString())})`;
-  return r.trigger === "at" ? `exit at ${fmtInstant(r.value)}` : `exit at ${r.value} ${r.value === "1" ? "day" : "days"} to expiry`;
+  if (r.trigger === "settle") return `exit all legs ${r.value} min before expiry settles (${fmtDateTime(new Date(Number(r.thresholdUsd)).toISOString())})`;
+  return r.trigger === "at" ? `exit at ${fmtDateTime(r.value)}` : `exit at ${r.value} ${r.value === "1" ? "day" : "days"} to expiry`;
 }
 
 /**
@@ -595,12 +594,12 @@ export function RuleDialog({ book }: { book: PaperBook }) {
       <span className="num text-muted-foreground" data-testid="rule-time-level">
         {timeD.trigger === "at"
           ? timeIso
-            ? `= ${fmtInstant(timeIso)} your clock`
+            ? `= ${fmtDateTime(timeIso)} your clock`
             : "—"
           : timeD.trigger === "settle"
             ? nearest
               ? settleMs !== null
-                ? `${fmtExpiry(nearest.expiry)} settles · exit all legs at ${fmtInstant(new Date(settleMs).toISOString())} your clock`
+                ? `${fmtExpiry(nearest.expiry)} settles · exit all legs at ${fmtDateTime(new Date(settleMs).toISOString())} your clock`
                 : `${fmtExpiry(nearest.expiry)} settles · ${SETTLE_LEAD_MINUTES.min} to ${SETTLE_LEAD_MINUTES.max} minutes`
               : "no dated leg to count to"
             : nearest

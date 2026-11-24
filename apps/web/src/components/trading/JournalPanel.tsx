@@ -2,6 +2,7 @@
 // Journal tab (HC-TR-128..137): closed trades (archived strategies that were traded) newest first, the stats strip,
 // the equity curve, filter chips + search, tags and notes per trade saved to the strategy, CSV export, the
 // squared-off legs of active strategies, and the empty states. Rows open Strategy Details.
+import { fmtDateTime } from "@/lib/format";
 import type { Strategy } from "@hapiecoin/schema";
 import { Button, EmptyState, cn, toast } from "@hapiecoin/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -180,7 +181,7 @@ export function JournalPanel({ book }: { book: PaperBook }) {
                           <span>{t.s.templateName}</span>
                           <span><b>{t.s.legs.length}</b> {t.s.legs.length === 1 ? "leg" : "legs"}</span>
                           <span><b>{t.days}</b> days</span>
-                          <span>{dm(t.openedAt)} → {dm(t.closedAt)}</span>
+                          <span className="num flex flex-wrap gap-x-1 normal-case tracking-normal" data-testid="journal-trade-times"><span>{fmtDateTime(t.openedAt)}</span><span>→ {fmtDateTime(t.closedAt)}</span></span>
                           {t.reason ? <span className="rounded border border-border px-1" title="Why it closed (ADR-059)" data-testid="trade-reason" data-reason={t.reason}>{reasonLabel(t.reason)}</span> : null}
                           {t.s.tags.map((tag) => <span key={tag} className="text-accent">#{tag}</span>)}
                         </div>
@@ -203,7 +204,7 @@ export function JournalPanel({ book }: { book: PaperBook }) {
               <div className="mt-1 flex flex-col gap-1">
                 {legs.map((r) => (
                   <button key={r.leg.id} type="button" onClick={() => openDetails(r.s.id)} className="flex flex-wrap items-center gap-2 rounded border border-border px-2 py-1 text-left text-2xs hover:border-foreground/30" title="Open Strategy Details" data-testid="closed-leg" data-id={r.s.id}>
-                    <span className="num w-12 text-muted-foreground">{r.closedAt ? dm(r.closedAt) : "—"}</span>
+                    <span className="num min-w-40 shrink-0 normal-case tracking-normal text-muted-foreground" data-testid="journal-row-closed">{fmtDateTime(r.closedAt)}</span>
                     <span className={cn("micro rounded border px-1", r.leg.side === "sell" ? "border-loss text-loss" : "border-profit text-profit")}>{r.leg.side.toUpperCase()}</span>
                     <span className="num font-medium">{r.leg.symbol}</span>
                     <span className="text-muted-foreground">· {r.s.asset} {r.s.name} · {fmtLeg(r.leg).split(" × ")[1]} lots</span>
