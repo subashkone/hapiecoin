@@ -5,7 +5,7 @@
 // its switch, exits, backtest, paper result and what it is doing now) and the log. The expiry, the coin and the
 // search narrow every view.
 // Paper only. Figures in USD are shown in the trader's display currency.
-import { type Playbook, type PlaybookCadence, playbookCadence, playbookTemplate } from "@hapiecoin/pricing";
+import { type Playbook, type PlaybookCadence, playbookCadence } from "@hapiecoin/pricing";
 import { AUTOPILOT_CHOSEN_EXIT_STYLES, AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_EXIT_LABELS, type AutopilotExitStyle, type AutopilotRun, type AutopilotSettings, type PlaybookStatus, type Strategy } from "@hapiecoin/schema";
 import { Badge, Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, Switch, cn, toast } from "@hapiecoin/ui";
 import { useRouter } from "next/navigation";
@@ -22,9 +22,12 @@ import { fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
 import { HEALTH_LABELS, type TradeHealth, autopilotLevels, capitalInUse, capitalUnbounded, latestRun, tradeHealth } from "@/lib/strategy/autopilot";
 import { catalogueOf } from "@/lib/strategy/autopilot-catalogue";
+import { exitTags, hasWings, istClock, moveWords, nextDay, premiumWords } from "@/lib/strategy/autopilot-words";
 import { dayPnl, openLegs, priceMap } from "@/lib/strategy/paper";
 import { usePaperBook } from "@/lib/strategy/usePaper";
 
+// (kept as exports of the screen: its tests and the admin page read them from here or from the shared file)
+export { exitTags, istClock, moveWords };
 const NONE: never[] = [];
 const ASSETS = ["BTC", "ETH", "XAUT"] as const;
 type Coin = (typeof ASSETS)[number];
@@ -34,38 +37,6 @@ const CADENCE: Record<PlaybookCadence, { tab: string; title: string; note: strin
   daily: { tab: "Daily", title: "Evening strangles, daily expiry", note: "Entered every evening for the next day's expiry." },
   weekly: { tab: "Weekly", title: "Weekly strangles, Friday expiry", note: "Entered once a week, on a Friday or a Tuesday evening, for the Friday expiry." },
   monthly: { tab: "Monthly", title: "Monthly strangles, month-end expiry", note: "Entered one to two months before the month-end expiry." },
-};
-/** A whole hour on the UTC clock as IST reads it: 20 is "1:30 AM". */
-export const istClock = (hourUtc: number): string => {
-  const m = (hourUtc * 60 + 330) % 1440;
-  const h = Math.floor(m / 60);
-  return `${h % 12 === 0 ? 12 : h % 12}:${String(m % 60).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
-};
-/** ADR-122: the move an entry was judged on and the side it left to sell: "BTC up 1.62 % over 24 hours: the put only". */
-export const moveWords = (asset: string, move: { pct: string; side: "put" | "call" | "both" }): string => {
-  const pct = Number(move.pct);
-  return `${asset} ${pct < 0 ? "down" : "up"} ${Math.abs(pct).toFixed(2)} % over 24 hours: ${move.side === "both" ? "both sides" : `the ${move.side} only`}`;
-};
-/** A timed exit whose hour is not after the entry window's first hour is the next day's (HC-TR-263; the engine takes the next occurrence of the hour): a Friday entry at 9:30 PM closed at 5:30 PM is closed on Saturday. */
-const nextDay = (c: { fromHourUtc: number; exitHourUtc?: number | undefined }): boolean => c.exitHourUtc !== undefined && c.exitHourUtc <= c.fromHourUtc;
-/** A structure with bought options collects less than its sold options bring: its profit levels are on the net premium (ADR-138). */
-const hasWings = (p: Playbook): boolean => Boolean(playbookTemplate(p)?.legs.some((l) => l.side === "buy"));
-const premiumWords = (p: Playbook): string => (hasWings(p) ? "net premium" : "premium");
-/** How a strategy gets out as short tags in a fixed order, so that rows can be compared at a glance (ADR-139); the sentence stays in the row's details. */
-export const exitTags = (p: Playbook): string[] => {
-  const c = p.clock;
-  if (!c) return ["Playbook stop", "Time exit"];
-  const tags = [c.legStop ? `Stop ${c.legStop}x` : "No stop"];
-  if (hasWings(p)) tags.push("Wings");
-  if (c.takeProfitOfCredit) tags.push(`${c.takeTrailPct ? "Trail from" : "Take"} ${Math.round(c.takeProfitOfCredit * 100)} %`);
-  if (c.trailRestPct) tags.push("Trail the other side");
-  if (c.ladder) tags.push(`Steps ${c.ladder.join(" / ")} %`);
-  if (c.lock) tags.push(`Floor ${Math.round(c.lock.floor * 100)} % from ${Math.round(c.lock.at * 100)} %`);
-  if (c.exitHourUtc !== undefined) tags.push(`Out ${istClock(c.exitHourUtc)} IST${nextDay(c) ? " next day" : ""}`);
-  if (c.legBuyBackAt !== undefined) tags.push(`Buy back at ${c.legBuyBackAt} dollars`);
-  if (c.legBuyBackShare !== undefined) tags.push(`Buy back at ${Math.round(c.legBuyBackShare * 100)} %`);
-  if (!c.takeProfitOfCredit && !c.ladder && !c.lock && c.exitHourUtc === undefined) tags.push("Held to expiry");
-  return tags;
 };
 /** How a strategy gets out, in a few words: the sentence behind the tags. */
 const exitWords = (p: Playbook): string => {

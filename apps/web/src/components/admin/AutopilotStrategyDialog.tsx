@@ -60,12 +60,12 @@ function NamedUsers({ selected, onChange }: { selected: string[]; onChange: (ids
   );
 }
 
-export function AutopilotStrategyDialog({ strategy: opened, onOpenChange }: { strategy: SavedStrategy | null; onOpenChange: (o: boolean) => void }) {
+export function AutopilotStrategyDialog({ strategy: opened, copy, onSaved, onOpenChange }: { strategy: SavedStrategy | null; /** HC-TR-280: a new strategy that starts from the settings of a built-in one. */ copy?: { from: string; form: SavedForm; notes: string[] } | undefined; /** Called once the strategy is saved (not when the editor is closed without saving). */ onSaved?: (() => void) | undefined; onOpenChange: (o: boolean) => void }) {
   // a new strategy is saved as a draft first and then given its figures and audience: once the draft exists, a second
   // press of Save changes that draft and never makes another
   const [made, setMade] = useState<SavedStrategy | null>(null);
   const strategy = opened ?? made;
-  const [form, setForm] = useState<SavedForm>(opened ? savedFormOf(opened) : emptySavedForm());
+  const [form, setForm] = useState<SavedForm>(opened ? savedFormOf(opened) : copy ? { ...copy.form, legs: copy.form.legs.map((l) => ({ ...l })) } : emptySavedForm());
   const [error, setError] = useState<string | null>(null);
   const create = useCreateSavedStrategy();
   const update = useUpdateSavedStrategy();
@@ -110,6 +110,7 @@ export function AutopilotStrategyDialog({ strategy: opened, onOpenChange }: { st
     const summary = form.summary.trim();
     const done = (s: SavedStrategy, was: SavedStrategy | null) => {
       toast.success(was && s.id !== was.id ? `Saved as version ${s.version}` : "Saved", { description: `${s.name} · ${SAVED_STAGE_LABELS[s.stage]}` });
+      onSaved?.();
       onOpenChange(false);
     };
     /** Send what differs from `from`, and nothing else: another admin's change to a field this one did not touch stays. */
@@ -135,10 +136,21 @@ export function AutopilotStrategyDialog({ strategy: opened, onOpenChange }: { st
     <Dialog open onOpenChange={close}>
       <DialogContent className="sm:max-w-[880px]" data-testid="saved-dialog">
         <DialogHeader>
-          <DialogTitle>{opened ? `Edit strategy · version ${opened.version}` : "New strategy"}</DialogTitle>
+          <DialogTitle>{opened ? `Edit strategy · version ${opened.version}` : copy ? "New strategy from a built-in one" : "New strategy"}</DialogTitle>
           <DialogDescription>Paper only. A strategy trades on paper once it has backtest figures and you publish it.</DialogDescription>
         </DialogHeader>
         <DialogBody className="max-h-[70vh] space-y-4 overflow-y-auto text-xs">
+          {copy && !opened ? (
+            <div className="space-y-1 rounded border border-border p-2" data-testid="saved-copy-note">
+              <p>Started from the built-in strategy "{copy.from}", which stays as it is. What you save is a strategy of your own:</p>
+              <ul className="list-disc space-y-0.5 pl-4 text-muted-foreground">
+                <li>It trades under its own name, beside the built-in one. A trader with both switched on gets two trades.</li>
+                <li>Its paper record starts empty.</li>
+                <li>Its backtest figures are not copied. If you change nothing they are the built-in strategy's figures; if you change a setting they need a new backtest. Enter them below either way.</li>
+                {copy.notes.map((n) => <li key={n} className="text-foreground" data-testid="saved-copy-warning">{n}</li>)}
+              </ul>
+            </div>
+          ) : null}
           <Section n={1} title="Basics">
             <div className="grid gap-2 sm:grid-cols-2">
               <Field label="Name *"><input value={form.name} maxLength={60} onChange={(e) => set("name", e.target.value)} className={input} placeholder="e.g. BTC evening strangle, 2 % away" data-testid="saved-name" /></Field>

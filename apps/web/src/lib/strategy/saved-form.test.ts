@@ -1,8 +1,9 @@
 // The editor of a saved Autopilot strategy as data (HC-TR-278): India time and weekdays to the engine's UTC hours and
 // days and back, every field to its setting, and the first thing wrong said in the admin's words.
-import type { SavedStrategy } from "@hapiecoin/schema";
+import { AUTOPILOT_PLAYBOOKS, playbookTemplate } from "@hapiecoin/pricing";
+import { type SavedStrategy, savedPlaybookOf } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
-import { FROM_HOURS, LEG_PRESETS, type SavedForm, emptySavedForm, istClock, istWeekday, sameDefinition, savedBacktestOf, savedDefinitionOf, savedFormOf, utcWeekday } from "./saved-form";
+import { FROM_HOURS, LEG_PRESETS, type SavedForm, emptySavedForm, istClock, istWeekday, sameDefinition, SAVED_NAME_MAX, savedBacktestOf, savedDefinitionOf, savedFormFromBuiltIn, savedFormOf, utcWeekday } from "./saved-form";
 
 const form = (over: Partial<SavedForm> = {}): SavedForm => ({ ...emptySavedForm(), name: "Evening strangle", summary: "Sell both sides.", ...over });
 const defOf = (f: SavedForm) => {
@@ -140,5 +141,85 @@ describe("HC-TR-278 a saved strategy back into the form", () => {
     const { exits, legs, ...rest } = d;
     expect(sameDefinition(d, { legs, exits, ...rest })).toBe(true);
     expect(sameDefinition(d, defOf(form({ legStop: "3" })))).toBe(false);
+  });
+});
+
+describe("HC-TR-280 a built-in strategy as a draft of the admin's own", () => {
+  const clockOnes = AUTOPILOT_PLAYBOOKS.filter((p) => p.clock);
+  const trendOnes = AUTOPILOT_PLAYBOOKS.filter((p) => !p.clock);
+
+  it("HC-TR-280 every built-in strategy entered by the clock can be copied, and the copy is the same strategy: the same entry, legs, conditions and exits", () => {
+    expect(clockOnes.map((p) => [p.id, savedFormFromBuiltIn(p)] as const).filter(([, r]) => !r.ok).map(([id, r]) => `${id}: ${r.ok ? "" : r.why}`)).toEqual([]);
+    for (const p of clockOnes) {
+      const copied = savedFormFromBuiltIn(p);
+      if (!copied.ok) throw new Error(copied.why);
+      const definition = defOf(copied.form);
+      const q = savedPlaybookOf({ id: "sv_copy", name: copied.form.name, summary: copied.form.summary, definition, backtest: null });
+      const c = p.clock!;
+      // what the engine reads, key for key: every key the built-in clock, its legs and its conditions carry, whatever
+      // is added to them later (the words of the window and of the card are the copy's own)
+      const plain = (o: object | undefined) => JSON.parse(JSON.stringify(o ?? {})) as Record<string, unknown>;
+      const { window: _w, describe: _d, ...mine } = plain(q.clock);
+      const { window: _bw, describe: _bd, ...theirs } = plain(c);
+      void [_w, _d, _bw, _bd];
+      expect({ ...mine, oncePerExpiry: Boolean(mine["oncePerExpiry"]) }, p.id).toEqual({ ...theirs, oncePerExpiry: Boolean(theirs["oncePerExpiry"]) });
+      expect(q.template.legs.map((l) => plain(l)), p.id).toEqual(playbookTemplate(p)!.legs.map((l) => plain(l)));
+      expect(plain(q.conditions), p.id).toEqual(plain(p.conditions));
+      expect({ minDte: q.minDte, lots: q.lots, assets: q.assets, control: q.control, risk: q.template.risk }, p.id).toEqual({ minDte: p.minDte, lots: p.lots, assets: [...p.assets], control: p.control, risk: playbookTemplate(p)!.risk });
+    }
+  });
+
+  it("HC-TR-280 a copy's name is the built-in name with (copy), never cut: one too long is left for the admin to write, and no two copies share a name; a description too long is cut after a whole sentence, and both are said", () => {
+    const copies = clockOnes.map((p) => {
+      const r = savedFormFromBuiltIn(p);
+      if (!r.ok) throw new Error(r.why);
+      return { p, form: r.form, notes: r.notes };
+    });
+    const named = copies.filter((x) => x.form.name !== "");
+    expect(named.every((x) => x.form.name === `${x.p.name} (copy)` && x.form.name.length <= SAVED_NAME_MAX)).toBe(true);
+    expect(new Set(named.map((x) => x.form.name)).size).toBe(named.length);
+    const unnamed = copies.filter((x) => x.form.name === "");
+    expect(unnamed.length).toBeGreaterThan(0);
+    expect(unnamed.every((x) => `${x.p.name} (copy)`.length > SAVED_NAME_MAX && x.notes.some((n) => n.startsWith("Its name is too long to copy")))).toBe(true);
+    const cut = copies.filter((x) => x.form.summary !== x.p.summary);
+    expect(cut.length).toBeGreaterThan(0);
+    for (const x of cut) {
+      expect(x.form.summary.length, x.p.id).toBeLessThanOrEqual(300);
+      expect(x.form.summary.endsWith("."), x.p.id).toBe(true);
+      expect(x.p.summary.startsWith(x.form.summary), x.p.id).toBe(true);
+      expect(x.notes, x.p.id).toContain("Its description was too long to copy whole and was cut after a full sentence: read it and complete it.");
+    }
+    expect(copies.filter((x) => x.form.summary === x.p.summary && x.form.name !== "").every((x) => x.notes.length === 0)).toBe(true);
+    // one sentence that does not fit at all is left empty, for the admin to write
+    const long = savedFormFromBuiltIn({ ...clockOnes[0]!, summary: "x".repeat(400) });
+    expect(long.ok && long.form.summary).toBe("");
+  });
+
+  it("HC-TR-280 a strategy entered on a market condition is not copied yet, and says why", () => {
+    expect(trendOnes.length).toBeGreaterThan(0);
+    for (const p of trendOnes) expect(savedFormFromBuiltIn(p), p.id).toEqual({ ok: false, why: "It enters on a market condition, with exits the editor does not have yet." });
+  });
+
+  it("HC-TR-280 what the editor cannot hold is said: another exchange, a futures leg, legs of another size or expiry, a leg at the money, a window the rules refuse", () => {
+    const base = clockOnes[0]!;
+    const withLegs = (legs: object[]) => ({ ...base, template: { name: "T", category: "Neutral", description: "d", legs, risk: "undefined" } }) as never;
+    const why = (p: never) => {
+      const r = savedFormFromBuiltIn(p);
+      return r.ok ? null : r.why;
+    };
+    expect(why({ ...base, clock: { ...base.clock!, venues: ["deribit"] } } as never)).toBe("It trades on another exchange than Delta Exchange India.");
+    expect(why(withLegs([{ kind: "future", side: "sell" }]))).toBe("It holds a futures leg, which a saved strategy cannot.");
+    expect(why(withLegs([{ kind: "call", side: "sell", k: 2, lots: 2 }]))).toBe("Its legs differ in size or expiry, which the editor cannot hold.");
+    expect(why(withLegs([{ kind: "call", side: "sell", k: 2, expiryOffset: 1 }]))).toBe("Its legs differ in size or expiry, which the editor cannot hold.");
+    expect(why(withLegs([{ kind: "call", side: "sell", k: 0 }]))).toBe("It has a leg at or in the money, which the editor cannot hold yet.");
+    expect(why(withLegs([{ kind: "put", side: "sell", k: 0, pct: 2 }]))).toBe("It has a leg at or in the money, which the editor cannot hold yet.");
+    expect(why(withLegs([{ kind: "call", side: "buy", k: 2 }]))).toBe("The editor cannot hold it as it is. What to trade: A saved strategy sells at least one option");
+    expect(why({ ...base, template: "No such template" } as never)).toMatch(/^The editor cannot hold it as it is\. /);
+    // a day the editor has no field for is a reason, not a silent drop
+    expect(why({ ...base, clock: { ...base.clock!, cadence: "monthly", weekdayUtc: 5 } } as never)).toBe("It is monthly and tied to one weekday, which the editor cannot hold.");
+    expect(why({ ...base, conditions: { weekdays: [1] }, clock: { ...base.clock!, weekdayUtc: 5 } } as never)).toBe("It chooses its weekdays without being a daily strategy, which the editor cannot hold.");
+    // a whole-day window, chosen days and conditions come through
+    const allDay = savedFormFromBuiltIn({ ...base, conditions: { sma: { days: 20, side: "below" }, ivRank: { min: 40, lookbackDays: 120 }, weekdays: [1, 5] }, clock: { ...base.clock!, fromHourUtc: 0, toHourUtc: 24, oncePerExpiry: true, moveSide: { hours: 12, pct: 1.5 } } } as never);
+    expect(allDay.ok && allDay.form).toMatchObject({ anyTime: true, oncePerExpiry: true, weekdays: [1, 5], smaOn: true, smaDays: "20", smaSide: "below", ivOn: true, ivMin: "40", ivLookback: "120", moveOn: true, moveHours: "12", movePct: "1.5" });
   });
 });

@@ -1,5 +1,6 @@
-// Admin · Autopilot strategies against the mock API (HC-TR-277, HC-TR-278; ADR-141, ADR-142): the list with stages and
+// Admin · Autopilot strategies against the mock API (HC-TR-277, HC-TR-278, HC-TR-280; ADR-141, ADR-142): the list with stages and
 // the steps each strategy allows, and the editor from an empty form to a strategy on paper. Paper only.
+import { AUTOPILOT_PLAYBOOKS } from "@hapiecoin/pricing";
 import { type SavedStrategy, SavedDefinition, savedEntryText, savedLossCapped } from "@hapiecoin/schema";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -409,5 +410,120 @@ describe("HC-TR-278 the editor", () => {
     mock = installMockFetch(); // signed out: the create is refused
     await u.click(screen.getByTestId("saved-save"));
     await waitFor(() => expect(screen.getByTestId("saved-error").textContent).not.toBe(""));
+  });
+});
+
+describe("HC-TR-280 the built-in strategies on the admin page", () => {
+  const CLOCK = AUTOPILOT_PLAYBOOKS.find((p) => p.id === "evening-strangle-stop-2x")!;
+  const TREND = AUTOPILOT_PLAYBOOKS.find((p) => !p.clock)!;
+  const builtInRow = (id: string) => screen.getAllByTestId("builtin-row").find((r) => r.dataset["playbook"] === id)!;
+
+  it("HC-TR-280 a second tab lists every built-in strategy, read-only, with what it does and its figures; the search narrows it", async () => {
+    saved({ name: "One of mine" });
+    const u = await open();
+    const tabs = () => screen.getAllByTestId("saved-view");
+    expect(tabs().map((t) => t.textContent)).toEqual(["Yours (1)", `Built-in (${AUTOPILOT_PLAYBOOKS.length})`]);
+    expect(tabs()[0]!.getAttribute("aria-selected")).toBe("true");
+    // a stage chosen on the admin's own list does not follow to the other tab or come back
+    await u.selectOptions(screen.getByTestId("saved-stage-filter"), "paper");
+    expect(screen.getByTestId("saved-empty-filtered")).toBeTruthy();
+    // the arrow keys move along the tabs, as a tab list is expected to
+    tabs()[0]!.focus();
+    await u.keyboard("{ArrowRight}");
+    expect(tabs()[1]!.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tabs()[1]);
+    await u.keyboard("{ArrowLeft}");
+    expect(tabs()[0]!.getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByTestId("saved-count").textContent).toBe("1 of 1");
+    await u.keyboard("a");
+    await u.click(tabs()[1]!);
+    expect(screen.queryByTestId("saved-clear")).toBeNull();
+    expect(screen.getAllByTestId("builtin-row").map((r) => r.dataset["playbook"])).toEqual(AUTOPILOT_PLAYBOOKS.map((p) => p.id));
+    expect(screen.getByTestId("saved-count").textContent).toBe(`${AUTOPILOT_PLAYBOOKS.length} of ${AUTOPILOT_PLAYBOOKS.length}`);
+    expect(screen.getByTestId("builtin-note").textContent).toContain("They cannot be edited or removed here");
+    expect(screen.queryByTestId("saved-row")).toBeNull();
+    expect(screen.getByTestId("saved-stage-filter").hidden).toBe(true);
+    const row = builtInRow(CLOCK.id);
+    expect(row.textContent).toContain(CLOCK.name);
+    expect(row.textContent).toContain(CLOCK.clock!.describe);
+    expect(row.textContent).toContain("Stop 2x");
+    expect(row.textContent).toContain("Daily");
+    expect(within(row).getByTestId("builtin-backtest").textContent).toContain("a day");
+    expect(within(row).getByTestId("builtin-backtest").textContent).toContain("days tested");
+    expect(within(row).queryByTestId("saved-edit")).toBeNull();
+    // one entered on a market condition is listed, and says why it is not copied yet
+    const trend = builtInRow(TREND.id);
+    expect(trend.dataset["copyable"]).toBe("false");
+    expect(trend.textContent).toContain("when its market condition is met");
+    expect(within(trend).getByTestId("builtin-no-copy").textContent).toContain("Cannot be copied yet. It enters on a market condition");
+    expect(within(trend).queryByTestId("builtin-copy")).toBeNull();
+    expect(within(trend).getByTestId("builtin-backtest").textContent).toBe("Recorded per coin, on the Autopilot page");
+    await u.type(screen.getByTestId("saved-search"), "nothing like this at all");
+    expect(screen.getByTestId("builtin-empty")).toBeTruthy();
+    await u.clear(screen.getByTestId("saved-search"));
+    await u.type(screen.getByTestId("saved-search"), CLOCK.name);
+    expect(screen.getAllByTestId("builtin-row").some((r) => r.dataset["playbook"] === CLOCK.id)).toBe(true);
+    expect(screen.getAllByTestId("builtin-row").length).toBeLessThan(AUTOPILOT_PLAYBOOKS.length);
+    expect(screen.getByTestId("saved-clear")).toBeTruthy();
+    // back on the admin's own list the search is gone: it does not hide the admin's strategies
+    await u.click(tabs()[0]!);
+    expect(screen.getByTestId("saved-count").textContent).toBe("1 of 1");
+    await u.click(tabs()[0]!);
+    expect(screen.getByTestId("saved-count").textContent).toBe("1 of 1");
+  });
+
+  it("HC-TR-280 Copy as my own opens the editor with the built-in strategy's settings as a new draft, without its figures; saving makes a strategy of the admin's own", async () => {
+    const u = await open();
+    await u.click(screen.getAllByTestId("saved-view")[1]!);
+    await u.click(within(builtInRow(CLOCK.id)).getByTestId("builtin-copy"));
+    expect(screen.getByText("New strategy from a built-in one")).toBeTruthy();
+    const note = screen.getByTestId("saved-copy-note").textContent;
+    expect(note).toContain(`Started from the built-in strategy "${CLOCK.name}", which stays as it is`);
+    expect(note).toContain("A trader with both switched on gets two trades");
+    expect(note).toContain("Its paper record starts empty");
+    expect(note).toContain("Its backtest figures are not copied");
+    expect(screen.queryByTestId("saved-copy-warning")).toBeNull();
+    expect(screen.getByTestId<HTMLInputElement>("saved-name").value).toBe(`${CLOCK.name} (copy)`);
+    expect(screen.getByTestId<HTMLInputElement>("saved-leg-stop").value).toBe("2");
+    expect(screen.getByTestId<HTMLInputElement>("saved-bt-mean").value).toBe("");
+    expect(screen.getAllByTestId("saved-leg")).toHaveLength(2);
+    await u.click(screen.getByTestId("saved-save"));
+    await waitFor(() => expect(screen.queryByTestId("saved-dialog")).toBeNull());
+    const made = mock.state.savedStrategies[0]!;
+    expect(made).toMatchObject({ name: `${CLOCK.name} (copy)`, stage: "draft", backtest: null, version: 1, audience: "admins" });
+    expect(made.definition).toMatchObject({ assets: ["BTC"], lots: CLOCK.lots, cadence: "daily", fromHourUtc: CLOCK.clock!.fromHourUtc, toHourUtc: CLOCK.clock!.toHourUtc, minDte: CLOCK.minDte, maxDte: CLOCK.clock!.maxDte, exits: { legStop: 2 } });
+    // back on the admin's own list, where the new draft is
+    await waitFor(() => expect(rowOf(`${CLOCK.name} (copy)`).dataset["stage"]).toBe("draft"));
+    // called off: nothing is made, and the admin is still on the list they were choosing from
+    await u.click(screen.getAllByTestId("saved-view")[1]!);
+    await u.click(within(builtInRow(CLOCK.id)).getByTestId("builtin-copy"));
+    await u.click(screen.getByTestId("saved-cancel"));
+    await waitFor(() => expect(screen.queryByTestId("saved-dialog")).toBeNull());
+    expect(mock.state.savedStrategies).toHaveLength(1);
+    expect(screen.getAllByTestId("saved-view")[1]!.getAttribute("aria-selected")).toBe("true");
+    expect(screen.getAllByTestId("builtin-row").length).toBe(AUTOPILOT_PLAYBOOKS.length);
+  });
+
+  it("HC-TR-280 a built-in strategy whose name or description does not fit says so in the editor, and is saved once the admin has written them; a weekly one keeps its India day", async () => {
+    const LONG = AUTOPILOT_PLAYBOOKS.find((p) => p.clock && `${p.name} (copy)`.length > 60)!;
+    const WEEKLY = AUTOPILOT_PLAYBOOKS.find((p) => p.clock?.weekdayUtc !== undefined && `${p.name} (copy)`.length <= 60 && p.summary.length <= 300)!;
+    const u = await open();
+    await u.click(screen.getAllByTestId("saved-view")[1]!);
+    await u.click(within(builtInRow(LONG.id)).getByTestId("builtin-copy"));
+    expect(screen.getByTestId<HTMLInputElement>("saved-name").value).toBe("");
+    expect(screen.getAllByTestId("saved-copy-warning").map((w) => w.textContent)).toContain("Its name is too long to copy (60 characters at most): give your strategy a name.");
+    await u.click(screen.getByTestId("saved-save"));
+    expect(screen.getByTestId("saved-error").textContent).toBe("Give the strategy a name.");
+    type("saved-name", "My long one, renamed");
+    if (screen.getByTestId<HTMLTextAreaElement>("saved-summary").value === "") type("saved-summary", "Written by the admin.");
+    await u.click(screen.getByTestId("saved-save"));
+    await waitFor(() => expect(screen.queryByTestId("saved-dialog")).toBeNull());
+    expect(mock.state.savedStrategies.map((x) => x.name)).toEqual(["My long one, renamed"]);
+    await u.click(screen.getAllByTestId("saved-view")[1]!);
+    await u.click(within(builtInRow(WEEKLY.id)).getByTestId("builtin-copy"));
+    expect(screen.getByTestId<HTMLSelectElement>("saved-cadence").value).toBe("weekly");
+    await u.click(screen.getByTestId("saved-save"));
+    await waitFor(() => expect(screen.queryByTestId("saved-dialog")).toBeNull());
+    expect(mock.state.savedStrategies.find((x) => x.name === `${WEEKLY.name} (copy)`)!.definition).toMatchObject({ cadence: "weekly", weekdayUtc: WEEKLY.clock!.weekdayUtc, fromHourUtc: WEEKLY.clock!.fromHourUtc, minDte: WEEKLY.minDte, maxDte: WEEKLY.clock!.maxDte });
   });
 });
