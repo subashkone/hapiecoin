@@ -85,6 +85,7 @@ export function buildCommands(opts: {
             nav("nav:admin-coupons", "/admin/coupons", "Admin: Coupon Codes", ["admin", "coupons", "discount"]),
             nav("nav:admin-subscriptions", "/admin/subscriptions", "Admin: User Subscriptions", ["admin", "commissions", "subscriptions"]),
             nav("nav:admin-banners", "/admin/banners", "Admin: Banners", ["admin", "flyer", "popup"]),
+            nav("nav:admin-autopilot-strategies", "/admin/autopilot-strategies", "Admin: Autopilot strategies", ["admin", "autopilot", "strategy builder", "saved strategies"]),
             nav("nav:admin-emails", "/admin/emails", "Admin: Promotional Emails", ["admin", "campaign", "email"]),
           ]
         : []),

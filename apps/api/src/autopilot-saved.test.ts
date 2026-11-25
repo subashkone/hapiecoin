@@ -200,7 +200,7 @@ describe("HC-TR-276 a saved strategy as the playbook the engine runs", () => {
     );
     expect(trend.conditions).toEqual({ sma: { days: 50, side: "above" }, ivRank: { min: 60, lookbackDays: 90 }, weekdays: undefined });
     expect(trend.template).toMatchObject({ risk: "defined", legs: [{ kind: "put", side: "buy", k: -8 }, { kind: "put", side: "sell", k: -3 }, { kind: "call", side: "sell", k: 0, premium: 250 }, { kind: "call", side: "buy", k: 8 }] });
-    expect(trend.clock).toMatchObject({ fromHourUtc: 0, toHourUtc: 24, cadence: "monthly", oncePerExpiry: true, window: "any time of day", moveSide: { hours: 24, pct: 2 }, ladder: [25, 50], lock: { at: 0.5, floor: 0.2 }, exitHourUtc: 10, trailRestPct: 50, legBuyBackShare: 0.2, takeProfitOfCredit: 0.9, takeTrailPct: 5 });
+    expect(trend.clock).toMatchObject({ fromHourUtc: 0, toHourUtc: 24, cadence: "monthly", oncePerExpiry: true, window: "any time from 05:30 IST to 05:30 the next morning", moveSide: { hours: 24, pct: 2 }, ladder: [25, 50], lock: { at: 0.5, floor: 0.2 }, exitHourUtc: 10, trailRestPct: 50, legBuyBackShare: 0.2, takeProfitOfCredit: 0.9, takeTrailPct: 5 });
     expect(trend.evidence).toEqual({ claim: "12.4 a day on 106 trades, 71 % positive, worst -180.", source: FIGURES.basis });
     // chosen weekdays alone are a condition too; a weekly strategy has its one day on the clock
     expect(savedPlaybook(row({ ...DAILY, weekdays: [1, 3] })).conditions).toEqual({ sma: undefined, ivRank: undefined, weekdays: [1, 3] });

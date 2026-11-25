@@ -38,7 +38,7 @@ describe("HC-PB-059 command palette", () => {
     // HC-AD-091 the seven Admin commands exist only for admins
     expect(inn.find((c) => c.id === "nav:admin-users")).toBeUndefined();
     const adminCmds = buildCommands({ loggedIn: true, navigate, toggleTheme: vi.fn(), admin: true }).filter((c) => c.id.startsWith("nav:admin-"));
-    expect(adminCmds.map((c) => c.label)).toEqual(["Admin: Users", "Admin: Subscription Plans", "Admin: Menu Pricing", "Admin: Coupon Codes", "Admin: User Subscriptions", "Admin: Banners", "Admin: Promotional Emails"]);
+    expect(adminCmds.map((c) => c.label)).toEqual(["Admin: Users", "Admin: Subscription Plans", "Admin: Menu Pricing", "Admin: Coupon Codes", "Admin: User Subscriptions", "Admin: Banners", "Admin: Autopilot strategies", "Admin: Promotional Emails"]);
     adminCmds[0]?.run();
     expect(navigate).toHaveBeenCalledWith("/admin/users");
     // HC-AC-073 the copy-link command exists only once the referral code is known

@@ -15,6 +15,7 @@ export const ADMIN_NAV = [
   { href: "/admin/coupons", label: "Coupon Codes", count: null },
   { href: "/admin/subscriptions", label: "User Subscriptions", count: "users" as const },
   { href: "/admin/banners", label: "Banners", count: null },
+  { href: "/admin/autopilot-strategies", label: "Autopilot strategies", count: null },
   { href: "/admin/emails", label: "Promotional Emails", count: null },
 ];
 
