@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "autopilot_saved_strategies_family_paper_uq" ON "autopilot_saved_strategies" USING btree ("family_id") WHERE "autopilot_saved_strategies"."stage" = 'paper';

@@ -48,6 +48,7 @@ import {
 import { DEFAULT_VENUE, defaultLotSizes, getVenue } from "@hapiecoin/venues";
 import { and, asc, desc, eq, gte, like, lt, lte, max, ne, sql } from "drizzle-orm";
 import { writeAudit } from "./audit.js";
+import { SAVED_WITHDRAWN, type SavedCatalogue, isSavedId, savedCatalogue, savedStillOnPaper, usableSavedIds } from "./autopilot-saved.js";
 import { dayOf, eodDaysCached } from "./chain-eod.js";
 import type { Db } from "./db/client.js";
 import { autopilotRuns, autopilotSettings, brokers, instrumentMarks, ivSnapshots, strategies, strategyLegs, strategyRules, userSettings, users } from "./db/schema.js";
@@ -320,6 +321,15 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
   // ADR-107: the product needs a plan; a trader without one gets no trades until they have it again
   const freeOnOffer = (await freePlan(deps)) !== undefined;
   const planned = new Map<string, boolean>();
+  // ADR-141: the strategies an admin saved and published, beside the built-in list; read once a pass, when the first
+  // underlying is reached. A failure to read them leaves the built-in playbooks trading as they always have.
+  let savedRead: Promise<SavedCatalogue> | undefined;
+  const savedOf = (): Promise<SavedCatalogue> =>
+    (savedRead ??= savedCatalogue(deps.db, at).catch((e: unknown) => {
+      report.failed += 1;
+      deps.logger.warn({ reason: errorText(e) }, "autopilot could not read the saved strategies");
+      return { playbooks: [], unreadable: [], mayUse: () => Promise.resolve(true) };
+    }));
   const hasPlan = async (t: Trader): Promise<boolean> => {
     let ok = planned.get(t.userId);
     if (ok === undefined) planned.set(t.userId, (ok = t.role === "admin" || freeOnOffer || (await activeSubscription(deps, t.userId, at)) !== undefined));
@@ -336,7 +346,10 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
         const live = broker ? await liveDay(deps.db, venue, asset, nowMs, deps.maxMarkAgeMs ?? AUTOPILOT_MAX_MARK_AGE_MS) : null;
         const days = live ? [...(await eodDaysCached(deps.db, venue, asset)).filter((d) => d.day < live.day), live] : [];
         const calendar = calendarFor(adapter.calendar.settlementHourUtc(asset));
-        for (const p of AUTOPILOT_PLAYBOOKS) {
+        const saved = await savedOf();
+        if (saved.unreadable.length > 0 && asset === AUTOPILOT_ASSETS[0] && venue === venues[0]) deps.logger.warn({ ids: saved.unreadable }, "autopilot left out saved strategies whose settings cannot be read");
+        const playbooks: readonly Playbook[] = saved.playbooks.length === 0 ? AUTOPILOT_PLAYBOOKS : [...AUTOPILOT_PLAYBOOKS, ...saved.playbooks];
+        for (const p of playbooks) {
           if (!p.assets.includes(asset) || (p.clock && !p.clock.venues.includes(venue))) continue;
           // ADR-122: the spot of the look-back before this snapshot, read only while the entry window is open
           const spotBefore = live && p.clock?.moveSide && inWindow(p.clock, nowMs) ? await spotNear(deps.db, venue, asset, live.ts - p.clock.moveSide.hours * 3_600_000) : null;
@@ -376,6 +389,7 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
                 if (await skip(deps.db, k, reason, detail, at)) report.skipped += 1;
               };
               if (!(await hasPlan(t))) await no("No active plan: choose a plan to let Autopilot trade");
+              else if (!(await saved.mayUse(p.id, t))) await no("This strategy is not available to you");
               else if (!broker) await no("No paper exchange is set up for this venue");
               else if (p.clock && !inWindow(p.clock, nowMs)) await no(`Outside its entry hours (${p.clock.window})`);
               else if (!live || !result) await no("No fresh prices: the newest market snapshot is missing or too old");
@@ -414,7 +428,7 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
               }
             } catch (e) {
               const reason = errorText(e);
-              if (reason.includes(OPEN_UQ)) continue; // another pass opened this key's trade a moment ago
+              if (reason.includes(OPEN_UQ) || reason.includes(SAVED_WITHDRAWN)) continue; // another pass opened this key's trade a moment ago, or the saved strategy was withdrawn
               report.failed += 1;
               deps.logger.warn({ userId: t.userId, playbookId: p.id, venue, asset, reason }, "autopilot pass failed for a trader");
             }
@@ -447,6 +461,8 @@ async function enter(db: Db, k: Key, p: Playbook, proposal: PlaybookProposal, pl
   const id = newId("strat");
   const detail = detailOf(proposal, plan, at.getTime(), exit);
   await db.transaction(async (tx) => {
+    // ADR-142: a saved strategy is entered only while it is still published, checked with the trade's own write
+    if (isSavedId(p.id) && !(await savedStillOnPaper(tx, p.id))) throw new Error(SAVED_WITHDRAWN);
     await tx.insert(strategies).values({
       id,
       userId: k.userId,
@@ -539,14 +555,25 @@ export async function autopilotSettingsOf(db: Db, userId: string): Promise<Autop
   return row ? { enabled: row.enabled, strategies: row.strategies } : DEFAULT_AUTOPILOT_SETTINGS;
 }
 
-/** Save the settings; a playbook that does not exist or is the control is refused by name. */
+/**
+ * Save the settings; a playbook that does not exist or is the control is refused by name. A saved strategy (ADR-141)
+ * counts while it is published and this trader may use it; one that has been retired or withdrawn since is dropped,
+ * not refused, so the settings a trader already holds can still be saved.
+ */
 export async function saveAutopilotSettings(db: Db, userId: string, next: AutopilotSettings, at: Date): Promise<{ ok: true } | { ok: false; why: string }> {
+  const usable = next.strategies.some((s) => isSavedId(s.playbookId)) ? await usableSavedIds(db, userId, at) : new Set<string>();
+  const chosen: AutopilotSettings["strategies"] = [];
   for (const s of next.strategies) {
+    if (isSavedId(s.playbookId)) {
+      // a saved strategy is entered by the clock: its own exits
+      if (usable.has(s.playbookId)) chosen.push({ ...s, exit: "own" });
+      continue;
+    }
     const p = AUTOPILOT_PLAYBOOKS.find((x) => x.id === s.playbookId);
     if (!p) return { ok: false, why: `${s.playbookId} is not a playbook Autopilot can trade` };
     if (s.exit === "own" && !p.clock) return { ok: false, why: `${p.name} takes Autopilot's profit exit: choose trail or target` };
+    chosen.push(p.clock ? { ...s, exit: "own" } : s);
   }
-  const chosen = next.strategies.map((s) => (AUTOPILOT_PLAYBOOKS.find((x) => x.id === s.playbookId)!.clock ? { ...s, exit: "own" as const } : s));
   await db.insert(autopilotSettings).values({ userId, enabled: next.enabled, strategies: chosen, updatedAt: at }).onConflictDoUpdate({ target: autopilotSettings.userId, set: { enabled: next.enabled, strategies: chosen, updatedAt: at } });
   return { ok: true };
 }

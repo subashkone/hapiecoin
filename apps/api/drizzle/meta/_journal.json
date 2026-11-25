@@ -225,6 +225,27 @@
       "when": 1795417411979,
       "tag": "0031_cuddly_prism",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795605266972,
+      "tag": "0032_minor_mariko_yashida",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1795605831826,
+      "tag": "0033_nosy_sphinx",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1795606939511,
+      "tag": "0034_conscious_marrow",
+      "breakpoints": true
     }
   ]
 }

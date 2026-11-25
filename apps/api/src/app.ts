@@ -19,6 +19,7 @@ import { registerPublicPageRoutes } from "./routes/public-page.js";
 import { registerBacktestRoutes } from "./routes/backtest.js";
 import { registerReplayRoutes } from "./routes/replay.js";
 import { registerAutopilotRoutes } from "./routes/autopilot.js";
+import { registerAutopilotSavedRoutes } from "./routes/autopilot-saved.js";
 import { registerPlaybookRoutes } from "./routes/playbooks.js";
 import { registerProposalRoutes } from "./routes/proposals.js";
 import { registerBillingRoutes } from "./routes/billing.js";
@@ -162,6 +163,7 @@ export function createApp(deps: AppDeps): OpenAPIHono<AppEnv> {
   registerPlaybookRoutes(app, deps);
   registerProposalRoutes(app, deps);
   registerAutopilotRoutes(app, deps);
+  registerAutopilotSavedRoutes(app, deps);
   registerMarketRoutes(app, deps);
   registerTelegramRoutes(app, deps);
 
