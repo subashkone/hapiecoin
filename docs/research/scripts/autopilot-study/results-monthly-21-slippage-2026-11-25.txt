@@ -1,0 +1,146 @@
+## BTC monthly WITH SLIPPAGE: monthly expiries in the cache 11 (2026-01-30 .. 2026-11-27); sold 50 to 40 days before, every day at 21:30 IST; 100 lots x 0.001 a leg; net of fees; hourly marks
+   left out, fetched before the settlement (the series is padded with its last price): 2026-11-27
+
+16 delta a side: mean premium   191.5, sold on average 15.0 % away
+   no stop, hold          entries=110 mean=  -264.1 win= 60% worst=   -1679 held 44.9 d | expiries: mean of means   -264.1, positive  6 of 10, worst    -1341, best     +240
+   no stop, 21 days       entries=110 mean=  -175.0 win= 70% worst=   -1655 held 23.9 d | expiries: mean of means   -175.0, positive  7 of 10, worst    -1333, best     +183
+   no stop, half          entries=110 mean=  -134.5 win= 83% worst=   -1679 held 20.8 d | expiries: mean of means   -134.5, positive  7 of 10, worst    -1081, best     +116
+   no stop, half or 21    entries=110 mean=   -88.5 win= 83% worst=   -1655 held 17.0 d | expiries: mean of means    -88.5, positive  7 of 10, worst     -797, best     +116
+   stop 2x, hold          entries=110 mean=   +48.2 win= 45% worst=    -309 held 44.1 d | expiries: mean of means    +48.2, positive  6 of 10, worst     -115, best     +240
+   stop 2x, 21 days       entries=110 mean=   +27.9 win= 44% worst=    -309 held 23.7 d | expiries: mean of means    +27.9, positive  6 of 10, worst     -117, best     +183
+   stop 2x, half          entries=110 mean=   +28.5 win= 59% worst=    -309 held 28.8 d | expiries: mean of means    +28.5, positive  6 of 10, worst      -80, best     +116
+   stop 2x, half or 21    entries=110 mean=   +22.6 win= 54% worst=    -309 held 18.7 d | expiries: mean of means    +22.6, positive  6 of 10, worst      -81, best     +116
+   stop 3x, hold          entries=110 mean=   +38.3 win= 47% worst=    -215 held 44.9 d | expiries: mean of means    +38.3, positive  5 of 10, worst     -185, best     +240
+   stop 3x, 21 days       entries=110 mean=   +21.3 win= 57% worst=    -218 held 23.9 d | expiries: mean of means    +21.3, positive  6 of 10, worst     -188, best     +183
+   stop 3x, half          entries=110 mean=   +35.2 win= 71% worst=    -215 held 23.4 d | expiries: mean of means    +35.2, positive  7 of 10, worst      -82, best     +116
+   stop 3x, half or 21    entries=110 mean=   +32.8 win= 71% worst=    -218 held 17.2 d | expiries: mean of means    +32.8, positive  7 of 10, worst      -95, best     +116
+
+10 delta a side: mean premium   117.0, sold on average 19.8 % away
+   no stop, hold          entries=110 mean=  -211.4 win= 60% worst=   -1371 held 44.9 d | expiries: mean of means   -211.4, positive  6 of 10, worst    -1015, best     +159
+   no stop, 21 days       entries=110 mean=  -139.6 win= 70% worst=   -1362 held 23.9 d | expiries: mean of means   -139.6, positive  7 of 10, worst    -1046, best     +115
+   no stop, half          entries=110 mean=  -111.3 win= 85% worst=   -1371 held 18.6 d | expiries: mean of means   -111.3, positive  8 of 10, worst     -904, best      +76
+   no stop, half or 21    entries=110 mean=   -73.7 win= 85% worst=   -1362 held 15.3 d | expiries: mean of means    -73.7, positive  8 of 10, worst     -652, best      +76
+   stop 2x, hold          entries=110 mean=   +28.5 win= 48% worst=    -174 held 44.1 d | expiries: mean of means    +28.5, positive  5 of 10, worst      -63, best     +142
+   stop 2x, 21 days       entries=110 mean=   +18.1 win= 46% worst=    -174 held 23.7 d | expiries: mean of means    +18.1, positive  5 of 10, worst      -65, best     +115
+   stop 2x, half          entries=110 mean=   +17.9 win= 64% worst=    -174 held 28.1 d | expiries: mean of means    +17.9, positive  6 of 10, worst      -45, best      +67
+   stop 2x, half or 21    entries=110 mean=   +14.8 win= 59% worst=    -174 held 17.8 d | expiries: mean of means    +14.8, positive  6 of 10, worst      -47, best      +67
+   stop 3x, hold          entries=110 mean=   +25.0 win= 49% worst=    -132 held 44.9 d | expiries: mean of means    +25.0, positive  5 of 10, worst     -114, best     +159
+   stop 3x, 21 days       entries=110 mean=   +18.4 win= 58% worst=    -134 held 23.9 d | expiries: mean of means    +18.4, positive  6 of 10, worst     -117, best     +115
+   stop 3x, half          entries=110 mean=   +22.5 win= 73% worst=    -132 held 21.5 d | expiries: mean of means    +22.5, positive  7 of 10, worst      -64, best      +76
+   stop 3x, half or 21    entries=110 mean=   +21.4 win= 73% worst=    -134 held 15.7 d | expiries: mean of means    +21.4, positive  7 of 10, worst      -65, best      +76
+
+25 delta a side: mean premium   328.6, sold on average  9.8 % away
+   no stop, hold          entries=110 mean=  -264.1 win= 60% worst=   -1929 held 44.9 d | expiries: mean of means   -264.1, positive  6 of 10, worst    -1590, best     +415
+   no stop, 21 days       entries=110 mean=  -200.8 win= 68% worst=   -1910 held 23.9 d | expiries: mean of means   -200.8, positive  7 of 10, worst    -1571, best     +285
+   no stop, half          entries=110 mean=  -208.4 win= 75% worst=   -1929 held 26.0 d | expiries: mean of means   -208.4, positive  7 of 10, worst    -1271, best     +201
+   no stop, half or 21    entries=110 mean=  -154.3 win= 74% worst=   -1910 held 20.2 d | expiries: mean of means   -154.3, positive  7 of 10, worst    -1038, best     +201
+   stop 2x, hold          entries=110 mean=   +92.0 win= 43% worst=    -438 held 44.1 d | expiries: mean of means    +92.0, positive  5 of 10, worst     -155, best     +415
+   stop 2x, 21 days       entries=110 mean=   +42.9 win= 41% worst=    -438 held 23.7 d | expiries: mean of means    +42.9, positive  6 of 10, worst     -158, best     +285
+   stop 2x, half          entries=110 mean=   +45.1 win= 52% worst=    -438 held 32.0 d | expiries: mean of means    +45.1, positive  6 of 10, worst     -109, best     +201
+   stop 2x, half or 21    entries=110 mean=   +31.9 win= 45% worst=    -438 held 20.8 d | expiries: mean of means    +31.9, positive  5 of 10, worst     -111, best     +201
+   stop 3x, hold          entries=110 mean=   +78.0 win= 49% worst=    -329 held 44.9 d | expiries: mean of means    +78.0, positive  6 of 10, worst     -279, best     +415
+   stop 3x, 21 days       entries=110 mean=   +28.9 win= 59% worst=    -334 held 23.9 d | expiries: mean of means    +28.9, positive  6 of 10, worst     -284, best     +285
+   stop 3x, half          entries=110 mean=   +37.8 win= 65% worst=    -329 held 28.0 d | expiries: mean of means    +37.8, positive  6 of 10, worst     -164, best     +201
+   stop 3x, half or 21    entries=110 mean=   +29.5 win= 65% worst=    -334 held 20.3 d | expiries: mean of means    +29.5, positive  6 of 10, worst     -167, best     +201
+
+12 % away: mean premium   266.5, sold on average 12.0 % away
+   no stop, hold          entries=110 mean=  -223.3 win= 60% worst=   -1619 held 44.9 d | expiries: mean of means   -223.3, positive  6 of 10, worst    -1321, best     +402
+   no stop, 21 days       entries=110 mean=  -157.0 win= 66% worst=   -1595 held 23.9 d | expiries: mean of means   -157.0, positive  7 of 10, worst    -1309, best     +260
+   no stop, half          entries=110 mean=   -69.7 win= 85% worst=   -1619 held 21.8 d | expiries: mean of means    -69.7, positive  8 of 10, worst    -1147, best     +199
+   no stop, half or 21    entries=110 mean=   -36.4 win= 82% worst=   -1595 held 18.1 d | expiries: mean of means    -36.4, positive  8 of 10, worst     -718, best     +199
+   stop 2x, hold          entries=110 mean=   +90.8 win= 46% worst=    -395 held 44.1 d | expiries: mean of means    +90.8, positive  5 of 10, worst      -90, best     +375
+   stop 2x, 21 days       entries=110 mean=   +47.0 win= 49% worst=    -395 held 23.7 d | expiries: mean of means    +47.0, positive  6 of 10, worst      -93, best     +249
+   stop 2x, half          entries=110 mean=   +53.1 win= 61% worst=    -395 held 28.1 d | expiries: mean of means    +53.1, positive  7 of 10, worst      -72, best     +184
+   stop 2x, half or 21    entries=110 mean=   +45.2 win= 59% worst=    -395 held 19.1 d | expiries: mean of means    +45.2, positive  6 of 10, worst      -90, best     +175
+   stop 3x, hold          entries=110 mean=   +77.4 win= 47% worst=    -232 held 44.9 d | expiries: mean of means    +77.4, positive  5 of 10, worst     -141, best     +402
+   stop 3x, 21 days       entries=110 mean=   +39.7 win= 57% worst=    -247 held 23.9 d | expiries: mean of means    +39.7, positive  6 of 10, worst     -145, best     +260
+   stop 3x, half          entries=110 mean=   +63.3 win= 73% worst=    -232 held 24.3 d | expiries: mean of means    +63.3, positive  8 of 10, worst     -130, best     +199
+   stop 3x, half or 21    entries=110 mean=   +57.1 win= 73% worst=    -247 held 18.2 d | expiries: mean of means    +57.1, positive  8 of 10, worst     -143, best     +199
+
+16 % away: mean premium   178.3, sold on average 16.0 % away
+   no stop, hold          entries=110 mean=  -179.1 win= 60% worst=   -1324 held 44.9 d | expiries: mean of means   -179.1, positive  6 of 10, worst    -1034, best     +290
+   no stop, 21 days       entries=110 mean=  -119.1 win= 69% worst=   -1315 held 23.9 d | expiries: mean of means   -119.1, positive  7 of 10, worst    -1053, best     +206
+   no stop, half          entries=110 mean=   -74.7 win= 85% worst=   -1324 held 19.8 d | expiries: mean of means    -74.7, positive  8 of 10, worst     -947, best     +141
+   no stop, half or 21    entries=110 mean=   -37.8 win= 85% worst=   -1315 held 16.6 d | expiries: mean of means    -37.8, positive  8 of 10, worst     -555, best     +140
+   stop 2x, hold          entries=110 mean=   +59.3 win= 48% worst=    -261 held 44.1 d | expiries: mean of means    +59.3, positive  5 of 10, worst      -61, best     +250
+   stop 2x, 21 days       entries=110 mean=   +33.4 win= 48% worst=    -261 held 23.7 d | expiries: mean of means    +33.4, positive  6 of 10, worst      -63, best     +185
+   stop 2x, half          entries=110 mean=   +31.1 win= 58% worst=    -261 held 28.3 d | expiries: mean of means    +31.1, positive  6 of 10, worst      -50, best     +120
+   stop 2x, half or 21    entries=110 mean=   +26.2 win= 57% worst=    -261 held 18.4 d | expiries: mean of means    +26.2, positive  6 of 10, worst      -55, best     +120
+   stop 3x, hold          entries=110 mean=   +61.4 win= 46% worst=    -146 held 44.9 d | expiries: mean of means    +61.4, positive  5 of 10, worst     -100, best     +290
+   stop 3x, 21 days       entries=110 mean=   +38.5 win= 56% worst=    -154 held 23.9 d | expiries: mean of means    +38.5, positive  6 of 10, worst     -112, best     +206
+   stop 3x, half          entries=110 mean=   +42.6 win= 72% worst=    -146 held 22.8 d | expiries: mean of means    +42.6, positive  8 of 10, worst     -105, best     +141
+   stop 3x, half or 21    entries=110 mean=   +41.1 win= 72% worst=    -154 held 16.8 d | expiries: mean of means    +41.1, positive  8 of 10, worst     -113, best     +140
+
+## ETH monthly WITH SLIPPAGE: monthly expiries in the cache 11 (2026-01-30 .. 2026-11-27); sold 50 to 40 days before, every day at 21:30 IST; 100 lots x 0.01 a leg; net of fees; hourly marks
+   left out, fetched before the settlement (the series is padded with its last price): 2026-11-27
+
+16 delta a side: mean premium    82.0, sold on average 21.8 % away
+   no stop, hold          entries=110 mean=  -102.4 win= 60% worst=    -741 held 44.9 d | expiries: mean of means   -102.4, positive  6 of 10, worst     -611, best     +126
+   no stop, 21 days       entries=110 mean=   -62.5 win= 70% worst=    -799 held 23.9 d | expiries: mean of means    -62.5, positive  7 of 10, worst     -666, best     +108
+   no stop, half          entries=110 mean=   -67.4 win= 78% worst=    -741 held 21.2 d | expiries: mean of means    -67.4, positive  7 of 10, worst     -411, best      +62
+   no stop, half or 21    entries=110 mean=   -43.3 win= 78% worst=    -799 held 16.5 d | expiries: mean of means    -43.3, positive  7 of 10, worst     -387, best      +62
+   stop 2x, hold          entries=110 mean=   +23.0 win= 47% worst=     -79 held 44.9 d | expiries: mean of means    +23.0, positive  5 of 10, worst      -29, best     +126
+   stop 2x, 21 days       entries=110 mean=   +18.1 win= 47% worst=     -80 held 23.9 d | expiries: mean of means    +18.1, positive  5 of 10, worst      -29, best     +108
+   stop 2x, half          entries=110 mean=   +17.9 win= 64% worst=     -45 held 29.5 d | expiries: mean of means    +17.9, positive  8 of 10, worst      -22, best      +62
+   stop 2x, half or 21    entries=110 mean=   +14.6 win= 55% worst=     -46 held 18.8 d | expiries: mean of means    +14.6, positive  7 of 10, worst      -23, best      +62
+   stop 3x, hold          entries=110 mean=   +25.0 win= 57% worst=    -155 held 44.9 d | expiries: mean of means    +25.0, positive  6 of 10, worst      -97, best     +126
+   stop 3x, 21 days       entries=110 mean=   +20.9 win= 67% worst=    -156 held 23.9 d | expiries: mean of means    +20.9, positive  7 of 10, worst      -97, best     +108
+   stop 3x, half          entries=110 mean=   +17.0 win= 75% worst=    -146 held 21.9 d | expiries: mean of means    +17.0, positive  7 of 10, worst      -48, best      +62
+   stop 3x, half or 21    entries=110 mean=   +16.5 win= 75% worst=    -146 held 16.7 d | expiries: mean of means    +16.5, positive  7 of 10, worst      -50, best      +62
+
+10 delta a side: mean premium    50.3, sold on average 28.7 % away
+   no stop, hold          entries=110 mean=   -78.6 win= 60% worst=    -674 held 44.9 d | expiries: mean of means    -78.6, positive  6 of 10, worst     -480, best      +75
+   no stop, 21 days       entries=110 mean=   -51.4 win= 70% worst=    -725 held 23.9 d | expiries: mean of means    -51.4, positive  7 of 10, worst     -542, best      +68
+   no stop, half          entries=110 mean=   -31.5 win= 87% worst=    -674 held 17.1 d | expiries: mean of means    -31.5, positive  7 of 10, worst     -259, best      +36
+   no stop, half or 21    entries=110 mean=   -20.5 win= 87% worst=    -725 held 14.4 d | expiries: mean of means    -20.5, positive  8 of 10, worst     -284, best      +36
+   stop 2x, hold          entries=110 mean=   +14.7 win= 55% worst=     -45 held 44.9 d | expiries: mean of means    +14.7, positive  6 of 10, worst      -19, best      +75
+   stop 2x, 21 days       entries=110 mean=   +11.9 win= 50% worst=     -45 held 23.9 d | expiries: mean of means    +11.9, positive  6 of 10, worst      -20, best      +68
+   stop 2x, half          entries=110 mean=   +13.4 win= 79% worst=     -35 held 26.2 d | expiries: mean of means    +13.4, positive  8 of 10, worst      -10, best      +36
+   stop 2x, half or 21    entries=110 mean=   +11.8 win= 66% worst=     -36 held 17.3 d | expiries: mean of means    +11.8, positive  7 of 10, worst      -10, best      +36
+   stop 3x, hold          entries=110 mean=   +14.5 win= 57% worst=     -97 held 44.9 d | expiries: mean of means    +14.5, positive  6 of 10, worst      -60, best      +75
+   stop 3x, 21 days       entries=110 mean=   +14.1 win= 67% worst=     -98 held 23.9 d | expiries: mean of means    +14.1, positive  7 of 10, worst      -61, best      +68
+   stop 3x, half          entries=110 mean=   +15.7 win= 85% worst=     -61 held 17.8 d | expiries: mean of means    +15.7, positive  8 of 10, worst      -15, best      +36
+   stop 3x, half or 21    entries=110 mean=   +15.5 win= 85% worst=     -61 held 14.6 d | expiries: mean of means    +15.5, positive  8 of 10, worst      -16, best      +36
+
+25 delta a side: mean premium   143.7, sold on average 14.1 % away
+   no stop, hold          entries=110 mean=  -109.7 win= 57% worst=    -869 held 44.9 d | expiries: mean of means   -109.7, positive  6 of 10, worst     -720, best     +214
+   no stop, 21 days       entries=110 mean=   -63.2 win= 70% worst=    -926 held 23.9 d | expiries: mean of means    -63.2, positive  7 of 10, worst     -777, best     +167
+   no stop, half          entries=110 mean=   -90.6 win= 73% worst=    -869 held 24.9 d | expiries: mean of means    -90.6, positive  7 of 10, worst     -536, best     +106
+   no stop, half or 21    entries=110 mean=   -62.1 win= 73% worst=    -926 held 19.0 d | expiries: mean of means    -62.1, positive  7 of 10, worst     -578, best     +106
+   stop 2x, hold          entries=110 mean=   +32.8 win= 46% worst=     -66 held 44.9 d | expiries: mean of means    +32.8, positive  5 of 10, worst      -43, best     +214
+   stop 2x, 21 days       entries=110 mean=   +30.0 win= 46% worst=     -67 held 23.9 d | expiries: mean of means    +30.0, positive  5 of 10, worst      -34, best     +167
+   stop 2x, half          entries=110 mean=   +27.6 win= 60% worst=     -57 held 32.0 d | expiries: mean of means    +27.6, positive  7 of 10, worst      -26, best     +106
+   stop 2x, half or 21    entries=110 mean=   +21.0 win= 49% worst=     -59 held 20.4 d | expiries: mean of means    +21.0, positive  6 of 10, worst      -29, best     +106
+   stop 3x, hold          entries=110 mean=   +35.0 win= 55% worst=    -233 held 44.9 d | expiries: mean of means    +35.0, positive  6 of 10, worst     -150, best     +214
+   stop 3x, 21 days       entries=110 mean=   +30.4 win= 67% worst=    -234 held 23.9 d | expiries: mean of means    +30.4, positive  7 of 10, worst     -152, best     +167
+   stop 3x, half          entries=110 mean=   +21.3 win= 70% worst=    -183 held 25.6 d | expiries: mean of means    +21.3, positive  7 of 10, worst      -96, best     +106
+   stop 3x, half or 21    entries=110 mean=   +19.6 win= 70% worst=    -185 held 19.2 d | expiries: mean of means    +19.6, positive  7 of 10, worst      -97, best     +106
+
+12 % away: mean premium   166.6, sold on average 12.0 % away
+   no stop, hold          entries=110 mean=   -84.6 win= 60% worst=    -769 held 44.9 d | expiries: mean of means    -84.6, positive  6 of 10, worst     -646, best     +271
+   no stop, 21 days       entries=110 mean=   -45.9 win= 70% worst=    -827 held 23.9 d | expiries: mean of means    -45.9, positive  7 of 10, worst     -702, best     +189
+   no stop, half          entries=110 mean=   -49.2 win= 78% worst=    -769 held 24.3 d | expiries: mean of means    -49.2, positive  7 of 10, worst     -508, best     +135
+   no stop, half or 21    entries=110 mean=   -25.6 win= 78% worst=    -827 held 19.5 d | expiries: mean of means    -25.6, positive  7 of 10, worst     -454, best     +135
+   stop 2x, hold          entries=110 mean=   +53.4 win= 53% worst=    -126 held 44.9 d | expiries: mean of means    +53.4, positive  8 of 10, worst      -59, best     +271
+   stop 2x, 21 days       entries=110 mean=   +39.1 win= 58% worst=    -105 held 23.9 d | expiries: mean of means    +39.1, positive  7 of 10, worst      -42, best     +189
+   stop 2x, half          entries=110 mean=   +40.2 win= 65% worst=    -102 held 30.1 d | expiries: mean of means    +40.2, positive  8 of 10, worst      -39, best     +135
+   stop 2x, half or 21    entries=110 mean=   +33.0 win= 61% worst=    -105 held 20.2 d | expiries: mean of means    +33.0, positive  7 of 10, worst      -42, best     +135
+   stop 3x, hold          entries=110 mean=   +62.0 win= 58% worst=    -215 held 44.9 d | expiries: mean of means    +62.0, positive  6 of 10, worst     -120, best     +271
+   stop 3x, 21 days       entries=110 mean=   +48.4 win= 68% worst=    -142 held 23.9 d | expiries: mean of means    +48.4, positive  7 of 10, worst      -91, best     +189
+   stop 3x, half          entries=110 mean=   +47.1 win= 76% worst=    -140 held 24.8 d | expiries: mean of means    +47.1, positive  7 of 10, worst      -88, best     +135
+   stop 3x, half or 21    entries=110 mean=   +44.7 win= 76% worst=    -142 held 19.6 d | expiries: mean of means    +44.7, positive  7 of 10, worst      -91, best     +135
+
+16 % away: mean premium   125.7, sold on average 16.0 % away
+   no stop, hold          entries=110 mean=   -75.8 win= 60% worst=    -727 held 44.9 d | expiries: mean of means    -75.8, positive  6 of 10, worst     -581, best     +217
+   no stop, 21 days       entries=110 mean=   -41.5 win= 70% worst=    -785 held 23.9 d | expiries: mean of means    -41.5, positive  7 of 10, worst     -637, best     +163
+   no stop, half          entries=110 mean=   -35.3 win= 82% worst=    -727 held 21.4 d | expiries: mean of means    -35.3, positive  7 of 10, worst     -458, best     +107
+   no stop, half or 21    entries=110 mean=   -12.7 win= 82% worst=    -785 held 17.5 d | expiries: mean of means    -12.7, positive  7 of 10, worst     -296, best     +107
+   stop 2x, hold          entries=110 mean=   +42.8 win= 52% worst=     -90 held 44.9 d | expiries: mean of means    +42.8, positive  7 of 10, worst      -51, best     +217
+   stop 2x, 21 days       entries=110 mean=   +31.8 win= 61% worst=     -71 held 23.9 d | expiries: mean of means    +31.8, positive  7 of 10, worst      -31, best     +163
+   stop 2x, half          entries=110 mean=   +30.5 win= 65% worst=     -49 held 28.3 d | expiries: mean of means    +30.5, positive  7 of 10, worst      -30, best     +107
+   stop 2x, half or 21    entries=110 mean=   +25.8 win= 64% worst=     -71 held 18.9 d | expiries: mean of means    +25.8, positive  6 of 10, worst      -31, best     +107
+   stop 3x, hold          entries=110 mean=   +58.6 win= 58% worst=    -144 held 44.9 d | expiries: mean of means    +58.6, positive  6 of 10, worst      -87, best     +217
+   stop 3x, 21 days       entries=110 mean=   +44.4 win= 68% worst=    -108 held 23.9 d | expiries: mean of means    +44.4, positive  7 of 10, worst      -66, best     +163
+   stop 3x, half          entries=110 mean=   +41.5 win= 80% worst=     -93 held 21.9 d | expiries: mean of means    +41.5, positive  9 of 10, worst      -65, best     +107
+   stop 3x, half or 21    entries=110 mean=   +40.3 win= 80% worst=     -96 held 17.6 d | expiries: mean of means    +40.3, positive  9 of 10, worst      -66, best     +107
+

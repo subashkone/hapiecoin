@@ -1,0 +1,138 @@
+## BTC weekly WITH SLIPPAGE: 51 Friday expiries (2025-12-05 .. 2026-11-20), sold 7 days before at 21:30 IST; 100 lots (0.1 BTC); net of fees; hourly marks
+   spot at the first entry 92310, at the last settlement 61788 (-33.1 %)
+
+-- sold 0 % away, held to settlement
+                                                wks     mean  win   total    worst  worst 3 drawdown        halves
+   put and call, every week                      51     +4.5  65%    +229  -1286.4  -3454.9  -1878.8   +1812/-1584
+   put only, every week                          51    -23.8  73%   -1214  -1461.8  -3119.1  -2326.8    +178/-1392
+   call only, every week                         51    +28.3  67%   +1443  -1290.2  -1910.0  -1612.0    +1635/-192
+   put when up (7 d mean; 19 up, 32 down)        19    +58.3  79%   +1107   -371.6   -611.5   -371.6     +808/+299
+   put when up, call when down (7 d)             51    +35.0  73%   +1783  -1290.2  -2030.5  -1606.6     +1754/+29
+   put when DOWN (7 d), the other side           32    -72.5  69%   -2321  -1461.8  -3119.1  -3121.5    -631/-1691
+   put when up (14 d mean; 21 up, 29 down)       21    +78.4  81%   +1646   -371.6   -611.5   -371.6    +1123/+523
+   put when up, call when down (14 d)            50    +56.8  78%   +2840  -1290.2  -2030.5  -1547.2    +2272/+568
+   put when DOWN (14 d), the other side          29   -101.5  66%   -2942  -1461.8  -3119.1  -3345.3   -1028/-1914
+   put when up (28 d mean; 24 up, 24 down)       24    +60.4  75%   +1449   -371.6   -639.7   -371.6     +723/+727
+   put when up, call when down (28 d)            48    +33.1  71%   +1590  -1290.2  -2030.5  -1547.2    +1314/+276
+   put when DOWN (28 d), the other side          24   -125.4  67%   -3011  -1461.8  -3119.1  -3382.1    -892/-2119
+
+-- sold 0 % away, stop 2x
+                                                wks     mean  win   total    worst  worst 3 drawdown        halves
+   put and call, every week                      51    +26.8  35%   +1368   -397.0   -760.2   -533.7     +889/+479
+   put only, every week                          51     +5.8  61%    +297   -395.1   -948.5   -963.1      -28/+325
+   call only, every week                         51    +21.0  59%   +1071   -308.5   -763.0   -804.3     +917/+154
+   put when up (7 d mean; 19 up, 32 down)        19    +11.6  63%    +220   -395.1   -786.3   -428.7      +157/+62
+   put when up, call when down (7 d)             51    +33.8  65%   +1723   -395.1   -922.1   -641.7    +1269/+454
+   put when DOWN (7 d), the other side           32     +2.4  59%     +77   -303.2   -766.9   -996.2     -185/+262
+   put when up (14 d mean; 21 up, 29 down)       21    +58.9  71%   +1236   -218.4   -548.8   -218.4     +950/+286
+   put when up, call when down (14 d)            50    +63.2  70%   +3158   -218.4   -625.4   -366.7    +2323/+836
+   put when DOWN (14 d), the other side          29    -18.7  55%    -544   -303.2   -766.9   -996.2      -582/+39
+   put when up (28 d mean; 24 up, 24 down)       24    +38.1  67%    +915   -218.4   -548.8   -278.5     +424/+490
+   put when up, call when down (28 d)            48    +36.3  62%   +1745   -218.4   -625.4   -662.5    +1240/+505
+   put when DOWN (28 d), the other side          24     -8.6  58%    -206   -303.2   -724.1   -744.7      -40/-165
+
+-- sold 0 % away, stop 3x
+                                                wks     mean  win   total    worst  worst 3 drawdown        halves
+   put and call, every week                      51    +48.5  59%   +2476   -241.6   -709.2   -762.3    +2285/+191
+   put only, every week                          51     +9.5  71%    +487   -438.3  -1182.6  -1060.1     +923/-437
+   call only, every week                         51    +39.0  67%   +1989   -400.1  -1130.2   -733.0    +1362/+628
+   put when up (7 d mean; 19 up, 32 down)        19    +20.5  74%    +389   -438.3  -1100.4   -602.7      +310/+80
+   put when up, call when down (7 d)             51    +33.0  71%   +1682   -438.3  -1236.1   -749.4     +982/+699
+   put when DOWN (7 d), the other side           32     +3.0  69%     +97   -395.0  -1050.6   -946.2     +614/-516
+   put when up (14 d mean; 21 up, 29 down)       21    +69.0  81%   +1449   -349.3   -790.6   -349.3    +1145/+303
+   put when up, call when down (14 d)            50    +71.9  78%   +3596   -397.7  -1079.4   -470.8   +2171/+1425
+   put when DOWN (14 d), the other side          29    -18.1  66%    -524   -395.0  -1050.6   -946.2     +216/-740
+   put when up (28 d mean; 24 up, 24 down)       24    +52.2  75%   +1252   -349.3   -801.8   -349.3     +745/+507
+   put when up, call when down (28 d)            48    +48.9  71%   +2346   -397.7  -1079.4   -515.5   +1213/+1133
+   put when DOWN (28 d), the other side          24    -24.7  67%    -592   -395.0  -1050.6   -963.4     +352/-944
+
+-- sold 3 % away, held to settlement
+                                                wks     mean  win   total    worst  worst 3 drawdown        halves
+   put and call, every week                      51     +6.1  75%    +312  -1221.6  -3221.6  -1584.9   +1478/-1167
+   put only, every week                          51    -15.2  82%    -774  -1299.1  -2661.4  -1792.1     +165/-940
+   call only, every week                         51    +21.3  80%   +1086  -1158.7  -1534.6  -1158.7    +1313/-227
+   put when up (7 d mean; 19 up, 32 down)        19    +52.5  95%    +998   -171.4   -123.0   -171.4     +552/+446
+   put when up, call when down (7 d)             51    +24.7  86%   +1261  -1158.7  -1580.2  -1159.2     +1322/-61
+   put when DOWN (7 d), the other side           32    -55.4  75%   -1773  -1299.1  -2661.4  -2274.7    -387/-1386
+   put when up (14 d mean; 21 up, 29 down)       21    +54.6  95%   +1147   -171.4   -123.0   -171.4     +660/+486
+   put when up, call when down (14 d)            50    +27.3  88%   +1366  -1158.7  -1580.2  -1159.2      +1366/+0
+   put when DOWN (14 d), the other side          29    -69.5  72%   -2016  -1299.1  -2661.4  -2315.1    -590/-1426
+   put when up (28 d mean; 24 up, 24 down)       24    +50.1  96%   +1203   -171.4   -141.6   -171.4     +610/+593
+   put when up, call when down (28 d)            48    +20.6  85%    +987  -1158.7  -1580.2  -1159.2     +1050/-63
+   put when DOWN (28 d), the other side          24    -96.0  67%   -2304  -1299.1  -2661.4  -2496.1    -770/-1533
+
+-- sold 3 % away, stop 2x
+                                                wks     mean  win   total    worst  worst 3 drawdown        halves
+   put and call, every week                      51    +25.7  43%   +1312   -274.1   -619.2   -315.0     +692/+620
+   put only, every week                          51    +12.3  67%    +626   -271.0   -544.3   -303.0     +290/+337
+   call only, every week                         51    +13.4  63%    +686   -172.9   -466.2   -464.1     +402/+283
+   put when up (7 d mean; 19 up, 32 down)        19    +14.6  74%    +277   -271.0   -489.8   -289.9      +90/+187
+   put when up, call when down (7 d)             51    +22.0  71%   +1122   -271.0   -593.9   -293.8     +716/+406
+   put when DOWN (7 d), the other side           32    +10.9  62%    +349   -139.1   -406.9   -272.6     +200/+149
+   put when up (14 d mean; 21 up, 29 down)       21    +37.7  81%    +792   -123.6   -311.5   -123.6     +564/+228
+   put when up, call when down (14 d)            50    +32.8  74%   +1638   -150.0   -414.1   -303.9    +1233/+405
+   put when DOWN (14 d), the other side          29     +3.6  59%    +106   -139.1   -406.9   -272.6       -3/+109
+   put when up (28 d mean; 24 up, 24 down)       24    +30.5  79%    +732   -123.6   -311.5   -123.6     +398/+335
+   put when up, call when down (28 d)            48    +23.0  69%   +1104   -150.0   -414.1   -319.1     +801/+303
+   put when DOWN (28 d), the other side          24     +7.3  58%    +175   -139.1   -403.6   -272.6       +173/+2
+
+-- sold 3 % away, stop 3x
+                                                wks     mean  win   total    worst  worst 3 drawdown        halves
+   put and call, every week                      51    +38.2  57%   +1949   -173.9   -485.8   -525.1    +1452/+497
+   put only, every week                          51    +18.6  76%    +950   -271.0   -660.0   -513.1     +829/+121
+   call only, every week                         51    +19.6  73%    +999   -256.0   -690.6   -374.1     +623/+376
+   put when up (7 d mean; 19 up, 32 down)        19    +13.4  79%    +254   -271.0   -578.6   -332.6      -30/+284
+   put when up, call when down (7 d)             51    +24.5  78%   +1252   -271.0   -760.4   -326.9     +520/+732
+   put when DOWN (7 d), the other side           32    +21.8  75%    +696   -219.5   -538.1   -375.1     +859/-163
+   put when up (14 d mean; 21 up, 29 down)       21    +36.6  86%    +769   -169.6   -431.2   -169.6     +444/+325
+   put when up, call when down (14 d)            50    +34.2  82%   +1712   -256.0   -659.0   -326.9    +1036/+675
+   put when DOWN (14 d), the other side          29    +15.6  72%    +452   -219.5   -538.1   -375.1     +656/-203
+   put when up (28 d mean; 24 up, 24 down)       24    +34.4  88%    +825   -169.6   -431.2   -169.6     +393/+431
+   put when up, call when down (28 d)            48    +26.0  79%   +1250   -256.0   -659.0   -326.9     +720/+530
+   put when DOWN (28 d), the other side          24     +6.9  67%    +165   -219.5   -538.1   -375.1     +475/-310
+
+-- sold 5 % away, held to settlement
+                                                wks     mean  win   total    worst  worst 3 drawdown        halves
+   put and call, every week                      36    +20.1  86%    +723  -1055.5  -2018.0  -1438.2   +1937/-1214
+   put only, every week                          42    +12.4  88%    +523   -783.3  -1168.7   -783.3    +1099/-576
+   call only, every week                         45     +9.2  93%    +413  -1068.9  -1260.1  -1068.9     +815/-402
+   put when up (7 d mean; 19 up, 32 down)        19    +33.7  95%    +640    -45.6    -16.6    -45.6     +393/+247
+   put when up, call when down (7 d)             50    +10.3  92%    +515  -1068.9  -1288.9  -1068.9     +887/-372
+   put when DOWN (7 d), the other side           23     -5.1  83%    -117   -783.3  -1168.7   -845.2     +705/-823
+   put when up (14 d mean; 21 up, 29 down)       21    +34.8  95%    +731    -45.6    -16.6    -45.6     +469/+262
+   put when up, call when down (14 d)            49     +9.4  92%    +463  -1068.9  -1288.9  -1068.9     +845/-382
+   put when DOWN (14 d), the other side          20    -13.3  80%    -265   -783.3  -1168.7   -860.4     +573/-838
+   put when up (28 d mean; 24 up, 24 down)       23    +33.7  96%    +776    -45.6    -16.6    -45.6     +490/+285
+   put when up, call when down (28 d)            47     +7.5  91%    +353  -1068.9  -1288.9  -1068.9     +779/-425
+   put when DOWN (28 d), the other side          16    -29.5  75%    -473   -783.3  -1168.7   -883.7     +389/-861
+
+-- sold 5 % away, stop 2x
+                                                wks     mean  win   total    worst  worst 3 drawdown        halves
+   put and call, every week                      36    +25.7  50%    +925   -167.9   -397.8   -209.4     +501/+424
+   put only, every week                          42    +10.2  67%    +427   -191.3   -400.6   -209.4     +265/+162
+   call only, every week                         45    +10.9  67%    +489   -111.6   -281.6   -252.1     +213/+275
+   put when up (7 d mean; 19 up, 32 down)        19     +8.5  74%    +162   -191.3   -302.2   -198.9      +33/+128
+   put when up, call when down (7 d)             50    +13.3  72%    +665   -191.3   -381.5   -191.3     +352/+313
+   put when DOWN (7 d), the other side           23    +11.5  61%    +265   -109.5   -297.6   -209.4      +232/+34
+   put when up (14 d mean; 21 up, 29 down)       21    +23.8  81%    +501    -55.8   -152.5    -55.8     +357/+144
+   put when up, call when down (14 d)            49    +19.8  76%    +969    -78.7   -198.3   -160.1     +711/+257
+   put when DOWN (14 d), the other side          20     +5.9  55%    +118   -109.5   -297.6   -209.4      +100/+18
+   put when up (28 d mean; 24 up, 24 down)       23    +20.7  78%    +477    -55.8   -152.5    -67.0     +310/+167
+   put when up, call when down (28 d)            47    +15.9  70%    +748    -78.7   -198.3   -179.2     +578/+171
+   put when DOWN (28 d), the other side          16     +8.7  56%    +140   -109.5   -264.0   -209.4       +145/-5
+
+-- sold 5 % away, stop 3x
+                                                wks     mean  win   total    worst  worst 3 drawdown        halves
+   put and call, every week                      36    +40.4  67%   +1455   -140.3   -379.7   -254.7    +1239/+216
+   put only, every week                          42    +16.4  81%    +688   -191.3   -487.3   -237.0      +654/+33
+   call only, every week                         45    +17.6  82%    +792   -181.2   -410.1   -212.9     +445/+347
+   put when up (7 d mean; 19 up, 32 down)        19     +5.8  79%    +110   -191.3   -401.1   -242.4      -66/+176
+   put when up, call when down (7 d)             50    +14.7  82%    +733   -191.3   -484.0   -210.3     +205/+528
+   put when DOWN (7 d), the other side           23    +25.1  83%    +578   -154.8   -434.3   -215.2     +720/-142
+   put when up (14 d mean; 21 up, 29 down)       21    +21.4  86%    +449   -111.2   -260.7   -111.2     +258/+191
+   put when up, call when down (14 d)            49    +20.1  86%    +984   -181.2   -409.7   -181.2     +564/+420
+   put when DOWN (14 d), the other side          20    +21.5  80%    +430   -154.8   -434.3   -179.8     +588/-157
+   put when up (28 d mean; 24 up, 24 down)       23    +21.4  87%    +493   -111.2   -260.7   -111.2     +279/+214
+   put when up, call when down (28 d)            47    +17.2  83%    +807   -181.2   -409.7   -181.2     +498/+309
+   put when DOWN (28 d), the other side          16    +13.9  75%    +223   -154.8   -434.3   -203.1     +403/-181
+

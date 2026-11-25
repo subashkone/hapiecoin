@@ -1,0 +1,108 @@
+## BTC daily straddle: 109 days (2026-08-08 .. 2026-11-24), each side 0 % away, entered 20 h before settlement; mean premium 80.9; stop where named 3x
+                                                           mean  win   total   worst  worst 3 drawdown        halves    11-24   future alone / its fees / fills
+   held, no hedge                                         +9.53  67%   +1039  -352.9   -983.8   -607.1     +557/+482    -79.9
+   stop 3x, no hedge                                     +14.93  61%   +1627  -148.2   -358.2   -332.6    +1034/+593    -58.7
+   -- future at the market fee 0.05 %
+   held, hedged every 1 h                                 -9.31  38%   -1014  -152.8   -314.9  -1105.4     -328/-687     -1.7     -2054 /  1700 /  2289
+   held, hedged every 2 h                                 -3.54  52%    -386  -115.2   -323.8   -645.5      +41/-427    -10.5     -1425 /  1252 /  1199
+   held, hedged every 4 h                                 +0.68  62%     +75  -150.0   -412.5   -488.8     +379/-304    -32.7      -965 /   871 /   654
+   held, hedged every 8 h                                 +3.23  63%    +352  -317.5   -683.6   -616.8      +440/-88    -31.9      -687 /   741 /   436
+   held, every 1 h, only a change over 10 lots            -7.59  45%    -827  -155.6   -332.6   -934.7     -228/-600     -2.0     -1867 /  1517 /  1154
+   held, every 1 h, only a change over 25 lots            -3.68  49%    -401  -129.1   -315.7   -620.5      -21/-380    -23.8     -1441 /  1161 /   578
+   held, hedged once at the entry only                    +8.98  67%    +978  -374.2  -1014.4   -635.3     +540/+439    -83.9       -61 /    40 /   218
+   stop 3x, hedged every 1 h                              -5.47  42%    -596   -82.5   -237.2   -797.8     -111/-485    +54.5     -2223 /  1617 /  2285
+   stop 3x, hedged every 4 h                              +6.10  60%    +665  -135.8   -332.2   -320.2      +695/-31     -0.3      -962 /   746 /   653
+   stop 3x, every 1 h, only a change over 25 lots         +0.76  50%     +83   -77.6   -212.9   -500.7     +261/-178    +32.9     -1544 /  1088 /   575
+   -- future at the limit fee 0.02 %
+   held, hedged every 1 h                                 +0.05  53%      +6  -140.3   -276.4   -432.3     +182/-177     +3.0     -1033 /   680 /  2289
+   held, hedged every 2 h                                 +3.35  60%    +365  -107.0   -297.7   -334.0      +412/-47     -6.1      -674 /   501 /  1199
+   held, hedged every 4 h                                 +5.48  66%    +597  -139.9   -392.9   -292.9      +630/-33    -28.3      -442 /   348 /   654
+   held, hedged every 8 h                                 +7.31  68%    +797  -311.7   -663.8   -458.1     +655/+142    -27.5      -243 /   296 /   436
+   held, every 1 h, only a change over 10 lots            +0.76  56%     +83  -144.5   -297.6   -419.6     +230/-147     +2.0      -956 /   607 /  1154
+   held, every 1 h, only a change over 25 lots            +2.71  56%    +295  -118.6   -290.2   -318.0      +324/-28    -19.9      -744 /   465 /   578
+   held, hedged once at the entry only                    +9.20  67%   +1002  -373.9  -1013.8   -625.3     +551/+451    -83.9       -37 /    16 /   218
+   stop 3x, hedged every 1 h                              +3.43  56%    +374   -69.4   -199.2   -412.8       +383/-9    +58.8     -1253 /   647 /  2285
+   stop 3x, hedged every 4 h                             +10.21  65%   +1113  -131.5   -322.8   -236.1     +926/+187     +3.0      -514 /   298 /   653
+   stop 3x, every 1 h, only a change over 25 lots         +6.75  56%    +736   -72.8   -186.6   -279.5     +589/+147    +36.0      -891 /   435 /   575
+
+## BTC daily: 109 days (2026-08-08 .. 2026-11-24), each side 1 % away, entered 20 h before settlement; mean premium 37.9; stop where named 3x
+                                                           mean  win   total   worst  worst 3 drawdown        halves    11-24   future alone / its fees / fills
+   held, no hedge                                         +7.58  80%    +826  -338.2   -938.7   -505.1     +378/+448    -66.1
+   stop 3x, no hedge                                     +12.03  65%   +1311  -105.8   -254.2   -185.0     +696/+615    -49.2
+   -- future at the market fee 0.05 %
+   held, hedged every 1 h                                 -4.71  51%    -514  -192.0   -340.7   -622.3     -108/-406     -1.1     -1339 /  1022 /  2289
+   held, hedged every 2 h                                 -0.71  65%     -77  -120.0   -310.0   -297.2     +126/-203     -4.8      -903 /   744 /  1199
+   held, hedged every 4 h                                 +1.85  69%    +201  -122.3   -336.4   -279.7     +382/-181    -26.2      -624 /   520 /   654
+   held, hedged every 8 h                                 +3.47  74%    +378  -280.6   -596.5   -400.0      +404/-26    -25.2      -448 /   420 /   436
+   held, every 1 h, only a change over 10 lots            -2.46  61%    -268  -189.9   -325.3   -448.4       -1/-267     +0.3     -1094 /   820 /   842
+   held, every 1 h, only a change over 25 lots            +1.75  65%    +191  -107.4   -284.6   -217.5      +239/-47    -15.7      -635 /   550 /   332
+   held, hedged once at the entry only                    +7.42  81%    +809  -333.7   -900.3   -482.5     +386/+423    -67.9       -17 /    25 /   218
+   stop 3x, hedged every 1 h                              +0.70  53%     +76   -54.9   -139.0   -235.5      +121/-45    +49.2     -1235 /   814 /  2283
+   stop 3x, hedged every 4 h                              +8.11  62%    +884   -91.4   -233.6   -199.1     +701/+183     +2.4      -428 /   357 /   653
+   stop 3x, every 1 h, only a change over 25 lots         +6.85  59%    +747   -46.0   -130.1   -111.3     +447/+300    +34.8      -564 /   387 /   271
+   -- future at the limit fee 0.02 %
+   held, hedged every 1 h                                 +0.91  65%    +100  -180.9   -312.9   -250.4      +178/-78     +3.7      -726 /   409 /  2289
+   held, hedged every 2 h                                 +3.39  70%    +369  -113.6   -291.0   -217.6      +333/+37     -0.5      -457 /   298 /  1199
+   held, hedged every 4 h                                 +4.71  71%    +513  -117.3   -318.0   -263.2       +519/-6    -21.9      -313 /   208 /   654
+   held, hedged every 8 h                                 +5.78  75%    +630  -275.1   -577.9   -309.9     +515/+115    -20.9      -196 /   168 /   436
+   held, every 1 h, only a change over 10 lots            +2.05  66%    +224  -179.8   -302.2   -219.9       +224/-0     +4.6      -602 /   328 /   842
+   held, every 1 h, only a change over 25 lots            +4.78  70%    +521  -100.2   -267.4   -182.9     +384/+137    -11.9      -305 /   220 /   332
+   held, hedged once at the entry only                    +7.56  81%    +824  -333.6   -899.8   -482.2     +395/+429    -67.9        -1 /    10 /   218
+   stop 3x, hedged every 1 h                              +5.17  60%    +564   -48.2   -122.8   -148.7     +361/+204    +53.1      -747 /   325 /  2283
+   stop 3x, hedged every 4 h                             +10.07  66%   +1098   -88.1   -228.6   -192.4     +807/+291     +5.3      -214 /   143 /   653
+   stop 3x, every 1 h, only a change over 25 lots         +8.98  61%    +979   -43.7   -123.9    -83.7     +559/+420    +37.7      -332 /   155 /   271
+
+## ETH daily straddle: 109 days (2026-08-08 .. 2026-11-24), each side 0 % away, entered 20 h before settlement; mean premium 34.8; stop where named 3x
+                                                           mean  win   total   worst  worst 3 drawdown        halves    11-24   future alone / its fees / fills
+   held, no hedge                                         +8.36  73%    +911  -135.0   -328.7   -135.0     +466/+445    -18.2
+   stop 3x, no hedge                                      +6.60  62%    +719   -51.0   -144.8   -131.4     +341/+378    -24.7
+   -- future at the market fee 0.05 %
+   held, hedged every 1 h                                 +0.95  62%    +104  -101.4   -187.5   -120.8       +40/+63     +0.5      -808 /   493 /  2289
+   held, hedged every 2 h                                 +2.11  67%    +230  -107.3   -206.7   -144.5     +117/+113     +0.9      -681 /   371 /  1199
+   held, hedged every 4 h                                 +3.63  64%    +395   -91.1   -208.7   -114.8     +216/+180     -6.0      -516 /   262 /   654
+   held, hedged every 8 h                                 +4.90  72%    +534   -99.9   -273.5   -175.8     +257/+277    -17.9      -377 /   224 /   436
+   held, every 1 h, only a change over 10 lots            +1.28  63%    +139  -103.8   -204.0   -121.4       +71/+68     +0.5      -772 /   441 /  1137
+   held, every 1 h, only a change over 25 lots            +2.81  63%    +306  -103.8   -207.3   -123.6     +151/+155     +0.5      -605 /   329 /   531
+   held, hedged once at the entry only                    +8.47  75%    +923  -136.1   -327.7   -136.1     +471/+452    -19.5       +12 /    13 /   218
+   stop 3x, hedged every 1 h                              +1.70  64%    +185   -44.4   -118.5   -121.9      +61/+123     +0.8      -534 /   464 /  2286
+   stop 3x, hedged every 4 h                              +2.93  65%    +320   -82.5   -194.0    -87.0     +124/+195     -6.1      -399 /   227 /   654
+   stop 3x, every 1 h, only a change over 25 lots         +3.43  61%    +374   -44.2   -116.4   -101.4     +157/+217     -0.2      -345 /   307 /   530
+   -- future at the limit fee 0.02 %
+   held, hedged every 1 h                                 +3.67  71%    +400   -99.2   -180.0   -108.0     +192/+208     +1.9      -512 /   197 /  2289
+   held, hedged every 2 h                                 +4.15  69%    +453  -105.2   -201.3   -135.9     +232/+220     +2.2      -459 /   148 /  1199
+   held, hedged every 4 h                                 +5.07  67%    +553   -89.5   -203.3   -103.8     +294/+258     -4.8      -359 /   105 /   654
+   held, hedged every 8 h                                 +6.13  74%    +669   -98.3   -268.6   -169.3     +325/+344    -16.7      -243 /    89 /   436
+   held, every 1 h, only a change over 10 lots            +3.71  71%    +404  -101.8   -197.1   -111.7     +207/+197     +1.6      -507 /   176 /  1137
+   held, every 1 h, only a change over 25 lots            +4.62  70%    +504  -101.8   -202.2   -115.7     +252/+252     +1.5      -408 /   132 /   531
+   held, hedged once at the entry only                    +8.54  75%    +931  -136.1   -327.5   -136.1     +475/+456    -19.5       +20 /     5 /   218
+   stop 3x, hedged every 1 h                              +4.25  71%    +463   -43.8   -113.2    -53.6     +206/+257     +2.0      -256 /   185 /  2286
+   stop 3x, hedged every 4 h                              +4.19  67%    +456   -80.9   -189.0    -82.3     +195/+261     -5.0      -263 /    91 /   654
+   stop 3x, every 1 h, only a change over 25 lots         +5.12  68%    +558   -43.7   -112.8    -60.0     +252/+305     +0.9      -161 /   123 /   530
+
+## ETH daily: 109 days (2026-08-08 .. 2026-11-24), each side 1 % away, entered 20 h before settlement; mean premium 21.3; stop where named 3x
+                                                           mean  win   total   worst  worst 3 drawdown        halves    11-24   future alone / its fees / fills
+   held, no hedge                                         +6.85  81%    +747  -137.9   -318.9   -137.9     +380/+368    -16.7
+   stop 3x, no hedge                                      +4.64  61%    +506   -49.6   -136.2   -119.9     +256/+250    -23.9
+   -- future at the market fee 0.05 %
+   held, hedged every 1 h                                 +0.39  62%     +42   -89.2   -182.5   -108.9       +12/+30     -0.0      -705 /   378 /  2289
+   held, hedged every 2 h                                 +1.41  68%    +154   -94.5   -198.7   -122.3       +79/+74     +1.0      -593 /   275 /  1199
+   held, hedged every 4 h                                 +2.70  68%    +294   -80.3   -201.0   -111.2     +178/+116     -5.5      -453 /   197 /   654
+   held, hedged every 8 h                                 +3.73  74%    +407   -93.7   -265.0   -148.4     +209/+198    -16.8      -340 /   161 /   436
+   held, every 1 h, only a change over 10 lots            +0.94  67%    +103   -88.8   -192.0   -102.5       +38/+65     +0.4      -644 /   320 /   989
+   held, every 1 h, only a change over 25 lots            +2.22  69%    +242  -106.8   -200.8   -154.7      +76/+166     +1.1      -505 /   219 /   399
+   held, hedged once at the entry only                    +6.91  80%    +754  -127.8   -310.5   -127.8     +398/+356    -18.1        +7 /     9 /   218
+   stop 3x, hedged every 1 h                              +1.39  61%    +152   -33.0    -95.6   -146.5       +76/+76     +0.2      -354 /   316 /  2277
+   stop 3x, hedged every 4 h                              +2.03  61%    +221   -73.8   -151.5    -92.9     +121/+100     -6.1      -285 /   150 /   651
+   stop 3x, every 1 h, only a change over 25 lots         +2.83  62%    +308   -49.6   -101.8    -94.1     +102/+207     -0.5      -198 /   172 /   366
+   -- future at the limit fee 0.02 %
+   held, hedged every 1 h                                 +2.47  72%    +269   -87.1   -176.4    -89.7     +126/+144     +1.3      -478 /   151 /  2289
+   held, hedged every 2 h                                 +2.93  70%    +319   -92.6   -193.1   -114.3     +163/+156     +2.3      -428 /   110 /  1199
+   held, hedged every 4 h                                 +3.78  68%    +412   -78.7   -196.1   -101.6     +236/+176     -4.3      -335 /    79 /   654
+   held, hedged every 8 h                                 +4.62  76%    +503   -92.1   -260.1   -142.6     +257/+247    -15.6      -244 /    64 /   436
+   held, every 1 h, only a change over 10 lots            +2.70  71%    +295   -86.9   -185.4    -93.9     +133/+161     +1.5      -453 /   128 /   989
+   held, every 1 h, only a change over 25 lots            +3.43  71%    +374  -105.2   -196.0   -147.8     +142/+231     +2.1      -373 /    88 /   399
+   held, hedged once at the entry only                    +6.96  80%    +759  -127.7   -310.4   -127.7     +401/+358    -18.0       +12 /     3 /   218
+   stop 3x, hedged every 1 h                              +3.13  65%    +341   -32.3    -89.8   -100.4     +170/+172     +1.4      -164 /   126 /  2277
+   stop 3x, hedged every 4 h                              +2.85  61%    +311   -72.6   -145.9    -90.7     +167/+144     -5.0      -195 /    60 /   651
+   stop 3x, every 1 h, only a change over 25 lots         +3.78  65%    +412   -49.6   -100.6    -83.0     +153/+259     +0.6       -94 /    69 /   366
+
