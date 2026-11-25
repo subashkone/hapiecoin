@@ -1,0 +1,312 @@
+## BTC monthly WITH SLIPPAGE: 10 settled monthly expiries (2026-01-30 .. 2026-10-30); distance 12 % at every entry; 100 lots x 0.001 a leg an entry; net of fees; hourly marks
+   left out, fetched before the settlement or without a last bar: 2026-11-27
+
+-- no stop, held to settlement
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10   -227.8   6    -2278    -1589     +413    263.0   1.0   -227.8
+   single, 37 days before                          10   -144.1   6    -1441    -1087     +306    206.1   1.0   -144.1
+   single, 30 days before                          10   -123.5   7    -1235    -1152     +228    150.8   1.0   -123.5
+   single, 23 days before                          10    +27.7   9     +277     -718     +222    118.6   1.0    +27.7
+   single, 16 days before                          10    -39.3   8     -393     -842     +148     68.2   1.0    -39.3
+   single, 9 days before                           10     -3.0   9      -30     -239      +48     24.3   1.0     -3.0
+
+-- stop 3x on every sold option
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10    +59.7   4     +597     -168     +413    263.0   1.0    +59.7
+   single, 37 days before                          10    +92.6   6     +926     -141     +306    206.1   1.0    +92.6
+   single, 30 days before                          10    +76.3   6     +763      -81     +228    150.8   1.0    +76.3
+   single, 23 days before                          10    +23.7   5     +237     -122     +222    118.6   1.0    +23.7
+   single, 16 days before                          10    +37.9   7     +379      -54     +148     68.2   1.0    +37.9
+   single, 9 days before                           10     +5.2   6      +52      -33      +48     24.3   1.0     +5.2
+   ladder, 44 + 30 days before                     10   +135.9   5    +1359     -226     +640    413.8   2.0    +68.0
+   ladder, 44 + 23 days before                     10    +83.4   4     +834     -245     +635    381.6   2.0    +41.7
+   ladder, 44 + 30 + 16 days before                10   +173.9   6    +1739     -280     +763    482.0   3.0    +58.0
+   ladder, 44 + 37 + 30 + 23 days before           10   +252.3   6    +2523     -426    +1142    738.5   4.0    +63.1
+   roll: the 44-day strangle moved at 30 days      10   +116.2   7    +1162      -76     +383    413.8   2.0    +58.1
+   roll: the 44-day strangle moved at 23 days      10     +3.3   5      +33     -249     +305    381.6   2.0     +1.7
+   roll: the 44-day strangle moved at 16 days      10    +60.0   6     +600     -127     +334    331.2   2.0    +30.0
+   re-sell the side the stop took                  10     -0.2   4       -2     -518     +413    357.2   1.6     -0.1
+   re-centre once the spot is 4 % away             10     +7.0   6      +70     -348     +202   1502.4   9.0     +0.8
+   re-centre once the spot is 6 % away             10    +10.2   4     +102     -192     +263    966.0   5.2     +2.0
+   re-centre once the spot is 8 % away             10     -8.3   6      -83     -520     +331    598.5   3.5     -2.4
+
+-- stop 2x on every sold option
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10    +98.9   5     +989     -101     +413    263.0   1.0    +98.9
+   single, 37 days before                          10    +73.3   4     +733      -30     +306    206.1   1.0    +73.3
+   single, 30 days before                          10    +40.3   4     +403      -42     +228    150.8   1.0    +40.3
+   single, 23 days before                          10    +15.0   4     +150      -62     +133    118.6   1.0    +15.0
+   single, 16 days before                          10     +5.4   6      +54      -54      +52     68.2   1.0     +5.4
+   single, 9 days before                           10     +0.3   4       +3      -32      +48     24.3   1.0     +0.3
+   ladder, 44 + 30 days before                     10   +139.2   7    +1392      -46     +616    413.8   2.0    +69.6
+   ladder, 44 + 23 days before                     10   +113.8   6    +1138     -131     +494    381.6   2.0    +56.9
+   ladder, 44 + 30 + 16 days before                10   +144.5   8    +1445      -69     +623    482.0   3.0    +48.2
+   ladder, 44 + 37 + 30 + 23 days before           10   +227.4   6    +2274      -85     +888    738.5   4.0    +56.8
+   roll: the 44-day strangle moved at 30 days      10    +95.2   8     +952      -26     +379    413.8   2.0    +47.6
+   roll: the 44-day strangle moved at 23 days      10    +44.0   6     +440     -133     +305    381.6   2.0    +22.0
+   roll: the 44-day strangle moved at 16 days      10    +60.4   7     +604     -125     +320    331.2   2.0    +30.2
+   re-sell the side the stop took                  10     +6.1   5      +61     -458     +413    387.1   1.8     +3.4
+   re-centre once the spot is 4 % away             10    +14.0   7     +140     -285     +180   1502.4   9.0     +1.6
+   re-centre once the spot is 6 % away             10    +49.5   6     +495      -67     +263    966.0   5.2     +9.5
+   re-centre once the spot is 8 % away             10    +53.2   8     +532     -264     +313    598.5   3.5    +15.2
+
+## BTC monthly WITH SLIPPAGE: 10 settled monthly expiries (2026-01-30 .. 2026-10-30); distance 12 % x sqrt(days left / 44); 100 lots x 0.001 a leg an entry; net of fees; hourly marks
+   left out, fetched before the settlement or without a last bar: 2026-11-27
+
+-- no stop, held to settlement
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10   -227.8   6    -2278    -1589     +413    263.0   1.0   -227.8
+   single, 37 days before                          10   -158.5   6    -1585    -1156     +347    232.0   1.0   -158.5
+   single, 30 days before                          10   -140.6   7    -1406    -1298     +284    196.1   1.0   -140.6
+   single, 23 days before                          10     +2.2   7      +22     -886     +271    183.2   1.0     +2.2
+   single, 16 days before                          10    -63.0   7     -630    -1105     +268    152.5   1.0    -63.0
+   single, 9 days before                           10   -109.2   5    -1092     -673     +154    102.0   1.0   -109.2
+
+-- stop 3x on every sold option
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10    +59.7   4     +597     -168     +413    263.0   1.0    +59.7
+   single, 37 days before                          10    +98.2   6     +982     -159     +347    232.0   1.0    +98.2
+   single, 30 days before                          10    +84.0   6     +840     -131     +284    196.1   1.0    +84.0
+   single, 23 days before                          10    +11.7   4     +117     -221     +271    183.2   1.0    +11.7
+   single, 16 days before                          10    +48.7   6     +487     -136     +268    152.5   1.0    +48.7
+   single, 9 days before                           10     -9.1   4      -91      -73     +154    102.0   1.0     -9.1
+   ladder, 44 + 30 days before                     10   +143.6   6    +1436     -287     +696    459.2   2.0    +71.8
+   ladder, 44 + 23 days before                     10    +71.4   4     +714     -344     +683    446.2   2.0    +35.7
+   ladder, 44 + 30 + 16 days before                10   +192.4   7    +1924     -423     +942    611.7   3.0    +64.1
+   ladder, 44 + 37 + 30 + 23 days before           10   +253.5   6    +2535     -568    +1268    874.4   4.0    +63.4
+   roll: the 44-day strangle moved at 30 days      10   +123.9   6    +1239      -77     +439    459.2   2.0    +62.0
+   roll: the 44-day strangle moved at 23 days      10     -8.7   4      -87     -348     +391    446.2   2.0     -4.3
+   roll: the 44-day strangle moved at 16 days      10    +70.8   6     +708     -235     +456    415.6   2.0    +35.4
+   re-sell the side the stop took                  10    -17.0   4     -170     -611     +413    394.1   1.6    -11.0
+   re-centre once the spot is 4 % away             10    +22.6   6     +226     -356     +303   1993.2   9.0     +2.5
+   re-centre once the spot is 6 % away             10     -8.4   5      -84     -239     +252   1242.0   5.2     -1.6
+   re-centre once the spot is 8 % away             10    -40.3   4     -403     -689     +415    790.5   3.5    -11.5
+
+-- stop 2x on every sold option
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10    +98.9   5     +989     -101     +413    263.0   1.0    +98.9
+   single, 37 days before                          10    +80.8   4     +808      -51     +347    232.0   1.0    +80.8
+   single, 30 days before                          10    +48.4   4     +484      -35     +267    196.1   1.0    +48.4
+   single, 23 days before                          10    -25.7   2     -257     -157     +119    183.2   1.0    -25.7
+   single, 16 days before                          10    +20.0   4     +200     -136     +268    152.5   1.0    +20.0
+   single, 9 days before                           10    -10.9   3     -109      -69      +62    102.0   1.0    -10.9
+   ladder, 44 + 30 days before                     10   +147.3   6    +1473      -66     +655    459.2   2.0    +73.6
+   ladder, 44 + 23 days before                     10    +73.2   4     +732     -140     +405    446.2   2.0    +36.6
+   ladder, 44 + 30 + 16 days before                10   +167.3   7    +1673     -172     +624    611.7   3.0    +55.8
+   ladder, 44 + 37 + 30 + 23 days before           10   +202.5   7    +2025     -159     +993    874.4   4.0    +50.6
+   roll: the 44-day strangle moved at 30 days      10   +103.4   8    +1034      -35     +418    459.2   2.0    +51.7
+   roll: the 44-day strangle moved at 23 days      10     +3.4   4      +34     -142     +217    446.2   2.0     +1.7
+   roll: the 44-day strangle moved at 16 days      10    +75.0   7     +750     -156     +288    415.6   2.0    +37.5
+   re-sell the side the stop took                  10    -21.1   5     -211     -486     +413    433.2   1.8    -11.7
+   re-centre once the spot is 4 % away             10     +0.5   5       +5     -291     +280   1993.2   9.0     +0.1
+   re-centre once the spot is 6 % away             10     +5.6   4      +56     -216     +252   1242.0   5.2     +1.1
+   re-centre once the spot is 8 % away             10    +21.5   7     +215     -330     +205    790.5   3.5     +6.2
+
+## BTC monthly WITH SLIPPAGE: 10 settled monthly expiries (2026-01-30 .. 2026-10-30); distance 8 % at every entry; 100 lots x 0.001 a leg an entry; net of fees; hourly marks
+   left out, fetched before the settlement or without a last bar: 2026-11-27
+
+-- no stop, held to settlement
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10   -237.5   6    -2375    -1816     +528    386.6   1.0   -237.5
+   single, 37 days before                          10   -171.5   6    -1715    -1338     +398    321.9   1.0   -171.5
+   single, 30 days before                          10   -144.1   7    -1441    -1363     +330    248.6   1.0   -144.1
+   single, 23 days before                          10    -16.1   7     -161     -886     +297    204.1   1.0    -16.1
+   single, 16 days before                          10    -52.4   8     -524    -1024     +221    127.5   1.0    -52.4
+   single, 9 days before                           10    -41.2   6     -412     -517     +108     55.5   1.0    -41.2
+
+-- stop 3x on every sold option
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10    +69.1   4     +691     -240     +528    386.6   1.0    +69.1
+   single, 37 days before                          10   +111.0   6    +1110     -256     +398    321.9   1.0   +111.0
+   single, 30 days before                          10    +88.2   6     +882     -167     +330    248.6   1.0    +88.2
+   single, 23 days before                          10     +7.2   5      +72     -197     +297    204.1   1.0     +7.2
+   single, 16 days before                          10    +39.3   6     +393     -119     +221    127.5   1.0    +39.3
+   single, 9 days before                           10     +2.3   4      +23      -55     +108     55.5   1.0     +2.3
+   ladder, 44 + 30 days before                     10   +157.3   6    +1573     -407     +854    635.2   2.0    +78.7
+   ladder, 44 + 23 days before                     10    +76.4   4     +764     -406     +820    590.6   2.0    +38.2
+   ladder, 44 + 30 + 16 days before                10   +196.6   6    +1966     -510    +1075    762.8   3.0    +65.5
+   ladder, 44 + 37 + 30 + 23 days before           10   +275.6   6    +2756     -783    +1549   1161.2   4.0    +68.9
+   roll: the 44-day strangle moved at 30 days      10   +136.7   7    +1367      -99     +513    635.2   2.0    +68.4
+   roll: the 44-day strangle moved at 23 days      10    -26.9   4     -269     -412     +340    590.6   2.0    -13.4
+   roll: the 44-day strangle moved at 16 days      10    +51.4   5     +514     -249     +453    514.1   2.0    +25.7
+   re-sell the side the stop took                  10    -23.1   5     -231     -727     +528    533.5   1.6    -14.9
+   re-centre once the spot is 4 % away             10    +13.0   5     +130     -378     +278   2338.4   9.0     +1.4
+   re-centre once the spot is 6 % away             10    -29.3   4     -293     -374     +275   1471.9   5.2     -5.6
+   re-centre once the spot is 8 % away             10    -51.4   6     -514     -706     +391    942.9   3.5    -14.7
+
+-- stop 2x on every sold option
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10   +121.2   5    +1212     -116     +528    386.6   1.0   +121.2
+   single, 37 days before                          10    +70.0   3     +700      -49     +329    321.9   1.0    +70.0
+   single, 30 days before                          10     +3.4   2      +34      -94     +191    248.6   1.0     +3.4
+   single, 23 days before                          10    -26.8   3     -268     -133     +147    204.1   1.0    -26.8
+   single, 16 days before                          10    +24.3   6     +243     -103     +220    127.5   1.0    +24.3
+   single, 9 days before                           10     +1.4   3      +14      -48     +108     55.5   1.0     +1.4
+   ladder, 44 + 30 days before                     10   +124.5   6    +1245     -203     +495    635.2   2.0    +62.3
+   ladder, 44 + 23 days before                     10    +94.3   5     +943     -171     +542    590.6   2.0    +47.2
+   ladder, 44 + 30 + 16 days before                10   +148.9   7    +1489     -237     +497    762.8   3.0    +49.6
+   ladder, 44 + 37 + 30 + 23 days before           10   +167.6   6    +1676     -296     +754   1161.2   4.0    +41.9
+   roll: the 44-day strangle moved at 30 days      10    +71.7   7     +717     -217     +316    635.2   2.0    +35.8
+   roll: the 44-day strangle moved at 23 days      10     +8.9   5      +89     -176     +226    590.6   2.0     +4.5
+   roll: the 44-day strangle moved at 16 days      10    +84.1   8     +841     -152     +387    514.1   2.0    +42.1
+   re-sell the side the stop took                  10    -14.8   5     -148     -653     +528    585.2   1.8     -8.2
+   re-centre once the spot is 4 % away             10    +13.3   5     +133     -362     +251   2338.4   9.0     +1.5
+   re-centre once the spot is 6 % away             10     +1.0   4      +10     -295     +275   1471.9   5.2     +0.2
+   re-centre once the spot is 8 % away             10    +36.8   8     +368     -365     +347    942.9   3.5    +10.5
+
+## BTC monthly WITH SLIPPAGE: 10 settled monthly expiries (2026-01-30 .. 2026-10-30); distance 8 % x sqrt(days left / 44); 100 lots x 0.001 a leg an entry; net of fees; hourly marks
+   left out, fetched before the settlement or without a last bar: 2026-11-27
+
+-- no stop, held to settlement
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10   -252.6   6    -2526    -1816     +528    391.5   1.0   -252.6
+   single, 37 days before                          10   -171.6   6    -1716    -1415     +431    348.8   1.0   -171.6
+   single, 30 days before                          10   -167.6   7    -1676    -1475     +383    302.4   1.0   -167.6
+   single, 23 days before                          10    -86.9   5     -869    -1018     +196    280.7   1.0    -86.9
+   single, 16 days before                          10    -99.2   6     -992    -1256     +325    218.7   1.0    -99.2
+   single, 9 days before                           10   -169.8   3    -1698     -735     +204    159.7   1.0   -169.8
+
+-- stop 3x on every sold option
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10    +54.9   4     +549     -240     +528    391.5   1.0    +54.9
+   single, 37 days before                          10   +117.0   6    +1170     -304     +431    348.8   1.0   +117.0
+   single, 30 days before                          10   +112.1   7    +1121     -202     +383    302.4   1.0   +112.1
+   single, 23 days before                          10    -46.0   4     -460     -215     +196    280.7   1.0    -46.0
+   single, 16 days before                          10    +29.7   6     +297     -222     +325    218.7   1.0    +29.7
+   single, 9 days before                           10    -32.4   3     -324     -144     +204    159.7   1.0    -32.4
+   ladder, 44 + 30 days before                     10   +167.1   5    +1671     -442     +907    693.9   2.0    +83.5
+   ladder, 44 + 23 days before                     10     +8.9   5      +89     -424     +699    672.2   2.0     +4.5
+   ladder, 44 + 30 + 16 days before                10   +196.7   5    +1967     -665    +1197    912.5   3.0    +65.6
+   ladder, 44 + 37 + 30 + 23 days before           10   +238.1   6    +2381     -901    +1508   1323.4   4.0    +59.5
+   roll: the 44-day strangle moved at 30 days      10   +150.8   6    +1508     -155     +560    693.9   2.0    +75.4
+   roll: the 44-day strangle moved at 23 days      10    -94.3   5     -943     -430     +231    672.2   2.0    -47.2
+   roll: the 44-day strangle moved at 16 days      10    +27.6   4     +276     -396     +522    610.2   2.0    +13.8
+   re-sell the side the stop took                  10    -17.6   5     -176     -702     +528    577.1   1.6    -11.3
+   re-centre once the spot is 4 % away             10     +1.1   6      +11     -453     +385   2883.6   9.0     +0.1
+   re-centre once the spot is 6 % away             10    -27.2   5     -272     -300     +328   1801.0   5.2     -5.2
+   re-centre once the spot is 8 % away             10    -65.7   5     -657     -887     +498   1145.3   3.5    -18.8
+
+-- stop 2x on every sold option
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10   +117.4   4    +1174     -142     +528    391.5   1.0   +117.4
+   single, 37 days before                          10    +76.3   4     +763      -55     +354    348.8   1.0    +76.3
+   single, 30 days before                          10    -15.3   2     -153      -96     +101    302.4   1.0    -15.3
+   single, 23 days before                          10    -73.7   0     -737     -385       -4    280.7   1.0    -73.7
+   single, 16 days before                          10    -10.9   3     -109     -222     +325    218.7   1.0    -10.9
+   single, 9 days before                           10    -43.7   1     -437     -126       +7    159.7   1.0    -43.7
+   ladder, 44 + 30 days before                     10   +102.1   5    +1021     -223     +495    693.9   2.0    +51.1
+   ladder, 44 + 23 days before                     10    +43.7   3     +437     -178     +518    672.2   2.0    +21.9
+   ladder, 44 + 30 + 16 days before                10    +91.3   6     +913     -327     +487    912.5   3.0    +30.4
+   ladder, 44 + 37 + 30 + 23 days before           10   +104.8   5    +1048     -274     +722   1323.4   4.0    +26.2
+   roll: the 44-day strangle moved at 30 days      10    +49.7   7     +497     -237     +274    693.9   2.0    +24.8
+   roll: the 44-day strangle moved at 23 days      10    -41.7   2     -417     -191     +237    672.2   2.0    -20.8
+   roll: the 44-day strangle moved at 16 days      10    +45.2   6     +452     -271     +377    610.2   2.0    +22.6
+   re-sell the side the stop took                  10    -43.6   5     -436     -679     +528    626.6   1.8    -24.2
+   re-centre once the spot is 4 % away             10    -19.5   5     -195     -375     +385   2883.6   9.0     -2.2
+   re-centre once the spot is 6 % away             10    -34.9   4     -349     -375     +328   1801.0   5.2     -6.7
+   re-centre once the spot is 8 % away             10    +30.8   6     +308     -474     +498   1145.3   3.5     +8.8
+
+## ETH monthly WITH SLIPPAGE: 10 settled monthly expiries (2026-01-30 .. 2026-10-30); distance 12 % at every entry; 100 lots x 0.01 a leg an entry; net of fees; hourly marks
+   left out, fetched before the settlement or without a last bar: 2026-11-27
+
+-- no stop, held to settlement
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10    -82.1   6     -821     -726     +265    163.7   1.0    -82.1
+   single, 37 days before                          10    -70.1   5     -701     -509     +205    127.5   1.0    -70.1
+   single, 30 days before                          10    -55.7   5     -557     -544     +150    102.3   1.0    -55.7
+   single, 23 days before                          10     +7.3   6      +73     -379     +138     76.2   1.0     +7.3
+   single, 16 days before                          10    -15.1   8     -151     -384      +82     45.5   1.0    -15.1
+   single, 9 days before                           10     -2.5   9      -25     -186      +40     20.9   1.0     -2.5
+
+-- stop 3x on every sold option
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10    +44.9   5     +449     -113     +265    163.7   1.0    +44.9
+   single, 37 days before                          10    +27.8   5     +278      -93     +205    127.5   1.0    +27.8
+   single, 30 days before                          10    +37.1   5     +371      -71     +150    102.3   1.0    +37.1
+   single, 23 days before                          10    +25.9   4     +259      -39     +138     76.2   1.0    +25.9
+   single, 16 days before                          10    +12.5   6     +125      -52      +82     45.5   1.0    +12.5
+   single, 9 days before                           10     +1.8   6      +18      -68      +40     20.9   1.0     +1.8
+   ladder, 44 + 30 days before                     10    +82.0   5     +820     -158     +400    266.0   2.0    +41.0
+   ladder, 44 + 23 days before                     10    +70.8   6     +708     -149     +333    239.9   2.0    +35.4
+   ladder, 44 + 30 + 16 days before                10    +94.5   6     +945     -170     +384    311.4   3.0    +31.5
+   ladder, 44 + 37 + 30 + 23 days before           10   +135.6   4    +1356     -232     +669    469.6   4.0    +33.9
+   roll: the 44-day strangle moved at 30 days      10    +60.5   6     +605     -169     +260    266.0   2.0    +30.3
+   roll: the 44-day strangle moved at 23 days      10    +37.8   7     +378     -152     +195    239.9   2.0    +18.9
+   roll: the 44-day strangle moved at 16 days      10    +37.0   7     +370     -100     +193    209.1   2.0    +18.5
+   re-sell the side the stop took                  10    +16.9   5     +169     -275     +265    212.5   1.4    +11.7
+   re-centre once the spot is 4 % away             10    -12.1   4     -121     -185     +142   1625.3  15.8     -0.8
+   re-centre once the spot is 6 % away             10    +33.2   6     +332      -46     +175    770.1   7.3     +4.5
+   re-centre once the spot is 8 % away             10    +15.9   5     +159     -111     +164    574.5   5.3     +3.0
+
+-- stop 2x on every sold option
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10    +23.3   3     +233      -60     +265    163.7   1.0    +23.3
+   single, 37 days before                          10    +26.2   4     +262      -71     +205    127.5   1.0    +26.2
+   single, 30 days before                          10    +23.9   6     +239      -71     +150    102.3   1.0    +23.9
+   single, 23 days before                          10    +12.8   3     +128      -33     +125     76.2   1.0    +12.8
+   single, 16 days before                          10     -8.9   2      -89      -39      +30     45.5   1.0     -8.9
+   single, 9 days before                           10     +4.8   4      +48      -22      +40     20.9   1.0     +4.8
+   ladder, 44 + 30 days before                     10    +47.2   6     +472     -131     +219    266.0   2.0    +23.6
+   ladder, 44 + 23 days before                     10    +36.1   4     +361      -94     +333    239.9   2.0    +18.0
+   ladder, 44 + 30 + 16 days before                10    +38.3   6     +383     -170     +225    311.4   3.0    +12.8
+   ladder, 44 + 37 + 30 + 23 days before           10    +86.2   5     +862     -232     +487    469.6   4.0    +21.5
+   roll: the 44-day strangle moved at 30 days      10    +42.3   7     +423      -50     +197    266.0   2.0    +21.1
+   roll: the 44-day strangle moved at 23 days      10    +31.5   5     +315      -70     +188    239.9   2.0    +15.7
+   roll: the 44-day strangle moved at 16 days      10    +18.8   5     +188      -70     +130    209.1   2.0     +9.4
+   re-sell the side the stop took                  10     +6.3   6      +63     -205     +265    241.0   1.8     +3.6
+   re-centre once the spot is 4 % away             10    -16.0   4     -160     -185     +118   1625.3  15.8     -1.0
+   re-centre once the spot is 6 % away             10    +34.6   6     +346      -46     +175    770.1   7.3     +4.7
+   re-centre once the spot is 8 % away             10    +18.3   6     +183     -137     +164    574.5   5.3     +3.5
+
+## ETH monthly WITH SLIPPAGE: 10 settled monthly expiries (2026-01-30 .. 2026-10-30); distance 12 % x sqrt(days left / 44); 100 lots x 0.01 a leg an entry; net of fees; hourly marks
+   left out, fetched before the settlement or without a last bar: 2026-11-27
+
+-- no stop, held to settlement
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10    -82.1   6     -821     -726     +265    163.7   1.0    -82.1
+   single, 37 days before                          10    -74.0   4     -740     -564     +227    143.7   1.0    -74.0
+   single, 30 days before                          10    -63.3   5     -633     -606     +157    114.7   1.0    -63.3
+   single, 23 days before                          10    -12.1   5     -121     -410     +165    107.1   1.0    -12.1
+   single, 16 days before                          10    -20.2   7     -202     -421     +135     83.8   1.0    -20.2
+   single, 9 days before                           10    -37.3   5     -373     -261      +78     63.1   1.0    -37.3
+
+-- stop 3x on every sold option
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10    +44.9   5     +449     -113     +265    163.7   1.0    +44.9
+   single, 37 days before                          10    +23.5   4     +235      -81     +227    143.7   1.0    +23.5
+   single, 30 days before                          10    +39.2   5     +392      -71     +157    114.7   1.0    +39.2
+   single, 23 days before                          10    +14.1   4     +141      -70     +165    107.1   1.0    +14.1
+   single, 16 days before                          10     +5.8   5      +58      -71     +135     83.8   1.0     +5.8
+   single, 9 days before                           10     -3.6   5      -36      -98      +78     63.1   1.0     -3.6
+   ladder, 44 + 30 days before                     10    +84.1   5     +841     -138     +422    278.4   2.0    +42.1
+   ladder, 44 + 23 days before                     10    +59.0   6     +590     -175     +350    270.8   2.0    +29.5
+   ladder, 44 + 30 + 16 days before                10    +90.0   7     +900     -182     +433    362.2   3.0    +30.0
+   ladder, 44 + 37 + 30 + 23 days before           10   +121.7   4    +1217     -266     +664    529.2   4.0    +30.4
+   roll: the 44-day strangle moved at 30 days      10    +62.7   5     +627     -148     +282    278.4   2.0    +31.3
+   roll: the 44-day strangle moved at 23 days      10    +26.0   7     +260     -179     +206    270.8   2.0    +13.0
+   roll: the 44-day strangle moved at 16 days      10    +30.3   7     +303     -108     +220    247.4   2.0    +15.2
+   re-sell the side the stop took                  10     +5.6   5      +56     -307     +265    226.0   1.4     +3.9
+   re-centre once the spot is 4 % away             10     -7.6   4      -76     -161     +179   2033.2  15.7     -0.5
+   re-centre once the spot is 6 % away             10    +30.3   7     +303      -93     +170    953.6   7.3     +4.1
+   re-centre once the spot is 8 % away             10    +21.4   5     +214     -137     +232    703.5   5.3     +4.0
+
+-- stop 2x on every sold option
+                                                  exp     mean pos    total    worst     best  premium entr. an entry
+   single, 44 days before                          10    +23.3   3     +233      -60     +265    163.7   1.0    +23.3
+   single, 37 days before                          10    +31.2   4     +312      -68     +227    143.7   1.0    +31.2
+   single, 30 days before                          10    +24.0   5     +240      -71     +150    114.7   1.0    +24.0
+   single, 23 days before                          10     +4.8   4      +48      -40     +165    107.1   1.0     +4.8
+   single, 16 days before                          10     -2.1   1      -21      -51     +135     83.8   1.0     -2.1
+   single, 9 days before                           10     +3.1   3      +31      -36      +78     63.1   1.0     +3.1
+   ladder, 44 + 30 days before                     10    +47.4   5     +474     -131     +241    278.4   2.0    +23.7
+   ladder, 44 + 23 days before                     10    +28.1   4     +281     -101     +265    270.8   2.0    +14.1
+   ladder, 44 + 30 + 16 days before                10    +45.3   5     +453     -182     +241    362.2   3.0    +15.1
+   ladder, 44 + 37 + 30 + 23 days before           10    +83.3   6     +833     -239     +468    529.2   4.0    +20.8
+   roll: the 44-day strangle moved at 30 days      10    +42.4   7     +424      -50     +197    278.4   2.0    +21.2
+   roll: the 44-day strangle moved at 23 days      10    +23.5   5     +235      -92     +187    270.8   2.0    +11.7
+   roll: the 44-day strangle moved at 16 days      10    +25.6   5     +256      -72     +175    247.4   2.0    +12.8
+   re-sell the side the stop took                  10     +4.7   6      +47     -242     +265    259.1   1.8     +2.7
+   re-centre once the spot is 4 % away             10    -13.9   4     -139     -161     +179   2033.2  15.7     -0.9
+   re-centre once the spot is 6 % away             10    +21.3   6     +213      -86     +140    953.6   7.3     +2.9
+   re-centre once the spot is 8 % away             10    +19.4   5     +194     -173     +199    703.5   5.3     +3.7
+
