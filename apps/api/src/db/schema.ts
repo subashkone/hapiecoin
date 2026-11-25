@@ -6,7 +6,7 @@
  * Money-shaped values (fee percentages, conversion rate, lot sizes) are stored as decimal strings in
  * text/jsonb columns, never as floats (brief: decimal strings cross package boundaries).
  */
-import { type AutopilotRunDetail, type AutopilotStrategy, DEFAULT_MINDFUL, type MindfulSettings, type PlanIntervals, type PlaybookRecord, type ProposalLeg } from "@hapiecoin/schema";
+import { type AutopilotRunDetail, type AutopilotStrategy, DEFAULT_MINDFUL, type SavedBacktest, type SavedDefinition, type MindfulSettings, type PlanIntervals, type PlaybookRecord, type ProposalLeg } from "@hapiecoin/schema";
 import { sql } from "drizzle-orm";
 import { bigserial, boolean, customType, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
@@ -928,4 +928,37 @@ export const autopilotRuns = pgTable(
     at: timestamp("at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
   },
   (t) => [index("autopilot_runs_user_at_idx").on(t.userId, t.at), index("autopilot_runs_key_idx").on(t.userId, t.playbookId, t.venue, t.asset, t.at)],
+);
+
+/**
+ * ADR-141 / ADR-142 (HC-TR-269..276): a strategy an admin saved for Autopilot, beside the built-in list. One row is one
+ * version: its id is what Autopilot trades it under, so a version's trades and log lines are its own. Only a row at
+ * stage `paper` is traded. Paper only.
+ */
+export const autopilotSavedStrategies = pgTable(
+  "autopilot_saved_strategies",
+  {
+    id: text("id").primaryKey(),
+    familyId: text("family_id").notNull(),
+    version: integer("version").notNull().default(1),
+    name: text("name").notNull(),
+    summary: text("summary").notNull(),
+    definition: jsonb("definition").$type<SavedDefinition>().notNull(),
+    stage: text("stage", { enum: ["draft", "backtested", "paper", "retired"] }).notNull().default("draft"),
+    audience: text("audience", { enum: ["admins", "users", "plans"] }).notNull().default("admins"),
+    userIds: jsonb("user_ids").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    planIds: jsonb("plan_ids").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    backtest: jsonb("backtest").$type<SavedBacktest>(),
+    backtestAt: timestamp("backtest_at", { withTimezone: true, mode: "date" }),
+    createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
+    publishedAt: timestamp("published_at", { withTimezone: true, mode: "date" }),
+    retiredAt: timestamp("retired_at", { withTimezone: true, mode: "date" }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("autopilot_saved_strategies_family_version_uq").on(t.familyId, t.version),
+    index("autopilot_saved_strategies_stage_idx").on(t.stage),
+    // one version of a family is on paper at a time: two publishes at once cannot both win
+    uniqueIndex("autopilot_saved_strategies_family_paper_uq").on(t.familyId).where(sql`${t.stage} = 'paper'`),
+  ],
 );
