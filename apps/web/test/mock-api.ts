@@ -730,18 +730,29 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     return c.json(state.backtestDays === 0 ? { venue, day: new Date().toISOString().slice(0, 10), items: [] } : mockProposals(state.backtestDays, venue, acc.proposalMarks));
   });
   // ADR-108: the trader's Autopilot settings and log; the mock keeps what is saved and never trades by itself
-  v1.get("/autopilot", (c) => c.json(current(c)!.autopilot));
+  // ADR-142 (HC-TR-279): the saved strategies a trader may use, and the ones they have traded
+  const savedUsable = (acc: Account, x: SavedStrategy): boolean => x.stage === "paper" && (acc.user.role === "admin" || (x.audience === "users" ? x.userIds.includes(acc.user.id) : x.audience === "plans" && acc.subscription !== null && x.planIds.includes(acc.subscription.planId)));
+  const autopilotViewOf = (acc: Account): AutopilotView => {
+    const traded = new Set(acc.strategies.map((x) => x.autopilotPlaybookId));
+    const saved = state.savedStrategies.filter((x) => savedUsable(acc, x) || ((x.stage === "paper" || x.stage === "retired") && traded.has(x.id))).map((x) => ({ id: x.id, version: x.version, name: x.name, summary: x.summary, definition: x.definition, backtest: x.backtest, usable: savedUsable(acc, x) }));
+    return { ...acc.autopilot, ...(saved.length > 0 ? { saved } : {}) };
+  };
+  v1.get("/autopilot", (c) => c.json(autopilotViewOf(current(c)!)));
   v1.get("/autopilot/results", (c) => c.json(current(c)!.autopilotResults));
   v1.put("/autopilot", async (c) => {
     const acc = current(c)!;
     const parsed = AutopilotSettings.safeParse(await c.req.json());
     if (!parsed.success) return err(c, 400, "BAD_REQUEST", "Invalid Autopilot settings");
     const clock = (id: string) => AUTOPILOT_PLAYBOOKS.find((p) => p.id === id)?.clock;
-    const bad = parsed.data.strategies.find((s) => !AUTOPILOT_PLAYBOOKS.some((p) => p.id === s.playbookId) || (s.exit === "own" && !clock(s.playbookId)));
+    // a saved strategy counts while this trader may use it; one they may not is dropped, not refused (as the API does)
+    const isSaved = (id: string) => id.startsWith("sv_");
+    const usable = (id: string) => state.savedStrategies.some((x) => x.id === id && savedUsable(acc, x));
+    const kept = parsed.data.strategies.filter((s) => !isSaved(s.playbookId) || usable(s.playbookId));
+    const bad = kept.find((s) => !isSaved(s.playbookId) && (!AUTOPILOT_PLAYBOOKS.some((p) => p.id === s.playbookId) || (s.exit === "own" && !clock(s.playbookId))));
     if (bad) return err(c, 400, "BAD_REQUEST", `${bad.playbookId} is not a playbook Autopilot can trade`);
-    // ADR-112: a playbook entered by the clock runs on its own exits, whatever was sent
-    acc.autopilot = { ...acc.autopilot, settings: { ...parsed.data, strategies: parsed.data.strategies.map((s) => (clock(s.playbookId) ? { ...s, exit: "own" as const } : s)) } };
-    return c.json(acc.autopilot);
+    // ADR-112: a playbook entered by the clock runs on its own exits, whatever was sent; a saved one is always such
+    acc.autopilot = { ...acc.autopilot, settings: { ...parsed.data, strategies: kept.map((s) => (isSaved(s.playbookId) || clock(s.playbookId) ? { ...s, exit: "own" as const } : s)) } };
+    return c.json(autopilotViewOf(acc));
   });
   v1.post("/proposals/:id/mark", async (c) => {
     const acc = current(c)!;

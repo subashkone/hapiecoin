@@ -167,13 +167,13 @@ export function AutopilotStrategyDialog({ strategy: opened, onOpenChange }: { st
               </Field>
               <Field label="To (IST)">
                 <select value={form.toHourUtc} disabled={form.anyTime} onChange={(e) => set("toHourUtc", Number(e.target.value))} className={numInput} data-testid="saved-to">
-                  {FROM_HOURS.map((h) => <option key={h + 1} value={h + 1}>{istClock(h + 1)}</option>)}
+                  {FROM_HOURS.map((h) => <option key={h + 1} value={h + 1}>{istClock(h + 1)}{h + 1 === 24 ? " the next morning" : ""}</option>)}
                 </select>
               </Field>
               <div className="flex items-end pb-1"><Check label="Any time of day" checked={form.anyTime} onChange={(on) => set("anyTime", on)} testId="saved-anytime" /></div>
             </div>
             {form.cadence === "weekly" ? (
-              <Field label={form.anyTime ? "Day (from 05:30 IST to 05:30 the next morning)" : "Day (IST)"} className="sm:w-1/2">
+              <Field label={form.anyTime ? "Day (from 5:30 AM IST to 5:30 the next morning)" : "Day (IST)"} className="sm:w-1/2">
                 <select value={form.weekday} onChange={(e) => set("weekday", Number(e.target.value))} className={input} data-testid="saved-weekday">
                   {WEEKDAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}
                 </select>
@@ -181,7 +181,7 @@ export function AutopilotStrategyDialog({ strategy: opened, onOpenChange }: { st
             ) : null}
             {form.cadence === "daily" ? (
               <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Days">
-                <span className="micro">{form.anyTime ? "Days (each from 05:30 IST to 05:30 the next morning)" : "Days (IST)"}, none ticked: every day</span>
+                <span className="micro">{form.anyTime ? "Days (each from 5:30 AM IST to 5:30 the next morning)" : "Days (IST)"}, none ticked: every day</span>
                 {WEEKDAYS.map((d, i) => <Check key={d} label={d.slice(0, 3)} checked={form.weekdays.includes(i)} onChange={(on) => set("weekdays", toggle(form.weekdays, i, on))} testId={`saved-day-${i}`} />)}
               </div>
             ) : null}

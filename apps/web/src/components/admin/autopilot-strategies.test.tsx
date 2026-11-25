@@ -60,7 +60,7 @@ describe("HC-TR-277 the list of saved strategies", () => {
     const paper = rowOf("Paper strangle");
     expect(within(paper).getByTestId("saved-stage").textContent).toBe("On paper");
     expect(within(paper).getByTestId("saved-version").textContent).toBe("· v2");
-    expect(paper.textContent).toContain("every day, 21:30 to 22:30 IST, on the next expiry");
+    expect(paper.textContent).toContain("every day, 9:30 to 10:30 PM IST, on the next expiry");
     expect(paper.textContent).toContain("BTC · 100 lots");
     expect(paper.textContent).toContain("Loss not limited · has traded");
     expect(within(paper).getByTestId("saved-backtest").textContent).toContain("−$3 a day");
@@ -157,7 +157,7 @@ describe("HC-TR-278 the editor", () => {
     await u.click(screen.getByTestId("saved-save"));
     expect(error()).toBe("Describe the strategy in a sentence.");
     type("saved-summary", "Sell a call and a put 2 % away each evening.");
-    expect(screen.getByTestId("saved-reads").textContent).toContain("Enters every day, 21:30 to 22:30 IST, on the next expiry.");
+    expect(screen.getByTestId("saved-reads").textContent).toContain("Enters every day, 9:30 to 10:30 PM IST, on the next expiry.");
     // settings that cannot be: said where the entry is read back, and on save
     type("saved-lots", "");
     expect(screen.getByTestId("saved-reads").textContent).toContain("Lots:");
@@ -217,7 +217,7 @@ describe("HC-TR-278 the editor", () => {
     await u.click(screen.getByTestId("saved-asset-ETH"));
     await u.selectOptions(screen.getByTestId("saved-cadence"), "weekly");
     await u.selectOptions(screen.getByTestId("saved-weekday"), "5");
-    await u.selectOptions(screen.getByTestId("saved-from"), "19"); // 00:30 IST on Friday is 19:00 UTC on Thursday: kept as Thursday, read back as Friday
+    await u.selectOptions(screen.getByTestId("saved-from"), "19"); // 12:30 AM IST on Friday is 19:00 UTC on Thursday: kept as Thursday, read back as Friday
     await u.selectOptions(screen.getByTestId("saved-to"), "20");
     type("saved-min-dte", "6.5");
     type("saved-max-dte", "7.5");
@@ -253,7 +253,7 @@ describe("HC-TR-278 the editor", () => {
     type("saved-lock-floor", "20");
     await u.selectOptions(screen.getByTestId("saved-exit-hour"), "10");
     await u.selectOptions(screen.getByTestId("saved-bt-per"), "week");
-    expect(screen.getByTestId("saved-reads").textContent).toContain("Enters each Friday, 00:30 to 01:30 IST, on the weekly expiry, when the price is above its 20-day average and volatility is in its set range.");
+    expect(screen.getByTestId("saved-reads").textContent).toContain("Enters each Friday, 12:30 to 1:30 AM IST, on the weekly expiry, when the price is above its 20-day average and volatility is in its set range.");
     await u.click(screen.getByTestId("saved-save"));
     await waitFor(() => expect(screen.queryByTestId("saved-dialog")).toBeNull());
     const d = mock.state.savedStrategies[0]!.definition;
@@ -277,7 +277,7 @@ describe("HC-TR-278 the editor", () => {
     await u.click(screen.getByTestId("saved-day-3"));
     await u.click(screen.getByTestId("saved-day-3"));
     await u.click(screen.getByTestId("saved-anytime"));
-    expect(screen.getByText(/Days \(each from 05:30 IST to 05:30 the next morning\)/)).toBeTruthy();
+    expect(screen.getByText(/Days \(each from 5:30 AM IST to 5:30 the next morning\)/)).toBeTruthy();
     await u.click(screen.getByTestId("saved-save"));
     expect(screen.getByTestId("saved-error").textContent).toContain("any time of day enters once per expiry");
     await u.click(screen.getByTestId("saved-once"));

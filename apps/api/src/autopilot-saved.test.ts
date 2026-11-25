@@ -82,7 +82,7 @@ describe("HC-TR-270 an admin saves, edits and copies a strategy", () => {
     expect(made.status).toBe(201);
     const s = await json<SavedStrategy>(made);
     expect(isSavedId(s.id)).toBe(true);
-    expect(s).toMatchObject({ familyId: s.id, version: 1, name: "Evening strangle 1 %", stage: "draft", audience: "admins", userIds: [], planIds: [], backtest: null, backtestAt: null, traded: false, lossCapped: false, entryText: "every day, 21:30 to 22:30 IST, on the next expiry", publishedAt: null, retiredAt: null });
+    expect(s).toMatchObject({ familyId: s.id, version: 1, name: "Evening strangle 1 %", stage: "draft", audience: "admins", userIds: [], planIds: [], backtest: null, backtestAt: null, traded: false, lossCapped: false, entryText: "every day, 9:30 to 10:30 PM IST, on the next expiry", publishedAt: null, retiredAt: null });
     expect(s.definition).toEqual(DAILY);
     expect(s.createdBy).toBe(await idOf(admin));
     expect((await post(BASE, { name: "x", summary: "x", definition: { ...DAILY, legs: [{ kind: "call", side: "buy", by: "pct", value: 2 }] } })).status).toBe(400);
@@ -178,7 +178,7 @@ describe("HC-TR-276 a saved strategy as the playbook the engine runs", () => {
     const clock = savedPlaybook(row(DAILY));
     expect(clock).toMatchObject({ id: "sv_x", name: "X", summary: "Sums it up.", minDte: 0.5, lots: 100, assets: ["BTC"], control: false, conditions: undefined, evidence: { claim: "No backtest entered.", source: "none" } });
     expect(clock.template).toMatchObject({ name: "X", category: "Neutral", risk: "undefined", legs: [{ kind: "put", side: "sell", k: 0, pct: -1 }, { kind: "call", side: "sell", k: 0, pct: 1 }] });
-    expect(clock.clock).toMatchObject({ fromHourUtc: 16, toHourUtc: 17, weekdayUtc: undefined, cadence: undefined, oncePerExpiry: undefined, window: "21:30 to 22:30 IST", describe: "every day, 21:30 to 22:30 IST, on the next expiry", maxDte: 1.5, venues: ["delta_india"], legStop: 2, takeProfitOfCredit: 0.5, legBuyBackAt: 5 });
+    expect(clock.clock).toMatchObject({ fromHourUtc: 16, toHourUtc: 17, weekdayUtc: undefined, cadence: undefined, oncePerExpiry: undefined, window: "9:30 to 10:30 PM IST", describe: "every day, 9:30 to 10:30 PM IST, on the next expiry", maxDte: 1.5, venues: ["delta_india"], legStop: 2, takeProfitOfCredit: 0.5, legBuyBackAt: 5 });
 
     const trend = savedPlaybook(
       row(
@@ -200,8 +200,8 @@ describe("HC-TR-276 a saved strategy as the playbook the engine runs", () => {
     );
     expect(trend.conditions).toEqual({ sma: { days: 50, side: "above" }, ivRank: { min: 60, lookbackDays: 90 }, weekdays: undefined });
     expect(trend.template).toMatchObject({ risk: "defined", legs: [{ kind: "put", side: "buy", k: -8 }, { kind: "put", side: "sell", k: -3 }, { kind: "call", side: "sell", k: 0, premium: 250 }, { kind: "call", side: "buy", k: 8 }] });
-    expect(trend.clock).toMatchObject({ fromHourUtc: 0, toHourUtc: 24, cadence: "monthly", oncePerExpiry: true, window: "any time from 05:30 IST to 05:30 the next morning", moveSide: { hours: 24, pct: 2 }, ladder: [25, 50], lock: { at: 0.5, floor: 0.2 }, exitHourUtc: 10, trailRestPct: 50, legBuyBackShare: 0.2, takeProfitOfCredit: 0.9, takeTrailPct: 5 });
-    expect(trend.evidence).toEqual({ claim: "12.4 a day on 106 trades, 71 % positive, worst -180.", source: FIGURES.basis });
+    expect(trend.clock).toMatchObject({ fromHourUtc: 0, toHourUtc: 24, cadence: "monthly", oncePerExpiry: true, window: "any time from 5:30 AM IST to 5:30 the next morning", moveSide: { hours: 24, pct: 2 }, ladder: [25, 50], lock: { at: 0.5, floor: 0.2 }, exitHourUtc: 10, trailRestPct: 50, legBuyBackShare: 0.2, takeProfitOfCredit: 0.9, takeTrailPct: 5 });
+    expect(trend.evidence).toEqual({ claim: "$12.4 a day on 106 trades, 71 % of them positive, worst -$180 (USD, figures entered by hand).", source: FIGURES.basis });
     // chosen weekdays alone are a condition too; a weekly strategy has its one day on the clock
     expect(savedPlaybook(row({ ...DAILY, weekdays: [1, 3] })).conditions).toEqual({ sma: undefined, ivRank: undefined, weekdays: [1, 3] });
     expect(savedPlaybook(row({ ...DAILY, conditions: { ivRank: { max: 40, lookbackDays: 90 } } })).conditions).toMatchObject({ ivRank: { max: 40, lookbackDays: 90 } });
@@ -274,6 +274,16 @@ describe("HC-TR-275 the engine trades the published strategies beside the built-
     expect(await tradesOf(free.id)).toEqual([]);
     expect(await lastLine(free.id)).toMatchObject({ kind: "skipped", playbookId: saved.id, reason: "This strategy is not available to you" });
     expect((await list()).find((x) => x.id === saved.id)!.traded).toBe(true);
+    // HC-TR-279: the trader's view carries the strategy they may use, whole; a trader it is not for gets nothing of
+    // it, not even when their settings and their log hold its id; a trader with none gets no list
+    const mineNow = await json<AutopilotView>(await t.request("/v1/autopilot", { cookie: elite.cookie }));
+    expect(mineNow.saved).toEqual([{ id: saved.id, version: 1, name: "Evening strangle 1 %", summary: "Sell both sides each evening.", definition: DAILY, backtest: FIGURES, usable: true }]);
+    const notMine = await json<AutopilotView>(await t.request("/v1/autopilot", { cookie: free.cookie }));
+    expect(notMine.settings.strategies).toEqual([{ playbookId: saved.id, exit: "own" }]);
+    expect(notMine.runs.some((r) => r.playbookId === saved.id)).toBe(true);
+    expect("saved" in notMine).toBe(false);
+    const stranger = await t.signUp("saved-stranger@hapiecoin.test", { plan: "free" });
+    expect("saved" in (await json<AutopilotView>(await t.request("/v1/autopilot", { cookie: stranger.cookie })))).toBe(false);
     // paper only: a trade a saved strategy opened is refused by Go live, alone and in a batch
     const single = await t.request(`/v1/strategies/${trade.id}/live/place`, { cookie: elite.cookie, json: { confirm: "LIVE", brokerId: SEED.brokerId, idempotencyKey: "saved-live-001", expected: {} } });
     expect(single.status).toBe(409);
@@ -373,9 +383,14 @@ describe("HC-TR-275 the engine trades the published strategies beside the built-
     const rulesBefore = await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, trade.id)).orderBy(asc(strategyRules.id));
 
     expect((await json<SavedStrategy>(await post(`${BASE}/${v3.id}/publish`))).stage).toBe("paper");
-    // the traders who had the old version switched on have the new one, once; their other strategies are as they were
+    // the traders who had the old version switched on and may use the new one have it, once; their other strategies
+    // are as they were. A trader the new version is not for keeps the old id: the new one is not written into their
+    // settings, and nothing of it reaches their view
     const carried = (await json<AutopilotView>(await t.request("/v1/autopilot", { cookie: elite.cookie }))).settings.strategies;
     expect(carried).toEqual([{ playbookId: BUILT_IN, exit: "own" }, { playbookId: v3.id, exit: "own" }]);
+    const left = await json<AutopilotView>(await t.request("/v1/autopilot", { cookie: free.cookie }));
+    expect(left.settings.strategies).toEqual([{ playbookId: saved.id, exit: "own" }]);
+    expect("saved" in left).toBe(false);
     const old = (await list()).find((x) => x.id === saved.id)!;
     expect(old.stage).toBe("retired");
     expect(old.retiredAt).not.toBeNull();
@@ -388,6 +403,9 @@ describe("HC-TR-275 the engine trades the published strategies beside the built-
     expect(kept.status).toBe(409);
     expect(await why(kept)).toBe(SAVED_REFUSALS.traded);
     expect((await savedCatalogue(t.db, new Date(W))).playbooks.map((p) => p.id)).toEqual([v3.id]);
+    // HC-TR-279: the retired version stays in the view of the trader who traded it, by name and without the switch
+    const cards = (await json<AutopilotView>(await t.request("/v1/autopilot", { cookie: elite.cookie }))).saved!;
+    expect(cards.map((c) => [c.id, c.version, c.usable])).toEqual([[saved.id, 1, false], [v3.id, 3, true]]);
     expect((await json<AutopilotView>(await put({ enabled: true, strategies: [{ playbookId: saved.id, exit: "own" }, { playbookId: v3.id, exit: "own" }] }, elite.cookie))).settings.strategies).toEqual([{ playbookId: v3.id, exit: "own" }]);
 
     // retire and delete

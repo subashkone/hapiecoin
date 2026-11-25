@@ -9109,6 +9109,21 @@
   "evidence": "ADR-141, ADR-142 (25 Nov 2026): apps/web/src/components/admin/AutopilotStrategyDialog.tsx, apps/web/src/lib/strategy/saved-form.ts (savedDefinitionOf, savedFormOf, utcWeekday, istWeekday); tests: apps/web/src/lib/strategy/saved-form.test.ts HC-TR-278, apps/web/src/components/admin/autopilot-strategies.test.tsx HC-TR-278; packages/schema/src/autopilot-saved.ts (savedIstWeekday, savedEntryText in India days)"
  },
  {
+  "id": "HC-TR-279",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/autopilot",
+  "screen": "Trading · Autopilot",
+  "feature": "Saved strategies on the trader's Autopilot screen",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web), integration (api), unit (schema)",
+  "acceptance": "the Autopilot view carries the saved strategies this trader may use (published, and theirs by plan, by name or as an admin) and those they can no longer use but have traded; one that only sits in their settings or log and is not theirs is never sent; the screen lists the usable ones after the built-in ones in the family of their cadence, with the same row: when it enters in India time, what it does, how it gets out, its own exits, its backtest figures marked as entered by hand, the paper result and what it is doing now; its switch saves it with its own exits; one that is no longer usable is not offered and keeps its name in the open trades, the log and the results; with none, the screen is the built-in list as before; a sold structure with no stop and no bought options is said to have a loss that is not limited; a strategy in the settings that is no longer offered is not counted as on and is said to have stopped",
+  "evidence": "ADR-141, ADR-142 (25 Nov 2026): packages/schema/src/autopilot-saved.ts (SavedCard, savedPlaybookOf: one conversion for the engine and the screens), packages/schema/src/autopilot.ts (AutopilotView.saved), apps/api/src/autopilot-saved.ts (savedCardsFor), apps/api/src/autopilot.ts (autopilotView), apps/web/src/lib/strategy/autopilot-catalogue.ts (catalogueOf), apps/web/src/components/autopilot/AutopilotPage.tsx, AutopilotResultsPanel.tsx (nameOf); tests: apps/web/src/components/autopilot/autopilot-saved.test.tsx HC-TR-279, apps/web/src/lib/strategy/autopilot-catalogue.test.ts HC-TR-279, apps/api/src/autopilot-saved.test.ts HC-TR-279, packages/schema/src/autopilot-saved.test.ts HC-TR-279; autopilot-page.test.tsx unchanged"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

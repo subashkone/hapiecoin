@@ -9,11 +9,11 @@
  * the log of the old one stay its own, and an open trade keeps the exits it was entered with (they are copied onto the
  * trade at entry, autopilot.ts).
  */
-import type { Playbook, TemplateOptionLeg } from "@hapiecoin/pricing";
-import { type AutopilotStrategy, SAVED_REFUSALS, SavedDefinition, type SavedLeg, type SavedStrategy, type SavedStrategyCreate, type SavedStrategyPatch, savedEntryText, savedLossCapped, savedWindowText } from "@hapiecoin/schema";
+import type { Playbook } from "@hapiecoin/pricing";
+import { type AutopilotStrategy, SAVED_REFUSALS, type SavedCard, SavedDefinition, type SavedStrategy, type SavedStrategyCreate, type SavedStrategyPatch, savedEntryText, savedLossCapped, savedPlaybookOf } from "@hapiecoin/schema";
 import { and, desc, eq, inArray, max, ne, notExists, sql } from "drizzle-orm";
 import type { Db } from "./db/client.js";
-import { autopilotSavedStrategies, autopilotSettings, plans, strategies, users } from "./db/schema.js";
+import { autopilotSavedStrategies, autopilotSettings, plans, strategies, subscriptions, users } from "./db/schema.js";
 import { activeSubscription } from "./entitlements.js";
 import { newId } from "./routes/shared.js";
 
@@ -26,45 +26,9 @@ export const isSavedId = (id: string): boolean => id.startsWith(SAVED_ID_PREFIX)
 /** JSON with its keys in order: Postgres stores jsonb with its own key order, so settings are compared by this. */
 const stable = (v: unknown): string => JSON.stringify(v, (_k, x: unknown) => (x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => a.localeCompare(b))) : x));
 
-const templateLeg = (l: SavedLeg): TemplateOptionLeg => {
-  // out of the money: a call above the spot, a put below it
-  const away = l.kind === "call" ? l.value : -l.value;
-  return { kind: l.kind, side: l.side, ...(l.by === "strikes" ? { k: away } : l.by === "pct" ? { k: 0, pct: away } : { k: 0, premium: l.value }) };
-};
-
-/** A saved strategy as the playbook the engine runs: always entered by the clock, with its own exits. */
+/** A saved strategy as the playbook the engine runs: always entered by the clock, with its own exits (one conversion, shared with the screens). */
 export function savedPlaybook(row: Pick<Row, "id" | "name" | "summary" | "definition" | "backtest">): Playbook {
-  const d = row.definition;
-  const conditions = d.conditions?.sma || d.conditions?.ivRank || d.weekdays ? { sma: d.conditions?.sma, ivRank: d.conditions?.ivRank, weekdays: d.weekdays } : undefined;
-  return {
-    id: row.id,
-    name: row.name,
-    summary: row.summary,
-    rationale: row.summary,
-    evidence: row.backtest ? { claim: `${row.backtest.mean} a ${row.backtest.per} on ${row.backtest.samples} trades, ${row.backtest.positivePct} % positive, worst ${row.backtest.worst}.`, source: row.backtest.basis } : { claim: "No backtest entered.", source: "none" },
-    template: { name: row.name, category: "Neutral", description: row.summary, legs: d.legs.map(templateLeg), risk: savedLossCapped(d.legs) ? "defined" : "undefined" },
-    conditions,
-    minDte: d.minDte,
-    lots: d.lots,
-    assets: d.assets,
-    // never judged by the daily record: Autopilot's own results are its record
-    thresholds: { minTrades: Number.MAX_SAFE_INTEGER, netPositive: true, outOfSamplePositive: true },
-    trials: { count: 1, note: "Saved in the strategy builder; its backtest figures are entered by hand" },
-    control: false,
-    clock: {
-      fromHourUtc: d.fromHourUtc,
-      toHourUtc: d.toHourUtc,
-      weekdayUtc: d.weekdayUtc,
-      cadence: d.cadence === "monthly" ? "monthly" : undefined,
-      oncePerExpiry: d.oncePerExpiry || undefined,
-      window: savedWindowText(d),
-      describe: savedEntryText(d),
-      maxDte: d.maxDte,
-      venues: d.venues,
-      moveSide: d.moveSide,
-      ...d.exits,
-    },
-  };
+  return savedPlaybookOf(row);
 }
 
 /** No trade was ever opened from the row: part of the write itself, so an entry a moment earlier is not missed between a read and the write. */
@@ -206,13 +170,24 @@ export async function updateSaved(db: Db, id: string, patch: SavedStrategyPatch,
   return { ok: true, strategy: toSaved(saved!, (await tradedIds(db, [id])).has(id)), newVersion: false };
 }
 
-/** In a trader's settings, the id of a version that was just retired becomes the id of the version published in its place. */
-async function carrySwitches(tx: Pick<Db, "select" | "update">, from: readonly string[], to: string, at: Date): Promise<void> {
+/**
+ * In a trader's settings, the id of a version that was just retired becomes the id of the version published in its
+ * place, for the traders who may use the new one. A trader it is not for keeps the retired id, which their next save
+ * lets go of: the new version is never written into the settings of somebody it was not published for.
+ */
+async function carrySwitches(tx: Pick<Db, "select" | "update">, from: readonly string[], to: Pick<Row, "id" | "audience" | "userIds" | "planIds">, at: Date): Promise<void> {
   for (const old of from) {
-    const holders = await tx.select().from(autopilotSettings).where(sql`${autopilotSettings.strategies} @> ${JSON.stringify([{ playbookId: old }])}::jsonb`);
+    const holders = await tx.select({ userId: autopilotSettings.userId, strategies: autopilotSettings.strategies, role: users.role }).from(autopilotSettings).innerJoin(users, eq(users.id, autopilotSettings.userId)).where(sql`${autopilotSettings.strategies} @> ${JSON.stringify([{ playbookId: old }])}::jsonb`);
     for (const h of holders) {
-      const kept: AutopilotStrategy[] = h.strategies.filter((x) => x.playbookId !== old && x.playbookId !== to);
-      await tx.update(autopilotSettings).set({ strategies: [...kept, { playbookId: to, exit: "own" }], updatedAt: at }).where(eq(autopilotSettings.userId, h.userId));
+      let planId: string | null = null;
+      if (h.role !== "admin" && to.audience === "plans") {
+        // the subscription that is running now, as entitlements.activeSubscription reads it
+        const [sub] = await tx.select({ planId: subscriptions.planId, expiresAt: subscriptions.expiresAt }).from(subscriptions).where(and(eq(subscriptions.userId, h.userId), eq(subscriptions.status, "active"))).orderBy(desc(subscriptions.startsAt)).limit(1);
+        planId = sub && (sub.expiresAt === null || sub.expiresAt.getTime() > at.getTime()) ? sub.planId : null;
+      }
+      if (!mayUseSaved(to, { userId: h.userId, role: h.role }, planId)) continue;
+      const kept: AutopilotStrategy[] = h.strategies.filter((x) => x.playbookId !== old && x.playbookId !== to.id);
+      await tx.update(autopilotSettings).set({ strategies: [...kept, { playbookId: to.id, exit: "own" }], updatedAt: at }).where(eq(autopilotSettings.userId, h.userId));
     }
   }
 }
@@ -233,7 +208,7 @@ export async function publishSaved(db: Db, id: string, at: Date): Promise<SavedR
       // the stage is part of the write: a publish or a delete that got there first leaves nothing to publish
       const [next] = await tx.update(autopilotSavedStrategies).set({ stage: "paper", publishedAt: at, updatedAt: at }).where(and(eq(autopilotSavedStrategies.id, id), inArray(autopilotSavedStrategies.stage, ["draft", "backtested"]))).returning();
       if (!next) throw new Error(PAPER_UQ);
-      await carrySwitches(tx, retired.map((r) => r.id), id, at);
+      await carrySwitches(tx, retired.map((r) => r.id), next, at);
       return next;
     });
     return { ok: true, strategy: toSaved(saved, false), newVersion: false };
@@ -317,4 +292,20 @@ export async function usableSavedIds(db: Db, userId: string, at: Date): Promise<
   const usable = new Set<string>();
   for (const p of catalogue.playbooks) if (await catalogue.mayUse(p.id, { userId, role: user?.role ?? "user" })) usable.add(p.id);
   return usable;
+}
+
+/**
+ * The saved strategies a trader's Autopilot screen is given (HC-TR-279): the published ones they may switch on, and
+ * the ones they can no longer switch on but have traded, so that those trades keep their name and their exits read
+ * as they were. Nothing else: a draft, a strategy for somebody else, and a version that only sits in their settings
+ * are not theirs to see. A trader with no saved strategy anywhere costs one read.
+ */
+export async function savedCardsFor(db: Db, userId: string, at: Date): Promise<SavedCard[]> {
+  const rows = await db.select().from(autopilotSavedStrategies).where(inArray(autopilotSavedStrategies.stage, ["paper", "retired"])).orderBy(autopilotSavedStrategies.createdAt, autopilotSavedStrategies.id);
+  if (rows.length === 0) return [];
+  const usable = await usableSavedIds(db, userId, at);
+  const others = rows.filter((r) => !usable.has(r.id)).map((r) => r.id);
+  const traded = others.length === 0 ? [] : await db.selectDistinct({ id: strategies.autopilotPlaybookId }).from(strategies).where(and(eq(strategies.userId, userId), inArray(strategies.autopilotPlaybookId, others)));
+  const mine = new Set([...usable, ...traded.map((r) => r.id!)]);
+  return rows.filter((r) => mine.has(r.id) && SavedDefinition.safeParse(r.definition).success).map((r) => ({ id: r.id, version: r.version, name: r.name, summary: r.summary, definition: r.definition, backtest: r.backtest, usable: usable.has(r.id) }));
 }

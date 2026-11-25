@@ -1,6 +1,7 @@
 // Saved Autopilot strategies (ADR-141, ADR-142): the settings an admin may save, and how they read.
 import { describe, expect, it } from "vitest";
-import { SavedBacktest, SavedDefinition, SavedLeg, SavedStrategyCreate, SavedStrategyPatch, savedEntryText, savedIstWeekday, savedLossCapped, savedWindowText } from "./autopilot-saved.js";
+import { SavedBacktest, SavedCard, SavedDefinition, SavedLeg, SavedStrategyCreate, SavedStrategyPatch, savedEntryText, savedIstClock, savedIstWeekday, savedLossCapped, savedPlaybookOf, savedWindowText } from "./autopilot-saved.js";
+import { AutopilotView } from "./autopilot.js";
 
 const sellPut = { kind: "put", side: "sell", by: "pct", value: 2 } as const;
 const sellCall = { kind: "call", side: "sell", by: "pct", value: 2 } as const;
@@ -91,19 +92,23 @@ describe("HC-TR-269 the settings of a saved strategy", () => {
 
   it("HC-TR-269 writes the entry as a trader in India reads it", () => {
     const d = SavedDefinition.parse(daily);
-    expect(savedWindowText(d)).toBe("21:30 to 22:30 IST");
-    expect(savedWindowText({ fromHourUtc: 0, toHourUtc: 24 })).toBe("any time from 05:30 IST to 05:30 the next morning");
-    expect(savedWindowText({ fromHourUtc: 20, toHourUtc: 22 })).toBe("01:30 to 03:30 IST");
-    expect(savedEntryText(d)).toBe("every day, 21:30 to 22:30 IST, on the next expiry");
-    expect(savedEntryText(SavedDefinition.parse({ ...daily, weekdays: [5, 1] }))).toBe("on Monday, Friday, 21:30 to 22:30 IST, on the next expiry");
-    expect(savedEntryText(SavedDefinition.parse({ ...daily, cadence: "weekly", weekdayUtc: 5 }))).toBe("each Friday, 21:30 to 22:30 IST, on the weekly expiry");
-    expect(savedEntryText(SavedDefinition.parse({ ...daily, cadence: "monthly", oncePerExpiry: true, minDte: 20, maxDte: 35 }))).toBe("once per month-end expiry, 21:30 to 22:30 IST, on the month-end expiry");
-    expect(savedEntryText(SavedDefinition.parse({ ...daily, fromHourUtc: 0, toHourUtc: 24, oncePerExpiry: true, conditions: { sma: { days: 50, side: "above" }, ivRank: { min: 60, lookbackDays: 90 } } }))).toBe("every day, any time from 05:30 IST to 05:30 the next morning, on the next expiry, when the price is above its 50-day average and volatility is in its set range");
-    expect(savedEntryText(SavedDefinition.parse({ ...daily, conditions: { ivRank: { max: 40, lookbackDays: 90 } } }))).toBe("every day, 21:30 to 22:30 IST, on the next expiry, when volatility is in its set range");
+    expect(savedWindowText(d)).toBe("9:30 to 10:30 PM IST");
+    expect(savedWindowText({ fromHourUtc: 0, toHourUtc: 24 })).toBe("any time from 5:30 AM IST to 5:30 the next morning");
+    expect(savedWindowText({ fromHourUtc: 20, toHourUtc: 22 })).toBe("1:30 to 3:30 AM IST");
+    // the half of the day is said once when both ends share it, as the built-in strategies write it
+    expect(savedWindowText({ fromHourUtc: 18, toHourUtc: 19 })).toBe("11:30 PM to 12:30 AM IST");
+    expect(savedWindowText({ fromHourUtc: 6, toHourUtc: 8 })).toBe("11:30 AM to 1:30 PM IST");
+    expect([savedIstClock(16), savedIstClock(24), savedIstClock(7)]).toEqual([{ time: "9:30", half: "PM" }, { time: "5:30", half: "AM" }, { time: "12:30", half: "PM" }]);
+    expect(savedEntryText(d)).toBe("every day, 9:30 to 10:30 PM IST, on the next expiry");
+    expect(savedEntryText(SavedDefinition.parse({ ...daily, weekdays: [5, 1] }))).toBe("on Monday, Friday, 9:30 to 10:30 PM IST, on the next expiry");
+    expect(savedEntryText(SavedDefinition.parse({ ...daily, cadence: "weekly", weekdayUtc: 5 }))).toBe("each Friday, 9:30 to 10:30 PM IST, on the weekly expiry");
+    expect(savedEntryText(SavedDefinition.parse({ ...daily, cadence: "monthly", oncePerExpiry: true, minDte: 20, maxDte: 35 }))).toBe("once per month-end expiry, 9:30 to 10:30 PM IST, on the month-end expiry");
+    expect(savedEntryText(SavedDefinition.parse({ ...daily, fromHourUtc: 0, toHourUtc: 24, oncePerExpiry: true, conditions: { sma: { days: 50, side: "above" }, ivRank: { min: 60, lookbackDays: 90 } } }))).toBe("every day, any time from 5:30 AM IST to 5:30 the next morning, on the next expiry, when the price is above its 50-day average and volatility is in its set range");
+    expect(savedEntryText(SavedDefinition.parse({ ...daily, conditions: { ivRank: { max: 40, lookbackDays: 90 } } }))).toBe("every day, 9:30 to 10:30 PM IST, on the next expiry, when volatility is in its set range");
     // the days are India's, like the times: a window from 19:00 UTC opens on the next India day
     expect([savedIstWeekday(5, 16), savedIstWeekday(5, 18), savedIstWeekday(4, 19), savedIstWeekday(6, 23), savedIstWeekday(5, 0)]).toEqual([5, 5, 5, 0, 5]);
-    expect(savedEntryText(SavedDefinition.parse({ ...daily, cadence: "weekly", weekdayUtc: 4, fromHourUtc: 19, toHourUtc: 20 }))).toBe("each Friday, 00:30 to 01:30 IST, on the weekly expiry");
-    expect(savedEntryText(SavedDefinition.parse({ ...daily, weekdays: [0, 6], fromHourUtc: 20, toHourUtc: 22 }))).toBe("on Sunday, Monday, 01:30 to 03:30 IST, on the next expiry");
+    expect(savedEntryText(SavedDefinition.parse({ ...daily, cadence: "weekly", weekdayUtc: 4, fromHourUtc: 19, toHourUtc: 20 }))).toBe("each Friday, 12:30 to 1:30 AM IST, on the weekly expiry");
+    expect(savedEntryText(SavedDefinition.parse({ ...daily, weekdays: [0, 6], fromHourUtc: 20, toHourUtc: 22 }))).toBe("on Sunday, Monday, 1:30 to 3:30 AM IST, on the next expiry");
   });
 });
 
@@ -123,5 +128,43 @@ describe("HC-TR-270 / HC-TR-271 what an admin sends", () => {
     expect(SavedBacktest.safeParse({ mean: 12.4, per: "day", positivePct: 71, worst: -180, samples: 106, basis: " " }).success).toBe(false);
     expect(SavedBacktest.safeParse({ mean: 12.4, per: "day", positivePct: 101, worst: -180, samples: 106, basis: "x" }).success).toBe(false);
     expect(SavedBacktest.safeParse({ mean: 12.4, per: "day", positivePct: 71, worst: -180, samples: 0, basis: "x" }).success).toBe(false);
+  });
+});
+
+describe("HC-TR-276 HC-TR-279 a saved strategy as a playbook, and as a trader's card", () => {
+  const figures = { mean: 12.4, per: "day", positivePct: 71, worst: -180, samples: 106, basis: "autopilot-study, real fees" } as const;
+  it("HC-TR-276 by the clock: its legs out of the money, its exits on the clock, no conditions, and what its evidence says without figures", () => {
+    const p = savedPlaybookOf({ id: "sv_x", name: "X", summary: "Sums it up.", definition: SavedDefinition.parse({ ...daily, exits: { legStop: 2, takeProfitOfCredit: 0.5 } }), backtest: null });
+    expect(p).toMatchObject({ id: "sv_x", name: "X", summary: "Sums it up.", rationale: "Sums it up.", minDte: 0.5, lots: 100, assets: ["BTC"], control: false, conditions: undefined, evidence: { claim: "No backtest entered.", source: "none" } });
+    expect(p.template).toEqual({ name: "X", category: "Neutral", description: "Sums it up.", risk: "undefined", legs: [{ kind: "put", side: "sell", k: 0, pct: -2 }, { kind: "call", side: "sell", k: 0, pct: 2 }] });
+    expect(p.clock).toMatchObject({ fromHourUtc: 16, toHourUtc: 17, weekdayUtc: undefined, cadence: undefined, oncePerExpiry: undefined, window: "9:30 to 10:30 PM IST", describe: "every day, 9:30 to 10:30 PM IST, on the next expiry", maxDte: 1.5, venues: ["delta_india"], legStop: 2, takeProfitOfCredit: 0.5 });
+    expect(p.thresholds.minTrades).toBe(Number.MAX_SAFE_INTEGER);
+  });
+
+  it("HC-TR-276 on market conditions, monthly, with wings by strikes and a call by premium, its figures as its evidence", () => {
+    const definition = SavedDefinition.parse({
+      ...daily, cadence: "monthly", oncePerExpiry: true, fromHourUtc: 0, toHourUtc: 24, minDte: 20, maxDte: 35, conditions: { sma: { days: 50, side: "above" }, ivRank: { min: 60, lookbackDays: 90 } }, moveSide: { hours: 24, pct: 2 },
+      legs: [{ kind: "put", side: "buy", by: "strikes", value: 8 }, { kind: "put", side: "sell", by: "strikes", value: 3 }, { kind: "call", side: "sell", by: "premium", value: 250 }, { kind: "call", side: "buy", by: "strikes", value: 8 }],
+      exits: { ladder: [25, 50], lock: { at: 0.5, floor: 0.2 }, exitHourUtc: 10, legStop: 2, trailRestPct: 50, legBuyBackShare: 0.2 },
+    });
+    const p = savedPlaybookOf({ id: "sv_y", name: "Y", summary: "s", definition, backtest: figures });
+    expect(p.conditions).toEqual({ sma: { days: 50, side: "above" }, ivRank: { min: 60, lookbackDays: 90 }, weekdays: undefined });
+    expect(p.template).toMatchObject({ risk: "defined", legs: [{ kind: "put", side: "buy", k: -8 }, { kind: "put", side: "sell", k: -3 }, { kind: "call", side: "sell", k: 0, premium: 250 }, { kind: "call", side: "buy", k: 8 }] });
+    expect(p.clock).toMatchObject({ cadence: "monthly", oncePerExpiry: true, moveSide: { hours: 24, pct: 2 }, ladder: [25, 50], lock: { at: 0.5, floor: 0.2 }, exitHourUtc: 10, trailRestPct: 50, legBuyBackShare: 0.2 });
+    expect(p.evidence).toEqual({ claim: "$12.4 a day on 106 trades, 71 % of them positive, worst -$180 (USD, figures entered by hand).", source: "autopilot-study, real fees" });
+    // chosen weekdays alone are a condition; a volatility rank alone is one too; a weekly strategy has its day on the clock
+    expect(savedPlaybookOf({ id: "a", name: "A", summary: "s", definition: SavedDefinition.parse({ ...daily, weekdays: [1, 3] }), backtest: null }).conditions).toEqual({ sma: undefined, ivRank: undefined, weekdays: [1, 3] });
+    expect(savedPlaybookOf({ id: "a", name: "A", summary: "s", definition: SavedDefinition.parse({ ...daily, conditions: { ivRank: { max: 40, lookbackDays: 90 } } }), backtest: null }).conditions).toMatchObject({ ivRank: { max: 40, lookbackDays: 90 } });
+    expect(savedPlaybookOf({ id: "a", name: "A", summary: "s", definition: SavedDefinition.parse({ ...daily, cadence: "weekly", weekdayUtc: 5 }), backtest: null }).clock).toMatchObject({ weekdayUtc: 5, cadence: undefined, window: "Fridays, 9:30 to 10:30 PM IST" });
+    // the day in the window is India's too
+    expect(savedPlaybookOf({ id: "a", name: "A", summary: "s", definition: SavedDefinition.parse({ ...daily, cadence: "weekly", weekdayUtc: 4, fromHourUtc: 19, toHourUtc: 20 }), backtest: null }).clock.window).toBe("Fridays, 12:30 to 1:30 AM IST");
+  });
+
+  it("HC-TR-279 the Autopilot view carries the trader's saved strategies, or none at all", () => {
+    const card = { id: "sv_x", version: 2, name: "X", summary: "s", definition: daily, backtest: figures, usable: true };
+    expect(SavedCard.safeParse(card).success).toBe(true);
+    expect(SavedCard.safeParse({ ...card, usable: undefined }).success).toBe(false);
+    expect(AutopilotView.safeParse({ settings: { enabled: false, strategies: [] }, runs: [] }).success).toBe(true);
+    expect(AutopilotView.parse({ settings: { enabled: false, strategies: [] }, runs: [], saved: [card] }).saved).toHaveLength(1);
   });
 });

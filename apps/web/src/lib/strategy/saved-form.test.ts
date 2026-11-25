@@ -20,23 +20,23 @@ const strategy = (f: SavedForm, over: Partial<SavedStrategy> = {}): SavedStrateg
 
 describe("HC-TR-278 India time and the engine's UTC hours", () => {
   it("HC-TR-278 reads a UTC hour as the India clock, and the hours run from 05:30 through the India day", () => {
-    expect(istClock(16)).toBe("21:30");
-    expect(istClock(0)).toBe("05:30");
-    expect(istClock(19)).toBe("00:30");
-    expect(istClock(24)).toBe("05:30");
+    expect(istClock(16)).toBe("9:30 PM");
+    expect(istClock(0)).toBe("5:30 AM");
+    expect(istClock(19)).toBe("12:30 AM");
+    expect(istClock(24)).toBe("5:30 AM");
     expect(FROM_HOURS).toHaveLength(24);
   });
 
-  it("HC-TR-278 an India weekday is the UTC day before it when the window starts at 00:30 IST or later in the night", () => {
+  it("HC-TR-278 an India weekday is the UTC day before it when the window starts at 12:30 AM IST or later in the night", () => {
     // 21:30 IST on Friday is 16:00 UTC on Friday
     expect(utcWeekday(5, 16)).toBe(5);
-    // 00:30 IST on Friday is 19:00 UTC on Thursday
+    // 12:30 AM IST on Friday is 19:00 UTC on Thursday
     expect(utcWeekday(5, 19)).toBe(4);
     expect(utcWeekday(0, 22)).toBe(6);
     expect(istWeekday(4, 19)).toBe(5);
     expect(istWeekday(6, 22)).toBe(0);
     expect(istWeekday(5, 16)).toBe(5);
-    // 23:30 IST is still the same day; any time of day is the UTC day
+    // 11:30 PM IST is still the same day; any time of day is the UTC day
     expect(utcWeekday(5, 18)).toBe(5);
     expect(istWeekday(5, 18)).toBe(5);
     expect(utcWeekday(5, 0)).toBe(5);
@@ -44,7 +44,7 @@ describe("HC-TR-278 India time and the engine's UTC hours", () => {
 });
 
 describe("HC-TR-278 the form as settings", () => {
-  it("HC-TR-278 a new form is the evening strangle: daily, 21:30 to 22:30 IST, 2 % away, nothing else set", () => {
+  it("HC-TR-278 a new form is the evening strangle: daily, 9:30 to 10:30 PM IST, 2 % away, nothing else set", () => {
     expect(defOf(form())).toEqual({ assets: ["BTC"], venues: ["delta_india"], lots: 100, cadence: "daily", fromHourUtc: 16, toHourUtc: 17, oncePerExpiry: false, minDte: 0.5, maxDte: 1.5, legs: [{ kind: "put", side: "sell", by: "pct", value: 2 }, { kind: "call", side: "sell", by: "pct", value: 2 }], exits: {} });
     expect(LEG_PRESETS.wings.legs().map((l) => `${l.side} ${l.kind} ${l.value}`)).toEqual(["buy put 4", "sell put 2", "sell call 2", "buy call 4"]);
     expect(LEG_PRESETS.put.legs()).toHaveLength(1);
@@ -79,7 +79,7 @@ describe("HC-TR-278 the form as settings", () => {
 
   it("HC-TR-278 says the first thing wrong in the admin's words", () => {
     expect(errOf(form())).toBeNull();
-    expect(errOf(form({ fromHourUtc: 22, toHourUtc: 2 }))).toContain("crosses 05:30 IST");
+    expect(errOf(form({ fromHourUtc: 22, toHourUtc: 2 }))).toContain("crosses 5:30 AM IST");
     expect(errOf(form({ fromHourUtc: 10, toHourUtc: 17 }))).toContain("longer than six hours");
     expect(errOf(form({ fromHourUtc: 10, toHourUtc: 17, oncePerExpiry: true }))).toBeNull();
     expect(errOf(form({ anyTime: true }))).toContain("any time of day");

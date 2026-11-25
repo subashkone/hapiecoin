@@ -115,14 +115,20 @@ export function savedLossCapped(legs: readonly SavedLeg[]): boolean {
 }
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
-/** A UTC hour as the clock reads in India (UTC + 5:30), 24-hour. */
-const ist = (hourUtc: number): string => `${String((hourUtc + 5) % 24).padStart(2, "0")}:30`;
+/** A UTC hour as the clock reads in India (UTC + 5:30), as the built-in strategies write it: "9:30 PM". 24 is 5:30 the next morning. */
+export function savedIstClock(hourUtc: number): { time: string; half: "AM" | "PM" } {
+  const h = (hourUtc + 5) % 24;
+  return { time: `${h % 12 === 0 ? 12 : h % 12}:30`, half: h < 12 ? "AM" : "PM" };
+}
 /** The whole UTC day, as it falls in India. */
-const WHOLE_DAY = "any time from 05:30 IST to 05:30 the next morning";
+const WHOLE_DAY = "any time from 5:30 AM IST to 5:30 the next morning";
 const wholeDay = (d: Pick<SavedDefinition, "fromHourUtc" | "toHourUtc">): boolean => d.fromHourUtc === 0 && d.toHourUtc === 24;
-/** The entry window as a trader in India reads it: "21:30 to 22:30 IST", or the whole day. */
+/** The entry window as a trader in India reads it: "9:30 to 10:30 PM IST", "11:30 PM to 12:30 AM IST", or the whole day. */
 export function savedWindowText(d: Pick<SavedDefinition, "fromHourUtc" | "toHourUtc">): string {
-  return wholeDay(d) ? WHOLE_DAY : `${ist(d.fromHourUtc)} to ${ist(d.toHourUtc)} IST`;
+  if (wholeDay(d)) return WHOLE_DAY;
+  const from = savedIstClock(d.fromHourUtc);
+  const to = savedIstClock(d.toHourUtc);
+  return from.half === to.half ? `${from.time} to ${to.time} ${to.half} IST` : `${from.time} ${from.half} to ${to.time} ${to.half} IST`;
 }
 /**
  * The India weekday a window opens on, for the UTC weekday the engine keeps: India is a day ahead of UTC from
@@ -139,6 +145,62 @@ export function savedEntryText(d: SavedDefinition): string {
   const expiry = d.cadence === "monthly" ? "on the month-end expiry" : d.cadence === "weekly" ? "on the weekly expiry" : "on the next expiry";
   const when = [d.conditions?.sma ? `the price is ${d.conditions.sma.side} its ${d.conditions.sma.days}-day average` : null, d.conditions?.ivRank ? "volatility is in its set range" : null].filter((x) => x !== null);
   return `${days}, ${savedWindowText(d)}, ${expiry}${when.length ? `, when ${when.join(" and ")}` : ""}`;
+}
+
+/**
+ * A saved strategy as the playbook the engine runs and the screens draw: always entered by the clock, with its own
+ * exits, and market conditions when it has them. The shape is the pricing package's `Playbook`, written out here
+ * because this package does not depend on that one; the API and the web both hand it to code typed as `Playbook`, so
+ * the compiler holds the two together.
+ */
+export interface SavedPlaybook {
+  id: string;
+  name: string;
+  summary: string;
+  rationale: string;
+  evidence: { claim: string; source: string };
+  template: { name: string; category: "Neutral"; description: string; legs: { kind: "call" | "put"; side: "buy" | "sell"; k: number; pct?: number; premium?: number }[]; risk: "defined" | "undefined" };
+  conditions: { sma: { days: number; side: "above" | "below" } | undefined; ivRank: { min?: number | undefined; max?: number | undefined; lookbackDays: number } | undefined; weekdays: number[] | undefined } | undefined;
+  minDte: number;
+  lots: number;
+  assets: SavedDefinition["assets"];
+  thresholds: { minTrades: number; netPositive: boolean; outOfSamplePositive: boolean };
+  trials: { count: number; note: string };
+  control: false;
+  clock: SavedExits & { fromHourUtc: number; toHourUtc: number; weekdayUtc: number | undefined; cadence: "monthly" | undefined; oncePerExpiry: true | undefined; window: string; describe: string; maxDte: number; venues: string[]; moveSide: { hours: number; pct: number } | undefined };
+}
+/** A USD amount in a sentence: "$12.4", "-$180". */
+const usd = (n: number): string => `${n < 0 ? "-" : ""}$${Math.abs(n)}`;
+export function savedPlaybookOf(row: { id: string; name: string; summary: string; definition: SavedDefinition; backtest: SavedBacktest | null }): SavedPlaybook {
+  const d = row.definition;
+  const b = row.backtest;
+  return {
+    id: row.id,
+    name: row.name,
+    summary: row.summary,
+    rationale: row.summary,
+    evidence: b ? { claim: `${usd(b.mean)} a ${b.per} on ${b.samples} trades, ${b.positivePct} % of them positive, worst ${usd(b.worst)} (USD, figures entered by hand).`, source: b.basis } : { claim: "No backtest entered.", source: "none" },
+    template: {
+      name: row.name,
+      category: "Neutral",
+      description: row.summary,
+      legs: d.legs.map((l) => {
+        // out of the money: a call above the spot, a put below it
+        const away = l.kind === "call" ? l.value : -l.value;
+        return { kind: l.kind, side: l.side, ...(l.by === "strikes" ? { k: away } : l.by === "pct" ? { k: 0, pct: away } : { k: 0, premium: l.value }) };
+      }),
+      risk: savedLossCapped(d.legs) ? "defined" : "undefined",
+    },
+    conditions: d.conditions?.sma || d.conditions?.ivRank || d.weekdays ? { sma: d.conditions?.sma, ivRank: d.conditions?.ivRank, weekdays: d.weekdays } : undefined,
+    minDte: d.minDte,
+    lots: d.lots,
+    assets: d.assets,
+    // never judged by the daily record: Autopilot's own results are its record
+    thresholds: { minTrades: Number.MAX_SAFE_INTEGER, netPositive: true, outOfSamplePositive: true },
+    trials: { count: 1, note: "Saved in the strategy builder; its backtest figures are entered by hand" },
+    control: false,
+    clock: { fromHourUtc: d.fromHourUtc, toHourUtc: d.toHourUtc, weekdayUtc: d.weekdayUtc, cadence: d.cadence === "monthly" ? "monthly" : undefined, oncePerExpiry: d.oncePerExpiry || undefined, window: d.cadence === "weekly" ? `${WEEKDAYS[savedIstWeekday(d.weekdayUtc!, d.fromHourUtc)]}s, ${savedWindowText(d)}` : savedWindowText(d), describe: savedEntryText(d), maxDte: d.maxDte, venues: d.venues, moveSide: d.moveSide, ...d.exits },
+  };
 }
 
 /** Draft: saved, cannot trade. Backtested: its backtest figures are entered. Paper: published, Autopilot trades it. Retired: no new entries. */
@@ -209,6 +271,14 @@ export const SavedStrategy = z.strictObject({
 export type SavedStrategy = z.infer<typeof SavedStrategy>;
 export const SavedStrategyList = z.strictObject({ items: z.array(SavedStrategy) });
 export type SavedStrategyList = z.infer<typeof SavedStrategyList>;
+
+/**
+ * A saved strategy as a trader's Autopilot screen gets it (HC-TR-279): the ones they may switch on (`usable`), and
+ * the ones they can no longer switch on but have traded or still hold in their settings, so that a trade, a log line
+ * and a result keep their name.
+ */
+export const SavedCard = z.strictObject({ id: z.string(), version: z.number().int().positive(), name: z.string(), summary: z.string(), definition: SavedDefinition, backtest: SavedBacktest.nullable(), usable: z.boolean() });
+export type SavedCard = z.infer<typeof SavedCard>;
 
 /** What the admin routes answer when a step is refused. */
 export const SAVED_REFUSALS = {
