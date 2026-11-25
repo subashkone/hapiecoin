@@ -1,6 +1,6 @@
 "use client";
 // Public header (HC-PB-001, HC-PB-059): sticky 56px panel-tone bar, section nav, Ctrl K, theme toggle,
-// "Get Started" for guests / "Go to App" once a session exists.
+// "Sign in" and "Get started" for guests / "Go to App" once a session exists. The nav follows the home page (ADR-140).
 import { ArrowRight, Button } from "@hapiecoin/ui";
 import Link from "next/link";
 import { authClient } from "@/lib/auth/client";
@@ -10,11 +10,10 @@ import { Logo } from "@/components/shell/Logo";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
 
 const NAV = [
-  { href: "#features", label: "Features" },
-  { href: "#crypto-analytics", label: "Market Analytics" },
-  { href: "#prices", label: "Markets" },
-  { href: "#exchanges", label: "Exchanges" },
-  { href: "#whats-new", label: "What's new" },
+  { href: "/#how", label: "How it works" },
+  { href: "/#autopilot", label: "Autopilot" },
+  { href: "/#safety", label: "Safety" },
+  { href: "/#plans", label: "Plans" },
 ] as const;
 
 export function PublicHeader() {
@@ -45,11 +44,11 @@ export function PublicHeader() {
           ) : (
             <>
               <Button asChild variant="ghost" size="md" className="hidden sm:inline-flex">
-                <Link href="/auth?tab=signup">Sign Up</Link>
+                <Link href="/auth">Sign in</Link>
               </Button>
               <Button asChild size="md">
-                <Link href="/auth" data-testid="get-started">
-                  Get Started <ArrowRight className="size-3.5" aria-hidden="true" />
+                <Link href="/auth?tab=signup" data-testid="get-started">
+                  Get started <ArrowRight className="size-3.5" aria-hidden="true" />
                 </Link>
               </Button>
             </>

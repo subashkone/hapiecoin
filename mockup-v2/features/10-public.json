@@ -1,579 +1,590 @@
 [
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Sticky 56px panel-tone header with amber Δ mark logo (→ home), text nav (Features / Market Analytics / Markets / Exchanges / What's new), Ctrl K button, theme toggle, Sign Up, Get Started →",
-  "how": "Nav links smooth-scroll to landing sections without changing the route; Ctrl K opens CG.palette; Sign Up → #/auth?tab=signup, Get Started → #/auth",
-  "status": "working",
-  "evidence": "bundle strings: Features, Market Analytics, Markets, Exchanges, Sign Up, Get Started, #features, #crypto-analytics, #prices, #exchanges · Phase 1 tests (tagged 08 Sep 2026): unit landing.test.tsx, e2e public.spec.ts"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Header swaps to “Go to App →” when the visitor is logged in",
-  "how": "Listens to CG 'auth' events and CG.state.loggedIn; hides Sign Up / Get Started and shows Go to App → #/analyse",
-  "status": "working",
-  "evidence": "bundle string: Go to App — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: PublicHeader swaps to Go to App → /desk (landing.test.tsx 'shows Go to App once a session exists', public.spec HC-PB-003)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Theme toggle (moon / sun icon)",
-  "how": "Calls CG.theme.toggle(); icon flips on the 'theme' event; whole page re-skins via CSS variables",
-  "status": "working",
-  "evidence": "bundle: Moon icon path M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: theme-toggle in PublicHeader, persisted in hapiecoin.theme (public.spec HC-PB-003, landing.test.tsx)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Hero: ‘LIVE ON DELTA EXCHANGE’ mono tag with pulsing dot, headline “Trade Crypto Options / Like a Pro” (second line muted, no gradient), lead paragraph, 6 check bullets",
-  "how": "Copy unchanged; dark ground, no gradient washes",
-  "status": "static",
-  "evidence": "bundle: rst[] array, hero-grid pattern · Phase 1 tests (tagged 08 Sep 2026): unit landing.test.tsx, e2e public.spec.ts"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Hero buttons “Start Trading Free →” and “Explore Features ⌄”",
-  "how": "Start Trading Free navigates to #/auth; Explore Features smooth-scrolls to the Platform Features section",
-  "status": "working",
-  "evidence": "bundle: Start Trading Free, Explore Features, scrollIntoView({behavior:'smooth'}) — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: hero-cta → /auth and Explore Features → #features (landing-sections.test.tsx)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Hero product visual: terminal mock built from live CG.chain / CG.analyze data — top bar (asset segments, futures price, ATM IV, expected move, feed, Ctrl K), 11-row mirrored chain (Δ · OI · Mark/IV | Strike | Mark/IV · OI · Δ, ITM tint, amber ATM row, OI bars, leg outlines), builder strip, payoff tiles + chart, scenario matrix, portfolio bar",
-  "how": "CG.pubTerminal(kind) (alias CG.pubMock); the BTC price in the mock updates on every tick",
-  "status": "static",
-  "evidence": "original uses feature-payoff-diagram png inside a browser frame with hapiecoin.com url pill — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: TerminalIllustration built from design-system parts, no images (landing.test.tsx HC-PB-004); the live-data top bar, scenario matrix and portfolio bar of the v2 mock are not built (GAPS #54)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Floating hero chips replaced by data inside the terminal (Bull Call Spread legs with Δ/Θ, max profit / max loss / breakeven / POP tiles, 5×4 P&L matrix)",
-  "how": "Absolutely positioned cards around the mock; the mini frame lifts on hover",
-  "status": "static",
-  "evidence": "bundle strings: Strategy Templates, Ready to use, Live Greeks, Δ 0.45, Γ 0.02, Θ -12.5 — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: legs table and Max profit / Max loss / Breakeven / POP stat tiles inside the terminal (landing.test.tsx: 4 stat slots); the 5×4 P&L matrix is not built (GAPS #54)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Stats strip: 28 Built-in Strategies · Real-time Greeks & IV · 2 Assets Supported · Paper Trading (mono values, hairline cells)",
-  "how": "Numeric values count up from 0 when the row scrolls into view (IntersectionObserver, 1.5s; skipped under reduced-motion)",
-  "status": "working",
-  "evidence": "bundle: ist[] array + count-up hook — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: STATS from content/landing.ts rendered as the four-cell strip (landing-sections.test.tsx); values are static, the count-up animation is not built (GAPS #54)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Live Markets · Powered by Delta Exchange with LIVE tag and BTCUSD / ETHUSD / XAUTUSD tiles (price, 24h %, sparkline, H/L, IV)",
-  "how": "Tiles update and flash on every 'tick'",
-  "status": "working",
-  "evidence": "bundle: v2/ticker websocket subscription, LIVE / Connecting..., H: $ / L: $ · Phase 1 tests (tagged 08 Sep 2026): unit landing.test.tsx, e2e public.spec.ts"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "WHY HAPIECOIN? “Stop Guessing. Start Trading Smart” — two-column comparison table: Without HapieCoin (× rows, muted) vs With HapieCoin (✓ rows)",
-  "how": "Same 5 + 5 statements as v1 rendered as a table",
-  "status": "static",
-  "evidence": "bundle: fst[] and hst[] arrays — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: WITHOUT / WITH rows in one table (landing-sections.test.tsx)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "PLATFORM FEATURES tabs (amber underline, auto-rotate progress): Real-time Options Chain / Strategy Builder & Payoff / Paper & Live Trading, each with its terminal mock variant",
-  "how": "Variants: chain (chain + builder + payoff + matrix), builder (legs table + templates + payoff + Greeks strip), trading (positions list + wallet tiles + P&L history)",
-  "status": "working",
-  "evidence": "bundle: Zu[] array, 8000ms interval with progress state — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: FeatureTabs with the three tabs and panels (landing.test.tsx 'feature tabs switch panels', landing-sections.test.tsx); no auto-rotate progress (GAPS #54)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "CAPABILITIES “Built for Serious Traders” — 6 hairline cells (two wide) in one bordered grid",
-  "how": "4-column grid; the two “large” cards span 2 columns exactly like the original; hover lift",
-  "status": "static",
-  "evidence": "bundle: vst[] array with large flags — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: six CAPABILITIES cells, the two large ones span two columns (landing-sections.test.tsx)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "MARKET ANALYTICS “Liquidations & Market Pulse” — 24H Total Liq / Long Liq / Short Liq / Top Coin stat cells",
-  "how": "Values come from CG.mock.global (liq24h, longLiq24h, shortLiq24h, topLiqCoin) formatted as $214.00M etc.",
-  "status": "static",
-  "evidence": "bundle: 24H Total Liq, Long Liq, Short Liq, Top Coin — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: section head 'Liquidations & Market Pulse' with the teaser card; the four liquidation stat cells need analytics data and arrive with Phase 5 (GAPS #54)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "“Live liquidation pattern · last 40 intervals” bar sparkline",
-  "how": "40 bars from the last 40 entries of CG.mock.liqHistory; height ∝ long+short, red when long liquidations dominate, green otherwise; bars grow in on view and show a tooltip with the hourly values",
-  "status": "static",
-  "evidence": "bundle: 40-bar sparkline with bg-loss/bg-profit classes — Phase 4 item 5c audit (09 Sep 2026): not built: the 40-interval liquidation sparkline needs the analytics feed (Phase 5, GAPS #54)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "“Explore Analytics →” button",
-  "how": "Navigates to #/analytics (Market Analytics area)",
-  "status": "working",
-  "evidence": "bundle: Explore Analytics; original routes logged-in users to analytics — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: outline button → /analytics (landing-sections.test.tsx)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "EVERYTHING YOU NEED “Full Feature List” — 6 hairline cards × 6 bullets",
-  "how": "Exact bullet copy from the bundle's jot[] array rendered in a 3-column grid",
-  "status": "static",
-  "evidence": "bundle: jot[] array — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: FEATURE_LIST groups and bullets (landing-sections.test.tsx)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Testimonials marquee removed — replaced by the “What’s new in v2” strip",
-  "how": "See the new entries below",
-  "status": "working",
-  "evidence": "bundle: wse[] array, D9 marquee component (duration 30, x 0% → -50%) — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: no marquee; WHATS_NEW strip with 'new' badges (landing-sections.test.tsx)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "INTEGRATIONS “Supported Exchanges” — Delta Exchange (● LIVE, Connected via API) plus CoinDCX, CoinSwitch, Mudrex (Coming Soon)",
-  "how": "Text-logo tiles; the live card is highlighted, coming-soon cards are dimmed to 60% like the original",
-  "status": "static",
-  "evidence": "bundle: Tot[] array, Live / Coming Soon badges · Phase 1 tests (tagged 08 Sep 2026): e2e public.spec.ts"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "CTA panel “Ready to Trade Smarter?” with amber accent stripe (no gradient) and “Create Free Account →”",
-  "how": "Gradient primary→accent band; button navigates to #/auth",
-  "status": "working",
-  "evidence": "bundle: Ready to Trade Smarter?, Create Free Account — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: 'Ready to Trade Smarter?' with Create Free Account → /auth?tab=signup (landing-sections.test.tsx)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Footer: brand blurb, Quick Links (Features / Markets / Exchanges / What’s new in v2), Legal, Contact Us, mono bottom line",
-  "how": "Rendered by the shared CG.chrome['footer'] override so every screen with <div data-cg=\"footer\"> gets the same footer; Quick Links scroll to landing sections (navigating home first when needed), Legal links route, email is a mailto:, phone opens wa.me in a new tab",
-  "status": "working",
-  "evidence": "bundle: Iot[], Dot[], Quick Links, Legal, Contact Us, _blank noopener noreferrer — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: Footer with Quick Links (now including Payoff chart preview), Legal, Contact Us, mono bottom line (landing.test.tsx 'footer carries legal links and support contact', public.spec HC-PB-058)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Smooth-scroll section anchors with sticky-header offset",
-  "how": "data-scroll links call scrollIntoView on data-anchor targets (scroll-margin-top 64px) instead of changing the hash, so they never collide with the hash router",
-  "status": "working",
-  "evidence": "bundle: #features / #prices / #exchanges anchors, behavior: smooth — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: section ids whats-new / features / crypto-analytics / exchanges carry scroll-mt-16; header nav uses in-page anchors (landing-sections.test.tsx, landing.test.tsx nav links)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Dark theme support",
-  "how": "All colours use the shell's CSS variables; verified with clone/shots/public-landing-dark.png",
-  "status": "working",
-  "evidence": "original ships light + dark themes — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: visual captures home-dark / home-light (visual.spec)"
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "Split layout: panel-tone brand column (mono eyebrow, “Master Options Trading” with amber word, paragraph, 4 hairline feature rows, live futures ticker, mono copyright) + form column",
-  "how": "Glows and grid backgrounds removed",
-  "status": "static",
-  "evidence": "bundle: Master Options / Trading, fnt[] features, © 2025 HapieCoin. Secure & encrypted. · Phase 1 tests (tagged 08 Sep 2026): unit AuthScreen.test.tsx"
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "Tab state driven by the URL (?tab=login | otp-login | otp-verify | signup | verify-email | forgot | reset-password)",
-  "how": "Every tab change navigates to #/auth?tab=… (preserving next= and ref=) so browser back/forward moves between steps; sub-steps that need an email fall back to their parent step on a cold visit",
-  "status": "working",
-  "evidence": "bundle: signup, otp-verify, verify-email, reset-password, forgot, otp-login view keys · Phase 1 tests (tagged 08 Sep 2026): unit AuthScreen.test.tsx"
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "Logged-in visitors are redirected away from /auth",
-  "how": "show() checks CG.state.loggedIn and navigates to ?next= or /desk",
-  "status": "working",
-  "evidence": "bundle: navigate('/desk') when isLoggedIn · Phase 1 tests (tagged 08 Sep 2026): e2e auth.spec.ts"
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "Login card: “Welcome back · Sign in to your trading dashboard”, Continue with Delta Exchange, OR divider, mono uppercase field labels, amber Sign In, Forgot password? / Sign in with OTP, Create account",
-  "how": "Email required / format validated inline (“Email is required”, “Invalid email”); password < 6 chars → toast “Login failed · Invalid credentials.”; success → CG.auth.login(email), toast “Welcome back! · Logged in successfully.”, navigate to ?next= or /desk",
-  "status": "working",
-  "evidence": "bundle strings: Welcome back, Sign in to your trading dashboard, Continue with Delta Exchange, Email, Password, Sign In, Forgot password?, Sign in with OTP, Create account, Invalid credentials., Logged in successfully. · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "Password visibility toggle (eye / eye-off)",
-  "how": "Button switches the input type between password and text and swaps the icon; present on every password field",
-  "status": "working",
-  "evidence": "bundle: Eye / EyeOff icon paths · Phase 1 tests (tagged 08 Sep 2026): e2e auth.spec.ts"
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "Continue with Delta Exchange",
-  "how": "Navigates to #/auth/delta which simulates the OAuth hand-off",
-  "status": "working",
-  "evidence": "bundle: Continue with Delta Exchange, /auth/delta route · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx"
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "Sign in with OTP: “We'll send a one-time code to your registered email”, Email, Send OTP, New here? Create an account first, ← Back to login",
-  "how": "Validates the email, toast “OTP Sent · Check your email for the OTP.” and moves to ?tab=otp-verify",
-  "status": "working",
-  "evidence": "bundle: Sign in with OTP, otp-email, Send OTP, New here?, Create an account first, Back to login, OTP Sent · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "Enter OTP: “Code sent to <email>”, 6 DM Mono digit boxes (auto-advance, backspace, paste), Verify & Login, “Resend OTP in 30s” countdown → “Resend OTP”",
-  "how": "Boxes auto-advance, support backspace and paste; any 6 digits succeed (e.g. 123456) → toast “Welcome! · Logged in successfully” + login; incomplete code → “Error · Enter valid OTP”; resend → toast “OTP Resent” and the 30s timer restarts",
-  "status": "working",
-  "evidence": "bundle: Enter OTP, Code sent to, OTP Code, Verify & Login, Resend OTP in, Resend OTP, Change email, Enter valid OTP, OTP Resent · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "Create account form: Full Name, Email, Mobile Number, Password, Confirm, Referral Code (Optional) placeholder REF_XXXXXXX, Create Account, Already have an account? Sign in",
-  "how": "Referral code is prefilled from ?ref= (referral links); validations: name required, email format, 10-digit mobile, all password rules, confirm must match (“Passwords do not match”), referral pattern REF_…; success → toast “Account created! · Please verify your email with the OTP sent.” → ?tab=verify-email",
-  "status": "working",
-  "evidence": "bundle: Start your options trading journey, Full Name, John Doe, Mobile Number, signup-ref, Referral Code (Optional), REF_XXXXXXX, Create Account, Already have an account?, Account created! · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "Live password rules: ✓ Uppercase letter · ✓ Lowercase letter · ✓ Number · ✓ Special character · ✓ 8+ characters (+ strength bar)",
-  "how": "Each rule turns green as the typed password satisfies it; bar colour goes red → amber → green",
-  "status": "working",
-  "evidence": "bundle strings: ✓ Uppercase letter, ✓ Lowercase letter, ✓ Number, ✓ Special character, ✓ 8+ characters — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: PasswordRules turn green per rule with the red → amber → green bar (inputs.test.tsx)"
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "Verify your email: “We've sent a 6-digit OTP to <email>”, 6 boxes, Verify Email, “Didn't receive the code? Resend in 30s”, ← Back to sign up",
-  "how": "Incomplete → toast “Verification failed · Please enter the complete 6-digit OTP”; success → toast “Email verified! · You can now sign in.” and returns to the login tab with the email prefilled; resend → “OTP resent · A new OTP has been sent to your email.”",
-  "status": "working",
-  "evidence": "bundle: Verify your email, We've sent a 6-digit OTP to, Verify Email, Didn't receive the code?, Resend in, Email verified!, You can now sign in., OTP resent · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "Reset password: “Enter your email and we'll send you an OTP”, Email Address, Send OTP, ← Back to sign in",
-  "how": "Validates the email, toast “OTP sent! · Check your email for the OTP.” → ?tab=reset-password",
-  "status": "working",
-  "evidence": "bundle: Reset password, forgot-email, Email Address, Send OTP, Back to sign in, OTP sent! · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "Set new password: “Enter the OTP sent to <email> and your new password”, OTP, New Password (rules), Confirm Password, Reset Password, resend countdown, ← Back",
-  "how": "OTP must be 6 digits, new password must pass all rules and match; success → toast “Password reset! · You can now sign in with your new password.” → login tab",
-  "status": "working",
-  "evidence": "bundle: Set new password, Enter the OTP sent to, and your new password, reset-new-password, New Password, Confirm Password, Reset Password, Password reset!, A new OTP has been sent. · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "?next= deep-link support",
-  "how": "Protected screens redirect to /auth?next=/path; after any successful login the user lands on that path",
-  "status": "working",
-  "evidence": "router contract in core.js · Phase 1 tests (tagged 08 Sep 2026): e2e auth.spec.ts"
- },
- {
-  "route": "/auth/delta",
-  "screen": "Delta Exchange sign-in",
-  "feature": "Full-screen spinner “Signing you in with Delta…”, then login",
-  "how": "After 1.5s: CG.auth.login(), toast “Welcome! · Signed in with Delta.”, navigate to /desk (timer cancelled if the user leaves)",
-  "status": "working",
-  "evidence": "bundle: Signing you in with Delta…, Welcome!, Signed in with Delta. — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: DeltaSignIn spinner then explanation (AuthScreen.test.tsx, auth.spec HC-PB-037)"
- },
- {
-  "route": "/sso",
-  "screen": "SSO return",
-  "feature": "“Signing you in…” spinner then redirect",
-  "how": "After 1s logs the user in and navigates to ?sso_return= (when it is an in-app path) or /desk",
-  "status": "working",
-  "evidence": "bundle: Signing you in…, sso_return — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: SsoReturn redirects after the delay (AuthScreen.test.tsx 'redirects to the target after the delay', auth.spec HC-PB-038)"
- },
- {
-  "route": "/privacy",
-  "screen": "Privacy Policy",
-  "feature": "← Back button, LEGAL eyebrow, title, mono “LAST UPDATED” line, 7 sections in a two-column definition layout",
-  "how": "Back goes to the previous screen (history.back) or home when opened directly; sections 1–7 use the bundle's exact headings and paragraphs",
-  "status": "working",
-  "evidence": "bundle: Privacy Policy, Last updated: March 30, 2026, 1. Information We Collect … 7. Contact Us — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: LegalPage with ← Back, Legal eyebrow, title, mono last-updated line and every section (landing.test.tsx 'legal pages render every section', public.spec HC-SH-016)"
- },
- {
-  "route": "/terms",
-  "screen": "Terms of Service",
-  "feature": "← Back button, title, mono last-updated line, 8 two-column sections",
-  "how": "Exact copy incl. “provided \"as is\" without warranties”",
-  "status": "working",
-  "evidence": "bundle: Terms of Service, 1. Acceptance of Terms … 8. Contact — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: LegalPage kind terms (public.spec HC-SH-016 checks the h1)"
- },
- {
-  "route": "/disclaimer",
-  "screen": "Disclaimer",
-  "feature": "← Back button, title, mono last-updated line, 7 two-column sections (Not Financial Advice … Third-Party Integrations)",
-  "how": "Exact copy from the bundle",
-  "status": "working",
-  "evidence": "bundle: Disclaimer, Not Financial Advice, Trading Risks, Cryptocurrency Risks, Data Accuracy, Paper Trading, No Guarantee, Third-Party Integrations — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: LegalPage kind disclaimer, 7 sections (landing.test.tsx, public.spec HC-PB-059 navigates there)"
- },
- {
-  "route": "/payoff-preview",
-  "screen": "Payoff chart preview",
-  "feature": "Preset chips: Iron Condor · Long Call (Unlimited) · Short Strangle (Both Unlimited) · Wide chain, narrow leg (BTC 78k, chain 69k-87k)",
-  "how": "Legs, prices and IVs copied from the bundle (Uot/zot/Vot/Wot); selecting a preset resets zoom, target and date and re-renders; spot 100k (78k for the wide-chain case) is passed to CG.analyze via opts.spot with lots sized so 1 contract = 1 BTC",
-  "status": "working",
-  "evidence": "bundle: R9[] presets, Payoff chart preview — Phase 4 item 5b (09 Sep 2026, ADR-037): PRESETS in lib/payoff-preview.ts (same legs, prices, IVs, spots); pp-preset buttons reset zoom, target and day (payoff-preview.test.tsx, public.spec)"
- },
- {
-  "route": "/payoff-preview",
-  "screen": "Payoff chart preview",
-  "feature": "Legend: On Expiry (ink) · On Target Date (blue) · Profit · Loss · Call OI · Put OI (faint) — click toggles the layer",
-  "how": "Legend items are clickable and toggle the matching chart layer (struck-through when off)",
-  "status": "working",
-  "evidence": "bundle: On Expiry, On Target Date, Profit, Loss, Call OI, Put OI — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-legend-item ×6 toggle expiry/target/fill/oi layers; struck-through when off"
- },
- {
-  "route": "/payoff-preview",
-  "screen": "Payoff chart preview",
-  "feature": "Zoom In / 100% / Zoom Out",
-  "how": "Zoom narrows or widens the price range around spot (×1.25 steps, 50%–400%); clicking the percentage resets; the target slider range follows",
-  "status": "working",
-  "evidence": "bundle: Zoom In, Zoom Out, Reset Zoom — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-zoom-in / pp-zoom-label (reset) / pp-zoom-out: ×1.25 steps, 50 %–400 %, price axis ±18 %/zoom around spot, target clamped into the axis"
- },
- {
-  "route": "/payoff-preview",
-  "screen": "Payoff chart preview",
-  "feature": "Layers popover (“Chart Layers”): Expiry P&L, Target Date P&L, Profit / Loss Fill, Open Interest, SD Bands, Breakevens",
-  "how": "Switch rows toggle each SVG layer live; closes on outside click",
-  "status": "working",
-  "evidence": "bundle: Toggle Layers, Chart Layers, Expiry P&L, Target Date P&L, Profit / Loss Fill, Open Interest, SD Bands, Breakevens — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-layers-button opens 'Chart Layers' with six role=switch rows (pp-layer-*); closes on outside mousedown"
- },
- {
-  "route": "/payoff-preview",
-  "screen": "Payoff chart preview",
-  "feature": "SD header: −2SD / −1SD / Current / +1SD / +2SD with “Expected move by target date (Nd)”",
-  "how": "Log-normal bands from the legs' average IV over the selected horizon; ±1SD is shaded on the chart with dashed edges",
-  "status": "working",
-  "evidence": "bundle: -2SD, -1SD, Current, +1SD, +2SD, Expected move by — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-sd: −2SD / −1SD / Current / +1SD / +2SD from sdBands() (average leg IV, lognormal over the slider horizon; 'by expiry (30d)' at day 0); ±1σ shaded by PayoffChart's band layer"
- },
- {
-  "route": "/payoff-preview",
-  "screen": "Payoff chart preview",
-  "feature": "SVG payoff chart restyled to the reference: single ink expiry line with green/red fills, blue target-date curve, amber SPOT pill + line, faint neutral OI bars, dashed ±1σ band labels, dashed breakevens with BE labels, blue target-price marker with P&L label",
-  "how": "Colours only via tokens: --foreground, --curve, --spot, --profit, --loss, --muted-foreground",
-  "status": "working",
-  "evidence": "pw/pub_payoff-preview.png — Phase 4 item 5b (09 Sep 2026, ADR-037): the workspace's canvas PayoffChart (ink expiry line, profit/loss fills, blue target curve, spot line, ±1σ band, dashed breakevens with BE labels, target marker) reused with the page's token colours"
- },
- {
-  "route": "/payoff-preview",
-  "screen": "Payoff chart preview",
-  "feature": "Hover crosshair + tooltip",
-  "how": "Moving over the plot shows a vertical crosshair, markers on both curves and a tooltip with the price, Expiry P&L and target-date P&L",
-  "status": "working",
-  "evidence": "original chart tooltip — Phase 4 item 5b (09 Sep 2026, ADR-037): PayoffChart draws the crosshair and markers; the summary row shows the pp-hover readout (price, Expiry P&L, ND P&L)"
- },
- {
-  "route": "/payoff-preview",
-  "screen": "Payoff chart preview",
-  "feature": "Summary line “@ $100k (+0.0%) · 15D: +$… · Expiry: +$… · Profit/Loss pill” (mono)",
-  "how": "Recomputed from CG.analyze at the target price for both the target date and expiry; the pill turns red “Loss: $…” when negative",
-  "status": "working",
-  "evidence": "pw/pub_payoff-preview.png summary row — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-summary: '@ $100k (+0.0%) · 15D: +$… · Expiry: +$… · Profit/Loss pill' from analyze()'s target point (pp-summary-target, pp-summary-expiry, pp-pill)"
- },
- {
-  "route": "/payoff-preview",
-  "screen": "Payoff chart preview",
-  "feature": "BTC TARGET slider with −/+ buttons, % chip and $ label",
-  "how": "Range slider (step $100) and ±$500 buttons move a target marker on the chart and update the summary on every input event",
-  "status": "working",
-  "evidence": "pw/pub_payoff-preview.png BTC TARGET card — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-target range (step $100) with pp-target-minus / pp-target-plus (±$500), pp-target-pct chip and $ label"
- },
- {
-  "route": "/payoff-preview",
-  "screen": "Payoff chart preview",
-  "feature": "TODAY date slider (Today ↔ Expiry) with ‹ › day buttons and info hint — defaults to mid-way so the target curve is visible",
-  "how": "Slider from day 0 to expiry (30d); the blue target-date curve, SD header and “ND:” summary value follow the selected day; label shows e.g. “Fri, 18 Sep 02:30 PM”",
-  "status": "working",
-  "evidence": "bundle: Expiry (date), Today — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-day range 0..30 with pp-day-prev / pp-day-next, defaults to day 15, label 'Fri, 18 Sep 02:30 PM' style via dayLabel()"
- },
- {
-  "route": "*",
-  "screen": "Not found",
-  "feature": "Not found: ERROR eyebrow, 64px mono “404”, “Oops! Page not found”, outline “Return to Home”",
-  "how": "Catch-all screen; Return to Home → #/",
-  "status": "working",
-  "evidence": "bundle: 404, Oops! Page not found, Return to Home — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: app/not-found.tsx with 'Oops! Page not found' and Return to Home (public.spec HC-SH-016)"
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "“What’s new in v2” strip (replaces testimonials): Scenario matrix · Vol & Structure tabs · Alerts · Command palette · Journal · Share links, each with an inline SVG icon, NEW tag and one-liner; “Full feature inventory →” link",
-  "how": "CG.mock.landing.whatsNew; anchor #whats-new reachable from the header nav and footer",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: WHATS_NEW strip reachable at #whats-new from the header nav and footer (landing-sections.test.tsx)",
-  "new": true
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Terminal mock top bar shows live ATM IV / IV rank / expected move from CG.chrome.marketStats and the Ctrl K hint",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): not built: the terminal illustration is static (no live ATM IV / IV rank / expected move); GAPS #54",
-  "new": true
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Terminal mock scenario matrix: 5 prices × Today / +6d / +13d / Expiry P&L cells, colour intensity scaled by magnitude",
-  "how": "Each cell is a CG.analyze(legs, asset, {targetDays, min, max, points:2}) call",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): not built: no scenario matrix in the illustration; GAPS #54",
-  "new": true
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Terminal mock portfolio bar mirrors the app: strategies, Net Δ, margin used, day P&L, alerts armed, basis, CCY",
-  "how": "Reads CG.chrome.portfolioData() when the chrome part is present",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): not built: no portfolio bar in the illustration; GAPS #54",
-  "new": true
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Live Markets tiles gained a 40-point sparkline and the asset IV",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: 40-point sparkline on every tile (landing.test.tsx 'renders connecting tiles, then live prices with flash, change, H/L and a sparkline'); the asset IV is not shown (GAPS #54)",
-  "new": true
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Hero meta line: FREE PLAN · PAPER TRADING INCLUDED · BTC · ETH · XAUT OPTIONS · DELTA EXCHANGE INDIA (mono micro-labels)",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: 'Free plan · paper trading included' meta line (public.spec HC-PB-001, landing-sections.test.tsx)",
-  "new": true
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Ctrl K button in the public header opens the command palette (Home / Sign in / legal / payoff preview commands available while logged out)",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5b (09 Sep 2026, ADR-037): palette nav:payoff-preview available signed out (public.spec)",
-  "new": true
- },
- {
-  "route": "/",
-  "screen": "Landing page",
-  "feature": "Both themes: dark-first obsidian ground; light variant is the cool paper/graphite reading — no gradients, no card shadows, hairline separation",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: token-driven light and dark, captured in visual.spec home-*/auth-*/desk-*",
-  "new": true
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "Live futures ticker (BTC / ETH / XAUT price and 24h %) under the feature rows, updated every tick",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: AuthScreen brand column ticker from the gateway (AuthScreen.test.tsx HC-PB-023)",
-  "new": true
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "Mono inputs for mobile number, referral code and OTP; password strength bar + mono rule list",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: OtpInput boxes, mono mobile / referral inputs, PasswordRules with strength bar (inputs.test.tsx, AuthForms.test.tsx)",
-  "new": true
- },
- {
-  "route": "/payoff-preview",
-  "screen": "Payoff chart preview",
-  "feature": "Header note “Spot · amber · Target date · blue · OI · faint bars”; preset buttons use a neutral selected state",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5b (09 Sep 2026, ADR-037): 'Spot · amber · Target date · blue · OI · faint bars' note in the page header; selected preset uses variant secondary",
-  "new": true
- },
- {
-  "route": "/payoff-preview",
-  "screen": "Payoff chart preview",
-  "feature": "Target-price marker: dashed blue line, hollow dot on the active curve and “+$… @ price” label when the target differs from spot",
-  "how": "",
-  "status": "working",
-  "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5b (09 Sep 2026, ADR-037): frame.target set only when the target differs from spot; PayoffChart draws the dashed marker with the P&L label",
-  "new": true
- },
- {
-  "route": "/auth",
-  "screen": "Sign in / Sign up",
-  "feature": "Continue with Google (Better Auth social sign-in): the button shows only when the API has Google configured; the OAuth callback is served on the web origin so the session cookie is first-party and /desk opens signed in",
-  "how": "authClient.signIn.social({ provider: \"google\", callbackURL: next }); BETTER_AUTH_URL = web origin (ADR-019)",
-  "status": "working",
-  "evidence": "Phase 1 build, 07 Sep 2026: e2e auth.spec.ts against the mock provider; GAPS #27",
-  "phase": 1
- },
- {
-  "route": "/t/<handle>",
-  "screen": "Public trader page",
-  "status": "working",
-  "phase": 5,
-  "new": true,
-  "feature": "A trader's verified P&L on a public page: totals net of fees always, the daily chart, accounts and months when the trader turned them on, 404 alike for an unknown handle or a page that is off",
-  "how": "PublicHeader + Footer like /s/<code>; the body reads GET /v1/public/traders/<handle> (unauthenticated, Cache-Control public max-age=60) whose shape is publicTraderFrom: name, handle, all / 30-day / 7-day net, fills, since, last read, partial flag, and only the opted-in sections; never account ids, commissions, balances, positions, products or the Journal comparison; generateMetadata carries the 30-day figure into the title and description for link previews; USD only",
-  "evidence": "ADR-075 (12 Sep 2026): apps/web app/t/[handle]/page.tsx, components/public/TraderPage.tsx (trader-page[data-state], trader-total / d7 / d30, trader-days, trader-account, trader-month, trader-partial); apps/api routes/public-page.ts; packages/schema public-page.ts publicTraderFrom; unit public-page.test.ts (schema + api) HC-PB-066, trader-page.test.tsx HC-PB-066; e2e public.spec.ts HC-PB-066",
-  "test": "unit (schema + api + web), e2e"
- },
- {
-  "route": "/t/<handle>",
-  "screen": "Public trader page · share",
-  "status": "working",
-  "phase": 5,
-  "new": true,
-  "feature": "Share the page: post on X, send on Telegram, copy the link, download a 1200×630 PNG card",
-  "how": "Intent links built from the 30-day figure net of fees and the page URL (twitter.com/intent/tweet, t.me/share/url), opened in a new tab; Copy link through the clipboard; the card drawn on a canvas in the browser (dark, amber rule, name, handle, three figures, fills and since, the URL) and saved as hapiecoin-<handle>-verified-pnl.png through a data URL, no library and no server rendering; the same bar sits in the Public page dialog",
-  "evidence": "ADR-075 (12 Sep 2026): apps/web lib/public/share.ts shareText / xShareUrl / telegramShareUrl / cardFigures / drawShareCard / shareCardPng, components/public/ShareBar.tsx (share-x, share-telegram, share-copy-link, share-image); unit share.test.ts HC-PB-067, trader-page.test.tsx HC-PB-067; e2e public.spec.ts HC-PB-067",
-  "test": "unit (web), e2e"
- },
- {
-  "route": "/auth?tab=totp",
-  "screen": "Auth · Two-factor code",
-  "status": "working",
-  "phase": 5,
-  "new": true,
-  "feature": "Second factor at sign-in: the 6-digit code from the authenticator app, or a backup code",
-  "how": "A password sign-in on an account with 2FA on answers twoFactorRedirect and the form moves to the code step (no session yet); six boxes for the app code, 'Use a backup code instead' for a saved code (each works once), 'Back to sign in'; a wrong code says 'That code is not right.' Email codes and Google are refused for such an account with 'This account uses an authenticator app: sign in with your password and the code'",
-  "evidence": "ADR-078 (12 Sep 2026): apps/api auth.ts twoFactor plugin + the sign-in hooks; apps/web lib/auth/client.ts twoFactorClient, components/auth/AuthScreen.tsx AuthTab totp, AuthForms.tsx TotpForm; unit auth.test.ts (api) HC-PB-068, AuthForms.test.tsx HC-PB-068; e2e auth.spec.ts HC-PB-068",
-  "test": "unit (api + web), e2e"
- },
- {
-  "route": "/auth",
-  "screen": "Auth · Sign in",
-  "feature": "Sign in with a passkey",
-  "how": "Above the Delta and Google buttons when the browser has WebAuthn: one tap asks the device for the passkey and signs the account in without the password; an account with two-factor on is refused with 'This account uses an authenticator app: sign in with your password and the code' (ADR-078); a closed prompt and a device without a passkey each get one sentence",
-  "status": "working",
-  "new": true,
-  "phase": 5,
-  "evidence": "ADR-089 (13 Sep 2026): apps/web/src/components/auth/AuthForms.tsx Providers (continue-passkey), lib/auth/client.ts authErrorMessage; unit AuthForms.test.tsx HC-PB-069; e2e auth.spec.ts HC-PB-069 (CDP virtual authenticator)",
-  "test": "unit (web), e2e"
- }
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Sticky 56px panel-tone header with amber Δ mark logo (→ home), text nav (Features / Market Analytics / Markets / Exchanges / What's new), Ctrl K button, theme toggle, Sign Up, Get Started →",
+    "how": "Nav links smooth-scroll to landing sections without changing the route; Ctrl K opens CG.palette; Sign Up → #/auth?tab=signup, Get Started → #/auth",
+    "status": "working",
+    "evidence": "bundle strings: Features, Market Analytics, Markets, Exchanges, Sign Up, Get Started, #features, #crypto-analytics, #prices, #exchanges · Phase 1 tests (tagged 08 Sep 2026): unit landing.test.tsx, e2e public.spec.ts"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Header swaps to “Go to App →” when the visitor is logged in",
+    "how": "Listens to CG 'auth' events and CG.state.loggedIn; hides Sign Up / Get Started and shows Go to App → #/analyse",
+    "status": "working",
+    "evidence": "bundle string: Go to App — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: PublicHeader swaps to Go to App → /desk (landing.test.tsx 'shows Go to App once a session exists', public.spec HC-PB-003)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Theme toggle (moon / sun icon)",
+    "how": "Calls CG.theme.toggle(); icon flips on the 'theme' event; whole page re-skins via CSS variables",
+    "status": "working",
+    "evidence": "bundle: Moon icon path M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: theme-toggle in PublicHeader, persisted in hapiecoin.theme (public.spec HC-PB-003, landing.test.tsx)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Hero: ‘LIVE ON DELTA EXCHANGE’ mono tag with pulsing dot, headline “Trade Crypto Options / Like a Pro” (second line muted, no gradient), lead paragraph, 6 check bullets",
+    "how": "Copy unchanged; dark ground, no gradient washes",
+    "status": "static",
+    "evidence": "bundle: rst[] array, hero-grid pattern · Phase 1 tests (tagged 08 Sep 2026): unit landing.test.tsx, e2e public.spec.ts"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Hero buttons “Start Trading Free →” and “Explore Features ⌄”",
+    "how": "Start Trading Free navigates to #/auth; Explore Features smooth-scrolls to the Platform Features section",
+    "status": "working",
+    "evidence": "bundle: Start Trading Free, Explore Features, scrollIntoView({behavior:'smooth'}) — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: hero-cta → /auth and Explore Features → #features (landing-sections.test.tsx)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Hero product visual: terminal mock built from live CG.chain / CG.analyze data — top bar (asset segments, futures price, ATM IV, expected move, feed, Ctrl K), 11-row mirrored chain (Δ · OI · Mark/IV | Strike | Mark/IV · OI · Δ, ITM tint, amber ATM row, OI bars, leg outlines), builder strip, payoff tiles + chart, scenario matrix, portfolio bar",
+    "how": "CG.pubTerminal(kind) (alias CG.pubMock); the BTC price in the mock updates on every tick",
+    "status": "static",
+    "evidence": "original uses feature-payoff-diagram png inside a browser frame with hapiecoin.com url pill — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: TerminalIllustration built from design-system parts, no images (landing.test.tsx HC-PB-004); the live-data top bar, scenario matrix and portfolio bar of the v2 mock are not built (GAPS #54)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Floating hero chips replaced by data inside the terminal (Bull Call Spread legs with Δ/Θ, max profit / max loss / breakeven / POP tiles, 5×4 P&L matrix)",
+    "how": "Absolutely positioned cards around the mock; the mini frame lifts on hover",
+    "status": "static",
+    "evidence": "bundle strings: Strategy Templates, Ready to use, Live Greeks, Δ 0.45, Γ 0.02, Θ -12.5 — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: legs table and Max profit / Max loss / Breakeven / POP stat tiles inside the terminal (landing.test.tsx: 4 stat slots); the 5×4 P&L matrix is not built (GAPS #54)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Stats strip: 28 Built-in Strategies · Real-time Greeks & IV · 2 Assets Supported · Paper Trading (mono values, hairline cells)",
+    "how": "Numeric values count up from 0 when the row scrolls into view (IntersectionObserver, 1.5s; skipped under reduced-motion)",
+    "status": "working",
+    "evidence": "bundle: ist[] array + count-up hook — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: STATS from content/landing.ts rendered as the four-cell strip (landing-sections.test.tsx); values are static, the count-up animation is not built (GAPS #54)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Live Markets · Powered by Delta Exchange with LIVE tag and BTCUSD / ETHUSD / XAUTUSD tiles (price, 24h %, sparkline, H/L, IV)",
+    "how": "Tiles update and flash on every 'tick'",
+    "status": "working",
+    "evidence": "bundle: v2/ticker websocket subscription, LIVE / Connecting..., H: $ / L: $ · Phase 1 tests (tagged 08 Sep 2026): unit landing.test.tsx, e2e public.spec.ts"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "WHY HAPIECOIN? “Stop Guessing. Start Trading Smart” — two-column comparison table: Without HapieCoin (× rows, muted) vs With HapieCoin (✓ rows)",
+    "how": "Same 5 + 5 statements as v1 rendered as a table",
+    "status": "static",
+    "evidence": "bundle: fst[] and hst[] arrays — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: WITHOUT / WITH rows in one table (landing-sections.test.tsx)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "PLATFORM FEATURES tabs (amber underline, auto-rotate progress): Real-time Options Chain / Strategy Builder & Payoff / Paper & Live Trading, each with its terminal mock variant",
+    "how": "Variants: chain (chain + builder + payoff + matrix), builder (legs table + templates + payoff + Greeks strip), trading (positions list + wallet tiles + P&L history)",
+    "status": "working",
+    "evidence": "bundle: Zu[] array, 8000ms interval with progress state — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: FeatureTabs with the three tabs and panels (landing.test.tsx 'feature tabs switch panels', landing-sections.test.tsx); no auto-rotate progress (GAPS #54)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "CAPABILITIES “Built for Serious Traders” — 6 hairline cells (two wide) in one bordered grid",
+    "how": "4-column grid; the two “large” cards span 2 columns exactly like the original; hover lift",
+    "status": "static",
+    "evidence": "bundle: vst[] array with large flags — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: six CAPABILITIES cells, the two large ones span two columns (landing-sections.test.tsx)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "MARKET ANALYTICS “Liquidations & Market Pulse” — 24H Total Liq / Long Liq / Short Liq / Top Coin stat cells",
+    "how": "Values come from CG.mock.global (liq24h, longLiq24h, shortLiq24h, topLiqCoin) formatted as $214.00M etc.",
+    "status": "static",
+    "evidence": "bundle: 24H Total Liq, Long Liq, Short Liq, Top Coin — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: section head 'Liquidations & Market Pulse' with the teaser card; the four liquidation stat cells need analytics data and arrive with Phase 5 (GAPS #54)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "“Live liquidation pattern · last 40 intervals” bar sparkline",
+    "how": "40 bars from the last 40 entries of CG.mock.liqHistory; height ∝ long+short, red when long liquidations dominate, green otherwise; bars grow in on view and show a tooltip with the hourly values",
+    "status": "static",
+    "evidence": "bundle: 40-bar sparkline with bg-loss/bg-profit classes — Phase 4 item 5c audit (09 Sep 2026): not built: the 40-interval liquidation sparkline needs the analytics feed (Phase 5, GAPS #54)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "“Explore Analytics →” button",
+    "how": "Navigates to #/analytics (Market Analytics area)",
+    "status": "working",
+    "evidence": "bundle: Explore Analytics; original routes logged-in users to analytics — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: outline button → /analytics (landing-sections.test.tsx)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "EVERYTHING YOU NEED “Full Feature List” — 6 hairline cards × 6 bullets",
+    "how": "Exact bullet copy from the bundle's jot[] array rendered in a 3-column grid",
+    "status": "static",
+    "evidence": "bundle: jot[] array — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: FEATURE_LIST groups and bullets (landing-sections.test.tsx)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Testimonials marquee removed — replaced by the “What’s new in v2” strip",
+    "how": "See the new entries below",
+    "status": "working",
+    "evidence": "bundle: wse[] array, D9 marquee component (duration 30, x 0% → -50%) — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: no marquee; WHATS_NEW strip with 'new' badges (landing-sections.test.tsx)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "INTEGRATIONS “Supported Exchanges” — Delta Exchange (● LIVE, Connected via API) plus CoinDCX, CoinSwitch, Mudrex (Coming Soon)",
+    "how": "Text-logo tiles; the live card is highlighted, coming-soon cards are dimmed to 60% like the original",
+    "status": "static",
+    "evidence": "bundle: Tot[] array, Live / Coming Soon badges · Phase 1 tests (tagged 08 Sep 2026): e2e public.spec.ts"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "CTA panel “Ready to Trade Smarter?” with amber accent stripe (no gradient) and “Create Free Account →”",
+    "how": "Gradient primary→accent band; button navigates to #/auth",
+    "status": "working",
+    "evidence": "bundle: Ready to Trade Smarter?, Create Free Account — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: 'Ready to Trade Smarter?' with Create Free Account → /auth?tab=signup (landing-sections.test.tsx)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Footer: brand blurb, Quick Links (Features / Markets / Exchanges / What’s new in v2), Legal, Contact Us, mono bottom line",
+    "how": "Rendered by the shared CG.chrome['footer'] override so every screen with <div data-cg=\"footer\"> gets the same footer; Quick Links scroll to landing sections (navigating home first when needed), Legal links route, email is a mailto:, phone opens wa.me in a new tab",
+    "status": "working",
+    "evidence": "bundle: Iot[], Dot[], Quick Links, Legal, Contact Us, _blank noopener noreferrer — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: Footer with Quick Links (now including Payoff chart preview), Legal, Contact Us, mono bottom line (landing.test.tsx 'footer carries legal links and support contact', public.spec HC-PB-058)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Smooth-scroll section anchors with sticky-header offset",
+    "how": "data-scroll links call scrollIntoView on data-anchor targets (scroll-margin-top 64px) instead of changing the hash, so they never collide with the hash router",
+    "status": "working",
+    "evidence": "bundle: #features / #prices / #exchanges anchors, behavior: smooth — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: section ids whats-new / features / crypto-analytics / exchanges carry scroll-mt-16; header nav uses in-page anchors (landing-sections.test.tsx, landing.test.tsx nav links)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Dark theme support",
+    "how": "All colours use the shell's CSS variables; verified with clone/shots/public-landing-dark.png",
+    "status": "working",
+    "evidence": "original ships light + dark themes — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: visual captures home-dark / home-light (visual.spec)"
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "Split layout: panel-tone brand column (mono eyebrow, “Master Options Trading” with amber word, paragraph, 4 hairline feature rows, live futures ticker, mono copyright) + form column",
+    "how": "Glows and grid backgrounds removed",
+    "status": "static",
+    "evidence": "bundle: Master Options / Trading, fnt[] features, © 2025 HapieCoin. Secure & encrypted. · Phase 1 tests (tagged 08 Sep 2026): unit AuthScreen.test.tsx"
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "Tab state driven by the URL (?tab=login | otp-login | otp-verify | signup | verify-email | forgot | reset-password)",
+    "how": "Every tab change navigates to #/auth?tab=… (preserving next= and ref=) so browser back/forward moves between steps; sub-steps that need an email fall back to their parent step on a cold visit",
+    "status": "working",
+    "evidence": "bundle: signup, otp-verify, verify-email, reset-password, forgot, otp-login view keys · Phase 1 tests (tagged 08 Sep 2026): unit AuthScreen.test.tsx"
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "Logged-in visitors are redirected away from /auth",
+    "how": "show() checks CG.state.loggedIn and navigates to ?next= or /desk",
+    "status": "working",
+    "evidence": "bundle: navigate('/desk') when isLoggedIn · Phase 1 tests (tagged 08 Sep 2026): e2e auth.spec.ts"
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "Login card: “Welcome back · Sign in to your trading dashboard”, Continue with Delta Exchange, OR divider, mono uppercase field labels, amber Sign In, Forgot password? / Sign in with OTP, Create account",
+    "how": "Email required / format validated inline (“Email is required”, “Invalid email”); password < 6 chars → toast “Login failed · Invalid credentials.”; success → CG.auth.login(email), toast “Welcome back! · Logged in successfully.”, navigate to ?next= or /desk",
+    "status": "working",
+    "evidence": "bundle strings: Welcome back, Sign in to your trading dashboard, Continue with Delta Exchange, Email, Password, Sign In, Forgot password?, Sign in with OTP, Create account, Invalid credentials., Logged in successfully. · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "Password visibility toggle (eye / eye-off)",
+    "how": "Button switches the input type between password and text and swaps the icon; present on every password field",
+    "status": "working",
+    "evidence": "bundle: Eye / EyeOff icon paths · Phase 1 tests (tagged 08 Sep 2026): e2e auth.spec.ts"
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "Continue with Delta Exchange",
+    "how": "Navigates to #/auth/delta which simulates the OAuth hand-off",
+    "status": "working",
+    "evidence": "bundle: Continue with Delta Exchange, /auth/delta route · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx"
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "Sign in with OTP: “We'll send a one-time code to your registered email”, Email, Send OTP, New here? Create an account first, ← Back to login",
+    "how": "Validates the email, toast “OTP Sent · Check your email for the OTP.” and moves to ?tab=otp-verify",
+    "status": "working",
+    "evidence": "bundle: Sign in with OTP, otp-email, Send OTP, New here?, Create an account first, Back to login, OTP Sent · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "Enter OTP: “Code sent to <email>”, 6 DM Mono digit boxes (auto-advance, backspace, paste), Verify & Login, “Resend OTP in 30s” countdown → “Resend OTP”",
+    "how": "Boxes auto-advance, support backspace and paste; any 6 digits succeed (e.g. 123456) → toast “Welcome! · Logged in successfully” + login; incomplete code → “Error · Enter valid OTP”; resend → toast “OTP Resent” and the 30s timer restarts",
+    "status": "working",
+    "evidence": "bundle: Enter OTP, Code sent to, OTP Code, Verify & Login, Resend OTP in, Resend OTP, Change email, Enter valid OTP, OTP Resent · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "Create account form: Full Name, Email, Mobile Number, Password, Confirm, Referral Code (Optional) placeholder REF_XXXXXXX, Create Account, Already have an account? Sign in",
+    "how": "Referral code is prefilled from ?ref= (referral links); validations: name required, email format, 10-digit mobile, all password rules, confirm must match (“Passwords do not match”), referral pattern REF_…; success → toast “Account created! · Please verify your email with the OTP sent.” → ?tab=verify-email",
+    "status": "working",
+    "evidence": "bundle: Start your options trading journey, Full Name, John Doe, Mobile Number, signup-ref, Referral Code (Optional), REF_XXXXXXX, Create Account, Already have an account?, Account created! · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "Live password rules: ✓ Uppercase letter · ✓ Lowercase letter · ✓ Number · ✓ Special character · ✓ 8+ characters (+ strength bar)",
+    "how": "Each rule turns green as the typed password satisfies it; bar colour goes red → amber → green",
+    "status": "working",
+    "evidence": "bundle strings: ✓ Uppercase letter, ✓ Lowercase letter, ✓ Number, ✓ Special character, ✓ 8+ characters — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: PasswordRules turn green per rule with the red → amber → green bar (inputs.test.tsx)"
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "Verify your email: “We've sent a 6-digit OTP to <email>”, 6 boxes, Verify Email, “Didn't receive the code? Resend in 30s”, ← Back to sign up",
+    "how": "Incomplete → toast “Verification failed · Please enter the complete 6-digit OTP”; success → toast “Email verified! · You can now sign in.” and returns to the login tab with the email prefilled; resend → “OTP resent · A new OTP has been sent to your email.”",
+    "status": "working",
+    "evidence": "bundle: Verify your email, We've sent a 6-digit OTP to, Verify Email, Didn't receive the code?, Resend in, Email verified!, You can now sign in., OTP resent · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "Reset password: “Enter your email and we'll send you an OTP”, Email Address, Send OTP, ← Back to sign in",
+    "how": "Validates the email, toast “OTP sent! · Check your email for the OTP.” → ?tab=reset-password",
+    "status": "working",
+    "evidence": "bundle: Reset password, forgot-email, Email Address, Send OTP, Back to sign in, OTP sent! · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "Set new password: “Enter the OTP sent to <email> and your new password”, OTP, New Password (rules), Confirm Password, Reset Password, resend countdown, ← Back",
+    "how": "OTP must be 6 digits, new password must pass all rules and match; success → toast “Password reset! · You can now sign in with your new password.” → login tab",
+    "status": "working",
+    "evidence": "bundle: Set new password, Enter the OTP sent to, and your new password, reset-new-password, New Password, Confirm Password, Reset Password, Password reset!, A new OTP has been sent. · Phase 1 tests (tagged 08 Sep 2026): unit AuthForms.test.tsx, e2e auth.spec.ts"
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "?next= deep-link support",
+    "how": "Protected screens redirect to /auth?next=/path; after any successful login the user lands on that path",
+    "status": "working",
+    "evidence": "router contract in core.js · Phase 1 tests (tagged 08 Sep 2026): e2e auth.spec.ts"
+  },
+  {
+    "route": "/auth/delta",
+    "screen": "Delta Exchange sign-in",
+    "feature": "Full-screen spinner “Signing you in with Delta…”, then login",
+    "how": "After 1.5s: CG.auth.login(), toast “Welcome! · Signed in with Delta.”, navigate to /desk (timer cancelled if the user leaves)",
+    "status": "working",
+    "evidence": "bundle: Signing you in with Delta…, Welcome!, Signed in with Delta. — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: DeltaSignIn spinner then explanation (AuthScreen.test.tsx, auth.spec HC-PB-037)"
+  },
+  {
+    "route": "/sso",
+    "screen": "SSO return",
+    "feature": "“Signing you in…” spinner then redirect",
+    "how": "After 1s logs the user in and navigates to ?sso_return= (when it is an in-app path) or /desk",
+    "status": "working",
+    "evidence": "bundle: Signing you in…, sso_return — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: SsoReturn redirects after the delay (AuthScreen.test.tsx 'redirects to the target after the delay', auth.spec HC-PB-038)"
+  },
+  {
+    "route": "/privacy",
+    "screen": "Privacy Policy",
+    "feature": "← Back button, LEGAL eyebrow, title, mono “LAST UPDATED” line, 7 sections in a two-column definition layout",
+    "how": "Back goes to the previous screen (history.back) or home when opened directly; sections 1–7 use the bundle's exact headings and paragraphs",
+    "status": "working",
+    "evidence": "bundle: Privacy Policy, Last updated: March 30, 2026, 1. Information We Collect … 7. Contact Us — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: LegalPage with ← Back, Legal eyebrow, title, mono last-updated line and every section (landing.test.tsx 'legal pages render every section', public.spec HC-SH-016)"
+  },
+  {
+    "route": "/terms",
+    "screen": "Terms of Service",
+    "feature": "← Back button, title, mono last-updated line, 8 two-column sections",
+    "how": "Exact copy incl. “provided \"as is\" without warranties”",
+    "status": "working",
+    "evidence": "bundle: Terms of Service, 1. Acceptance of Terms … 8. Contact — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: LegalPage kind terms (public.spec HC-SH-016 checks the h1)"
+  },
+  {
+    "route": "/disclaimer",
+    "screen": "Disclaimer",
+    "feature": "← Back button, title, mono last-updated line, 7 two-column sections (Not Financial Advice … Third-Party Integrations)",
+    "how": "Exact copy from the bundle",
+    "status": "working",
+    "evidence": "bundle: Disclaimer, Not Financial Advice, Trading Risks, Cryptocurrency Risks, Data Accuracy, Paper Trading, No Guarantee, Third-Party Integrations — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: LegalPage kind disclaimer, 7 sections (landing.test.tsx, public.spec HC-PB-059 navigates there)"
+  },
+  {
+    "route": "/payoff-preview",
+    "screen": "Payoff chart preview",
+    "feature": "Preset chips: Iron Condor · Long Call (Unlimited) · Short Strangle (Both Unlimited) · Wide chain, narrow leg (BTC 78k, chain 69k-87k)",
+    "how": "Legs, prices and IVs copied from the bundle (Uot/zot/Vot/Wot); selecting a preset resets zoom, target and date and re-renders; spot 100k (78k for the wide-chain case) is passed to CG.analyze via opts.spot with lots sized so 1 contract = 1 BTC",
+    "status": "working",
+    "evidence": "bundle: R9[] presets, Payoff chart preview — Phase 4 item 5b (09 Sep 2026, ADR-037): PRESETS in lib/payoff-preview.ts (same legs, prices, IVs, spots); pp-preset buttons reset zoom, target and day (payoff-preview.test.tsx, public.spec)"
+  },
+  {
+    "route": "/payoff-preview",
+    "screen": "Payoff chart preview",
+    "feature": "Legend: On Expiry (ink) · On Target Date (blue) · Profit · Loss · Call OI · Put OI (faint) — click toggles the layer",
+    "how": "Legend items are clickable and toggle the matching chart layer (struck-through when off)",
+    "status": "working",
+    "evidence": "bundle: On Expiry, On Target Date, Profit, Loss, Call OI, Put OI — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-legend-item ×6 toggle expiry/target/fill/oi layers; struck-through when off"
+  },
+  {
+    "route": "/payoff-preview",
+    "screen": "Payoff chart preview",
+    "feature": "Zoom In / 100% / Zoom Out",
+    "how": "Zoom narrows or widens the price range around spot (×1.25 steps, 50%–400%); clicking the percentage resets; the target slider range follows",
+    "status": "working",
+    "evidence": "bundle: Zoom In, Zoom Out, Reset Zoom — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-zoom-in / pp-zoom-label (reset) / pp-zoom-out: ×1.25 steps, 50 %–400 %, price axis ±18 %/zoom around spot, target clamped into the axis"
+  },
+  {
+    "route": "/payoff-preview",
+    "screen": "Payoff chart preview",
+    "feature": "Layers popover (“Chart Layers”): Expiry P&L, Target Date P&L, Profit / Loss Fill, Open Interest, SD Bands, Breakevens",
+    "how": "Switch rows toggle each SVG layer live; closes on outside click",
+    "status": "working",
+    "evidence": "bundle: Toggle Layers, Chart Layers, Expiry P&L, Target Date P&L, Profit / Loss Fill, Open Interest, SD Bands, Breakevens — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-layers-button opens 'Chart Layers' with six role=switch rows (pp-layer-*); closes on outside mousedown"
+  },
+  {
+    "route": "/payoff-preview",
+    "screen": "Payoff chart preview",
+    "feature": "SD header: −2SD / −1SD / Current / +1SD / +2SD with “Expected move by target date (Nd)”",
+    "how": "Log-normal bands from the legs' average IV over the selected horizon; ±1SD is shaded on the chart with dashed edges",
+    "status": "working",
+    "evidence": "bundle: -2SD, -1SD, Current, +1SD, +2SD, Expected move by — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-sd: −2SD / −1SD / Current / +1SD / +2SD from sdBands() (average leg IV, lognormal over the slider horizon; 'by expiry (30d)' at day 0); ±1σ shaded by PayoffChart's band layer"
+  },
+  {
+    "route": "/payoff-preview",
+    "screen": "Payoff chart preview",
+    "feature": "SVG payoff chart restyled to the reference: single ink expiry line with green/red fills, blue target-date curve, amber SPOT pill + line, faint neutral OI bars, dashed ±1σ band labels, dashed breakevens with BE labels, blue target-price marker with P&L label",
+    "how": "Colours only via tokens: --foreground, --curve, --spot, --profit, --loss, --muted-foreground",
+    "status": "working",
+    "evidence": "pw/pub_payoff-preview.png — Phase 4 item 5b (09 Sep 2026, ADR-037): the workspace's canvas PayoffChart (ink expiry line, profit/loss fills, blue target curve, spot line, ±1σ band, dashed breakevens with BE labels, target marker) reused with the page's token colours"
+  },
+  {
+    "route": "/payoff-preview",
+    "screen": "Payoff chart preview",
+    "feature": "Hover crosshair + tooltip",
+    "how": "Moving over the plot shows a vertical crosshair, markers on both curves and a tooltip with the price, Expiry P&L and target-date P&L",
+    "status": "working",
+    "evidence": "original chart tooltip — Phase 4 item 5b (09 Sep 2026, ADR-037): PayoffChart draws the crosshair and markers; the summary row shows the pp-hover readout (price, Expiry P&L, ND P&L)"
+  },
+  {
+    "route": "/payoff-preview",
+    "screen": "Payoff chart preview",
+    "feature": "Summary line “@ $100k (+0.0%) · 15D: +$… · Expiry: +$… · Profit/Loss pill” (mono)",
+    "how": "Recomputed from CG.analyze at the target price for both the target date and expiry; the pill turns red “Loss: $…” when negative",
+    "status": "working",
+    "evidence": "pw/pub_payoff-preview.png summary row — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-summary: '@ $100k (+0.0%) · 15D: +$… · Expiry: +$… · Profit/Loss pill' from analyze()'s target point (pp-summary-target, pp-summary-expiry, pp-pill)"
+  },
+  {
+    "route": "/payoff-preview",
+    "screen": "Payoff chart preview",
+    "feature": "BTC TARGET slider with −/+ buttons, % chip and $ label",
+    "how": "Range slider (step $100) and ±$500 buttons move a target marker on the chart and update the summary on every input event",
+    "status": "working",
+    "evidence": "pw/pub_payoff-preview.png BTC TARGET card — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-target range (step $100) with pp-target-minus / pp-target-plus (±$500), pp-target-pct chip and $ label"
+  },
+  {
+    "route": "/payoff-preview",
+    "screen": "Payoff chart preview",
+    "feature": "TODAY date slider (Today ↔ Expiry) with ‹ › day buttons and info hint — defaults to mid-way so the target curve is visible",
+    "how": "Slider from day 0 to expiry (30d); the blue target-date curve, SD header and “ND:” summary value follow the selected day; label shows e.g. “Fri, 18 Sep 02:30 PM”",
+    "status": "working",
+    "evidence": "bundle: Expiry (date), Today — Phase 4 item 5b (09 Sep 2026, ADR-037): pp-day range 0..30 with pp-day-prev / pp-day-next, defaults to day 15, label 'Fri, 18 Sep 02:30 PM' style via dayLabel()"
+  },
+  {
+    "route": "*",
+    "screen": "Not found",
+    "feature": "Not found: ERROR eyebrow, 64px mono “404”, “Oops! Page not found”, outline “Return to Home”",
+    "how": "Catch-all screen; Return to Home → #/",
+    "status": "working",
+    "evidence": "bundle: 404, Oops! Page not found, Return to Home — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: app/not-found.tsx with 'Oops! Page not found' and Return to Home (public.spec HC-SH-016)"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "“What’s new in v2” strip (replaces testimonials): Scenario matrix · Vol & Structure tabs · Alerts · Command palette · Journal · Share links, each with an inline SVG icon, NEW tag and one-liner; “Full feature inventory →” link",
+    "how": "CG.mock.landing.whatsNew; anchor #whats-new reachable from the header nav and footer",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: WHATS_NEW strip reachable at #whats-new from the header nav and footer (landing-sections.test.tsx)",
+    "new": true
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Terminal mock top bar shows live ATM IV / IV rank / expected move from CG.chrome.marketStats and the Ctrl K hint",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): not built: the terminal illustration is static (no live ATM IV / IV rank / expected move); GAPS #54",
+    "new": true
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Terminal mock scenario matrix: 5 prices × Today / +6d / +13d / Expiry P&L cells, colour intensity scaled by magnitude",
+    "how": "Each cell is a CG.analyze(legs, asset, {targetDays, min, max, points:2}) call",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): not built: no scenario matrix in the illustration; GAPS #54",
+    "new": true
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Terminal mock portfolio bar mirrors the app: strategies, Net Δ, margin used, day P&L, alerts armed, basis, CCY",
+    "how": "Reads CG.chrome.portfolioData() when the chrome part is present",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): not built: no portfolio bar in the illustration; GAPS #54",
+    "new": true
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Live Markets tiles gained a 40-point sparkline and the asset IV",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: 40-point sparkline on every tile (landing.test.tsx 'renders connecting tiles, then live prices with flash, change, H/L and a sparkline'); the asset IV is not shown (GAPS #54)",
+    "new": true
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Hero meta line: FREE PLAN · PAPER TRADING INCLUDED · BTC · ETH · XAUT OPTIONS · DELTA EXCHANGE INDIA (mono micro-labels)",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: 'Free plan · paper trading included' meta line (public.spec HC-PB-001, landing-sections.test.tsx)",
+    "new": true
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Ctrl K button in the public header opens the command palette (Home / Sign in / legal / payoff preview commands available while logged out)",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5b (09 Sep 2026, ADR-037): palette nav:payoff-preview available signed out (public.spec)",
+    "new": true
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "Both themes: dark-first obsidian ground; light variant is the cool paper/graphite reading — no gradients, no card shadows, hairline separation",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: token-driven light and dark, captured in visual.spec home-*/auth-*/desk-*",
+    "new": true
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "Live futures ticker (BTC / ETH / XAUT price and 24h %) under the feature rows, updated every tick",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: AuthScreen brand column ticker from the gateway (AuthScreen.test.tsx HC-PB-023)",
+    "new": true
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "Mono inputs for mobile number, referral code and OTP; password strength bar + mono rule list",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5c audit (09 Sep 2026): verified in the web app: OtpInput boxes, mono mobile / referral inputs, PasswordRules with strength bar (inputs.test.tsx, AuthForms.test.tsx)",
+    "new": true
+  },
+  {
+    "route": "/payoff-preview",
+    "screen": "Payoff chart preview",
+    "feature": "Header note “Spot · amber · Target date · blue · OI · faint bars”; preset buttons use a neutral selected state",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5b (09 Sep 2026, ADR-037): 'Spot · amber · Target date · blue · OI · faint bars' note in the page header; selected preset uses variant secondary",
+    "new": true
+  },
+  {
+    "route": "/payoff-preview",
+    "screen": "Payoff chart preview",
+    "feature": "Target-price marker: dashed blue line, hollow dot on the active curve and “+$… @ price” label when the target differs from spot",
+    "how": "",
+    "status": "working",
+    "evidence": "v2 brief · verified in pw/check-v2-*.js — Phase 4 item 5b (09 Sep 2026, ADR-037): frame.target set only when the target differs from spot; PayoffChart draws the dashed marker with the P&L label",
+    "new": true
+  },
+  {
+    "route": "/auth",
+    "screen": "Sign in / Sign up",
+    "feature": "Continue with Google (Better Auth social sign-in): the button shows only when the API has Google configured; the OAuth callback is served on the web origin so the session cookie is first-party and /desk opens signed in",
+    "how": "authClient.signIn.social({ provider: \"google\", callbackURL: next }); BETTER_AUTH_URL = web origin (ADR-019)",
+    "status": "working",
+    "evidence": "Phase 1 build, 07 Sep 2026: e2e auth.spec.ts against the mock provider; GAPS #27",
+    "phase": 1
+  },
+  {
+    "route": "/t/<handle>",
+    "screen": "Public trader page",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "A trader's verified P&L on a public page: totals net of fees always, the daily chart, accounts and months when the trader turned them on, 404 alike for an unknown handle or a page that is off",
+    "how": "PublicHeader + Footer like /s/<code>; the body reads GET /v1/public/traders/<handle> (unauthenticated, Cache-Control public max-age=60) whose shape is publicTraderFrom: name, handle, all / 30-day / 7-day net, fills, since, last read, partial flag, and only the opted-in sections; never account ids, commissions, balances, positions, products or the Journal comparison; generateMetadata carries the 30-day figure into the title and description for link previews; USD only",
+    "evidence": "ADR-075 (12 Sep 2026): apps/web app/t/[handle]/page.tsx, components/public/TraderPage.tsx (trader-page[data-state], trader-total / d7 / d30, trader-days, trader-account, trader-month, trader-partial); apps/api routes/public-page.ts; packages/schema public-page.ts publicTraderFrom; unit public-page.test.ts (schema + api) HC-PB-066, trader-page.test.tsx HC-PB-066; e2e public.spec.ts HC-PB-066",
+    "test": "unit (schema + api + web), e2e"
+  },
+  {
+    "route": "/t/<handle>",
+    "screen": "Public trader page · share",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Share the page: post on X, send on Telegram, copy the link, download a 1200×630 PNG card",
+    "how": "Intent links built from the 30-day figure net of fees and the page URL (twitter.com/intent/tweet, t.me/share/url), opened in a new tab; Copy link through the clipboard; the card drawn on a canvas in the browser (dark, amber rule, name, handle, three figures, fills and since, the URL) and saved as hapiecoin-<handle>-verified-pnl.png through a data URL, no library and no server rendering; the same bar sits in the Public page dialog",
+    "evidence": "ADR-075 (12 Sep 2026): apps/web lib/public/share.ts shareText / xShareUrl / telegramShareUrl / cardFigures / drawShareCard / shareCardPng, components/public/ShareBar.tsx (share-x, share-telegram, share-copy-link, share-image); unit share.test.ts HC-PB-067, trader-page.test.tsx HC-PB-067; e2e public.spec.ts HC-PB-067",
+    "test": "unit (web), e2e"
+  },
+  {
+    "route": "/auth?tab=totp",
+    "screen": "Auth · Two-factor code",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Second factor at sign-in: the 6-digit code from the authenticator app, or a backup code",
+    "how": "A password sign-in on an account with 2FA on answers twoFactorRedirect and the form moves to the code step (no session yet); six boxes for the app code, 'Use a backup code instead' for a saved code (each works once), 'Back to sign in'; a wrong code says 'That code is not right.' Email codes and Google are refused for such an account with 'This account uses an authenticator app: sign in with your password and the code'",
+    "evidence": "ADR-078 (12 Sep 2026): apps/api auth.ts twoFactor plugin + the sign-in hooks; apps/web lib/auth/client.ts twoFactorClient, components/auth/AuthScreen.tsx AuthTab totp, AuthForms.tsx TotpForm; unit auth.test.ts (api) HC-PB-068, AuthForms.test.tsx HC-PB-068; e2e auth.spec.ts HC-PB-068",
+    "test": "unit (api + web), e2e"
+  },
+  {
+    "route": "/auth",
+    "screen": "Auth · Sign in",
+    "feature": "Sign in with a passkey",
+    "how": "Above the Delta and Google buttons when the browser has WebAuthn: one tap asks the device for the passkey and signs the account in without the password; an account with two-factor on is refused with 'This account uses an authenticator app: sign in with your password and the code' (ADR-078); a closed prompt and a device without a passkey each get one sentence",
+    "status": "working",
+    "new": true,
+    "phase": 5,
+    "evidence": "ADR-089 (13 Sep 2026): apps/web/src/components/auth/AuthForms.tsx Providers (continue-passkey), lib/auth/client.ts authErrorMessage; unit AuthForms.test.tsx HC-PB-069; e2e auth.spec.ts HC-PB-069 (CDP virtual authenticator)",
+    "test": "unit (web), e2e"
+  },
+  {
+    "route": "/",
+    "screen": "Landing page",
+    "feature": "HapieCoin's own home page with pictures of the product; plans coming soon",
+    "how": "A hero with one promise over a picture of the Desk, live market tiles, Build / Protect / Review, Autopilot (paper today, live next), Safety with the one connected exchange, and Plans marked coming soon with the support address; the pictures are the real screens with sample trades, one file per theme, captioned as samples, and the Autopilot picture shows no strategy names, strikes or exit levels; while plans are not on sale the hero button is Request early access and /plans shows a non-admin no prices and no way to pay",
+    "status": "working",
+    "new": true,
+    "phase": 5,
+    "evidence": "ADR-140 (25 Nov 2026): apps/web/src/app/page.tsx, src/content/landing.ts (PLANS_ON_SALE), src/components/landing/ProductShot.tsx, PublicHeader.tsx, Footer.tsx, src/components/account/SubscriptionPage.tsx (onSale), src/app/plans/page.tsx, public/shots; tests: landing-sections.test.tsx HC-PB-070 (four tests), subscription.test.tsx HC-PB-070, landing.test.tsx HC-PB-001, e2e public.spec.ts; GAPS #177",
+    "test": "unit (web), e2e"
+  }
 ]

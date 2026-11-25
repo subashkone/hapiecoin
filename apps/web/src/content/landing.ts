@@ -1,216 +1,89 @@
-// Landing copy, verbatim from the v2 mock (mockup-v2/public-src/20-landing.js). Server-safe: plain data; the template
-// count is read from the catalogue so the copy never drifts from it (ADR-060).
+// Public home page copy (ADR-140). HapieCoin's own words, in the order a trade happens: build, protect, review, then
+// Autopilot and safety. Every claim names something the product does; the pictures are the product itself with sample
+// trades (apps/web/public/shots). Server-safe: plain data; the template count is read from the catalogue so the copy
+// never drifts from it (ADR-060).
 import { TEMPLATE_COUNT } from "@/lib/strategy/templates";
 
-export const HERO_BULLETS = [
-  "Real-time Options Chain with Live Greeks",
-  `${TEMPLATE_COUNT} Pre-built Strategy Templates`,
-  "Risk-free Paper Trading Mode",
-  "Interactive P&L Payoff Diagrams",
-  "WebSocket Streaming Prices",
-  "Multi-leg Strategy Builder",
-] as const;
+export const HERO = {
+  eyebrow: "Crypto options · Indian exchanges",
+  title: "Know your worst case before you place the trade.",
+  lede: "HapieCoin is a desk for BTC, ETH and gold options. Build a strategy, see what it can make and lose, practise it on paper, and let stop and target rules watch it for you.",
+  note: "Connected today: Delta Exchange India. Options trading carries risk of loss.",
+} as const;
 
-export const STATS = [
-  { icon: "layers", value: String(TEMPLATE_COUNT), label: "Built-in Strategies" },
-  { icon: "activity", value: "Real-time", label: "Greeks & IV" },
-  { icon: "coins", value: "3", label: "Assets Supported" },
-  { icon: "shield", value: "Paper", label: "Trading" },
-] as const;
+/** A product picture: `shots/<name>-dark.png` and `-light.png`. A whole screen is 2000 x 1250; a dialog gives its own size. */
+export interface Shot {
+  name: string;
+  alt: string;
+  /** Pixel size of the files, when it is not a whole screen. */
+  size?: { w: number; h: number };
+}
 
-export const WITHOUT = [
-  "Guessing strike prices blindly",
-  "No real-time Greeks or IV data",
-  "Manual P&L tracking on spreadsheets",
-  "No way to test strategies risk-free",
-  "Scattered tools across platforms",
-] as const;
+export const HERO_SHOT: Shot = { name: "paper", alt: "The HapieCoin Desk: a sample BTC iron condor on paper with its stop and target, and its payoff chart with both break-evens" };
 
-export const WITH = [
-  "ATM detection + full options chain",
-  "Live Delta, Gamma, Theta, Vega & IV",
-  "Automated P&L with payoff charts",
-  "Free paper trading with live prices",
-  "All-in-one analytics dashboard",
-] as const;
-
-export const FEATURE_TABS = [
+export const STEPS: readonly { id: string; step: string; title: string; body: string; points: readonly string[]; shot: Shot }[] = [
   {
-    id: "chain",
-    title: "Real-time Options Chain",
-    bullets: [
-      "Live Greeks: Delta, Gamma, Theta, Vega",
-      "Implied Volatility & Open Interest",
-      "Bid/Ask spreads with depth",
-      "WebSocket streaming updates",
-    ],
+    id: "build",
+    step: "1 · Build",
+    title: "Pick the strikes, see the payoff.",
+    body: `A live options chain with every strike the exchange lists. Add legs by hand or start from ${TEMPLATE_COUNT} ready templates.`,
+    points: ["Most you can make, most you can lose and both break-evens", "Fees and estimated margin before you trade", "Greeks, scenarios and volatility beside the chart"],
+    shot: { name: "build", alt: "The Builder with a four-leg iron condor: premium, fees, margin estimate and the payoff chart" },
   },
   {
-    id: "builder",
-    title: "Strategy Builder & Payoff",
-    bullets: [
-      "Build multi-leg strategies visually",
-      "Interactive P&L payoff charts",
-      "Max profit, max loss & breakevens",
-      `${TEMPLATE_COUNT} pre-built strategy templates`,
-    ],
-  },
-  {
-    id: "trading",
-    title: "Paper & Live Trading",
-    bullets: [
-      "Risk-free paper trading mode",
-      "Real-time P&L tracking",
-      "Position management & adjustments",
-      "One-click live execution via Delta",
-    ],
+    id: "protect",
+    step: "2 · Protect",
+    title: "Set the exits before you enter.",
+    body: "Give a trade its stop and its target when you open it. The rules run on our servers, so they work with your browser closed.",
+    points: ["Stop loss and target for the whole strategy", "A target that trails your best profit, or takes profit in steps", "A stop on one leg, a spot level and a time exit"],
+    shot: { name: "protect", alt: "The Protect dialog: stop loss, target with a trail, take profit in steps, leg stops and a time exit", size: { w: 800, h: 1150 } },
   },
 ] as const;
 
-export const CAPABILITIES = [
-  {
-    icon: "activity",
-    title: "Live Greeks & IV",
-    desc: "Delta, Gamma, Theta, Vega — all updated in real-time with sub-second WebSocket streaming for precise risk assessment.",
-    large: true,
-  },
-  { icon: "crosshair", title: "ATM Detection", desc: "Auto-detect at-the-money strikes for quick strategy setup." },
-  { icon: "gitbranch", title: "Multi-leg Strategies", desc: "Build complex spreads, strangles, iron condors & more." },
-  {
-    icon: "radio",
-    title: "WebSocket Prices",
-    desc: "Sub-second price updates via WebSocket streaming for lightning-fast decisions.",
-  },
-  {
-    icon: "shield",
-    title: "Risk Management",
-    desc: "Max profit, max loss, breakeven analysis, and comprehensive risk metrics — everything you need to manage exposure with confidence.",
-    large: true,
-  },
-  { icon: "globe", title: "Multiple Assets", desc: "Trade BTC, ETH & XAUT options on Delta Exchange." },
+export const REVIEW = {
+  step: "3 · Review",
+  title: "Learn from every closed trade.",
+  points: [
+    { title: "Journal", body: "Every paper and live trade with its notes, tags and the reason it closed." },
+    { title: "Backtest and replay", body: "Run a strategy on past option prices, or step through a past day." },
+    { title: "Verified P&L", body: "Your live results checked against the exchange's own fills." },
+  ],
+} as const;
+
+export const AUTOPILOT = {
+  title: "Autopilot trades your strategies for you, with the exits attached.",
+  lede: "Switch on the strategies you want. Autopilot watches the market, enters when a strategy's own conditions are met and stays out when they are not. Today it trades on paper with live prices; live trading on your exchange comes next.",
+  points: [
+    { title: "Paper first", body: "Today it places no real orders. Live trading comes next." },
+    { title: "Every trade has an exit", body: "Stop, target or trail from the moment it opens." },
+    { title: "You stay in charge", body: "Exit one trade, switch a strategy off, or stop everything." },
+    { title: "Every decision is logged", body: "Entries, exits and the trades it skipped, with the reason." },
+  ],
+  shot: { name: "autopilot", alt: "The Autopilot screen: five sample paper trades, each with its health and its profit or loss now" } satisfies Shot,
+} as const;
+
+export const SAFETY = [
+  { title: "Paper before live", body: "Every strategy can run on paper with live prices first." },
+  { title: "You type LIVE to go live", body: "A real order needs a typed confirmation, and a second factor when you turn it on." },
+  { title: "Margin shown first", body: "You see the estimated margin and the fees before anything is sent." },
+  { title: "Keys stay encrypted", body: "Your exchange API key is stored encrypted and is never shown again after you save it." },
 ] as const;
 
-export const FEATURE_LIST = [
-  {
-    icon: "barchart",
-    title: "Options Analytics",
-    features: [
-      "Real-time Options Chain with live bid/ask prices",
-      "Full Greeks display — Delta, Gamma, Theta, Vega, Rho",
-      "Implied Volatility (IV) calculations",
-      "ATM (At-The-Money) strike auto-detection",
-      "Open Interest & Volume analysis",
-      "Multi-expiry support with quick switching",
-    ],
-  },
-  {
-    icon: "gitbranch",
-    title: "Strategy Builder",
-    features: [
-      "Multi-leg strategy construction (up to 4 legs)",
-      "Pre-built strategy templates (Straddle, Strangle, Spreads…)",
-      "Payoff diagram with breakeven visualization",
-      "Max Profit / Max Loss / Risk-Reward ratio",
-      "Custom strike & expiry selection per leg",
-      "Save & load strategies for later analysis",
-    ],
-  },
-  {
-    icon: "wallet",
-    title: "Paper Trading",
-    features: [
-      "Simulated order execution with live market prices",
-      "Track P&L in real-time without real capital",
-      "Position management — view, modify & square-off",
-      "Order history with entry / exit details",
-      "Exchange charges & fee simulation",
-      "Practice strategies risk-free before going live",
-    ],
-  },
-  {
-    icon: "activity",
-    title: "Live Market Data",
-    features: [
-      "WebSocket streaming for sub-second price updates",
-      "BTC, ETH & XAUT futures price with 24h change",
-      "Live P&L tracking on open positions",
-      "Connection status indicators",
-      "Automatic reconnection on network drops",
-      "Binance & Delta Exchange data feeds",
-    ],
-  },
-  {
-    icon: "shield",
-    title: "Risk Management",
-    features: [
-      "Position-level & portfolio-level risk metrics",
-      "Breakeven price calculation",
-      "Probability of profit estimation",
-      "Max drawdown & exposure analysis",
-      "Lot size & margin calculator",
-      "Currency conversion (USD / INR)",
-    ],
-  },
-  {
-    icon: "settings",
-    title: "Platform & Settings",
-    features: [
-      "Dark / Light theme toggle",
-      "API key management for Delta Exchange",
-      "Exchange charge configuration",
-      "Custom lot size settings",
-      "User profile & subscription management",
-      "Mobile-responsive design",
-    ],
-  },
-] as const;
-
-export const WHATS_NEW = [
-  {
-    icon: "grid",
-    title: "Scenario matrix",
-    desc: "P&L by price × date in one colour-scaled table — the most-used paid feature, now first-class in the Scenarios tab.",
-  },
-  {
-    icon: "sliders",
-    title: "Vol & Structure tabs",
-    desc: "IV smile, term structure, open-interest walls and max pain for the selected expiry, right beside the chain.",
-  },
-  {
-    icon: "bell",
-    title: "Alerts",
-    desc: "Price, IV rank and strategy P&L alerts evaluated on every tick — delivered by push, email or Telegram.",
-  },
-  {
-    icon: "command",
-    title: "Command palette",
-    desc: "Ctrl K anywhere: jump to a screen, switch asset, toggle theme or density, arm an alert. Press ? for every shortcut.",
-  },
-  {
-    icon: "book",
-    title: "Journal",
-    desc: "Every paper and live trade with notes, tags and outcome — searchable, filterable and exportable.",
-  },
-  {
-    icon: "share",
-    title: "Share links",
-    desc: "Share a strategy as a link with legs, payoff and scenario matrix embedded for review.",
-  },
-] as const;
-
-export const EXCHANGES = [
-  { name: "Delta Exchange", status: "live", mark: "Δ" },
-  { name: "CoinDCX", status: "coming", mark: "DCX" },
-  { name: "CoinSwitch", status: "coming", mark: "CS" },
-  { name: "Mudrex", status: "coming", mark: "M" },
-] as const;
+export const EXCHANGES = [{ name: "Delta Exchange India", status: "live", mark: "Δ" }] as const;
 
 export const AUTH_FEATURES = [
-  { icon: "barchart", title: "Real-time Analytics", desc: "Live options chain with Greeks & IV" },
-  { icon: "shield", title: "Paper Trading", desc: "Practice risk-free before going live" },
-  { icon: "zap", title: "Strategy Builder", desc: "Build & backtest custom strategies" },
-  { icon: "trending", title: "Payoff Charts", desc: "Visualize P&L across strike prices" },
+  { icon: "barchart", title: "See the worst case first", desc: "Payoff, break-evens, fees and margin before you trade" },
+  { icon: "shield", title: "Practise on paper", desc: "The same screens and rules, with live prices" },
+  { icon: "zap", title: "Exits that keep watching", desc: "Stops, targets and trails run on our servers" },
+  { icon: "trending", title: "Learn from every trade", desc: "Journal, backtest and replay" },
 ] as const;
+
+/**
+ * ADR-140: whether plans can be bought. Off until the pricing is decided: the home page says "coming soon", the plan
+ * page shows no prices and no way to pay (an admin still sees everything), and access is granted by hand from the admin
+ * screen. One switch, so turning sales on is one line.
+ */
+export const PLANS_ON_SALE: boolean = false;
 
 export const SUPPORT_EMAIL = "support@hapiecoin.com";
 export const SUPPORT_WHATSAPP = { href: "https://wa.me/919684022369", label: "+91 96840 22369" };

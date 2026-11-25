@@ -24,8 +24,8 @@ describe("HC-PB-024 tab state in the URL", () => {
   });
   it("HC-PB-023 renders the brand column, feature rows and live ticker; cold sub-step falls back to its parent", async () => {
     renderWithProviders(<AuthScreen tab="otp-verify" next="" referral="" googleEnabled={false} />);
-    expect(screen.getByText("Master Options")).toBeTruthy();
-    expect(screen.getByText("Real-time Analytics")).toBeTruthy();
+    expect(screen.getByText("Know your worst case before you place the trade.")).toBeTruthy();
+    expect(screen.getByText("See the worst case first")).toBeTruthy();
     expect(screen.getByText("© 2025 HapieCoin · Secure & encrypted")).toBeTruthy();
     // no email known on a cold visit → parent step (otp-login)
     await waitFor(() => expect(screen.getByTestId("auth-otp-login")).toBeTruthy());

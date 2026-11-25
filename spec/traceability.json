@@ -3159,6 +3159,21 @@
   "evidence": "ADR-089 (13 Sep 2026): apps/web/src/components/auth/AuthForms.tsx Providers (continue-passkey), lib/auth/client.ts authErrorMessage; unit AuthForms.test.tsx HC-PB-069; e2e auth.spec.ts HC-PB-069 (CDP virtual authenticator)"
  },
  {
+  "id": "HC-PB-070",
+  "area": "10-public",
+  "areaName": "Public site & authentication",
+  "owner": "Platform engineer",
+  "route": "/",
+  "screen": "Landing page",
+  "feature": "HapieCoin's own home page with pictures of the product; plans coming soon",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web), e2e",
+  "acceptance": "A hero with one promise over a picture of the Desk, live market tiles, Build / Protect / Review, Autopilot (paper today, live next), Safety with the one connected exchange, and Plans marked coming soon with the support address; the pictures are the real screens with sample trades, one file per theme, captioned as samples, and the Autopilot picture shows no strategy names, strikes or exit levels; while plans are not on sale the hero button is Request early access and /plans shows a non-admin no prices and no way to pay",
+  "evidence": "ADR-140 (25 Nov 2026): apps/web/src/app/page.tsx, src/content/landing.ts (PLANS_ON_SALE), src/components/landing/ProductShot.tsx, PublicHeader.tsx, Footer.tsx, src/components/account/SubscriptionPage.tsx (onSale), src/app/plans/page.tsx, public/shots; tests: landing-sections.test.tsx HC-PB-070 (four tests), subscription.test.tsx HC-PB-070, landing.test.tsx HC-PB-001, e2e public.spec.ts; GAPS #177"
+ },
+ {
   "id": "HC-WS-001",
   "area": "20-desk",
   "areaName": "Workspace: chain & analysis pane",
