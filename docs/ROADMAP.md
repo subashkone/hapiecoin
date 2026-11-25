@@ -19,6 +19,7 @@ Order agreed with the user. One PR per line unless grouped. Status: ⬜ not star
 12. ✅ Phone pass on the workspace, cards and dialogs · MERGED 12 Sep 2026 as PR #85 (ADR-080; HC-SH-130..131, HC-WS-115; GAPS #96): scrolling tab strips, compact header below 768 px, the chain pans by touch and acts on tap with finger-sized controls, tables scroll inside their container, a Pixel 7 Playwright project (phone.spec.ts)
 
 ## C. Go-live and business
+12a. 🔨 The public home page as HapieCoin's own, with pictures of the product; plans marked coming soon behind one switch (branch feat/public-home; ADR-140, HC-PB-070, GAPS #177). The owner's order, 25 Nov 2026: this, then deployment (13), then the Autopilot strategy builder (39x)
 13. ⬜ Deployment (docs/deploy.md) — waits on the hosting provider choice; then DNS, Resend, Razorpay live keys, Telegram bot token
 14. ⬜ Delta Exchange India partnership conversation (broker-pays or affiliate; reuses the referral / commission machinery)
 15. ⬜ Free tier vs. Pro split tuned to the competitor anchor (₹392–800 / month); education funnel (English + Hindi) tied to paper trading
@@ -60,7 +61,8 @@ The server enters paper trades by itself from playbooks, with their exits armed.
 39a. 🔨 Strategy lab: a second thread that only researches and proposes (docs/research/STRATEGY-LAB.md); approved ideas are built here as new paper strategies
 39b. 🔨 Take profit in steps: a profit ladder on any paper trade (Protect dialog, the card) and three Autopilot paper strategies with it (branch feat/profit-ladder, ADR-120, HC-TR-236 to HC-TR-239, GAPS #155, migration 0030); live partial exits are a later step
 39d. ✅ (PR #137) Ten paper strategies from the strategy lab, with a profit lock rule, a timed exit and half then trail (branch feat/autopilot-exits, ADR-121, HC-TR-240, HC-TR-241, GAPS #156); approved and not built: sell only the side behind a 24-hour move
-39w. 🔨 Open on the Desk goes to the trade's own card: the link names the trade and the Paper list turns to its page (branch fix/autopilot-open-on-desk; HC-TR-268, GAPS #176)
+39x. ⬜ A builder for the owner's own Autopilot strategies (asked 25 Nov 2026): a form over the settings the engine already has, paper only, the backtest with fill costs shown before a strategy can be switched on. Brainstorm and mock screens first; nothing is built before the owner approves them. After deployment
+39w. ✅ (PR #152) Open on the Desk goes to the trade's own card: the link names the trade and the Paper list turns to its page (branch fix/autopilot-open-on-desk; HC-TR-268, GAPS #176)
 39v. ✅ (PR #151) The Autopilot screen as a summary and four full-width views: open trades worst first, closed trades by day with won and lost, strategies with exit tags, the log by kind and day (branch feat/autopilot-tabs; ADR-139, HC-TR-267, GAPS #175); open: paging to rows older than the server sends
 39u. ✅ (PR #150) An ETH daily strangle with wings and the trail alone: sold 2 % away, wings 4 % away, no stop, trailed from half the net premium; a capped loss (branch feat/eth-winged-daily; ADR-138, HC-TR-266, GAPS #174); switched on 24 Nov 2026, first entry that evening
 39t. ✅ (PR #149) The cautious cards quote their backtest with real fill costs (BTC +4.12, ETH +2.28 a day), with the mark-filled figures beside them (branch fix/cautious-slippage; ADR-137, GAPS #173); open: the older cards are still at the mark

@@ -90,14 +90,10 @@ export function AuthScreen({ tab: requestedTab, next, referral, googleEnabled }:
         <div>
           <Logo />
           <div className="mt-16 max-w-md">
-            <p className="micro">Options analytics · Delta Exchange India</p>
-            <h1 className="mt-3 text-4xl leading-[1.08]">
-              Master Options
-              <br />
-              <span className="text-primary">Trading</span>
-            </h1>
+            <p className="micro">Crypto options · Indian exchanges</p>
+            <h1 className="mt-3 text-balance text-4xl leading-[1.08]">Know your worst case before you place the trade.</h1>
             <p className="mt-4 text-muted-foreground">
-              Professional-grade crypto options analytics with real-time Greeks, strategy building, and paper trading.
+              Build a strategy, see what it can make and lose, practise it on paper, and let stop and target rules watch it for you.
             </p>
             <div className="mt-8 divide-y divide-border border-y border-border">
               {AUTH_FEATURES.map((f) => (

@@ -117,6 +117,27 @@ describe("HC-AC-008 / HC-AC-009 / HC-AC-064 current-plan actions and error state
   });
 });
 
+describe("HC-PB-070 plans not on sale yet (ADR-140)", () => {
+  it("the page says coming soon and how to ask for early access, with no prices, no plan cards and no way to pay; a subscriber keeps the plan and loses only Renew and Upgrade", async () => {
+    mock.state.plans.find((p) => p.name === "Free")!.active = false;
+    const first = renderWithProviders(<SubscriptionPage onSale={false} />);
+    await waitFor(() => expect(screen.getByTestId("subscription-page").dataset["state"]).toBe("ready"));
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Plans are coming soon");
+    const note = screen.getByTestId("sub-coming-soon");
+    expect(note.textContent).toContain("Your account is ready. Plans and pricing are coming soon.");
+    expect([...note.querySelectorAll("a")].map((x) => x.getAttribute("href"))).toEqual(["mailto:support@hapiecoin.com", "https://wa.me/919684022369"]);
+    for (const id of ["sub-need-plan", "sub-plans", "plan-card", "plan-price", "plan-matrix", "sub-upgrade", "sub-renew"]) expect(screen.queryByTestId(id)).toBeNull();
+    expect(screen.getByTestId("sub-none").textContent).toContain("We add it by hand for early access.");
+    first.unmount();
+    mock.state.accounts.get(EMAIL)!.subscription = { id: "sub_soon", planId: "pln_pro", interval: "monthly", startsAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 20 * 86_400_000).toISOString(), priceInr: "999", paidInr: "0" };
+    renderWithProviders(<SubscriptionPage onSale={false} />);
+    await waitFor(() => expect(screen.getByTestId("subscription-page").dataset["state"]).toBe("ready"));
+    expect(screen.getByTestId("sub-plan-name").textContent).toBe("Pro");
+    expect(screen.getByTestId("sub-coming-soon").textContent).not.toContain("Your account is ready");
+    for (const id of ["sub-plans", "sub-upgrade", "sub-renew"]) expect(screen.queryByTestId(id)).toBeNull();
+  });
+});
+
 describe("HC-AC-075 no Free plan on offer (ADR-107)", () => {
   it("a user without a plan is told one is needed and sees only the paid plans; a subscriber is not told", async () => {
     mock.state.plans.find((p) => p.name === "Free")!.active = false;

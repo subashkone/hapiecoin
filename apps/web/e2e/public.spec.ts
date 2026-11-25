@@ -4,14 +4,22 @@ test.describe("HC-PB landing and public pages", () => {
   test("HC-PB-001 / HC-PB-004 / HC-PB-018 / HC-PB-058 header, hero, exchanges, footer", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle(/HapieCoin/);
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Trade Crypto Options");
-    await expect(page.getByText("Live on Delta Exchange")).toBeVisible();
-    await expect(page.getByText("Free plan · paper trading included")).toBeVisible();
-    await expect(page.getByTestId("get-started")).toHaveAttribute("href", "/auth");
+    // HC-PB-070 (ADR-140): HapieCoin's own page, no free plan on offer, plans coming soon
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Know your worst case");
+    await expect(page.getByTestId("hero-note")).toContainText("Delta Exchange India");
+    await expect(page.getByText(/free plan/i)).toHaveCount(0);
+    await expect(page.getByTestId("hero-cta")).toHaveAttribute("href", "/auth?tab=signup");
+    await expect(page.getByTestId("get-started")).toHaveAttribute("href", "/auth?tab=signup");
+    await expect(page.getByTestId("home-plans-soon")).toContainText("coming soon");
     await expect(page.getByTestId("exchange-live")).toHaveCount(1);
-    await expect(page.getByTestId("exchange-coming")).toHaveCount(3);
+    await expect(page.getByTestId("exchange-coming")).toHaveCount(0);
     await expect(page.getByText("support@hapiecoin.com")).toBeVisible();
-    await expect(page.locator("img")).toHaveCount(0); // hero terminal is built from components, not images
+    await expect(page.getByTestId("product-shot")).toHaveCount(4); // the product itself, with sample trades
+    // of each picture's two files only the one for the theme is shown, and it has loaded
+    const hero = page.locator("[data-testid=product-shot][data-shot=paper] img[data-theme-shot=dark]");
+    await expect(hero).toBeVisible();
+    await expect(page.locator("[data-testid=product-shot][data-shot=paper] img[data-theme-shot=light]")).toBeHidden();
+    expect(await hero.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
     // security headers from the proxy
     const res = await page.request.get("/privacy");
     const csp = res.headers()["content-security-policy"] ?? "";

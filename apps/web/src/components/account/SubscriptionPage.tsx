@@ -7,6 +7,7 @@ import { PaymentHistory } from "./PaymentHistory";
 import { type BillingInterval, LIMIT_KEYS, LIMIT_LABELS, type Plan, type SubscriptionView } from "@hapiecoin/schema";
 import { Button, EmptyState, cn } from "@hapiecoin/ui";
 import { useEffect, useMemo, useState } from "react";
+import { SUPPORT_EMAIL, SUPPORT_WHATSAPP } from "@/content/landing";
 import { useSubscription } from "@/lib/api/billing";
 import { BILLING_INTERVALS, INTERVAL_LABELS, effectivePrice, fmtInr, limitText, nextPlan, perMonth } from "@/lib/billing/format";
 import { fmtDate } from "@/lib/format";
@@ -193,7 +194,11 @@ export function LimitsMatrix({ plans, interval, currentId }: { plans: Plan[]; in
   );
 }
 
-export function SubscriptionPage() {
+/**
+ * `onSale` false (ADR-140): plans are not sold yet. The page keeps what the trader has (plan, limits, payments) and
+ * shows no prices, no plan cards and no way to pay; it says how to ask for early access instead.
+ */
+export function SubscriptionPage({ onSale = true }: { onSale?: boolean }) {
   const { data: view, isLoading, isError, error, refetch } = useSubscription();
   const [interval, setInterval] = useState<BillingInterval>("monthly");
   const [pinnedId, setPinnedId] = useState<string | null>(null);
@@ -227,8 +232,15 @@ export function SubscriptionPage() {
   return (
     <main className="mx-auto max-w-[1100px] px-6 py-8" data-testid="subscription-page" data-state="ready">
       <p className="micro">My plan</p>
-      <h1 className="mt-1">Choose a plan to unlock features</h1>
-      {view.plan.access === false ? <div className="mt-3 rounded border border-primary/40 p-2 text-xs" data-testid="sub-need-plan">HapieCoin needs an active plan. Choose one below to open the Desk; if you have already paid us directly, your plan appears here as soon as we add it.</div> : null}
+      <h1 className="mt-1">{onSale ? "Choose a plan to unlock features" : "Plans are coming soon"}</h1>
+      {!onSale ? (
+        <div className="mt-3 rounded border border-primary/40 p-3 text-sm" data-testid="sub-coming-soon">
+          {view.plan.access === false ? "Your account is ready. " : ""}Plans and pricing are coming soon. For early access write to{" "}
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="underline underline-offset-4">{SUPPORT_EMAIL}</a> or WhatsApp{" "}
+          <a href={SUPPORT_WHATSAPP.href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{SUPPORT_WHATSAPP.label}</a>
+          ; your plan appears here as soon as we add it.
+        </div>
+      ) : view.plan.access === false ? <div className="mt-3 rounded border border-primary/40 p-2 text-xs" data-testid="sub-need-plan">HapieCoin needs an active plan. Choose one below to open the Desk; if you have already paid us directly, your plan appears here as soon as we add it.</div> : null}
       {!view.accountActive ? <div className="mt-3 rounded border border-loss/40 p-2 text-xs text-loss" data-testid="sub-deactivated">Your account has been deactivated. Trading and plan changes are paused; contact support.</div> : null}
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
@@ -239,8 +251,8 @@ export function SubscriptionPage() {
                 <span className="text-lg font-medium" data-testid="sub-plan-name">{cur.planName}</span>
                 <StatusBadge state={view.plan.state} daysLeft={view.plan.daysLeft} />
                 <span className="flex-1" />
-                {cur.interval ? <Button size="sm" variant="outline" onClick={() => plan && setChoose(plan)} data-testid="sub-renew">Renew</Button> : null}
-                {upgrade ? <Button size="sm" onClick={() => setChoose(upgrade)} data-testid="sub-upgrade">Upgrade</Button> : null}
+                {onSale && cur.interval ? <Button size="sm" variant="outline" onClick={() => plan && setChoose(plan)} data-testid="sub-renew">Renew</Button> : null}
+                {onSale && upgrade ? <Button size="sm" onClick={() => setChoose(upgrade)} data-testid="sub-upgrade">Upgrade</Button> : null}
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-3 sm:grid-cols-5" data-testid="sub-summary">
                 <Stat label="Billing" value={cur.interval ? INTERVAL_LABELS[cur.interval] : "—"} />
@@ -251,7 +263,7 @@ export function SubscriptionPage() {
               </div>
             </>
           ) : (
-            <EmptyState title="No Active Subscription" description={plan ? `You are on the ${plan.name} plan. Pick a plan below to unlock more.` : "No plans are configured yet."} className="py-6" data-testid="sub-none" action={upgrade ? <Button size="sm" onClick={() => setChoose(upgrade)} data-testid="sub-upgrade">See plans</Button> : undefined} />
+            <EmptyState title="No Active Subscription" description={!onSale ? "You have no plan yet. We add it by hand for early access." : plan ? `You are on the ${plan.name} plan. Pick a plan below to unlock more.` : "No plans are configured yet."} className="py-6" data-testid="sub-none" action={onSale && upgrade ? <Button size="sm" onClick={() => setChoose(upgrade)} data-testid="sub-upgrade">See plans</Button> : undefined} />
           )}
           {plan ? (
             <div className="mt-4 border-t border-border pt-3 text-xs" data-testid="sub-features">
@@ -270,7 +282,7 @@ export function SubscriptionPage() {
         <LimitsList view={view} />
       </div>
 
-      <section className="mt-8" data-testid="sub-plans">
+      {onSale ? <section className="mt-8" data-testid="sub-plans">
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="text-base font-medium">Available plans</h2>
           <div className="ml-auto flex rounded border border-border p-0.5" role="tablist" aria-label="Billing interval">
@@ -290,10 +302,10 @@ export function SubscriptionPage() {
         <div className="mt-4">
           <LimitsMatrix plans={view.plans} interval={interval} currentId={currentId} />
         </div>
-      </section>
+      </section> : null}
 
       <PaymentHistory onBrowsePlans={() => document.getElementById("plan-grid")?.scrollIntoView({ behavior: "smooth" })} />
-      <CheckoutDialog plan={choose} interval={interval} open={choose !== null} onOpenChange={(o) => !o && setChoose(null)} onActivated={() => setPinnedId(null)} />
+      {onSale ? <CheckoutDialog plan={choose} interval={interval} open={choose !== null} onOpenChange={(o) => !o && setChoose(null)} onActivated={() => setPinnedId(null)} /> : null}
     </main>
   );
 }

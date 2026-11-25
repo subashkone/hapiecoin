@@ -1,6 +1,6 @@
 # Public site and sign-in
 
-Part of the [HapieCoin feature guide](README.md). 69 traced features on 13 screens; 59 built and tested, 10 still mock-only (listed in the backlog).
+Part of the [HapieCoin feature guide](README.md). 70 traced features on 13 screens; 60 built and tested, 10 still mock-only (listed in the backlog).
 
 ## What it does
 
@@ -89,6 +89,7 @@ Each row is one traced feature from the build spec: the id, what it is, how it b
 | HC-PB-058 | Hero meta line: FREE PLAN · PAPER TRADING INCLUDED · BTC · ETH · XAUT OPTIONS · DELTA EXCHANGE INDIA (mono micro-labels) | Behaves as in the v2 mock. | built | unit (pricing) · e2e (Playwright) |
 | HC-PB-059 | Ctrl K button in the public header opens the command palette (Home / Sign in / legal / payoff preview commands available while logged out) | Behaves as in the v2 mock. | built | unit (pricing) · e2e (Playwright) |
 | HC-PB-060 | Both themes: dark-first obsidian ground; light variant is the cool paper/graphite reading — no gradients, no card shadows, hairline separation | Behaves as in the v2 mock. | built | e2e (Playwright) |
+| HC-PB-070 | HapieCoin's own home page with pictures of the product; plans coming soon | A hero with one promise over a picture of the Desk, live market tiles, Build / Protect / Review, Autopilot (paper today, live next), Safety with the one connected exchange, and Plans marked coming soon with the support address; the pictures are the real screens with sample trades, one file per theme, captioned as samples, and the Autopilot picture shows no strategy names, strikes or exit levels; while plans are not on sale the hero button is Request early access and /plans shows a non-admin no prices and no way to pay | built | unit (web), e2e |
 
 ### Sign in / Sign up · `/auth`
 

@@ -1,14 +1,11 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
 import { authClient } from "@/lib/auth/client";
-import { FeatureTabs } from "./FeatureTabs";
 import { Footer } from "./Footer";
 import { LegalPage } from "./LegalPage";
 import { LiveMarkets, sparkPath } from "./LiveMarkets";
 import { PublicHeader } from "./PublicHeader";
-import { TerminalIllustration } from "./TerminalIllustration";
 
 let mock: MockFetch;
 beforeEach(() => {
@@ -18,14 +15,15 @@ beforeEach(() => {
 afterEach(() => mock.restore());
 
 describe("HC-PB-001 public header", () => {
-  it("shows nav, Ctrl K, theme toggle and Get Started for guests", async () => {
+  it("shows nav, Ctrl K, theme toggle, Sign in and Get started for guests", async () => {
     renderWithProviders(<PublicHeader />);
     const nav = screen.getByRole("navigation", { name: "Landing sections" });
-    expect(within(nav).getAllByRole("link").map((a) => a.textContent)).toEqual(["Features", "Market Analytics", "Markets", "Exchanges", "What's new"]);
+    expect(within(nav).getAllByRole("link").map((a) => a.textContent)).toEqual(["How it works", "Autopilot", "Safety", "Plans"]);
+    expect(within(nav).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/#how", "/#autopilot", "/#safety", "/#plans"]); // they work from every public page
     expect(screen.getByTestId("palette-button")).toBeTruthy();
     expect(screen.getByTestId("theme-toggle")).toBeTruthy();
-    await waitFor(() => expect(screen.getByTestId("get-started").getAttribute("href")).toBe("/auth"));
-    expect(screen.getByText("Sign Up").getAttribute("href")).toBe("/auth?tab=signup");
+    await waitFor(() => expect(screen.getByTestId("get-started").getAttribute("href")).toBe("/auth?tab=signup"));
+    expect(screen.getByText("Sign in").getAttribute("href")).toBe("/auth");
   });
   it("shows Go to App once a session exists", async () => {
     mock.loginAs("asha@example.com");
@@ -76,15 +74,11 @@ describe("HC-PB-009 live markets", () => {
 });
 
 describe("[LANDING] static sections", () => {
-  it("feature tabs switch panels", async () => {
-    renderWithProviders(<FeatureTabs />);
-    expect(screen.getByText("Live Greeks: Delta, Gamma, Theta, Vega")).toBeTruthy();
-    await userEvent.setup().click(screen.getByRole("tab", { name: "Paper & Live Trading" }));
-    expect(await screen.findByText("Risk-free paper trading mode")).toBeTruthy();
-  });
-  it("footer carries legal links and support contact", () => {
+  it("footer carries the home page links, legal links and support contact", () => {
     render(<Footer year={2026} />);
     expect(screen.getByText("Privacy Policy").getAttribute("href")).toBe("/privacy");
+    expect(screen.getByText("How it works").getAttribute("href")).toBe("/#how");
+    expect(screen.getByText("Plans").getAttribute("href")).toBe("/#plans"); // the plans are not on sale yet: the link goes to the coming-soon note
     expect(screen.getByText("support@hapiecoin.com").getAttribute("href")).toBe("mailto:support@hapiecoin.com");
     expect(screen.getByText("© 2026 HapieCoin. All rights reserved.")).toBeTruthy();
   });
@@ -93,13 +87,5 @@ describe("[LANDING] static sections", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Disclaimer");
     expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(7);
     expect(screen.getByText("← Back").getAttribute("href")).toBe("/");
-  });
-  it("HC-PB-004 terminal illustration is built from design-system parts, no images", () => {
-    const { container } = renderWithProviders(<TerminalIllustration />);
-    expect(container.querySelector("img")).toBeNull();
-    expect(container.querySelector("[data-slot=table]")).toBeTruthy();
-    expect(container.querySelectorAll("[data-slot=stat]")).toHaveLength(4);
-    expect(container.querySelector("kbd")).toBeTruthy();
-    expect(container.textContent).toContain("79,500");
   });
 });
