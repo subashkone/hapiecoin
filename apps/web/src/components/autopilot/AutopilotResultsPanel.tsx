@@ -4,18 +4,17 @@
 // day, and can be narrowed to one day and to the won or the lost ones; the tables by strategy and by days to expiry
 // follow. Net figures are after the fees estimated at entry (the paper book charges none). Figures in USD are shown in
 // the trader's display currency.
-import { AUTOPILOT_PLAYBOOKS } from "@hapiecoin/pricing";
 import { AUTOPILOT_DTE_BAND_LABELS, AUTOPILOT_EXIT_STYLES, type AutopilotClosedTrade, type AutopilotExitStyle, type AutopilotResults, CLOSE_REASON_LABELS, type CloseReason } from "@hapiecoin/schema";
 import { Button, EmptyState, cn } from "@hapiecoin/ui";
 import { useState } from "react";
 import { useAutopilotResults } from "@/lib/api/autopilot";
 import { fmtDateTime, fmtExpiry, fmtStrike } from "@/lib/format";
 import { type MoneyFormat, fmtMoney } from "@/lib/money";
+import { BUILT_IN_CATALOGUE } from "@/lib/strategy/autopilot-catalogue";
 
 /** Closed trades drawn at first, and added by "Show more": a year of dailies is thousands of rows. */
 export const TRADES_PAGE = 100;
 const EXIT_SHORT: Record<AutopilotExitStyle, string> = { trail: "Trail", target: "Target", own: "Own" };
-const nameOf = (playbookId: string) => AUTOPILOT_PLAYBOOKS.find((p) => p.id === playbookId)?.name ?? playbookId;
 const reasonOf = (reason: string | null) => (reason === null ? "closed" : (CLOSE_REASON_LABELS[reason as CloseReason] ?? reason));
 const tone = (v: string | number) => (Number(v) > 0 ? "text-profit" : Number(v) < 0 ? "text-loss" : "");
 const winRate = (wins: number, closed: number) => (closed ? `${Math.round((wins / closed) * 100)}%` : "—");
@@ -62,7 +61,7 @@ export function totalOf(rows: AutopilotResults["rows"]): AutopilotResults["total
 }
 
 /** `show` (ADR-116): the screen's selection by expiry and coin; the rows, the totals and the closed trades follow it. */
-export function AutopilotResultsPanel({ money, show }: { money: MoneyFormat; show?: ((playbookId: string, asset: string) => boolean) | undefined }) {
+export function AutopilotResultsPanel({ money, show, nameOf = BUILT_IN_CATALOGUE.nameOf }: { money: MoneyFormat; show?: ((playbookId: string, asset: string) => boolean) | undefined; /** The name of a strategy by its id: the screen passes its own, which knows the saved ones (HC-TR-279). */ nameOf?: ((playbookId: string) => string) | undefined }) {
   const raw = useAutopilotResults();
   const [day, setDay] = useState("all");
   const [outcome, setOutcome] = useState<Outcome>("all");

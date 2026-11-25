@@ -1,11 +1,11 @@
 "use client";
-// Autopilot (ADR-108, ADR-109, ADR-116, ADR-139; HC-TR-219, HC-TR-220, HC-TR-232, HC-TR-267): the master switch and a
+// Autopilot (ADR-108, ADR-109, ADR-116, ADR-139, ADR-142; HC-TR-219, HC-TR-220, HC-TR-232, HC-TR-267, HC-TR-279): the master switch and a
 // summary that stay on top, then four views that each take the full width: the trades Autopilot holds (worst first,
 // with a health reading and an exit), the closed trades by day with the results, the strategies as rows (each with
 // its switch, exits, backtest, paper result and what it is doing now) and the log. The expiry, the coin and the
 // search narrow every view.
 // Paper only. Figures in USD are shown in the trader's display currency.
-import { AUTOPILOT_PLAYBOOKS, type Playbook, type PlaybookCadence, playbookBacktest, playbookCadence, playbookTemplate } from "@hapiecoin/pricing";
+import { type Playbook, type PlaybookCadence, playbookCadence, playbookTemplate } from "@hapiecoin/pricing";
 import { AUTOPILOT_CHOSEN_EXIT_STYLES, AUTOPILOT_COOLDOWN_MINUTES, AUTOPILOT_EXIT_LABELS, type AutopilotExitStyle, type AutopilotRun, type AutopilotSettings, type PlaybookStatus, type Strategy } from "@hapiecoin/schema";
 import { Badge, Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, Switch, cn, toast } from "@hapiecoin/ui";
 import { useRouter } from "next/navigation";
@@ -21,27 +21,19 @@ import { useConnectionStatus } from "@/lib/gateway/hooks";
 import { fmtMoney } from "@/lib/money";
 import { useUiStore } from "@/lib/store";
 import { HEALTH_LABELS, type TradeHealth, autopilotLevels, capitalInUse, capitalUnbounded, latestRun, tradeHealth } from "@/lib/strategy/autopilot";
+import { catalogueOf } from "@/lib/strategy/autopilot-catalogue";
 import { dayPnl, openLegs, priceMap } from "@/lib/strategy/paper";
 import { usePaperBook } from "@/lib/strategy/usePaper";
 
 const NONE: never[] = [];
 const ASSETS = ["BTC", "ETH", "XAUT"] as const;
 type Coin = (typeof ASSETS)[number];
-// the recorded playbooks (never the control) and the ones entered by the clock (ADR-112)
-const TRADABLE = AUTOPILOT_PLAYBOOKS;
 // ADR-116: the strategies by how often they trade, in the order of the list; a family with no strategy is not shown
 const CADENCE: Record<PlaybookCadence, { tab: string; title: string; note: string }> = {
   trend: { tab: "Trend", title: "Longer-dated strategies", note: "Entered whenever their market condition is met." },
   daily: { tab: "Daily", title: "Evening strangles, daily expiry", note: "Entered every evening for the next day's expiry." },
   weekly: { tab: "Weekly", title: "Weekly strangles, Friday expiry", note: "Entered once a week, on a Friday or a Tuesday evening, for the Friday expiry." },
   monthly: { tab: "Monthly", title: "Monthly strangles, month-end expiry", note: "Entered one to two months before the month-end expiry." },
-};
-const CADENCES = (["trend", "daily", "weekly", "monthly"] as const).filter((c) => TRADABLE.some((p) => playbookCadence(p) === c));
-const GROUPS = CADENCES.map((c) => ({ cadence: c, ...CADENCE[c], items: TRADABLE.filter((p) => playbookCadence(p) === c) }));
-const COINS = ASSETS.filter((a) => TRADABLE.some((p) => (p.assets as readonly string[]).includes(a)));
-const cadenceOfId = (playbookId: string | null | undefined): PlaybookCadence | null => {
-  const p = AUTOPILOT_PLAYBOOKS.find((x) => x.id === playbookId);
-  return p ? playbookCadence(p) : null;
 };
 /** A whole hour on the UTC clock as IST reads it: 20 is "1:30 AM". */
 export const istClock = (hourUtc: number): string => {
@@ -57,13 +49,14 @@ export const moveWords = (asset: string, move: { pct: string; side: "put" | "cal
 /** A timed exit whose hour is not after the entry window's first hour is the next day's (HC-TR-263; the engine takes the next occurrence of the hour): a Friday entry at 9:30 PM closed at 5:30 PM is closed on Saturday. */
 const nextDay = (c: { fromHourUtc: number; exitHourUtc?: number | undefined }): boolean => c.exitHourUtc !== undefined && c.exitHourUtc <= c.fromHourUtc;
 /** A structure with bought options collects less than its sold options bring: its profit levels are on the net premium (ADR-138). */
-const premiumWords = (p: Playbook): string => (playbookTemplate(p)?.legs.some((l) => l.side === "buy") ? "net premium" : "premium");
+const hasWings = (p: Playbook): boolean => Boolean(playbookTemplate(p)?.legs.some((l) => l.side === "buy"));
+const premiumWords = (p: Playbook): string => (hasWings(p) ? "net premium" : "premium");
 /** How a strategy gets out as short tags in a fixed order, so that rows can be compared at a glance (ADR-139); the sentence stays in the row's details. */
 export const exitTags = (p: Playbook): string[] => {
   const c = p.clock;
   if (!c) return ["Playbook stop", "Time exit"];
   const tags = [c.legStop ? `Stop ${c.legStop}x` : "No stop"];
-  if (playbookTemplate(p)?.legs.some((l) => l.side === "buy")) tags.push("Wings");
+  if (hasWings(p)) tags.push("Wings");
   if (c.takeProfitOfCredit) tags.push(`${c.takeTrailPct ? "Trail from" : "Take"} ${Math.round(c.takeProfitOfCredit * 100)} %`);
   if (c.trailRestPct) tags.push("Trail the other side");
   if (c.ladder) tags.push(`Steps ${c.ladder.join(" / ")} %`);
@@ -78,7 +71,9 @@ export const exitTags = (p: Playbook): string[] => {
 const exitWords = (p: Playbook): string => {
   const c = p.clock;
   if (!c) return "Playbook stop and time exit";
-  const parts = [c.legStop ? `Stop at ${c.legStop}x on each sold option` : c.takeProfitOfCredit ? "Wings cap the loss, no stop" : "Wings cap the loss, held to expiry"];
+  // with neither a stop nor bought options nothing limits the loss (a saved strategy may be so, HC-TR-279): never "wings"
+  const guard = c.legStop ? `Stop at ${c.legStop}x on each sold option` : !hasWings(p) ? (c.takeProfitOfCredit ? "No stop and no wings: the loss is not limited" : "No stop and no wings: the loss is not limited, held to expiry") : c.takeProfitOfCredit ? "Wings cap the loss, no stop" : "Wings cap the loss, held to expiry";
+  const parts = [guard];
   if (c.takeProfitOfCredit) parts.push(c.takeTrailPct ? `trail from ${Math.round(c.takeProfitOfCredit * 100)} % of the ${premiumWords(p)}` : `take ${Math.round(c.takeProfitOfCredit * 100)} % of the ${premiumWords(p)}`);
   if (c.trailRestPct) parts.push("then trail the other side");
   if (c.ladder) parts.push(`profit in steps at ${c.ladder.join(" / ")} %`);
@@ -125,7 +120,6 @@ const KIND_SHAPE: Record<AutopilotRun["kind"], string> = { entered: "✓", skipp
 /** The strikes and the expiry a trade sits on: what tells two trades of one strategy apart (ADR-110). */
 const strikesOf = (s: Strategy) => `${[...new Set(s.legs.map((l) => fmtStrike(l.strike)))].join(" / ")}${s.legs.length ? ` · ${[...new Set(s.legs.map((l) => fmtExpiry(l.expiry)))].join(" / ")}` : ""}`;
 const KIND: Record<AutopilotRun["kind"], { label: string; variant: "profit" | "outline" | "info" }> = { entered: { label: "Entered", variant: "profit" }, skipped: { label: "Skipped", variant: "outline" }, noted: { label: "Noted", variant: "info" } };
-const nameOf = (playbookId: string) => AUTOPILOT_PLAYBOOKS.find((p) => p.id === playbookId)?.name ?? playbookId;
 const isToday = (iso: string | null) => iso !== null && new Date(iso).toDateString() === new Date().toDateString();
 
 export function AutopilotPage() {
@@ -163,14 +157,26 @@ export function AutopilotPage() {
   const money = book.money;
   const settings = view.data?.settings;
   const runs = view.data?.runs ?? NONE;
+  // the built-in strategies (never the control), the ones entered by the clock (ADR-112), and beside them the saved
+  // ones the server says this trader may use (ADR-142, HC-TR-279)
+  const catalogue = useMemo(() => catalogueOf(view.data?.saved), [view.data?.saved]);
 
   // a list that is not read yet, or could not be read, is never shown as "no trades"
   if (view.isPending || strategies.isPending) return <main className="mx-auto max-w-[1280px] px-6 py-8" data-testid="autopilot-page" data-state="loading"><p className="text-xs text-muted-foreground">Loading Autopilot…</p></main>;
   if (view.isError || strategies.isError || !settings) return <main className="mx-auto max-w-[1280px] px-6 py-8" data-testid="autopilot-page" data-state="error"><EmptyState title="Autopilot could not be loaded" description="Check your connection and try again." action={<Button size="sm" onClick={() => { void view.refetch(); void strategies.refetch(); }}>Try again</Button>} /></main>;
 
+  const TRADABLE = catalogue.tradable;
+  const offered = new Set(TRADABLE.map((p) => p.id));
+  const onCount = settings.strategies.filter((x) => offered.has(x.playbookId)).length;
+  const gone = settings.strategies.filter((x) => !offered.has(x.playbookId)).map((x) => catalogue.nameOf(x.playbookId));
+  const CADENCES = (["trend", "daily", "weekly", "monthly"] as const).filter((c) => TRADABLE.some((p) => playbookCadence(p) === c));
+  const GROUPS = CADENCES.map((c) => ({ cadence: c, ...CADENCE[c], items: TRADABLE.filter((p) => playbookCadence(p) === c) }));
+  const COINS = ASSETS.filter((a) => TRADABLE.some((p) => (p.assets as readonly string[]).includes(a)));
+  const cadenceOfId = catalogue.cadenceOf;
+  const nameOf = catalogue.nameOf;
   const update = (next: AutopilotSettings, done?: string) => save.mutate(next, { onSuccess: () => done && toast.success(done), onError: (e) => toast.error("Autopilot was not saved", { description: e.message }) });
   const switchedOn = (playbookId: string) => settings.strategies.find((s) => s.playbookId === playbookId);
-  const toggle = (playbookId: string, on: boolean) => update({ ...settings, strategies: on ? [...settings.strategies, { playbookId, exit: AUTOPILOT_PLAYBOOKS.find((p) => p.id === playbookId)?.clock ? "own" : "trail" }] : settings.strategies.filter((s) => s.playbookId !== playbookId) });
+  const toggle = (playbookId: string, on: boolean) => update({ ...settings, strategies: on ? [...settings.strategies, { playbookId, exit: catalogue.find(playbookId)?.clock ? "own" : "trail" }] : settings.strategies.filter((s) => s.playbookId !== playbookId) });
   const setExit = (playbookId: string, exit: AutopilotExitStyle) => update({ ...settings, strategies: settings.strategies.map((s) => (s.playbookId === playbookId ? { ...s, exit } : s)) });
 
   /** Every open leg has a live price. Without one a leg reads as its entry price, which is neither a P&L nor a price to close at. */
@@ -223,7 +229,7 @@ export function AutopilotPage() {
   const openPnl = open.reduce((cents, s) => cents + (priced(s) ? Math.round(book.pnlOf(s).total * 100) : 0), 0) / 100;
   const stratShown = (p: Playbook) => (q === "" || p.name.toLowerCase().includes(q)) && (state === "all" || (state === "in" ? open.some((s) => s.autopilotPlaybookId === p.id && (coin === "all" || s.asset === coin)) : Boolean(switchedOn(p.id)) === (state === "on")));
   const score = (p: Playbook): number => {
-    if (sort === "backtest") return playbookBacktest(p.id)?.mean ?? -Infinity;
+    if (sort === "backtest") return catalogue.backtestOf(p.id)?.mean ?? -Infinity;
     const paper = paperOf(p.id);
     return paper && paper.closed ? paper.net : -Infinity;
   };
@@ -314,7 +320,7 @@ export function AutopilotPage() {
         <div><div className="micro">Today</div><div className={cn("num text-lg font-medium", today >= 0 ? "text-profit" : "text-loss")} data-testid="autopilot-today">{mine.length ? fmtMoney(today, money, { signed: true }) : "—"}</div><div className="text-xs text-muted-foreground" data-testid="autopilot-today-note">{unpriced ? `${unpriced} open ${unpriced === 1 ? "trade has" : "trades have"} no live price and ${unpriced === 1 ? "is" : "are"} not counted` : "today's change of the open trades and the result of those closed today, before fees"}</div></div>
         <div><div className="micro">Capital in use</div><div className="num text-lg font-medium" data-testid="autopilot-capital">{!open.length ? "—" : unbounded ? "not bounded" : fmtMoney(capital, money)}</div><div className="text-xs text-muted-foreground">{unbounded ? `a sold strangle with no wings has no maximum loss; the others ${fmtMoney(capital, money)}` : "the most the open trades can lose"}</div></div>
         <div><div className="micro">Closed trades, net</div><div className={cn("num text-lg font-medium", !results.data || !results.data.total.closed ? "" : Number(results.data.total.netUsd) >= 0 ? "text-profit" : "text-loss")} data-testid="autopilot-closed-net">{!results.data ? (results.isError ? "Not loaded" : "…") : results.data.total.closed ? fmtMoney(results.data.total.netUsd, money, { signed: true }) : "—"}</div><div className="text-xs text-muted-foreground">{results.data ? `${results.data.total.closed} closed · ${results.data.total.wins} won, after estimated fees` : "every closed paper trade, after estimated fees"}</div></div>
-        <div><div className="micro">Strategies on</div><div className="num text-lg font-medium" data-testid="autopilot-on-count">{settings.strategies.length} of {TRADABLE.length}</div></div>
+        <div><div className="micro">Strategies on</div><div className="num text-lg font-medium" data-testid="autopilot-on-count">{onCount} of {TRADABLE.length}</div>{gone.length > 0 ? <div className="text-xs text-muted-foreground" data-testid="autopilot-gone">{gone.length === 1 ? "1 strategy you had on is no longer offered and has stopped entering" : `${gone.length} strategies you had on are no longer offered and have stopped entering`}</div> : null}</div>
       </section>
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded border border-border px-3 py-2" aria-label="Show" data-testid="autopilot-filters" data-filtered={filtered}>
@@ -428,7 +434,7 @@ export function AutopilotPage() {
       </div>
 
       <div {...panel("closed")}>
-        <AutopilotResultsPanel money={money} show={filtered ? shown : undefined} />
+        <AutopilotResultsPanel nameOf={nameOf} money={money} show={filtered ? shown : undefined} />
       </div>
 
       <div {...panel("strategies")}>
@@ -468,7 +474,7 @@ export function AutopilotPage() {
                 {onCoin.length === 0 ? <p className="px-3 py-3 text-xs text-muted-foreground" data-testid="autopilot-group-empty">No {g.tab.toLowerCase()} strategy trades {coin} yet.</p> : items.length === 0 ? <p className="px-3 py-3 text-xs text-muted-foreground" data-testid="autopilot-group-none">No {g.tab.toLowerCase()} strategy in this selection.</p> : null}
                 {items.map((p) => {
                   const on = switchedOn(p.id);
-                  const back = playbookBacktest(p.id);
+                  const back = catalogue.backtestOf(p.id);
                   const paper = paperOf(p.id);
                   return (
                     <article key={p.id} className={cn(ROW, "border-b border-border px-3 py-2.5 text-xs last:border-b-0")} data-testid="autopilot-card" data-playbook={p.id} data-on={Boolean(on)}>
@@ -482,7 +488,7 @@ export function AutopilotPage() {
                             <p className="mt-1 text-muted-foreground">{p.summary}</p>
                             <p className="mt-1 text-muted-foreground" data-testid="autopilot-card-exit-words">How it gets out: {exitWords(p)}</p>
                             {p.clock ? (
-                              <p className="mt-1 text-muted-foreground" data-testid="autopilot-card-how">Entered {p.clock.describe}. {p.clock.takeProfitOfCredit ? (p.clock.takeTrailPct ? `Once the trade is up by ${Math.round(p.clock.takeProfitOfCredit * 100)} % of the ${premiumWords(p) === "premium" ? "premium collected" : "net premium (collected less paid for the wings)"} it is not closed: it is trailed, and closed when the profit gives back ${p.clock.takeTrailPct} % of its best. ` : `The whole trade is closed once it is up by ${Math.round(p.clock.takeProfitOfCredit * 100)} % of the ${premiumWords(p) === "premium" ? "premium collected" : "net premium (collected less paid for the wings)"}. `) : ""}{p.clock.lock ? `Once the trade is up by ${Math.round(p.clock.lock.at * 100)} % of the premium a floor is set at ${Math.round(p.clock.lock.floor * 100)} %: the whole trade is closed if the profit falls back there. ` : ""}{p.clock.exitHourUtc !== undefined ? `Everything is closed at ${istClock(p.clock.exitHourUtc)} IST${nextDay(p.clock) ? " the next day" : ""}, whatever the profit. ` : ""}{p.clock.ladder ? `An equal part of the lots is closed each time the lots still open are up by ${p.clock.ladder.join(", ")} % of their premium, and the last part is held. ` : ""}{p.clock.legStop ? `Each sold option is bought back if its price reaches ${p.clock.legStop} times what it was sold for.` : p.clock.takeProfitOfCredit ? "No stop: the bought wings cap the loss, and it is held to settlement if the trail never closes it." : "Held to settlement: the bought wings cap the loss."}{p.clock.trailRestPct ? ` After that, the profit on the other one is trailed and it is closed when it gives back ${p.clock.trailRestPct} % of its best.` : ""} Backtest only so far: {p.evidence.claim}</p>
+                              <p className="mt-1 text-muted-foreground" data-testid="autopilot-card-how">Entered {p.clock.describe}. {p.clock.takeProfitOfCredit ? (p.clock.takeTrailPct ? `Once the trade is up by ${Math.round(p.clock.takeProfitOfCredit * 100)} % of the ${premiumWords(p) === "premium" ? "premium collected" : "net premium (collected less paid for the wings)"} it is not closed: it is trailed, and closed when the profit gives back ${p.clock.takeTrailPct} % of its best. ` : `The whole trade is closed once it is up by ${Math.round(p.clock.takeProfitOfCredit * 100)} % of the ${premiumWords(p) === "premium" ? "premium collected" : "net premium (collected less paid for the wings)"}. `) : ""}{p.clock.lock ? `Once the trade is up by ${Math.round(p.clock.lock.at * 100)} % of the premium a floor is set at ${Math.round(p.clock.lock.floor * 100)} %: the whole trade is closed if the profit falls back there. ` : ""}{p.clock.exitHourUtc !== undefined ? `Everything is closed at ${istClock(p.clock.exitHourUtc)} IST${nextDay(p.clock) ? " the next day" : ""}, whatever the profit. ` : ""}{p.clock.ladder ? `An equal part of the lots is closed each time the lots still open are up by ${p.clock.ladder.join(", ")} % of their premium, and the last part is held. ` : ""}{p.clock.legStop ? `Each sold option is bought back if its price reaches ${p.clock.legStop} times what it was sold for.` : !hasWings(p) ? "No stop and no bought options: nothing limits the loss, and it is held to settlement unless an exit above closes it." : p.clock.takeProfitOfCredit ? "No stop: the bought wings cap the loss, and it is held to settlement if the trail never closes it." : "Held to settlement: the bought wings cap the loss."}{p.clock.trailRestPct ? ` After that, the profit on the other one is trailed and it is closed when it gives back ${p.clock.trailRestPct} % of its best.` : ""} Backtest only so far: {p.evidence.claim}</p>
                             ) : (
                               <p className="mt-1 text-muted-foreground" data-testid="autopilot-card-how">Autopilot enters as above and keeps the stop and the time exit. It takes profit its own way, chosen below, so the record shown is the playbook's own exits, not Autopilot's.</p>
                             )}
@@ -505,7 +511,7 @@ export function AutopilotPage() {
                           <>
                             <span className={cn("num", back.mean > 0 ? "text-profit" : back.mean < 0 ? "text-loss" : "")}>{fmtMoney(back.mean, money, { signed: true })} a {back.per}</span>
                             <span className="text-muted-foreground">{back.positivePct}% won · worst {fmtMoney(back.worst, money, { signed: true })}</span>
-                            <span className="text-muted-foreground">{back.basis ?? `${back.samples} ${back.per}s tested`}</span>
+                            <span className="text-muted-foreground" data-testid="autopilot-card-basis">{catalogue.isSaved(p.id) ? `${back.samples} trades tested · figures entered by hand: ${back.basis}` : (back.basis ?? `${back.samples} ${back.per}s tested`)}</span>
                           </>
                         ) : (
                           <span className="text-muted-foreground">Recorded per coin, under Now</span>

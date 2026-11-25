@@ -1,10 +1,13 @@
 // The editor of a saved Autopilot strategy as plain data (ADR-141, ADR-142; HC-TR-278): what the admin types, and its
 // conversion to and from the settings the API keeps. The screen shows India time and India weekdays; the engine keeps
 // whole UTC hours and UTC weekdays, so the conversion lives here, in one place, and is tested on its own.
-import { SAVED_LONG_WINDOW_HOURS, SavedBacktest, type SavedCadence, SavedDefinition, type SavedLeg, type SavedStrategy, type Underlying, savedIstWeekday } from "@hapiecoin/schema";
+import { SAVED_LONG_WINDOW_HOURS, SavedBacktest, type SavedCadence, SavedDefinition, type SavedLeg, type SavedStrategy, type Underlying, savedIstClock, savedIstWeekday } from "@hapiecoin/schema";
 
-/** A UTC hour as the clock reads in India (UTC + 5:30). 24 is the end of the UTC day: 05:30 the next morning. */
-export const istClock = (hourUtc: number): string => `${String((hourUtc + 5) % 24).padStart(2, "0")}:30`;
+/** A UTC hour as the clock reads in India (UTC + 5:30), as every Autopilot card writes it: "9:30 PM". 24 is 5:30 the next morning. */
+export const istClock = (hourUtc: number): string => {
+  const c = savedIstClock(hourUtc);
+  return `${c.time} ${c.half}`;
+};
 /** The UTC hours a window may start at, in the order of the India day (05:30 first). */
 export const FROM_HOURS: readonly number[] = Array.from({ length: 24 }, (_, i) => i);
 export const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
@@ -242,7 +245,7 @@ const typedNumbers = (f: SavedForm): [string, string][] => [
 /** The settings the form describes, or the first thing wrong with it in the admin's words. */
 export function savedDefinitionOf(f: SavedForm): Parsed<SavedDefinition> {
   // the engine's day turns at 00:00 UTC, which is 05:30 in India: a window cannot cross it
-  if (!f.anyTime && f.toHourUtc <= f.fromHourUtc) return { ok: false, error: "The entry window crosses 05:30 IST, where the engine's day turns. Choose a window that ends by 05:30 IST or starts after it." };
+  if (!f.anyTime && f.toHourUtc <= f.fromHourUtc) return { ok: false, error: "The entry window crosses 5:30 AM IST, where the engine's day turns. Choose a window that ends by 5:30 AM IST or starts after it." };
   if (!f.anyTime && f.toHourUtc - f.fromHourUtc > SAVED_LONG_WINDOW_HOURS && !f.oncePerExpiry) return { ok: false, error: "A window longer than six hours enters once per expiry: tick that box, or shorten the window." };
   if (f.anyTime && !f.oncePerExpiry) return { ok: false, error: "A strategy that may enter at any time of day enters once per expiry: tick that box." };
   const bad = typedNumbers(f).find(([, v]) => v.trim() !== "" && !Number.isFinite(Number(v)));

@@ -93,7 +93,7 @@ test.describe("HC-AD admin", () => {
     await page.getByTestId("saved-name").fill("BTC evening strangle");
     await page.getByTestId("saved-summary").fill("Sell a call and a put 2 % away each evening; stop at double.");
     await page.getByTestId("saved-leg-stop").fill("2");
-    await expect(page.getByTestId("saved-reads")).toContainText("Enters every day, 21:30 to 22:30 IST, on the next expiry.");
+    await expect(page.getByTestId("saved-reads")).toContainText("Enters every day, 9:30 to 10:30 PM IST, on the next expiry.");
     await page.getByTestId("saved-save").click();
     const row = page.locator("[data-testid=saved-row][data-name='BTC evening strangle']");
     await expect(row).toHaveAttribute("data-stage", "draft");

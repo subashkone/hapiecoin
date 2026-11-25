@@ -7,6 +7,7 @@
  */
 import { z } from "zod";
 import { Id } from "./accounts.js";
+import { SavedCard } from "./autopilot-saved.js";
 import { DecimalString, IsoDateTime, Underlying, Venue } from "./primitives.js";
 
 /**
@@ -123,8 +124,11 @@ export const AutopilotRun = z.strictObject({
 });
 export type AutopilotRun = z.infer<typeof AutopilotRun>;
 
-/** GET /v1/autopilot: the trader's settings and the newest log lines. */
-export const AutopilotView = z.strictObject({ settings: AutopilotSettings, runs: z.array(AutopilotRun) });
+/**
+ * GET /v1/autopilot: the trader's settings and the newest log lines, and (ADR-142, HC-TR-279) the saved strategies
+ * they may use or have used; absent when there is none, which is every trader until an admin publishes one.
+ */
+export const AutopilotView = z.strictObject({ settings: AutopilotSettings, runs: z.array(AutopilotRun), saved: z.array(SavedCard).optional() });
 export type AutopilotView = z.infer<typeof AutopilotView>;
 
 // ---- results (ADR-111): what the trades Autopilot opened came to ----------------------------------------------------

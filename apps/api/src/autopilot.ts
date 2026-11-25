@@ -48,7 +48,7 @@ import {
 import { DEFAULT_VENUE, defaultLotSizes, getVenue } from "@hapiecoin/venues";
 import { and, asc, desc, eq, gte, like, lt, lte, max, ne, sql } from "drizzle-orm";
 import { writeAudit } from "./audit.js";
-import { SAVED_WITHDRAWN, type SavedCatalogue, isSavedId, savedCatalogue, savedStillOnPaper, usableSavedIds } from "./autopilot-saved.js";
+import { SAVED_WITHDRAWN, type SavedCatalogue, isSavedId, savedCardsFor, savedCatalogue, savedStillOnPaper, usableSavedIds } from "./autopilot-saved.js";
 import { dayOf, eodDaysCached } from "./chain-eod.js";
 import type { Db } from "./db/client.js";
 import { autopilotRuns, autopilotSettings, brokers, instrumentMarks, ivSnapshots, strategies, strategyLegs, strategyRules, userSettings, users } from "./db/schema.js";
@@ -579,10 +579,13 @@ export async function saveAutopilotSettings(db: Db, userId: string, next: Autopi
 }
 
 export const AUTOPILOT_RUNS_SHOWN = 200;
-export async function autopilotView(db: Db, userId: string): Promise<AutopilotView> {
+export async function autopilotView(db: Db, userId: string, at: Date = new Date()): Promise<AutopilotView> {
   const rows = await db.select().from(autopilotRuns).where(eq(autopilotRuns.userId, userId)).orderBy(desc(autopilotRuns.at), desc(autopilotRuns.id)).limit(AUTOPILOT_RUNS_SHOWN);
   const runs: AutopilotRun[] = rows.map((r) => ({ id: String(r.id), at: r.at.toISOString(), playbookId: r.playbookId, venue: r.venue, asset: r.asset, kind: r.kind, reason: r.reason, strategyId: r.strategyId, detail: r.detail }));
-  return { settings: await autopilotSettingsOf(db, userId), runs };
+  const settings = await autopilotSettingsOf(db, userId);
+  // ADR-142: the saved strategies this trader may use, and the ones they have traded
+  const saved = await savedCardsFor(db, userId, at);
+  return { settings, runs, ...(saved.length > 0 ? { saved } : {}) };
 }
 
 // ---- results (ADR-111; HC-TR-223): what the trades Autopilot opened came to -----------------------------------------
