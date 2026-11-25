@@ -86,7 +86,7 @@ test.describe("HC-PB-025 / HC-PB-036 redirects", () => {
     await seedUser(request, { email: "in@example.com" });
     await signIn(page, "in@example.com");
     await page.goto("/auth?next=%2Fplans");
-    await expect(page).toHaveURL(/\/subscription/);
+    await expect(page).toHaveURL(/\/plans/); // the route since ADR-106
     await expect(page.getByTestId("subscription-page")).toBeVisible();
   });
   test("HC-PB-037 / HC-PB-038 Delta hand-off explains itself; SSO returns to the app", async ({ page }) => {

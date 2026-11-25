@@ -63,6 +63,7 @@ export default defineConfig({
         API_URL: `http://127.0.0.1:${API_PORT}`,
         NEXT_PUBLIC_GATEWAY_URL: `ws://127.0.0.1:${GATEWAY_PORT}`,
         NEXT_PUBLIC_GOOGLE_ENABLED: "true",
+        NEXT_PUBLIC_PLANS_ON_SALE: "true", // ADR-140: off in production until the pricing is decided; on here so the buying flow stays tested
         NEXT_DIST_DIR: ".next-visual", // its own build folder and lock: `pnpm dev` can stay up during a visual run
       },
     },

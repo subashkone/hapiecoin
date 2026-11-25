@@ -3,6 +3,7 @@
 // "Sign in" and "Get started" for guests / "Go to App" once a session exists. The nav follows the home page (ADR-140).
 import { ArrowRight, Button } from "@hapiecoin/ui";
 import Link from "next/link";
+import { PLANS_ON_SALE } from "@/content/landing";
 import { authClient } from "@/lib/auth/client";
 import { useMounted } from "@/lib/use-mounted";
 import { CommandPalette, PaletteButton } from "@/components/shell/CommandPalette";
@@ -13,10 +14,10 @@ const NAV = [
   { href: "/#how", label: "How it works" },
   { href: "/#autopilot", label: "Autopilot" },
   { href: "/#safety", label: "Safety" },
-  { href: "/#plans", label: "Plans" },
 ] as const;
 
-export function PublicHeader() {
+/** `plansOnSale` (ADR-140): the Plans link opens the plans when they are sold, the coming-soon note when they are not. */
+export function PublicHeader({ plansOnSale = PLANS_ON_SALE }: { plansOnSale?: boolean }) {
   const { data: session, isPending } = authClient.useSession();
   const loggedIn = !!session?.user;
   // Server HTML and the first client render both show the guest buttons; the session is only known in the browser.
@@ -31,6 +32,9 @@ export function PublicHeader() {
               {n.label}
             </a>
           ))}
+          <a href={plansOnSale ? "/plans" : "/#plans"} className="hover:text-foreground">
+            Plans
+          </a>
         </nav>
         <div className="ml-auto flex items-center gap-2">
           <PaletteButton className="hidden sm:inline-flex" />

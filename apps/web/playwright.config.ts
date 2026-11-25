@@ -63,6 +63,7 @@ export default defineConfig({
         NEXT_PUBLIC_GATEWAY_URL: `ws://127.0.0.1:${GATEWAY_PORT}`,
         // The mock API implements the social sign-in round trip (HC-PB-065), so the button is shown.
         NEXT_PUBLIC_GOOGLE_ENABLED: "true",
+        NEXT_PUBLIC_PLANS_ON_SALE: "true", // ADR-140: off in production until the pricing is decided; on here so the buying flow stays tested
       },
     },
   ],
