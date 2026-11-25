@@ -1,0 +1,37 @@
+## The book: 110 calendar days (2026-08-08 .. 2026-11-25), 110 daily expiries on both coins; the BTC weekly booked on 20 dates in the period (51 weeks in its cache)
+   100 lots: BTC 0.1 coin (spot 64954 at the start), ETH 1 coin (spot 1920); equal value = 338 lots of ETH for 100 of BTC
+
+-- stop 3x on every sold option
+   BTC and ETH daily results: correlation +0.67; both lose on 30 days (BTC loses on 38, ETH on 42); of BTC's 10 worst days 4 are among ETH's 10 worst
+                                                          mean  win   total    worst  worst 7 worst 30 drawdown  days halves
+   BTC daily 100                                        +12.35  65%   +1359   -105.8   -161.0    +60.7   -185.0   8.6   +725/+633
+   ETH daily 100                                         +4.70  62%    +517    -49.6   -107.4    -58.5   -119.9  10.5   +273/+244
+   ETH daily 338 (equal value to BTC 100)               +15.90  62%   +1749   -167.5   -363.0   -197.7   -405.3  10.5   +924/+825
+   BTC weekly 100 (realised only)                        +4.64  13%    +511   -147.4   -218.0    -98.6   -218.0  31.8   +387/+124
+   book: BTC 100 + ETH 100                              +17.06  67%   +1876   -134.1   -220.3     +2.3   -262.9   7.9   +999/+877
+   book: BTC 100 + ETH 338                              +28.25  62%   +3108   -246.7   -462.6   -136.7   -521.0   8.7  +1650/+1458
+   book: BTC 50 + ETH 169 (half of each)                +14.13  62%   +1554   -123.4   -231.3    -68.4   -260.5   8.7   +825/+729
+   book: BTC 100 + ETH 100 + weekly 100                 +21.70  67%   +2387   -198.0   -309.9   +186.8   -359.3   9.1  +1386/+1001
+   book: BTC 100 + ETH 338 + weekly 100                 +32.89  62%   +3618   -270.8   -531.1    +85.5   -554.1   8.2  +2037/+1582
+   book: BTC 50 + ETH 169 + weekly 50                   +16.45  62%   +1809   -135.4   -265.5    +42.8   -277.0   8.2  +1018/+791
+
+-- stop 2x on every sold option
+   BTC and ETH daily results: correlation +0.50; both lose on 40 days (BTC loses on 55, ETH on 55); of BTC's 10 worst days 2 are among ETH's 10 worst
+                                                          mean  win   total    worst  worst 7 worst 30 drawdown  days halves
+   BTC daily 100                                         +8.63  50%    +950    -39.8    -80.8    +79.3   -126.4   4.6   +362/+588
+   ETH daily 100                                         +3.28  50%    +361    -49.6    -98.5    -77.4   -101.1  15.1   +159/+202
+   ETH daily 338 (equal value to BTC 100)               +11.09  50%   +1220   -167.5   -333.1   -261.8   -341.7  15.1   +539/+682
+   BTC weekly 100 (realised only)                        +5.68  14%    +625   -132.3   -152.1    -33.2   -152.1  23.3   +460/+165
+   book: BTC 100 + ETH 100                              +11.91  57%   +1311    -56.6   -143.1    +46.0   -143.1   4.8   +521/+790
+   book: BTC 100 + ETH 338                              +19.73  55%   +2170   -174.6   -331.3    -71.2   -331.3   8.8   +900/+1269
+   book: BTC 50 + ETH 169 (half of each)                 +9.86  55%   +1085    -87.3   -165.6    -35.6   -165.6   8.8   +450/+635
+   book: BTC 100 + ETH 100 + weekly 100                 +17.59  61%   +1935   -148.1   -138.4    +76.2   -228.2   8.4   +981/+954
+   book: BTC 100 + ETH 338 + weekly 100                 +25.41  59%   +2795   -174.6   -286.5    -17.6   -327.4   6.9  +1360/+1434
+   book: BTC 50 + ETH 169 + weekly 50                   +12.70  59%   +1397    -87.3   -143.3     -8.8   -163.7   6.9   +680/+717
+
+-- mixed: BTC daily with the stop at 2x, ETH daily and the BTC weekly with the stop at 3x
+                                                          mean  win   total    worst  worst 7 worst 30 drawdown  days halves
+   book: BTC 100 (2x) + ETH 100 (3x)                    +13.34  63%   +1467    -66.3   -168.2    +47.6   -168.2   5.0   +635/+832
+   book: BTC 100 (2x) + ETH 100 (3x) + weekly 100 (3x)   +17.98  65%   +1978   -171.9   -236.6   +149.4   -262.9   9.6  +1022/+955
+   book: BTC 100 (2x) + ETH 100 (3x) + weekly 50 (3x)   +15.66  65%   +1722   -105.7   -202.4   +139.3   -202.4   6.8   +829/+894
+
