@@ -4,6 +4,7 @@ import { screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { FakeSocket, installMockFetch, renderWithProviders, type MockFetch } from "../../../test/helpers";
 import LandingPage from "@/app/page";
+import { HomePage } from "./HomePage";
 import { AUTOPILOT, HERO, REVIEW, SAFETY, STEPS } from "@/content/landing";
 import { TEMPLATE_COUNT } from "@/lib/strategy/templates";
 
@@ -75,5 +76,21 @@ describe("HC-PB landing sections", () => {
     expect(container.querySelector('a[href="/plans"]')).toBeNull();
     // HC-PB-021 section anchors with the sticky-header offset
     for (const id of ["how", "autopilot", "safety", "exchanges", "plans"]) expect(container.querySelector(`#${id}`)?.className).toContain("scroll-mt-16");
+  });
+
+  it("HC-PB-070 with the plans on sale the hero asks for an account, the plans section links to /plans, and the header and footer link there too", () => {
+    renderWithProviders(<HomePage plansOnSale />);
+    expect(screen.getByTestId("hero-cta").textContent).toContain("Create your account");
+    expect(screen.getByTestId("home-plans").getAttribute("href")).toBe("/plans");
+    expect(screen.queryByTestId("home-plans-soon")).toBeNull();
+    expect(screen.queryByText("Plans · coming soon")).toBeNull();
+    expect(screen.getAllByText("Plans").map((a) => a.getAttribute("href"))).toEqual(["/plans", "/plans"]); // header, footer
+  });
+
+  it("HC-PB-070 with the plans not on sale (the default) the hero asks for early access and the Plans links go to the note", () => {
+    renderWithProviders(<HomePage />);
+    expect(screen.getByTestId("hero-cta").textContent).toContain("Request early access");
+    expect(screen.getByText("Plans · coming soon")).toBeTruthy();
+    expect(screen.getAllByText("Plans").map((a) => a.getAttribute("href"))).toEqual(["/#plans", "/#plans"]);
   });
 });

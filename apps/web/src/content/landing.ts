@@ -2,6 +2,7 @@
 // Autopilot and safety. Every claim names something the product does; the pictures are the product itself with sample
 // trades (apps/web/public/shots). Server-safe: plain data; the template count is read from the catalogue so the copy
 // never drifts from it (ADR-060).
+import { publicEnv } from "@/lib/env";
 import { TEMPLATE_COUNT } from "@/lib/strategy/templates";
 
 export const HERO = {
@@ -81,9 +82,10 @@ export const AUTH_FEATURES = [
 /**
  * ADR-140: whether plans can be bought. Off until the pricing is decided: the home page says "coming soon", the plan
  * page shows no prices and no way to pay (an admin still sees everything), and access is granted by hand from the admin
- * screen. One switch, so turning sales on is one line.
+ * screen. One switch, read from the environment (`NEXT_PUBLIC_PLANS_ON_SALE`, off unless it says "true"), so sales are
+ * turned on at deploy time without a code change; the end-to-end stack runs with it on, so the buying flow stays tested.
  */
-export const PLANS_ON_SALE: boolean = false;
+export const PLANS_ON_SALE: boolean = publicEnv().NEXT_PUBLIC_PLANS_ON_SALE === "true";
 
 export const SUPPORT_EMAIL = "support@hapiecoin.com";
 export const SUPPORT_WHATSAPP = { href: "https://wa.me/919684022369", label: "+91 96840 22369" };

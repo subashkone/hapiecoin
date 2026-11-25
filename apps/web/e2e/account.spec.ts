@@ -45,7 +45,7 @@ test.describe("HC-AC My plan", () => {
     await expect(dlg).toBeVisible();
     await expect(dlg.getByTestId("upgrade-message")).toContainText("Your Free plan allows 3 paper trades / month");
     await dlg.getByTestId("upgrade-subscribe").click();
-    await expect(page).toHaveURL(/\/subscription$/);
+    await expect(page).toHaveURL(/\/plans$/); // the route since ADR-106
     await expect(page.getByTestId("subscription-page")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
   });
 });

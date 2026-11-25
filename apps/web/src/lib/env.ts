@@ -8,6 +8,8 @@ const PublicEnv = z.object({
   NEXT_PUBLIC_GOOGLE_ENABLED: z.enum(["true", "false"]).default("false"),
   /** Fallback expiry list (ISO dates, comma separated) used when the gateway exposes none (see chain/expiries.ts). */
   NEXT_PUBLIC_DEFAULT_EXPIRIES: z.string().default("2026-09-11,2026-09-18,2026-09-25,2026-10-30,2026-11-27"),
+  /** ADR-140: "true" puts the plans on sale (prices, plan cards and checkout on /plans, See plans on the home page). */
+  NEXT_PUBLIC_PLANS_ON_SALE: z.enum(["true", "false"]).default("false"),
 });
 
 const ServerEnv = z.object({
@@ -24,6 +26,7 @@ export function publicEnv(): PublicEnv {
     NEXT_PUBLIC_GATEWAY_URL: process.env["NEXT_PUBLIC_GATEWAY_URL"] || undefined,
     NEXT_PUBLIC_GOOGLE_ENABLED: process.env["NEXT_PUBLIC_GOOGLE_ENABLED"] || undefined,
     NEXT_PUBLIC_DEFAULT_EXPIRIES: process.env["NEXT_PUBLIC_DEFAULT_EXPIRIES"] || undefined,
+    NEXT_PUBLIC_PLANS_ON_SALE: process.env["NEXT_PUBLIC_PLANS_ON_SALE"] || undefined,
   });
 }
 

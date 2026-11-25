@@ -1,9 +1,9 @@
 // Public footer (server component): quick links, legal, contact (ADR-140: the links follow the home page).
 import Link from "next/link";
 import { LogoMark } from "@/components/shell/Logo";
-import { SUPPORT_EMAIL, SUPPORT_WHATSAPP } from "@/content/landing";
+import { PLANS_ON_SALE, SUPPORT_EMAIL, SUPPORT_WHATSAPP } from "@/content/landing";
 
-export function Footer({ year = new Date().getFullYear() }: { year?: number }) {
+export function Footer({ year = new Date().getFullYear(), plansOnSale = PLANS_ON_SALE }: { year?: number; plansOnSale?: boolean }) {
   return (
     <footer className="border-t border-border bg-surface-1">
       <div className="pub-wrap py-12">
@@ -23,7 +23,7 @@ export function Footer({ year = new Date().getFullYear() }: { year?: number }) {
               <li><a href="/#how" className="hover:text-foreground">How it works</a></li>
               <li><a href="/#autopilot" className="hover:text-foreground">Autopilot</a></li>
               <li><a href="/#safety" className="hover:text-foreground">Safety</a></li>
-              <li><a href="/#plans" className="hover:text-foreground">Plans</a></li>
+              <li><a href={plansOnSale ? "/plans" : "/#plans"} className="hover:text-foreground">Plans</a></li>
               <li><Link href="/payoff-preview" className="hover:text-foreground">Payoff chart preview</Link></li>
             </ul>
           </div>

@@ -4,13 +4,14 @@ test.describe("HC-PB landing and public pages", () => {
   test("HC-PB-001 / HC-PB-004 / HC-PB-018 / HC-PB-058 header, hero, exchanges, footer", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle(/HapieCoin/);
-    // HC-PB-070 (ADR-140): HapieCoin's own page, no free plan on offer, plans coming soon
+    // HC-PB-070 (ADR-140): HapieCoin's own page, no free plan on offer; this stack sells plans (NEXT_PUBLIC_PLANS_ON_SALE)
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Know your worst case");
     await expect(page.getByTestId("hero-note")).toContainText("Delta Exchange India");
     await expect(page.getByText(/free plan/i)).toHaveCount(0);
     await expect(page.getByTestId("hero-cta")).toHaveAttribute("href", "/auth?tab=signup");
     await expect(page.getByTestId("get-started")).toHaveAttribute("href", "/auth?tab=signup");
-    await expect(page.getByTestId("home-plans-soon")).toContainText("coming soon");
+    await expect(page.getByTestId("home-plans")).toHaveAttribute("href", "/plans");
+    await expect(page.getByTestId("home-plans-soon")).toHaveCount(0);
     await expect(page.getByTestId("exchange-live")).toHaveCount(1);
     await expect(page.getByTestId("exchange-coming")).toHaveCount(0);
     await expect(page.getByText("support@hapiecoin.com")).toBeVisible();
