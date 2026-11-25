@@ -1,6 +1,6 @@
 // Saved Autopilot strategies (ADR-141, ADR-142): the settings an admin may save, and how they read.
 import { describe, expect, it } from "vitest";
-import { SavedBacktest, SavedDefinition, SavedLeg, SavedStrategyCreate, SavedStrategyPatch, savedEntryText, savedLossCapped, savedWindowText } from "./autopilot-saved.js";
+import { SavedBacktest, SavedDefinition, SavedLeg, SavedStrategyCreate, SavedStrategyPatch, savedEntryText, savedIstWeekday, savedLossCapped, savedWindowText } from "./autopilot-saved.js";
 
 const sellPut = { kind: "put", side: "sell", by: "pct", value: 2 } as const;
 const sellCall = { kind: "call", side: "sell", by: "pct", value: 2 } as const;
@@ -92,14 +92,18 @@ describe("HC-TR-269 the settings of a saved strategy", () => {
   it("HC-TR-269 writes the entry as a trader in India reads it", () => {
     const d = SavedDefinition.parse(daily);
     expect(savedWindowText(d)).toBe("21:30 to 22:30 IST");
-    expect(savedWindowText({ fromHourUtc: 0, toHourUtc: 24 })).toBe("any time of day");
+    expect(savedWindowText({ fromHourUtc: 0, toHourUtc: 24 })).toBe("any time from 05:30 IST to 05:30 the next morning");
     expect(savedWindowText({ fromHourUtc: 20, toHourUtc: 22 })).toBe("01:30 to 03:30 IST");
     expect(savedEntryText(d)).toBe("every day, 21:30 to 22:30 IST, on the next expiry");
     expect(savedEntryText(SavedDefinition.parse({ ...daily, weekdays: [5, 1] }))).toBe("on Monday, Friday, 21:30 to 22:30 IST, on the next expiry");
     expect(savedEntryText(SavedDefinition.parse({ ...daily, cadence: "weekly", weekdayUtc: 5 }))).toBe("each Friday, 21:30 to 22:30 IST, on the weekly expiry");
     expect(savedEntryText(SavedDefinition.parse({ ...daily, cadence: "monthly", oncePerExpiry: true, minDte: 20, maxDte: 35 }))).toBe("once per month-end expiry, 21:30 to 22:30 IST, on the month-end expiry");
-    expect(savedEntryText(SavedDefinition.parse({ ...daily, fromHourUtc: 0, toHourUtc: 24, oncePerExpiry: true, conditions: { sma: { days: 50, side: "above" }, ivRank: { min: 60, lookbackDays: 90 } } }))).toBe("every day, any time of day, on the next expiry, when the price above its 50-day average and volatility in its set range");
-    expect(savedEntryText(SavedDefinition.parse({ ...daily, conditions: { ivRank: { max: 40, lookbackDays: 90 } } }))).toBe("every day, 21:30 to 22:30 IST, on the next expiry, when volatility in its set range");
+    expect(savedEntryText(SavedDefinition.parse({ ...daily, fromHourUtc: 0, toHourUtc: 24, oncePerExpiry: true, conditions: { sma: { days: 50, side: "above" }, ivRank: { min: 60, lookbackDays: 90 } } }))).toBe("every day, any time from 05:30 IST to 05:30 the next morning, on the next expiry, when the price is above its 50-day average and volatility is in its set range");
+    expect(savedEntryText(SavedDefinition.parse({ ...daily, conditions: { ivRank: { max: 40, lookbackDays: 90 } } }))).toBe("every day, 21:30 to 22:30 IST, on the next expiry, when volatility is in its set range");
+    // the days are India's, like the times: a window from 19:00 UTC opens on the next India day
+    expect([savedIstWeekday(5, 16), savedIstWeekday(5, 18), savedIstWeekday(4, 19), savedIstWeekday(6, 23), savedIstWeekday(5, 0)]).toEqual([5, 5, 5, 0, 5]);
+    expect(savedEntryText(SavedDefinition.parse({ ...daily, cadence: "weekly", weekdayUtc: 4, fromHourUtc: 19, toHourUtc: 20 }))).toBe("each Friday, 00:30 to 01:30 IST, on the weekly expiry");
+    expect(savedEntryText(SavedDefinition.parse({ ...daily, weekdays: [0, 6], fromHourUtc: 20, toHourUtc: 22 }))).toBe("on Sunday, Monday, 01:30 to 03:30 IST, on the next expiry");
   });
 });
 

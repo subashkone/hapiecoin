@@ -6,7 +6,7 @@ import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { Underlying, PublicPageSettings, AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
 import { AUTOPILOT_PLAYBOOKS, type SweepAxisSpec } from "@hapiecoin/pricing";
-import { AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_PAPER_ONLY_MESSAGE, type AutopilotResults, AutopilotSettings, type AutopilotView, ProposalMarkBody, parseSweepValues } from "@hapiecoin/schema";
+import { AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_PAPER_ONLY_MESSAGE, type AutopilotResults, AutopilotSettings, type AutopilotView, ProposalMarkBody, parseSweepValues, SAVED_REFUSALS, type SavedStrategy, SavedStrategyCreate, SavedStrategyPatch, savedEntryText, savedLossCapped } from "@hapiecoin/schema";
 import { type MockBacktestParams, mockBacktest, mockSweep } from "./mock-backtest";
 import { mockReplayChain, mockReplayExpiries, mockReplaySteps } from "./mock-replay";
 import { mockPlaybookRecords } from "./mock-playbooks";
@@ -144,6 +144,8 @@ export interface MockState {
   commissions: MockCommission[];
   /** Banners (ADR-033) with the image kept as the data URL the admin uploaded. */
   banners: MockBanner[];
+  /** Saved Autopilot strategies (ADR-142), as the admin routes answer them. */
+  savedStrategies: SavedStrategy[];
   /** Coupons and payments (ADR-034); checkout answers in "mock" mode, confirm accepts the signature "mock-sig". */
   coupons: Coupon[];
   payments: (Payment & { userId: string; couponId: string | null })[];
@@ -274,7 +276,7 @@ export function createSession(state: MockState, email: string): string {
 
 export function createMockApi(state: MockState = { plans: seedPlans(),
     menuItems: seedMenuItems(),
-    accounts: new Map(), commissions: [], banners: [], coupons: [], payments: [], checkoutMode: "mock", clientErrors: [], backtestDays: 12, replayDays: 12, tradingEnv: "testnet", ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
+    accounts: new Map(), commissions: [], banners: [], savedStrategies: [], coupons: [], payments: [], checkoutMode: "mock", clientErrors: [], backtestDays: 12, replayDays: 12, tradingEnv: "testnet", ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
   const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409 | 429 | 503, code: string, message: string, details?: Record<string, unknown>) =>
@@ -1745,6 +1747,100 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     return c.json({ deleted: true });
   });
 
+  // ---- saved Autopilot strategies (ADR-141, ADR-142): the admin routes, with the API's own refusals ---------------
+  const savedOf = (sid: string) => state.savedStrategies.find((x) => x.id === sid);
+  const savedAudienceOk = (x: Pick<SavedStrategy, "audience" | "userIds" | "planIds">) => x.audience === "admins" || (x.audience === "users" ? x.userIds.length > 0 : x.planIds.length > 0);
+
+  const savedDraft = (name: string, summary: string, definition: SavedStrategy["definition"], by: string, family?: { familyId: string; version: number }): SavedStrategy => {
+    const sid = id("sv");
+    const at = nowIso();
+    return { id: sid, familyId: family?.familyId ?? sid, version: family?.version ?? 1, name, summary, definition, stage: "draft", audience: "admins", userIds: [], planIds: [], backtest: null, backtestAt: null, traded: false, lossCapped: savedLossCapped(definition.legs), entryText: savedEntryText(definition), createdBy: by, createdAt: at, updatedAt: at, publishedAt: null, retiredAt: null };
+  };
+  v1.get("/admin/autopilot-strategies", (c) => adminGate(c) ?? c.json({ items: [...state.savedStrategies].reverse() }));
+  v1.post("/admin/autopilot-strategies", async (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const parsed = SavedStrategyCreate.safeParse(await c.req.json());
+    if (!parsed.success) return err(c, 400, "VALIDATION", parsed.error.issues[0]!.message);
+    const made = savedDraft(parsed.data.name, parsed.data.summary, parsed.data.definition, current(c)!.user.id);
+    state.savedStrategies.push(made);
+    return c.json(made, 201);
+  });
+  v1.patch("/admin/autopilot-strategies/:id", async (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const row = savedOf(c.req.param("id"));
+    if (!row) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    const parsed = SavedStrategyPatch.safeParse(await c.req.json());
+    if (!parsed.success) return err(c, 400, "VALIDATION", parsed.error.issues[0]!.message);
+    const body = parsed.data;
+    if (row.stage === "retired") return err(c, 409, "CONFLICT", SAVED_REFUSALS.retired);
+    const unknownUser = body.userIds?.find((u) => ![...state.accounts.values()].some((a) => a.user.id === u));
+    if (unknownUser !== undefined) return err(c, 400, "BAD_REQUEST", `${SAVED_REFUSALS.unknownUser}: ${unknownUser}`);
+    const unknownPlan = body.planIds?.find((x) => !state.plans.some((pl) => pl.id === x));
+    if (unknownPlan !== undefined) return err(c, 400, "BAD_REQUEST", `${SAVED_REFUSALS.unknownPlan}: ${unknownPlan}`);
+    const resettled = body.definition !== undefined && stableJson(body.definition) !== stableJson(row.definition);
+    const backtest = body.backtest !== undefined ? body.backtest : resettled ? null : row.backtest;
+    const at = nowIso();
+    const next = { name: body.name ?? row.name, summary: body.summary ?? row.summary, audience: body.audience ?? row.audience, userIds: body.userIds ?? row.userIds, planIds: body.planIds ?? row.planIds, backtest, backtestAt: body.backtest ? at : backtest ? row.backtestAt : null };
+    if (resettled && row.traded) {
+      const version = Math.max(...state.savedStrategies.filter((x) => x.familyId === row.familyId).map((x) => x.version)) + 1;
+      const made: SavedStrategy = { ...savedDraft(next.name, next.summary, body.definition!, current(c)!.user.id, { familyId: row.familyId, version }), ...next, stage: backtest ? "backtested" : "draft" };
+      state.savedStrategies.push(made);
+      return c.json(made);
+    }
+    if (resettled) {
+      Object.assign(row, next, { definition: body.definition!, lossCapped: savedLossCapped(body.definition!.legs), entryText: savedEntryText(body.definition!), stage: backtest ? "backtested" : "draft", publishedAt: null, updatedAt: at });
+      return c.json(row);
+    }
+    if (row.stage === "paper" && !backtest) return err(c, 409, "CONFLICT", SAVED_REFUSALS.needsBacktest);
+    if (row.stage === "paper" && !savedAudienceOk(next)) return err(c, 409, "CONFLICT", SAVED_REFUSALS.needsAudience);
+    Object.assign(row, next, { stage: row.stage === "paper" ? "paper" : backtest ? "backtested" : "draft", updatedAt: at });
+    return c.json(row);
+  });
+  v1.post("/admin/autopilot-strategies/:id/duplicate", (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const row = savedOf(c.req.param("id"));
+    if (!row) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    const made = savedDraft(`${row.name.slice(0, 53)} (copy)`, row.summary, row.definition, current(c)!.user.id);
+    state.savedStrategies.push(made);
+    return c.json(made, 201);
+  });
+  v1.post("/admin/autopilot-strategies/:id/publish", (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const row = savedOf(c.req.param("id"));
+    if (!row) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (row.stage === "paper" || row.stage === "retired") return err(c, 409, "CONFLICT", SAVED_REFUSALS.notDraft);
+    if (!row.backtest) return err(c, 409, "CONFLICT", SAVED_REFUSALS.needsBacktest);
+    if (!savedAudienceOk(row)) return err(c, 409, "CONFLICT", SAVED_REFUSALS.needsAudience);
+    const at = nowIso();
+    for (const other of state.savedStrategies) if (other.familyId === row.familyId && other.stage === "paper") Object.assign(other, { stage: "retired", retiredAt: at, updatedAt: at });
+    Object.assign(row, { stage: "paper", publishedAt: at, updatedAt: at });
+    return c.json(row);
+  });
+  v1.post("/admin/autopilot-strategies/:id/retire", (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const row = savedOf(c.req.param("id"));
+    if (!row) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (row.stage !== "paper") return err(c, 409, "CONFLICT", SAVED_REFUSALS.notPaper);
+    const at = nowIso();
+    Object.assign(row, { stage: "retired", retiredAt: at, updatedAt: at });
+    return c.json(row);
+  });
+  v1.delete("/admin/autopilot-strategies/:id", (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const row = savedOf(c.req.param("id"));
+    if (!row) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (row.stage === "paper") return err(c, 409, "CONFLICT", SAVED_REFUSALS.onPaper);
+    if (row.traded) return err(c, 409, "CONFLICT", SAVED_REFUSALS.traded);
+    state.savedStrategies.splice(state.savedStrategies.indexOf(row), 1);
+    return c.json({ deleted: true });
+  });
+
   /* ---------------- coupons, checkout, payments (ADR-034) ---------------- */
   const nextInvoiceNo = () => invoiceNumber(new Date().getUTCFullYear(), state.payments.filter((p) => p.invoiceNo).length + 1);
   const userUses = (acc: Account, couponId: string) => state.payments.filter((p) => p.userId === acc.user.id && p.couponId === couponId && p.status === "paid").length;
@@ -2289,6 +2385,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     state.replayDays = 12;
     state.commissions.length = 0;
     state.banners.length = 0;
+    state.savedStrategies.length = 0;
     state.coupons.length = 0;
     state.payments.length = 0;
     state.campaigns.length = 0;

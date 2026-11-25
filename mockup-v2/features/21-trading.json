@@ -2590,5 +2590,29 @@
     "how": "beside or instead of a time window (the window may be the whole day) a saved strategy may enter only when the price is above or below its average of the last days, or when the volatility rank is inside a range; every exit of a clock strategy is available to it; it still collects premium (GAPS #178)",
     "evidence": "ADR-141, ADR-142 (25 Nov 2026): packages/schema/src/autopilot-saved.ts (SavedConditions), apps/api/src/autopilot-saved.ts (savedPlaybook: conditions on a clock playbook); tests: packages/schema/src/autopilot-saved.test.ts HC-TR-276, apps/api/src/autopilot-saved.test.ts HC-TR-276",
     "test": "unit (schema), unit (api)"
+  },
+  {
+    "id": "HC-TR-277",
+    "route": "/admin/autopilot-strategies",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Admin screen: the list of saved Autopilot strategies",
+    "how": "an admin page lists every saved strategy and version, newest first, with its stage, how it enters in India time, its coins and lots, whether its loss is limited, its backtest figures marked as entered by hand, and who can use it; search and a stage filter; only the steps the API would accept are offered for a row (edit, copy, publish, retire, delete); publish, retire and delete ask first and say what happens; a refusal is shown in the server's words; a fixed PAPER ONLY tag; an entry in the admin rail and in the command palette",
+    "evidence": "ADR-141, ADR-142 (25 Nov 2026): apps/web/src/components/admin/AutopilotStrategiesAdmin.tsx (stepsOf), apps/web/src/app/admin/autopilot-strategies/page.tsx, apps/web/src/lib/api/autopilot-saved.ts, AdminShell.tsx (ADMIN_NAV), CommandPalette.tsx; tests: apps/web/src/components/admin/autopilot-strategies.test.tsx HC-TR-277, e2e/admin.spec.ts HC-TR-277 HC-TR-278",
+    "test": "unit (web), e2e"
+  },
+  {
+    "id": "HC-TR-278",
+    "route": "/admin/autopilot-strategies",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Admin screen: the editor of a saved Autopilot strategy",
+    "how": "one editor in six parts: basics (name, sentence, coins, lots), when to enter (daily, weekly or monthly; the window and the days in India time, converted to the UTC hours and days the engine keeps; any time of day; nearest and furthest expiry; one entry per expiry; market conditions on the price average and the volatility rank; one side after a move), what to trade (legs with presets), when to exit (every clock exit), the backtest figures entered by hand with their source, and who can use it (admins, named users, plans); the entry is read back in words as it is typed; the first thing wrong is said in plain words; editing a strategy that has traded says before saving that a new version will be made, and editing one that has not says that its figures will be cleared; a save sends only the fields that changed, judged against the settings as the form opened them; a strategy on paper that has not traded is said to come off paper when its settings change; figures cannot be removed from a strategy on paper; the named users stay in sight as removable chips; the editor cannot be closed between the two requests of a new strategy",
+    "evidence": "ADR-141, ADR-142 (25 Nov 2026): apps/web/src/components/admin/AutopilotStrategyDialog.tsx, apps/web/src/lib/strategy/saved-form.ts (savedDefinitionOf, savedFormOf, utcWeekday, istWeekday); tests: apps/web/src/lib/strategy/saved-form.test.ts HC-TR-278, apps/web/src/components/admin/autopilot-strategies.test.tsx HC-TR-278; packages/schema/src/autopilot-saved.ts (savedIstWeekday, savedEntryText in India days)",
+    "test": "unit (web), e2e"
   }
 ]

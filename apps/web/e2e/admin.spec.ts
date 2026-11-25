@@ -81,6 +81,48 @@ test.describe("HC-AD admin", () => {
     await expect(page.getByTestId("drawer-name")).toHaveText("New Trader");
   });
 
+  test("HC-TR-277 HC-TR-278 Autopilot strategies: build one, enter its figures, publish it to paper, retire it", async ({ page, request }) => {
+    await seedUser(request, { email: "builder@example.com", role: "admin" });
+    await signIn(page, "builder@example.com");
+    await page.goto("/admin/autopilot-strategies");
+    await expect(page.getByTestId("admin-saved")).toHaveAttribute("data-state", "ready", { timeout: 15_000 });
+    await expect(page.getByTestId("saved-paper-only")).toHaveText("PAPER ONLY");
+    await page.getByTestId("saved-new").click();
+    await page.getByTestId("saved-save").click();
+    await expect(page.getByTestId("saved-error")).toHaveText("Give the strategy a name.");
+    await page.getByTestId("saved-name").fill("BTC evening strangle");
+    await page.getByTestId("saved-summary").fill("Sell a call and a put 2 % away each evening; stop at double.");
+    await page.getByTestId("saved-leg-stop").fill("2");
+    await expect(page.getByTestId("saved-reads")).toContainText("Enters every day, 21:30 to 22:30 IST, on the next expiry.");
+    await page.getByTestId("saved-save").click();
+    const row = page.locator("[data-testid=saved-row][data-name='BTC evening strangle']");
+    await expect(row).toHaveAttribute("data-stage", "draft");
+    // a draft with no figures is refused, in the server's words
+    await row.getByTestId("saved-publish").click();
+    await page.getByTestId("saved-confirm-yes").click();
+    await expect(page.getByText("Enter its backtest figures before publishing")).toBeVisible();
+    await expect(row).toHaveAttribute("data-stage", "draft");
+    // figures entered by hand, then to paper
+    await row.getByTestId("saved-edit").click();
+    await page.getByTestId("saved-bt-mean").fill("12.4");
+    await page.getByTestId("saved-bt-positive").fill("71");
+    await page.getByTestId("saved-bt-worst").fill("-180");
+    await page.getByTestId("saved-bt-samples").fill("106");
+    await page.getByTestId("saved-bt-basis").fill("autopilot-study, 8 Aug to 21 Nov 2026, real fees");
+    await page.getByTestId("saved-save").click();
+    await expect(row).toHaveAttribute("data-stage", "backtested");
+    await expect(row.getByTestId("saved-backtest")).toContainText("+$12.4 a day");
+    await row.getByTestId("saved-publish").click();
+    await expect(page.getByTestId("saved-confirm")).toContainText("No real order is placed");
+    await page.getByTestId("saved-confirm-yes").click();
+    await expect(row).toHaveAttribute("data-stage", "paper");
+    await expect(row.getByTestId("saved-delete")).toHaveCount(0);
+    await row.getByTestId("saved-retire").click();
+    await page.getByTestId("saved-confirm-yes").click();
+    await expect(row).toHaveAttribute("data-stage", "retired");
+    await expect(row.getByTestId("saved-edit")).toHaveCount(0);
+  });
+
   test("HC-AD-059..069, 121 banners: create with an image, preview, switch, edit, delete", async ({ page, request }) => {
     await seedUser(request, { email: "boss@example.com", role: "admin", banners: 2 });
     await signIn(page, "boss@example.com");

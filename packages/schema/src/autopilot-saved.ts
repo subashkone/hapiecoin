@@ -117,15 +117,27 @@ export function savedLossCapped(legs: readonly SavedLeg[]): boolean {
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 /** A UTC hour as the clock reads in India (UTC + 5:30), 24-hour. */
 const ist = (hourUtc: number): string => `${String((hourUtc + 5) % 24).padStart(2, "0")}:30`;
-/** The entry window as a trader in India reads it: "21:30 to 22:30 IST", or "any time of day". */
+/** The whole UTC day, as it falls in India. */
+const WHOLE_DAY = "any time from 05:30 IST to 05:30 the next morning";
+const wholeDay = (d: Pick<SavedDefinition, "fromHourUtc" | "toHourUtc">): boolean => d.fromHourUtc === 0 && d.toHourUtc === 24;
+/** The entry window as a trader in India reads it: "21:30 to 22:30 IST", or the whole day. */
 export function savedWindowText(d: Pick<SavedDefinition, "fromHourUtc" | "toHourUtc">): string {
-  return d.fromHourUtc === 0 && d.toHourUtc === 24 ? "any time of day" : `${ist(d.fromHourUtc)} to ${ist(d.toHourUtc)} IST`;
+  return wholeDay(d) ? WHOLE_DAY : `${ist(d.fromHourUtc)} to ${ist(d.toHourUtc)} IST`;
 }
-/** When and on which expiry a saved strategy enters, in words (what a card shows after "Entered "). Weekdays are the UTC day the window opens on. */
+/**
+ * The India weekday a window opens on, for the UTC weekday the engine keeps: India is a day ahead of UTC from
+ * 18:30 UTC, so a window that starts at 19:00 UTC or later opens on the next India day. The times in the sentence are
+ * India's, so its days are too.
+ */
+export function savedIstWeekday(utcDay: number, fromHourUtc: number): number {
+  return (utcDay + (fromHourUtc >= 19 ? 1 : 0)) % 7;
+}
+/** When and on which expiry a saved strategy enters, in words (what a card shows after "Entered "), in India time and India days. */
 export function savedEntryText(d: SavedDefinition): string {
-  const days = d.cadence === "weekly" ? `each ${WEEKDAYS[d.weekdayUtc!]}` : d.cadence === "monthly" ? "once per month-end expiry" : d.weekdays ? `on ${[...d.weekdays].sort((a, b) => a - b).map((w) => WEEKDAYS[w]).join(", ")}` : "every day";
+  const day = (w: number) => WEEKDAYS[savedIstWeekday(w, d.fromHourUtc)]!;
+  const days = d.cadence === "weekly" ? `each ${day(d.weekdayUtc!)}` : d.cadence === "monthly" ? "once per month-end expiry" : d.weekdays ? `on ${[...d.weekdays].map((w) => savedIstWeekday(w, d.fromHourUtc)).sort((a, b) => a - b).map((w) => WEEKDAYS[w]).join(", ")}` : "every day";
   const expiry = d.cadence === "monthly" ? "on the month-end expiry" : d.cadence === "weekly" ? "on the weekly expiry" : "on the next expiry";
-  const when = [d.conditions?.sma ? `the price ${d.conditions.sma.side} its ${d.conditions.sma.days}-day average` : null, d.conditions?.ivRank ? "volatility in its set range" : null].filter((x) => x !== null);
+  const when = [d.conditions?.sma ? `the price is ${d.conditions.sma.side} its ${d.conditions.sma.days}-day average` : null, d.conditions?.ivRank ? "volatility is in its set range" : null].filter((x) => x !== null);
   return `${days}, ${savedWindowText(d)}, ${expiry}${when.length ? `, when ${when.join(" and ")}` : ""}`;
 }
 
