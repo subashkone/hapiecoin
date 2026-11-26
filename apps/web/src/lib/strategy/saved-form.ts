@@ -1,6 +1,7 @@
 // The editor of a saved Autopilot strategy as plain data (ADR-141, ADR-142; HC-TR-278): what the admin types, and its
 // conversion to and from the settings the API keeps. The screen shows India time and India weekdays; the engine keeps
 // whole UTC hours and UTC weekdays, so the conversion lives here, in one place, and is tested on its own.
+import { type Playbook, playbookTemplate } from "@hapiecoin/pricing";
 import { SAVED_LONG_WINDOW_HOURS, SavedBacktest, type SavedCadence, SavedDefinition, type SavedLeg, type SavedStrategy, type Underlying, savedIstClock, savedIstWeekday } from "@hapiecoin/schema";
 
 /** A UTC hour as the clock reads in India (UTC + 5:30), as every Autopilot card writes it: "9:30 PM". 24 is 5:30 the next morning. */
@@ -306,4 +307,85 @@ export function savedBacktestOf(f: SavedForm): Parsed<SavedBacktest | null> {
 export function sameDefinition(a: SavedDefinition, b: SavedDefinition): boolean {
   const stable = (v: unknown): string => JSON.stringify(v, (_k, x: unknown) => (x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([p], [q]) => p.localeCompare(q))) : x));
   return stable(a) === stable(b);
+}
+
+/**
+ * A built-in strategy as the editor's form (HC-TR-280): what "Copy as my own" opens, a new draft that leaves the
+ * built-in one as it is. Only a strategy the editor can hold whole is copied: entered by the clock, on Delta Exchange
+ * India, every leg an option out of the money. Anything else says why not, in the admin's words.
+ */
+/** The longest name a saved strategy may carry. */
+export const SAVED_NAME_MAX = 60;
+const SUMMARY_MAX = 300;
+/** A sentence too long for the field, cut after its last whole sentence that fits. */
+function wholeSentences(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const end = text.slice(0, max).lastIndexOf(". ");
+  return end > 0 ? text.slice(0, end + 1) : "";
+}
+export function savedFormFromBuiltIn(p: Playbook): { ok: true; form: SavedForm; notes: string[] } | { ok: false; why: string } {
+  const c = p.clock;
+  if (!c) return { ok: false, why: "It enters on a market condition, with exits the editor does not have yet." };
+  if (!(c.venues.length === 1 && c.venues[0] === "delta_india")) return { ok: false, why: "It trades on another exchange than Delta Exchange India." };
+  const legs: LegForm[] = [];
+  for (const l of playbookTemplate(p)?.legs ?? []) {
+    if (l.kind === "future") return { ok: false, why: "It holds a futures leg, which a saved strategy cannot." };
+    if (l.lots !== undefined || l.expiryOffset !== undefined) return { ok: false, why: "Its legs differ in size or expiry, which the editor cannot hold." };
+    // out of the money: a call above the spot, a put below it
+    const up = l.kind === "call";
+    if (l.premium !== undefined) legs.push({ kind: l.kind, side: l.side, by: "premium", value: String(l.premium) });
+    else if (l.pct !== undefined && (up ? l.pct > 0 : l.pct < 0)) legs.push({ kind: l.kind, side: l.side, by: "pct", value: String(Math.abs(l.pct)) });
+    else if (l.pct === undefined && (up ? l.k > 0 : l.k < 0)) legs.push({ kind: l.kind, side: l.side, by: "strikes", value: String(Math.abs(l.k)) });
+    else return { ok: false, why: "It has a leg at or in the money, which the editor cannot hold yet." };
+  }
+  const anyTime = c.fromHourUtc === 0 && c.toHourUtc === 24;
+  const cadence: SavedCadence = c.cadence === "monthly" ? "monthly" : c.weekdayUtc !== undefined ? "weekly" : "daily";
+  // nothing is dropped without a word: a day the editor has no field for is a reason not to copy
+  if (cadence === "monthly" && c.weekdayUtc !== undefined) return { ok: false, why: "It is monthly and tied to one weekday, which the editor cannot hold." };
+  if (cadence !== "daily" && p.conditions?.weekdays !== undefined) return { ok: false, why: "It chooses its weekdays without being a daily strategy, which the editor cannot hold." };
+  // a name is never cut: two built-in strategies must not end up with one copy name, so a long one is left for the admin to write
+  const copyName = `${p.name} (copy)`;
+  const name = copyName.length <= SAVED_NAME_MAX ? copyName : "";
+  const summary = wholeSentences(p.summary, SUMMARY_MAX);
+  const notes = [...(name === "" ? [`Its name is too long to copy (${SAVED_NAME_MAX} characters at most): give your strategy a name.`] : []), ...(summary !== p.summary ? ["Its description was too long to copy whole and was cut after a full sentence: read it and complete it."] : [])];
+  const form: SavedForm = {
+    ...emptySavedForm(),
+    name,
+    summary,
+    assets: [...p.assets],
+    lots: String(p.lots),
+    cadence,
+    anyTime,
+    fromHourUtc: anyTime ? 16 : c.fromHourUtc,
+    toHourUtc: anyTime ? 17 : c.toHourUtc,
+    weekday: c.weekdayUtc === undefined ? 5 : istWeekday(c.weekdayUtc, anyTime ? 0 : c.fromHourUtc),
+    weekdays: cadence === "daily" ? (p.conditions?.weekdays ?? []).map((w) => istWeekday(w, anyTime ? 0 : c.fromHourUtc)).sort((a, b) => a - b) : [],
+    oncePerExpiry: Boolean(c.oncePerExpiry),
+    minDte: String(p.minDte),
+    maxDte: String(c.maxDte),
+    legs,
+    smaOn: p.conditions?.sma !== undefined,
+    smaDays: str(p.conditions?.sma?.days) || "50",
+    smaSide: p.conditions?.sma?.side ?? "above",
+    ivOn: p.conditions?.ivRank !== undefined,
+    ivMin: str(p.conditions?.ivRank?.min),
+    ivMax: str(p.conditions?.ivRank?.max),
+    ivLookback: str(p.conditions?.ivRank?.lookbackDays) || "90",
+    moveOn: c.moveSide !== undefined,
+    moveHours: str(c.moveSide?.hours) || "24",
+    movePct: str(c.moveSide?.pct) || "2",
+    legStop: str(c.legStop),
+    takeProfitPct: pct(c.takeProfitOfCredit),
+    takeTrailPct: str(c.takeTrailPct),
+    trailRestPct: str(c.trailRestPct),
+    ladder: (c.ladder ?? []).join(", "),
+    lockAtPct: pct(c.lock?.at),
+    lockFloorPct: pct(c.lock?.floor),
+    exitHourUtc: str(c.exitHourUtc),
+    buyBackBy: c.legBuyBackAt !== undefined ? "price" : c.legBuyBackShare !== undefined ? "share" : "none",
+    buyBackValue: c.legBuyBackAt !== undefined ? String(c.legBuyBackAt) : pct(c.legBuyBackShare),
+  };
+  // the same rules a typed strategy meets: one the editor would refuse is not offered as a copy
+  const held = savedDefinitionOf(form);
+  return held.ok ? { ok: true, form, notes } : { ok: false, why: `The editor cannot hold it as it is. ${held.error}` };
 }

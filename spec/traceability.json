@@ -9124,6 +9124,21 @@
   "evidence": "ADR-141, ADR-142 (25 Nov 2026): packages/schema/src/autopilot-saved.ts (SavedCard, savedPlaybookOf: one conversion for the engine and the screens), packages/schema/src/autopilot.ts (AutopilotView.saved), apps/api/src/autopilot-saved.ts (savedCardsFor), apps/api/src/autopilot.ts (autopilotView), apps/web/src/lib/strategy/autopilot-catalogue.ts (catalogueOf), apps/web/src/components/autopilot/AutopilotPage.tsx, AutopilotResultsPanel.tsx (nameOf); tests: apps/web/src/components/autopilot/autopilot-saved.test.tsx HC-TR-279, apps/web/src/lib/strategy/autopilot-catalogue.test.ts HC-TR-279, apps/api/src/autopilot-saved.test.ts HC-TR-279, packages/schema/src/autopilot-saved.test.ts HC-TR-279; autopilot-page.test.tsx unchanged"
  },
  {
+  "id": "HC-TR-280",
+  "area": "21-trading",
+  "areaName": "Builder, paper & live trading, journal",
+  "owner": "Trading engineer",
+  "route": "/admin/autopilot-strategies",
+  "screen": "Trading · Autopilot",
+  "feature": "Admin screen: the built-in Autopilot strategies, read-only, with Copy as my own",
+  "status": "working",
+  "isNew": true,
+  "phase": 5,
+  "test": "unit (web)",
+  "acceptance": "a second tab on the admin page lists every built-in strategy with its family, when it enters, how it gets out and its backtest figures; none can be edited or removed there; Copy as my own opens the editor with the strategy's settings as a new draft of the admin's own and leaves the built-in one as it is; the backtest figures are not copied, because they hold only for the settings they were measured on; every built-in strategy entered by the clock can be copied and the copy has the same entry, legs, conditions and exits; a strategy entered on a market condition says why it cannot be copied yet",
+  "evidence": "ADR-141 (the design's read-only built-in tab), ADR-142 (25 Nov 2026): apps/web/src/components/admin/AutopilotStrategiesAdmin.tsx (BuiltInTable), AutopilotStrategyDialog.tsx (copy), apps/web/src/lib/strategy/saved-form.ts (savedFormFromBuiltIn); tests: apps/web/src/lib/strategy/saved-form.test.ts HC-TR-280 (every clock strategy, field for field), apps/web/src/components/admin/autopilot-strategies.test.tsx HC-TR-280"
+ },
+ {
   "id": "HC-AC-001",
   "area": "30-account",
   "areaName": "Subscription & referrals",

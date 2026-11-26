@@ -2626,5 +2626,17 @@
     "how": "the Autopilot view carries the saved strategies this trader may use (published, and theirs by plan, by name or as an admin) and those they can no longer use but have traded; one that only sits in their settings or log and is not theirs is never sent; the screen lists the usable ones after the built-in ones in the family of their cadence, with the same row: when it enters in India time, what it does, how it gets out, its own exits, its backtest figures marked as entered by hand, the paper result and what it is doing now; its switch saves it with its own exits; one that is no longer usable is not offered and keeps its name in the open trades, the log and the results; with none, the screen is the built-in list as before; a sold structure with no stop and no bought options is said to have a loss that is not limited; a strategy in the settings that is no longer offered is not counted as on and is said to have stopped",
     "evidence": "ADR-141, ADR-142 (25 Nov 2026): packages/schema/src/autopilot-saved.ts (SavedCard, savedPlaybookOf: one conversion for the engine and the screens), packages/schema/src/autopilot.ts (AutopilotView.saved), apps/api/src/autopilot-saved.ts (savedCardsFor), apps/api/src/autopilot.ts (autopilotView), apps/web/src/lib/strategy/autopilot-catalogue.ts (catalogueOf), apps/web/src/components/autopilot/AutopilotPage.tsx, AutopilotResultsPanel.tsx (nameOf); tests: apps/web/src/components/autopilot/autopilot-saved.test.tsx HC-TR-279, apps/web/src/lib/strategy/autopilot-catalogue.test.ts HC-TR-279, apps/api/src/autopilot-saved.test.ts HC-TR-279, packages/schema/src/autopilot-saved.test.ts HC-TR-279; autopilot-page.test.tsx unchanged",
     "test": "unit (web), integration (api), unit (schema)"
+  },
+  {
+    "id": "HC-TR-280",
+    "route": "/admin/autopilot-strategies",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Admin screen: the built-in Autopilot strategies, read-only, with Copy as my own",
+    "how": "a second tab on the admin page lists every built-in strategy with its family, when it enters, how it gets out and its backtest figures; none can be edited or removed there; Copy as my own opens the editor with the strategy's settings as a new draft of the admin's own and leaves the built-in one as it is; the backtest figures are not copied, because they hold only for the settings they were measured on; every built-in strategy entered by the clock can be copied and the copy has the same entry, legs, conditions and exits; a strategy entered on a market condition says why it cannot be copied yet",
+    "evidence": "ADR-141 (the design's read-only built-in tab), ADR-142 (25 Nov 2026): apps/web/src/components/admin/AutopilotStrategiesAdmin.tsx (BuiltInTable), AutopilotStrategyDialog.tsx (copy), apps/web/src/lib/strategy/saved-form.ts (savedFormFromBuiltIn); tests: apps/web/src/lib/strategy/saved-form.test.ts HC-TR-280 (every clock strategy, field for field), apps/web/src/components/admin/autopilot-strategies.test.tsx HC-TR-280",
+    "test": "unit (web)"
   }
 ]
