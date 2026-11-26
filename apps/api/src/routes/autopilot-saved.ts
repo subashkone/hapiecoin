@@ -12,15 +12,20 @@
  *   GET    /v1/admin/autopilot-strategies/{id}/backtests            its latest runs of the backtest in the app (HC-TR-288)
  *   POST   /v1/admin/autopilot-strategies/{id}/backtests            start a run on its settings as they are (HC-TR-288)
  *   POST   /v1/admin/autopilot-strategies/{id}/backtests/{run}/use  put a run's figures on the strategy (HC-TR-288)
+ *   GET    /v1/admin/autopilot-strategies/{id}/approval             its paper record against the approval checks (HC-TR-291, HC-TR-292)
+ *   POST   /v1/admin/autopilot-strategies/{id}/approve              approve it for live: a record, nothing is placed (HC-TR-292, HC-TR-293)
+ *   POST   /v1/admin/autopilot-strategies/{id}/withdraw-approval    withdraw that approval (HC-TR-292, HC-TR-293)
  */
-import { SavedBacktestRun, SavedBacktestStart, SavedStrategy, SavedStrategyCreate, SavedStrategyList, SavedStrategyPatch } from "@hapiecoin/schema";
+import { SavedApprovalView, SavedApprove, SavedBacktestRun, SavedBacktestStart, SavedStrategy, SavedStrategyCreate, SavedStrategyList, SavedStrategyPatch } from "@hapiecoin/schema";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { auditFrom } from "../audit.js";
 import { type SavedResult, createSaved, deleteSaved, duplicateSaved, listSaved, publishSaved, retireSaved, savedById, updateSaved } from "../autopilot-saved.js";
+import { approvalView, approveSaved, withdrawApproval } from "../saved-approval.js";
 import { runsOf, startRun, useRun } from "../saved-backtest-runs.js";
 import { type AppEnv, currentUser } from "../security/context.js";
 import { errors } from "../security/errors.js";
 import { requireAdmin } from "../security/guards.js";
+import { requireSecondFactor } from "../security/second-factor.js";
 import { type AppDeps, cookieAuth, errorResponses, jsonContent } from "./shared.js";
 
 const IdParam = z.object({ id: z.string().min(1).max(64) });
@@ -172,6 +177,47 @@ export function registerAutopilotSavedRoutes(app: OpenAPIHono<AppEnv>, deps: App
       const s = settled(result);
       await auditFrom(c, db)({ action: "admin.autopilot_strategy.backtest_use", target: `autopilot_strategy:${id}`, before: { backtest: strategy.backtest }, after: { run, backtest: s.backtest } });
       return c.json(s, 200);
+    },
+  );
+
+  // ---- approval for live (ADR-145): a record on a strategy that stays on paper; nothing here places or enables an order ----
+  app.openapi(
+    createRoute({ method: "get", path: `${BASE}/{id}/approval`, tags: ["admin"], summary: "The paper record of a saved strategy against the approval checks (HC-TR-291, HC-TR-292)", security: cookieAuth, middleware: admin, request: { params: IdParam }, responses: { 200: jsonContent(SavedApprovalView, "The record, the checks and the approval"), 401: errorResponses[401], 403: errorResponses[403], 404: errorResponses[404] } }),
+    async (c) => c.json(await approvalView(db, await found(c.req.valid("param").id), currentUser(c).id, now()), 200),
+  );
+
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: `${BASE}/{id}/approve`,
+      tags: ["admin"],
+      summary: "Approve a saved strategy for live: recorded with who, when and the paper record; it still trades on paper only (HC-TR-292, HC-TR-293)",
+      security: cookieAuth,
+      middleware: admin,
+      request: { params: IdParam, body: { content: { "application/json": { schema: SavedApprove } }, required: true } },
+      responses: { 200: jsonContent(SavedStrategy, "The strategy"), ...refusals },
+    }),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const user = currentUser(c);
+      await requireSecondFactor(deps, c, user); // an account with the authenticator on confirms with its code (ADR-086)
+      const result = await approveSaved(db, id, { id: user.id, name: user.name }, now(), (tx, approval) => auditFrom(c, tx)({ action: "admin.autopilot_strategy.approve", target: `autopilot_strategy:${id}`, after: { approval } }));
+      if (!result) throw errors.notFound("Strategy");
+      if (!result.ok) throw result.forbidden ? errors.forbidden(result.why) : errors.conflict(result.why);
+      return c.json(result.strategy, 200);
+    },
+  );
+
+  app.openapi(
+    createRoute({ method: "post", path: `${BASE}/{id}/withdraw-approval`, tags: ["admin"], summary: "Withdraw the approval of a saved strategy for live; it stays on paper (HC-TR-292, HC-TR-293)", security: cookieAuth, middleware: admin, request: { params: IdParam }, responses: { 200: jsonContent(SavedStrategy, "The strategy"), ...refusals } }),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const user = currentUser(c);
+      await requireSecondFactor(deps, c, user);
+      const result = await withdrawApproval(db, id, user.id, now(), (tx, approval) => auditFrom(c, tx)({ action: "admin.autopilot_strategy.withdraw_approval", target: `autopilot_strategy:${id}`, before: { approval } }));
+      if (!result) throw errors.notFound("Strategy");
+      if (!result.ok) throw result.forbidden ? errors.forbidden(result.why) : errors.conflict(result.why);
+      return c.json(result.strategy, 200);
     },
   );
 }

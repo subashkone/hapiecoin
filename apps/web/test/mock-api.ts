@@ -1770,7 +1770,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
   const savedDraft = (name: string, summary: string, definition: SavedStrategy["definition"], by: string, family?: { familyId: string; version: number }): SavedStrategy => {
     const sid = id("sv");
     const at = nowIso();
-    return { id: sid, familyId: family?.familyId ?? sid, version: family?.version ?? 1, name, summary, definition, stage: "draft", audience: "admins", userIds: [], planIds: [], backtest: null, backtestAt: null, traded: false, lossCapped: savedLossCapped(definition.legs), entryText: savedEntryText(definition), createdBy: by, createdAt: at, updatedAt: at, publishedAt: null, retiredAt: null };
+    return { id: sid, familyId: family?.familyId ?? sid, version: family?.version ?? 1, name, summary, definition, stage: "draft", audience: "admins", userIds: [], planIds: [], backtest: null, backtestAt: null, approval: null, traded: false, lossCapped: savedLossCapped(definition.legs), entryText: savedEntryText(definition), createdBy: by, createdAt: at, updatedAt: at, publishedAt: null, retiredAt: null };
   };
   v1.get("/admin/autopilot-strategies", (c) => adminGate(c) ?? c.json({ items: [...state.savedStrategies].reverse() }));
   v1.post("/admin/autopilot-strategies", async (c) => {

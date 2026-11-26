@@ -24,7 +24,7 @@ const DAILY = SavedDefinition.parse({ assets: ["BTC"], venues: ["delta_india"], 
 const FIGURES = { mean: 12.4, per: "day" as const, positivePct: 71, worst: -180, samples: 106, basis: "autopilot-study, real fees" };
 function publish(id: string, over: Partial<SavedStrategy> = {}): SavedStrategy {
   const definition = over.definition ?? DAILY;
-  const row: SavedStrategy = { id, familyId: id, version: 1, name: `Saved ${id}`, summary: "Sell a call and a put 2 % away each evening.", definition, stage: "paper", audience: "plans", userIds: [], planIds: [acc().subscription!.planId], backtest: FIGURES, backtestAt: "2026-11-25T10:00:00.000Z", traded: false, lossCapped: savedLossCapped(definition.legs), entryText: savedEntryText(definition), createdBy: null, createdAt: "2026-11-25T10:00:00.000Z", updatedAt: "2026-11-25T10:00:00.000Z", publishedAt: "2026-11-25T10:00:00.000Z", retiredAt: null, ...over };
+  const row: SavedStrategy = { id, familyId: id, version: 1, name: `Saved ${id}`, summary: "Sell a call and a put 2 % away each evening.", definition, stage: "paper", audience: "plans", userIds: [], planIds: [acc().subscription!.planId], backtest: FIGURES, backtestAt: "2026-11-25T10:00:00.000Z", approval: null, traded: false, lossCapped: savedLossCapped(definition.legs), entryText: savedEntryText(definition), createdBy: null, createdAt: "2026-11-25T10:00:00.000Z", updatedAt: "2026-11-25T10:00:00.000Z", publishedAt: "2026-11-25T10:00:00.000Z", retiredAt: null, ...over };
   mock.state.savedStrategies.push(row);
   return row;
 }

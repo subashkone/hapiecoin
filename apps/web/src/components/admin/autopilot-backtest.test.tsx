@@ -24,7 +24,7 @@ function saved(over: Partial<SavedStrategy> = {}): SavedStrategy {
   const definition = over.definition ?? DAILY;
   const id = over.id ?? `bt_sv_${n}`;
   const at = new Date(Date.UTC(2026, 10, 25, 10, n)).toISOString();
-  const row: SavedStrategy = { id, familyId: id, version: 1, name: `Strategy ${n}`, summary: "Sell both sides each evening.", definition, stage: "draft", audience: "admins", userIds: [], planIds: [], backtest: null, backtestAt: null, traded: false, lossCapped: savedLossCapped(definition.legs), entryText: savedEntryText(definition), createdBy: null, createdAt: at, updatedAt: at, publishedAt: null, retiredAt: null, ...over };
+  const row: SavedStrategy = { id, familyId: id, version: 1, name: `Strategy ${n}`, summary: "Sell both sides each evening.", definition, stage: "draft", audience: "admins", userIds: [], planIds: [], backtest: null, backtestAt: null, approval: null, traded: false, lossCapped: savedLossCapped(definition.legs), entryText: savedEntryText(definition), createdBy: null, createdAt: at, updatedAt: at, publishedAt: null, retiredAt: null, ...over };
   mock.state.savedStrategies.push(row);
   return row;
 }
