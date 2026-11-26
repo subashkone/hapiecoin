@@ -134,4 +134,44 @@ describe("HC-TR-279 saved strategies on the Autopilot screen", () => {
     expect(screen.getByTestId("autopilot-on-count").textContent).toBe(`0 of ${AUTOPILOT_PLAYBOOKS.length}`);
     expect(screen.getByTestId("autopilot-gone").textContent).toBe("2 strategies you had on are no longer offered and have stopped entering");
   });
+
+  it("HC-TR-284 a saved strategy with exits on the whole trade reads with them, in its tags, its line and its sentences, and never as held to expiry", async () => {
+    const SPREAD = { ...DAILY, fromHourUtc: 0, toHourUtc: 24, oncePerExpiry: true, minDte: 14, maxDte: 400, legs: [{ kind: "call", side: "buy", by: "strikes", value: 0 }, { kind: "call", side: "sell", by: "strikes", value: 2 }] };
+    publish("sv_spread", { name: "Call spread on the trend", definition: SavedDefinition.parse({ ...SPREAD, exits: { targetOfMax: 0.5, stopOfMax: 0.5, timeStopDte: 2 } }) });
+    publish("sv_trail", { definition: SavedDefinition.parse({ ...SPREAD, exits: { targetOfMax: 0.25, takeTrailPct: 10, timeStopDte: 1 } }) });
+    publish("sv_sold", { definition: SavedDefinition.parse({ ...DAILY, exits: { targetOfMax: 0.5 } }) });
+    publish("sv_soldtime", { definition: SavedDefinition.parse({ ...DAILY, minDte: 3, maxDte: 8, exits: { targetOfMax: 0.5, timeStopDte: 1 } }) });
+    publish("sv_legstop", { definition: SavedDefinition.parse({ ...SPREAD, exits: { legStop: 2, targetOfMax: 0.5, stopOfMax: 0.5 } }) });
+    renderWithProviders(<AutopilotPage />);
+    await ready();
+    const words = (id: string) => within(cardOf(id)!).getByTestId("autopilot-card-exit-words").textContent;
+    const how = (id: string) => within(cardOf(id)!).getByTestId("autopilot-card-how").textContent;
+    const tags = (id: string) => [...within(cardOf(id)!).getByTestId("autopilot-card-tags").querySelectorAll("li")].map((li) => li.textContent);
+
+    expect(cardOf("sv_spread")!.textContent).toContain("Enters every day, any time from 5:30 AM IST to 5:30 the next morning, on the first expiry at least 14 days out");
+    expect(words("sv_spread")).toBe("How it gets out: Bought options limit the loss, target at 50 % of the most it can make, stop at 50 % of the most it can lose, out 2 days before expiry");
+    expect(how("sv_spread")).toContain("The whole trade is closed once it is up by 50 % of the most it can make, after fees. It is closed at a loss of 50 % of the most it can lose, before fees. It is closed 2 days before expiry, whatever the profit. Until then the bought options limit the loss.");
+    expect(how("sv_spread")).not.toContain("held to settlement");
+    expect(tags("sv_spread")).toEqual(["No stop on a leg", "Loss limited", "Target 50 % of max profit", "Stop 50 % of max loss", "Out 2 days before expiry"]);
+
+    expect(words("sv_trail")).toBe("How it gets out: Bought options limit the loss, trail from 25 % of the most it can make, out 1 day before expiry");
+    expect(how("sv_trail")).toContain("Once the trade is up by 25 % of the most it can make, after fees, it is not closed: it is trailed, and closed when the profit gives back 10 % of its best. It is closed 1 day before expiry, whatever the profit.");
+    expect(tags("sv_trail")).toEqual(["No stop", "Loss limited", "Trail from 25 % of max profit", "Out 1 day before expiry"]);
+
+    // sold options alone with a target: nothing limits the loss, and it says so
+    expect(words("sv_sold")).toBe("How it gets out: The loss is not limited, target at 50 % of the most it can make");
+    expect(how("sv_sold")).toContain("The whole trade is closed once it is up by 50 % of the most it can make, after fees. Otherwise it is held to settlement, and nothing limits the loss.");
+    expect(tags("sv_sold")).toEqual(["No stop", "Target 50 % of max profit"]);
+
+    // sold options with an exit before expiry and no cover: said, and never "held to settlement"
+    expect(how("sv_soldtime")).toContain("It is closed 1 day before expiry, whatever the profit. Until then nothing limits the loss.");
+    expect(how("sv_soldtime")).not.toContain("held to settlement");
+    expect(cardOf("sv_soldtime")!.textContent).toContain("on the first expiry at least 3 days out");
+
+    // with a stop on its sold option the stop leads, as on every card
+    expect(words("sv_legstop")).toBe("How it gets out: Stop at 2x on each sold option, target at 50 % of the most it can make, stop at 50 % of the most it can lose");
+    expect(how("sv_legstop")).toContain("It is closed at a loss of 50 % of the most it can lose, before fees. Each sold option is bought back if its price reaches 2 times what it was sold for.");
+    expect(tags("sv_legstop")).toEqual(["Stop 2x", "Loss limited", "Target 50 % of max profit", "Stop 50 % of max loss"]);
+    for (const id of ["sv_spread", "sv_trail", "sv_sold", "sv_legstop"]) expect(cardOf(id)!.textContent, id).not.toContain("Held to expiry");
+  });
 });

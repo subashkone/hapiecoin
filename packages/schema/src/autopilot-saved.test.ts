@@ -1,6 +1,6 @@
 // Saved Autopilot strategies (ADR-141, ADR-142): the settings an admin may save, and how they read.
 import { describe, expect, it } from "vitest";
-import { SavedBacktest, SavedCard, SavedDefinition, SavedLeg, SavedStrategyCreate, SavedStrategyPatch, savedEntryText, savedIstClock, savedIstWeekday, savedLossCapped, savedPlaybookOf, savedWindowText } from "./autopilot-saved.js";
+import { SavedBacktest, SavedCard, SavedDefinition, SavedLeg, SavedStrategyCreate, SavedStrategyPatch, savedEntryText, savedIstClock, savedIstWeekday, savedLossCapped, savedPlaybookOf, savedProfitCapped, savedWindowText } from "./autopilot-saved.js";
 import { AutopilotView } from "./autopilot.js";
 
 const sellPut = { kind: "put", side: "sell", by: "pct", value: 2 } as const;
@@ -100,6 +100,10 @@ describe("HC-TR-269 the settings of a saved strategy", () => {
     expect(savedWindowText({ fromHourUtc: 6, toHourUtc: 8 })).toBe("11:30 AM to 1:30 PM IST");
     expect([savedIstClock(16), savedIstClock(24), savedIstClock(7)]).toEqual([{ time: "9:30", half: "PM" }, { time: "5:30", half: "AM" }, { time: "12:30", half: "PM" }]);
     expect(savedEntryText(d)).toBe("every day, 9:30 to 10:30 PM IST, on the next expiry");
+    // HC-TR-284: entered a day out or more, it is not "the next expiry"
+    expect(savedEntryText(SavedDefinition.parse({ ...daily, minDte: 1, maxDte: 3 }))).toBe("every day, 9:30 to 10:30 PM IST, on the first expiry at least 1 day out");
+    expect(savedEntryText(SavedDefinition.parse({ ...daily, minDte: 0.9, maxDte: 3 }))).toBe("every day, 9:30 to 10:30 PM IST, on the next expiry");
+    expect(savedEntryText(SavedDefinition.parse({ ...daily, fromHourUtc: 0, toHourUtc: 24, oncePerExpiry: true, minDte: 14, maxDte: 400, conditions: { sma: { days: 50, side: "above" } } }))).toBe("every day, any time from 5:30 AM IST to 5:30 the next morning, on the first expiry at least 14 days out, when the price is above its 50-day average");
     expect(savedEntryText(SavedDefinition.parse({ ...daily, weekdays: [5, 1] }))).toBe("on Monday, Friday, 9:30 to 10:30 PM IST, on the next expiry");
     expect(savedEntryText(SavedDefinition.parse({ ...daily, cadence: "weekly", weekdayUtc: 5 }))).toBe("each Friday, 9:30 to 10:30 PM IST, on the weekly expiry");
     expect(savedEntryText(SavedDefinition.parse({ ...daily, cadence: "monthly", oncePerExpiry: true, minDte: 20, maxDte: 35 }))).toBe("once per month-end expiry, 9:30 to 10:30 PM IST, on the month-end expiry");
@@ -166,5 +170,78 @@ describe("HC-TR-276 HC-TR-279 a saved strategy as a playbook, and as a trader's 
     expect(SavedCard.safeParse({ ...card, usable: undefined }).success).toBe(false);
     expect(AutopilotView.safeParse({ settings: { enabled: false, strategies: [] }, runs: [] }).success).toBe(true);
     expect(AutopilotView.parse({ settings: { enabled: false, strategies: [] }, runs: [], saved: [card] }).saved).toHaveLength(1);
+  });
+});
+
+describe("HC-TR-281 a saved strategy may pay premium (ADR-143)", () => {
+  const leg = (kind: "call" | "put", side: "buy" | "sell", value: number, over: object = {}) => ({ kind, side, by: "strikes", value, ...over });
+  const callSpread = [leg("call", "buy", 0), leg("call", "sell", 2)];
+  const butterfly = [leg("call", "buy", 2, { itm: true }), leg("call", "sell", 0, { ratio: 2 }), leg("call", "buy", 2)];
+  const trend = { ...daily, fromHourUtc: 0, toHourUtc: 24, oncePerExpiry: true, minDte: 14, maxDte: 400 };
+  const legsOf = (list: object[]) => SavedDefinition.shape.legs.parse(list);
+
+  it("HC-TR-281 a leg may sit at the money or in the money by strikes, and be a multiple of the lots", () => {
+    expect(SavedLeg.safeParse(leg("call", "buy", 0)).success).toBe(true);
+    expect(SavedLeg.safeParse(leg("call", "buy", 2, { itm: true })).success).toBe(true);
+    expect(SavedLeg.safeParse(leg("call", "sell", 0, { ratio: 2 })).success).toBe(true);
+    // in the money is by strikes, at least one strike in; per cent and premium stay above zero; a multiple has a limit
+    expect(SavedLeg.safeParse(leg("call", "buy", 0, { itm: true })).success).toBe(false);
+    expect(SavedLeg.safeParse({ kind: "call", side: "buy", by: "pct", value: 2, itm: true }).success).toBe(false);
+    expect(SavedLeg.safeParse({ kind: "call", side: "buy", by: "pct", value: 0 }).success).toBe(false);
+    expect(SavedLeg.safeParse({ kind: "call", side: "buy", by: "premium", value: 0 }).success).toBe(false);
+    expect(SavedLeg.safeParse(leg("call", "sell", 0, { ratio: 1 })).success).toBe(false);
+    expect(SavedLeg.safeParse(leg("call", "sell", 0, { ratio: 6 })).success).toBe(false);
+  });
+
+  it("HC-TR-281 what limits a trade, lot for lot: its loss when every sold option is covered, its profit when no more is bought than sold", () => {
+    expect([savedLossCapped(legsOf(butterfly)), savedProfitCapped(legsOf(butterfly))]).toEqual([true, true]);
+    expect([savedLossCapped(legsOf(callSpread)), savedProfitCapped(legsOf(callSpread))]).toEqual([true, true]);
+    // a sold strangle: the most it makes is its premium, its loss has no limit
+    expect([savedLossCapped(legsOf([sellPut, sellCall])), savedProfitCapped(legsOf([sellPut, sellCall]))]).toEqual([false, true]);
+    // three sold against two bought is not covered; two bought against one sold has no limit to what it can make
+    expect(savedLossCapped(legsOf([leg("call", "buy", 2, { itm: true }), leg("call", "sell", 0, { ratio: 3 }), leg("call", "buy", 2)]))).toBe(false);
+    expect([savedLossCapped(legsOf([leg("call", "buy", 2, { ratio: 2 }), leg("call", "sell", 0)])), savedProfitCapped(legsOf([leg("call", "buy", 2, { ratio: 2 }), leg("call", "sell", 0)]))]).toEqual([true, false]);
+    expect(savedProfitCapped(legsOf([leg("put", "buy", 2, { ratio: 2 }), leg("put", "sell", 0)]))).toBe(false);
+  });
+
+  it("HC-TR-281 a target needs a most to make, a stop a most to lose; one profit level; an exit before expiry that leaves the trade a day; a sold option always", () => {
+    const exits = (legs: object[], e: object, over: object = {}) => ok({ ...trend, legs, exits: e, ...over });
+    expect(exits(callSpread, { targetOfMax: 0.5, stopOfMax: 0.5, timeStopDte: 7 })).toBe(true);
+    expect(exits(butterfly, { targetOfMax: 0.75 })).toBe(true);
+    expect(exits(callSpread, { targetOfMax: 0.1, takeTrailPct: 10 })).toBe(true);
+    // a strategy that would never trade is refused where it is typed: a lone bought call, a straddle, a backspread
+    expect(exits([leg("call", "buy", 0)], { targetOfMax: 0.5 })).toBe(false);
+    expect(exits([leg("call", "buy", 0), leg("put", "buy", 0)], { targetOfMax: 0.5 })).toBe(false);
+    expect(exits([leg("call", "buy", 2, { ratio: 2 }), leg("call", "sell", 0)], { targetOfMax: 0.5 })).toBe(false);
+    expect(exits([leg("call", "buy", 0)], {})).toBe(false);
+    // a sold strangle may take a share of the most it can make (its premium), and has no most to lose to stop on
+    expect(exits([sellPut, sellCall], { targetOfMax: 0.5 })).toBe(true);
+    expect(exits([sellPut, sellCall], { stopOfMax: 0.5 })).toBe(false);
+    expect(exits([buyPut, sellPut, sellCall, buyCall], { stopOfMax: 0.5, takeProfitOfCredit: 0.5 })).toBe(true);
+    // one profit level, not two; a level below the whole
+    expect(exits(callSpread, { targetOfMax: 0.5, takeProfitOfCredit: 0.5 })).toBe(false);
+    expect(exits(callSpread, { targetOfMax: 1 })).toBe(false);
+    // entered at least 14 days out: an exit 13 days out leaves a day, 14 does not; none at the settlement itself
+    expect(exits(callSpread, { targetOfMax: 0.5, timeStopDte: 13 })).toBe(true);
+    expect(exits(callSpread, { targetOfMax: 0.5, timeStopDte: 14 })).toBe(false);
+    expect(exits(callSpread, { targetOfMax: 0.5, timeStopDte: 0 })).toBe(false);
+    expect(exits([sellPut, sellCall], { legStop: 2, timeStopDte: 7 })).toBe(true);
+  });
+
+  it("HC-TR-281 as a playbook: legs at and in the money and their multiple, the whole-trade exits beside the clock, a trail from the level", () => {
+    const p = savedPlaybookOf({ id: "sv_b", name: "B", summary: "s", definition: SavedDefinition.parse({ ...trend, legs: butterfly, exits: { targetOfMax: 0.75, stopOfMax: 0.5, timeStopDte: 3, takeTrailPct: 10 } }), backtest: null });
+    expect(p.template.legs).toEqual([{ kind: "call", side: "buy", k: -2 }, { kind: "call", side: "sell", k: 0, lots: 2 }, { kind: "call", side: "buy", k: 2 }]);
+    expect(p.template.risk).toBe("defined");
+    expect(p.exits).toEqual({ targetPct: 0.75, stopPct: 0.5, timeStopDte: 3 });
+    expect(p.clock.takeTrailPct).toBe(10);
+    expect(Object.keys(p.clock)).not.toEqual(expect.arrayContaining(["targetOfMax", "stopOfMax", "timeStopDte"]));
+    // a put in the money sits above the spot; with one of the three alone the others are absent
+    const puts = savedPlaybookOf({ id: "sv_p", name: "P", summary: "s", definition: SavedDefinition.parse({ ...trend, legs: [leg("put", "buy", 1, { itm: true }), leg("put", "sell", 2)], exits: { targetOfMax: 0.5 } }), backtest: null });
+    expect(puts.template.legs).toEqual([{ kind: "put", side: "buy", k: 1 }, { kind: "put", side: "sell", k: -2 }]);
+    expect(puts.exits).toEqual({ targetPct: 0.5, stopPct: undefined, timeStopDte: undefined });
+    expect(savedPlaybookOf({ id: "sv_t", name: "T", summary: "s", definition: SavedDefinition.parse({ ...trend, legs: [sellPut, sellCall], exits: { timeStopDte: 7 } }), backtest: null }).exits).toEqual({ targetPct: undefined, stopPct: undefined, timeStopDte: 7 });
+    expect(savedPlaybookOf({ id: "sv_s", name: "S", summary: "s", definition: SavedDefinition.parse({ ...trend, legs: callSpread, exits: { stopOfMax: 0.5, targetOfMax: 0.2 } }), backtest: null }).exits).toMatchObject({ stopPct: 0.5 });
+    // a strategy with none of them is as it was: no exits beside the clock
+    expect(savedPlaybookOf({ id: "sv_n", name: "N", summary: "s", definition: SavedDefinition.parse(daily), backtest: null }).exits).toBeUndefined();
   });
 });

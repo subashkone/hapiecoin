@@ -2,13 +2,14 @@
 // Admin · the editor of a saved Autopilot strategy (HC-TR-278; ADR-141, ADR-142): basics, when to enter, what to
 // trade, when to exit, the backtest figures entered by hand, and who can use it. India time on screen; the conversion
 // to the engine's UTC hours and days is in lib/strategy/saved-form. Paper only: there is no live control here.
-import { SAVED_STAGE_LABELS, type SavedStrategy, type SavedStrategyPatch, UNDERLYINGS, savedEntryText } from "@hapiecoin/schema";
+// HC-TR-284 (ADR-143): legs at and in the money and of several times the lots, and the exits on the whole trade.
+import { SAVED_LEG_RATIO_MAX, SAVED_STAGE_LABELS, type SavedStrategy, type SavedStrategyPatch, UNDERLYINGS, savedEntryText } from "@hapiecoin/schema";
 import { Button, Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, cn, toast } from "@hapiecoin/ui";
 import { type ReactNode, useState } from "react";
 import { useAdminUsersList } from "@/lib/api/admin";
 import { useCreateSavedStrategy, useUpdateSavedStrategy } from "@/lib/api/autopilot-saved";
 import { useAdminPlans } from "@/lib/api/billing";
-import { FROM_HOURS, LEG_PRESETS, type LegForm, type SavedForm, WEEKDAYS, emptySavedForm, istClock, sameDefinition, savedBacktestOf, savedDefinitionOf, savedFormOf } from "@/lib/strategy/saved-form";
+import { FROM_HOURS, LEG_PRESETS, type LegForm, type SavedForm, TREND_COPY_NOTES, WEEKDAYS, emptySavedForm, istClock, sameDefinition, savedBacktestOf, savedDefinitionOf, savedFormOf } from "@/lib/strategy/saved-form";
 
 const input = "h-8 w-full rounded border border-input bg-background px-2 text-xs";
 const numInput = `num ${input}`;
@@ -146,7 +147,7 @@ export function AutopilotStrategyDialog({ strategy: opened, copy, onSaved, onOpe
               <ul className="list-disc space-y-0.5 pl-4 text-muted-foreground">
                 <li>It trades under its own name, beside the built-in one. A trader with both switched on gets two trades.</li>
                 <li>Its paper record starts empty.</li>
-                <li>Its backtest figures are not copied. If you change nothing they are the built-in strategy's figures; if you change a setting they need a new backtest. Enter them below either way.</li>
+                {copy.notes.includes(TREND_COPY_NOTES[0]!) ? null : <li>Its backtest figures are not copied. If you change nothing they are the built-in strategy's figures; if you change a setting they need a new backtest. Enter them below either way.</li>}
                 {copy.notes.map((n) => <li key={n} className="text-foreground" data-testid="saved-copy-warning">{n}</li>)}
               </ul>
             </div>
@@ -167,7 +168,7 @@ export function AutopilotStrategyDialog({ strategy: opened, copy, onSaved, onOpe
             <div className="grid gap-2 sm:grid-cols-4">
               <Field label="How often">
                 <select value={form.cadence} onChange={(e) => set("cadence", e.target.value as SavedForm["cadence"])} className={input} data-testid="saved-cadence">
-                  <option value="daily">Daily, the next expiry</option>
+                  <option value="daily">Daily, the nearest expiry in the range below</option>
                   <option value="weekly">Weekly, one day</option>
                   <option value="monthly">Monthly, the month-end expiry</option>
                 </select>
@@ -230,10 +231,10 @@ export function AutopilotStrategyDialog({ strategy: opened, copy, onSaved, onOpe
             </div>
           </Section>
 
-          <Section n={3} title="What to trade" hint="Every leg is out of the money: a call above the spot, a put below it. A strategy sells at least one option; bought options further out limit the loss.">
+          <Section n={3} title="What to trade" hint="By per cent or by premium a leg is out of the money: a call above the spot, a put below it. By listed strikes it may also sit at the money (0 strikes) or in the money. A strategy sells at least one option; a bought option of the same kind limits the loss.">
             <div className="flex flex-wrap items-center gap-2">
               <span className="micro">Start from</span>
-              {(Object.keys(LEG_PRESETS) as (keyof typeof LEG_PRESETS)[]).map((k) => <Button key={k} size="sm" variant="outline" onClick={() => set("legs", LEG_PRESETS[k].legs())} data-testid={`saved-preset-${k}`}>{LEG_PRESETS[k].label}</Button>)}
+              {(Object.keys(LEG_PRESETS) as (keyof typeof LEG_PRESETS)[]).map((k) => <Button key={k} size="sm" variant="outline" onClick={() => setForm((f) => ({ ...f, legs: LEG_PRESETS[k].legs(), ...(LEG_PRESETS[k].target !== undefined && f.targetOfMaxPct === "" && f.takeProfitPct === "" ? { targetOfMaxPct: LEG_PRESETS[k].target } : {}) }))} data-testid={`saved-preset-${k}`}>{LEG_PRESETS[k].label}</Button>)}
             </div>
             <ul className="space-y-1" data-testid="saved-legs">
               {form.legs.map((l, i) => (
@@ -241,10 +242,14 @@ export function AutopilotStrategyDialog({ strategy: opened, copy, onSaved, onOpe
                   <select value={l.side} onChange={(e) => setLeg(i, { side: e.target.value as LegForm["side"] })} className={cn("h-8 rounded border border-input bg-background px-2 text-xs", l.side === "buy" ? "text-profit" : "text-loss")} aria-label={`Leg ${i + 1} side`} data-testid="saved-leg-side"><option value="sell">Sell</option><option value="buy">Buy</option></select>
                   <select value={l.kind} onChange={(e) => setLeg(i, { kind: e.target.value as LegForm["kind"] })} className="h-8 rounded border border-input bg-background px-2 text-xs" aria-label={`Leg ${i + 1} kind`} data-testid="saved-leg-kind"><option value="put">Put</option><option value="call">Call</option></select>
                   <input value={l.value} inputMode="decimal" onChange={(e) => setLeg(i, { value: e.target.value })} className="num h-8 w-20 rounded border border-input bg-background px-2 text-xs" aria-label={`Leg ${i + 1} value`} data-testid="saved-leg-value" />
-                  <select value={l.by} onChange={(e) => setLeg(i, { by: e.target.value as LegForm["by"] })} className="h-8 rounded border border-input bg-background px-2 text-xs" aria-label={`Leg ${i + 1} strike by`} data-testid="saved-leg-by">
+                  <select value={l.by === "strikes" && l.itm ? "itm" : l.by} onChange={(e) => setLeg(i, e.target.value === "itm" ? { by: "strikes", itm: true } : { by: e.target.value as LegForm["by"], itm: undefined })} className="h-8 rounded border border-input bg-background px-2 text-xs" aria-label={`Leg ${i + 1} strike by`} data-testid="saved-leg-by">
                     <option value="pct">% of the spot away</option>
-                    <option value="strikes">listed strikes out</option>
+                    <option value="strikes">listed strikes out (0: at the money)</option>
+                    <option value="itm">listed strikes in the money</option>
                     <option value="premium">priced nearest this premium (USD)</option>
+                  </select>
+                  <select value={l.ratio ?? "1"} onChange={(e) => setLeg(i, { ratio: e.target.value === "1" ? undefined : e.target.value })} className="num h-8 rounded border border-input bg-background px-2 text-xs" aria-label={`Leg ${i + 1} size`} data-testid="saved-leg-ratio">
+                    {Array.from({ length: SAVED_LEG_RATIO_MAX }, (_, n) => <option key={n} value={String(n + 1)}>{n === 0 ? "the lots, once" : `${n + 1} times the lots`}</option>)}
                   </select>
                   <Button size="sm" variant="ghost" disabled={form.legs.length === 1} onClick={() => set("legs", form.legs.filter((_, j) => j !== i))} aria-label={`Remove leg ${i + 1}`} data-testid="saved-leg-remove">Remove</Button>
                 </li>
@@ -264,7 +269,7 @@ export function AutopilotStrategyDialog({ strategy: opened, copy, onSaved, onOpe
                 </select>
               </Field>
               <Field label="Take profit at (% of the premium)"><input value={form.takeProfitPct} inputMode="decimal" placeholder="e.g. 50" onChange={(e) => set("takeProfitPct", e.target.value)} className={numInput} data-testid="saved-take" /></Field>
-              <Field label="…and trail from there (give back %)"><input value={form.takeTrailPct} inputMode="decimal" placeholder="empty: close there" onChange={(e) => set("takeTrailPct", e.target.value)} className={numInput} data-testid="saved-take-trail" /></Field>
+              <Field label="…and trail from the profit level (give back %)"><input value={form.takeTrailPct} inputMode="decimal" placeholder="empty: close there" onChange={(e) => set("takeTrailPct", e.target.value)} className={numInput} data-testid="saved-take-trail" /></Field>
               <Field label="Take profit in steps (% levels, commas)"><input value={form.ladder} placeholder="e.g. 25, 50, 75" onChange={(e) => set("ladder", e.target.value)} className={numInput} data-testid="saved-ladder" /></Field>
               <Field label="Profit lock: arm at (% of the premium)"><input value={form.lockAtPct} inputMode="decimal" placeholder="e.g. 50" onChange={(e) => set("lockAtPct", e.target.value)} className={numInput} data-testid="saved-lock-at" /></Field>
               <Field label="…and close if it falls back to (%)"><input value={form.lockFloorPct} inputMode="decimal" placeholder="e.g. 20" onChange={(e) => set("lockFloorPct", e.target.value)} className={numInput} data-testid="saved-lock-floor" /></Field>
@@ -277,6 +282,14 @@ export function AutopilotStrategyDialog({ strategy: opened, copy, onSaved, onOpe
                   </select>
                 </Field>
                 <input value={form.buyBackValue} disabled={form.buyBackBy === "none"} inputMode="decimal" placeholder={form.buyBackBy === "none" ? "" : form.buyBackBy === "share" ? "e.g. 20" : "e.g. 5"} onChange={(e) => set("buyBackValue", e.target.value)} className="num h-8 w-20 rounded border border-input bg-background px-2 text-xs" aria-label="Buy-back level" data-testid="saved-buyback-value" />
+              </div>
+            </div>
+            <div className="space-y-2 rounded border border-border p-2" role="group" aria-label="On the whole trade">
+              <p className="text-muted-foreground">On the whole trade, measured against the most it can make or lose at expiry. A structure that pays premium (a bought spread, a butterfly) needs the target. The target is a profit after fees; the stop is a loss before fees. To trail from the target instead of closing there, fill in "trail from the profit level" above.</p>
+              <div className="grid items-end gap-2 sm:grid-cols-3">
+                <Field label="Target (% of the most it can make)"><input value={form.targetOfMaxPct} inputMode="decimal" placeholder="e.g. 50" onChange={(e) => set("targetOfMaxPct", e.target.value)} className={numInput} data-testid="saved-target-max" /></Field>
+                <Field label="Stop (% of the most it can lose)"><input value={form.stopOfMaxPct} inputMode="decimal" placeholder="e.g. 50" onChange={(e) => set("stopOfMaxPct", e.target.value)} className={numInput} data-testid="saved-stop-max" /></Field>
+                <Field label="Close this many days before expiry"><input value={form.timeStopDte} inputMode="numeric" placeholder="e.g. 2" onChange={(e) => set("timeStopDte", e.target.value)} className={numInput} data-testid="saved-time-stop" /></Field>
               </div>
             </div>
           </Section>

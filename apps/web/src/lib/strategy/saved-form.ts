@@ -2,7 +2,7 @@
 // conversion to and from the settings the API keeps. The screen shows India time and India weekdays; the engine keeps
 // whole UTC hours and UTC weekdays, so the conversion lives here, in one place, and is tested on its own.
 import { type Playbook, playbookTemplate } from "@hapiecoin/pricing";
-import { SAVED_LONG_WINDOW_HOURS, SavedBacktest, type SavedCadence, SavedDefinition, type SavedLeg, type SavedStrategy, type Underlying, savedIstClock, savedIstWeekday } from "@hapiecoin/schema";
+import { AUTOPILOT_TARGET_PCT, SAVED_LEG_RATIO_MAX, SAVED_LONG_WINDOW_HOURS, SavedBacktest, type SavedCadence, SavedDefinition, type SavedLeg, type SavedStrategy, type Underlying, savedIstClock, savedIstWeekday } from "@hapiecoin/schema";
 
 /** A UTC hour as the clock reads in India (UTC + 5:30), as every Autopilot card writes it: "9:30 PM". 24 is 5:30 the next morning. */
 export const istClock = (hourUtc: number): string => {
@@ -17,7 +17,16 @@ const dayShift = (fromHourUtc: number): number => (fromHourUtc >= 19 ? 1 : 0);
 export const utcWeekday = (istDay: number, fromHourUtc: number): number => (istDay - dayShift(fromHourUtc) + 7) % 7;
 export const istWeekday = savedIstWeekday;
 
-export interface LegForm { kind: SavedLeg["kind"]; side: SavedLeg["side"]; by: SavedLeg["by"]; value: string }
+export interface LegForm {
+  kind: SavedLeg["kind"];
+  side: SavedLeg["side"];
+  by: SavedLeg["by"];
+  value: string;
+  /** ADR-143, by strikes only: the strike is in the money. Absent: out of the money (0 strikes: at the money). */
+  itm?: boolean | undefined;
+  /** ADR-143: how many times the strategy's lots this leg is; absent or "1": once. */
+  ratio?: string | undefined;
+}
 export interface SavedForm {
   name: string;
   summary: string;
@@ -58,6 +67,12 @@ export interface SavedForm {
   exitHourUtc: string;
   buyBackBy: "none" | "price" | "share";
   buyBackValue: string;
+  /** ADR-143: per cent of the most the trade can make at expiry. */
+  targetOfMaxPct: string;
+  /** ADR-143: per cent of the most the trade can lose at expiry. */
+  stopOfMaxPct: string;
+  /** ADR-143: whole days before expiry. */
+  timeStopDte: string;
   btMean: string;
   btPer: "day" | "week" | "trade";
   btPositivePct: string;
@@ -70,12 +85,21 @@ export interface SavedForm {
 }
 
 const leg = (kind: SavedLeg["kind"], side: SavedLeg["side"], value: string): LegForm => ({ kind, side, by: "pct", value });
-/** Starting points for "What to trade": distances in per cent of the spot. */
-export const LEG_PRESETS: Record<"strangle" | "wings" | "put" | "call", { label: string; legs: () => LegForm[] }> = {
+const byStrikes = (kind: SavedLeg["kind"], side: SavedLeg["side"], value: string, over: Partial<LegForm> = {}): LegForm => ({ kind, side, by: "strikes", value, ...over });
+/**
+ * Starting points for "What to trade": distances in per cent of the spot, or in listed strikes for the structures that
+ * pay premium. Those carry a target too (in per cent of the most the trade can make): without one such a strategy
+ * would be saved and then refused at every entry.
+ */
+export const LEG_PRESETS: Record<"strangle" | "wings" | "put" | "call" | "callSpread" | "putSpread" | "butterfly", { label: string; legs: () => LegForm[]; target?: string }> = {
   strangle: { label: "Strangle", legs: () => [leg("put", "sell", "2"), leg("call", "sell", "2")] },
   wings: { label: "Strangle with wings", legs: () => [leg("put", "buy", "4"), leg("put", "sell", "2"), leg("call", "sell", "2"), leg("call", "buy", "4")] },
   put: { label: "Sold put", legs: () => [leg("put", "sell", "2")] },
   call: { label: "Sold call", legs: () => [leg("call", "sell", "2")] },
+  // ADR-143: structures that pay premium, by listed strikes as the built-in templates count them
+  callSpread: { label: "Bought call spread", legs: () => [byStrikes("call", "buy", "0"), byStrikes("call", "sell", "2")], target: "50" },
+  putSpread: { label: "Bought put spread", legs: () => [byStrikes("put", "buy", "0"), byStrikes("put", "sell", "2")], target: "50" },
+  butterfly: { label: "Call butterfly", legs: () => [byStrikes("call", "buy", "2", { itm: true }), byStrikes("call", "sell", "0", { ratio: "2" }), byStrikes("call", "buy", "2")], target: "75" },
 };
 
 /** A new strategy: the evening strangle the built-in daily ones start from, with nothing else set. */
@@ -114,6 +138,9 @@ export const emptySavedForm = (): SavedForm => ({
   exitHourUtc: "",
   buyBackBy: "none",
   buyBackValue: "",
+  targetOfMaxPct: "",
+  stopOfMaxPct: "",
+  timeStopDte: "",
   btMean: "",
   btPer: "day",
   btPositivePct: "",
@@ -150,7 +177,7 @@ export function savedFormOf(s: SavedStrategy): SavedForm {
     oncePerExpiry: d.oncePerExpiry,
     minDte: String(d.minDte),
     maxDte: String(d.maxDte),
-    legs: d.legs.map((l) => ({ kind: l.kind, side: l.side, by: l.by, value: String(l.value) })),
+    legs: d.legs.map((l) => ({ kind: l.kind, side: l.side, by: l.by, value: String(l.value), ...(l.itm ? { itm: true } : {}), ...(l.ratio ? { ratio: String(l.ratio) } : {}) })),
     smaOn: d.conditions?.sma !== undefined,
     smaDays: str(d.conditions?.sma?.days) || "50",
     smaSide: d.conditions?.sma?.side ?? "above",
@@ -171,6 +198,9 @@ export function savedFormOf(s: SavedStrategy): SavedForm {
     exitHourUtc: str(e.exitHourUtc),
     buyBackBy: e.legBuyBackAt !== undefined ? "price" : e.legBuyBackShare !== undefined ? "share" : "none",
     buyBackValue: e.legBuyBackAt !== undefined ? String(e.legBuyBackAt) : pct(e.legBuyBackShare),
+    targetOfMaxPct: pct(e.targetOfMax),
+    stopOfMaxPct: pct(e.stopOfMax),
+    timeStopDte: str(e.timeStopDte),
     btMean: str(b?.mean),
     btPer: b?.per ?? "day",
     btPositivePct: str(b?.positivePct),
@@ -216,6 +246,9 @@ const EXIT_NAMES: Record<string, string> = {
   exitHourUtc: "The closing time",
   legBuyBackAt: "The buy-back",
   legBuyBackShare: "The buy-back",
+  targetOfMax: "The target on the most it can make",
+  stopOfMax: "The stop on the most it can lose",
+  timeStopDte: "The exit before expiry",
 };
 /** Where an issue of the schema sits, as the editor names it: the exit, the leg, or the part of the form. */
 function placeOf(path: readonly PropertyKey[]): string {
@@ -230,12 +263,16 @@ const typedNumbers = (f: SavedForm): [string, string][] => [
   ["Nearest expiry", f.minDte],
   ["Furthest expiry", f.maxDte],
   ...f.legs.map((l, i): [string, string] => [`Leg ${i + 1}`, l.value]),
+  ...f.legs.map((l, i): [string, string] => [`The size of leg ${i + 1}`, l.ratio ?? ""]),
   ...(f.smaOn ? ([["The days of the average", f.smaDays]] as [string, string][]) : []),
   ...(f.ivOn ? ([["The lowest rank", f.ivMin], ["The highest rank", f.ivMax], ["The days of the rank", f.ivLookback]] as [string, string][]) : []),
   ...(f.moveOn ? ([["The move", f.movePct], ["The hours of the move", f.moveHours]] as [string, string][]) : []),
   ["The stop on each sold option", f.legStop],
   ["The profit take", f.takeProfitPct],
   ["The trail from the profit take", f.takeTrailPct],
+  ["The target on the most it can make", f.targetOfMaxPct],
+  ["The stop on the most it can lose", f.stopOfMaxPct],
+  ["The exit before expiry", f.timeStopDte],
   ["The trail of the rest", f.trailRestPct],
   ["The profit lock", f.lockAtPct],
   ["The profit lock's floor", f.lockFloorPct],
@@ -254,6 +291,14 @@ export function savedDefinitionOf(f: SavedForm): Parsed<SavedDefinition> {
   // per cent on screen, a share in the settings: said in the unit the admin typed
   const take = num(f.takeProfitPct);
   if (take !== undefined && !(take > 0 && take < 100)) return { ok: false, error: "The profit take is between 0 and 100 % of the premium (100 % is never reached before settlement)." };
+  const target = num(f.targetOfMaxPct);
+  if (target !== undefined && !(target > 0 && target < 100)) return { ok: false, error: "The target is between 0 and 100 % of the most the trade can make (the whole of it is only reached at settlement)." };
+  const stop = num(f.stopOfMaxPct);
+  if (stop !== undefined && !(stop > 0 && stop <= 100)) return { ok: false, error: "The stop is above 0 and at most 100 % of the most the trade can lose." };
+  const daysBefore = num(f.timeStopDte);
+  if (daysBefore !== undefined && !(Number.isInteger(daysBefore) && daysBefore >= 1)) return { ok: false, error: "The exit before expiry is in whole days, at least 1." };
+  const sizes = f.legs.map((l) => num(l.ratio ?? ""));
+  if (sizes.some((n) => n !== undefined && !(Number.isInteger(n) && n >= 1 && n <= SAVED_LEG_RATIO_MAX))) return { ok: false, error: `The size of a leg is a whole number of times the lots, from 1 to ${SAVED_LEG_RATIO_MAX}.` };
   const from = f.anyTime ? 0 : f.fromHourUtc;
   const ladder = f.ladder.trim() === "" ? undefined : f.ladder.split(",").map((x) => Number(x.trim()));
   const lockAt = share(f.lockAtPct);
@@ -273,13 +318,16 @@ export function savedDefinitionOf(f: SavedForm): Parsed<SavedDefinition> {
     oncePerExpiry: f.oncePerExpiry,
     minDte: num(f.minDte),
     maxDte: num(f.maxDte),
-    legs: f.legs.map((l) => ({ kind: l.kind, side: l.side, by: l.by, value: num(l.value) })),
+    legs: f.legs.map((l, i) => ({ kind: l.kind, side: l.side, by: l.by, value: num(l.value), ...(l.by === "strikes" && l.itm ? { itm: true } : {}), ...(sizes[i] !== undefined && sizes[i] > 1 ? { ratio: sizes[i] } : {}) })),
     ...(f.smaOn || f.ivOn ? { conditions: drop({ sma: f.smaOn ? { days: num(f.smaDays), side: f.smaSide } : undefined, ivRank: f.ivOn ? drop({ min: num(f.ivMin), max: num(f.ivMax), lookbackDays: num(f.ivLookback) }) : undefined }) } : {}),
     ...(f.moveOn ? { moveSide: { hours: num(f.moveHours), pct: num(f.movePct) } } : {}),
     exits: drop({
       legStop: num(f.legStop),
       takeProfitOfCredit: share(f.takeProfitPct),
       takeTrailPct: num(f.takeTrailPct),
+      targetOfMax: share(f.targetOfMaxPct),
+      stopOfMax: share(f.stopOfMaxPct),
+      timeStopDte: num(f.timeStopDte),
       trailRestPct: num(f.trailRestPct),
       ladder,
       lock: lockAt === undefined ? undefined : { at: lockAt, floor: lockFloor },
@@ -309,11 +357,24 @@ export function sameDefinition(a: SavedDefinition, b: SavedDefinition): boolean 
   return stable(a) === stable(b);
 }
 
+/** A built-in strategy entered on a condition has no furthest expiry: its copy takes the furthest the settings allow. */
+const TREND_MAX_DTE = 400;
+/** What a copy of a strategy entered on a market condition does differently from the built-in one, whatever the strategy (ADR-143, Consequences). */
+export const TREND_COPY_NOTES: readonly string[] = [
+  "It may enter at any time of day and enters once per expiry. The built-in one may enter again on the same expiry after a pause.",
+  "Its exit is the one set below, for every trader. The built-in one lets each trader choose between closing at its profit level and trailing from it.",
+  "It trades on Delta Exchange India only.",
+  "It needs a backtest of its own: the built-in one has no figures to copy, and this copy does not trade as it does.",
+];
 /**
- * A built-in strategy as the editor's form (HC-TR-280): what "Copy as my own" opens, a new draft that leaves the
- * built-in one as it is. Only a strategy the editor can hold whole is copied: entered by the clock, on Delta Exchange
- * India, every leg an option out of the money. Anything else says why not, in the admin's words.
+ * The same, with the one thing that depends on the strategy: Autopilot takes the built-in one's profit at
+ * AUTOPILOT_TARGET_PCT of the most it can make, whatever target its description names, and the copy starts with the
+ * described one.
  */
+export function trendCopyNotes(p: Playbook): string[] {
+  const own = p.exits?.targetPct === undefined ? null : Number((p.exits.targetPct * 100).toFixed(6));
+  return [...TREND_COPY_NOTES, ...(own === null || own === AUTOPILOT_TARGET_PCT ? [] : [`Autopilot takes the built-in one's profit at ${AUTOPILOT_TARGET_PCT} % of the most it can make. This copy starts with the target its description names, ${own} %: set the target to ${AUTOPILOT_TARGET_PCT} if it should get out where the built-in one does.`])];
+}
 /** The longest name a saved strategy may carry. */
 export const SAVED_NAME_MAX = 60;
 const SUMMARY_MAX = 300;
@@ -323,31 +384,63 @@ function wholeSentences(text: string, max: number): string {
   const end = text.slice(0, max).lastIndexOf(". ");
   return end > 0 ? text.slice(0, end + 1) : "";
 }
+/**
+ * A built-in strategy as the editor's form (HC-TR-280, HC-TR-285): what "Copy as my own" opens, a new draft that leaves
+ * the built-in one as it is. Only a strategy the editor can hold whole is copied: on Delta Exchange India, every leg an
+ * option of one expiry. One entered by the clock is copied setting for setting. One entered on a market condition
+ * (ADR-143) becomes a strategy that may enter at any time of day, once per expiry, with the built-in exits on the
+ * whole trade; what differs from the built-in one is said in the notes. Anything else says why not.
+ */
 export function savedFormFromBuiltIn(p: Playbook): { ok: true; form: SavedForm; notes: string[] } | { ok: false; why: string } {
   const c = p.clock;
-  if (!c) return { ok: false, why: "It enters on a market condition, with exits the editor does not have yet." };
-  if (!(c.venues.length === 1 && c.venues[0] === "delta_india")) return { ok: false, why: "It trades on another exchange than Delta Exchange India." };
+  if (c && !(c.venues.length === 1 && c.venues[0] === "delta_india")) return { ok: false, why: "It trades on another exchange than Delta Exchange India." };
   const legs: LegForm[] = [];
   for (const l of playbookTemplate(p)?.legs ?? []) {
     if (l.kind === "future") return { ok: false, why: "It holds a futures leg, which a saved strategy cannot." };
-    if (l.lots !== undefined || l.expiryOffset !== undefined) return { ok: false, why: "Its legs differ in size or expiry, which the editor cannot hold." };
+    if (l.expiryOffset !== undefined) return { ok: false, why: "Its legs differ in expiry, which the editor cannot hold." };
+    if (l.lots !== undefined && !(Number.isInteger(l.lots) && l.lots >= 1 && l.lots <= SAVED_LEG_RATIO_MAX)) return { ok: false, why: `It has a leg of more than ${SAVED_LEG_RATIO_MAX} times the lots, or of a part of them, which the editor cannot hold.` };
+    const size = l.lots !== undefined && l.lots > 1 ? { ratio: String(l.lots) } : {};
     // out of the money: a call above the spot, a put below it
     const up = l.kind === "call";
-    if (l.premium !== undefined) legs.push({ kind: l.kind, side: l.side, by: "premium", value: String(l.premium) });
-    else if (l.pct !== undefined && (up ? l.pct > 0 : l.pct < 0)) legs.push({ kind: l.kind, side: l.side, by: "pct", value: String(Math.abs(l.pct)) });
-    else if (l.pct === undefined && (up ? l.k > 0 : l.k < 0)) legs.push({ kind: l.kind, side: l.side, by: "strikes", value: String(Math.abs(l.k)) });
-    else return { ok: false, why: "It has a leg at or in the money, which the editor cannot hold yet." };
+    if (l.premium !== undefined) legs.push({ kind: l.kind, side: l.side, by: "premium", value: String(l.premium), ...size });
+    else if (l.pct !== undefined && (up ? l.pct > 0 : l.pct < 0)) legs.push({ kind: l.kind, side: l.side, by: "pct", value: String(Math.abs(l.pct)), ...size });
+    else if (l.pct !== undefined) return { ok: false, why: "It has a leg by per cent at or in the money, which the editor cannot hold." };
+    // by listed strikes: out of the money, at it (0), or in it
+    else legs.push({ kind: l.kind, side: l.side, by: "strikes", value: String(Math.abs(l.k)), ...((up ? l.k < 0 : l.k > 0) ? { itm: true } : {}), ...size });
+  }
+  // a name is never cut: two built-in strategies must not end up with one copy name, so a long one is left for the admin to write
+  const copyName = `${p.name} (copy)`;
+  const name = copyName.length <= SAVED_NAME_MAX ? copyName : "";
+  const summary = wholeSentences(p.summary, SUMMARY_MAX);
+  const said = [...(name === "" ? [`Its name is too long to copy (${SAVED_NAME_MAX} characters at most): give your strategy a name.`] : []), ...(summary !== p.summary ? ["Its description was too long to copy whole and was cut after a full sentence: read it and complete it."] : [])];
+  const conditions = {
+    smaOn: p.conditions?.sma !== undefined,
+    smaDays: str(p.conditions?.sma?.days) || "50",
+    smaSide: p.conditions?.sma?.side ?? ("above" as const),
+    ivOn: p.conditions?.ivRank !== undefined,
+    ivMin: str(p.conditions?.ivRank?.min),
+    ivMax: str(p.conditions?.ivRank?.max),
+    ivLookback: str(p.conditions?.ivRank?.lookbackDays) || "90",
+  };
+  const held = (form: SavedForm, notes: string[]): ReturnType<typeof savedFormFromBuiltIn> => {
+    // the same rules a typed strategy meets: one the editor would refuse is not offered as a copy
+    const parsed = savedDefinitionOf(form);
+    return parsed.ok ? { ok: true, form, notes } : { ok: false, why: `The editor cannot hold it as it is. ${parsed.error}` };
+  };
+  if (!c) {
+    // entered on a market condition (ADR-143): any time of day, once per expiry, on the first expiry far enough out
+    if (p.conditions?.weekdays !== undefined) return { ok: false, why: "It chooses its weekdays without a window by the clock, which the editor cannot hold." };
+    const x = p.exits;
+    return held(
+      { ...emptySavedForm(), name, summary, assets: [...p.assets], lots: String(p.lots), cadence: "daily", anyTime: true, oncePerExpiry: true, minDte: String(p.minDte), maxDte: String(TREND_MAX_DTE), legs, ...conditions, targetOfMaxPct: pct(x?.targetPct), stopOfMaxPct: pct(x?.stopPct), timeStopDte: str(x?.timeStopDte) },
+      [...said, ...trendCopyNotes(p)],
+    );
   }
   const anyTime = c.fromHourUtc === 0 && c.toHourUtc === 24;
   const cadence: SavedCadence = c.cadence === "monthly" ? "monthly" : c.weekdayUtc !== undefined ? "weekly" : "daily";
   // nothing is dropped without a word: a day the editor has no field for is a reason not to copy
   if (cadence === "monthly" && c.weekdayUtc !== undefined) return { ok: false, why: "It is monthly and tied to one weekday, which the editor cannot hold." };
   if (cadence !== "daily" && p.conditions?.weekdays !== undefined) return { ok: false, why: "It chooses its weekdays without being a daily strategy, which the editor cannot hold." };
-  // a name is never cut: two built-in strategies must not end up with one copy name, so a long one is left for the admin to write
-  const copyName = `${p.name} (copy)`;
-  const name = copyName.length <= SAVED_NAME_MAX ? copyName : "";
-  const summary = wholeSentences(p.summary, SUMMARY_MAX);
-  const notes = [...(name === "" ? [`Its name is too long to copy (${SAVED_NAME_MAX} characters at most): give your strategy a name.`] : []), ...(summary !== p.summary ? ["Its description was too long to copy whole and was cut after a full sentence: read it and complete it."] : [])];
   const form: SavedForm = {
     ...emptySavedForm(),
     name,
@@ -364,13 +457,7 @@ export function savedFormFromBuiltIn(p: Playbook): { ok: true; form: SavedForm; 
     minDte: String(p.minDte),
     maxDte: String(c.maxDte),
     legs,
-    smaOn: p.conditions?.sma !== undefined,
-    smaDays: str(p.conditions?.sma?.days) || "50",
-    smaSide: p.conditions?.sma?.side ?? "above",
-    ivOn: p.conditions?.ivRank !== undefined,
-    ivMin: str(p.conditions?.ivRank?.min),
-    ivMax: str(p.conditions?.ivRank?.max),
-    ivLookback: str(p.conditions?.ivRank?.lookbackDays) || "90",
+    ...conditions,
     moveOn: c.moveSide !== undefined,
     moveHours: str(c.moveSide?.hours) || "24",
     movePct: str(c.moveSide?.pct) || "2",
@@ -385,7 +472,5 @@ export function savedFormFromBuiltIn(p: Playbook): { ok: true; form: SavedForm; 
     buyBackBy: c.legBuyBackAt !== undefined ? "price" : c.legBuyBackShare !== undefined ? "share" : "none",
     buyBackValue: c.legBuyBackAt !== undefined ? String(c.legBuyBackAt) : pct(c.legBuyBackShare),
   };
-  // the same rules a typed strategy meets: one the editor would refuse is not offered as a copy
-  const held = savedDefinitionOf(form);
-  return held.ok ? { ok: true, form, notes } : { ok: false, why: `The editor cannot hold it as it is. ${held.error}` };
+  return held(form, said);
 }

@@ -2,12 +2,12 @@
 // deletes strategies beside the built-in list; the engine paper-trades the published ones for the traders allowed to
 // use them and trades the built-in ones exactly as before. Nothing here places anything on a venue.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { AUTOPILOT_PLAYBOOKS } from "@hapiecoin/pricing";
-import { AUTOPILOT_PAPER_ONLY_MESSAGE, type AutopilotView, type Instrument, type Quote, SAVED_REFUSALS, type SavedStrategy, type SavedStrategyList } from "@hapiecoin/schema";
+import { AUTOPILOT_PLAYBOOKS, type PlaybookProposal } from "@hapiecoin/pricing";
+import { AUTOPILOT_PAPER_ONLY_MESSAGE, type AutopilotView, type Instrument, type Quote, SAVED_REFUSALS, SavedDefinition, type SavedStrategy, type SavedStrategyList } from "@hapiecoin/schema";
 import { asc, eq } from "drizzle-orm";
-import { type AutopilotDeps, runAutopilot } from "./autopilot.js";
+import { type AutopilotDeps, clockPlanFor, runAutopilot, savedPlanFor, savedPlanRefusal } from "./autopilot.js";
 import { isSavedId, mayUseSaved, savedCatalogue, savedPlaybook, savedStillOnPaper, usableSavedIds } from "./autopilot-saved.js";
-import { auditLog, autopilotRuns, autopilotSavedStrategies, autopilotSettings, strategies, strategyRules } from "./db/schema.js";
+import { auditLog, autopilotRuns, autopilotSavedStrategies, autopilotSettings, strategies, strategyLegs, strategyRules } from "./db/schema.js";
 import { SEED } from "./db/seed.js";
 import { type MarketSource, snapshotOnce } from "./iv-snapshot.js";
 import { createTestApp, type TestApp } from "./test-support/harness.js";
@@ -419,5 +419,157 @@ describe("HC-TR-275 the engine trades the published strategies beside the built-
     expect((await t.request(`${BASE}/${v2.id}`, { cookie: admin, method: "DELETE" })).status).toBe(404);
     expect((await t.request(`${BASE}/${v3.id}`, { cookie: elite.cookie, method: "DELETE" })).status).toBe(403);
     expect((await list()).map((x) => x.version).sort()).toEqual([1, 3]);
+  });
+});
+
+describe("HC-TR-282 the plan of a saved strategy with whole-trade exits (ADR-143)", () => {
+  const fees = { optionPct: 0.0001, optionCapOfPremium: 0.035, futurePct: 0.0005, gstPct: 0.18, settlementFee: true };
+  const leg = (kind: "call" | "put", side: "buy" | "sell", value: number) => ({ kind, side, by: "strikes" as const, value });
+  /** Entered two to thirty days out, so that an exit a day before expiry has a trade to close. */
+  const LONGER = { ...DAILY, minDte: 2, maxDte: 30 };
+  const SPREAD = { ...LONGER, legs: [leg("call", "buy", 0), leg("call", "sell", 2)] };
+  const playbook = (definition: object) => savedPlaybook({ id: "sv_x", name: "X", summary: "s", definition: SavedDefinition.parse(definition), backtest: null });
+  /** A bought call spread of 100 lots: 9.4 paid, 30.6 the most to make, 9.4 the most to lose. */
+  const paid = (over: Partial<PlaybookProposal> = {}): PlaybookProposal => ({
+    day: "2026-09-25",
+    spot: 83_200,
+    expiry: "2026-10-20",
+    legs: [
+      { asset: "BTC", kind: "call", side: "buy", strike: "83200", expiry: "2026-10-20", lots: 100, price: "400" },
+      { asset: "BTC", kind: "call", side: "sell", strike: "83600", expiry: "2026-10-20", lots: 100, price: "306" },
+    ],
+    entryCost: 9.4,
+    maxProfit: 30.6,
+    maxLoss: -9.4,
+    ...over,
+  });
+  const collected = (over: Partial<PlaybookProposal> = {}): PlaybookProposal => paid({ entryCost: -53.6, maxProfit: 53.6, maxLoss: -Infinity, ...over });
+  const NONE = { legStop: null, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null, legBuyBackAt: null, legBuyBackShare: null };
+  const why = (p: ReturnType<typeof playbook>, proposal: PlaybookProposal, rule: typeof fees | null = null) => {
+    expect(savedPlanFor(p, proposal, 0.001, rule)).toBeNull();
+    return savedPlanRefusal(p, proposal, 0.001, rule);
+  };
+
+  it("HC-TR-282 without whole-trade exits it is the plan of a playbook entered by the clock, to the figure", () => {
+    const p = playbook(DAILY);
+    expect(savedPlanFor(p, collected(), 0.001, fees)).toEqual(clockPlanFor(p, collected(), 0.001, fees));
+    expect(savedPlanRefusal(p, collected(), 0.001, fees)).toBeNull();
+    expect(why(p, paid(), fees)).toBe("The premium collected is smaller than the fees"); // nothing collected: not this trade
+  });
+
+  it("HC-TR-282 a structure that pays premium: a target on the most it can make, after the fees of both fills; a stop on the most it can lose; an exit before expiry", () => {
+    const p = playbook({ ...SPREAD, exits: { targetOfMax: 0.5, stopOfMax: 0.5, timeStopDte: 1, takeTrailPct: 10 } });
+    expect(savedPlanFor(p, paid(), 0.001, null)).toEqual({ ...NONE, fees: 0, targetUsd: 15.3, stopUsd: 4.7, timeStopDte: 1, takeTrailPct: 10 });
+    // with fees the level is half of the most it can make plus the fees: reaching it is that half after both fills
+    const withFees = savedPlanFor(p, paid(), 0.001, fees)!;
+    expect(withFees.fees).toBeGreaterThan(0);
+    expect(withFees.targetUsd).toBeCloseTo(15.3 + withFees.fees, 8);
+    expect(withFees.stopUsd).toBe(4.7);
+    // the fees leave nothing of the trade above its target
+    expect(why(p, paid({ maxProfit: 5 }), fees)).toBe("The fees are larger than what is left of the trade above its target");
+    // the most it can make or lose is not a number, or a level rounds to nothing
+    expect(why(p, paid({ maxProfit: Infinity }))).toBe("The most it can make is not a number above zero");
+    expect(why(p, paid({ maxProfit: 0 }))).toBe("The most it can make is not a number above zero");
+    expect(why(p, paid({ maxLoss: -Infinity }))).toBe("The most it can lose is not a number above zero");
+    expect(why(p, paid({ maxProfit: 0.01 }))).toBe("Its profit level rounds to nothing");
+    expect(why(p, paid({ maxLoss: -0.01 }))).toBe("Its stop rounds to nothing");
+    // a target alone
+    expect(savedPlanFor(playbook({ ...SPREAD, exits: { targetOfMax: 0.2 } }), paid(), 0.001, null)).toEqual({ ...NONE, fees: 0, targetUsd: expect.closeTo(6.12, 6) as number, stopUsd: null, timeStopDte: null });
+    // the same structure a cent the other side of zero is the same trade: its target decides, not the sign of the premium
+    expect(savedPlanFor(p, paid({ entryCost: -0.01 }), 0.001, fees)).not.toBeNull();
+    expect(savedPlanFor(p, paid({ entryCost: 0.01 }), 0.001, fees)).not.toBeNull();
+    // a structure that pays premium and names no target has nowhere to take its profit
+    expect(why(playbook({ ...SPREAD, exits: { stopOfMax: 0.5 } }), paid())).toBe("It pays premium and has no target on the most it can make");
+    // steps are measured on the premium collected: a structure that pays has none
+    expect(why(playbook({ ...SPREAD, exits: { targetOfMax: 0.5, ladder: [25, 50] } }), paid())).toBe("The premium collected is smaller than the fees");
+  });
+
+  it("HC-TR-282 a structure that collects premium keeps its premium rules and may add the time exit and a stop on the whole trade", () => {
+    const wings = { ...LONGER, legs: [{ kind: "put", side: "buy", by: "pct", value: 4 }, sell("put"), sell("call"), { kind: "call", side: "buy", by: "pct", value: 4 }] };
+    const p = playbook({ ...wings, exits: { legStop: 2, takeProfitOfCredit: 0.5, timeStopDte: 1, stopOfMax: 0.5, lock: { at: 0.5, floor: 0.2 } } });
+    const capped = collected({ maxLoss: -100 });
+    expect(savedPlanFor(p, capped, 0.001, null)).toEqual({ ...NONE, fees: 0, targetUsd: 26.8, stopUsd: 50, timeStopDte: 1, legStop: 2, lock: { atUsd: 26.8, floorUsd: 10.72 } });
+    // collects less than the fills cost; a profit level on a premium that was not collected; a floor that rounds to nothing
+    expect(why(p, collected({ entryCost: -3.9, maxLoss: -100 }), fees)).toBe("The premium collected is smaller than the fees");
+    expect(why(p, paid())).toBe("It pays premium and has no target on the most it can make");
+    expect(why(p, collected({ entryCost: -0.04, maxLoss: -100 }))).toBe("Its floor rounds to nothing");
+    // the time exit alone on a sold strangle: the plan of the clock with the exit added
+    expect(savedPlanFor(playbook({ ...LONGER, exits: { legStop: 2, timeStopDte: 1 } }), collected(), 0.001, null)).toEqual({ ...NONE, fees: 0, targetUsd: null, stopUsd: null, timeStopDte: 1, legStop: 2 });
+    // a level on the premium that rounds to nothing
+    expect(why(playbook({ ...LONGER, exits: { takeProfitOfCredit: 0.5, timeStopDte: 1 } }), collected({ entryCost: -0.015 }))).toBe("Its profit level rounds to nothing");
+    // a target on the most a sold strangle can make is a share of its premium, with a profit level on the premium refused beside it by the settings
+    expect(savedPlanFor(playbook({ ...LONGER, exits: { targetOfMax: 0.5 } }), collected(), 0.001, null)).toMatchObject({ targetUsd: 26.8, stopUsd: null });
+  });
+});
+
+describe("HC-TR-283 the engine enters a published bought structure on paper", () => {
+  const leg = (kind: "call" | "put", side: "buy" | "sell", value: number, over: object = {}) => ({ kind, side, by: "strikes", value, ...over });
+  /** Two to thirty days out: on the test chain that is the expiry of 20 October. */
+  const LONGER = { ...DAILY, minDte: 2, maxDte: 30 };
+  const publishFor = async (name: string, definition: object) => {
+    const made = await create(name, definition);
+    await patch(made.id, { backtest: FIGURES, audience: "plans", planIds: [SEED.plans.elite] });
+    expect((await json<SavedStrategy>(await post(`${BASE}/${made.id}/publish`))).stage).toBe("paper");
+    return made;
+  };
+  const entryOf = async (strategyId: string) => (await t.db.select().from(autopilotRuns).where(eq(autopilotRuns.strategyId, strategyId)))[0]!;
+
+  it("HC-TR-283 a bought call spread is entered with its target (after fees), its stop and its exit before expiry as rules, to the cent; a built-in strategy beside it is entered as before", async () => {
+    const made = await publishFor("Evening call spread", { ...LONGER, legs: [leg("call", "buy", 0), leg("call", "sell", 2)], exits: { targetOfMax: 0.5, stopOfMax: 0.5, timeStopDte: 1 } });
+    const buyer = await t.signUp("saved-bought@hapiecoin.test");
+    const buyerId = await idOf(buyer.cookie);
+    const builtIn = "evening-strangle-stop-3x";
+    expect((await json<AutopilotView>(await put({ enabled: true, strategies: [{ playbookId: made.id, exit: "own" }, { playbookId: builtIn, exit: "own" }] }, buyer.cookie))).settings.strategies).toHaveLength(2);
+    const report = await pass(W + 20 * MIN);
+    expect(report.failed).toBe(0);
+    const trades = await tradesOf(buyerId);
+    expect(trades.map((x) => x.autopilotPlaybookId).sort()).toEqual([builtIn, made.id].sort());
+    // the built-in strangle beside it: on the next expiry, with its stop on each sold option and nothing else
+    const strangle = trades.find((x) => x.autopilotPlaybookId === builtIn)!;
+    expect((await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, strangle.id))).map((r) => `${r.kind}:${r.value}`).sort()).toEqual(["leg_stop:3", "leg_stop:3"]);
+    const trade = trades.find((x) => x.autopilotPlaybookId === made.id)!;
+    expect(trade).toMatchObject({ status: "paper", tradingMode: "paper", name: "Evening call spread · Autopilot" });
+    // the listed strike at the spot (83,200) bought, two listed strikes out (83,600) sold, on the first expiry two days out
+    expect(trade.autopilotStructure).toBe("buy:call:83200:2026-10-20,sell:call:83600:2026-10-20");
+    // marks 400.0 and 306.4 on 100 lots of 0.001: 9.36 paid, 30.64 the most to make, 9.36 the most to lose
+    const detail = (await entryOf(trade.id)).detail;
+    expect(detail).toMatchObject({ entryCost: "9.36", maxProfit: "30.64", maxLoss: "-9.36" });
+    const fee = Number(detail.fees);
+    expect(fee).toBeGreaterThan(0);
+    const rules = await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, trade.id));
+    expect(rules.map((r) => `${r.kind}:${r.trigger}`).sort()).toEqual(["stop:money", "target:money", "time:dte"]);
+    expect(rules.every((r) => r.state === "armed")).toBe(true);
+    // half of the most it can make, plus the fees; a loss of half of the most it can lose; a day before expiry
+    expect(rules.find((r) => r.kind === "target")).toMatchObject({ thresholdUsd: (15.32 + fee).toFixed(2), trailTrigger: null });
+    expect(rules.find((r) => r.kind === "stop")).toMatchObject({ thresholdUsd: "-4.68" });
+    expect(rules.find((r) => r.kind === "time")).toMatchObject({ value: "1" });
+    // paper only: Go live refuses it
+    const live = await t.request(`/v1/strategies/${trade.id}/live/place`, { cookie: buyer.cookie, json: { confirm: "LIVE", brokerId: SEED.brokerId, idempotencyKey: "saved-bought-live-1", expected: {} } });
+    expect(live.status).toBe(409);
+  });
+
+  it("HC-TR-283 a butterfly with a leg in the money and a double leg at the money is entered with its lots and a trailing target; a structure with nothing left above its target says so in the log", async () => {
+    const fly = await publishFor("Evening butterfly", { ...LONGER, legs: [leg("call", "buy", 2, { itm: true }), leg("call", "sell", 0, { ratio: 2 }), leg("call", "buy", 2)], exits: { targetOfMax: 0.3, takeTrailPct: 10 } });
+    const thin = await publishFor("Thin spread", { ...LONGER, legs: [leg("call", "buy", 0), leg("call", "sell", 2)], exits: { targetOfMax: 0.99 } });
+    const buyer = await t.signUp("saved-fly@hapiecoin.test");
+    const buyerId = await idOf(buyer.cookie);
+    await put({ enabled: true, strategies: [{ playbookId: fly.id, exit: "own" }, { playbookId: thin.id, exit: "own" }] }, buyer.cookie);
+    const report = await pass(W + 24 * MIN);
+    expect(report.failed).toBe(0);
+    const trades = await tradesOf(buyerId);
+    expect(trades.map((x) => x.autopilotPlaybookId)).toEqual([fly.id]);
+    const trade = trades[0]!;
+    expect(trade.autopilotStructure).toBe("buy:call:82800:2026-10-20,sell:call:83200:2026-10-20,buy:call:83600:2026-10-20");
+    const legs = await t.db.select().from(strategyLegs).where(eq(strategyLegs.strategyId, trade.id)).orderBy(asc(strategyLegs.position));
+    expect(legs.map((l) => `${l.side}:${l.strike}:${l.lots}`)).toEqual(["buy:82800:100", "sell:83200:200", "buy:83600:100"]);
+    // marks 706.4, 400.0 twice and 306.4: 21.28 paid, 18.72 the most to make
+    const detail = (await entryOf(trade.id)).detail;
+    expect(detail).toMatchObject({ entryCost: "21.28", maxProfit: "18.72", takeTrailPct: 10 });
+    const rules = await t.db.select().from(strategyRules).where(eq(strategyRules.strategyId, trade.id));
+    expect(rules.map((r) => r.kind)).toEqual(["target"]);
+    // a third of the most it can make, plus the fees, and from there a trail that gives back a tenth
+    expect(rules[0]).toMatchObject({ thresholdUsd: (18.72 * 0.3 + Number(detail.fees)).toFixed(2), trailTrigger: "pct", trailValue: "10" });
+    // the spread whose target is 99 % of the most it can make: the fees leave nothing above it
+    expect((await t.db.select().from(autopilotRuns).where(eq(autopilotRuns.userId, buyerId))).find((r) => r.playbookId === thin.id)).toMatchObject({ kind: "skipped", reason: "The fees are larger than what is left of the trade above its target" });
   });
 });
