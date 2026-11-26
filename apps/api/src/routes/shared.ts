@@ -1,5 +1,6 @@
 /** Shared route plumbing: dependency bag, OpenAPI response helpers, id generation. */
 import type { MarginInputsSource } from "../margin.js";
+import type { MarkSource } from "../mark-candles.js";
 import type { Auth } from "../auth.js";
 import type { DeltaTradingClient } from "@hapiecoin/venues";
 import { randomBytes } from "node:crypto";
@@ -43,6 +44,8 @@ export interface AppDeps {
   tradingFor: (venue: string) => DeltaTradingClient;
   /** HC-TR-257: the venue's public margin parameters and spot, read when a paper trade is entered; absent in tests that do not name one (the trade is then entered without a margin figure). */
   marginInputs?: MarginInputsSource | undefined;
+  /** ADR-144: the default venue's public mark candles, for the backtest in the app; absent where the venue offers none (the route then answers 503). */
+  markSource?: MarkSource | undefined;
   /** Market Analytics snapshots written by the ingest service (ADR-038). */
   analytics: AnalyticsReader;
   /** Telegram bot for alert delivery and chat linking (ADR-057); null without TELEGRAM_BOT_TOKEN. */

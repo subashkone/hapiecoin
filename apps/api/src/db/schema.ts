@@ -6,9 +6,9 @@
  * Money-shaped values (fee percentages, conversion rate, lot sizes) are stored as decimal strings in
  * text/jsonb columns, never as floats (brief: decimal strings cross package boundaries).
  */
-import { type AutopilotRunDetail, type AutopilotStrategy, DEFAULT_MINDFUL, type SavedBacktest, type SavedDefinition, type MindfulSettings, type PlanIntervals, type PlaybookRecord, type ProposalLeg } from "@hapiecoin/schema";
+import { type AutopilotRunDetail, type AutopilotStrategy, DEFAULT_MINDFUL, type SavedBacktest, type SavedBacktestResolution, type SavedBacktestRun, type SavedDefinition, type MindfulSettings, type PlanIntervals, type PlaybookRecord, type ProposalLeg } from "@hapiecoin/schema";
 import { sql } from "drizzle-orm";
-import { bigserial, boolean, customType, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { bigint, bigserial, boolean, customType, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
@@ -961,4 +961,49 @@ export const autopilotSavedStrategies = pgTable(
     // one version of a family is on paper at a time: two publishes at once cannot both win
     uniqueIndex("autopilot_saved_strategies_family_paper_uq").on(t.familyId).where(sql`${t.stage} = 'paper'`),
   ],
+);
+
+/**
+ * The exchange's public mark candles as a backtest downloaded them (ADR-144; HC-TR-287): one row per series (an
+ * option's `MARK:` symbol, or the perpetual's for the spot) and resolution. `bars` holds the closes, oldest first, as
+ * [bar start in seconds, close]; a bar missing inside [fromMs, toMs] does not exist at the venue. Nothing past the
+ * moment of the download is kept (a series asked for beyond "now" comes back padded with its last price, GAPS #179).
+ * Public data, no account behind it.
+ */
+export const markCandles = pgTable(
+  "mark_candles",
+  {
+    venue: text("venue").notNull(),
+    symbol: text("symbol").notNull(),
+    resolution: text("resolution").$type<SavedBacktestResolution>().notNull(),
+    fromMs: bigint("from_ms", { mode: "number" }).notNull(),
+    toMs: bigint("to_ms", { mode: "number" }).notNull(),
+    bars: jsonb("bars").$type<[number, number][]>().notNull(),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ name: "mark_candles_pk", columns: [t.venue, t.symbol, t.resolution] })],
+);
+
+/**
+ * A run of the backtest in the app on a saved strategy (ADR-144; HC-TR-288). `definition` is the settings it tested:
+ * its figures can be put on the strategy only while the strategy still has them. `result` is everything but the
+ * identity and the state: the period, the figures, the trades and what the run could not do. Paper arithmetic only.
+ */
+export const autopilotSavedBacktests = pgTable(
+  "autopilot_saved_backtests",
+  {
+    id: text("id").primaryKey(),
+    strategyId: text("strategy_id")
+      .notNull()
+      .references(() => autopilotSavedStrategies.id, { onDelete: "cascade" }),
+    status: text("status", { enum: ["running", "done", "failed"] }).notNull().default("running"),
+    definition: jsonb("definition").$type<SavedDefinition>().notNull(),
+    progress: jsonb("progress").$type<{ done: number; total: number }>().notNull(),
+    result: jsonb("result").$type<Pick<SavedBacktestRun, "from" | "to" | "resolution" | "figures" | "noEntry" | "barsJudged" | "barsSkipped" | "notes" | "trades">>().notNull(),
+    error: text("error"),
+    createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
+    finishedAt: timestamp("finished_at", { withTimezone: true, mode: "date" }),
+    ...timestamps,
+  },
+  (t) => [index("autopilot_saved_backtests_strategy_id_idx").on(t.strategyId, t.createdAt)],
 );

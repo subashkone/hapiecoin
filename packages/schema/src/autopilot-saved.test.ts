@@ -1,6 +1,6 @@
 // Saved Autopilot strategies (ADR-141, ADR-142): the settings an admin may save, and how they read.
 import { describe, expect, it } from "vitest";
-import { SavedBacktest, SavedCard, SavedDefinition, SavedLeg, SavedStrategyCreate, SavedStrategyPatch, savedEntryText, savedIstClock, savedIstWeekday, savedLossCapped, savedPlaybookOf, savedProfitCapped, savedWindowText } from "./autopilot-saved.js";
+import { SavedBacktest, SavedBacktestRun, SavedBacktestStart, SavedBacktestTyped, SavedCard, SavedDefinition, SavedLeg, SavedStrategyCreate, SavedStrategyPatch, savedEntryText, savedIstClock, savedIstWeekday, savedLossCapped, savedPlaybookOf, savedProfitCapped, savedWindowText } from "./autopilot-saved.js";
 import { AutopilotView } from "./autopilot.js";
 
 const sellPut = { kind: "put", side: "sell", by: "pct", value: 2 } as const;
@@ -243,5 +243,40 @@ describe("HC-TR-281 a saved strategy may pay premium (ADR-143)", () => {
     expect(savedPlaybookOf({ id: "sv_s", name: "S", summary: "s", definition: SavedDefinition.parse({ ...trend, legs: callSpread, exits: { stopOfMax: 0.5, targetOfMax: 0.2 } }), backtest: null }).exits).toMatchObject({ stopPct: 0.5 });
     // a strategy with none of them is as it was: no exits beside the clock
     expect(savedPlaybookOf({ id: "sv_n", name: "N", summary: "s", definition: SavedDefinition.parse(daily), backtest: null }).exits).toBeUndefined();
+  });
+});
+
+describe("HC-TR-288 figures computed in the app (ADR-144)", () => {
+  const typed = { mean: 12.4, per: "day", positivePct: 71, worst: -180, samples: 106, basis: "HapieCoin backtest" } as const;
+  const origin = { id: "bt_1", from: "2026-08-01", to: "2026-11-20", resolution: "5m", notes: ["Fills are at the price of the bar: no bid and ask, no slippage."] } as const;
+
+  it("HC-TR-288 figures may carry the run they came from; a form's figures never do, so a change through the form cannot claim one", () => {
+    expect(SavedBacktest.safeParse(typed).success).toBe(true);
+    expect(SavedBacktest.safeParse({ ...typed, run: origin }).success).toBe(true);
+    expect(SavedBacktest.safeParse({ ...typed, run: { ...origin, resolution: "1m" } }).success).toBe(false);
+    expect(SavedBacktestTyped.safeParse(typed).success).toBe(true);
+    expect(SavedBacktestTyped.safeParse({ ...typed, run: origin }).success).toBe(false);
+    expect(SavedStrategyPatch.safeParse({ backtest: typed }).success).toBe(true);
+    expect(SavedStrategyPatch.safeParse({ backtest: { ...typed, run: origin } }).success).toBe(false);
+    expect(SavedBacktestStart.safeParse({}).success).toBe(true);
+    expect(SavedBacktestStart.safeParse({ from: "2026-08-01", to: "2026-11-20" }).success).toBe(true);
+    expect(SavedBacktestStart.safeParse({ from: "yesterday" }).success).toBe(false);
+  });
+
+  it("HC-TR-288 a card says where its figures come from: typed by hand, or backtested in the app with its prices and its period", () => {
+    const claim = (backtest: object | null) => savedPlaybookOf({ id: "sv_a", name: "A", summary: "s", definition: SavedDefinition.parse(daily), backtest: backtest === null ? null : SavedBacktest.parse(backtest) }).evidence.claim;
+    expect(claim(typed)).toBe("$12.4 a day on 106 trades, 71 % of them positive, worst -$180 (USD, figures entered by hand).");
+    expect(claim({ ...typed, run: origin })).toBe("$12.4 a day on 106 trades, 71 % of them positive, worst -$180 (USD, backtested in the app on 5-minute prices, 2026-08-01 to 2026-11-20).");
+    expect(claim({ ...typed, run: { ...origin, resolution: "1h" } })).toContain("backtested in the app on hourly prices, 2026-08-01 to 2026-11-20");
+    expect(claim(null)).toBe("No backtest entered.");
+  });
+
+  it("HC-TR-288 a run as the screens get it: its state, its period, its figures or none, and what it could not do", () => {
+    const run = { id: "bt_1", strategyId: "sv_a", status: "done", progress: { done: 5, total: 5 }, from: "2026-08-01", to: "2026-08-05", resolution: "5m", figures: typed, noEntry: { "Already traded this expiry": 2 }, barsJudged: 900, barsSkipped: 3, notes: origin.notes, trades: [{ asset: "BTC", entryAt: "2026-08-01T16:00:00.000Z", closedAt: "2026-08-02T12:00:00.000Z", expiry: "2026-08-02", spot: 83200, legs: [{ kind: "put", side: "sell", strike: 82400, lots: 100, price: 234.5 }], gross: 23.45, fees: 0.9086, net: 22.54, reason: "expired", events: [{ at: "2026-08-02T12:00:00.000Z", kind: "settled", pnl: 23.45 }], barsSkipped: 0 }], error: null, current: true, createdAt: "2026-11-26T10:00:00.000Z", finishedAt: "2026-11-26T10:00:05.000Z" };
+    expect(SavedBacktestRun.safeParse(run).success).toBe(true);
+    expect(SavedBacktestRun.safeParse({ ...run, status: "running", figures: null, finishedAt: null }).success).toBe(true);
+    expect(SavedBacktestRun.safeParse({ ...run, status: "queued" }).success).toBe(false);
+    // a run's own figures are the numbers alone: the mark of the run is put on when they go to the strategy
+    expect(SavedBacktestRun.safeParse({ ...run, figures: { ...typed, run: origin } }).success).toBe(false);
   });
 });

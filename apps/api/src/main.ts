@@ -3,6 +3,7 @@ import { serve } from "@hono/node-server";
 import { startReconciler } from "./live-reconcile.js";
 import { type JobStarter, startJobs } from "./jobs.js";
 import { historyTargets, startEodHistoryBackfill } from "./chain-eod-history.js";
+import { spacedSource } from "./mark-candles.js";
 import { startPlaybookRecords } from "./playbooks.js";
 import { runAutopilot } from "./autopilot.js";
 import { runProposals } from "./proposals.js";
@@ -83,6 +84,7 @@ const mailer = createMailer({
 });
 const auth = createAuth({ config, db: handle.db, mailer, rateStore, logger });
 
+const defaultCandles = clients.restFor(DEFAULT_VENUE)?.candles;
 const deps: AppDeps = {
   config,
   db: handle.db,
@@ -100,6 +102,8 @@ const deps: AppDeps = {
   trading: clients.tradingFor(DEFAULT_VENUE),
   tradingFor: (venue) => clients.tradingFor(venue),
   marginInputs: (asset, venue, spot) => clients.marginInputs(asset, venue, spot),
+  // ADR-144: the default venue's public candles for the backtest in the app, spaced as the nightly chain history spaces its own
+  markSource: defaultCandles ? spacedSource({ candles: (p) => defaultCandles(p) }) : undefined,
   authOptions: authOptionsPublic(config),
   errors: errorSink,
   metrics: createApiMetrics(),

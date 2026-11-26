@@ -10,7 +10,7 @@
  * trade at entry, autopilot.ts).
  */
 import type { Playbook } from "@hapiecoin/pricing";
-import { type AutopilotStrategy, SAVED_REFUSALS, type SavedCard, SavedDefinition, type SavedStrategy, type SavedStrategyCreate, type SavedStrategyPatch, savedEntryText, savedLossCapped, savedPlaybookOf } from "@hapiecoin/schema";
+import { type AutopilotStrategy, SAVED_REFUSALS, type SavedBacktest, type SavedCard, SavedDefinition, type SavedStrategy, type SavedStrategyCreate, type SavedStrategyPatch, savedEntryText, savedLossCapped, savedPlaybookOf } from "@hapiecoin/schema";
 import { and, desc, eq, inArray, max, ne, notExists, sql } from "drizzle-orm";
 import type { Db } from "./db/client.js";
 import { autopilotSavedStrategies, autopilotSettings, plans, strategies, subscriptions, users } from "./db/schema.js";
@@ -120,6 +120,26 @@ async function unknownAudience(db: Db, userIds: readonly string[] | undefined, p
 const audienceOk = (audience: Row["audience"], userIds: readonly string[], planIds: readonly string[]): boolean => audience === "admins" || (audience === "users" ? userIds.length > 0 : planIds.length > 0);
 
 /**
+ * The figures of a run of the app's own backtest (ADR-144), put on the strategy it tested: refused when the strategy
+ * no longer has the settings the run tested. A draft becomes backtested; a strategy on paper stays on paper.
+ */
+export async function putSavedBacktest(db: Db, id: string, tested: SavedDefinition, backtest: SavedBacktest, at: Date): Promise<SavedResult | null> {
+  // read and written under one lock: settings changed by another admin in between are seen, never given these figures
+  return db.transaction(async (tx) => {
+    const [row] = await tx.select().from(autopilotSavedStrategies).where(eq(autopilotSavedStrategies.id, id)).for("update").limit(1);
+    if (!row) return null;
+    if (row.stage === "retired") return { ok: false as const, why: SAVED_REFUSALS.retired };
+    if (stable(tested) !== stable(row.definition)) return { ok: false as const, why: SAVED_REFUSALS.backtestStale };
+    const [saved] = await tx
+      .update(autopilotSavedStrategies)
+      .set({ backtest, backtestAt: at, stage: row.stage === "paper" ? "paper" : "backtested", updatedAt: at })
+      .where(eq(autopilotSavedStrategies.id, id))
+      .returning();
+    return { ok: true as const, strategy: toSaved(saved!, (await tradedIds(tx, [id])).has(id)), newVersion: false };
+  });
+}
+
+/**
  * Change a saved strategy. The name, the summary and the audience change in place. New settings on a version that has
  * traded are saved as the next version (a draft with no backtest); on one that has not, they change in place, clear
  * its backtest and take it back to a draft, since the figures and the publication were for other settings.
@@ -137,8 +157,11 @@ export async function updateSaved(db: Db, id: string, patch: SavedStrategyPatch,
   const userIds = patch.userIds ?? row.userIds;
   const planIds = patch.planIds ?? row.planIds;
   // figures sent with new settings are the new settings'; otherwise new settings leave none
-  const backtest = patch.backtest !== undefined ? patch.backtest : resettled ? null : row.backtest;
-  const backtestAt = patch.backtest ? at : backtest ? row.backtestAt : null;
+  // (figures typed again exactly as a run of the app's backtest left them are still that run's: its mark stays)
+  const typed = patch.backtest && !resettled && row.backtest?.run && stable(patch.backtest) === stable({ ...row.backtest, run: undefined }) ? row.backtest : patch.backtest;
+  const backtest: SavedBacktest | null = typed !== undefined ? typed : resettled ? null : row.backtest;
+  // (a run's figures that a form sends back unchanged are not new figures: their date stays; typed ones are dated when they are sent)
+  const backtestAt = patch.backtest && backtest !== row.backtest ? at : backtest ? row.backtestAt : null;
 
   if (resettled) {
     // in place only while no trade was ever opened from it, which the write itself checks: a draft again, unpublished
