@@ -1,0 +1,134 @@
+## BTC daily: 110 days (2026-08-08 .. 2026-11-25), each side 1 % away, entered 20 h before settlement; stop 2x on every sold option
+   a stop fires on 61 of 110 days (55 %); on 54 of those days another stop day lies within the 3 days before; 81 of the 107 windows of 4 days in a row hold 2 or more stop days
+                                                           mean  win   total   worst  worst 3 drawdown        halves stop days   other  adj  adj own
+   the stop alone                                         +8.63  50%    +950   -39.8   -110.6   -126.4     +362/+588     -9.81  +31.59    0       +0
+   -- roll the winner nearer (old one bought back, a new one sold)
+   at the first stop: new one 1 % away                    +5.48  61%    +603   -62.1   -172.6   -293.1     +104/+499    -15.48  +31.59   59     -222
+   at the first stop: new one 0.75 % away                 +4.70  63%    +517   -67.2   -195.0   -314.2      +39/+479    -16.89  +31.59   59     -308
+   at the first stop: new one 0.5 % away                  +3.34  65%    +367   -77.1   -221.4   -355.5      -56/+423    -19.35  +31.59   59     -458
+   at 1.5x on the other side: new one 1 % away            +5.78  61%    +636   -64.8   -179.4   -142.1     +366/+270    -10.37  +25.88   82     -187
+   at 1.5x on the other side: new one 0.75 % away         +6.06  62%    +667   -70.5   -190.1   -100.9     +364/+303     -9.06  +24.89   81     -157
+   at 1.5x on the other side: new one 0.5 % away          +5.13  56%    +565   -76.0   -212.0   -137.9     +315/+250     -8.69  +22.35   82     -258
+   -- add a winner (old one kept, one more sold)
+   at the first stop: one more 1 % away                   +6.71  63%    +738   -54.0   -158.0   -257.0     +129/+609    -13.28  +31.59   59     -212
+   at the first stop: one more 0.5 % away                 +4.57  66%    +502   -69.7   -208.5   -319.4      -31/+533    -17.14  +31.59   59     -447
+   at 1.5x on the other side: one more 1 % away           +7.14  62%    +786   -68.8   -170.5   -115.6     +349/+437    -10.47  +29.07   82     -164
+   at 1.5x on the other side: one more 0.5 % away         +6.50  64%    +715   -84.2   -230.0   -167.4     +298/+417     -8.79  +25.53   82     -235
+   -- roll the loser further out before its stop
+   at 1.5x: new one 1 % away                              +6.09  60%    +670   -63.8   -166.2   -149.5     +275/+396     -7.47  +22.98   81     +253
+   at 1.5x: new one 1.5 % away                            +5.06  62%    +557   -63.2   -156.2   -139.1     +214/+343     -6.82  +19.85   82     +142
+   -- spot exit: everything closed once the spot has moved from the entry
+   spot 0.5 % from the entry                              +1.00  53%    +109   -16.3    -46.5    -57.9       +80/+30     -1.58   +4.20  103        -
+   spot 0.75 % from the entry                             +2.85  55%    +313   -30.5    -81.3    -59.0     +156/+157     -3.51  +10.76   87        -
+   spot 1 % from the entry                                +3.93  51%    +432   -32.5    -92.4    -85.3     +225/+207     -6.83  +17.32   78        -
+   spot 1.25 % from the entry                             +7.31  56%    +804   -39.8   -103.4    -75.5     +360/+443     -7.42  +25.65   58        -
+   -- earlier stop
+   stop at 1.5x                                           +3.66  65%    +403   -81.6   -165.0   -119.4     +152/+251     -4.33  +13.61    0        -
+   half at 1.5x, the rest at 2x                           +6.15  59%    +676   -54.8   -113.7   -106.2     +257/+419     -7.07  +22.60    0        -
+
+## BTC daily: 110 days (2026-08-08 .. 2026-11-25), each side 1 % away, entered 20 h before settlement; stop 3x on every sold option
+   a stop fires on 37 of 110 days (34 %); on 28 of those days another stop day lies within the 3 days before; 50 of the 107 windows of 4 days in a row hold 2 or more stop days
+                                                           mean  win   total   worst  worst 3 drawdown        halves stop days   other  adj  adj own
+   the stop alone                                        +12.35  65%   +1359  -105.8   -254.2   -185.0     +725/+633    -30.13  +33.89    0       +0
+   -- roll the winner nearer (old one bought back, a new one sold)
+   at the first stop: new one 1 % away                   +12.72  67%   +1399  -146.5   -357.4   -191.3     +741/+659    -29.04  +33.89   35      +65
+   at the first stop: new one 0.75 % away                +12.63  69%   +1389  -196.4   -437.9   -230.4     +760/+629    -29.32  +33.89   35      +54
+   at the first stop: new one 0.5 % away                 +13.00  72%   +1430  -196.4   -454.3   -224.4     +758/+673    -28.21  +33.89   35      +95
+   at 1.5x on the other side: new one 1 % away            +9.40  60%   +1034  -121.0   -279.8   -204.6     +443/+591    -24.78  +26.72   91     -208
+   at 1.5x on the other side: new one 0.75 % away         +8.47  54%    +932  -128.4   -294.6   -221.8     +369/+563    -24.12  +24.99   90     -310
+   at 1.5x on the other side: new one 0.5 % away          +7.53  59%    +829  -165.2   -343.6   -213.2     +292/+537    -24.41  +23.72   91     -413
+   at 2x on the other side: new one 1 % away             +10.20  63%   +1122  -121.0   -281.2   -191.1     +559/+563    -24.39  +27.73   55     -130
+   at 2x on the other side: new one 0.75 % away           +9.54  62%   +1049  -128.4   -284.1   -199.3     +522/+528    -23.01  +26.04   55     -202
+   at 2x on the other side: new one 0.5 % away            +8.93  65%    +982  -165.2   -318.8   -229.1     +438/+545    -22.50  +24.86   55     -269
+   -- add a winner (old one kept, one more sold)
+   at the first stop: one more 1 % away                  +12.97  69%   +1427  -143.4   -355.5   -179.8     +776/+651    -28.29  +33.89   35      +68
+   at the first stop: one more 0.5 % away                +13.25  75%   +1458  -193.3   -465.9   -212.9     +792/+665    -27.46  +33.89   35      +99
+   at 1.5x on the other side: one more 1 % away          +10.69  65%   +1175  -130.0   -344.3   -261.5     +471/+704    -29.63  +31.12   91     -183
+   at 1.5x on the other side: one more 0.5 % away         +8.82  63%    +971  -164.4   -419.3   -273.0     +320/+650    -29.26  +28.12   91     -388
+   at 2x on the other side: one more 1 % away            +11.26  65%   +1239  -120.1   -286.7   -164.7     +598/+641    -23.69  +28.98   55     -120
+   at 2x on the other side: one more 0.5 % away           +9.99  69%   +1099  -164.4   -340.7   -202.7     +477/+623    -21.80  +26.11   55     -260
+   -- roll the loser further out before its stop
+   at 1.5x: new one 1 % away                              +4.81  72%    +529  -134.2   -343.1   -165.7     +346/+183    -28.35  +21.62   90     +137
+   at 1.5x: new one 1.5 % away                            +3.86  73%    +425  -108.0   -305.5   -156.6     +249/+176    -23.53  +17.75   91      +34
+   at 2x: new one 1 % away                                +6.02  67%    +662  -108.5   -287.0   -205.4     +321/+342    -30.11  +24.33   55     -350
+   at 2x: new one 1.5 % away                              +7.33  65%    +807   -95.2   -243.6   -171.8     +369/+438    -23.50  +22.97   55     -205
+   -- spot exit: everything closed once the spot has moved from the entry
+   spot 0.5 % from the entry                              +1.25  55%    +138   -15.9    -43.3    -62.0      +112/+25     -1.20   +2.50  104        -
+   spot 0.75 % from the entry                             +2.99  57%    +329   -30.5    -71.0    -63.4     +181/+148     -4.93   +7.01   89        -
+   spot 1 % from the entry                                +2.98  55%    +328   -43.1   -115.0    -90.4      +235/+93    -12.26  +10.70   79        -
+   spot 1.25 % from the entry                             +6.80  61%    +748   -43.1   -116.4    -89.4     +460/+288    -14.42  +17.56   59        -
+   -- earlier stop
+   stop at 1.5x                                           +3.66  65%    +403   -81.6   -165.0   -119.4     +152/+251     -3.94   +7.51    0        -
+   half at 1.5x, the rest at 3x                           +8.01  65%    +881   -61.8   -165.0   -117.8     +439/+442    -17.04  +20.70    0        -
+   stop at 2x                                             +8.63  50%    +950   -39.8   -110.6   -126.4     +362/+588    -10.46  +18.31    0        -
+   half at 2x, the rest at 3x                            +10.49  65%   +1154   -62.7   -158.0   -105.8     +544/+611    -20.29  +26.10    0        -
+   stop at 2.5x                                           +8.65  55%    +951   -54.5   -157.3   -188.7     +410/+541    -19.86  +23.09    0        -
+   half at 2.5x, the rest at 3x                          +10.50  65%   +1155   -73.1   -186.1   -146.0     +568/+587    -24.99  +28.49    0        -
+
+## ETH daily: 110 days (2026-08-08 .. 2026-11-25), each side 1 % away, entered 20 h before settlement; stop 3x on every sold option
+   a stop fires on 39 of 110 days (35 %); on 26 of those days another stop day lies within the 3 days before; 48 of the 107 windows of 4 days in a row hold 2 or more stop days
+                                                           mean  win   total   worst  worst 3 drawdown        halves stop days   other  adj  adj own
+   the stop alone                                         +4.70  62%    +517   -49.6   -136.2   -119.9     +273/+244    -18.52  +17.46    0       +0
+   -- roll the winner nearer (old one bought back, a new one sold)
+   at the first stop: new one 1 % away                    +3.44  62%    +379   -78.4   -210.6   -166.9     +218/+160    -22.09  +17.46   37     -147
+   at the first stop: new one 0.75 % away                 +2.88  62%    +316   -83.5   -215.7   -211.0     +193/+124    -23.68  +17.46   37     -209
+   at the first stop: new one 0.5 % away                  +2.76  63%    +304   -83.5   -225.9   -236.5     +177/+127    -24.00  +17.46   38     -221
+   at 1.5x on the other side: new one 1 % away            +3.78  55%    +416   -61.9   -166.5   -129.4     +256/+160    -15.93  +14.61   86      -95
+   at 1.5x on the other side: new one 0.75 % away         +4.14  54%    +455   -61.9   -176.5   -124.6     +238/+217    -15.97  +15.18   86      -56
+   at 1.5x on the other side: new one 0.5 % away          +4.64  56%    +510   -67.1   -192.5   -102.6     +251/+260    -15.38  +15.64   86       -0
+   at 2x on the other side: new one 1 % away              +4.23  61%    +465   -63.6   -162.4   -107.6     +240/+225    -17.00  +15.89   55      -70
+   at 2x on the other side: new one 0.75 % away           +3.72  60%    +410   -68.0   -184.8   -108.1     +190/+220    -17.49  +15.38   55     -126
+   at 2x on the other side: new one 0.5 % away            +3.40  60%    +374   -68.0   -189.8   -113.3     +152/+222    -17.14  +14.69   55     -161
+   -- add a winner (old one kept, one more sold)
+   at the first stop: one more 1 % away                   +3.38  62%    +372   -77.6   -222.3   -165.8     +195/+176    -22.26  +17.46   37     -146
+   at the first stop: one more 0.5 % away                 +2.71  65%    +298   -82.7   -244.0   -227.0     +155/+143    -24.16  +17.46   38     -220
+   at 1.5x on the other side: one more 1 % away           +3.95  57%    +435  -109.1   -250.7   -174.5     +257/+178    -17.76  +15.88   86      -82
+   at 1.5x on the other side: one more 0.5 % away         +4.81  60%    +529  -114.8   -289.4   -164.8     +252/+278    -17.21  +16.91   86      +12
+   at 2x on the other side: one more 1 % away             +4.11  62%    +452   -62.9   -177.3   -117.1     +223/+229    -17.84  +16.17   55      -65
+   at 2x on the other side: one more 0.5 % away           +3.28  63%    +361   -91.6   -218.4   -135.3     +136/+225    -17.98  +14.96   55     -156
+   -- roll the loser further out before its stop
+   at 1.5x: new one 1 % away                              +3.71  72%    +409   -64.2   -157.8   -146.2     +119/+289    -11.87  +12.27   86      +58
+   at 1.5x: new one 1.5 % away                            +3.45  72%    +379   -67.4   -158.8   -129.9     +108/+271    -10.28  +10.99   86      +29
+   at 2x: new one 1 % away                                +3.27  67%    +360   -49.6   -145.8   -111.3     +129/+231    -14.85  +13.22   54      -53
+   at 2x: new one 1.5 % away                              +3.03  62%    +334   -49.6   -131.6   -109.5     +114/+219    -13.36  +12.04   55      -36
+   -- spot exit: everything closed once the spot has moved from the entry
+   spot 0.5 % from the entry                              +0.83  51%     +91    -7.9    -20.4    -24.4       +37/+54     -1.25   +1.97  107        -
+   spot 0.75 % from the entry                             +1.59  59%    +175   -13.7    -39.7    -40.7       +93/+81     -2.42   +3.79   99        -
+   spot 1 % from the entry                                +1.87  63%    +206   -18.1    -49.1    -61.2      +119/+86     -3.79   +4.98   91        -
+   spot 1.25 % from the entry                             +1.78  55%    +196   -40.0    -74.0    -83.9      +105/+91     -6.63   +6.40   81        -
+   -- earlier stop
+   stop at 1.5x                                           +2.84  76%    +312   -76.8   -125.5    -86.0      +64/+248     -2.12   +5.56    0        -
+   half at 1.5x, the rest at 3x                           +3.77  61%    +415   -63.2   -120.0    -94.4     +169/+246    -10.32  +11.51    0        -
+   stop at 2x                                             +3.28  50%    +361   -49.6   -121.9   -101.1     +159/+202     -8.75   +9.89    0        -
+   half at 2x, the rest at 3x                             +3.99  60%    +439   -49.6   -127.6    -92.4     +216/+223    -13.64  +13.68    0        -
+   stop at 2.5x                                           +5.20  56%    +571   -49.6   -128.4    -78.8     +285/+287    -12.43  +14.88    0        -
+   half at 2.5x, the rest at 3x                           +4.95  61%    +544   -49.6   -130.9    -99.3     +279/+265    -15.48  +16.17    0        -
+
+## ETH daily: 110 days (2026-08-08 .. 2026-11-25), each side 1 % away, entered 20 h before settlement; stop 2x on every sold option
+   a stop fires on 63 of 110 days (57 %); on 58 of those days another stop day lies within the 3 days before; 89 of the 107 windows of 4 days in a row hold 2 or more stop days
+                                                           mean  win   total   worst  worst 3 drawdown        halves stop days   other  adj  adj own
+   the stop alone                                         +3.28  50%    +361   -49.6   -121.9   -101.1     +159/+202     -7.61  +17.89    0       +0
+   -- roll the winner nearer (old one bought back, a new one sold)
+   at the first stop: new one 1 % away                    +2.25  63%    +248   -49.6   -132.6   -172.4     +117/+131     -9.41  +17.89   59     -119
+   at the first stop: new one 0.75 % away                 +2.14  64%    +235   -50.4   -140.8   -178.4     +112/+123     -9.62  +17.89   59     -132
+   at the first stop: new one 0.5 % away                  +2.13  66%    +235   -50.4   -135.4   -204.5     +104/+131     -9.62  +17.89   60     -132
+   at 1.5x on the other side: new one 1 % away            +3.80  69%    +418   -48.7   -121.3    -70.1     +207/+212     -5.04  +15.65   81      +46
+   at 1.5x on the other side: new one 0.75 % away         +3.99  73%    +439   -48.7   -121.3    -68.7     +212/+227     -4.44  +15.28   81      +67
+   at 1.5x on the other side: new one 0.5 % away          +4.20  76%    +462   -53.9   -127.3    -74.9     +192/+270     -3.53  +14.57   81      +90
+   -- add a winner (old one kept, one more sold)
+   at the first stop: one more 1 % away                   +2.24  67%    +247   -58.4   -162.3   -179.6      +94/+153     -9.43  +17.89   59     -114
+   at the first stop: one more 0.5 % away                 +2.13  67%    +234   -61.7   -168.5   -211.7      +82/+152     -9.63  +17.89   60     -127
+   at 1.5x on the other side: one more 1 % away           +3.73  73%    +410   -64.2   -168.0   -127.1     +189/+222     -6.26  +17.12   83      +49
+   at 1.5x on the other side: one more 0.5 % away         +4.52  75%    +497   -67.6   -178.1   -141.1     +182/+316     -4.06  +16.03   83     +136
+   -- roll the loser further out before its stop
+   at 1.5x: new one 1 % away                              +2.42  57%    +267   -64.2   -142.7   -137.5      +49/+218     -6.38  +14.22   83      -45
+   at 1.5x: new one 1.5 % away                            +2.61  62%    +287   -67.4   -144.4   -133.3      +43/+244     -5.40  +13.35   83      -24
+   -- spot exit: everything closed once the spot has moved from the entry
+   spot 0.5 % from the entry                              +0.83  51%     +91    -7.9    -20.4    -24.4       +37/+54     -0.71   +2.90  107        -
+   spot 0.75 % from the entry                             +1.47  58%    +161   -13.7    -39.7    -40.7       +81/+81     -1.72   +5.74   99        -
+   spot 1 % from the entry                                +2.06  61%    +227   -15.1    -42.3    -30.3     +110/+117     -2.21   +7.79   90        -
+   spot 1.25 % from the entry                             +2.06  54%    +227   -40.0    -79.7    -84.3     +108/+119     -4.04  +10.24   80        -
+   -- earlier stop
+   stop at 1.5x                                           +2.84  76%    +312   -76.8   -125.5    -86.0      +64/+248     -2.47   +9.95    0        -
+   half at 1.5x, the rest at 2x                           +3.06  58%    +337   -63.2   -117.2    -76.3     +112/+225     -5.04  +13.92    0        -
+
