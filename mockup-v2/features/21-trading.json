@@ -2638,5 +2638,65 @@
     "how": "a second tab on the admin page lists every built-in strategy with its family, when it enters, how it gets out and its backtest figures; none can be edited or removed there; Copy as my own opens the editor with the strategy's settings as a new draft of the admin's own and leaves the built-in one as it is; the backtest figures are not copied, because they hold only for the settings they were measured on; every built-in strategy entered by the clock can be copied and the copy has the same entry, legs, conditions and exits; a strategy entered on a market condition says why it cannot be copied yet",
     "evidence": "ADR-141 (the design's read-only built-in tab), ADR-142 (25 Nov 2026): apps/web/src/components/admin/AutopilotStrategiesAdmin.tsx (BuiltInTable), AutopilotStrategyDialog.tsx (copy), apps/web/src/lib/strategy/saved-form.ts (savedFormFromBuiltIn); tests: apps/web/src/lib/strategy/saved-form.test.ts HC-TR-280 (every clock strategy, field for field), apps/web/src/components/admin/autopilot-strategies.test.tsx HC-TR-280",
     "test": "unit (web)"
+  },
+  {
+    "id": "HC-TR-281",
+    "route": "/admin/autopilot-strategies",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Saved Autopilot strategy: bought structures, legs at and in the money, whole-trade exits",
+    "how": "a saved strategy may pay premium: a leg by listed strikes may sit at the money (0) or in the money, and may be a multiple of the strategy's lots (up to 5); three exits on the whole trade join the others: a target as a share of the most the trade can make (which may start a trail), a stop as a share of the most it can lose, and an exit so many days before expiry (at least one, and at least a day nearer than the nearest expiry entered); a target needs the most the trade can make to be limited (no more bought than sold, of each kind), a stop needs every sold option covered; a strategy always sells at least one option; one profit level, not two",
+    "evidence": "ADR-143 (25 Nov 2026): packages/schema/src/autopilot-saved.ts (SavedLeg itm / ratio, SavedExits targetOfMax / stopOfMax / timeStopDte, savedLossCapped and savedProfitCapped by lots, savedPlaybookOf: exits beside the clock); tests: packages/schema/src/autopilot-saved.test.ts HC-TR-281",
+    "test": "unit (schema)"
+  },
+  {
+    "id": "HC-TR-282",
+    "route": "/admin/autopilot-strategies",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Saved Autopilot strategy: the plan of a bought structure",
+    "how": "a saved strategy with whole-trade exits has a plan of its own: a target on the most it can make is that share plus the fees of both fills, and must stay below that most; without such a target the structure must collect more premium than the fees; the levels on the premium collected need a premium collected; a level on the most it can make or lose needs that most to be a number; a level that rounds to nothing is no plan; each refusal has its own sentence; without such exits the plan is the clock playbook's, to the figure",
+    "evidence": "ADR-143 (25 Nov 2026): apps/api/src/autopilot.ts (savedPlanFor, savedPlanRefusal); tests: apps/api/src/autopilot-saved.test.ts HC-TR-282",
+    "test": "unit (api)"
+  },
+  {
+    "id": "HC-TR-283",
+    "route": "/admin/autopilot-strategies",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Autopilot enters a published bought structure on paper",
+    "how": "the engine takes the plan of a saved strategy for a saved id and the plans it always took for the built-in playbooks; a published bought call spread is entered on paper at the snapshot's marks with a target (after fees), a stop and an exit before expiry as rules, to the cent, beside a built-in strangle entered as before; a butterfly with a leg in the money and a double leg at the money is entered with its lots and a trailing target; a structure with nothing left above its target is a reason in the log; Go live refuses the trade",
+    "evidence": "ADR-143 (25 Nov 2026): apps/api/src/autopilot.ts (runAutopilot: the plan by id), enter() unchanged; tests: apps/api/src/autopilot-saved.test.ts HC-TR-283, apps/api/src/autopilot.test.ts unchanged",
+    "test": "integration (api)"
+  },
+  {
+    "id": "HC-TR-284",
+    "route": "/admin/autopilot-strategies",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Saved Autopilot strategy editor: structures that pay premium",
+    "how": "the editor builds what the settings hold since HC-TR-281: a leg by listed strikes out of the money (0: at the money) or in the money, a leg of 1 to 5 times the lots, presets for a bought call spread, a bought put spread and a call butterfly, and three exits on the whole trade (a target in per cent of the most it can make, which the trail field may start from, a stop in per cent of the most it can lose, an exit so many days before expiry); what is wrong is said by the name of the field; the presets of such structures fill in the target they need; a daily strategy entered a day out or more reads 'on the first expiry at least N days out'; on the trader's Autopilot screen such a strategy shows these exits in its tags, its line and its sentences and is never called held to expiry",
+    "evidence": "ADR-143 (26 Nov 2026): apps/web/src/components/admin/AutopilotStrategyDialog.tsx, apps/web/src/lib/strategy/saved-form.ts (LegForm itm / ratio, targetOfMaxPct / stopOfMaxPct / timeStopDte, LEG_PRESETS), apps/web/src/lib/strategy/autopilot-words.ts (wholeTradeWords, wholeTradeFew, lossLimited), apps/web/src/components/autopilot/AutopilotPage.tsx, packages/schema/src/autopilot-saved.ts (savedEntryText); tests: saved-form.test.ts, autopilot-strategies.test.tsx and autopilot-saved.test.tsx HC-TR-284",
+    "test": "unit + component (web)"
+  },
+  {
+    "id": "HC-TR-285",
+    "route": "/admin/autopilot-strategies",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Copy as my own for the built-in strategies entered on a market condition",
+    "how": "five of the six built-in strategies entered on a market condition (Trend with calls, Trend with puts, Premium harvest, Expiry-week credit spread, Pin butterfly) can be copied: the copy may enter at any time of day, once per expiry, on the first expiry at least as far out as the built-in one's, with the same legs, size, condition and exits on the whole trade; the editor says what differs: the built-in one may enter again on the same expiry after a pause, lets each trader choose between closing at its profit level and trailing from it, trades on every venue the API serves, has no backtest figures to copy, and is taken off by Autopilot at 10 % of the most it can make where the copy starts with the target its description names; the covered call is not copied because it holds a futures leg",
+    "evidence": "ADR-143 (26 Nov 2026): apps/web/src/lib/strategy/saved-form.ts (savedFormFromBuiltIn, TREND_COPY_NOTES, trendCopyNotes); tests: saved-form.test.ts and autopilot-strategies.test.tsx HC-TR-285",
+    "test": "unit + component (web)"
   }
 ]

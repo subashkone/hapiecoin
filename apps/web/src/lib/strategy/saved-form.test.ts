@@ -3,7 +3,7 @@
 import { AUTOPILOT_PLAYBOOKS, playbookTemplate } from "@hapiecoin/pricing";
 import { type SavedStrategy, savedPlaybookOf } from "@hapiecoin/schema";
 import { describe, expect, it } from "vitest";
-import { FROM_HOURS, LEG_PRESETS, type SavedForm, emptySavedForm, istClock, istWeekday, sameDefinition, SAVED_NAME_MAX, savedBacktestOf, savedDefinitionOf, savedFormFromBuiltIn, savedFormOf, utcWeekday } from "./saved-form";
+import { FROM_HOURS, LEG_PRESETS, type SavedForm, TREND_COPY_NOTES, emptySavedForm, istClock, istWeekday, sameDefinition, SAVED_NAME_MAX, savedBacktestOf, savedDefinitionOf, savedFormFromBuiltIn, savedFormOf, trendCopyNotes, utcWeekday } from "./saved-form";
 
 const form = (over: Partial<SavedForm> = {}): SavedForm => ({ ...emptySavedForm(), name: "Evening strangle", summary: "Sell both sides.", ...over });
 const defOf = (f: SavedForm) => {
@@ -195,9 +195,40 @@ describe("HC-TR-280 a built-in strategy as a draft of the admin's own", () => {
     expect(long.ok && long.form.summary).toBe("");
   });
 
-  it("HC-TR-280 a strategy entered on a market condition is not copied yet, and says why", () => {
-    expect(trendOnes.length).toBeGreaterThan(0);
-    for (const p of trendOnes) expect(savedFormFromBuiltIn(p), p.id).toEqual({ ok: false, why: "It enters on a market condition, with exits the editor does not have yet." });
+  it("HC-TR-285 a strategy entered on a market condition is copied as one that may enter at any time of day, once per expiry: the same legs, conditions, size and exits on the whole trade, and what differs is said", () => {
+    const plain = (o: object | undefined) => JSON.parse(JSON.stringify(o ?? {})) as Record<string, unknown>;
+    const copied = trendOnes.filter((p) => savedFormFromBuiltIn(p).ok);
+    expect(copied.map((p) => p.id)).toEqual(["trend-calls", "trend-puts", "premium-harvest", "expiry-week-credit", "pin-butterfly"]);
+    for (const p of copied) {
+      const r = savedFormFromBuiltIn(p);
+      if (!r.ok) throw new Error(r.why);
+      expect(r.form).toMatchObject({ name: `${p.name} (copy)`, summary: p.summary, anyTime: true, oncePerExpiry: true, cadence: "daily", minDte: String(p.minDte), maxDte: "400", lots: String(p.lots) });
+      // what differs is said, and that Autopilot gets out of the built-in one at 10 %, not at the target its description names
+      expect(r.notes, p.id).toEqual([...TREND_COPY_NOTES, `Autopilot takes the built-in one's profit at 10 % of the most it can make. This copy starts with the target its description names, ${p.id === "pin-butterfly" ? 75 : 50} %: set the target to 10 if it should get out where the built-in one does.`]);
+      const q = savedPlaybookOf({ id: "sv_copy", name: r.form.name, summary: r.form.summary, definition: defOf(r.form), backtest: null });
+      expect(q.template.legs.map((l) => plain(l)), p.id).toEqual(playbookTemplate(p)!.legs.map((l) => plain(l)));
+      expect(plain(q.exits), p.id).toEqual(plain(p.exits));
+      expect(plain(q.conditions), p.id).toEqual(plain(p.conditions));
+      expect({ minDte: q.minDte, lots: q.lots, assets: q.assets, risk: q.template.risk }, p.id).toEqual({ minDte: p.minDte, lots: p.lots, assets: [...p.assets], risk: playbookTemplate(p)!.risk });
+      expect(q.clock).toMatchObject({ fromHourUtc: 0, toHourUtc: 24, oncePerExpiry: true, maxDte: 400, venues: ["delta_india"] });
+      // none of the exits a clock strategy has: only the ones the built-in strategy carries
+      expect(Object.keys(plain(q.clock)).sort(), p.id).toEqual(["describe", "fromHourUtc", "maxDte", "oncePerExpiry", "toHourUtc", "venues", "window"]);
+    }
+    // the butterfly: one in the money, two at it, one out
+    const fly = savedFormFromBuiltIn(trendOnes.find((p) => p.id === "pin-butterfly")!);
+    expect(fly.ok && fly.form.legs).toEqual([{ kind: "call", side: "buy", by: "strikes", value: "2", itm: true }, { kind: "call", side: "sell", by: "strikes", value: "0", ratio: "2" }, { kind: "call", side: "buy", by: "strikes", value: "2" }]);
+    expect(fly.ok && [fly.form.targetOfMaxPct, fly.form.stopOfMaxPct, fly.form.timeStopDte]).toEqual(["75", "", ""]);
+    const calls = savedFormFromBuiltIn(trendOnes.find((p) => p.id === "trend-calls")!);
+    expect(calls.ok && [calls.form.targetOfMaxPct, calls.form.stopOfMaxPct, calls.form.timeStopDte, calls.form.smaOn, calls.form.smaDays, calls.form.smaSide]).toEqual(["50", "50", "2", true, "50", "above"]);
+    // the one that holds the perpetual stays out, and one that names weekdays without a clock
+    expect(trendOnes.filter((p) => !savedFormFromBuiltIn(p).ok).map((p) => [p.id, savedFormFromBuiltIn(p)])).toEqual([["covered-call", { ok: false, why: "It holds a futures leg, which a saved strategy cannot." }]]);
+    expect(savedFormFromBuiltIn({ ...copied[0]!, conditions: { weekdays: [1] } })).toEqual({ ok: false, why: "It chooses its weekdays without a window by the clock, which the editor cannot hold." });
+    expect(TREND_COPY_NOTES).toHaveLength(4);
+    expect(trendCopyNotes({ ...copied[0]!, exits: { targetPct: 0.1 } })).toEqual([...TREND_COPY_NOTES]);
+    expect(trendCopyNotes({ ...copied[0]!, exits: { stopPct: 0.5 } })).toEqual([...TREND_COPY_NOTES]);
+    // one with no exits of its own comes through with none (whether its prices let it trade is judged at the entry)
+    const bare = savedFormFromBuiltIn({ ...copied[0]!, exits: undefined });
+    expect(bare.ok && [bare.form.targetOfMaxPct, bare.form.stopOfMaxPct, bare.form.timeStopDte]).toEqual(["", "", ""]);
   });
 
   it("HC-TR-280 what the editor cannot hold is said: another exchange, a futures leg, legs of another size or expiry, a leg at the money, a window the rules refuse", () => {
@@ -209,10 +240,14 @@ describe("HC-TR-280 a built-in strategy as a draft of the admin's own", () => {
     };
     expect(why({ ...base, clock: { ...base.clock!, venues: ["deribit"] } } as never)).toBe("It trades on another exchange than Delta Exchange India.");
     expect(why(withLegs([{ kind: "future", side: "sell" }]))).toBe("It holds a futures leg, which a saved strategy cannot.");
-    expect(why(withLegs([{ kind: "call", side: "sell", k: 2, lots: 2 }]))).toBe("Its legs differ in size or expiry, which the editor cannot hold.");
-    expect(why(withLegs([{ kind: "call", side: "sell", k: 2, expiryOffset: 1 }]))).toBe("Its legs differ in size or expiry, which the editor cannot hold.");
-    expect(why(withLegs([{ kind: "call", side: "sell", k: 0 }]))).toBe("It has a leg at or in the money, which the editor cannot hold yet.");
-    expect(why(withLegs([{ kind: "put", side: "sell", k: 0, pct: 2 }]))).toBe("It has a leg at or in the money, which the editor cannot hold yet.");
+    expect(why(withLegs([{ kind: "call", side: "sell", k: 2, lots: 6 }]))).toBe("It has a leg of more than 5 times the lots, or of a part of them, which the editor cannot hold.");
+    expect(why(withLegs([{ kind: "call", side: "sell", k: 2, lots: 0.5 }]))).toBe("It has a leg of more than 5 times the lots, or of a part of them, which the editor cannot hold.");
+    expect(why(withLegs([{ kind: "call", side: "sell", k: 2, expiryOffset: 1 }]))).toBe("Its legs differ in expiry, which the editor cannot hold.");
+    expect(why(withLegs([{ kind: "put", side: "sell", k: 0, pct: 2 }]))).toBe("It has a leg by per cent at or in the money, which the editor cannot hold.");
+    expect(why(withLegs([{ kind: "call", side: "sell", k: 0, pct: 0 }]))).toBe("It has a leg by per cent at or in the money, which the editor cannot hold.");
+    // HC-TR-285: by listed strikes a leg may sit at the money or in it, and be several times the lots
+    const held = savedFormFromBuiltIn(withLegs([{ kind: "call", side: "sell", k: 0, lots: 2 }, { kind: "put", side: "sell", k: 1 }, { kind: "put", side: "sell", k: -1, lots: 1 }]));
+    expect(held.ok && held.form.legs).toEqual([{ kind: "call", side: "sell", by: "strikes", value: "0", ratio: "2" }, { kind: "put", side: "sell", by: "strikes", value: "1", itm: true }, { kind: "put", side: "sell", by: "strikes", value: "1" }]);
     expect(why(withLegs([{ kind: "call", side: "buy", k: 2 }]))).toBe("The editor cannot hold it as it is. What to trade: A saved strategy sells at least one option");
     expect(why({ ...base, template: "No such template" } as never)).toMatch(/^The editor cannot hold it as it is\. /);
     // a day the editor has no field for is a reason, not a silent drop
@@ -221,5 +256,58 @@ describe("HC-TR-280 a built-in strategy as a draft of the admin's own", () => {
     // a whole-day window, chosen days and conditions come through
     const allDay = savedFormFromBuiltIn({ ...base, conditions: { sma: { days: 20, side: "below" }, ivRank: { min: 40, lookbackDays: 120 }, weekdays: [1, 5] }, clock: { ...base.clock!, fromHourUtc: 0, toHourUtc: 24, oncePerExpiry: true, moveSide: { hours: 12, pct: 1.5 } } } as never);
     expect(allDay.ok && allDay.form).toMatchObject({ anyTime: true, oncePerExpiry: true, weekdays: [1, 5], smaOn: true, smaDays: "20", smaSide: "below", ivOn: true, ivMin: "40", ivLookback: "120", moveOn: true, moveHours: "12", movePct: "1.5" });
+  });
+});
+
+describe("HC-TR-284 the editor holds a structure that pays premium (ADR-143)", () => {
+  const spread = (over: Partial<SavedForm> = {}): SavedForm => form({ anyTime: true, oncePerExpiry: true, minDte: "14", maxDte: "400", legs: LEG_PRESETS.callSpread.legs(), targetOfMaxPct: "50", ...over });
+
+  it("HC-TR-284 the presets: a bought call spread, a bought put spread and a call butterfly, by listed strikes, each with the target it needs", () => {
+    expect([LEG_PRESETS.callSpread.target, LEG_PRESETS.putSpread.target, LEG_PRESETS.butterfly.target, LEG_PRESETS.strangle.target]).toEqual(["50", "50", "75", undefined]);
+    expect(LEG_PRESETS.callSpread.legs()).toEqual([{ kind: "call", side: "buy", by: "strikes", value: "0" }, { kind: "call", side: "sell", by: "strikes", value: "2" }]);
+    expect(LEG_PRESETS.putSpread.legs()).toEqual([{ kind: "put", side: "buy", by: "strikes", value: "0" }, { kind: "put", side: "sell", by: "strikes", value: "2" }]);
+    expect(defOf(spread({ legs: LEG_PRESETS.butterfly.legs(), targetOfMaxPct: "75" })).legs).toEqual([{ kind: "call", side: "buy", by: "strikes", value: 2, itm: true }, { kind: "call", side: "sell", by: "strikes", value: 0, ratio: 2 }, { kind: "call", side: "buy", by: "strikes", value: 2 }]);
+    expect(defOf(spread({ legs: LEG_PRESETS.putSpread.legs() })).legs).toEqual([{ kind: "put", side: "buy", by: "strikes", value: 0 }, { kind: "put", side: "sell", by: "strikes", value: 2 }]);
+  });
+
+  it("HC-TR-284 the three exits on the whole trade go to the settings as shares and whole days, and come back as typed; a trail may start from the target", () => {
+    const d = defOf(spread({ targetOfMaxPct: "50", stopOfMaxPct: "55", timeStopDte: "2", takeTrailPct: "10" }));
+    expect(d.exits).toEqual({ targetOfMax: 0.5, stopOfMax: 0.55, timeStopDte: 2, takeTrailPct: 10 });
+    const back = savedFormOf(strategy(spread({ targetOfMaxPct: "50", stopOfMaxPct: "55", timeStopDte: "2", takeTrailPct: "10", legs: LEG_PRESETS.butterfly.legs() })));
+    expect([back.targetOfMaxPct, back.stopOfMaxPct, back.timeStopDte, back.takeTrailPct]).toEqual(["50", "55", "2", "10"]);
+    expect(back.legs).toEqual(LEG_PRESETS.butterfly.legs());
+    // a strategy with none of them is as it was
+    expect(defOf(form()).exits).toEqual({});
+    expect([savedFormOf(strategy(form())).targetOfMaxPct, savedFormOf(strategy(form())).stopOfMaxPct, savedFormOf(strategy(form())).timeStopDte]).toEqual(["", "", ""]);
+  });
+
+  it("HC-TR-284 a leg in the money is by listed strikes only, and a size of once is not written", () => {
+    // in the money is dropped when the leg is no longer by strikes; "1" and "" are once
+    expect(defOf(form({ legs: [{ kind: "put", side: "sell", by: "pct", value: "2", itm: true, ratio: "1" }, { kind: "call", side: "sell", by: "pct", value: "2", ratio: "" }] })).legs).toEqual([{ kind: "put", side: "sell", by: "pct", value: 2 }, { kind: "call", side: "sell", by: "pct", value: 2 }]);
+    expect(defOf(form({ legs: [{ kind: "put", side: "sell", by: "strikes", value: "1", itm: true, ratio: "3" }] })).legs).toEqual([{ kind: "put", side: "sell", by: "strikes", value: 1, itm: true, ratio: 3 }]);
+  });
+
+  it("HC-TR-284 what is wrong is said in the admin's words: the ranges, a size, a level without its most, an exit too near the entry", () => {
+    expect(errOf(spread({ targetOfMaxPct: "100" }))).toBe("The target is between 0 and 100 % of the most the trade can make (the whole of it is only reached at settlement).");
+    expect(errOf(spread({ targetOfMaxPct: "0" }))).toBe("The target is between 0 and 100 % of the most the trade can make (the whole of it is only reached at settlement).");
+    expect(errOf(spread({ stopOfMaxPct: "0" }))).toBe("The stop is above 0 and at most 100 % of the most the trade can lose.");
+    expect(errOf(spread({ stopOfMaxPct: "101" }))).toBe("The stop is above 0 and at most 100 % of the most the trade can lose.");
+    expect(errOf(spread({ stopOfMaxPct: "100" }))).toBeNull();
+    expect(errOf(spread({ targetOfMaxPct: "half" }))).toBe('The target on the most it can make: "half" is not a number.');
+    expect(errOf(spread({ stopOfMaxPct: "x" }))).toBe('The stop on the most it can lose: "x" is not a number.');
+    expect(errOf(spread({ timeStopDte: "soon" }))).toBe('The exit before expiry: "soon" is not a number.');
+    const sized = (ratio: string) => spread({ legs: [{ kind: "call", side: "buy", by: "strikes", value: "0" }, { kind: "call", side: "sell", by: "strikes", value: "2", ratio }] });
+    expect(errOf(sized("6"))).toBe("The size of a leg is a whole number of times the lots, from 1 to 5.");
+    expect(errOf(sized("1.5"))).toBe("The size of a leg is a whole number of times the lots, from 1 to 5.");
+    expect(errOf(sized("0"))).toBe("The size of a leg is a whole number of times the lots, from 1 to 5.");
+    expect(errOf(sized("two"))).toBe('The size of leg 2: "two" is not a number.');
+    // the schema's own rules, by the name of the part of the form
+    expect(errOf(spread({ legs: [{ kind: "call", side: "buy", by: "strikes", value: "0", ratio: "2" }, { kind: "call", side: "sell", by: "strikes", value: "2" }] }))).toBe("When to exit: A target on the most the trade can make needs that most to be limited: do not buy more calls than you sell, or more puts");
+    expect(errOf(form({ stopOfMaxPct: "50" }))).toBe("When to exit: A stop on the most the trade can lose needs a limited loss: cover every sold option with a bought one of its kind");
+    expect(errOf(spread({ takeProfitPct: "50" }))).toBe("The target on the most it can make: A profit level is a share of the premium or of the most the trade can make, not both");
+    expect(errOf(spread({ timeStopDte: "14" }))).toBe("When to exit: The exit before expiry is at least a day nearer than the nearest expiry it enters");
+    expect(errOf(spread({ timeStopDte: "0" }))).toBe("The exit before expiry is in whole days, at least 1.");
+    expect(errOf(spread({ timeStopDte: "2.5" }))).toBe("The exit before expiry is in whole days, at least 1.");
+    expect(errOf(spread({ legs: [{ kind: "call", side: "buy", by: "strikes", value: "0", itm: true }, { kind: "call", side: "sell", by: "strikes", value: "2" }] }))).toBe("Leg 1: In the money is for a leg by strikes, at least one strike in");
   });
 });

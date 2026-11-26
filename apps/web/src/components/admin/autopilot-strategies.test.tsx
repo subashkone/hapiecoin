@@ -451,13 +451,15 @@ describe("HC-TR-280 the built-in strategies on the admin page", () => {
     expect(within(row).getByTestId("builtin-backtest").textContent).toContain("a day");
     expect(within(row).getByTestId("builtin-backtest").textContent).toContain("days tested");
     expect(within(row).queryByTestId("saved-edit")).toBeNull();
-    // one entered on a market condition is listed, and says why it is not copied yet
+    // one entered on a market condition is listed and can be copied (HC-TR-285); the one that holds the perpetual cannot
     const trend = builtInRow(TREND.id);
-    expect(trend.dataset["copyable"]).toBe("false");
+    expect(trend.dataset["copyable"]).toBe("true");
     expect(trend.textContent).toContain("when its market condition is met");
-    expect(within(trend).getByTestId("builtin-no-copy").textContent).toContain("Cannot be copied yet. It enters on a market condition");
-    expect(within(trend).queryByTestId("builtin-copy")).toBeNull();
     expect(within(trend).getByTestId("builtin-backtest").textContent).toBe("Recorded per coin, on the Autopilot page");
+    const perp = builtInRow("covered-call");
+    expect(perp.dataset["copyable"]).toBe("false");
+    expect(within(perp).getByTestId("builtin-no-copy").textContent).toBe("Cannot be copied yet. It holds a futures leg, which a saved strategy cannot.");
+    expect(within(perp).queryByTestId("builtin-copy")).toBeNull();
     await u.type(screen.getByTestId("saved-search"), "nothing like this at all");
     expect(screen.getByTestId("builtin-empty")).toBeTruthy();
     await u.clear(screen.getByTestId("saved-search"));
@@ -525,5 +527,79 @@ describe("HC-TR-280 the built-in strategies on the admin page", () => {
     await u.click(screen.getByTestId("saved-save"));
     await waitFor(() => expect(screen.queryByTestId("saved-dialog")).toBeNull());
     expect(mock.state.savedStrategies.find((x) => x.name === `${WEEKLY.name} (copy)`)!.definition).toMatchObject({ cadence: "weekly", weekdayUtc: WEEKLY.clock!.weekdayUtc, fromHourUtc: WEEKLY.clock!.fromHourUtc, minDte: WEEKLY.minDte, maxDte: WEEKLY.clock!.maxDte });
+  });
+
+  it("HC-TR-284 a call butterfly built from the controls: legs at and in the money, a leg of twice the lots, a target on the most it can make with a trail, a stop and an exit before expiry", async () => {
+    const u = await open();
+    await u.click(screen.getByTestId("saved-new"));
+    type("saved-name", "BTC pin butterfly");
+    type("saved-summary", "Buy a call butterfly at the money two weeks out.");
+    await u.click(screen.getByTestId("saved-anytime"));
+    await u.click(screen.getByTestId("saved-once"));
+    type("saved-min-dte", "14");
+    type("saved-max-dte", "60");
+    await u.click(screen.getByTestId("saved-preset-butterfly"));
+    const legs = () => screen.getAllByTestId("saved-leg");
+    const shown = () => legs().map((l) => [within(l).getByTestId<HTMLSelectElement>("saved-leg-by").value, within(l).getByTestId<HTMLInputElement>("saved-leg-value").value, within(l).getByTestId<HTMLSelectElement>("saved-leg-ratio").value]);
+    expect(shown()).toEqual([["itm", "2", "1"], ["strikes", "0", "2"], ["strikes", "2", "1"]]);
+    expect(within(legs()[1]!).getByTestId("saved-leg-ratio").textContent).toContain("2 times the lots");
+    // a structure that pays premium comes with the target it needs; one already typed is kept
+    expect(screen.getByTestId<HTMLInputElement>("saved-target-max").value).toBe("75");
+    await u.click(screen.getByTestId("saved-preset-callSpread"));
+    expect(screen.getByTestId<HTMLInputElement>("saved-target-max").value).toBe("75");
+    await u.click(screen.getByTestId("saved-preset-butterfly"));
+    // out of the money and back in, by the control
+    await u.selectOptions(within(legs()[0]!).getByTestId("saved-leg-by"), "strikes");
+    expect(shown()[0]).toEqual(["strikes", "2", "1"]);
+    await u.selectOptions(within(legs()[0]!).getByTestId("saved-leg-by"), "itm");
+    type("saved-target-max", "75");
+    type("saved-take-trail", "10");
+    type("saved-stop-max", "50");
+    type("saved-time-stop", "3");
+    // sold once against two bought: the most it can make has no limit, and the editor says so before anything is sent
+    await u.selectOptions(within(legs()[1]!).getByTestId("saved-leg-ratio"), "1");
+    expect(screen.getByTestId("saved-reads").textContent).toContain("When to exit: A target on the most the trade can make needs that most to be limited");
+    await u.click(screen.getByTestId("saved-save"));
+    expect(screen.getByTestId("saved-error").textContent).toContain("A target on the most the trade can make needs that most to be limited");
+    expect(mock.state.savedStrategies).toHaveLength(0);
+    await u.selectOptions(within(legs()[1]!).getByTestId("saved-leg-ratio"), "2");
+    expect(screen.getByTestId("saved-reads").textContent).toContain("Enters every day, any time from 5:30 AM IST to 5:30 the next morning, on the first expiry at least 14 days out.");
+    await u.click(screen.getByTestId("saved-save"));
+    await waitFor(() => expect(screen.queryByTestId("saved-dialog")).toBeNull());
+    const d = mock.state.savedStrategies[0]!.definition;
+    expect(d.legs).toEqual([{ kind: "call", side: "buy", by: "strikes", value: 2, itm: true }, { kind: "call", side: "sell", by: "strikes", value: 0, ratio: 2 }, { kind: "call", side: "buy", by: "strikes", value: 2 }]);
+    expect(d.exits).toEqual({ targetOfMax: 0.75, takeTrailPct: 10, stopOfMax: 0.5, timeStopDte: 3 });
+    expect(d).toMatchObject({ fromHourUtc: 0, toHourUtc: 24, oncePerExpiry: true, minDte: 14, maxDte: 60 });
+    // opened again it reads as it was typed
+    await u.click(within(rowOf("BTC pin butterfly")).getByTestId("saved-edit"));
+    expect(shown()).toEqual([["itm", "2", "1"], ["strikes", "0", "2"], ["strikes", "2", "1"]]);
+    expect(["saved-target-max", "saved-take-trail", "saved-stop-max", "saved-time-stop"].map((t) => screen.getByTestId<HTMLInputElement>(t).value)).toEqual(["75", "10", "50", "3"]);
+  });
+
+  it("HC-TR-285 a built-in strategy entered on a market condition is copied: any time of day, once per expiry, its condition and its exits on the whole trade, and what differs is said", async () => {
+    const u = await open();
+    await u.click(screen.getAllByTestId("saved-view")[1]!);
+    await u.click(within(builtInRow("trend-calls")).getByTestId("builtin-copy"));
+    expect(screen.getAllByTestId("saved-copy-warning").map((w) => w.textContent)).toEqual([
+      "It may enter at any time of day and enters once per expiry. The built-in one may enter again on the same expiry after a pause.",
+      "Its exit is the one set below, for every trader. The built-in one lets each trader choose between closing at its profit level and trailing from it.",
+      "It trades on Delta Exchange India only.",
+      "It needs a backtest of its own: the built-in one has no figures to copy, and this copy does not trade as it does.",
+      "Autopilot takes the built-in one's profit at 10 % of the most it can make. This copy starts with the target its description names, 50 %: set the target to 10 if it should get out where the built-in one does.",
+    ]);
+    // the sentence about the built-in strategy's figures is for a copy that trades as the built-in one does
+    expect(screen.getByTestId("saved-copy-note").textContent).not.toContain("they are the built-in strategy's figures");
+    expect(screen.getByTestId<HTMLInputElement>("saved-anytime").checked).toBe(true);
+    expect(screen.getByTestId<HTMLInputElement>("saved-once").checked).toBe(true);
+    expect(screen.getByTestId<HTMLInputElement>("saved-sma").checked).toBe(true);
+    expect(["saved-target-max", "saved-stop-max", "saved-time-stop", "saved-leg-stop", "saved-take"].map((t) => screen.getByTestId<HTMLInputElement>(t).value)).toEqual(["50", "50", "2", "", ""]);
+    expect(screen.getByTestId("saved-reads").textContent).toContain("Enters every day, any time from 5:30 AM IST to 5:30 the next morning, on the first expiry at least 14 days out, when the price is above its 50-day average.");
+    await u.click(screen.getByTestId("saved-save"));
+    await waitFor(() => expect(screen.queryByTestId("saved-dialog")).toBeNull());
+    const made = mock.state.savedStrategies[0]!;
+    expect(made).toMatchObject({ name: "Trend with calls (copy)", stage: "draft", backtest: null });
+    expect(made.definition).toMatchObject({ assets: ["BTC", "ETH"], lots: 10, cadence: "daily", fromHourUtc: 0, toHourUtc: 24, oncePerExpiry: true, minDte: 14, maxDte: 400, conditions: { sma: { days: 50, side: "above" } } });
+    expect(made.definition.legs).toEqual([{ kind: "call", side: "buy", by: "strikes", value: 0 }, { kind: "call", side: "sell", by: "strikes", value: 2 }]);
+    expect(made.definition.exits).toEqual({ targetOfMax: 0.5, stopOfMax: 0.5, timeStopDte: 2 });
   });
 });

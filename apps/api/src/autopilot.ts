@@ -216,6 +216,50 @@ export function planFor(p: Playbook, proposal: PlaybookProposal, unitsPerLot: nu
   return { fees, targetUsd, stopUsd, timeStopDte: p.exits?.timeStopDte ?? null, legStop: null, trailRestPct: null, ladder: null, lock: null, exitHourUtc: null, takeTrailPct: null, legBuyBackAt: null, legBuyBackShare: null };
 }
 
+/**
+ * The plan of a saved strategy, or why it has none (pure; ADR-142, ADR-143). Without whole-trade exits it is the plan
+ * of a playbook entered by the clock, unchanged. With them (`p.exits`: a target on the most the trade can make, a stop
+ * on the most it can lose, an exit so many days before expiry) the strategy may pay premium:
+ * - with a target on the most it can make, the level is that share plus the fees of both fills, so that reaching it is
+ *   that profit after fees (as `planFor` has it); a level not below the most the trade can make is no trade;
+ * - without one, the structure has to collect more premium than the fees, as a clock playbook does;
+ * - the profit levels on the premium collected (a take, a lock, steps) need a premium collected above the fees;
+ * - a level on the most it can make or lose needs that most to be a number, and a level that rounds to nothing would
+ *   fire on the first tick.
+ * The exits on a sold option (stop, buy-back, trail of the rest) come from the clock as before.
+ */
+function savedPlan(p: Playbook, proposal: PlaybookProposal, unitsPerLot: number, feeRule: FeeRule): AutopilotPlan | string {
+  const x = p.exits;
+  if (!x) return clockPlanFor(p, proposal, unitsPerLot, feeRule) ?? "The premium collected is smaller than the fees";
+  const c = p.clock;
+  const fees = roundTripFees(proposal, unitsPerLot, feeRule);
+  const credit = -proposal.entryCost;
+  const maxProfit = proposal.maxProfit;
+  const maxLoss = Math.abs(proposal.maxLoss); // the expiry extremes give the loss as a negative P&L
+  const take = c?.takeProfitOfCredit;
+  const lock = c?.lock;
+  if (x.targetPct === undefined && !(credit > 0)) return "It pays premium and has no target on the most it can make";
+  if ((x.targetPct === undefined || take !== undefined || lock !== undefined || c?.ladder !== undefined) && !(credit > fees)) return "The premium collected is smaller than the fees";
+  if (x.targetPct !== undefined && !(Number.isFinite(maxProfit) && maxProfit > 0)) return "The most it can make is not a number above zero";
+  if (x.stopPct !== undefined && !(Number.isFinite(maxLoss) && maxLoss > 0)) return "The most it can lose is not a number above zero";
+  const targetUsd = x.targetPct !== undefined ? maxProfit * x.targetPct + fees : take !== undefined ? credit * take : null;
+  if (x.targetPct !== undefined && targetUsd! >= maxProfit) return "The fees are larger than what is left of the trade above its target";
+  if (targetUsd !== null && targetUsd < 0.01) return "Its profit level rounds to nothing";
+  const stopUsd = x.stopPct === undefined ? null : maxLoss * x.stopPct;
+  if (stopUsd !== null && stopUsd < 0.01) return "Its stop rounds to nothing";
+  if (lock !== undefined && credit * lock.floor < 0.01) return "Its floor rounds to nothing";
+  return { fees, targetUsd, stopUsd, timeStopDte: x.timeStopDte ?? null, legStop: c?.legStop ?? null, trailRestPct: c?.trailRestPct ?? null, ladder: c?.ladder ?? null, lock: lock === undefined ? null : { atUsd: credit * lock.at, floorUsd: credit * lock.floor }, exitHourUtc: c?.exitHourUtc ?? null, takeTrailPct: c?.takeTrailPct ?? null, legBuyBackAt: c?.legBuyBackAt ?? null, legBuyBackShare: c?.legBuyBackShare ?? null };
+}
+export function savedPlanFor(p: Playbook, proposal: PlaybookProposal, unitsPerLot: number, feeRule: FeeRule): AutopilotPlan | null {
+  const plan = savedPlan(p, proposal, unitsPerLot, feeRule);
+  return typeof plan === "string" ? null : plan;
+}
+/** Why a saved strategy has no plan on these prices, in words for the log; null when it has one. */
+export function savedPlanRefusal(p: Playbook, proposal: PlaybookProposal, unitsPerLot: number, feeRule: FeeRule): string | null {
+  const plan = savedPlan(p, proposal, unitsPerLot, feeRule);
+  return typeof plan === "string" ? plan : null;
+}
+
 /** Whether `fresh` (a net premium: paid positive, received negative) is better than `open` by the noted margin; judged in cents. */
 export function betterEntry(fresh: number, open: number): boolean {
   const openCents = Math.round(open * 100);
@@ -359,7 +403,7 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
             let hit = priced.get(unitsPerLot);
             if (!hit) {
               const result = proposalFor(p, days, { unitsPerLot, calendar, spotBefore });
-              priced.set(unitsPerLot, (hit = { result, plan: result.ok ? (p.clock ? clockPlanFor : planFor)(p, result.proposal, unitsPerLot, adapter.feeRule) : null }));
+              priced.set(unitsPerLot, (hit = { result, plan: result.ok ? (isSavedId(p.id) ? savedPlanFor : p.clock ? clockPlanFor : planFor)(p, result.proposal, unitsPerLot, adapter.feeRule) : null }));
             }
             return hit;
           };
@@ -398,7 +442,7 @@ export async function runAutopilot(deps: AutopilotDeps, venues: readonly Venue[]
               else if (p.clock && daysToExpiryOf(calendar, nowMs, result.proposal.expiry) > p.clock.maxDte) await no(p.clock.cadence === "monthly" ? "No month-end expiry in its range yet" : p.clock.weekdayUtc === undefined ? "The next expiry has no prices yet" : "Its Friday expiry has no prices yet", detailOf(result.proposal, null, nowMs));
               else if (result.proposal.legs.some((l) => l.kind === "future")) await no("A futures leg needs a margin figure Autopilot does not have yet", detailOf(result.proposal, null, nowMs));
               else if (result.proposal.legs.some((l) => !(Number(l.price) > 0))) await no("A leg of the structure has no price", detailOf(result.proposal, null, nowMs));
-              else if (!plan) await no(p.clock ? "The premium collected is smaller than the fees" : "The fees are larger than the profit target, or the structure has no defined maximum", detailOf(result.proposal, null, nowMs));
+              else if (!plan) await no(isSavedId(p.id) && p.exits ? (savedPlanRefusal(p, result.proposal, unitsPerLot, adapter.feeRule) ?? "No plan on these prices") : p.clock ? "The premium collected is smaller than the fees" : "The fees are larger than the profit target, or the structure has no defined maximum", detailOf(result.proposal, null, nowMs));
               else if (open.length >= maxOpen) await no(maxOpen === 1 ? "Holds a trade already: one at a time for a strategy and coin" : `Holds ${maxOpen} trades already, the most for one strategy and coin`, detailOf(result.proposal, plan, nowMs));
               else {
                 // the newest entry or close of the key, whichever trade it was: one entry per cool-down, and none right after a close.
