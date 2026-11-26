@@ -6,7 +6,7 @@
  * Money-shaped values (fee percentages, conversion rate, lot sizes) are stored as decimal strings in
  * text/jsonb columns, never as floats (brief: decimal strings cross package boundaries).
  */
-import { type AutopilotRunDetail, type AutopilotStrategy, DEFAULT_MINDFUL, type SavedBacktest, type SavedBacktestResolution, type SavedBacktestRun, type SavedDefinition, type MindfulSettings, type PlanIntervals, type PlaybookRecord, type ProposalLeg } from "@hapiecoin/schema";
+import { type AutopilotRunDetail, type AutopilotStrategy, DEFAULT_MINDFUL, type SavedApproval, type SavedBacktest, type SavedBacktestResolution, type SavedBacktestRun, type SavedDefinition, type MindfulSettings, type PlanIntervals, type PlaybookRecord, type ProposalLeg } from "@hapiecoin/schema";
 import { sql } from "drizzle-orm";
 import { bigint, bigserial, boolean, customType, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
@@ -43,6 +43,8 @@ export const users = pgTable(
     /** Two-factor sign-in with an authenticator app (ADR-078); the two_factors row holds the secret. */
     twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
     tradingDisabled: boolean("trading_disabled").notNull().default(false),
+    /** ADR-145 (HC-TR-293): may approve a saved Autopilot strategy for live, and withdraw it. Off for everyone until it is given by name; being an admin is not enough. */
+    canApproveLive: boolean("can_approve_live").notNull().default(false),
     /** Admin account toggle (HC-AD-047): false refuses trading and plan activation. */
     active: boolean("active").notNull().default(true),
     /** Telegram alert delivery (ADR-057): the linked chat, the pending /start code, and when the link was made. */
@@ -950,6 +952,8 @@ export const autopilotSavedStrategies = pgTable(
     planIds: jsonb("plan_ids").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
     backtest: jsonb("backtest").$type<SavedBacktest>(),
     backtestAt: timestamp("backtest_at", { withTimezone: true, mode: "date" }),
+    /** ADR-145 (HC-TR-292): who approved this version for live, when, and on which paper record; null while it is not approved. The row still trades on paper only. */
+    approval: jsonb("approval").$type<SavedApproval>(),
     createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
     publishedAt: timestamp("published_at", { withTimezone: true, mode: "date" }),
     retiredAt: timestamp("retired_at", { withTimezone: true, mode: "date" }),

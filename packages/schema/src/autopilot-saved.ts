@@ -11,7 +11,7 @@
  */
 import { z } from "zod";
 import { Id } from "./accounts.js";
-import { IsoDate, IsoDateTime, Underlying } from "./primitives.js";
+import { DecimalString, IsoDate, IsoDateTime, Underlying } from "./primitives.js";
 
 /** How a leg's strike is chosen: listed strikes from the money, per cent of the spot away, or the option priced nearest a premium. */
 export const SAVED_LEG_BY = ["strikes", "pct", "premium"] as const;
@@ -324,6 +324,79 @@ export type SavedBacktestRun = z.infer<typeof SavedBacktestRun>;
 export const SavedBacktestStart = z.strictObject({ from: IsoDate.optional(), to: IsoDate.optional() });
 export type SavedBacktestStart = z.infer<typeof SavedBacktestStart>;
 
+/**
+ * Approval for live (ADR-145; HC-TR-291..294). A strategy on paper builds a paper record per version; an approver reads
+ * it against the checks below and approves, or withdraws the approval. Approval is a record on a strategy that stays on
+ * paper: it says the version is eligible for live once live exists, and places, enables and switches nothing.
+ */
+export const APPROVAL_MIN_DAYS = 30;
+export const APPROVAL_MIN_TRADES = 20;
+/**
+ * What a version did on paper, read from one account: the one that took the most entries of it (accounts trade their
+ * own sizes and can miss entries, so they are not added together). USD, paper fills at the mark, less the fees
+ * estimated at entry.
+ */
+export const SavedPaperRecord = z.strictObject({
+  /** When this version was published to paper; null when it never was. */
+  since: IsoDateTime.nullable(),
+  /** Whole days since it was published. */
+  publishedDays: z.number().int().nonnegative(),
+  /** The first and the latest paper trade of the account the record is read from; null with none. */
+  firstEntryAt: IsoDateTime.nullable(),
+  lastEntryAt: IsoDateTime.nullable(),
+  /** Whole days since that first paper trade: what "days on paper" is judged on. */
+  days: z.number().int().nonnegative(),
+  /** How many accounts traded this version. The figures are those of one of them. */
+  accounts: z.number().int().nonnegative(),
+  open: z.number().int().nonnegative(),
+  closed: z.number().int().nonnegative(),
+  wins: z.number().int().nonnegative(),
+  grossUsd: DecimalString,
+  feesUsd: DecimalString,
+  netUsd: DecimalString,
+  worstNetUsd: DecimalString.nullable(),
+  /** Lines of that account's log that say an entry was not taken. The engine writes one when the reason changes, not once per entry skipped. */
+  skipLines: z.number().int().nonnegative(),
+  /** The log behind the record keeps this many days: a version on paper for longer shows only its latest ones. */
+  logDays: z.number().int().positive(),
+});
+export type SavedPaperRecord = z.infer<typeof SavedPaperRecord>;
+export const SAVED_APPROVAL_CHECKS = ["backtest", "days", "trades", "paperNet", "lossCapped", "margin"] as const;
+export const SavedApprovalCheck = z.strictObject({
+  key: z.enum(SAVED_APPROVAL_CHECKS),
+  label: z.string(),
+  pass: z.boolean(),
+  /** A check that does not pass and is blocking refuses the approval; one that is not blocking is shown and left open. */
+  blocking: z.boolean(),
+  /** What was found, in a sentence. */
+  detail: z.string(),
+});
+export type SavedApprovalCheck = z.infer<typeof SavedApprovalCheck>;
+/** An approval as it is kept on the strategy: who, when, and the paper record and the backtest figures it was given on. */
+export const SavedApproval = z.strictObject({ by: z.string().nullable(), byName: z.string(), at: IsoDateTime, record: SavedPaperRecord, backtest: SavedBacktest });
+export type SavedApproval = z.infer<typeof SavedApproval>;
+/** One closed paper trade of the record, and one reason entries were skipped for. */
+export const SavedPaperTrade = z.strictObject({ asset: Underlying, expiry: z.string().nullable(), strikes: z.array(z.string()), openedAt: IsoDateTime, closedAt: IsoDateTime, netUsd: DecimalString, reason: z.string() });
+export type SavedPaperTrade = z.infer<typeof SavedPaperTrade>;
+/** GET /v1/admin/autopilot-strategies/{id}/approval. */
+export const SavedApprovalView = z.strictObject({
+  strategyId: z.string(),
+  record: SavedPaperRecord,
+  checks: z.array(SavedApprovalCheck),
+  /** Every blocking check passes and the strategy is on paper. */
+  approvable: z.boolean(),
+  /** Whether the admin asking may approve and withdraw. */
+  mayApprove: z.boolean(),
+  approval: SavedApproval.nullable(),
+  /** The closed trades counted, the latest entered first, and the skip lines of the log by reason. */
+  trades: z.array(SavedPaperTrade),
+  skips: z.record(z.string(), z.number().int()),
+});
+export type SavedApprovalView = z.infer<typeof SavedApprovalView>;
+/** POST .../approve: the approver says they read the trades and the skipped entries. */
+export const SavedApprove = z.strictObject({ read: z.literal(true) });
+export type SavedApprove = z.infer<typeof SavedApprove>;
+
 const Name = z.string().trim().min(1).max(60);
 const Summary = z.string().trim().min(1).max(300);
 const Ids = z.array(Id).max(200);
@@ -356,6 +429,8 @@ export const SavedStrategy = z.strictObject({
   planIds: z.array(z.string()),
   backtest: SavedBacktest.nullable(),
   backtestAt: IsoDateTime.nullable(),
+  /** ADR-145: set while this version is approved for live. It still trades on paper only. */
+  approval: SavedApproval.nullable(),
   /** Whether Autopilot ever opened a trade from this version: such a version is retired, never deleted, and its settings never change. */
   traded: z.boolean(),
   lossCapped: z.boolean(),
@@ -388,6 +463,11 @@ export const SAVED_REFUSALS = {
   backtestRunning: "A backtest of this strategy is already running",
   backtestStale: "The settings changed since this backtest ran: run it again",
   backtestEmpty: "This backtest made no trade: there are no figures to use",
+  approveNotPaper: "Only a strategy on paper can be approved for live",
+  approveChecks: "It does not pass the approval checks",
+  approveTwice: "It is already approved for live",
+  notApproved: "It is not approved for live",
+  notApprover: "Approving a strategy for live is not among your permissions",
   onPaper: "It is on paper: retire it before deleting it",
   unknownUser: "No such user",
   unknownPlan: "No such plan",

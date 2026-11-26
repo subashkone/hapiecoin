@@ -16,7 +16,7 @@ const errOf = (f: SavedForm) => {
   return r.ok ? null : r.error;
 };
 const strategy = (f: SavedForm, over: Partial<SavedStrategy> = {}): SavedStrategy => ({
-  id: "sv_1", familyId: "sv_1", version: 1, name: f.name, summary: f.summary, definition: defOf(f), stage: "draft", audience: "admins", userIds: [], planIds: [], backtest: null, backtestAt: null, traded: false, lossCapped: false, entryText: "", createdBy: null, createdAt: "2026-11-25T10:00:00.000Z", updatedAt: "2026-11-25T10:00:00.000Z", publishedAt: null, retiredAt: null, ...over,
+  id: "sv_1", familyId: "sv_1", version: 1, name: f.name, summary: f.summary, definition: defOf(f), stage: "draft", audience: "admins", userIds: [], planIds: [], backtest: null, backtestAt: null, approval: null, traded: false, lossCapped: false, entryText: "", createdBy: null, createdAt: "2026-11-25T10:00:00.000Z", updatedAt: "2026-11-25T10:00:00.000Z", publishedAt: null, retiredAt: null, ...over,
 });
 
 describe("HC-TR-278 India time and the engine's UTC hours", () => {

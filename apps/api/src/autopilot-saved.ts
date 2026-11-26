@@ -56,6 +56,7 @@ export function toSaved(r: Row, traded: boolean): SavedStrategy {
     planIds: r.planIds,
     backtest: r.backtest,
     backtestAt: r.backtestAt?.toISOString() ?? null,
+    approval: r.stage === "paper" ? r.approval : null,
     traded,
     lossCapped: savedLossCapped(r.definition.legs),
     entryText: savedEntryText(r.definition),
@@ -132,7 +133,7 @@ export async function putSavedBacktest(db: Db, id: string, tested: SavedDefiniti
     if (stable(tested) !== stable(row.definition)) return { ok: false as const, why: SAVED_REFUSALS.backtestStale };
     const [saved] = await tx
       .update(autopilotSavedStrategies)
-      .set({ backtest, backtestAt: at, stage: row.stage === "paper" ? "paper" : "backtested", updatedAt: at })
+      .set({ backtest, backtestAt: at, approval: stable(backtest) === stable(row.backtest) ? row.approval : null, stage: row.stage === "paper" ? "paper" : "backtested", updatedAt: at })
       .where(eq(autopilotSavedStrategies.id, id))
       .returning();
     return { ok: true as const, strategy: toSaved(saved!, (await tradedIds(tx, [id])).has(id)), newVersion: false };
@@ -169,7 +170,7 @@ export async function updateSaved(db: Db, id: string, patch: SavedStrategyPatch,
       ? []
       : await db
           .update(autopilotSavedStrategies)
-          .set({ name, summary, definition: patch.definition!, audience, userIds, planIds, backtest, backtestAt, stage: backtest ? "backtested" : "draft", publishedAt: null, updatedAt: at })
+          .set({ name, summary, definition: patch.definition!, audience, userIds, planIds, backtest, backtestAt, stage: backtest ? "backtested" : "draft", publishedAt: null, approval: null, updatedAt: at })
           .where(and(eq(autopilotSavedStrategies.id, id), neverTraded(db)))
           .returning();
     if (saved) return { ok: true, strategy: toSaved(saved, false), newVersion: false };
@@ -187,7 +188,8 @@ export async function updateSaved(db: Db, id: string, patch: SavedStrategyPatch,
   if (paper && !audienceOk(audience, userIds, planIds)) return { ok: false, why: SAVED_REFUSALS.needsAudience };
   const [saved] = await db
     .update(autopilotSavedStrategies)
-    .set({ name, summary, audience, userIds, planIds, backtest, backtestAt, stage: paper ? "paper" : backtest ? "backtested" : "draft", updatedAt: at })
+    // (an approval was given on the figures it saw: other figures end it, ADR-145)
+    .set({ name, summary, audience, userIds, planIds, backtest, backtestAt, approval: stable(backtest) === stable(row.backtest) ? row.approval : null, stage: paper ? "paper" : backtest ? "backtested" : "draft", updatedAt: at })
     .where(eq(autopilotSavedStrategies.id, id))
     .returning();
   return { ok: true, strategy: toSaved(saved!, (await tradedIds(db, [id])).has(id)), newVersion: false };
@@ -227,9 +229,9 @@ export async function publishSaved(db: Db, id: string, at: Date): Promise<SavedR
   if (!audienceOk(row.audience, row.userIds, row.planIds)) return { ok: false, why: SAVED_REFUSALS.needsAudience };
   try {
     const saved = await db.transaction(async (tx) => {
-      const retired = await tx.update(autopilotSavedStrategies).set({ stage: "retired", retiredAt: at, updatedAt: at }).where(and(eq(autopilotSavedStrategies.familyId, row.familyId), eq(autopilotSavedStrategies.stage, "paper"), ne(autopilotSavedStrategies.id, id))).returning({ id: autopilotSavedStrategies.id });
+      const retired = await tx.update(autopilotSavedStrategies).set({ stage: "retired", retiredAt: at, approval: null, updatedAt: at }).where(and(eq(autopilotSavedStrategies.familyId, row.familyId), eq(autopilotSavedStrategies.stage, "paper"), ne(autopilotSavedStrategies.id, id))).returning({ id: autopilotSavedStrategies.id });
       // the stage is part of the write: a publish or a delete that got there first leaves nothing to publish
-      const [next] = await tx.update(autopilotSavedStrategies).set({ stage: "paper", publishedAt: at, updatedAt: at }).where(and(eq(autopilotSavedStrategies.id, id), inArray(autopilotSavedStrategies.stage, ["draft", "backtested"]))).returning();
+      const [next] = await tx.update(autopilotSavedStrategies).set({ stage: "paper", publishedAt: at, approval: null, updatedAt: at }).where(and(eq(autopilotSavedStrategies.id, id), inArray(autopilotSavedStrategies.stage, ["draft", "backtested"]))).returning();
       if (!next) throw new Error(PAPER_UQ);
       await carrySwitches(tx, retired.map((r) => r.id), next, at);
       return next;
@@ -247,7 +249,7 @@ export async function retireSaved(db: Db, id: string, at: Date): Promise<SavedRe
   const row = await rowOf(db, id);
   if (!row) return null;
   if (row.stage !== "paper") return { ok: false, why: SAVED_REFUSALS.notPaper };
-  const [saved] = await db.update(autopilotSavedStrategies).set({ stage: "retired", retiredAt: at, updatedAt: at }).where(eq(autopilotSavedStrategies.id, id)).returning();
+  const [saved] = await db.update(autopilotSavedStrategies).set({ stage: "retired", retiredAt: at, approval: null, updatedAt: at }).where(eq(autopilotSavedStrategies.id, id)).returning();
   return { ok: true, strategy: toSaved(saved!, (await tradedIds(db, [id])).has(id)), newVersion: false };
 }
 
