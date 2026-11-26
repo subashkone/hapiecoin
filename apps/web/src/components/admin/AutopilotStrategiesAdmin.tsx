@@ -3,12 +3,14 @@
 // backtest figures and who can use it, and the steps the API would accept for it: edit, copy, publish to paper, retire,
 // delete. A second tab lists the built-in strategies, read-only, each with "Copy as my own" (HC-TR-280): the built-in
 // one is never changed. HC-TR-289, HC-TR-290 (ADR-144): Backtest opens the app's own backtest of a strategy, and the
-// figures say whether they were computed in the app or entered by hand. Paper only.
+// figures say whether they were computed in the app or entered by hand. HC-TR-294 (ADR-145): Approval opens the paper
+// record of a strategy on paper against the approval checks; an approved one is marked, and still trades on paper only.
 import { AUTOPILOT_PLAYBOOKS, type Playbook, playbookBacktest, playbookCadence } from "@hapiecoin/pricing";
 import { SAVED_STAGES, SAVED_STAGE_LABELS, type SavedStage, type SavedStrategy } from "@hapiecoin/schema";
 import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, cn, toast } from "@hapiecoin/ui";
 import { type KeyboardEvent, useMemo, useState } from "react";
 import { AdminHeader } from "./AdminShell";
+import { AutopilotApprovalDialog } from "./AutopilotApprovalDialog";
 import { AutopilotBacktestDialog, pricesOf } from "./AutopilotBacktestDialog";
 import { AutopilotStrategyDialog } from "./AutopilotStrategyDialog";
 import { useDeleteSavedStrategy, useSavedStrategies, useSavedStrategyStep } from "@/lib/api/autopilot-saved";
@@ -47,11 +49,13 @@ export function AutopilotStrategiesAdmin() {
   const [copying, setCopying] = useState<{ id: string; from: string; form: SavedForm; notes: string[] } | null>(null);
   const [asking, setAsking] = useState<{ step: Step; strategy: SavedStrategy } | null>(null);
   const [testingId, setTestingId] = useState<string | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const all = useMemo(() => list.data ?? [], [list.data]);
   const rows = all.filter((s) => (!q || `${s.name} ${s.summary}`.toLowerCase().includes(q.toLowerCase())) && (stage === "all" || s.stage === stage));
   const filtered = q !== "" || stage !== "all";
   // (by id, so the dialog shows the strategy as the list has it after its figures are stored)
   const testing = testingId ? all.find((s) => s.id === testingId) : undefined;
+  const approving = approvingId ? all.find((s) => s.id === approvingId) : undefined;
   const builtIn = BUILT_IN.filter(({ p }) => !q || `${p.name} ${p.summary}`.toLowerCase().includes(q.toLowerCase()));
   const clear = () => { setQ(""); setStage("all"); };
   // each tab starts unfiltered: a search or a stage chosen on one must not hide rows on the other
@@ -123,7 +127,7 @@ export function AutopilotStrategiesAdmin() {
                       <div className="micro truncate" title={s.summary}>{s.summary}</div>
                       <div className="micro">{s.lossCapped ? "Loss limited by bought options" : "Loss not limited"}{s.traded ? " · has traded" : ""}</div>
                     </td>
-                    <td className="py-1.5 pr-2"><span className={cn("rounded border px-1.5 py-0.5 font-mono text-3xs", s.stage === "paper" ? "border-foreground/50 text-foreground" : "border-border text-muted-foreground")} data-testid="saved-stage">{SAVED_STAGE_LABELS[s.stage]}</span></td>
+                    <td className="py-1.5 pr-2"><span className={cn("rounded border px-1.5 py-0.5 font-mono text-3xs", s.stage === "paper" ? "border-foreground/50 text-foreground" : "border-border text-muted-foreground")} data-testid="saved-stage">{SAVED_STAGE_LABELS[s.stage]}</span>{s.approval ? <div className="micro mt-1" title={`By ${s.approval.byName} on ${fmtDate(s.approval.at)}. It still trades on paper only.`} data-testid="saved-approved">Approved for live</div> : null}</td>
                     <td className="max-w-[260px] py-1.5 pr-2"><div>{s.entryText}</div><div className="micro num">{s.definition.assets.join(", ")} · {s.definition.lots} lots</div></td>
                     <td className="num whitespace-nowrap py-1.5 pr-2 text-right" data-testid="saved-backtest">
                       {s.backtest ? (
@@ -139,6 +143,7 @@ export function AutopilotStrategiesAdmin() {
                     <td className="py-1.5 pr-2 text-right whitespace-nowrap">
                       {can.edit ? <Button size="sm" variant="ghost" onClick={() => setEditing(s)} aria-label={`Edit ${s.name}`} data-testid="saved-edit">Edit</Button> : null}
                       {can.edit ? <Button size="sm" variant="ghost" onClick={() => setTestingId(s.id)} aria-label={`Backtest ${s.name}`} data-testid="saved-backtest-open">Backtest</Button> : null}
+                      {can.retire ? <Button size="sm" variant="ghost" onClick={() => setApprovingId(s.id)} aria-label={`Approval of ${s.name}`} data-testid="saved-approval-open">Approval</Button> : null}
                       <Button size="sm" variant="ghost" onClick={() => copy(s)} aria-label={`Copy ${s.name}`} data-testid="saved-copy">Copy</Button>
                       {can.publish ? <Button size="sm" variant="outline" onClick={() => setAsking({ step: "publish", strategy: s })} aria-label={`Publish ${s.name}`} data-testid="saved-publish">Publish</Button> : null}
                       {can.retire ? <Button size="sm" variant="outline" onClick={() => setAsking({ step: "retire", strategy: s })} aria-label={`Retire ${s.name}`} data-testid="saved-retire">Retire</Button> : null}
@@ -154,6 +159,7 @@ export function AutopilotStrategiesAdmin() {
       </div>
       {copying ? <AutopilotStrategyDialog key={`copy-${copying.id}`} strategy={null} copy={copying} onSaved={saved} onOpenChange={(o) => { if (!o) setCopying(null); }} /> : null}
       {editing ? <AutopilotStrategyDialog key={editing === "new" ? "new" : editing.id} strategy={editing === "new" ? null : editing} onSaved={saved} onOpenChange={(o) => { if (!o) setEditing(null); }} /> : null}
+      {approving ? <AutopilotApprovalDialog key={`ap-${approving.id}`} strategy={approving} onOpenChange={(o) => { if (!o) setApprovingId(null); }} /> : null}
       {testing ? <AutopilotBacktestDialog key={`bt-${testing.id}`} strategy={testing} onOpenChange={(o) => { if (!o) setTestingId(null); }} /> : null}
       <Dialog open={asking !== null} onOpenChange={(o) => { if (!o) setAsking(null); }}>
         <DialogContent className="sm:max-w-[440px]" data-testid="saved-confirm">

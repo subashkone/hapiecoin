@@ -2794,5 +2794,17 @@
     "how": "approving and withdrawing need a permission of their own on the user, off for everyone and given by name; an admin without it reads the record and is refused both steps, and the permission without the admin role or on a deactivated account counts for nothing",
     "evidence": "ADR-145 (26 Nov 2026): apps/api/src/saved-approval.ts, apps/api/src/routes/autopilot-saved.ts, packages/schema/src/autopilot-saved.ts, migration 0036; tests: apps/api/src/saved-approval.test.ts HC-TR-293 (mayApprove, users.can_approve_live)",
     "test": "integration (api)"
+  },
+  {
+    "id": "HC-TR-294",
+    "route": "/admin/autopilot-strategies",
+    "screen": "Trading · Autopilot",
+    "status": "working",
+    "phase": 5,
+    "new": true,
+    "feature": "Approval for live: the admin screen",
+    "how": "Approval on a row that is on paper opens a dialog on that version: the checks first, each marked passes, does not pass or open with the sentence of what was found; the paper record under a heading that says it is one account of however many traded it, with its first and latest paper trade, the result after estimated fees, wins of closed, the worst trade, open trades, the result before fees and the estimated fees, and a line on what the figures rest on (fills at the mark, fees estimated at entry, the 90-day log); the closed trades and the skip lines by reason, open for reading. Approve for live is offered only when every blocking check passes, the approver has ticked that they read the trades and skip lines and holds the approver permission; an account with the authenticator on confirms with its code. An approved strategy shows who approved it, when, on which record and backtest, and what the checks say today; Withdraw approval asks once more. The list marks an approved row beside its stage, which stays On paper. An admin without the permission reads everything and is told why. The server's refusals are shown in its words and the view is read again. The dialog says it places nothing: Autopilot stays paper only. A trader sees none of it",
+    "evidence": "ADR-145 (26 Nov 2026): apps/web/src/components/admin/AutopilotApprovalDialog.tsx, AutopilotStrategiesAdmin.tsx (Approval action, saved-approved mark), apps/web/src/lib/api/autopilot-saved.ts (useSavedApproval, useSavedApprovalStep), packages/schema/src/autopilot-saved.ts (savedApprovalChecks), apps/web/test/mock-api.ts; tests: apps/web/src/components/admin/autopilot-approval.test.tsx HC-TR-294, packages/schema/src/autopilot-saved.test.ts HC-TR-292",
+    "test": "component (web, mock API) + unit (schema)"
   }
 ]
