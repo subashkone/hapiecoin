@@ -1,14 +1,15 @@
 // Saved Autopilot strategies through TanStack Query (ADR-141, ADR-142; HC-TR-270..278): the admin's list and the steps
 // a strategy goes through, and the backtest of one in the app (ADR-144; HC-TR-289, HC-TR-290). Paper only: nothing
 // here can place an order.
-import { SavedBacktestRun, type SavedBacktestStart, SavedStrategy, type SavedStrategyCreate, SavedStrategyList, type SavedStrategyPatch } from "@hapiecoin/schema";
+import { SavedApprovalView, SavedBacktestRun, type SavedBacktestStart, SavedStrategy, type SavedStrategyCreate, SavedStrategyList, type SavedStrategyPatch } from "@hapiecoin/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { api, type ApiClient } from "./client";
+import { secondFactorHeaders } from "./second-factor";
 
 const enc = encodeURIComponent;
 const BASE = "/v1/admin/autopilot-strategies";
-export const savedStrategyKeys = { admin: ["autopilot-strategies", "admin"] as const, allBacktests: ["autopilot-strategies", "backtests"] as const, backtests: (id: string) => ["autopilot-strategies", "backtests", id] as const };
+export const savedStrategyKeys = { admin: ["autopilot-strategies", "admin"] as const, allBacktests: ["autopilot-strategies", "backtests"] as const, approval: (id: string) => ["autopilot-strategies", "approval", id] as const, backtests: (id: string) => ["autopilot-strategies", "backtests", id] as const };
 const SavedBacktestRuns = z.object({ items: z.array(SavedBacktestRun) });
 /** How often a running backtest is asked how far it is. */
 export const BACKTEST_POLL_MS = 2_000;
@@ -24,6 +25,11 @@ export function savedStrategyFetchers(client: ApiClient = api) {
     remove: (id: string) => client.delete(`${BASE}/${enc(id)}`),
     backtests: (id: string) => client.get(`${BASE}/${enc(id)}/backtests`, SavedBacktestRuns),
     startBacktest: (id: string, body: SavedBacktestStart) => client.post(`${BASE}/${enc(id)}/backtests`, body, SavedBacktestRun),
+    approval: (id: string) => client.get(`${BASE}/${enc(id)}/approval`, SavedApprovalView),
+    // (an account with the authenticator on sends its current code in a header, ADR-086)
+    // (`read` is what the approver ticked: the server refuses anything but true, and nothing here says it for them)
+    approve: (id: string, read: boolean, code?: string) => client.request(`${BASE}/${enc(id)}/approve`, { method: "POST", body: { read }, schema: SavedStrategy, ...(secondFactorHeaders(code) ? { headers: secondFactorHeaders(code)! } : {}) }),
+    withdrawApproval: (id: string, code?: string) => client.request(`${BASE}/${enc(id)}/withdraw-approval`, { method: "POST", body: {}, schema: SavedStrategy, ...(secondFactorHeaders(code) ? { headers: secondFactorHeaders(code)! } : {}) }),
     useBacktest: (id: string, run: string) => client.post(`${BASE}/${enc(id)}/backtests/${enc(run)}/use`, {}, SavedStrategy),
   };
 }
@@ -80,6 +86,22 @@ export function useUseSavedBacktest(id: string) {
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: savedStrategyKeys.admin });
       return qc.invalidateQueries({ queryKey: savedStrategyKeys.backtests(id) });
+    },
+  });
+}
+
+/** The paper record of a strategy against the approval checks (ADR-145; HC-TR-294): read afresh every time, the record moves with every trade. */
+export function useSavedApproval(id: string) {
+  return useQuery({ queryKey: savedStrategyKeys.approval(id), queryFn: () => f.approval(id), staleTime: 0, gcTime: 0 });
+}
+/** Approve for live, or withdraw it. A record on a strategy that stays on paper: nothing is placed. After either, and after a refusal, the list and the view are read again. */
+export function useSavedApprovalStep(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ step, read, code }: { step: "approve" | "withdraw"; read: boolean; code?: string }) => (step === "approve" ? f.approve(id, read, code) : f.withdrawApproval(id, code)),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: savedStrategyKeys.admin });
+      return qc.invalidateQueries({ queryKey: savedStrategyKeys.approval(id) });
     },
   });
 }

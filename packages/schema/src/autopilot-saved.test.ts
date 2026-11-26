@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { SavedBacktest, SavedBacktestRun, SavedBacktestStart, SavedBacktestTyped, SavedCard, SavedDefinition, SavedLeg, SavedStrategyCreate, SavedStrategyPatch, savedEntryText, savedIstClock, savedIstWeekday, savedLossCapped, savedPlaybookOf, savedProfitCapped, savedWindowText } from "./autopilot-saved.js";
 import { AutopilotView } from "./autopilot.js";
+import { APPROVAL_MIN_DAYS, APPROVAL_MIN_TRADES, SavedApproval, SavedApprovalView, SavedApprove, type SavedPaperRecord, savedApprovalChecks } from "./autopilot-saved.js";
 
 const sellPut = { kind: "put", side: "sell", by: "pct", value: 2 } as const;
 const sellCall = { kind: "call", side: "sell", by: "pct", value: 2 } as const;
@@ -278,5 +279,64 @@ describe("HC-TR-288 figures computed in the app (ADR-144)", () => {
     expect(SavedBacktestRun.safeParse({ ...run, status: "queued" }).success).toBe(false);
     // a run's own figures are the numbers alone: the mark of the run is put on when they go to the strategy
     expect(SavedBacktestRun.safeParse({ ...run, figures: { ...typed, run: origin } }).success).toBe(false);
+  });
+});
+
+describe("HC-TR-292 the approval checks (ADR-145)", () => {
+  const FIGURES = { mean: 4.2, per: "day" as const, positivePct: 71, worst: -60, samples: 106, basis: "autopilot-study, real fees" };
+  const record: SavedPaperRecord = { since: "2026-09-25T00:00:00.000Z", publishedDays: 36, firstEntryAt: "2026-10-01T16:05:00.000Z", lastEntryAt: "2026-10-30T16:05:00.000Z", days: APPROVAL_MIN_DAYS, accounts: 1, open: 0, closed: APPROVAL_MIN_TRADES, wins: 14, grossUsd: "12.00", feesUsd: "2.00", netUsd: "10.00", worstNetUsd: "-8.00", skipLines: 0, logDays: 90 };
+  const good = { backtest: FIGURES, lossCapped: true };
+  const failing = (s: Parameters<typeof savedApprovalChecks>[0], r: SavedPaperRecord) => savedApprovalChecks(s, r).filter((c) => !c.pass).map((c) => c.key);
+
+  it("HC-TR-292 each check fails for its own reason: under 30 days, under 20 trades, backtest or paper net not positive, loss not limited, no backtest", () => {
+    // everything the owner kept passes at exactly 30 days and 20 trades; the margin check stays open and does not block
+    expect(APPROVAL_MIN_DAYS).toBe(30);
+    expect(APPROVAL_MIN_TRADES).toBe(20);
+    expect(failing(good, record)).toEqual(["margin"]);
+    expect(savedApprovalChecks(good, record).filter((c) => !c.blocking).map((c) => c.key)).toEqual(["margin"]);
+    expect(failing(good, { ...record, days: 29 })).toEqual(["days", "margin"]);
+    // published long ago and first traded yesterday is not thirty days on paper
+    expect(failing(good, { ...record, publishedDays: 200, days: 1 })).toEqual(["days", "margin"]);
+    expect(failing(good, { ...record, closed: 19 })).toEqual(["trades", "margin"]);
+    expect(failing(good, { ...record, netUsd: "0.00" })).toEqual(["paperNet", "margin"]);
+    expect(failing(good, { ...record, netUsd: "-0.01" })).toEqual(["paperNet", "margin"]);
+    expect(failing({ ...good, backtest: { ...FIGURES, mean: 0 } }, record)).toEqual(["backtest", "margin"]);
+    expect(failing({ ...good, backtest: null }, record)).toEqual(["backtest", "margin"]);
+    expect(failing({ ...good, lossCapped: false }, record)).toEqual(["lossCapped", "margin"]);
+  });
+
+  it("HC-TR-292 each check says what it found, with what the figures rest on", () => {
+    const said = Object.fromEntries(savedApprovalChecks({ ...good, lossCapped: false }, { ...record, days: 1, publishedDays: 5, closed: 1, open: 2, accounts: 3 }).map((c) => [c.key, c.detail]));
+    expect(said).toEqual({
+      backtest: "4.20 USD a day on 106 samples; figures entered by hand. Source: autopilot-study, real fees",
+      days: "First paper trade on 2026-10-01, 1 day ago; published 5 days ago.",
+      trades: "1 closed paper trade, 2 still open, in the account that took the most entries (3 accounts traded it).",
+      paperNet: "10.00 USD on 1 closed paper trade of one account, filled at the mark, less the fees estimated at entry.",
+      lossCapped: "Its loss is not limited: such a strategy runs on paper and never goes live.",
+      margin: "Not checked yet. It is required before any live order, and is part of the live step, not of this approval.",
+    });
+    // figures computed in the app say so, a mean with a long tail is printed to the cent, and a record older than the log says what it lacks
+    const app = savedApprovalChecks({ ...good, backtest: { ...FIGURES, mean: 4.199999999, samples: 1, run: { id: "bt_1", from: "2026-08-07", to: "2026-11-20", resolution: "5m", notes: [] } } }, { ...record, closed: 0, days: 120, publishedDays: 121 }).map((c) => c.detail);
+    expect(app.slice(0, 5)).toEqual([
+      "4.20 USD a day on 1 sample; a backtest in the app. Source: autopilot-study, real fees",
+      "First paper trade on 2026-10-01, 120 days ago; published 121 days ago. The log keeps 90 days: older trades are not in this record.",
+      "0 closed paper trades, 0 still open, in the account that took the most entries (1 account traded it).",
+      "No paper trade has closed yet.",
+      "By its settings, every sold option is covered by a bought one.",
+    ]);
+    const none = { ...record, firstEntryAt: null, lastEntryAt: null, days: 0, closed: 0 };
+    expect(savedApprovalChecks(good, { ...none, publishedDays: 3 }).find((c) => c.key === "days")!.detail).toBe("No paper trade yet; published 3 days ago.");
+    expect(savedApprovalChecks({ ...good, backtest: null }, { ...none, since: null, publishedDays: 0 }).slice(0, 2).map((c) => c.detail)).toEqual(["It has no backtest figures.", "It is not on paper."]);
+  });
+
+  it("HC-TR-292 an approval keeps who, when, the record and the backtest; the approver confirms having read the trades", () => {
+    const approval = { by: "usr_1", byName: "Owner", at: "2026-11-26T09:00:00.000Z", record, backtest: FIGURES };
+    expect(SavedApproval.parse(approval)).toEqual(approval);
+    expect(SavedApproval.safeParse({ ...approval, backtest: undefined }).success).toBe(false);
+    expect(SavedApprove.safeParse({ read: true }).success).toBe(true);
+    expect(SavedApprove.safeParse({ read: false }).success).toBe(false);
+    expect(SavedApprove.safeParse({}).success).toBe(false);
+    const view = { strategyId: "sv_1", record, checks: savedApprovalChecks(good, record), approvable: true, mayApprove: false, approval: null, trades: [{ asset: "BTC", expiry: "2026-10-02", strikes: ["82000", "86000"], openedAt: "2026-10-01T16:05:00.000Z", closedAt: "2026-10-02T12:00:00.000Z", netUsd: "9.90", reason: "expired" }], skips: { "No expiry in its range": 2 } };
+    expect(SavedApprovalView.parse(view)).toEqual(view);
   });
 });

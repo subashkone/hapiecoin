@@ -372,6 +372,27 @@ export const SavedApprovalCheck = z.strictObject({
   detail: z.string(),
 });
 export type SavedApprovalCheck = z.infer<typeof SavedApprovalCheck>;
+/**
+ * The checks of design §3.4 as the owner kept them. Five are blocking. The days are counted from the first paper trade,
+ * not from the publish: a strategy published and left switched off has not been on paper. The margin check is shown and
+ * left open: the app cannot make it (GAPS #109), and live itself waits on it (step 4), so it does not stand in the way
+ * of this record.
+ */
+export function savedApprovalChecks(strategy: { backtest: SavedBacktest | null; lossCapped: boolean }, record: SavedPaperRecord): SavedApprovalCheck[] {
+  const b = strategy.backtest;
+  const net = Math.round(Number(record.netUsd) * 100);
+  const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
+  const paper = `${plural(record.closed, "closed paper trade")} of one account, filled at the mark, less the fees estimated at entry`;
+  return [
+    { key: "backtest", label: "Backtest average is positive", blocking: true, pass: b !== null && b.mean > 0, detail: b === null ? "It has no backtest figures." : `${b.mean.toFixed(2)} USD a ${b.per} on ${plural(b.samples, "sample")}; ${b.run ? "a backtest in the app" : "figures entered by hand"}. Source: ${b.basis}` },
+    { key: "days", label: `At least ${APPROVAL_MIN_DAYS} days since its first paper trade`, blocking: true, pass: record.days >= APPROVAL_MIN_DAYS, detail: record.firstEntryAt === null ? (record.since === null ? "It is not on paper." : `No paper trade yet; published ${plural(record.publishedDays, "day")} ago.`) : `First paper trade on ${record.firstEntryAt.slice(0, 10)}, ${plural(record.days, "day")} ago; published ${plural(record.publishedDays, "day")} ago.${record.days > record.logDays ? ` The log keeps ${record.logDays} days: older trades are not in this record.` : ""}` },
+    { key: "trades", label: `At least ${APPROVAL_MIN_TRADES} closed paper trades`, blocking: true, pass: record.closed >= APPROVAL_MIN_TRADES, detail: `${plural(record.closed, "closed paper trade")}, ${record.open} still open, in the account that took the most entries (${plural(record.accounts, "account")} traded it).` },
+    { key: "paperNet", label: "Paper result is positive after estimated fees", blocking: true, pass: net > 0, detail: record.closed === 0 ? "No paper trade has closed yet." : `${record.netUsd} USD on ${paper}.` },
+    { key: "lossCapped", label: "Loss limited by bought options", blocking: true, pass: strategy.lossCapped, detail: strategy.lossCapped ? "By its settings, every sold option is covered by a bought one." : "Its loss is not limited: such a strategy runs on paper and never goes live." },
+    { key: "margin", label: "Margin estimate checked against the exchange", blocking: false, pass: false, detail: "Not checked yet. It is required before any live order, and is part of the live step, not of this approval." },
+  ];
+}
+
 /** An approval as it is kept on the strategy: who, when, and the paper record and the backtest figures it was given on. */
 export const SavedApproval = z.strictObject({ by: z.string().nullable(), byName: z.string(), at: IsoDateTime, record: SavedPaperRecord, backtest: SavedBacktest });
 export type SavedApproval = z.infer<typeof SavedApproval>;

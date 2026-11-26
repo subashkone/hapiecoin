@@ -6,7 +6,7 @@ import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { Underlying, PublicPageSettings, AdminCommissionRow, Alert, AvailableCoupon, Banner, BannerFrequency, BillingInterval, Campaign, CampaignRecipient, Coupon, CouponReason, EmailSegment, Payment, Broker, BrokerCredentialPublic, CommissionStatus, LimitKey, MenuItem, Plan, PlanLimits, ReferralRow, Strategy, StrategyLeg, StrategyLegInput, StrategyOrder, User, UserSettings } from "@hapiecoin/schema";
 import { mockAnalyticsSnapshots } from "./mock-analytics";
 import { AUTOPILOT_PLAYBOOKS, type SweepAxisSpec } from "@hapiecoin/pricing";
-import { AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_PAPER_ONLY_MESSAGE, type AutopilotResults, AutopilotSettings, type AutopilotView, ProposalMarkBody, parseSweepValues, SAVED_REFUSALS, type SavedBacktestRun, SavedBacktestStart, type SavedBacktestTrade, type SavedStrategy, SavedStrategyCreate, SavedStrategyPatch, savedEntryText, savedLossCapped } from "@hapiecoin/schema";
+import { AUTOPILOT_KEEP_MESSAGE, AUTOPILOT_PAPER_ONLY_MESSAGE, type AutopilotResults, AutopilotSettings, type AutopilotView, ProposalMarkBody, parseSweepValues, SAVED_REFUSALS, type SavedApproval, type SavedApprovalView, SavedApprove, type SavedBacktestRun, SavedBacktestStart, type SavedBacktestTrade, type SavedStrategy, SavedStrategyCreate, SavedStrategyPatch, savedApprovalChecks, savedEntryText, savedLossCapped } from "@hapiecoin/schema";
 import { type MockBacktestParams, mockBacktest, mockSweep } from "./mock-backtest";
 import { mockReplayChain, mockReplayExpiries, mockReplaySteps } from "./mock-replay";
 import { mockPlaybookRecords } from "./mock-playbooks";
@@ -151,6 +151,9 @@ export interface MockState {
   savedBacktestReads: number;
   /** Whether this server has the exchange's price history: without it a backtest cannot start (503). */
   savedBacktestSource: boolean;
+  /** Approval for live (ADR-145): the paper record a test gives a strategy (an empty one otherwise), and the users who hold the approver permission. */
+  savedPaper: Record<string, Pick<SavedApprovalView, "record" | "trades" | "skips">>;
+  savedApprovers: string[];
   /** Coupons and payments (ADR-034); checkout answers in "mock" mode, confirm accepts the signature "mock-sig". */
   coupons: Coupon[];
   payments: (Payment & { userId: string; couponId: string | null })[];
@@ -281,7 +284,7 @@ export function createSession(state: MockState, email: string): string {
 
 export function createMockApi(state: MockState = { plans: seedPlans(),
     menuItems: seedMenuItems(),
-    accounts: new Map(), commissions: [], banners: [], savedStrategies: [], savedBacktests: [], savedBacktestReads: 1, savedBacktestSource: true, coupons: [], payments: [], checkoutMode: "mock", clientErrors: [], backtestDays: 12, replayDays: 12, tradingEnv: "testnet", ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
+    accounts: new Map(), commissions: [], banners: [], savedStrategies: [], savedBacktests: [], savedBacktestReads: 1, savedBacktestSource: true, savedPaper: {}, savedApprovers: [], coupons: [], payments: [], checkoutMode: "mock", clientErrors: [], backtestDays: 12, replayDays: 12, tradingEnv: "testnet", ivHistoryDays: 365, telegramConfigured: true, telegramAutoLink: true, campaigns: [], invites: [], sessions: new Map(), otps: new Map() }) {
   const app = new Hono();
 
   const err = (c: Context, status: 400 | 401 | 402 | 403 | 404 | 409 | 429 | 503, code: string, message: string, details?: Record<string, unknown>) =>
@@ -1808,12 +1811,13 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
       return c.json(made);
     }
     if (resettled) {
-      Object.assign(row, next, { definition: body.definition!, lossCapped: savedLossCapped(body.definition!.legs), entryText: savedEntryText(body.definition!), stage: backtest ? "backtested" : "draft", publishedAt: null, updatedAt: at });
+      Object.assign(row, next, { definition: body.definition!, lossCapped: savedLossCapped(body.definition!.legs), entryText: savedEntryText(body.definition!), stage: backtest ? "backtested" : "draft", publishedAt: null, approval: null, updatedAt: at });
       return c.json(row);
     }
     if (row.stage === "paper" && !backtest) return err(c, 409, "CONFLICT", SAVED_REFUSALS.needsBacktest);
     if (row.stage === "paper" && !savedAudienceOk(next)) return err(c, 409, "CONFLICT", SAVED_REFUSALS.needsAudience);
-    Object.assign(row, next, { stage: row.stage === "paper" ? "paper" : backtest ? "backtested" : "draft", updatedAt: at });
+    // (an approval was given on the figures it saw: other figures end it, as on the server)
+    Object.assign(row, next, { approval: stableJson(backtest) === stableJson(row.backtest) ? row.approval : null, stage: row.stage === "paper" ? "paper" : backtest ? "backtested" : "draft", updatedAt: at });
     return c.json(row);
   });
   v1.post("/admin/autopilot-strategies/:id/duplicate", (c) => {
@@ -1834,8 +1838,8 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (!row.backtest) return err(c, 409, "CONFLICT", SAVED_REFUSALS.needsBacktest);
     if (!savedAudienceOk(row)) return err(c, 409, "CONFLICT", SAVED_REFUSALS.needsAudience);
     const at = nowIso();
-    for (const other of state.savedStrategies) if (other.familyId === row.familyId && other.stage === "paper") Object.assign(other, { stage: "retired", retiredAt: at, updatedAt: at });
-    Object.assign(row, { stage: "paper", publishedAt: at, updatedAt: at });
+    for (const other of state.savedStrategies) if (other.familyId === row.familyId && other.stage === "paper") Object.assign(other, { stage: "retired", retiredAt: at, approval: null, updatedAt: at });
+    Object.assign(row, { stage: "paper", publishedAt: at, approval: null, updatedAt: at });
     return c.json(row);
   });
   v1.post("/admin/autopilot-strategies/:id/retire", (c) => {
@@ -1845,7 +1849,7 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (!row) return err(c, 404, "NOT_FOUND", "Strategy not found");
     if (row.stage !== "paper") return err(c, 409, "CONFLICT", SAVED_REFUSALS.notPaper);
     const at = nowIso();
-    Object.assign(row, { stage: "retired", retiredAt: at, updatedAt: at });
+    Object.assign(row, { stage: "retired", retiredAt: at, approval: null, updatedAt: at });
     return c.json(row);
   });
   v1.delete("/admin/autopilot-strategies/:id", (c) => {
@@ -1917,6 +1921,52 @@ export function createMockApi(state: MockState = { plans: seedPlans(),
     if (!run.current) return err(c, 409, "CONFLICT", SAVED_REFUSALS.backtestStale);
     const at = nowIso();
     Object.assign(row, { backtest: { ...run.figures, run: { id: run.id, from: run.from, to: run.to, resolution: run.resolution, notes: run.notes } }, backtestAt: at, stage: row.stage === "paper" ? "paper" : "backtested", updatedAt: at });
+    return c.json(row);
+  });
+
+  // Approval for live (ADR-145; HC-TR-294): the checks are the schema package's own, on the record a test gave the
+  // strategy. The refusals and their order are the API's. Nothing here is live: the row stays on paper.
+  const paperOf = (row: SavedStrategy): Pick<SavedApprovalView, "record" | "trades" | "skips"> =>
+    state.savedPaper[row.id] ?? { record: { since: row.publishedAt, publishedDays: 0, firstEntryAt: null, lastEntryAt: null, days: 0, accounts: 0, open: 0, closed: 0, wins: 0, grossUsd: "0.00", feesUsd: "0.00", netUsd: "0.00", worstNetUsd: null, skipLines: 0, logDays: 90 }, trades: [], skips: {} };
+  const approver = (c: Context): boolean => state.savedApprovers.includes(current(c)!.user.id);
+  v1.get("/admin/autopilot-strategies/:id/approval", (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const row = savedOf(c.req.param("id"));
+    if (!row) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    const paper = paperOf(row);
+    const checks = savedApprovalChecks(row, paper.record);
+    const view: SavedApprovalView = { strategyId: row.id, ...paper, checks, approvable: row.stage === "paper" && checks.every((k) => k.pass || !k.blocking), mayApprove: approver(c), approval: row.stage === "paper" ? row.approval : null };
+    return c.json(view);
+  });
+  v1.post("/admin/autopilot-strategies/:id/approve", async (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    if (!SavedApprove.safeParse(await c.req.json().catch(() => null)).success) return err(c, 400, "VALIDATION", "Confirm that you have read its trades");
+    const refused = secondFactorRefusal(c);
+    if (refused) return refused;
+    if (!approver(c)) return err(c, 403, "FORBIDDEN", SAVED_REFUSALS.notApprover);
+    const row = savedOf(c.req.param("id"));
+    if (!row) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (row.stage !== "paper") return err(c, 409, "CONFLICT", SAVED_REFUSALS.approveNotPaper);
+    if (row.approval) return err(c, 409, "CONFLICT", SAVED_REFUSALS.approveTwice);
+    const { record } = paperOf(row);
+    const failed = savedApprovalChecks(row, record).filter((k) => k.blocking && !k.pass);
+    if (failed.length > 0 || !row.backtest) return err(c, 409, "CONFLICT", `${SAVED_REFUSALS.approveChecks}: ${failed.map((k) => k.label.toLowerCase()).join("; ")}`);
+    const approval: SavedApproval = { by: current(c)!.user.id, byName: current(c)!.user.name, at: nowIso(), record, backtest: row.backtest };
+    Object.assign(row, { approval, updatedAt: approval.at });
+    return c.json(row);
+  });
+  v1.post("/admin/autopilot-strategies/:id/withdraw-approval", (c) => {
+    const denied = adminGate(c);
+    if (denied) return denied;
+    const refused = secondFactorRefusal(c);
+    if (refused) return refused;
+    if (!approver(c)) return err(c, 403, "FORBIDDEN", SAVED_REFUSALS.notApprover);
+    const row = savedOf(c.req.param("id"));
+    if (!row) return err(c, 404, "NOT_FOUND", "Strategy not found");
+    if (row.stage !== "paper" || !row.approval) return err(c, 409, "CONFLICT", SAVED_REFUSALS.notApproved);
+    Object.assign(row, { approval: null, updatedAt: nowIso() });
     return c.json(row);
   });
 
