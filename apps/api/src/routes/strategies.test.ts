@@ -365,7 +365,7 @@ describe("HC-TR-071 / HC-TR-088 adjustment batch on a paper strategy (ADR-044)",
 
 describe("HC-TR-257 the margin estimated when a paper trade is started (ADR-128)", () => {
   it("HC-TR-257 a started trade with a sold option stores the estimate at the entry prices and returns it; nothing sold, or a venue that does not answer, stores none", async () => {
-    const params = new Map([[PUT.symbol, { contractValue: "0.001", initialMarginPct: "1", initialMarginScalingFactor: "0.000002" }]]);
+    const params = new Map([[PUT.symbol, { contractValue: "0.001", initialMarginPct: "1", initialMarginScalingFactor: "0.000002", maxLeverageNotional: "200000" }]]);
     t.deps.marginInputs = (asset, venue) => Promise.resolve(asset === "BTC" && venue === "delta_india" ? { spot: 80_000, params } : null);
     try {
       // a risk reversal: bought call at 1200, sold put entered at 950 (not its draft price of 900); 10 lots of 0.001 BTC

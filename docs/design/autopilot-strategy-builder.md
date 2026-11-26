@@ -89,7 +89,7 @@ Plans already exist as rows an admin creates (`packages/schema/src/billing.ts`, 
 
 ### 4.2 The margin figure
 
-- GAPS #109 asked the wrong question. The unit (percent) is right. **The defect is that the code multiplies the scaling factor by the number of contracts; Delta's documents and product list say it applies per USD of position above a threshold** (`max_leverage_notional`, 200,000 USD for a BTC option in production), which the code never reads.
+- (26 Nov 2026: the scaling term described in this bullet was changed to the documented reading in ADR-146; the rest of this section still stands.) GAPS #109 asked the wrong question. The unit (percent) is right. **The defect is that the code multiplies the scaling factor by the number of contracts; Delta's documents and product list say it applies per USD of position above a threshold** (`max_leverage_notional`, 200,000 USD for a BTC option in production), which the code never reads.
 - At the owner's sizes the difference is small (the code overstates by at most 1.4 % below the threshold). Above the threshold the code understates: about 26 % low at 5,000 lots and 59 % low at 10,000 lots.
 - A larger unknown: in isolated margin the trader's chosen leverage sets the margin, and the code assumes the highest leverage and never reads the setting. At 10x leverage Delta could hold twenty times the code's figure.
 - Relief for a sold option covered by a bought one exists only in portfolio margin, an account mode the trader selects. The code's "no relief" is right for isolated margin.

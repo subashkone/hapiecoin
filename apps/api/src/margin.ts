@@ -9,7 +9,7 @@
  * The arithmetic is the live preview's (ADR-091, ADR-095): every sold option under `shortOptionMarginUsd`, every
  * futures leg under `futuresMarginUsd`, plus the net premium paid. (The public list this API reads holds options only,
  * so a PAPER trade with a futures leg finds no parameters for it and gets no figure; a live one takes the preview's.) No relief is assumed for a bought option on the
- * same side, and the figure has never been compared with what the exchange holds (GAPS #109): it is an estimate.
+ * same side, and the figure has never been compared with what the exchange holds (GAPS #109): it is an estimate, at the product's highest leverage.
  * Pure but for `entryMargin`, which reads the source and never throws: a trade is entered whether or not its margin
  * could be estimated.
  */
@@ -19,8 +19,10 @@ import { contractsFor, futuresMarginUsd, shortOptionMarginUsd } from "@hapiecoin
 /** What the venue lists for one contract, keyed by venue symbol in `MarginInputs.params`. */
 export interface MarginParams {
   contractValue: string;
-  initialMarginPct?: string | undefined;
-  initialMarginScalingFactor?: string | undefined;
+  initialMarginPct: string | undefined;
+  initialMarginScalingFactor: string | undefined;
+  /** Named by every builder, absent or not: a source that forgot it would leave every trade without a figure, silently (HC-TR-295). */
+  maxLeverageNotional: string | undefined;
 }
 
 export interface MarginInputs {
@@ -70,8 +72,8 @@ export function marginEstimateOf(legs: readonly MarginLeg[], lotSize: string, in
     const contracts = contractsFor(l.lots, lotSize, p.contractValue);
     const est =
       l.kind === "future"
-        ? futuresMarginUsd({ contracts, contractValue: p.contractValue, price: l.price, initialMarginPct: p.initialMarginPct, initialMarginScalingFactor: p.initialMarginScalingFactor })
-        : shortOptionMarginUsd({ contracts, contractValue: p.contractValue, spot: inputs.spot === null ? null : String(inputs.spot), mark: l.price, initialMarginPct: p.initialMarginPct, initialMarginScalingFactor: p.initialMarginScalingFactor });
+        ? futuresMarginUsd({ contracts, contractValue: p.contractValue, price: l.price, initialMarginPct: p.initialMarginPct, initialMarginScalingFactor: p.initialMarginScalingFactor, maxLeverageNotional: p.maxLeverageNotional })
+        : shortOptionMarginUsd({ contracts, contractValue: p.contractValue, spot: inputs.spot === null ? null : String(inputs.spot), mark: l.price, initialMarginPct: p.initialMarginPct, initialMarginScalingFactor: p.initialMarginScalingFactor, maxLeverageNotional: p.maxLeverageNotional });
     if (est === null) return null;
     margin += Number(est);
     margined += 1;
